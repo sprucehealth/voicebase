@@ -353,7 +353,7 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 		}
 		columnsAndData["dr_favorite_treatment_plan_id"] = drFavoriteTreatmentID
 	case pharmacyDispensedTreatmentType:
-		columnsAndData["doctor_id"] = treatment.Doctor.DoctorID.Int64()
+		columnsAndData["doctor_id"] = treatment.Doctor.ID.Int64()
 		columnsAndData["erx_id"] = treatment.ERx.PrescriptionID.Int64()
 
 		if treatment.ERx.ErxLastDateFilled != nil && !treatment.ERx.ErxLastDateFilled.IsZero() {
@@ -373,7 +373,7 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 		columnsAndData["requested_treatment_id"] = requestedTreatment.ID.Int64()
 
 	case refillRequestTreatmentType:
-		columnsAndData["doctor_id"] = treatment.Doctor.DoctorID.Int64()
+		columnsAndData["doctor_id"] = treatment.Doctor.ID.Int64()
 		columnsAndData["erx_id"] = treatment.ERx.PrescriptionID.Int64()
 
 		if treatment.ERx.ErxLastDateFilled != nil && !treatment.ERx.ErxLastDateFilled.IsZero() {

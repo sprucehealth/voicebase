@@ -163,7 +163,7 @@ func TestMACanFetchAllCareTeams(t *testing.T) {
 		H: careTeamHandler,
 		Setup: func() {
 			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.RoleMA
+			ctxt.Role = api.RoleCC
 			ctxt.AccountID = 1
 		},
 	}

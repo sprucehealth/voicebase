@@ -164,8 +164,10 @@ func CreateRandomAdmin(t *testing.T, testData *TestData) *common.Patient {
 	patient, err := testData.DataAPI.GetPatientFromID(pr.Patient.PatientID.Int64())
 	test.OK(t, err)
 	// update the role to be that of an admin person
-	_, err = testData.DB.Exec(`update account set 
-		role_type_id = (select id from role_type where role_type_tag='ADMIN') where id = ?`, patient.AccountID.Int64())
+	_, err = testData.DB.Exec(`
+		UPDATE account SET role_type_id = (
+			SELECT id FROM role_type WHERE role_type_tag = 'ADMIN')
+		WHERE id = ?`, patient.AccountID.Int64())
 	test.OK(t, err)
 	return patient
 }
@@ -275,7 +277,7 @@ func CreateRandomPatientVisitAndPickTPForPathway(t *testing.T, testData *TestDat
 	careProvidingStateID, err := testData.DataAPI.AddCareProvidingState("CA", "California", pathway.Tag)
 	test.OK(t, err)
 
-	err = testData.DataAPI.MakeDoctorElligibleinCareProvidingState(careProvidingStateID, doctor.DoctorID.Int64())
+	err = testData.DataAPI.MakeDoctorElligibleinCareProvidingState(careProvidingStateID, doctor.ID.Int64())
 	test.OK(t, err)
 
 	pc := PatientClient(testData, t, patient.PatientID.Int64())
@@ -291,10 +293,10 @@ func CreateRandomPatientVisitAndPickTPForPathway(t *testing.T, testData *TestDat
 	StartReviewingPatientVisit(pv.PatientVisitID, doctor, testData, t)
 	doctorPickTreatmentPlanResponse := PickATreatmentPlanForPatientVisit(pv.PatientVisitID, doctor, nil, testData, t)
 	role := api.RoleDoctor
-	if doctor.IsMA {
-		role = api.RoleMA
+	if doctor.IsCC {
+		role = api.RoleCC
 	}
-	tp, err := responses.TransformTPFromResponse(testData.DataAPI, doctorPickTreatmentPlanResponse.TreatmentPlan, doctor.DoctorID.Int64(), role)
+	tp, err := responses.TransformTPFromResponse(testData.DataAPI, doctorPickTreatmentPlanResponse.TreatmentPlan, doctor.ID.Int64(), role)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -312,10 +314,10 @@ func CreatePatientVisitAndPickTP(t *testing.T, testData *TestData, patient *comm
 	StartReviewingPatientVisit(pv.PatientVisitID, doctor, testData, t)
 	doctorPickTreatmentPlanResponse := PickATreatmentPlanForPatientVisit(pv.PatientVisitID, doctor, nil, testData, t)
 	role := api.RoleDoctor
-	if doctor.IsMA {
-		role = api.RoleMA
+	if doctor.IsCC {
+		role = api.RoleCC
 	}
-	tp, err := responses.TransformTPFromResponse(testData.DataAPI, doctorPickTreatmentPlanResponse.TreatmentPlan, doctor.DoctorID.Int64(), role)
+	tp, err := responses.TransformTPFromResponse(testData.DataAPI, doctorPickTreatmentPlanResponse.TreatmentPlan, doctor.ID.Int64(), role)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -323,7 +325,6 @@ func CreatePatientVisitAndPickTP(t *testing.T, testData *TestData, patient *comm
 }
 
 func CreateAndSubmitPatientVisitWithSpecifiedAnswers(answers map[int64]*apiservice.QuestionAnswerItem, testData *TestData, t *testing.T) *patient.PatientVisitResponse {
-
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	pv := CreatePatientVisitForPatient(pr.Patient.PatientID.Int64(), testData, t)
 	answerIntake := PrepareAnswersForQuestionsWithSomeSpecifiedAnswers(pv.PatientVisitID, pv.ClientLayout, answers, t)

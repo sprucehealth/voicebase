@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 	"time"
@@ -30,27 +29,26 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 		DoctorRegistered, doctor.DoseSpotClinicianID)
 	if err != nil {
 		tx.Rollback()
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 
 	lastID, err := res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
-		log.Fatal("Unable to return id of inserted item as error was returned when trying to return id", err)
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 
-	doctor.DoctorID = encoding.NewObjectID(lastID)
+	doctor.ID = encoding.NewObjectID(lastID)
 	doctor.DoctorAddress.ID, err = addAddress(tx, doctor.DoctorAddress)
 	if err != nil {
 		tx.Rollback()
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 
 	_, err = tx.Exec(`insert into doctor_address_selection (doctor_id, address_id) values (?,?)`, lastID, doctor.DoctorAddress.ID)
 	if err != nil {
 		tx.Rollback()
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 
 	if doctor.CellPhone != "" {
@@ -58,22 +56,22 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 			doctor.CellPhone.String(), PhoneCell, doctor.AccountID.Int64(), StatusActive)
 		if err != nil {
 			tx.Rollback()
-			return 0, err
+			return 0, errors.Trace(err)
 		}
 	}
 
 	res, err = tx.Exec(`INSERT INTO person (role_type_id, role_id) VALUES (?, ?)`, d.roleTypeMapping[RoleDoctor], lastID)
 	if err != nil {
 		tx.Rollback()
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 	doctor.PersonID, err = res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 
-	return lastID, tx.Commit()
+	return lastID, errors.Trace(tx.Commit())
 }
 
 func (d *DataService) GetDoctorFromID(doctorID int64) (*common.Doctor, error) {
@@ -86,11 +84,13 @@ func (d *DataService) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, erro
 		return d.GetDoctorFromID(id)
 	}
 
-	return scanDoctor(d.db.QueryRow(`
-		SELECT id, account_id, first_name, last_name, short_title, long_title, short_display_name, long_display_name, gender,
-			dob_year, dob_month, dob_day, status, clinician_id, small_thumbnail_id, large_thumbnail_id, hero_image_id, npi_number, dea_number
-		FROM doctor
-		WHERE id = ?`, id))
+	return d.scanDoctor(d.db.QueryRow(`
+		SELECT d.id, account_id, first_name, last_name, short_title, long_title, short_display_name, long_display_name, gender,
+			dob_year, dob_month, dob_day, status, clinician_id, small_thumbnail_id, large_thumbnail_id, hero_image_id, npi_number,
+			dea_number, a.role_type_id, d.primary_cc
+		FROM doctor d
+		INNER JOIN account a ON a.id = d.account_id
+		WHERE d.id = ?`, id))
 }
 
 func (d *DataService) Doctors(ids []int64) ([]*common.Doctor, error) {
@@ -99,23 +99,25 @@ func (d *DataService) Doctors(ids []int64) ([]*common.Doctor, error) {
 	}
 
 	rows, err := d.db.Query(`
-		SELECT id, account_id, first_name, last_name, short_title, long_title, short_display_name, long_display_name, gender,
-			dob_year, dob_month, dob_day, status, clinician_id, small_thumbnail_id, large_thumbnail_id, hero_image_id, npi_number, dea_number
-		FROM doctor
-		WHERE id in (`+dbutil.MySQLArgs(len(ids))+`)`,
+		SELECT d.id, account_id, first_name, last_name, short_title, long_title, short_display_name, long_display_name, gender,
+			dob_year, dob_month, dob_day, status, clinician_id, small_thumbnail_id, large_thumbnail_id, hero_image_id, npi_number,
+			dea_number, a.role_type_id, d.primary_cc
+		FROM doctor d
+		INNER JOIN account a ON a.id = d.account_id
+		WHERE d.id in (`+dbutil.MySQLArgs(len(ids))+`)`,
 		dbutil.AppendInt64sToInterfaceSlice(nil, ids)...)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	defer rows.Close()
 
 	doctorMap := make(map[int64]*common.Doctor)
 	for rows.Next() {
-		doctor, err := scanDoctor(rows)
+		doctor, err := d.scanDoctor(rows)
 		if err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
-		doctorMap[doctor.DoctorID.Int64()] = doctor
+		doctorMap[doctor.ID.Int64()] = doctor
 	}
 
 	doctors := make([]*common.Doctor, len(ids))
@@ -123,60 +125,61 @@ func (d *DataService) Doctors(ids []int64) ([]*common.Doctor, error) {
 		doctors[i] = doctorMap[doctorID]
 	}
 
-	return doctors, rows.Err()
+	return doctors, errors.Trace(rows.Err())
 }
 
-func (d *DataService) AllDoctors() ([]*common.Doctor, error) {
+func (d *DataService) ListCareProviders(opt ListCareProvidersOption) ([]*common.Doctor, error) {
+	var vals []interface{}
+	var where string
+	if opt.Has(LCPOptDoctorsOnly) {
+		where = "WHERE a.role_type_id = ?"
+		vals = append(vals, d.roleTypeMapping[RoleDoctor])
+	} else if opt.Has(LCPOptPrimaryCCOnly) {
+		where = "WHERE a.role_type_id = ? AND d.primary_cc = ?"
+		vals = append(vals, d.roleTypeMapping[RoleCC], true)
+	} else if opt.Has(LCPOptCCOnly) {
+		where = "WHERE a.role_type_id = ?"
+		vals = append(vals, d.roleTypeMapping[RoleCC])
+	}
 	rows, err := d.db.Query(`
-		SELECT id, account_id, first_name, last_name, short_title, long_title, short_display_name, long_display_name, gender,
-			dob_year, dob_month, dob_day, status, clinician_id, small_thumbnail_id, large_thumbnail_id, hero_image_id, npi_number, dea_number
-		FROM doctor`)
+		SELECT d.id, account_id, first_name, last_name, short_title, long_title, short_display_name, long_display_name, gender,
+			dob_year, dob_month, dob_day, status, clinician_id, small_thumbnail_id, large_thumbnail_id, hero_image_id, npi_number,
+			dea_number, a.role_type_id, d.primary_cc
+		FROM doctor d
+		INNER JOIN account a ON a.id = d.account_id `+where, vals...)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	defer rows.Close()
 	var doctors []*common.Doctor
 	for rows.Next() {
-		dr, err := scanDoctor(rows)
+		dr, err := d.scanDoctor(rows)
 		if err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 		doctors = append(doctors, dr)
 	}
-	return doctors, rows.Err()
+	return doctors, errors.Trace(rows.Err())
 }
 
-func scanDoctor(s scannable) (*common.Doctor, error) {
+func (d *DataService) scanDoctor(s scannable) (*common.Doctor, error) {
 	var doctor common.Doctor
 	var smallThumbnailID, largeThumbnailID, heroImageID sql.NullString
 	var shortTitle, longTitle, shortDisplayName, longDisplayName sql.NullString
 	var NPI, DEA sql.NullString
 	var clinicianID sql.NullInt64
+	var roleTypeID int64
 	err := s.Scan(
-		&doctor.DoctorID,
-		&doctor.AccountID,
-		&doctor.FirstName,
-		&doctor.LastName,
-		&shortTitle,
-		&longTitle,
-		&shortDisplayName,
-		&longDisplayName,
-		&doctor.Gender,
-		&doctor.DOB.Year, &doctor.DOB.Month, &doctor.DOB.Day,
-		&doctor.Status,
-		&clinicianID,
-		&smallThumbnailID,
-		&largeThumbnailID,
-		&heroImageID,
-		&NPI,
-		&DEA)
-
+		&doctor.ID, &doctor.AccountID, &doctor.FirstName, &doctor.LastName,
+		&shortTitle, &longTitle, &shortDisplayName, &longDisplayName,
+		&doctor.Gender, &doctor.DOB.Year, &doctor.DOB.Month, &doctor.DOB.Day,
+		&doctor.Status, &clinicianID, &smallThumbnailID, &largeThumbnailID,
+		&heroImageID, &NPI, &DEA, &roleTypeID, &doctor.IsPrimaryCC)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound("doctor")
 	} else if err != nil {
 		return nil, err
 	}
-
 	doctor.ShortTitle = shortTitle.String
 	doctor.LongTitle = longTitle.String
 	doctor.ShortDisplayName = shortDisplayName.String
@@ -185,7 +188,7 @@ func scanDoctor(s scannable) (*common.Doctor, error) {
 	doctor.DoseSpotClinicianID = clinicianID.Int64
 	doctor.LargeThumbnailID = largeThumbnailID.String
 	doctor.HeroImageID = heroImageID.String
-
+	doctor.IsCC = roleTypeID != d.roleTypeMapping[RoleDoctor]
 	return &doctor, nil
 }
 
@@ -212,10 +215,6 @@ func (d *DataService) GetFirstDoctorWithAClinicianID() (*common.Doctor, error) {
 	return d.queryDoctor(`doctor.clinician_id is not null AND (account_phone.phone IS NULL OR account_phone.phone_type = ?) LIMIT 1`, PhoneCell)
 }
 
-func (d *DataService) GetMAInClinic() (*common.Doctor, error) {
-	return d.queryDoctor(`account.role_type_id = ? AND (account_phone.phone is NULL or account_phone.phone_type = ?)`, d.roleTypeMapping[RoleMA], PhoneCell)
-}
-
 func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*common.Doctor, error) {
 	row := d.db.QueryRow(fmt.Sprintf(`
 		SELECT doctor.id, doctor.account_id, phone, first_name, last_name, middle_name, suffix,
@@ -223,7 +222,8 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 			gender, dob_year, dob_month, dob_day, doctor.status, clinician_id,
 			address.address_line_1,	address.address_line_2, address.city, address.state,
 			address.zip_code, person.id, npi_number, dea_number, account.role_type_id,
-			doctor.small_thumbnail_id, doctor.large_thumbnail_id, doctor.hero_image_id
+			doctor.small_thumbnail_id, doctor.large_thumbnail_id, doctor.hero_image_id,
+			doctor.primary_cc
 		FROM doctor
 		INNER JOIN account ON account.id = doctor.account_id
 		INNER JOIN person ON person.role_type_id = account.role_type_id AND person.role_id = doctor.id
@@ -243,6 +243,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 	var personID, roleTypeID int64
 	var clinicianID sql.NullInt64
 	var NPI, DEA, shortDisplayName, longDisplayName sql.NullString
+	var primaryCC bool
 
 	err := row.Scan(
 		&doctorID, &accountID, &cellPhoneNumber, &firstName, &lastName,
@@ -250,7 +251,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		&longDisplayName, &email, &gender, &dobYear, &dobMonth,
 		&dobDay, &status, &clinicianID, &addressLine1, &addressLine2,
 		&city, &state, &zipCode, &personID, &NPI, &DEA, &roleTypeID,
-		&smallThumbnailID, &largeThumbnailID, &heroImageID)
+		&smallThumbnailID, &largeThumbnailID, &heroImageID, &primaryCC)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound("doctor")
 	} else if err != nil {
@@ -258,8 +259,8 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 	}
 
 	doctor := &common.Doctor{
+		ID:                  doctorID,
 		AccountID:           accountID,
-		DoctorID:            doctorID,
 		FirstName:           firstName,
 		LastName:            lastName,
 		MiddleName:          middleName.String,
@@ -284,11 +285,12 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 			State:        state.String,
 			ZipCode:      zipCode.String,
 		},
-		DOB:      encoding.Date{Year: dobYear, Month: dobMonth, Day: dobDay},
-		PersonID: personID,
-		NPI:      NPI.String,
-		DEA:      DEA.String,
-		IsMA:     d.roleTypeMapping[RoleMA] == roleTypeID,
+		DOB:         encoding.Date{Year: dobYear, Month: dobMonth, Day: dobDay},
+		PersonID:    personID,
+		NPI:         NPI.String,
+		DEA:         DEA.String,
+		IsCC:        d.roleTypeMapping[RoleCC] == roleTypeID,
+		IsPrimaryCC: primaryCC,
 	}
 
 	doctor.PromptStatus, err = d.GetPushPromptStatus(doctor.AccountID.Int64())
@@ -301,14 +303,14 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 
 func (d *DataService) GetDoctorIDFromAccountID(accountID int64) (int64, error) {
 	var doctorID int64
-	err := d.db.QueryRow("select id from doctor where account_id = ?", accountID).Scan(&doctorID)
+	err := d.db.QueryRow("SELECT id FROM doctor WHERE account_id = ?", accountID).Scan(&doctorID)
 	return doctorID, err
 }
 
 func (d *DataService) GetRegimenStepsForDoctor(doctorID int64) ([]*common.DoctorInstructionItem, error) {
 	rows, err := d.db.Query(`
-	SELECT id, text, status
-	FROM dr_regimen_step where doctor_id = ? AND status = ?`, doctorID, StatusActive)
+		SELECT id, text, status
+		FROM dr_regimen_step where doctor_id = ? AND status = ?`, doctorID, StatusActive)
 	if err != nil {
 		return nil, err
 	}

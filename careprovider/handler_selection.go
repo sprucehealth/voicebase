@@ -184,11 +184,11 @@ func (c *selectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	for i, doctor := range doctors {
 		response.Options[i+1] = &careProviderSelection{
-			ImageURL:       app_url.ThumbnailURL(c.apiDomain, api.RoleDoctor, doctor.DoctorID.Int64()),
+			ImageURL:       app_url.ThumbnailURL(c.apiDomain, api.RoleDoctor, doctor.ID.Int64()),
 			Title:          doctor.ShortDisplayName,
 			Description:    doctor.LongTitle,
 			ButtonTitle:    fmt.Sprintf("Choose %s", doctor.ShortDisplayName),
-			CareProviderID: doctor.DoctorID.Int64(),
+			CareProviderID: doctor.ID.Int64(),
 		}
 	}
 

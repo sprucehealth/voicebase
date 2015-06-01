@@ -143,7 +143,7 @@ func TestCaseNotifications_MessageFromMA(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
+	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
 	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
 
@@ -153,7 +153,7 @@ func TestCaseNotifications_MessageFromMA(t *testing.T) {
 
 	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
-	maCli := test_integration.DoctorClient(testData, t, ma.DoctorID.Int64())
+	maCli := test_integration.DoctorClient(testData, t, ma.ID.Int64())
 
 	// have the MA message the patient
 	_, err = maCli.PostCaseMessage(tp.PatientCaseID.Int64(), "foo", nil)

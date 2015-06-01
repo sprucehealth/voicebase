@@ -45,7 +45,7 @@ func GetRegimenPlanForTreatmentPlan(testData *TestData, doctor *common.Doctor, t
 
 func CreateRegimenPlanForTreatmentPlan(regimenPlan *common.RegimenPlan, testData *TestData, doctor *common.Doctor, t *testing.T) *common.RegimenPlan {
 	// TODO: replace instance of this function with the few lines below
-	cli := DoctorClient(testData, t, doctor.DoctorID.Int64())
+	cli := DoctorClient(testData, t, doctor.ID.Int64())
 	rp, err := cli.CreateRegimenPlan(regimenPlan)
 	if err != nil {
 		t.Fatalf("Failed to create regimen plan: %s [%s]", err.Error(), test.CallerString(1))
@@ -102,10 +102,10 @@ func GetDoctorTreatmentPlanByID(treatmentPlanID, doctorAccountID int64, testData
 		t.Fatal(err)
 	}
 	role := api.RoleDoctor
-	if doctor.IsMA {
-		role = api.RoleMA
+	if doctor.IsCC {
+		role = api.RoleCC
 	}
-	tp, err := responses.TransformTPFromResponse(testData.DataAPI, response.TreatmentPlan, doctor.DoctorID.Int64(), role)
+	tp, err := responses.TransformTPFromResponse(testData.DataAPI, response.TreatmentPlan, doctor.ID.Int64(), role)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -204,7 +204,7 @@ func ValidateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenRe
 }
 
 func CreateFavoriteTreatmentPlan(treatmentPlanID int64, testData *TestData, doctor *common.Doctor, t *testing.T) *responses.FavoriteTreatmentPlan {
-	cli := DoctorClient(testData, t, doctor.DoctorID.Int64())
+	cli := DoctorClient(testData, t, doctor.ID.Int64())
 
 	// lets submit a regimen plan for this patient
 	// reason we do this is because the regimen steps have to exist before treatment plan can be favorited,

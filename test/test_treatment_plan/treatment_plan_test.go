@@ -116,7 +116,7 @@ func TestTreatmentPlanViews(t *testing.T) {
 	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
 
-	dcli := test_integration.DoctorClient(testData, t, doctor.DoctorID.Int64())
+	dcli := test_integration.DoctorClient(testData, t, doctor.ID.Int64())
 	pcli := test_integration.PatientClient(testData, t, patient.PatientID.Int64())
 
 	test_integration.AddTreatmentsToTreatmentPlan(tp.ID.Int64(), doctor, t, testData)
@@ -125,7 +125,7 @@ func TestTreatmentPlanViews(t *testing.T) {
 	test.OK(t, dcli.UpdateTreatmentPlanNote(tp.ID.Int64(), "foo"))
 	test.OK(t, dcli.SubmitTreatmentPlan(tp.ID.Int64()))
 
-	test.OK(t, testData.DataAPI.ActivateTreatmentPlan(tp.ID.Int64(), doctor.DoctorID.Int64()))
+	test.OK(t, testData.DataAPI.ActivateTreatmentPlan(tp.ID.Int64(), doctor.ID.Int64()))
 
 	tpViews, err := pcli.TreatmentPlanForCase(tp.PatientCaseID.Int64())
 	test.OK(t, err)
@@ -207,7 +207,7 @@ func TestTreatmentPlanList_DiffTPStates(t *testing.T) {
 	test.Equals(t, 404, err.(*apiservice.SpruceError).HTTPStatusCode)
 
 	// now lets activate the treatment plan
-	err = testData.DataAPI.ActivateTreatmentPlan(tp.ID.Int64(), doctor.DoctorID.Int64())
+	err = testData.DataAPI.ActivateTreatmentPlan(tp.ID.Int64(), doctor.ID.Int64())
 	test.OK(t, err)
 
 	// in this state the patient should have an active treatment plan
@@ -236,7 +236,7 @@ func TestTreatmentPlanList_DraftTest(t *testing.T) {
 	test.OK(t, err)
 
 	// add doctor2 to the care team of the patient
-	test.OK(t, testData.DataAPI.AddDoctorToPatientCase(doctor2.DoctorID.Int64(), treatmentPlan.PatientCaseID.Int64()))
+	test.OK(t, testData.DataAPI.AddDoctorToPatientCase(doctor2.ID.Int64(), treatmentPlan.PatientCaseID.Int64()))
 
 	// doctor2 should not be able to see previous doctor's draft
 	treatmentPlanResponse := test_integration.GetListOfTreatmentPlansForPatient(patientID, doctor2.AccountID.Int64(), testData, t)
@@ -302,7 +302,7 @@ func TestTreatmentPlanList_FavTP(t *testing.T) {
 	test.OK(t, err)
 
 	// assign the doctor to the patient case
-	test.OK(t, testData.DataAPI.AddDoctorToPatientCase(doctor2.DoctorID.Int64(), patientCase.ID.Int64()))
+	test.OK(t, testData.DataAPI.AddDoctorToPatientCase(doctor2.ID.Int64(), patientCase.ID.Int64()))
 
 	drTreatmentPlan = test_integration.GetDoctorTreatmentPlanByID(treatmentPlanResponse.DraftTreatmentPlans[0].ID.Int64(), doctor2.AccountID.Int64(), testData, t)
 	if drTreatmentPlan.ContentSource != nil && drTreatmentPlan.ContentSource.ID.Int64() != 0 {
@@ -385,7 +385,7 @@ func TestTreatmentPlanDelete_DifferentDoctor(t *testing.T) {
 	signedUpDoctorResponse, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 	doctor2, err := testData.DataAPI.GetDoctorFromID(signedUpDoctorResponse.DoctorID)
 	test.OK(t, err)
-	cli := test_integration.DoctorClient(testData, t, doctor2.DoctorID.Int64())
+	cli := test_integration.DoctorClient(testData, t, doctor2.ID.Int64())
 
 	// attempting to delete the treatment plan should fail given that the treatment plan is being worked on by another doctor
 	if err := cli.DeleteTreatmentPlan(treatmentPlan.ID.Int64()); err == nil {

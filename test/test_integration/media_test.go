@@ -89,8 +89,8 @@ func TestMediaUpload(t *testing.T) {
 	test.OK(t, err)
 	uploadMedia(t, testData, doctor.AccountID.Int64())
 
-	// ensure that MA can upoload via media api
-	mr, _, _ := SignupRandomTestMA(t, testData)
+	// ensure that MA can upload via media api
+	mr, _, _ := SignupRandomTestCC(t, testData, true)
 	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
 	uploadMedia(t, testData, ma.AccountID.Int64())

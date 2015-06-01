@@ -188,7 +188,7 @@ func TestPatientVisitReview(t *testing.T) {
 	// get doctor to submit the patient visit review
 	SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
 
-	treatmentPlan, err = testData.DataAPI.GetAbridgedTreatmentPlan(treatmentPlan.ID.Int64(), doctor.DoctorID.Int64())
+	treatmentPlan, err = testData.DataAPI.GetAbridgedTreatmentPlan(treatmentPlan.ID.Int64(), doctor.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, common.TPStatusSubmitted, treatmentPlan.Status)
 

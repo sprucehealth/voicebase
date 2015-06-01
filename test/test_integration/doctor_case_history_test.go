@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
-
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -15,7 +14,7 @@ func TestDoctorCaseHistory(t *testing.T) {
 
 	// Setup
 
-	mr, _, _ := SignupRandomTestMA(t, testData)
+	mr, _, _ := SignupRandomTestCC(t, testData, true)
 	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
 
@@ -30,7 +29,7 @@ func TestDoctorCaseHistory(t *testing.T) {
 	test.OK(t, err)
 
 	doctorCli := DoctorClient(testData, t, doctorID)
-	maCli := DoctorClient(testData, t, ma.DoctorID.Int64())
+	maCli := DoctorClient(testData, t, ma.ID.Int64())
 	patientCli := PatientClient(testData, t, patient.PatientID.Int64())
 
 	test.OK(t, doctorCli.UpdateTreatmentPlanNote(treatmentPlan.ID.Int64(), "foo"))

@@ -82,7 +82,7 @@ func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 			return false, err
 		}
 
-		if ctxt.Role == api.RoleMA {
+		if ctxt.Role == api.RoleCC {
 			// identify the doctor on the case to surface the diagnosis to the MA
 			assignments, err := d.dataAPI.GetActiveMembersOfCareTeamForCase(
 				patientVisit.PatientCaseID.Int64(),
@@ -98,7 +98,7 @@ func (d *diagnosePatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 					if err != nil {
 						return false, err
 					}
-					ctxt.RequestCache[apiservice.DoctorID] = doctorOnCase.DoctorID.Int64()
+					ctxt.RequestCache[apiservice.DoctorID] = doctorOnCase.ID.Int64()
 					break
 				}
 			}

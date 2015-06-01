@@ -41,7 +41,7 @@ func NewQueueHandler(dataAPI api.DataAPI) http.Handler {
 			apiservice.NoAuthorizationRequired(
 				&queueHandler{
 					dataAPI: dataAPI,
-				}), []string{api.RoleDoctor, api.RoleMA}),
+				}), []string{api.RoleDoctor, api.RoleCC}),
 		httputil.Get)
 }
 
@@ -78,7 +78,7 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case stateGlobal:
-		if apiservice.GetContext(r).Role == api.RoleMA {
+		if apiservice.GetContext(r).Role == api.RoleCC {
 			queueItems, err = d.dataAPI.GetPendingItemsForClinic()
 			if err != nil {
 				apiservice.WriteError(err, w, r)
@@ -93,7 +93,7 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case stateCompleted:
-		if apiservice.GetContext(r).Role == api.RoleMA {
+		if apiservice.GetContext(r).Role == api.RoleCC {
 			queueItems, err = d.dataAPI.GetCompletedItemsForClinic()
 			if err != nil {
 				apiservice.WriteError(err, w, r)

@@ -112,7 +112,7 @@ func TestPromptStatus_DoctorOnModify(t *testing.T) {
 		t.Fatalf("Expected status code %d instead got %d", http.StatusOK, res.StatusCode)
 	}
 
-	doctor, err = testData.DataAPI.GetDoctorFromID(doctor.DoctorID.Int64())
+	doctor, err = testData.DataAPI.GetDoctorFromID(doctor.ID.Int64())
 	if err != nil {
 		t.Fatal(err.Error())
 	}

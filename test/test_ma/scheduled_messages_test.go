@@ -40,7 +40,7 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 	genericOnlyAnswerID := test_integration.DeterminePotentialAnswerIDForTag("a_insurance_generic_only", testData, t)
 
 	// signup ma
-	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
+	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
 	_, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
 
@@ -168,7 +168,7 @@ func TestScheduledMessage_TreatmentPlanViewed(t *testing.T) {
 	test.OK(t, err)
 
 	// signup ma
-	mr, _, _ := test_integration.SignupRandomTestMA(t, testData)
+	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
 	_, err = testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
 

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"reflect"
 	"strings"
 	"time"
@@ -607,17 +608,15 @@ func (d *DataService) createPatientCase(tx *sql.Tx, patientCase *common.PatientC
 	}
 	patientCase.ID = encoding.NewObjectID(patientCaseID)
 
-	// for now, automatically assign MA to be on the care team of the patient and the case
-	ma, err := d.GetMAInClinic()
-	if err == nil {
-		if err := d.assignCareProviderToPatientFileAndCase(tx, ma.DoctorID.Int64(), d.roleTypeMapping[RoleMA], patientCase); err != nil {
-			return err
-		}
-	} else if !IsErrNotFound(err) {
+	// Assign a random primary CC to the case care team
+	cc, err := d.ListCareProviders(LCPOptPrimaryCCOnly)
+	if err != nil {
 		return err
 	}
-
-	return nil
+	if len(cc) == 0 {
+		return nil
+	}
+	return d.assignCareProviderToPatientFileAndCase(tx, cc[rand.Intn(len(cc))].ID.Int64(), d.roleTypeMapping[RoleCC], patientCase)
 }
 
 func (d *DataService) UpdatePatientCase(id int64, update *PatientCaseUpdate) error {

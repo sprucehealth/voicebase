@@ -177,7 +177,7 @@ func (h *ftpMembershipHandler) serveGET(w http.ResponseWriter, r *http.Request, 
 
 	doctorMap := make(map[int64]FullName)
 	for _, d := range doctors {
-		doctorMap[d.DoctorID.Int64()] = FullName{
+		doctorMap[d.ID.Int64()] = FullName{
 			FirstName: d.FirstName,
 			LastName:  d.LastName,
 		}

@@ -164,7 +164,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if len(par.Person.Patient.LastName) > 0 {
 				p.Initials += par.Person.Patient.LastName[:1]
 			}
-		case api.RoleDoctor, api.RoleMA:
+		case api.RoleDoctor, api.RoleCC:
 			p.Name = par.Person.Doctor.LongDisplayName
 			if len(par.Person.Doctor.FirstName) > 0 {
 				p.Initials += par.Person.Doctor.FirstName[:1]
@@ -172,7 +172,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if len(par.Person.Doctor.LastName) > 0 {
 				p.Initials += par.Person.Doctor.LastName[:1]
 			}
-			p.ThumbnailURL = app_url.ThumbnailURL(h.apiDomain, par.Person.RoleType, par.Person.Doctor.DoctorID.Int64())
+			p.ThumbnailURL = app_url.ThumbnailURL(h.apiDomain, par.Person.RoleType, par.Person.Doctor.ID.Int64())
 			p.Subtitle = par.Person.Doctor.ShortTitle
 		}
 		res.Participants = append(res.Participants, p)

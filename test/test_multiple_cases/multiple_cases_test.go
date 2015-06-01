@@ -33,7 +33,7 @@ func TestMultipleCases_JBCQ_JBCQ(t *testing.T) {
 	pv2, _ := test_integration.CreateRandomPatientVisitAndPickTPForPathway(t, testData, pathway, patient, doctor2)
 
 	// attempt to open the patient file for doctor1
-	dc1 := test_integration.DoctorClient(testData, t, doctor1.DoctorID.Int64())
+	dc1 := test_integration.DoctorClient(testData, t, doctor1.ID.Int64())
 
 	// lets get doctor1 to claim case1
 	pc, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv1.PatientVisitID)
@@ -52,7 +52,7 @@ func TestMultipleCases_JBCQ_JBCQ(t *testing.T) {
 	test.OK(t, err)
 
 	// doctor2 should be able to open visit for case2 but not for case1
-	dc2 := test_integration.DoctorClient(testData, t, doctor2.DoctorID.Int64())
+	dc2 := test_integration.DoctorClient(testData, t, doctor2.ID.Int64())
 	cases, err = dc2.CasesForPatient(patient.PatientID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2, len(cases))

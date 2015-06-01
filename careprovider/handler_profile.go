@@ -54,13 +54,13 @@ func (h *careProviderProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 	}
 
 	role := api.RoleDoctor
-	if doctor.IsMA {
-		role = api.RoleMA
+	if doctor.IsCC {
+		role = api.RoleCC
 	}
 
 	views := []profileView{
 		&profileHeaderView{
-			PhotoURL: app_url.HeroImageURL(h.apiDomain, role, doctor.DoctorID.Int64()),
+			PhotoURL: app_url.HeroImageURL(h.apiDomain, role, doctor.ID.Int64()),
 			Title:    profile.FullName,
 			Subtitle: doctor.LongTitle,
 		},

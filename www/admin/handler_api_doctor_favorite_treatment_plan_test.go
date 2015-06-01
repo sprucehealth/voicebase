@@ -51,12 +51,12 @@ func TestHandlerDoctorFTPGETSuccess(t *testing.T) {
 	}
 	doctors := []*common.Doctor{
 		&common.Doctor{
-			DoctorID:  encoding.ObjectID{Int64Value: 1},
+			ID:        encoding.ObjectID{Int64Value: 1},
 			FirstName: "DFN1",
 			LastName:  "DLN1",
 		},
 		&common.Doctor{
-			DoctorID:  encoding.ObjectID{Int64Value: 2},
+			ID:        encoding.ObjectID{Int64Value: 2},
 			FirstName: "DFN2",
 			LastName:  "DLN2",
 		},

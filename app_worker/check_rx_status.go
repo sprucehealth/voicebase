@@ -272,7 +272,7 @@ func (w *ERxStatusWorker) Do() error {
 					}
 				}
 				w.dispatcher.Publish(&RxTransmissionErrorEvent{
-					DoctorID:  doctor.DoctorID.Int64(),
+					DoctorID:  doctor.ID.Int64(),
 					ItemID:    prescriptionStatus.ItemID,
 					EventType: statusCheckMessage.EventCheckType,
 					Patient:   patient,

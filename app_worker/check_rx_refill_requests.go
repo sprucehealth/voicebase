@@ -162,9 +162,9 @@ func (w *RefillRequestWorker) Do() {
 			continue
 		}
 
-		if refillRequestItem.Doctor.DoctorID.Int64() != refillRequestItem.RequestedPrescription.Doctor.DoctorID.Int64() {
-			golog.Errorf("Expected the doctor for the refill request (id = %d) to be the same as the doctor for the requested prescription in the refill request (id = %d), but this is not the case. (refill request queue item id = %d)", refillRequestItem.Doctor.DoctorID.Int64(),
-				refillRequestItem.RequestedPrescription.Doctor.DoctorID.Int64(), refillRequestItem.RxRequestQueueItemID)
+		if refillRequestItem.Doctor.ID.Int64() != refillRequestItem.RequestedPrescription.Doctor.ID.Int64() {
+			golog.Errorf("Expected the doctor for the refill request (id = %d) to be the same as the doctor for the requested prescription in the refill request (id = %d), but this is not the case. (refill request queue item id = %d)",
+				refillRequestItem.Doctor.ID.Int64(), refillRequestItem.RequestedPrescription.Doctor.ID.Int64(), refillRequestItem.RxRequestQueueItemID)
 			w.statFailure.Inc(1)
 			continue
 		}
@@ -257,7 +257,7 @@ func (w *RefillRequestWorker) Do() {
 
 		w.dispatcher.Publish(&RefillRequestCreatedEvent{
 			Patient:         refillRequestItem.Patient,
-			DoctorID:        refillRequestItem.RequestedPrescription.Doctor.DoctorID.Int64(),
+			DoctorID:        refillRequestItem.RequestedPrescription.Doctor.ID.Int64(),
 			RefillRequestID: refillRequestItem.ID,
 		})
 

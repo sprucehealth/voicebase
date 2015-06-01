@@ -33,10 +33,10 @@ func TestScheduledMessage(t *testing.T) {
 	test.OK(t, err)
 	doctorCli := test_integration.DoctorClient(testData, t, doctorID)
 
-	dr, _, _ := test_integration.SignupRandomTestMA(t, testData)
+	dr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
 	ma, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
-	maCli := test_integration.DoctorClient(testData, t, ma.DoctorID.Int64())
+	maCli := test_integration.DoctorClient(testData, t, ma.ID.Int64())
 
 	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 

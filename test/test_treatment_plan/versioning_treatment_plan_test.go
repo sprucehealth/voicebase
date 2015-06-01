@@ -313,7 +313,7 @@ func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 	parentTreatmentPlan, err := testData.DataAPI.GetTreatmentPlan(tpResponse.TreatmentPlan.ID.Int64(), doctorID)
 	test.OK(t, err)
 
-	tp2, err := responses.TransformTPFromResponse(testData.DataAPI, tpResponse2.TreatmentPlan, doctor.DoctorID.Int64(), api.RoleDoctor)
+	tp2, err := responses.TransformTPFromResponse(testData.DataAPI, tpResponse2.TreatmentPlan, doctor.ID.Int64(), api.RoleDoctor)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -33,10 +33,10 @@ func CreateReferralProgramForDoctor(doctor *common.Doctor, dataAPI api.DataAPI, 
 	successMsg := fmt.Sprintf("You will be seen by %s.", doctor.LongDisplayName)
 
 	promotion, err := NewRouteDoctorPromotion(
-		doctor.DoctorID.Int64(),
+		doctor.ID.Int64(),
 		doctor.LongDisplayName,
 		doctor.ShortDisplayName,
-		app_url.ThumbnailURL(apiDomain, api.RoleDoctor, doctor.DoctorID.Int64()),
+		app_url.ThumbnailURL(apiDomain, api.RoleDoctor, doctor.ID.Int64()),
 		"new_user",
 		displayMsg, shortMsg, successMsg, 0, USDUnit)
 	if err != nil {

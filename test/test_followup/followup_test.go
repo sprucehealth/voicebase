@@ -141,7 +141,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	test.Equals(t, 2000, patientReceipt.CostBreakdown.TotalCost.Amount)
 
 	// at this point the doctor should have a pending item in their inbox
-	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
+	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingItems))
 	test.Equals(t, followupVisit.PatientVisitID.Int64(), pendingItems[0].ItemID)
@@ -186,11 +186,11 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	test.Equals(t, patient_case.CNMessage, caseNotifications[0].NotificationType)
 
 	// there should no longer be an item in the pending list for the doctor, but there should be an item in the completed list
-	pendingItems, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
+	pendingItems, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingItems))
 
-	completedItems, err := testData.DataAPI.GetCompletedItemsInDoctorQueue(doctor.DoctorID.Int64())
+	completedItems, err := testData.DataAPI.GetCompletedItemsInDoctorQueue(doctor.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2, len(completedItems))
 
@@ -200,7 +200,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	test.Equals(t, common.PVStatusTreated, followupVisit.Status)
 
 	// there should be a doctor transaction for treating the followup visit
-	transactions, err := testData.DataAPI.TransactionsForDoctor(doctor.DoctorID.Int64())
+	transactions, err := testData.DataAPI.TransactionsForDoctor(doctor.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2, len(transactions))
 	test.Equals(t, true, transactions[0].SKUType != transactions[1].SKUType)

@@ -24,10 +24,10 @@ func TestDoctorsMultiQuery(t *testing.T) {
 	doctors, err := testData.DataAPI.Doctors([]int64{dr1.DoctorID, dr2.DoctorID, 100, dr3.DoctorID})
 	test.OK(t, err)
 	test.Equals(t, 4, len(doctors))
-	test.Equals(t, dr1.DoctorID, doctors[0].DoctorID.Int64())
-	test.Equals(t, dr2.DoctorID, doctors[1].DoctorID.Int64())
+	test.Equals(t, dr1.DoctorID, doctors[0].ID.Int64())
+	test.Equals(t, dr2.DoctorID, doctors[1].ID.Int64())
 	test.Equals(t, true, doctors[2] == nil)
-	test.Equals(t, dr3.DoctorID, doctors[3].DoctorID.Int64())
+	test.Equals(t, dr3.DoctorID, doctors[3].ID.Int64())
 }
 
 // This test is to ensure that only eligible and available

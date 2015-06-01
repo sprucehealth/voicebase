@@ -26,14 +26,14 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 	pv := CreateRandomPatientVisitInState("CA", t, testData)
 
 	// there should be 1 item in the global queue for the doctor to consume
-	elligibleItems, err := testData.DataAPI.GetElligibleItemsInUnclaimedQueue(doctor.DoctorID.Int64())
+	elligibleItems, err := testData.DataAPI.GetElligibleItemsInUnclaimedQueue(doctor.ID.Int64())
 	test.OK(t, err)
 
 	for i := 0; i < 5; i++ {
 		CreateRandomPatientVisitInState("CA", t, testData)
 	}
 
-	elligibleItems, err = testData.DataAPI.GetElligibleItemsInUnclaimedQueue(doctor.DoctorID.Int64())
+	elligibleItems, err = testData.DataAPI.GetElligibleItemsInUnclaimedQueue(doctor.ID.Int64())
 	if err != nil {
 		t.Fatal(err)
 	} else if len(elligibleItems) != 6 {
@@ -61,7 +61,7 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	elligibleItems, err = testData.DataAPI.GetElligibleItemsInUnclaimedQueue(doctor.DoctorID.Int64())
+	elligibleItems, err = testData.DataAPI.GetElligibleItemsInUnclaimedQueue(doctor.ID.Int64())
 	if err != nil {
 		t.Fatal(err)
 	} else if len(elligibleItems) != 5 {
@@ -69,7 +69,7 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 	}
 
 	// ensure that there is 1 completed item in the doctor queue
-	completedItems, err := testData.DataAPI.GetCompletedItemsInDoctorQueue(doctor.DoctorID.Int64())
+	completedItems, err := testData.DataAPI.GetCompletedItemsInDoctorQueue(doctor.ID.Int64())
 	if err != nil {
 		t.Fatal(err)
 	} else if len(completedItems) != 1 {

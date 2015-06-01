@@ -16,7 +16,7 @@ import (
 const (
 	RoleAdmin   = "ADMIN"
 	RoleDoctor  = "DOCTOR"
-	RoleMA      = "MA"
+	RoleCC      = "MA"
 	RolePatient = "PATIENT"
 )
 
@@ -440,8 +440,20 @@ type TreatmentPlanAge struct {
 	Age time.Duration
 }
 
+type ListCareProvidersOption int
+
+const (
+	LCPOptDoctorsOnly ListCareProvidersOption = 1 << iota
+	LCPOptCCOnly
+	LCPOptPrimaryCCOnly
+)
+
+func (o ListCareProvidersOption) Has(opt ListCareProvidersOption) bool {
+	return o&opt == opt
+}
+
 type DoctorAPI interface {
-	AllDoctors() ([]*common.Doctor, error)
+	ListCareProviders(opt ListCareProvidersOption) ([]*common.Doctor, error)
 	RegisterDoctor(doctor *common.Doctor) (int64, error)
 	GetAccountIDFromDoctorID(doctorID int64) (int64, error)
 	UpdateDoctor(doctorID int64, req *DoctorUpdate) error
@@ -451,7 +463,6 @@ type DoctorAPI interface {
 	GetDoctorFromAccountID(accountID int64) (doctor *common.Doctor, err error)
 	GetDoctorFromDoseSpotClinicianID(clincianID int64) (doctor *common.Doctor, err error)
 	GetDoctorIDFromAccountID(accountID int64) (int64, error)
-	GetMAInClinic() (*common.Doctor, error)
 	GetRegimenStepsForDoctor(doctorID int64) ([]*common.DoctorInstructionItem, error)
 	GetRegimenStepForDoctor(regimenStepID, doctorID int64) (*common.DoctorInstructionItem, error)
 	AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorID int64) error

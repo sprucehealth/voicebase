@@ -61,13 +61,13 @@ func (t *treatmentsHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.Doctor] = doctor
 
-	treatmentPlan, err := t.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanID.Int64(), doctor.DoctorID.Int64())
+	treatmentPlan, err := t.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanID.Int64(), doctor.ID.Int64())
 	if err != nil {
 		return false, err
 	}
 	ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
 
-	if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctor.DoctorID.Int64(), treatmentPlan.PatientID, treatmentPlan.PatientCaseID.Int64(), t.dataAPI); err != nil {
+	if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctor.ID.Int64(), treatmentPlan.PatientID, treatmentPlan.PatientCaseID.Int64(), t.dataAPI); err != nil {
 		return false, err
 	}
 
@@ -109,7 +109,7 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Add treatments to patient
 	if err := t.dataAPI.AddTreatmentsForTreatmentPlan(requestData.Treatments,
-		doctor.DoctorID.Int64(),
+		doctor.ID.Int64(),
 		requestData.TreatmentPlanID.Int64(),
 		treatmentPlan.PatientID); err != nil {
 		apiservice.WriteError(err, w, r)
@@ -124,7 +124,7 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	t.dispatcher.Publish(&TreatmentPlanUpdatedEvent{
 		SectionUpdated:  TreatmentsSection,
-		DoctorID:        doctor.DoctorID.Int64(),
+		DoctorID:        doctor.ID.Int64(),
 		TreatmentPlanID: treatmentPlan.ID.Int64(),
 	})
 

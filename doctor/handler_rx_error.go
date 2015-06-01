@@ -53,7 +53,7 @@ func (d *prescriptionErrorHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 
 	if treatment != nil {
-		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, treatment.Doctor.DoctorID.Int64(), treatment.PatientID.Int64(), d.dataAPI); err != nil {
+		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, treatment.Doctor.ID.Int64(), treatment.PatientID.Int64(), d.dataAPI); err != nil {
 			return false, err
 		}
 	}

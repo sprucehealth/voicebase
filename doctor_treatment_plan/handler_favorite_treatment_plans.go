@@ -71,18 +71,18 @@ func (d *doctorFavoriteTreatmentPlansHandler) IsAuthorized(r *http.Request) (boo
 
 	if requestData.TreatmentPlanID > 0 {
 		// ensure that the doctor has access to the patient file
-		treatmentPlan, err := d.dataAPI.GetTreatmentPlan(requestData.TreatmentPlanID, doctor.DoctorID.Int64())
+		treatmentPlan, err := d.dataAPI.GetTreatmentPlan(requestData.TreatmentPlanID, doctor.ID.Int64())
 		if err != nil {
 			return false, err
 		}
 		ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
 
 		// ensure that the doctor owns the treatment plan
-		if treatmentPlan.DoctorID.Int64() != doctor.DoctorID.Int64() {
+		if treatmentPlan.DoctorID.Int64() != doctor.ID.Int64() {
 			return false, apiservice.NewAccessForbiddenError()
 		}
 
-		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctor.DoctorID.Int64(), treatmentPlan.PatientID, treatmentPlan.PatientCaseID.Int64(), d.dataAPI); err != nil {
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctor.ID.Int64(), treatmentPlan.PatientID, treatmentPlan.PatientCaseID.Int64(), d.dataAPI); err != nil {
 			return false, err
 		}
 	}
@@ -122,7 +122,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) getFavoriteTreatmentPlans(
 
 	// no favorite treatment plan id specified in which case return all for the requested pathway
 	if requestData.FavoriteTreatmentPlanID == 0 {
-		pathwayFTPGroups, err := d.pathwayFTPGroupsForDoctor(doctor.DoctorID.Int64(), requestData.PathwayTag)
+		pathwayFTPGroups, err := d.pathwayFTPGroupsForDoctor(doctor.ID.Int64(), requestData.PathwayTag)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -152,7 +152,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 	doctor *common.Doctor,
 	req *DoctorFavoriteTreatmentPlansRequestData) {
 	ctx := apiservice.GetContext(r)
-	ftp, err := responses.TransformFTPFromResponse(d.dataAPI, req.FavoriteTreatmentPlan, doctor.DoctorID.Int64(), ctx.Role)
+	ftp, err := responses.TransformFTPFromResponse(d.dataAPI, req.FavoriteTreatmentPlan, doctor.ID.Int64(), ctx.Role)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -214,7 +214,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 	}
 
 	// prepare the favorite treatment plan to have a creator id
-	id := doctor.DoctorID.Int64()
+	id := doctor.ID.Int64()
 	ftp.CreatorID = &id
 
 	if _, err := d.dataAPI.InsertFavoriteTreatmentPlan(ftp, req.PathwayTag, req.TreatmentPlanID); err != nil {
@@ -256,13 +256,13 @@ func (d *doctorFavoriteTreatmentPlansHandler) deleteFavoriteTreatmentPlan(
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	if err := d.dataAPI.DeleteFavoriteTreatmentPlan(req.FavoriteTreatmentPlanID, doctor.DoctorID.Int64(), req.PathwayTag); err != nil {
+	if err := d.dataAPI.DeleteFavoriteTreatmentPlan(req.FavoriteTreatmentPlanID, doctor.ID.Int64(), req.PathwayTag); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	// echo back updated list of favorite treatment plans
-	pathwayFTPGroups, err := d.pathwayFTPGroupsForDoctor(doctor.DoctorID.Int64(), req.PathwayTag)
+	pathwayFTPGroups, err := d.pathwayFTPGroupsForDoctor(doctor.ID.Int64(), req.PathwayTag)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

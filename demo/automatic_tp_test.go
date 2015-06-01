@@ -224,8 +224,8 @@ func TestAutomaticTP_DoctorPicked_NoFTP(t *testing.T) {
 		doctorLookupByID: func(id int64) (*common.Doctor, error) {
 			doctorIDLookedup = id
 			return &common.Doctor{
-				DoctorID: encoding.NewObjectID(id),
-				Email:    "doctorPicked@test.com",
+				ID:    encoding.NewObjectID(id),
+				Email: "doctorPicked@test.com",
 			}, nil
 		},
 	}
@@ -268,8 +268,8 @@ func TestAutomaticTP_DoctorPicked_FTPForPathway(t *testing.T) {
 		doctorLookupByID: func(id int64) (*common.Doctor, error) {
 			doctorIDLookedup = id
 			return &common.Doctor{
-				DoctorID: encoding.NewObjectID(id),
-				Email:    "doctorPicked@test.com",
+				ID:    encoding.NewObjectID(id),
+				Email: "doctorPicked@test.com",
 			}, nil
 		},
 	}

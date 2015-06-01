@@ -209,7 +209,7 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 
 		var careCoordinator *common.Doctor
 		for _, x := range careTeams[pcase.ID.Int64()].Assignments {
-			if x.ProviderRole == api.RoleMA {
+			if x.ProviderRole == api.RoleCC {
 				careCoordinator, err = w.dataAPI.Doctor(x.ProviderID, true)
 				if err != nil {
 					return err

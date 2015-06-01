@@ -141,7 +141,7 @@ func (w *worker) processMessage(msg *erxRouteMessage) error {
 	// activate the treatment plan and send the case message if we are not routing e-prescriptions
 	// or there are no treatments in the TP
 	if len(treatments) == 0 {
-		if err := w.dataAPI.ActivateTreatmentPlan(treatmentPlan.ID.Int64(), doctor.DoctorID.Int64()); err != nil {
+		if err := w.dataAPI.ActivateTreatmentPlan(treatmentPlan.ID.Int64(), doctor.ID.Int64()); err != nil {
 			return errors.Trace(err)
 		}
 
@@ -172,7 +172,7 @@ func (w *worker) processMessage(msg *erxRouteMessage) error {
 		// update the treatments to have the prescription ids and also track the pharmacy to which the prescriptions will be sent
 		// at the same time, update the status of the treatment plan to indicate that we succesfullly
 		// start prescribing prescriptions for this patient
-		if err := w.dataAPI.StartRXRoutingForTreatmentsAndTreatmentPlan(treatments, patient.Pharmacy, treatmentPlan.ID.Int64(), doctor.DoctorID.Int64()); err != nil {
+		if err := w.dataAPI.StartRXRoutingForTreatmentsAndTreatmentPlan(treatments, patient.Pharmacy, treatmentPlan.ID.Int64(), doctor.ID.Int64()); err != nil {
 			return errors.Trace(err)
 		}
 
@@ -185,7 +185,7 @@ func (w *worker) processMessage(msg *erxRouteMessage) error {
 			return errors.Trace(err)
 		}
 
-		if err := w.dataAPI.ActivateTreatmentPlan(treatmentPlan.ID.Int64(), doctor.DoctorID.Int64()); err != nil {
+		if err := w.dataAPI.ActivateTreatmentPlan(treatmentPlan.ID.Int64(), doctor.ID.Int64()); err != nil {
 			return errors.Trace(err)
 		}
 		currentTPStatus = common.TPStatusActive
@@ -241,7 +241,7 @@ func (w *worker) sendPrescriptionsToPharmacy(treatments []*common.Treatment, pat
 	//  Queue up notification to patient
 	if err := apiservice.QueueUpJob(w.erxStatusQueue, &common.PrescriptionStatusCheckMessage{
 		PatientID:      patient.PatientID.Int64(),
-		DoctorID:       doctor.DoctorID.Int64(),
+		DoctorID:       doctor.ID.Int64(),
 		EventCheckType: common.ERxType,
 	}); err != nil {
 		golog.Errorf("Unable to enqueue job to check status of erx. Not going to error out on this for the user because there is nothing the user can do about this: %+v", err)

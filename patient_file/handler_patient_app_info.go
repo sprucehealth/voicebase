@@ -33,7 +33,7 @@ func NewPatientAppInfoHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Han
 				&patientAppInfoHandler{
 					dataAPI: dataAPI,
 					authAPI: authAPI,
-				}), []string{api.RoleDoctor, api.RoleMA}),
+				}), []string{api.RoleDoctor, api.RoleCC}),
 		httputil.Get)
 }
 

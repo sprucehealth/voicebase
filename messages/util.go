@@ -40,7 +40,7 @@ func validateAccess(dataAPI api.DataAPI, r *http.Request, patientCase *common.Pa
 		if err != nil {
 			return 0, 0, err
 		}
-	case api.RoleMA:
+	case api.RoleCC:
 		// For messaging, we let the MA POST as well as GET from the message thread given
 		// they will be an active participant in the thread.
 		doctorID, err = dataAPI.GetDoctorIDFromAccountID(ctx.AccountID)
@@ -48,7 +48,7 @@ func validateAccess(dataAPI api.DataAPI, r *http.Request, patientCase *common.Pa
 			return 0, 0, err
 		}
 
-		personID, err = dataAPI.GetPersonIDByRole(api.RoleMA, doctorID)
+		personID, err = dataAPI.GetPersonIDByRole(api.RoleCC, doctorID)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -83,7 +83,7 @@ func CreateMessageAndAttachments(msg *common.CaseMessage, attachments []*Attachm
 			}
 		case common.AttachmentTypeVisit:
 			// Make sure the visit is part of the same case
-			if role != api.RoleDoctor && role != api.RoleMA {
+			if role != api.RoleDoctor && role != api.RoleCC {
 				return apiservice.NewError("Only a doctor is allowed to attach a visit", http.StatusBadRequest)
 			}
 			visit, err := dataAPI.GetPatientVisitFromID(att.ID)

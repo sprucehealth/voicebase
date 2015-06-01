@@ -21,13 +21,13 @@ type CareProvider struct {
 
 func NewCareProviderFromDoctorDBModel(d *common.Doctor, apiDomain string) *CareProvider {
 	return &CareProvider{
-		ProviderID:       d.DoctorID.Int64(),
+		ProviderID:       d.ID.Int64(),
 		FirstName:        d.FirstName,
 		LastName:         d.LastName,
 		ShortTitle:       d.ShortTitle,
 		LongTitle:        d.LongTitle,
 		ShortDisplayName: d.ShortDisplayName,
 		LongDisplayName:  d.LongDisplayName,
-		ThumbnailURL:     app_url.ThumbnailURL(apiDomain, api.RoleDoctor, d.DoctorID.Int64()),
+		ThumbnailURL:     app_url.ThumbnailURL(apiDomain, api.RoleDoctor, d.ID.Int64()),
 	}
 }

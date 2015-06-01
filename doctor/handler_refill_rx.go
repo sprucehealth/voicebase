@@ -97,7 +97,7 @@ func (d *refillRxHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.Doctor] = doctor
 
-	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctor.DoctorID.Int64(), refillRequest.Patient.PatientID.Int64(), d.dataAPI); err != nil {
+	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctor.ID.Int64(), refillRequest.Patient.PatientID.Int64(), d.dataAPI); err != nil {
 		return false, err
 	}
 
@@ -115,7 +115,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if doctor.DoctorID.Int64() != refillRequest.Doctor.DoctorID.Int64() {
+	if doctor.ID.Int64() != refillRequest.Doctor.ID.Int64() {
 		apiservice.WriteValidationError("The doctor in the refill request is not the same doctor as the one trying to resolve the request.", w, r)
 		return
 	}
@@ -257,7 +257,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 				return
 			}
 
-			if err := d.addTreatmentInEventOfDNTF(originatingTreatmentFound, requestData.Treatment, refillRequest.Doctor.DoctorID.Int64(), refillRequest.Patient.PatientID.Int64(), refillRequest.ID); err != nil {
+			if err := d.addTreatmentInEventOfDNTF(originatingTreatmentFound, requestData.Treatment, refillRequest.Doctor.ID.Int64(), refillRequest.Patient.PatientID.Int64(), refillRequest.ID); err != nil {
 				apiservice.WriteError(err, w, r)
 				return
 			}
@@ -269,7 +269,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 			}
 
 			// update pharmacy and erx id for treatment
-			if err := d.updateTreatmentWithPharmacyAndERxID(originatingTreatmentFound, requestData.Treatment, refillRequest.RequestedPrescription.ERx.Pharmacy, doctor.DoctorID.Int64()); err != nil {
+			if err := d.updateTreatmentWithPharmacyAndERxID(originatingTreatmentFound, requestData.Treatment, refillRequest.RequestedPrescription.ERx.Pharmacy, doctor.ID.Int64()); err != nil {
 				apiservice.WriteError(err, w, r)
 				return
 			}
@@ -306,7 +306,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 			// queue up job for status checking
 			if err := apiservice.QueueUpJob(d.erxStatusQueue, &common.PrescriptionStatusCheckMessage{
 				PatientID:      refillRequest.Patient.PatientID.Int64(),
-				DoctorID:       doctor.DoctorID.Int64(),
+				DoctorID:       doctor.ID.Int64(),
 				EventCheckType: eventCheckType,
 			}); err != nil {
 				golog.Errorf("Unable to enqueue job to check status of erx for new rx after DNTF. Not going to error out on this for the user becuase there is nothing the user can do about this: %+v", err)
@@ -340,7 +340,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 	// was successfully transmitted to the pharmacy
 	if err := apiservice.QueueUpJob(d.erxStatusQueue, &common.PrescriptionStatusCheckMessage{
 		PatientID:      refillRequest.Patient.PatientID.Int64(),
-		DoctorID:       refillRequest.Doctor.DoctorID.Int64(),
+		DoctorID:       refillRequest.Doctor.ID.Int64(),
 		EventCheckType: common.RefillRxType,
 	}); err != nil {
 		golog.Errorf("Unable to enqueue job into sqs queue to keep track of refill request status. Not erroring out to user because there's nothing they can do about it: %+v", err)

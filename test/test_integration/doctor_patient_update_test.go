@@ -285,7 +285,7 @@ func TestCCUpdateToTopLevelInformation(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	dr, _, _ := SignupRandomTestMA(t, testData)
+	dr, _, _ := SignupRandomTestCC(t, testData, true)
 	ma, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	if err != nil {
 		t.Fatal("Unable to read doctor information")

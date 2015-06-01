@@ -36,7 +36,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianID(testData, t)
 
-	doctorClient := DoctorClient(testData, t, doctor.DoctorID.Int64())
+	doctorClient := DoctorClient(testData, t, doctor.ID.Int64())
 
 	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	erxPatientID := int64(60)
@@ -109,7 +109,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	}
 
 	// add this treatment to the treatment plan
-	err = testData.DataAPI.AddTreatmentsForTreatmentPlan([]*common.Treatment{treatment1}, doctor.DoctorID.Int64(), treatmentPlanID, signedupPatientResponse.Patient.PatientID.Int64())
+	err = testData.DataAPI.AddTreatmentsForTreatmentPlan([]*common.Treatment{treatment1}, doctor.ID.Int64(), treatmentPlanID, signedupPatientResponse.Patient.PatientID.Int64())
 	if err != nil {
 		t.Fatal("Unable to add treatment for patient visit: " + err.Error())
 	}
@@ -232,7 +232,7 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	}
 
 	// There should be a pending entry in the doctor's queue
-	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
+	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.ID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get pending items from doctor queue: " + err.Error())
 	}
@@ -442,7 +442,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 	}
 
 	// doctor queue should be empty and the approved request should be in the completed tab
-	completedItems, err := testData.DataAPI.GetCompletedItemsInDoctorQueue(doctor.DoctorID.Int64())
+	completedItems, err := testData.DataAPI.GetCompletedItemsInDoctorQueue(doctor.ID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the completed items for the doctor: " + err.Error())
 	}
@@ -456,7 +456,7 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 		t.Fatal("Completed item in the doctor's queue not in the expected state")
 	}
 
-	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
+	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.ID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the pending items for the doctor: " + err.Error())
 		return
@@ -658,7 +658,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianID(testData, t)
-	doctorCli := DoctorClient(testData, t, doctor.DoctorID.Int64())
+	doctorCli := DoctorClient(testData, t, doctor.ID.Int64())
 
 	approvedRefillRequestPrescriptionID := int64(101010)
 	approvedRefillAmount := int64(10)
@@ -822,7 +822,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	}
 
 	// doctor queue should be empty and the approved request should be in the completed tab
-	completedItems, err := testData.DataAPI.GetCompletedItemsInDoctorQueue(doctor.DoctorID.Int64())
+	completedItems, err := testData.DataAPI.GetCompletedItemsInDoctorQueue(doctor.ID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the completed items for the doctor: " + err.Error())
 	}
@@ -836,7 +836,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 		t.Fatal("Completed item in the doctor's queue not in the expected state")
 	}
 
-	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
+	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.ID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the pending items for the doctor: " + err.Error())
 		return
@@ -873,7 +873,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	}
 
 	// lets make sure that the error for the refill request makes it into the doctor's queue
-	pendingItems, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
+	pendingItems, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.ID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get pending items in doctors queue: " + err.Error())
 	}
@@ -903,7 +903,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 		t.Fatal("Expected the refill request to be resolved once the doctor resolved the error")
 	}
 
-	pendingItems, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
+	pendingItems, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.ID.Int64())
 	if err != nil {
 		t.Fatalf("there should be no pending items in the doctor queue: %+v", err)
 	}
@@ -1084,7 +1084,7 @@ func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *tes
 	}
 
 	// doctor queue should be empty and the denied request should be in the completed tab
-	completedItems, err := testData.DataAPI.GetCompletedItemsInDoctorQueue(doctor.DoctorID.Int64())
+	completedItems, err := testData.DataAPI.GetCompletedItemsInDoctorQueue(doctor.ID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the completed items for the doctor: " + err.Error())
 	}
@@ -1098,7 +1098,7 @@ func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *tes
 		t.Fatal("Completed item in the doctor's queue not in the expected state")
 	}
 
-	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
+	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.ID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get the pending items for the doctor: " + err.Error())
 		return
@@ -1683,7 +1683,7 @@ func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 	}
 
 	// check if this results in an item in the doctor queue
-	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(unlinkedTreatment.Doctor.DoctorID.Int64())
+	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(unlinkedTreatment.Doctor.ID.Int64())
 	if err != nil {
 		t.Fatalf("Unable to get pending items for doctor: %+v", err)
 	}
@@ -1709,7 +1709,7 @@ func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 		t.Fatalf("Expected 200 but got %d", resp.StatusCode)
 	}
 
-	pendingItems, err = testData.DataAPI.GetPendingItemsInDoctorQueue(unlinkedTreatment.Doctor.DoctorID.Int64())
+	pendingItems, err = testData.DataAPI.GetPendingItemsInDoctorQueue(unlinkedTreatment.Doctor.ID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get doctor queue")
 	}
@@ -1718,7 +1718,7 @@ func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 		t.Fatalf("Expected no items in the pending tab instead got %d", len(pendingItems))
 	}
 
-	completedItems, err := testData.DataAPI.GetCompletedItemsInDoctorQueue(unlinkedTreatment.Doctor.DoctorID.Int64())
+	completedItems, err := testData.DataAPI.GetCompletedItemsInDoctorQueue(unlinkedTreatment.Doctor.ID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get completed items for doctor queue")
 	}
@@ -1732,7 +1732,7 @@ func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *TestData, endErxStatus common.StatusEvent, toAddTemplatedTreatment bool) *common.Treatment {
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianID(testData, t)
-	doctorClient := DoctorClient(testData, t, doctor.DoctorID.Int64())
+	doctorClient := DoctorClient(testData, t, doctor.ID.Int64())
 
 	pv, _ := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(pv.PatientVisitID)
@@ -1857,7 +1857,7 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 	}
 
 	// add this treatment to the treatment plan
-	err = testData.DataAPI.AddTreatmentsForTreatmentPlan([]*common.Treatment{treatment1}, doctor.DoctorID.Int64(), treatmentPlanID, patient.PatientID.Int64())
+	err = testData.DataAPI.AddTreatmentsForTreatmentPlan([]*common.Treatment{treatment1}, doctor.ID.Int64(), treatmentPlanID, patient.PatientID.Int64())
 	if err != nil {
 		t.Fatal("Unable to add treatment for patient visit: " + err.Error())
 	}
@@ -2163,7 +2163,7 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentErrorSend(t *testing.T) {
 	}
 
 	// there should be one item in the doctor's queue relating to a transmission error
-	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(linkedTreatment.Doctor.DoctorID.Int64())
+	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(linkedTreatment.Doctor.ID.Int64())
 	if err != nil {
 		t.Fatalf("Unable to get pending items from doctors queue: %+v", err)
 	}
@@ -2471,7 +2471,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianID(testData, t)
-	doctorClient := DoctorClient(testData, t, doctor.DoctorID.Int64())
+	doctorClient := DoctorClient(testData, t, doctor.ID.Int64())
 	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	erxPatientID := int64(60)
 
@@ -2556,7 +2556,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	}
 
 	// add this treatment to the treatment plan
-	err = testData.DataAPI.AddTreatmentsForTreatmentPlan([]*common.Treatment{treatment1}, doctor.DoctorID.Int64(), treatmentPlanID, signedupPatientResponse.Patient.PatientID.Int64())
+	err = testData.DataAPI.AddTreatmentsForTreatmentPlan([]*common.Treatment{treatment1}, doctor.ID.Int64(), treatmentPlanID, signedupPatientResponse.Patient.PatientID.Int64())
 	if err != nil {
 		t.Fatal("Unable to add treatment for patient visit: " + err.Error())
 	}
@@ -2671,7 +2671,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	}
 
 	// There should be a pending entry in the doctor's queue
-	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
+	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.ID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get pending items from doctor queue: " + err.Error())
 	}
@@ -2862,7 +2862,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 	}
 
 	// There should be a pending entry in the doctor's queue
-	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
+	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.ID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get pending items from doctor queue: " + err.Error())
 	}
@@ -3059,7 +3059,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
 	}
 
 	// There should be a pending entry in the doctor's queue
-	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.DoctorID.Int64())
+	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.ID.Int64())
 	if err != nil {
 		t.Fatal("Unable to get pending items from doctor queue: " + err.Error())
 	}
