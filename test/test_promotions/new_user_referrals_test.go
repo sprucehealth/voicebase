@@ -118,7 +118,7 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	test.OK(t, err)
 
 	// sign the user up
-	pr = test_integration.SignupTestPatientWithEmail("kunal2@test.com", t, testData)
+	_ = test_integration.SignupTestPatientWithEmail("kunal2@test.com", t, testData)
 
 	// ensure that the patient is informed of the associated user
 	referralProgram, err = testData.DataAPI.ActiveReferralProgramForAccount(pr1.Patient.AccountID.Int64(), common.PromotionTypes)

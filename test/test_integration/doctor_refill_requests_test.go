@@ -2339,8 +2339,7 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 		t.Fatal("Unable to make successful request to approve refill request: ")
 	}
 
-	refillRequest, err = testData.DataAPI.GetRefillRequestFromID(refillRequest.ID)
-	if err != nil {
+	if _, err := testData.DataAPI.GetRefillRequestFromID(refillRequest.ID); err != nil {
 		t.Fatal("Unable to get refill request after approving request: " + err.Error())
 	}
 

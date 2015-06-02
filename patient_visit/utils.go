@@ -99,7 +99,6 @@ func GetDiagnosisLayout(dataAPI api.DataAPI, patientVisit *common.PatientVisit, 
 	// exist for the followup yet, prepopulate the diagnosis with the previous treated visit's
 	// information
 	if patientVisit.IsFollowup && len(doctorAnswers) == 0 {
-
 		visits, err := dataAPI.GetVisitsForCase(patientVisit.PatientCaseID.Int64(), common.TreatedPatientVisitStates())
 		if err != nil {
 			return nil, err
@@ -109,6 +108,9 @@ func GetDiagnosisLayout(dataAPI api.DataAPI, patientVisit *common.PatientVisit, 
 			DoctorID:       doctorID,
 			PatientVisitID: visits[0].PatientVisitID.Int64(),
 		})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// populate the diagnosis layout with the answers to the questions

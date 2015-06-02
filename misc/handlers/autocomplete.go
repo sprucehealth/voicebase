@@ -88,9 +88,9 @@ func (s *autocompleteHandler) handleAutocompleteForDrugs(requestData *Autocomple
 	var err error
 	switch apiservice.GetContext(r).Role {
 	case api.RoleDoctor:
-		doctor, err := s.dataAPI.GetDoctorFromAccountID(apiservice.GetContext(r).AccountID)
-		if err != nil {
-			apiservice.WriteError(err, w, r)
+		doctor, e := s.dataAPI.GetDoctorFromAccountID(apiservice.GetContext(r).AccountID)
+		if e != nil {
+			apiservice.WriteError(e, w, r)
 			return
 		}
 		searchResults, err = s.erxAPI.GetDrugNamesForDoctor(doctor.DoseSpotClinicianID, requestData.SearchString)
