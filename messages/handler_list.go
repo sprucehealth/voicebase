@@ -123,6 +123,8 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				Title: att.Title,
 			}
 			switch att.ItemType {
+			case common.AttachmentTypeResourceGuide:
+				a.URL = app_url.ViewResourceGuideAction(att.ItemID).String()
 			case common.AttachmentTypeFollowupVisit:
 				a.URL = app_url.ContinueVisitAction(att.ItemID).String()
 			case common.AttachmentTypeTreatmentPlan:
