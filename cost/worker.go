@@ -249,7 +249,6 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 		if err := w.dataAPI.UpdatePatientReceipt(pReceipt.ID, patientReceiptUpdate); err != nil {
 			return err
 		}
-		currentStatus = common.PRCharged
 	}
 
 	// update the patient visit to indicate that it was successfully charged

@@ -105,10 +105,16 @@ func TestSelection_RandomPhotoSelection(t *testing.T) {
 
 	// the next item should be a care provider selection
 	careProviderID, err := strconv.ParseInt(options[1].(map[string]interface{})["care_provider_id"].(string), 10, 64)
+	if err != nil {
+		t.Fatal(err)
+	}
 	testCareProviderSelection(options[1], m.doctorMap[careProviderID], t)
 
 	// third item should be a care provider selection
 	careProviderID, err = strconv.ParseInt(options[2].(map[string]interface{})["care_provider_id"].(string), 10, 64)
+	if err != nil {
+		t.Fatal(err)
+	}
 	testCareProviderSelection(options[2], m.doctorMap[careProviderID], t)
 }
 
@@ -190,10 +196,16 @@ func TestSelection_Unauthenticated_NotEnoughDoctors(t *testing.T) {
 
 	// the next item should be a care provider selection
 	careProviderID, err := strconv.ParseInt(options[1].(map[string]interface{})["care_provider_id"].(string), 10, 64)
+	if err != nil {
+		t.Fatal(err)
+	}
 	testCareProviderSelection(options[1], m.doctorMap[careProviderID], t)
 
 	// third item should be a care provider selection
 	careProviderID, err = strconv.ParseInt(options[2].(map[string]interface{})["care_provider_id"].(string), 10, 64)
+	if err != nil {
+		t.Fatal(err)
+	}
 	testCareProviderSelection(options[2], m.doctorMap[careProviderID], t)
 }
 
@@ -242,10 +254,13 @@ func TestSelection_Unauthenticated_SufficientDoctors(t *testing.T) {
 
 	testFirstAvailableOption(options[0], make([]string, 6), t)
 	careProviderID, err := strconv.ParseInt(options[1].(map[string]interface{})["care_provider_id"].(string), 10, 64)
+	test.OK(t, err)
 	testCareProviderSelection(options[1], doctorMap[careProviderID], t)
 	careProviderID, err = strconv.ParseInt(options[2].(map[string]interface{})["care_provider_id"].(string), 10, 64)
+	test.OK(t, err)
 	testCareProviderSelection(options[2], doctorMap[careProviderID], t)
 	careProviderID, err = strconv.ParseInt(options[2].(map[string]interface{})["care_provider_id"].(string), 10, 64)
+	test.OK(t, err)
 	testCareProviderSelection(options[2], doctorMap[careProviderID], t)
 }
 
@@ -387,9 +402,15 @@ func TestSelection_Authenticated_SingleCase_DoctorEligible(t *testing.T) {
 	testCareProviderSelection(options[1], doctors[0], t)
 
 	careProviderID, err := strconv.ParseInt(options[2].(map[string]interface{})["care_provider_id"].(string), 10, 64)
+	if err != nil {
+		t.Fatal(err)
+	}
 	testCareProviderSelection(options[2], doctorMap[careProviderID], t)
 
 	careProviderID, err = strconv.ParseInt(options[3].(map[string]interface{})["care_provider_id"].(string), 10, 64)
+	if err != nil {
+		t.Fatal(err)
+	}
 	testCareProviderSelection(options[3], doctorMap[careProviderID], t)
 }
 

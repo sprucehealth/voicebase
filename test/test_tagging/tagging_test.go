@@ -405,7 +405,7 @@ func TestCCTagCaseMembershipAndAssociationRoundTrip(t *testing.T) {
 	}
 	test.Assert(t, notFound, "Expected to not find previously created membership in GET response")
 
-	postTagCaseAssociationResp, err = doctorCli.PostTagCaseAssociation(&tagging.TagCaseAssociationPOSTRequest{
+	_, err = doctorCli.PostTagCaseAssociation(&tagging.TagCaseAssociationPOSTRequest{
 		Text:   "TestTag5",
 		CaseID: &caseID,
 	})

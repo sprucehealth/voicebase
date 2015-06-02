@@ -77,7 +77,7 @@ func TestLayoutVersioning_MajorUpgrade(t *testing.T) {
 	test.Equals(t, true, layoutID > 0)
 
 	// there should be no layout for a version prior to 0.9.5
-	layout, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 0, Minor: 8, Patch: 5}, common.IOS,
+	_, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 0, Minor: 8, Patch: 5}, common.IOS,
 		pathway.ID, api.LanguageIDEnglish, test_integration.SKUAcneVisit)
 	test.Equals(t, true, api.IsErrNotFound(err))
 
@@ -145,11 +145,11 @@ func TestLayoutVersioning_MajorUpgrade(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, v2IntakeLayoutVersionID, layoutID)
 
-	layout, layoutID, err = testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(2, 0, pathway.ID, test_integration.SKUAcneVisit)
+	_, layoutID, err = testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(2, 0, pathway.ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, v1ReviewLayoutVersionID, layoutID)
 
-	layout, layoutID, err = testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(3, 0, pathway.ID, test_integration.SKUAcneVisit)
+	_, layoutID, err = testData.DataAPI.ReviewLayoutForIntakeLayoutVersion(3, 0, pathway.ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, v2ReviewLayoutVersionID, layoutID)
 

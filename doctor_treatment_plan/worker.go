@@ -180,7 +180,6 @@ func (w *worker) processMessage(msg *erxRouteMessage) error {
 	}
 
 	if currentTPStatus == common.TPStatusRXStarted {
-
 		if err := w.sendPrescriptionsToPharmacy(treatments, patient, doctor); err != nil {
 			return errors.Trace(err)
 		}
@@ -188,7 +187,6 @@ func (w *worker) processMessage(msg *erxRouteMessage) error {
 		if err := w.dataAPI.ActivateTreatmentPlan(treatmentPlan.ID.Int64(), doctor.ID.Int64()); err != nil {
 			return errors.Trace(err)
 		}
-		currentTPStatus = common.TPStatusActive
 	}
 
 	if err := sendCaseMessageAndPublishTPActivatedEvent(w.dataAPI, w.dispatcher, treatmentPlan, doctor, msg.Message); err != nil {
