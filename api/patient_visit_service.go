@@ -346,11 +346,11 @@ func (d *DataService) VisitSummaries(visitStatuses []string, from, to time.Time)
 		values = dbutil.AppendStringsToInterfaceSlice(values, visitStatuses)
 	}
 	if !from.IsZero() {
-		conditions = append(conditions, ` pv.submitted_date >= ?`)
+		conditions = append(conditions, ` pv.creation_date >= ?`)
 		values = append(values, from)
 	}
 	if !to.IsZero() {
-		conditions = append(conditions, ` pv.submitted_date <= ?`)
+		conditions = append(conditions, ` pv.creation_date <= ?`)
 		values = append(values, to)
 	}
 	if len(conditions) > 0 {

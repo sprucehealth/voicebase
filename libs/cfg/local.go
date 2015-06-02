@@ -14,26 +14,35 @@ type localStore struct {
 	updateMu sync.Mutex
 }
 
-func NewLocalStore() Store {
+// NewLocalStore returns an instance of a config store that stores values
+// in memory. It it safe for concurrent access and can be used for testing
+// or as the cache for distributed store implementations.
+func NewLocalStore(defs []*ValueDef) (Store, error) {
 	lc := &localStore{
-		defs: make(map[string]*ValueDef),
+		defs: make(map[string]*ValueDef, len(defs)),
+	}
+	for _, d := range defs {
+		if err := lc.Register(d); err != nil {
+			return nil, err
+		}
 	}
 	lc.storeValues(make(map[string]interface{}))
-	return lc
+	return lc, nil
 }
 
 func (lc *localStore) Close() error {
 	return nil
 }
 
-func (lc *localStore) Register(def *ValueDef) {
+func (lc *localStore) Register(def *ValueDef) error {
 	if err := def.Validate(); err != nil {
-		panic(fmt.Sprintf("config.LocalConfig: %+v is not a valid definition: %s", def, err))
+		return fmt.Errorf("config.LocalConfig: %+v is not a valid definition: %s", def, err)
 	}
 	if _, ok := lc.defs[def.Name]; ok {
-		panic("config.LocalConfig: name " + def.Name + " already registered")
+		return fmt.Errorf("config.LocalConfig: name %s already registered", def.Name)
 	}
 	lc.defs[def.Name] = def
+	return nil
 }
 
 func (lc *localStore) Defs() map[string]*ValueDef {

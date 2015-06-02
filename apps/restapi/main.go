@@ -149,12 +149,15 @@ func main() {
 
 	var cfgStore cfg.Store
 	if consulClient != nil {
-		cfgStore, err = cfg.NewConsulStore(consulClient, "services/restapi/cfg", metricsRegistry.Scope("cfg"))
+		cfgStore, err = cfg.NewConsulStore(consulClient, "services/restapi/cfg", config.CfgDefs(), metricsRegistry.Scope("cfg"))
 		if err != nil {
 			golog.Fatalf("Failed to initialize consul cfg store: %s", err)
 		}
 	} else {
-		cfgStore = cfg.NewLocalStore()
+		cfgStore, err = cfg.NewLocalStore(config.CfgDefs())
+		if err != nil {
+			golog.Fatalf("Failed to initialize local cfg store: %s", err)
+		}
 	}
 
 	defer func() {

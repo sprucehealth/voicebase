@@ -1,3 +1,8 @@
+// Package cfg provides a way to change configuration variables at runtime.
+// It supports multiple backends (currently local for testing and Consul for
+// distributed use). When using the Consul backend any configuration value
+// changes are propogated nearly instantly to all other processes using cfg
+// against the same Consul cluster and key.
 package cfg
 
 import (
@@ -9,8 +14,10 @@ import (
 	"time"
 )
 
+// ValueType defines the type of a store config value.
 type ValueType string
 
+// The following constants are the only allowed types for values.
 const (
 	ValueTypeBool     ValueType = "bool"
 	ValueTypeInt      ValueType = "int"   // 64-bit
@@ -31,11 +38,16 @@ type ValueDef struct {
 
 // Store is the interface implemented by configuration storage backends.
 type Store interface {
-	Register(def *ValueDef)
+	Register(def *ValueDef) error
 	Defs() map[string]*ValueDef
 	Snapshot() Snapshot
 	Update(map[string]interface{}) error
 	Close() error
+}
+
+// String implements the fmt.Stringer interface
+func (vt ValueType) String() string {
+	return string(vt)
 }
 
 // Valid returns true if the type is one of the defined constants
@@ -155,6 +167,9 @@ func (v *jsonValue) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// DecodeValues does json.Unmarshal, but it uses an intermediate
+// value type to make sure that integers in the json (numbers without
+// decimal or exponent) are decoded as int64 rather than float64.
 func DecodeValues(b []byte) (map[string]interface{}, error) {
 	var val map[string]jsonValue
 	if err := json.Unmarshal(b, &val); err != nil {
@@ -167,6 +182,9 @@ func DecodeValues(b []byte) (map[string]interface{}, error) {
 	return snap, nil
 }
 
+// CoerceValues makes sure that all values in `val` match the types in
+// the provided definitions. If the value does not match and cannot be
+// coerced to the proper type then it returns an error.
 func CoerceValues(def map[string]*ValueDef, val map[string]interface{}) error {
 	for name, d := range def {
 		if v, ok := val[name]; ok {

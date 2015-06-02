@@ -22,6 +22,9 @@ module.exports = {
 			schedmsg: function(): any {
 				return <ScheduledMessageTemplates router={this.props.router} />
 			},
+			email: function(): any {
+				return <Email router={this.props.router} />
+			},
 		},
 		menuItems: function(): any {
 			var items = [];
@@ -44,6 +47,13 @@ module.exports = {
 					id: "schedmsg",
 					url: "schedmsg",
 					name: "Scheduled Message Templates"
+				});
+			}
+			if (Perms.has(Perms.EmailEdit)) {
+				items.push({
+					id: "email",
+					url: "email",
+					name: "Email Testing"
 				});
 			}
 			return [items];
@@ -374,6 +384,58 @@ var ScheduledMessageTemplates = React.createClass({displayName: "ScheduledMessag
 						</form>
 					: null}
 				</div>
+			</div>
+		);
+	}
+});
+
+// TODO(samuelks): move this to the marketing section once that exists
+var Email = React.createClass({displayName: "Email",
+	mixins: [Routing.RouterNavigateMixin],
+	getInitialState: function() {
+		return {
+			error: null,
+			busy: false,
+			sent: false,
+			emailType: ""
+		};
+	},
+	componentWillMount: function() {
+		document.title = "Email | Spruce Admin";
+	},
+	handleChangeEmailType: function(e: any) {
+		e.preventDefault();
+		this.setState({emailType: e.target.value});
+	},
+	handleSubmit: function(e: Event) {
+		e.preventDefault();
+		this.setState({busy: true, sent: false});
+		AdminAPI.sendTestEmail(this.state.emailType, function(success, data, error) {
+			if (this.isMounted()) {
+				if (!success) {
+					this.setState({busy: false, error: error.message});
+					return;
+				}
+				if (data.success) {
+					this.setState({busy: false, sent: true, error: null});
+				} else {
+					this.setState({busy: false, error: data.error});
+				}
+			}
+		}.bind(this));
+	},
+	render: function(): any {
+		return (
+			<div>
+				{this.state.busy ? <Utils.LoadingAnimation /> : null}
+				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
+				{this.state.sent ? <Utils.Alert type="success">Sent Successfully</Utils.Alert> : null}
+				<form onSubmit={this.handleSubmit}>
+					<Forms.FormInput required={true} label="Type" name="type" value={this.state.emailType} onChange={this.handleChangeEmailType} />
+					<div className="text-right">
+						<button className="btn btn-primary" type="submit">Send</button>
+					</div>
+				</form>
 			</div>
 		);
 	}

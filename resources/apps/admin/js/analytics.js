@@ -209,7 +209,7 @@ var AnalyticsQuery = React.createClass({displayName: "AnalyticsQuery",
 						<h2>Analytics</h2>
 					</div>
 					<form onSubmit={this.onSubmit}>
-						<Forms.TextArea tabs="true" label="Query" name="q" value={this.state.query} onChange={this.onQueryChange} rows="10" />
+						<Forms.TextArea tabs={true} label="Query" name="q" value={this.state.query} onChange={this.onQueryChange} rows={10} />
 						<div className="text-center">
 							<button className="btn btn-default" onClick={this.onSave}>Save</button>
 							&nbsp;<button disabled={this.state.results ? "" : "disabled"} className="btn btn-default" onClick={this.onDownload}>Download</button>

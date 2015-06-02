@@ -760,6 +760,18 @@ module.exports = {
 			dataType: "json"
 		}, cb);
 	},
+
+	// Email
+
+	sendTestEmail: function(type: string, cb: ajaxCB) {
+		this.ajax({
+			type: "POST",
+			contentType: "application/json",
+			url: "/email/test",
+			data: JSON.stringify({type: type}),
+			dataType: "json"
+		}, cb);
+	},
 };
 
 var noError: ajaxError = {message: ""};

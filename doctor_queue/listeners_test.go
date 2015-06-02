@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/aws/sns"
@@ -97,7 +98,11 @@ func testCaseAssignment(t *testing.T, role string) {
 	notifyManager := notify.NewManager(m, a, &sns.MockSNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
 
 	dispatcher := dispatch.New()
-	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", cfg.NewLocalStore())
+	ls, err := cfg.NewLocalStore(config.CfgDefs())
+	if err != nil {
+		t.Fatal(err)
+	}
+	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls)
 
 	ma := &common.Doctor{
 		ID:               encoding.NewObjectID(4),
@@ -201,7 +206,11 @@ func TestCaseAssignment_Multiple(t *testing.T) {
 
 	notifyManager := notify.NewManager(m, a, &sns.MockSNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
 	dispatcher := dispatch.New()
-	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", cfg.NewLocalStore())
+	ls, err := cfg.NewLocalStore(config.CfgDefs())
+	if err != nil {
+		t.Fatal(err)
+	}
+	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls)
 
 	// assign the case 2 times from the cc to the doctor
 	for i := 0; i < 2; i++ {
@@ -272,7 +281,11 @@ func TestCaseAssignment_Doctor_DeleteOnTP(t *testing.T) {
 	notifyManager := notify.NewManager(m, a, &sns.MockSNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
 
 	dispatcher := dispatch.New()
-	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", cfg.NewLocalStore())
+	ls, err := cfg.NewLocalStore(config.CfgDefs())
+	if err != nil {
+		t.Fatal(err)
+	}
+	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls)
 
 	dispatcher.Publish(&doctor_treatment_plan.TreatmentPlanSubmittedEvent{
 		VisitID:       10,
@@ -312,7 +325,11 @@ func TestCaseAssignment_Doctor_PersistsInInbox(t *testing.T) {
 	notifyManager := notify.NewManager(m, a, &sns.MockSNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
 
 	dispatcher := dispatch.New()
-	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", cfg.NewLocalStore())
+	ls, err := cfg.NewLocalStore(config.CfgDefs())
+	if err != nil {
+		t.Fatal(err)
+	}
+	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls)
 
 	dispatcher.Publish(&messages.CaseAssignEvent{
 		Message: &common.CaseMessage{
@@ -403,7 +420,11 @@ func testMessage_PatientToCareTeam(t *testing.T, assignments []*common.CareProvi
 	notifyManager := notify.NewManager(m, a, &sns.MockSNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
 
 	dispatcher := dispatch.New()
-	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", cfg.NewLocalStore())
+	ls, err := cfg.NewLocalStore(config.CfgDefs())
+	if err != nil {
+		t.Fatal(err)
+	}
+	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls)
 
 	dispatcher.Publish(&messages.PostEvent{
 		Message: &common.CaseMessage{
@@ -469,7 +490,11 @@ func TestMessage_PatientToCareTeam_Multiple(t *testing.T) {
 	notifyManager := notify.NewManager(m, a, &sns.MockSNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
 
 	dispatcher := dispatch.New()
-	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", cfg.NewLocalStore())
+	ls, err := cfg.NewLocalStore(config.CfgDefs())
+	if err != nil {
+		t.Fatal(err)
+	}
+	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls)
 
 	for i := 0; i < 2; i++ {
 		dispatcher.Publish(&messages.PostEvent{
@@ -526,7 +551,11 @@ func testMessage_ProviderToPatient(t *testing.T, role string) {
 	notifyManager := notify.NewManager(m, a, &sns.MockSNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
 
 	dispatcher := dispatch.New()
-	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", cfg.NewLocalStore())
+	ls, err := cfg.NewLocalStore(config.CfgDefs())
+	if err != nil {
+		t.Fatal(err)
+	}
+	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls)
 
 	dispatcher.Publish(&messages.PostEvent{
 		Message: &common.CaseMessage{

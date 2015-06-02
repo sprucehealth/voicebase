@@ -7,7 +7,6 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/email/campaigns"
-	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/test"
@@ -29,12 +28,11 @@ func TestScheduledCampaigns(t *testing.T) {
 	dispatcher := dispatch.New()
 	testMand := &email.TestMandrill{}
 	emailService := email.NewOptoutChecker(testData.DataAPI, testMand, testData.Config.Cfg, dispatcher)
-	cfgStore := cfg.NewLocalStore()
 	lock := &test_integration.TestLock{}
 
 	signer, err := sig.NewSigner([][]byte{[]byte("foo")}, nil)
 	test.OK(t, err)
-	w := campaigns.NewWorker(testData.DataAPI, emailService, "", signer, cfgStore, lock, metrics.NewRegistry())
+	w := campaigns.NewWorker(testData.DataAPI, emailService, "", signer, testData.Config.Cfg, lock, metrics.NewRegistry())
 	if err := w.Do(); err != nil {
 		t.Fatal(err)
 	}
@@ -47,9 +45,10 @@ func TestScheduledCampaigns(t *testing.T) {
 		t.Error("emails sent when none should have been")
 	}
 
-	w.Reset()
+	_, err = testData.DB.Exec(`DELETE FROM email_campaign_state`)
+	test.OK(t, err)
 
-	res, err := testData.DB.Exec(`UPDATE patient_visit SET submitted_date = NOW() - INTERVAL 60 day WHERE status = ?`, common.PVStatusOpen)
+	res, err := testData.DB.Exec(`UPDATE patient_visit SET creation_date = NOW() - INTERVAL 60 day WHERE status = ?`, common.PVStatusOpen)
 	test.OK(t, err)
 	n, err := res.RowsAffected()
 	test.OK(t, err)
@@ -68,7 +67,8 @@ func TestScheduledCampaigns(t *testing.T) {
 		t.Error("emails sent when none should have been")
 	}
 
-	w.Reset()
+	_, err = testData.DB.Exec(`DELETE FROM email_campaign_state`)
+	test.OK(t, err)
 
 	if err := w.Do(); err != nil {
 		t.Fatal(err)
