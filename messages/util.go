@@ -66,6 +66,12 @@ func CreateMessageAndAttachments(msg *common.CaseMessage, attachments []*Attachm
 		switch att.Type {
 		default:
 			return apiservice.NewError("Unknown attachment type "+att.Type, http.StatusBadRequest)
+		case common.AttachmentTypeResourceGuide:
+			// Make sure the resource guide exists
+			_, err := dataAPI.GetResourceGuide(att.ID)
+			if err != nil {
+				return err
+			}
 		case common.AttachmentTypeTreatmentPlan:
 			// Make sure the treatment plan is a part of the same case
 			if role != api.RoleDoctor {
