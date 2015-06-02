@@ -18,6 +18,7 @@ var Pathways = require("./pathways.js");
 var Perms = require("./permissions.js");
 var Settings = require("./settings.js");
 var Visit = require("./visit.js");
+var CareCoordinator = require("./care_coordinator.js");
 
 var AdminRouter = Backbone.Router.extend({
 	routes : {
@@ -101,6 +102,10 @@ var AdminRouter = Backbone.Router.extend({
 			this.current = "settings";
 			this.params = {page: page};
 		},
+		"carecoordinator/tags/:page": function(page) {
+			this.current = "carecoordinator";
+			this.params = {page: page};
+		},
 	}
 });
 
@@ -157,6 +162,14 @@ var Admin = React.createClass({displayName: "Admin",
 				id: "financial",
 				url: "financial/incoming",
 				name: "Financial"
+			})
+		}
+
+		if (Perms.has(Perms.CareCoordinatorView)) {
+			leftMenuItems.push({
+				id: "carecoordinator",
+				url: "carecoordinator/tags/manage",
+				name: "Care Coordinator"
 			})
 		}
 
@@ -220,6 +233,9 @@ var Admin = React.createClass({displayName: "Admin",
 		},
 		visit: function() {
 			return <Visit.Page router={this.props.router} page={this.props.router.params.page} caseID={this.props.router.params.caseID} visitID={this.props.router.params.visitID} />;
+		},
+		carecoordinator: function() {
+			return <CareCoordinator.Page router={this.props.router} page={this.props.router.params.page} />;
 		},
 		settings: function() {
 			return <Settings.Page router={this.props.router} page={this.props.router.params.page} />;

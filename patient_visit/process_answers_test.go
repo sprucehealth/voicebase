@@ -9,6 +9,9 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/patient"
+	"github.com/sprucehealth/backend/tagging/model"
+	"github.com/sprucehealth/backend/tagging/response"
+	"github.com/sprucehealth/backend/test"
 )
 
 type mockDataAPI_processPatientAnswers struct {
@@ -51,6 +54,65 @@ func (d *mockDataAPI_processPatientAnswers) ScheduledMessageTemplates(eventType 
 func (d *mockDataAPI_processPatientAnswers) CreateScheduledMessage(msg *common.ScheduledMessage) (int64, error) {
 	d.messageScheduled = msg
 	return 0, nil
+}
+
+type mockTaggingClient_processPatientAnswers struct {
+	TagsCreated map[int64][]string
+	TagsDeleted map[int64][]string
+}
+
+func (t *mockTaggingClient_processPatientAnswers) CaseAssociations(ms []*model.TagMembership, start, end int64) ([]*response.TagAssociation, error) {
+	return nil, nil
+}
+func (t *mockTaggingClient_processPatientAnswers) CaseTagMemberships(caseID int64) (map[string]*model.TagMembership, error) {
+	return nil, nil
+}
+func (t *mockTaggingClient_processPatientAnswers) DeleteTag(id int64) (int64, error) {
+	return 0, nil
+}
+func (t *mockTaggingClient_processPatientAnswers) DeleteTagCaseAssociation(text string, caseID int64) error {
+	if t.TagsDeleted == nil {
+		t.TagsDeleted = make(map[int64][]string)
+	}
+	t.TagsDeleted[caseID] = append(t.TagsDeleted[caseID], text)
+	return nil
+}
+func (t *mockTaggingClient_processPatientAnswers) DeleteTagCaseMembership(tagID, caseID int64) error {
+	return nil
+}
+func (t *mockTaggingClient_processPatientAnswers) InsertTagAssociation(tag *model.Tag, membership *model.TagMembership) (int64, error) {
+	if t.TagsCreated == nil {
+		t.TagsCreated = make(map[int64][]string)
+	}
+	t.TagsCreated[*membership.CaseID] = append(t.TagsCreated[*membership.CaseID], tag.Text)
+	return 0, nil
+}
+func (t *mockTaggingClient_processPatientAnswers) TagMembershipQuery(query string, pastTrigger bool) ([]*model.TagMembership, error) {
+	return nil, nil
+}
+func (t *mockTaggingClient_processPatientAnswers) Tag(tagText string) (*response.Tag, error) {
+	return nil, nil
+}
+func (t *mockTaggingClient_processPatientAnswers) Tags(tagText []string, common bool) ([]*response.Tag, error) {
+	return nil, nil
+}
+func (t *mockTaggingClient_processPatientAnswers) InsertTagSavedSearch(ss *model.TagSavedSearch) (int64, error) {
+	return 0, nil
+}
+func (t *mockTaggingClient_processPatientAnswers) DeleteTagSavedSearch(ssID int64) (int64, error) {
+	return 0, nil
+}
+func (t *mockTaggingClient_processPatientAnswers) InsertTag(tag *model.Tag) (int64, error) {
+	return 0, nil
+}
+func (t *mockTaggingClient_processPatientAnswers) TagSavedSearchs() ([]*model.TagSavedSearch, error) {
+	return nil, nil
+}
+func (t *mockTaggingClient_processPatientAnswers) UpdateTag(tag *model.TagUpdate) error {
+	return nil
+}
+func (t *mockTaggingClient_processPatientAnswers) UpdateTagCaseMembership(membership *model.TagMembershipUpdate) error {
+	return nil
 }
 
 // TestProcessAnswers_InsuredScheduledMessage is to ensure that a message
@@ -126,13 +188,26 @@ func testProcessAnswersForInsurance(t *testing.T, event string, answerTag string
 		},
 	}
 
+	caseID := encoding.NewObjectID(1)
 	ev := &patient.VisitSubmittedEvent{
 		Visit: &common.PatientVisit{
-			PatientCaseID: encoding.NewObjectID(1),
+			PatientCaseID: caseID,
 		},
+		PatientCaseID: caseID.Int64(),
 	}
 
-	processPatientAnswers(m, "api.spruce.local", ev)
+	taggingClient := &mockTaggingClient_processPatientAnswers{}
+	processPatientAnswers(m, "api.spruce.local", ev, taggingClient)
+
+	test.Assert(t, len(taggingClient.TagsCreated) == 1, "Expected only 1 tag to have been created")
+	test.Assert(t, len(taggingClient.TagsDeleted) == 1, "Expected only 1 tag to have been deleted")
+	if answerTag == noInsuranceAnswerTags[0] || answerTag == noInsuranceAnswerTags[1] {
+		test.Equals(t, []string{"Uninsured"}, taggingClient.TagsCreated[caseID.Int64()])
+		test.Equals(t, []string{"Insured"}, taggingClient.TagsDeleted[caseID.Int64()])
+	} else {
+		test.Equals(t, []string{"Insured"}, taggingClient.TagsCreated[caseID.Int64()])
+		test.Equals(t, []string{"Uninsured"}, taggingClient.TagsDeleted[caseID.Int64()])
+	}
 
 	if m.messageScheduled == nil {
 		t.Fatal("Expected message to be scheduled but it wasnt")
@@ -208,13 +283,21 @@ func TestProcessAnswers_SecondCase(t *testing.T) {
 		},
 	}
 
+	caseID := encoding.NewObjectID(1)
 	ev := &patient.VisitSubmittedEvent{
 		Visit: &common.PatientVisit{
-			PatientCaseID: encoding.NewObjectID(1),
+			PatientCaseID: caseID,
 		},
+		PatientCaseID: caseID.Int64(),
 	}
 
-	processPatientAnswers(m, "api.spruce.local", ev)
+	taggingClient := &mockTaggingClient_processPatientAnswers{}
+	processPatientAnswers(m, "api.spruce.local", ev, taggingClient)
+
+	test.Assert(t, len(taggingClient.TagsCreated) == 1, "Expected only 1 tag to have been created")
+	test.Assert(t, len(taggingClient.TagsDeleted) == 1, "Expected only 1 tag to have been deleted")
+	test.Equals(t, []string{"Uninsured"}, taggingClient.TagsCreated[caseID.Int64()])
+	test.Equals(t, []string{"Insured"}, taggingClient.TagsDeleted[caseID.Int64()])
 
 	if m.messageScheduled != nil {
 		t.Fatal("Expected no message to get scheduled for a subsequent visit")
@@ -280,14 +363,21 @@ func TestProcessAnswers_FollowupVisit(t *testing.T) {
 		},
 	}
 
+	caseID := encoding.NewObjectID(1)
 	ev := &patient.VisitSubmittedEvent{
 		Visit: &common.PatientVisit{
-			PatientCaseID: encoding.NewObjectID(2),
-			IsFollowup:    true,
+			PatientCaseID: caseID,
 		},
+		PatientCaseID: caseID.Int64(),
 	}
 
-	processPatientAnswers(m, "api.spruce.local", ev)
+	taggingClient := &mockTaggingClient_processPatientAnswers{}
+	processPatientAnswers(m, "api.spruce.local", ev, taggingClient)
+
+	test.Assert(t, len(taggingClient.TagsCreated) == 1, "Expected only 1 tag to have been created")
+	test.Assert(t, len(taggingClient.TagsDeleted) == 1, "Expected only 1 tag to have been deleted")
+	test.Equals(t, []string{"Uninsured"}, taggingClient.TagsCreated[caseID.Int64()])
+	test.Equals(t, []string{"Insured"}, taggingClient.TagsDeleted[caseID.Int64()])
 
 	if m.messageScheduled != nil {
 		t.Fatal("Expected no message to get scheduled for a subsequent visit")

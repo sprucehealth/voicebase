@@ -178,15 +178,14 @@ func TestTaggingQueryScanComplexQueries(t *testing.T) {
 
 func TestTaggingQueryScanError(t *testing.T) {
 	testSets := []struct {
-		input       string
-		expectedErr error
+		input string
 	}{
-		{`A NOT B`, ErrBadExpression},
+		{`A NOT B`},
 	}
 	for _, v := range testSets {
 		fmt.Println(v.input)
 		_, err := scan(v.input)
-		test.Equals(t, v.expectedErr, err)
+		test.Assert(t, IsErrBadExpression(err), "Expected to find a bad expression error")
 	}
 }
 

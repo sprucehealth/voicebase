@@ -98,20 +98,21 @@ type Config struct {
 }
 
 func New(conf *Config) http.Handler {
+	taggingClient := tagging.NewTaggingClient(conf.ApplicationDB)
+
 	// Initialize listneners
 	doctor_queue.InitListeners(conf.DataAPI, conf.AnalyticsLogger, conf.Dispatcher, conf.NotificationManager, conf.MetricsRegistry.Scope("doctor_queue"), conf.JBCQMinutesThreshold, conf.CustomerSupportEmail, conf.Cfg)
 	doctor_treatment_plan.InitListeners(conf.DataAPI, conf.Dispatcher)
 	notify.InitListeners(conf.DataAPI, conf.Dispatcher)
 	patient_case.InitListeners(conf.DataAPI, conf.Dispatcher, conf.NotificationManager)
 	demo.InitListeners(conf.DataAPI, conf.Dispatcher, conf.APIDomain, conf.DosespotConfig.UserID)
-	patient_visit.InitListeners(conf.DataAPI, conf.APICDNDomain, conf.Dispatcher, conf.VisitQueue)
+	patient_visit.InitListeners(conf.DataAPI, conf.APICDNDomain, conf.Dispatcher, conf.VisitQueue, taggingClient)
 	doctor.InitListeners(conf.DataAPI, conf.APICDNDomain, conf.Dispatcher)
 	cost.InitListeners(conf.DataAPI, conf.Dispatcher)
 	auth.InitListeners(conf.AuthAPI, conf.Dispatcher)
 	campaigns.InitListeners(conf.Dispatcher, conf.Cfg, conf.EmailService)
 
 	conf.mux = apiservice.NewQueryableMux()
-	taggingClient := tagging.NewTaggingClient(conf.ApplicationDB)
 
 	addressValidationAPI := address.NewAddressValidationWithCacheWrapper(conf.AddressValidator, conf.MemcacheClient)
 
@@ -253,10 +254,11 @@ func New(conf *Config) http.Handler {
 
 	// Tagging APIs
 	authenticationRequired(conf, apipaths.TagURLPath, tagging.NewTagHandler(taggingClient))
-	authenticationRequired(conf, apipaths.TagAssociationPath, tagging.NewTagAssociationHandler(taggingClient))
+	authenticationRequired(conf, apipaths.TagCaseMembershipURLPath, tagging.NewTagCaseMembershipHandler(taggingClient))
+	authenticationRequired(conf, apipaths.TagCaseAssociationURLPath, tagging.NewTagCaseAssociationHandler(taggingClient))
+	authenticationRequired(conf, apipaths.TagSavedSearchURLPath, tagging.NewTagSavedSearchHandler(taggingClient))
 
 	// Miscellaneous APIs
-
 	authenticationRequired(conf, apipaths.AppEventURLPath, app_event.NewHandler(conf.Dispatcher))
 	authenticationRequired(conf, apipaths.PromotionsURLPath, promotions.NewPromotionsHandler(conf.DataAPI))
 	noAuthenticationRequired(conf, apipaths.PromotionsConfirmationURLPath, promotions.NewPromotionConfirmationHandler(conf.DataAPI))

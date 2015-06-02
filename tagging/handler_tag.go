@@ -1,7 +1,6 @@
 package tagging
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -18,16 +17,17 @@ type tagHandler struct {
 	taggingClient Client
 }
 
-type tagGETRequest struct {
-	Text []string `schema:"text,required"`
+type TagGETRequest struct {
+	Text   []string `schema:"text"`
+	Common bool     `schema:"common"`
 }
 
-type tagGETResponse struct {
+type TagGETResponse struct {
 	Tags []*response.Tag `json:"tags"`
 }
 
-type tagDELETERequest struct {
-	ID int64 `json:"id,string"`
+type TagDELETERequest struct {
+	ID int64 `schema:"id,required"`
 }
 
 func NewTagHandler(taggingClient Client) http.Handler {
@@ -64,8 +64,8 @@ func (h *tagHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *tagHandler) parseGETRequest(r *http.Request) (*tagGETRequest, error) {
-	rd := &tagGETRequest{}
+func (h *tagHandler) parseGETRequest(r *http.Request) (*TagGETRequest, error) {
+	rd := &TagGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
 	}
@@ -75,7 +75,7 @@ func (h *tagHandler) parseGETRequest(r *http.Request) (*tagGETRequest, error) {
 	return rd, nil
 }
 
-func (h *tagHandler) serveGET(w http.ResponseWriter, r *http.Request, req *tagGETRequest) {
+func (h *tagHandler) serveGET(w http.ResponseWriter, r *http.Request, req *TagGETRequest) {
 	text := make([]string, 0, len(req.Text))
 	for _, v := range req.Text {
 		trimmed := strings.TrimSpace(v)
@@ -83,38 +83,38 @@ func (h *tagHandler) serveGET(w http.ResponseWriter, r *http.Request, req *tagGE
 			text = append(text, trimmed)
 		}
 	}
-	if len(text) == 0 {
-		httputil.JSONResponse(w, http.StatusOK, &tagGETResponse{
+
+	if len(text) == 0 && !req.Common {
+		httputil.JSONResponse(w, http.StatusOK, &TagGETResponse{
 			Tags: []*response.Tag{},
 		})
 		return
 	}
 
-	tags, err := h.taggingClient.Tags(text)
+	tags, err := h.taggingClient.Tags(text, req.Common)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	httputil.JSONResponse(w, http.StatusOK, &tagGETResponse{
+	httputil.JSONResponse(w, http.StatusOK, &TagGETResponse{
 		Tags: tags,
 	})
 }
 
-func (h *tagHandler) parseDELETERequest(r *http.Request) (*tagDELETERequest, error) {
-	rd := &tagDELETERequest{}
+func (h *tagHandler) parseDELETERequest(r *http.Request) (*TagDELETERequest, error) {
+	rd := &TagDELETERequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
 	}
-	if err := json.NewDecoder(r.Body).Decode(rd); err != nil {
+	if err := schema.NewDecoder().Decode(rd, r.Form); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
 	}
 	return rd, nil
 }
 
-func (h *tagHandler) serveDELETE(w http.ResponseWriter, r *http.Request, req *tagDELETERequest) {
-	_, err := h.taggingClient.DeleteTag(req.ID)
-	if err != nil {
+func (h *tagHandler) serveDELETE(w http.ResponseWriter, r *http.Request, req *TagDELETERequest) {
+	if _, err := h.taggingClient.DeleteTag(req.ID); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
