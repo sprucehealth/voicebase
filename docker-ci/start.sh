@@ -1,6 +1,6 @@
 #!/bin/bash
 
-/bin/bash -x -e /run.sh
+/bin/bash -e /run.sh
 EXIT=$?
 
 # Cleanup
