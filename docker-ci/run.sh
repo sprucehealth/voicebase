@@ -68,7 +68,8 @@ else
 fi
 
 go run docker-ci/covermerge.go ./coverage-$BUILD_NUMBER.out ./
-go tool cover -html=coverage-$BUILD_NUMBER.out -o coverage-$BUILD_NUMBER.html
+go tool cover -html=coverage-$BUILD_NUMBER.out -o coverage.html
+cp coverage.html coverage-$BUILD_NUMBER.html
 
 # Test static resources
 echo "TESTING STATIC RESOURCES"
@@ -90,6 +91,7 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
     cp restapi build/$CMD_NAME
     bzip2 -9 build/$CMD_NAME
     echo $GIT_COMMIT > build/$CMD_NAME.revision
+    cp ../../coverage.html build/$CMD_NAME.coverage.html
     s3cmd --add-header "x-amz-acl:bucket-owner-full-control" -M --server-side-encryption put build/* s3://spruce-deploy/restapi/
 
     cd ../../resources/static
