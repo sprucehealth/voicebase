@@ -6,6 +6,8 @@ NAME=${BUILD_TAG,,}
 echo 'ssh -i ~/.ssh/id_api $*' > ssh ; chmod +x ssh
 export GIT_SSH="./ssh"
 git submodule update --init
+# Remove ignored files
+git clean -X -f
 
 docker build --rm --force-rm -t $NAME docker-ci
 
@@ -23,6 +25,7 @@ docker run --rm=true --name=$NAME \
 	-e "GIT_BRANCH=$BRANCH" \
 	-e "JOB_NAME=$JOB_NAME" \
 	-e "DEPLOY_TO_S3=$DEPLOY_TO_S3" \
+	-e "FULLCOVERAGE=$FULLCOVERAGE" \
 	-v $MEMPATH:/mem \
 	-v `pwd`:/workspace/go/src/github.com/sprucehealth/backend \
     $NAME
