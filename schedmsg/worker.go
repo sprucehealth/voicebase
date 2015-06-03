@@ -199,7 +199,7 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 			return err
 		}
 		if len(careTeams) != 1 {
-			return fmt.Errorf("Expected to find 1 care team for patient case %d but found %d", pcase.ID, len(careTeams))
+			return fmt.Errorf("Expected to find 1 care team for patient case %d but found %d", pcase.ID.Int64(), len(careTeams))
 		}
 
 		_, ok := careTeams[pcase.ID.Int64()]

@@ -455,6 +455,18 @@ const (
 	DQActionRemove
 )
 
+func (a DoctorQueueAction) String() string {
+	switch a {
+	case DQActionInsert:
+		return "DQActionInsert"
+	case DQActionReplace:
+		return "DQActionReplace"
+	case DQActionRemove:
+		return "DQActionRemove"
+	}
+	return fmt.Sprintf("DoctorQueueAction(%d)", int(a))
+}
+
 // DoctorQueueUpdate represents a single update to undertake on the doctor queue with the provided action and item
 type DoctorQueueUpdate struct {
 	// Action represents the action to undertake.
@@ -514,9 +526,9 @@ func updateDoctorQueue(tx *sql.Tx, updates []*DoctorQueueUpdate) error {
 }
 
 func deleteItemFromDoctorQueue(tx *sql.Tx, doctorQueueItem *DoctorQueueItem) error {
-	_, err := tx.Exec(`		
-	DELETE FROM doctor_queue		
-	WHERE doctor_id = ? AND item_id = ? AND event_type = ? AND status = ?`,
+	_, err := tx.Exec(`
+		DELETE FROM doctor_queue
+		WHERE doctor_id = ? AND item_id = ? AND event_type = ? AND status = ?`,
 		doctorQueueItem.DoctorID,
 		doctorQueueItem.ItemID,
 		doctorQueueItem.EventType,
