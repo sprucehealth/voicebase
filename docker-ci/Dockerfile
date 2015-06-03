@@ -1,6 +1,6 @@
 FROM ubuntu:latest
 MAINTAINER Spruce Backend <backend@sprucehealth.com>
-RUN apt-get update # Apr 24, 2015
+RUN apt-get update # June 2, 2015
 RUN apt-get -y upgrade
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y install mysql-client-5.6 mysql-server-5.6 \
 	ruby npm nodejs unzip zip curl libelf1 git python-pip python-magic python-dateutil
