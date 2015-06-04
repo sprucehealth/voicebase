@@ -23,6 +23,7 @@ const (
 
 type Condition struct {
 	OperationTag         string       `json:"op,omitempty"`
+	Type                 string       `json:"type,omitempty"`
 	IsServerCondition    bool         `json:"server_condition,omitempty"`
 	GenderField          string       `json:"gender,omitempty"`
 	QuestionTag          string       `json:"question,omitempty"`
@@ -48,6 +49,7 @@ type PotentialAnswer struct {
 	Answer        string                 `json:"potential_answer,omitempty"`
 	AnswerSummary string                 `json:"potential_answer_summary,omitempty"`
 	AnswerType    string                 `json:"answer_type,omitempty"`
+	Type          string                 `json:"type,omitempty"`
 	Ordering      int64                  `json:"ordering,string"`
 	ToAlert       bool                   `json:"to_alert"`
 	AnswerTag     string                 `json:"answer_tag"`
@@ -60,6 +62,7 @@ type Question struct {
 	QuestionTitle                string                 `json:"question_title,omitempty"`
 	QuestionTitleHasTokens       bool                   `json:"question_title_has_tokens"`
 	QuestionType                 string                 `json:"question_type,omitempty"`
+	Type                         string                 `json:"type,omitempty"`
 	FormattedFieldTags           []string               `json:"formatted_field_tags,omitempty"`
 	QuestionSubText              string                 `json:"question_subtext,omitempty"`
 	QuestionSummary              string                 `json:"question_summary,omitempty"`
@@ -101,6 +104,7 @@ type Screen struct {
 	HeaderSummary  string      `json:"header_summary,omitempty"`
 	Questions      []*Question `json:"questions,omitempty"`
 	ScreenType     string      `json:"screen_type,omitempty"`
+	Type           string      `json:"type,omitempty"`
 	ConditionBlock *Condition  `json:"condition,omitempty"`
 
 	// Body represents the screen's body contents used in certain situations to communicate
@@ -126,6 +130,7 @@ type Screen struct {
 }
 
 type Section struct {
+	Type              string      `json:"type,omitempty"`
 	SectionTag        string      `json:"section"`
 	SectionID         string      `json:"section_id,omitempty"`
 	SectionTitle      string      `json:"section_title,omitempty"`
@@ -149,7 +154,7 @@ type Button struct {
 
 type Body struct {
 	Text   string  `json:"text,omitempty"`
-	Button *Button `json:"button,omitempy"`
+	Button *Button `json:"button,omitempty"`
 }
 
 type VisitOverviewHeader struct {

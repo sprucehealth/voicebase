@@ -40,6 +40,8 @@ func fillConditionBlock(c *info_intake.Condition, dataAPI DataAPI, languageID in
 		}
 	}
 
+	c.Type = c.OperationTag
+
 	if c.QuestionTag == "" {
 		return nil
 	}
@@ -71,6 +73,7 @@ func fillConditionBlock(c *info_intake.Condition, dataAPI DataAPI, languageID in
 			return fmt.Errorf("Unknown answer tag '%s' for question '%s'", tag, c.QuestionTag)
 		}
 	}
+
 	return nil
 }
 
@@ -90,6 +93,7 @@ func fillQuestion(q *info_intake.Question, dataAPI DataAPI, languageID int64) er
 	q.QuestionID = questionInfo.QuestionID
 	q.QuestionTitle = questionInfo.QuestionTitle
 	q.QuestionType = questionInfo.QuestionType
+	q.Type = q.QuestionType
 	q.ParentQuestionID = questionInfo.ParentQuestionID
 	q.QuestionSummary = questionInfo.QuestionSummary
 	q.QuestionSubText = questionInfo.QuestionSubText
@@ -142,6 +146,10 @@ func fillQuestion(q *info_intake.Question, dataAPI DataAPI, languageID int64) er
 		return err
 	}
 
+	for i := range q.PotentialAnswers {
+		q.PotentialAnswers[i].Type = q.PotentialAnswers[i].AnswerType
+	}
+
 	// fill in any photo slots into the question
 	// Note that this could be optimized to only query based on the question type
 	// but given the small number of questions currently coupled with the fact that we need to rewrite the implementation
@@ -170,6 +178,14 @@ func fillScreen(s *info_intake.Screen, dataAPI DataAPI, languageID int64) error 
 			}
 		}
 	}
+
+	// assume for now that if the screen type is not defined that it is a screen
+	// containing questions
+	s.Type = "screen_type_questions"
+	if s.ScreenType != "" {
+		s.Type = s.ScreenType
+	}
+
 	return nil
 }
 
@@ -192,6 +208,8 @@ func fillSection(s *info_intake.Section, dataAPI DataAPI, languageID int64) erro
 			return err
 		}
 	}
+
+	s.Type = "section_type_screen_container"
 	return nil
 }
 
