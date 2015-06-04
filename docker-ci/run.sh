@@ -66,17 +66,17 @@ if [[ ! -z "$FULLCOVERAGE" ]]; then
         # For integration tests tell it to check coverage in all packages,
         # but for other packages just check coverage against themselves.
         if [[ "$PKG" == *"/test/"* ]]; then
-            go test -cover -covermode=set -coverprofile="$PKG/cover.out" -coverpkg=$PKGSLIST -test.parallel 8 "$PKG" 2>&1 | grep -v "warning: no packages being tested depend on"
+            go test -cover -covermode=set -coverprofile="$PKG/cover.out" -coverpkg=$PKGSLIST -test.parallel 4 "$PKG" 2>&1 | grep -v "warning: no packages being tested depend on"
         else
-            go test -cover -covermode=set -coverprofile="$PKG/cover.out" -test.parallel 8 "$PKG"
+            go test -cover -covermode=set -coverprofile="$PKG/cover.out" -test.parallel 4 "$PKG"
         fi
     done
 else
     for PKG in $PKGS; do
         if [[ "$PKG" == *"/test/"* ]]; then
-            go test -test.parallel 8 "$PKG"
+            go test -test.parallel 4 "$PKG"
         else
-            go test -cover -covermode=set -coverprofile="$PKG/cover.out" -test.parallel 8 "$PKG"
+            go test -cover -covermode=set -coverprofile="$PKG/cover.out" -test.parallel 4 "$PKG"
         fi
     done
 fi
