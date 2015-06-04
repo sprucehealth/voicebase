@@ -1,8 +1,13 @@
 #!/bin/bash -e
 
+# Start MySQL
 mv /var/lib/mysql /mem/mysql
 ln -s /mem/mysql /var/lib/mysql
 /etc/init.d/mysql start
+
+# Start Consul
+mkdir -p /tmp/consul
+tmux new -d -s consul 'GOMAXPROCS=2 /usr/local/bin/consul agent -data-dir /tmp/consul -bootstrap -server'
 
 export PATH=/usr/local/go/bin:$PATH
 export CF_LOCAL_DB_INSTANCE=127.0.0.1
@@ -11,6 +16,7 @@ export CF_LOCAL_DB_USERNAME=root
 export CF_LOCAL_DB_PASSWORD=
 export DOSESPOT_USER_ID=407
 export USER=`whoami`
+export TEST_CONSUL_ADDRESS=127.0.0.1:8500
 
 export GOPATH=/workspace/go
 export PATH=$GOPATH/bin:$PATH
