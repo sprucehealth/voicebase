@@ -14,8 +14,9 @@ import (
 	"github.com/sprucehealth/backend/libs/sig"
 )
 
+var workerPeriod = time.Minute * 15
+
 type Worker struct {
-	campaigns             []campaign
 	cfgStore              cfg.Store
 	dataAPI               api.DataAPI
 	emailService          email.Service
@@ -29,9 +30,6 @@ type Worker struct {
 
 func NewWorker(dataAPI api.DataAPI, emailService email.Service, webDomain string, signer *sig.Signer, cfgStore cfg.Store, lock api.LockAPI, metricsRegistry metrics.Registry) *Worker {
 	w := &Worker{
-		campaigns: []campaign{
-			newAbandonedVisitCampaign(dataAPI, cfgStore),
-		},
 		cfgStore:              cfgStore,
 		dataAPI:               dataAPI,
 		emailService:          emailService,
@@ -50,7 +48,7 @@ func NewWorker(dataAPI api.DataAPI, emailService email.Service, webDomain string
 func (w *Worker) Start() {
 	go func() {
 		defer w.lock.Release()
-		tc := time.NewTicker(time.Hour)
+		tc := time.NewTicker(workerPeriod)
 		for {
 			if !w.lock.Wait() {
 				return
@@ -76,42 +74,28 @@ func (w *Worker) Stop() {
 
 func (w *Worker) Do() error {
 	snap := w.cfgStore.Snapshot()
-	for _, c := range w.campaigns {
-		ci, err := c.Run(snap)
+	for _, c := range CampaignRegistry {
+		ci, err := c.Run(w.dataAPI, snap)
 		if err != nil {
 			w.statCampaignFailed.Inc(1)
 			golog.Errorf("Failed to run email campaign %T: %s", c, err)
 			continue
 		}
 		w.statCampaignSucceeded.Inc(1)
-		if ci != nil && len(ci.accounts) != 0 {
-			to := make([]int64, 0, len(ci.accounts))
-			for id := range ci.accounts {
+		if ci != nil && len(ci.Accounts) != 0 {
+			to := make([]int64, 0, len(ci.Accounts))
+			for id := range ci.Accounts {
 				to = append(to, id)
-				sig, err := w.signer.Sign([]byte("optout:" + strconv.FormatInt(id, 10)))
-				if err != nil {
-					golog.Errorf("Failed to generate optout signature: %s", err)
-				} else {
-					ci.accounts[id] = append(ci.accounts[id],
-						mandrill.Var{
-							Name: "OptoutURL",
-							Content: "https://" + w.webDomain + "/e/optout?" + url.Values{
-								"type": []string{ci.emailType},
-								"id":   []string{strconv.FormatInt(id, 10)},
-								"sig":  []string{string(sig)},
-							}.Encode(),
-						},
-					)
-				}
+				ci.Accounts[id] = append(ci.Accounts[id], VarsForAccount(id, c.Key(), w.signer, w.webDomain)...)
 			}
-			if ci.msg == nil {
-				ci.msg = &mandrill.Message{}
+			if ci.Msg == nil {
+				ci.Msg = &mandrill.Message{}
 			}
-			res, err := w.emailService.Send(to, ci.emailType, ci.accounts, ci.msg, email.CanOptOut|email.Async|email.OnlyOnce)
+			res, err := w.emailService.Send(to, c.Key(), ci.Accounts, ci.Msg, email.CanOptOut|email.Async|email.OnlyOnce)
 			if err != nil {
 				golog.Errorf("Failed to send email for campaign %T (%+v): %s", c, res, err)
 			}
-			if err := w.dataAPI.EmailRecordSend(to, ci.emailType); err != nil {
+			if err := w.dataAPI.EmailRecordSend(to, c.Key()); err != nil {
 				golog.Errorf("Failed to record email send for campaign %T: %s", c, err)
 			}
 		}
@@ -119,9 +103,20 @@ func (w *Worker) Do() error {
 	return nil
 }
 
-// Reset is used by tests to reset the campaigns
-func (w *Worker) Reset() {
-	for _, c := range w.campaigns {
-		c.Reset()
+func VarsForAccount(accountID int64, campaignKey string, signer *sig.Signer, webDomain string) []mandrill.Var {
+	sig, err := signer.Sign([]byte("optout:" + strconv.FormatInt(accountID, 10)))
+	if err != nil {
+		golog.Errorf("Failed to generate optout signature: %s", err)
+		return nil
+	}
+	return []mandrill.Var{
+		{
+			Name: "OptoutURL",
+			Content: "https://" + webDomain + "/e/optout?" + url.Values{
+				"type": []string{campaignKey},
+				"id":   []string{strconv.FormatInt(accountID, 10)},
+				"sig":  []string{string(sig)},
+			}.Encode(),
+		},
 	}
 }

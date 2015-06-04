@@ -325,6 +325,12 @@ func SetupRoutes(r *mux.Router, config *Config) {
 				httputil.Patch: []string{PermPathwaysEdit},
 			},
 			NewDiagnosisSetsHandler(config.DataAPI, config.DiagnosisAPI), nil)))
+	r.Handle(`/admin/api/email/test`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				httputil.Post: []string{PermEmailEdit},
+			},
+			NewEmailTestSendHandler(config.EmailService, config.Signer, config.WebDomain), nil)))
 
 	// Layout CMS APIS
 	r.Handle(`/admin/api/layouts/versioned_question`, apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,

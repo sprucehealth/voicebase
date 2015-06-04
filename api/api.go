@@ -285,7 +285,7 @@ type PatientVisitAPI interface {
 	GetTreatmentPlan(treatmentPlanID, doctorID int64) (*common.TreatmentPlan, error)
 	GetAbridgedTreatmentPlanList(doctorID, patientCaseID int64, statuses []common.TreatmentPlanStatus) ([]*common.TreatmentPlan, error)
 	GetAbridgedTreatmentPlanListInDraftForDoctor(doctorID, patientCaseID int64) ([]*common.TreatmentPlan, error)
-	VisitSummaries(visitStatuses []string, from, to time.Time) ([]*common.VisitSummary, error)
+	VisitSummaries(visitStatuses []string, createdFrom, createdTo time.Time) ([]*common.VisitSummary, error)
 	VisitSummary(visitID int64) (*common.VisitSummary, error)
 
 	// diagnosis set related apis
@@ -745,6 +745,11 @@ type EmailAPI interface {
 	EmailRecipients(accountIDs []int64) ([]*Recipient, error)
 	EmailRecipientsWithOptOut(accountIDs []int64, emailType string, onlyOnce bool) ([]*Recipient, error)
 	EmailRecordSend(accountIDs []int64, emailType string) error
+	// EmailCampaignState returns the state data for an email campaign. If there's no
+	// existing data then it will return nil data and a nil error.
+	EmailCampaignState(campaignKey string) ([]byte, error)
+	// UpdateEmailCampaignState updates the state data for an email campaign.
+	UpdateEmailCampaignState(campaignKey string, state []byte) error
 }
 
 type ScheduledMessageAPI interface {

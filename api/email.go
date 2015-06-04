@@ -106,3 +106,18 @@ func (d *DataService) EmailRecordSend(accountIDs []int64, emailType string) erro
 		VALUES `+strings.Join(reps, ","), vals...)
 	return err
 }
+
+func (d *DataService) EmailCampaignState(key string) ([]byte, error) {
+	var data []byte
+	row := d.db.QueryRow(`SELECT "data" FROM email_campaign_state WHERE "key" = ?`, key)
+	err := row.Scan(&data)
+	if err == sql.ErrNoRows {
+		err = nil
+	}
+	return data, err
+}
+
+func (d *DataService) UpdateEmailCampaignState(key string, state []byte) error {
+	_, err := d.db.Exec(`REPLACE INTO email_campaign_state ("key", "data")  VALUES (?, ?)`, key, state)
+	return err
+}

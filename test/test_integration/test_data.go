@@ -333,7 +333,10 @@ func setupTest() (*TestData, error) {
 		return nil, err
 	}
 
-	cfgStore := cfg.NewLocalStore()
+	cfgStore, err := cfg.NewLocalStore(config.CfgDefs())
+	if err != nil {
+		return nil, err
+	}
 	dataAPI, err := api.NewDataService(db, cfgStore, metrics.NewRegistry())
 	if err != nil {
 		return nil, err
@@ -401,7 +404,7 @@ func setupTest() (*TestData, error) {
 		EmailService:        testData.EmailService,
 		SMSAPI:              testData.SMSAPI,
 		TwoFactorExpiration: 60,
-		Cfg:                 cfg.NewLocalStore(),
+		Cfg:                 cfgStore,
 		ApplicationDB:       testData.DB,
 	}
 
@@ -425,7 +428,7 @@ func setupTest() (*TestData, error) {
 			"medicalrecords": storage.NewTestStore(nil),
 		},
 		MediaStore: media.NewStore("http://example.com"+apipaths.MediaURLPath, signer, storage.NewTestStore(nil)),
-		Cfg:        cfg.NewLocalStore(),
+		Cfg:        cfgStore,
 	}
 
 	return testData, nil

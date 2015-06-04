@@ -29,14 +29,26 @@ type consulStore struct {
 	updateMu         sync.Mutex // serializes updates
 }
 
-func NewConsulStore(cli *api.Client, key string, metricsRegistry metrics.Registry) (Store, error) {
-	cs := newConsulStore(cli, key, metricsRegistry)
+// NewConsulStore returns a Store that uses Consul as the backing storage for config
+// values. Any instance of the Consul Store that uses the same cluster and key sees the
+// same set of values regardless of which one does the Update. Values propogate using
+// watches in the shared value so value should propagate quickly baring any breaks in
+// the Consul cluster.
+func NewConsulStore(cli *api.Client, key string, defs []*ValueDef, metricsRegistry metrics.Registry) (Store, error) {
+	cs, err := newConsulStore(cli, key, defs, metricsRegistry)
+	if err != nil {
+		return nil, err
+	}
 	return cs, cs.start()
 }
 
-func newConsulStore(cli *api.Client, key string, metricsRegistry metrics.Registry) *consulStore {
+func newConsulStore(cli *api.Client, key string, defs []*ValueDef, metricsRegistry metrics.Registry) (*consulStore, error) {
+	ls, err := NewLocalStore(defs)
+	if err != nil {
+		return nil, err
+	}
 	cs := &consulStore{
-		localStore:       NewLocalStore().(*localStore),
+		localStore:       ls.(*localStore),
 		cli:              cli,
 		key:              key,
 		stopCh:           make(chan struct{}),
@@ -46,7 +58,7 @@ func newConsulStore(cli *api.Client, key string, metricsRegistry metrics.Registr
 	}
 	metricsRegistry.Add("updates", cs.statUpdates)
 	metricsRegistry.Add("consul/error", cs.statConsulErrors)
-	return cs
+	return cs, nil
 }
 
 func (cs *consulStore) start() error {

@@ -32,7 +32,10 @@ func newConsulClient(t *testing.T) *api.Client {
 func TestConsulStore(t *testing.T) {
 	cli := newConsulClient(t)
 	key := fmt.Sprintf("test/cfg/%d", rand.Int())
-	store := newConsulStore(cli, key, metrics.NewRegistry())
+	store, err := newConsulStore(cli, key, nil, metrics.NewRegistry())
+	if err != nil {
+		t.Fatal(err)
+	}
 	store.testCh = make(chan Snapshot, 64)
 	if err := store.start(); err != nil {
 		t.Fatal(err)
@@ -88,7 +91,7 @@ func TestConsulStore(t *testing.T) {
 
 	// Make sure changes propagate across connections
 
-	store2, err := NewConsulStore(cli, key, metrics.NewRegistry())
+	store2, err := NewConsulStore(cli, key, nil, metrics.NewRegistry())
 	if err != nil {
 		t.Fatal(err)
 	}

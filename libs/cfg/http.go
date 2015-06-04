@@ -20,6 +20,7 @@ func HTTPHandler(h http.Handler, store Store) http.Handler {
 	})
 }
 
+// Context returns the Snapshot of config values for an HTTP request.
 func Context(r *http.Request) Snapshot {
 	return context.Get(r, contextKey).(Snapshot)
 }
