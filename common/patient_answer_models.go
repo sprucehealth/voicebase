@@ -13,6 +13,7 @@ type Answer interface {
 type AnswerIntake struct {
 	AnswerIntakeID    encoding.ObjectID `json:"answer_id,omitempty"`
 	QuestionID        encoding.ObjectID `json:"question_id,omitempty"`
+	Type              string            `json:"type,omitempty"`
 	RoleID            encoding.ObjectID `json:"-"`
 	Role              string            `json:"-"`
 	ContextID         encoding.ObjectID `json:"-"`
@@ -38,6 +39,7 @@ func (a *AnswerIntake) getQuestionID() int64 {
 type PhotoIntakeSection struct {
 	ID           int64              `json:"-"`
 	QuestionID   int64              `json:"-"`
+	Type         string             `json:"type"`
 	Name         string             `json:"name,omitempty"`
 	Photos       []*PhotoIntakeSlot `json:"photos,omitempty"`
 	CreationDate time.Time          `json:"creation_date"`

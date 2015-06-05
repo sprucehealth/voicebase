@@ -20,11 +20,12 @@ func (d *DataService) AnswersForQuestions(questionIDs []int64, info IntakeInfo) 
 	vals = append(vals, info.Role().Value, info.Context().Value)
 
 	return d.getAnswersForQuestionsBasedOnQuery(`
-		SELECT i.id, i.question_id, potential_answer_id, potential_answer.answer_text, potential_answer.answer_summary_text, i.answer_text,
-			layout_version_id, parent_question_id, parent_info_intake_id
+		SELECT i.id, i.question_id, question.question_type, potential_answer_id, potential_answer.answer_text, potential_answer.answer_summary_text, i.answer_text,
+			layout_version_id, i.parent_question_id, parent_info_intake_id
 		FROM `+info.TableName()+` as i
 		LEFT OUTER JOIN potential_answer ON potential_answer_id = potential_answer.id
-		WHERE (i.question_id in (`+replacements+`) OR parent_question_id in (`+replacements+`))
+		INNER JOIN question ON question.id = i.question_id
+		WHERE (i.question_id in (`+replacements+`) OR i.parent_question_id in (`+replacements+`))
 		AND `+info.Role().Column+` = ? and `+info.Context().Column+` = ?`, vals...)
 }
 
@@ -43,7 +44,7 @@ func (d *DataService) PreviousPatientAnswersForQuestions(
 	vals = append(vals, patientID, beforeTime, beforeTime)
 
 	questionIDToAnswersMap, err := d.getAnswersForQuestionsBasedOnQuery(`
-		SELECT i.id, i.question_id, potential_answer_id, potential_answer.answer_text, potential_answer.answer_summary_text, i.answer_text,
+		SELECT i.id, i.question_id, q.question_type, potential_answer_id, potential_answer.answer_text, potential_answer.answer_summary_text, i.answer_text,
 			i.layout_version_id, i.parent_question_id, i.parent_info_intake_id
 		FROM info_intake as i
 		LEFT OUTER JOIN potential_answer ON potential_answer_id = potential_answer.id
@@ -249,8 +250,9 @@ func (d *DataService) PatientPhotoSectionsForQuestionIDs(
 	params = append(params, patientVisitID)
 
 	rows, err := d.db.Query(`
-		SELECT id, question_id, section_name, creation_date
+		SELECT photo_intake_section.id, question_id, question_type, section_name, creation_date
 		FROM photo_intake_section
+		INNER JOIN question ON question.id = question_id
 		WHERE patient_id = ?
 		AND question_id in (`+dbutil.MySQLArgs(len(questionIDs))+`)
 		AND patient_visit_id = ?`, params...)
@@ -264,6 +266,7 @@ func (d *DataService) PatientPhotoSectionsForQuestionIDs(
 		if err := rows.Scan(
 			&photoIntakeSection.ID,
 			&photoIntakeSection.QuestionID,
+			&photoIntakeSection.Type,
 			&photoIntakeSection.Name,
 			&photoIntakeSection.CreationDate); err != nil {
 			return nil, err
@@ -550,6 +553,7 @@ func (d *DataService) getAnswersForQuestionsBasedOnQuery(query string, args ...i
 		if err := rows.Scan(
 			&patientAnswerToQuestion.AnswerIntakeID,
 			&patientAnswerToQuestion.QuestionID,
+			&patientAnswerToQuestion.Type,
 			&patientAnswerToQuestion.PotentialAnswerID,
 			&potentialAnswer,
 			&answerSummaryText,
