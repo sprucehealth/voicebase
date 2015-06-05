@@ -3,12 +3,12 @@ package notify
 import (
 	"sort"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/email"
-	"github.com/sprucehealth/backend/libs/aws/sns"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/mandrill"
 )
@@ -18,7 +18,7 @@ import (
 type NotificationManager struct {
 	dataAPI             api.DataAPI
 	authAPI             api.AuthAPI
-	snsClient           sns.SNSService
+	snsClient           snsiface.SNSAPI
 	smsAPI              api.SMSAPI
 	emailService        email.Service
 	fromNumber          string
@@ -31,7 +31,7 @@ type NotificationManager struct {
 	statEmailFailed     *metrics.Counter
 }
 
-func NewManager(dataAPI api.DataAPI, authAPI api.AuthAPI, snsClient sns.SNSService, smsAPI api.SMSAPI, emailService email.Service, fromNumber string, notificationConfigs *config.NotificationConfigs, statsRegistry metrics.Registry) *NotificationManager {
+func NewManager(dataAPI api.DataAPI, authAPI api.AuthAPI, snsClient snsiface.SNSAPI, smsAPI api.SMSAPI, emailService email.Service, fromNumber string, notificationConfigs *config.NotificationConfigs, statsRegistry metrics.Registry) *NotificationManager {
 	manager := &NotificationManager{
 		dataAPI:             dataAPI,
 		authAPI:             authAPI,

@@ -10,7 +10,7 @@ import (
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/aws/sns"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/messages"
@@ -95,7 +95,7 @@ func testCaseAssignment(t *testing.T, role string) {
 		},
 	}
 
-	notifyManager := notify.NewManager(m, a, &sns.MockSNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
+	notifyManager := notify.NewManager(m, a, &awsutil.SNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
 
 	dispatcher := dispatch.New()
 	ls, err := cfg.NewLocalStore(config.CfgDefs())
@@ -204,7 +204,7 @@ func TestCaseAssignment_Multiple(t *testing.T) {
 		},
 	}
 
-	notifyManager := notify.NewManager(m, a, &sns.MockSNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
+	notifyManager := notify.NewManager(m, a, &awsutil.SNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
 	dispatcher := dispatch.New()
 	ls, err := cfg.NewLocalStore(config.CfgDefs())
 	if err != nil {
@@ -278,7 +278,7 @@ func TestCaseAssignment_Doctor_DeleteOnTP(t *testing.T) {
 		},
 	}
 
-	notifyManager := notify.NewManager(m, a, &sns.MockSNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
+	notifyManager := notify.NewManager(m, a, &awsutil.SNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
 
 	dispatcher := dispatch.New()
 	ls, err := cfg.NewLocalStore(config.CfgDefs())
@@ -322,7 +322,7 @@ func TestCaseAssignment_Doctor_PersistsInInbox(t *testing.T) {
 		},
 	}
 
-	notifyManager := notify.NewManager(m, a, &sns.MockSNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
+	notifyManager := notify.NewManager(m, a, &awsutil.SNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
 
 	dispatcher := dispatch.New()
 	ls, err := cfg.NewLocalStore(config.CfgDefs())
@@ -417,7 +417,7 @@ func testMessage_PatientToCareTeam(t *testing.T, assignments []*common.CareProvi
 		},
 	}
 
-	notifyManager := notify.NewManager(m, a, &sns.MockSNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
+	notifyManager := notify.NewManager(m, a, &awsutil.SNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
 
 	dispatcher := dispatch.New()
 	ls, err := cfg.NewLocalStore(config.CfgDefs())
@@ -487,7 +487,7 @@ func TestMessage_PatientToCareTeam_Multiple(t *testing.T) {
 		},
 	}
 
-	notifyManager := notify.NewManager(m, a, &sns.MockSNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
+	notifyManager := notify.NewManager(m, a, &awsutil.SNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
 
 	dispatcher := dispatch.New()
 	ls, err := cfg.NewLocalStore(config.CfgDefs())
@@ -548,7 +548,7 @@ func testMessage_ProviderToPatient(t *testing.T, role string) {
 		},
 	}
 
-	notifyManager := notify.NewManager(m, a, &sns.MockSNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
+	notifyManager := notify.NewManager(m, a, &awsutil.SNS{}, &nullSMSAPI{}, nil, "", nil, metrics.NewRegistry())
 
 	dispatcher := dispatch.New()
 	ls, err := cfg.NewLocalStore(config.CfgDefs())

@@ -10,8 +10,8 @@ import (
 var ErrNoObject = errors.New("storage: no object")
 
 type Store interface {
-	Put(name string, data []byte, headers http.Header) (string, error)
-	PutReader(name string, r io.Reader, size int64, headers http.Header) (string, error)
+	Put(name string, data []byte, contentType string, meta map[string]string) (string, error)
+	PutReader(name string, r io.ReadSeeker, size int64, contentType string, meta map[string]string) (string, error)
 	Get(id string) ([]byte, http.Header, error)
 	GetReader(id string) (io.ReadCloser, http.Header, error)
 	SignedURL(id string, expires time.Duration) (string, error)

@@ -4,25 +4,26 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
-	"github.com/sprucehealth/backend/libs/aws/sns"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type notificationHandler struct {
 	dataAPI             api.DataAPI
 	notificationConfigs *config.NotificationConfigs
-	snsClient           sns.SNSService
+	snsClient           snsiface.SNSAPI
 }
 
 type requestData struct {
 	DeviceToken string `schema:"device_token,required" json:"device_token"`
 }
 
-func NewNotificationHandler(dataAPI api.DataAPI, configs *config.NotificationConfigs, snsClient sns.SNSService) http.Handler {
+func NewNotificationHandler(dataAPI api.DataAPI, configs *config.NotificationConfigs, snsClient snsiface.SNSAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&notificationHandler{
@@ -74,11 +75,15 @@ func (n *notificationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	// if the device token exists and has changed, register the device token for the user to get the application endpoint
 	if existingPushConfigData == nil || rData.DeviceToken != existingPushConfigData.DeviceToken {
-		pushEndpoint, err = n.snsClient.CreatePlatformEndpoint(notificationConfig.SNSApplicationEndpoint, rData.DeviceToken)
+		res, err := n.snsClient.CreatePlatformEndpoint(&sns.CreatePlatformEndpointInput{
+			PlatformApplicationARN: &notificationConfig.SNSApplicationEndpoint,
+			Token: &rData.DeviceToken,
+		})
 		if err != nil {
 			apiservice.WriteError(errors.New("Unable to register token for push notifications: "+err.Error()), w, r)
 			return
 		}
+		pushEndpoint = *res.EndpointARN
 	}
 
 	newPushConfigData := &common.PushConfigData{

@@ -1,7 +1,9 @@
 package main
 
 import (
-	"github.com/sprucehealth/backend/libs/aws/sns"
+	"encoding/json"
+
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/patient"
@@ -14,8 +16,17 @@ type snsNotification struct {
 
 func initNotifyListener(disp *dispatch.Dispatcher, snsCli *sns.SNS, topic string) {
 	note := &snsNotification{Default: "VisitSubmitted", HTTP: "party/time"}
+	noteJSONBytes, err := json.Marshal(note)
+	if err != nil {
+		panic(err)
+	}
+	noteJSON := string(noteJSONBytes)
 	disp.SubscribeAsync(func(ev *patient.VisitSubmittedEvent) error {
-		if err := snsCli.Publish(note, topic); err != nil {
+		_, err := snsCli.Publish(&sns.PublishInput{
+			Message:   &noteJSON,
+			TargetARN: &topic,
+		})
+		if err != nil {
 			golog.Warningf("SNS notification failed for party time: %s", err.Error())
 		}
 		return nil

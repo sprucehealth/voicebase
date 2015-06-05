@@ -7,17 +7,19 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/s3"
 	_ "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 	_ "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/lib/pq"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-librato/librato"
-	"github.com/sprucehealth/backend/libs/aws"
-	"github.com/sprucehealth/backend/libs/aws/s3"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -48,7 +50,7 @@ type appConfig struct {
 	LibratoToken    string
 	LibratoSource   string
 
-	awsAuth aws.Auth
+	awsConfig *aws.Config
 }
 
 var config = &appConfig{}
@@ -88,20 +90,18 @@ func (c *appConfig) verify() {
 		log.Fatalf("db.sslmode is required")
 	}
 
+	var creds *credentials.Credentials
 	if c.AWSAccessKey != "" && c.AWSSecretKey != "" {
-		c.awsAuth = aws.Keys{
-			AccessKey: c.AWSAccessKey,
-			SecretKey: c.AWSSecretKey,
-			Token:     c.AWSToken,
-		}
-	} else if keys := aws.KeysFromEnvironment(); keys.AccessKey != "" {
-		c.awsAuth = keys
+		creds = credentials.NewStaticCredentials(c.AWSAccessKey, c.AWSSecretKey, c.AWSToken)
 	} else {
-		var err error
-		c.awsAuth, err = aws.CredentialsForRole("")
-		if err != nil {
-			log.Fatal(err)
+		creds = credentials.NewEnvCredentials()
+		if v, err := creds.Get(); err != nil || v.AccessKeyID == "" || v.SecretAccessKey == "" {
+			creds = credentials.NewEC2RoleCredentials(http.DefaultClient, "", time.Minute*10)
 		}
+	}
+	c.awsConfig = &aws.Config{
+		Region:      "us-east-1",
+		Credentials: creds,
 	}
 }
 
@@ -192,12 +192,7 @@ func main() {
 			log.Fatalf("Failed to ping MySQL: %s", err.Error())
 		}
 
-		s3c := &s3.S3{
-			Region: aws.USEast,
-			Client: &aws.Client{
-				Auth: config.awsAuth,
-			},
-		}
+		s3c := s3.New(config.awsConfig)
 
 		u, err := url.Parse(config.TransformS3URL)
 		if err != nil {
@@ -299,10 +294,13 @@ func loadEvents(db *sql.DB, schemaFile, category, s3Path string, date time.Time)
 		return err
 	}
 
-	keys := config.awsAuth.Keys()
-	credentials := fmt.Sprintf("aws_access_key_id=%s;aws_secret_access_key=%s", keys.AccessKey, keys.SecretKey)
-	if keys.Token != "" {
-		credentials += ";token=" + keys.Token
+	keys, err := config.awsConfig.Credentials.Get()
+	if err != nil {
+		return fmt.Errorf("failed to get AWS keys: %s", err)
+	}
+	credentials := fmt.Sprintf("aws_access_key_id=%s;aws_secret_access_key=%s", keys.AccessKeyID, keys.SecretAccessKey)
+	if keys.SessionToken != "" {
+		credentials += ";token=" + keys.SessionToken
 	}
 
 	golog.Debugf("Importing data...")

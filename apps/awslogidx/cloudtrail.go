@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sprucehealth/backend/libs/aws/cloudtrail"
-	"github.com/sprucehealth/backend/libs/aws/sns"
-	"github.com/sprucehealth/backend/libs/aws/sqs"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/s3"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -17,38 +17,40 @@ var (
 )
 
 func startCloudTrailIndexer(es *ElasticSearch) error {
-	sq := &sqs.SQS{
-		Region: region,
-		Client: awsClient,
-	}
+	sq := sqs.New(awsConfig)
 
-	queueURL, err := sq.GetQueueURL(*cloudTrailSQSQueue, "")
+	res, err := sq.GetQueueURL(&sqs.GetQueueURLInput{QueueName: cloudTrailSQSQueue})
 	if err != nil {
 		return err
 	}
+	queueURL := *res.QueueURL
 
-	visibilityTimeout := 120
-	waitTimeSeconds := 20
+	visibilityTimeout := int64(120)
+	waitTimeSeconds := int64(20)
 	go func() {
 		for {
-			msgs, err := sq.ReceiveMessage(queueURL, nil, 1, visibilityTimeout, waitTimeSeconds)
+			res, err := sq.ReceiveMessage(&sqs.ReceiveMessageInput{
+				QueueURL:          &queueURL,
+				VisibilityTimeout: &visibilityTimeout,
+				WaitTimeSeconds:   &waitTimeSeconds,
+			})
 			if err != nil {
 				golog.Errorf("SQS ReceiveMessage failed: %+v", err)
 				time.Sleep(time.Minute)
 				continue
 			}
-			if len(msgs) == 0 {
+			if len(res.Messages) == 0 {
 				// log.Println("No message received, sleeping")
 				time.Sleep(time.Minute)
 				continue
 			}
-			for _, m := range msgs {
-				var note sns.SQSMessage
-				if err := json.Unmarshal([]byte(m.Body), &note); err != nil {
+			for _, m := range res.Messages {
+				var note awsutil.SNSSQSMessage
+				if err := json.Unmarshal([]byte(*m.Body), &note); err != nil {
 					golog.Errorf("Failed to unmarshal SNS notification from SQS Body: %+v", err)
 					continue
 				}
-				var ctNote cloudtrail.SNSNotification
+				var ctNote awsutil.CloudTrailSNSNotification
 				if err := json.Unmarshal([]byte(note.Message), &ctNote); err != nil {
 					golog.Errorf("Failed to unmarshal CloudTrail notification from SNS message: %+v", err)
 					continue
@@ -56,13 +58,17 @@ func startCloudTrailIndexer(es *ElasticSearch) error {
 
 				failed := 0
 				for _, path := range ctNote.S3ObjectKey {
-					rd, _, err := s3Client.GetReader(ctNote.S3Bucket, path)
+					res, err := s3Client.GetObject(&s3.GetObjectInput{
+						Bucket: &ctNote.S3Bucket,
+						Key:    &path,
+					})
 					if err != nil {
 						golog.Errorf("Failed to fetch log from S3 (%s:%s): %+v", ctNote.S3Bucket, path, err)
 						failed++
 						continue
 					}
-					var ct cloudtrail.Log
+					rd := res.Body
+					var ct awsutil.CloudTrailLog
 					err = json.NewDecoder(rd).Decode(&ct)
 					rd.Close()
 					if err != nil {
@@ -109,7 +115,11 @@ func startCloudTrailIndexer(es *ElasticSearch) error {
 					}
 				}
 				if failed == 0 {
-					if err := sq.DeleteMessage(queueURL, m.ReceiptHandle); err != nil {
+					_, err := sq.DeleteMessage(&sqs.DeleteMessageInput{
+						QueueURL:      &queueURL,
+						ReceiptHandle: m.ReceiptHandle,
+					})
+					if err != nil {
 						golog.Errorf("Failed to delete message: %+v", err)
 					}
 				}

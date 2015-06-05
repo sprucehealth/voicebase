@@ -1,13 +1,16 @@
 package main
 
 import (
-	"errors"
 	"flag"
+	"net/http"
 	"os"
+	"time"
 
-	"github.com/sprucehealth/backend/libs/aws"
-	"github.com/sprucehealth/backend/libs/aws/cloudwatchlogs"
-	"github.com/sprucehealth/backend/libs/aws/s3"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/s3"
+	"github.com/sprucehealth/backend/libs/awsutil"
 )
 
 var (
@@ -16,40 +19,27 @@ var (
 	awsRole      = flag.String("aws_role", "", "AWS Role")
 	awsRegion    = flag.String("aws_region", "", "AWS Region")
 
-	region    aws.Region
-	awsClient *aws.Client
+	awsConfig *aws.Config
 	s3Client  *s3.S3
-	cwlClient *cloudwatchlogs.Client
+	cwlClient *cloudwatchlogs.CloudWatchLogs
 )
 
 func setupAWS() error {
-	var auth aws.Auth
+	var awsConfig *aws.Config
 
+	var creds *credentials.Credentials
 	if *awsRole == "" {
 		*awsRole = os.Getenv("AWS_ROLE")
 	}
 	if *awsRole != "" || *awsRole == "*" {
-		var err error
-		auth, err = aws.CredentialsForRole(*awsRole)
-		if err != nil {
-			return err
-		}
+		creds = credentials.NewEC2RoleCredentials(http.DefaultClient, "", time.Minute*10)
+	} else if *awsAccessKey != "" && *awsSecretKey != "" {
+		creds = credentials.NewStaticCredentials(*awsAccessKey, *awsSecretKey, "")
 	} else {
-		keys := aws.Keys{
-			AccessKey: *awsAccessKey,
-			SecretKey: *awsSecretKey,
-		}
-		if keys.AccessKey == "" || keys.SecretKey == "" {
-			keys = aws.KeysFromEnvironment()
-		}
-		if keys.AccessKey == "" || keys.SecretKey == "" {
-			return errors.New("No AWS credentials or role set")
-		}
-		auth = keys
+		creds = credentials.NewEnvCredentials()
 	}
-
 	if *awsRegion == "" {
-		az, err := aws.GetMetadata(aws.MetadataAvailabilityZone)
+		az, err := awsutil.GetMetadata(awsutil.MetadataAvailabilityZone)
 		if err != nil {
 			return err
 		}
@@ -57,25 +47,11 @@ func setupAWS() error {
 		*awsRegion = az[:len(az)-1]
 	}
 
-	var ok bool
-	region, ok = aws.Regions[*awsRegion]
-	if !ok {
-		return errors.New("Unknown region " + *awsRegion)
+	awsConfig = &aws.Config{
+		Credentials: creds,
+		Region:      *awsRegion,
 	}
-
-	awsClient = &aws.Client{
-		Auth: auth,
-	}
-
-	s3Client = &s3.S3{
-		Region: region,
-		Client: awsClient,
-	}
-
-	cwlClient = &cloudwatchlogs.Client{
-		Region: aws.USEast,
-		Client: awsClient,
-	}
-
+	s3Client = s3.New(awsConfig)
+	cwlClient = cloudwatchlogs.New(awsConfig)
 	return nil
 }

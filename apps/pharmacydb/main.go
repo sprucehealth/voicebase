@@ -11,12 +11,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/s3"
 	consulapi "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/hashicorp/consul/api"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/reporter"
 	"github.com/sprucehealth/backend/consul"
-	"github.com/sprucehealth/backend/libs/aws"
-	"github.com/sprucehealth/backend/libs/aws/s3"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -74,15 +76,28 @@ func main() {
 		golog.Fatalf(err.Error())
 	}
 
-	s3Client := &s3.S3{
-		Region: aws.Regions[*awsRegion],
-		Client: &aws.Client{
-			Auth: aws.Keys{
-				AccessKey: *awsAccessKey,
-				SecretKey: *awsSecretKey,
-			},
-		},
+	var creds *credentials.Credentials
+	if *awsAccessKey != "" && *awsSecretKey != "" {
+		creds = credentials.NewStaticCredentials(*awsAccessKey, *awsSecretKey, "")
+	} else {
+		creds = credentials.NewEnvCredentials()
+		if v, err := creds.Get(); err != nil || v.AccessKeyID == "" || v.SecretAccessKey == "" {
+			creds = credentials.NewEC2RoleCredentials(http.DefaultClient, "", time.Minute*10)
+		}
 	}
+	if *awsRegion == "" {
+		az, err := awsutil.GetMetadata(awsutil.MetadataAvailabilityZone)
+		if err != nil {
+			log.Fatalf("no region specified and failed to get from instance metadata: %+v", err)
+		}
+		*awsRegion = az[:len(az)-1]
+	}
+
+	awsConfig := &aws.Config{
+		Credentials: creds,
+		Region:      *awsRegion,
+	}
+	s3Client := s3.New(awsConfig)
 
 	consulClient, err := consulapi.NewClient(&consulapi.Config{
 		Address:    *consulAddress,

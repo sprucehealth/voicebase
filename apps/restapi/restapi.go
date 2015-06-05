@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
 	"github.com/sprucehealth/backend/address"
@@ -26,9 +27,7 @@ import (
 	"github.com/sprucehealth/backend/email/campaigns"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/events"
-	"github.com/sprucehealth/backend/libs/aws"
-	"github.com/sprucehealth/backend/libs/aws/sns"
-	"github.com/sprucehealth/backend/libs/aws/sqs"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
@@ -68,10 +67,7 @@ func buildRESTAPI(
 	metricsRegistry metrics.Registry,
 	applicationDB *sql.DB,
 ) http.Handler {
-	awsAuth, err := conf.AWSAuth()
-	if err != nil {
-		log.Fatalf("Failed to get AWS auth: %+v", err)
-	}
+	awsConfig := conf.AWS()
 
 	surescriptsPharmacySearch, err := pharmacy.NewSurescriptsPharmacySearch(conf.PharmacyDB)
 	if err != nil {
@@ -85,13 +81,13 @@ func buildRESTAPI(
 	var erxStatusQueue *common.SQSQueue
 	if conf.ERxStatusQueue != "" {
 		var err error
-		erxStatusQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxStatusQueue)
+		erxStatusQueue, err = common.NewQueue(awsConfig, conf.ERxStatusQueue)
 		if err != nil {
 			log.Fatalf("Unable to get erx queue for sending prescriptions to: %s", err.Error())
 		}
 	} else if conf.Debug {
 		erxStatusQueue = &common.SQSQueue{
-			QueueService: &sqs.Mock{},
+			QueueService: &awsutil.SQS{},
 			QueueURL:     "ERxStatusQueue",
 		}
 	} else if conf.ERxRouting {
@@ -101,13 +97,13 @@ func buildRESTAPI(
 	var erxRoutingQueue *common.SQSQueue
 	if conf.ERxRoutingQueue != "" {
 		var err error
-		erxRoutingQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.ERxRoutingQueue)
+		erxRoutingQueue, err = common.NewQueue(awsConfig, conf.ERxRoutingQueue)
 		if err != nil {
 			log.Fatalf("Unable to get erx queue for sending prescriptions to: %s", err.Error())
 		}
 	} else if conf.Debug {
 		erxRoutingQueue = &common.SQSQueue{
-			QueueService: &sqs.Mock{},
+			QueueService: &awsutil.SQS{},
 			QueueURL:     "ERXRoutingQueue",
 		}
 	} else if conf.ERxRouting {
@@ -116,7 +112,7 @@ func buildRESTAPI(
 
 	var medicalRecordQueue *common.SQSQueue
 	if conf.MedicalRecordQueue != "" {
-		medicalRecordQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.MedicalRecordQueue)
+		medicalRecordQueue, err = common.NewQueue(awsConfig, conf.MedicalRecordQueue)
 		if err != nil {
 			log.Fatalf("Failed to get queue for medical record requests: %s", err.Error())
 		}
@@ -124,14 +120,14 @@ func buildRESTAPI(
 		log.Fatal("MedicalRecordQueue not configured")
 	} else {
 		medicalRecordQueue = &common.SQSQueue{
-			QueueService: &sqs.Mock{},
+			QueueService: &awsutil.SQS{},
 			QueueURL:     "MedicalRecord",
 		}
 	}
 
 	var visitQueue *common.SQSQueue
 	if conf.VisitQueue != "" {
-		visitQueue, err = common.NewQueue(awsAuth, aws.Regions[conf.AWSRegion], conf.VisitQueue)
+		visitQueue, err = common.NewQueue(awsConfig, conf.VisitQueue)
 		if err != nil {
 			log.Fatalf("Failed to get queue for charging visits: %s", err.Error())
 		}
@@ -139,17 +135,12 @@ func buildRESTAPI(
 		log.Fatal("VisitQueue not configured")
 	} else {
 		visitQueue = &common.SQSQueue{
-			QueueService: &sqs.Mock{},
+			QueueService: &awsutil.SQS{},
 			QueueURL:     "Visit",
 		}
 	}
 
-	snsClient := &sns.SNS{
-		Region: aws.Regions[conf.AWSRegion],
-		Client: &aws.Client{
-			Auth: awsAuth,
-		},
-	}
+	snsClient := sns.New(awsConfig)
 	smartyStreetsService := &address.SmartyStreetsService{
 		AuthID:    conf.SmartyStreets.AuthID,
 		AuthToken: conf.SmartyStreets.AuthToken,

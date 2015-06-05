@@ -5,7 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
-	"github.com/sprucehealth/backend/libs/aws/sqs"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -88,7 +88,7 @@ func TestPromotion_NonNewUser(t *testing.T) {
 	defer testData.Close()
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
-		QueueService: &sqs.StubSQS{},
+		QueueService: &awsutil.SQS{},
 	}
 	testData.Config.VisitQueue = stubSQSQueue
 

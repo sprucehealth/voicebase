@@ -9,21 +9,20 @@ import (
 	"strings"
 	"time"
 
-	goamz "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mitchellh/goamz/aws"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mitchellh/goamz/s3"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/aws"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/s3"
 )
 
+var sseAlgorithm = "AES256"
+
 type S3 struct {
-	auth          aws.Auth
-	region        goamz.Region
+	s3            *s3.S3
 	bucket        string
 	prefix        string
 	latchedExpire bool
 }
 
-func NewS3(auth aws.Auth, region, bucket, prefix string) *S3 {
+func NewS3(awsConfig *aws.Config, bucket, prefix string) *S3 {
 	// Make sure the path prefix starts and ends with /
 	if !strings.HasSuffix(prefix, "/") {
 		prefix += "/"
@@ -31,14 +30,8 @@ func NewS3(auth aws.Auth, region, bucket, prefix string) *S3 {
 	if !strings.HasPrefix(prefix, "/") {
 		prefix = "/" + prefix
 	}
-
-	reg, ok := goamz.Regions[region]
-	if !ok {
-		reg = goamz.USEast
-	}
 	return &S3{
-		auth:   auth,
-		region: reg,
+		s3:     s3.New(awsConfig),
 		bucket: bucket,
 		prefix: prefix,
 	}
@@ -49,28 +42,39 @@ func (s *S3) LatchedExpire(enabled bool) {
 }
 
 func (s *S3) IDFromName(name string) string {
-	return fmt.Sprintf("s3://%s/%s%s%s", s.region.Name, s.bucket, s.prefix, name)
+	return fmt.Sprintf("s3://%s/%s%s%s", s.s3.Config.Region, s.bucket, s.prefix, name)
 }
 
-func (s *S3) Put(name string, data []byte, headers http.Header) (string, error) {
-	return s.PutReader(name, bytes.NewReader(data), int64(len(data)), headers)
+func (s *S3) Put(name string, data []byte, contentType string, meta map[string]string) (string, error) {
+	return s.PutReader(name, bytes.NewReader(data), int64(len(data)), contentType, meta)
 }
 
-func (s *S3) PutReader(name string, r io.Reader, size int64, headers http.Header) (string, error) {
-	if headers == nil {
-		headers = http.Header{}
+func (s *S3) PutReader(name string, r io.ReadSeeker, size int64, contentType string, meta map[string]string) (string, error) {
+	var m map[string]*string
+	if len(meta) != 0 {
+		m = make(map[string]*string, len(meta))
+		for k, v := range meta {
+			m[k] = &v
+		}
 	}
-	headers.Set("x-amz-server-side-encryption", "AES256")
-	if headers.Get("Content-Type") == "" {
+	if contentType == "" {
 		// TODO: could use the mime package to try to detect type based on extension
-		headers.Set("Content-Type", "application/binary")
+		contentType = "application/binary"
 	}
 	path := s.prefix + name
-	err := s.bkt().PutReaderHeader(path, r, size, headers, s3.BucketOwnerFull)
+	_, err := s.s3.PutObject(&s3.PutObjectInput{
+		Bucket:               &s.bucket,
+		Key:                  &path,
+		Body:                 r,
+		ContentLength:        &size,
+		ContentType:          &contentType,
+		ServerSideEncryption: &sseAlgorithm,
+		Metadata:             m,
+	})
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("s3://%s/%s%s", s.region.Name, s.bucket, path), nil
+	return fmt.Sprintf("s3://%s/%s%s", s.s3.Config.Region, s.bucket, path), nil
 }
 
 func (s *S3) Get(id string) ([]byte, http.Header, error) {
@@ -87,62 +91,74 @@ func (s *S3) Get(id string) ([]byte, http.Header, error) {
 }
 
 func (s *S3) GetReader(id string) (io.ReadCloser, http.Header, error) {
-	bkt, path, err := s.parseURI(id)
+	region, bkt, path, err := s.parseURI(id)
 	if err != nil {
 		return nil, nil, err
 	}
-	res, err := bkt.GetResponse(path)
-	if res != nil {
-		return res.Body, res.Header, err
+	// TODO(samuel): Support different regions
+	_ = region
+	obj, err := s.s3.GetObject(&s3.GetObjectInput{
+		Bucket: &bkt,
+		Key:    &path,
+	})
+	if err != nil {
+		return nil, nil, err
 	}
-	return nil, nil, err
+	header := http.Header{}
+	if obj.ContentType != nil {
+		header.Set("Content-Type", *obj.ContentType)
+	}
+	for k, v := range obj.Metadata {
+		if v != nil {
+			header.Set(k, *v)
+		}
+	}
+	return obj.Body, header, nil
 }
 
 func (s *S3) SignedURL(id string, expires time.Duration) (string, error) {
-	bkt, path, err := s.parseURI(id)
+	region, bkt, path, err := s.parseURI(id)
 	if err != nil {
 		return "", err
 	}
+	// TODO(samuel): Support different regions
+	_ = region
+	req, _ := s.s3.GetObjectRequest(&s3.GetObjectInput{
+		Bucket: &bkt,
+		Key:    &path,
+	})
 	now := time.Now().UTC()
-	var expireTime time.Time
 	if s.latchedExpire {
-		ex := int64(expires / time.Second)
-		tm := now.Unix()
 		// Set expire time to end of the following period so the actual
 		// expire duration is somewhere between `expires` and `2*expires`
-		expireTime = time.Unix(tm-(tm%ex)+2*ex, 0)
-	} else {
-		expireTime = now.Add(expires)
+		ex := int64(expires / time.Second)
+		expires = time.Second * time.Duration(2*ex-(now.Unix()%ex))
 	}
-	return bkt.SignedURL(path, expireTime), nil
+	return req.Presign(expires)
 }
 
 func (s *S3) Delete(id string) error {
-	bkt, path, err := s.parseURI(id)
+	region, bkt, path, err := s.parseURI(id)
 	if err != nil {
 		return err
 	}
-	return bkt.Del(path)
+	// TODO(samuel): Support different regions
+	_ = region
+	_, err = s.s3.DeleteObject(&s3.DeleteObjectInput{
+		Bucket: &bkt,
+		Key:    &path,
+	})
+	return err
 }
 
-func (s *S3) bkt() *s3.Bucket {
-	return s3.New(common.AWSAuthAdapter(s.auth), s.region).Bucket(s.bucket)
-}
-
-func (s *S3) parseURI(uri string) (*s3.Bucket, string, error) {
+func (s *S3) parseURI(uri string) (region string, bucket string, key string, err error) {
 	u, err := url.Parse(uri)
 	if err != nil {
-		return nil, "", err
-	}
-	region, ok := goamz.Regions[u.Host]
-	if !ok {
-		return nil, "", fmt.Errorf("storage: unknown S3 region %s", u.Host)
+		return "", "", "", err
 	}
 	p := strings.SplitN(u.Path, "/", 3)
 	if len(p) < 3 {
-		return nil, "", fmt.Errorf("storage: bad S3 path %s", u.Path)
+		return "", "", "", fmt.Errorf("storage: bad S3 path %s", u.Path)
 	}
-	bucket := p[1]
-	path := "/" + p[2]
-	return s3.New(common.AWSAuthAdapter(s.auth), region).Bucket(bucket), path, nil
+	return u.Host, p[1], "/" + p[2], nil
 }

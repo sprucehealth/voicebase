@@ -39,19 +39,24 @@ func (s *testStore) IDFromName(name string) string {
 	return name
 }
 
-func (s *testStore) Put(name string, data []byte, headers http.Header) (string, error) {
+func (s *testStore) Put(name string, data []byte, contentType string, meta map[string]string) (string, error) {
 	s.mu.Lock()
+	headers := http.Header{}
+	headers.Set("Content-Type", contentType)
+	for k, v := range meta {
+		headers.Set(k, v)
+	}
 	s.objects[name] = &TestObject{data, headers}
 	s.mu.Unlock()
 	return name, nil
 }
 
-func (s *testStore) PutReader(name string, r io.Reader, size int64, headers http.Header) (string, error) {
+func (s *testStore) PutReader(name string, r io.ReadSeeker, size int64, contentType string, meta map[string]string) (string, error) {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
 		return "", err
 	}
-	return s.Put(name, data, headers)
+	return s.Put(name, data, contentType, meta)
 }
 
 func (s *testStore) Get(id string) ([]byte, http.Header, error) {

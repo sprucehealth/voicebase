@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
-	"github.com/sprucehealth/backend/libs/aws/elasticache"
+	"github.com/sprucehealth/backend/libs/awsutil"
 )
 
 type tcpAddr string
@@ -84,12 +84,12 @@ func (hs *hrwServers) SetHosts(hosts []string) {
 
 type elastiCacheServers struct {
 	*hrwServers
-	d      *elasticache.Discoverer
+	d      *awsutil.ElastiCacheDiscoverer
 	ch     chan []string
 	stopCh chan bool
 }
 
-func newElastiCacheServers(d *elasticache.Discoverer) *elastiCacheServers {
+func newElastiCacheServers(d *awsutil.ElastiCacheDiscoverer) *elastiCacheServers {
 	ecs := &elastiCacheServers{
 		hrwServers: newHRWServer(d.Hosts()),
 		d:          d,

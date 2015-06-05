@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/s3"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/lib/pq"
 	"github.com/sprucehealth/backend/consul"
-	"github.com/sprucehealth/backend/libs/aws/s3"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -69,7 +69,7 @@ func (w *pharmacyUpdateWorker) updatePharmacyDB() error {
 		}
 
 		for _, item := range bucketItems {
-			if err := w.processFile(item.Key); err != nil {
+			if err := w.processFile(*item.Key); err != nil {
 				return err
 			}
 		}
@@ -117,11 +117,11 @@ func (w *pharmacyUpdateWorker) updateDBFromFile(item *migrationItem) error {
 		return err
 	}
 
-	reader, _, err := w.s3Client.GetReader(w.bucketName, *item.fileName)
+	res, err := w.s3Client.GetObject(&s3.GetObjectInput{Bucket: &w.bucketName, Key: item.fileName})
 	if err != nil {
 		return err
 	}
-	defer reader.Close()
+	defer res.Body.Close()
 
 	tx, err := w.db.Begin()
 	if err != nil {
@@ -155,7 +155,7 @@ func (w *pharmacyUpdateWorker) updateDBFromFile(item *migrationItem) error {
 		return err
 	}
 
-	csvReader := csv.NewReader(reader)
+	csvReader := csv.NewReader(res.Body)
 	var rowsInserted int
 	var rowsToUpdate [][]string
 	for {
@@ -273,15 +273,15 @@ func (w *pharmacyUpdateWorker) getMigrationItemForFile(fileName string) (*migrat
 	return &mItem, nil
 }
 
-func (w *pharmacyUpdateWorker) nextFilesToMigrate() ([]*s3.BucketItem, error) {
+func (w *pharmacyUpdateWorker) nextFilesToMigrate() ([]*s3.Object, error) {
 
 	// don't proceed with identifying files if there are migrations
 	// in incomplete states. Reason for this is that we continuing forth with the
 	// migration will actually cause more problems because they have to be played back in order
 	var count int64
 	if err := w.db.QueryRow(`
-		SELECT count(*) 
-		FROM pharmacy_migration 
+		SELECT count(*)
+		FROM pharmacy_migration
 		WHERE status != $1`, completedStatus).Scan(&count); err != nil {
 		return nil, err
 	} else if count > 0 {
@@ -324,11 +324,11 @@ func (w *pharmacyUpdateWorker) nextFilesToMigrate() ([]*s3.BucketItem, error) {
 		// lets look for the migration file from the next day
 		filePrefix := fmt.Sprintf("%d-%02d-%02d", date.Year(), date.Month(), date.Day())
 
-		listResults, err := w.s3Client.ListBucket(w.bucketName, &s3.ListBucketParams{Prefix: filePrefix})
+		res, err := w.s3Client.ListObjects(&s3.ListObjectsInput{Bucket: &w.bucketName, Prefix: &filePrefix})
 		if err != nil {
 			return nil, err
-		} else if len(listResults.Contents) > 0 {
-			return listResults.Contents, nil
+		} else if len(res.Contents) > 0 {
+			return res.Contents, nil
 		}
 	}
 
@@ -391,13 +391,13 @@ func (w *pharmacyUpdateWorker) addOrUpdateMigrationItem(mItem *migrationItem) er
 // sanityCheckCSVFile ensures that each row in the file has the number of expected rows
 // and errors out if this is not the case
 func (w *pharmacyUpdateWorker) sanityCheckCSVFile(key string) error {
-	reader, _, err := w.s3Client.GetReader(w.bucketName, key)
+	res, err := w.s3Client.GetObject(&s3.GetObjectInput{Bucket: &w.bucketName, Key: &key})
 	if err != nil {
 		return err
 	}
-	defer reader.Close()
+	defer res.Body.Close()
 
-	csvReader := csv.NewReader(reader)
+	csvReader := csv.NewReader(res.Body)
 	for {
 		row, err := csvReader.Read()
 		if err == io.EOF {

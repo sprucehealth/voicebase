@@ -224,10 +224,7 @@ func (h *handler) get(w http.ResponseWriter, r *http.Request) {
 
 	// Save resized image to the cache
 	go func() {
-		headers := map[string][]string{
-			"Content-Type": []string{"image/jpeg"},
-		}
-		if _, err := h.cacheStore.Put(cacheKey, buf.Bytes(), headers); err != nil {
+		if _, err := h.cacheStore.Put(cacheKey, buf.Bytes(), "image/jpeg", nil); err != nil {
 			golog.Errorf("Failed to write resize image to cache: %s", err.Error())
 		}
 	}()
@@ -265,11 +262,8 @@ func (h *handler) post(w http.ResponseWriter, r *http.Request) {
 
 	name := "media-" + hex.EncodeToString(uid)
 	contentType := handler.Header.Get("Content-Type")
-	headers := http.Header{
-		"Content-Type": []string{contentType},
-	}
 
-	url, err := h.store.PutReader(name, file, size, headers)
+	url, err := h.store.PutReader(name, file, size, contentType, nil)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

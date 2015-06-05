@@ -3,6 +3,7 @@ package app_worker
 import (
 	"encoding/json"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
@@ -14,10 +15,11 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 )
 
-const (
-	waitTimeInSeconds     = 30
-	msgVisibilityTimeout  = 30
-	longPollingTimePeriod = 20
+const sleepTime = 30 * time.Second
+
+var (
+	msgVisibilityTimeout int64 = 30
+	waitTimeInSeconds    int64 = 20
 )
 
 type ERxStatusWorker struct {
@@ -75,7 +77,7 @@ func (w *ERxStatusWorker) Start() {
 			select {
 			case <-w.stopChan:
 				return
-			case <-time.After(waitTimeInSeconds * time.Second):
+			case <-time.After(sleepTime):
 			}
 		}
 	}()
@@ -86,23 +88,27 @@ func (w *ERxStatusWorker) Stop() {
 }
 
 func (w *ERxStatusWorker) Do() error {
-	msgs, err := w.erxQueue.QueueService.ReceiveMessage(w.erxQueue.QueueURL, nil, 1, msgVisibilityTimeout, longPollingTimePeriod)
+	res, err := w.erxQueue.QueueService.ReceiveMessage(&sqs.ReceiveMessageInput{
+		QueueURL:          &w.erxQueue.QueueURL,
+		VisibilityTimeout: &msgVisibilityTimeout,
+		WaitTimeSeconds:   &waitTimeInSeconds,
+	})
 	w.statCycles.Inc(1)
 	if err != nil {
 		w.statFailure.Inc(1)
 		return err
 	}
 
-	if msgs == nil || len(msgs) == 0 {
+	if len(res.Messages) == 0 {
 		return nil
 	}
 
 	// keep track of failed events so as to determine
 	// whether or not to delete a message from the queue
 	startTime := time.Now()
-	for _, msg := range msgs {
+	for _, msg := range res.Messages {
 		statusCheckMessage := &common.PrescriptionStatusCheckMessage{}
-		err := json.Unmarshal([]byte(msg.Body), statusCheckMessage)
+		err := json.Unmarshal([]byte(*msg.Body), statusCheckMessage)
 		if err != nil {
 			golog.Errorf("Unable to correctly parse json object for status check: %s", err.Error())
 			w.statFailure.Inc(1)
@@ -154,7 +160,10 @@ func (w *ERxStatusWorker) Do() error {
 		// nothing to do if there are no prescriptions for this patient to keep track of
 		if prescriptionStatuses == nil || len(prescriptionStatuses) == 0 {
 			golog.Infof("No prescription statuses to keep track of for patient")
-			err = w.erxQueue.QueueService.DeleteMessage(w.erxQueue.QueueURL, msg.ReceiptHandle)
+			_, err := w.erxQueue.QueueService.DeleteMessage(&sqs.DeleteMessageInput{
+				QueueURL:      &w.erxQueue.QueueURL,
+				ReceiptHandle: msg.ReceiptHandle,
+			})
 			if err != nil {
 				w.statFailure.Inc(1)
 				golog.Errorf("Failed to delete message: %s", err.Error())
@@ -194,7 +203,10 @@ func (w *ERxStatusWorker) Do() error {
 		if len(latestPendingStatusPerPrescription) == 0 {
 			// nothing to do if there are no pending treatments to work with
 			golog.Infof("There are no pending prescriptions for this patient")
-			err = w.erxQueue.QueueService.DeleteMessage(w.erxQueue.QueueURL, msg.ReceiptHandle)
+			_, err := w.erxQueue.QueueService.DeleteMessage(&sqs.DeleteMessageInput{
+				QueueURL:      &w.erxQueue.QueueURL,
+				ReceiptHandle: msg.ReceiptHandle,
+			})
 			if err != nil {
 				w.statFailure.Inc(1)
 				golog.Errorf("Failed to delete message: %s", err.Error())
@@ -339,9 +351,10 @@ func (w *ERxStatusWorker) Do() error {
 
 		if pendingTreatments == 0 && failed == 0 {
 			// delete message from queue because there are no more pending treatments for this patient
-			err = w.erxQueue.QueueService.DeleteMessage(
-				w.erxQueue.QueueURL,
-				msg.ReceiptHandle)
+			_, err := w.erxQueue.QueueService.DeleteMessage(&sqs.DeleteMessageInput{
+				QueueURL:      &w.erxQueue.QueueURL,
+				ReceiptHandle: msg.ReceiptHandle,
+			})
 			if err != nil {
 				w.statFailure.Inc(1)
 				golog.Errorf("Failed to delete message: %s", err.Error())

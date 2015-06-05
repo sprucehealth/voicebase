@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/BurntSushi/toml"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
 	resources "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/cookieo9/resources-go"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
@@ -33,9 +34,7 @@ import (
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/environment"
-	"github.com/sprucehealth/backend/libs/aws"
-	"github.com/sprucehealth/backend/libs/aws/sns"
-	"github.com/sprucehealth/backend/libs/aws/sqs"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
@@ -108,7 +107,7 @@ type TestData struct {
 	Config         *router.Config
 	AdminConfig    *www_router.Config
 	DB             *sql.DB
-	AWSAuth        aws.Auth
+	AWSConfig      *aws.Config
 	APIServer      *httptest.Server
 	AdminAPIServer *httptest.Server
 	AdminUser      *AdminCredentials
@@ -322,11 +321,7 @@ func setupTest() (*TestData, error) {
 	}
 
 	conf := config.BaseConfig{}
-	awsAuth, err := conf.AWSAuth()
-	if err != nil {
-		return nil, err
-	}
-
+	awsConfig := conf.AWS()
 	authTokenExpireDuration := time.Minute * 10
 	authAPI, err := api.NewAuthAPI(db, authTokenExpireDuration, time.Minute*5, authTokenExpireDuration, time.Minute*5, nullHasher{})
 	if err != nil {
@@ -349,7 +344,7 @@ func setupTest() (*TestData, error) {
 		SMSAPI:       &SMSAPI{},
 		EmailService: &email.TestService{},
 		DB:           db,
-		AWSAuth:      awsAuth,
+		AWSConfig:    awsConfig,
 		ERxAPI: erx.NewDoseSpotService(testConf.DoseSpot.ClinicID, testConf.DoseSpot.UserID,
 			testConf.DoseSpot.ClinicKey, testConf.DoseSpot.SOAPEndpoint, testConf.DoseSpot.APIEndpoint, nil),
 	}
@@ -380,14 +375,14 @@ func setupTest() (*TestData, error) {
 			},
 		}),
 		NotificationManager: notify.NewManager(testData.DataAPI, testData.AuthAPI, nil, testData.SMSAPI, testData.EmailService, "", nil, metrics.NewRegistry()),
-		ERxStatusQueue:      &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueURL: "local-status-erx"},
-		ERxRoutingQueue:     &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueURL: "local-routing-erx"},
+		ERxStatusQueue:      &common.SQSQueue{QueueService: &awsutil.SQS{}, QueueURL: "local-status-erx"},
+		ERxRoutingQueue:     &common.SQSQueue{QueueService: &awsutil.SQS{}, QueueURL: "local-routing-erx"},
 		ERxAPI: &erx.StubErxService{
 			SelectMedicationFunc: func(clinicianID int64, name, strength string) (*erx.MedicationSelectResponse, error) {
 				return &erx.MedicationSelectResponse{}, nil
 			},
 		},
-		MedicalRecordQueue: &common.SQSQueue{QueueService: &sqs.StubSQS{}, QueueURL: "local-medrecord"},
+		MedicalRecordQueue: &common.SQSQueue{QueueService: &awsutil.SQS{}, QueueURL: "local-medrecord"},
 		Stores: map[string]storage.Store{
 			"media":          storage.NewTestStore(nil),
 			"media-cache":    storage.NewTestStore(nil),
@@ -395,7 +390,7 @@ func setupTest() (*TestData, error) {
 			"medicalrecords": storage.NewTestStore(nil),
 		},
 		MediaStore:          media.NewStore("http://example.com"+apipaths.MediaURLPath, signer, storage.NewTestStore(nil)),
-		SNSClient:           &sns.MockSNS{PushEndpointToReturn: "push_endpoint"},
+		SNSClient:           &awsutil.SNS{EndpointARN: "push_endpoint"},
 		MetricsRegistry:     metrics.NewRegistry(),
 		DosespotConfig:      &config.DosespotConfig{},
 		ERxRouting:          false,

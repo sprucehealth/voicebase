@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
 	consulapi "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/hashicorp/consul/api"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
@@ -22,9 +23,7 @@ import (
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/events"
-	"github.com/sprucehealth/backend/libs/aws"
-	"github.com/sprucehealth/backend/libs/aws/elasticache"
-	"github.com/sprucehealth/backend/libs/aws/sns"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
@@ -106,17 +105,13 @@ func main() {
 
 	environment.SetCurrent(conf.Environment)
 
-	awsAuth, err := conf.AWSAuth()
-	if err != nil {
-		log.Fatalf("Failed to get AWS auth: %+v", err)
-	}
 	stores := storage.StoreMap{}
 	for name, c := range conf.Storage {
 		switch strings.ToLower(c.Type) {
 		default:
 			log.Fatalf("Unknown storage type %s for name %s", c.Type, name)
 		case "s3":
-			s := storage.NewS3(awsAuth, c.Region, c.Bucket, c.Prefix)
+			s := storage.NewS3(conf.AWS(), c.Bucket, c.Prefix)
 			s.LatchedExpire(c.LatchedExpire)
 			stores[name] = s
 		}
@@ -250,17 +245,7 @@ func main() {
 	analisteners.InitListeners(alog, dispatcher, eventsClient)
 
 	if conf.OfficeNotifySNSTopic != "" {
-		awsAuth, err := conf.AWSAuth()
-		if err != nil {
-			log.Fatalf("Failed to get AWS auth: %+v", err)
-		}
-		snsClient := &sns.SNS{
-			Region: aws.USEast,
-			Client: &aws.Client{
-				Auth: awsAuth,
-			},
-		}
-		initNotifyListener(dispatcher, snsClient, conf.OfficeNotifySNSTopic)
+		initNotifyListener(dispatcher, sns.New(conf.AWS()), conf.OfficeNotifySNSTopic)
 	}
 
 	var memcacheCli *memcache.Client
@@ -271,7 +256,7 @@ func main() {
 				if m.DiscoveryInterval <= 0 {
 					m.DiscoveryInterval = 60 * 5
 				}
-				d, err := elasticache.NewDiscoverer(m.DiscoveryHost, time.Second*time.Duration(m.DiscoveryInterval))
+				d, err := awsutil.NewElastiCacheDiscoverer(m.DiscoveryHost, time.Second*time.Duration(m.DiscoveryInterval))
 				if err != nil {
 					log.Fatalf("Failed to discover memcached hosts: %s", err.Error())
 				}

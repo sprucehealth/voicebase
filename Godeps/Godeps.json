@@ -38,6 +38,86 @@
 			"Rev": "9b7cb5f7ba0210ce20c8582fb22331b58444636a"
 		},
 		{
+			"ImportPath": "github.com/aws/aws-sdk-go/aws",
+			"Comment": "v0.6.1-2-gb3e3b21",
+			"Rev": "b3e3b210da40e79d3408ff58fb1f78f24b4a38f8"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/apierr",
+			"Comment": "v0.6.1-2-gb3e3b21",
+			"Rev": "b3e3b210da40e79d3408ff58fb1f78f24b4a38f8"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/endpoints",
+			"Comment": "v0.6.1-2-gb3e3b21",
+			"Rev": "b3e3b210da40e79d3408ff58fb1f78f24b4a38f8"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/ec2query",
+			"Comment": "v0.6.1-2-gb3e3b21",
+			"Rev": "b3e3b210da40e79d3408ff58fb1f78f24b4a38f8"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/json/jsonutil",
+			"Comment": "v0.6.1-2-gb3e3b21",
+			"Rev": "b3e3b210da40e79d3408ff58fb1f78f24b4a38f8"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/jsonrpc",
+			"Comment": "v0.6.1-2-gb3e3b21",
+			"Rev": "b3e3b210da40e79d3408ff58fb1f78f24b4a38f8"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/query",
+			"Comment": "v0.6.1-2-gb3e3b21",
+			"Rev": "b3e3b210da40e79d3408ff58fb1f78f24b4a38f8"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/rest",
+			"Comment": "v0.6.1-2-gb3e3b21",
+			"Rev": "b3e3b210da40e79d3408ff58fb1f78f24b4a38f8"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/restxml",
+			"Comment": "v0.6.1-2-gb3e3b21",
+			"Rev": "b3e3b210da40e79d3408ff58fb1f78f24b4a38f8"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/protocol/xml/xmlutil",
+			"Comment": "v0.6.1-2-gb3e3b21",
+			"Rev": "b3e3b210da40e79d3408ff58fb1f78f24b4a38f8"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/signer/v4",
+			"Comment": "v0.6.1-2-gb3e3b21",
+			"Rev": "b3e3b210da40e79d3408ff58fb1f78f24b4a38f8"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/service/cloudwatchlogs",
+			"Comment": "v0.6.1-2-gb3e3b21",
+			"Rev": "b3e3b210da40e79d3408ff58fb1f78f24b4a38f8"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/service/ec2",
+			"Comment": "v0.6.1-2-gb3e3b21",
+			"Rev": "b3e3b210da40e79d3408ff58fb1f78f24b4a38f8"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/service/s3",
+			"Comment": "v0.6.1-2-gb3e3b21",
+			"Rev": "b3e3b210da40e79d3408ff58fb1f78f24b4a38f8"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/service/sns",
+			"Comment": "v0.6.1-2-gb3e3b21",
+			"Rev": "b3e3b210da40e79d3408ff58fb1f78f24b4a38f8"
+		},
+		{
+			"ImportPath": "github.com/aws/aws-sdk-go/service/sqs",
+			"Comment": "v0.6.1-2-gb3e3b21",
+			"Rev": "b3e3b210da40e79d3408ff58fb1f78f24b4a38f8"
+		},
+		{
 			"ImportPath": "github.com/bamiaux/rez",
 			"Rev": "5749ce8a13b16087dede0b885db6bf13d0c04c38"
 		},
@@ -68,10 +148,6 @@
 			"Rev": "26f03ea30d28fbbaa8033b20d8fed4edc603d150"
 		},
 		{
-			"ImportPath": "github.com/jeromer/syslogparser",
-			"Rev": "812866d0389ae7e1f5a0110d47dea20224fc776f"
-		},
-		{
 			"ImportPath": "github.com/jessevdk/go-flags",
 			"Comment": "v1-280-g37e89eb",
 			"Rev": "37e89eb6730ccfebfa05c17940954e4308719317"
@@ -80,18 +156,6 @@
 			"ImportPath": "github.com/lib/pq",
 			"Comment": "go1.0-cutoff-40-g8910d1c",
 			"Rev": "8910d1c3a4bda5c97c50bc38543953f1f1e1f8bb"
-		},
-		{
-			"ImportPath": "github.com/mcuadros/go-syslog",
-			"Rev": "951a3a0104421c506c3145f943f324ae55b12b2d"
-		},
-		{
-			"ImportPath": "github.com/mitchellh/goamz/aws",
-			"Rev": "84d8b2b74375eda9f189283e5f0710e6bcc3fb47"
-		},
-		{
-			"ImportPath": "github.com/mitchellh/goamz/s3",
-			"Rev": "84d8b2b74375eda9f189283e5f0710e6bcc3fb47"
 		},
 		{
 			"ImportPath": "github.com/rwcarlsen/goexif/exif",

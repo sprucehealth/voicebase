@@ -8,20 +8,22 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/libs/aws"
-	"github.com/sprucehealth/backend/libs/aws/ec2"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/cmd/cryptsetup"
 	"github.com/sprucehealth/backend/libs/cmd/dmsetup"
 	"github.com/sprucehealth/backend/libs/cmd/lvm"
 	"github.com/sprucehealth/backend/libs/cmd/mount"
 	"github.com/sprucehealth/backend/libs/cmd/xfs"
-
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 )
 
 type freezeCmd interface {
@@ -34,14 +36,13 @@ var config = struct {
 	Tags    map[string]string
 	// AWS
 	AWSRole    string
-	AWSKeys    aws.Keys
 	Region     string
 	InstanceID string
 	// FS Freeze
 	MountPath  string
 	FSType     string
-	Devices    []string // Used to lookup which EBS volumes to snapshot
-	EBSVolumes []string // IDs for the EBS volumes
+	Devices    []string  // Used to lookup which EBS volumes to snapshot
+	EBSVolumes []*string // IDs for the EBS volumes
 	// MySQL
 	Config     string
 	Host       string
@@ -55,7 +56,7 @@ var config = struct {
 
 	freezeCmd     freezeCmd
 	db            *sql.DB
-	awsAuth       aws.Auth
+	awsConfig     *aws.Config
 	ec2           *ec2.EC2
 	ebsVolumeInfo []*ec2.Volume
 }{
@@ -279,44 +280,47 @@ func main() {
 	}
 	info("Devices: %s\n", strings.Join(config.Devices, " "))
 
-	if config.AWSRole != "" {
-		if config.AWSRole == "*" {
-			config.AWSRole = ""
-		}
-		cred, err := aws.CredentialsForRole(config.AWSRole)
-		if err != nil {
-			log.Fatal(err)
-		}
-		config.awsAuth = cred
-	} else {
-		if keys := aws.KeysFromEnvironment(); keys.AccessKey == "" || keys.SecretKey == "" {
-			if cred, err := aws.CredentialsForRole(""); err == nil {
-				config.awsAuth = cred
-			} else {
-				log.Fatal("Missing AWS_ACCESS_KEY or AWS_SECRET_KEY")
-			}
-		} else {
-			config.awsAuth = keys
-		}
-	}
+	// var creds *credentials.Credentials
+	// if *awsRole == "" {
+	// 	*awsRole = os.Getenv("AWS_ROLE")
+	// }
+	// if *awsRole != "" || *awsRole == "*" {
+	// 	creds = credentials.NewEC2RoleCredentials(http.DefaultClient, "", time.Second*2)
+	// } else if *awsAccessKey != "" && *awsSecretKey != "" {
+	// 	creds = credentials.NewStaticCredentials(*awsAccessKey, *awsSecretKey, "")
+	// } else {
+	// 	creds = credentials.NewEnvCredentials()
+	// }
+	// if *awsRegion == "" {
+	// 	az, err := awsutil.GetMetadata(awsutil.MetadataAvailabilityZone)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	// Remove the last letter of the az to get the region (e.g. us-east-1a -> us-east-1)
+	// 	*awsRegion = az[:len(az)-1]
+	// }
 
+	creds := credentials.NewEnvCredentials()
+	if c, err := creds.Get(); err != nil || c.AccessKeyID == "" || c.SecretAccessKey == "" {
+		creds = credentials.NewEC2RoleCredentials(http.DefaultClient, "", time.Minute*10)
+	}
 	if config.Region == "" {
-		az, err := aws.GetMetadata(aws.MetadataAvailabilityZone)
+		az, err := awsutil.GetMetadata(awsutil.MetadataAvailabilityZone)
 		if err != nil {
 			log.Fatalf("no region specified and failed to get from instance metadata: %+v", err)
 		}
 		config.Region = az[:len(az)-1]
 		info("Region: %s\n", config.Region)
 	}
-
-	config.ec2 = &ec2.EC2{
-		Region: aws.Regions[config.Region],
-		Client: &aws.Client{Auth: config.awsAuth},
+	config.awsConfig = &aws.Config{
+		Credentials: creds,
+		Region:      config.Region,
 	}
+	config.ec2 = ec2.New(config.awsConfig)
 
 	if config.InstanceID == "" {
 		var err error
-		config.InstanceID, err = aws.GetMetadata(aws.MetadataInstanceID)
+		config.InstanceID, err = awsutil.GetMetadata(awsutil.MetadataInstanceID)
 		if err != nil {
 			log.Fatalf("Failed to get instance ID: %+v", err)
 		}
@@ -325,21 +329,24 @@ func main() {
 
 	// Lookup EBS volumes for devices
 	if len(config.EBSVolumes) == 0 {
-		vol, err := config.ec2.DescribeVolumes(nil, map[string][]string{
-			"attachment.instance-id": []string{config.InstanceID},
+		res, err := config.ec2.DescribeVolumes(&ec2.DescribeVolumesInput{
+			Filters: []*ec2.Filter{
+				{Name: aws.String("attachment.instance-id"), Values: []*string{&config.InstanceID}},
+			},
 		})
 		if err != nil {
 			log.Fatalf("Failed to get volumes: %+v", err)
 		}
-		config.EBSVolumes = make([]string, len(config.Devices))
+		config.EBSVolumes = make([]*string, len(config.Devices))
 		config.ebsVolumeInfo = make([]*ec2.Volume, len(config.Devices))
 		count := len(config.Devices)
 		info("Attached volumes:\n")
-		for _, v := range vol {
-			if v.Attachment != nil {
-				info("\t%s %s %s\n", v.VolumeID, v.Attachment.Device, v.Attachment.Status)
+		for _, v := range res.Volumes {
+			if len(v.Attachments) != 0 {
+				att := v.Attachments[0]
+				info("\t%s %s %s\n", *v.VolumeID, *att.Device, *att.State)
 				for j, d := range config.Devices {
-					if d == devMap(v.Attachment.Device) {
+					if d == devMap(*att.Device) {
 						config.EBSVolumes[j] = v.VolumeID
 						config.ebsVolumeInfo[j] = v
 						count--
@@ -352,16 +359,18 @@ func main() {
 			log.Fatalf("Only found %d volumes out of an expected %d", len(config.Devices)-count, len(config.Devices))
 		}
 	} else {
-		vol, err := config.ec2.DescribeVolumes(config.EBSVolumes, nil)
+		res, err := config.ec2.DescribeVolumes(&ec2.DescribeVolumesInput{
+			VolumeIDs: config.EBSVolumes,
+		})
 		if err != nil {
 			log.Fatalf("Failed to get volumes: %+v", err)
 		}
-		if len(vol) != len(config.EBSVolumes) {
+		if len(res.Volumes) != len(config.EBSVolumes) {
 			log.Fatalf("Not all volumes found")
 		}
 		config.ebsVolumeInfo = make([]*ec2.Volume, len(config.EBSVolumes))
-		for i, v := range vol {
-			if config.EBSVolumes[i] != v.VolumeID {
+		for i, v := range res.Volumes {
+			if *config.EBSVolumes[i] != *v.VolumeID {
 				log.Fatalf("VolumeID mismatch")
 			}
 			config.ebsVolumeInfo[i] = v
@@ -508,21 +517,44 @@ func unlockDB() error {
 func snapshotEBS(binlogName string, binlogPos int64) error {
 	timestamp := time.Now().Format(time.RFC3339)
 	for _, vol := range config.ebsVolumeInfo {
-		fmt.Printf("Snapshotting %s (%s)...", vol.VolumeID, vol.Tags["Name"])
-		res, err := config.ec2.CreateSnapshot(vol.VolumeID, fmt.Sprintf("%s %s", vol.Tags["Group"], timestamp))
+		fmt.Printf("Snapshotting %s (%s)...", *vol.VolumeID, tag(vol.Tags, "Name"))
+		snap, err := config.ec2.CreateSnapshot(&ec2.CreateSnapshotInput{
+			VolumeID:    vol.VolumeID,
+			Description: aws.String(fmt.Sprintf("%s %s", tag(vol.Tags, "Group"), timestamp)),
+		})
 		if err != nil {
-			log.Fatalf("Failed to create snapshot of %s: %+v", vol.VolumeID, err)
+			log.Fatalf("Failed to create snapshot of %s: %+v", *vol.VolumeID, err)
 		}
-		fmt.Printf(" %s %s\n", res.SnapshotID, res.Status)
+		fmt.Printf(" %s %s\n", *snap.SnapshotID, *snap.State)
 		tags := vol.Tags
-		tags["BinlogName"] = binlogName
-		tags["BinlogPos"] = strconv.FormatInt(binlogPos, 10)
-		for n, v := range config.Tags {
-			tags[n] = v
-		}
-		if err := config.ec2.CreateTags([]string{res.SnapshotID}, tags); err != nil {
-			log.Printf("Failed to tag snapshot %s: %+v", res.SnapshotID, err)
+		tags = setTag(tags, "BinlogName", binlogName)
+		tags = setTag(tags, "BinlogPos", strconv.FormatInt(binlogPos, 10))
+		if _, err := config.ec2.CreateTags(&ec2.CreateTagsInput{
+			Resources: []*string{snap.SnapshotID},
+			Tags:      tags,
+		}); err != nil {
+			log.Printf("Failed to tag snapshot %s: %+v", *snap.SnapshotID, err)
 		}
 	}
 	return nil
+}
+
+func setTag(tags []*ec2.Tag, key, value string) []*ec2.Tag {
+	for _, t := range tags {
+		if *t.Key == key {
+			t.Value = &value
+			return tags
+		}
+	}
+	tags = append(tags, &ec2.Tag{Key: &key, Value: &value})
+	return tags
+}
+
+func tag(tags []*ec2.Tag, key string) string {
+	for _, t := range tags {
+		if *t.Key == key {
+			return *t.Value
+		}
+	}
+	return ""
 }

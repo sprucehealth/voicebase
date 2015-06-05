@@ -1,6 +1,9 @@
 package notify
 
 import (
+	"encoding/json"
+
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -36,9 +39,18 @@ func (n *NotificationManager) pushNotificationToUser(
 		pushEndpoint := pushConfigData.PushEndpoint
 		// send push notifications in parallel
 		go func() {
-			err = n.snsClient.Publish(
-				renderNotification(notificationConfig, msg.ShortMessage, notificationCount),
-				pushEndpoint)
+			note := renderNotification(notificationConfig, msg.ShortMessage, notificationCount)
+			js, err := json.Marshal(note)
+			if err != nil {
+				n.statPushFailed.Inc(1)
+				golog.Errorf("Failed to marshal SNS notification: %s", err)
+				return
+			}
+			jsStr := string(js)
+			_, err = n.snsClient.Publish(&sns.PublishInput{
+				MessageStructure: &jsStr,
+				TargetARN:        &pushEndpoint,
+			})
 			if err != nil {
 				// don't return err so that we attempt to send push to as many devices as possible
 				n.statPushFailed.Inc(1)

@@ -8,8 +8,9 @@ import (
 	"io"
 	"strings"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/s3"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-librato/librato"
-	"github.com/sprucehealth/backend/libs/aws/s3"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -61,13 +62,9 @@ func transform(srcDB, destDB *sql.DB, tables []*table, s3c *s3.S3, bucket, prefi
 		}
 
 		r, w := io.Pipe()
-		headers := map[string][]string{
-			"x-amz-server-side-encryption": []string{"AES256"},
-			"Content-Encoding":             []string{"gzip"},
-		}
 		uploadCh := make(chan error, 1)
 		go func() {
-			uploadCh <- s3c.PutMultiFrom(bucket, prefix+tab.Name+".json.gz", r, "application/json", s3.Private, headers)
+			uploadCh <- awsutil.PutMultiFrom(s3c, bucket, prefix+tab.Name+".json.gz", r, "application/json", "gzip", awsutil.ACLPrivate, nil)
 		}()
 
 		err := func() error {
@@ -172,10 +169,13 @@ func transform(srcDB, destDB *sql.DB, tables []*table, s3c *s3.S3, bucket, prefi
 			}
 		}
 
-		s3Keys := s3c.Client.Auth.Keys()
-		s3Creds := fmt.Sprintf("aws_access_key_id=%s;aws_secret_access_key=%s", s3Keys.AccessKey, s3Keys.SecretKey)
-		if s3Keys.Token != "" {
-			s3Creds += ";token=" + s3Keys.Token
+		s3Keys, err := s3c.Config.Credentials.Get()
+		if err != nil {
+			return fmt.Errorf("Failed to get aws keys: %s", err)
+		}
+		s3Creds := fmt.Sprintf("aws_access_key_id=%s;aws_secret_access_key=%s", s3Keys.AccessKeyID, s3Keys.SecretAccessKey)
+		if s3Keys.SessionToken != "" {
+			s3Creds += ";token=" + s3Keys.SessionToken
 		}
 
 		var columns []string

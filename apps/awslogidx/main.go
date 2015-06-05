@@ -7,11 +7,9 @@ message in SQS for each notification.
 
 To index the log we receive message from the SQS queue, pull down the log from
 S3, and then parse and index the events in ElasticSearch. Only after the events
-have successfully been indexed do we delete the message from the SQS queue. It's
-possible some events may get indexed multiple times (due to partial success),
-but this is more desirable than missing out on events. It may be possible to
-generate a unique ID for each event to avoid this (e.g. hash of log file
-key + record index).
+have successfully been indexed do we delete the message from the SQS queue. A
+unique ID is genreated for each event based on its contents to try and avoid
+duplicates do to errors during processing.
 
 CloudWatch Logs are indexed by using the GetLogEvents api method which returns
 entries after either a provided timestamp or token. The token is used when
@@ -59,16 +57,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	consulapi "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/hashicorp/consul/api"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/reporter"
 	"github.com/sprucehealth/backend/consul"
-	"github.com/sprucehealth/backend/libs/aws/cloudwatchlogs"
 	"github.com/sprucehealth/backend/libs/golog"
-)
-
-const (
-	eventCount = 0
 )
 
 var (
@@ -136,8 +131,8 @@ func startPeriodicCleanup(es *ElasticSearch, days int, svc *consul.Service) {
 type streamInfo struct {
 	GroupName     string
 	StreamName    string
-	LastEventTime time.Time
-	LastIndexTime time.Time
+	LastEventTime int64
+	LastIndexTime int64
 	NextToken     string
 }
 
@@ -163,30 +158,32 @@ func startCloudWatchLogIndexer(es *ElasticSearch, consul *consulapi.Client, svc 
 			}
 			lastRunTime = time.Now()
 
-			groups, err := cwlClient.DescribeLogGroups("", "", 0)
+			res, err := cwlClient.DescribeLogGroups(&cloudwatchlogs.DescribeLogGroupsInput{})
 			if err != nil {
 				golog.Errorf("Failed to get log groups: %s", err.Error())
 				continue
 			}
 		groupLoop:
-			for _, g := range groups.LogGroups {
+			for _, g := range res.LogGroups {
 				if !lock.Locked() {
 					break
 				}
 
-				stream, err := cwlClient.DescribeLogStreams(g.LogGroupName, "", "", 0)
+				res, err := cwlClient.DescribeLogStreams(&cloudwatchlogs.DescribeLogStreamsInput{
+					LogGroupName: g.LogGroupName,
+				})
 				if err != nil {
-					golog.Errorf("Failed to get log stream for group %s: %s", g.LogGroupName, err.Error())
+					golog.Errorf("Failed to get log stream for group %s: %s", *g.LogGroupName, err.Error())
 					continue
 				}
-				for _, s := range stream.LogStreams {
+				for _, s := range res.LogStreams {
 					if !lock.Locked() {
 						break
 					}
-					if s.LastEventTimestamp.IsZero() {
+					if s.LastEventTimestamp == nil || *s.LastEventTimestamp == 0 {
 						continue
 					}
-					if indexStream(g.LogGroupName, s, es, consul) {
+					if indexStream(*g.LogGroupName, s, es, consul) {
 						break groupLoop
 					}
 				}
@@ -198,7 +195,7 @@ func startCloudWatchLogIndexer(es *ElasticSearch, consul *consulapi.Client, svc 
 }
 
 func indexStream(groupName string, stream *cloudwatchlogs.LogStream, es *ElasticSearch, consul *consulapi.Client) bool {
-	hash := md5.Sum([]byte(fmt.Sprintf("%s|%s", groupName, stream.LogStreamName)))
+	hash := md5.Sum([]byte(fmt.Sprintf("%s|%s", groupName, *stream.LogStreamName)))
 	key := "service/awslogidx/cwl/" + hex.EncodeToString(hash[:])
 
 	log := golog.Context(
@@ -213,35 +210,49 @@ func indexStream(groupName string, stream *cloudwatchlogs.LogStream, es *Elastic
 	}
 
 	var info streamInfo
-	var events *cloudwatchlogs.Events
+	// var events *cloudwatchlogs.Events
 	var modifyIndex uint64
+	var res *cloudwatchlogs.GetLogEventsOutput
 	if kv != nil {
 		if err := json.Unmarshal(kv.Value, &info); err != nil {
 			log.Errorf("Unmarshal failed: %s", err.Error())
 			return false
 		}
-		if !stream.LastEventTimestamp.Time.After(info.LastEventTime) {
-			log.Debugf("No new events since %s", info.LastEventTime.String())
+		if stream.LastEventTimestamp != nil && *stream.LastEventTimestamp <= info.LastEventTime {
+			log.Debugf("No new events since %s", time.Unix(info.LastEventTime, 0).String())
 			return false
 		}
 		modifyIndex = kv.ModifyIndex
 		// The next token is only valid for 24 hours so use the timestamp after that
-		if time.Since(info.LastIndexTime) > time.Hour*22 {
+		if time.Now().Unix()-info.LastIndexTime > 23*60*60 {
 			log.Debugf("Fetching by start time of %+v", info.LastEventTime)
-			events, err = cwlClient.GetLogEvents(groupName, stream.LogStreamName, true, info.LastEventTime, time.Time{}, "", eventCount)
+			res, err = cwlClient.GetLogEvents(&cloudwatchlogs.GetLogEventsInput{
+				LogGroupName:  &groupName,
+				LogStreamName: stream.LogStreamName,
+				StartFromHead: aws.Boolean(true),
+				StartTime:     aws.Long(info.LastEventTime),
+			})
 		} else {
 			log.Debugf("Fetching by token")
-			events, err = cwlClient.GetLogEvents(groupName, stream.LogStreamName, true, time.Time{}, time.Time{}, info.NextToken, eventCount)
+			res, err = cwlClient.GetLogEvents(&cloudwatchlogs.GetLogEventsInput{
+				LogGroupName:  &groupName,
+				LogStreamName: stream.LogStreamName,
+				StartFromHead: aws.Boolean(true),
+				NextToken:     &info.NextToken,
+			})
 		}
 	} else {
 		info = streamInfo{
 			GroupName:  groupName,
-			StreamName: stream.LogStreamName,
+			StreamName: *stream.LogStreamName,
 		}
 		log.Debugf("Fetching from beginning")
-		events, err = cwlClient.GetLogEvents(groupName, stream.LogStreamName, true, time.Time{}, time.Time{}, "", eventCount)
+		res, err = cwlClient.GetLogEvents(&cloudwatchlogs.GetLogEventsInput{
+			LogGroupName:  &groupName,
+			LogStreamName: stream.LogStreamName,
+			StartFromHead: aws.Boolean(true),
+		})
 	}
-
 	if err != nil {
 		statFailedGetLogEvents.Inc(1)
 		log.Errorf("GetLogEvents failed: %s", err.Error())
@@ -249,20 +260,22 @@ func indexStream(groupName string, stream *cloudwatchlogs.LogStream, es *Elastic
 	}
 	statSuccessfulGetLogEvents.Inc(1)
 
-	statEvents.Inc(uint64(len(events.Events)))
+	events := res.Events
+
+	statEvents.Inc(uint64(len(events)))
 
 	var buf []byte
-	for _, e := range events.Events {
-		if e.Timestamp.After(info.LastEventTime) {
-			info.LastEventTime = e.Timestamp.Time
+	for _, e := range events {
+		if *e.Timestamp > info.LastEventTime {
+			info.LastEventTime = *e.Timestamp
 		}
 		h := md5.New()
-		t := e.Timestamp.UTC()
+		t := time.Unix(*e.Timestamp, 0).UTC()
 		ts := t.Format(time.RFC3339)
 		h.Write([]byte(groupName))
-		h.Write([]byte(stream.LogStreamName))
+		h.Write([]byte(*stream.LogStreamName))
 		h.Write([]byte(ts))
-		h.Write([]byte(e.Message))
+		h.Write([]byte(*e.Message))
 		buf = h.Sum(buf[:0])
 		id := hex.EncodeToString(buf)
 		idx := fmt.Sprintf("log-%s", t.Format("2006.01.02"))
@@ -280,8 +293,8 @@ func indexStream(groupName string, stream *cloudwatchlogs.LogStream, es *Elastic
 		}
 	}
 
-	info.NextToken = events.NextForwardToken
-	info.LastIndexTime = time.Now()
+	info.NextToken = *res.NextForwardToken
+	info.LastIndexTime = time.Now().Unix()
 
 	log.Debugf("New info %+v", info)
 	b, err := json.Marshal(info)
