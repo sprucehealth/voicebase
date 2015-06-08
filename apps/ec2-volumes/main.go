@@ -4,12 +4,16 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"sort"
 	"strconv"
+	"time"
 
-	"github.com/sprucehealth/backend/libs/aws"
-	"github.com/sprucehealth/backend/libs/aws/ec2"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/cmd/cryptsetup"
 )
 
@@ -25,8 +29,8 @@ var config = struct {
 	Cipher      string
 	Verbose     bool
 
-	awsAuth aws.Auth
-	ec2     *ec2.EC2
+	awsConfig *aws.Config
+	ec2       *ec2.EC2
 }{
 	User:       os.Getenv("USER"),
 	StripeSize: 4, // KB
@@ -53,39 +57,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	if config.AWSRole != "" {
-		if config.AWSRole == "*" {
-			config.AWSRole = ""
-		}
-		cred, err := aws.CredentialsForRole(config.AWSRole)
-		if err != nil {
-			log.Fatal(err)
-		}
-		config.awsAuth = cred
-	} else {
-		if keys := aws.KeysFromEnvironment(); keys.AccessKey == "" || keys.SecretKey == "" {
-			if cred, err := aws.CredentialsForRole(""); err == nil {
-				config.awsAuth = cred
-			} else {
-				log.Fatal("Missing AWS_ACCESS_KEY or AWS_SECRET_KEY")
-			}
-		} else {
-			config.awsAuth = keys
-		}
+	creds := credentials.NewEnvCredentials()
+	if c, err := creds.Get(); err != nil || c.AccessKeyID == "" || c.SecretAccessKey == "" {
+		creds = credentials.NewEC2RoleCredentials(http.DefaultClient, "", time.Minute*10)
 	}
-
 	if config.AZ == "" {
-		az, err := aws.GetMetadata(aws.MetadataAvailabilityZone)
+		az, err := awsutil.GetMetadata(awsutil.MetadataAvailabilityZone)
 		if err != nil {
 			log.Fatalf("no region specified and failed to get from instance metadata: %+v", err)
 		}
 		config.AZ = az
 	}
-
-	config.ec2 = &ec2.EC2{
-		Region: aws.Regions[config.AZ[:len(config.AZ)-1]],
-		Client: &aws.Client{Auth: config.awsAuth},
+	config.awsConfig = &aws.Config{
+		Credentials: creds,
+		Region:      config.AZ[:len(config.AZ)-1],
 	}
+	config.ec2 = ec2.New(config.awsConfig)
 
 	var err error
 	switch flag.Arg(0) {
@@ -111,11 +98,17 @@ func main() {
 }
 
 func findGroup(name string) ([]*ec2.Volume, error) {
-	return config.ec2.DescribeVolumes(nil, map[string][]string{
-		"availability-zone": []string{config.AZ},
-		"tag:Group":         []string{name},
-		"tag:Environment":   []string{config.Environment},
+	res, err := config.ec2.DescribeVolumes(&ec2.DescribeVolumesInput{
+		Filters: []*ec2.Filter{
+			{Name: aws.String("availability-zone"), Values: []*string{&config.AZ}},
+			{Name: aws.String("tag:Group"), Values: []*string{&name}},
+			{Name: aws.String("tag:Environment"), Values: []*string{&config.Environment}},
+		},
 	})
+	if err != nil {
+		return nil, err
+	}
+	return res.Volumes, nil
 }
 
 type snapshotSort []*ec2.Snapshot
@@ -125,7 +118,7 @@ func (s snapshotSort) Len() int {
 }
 
 func (s snapshotSort) Less(a, b int) bool {
-	return s[a].Description >= s[b].Description
+	return *s[a].Description >= *s[b].Description
 }
 
 func (s snapshotSort) Swap(a, b int) {
@@ -166,41 +159,43 @@ func create() error {
 
 	var snapshots []*ec2.Snapshot // Snapshot IDs
 	if snapshotGroupName != "" {
-
-		filters := map[string][]string{
-			"tag:Group":       []string{snapshotGroupName},
-			"tag:Environment": []string{config.Environment},
+		filters := []*ec2.Filter{
+			{Name: aws.String("tag:Group"), Values: []*string{&snapshotGroupName}},
+			{Name: aws.String("tag:Environment"), Values: []*string{&config.Environment}},
 		}
 
 		if snapshotDescription != "" {
-			filters["description"] = []string{snapshotDescription}
+			filters = append(filters, &ec2.Filter{Name: aws.String("description"), Values: []*string{&snapshotDescription}})
 		}
 
-		snaps, err := config.ec2.DescribeSnapshots(nil, []string{"self"}, nil, filters)
+		res, err := config.ec2.DescribeSnapshots(&ec2.DescribeSnapshotsInput{
+			OwnerIDs: []*string{aws.String("self")},
+			Filters:  filters,
+		})
 		if err != nil {
 			return fmt.Errorf("failed to lookup snapshots: %+v", err)
 		}
-		if len(snaps) == 0 {
+		if len(res.Snapshots) == 0 {
 			if snapshotDescription == "" {
 				return fmt.Errorf("no snapshots found for group %s", snapshotGroupName)
 			}
 			return fmt.Errorf("no snapshots found for group %s with description %s", snapshotGroupName, snapshotDescription)
 		}
-		sort.Sort(snapshotSort(snaps))
+		sort.Sort(snapshotSort(res.Snapshots))
 
-		s := snaps[0]
+		s := res.Snapshots[0]
 		desc := s.Description
-		count, err = strconv.Atoi(s.Tags["Total"])
+		count, err = strconv.Atoi(tag(s.Tags, "Total"))
 		if err != nil {
 			return err
 		}
 		snapshots = make([]*ec2.Snapshot, count)
 
-		for _, s := range snaps[:count] {
-			if s.Description != desc {
-				return fmt.Errorf("snapshot group not complete: %s", desc)
+		for _, s := range res.Snapshots[:count] {
+			if *s.Description != *desc {
+				return fmt.Errorf("snapshot group not complete: %s", *desc)
 			}
-			num, err := strconv.Atoi(s.Tags["Number"])
+			num, err := strconv.Atoi(tag(s.Tags, "Number"))
 			if err != nil {
 				return err
 			}
@@ -211,26 +206,34 @@ func create() error {
 	for i := 0; i < count; i++ {
 		snap := ""
 		if len(snapshots) != 0 {
-			snap = snapshots[i].SnapshotID
+			snap = *snapshots[i].SnapshotID
 		}
 
-		vol, err := config.ec2.CreateVolume(size, config.AZ, "", snap, config.Iops)
+		vol, err := config.ec2.CreateVolume(&ec2.CreateVolumeInput{
+			Size:             aws.Long(int64(size)),
+			AvailabilityZone: &config.AZ,
+			SnapshotID:       &snap,
+			IOPS:             aws.Long(int64(config.Iops)),
+		})
 		if err != nil {
 			return err
 		}
-		tags := map[string]string{
-			"Name":        fmt.Sprintf("%s-%s-%d", config.Environment, name, i+1),
-			"Group":       name,
-			"Number":      strconv.Itoa(i + 1),
-			"Environment": config.Environment,
-			"Total":       strconv.Itoa(count),
+		tags := []*ec2.Tag{
+			{Key: aws.String("Name"), Value: aws.String(fmt.Sprintf("%s-%s-%d", config.Environment, name, i+1))},
+			{Key: aws.String("Group"), Value: &name},
+			{Key: aws.String("Number"), Value: aws.String(strconv.Itoa(i + 1))},
+			{Key: aws.String("Environment"), Value: &config.Environment},
+			{Key: aws.String("Total"), Value: aws.String(strconv.Itoa(count))},
 		}
-		fmt.Printf("Created volume %s (%s)\n", tags["Name"], vol.VolumeID)
+		fmt.Printf("Created volume %s (%s)\n", tag(tags, "Name"), *vol.VolumeID)
 		if snapshotGroupName != "" {
-			tags["SnapshotGroup"] = snapshotGroupName
+			tags = append(tags, &ec2.Tag{Key: aws.String("SnapshotGroup"), Value: &snapshotGroupName})
 		}
-		if err := config.ec2.CreateTags([]string{vol.VolumeID}, tags); err != nil {
-			log.Printf("Failed to create tags for %s", vol.VolumeID)
+		if _, err := config.ec2.CreateTags(&ec2.CreateTagsInput{
+			Resources: []*string{vol.VolumeID},
+			Tags:      tags,
+		}); err != nil {
+			log.Printf("Failed to create tags for %s", *vol.VolumeID)
 		}
 	}
 
@@ -246,7 +249,7 @@ func attach() error {
 	instanceID := flag.Arg(3)
 	if instanceID == "" {
 		var err error
-		instanceID, err = aws.GetMetadata(aws.MetadataInstanceID)
+		instanceID, err = awsutil.GetMetadata(awsutil.MetadataInstanceID)
 		if err != nil {
 			return fmt.Errorf("instance ID required when not running on EC2")
 		}
@@ -255,9 +258,11 @@ func attach() error {
 	// If the instanceID doesn't look like an instance_id (starting with "i-)
 	// then see if there's an instance with the tag Name that matches.
 	if instanceID[:2] != "i-" {
-		res, err := config.ec2.DescribeInstances(nil, 0, "", map[string][]string{
-			"tag:Name":        []string{instanceID},
-			"tag:Environment": []string{config.Environment},
+		res, err := config.ec2.DescribeInstances(&ec2.DescribeInstancesInput{
+			Filters: []*ec2.Filter{
+				{Name: aws.String("tag:Name"), Values: []*string{&instanceID}},
+				{Name: aws.String("tag:Environment"), Values: []*string{&config.Environment}},
+			},
 		})
 		if err != nil {
 			return err
@@ -270,7 +275,7 @@ func attach() error {
 		if n := len(res.Reservations[0].Instances); n > 1 {
 			return fmt.Errorf("more than one instance (%d) with name %s not found", n, instanceID)
 		}
-		instanceID = res.Reservations[0].Instances[0].InstanceID
+		instanceID = *res.Reservations[0].Instances[0].InstanceID
 	}
 
 	vols, err := findGroup(name)
@@ -282,7 +287,7 @@ func attach() error {
 	}
 
 	// Validate the correct number of volumes were returned
-	if total, err := strconv.Atoi(vols[0].Tags["Total"]); err != nil {
+	if total, err := strconv.Atoi(tag(vols[0].Tags, "Total")); err != nil {
 		return err
 	} else if len(vols) != total {
 		return fmt.Errorf("expected %d volumes but found %d", total, len(vols))
@@ -290,23 +295,27 @@ func attach() error {
 
 	// Make sure the volumes aren't already attached
 	for _, v := range vols {
-		if v.Attachment != nil {
-			return fmt.Errorf("volume %s (%s) is already attached to %s (%s)", v.VolumeID, v.Tags["Name"], v.Attachment.InstanceID, v.Attachment.Status)
+		if len(v.Attachments) != 0 {
+			return fmt.Errorf("volume %s (%s) is already attached to %s (%s)", *v.VolumeID, tag(v.Tags, "Name"), *v.Attachments[0].InstanceID, *v.Attachments[0].State)
 		}
 	}
 
 	for _, v := range vols {
-		num, err := strconv.Atoi(v.Tags["Number"])
+		num, err := strconv.Atoi(tag(v.Tags, "Number"))
 		if err != nil {
 			return err
 		}
 		dev := firstDevice[:len(firstDevice)-1] + string(firstDevice[len(firstDevice)-1]+uint8(num-1))
-		fmt.Printf("Attaching %s (%s) to %s as %s... ", v.VolumeID, v.Tags["Name"], instanceID, dev)
-		if res, err := config.ec2.AttachVolume(v.VolumeID, instanceID, dev); err == nil {
-			fmt.Printf("%s\n", res.Status)
-		} else {
+		fmt.Printf("Attaching %s (%s) to %s as %s... ", *v.VolumeID, tag(v.Tags, "Name"), instanceID, dev)
+		res, err := config.ec2.AttachVolume(&ec2.AttachVolumeInput{
+			VolumeID:   v.VolumeID,
+			InstanceID: &instanceID,
+			Device:     &dev,
+		})
+		if err != nil {
 			return err
 		}
+		fmt.Printf("%s\n", *res.State)
 	}
 	return nil
 }
@@ -326,13 +335,13 @@ func detach() error {
 	}
 
 	for _, v := range vols {
-		if v.Attachment != nil && v.Attachment.Status != "available" {
-			fmt.Printf("Detaching %s (%s) from %s... ", v.VolumeID, v.Tags["Name"], v.Attachment.InstanceID)
-			if res, err := config.ec2.DetachVolume(v.VolumeID, "", "", false); err == nil {
-				fmt.Println(res.Status)
-			} else {
+		if len(v.Attachments) != 0 && *v.Attachments[0].State != "available" {
+			fmt.Printf("Detaching %s (%s) from %s... ", *v.VolumeID, tag(v.Tags, "Name"), *v.Attachments[0].InstanceID)
+			res, err := config.ec2.DetachVolume(&ec2.DetachVolumeInput{VolumeID: v.VolumeID})
+			if err != nil {
 				return err
 			}
+			fmt.Println(res.State)
 		}
 	}
 
@@ -352,15 +361,17 @@ func gcSnapshots() error {
 		toKeep = 0
 	}
 
-	snaps, err := config.ec2.DescribeSnapshots(nil, []string{"self"}, nil,
-		map[string][]string{
-			"tag:Group":       []string{name},
-			"tag:Environment": []string{config.Environment},
-		})
+	res, err := config.ec2.DescribeSnapshots(&ec2.DescribeSnapshotsInput{
+		OwnerIDs: []*string{aws.String("self")},
+		Filters: []*ec2.Filter{
+			{Name: aws.String("tag:Group"), Values: []*string{&name}},
+			{Name: aws.String("tag:Environment"), Values: []*string{&config.Environment}},
+		},
+	})
 	if err != nil {
 		return fmt.Errorf("failed to lookup snapshots: %+v", err)
 	}
-	sort.Sort(snapshotSort(snaps))
+	sort.Sort(snapshotSort(res.Snapshots))
 
 	// s := snaps[0]
 	// desc := s.Description
@@ -371,19 +382,19 @@ func gcSnapshots() error {
 	// snapshots = make([]*ec2.Snapshot, count)
 
 	desc := ""
-	for _, s := range snaps {
-		if s.Description != desc {
+	for _, s := range res.Snapshots {
+		if *s.Description != desc {
 			first := desc == ""
-			desc = s.Description
+			desc = *s.Description
 			if !first {
 				toKeep--
 			}
 			if toKeep <= 0 && config.Verbose {
-				fmt.Printf("deleting snapshot group '%s'\n", s.Description)
+				fmt.Printf("deleting snapshot group '%s'\n", *s.Description)
 			}
 		}
 		if toKeep <= 0 {
-			if err := config.ec2.DeleteSnapshot(s.SnapshotID); err != nil {
+			if _, err := config.ec2.DeleteSnapshot(&ec2.DeleteSnapshotInput{SnapshotID: s.SnapshotID}); err != nil {
 				return err
 			}
 		}
@@ -396,4 +407,13 @@ func gcSnapshots() error {
 	// }
 
 	return nil
+}
+
+func tag(tags []*ec2.Tag, key string) string {
+	for _, t := range tags {
+		if *t.Key == key {
+			return *t.Value
+		}
+	}
+	return ""
 }

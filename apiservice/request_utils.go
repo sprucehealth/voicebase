@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
@@ -143,9 +144,14 @@ func QueueUpJob(queue *common.SQSQueue, msg interface{}) error {
 	if err != nil {
 		return err
 	}
+	jsonDataString := string(jsonData)
 
 	for i := 0; i < numRetries; i++ {
-		if err := queue.QueueService.SendMessage(queue.QueueURL, 0, string(jsonData)); err != nil {
+		_, err := queue.QueueService.SendMessage(&sqs.SendMessageInput{
+			QueueURL:    &queue.QueueURL,
+			MessageBody: &jsonDataString,
+		})
+		if err != nil {
 			golog.Errorf("Unable to queue job: %s. Retrying after %d seconds", err, retryIntervalSeconds)
 			time.Sleep(time.Duration(retryIntervalSeconds) * time.Second)
 			continue

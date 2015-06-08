@@ -3,9 +3,9 @@ package medrecord
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
@@ -20,10 +20,10 @@ import (
 
 const emailType = "medical-record-ready"
 
-const (
-	batchSize         = 1
-	visibilityTimeout = 60 * 5
-	waitTimeSeconds   = 20
+var (
+	batchSize         int64 = 1
+	visibilityTimeout int64 = 60 * 5
+	waitTimeSeconds   int64 = 20
 )
 
 type Worker struct {
@@ -98,14 +98,19 @@ func (w *Worker) Start() {
 }
 
 func (w *Worker) Do() error {
-	msgs, err := w.queue.QueueService.ReceiveMessage(w.queue.QueueURL, nil, batchSize, visibilityTimeout, waitTimeSeconds)
+	res, err := w.queue.QueueService.ReceiveMessage(&sqs.ReceiveMessageInput{
+		QueueURL:            &w.queue.QueueURL,
+		MaxNumberOfMessages: &batchSize,
+		VisibilityTimeout:   &visibilityTimeout,
+		WaitTimeSeconds:     &waitTimeSeconds,
+	})
 	if err != nil {
 		return err
 	}
 
-	for _, m := range msgs {
+	for _, m := range res.Messages {
 		msg := &queueMessage{}
-		if err := json.Unmarshal([]byte(m.Body), msg); err != nil {
+		if err := json.Unmarshal([]byte(*m.Body), msg); err != nil {
 			golog.Errorf(err.Error())
 			continue
 		}
@@ -113,7 +118,11 @@ func (w *Worker) Do() error {
 			w.statFailed.Inc(1)
 			golog.Errorf(err.Error())
 		} else {
-			if err := w.queue.QueueService.DeleteMessage(w.queue.QueueURL, m.ReceiptHandle); err != nil {
+			_, err := w.queue.QueueService.DeleteMessage(&sqs.DeleteMessageInput{
+				QueueURL:      &w.queue.QueueURL,
+				ReceiptHandle: m.ReceiptHandle,
+			})
+			if err != nil {
 				golog.Errorf(err.Error())
 				w.statFailed.Inc(1)
 			} else {
@@ -154,9 +163,8 @@ func (w *Worker) processMessage(msg *queueMessage) error {
 		return fmt.Errorf("Failed to render medical record: %s", err)
 	}
 
-	headers := http.Header{"Content-Type": []string{"text/html"}}
 	// TODO: caching headers
-	url, err := w.store.Put(fmt.Sprintf("%d.html", mr.ID), recordFile, headers)
+	url, err := w.store.Put(fmt.Sprintf("%d.html", mr.ID), recordFile, "text/html", nil)
 	if err != nil {
 		return err
 	}

@@ -81,11 +81,10 @@ func (h *doctorProfileImageAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.
 			return
 		}
 
-		headers := http.Header{
-			"Content-Type":             []string{head.Header.Get("Content-Type")},
-			"X-Amz-Meta-Original-Name": []string{head.Filename},
+		meta := map[string]string{
+			"X-Amz-Meta-Original-Name": head.Filename,
 		}
-		storeID, err := h.imageStore.PutReader(fmt.Sprintf("doctor_%d_%s", doctorID, imageSuffix), file, size, headers)
+		storeID, err := h.imageStore.PutReader(fmt.Sprintf("doctor_%d_%s", doctorID, imageSuffix), file, size, "", meta)
 		if err != nil {
 			www.APIInternalError(w, r, err)
 			return

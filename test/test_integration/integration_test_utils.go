@@ -21,7 +21,7 @@ import (
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/aws/sqs"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/responses"
@@ -359,7 +359,7 @@ func SetupTestWithActiveCostAndVisitSubmitted(testData *TestData, t *testing.T) 
 
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
-		QueueService: &sqs.StubSQS{},
+		QueueService: &awsutil.SQS{},
 	}
 
 	testData.Config.VisitQueue = stubSQSQueue

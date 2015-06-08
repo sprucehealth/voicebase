@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -55,7 +56,11 @@ func (h *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		apiservice.WriteError(err, w, r)
 		return
 	}
-	if err := h.queue.QueueService.SendMessage(h.queue.QueueURL, 0, string(js)); err != nil {
+	jsStr := string(js)
+	if _, err := h.queue.QueueService.SendMessage(&sqs.SendMessageInput{
+		QueueURL:    &h.queue.QueueURL,
+		MessageBody: &jsStr,
+	}); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}

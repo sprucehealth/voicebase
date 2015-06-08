@@ -7,9 +7,9 @@ import (
 	"math/big"
 	"os"
 
-	goamz "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mitchellh/goamz/aws"
-	"github.com/sprucehealth/backend/libs/aws"
-	"github.com/sprucehealth/backend/libs/aws/sqs"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 )
 
 const MinimumTokenLength = 20
@@ -43,15 +43,6 @@ func GenerateToken() (string, error) {
 	return tok, nil
 }
 
-func AWSAuthAdapter(auth aws.Auth) goamz.Auth {
-	keys := auth.Keys()
-	return goamz.Auth{
-		AccessKey: keys.AccessKey,
-		SecretKey: keys.SecretKey,
-		Token:     keys.Token,
-	}
-}
-
 type ERxSourceType int64
 
 const (
@@ -67,28 +58,19 @@ type PrescriptionStatusCheckMessage struct {
 }
 
 type SQSQueue struct {
-	QueueService sqs.SQSService
+	QueueService sqsiface.SQSAPI
 	QueueURL     string
 }
 
-func NewQueue(auth aws.Auth, region aws.Region, queueName string) (*SQSQueue, error) {
-	awsClient := &aws.Client{
-		Auth: auth,
-	}
-
-	sq := &sqs.SQS{
-		Region: region,
-		Client: awsClient,
-	}
-
-	queueURL, err := sq.GetQueueURL(queueName, "")
+func NewQueue(config *aws.Config, queueName string) (*SQSQueue, error) {
+	sq := sqs.New(config)
+	res, err := sq.GetQueueURL(&sqs.GetQueueURLInput{QueueName: &queueName})
 	if err != nil {
 		return nil, err
 	}
-
 	return &SQSQueue{
 		QueueService: sq,
-		QueueURL:     queueURL,
+		QueueURL:     *res.QueueURL,
 	}, nil
 }
 

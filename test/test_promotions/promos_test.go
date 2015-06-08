@@ -6,7 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
-	"github.com/sprucehealth/backend/libs/aws/sqs"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -16,7 +16,7 @@ func TestPromotion_NewUserPercentOff(t *testing.T) {
 	defer testData.Close()
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
-		QueueService: &sqs.StubSQS{},
+		QueueService: &awsutil.SQS{},
 	}
 	testData.Config.VisitQueue = stubSQSQueue
 	testData.StartAPIServer(t)
@@ -122,7 +122,7 @@ func TestPromotion_NewUserDollarOff(t *testing.T) {
 	defer testData.Close()
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
-		QueueService: &sqs.StubSQS{},
+		QueueService: &awsutil.SQS{},
 	}
 	testData.Config.VisitQueue = stubSQSQueue
 	testData.StartAPIServer(t)
@@ -227,7 +227,7 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 	defer testData.Close()
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
-		QueueService: &sqs.StubSQS{},
+		QueueService: &awsutil.SQS{},
 	}
 	testData.Config.VisitQueue = stubSQSQueue
 	testData.StartAPIServer(t)
@@ -308,7 +308,7 @@ func TestPromotion_ExistingUserAccountCredit(t *testing.T) {
 	defer testData.Close()
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
-		QueueService: &sqs.StubSQS{},
+		QueueService: &awsutil.SQS{},
 	}
 	testData.Config.VisitQueue = stubSQSQueue
 	testData.StartAPIServer(t)
@@ -341,7 +341,7 @@ func TestPromotion_NewUserRouteToDoctor(t *testing.T) {
 	defer testData.Close()
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
-		QueueService: &sqs.StubSQS{},
+		QueueService: &awsutil.SQS{},
 	}
 	testData.Config.VisitQueue = stubSQSQueue
 	testData.StartAPIServer(t)
@@ -437,7 +437,7 @@ func TestPromotion_ExistingUserRouteToDoctor(t *testing.T) {
 	defer testData.Close()
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
-		QueueService: &sqs.StubSQS{},
+		QueueService: &awsutil.SQS{},
 	}
 	testData.Config.VisitQueue = stubSQSQueue
 	testData.StartAPIServer(t)
@@ -489,7 +489,7 @@ func TestPromotion_ExistingUserRouteToDoctor_Uneligible(t *testing.T) {
 	defer testData.Close()
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
-		QueueService: &sqs.StubSQS{},
+		QueueService: &awsutil.SQS{},
 	}
 	testData.Config.VisitQueue = stubSQSQueue
 	testData.StartAPIServer(t)

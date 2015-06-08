@@ -12,7 +12,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost"
-	"github.com/sprucehealth/backend/libs/aws/sqs"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/stripe"
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/test"
@@ -27,7 +27,7 @@ func TestApplePay(t *testing.T) {
 	SetupActiveCostForAcne(testData, t)
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
-		QueueService: &sqs.StubSQS{},
+		QueueService: &awsutil.SQS{},
 	}
 	testData.Config.VisitQueue = stubSQSQueue
 	testData.StartAPIServer(t)

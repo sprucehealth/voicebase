@@ -11,7 +11,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
-	"github.com/sprucehealth/backend/libs/aws/sqs"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -21,7 +21,7 @@ func TestReferrals_NewPatientReferral(t *testing.T) {
 	defer testData.Close()
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
-		QueueService: &sqs.StubSQS{},
+		QueueService: &awsutil.SQS{},
 	}
 	testData.Config.VisitQueue = stubSQSQueue
 	testData.StartAPIServer(t)
@@ -230,7 +230,7 @@ func TestReferrals_NewDoctorReferral(t *testing.T) {
 	defer testData.Close()
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
-		QueueService: &sqs.StubSQS{},
+		QueueService: &awsutil.SQS{},
 	}
 	testData.Config.VisitQueue = stubSQSQueue
 	testData.StartAPIServer(t)

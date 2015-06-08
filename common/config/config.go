@@ -19,13 +19,15 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/BurntSushi/toml"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/s3"
 	flags "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/jessevdk/go-flags"
-	goamz "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mitchellh/goamz/aws"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/mitchellh/goamz/s3"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/aws"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -87,7 +89,7 @@ type BaseConfig struct {
 
 	Version bool `long:"version" description:"Show version and exit" toml:"-"`
 
-	awsAuth     aws.Auth
+	awsConfig   *aws.Config
 	awsAuthOnce sync.Once
 }
 
@@ -143,24 +145,24 @@ var validEnvironments = map[string]bool{
 	"demo":    true,
 }
 
-func (c *BaseConfig) AWSAuth() (auth aws.Auth, err error) {
+func (c *BaseConfig) AWS() *aws.Config {
 	c.awsAuthOnce.Do(func() {
+		var cred *credentials.Credentials
 		if c.AWSRole != "" {
-			c.awsAuth, err = aws.CredentialsForRole(c.AWSRole)
+			cred = credentials.NewEC2RoleCredentials(&http.Client{Timeout: 2 * time.Second}, "", time.Minute*5)
+		} else if c.AWSAccessKey != "" && c.AWSSecretKey != "" {
+			cred = credentials.NewStaticCredentials(c.AWSAccessKey, c.AWSSecretKey, "")
 		} else {
-			keys := aws.KeysFromEnvironment()
-			if c.AWSAccessKey != "" && c.AWSSecretKey != "" {
-				keys.AccessKey = c.AWSAccessKey
-				keys.SecretKey = c.AWSSecretKey
-			} else {
-				c.AWSAccessKey = keys.AccessKey
-				c.AWSSecretKey = keys.SecretKey
-			}
-			c.awsAuth = keys
+			cred = credentials.NewEnvCredentials()
+		}
+		c.awsConfig = &aws.Config{
+			Credentials: cred,
+			Region:      c.AWSRegion,
 		}
 	})
-	auth = c.awsAuth
-	return
+	// Return a copy
+	cnf := *c.awsConfig
+	return &cnf
 }
 
 func (c *BaseConfig) OpenURI(uri string) (io.ReadCloser, error) {
@@ -171,15 +173,14 @@ func (c *BaseConfig) OpenURI(uri string) (io.ReadCloser, error) {
 			return nil, err
 		}
 		if ur.Scheme == "s3" {
-			awsAuth, err := c.AWSAuth()
+			out, err := s3.New(c.AWS()).GetObject(&s3.GetObjectInput{
+				Bucket: &ur.Host,
+				Key:    &ur.Path,
+			})
 			if err != nil {
 				return nil, err
 			}
-			s3 := s3.New(common.AWSAuthAdapter(awsAuth), goamz.Regions[c.AWSRegion])
-			rd, err = s3.Bucket(ur.Host).GetReader(ur.Path)
-			if err != nil {
-				return nil, err
-			}
+			rd = out.Body
 		} else {
 			if res, err := http.Get(uri); err != nil {
 				return nil, err
@@ -208,27 +209,26 @@ func (c *BaseConfig) ReadURI(uri string) ([]byte, error) {
 	}
 }
 
-func LoadConfigFile(configURL string, config interface{}, awsAuther func() (aws.Auth, error)) error {
+func LoadConfigFile(configURL string, config interface{}, awsConfig func() *aws.Config) error {
 	if configURL == "" {
 		return nil
 	}
 
 	var rd io.ReadCloser
 	if strings.Contains(configURL, "://") {
-		awsAuth, err := awsAuther()
-		if err != nil {
-			return fmt.Errorf("config: failed to get AWS auth: %+v", err)
-		}
 		ur, err := url.Parse(configURL)
 		if err != nil {
 			return fmt.Errorf("config: failed to parse config url %s: %+v", configURL, err)
 		}
 		if ur.Scheme == "s3" {
-			s3 := s3.New(common.AWSAuthAdapter(awsAuth), goamz.USEast)
-			rd, err = s3.Bucket(ur.Host).GetReader(ur.Path)
+			obj, err := s3.New(awsConfig()).GetObject(&s3.GetObjectInput{
+				Bucket: &ur.Host,
+				Key:    &ur.Path,
+			})
 			if err != nil {
 				return fmt.Errorf("config: failed to get config from s3 %s: %+v", configURL, err)
 			}
+			rd = obj.Body
 		} else {
 			if res, err := http.Get(configURL); err != nil {
 				return fmt.Errorf("config: failed to fetch config from URL %s: %+v", configURL, err)
@@ -302,7 +302,7 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 		os.Exit(0)
 	}
 
-	if err := LoadConfigFile(baseConfig.ConfigPath, config, baseConfig.AWSAuth); err != nil {
+	if err := LoadConfigFile(baseConfig.ConfigPath, config, baseConfig.AWS); err != nil {
 		return nil, err
 	}
 
@@ -316,7 +316,7 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 	}
 
 	if baseConfig.AWSRegion == "" {
-		az, err := aws.GetMetadata(aws.MetadataAvailabilityZone)
+		az, err := awsutil.GetMetadata(awsutil.MetadataAvailabilityZone)
 		if err != nil {
 			return nil, fmt.Errorf("config: no region specified and failed to get from instance metadata: %+v", err)
 		}

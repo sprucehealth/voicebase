@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/sprucehealth/backend/libs/cmd"
 	"github.com/sprucehealth/backend/libs/cmd/cryptsetup"
 	"github.com/sprucehealth/backend/libs/cmd/lvm"
@@ -44,7 +45,7 @@ func luksMount() error {
 	}
 
 	// Validate the correct number of volumes were returned
-	if total, err := strconv.Atoi(vols[0].Tags["Total"]); err != nil {
+	if total, err := strconv.Atoi(tag(vols[0].Tags, "Total")); err != nil {
 		return err
 	} else if len(vols) != total {
 		return fmt.Errorf("expected %d volumes but found %d", total, len(vols))
@@ -55,22 +56,24 @@ func luksMount() error {
 	var devices []string
 	for _, v := range vols {
 		status := ""
-		if v.Attachment != nil {
-			status = v.Attachment.Status
+		if len(v.Attachments) != 0 {
+			status = *v.Attachments[0].State
 		}
 		if status != "attached" {
-			return fmt.Errorf("volume %s (%s) is not attached: %s", v.VolumeID, v.Tags["Name"], status)
+			return fmt.Errorf("volume %s (%s) is not attached: %s", *v.VolumeID, tag(v.Tags, "Name"), status)
 		}
 		if instanceID == "" {
-			instanceID = v.Attachment.InstanceID
-		} else if instanceID != v.Attachment.InstanceID {
+			instanceID = *v.Attachments[0].InstanceID
+		} else if instanceID != *v.Attachments[0].InstanceID {
 			return fmt.Errorf("some volumes are attached to different instances")
 		}
-		devices = append(devices, v.Attachment.Device)
+		devices = append(devices, *v.Attachments[0].Device)
 	}
 	sort.Strings(devices)
 
-	res, err := config.ec2.DescribeInstances([]string{instanceID}, 0, "", nil)
+	res, err := config.ec2.DescribeInstances(&ec2.DescribeInstancesInput{
+		InstanceIDs: []*string{&instanceID},
+	})
 	if err != nil {
 		return err
 	}
@@ -78,7 +81,7 @@ func luksMount() error {
 		return fmt.Errorf("instance %s not found", instanceID)
 	}
 	inst := res.Reservations[0].Instances[0]
-	ip := inst.PrivateIPAddress
+	ip := *inst.PrivateIPAddress
 	fmt.Printf("IP: %s\n", ip)
 
 	cmr, err := cmd.NewSSHCommander(fmt.Sprintf("%s@%s:22", config.User, ip), fmt.Sprintf("%s:22", config.Bastion))

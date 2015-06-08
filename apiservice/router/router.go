@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
 	"github.com/sprucehealth/backend/address"
@@ -28,7 +29,6 @@ import (
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/email/campaigns"
 	"github.com/sprucehealth/backend/environment"
-	"github.com/sprucehealth/backend/libs/aws/sns"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
@@ -59,7 +59,7 @@ type Config struct {
 	AddressValidator         address.Validator
 	PharmacySearchAPI        pharmacy.PharmacySearchAPI
 	DiagnosisAPI             diagnosis.API
-	SNSClient                sns.SNSService
+	SNSClient                snsiface.SNSAPI
 	PaymentAPI               apiservice.StripeClient
 	MemcacheClient           *memcache.Client
 	NotifyConfigs            *config.NotificationConfigs

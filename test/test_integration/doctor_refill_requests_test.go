@@ -18,7 +18,7 @@ import (
 	doctorpkg "github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/aws/sqs"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/test"
@@ -790,9 +790,6 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 
 	// lets go ahead and attempt to approve this refill request
 	comment := "this is a test"
-	erxStatusQueue := &common.SQSQueue{}
-	erxStatusQueue.QueueService = &sqs.StubSQS{}
-	erxStatusQueue.QueueURL = "local-erx"
 
 	approveRefillRequest(refillRequest, doctor.AccountID.Int64(), comment, testData, t)
 
@@ -1621,7 +1618,6 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 }
 
 func TestDenyRefillRequestWithDNTFWithUnlinkedTreatment(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -1629,7 +1625,7 @@ func TestDenyRefillRequestWithDNTFWithUnlinkedTreatment(t *testing.T) {
 	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERXStatusSent}, false)
 
 	if len(unlinkedTreatment.ERx.RxHistory) != 3 {
-		t.Fatalf("Expcted 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
+		t.Fatalf("Expected 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
 	}
 
 	for _, unlinkedTreatmentStatusEvent := range unlinkedTreatment.ERx.RxHistory {
@@ -1640,7 +1636,6 @@ func TestDenyRefillRequestWithDNTFWithUnlinkedTreatment(t *testing.T) {
 }
 
 func TestDenyRefillRequestWithDNTFWithUnlinkedTreatmentFromTemplatedTreatment(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -1648,7 +1643,7 @@ func TestDenyRefillRequestWithDNTFWithUnlinkedTreatmentFromTemplatedTreatment(t 
 	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERXStatusSent}, true)
 
 	if len(unlinkedTreatment.ERx.RxHistory) != 3 {
-		t.Fatalf("Expcted 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
+		t.Fatalf("Expected 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
 	}
 
 	for _, unlinkedTreatmentStatusEvent := range unlinkedTreatment.ERx.RxHistory {
@@ -1659,7 +1654,6 @@ func TestDenyRefillRequestWithDNTFWithUnlinkedTreatmentFromTemplatedTreatment(t 
 }
 
 func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -1668,7 +1662,7 @@ func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERXStatusError, StatusDetails: errorMessage}, false)
 
 	if len(unlinkedTreatment.ERx.RxHistory) != 3 {
-		t.Fatalf("Expcted 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
+		t.Fatalf("Expected 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
 	}
 
 	for _, unlinkedTreatmentStatusEvent := range unlinkedTreatment.ERx.RxHistory {
@@ -2100,7 +2094,6 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 }
 
 func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSend(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -2119,7 +2112,6 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSend(t *testing.T
 }
 
 func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSendAddingFromTemplatedTreatment(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -2138,7 +2130,6 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSendAddingFromTem
 }
 
 func TestDenyRefillRequestWithDNTFWithLinkedTreatmentErrorSend(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -2176,7 +2167,6 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentErrorSend(t *testing.T) {
 }
 
 func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -2441,29 +2431,28 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 		t.Fatalf("Expected 3 refill request events instead got %d", len(refillRequestStatusEvents))
 	}
 
-	stubSqs := testData.Config.ERxStatusQueue.QueueService.(*sqs.StubSQS)
+	stubSqs := testData.Config.ERxStatusQueue.QueueService.(*awsutil.SQS)
 
-	if stubSqs.MsgQueue[testData.Config.ERxStatusQueue.QueueURL].Len() != 2 {
-		t.Fatalf("Expected 2 items to remain in the msg queue instead got %d", len(stubSqs.MsgQueue))
+	if len(stubSqs.Messages[testData.Config.ERxStatusQueue.QueueURL]) != 2 {
+		t.Fatalf("Expected 2 items to remain in the msg queue instead got %d", len(stubSqs.Messages))
 	}
 
 	// now lets go ahead and ensure that the refill request is successfully sent to the pharmacy
 	statusWorker.Do()
 
-	if stubSqs.MsgQueue[testData.Config.ERxStatusQueue.QueueURL].Len() != 1 {
-		t.Fatalf("Expected 1 item to remain in the msg queue instead got %d", len(stubSqs.MsgQueue))
+	if len(stubSqs.Messages[testData.Config.ERxStatusQueue.QueueURL]) != 1 {
+		t.Fatalf("Expected 1 item to remain in the msg queue instead got %d", len(stubSqs.Messages))
 	}
 
 	// now lets go ahead and ensure that the refill request is successfully sent to the pharmacy
 	statusWorker.Do()
 
-	if stubSqs.MsgQueue[testData.Config.ERxStatusQueue.QueueURL].Len() != 0 {
-		t.Fatalf("Expected 0 item to remain in the msg queue instead got %d", len(stubSqs.MsgQueue))
+	if len(stubSqs.Messages[testData.Config.ERxStatusQueue.QueueURL]) != 0 {
+		t.Fatalf("Expected 0 item to remain in the msg queue instead got %d", len(stubSqs.Messages))
 	}
 }
 
 func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -2561,13 +2550,13 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	}
 
 	// insert erxStatusEvent for this treatment to indicate that it was sent
-	_, err = testData.DB.Exec(`insert into erx_status_events (treatment_id, erx_status, creation_date, status) values (?,?,?,?)`, treatment1.ID.Int64(), api.ERXStatusSent, testTime, "ACTIVE")
+	_, err = testData.DB.Exec(`INSERT INTO erx_status_events (treatment_id, erx_status, creation_date, status) VALUES (?,?,?,?)`, treatment1.ID.Int64(), api.ERXStatusSent, testTime, "ACTIVE")
 	if err != nil {
-		t.Fatal("Unable to insert erx_status_events x`")
+		t.Fatal("Unable to insert erx_status_events")
 	}
 
 	// update the treatment with prescription id and pharmacy id for where prescription was routed
-	_, err = testData.DB.Exec(`update treatment set erx_id = ?, pharmacy_id=? where id = ?`, treatment1.ERx.PrescriptionID.Int64(), pharmacyToReturn.LocalID, treatment1.ID.Int64())
+	_, err = testData.DB.Exec(`UPDATE treatment SET erx_id = ?, pharmacy_id = ? WHERE id = ?`, treatment1.ERx.PrescriptionID.Int64(), pharmacyToReturn.LocalID, treatment1.ID.Int64())
 	if err != nil {
 		t.Fatal("Unable to update treatment with erx id: " + err.Error())
 	}
@@ -2646,7 +2635,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	refillRXWorker.Do()
 
 	var count int64
-	err = testData.DB.QueryRow(`select count(*) from requested_treatment`).Scan(&count)
+	err = testData.DB.QueryRow(`SELECT count(*) FROM requested_treatment`).Scan(&count)
 	if err != nil {
 		t.Fatal("Unable to get a count for the unumber of treatments in the requested_treatment table " + err.Error())
 	}
@@ -2717,7 +2706,6 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 }
 
 func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -2902,7 +2890,6 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 }
 
 func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -3141,7 +3128,6 @@ func approveRefillRequest(refillRequest *common.RefillRequestItem, doctorAccount
 }
 
 func denyRefillRequest(refillRequest *common.RefillRequestItem, doctorAccountID int64, comment string, testData *TestData, t *testing.T) {
-
 	denialReasons, err := testData.DataAPI.GetRefillRequestDenialReasons()
 	if err != nil || len(denialReasons) == 0 {
 		t.Fatal("Unable to get the denial reasons for the refill request")

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -13,6 +14,16 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
+)
+
+const (
+	successfulERxRoutingPharmacyID = 47731
+)
+
+var (
+	defaultTimePeriodSeconds int64 = 20
+	visibilityTimeout        int64 = 30
+	batchSize                int64 = 1
 )
 
 type erxRouteMessage struct {
@@ -32,13 +43,6 @@ type worker struct {
 	erxRouteSuccess *metrics.Counter
 	timePeriod      int64
 }
-
-const (
-	defaultTimePeriodSeconds       = 20
-	visibilityTimeout              = 30
-	batchSize                      = 1
-	successfulERxRoutingPharmacyID = 47731
-)
 
 func StartWorker(dataAPI api.DataAPI, erxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher, erxRoutingQueue *common.SQSQueue, erxStatusQueue *common.SQSQueue, timePeriod int64, metricsRegistry metrics.Registry) {
 	if timePeriod == 0 {
@@ -85,19 +89,24 @@ func (w *worker) start() {
 }
 
 func (w *worker) consumeMessage() (bool, error) {
-	msgs, err := w.erxRoutingQueue.QueueService.ReceiveMessage(w.erxRoutingQueue.QueueURL, nil, batchSize, visibilityTimeout, defaultTimePeriodSeconds)
+	res, err := w.erxRoutingQueue.QueueService.ReceiveMessage(&sqs.ReceiveMessageInput{
+		QueueURL:            &w.erxRoutingQueue.QueueURL,
+		MaxNumberOfMessages: &batchSize,
+		VisibilityTimeout:   &visibilityTimeout,
+		WaitTimeSeconds:     &defaultTimePeriodSeconds,
+	})
 	if err != nil {
 		return false, err
 	}
 
-	if len(msgs) == 0 {
+	if len(res.Messages) == 0 {
 		return false, nil
 	}
 
 	msgsConsumed := true
-	for _, msg := range msgs {
+	for _, msg := range res.Messages {
 		routeMessage := erxRouteMessage{}
-		if err := json.Unmarshal([]byte(msg.Body), &routeMessage); err != nil {
+		if err := json.Unmarshal([]byte(*msg.Body), &routeMessage); err != nil {
 			golog.Errorf(err.Error())
 			msgsConsumed = false
 		}
@@ -106,7 +115,11 @@ func (w *worker) consumeMessage() (bool, error) {
 			golog.Errorf(err.Error())
 			msgsConsumed = false
 		} else {
-			if err := w.erxRoutingQueue.QueueService.DeleteMessage(w.erxRoutingQueue.QueueURL, msg.ReceiptHandle); err != nil {
+			_, err := w.erxRoutingQueue.QueueService.DeleteMessage(&sqs.DeleteMessageInput{
+				QueueURL:      &w.erxRoutingQueue.QueueURL,
+				ReceiptHandle: msg.ReceiptHandle,
+			})
+			if err != nil {
 				golog.Errorf(err.Error())
 				msgsConsumed = false
 			}

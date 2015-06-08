@@ -119,18 +119,16 @@ func (h *uploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case nil:
 			defer file.Close()
 
-			headers := http.Header{
-				"Content-Type":             []string{fileHandler.Header.Get("Content-Type")},
-				"X-Amz-Meta-Original-Name": []string{fileHandler.Filename},
-			}
-
 			size, err := common.SeekerSize(file)
 			if err != nil {
 				www.InternalServerError(w, r, err)
 				return
 			}
 
-			fileID, err := h.store.PutReader(fmt.Sprintf("doctor-%d-%s", doctorID, h.fileTag), file, size, headers)
+			meta := map[string]string{
+				"X-Amz-Meta-Original-Name": fileHandler.Filename,
+			}
+			fileID, err := h.store.PutReader(fmt.Sprintf("doctor-%d-%s", doctorID, h.fileTag), file, size, "", meta)
 			if err != nil {
 				www.InternalServerError(w, r, err)
 				return

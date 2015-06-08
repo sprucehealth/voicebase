@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
@@ -19,13 +20,16 @@ import (
 )
 
 const (
-	batchSize               = 1
-	visibilityTimeout       = 60 * 5
-	waitTimeSeconds         = 20
 	timeBetweenEmailRetries = 10
 	receiptNumberMax        = 99999
 	receiptNumDigits        = 5
 	defaultTimePeriod       = 60
+)
+
+var (
+	batchSize         int64 = 1
+	visibilityTimeout int64 = 60 * 5
+	waitTimeSeconds   int64 = 20
 )
 
 type Worker struct {
@@ -119,16 +123,21 @@ func (w *Worker) Do() error {
 }
 
 func (w *Worker) consumeMessage() (bool, error) {
-	msgs, err := w.queue.QueueService.ReceiveMessage(w.queue.QueueURL, nil, batchSize, visibilityTimeout, waitTimeSeconds)
+	res, err := w.queue.QueueService.ReceiveMessage(&sqs.ReceiveMessageInput{
+		QueueURL:            &w.queue.QueueURL,
+		MaxNumberOfMessages: &batchSize,
+		VisibilityTimeout:   &visibilityTimeout,
+		WaitTimeSeconds:     &waitTimeSeconds,
+	})
 	if err != nil {
 		return false, err
 	}
 
-	allMsgsConsumed := len(msgs) > 0
+	allMsgsConsumed := len(res.Messages) > 0
 
-	for _, m := range msgs {
+	for _, m := range res.Messages {
 		v := &VisitMessage{}
-		if err := json.Unmarshal([]byte(m.Body), v); err != nil {
+		if err := json.Unmarshal([]byte(*m.Body), v); err != nil {
 			return false, err
 		}
 
@@ -136,7 +145,11 @@ func (w *Worker) consumeMessage() (bool, error) {
 			golog.Errorf(err.Error())
 			allMsgsConsumed = false
 		} else {
-			if err := w.queue.QueueService.DeleteMessage(w.queue.QueueURL, m.ReceiptHandle); err != nil {
+			_, err := w.queue.QueueService.DeleteMessage(&sqs.DeleteMessageInput{
+				QueueURL:      &w.queue.QueueURL,
+				ReceiptHandle: m.ReceiptHandle,
+			})
+			if err != nil {
 				golog.Errorf(err.Error())
 				allMsgsConsumed = false
 			}
