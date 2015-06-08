@@ -1630,7 +1630,10 @@ func setupRefill_Deny_DNTF(t *testing.T, testData *TestData, endErxStatus common
 	return unlinkedTreatment
 }
 
-func TestRefill_Deny_DNTF_UnlinkedPatient(t *testing.T) {
+// TestRefill_Deny_DNTF_NonSprucePatient is an integration test
+// to ensure that the Deny New Request To Follow experience for a refill
+// request works as expected for a non-Spruce patient.
+func TestRefill_Deny_DNTF_NonSprucePatient(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -1648,7 +1651,11 @@ func TestRefill_Deny_DNTF_UnlinkedPatient(t *testing.T) {
 	}
 }
 
-func TestRefill_Deny_DNTF_UnlinkedPatient_FromTemplate(t *testing.T) {
+// TestRefill_Deny_DNTF_NonSprucePatient_FromTemplate is an integration test
+// to ensure that the Deny New Request To Follow experience for a refill
+// request works well for a non-Spruce patient when the doctor attempts to
+// respond with a new request taht is picked from a templated treatment.
+func TestRefill_Deny_DNTF_NonSprucePatient_FromTemplate(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -1666,7 +1673,12 @@ func TestRefill_Deny_DNTF_UnlinkedPatient_FromTemplate(t *testing.T) {
 	}
 }
 
-func TestRefill_Deny_DNTF_UnlinkedPatient_Error(t *testing.T) {
+// TestRefill_Deny_DNTF_NonSprucePatient_Error is an integration test
+// to ensure that Deny New Request To Follow experience for a refill
+// request works well for a non-Spruce patient when the new prescription
+// routed in response to the refill request has an error in being routed
+// to the pharmacy.
+func TestRefill_Deny_DNTF_NonSprucePatient_Error(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -2091,8 +2103,8 @@ func setupRefill_Deny_DNTF_ExistingPatient(t *testing.T, testData *TestData, end
 	}
 
 	// create an artificial delay in between the newRX and sending states to ensure as would exist in the real world
-	_, err = testData.DB.Exec(`UPDATE unlinked_dntf_treatment_status_events SET creation_date = ? WHERE unlinked_dntf_treatment_id = ? and erx_status=?`,
-		time.Now().Add(5*time.Minute), linkedTreatment.ID.Int64(), api.ERXStatusSending)
+	_, err = testData.DB.Exec(`UPDATE erx_status_events SET creation_date = ? WHERE treatment_id = ? and erx_status=?`,
+		time.Now().Add(-5*time.Minute), linkedTreatment.ID.Int64(), api.ERXStatusSending)
 	test.OK(t, err)
 
 	// check erx status to be sent once its sent
@@ -2111,6 +2123,9 @@ func setupRefill_Deny_DNTF_ExistingPatient(t *testing.T, testData *TestData, end
 	return linkedTreatment
 }
 
+// TestRefill_Deny_DNTF_ExistingPatient is an integration test to ensure
+// that the DNTF process works well for an existing patient with a refill request
+// coming in for an existing treatment.
 func TestRefill_Deny_DNTF_ExistingPatient(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
@@ -2129,6 +2144,9 @@ func TestRefill_Deny_DNTF_ExistingPatient(t *testing.T) {
 	}
 }
 
+// TestRefill_Deny_DNTF_ExistingPatient_TemplatedTreatment is an integration test to ensure
+// that the DNTF process works well for an existing patient with a refill request
+// coming in for an existing treatment where the new rx is picked from a templated treatment.
 func TestRefill_Deny_DNTF_ExistingPatient_TemplatedTreatment(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
@@ -2147,6 +2165,9 @@ func TestRefill_Deny_DNTF_ExistingPatient_TemplatedTreatment(t *testing.T) {
 	}
 }
 
+// TestRefill_DNTF_ExistingPatient_Error is an integration test to ensure
+// that the DNTF process works well for an existing patient where the new rx created
+// has an error in being routed to the pharmacy.
 func TestRefill_DNTF_ExistingPatient_Error(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
@@ -2184,6 +2205,9 @@ func TestRefill_DNTF_ExistingPatient_Error(t *testing.T) {
 	}
 }
 
+// TestRefill_Status_MultipleRefills is an integration test to test the status of multiple refill
+// requests at once to ensure that the logic for the refill request worker works as expected
+// when working with refill requests in a batch.
 func TestRefill_Status_MultipleRefills(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
@@ -2909,7 +2933,9 @@ func TestRefill_ExistingPatient_NonexistentTreatment(t *testing.T) {
 	}
 }
 
-func TestRefill_UnlinkedPatient(t *testing.T) {
+// TestRefill_NonSprucePatient is an integration test to ensure that refill requests
+// work as expected for non spruce patients.
+func TestRefill_NonSprucePatient(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)

@@ -108,7 +108,7 @@ func getTestPreferredPharmacyAndTreatment() (*common.Treatment, *pharmacy.Pharma
 }
 
 // Test treatment in treatment plan that has an error after being in the sent state
-func TestTreatmentInErrorAfterSentState(t *testing.T) {
+func TestRXError_Treatment_ErrorAfterSentState(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	// enable erx routing so that we can test the different expected status events
@@ -210,7 +210,7 @@ func TestTreatmentInErrorAfterSentState(t *testing.T) {
 }
 
 // Test treatment in treatment plan that has an error after being in the sending state
-func TestTreatmentInErrorAfterSendingState(t *testing.T) {
+func TestRXError_Treatment_ErrorAfterSendingState(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	// enable erx routing so that we can test the different expected status events
@@ -302,7 +302,7 @@ func TestTreatmentInErrorAfterSendingState(t *testing.T) {
 }
 
 // Test treatment in treatment plan that has an error after being in the sent state
-func TestTreatmentInErrorAfterErorState(t *testing.T) {
+func TestRXError_Treatment_ErrorAfterError(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	// enable erx routing so that we can test the different expected status events
@@ -415,7 +415,7 @@ func TestTreatmentInErrorAfterErorState(t *testing.T) {
 	}
 }
 
-func TestRefillRequestInErrorAfterSentState(t *testing.T) {
+func TestRXError_Refill_ErrorAfterSentState(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	// enable erx routing so that we can test the different expected status events
@@ -523,7 +523,7 @@ func TestRefillRequestInErrorAfterSentState(t *testing.T) {
 	}
 }
 
-func TestRefillRequestInErrorAfterSendingState(t *testing.T) {
+func TestRXError_Refill_ErrorAfterSendingState(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	// enable erx routing so that we can test the different expected status events
@@ -621,7 +621,7 @@ func TestRefillRequestInErrorAfterSendingState(t *testing.T) {
 	}
 }
 
-func TestRefillRequestInErrorAfterErrorState(t *testing.T) {
+func TestRXError_Refill_ErrorAfterErrorState(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	// enable erx routing so that we can test the different expected status events
@@ -726,7 +726,7 @@ func TestRefillRequestInErrorAfterErrorState(t *testing.T) {
 }
 
 // Test unlinked dntf treatment that has an error after being in sent state
-func TestUnlinkedDNTFTreatmentSentToErrorState(t *testing.T) {
+func TestRXError_UnlinkedDNTFT_SentToErrorState(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	// enable erx routing so that we can test the different expected status events
@@ -757,7 +757,7 @@ func TestUnlinkedDNTFTreatmentSentToErrorState(t *testing.T) {
 	}
 }
 
-func TestUnlinkedDNTFTreatmentSendingToErrorState(t *testing.T) {
+func TestRXError_UnlinkedDNTF_SendingToErrorState(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	// enable erx routing so that we can test the different expected status events
