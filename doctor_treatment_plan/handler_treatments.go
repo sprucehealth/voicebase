@@ -80,11 +80,6 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	doctor := ctxt.RequestCache[apiservice.Doctor].(*common.Doctor)
 	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
 
-	if len(requestData.Treatments) == 0 {
-		apiservice.WriteValidationError("nothing to do because no treatments provided", w, r)
-		return
-	}
-
 	if !treatmentPlan.InDraftMode() {
 		apiservice.WriteValidationError("treatment plan must be in draft mode", w, r)
 		return
