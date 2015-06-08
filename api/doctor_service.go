@@ -567,11 +567,10 @@ func insertItemIntoDoctorQueue(tx *sql.Tx, dqi *DoctorQueueItem, dedupe bool) er
 }
 
 func replaceItemInDoctorQueue(tx *sql.Tx, dqi *DoctorQueueItem, currentState string) error {
-
 	// check if there is an item to replace. If not, then do nothing.
 	var id int64
 	if err := tx.QueryRow(`
-		SELECT id 
+		SELECT id
 		FROM doctor_queue
 		WHERE status = ? AND doctor_id = ? AND event_type = ? AND item_id = ?`,
 		currentState, dqi.DoctorID, dqi.EventType, dqi.ItemID).Scan(&id); err == sql.ErrNoRows {
@@ -721,7 +720,7 @@ func (d *DataService) GetPendingItemsForClinic() ([]*DoctorQueueItem, error) {
 	queueItems = append(queueItems, unclaimedQueueItems...)
 
 	// sort the items in ascending order so as to return a wholistic view of the items that are pending
-	sort.Sort(ByTimestamp(queueItems))
+	sort.Sort(byTimestamp(queueItems))
 
 	return queueItems, nil
 }

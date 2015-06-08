@@ -7,33 +7,41 @@ import (
 	"github.com/sprucehealth/backend/app_url"
 )
 
+// Doctor queue event types
 const (
-	DQEventTypePatientVisit                  = "PATIENT_VISIT"
-	DQEventTypeTreatmentPlan                 = "TREATMENT_PLAN"
-	DQEventTypeRefillRequest                 = "REFILL_REQUEST"
-	DQEventTypeTransmissionError             = "TRANSMISSION_ERROR"
-	DQEventTypeUnlinkedDNTFTransmissionError = "UNLINKED_DNTF_TRANSMISSION_ERROR"
-	DQEventTypeRefillTransmissionError       = "REFILL_TRANSMISSION_ERROR"
-	DQEventTypeCaseMessage                   = "CASE_MESSAGE"
 	DQEventTypeCaseAssignment                = "CASE_ASSIGNMENT"
-	DQItemStatusPending                      = "PENDING"
-	DQItemStatusTreated                      = "TREATED"
-	DQItemStatusTriaged                      = "TRIAGED"
-	DQItemStatusOngoing                      = "ONGOING"
-	DQItemStatusRefillApproved               = "APPROVED"
-	DQItemStatusRefillDenied                 = "DENIED"
-	DQItemStatusReplied                      = "REPLIED"
-	DQItemStatusRead                         = "READ"
-	DisplayTypeTitleSubtitleActionable       = "title_subtitle_actionable"
-
-	tagSeparator = "|"
+	DQEventTypeCaseMessage                   = "CASE_MESSAGE"
+	DQEventTypePatientVisit                  = "PATIENT_VISIT"
+	DQEventTypeRefillRequest                 = "REFILL_REQUEST"
+	DQEventTypeRefillTransmissionError       = "REFILL_TRANSMISSION_ERROR"
+	DQEventTypeTransmissionError             = "TRANSMISSION_ERROR"
+	DQEventTypeTreatmentPlan                 = "TREATMENT_PLAN"
+	DQEventTypeUnlinkedDNTFTransmissionError = "UNLINKED_DNTF_TRANSMISSION_ERROR"
 )
 
-type ByTimestamp []*DoctorQueueItem
+// Doctor queue item statuses
+const (
+	DQItemStatusOngoing        = "ONGOING"
+	DQItemStatusPending        = "PENDING"
+	DQItemStatusRead           = "READ"
+	DQItemStatusRefillApproved = "APPROVED"
+	DQItemStatusRefillDenied   = "DENIED"
+	// DQItemStatusRemoved status represents an item that has been removed from the active queue.
+	DQItemStatusRemoved = "REMOVED"
+	DQItemStatusReplied = "REPLIED"
+	DQItemStatusTreated = "TREATED"
+	DQItemStatusTriaged = "TRIAGED"
+)
 
-func (a ByTimestamp) Len() int      { return len(a) }
-func (a ByTimestamp) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a ByTimestamp) Less(i, j int) bool {
+const DisplayTypeTitleSubtitleActionable = "title_subtitle_actionable"
+
+const tagSeparator = "|"
+
+type byTimestamp []*DoctorQueueItem
+
+func (a byTimestamp) Len() int      { return len(a) }
+func (a byTimestamp) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a byTimestamp) Less(i, j int) bool {
 	return a[i].EnqueueDate.Before(a[j].EnqueueDate)
 }
 

@@ -98,7 +98,8 @@ func NewHistoryHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&historyHandler{
 				dataAPI: dataAPI,
-			}), []string{api.RoleDoctor, api.RoleCC}), httputil.Get)
+			}), []string{api.RoleDoctor, api.RoleCC}),
+		httputil.Get)
 }
 
 func (h *historyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

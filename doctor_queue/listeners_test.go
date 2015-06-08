@@ -22,6 +22,7 @@ type mockDataAPI_listener struct {
 	patient     *common.Patient
 	doctor      *common.Doctor
 	patientCase *common.PatientCase
+	visit       *common.PatientVisit
 	assignments []*common.CareProviderAssignment
 
 	updatesRequested []*api.DoctorQueueUpdate
@@ -52,6 +53,14 @@ func (m *mockDataAPI_listener) CompleteVisitOnTreatmentPlanGeneration(doctorID, 
 }
 func (m *mockDataAPI_listener) GetPatientCaseFromPatientVisitID(patientVisitID int64) (*common.PatientCase, error) {
 	return m.patientCase, nil
+}
+
+func (m *mockDataAPI_listener) GetDoctorFromAccountID(accountID int64) (*common.Doctor, error) {
+	return m.doctor, nil
+}
+
+func (m *mockDataAPI_listener) GetPatientVisitFromID(visitID int64) (*common.PatientVisit, error) {
+	return m.visit, nil
 }
 
 type mockAuthAPI_listener struct {
