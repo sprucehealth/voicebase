@@ -734,7 +734,7 @@ func TestUnlinkedDNTFTreatmentSentToErrorState(t *testing.T) {
 	testData.Config.ERxRouting = true
 	testData.StartAPIServer(t)
 
-	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERXStatusSent}, false)
+	unlinkedTreatment := setupRefill_Deny_DNTF(t, testData, common.StatusEvent{Status: api.ERXStatusSent}, false)
 
 	// lets go ahead and setup the stubErxApi to throw a transmission error for this treatment now
 	stubErxAPI := &erx.StubErxService{
@@ -765,7 +765,7 @@ func TestUnlinkedDNTFTreatmentSendingToErrorState(t *testing.T) {
 	testData.Config.ERxRouting = true
 	testData.StartAPIServer(t)
 
-	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERXStatusError}, false)
+	unlinkedTreatment := setupRefill_Deny_DNTF(t, testData, common.StatusEvent{Status: api.ERXStatusError}, false)
 
 	// lets go ahead and setup the stubErxApi to throw a transmission error for this treatment now
 	stubErxAPI := &erx.StubErxService{

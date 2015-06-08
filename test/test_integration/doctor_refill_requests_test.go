@@ -28,7 +28,9 @@ const (
 	clinicianID = 100
 )
 
-func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
+// TestRefill_ExistingPatient is an integration test
+// for refill requests coming in for patients that exist on the Spruce platform.
+func TestRefill_ExistingPatient(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -275,7 +277,9 @@ func TestNewRefillRequestForExistingPatientAndExistingTreatment(t *testing.T) {
 	}
 }
 
-func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
+// TestRefill_Approve is an integration test to test the approving of a refill request
+// for a new patient.
+func TestRefill_Approve(t *testing.T) {
 
 	testData := SetupTest(t)
 	defer testData.Close()
@@ -490,7 +494,9 @@ func TestApproveRefillRequestAndSuccessfulSendToPharmacy(t *testing.T) {
 	}
 }
 
-func TestApproveRefillRequest_ErrorForControlledSubstances(t *testing.T) {
+// TestRefill_Approve_ControlledSubstance is an integration test to ensure
+// that the system does not allow approving of refill requests for controlled substances.
+func TestRefill_Approve_ControlledSubstance(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -651,7 +657,10 @@ func TestApproveRefillRequest_ErrorForControlledSubstances(t *testing.T) {
 
 }
 
-func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
+// TestRefill_Approve_ErrorSending is an integration test to ensure that if a prescriber
+// approves a refill request that errors on the routing to a pharmacy, we gracefully handle this situation
+// by inserting an errored prescription entry into the doctor queue.
+func TestRefill_Approve_ErrorSending(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -910,7 +919,7 @@ func TestApproveRefillRequestAndErrorSendingToPharmacy(t *testing.T) {
 	}
 }
 
-func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *testing.T) {
+func testRefill_Deny(isControlledSubstance bool, t *testing.T) {
 
 	testData := SetupTest(t)
 	defer testData.Close()
@@ -1129,15 +1138,19 @@ func testDenyRefillRequestAndSuccessfulDelete(isControlledSubstance bool, t *tes
 	}
 }
 
-func TestDenyRefillRequestAndSuccessfulDelete(t *testing.T) {
-	testDenyRefillRequestAndSuccessfulDelete(false, t)
+// TestRefill_Deny is an integration test to test the system
+// for the denial of a refill request.
+func TestRefill_Deny(t *testing.T) {
+	testRefill_Deny(false, t)
 }
 
-func TestDenyRefillRequestForControlledSubstance(t *testing.T) {
-	testDenyRefillRequestAndSuccessfulDelete(true, t)
+// TestRefill_Deny is an integration test to ensure that we allow
+// denial of refill requests pertaining to controlled substances.
+func TestRefill_Deny_ControlledSubstance(t *testing.T) {
+	testRefill_Deny(true, t)
 }
 
-func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
+func TestRefill_Deny_DNTF_NoTreatment(t *testing.T) {
 
 	testData := SetupTest(t)
 	defer testData.Close()
@@ -1312,7 +1325,7 @@ func TestDenyRefillRequestWithDNTFWithoutTreatment(t *testing.T) {
 
 }
 
-func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxStatus common.StatusEvent, toAddTemplatedTreatment bool) *common.Treatment {
+func setupRefill_Deny_DNTF(t *testing.T, testData *TestData, endErxStatus common.StatusEvent, toAddTemplatedTreatment bool) *common.Treatment {
 
 	// create doctor with clinicianId specicified
 	doctor := createDoctorWithClinicianID(testData, t)
@@ -1617,12 +1630,12 @@ func setUpDeniedRefillRequestWithDNTF(t *testing.T, testData *TestData, endErxSt
 	return unlinkedTreatment
 }
 
-func TestDenyRefillRequestWithDNTFWithUnlinkedTreatment(t *testing.T) {
+func TestRefill_Deny_DNTF_UnlinkedPatient(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERXStatusSent}, false)
+	unlinkedTreatment := setupRefill_Deny_DNTF(t, testData, common.StatusEvent{Status: api.ERXStatusSent}, false)
 
 	if len(unlinkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expected 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
@@ -1635,12 +1648,12 @@ func TestDenyRefillRequestWithDNTFWithUnlinkedTreatment(t *testing.T) {
 	}
 }
 
-func TestDenyRefillRequestWithDNTFWithUnlinkedTreatmentFromTemplatedTreatment(t *testing.T) {
+func TestRefill_Deny_DNTF_UnlinkedPatient_FromTemplate(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERXStatusSent}, true)
+	unlinkedTreatment := setupRefill_Deny_DNTF(t, testData, common.StatusEvent{Status: api.ERXStatusSent}, true)
 
 	if len(unlinkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expected 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
@@ -1653,13 +1666,13 @@ func TestDenyRefillRequestWithDNTFWithUnlinkedTreatmentFromTemplatedTreatment(t 
 	}
 }
 
-func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
+func TestRefill_Deny_DNTF_UnlinkedPatient_Error(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	errorMessage := "this is a test error message"
-	unlinkedTreatment := setUpDeniedRefillRequestWithDNTF(t, testData, common.StatusEvent{Status: api.ERXStatusError, StatusDetails: errorMessage}, false)
+	unlinkedTreatment := setupRefill_Deny_DNTF(t, testData, common.StatusEvent{Status: api.ERXStatusError, StatusDetails: errorMessage}, false)
 
 	if len(unlinkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expected 3 events from rx history of unlinked treatment instead got %d", len(unlinkedTreatment.ERx.RxHistory))
@@ -1723,8 +1736,8 @@ func TestDenyRefillRequestWithDNTFUnlinkedTreatmentErrorSending(t *testing.T) {
 
 }
 
-func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *TestData, endErxStatus common.StatusEvent, toAddTemplatedTreatment bool) *common.Treatment {
-	// create doctor with clinicianId specicified
+func setupRefill_Deny_DNTF_ExistingPatient(t *testing.T, testData *TestData, endErxStatus common.StatusEvent, toAddTemplatedTreatment bool) *common.Treatment {
+	// create doctor with clinicianId specified
 	doctor := createDoctorWithClinicianID(testData, t)
 	doctorClient := DoctorClient(testData, t, doctor.ID.Int64())
 
@@ -2077,6 +2090,11 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 		}
 	}
 
+	// create an artificial delay in between the newRX and sending states to ensure as would exist in the real world
+	_, err = testData.DB.Exec(`UPDATE unlinked_dntf_treatment_status_events SET creation_date = ? WHERE unlinked_dntf_treatment_id = ? and erx_status=?`,
+		time.Now().Add(5*time.Minute), linkedTreatment.ID.Int64(), api.ERXStatusSending)
+	test.OK(t, err)
+
 	// check erx status to be sent once its sent
 	statusWorker := app_worker.NewERxStatusWorker(
 		testData.DataAPI,
@@ -2093,12 +2111,12 @@ func setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t *testing.T, testData *
 	return linkedTreatment
 }
 
-func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSend(t *testing.T) {
+func TestRefill_Deny_DNTF_ExistingPatient(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, common.StatusEvent{Status: api.ERXStatusSent}, false)
+	linkedTreatment := setupRefill_Deny_DNTF_ExistingPatient(t, testData, common.StatusEvent{Status: api.ERXStatusSent}, false)
 
 	if len(linkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expected 3 events for linked treatment instead got %d", len(linkedTreatment.ERx.RxHistory))
@@ -2111,15 +2129,15 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSend(t *testing.T
 	}
 }
 
-func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSendAddingFromTemplatedTreatment(t *testing.T) {
+func TestRefill_Deny_DNTF_ExistingPatient_TemplatedTreatment(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
-	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, common.StatusEvent{Status: api.ERXStatusSent}, true)
+	linkedTreatment := setupRefill_Deny_DNTF_ExistingPatient(t, testData, common.StatusEvent{Status: api.ERXStatusSent}, true)
 
 	if len(linkedTreatment.ERx.RxHistory) != 3 {
-		t.Fatalf("Expected 3 events for linked treatment instead got %d", len(linkedTreatment.ERx.RxHistory))
+		t.Fatalf("Expected 3 events for linked treatment instead got %v", linkedTreatment.ERx.RxHistory)
 	}
 
 	for _, linkedTreatmentStatusEvent := range linkedTreatment.ERx.RxHistory {
@@ -2129,13 +2147,13 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentSuccessfulSendAddingFromTem
 	}
 }
 
-func TestDenyRefillRequestWithDNTFWithLinkedTreatmentErrorSend(t *testing.T) {
+func TestRefill_DNTF_ExistingPatient_Error(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
 	errorMessage := "this is a test error message"
-	linkedTreatment := setUpDeniedRefillRequestWithDNTFForLinkedTreatment(t, testData, common.StatusEvent{Status: api.ERXStatusError, StatusDetails: errorMessage}, false)
+	linkedTreatment := setupRefill_Deny_DNTF_ExistingPatient(t, testData, common.StatusEvent{Status: api.ERXStatusError, StatusDetails: errorMessage}, false)
 
 	if len(linkedTreatment.ERx.RxHistory) != 3 {
 		t.Fatalf("Expected 3 events for linked treatment instead got %d", len(linkedTreatment.ERx.RxHistory))
@@ -2166,7 +2184,7 @@ func TestDenyRefillRequestWithDNTFWithLinkedTreatmentErrorSend(t *testing.T) {
 	}
 }
 
-func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
+func TestRefill_Status_MultipleRefills(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -2452,7 +2470,9 @@ func TestCheckingStatusOfMultipleRefillRequestsAtOnce(t *testing.T) {
 	}
 }
 
-func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *testing.T) {
+// TestRefill_DifferentPharmacy tests the refill request flow through the system
+// when the refill request comes from a different pharmacy than the pharmacy where the medication was originaly dispensed.
+func TestRefill_DifferentPharmacy(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -2705,7 +2725,7 @@ func TestRefillRequestComingFromDifferentPharmacyThanDispensedPrescription(t *te
 	}
 }
 
-func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
+func TestRefill_ExistingPatient_NonexistentTreatment(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -2889,7 +2909,7 @@ func TestNewRefillRequestWithUnlinkedTreatmentAndLinkedPatient(t *testing.T) {
 	}
 }
 
-func TestNewRefillRequestWithUnlinkedTreatmentAndUnlinkedPatient(t *testing.T) {
+func TestRefill_UnlinkedPatient(t *testing.T) {
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
