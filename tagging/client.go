@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/tagging/model"
@@ -322,10 +321,9 @@ func (tc *TaggingClient) CaseAssociations(ms []*model.TagMembership, start, end 
 	submittedEpochsByCaseID := make(map[int64][]int64)
 	for rows.Next() {
 		var id int64
-		var pFirst, pLast string
 		var submittedEpoch time.Time
-		tad := &response.PHISafeCaseAssociationDescription{}
-		if err := rows.Scan(&id, &pFirst, &pLast, &tad.Pathway, &submittedEpoch); err != nil {
+		tad := &response.CaseAssociationDescription{}
+		if err := rows.Scan(&id, &tad.PatientFirstName, &tad.PatientLastName, &tad.Pathway, &submittedEpoch); err != nil {
 			return nil, errors.Trace(err)
 		}
 
@@ -334,7 +332,6 @@ func (tc *TaggingClient) CaseAssociations(ms []*model.TagMembership, start, end 
 			submittedEpochsByCaseID[id] = append(submittedEpochsByCaseID[id], submittedEpoch.Unix())
 		} else {
 			submittedEpochs := []int64{submittedEpoch.Unix()}
-			tad.PatientInitials = common.Initials(pFirst, pLast)
 			tad.VisitSubmittedEpochs = submittedEpochs
 			submittedEpochsByCaseID[id] = submittedEpochs
 			associations = append(associations, &response.TagAssociation{
