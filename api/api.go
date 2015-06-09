@@ -64,11 +64,6 @@ type PatientAPI interface {
 	GetPatientFromID(patientID int64) (patient *common.Patient, err error)
 	GetPatientFromAccountID(accountID int64) (patient *common.Patient, err error)
 	GetPatientFromErxPatientID(erxPatientID int64) (*common.Patient, error)
-	GetPatientFromRefillRequestID(refillRequestID int64) (*common.Patient, error)
-	GetPatientFromTreatmentID(treatmentID int64) (*common.Patient, error)
-	GetPatientFromCaseID(patientCaseID int64) (*common.Patient, error)
-	GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentID int64) (*common.Patient, error)
-	GetPatientVisitsForPatient(patientID int64) ([]*common.PatientVisit, error)
 	PatientLocation(patientID int64) (zipcode string, state string, err error)
 	AnyVisitSubmitted(patientID int64) (bool, error)
 	RegisterPatient(patient *common.Patient) error
@@ -77,14 +72,12 @@ type PatientAPI interface {
 	UpdatePatientWithERxPatientID(patientID, erxPatientID int64) error
 	GetPatientIDFromAccountID(accountID int64) (int64, error)
 	AddDoctorToCareTeamForPatient(patientID, doctorID int64, pathwayTag string) error
-	UpdatePatientAddress(patientID int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error
 	UpdatePatientPharmacy(patientID int64, pharmacyDetails *pharmacy.PharmacyData) error
 	TrackPatientAgreements(patientID int64, agreements map[string]bool) error
 	PatientAgreements(patientID int64) (map[string]time.Time, error)
 	GetPatientFromPatientVisitID(patientVisitID int64) (patient *common.Patient, err error)
 	GetPatientFromTreatmentPlanID(treatmentPlanID int64) (patient *common.Patient, err error)
 	GetPatientsForIDs(patientIDs []int64) ([]*common.Patient, error)
-	GetPharmacySelectionForPatients(patientIDs []int64) ([]*pharmacy.PharmacyData, error)
 	GetPharmacyBasedOnReferenceIDAndSource(pharmacyid int64, pharmacySource string) (*pharmacy.PharmacyData, error)
 	GetPharmacyFromID(pharmacyLocalID int64) (*pharmacy.PharmacyData, error)
 	AddPharmacy(pharmacyDetails *pharmacy.PharmacyData) error
@@ -163,7 +156,6 @@ type PatientCaseAPI interface {
 	GetActiveCareTeamMemberForCase(role string, patientCaseID int64) (*common.CareProviderAssignment, error)
 	GetActiveMembersOfCareTeamForCase(patientCaseID int64, fillInDetails bool) ([]*common.CareProviderAssignment, error)
 	GetPatientCaseFromPatientVisitID(patientVisitID int64) (*common.PatientCase, error)
-	GetPatientCaseFromTreatmentPlanID(treatmentPlanID int64) (*common.PatientCase, error)
 	GetPatientCaseFromID(patientCaseID int64) (*common.PatientCase, error)
 	AddDoctorToPatientCase(doctorID, caseID int64) error
 	DoesActiveTreatmentPlanForCaseExist(patientCaseID int64) (bool, error)
@@ -235,12 +227,10 @@ type TreatmentPlanUpdate struct {
 
 type PatientVisitAPI interface {
 	GetPatientIDFromPatientVisitID(patientVisitID int64) (int64, error)
-	GetLatestSubmittedPatientVisit() (*common.PatientVisit, error)
 	GetPatientVisitIDFromTreatmentPlanID(treatmentPlanID int64) (int64, error)
 	GetPatientVisitFromID(patientVisitID int64) (*common.PatientVisit, error)
 	GetPatientVisitForSKU(patientID int64, skuType string) (*common.PatientVisit, error)
 	VisitsSubmittedForPatientSince(patientID int64, since time.Time) ([]*common.PatientVisit, error)
-	GetPatientVisitFromTreatmentPlanID(treatmentPlanID int64) (*common.PatientVisit, error)
 	GetPatientCaseIDFromPatientVisitID(patientVisitID int64) (int64, error)
 	PendingFollowupVisitForCase(caseID int64) (*common.PatientVisit, error)
 	CreatePatientVisit(visit *common.PatientVisit, requestedDoctorID *int64) (int64, error)
@@ -467,13 +457,11 @@ type DoctorAPI interface {
 	GetRegimenStepForDoctor(regimenStepID, doctorID int64) (*common.DoctorInstructionItem, error)
 	AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorID int64) error
 	UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorID int64) error
-	MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstructionItem, doctorID int64) error
 	MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorInstructionItem, doctorID int64) error
 	GetPendingItemsInDoctorQueue(doctorID int64) (doctorQueue []*DoctorQueueItem, err error)
 	GetCompletedItemsInDoctorQueue(doctorID int64) (doctorQueue []*DoctorQueueItem, err error)
 	GetPendingItemsForClinic() ([]*DoctorQueueItem, error)
 	GetCompletedItemsForClinic() ([]*DoctorQueueItem, error)
-	GetPendingItemCountForDoctorQueue(doctorID int64) (int64, error)
 	GetMedicationDispenseUnits(languageID int64) (dispenseUnitIDs []int64, dispenseUnits []string, err error)
 	MarkPatientVisitAsOngoingInDoctorQueue(doctorID, patientVisitID int64) error
 	AddTreatmentTemplates(treatments []*common.DoctorTreatmentTemplate, doctorID, treatmentPlanID int64) error
@@ -493,7 +481,6 @@ type DoctorAPI interface {
 	UpdateCareProviderProfile(accountID int64, profile *common.CareProviderProfile) error
 	GetFirstDoctorWithAClinicianID() (*common.Doctor, error)
 	GetOldestTreatmentPlanInStatuses(max int, statuses []common.TreatmentPlanStatus) ([]*TreatmentPlanAge, error)
-	DoctorEligibleToTreatInState(state string, doctorID int64, pathwayTag string) (bool, error)
 	PatientCaseFeed() ([]*common.PatientCaseFeedItem, error)
 	PatientCaseFeedForDoctor(doctorID int64) ([]*common.PatientCaseFeedItem, error)
 

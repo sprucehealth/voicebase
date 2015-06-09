@@ -413,16 +413,6 @@ func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstr
 	return tx.Commit()
 }
 
-func (d *DataService) MarkRegimenStepToBeDeleted(regimenStep *common.DoctorInstructionItem, doctorID int64) error {
-	// mark the regimen step to be deleted
-	_, err := d.db.Exec(`UPDATE dr_regimen_step SET status = ? WHERE id = ? AND doctor_id = ?`,
-		StatusDeleted, regimenStep.ID.Int64(), doctorID)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (d *DataService) MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorInstructionItem, doctorID int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
@@ -747,17 +737,6 @@ func (d *DataService) GetCompletedItemsForClinic() ([]*DoctorQueueItem, error) {
 	defer rows.Close()
 
 	return populateDoctorQueueFromRows(rows)
-}
-
-func (d *DataService) GetPendingItemCountForDoctorQueue(doctorID int64) (int64, error) {
-	var count int64
-	err := d.db.QueryRow(fmt.Sprintf(`
-		SELECT count(*)
-		FROM doctor_queue
-		WHERE doctor_id = ? AND status IN (%s)`,
-		dbutil.MySQLArgs(2)),
-		doctorID, StatusPending, StatusOngoing).Scan(&count)
-	return count, err
 }
 
 func populateDoctorQueueFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
@@ -1331,25 +1310,6 @@ func (d *DataService) GetOldestTreatmentPlanInStatuses(max int, statuses []commo
 	}
 
 	return tpAges, rows.Err()
-}
-
-func (d *DataService) DoctorEligibleToTreatInState(state string, doctorID int64, pathwayTag string) (bool, error) {
-	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
-	if err != nil {
-		return false, err
-	}
-
-	var id int64
-	err = d.db.QueryRow(`
-		SELECT 1
-		FROM care_provider_state_elligibility
-		INNER JOIN care_providing_state on care_providing_state.id = care_providing_state_id
-		WHERE clinical_pathway_id = ? AND care_providing_state.state = ? AND provider_id = ?
-			AND role_type_id = ?`, pathwayID, state, doctorID, d.roleTypeMapping[RoleDoctor]).Scan(&id)
-	if err == sql.ErrNoRows {
-		return false, nil
-	}
-	return (err == nil), err
 }
 
 func (d *DataService) ListTreatmentPlanResourceGuides(tpID int64) ([]*common.ResourceGuide, error) {
