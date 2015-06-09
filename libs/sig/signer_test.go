@@ -45,7 +45,7 @@ func TestSigner(t *testing.T) {
 	}
 
 	// Old keys should still verify (key rotation)
-	if s3.Verify(msg, sig) {
+	if !s3.Verify(msg, sig) {
 		t.Fatal("Old key did not verify")
 	}
 
@@ -54,11 +54,11 @@ func TestSigner(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sig2, err := s2.Sign(msg)
+	sig2, err := s3.Sign(msg)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Compare(sig1, sig2) {
+	if !bytes.Equal(sig1, sig2) {
 		t.Fatalf("Did not use latest key for signing: %+v != %+v", sig1, sig2)
 	}
 }
