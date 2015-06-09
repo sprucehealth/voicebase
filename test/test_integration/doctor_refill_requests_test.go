@@ -1613,9 +1613,13 @@ func setupRefill_Deny_DNTF(t *testing.T, testData *TestData, endErxStatus common
 		t.Fatalf("Expected 1 entry in dntf mapping table instead got %d", dntfMappingCount)
 	}
 
-	// create an artificial delay in between the newRX and sending states to ensure as would exist in the real world
+	// create an artificial delay in between the newRXDNTF and Sending state such that there is a guarantee that NewRXDNTF happens after Sending.
 	_, err = testData.DB.Exec(`UPDATE unlinked_dntf_treatment_status_events SET creation_date = ? WHERE unlinked_dntf_treatment_id = ? and erx_status=?`,
-		time.Now().Add(-5*time.Minute), unlinkedTreatment.ID.Int64(), api.ERXStatusSending)
+		time.Now().Add(-1*time.Minute), unlinkedTreatment.ID.Int64(), api.ERXStatusSending)
+	test.OK(t, err)
+
+	_, err = testData.DB.Exec(`UPDATE unlinked_dntf_treatment_status_events SET creation_date = ? WHERE unlinked_dntf_treatment_id = ? and erx_status=?`,
+		time.Now().Add(-5*time.Minute), unlinkedTreatment.ID.Int64(), api.ERXStatusNewRXFromDNTF)
 	test.OK(t, err)
 
 	// check erx status to be sent once its sent
@@ -2107,9 +2111,13 @@ func setupRefill_Deny_DNTF_ExistingPatient(t *testing.T, testData *TestData, end
 		}
 	}
 
-	// create an artificial delay in between the newRX and sending states to ensure as would exist in the real world
+	// create an artificial delay in between the newRXDNTF and Sending state such that there is a guarantee that NewRXDNTF happens after Sending.
 	_, err = testData.DB.Exec(`UPDATE erx_status_events SET creation_date = ? WHERE treatment_id = ? and erx_status=?`,
-		time.Now().Add(-5*time.Minute), linkedTreatment.ID.Int64(), api.ERXStatusSending)
+		time.Now().Add(-1*time.Minute), linkedTreatment.ID.Int64(), api.ERXStatusSending)
+	test.OK(t, err)
+
+	_, err = testData.DB.Exec(`UPDATE erx_status_events SET creation_date = ? WHERE treatment_id = ? and erx_status=?`,
+		time.Now().Add(-5*time.Minute), linkedTreatment.ID.Int64(), api.ERXStatusNewRXFromDNTF)
 	test.OK(t, err)
 
 	// check erx status to be sent once its sent
