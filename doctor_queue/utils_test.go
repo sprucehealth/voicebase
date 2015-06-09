@@ -35,6 +35,6 @@ func TestIDBreakdown(t *testing.T) {
 	} else if qid.doctorID != 10 {
 		t.Fatalf("Expected %d got %d", 10, qid.doctorID)
 	} else if qid.queueType != api.DQTUnclaimedQueue {
-		t.Fatalf("Expected %d got %d", api.DQTUnclaimedQueue, qid.queueType)
+		t.Fatalf("Expected %s got %s", api.DQTUnclaimedQueue, qid.queueType)
 	}
 }
