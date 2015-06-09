@@ -39,20 +39,20 @@ func (h *itemHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	eventType, status, itemID, doctorID, err := queueItemPartsFromID(rd.ID)
+	qid, err := queueItemPartsFromID(rd.ID)
 	if err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}
 
-	switch eventType {
+	switch qid.eventType {
 	case api.DQEventTypeCaseAssignment, api.DQEventTypeCaseMessage:
-		if status != api.DQItemStatusPending {
+		if qid.status != api.DQItemStatusPending {
 			apiservice.WriteAccessNotAllowedError(w, r)
 			return
 		}
 	case api.DQEventTypePatientVisit:
-		if status != api.DQItemStatusPending && status != api.DQItemStatusOngoing {
+		if qid.status != api.DQItemStatusPending && qid.status != api.DQItemStatusOngoing {
 			apiservice.WriteAccessNotAllowedError(w, r)
 			return
 		}
@@ -65,21 +65,21 @@ func (h *itemHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		{
 			Action: api.DQActionRemove,
 			QueueItem: &api.DoctorQueueItem{
-				EventType: eventType,
-				Status:    status,
-				DoctorID:  doctorID,
-				ItemID:    itemID,
+				EventType: qid.eventType,
+				Status:    qid.status,
+				DoctorID:  qid.doctorID,
+				ItemID:    qid.itemID,
 			},
 		},
 	}
-	if eventType == api.DQEventTypePatientVisit {
+	if qid.eventType == api.DQEventTypePatientVisit {
 		accountID := apiservice.GetContext(r).AccountID
 		cc, err := h.dataAPI.GetDoctorFromAccountID(accountID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
-		visit, err := h.dataAPI.GetPatientVisitFromID(itemID)
+		visit, err := h.dataAPI.GetPatientVisitFromID(qid.itemID)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -92,14 +92,14 @@ func (h *itemHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		updates = append(updates, &api.DoctorQueueUpdate{
 			Action: api.DQActionInsert,
 			QueueItem: &api.DoctorQueueItem{
-				EventType:        eventType,
+				EventType:        qid.eventType,
 				Status:           api.DQItemStatusRemoved,
 				DoctorID:         cc.ID.Int64(),
-				ItemID:           itemID,
+				ItemID:           qid.itemID,
 				PatientID:        visit.PatientID.Int64(),
 				Description:      fmt.Sprintf("%s removed visit for %s %s from queue", cc.ShortDisplayName, patient.FirstName, patient.LastName),
 				ShortDescription: "Visit removed from queue",
-				ActionURL:        app_url.ViewPatientVisitInfoAction(visit.PatientID.Int64(), itemID, visit.PatientCaseID.Int64()),
+				ActionURL:        app_url.ViewPatientVisitInfoAction(visit.PatientID.Int64(), qid.itemID, visit.PatientCaseID.Int64()),
 			},
 		})
 	}

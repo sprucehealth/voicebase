@@ -376,6 +376,7 @@ func (d *DataService) GetClaimedItemsInQueue() ([]*DoctorQueueItem, error) {
 			&actionURL); err != nil {
 			return nil, err
 		}
+		queueItem.QueueType = DQTUnclaimedQueue
 
 		if actionURL != "" {
 			aURL, err := app_url.ParseSpruceAction(actionURL)
@@ -420,6 +421,7 @@ func (d *DataService) GetTempClaimedCaseInQueue(patientCaseID int64) (*DoctorQue
 	} else if err != nil {
 		return nil, err
 	}
+	queueItem.QueueType = DQTUnclaimedQueue
 
 	if actionURL != "" {
 		aURL, err := app_url.ParseSpruceAction(actionURL)
@@ -436,9 +438,9 @@ func (d *DataService) GetTempClaimedCaseInQueue(patientCaseID int64) (*DoctorQue
 
 func (d *DataService) GetAllItemsInUnclaimedQueue() ([]*DoctorQueueItem, error) {
 	rows, err := d.db.Query(`
-	SELECT id, event_type, item_id, patient_case_id, patient_id, enqueue_date, status, description, short_description, action_url, tags
-	FROM unclaimed_case_queue
-	ORDER BY enqueue_date`)
+		SELECT id, event_type, item_id, patient_case_id, patient_id, enqueue_date, status, description, short_description, action_url, tags
+		FROM unclaimed_case_queue
+		ORDER BY enqueue_date`)
 	if err != nil {
 		return nil, err
 	}
@@ -494,9 +496,11 @@ func getUnclaimedItemsFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 			&queueItem.Description,
 			&queueItem.ShortDescription,
 			&actionURL,
-			&tags); err != nil {
+			&tags,
+		); err != nil {
 			return nil, err
 		}
+		queueItem.QueueType = DQTUnclaimedQueue
 		queueItem.EnqueueDate = enqueueDate.Time
 		if actionURL != "" {
 			aURL, err := app_url.ParseSpruceAction(actionURL)

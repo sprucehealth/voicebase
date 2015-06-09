@@ -82,7 +82,6 @@ func (w *Worker) Start() {
 }
 
 func (w *Worker) Do() error {
-
 	// identify the distinct states in which we currently have unclaimed cases
 	careProvidingStateIDs, err := w.dataAPI.CareProvidingStatesWithUnclaimedCases()
 	if err != nil {

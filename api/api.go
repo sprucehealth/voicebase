@@ -187,22 +187,22 @@ type DoctorNotify struct {
 }
 
 type CaseRouteAPI interface {
-	TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorID int64, patientCase *common.PatientCase, duration time.Duration) error
-	TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(doctorID int64, patientCase *common.PatientCase) error
-	PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorID int64, patientCase *common.PatientCase, queueItem *DoctorQueueItem) error
-	ExtendClaimForDoctor(doctorID, patientID, patientCaseID int64, duration time.Duration) error
-	GetClaimedItemsInQueue() ([]*DoctorQueueItem, error)
-	GetTempClaimedCaseInQueue(patientCaseID int64) (*DoctorQueueItem, error)
-	GetElligibleItemsInUnclaimedQueue(doctorID int64) ([]*DoctorQueueItem, error)
-	GetAllItemsInUnclaimedQueue() ([]*DoctorQueueItem, error)
-	OldestUnclaimedItems(maxItems int) ([]*ItemAge, error)
-	InsertUnclaimedItemIntoQueue(doctorQueueItem *DoctorQueueItem) error
-	RevokeDoctorAccessToCase(patientCaseID, patientID, doctorID int64) error
 	CareProvidingStatesWithUnclaimedCases() ([]int64, error)
 	DoctorsToNotifyInCareProvidingState(careProvidingStateID int64, avoidDoctorsRegisteredInStates []int64, timeThreshold time.Time) ([]*DoctorNotify, error)
-	RecordDoctorNotifiedOfUnclaimedCases(doctorID int64) error
-	RecordCareProvidingStateNotified(careProvidingStateID int64) error
+	ExtendClaimForDoctor(doctorID, patientID, patientCaseID int64, duration time.Duration) error
+	GetAllItemsInUnclaimedQueue() ([]*DoctorQueueItem, error)
+	GetClaimedItemsInQueue() ([]*DoctorQueueItem, error)
+	GetElligibleItemsInUnclaimedQueue(doctorID int64) ([]*DoctorQueueItem, error)
+	GetTempClaimedCaseInQueue(patientCaseID int64) (*DoctorQueueItem, error)
+	InsertUnclaimedItemIntoQueue(doctorQueueItem *DoctorQueueItem) error
 	LastNotifiedTimeForCareProvidingState(careProvidingStateID int64) (time.Time, error)
+	OldestUnclaimedItems(maxItems int) ([]*ItemAge, error)
+	PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorID int64, patientCase *common.PatientCase, queueItem *DoctorQueueItem) error
+	RecordCareProvidingStateNotified(careProvidingStateID int64) error
+	RecordDoctorNotifiedOfUnclaimedCases(doctorID int64) error
+	RevokeDoctorAccessToCase(patientCaseID, patientID, doctorID int64) error
+	TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorID int64, patientCase *common.PatientCase, duration time.Duration) error
+	TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(doctorID int64, patientCase *common.PatientCase) error
 }
 
 type PatientUpdate struct {
