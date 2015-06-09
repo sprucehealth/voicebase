@@ -30,6 +30,13 @@ type PHISafeCaseAssociationDescription struct {
 	VisitSubmittedEpochs []int64 `json:"visit_submitted_epochs"`
 }
 
+type CaseAssociationDescription struct {
+	PatientFirstName     string  `json:"patient_first_name"`
+	PatientLastName      string  `json:"patient_last_name"`
+	Pathway              string  `json:"pathway"`
+	VisitSubmittedEpochs []int64 `json:"visit_submitted_epochs"`
+}
+
 type Tag struct {
 	ID     int64  `json:"id,string"`
 	Text   string `json:"text"`
