@@ -56,35 +56,6 @@ func (d *DataService) GetPatientIDFromPatientVisitID(patientVisitID int64) (int6
 	return patientID, err
 }
 
-// Adding this only to link the patient and the doctor app so as to show the doctor
-// the patient visit review of the latest submitted patient visit
-func (d *DataService) GetLatestSubmittedPatientVisit() (*common.PatientVisit, error) {
-	rows, err := d.db.Query(`
-		SELECT id, patient_id, patient_case_id, clinical_pathway_id, layout_version_id,
-		creation_date, submitted_date, closed_date, status, sku_id, followup
-		FROM patient_visit
-		WHERE status IN ('SUBMITTED', 'REVIEWING')
-		ORDER BY submitted_date DESC
-		LIMIT 1`)
-	if err != nil {
-		return nil, err
-	}
-
-	patientVisits, err := d.getPatientVisitFromRows(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	switch l := len(patientVisits); {
-	case l == 0:
-		return nil, ErrNotFound("patient_visit")
-	case l == 1:
-		return patientVisits[0], nil
-	}
-
-	return nil, fmt.Errorf("expected 1 patient visit but got %d", len(patientVisits))
-}
-
 func (d *DataService) PendingFollowupVisitForCase(caseID int64) (*common.PatientVisit, error) {
 	// get the creation time of the initial visit
 	var creationDate time.Time
@@ -144,22 +115,6 @@ func (d *DataService) GetPatientVisitFromID(patientVisitID int64) (*common.Patie
 		creation_date, submitted_date, closed_date, status, sku_id, followup
 		FROM patient_visit
 		WHERE id = ?`, patientVisitID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	return d.getSinglePatientVisit(rows)
-}
-
-func (d *DataService) GetPatientVisitFromTreatmentPlanID(treatmentPlanID int64) (*common.PatientVisit, error) {
-	rows, err := d.db.Query(`
-		SELECT pv.id, pv.patient_id, pv.patient_case_id, pv.clinical_pathway_id,
-		pv.layout_version_id, pv.creation_date, pv.submitted_date, pv.closed_date,
-		pv.status, pv.sku_id, pv.followup
-		FROM patient_visit pv
-		INNER JOIN treatment_plan_patient_visit_mapping m ON m.patient_visit_id = pv.id
-		WHERE treatment_plan_id = ?`, treatmentPlanID)
 	if err != nil {
 		return nil, err
 	}
@@ -1796,25 +1751,6 @@ func getRegimenPlanFromRows(rows *sql.Rows) (*common.RegimenPlan, error) {
 	}
 
 	return &common.RegimenPlan{Sections: regimenSectionsArray}, nil
-}
-
-func getAdvicePointsFromRows(rows *sql.Rows) ([]*common.DoctorInstructionItem, error) {
-	var advicePoints []*common.DoctorInstructionItem
-	for rows.Next() {
-		var id, parentID encoding.ObjectID
-		var text string
-		if err := rows.Scan(&id, &parentID, &text); err != nil {
-			return nil, err
-		}
-
-		advicePoint := &common.DoctorInstructionItem{
-			ID:       id,
-			ParentID: parentID,
-			Text:     text,
-		}
-		advicePoints = append(advicePoints, advicePoint)
-	}
-	return advicePoints, rows.Err()
 }
 
 func getTreatmentPlansFromRows(rows *sql.Rows) ([]*common.TreatmentPlan, error) {

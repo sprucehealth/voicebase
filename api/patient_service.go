@@ -517,104 +517,11 @@ func (d *DataService) GetPatientFromErxPatientID(erxPatientID int64) (*common.Pa
 	return nil, err
 }
 
-func (d *DataService) GetPatientFromRefillRequestID(refillRequestID int64) (*common.Patient, error) {
-	patients, err := d.getPatientBasedOnQuery("rx_refill_request",
-		`INNER JOIN patient ON rx_refill_request.patient_id = patient.id`,
-		`rx_refill_request.id = ?
-			AND (phone IS NULL OR (account_phone.status='ACTIVE'))
-			AND (zip_code IS NULL OR patient_location.status = 'ACTIVE')`, refillRequestID)
-	if err != nil {
-		return nil, err
-	}
-	switch l := len(patients); {
-	case l == 1:
-		err = d.getOtherInfoForPatient(patients[0])
-		return patients[0], err
-	case l == 0:
-		return nil, ErrNotFound("patient")
-	}
-
-	return nil, errors.New("Got more than 1 patient for refill request when expected just 1")
-}
-
-func (d *DataService) GetPatientFromTreatmentID(treatmentID int64) (*common.Patient, error) {
-	patients, err := d.getPatientBasedOnQuery("treatment",
-		`INNER JOIN treatment_plan ON treatment.treatment_plan_id = treatment_plan.id
-		INNER JOIN patient ON treatment_plan.patient_id = patient.id`,
-		`treatment.id = ?
-			AND (phone IS NULL OR (account_phone.status = 'ACTIVE'))
-			AND (zip_code IS NULL OR patient_location.status = 'ACTIVE')`, treatmentID)
-	if err != nil {
-		return nil, err
-	}
-	switch l := len(patients); {
-	case l == 1:
-		err = d.getOtherInfoForPatient(patients[0])
-		return patients[0], err
-	case l == 0:
-		return nil, ErrNotFound("patient")
-	}
-
-	return nil, errors.New("Got more than 1 patient for treatment when expected just 1")
-}
-
-func (d *DataService) GetPatientFromCaseID(patientCaseID int64) (*common.Patient, error) {
-	patients, err := d.getPatientBasedOnQuery("patient_case",
-		`INNER JOIN patient ON patient_case.patient_id = patient.id`,
-		`patient_case.id = ?
-			AND (phone IS NULL OR (account_phone.status = 'ACTIVE'))
-			AND (zip_code IS NULL OR patient_location.status = 'ACTIVE')`, patientCaseID)
-	if err != nil {
-		return nil, err
-	}
-	switch l := len(patients); {
-	case l == 1:
-		err = d.getOtherInfoForPatient(patients[0])
-		return patients[0], err
-	case l == 0:
-		return nil, ErrNotFound("patient")
-	}
-
-	return nil, errors.New("Got more than 1 patient from patient_case when expected just 1")
-}
-
-func (d *DataService) GetPatientFromUnlinkedDNTFTreatment(unlinkedDNTFTreatmentID int64) (*common.Patient, error) {
-	patients, err := d.getPatientBasedOnQuery("unlinked_dntf_treatment",
-		`INNER JOIN patient ON patient_id = patient.id`,
-		`unlinked_dntf_treatment.id = ?`, unlinkedDNTFTreatmentID)
-	if err != nil {
-		return nil, err
-	}
-	switch l := len(patients); {
-	case l == 1:
-		err = d.getOtherInfoForPatient(patients[0])
-		return patients[0], err
-	case l == 0:
-		return nil, ErrNotFound("patient")
-	}
-
-	return nil, errors.New("Got more than 1 patient for treatment when expected just 1")
-}
-
-func (d *DataService) GetPatientVisitsForPatient(patientID int64) ([]*common.PatientVisit, error) {
-	rows, err := d.db.Query(`
-	SELECT id, patient_id, patient_case_id, clinical_pathway_id, layout_version_id, 
-	creation_date, submitted_date, closed_date, status, sku_id, followup
-	FROM patient_visit 
-	WHERE patient_id = ?`, patientID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	return d.getPatientVisitFromRows(rows)
-}
-
 func (d *DataService) AnyVisitSubmitted(patientID int64) (bool, error) {
 	var count int64
 	if err := d.db.QueryRow(`
-		SELECT count(*) 
-		FROM patient_visit 
+		SELECT count(*)
+		FROM patient_visit
 		WHERE patient_visit.status NOT IN (?,?,?) AND patient_id = ? LIMIT 1`,
 		common.PVStatusOpen, common.PVStatusDeleted, common.PVStatusPreSubmissionTriage, patientID).Scan(&count); err == sql.ErrNoRows {
 		return false, nil
@@ -623,37 +530,6 @@ func (d *DataService) AnyVisitSubmitted(patientID int64) (bool, error) {
 	}
 
 	return count > 0, nil
-}
-
-func (d *DataService) UpdatePatientAddress(patientID int64, addressLine1, addressLine2, city, state, zipCode, addressType string) error {
-	tx, err := d.db.Begin()
-	if err != nil {
-		return err
-	}
-
-	// update any existing address for the address type as inactive
-	_, err = tx.Exec(`update patient_address set status=? where patient_id = ? and address_type = ?`, StatusInactive, addressType, patientID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// insert new address
-	if addressLine2 != "" {
-		_, err = tx.Exec(`insert into patient_address (patient_id, address_line_1, address_line_2, city, state, zip_code, address_type, status) values 
-							(?, ?, ?, ?, ?, ?, ?, ?)`, patientID, addressLine1, addressLine2, city, state, zipCode, addressType, StatusActive)
-		if err != nil {
-			return err
-		}
-	} else {
-		_, err = tx.Exec(`insert into patient_address (patient_id, address_line_1, city, state, zip_code, address_type, status) values 
-							(?, ?, ?, ?, ?, ?, ?)`, patientID, addressLine1, city, state, zipCode, addressType, StatusActive)
-		if err != nil {
-			return err
-		}
-	}
-
-	return tx.Commit()
 }
 
 func (d *DataService) UpdatePatientPharmacy(patientID int64, pharmacyDetails *pharmacy.PharmacyData) error {
@@ -693,35 +569,6 @@ func (d *DataService) getPatientPharmacySelection(patientID int64) (*pharmacy.Ph
 		WHERE patient_id = ? AND status = ?
 		LIMIT 1`, patientID, StatusActive)
 	return scanPharmacy(row)
-}
-
-func (d *DataService) GetPharmacySelectionForPatients(patientIDs []int64) ([]*pharmacy.PharmacyData, error) {
-	if len(patientIDs) == 0 {
-		return nil, nil
-	}
-
-	rows, err := d.db.Query(fmt.Sprintf(`
-		SELECT pharmacy_selection.id, patient_id, pharmacy_selection.pharmacy_id, source,
-			name, address_line_1, address_line_2, city, state, zip_code, phone, lat, lng
-		FROM patient_pharmacy_selection
-		INNER JOIN pharmacy_selection ON pharmacy_selection.id = pharmacy_selection_id
-		WHERE patient_id IN (%s) AND status = ?`, enumerateItemsIntoString(patientIDs)),
-		StatusActive)
-	if err != nil {
-		return nil, err
-	}
-
-	pharmacies := make([]*pharmacy.PharmacyData, 0, len(patientIDs))
-	for rows.Next() {
-		pharmacySelection, err := scanPharmacy(rows)
-		if err != nil {
-			return nil, err
-		}
-
-		pharmacies = append(pharmacies, pharmacySelection)
-	}
-
-	return pharmacies, rows.Err()
 }
 
 func (d *DataService) GetPharmacyBasedOnReferenceIDAndSource(pharmacyID int64, pharmacySource string) (*pharmacy.PharmacyData, error) {

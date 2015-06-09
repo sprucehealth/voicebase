@@ -224,15 +224,6 @@ func (d *DataService) CasesForPathway(patientID int64, pathwayTag string, states
 	return patientCases, errors.Trace(rows.Err())
 }
 
-func (d *DataService) GetPatientCaseFromTreatmentPlanID(treatmentPlanID int64) (*common.PatientCase, error) {
-	row := d.db.QueryRow(`
-		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed
-		FROM patient_case pc
-		INNER JOIN treatment_plan tp ON tp.patient_case_id = pc.id
-		WHERE tp.id = ?`, treatmentPlanID)
-	return d.getPatientCaseFromRow(row)
-}
-
 func (d *DataService) GetPatientCaseFromPatientVisitID(patientVisitID int64) (*common.PatientCase, error) {
 	row := d.db.QueryRow(`
 		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed
