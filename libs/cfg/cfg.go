@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -34,6 +35,8 @@ type ValueDef struct {
 	Default     interface{}   `json:"default"`
 	Choices     []interface{} `json:"choices"`
 	Multi       bool          `json:"multi"`
+	// mu used in Validate as it rewrites Default and Choices to be normalized types
+	mu sync.Mutex
 }
 
 // Store is the interface implemented by configuration storage backends.
@@ -62,6 +65,8 @@ func (vt ValueType) Valid() bool {
 // Validate makes sure all fields of the definition are valid. It
 // returns an error if it's not valid.
 func (d *ValueDef) Validate() error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 	if d.Name == "" {
 		return errors.New("missing name")
 	}
