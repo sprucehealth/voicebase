@@ -136,10 +136,11 @@ func PatientClient(testData *TestData, t *testing.T, patientID int64) *apiclient
 func GetDoctorIDOfCurrentDoctor(testData *TestData, t *testing.T) int64 {
 	// get the current primary doctor
 	var doctorID int64
-	err := testData.DB.QueryRow(`select provider_id from care_provider_state_elligibility
-							inner join role_type on role_type_id = role_type.id
-							inner join care_providing_state on care_providing_state_id = care_providing_state.id
-							where role_type_tag='DOCTOR' and care_providing_state.state = 'CA'`).Scan(&doctorID)
+	err := testData.DB.QueryRow(`
+		SELECT provider_id FROM care_provider_state_elligibility
+		INNER join role_type ON role_type_id = role_type.id
+		INNER join care_providing_state ON care_providing_state_id = care_providing_state.id
+		WHERE role_type_tag = 'DOCTOR' AND care_providing_state.state = 'CA'`).Scan(&doctorID)
 	if err != nil {
 		t.Fatal("Unable to query for doctor that is elligible to diagnose in CA: " + err.Error())
 	}

@@ -82,15 +82,14 @@ func (w *RefillRequestWorker) Stop() {
 	close(w.stopChan)
 }
 
-func (w *RefillRequestWorker) Do() {
-
+func (w *RefillRequestWorker) Do() error {
 	// Unfortunately, we have to get the clincianId of a doctor to make the call to get refill
 	// requests at the clinic level beacuse this call does not work with the proxy clincian Id
 	doctor, err := w.dataAPI.GetFirstDoctorWithAClinicianID()
 	if err != nil {
 		golog.Errorf("Unable to get doctor with clinician id set: %s", err)
 		w.statFailure.Inc(1)
-		return
+		return err
 	}
 
 	// get refill request queue for clinic
@@ -98,7 +97,7 @@ func (w *RefillRequestWorker) Do() {
 	if err != nil {
 		golog.Errorf("Unable to get refill request queue for clinic: %+v", err)
 		w.statFailure.Inc(1)
-		return
+		return err
 	}
 
 	// create a map of the queue item id to the refill request
@@ -116,7 +115,7 @@ func (w *RefillRequestWorker) Do() {
 	if err != nil {
 		golog.Errorf("Unable to filter out existing refill requests: %s", err)
 		w.statFailure.Inc(1)
-		return
+		return err
 	}
 
 	// add the new refill requests to the database
@@ -265,6 +264,7 @@ func (w *RefillRequestWorker) Do() {
 	}
 
 	w.statCycles.Inc(1)
+	return nil
 }
 
 func linkDoctorToPrescription(dataAPI api.DataAPI, prescription *common.Treatment) error {

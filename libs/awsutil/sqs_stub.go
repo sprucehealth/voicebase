@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sqs"
 )
 
@@ -49,9 +50,9 @@ func (s *SQS) ReceiveMessage(req *sqs.ReceiveMessageInput) (*sqs.ReceiveMessageO
 		if q := s.Messages[*req.QueueURL]; q != nil {
 			for h, m := range q {
 				msgs = append(msgs, &sqs.Message{
-					MessageID:     &h,
-					ReceiptHandle: &h,
-					Body:          &m,
+					MessageID:     aws.String(h),
+					ReceiptHandle: aws.String(h),
+					Body:          aws.String(m),
 				})
 				if len(msgs) == maxNumberOfMessages {
 					break

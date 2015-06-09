@@ -9,7 +9,6 @@ import (
 )
 
 func TestDoctorQueueWithPatientVisits(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -22,7 +21,6 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 		t.Fatal("Unable to get doctor from doctor id " + err.Error())
 	}
 	dc := DoctorClient(testData, t, doctorID)
-
 	pv := CreateRandomPatientVisitInState("CA", t, testData)
 
 	// there should be 1 item in the global queue for the doctor to consume
@@ -34,23 +32,16 @@ func TestDoctorQueueWithPatientVisits(t *testing.T) {
 	}
 
 	elligibleItems, err = testData.DataAPI.GetElligibleItemsInUnclaimedQueue(doctor.ID.Int64())
-	if err != nil {
-		t.Fatal(err)
-	} else if len(elligibleItems) != 6 {
-		t.Fatalf("Expected 6 items in the queue instead got %d", len(elligibleItems))
-	}
+	test.OK(t, err)
+	test.Equals(t, 6, len(elligibleItems))
 
 	// now, go ahead and start TP for the case
 	pc, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+	test.OK(t, err)
 
-	if err := dc.ClaimCase(pc.ID.Int64()); err != nil {
-		t.Fatal(err.Error())
-	} else if _, err := dc.ReviewVisit(pv.PatientVisitID); err != nil {
-		t.Fatal(err.Error())
-	}
+	test.OK(t, dc.ClaimCase(pc.ID.Int64()))
+	_, err = dc.ReviewVisit(pv.PatientVisitID)
+	test.OK(t, err)
 
 	tp, err := dc.PickTreatmentPlanForVisit(pv.PatientVisitID, nil)
 	if err != nil {

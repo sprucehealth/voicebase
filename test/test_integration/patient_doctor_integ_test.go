@@ -58,13 +58,21 @@ func TestPatientVisitReview(t *testing.T) {
 	// once the doctor has started reviewing the case, lets go ahead and get the doctor to close the case with no diagnosis
 	stubErxService := testData.Config.ERxAPI.(*erx.StubErxService)
 	stubErxService.PatientErxID = 10
-	stubErxService.PrescriptionIdsToReturn = []int64{}
+	stubErxService.PrescriptionIDsToReturn = []int64{}
 	stubErxService.PrescriptionIDToPrescriptionStatuses = make(map[int64][]common.StatusEvent)
 	stubErxService.PharmacyToSendPrescriptionTo = pharmacySelection.SourceID
 
 	SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
 	// consume the message
-	doctor_treatment_plan.StartWorker(testData.DataAPI, stubErxService, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
+	consumed, err := doctor_treatment_plan.NewWorker(
+		testData.DataAPI, stubErxService, testData.Config.Dispatcher,
+		testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue,
+		0, metrics.NewRegistry(),
+	).Do()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Doctor treatment plan worker consume message: %t", consumed)
 
 	// start a new patient visit
 	patientVisitResponse, treatmentPlan = CreateRandomPatientVisitAndPickTP(t, testData, doctor)
@@ -192,10 +200,17 @@ func TestPatientVisitReview(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, common.TPStatusSubmitted, treatmentPlan.Status)
 
-	stubErxService.PrescriptionIdsToReturn = []int64{10, 20}
-	stubErxService.PrescriptionIDToPrescriptionStatuses[10] = []common.StatusEvent{common.StatusEvent{Status: api.ERXStatusEntered}}
-	stubErxService.PrescriptionIDToPrescriptionStatuses[20] = []common.StatusEvent{common.StatusEvent{Status: api.ERXStatusEntered}}
-	doctor_treatment_plan.StartWorker(testData.DataAPI, stubErxService, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
+	stubErxService.PrescriptionIDsToReturn = []int64{10, 20}
+	stubErxService.PrescriptionIDToPrescriptionStatuses[10] = []common.StatusEvent{{Status: api.ERXStatusEntered}}
+	stubErxService.PrescriptionIDToPrescriptionStatuses[20] = []common.StatusEvent{{Status: api.ERXStatusEntered}}
+	consumedDTP, err := doctor_treatment_plan.NewWorker(
+		testData.DataAPI, stubErxService, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue,
+		testData.Config.ERxStatusQueue, 0, metrics.NewRegistry(),
+	).Do()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Doctor treatment plan worker consume message: %t", consumedDTP)
 
 	// get an updated view of the patient informatio nfrom the database again given that weve assigned a prescription id to him
 	patient, err = testData.DataAPI.GetPatientFromID(patient.ID.Int64())
@@ -216,8 +231,8 @@ func TestPatientVisitReview(t *testing.T) {
 	test.Equals(t, false, patientVisit.ClosedDate.IsZero())
 
 	// attempt to consume the message put into the queue
-	stubErxService.PrescriptionIDToPrescriptionStatuses[10] = []common.StatusEvent{common.StatusEvent{Status: api.ERXStatusSent}}
-	stubErxService.PrescriptionIDToPrescriptionStatuses[20] = []common.StatusEvent{common.StatusEvent{Status: api.ERXStatusError, StatusDetails: "error test"}}
+	stubErxService.PrescriptionIDToPrescriptionStatuses[10] = []common.StatusEvent{{Status: api.ERXStatusSent}}
+	stubErxService.PrescriptionIDToPrescriptionStatuses[20] = []common.StatusEvent{{Status: api.ERXStatusError, StatusDetails: "error test"}}
 
 	statusWorker := app_worker.NewERxStatusWorker(
 		testData.DataAPI,
@@ -225,7 +240,13 @@ func TestPatientVisitReview(t *testing.T) {
 		testData.Config.Dispatcher,
 		testData.Config.ERxStatusQueue,
 		testData.Config.MetricsRegistry)
-	statusWorker.Do()
+	for {
+		consumed, err := statusWorker.Do()
+		test.OK(t, err)
+		if !consumed {
+			break
+		}
+	}
 
 	prescriptionStatuses, err = testData.DataAPI.GetPrescriptionStatusEventsForPatient(patient.ERxPatientID.Int64())
 	test.OK(t, err)

@@ -248,7 +248,10 @@ func buildRESTAPI(
 			checkRxErrorsLock,
 			metricsRegistry.Scope("check_rx_errors"),
 		).Start()
-		doctor_treatment_plan.StartWorker(dataAPI, eRxAPI, dispatcher, erxRoutingQueue, erxStatusQueue, 0, metricsRegistry.Scope("erx_route"))
+		doctor_treatment_plan.NewWorker(
+			dataAPI, eRxAPI, dispatcher, erxRoutingQueue,
+			erxStatusQueue, 0, metricsRegistry.Scope("erx_route"),
+		).Start()
 	}
 
 	medrecord.NewWorker(

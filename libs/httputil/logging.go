@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/environment"
+
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -93,6 +95,9 @@ type loggingHandler struct {
 
 // LoggingHandler wraps a handler to provide request logging.
 func LoggingHandler(h http.Handler, log golog.Logger, alog analytics.Logger) http.Handler {
+	if environment.IsTest() {
+		return h
+	}
 	return &loggingHandler{
 		h:    h,
 		log:  log,

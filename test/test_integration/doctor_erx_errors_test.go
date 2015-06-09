@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/test"
+
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_worker"
@@ -117,11 +119,8 @@ func TestRXError_Treatment_ErrorAfterSentState(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	// setup test
-	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
-	if err != nil {
-		t.Fatalf("Unable to get doctor from id %s", err)
-	}
+	doctor := createDoctorWithClinicianID(testData, t)
+	doctorID := doctor.ID.Int64()
 
 	// get treatment ready for doctor to add for patient
 	// while creating treatment plan
@@ -131,10 +130,7 @@ func TestRXError_Treatment_ErrorAfterSentState(t *testing.T) {
 	// sign up a patient and get them to submit a patient visit
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
-	err = testData.DataAPI.UpdatePatientPharmacy(treatmentPlan.PatientID, pharmacySelection)
-	if err != nil {
-		t.Fatal("Unable to update patient pharmacy: " + err.Error())
-	}
+	test.OK(t, testData.DataAPI.UpdatePatientPharmacy(treatmentPlan.PatientID, pharmacySelection))
 
 	treatmentResponse := AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountID.Int64(), treatmentPlan.ID.Int64(), t)
 
@@ -142,24 +138,30 @@ func TestRXError_Treatment_ErrorAfterSentState(t *testing.T) {
 
 	// ensure that the prescription is entered (rx started) so that it can be routed
 	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
-	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIDToReturn}
+	stubErxAPI.PrescriptionIDsToReturn = []int64{prescriptionIDToReturn}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		prescriptionIDToReturn: []common.StatusEvent{common.StatusEvent{
+		prescriptionIDToReturn: []common.StatusEvent{{
 			Status:            api.ERXStatusEntered,
 			ReportedTimestamp: time.Now(),
-		},
-		},
+		}},
 	}
-	doctor_treatment_plan.StartWorker(testData.DataAPI, stubErxAPI, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
+	consumed, err := doctor_treatment_plan.NewWorker(
+		testData.DataAPI, stubErxAPI, testData.Config.Dispatcher,
+		testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue,
+		0, metrics.NewRegistry(),
+	).Do()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Doctor treatment plan worker consume message: %t", consumed)
 
 	// once the treatment has been submitted, track the status of the submitted treatment to move it to the sent state
-	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIDToReturn}
+	stubErxAPI.PrescriptionIDsToReturn = []int64{prescriptionIDToReturn}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		prescriptionIDToReturn: []common.StatusEvent{common.StatusEvent{
+		prescriptionIDToReturn: []common.StatusEvent{{
 			Status:            api.ERXStatusSent,
 			ReportedTimestamp: time.Now().Add(5 * time.Minute),
-		},
-		},
+		}},
 	}
 
 	statusWorker := app_worker.NewERxStatusWorker(
@@ -168,13 +170,21 @@ func TestRXError_Treatment_ErrorAfterSentState(t *testing.T) {
 		testData.Config.Dispatcher,
 		testData.Config.ERxStatusQueue,
 		testData.Config.MetricsRegistry)
-	statusWorker.Do()
+	for {
+		consumed, err := statusWorker.Do()
+		test.OK(t, err)
+		if !consumed {
+			break
+		}
+	}
 
 	// expected state of the treatment here is sent
 	statusEvents, err := testData.DataAPI.GetPrescriptionStatusEventsForTreatment(treatmentResponse.TreatmentList.Treatments[0].ID.Int64())
-	if err != nil {
-		t.Fatalf("Unable to get status events for treatments: %s", err)
-	} else if len(statusEvents) != 2 {
+	test.OK(t, err)
+	if len(statusEvents) != 2 {
+		for _, e := range statusEvents {
+			t.Logf("\t%+v", e)
+		}
 		t.Fatalf("Expected 2 status events instead got %d", len(statusEvents))
 	} else if statusEvents[0].Status != api.ERXStatusSent {
 		t.Fatalf("Expected status to be %s instead it was %s", api.ERXStatusSent, statusEvents[0].Status)
@@ -187,14 +197,16 @@ func TestRXError_Treatment_ErrorAfterSentState(t *testing.T) {
 		stubErxAPI,
 		&TestLock{},
 		testData.Config.MetricsRegistry)
-	errorWorker.Do()
+	test.OK(t, errorWorker.Do())
 
 	// there should now be 3 status events for this treatment given that
 	// the rx error checker caught the missed transition from sending -> sent -> error
 	statusEvents, err = testData.DataAPI.GetPrescriptionStatusEventsForTreatment(treatmentResponse.TreatmentList.Treatments[0].ID.Int64())
-	if err != nil {
-		t.Fatalf("Unable to get status events for treatment: %s", err)
-	} else if len(statusEvents) != 3 {
+	test.OK(t, err)
+	if len(statusEvents) != 3 {
+		for _, e := range statusEvents {
+			t.Logf("\t%+v", e)
+		}
 		t.Fatalf("Expected 3 status events instead got %d", len(statusEvents))
 	} else if statusEvents[0].Status != api.ERXStatusError && statusEvents[1].Status != api.ERXStatusSent {
 		t.Fatalf("Expected a transition from sent -> error, instead got %s -> %s", statusEvents[1].Status, statusEvents[0].Status)
@@ -221,11 +233,8 @@ func TestRXError_Treatment_ErrorAfterSendingState(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	// setup test
-	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
-	if err != nil {
-		t.Fatalf("Unable to get doctor from id %s", err)
-	}
+	doctor := createDoctorWithClinicianID(testData, t)
+	doctorID := doctor.ID.Int64()
 
 	// get treatment ready for doctor to add for patient
 	// while creating treatment plan
@@ -234,10 +243,7 @@ func TestRXError_Treatment_ErrorAfterSendingState(t *testing.T) {
 
 	// sign up a patient and get them to submit a patient visit
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	err = testData.DataAPI.UpdatePatientPharmacy(treatmentPlan.PatientID, pharmacySelection)
-	if err != nil {
-		t.Fatal("Unable to update patient pharmacy: " + err.Error())
-	}
+	test.OK(t, testData.DataAPI.UpdatePatientPharmacy(treatmentPlan.PatientID, pharmacySelection))
 
 	// get the doctor to add a treatment to the patient visit that we can track the status of
 	treatmentResponse := AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountID.Int64(),
@@ -247,29 +253,28 @@ func TestRXError_Treatment_ErrorAfterSendingState(t *testing.T) {
 
 	// first return the erx status as entered so that we can proceed forward with routing the erx
 	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
-	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIDToReturn}
+	stubErxAPI.PrescriptionIDsToReturn = []int64{prescriptionIDToReturn}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		prescriptionIDToReturn: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERXStatusEntered,
-		},
-		},
+		prescriptionIDToReturn: []common.StatusEvent{{Status: api.ERXStatusEntered}},
 	}
 
-	doctor_treatment_plan.StartWorker(
+	consumed, err := doctor_treatment_plan.NewWorker(
 		testData.DataAPI,
 		testData.Config.ERxAPI,
 		testData.Config.Dispatcher,
 		testData.Config.ERxRoutingQueue,
 		testData.Config.ERxStatusQueue,
 		0,
-		metrics.NewRegistry())
+		metrics.NewRegistry(),
+	).Do()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Doctor treatment plan worker consume message: %t", consumed)
 
-	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIDToReturn}
+	stubErxAPI.PrescriptionIDsToReturn = []int64{prescriptionIDToReturn}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		prescriptionIDToReturn: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERXStatusSent,
-		},
-		},
+		prescriptionIDToReturn: []common.StatusEvent{{Status: api.ERXStatusSent}},
 	}
 
 	// now stub the erx api to return a "free-standing" transmission error detail for this treatment
@@ -279,7 +284,7 @@ func TestRXError_Treatment_ErrorAfterSendingState(t *testing.T) {
 		stubErxAPI,
 		&TestLock{},
 		testData.Config.MetricsRegistry)
-	errorWorker.Do()
+	test.OK(t, errorWorker.Do())
 
 	// there should now be 2 status events for this treatment given that
 	// the rx error checker caught the transition from sending  -> error
@@ -313,11 +318,8 @@ func TestRXError_Treatment_ErrorAfterError(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	// setup test
-	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
-	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
-	if err != nil {
-		t.Fatalf("Unable to get doctor from id %s", err)
-	}
+	doctor := createDoctorWithClinicianID(testData, t)
+	doctorID := doctor.ID.Int64()
 
 	// get treatment ready for doctor to add for patient
 	// while creating treatment plan
@@ -327,10 +329,7 @@ func TestRXError_Treatment_ErrorAfterError(t *testing.T) {
 	// sign up a patient and get them to submit a patient visit
 	_, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 
-	err = testData.DataAPI.UpdatePatientPharmacy(treatmentPlan.PatientID, pharmacySelection)
-	if err != nil {
-		t.Fatal("Unable to update patient pharmacy: " + err.Error())
-	}
+	test.OK(t, testData.DataAPI.UpdatePatientPharmacy(treatmentPlan.PatientID, pharmacySelection))
 
 	// get the doctor to add a treatment to the patient visit that we can track the status of
 	treatmentResponse := AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1}, doctor.AccountID.Int64(),
@@ -341,22 +340,25 @@ func TestRXError_Treatment_ErrorAfterError(t *testing.T) {
 	SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
 
 	stubErxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
-	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIDToReturn}
+	stubErxAPI.PrescriptionIDsToReturn = []int64{prescriptionIDToReturn}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		prescriptionIDToReturn: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERXStatusEntered,
-		},
-		},
+		prescriptionIDToReturn: []common.StatusEvent{{Status: api.ERXStatusEntered}},
 	}
-	doctor_treatment_plan.StartWorker(testData.DataAPI, testData.Config.ERxAPI, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
+	consumed, err := doctor_treatment_plan.NewWorker(testData.DataAPI, testData.Config.ERxAPI,
+		testData.Config.Dispatcher, testData.Config.ERxRoutingQueue,
+		testData.Config.ERxStatusQueue, 0, metrics.NewRegistry(),
+	).Do()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Doctor treatment plan worker consume message: %t", consumed)
 
-	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIDToReturn}
+	stubErxAPI.PrescriptionIDsToReturn = []int64{prescriptionIDToReturn}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		prescriptionIDToReturn: []common.StatusEvent{common.StatusEvent{
+		prescriptionIDToReturn: []common.StatusEvent{{
 			Status:        api.ERXStatusError,
 			StatusDetails: "test error",
-		},
-		},
+		}},
 	}
 	// once the treatment has been submitted, track the status of the submitted treatment to move it to the sent state
 	statusWorker := app_worker.NewERxStatusWorker(
@@ -365,7 +367,13 @@ func TestRXError_Treatment_ErrorAfterError(t *testing.T) {
 		testData.Config.Dispatcher,
 		testData.Config.ERxStatusQueue,
 		testData.Config.MetricsRegistry)
-	statusWorker.Do()
+	for {
+		consumed, err := statusWorker.Do()
+		test.OK(t, err)
+		if !consumed {
+			break
+		}
+	}
 
 	// expected state of the treatment here is sent
 	statusEvents, err := testData.DataAPI.GetPrescriptionStatusEventsForTreatment(treatmentResponse.TreatmentList.Treatments[0].ID.Int64())
@@ -393,7 +401,7 @@ func TestRXError_Treatment_ErrorAfterError(t *testing.T) {
 		testData.ERxAPI,
 		&TestLock{},
 		testData.Config.MetricsRegistry)
-	errorWorker.Do()
+	test.OK(t, errorWorker.Do())
 
 	// there should now be 3 status events for this treatment given that
 	// the rx error checker caught the missed transition from sending -> sent -> error
@@ -463,14 +471,13 @@ func TestRXError_Refill_ErrorAfterSentState(t *testing.T) {
 	stubErxAPI.PharmacyDetailsToReturn = pharmacyToReturn
 	stubErxAPI.PatientDetailsToReturn = patientToReturn
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
-	stubErxAPI.RefillRequestPrescriptionIds = map[int64]int64{
+	stubErxAPI.RefillRequestPrescriptionIDs = map[int64]int64{
 		refillRequestQueueItemID: approvedRefillRequestPrescriptionID,
 	}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		approvedRefillRequestPrescriptionID: []common.StatusEvent{common.StatusEvent{
+		approvedRefillRequestPrescriptionID: []common.StatusEvent{{
 			Status: api.ERXStatusSent,
-		},
-		},
+		}},
 	}
 
 	// consume the refill request to store the refill request into our system
@@ -481,7 +488,7 @@ func TestRXError_Refill_ErrorAfterSentState(t *testing.T) {
 		testData.Config.Dispatcher,
 		testData.Config.MetricsRegistry,
 	)
-	refillRXWorker.Do()
+	test.OK(t, refillRXWorker.Do())
 
 	// now lets go ahead and attempt to approve this refill request
 	refillRequestStatuses, err := testData.DataAPI.GetPendingRefillRequestStatusEventsForClinic()
@@ -504,7 +511,13 @@ func TestRXError_Refill_ErrorAfterSentState(t *testing.T) {
 		testData.Config.Dispatcher,
 		testData.Config.ERxStatusQueue,
 		testData.Config.MetricsRegistry)
-	statusWorker.Do()
+	for {
+		consumed, err := statusWorker.Do()
+		test.OK(t, err)
+		if !consumed {
+			break
+		}
+	}
 
 	// now lets get it to transition into the ERROR state
 	stubErxAPI.TransmissionErrorsForPrescriptionIds = []int64{approvedRefillRequestPrescriptionID}
@@ -513,7 +526,7 @@ func TestRXError_Refill_ErrorAfterSentState(t *testing.T) {
 		stubErxAPI,
 		&TestLock{},
 		testData.Config.MetricsRegistry)
-	errorWorker.Do()
+	test.OK(t, errorWorker.Do())
 
 	refillStatusEvents, err := testData.DataAPI.GetRefillStatusEventsForRefillRequest(refillRequest.ID)
 	if err != nil {
@@ -571,14 +584,13 @@ func TestRXError_Refill_ErrorAfterSendingState(t *testing.T) {
 	stubErxAPI.PharmacyDetailsToReturn = pharmacyToReturn
 	stubErxAPI.PatientDetailsToReturn = patientToReturn
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
-	stubErxAPI.RefillRequestPrescriptionIds = map[int64]int64{
+	stubErxAPI.RefillRequestPrescriptionIDs = map[int64]int64{
 		refillRequestQueueItemID: approvedRefillRequestPrescriptionID,
 	}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		approvedRefillRequestPrescriptionID: []common.StatusEvent{common.StatusEvent{
+		approvedRefillRequestPrescriptionID: []common.StatusEvent{{
 			Status: api.ERXStatusSent,
-		},
-		},
+		}},
 	}
 
 	// consume the refill request to store the refill request into our system
@@ -589,7 +601,7 @@ func TestRXError_Refill_ErrorAfterSendingState(t *testing.T) {
 		testData.Config.Dispatcher,
 		testData.Config.MetricsRegistry,
 	)
-	refillRXWorker.Do()
+	test.OK(t, refillRXWorker.Do())
 
 	// now lets go ahead and attempt to approve this refill request
 	refillRequestStatuses, err := testData.DataAPI.GetPendingRefillRequestStatusEventsForClinic()
@@ -611,7 +623,7 @@ func TestRXError_Refill_ErrorAfterSendingState(t *testing.T) {
 		stubErxAPI,
 		&TestLock{},
 		testData.Config.MetricsRegistry)
-	errorWorker.Do()
+	test.OK(t, errorWorker.Do())
 
 	refillStatusEvents, err := testData.DataAPI.GetRefillStatusEventsForRefillRequest(refillRequest.ID)
 	if err != nil {
@@ -669,15 +681,14 @@ func TestRXError_Refill_ErrorAfterErrorState(t *testing.T) {
 	stubErxAPI.PharmacyDetailsToReturn = pharmacyToReturn
 	stubErxAPI.PatientDetailsToReturn = patientToReturn
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
-	stubErxAPI.RefillRequestPrescriptionIds = map[int64]int64{
+	stubErxAPI.RefillRequestPrescriptionIDs = map[int64]int64{
 		refillRequestQueueItemID: approvedRefillRequestPrescriptionID,
 	}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		approvedRefillRequestPrescriptionID: []common.StatusEvent{common.StatusEvent{
+		approvedRefillRequestPrescriptionID: []common.StatusEvent{{
 			Status:        api.ERXStatusError,
 			StatusDetails: "Error state",
-		},
-		},
+		}},
 	}
 
 	// consume the refill request to store the refill request into our system
@@ -688,7 +699,7 @@ func TestRXError_Refill_ErrorAfterErrorState(t *testing.T) {
 		testData.Config.Dispatcher,
 		testData.Config.MetricsRegistry,
 	)
-	refillRXWorker.Do()
+	test.OK(t, refillRXWorker.Do())
 
 	// now lets go ahead and attempt to approve this refill request
 	refillRequestStatuses, err := testData.DataAPI.GetPendingRefillRequestStatusEventsForClinic()
@@ -703,6 +714,8 @@ func TestRXError_Refill_ErrorAfterErrorState(t *testing.T) {
 
 	approveRefillRequest(refillRequest, doctor.AccountID.Int64(), "this is a test", testData, t)
 
+	// now lets get it to transition into the ERROR state
+	stubErxAPI.TransmissionErrorsForPrescriptionIds = []int64{approvedRefillRequestPrescriptionID}
 	// now that the refill request has been approved there should be an item in the message queue to check the status of the
 	// prescription that was created as a result of the approval. Let's get this prescription to transition from approved -> sent
 	statusWorker := app_worker.NewERxStatusWorker(
@@ -711,11 +724,13 @@ func TestRXError_Refill_ErrorAfterErrorState(t *testing.T) {
 		testData.Config.Dispatcher,
 		testData.Config.ERxStatusQueue,
 		testData.Config.MetricsRegistry)
-	statusWorker.Do()
-
-	// now lets get it to transition into the ERROR state
-	stubErxAPI.TransmissionErrorsForPrescriptionIds = []int64{approvedRefillRequestPrescriptionID}
-	statusWorker.Do()
+	for {
+		consumed, err := statusWorker.Do()
+		test.OK(t, err)
+		if !consumed {
+			break
+		}
+	}
 
 	refillStatusEvents, err := testData.DataAPI.GetRefillStatusEventsForRefillRequest(refillRequest.ID)
 	if err != nil {
@@ -747,7 +762,7 @@ func TestRXError_UnlinkedDNTFT_SentToErrorState(t *testing.T) {
 		stubErxAPI,
 		&TestLock{},
 		testData.Config.MetricsRegistry)
-	errorWorker.Do()
+	test.OK(t, errorWorker.Do())
 
 	unlinkedTreatment, err := testData.DataAPI.GetUnlinkedDNTFTreatment(unlinkedTreatment.ID.Int64())
 	if err != nil {
@@ -778,7 +793,7 @@ func TestRXError_UnlinkedDNTF_SendingToErrorState(t *testing.T) {
 		stubErxAPI,
 		&TestLock{},
 		testData.Config.MetricsRegistry)
-	errorWorker.Do()
+	test.OK(t, errorWorker.Do())
 
 	unlinkedTreatment, err := testData.DataAPI.GetUnlinkedDNTFTreatment(unlinkedTreatment.ID.Int64())
 	if err != nil {

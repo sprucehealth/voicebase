@@ -11,6 +11,7 @@ import (
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/idgen"
@@ -189,17 +190,19 @@ func (h *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				h.statLatency.Update(responseTime)
 			}
 
-			golog.Context(
-				"StatusCode", statusCode,
-				"Method", r.Method,
-				"URL", r.URL.String(),
-				"RequestID", ctx.RequestID,
-				"AccountID", ctx.AccountID,
-				"RemoteAddr", remoteAddr,
-				"ContentType", w.Header().Get("Content-Type"),
-				"UserAgent", r.UserAgent(),
-				"ResponseTime", float64(responseTime)/1000.0,
-			).LogDepthf(-1, golog.INFO, "apirequest")
+			if !environment.IsTest() {
+				golog.Context(
+					"StatusCode", statusCode,
+					"Method", r.Method,
+					"URL", r.URL.String(),
+					"RequestID", ctx.RequestID,
+					"AccountID", ctx.AccountID,
+					"RemoteAddr", remoteAddr,
+					"ContentType", w.Header().Get("Content-Type"),
+					"UserAgent", r.UserAgent(),
+					"ResponseTime", float64(responseTime)/1000.0,
+				).LogDepthf(-1, golog.INFO, "apirequest")
+			}
 		}
 
 		if counter, ok := h.statResponseCodeRequests[statusCode]; ok {

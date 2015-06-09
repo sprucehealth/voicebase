@@ -2,17 +2,15 @@ package app_worker
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
-
-	"time"
-
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 )
 
 const sleepTime = 30 * time.Second
@@ -70,7 +68,7 @@ func (w *ERxStatusWorker) Start() {
 			default:
 			}
 
-			if err := w.Do(); err != nil {
+			if _, err := w.Do(); err != nil {
 				golog.Errorf(err.Error())
 			}
 
@@ -87,7 +85,7 @@ func (w *ERxStatusWorker) Stop() {
 	close(w.stopChan)
 }
 
-func (w *ERxStatusWorker) Do() error {
+func (w *ERxStatusWorker) Do() (bool, error) {
 	res, err := w.erxQueue.QueueService.ReceiveMessage(&sqs.ReceiveMessageInput{
 		QueueURL:          &w.erxQueue.QueueURL,
 		VisibilityTimeout: &msgVisibilityTimeout,
@@ -96,11 +94,11 @@ func (w *ERxStatusWorker) Do() error {
 	w.statCycles.Inc(1)
 	if err != nil {
 		w.statFailure.Inc(1)
-		return err
+		return false, err
 	}
 
 	if len(res.Messages) == 0 {
-		return nil
+		return false, err
 	}
 
 	// keep track of failed events so as to determine
@@ -158,7 +156,7 @@ func (w *ERxStatusWorker) Do() error {
 		}
 
 		// nothing to do if there are no prescriptions for this patient to keep track of
-		if prescriptionStatuses == nil || len(prescriptionStatuses) == 0 {
+		if len(prescriptionStatuses) == 0 {
 			golog.Infof("No prescription statuses to keep track of for patient")
 			_, err := w.erxQueue.QueueService.DeleteMessage(&sqs.DeleteMessageInput{
 				QueueURL:      &w.erxQueue.QueueURL,
@@ -364,5 +362,5 @@ func (w *ERxStatusWorker) Do() error {
 	}
 	responseTime := time.Since(startTime).Nanoseconds() / 1e3
 	w.statProcessTime.Update(responseTime)
-	return nil
+	return true, nil
 }
