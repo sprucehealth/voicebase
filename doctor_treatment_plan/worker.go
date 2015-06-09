@@ -9,7 +9,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
@@ -33,7 +32,7 @@ type erxRouteMessage struct {
 	Message         string
 }
 
-type worker struct {
+type Worker struct {
 	dataAPI         api.DataAPI
 	erxAPI          erx.ERxAPI
 	dispatcher      *dispatch.Dispatcher
@@ -44,7 +43,7 @@ type worker struct {
 	timePeriod      int64
 }
 
-func StartWorker(dataAPI api.DataAPI, erxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher, erxRoutingQueue *common.SQSQueue, erxStatusQueue *common.SQSQueue, timePeriod int64, metricsRegistry metrics.Registry) {
+func NewWorker(dataAPI api.DataAPI, erxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher, erxRoutingQueue *common.SQSQueue, erxStatusQueue *common.SQSQueue, timePeriod int64, metricsRegistry metrics.Registry) *Worker {
 	if timePeriod == 0 {
 		timePeriod = defaultTimePeriodSeconds
 	}
@@ -54,7 +53,7 @@ func StartWorker(dataAPI api.DataAPI, erxAPI erx.ERxAPI, dispatcher *dispatch.Di
 	metricsRegistry.Add("route/failure", erxRouteFail)
 	metricsRegistry.Add("route/success", erxRouteSuccess)
 
-	w := &worker{
+	return &Worker{
 		dataAPI:         dataAPI,
 		erxAPI:          erxAPI,
 		dispatcher:      dispatcher,
@@ -64,18 +63,12 @@ func StartWorker(dataAPI api.DataAPI, erxAPI erx.ERxAPI, dispatcher *dispatch.Di
 		erxRouteFail:    erxRouteFail,
 		erxRouteSuccess: erxRouteSuccess,
 	}
-
-	if environment.IsTest() {
-		w.consumeMessage()
-	} else {
-		w.start()
-	}
 }
 
-func (w *worker) start() {
+func (w *Worker) Start() {
 	go func() {
 		for {
-			msgsConsumed, err := w.consumeMessage()
+			msgsConsumed, err := w.Do()
 
 			if err != nil {
 				golog.Errorf(err.Error())
@@ -88,7 +81,7 @@ func (w *worker) start() {
 	}()
 }
 
-func (w *worker) consumeMessage() (bool, error) {
+func (w *Worker) Do() (bool, error) {
 	res, err := w.erxRoutingQueue.QueueService.ReceiveMessage(&sqs.ReceiveMessageInput{
 		QueueURL:            &w.erxRoutingQueue.QueueURL,
 		MaxNumberOfMessages: &batchSize,
@@ -129,7 +122,7 @@ func (w *worker) consumeMessage() (bool, error) {
 	return msgsConsumed, nil
 }
 
-func (w *worker) processMessage(msg *erxRouteMessage) error {
+func (w *Worker) processMessage(msg *erxRouteMessage) error {
 	treatmentPlan, err := w.dataAPI.GetAbridgedTreatmentPlan(msg.TreatmentPlanID, msg.DoctorID)
 	if err != nil {
 		return errors.Trace(err)
@@ -209,7 +202,7 @@ func (w *worker) processMessage(msg *erxRouteMessage) error {
 	return nil
 }
 
-func (w *worker) sendPrescriptionsToPharmacy(treatments []*common.Treatment, patient *common.Patient, doctor *common.Doctor) error {
+func (w *Worker) sendPrescriptionsToPharmacy(treatments []*common.Treatment, patient *common.Patient, doctor *common.Doctor) error {
 	prescriptionsToSend, err := w.determinePrescriptionsToSendToPharmacy(treatments, doctor)
 	if err != nil {
 		return errors.Trace(err)
@@ -261,7 +254,7 @@ func (w *worker) sendPrescriptionsToPharmacy(treatments []*common.Treatment, pat
 	return nil
 }
 
-func (w *worker) determinePrescriptionsToSendToPharmacy(treatments []*common.Treatment, doctor *common.Doctor) ([]*common.Treatment, error) {
+func (w *Worker) determinePrescriptionsToSendToPharmacy(treatments []*common.Treatment, doctor *common.Doctor) ([]*common.Treatment, error) {
 	var treatmentsToSend []*common.Treatment
 	for _, tItem := range treatments {
 		prescriptionLogs, err := w.erxAPI.GetPrescriptionStatus(doctor.DoseSpotClinicianID, tItem.ERx.PrescriptionID.Int64())

@@ -56,6 +56,7 @@ func init() {
 	apiservice.Testing = true
 	dispatch.Testing = true
 	golog.Default().SetLevel(golog.WARN)
+	environment.SetCurrent(environment.Test)
 }
 
 type SMS struct {
@@ -354,7 +355,6 @@ func setupTest() (*TestData, error) {
 		return nil, err
 	}
 
-	environment.SetCurrent("test")
 	testData.Config = &router.Config{
 		DataAPI:             testData.DataAPI,
 		AuthAPI:             testData.AuthAPI,
@@ -484,7 +484,6 @@ func (d *TestData) bootstrapData() {
 	// In reality, the drug descriptions are added to the database (after being pulled down from the e-prescription service)
 	// for each drug that the doctor selects on the app.
 	for i := 0; i < 3; i++ {
-
 		drugName := fmt.Sprintf("Drug%d", i+1)
 		drugForm := fmt.Sprintf("Form%d", i+1)
 		drugRoute := fmt.Sprintf("Route%d", i+1)

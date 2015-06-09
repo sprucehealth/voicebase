@@ -289,5 +289,4 @@ func TestTrackAppDeviceInfo(t *testing.T) {
 	appInfo, err := testData.AuthAPI.LatestAppInfo(account.ID)
 	test.OK(t, err)
 	test.Equals(t, true, appInfo != nil)
-
 }

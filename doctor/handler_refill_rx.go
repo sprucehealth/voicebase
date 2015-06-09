@@ -200,7 +200,6 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 
 		// if denial reason is DNTF then make sure that there is a treatment along with the denial request
 		if denialReasonCode == api.RXRefillDNTFReasonCode {
-
 			if requestData.Treatment == nil {
 				apiservice.WriteDeveloperErrorWithCode(w, apiservice.DeveloperErrorTreatmentMissingDNTF, http.StatusBadRequest, "Treatment missing when reason for denial selected as denied new request to follow.")
 				return
@@ -336,7 +335,7 @@ func (d *refillRxHandler) resolveRefillRequest(w http.ResponseWriter, r *http.Re
 		RefillRequestID: refillRequest.ID,
 	})
 
-	//  Queue up job to check for whether or not the response to this refill request
+	// Queue up job to check for whether or not the response to this refill request
 	// was successfully transmitted to the pharmacy
 	if err := apiservice.QueueUpJob(d.erxStatusQueue, &common.PrescriptionStatusCheckMessage{
 		PatientID:      refillRequest.Patient.ID.Int64(),

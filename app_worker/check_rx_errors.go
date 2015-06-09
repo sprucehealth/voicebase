@@ -79,17 +79,16 @@ func (w *ERxWorker) Start() {
 	}()
 }
 
-func (w *ERxWorker) Do() {
+func (w *ERxWorker) Do() error {
 	// Get all doctors on our platform
 	doctors, err := w.dataAPI.ListCareProviders(api.LCPOptDoctorsOnly)
 	if err != nil {
 		golog.Errorf("Unable to get all doctors in clinic: %s", err)
 		w.statFailure.Inc(1)
-		return
+		return err
 	}
 
 	for _, doctor := range doctors {
-
 		// nothing to do if doctor does not have a dosespot clinician id
 		if doctor.DoseSpotClinicianID == 0 {
 			continue
@@ -157,6 +156,7 @@ func (w *ERxWorker) Do() {
 			}
 		}
 	}
+	return nil
 }
 
 func handlErxErrorForUnlinkedDNTFTreatment(dataAPI api.DataAPI, unlinkedDNTFTreatment, treatmentWithError *common.Treatment) error {

@@ -32,7 +32,6 @@ func getQuestionWithTagAndExpectedType(questionTag, questionType string, t *test
 }
 
 func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionID int64, testData *TestData, t *testing.T) int64 {
-
 	potentialAnswers, err := testData.DataAPI.GetAnswerInfo(questionID, 1)
 	if err != nil {
 		t.Fatal("Unable to get answers for question with id " + strconv.FormatInt(questionID, 10))
@@ -60,7 +59,6 @@ func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionID in
 }
 
 func TestSingleSelectIntake(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -137,8 +135,9 @@ func TestMultipleChoiceIntake(t *testing.T) {
 		PatientVisitID: patientVisitResponse.PatientVisitID,
 	}
 
-	qaItem := &apiservice.QuestionAnswerItem{}
-	qaItem.QuestionID = questionID
+	qaItem := &apiservice.QuestionAnswerItem{
+		QuestionID: questionID,
+	}
 	for _, potentialAnswer := range potentialAnswers {
 		if potentialAnswer.AnswerTag == "a_otc_prev_treatment_type" || potentialAnswer.AnswerTag == "a_prescription_prev_treatment_type" {
 			qaItem.AnswerIntakes = append(qaItem.AnswerIntakes, &apiservice.AnswerItem{PotentialAnswerID: potentialAnswer.AnswerID})
@@ -193,9 +192,10 @@ func TestSingleEntryIntake(t *testing.T) {
 	intakeData := apiservice.IntakeData{}
 	intakeData.PatientVisitID = patientVisitResponse.PatientVisitID
 
-	qaItem := &apiservice.QuestionAnswerItem{}
-	qaItem.QuestionID = questionID
-	qaItem.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: potentialAnswerID, AnswerText: "testAnswer"}}
+	qaItem := &apiservice.QuestionAnswerItem{
+		QuestionID:    questionID,
+		AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: potentialAnswerID, AnswerText: "testAnswer"}},
+	}
 	intakeData.Questions = []*apiservice.QuestionAnswerItem{qaItem}
 	SubmitAnswersIntakeForPatient(pr.Patient.ID.Int64(), pr.Patient.AccountID.Int64(), &intakeData, testData, t)
 
@@ -223,7 +223,6 @@ func TestSingleEntryIntake(t *testing.T) {
 }
 
 func TestFreeTextEntryIntake(t *testing.T) {
-
 	testData := SetupTest(t)
 	defer testData.Close()
 	testData.StartAPIServer(t)
@@ -276,12 +275,10 @@ func TestIntake_ClientOrdering(t *testing.T) {
 		SessionID:      "68753A44-4D6F-1226-9C60-0050E4C00067",
 		SessionCounter: 10,
 		Questions: []*apiservice.QuestionAnswerItem{
-			&apiservice.QuestionAnswerItem{
+			{
 				QuestionID: questionID,
 				AnswerIntakes: []*apiservice.AnswerItem{
-					&apiservice.AnswerItem{
-						AnswerText: response1,
-					},
+					{AnswerText: response1},
 				},
 			},
 		},
@@ -301,12 +298,10 @@ func TestIntake_ClientOrdering(t *testing.T) {
 		SessionID:      "68753A44-4D6F-1226-9C60-0050E4C00067",
 		SessionCounter: 9,
 		Questions: []*apiservice.QuestionAnswerItem{
-			&apiservice.QuestionAnswerItem{
+			{
 				QuestionID: questionID,
 				AnswerIntakes: []*apiservice.AnswerItem{
-					&apiservice.AnswerItem{
-						AnswerText: response2,
-					},
+					{AnswerText: response2},
 				},
 			},
 		},

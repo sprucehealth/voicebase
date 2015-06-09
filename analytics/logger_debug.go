@@ -3,6 +3,7 @@ package analytics
 import (
 	"testing"
 
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -14,7 +15,7 @@ func (l DebugLogger) WriteEvents(events []Event) {
 	for _, e := range events {
 		if l.T != nil {
 			l.T.Logf("%s %+v", e.Category(), e)
-		} else {
+		} else if !environment.IsTest() {
 			golog.Debugf("%s %+v", e.Category(), e)
 		}
 	}

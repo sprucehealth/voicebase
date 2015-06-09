@@ -90,12 +90,14 @@ func TestERXRouting_RXStarted(t *testing.T) {
 	// after routing the prescriptions
 	stubERxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
 	stubERxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		treatmentPrescriptionID: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERXStatusEntered,
-		},
-		},
+		treatmentPrescriptionID: []common.StatusEvent{{Status: api.ERXStatusEntered}},
 	}
-	doctor_treatment_plan.StartWorker(testData.DataAPI, stubERxAPI, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
+	consumed, err := doctor_treatment_plan.NewWorker(
+		testData.DataAPI, stubERxAPI, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue,
+		testData.Config.ERxStatusQueue, 0, metrics.NewRegistry(),
+	).Do()
+	test.OK(t, err)
+	t.Logf("Doctor treatment plan worker consume message: %t", consumed)
 
 	// at this point the treatment plan should be activated
 	treatmentPlan, err := testData.DataAPI.GetAbridgedTreatmentPlan(tp.ID.Int64(), doctor.ID.Int64())
@@ -183,12 +185,14 @@ func TestERXRouting_RXSent(t *testing.T) {
 	// after routing the prescriptions
 	stubERxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
 	stubERxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		treatmentPrescriptionID: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERXStatusSent,
-		},
-		},
+		treatmentPrescriptionID: []common.StatusEvent{{Status: api.ERXStatusSent}},
 	}
-	doctor_treatment_plan.StartWorker(testData.DataAPI, stubERxAPI, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
+	consumed, err := doctor_treatment_plan.NewWorker(
+		testData.DataAPI, stubERxAPI, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue,
+		testData.Config.ERxStatusQueue, 0, metrics.NewRegistry(),
+	).Do()
+	test.OK(t, err)
+	t.Logf("Doctor treatment plan worker consume message: %t", consumed)
 
 	// at this point the treatment plan should be activated
 	treatmentPlan, err := testData.DataAPI.GetAbridgedTreatmentPlan(tp.ID.Int64(), doctor.ID.Int64())
@@ -280,7 +284,7 @@ func TestERxRouting_CaseMessageExistsAlready(t *testing.T) {
 		PersonID: doctor.PersonID,
 		Body:     "foo",
 		Attachments: []*common.CaseMessageAttachment{
-			&common.CaseMessageAttachment{
+			{
 				ItemType: common.AttachmentTypeTreatmentPlan,
 				ItemID:   tp.ID.Int64(),
 			},
@@ -290,7 +294,12 @@ func TestERxRouting_CaseMessageExistsAlready(t *testing.T) {
 	test.OK(t, err)
 
 	// now lets go ahead and get the worker to consume the message
-	doctor_treatment_plan.StartWorker(testData.DataAPI, testData.Config.ERxAPI, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue, testData.Config.ERxStatusQueue, 0, metrics.NewRegistry())
+	consumed, err := doctor_treatment_plan.NewWorker(
+		testData.DataAPI, testData.Config.ERxAPI, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue,
+		testData.Config.ERxStatusQueue, 0, metrics.NewRegistry(),
+	).Do()
+	test.OK(t, err)
+	t.Logf("Doctor treatment plan worker consume message: %t", consumed)
 
 	// at this point the treatment plan should be activated
 	treatmentPlan, err := testData.DataAPI.GetAbridgedTreatmentPlan(tp.ID.Int64(), doctor.ID.Int64())

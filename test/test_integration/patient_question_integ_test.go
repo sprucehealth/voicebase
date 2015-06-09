@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/test"
 )
 
 func TestNoPotentialAnswerForQuestionTypes(t *testing.T) {
@@ -16,13 +17,15 @@ func TestNoPotentialAnswerForQuestionTypes(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to query database for a list of question ids : " + err.Error())
 	}
+	defer rows.Close()
 
-	questionIDs := make([]int64, 0)
+	var questionIDs []int64
 	for rows.Next() {
 		var id int64
-		rows.Scan(&id)
+		test.OK(t, rows.Scan(&id))
 		questionIDs = append(questionIDs, id)
 	}
+	test.OK(t, rows.Err())
 
 	// for each of these question ids, there should be no potential responses
 	for _, questionID := range questionIDs {
