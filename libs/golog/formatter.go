@@ -15,6 +15,7 @@ const (
 	floatFormat = 'f'
 )
 
+// Formatter is the interface implemented by objects that support formatting of log entries.
 type Formatter interface {
 	Format(e *Entry) []byte
 }
@@ -135,6 +136,9 @@ func TerminalFormatter() Formatter {
 	})
 }
 
+// FormatContext formats a list of context key-value pairs in the form
+// [key, value, key, value, ...] and returns the string representation as a
+// byte slice. The returned string is "key1=value1<delim>key2=value2..."
 func FormatContext(ctx []interface{}, delim rune) []byte {
 	buf := &bytes.Buffer{}
 	for i := 0; i < len(ctx); i += 2 {

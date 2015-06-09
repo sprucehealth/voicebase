@@ -1,5 +1,6 @@
 package httputil
 
+// HTTP verbs
 const (
 	Get    = "GET"
 	Put    = "PUT"

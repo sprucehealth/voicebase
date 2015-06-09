@@ -30,10 +30,11 @@ func init() {
 	}
 }
 
-type ContextKey int
+// contextKey provides a unique type to be used as a private namespace for values in the context.
+type contextKey int
 
 const (
-	requestIDContextKey ContextKey = iota
+	requestIDContextKey contextKey = iota
 )
 
 type loggingResponseWriter struct {
@@ -55,6 +56,10 @@ func (w *loggingResponseWriter) Write(bytes []byte) (int, error) {
 	return w.ResponseWriter.Write(bytes)
 }
 
+// RequestID returns the request ID for an HTTP request. RequestIDHandler
+// must be used to guarantee that a request ID exists. If a request ID does
+// not exist because a handler has not been wrapped with RequestIDHandler then
+// this function will panic.
 func RequestID(r *http.Request) int64 {
 	reqID, _ := context.Get(r, requestIDContextKey).(int64)
 	return reqID
@@ -64,6 +69,8 @@ type requestIDHandler struct {
 	h http.Handler
 }
 
+// RequestIDHandler wraps a handler to provide generation of a unique
+// request ID per request. The ID is available by calling RequestID(request).
 func RequestIDHandler(h http.Handler) http.Handler {
 	return &requestIDHandler{h: h}
 }
@@ -84,6 +91,7 @@ type loggingHandler struct {
 	alog analytics.Logger
 }
 
+// LoggingHandler wraps a handler to provide request logging.
 func LoggingHandler(h http.Handler, log golog.Logger, alog analytics.Logger) http.Handler {
 	return &loggingHandler{
 		h:    h,

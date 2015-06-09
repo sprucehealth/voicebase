@@ -21,6 +21,7 @@ var entryPool = sync.Pool{
 // Level represents a log level (CRIT, ERR, ...)
 type Level int32
 
+// Logger is the interface for a logger output.
 type Logger interface {
 	Context(ctx ...interface{}) Logger
 
@@ -142,8 +143,10 @@ func newLogger(ctx []interface{}, hnd Handler, lvl Level, stats *Stats) *logger 
 	return l
 }
 
+// DefaultHandler is the default log handler.
 var DefaultHandler Handler
 
+// Default returns the default logger.
 func Default() Logger {
 	return defaultL
 }
@@ -178,6 +181,8 @@ func (l *logger) L(lvl Level) bool {
 	return l.Level() >= lvl
 }
 
+// Context returns a new logger that appends the provided context to any existing
+// context for the old logger.
 func (l *logger) Context(ctx ...interface{}) Logger {
 	if len(l.ctx) != 0 {
 		ctx = append(l.ctx, ctx...)
@@ -263,6 +268,7 @@ func (l *logger) readStats(s *Stats) {
 	s.Debug = atomic.LoadUint64(&l.stats.Debug)
 }
 
+// Context returns a new logger with the provided context extended from the default logger.
 func Context(ctx ...interface{}) Logger {
 	return defaultL.Context(ctx...)
 }

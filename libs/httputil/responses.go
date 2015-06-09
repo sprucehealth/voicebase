@@ -8,9 +8,12 @@ import (
 )
 
 var (
+	// JSONContentType is the values used for the Content-Type header on JSON responses.
 	JSONContentType = "application/json"
 )
 
+// JSONResponse writes a resposne with the provided object encoded as JSON
+// settings an appropriate Content-Type header.
 func JSONResponse(w http.ResponseWriter, statusCode int, res interface{}) {
 	w.Header().Set("Content-Type", JSONContentType)
 	w.WriteHeader(statusCode)

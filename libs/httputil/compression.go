@@ -36,6 +36,8 @@ type compressResponseHandler struct {
 	h http.Handler
 }
 
+// CompressResponse wraps a handler to take care of compressing
+// responses when the content-type is of a compressible type (e.g. json, html)
 func CompressResponse(h http.Handler) http.Handler {
 	return &compressResponseHandler{h: h}
 }

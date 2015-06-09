@@ -31,6 +31,7 @@ type metricsHandler struct {
 	h                   http.Handler
 }
 
+// MetricsHandler wraps a handler to provides stats counters on response codes.
 func MetricsHandler(h http.Handler, metricsRegistry metrics.Registry) http.Handler {
 	m := &metricsHandler{
 		h: h,

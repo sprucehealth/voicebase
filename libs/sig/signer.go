@@ -17,7 +17,7 @@ type Signer struct {
 	hashNew func() hash.Hash
 }
 
-// New returns a new Signer. hashNew may be null in which case SHA1 is used
+// NewSigner returns a new Signer. hashNew may be null in which case SHA1 is used
 // for the HMAC.
 func NewSigner(keys [][]byte, hashNew func() hash.Hash) (*Signer, error) {
 	if len(keys) == 0 {

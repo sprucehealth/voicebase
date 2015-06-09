@@ -5,6 +5,10 @@ import (
 	"time"
 )
 
+// FlexibleBool is a type alias of bool that supports more flexible
+// parsing of JSON. As well as supporting the standard true/false it
+// also allows the value to be a string. It always marshals as the
+// standard bool values.
 type FlexibleBool bool
 
 var (
@@ -12,6 +16,8 @@ var (
 	falseBytes = []byte("false")
 )
 
+// MarshalJSON implements json.Marshaler. It encodes the values as
+// the standard JSON bool types.
 func (sb FlexibleBool) MarshalJSON() ([]byte, error) {
 	if bool(sb) {
 		return trueBytes, nil
@@ -19,6 +25,8 @@ func (sb FlexibleBool) MarshalJSON() ([]byte, error) {
 	return falseBytes, nil
 }
 
+// UnmarshalJSON implements json.Unmarshaler. It decodes values as
+// either the standard JSON bool type or as strings "true" / "false".
 func (sb *FlexibleBool) UnmarshalJSON(by []byte) error {
 	*sb = false
 	if len(by) < 4 {

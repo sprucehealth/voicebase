@@ -32,6 +32,9 @@ func (sm *supportedMethods) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	SupportedMethodsResponse(w, r, sm.methods)
 }
 
+// SupportedMethodsResponse writes a "method not allowed" response with the provided list
+// of methods in the "Allow" header. For "OPTIONS" requests the response status is 200 OK
+// otherwise it's 405 Method Not Allowed.
 func SupportedMethodsResponse(w http.ResponseWriter, r *http.Request, methods []string) {
 	w.Header().Set("Allow", strings.Join(methods, ", "))
 	if r.Method == "OPTIONS" {

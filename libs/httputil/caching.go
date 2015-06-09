@@ -11,6 +11,9 @@ const (
 	futureExpiresDuration = time.Hour * 24 * 364
 )
 
+// FarFutureCacheHeaders sets the Expires and Cache-Control (max-age) headers to
+// a year and 10 years respectively. The Last-Modified header is also set
+// if the provided time is not zero.
 func FarFutureCacheHeaders(h http.Header, lastModified time.Time) {
 	if !lastModified.IsZero() {
 		h.Set("Last-Modified", lastModified.Format(time.RFC1123))
@@ -19,6 +22,9 @@ func FarFutureCacheHeaders(h http.Header, lastModified time.Time) {
 	h.Set("Cache-Control", futureMaxAge)
 }
 
+// CacheHeaders sets the Expires and Cache-Control (max-age) headers to the
+// provided expiration date. The Last-Modified header is also set
+// if the provided time is not zero.
 func CacheHeaders(h http.Header, lastModified time.Time, expires time.Duration) {
 	if !lastModified.IsZero() {
 		h.Set("Last-Modified", lastModified.Format(time.RFC1123))
