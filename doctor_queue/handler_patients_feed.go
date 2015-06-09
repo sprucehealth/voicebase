@@ -68,8 +68,6 @@ func (h *patientsFeedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		Items: make([]*PatientsFeedItem, len(items)),
 	}
 	for i, it := range items {
-		var tags []string
-		tags = []string{it.PathwayName}
 		res.Items[i] = &PatientsFeedItem{
 			// Generate an ID unique to the contents of the item
 			ID:               fmt.Sprintf("%d:%d:%d:%d", it.DoctorID, it.PatientID, it.CaseID, it.LastVisitID),
@@ -78,7 +76,7 @@ func (h *patientsFeedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 			LastVisitTime:    it.LastVisitTime.Unix(),
 			LastVisitDoctor:  it.LastVisitDoctor,
 			ActionURL:        app_url.CaseFeedItemAction(it.CaseID, it.PatientID, it.LastVisitID),
-			Tags:             tags,
+			Tags:             []string{it.PathwayName},
 		}
 	}
 

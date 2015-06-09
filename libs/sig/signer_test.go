@@ -2,9 +2,18 @@ package sig
 
 import (
 	"bytes"
-
+	"fmt"
 	"testing"
 )
+
+func Example() {
+	keys := [][]byte{[]byte("key")}
+	msg := []byte("msg")
+	s, _ := NewSigner(keys, nil)
+	sig, _ := s.Sign(msg)
+	fmt.Println(s.Verify(msg, sig))
+	// Output: true
+}
 
 func TestSigner(t *testing.T) {
 	_, err := NewSigner(nil, nil)

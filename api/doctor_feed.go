@@ -45,6 +45,21 @@ func (a byTimestamp) Less(i, j int) bool {
 	return a[i].EnqueueDate.Before(a[j].EnqueueDate)
 }
 
+type DoctorQueueType string
+
+const (
+	DQTUnclaimedQueue DoctorQueueType = "unclaimed"
+	DQTDoctorQueue    DoctorQueueType = "doctor"
+)
+
+func (dqt DoctorQueueType) String() string {
+	return string(dqt)
+}
+
+func ParseDoctorQueueType(s string) DoctorQueueType {
+	return DoctorQueueType(s)
+}
+
 type DoctorQueueItem struct {
 	ID                   int64
 	DoctorID             int64
@@ -60,6 +75,7 @@ type DoctorQueueItem struct {
 	ShortDescription     string
 	ActionURL            *app_url.SpruceAction
 	Tags                 []string
+	QueueType            DoctorQueueType
 }
 
 func (dqi *DoctorQueueItem) Validate() error {

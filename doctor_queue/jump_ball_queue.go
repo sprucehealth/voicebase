@@ -196,8 +196,8 @@ func permanentlyAssignCaseToDoctor(
 	doctorID int64,
 	dataAPI api.DataAPI,
 	aLogger analytics.Logger,
-	permClaimSuccess, permClaimFailure *metrics.Counter) error {
-
+	permClaimSuccess, permClaimFailure *metrics.Counter,
+) error {
 	tempClaimedItem, err := dataAPI.GetTempClaimedCaseInQueue(pc.ID.Int64())
 	if api.IsErrNotFound(err) {
 		// nothing to do if case is not temporarily claimed

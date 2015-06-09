@@ -50,7 +50,6 @@ type DoctorQueueRequestData struct {
 }
 
 func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	requestData := &DoctorQueueRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteValidationError("Unable to parse input parameters", w, r)
@@ -113,7 +112,6 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	feedItems := make([]*DisplayFeedItem, 0, len(queueItems))
 	for _, doctorQueueItem := range queueItems {
-
 		feedItem := &DisplayFeedItem{
 			ID:           doctorQueueItem.ID,
 			Title:        doctorQueueItem.Description,

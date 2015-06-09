@@ -29,7 +29,8 @@ func NewInboxHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&inboxHandler{
 				dataAPI: dataAPI,
-			}), []string{api.RoleDoctor, api.RoleCC}), httputil.Get)
+			}), []string{api.RoleDoctor, api.RoleCC}),
+		httputil.Get)
 }
 
 func (i *inboxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +58,8 @@ func NewUnassignedHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&unassignedHandler{
 				dataAPI: dataAPI,
-			}), []string{api.RoleDoctor, api.RoleCC}), httputil.Get)
+			}), []string{api.RoleDoctor, api.RoleCC}),
+		httputil.Get)
 }
 
 func (u *unassignedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -134,7 +136,8 @@ func transformQueueItems(
 	queueItems []*api.DoctorQueueItem,
 	addAuthURL bool,
 	w http.ResponseWriter,
-	r *http.Request) {
+	r *http.Request,
+) {
 	// collect the set of patient ids
 	patientIDs := make([]int64, 0, len(queueItems))
 	patientIDMap := make(map[int64]bool)

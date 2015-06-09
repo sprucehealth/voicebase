@@ -1,3 +1,5 @@
+// Package sig provides data signature generation and verification with
+// the ability to rotate keys.
 package sig
 
 import (

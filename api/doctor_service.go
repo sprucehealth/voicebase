@@ -526,13 +526,23 @@ func updateDoctorQueue(tx *sql.Tx, updates []*DoctorQueueUpdate) error {
 }
 
 func deleteItemFromDoctorQueue(tx *sql.Tx, doctorQueueItem *DoctorQueueItem) error {
-	_, err := tx.Exec(`
-		DELETE FROM doctor_queue
-		WHERE doctor_id = ? AND item_id = ? AND event_type = ? AND status = ?`,
-		doctorQueueItem.DoctorID,
-		doctorQueueItem.ItemID,
-		doctorQueueItem.EventType,
-		doctorQueueItem.Status)
+	var err error
+	if doctorQueueItem.QueueType == DQTUnclaimedQueue {
+		_, err = tx.Exec(`
+			DELETE FROM unclaimed_case_queue
+			WHERE item_id = ? AND event_type = ? AND status = ?`,
+			doctorQueueItem.ItemID,
+			doctorQueueItem.EventType,
+			doctorQueueItem.Status)
+	} else {
+		_, err = tx.Exec(`
+			DELETE FROM doctor_queue
+			WHERE doctor_id = ? AND item_id = ? AND event_type = ? AND status = ?`,
+			doctorQueueItem.DoctorID,
+			doctorQueueItem.ItemID,
+			doctorQueueItem.EventType,
+			doctorQueueItem.Status)
+	}
 	return err
 }
 
@@ -592,7 +602,7 @@ func replaceItemInDoctorQueue(tx *sql.Tx, dqi *DoctorQueueItem, currentState str
 
 func (d *DataService) MarkPatientVisitAsOngoingInDoctorQueue(doctorID, patientVisitID int64) error {
 	_, err := d.db.Exec(`
-		UPDATE doctor_queue SET status=? WHERE event_type=? AND item_id=? AND doctor_id=?`,
+		UPDATE doctor_queue SET status = ? WHERE event_type = ? AND item_id = ? AND doctor_id = ?`,
 		StatusOngoing,
 		DQEventTypePatientVisit,
 		patientVisitID,
@@ -771,6 +781,7 @@ func populateDoctorQueueFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 		if err != nil {
 			return nil, err
 		}
+		queueItem.QueueType = DQTDoctorQueue
 
 		if actionURL != "" {
 			aURL, err := app_url.ParseSpruceAction(actionURL)

@@ -11,7 +11,6 @@ import (
 )
 
 func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, notificationManager *notify.NotificationManager) error {
-
 	// identify the MA and active doctor on the patient's care team
 	var maID, activeDoctorID int64
 
@@ -50,7 +49,6 @@ func routeIncomingPatientVisit(ev *cost.VisitChargedEvent, dataAPI api.DataAPI, 
 
 	// route the case to the active doctor already part of the patient's care team
 	if activeDoctorID > 0 {
-
 		var description, shortDescription, notifyMessage string
 		if ev.IsFollowup {
 			description = fmt.Sprintf("Follow-up visit for %s %s", patient.FirstName, patient.LastName)

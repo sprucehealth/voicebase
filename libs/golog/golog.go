@@ -1,3 +1,5 @@
+// Package golog provides leveled logging, attached context, sub loggers,
+// and configurable formatters and handlers.
 package golog
 
 import (
