@@ -89,6 +89,7 @@ func (w *ERxWorker) Do() {
 	}
 
 	for _, doctor := range doctors {
+
 		// nothing to do if doctor does not have a dosespot clinician id
 		if doctor.DoseSpotClinicianID == 0 {
 			continue
