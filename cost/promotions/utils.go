@@ -354,6 +354,10 @@ func CreateReferralDisplayInfo(dataAPI api.DataAPI, webDomain string, accountID 
 		golog.Errorf(err.Error())
 	}
 
+	displayURL := referralURL.Host + referralURL.Path
+	if displayURL[:4] == "www." {
+		displayURL = displayURL[4:]
+	}
 	// Note: Temporarily return a placeholder image and the associated size.
 	return &ReferralDisplayInfo{
 		CTATitle:           "Refer a Friend",
@@ -361,7 +365,7 @@ func CreateReferralDisplayInfo(dataAPI api.DataAPI, webDomain string, accountID 
 		Title:              promotionReferralProgram.Title(),
 		Body:               promotionReferralProgram.Description(),
 		URL:                referralURL.String(),
-		URLDisplayText:     referralURL.Host + referralURL.Path,
+		URLDisplayText:     displayURL,
 		ButtonTitle:        "Share Link",
 		DismissButtonTitle: "Okay",
 		ImageURL:           "https://d2bln09x7zhlg8.cloudfront.net/icon_share_default_160_x_160.png",
