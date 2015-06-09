@@ -1381,8 +1381,11 @@ func (d *DataService) GetPrescriptionStatusEventsForPatient(erxPatientID int64) 
 }
 
 func (d *DataService) GetPrescriptionStatusEventsForTreatment(treatmentID int64) ([]common.StatusEvent, error) {
-	rows, err := d.db.Query(`select erx_status_events.treatment_id, erx_status_events.erx_status, erx_status_events.event_details, erx_status_events.creation_date
-									  from erx_status_events where treatment_id = ? order by erx_status_events.creation_date desc`, treatmentID)
+	rows, err := d.db.Query(`
+		SELECT erx_status_events.treatment_id, erx_status_events.erx_status, erx_status_events.event_details, erx_status_events.creation_date
+		FROM erx_status_events 
+		WHERE treatment_id = ? 
+		ORDER BY erx_status_events.creation_date desc, erx_status_events.id DESC`, treatmentID)
 	if err != nil {
 		return nil, err
 	}

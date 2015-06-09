@@ -145,7 +145,8 @@ func TestRXError_Treatment_ErrorAfterSentState(t *testing.T) {
 	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIDToReturn}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
 		prescriptionIDToReturn: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERXStatusEntered,
+			Status:            api.ERXStatusEntered,
+			ReportedTimestamp: time.Now(),
 		},
 		},
 	}
@@ -155,7 +156,8 @@ func TestRXError_Treatment_ErrorAfterSentState(t *testing.T) {
 	stubErxAPI.PrescriptionIdsToReturn = []int64{prescriptionIDToReturn}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
 		prescriptionIDToReturn: []common.StatusEvent{common.StatusEvent{
-			Status: api.ERXStatusSent,
+			Status:            api.ERXStatusSent,
+			ReportedTimestamp: time.Now().Add(5 * time.Minute),
 		},
 		},
 	}
