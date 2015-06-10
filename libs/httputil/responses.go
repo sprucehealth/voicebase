@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	// JSONContentType is the values used for the Content-Type header on JSON responses.
+	// JSONContentType is the value used for the Content-Type header on JSON responses.
 	JSONContentType = "application/json"
 )
 
