@@ -13,6 +13,14 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/s3"
 )
 
+// awsError matches against aws-sdk-go/internal/apierr.*RequestError since it's an
+// internal struct that we can't use directly.
+type awsError interface {
+	Error() string
+	RequestID() string
+	StatusCode() int
+}
+
 var sseAlgorithm = "AES256"
 
 type S3 struct {
@@ -79,7 +87,12 @@ func (s *S3) PutReader(name string, r io.ReadSeeker, size int64, contentType str
 
 func (s *S3) Get(id string) ([]byte, http.Header, error) {
 	r, headers, err := s.GetReader(id)
-	if err != nil {
+	if e, ok := err.(awsError); ok {
+		if e.StatusCode() == http.StatusNotFound {
+			return nil, nil, ErrNoObject
+		}
+		return nil, nil, err
+	} else if err != nil {
 		return nil, nil, err
 	}
 	defer r.Close()
