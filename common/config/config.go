@@ -79,7 +79,6 @@ func (m MinimumAppVersionConfigs) Get(configName string) (*MinimumAppVersionConf
 type BaseConfig struct {
 	AppName      string `long:"app_name" description:"Application name (required)"`
 	AWSRegion    string `long:"aws_region" description:"AWS region"`
-	AWSRole      string `long:"aws_role" description:"AWS role for fetching temporary credentials"`
 	AWSSecretKey string `long:"aws_secret_key" description:"AWS secret key"`
 	AWSAccessKey string `long:"aws_access_key" description:"AWS access key id"`
 	ConfigPath   string `short:"c" long:"config" description:"Path to config file. If not set then stderr is used."`
@@ -148,16 +147,27 @@ var validEnvironments = map[string]bool{
 func (c *BaseConfig) AWS() *aws.Config {
 	c.awsAuthOnce.Do(func() {
 		var cred *credentials.Credentials
-		if c.AWSRole != "" {
-			cred = credentials.NewEC2RoleCredentials(&http.Client{Timeout: 2 * time.Second}, "", time.Minute*5)
-		} else if c.AWSAccessKey != "" && c.AWSSecretKey != "" {
+		if c.AWSAccessKey != "" && c.AWSSecretKey != "" {
 			cred = credentials.NewStaticCredentials(c.AWSAccessKey, c.AWSSecretKey, "")
 		} else {
 			cred = credentials.NewEnvCredentials()
+			if v, err := cred.Get(); err != nil || v.AccessKeyID == "" || v.SecretAccessKey == "" {
+				cred = credentials.NewEC2RoleCredentials(&http.Client{Timeout: 2 * time.Second}, "", time.Minute*5)
+			}
 		}
+
+		region := c.AWSRegion
+		if region == "" {
+			az, err := awsutil.GetMetadata(awsutil.MetadataAvailabilityZone)
+			if err != nil {
+				golog.Fatalf("config: no region provided and failed to get from instance metadata: %s", err)
+			}
+			region = az[:len(az)-1]
+		}
+
 		c.awsConfig = &aws.Config{
 			Credentials: cred,
-			Region:      c.AWSRegion,
+			Region:      region,
 		}
 	})
 	// Return a copy
@@ -313,15 +323,6 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 			os.Exit(1)
 		}
 		return nil, err
-	}
-
-	if baseConfig.AWSRegion == "" {
-		az, err := awsutil.GetMetadata(awsutil.MetadataAvailabilityZone)
-		if err != nil {
-			return nil, fmt.Errorf("config: no region specified and failed to get from instance metadata: %+v", err)
-		}
-		baseConfig.AWSRegion = az[:len(az)-1]
-		return nil, fmt.Errorf("config: got region from metadata: %s", baseConfig.AWSRegion)
 	}
 
 	if baseConfig.AppName == "" {
