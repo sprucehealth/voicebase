@@ -18,7 +18,7 @@ func (d *DataService) DiagnosesThatHaveDetails(codeIDs []string) (map[string]boo
 	}
 
 	rows, err := d.db.Query(`
-		SELECT diagnosis_code_id 
+		SELECT diagnosis_code_id
 		FROM diagnosis_details_layout
 		WHERE diagnosis_code_id in (`+dbutil.MySQLArgs(len(codeIDs))+`)`,
 		dbutil.AppendStringsToInterfaceSlice(nil, codeIDs)...)
