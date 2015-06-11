@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
@@ -32,14 +33,14 @@ func (m *mockDataAPI_itemHandler) GetDoctorFromAccountID(accountID int64) (*comm
 }
 
 func TestSuccessfulRemove(t *testing.T) {
-	testQueueUpdate(t, http.StatusOK, 1, "CASE_ASSIGNMENT:PENDING:10:100")
-	testQueueUpdate(t, http.StatusOK, 1, "CASE_MESSAGE:PENDING:10:100")
-	testQueueUpdate(t, http.StatusOK, 2, "PATIENT_VISIT:PENDING:10:100")
-	testQueueUpdate(t, http.StatusOK, 2, "PATIENT_VISIT:ONGOING:10:100")
+	testQueueUpdate(t, http.StatusOK, 1, "CASE_ASSIGNMENT:PENDING:10:100:doctor")
+	testQueueUpdate(t, http.StatusOK, 1, "CASE_MESSAGE:PENDING:10:100:doctor")
+	testQueueUpdate(t, http.StatusOK, 2, "PATIENT_VISIT:PENDING:10:100:unclaimed")
+	testQueueUpdate(t, http.StatusOK, 2, "PATIENT_VISIT:ONGOING:10:100:doctor")
 }
 
 func TestUnsuccessfulRemove(t *testing.T) {
-	testQueueUpdate(t, http.StatusForbidden, 0, "CASE_ASSIGNMENT:REPLIED:10:100")
+	testQueueUpdate(t, http.StatusForbidden, 0, "CASE_ASSIGNMENT:REPLIED:10:100:doctor")
 }
 
 func testQueueUpdate(t *testing.T, expStatus, expCount int, id string) {
@@ -78,5 +79,11 @@ func testQueueUpdate(t *testing.T, expStatus, expCount int, id string) {
 		t.Fatalf("Expected %d but got %d [%s]", expStatus, w.Code, golog.Caller(1))
 	} else if len(m.updatesRequested) != expCount {
 		t.Fatalf("Expected %d but got %d [%s]", expCount, len(m.updatesRequested), golog.Caller(1))
+	}
+	if expStatus == http.StatusOK {
+		exp := api.DoctorQueueType(id[strings.LastIndex(id, ":")+1:])
+		if v := m.updatesRequested[0].QueueItem.QueueType; v != exp {
+			t.Fatalf("Expected '%s' got '%s' for queue type", exp, v)
+		}
 	}
 }

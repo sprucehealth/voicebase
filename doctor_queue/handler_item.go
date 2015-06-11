@@ -69,6 +69,7 @@ func (h *itemHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				Status:    qid.status,
 				DoctorID:  qid.doctorID,
 				ItemID:    qid.itemID,
+				QueueType: qid.queueType,
 			},
 		},
 	}
@@ -96,6 +97,7 @@ func (h *itemHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				Status:           api.DQItemStatusRemoved,
 				DoctorID:         cc.ID.Int64(),
 				ItemID:           qid.itemID,
+				QueueType:        api.DQTDoctorQueue,
 				PatientID:        visit.PatientID.Int64(),
 				Description:      fmt.Sprintf("%s removed visit for %s %s from queue", cc.ShortDisplayName, patient.FirstName, patient.LastName),
 				ShortDescription: "Visit removed from queue",

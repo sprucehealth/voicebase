@@ -525,6 +525,9 @@ func deleteItemFromDoctorQueue(tx *sql.Tx, doctorQueueItem *DoctorQueueItem) err
 			doctorQueueItem.EventType,
 			doctorQueueItem.Status)
 	} else {
+		if doctorQueueItem.DoctorID == 0 {
+			return errors.New("api: doctor ID required to delete doctor queue item")
+		}
 		_, err = tx.Exec(`
 			DELETE FROM doctor_queue
 			WHERE doctor_id = ? AND item_id = ? AND event_type = ? AND status = ?`,

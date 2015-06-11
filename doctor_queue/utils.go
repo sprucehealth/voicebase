@@ -24,8 +24,8 @@ func constructIDFromItem(queueItem *api.DoctorQueueItem) string {
 // queueItemPartsFromID breaks down the ID into its components expecting the form <EventType>:<Status>:<ItemID>:<DoctorID>
 func queueItemPartsFromID(id string) (*doctorQueueItemID, error) {
 	parts := strings.Split(id, ":")
-	if len(parts) < 4 {
-		return nil, fmt.Errorf("doctor_queue: expected at least 4 parts to the id: '%s'", id)
+	if len(parts) != 5 {
+		return nil, fmt.Errorf("doctor_queue: expected 5 parts to the id: '%s'", id)
 	}
 
 	var err error
@@ -41,11 +41,7 @@ func queueItemPartsFromID(id string) (*doctorQueueItemID, error) {
 	if err != nil {
 		return nil, err
 	}
-	// TODO: making this optional for now to allow cached queues in doctor app to
-	// still work as expected. Can remove shortly after pushing to prod.
-	if len(parts) > 4 {
-		qid.queueType = api.ParseDoctorQueueType(parts[4])
-	}
+	qid.queueType = api.ParseDoctorQueueType(parts[4])
 
 	return qid, nil
 }
