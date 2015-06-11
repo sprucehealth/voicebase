@@ -54,20 +54,15 @@ const (
 )
 
 const (
-	treatmentOTC                       = "OTC"
-	treatmentRX                        = "RX"
-	drDrugSupplementalInstructionTable = "dr_drug_supplemental_instruction"
-	drRegimenStepTable                 = "dr_regimen_step"
-	drAdvicePointTable                 = "dr_advice_point"
-	drugNameTable                      = "drug_name"
-	drugFormTable                      = "drug_form"
-	drugRouteTable                     = "drug_route"
-	treatmentTable                     = "treatment"
-	pharmacyDispensedTreatmentTable    = "pharmacy_dispensed_treatment"
-	requestedTreatmentTable            = "requested_treatment"
-	unlinkedDntfTreatmentTable         = "unlinked_dntf_treatment"
-	addressUsa                         = "USA"
-	PendingTaskPatientCard             = "PATIENT_CARD"
+	treatmentOTC                    = "OTC"
+	treatmentRX                     = "RX"
+	drugNameTable                   = "drug_name"
+	drugFormTable                   = "drug_form"
+	drugRouteTable                  = "drug_route"
+	pharmacyDispensedTreatmentTable = "pharmacy_dispensed_treatment"
+	requestedTreatmentTable         = "requested_treatment"
+	addressUsa                      = "USA"
+	PendingTaskPatientCard          = "PATIENT_CARD"
 )
 
 type DataService struct {
@@ -223,30 +218,6 @@ func (d *DataService) pathwayIDFromTag(tag string) (int64, error) {
 	d.pathwayIDToTagMap[id] = tag
 	d.pathwayMapMu.Unlock()
 	return id, nil
-}
-
-func infoIdsFromMap(m map[int64]*common.AnswerIntake) []int64 {
-	infoIds := make([]int64, 0, len(m))
-	for key := range m {
-		infoIds = append(infoIds, key)
-	}
-	return infoIds
-}
-
-func createKeysArrayFromMap(m map[int64]bool) []int64 {
-	keys := make([]int64, 0, len(m))
-	for key := range m {
-		keys = append(keys, key)
-	}
-	return keys
-}
-
-func createValuesArrayFromMap(m map[int64]int64) []int64 {
-	values := make([]int64, 0, len(m))
-	for _, value := range m {
-		values = append(values, value)
-	}
-	return values
 }
 
 func enumerateItemsIntoString(ids []int64) string {

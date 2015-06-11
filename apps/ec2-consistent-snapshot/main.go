@@ -71,19 +71,6 @@ var cnfSearchPath = []string{
 	"/etc/mysql/my.cnf",
 }
 
-type stringListFlag struct {
-	Values *[]string
-}
-
-func (sl stringListFlag) String() string {
-	return strings.Join(*sl.Values, ",")
-}
-
-func (sl stringListFlag) Set(s string) error {
-	*sl.Values = append(*sl.Values, s)
-	return nil
-}
-
 type mapFlag struct {
 	Values *map[string]string
 }

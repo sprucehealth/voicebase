@@ -34,8 +34,6 @@ func init() {
 }
 
 const (
-	timeTag = "time"
-
 	invalidTimeThreshold = 60 * 60 * 24 * 30 // number of seconds after which an event is dropped
 )
 

@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	consulCheckTTL  = "60s"
-	consulLockDelay = time.Second * 30
+	consulCheckTTL = "60s"
 )
 
 // Service defines a service that is made available over a consul cluster.

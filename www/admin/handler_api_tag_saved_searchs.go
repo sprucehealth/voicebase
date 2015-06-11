@@ -28,10 +28,6 @@ type tagSavedSearchsPOSTRequest struct {
 	Query string `json:"query"`
 }
 
-type tagSavedSearchsDELETERequest struct {
-	ID int64 `schema:"id,required"`
-}
-
 func NewTagSavedSearchesHandler(taggingClient tagging.Client) http.Handler {
 	return httputil.SupportedMethods(&tagSavedSearchsHandler{taggingClient: taggingClient}, httputil.Get, httputil.Post)
 }

@@ -19,11 +19,6 @@ type pathwayMenuHandler struct {
 	dataAPI api.DataAPI
 }
 
-type pathwayMenuPostResponse struct {
-	Success bool
-	Error   string
-}
-
 func NewPathwayMenuHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&pathwayMenuHandler{
 		dataAPI: dataAPI,

@@ -16,10 +16,6 @@ type tagSavedSearchHandler struct {
 	taggingClient tagging.Client
 }
 
-type tagSavedSearchDELETERequest struct {
-	ID int64
-}
-
 func NewTagSavedSearchHandler(taggingClient tagging.Client) http.Handler {
 	return httputil.SupportedMethods(&tagSavedSearchHandler{taggingClient: taggingClient}, httputil.Delete)
 }

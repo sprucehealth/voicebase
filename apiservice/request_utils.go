@@ -37,7 +37,6 @@ const (
 	genericUserErrorMessage   = "Something went wrong on our end. Apologies for the inconvenience and please try again later!"
 	authTokenExpiredMessage   = "Authentication expired. Log in to continue."
 	StatusUnprocessableEntity = 422
-	signedURLAuthTimeout      = 10 * time.Minute
 	TimeFormatLayout          = "January 2 at 3:04pm"
 )
 

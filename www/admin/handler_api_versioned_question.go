@@ -72,10 +72,6 @@ type versionedPhotoSlotPOSTRequest struct {
 
 type versionedAdditionalQuestionFieldsPOSTRequest map[string]interface{}
 
-type versionedQuestionPOSTResponse struct {
-	VersionedQuestion *responses.VersionedQuestion `json:"versioned_question"`
-}
-
 // NewPatientCareTeamsHandler returns a new handler to access the question bank
 // Authorization Required: true
 // Supported Roles: ADMIN_ROLE

@@ -15,8 +15,6 @@ import (
 )
 
 const (
-	timeTag = "time"
-
 	maxEventNameLength   = 256
 	invalidTimeThreshold = 60 * 60 * 24 * 30 // number of seconds after which an event is dropped
 )

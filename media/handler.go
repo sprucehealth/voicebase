@@ -47,11 +47,6 @@ type mediaRequest struct {
 	Height     int    `schema:"height"`
 }
 
-type mediaResponse struct {
-	MediaType string `json:"media_type"`
-	MediaURL  string `json:"media_url"`
-}
-
 func NewHandler(
 	dataAPI api.DataAPI,
 	store *Store,

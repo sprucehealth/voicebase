@@ -3,20 +3,11 @@ package demo
 import "github.com/sprucehealth/backend/common"
 
 const (
-	signupPatientURL         = "/v1/patient"
-	updatePatientPharmacyURL = "/v1/patient/pharmacy"
-	patientVisitURL          = "/v1/patient/visit"
-	answerQuestionsURL       = "/v1/patient/visit/answer"
-	photoIntakeURL           = "/v1/patient/visit/photo_answer"
-	messagesURL              = "/v1/case/messages"
-	regimenURL               = "/v1/doctor/visit/regimen"
-	addTreatmentsURL         = "/v1/doctor/visit/treatment/treatments"
-	dVisitReviewURL          = "/v1/doctor/visit/review"
-	dFavoriteTPUrl           = "/v1/doctor/favorite_treatment_plans"
-	dTPUrl                   = "/v1/doctor/treatment_plans"
-	dAuthURL                 = "/v1/doctor/authenticate"
-	visitMessageURL          = "/v1/patient/visit/message"
-	demoPhotosBucketFormat   = "%s-carefront-demo"
+	patientVisitURL        = "/v1/patient/visit"
+	answerQuestionsURL     = "/v1/patient/visit/answer"
+	photoIntakeURL         = "/v1/patient/visit/photo_answer"
+	visitMessageURL        = "/v1/patient/visit/message"
+	demoPhotosBucketFormat = "%s-carefront-demo"
 )
 
 var LocalServerURL = "http://127.0.0.1:8080"

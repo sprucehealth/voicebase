@@ -12,10 +12,6 @@ import (
 )
 
 const (
-	checkTreatments = iota
-	checkRegimenPlan
-	checkNote
-
 	treatmentPlanScheduledMessageEvent = "treatment_plan"
 )
 

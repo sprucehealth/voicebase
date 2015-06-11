@@ -24,11 +24,6 @@ type insuranceHandler struct {
 	nextStep string
 }
 
-type explanation struct {
-	Date        string
-	Explanation string
-}
-
 // Needed because strangly 'schema' can't decode into []string
 type str struct {
 	Str string

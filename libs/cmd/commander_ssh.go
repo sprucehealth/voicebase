@@ -6,7 +6,6 @@ import (
 	"net"
 	"os"
 	"path"
-	"regexp"
 	"strings"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/crypto/ssh"
@@ -202,10 +201,6 @@ func (cnf *sshConfig) ConfigForHost(name string) *sshHostConfig {
 // 	}
 // 	return true
 // }
-
-func toRE(pattern string) *regexp.Regexp {
-	return nil
-}
 
 // parseSSHConfig is a super janky parser for ~/.ssh/config
 func parseSSHConfig() *sshConfig {

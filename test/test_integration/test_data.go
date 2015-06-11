@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/BurntSushi/toml"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
 	resources "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/cookieo9/resources-go"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
@@ -108,7 +107,6 @@ type TestData struct {
 	Config         *router.Config
 	AdminConfig    *www_router.Config
 	DB             *sql.DB
-	AWSConfig      *aws.Config
 	APIServer      *httptest.Server
 	AdminAPIServer *httptest.Server
 	AdminUser      *AdminCredentials
@@ -321,8 +319,6 @@ func setupTest() (*TestData, error) {
 		return nil, err
 	}
 
-	conf := config.BaseConfig{}
-	awsConfig := conf.AWS()
 	authTokenExpireDuration := time.Minute * 10
 	authAPI, err := api.NewAuthAPI(db, authTokenExpireDuration, time.Minute*5, authTokenExpireDuration, time.Minute*5, nullHasher{})
 	if err != nil {
@@ -345,7 +341,6 @@ func setupTest() (*TestData, error) {
 		SMSAPI:       &SMSAPI{},
 		EmailService: &email.TestService{},
 		DB:           db,
-		AWSConfig:    awsConfig,
 		ERxAPI: erx.NewDoseSpotService(testConf.DoseSpot.ClinicID, testConf.DoseSpot.UserID,
 			testConf.DoseSpot.ClinicKey, testConf.DoseSpot.SOAPEndpoint, testConf.DoseSpot.APIEndpoint, nil),
 	}
