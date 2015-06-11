@@ -615,11 +615,11 @@ type SnoozeConfig struct {
 }
 
 type PushConfigData struct {
-	ID           int64
-	AccountID    int64
-	DeviceToken  string
-	PushEndpoint string
-	Platform
+	ID              int64
+	AccountID       int64
+	DeviceToken     string
+	PushEndpoint    string
+	Platform        Platform
 	PlatformVersion string
 	AppType         string
 	AppEnvironment  string
