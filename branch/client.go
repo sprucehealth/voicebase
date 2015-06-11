@@ -65,7 +65,7 @@ func (bc *BranchClient) URL(linkData map[string]interface{}) (string, error) {
 		var e struct {
 			Error *Error `json:"error"`
 		}
-		if json.NewDecoder(resp.Body).Decode(&e); err != nil {
+		if err := json.NewDecoder(resp.Body).Decode(&e); err != nil {
 			return "", errors.Trace(fmt.Errorf("batch: received non 200 response %d", resp.StatusCode))
 		}
 		return "", e.Error

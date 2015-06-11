@@ -296,7 +296,6 @@ func (d *DataService) populateAssignmentInfoFromProviderID(assignment *common.Ca
 
 // CaseCareTeams returns care teams for a given set of cases.
 func (d *DataService) CaseCareTeams(caseIDs []int64) (map[int64]*common.PatientCareTeam, error) {
-
 	if len(caseIDs) == 0 {
 		return nil, nil
 	}
@@ -327,11 +326,12 @@ func (d *DataService) CaseCareTeams(caseIDs []int64) (map[int64]*common.PatientC
 			return nil, err
 		}
 
-		d.populateAssignmentInfoFromProviderID(&assignment, assignment.ProviderID)
+		if err := d.populateAssignmentInfoFromProviderID(&assignment, assignment.ProviderID); err != nil {
+			return nil, err
+		}
 
 		if _, ok := careTeams[patientCaseID]; !ok {
 			careTeams[patientCaseID] = &common.PatientCareTeam{}
-			careTeams[patientCaseID].Assignments = make([]*common.CareProviderAssignment, 0)
 		}
 
 		careTeam := careTeams[patientCaseID]

@@ -193,10 +193,10 @@ func queryDB(db *sql.DB, query string, params ...interface{}) ([]string, [][]int
 		// but for now this "works"
 		func() {
 			defer func() {
-				recover()
+				_ = recover()
 			}()
 			var x int
-			db.QueryRow("SELECT 1").Scan(&x)
+			_ = db.QueryRow("SELECT 1").Scan(&x)
 		}()
 		return nil, nil, err
 	}

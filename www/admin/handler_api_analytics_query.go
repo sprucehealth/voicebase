@@ -60,7 +60,7 @@ func runAnalyticsQuery(w http.ResponseWriter, r *http.Request, db *sql.DB, query
 		// but for now this "works"
 		func() {
 			defer func() {
-				recover()
+				_ = recover()
 			}()
 			var x int
 			db.QueryRow("SELECT 1").Scan(&x)
