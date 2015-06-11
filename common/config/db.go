@@ -52,11 +52,13 @@ func (c *DB) ConnectMySQL(bconf *BaseConfig) (*sql.DB, error) {
 			return nil, err
 		}
 		clientCert = append(clientCert, certs)
-		mysql.RegisterTLSConfig("custom", &tls.Config{
+		if err := mysql.RegisterTLSConfig("custom", &tls.Config{
 			RootCAs:            rootCertPool,
 			Certificates:       clientCert,
 			InsecureSkipVerify: true,
-		})
+		}); err != nil {
+			return nil, err
+		}
 	}
 
 	tlsOpt := "?parseTime=true"

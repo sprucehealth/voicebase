@@ -380,11 +380,13 @@ func main() {
 			log.Fatal(err)
 		}
 		clientCert = append(clientCert, certs)
-		mysql.RegisterTLSConfig("custom", &tls.Config{
+		if err := mysql.RegisterTLSConfig("custom", &tls.Config{
 			RootCAs:            rootCertPool,
 			Certificates:       clientCert,
 			InsecureSkipVerify: true,
-		})
+		}); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	tlsOpt := ""

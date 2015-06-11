@@ -176,7 +176,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed to open tables.json file: %s", err.Error())
 		}
-		if json.NewDecoder(f).Decode(&tables); err != nil {
+		if err := json.NewDecoder(f).Decode(&tables); err != nil {
 			log.Fatalf("Failed to decode tables: %s", err.Error())
 		}
 		f.Close()

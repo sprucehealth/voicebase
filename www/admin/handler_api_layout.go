@@ -527,7 +527,7 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 			return err
 		}
 
-		if decodeReviewJSIntoLayout(rData.reviewJS, &rData.reviewLayout); err != nil {
+		if err := decodeReviewJSIntoLayout(rData.reviewJS, &rData.reviewLayout); err != nil {
 			return err
 		}
 

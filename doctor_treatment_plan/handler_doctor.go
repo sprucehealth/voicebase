@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/responses"
@@ -284,12 +285,14 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 	})
 
 	if d.routeErx {
-		apiservice.QueueUpJob(d.erxRoutingQueue, &erxRouteMessage{
+		if err := apiservice.QueueUpJob(d.erxRoutingQueue, &erxRouteMessage{
 			TreatmentPlanID: requestData.TreatmentPlanID,
 			PatientID:       treatmentPlan.PatientID,
 			DoctorID:        treatmentPlan.DoctorID.Int64(),
 			Message:         note,
-		})
+		}); err != nil {
+			golog.Errorf("Failed to queue erx routing job: %s", err)
+		}
 	} else {
 		if err := d.dataAPI.ActivateTreatmentPlan(treatmentPlan.ID.Int64(), treatmentPlan.DoctorID.Int64()); err != nil {
 			apiservice.WriteError(err, w, r)

@@ -191,8 +191,7 @@ func (c *specialDateTime) UnmarshalXML(d *xml.Decoder, start xml.StartElement) e
 	if len(start.Attr) > 0 {
 		if start.Attr[0].Name.Local == "nil" && start.Attr[0].Value == "true" {
 			// still decoding to consume the element in the xml document
-			d.DecodeElement(&dateStr, &start)
-			return nil
+			return d.DecodeElement(&dateStr, &start)
 		}
 	}
 
