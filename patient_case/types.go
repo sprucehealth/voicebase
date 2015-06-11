@@ -148,8 +148,7 @@ func (v *visitSubmittedNotification) TypeName() string {
 }
 
 const (
-	visitSubmittedSubtitle = "We'll notify you when your doctor has reviewed your visit."
-	visitSubmittedTitle    = "Your acne case has been successfully submitted."
+	visitSubmittedTitle = "We'll notify you when your doctor has reviewed your visit."
 )
 
 func (v *visitSubmittedNotification) canRenderCaseNotificationView() bool { return false }
@@ -159,7 +158,7 @@ func (v *visitSubmittedNotification) makeCaseNotificationView(data *caseData) (c
 }
 
 func (v *visitSubmittedNotification) makeHomeCardView(data *caseData) (common.ClientView, error) {
-	title := visitSubmittedSubtitle
+	title := visitSubmittedTitle
 	iconURL := app_url.IconVisitSubmitted.String()
 	doctorAssignment := findActiveDoctor(data.CareTeamMembers)
 

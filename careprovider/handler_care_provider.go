@@ -14,8 +14,6 @@ type careProviderGETRequest struct {
 	ProviderID int64 `schema:"provider_id,required"`
 }
 
-type careProviderGETResponse responses.CareProvider
-
 type careProviderHandler struct {
 	dataAPI   api.DataAPI
 	apiDomain string

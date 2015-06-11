@@ -17,11 +17,10 @@ import (
 )
 
 const (
-	maxMemoryUsage      = 2 * 1024 * 1024 // MB
-	intake              = "intake"
-	review              = "review"
-	diagnose            = "diagnose"
-	layoutSyntaxVersion = 1
+	maxMemoryUsage = 2 * 1024 * 1024 // MB
+	intake         = "intake"
+	review         = "review"
+	diagnose       = "diagnose"
 )
 
 type layoutUploadHandler struct {

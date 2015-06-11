@@ -14,13 +14,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
-const (
-	questionAcneDiagnosis = "q_acne_diagnosis"
-	questionAcneSeverity  = "q_acne_severity"
-	questionAcneType      = "q_acne_type"
-	questionRosaceaType   = "q_acne_rosacea_type"
-)
-
 const VersionedTreatmentPlanNote = `Here is your revised treatment plan.
 
 P.S. Please remember to consult the attached 'Prescription Guide' for additional information regarding the medication I've prescribed for you, including usage tips, warnings, and common side effects.`
@@ -337,22 +330,6 @@ func validateTreatments(treatments []*common.Treatment,
 		}
 	}
 
-	return nil
-}
-
-func ensureDrugsAreInMarket(treatments []*common.Treatment, tp *common.TreatmentPlan, doctor *common.Doctor, erxAPI erx.ERxAPI) error {
-	for _, treatment := range treatments {
-		// only check for drugs being out of market in the event of a treatment template
-		// or a treatment saved in an FTP/TP being used for the new treatments
-		if tp.ContentSource != nil || treatment.DoctorTreatmentTemplateID.Int64() != 0 {
-			if err := apiservice.IsDrugOutOfMarket(
-				treatment,
-				doctor,
-				erxAPI); err != nil {
-				return err
-			}
-		}
-	}
 	return nil
 }
 

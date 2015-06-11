@@ -15,10 +15,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
-const (
-	successfulERxRoutingPharmacyID = 47731
-)
-
 var (
 	defaultTimePeriodSeconds int64 = 20
 	visibilityTimeout        int64 = 30

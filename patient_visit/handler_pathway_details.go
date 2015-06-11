@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -373,33 +372,4 @@ func detailsMissingScreen(pathway *common.Pathway) *pathwayDetailsScreen {
 		ContentText:    "Sorry, but there seems to be a problem with the service.",
 		ContentSubtext: "Please try to start a visit later.",
 	}
-}
-
-func parseIDList(s string) ([]int64, error) {
-	if len(s) == 0 {
-		return nil, nil
-	}
-	// Counter the number of commas to preallocate the correct sized slice
-	n := 1
-	for _, r := range s {
-		if r == ',' {
-			n++
-		}
-	}
-	ids := make([]int64, 0, n)
-	for len(s) != 0 {
-		sid := s
-		if i := strings.IndexByte(s, ','); i > 0 {
-			sid = s[:i]
-			s = s[i+1:]
-		} else {
-			s = s[:0]
-		}
-		id, err := strconv.ParseInt(sid, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-		ids = append(ids, id)
-	}
-	return ids, nil
 }

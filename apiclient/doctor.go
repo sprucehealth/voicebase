@@ -17,8 +17,6 @@ import (
 	"github.com/sprucehealth/backend/tagging"
 )
 
-const defaultBaseURL = "https://staging-api.carefront.net"
-
 type DoctorClient struct {
 	Config
 }

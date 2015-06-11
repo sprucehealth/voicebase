@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	reDocID     = regexp.MustCompile(`doctor (\d+)`)
+	// reDocID     = regexp.MustCompile(`doctor (\d+)`)
 	reTimestamp = regexp.MustCompile(`^t=([^\s]+)`)
 	reJBCQ      = map[string]*regexp.Regexp{
 		"jbcq_claim_extend": regexp.MustCompile(`JBCQ: Claim extended for doctor (?P<doctor_id>\d+) on case (?P<case_id>\d+) with treatment plan (?P<treatment_plan_id>\d+)`),

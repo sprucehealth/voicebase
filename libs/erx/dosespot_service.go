@@ -37,7 +37,6 @@ const (
 	sendMultiplPrescriptionsAction
 	searchPharmaciesAction
 	getPrescriptionLogDetailsAction
-	getMedicationListAction
 	getTransmissionErrorDetailsAction
 	getRefillRequestsTransmissionsErrorsAction
 	ignoreAlertAction

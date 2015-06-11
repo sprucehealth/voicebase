@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -374,23 +373,6 @@ func TestPathwayDetailsHandler(t *testing.T) {
 			} else if len(p.Screen.Views) != 4 {
 				t.Fatalf("Expected 4 views within the screen but got %d", len(p.Screen.Views))
 			}
-		}
-	}
-}
-
-func TestParseIDList(t *testing.T) {
-	testCases := map[string][]int64{
-		"":      nil,
-		"123":   []int64{123},
-		"11,22": []int64{11, 22},
-	}
-	for s, expIDs := range testCases {
-		ids, err := parseIDList(s)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !reflect.DeepEqual(ids, expIDs) {
-			t.Fatalf("parseIDList('%s') = %+v. Expected %+v", s, ids, expIDs)
 		}
 	}
 }

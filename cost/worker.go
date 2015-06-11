@@ -20,10 +20,9 @@ import (
 )
 
 const (
-	timeBetweenEmailRetries = 10
-	receiptNumberMax        = 99999
-	receiptNumDigits        = 5
-	defaultTimePeriod       = 60
+	receiptNumberMax  = 99999
+	receiptNumDigits  = 5
+	defaultTimePeriod = 60
 )
 
 var (

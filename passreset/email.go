@@ -15,14 +15,6 @@ const (
 	successEmailType = "passreset-success"
 )
 
-type requestEmailContext struct {
-	ResetURL string
-}
-
-type successEmailContext struct {
-	SupportEmail string
-}
-
 const (
 	lostPasswordExpires     = 30 * 60 // seconds
 	lostPasswordCodeExpires = 10 * 60 // seconds
