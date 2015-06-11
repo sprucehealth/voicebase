@@ -6,15 +6,18 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 )
+
+var jsonStr = "json"
 
 func (n *NotificationManager) pushNotificationToUser(
 	accountID int64,
 	role string,
 	msg *Message,
-	notificationCount int64) error {
-
+	notificationCount int64,
+) error {
 	if n.snsClient == nil {
 		golog.Errorf("No sns client configured when one was expected")
 		return nil
@@ -38,7 +41,7 @@ func (n *NotificationManager) pushNotificationToUser(
 
 		pushEndpoint := pushConfigData.PushEndpoint
 		// send push notifications in parallel
-		go func() {
+		dispatch.RunAsync(func() {
 			note := renderNotification(notificationConfig, msg.ShortMessage, notificationCount)
 			js, err := json.Marshal(note)
 			if err != nil {
@@ -48,7 +51,8 @@ func (n *NotificationManager) pushNotificationToUser(
 			}
 			jsStr := string(js)
 			_, err = n.snsClient.Publish(&sns.PublishInput{
-				MessageStructure: &jsStr,
+				Message:          &jsStr,
+				MessageStructure: &jsonStr,
 				TargetARN:        &pushEndpoint,
 			})
 			if err != nil {
@@ -58,7 +62,7 @@ func (n *NotificationManager) pushNotificationToUser(
 			} else {
 				n.statPushSent.Inc(1)
 			}
-		}()
+		})
 	}
 
 	return nil
