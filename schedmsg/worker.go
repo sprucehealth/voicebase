@@ -189,11 +189,6 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 			return err
 		}
 
-		personID, err := w.dataAPI.GetPersonIDByRole(api.RoleDoctor, tp.DoctorID.Int64())
-		if err != nil {
-			return err
-		}
-
 		careTeams, err := w.dataAPI.CaseCareTeams([]int64{pcase.ID.Int64()})
 		if err != nil {
 			return err
@@ -208,17 +203,28 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 		}
 
 		var careCoordinator *common.Doctor
+		var activeDoctorID int64
 		for _, x := range careTeams[pcase.ID.Int64()].Assignments {
-			if x.ProviderRole == api.RoleCC {
+			switch x.ProviderRole {
+			case api.RoleCC:
 				careCoordinator, err = w.dataAPI.Doctor(x.ProviderID, true)
 				if err != nil {
 					return err
 				}
+			case api.RoleDoctor:
+				activeDoctorID = x.ProviderID
 			}
 		}
 
 		if careCoordinator == nil {
 			golog.Errorf("Unable to find care coordinator in care team for patient case %d - continuing but this is suspicious. This case will not be reassigned.", tp.PatientCaseID.Int64())
+		} else if activeDoctorID == 0 {
+			return fmt.Errorf("Unable to find active doctor on the case care team on behalf of whom to send the scheduled treatment plan (id: %d) message.", sm.TreatmentPlanID)
+		}
+
+		personID, err := w.dataAPI.GetPersonIDByRole(api.RoleDoctor, activeDoctorID)
+		if err != nil {
+			return err
 		}
 
 		people, err := w.dataAPI.GetPeople([]int64{personID})
