@@ -5,7 +5,7 @@ var objectAssign = require('object-assign');
 module.exports = {
 	StatusNotFound: 404,
 
-	ajax: function(params: any, cb: ajaxCB, async?: bool) {
+	ajax: function(params: ajaxParams, cb: ajaxCB, async?: bool) {
 		jQuery.ajax(objectAssign(params, {
 			async: (async == true || async == null),
 			url: "/admin/api" + params.url,
@@ -566,6 +566,7 @@ module.exports = {
 		this.ajax({
 			type: "GET",
 			url: "/financial/outgoing?"+query,
+			dataType: "json"
 		}, cb);
 	},
 

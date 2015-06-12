@@ -12,10 +12,19 @@ declare function ajaxErrorCB(jqXHR: jqXHR): void;
 
 type ajaxParams = {
 	type: string;
-	contentType: string;
+	url: string;
+	dataType: string;
+} | {
+	type: string;
 	url: string;
 	data: string;
 	dataType: string;
-	success: ?ajaxSuccessCB;
-	error: ?ajaxErrorCB;
+	contentType: string;
+} | {
+	type: string;
+	url: string;
+	data: any;
+	contentType: boolean | string;
+	cache: boolean;
+	processData: boolean;
 };

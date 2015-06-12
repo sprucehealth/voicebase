@@ -308,7 +308,9 @@ var AnalyticsReport = React.createClass({displayName: "AnalyticsReport",
 			});
 			// Make the data available to the presentation iframe
 			window.spruceAnalyticsData = results;
-			AnalyticsQueryCache[this.state.id] = results;
+			if (this.state.id) {
+				AnalyticsQueryCache[this.state.id] = results;
+			}
 			// TODO: push changes to presentation
 			// var pres = this.refs.presentation;
 			// if (pres != null) {

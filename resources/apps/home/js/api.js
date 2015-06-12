@@ -3,7 +3,7 @@
 var objectAssign = require('object-assign');
 
 module.exports = {
-	ajax: function(params: any, cb: ajaxCB, async?: bool) {
+	ajax: function(params: ajaxParams, cb: ajaxCB, async?: bool) {
 		jQuery.ajax(objectAssign(params, {
 			async: (async == true || async == null),
 			url: "/api" + params.url,

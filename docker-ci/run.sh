@@ -89,7 +89,7 @@ cp coverage.html coverage-$BUILD_NUMBER.html
 echo "TESTING STATIC RESOURCES"
 flow --version
 resources/build.sh
-(cd resources/apps ; flow check)
+(cd resources/apps ; time flow check)
 
 # Build for deploy
 echo "BUILDING"
