@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/patient"
+	"github.com/sprucehealth/backend/tagging"
 	"github.com/sprucehealth/backend/tagging/model"
 	"github.com/sprucehealth/backend/tagging/response"
 	"github.com/sprucehealth/backend/test"
@@ -87,13 +88,7 @@ func (t *mockTaggingClient_processPatientAnswers) InsertTagAssociation(tag *mode
 	t.TagsCreated[*membership.CaseID] = append(t.TagsCreated[*membership.CaseID], tag.Text)
 	return 0, nil
 }
-func (t *mockTaggingClient_processPatientAnswers) TagMembershipQuery(query string, pastTrigger bool) ([]*model.TagMembership, error) {
-	return nil, nil
-}
-func (t *mockTaggingClient_processPatientAnswers) Tag(tagText string) (*response.Tag, error) {
-	return nil, nil
-}
-func (t *mockTaggingClient_processPatientAnswers) Tags(tagText []string, common bool) ([]*response.Tag, error) {
+func (t *mockTaggingClient_processPatientAnswers) TagMembershipQuery(query string, ops tagging.TaggingOption) ([]*model.TagMembership, error) {
 	return nil, nil
 }
 func (t *mockTaggingClient_processPatientAnswers) InsertTagSavedSearch(ss *model.TagSavedSearch) (int64, error) {
@@ -113,6 +108,18 @@ func (t *mockTaggingClient_processPatientAnswers) UpdateTag(tag *model.TagUpdate
 }
 func (t *mockTaggingClient_processPatientAnswers) UpdateTagCaseMembership(membership *model.TagMembershipUpdate) error {
 	return nil
+}
+func (t *mockTaggingClient_processPatientAnswers) TagFromText(tagText string) (*response.Tag, error) {
+	return nil, nil
+}
+func (t *mockTaggingClient_processPatientAnswers) TagsFromText(tagText []string, ops tagging.TaggingOption) ([]*response.Tag, error) {
+	return nil, nil
+}
+func (t *mockTaggingClient_processPatientAnswers) TagsForCases(ids []int64, ops tagging.TaggingOption) (map[int64][]*response.Tag, error) {
+	return nil, nil
+}
+func (t *mockTaggingClient_processPatientAnswers) Tags(ids []int64) (map[int64]*response.Tag, error) {
+	return make(map[int64]*response.Tag), nil
 }
 
 // TestProcessAnswers_InsuredScheduledMessage is to ensure that a message

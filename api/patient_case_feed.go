@@ -2,13 +2,16 @@ package api
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/errors"
+	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
-func (d *DataService) PatientCaseFeed() ([]*common.PatientCaseFeedItem, error) {
-	rows, err := d.db.Query(`
+// PatientCaseFeed returns the feed items for the indicated case ids with visits in the specified bounds. If nil is provided then all items will be returned
+func (d *DataService) PatientCaseFeed(caseIDs []int64, start, end *time.Time) ([]*common.PatientCaseFeedItem, error) {
+	q := `
 		SELECT pca.patient_case_id, pc.clinical_pathway_id, pc.name,
 			COALESCE(pv.submitted_date, pv.creation_date),
 			p.first_name, p.last_name, p.id, pv.id,
@@ -19,8 +22,22 @@ func (d *DataService) PatientCaseFeed() ([]*common.PatientCaseFeedItem, error) {
 		INNER JOIN patient_visit pv ON pv.patient_case_id = pca.patient_case_id
 			AND pv.status IN ('ROUTED', 'REVIEWING', 'TRIAGED', 'TREATED')
 		INNER JOIN patient p ON p.id = pc.patient_id
-		WHERE role_type_id = ?
-		ORDER BY pv.submitted_date DESC`, d.roleTypeMapping[RoleDoctor])
+		WHERE role_type_id = ?`
+	vs := dbutil.AppendInt64sToInterfaceSlice(nil, []int64{d.roleTypeMapping[RoleDoctor]})
+	if len(caseIDs) > 0 {
+		q += ` AND pca.patient_case_id IN (` + dbutil.MySQLArgs(len(caseIDs)) + `)`
+		vs = dbutil.AppendInt64sToInterfaceSlice(vs, caseIDs)
+	}
+	if start != nil {
+		q += ` AND pv.submitted_date >= ?`
+		vs = append(vs, start)
+	}
+	if end != nil {
+		q += ` AND pv.submitted_date <= ?`
+		vs = append(vs, end)
+	}
+	q += ` ORDER BY pv.submitted_date DESC`
+	rows, err := d.db.Query(q, vs...)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

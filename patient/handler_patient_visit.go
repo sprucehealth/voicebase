@@ -22,10 +22,10 @@ import (
 )
 
 const (
-	ExistingPatientTag = "existing_patient"
-	NewPatientTag      = "new_patient"
-	InitialVisitTag    = "initial_visit"
-	FollowupVisitTag   = "follow-up_visit"
+	ExistingPatientTag = "ExistingPatient"
+	NewPatientTag      = "NewPatient"
+	InitialVisitTag    = "InitialVisit"
+	FollowupVisitTag   = "FollowUpVisit"
 )
 
 type patientVisitHandler struct {
@@ -227,21 +227,21 @@ func (s *patientVisitHandler) applyVisitTags(caseID, patientID int64) error {
 			currentCase = v
 		}
 		if existing {
-			if err := s.swapCaseTag(NewPatientTag, ExistingPatientTag, v.ID.Int64()); err != nil {
+			if err := s.swapCaseTag(NewPatientTag, ExistingPatientTag, v.ID.Int64(), false); err != nil {
 				return err
 			}
 		} else {
-			if err := s.applyCaseTag(NewPatientTag, v.ID.Int64()); err != nil {
+			if err := s.applyCaseTag(NewPatientTag, v.ID.Int64(), false); err != nil {
 				return err
 			}
 		}
 	}
 	if len(visits) > 1 {
-		if err := s.swapCaseTag(FollowupVisitTag, InitialVisitTag, caseID); err != nil {
+		if err := s.swapCaseTag(FollowupVisitTag, InitialVisitTag, caseID, false); err != nil {
 			return err
 		}
 	} else {
-		if err := s.applyCaseTag(InitialVisitTag, caseID); err != nil {
+		if err := s.applyCaseTag(InitialVisitTag, caseID, false); err != nil {
 			return err
 		}
 	}
@@ -252,24 +252,24 @@ func (s *patientVisitHandler) applyVisitTags(caseID, patientID int64) error {
 	if err != nil {
 		return fmt.Errorf("An error occurred while attemping to retrieve the patient for case %d, - %v", caseID, err)
 	}
-	if err := s.applyCaseTag(patient.StateFromZipCode+"_state", caseID); err != nil {
+	if err := s.applyCaseTag("state:"+patient.StateFromZipCode, caseID, true); err != nil {
 		return err
 	}
-	if err := s.applyCaseTag("patient:"+strconv.FormatInt(patient.ID.Int64(), 10), caseID); err != nil {
+	if err := s.applyCaseTag("patient:"+strconv.FormatInt(patient.ID.Int64(), 10), caseID, true); err != nil {
 		return err
 	}
 	monthI := time.Now().Month()
 	monthS := strconv.FormatInt(int64(time.Now().Month()), 10)
-	if err := s.applyCaseTag(monthI.String(), caseID); err != nil {
+	if err := s.applyCaseTag(monthI.String(), caseID, true); err != nil {
 		return err
 	}
 	dayI := int64(time.Now().Day())
 	dayS := strconv.FormatInt(dayI, 10)
-	if err := s.applyCaseTag(dayS, caseID); err != nil {
+	if err := s.applyCaseTag(dayS, caseID, true); err != nil {
 		return err
 	}
 	yearS := strconv.FormatInt(int64(time.Now().Year()), 10)
-	if err := s.applyCaseTag(yearS, caseID); err != nil {
+	if err := s.applyCaseTag(yearS, caseID, true); err != nil {
 		return err
 	}
 	if dayI < 10 {
@@ -280,29 +280,29 @@ func (s *patientVisitHandler) applyVisitTags(caseID, patientID int64) error {
 	}
 	yearS = yearS[len(yearS)-2:]
 
-	if err := s.applyCaseTag(monthS+dayS+yearS, caseID); err != nil {
+	if err := s.applyCaseTag(monthS+dayS+yearS, caseID, true); err != nil {
 		return err
 	}
-	if err := s.applyCaseTag(currentCase.PathwayTag, caseID); err != nil {
+	if err := s.applyCaseTag(currentCase.PathwayTag, caseID, true); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *patientVisitHandler) swapCaseTag(newTag, oldTag string, caseID int64) error {
+func (s *patientVisitHandler) swapCaseTag(newTag, oldTag string, caseID int64, hidden bool) error {
 	if err := s.taggingClient.DeleteTagCaseAssociation(oldTag, caseID); err != nil {
 		return fmt.Errorf("An error occured while attempting to delete tags for a new visit for case %d - tag %s. This error likely means the tags should be applied by hand after investigation - %v", caseID, oldTag, err)
 	}
-	if err := s.applyCaseTag(newTag, caseID); err != nil {
+	if err := s.applyCaseTag(newTag, caseID, hidden); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *patientVisitHandler) applyCaseTag(tag string, caseID int64) error {
+func (s *patientVisitHandler) applyCaseTag(tag string, caseID int64, hidden bool) error {
 	if _, err := s.taggingClient.InsertTagAssociation(&model.Tag{Text: tag}, &model.TagMembership{
 		CaseID: &caseID,
-		Hidden: true,
+		Hidden: hidden,
 	}); err != nil {
 		return fmt.Errorf("An error occured while attempting to add tags to a new visit for case %d - tag %s. This error likely means the tags should be applied by hand after investigation - %v", caseID, tag, err)
 	}

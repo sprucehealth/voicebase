@@ -200,7 +200,7 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.DoctorQueueUnassignedURLPath, doctor_queue.NewUnassignedHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.DoctorQueueHistoryURLPath, doctor_queue.NewHistoryHandler(conf.DataAPI))
 
-	authenticationRequired(conf, apipaths.DoctorCaseHistoryURLPath, doctor_queue.NewPatientsFeedHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.DoctorCaseHistoryURLPath, doctor_queue.NewPatientsFeedHandler(conf.DataAPI, taggingClient))
 	noAuthenticationRequired(conf, apipaths.DoctorSignupURLPath, doctor.NewSignupDoctorHandler(conf.DataAPI, conf.AuthAPI))
 	noAuthenticationRequired(conf, apipaths.DoctorAuthenticateURLPath, doctor.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.SMSAPI, conf.APICDNDomain, conf.Dispatcher,
 		conf.SMSFromNumber, conf.TwoFactorExpiration, conf.RateLimiters.Get("login"), conf.MetricsRegistry.Scope("doctor.auth")))

@@ -2,6 +2,7 @@ package test_integration
 
 import (
 	"testing"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/test"
@@ -86,9 +87,19 @@ func TestDoctorCaseHistory(t *testing.T) {
 	test.Equals(t, 1, len(items))
 	test.Equals(t, case2ID, items[0].CaseID)
 
-	// MA should see all cases
-
-	items, err = testData.DataAPI.PatientCaseFeed()
+	// MA should see all cases  or a filtered set depending on params
+	s := time.Unix(1, 0)
+	now := time.Now()
+	items, err = testData.DataAPI.PatientCaseFeed(nil, &s, &now)
+	test.OK(t, err)
+	test.Equals(t, 2, len(items))
+	items, err = testData.DataAPI.PatientCaseFeed([]int64{case2ID}, &s, nil)
+	test.OK(t, err)
+	test.Equals(t, 1, len(items))
+	items, err = testData.DataAPI.PatientCaseFeed([]int64{case2ID}, &s, &s)
+	test.OK(t, err)
+	test.Equals(t, 0, len(items))
+	items, err = testData.DataAPI.PatientCaseFeed(nil, nil, nil)
 	test.OK(t, err)
 	test.Equals(t, 2, len(items))
 }

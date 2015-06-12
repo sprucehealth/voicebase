@@ -91,7 +91,11 @@ func (h *tagHandler) serveGET(w http.ResponseWriter, r *http.Request, req *TagGE
 		return
 	}
 
-	tags, err := h.taggingClient.Tags(text, req.Common)
+	ops := TONone
+	if req.Common {
+		ops = TOCommonOnly
+	}
+	tags, err := h.taggingClient.TagsFromText(text, ops)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
