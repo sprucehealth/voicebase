@@ -32,12 +32,14 @@ type mockedDataAPI_WorkerTest struct {
 	PCase         *common.PatientCase
 	TPSM          *common.TreatmentPlanScheduledMessage
 	TP            *common.TreatmentPlan
-	PersonID      int64
+	PersonID      map[int64]int64
 	CareTeams     map[int64]*common.PatientCareTeam
 	People        map[int64]*common.Person
 	Doc           *common.Doctor
 	CaseMessageID int64
 	Error         error
+
+	msgCreated *common.CaseMessage
 }
 
 func (d mockedDataAPI_WorkerTest) GetAbridgedTreatmentPlan(treatmentPlanID, doctorID int64) (*common.TreatmentPlan, error) {
@@ -53,7 +55,7 @@ func (d mockedDataAPI_WorkerTest) GetPatientCaseFromID(patientCaseID int64) (*co
 }
 
 func (d mockedDataAPI_WorkerTest) GetPersonIDByRole(roleType string, roleID int64) (int64, error) {
-	return d.PersonID, d.Error
+	return d.PersonID[roleID], d.Error
 }
 
 func (d mockedDataAPI_WorkerTest) CaseCareTeams(caseIDs []int64) (map[int64]*common.PatientCareTeam, error) {
@@ -68,19 +70,78 @@ func (d mockedDataAPI_WorkerTest) GetPeople(ids []int64) (map[int64]*common.Pers
 	return d.People, d.Error
 }
 
-func (d mockedDataAPI_WorkerTest) CreateCaseMessage(msg *common.CaseMessage) (int64, error) {
+func (d *mockedDataAPI_WorkerTest) CreateCaseMessage(msg *common.CaseMessage) (int64, error) {
+	d.msgCreated = msg
 	return d.CaseMessageID, d.Error
 }
 
+// TestScheduledMessage_FromActiveDoctor ensures that a treatment plan
+// scheduled message goes from the active doctor on the case versus the doctor on the TP.
+func TestScheduledMessage_FromActiveDoctor(t *testing.T) {
+	activeDoctorOnCareTeamID := int64(510)
+	doctorOnTPID := int64(500)
+
+	data := &mockedDataAPI_WorkerTest{
+		DataAPI: &api.DataService{},
+		PCase: &common.PatientCase{
+			ID: encoding.NewObjectID(1),
+		},
+		TPSM: &common.TreatmentPlanScheduledMessage{},
+		TP: &common.TreatmentPlan{
+			Status:        api.StatusActive,
+			DoctorID:      encoding.NewObjectID(doctorOnTPID),
+			PatientCaseID: encoding.NewObjectID(1),
+			PatientID:     1,
+		},
+		PersonID: map[int64]int64{
+			activeDoctorOnCareTeamID: activeDoctorOnCareTeamID,
+			doctorOnTPID:             doctorOnTPID,
+		},
+		CareTeams: map[int64]*common.PatientCareTeam{
+			1: {
+				Assignments: []*common.CareProviderAssignment{
+					{
+						ProviderRole: api.RoleDoctor,
+						ProviderID:   activeDoctorOnCareTeamID,
+					},
+					{
+						ProviderRole: api.RoleCC,
+						ProviderID:   521,
+					},
+				},
+			},
+		},
+		People: map[int64]*common.Person{
+			510: &common.Person{
+				Doctor: &common.Doctor{},
+			},
+		},
+		Doc:           &common.Doctor{},
+		CaseMessageID: 0,
+		Error:         nil,
+	}
+	publisher := &TestPublisher{}
+	worker := NewWorker(data, nil, publisher, metrics.NewRegistry(), 1)
+	worker.processMessage(&common.ScheduledMessage{
+		Message: &TreatmentPlanMessage{},
+	})
+	test.Equals(t, 2, len(publisher.Events))
+	// ensure that the case message has the personID that maps to the active doctor on the care team
+	// and not the personID of the doctor on the TP
+	test.Equals(t, activeDoctorOnCareTeamID, data.msgCreated.PersonID)
+}
+
 func TestCaseNotReassignedOnTPScheduledMessageNoCC(t *testing.T) {
-	data := &mockedDataAPI_WorkerTest{&api.DataService{}, nil, nil, nil, 0, nil, nil, nil, 0, nil}
+	data := &mockedDataAPI_WorkerTest{DataAPI: &api.DataService{}}
 	publisher := &TestPublisher{}
 	worker := NewWorker(data, nil, publisher, metrics.NewRegistry(), 1)
 	data.TP = &common.TreatmentPlan{Status: api.StatusActive, DoctorID: encoding.NewObjectID(1), PatientCaseID: encoding.NewObjectID(1), PatientID: 1}
 	data.TPSM = &common.TreatmentPlanScheduledMessage{}
 	data.PCase = &common.PatientCase{ID: encoding.NewObjectID(1)}
 	data.CareTeams = map[int64]*common.PatientCareTeam{1: {Assignments: make([]*common.CareProviderAssignment, 0)}}
-	data.PersonID = 1
+	data.PersonID = map[int64]int64{
+		1: 1,
+	}
 	data.People = map[int64]*common.Person{1: &common.Person{Doctor: &common.Doctor{}}}
 	data.CaseMessageID = 1
 	msg := &common.ScheduledMessage{
@@ -96,14 +157,16 @@ func TestCaseNotReassignedOnTPScheduledMessageNoCC(t *testing.T) {
 }
 
 func TestCaseReassignedOnTPScheduledMessageCC(t *testing.T) {
-	data := &mockedDataAPI_WorkerTest{&api.DataService{}, nil, nil, nil, 0, nil, nil, nil, 0, nil}
+	data := &mockedDataAPI_WorkerTest{DataAPI: &api.DataService{}}
 	publisher := &TestPublisher{}
 	worker := NewWorker(data, nil, publisher, metrics.NewRegistry(), 1)
 	data.TP = &common.TreatmentPlan{Status: api.StatusActive, DoctorID: encoding.NewObjectID(1), PatientCaseID: encoding.NewObjectID(1), PatientID: 1}
 	data.TPSM = &common.TreatmentPlanScheduledMessage{}
 	data.PCase = &common.PatientCase{ID: encoding.NewObjectID(1)}
-	data.CareTeams = map[int64]*common.PatientCareTeam{1: {Assignments: []*common.CareProviderAssignment{&common.CareProviderAssignment{ProviderRole: api.RoleCC, ProviderID: 1}}}}
-	data.PersonID = 1
+	data.CareTeams = map[int64]*common.PatientCareTeam{1: {Assignments: []*common.CareProviderAssignment{&common.CareProviderAssignment{ProviderRole: api.RoleCC, ProviderID: 1}, &common.CareProviderAssignment{ProviderRole: api.RoleDoctor, ProviderID: 1}}}}
+	data.PersonID = map[int64]int64{
+		1: 1,
+	}
 	data.People = map[int64]*common.Person{1: &common.Person{Doctor: &common.Doctor{}}}
 	data.CaseMessageID = 1
 	data.Doc = &common.Doctor{ID: encoding.NewObjectID(99)}
