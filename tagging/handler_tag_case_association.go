@@ -108,7 +108,11 @@ func (h *tagCaseAssociationHandler) serveGET(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	memberships, err := h.taggingClient.TagMembershipQuery(req.Query, req.PastTrigger)
+	ops := TONone
+	if req.PastTrigger {
+		ops = TOPastTrigger
+	}
+	memberships, err := h.taggingClient.TagMembershipQuery(req.Query, ops)
 	if query.IsErrBadExpression(err) {
 		apiservice.WriteBadRequestError(err, w, r)
 		return

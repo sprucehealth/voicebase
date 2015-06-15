@@ -13,6 +13,15 @@ import (
 	"github.com/sprucehealth/backend/tagging/response"
 )
 
+type TaggingOption int
+
+const (
+	TONonHiddenOnly TaggingOption = 1 << iota
+	TOCommonOnly
+	TOPastTrigger
+	TONone TaggingOption = 0
+)
+
 type Client interface {
 	CaseAssociations(ms []*model.TagMembership, start, end int64) ([]*response.TagAssociation, error)
 	CaseTagMemberships(caseID int64) (map[string]*model.TagMembership, error)
@@ -23,9 +32,11 @@ type Client interface {
 	InsertTag(tag *model.Tag) (int64, error)
 	InsertTagAssociation(tag *model.Tag, membership *model.TagMembership) (int64, error)
 	InsertTagSavedSearch(ss *model.TagSavedSearch) (int64, error)
-	TagMembershipQuery(query string, pastTrigger bool) ([]*model.TagMembership, error)
-	Tag(tagText string) (*response.Tag, error)
-	Tags(tagText []string, common bool) ([]*response.Tag, error)
+	TagMembershipQuery(query string, ops TaggingOption) ([]*model.TagMembership, error)
+	TagFromText(tagText string) (*response.Tag, error)
+	TagsForCases(ids []int64, ops TaggingOption) (map[int64][]*response.Tag, error)
+	TagsFromText(tagText []string, ops TaggingOption) ([]*response.Tag, error)
+	Tags(ids []int64) (map[int64]*response.Tag, error)
 	TagSavedSearchs() ([]*model.TagSavedSearch, error)
 	UpdateTag(tag *model.TagUpdate) error
 	UpdateTagCaseMembership(membership *model.TagMembershipUpdate) error
@@ -94,17 +105,17 @@ func (tc *TaggingClient) UpdateTag(tag *model.TagUpdate) error {
 	return errors.Trace(err)
 }
 
-func (tc *TaggingClient) Tag(text string) (*response.Tag, error) {
+func (tc *TaggingClient) TagFromText(text string) (*response.Tag, error) {
 	tag := &response.Tag{}
 	if err := tc.db.QueryRow(`SELECT id, tag_text, common FROM tag WHERE tag_text = ?`, text).Scan(&tag.ID, &tag.Text, &tag.Common); err == sql.ErrNoRows {
-		return nil, api.ErrNotFound(`tag`)
+		return nil, errors.Trace(api.ErrNotFound(`tag`))
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
 	return tag, nil
 }
 
-func (tc *TaggingClient) Tags(conditionValues []string, common bool) ([]*response.Tag, error) {
+func (tc *TaggingClient) TagsFromText(conditionValues []string, ops TaggingOption) ([]*response.Tag, error) {
 	q := `SELECT id, tag_text, common FROM tag`
 	conditionFields := make([]string, len(conditionValues))
 	for i := range conditionValues {
@@ -114,14 +125,13 @@ func (tc *TaggingClient) Tags(conditionValues []string, common bool) ([]*respons
 		q += ` WHERE (` + strings.Join(conditionFields, ` OR `) + `)`
 	}
 	interfaceValues := dbutil.AppendStringsToInterfaceSlice(nil, conditionValues)
-	if common {
+	if ops&TOCommonOnly != 0 {
 		if len(conditionValues) > 0 {
 			q += ` AND `
 		} else {
 			q += ` WHERE `
 		}
-		q += ` common = ?`
-		interfaceValues = append(interfaceValues, common)
+		q += ` common = true`
 	}
 	q += ` ORDER BY tag_text DESC LIMIT 1000`
 	rows, err := tc.db.Query(q, interfaceValues...)
@@ -137,6 +147,57 @@ func (tc *TaggingClient) Tags(conditionValues []string, common bool) ([]*respons
 			return nil, errors.Trace(err)
 		}
 		tags = append(tags, &response.Tag{ID: tag.ID, Text: tag.Text, Common: tag.Common})
+	}
+	return tags, errors.Trace(rows.Err())
+}
+
+func (tc *TaggingClient) Tags(ids []int64) (map[int64]*response.Tag, error) {
+	rows, err := tc.db.Query(`SELECT id, tag_text, common FROM tag WHERE id IN (`+dbutil.MySQLArgs(len(ids))+`)`, dbutil.AppendInt64sToInterfaceSlice(nil, ids)...)
+	if err == sql.ErrNoRows {
+		return nil, errors.Trace(api.ErrNotFound(`tag`))
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	tags := make(map[int64]*response.Tag)
+	for rows.Next() {
+		tag := &response.Tag{}
+		if err := rows.Scan(&tag.ID, &tag.Text, &tag.Common); err != nil {
+			return nil, errors.Trace(err)
+		}
+		tags[tag.ID] = tag
+	}
+	return tags, errors.Trace(rows.Err())
+}
+
+func (tc *TaggingClient) TagsForCases(ids []int64, ops TaggingOption) (map[int64][]*response.Tag, error) {
+	tags := make(map[int64][]*response.Tag)
+	if len(ids) == 0 {
+		return tags, nil
+	}
+	q := `
+		SELECT tag.id, tag.tag_text, tag.common, tag_membership.case_id FROM tag_membership 
+			JOIN tag ON tag_membership.tag_id = tag.id 
+			WHERE tag_membership.case_id IN (` + dbutil.MySQLArgs(len(ids)) + `)`
+	if ops&TONonHiddenOnly != 0 {
+		q += ` AND tag_membership.hidden = false`
+	}
+	rows, err := tc.db.Query(q, dbutil.AppendInt64sToInterfaceSlice(nil, ids)...)
+	if err == sql.ErrNoRows {
+		return nil, errors.Trace(api.ErrNotFound(`tag_membership`))
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var caseID int64
+		tag := &response.Tag{}
+		if err := rows.Scan(&tag.ID, &tag.Text, &tag.Common, &caseID); err != nil {
+			return nil, errors.Trace(err)
+		}
+		tags[caseID] = append(tags[caseID], tag)
 	}
 	return tags, errors.Trace(rows.Err())
 }
@@ -241,7 +302,7 @@ func (tc *TaggingClient) CaseTagMemberships(caseID int64) (map[string]*model.Tag
 	return memberships, errors.Trace(rows.Err())
 }
 
-func (tc *TaggingClient) TagMembershipQuery(qs string, pastTrigger bool) ([]*model.TagMembership, error) {
+func (tc *TaggingClient) TagMembershipQuery(qs string, ops TaggingOption) ([]*model.TagMembership, error) {
 	q, err := query.NewTagAssociationQuery(qs)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -251,13 +312,13 @@ func (tc *TaggingClient) TagMembershipQuery(qs string, pastTrigger bool) ([]*mod
 		return nil, errors.Trace(err)
 	}
 
-	if pastTrigger {
+	if ops&TOPastTrigger != 0 {
 		if !strings.Contains(sql, `WHERE`) {
 			sql += ` WHERE `
 		} else if qs != "" {
 			sql += ` AND `
 		}
-		sql += ` trigger_time <= current_timestamp `
+		sql += ` trigger_time <= current_timestamp AND trigger_time IS NOT NULL `
 	}
 
 	// Limit the query to only return the latest 1000 matches

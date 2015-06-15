@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/ratelimit"
+	"github.com/sprucehealth/backend/tagging"
 	"github.com/sprucehealth/backend/tagging/model"
 	"github.com/sprucehealth/backend/tagging/response"
 	"github.com/sprucehealth/backend/test"
@@ -42,13 +43,13 @@ func (t *mockTaggingClient_PatientVisitHandler) DeleteTagCaseMembership(tagID, c
 func (t *mockTaggingClient_PatientVisitHandler) InsertTagAssociation(tag *model.Tag, membership *model.TagMembership) (int64, error) {
 	return 0, nil
 }
-func (t *mockTaggingClient_PatientVisitHandler) TagMembershipQuery(query string, pastTrigger bool) ([]*model.TagMembership, error) {
+func (t *mockTaggingClient_PatientVisitHandler) TagMembershipQuery(query string, ops tagging.TaggingOption) ([]*model.TagMembership, error) {
 	return nil, nil
 }
-func (t *mockTaggingClient_PatientVisitHandler) Tag(tagText string) (*response.Tag, error) {
+func (t *mockTaggingClient_PatientVisitHandler) TagFromText(tagText string) (*response.Tag, error) {
 	return nil, nil
 }
-func (t *mockTaggingClient_PatientVisitHandler) Tags(tagText []string, common bool) ([]*response.Tag, error) {
+func (t *mockTaggingClient_PatientVisitHandler) TagsFromText(tagText []string, ops tagging.TaggingOption) ([]*response.Tag, error) {
 	return nil, nil
 }
 func (t *mockTaggingClient_PatientVisitHandler) InsertTagSavedSearch(ss *model.TagSavedSearch) (int64, error) {
@@ -68,6 +69,12 @@ func (t *mockTaggingClient_PatientVisitHandler) UpdateTag(tag *model.TagUpdate) 
 }
 func (t *mockTaggingClient_PatientVisitHandler) UpdateTagCaseMembership(membership *model.TagMembershipUpdate) error {
 	return nil
+}
+func (t *mockTaggingClient_PatientVisitHandler) TagsForCases(ids []int64, ops tagging.TaggingOption) (map[int64][]*response.Tag, error) {
+	return nil, nil
+}
+func (t *mockTaggingClient_PatientVisitHandler) Tags(ids []int64) (map[int64]*response.Tag, error) {
+	return make(map[int64]*response.Tag), nil
 }
 
 type mockDataAPI_PatientVisitHandler struct {

@@ -481,7 +481,7 @@ type DoctorAPI interface {
 	UpdateCareProviderProfile(accountID int64, profile *common.CareProviderProfile) error
 	GetFirstDoctorWithAClinicianID() (*common.Doctor, error)
 	GetOldestTreatmentPlanInStatuses(max int, statuses []common.TreatmentPlanStatus) ([]*TreatmentPlanAge, error)
-	PatientCaseFeed() ([]*common.PatientCaseFeedItem, error)
+	PatientCaseFeed(caseIDs []int64, start, end *time.Time) ([]*common.PatientCaseFeedItem, error)
 	PatientCaseFeedForDoctor(doctorID int64) ([]*common.PatientCaseFeedItem, error)
 
 	// Treatment plan notes

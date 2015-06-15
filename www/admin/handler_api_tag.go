@@ -103,14 +103,18 @@ func (h *tagHandler) serveGET(w http.ResponseWriter, r *http.Request, req *tagGE
 	tags := make([]*response.Tag, 0, 1)
 	var err error
 	if !req.Common {
-		if tag, err := h.taggingClient.Tag(req.Text); err != nil && !api.IsErrNotFound(err) {
+		if tag, err := h.taggingClient.TagFromText(req.Text); err != nil && !api.IsErrNotFound(err) {
 			www.APIInternalError(w, r, err)
 			return
 		} else if !api.IsErrNotFound(err) {
 			tags = append(tags, tag)
 		}
 	} else {
-		tags, err = h.taggingClient.Tags([]string{}, req.Common)
+		ops := tagging.TONone
+		if req.Common {
+			ops = tagging.TOCommonOnly
+		}
+		tags, err = h.taggingClient.TagsFromText([]string{}, ops)
 		if err != nil {
 			www.APIInternalError(w, r, err)
 			return

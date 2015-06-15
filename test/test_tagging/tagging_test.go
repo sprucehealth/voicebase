@@ -82,10 +82,10 @@ func TestGetTags(t *testing.T) {
 	test.OK(t, err)
 
 	found := make(map[string]bool)
-	tags, err := client.Tags([]string{"Test"}, false)
+	tags, err := client.TagsFromText([]string{"Test"}, tagging.TONone)
 	test.OK(t, err)
 	test.Equals(t, len(tags), 3)
-	fooTags, err := client.Tags([]string{"Foo"}, false)
+	fooTags, err := client.TagsFromText([]string{"Foo"}, tagging.TONone)
 	test.OK(t, err)
 	test.Equals(t, len(fooTags), 1)
 	for _, v := range tags {
@@ -121,7 +121,7 @@ func TestDeleteTag(t *testing.T) {
 	})
 	test.OK(t, err)
 
-	tags, err := client.Tags([]string{"Test"}, false)
+	tags, err := client.TagsFromText([]string{"Test"}, tagging.TONone)
 	test.OK(t, err)
 	test.Equals(t, 2, len(tags))
 	for _, v := range tags {
@@ -129,7 +129,7 @@ func TestDeleteTag(t *testing.T) {
 		test.OK(t, err)
 		test.Equals(t, int64(1), aff)
 	}
-	tags, err = client.Tags([]string{"Test"}, false)
+	tags, err = client.TagsFromText([]string{"Test"}, tagging.TONone)
 	test.OK(t, err)
 	test.Equals(t, 0, len(tags))
 }
@@ -183,68 +183,68 @@ func TestTagAssociations(t *testing.T) {
 	})
 	test.OK(t, err)
 
-	ms, err := client.TagMembershipQuery(`A`, false)
+	ms, err := client.TagMembershipQuery(`A`, tagging.TONone)
 	test.OK(t, err)
 	associations, err := client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
 	test.OK(t, err)
 	test.Equals(t, 3, len(associations))
 
-	ms, err = client.TagMembershipQuery(`B`, false)
+	ms, err = client.TagMembershipQuery(`B`, tagging.TONone)
 	test.OK(t, err)
 	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
 	test.OK(t, err)
 	test.Equals(t, 2, len(associations))
 
-	ms, err = client.TagMembershipQuery(`C`, false)
+	ms, err = client.TagMembershipQuery(`C`, tagging.TONone)
 	test.OK(t, err)
 	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
 	test.OK(t, err)
 	test.Equals(t, 1, len(associations))
 
-	ms, err = client.TagMembershipQuery(`A | B | D`, false)
+	ms, err = client.TagMembershipQuery(`A | B | D`, tagging.TONone)
 	test.OK(t, err)
 	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
 	test.OK(t, err)
 	test.Equals(t, 3, len(associations))
 
-	ms, err = client.TagMembershipQuery(`!D`, false)
+	ms, err = client.TagMembershipQuery(`!D`, tagging.TONone)
 	test.OK(t, err)
 	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
 	test.OK(t, err)
 	test.Equals(t, 2, len(associations))
 
-	ms, err = client.TagMembershipQuery(`A AND (E OR F)`, false)
+	ms, err = client.TagMembershipQuery(`A AND (E OR F)`, tagging.TONone)
 	test.OK(t, err)
 	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
 	test.OK(t, err)
 	test.Equals(t, 2, len(associations))
 
-	ms, err = client.TagMembershipQuery(`A AND (E OR F AND (NOT D))`, false)
+	ms, err = client.TagMembershipQuery(`A AND (E OR F AND (NOT D))`, tagging.TONone)
 	test.OK(t, err)
 	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
 	test.OK(t, err)
 	test.Equals(t, 1, len(associations))
 
-	ms, err = client.TagMembershipQuery(`A OR (E OR F AND (NOT D))`, false)
+	ms, err = client.TagMembershipQuery(`A OR (E OR F AND (NOT D))`, tagging.TONone)
 	test.OK(t, err)
 	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
 	test.OK(t, err)
 	test.Equals(t, 3, len(associations))
 
-	ms, err = client.TagMembershipQuery(`!A`, false)
+	ms, err = client.TagMembershipQuery(`!A`, tagging.TONone)
 	test.OK(t, err)
 	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
 	test.OK(t, err)
 	test.Equals(t, 0, len(associations))
 
-	ms, err = client.TagMembershipQuery(`NotValid`, false)
+	ms, err = client.TagMembershipQuery(`NotValid`, tagging.TONone)
 	test.OK(t, err)
 	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
 	test.OK(t, err)
 	test.Equals(t, 0, len(associations))
 
 	// Test that we can timebound our query by visit
-	ms, err = client.TagMembershipQuery(`A`, false)
+	ms, err = client.TagMembershipQuery(`A`, tagging.TONone)
 	test.OK(t, err)
 	associations, err = client.CaseAssociations(ms, time.Now().Unix()+1, time.Now().Unix()+2)
 	test.OK(t, err)
@@ -268,22 +268,78 @@ func TestDeleteTagCaseAssociation(t *testing.T) {
 	})
 	test.OK(t, err)
 
-	tags, err := client.Tags([]string{"Test"}, false)
+	tags, err := client.TagsFromText([]string{"Test"}, tagging.TONone)
 	test.OK(t, err)
 	test.Equals(t, 2, len(tags))
 	err = client.DeleteTagCaseAssociation("TestTag2", caseID)
 	test.OK(t, err)
-	tagAs, err := client.TagMembershipQuery("TestTag2", false)
+	tagAs, err := client.TagMembershipQuery("TestTag2", tagging.TONone)
 	test.OK(t, err)
 	test.Equals(t, 0, len(tagAs))
 	err = client.DeleteTagCaseAssociation("TestTag1", caseID)
 	test.OK(t, err)
-	tagAs, err = client.TagMembershipQuery("TestTag1", false)
+	tagAs, err = client.TagMembershipQuery("TestTag1", tagging.TONone)
 	test.OK(t, err)
 	test.Equals(t, 0, len(tagAs))
-	tags, err = client.Tags([]string{"Test"}, false)
+	tags, err = client.TagsFromText([]string{"Test"}, tagging.TONone)
 	test.OK(t, err)
 	test.Equals(t, 2, len(tags))
+}
+
+func TestTagsMapping(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+	patientCase, _ := createPatientCaseAndAssignToDoctor(t, testData)
+
+	client := tagging.NewTaggingClient(testData.DB)
+	caseID := patientCase.ID.Int64()
+	_, err := client.InsertTagAssociation(&model.Tag{Text: "TestTag1"}, &model.TagMembership{
+		CaseID: &caseID,
+	})
+	test.OK(t, err)
+	_, err = client.InsertTagAssociation(&model.Tag{Text: "TestTag2"}, &model.TagMembership{
+		CaseID: &caseID,
+	})
+	test.OK(t, err)
+
+	tags, err := client.TagsFromText([]string{"TestTag1", "TestTag2"}, tagging.TONone)
+	test.OK(t, err)
+	test.Equals(t, 2, len(tags))
+
+	tagMap, err := client.Tags([]int64{tags[0].ID, tags[1].ID})
+	test.OK(t, err)
+	test.Equals(t, 2, len(tagMap))
+	test.Equals(t, tags[0], tagMap[tags[0].ID])
+	test.Equals(t, tags[1], tagMap[tags[1].ID])
+}
+
+func TestTagsForCases(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+	patientCase, _ := createPatientCaseAndAssignToDoctor(t, testData)
+
+	client := tagging.NewTaggingClient(testData.DB)
+	caseID := patientCase.ID.Int64()
+	_, err := client.InsertTagAssociation(&model.Tag{Text: "TestTag1"}, &model.TagMembership{
+		CaseID: &caseID,
+	})
+	test.OK(t, err)
+	_, err = client.InsertTagAssociation(&model.Tag{Text: "TestTag2"}, &model.TagMembership{
+		CaseID: &caseID,
+	})
+	test.OK(t, err)
+
+	tags, err := client.TagsForCases([]int64{caseID}, tagging.TONone)
+	test.OK(t, err)
+	test.Equals(t, 1, len(tags))
+	test.Equals(t, 12, len(tags[caseID]))
+
+	tags, err = client.TagsForCases([]int64{caseID}, tagging.TONonHiddenOnly)
+	test.OK(t, err)
+	test.Equals(t, 1, len(tags))
+	test.Equals(t, 5, len(tags[caseID]))
 }
 
 func TestCCTagRoundTrip(t *testing.T) {
