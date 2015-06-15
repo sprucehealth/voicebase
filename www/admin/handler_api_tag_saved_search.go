@@ -1,7 +1,6 @@
 package admin
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -23,7 +22,6 @@ func NewTagSavedSearchHandler(taggingClient tagging.Client) http.Handler {
 func (h *tagSavedSearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
 	if err != nil {
-		fmt.Println(err)
 		www.APINotFound(w, r)
 		return
 	}

@@ -268,6 +268,7 @@ func CreateRandomPromotion(t *testing.T, testData *test_integration.TestData, ex
 		Expires: expiration,
 	}
 
-	test.OK(t, testData.DataAPI.CreatePromotion(promo))
+	_, err = testData.DataAPI.CreatePromotion(promo)
+	test.OK(t, err)
 	return promoCode
 }

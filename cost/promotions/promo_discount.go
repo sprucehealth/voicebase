@@ -18,19 +18,15 @@ const (
 	USDUnit     DiscountUnit = "USD"
 )
 
-type percentDiscountPromotion struct {
+type consumableDiscountPromotion struct {
 	promoCodeParams
 	Type          string `json:"type"`
 	DiscountValue int    `json:"value"`
 	Consumed      bool   `json:"consumed"`
 }
 
-type moneyDiscountPromotion struct {
-	promoCodeParams
-	Type          string `json:"type"`
-	DiscountValue int    `json:"value"`
-	Consumed      bool   `json:"consumed"`
-}
+type percentDiscountPromotion consumableDiscountPromotion
+type moneyDiscountPromotion consumableDiscountPromotion
 
 type discountPromotion interface {
 	Promotion
@@ -54,7 +50,6 @@ func (d *percentDiscountPromotion) Associate(accountID, codeID int64, expires *t
 }
 
 func (d *percentDiscountPromotion) Apply(cost *common.CostBreakdown) (bool, error) {
-
 	applied, err := applyDiscount(cost, d, PercentUnit, d.DiscountValue)
 	if err != nil {
 		return false, err

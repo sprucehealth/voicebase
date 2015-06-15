@@ -23,6 +23,11 @@ type ajaxParams = {
 } | {
 	type: string;
 	url: string;
+	data: string;
+	contentType: string;
+} | {
+	type: string;
+	url: string;
 	data: any;
 	contentType: boolean | string;
 	cache: boolean;

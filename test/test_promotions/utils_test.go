@@ -24,7 +24,7 @@ func createPromotion(promotion promotions.Promotion, testData *test_integration.
 	test.OK(t, err)
 	test.Equals(t, true, promoCode != "")
 
-	err = testData.DataAPI.CreatePromotion(&common.Promotion{
+	_, err = testData.DataAPI.CreatePromotion(&common.Promotion{
 		Code:  promoCode,
 		Data:  promotion,
 		Group: promotion.Group(),

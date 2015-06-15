@@ -35,6 +35,9 @@ func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 		displayMsg,
 		displayMsg,
 		successMsg,
+		"",
+		0,
+		0,
 		true), testData, t)
 
 	// create a dollar off discount promotion
@@ -45,6 +48,9 @@ func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 		displayMsg,
 		displayMsg,
 		successMsg,
+		"",
+		0,
+		0,
 		true), testData, t)
 
 	// lets create a route to doctor promotion
@@ -72,6 +78,9 @@ func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 		displayMsg,
 		displayMsg,
 		successMsg,
+		"",
+		0,
+		0,
 		true), testData, t)
 
 	// create another account credits promotion
@@ -80,6 +89,9 @@ func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 		displayMsg,
 		displayMsg,
 		successMsg,
+		"",
+		0,
+		0,
 		true), testData, t)
 
 	// now lets apply all these promotions to an existing patient's account

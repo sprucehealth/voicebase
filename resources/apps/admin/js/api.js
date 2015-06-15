@@ -705,7 +705,117 @@ module.exports = {
 			contentType: "application/json",
 			url: "/schedmsgs/templates/" + encodeURIComponent(id),
 			data: JSON.stringify(template),
+		}, cb);
+	},
+
+	// Promotion
+	promotions: function(types: Array<string>, cb: ajaxCB) {
+		var url = "/promotion?"
+		for(var i = 0; i < types.length; i++){
+			url += "type="+encodeURIComponent(types[i]) + "&"
+		}
+		this.ajax({
+			type: "GET",
+			contentType: "application/json",
+			url: url,
 			dataType: "json"
+		}, cb);
+	},
+	addPromotion: function(code: string, promoType: string, group: string, promotionData: any, expires: ?Date, cb: ajaxCB) {
+		var url = "/promotion"
+		var data = {code: code, promo_type: promoType, group: group, data_json: JSON.stringify(promotionData), expires: null}
+		if(expires != null){
+			data.expires = expires.getTime() / 1000
+		}
+		this.ajax({
+			type: "POST",
+			contentType: "application/json",
+			url: url,
+			data: JSON.stringify(data),
+			dataType: "json",
+		}, cb);
+	},
+	promotionReferralRoutes: function(lifecycles: Array<string>, cb: ajaxCB) {
+		var url = "/promotion/referral_route?"
+		for(var i = 0; i < lifecycles.length; i++){
+			url += "lifecycles="+encodeURIComponent(lifecycles[i]) + "&"
+		}
+		this.ajax({
+			type: "GET",
+			contentType: "application/json",
+			url: url,
+			dataType: "json"
+		}, cb);
+	},
+	addPromotionReferralRoute: function(promotionCodeID: number, priority: number, gender: string, ageLower: number, ageUpper: number, state: string, pharmacy: string, cb: ajaxCB) {
+		var url = "/promotion/referral_route"
+		var data = {
+			promotion_code_id: promotionCodeID, 
+			priority: priority, 
+			lifecycle: "ACTIVE",
+			gender: gender, 
+			age_lower: ageLower,
+			age_upper: ageUpper, 
+			state: state,
+			pharmacy: pharmacy,
+		}
+		this.ajax({
+			type: "POST",
+			contentType: "application/json",
+			url: url,
+			data: JSON.stringify(data),
+			dataType: "json",
+		}, cb);
+	},
+	updatePromotionReferralRoute: function(id: number, lifecycle: string, cb: ajaxCB) {
+		var url = "/promotion/referral_route/" + encodeURIComponent(id.toString())
+		var data = {lifecycle: lifecycle}
+		this.ajax({
+			type: "PUT",
+			contentType: "application/json",
+			url: url,
+			data: JSON.stringify(data),
+			dataType: "json",
+		}, cb);
+	},
+	promotionReferralTemplates: function(statuses: string, cb: ajaxCB) {
+		var url = "/promotion/referral_template?"
+		for(var i = 0; i < statuses.length; i++){
+			url += "statuses="+encodeURIComponent(statuses[i]) + "&"
+		}
+		this.ajax({
+			type: "GET",
+			contentType: "application/json",
+			url: url,
+			dataType: "json",
+		}, cb);
+	},
+	addPromotionReferralTemplates: function(promotionCodeID: number, title: string, description: string, defaultText: string, facebook: string, twitter: string, sms: string, email_subject: string, email_body: string, text: string, cb: ajaxCB) {
+		var url = "/promotion/referral_template"
+		var data  = {
+			promotion_code_id: promotionCodeID,
+			title: title,
+			description: description,
+			group: "new_user",
+			share_text: {
+				default: defaultText,
+				facebook: facebook,
+				twitter: twitter,
+				sms: sms,
+				email_subject: email_subject,
+				email_body: email_body,
+			},
+			home_card: {
+				text: text,
+				image_url: "spruce:///image/icon_promo_logo",
+			},
+		}
+		this.ajax({
+			type: "POST",
+			contentType: "application/json",
+			url: url,
+			data: JSON.stringify(data),
+			dataType: "json",
 		}, cb);
 	},
 

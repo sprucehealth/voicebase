@@ -30,6 +30,9 @@ func TestPromotion_NewUserPercentOff(t *testing.T) {
 		displayMsg,
 		displayMsg,
 		successMsg,
+		"",
+		0,
+		0,
 		true), testData, t)
 
 	// lets have a new user claim this code via the website
@@ -102,6 +105,9 @@ func TestPromotion_ExistingUserPercentOff(t *testing.T) {
 		displayMsg,
 		displayMsg,
 		successMsg,
+		"",
+		0,
+		0,
 		true), testData, t)
 
 	// now lets make sure that an existing user can claim the code as well
@@ -136,6 +142,9 @@ func TestPromotion_NewUserDollarOff(t *testing.T) {
 		displayMsg,
 		displayMsg,
 		successMsg,
+		"",
+		0,
+		0,
 		true), testData, t)
 
 	// lets have a new user claim this code via the website
@@ -207,6 +216,9 @@ func TestPromotion_ExistingUserDollarOff(t *testing.T) {
 		displayMsg,
 		displayMsg,
 		successMsg,
+		"",
+		0,
+		0,
 		true), testData, t)
 
 	// now lets make sure that an existing user can claim the code as well
@@ -241,6 +253,9 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 		displayMsg,
 		displayMsg,
 		successMsg,
+		"",
+		0,
+		0,
 		true), testData, t)
 
 	// lets have a new user claim this code via the website
@@ -322,6 +337,9 @@ func TestPromotion_ExistingUserAccountCredit(t *testing.T) {
 		displayMsg,
 		displayMsg,
 		successMsg,
+		"",
+		0,
+		0,
 		true), testData, t)
 
 	// now lets make sure that an existing user can claim the code as well
