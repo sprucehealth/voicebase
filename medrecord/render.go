@@ -480,8 +480,7 @@ func (r *Renderer) Render(patient *common.Patient) ([]byte, error) {
 		}
 		ctx.Cases = append(ctx.Cases, caseCtx)
 
-		// Use the doctor role to fetch messages in order to include private messages
-		msgs, err := r.DataAPI.ListCaseMessages(pcase.ID.Int64(), api.RoleDoctor)
+		msgs, err := r.DataAPI.ListCaseMessages(pcase.ID.Int64(), api.LCMOIncludePrivate)
 		if err != nil {
 			return nil, err
 		}
