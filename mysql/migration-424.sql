@@ -35,6 +35,9 @@ CREATE TABLE promotion_referral_route (
   CONSTRAINT promotion_referral_route_promotion_code FOREIGN KEY (promotion_code_id) REFERENCES promotion_code (id)
 );
 
+-- Move our single referral template into the default state
+UPDATE referral_program_template SET status = 'Default' WHERE status = 'Active';
+
 -- Map Referral Program Templates to the Promotion
 ALTER TABLE referral_program_template
   ADD COLUMN promotion_code_id INT UNSIGNED,
