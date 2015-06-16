@@ -22,6 +22,7 @@ var invalidEmails = []string{
 	"test@example.com.",
 	"asyouallcanseethisemailaddressexceedsthemaximumnumberofcharactersallowedtobeintheemailaddresswhichisnomorethatn254accordingtovariousrfcokaycanistopnowornotyetnoineedmorecharacterstoadd@i.really.cannot.thinkof.what.else.to.put.into.this.invalid.address.net",
 	"someone@somewhere",
+	"someone@gmail.con", // invalid TLD
 }
 
 func TestIsValidEmail(t *testing.T) {
