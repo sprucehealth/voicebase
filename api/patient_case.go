@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/dbutil"
+	"github.com/sprucehealth/backend/patient_case/model"
 )
 
 func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseID int64) ([]*common.CareProviderAssignment, error) {
@@ -638,4 +639,70 @@ func (d *DataService) UpdatePatientCase(id int64, update *PatientCaseUpdate) err
 	_, err := d.db.Exec(`
 		UPDATE patient_case set `+strings.Join(cols, ",")+` WHERE id = ?`, vals...)
 	return err
+}
+
+// InsertPatientCaseNote inserts the provided case note record
+func (d *DataService) InsertPatientCaseNote(n *model.PatientCaseNote) (int64, error) {
+	res, err := d.db.Exec(`INSERT INTO patient_case_note (case_id, author_doctor_id, note_text) VALUES (?, ?, ?)`, n.CaseID, n.AuthorDoctorID, n.NoteText)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+	return res.LastInsertId()
+}
+
+// UpdatePatientCaseNote updates the record for the indicated note
+func (d *DataService) UpdatePatientCaseNote(nu *model.PatientCaseNoteUpdate) (int64, error) {
+	res, err := d.db.Exec(`UPDATE patient_case_note SET note_text = ? WHERE id = ?`, nu.NoteText, nu.ID)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+	return res.RowsAffected()
+}
+
+// DeletePatientCaseNote deletes the record for the indicated note
+func (d *DataService) DeletePatientCaseNote(id int64) (int64, error) {
+	res, err := d.db.Exec(`DELETE FROM patient_case_note WHERE id = ?`, id)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+	return res.RowsAffected()
+}
+
+// PatientCaseNote retrieves the record for the indicated note
+func (d *DataService) PatientCaseNote(id int64) (*model.PatientCaseNote, error) {
+	caseNote := &model.PatientCaseNote{}
+	if err := d.db.QueryRow(
+		`SELECT id, case_id, created, modified, author_doctor_id, note_text 
+			FROM patient_case_note WHERE id = ?`, id).Scan(&caseNote.ID, &caseNote.CaseID, &caseNote.Created, &caseNote.Modified, &caseNote.AuthorDoctorID, &caseNote.NoteText); err == sql.ErrNoRows {
+		return nil, errors.Trace(ErrNotFound(`patient_case_note`))
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	return caseNote, nil
+}
+
+// PatientCaseNotes returns a map from case id to list of notes for the given case
+func (d *DataService) PatientCaseNotes(caseIDs []int64) (map[int64][]*model.PatientCaseNote, error) {
+	if len(caseIDs) == 0 {
+		return nil, nil
+	}
+	rows, err := d.db.Query(`SELECT id, case_id, created, modified, author_doctor_id, note_text FROM patient_case_note WHERE case_id IN (`+dbutil.MySQLArgs(len(caseIDs))+`) ORDER BY created ASC, id ASC`, dbutil.AppendInt64sToInterfaceSlice(nil, caseIDs)...)
+	if err == sql.ErrNoRows {
+		return nil, errors.Trace(ErrNotFound(`patient_case_note`))
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	caseNotes := make(map[int64][]*model.PatientCaseNote, len(caseIDs))
+	for rows.Next() {
+		caseNote := &model.PatientCaseNote{}
+		if err := rows.Scan(&caseNote.ID, &caseNote.CaseID, &caseNote.Created, &caseNote.Modified, &caseNote.AuthorDoctorID, &caseNote.NoteText); err != nil {
+			return nil, errors.Trace(err)
+		}
+		caseNotes[caseNote.CaseID] = append(caseNotes[caseNote.CaseID], caseNote)
+	}
+
+	return caseNotes, errors.Trace(rows.Err())
 }

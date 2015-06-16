@@ -9,10 +9,59 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 )
 
+type RecordAccessRequired int
+
+const (
+	ReadAccessRequired RecordAccessRequired = 1 << iota
+	WriteAccessRequired
+)
+
+func (ra RecordAccessRequired) Has(a RecordAccessRequired) bool {
+	return (ra & a) != 0
+}
+
 var (
 	JBCQError            = newJBCQForbiddenAccessError()
 	AccessForbiddenError = NewAccessForbiddenError()
 )
+
+// AccountDoctorHasAccessToCase validates a given doctor account's access to a patient case, this will also optionally populate the case and doctorID attributes of the provided context
+func AccountDoctorHasAccessToCase(accountID, caseID int64, accountRole string, requiredAccess RecordAccessRequired, dataAPI api.DataAPI, ctxt *Context) (bool, error) {
+	doctorID, err := dataAPI.GetDoctorIDFromAccountID(accountID)
+	if err != nil {
+		return false, err
+	}
+	return DoctorHasAccessToCase(doctorID, caseID, accountRole, requiredAccess, dataAPI, ctxt)
+}
+
+// AccountDoctorHasAccessToCase validates a given doctor's access to a patient case, this will also optionally populate the case and doctorID attributes of the provided context
+func DoctorHasAccessToCase(doctorID, caseID int64, accountRole string, requiredAccess RecordAccessRequired, dataAPI api.DataAPI, ctxt *Context) (bool, error) {
+	if ctxt != nil {
+		ctxt.RequestCache[DoctorID] = doctorID
+	}
+
+	patientCase, err := dataAPI.GetPatientCaseFromID(caseID)
+	if err != nil {
+		return false, err
+	}
+	if ctxt != nil {
+		ctxt.RequestCache[PatientCase] = patientCase
+	}
+
+	if requiredAccess.Has(WriteAccessRequired) {
+		if err := ValidateWriteAccessToPatientCase(httputil.Post, accountRole, doctorID, patientCase.PatientID.Int64(), patientCase.ID.Int64(), dataAPI); err != nil {
+			return false, err
+		}
+		requiredAccess = requiredAccess ^ WriteAccessRequired
+	}
+	if requiredAccess.Has(ReadAccessRequired) {
+		if err := ValidateReadAccessToPatientCase(httputil.Get, accountRole, doctorID, patientCase.PatientID.Int64(), patientCase.ID.Int64(), dataAPI); err != nil {
+			return false, err
+		}
+		requiredAccess = requiredAccess ^ ReadAccessRequired
+	}
+	return requiredAccess == 0, nil
+}
 
 func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorID, patientID int64, dataAPI api.DataAPI) error {
 
@@ -56,6 +105,14 @@ func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorID, patien
 	}
 
 	return AccessForbiddenError
+}
+
+func ValidateReadAccessToPatientCase(httpMethod, role string, doctorID, patientID, patientCaseID int64, dataAPI api.DataAPI) error {
+	return ValidateAccessToPatientCase(httputil.Get, role, doctorID, patientID, patientCaseID, dataAPI)
+}
+
+func ValidateWriteAccessToPatientCase(httpMethod, role string, doctorID, patientID, patientCaseID int64, dataAPI api.DataAPI) error {
+	return ValidateAccessToPatientCase(httputil.Post, role, doctorID, patientID, patientCaseID, dataAPI)
 }
 
 func ValidateAccessToPatientCase(httpMethod, role string, doctorID, patientID, patientCaseID int64, dataAPI api.DataAPI) error {
