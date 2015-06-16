@@ -191,7 +191,9 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 			return err
 		}
 
-		_, err = tx.Exec(`insert into patient_address_selection (address_id, patient_id, is_default, is_updated_by_doctor) values (?,?,1,0)`, addressID, patient.ID.Int64())
+		_, err = tx.Exec(
+			`INSERT INTO patient_address_selection (address_id, patient_id, is_default, is_updated_by_doctor) VALUES (?,?,1,0)`,
+			addressID, patient.ID.Int64())
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -200,7 +202,7 @@ func (d *DataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 
 	if patient.Pharmacy != nil {
 		var existingPharmacyID int64
-		err = tx.QueryRow(`select id from pharmacy_selection where pharmacy_id = ?`, patient.Pharmacy.SourceID).Scan(&existingPharmacyID)
+		err = tx.QueryRow(`SELECT id FROM pharmacy_selection WHERE pharmacy_id = ?`, patient.Pharmacy.SourceID).Scan(&existingPharmacyID)
 		if err != nil && err != sql.ErrNoRows {
 			tx.Rollback()
 			return err
@@ -796,7 +798,7 @@ func (d *DataService) PatientAgreements(patientID int64) (map[string]time.Time, 
 }
 
 func (d *DataService) UpdatePatientWithPaymentCustomerID(patientID int64, paymentCustomerID string) error {
-	_, err := d.db.Exec("update patient set payment_service_customer_id = ? where id = ?", paymentCustomerID, patientID)
+	_, err := d.db.Exec("UPDATE patient SET payment_service_customer_id = ? WHERE id = ?", paymentCustomerID, patientID)
 	return err
 }
 
@@ -817,7 +819,7 @@ func (d *DataService) AddCardForPatient(patientID int64, card *common.Card) erro
 
 	if card.IsDefault {
 		// undo all previous default cards for the patient
-		_, err = tx.Exec(`update credit_card set is_default = 0 where patient_id = ?`, patientID)
+		_, err = tx.Exec(`UPDATE credit_card SET is_default = 0 WHERE patient_id = ?`, patientID)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -901,8 +903,10 @@ func (d *DataService) MakeLatestCardDefaultForPatient(patientID int64) (*common.
 }
 
 func addAddress(tx *sql.Tx, address *common.Address) (int64, error) {
-	lastID, err := tx.Exec(`insert into address (address_line_1, address_line_2, city, state, zip_code, country) values (?,?,?,?,?,?)`,
-		address.AddressLine1, address.AddressLine2, address.City, address.State, address.ZipCode, addressUsa)
+	lastID, err := tx.Exec(`INSERT INTO address (address_line_1, address_line_2, city, state, zip_code, country) VALUES (?,?,?,?,?,?)`,
+		strings.TrimSpace(address.AddressLine1), strings.TrimSpace(address.AddressLine2),
+		strings.TrimSpace(address.City), strings.TrimSpace(address.State),
+		strings.TrimSpace(address.ZipCode), addressUSA)
 	if err != nil {
 		return 0, err
 	}
@@ -1004,13 +1008,14 @@ func (d *DataService) UpdateDefaultAddressForPatient(patientID int64, address *c
 		}
 	}
 
-	_, err = tx.Exec(`delete from patient_address_selection where patient_id = ?`, patientID)
+	_, err = tx.Exec(`DELETE FROM patient_address_selection WHERE patient_id = ?`, patientID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	_, err = tx.Exec(`insert into patient_address_selection (patient_id, address_id, is_default, is_updated_by_doctor) values (?,?,1,0)`, patientID, address.ID)
+	_, err = tx.Exec(`INSERT INTO patient_address_selection (patient_id, address_id, is_default, is_updated_by_doctor) VALUES (?,?,1,0)`,
+		patientID, address.ID)
 	if err != nil {
 		tx.Rollback()
 		return err

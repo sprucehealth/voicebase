@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
-
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/cfg"
@@ -61,7 +60,7 @@ const (
 	drugRouteTable                  = "drug_route"
 	pharmacyDispensedTreatmentTable = "pharmacy_dispensed_treatment"
 	requestedTreatmentTable         = "requested_treatment"
-	addressUsa                      = "USA"
+	addressUSA                      = "USA"
 	PendingTaskPatientCard          = "PATIENT_CARD"
 )
 
