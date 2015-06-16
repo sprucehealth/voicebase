@@ -90,14 +90,15 @@ type CaseNotification struct {
 }
 
 type CaseMessage struct {
-	ID          int64
-	CaseID      int64
-	PersonID    int64
-	Time        time.Time
-	Body        string
-	EventText   string
-	IsPrivate   bool
-	Attachments []*CaseMessageAttachment
+	ID           int64
+	CaseID       int64
+	PersonID     int64
+	Time         time.Time
+	Body         string
+	EventText    string
+	IsPrivate    bool
+	Attachments  []*CaseMessageAttachment
+	ReadReceipts []*ReadReceipt
 }
 
 type CaseMessageAttachment struct {
@@ -109,10 +110,13 @@ type CaseMessageAttachment struct {
 }
 
 type CaseMessageParticipant struct {
-	CaseID   int64
-	Unread   bool
-	LastRead time.Time
-	Person   *Person
+	CaseID int64
+	Person *Person
+}
+
+type ReadReceipt struct {
+	PersonID int64
+	Time     time.Time
 }
 
 const (

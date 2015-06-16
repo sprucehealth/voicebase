@@ -40,6 +40,7 @@ func TestCaseMessages(t *testing.T) {
 	defer testData.Close()
 	testData.StartAPIServer(t)
 
+	cc, _, _ := SignupRandomTestCC(t, testData, true)
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
@@ -54,6 +55,7 @@ func TestCaseMessages(t *testing.T) {
 
 	doctorCli := DoctorClient(testData, t, doctorID)
 	patientCli := PatientClient(testData, t, patient.ID.Int64())
+	ccCli := DoctorClient(testData, t, cc.DoctorID)
 
 	test.OK(t, doctorCli.UpdateTreatmentPlanNote(treatmentPlan.ID.Int64(), "foo"))
 	test.OK(t, doctorCli.SubmitTreatmentPlan(treatmentPlan.ID.Int64()))
@@ -78,17 +80,13 @@ func TestCaseMessages(t *testing.T) {
 	_, err = doctorCli.PostCaseMessage(caseID, "foo", attachments)
 	test.OK(t, err)
 
-	msgs, err := testData.DataAPI.ListCaseMessages(caseID, api.RoleDoctor)
-	if err != nil {
-		t.Fatal(err)
-	} else if len(msgs) != 2 { // one we just posted and one for the treatment plan submission
-		t.Fatalf("Expected 2 message. Got %d", len(msgs))
-	}
+	msgs, err := testData.DataAPI.ListCaseMessages(caseID, api.LCMOIncludePrivate)
+	test.OK(t, err)
+	test.Equals(t, 2, len(msgs)) // one we just posted and one for the treatment plan submission
 
 	m := msgs[len(msgs)-1]
-	if len(m.Attachments) != 2 {
-		t.Fatalf("Expected 2 attachment. Got %d", len(m.Attachments))
-	}
+	test.Equals(t, 0, len(m.ReadReceipts))
+	test.Equals(t, 2, len(m.Attachments))
 	a := m.Attachments[0]
 	if a.ItemType != common.AttachmentTypePhoto || a.ItemID != photoID {
 		t.Fatalf("Wrong attachment type or ID")
@@ -105,54 +103,68 @@ func TestCaseMessages(t *testing.T) {
 		t.Fatalf("Wrong attachment type or ID")
 	}
 	media, err := testData.DataAPI.GetMedia(audioID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	ok, err = testData.DataAPI.MediaHasClaim(media.ID, common.ClaimerTypeConversationMessage, m.ID)
 	test.OK(t, err)
 	test.Equals(t, true, ok)
 
-	if participants, err := testData.DataAPI.CaseMessageParticipants(caseID, false); err != nil {
-		t.Fatal(err)
-	} else if len(participants) != 1 {
-		t.Fatalf("Expected 1 participant. Got %d", len(participants))
-	} else if participants[doctorPersonID] == nil {
-		t.Fatalf("Participant does not match")
-	} else if participants[doctorPersonID].Unread {
-		t.Fatalf("Expected conversation to be read")
-	}
+	participants, err := testData.DataAPI.CaseMessageParticipants(caseID, false)
+	test.OK(t, err)
+	test.Equals(t, 1, len(participants))
+	test.Equals(t, false, participants[doctorPersonID] == nil)
 
 	// Reply from patient
 	_, err = patientCli.PostCaseMessage(caseID, "bar", nil)
 	test.OK(t, err)
 
-	if msgs, err = testData.DataAPI.ListCaseMessages(caseID, api.RolePatient); err != nil {
-		t.Fatal(err)
-	} else if len(msgs) != 3 {
-		t.Fatalf("Expected 3 messages. Got %d", len(msgs))
-	}
+	msgs, err = testData.DataAPI.ListCaseMessages(caseID, 0)
+	test.OK(t, err)
+	test.Equals(t, 3, len(msgs))
 
-	if participants, err := testData.DataAPI.CaseMessageParticipants(caseID, false); err != nil {
-		t.Fatal(err)
-	} else if len(participants) != 2 {
-		t.Fatalf("Expected 2 participants. Got %d", len(participants))
-	} else if participants[doctorPersonID] == nil {
-		t.Fatalf("Participant does not exist")
-	} else if !participants[doctorPersonID].Unread {
-		t.Fatalf("Expected doctor's conversation to be unread")
-	} else if participants[patientPersonID] == nil {
-		t.Fatalf("Participant does not exist")
-	} else if participants[patientPersonID].Unread {
-		t.Fatalf("Expected patient's conversation to be read")
-	}
+	participants, err = testData.DataAPI.CaseMessageParticipants(caseID, false)
+	test.OK(t, err)
+	test.Equals(t, 2, len(participants))
+	test.Equals(t, false, participants[doctorPersonID] == nil)
+	test.Equals(t, false, participants[patientPersonID] == nil)
 
-	if err := testData.DataAPI.MarkCaseMessagesAsRead(caseID, doctorPersonID); err != nil {
-		t.Fatal(err)
-	}
+	// Test read receipts
+	{
+		// Patient reading messages should record a read receipt
+		msgs, _, err := patientCli.ListCaseMessages(caseID)
+		test.OK(t, err)
+		test.Equals(t, 3, len(msgs))
 
-	if participants, err := testData.DataAPI.CaseMessageParticipants(caseID, false); err != nil {
-		t.Fatal(err)
-	} else if participants[doctorPersonID].Unread {
-		t.Fatalf("Expected doctor's conversation to be read")
+		// CC should see read receipts
+		msgs, pars, err := ccCli.ListCaseMessages(caseID)
+		test.OK(t, err)
+		test.Equals(t, 3, len(msgs))
+		for _, m := range msgs {
+			test.Equals(t, 1, len(m.ReadReceipts))
+			rr := m.ReadReceipts[0]
+			var found bool
+			for _, p := range pars {
+				if p.ID == rr.ParticipantID {
+					found = true
+					break
+				}
+			}
+			test.Equals(t, true, found)
+		}
+
+		// Doctor SHOULD NOT see read receipts
+		msgs, _, err = doctorCli.ListCaseMessages(caseID)
+		test.OK(t, err)
+		test.Equals(t, 3, len(msgs))
+		for _, m := range msgs {
+			test.Equals(t, 0, len(m.ReadReceipts))
+		}
+
+		// Patient MUST NOT see read receipts
+		msgs, _, err = patientCli.ListCaseMessages(caseID)
+		test.OK(t, err)
+		test.Equals(t, 3, len(msgs))
+		for _, m := range msgs {
+			test.Equals(t, 0, len(m.ReadReceipts))
+		}
 	}
 }

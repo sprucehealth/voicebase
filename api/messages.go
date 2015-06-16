@@ -2,11 +2,11 @@ package api
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
@@ -14,25 +14,24 @@ func (d *DataService) GetPeople(id []int64) (map[int64]*common.Person, error) {
 	if len(id) == 0 {
 		return map[int64]*common.Person{}, nil
 	}
-
 	rows, err := d.db.Query(fmt.Sprintf(`SELECT person.id, role_type_tag, role_id FROM person INNER JOIN role_type on role_type_id = role_type.id WHERE person.id IN (%s)`, dbutil.MySQLArgs(len(id))), dbutil.AppendInt64sToInterfaceSlice(nil, id)...)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	defer rows.Close()
 	people := map[int64]*common.Person{}
 	for rows.Next() {
 		p := &common.Person{}
 		if err := rows.Scan(&p.ID, &p.RoleType, &p.RoleID); err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 		people[p.ID] = p
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	if err := d.populateDoctorOrPatientForPeople(people); err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	return people, nil
 }
@@ -45,7 +44,7 @@ func (d *DataService) GetPersonIDByRole(roleType string, roleID int64) (int64, e
 	if err == sql.ErrNoRows {
 		return 0, ErrNotFound("person")
 	}
-	return id, err
+	return id, errors.Trace(err)
 }
 
 func (d *DataService) CaseMessageForAttachment(itemType string, itemID, senderPersonID, patientCaseID int64) (*common.CaseMessage, error) {
@@ -74,11 +73,11 @@ func (d *DataService) CaseMessageForAttachment(itemType string, itemID, senderPe
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound("patient_case_message_attachment")
 	} else if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	message.Attachments = []*common.CaseMessageAttachment{
-		&common.CaseMessageAttachment{
+		{
 			ID:       attachmentID,
 			ItemType: itemType,
 			ItemID:   itemID,
@@ -87,10 +86,27 @@ func (d *DataService) CaseMessageForAttachment(itemType string, itemID, senderPe
 	return &message, nil
 }
 
-func (d *DataService) ListCaseMessages(caseID int64, role string) ([]*common.CaseMessage, error) {
+func (d *DataService) CaseMessagesRead(messageIDs []int64, personID int64) error {
+	if len(messageIDs) == 0 {
+		return nil
+	}
+	reps := make([]byte, 0, 6*len(messageIDs)) // len("(?,?),") == 6
+	vals := make([]interface{}, 0, 2*len(messageIDs))
+	for _, mid := range messageIDs {
+		reps = append(reps, "(?,?),"...)
+		vals = append(vals, mid, personID)
+	}
+	reps = reps[:len(reps)-1] // -1 to remove trailing comma
+	_, err := d.db.Exec(`
+		INSERT IGNORE INTO patient_case_message_read (message_id, person_id)
+		VALUES `+string(reps), vals...)
+	return errors.Trace(err)
+}
+
+func (d *DataService) ListCaseMessages(caseID int64, opts ListCaseMessagesOption) ([]*common.CaseMessage, error) {
 	var clause string
-	// private messages should only be returned to the doctor or ma
-	if role != RoleDoctor && role != RoleCC {
+
+	if !opts.has(LCMOIncludePrivate) {
 		clause = `AND private = 0`
 	}
 
@@ -99,7 +115,7 @@ func (d *DataService) ListCaseMessages(caseID int64, role string) ([]*common.Cas
 		FROM patient_case_message
 		WHERE patient_case_id = ? `+clause+` ORDER BY tstamp`, caseID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	defer rows.Close()
 
@@ -111,67 +127,89 @@ func (d *DataService) ListCaseMessages(caseID int64, role string) ([]*common.Cas
 			CaseID: caseID,
 		}
 		if err := rows.Scan(&m.ID, &m.Time, &m.PersonID, &m.Body, &m.IsPrivate, &m.EventText); err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 		messageMap[m.ID] = m
 		messageIDs = append(messageIDs, m.ID)
 		messages = append(messages, m)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
+	}
+
+	if len(messages) == 0 {
+		return messages, nil
 	}
 
 	// Attachments
 
-	if len(messageIDs) > 0 {
-		rows, err := d.db.Query(fmt.Sprintf(`
-			SELECT id, item_type, item_id, message_id, title
-			FROM patient_case_message_attachment
+	rows, err = d.db.Query(fmt.Sprintf(`
+			SELECT a.id, item_type, item_id, message_id, title, mimetype
+			FROM patient_case_message_attachment a
+			LEFT OUTER JOIN media m ON m.id = a.item_id AND a.item_type IN ('photo', 'audio')
 			WHERE message_id IN (%s)`, dbutil.MySQLArgs(len(messageIDs))),
-			messageIDs...)
-		if err != nil {
-			return nil, err
+		messageIDs...)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var mid int64
+		var mimetype sql.NullString
+		a := &common.CaseMessageAttachment{}
+		if err := rows.Scan(&a.ID, &a.ItemType, &a.ItemID, &mid, &a.Title, &mimetype); err != nil {
+			return nil, errors.Trace(err)
 		}
-		defer rows.Close()
-		for rows.Next() {
-			var mid int64
-			a := &common.CaseMessageAttachment{}
-			if err := rows.Scan(&a.ID, &a.ItemType, &a.ItemID, &mid, &a.Title); err != nil {
-				return nil, err
-			}
-			switch a.ItemType {
-			case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
-				// If it's a media item, find the mimetype
-				if err := d.db.QueryRow(`
-					SELECT mimetype
-					FROM media
-					WHERE id = ?`, a.ItemID,
-				).Scan(&a.MimeType); err == sql.ErrNoRows {
-					return nil, ErrNotFound("media")
-				} else if err != nil {
-					return nil, err
-				}
-
-			}
-
-			messageMap[mid].Attachments = append(messageMap[mid].Attachments, a)
-		}
-		if err := rows.Err(); err != nil {
-			return nil, err
-		}
+		a.MimeType = mimetype.String
+		messageMap[mid].Attachments = append(messageMap[mid].Attachments, a)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Trace(err)
 	}
 
+	// Read receipts
+
+	if opts.has(LCMOIncludeReadReceipts) {
+		receipts, err := d.caseMessageReadReceipts(messageIDs)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		for mid, rr := range receipts {
+			messageMap[mid].ReadReceipts = rr
+		}
+	}
 	return messages, nil
+}
+
+func (d *DataService) caseMessageReadReceipts(msgIDs []interface{}) (map[int64][]*common.ReadReceipt, error) {
+	rows, err := d.db.Query(`
+		SELECT "message_id", "person_id", "timestamp"
+		FROM "patient_case_message_read"
+		WHERE "message_id" IN (`+dbutil.MySQLArgs(len(msgIDs))+`)`,
+		msgIDs...)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+	receipts := make(map[int64][]*common.ReadReceipt, len(msgIDs))
+	for rows.Next() {
+		var mid int64
+		rr := &common.ReadReceipt{}
+		if err := rows.Scan(&mid, &rr.PersonID, &rr.Time); err != nil {
+			return nil, errors.Trace(err)
+		}
+		receipts[mid] = append(receipts[mid], rr)
+	}
+	return receipts, errors.Trace(rows.Err())
 }
 
 func (d *DataService) GetCaseIDFromMessageID(messageID int64) (int64, error) {
 	var caseID int64
-	err := d.db.QueryRow(`select patient_case_id from patient_case_message where id = ?`, messageID).Scan(&caseID)
-
+	err := d.db.QueryRow(`SELECT patient_case_id FROM patient_case_message WHERE id = ?`, messageID).Scan(&caseID)
 	if err == sql.ErrNoRows {
 		return 0, ErrNotFound("patient_case_message")
 	}
-	return caseID, err
+	return caseID, errors.Trace(err)
 }
 
 func (d *DataService) CreateCaseMessage(msg *common.CaseMessage) (int64, error) {
@@ -190,7 +228,7 @@ func (d *DataService) CreateCaseMessage(msg *common.CaseMessage) (int64, error) 
 
 	tx, err := d.db.Begin()
 	if err != nil {
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 
 	res, err := tx.Exec(`
@@ -198,12 +236,12 @@ func (d *DataService) CreateCaseMessage(msg *common.CaseMessage) (int64, error) 
 		VALUES (?, ?, ?, ?, ?, ?)`, msg.Time, msg.PersonID, msg.Body, msg.CaseID, msg.IsPrivate, msg.EventText)
 	if err != nil {
 		tx.Rollback()
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 	msg.ID, err = res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 
 	for _, a := range msg.Attachments {
@@ -212,45 +250,38 @@ func (d *DataService) CreateCaseMessage(msg *common.CaseMessage) (int64, error) 
 			VALUES (?, ?, ?, ?)`, msg.ID, a.ItemType, a.ItemID, a.Title)
 		if err != nil {
 			tx.Rollback()
-			return 0, err
+			return 0, errors.Trace(err)
 		}
 		switch a.ItemType {
 		case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
 			if err := d.claimMedia(tx, a.ItemID, common.ClaimerTypeConversationMessage, msg.ID); err != nil {
 				tx.Rollback()
-				return 0, err
+				return 0, errors.Trace(err)
 			}
 		}
 	}
 
 	_, err = tx.Exec(`
-		REPLACE INTO patient_case_message_participant (patient_case_id, person_id, unread, last_read_tstamp)
-		VALUES (?, ?, ?, ?)`,
-		msg.CaseID, msg.PersonID, false, time.Now())
+		REPLACE INTO patient_case_message_participant (patient_case_id, person_id)
+		VALUES (?, ?)`,
+		msg.CaseID, msg.PersonID)
 	if err != nil {
 		tx.Rollback()
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 
-	// Mark the conversation as unread for all participants except the one that just posted
-	_, err = tx.Exec(`UPDATE patient_case_message_participant SET unread = true WHERE person_id != ?`, msg.PersonID)
-	if err != nil {
-		tx.Rollback()
-		return 0, err
-	}
-
-	return msg.ID, tx.Commit()
+	return msg.ID, errors.Trace(tx.Commit())
 }
 
 func (d *DataService) CaseMessageParticipants(caseID int64, withRoleObjects bool) (map[int64]*common.CaseMessageParticipant, error) {
 	rows, err := d.db.Query(`
-		SELECT person_id, unread, last_read_tstamp, role_type_tag, role_id
+		SELECT person_id, role_type_tag, role_id
 		FROM patient_case_message_participant
 		INNER JOIN person ON person.id = person_id
 		INNER JOIN role_type ON role_type.id = role_type_id
 		WHERE patient_case_id = ?`, caseID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	defer rows.Close()
 
@@ -260,13 +291,13 @@ func (d *DataService) CaseMessageParticipants(caseID int64, withRoleObjects bool
 			CaseID: caseID,
 			Person: &common.Person{},
 		}
-		if err := rows.Scan(&p.Person.ID, &p.Unread, &p.LastRead, &p.Person.RoleType, &p.Person.RoleID); err != nil {
-			return nil, err
+		if err := rows.Scan(&p.Person.ID, &p.Person.RoleType, &p.Person.RoleID); err != nil {
+			return nil, errors.Trace(err)
 		}
 		participants[p.Person.ID] = p
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	if withRoleObjects {
@@ -279,20 +310,12 @@ func (d *DataService) CaseMessageParticipants(caseID int64, withRoleObjects bool
 				p.Person.Doctor, err = d.GetDoctorFromID(p.Person.RoleID)
 			}
 			if err != nil {
-				return nil, err
+				return nil, errors.Trace(err)
 			}
 		}
 	}
 
 	return participants, nil
-}
-
-func (d *DataService) MarkCaseMessagesAsRead(caseID, personID int64) error {
-	_, err := d.db.Exec(`
-		REPLACE INTO patient_case_message_participant (patient_case_id, person_id, unread, last_read_tstamp)
-		VALUES (?, ?, ?, ?)`,
-		caseID, personID, false, time.Now())
-	return err
 }
 
 func (d *DataService) populateDoctorOrPatientForPeople(people map[int64]*common.Person) error {
@@ -305,7 +328,7 @@ func (d *DataService) populateDoctorOrPatientForPeople(people map[int64]*common.
 			p.Doctor, err = d.GetDoctorFromID(p.RoleID)
 		}
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 	}
 	return nil

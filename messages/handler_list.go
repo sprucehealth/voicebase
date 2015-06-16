@@ -1,9 +1,9 @@
 package messages
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
@@ -24,13 +24,19 @@ type Participant struct {
 }
 
 type Message struct {
-	ID          int64         `json:"message_id,string"`
-	Type        string        `json:"type"`
-	Time        time.Time     `json:"date_time"`
-	SenderID    int64         `json:"sender_participant_id,string"`
-	Message     string        `json:"message"`
-	Attachments []*Attachment `json:"attachments,omitempty"`
-	StatusText  string        `json:"status_text,omitempty"`
+	ID           int64          `json:"message_id,string"`
+	Type         string         `json:"type"`
+	Time         time.Time      `json:"date_time"`
+	SenderID     int64          `json:"sender_participant_id,string"`
+	Message      string         `json:"message"`
+	Attachments  []*Attachment  `json:"attachments,omitempty"`
+	StatusText   string         `json:"status_text,omitempty"`
+	ReadReceipts []*ReadReceipt `json:"read_receipts,omitempty"`
+}
+
+type ReadReceipt struct {
+	ParticipantID int64 `json:"participant_id,string"`
+	Timestamp     int64 `json:"timestamp"`
 }
 
 type ListResponse struct {
@@ -76,10 +82,11 @@ func (h *listHandler) IsAuthorized(r *http.Request) (bool, error) {
 	}
 	ctxt.RequestCache[apiservice.PatientCase] = cas
 
-	_, _, err = validateAccess(h.dataAPI, r, cas)
+	personID, _, err := validateAccess(h.dataAPI, r, cas)
 	if err != nil {
 		return false, err
 	}
+	ctxt.RequestCache[apiservice.PersonID] = personID
 
 	return true, nil
 }
@@ -88,7 +95,14 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxt := apiservice.GetContext(r)
 	cas := ctxt.RequestCache[apiservice.PatientCase].(*common.PatientCase)
 
-	msgs, err := h.dataAPI.ListCaseMessages(cas.ID.Int64(), ctxt.Role)
+	var lcmOpts api.ListCaseMessagesOption
+	switch ctxt.Role {
+	case api.RoleDoctor:
+		lcmOpts |= api.LCMOIncludePrivate
+	case api.RoleCC:
+		lcmOpts |= api.LCMOIncludePrivate | api.LCMOIncludeReadReceipts
+	}
+	msgs, err := h.dataAPI.ListCaseMessages(cas.ID.Int64(), lcmOpts)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -99,21 +113,62 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := &ListResponse{}
-	for _, msg := range msgs {
+	if ctxt.Role == api.RoleCC {
+		// Look up any people in the read receipts that we don't already have as a participant.
+		var peopleIDs []int64
+		for _, m := range msgs {
+			for _, rr := range m.ReadReceipts {
+				if _, ok := participants[rr.PersonID]; !ok {
+					peopleIDs = append(peopleIDs, rr.PersonID)
+				}
+			}
+		}
+		if len(peopleIDs) != 0 {
+			rrPeople, err := h.dataAPI.GetPeople(peopleIDs)
+			if err != nil {
+				apiservice.WriteError(err, w, r)
+				return
+			}
+			if participants == nil {
+				participants = make(map[int64]*common.CaseMessageParticipant, len(rrPeople))
+			}
+			for _, p := range rrPeople {
+				participants[p.ID] = &common.CaseMessageParticipant{
+					CaseID: cas.ID.Int64(),
+					Person: p,
+				}
+			}
+		}
+	}
 
+	res := &ListResponse{
+		Items: make([]*Message, 0, len(msgs)),
+	}
+	msgIDs := make([]int64, 0, len(msgs))
+	for _, msg := range msgs {
 		msgType := "conversation_item:message"
 		if msg.IsPrivate {
 			msgType = "conversation_item:private_message"
 		}
 
 		m := &Message{
-			ID:         msg.ID,
-			Type:       msgType,
-			Time:       msg.Time,
-			SenderID:   msg.PersonID,
-			Message:    msg.Body,
-			StatusText: msg.EventText,
+			ID:          msg.ID,
+			Type:        msgType,
+			Time:        msg.Time,
+			SenderID:    msg.PersonID,
+			Message:     msg.Body,
+			StatusText:  msg.EventText,
+			Attachments: make([]*Attachment, 0, len(msg.Attachments)),
+		}
+
+		if len(msg.ReadReceipts) != 0 {
+			m.ReadReceipts = make([]*ReadReceipt, len(msg.ReadReceipts))
+			for i, rr := range msg.ReadReceipts {
+				m.ReadReceipts[i] = &ReadReceipt{
+					ParticipantID: rr.PersonID,
+					Timestamp:     rr.Time.Unix(),
+				}
+			}
 		}
 
 		for _, att := range msg.Attachments {
@@ -134,6 +189,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
 				if ok, err := h.dataAPI.MediaHasClaim(att.ItemID, common.ClaimerTypeConversationMessage, msg.ID); err != nil {
 					apiservice.WriteError(err, w, r)
+					return
 				} else if !ok {
 					// This should never happen but best to make sure
 					golog.Errorf("Message %d attachment %d references media %d which it does not own", msg.ID, att.ID, att.ItemID)
@@ -146,12 +202,15 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					apiservice.WriteError(err, w, r)
 					return
 				}
+			default:
+				golog.Errorf("Unknown attachment type %s for message %d", att.ItemType, msg.ID)
 			}
 
 			m.Attachments = append(m.Attachments, a)
 		}
 
 		res.Items = append(res.Items, m)
+		msgIDs = append(msgIDs, m.ID)
 	}
 	for _, par := range participants {
 		p := &Participant{
@@ -159,25 +218,21 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		switch par.Person.RoleType {
 		case api.RolePatient:
-			p.Name = fmt.Sprintf("%s %s", par.Person.Patient.FirstName, par.Person.Patient.LastName)
-			if len(par.Person.Patient.FirstName) > 0 {
-				p.Initials += par.Person.Patient.FirstName[:1]
-			}
-			if len(par.Person.Patient.LastName) > 0 {
-				p.Initials += par.Person.Patient.LastName[:1]
-			}
+			p.Name = fullName(par.Person.Patient.FirstName, par.Person.Patient.LastName)
+			p.Initials = initials(par.Person.Patient.FirstName, par.Person.Patient.LastName)
 		case api.RoleDoctor, api.RoleCC:
 			p.Name = par.Person.Doctor.LongDisplayName
-			if len(par.Person.Doctor.FirstName) > 0 {
-				p.Initials += par.Person.Doctor.FirstName[:1]
-			}
-			if len(par.Person.Doctor.LastName) > 0 {
-				p.Initials += par.Person.Doctor.LastName[:1]
-			}
+			p.Initials = initials(par.Person.Doctor.FirstName, par.Person.Doctor.LastName)
 			p.ThumbnailURL = app_url.ThumbnailURL(h.apiDomain, par.Person.RoleType, par.Person.Doctor.ID.Int64())
 			p.Subtitle = par.Person.Doctor.ShortTitle
 		}
 		res.Participants = append(res.Participants, p)
+	}
+
+	// Update read statuses if necessary
+	personID := ctxt.RequestCache[apiservice.PersonID].(int64)
+	if err := h.dataAPI.CaseMessagesRead(msgIDs, personID); err != nil {
+		golog.Errorf("Failed to update case message read statuses: %s", err)
 	}
 
 	httputil.JSONResponse(w, http.StatusOK, res)
@@ -193,4 +248,19 @@ func AttachmentTitle(typ string) string {
 		return "View Visit"
 	}
 	return ""
+}
+
+func initials(firstName, lastName string) string {
+	var ins string
+	if firstName != "" {
+		ins = firstName[:1]
+	}
+	if lastName != "" {
+		ins += lastName[:1]
+	}
+	return strings.ToUpper(ins)
+}
+
+func fullName(firstName, lastName string) string {
+	return strings.TrimSpace(firstName + " " + lastName)
 }

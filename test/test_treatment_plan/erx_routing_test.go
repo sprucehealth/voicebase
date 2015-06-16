@@ -105,7 +105,7 @@ func TestERXRouting_RXStarted(t *testing.T) {
 	test.Equals(t, common.TPStatusActive, treatmentPlan.Status)
 
 	// there should also be a case message for the patient
-	caseMessages, err := testData.DataAPI.ListCaseMessages(treatmentPlan.PatientCaseID.Int64(), api.RolePatient)
+	caseMessages, err := testData.DataAPI.ListCaseMessages(treatmentPlan.PatientCaseID.Int64(), 0)
 	test.OK(t, err)
 	test.Equals(t, 1, len(caseMessages))
 }
@@ -201,7 +201,7 @@ func TestERXRouting_RXSent(t *testing.T) {
 	test.Equals(t, true, treatmentPlan.SentDate != nil)
 
 	// there should also be a case message for the patient
-	caseMessages, err := testData.DataAPI.ListCaseMessages(treatmentPlan.PatientCaseID.Int64(), api.RolePatient)
+	caseMessages, err := testData.DataAPI.ListCaseMessages(treatmentPlan.PatientCaseID.Int64(), 0)
 	test.OK(t, err)
 	test.Equals(t, 1, len(caseMessages))
 }
@@ -307,7 +307,7 @@ func TestERxRouting_CaseMessageExistsAlready(t *testing.T) {
 	test.Equals(t, common.TPStatusActive, treatmentPlan.Status)
 
 	// there should also be just a single case message for the patient
-	caseMessages, err := testData.DataAPI.ListCaseMessages(treatmentPlan.PatientCaseID.Int64(), api.RolePatient)
+	caseMessages, err := testData.DataAPI.ListCaseMessages(treatmentPlan.PatientCaseID.Int64(), 0)
 	test.OK(t, err)
 	test.Equals(t, 1, len(caseMessages))
 }

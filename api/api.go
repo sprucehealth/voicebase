@@ -617,13 +617,29 @@ type PeopleAPI interface {
 	GetPersonIDByRole(roleType string, roleID int64) (int64, error)
 }
 
+// ListCaseMessagesOption is the type for options passed to the ListCaseMessages function
+type ListCaseMessagesOption int
+
+const (
+	// LCMOIncludePrivate returns private messages (between doctor and cc)
+	LCMOIncludePrivate = 1 << iota
+	// LCMOIncludeReadReceipts returns read receipts with the messages
+	LCMOIncludeReadReceipts
+)
+
+func (o ListCaseMessagesOption) has(opt ListCaseMessagesOption) bool {
+	return (o & opt) != 0
+}
+
 type CaseMessageAPI interface {
-	CreateCaseMessage(msg *common.CaseMessage) (int64, error)
-	ListCaseMessages(caseID int64, role string) ([]*common.CaseMessage, error)
-	CaseMessageParticipants(caseID int64, withRoleObjects bool) (map[int64]*common.CaseMessageParticipant, error)
-	MarkCaseMessagesAsRead(caseID, personID int64) error
-	GetCaseIDFromMessageID(messageID int64) (int64, error)
 	CaseMessageForAttachment(itemType string, itemID, senderPersonID, patientCaseID int64) (*common.CaseMessage, error)
+	CaseMessageParticipants(caseID int64, withRoleObjects bool) (map[int64]*common.CaseMessageParticipant, error)
+	// CaseMessagesRead records that a person read each message. If they have previously
+	// read a message then the old timestamp is maintained (earliest read timestamp is used).
+	CaseMessagesRead(messageIDs []int64, personID int64) error
+	CreateCaseMessage(msg *common.CaseMessage) (int64, error)
+	GetCaseIDFromMessageID(messageID int64) (int64, error)
+	ListCaseMessages(caseID int64, opts ListCaseMessagesOption) ([]*common.CaseMessage, error)
 }
 
 type NotificationAPI interface {

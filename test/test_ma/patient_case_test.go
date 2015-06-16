@@ -1,14 +1,10 @@
 package test_ma
 
 import (
-	"encoding/json"
-	"net/http"
-	"strconv"
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/test"
@@ -235,6 +231,8 @@ func TestMA_PrivateMessages(t *testing.T) {
 	test.OK(t, err)
 
 	maCli := test_integration.DoctorClient(testData, t, ma.ID.Int64())
+	doctorCli := test_integration.DoctorClient(testData, t, doctor.ID.Int64())
+	patientCli := test_integration.PatientClient(testData, t, patient.ID.Int64())
 
 	expectedMessage := "m1"
 	req := &messages.PostMessageRequest{
@@ -245,21 +243,21 @@ func TestMA_PrivateMessages(t *testing.T) {
 	test_integration.AssignCaseMessage(t, testData, doctor.AccountID.Int64(), req)
 
 	// Doctor should be able to retreive the assigned message in the thread
-	listResponse := getCaseMessages(t, testData, doctor.AccountID.Int64(), tp.PatientCaseID.Int64())
+	msgs, _, err := doctorCli.ListCaseMessages(tp.PatientCaseID.Int64())
 	test.OK(t, err)
-	test.Equals(t, 1, len(listResponse.Items))
-	test.Equals(t, expectedMessage, listResponse.Items[0].Message)
+	test.Equals(t, 1, len(msgs))
+	test.Equals(t, expectedMessage, msgs[0].Message)
 
 	// MA should be able to retreive the assigned message in the thread
-	listResponse = getCaseMessages(t, testData, ma.AccountID.Int64(), tp.PatientCaseID.Int64())
+	msgs, _, err = maCli.ListCaseMessages(tp.PatientCaseID.Int64())
 	test.OK(t, err)
-	test.Equals(t, 1, len(listResponse.Items))
-	test.Equals(t, expectedMessage, listResponse.Items[0].Message)
+	test.Equals(t, 1, len(msgs))
+	test.Equals(t, expectedMessage, msgs[0].Message)
 
 	// Patient should NOT be able to retrieve the message as it is considered private
-	listResponse = getCaseMessages(t, testData, patient.AccountID.Int64(), tp.PatientCaseID.Int64())
+	msgs, _, err = patientCli.ListCaseMessages(tp.PatientCaseID.Int64())
 	test.OK(t, err)
-	test.Equals(t, 0, len(listResponse.Items))
+	test.Equals(t, 0, len(msgs))
 
 	// MA should be able to message the patient
 	msg2 := "foo"
@@ -268,22 +266,22 @@ func TestMA_PrivateMessages(t *testing.T) {
 
 	// All three parties should be able to see this message
 	// Doctor should be able to retreive the assigned message in the thread
-	listResponse = getCaseMessages(t, testData, doctor.AccountID.Int64(), tp.PatientCaseID.Int64())
-	test.Equals(t, 2, len(listResponse.Items))
-	test.Equals(t, expectedMessage, listResponse.Items[0].Message)
-	test.Equals(t, msg2, listResponse.Items[1].Message)
+	msgs, _, err = doctorCli.ListCaseMessages(tp.PatientCaseID.Int64())
+	test.Equals(t, 2, len(msgs))
+	test.Equals(t, expectedMessage, msgs[0].Message)
+	test.Equals(t, msg2, msgs[1].Message)
 
 	// MA should be able to retreive the assigned message in the thread
-	listResponse = getCaseMessages(t, testData, ma.AccountID.Int64(), tp.PatientCaseID.Int64())
-	test.Equals(t, 2, len(listResponse.Items))
-	test.Equals(t, expectedMessage, listResponse.Items[0].Message)
-	test.Equals(t, msg2, listResponse.Items[1].Message)
+	msgs, _, err = maCli.ListCaseMessages(tp.PatientCaseID.Int64())
+	test.Equals(t, 2, len(msgs))
+	test.Equals(t, expectedMessage, msgs[0].Message)
+	test.Equals(t, msg2, msgs[1].Message)
 
 	// Patient should be able  to see hte message from the MA
-	listResponse = getCaseMessages(t, testData, patient.AccountID.Int64(), tp.PatientCaseID.Int64())
+	msgs, _, err = patientCli.ListCaseMessages(tp.PatientCaseID.Int64())
 	test.OK(t, err)
-	test.Equals(t, 1, len(listResponse.Items))
-	test.Equals(t, msg2, listResponse.Items[0].Message)
+	test.Equals(t, 1, len(msgs))
+	test.Equals(t, msg2, msgs[0].Message)
 }
 
 // This test is to ensure that the case is assigned to the MA
@@ -352,17 +350,4 @@ func TestMA_AssignOnMarkingCaseAsUnsuitable_PublicMessage(t *testing.T) {
 	pendingItems, err = testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 0, len(pendingItems))
-}
-
-func getCaseMessages(t *testing.T, testData *test_integration.TestData, accountID, caseID int64) *messages.ListResponse {
-	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.CaseMessagesListURLPath+"?case_id="+strconv.FormatInt(caseID, 10), accountID)
-	test.OK(t, err)
-	defer res.Body.Close()
-	test.Equals(t, http.StatusOK, res.StatusCode)
-
-	lResponse := &messages.ListResponse{}
-	err = json.NewDecoder(res.Body).Decode(lResponse)
-	test.OK(t, err)
-
-	return lResponse
 }
