@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 	"text/template"
 	"time"
 
@@ -37,7 +38,9 @@ I’m writing to let you know that Dr. Gordon-Spratt is no longer practicing on 
 Dr. McLellan is an Assistant Professor at the Albert Einstein College of Medicine (Division of Dermatology) and also maintains an in-person practice in the Bronx. She has a reputation for providing excellent care for Spruce patients, and I’m sure you’ll enjoy working with her.
 
 Please let me know if you have any questions!
-Warmly, {{.CCName}}`
+
+Warmly,
+Holly`
 
 type context struct {
 	PatientFirstName string
@@ -106,7 +109,7 @@ func main() {
 			golog.Fatalf(err.Error())
 		}
 
-		caseID, err := strconv.ParseInt(row[0], 10, 64)
+		caseID, err := strconv.ParseInt(strings.TrimSpace(row[0]), 10, 64)
 		if err != nil {
 			golog.Fatalf(err.Error())
 		}
