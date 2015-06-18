@@ -54,7 +54,6 @@ type registerForm struct {
 	// Engagement
 	HoursPerWeek string
 	TimesActive  string
-	JacketSize   string
 	Excitement   string
 	// Legal
 	EBusinessAgree bool
@@ -189,7 +188,6 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				attributes := map[string]string{
 					api.AttrHoursUsingSprucePerWeek: form.HoursPerWeek,
 					api.AttrTimesActiveOnSpruce:     form.TimesActive,
-					api.AttrJacketSize:              form.JacketSize,
 					api.AttrExcitedAboutSpruce:      form.Excitement,
 					api.AttrEBusinessAgreement:      "true",
 				}

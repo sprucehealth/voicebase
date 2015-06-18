@@ -107,14 +107,6 @@ $(function() {
 			<input type="text" name="TimesActive" value="{{.Form.TimesActive}}" class="form-control">
 		</div>
 
-		<div class="form-group {{if .FormErrors.JacketSize}}has-error has-feedback{{end}}">
-			<label class="control-label" for="JacketSize">
-				Jacket size<br>
-				<span class="subtext">(S / M / L)</span>
-			</label>
-			<input type="text" name="JacketSize" value="{{.Form.JacketSize}}" class="form-control">
-		</div>
-
 		<div class="form-group {{if .FormErrors.Excitement}}has-error has-feedback{{end}}">
 			<label class="control-label" for="Excitement">
 				Why are you excited to be on Spruce?<br>
