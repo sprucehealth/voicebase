@@ -143,7 +143,7 @@ var AddPromotionModal = React.createClass({displayName: "AddPromotionModal",
 	onValueChange: function(e): any {
 		e.preventDefault();
 		var state = {
-			value: e.target.value,
+			val: e.target.value,
 			error: null,
 		};
 		if(!Utils.isInteger(e.target.value) && e.target.value != "") {
