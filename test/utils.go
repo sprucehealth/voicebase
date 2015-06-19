@@ -6,31 +6,26 @@ import (
 	"reflect"
 	"runtime"
 	"testing"
-
-	"github.com/sprucehealth/backend/libs/golog"
 )
 
 // Assert fails the test if the condition is false.
 func Assert(t testing.TB, condition bool, msg string, v ...interface{}) {
 	if !condition {
-		golog.LogDepthf(1, golog.ERR, msg+"\n\n", v...)
-		t.FailNow()
+		t.Fatalf("["+CallerString(1)+"] "+msg, v...)
 	}
 }
 
 // OK fails the test if an err is not nil.
 func OK(t testing.TB, err error) {
 	if err != nil {
-		golog.LogDepthf(1, golog.ERR, "unexpected error: %s\n\n", err.Error())
-		t.FailNow()
+		t.Fatalf("unexpected error [%s]: %s", CallerString(1), err.Error())
 	}
 }
 
 // Equals fails the test if exp is not equal to act.
 func Equals(t testing.TB, exp, act interface{}) {
 	if !reflect.DeepEqual(exp, act) {
-		golog.LogDepthf(1, golog.ERR, "\n\n\texp: %#v\n\n\tgot: %#v\n\n", exp, act)
-		t.FailNow()
+		t.Fatalf("["+CallerString(1)+"]\nexp: %T\n\t%#v\ngot: %T\n\t%#v", exp, exp, act, act)
 	}
 }
 
