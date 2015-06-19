@@ -50,39 +50,6 @@ func (g *giveReferralProgram) SetOwnerAccountID(accountID int64) {
 	g.OwnerAccountID = accountID
 }
 
-func (g *giveReferralProgram) ReferredAccountAssociatedCode(accountID, codeID int64, dataAPI api.DataAPI) error {
-	//  update the associated count for the original promotion and update the database
-	g.AssociatedCount += 1
-	if err := dataAPI.UpdateReferralProgram(g.referralProgramParams.OwnerAccountID, codeID, g); err != nil {
-		return err
-	}
-
-	if err := dataAPI.TrackAccountReferral(&common.ReferralTrackingEntry{
-		CodeID:             codeID,
-		ClaimingAccountID:  accountID,
-		ReferringAccountID: g.referralProgramParams.OwnerAccountID,
-		Status:             common.RTSPending,
-	}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (g *giveReferralProgram) ReferredAccountSubmittedVisit(accountID, codeID int64, dataAPI api.DataAPI) error {
-
-	g.SubmittedCount += 1
-	if err := dataAPI.UpdateReferralProgram(g.referralProgramParams.OwnerAccountID, codeID, g); err != nil {
-		return err
-	}
-
-	if err := dataAPI.UpdateAccountReferral(accountID, common.RTSCompleted); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (g *giveReferralProgram) UsersAssociatedCount() int {
 	return g.AssociatedCount
 }
@@ -128,6 +95,37 @@ func (g *giveMoneyOffReferralProgram) TypeName() string {
 	return giveReferralMoneyOffType
 }
 
+func (g *giveMoneyOffReferralProgram) ReferredAccountAssociatedCode(accountID, codeID int64, dataAPI api.DataAPI) error {
+	g.AssociatedCount += 1
+	if err := dataAPI.UpdateReferralProgram(g.referralProgramParams.OwnerAccountID, codeID, g); err != nil {
+		return err
+	}
+
+	if err := dataAPI.TrackAccountReferral(&common.ReferralTrackingEntry{
+		CodeID:             codeID,
+		ClaimingAccountID:  accountID,
+		ReferringAccountID: g.referralProgramParams.OwnerAccountID,
+		Status:             common.RTSPending,
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (g *giveMoneyOffReferralProgram) ReferredAccountSubmittedVisit(accountID, codeID int64, dataAPI api.DataAPI) error {
+	g.SubmittedCount += 1
+	if err := dataAPI.UpdateReferralProgram(g.referralProgramParams.OwnerAccountID, codeID, g); err != nil {
+		return err
+	}
+
+	if err := dataAPI.UpdateAccountReferral(accountID, common.RTSCompleted); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type givePercentOffReferralProgram struct {
 	giveReferralProgram
 	Promotion *percentDiscountPromotion `json:"promotion"`
@@ -163,6 +161,37 @@ func (g *givePercentOffReferralProgram) Validate() error {
 
 func (g *givePercentOffReferralProgram) TypeName() string {
 	return giveReferralPercentOffType
+}
+
+func (g *givePercentOffReferralProgram) ReferredAccountAssociatedCode(accountID, codeID int64, dataAPI api.DataAPI) error {
+	g.AssociatedCount += 1
+	if err := dataAPI.UpdateReferralProgram(g.referralProgramParams.OwnerAccountID, codeID, g); err != nil {
+		return err
+	}
+
+	if err := dataAPI.TrackAccountReferral(&common.ReferralTrackingEntry{
+		CodeID:             codeID,
+		ClaimingAccountID:  accountID,
+		ReferringAccountID: g.referralProgramParams.OwnerAccountID,
+		Status:             common.RTSPending,
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (g *givePercentOffReferralProgram) ReferredAccountSubmittedVisit(accountID, codeID int64, dataAPI api.DataAPI) error {
+	g.SubmittedCount += 1
+	if err := dataAPI.UpdateReferralProgram(g.referralProgramParams.OwnerAccountID, codeID, g); err != nil {
+		return err
+	}
+
+	if err := dataAPI.UpdateAccountReferral(accountID, common.RTSCompleted); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func NewGiveReferralProgram(title, description, group string, homeCard *HomeCardConfig, promotion Promotion, shareTextParams *ShareTextParams) (ReferralProgram, error) {
