@@ -58,7 +58,7 @@ func TransformDoctor(doctor *common.Doctor, apiDomain string) *Doctor {
 		LargeThumbnailURL: app_url.ThumbnailURL(apiDomain, role, doctor.ID.Int64()),
 		SmallThumbnailURL: app_url.ThumbnailURL(apiDomain, role, doctor.ID.Int64()),
 		ThumbnailURL:      app_url.ThumbnailURL(apiDomain, role, doctor.ID.Int64()),
-		Address:           doctor.DoctorAddress,
+		Address:           doctor.Address,
 		PersonID:          doctor.PersonID,
 		PromptStatus:      doctor.PromptStatus.String(),
 		NPI:               doctor.NPI,

@@ -39,13 +39,13 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 	}
 
 	doctor.ID = encoding.NewObjectID(lastID)
-	doctor.DoctorAddress.ID, err = addAddress(tx, doctor.DoctorAddress)
+	doctor.Address.ID, err = addAddress(tx, doctor.Address)
 	if err != nil {
 		tx.Rollback()
 		return 0, errors.Trace(err)
 	}
 
-	_, err = tx.Exec(`insert into doctor_address_selection (doctor_id, address_id) values (?,?)`, lastID, doctor.DoctorAddress.ID)
+	_, err = tx.Exec(`insert into doctor_address_selection (doctor_id, address_id) values (?,?)`, lastID, doctor.Address.ID)
 	if err != nil {
 		tx.Rollback()
 		return 0, errors.Trace(err)
@@ -278,7 +278,7 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 		Email:               email,
 		CellPhone:           cellPhoneNumber,
 		DoseSpotClinicianID: clinicianID.Int64,
-		DoctorAddress: &common.Address{
+		Address: &common.Address{
 			AddressLine1: addressLine1.String,
 			AddressLine2: addressLine2.String,
 			City:         city.String,

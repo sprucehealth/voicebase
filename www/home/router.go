@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/branch"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/www"
@@ -32,7 +33,32 @@ func SetupRoutes(
 	experimentIDs map[string]string,
 	metricsRegistry metrics.Registry,
 ) {
-	templateLoader.MustLoadTemplate("home/base.html", "base.html", nil)
+	templateLoader.MustLoadTemplate("home/base.html", "base.html", map[string]interface{}{
+		"availableStates": func() string {
+			// TODO: should cache this as it's mostly static
+			states, err := dataAPI.AvailableStates()
+			if err != nil {
+				golog.Errorf("Failed to get list of available states: %s", err)
+				// Seems like the safest fallback and doesn't seem useful to error the
+				// entire page just because the list of states failed to fetch.
+				return "CA, FL, NY, PA, and more"
+			}
+			// Special cases to simplify multi-state logic
+			switch len(states) {
+			case 0:
+				return ""
+			case 1:
+				return states[0].Abbreviation
+			case 2:
+				return states[0].Abbreviation + " and " + states[1].Abbreviation
+			}
+			out := make([]string, len(states)-1)
+			for i, s := range states[:len(states)-1] {
+				out[i] = s.Abbreviation
+			}
+			return strings.Join(out, ", ") + ", and " + states[len(states)-1].Abbreviation
+		},
+	})
 
 	var protect func(http.Handler) http.Handler
 	if password != "" {

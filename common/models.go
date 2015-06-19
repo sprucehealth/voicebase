@@ -129,7 +129,7 @@ type Doctor struct {
 	PromptStatus     PushPromptStatus  `json:"prompt_status"`
 	// Doctor specific
 	DoseSpotClinicianID int64    `json:"-"`
-	DoctorAddress       *Address `json:"address,omitempty"`
+	Address             *Address `json:"address,omitempty"`
 	NPI                 string   `json:"npi,omitempty"`
 	DEA                 string   `json:"dea,omitempty"`
 	// Care coordinator specific
@@ -138,7 +138,6 @@ type Doctor struct {
 }
 
 type State struct {
-	ID           int64
 	Name         string
 	Abbreviation string
 	Country      string

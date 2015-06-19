@@ -121,7 +121,7 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		MiddleName:          requestData.MiddleName,
 		DOB:                 encoding.Date{Year: year, Month: month, Day: day},
 		DoseSpotClinicianID: requestData.ClinicianID,
-		DoctorAddress: &common.Address{
+		Address: &common.Address{
 			AddressLine1: requestData.AddressLine1,
 			AddressLine2: requestData.AddressLine2,
 			City:         requestData.City,

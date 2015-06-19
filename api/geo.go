@@ -20,7 +20,7 @@ func (d *DataService) State(state string) (full string, short string, err error)
 }
 
 func (d *DataService) ListStates() ([]*common.State, error) {
-	rows, err := d.db.Query(`SELECT id, full_name, abbreviation, country FROM state ORDER BY full_name`)
+	rows, err := d.db.Query(`SELECT full_name, abbreviation, country FROM state ORDER BY full_name`)
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +28,7 @@ func (d *DataService) ListStates() ([]*common.State, error) {
 	var states []*common.State
 	for rows.Next() {
 		state := &common.State{}
-		if err := rows.Scan(&state.ID, &state.Name, &state.Abbreviation, &state.Country); err != nil {
+		if err := rows.Scan(&state.Name, &state.Abbreviation, &state.Country); err != nil {
 			return nil, err
 		}
 		states = append(states, state)
