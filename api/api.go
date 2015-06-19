@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/patient_case/model"
 	"github.com/sprucehealth/backend/pharmacy"
 )
 
@@ -171,6 +172,11 @@ type PatientCaseAPI interface {
 	InsertCaseNotification(caseNotificationItem *common.CaseNotification) error
 	DeleteCaseNotification(uid string, patientCaseID int64) error
 	UpdatePatientCase(id int64, update *PatientCaseUpdate) error
+	InsertPatientCaseNote(n *model.PatientCaseNote) (int64, error)
+	UpdatePatientCaseNote(nu *model.PatientCaseNoteUpdate) (int64, error)
+	PatientCaseNote(id int64) (*model.PatientCaseNote, error)
+	PatientCaseNotes(caseIDs []int64) (map[int64][]*model.PatientCaseNote, error)
+	DeletePatientCaseNote(id int64) (int64, error)
 }
 
 type DoctorNotify struct {

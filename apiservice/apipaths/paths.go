@@ -9,6 +9,7 @@ const (
 	CareProviderProfileURLPath           = "/v1/care_provider_profile"
 	CaseMessagesListURLPath              = "/v1/case/messages/list"
 	CaseMessagesURLPath                  = "/v1/case/messages"
+	CaseNotesURLPath                     = "/v1/case/notes"
 	NotifyMeURLPath                      = "/v1/notifyme"
 	CheckEligibilityURLPath              = "/v1/check_eligibility"
 	CareProviderSelectionURLPath         = "/v1/care_provider_selection"
