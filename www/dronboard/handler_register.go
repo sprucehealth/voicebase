@@ -176,7 +176,7 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					LongDisplayName:  fmt.Sprintf("Dr. %s %s", form.FirstName, form.LastName),
 					DOB:              form.dob,
 					Gender:           form.Gender,
-					DoctorAddress:    address,
+					Address:          address,
 				}
 
 				doctorID, err := h.dataAPI.RegisterDoctor(doctor)

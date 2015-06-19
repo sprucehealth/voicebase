@@ -417,6 +417,8 @@ type CareProviderStatePathwayMappingSummary struct {
 }
 
 type DoctorManagementAPI interface {
+	// AvailableStates returns a list of states with elligible doctors
+	AvailableStates() ([]*common.State, error)
 	SpruceAvailableInState(state string) (bool, error)
 	GetCareProvidingStateID(stateAbbreviation, pathwayTag string) (int64, error)
 	AddCareProvidingState(stateAbbreviation, fullStateName, pathwayTag string) (int64, error)

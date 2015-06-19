@@ -2,11 +2,39 @@ package api
 
 import (
 	"database/sql"
+	"sort"
 	"strings"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
+
+type statesByAbbr []*common.State
+
+func (s statesByAbbr) Len() int           { return len(s) }
+func (s statesByAbbr) Less(a, b int) bool { return s[a].Abbreviation < s[b].Abbreviation }
+func (s statesByAbbr) Swap(a, b int)      { s[a], s[b] = s[b], s[a] }
+
+func (d *DataService) AvailableStates() ([]*common.State, error) {
+	rows, err := d.db.Query(`
+		SELECT DISTINCT state, long_state
+		FROM care_provider_state_elligibility cpse
+		INNER JOIN care_providing_state cps ON cps.id = cpse.care_providing_state_id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var states []*common.State
+	for rows.Next() {
+		s := &common.State{}
+		if err := rows.Scan(&s.Abbreviation, &s.Name); err != nil {
+			return nil, err
+		}
+		states = append(states, s)
+	}
+	sort.Sort(statesByAbbr(states))
+	return states, rows.Err()
+}
 
 // SpruceAvailableInState checks to see if atleast one doctor is registered in the state
 // to see patient for any condition.

@@ -15,7 +15,7 @@ func TestDoctorQueue(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 
-	accountID, err := testData.AuthAPI.CreateAccount("test@spruceleaht.com", "abc", api.RolePatient)
+	accountID, err := testData.AuthAPI.CreateAccount("test@sprucehealth.com", "abc", api.RolePatient)
 	test.OK(t, err)
 
 	patient := &common.Patient{
