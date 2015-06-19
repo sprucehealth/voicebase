@@ -25,7 +25,11 @@ type homeContext struct {
 	SubContext   interface{}
 }
 
-func newStaticHandler(router *mux.Router, templateLoader *www.TemplateLoader, tmpl, title string, ctx interface{}) http.Handler {
+func newStaticHandler(router *mux.Router, templateLoader *www.TemplateLoader, tmpl, title string, ctxFun func() interface{}) http.Handler {
+	var ctx interface{}
+	if ctxFun != nil {
+		ctx = ctxFun()
+	}
 	return httputil.SupportedMethods(&staticHandler{
 		router: router,
 		title:  title,
