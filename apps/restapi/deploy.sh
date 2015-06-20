@@ -2,7 +2,7 @@
 
 DATE=$(date +%Y%m%d%H%M)
 DEV_HOSTS="54.209.3.156"
-PROD_HOSTS="10.0.43.89 10.0.89.31 10.0.137.59 10.0.42.192"
+PROD_HOSTS="prod-restapi-1.node.prod-us-east-1.spruce prod-restapi-2.node.prod-us-east-1.spruce"
 STAGING_HOSTS="10.1.5.105 10.1.22.127"
 DEMO_HOSTS="54.210.97.69"
 DEPLOY_ENV="$1"
@@ -121,5 +121,3 @@ if [ "$SLACK_NOTIFY_WEBHOOK" != "" ]; then
 		      }
 		   ]}" "$SLACK_NOTIFY_WEBHOOK"
 fi
-
-
