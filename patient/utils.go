@@ -199,6 +199,7 @@ func populateAnswers(question *info_intake.Question, answers []common.Answer) ([
 				AnswerText:       a.AnswerText,
 				PotentialAnswer:  a.PotentialAnswer,
 				AnswerSummary:    a.AnswerSummary,
+				Type:             a.Type,
 			}
 
 			// populate the potential answer id from the question versus the answer
