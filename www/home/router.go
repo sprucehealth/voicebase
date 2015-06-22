@@ -3,6 +3,7 @@ package home
 import (
 	"html/template"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
@@ -43,6 +44,7 @@ func SetupRoutes(
 				// entire page just because the list of states failed to fetch.
 				return "CA, FL, NY, PA, and more"
 			}
+			sort.Sort(statesByAbbr(states))
 			// Special cases to simplify multi-state logic
 			switch len(states) {
 			case 0:
@@ -181,6 +183,7 @@ func faq(dataAPI api.DataAPI) []*faqSection {
 		// entire page just because the list of states failed to fetch.
 		stateList = "California, Florida, New York, Pennsylvania, and more"
 	} else {
+		sort.Sort(statesByName(states))
 		// Special cases to simplify multi-state logic
 		switch len(states) {
 		case 0:
