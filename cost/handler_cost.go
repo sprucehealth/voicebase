@@ -26,6 +26,7 @@ type displayLineItem struct {
 type costResponse struct {
 	LineItems []*displayLineItem `json:"line_items"`
 	Total     *displayLineItem   `json:"total"`
+	IsFree    bool               `json:"is_free"`
 }
 
 func NewCostHandler(
@@ -76,6 +77,10 @@ func (c *costHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Currency:    lItem.Cost.Currency,
 		})
 	}
+
+	// indicate to the client whether or not cost is free so that
+	// client can leverage this information without having to parse the cost
+	response.IsFree = costBreakdown.TotalCost.Amount == 0
 
 	httputil.JSONResponse(w, http.StatusOK, response)
 }

@@ -386,3 +386,21 @@ func ViewChooseDoctorScreen() *SpruceAction {
 func NotifyMeAction() *SpruceAction {
 	return &SpruceAction{name: "notify_when_available"}
 }
+
+// ViewVisitScreen indicates to the client the screen within
+// the visit to navigate to.
+func ViewVisitScreen(screenID string) *SpruceAction {
+	params := url.Values{
+		"screen_id": []string{screenID},
+	}
+	return &SpruceAction{
+		name:   "view_visit_screen",
+		params: params,
+	}
+}
+
+// ViewVisitMessage indicates to the client to navigate
+// to the additional message screen from the visit overview.
+func ViewVisitMessage() *SpruceAction {
+	return &SpruceAction{name: "view_visit_message"}
+}
