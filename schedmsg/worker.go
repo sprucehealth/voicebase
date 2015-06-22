@@ -100,16 +100,18 @@ func (w *Worker) ConsumeMessage() (bool, error) {
 
 	w.statAge.Update(time.Since(scheduledMessage.Scheduled).Nanoseconds() / 1e9)
 
-	if err := w.processMessage(scheduledMessage); err == patient.ErrFollowupNotSupportedOnApp {
-		// Could this as a success since it's a handled error
-		w.statSucceeded.Inc(1)
-		golog.Errorf("Can't send scheduled message %d: %s", scheduledMessage.ID, err.Error())
-		if err := w.dataAPI.UpdateScheduledMessage(scheduledMessage.ID, common.SMError); err != nil {
-			golog.Errorf(err.Error())
+	if err := w.processMessage(scheduledMessage); err != nil {
+		switch err {
+		case patient.ErrInitialVisitNotTreated, patient.ErrFollowupNotSupportedOnApp, patient.ErrNoInitialVisitFound, patient.ErrOpenFollowupExists:
+			// Record this as a success since it's a handled error
+			w.statSucceeded.Inc(1)
+			golog.Errorf("Can't send scheduled message %d: %s", scheduledMessage.ID, err.Error())
+			if err := w.dataAPI.UpdateScheduledMessage(scheduledMessage.ID, common.SMError); err != nil {
+				golog.Errorf(err.Error())
+				return false, err
+			}
 			return false, err
 		}
-		return false, err
-	} else if err != nil {
 		w.statFailed.Inc(1)
 		golog.Errorf(err.Error())
 		// revert the status back to being in the scheduled state
@@ -199,7 +201,7 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 
 		_, ok := careTeams[pcase.ID.Int64()]
 		if !ok {
-			return fmt.Errorf("No care team found for patiend %d for case %d", tp.PatientID, tp.PatientCaseID.Int64())
+			return fmt.Errorf("No care team found for patient %d for case %d", tp.PatientID, tp.PatientCaseID.Int64())
 		}
 
 		var careCoordinator *common.Doctor
