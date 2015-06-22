@@ -466,6 +466,8 @@ type DoctorAPI interface {
 	AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorID int64) error
 	UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorID int64) error
 	MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorInstructionItem, doctorID int64) error
+	// GetPendingItemsInCCQueues returns all items in all CC inboxes.
+	GetPendingItemsInCCQueues() ([]*DoctorQueueItem, error)
 	GetPendingItemsInDoctorQueue(doctorID int64) (doctorQueue []*DoctorQueueItem, err error)
 	GetCompletedItemsInDoctorQueue(doctorID int64) (doctorQueue []*DoctorQueueItem, err error)
 	GetPendingItemsForClinic() ([]*DoctorQueueItem, error)

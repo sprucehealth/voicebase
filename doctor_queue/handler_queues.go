@@ -34,16 +34,30 @@ func NewInboxHandler(dataAPI api.DataAPI) http.Handler {
 }
 
 func (i *inboxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	doctorID, err := i.dataAPI.GetDoctorIDFromAccountID(apiservice.GetContext(r).AccountID)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
-	}
+	ctx := apiservice.GetContext(r)
 
-	queueItems, err := i.dataAPI.GetPendingItemsInDoctorQueue(doctorID)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
+	var queueItems []*api.DoctorQueueItem
+
+	if ctx.Role == api.RoleCC {
+		// Care coordinates see a unified inbox across all CC accounts
+		var err error
+		queueItems, err = i.dataAPI.GetPendingItemsInCCQueues()
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+	} else {
+		doctorID, err := i.dataAPI.GetDoctorIDFromAccountID(ctx.AccountID)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+
+		queueItems, err = i.dataAPI.GetPendingItemsInDoctorQueue(doctorID)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
 	}
 
 	transformQueueItems(i.dataAPI, queueItems, false, w, r)

@@ -668,13 +668,30 @@ func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(
 }
 
 func (d *DataService) GetPendingItemsInDoctorQueue(doctorID int64) ([]*DoctorQueueItem, error) {
-	params := []interface{}{doctorID}
-	params = dbutil.AppendStringsToInterfaceSlice(params, []string{StatusPending, StatusOngoing})
 	rows, err := d.db.Query(fmt.Sprintf(`
 		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url, tags
 		FROM doctor_queue
 		WHERE doctor_id = ? AND status IN (%s)
-		ORDER BY enqueue_date`, dbutil.MySQLArgs(2)), params...)
+		ORDER BY enqueue_date`, dbutil.MySQLArgs(2)), doctorID, StatusPending, StatusOngoing)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return populateDoctorQueueFromRows(rows)
+}
+
+func (d *DataService) GetPendingItemsInCCQueues() ([]*DoctorQueueItem, error) {
+	rows, err := d.db.Query(`
+		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id,
+			description, short_description, action_url, tags
+		FROM doctor_queue
+		WHERE doctor_id IN (
+			SELECT d.id
+			FROM doctor d
+			INNER JOIN account a ON a.id = d.account_id
+			WHERE a.role_type_id = ?
+		) AND status IN (?, ?)
+		ORDER BY enqueue_date`, d.roleTypeMapping[RoleCC], StatusPending, StatusOngoing)
 	if err != nil {
 		return nil, err
 	}
@@ -683,13 +700,11 @@ func (d *DataService) GetPendingItemsInDoctorQueue(doctorID int64) ([]*DoctorQue
 }
 
 func (d *DataService) GetCompletedItemsInDoctorQueue(doctorID int64) ([]*DoctorQueueItem, error) {
-	params := []interface{}{doctorID}
-	params = dbutil.AppendStringsToInterfaceSlice(params, []string{StatusPending, StatusOngoing})
 	rows, err := d.db.Query(fmt.Sprintf(`
 		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url, tags
 		FROM doctor_queue
 		WHERE doctor_id = ? AND status NOT IN (%s)
-		ORDER BY enqueue_date DESC`, dbutil.MySQLArgs(2)), params...)
+		ORDER BY enqueue_date DESC`, dbutil.MySQLArgs(2)), doctorID, StatusPending, StatusOngoing)
 	if err != nil {
 		return nil, err
 	}
