@@ -67,6 +67,12 @@ func SetupRoutes(
 		protect = func(h http.Handler) http.Handler { return h }
 	}
 
+	faqCtx := func() interface{} {
+		return &faqContext{
+			Sections: faq(dataAPI),
+		}
+	}
+
 	r.Handle("/", protect(newStaticHandler(r, templateLoader, "home/home.html", "Spruce", nil)))
 	r.Handle("/about", protect(newStaticHandler(r, templateLoader, "home/about.html", "About | Spruce", nil)))
 	r.Handle("/conditions-treated", protect(newStaticHandler(r, templateLoader, "home/conditions.html", "Conditions Treated | Spruce", nil)))
@@ -153,12 +159,12 @@ func (h *passwordProtectHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 }
 
 type faqContext struct {
-	Sections []faqSection
+	Sections []*faqSection
 }
 
 type faqSection struct {
 	Title     string
-	Questions []faqQuestion
+	Questions []*faqQuestion
 }
 
 type faqQuestion struct {
@@ -166,11 +172,36 @@ type faqQuestion struct {
 	Answer   template.HTML
 }
 
-var faqCtx = faqContext{
-	Sections: []faqSection{
+func faq(dataAPI api.DataAPI) []*faqSection {
+	var stateList string
+	states, err := dataAPI.AvailableStates()
+	if err != nil {
+		golog.Errorf("Failed to get list of available states: %s", err)
+		// Seems like the safest fallback and doesn't seem useful to error the
+		// entire page just because the list of states failed to fetch.
+		stateList = "California, Florida, New York, Pennsylvania, and more"
+	} else {
+		// Special cases to simplify multi-state logic
+		switch len(states) {
+		case 0:
+			stateList = ""
+		case 1:
+			stateList = states[0].Name
+		case 2:
+			stateList = states[0].Name + " and " + states[1].Name
+		default:
+			out := make([]string, len(states)-1)
+			for i, s := range states[:len(states)-1] {
+				out[i] = s.Name
+			}
+			stateList = strings.Join(out, ", ") + ", and " + states[len(states)-1].Name
+		}
+	}
+
+	return []*faqSection{
 		{
 			Title: "General",
-			Questions: []faqQuestion{
+			Questions: []*faqQuestion{
 				{
 					Question: "What is Spruce?",
 					Answer: `
@@ -196,7 +227,7 @@ var faqCtx = faqContext{
 				},
 				{
 					Question: "Where is Spruce available?",
-					Answer:   "<p>Patients living in California, Florida, New York, and Pennsylvania can access Spruce. If you’re located somewhere else, don’t worry &mdash; we’ll be there soon.</p>",
+					Answer:   template.HTML("<p>Patients living in " + stateList + " can access Spruce. If you’re located somewhere else, don’t worry &mdash; we’ll be there soon.</p>"),
 				},
 				{
 					Question: "Can people under 18 use Spruce?",
@@ -215,7 +246,7 @@ var faqCtx = faqContext{
 		},
 		{
 			Title: "Visits",
-			Questions: []faqQuestion{
+			Questions: []*faqQuestion{
 				{
 					Question: "How much does Spruce cost?",
 					Answer:   "<p>A Spruce visit costs $40. We accept major credit and debit cards, as well as HSA and FSA cards (as long as they are branded Visa or MasterCard).</p>",
@@ -259,7 +290,7 @@ var faqCtx = faqContext{
 		},
 		{
 			Title: "Prescriptions",
-			Questions: []faqQuestion{
+			Questions: []*faqQuestion{
 				{
 					Question: "Will I definitely get a prescription?",
 					Answer:   "<p>It’s not guaranteed, but the vast majority of treatment plans include a prescription. Your dermatologist will decide what’s needed to address your condition.</p>",
@@ -291,7 +322,7 @@ var faqCtx = faqContext{
 		},
 		{
 			Title: "Insurance",
-			Questions: []faqQuestion{
+			Questions: []*faqQuestion{
 				{
 					Question: "Does Spruce work with my insurance?",
 					Answer:   "<p>Your insurance cannot be used to pay for the visit but &mdash; just like an in-person doctor’s visit &mdash; it will be applied to any medications you’re prescribed when you pick them up at the pharmacy.</p>",
@@ -304,7 +335,7 @@ var faqCtx = faqContext{
 		},
 		{
 			Title: "Doctors",
-			Questions: []faqQuestion{
+			Questions: []*faqQuestion{
 				{
 					Question: "Who are the doctors that will be treating me?",
 					Answer: `
@@ -330,7 +361,7 @@ var faqCtx = faqContext{
 		},
 		{
 			Title: "Information & Privacy",
-			Questions: []faqQuestion{
+			Questions: []*faqQuestion{
 				{
 					Question: "How can I keep my primary care physician in the loop?",
 					Answer:   "<p>Spruce enables you to download your care record, which you can then print or share with your PCP (or any other doctor). You can do this by clicking on the ‘Care Record’ tab, then ‘Export Care Record’.</p>",
@@ -341,5 +372,5 @@ var faqCtx = faqContext{
 				},
 			},
 		},
-	},
+	}
 }
