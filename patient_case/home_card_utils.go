@@ -151,7 +151,6 @@ func homeCardsForAuthenticatedUser(
 
 	// iterate through the cases to populate the view for each case card
 	for _, patientCase := range cases {
-
 		caseNotifications := notificationMap[patientCase.ID.Int64()]
 		assignments := careTeams[patientCase.ID.Int64()].Assignments
 
@@ -183,12 +182,14 @@ func homeCardsForAuthenticatedUser(
 		switch l := renderableCaseNotifications; {
 
 		case len(caseNotifications) == 1, l == 1:
-			hView, err := caseNotifications[0].Data.(notification).makeHomeCardView(&caseData{
-				APIDomain:       apiCDNDomain,
-				Notification:    caseNotifications[0],
-				CareTeamMembers: assignments,
-				Case:            patientCase,
-			})
+			hView, err := caseNotifications[0].Data.(notification).makeHomeCardView(
+				dataAPI,
+				&caseData{
+					APIDomain:       apiCDNDomain,
+					Notification:    caseNotifications[0],
+					CareTeamMembers: assignments,
+					Case:            patientCase,
+				})
 			if err != nil {
 				return nil, err
 			}
