@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/stripe"
 	patientpkg "github.com/sprucehealth/backend/patient"
+	"github.com/sprucehealth/backend/test"
 )
 
 func TestAddCardsForPatient(t *testing.T) {
@@ -39,9 +40,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	stubPaymentsService.CustomerToReturn = customerToAdd
 
 	patient, err := testData.DataAPI.GetPatientFromID(signedupPatientResponse.Patient.ID.Int64())
-	if err != nil {
-		t.Fatal("Unable to get patient from id: " + err.Error())
-	}
+	test.OK(t, err)
 
 	card1, localCards := addCard(t, testData, patient.AccountID.Int64(), stubPaymentsService, nil)
 
@@ -50,15 +49,11 @@ func TestAddCardsForPatient(t *testing.T) {
 
 	//  get the patient address to see what the address is
 	patient, err = testData.DataAPI.GetPatientFromID(patient.ID.Int64())
-	if err != nil {
-		t.Fatal("Unable to get patient from id: " + err.Error())
-	}
+	test.OK(t, err)
 
 	checkBillingAddress(t, patient, card1.BillingAddress)
 
-	if len(localCards) != 1 {
-		t.Fatalf("Expected to get back one card saved for patient instead got back %d", len(localCards))
-	}
+	test.Equals(t, 1, len(localCards))
 
 	if localCards[0].ThirdPartyID != customerToAdd.CardList.Cards[0].ID ||
 		localCards[0].Fingerprint != customerToAdd.CardList.Cards[0].Fingerprint ||

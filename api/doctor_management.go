@@ -2,18 +2,11 @@ package api
 
 import (
 	"database/sql"
-	"sort"
 	"strings"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
-
-type statesByAbbr []*common.State
-
-func (s statesByAbbr) Len() int           { return len(s) }
-func (s statesByAbbr) Less(a, b int) bool { return s[a].Abbreviation < s[b].Abbreviation }
-func (s statesByAbbr) Swap(a, b int)      { s[a], s[b] = s[b], s[a] }
 
 func (d *DataService) AvailableStates() ([]*common.State, error) {
 	rows, err := d.db.Query(`
@@ -32,7 +25,6 @@ func (d *DataService) AvailableStates() ([]*common.State, error) {
 		}
 		states = append(states, s)
 	}
-	sort.Sort(statesByAbbr(states))
 	return states, rows.Err()
 }
 
