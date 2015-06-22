@@ -1,9 +1,9 @@
 #!/bin/bash -e
 
 DATE=$(date +%Y%m%d%H%M)
-DEV_HOSTS="54.209.3.156"
+DEV_HOSTS="dev-restapi-1.node.dev-us-east-1.spruce"
 PROD_HOSTS="prod-restapi-1.node.prod-us-east-1.spruce prod-restapi-2.node.prod-us-east-1.spruce"
-STAGING_HOSTS="10.1.5.105 10.1.22.127"
+STAGING_HOSTS="staging-restapi-1.node.staging-us-east-1.spruce staging-restapi-2.node.staging-us-east-1.spruce"
 DEMO_HOSTS="54.210.97.69"
 DEPLOY_ENV="$1"
 DEPLOY_BUILD="$2"
