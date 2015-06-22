@@ -5,11 +5,11 @@
 
 LOCAL_DB_USERNAME="carefront"
 LOCAL_DB_NAME="carefront_db"
-RDS_USERNAME="carefront"
-RDS_DB_NAME="carefront_db"
+DEV_USERNAME="spruce"
+DEV_DB_NAME="spruce"
+DEV_HOST="dev-mysql-1.node.staging-us-east-1.spruce"
 PROD_DB_NAME="carefront"
 PROD_DB_INSTANCE="master.mysql.service.prod-us-east-1.spruce"
-DEV_RDS_INSTANCE="dev-db-2b.ckwporuc939i.us-east-1.rds.amazonaws.com"
 STAGING_DB_NAME="carefront"
 STAGING_DB_USER_NAME="restapi"
 STAGING_DB_INSTANCE="staging-mysql-1.node.staging-us-east-1.spruce"
@@ -61,10 +61,10 @@ do
 		;;
 
 		"dev" )
-			echo "use $RDS_DB_NAME; insert into migrations (migration_id, migration_user) values ($migrationNumber, '$USER');" > temp-migration.sql
-			echo "use $RDS_DB_NAME;" | cat - migration-$migrationNumber.sql > temp.sql
-			mysql -h $DEV_RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp.sql
-			mysql -h $DEV_RDS_INSTANCE -u $RDS_USERNAME -p$DEV_RDS_PASSWORD < temp-migration.sql
+			echo "use $DEV_DB_NAME; insert into migrations (migration_id, migration_user) values ($migrationNumber, '$USER');" > temp-migration.sql
+			echo "use $DEV_DB_NAME;" | cat - migration-$migrationNumber.sql > temp.sql
+			mysql -h $DEV_HOST -u $DEV_USERNAME -p$DEV_RDS_PASSWORD < temp.sql
+			mysql -h $DEV_HOST -u $DEV_USERNAME -p$DEV_RDS_PASSWORD < temp-migration.sql
 		;;
 
 		"demo" )
