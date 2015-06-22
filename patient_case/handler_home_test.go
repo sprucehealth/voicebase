@@ -39,6 +39,7 @@ type mockHomeHandlerDataAPI struct {
 	accountCode                      *uint64
 	activeReferralProgramTemplateErr error
 	activeReferralProgramErr         error
+	doctors                          map[int64]*common.Doctor
 }
 
 // overriding all the data access methods that are relevant to the home API
@@ -99,6 +100,13 @@ func (m *mockHomeHandlerDataAPI) AccountCode(accountID int64) (*uint64, error) {
 }
 func (m *mockHomeHandlerDataAPI) AssociateRandomAccountCode(accountID int64) (uint64, error) {
 	return *m.accountCode, nil
+}
+func (m *mockHomeHandlerDataAPI) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, error) {
+	dr, ok := m.doctors[id]
+	if !ok {
+		return nil, api.ErrNotFound("doctor")
+	}
+	return dr, nil
 }
 
 type mockHandlerHomeAddressValidationAPI struct {

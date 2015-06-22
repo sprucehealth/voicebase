@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/errors"
 )
 
 const (
@@ -33,7 +34,7 @@ type notification interface {
 	common.Typed
 	canRenderCaseNotificationView() bool
 	makeCaseNotificationView(data *caseData) (common.ClientView, error)
-	makeHomeCardView(data *caseData) (common.ClientView, error)
+	makeHomeCardView(dataAPI api.DataAPI, data *caseData) (common.ClientView, error)
 }
 
 //
@@ -68,7 +69,7 @@ func (t *treatmentPlanNotification) makeCaseNotificationView(data *caseData) (co
 	return nView, nView.Validate()
 }
 
-func (t *treatmentPlanNotification) makeHomeCardView(data *caseData) (common.ClientView, error) {
+func (t *treatmentPlanNotification) makeHomeCardView(dataAPI api.DataAPI, data *caseData) (common.ClientView, error) {
 
 	doctorAssignment := findActiveDoctor(data.CareTeamMembers)
 	nView := &phCaseNotificationStandardView{
@@ -116,12 +117,33 @@ func (m *messageNotification) makeCaseNotificationView(data *caseData) (common.C
 	return nView, nView.Validate()
 }
 
-func (m *messageNotification) makeHomeCardView(data *caseData) (common.ClientView, error) {
+func (m *messageNotification) makeHomeCardView(dataAPI api.DataAPI, data *caseData) (common.ClientView, error) {
 	var provider *common.CareProviderAssignment
 	for _, assignment := range data.CareTeamMembers {
 		if assignment.ProviderID == m.DoctorID {
 			provider = assignment
 		}
+	}
+
+	// It's possible for a CC that's not on the care team to message the patient.
+	if provider == nil {
+		cc, err := dataAPI.Doctor(m.DoctorID, true)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		provider = &common.CareProviderAssignment{
+			ShortDisplayName: cc.ShortDisplayName,
+			LongDisplayName:  cc.LongDisplayName,
+			ProviderID:       cc.ID.Int64(),
+			ProviderRole:     api.RoleDoctor,
+		}
+		if cc.IsCC {
+			provider.ProviderRole = api.RoleCC
+		}
+	}
+
+	if provider == nil {
+		return nil, fmt.Errorf("failed to find provider with ID %d for message notification", m.DoctorID)
 	}
 
 	nView := &phCaseNotificationStandardView{
@@ -157,7 +179,7 @@ func (v *visitSubmittedNotification) makeCaseNotificationView(data *caseData) (c
 	return nil, nil
 }
 
-func (v *visitSubmittedNotification) makeHomeCardView(data *caseData) (common.ClientView, error) {
+func (v *visitSubmittedNotification) makeHomeCardView(dataAPI api.DataAPI, data *caseData) (common.ClientView, error) {
 	title := visitSubmittedTitle
 	iconURL := app_url.IconVisitSubmitted.String()
 	doctorAssignment := findActiveDoctor(data.CareTeamMembers)
@@ -204,7 +226,7 @@ func (v *incompleteVisitNotification) makeCaseNotificationView(data *caseData) (
 	return nView, nView.Validate()
 }
 
-func (v *incompleteVisitNotification) makeHomeCardView(data *caseData) (common.ClientView, error) {
+func (v *incompleteVisitNotification) makeHomeCardView(dataAPI api.DataAPI, data *caseData) (common.ClientView, error) {
 	doctorAssignment := findActiveDoctor(data.CareTeamMembers)
 	continueVisitMessage := determineContinueVisitMessage(doctorAssignment)
 
@@ -260,7 +282,7 @@ func (v *incompleteFollowupVisitNotification) makeCaseNotificationView(data *cas
 	return nView, nView.Validate()
 }
 
-func (v *incompleteFollowupVisitNotification) makeHomeCardView(data *caseData) (common.ClientView, error) {
+func (v *incompleteFollowupVisitNotification) makeHomeCardView(dataAPI api.DataAPI, data *caseData) (common.ClientView, error) {
 	doctorMember := findActiveDoctor(data.CareTeamMembers)
 
 	nView := &phCaseNotificationStandardView{
@@ -299,7 +321,7 @@ func (v *startFollowupVisitNotification) makeCaseNotificationView(data *caseData
 	return nView, nView.Validate()
 }
 
-func (v *startFollowupVisitNotification) makeHomeCardView(data *caseData) (common.ClientView, error) {
+func (v *startFollowupVisitNotification) makeHomeCardView(dataAPI api.DataAPI, data *caseData) (common.ClientView, error) {
 	doctorMember := findActiveDoctor(data.CareTeamMembers)
 
 	nView := &phCaseNotificationStandardView{
@@ -329,7 +351,7 @@ func (v *preSubmissionTriageNotification) TypeName() string {
 
 func (v *preSubmissionTriageNotification) canRenderCaseNotificationView() bool { return false }
 
-func (v *preSubmissionTriageNotification) makeHomeCardView(data *caseData) (common.ClientView, error) {
+func (v *preSubmissionTriageNotification) makeHomeCardView(dataAPI api.DataAPI, data *caseData) (common.ClientView, error) {
 	return &phSectionView{
 		Title: v.Title,
 		Views: []common.ClientView{
