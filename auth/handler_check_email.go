@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 )
@@ -44,8 +45,8 @@ func NewCheckEmailHandler(emailChecker EmailChecker, rateLimiter ratelimit.Keyed
 }
 
 func (h *checkEmailHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	email := r.FormValue("email")
-	if email == "" {
+	em := r.FormValue("email")
+	if em == "" {
 		// Don't record this in the stats since it's basically a noop
 		httputil.JSONResponse(w, http.StatusOK, emailCheckResponse{Available: false})
 		return
@@ -53,7 +54,12 @@ func (h *checkEmailHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	h.statRequests.Inc(1)
 
-	_, err := h.emailChecker.AccountForEmail(email)
+	if !email.IsValidEmail(em) {
+		apiservice.WriteUserError(w, http.StatusBadRequest, "The provided email address is invalid.")
+		return
+	}
+
+	_, err := h.emailChecker.AccountForEmail(em)
 	if err == api.ErrLoginDoesNotExist {
 		h.statAvailable.Inc(1)
 		httputil.JSONResponse(w, http.StatusOK, emailCheckResponse{Available: true})
