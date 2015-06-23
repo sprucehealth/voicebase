@@ -1,3 +1,4 @@
+// Package geckoboard provides a client for working Geckoboard dashboards.
 package geckoboard
 
 import (
@@ -36,12 +37,15 @@ type Client struct {
 	apiKey string
 }
 
+// NewClient returns a new instance of the client using the provided api key
+// for authenticating with the API.
 func NewClient(apiKey string) *Client {
 	return &Client{
 		apiKey: apiKey,
 	}
 }
 
+// Push updates the data for a custom widget matching the provided key.
 func (c *Client) Push(widgetKey string, data interface{}) error {
 	return c.post("/v1/send/"+widgetKey, pushRequest{APIKey: c.apiKey, Data: data}, nil)
 }

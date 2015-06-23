@@ -125,6 +125,35 @@ type FunnelItem struct {
 	Label string  `json:"label"`
 }
 
+// Text is a widget that shows arbitrary text. Up to 10 items can be shown.
+//
+// https://developer.geckoboard.com/#text
+type Text struct {
+	Items []*TextItem `json:"item"`
+}
+
+// TextItem is one item in a text widget
+type TextItem struct {
+	Text string       `json:"text"`
+	Type TextItemType `json:"type"`
+}
+
+// TextItemType is the type of item in a text widget. It changes
+// the icon shown for an item.
+type TextItemType int
+
+const (
+	// AlertItem includes exclamation point on yellow background on the text item
+	AlertItem TextItemType = 1
+	// InfoItem includes 'i' icon on grey background on the text item
+	InfoItem TextItemType = 2
+)
+
+var textItemTypeMap = map[string]TextItemType{
+	"alert": AlertItem,
+	"info":  InfoItem,
+}
+
 func (w *PieChart) AppendData(cols []string, row []interface{}) error {
 	var err error
 	it := &PieChartItem{}
@@ -310,6 +339,38 @@ func (w *Funnel) AppendData(cols []string, row []interface{}) error {
 		}
 	}
 	w.Items = append(w.Items, it)
+	return nil
+}
+
+func (w *Text) AppendData(cols []string, row []interface{}) error {
+	var err error
+	it := &TextItem{}
+	for i, c := range cols {
+		switch c {
+		case "text":
+			it.Text, err = toString(row[i])
+		case "type":
+			var t int
+			t, err = toInteger(row[i])
+			if err == nil {
+				it.Type = TextItemType(t)
+			} else {
+				var ts string
+				ts, err = toString(row[i])
+				if err == nil {
+					it.Type = textItemTypeMap[ts]
+				}
+			}
+		default:
+			return fmt.Errorf("geckoboard: unknown Text column %s", c)
+		}
+		if err != nil {
+			return fmt.Errorf("geckoboard: Text %s: %s", c, err)
+		}
+	}
+	if it.Text != "" {
+		w.Items = append(w.Items, it)
+	}
 	return nil
 }
 
