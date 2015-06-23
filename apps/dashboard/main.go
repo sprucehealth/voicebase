@@ -60,6 +60,7 @@ var widgets = map[string]reflect.Type{
 	"map":    reflect.TypeOf(geckoboard.Map{}),
 	"list":   reflect.TypeOf(geckoboard.List{}),
 	"funnel": reflect.TypeOf(geckoboard.Funnel{}),
+	"text":   reflect.TypeOf(geckoboard.Text{}),
 }
 
 var (
