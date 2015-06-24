@@ -53,6 +53,11 @@ type PatientVisitResponse struct {
 	SubmittedDate *time.Time `json:"submission_date,omitempty"`
 }
 
+type AdditionalMessage struct {
+	*info_intake.VisitMessage
+	Message string `json:"message"`
+}
+
 type VisitIntakeInfo struct {
 	PatientVisitID          int64                                   `json:"patient_visit_id,string"`
 	DoctorID                int64                                   `json:"care_provider_id,string,omitempty"`
@@ -61,7 +66,7 @@ type VisitIntakeInfo struct {
 	RequireCreditCardIfFree bool                                    `json:"require_credit_card_if_free"`
 	ClientLayout            *info_intake.InfoIntakeLayout           `json:"health_condition,omitempty"`
 	SKUType                 *string                                 `json:"cost_item_type"`
-	AdditionalMessage       *info_intake.VisitMessage               `json:"additional_message,omitempty"`
+	AdditionalMessage       *AdditionalMessage                      `json:"additional_message,omitempty"`
 	SubmissionConfirmation  *info_intake.SubmissionConfirmationText `json:"submission_confirmation,omitempty"`
 	Checkout                *info_intake.CheckoutText               `json:"checkout,omitempty"`
 }

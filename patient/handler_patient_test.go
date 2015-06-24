@@ -170,6 +170,9 @@ func (m *mockDataAPI_PatientVisitHandler) UpdateCredit(accountID int64, credit i
 
 	return nil
 }
+func (m *mockDataAPI_PatientVisitHandler) GetMessageForPatientVisit(id int64) (string, error) {
+	return "", nil
+}
 
 type mockAuthAPI_PatientVisitHandler struct {
 	api.AuthAPI
