@@ -29,8 +29,9 @@ func IntakeLayoutForVisit(
 	errs := make(chan error, 2)
 	var visitLayout *info_intake.InfoIntakeLayout
 	var doctorID int64
+	var msg string
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(3)
 
 	go func() {
 		defer wg.Done()
@@ -69,12 +70,27 @@ func IntakeLayoutForVisit(
 		}
 	}()
 
+	go func() {
+		defer wg.Done()
+		var err error
+
+		msg, err = dataAPI.GetMessageForPatientVisit(visit.PatientVisitID.Int64())
+		if err != nil && !api.IsErrNotFound(err) {
+			errs <- err
+		}
+	}()
+
 	wg.Wait()
 
 	select {
 	case err := <-errs:
 		return nil, err
 	default:
+	}
+
+	additionalMessage := &AdditionalMessage{
+		VisitMessage: visitLayout.DeprecatedAdditionalMessage,
+		Message:      msg,
 	}
 
 	return &VisitIntakeInfo{
@@ -85,7 +101,7 @@ func IntakeLayoutForVisit(
 		DoctorID:                doctorID,
 		RequireCreditCardIfFree: false,
 		SKUType:                 visitLayout.DeprecatedSKUType,
-		AdditionalMessage:       visitLayout.DeprecatedAdditionalMessage,
+		AdditionalMessage:       additionalMessage,
 		SubmissionConfirmation:  visitLayout.DeprecatedSubmissionConfirmation,
 		Checkout:                visitLayout.DeprecatedCheckout,
 	}, nil
