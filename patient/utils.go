@@ -26,7 +26,7 @@ func IntakeLayoutForVisit(
 	expirationDuration time.Duration,
 	visit *common.PatientVisit) (*VisitIntakeInfo, error) {
 
-	errs := make(chan error, 2)
+	errs := make(chan error, 3)
 	var visitLayout *info_intake.InfoIntakeLayout
 	var doctorID int64
 	var msg string
