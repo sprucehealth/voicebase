@@ -4,11 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/tagging"
+	"github.com/sprucehealth/backend/tagging/model"
 )
 
 const (
@@ -30,13 +35,27 @@ type feedbackPromptHandler struct {
 }
 
 type feedbackHandler struct {
-	dataAPI api.DataAPI
+	dataAPI       api.DataAPI
+	taggingClient tagging.Client
+	cfgStore      cfg.Store
 }
 
 type feedbackSubmitRequest struct {
 	Rating  int     `json:"rating"`
 	Comment *string `json:"comment,omitempty"`
 }
+
+// lowRatingTagThreshold is a Server configurable value for the threshold at which to tag the patient's case as LowRating
+var lowRatingTagThreshold = &cfg.ValueDef{
+	Name:        "Patient.Feedback.LowRating.Tag.Threshold",
+	Description: "A value that represents the threshold for which if a patient feedback rating is equal to or below, the latest case for the patient will be tagged as LowRating.",
+	Type:        cfg.ValueTypeInt,
+	Default:     3,
+}
+
+const (
+	LowRatingTag string = "LowRating"
+)
 
 type feedbackPromptResponse struct {
 	ScreenTitle        string `json:"screen_title"`
@@ -55,11 +74,14 @@ func NewFeedbackPromptHandler(dataAPI api.DataAPI) http.Handler {
 		httputil.Get)
 }
 
-func NewFeedbackHandler(dataAPI api.DataAPI) http.Handler {
+func NewFeedbackHandler(dataAPI api.DataAPI, taggingClient tagging.Client, cfgStore cfg.Store) http.Handler {
+	cfgStore.Register(lowRatingTagThreshold)
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&feedbackHandler{
-				dataAPI: dataAPI,
+				dataAPI:       dataAPI,
+				taggingClient: taggingClient,
+				cfgStore:      cfgStore,
 			}),
 			[]string{api.RolePatient}),
 		httputil.Post)
@@ -105,5 +127,21 @@ func (h *feedbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		apiservice.WriteError(err, w, r)
 		return
 	}
+
+	// Check to see if we need to tag the latest case for a low rating but don't block/fail the API on this.
+	go func() {
+		lowRatingThreshold := h.cfgStore.Snapshot().Int(lowRatingTagThreshold.Name)
+		if req.Rating <= lowRatingThreshold {
+			if _, err = h.taggingClient.InsertTagAssociation(&model.Tag{Text: LowRatingTag}, &model.TagMembership{
+				CaseID: ptr.Int64Ptr(tp.PatientCaseID.Int64()),
+				// Place this tag in immediate trigger violation
+				TriggerTime: ptr.TimePtr(time.Now()),
+				Hidden:      false,
+			}); err != nil {
+				golog.Errorf("%v", err)
+			}
+		}
+	}()
+
 	apiservice.WriteJSONSuccess(w)
 }

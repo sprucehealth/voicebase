@@ -16,7 +16,7 @@ import (
 // doctorFTPQueryMaxThreads is a Server configurable value for maximum number of gorutines to use in this lookup
 var doctorFTPQueryMaxThreads = &cfg.ValueDef{
 	Name:        "Doctor.FTP.Query.Max.Threads",
-	Description: "Enable or disable making the unsuitable for spruce message from the doctor public.",
+	Description: "Change the number of goroutines used in the collection of FTPs.",
 	Type:        cfg.ValueTypeInt,
 	Default:     25,
 }
