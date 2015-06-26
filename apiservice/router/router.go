@@ -248,7 +248,7 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.TPResourceGuideURLPath, doctor_treatment_plan.NewResourceGuideHandler(conf.DataAPI, conf.Dispatcher))
 
 	// Patient Feedback
-	authenticationRequired(conf, apipaths.PatientFeedbackURLPath, patient.NewFeedbackHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.PatientFeedbackURLPath, patient.NewFeedbackHandler(conf.DataAPI, taggingClient, conf.Cfg))
 	authenticationRequired(conf, apipaths.PatientFeedbackPromptURLPath, patient.NewFeedbackPromptHandler(conf.DataAPI))
 
 	// Care Provider URLs
