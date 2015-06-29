@@ -265,16 +265,16 @@ func (s *patientVisitHandler) applyVisitTags(caseID, patientID int64) error {
 	}
 	monthI := time.Now().Month()
 	monthS := strconv.FormatInt(int64(time.Now().Month()), 10)
-	if err := s.applyCaseTag(monthI.String(), caseID, true); err != nil {
+	if err := s.applyCaseTag("month:"+monthI.String(), caseID, true); err != nil {
 		return err
 	}
 	dayI := int64(time.Now().Day())
 	dayS := strconv.FormatInt(dayI, 10)
-	if err := s.applyCaseTag(dayS, caseID, true); err != nil {
+	if err := s.applyCaseTag("day:"+dayS, caseID, true); err != nil {
 		return err
 	}
 	yearS := strconv.FormatInt(int64(time.Now().Year()), 10)
-	if err := s.applyCaseTag(yearS, caseID, true); err != nil {
+	if err := s.applyCaseTag("year:"+yearS, caseID, true); err != nil {
 		return err
 	}
 	if dayI < 10 {
@@ -285,10 +285,10 @@ func (s *patientVisitHandler) applyVisitTags(caseID, patientID int64) error {
 	}
 	yearS = yearS[len(yearS)-2:]
 
-	if err := s.applyCaseTag(monthS+dayS+yearS, caseID, true); err != nil {
+	if err := s.applyCaseTag("mmddyy:"+monthS+dayS+yearS, caseID, true); err != nil {
 		return err
 	}
-	if err := s.applyCaseTag(currentCase.PathwayTag, caseID, true); err != nil {
+	if err := s.applyCaseTag("pathwayTag:"+currentCase.PathwayTag, caseID, true); err != nil {
 		return err
 	}
 	return nil
