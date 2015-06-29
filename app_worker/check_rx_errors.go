@@ -210,38 +210,42 @@ func handlErxErrorForRefillRequest(dataAPI api.DataAPI, refillRequest *common.Re
 		return err
 	}
 
-	// if the latest item does not represent an error, insert
-	// an error into the rx history of the refill request and add a
-	// refil request transmission error to the doctor's queue
-	if statusEvents[0].Status != api.RXRefillStatusError {
-		if err := dataAPI.AddRefillRequestStatusEvent(common.StatusEvent{
-			Status:            api.RXRefillStatusError,
-			StatusDetails:     treatmentWithError.StatusDetails,
-			ReportedTimestamp: *treatmentWithError.ERx.TransmissionErrorDate,
-			ItemID:            refillRequest.ID,
-		}); err != nil {
-			golog.Errorf("Unable to add error event to rx history for refill request: %s", err.Error())
-			return err
+	// don't insert an error into the doctor queue if there is an event that indicates the error
+	// was already resolved or accounted for
+	for _, event := range statusEvents {
+		switch event.Status {
+		case api.RXRefillStatusErrorResolved, api.RXRefillStatusError:
+			return nil
 		}
+	}
 
-		if err := dataAPI.UpdateDoctorQueue([]*api.DoctorQueueUpdate{
-			{
-				Action: api.DQActionInsert,
-				QueueItem: &api.DoctorQueueItem{
-					DoctorID:         refillRequest.Doctor.ID.Int64(),
-					PatientID:        refillRequest.Patient.ID.Int64(),
-					ItemID:           refillRequest.ID,
-					Status:           api.DQItemStatusPending,
-					EventType:        api.DQEventTypeRefillTransmissionError,
-					Description:      fmt.Sprintf("Error completing refill request for %s %s", refillRequest.Patient.FirstName, refillRequest.Patient.LastName),
-					ShortDescription: "Refill request error",
-					ActionURL:        app_url.ViewRefillRequestAction(refillRequest.Patient.ID.Int64(), refillRequest.ID),
-				},
+	if err := dataAPI.AddRefillRequestStatusEvent(common.StatusEvent{
+		Status:            api.RXRefillStatusError,
+		StatusDetails:     treatmentWithError.StatusDetails,
+		ReportedTimestamp: *treatmentWithError.ERx.TransmissionErrorDate,
+		ItemID:            refillRequest.ID,
+	}); err != nil {
+		golog.Errorf("Unable to add error event to rx history for refill request: %s", err.Error())
+		return err
+	}
+
+	if err := dataAPI.UpdateDoctorQueue([]*api.DoctorQueueUpdate{
+		{
+			Action: api.DQActionInsert,
+			QueueItem: &api.DoctorQueueItem{
+				DoctorID:         refillRequest.Doctor.ID.Int64(),
+				PatientID:        refillRequest.Patient.ID.Int64(),
+				ItemID:           refillRequest.ID,
+				Status:           api.DQItemStatusPending,
+				EventType:        api.DQEventTypeRefillTransmissionError,
+				Description:      fmt.Sprintf("Error completing refill request for %s %s", refillRequest.Patient.FirstName, refillRequest.Patient.LastName),
+				ShortDescription: "Refill request error",
+				ActionURL:        app_url.ViewRefillRequestAction(refillRequest.Patient.ID.Int64(), refillRequest.ID),
 			},
-		}); err != nil {
-			golog.Errorf("Unable to insert refill transmission error into doctor queue: %+v", err)
-			return err
-		}
+		},
+	}); err != nil {
+		golog.Errorf("Unable to insert refill transmission error into doctor queue: %+v", err)
+		return err
 	}
 
 	return nil
@@ -254,38 +258,43 @@ func handleErxErrorForTreatmentInTreatmentPlan(dataAPI api.DataAPI, treatment, t
 		return err
 	}
 
-	// if the latest status item does not represent an error
-	// insert an error into the rx history of this treatment and add a
-	// transmission error for the doctor
-	if len(statusEvents) == 0 || statusEvents[0].Status != api.ERXStatusError {
-		if err := dataAPI.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{
-			Status:            api.ERXStatusError,
-			StatusDetails:     treatmentWithError.StatusDetails,
-			ReportedTimestamp: *treatmentWithError.ERx.TransmissionErrorDate,
-			ItemID:            treatment.ID.Int64(),
-		}); err != nil {
-			golog.Errorf("Unable to add error event for status: %s", err.Error())
-			return err
+	// don't insert an error into the doctor queue if there is an event
+	// that indicates that the error was already resolved or that the error
+	// has already been reported.
+	for _, event := range statusEvents {
+		switch event.Status {
+		case api.ERXStatusResolved, api.ERXStatusError:
+			return nil
 		}
+	}
 
-		if err := dataAPI.UpdateDoctorQueue([]*api.DoctorQueueUpdate{
-			{
-				Action: api.DQActionInsert,
-				QueueItem: &api.DoctorQueueItem{
-					DoctorID:         treatment.Doctor.ID.Int64(),
-					PatientID:        treatment.Patient.ID.Int64(),
-					ItemID:           treatment.ID.Int64(),
-					Status:           api.DQItemStatusPending,
-					EventType:        api.DQEventTypeTransmissionError,
-					Description:      fmt.Sprintf("Error sending prescription for %s %s", treatment.Patient.FirstName, treatment.Patient.LastName),
-					ShortDescription: "Prescription error",
-					ActionURL:        app_url.ViewTransmissionErrorAction(treatment.Patient.ID.Int64(), treatment.ID.Int64()),
-				},
+	if err := dataAPI.AddErxStatusEvent([]*common.Treatment{treatment}, common.StatusEvent{
+		Status:            api.ERXStatusError,
+		StatusDetails:     treatmentWithError.StatusDetails,
+		ReportedTimestamp: *treatmentWithError.ERx.TransmissionErrorDate,
+		ItemID:            treatment.ID.Int64(),
+	}); err != nil {
+		golog.Errorf("Unable to add error event for status: %s", err.Error())
+		return err
+	}
+
+	if err := dataAPI.UpdateDoctorQueue([]*api.DoctorQueueUpdate{
+		{
+			Action: api.DQActionInsert,
+			QueueItem: &api.DoctorQueueItem{
+				DoctorID:         treatment.Doctor.ID.Int64(),
+				PatientID:        treatment.Patient.ID.Int64(),
+				ItemID:           treatment.ID.Int64(),
+				Status:           api.DQItemStatusPending,
+				EventType:        api.DQEventTypeTransmissionError,
+				Description:      fmt.Sprintf("Error sending prescription for %s %s", treatment.Patient.FirstName, treatment.Patient.LastName),
+				ShortDescription: "Prescription error",
+				ActionURL:        app_url.ViewTransmissionErrorAction(treatment.Patient.ID.Int64(), treatment.ID.Int64()),
 			},
-		}); err != nil {
-			golog.Errorf("Unable to insert refill transmission error into doctor queue: %+v", err)
-			return err
-		}
+		},
+	}); err != nil {
+		golog.Errorf("Unable to insert refill transmission error into doctor queue: %+v", err)
+		return err
 	}
 	return nil
 }
