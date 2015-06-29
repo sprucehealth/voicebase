@@ -86,7 +86,7 @@ func TestPatientSignup_CreateVisit(t *testing.T) {
 
 	patientVisit, err := testData.DataAPI.GetPatientVisitForSKU(respData.Patient.ID.Int64(), test_integration.SKUAcneVisit)
 	test.OK(t, err)
-	test.Equals(t, patientVisit.PatientVisitID.Int64(), respData.PatientVisitData.PatientVisitID)
+	test.Equals(t, patientVisit.ID.Int64(), respData.PatientVisitData.PatientVisitID)
 
 	// ensure that there are no members assigned to the care team of the case yet
 	members, err := testData.DataAPI.GetActiveMembersOfCareTeamForCase(patientVisit.PatientCaseID.Int64(), false)

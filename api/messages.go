@@ -270,6 +270,15 @@ func (d *DataService) CreateCaseMessage(msg *common.CaseMessage) (int64, error) 
 		return 0, errors.Trace(err)
 	}
 
+	// Mark the posted message as read by the person that posted it as hopefully they did.
+	_, err = d.db.Exec(`
+		INSERT INTO patient_case_message_read (message_id, person_id)
+		VALUES (?, ?)`, msg.ID, msg.PersonID)
+	if err != nil {
+		tx.Rollback()
+		return 0, errors.Trace(err)
+	}
+
 	return msg.ID, errors.Trace(tx.Commit())
 }
 
@@ -316,6 +325,19 @@ func (d *DataService) CaseMessageParticipants(caseID int64, withRoleObjects bool
 	}
 
 	return participants, nil
+}
+
+func (d *DataService) UnreadMessageCount(caseID, personID int64) (int, error) {
+	row := d.db.QueryRow(`
+		SELECT count(1)
+		FROM patient_case_message cm
+		LEFT JOIN patient_case_message_read cmr ON cmr.message_id = cm.id AND cmr.person_id = ?
+		WHERE cm.patient_case_id = ?
+			AND cmr.message_id IS NULL
+			AND cm.person_id != ?`, personID, caseID, personID)
+	var count int
+	err := row.Scan(&count)
+	return count, err
 }
 
 func (d *DataService) populateDoctorOrPatientForPeople(people map[int64]*common.Person) error {

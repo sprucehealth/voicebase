@@ -315,7 +315,7 @@ func TestIntake_ClientOrdering(t *testing.T) {
 	// the second response should be rejected given that it was an older response
 	answers, err := testData.DataAPI.AnswersForQuestions([]int64{questionID}, &api.PatientIntake{
 		PatientID:      pr.Patient.ID.Int64(),
-		PatientVisitID: patientVisit.PatientVisitID.Int64(),
+		PatientVisitID: patientVisit.ID.Int64(),
 		LVersionID:     patientVisit.LayoutVersionID.Int64(),
 	})
 	test.OK(t, err)

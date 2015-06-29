@@ -139,16 +139,16 @@ func TestCaseMessages(t *testing.T) {
 		test.OK(t, err)
 		test.Equals(t, 3, len(msgs))
 		for _, m := range msgs {
-			test.Equals(t, 1, len(m.ReadReceipts))
-			rr := m.ReadReceipts[0]
-			var found bool
-			for _, p := range pars {
-				if p.ID == rr.ParticipantID {
-					found = true
-					break
+			for _, rr := range m.ReadReceipts {
+				var found bool
+				for _, p := range pars {
+					if p.ID == rr.ParticipantID {
+						found = true
+						break
+					}
 				}
+				test.Equals(t, true, found)
 			}
-			test.Equals(t, true, found)
 		}
 
 		// Doctor SHOULD NOT see read receipts
@@ -166,5 +166,36 @@ func TestCaseMessages(t *testing.T) {
 		for _, m := range msgs {
 			test.Equals(t, 0, len(m.ReadReceipts))
 		}
+	}
+
+	// Test unread count
+	{
+		// Initial unread counts should be 0
+		count, err := testData.DataAPI.UnreadMessageCount(caseID, doctor.PersonID)
+		test.OK(t, err)
+		test.Equals(t, 0, count)
+		count, err = testData.DataAPI.UnreadMessageCount(caseID, patient.PersonID)
+		test.OK(t, err)
+		test.Equals(t, 0, count)
+
+		_, err = patientCli.PostCaseMessage(caseID, "bar", nil)
+		test.OK(t, err)
+
+		// Doctor who hasn't seen the message yet should see an unread count of 1
+		count, err = testData.DataAPI.UnreadMessageCount(caseID, doctor.PersonID)
+		test.OK(t, err)
+		test.Equals(t, 1, count)
+		// Patient who posted the message should see an unread count of 0
+		count, err = testData.DataAPI.UnreadMessageCount(caseID, patient.PersonID)
+		test.OK(t, err)
+		test.Equals(t, 0, count)
+
+		_, _, err = doctorCli.ListCaseMessages(caseID)
+		test.OK(t, err)
+
+		// Now that the doctor read the message the unread count should be 0
+		count, err = testData.DataAPI.UnreadMessageCount(caseID, doctor.PersonID)
+		test.OK(t, err)
+		test.Equals(t, 0, count)
 	}
 }

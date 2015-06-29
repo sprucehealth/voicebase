@@ -74,7 +74,7 @@ func IntakeLayoutForVisit(
 		defer wg.Done()
 		var err error
 
-		msg, err = dataAPI.GetMessageForPatientVisit(visit.PatientVisitID.Int64())
+		msg, err = dataAPI.GetMessageForPatientVisit(visit.ID.Int64())
 		if err != nil && !api.IsErrNotFound(err) {
 			errs <- err
 		}
@@ -94,7 +94,7 @@ func IntakeLayoutForVisit(
 	}
 
 	return &VisitIntakeInfo{
-		PatientVisitID:          visit.PatientVisitID.Int64(),
+		PatientVisitID:          visit.ID.Int64(),
 		CanAbandon:              !visit.IsFollowup,
 		Status:                  visit.Status,
 		ClientLayout:            visitLayout,
@@ -116,7 +116,7 @@ func populateLayoutWithAnswers(
 ) error {
 
 	patientID := patientVisit.PatientID.Int64()
-	visitID := patientVisit.PatientVisitID.Int64()
+	visitID := patientVisit.ID.Int64()
 
 	photoQuestionIDs := visitLayout.PhotoQuestionIDs()
 	photosForVisit, err := dataAPI.PatientPhotoSectionsForQuestionIDs(photoQuestionIDs, patientID, visitID)
@@ -337,7 +337,7 @@ func createPatientVisit(
 	if visitCreated {
 		dispatcher.Publish(&VisitStartedEvent{
 			PatientID:     patient.ID.Int64(),
-			VisitID:       patientVisit.PatientVisitID.Int64(),
+			VisitID:       patientVisit.ID.Int64(),
 			PatientCaseID: patientVisit.PatientCaseID.Int64(),
 		})
 	}

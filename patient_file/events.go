@@ -21,7 +21,7 @@ func (e *PatientVisitOpenedEvent) Events() []analytics.Event {
 			Timestamp: analytics.Time(time.Now()),
 			PatientID: e.PatientID,
 			DoctorID:  e.DoctorID,
-			VisitID:   e.PatientVisit.PatientVisitID.Int64(),
+			VisitID:   e.PatientVisit.ID.Int64(),
 			CaseID:    e.PatientVisit.PatientCaseID.Int64(),
 			Role:      e.Role,
 		},

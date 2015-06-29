@@ -131,7 +131,7 @@ func (p *presubmissionTriageHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		}
 
 		p.dispatcher.Publish(&PreSubmissionVisitTriageEvent{
-			VisitID:       visit.PatientVisitID.Int64(),
+			VisitID:       visit.ID.Int64(),
 			CaseID:        visit.PatientCaseID.Int64(),
 			Title:         title,
 			ActionMessage: actionMessage,

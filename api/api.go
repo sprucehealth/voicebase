@@ -650,6 +650,8 @@ type CaseMessageAPI interface {
 	CreateCaseMessage(msg *common.CaseMessage) (int64, error)
 	GetCaseIDFromMessageID(messageID int64) (int64, error)
 	ListCaseMessages(caseID int64, opts ListCaseMessagesOption) ([]*common.CaseMessage, error)
+	// UnreadMessageCount returns a person's number of unread case messages.
+	UnreadMessageCount(caseID, personID int64) (int, error)
 }
 
 type NotificationAPI interface {

@@ -217,7 +217,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		diagnosis := determineDiagnosisFromAnswers(rb)
 
 		if err := d.dataAPI.UpdateDiagnosisForVisit(
-			patientVisit.PatientVisitID.Int64(),
+			patientVisit.ID.Int64(),
 			doctorID,
 			diagnosis); err != nil {
 			golog.Errorf("Unable to update diagnosis for patient visit: %s", err)

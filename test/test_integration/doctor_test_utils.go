@@ -248,7 +248,7 @@ func SubmitPatientVisitDiagnosis(patientVisitID int64, doctor *common.Doctor, te
 	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(patientVisitID)
 	test.OK(t, err)
 
-	SubmitPatientVisitDiagnosisWithIntake(patientVisit.PatientVisitID.Int64(), doctor.AccountID.Int64(), intakeData, testData, t)
+	SubmitPatientVisitDiagnosisWithIntake(patientVisit.ID.Int64(), doctor.AccountID.Int64(), intakeData, testData, t)
 
 	// now, get diagnosis layout again and check to ensure that the doctor successfully diagnosed the patient with the expected answers
 	diagnosisLayout, err := patient_visit.GetDiagnosisLayout(testData.DataAPI, patientVisit, doctor.ID.Int64())

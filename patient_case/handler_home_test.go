@@ -1051,9 +1051,9 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 
 	dataAPI.patientVisits = []*common.PatientVisit{
 		{
-			PatientVisitID: encoding.NewObjectID(1),
-			PatientCaseID:  encoding.NewObjectID(1),
-			Status:         common.PVStatusTreated,
+			ID:            encoding.NewObjectID(1),
+			PatientCaseID: encoding.NewObjectID(1),
+			Status:        common.PVStatusTreated,
 		},
 	}
 
@@ -1167,9 +1167,9 @@ func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 
 	dataAPI.patientVisits = []*common.PatientVisit{
 		{
-			PatientVisitID: encoding.NewObjectID(1),
-			PatientCaseID:  encoding.NewObjectID(1),
-			Status:         common.PVStatusTreated,
+			ID:            encoding.NewObjectID(1),
+			PatientCaseID: encoding.NewObjectID(1),
+			Status:        common.PVStatusTreated,
 		},
 	}
 
@@ -1371,9 +1371,9 @@ func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 
 	dataAPI.patientVisits = []*common.PatientVisit{
 		{
-			PatientVisitID: encoding.NewObjectID(1),
-			PatientCaseID:  encoding.NewObjectID(1),
-			Status:         common.PVStatusTreated,
+			ID:            encoding.NewObjectID(1),
+			PatientCaseID: encoding.NewObjectID(1),
+			Status:        common.PVStatusTreated,
 		},
 	}
 
@@ -1474,9 +1474,9 @@ func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 
 	dataAPI.patientVisits = []*common.PatientVisit{
 		{
-			PatientVisitID: encoding.NewObjectID(1),
-			PatientCaseID:  encoding.NewObjectID(1),
-			Status:         common.PVStatusTreated,
+			ID:            encoding.NewObjectID(1),
+			PatientCaseID: encoding.NewObjectID(1),
+			Status:        common.PVStatusTreated,
 		},
 	}
 
@@ -1598,9 +1598,9 @@ func TestHome_Authenticated_CompletedCase_ReferAFriend_2_0_2(t *testing.T) {
 
 	dataAPI.patientVisits = []*common.PatientVisit{
 		{
-			PatientVisitID: encoding.NewObjectID(1),
-			PatientCaseID:  encoding.NewObjectID(1),
-			Status:         common.PVStatusTreated,
+			ID:            encoding.NewObjectID(1),
+			PatientCaseID: encoding.NewObjectID(1),
+			Status:        common.PVStatusTreated,
 		},
 	}
 

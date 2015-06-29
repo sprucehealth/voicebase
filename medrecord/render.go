@@ -529,7 +529,7 @@ func (r *Renderer) Render(patient *common.Patient) ([]byte, error) {
 				Visit: visit,
 			}
 
-			visitCtx.DiagnosisSet, err = r.DataAPI.ActiveDiagnosisSet(visit.PatientVisitID.Int64())
+			visitCtx.DiagnosisSet, err = r.DataAPI.ActiveDiagnosisSet(visit.ID.Int64())
 			if !api.IsErrNotFound(err) {
 				if err != nil {
 					return nil, err

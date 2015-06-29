@@ -3,11 +3,11 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
@@ -461,23 +461,25 @@ func (d *DataService) CreateLayoutVersion(layout *LayoutVersion) error {
 		vals = append(vals, layout.SKUID)
 	case DiagnosePurpose:
 		tableName = "diagnosis_layout_version"
+	default:
+		return fmt.Errorf("api.CreateLayoutVersion: unknown layout purpose '%s' trying to create layout version", layout.Purpose)
 	}
 
 	tx, err := d.db.Begin()
 	if err != nil {
-		return nil
+		return errors.Trace(err)
 	}
 
 	lastInsertID, err := tx.Exec(`INSERT INTO layout_blob_storage (layout) VALUES (?)`, layout.Layout)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
 	layoutBlobStorageID, err := lastInsertID.LastInsertId()
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
 	cols = append(cols, "layout_blob_storage_id")
@@ -488,16 +490,16 @@ func (d *DataService) CreateLayoutVersion(layout *LayoutVersion) error {
 		VALUES (`+dbutil.MySQLArgs(len(vals))+`)`, vals...)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
 	layout.ID, err = res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
-	return tx.Commit()
+	return errors.Trace(tx.Commit())
 }
 
 func (d *DataService) UpdateActiveLayouts(purpose string, version *common.Version, layoutTemplateID int64, clientLayoutIDs []int64,

@@ -247,7 +247,7 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 					return err
 				}
 
-				a.ItemID = fvisit.PatientVisitID.Int64()
+				a.ItemID = fvisit.ID.Int64()
 				break
 			}
 		}

@@ -9,11 +9,11 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/misc/handlers"
 	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/test"
@@ -74,7 +74,7 @@ func TestDoctorTwoFactorAuthentication(t *testing.T) {
 
 	// Enable two factor auth for the account
 
-	if err := testData.AuthAPI.UpdateAccount(doc.AccountID.Int64(), nil, api.BoolPtr(true)); err != nil {
+	if err := testData.AuthAPI.UpdateAccount(doc.AccountID.Int64(), nil, ptr.Bool(true)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -309,7 +309,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 		t.Fatalf("Expected response code 200 instead got %d", resp.StatusCode)
 	} else if err = json.NewDecoder(resp.Body).Decode(&diagnosisResponse); err != nil {
 		t.Fatal("Unable to unmarshal response for diagnosis of patient visit: " + err.Error())
-	} else if diagnosisResponse.DiagnosisLayout == nil || diagnosisResponse.DiagnosisLayout.PatientVisitID != patientVisit.PatientVisitID.Int64() {
+	} else if diagnosisResponse.DiagnosisLayout == nil || diagnosisResponse.DiagnosisLayout.PatientVisitID != patientVisit.ID.Int64() {
 		t.Fatal("Diagnosis response not as expected")
 	} else {
 		// no doctor answers should exist yet

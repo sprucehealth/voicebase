@@ -69,10 +69,10 @@ func TestTrainingCase(t *testing.T) {
 	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(pendingVisits[0].ItemID)
 	test.OK(t, err)
 	test_integration.GrantDoctorAccessToPatientCase(t, testData, doctor, patientVisit.PatientCaseID.Int64())
-	test_integration.StartReviewingPatientVisit(patientVisit.PatientVisitID.Int64(), doctor, testData, t)
-	test_integration.SubmitPatientVisitDiagnosis(patientVisit.PatientVisitID.Int64(), doctor, testData, t)
+	test_integration.StartReviewingPatientVisit(patientVisit.ID.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitDiagnosis(patientVisit.ID.Int64(), doctor, testData, t)
 	tp := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
-		ParentID:   patientVisit.PatientVisitID,
+		ParentID:   patientVisit.ID,
 		ParentType: common.TPParentTypePatientVisit,
 	}, nil, doctor, testData, t)
 	test_integration.SubmitPatientVisitBackToPatient(tp.TreatmentPlan.ID.Int64(), doctor, testData, t)

@@ -136,12 +136,12 @@ func TestAlerts_ByCaseID(t *testing.T) {
 		visit: &common.PatientVisit{},
 		visits: []*common.PatientVisit{
 			{
-				PatientVisitID: encoding.NewObjectID(10),
-				CreationDate:   time.Now().Add(-10 * time.Hour),
+				ID:           encoding.NewObjectID(10),
+				CreationDate: time.Now().Add(-10 * time.Hour),
 			},
 			{
-				PatientVisitID: encoding.NewObjectID(9),
-				CreationDate:   time.Now().Add(-2 * time.Hour),
+				ID:           encoding.NewObjectID(9),
+				CreationDate: time.Now().Add(-2 * time.Hour),
 			},
 		},
 		alerts: []*common.Alert{
@@ -193,12 +193,12 @@ func TestAlerts_ByPatientID(t *testing.T) {
 		visit: &common.PatientVisit{},
 		visits: []*common.PatientVisit{
 			{
-				PatientVisitID: encoding.NewObjectID(10),
-				CreationDate:   time.Now().Add(-10 * time.Hour),
+				ID:           encoding.NewObjectID(10),
+				CreationDate: time.Now().Add(-10 * time.Hour),
 			},
 			{
-				PatientVisitID: encoding.NewObjectID(9),
-				CreationDate:   time.Now().Add(-2 * time.Hour),
+				ID:           encoding.NewObjectID(9),
+				CreationDate: time.Now().Add(-2 * time.Hour),
 			},
 		},
 		cases: []*common.PatientCase{

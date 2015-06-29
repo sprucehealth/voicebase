@@ -135,7 +135,7 @@ func checkLayoutVersionForFollowup(dataAPI api.DataAPI, publisher dispatch.Publi
 		// update the layout and the status for this visit
 		status = common.PVStatusOpen
 		visit.Status = common.PVStatusOpen
-		if err := dataAPI.UpdatePatientVisit(visit.PatientVisitID.Int64(), &api.PatientVisitUpdate{
+		if err := dataAPI.UpdatePatientVisit(visit.ID.Int64(), &api.PatientVisitUpdate{
 			Status:          &status,
 			LayoutVersionID: layoutVersionToUpdate,
 		}); err != nil {
@@ -143,7 +143,7 @@ func checkLayoutVersionForFollowup(dataAPI api.DataAPI, publisher dispatch.Publi
 		}
 
 		publisher.Publish(&VisitStartedEvent{
-			VisitID:       visit.PatientVisitID.Int64(),
+			VisitID:       visit.ID.Int64(),
 			PatientCaseID: visit.PatientCaseID.Int64(),
 		})
 	}

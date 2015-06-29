@@ -113,7 +113,7 @@ type PatientVisit struct {
 
 func NewPatientVisit(visit *common.PatientVisit, title string) *PatientVisit {
 	return &PatientVisit{
-		ID:                      visit.PatientVisitID.Int64(),
+		ID:                      visit.ID.Int64(),
 		Title:                   title,
 		Status:                  visit.Status,
 		DeprecatedSubmittedDate: visit.SubmittedDate,

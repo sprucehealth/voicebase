@@ -169,7 +169,7 @@ func (d *DataService) getPatientVisitFromRows(rows *sql.Rows) ([]*common.Patient
 		var skuID int64
 		var pathwayID int64
 		err := rows.Scan(
-			&patientVisit.PatientVisitID,
+			&patientVisit.ID,
 			&patientVisit.PatientID,
 			&patientVisit.PatientCaseID,
 			&pathwayID,
@@ -238,11 +238,13 @@ func (d *DataService) CreatePatientVisit(visit *common.PatientVisit, requestedDo
 
 	pathwayID, err := d.pathwayIDFromTag(visit.PathwayTag)
 	if err != nil {
+		tx.Rollback()
 		return 0, err
 	}
 
 	skuID, err := d.skuIDFromType(visit.SKUType)
 	if err != nil {
+		tx.Rollback()
 		return 0, err
 	}
 
@@ -258,6 +260,7 @@ func (d *DataService) CreatePatientVisit(visit *common.PatientVisit, requestedDo
 
 	visit.SKUType, err = d.skuTypeFromID(skuID)
 	if err != nil {
+		tx.Rollback()
 		return 0, err
 	}
 
@@ -272,7 +275,7 @@ func (d *DataService) CreatePatientVisit(visit *common.PatientVisit, requestedDo
 	}
 
 	visit.CreationDate = time.Now()
-	visit.PatientVisitID = encoding.NewObjectID(lastID)
+	visit.ID = encoding.NewObjectID(lastID)
 	visit.PatientCaseID = encoding.NewObjectID(caseID)
 	return lastID, nil
 }

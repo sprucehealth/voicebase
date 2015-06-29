@@ -113,7 +113,7 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var diagnosis string
 	for _, visit := range patientVisits {
 		if visit.Status == common.PVStatusTreated {
-			diagnosis, err = c.dataAPI.DiagnosisForVisit(visit.PatientVisitID.Int64())
+			diagnosis, err = c.dataAPI.DiagnosisForVisit(visit.ID.Int64())
 			if !api.IsErrNotFound(err) && err != nil {
 				apiservice.WriteError(err, w, r)
 				return

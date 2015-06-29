@@ -98,7 +98,7 @@ func (c ByPatientVisitCreationDate) Less(i, j int) bool {
 }
 
 type PatientVisit struct {
-	PatientVisitID  encoding.ObjectID `json:"patient_visit_id,omitempty"`
+	ID              encoding.ObjectID `json:"patient_visit_id,omitempty"`
 	PatientCaseID   encoding.ObjectID `json:"case_id"`
 	PatientID       encoding.ObjectID `json:"patient_id,omitempty"`
 	CreationDate    time.Time         `json:"creation_date,omitempty"`
