@@ -57,13 +57,14 @@ func (t *treatmentPlanNotification) canRenderCaseNotificationView() bool { retur
 func (t *treatmentPlanNotification) makeCaseNotificationView(data *caseData) (common.ClientView, error) {
 
 	nView := &caseNotificationMessageView{
-		ID:          data.Notification.ID,
-		Title:       "Your doctor created your treatment plan.",
-		IconURL:     app_url.IconTreatmentPlanSmall,
-		ActionURL:   app_url.ViewTreatmentPlanMessageAction(t.MessageID, t.TreatmentPlanID, t.CaseID),
-		MessageID:   t.MessageID,
-		RoundedIcon: true,
-		DateTime:    data.Notification.CreationDate,
+		ID:            data.Notification.ID,
+		Title:         "Your doctor created your treatment plan.",
+		IconURL:       app_url.IconTreatmentPlanSmall,
+		ActionURL:     app_url.ViewTreatmentPlanMessageAction(t.MessageID, t.TreatmentPlanID, t.CaseID),
+		MessageID:     t.MessageID,
+		RoundedIcon:   true,
+		CreationTime:  data.Notification.CreationDate,
+		CreationEpoch: data.Notification.CreationDate.Unix(),
 	}
 
 	return nView, nView.Validate()
@@ -106,13 +107,14 @@ func (m *messageNotification) makeCaseNotificationView(data *caseData) (common.C
 	}
 
 	nView := &caseNotificationMessageView{
-		ID:          data.Notification.ID,
-		Title:       title,
-		IconURL:     app_url.IconMessagesSmall,
-		ActionURL:   app_url.ViewCaseMessageAction(m.MessageID, m.CaseID),
-		MessageID:   m.MessageID,
-		RoundedIcon: true,
-		DateTime:    data.Notification.CreationDate,
+		ID:            data.Notification.ID,
+		Title:         title,
+		IconURL:       app_url.IconMessagesSmall,
+		ActionURL:     app_url.ViewCaseMessageAction(m.MessageID, m.CaseID),
+		MessageID:     m.MessageID,
+		RoundedIcon:   true,
+		CreationTime:  data.Notification.CreationDate,
+		CreationEpoch: data.Notification.CreationDate.Unix(),
 	}
 	return nView, nView.Validate()
 }
@@ -181,7 +183,7 @@ func (v *visitSubmittedNotification) makeCaseNotificationView(data *caseData) (c
 
 func (v *visitSubmittedNotification) makeHomeCardView(dataAPI api.DataAPI, data *caseData) (common.ClientView, error) {
 	title := visitSubmittedTitle
-	iconURL := app_url.IconVisitSubmitted.String()
+	iconURL := app_url.IconCaseLarge.String()
 	doctorAssignment := findActiveDoctor(data.CareTeamMembers)
 
 	if doctorAssignment != nil {
@@ -273,11 +275,12 @@ func (v *incompleteFollowupVisitNotification) canRenderCaseNotificationView() bo
 
 func (v *incompleteFollowupVisitNotification) makeCaseNotificationView(data *caseData) (common.ClientView, error) {
 	nView := &caseNotificationMessageView{
-		ID:        data.Notification.ID,
-		Title:     "Complete your follow-up visit",
-		IconURL:   app_url.IconCaseSmall,
-		ActionURL: app_url.ContinueVisitAction(v.PatientVisitID),
-		DateTime:  data.Notification.CreationDate,
+		ID:            data.Notification.ID,
+		Title:         "Complete your follow-up visit",
+		IconURL:       app_url.IconCaseSmall,
+		ActionURL:     app_url.ContinueVisitAction(v.PatientVisitID),
+		CreationTime:  data.Notification.CreationDate,
+		CreationEpoch: data.Notification.CreationDate.Unix(),
 	}
 	return nView, nView.Validate()
 }
@@ -312,11 +315,12 @@ func (v *startFollowupVisitNotification) canRenderCaseNotificationView() bool { 
 
 func (v *startFollowupVisitNotification) makeCaseNotificationView(data *caseData) (common.ClientView, error) {
 	nView := &caseNotificationMessageView{
-		ID:        data.Notification.ID,
-		Title:     "Start your follow-up visit",
-		IconURL:   app_url.IconCaseSmall,
-		ActionURL: app_url.ContinueVisitAction(v.PatientVisitID),
-		DateTime:  data.Notification.CreationDate,
+		ID:            data.Notification.ID,
+		Title:         "Start your follow-up visit",
+		IconURL:       app_url.IconCaseSmall,
+		ActionURL:     app_url.ContinueVisitAction(v.PatientVisitID),
+		CreationTime:  data.Notification.CreationDate,
+		CreationEpoch: data.Notification.CreationDate.Unix(),
 	}
 	return nView, nView.Validate()
 }
