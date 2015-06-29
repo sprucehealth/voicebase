@@ -2042,8 +2042,10 @@ func testNotifyMeCard(t *testing.T, notifyMeCard *phNotifyMeView, state string) 
 }
 
 func testContactUsSection(t *testing.T, contactUsCard map[string]interface{}) {
-
-	jsonData, err := json.Marshal(contactUsCard)
+	views, ok := contactUsCard["views"].([]interface{})
+	test.Equals(t, true, ok)
+	test.Equals(t, 1, len(views))
+	jsonData, err := json.Marshal(views[0])
 	test.OK(t, err)
 
 	var card phSmallIconText
@@ -2056,7 +2058,10 @@ func testContactUsSection(t *testing.T, contactUsCard map[string]interface{}) {
 }
 
 func testShareSpruceSection(t *testing.T, shareSpruceView map[string]interface{}) {
-	jsonData, err := json.Marshal(shareSpruceView)
+	views, ok := shareSpruceView["views"].([]interface{})
+	test.Equals(t, true, ok)
+	test.Equals(t, 1, len(views))
+	jsonData, err := json.Marshal(views[0])
 	test.OK(t, err)
 	var card phSmallIconText
 	test.OK(t, json.Unmarshal(jsonData, &card))
