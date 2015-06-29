@@ -605,7 +605,7 @@ func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 	test.OK(t, standardView.Validate())
 	test.Equals(t, "We'll notify you when your doctor has reviewed your visit.", standardView.Title)
 	test.Equals(t, app_url.ViewCaseAction(1).String(), standardView.ActionURL.String())
-	test.Equals(t, app_url.IconVisitSubmitted.String(), standardView.IconURL)
+	test.Equals(t, app_url.IconCaseLarge.String(), standardView.IconURL)
 	testShareSpruceSection(t, items[1].(map[string]interface{}))
 }
 

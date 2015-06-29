@@ -17,14 +17,15 @@ const (
 )
 
 type caseNotificationMessageView struct {
-	ID          int64                 `json:"id,string"`
-	Type        string                `json:"type"`
-	Title       string                `json:"title"`
-	IconURL     *app_url.SpruceAsset  `json:"icon_url"`
-	ActionURL   *app_url.SpruceAction `json:"action_url"`
-	MessageID   int64                 `json:"message_id,string"`
-	RoundedIcon bool                  `json:"rounded_icon"`
-	DateTime    time.Time             `json:"date_time"`
+	ID            int64                 `json:"id,string"`
+	Type          string                `json:"type"`
+	Title         string                `json:"title"`
+	IconURL       *app_url.SpruceAsset  `json:"icon_url"`
+	ActionURL     *app_url.SpruceAction `json:"action_url"`
+	MessageID     int64                 `json:"message_id,string"`
+	RoundedIcon   bool                  `json:"rounded_icon"`
+	CreationTime  time.Time             `json:"date_time"`
+	CreationEpoch int64                 `json:"creation_timestamp"`
 }
 
 func (c *caseNotificationMessageView) Validate() error {
