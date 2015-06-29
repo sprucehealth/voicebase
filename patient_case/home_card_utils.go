@@ -365,11 +365,15 @@ func getShareSpruceSection(currentAppVersion *common.Version, dataAPI api.DataAP
 	}
 	switch {
 	case currentAppVersion.GreaterThanOrEqualTo(referFriendLaunchVersion110) && currentAppVersion.LessThan(referFriendVersion202):
-		return &phSmallIconText{
-			Title:       referralDisplayInfo.ReferralProgram.HomeCardText(),
-			IconURL:     referralDisplayInfo.ReferralProgram.HomeCardImageURL(),
-			ActionURL:   app_url.ViewReferFriendAction().String(),
-			RoundedIcon: true,
+		return &phSectionView{
+			Views: []common.ClientView{
+				&phSmallIconText{
+					Title:       referralDisplayInfo.ReferralProgram.HomeCardText(),
+					IconURL:     referralDisplayInfo.ReferralProgram.HomeCardImageURL(),
+					ActionURL:   app_url.ViewReferFriendAction().String(),
+					RoundedIcon: true,
+				},
+			},
 		}, nil
 	case currentAppVersion.GreaterThanOrEqualTo(referFriendVersion202):
 		return &phReferFriend{
@@ -381,11 +385,15 @@ func getShareSpruceSection(currentAppVersion *common.Version, dataAPI api.DataAP
 }
 
 func getSendUsMessageSection() common.ClientView {
-	return &phSmallIconText{
-		Title:       "Have a question? Send us a message.",
-		IconURL:     app_url.IconSupport,
-		ActionURL:   app_url.ViewSupportAction().String(),
-		RoundedIcon: true,
+	return &phSectionView{
+		Views: []common.ClientView{
+			&phSmallIconText{
+				Title:       "Have a question? Send us a message.",
+				IconURL:     app_url.IconSupport,
+				ActionURL:   app_url.ViewSupportAction().String(),
+				RoundedIcon: true,
+			},
+		},
 	}
 }
 
