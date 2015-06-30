@@ -27,6 +27,7 @@ type Message struct {
 	ID           int64          `json:"message_id,string"`
 	Type         string         `json:"type"`
 	Time         time.Time      `json:"date_time"`
+	Timestamp    int64          `json:"timestamp"`
 	SenderID     int64          `json:"sender_participant_id,string"`
 	Message      string         `json:"message"`
 	Attachments  []*Attachment  `json:"attachments,omitempty"`
@@ -155,6 +156,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			ID:          msg.ID,
 			Type:        msgType,
 			Time:        msg.Time,
+			Timestamp:   msg.Time.Unix(),
 			SenderID:    msg.PersonID,
 			Message:     msg.Body,
 			StatusText:  msg.EventText,
