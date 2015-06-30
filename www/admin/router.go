@@ -93,10 +93,10 @@ func SetupRoutes(r *mux.Router, config *Config) {
 
 	adminRoles := []string{api.RoleAdmin}
 	authFilter := www.AuthRequiredFilter(config.AuthAPI, adminRoles, nil)
-	r.Handle(`/admin/doctors/{id:[0-9]+}/dl/{attr:[A-Za-z0-9_\-]+}`, authFilter(
+	r.Handle(`/admin/providers/{id:[0-9]+}/dl/{attr:[A-Za-z0-9_\-]+}`, authFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI, map[string][]string{
 			httputil.Get: []string{PermDoctorsView},
-		}, NewDoctorAttrDownloadHandler(r, config.DataAPI, config.Stores.MustGet("onboarding")), nil))).Name("admin-doctor-attr-download")
+		}, NewProviderAttrDownloadHandler(r, config.DataAPI, config.Stores.MustGet("onboarding")), nil))).Name("admin-doctor-attr-download")
 	r.Handle(`/admin/analytics/reports/{id:[0-9]+}/presentation/iframe`, authFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
@@ -119,71 +119,73 @@ func SetupRoutes(r *mux.Router, config *Config) {
 				httputil.Patch: []string{PermCFGEdit},
 			},
 			NewCFGHandler(config.Cfg), nil)))
-	r.Handle(`/admin/api/care_providers/state_pathway_mappings`, apiAuthFilter(
+	r.Handle(`/admin/api/providers/state_pathway_mappings`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				httputil.Get: []string{PermDoctorsView},
 			},
-			NewCPMappingsHandler(config.DataAPI), nil)))
-	r.Handle(`/admin/api/care_providers/state_pathway_mappings/summary`, apiAuthFilter(
+			NewProviderMappingsHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/providers/state_pathway_mappings/summary`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				httputil.Get: []string{PermDoctorsView},
 			},
-			NewCPMappingsSummaryHandler(config.DataAPI), nil)))
-	r.Handle(`/admin/api/doctors`, apiAuthFilter(
+			NewProviderMappingsSummaryHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/providers`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				httputil.Get:  []string{PermDoctorsView},
+				httputil.Post: []string{PermDoctorsEdit},
+			},
+			NewProviderSearchAPIHandler(config.DataAPI, config.AuthAPI), nil)))
+	r.Handle(`/admin/api/providers/{id:[0-9]+}`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				httputil.Get: []string{PermDoctorsView},
 			},
-			NewDoctorSearchAPIHandler(config.DataAPI), nil)))
-	r.Handle(`/admin/api/doctors/{id:[0-9]+}`, apiAuthFilter(
+			NewProviderAPIHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/providers/{id:[0-9]+}/attributes`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				httputil.Get: []string{PermDoctorsView},
 			},
-			NewDoctorAPIHandler(config.DataAPI), nil)))
-	r.Handle(`/admin/api/doctors/{id:[0-9]+}/attributes`, apiAuthFilter(
-		www.PermissionsRequiredHandler(config.AuthAPI,
-			map[string][]string{
-				httputil.Get: []string{PermDoctorsView},
-			},
-			NewDoctorAttributesAPIHandler(config.DataAPI), nil)))
-	r.Handle(`/admin/api/doctors/{id:[0-9]+}/licenses`, apiAuthFilter(
+			NewProviderAttributesAPIHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/providers/{id:[0-9]+}/licenses`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				httputil.Get: []string{PermDoctorsView},
 				httputil.Put: []string{PermDoctorsEdit},
 			},
 			NewMedicalLicenseAPIHandler(config.DataAPI), nil)))
-	r.Handle(`/admin/api/doctors/{id:[0-9]+}/profile`, apiAuthFilter(
+	r.Handle(`/admin/api/providers/{id:[0-9]+}/profile`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				httputil.Get: []string{PermDoctorsView},
 				httputil.Put: []string{PermDoctorsEdit},
 			},
-			NewDoctorProfileAPIHandler(config.DataAPI), nil)))
-	r.Handle(`/admin/api/doctors/{id:[0-9]+}/profile_image/{type:[a-z]+}`, apiAuthFilter(
+			NewProviderProfileAPIHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/providers/{id:[0-9]+}/profile_image/{type:[a-z]+}`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				httputil.Get: []string{PermDoctorsView},
 				httputil.Put: []string{PermDoctorsEdit},
 			},
-			NewDoctorProfileImageAPIHandler(config.DataAPI, config.Stores.MustGet("thumbnails")), nil)))
-	r.Handle(`/admin/api/doctors/{id:[0-9]+}/eligibility`, apiAuthFilter(
+			NewProviderProfileImageAPIHandler(config.DataAPI, config.Stores.MustGet("thumbnails")), nil)))
+	r.Handle(`/admin/api/providers/{id:[0-9]+}/eligibility`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				httputil.Get:   []string{PermDoctorsView},
 				httputil.Patch: []string{PermDoctorsEdit},
 			},
-			NewDoctorEligibilityListAPIHandler(config.DataAPI), nil)))
-	r.Handle(`/admin/api/doctors/{id:[0-9]+}/treatment_plan/favorite`, apiAuthFilter(
+			NewProviderEligibilityListAPIHandler(config.DataAPI), nil)))
+	r.Handle(`/admin/api/providers/{id:[0-9]+}/treatment_plan/favorite`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
 				httputil.Get: []string{PermFTPView},
 			},
-			NewDoctorFTPHandler(config.DataAPI, config.MediaStore), nil)))
-	r.Handle(`/admin/api/dronboarding`, apiAuthFilter(noPermsRequired(NewDoctorOnboardingURLAPIHandler(r, config.DataAPI, config.Signer, config.Cfg))))
+			NewProviderFTPHandler(config.DataAPI, config.MediaStore), nil)))
+	r.Handle(`/admin/api/dronboarding`, apiAuthFilter(
+		noPermsRequired(NewProviderOnboardingURLAPIHandler(r, config.DataAPI, config.Signer, config.Cfg))))
 	r.Handle(`/admin/api/guides/resources`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{

@@ -171,7 +171,7 @@ module.exports = {
 
 	Alert: React.createClass({displayName: "Alert",
 		propTypes: {
-			type: React.PropTypes.oneOf(['success', 'info', 'warning', 'danger'])
+			type: React.PropTypes.oneOf(['success', 'info', 'warning', 'danger']).isRequired
 		},
 		getDefaultProps: function(): any {
 			return {"type": "info"};

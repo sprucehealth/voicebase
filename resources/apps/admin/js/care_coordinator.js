@@ -9,6 +9,7 @@ var Routing = require("../../libs/routing.js");
 var Time = require("../../libs/time.js");
 var Utils = require("../../libs/utils.js");
 var Modals = require("../../libs/modals.js");
+var $ = require("jquery");
 
 module.exports = {
 	Page: React.createClass({displayName: "CareCoordinatorPage",

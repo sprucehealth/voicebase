@@ -52,28 +52,28 @@ module.exports = {
 	doctor: function(id: string, cb: ajaxCB) {
 		this.ajax({
 			type: "GET",
-			url: "/doctors/" + encodeURIComponent(id),
+			url: "/providers/" + encodeURIComponent(id),
 			dataType: "json"
 		}, cb);
 	},
 	doctorAttributes: function(id: string, cb: ajaxCB) {
 		this.ajax({
 			type: "GET",
-			url: "/doctors/" + encodeURIComponent(id) + "/attributes",
+			url: "/providers/" + encodeURIComponent(id) + "/attributes",
 			dataType: "json"
 		}, cb);
 	},
 	doctorFavoriteTreatmentPlans: function(id: string, cb: ajaxCB) {
 		this.ajax({
 			type: "GET",
-			url: "/doctors/" + encodeURIComponent(id) + "/treatment_plan/favorite",
+			url: "/providers/" + encodeURIComponent(id) + "/treatment_plan/favorite",
 			dataType: "json"
 		}, cb);
 	},
 	medicalLicenses: function(doctorID: string, cb: ajaxCB) {
 		this.ajax({
 			type: "GET",
-			url: "/doctors/" + doctorID + "/licenses",
+			url: "/providers/" + doctorID + "/licenses",
 			dataType: "json"
 		}, cb);
 	},
@@ -81,7 +81,7 @@ module.exports = {
 		this.ajax({
 			type: "PUT",
 			contentType: "application/json",
-			url: "/doctors/" + doctorID + "/licenses",
+			url: "/providers/" + doctorID + "/licenses",
 			data: JSON.stringify({"licenses": licenses}),
 			dataType: "json"
 		}, cb);
@@ -89,14 +89,14 @@ module.exports = {
 	searchDoctors: function(query: string, cb: ajaxCB) {
 		this.ajax({
 			type: "GET",
-			url: "/doctors?q=" + encodeURIComponent(query),
+			url: "/providers?q=" + encodeURIComponent(query),
 			dataType: "json"
 		}, cb);
 	},
 	careProviderProfile: function(doctorID: string, cb: ajaxCB) {
 		this.ajax({
 			type: "GET",
-			url: "/doctors/" + doctorID + "/profile",
+			url: "/providers/" + doctorID + "/profile",
 			dataType: "json"
 		}, cb);
 	},
@@ -104,7 +104,7 @@ module.exports = {
 		this.ajax({
 			type: "PUT",
 			contentType: "application/json",
-			url: "/doctors/" + doctorID + "/profile",
+			url: "/providers/" + doctorID + "/profile",
 			data: JSON.stringify(profile),
 			dataType: "json"
 		}, cb);
@@ -117,7 +117,7 @@ module.exports = {
 		}, cb);
 	},
 	doctorProfileImageURL: function(id: string, pImageType: string): string {
-		return "/admin/api/doctors/" + encodeURIComponent(id) + "/profile_image/" + encodeURIComponent(pImageType);
+		return "/admin/api/providers/" + encodeURIComponent(id) + "/profile_image/" + encodeURIComponent(pImageType);
 	},
 	updateDoctorProfileImage: function(id: string, pImageType: string, formData: any, cb: ajaxCB) {
 		this.ajax({
@@ -125,7 +125,7 @@ module.exports = {
 			cache: false,
 			contentType: false,
 			processData: false,
-			url: "/doctors/" + encodeURIComponent(id) + "/profile_image/" + encodeURIComponent(pImageType),
+			url: "/providers/" + encodeURIComponent(id) + "/profile_image/" + encodeURIComponent(pImageType),
 			data: formData
 		}, cb);
 	},
@@ -139,21 +139,21 @@ module.exports = {
 		}
 		this.ajax({
 			type: "GET",
-			url: "/care_providers/state_pathway_mappings?" + query.join("&"),
+			url: "/providers/state_pathway_mappings?" + query.join("&"),
 			dataType: "json"
 		}, cb);
 	},
 	careProviderStatePathwayMappingsSummary: function(cb: ajaxCB) {
 		this.ajax({
 			type: "GET",
-			url: "/care_providers/state_pathway_mappings/summary",
+			url: "/providers/state_pathway_mappings/summary",
 			dataType: "json"
 		}, cb);
 	},
 	careProviderEligibility: function(providerID: string, cb: ajaxCB) {
 		this.ajax({
 			type: "GET",
-			url: "/doctors/" + encodeURIComponent(providerID) + "/eligibility",
+			url: "/providers/" + encodeURIComponent(providerID) + "/eligibility",
 			dataType: "json"
 		}, cb);
 	},
@@ -161,7 +161,7 @@ module.exports = {
 		this.ajax({
 			type: "PATCH",
 			contentType: "application/json",
-			url: "/doctors/" + encodeURIComponent(providerID) + "/eligibility",
+			url: "/providers/" + encodeURIComponent(providerID) + "/eligibility",
 			data: JSON.stringify(update),
 			dataType: "json"
 		}, cb);

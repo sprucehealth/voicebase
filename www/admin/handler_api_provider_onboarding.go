@@ -27,24 +27,24 @@ var onboardTimeExpirationDef = &cfg.ValueDef{
 	Default:     time.Hour * 24 * 14,
 }
 
-type doctorOnboardingURLAPIHandler struct {
+type providerOnboardingURLAPIHandler struct {
 	router  *mux.Router
 	dataAPI api.DataAPI
 	signer  *sig.Signer
 }
 
-func NewDoctorOnboardingURLAPIHandler(r *mux.Router, dataAPI api.DataAPI, signer *sig.Signer, cfgStore cfg.Store) http.Handler {
+func NewProviderOnboardingURLAPIHandler(r *mux.Router, dataAPI api.DataAPI, signer *sig.Signer, cfgStore cfg.Store) http.Handler {
 	cfgStore.Register(onboardTimeExpirationDef)
-	return httputil.SupportedMethods(&doctorOnboardingURLAPIHandler{
+	return httputil.SupportedMethods(&providerOnboardingURLAPIHandler{
 		router:  r,
 		dataAPI: dataAPI,
 		signer:  signer,
 	}, httputil.Get)
 }
 
-func (h *doctorOnboardingURLAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *providerOnboardingURLAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	account := context.Get(r, www.CKAccount).(*common.Account)
-	audit.LogAction(account.ID, "AdminAPI", "GenerateDoctorOnboardingURL", nil)
+	audit.LogAction(account.ID, "AdminAPI", "GenerateProviderOnboardingURL", nil)
 
 	cfgSnap := cfg.Context(r)
 

@@ -26,7 +26,7 @@ func TestAvailableStates(t *testing.T) {
 		AccountID: encoding.NewObjectID(accountID),
 		Address:   &common.Address{},
 	}
-	_, err = testData.DataAPI.RegisterDoctor(doctor)
+	_, err = testData.DataAPI.RegisterProvider(doctor, api.RoleDoctor)
 	test.OK(t, err)
 
 	// Doctor registered but not elligible in any state

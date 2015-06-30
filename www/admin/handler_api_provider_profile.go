@@ -17,7 +17,7 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
-type doctorProfileForm struct {
+type providerProfileForm struct {
 	ShortTitle          string `json:"short_title"`
 	LongTitle           string `json:"long_title"`
 	ShortDisplayName    string `json:"short_display_name"`
@@ -33,17 +33,17 @@ type doctorProfileForm struct {
 	Experience          string `json:"experience"`
 }
 
-type doctorProfileAPIHandler struct {
+type providerProfileAPIHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewDoctorProfileAPIHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&doctorProfileAPIHandler{
+func NewProviderProfileAPIHandler(dataAPI api.DataAPI) http.Handler {
+	return httputil.SupportedMethods(&providerProfileAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Put)
 }
 
-func (h *doctorProfileAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *providerProfileAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	doctorID, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
 	if err != nil {
 		www.APIInternalError(w, r, err)
@@ -62,8 +62,8 @@ func (h *doctorProfileAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 	account := context.Get(r, www.CKAccount).(*common.Account)
 
 	switch r.Method {
-	case "GET":
-		audit.LogAction(account.ID, "AdminAPI", "GetDoctorProfile", map[string]interface{}{"doctor_id": doctorID})
+	case httputil.Get:
+		audit.LogAction(account.ID, "AdminAPI", "GetProviderProfile", map[string]interface{}{"provider_id": doctorID})
 
 		profile, err := h.dataAPI.CareProviderProfile(doctor.AccountID.Int64())
 		if err != nil {
@@ -110,7 +110,7 @@ func (h *doctorProfileAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 			}
 		}
 
-		form := &doctorProfileForm{
+		form := &providerProfileForm{
 			ShortTitle:          doctor.ShortTitle,
 			LongTitle:           doctor.LongTitle,
 			ShortDisplayName:    doctor.ShortDisplayName,
@@ -126,10 +126,10 @@ func (h *doctorProfileAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 			Experience:          profile.Experience,
 		}
 		httputil.JSONResponse(w, http.StatusOK, form)
-	case "PUT":
-		audit.LogAction(account.ID, "AdminAPI", "UpdateDoctorProfile", map[string]interface{}{"doctor_id": doctorID})
+	case httputil.Put:
+		audit.LogAction(account.ID, "AdminAPI", "UpdateProviderProfile", map[string]interface{}{"provider_id": doctorID})
 
-		var form doctorProfileForm
+		var form providerProfileForm
 		if err := json.NewDecoder(r.Body).Decode(&form); err != nil {
 			www.APIInternalError(w, r, err)
 			return

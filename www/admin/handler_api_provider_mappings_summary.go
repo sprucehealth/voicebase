@@ -11,21 +11,21 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
-type cpMappingsSummaryHandler struct {
+type providerMappingsSummaryHandler struct {
 	dataAPI api.DataAPI
 }
 
-type cpMappingsSummaryResponse struct {
+type providerMappingsSummaryResponse struct {
 	Summary []*api.CareProviderStatePathwayMappingSummary `json:"summary"`
 }
 
-func NewCPMappingsSummaryHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&cpMappingsSummaryHandler{
+func NewProviderMappingsSummaryHandler(dataAPI api.DataAPI) http.Handler {
+	return httputil.SupportedMethods(&providerMappingsSummaryHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get)
 }
 
-func (h *cpMappingsSummaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *providerMappingsSummaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	account := context.Get(r, www.CKAccount).(*common.Account)
 
 	audit.LogAction(account.ID, "AdminAPI", "CareProviderStatePathwayMappingsSummary", nil)
@@ -40,5 +40,5 @@ func (h *cpMappingsSummaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	if summary == nil {
 		summary = []*api.CareProviderStatePathwayMappingSummary{}
 	}
-	httputil.JSONResponse(w, http.StatusOK, cpMappingsSummaryResponse{Summary: summary})
+	httputil.JSONResponse(w, http.StatusOK, providerMappingsSummaryResponse{Summary: summary})
 }

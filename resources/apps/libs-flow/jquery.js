@@ -3,3 +3,6 @@ declare module jQuery {
 }
 
 declare var jQuery: jQuery;
+
+// TODO: temporary
+declare var $: any;

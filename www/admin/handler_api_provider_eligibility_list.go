@@ -16,7 +16,7 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
-type doctorEligibilityListAPIHandler struct {
+type providerEligibilityListAPIHandler struct {
 	dataAPI api.DataAPI
 }
 
@@ -33,19 +33,19 @@ type statePathwayMappingUpdate struct {
 	Unavailable *bool `json:"unavailable"`
 }
 
-type doctorEligibilityUpdateRequest struct {
+type providerEligibilityUpdateRequest struct {
 	Delete []encoding.ObjectID          `json:"delete,omitempty"`
 	Create []*statePathwayMapping       `json:"create,omitempty"`
 	Update []*statePathwayMappingUpdate `json:"update,omitempty"`
 }
 
-func NewDoctorEligibilityListAPIHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&doctorEligibilityListAPIHandler{
+func NewProviderEligibilityListAPIHandler(dataAPI api.DataAPI) http.Handler {
+	return httputil.SupportedMethods(&providerEligibilityListAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Patch)
 }
 
-func (h *doctorEligibilityListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *providerEligibilityListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	doctorID, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
 	if err != nil {
 		www.APIInternalError(w, r, err)
@@ -64,7 +64,7 @@ func (h *doctorEligibilityListAPIHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	}
 }
 
-func (h *doctorEligibilityListAPIHandler) get(w http.ResponseWriter, r *http.Request, doctorID int64) {
+func (h *providerEligibilityListAPIHandler) get(w http.ResponseWriter, r *http.Request, doctorID int64) {
 	mappings, err := h.dataAPI.CareProviderStatePathwayMappings(&api.CareProviderStatePathwayMappingQuery{
 		Provider: api.Provider{
 			Role: api.RoleDoctor,
@@ -75,13 +75,13 @@ func (h *doctorEligibilityListAPIHandler) get(w http.ResponseWriter, r *http.Req
 		www.APIInternalError(w, r, err)
 		return
 	}
-	httputil.JSONResponse(w, http.StatusOK, &cpMappingsResponse{
+	httputil.JSONResponse(w, http.StatusOK, &providerMappingsResponse{
 		Mappings: mappings,
 	})
 }
 
-func (h *doctorEligibilityListAPIHandler) patch(w http.ResponseWriter, r *http.Request, doctorID int64) {
-	var req doctorEligibilityUpdateRequest
+func (h *providerEligibilityListAPIHandler) patch(w http.ResponseWriter, r *http.Request, doctorID int64) {
+	var req providerEligibilityUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		www.APIBadRequestError(w, r, "unable to parse body")
 		return
