@@ -1,6 +1,6 @@
 #!/bin/bash
 
-APPS="admin dashboard dronboard home"
+APPS="admin dronboard home"
 RESOURCEPATH="$(cd "$(dirname "$0")/.."; pwd)/resources"
 
 if [ "$1" != "" ]; then
