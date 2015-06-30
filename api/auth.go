@@ -63,9 +63,6 @@ func NewAuthAPI(db *sql.DB, expireDuration, renewDuration, extendedAuthExpireDur
 }
 
 func (m *auth) CreateAccount(email, password, roleType string) (int64, error) {
-	if password == "" {
-		return 0, ErrInvalidPassword
-	}
 	email = normalizeEmail(email)
 
 	// ensure to check that the email does not already exist in the database
@@ -76,13 +73,19 @@ func (m *auth) CreateAccount(email, password, roleType string) (int64, error) {
 		return 0, err
 	}
 
-	hashedPassword, err := m.hasher.GenerateFromPassword([]byte(password))
-	if err != nil {
-		return 0, err
+	// Hash the password. If one was not provided then use an empty hash which makes
+	// it impossible to authenticate the account.
+	var hashedPassword string
+	if password != "" {
+		hash, err := m.hasher.GenerateFromPassword([]byte(password))
+		if err != nil {
+			return 0, err
+		}
+		hashedPassword = string(hash)
 	}
 
 	var roleTypeID int64
-	if err := m.db.QueryRow("SELECT id from role_type where role_type_tag = ?", roleType).Scan(&roleTypeID); err == sql.ErrNoRows {
+	if err := m.db.QueryRow("SELECT id FROM role_type WHERE role_type_tag = ?", roleType).Scan(&roleTypeID); err == sql.ErrNoRows {
 		return 0, ErrInvalidRoleType
 	}
 
@@ -93,7 +96,7 @@ func (m *auth) CreateAccount(email, password, roleType string) (int64, error) {
 	}
 
 	// create a new account since the user does not exist on the platform
-	res, err := tx.Exec("INSERT INTO account (email, password, role_type_id) VALUES (?, ?, ?)", email, string(hashedPassword), roleTypeID)
+	res, err := tx.Exec("INSERT INTO account (email, password, role_type_id) VALUES (?, ?, ?)", email, hashedPassword, roleTypeID)
 	if err != nil {
 		tx.Rollback()
 		return 0, err

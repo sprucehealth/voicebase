@@ -13,17 +13,17 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
-type doctorAPIHandler struct {
+type providerAPIHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewDoctorAPIHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&doctorAPIHandler{
+func NewProviderAPIHandler(dataAPI api.DataAPI) http.Handler {
+	return httputil.SupportedMethods(&providerAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get)
 }
 
-func (h *doctorAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *providerAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	doctorID, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)

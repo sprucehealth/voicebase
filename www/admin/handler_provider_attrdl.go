@@ -16,24 +16,24 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
-type doctorAttrDownloadHandler struct {
+type providerAttrDownloadHandler struct {
 	router  *mux.Router
 	dataAPI api.DataAPI
 	store   storage.Store
 }
 
-func NewDoctorAttrDownloadHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store) http.Handler {
-	return httputil.SupportedMethods(&doctorAttrDownloadHandler{
+func NewProviderAttrDownloadHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store) http.Handler {
+	return httputil.SupportedMethods(&providerAttrDownloadHandler{
 		router:  router,
 		dataAPI: dataAPI,
 		store:   store,
 	}, httputil.Get)
 }
 
-func (h *doctorAttrDownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *providerAttrDownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	doctorID, err := strconv.ParseInt(vars["id"], 10, 64)
+	providerID, err := strconv.ParseInt(vars["id"], 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -42,9 +42,9 @@ func (h *doctorAttrDownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 	attrName := vars["attr"]
 
 	account := context.Get(r, www.CKAccount).(*common.Account)
-	audit.LogAction(account.ID, "Admin", "DownloadDoctorAttributeFile", map[string]interface{}{"doctor_id": doctorID, "attribute": attrName})
+	audit.LogAction(account.ID, "Admin", "DownloadProviderAttributeFile", map[string]interface{}{"provider_id": providerID, "attribute": attrName})
 
-	attr, err := h.dataAPI.DoctorAttributes(doctorID, []string{attrName})
+	attr, err := h.dataAPI.DoctorAttributes(providerID, []string{attrName})
 	if err != nil {
 		www.InternalServerError(w, r, err)
 		return

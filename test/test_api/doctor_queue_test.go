@@ -21,7 +21,7 @@ func TestDoctorQueue(t *testing.T) {
 		AccountID: encoding.NewObjectID(accountID),
 		Address:   &common.Address{},
 	}
-	_, err = testData.DataAPI.RegisterDoctor(cc1)
+	_, err = testData.DataAPI.RegisterProvider(cc1, api.RoleDoctor)
 	test.OK(t, err)
 
 	accountID, err = testData.AuthAPI.CreateAccount("cc2@sprucehealth.com", "abc", api.RoleCC)
@@ -30,7 +30,7 @@ func TestDoctorQueue(t *testing.T) {
 		AccountID: encoding.NewObjectID(accountID),
 		Address:   &common.Address{},
 	}
-	_, err = testData.DataAPI.RegisterDoctor(cc2)
+	_, err = testData.DataAPI.RegisterProvider(cc2, api.RoleDoctor)
 	test.OK(t, err)
 
 	accountID, err = testData.AuthAPI.CreateAccount("test@sprucehealth.com", "abc", api.RolePatient)

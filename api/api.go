@@ -452,7 +452,7 @@ func (o ListCareProvidersOption) Has(opt ListCareProvidersOption) bool {
 
 type DoctorAPI interface {
 	ListCareProviders(opt ListCareProvidersOption) ([]*common.Doctor, error)
-	RegisterDoctor(doctor *common.Doctor) (int64, error)
+	RegisterProvider(provider *common.Doctor, role string) (int64, error)
 	GetAccountIDFromDoctorID(doctorID int64) (int64, error)
 	UpdateDoctor(doctorID int64, req *DoctorUpdate) error
 	GetDoctorFromID(doctorID int64) (doctor *common.Doctor, err error)

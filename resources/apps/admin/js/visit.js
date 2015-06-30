@@ -7,6 +7,7 @@ var Nav = require("../../libs/nav.js");
 var React = require("react");
 var Routing = require("../../libs/routing.js");
 var Utils = require("../../libs/utils.js");
+var $ = require("jquery");
 require('date-utils');
 
 module.exports = {

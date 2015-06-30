@@ -138,7 +138,7 @@ func (d *signupDoctorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// then, register the signed up user as a doctor
-	doctorID, err := d.dataAPI.RegisterDoctor(doctorToRegister)
+	doctorID, err := d.dataAPI.RegisterProvider(doctorToRegister, api.RoleDoctor)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return

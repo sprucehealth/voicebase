@@ -179,7 +179,7 @@ func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					Address:          address,
 				}
 
-				doctorID, err := h.dataAPI.RegisterDoctor(doctor)
+				doctorID, err := h.dataAPI.RegisterProvider(doctor, api.RoleDoctor)
 				if err != nil {
 					www.InternalServerError(w, r, err)
 					return

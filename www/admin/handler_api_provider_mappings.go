@@ -12,21 +12,21 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
-type cpMappingsHandler struct {
+type providerMappingsHandler struct {
 	dataAPI api.DataAPI
 }
 
-type cpMappingsResponse struct {
+type providerMappingsResponse struct {
 	Mappings []*api.CareProviderStatePathway `json:"mappings"`
 }
 
-func NewCPMappingsHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&cpMappingsHandler{
+func NewProviderMappingsHandler(dataAPI api.DataAPI) http.Handler {
+	return httputil.SupportedMethods(&providerMappingsHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get)
 }
 
-func (h *cpMappingsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *providerMappingsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	account := context.Get(r, www.CKAccount).(*common.Account)
 
 	audit.LogAction(account.ID, "AdminAPI", "ListCareProviderStatePathwayMappings", nil)
@@ -58,5 +58,5 @@ func (h *cpMappingsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if mappings == nil {
 		mappings = []*api.CareProviderStatePathway{}
 	}
-	httputil.JSONResponse(w, http.StatusOK, cpMappingsResponse{Mappings: mappings})
+	httputil.JSONResponse(w, http.StatusOK, providerMappingsResponse{Mappings: mappings})
 }

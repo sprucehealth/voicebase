@@ -15,18 +15,50 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
-func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
+func (d *DataService) RegisterProvider(provider *common.Doctor, role string) (int64, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, err
 	}
 
+	switch role {
+	case RoleCC:
+		if provider.ShortDisplayName == "" {
+			provider.ShortDisplayName = provider.FirstName + " " + provider.LastName
+		}
+		if provider.LongDisplayName == "" {
+			provider.LongDisplayName = provider.FirstName + " " + provider.LastName
+		}
+		if provider.ShortTitle == "" {
+			provider.ShortTitle = "Care Provider"
+		}
+		if provider.LongTitle == "" {
+			provider.LongTitle = "Care Provider"
+		}
+	case RoleDoctor:
+		if provider.ShortDisplayName == "" {
+			provider.ShortDisplayName = "Dr. " + provider.LastName
+		}
+		if provider.LongDisplayName == "" {
+			provider.LongDisplayName = "Dr. " + provider.FirstName + " " + provider.LastName
+		}
+		if provider.ShortTitle == "" {
+			provider.ShortTitle = "Doctor"
+		}
+		if provider.LongTitle == "" {
+			provider.LongTitle = "Doctor"
+		}
+	}
+
 	res, err := tx.Exec(`
-		insert into doctor (account_id, first_name, last_name, short_title, long_title, short_display_name, long_display_name, suffix, prefix, middle_name, gender, dob_year, dob_month, dob_day, status, clinician_id)
-		values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		doctor.AccountID.Int64(), doctor.FirstName, doctor.LastName, doctor.ShortTitle, doctor.LongTitle, doctor.ShortDisplayName, doctor.LongDisplayName,
-		doctor.MiddleName, doctor.Suffix, doctor.Prefix, doctor.Gender, doctor.DOB.Year, doctor.DOB.Month, doctor.DOB.Day,
-		DoctorRegistered, doctor.DoseSpotClinicianID)
+		INSERT INTO doctor (
+			account_id, first_name, last_name, short_title, long_title, short_display_name,	long_display_name,
+			suffix, prefix, middle_name, gender, dob_year, dob_month, dob_day, status, clinician_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		provider.AccountID.Int64(), provider.FirstName, provider.LastName, provider.ShortTitle,
+		provider.LongTitle, provider.ShortDisplayName, provider.LongDisplayName, provider.MiddleName,
+		provider.Suffix, provider.Prefix, provider.Gender, provider.DOB.Year, provider.DOB.Month, provider.DOB.Day,
+		DoctorRegistered, provider.DoseSpotClinicianID)
 	if err != nil {
 		tx.Rollback()
 		return 0, errors.Trace(err)
@@ -38,34 +70,37 @@ func (d *DataService) RegisterDoctor(doctor *common.Doctor) (int64, error) {
 		return 0, errors.Trace(err)
 	}
 
-	doctor.ID = encoding.NewObjectID(lastID)
-	doctor.Address.ID, err = addAddress(tx, doctor.Address)
-	if err != nil {
-		tx.Rollback()
-		return 0, errors.Trace(err)
-	}
+	provider.ID = encoding.NewObjectID(lastID)
 
-	_, err = tx.Exec(`insert into doctor_address_selection (doctor_id, address_id) values (?,?)`, lastID, doctor.Address.ID)
-	if err != nil {
-		tx.Rollback()
-		return 0, errors.Trace(err)
-	}
+	if provider.Address != nil {
+		provider.Address.ID, err = addAddress(tx, provider.Address)
+		if err != nil {
+			tx.Rollback()
+			return 0, errors.Trace(err)
+		}
 
-	if doctor.CellPhone != "" {
-		_, err = tx.Exec(`INSERT INTO account_phone (phone, phone_type, account_id, status) VALUES (?,?,?,?) `,
-			doctor.CellPhone.String(), PhoneCell, doctor.AccountID.Int64(), StatusActive)
+		_, err = tx.Exec(`INSERT INTO doctor_address_selection (doctor_id, address_id) VALUES (?,?)`, lastID, provider.Address.ID)
 		if err != nil {
 			tx.Rollback()
 			return 0, errors.Trace(err)
 		}
 	}
 
-	res, err = tx.Exec(`INSERT INTO person (role_type_id, role_id) VALUES (?, ?)`, d.roleTypeMapping[RoleDoctor], lastID)
+	if provider.CellPhone != "" {
+		_, err = tx.Exec(`INSERT INTO account_phone (phone, phone_type, account_id, status) VALUES (?,?,?,?) `,
+			provider.CellPhone.String(), PhoneCell, provider.AccountID.Int64(), StatusActive)
+		if err != nil {
+			tx.Rollback()
+			return 0, errors.Trace(err)
+		}
+	}
+
+	res, err = tx.Exec(`INSERT INTO person (role_type_id, role_id) VALUES (?, ?)`, d.roleTypeMapping[role], lastID)
 	if err != nil {
 		tx.Rollback()
 		return 0, errors.Trace(err)
 	}
-	doctor.PersonID, err = res.LastInsertId()
+	provider.PersonID, err = res.LastInsertId()
 	if err != nil {
 		tx.Rollback()
 		return 0, errors.Trace(err)

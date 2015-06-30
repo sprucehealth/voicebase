@@ -16,19 +16,19 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
-type doctorProfileImageAPIHandler struct {
+type providerProfileImageAPIHandler struct {
 	dataAPI    api.DataAPI
 	imageStore storage.Store
 }
 
-func NewDoctorProfileImageAPIHandler(dataAPI api.DataAPI, imageStore storage.Store) http.Handler {
-	return httputil.SupportedMethods(&doctorProfileImageAPIHandler{
+func NewProviderProfileImageAPIHandler(dataAPI api.DataAPI, imageStore storage.Store) http.Handler {
+	return httputil.SupportedMethods(&providerProfileImageAPIHandler{
 		dataAPI:    dataAPI,
 		imageStore: imageStore,
 	}, httputil.Get, httputil.Put)
 }
 
-func (h *doctorProfileImageAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *providerProfileImageAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	doctorID, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
 	if err != nil {
 		www.APIInternalError(w, r, err)
@@ -61,7 +61,7 @@ func (h *doctorProfileImageAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.
 	account := context.Get(r, www.CKAccount).(*common.Account)
 
 	if r.Method == httputil.Put {
-		audit.LogAction(account.ID, "AdminAPI", "UpdateDoctorThumbnail", map[string]interface{}{"doctor_id": doctorID, "type": profileImageType})
+		audit.LogAction(account.ID, "AdminAPI", "UpdateProviderThumbnail", map[string]interface{}{"doctor_id": doctorID, "type": profileImageType})
 
 		if err := r.ParseMultipartForm(maxMemory); err != nil {
 			www.APIInternalError(w, r, err)
@@ -105,7 +105,7 @@ func (h *doctorProfileImageAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.
 		return
 	}
 
-	audit.LogAction(account.ID, "AdminAPI", "GetDoctorThumbnail", map[string]interface{}{"doctor_id": doctorID, "type": profileImageType})
+	audit.LogAction(account.ID, "AdminAPI", "GetProviderThumbnail", map[string]interface{}{"doctor_id": doctorID, "type": profileImageType})
 
 	var storeID string
 	switch profileImageType {

@@ -15,22 +15,20 @@ import (
 
 const scheduledMessageMediaExpirationDuration = time.Hour * 24 * 7
 
-type doctorFTPHandler struct {
+type providerFTPHandler struct {
 	dataAPI    api.DataAPI
 	mediaStore *media.Store
 }
 
-type doctorFTPGETResponse struct {
+type providerFTPGETResponse struct {
 	FavoriteTreatmentPlans map[string][]*responses.FavoriteTreatmentPlan `json:"favorite_treatment_plans"`
 }
 
-func NewDoctorFTPHandler(
-	dataAPI api.DataAPI,
-	mediaStore *media.Store) http.Handler {
-	return httputil.SupportedMethods(&doctorFTPHandler{dataAPI: dataAPI, mediaStore: mediaStore}, httputil.Get)
+func NewProviderFTPHandler(dataAPI api.DataAPI, mediaStore *media.Store) http.Handler {
+	return httputil.SupportedMethods(&providerFTPHandler{dataAPI: dataAPI, mediaStore: mediaStore}, httputil.Get)
 }
 
-func (h *doctorFTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *providerFTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	doctorID, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
@@ -38,19 +36,19 @@ func (h *doctorFTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch r.Method {
-	case "GET":
+	case httputil.Get:
 		h.serveGET(w, r, doctorID)
 	}
 }
 
-func (h *doctorFTPHandler) serveGET(w http.ResponseWriter, r *http.Request, doctorID int64) {
+func (h *providerFTPHandler) serveGET(w http.ResponseWriter, r *http.Request, doctorID int64) {
 	memberships, err := h.dataAPI.FTPMembershipsForDoctor(doctorID)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
 	}
 
-	response := doctorFTPGETResponse{
+	response := providerFTPGETResponse{
 		FavoriteTreatmentPlans: make(map[string][]*responses.FavoriteTreatmentPlan),
 	}
 	for _, membership := range memberships {
@@ -64,10 +62,6 @@ func (h *doctorFTPHandler) serveGET(w http.ResponseWriter, r *http.Request, doct
 		if err != nil {
 			www.APIInternalError(w, r, err)
 			return
-		}
-
-		if _, ok := response.FavoriteTreatmentPlans[pathway.Name]; !ok {
-			response.FavoriteTreatmentPlans[pathway.Name] = make([]*responses.FavoriteTreatmentPlan, 0)
 		}
 
 		ftpr, err := responses.TransformFTPToResponse(h.dataAPI, h.mediaStore, scheduledMessageMediaExpirationDuration, ftp, pathway.Tag)
