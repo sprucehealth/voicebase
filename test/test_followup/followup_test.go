@@ -77,7 +77,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 
 	// lets query for the visit to have its status update to OPEN
 	pv = test_integration.QueryPatientVisit(
-		followupVisit.PatientVisitID.Int64(),
+		followupVisit.ID.Int64(),
 		patientAccountID,
 		map[string]string{
 			"S-Version": "Patient;Test;1.0.0;0001",
@@ -129,7 +129,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	test.Equals(t, 0, len(items))
 
 	// at this point the patient visit should be in the routed state
-	followupVisit, err = testData.DataAPI.GetPatientVisitFromID(followupVisit.PatientVisitID.Int64())
+	followupVisit, err = testData.DataAPI.GetPatientVisitFromID(followupVisit.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, common.PVStatusRouted, followupVisit.Status)
 
@@ -144,7 +144,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctor.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 1, len(pendingItems))
-	test.Equals(t, followupVisit.PatientVisitID.Int64(), pendingItems[0].ItemID)
+	test.Equals(t, followupVisit.ID.Int64(), pendingItems[0].ItemID)
 
 	// Ensure that doctor gets appropriate notification in their inbox as well as over text message
 	test.Equals(t, api.DQEventTypePatientVisit, pendingItems[0].EventType)
@@ -154,15 +154,15 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	test.Equals(t, true, strings.Contains(testData.SMSAPI.Sent[0].Text, "follow-up visit"))
 
 	// lets get the doctor to start revieiwng the visit
-	test_integration.StartReviewingPatientVisit(followupVisit.PatientVisitID.Int64(), doctor, testData, t)
+	test_integration.StartReviewingPatientVisit(followupVisit.ID.Int64(), doctor, testData, t)
 
 	// at this point the visit should be in reviewing state
-	followupVisit, err = testData.DataAPI.GetPatientVisitFromID(followupVisit.PatientVisitID.Int64())
+	followupVisit, err = testData.DataAPI.GetPatientVisitFromID(followupVisit.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, common.PVStatusReviewing, followupVisit.Status)
 
 	// now lets get the doctor to submit diagnosis for the followup visit
-	test_integration.SubmitPatientVisitDiagnosis(followupVisit.PatientVisitID.Int64(), doctor, testData, t)
+	test_integration.SubmitPatientVisitDiagnosis(followupVisit.ID.Int64(), doctor, testData, t)
 
 	// start treatment plan
 	newTP := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
@@ -195,7 +195,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	test.Equals(t, 2, len(completedItems))
 
 	// followup visit should be in treated state
-	followupVisit, err = testData.DataAPI.GetPatientVisitFromID(followupVisit.PatientVisitID.Int64())
+	followupVisit, err = testData.DataAPI.GetPatientVisitFromID(followupVisit.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, common.PVStatusTreated, followupVisit.Status)
 
@@ -262,7 +262,7 @@ func TestFollowup_LayoutVersionUpdateOnRead(t *testing.T) {
 
 	// now lets have the patient query for the followup visit with the newly updated information
 	pv = test_integration.QueryPatientVisit(
-		followupVisit.PatientVisitID.Int64(),
+		followupVisit.ID.Int64(),
 		patientAccountID,
 		map[string]string{
 			"S-Version": "Patient;Test;1.1.0;0001",
@@ -277,7 +277,7 @@ func TestFollowup_LayoutVersionUpdateOnRead(t *testing.T) {
 	test.OK(t, err)
 	layoutVersionIDAfterUpdate := fVisit.LayoutVersionID.Int64()
 	test.Equals(t, true, layoutVersionIDBeforeUpdate < layoutVersionIDAfterUpdate)
-	test.Equals(t, fVisit.PatientVisitID.Int64(), followupVisit.PatientVisitID.Int64())
+	test.Equals(t, fVisit.ID.Int64(), followupVisit.ID.Int64())
 
 }
 

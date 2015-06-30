@@ -147,7 +147,7 @@ func (s *patientVisitHandler) deletePatientVisit(w http.ResponseWriter, r *http.
 
 	// update the visit to mark it as deleted
 	visitStatus := common.PVStatusDeleted
-	if err := s.dataAPI.UpdatePatientVisit(visit.PatientVisitID.Int64(), &api.PatientVisitUpdate{
+	if err := s.dataAPI.UpdatePatientVisit(visit.ID.Int64(), &api.PatientVisitUpdate{
 		Status: &visitStatus,
 	}); err != nil {
 		apiservice.WriteError(err, w, r)

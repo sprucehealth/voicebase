@@ -78,7 +78,7 @@ func GetDiagnosisLayout(dataAPI api.DataAPI, patientVisit *common.PatientVisit, 
 	if err != nil {
 		return nil, err
 	}
-	diagnosisLayout.PatientVisitID = patientVisit.PatientVisitID.Int64()
+	diagnosisLayout.PatientVisitID = patientVisit.ID.Int64()
 
 	// get a list of question ids in ther diagnosis layout, so that we can look for answers from the doctor pertaining to this visit
 	questionIDs := getQuestionIdsInDiagnosisLayout(diagnosisLayout)
@@ -86,7 +86,7 @@ func GetDiagnosisLayout(dataAPI api.DataAPI, patientVisit *common.PatientVisit, 
 	// get the answers to the questions in the array
 	doctorAnswers, err := dataAPI.AnswersForQuestions(questionIDs, &api.DiagnosisIntake{
 		DoctorID:       doctorID,
-		PatientVisitID: patientVisit.PatientVisitID.Int64(),
+		PatientVisitID: patientVisit.ID.Int64(),
 	})
 	if err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func GetDiagnosisLayout(dataAPI api.DataAPI, patientVisit *common.PatientVisit, 
 
 		doctorAnswers, err = dataAPI.AnswersForQuestions(questionIDs, &api.DiagnosisIntake{
 			DoctorID:       doctorID,
-			PatientVisitID: visits[0].PatientVisitID.Int64(),
+			PatientVisitID: visits[0].ID.Int64(),
 		})
 		if err != nil {
 			return nil, err

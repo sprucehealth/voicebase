@@ -10,12 +10,6 @@ import (
 	"github.com/sprucehealth/backend/info_intake"
 )
 
-// Helpers to generate pointers for update calls
-
-func BoolPtr(b bool) *bool {
-	return &b
-}
-
 // db can be used when a function can accept either a *Tx or *DB.
 type db interface {
 	Query(query string, args ...interface{}) (*sql.Rows, error)

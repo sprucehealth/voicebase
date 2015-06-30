@@ -123,7 +123,7 @@ func (d *diagnosisListHandler) putDiagnosisList(w http.ResponseWriter, r *http.R
 	// populate new diagnosis set
 	set := &common.VisitDiagnosisSet{
 		DoctorID:         doctorID,
-		VisitID:          visit.PatientVisitID.Int64(),
+		VisitID:          visit.ID.Int64(),
 		Notes:            rd.InternalNote,
 		Unsuitable:       rd.CaseManagement.Unsuitable,
 		UnsuitableReason: rd.CaseManagement.Reason,
@@ -209,7 +209,7 @@ func (d *diagnosisListHandler) putDiagnosisList(w http.ResponseWriter, r *http.R
 			DoctorID:       doctorID,
 			PatientID:      visit.PatientID.Int64(),
 			CaseID:         visit.PatientCaseID.Int64(),
-			PatientVisitID: visit.PatientVisitID.Int64(),
+			PatientVisitID: visit.ID.Int64(),
 			Reason:         rd.CaseManagement.Reason,
 		})
 	} else {
@@ -229,7 +229,7 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 	doctorID := ctxt.RequestCache[apiservice.DoctorID].(int64)
 	visit := ctxt.RequestCache[apiservice.PatientVisit].(*common.PatientVisit)
 
-	diagnosisSet, err := d.dataAPI.ActiveDiagnosisSet(visit.PatientVisitID.Int64())
+	diagnosisSet, err := d.dataAPI.ActiveDiagnosisSet(visit.ID.Int64())
 	if api.IsErrNotFound(err) && visit.IsFollowup {
 
 		// if we are dealing with a followup visit and there is no active diagnosis
@@ -247,7 +247,7 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 		// sort in descending order of creation date to get the latest visit that was treated
 		sort.Sort(sort.Reverse(common.ByPatientVisitCreationDate(visits)))
 
-		diagnosisSet, err = d.dataAPI.ActiveDiagnosisSet(visits[0].PatientVisitID.Int64())
+		diagnosisSet, err = d.dataAPI.ActiveDiagnosisSet(visits[0].ID.Int64())
 		if api.IsErrNotFound(err) {
 			httputil.JSONResponse(w, http.StatusOK, DiagnosisListResponse{})
 			return

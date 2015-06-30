@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/lib/pq"
 	"github.com/sprucehealth/backend/consul"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/ptr"
 )
 
 const (
@@ -82,7 +83,7 @@ func (w *pharmacyUpdateWorker) processFile(key string) error {
 
 	mItem := &migrationItem{
 		fileName: &key,
-		status:   strPtr(createdStatus),
+		status:   ptr.String(createdStatus),
 	}
 
 	// if the migration is already complete for this file then
@@ -100,8 +101,8 @@ func (w *pharmacyUpdateWorker) processFile(key string) error {
 
 	err = w.updateDBFromFile(mItem)
 	if err != nil {
-		mItem.status = strPtr(erroredStatus)
-		mItem.errorMsg = strPtr(err.Error())
+		mItem.status = ptr.String(erroredStatus)
+		mItem.errorMsg = ptr.String(err.Error())
 	}
 
 	if err := w.addOrUpdateMigrationItem(mItem); err != nil {
@@ -252,7 +253,7 @@ func (w *pharmacyUpdateWorker) updateDBFromFile(item *migrationItem) error {
 	rowsUpdated := len(rowsToUpdate)
 	item.numRowsUpdated = &rowsUpdated
 	item.numRowsInserted = &rowsInserted
-	item.status = strPtr(completedStatus)
+	item.status = ptr.String(completedStatus)
 	return nil
 }
 

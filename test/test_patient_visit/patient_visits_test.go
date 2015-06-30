@@ -72,7 +72,7 @@ func TestPatientVisitsList_Patient(t *testing.T) {
 	patientVisit, err := testData.DataAPI.GetPatientVisitForSKU(patient.ID.Int64(), test_integration.SKUAcneFollowup)
 	test.OK(t, err)
 
-	test_integration.SubmitPatientVisitForPatient(patient.ID.Int64(), patientVisit.PatientVisitID.Int64(), testData, t)
+	test_integration.SubmitPatientVisitForPatient(patient.ID.Int64(), patientVisit.ID.Int64(), testData, t)
 
 	// now query to ensure that 2 visits are returned when completed is true
 	res, err = getPatientVisits(patient.AccountID.Int64(), tp.PatientCaseID.Int64(), true, t, testData)

@@ -169,7 +169,7 @@ func (a *alertsHandler) getVisitIDFromCaseID(caseID int64) (int64, error) {
 	var visitID int64
 	if len(visits) > 0 {
 		sort.Sort(sort.Reverse(common.ByPatientVisitCreationDate(visits)))
-		visitID = visits[0].PatientVisitID.Int64()
+		visitID = visits[0].ID.Int64()
 	}
 
 	return visitID, nil

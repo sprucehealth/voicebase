@@ -133,9 +133,9 @@ func (h *feedbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		lowRatingThreshold := h.cfgStore.Snapshot().Int(lowRatingTagThreshold.Name)
 		if req.Rating <= lowRatingThreshold {
 			if _, err = h.taggingClient.InsertTagAssociation(&model.Tag{Text: LowRatingTag}, &model.TagMembership{
-				CaseID: ptr.Int64Ptr(tp.PatientCaseID.Int64()),
+				CaseID: ptr.Int64(tp.PatientCaseID.Int64()),
 				// Place this tag in immediate trigger violation
-				TriggerTime: ptr.TimePtr(time.Now()),
+				TriggerTime: ptr.Time(time.Now()),
 				Hidden:      false,
 			}); err != nil {
 				golog.Errorf("%v", err)

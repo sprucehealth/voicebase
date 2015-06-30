@@ -227,7 +227,7 @@ func buildContext(
 		visitLayout.Questions(),
 		dataAPI,
 		visit.PatientID.Int64(),
-		visit.PatientVisitID.Int64())
+		visit.ID.Int64())
 
 	if err != nil {
 		return nil, err

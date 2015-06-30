@@ -69,10 +69,10 @@ func TestDoctorTransaction_ItemCostExists_TreatmentPlanCreated(t *testing.T) {
 	test.OK(t, err)
 
 	test_integration.GrantDoctorAccessToPatientCase(t, testData, doctor, patientVisit.PatientCaseID.Int64())
-	test_integration.StartReviewingPatientVisit(patientVisit.PatientVisitID.Int64(), doctor, testData, t)
+	test_integration.StartReviewingPatientVisit(patientVisit.ID.Int64(), doctor, testData, t)
 
 	dTP := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
-		ParentID:   patientVisit.PatientVisitID,
+		ParentID:   patientVisit.ID,
 		ParentType: common.TPParentTypePatientVisit,
 	}, nil, doctor, testData, t)
 

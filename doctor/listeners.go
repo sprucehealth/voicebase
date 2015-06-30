@@ -22,7 +22,7 @@ func InitListeners(dataAPI api.DataAPI, apiDomain string, dispatcher *dispatch.D
 		// ensure that a single doctor transaction exists for every submitted visit.
 		for _, visit := range visits {
 
-			_, err := dataAPI.TransactionForItem(visit.PatientVisitID.Int64(), ev.TreatmentPlan.DoctorID.Int64(), visit.SKUType)
+			_, err := dataAPI.TransactionForItem(visit.ID.Int64(), ev.TreatmentPlan.DoctorID.Int64(), visit.SKUType)
 			if !api.IsErrNotFound(err) && err != nil {
 				return err
 			} else if err == nil {
@@ -63,7 +63,7 @@ func createDoctorTransaction(dataAPI api.DataAPI, doctorID, patientID int64, vis
 	var itemCostID *int64
 	// lookup the patient receipt to get the itemCostID associated with the
 	// visit. If one doesn't exist, then treat it as no cost existing for the visit
-	patientReceipt, err := dataAPI.GetPatientReceipt(patientID, visit.PatientVisitID.Int64(), visit.SKUType, false)
+	patientReceipt, err := dataAPI.GetPatientReceipt(patientID, visit.ID.Int64(), visit.SKUType, false)
 	if err == nil {
 		itemCostID = &patientReceipt.ItemCostID
 	} else if err != nil && !api.IsErrNotFound(err) {
@@ -74,7 +74,7 @@ func createDoctorTransaction(dataAPI api.DataAPI, doctorID, patientID int64, vis
 		DoctorID:   doctorID,
 		ItemCostID: itemCostID,
 		SKUType:    visit.SKUType,
-		ItemID:     visit.PatientVisitID.Int64(),
+		ItemID:     visit.ID.Int64(),
 		PatientID:  patientID,
 	}); err != nil {
 		return err

@@ -233,7 +233,7 @@ func TestDiagnosisSet_Followup(t *testing.T) {
 	// the diagnosis for the followup visit should match the diagnosis created for the
 	// initial visit
 	test.OK(t, err)
-	diagnosisListResponse, err := doctorClient.ListDiagnosis(visits[0].PatientVisitID.Int64())
+	diagnosisListResponse, err := doctorClient.ListDiagnosis(visits[0].ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, true, visits[0].IsFollowup)
 	test.Equals(t, 2, len(diagnosisListResponse.Diagnoses))
@@ -245,7 +245,7 @@ func TestDiagnosisSet_Followup(t *testing.T) {
 	// now lets go ahead and add a specific diagnosis fro for the followup and ensure that
 	// the diagnosis of the initial visit and followup visit are maintained
 	err = doctorClient.CreateDiagnosisSet(&diaghandlers.DiagnosisListRequestData{
-		VisitID: visits[0].PatientVisitID.Int64(),
+		VisitID: visits[0].ID.Int64(),
 		Diagnoses: []*diaghandlers.DiagnosisInputItem{
 			{
 				CodeID: "diag_l710",
@@ -253,14 +253,14 @@ func TestDiagnosisSet_Followup(t *testing.T) {
 		},
 	})
 	test.OK(t, err)
-	diagnosisListResponse, err = doctorClient.ListDiagnosis(visits[0].PatientVisitID.Int64())
+	diagnosisListResponse, err = doctorClient.ListDiagnosis(visits[0].ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 1, len(diagnosisListResponse.Diagnoses))
 	test.Equals(t, false, diagnosisListResponse.CaseManagement.Unsuitable)
 	test.Equals(t, "diag_l710", diagnosisListResponse.Diagnoses[0].CodeID)
 
 	// the diagnosis set for the initial visit should remain the same
-	diagnosisListResponse, err = doctorClient.ListDiagnosis(visits[1].PatientVisitID.Int64())
+	diagnosisListResponse, err = doctorClient.ListDiagnosis(visits[1].ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 2, len(diagnosisListResponse.Diagnoses))
 	test.Equals(t, note, diagnosisListResponse.Notes)

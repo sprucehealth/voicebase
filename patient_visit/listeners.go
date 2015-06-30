@@ -70,7 +70,7 @@ func InitListeners(dataAPI api.DataAPI, apiDomain string, dispatcher *dispatch.D
 		// they were treated
 		visitIDs := make([]int64, len(visits))
 		for i, visit := range visits {
-			visitIDs[i] = visit.PatientVisitID.Int64()
+			visitIDs[i] = visit.ID.Int64()
 		}
 
 		nextStatus := common.PVStatusTreated

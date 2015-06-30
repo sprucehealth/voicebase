@@ -250,7 +250,7 @@ func TestCreateVisit_FirstAvailable(t *testing.T) {
 			Layout: intakeData,
 		},
 		createVisitFunc: func(visit *common.PatientVisit) (int64, error) {
-			visit.PatientVisitID = encoding.NewObjectID(visitID)
+			visit.ID = encoding.NewObjectID(visitID)
 			visit.PatientCaseID = encoding.NewObjectID(caseID)
 			return visitID, nil
 		},
@@ -298,7 +298,7 @@ func TestCreateVisit_DoctorPicked(t *testing.T) {
 			Layout: intakeData,
 		},
 		createVisitFunc: func(visit *common.PatientVisit) (int64, error) {
-			visit.PatientVisitID = encoding.NewObjectID(visitID)
+			visit.ID = encoding.NewObjectID(visitID)
 			visit.PatientCaseID = encoding.NewObjectID(caseID)
 			return visitID, nil
 		},
@@ -346,7 +346,7 @@ func TestCreatePatient_DoctorPicked(t *testing.T) {
 			Layout: intakeData,
 		},
 		createVisitFunc: func(visit *common.PatientVisit) (int64, error) {
-			visit.PatientVisitID = encoding.NewObjectID(visitID)
+			visit.ID = encoding.NewObjectID(visitID)
 			visit.PatientCaseID = encoding.NewObjectID(caseID)
 			return visitID, nil
 		},
@@ -413,7 +413,7 @@ func TestCreatePatient_FirstAvailable(t *testing.T) {
 			Layout: intakeData,
 		},
 		createVisitFunc: func(visit *common.PatientVisit) (int64, error) {
-			visit.PatientVisitID = encoding.NewObjectID(visitID)
+			visit.ID = encoding.NewObjectID(visitID)
 			visit.PatientCaseID = encoding.NewObjectID(caseID)
 			return visitID, nil
 		},

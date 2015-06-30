@@ -380,7 +380,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 					NotificationType: CNStartFollowup,
 					UID:              CNStartFollowup,
 					Data: &startFollowupVisitNotification{
-						PatientVisitID: pendingFollowupVisit.PatientVisitID.Int64(),
+						PatientVisitID: pendingFollowupVisit.ID.Int64(),
 						CaseID:         caseID,
 					},
 				}); err != nil {

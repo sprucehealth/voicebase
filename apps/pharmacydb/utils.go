@@ -8,7 +8,3 @@ func strSliceToInterfaceSlice(strSlice []string) []interface{} {
 
 	return interfaceSlice
 }
-
-func strPtr(str string) *string {
-	return &str
-}

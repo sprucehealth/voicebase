@@ -59,7 +59,7 @@ func TestFollowup_Diagnose(t *testing.T) {
 
 	// query for the followup
 	pv = test_integration.QueryPatientVisit(
-		followupVisit.PatientVisitID.Int64(),
+		followupVisit.ID.Int64(),
 		patientAccountID,
 		map[string]string{
 			"S-Version": "Patient;Test;1.0.0;0001",
@@ -72,10 +72,10 @@ func TestFollowup_Diagnose(t *testing.T) {
 	// lets have the patient submit the followup
 	patientIntakeRequestData := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
 	test_integration.SubmitAnswersIntakeForPatient(patientID, patientAccountID, patientIntakeRequestData, testData, t)
-	test_integration.SubmitPatientVisitForPatient(patientID, followupVisit.PatientVisitID.Int64(), testData, t)
+	test_integration.SubmitPatientVisitForPatient(patientID, followupVisit.ID.Int64(), testData, t)
 
 	// lets have the doctor start reviewing the visit
-	test_integration.StartReviewingPatientVisit(followupVisit.PatientVisitID.Int64(), doctor, testData, t)
+	test_integration.StartReviewingPatientVisit(followupVisit.ID.Int64(), doctor, testData, t)
 
 	// now lets query for the diagnosis without having submitted anything.
 	// at this point the doctor should get back the diagnosis of the previous visit
@@ -90,10 +90,10 @@ func TestFollowup_Diagnose(t *testing.T) {
 	diagnosisIntakeRequestData = test_integration.SetupAnswerIntakeForDiagnosis(map[int64][]string{
 		diagnosisQuestionID: []string{"a_doctor_acne_vulgaris"},
 		acneTypeQuestionID:  []string{"a_acne_comedonal"},
-	}, followupVisit.PatientVisitID.Int64(), testData, t)
+	}, followupVisit.ID.Int64(), testData, t)
 
 	// lets submit the diagnosis for followup
-	test_integration.SubmitPatientVisitDiagnosisWithIntake(followupVisit.PatientVisitID.Int64(),
+	test_integration.SubmitPatientVisitDiagnosisWithIntake(followupVisit.ID.Int64(),
 		doctor.AccountID.Int64(), diagnosisIntakeRequestData, testData, t)
 
 	// now lets query for the diagnosis of the visit to ensure that its returned as expected
@@ -101,7 +101,7 @@ func TestFollowup_Diagnose(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, "Inflammatory Acne", initialVisitDiagnosis)
 
-	followupVisitDiagnosis, err := testData.DataAPI.DiagnosisForVisit(followupVisit.PatientVisitID.Int64())
+	followupVisitDiagnosis, err := testData.DataAPI.DiagnosisForVisit(followupVisit.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, "Comedonal Acne", followupVisitDiagnosis)
 

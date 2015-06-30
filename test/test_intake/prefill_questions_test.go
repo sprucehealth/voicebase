@@ -59,7 +59,7 @@ func TestIntake_PrefillQuestions(t *testing.T) {
 	test_integration.StartReviewingPatientVisit(pv.PatientVisitID, doctor, testData, t)
 	test_integration.SubmitPatientVisitDiagnosis(pv.PatientVisitID, doctor, testData, t)
 	tp := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
-		ParentID:   visit.PatientVisitID,
+		ParentID:   visit.ID,
 		ParentType: common.TPParentTypePatientVisit,
 	}, nil, doctor, testData, t)
 	test_integration.SubmitPatientVisitBackToPatient(tp.TreatmentPlan.ID.Int64(), doctor, testData, t)
@@ -77,8 +77,8 @@ func TestIntake_PrefillQuestions(t *testing.T) {
 
 	// now get the patient to start a followup visit
 	followupVisit, visitLayout := createFollowupAndGetVisitLayout(patient, visit.PatientCaseID.Int64(), testData, t)
-	followupVisitID := followupVisit.PatientVisitID.Int64()
-	test.Equals(t, true, followupVisitID != visit.PatientVisitID.Int64())
+	followupVisitID := followupVisit.ID.Int64()
+	test.Equals(t, true, followupVisitID != visit.ID.Int64())
 
 	// the followup visit layout should contain the patient's
 	// previous response to the allergy question given that it
@@ -125,7 +125,7 @@ func TestIntake_PrefillQuestions(t *testing.T) {
 
 	// lets go ahead and generate another followup
 	followupVisit2, visitLayout := createFollowupAndGetVisitLayout(patient, tp.TreatmentPlan.PatientCaseID.Int64(), testData, t)
-	test.Equals(t, true, followupVisit.PatientVisitID.Int64() != followupVisit2.PatientVisitID.Int64())
+	test.Equals(t, true, followupVisit.ID.Int64() != followupVisit2.ID.Int64())
 
 	// the followup visit layout should contain the patient's
 	// previous response to the allergy question given that it
@@ -163,7 +163,7 @@ func createFollowupAndGetVisitLayout(patient *common.Patient, caseID int64, test
 	followupVisit := visits[0]
 	test.Equals(t, test_integration.SKUAcneFollowup, followupVisit.SKUType)
 
-	followupVisitID := followupVisit.PatientVisitID.Int64()
+	followupVisitID := followupVisit.ID.Int64()
 	// indicate the followup visit to be in the open state as that
 	// is the state the user would find the visit in if they were to
 	// start the followup visit

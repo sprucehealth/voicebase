@@ -195,6 +195,7 @@ func New(conf *Config) http.Handler {
 	// Patient/Doctor: Message APIs
 	authenticationRequired(conf, apipaths.CaseMessagesURLPath, messages.NewHandler(conf.DataAPI, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.CaseMessagesListURLPath, messages.NewListHandler(conf.DataAPI, conf.APICDNDomain, conf.MediaStore, conf.AuthTokenExpiration))
+	authenticationRequired(conf, apipaths.CaseMessagesUnreadCountURLPath, messages.NewUnreadCountHandler(conf.DataAPI))
 
 	// Doctor: Account APIs
 	authenticationRequired(conf, apipaths.DoctorIsAuthenticatedURLPath, handlers.NewIsAuthenticatedHandler(conf.AuthAPI))
