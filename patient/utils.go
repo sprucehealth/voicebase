@@ -93,6 +93,11 @@ func IntakeLayoutForVisit(
 		Message:      msg,
 	}
 
+	var title string
+	if visitLayout.Header != nil {
+		title = visitLayout.Header.Title
+	}
+
 	return &VisitIntakeInfo{
 		PatientVisitID:          visit.ID.Int64(),
 		CanAbandon:              !visit.IsFollowup,
@@ -104,6 +109,7 @@ func IntakeLayoutForVisit(
 		AdditionalMessage:       additionalMessage,
 		SubmissionConfirmation:  visitLayout.DeprecatedSubmissionConfirmation,
 		Checkout:                visitLayout.DeprecatedCheckout,
+		Title:                   title,
 	}, nil
 }
 
