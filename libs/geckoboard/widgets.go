@@ -125,6 +125,18 @@ type FunnelItem struct {
 	Label string  `json:"label"`
 }
 
+type Leaderboard struct {
+	Items  []*LeaderboardItem `json:"items"`
+	Format string             `json:"format,omitempty"` // optional: Possible values are "decimal", "percent" and "currency". The default is "decimal".
+	Unit   string             `json:"unit,omitempty"`   // optional: When the format is currency this must be an ISO 4217 currency code. E.g. "GBP", "USD", "EUR"
+}
+
+type LeaderboardItem struct {
+	Label        string      `json:"label"`
+	Value        interface{} `json:"value"`
+	PreviousRank int         `json:"previous_rank,omitempty"`
+}
+
 // Text is a widget that shows arbitrary text. Up to 10 items can be shown.
 //
 // https://developer.geckoboard.com/#text
@@ -369,6 +381,33 @@ func (w *Text) AppendData(cols []string, row []interface{}) error {
 		}
 	}
 	if it.Text != "" {
+		w.Items = append(w.Items, it)
+	}
+	return nil
+}
+
+func (w *Leaderboard) AppendData(cols []string, row []interface{}) error {
+	var err error
+	it := &LeaderboardItem{}
+	for i, c := range cols {
+		switch c {
+		case "label":
+			it.Label, err = toString(row[i])
+		case "value":
+			it.Value, err = toFloat64(row[i])
+			if err != nil {
+				it.Value, err = toString(row[i])
+			}
+		case "previous_rank":
+			it.PreviousRank, err = toInteger(row[i])
+		default:
+			return fmt.Errorf("geckoboard: unknown Leaderboard column %s", c)
+		}
+		if err != nil {
+			return fmt.Errorf("geckoboard: Leaderboard %s: %s", c, err)
+		}
+	}
+	if it.Label != "" {
 		w.Items = append(w.Items, it)
 	}
 	return nil

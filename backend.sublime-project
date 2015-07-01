@@ -1,51 +1,58 @@
 {
+	"build_systems":
+	[
+		{
+			"name": "Build restapi",
+			"selector": "source.go",
+			"shell_cmd": "go build -i -v",
+			"working_dir": "$project_path/apps/restapi"
+		},
+		{
+			"name": "Build CSS",
+			"selector": "source.scss,source.css",
+			"shell_cmd": "./build.sh css",
+			"working_dir": "$project_path/resources"
+		},
+		{
+			"name": "Build JS",
+			"selector": "source.js",
+			"shell_cmd": "./build.sh admin",
+			"working_dir": "$project_path/resources"
+		},
+		{
+			"name": "Flow (JS check)",
+			"selector": "source.js",
+			"shell_cmd": "flow check",
+			"working_dir": "$project_path/resources/apps/admin"
+		}
+	],
 	"folders":
 	[
 		{
 			"path": "."
 		}
 	],
-	"build_systems":
-	[
-		{
-			"name": "Build restapi",
-			"working_dir": "$project_path/apps/restapi",
-			"shell_cmd": "go build -i -v",
-			"selector": "source.go"
-		},
-		{
-			"name": "Build CSS",
-			"working_dir": "$project_path/resources",
-			"shell_cmd": "./build.sh css",
-			"selector": "source.scss,source.css"
-		},
-		{
-			"name": "Build JS",
-			"working_dir": "$project_path/resources",
-			"shell_cmd": "./build.sh admin",
-			"selector": "source.js"
-		},
-		{
-			"name": "Flow (JS check)",
-			"working_dir": "$project_path/resources/apps/admin",
-			"shell_cmd": "flow check",
-			"selector": "source.js"
-		}
-	],
 	"settings":
 	{
-		"GoSublime": {
-			"env": {
-				"GOPATH": "$HOME/workspace/spruce/backend",
-				"PATH": "$HOME/workspace/spruce/backend/bin:$PATH"
-			}
-		},
-		"GoOracle": {
-			"env": {
+		"GoOracle":
+		{
+			"env":
+			{
 				"GOPATH": "$HOME/workspace/spruce/backend",
 				"PATH": "$GOPATH/bin:/usr/local/bin:$PATH"
 			},
-			"oracle_scope": ["github.com/sprucehealth/backend/apps/restapi"]
+			"oracle_scope":
+			[
+				"github.com/sprucehealth/backend/apps/restapi"
+			]
+		},
+		"GoSublime":
+		{
+			"env":
+			{
+				"GOPATH": "$HOME/workspace/spruce/backend",
+				"PATH": "$HOME/workspace/spruce/backend/bin:$PATH"
+			}
 		}
 	}
 }

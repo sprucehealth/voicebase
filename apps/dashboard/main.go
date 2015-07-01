@@ -38,7 +38,7 @@ type dbConfig struct {
 
 type widgetConfig struct {
 	Name    string        `json:"name" yaml:"name"`
-	Key     string        `json:"key" yaml:"key"`
+	Keys    []string      `json:"keys" yaml:"keys"`
 	Type    string        `json:"type" yaml:"type"`
 	Period  time.Duration `json:"period" yaml:"period"`
 	Queries []*query      `json:"queries" yaml:"queries"`
@@ -57,10 +57,11 @@ var widgets = map[string]reflect.Type{
 	"bar-chart":                 reflect.TypeOf(geckoboard.BarChart{}),
 	"line-chart":                reflect.TypeOf(geckoboard.LineChart{}),
 	"number-and-secondary-stat": reflect.TypeOf(geckoboard.NumberAndSecondaryStat{}),
-	"map":    reflect.TypeOf(geckoboard.Map{}),
-	"list":   reflect.TypeOf(geckoboard.List{}),
-	"funnel": reflect.TypeOf(geckoboard.Funnel{}),
-	"text":   reflect.TypeOf(geckoboard.Text{}),
+	"map":         reflect.TypeOf(geckoboard.Map{}),
+	"list":        reflect.TypeOf(geckoboard.List{}),
+	"funnel":      reflect.TypeOf(geckoboard.Funnel{}),
+	"text":        reflect.TypeOf(geckoboard.Text{}),
+	"leaderboard": reflect.TypeOf(geckoboard.Leaderboard{}),
 }
 
 var (
@@ -153,8 +154,10 @@ func processWidget(db *sql.DB, gb *geckoboard.Client, conf *config, w *widgetCon
 		}
 	}
 
-	if err := gb.Push(w.Key, widget); err != nil {
-		golog.Errorf("Failed to push data for %s: %s", w.Name, err)
+	for _, key := range w.Keys {
+		if err := gb.Push(key, widget); err != nil {
+			golog.Errorf("Failed to push data for %s: %s", w.Name, err)
+		}
 	}
 }
 
