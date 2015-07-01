@@ -50,7 +50,8 @@ type PatientVisitRequestData struct {
 
 type PatientVisitResponse struct {
 	*VisitIntakeInfo
-	SubmittedDate *time.Time `json:"submission_date,omitempty"`
+	SubmittedDate      *time.Time `json:"submission_date,omitempty"`
+	SubmittedTimestamp int64      `json:"submission_timestamp,omitempty"`
 }
 
 type AdditionalMessage struct {
@@ -69,6 +70,7 @@ type VisitIntakeInfo struct {
 	AdditionalMessage       *AdditionalMessage                      `json:"additional_message,omitempty"`
 	SubmissionConfirmation  *info_intake.SubmissionConfirmationText `json:"submission_confirmation,omitempty"`
 	Checkout                *info_intake.CheckoutText               `json:"checkout,omitempty"`
+	Title                   string                                  `json:"title,omitempty"`
 }
 
 type PatientVisitSubmittedResponse struct {

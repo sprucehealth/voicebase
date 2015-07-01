@@ -90,8 +90,9 @@ func (v *visitsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		submittedDate := visit.SubmittedDate
 		visitResponses[i] = &PatientVisitResponse{
-			SubmittedDate:   &submittedDate,
-			VisitIntakeInfo: intakeInfo,
+			SubmittedDate:      &submittedDate,
+			SubmittedTimestamp: submittedDate.Unix(),
+			VisitIntakeInfo:    intakeInfo,
 		}
 	}
 
