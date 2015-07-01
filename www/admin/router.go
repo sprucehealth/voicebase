@@ -466,10 +466,6 @@ func SetupRoutes(r *mux.Router, config *Config) {
 			httputil.Post: []string{PermMarketingEdit},
 		}, NewReferralProgramTemplateHandler(config.DataAPI), nil)))
 
-	// Used for dashboard
-	r.Handle(`/admin/api/librato/composite`, apiAuthFilter(noPermsRequired(NewLibratoCompositeAPIHandler(config.LibratoClient))))
-	r.Handle(`/admin/api/stripe/charges`, apiAuthFilter(noPermsRequired(NewStripeChargesAPIHAndler(config.StripeClient))))
-
 	if !environment.IsProd() {
 		r.Handle(`/admin/medrecord`, apiAuthFilter(noPermsRequired(
 			NewMedicalRecordHandler(
@@ -481,7 +477,6 @@ func SetupRoutes(r *mux.Router, config *Config) {
 				config.Signer))))
 	}
 
-	r.Handle(`/admin/_dashboard/{id:[0-9]+}`, authFilter(noPermsRequired(newDashboardHandler(config.DataAPI, config.TemplateLoader))))
 	appHandler := authFilter(noPermsRequired(NewAppHandler(config.TemplateLoader)))
 	r.Handle(`/admin`, appHandler)
 	r.Handle(`/admin/{page:.*}`, appHandler)
