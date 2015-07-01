@@ -13,8 +13,13 @@ import (
 )
 
 func TestS3(t *testing.T) {
+	var creds *credentials.Credentials
+	creds = credentials.NewEnvCredentials()
+	if v, err := creds.Get(); err != nil || v.AccessKeyID == "" || v.SecretAccessKey == "" {
+		creds = credentials.NewEC2RoleCredentials(&http.Client{Timeout: 2 * time.Second}, "", time.Minute*5)
+	}
 	awsConf := &aws.Config{
-		Credentials: credentials.NewEnvCredentials(),
+		Credentials: creds,
 		Region:      "us-east-1",
 	}
 	if _, err := awsConf.Credentials.Get(); err != nil {
