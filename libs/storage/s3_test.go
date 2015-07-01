@@ -30,7 +30,7 @@ func TestS3(t *testing.T) {
 	storage := NewS3(awsConf, bucket, "/storage-test")
 
 	// Test not existant object
-	_, _, err := storage.Get("s3://us-east-1/test-spruce-storage/storage-test/ofiu3j2n90f32u09fnmeuw9")
+	_, _, err := storage.Get("s3://us-east-1/" + bucket + "/storage-test/ofiu3j2n90f32u09fnmeuw9")
 	if err != ErrNoObject {
 		t.Fatalf("Expected ErrNoObject got %T %+v", err, err)
 	}

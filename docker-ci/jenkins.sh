@@ -28,6 +28,7 @@ docker run --rm=true --name=$NAME \
 	-e "JOB_NAME=$JOB_NAME" \
 	-e "DEPLOY_TO_S3=$DEPLOY_TO_S3" \
 	-e "FULLCOVERAGE=$FULLCOVERAGE" \
+	-e "TEST_S3_BUCKET=$TEST_S3_BUCKET" \
 	-v $MEMPATH:/mem \
 	-v `pwd`:/workspace/go/src/github.com/sprucehealth/backend \
     $NAME
