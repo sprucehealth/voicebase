@@ -5,9 +5,9 @@
 
 LOCAL_DB_USERNAME="carefront"
 LOCAL_DB_NAME="carefront_db"
-DEV_USERNAME="spruce"
+DEV_DB_USERNAME="spruce"
 DEV_DB_NAME="spruce"
-DEV_HOST="dev-mysql-1.node.dev-us-east-1.spruce"
+DEV_DB_HOST="dev-mysql-1.node.dev-us-east-1.spruce"
 PROD_DB_NAME="carefront"
 PROD_DB_INSTANCE="master.mysql.service.prod-us-east-1.spruce"
 STAGING_DB_NAME="carefront"
@@ -57,14 +57,16 @@ do
 			scp temp.sql $STAGING_DB_INSTANCE:~
 			scp temp-migration.sql $STAGING_DB_INSTANCE:~
 			ssh -t $USER@$STAGING_DB_INSTANCE "sudo ec2-consistent-snapshot -mysql.config /mysql-data/mysql/backup.cnf -tag migrationId=migration-$migrationNumber"
-			ssh -t $USER@$STAGING_DB_INSTANCE "mysql -h 127.0.0.1 -u $STAGING_DB_USER_NAME -p$STAGING_DB_PASSWORD < temp.sql ; mysql -h $STAGING_DB_INSTANCE -u $STAGING_DB_USER_NAME -p$STAGING_DB_PASSWORD < temp-migration.sql; logger -p user.info -t schema '$LOGMSG'"
+			ssh -t $USER@$STAGING_DB_INSTANCE "mysql -h 127.0.0.1 -u $STAGING_DB_USER_NAME -p$STAGING_DB_PASSWORD < temp.sql ; mysql -h 127.0.0.1 -u $STAGING_DB_USER_NAME -p$STAGING_DB_PASSWORD < temp-migration.sql; logger -p user.info -t schema '$LOGMSG'"
 		;;
 
 		"dev" )
 			echo "use $DEV_DB_NAME; insert into migrations (migration_id, migration_user) values ($migrationNumber, '$USER');" > temp-migration.sql
+			LOGMSG="{\"env\":\"$env\",\"user\":\"$USER\",\"migration_id\":\"$migrationNumber\"}"
 			echo "use $DEV_DB_NAME;" | cat - migration-$migrationNumber.sql > temp.sql
-			mysql -h $DEV_HOST -u $DEV_USERNAME -p$DEV_RDS_PASSWORD < temp.sql
-			mysql -h $DEV_HOST -u $DEV_USERNAME -p$DEV_RDS_PASSWORD < temp-migration.sql
+			scp temp.sql $DEV_DB_HOST:~
+			scp temp-migration.sql $DEV_DB_HOST:~
+			ssh -t $USER@$DEV_DB_HOST "mysql -h 127.0.0.1 -u $DEV_DB_USERNAME -p$DEV_DB_PASSWORD < temp.sql ; mysql -h 127.0.0.1 -u $DEV_DB_USERNAME -p$DEV_DB_PASSWORD < temp-migration.sql; logger -p user.info -t schema '$LOGMSG'"
 		;;
 
 		"demo" )
