@@ -5,13 +5,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/libs/dbutil"
+
 	"github.com/sprucehealth/backend/common"
 )
 
 func (d *DataService) GetItemCost(id int64) (*common.ItemCost, error) {
 	row := d.db.QueryRow(`
-		SELECT item_cost.id, sku_id, status 
-		FROM item_cost 
+		SELECT item_cost.id, sku_id, status
+		FROM item_cost
 		WHERE item_cost.id = ?`, id)
 	return d.getItemCostFromRow(row)
 }
@@ -22,8 +24,8 @@ func (d *DataService) GetActiveItemCost(skuType string) (*common.ItemCost, error
 		return nil, err
 	}
 	row := d.db.QueryRow(`
-		SELECT item_cost.id, sku_id, status 
-		FROM item_cost 
+		SELECT item_cost.id, sku_id, status
+		FROM item_cost
 		WHERE status = ? and sku_id = ?`, StatusActive, skuID)
 	return d.getItemCostFromRow(row)
 }
@@ -118,7 +120,7 @@ func (d *DataService) CreatePatientReceipt(receipt *common.PatientReceipt) error
 	}
 
 	_, err = tx.Exec(`
-		INSERT INTO patient_charge_item (currency, description, amount, patient_receipt_id) 
+		INSERT INTO patient_charge_item (currency, description, amount, patient_receipt_id)
 		VALUES `+strings.Join(vals, ","), params...)
 	if err != nil {
 		tx.Rollback()
@@ -129,33 +131,21 @@ func (d *DataService) CreatePatientReceipt(receipt *common.PatientReceipt) error
 }
 
 func (d *DataService) UpdatePatientReceipt(id int64, update *PatientReceiptUpdate) error {
-	var cols []string
-	var vals []interface{}
-
+	args := dbutil.MySQLVarArgs()
 	if update.Status != nil {
-		cols = append(cols, "status = ?")
-		vals = append(vals, update.Status.String())
+		args.Append("status", update.Status.String())
 	}
 	if update.StripeChargeID != nil {
-		cols = append(cols, "stripe_charge_id = ?")
-		vals = append(vals, *update.StripeChargeID)
+		args.Append("stripe_charge_id", *update.StripeChargeID)
 	}
-
-	if len(cols) == 0 {
+	if args.IsEmpty() {
 		return nil
 	}
-
-	vals = append(vals, id)
-
-	_, err := d.db.Exec(`
-		UPDATE patient_receipt 
-		SET `+strings.Join(cols, ", ")+` 
-		WHERE id = ?`, vals...)
+	_, err := d.db.Exec(`UPDATE patient_receipt SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), id)...)
 	return err
 }
 
 func (d *DataService) GetPatientReceipt(patientID, itemID int64, skuType string, includeLineItems bool) (*common.PatientReceipt, error) {
-
 	skuID, err := d.skuIDFromType(skuType)
 	if err != nil {
 		return nil, err
@@ -164,8 +154,8 @@ func (d *DataService) GetPatientReceipt(patientID, itemID int64, skuType string,
 	var patientReceipt common.PatientReceipt
 	var stripeChargeID sql.NullString
 	if err := d.db.QueryRow(`
-		SELECT patient_receipt.id, patient_id, item_id, item_cost_id, receipt_reference_id, stripe_charge_id, creation_timestamp, status 
-		FROM patient_receipt 
+		SELECT patient_receipt.id, patient_id, item_id, item_cost_id, receipt_reference_id, stripe_charge_id, creation_timestamp, status
+		FROM patient_receipt
 		WHERE patient_id = ? AND item_id = ? AND sku_id = ?`, patientID, itemID, skuID).Scan(
 		&patientReceipt.ID,
 		&patientReceipt.PatientID,
@@ -188,8 +178,8 @@ func (d *DataService) GetPatientReceipt(patientID, itemID int64, skuType string,
 	}
 
 	rows, err := d.db.Query(`
-		SELECT id, description, currency, amount 
-		FROM patient_charge_item 
+		SELECT id, description, currency, amount
+		FROM patient_charge_item
 		WHERE patient_receipt_id = ?`, patientReceipt.ID)
 	if err != nil {
 		return nil, err

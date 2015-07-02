@@ -705,11 +705,22 @@ type GeoAPI interface {
 	ListStates() ([]*common.State, error)
 }
 
+type BankAccountUpdate struct {
+	StripeRecipientID *string
+	Default           *bool
+	Verified          *bool
+	VerifyAmount1     *int
+	VerifyAmount2     *int
+	VerifyTransfer1ID *string
+	VerifyTransfer2ID *string
+	VerifyExpires     *time.Time
+}
+
 type BankingAPI interface {
 	AddBankAccount(bankAccount *common.BankAccount) (int64, error)
 	DeleteBankAccount(id int64) error
 	ListBankAccounts(userAccountID int64) ([]*common.BankAccount, error)
-	UpdateBankAccountVerficiation(id int64, amount1, amount2 int, transfer1ID, transfer2ID string, expires time.Time, verified bool) error
+	UpdateBankAccount(id int64, update *BankAccountUpdate) (int, error)
 }
 
 type PatientReceiptUpdate struct {

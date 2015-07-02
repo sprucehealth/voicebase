@@ -5,12 +5,15 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
 func (d *DataService) AddBankAccount(bankAccount *common.BankAccount) (int64, error) {
 	res, err := d.db.Exec(`
-		INSERT INTO bank_account 
-		(account_id, stripe_recipient_id, default_account, verify_amount_1, verify_amount_2, verify_transfer1_id, verify_transfer2_id, verify_expires, verified) 
+		INSERT INTO bank_account (
+			account_id, stripe_recipient_id, default_account, verify_amount_1, verify_amount_2,
+			verify_transfer1_id, verify_transfer2_id, verify_expires, verified
+		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		bankAccount.AccountID,
 		bankAccount.StripeRecipientID,
@@ -79,17 +82,59 @@ func (d *DataService) ListBankAccounts(userAccountID int64) ([]*common.BankAccou
 	return accounts, nil
 }
 
-func (d *DataService) UpdateBankAccountVerficiation(id int64, amount1, amount2 int, transfer1ID, transfer2ID string, expires time.Time, verified bool) error {
-	if verified {
-		_, err := d.db.Exec(`
-			UPDATE bank_account
-			SET verified = true, verify_amount_1 = NULL, verify_amount_2 = NULL, verify_expires = NULL
-			WHERE id = ?`, id)
-		return err
+func (d *DataService) UpdateBankAccount(id int64, update *BankAccountUpdate) (int, error) {
+	args := dbutil.MySQLVarArgs()
+	if update.StripeRecipientID != nil {
+		args.Append("stripe_recipient_id", *update.StripeRecipientID)
 	}
-	_, err := d.db.Exec(`
-			UPDATE bank_account
-			SET verified = false, verify_amount_1 = ?, verify_amount_2 = ?, verify_transfer1_id = ?, verify_transfer2_id = ?, verify_expires = ?
-			WHERE id = ?`, amount1, amount2, transfer1ID, transfer2ID, expires, id)
-	return err
+	if update.Default != nil {
+		args.Append("default_account", *update.Default)
+	}
+	if update.Verified != nil {
+		args.Append("verified", *update.Verified)
+	}
+	if update.VerifyAmount1 != nil {
+		if *update.VerifyAmount1 == 0 {
+			args.Append("verify_amount_1", nil)
+		} else {
+			args.Append("verify_amount_1", *update.VerifyAmount1)
+		}
+	}
+	if update.VerifyAmount2 != nil {
+		if *update.VerifyAmount2 == 0 {
+			args.Append("verify_amount_2", nil)
+		} else {
+			args.Append("verify_amount_2", *update.VerifyAmount2)
+		}
+	}
+	if update.VerifyTransfer1ID != nil {
+		if *update.VerifyTransfer1ID == "" {
+			args.Append("verify_transfer1_id", nil)
+		} else {
+			args.Append("verify_transfer1_id", *update.VerifyTransfer1ID)
+		}
+	}
+	if update.VerifyTransfer2ID != nil {
+		if *update.VerifyTransfer2ID == "" {
+			args.Append("verify_transfer2_id", nil)
+		} else {
+			args.Append("verify_transfer2_id", *update.VerifyTransfer2ID)
+		}
+	}
+	if update.VerifyExpires != nil {
+		if update.VerifyExpires.IsZero() {
+			args.Append("verify_expires", nil)
+		} else {
+			args.Append("verify_expires", *update.VerifyExpires)
+		}
+	}
+	if args.IsEmpty() {
+		return 0, nil
+	}
+	res, err := d.db.Exec(`UPDATE back_account SET `+args.Columns()+` WHERE id = ?`, args.Values()...)
+	if err != nil {
+		return 0, err
+	}
+	n, err := res.RowsAffected()
+	return int(n), err
 }

@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/sprucehealth/backend/libs/ptr"
+
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
@@ -105,7 +107,15 @@ func (h *financialsVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		if len(errors) == 0 {
 			if (toVerify.VerifyAmount1 == form.amount1 && toVerify.VerifyAmount2 == form.amount2) ||
 				(toVerify.VerifyAmount2 == form.amount1 && toVerify.VerifyAmount1 == form.amount2) {
-				if err := h.dataAPI.UpdateBankAccountVerficiation(toVerify.ID, 0, 0, "", "", time.Time{}, true); err != nil {
+
+				if _, err := h.dataAPI.UpdateBankAccount(toVerify.ID, &api.BankAccountUpdate{
+					VerifyAmount1:     ptr.Int(0),
+					VerifyAmount2:     ptr.Int(0),
+					VerifyTransfer1ID: ptr.String(""),
+					VerifyTransfer2ID: ptr.String(""),
+					VerifyExpires:     ptr.Time(time.Time{}),
+					Verified:          ptr.Bool(true),
+				}); err != nil {
 					www.InternalServerError(w, r, err)
 					return
 				}

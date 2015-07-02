@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
@@ -173,9 +174,9 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			attributes := map[string]string{
 				api.AttrSocialSecurityNumber:   form.SSN,
-				api.AttrAmericanBoardCertified: api.BoolToString(form.AmericanBoardCertified),
-				api.AttrContinuedEducation:     api.BoolToString(form.ContinuedEducation),
-				api.AttrRiskManagementCourse:   api.BoolToString(form.RiskManagementCourse),
+				api.AttrAmericanBoardCertified: strconv.FormatBool(form.AmericanBoardCertified),
+				api.AttrContinuedEducation:     strconv.FormatBool(form.ContinuedEducation),
+				api.AttrRiskManagementCourse:   strconv.FormatBool(form.RiskManagementCourse),
 			}
 			if form.AmericanBoardCertified {
 				attributes[api.AttrSpecialtyBoard] = form.SpecialtyBoard
@@ -219,12 +220,12 @@ func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		form.SSN = attr[api.AttrSocialSecurityNumber]
-		form.AmericanBoardCertified = api.StringToBool(attr[api.AttrAmericanBoardCertified])
+		form.AmericanBoardCertified, _ = strconv.ParseBool(attr[api.AttrAmericanBoardCertified])
 		form.SpecialtyBoard = attr[api.AttrSpecialtyBoard]
 		form.RecentCertDate = attr[api.AttrMostRecentCertificationDate]
-		form.ContinuedEducation = api.StringToBool(attr[api.AttrContinuedEducation])
+		form.ContinuedEducation, _ = strconv.ParseBool(attr[api.AttrContinuedEducation])
 		form.CreditHours = attr[api.AttrContinuedEducationCreditHours]
-		form.RiskManagementCourse = api.StringToBool(attr[api.AttrRiskManagementCourse])
+		form.RiskManagementCourse, _ = strconv.ParseBool(attr[api.AttrRiskManagementCourse])
 
 		licenses, err := h.dataAPI.MedicalLicenses(doctor.ID.Int64())
 		if err != nil {

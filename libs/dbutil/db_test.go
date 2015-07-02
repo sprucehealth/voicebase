@@ -1,6 +1,21 @@
 package dbutil
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
+
+func ExampleMySQLArgs() {
+	fmt.Println(MySQLArgs(3))
+	// Output:
+	// ?,?,?
+}
+
+func ExamplePostgresArgs() {
+	fmt.Println(PostgresArgs(5, 3))
+	// Output:
+	// $5,$6,$7
+}
 
 func TestDBArgs(t *testing.T) {
 	expected := "?,?,?,?,?"

@@ -324,7 +324,7 @@ func (h *logoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		next = "/"
 	}
 
-	http.SetCookie(w, TomestoneAuthCookie(r))
+	http.SetCookie(w, TombstoneAuthCookie(r))
 	http.Redirect(w, r, next, http.StatusSeeOther)
 }
 

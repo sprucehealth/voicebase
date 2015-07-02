@@ -98,6 +98,7 @@ func (s *autocompleteHandler) handleAutocompleteForDrugs(requestData *Autocomple
 		searchResults, err = s.erxAPI.GetDrugNamesForPatient(requestData.SearchString)
 	default:
 		apiservice.WriteAccessNotAllowedError(w, r)
+		return
 	}
 	if err != nil {
 		apiservice.WriteError(err, w, r)

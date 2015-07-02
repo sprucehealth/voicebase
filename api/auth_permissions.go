@@ -9,17 +9,9 @@ import (
 
 type byAccountGroupName []*common.AccountGroup
 
-func (s byAccountGroupName) Len() int {
-	return len(s)
-}
-
-func (s byAccountGroupName) Less(a, b int) bool {
-	return s[a].Name < s[b].Name
-}
-
-func (s byAccountGroupName) Swap(a, b int) {
-	s[a], s[b] = s[b], s[a]
-}
+func (s byAccountGroupName) Len() int           { return len(s) }
+func (s byAccountGroupName) Less(a, b int) bool { return s[a].Name < s[b].Name }
+func (s byAccountGroupName) Swap(a, b int)      { s[a], s[b] = s[b], s[a] }
 
 func (m *auth) AvailableAccountPermissions() ([]string, error) {
 	perms := make([]string, 0, len(m.perms))

@@ -22,7 +22,6 @@ const (
 func validateRedirectURL(urlString string) (string, bool) {
 	u, err := url.Parse(urlString)
 	if err != nil {
-		println(err.Error())
 		return "", false
 	}
 	path := u.Path
@@ -33,6 +32,8 @@ func validateRedirectURL(urlString string) (string, bool) {
 	return path, true
 }
 
+// NewAuthCookie returns a new auth cookie using the provided token and
+// HOST from the request as the domain.
 func NewAuthCookie(token string, r *http.Request) *http.Cookie {
 	return NewCookie(authCookieName, token, r)
 }
@@ -55,7 +56,10 @@ func NewCookie(name, value string, r *http.Request) *http.Cookie {
 	}
 }
 
-func TomestoneAuthCookie(r *http.Request) *http.Cookie {
+// TombstoneAuthCookie returns an empty valued auth cookie. Since there's
+// no way to tell a browser to delete a cookie the next best thing is to
+// write a tombstone (same name, empty value).
+func TombstoneAuthCookie(r *http.Request) *http.Cookie {
 	c := NewAuthCookie("", r)
 	c.MaxAge = -1
 	c.Value = ""
