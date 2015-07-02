@@ -220,7 +220,7 @@ func (h *patientCaseNoteHandler) serveGET(w http.ResponseWriter, r *http.Request
 
 	// Don't assume size here since we can't know it just from the size of the notes list, sacrifice memory for compute here and double track the ids
 	doctorsLookup := make(map[int64]struct{})
-	doctorIDs := make([]int64, 0)
+	var doctorIDs []int64
 	respNotes := make([]*response.PatientCaseNote, len(caseNotes[req.CaseID]))
 	for i, n := range caseNotes[req.CaseID] {
 		respNotes[i] = response.TransformPatientCaseNote(n)

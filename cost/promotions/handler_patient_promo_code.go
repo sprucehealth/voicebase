@@ -47,7 +47,7 @@ func NewPatientPromotionsHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, analy
 		httputil.Get, httputil.Post)
 }
 
-func (p *patientPromotionsHandler) IsAuthorized(r *http.Request) (bool, error) {
+func (*patientPromotionsHandler) IsAuthorized(r *http.Request) (bool, error) {
 	return true, nil
 }
 

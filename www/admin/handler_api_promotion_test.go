@@ -129,7 +129,7 @@ func TestPromotionHandlerPOSTWritesDataLayerNoExpiration(t *testing.T) {
 }
 
 func TestPromotionHandlerPOSTWritesDataLayerExpiration(t *testing.T) {
-	var n int64 = 0
+	var n int64
 	req, err := json.Marshal(&PromotionPOSTRequest{
 		Code:          "Foo",
 		DataJSON:      "{}",
@@ -151,7 +151,7 @@ func TestPromotionHandlerPOSTWritesDataLayerExpiration(t *testing.T) {
 }
 
 func TestPromotionHandlerPOSTBadPromoType(t *testing.T) {
-	var n int64 = 0
+	var n int64
 	req, err := json.Marshal(&PromotionPOSTRequest{
 		Code:          "Foo",
 		DataJSON:      "{}",

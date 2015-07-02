@@ -54,7 +54,7 @@ func NewTagCaseAssociationHandler(taggingClient Client) http.Handler {
 		httputil.Get, httputil.Post, httputil.Delete)
 }
 
-func (p *tagCaseAssociationHandler) IsAuthorized(r *http.Request) (bool, error) {
+func (*tagCaseAssociationHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
 	if ctxt.Role != api.RoleCC {
 		return false, apiservice.NewAccessForbiddenError()

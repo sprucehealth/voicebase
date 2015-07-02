@@ -91,7 +91,7 @@ func (d *defaultDoctorPicker) PickDoctorToNotify(config *DoctorNotifyPickerConfi
 		return doctorToNotify, nil
 	}
 
-	return 0, noDoctorFound
+	return 0, errNoDoctorFound
 }
 
 func (d *defaultDoctorPicker) isDoctorWithinSnoozePeriod(doctorID int64) (bool, error) {

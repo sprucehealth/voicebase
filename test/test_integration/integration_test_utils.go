@@ -538,31 +538,31 @@ func UploadLayoutPairForPathway(pathwayTag string, testData *TestData, t *testin
 	// read in the intake layout and modify the pathway tag
 	data, err := ioutil.ReadFile(IntakeFileLocation)
 	test.OK(t, err)
-	var intakeJsonMap map[string]interface{}
-	test.OK(t, json.Unmarshal(data, &intakeJsonMap))
-	intakeJsonMap["health_condition"] = pathwayTag
-	intakeJsonMap["cost_item_type"] = pathwayTag + "_visit"
-	intakeJsonData, err := json.Marshal(intakeJsonMap)
+	var intakeJSONMap map[string]interface{}
+	test.OK(t, json.Unmarshal(data, &intakeJSONMap))
+	intakeJSONMap["health_condition"] = pathwayTag
+	intakeJSONMap["cost_item_type"] = pathwayTag + "_visit"
+	intakeJSONData, err := json.Marshal(intakeJSONMap)
 	test.OK(t, err)
 
 	// read in the review layout and modify the pathway tag
 	data, err = ioutil.ReadFile(ReviewFileLocation)
 	test.OK(t, err)
-	var reviewJsonMap map[string]interface{}
-	test.OK(t, json.Unmarshal(data, &reviewJsonMap))
-	reviewJsonMap["health_condition"] = pathwayTag
-	reviewJsonMap["cost_item_type"] = pathwayTag + "_visit"
-	reviewJsonData, err := json.Marshal(reviewJsonMap)
+	var reviewJSONMap map[string]interface{}
+	test.OK(t, json.Unmarshal(data, &reviewJSONMap))
+	reviewJSONMap["health_condition"] = pathwayTag
+	reviewJSONMap["cost_item_type"] = pathwayTag + "_visit"
+	reviewJSONData, err := json.Marshal(reviewJSONMap)
 	test.OK(t, err)
 
 	// now write the intake and review files to the multipart writer
 	part, err := writer.CreateFormFile("intake", "intake-1-0-0.json")
 	test.OK(t, err)
-	_, err = part.Write(intakeJsonData)
+	_, err = part.Write(intakeJSONData)
 	test.OK(t, err)
 	part, err = writer.CreateFormFile("review", "review-1-0-0.json")
 	test.OK(t, err)
-	_, err = part.Write(reviewJsonData)
+	_, err = part.Write(reviewJSONData)
 	test.OK(t, err)
 
 	// specify the app versions and the platform information

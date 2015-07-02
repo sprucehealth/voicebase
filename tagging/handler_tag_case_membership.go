@@ -45,7 +45,7 @@ func NewTagCaseMembershipHandler(taggingClient Client) http.Handler {
 		httputil.Get, httputil.Delete, httputil.Put)
 }
 
-func (p *tagCaseMembershipHandler) IsAuthorized(r *http.Request) (bool, error) {
+func (*tagCaseMembershipHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
 	if ctxt.Role != api.RoleCC {
 		return false, apiservice.NewAccessForbiddenError()

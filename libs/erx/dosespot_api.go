@@ -51,9 +51,9 @@ type selfReportedMedicationSearchRequest struct {
 }
 
 type selfReportedMedicationSearchResultItem struct {
-	DisplayName       string
-	LexiCompDrugId    string
-	LexiCompSynonymId int64
+	DisplayName       string `xml:"DisplayName"`
+	LexiCompDrugID    string `xml:"LexiCompDrugId"`
+	LexiCompSynonymID int64  `xml:"LexiCompSynonymId"`
 }
 
 type selfReportedMedicationSearchResponse struct {
@@ -129,7 +129,7 @@ type patientUpdate struct {
 }
 
 type prescription struct {
-	DoseSpotPrescriptionId int64  `xml:"Medication>DoseSpotPrescriptionId"`
+	DoseSpotPrescriptionID int64  `xml:"Medication>DoseSpotPrescriptionId"`
 	LexiGenProductID       int64  `xml:"Medication>LexiGenProductId"`
 	LexiDrugSynID          int64  `xml:"Medication>LexiDrugSynId"`
 	LexiSynonymTypeID      int64  `xml:"Medication>LexiSynonymTypeId"`

@@ -18,7 +18,7 @@ import (
 type financialsVerifyHandler struct {
 	router       *mux.Router
 	dataAPI      api.DataAPI
-	stripeCli    *stripe.StripeService
+	stripeCli    *stripe.Client
 	template     *template.Template
 	supportEmail string
 }
@@ -47,7 +47,7 @@ func (r *financialsVerifyForm) Validate() map[string]string {
 	return errors
 }
 
-func NewFinancialVerifyHandler(router *mux.Router, dataAPI api.DataAPI, supportEmail string, stripeCli *stripe.StripeService, templateLoader *www.TemplateLoader) http.Handler {
+func NewFinancialVerifyHandler(router *mux.Router, dataAPI api.DataAPI, supportEmail string, stripeCli *stripe.Client, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&financialsVerifyHandler{
 		router:       router,
 		dataAPI:      dataAPI,

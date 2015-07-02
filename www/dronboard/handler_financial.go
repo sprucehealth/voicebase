@@ -22,7 +22,7 @@ var verifyDuration = time.Hour * 24 * 7
 type financialsHandler struct {
 	router    *mux.Router
 	dataAPI   api.DataAPI
-	stripeCli *stripe.StripeService
+	stripeCli *stripe.Client
 	template  *template.Template
 }
 
@@ -38,7 +38,7 @@ func (r *financialsForm) Validate() map[string]string {
 	return errors
 }
 
-func NewFinancialsHandler(router *mux.Router, dataAPI api.DataAPI, stripeCli *stripe.StripeService, templateLoader *www.TemplateLoader) http.Handler {
+func NewFinancialsHandler(router *mux.Router, dataAPI api.DataAPI, stripeCli *stripe.Client, templateLoader *www.TemplateLoader) http.Handler {
 	return httputil.SupportedMethods(&financialsHandler{
 		router:    router,
 		dataAPI:   dataAPI,

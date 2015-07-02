@@ -93,7 +93,7 @@ func (r *routeDoctorReferralProgram) PromotionForReferredAccount(code string) *c
 }
 
 func (r *routeDoctorReferralProgram) ReferredAccountAssociatedCode(accountID, codeID int64, dataAPI api.DataAPI) error {
-	r.AssociatedCount += 1
+	r.AssociatedCount++
 	if err := dataAPI.UpdateReferralProgram(r.referralProgramParams.OwnerAccountID, codeID, r); err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func (r *routeDoctorReferralProgram) ReferredAccountAssociatedCode(accountID, co
 
 func (r *routeDoctorReferralProgram) ReferredAccountSubmittedVisit(accountID, codeID int64, dataAPI api.DataAPI) error {
 
-	r.SubmittedCount += 1
+	r.SubmittedCount++
 	if err := dataAPI.UpdateReferralProgram(r.referralProgramParams.OwnerAccountID, codeID, r); err != nil {
 		return err
 	}

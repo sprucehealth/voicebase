@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	noDoctorFound                          = errors.New("No doctor found to notify")
+	errNoDoctorFound                       = errors.New("No doctor found to notify")
 	timePeriodBetweenNotificationChecks    = time.Minute
 	minimumTimeBeforeNotifyingSameDoctor   = 2 * time.Hour
 	minimumTimeBeforeNotifyingForSameState = 30 * time.Minute
@@ -90,14 +90,13 @@ func (w *Worker) Do() error {
 
 	// iterate through the states to notify a doctor per state
 	for i, careProvidingStateID := range careProvidingStateIDs {
-
 		doctorToNotify, err := w.doctorPicker.PickDoctorToNotify(&DoctorNotifyPickerConfig{
 			CareProvidingStateID:                   careProvidingStateID,
 			StatesToAvoid:                          careProvidingStateIDs[:i],
 			MinimumTimeBeforeNotifyingForSameState: w.minimumTimeBeforeNotifyingForSameState,
 			MinimumTimeBeforeNotifyingSameDoctor:   w.minimumTimeBeforeNotifyingSameDoctor,
 		})
-		if err == noDoctorFound {
+		if err == errNoDoctorFound {
 			w.statNoDoctorsToNotify.Inc(1)
 			continue
 		} else if err != nil {

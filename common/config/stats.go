@@ -18,8 +18,8 @@ type Stats struct {
 }
 
 var (
-	statsExportIncludes []*regexp.Regexp = nil
-	statsExportExcludes []*regexp.Regexp = nil
+	statsExportIncludes []*regexp.Regexp
+	statsExportExcludes []*regexp.Regexp
 )
 
 func (s *BaseConfig) StartReporters(statsRegistry metrics.Registry) {

@@ -96,7 +96,7 @@ func (g *giveMoneyOffReferralProgram) TypeName() string {
 }
 
 func (g *giveMoneyOffReferralProgram) ReferredAccountAssociatedCode(accountID, codeID int64, dataAPI api.DataAPI) error {
-	g.AssociatedCount += 1
+	g.AssociatedCount++
 	if err := dataAPI.UpdateReferralProgram(g.referralProgramParams.OwnerAccountID, codeID, g); err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func (g *giveMoneyOffReferralProgram) ReferredAccountAssociatedCode(accountID, c
 }
 
 func (g *giveMoneyOffReferralProgram) ReferredAccountSubmittedVisit(accountID, codeID int64, dataAPI api.DataAPI) error {
-	g.SubmittedCount += 1
+	g.SubmittedCount++
 	if err := dataAPI.UpdateReferralProgram(g.referralProgramParams.OwnerAccountID, codeID, g); err != nil {
 		return err
 	}
@@ -164,7 +164,7 @@ func (g *givePercentOffReferralProgram) TypeName() string {
 }
 
 func (g *givePercentOffReferralProgram) ReferredAccountAssociatedCode(accountID, codeID int64, dataAPI api.DataAPI) error {
-	g.AssociatedCount += 1
+	g.AssociatedCount++
 	if err := dataAPI.UpdateReferralProgram(g.referralProgramParams.OwnerAccountID, codeID, g); err != nil {
 		return err
 	}
@@ -182,7 +182,7 @@ func (g *givePercentOffReferralProgram) ReferredAccountAssociatedCode(accountID,
 }
 
 func (g *givePercentOffReferralProgram) ReferredAccountSubmittedVisit(accountID, codeID int64, dataAPI api.DataAPI) error {
-	g.SubmittedCount += 1
+	g.SubmittedCount++
 	if err := dataAPI.UpdateReferralProgram(g.referralProgramParams.OwnerAccountID, codeID, g); err != nil {
 		return err
 	}

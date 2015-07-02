@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// MYSQLArgs returns n mysql argumetns for a database query.
+// MySQLArgs returns n mysql argumetns for a database query.
 func MySQLArgs(n int) string {
 	if n <= 0 {
 		return ""

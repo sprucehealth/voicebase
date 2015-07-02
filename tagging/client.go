@@ -42,15 +42,15 @@ type Client interface {
 	UpdateTagCaseMembership(membership *model.TagMembershipUpdate) error
 }
 
-type TaggingClient struct {
+type client struct {
 	db *sql.DB
 }
 
 func NewTaggingClient(db *sql.DB) Client {
-	return &TaggingClient{db: db}
+	return &client{db: db}
 }
 
-func (tc *TaggingClient) TagSavedSearchs() ([]*model.TagSavedSearch, error) {
+func (tc *client) TagSavedSearchs() ([]*model.TagSavedSearch, error) {
 	rows, err := tc.db.Query("SELECT id, title, query, created FROM tag_saved_search ORDER BY title LIMIT 100")
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -68,7 +68,7 @@ func (tc *TaggingClient) TagSavedSearchs() ([]*model.TagSavedSearch, error) {
 	return savedSearches, errors.Trace(rows.Err())
 }
 
-func (tc *TaggingClient) InsertTagSavedSearch(ss *model.TagSavedSearch) (int64, error) {
+func (tc *client) InsertTagSavedSearch(ss *model.TagSavedSearch) (int64, error) {
 	res, err := tc.db.Exec("INSERT INTO tag_saved_search (title, query) VALUES (?, ?)", ss.Title, ss.Query)
 	if err != nil {
 		return 0, errors.Trace(err)
@@ -76,7 +76,7 @@ func (tc *TaggingClient) InsertTagSavedSearch(ss *model.TagSavedSearch) (int64, 
 	return res.LastInsertId()
 }
 
-func (tc *TaggingClient) DeleteTagSavedSearch(ssID int64) (int64, error) {
+func (tc *client) DeleteTagSavedSearch(ssID int64) (int64, error) {
 	res, err := tc.db.Exec("DELETE FROM tag_saved_search WHERE id = ?", ssID)
 	if err != nil {
 		return 0, errors.Trace(err)
@@ -84,7 +84,7 @@ func (tc *TaggingClient) DeleteTagSavedSearch(ssID int64) (int64, error) {
 	return res.RowsAffected()
 }
 
-func (tc *TaggingClient) DeleteTag(id int64) (int64, error) {
+func (tc *client) DeleteTag(id int64) (int64, error) {
 	res, err := tc.db.Exec("DELETE FROM tag WHERE id = ?", id)
 	if err != nil {
 		return 0, errors.Trace(err)
@@ -92,7 +92,7 @@ func (tc *TaggingClient) DeleteTag(id int64) (int64, error) {
 	return res.RowsAffected()
 }
 
-func (tc *TaggingClient) InsertTag(tag *model.Tag) (int64, error) {
+func (tc *client) InsertTag(tag *model.Tag) (int64, error) {
 	res, err := tc.db.Exec("INSERT INTO tag (tag_text, common) VALUES (?, ?)", tag.Text, tag.Common)
 	if err != nil {
 		return 0, errors.Trace(err)
@@ -100,12 +100,12 @@ func (tc *TaggingClient) InsertTag(tag *model.Tag) (int64, error) {
 	return res.LastInsertId()
 }
 
-func (tc *TaggingClient) UpdateTag(tag *model.TagUpdate) error {
+func (tc *client) UpdateTag(tag *model.TagUpdate) error {
 	_, err := tc.db.Exec("UPDATE tag SET common = ? WHERE id = ?", tag.Common, tag.ID)
 	return errors.Trace(err)
 }
 
-func (tc *TaggingClient) TagFromText(text string) (*response.Tag, error) {
+func (tc *client) TagFromText(text string) (*response.Tag, error) {
 	tag := &response.Tag{}
 	if err := tc.db.QueryRow(`SELECT id, tag_text, common FROM tag WHERE tag_text = ?`, text).Scan(&tag.ID, &tag.Text, &tag.Common); err == sql.ErrNoRows {
 		return nil, errors.Trace(api.ErrNotFound(`tag`))
@@ -115,7 +115,7 @@ func (tc *TaggingClient) TagFromText(text string) (*response.Tag, error) {
 	return tag, nil
 }
 
-func (tc *TaggingClient) TagsFromText(conditionValues []string, ops TaggingOption) ([]*response.Tag, error) {
+func (tc *client) TagsFromText(conditionValues []string, ops TaggingOption) ([]*response.Tag, error) {
 	q := `SELECT id, tag_text, common FROM tag`
 	conditionFields := make([]string, len(conditionValues))
 	for i := range conditionValues {
@@ -151,7 +151,7 @@ func (tc *TaggingClient) TagsFromText(conditionValues []string, ops TaggingOptio
 	return tags, errors.Trace(rows.Err())
 }
 
-func (tc *TaggingClient) Tags(ids []int64) (map[int64]*response.Tag, error) {
+func (tc *client) Tags(ids []int64) (map[int64]*response.Tag, error) {
 	rows, err := tc.db.Query(`SELECT id, tag_text, common FROM tag WHERE id IN (`+dbutil.MySQLArgs(len(ids))+`)`, dbutil.AppendInt64sToInterfaceSlice(nil, ids)...)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(api.ErrNotFound(`tag`))
@@ -171,7 +171,7 @@ func (tc *TaggingClient) Tags(ids []int64) (map[int64]*response.Tag, error) {
 	return tags, errors.Trace(rows.Err())
 }
 
-func (tc *TaggingClient) TagsForCases(ids []int64, ops TaggingOption) (map[int64][]*response.Tag, error) {
+func (tc *client) TagsForCases(ids []int64, ops TaggingOption) (map[int64][]*response.Tag, error) {
 	tags := make(map[int64][]*response.Tag)
 	if len(ids) == 0 {
 		return tags, nil
@@ -202,7 +202,7 @@ func (tc *TaggingClient) TagsForCases(ids []int64, ops TaggingOption) (map[int64
 	return tags, errors.Trace(rows.Err())
 }
 
-func (tc *TaggingClient) DeleteTagCaseAssociation(tagText string, caseID int64) error {
+func (tc *client) DeleteTagCaseAssociation(tagText string, caseID int64) error {
 	var id int64
 	err := tc.db.QueryRow("SELECT id FROM tag WHERE tag_text = ?", tagText).Scan(&id)
 	if err == sql.ErrNoRows {
@@ -217,21 +217,21 @@ func (tc *TaggingClient) DeleteTagCaseAssociation(tagText string, caseID int64) 
 	return nil
 }
 
-func (tc *TaggingClient) DeleteTagCaseMembership(tagID, caseID int64) error {
+func (tc *client) DeleteTagCaseMembership(tagID, caseID int64) error {
 	if _, err := tc.db.Exec("DELETE FROM tag_membership WHERE tag_id = ? AND case_id = ?", tagID, caseID); err != nil {
 		return errors.Trace(err)
 	}
 	return nil
 }
 
-func (tc *TaggingClient) UpdateTagCaseMembership(membership *model.TagMembershipUpdate) error {
+func (tc *client) UpdateTagCaseMembership(membership *model.TagMembershipUpdate) error {
 	if _, err := tc.db.Exec("UPDATE tag_membership SET trigger_time = ? WHERE tag_id = ? AND case_id = ?", membership.TriggerTime, membership.TagID, membership.CaseID); err != nil {
 		return errors.Trace(err)
 	}
 	return nil
 }
 
-func (tc *TaggingClient) InsertTagAssociation(tag *model.Tag, membership *model.TagMembership) (int64, error) {
+func (tc *client) InsertTagAssociation(tag *model.Tag, membership *model.TagMembership) (int64, error) {
 	tx, err := tc.db.Begin()
 	if err != nil {
 		return 0, errors.Trace(err)
@@ -280,7 +280,7 @@ func (tc *TaggingClient) InsertTagAssociation(tag *model.Tag, membership *model.
 }
 
 // CaseTagMembership returns a map of tag text mapped to the corresponding membership
-func (tc *TaggingClient) CaseTagMemberships(caseID int64) (map[string]*model.TagMembership, error) {
+func (tc *client) CaseTagMemberships(caseID int64) (map[string]*model.TagMembership, error) {
 	rows, err := tc.db.Query(
 		`SELECT tag.tag_text, tag_id, case_id, trigger_time, hidden, created FROM tag_membership 
 			JOIN tag ON tag.id = tag_id
@@ -302,7 +302,7 @@ func (tc *TaggingClient) CaseTagMemberships(caseID int64) (map[string]*model.Tag
 	return memberships, errors.Trace(rows.Err())
 }
 
-func (tc *TaggingClient) TagMembershipQuery(qs string, ops TaggingOption) ([]*model.TagMembership, error) {
+func (tc *client) TagMembershipQuery(qs string, ops TaggingOption) ([]*model.TagMembership, error) {
 	q, err := query.NewTagAssociationQuery(qs)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -342,7 +342,7 @@ func (tc *TaggingClient) TagMembershipQuery(qs string, ops TaggingOption) ([]*mo
 }
 
 // CaseAssociations returns the summarized case objects for the provided memberships and visit submission bounds
-func (tc *TaggingClient) CaseAssociations(ms []*model.TagMembership, start, end int64) ([]*response.TagAssociation, error) {
+func (tc *client) CaseAssociations(ms []*model.TagMembership, start, end int64) ([]*response.TagAssociation, error) {
 	if len(ms) == 0 {
 		return nil, nil
 	}

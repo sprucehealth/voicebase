@@ -34,7 +34,7 @@ func NewPromotionConfirmationHandler(dataAPI api.DataAPI) http.Handler {
 		}, httputil.Get))
 }
 
-func (p *promotionConfirmationHandler) IsAuthorized(r *http.Request) (bool, error) {
+func (*promotionConfirmationHandler) IsAuthorized(r *http.Request) (bool, error) {
 	return true, nil
 }
 

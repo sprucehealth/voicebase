@@ -252,29 +252,29 @@ func (d *TestData) StartAPIServer(t *testing.T) {
 	d.bootstrapData()
 }
 
-func (td *TestData) Close() {
-	td.DB.Close()
+func (d *TestData) Close() {
+	d.DB.Close()
 
-	if td.APIServer != nil {
-		td.APIServer.Close()
+	if d.APIServer != nil {
+		d.APIServer.Close()
 	}
-	if td.AdminAPIServer != nil {
-		td.AdminAPIServer.Close()
+	if d.AdminAPIServer != nil {
+		d.AdminAPIServer.Close()
 	}
 	// put anything here that is global to the teardown process for integration tests
 	teardownScript := os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test_integration/teardown_integration_test.sh"
-	cmd := exec.Command(teardownScript, td.DBConfig.Name)
+	cmd := exec.Command(teardownScript, d.DBConfig.Name)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = os.Stderr
 	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("CF_LOCAL_DB_INSTANCE=%s", td.DBConfig.Host),
-		fmt.Sprintf("CF_LOCAL_DB_PORT=%d", td.DBConfig.Port),
-		fmt.Sprintf("CF_LOCAL_DB_USERNAME=%s", td.DBConfig.User),
-		fmt.Sprintf("CF_LOCAL_DB_PASSWORD=%s", td.DBConfig.Password),
+		fmt.Sprintf("CF_LOCAL_DB_INSTANCE=%s", d.DBConfig.Host),
+		fmt.Sprintf("CF_LOCAL_DB_PORT=%d", d.DBConfig.Port),
+		fmt.Sprintf("CF_LOCAL_DB_USERNAME=%s", d.DBConfig.User),
+		fmt.Sprintf("CF_LOCAL_DB_PASSWORD=%s", d.DBConfig.Password),
 	)
 	err := cmd.Run()
-	test.OK(td.T, err)
+	test.OK(d.T, err)
 }
 
 func setupTest() (*TestData, error) {

@@ -77,7 +77,7 @@ func (n note) String() string {
 	}
 	var additionalInfo string
 	additionalInfoKeys := make([]string, 0, len(n.AdditionalInfo))
-	for k, _ := range n.AdditionalInfo {
+	for k := range n.AdditionalInfo {
 		additionalInfoKeys = append(additionalInfoKeys, k)
 	}
 	sort.Strings(additionalInfoKeys)
@@ -152,7 +152,6 @@ func newFTP() *ftp {
 		ScheduledMessages: make(map[string]scheduledMessage),
 		Sections:          make(map[string]section),
 		RXs:               make(map[string]rx),
-		ResourceGuideTags: make([]string, 0),
 	}
 }
 
@@ -264,14 +263,14 @@ func (h *treatmentPlanCSVHandler) createGlobalFTPs(ftps []*ftp) error {
 	}
 	ftpModels := make(map[int64][]*common.FavoriteTreatmentPlan)
 	for _, ftp := range ftps {
-		regimineSections := make([]*common.RegimenSection, 0)
+		regimineSections := make([]*common.RegimenSection, 0, len(ftp.Sections))
 		sectionKeys := make([]string, 0, len(ftp.Sections))
-		for k, _ := range ftp.Sections {
+		for k := range ftp.Sections {
 			sectionKeys = append(sectionKeys, k)
 		}
 		sort.Strings(sectionKeys)
 		for _, k := range sectionKeys {
-			steps := make([]*common.DoctorInstructionItem, 0)
+			steps := make([]*common.DoctorInstructionItem, 0, len(ftp.Sections[k].Steps))
 			for _, st := range ftp.Sections[k].Steps {
 				steps = append(steps, &common.DoctorInstructionItem{Text: st.Text})
 			}
@@ -289,7 +288,7 @@ func (h *treatmentPlanCSVHandler) createGlobalFTPs(ftps []*ftp) error {
 
 		treatmentList := &common.TreatmentList{}
 		rxKeys := make([]string, 0, len(ftp.Sections))
-		for k, _ := range ftp.RXs {
+		for k := range ftp.RXs {
 			rxKeys = append(rxKeys, k)
 		}
 		sort.Strings(rxKeys)
@@ -326,9 +325,9 @@ func (h *treatmentPlanCSVHandler) createGlobalFTPs(ftps []*ftp) error {
 			treatmentList.Status = "ACTIVE"
 		}
 
-		scheduledMessages := make([]*common.TreatmentPlanScheduledMessage, 0)
+		scheduledMessages := make([]*common.TreatmentPlanScheduledMessage, 0, len(ftp.ScheduledMessages))
 		scheduledMessagesKeys := make([]string, 0, len(ftp.Sections))
-		for k, _ := range ftp.ScheduledMessages {
+		for k := range ftp.ScheduledMessages {
 			scheduledMessagesKeys = append(scheduledMessagesKeys, k)
 		}
 		sort.Strings(scheduledMessagesKeys)
@@ -337,7 +336,7 @@ func (h *treatmentPlanCSVHandler) createGlobalFTPs(ftps []*ftp) error {
 			if err != nil {
 				return err
 			}
-			attachments := make([]*common.CaseMessageAttachment, 0)
+			var attachments []*common.CaseMessageAttachment
 			if ftp.ScheduledMessages[k].RequiresFollowup() {
 				attachments = append(attachments, &common.CaseMessageAttachment{
 					ItemType: "followup_visit",
@@ -375,12 +374,7 @@ func (h *treatmentPlanCSVHandler) createGlobalFTPs(ftps []*ftp) error {
 			return err
 		}
 
-		list, ok := ftpModels[pathway.ID]
-		if !ok {
-			list = make([]*common.FavoriteTreatmentPlan, 0)
-		}
-		list = append(list, ftpModel)
-		ftpModels[pathway.ID] = list
+		ftpModels[pathway.ID] = append(ftpModels[pathway.ID], ftpModel)
 	}
 	if err := h.dataAPI.InsertGlobalFTPsAndUpdateMemberships(ftpModels); err != nil {
 		return err
@@ -394,8 +388,8 @@ func (h *treatmentPlanCSVHandler) transformFTPToSTP(ftp ftp, complete chan *comp
 		treatment_plan.NewTPHeroHeaderView("Sample Treatment Plan", "Your doctor will personalize a treatment plan for you."),
 	}
 
-	instruction_views := make([]views.View, len(ftp.Sections)+1)
-	instruction_views[0] = treatment_plan.NewTPCardView([]views.View{
+	instructionCiews := make([]views.View, len(ftp.Sections)+1)
+	instructionCiews[0] = treatment_plan.NewTPCardView([]views.View{
 		treatment_plan.NewTPTextView("title1_medium", "Your doctor will explain how to use your treatments together in a personalized care routine."),
 	})
 	for _, v := range sftp.HeaderViews {
@@ -403,34 +397,34 @@ func (h *treatmentPlanCSVHandler) transformFTPToSTP(ftp ftp, complete chan *comp
 	}
 
 	sectionKeys := make([]string, 0, len(ftp.Sections))
-	for k, _ := range ftp.Sections {
+	for k := range ftp.Sections {
 		sectionKeys = append(sectionKeys, k)
 	}
 	sort.Strings(sectionKeys)
 	sectionIndex := 1
 	for _, k := range sectionKeys {
-		section_instruction_views := make([]views.View, len(ftp.Sections[k].Steps)+1)
-		section_instruction_views[0] = treatment_plan.NewTPCardTitleView(ftp.Sections[k].Title, "", false)
+		sectionInstructionViews := make([]views.View, len(ftp.Sections[k].Steps)+1)
+		sectionInstructionViews[0] = treatment_plan.NewTPCardTitleView(ftp.Sections[k].Title, "", false)
 		for si, st := range ftp.Sections[k].Steps {
-			section_instruction_views[si+1] = treatment_plan.NewTPListElement("bulleted", st.Text, si)
+			sectionInstructionViews[si+1] = treatment_plan.NewTPListElement("bulleted", st.Text, si)
 		}
-		instruction_views[sectionIndex] = treatment_plan.NewTPCardView(section_instruction_views)
+		instructionCiews[sectionIndex] = treatment_plan.NewTPCardView(sectionInstructionViews)
 		sectionIndex++
 	}
-	sftp.InstructionViews = instruction_views
+	sftp.InstructionViews = instructionCiews
 	for _, v := range sftp.InstructionViews {
 		v.Validate("treatment")
 	}
 
-	treatment_views := make([]views.View, 0, len(ftp.RXs)+2)
-	treatment_views = append(treatment_views, treatment_plan.NewTPCardView([]views.View{
+	treatmentViews := make([]views.View, 0, len(ftp.RXs)+2)
+	treatmentViews = append(treatmentViews, treatment_plan.NewTPCardView([]views.View{
 		treatment_plan.NewTPTextView("title1_medium", "Your doctor will determine the right treatments for you."),
 		treatment_plan.NewTPTextView("", "Prescriptions will be available to pick up at your preferred pharmacy."),
 	}))
-	treatment_list := &common.TreatmentList{}
+	treatmentList := &common.TreatmentList{}
 
 	rxKeys := make([]string, 0, len(ftp.Sections))
-	for k, _ := range ftp.RXs {
+	for k := range ftp.RXs {
 		rxKeys = append(rxKeys, k)
 	}
 	sort.Strings(rxKeys)
@@ -443,14 +437,14 @@ func (h *treatmentPlanCSVHandler) transformFTPToSTP(ftp ftp, complete chan *comp
 		if msr != nil {
 			treatment, _ := doctor_treatment_plan.CreateTreatmentFromMedication(msr, ftp.RXs[k].Dosage, ftp.RXs[k].Name)
 			treatment.PatientInstructions = ftp.RXs[k].Sig
-			treatment_list.Treatments = append(treatment_list.Treatments, treatment)
-			treatment_list.Status = "ACTIVE"
+			treatmentList.Treatments = append(treatmentList.Treatments, treatment)
+			treatmentList.Status = "ACTIVE"
 		}
 	}
-	if len(treatment_list.Treatments) > 0 {
-		treatment_views = append(treatment_views, treatment_plan.GenerateViewsForTreatments(treatment_list, 0, h.dataAPI, false)...)
+	if len(treatmentList.Treatments) != 0 {
+		treatmentViews = append(treatmentViews, treatment_plan.GenerateViewsForTreatments(treatmentList, 0, h.dataAPI, false)...)
 	}
-	treatment_views = append(treatment_views, treatment_plan.NewTPCardView([]views.View{
+	treatmentViews = append(treatmentViews, treatment_plan.NewTPCardView([]views.View{
 		treatment_plan.NewTPCardTitleView("Prescription Pickup", "", false),
 		treatment_plan.NewPharmacyView("Your prescriptions should be ready soon. Call your pharmacy to confirm a pickup time.", nil,
 			&pharmacy.PharmacyData{
@@ -467,7 +461,7 @@ func (h *treatmentPlanCSVHandler) transformFTPToSTP(ftp ftp, complete chan *comp
 				Postal:       "94103",
 			}),
 	}))
-	sftp.TreatmentViews = treatment_views
+	sftp.TreatmentViews = treatmentViews
 	for _, v := range sftp.TreatmentViews {
 		v.Validate("treatment")
 	}
@@ -685,7 +679,7 @@ func parseFTP(colData [][]string, column int, errs chan error, complete chan *ft
 				}
 				s, ok := ftp.Sections[si[0]]
 				if !ok {
-					s = section{Steps: make([]step, 0)}
+					s = section{}
 				}
 				order, err := strconv.ParseInt(si[1], 10, 64)
 				if err != nil {

@@ -36,7 +36,6 @@ func (c *Case) String() string {
 }
 
 func NewCase(pc *common.PatientCase, careTeamMembers []*PatientCareTeamMember, diagnosis string) *Case {
-
 	firstLetter := false
 	displayStatus := strings.Map(func(r rune) rune {
 		if !firstLetter {
@@ -61,7 +60,7 @@ func NewCase(pc *common.PatientCase, careTeamMembers []*PatientCareTeamMember, d
 	}
 }
 
-// An entry representing an individual care team member
+// PatientCareTeamMember represents an individual care team member
 type PatientCareTeamMember struct {
 	*CareProvider
 	ProviderRole           string    `json:"provider_role"`
@@ -93,7 +92,7 @@ func TransformCareTeamMember(member *common.CareProviderAssignment, apiDomain st
 	}
 }
 
-// A summary object representing an individual care team
+// PatientCareTeamSummary is a summary object representing an individual care team
 type PatientCareTeamSummary struct {
 	CaseID  int64                    `json:"case_id,string"`
 	Members []*PatientCareTeamMember `json:"members"`

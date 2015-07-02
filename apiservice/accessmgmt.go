@@ -34,7 +34,7 @@ func AccountDoctorHasAccessToCase(accountID, caseID int64, accountRole string, r
 	return DoctorHasAccessToCase(doctorID, caseID, accountRole, requiredAccess, dataAPI, ctxt)
 }
 
-// AccountDoctorHasAccessToCase validates a given doctor's access to a patient case, this will also optionally populate the case and doctorID attributes of the provided context
+// DoctorHasAccessToCase validates a given doctor's access to a patient case, this will also optionally populate the case and doctorID attributes of the provided context
 func DoctorHasAccessToCase(doctorID, caseID int64, accountRole string, requiredAccess RecordAccessRequired, dataAPI api.DataAPI, ctxt *Context) (bool, error) {
 	if ctxt != nil {
 		ctxt.RequestCache[DoctorID] = doctorID

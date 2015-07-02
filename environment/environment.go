@@ -16,7 +16,7 @@ const (
 var current = Test
 var once sync.Once
 
-// SetCurrentEnvironment should be called at startup to set the current environment variable
+// SetCurrent should be called at startup to set the current environment variable
 // so as to make it possible for any package to pull in the current state to act on it
 func SetCurrent(env string) {
 	once.Do(func() {

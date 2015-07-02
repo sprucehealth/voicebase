@@ -90,8 +90,7 @@ type ERxData struct {
 	PharmacyLocalID       encoding.ObjectID      `json:"-"`
 }
 
-// defining an equals method on the treatment so that
-// we can compare two treatments based on the fields that
+// Equals compares two treatments based on the fields that
 // are important to be the same between treatments
 func (t *Treatment) Equals(other *Treatment) bool {
 	if t == nil || other == nil {

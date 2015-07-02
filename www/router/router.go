@@ -77,7 +77,7 @@ type Config struct {
 	APIDomain           string
 	WebDomain           string
 	StaticResourceURL   string
-	StripeClient        *stripe.StripeService
+	StripeClient        *stripe.Client
 	Signer              *sig.Signer
 	Stores              map[string]storage.Store
 	MediaStore          *media.Store
