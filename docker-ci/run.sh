@@ -84,6 +84,7 @@ fi
 go run docker-ci/covermerge.go ./coverage-$BUILD_NUMBER.out ./
 go tool cover -html=coverage-$BUILD_NUMBER.out -o coverage.html
 cp coverage.html coverage-$BUILD_NUMBER.html
+go tool cover -func=coverage-$BUILD_NUMBER.out
 
 # Test static resources
 echo "TESTING STATIC RESOURCES"
