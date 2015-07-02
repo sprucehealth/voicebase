@@ -84,7 +84,7 @@ fi
 go run docker-ci/covermerge.go ./coverage-$BUILD_NUMBER.out ./
 go tool cover -html=coverage-$BUILD_NUMBER.out -o coverage.html
 cp coverage.html coverage-$BUILD_NUMBER.html
-echo -n "cover: all\t" ; go tool cover -func=coverage-$BUILD_NUMBER.out | grep "total:"
+echo -n "cover: all       " ; go tool cover -func=coverage-$BUILD_NUMBER.out | grep "total:"
 for PKG in $PKGS; do
     if [ -e "$PKG/cover.out" ]; then
         echo -n "cover: $PKG     " ; go tool cover -func="$PKG/cover.out" | grep "total:"
