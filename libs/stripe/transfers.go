@@ -36,7 +36,7 @@ type CreateTransferRequest struct {
 	Metadata             map[string]string // optional
 }
 
-func (s *StripeService) CreateTransfer(req *CreateTransferRequest) (*Transfer, error) {
+func (s *Client) CreateTransfer(req *CreateTransferRequest) (*Transfer, error) {
 	params := url.Values{}
 	params.Set("amount", strconv.Itoa(req.Amount))
 	params.Set("currency", req.Currency.ISO)
@@ -66,7 +66,7 @@ func (s *StripeService) CreateTransfer(req *CreateTransferRequest) (*Transfer, e
 	return &transfer, nil
 }
 
-func (s *StripeService) GetTransfer(id string) (*Transfer, error) {
+func (s *Client) GetTransfer(id string) (*Transfer, error) {
 	var transfer Transfer
 	if err := s.query("GET", transfersURL+"/"+id, nil, &transfer); err != nil {
 		return nil, err

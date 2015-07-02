@@ -76,7 +76,7 @@ type Config struct {
 	TemplateLoader  *www.TemplateLoader
 	EmailService    email.Service
 	LibratoClient   *librato.Client
-	StripeClient    *stripe.StripeService
+	StripeClient    *stripe.Client
 	MediaStore      *media.Store
 	APIDomain       string
 	WebDomain       string

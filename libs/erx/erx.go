@@ -8,16 +8,16 @@ import (
 )
 
 const (
-	PHARMACY_TYPE_TWENTY_FOUR_HOURS = "TwentyFourHourPharmacy"
-	PHARMACY_TYPE_MAIL_ORDER        = "MailOrder"
-	PHARMACY_TYPE_LONG_TERM_CARE    = "LongTermCarePharmacy"
-	PHARMACY_TYPE_RETAIL            = "Retail"
-	PHARMACY_TYPE_SPECIALTY         = "SpecialtyPharmacy"
+	PharmacyTypeTwentyFourHours = "TwentyFourHourPharmacy"
+	PharmacyTypeMailOrder       = "MailOrder"
+	PharmacyTypeLongTermCare    = "LongTermCarePharmacy"
+	PharmacyTypeRetail          = "Retail"
+	PharmacyTypeSpecialty       = "SpecialtyPharmacy"
 )
 
 type ERxAPI interface {
-	ApproveRefillRequest(clinicianID, erxRefillRequestQueueItemId, approvedRefillAmount int64, comments string) (int64, error)
-	DenyRefillRequest(clinicianID, erxRefillRequestQueueItemId int64, denialReason, comments string) (int64, error)
+	ApproveRefillRequest(clinicianID, erxRefillRequestQueueItemID, approvedRefillAmount int64, comments string) (int64, error)
+	DenyRefillRequest(clinicianID, erxRefillRequestQueueItemID int64, denialReason, comments string) (int64, error)
 	GetDrugNamesForDoctor(clinicianID int64, prefix string) ([]string, error)
 	GetDrugNamesForPatient(prefix string) ([]string, error)
 	GetPatientDetails(erxPatientID int64) (*common.Patient, error)
@@ -32,7 +32,7 @@ type ERxAPI interface {
 	SearchForPharmacies(clinicianID int64, city, state, zipcode, name string, pharmacyTypes []string) ([]*pharmacySearch.PharmacyData, error)
 	SelectMedication(clinicianID int64, medicationName, medicationStrength string) (*MedicationSelectResponse, error)
 	SendMultiplePrescriptions(clinicianID int64, patient *common.Patient, treatments []*common.Treatment) ([]*common.Treatment, error)
-	StartPrescribingPatient(clinicianID int64, patient *common.Patient, treatments []*common.Treatment, pharmacySourceId int64) error
+	StartPrescribingPatient(clinicianID int64, patient *common.Patient, treatments []*common.Treatment, pharmacySourceID int64) error
 	UpdatePatientInformation(clinicianID int64, patient *common.Patient) error
 }
 

@@ -146,9 +146,8 @@ func (h *passwordProtectHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 			// will be set.
 			http.Redirect(w, r, "", http.StatusSeeOther)
 			return
-		} else {
-			errorMsg = "Invalid password."
 		}
+		errorMsg = "Invalid password."
 	}
 	www.TemplateResponse(w, http.StatusOK, h.tmpl, &www.BaseTemplateContext{
 		Title: "Spruce",

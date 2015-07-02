@@ -117,9 +117,8 @@ func (a *arcgisClient) geocodeAddresses(addresses []*address) (*addressResult, e
 		respData, err := ioutil.ReadAll(res.Body)
 		if err != nil {
 			return nil, err
-		} else {
-			golog.Errorf(string(respData))
 		}
+		golog.Errorf(string(respData))
 
 		// TODO better error reporting
 		return nil, fmt.Errorf("Expected 200 but got %d", res.StatusCode)

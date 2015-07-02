@@ -20,7 +20,7 @@ type Config struct {
 	Dispatcher      *dispatch.Dispatcher
 	SMSFromNumber   string
 	SupportEmail    string
-	StripeClient    *stripe.StripeService
+	StripeClient    *stripe.Client
 	Signer          *sig.Signer
 	Stores          storage.StoreMap
 	TemplateLoader  *www.TemplateLoader

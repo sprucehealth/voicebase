@@ -25,7 +25,7 @@ func TestGenerateBranchURL(t *testing.T) {
 	data, err := json.Marshal(&branchURLResponse{
 		URL: expectedURL,
 	})
-	cli := &BranchClient{
+	cli := &client{
 		branchKey: "key",
 		httpClient: &http.Client{
 			Transport: &recordingTransport{
@@ -43,7 +43,7 @@ func TestGenerateBranchURL(t *testing.T) {
 }
 
 func TestGenerateBranchURLNotOK(t *testing.T) {
-	cli := &BranchClient{
+	cli := &client{
 		branchKey: "key",
 		httpClient: &http.Client{
 			Transport: &recordingTransport{

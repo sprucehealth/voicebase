@@ -63,13 +63,12 @@ type ErrorList []error
 func (e ErrorList) Error() string {
 	if len(e) == 1 {
 		return fmt.Sprintf("dispatch: %s", e[0].Error())
-	} else {
-		s := make([]string, len(e))
-		for i, err := range e {
-			s[i] = err.Error()
-		}
-		return fmt.Sprintf("dispatch: %s", strings.Join(s, ","))
 	}
+	s := make([]string, len(e))
+	for i, err := range e {
+		s[i] = err.Error()
+	}
+	return fmt.Sprintf("dispatch: %s", strings.Join(s, ","))
 }
 
 type Publisher interface {

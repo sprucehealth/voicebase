@@ -89,16 +89,16 @@ func (g *GoogleMapsService) ConvertZipcodeToCityState(zipcode string) (*CityStat
 		return nil, nil
 	case "OVER_QUERY_LIMIT":
 		g.statFailedOverQueryLimit.Inc(1)
-		return nil, QuotaExceededErr
+		return nil, ErrQuotaExceeded
 	case "REQUEST_DENIED":
 		g.statFailedRequestDenied.Inc(1)
-		return nil, RequestDeniedErr
+		return nil, ErrRequestDenied
 	case "INVALID_REQUEST":
 		g.statFailedInvalidRequest.Inc(1)
-		return nil, InvalidRequestErr
+		return nil, ErrInvalidRequest
 	case "UNKNOWN_ERROR":
 		g.statFailedUnknown.Inc(1)
-		return nil, UnknownError
+		return nil, ErrUnknown
 	}
 
 	// look through the address components to find the ones that relate to the city level and the state level
@@ -150,16 +150,16 @@ func (g *GoogleMapsService) GetLatLongFromSearchLocation(searchLocation string) 
 		return nil, nil
 	case "OVER_QUERY_LIMIT":
 		g.statFailedOverQueryLimit.Inc(1)
-		return nil, QuotaExceededErr
+		return nil, ErrQuotaExceeded
 	case "REQUEST_DENIED":
 		g.statFailedRequestDenied.Inc(1)
-		return nil, RequestDeniedErr
+		return nil, ErrRequestDenied
 	case "INVALID_REQUEST":
 		g.statFailedInvalidRequest.Inc(1)
-		return nil, InvalidRequestErr
+		return nil, ErrInvalidRequest
 	case "UNKNOWN_ERROR":
 		g.statFailedUnknown.Inc(1)
-		return nil, UnknownError
+		return nil, ErrUnknown
 	}
 
 	return &LocationInfo{

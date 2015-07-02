@@ -18,7 +18,7 @@ type Client interface {
 	URL(linkData map[string]interface{}) (string, error)
 }
 
-type BranchClient struct {
+type client struct {
 	branchKey  string
 	httpClient *http.Client
 }
@@ -33,7 +33,7 @@ func (e *Error) Error() string {
 }
 
 func NewBranchClient(branchKey string) Client {
-	return &BranchClient{
+	return &client{
 		branchKey:  branchKey,
 		httpClient: &http.Client{},
 	}
@@ -43,7 +43,7 @@ type branchURLResponse struct {
 	URL string `json:"url"`
 }
 
-func (bc *BranchClient) URL(linkData map[string]interface{}) (string, error) {
+func (bc *client) URL(linkData map[string]interface{}) (string, error) {
 	data, err := json.Marshal(struct {
 		BranchKey string                 `json:"branch_key"`
 		Data      map[string]interface{} `json:"data"`

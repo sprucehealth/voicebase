@@ -1,6 +1,4 @@
-/*
-	Package config implements command line argument and config file parsing.
-*/
+// Package config implements command line argument and config file parsing.
 package config
 
 import (
@@ -211,12 +209,12 @@ func (c *BaseConfig) OpenURI(uri string) (io.ReadCloser, error) {
 }
 
 func (c *BaseConfig) ReadURI(uri string) ([]byte, error) {
-	if rd, err := c.OpenURI(uri); err != nil {
+	rd, err := c.OpenURI(uri)
+	if err != nil {
 		return nil, err
-	} else {
-		defer rd.Close()
-		return ioutil.ReadAll(rd)
 	}
+	defer rd.Close()
+	return ioutil.ReadAll(rd)
 }
 
 func LoadConfigFile(configURL string, config interface{}, awsConfig func() *aws.Config) error {

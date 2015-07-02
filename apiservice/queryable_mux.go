@@ -21,7 +21,7 @@ type queryableMux struct {
 	registeredPatterns map[string]bool
 }
 
-func NewQueryableMux() *queryableMux {
+func NewQueryableMux() QueryableMux {
 	m := &queryableMux{
 		ServeMux:           *http.NewServeMux(),
 		registeredPatterns: make(map[string]bool),

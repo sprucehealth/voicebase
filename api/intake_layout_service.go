@@ -716,7 +716,7 @@ func (d *DataService) VersionedQuestionFromID(id int64) (*common.VersionedQuesti
 	return vq, nil
 }
 
-// VersionedQuestion retrieves a set of records from the question table relating to a specific set of versioned questions based on versioning info
+// VersionedQuestions retrieves a set of records from the question table relating to a specific set of versioned questions based on versioning info
 func (d *DataService) VersionedQuestions(questionQueryParams []*QuestionQueryParams) ([]*common.VersionedQuestion, error) {
 	if len(questionQueryParams) == 0 {
 		return nil, nil

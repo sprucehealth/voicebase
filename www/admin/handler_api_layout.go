@@ -462,7 +462,7 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 		if err != nil && !api.IsErrNotFound(err) {
 			return err
 		} else if rData.patientAppVersion.LessThan(currentPatientAppVersion) {
-			return errors.New(fmt.Sprintf("the patient app version for the major upgrade has to be greater than %s", currentPatientAppVersion.String()))
+			return fmt.Errorf("the patient app version for the major upgrade has to be greater than %s", currentPatientAppVersion.String())
 		}
 
 		if err := parsePlatform(r, rData); err != nil {
@@ -484,7 +484,7 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 		if err != nil && !api.IsErrNotFound(err) {
 			return err
 		} else if rData.doctorAppVersion.LessThan(currentDoctorAppVersion) {
-			return errors.New(fmt.Sprintf("the doctor app version for the major upgrade has to be greater than %s", currentDoctorAppVersion.String()))
+			return fmt.Errorf("the doctor app version for the major upgrade has to be greater than %s", currentDoctorAppVersion.String())
 		}
 
 		if err := parsePlatform(r, rData); err != nil {

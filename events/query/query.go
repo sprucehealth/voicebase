@@ -15,11 +15,11 @@ func (eq *TimestampQuery) TimestampConditionString(n int) []string {
 	q := make([]string, 0, 2)
 	if eq.Begin != nil {
 		q = append(q, fmt.Sprintf(`timestamp >= $%d`, n))
-		n += 1
+		n++
 	}
 	if eq.End != nil {
 		q = append(q, fmt.Sprintf(`timestamp <= $%d`, n))
-		n += 1
+		n++
 	}
 	return q
 }

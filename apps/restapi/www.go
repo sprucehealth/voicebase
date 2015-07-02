@@ -48,7 +48,7 @@ func buildWWW(
 	metricsRegistry metrics.Registry,
 	cfgStore cfg.Store,
 ) http.Handler {
-	stripeCli := &stripe.StripeService{
+	stripeCli := &stripe.Client{
 		SecretKey:      conf.Stripe.SecretKey,
 		PublishableKey: conf.Stripe.PublishableKey,
 	}

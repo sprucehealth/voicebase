@@ -48,9 +48,9 @@ func (s *StubErxService) SelectMedication(clinicianID int64, medicationName, med
 	return nil, nil
 }
 
-func (s *StubErxService) StartPrescribingPatient(clinicianID int64, Patient *common.Patient, Treatments []*common.Treatment, pharmacySourceId int64) error {
-	if s.PharmacyToSendPrescriptionTo != 0 && s.PharmacyToSendPrescriptionTo != pharmacySourceId {
-		return fmt.Errorf("Expected to send treatment to pharmacy with sourceId %d instead it was attempted to be sent to pharmacy with id %d", s.PharmacyToSendPrescriptionTo, pharmacySourceId)
+func (s *StubErxService) StartPrescribingPatient(clinicianID int64, Patient *common.Patient, Treatments []*common.Treatment, pharmacySourceID int64) error {
+	if s.PharmacyToSendPrescriptionTo != 0 && s.PharmacyToSendPrescriptionTo != pharmacySourceID {
+		return fmt.Errorf("Expected to send treatment to pharmacy with sourceId %d instead it was attempted to be sent to pharmacy with id %d", s.PharmacyToSendPrescriptionTo, pharmacySourceID)
 	}
 
 	if s.ExpectedRxReferenceNumber != "" && Treatments[0].ERx.ErxReferenceNumber != s.ExpectedRxReferenceNumber {
@@ -131,12 +131,12 @@ func (s *StubErxService) GetPharmacyDetails(pharmacyID int64) (*pharmacySearch.P
 	return s.PharmacyDetailsToReturn, nil
 }
 
-func (s *StubErxService) ApproveRefillRequest(clinicianID, erxRefillRequestQueueItemId, approvedRefillAmount int64, comments string) (int64, error) {
-	return s.RefillRequestPrescriptionIDs[erxRefillRequestQueueItemId], nil
+func (s *StubErxService) ApproveRefillRequest(clinicianID, erxRefillRequestQueueItemID, approvedRefillAmount int64, comments string) (int64, error) {
+	return s.RefillRequestPrescriptionIDs[erxRefillRequestQueueItemID], nil
 }
 
-func (s *StubErxService) DenyRefillRequest(clinicianID, erxRefillRequestQueueItemId int64, denialReason string, comments string) (int64, error) {
-	return s.RefillRequestPrescriptionIDs[erxRefillRequestQueueItemId], nil
+func (s *StubErxService) DenyRefillRequest(clinicianID, erxRefillRequestQueueItemID int64, denialReason string, comments string) (int64, error) {
+	return s.RefillRequestPrescriptionIDs[erxRefillRequestQueueItemID], nil
 }
 
 func (s *StubErxService) UpdatePatientInformation(clinicianID int64, patient *common.Patient) error {

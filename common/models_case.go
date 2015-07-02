@@ -10,7 +10,7 @@ import (
 type CaseStatus string
 
 const (
-	// PCStatusOpen is the state used to indicate a case that has not been submitted to the doctor yet
+	// PCStatusOpen is the state used to indicate a case that has not been submitted to the doctor yet
 	// and is considered unfinished by the patient.
 	// A case transitions from the OPEN -> ACTIVE state upon the submission of the first visit in the case.
 	PCStatusOpen CaseStatus = "OPEN"
@@ -32,7 +32,7 @@ const (
 	// for Spruce by a doctor upon reviewing the patient visits.
 	PCStatusUnsuitable CaseStatus = "UNSUITABLE"
 
-	// PCStatusPresubmissionTriage is the state used to indicate a case that has been automatically triaged
+	// PCStatusPreSubmissionTriage is the state used to indicate a case that has been automatically triaged
 	// pre-submission based on the information the patient entered.
 	PCStatusPreSubmissionTriage CaseStatus = "PRE_SUBMISSION_TRIAGE"
 

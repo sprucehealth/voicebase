@@ -47,7 +47,7 @@ func (t RecipientType) String() string {
 	return string(t)
 }
 
-type StripeService struct {
+type Client struct {
 	SecretKey      string
 	PublishableKey string
 }
@@ -171,7 +171,7 @@ type chargeList struct {
 	Charges []*Charge `json:"data"`
 }
 
-func (s *StripeService) CreateCustomerWithDefaultCard(token string) (*Customer, error) {
+func (s *Client) CreateCustomerWithDefaultCard(token string) (*Customer, error) {
 	params := url.Values{}
 	params.Set("card", token)
 
@@ -187,7 +187,7 @@ func (s *StripeService) CreateCustomerWithDefaultCard(token string) (*Customer, 
 	return sCustomer, nil
 }
 
-func (s *StripeService) GetCardsForCustomer(customerID string) ([]*Card, error) {
+func (s *Client) GetCardsForCustomer(customerID string) ([]*Card, error) {
 	sCardData := &CardList{}
 	if err := s.query("GET", fmt.Sprintf("%s/%s/cards", customersURL, customerID), nil, sCardData); err != nil {
 		return nil, err
@@ -196,7 +196,7 @@ func (s *StripeService) GetCardsForCustomer(customerID string) ([]*Card, error) 
 	return sCardData.Cards, nil
 }
 
-func (s *StripeService) AddCardForCustomer(cardToken, customerID string) (*Card, error) {
+func (s *Client) AddCardForCustomer(cardToken, customerID string) (*Card, error) {
 	params := url.Values{}
 	params.Set("card", cardToken)
 
@@ -209,7 +209,7 @@ func (s *StripeService) AddCardForCustomer(cardToken, customerID string) (*Card,
 	return sCard, nil
 }
 
-func (s *StripeService) MakeCardDefaultForCustomer(cardID, customerID string) error {
+func (s *Client) MakeCardDefaultForCustomer(cardID, customerID string) error {
 	params := url.Values{}
 	params.Set("default_card", cardID)
 
@@ -217,12 +217,12 @@ func (s *StripeService) MakeCardDefaultForCustomer(cardID, customerID string) er
 	return s.query("POST", customerUpdateEndpoint, params, nil)
 }
 
-func (s *StripeService) DeleteCardForCustomer(customerID string, cardID string) error {
+func (s *Client) DeleteCardForCustomer(customerID string, cardID string) error {
 	deleteCustomerCardEndpoint := fmt.Sprintf("%s/%s/cards/%s", customersURL, customerID, cardID)
 	return s.query("DELETE", deleteCustomerCardEndpoint, nil, nil)
 }
 
-func (s *StripeService) CreateRecipient(req *CreateRecipientRequest) (*Recipient, error) {
+func (s *Client) CreateRecipient(req *CreateRecipientRequest) (*Recipient, error) {
 	params := url.Values{}
 	params.Set("name", req.Name)
 	params.Set("type", string(req.Type))
@@ -259,8 +259,7 @@ func (s *StripeService) CreateRecipient(req *CreateRecipientRequest) (*Recipient
 	return &recipient, nil
 }
 
-func (s *StripeService) CreateChargeForCustomer(req *CreateChargeRequest) (*Charge, error) {
-
+func (s *Client) CreateChargeForCustomer(req *CreateChargeRequest) (*Charge, error) {
 	// lookup currency
 	currency, err := getCurrency(req.CurrencyCode)
 	if err != nil {
@@ -296,7 +295,7 @@ func (s *StripeService) CreateChargeForCustomer(req *CreateChargeRequest) (*Char
 	return &charge, nil
 }
 
-func (s *StripeService) ListAllCharges(limit int) ([]*Charge, error) {
+func (s *Client) ListAllCharges(limit int) ([]*Charge, error) {
 	params := url.Values{}
 	if limit > 0 {
 		params.Set("limit", strconv.Itoa(limit))
@@ -310,7 +309,7 @@ func (s *StripeService) ListAllCharges(limit int) ([]*Charge, error) {
 	return cList.Charges, nil
 }
 
-func (s *StripeService) ListAllCustomerCharges(customerID string) ([]*Charge, error) {
+func (s *Client) ListAllCustomerCharges(customerID string) ([]*Charge, error) {
 	params := url.Values{
 		"customer": []string{customerID},
 	}
@@ -323,8 +322,8 @@ func (s *StripeService) ListAllCustomerCharges(customerID string) ([]*Charge, er
 	return cList.Charges, nil
 }
 
-func (s *StripeService) query(httpVerb, endPointUrl string, parameters url.Values, res interface{}) error {
-	endPoint, err := url.Parse(endPointUrl)
+func (s *Client) query(httpVerb, endPointURL string, parameters url.Values, res interface{}) error {
+	endPoint, err := url.Parse(endPointURL)
 	if err != nil {
 		return err
 	}

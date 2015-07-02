@@ -14,8 +14,7 @@ import (
 
 const MinimumTokenLength = 20
 
-// Any structure that implements the Typed interface
-// requires a string that defines the type of the structure
+// Typed is an interface implemented by structs that can return their own type name
 type Typed interface {
 	TypeName() string
 }

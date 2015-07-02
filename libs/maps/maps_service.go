@@ -16,11 +16,13 @@ type LocationInfo struct {
 	Longitude float64 `json:"lng"`
 }
 
-var ZeroResultsErr = errors.New("maps_service: No results returned")
-var QuotaExceededErr = errors.New("maps_service: Query Quota exceed")
-var RequestDeniedErr = errors.New("maps_service: Request denied")
-var InvalidRequestErr = errors.New("maps_service: Invalid request possibly due to missing parameters")
-var UnknownError = errors.New("maps_service: Unknown error")
+var (
+	ErrZeroResults    = errors.New("maps_service: No results returned")
+	ErrQuotaExceeded  = errors.New("maps_service: Query Quota exceed")
+	ErrRequestDenied  = errors.New("maps_service: Request denied")
+	ErrInvalidRequest = errors.New("maps_service: Invalid request possibly due to missing parameters")
+	ErrUnknown        = errors.New("maps_service: Unknown error")
+)
 
 type MapsService interface {
 	ConvertZipcodeToCityState(zipcode string) (*CityStateInfo, error)

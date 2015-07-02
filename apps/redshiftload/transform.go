@@ -119,10 +119,9 @@ func transform(srcDB, destDB *sql.DB, tables []*table, s3c *s3.S3, bucket, prefi
 		if err != nil {
 			w.CloseWithError(err)
 			return err
-		} else {
-			if err := w.Close(); err != nil {
-				return err
-			}
+		}
+		if err := w.Close(); err != nil {
+			return err
 		}
 		if err := <-uploadCh; err != nil {
 			return err

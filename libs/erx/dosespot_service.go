@@ -410,7 +410,7 @@ func (d *DoseSpotService) UpdatePatientInformation(clinicianID int64, currentPat
 	return nil
 }
 
-func (d *DoseSpotService) StartPrescribingPatient(clinicianID int64, currentPatient *common.Patient, treatments []*common.Treatment, pharmacySourceId int64) error {
+func (d *DoseSpotService) StartPrescribingPatient(clinicianID int64, currentPatient *common.Patient, treatments []*common.Treatment, pharmacySourceID int64) error {
 
 	newPatient, err := populatePatientForDoseSpot(currentPatient)
 	if err != nil {
@@ -419,7 +419,7 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianID int64, currentPati
 
 	patientPreferredPharmacy := &patientPharmacySelection{
 		IsPrimary:  true,
-		PharmacyID: pharmacySourceId,
+		PharmacyID: pharmacySourceID,
 	}
 
 	prescriptions := make([]*prescription, len(treatments))
@@ -439,7 +439,7 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianID int64, currentPati
 			Instructions:      treatment.PatientInstructions,
 			NoSubstitutions:   !treatment.SubstitutionsAllowed,
 			PharmacyNotes:     treatment.PharmacyNotes,
-			PharmacyID:        pharmacySourceId,
+			PharmacyID:        pharmacySourceID,
 		}
 
 		if treatment.ERx != nil && treatment.ERx.ErxReferenceNumber != "" {
@@ -856,10 +856,10 @@ func (d *DoseSpotService) GetPharmacyDetails(pharmacyID int64) (*pharmacySearch.
 	}, nil
 }
 
-func (d *DoseSpotService) ApproveRefillRequest(clinicianID, erxRefillRequestQueueItemId, approvedRefillAmount int64, comments string) (int64, error) {
+func (d *DoseSpotService) ApproveRefillRequest(clinicianID, erxRefillRequestQueueItemID, approvedRefillAmount int64, comments string) (int64, error) {
 	request := &approveRefillRequest{
 		SSO:                  generateSingleSignOn(d.ClinicKey, clinicianID, d.ClinicID),
-		RxRequestQueueItemID: erxRefillRequestQueueItemId,
+		RxRequestQueueItemID: erxRefillRequestQueueItemID,
 		Refills:              approvedRefillAmount,
 		Comments:             comments,
 	}
@@ -874,10 +874,10 @@ func (d *DoseSpotService) ApproveRefillRequest(clinicianID, erxRefillRequestQueu
 	return response.PrescriptionID, nil
 }
 
-func (d *DoseSpotService) DenyRefillRequest(clinicianID, erxRefillRequestQueueItemId int64, denialReason string, comments string) (int64, error) {
+func (d *DoseSpotService) DenyRefillRequest(clinicianID, erxRefillRequestQueueItemID int64, denialReason string, comments string) (int64, error) {
 	request := &denyRefillRequest{
 		SSO:                  generateSingleSignOn(d.ClinicKey, clinicianID, d.ClinicID),
-		RxRequestQueueItemID: erxRefillRequestQueueItemId,
+		RxRequestQueueItemID: erxRefillRequestQueueItemID,
 		DenialReason:         denialReason,
 		Comments:             comments,
 	}

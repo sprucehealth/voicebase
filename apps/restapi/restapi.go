@@ -149,14 +149,14 @@ func buildRESTAPI(
 	notificationManager := notify.NewManager(dataAPI, authAPI, snsClient, smsAPI, emailService,
 		conf.Twilio.FromNumber, conf.NotifiyConfigs, metricsRegistry.Scope("notify"))
 
-	stripeService := &stripe.StripeService{}
+	stripeClient := &stripe.Client{}
 	if conf.TestStripe != nil && conf.TestStripe.SecretKey != "" {
 		if conf.Environment == "prod" {
 			golog.Warningf("Using test stripe key in production for patient")
 		}
-		stripeService.SecretKey = conf.TestStripe.SecretKey
+		stripeClient.SecretKey = conf.TestStripe.SecretKey
 	} else {
-		stripeService.SecretKey = conf.Stripe.SecretKey
+		stripeClient.SecretKey = conf.Stripe.SecretKey
 	}
 
 	mediaStore := media.NewStore("https://"+conf.APIDomain+apipaths.MediaURLPath, signer, stores.MustGet("media"))
@@ -175,7 +175,7 @@ func buildRESTAPI(
 		PharmacySearchAPI:        surescriptsPharmacySearch,
 		DiagnosisAPI:             diagnosisAPI,
 		SNSClient:                snsClient,
-		PaymentAPI:               stripeService,
+		PaymentAPI:               stripeClient,
 		MemcacheClient:           memcacheCli,
 		NotifyConfigs:            conf.NotifiyConfigs,
 		MinimumAppVersionConfigs: conf.MinimumAppVersionConfigs,
@@ -276,7 +276,7 @@ func buildRESTAPI(
 		dataAPI,
 		alog,
 		dispatcher,
-		stripeService,
+		stripeClient,
 		emailService,
 		visitQueue,
 		metricsRegistry.Scope("visit_queue"),

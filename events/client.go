@@ -41,12 +41,12 @@ func (NullClient) ServerEvents(q *query.ServerEventQuery) ([]*model.ServerEvent,
 	return nil, nil
 }
 
-type EventsClient struct {
+type client struct {
 	db *sql.DB
 }
 
 func NewClient(config *config.DB) (Client, error) {
-	s := &EventsClient{}
+	s := &client{}
 
 	var err error
 	s.db, err = config.ConnectPostgres()
@@ -57,7 +57,7 @@ func NewClient(config *config.DB) (Client, error) {
 	return s, nil
 }
 
-func (c *EventsClient) InsertServerEvent(sev *model.ServerEvent) error {
+func (c *client) InsertServerEvent(sev *model.ServerEvent) error {
 	_, err := c.db.Exec(
 		`INSERT INTO server_event
 			(name, timestamp, session_id, account_id, patient_id, doctor_id, visit_id, case_id, treatment_plan_id, role, extra_json)
@@ -70,7 +70,7 @@ func (c *EventsClient) InsertServerEvent(sev *model.ServerEvent) error {
 	return nil
 }
 
-func (c *EventsClient) InsertWebRequestEvent(wev *model.WebRequestEvent) error {
+func (c *client) InsertWebRequestEvent(wev *model.WebRequestEvent) error {
 	_, err := c.db.Exec(
 		`INSERT INTO web_request_event
 			(service, path, timestamp, request_id, status_code, method, url, remote_addr, content_type, user_agent, referrer, 
@@ -84,7 +84,7 @@ func (c *EventsClient) InsertWebRequestEvent(wev *model.WebRequestEvent) error {
 	return nil
 }
 
-func (c *EventsClient) InsertClientEvent(cevs []*model.ClientEvent) error {
+func (c *client) InsertClientEvent(cevs []*model.ClientEvent) error {
 	values := make([]interface{}, 0, len(cevs)*ClientEventDimensions)
 	params := make([]string, len(cevs))
 	for i, cev := range cevs {
@@ -109,7 +109,7 @@ func (c *EventsClient) InsertClientEvent(cevs []*model.ClientEvent) error {
 	return nil
 }
 
-func (c *EventsClient) ServerEvents(q *query.ServerEventQuery) ([]*model.ServerEvent, error) {
+func (c *client) ServerEvents(q *query.ServerEventQuery) ([]*model.ServerEvent, error) {
 	s, v := q.SQL()
 	rows, err := c.db.Query(s, v...)
 	if err != nil {
