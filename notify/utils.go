@@ -45,10 +45,10 @@ func phoneNumberForPatient(patient *common.Patient) string {
 // Amazon sns requires us to indicate when sending push notifications to APNS_SANDBOX
 // vs APNS vs GCM which is why there are individual variables to represent these objects
 type snsNotification struct {
-	DefaultMessage string                   `json:"default"`
-	IOSSandBox     *iOSPushNotification     `json:"APNS_SANDBOX,omitempty"`
-	IOS            *iOSPushNotification     `json:"APNS,omitempty"`
-	Android        *androidPushNotification `json:"GCM,omitempty"`
+	DefaultMessage string               `json:"default"`
+	IOSSandBox     *iOSPushNotification `json:"APNS_SANDBOX,omitempty"`
+	IOS            *iOSPushNotification `json:"APNS,omitempty"`
+	Android        string               `json:"GCM,omitempty"`
 }
 
 type iOSPushNotification struct {

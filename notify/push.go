@@ -74,10 +74,15 @@ func renderNotification(notificationConfig *config.NotificationConfig, message s
 	}
 	switch notificationConfig.Platform {
 	case common.Android:
-		snsNote.Android = &androidPushNotification{
+		jsonData, err := json.Marshal(&androidPushNotification{
 			Data: androidPushData{
 				Message: snsNote.DefaultMessage,
 			},
+		})
+		if err != nil {
+			golog.Infof("Unable to marshal json: %s", err)
+		} else {
+			snsNote.Android = string(jsonData)
 		}
 
 	case common.IOS:
