@@ -56,7 +56,9 @@ type iOSPushNotification struct {
 	Badge int64  `json:"badge,omitempty"`
 }
 
-type androidPushNotification struct {
+type androidPushData struct {
 	Message string `json:"message"`
-	URL     string `json:"url"`
+}
+type androidPushNotification struct {
+	Data androidPushData `json:"data"`
 }

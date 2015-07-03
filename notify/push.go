@@ -75,7 +75,9 @@ func renderNotification(notificationConfig *config.NotificationConfig, message s
 	switch notificationConfig.Platform {
 	case common.Android:
 		snsNote.Android = &androidPushNotification{
-			Message: snsNote.DefaultMessage,
+			Data: androidPushData{
+				Message: snsNote.DefaultMessage,
+			},
 		}
 
 	case common.IOS:
