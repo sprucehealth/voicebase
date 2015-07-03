@@ -44,10 +44,11 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 		// insert notification into patient case if the doctor or ma
 		// sent the patient a message
 		if ev.Person.RoleType == api.RoleDoctor || ev.Person.RoleType == api.RoleCC {
+			uid := fmt.Sprintf("%s:%d", CNMessage, ev.Message.ID)
 			if err := dataAPI.InsertCaseNotification(&common.CaseNotification{
 				PatientCaseID:    ev.Case.ID.Int64(),
 				NotificationType: CNMessage,
-				UID:              fmt.Sprintf("%s:%d", CNMessage, ev.Message.ID),
+				UID:              uid,
 				Data: &messageNotification{
 					MessageID: ev.Message.ID,
 					DoctorID:  ev.Person.Doctor.ID.Int64(),
@@ -70,6 +71,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 				patient, &notify.Message{
 					ShortMessage: "You have a new message on Spruce.",
 					EmailType:    notifyNewMessageEmailType,
+					PushID:       uid,
 				}); err != nil {
 				golog.Errorf("Unable to notify patient: %s", err)
 				return err
@@ -117,11 +119,13 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 			return err
 		}
 
+		var uid string
 		if isRevisedTreatmentPlan {
+			uid = fmt.Sprintf("%s:%d", CNMessage, ev.Message.ID)
 			if err := dataAPI.InsertCaseNotification(&common.CaseNotification{
 				PatientCaseID:    ev.TreatmentPlan.PatientCaseID.Int64(),
 				NotificationType: CNMessage,
-				UID:              fmt.Sprintf("%s:%d", CNMessage, ev.Message.ID),
+				UID:              uid,
 				Data: &messageNotification{
 					MessageID: ev.Message.ID,
 					DoctorID:  ev.DoctorID,
@@ -133,11 +137,12 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 				return err
 			}
 		} else {
+			uid = fmt.Sprintf("%s:%d", CNTreatmentPlan, ev.TreatmentPlan.ID.Int64())
 			// insert a notification into the patient case if the doctor activates a treatment plan
 			if err := dataAPI.InsertCaseNotification(&common.CaseNotification{
 				PatientCaseID:    ev.Message.CaseID,
 				NotificationType: CNTreatmentPlan,
-				UID:              fmt.Sprintf("%s:%d", CNTreatmentPlan, ev.TreatmentPlan.ID.Int64()),
+				UID:              uid,
 				Data: &treatmentPlanNotification{
 					MessageID:       ev.Message.ID,
 					DoctorID:        ev.DoctorID,
@@ -163,6 +168,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 		if err := notificationManager.NotifyPatient(
 			patient,
 			&notify.Message{
+				PushID:       uid,
 				ShortMessage: "Your doctor has reviewed your case.",
 				EmailType:    notifyTreatmentPlanCreatedEmailType,
 			}); err != nil {

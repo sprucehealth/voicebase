@@ -58,6 +58,7 @@ type iOSPushNotification struct {
 
 type androidPushData struct {
 	Message string `json:"message"`
+	PushID  string `json:"push_id"`
 }
 type androidPushNotification struct {
 	Data androidPushData `json:"data"`

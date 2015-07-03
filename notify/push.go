@@ -42,7 +42,7 @@ func (n *NotificationManager) pushNotificationToUser(
 		pushEndpoint := pushConfigData.PushEndpoint
 		// send push notifications in parallel
 		dispatch.RunAsync(func() {
-			note := renderNotification(notificationConfig, msg.ShortMessage, notificationCount)
+			note := renderNotification(notificationConfig, msg, notificationCount)
 			js, err := json.Marshal(note)
 			if err != nil {
 				n.statPushFailed.Inc(1)
@@ -68,15 +68,16 @@ func (n *NotificationManager) pushNotificationToUser(
 	return nil
 }
 
-func renderNotification(notificationConfig *config.NotificationConfig, message string, badgeCount int64) *snsNotification {
+func renderNotification(notificationConfig *config.NotificationConfig, message *Message, badgeCount int64) *snsNotification {
 	snsNote := &snsNotification{
-		DefaultMessage: message,
+		DefaultMessage: message.ShortMessage,
 	}
 	switch notificationConfig.Platform {
 	case common.Android:
 		jsonData, err := json.Marshal(&androidPushNotification{
 			Data: androidPushData{
 				Message: snsNote.DefaultMessage,
+				PushID:  message.PushID,
 			},
 		})
 		if err != nil {
