@@ -130,6 +130,7 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.PatientAlertsURLPath, patient_file.NewAlertsHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.PatientIsAuthenticatedURLPath, handlers.NewIsAuthenticatedHandler(conf.AuthAPI))
 	authenticationRequired(conf, apipaths.PatientCardURLPath, patient.NewCardsHandler(conf.DataAPI, conf.PaymentAPI, conf.AddressValidator))
+	authenticationRequired(conf, apipaths.PatientReplaceCardURLPath, patient.NewReplaceCardHandler(conf.DataAPI, conf.PaymentAPI))
 	authenticationRequired(conf, apipaths.PatientDefaultCardURLPath, patient.NewCardsHandler(conf.DataAPI, conf.PaymentAPI, conf.AddressValidator))
 	authenticationRequired(conf, apipaths.PatientRequestMedicalRecordURLPath, medrecord.NewRequestAPIHandler(conf.DataAPI, conf.MedicalRecordQueue))
 	authenticationRequired(conf, apipaths.LogoutURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher, conf.StaticContentURL,

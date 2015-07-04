@@ -63,7 +63,9 @@ func TestERXRouting_RXStarted(t *testing.T) {
 
 	erxPatientID := int64(100)
 	treatmentPrescriptionID := int64(105)
-	err = testData.DataAPI.UpdatePatientWithERxPatientID(patient.ID.Int64(), erxPatientID)
+	err = testData.DataAPI.UpdatePatient(patient.ID.Int64(), &api.PatientUpdate{
+		ERxID: &erxPatientID,
+	}, false)
 	test.OK(t, err)
 
 	treatmentsResponse.TreatmentList.Treatments[0].ERx = &common.ERxData{
@@ -158,7 +160,9 @@ func TestERXRouting_RXSent(t *testing.T) {
 
 	erxPatientID := int64(100)
 	treatmentPrescriptionID := int64(105)
-	err = testData.DataAPI.UpdatePatientWithERxPatientID(patient.ID.Int64(), erxPatientID)
+	err = testData.DataAPI.UpdatePatient(patient.ID.Int64(), &api.PatientUpdate{
+		ERxID: &erxPatientID,
+	}, false)
 	test.OK(t, err)
 
 	treatmentsResponse.TreatmentList.Treatments[0].ERx = &common.ERxData{
@@ -253,7 +257,9 @@ func TestERxRouting_CaseMessageExistsAlready(t *testing.T) {
 	test.OK(t, err)
 
 	erxPatientID := int64(100)
-	err = testData.DataAPI.UpdatePatientWithERxPatientID(patient.ID.Int64(), erxPatientID)
+	err = testData.DataAPI.UpdatePatient(patient.ID.Int64(), &api.PatientUpdate{
+		ERxID: &erxPatientID,
+	}, false)
 	test.OK(t, err)
 
 	treatmentsResponse.TreatmentList.Treatments[0].ERx = &common.ERxData{

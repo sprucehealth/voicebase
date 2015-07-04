@@ -153,6 +153,22 @@ type Address struct {
 	Country      string `json:"country"`
 }
 
+func (a *Address) Validate() error {
+	if strings.TrimSpace(a.AddressLine1) == "" {
+		return errors.New("AddressLine1 required")
+	}
+	if strings.TrimSpace(a.City) == "" {
+		return errors.New("City required")
+	}
+	if strings.TrimSpace(a.State) == "" {
+		return errors.New("State required")
+	}
+	if strings.TrimSpace(a.ZipCode) == "" {
+		return errors.New("ZipCode required")
+	}
+	return nil
+}
+
 type CareProviderAssignment struct {
 	ProviderRole     string     `json:"provider_role"`
 	ProviderID       int64      `json:"provider_id"`

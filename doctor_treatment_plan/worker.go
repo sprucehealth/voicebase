@@ -167,7 +167,10 @@ func (w *Worker) processMessage(msg *erxRouteMessage) error {
 			return errors.Trace(err)
 		}
 
-		if err := w.dataAPI.UpdatePatientWithERxPatientID(patient.ID.Int64(), patient.ERxPatientID.Int64()); err != nil {
+		erxID := patient.ERxPatientID.Int64()
+		if err := w.dataAPI.UpdatePatient(patient.ID.Int64(), &api.PatientUpdate{
+			ERxID: &erxID,
+		}, false); err != nil {
 			return errors.Trace(err)
 		}
 

@@ -16,7 +16,7 @@ func TestSucessfulCaseCharge(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 
-	patientVisit, stubSQSQueue, card := test_integration.SetupTestWithActiveCostAndVisitSubmitted(testData, t)
+	patientVisit, stubSQSQueue, _ := test_integration.SetupTestWithActiveCostAndVisitSubmitted(testData, t)
 
 	// now lets go ahead and start the work to consume the message
 	stubStripe := testData.Config.PaymentAPI.(*test_integration.StripeStub)
@@ -34,7 +34,6 @@ func TestSucessfulCaseCharge(t *testing.T) {
 	patientReceipt, err := testData.DataAPI.GetPatientReceipt(patientVisit.PatientID.Int64(), patientVisit.ID.Int64(), patientVisit.SKUType, true)
 	test.OK(t, err)
 	test.Equals(t, true, patientReceipt != nil)
-	test.Equals(t, true, patientReceipt.CreditCardID == card.ID.Int64())
 	test.Equals(t, "charge_test", patientReceipt.StripeChargeID)
 	test.Equals(t, common.PRCharged, patientReceipt.Status)
 	test.Equals(t, 1, len(patientReceipt.CostBreakdown.LineItems))
@@ -106,7 +105,7 @@ func TestFailedCharge_StripeFailure(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
 
-	patientVisit, stubSQSQueue, card := test_integration.SetupTestWithActiveCostAndVisitSubmitted(testData, t)
+	patientVisit, stubSQSQueue, _ := test_integration.SetupTestWithActiveCostAndVisitSubmitted(testData, t)
 
 	// lets fail the charge the first time to ensure that message doesn't get routed
 	stubStripe := testData.Config.PaymentAPI.(*test_integration.StripeStub)
@@ -122,7 +121,6 @@ func TestFailedCharge_StripeFailure(t *testing.T) {
 	patientReceipt, err := testData.DataAPI.GetPatientReceipt(patientVisit.PatientID.Int64(), patientVisit.ID.Int64(), patientVisit.SKUType, false)
 	test.OK(t, err)
 	test.Equals(t, common.PRChargePending, patientReceipt.Status)
-	test.Equals(t, int64(0), patientReceipt.CreditCardID)
 	test.Equals(t, "", patientReceipt.StripeChargeID)
 
 	// now lets get the charge to go through and it should succeed
@@ -141,7 +139,6 @@ func TestFailedCharge_StripeFailure(t *testing.T) {
 	patientReceipt, err = testData.DataAPI.GetPatientReceipt(patientVisit.PatientID.Int64(), patientVisit.ID.Int64(), patientVisit.SKUType, true)
 	test.OK(t, err)
 	test.Equals(t, common.PRCharged, patientReceipt.Status)
-	test.Equals(t, card.ID.Int64(), patientReceipt.CreditCardID)
 	test.Equals(t, "charge_test", patientReceipt.StripeChargeID)
 
 	// patient visit should indicate that it was charged
@@ -202,7 +199,6 @@ func TestFailedCharge_ChargeExists(t *testing.T) {
 	patientReceipt, err = testData.DataAPI.GetPatientReceipt(patientVisit.PatientID.Int64(), patientVisit.ID.Int64(), patientVisit.SKUType, true)
 	test.OK(t, err)
 	test.Equals(t, common.PRCharged, patientReceipt.Status)
-	test.Equals(t, int64(0), patientReceipt.CreditCardID)
 	test.Equals(t, "charge_test1234", patientReceipt.StripeChargeID)
 
 	// patient visit should indicate that it was charged

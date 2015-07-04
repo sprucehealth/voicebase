@@ -76,6 +76,14 @@ func (d *DataService) updatePatient(tx *sql.Tx, id int64, update *PatientUpdate,
 		cols = append(cols, "gender = ?")
 		vals = append(vals, strings.ToLower(*update.Gender))
 	}
+	if update.ERxID != nil {
+		cols = append(cols, "erx_patient_id = ?")
+		vals = append(vals, *update.ERxID)
+	}
+	if update.StripeCustomerID != nil {
+		cols = append(cols, "payment_service_customer_id = ?")
+		vals = append(vals, *update.StripeCustomerID)
+	}
 
 	if len(cols) != 0 {
 		vals = append(vals, id)
@@ -321,11 +329,6 @@ func (d *DataService) GetPatientIDFromAccountID(accountID int64) (int64, error) 
 	var patientID int64
 	err := d.db.QueryRow("SELECT id FROM patient WHERE account_id = ?", accountID).Scan(&patientID)
 	return patientID, err
-}
-
-func (d *DataService) UpdatePatientWithERxPatientID(patientID, erxPatientID int64) error {
-	_, err := d.db.Exec(`UPDATE patient SET erx_patient_id = ? WHERE id = ? `, erxPatientID, patientID)
-	return err
 }
 
 func (d *DataService) AddDoctorToCareTeamForPatient(patientID, doctorID int64, pathwayTag string) error {
@@ -797,11 +800,6 @@ func (d *DataService) PatientAgreements(patientID int64) (map[string]time.Time, 
 	return ag, rows.Err()
 }
 
-func (d *DataService) UpdatePatientWithPaymentCustomerID(patientID int64, paymentCustomerID string) error {
-	_, err := d.db.Exec("UPDATE patient SET payment_service_customer_id = ? WHERE id = ?", paymentCustomerID, patientID)
-	return err
-}
-
 func (d *DataService) AddCardForPatient(patientID int64, card *common.Card) error {
 	tx, err := d.db.Begin()
 	if err != nil {
@@ -809,13 +807,16 @@ func (d *DataService) AddCardForPatient(patientID int64, card *common.Card) erro
 	}
 
 	// add a new address to db
-	addressID, err := addAddress(tx, card.BillingAddress)
-	if err != nil {
-		tx.Rollback()
-		return err
+	var addressID *int64
+	if card.BillingAddress != nil {
+		aID, err := addAddress(tx, card.BillingAddress)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		card.BillingAddress.ID = aID
+		addressID = &aID
 	}
-
-	card.BillingAddress.ID = addressID
 
 	if card.IsDefault {
 		// undo all previous default cards for the patient
@@ -855,13 +856,19 @@ func (d *DataService) MakeCardDefaultForPatient(patientID int64, card *common.Ca
 		return err
 	}
 
-	_, err = tx.Exec(`update credit_card set is_default = 0 where patient_id = ?`, patientID)
+	_, err = tx.Exec(`
+		UPDATE credit_card 
+		SET is_default = 0 
+		WHERE patient_id = ?`, patientID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	_, err = tx.Exec(`update credit_card set is_default = 1 where id = ?`, card.ID.Int64())
+	_, err = tx.Exec(`
+		UPDATE credit_card 
+		SET is_default = 1 
+		WHERE id = ?`, card.ID.Int64())
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -871,18 +878,28 @@ func (d *DataService) MakeCardDefaultForPatient(patientID int64, card *common.Ca
 }
 
 func (d *DataService) MarkCardInactiveForPatient(patientID int64, card *common.Card) error {
-	_, err := d.db.Exec(`update credit_card set status = ? where patient_id = ? and id = ?`, StatusDeleted, patientID, card.ID.Int64())
+	_, err := d.db.Exec(`
+		UPDATE credit_card 
+		SET status = ? 
+		WHERE patient_id = ? AND id = ?`, StatusDeleted, patientID, card.ID.Int64())
 	return err
 }
 
 func (d *DataService) DeleteCardForPatient(patientID int64, card *common.Card) error {
-	_, err := d.db.Exec(`delete from credit_card where patient_id = ? and id = ?`, patientID, card.ID.Int64())
+	_, err := d.db.Exec(`
+		DELETE FROM credit_card 
+		WHERE patient_id = ? AND id = ?`, patientID, card.ID.Int64())
 	return err
 }
 
 func (d *DataService) MakeLatestCardDefaultForPatient(patientID int64) (*common.Card, error) {
 	var latestCardID int64
-	err := d.db.QueryRow(`select id from credit_card where patient_id = ? and status = ? AND apple_pay = false order by creation_date desc limit 1`, patientID, StatusActive).Scan(&latestCardID)
+	err := d.db.QueryRow(`
+		SELECT id 
+		FROM credit_card 
+		WHERE patient_id = ? AND status = ? AND apple_pay = false 
+		ORDER BY creation_date 
+		DESC limit 1`, patientID, StatusActive).Scan(&latestCardID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -890,7 +907,10 @@ func (d *DataService) MakeLatestCardDefaultForPatient(patientID int64) (*common.
 		return nil, err
 	}
 
-	_, err = d.db.Exec(`update credit_card set is_default = 1 where patient_id = ? and id = ?`, patientID, latestCardID)
+	_, err = d.db.Exec(`
+		UPDATE credit_card 
+		SET is_default = 1 
+		WHERE patient_id = ? AND id = ?`, patientID, latestCardID)
 	if err != nil {
 		return nil, err
 	}
@@ -946,26 +966,35 @@ func (d *DataService) GetCardsForPatient(patientID int64) ([]*common.Card, error
 }
 
 func (d *DataService) GetDefaultCardForPatient(patientID int64) (*common.Card, error) {
-	row := d.db.QueryRow(`select id, third_party_card_id, fingerprint, type, address_id, is_default, creation_date, apple_pay from credit_card where patient_id = ? and is_default = 1`,
+	row := d.db.QueryRow(`
+		SELECT id, third_party_card_id, fingerprint, type, address_id, is_default, creation_date, apple_pay 
+		FROM credit_card 
+		WHERE patient_id = ? AND is_default = 1`,
 		patientID)
 	return d.getCardFromRow(row)
 }
 
 func (d *DataService) GetCardFromID(cardID int64) (*common.Card, error) {
-	row := d.db.QueryRow(`select id, third_party_card_id, fingerprint, type, address_id, is_default, creation_date, apple_pay from credit_card where id = ?`,
+	row := d.db.QueryRow(`
+		SELECT id, third_party_card_id, fingerprint, type, address_id, is_default, creation_date, apple_pay 
+		FROM credit_card 
+		WHERE id = ?`,
 		cardID)
 	return d.getCardFromRow(row)
 }
 
 func (d *DataService) GetCardFromThirdPartyID(thirdPartyID string) (*common.Card, error) {
-	row := d.db.QueryRow(`select id, third_party_card_id, fingerprint, type, address_id, is_default, creation_date, apple_pay from credit_card where third_party_card_id = ?`,
+	row := d.db.QueryRow(`
+		SELECT id, third_party_card_id, fingerprint, type, address_id, is_default, creation_date, apple_pay 
+		FROM credit_card 
+		WHERE third_party_card_id = ?`,
 		thirdPartyID)
 	return d.getCardFromRow(row)
 }
 
 func (d *DataService) getCardFromRow(row *sql.Row) (*common.Card, error) {
 	var card common.Card
-	var addressID int64
+	var addressID sql.NullInt64
 	err := row.Scan(
 		&card.ID, &card.ThirdPartyID, &card.Fingerprint, &card.Type,
 		&addressID, &card.IsDefault, &card.CreationDate, &card.ApplePay)
@@ -974,23 +1003,31 @@ func (d *DataService) getCardFromRow(row *sql.Row) (*common.Card, error) {
 	} else if err != nil {
 		return nil, err
 	}
-	var addressLine1, addressLine2, city, state, country, zipCode sql.NullString
-	err = d.db.QueryRow(`select address_line_1, address_line_2, city, state, zip_code, country from address where id = ?`, addressID).Scan(&addressLine1, &addressLine2, &city, &state, &zipCode, &country)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return &card, nil
+
+	if addressID.Valid {
+		var addressLine1, addressLine2, city, state, country, zipCode sql.NullString
+		err = d.db.QueryRow(`
+			SELECT address_line_1, address_line_2, city, state, zip_code, country 
+			FROM address 
+			WHERE id = ?`, addressID.Int64).Scan(&addressLine1, &addressLine2, &city, &state, &zipCode, &country)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return &card, nil
+			}
+			return nil, err
 		}
-		return nil, err
+
+		card.BillingAddress = &common.Address{
+			ID:           addressID.Int64,
+			AddressLine1: addressLine1.String,
+			AddressLine2: addressLine2.String,
+			City:         city.String,
+			State:        state.String,
+			ZipCode:      zipCode.String,
+			Country:      country.String,
+		}
 	}
-	card.BillingAddress = &common.Address{
-		ID:           addressID,
-		AddressLine1: addressLine1.String,
-		AddressLine2: addressLine2.String,
-		City:         city.String,
-		State:        state.String,
-		ZipCode:      zipCode.String,
-		Country:      country.String,
-	}
+
 	return &card, nil
 }
 

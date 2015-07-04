@@ -145,7 +145,6 @@ type PatientReceipt struct {
 	SKUType           string               `json:"item_type"`
 	ItemID            int64                `json:"item_id,string"`
 	PatientID         int64                `json:"-"`
-	CreditCardID      int64                `json:"-"`
 	StripeChargeID    string               `json:"-"`
 	CreationTimestamp time.Time            `json:"creation_timestamp"`
 	Status            PatientReceiptStatus `json:"-"`

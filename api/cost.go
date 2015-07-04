@@ -136,10 +136,6 @@ func (d *DataService) UpdatePatientReceipt(id int64, update *PatientReceiptUpdat
 		cols = append(cols, "status = ?")
 		vals = append(vals, update.Status.String())
 	}
-	if update.CreditCardID != nil {
-		cols = append(cols, "credit_card_id = ?")
-		vals = append(vals, *update.CreditCardID)
-	}
 	if update.StripeChargeID != nil {
 		cols = append(cols, "stripe_charge_id = ?")
 		vals = append(vals, *update.StripeChargeID)
@@ -166,15 +162,13 @@ func (d *DataService) GetPatientReceipt(patientID, itemID int64, skuType string,
 	}
 
 	var patientReceipt common.PatientReceipt
-	var creditCardID sql.NullInt64
 	var stripeChargeID sql.NullString
 	if err := d.db.QueryRow(`
-		SELECT patient_receipt.id, patient_id, credit_card_id, item_id, item_cost_id, receipt_reference_id, stripe_charge_id, creation_timestamp, status 
+		SELECT patient_receipt.id, patient_id, item_id, item_cost_id, receipt_reference_id, stripe_charge_id, creation_timestamp, status 
 		FROM patient_receipt 
 		WHERE patient_id = ? AND item_id = ? AND sku_id = ?`, patientID, itemID, skuID).Scan(
 		&patientReceipt.ID,
 		&patientReceipt.PatientID,
-		&creditCardID,
 		&patientReceipt.ItemID,
 		&patientReceipt.ItemCostID,
 		&patientReceipt.ReferenceNumber,
@@ -186,7 +180,6 @@ func (d *DataService) GetPatientReceipt(patientID, itemID int64, skuType string,
 	} else if err != nil {
 		return nil, err
 	}
-	patientReceipt.CreditCardID = creditCardID.Int64
 	patientReceipt.StripeChargeID = stripeChargeID.String
 	patientReceipt.SKUType = skuType
 
