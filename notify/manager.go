@@ -83,6 +83,7 @@ func (n *NotificationManager) NotifyDoctor(role string, doctorID, accountID int6
 
 type Message struct {
 	ShortMessage string
+	PushID       string
 	EmailType    string
 	EmailVars    []mandrill.Var
 }
