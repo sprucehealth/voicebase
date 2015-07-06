@@ -1253,6 +1253,7 @@ func (d *DataService) getPatientBasedOnQuery(table, joins, where string, queryPa
 					Type:  phoneType.String,
 				},
 			}
+			patient.PrimaryPhoneNumber = phone.String()
 		}
 
 		patient.Pharmacy, err = d.getPatientPharmacySelection(patient.ID.Int64())
