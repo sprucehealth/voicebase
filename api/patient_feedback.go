@@ -2,6 +2,8 @@ package api
 
 import (
 	"database/sql"
+
+	"github.com/sprucehealth/backend/common"
 )
 
 func (d *DataService) PatientFeedbackRecorded(patientID int64, feedbackFor string) (bool, error) {
@@ -18,4 +20,23 @@ func (d *DataService) RecordPatientFeedback(patientID int64, feedbackFor string,
 		`INSERT INTO patient_feedback (patient_id, feedback_for, rating, comment) VALUES (?, ?, ?, ?)`,
 		patientID, feedbackFor, rating, comment)
 	return err
+}
+
+func (d *DataService) PatientFeedback(feedbackFor string) ([]*common.PatientFeedback, error) {
+	rows, err := d.db.Query(`SELECT patient_id, rating, comment, created FROM patient_feedback WHERE feedback_for = ?`, feedbackFor)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var feedback []*common.PatientFeedback
+	for rows.Next() {
+		var pf common.PatientFeedback
+		var comment sql.NullString
+		if err := rows.Scan(&pf.PatientID, &pf.Rating, &comment, &pf.Created); err != nil {
+			return nil, err
+		}
+		pf.Comment = comment.String
+		feedback = append(feedback, &pf)
+	}
+	return feedback, rows.Err()
 }

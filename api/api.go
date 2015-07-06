@@ -844,6 +844,7 @@ type TextAPI interface {
 type PatientFeedbackAPI interface {
 	PatientFeedbackRecorded(patientID int64, feedbackFor string) (bool, error)
 	RecordPatientFeedback(patientID int64, feedbackFor string, rating int, comment *string) error
+	PatientFeedback(feedbackFor string) ([]*common.PatientFeedback, error)
 }
 
 type DataAPI interface {
