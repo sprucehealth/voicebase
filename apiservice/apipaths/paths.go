@@ -64,6 +64,7 @@ const (
 	PatientAlertsURLPath                 = "/v1/patient/alerts"
 	PatientAuthenticateURLPath           = "/v1/authenticate"
 	PatientCardURLPath                   = "/v1/credit_card"
+	PatientReplaceCardURLPath            = "/v1/patient/card/replace"
 	PatientCareTeamsURLPath              = "/v1/patient/care_teams"
 	PatientCareTeamURLPath               = "/v1/patient/care_team"
 	PatientCaseNotificationsURLPath      = "/v1/patient/case/notifications"

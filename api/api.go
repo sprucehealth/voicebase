@@ -70,7 +70,6 @@ type PatientAPI interface {
 	RegisterPatient(patient *common.Patient) error
 	UpdatePatient(id int64, update *PatientUpdate, updateFromDoctor bool) error
 	CreateUnlinkedPatientFromRefillRequest(patient *common.Patient, doctor *common.Doctor, pathwayTag string) error
-	UpdatePatientWithERxPatientID(patientID, erxPatientID int64) error
 	GetPatientIDFromAccountID(accountID int64) (int64, error)
 	AddDoctorToCareTeamForPatient(patientID, doctorID int64, pathwayTag string) error
 	UpdatePatientPharmacy(patientID int64, pharmacyDetails *pharmacy.PharmacyData) error
@@ -82,7 +81,6 @@ type PatientAPI interface {
 	GetPharmacyBasedOnReferenceIDAndSource(pharmacyid int64, pharmacySource string) (*pharmacy.PharmacyData, error)
 	GetPharmacyFromID(pharmacyLocalID int64) (*pharmacy.PharmacyData, error)
 	AddPharmacy(pharmacyDetails *pharmacy.PharmacyData) error
-	UpdatePatientWithPaymentCustomerID(patientID int64, paymentCustomerID string) error
 	CreatePendingTask(workType, status string, itemID int64) (int64, error)
 	DeletePendingTask(pendingTaskID int64) error
 	AddCardForPatient(patientID int64, card *common.Card) error
@@ -204,15 +202,17 @@ type CaseRouteAPI interface {
 }
 
 type PatientUpdate struct {
-	FirstName    *string
-	MiddleName   *string
-	LastName     *string
-	Prefix       *string
-	Suffix       *string
-	DOB          *encoding.Date
-	Gender       *string
-	PhoneNumbers []*common.PhoneNumber
-	Address      *common.Address
+	FirstName        *string
+	MiddleName       *string
+	LastName         *string
+	Prefix           *string
+	Suffix           *string
+	DOB              *encoding.Date
+	Gender           *string
+	PhoneNumbers     []*common.PhoneNumber
+	Address          *common.Address
+	ERxID            *int64
+	StripeCustomerID *string
 }
 
 type PatientVisitUpdate struct {
@@ -715,7 +715,6 @@ type BankingAPI interface {
 type PatientReceiptUpdate struct {
 	Status         *common.PatientReceiptStatus
 	StripeChargeID *string
-	CreditCardID   *int64
 }
 
 type CostAPI interface {

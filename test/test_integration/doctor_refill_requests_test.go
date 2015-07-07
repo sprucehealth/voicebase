@@ -44,7 +44,10 @@ func TestRefill_ExistingPatient(t *testing.T) {
 	erxPatientID := int64(60)
 
 	// add an erx patient id to the patient
-	err := testData.DataAPI.UpdatePatientWithERxPatientID(signedupPatientResponse.Patient.ID.Int64(), erxPatientID)
+	err := testData.DataAPI.UpdatePatient(signedupPatientResponse.Patient.ID.Int64(),
+		&api.PatientUpdate{
+			ERxID: &erxPatientID,
+		}, false)
 	if err != nil {
 		t.Fatal("Unable to update patient with erx patient id : " + err.Error())
 	}
@@ -1677,7 +1680,9 @@ func setupRefill_Deny_DNTF_ExistingPatient(t *testing.T, testData *TestData, end
 	erxPatientID := int64(60)
 
 	// add an erx patient id to the patient
-	err = testData.DataAPI.UpdatePatientWithERxPatientID(patient.ID.Int64(), erxPatientID)
+	err = testData.DataAPI.UpdatePatient(patient.ID.Int64(), &api.PatientUpdate{
+		ERxID: &erxPatientID,
+	}, false)
 	if err != nil {
 		t.Fatal("Unable to update patient with erx patient id : " + err.Error())
 	}
@@ -2347,7 +2352,9 @@ func TestRefill_DifferentPharmacy(t *testing.T) {
 	erxPatientID := int64(60)
 
 	// add an erx patient id to the patient
-	err := testData.DataAPI.UpdatePatientWithERxPatientID(signedupPatientResponse.Patient.ID.Int64(), erxPatientID)
+	err := testData.DataAPI.UpdatePatient(signedupPatientResponse.Patient.ID.Int64(), &api.PatientUpdate{
+		ERxID: &erxPatientID,
+	}, false)
 	if err != nil {
 		t.Fatal("Unable to update patient with erx patient id : " + err.Error())
 	}
@@ -2556,7 +2563,9 @@ func TestRefill_ExistingPatient_NonexistentTreatment(t *testing.T) {
 	erxPatientID := int64(60)
 
 	// add an erx patient id to the patient
-	err := testData.DataAPI.UpdatePatientWithERxPatientID(signedupPatientResponse.Patient.ID.Int64(), erxPatientID)
+	err := testData.DataAPI.UpdatePatient(signedupPatientResponse.Patient.ID.Int64(), &api.PatientUpdate{
+		ERxID: &erxPatientID,
+	}, false)
 	if err != nil {
 		t.Fatal("Unable to update patient with erx patient id : " + err.Error())
 	}

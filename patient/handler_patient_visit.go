@@ -188,7 +188,14 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 	if requestData.Card != nil {
 		requestData.Card.ApplePay = requestData.ApplePay
 		requestData.Card.IsDefault = true
-		if err := addCardForPatient(s.dataAPI, s.paymentAPI, s.addressValidationAPI, requestData.Card, patient); err != nil {
+		enforceAddressRequirement := true
+		if err := addCardForPatient(
+			s.dataAPI,
+			s.paymentAPI,
+			s.addressValidationAPI,
+			requestData.Card,
+			patient,
+			enforceAddressRequirement); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
