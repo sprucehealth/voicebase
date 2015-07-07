@@ -105,10 +105,17 @@ func (h *promotionHandler) parsePOSTRequest(r *http.Request) (*PromotionPOSTRequ
 }
 
 func (h *promotionHandler) servePOST(w http.ResponseWriter, r *http.Request, req *PromotionPOSTRequest) {
+	// Check if the code already exists
+	if _, err := h.dataAPI.LookupPromoCode(req.Code); !api.IsErrNotFound(err) {
+		www.APIBadRequestError(w, r, fmt.Sprintf("PromoCode %q is already in use by another promotion.", req.Code))
+		return
+	}
+
 	promo := &common.Promotion{
 		Code:  req.Code,
 		Group: req.Group,
 	}
+
 	if req.Expires != nil {
 		t := time.Unix(*req.Expires, 0)
 		promo.Expires = &t
