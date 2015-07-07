@@ -3,9 +3,9 @@ package api
 import (
 	"database/sql"
 	"fmt"
-	"strings"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
 func (d *DataService) MedicalRecordsForPatient(patientID int64) ([]*common.MedicalRecord, error) {
@@ -70,9 +70,7 @@ func (d *DataService) CreateMedicalRecord(patientID int64) (int64, error) {
 }
 
 func (d *DataService) UpdateMedicalRecord(id int64, update *MedicalRecordUpdate) error {
-	var cols []string
-	var vals []interface{}
-
+	args := dbutil.MySQLVarArgs()
 	if update.Status != nil {
 		switch *update.Status {
 		case common.MRError:
@@ -84,29 +82,20 @@ func (d *DataService) UpdateMedicalRecord(id int64, update *MedicalRecordUpdate)
 				return fmt.Errorf("setting medical record status to success must also include a storage URL")
 			}
 		}
-
-		cols = append(cols, "status = ?")
-		vals = append(vals, update.Status.String())
+		args.Append("status", update.Status.String())
 	}
 	if update.Error != nil {
-		cols = append(cols, "error = ?")
-		vals = append(vals, *update.Error)
+		args.Append("error", *update.Error)
 	}
 	if update.StorageURL != nil {
-		cols = append(cols, "storage_url = ?")
-		vals = append(vals, *update.StorageURL)
+		args.Append("storage_url", *update.StorageURL)
 	}
 	if update.Completed != nil {
-		cols = append(cols, "completed_timestamp = ?")
-		vals = append(vals, *update.Completed)
+		args.Append("completed_timestamp", *update.Completed)
 	}
-
-	if len(cols) == 0 {
+	if args.IsEmpty() {
 		return nil
 	}
-	vals = append(vals, id)
-
-	colStr := strings.Join(cols, ", ")
-	_, err := d.db.Exec(`UPDATE patient_exported_medical_record SET `+colStr+` WHERE id = ?`, vals...)
+	_, err := d.db.Exec(`UPDATE patient_exported_medical_record SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), id)...)
 	return err
 }

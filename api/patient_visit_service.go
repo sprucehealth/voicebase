@@ -434,30 +434,18 @@ func (d *DataService) IsRevisedTreatmentPlan(treatmentPlanID int64) (bool, error
 	return count > 0, nil
 }
 
-func (d *DataService) UpdateTreatmentPlan(treatmentPlanID int64, update *TreatmentPlanUpdate) error {
-
-	var cols []string
-	var vals []interface{}
-
+func (d *DataService) UpdateTreatmentPlan(id int64, update *TreatmentPlanUpdate) error {
+	args := dbutil.MySQLVarArgs()
 	if update.PatientViewed != nil {
-		cols = append(cols, "patient_viewed = ?")
-		vals = append(vals, *update.PatientViewed)
+		args.Append("patient_viewed", *update.PatientViewed)
 	}
 	if update.Status != nil {
-		cols = append(cols, "status = ?")
-		vals = append(vals, update.Status.String())
+		args.Append("status", update.Status.String())
 	}
-
-	if len(cols) == 0 {
+	if args.IsEmpty() {
 		return nil
 	}
-
-	vals = append(vals, treatmentPlanID)
-
-	_, err := d.db.Exec(`
-		UPDATE treatment_plan
-		SET `+strings.Join(cols, ",")+`
-		WHERE id = ?`, vals...)
+	_, err := d.db.Exec(`UPDATE treatment_plan SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), id)...)
 	return err
 }
 
@@ -792,36 +780,25 @@ func (d *DataService) UpdatePatientVisits(ids []int64, update *PatientVisitUpdat
 }
 
 func updatePatientVisit(d db, id int64, update *PatientVisitUpdate) error {
-	cols := []string{}
-	vals := []interface{}{}
-
+	args := dbutil.MySQLVarArgs()
 	if update.Status != nil {
-		cols = append(cols, "status = ?")
-		vals = append(vals, *update.Status)
+		args.Append("status", *update.Status)
 	}
-
 	if update.LayoutVersionID != nil {
-		cols = append(cols, "layout_version_id = ?")
-		vals = append(vals, *update.LayoutVersionID)
+		args.Append("layout_version_id", *update.LayoutVersionID)
 	}
-
 	if update.ClosedDate != nil {
-		cols = append(cols, "closed_date = ?")
-		vals = append(vals, *update.ClosedDate)
+		args.Append("closed_date", *update.ClosedDate)
 	}
-
-	if len(cols) == 0 {
+	if args.IsEmpty() {
 		return nil
 	}
-
-	vals = append(vals, id)
-
-	_, err := d.Exec(`update patient_visit set `+strings.Join(cols, ",")+` where id = ?`, vals...)
+	_, err := d.Exec(`UPDATE patient_visit SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), id)...)
 	return err
 }
 
 func (d *DataService) ClosePatientVisit(patientVisitID int64, event string) error {
-	_, err := d.db.Exec(`update patient_visit set status=?, closed_date=now() where id = ?`, event, patientVisitID)
+	_, err := d.db.Exec(`UPDATE patient_visit SET status = ?, closed_date = now() WHERE id = ?`, event, patientVisitID)
 	return err
 }
 
@@ -1268,8 +1245,8 @@ func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, prescrip
 	}
 
 	for _, treatment := range treatments {
-
-		_, err = tx.Exec(`update erx_status_events set status = ? where treatment_id = ? and status = ?`, StatusInactive, treatment.ID.Int64(), StatusActive)
+		_, err = tx.Exec(`UPDATE erx_status_events SET status = ? WHERE treatment_id = ? AND status = ?`,
+			StatusInactive, treatment.ID.Int64(), StatusActive)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -1288,8 +1265,8 @@ func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, prescrip
 		}
 
 		keys, values := getKeysAndValuesFromMap(columnsAndData)
-
-		_, err = tx.Exec(fmt.Sprintf(`insert into erx_status_events (%s) values (%s)`, strings.Join(keys, ","), dbutil.MySQLArgs(len(values))), values...)
+		_, err = tx.Exec(fmt.Sprintf(`INSERT INTO erx_status_events (%s) VALUES (%s)`,
+			strings.Join(keys, ","), dbutil.MySQLArgs(len(values))), values...)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -1301,11 +1278,14 @@ func (d *DataService) AddErxStatusEvent(treatments []*common.Treatment, prescrip
 }
 
 func (d *DataService) GetPrescriptionStatusEventsForPatient(erxPatientID int64) ([]common.StatusEvent, error) {
-	rows, err := d.db.Query(`select erx_status_events.treatment_id, treatment.erx_id, erx_status_events.erx_status, erx_status_events.creation_date from treatment
-								inner join treatment_plan on treatment_plan_id = treatment_plan.id
-								left outer join erx_status_events on erx_status_events.treatment_id = treatment.id
-								inner join patient on patient.id = treatment_plan.patient_id
-									where patient.erx_patient_id = ? and erx_status_events.status = ? order by erx_status_events.creation_date desc`, erxPatientID, StatusActive)
+	rows, err := d.db.Query(`
+		SELECT erx_status_events.treatment_id, treatment.erx_id, erx_status_events.erx_status, erx_status_events.creation_date
+		FROM treatment
+		INNER JOIN treatment_plan ON treatment_plan_id = treatment_plan.id
+		LEFT OUTER join erx_status_events ON erx_status_events.treatment_id = treatment.id
+		INNER JOIN patient ON patient.id = treatment_plan.patient_id
+		WHERE patient.erx_patient_id = ? AND erx_status_events.status = ?
+		ORDER BY erx_status_events.creation_date DESC`, erxPatientID, StatusActive)
 	if err != nil {
 		return nil, err
 	}
@@ -1457,14 +1437,14 @@ func (d *DataService) AddAlertsForVisit(visitID int64, alerts []*common.Alert) e
 		return nil
 	}
 
-	fields := make([]string, 0, len(alerts))
-	values := make([]interface{}, 0, 3*len(alerts))
+	inserts := dbutil.MySQLMultiInsert(len(alerts))
 	for _, alert := range alerts {
-		values = append(values, alert.VisitID, alert.Message, alert.QuestionID)
-		fields = append(fields, "(?,?,?)")
+		if visitID != alert.VisitID {
+			return errors.New("api.AddAlertsForVisit: visit ID for alert doesn't match")
+		}
+		inserts.Append(alert.VisitID, alert.Message, alert.QuestionID)
 	}
-
-	_, err := d.db.Exec(`INSERT INTO patient_alerts (patient_visit_id, alert, question_id) VALUES `+strings.Join(fields, ","), values...)
+	_, err := d.db.Exec(`INSERT INTO patient_alerts (patient_visit_id, alert, question_id) VALUES `+inserts.Query(), inserts.Values()...)
 	return err
 }
 

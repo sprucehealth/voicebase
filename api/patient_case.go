@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/rand"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/sprucehealth/backend/common"
@@ -562,7 +561,8 @@ func (d *DataService) InsertCaseNotification(notificationItem *common.CaseNotifi
 		return err
 	}
 
-	_, err = d.db.Exec(`replace into case_notification (patient_case_id, notification_type, uid, data) values (?,?,?,?)`, notificationItem.PatientCaseID, notificationItem.NotificationType, notificationItem.UID, notificationData)
+	_, err = d.db.Exec(`replace into case_notification (patient_case_id, notification_type, uid, data) values (?,?,?,?)`,
+		notificationItem.PatientCaseID, notificationItem.NotificationType, notificationItem.UID, notificationData)
 	return err
 }
 
@@ -612,38 +612,27 @@ func (d *DataService) createPatientCase(tx *sql.Tx, patientCase *common.PatientC
 }
 
 func (d *DataService) UpdatePatientCase(id int64, update *PatientCaseUpdate) error {
-	var cols []string
-	var vals []interface{}
-
+	args := dbutil.MySQLVarArgs()
 	if update.Status != nil {
-		cols = append(cols, "status = ?")
-		vals = append(vals, update.Status.String())
+		args.Append("status", update.Status.String())
 	}
-
 	if update.ClosedDate != nil {
-		cols = append(cols, "closed_date = ?")
-		vals = append(vals, *update.ClosedDate)
+		args.Append("closed_date", *update.ClosedDate)
 	}
-
 	if update.TimeoutDate.Valid {
-		cols = append(cols, "timeout_date = ?")
-		vals = append(vals, update.TimeoutDate.Time)
+		args.Append("timeout_date", update.TimeoutDate.Time)
 	}
-
-	if len(cols) == 0 {
+	if args.IsEmpty() {
 		return nil
 	}
-
-	vals = append(vals, id)
-
-	_, err := d.db.Exec(`
-		UPDATE patient_case set `+strings.Join(cols, ",")+` WHERE id = ?`, vals...)
+	_, err := d.db.Exec(`UPDATE patient_case set `+args.Columns()+` WHERE id = ?`, append(args.Values(), id)...)
 	return err
 }
 
 // InsertPatientCaseNote inserts the provided case note record
 func (d *DataService) InsertPatientCaseNote(n *model.PatientCaseNote) (int64, error) {
-	res, err := d.db.Exec(`INSERT INTO patient_case_note (case_id, author_doctor_id, note_text) VALUES (?, ?, ?)`, n.CaseID, n.AuthorDoctorID, n.NoteText)
+	res, err := d.db.Exec(`INSERT INTO patient_case_note (case_id, author_doctor_id, note_text) VALUES (?, ?, ?)`,
+		n.CaseID, n.AuthorDoctorID, n.NoteText)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
@@ -672,7 +661,7 @@ func (d *DataService) DeletePatientCaseNote(id int64) (int64, error) {
 func (d *DataService) PatientCaseNote(id int64) (*model.PatientCaseNote, error) {
 	caseNote := &model.PatientCaseNote{}
 	if err := d.db.QueryRow(
-		`SELECT id, case_id, created, modified, author_doctor_id, note_text 
+		`SELECT id, case_id, created, modified, author_doctor_id, note_text
 			FROM patient_case_note WHERE id = ?`, id).Scan(&caseNote.ID, &caseNote.CaseID, &caseNote.Created, &caseNote.Modified, &caseNote.AuthorDoctorID, &caseNote.NoteText); err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound(`patient_case_note`))
 	} else if err != nil {

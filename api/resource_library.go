@@ -4,7 +4,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"strings"
+
+	"github.com/sprucehealth/backend/libs/dbutil"
 
 	"github.com/sprucehealth/backend/common"
 )
@@ -205,21 +206,17 @@ func (d *DataService) UpdateResourceGuideSection(sec *common.ResourceGuideSectio
 	if sec.ID <= 0 {
 		return fmt.Errorf("api.UpdateResourceGuideSection: ID may not be 0")
 	}
-	var columns []string
-	var values []interface{}
+	args := dbutil.MySQLVarArgs()
 	if sec.Title != "" {
-		columns = append(columns, "title = ?")
-		values = append(values, sec.Title)
+		args.Append("title", sec.Title)
 	}
 	if sec.Ordinal > 0 {
-		columns = append(columns, "ordinal = ?")
-		values = append(values, sec.Ordinal)
+		args.Append("ordinal", sec.Ordinal)
 	}
-	if len(columns) == 0 {
+	if args.IsEmpty() {
 		return fmt.Errorf("api.UpdateResourceGuideSection: nothing to update")
 	}
-	values = append(values, sec.ID)
-	_, err := d.db.Exec("UPDATE resource_guide_section SET "+strings.Join(columns, ",")+" WHERE id = ?", values...)
+	_, err := d.db.Exec("UPDATE resource_guide_section SET "+args.Columns()+" WHERE id = ?", append(args.Values(), sec.ID)...)
 	return err
 }
 
@@ -244,40 +241,32 @@ func (d *DataService) CreateResourceGuide(guide *common.ResourceGuide) (int64, e
 }
 
 func (d *DataService) UpdateResourceGuide(id int64, update *ResourceGuideUpdate) error {
-	var columns []string
-	var values []interface{}
+	args := dbutil.MySQLVarArgs()
 	if update.Title != nil {
-		columns = append(columns, "title = ?")
-		values = append(values, *update.Title)
+		args.Append("title", *update.Title)
 	}
 	if update.SectionID != nil {
-		columns = append(columns, "section_id = ?")
-		values = append(values, *update.SectionID)
+		args.Append("section_id", *update.SectionID)
 	}
 	if update.Ordinal != nil {
-		columns = append(columns, "ordinal = ?")
-		values = append(values, *update.Ordinal)
+		args.Append("ordinal", *update.Ordinal)
 	}
 	if update.PhotoURL != nil {
-		columns = append(columns, "photo_url = ?")
-		values = append(values, *update.PhotoURL)
+		args.Append("photo_url", *update.PhotoURL)
 	}
 	if update.Layout != nil {
-		columns = append(columns, "layout = ?")
 		b, err := json.Marshal(update.Layout)
 		if err != nil {
 			return err
 		}
-		values = append(values, b)
+		args.Append("layout", b)
 	}
 	if update.Active != nil {
-		columns = append(columns, "active = ?")
-		values = append(values, *update.Active)
+		args.Append("active", *update.Active)
 	}
-	if len(columns) == 0 {
+	if args.IsEmpty() {
 		return fmt.Errorf("api.UpdateResourceGuide: nothing to update")
 	}
-	values = append(values, id)
-	_, err := d.db.Exec("UPDATE resource_guide SET "+strings.Join(columns, ",")+" WHERE id = ?", values...)
+	_, err := d.db.Exec("UPDATE resource_guide SET "+args.Columns()+" WHERE id = ?", append(args.Values(), id)...)
 	return err
 }

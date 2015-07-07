@@ -518,7 +518,7 @@ func (d *DataService) CreateReferralProgram(referralProgram *common.ReferralProg
 		return errors.Trace(err)
 	}
 
-	_, err = tx.Exec(`INSERT INTO referral_program (referral_program_template_id, account_id, promotion_code_id, referral_type, referral_data, status, promotion_referral_route_id) 
+	_, err = tx.Exec(`INSERT INTO referral_program (referral_program_template_id, account_id, promotion_code_id, referral_type, referral_data, status, promotion_referral_route_id)
 		VALUES (?,?,?,?,?,?,?)`, referralProgram.TemplateID, referralProgram.AccountID, referralProgram.CodeID, referralProgram.Data.TypeName(), jsonData, referralProgram.Status.String(), referralProgram.PromotionReferralRouteID)
 	if err != nil {
 		tx.Rollback()
@@ -530,8 +530,8 @@ func (d *DataService) CreateReferralProgram(referralProgram *common.ReferralProg
 
 func (d *DataService) UpdateReferralProgramStatusesForRoute(routeID int64, newStatus common.ReferralProgramStatus) (int64, error) {
 	res, err := d.db.Exec(`
-		UPDATE referral_program 
-		SET status = ? 
+		UPDATE referral_program
+		SET status = ?
 		WHERE promotion_referral_route_id = ?`, newStatus.String(), routeID)
 	if err != nil {
 		return 0, errors.Trace(err)
@@ -547,8 +547,8 @@ func (d *DataService) UpdateReferralProgram(accountID int64, codeID int64, data 
 	}
 
 	_, err = d.db.Exec(`
-		UPDATE referral_program 
-		SET referral_data = ? 
+		UPDATE referral_program
+		SET referral_data = ?
 		WHERE account_id = ? and promotion_code_id = ?`, jsonData, accountID, codeID)
 	if err != nil {
 		return errors.Trace(err)
@@ -635,33 +635,24 @@ func (d *DataService) UpdateAccountPromotion(accountID, promoCodeID int64, updat
 		return nil
 	}
 
-	var cols []string
-	var vals []interface{}
-
+	args := dbutil.MySQLVarArgs()
 	if update.PromotionData != nil {
 		jsonData, err := json.Marshal(update.PromotionData)
 		if err != nil {
 			return errors.Trace(err)
 		}
-
-		cols = append(cols, "promo_data = ?")
-		vals = append(vals, jsonData)
+		args.Append("promo_data", jsonData)
 	}
-
 	if update.Status != nil {
-		cols = append(cols, "status = ?")
-		vals = append(vals, update.Status.String())
+		args.Append("status", update.Status.String())
 	}
-
-	if len(cols) == 0 {
+	if args.IsEmpty() {
 		return nil
 	}
 
-	vals = append(vals, accountID, promoCodeID)
-
-	_, err := d.db.Exec(fmt.Sprintf(
-		`UPDATE account_promotion SET %s WHERE account_id = ? AND promotion_code_id = ?`,
-		strings.Join(cols, ",")), vals...)
+	_, err := d.db.Exec(
+		`UPDATE account_promotion SET `+args.Columns()+` WHERE account_id = ? AND promotion_code_id = ?`,
+		append(args.Values(), accountID, promoCodeID)...)
 	return errors.Trace(err)
 }
 
@@ -860,7 +851,7 @@ func (d *DataService) AssociateRandomAccountCode(accountID int64) (uint64, error
 // InsertPromotionReferralRoute inserts a record intended to route patients to the most relevent promotion for their referral program
 func (d *DataService) InsertPromotionReferralRoute(route *common.PromotionReferralRoute) (int64, error) {
 	res, err := d.db.Exec(`
-		INSERT INTO promotion_referral_route 
+		INSERT INTO promotion_referral_route
 		(promotion_code_id, priority, lifecycle, gender, age_lower, age_upper, state, pharmacy)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		route.PromotionCodeID,
@@ -956,10 +947,10 @@ type RouteQueryParams struct {
 func (d *DataService) ReferralProgramTemplateRouteQuery(params *RouteQueryParams) (*int64, *common.ReferralProgramTemplate, error) {
 	q := `
 		SELECT id, promotion_code_id, priority,
-			IF(gender IS NULL, 0, 1) + 
-			IF(age_lower IS NULL, 0, 1) + 
-			IF(age_upper IS NULL, 0, 1) + 
-			IF(state IS NULL, 0, 1) + 
+			IF(gender IS NULL, 0, 1) +
+			IF(age_lower IS NULL, 0, 1) +
+			IF(age_upper IS NULL, 0, 1) +
+			IF(state IS NULL, 0, 1) +
 			IF(pharmacy IS NULL, 0, 1) AS dim_match_count FROM promotion_referral_route WHERE `
 	cs := []string{`lifecycle = ?`}
 	vs := []interface{}{string(common.PRRLifecycleActive)}
@@ -987,10 +978,9 @@ func (d *DataService) ReferralProgramTemplateRouteQuery(params *RouteQueryParams
 	} else {
 		cs = append(cs, `state IS NULL`)
 	}
-	suffix := ` ORDER BY 
-								dim_match_count DESC,
-								priority DESC 
-								LIMIT 1`
+	suffix := `
+		ORDER BY dim_match_count DESC, priority DESC
+		LIMIT 1`
 	q = q + strings.Join(cs, " AND ") + suffix
 	var routeID, promotionCodeID, dimMatchCount int64
 	var priority int64
@@ -1042,8 +1032,8 @@ func (d *DataService) RouteQueryParamsForAccount(accountID int64) (*RouteQueryPa
 
 	params := &RouteQueryParams{}
 	if err := d.db.QueryRow(`
-		SELECT FLOOR(DATEDIFF(CURRENT_DATE(), STR_TO_DATE(CONCAT_WS('-',dob_day,dob_month,dob_year), '%d-%m-%Y'))/365) AS age, gender, patient_location.state, pharmacy_selection.name AS pharmacy 
-			FROM patient 
+		SELECT FLOOR(DATEDIFF(CURRENT_DATE(), STR_TO_DATE(CONCAT_WS('-',dob_day,dob_month,dob_year), '%d-%m-%Y'))/365) AS age, gender, patient_location.state, pharmacy_selection.name AS pharmacy
+			FROM patient
 			LEFT JOIN patient_location ON patient.id = patient_location.patient_id
 			LEFT JOIN patient_pharmacy_selection ON patient.id = patient_pharmacy_selection.patient_id
 			LEFT JOIN pharmacy_selection ON patient_pharmacy_selection.pharmacy_selection_id = pharmacy_selection.id

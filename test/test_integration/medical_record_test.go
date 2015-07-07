@@ -20,7 +20,6 @@ type diagnosisTestSvc struct {
 func (d *diagnosisTestSvc) DiagnosisForCodeIDs(codeIDs []string) (map[string]*diagnosis.Diagnosis, error) {
 	res := make(map[string]*diagnosis.Diagnosis, len(codeIDs))
 	for _, cid := range codeIDs {
-		println(">>>", cid)
 		res[cid] = d.codes[cid]
 	}
 	return res, nil

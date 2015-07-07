@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -112,25 +113,17 @@ func (m *auth) CreateAccount(email, password, roleType string) (int64, error) {
 }
 
 func (m *auth) UpdateAccount(accountID int64, email *string, twoFactorEnabled *bool) error {
-	var cols []string
-	var vals []interface{}
-
+	args := dbutil.MySQLVarArgs()
 	if email != nil {
-		cols = append(cols, "email = ?")
-		vals = append(vals, *email)
+		args.Append("email", *email)
 	}
 	if twoFactorEnabled != nil {
-		cols = append(cols, "two_factor_enabled = ?")
-		vals = append(vals, *twoFactorEnabled)
+		args.Append("two_factor_enabled", *twoFactorEnabled)
 	}
-
-	if len(cols) == 0 {
+	if args.IsEmpty() {
 		return nil
 	}
-	vals = append(vals, accountID)
-
-	colStr := strings.Join(cols, ", ")
-	_, err := m.db.Exec(`UPDATE account SET `+colStr+` WHERE id = ?`, vals...)
+	_, err := m.db.Exec(`UPDATE account SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), accountID)...)
 	return err
 }
 

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dbutil"
@@ -389,19 +388,12 @@ func (d *DataService) PatchCommonDiagnosisSet(pathwayTag string, patch *Diagnosi
 	}
 
 	if len(patch.Create) > 0 {
-		items := make([]string, len(patch.Create))
-		vals := make([]interface{}, 3*len(patch.Create))
-
-		for i, createItem := range patch.Create {
-			items[i] = "(?,?,?)"
-			vals[3*i] = createItem
-			vals[3*i+1] = true
-			vals[3*i+2] = pathwayID
+		inserts := dbutil.MySQLMultiInsert(len(patch.Create))
+		for _, createItem := range patch.Create {
+			inserts.Append(createItem, true, pathwayID)
 		}
-
-		_, err = tx.Exec(`
-		INSERT INTO common_diagnosis_set_item 
-		(diagnosis_code_id, active, pathway_id) VALUES `+strings.Join(items, ","), vals...)
+		_, err = tx.Exec(`INSERT INTO common_diagnosis_set_item (diagnosis_code_id, active, pathway_id) VALUES `+inserts.Query(),
+			inserts.Values()...)
 		if err != nil {
 			tx.Rollback()
 			return err

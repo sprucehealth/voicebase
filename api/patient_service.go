@@ -45,52 +45,40 @@ func (d *DataService) UpdatePatient(id int64, update *PatientUpdate, updateFromD
 }
 
 func (d *DataService) updatePatient(tx *sql.Tx, id int64, update *PatientUpdate, updateFromDoctor bool) error {
-	var cols []string
-	var vals []interface{}
+	args := dbutil.MySQLVarArgs()
 
 	if update.FirstName != nil {
-		cols = append(cols, "first_name = ?")
-		vals = append(vals, *update.FirstName)
+		args.Append("first_name", *update.FirstName)
 	}
 	if update.MiddleName != nil {
-		cols = append(cols, "middle_name = ?")
-		vals = append(vals, *update.MiddleName)
+		args.Append("middle_name", *update.MiddleName)
 	}
 	if update.LastName != nil {
-		cols = append(cols, "last_name = ?")
-		vals = append(vals, *update.LastName)
+		args.Append("last_name", *update.LastName)
 	}
 	if update.Prefix != nil {
-		cols = append(cols, "prefix = ?")
-		vals = append(vals, *update.Prefix)
+		args.Append("prefix", *update.Prefix)
 	}
 	if update.Suffix != nil {
-		cols = append(cols, "suffix = ?")
-		vals = append(vals, *update.Suffix)
+		args.Append("suffix", *update.Suffix)
 	}
 	if update.DOB != nil {
-		cols = append(cols, "dob_day = ?", "dob_month = ?", "dob_year = ?")
-		vals = append(vals, update.DOB.Day, update.DOB.Month, update.DOB.Year)
+		args.Append("dob_day", update.DOB.Day)
+		args.Append("dob_month", update.DOB.Month)
+		args.Append("dob_year", update.DOB.Year)
 	}
 	if update.Gender != nil {
-		cols = append(cols, "gender = ?")
-		vals = append(vals, strings.ToLower(*update.Gender))
+		args.Append("gender", strings.ToLower(*update.Gender))
 	}
 	if update.ERxID != nil {
-		cols = append(cols, "erx_patient_id = ?")
-		vals = append(vals, *update.ERxID)
+		args.Append("erx_patient_id", *update.ERxID)
 	}
 	if update.StripeCustomerID != nil {
-		cols = append(cols, "payment_service_customer_id = ?")
-		vals = append(vals, *update.StripeCustomerID)
+		args.Append("payment_service_customer_id", *update.StripeCustomerID)
 	}
 
-	if len(cols) != 0 {
-		vals = append(vals, id)
-		_, err := tx.Exec(`
-			UPDATE patient
-			SET `+strings.Join(cols, ", ")+`
-			WHERE id = ?`, vals...)
+	if !args.IsEmpty() {
+		_, err := tx.Exec(`UPDATE patient SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), id)...)
 		if err != nil {
 			return err
 		}
@@ -138,15 +126,13 @@ func replaceAccountPhoneNumbers(tx *sql.Tx, accountID int64, numbers []*common.P
 		numbers[0].Status = StatusActive
 	}
 
-	reps := make([]string, len(numbers))
-	vals := make([]interface{}, 0, len(numbers)*5)
-	for i, p := range numbers {
-		reps[i] = "(?, ?, ?, ?, ?)"
-		vals = append(vals, accountID, p.Phone.String(), p.Type, p.Status, p.Verified)
+	inserts := dbutil.MySQLMultiInsert(len(numbers))
+	for _, p := range numbers {
+		inserts.Append(accountID, p.Phone.String(), p.Type, p.Status, p.Verified)
 	}
 	_, err = tx.Exec(`
 			INSERT INTO account_phone (account_id, phone, phone_type, status, verified)
-			VALUES `+strings.Join(reps, ", "), vals...)
+			VALUES `+inserts.Query(), inserts.Values()...)
 	return err
 }
 
@@ -162,9 +148,9 @@ func updatePatientAddress(tx *sql.Tx, patientID int64, address *common.Address, 
 	}
 
 	_, err = tx.Exec(`
-			INSERT INTO patient_address_selection
-				(address_id, patient_id, is_default, is_updated_by_doctor)
-			VALUES (?, ?, ?, ?)`, addressID, patientID, true, updateFromDoctor)
+		INSERT INTO patient_address_selection
+			(address_id, patient_id, is_default, is_updated_by_doctor)
+		VALUES (?, ?, ?, ?)`, addressID, patientID, true, updateFromDoctor)
 	return err
 }
 
@@ -543,7 +529,7 @@ func (d *DataService) UpdatePatientPharmacy(patientID int64, pharmacyDetails *ph
 		return err
 	}
 
-	_, err = tx.Exec(`update patient_pharmacy_selection set status=? where patient_id = ?`, StatusInactive, patientID)
+	_, err = tx.Exec(`UPDATE patient_pharmacy_selection SET status = ? WHERE patient_id = ?`, StatusInactive, patientID)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -556,7 +542,8 @@ func (d *DataService) UpdatePatientPharmacy(patientID int64, pharmacyDetails *ph
 	}
 	existingPharmacyID := pharmacyDetails.LocalID
 
-	_, err = tx.Exec(`insert into patient_pharmacy_selection (patient_id, pharmacy_selection_id, status) values (?,?,?)`, patientID, existingPharmacyID, StatusActive)
+	_, err = tx.Exec(`INSERT INTO patient_pharmacy_selection (patient_id, pharmacy_selection_id, status) VALUES (?,?,?)`,
+		patientID, existingPharmacyID, StatusActive)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -579,8 +566,10 @@ func (d *DataService) getPatientPharmacySelection(patientID int64) (*pharmacy.Ph
 func (d *DataService) GetPharmacyBasedOnReferenceIDAndSource(pharmacyID int64, pharmacySource string) (*pharmacy.PharmacyData, error) {
 	var addressLine1, addressLine2, city, state, country, phone, zipCode, lat, lng, name sql.NullString
 	var id int64
-	err := d.db.QueryRow(`select id, address_line_1, address_line_2, city, state, country, phone, zip_code, name, lat,lng
-		from pharmacy_selection where pharmacy_id = ? and source = ?`, pharmacyID, pharmacySource).
+	err := d.db.QueryRow(`
+		SELECT id, address_line_1, address_line_2, city, state, country, phone, zip_code, name, lat, lng
+		FROM pharmacy_selection
+		WHERE pharmacy_id = ? AND source = ?`, pharmacyID, pharmacySource).
 		Scan(&id, &addressLine1, &addressLine2, &city, &state, &country, &phone, &zipCode, &name, &lat, &lng)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -617,12 +606,13 @@ func (d *DataService) GetPharmacyBasedOnReferenceIDAndSource(pharmacyID int64, p
 }
 
 func (d *DataService) GetPharmacyFromID(pharmacyLocalID int64) (*pharmacy.PharmacyData, error) {
-
 	var addressLine1, addressLine2, city, state, country, phone, zipCode, lat, lng, name sql.NullString
 	var source string
 	var pharmacyReferenceID int64
-	err := d.db.QueryRow(`select source, pharmacy_id, address_line_1, address_line_2, city, state, country, phone, zip_code, name, lat,lng
-		from pharmacy_selection where id = ?`, pharmacyLocalID).
+	err := d.db.QueryRow(`
+		SELECT source, pharmacy_id, address_line_1, address_line_2, city, state, country, phone, zip_code, name, lat, lng
+		FROM pharmacy_selection
+		WHERE id = ?`, pharmacyLocalID).
 		Scan(&source, &pharmacyReferenceID, &addressLine1, &addressLine2, &city, &state, &country, &phone, &zipCode, &name, &lat, &lng)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -698,7 +688,7 @@ func addPharmacy(pharmacyDetails *pharmacy.PharmacyData, tx *sql.Tx) error {
 
 	columns, dataForColumns := getKeysAndValuesFromMap(columnsAndData)
 
-	lastID, err := tx.Exec(fmt.Sprintf("insert into pharmacy_selection (%s) values (%s)", strings.Join(columns, ","),
+	lastID, err := tx.Exec(fmt.Sprintf("INSERT INTO pharmacy_selection (%s) VALUES (%s)", strings.Join(columns, ","),
 		dbutil.MySQLArgs(len(columns))), dataForColumns...)
 
 	if err != nil {
@@ -761,13 +751,15 @@ func (d *DataService) TrackPatientAgreements(patientID int64, agreements map[str
 	}
 
 	for agreementType, agreed := range agreements {
-		_, err = tx.Exec(`update patient_agreement set status=? where patient_id = ? and agreement_type = ?`, StatusInactive, patientID, agreementType)
+		_, err = tx.Exec(`UPDATE patient_agreement SET status = ? WHERE patient_id = ? AND agreement_type = ?`,
+			StatusInactive, patientID, agreementType)
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
 
-		_, err = tx.Exec(`insert into patient_agreement (patient_id, agreement_type, agreed, status) values (?,?,?,?)`, patientID, agreementType, agreed, StatusActive)
+		_, err = tx.Exec(`INSERT INTO patient_agreement (patient_id, agreement_type, agreed, status) VALUES (?,?,?,?)`,
+			patientID, agreementType, agreed, StatusActive)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -856,19 +848,13 @@ func (d *DataService) MakeCardDefaultForPatient(patientID int64, card *common.Ca
 		return err
 	}
 
-	_, err = tx.Exec(`
-		UPDATE credit_card 
-		SET is_default = 0 
-		WHERE patient_id = ?`, patientID)
+	_, err = tx.Exec(`UPDATE credit_card SET is_default = 0 WHERE patient_id = ?`, patientID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	_, err = tx.Exec(`
-		UPDATE credit_card 
-		SET is_default = 1 
-		WHERE id = ?`, card.ID.Int64())
+	_, err = tx.Exec(`UPDATE credit_card SET is_default = 1 WHERE id = ?`, card.ID.Int64())
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -878,28 +864,23 @@ func (d *DataService) MakeCardDefaultForPatient(patientID int64, card *common.Ca
 }
 
 func (d *DataService) MarkCardInactiveForPatient(patientID int64, card *common.Card) error {
-	_, err := d.db.Exec(`
-		UPDATE credit_card 
-		SET status = ? 
-		WHERE patient_id = ? AND id = ?`, StatusDeleted, patientID, card.ID.Int64())
+	_, err := d.db.Exec(`UPDATE credit_card SET status = ? WHERE patient_id = ? AND id = ?`, StatusDeleted, patientID, card.ID.Int64())
 	return err
 }
 
 func (d *DataService) DeleteCardForPatient(patientID int64, card *common.Card) error {
-	_, err := d.db.Exec(`
-		DELETE FROM credit_card 
-		WHERE patient_id = ? AND id = ?`, patientID, card.ID.Int64())
+	_, err := d.db.Exec(`DELETE FROM credit_card WHERE patient_id = ? AND id = ?`, patientID, card.ID.Int64())
 	return err
 }
 
 func (d *DataService) MakeLatestCardDefaultForPatient(patientID int64) (*common.Card, error) {
 	var latestCardID int64
 	err := d.db.QueryRow(`
-		SELECT id 
-		FROM credit_card 
-		WHERE patient_id = ? AND status = ? AND apple_pay = false 
-		ORDER BY creation_date 
-		DESC limit 1`, patientID, StatusActive).Scan(&latestCardID)
+		SELECT id
+		FROM credit_card
+		WHERE patient_id = ? AND status = ? AND apple_pay = false
+		ORDER BY creation_date DESC
+		LIMIT 1`, patientID, StatusActive).Scan(&latestCardID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -907,10 +888,7 @@ func (d *DataService) MakeLatestCardDefaultForPatient(patientID int64) (*common.
 		return nil, err
 	}
 
-	_, err = d.db.Exec(`
-		UPDATE credit_card 
-		SET is_default = 1 
-		WHERE patient_id = ? AND id = ?`, patientID, latestCardID)
+	_, err = d.db.Exec(`UPDATE credit_card SET is_default = 1 WHERE patient_id = ? AND id = ?`, patientID, latestCardID)
 	if err != nil {
 		return nil, err
 	}

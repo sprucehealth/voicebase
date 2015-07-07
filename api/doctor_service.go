@@ -861,7 +861,6 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 	}
 
 	for _, doctorTreatmentTemplate := range doctorTreatmentTemplates {
-
 		var treatmentIDInPatientTreatmentPlan int64
 		if treatmentPlanID != 0 {
 			treatmentIDInPatientTreatmentPlan = doctorTreatmentTemplate.Treatment.ID.Int64()
@@ -1112,54 +1111,41 @@ type DoctorUpdate struct {
 }
 
 func (d *DataService) UpdateDoctor(doctorID int64, update *DoctorUpdate) error {
-	var cols []string
-	var vals []interface{}
+	args := dbutil.MySQLVarArgs()
 
 	if update.ShortTitle != nil {
-		cols = append(cols, "short_title = ?")
-		vals = append(vals, *update.ShortTitle)
+		args.Append("short_title", *update.ShortTitle)
 	}
 	if update.LongTitle != nil {
-		cols = append(cols, "long_title = ?")
-		vals = append(vals, *update.LongTitle)
+		args.Append("long_title", *update.LongTitle)
 	}
 	if update.ShortDisplayName != nil {
-		cols = append(cols, "short_display_name = ?")
-		vals = append(vals, *update.ShortDisplayName)
+		args.Append("short_display_name", *update.ShortDisplayName)
 	}
 	if update.LongDisplayName != nil {
-		cols = append(cols, "long_display_name = ?")
-		vals = append(vals, *update.LongDisplayName)
+		args.Append("long_display_name", *update.LongDisplayName)
 	}
 	if update.NPI != nil {
-		cols = append(cols, "npi_number = ?")
-		vals = append(vals, *update.NPI)
+		args.Append("npi_number", *update.NPI)
 	}
 	if update.DEA != nil {
-		cols = append(cols, "dea_number = ?")
-		vals = append(vals, *update.DEA)
+		args.Append("dea_number", *update.DEA)
 	}
 	if update.HeroImageID != nil {
-		cols = append(cols, "hero_image_id = ?")
-		vals = append(vals, *update.HeroImageID)
+		args.Append("hero_image_id", *update.HeroImageID)
 	}
 	if update.LargeThumbnailID != nil {
-		cols = append(cols, "large_thumbnail_id = ?")
-		vals = append(vals, *update.LargeThumbnailID)
+		args.Append("large_thumbnail_id", *update.LargeThumbnailID)
 	}
-
 	if update.DosespotClinicianID != nil {
-		cols = append(cols, "clinician_id = ?")
-		vals = append(vals, *update.DosespotClinicianID)
+		args.Append("clinician_id", *update.DosespotClinicianID)
 	}
 
-	if len(cols) == 0 {
+	if args.IsEmpty() {
 		return nil
 	}
-	vals = append(vals, doctorID)
 
-	colStr := strings.Join(cols, ", ")
-	_, err := d.db.Exec(`UPDATE doctor SET `+colStr+` WHERE id = ?`, vals...)
+	_, err := d.db.Exec(`UPDATE doctor SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), doctorID)...)
 	return err
 }
 
@@ -1192,14 +1178,12 @@ func (d *DataService) UpdateDoctorAttributes(doctorID int64, attributes map[stri
 		return nil
 	}
 	var toDelete []interface{}
-	var replacements []string
-	var values []interface{}
+	inserts := dbutil.MySQLMultiInsert(len(attributes))
 	for name, value := range attributes {
 		if value == "" {
 			toDelete = append(toDelete, name)
 		} else {
-			replacements = append(replacements, "(?,?,?)")
-			values = append(values, doctorID, name, value)
+			inserts.Append(doctorID, name, value)
 		}
 	}
 	tx, err := d.db.Begin()
@@ -1214,8 +1198,8 @@ func (d *DataService) UpdateDoctorAttributes(doctorID int64, attributes map[stri
 			return err
 		}
 	}
-	if len(replacements) != 0 {
-		_, err := tx.Exec(`REPLACE INTO doctor_attribute (doctor_id, name, value) VALUES `+strings.Join(replacements, ","), values...)
+	if !inserts.IsEmpty() {
+		_, err := tx.Exec(`REPLACE INTO doctor_attribute (doctor_id, name, value) VALUES `+inserts.Query(), inserts.Values()...)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -1232,19 +1216,17 @@ func (d *DataService) addMedicalLicenses(db db, licenses []*common.MedicalLicens
 	if len(licenses) == 0 {
 		return nil
 	}
-	replacements := make([]string, len(licenses))
-	values := make([]interface{}, 0, 4*len(licenses))
-	for i, l := range licenses {
+	inserts := dbutil.MySQLMultiInsert(len(licenses))
+	for _, l := range licenses {
 		if l.State == "" || l.Number == "" || l.Status == "" {
 			return errors.New("api: license is missing state, number, or status")
 		}
-		replacements[i] = "(?,?,?,?,?)"
-		values = append(values, l.DoctorID, l.State, l.Number, l.Status.String(), l.Expiration)
+		inserts.Append(l.DoctorID, l.State, l.Number, l.Status.String(), l.Expiration)
 	}
 	_, err := db.Exec(`
 		REPLACE INTO doctor_medical_license
 			(doctor_id, state, license_number, status, expiration_date)
-		VALUES `+strings.Join(replacements, ","), values...)
+		VALUES `+inserts.Query(), inserts.Values()...)
 	return err
 }
 
