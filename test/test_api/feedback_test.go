@@ -41,4 +41,18 @@ func TestFeedback(t *testing.T) {
 	found, err = testData.DataAPI.PatientFeedbackRecorded(patientID, "two")
 	test.OK(t, err)
 	test.Equals(t, true, found)
+
+	feedback, err := testData.DataAPI.PatientFeedback("one")
+	test.OK(t, err)
+	test.Equals(t, 1, len(feedback))
+	test.Equals(t, patientID, feedback[0].PatientID)
+	test.Equals(t, 1, feedback[0].Rating)
+	test.Equals(t, cmt, feedback[0].Comment)
+
+	feedback, err = testData.DataAPI.PatientFeedback("two")
+	test.OK(t, err)
+	test.Equals(t, 1, len(feedback))
+	test.Equals(t, patientID, feedback[0].PatientID)
+	test.Equals(t, 5, feedback[0].Rating)
+	test.Equals(t, "", feedback[0].Comment)
 }

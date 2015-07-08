@@ -11,6 +11,7 @@ const (
 	CaseMessagesUnreadCountURLPath       = "/v1/case/messages/unread_count"
 	CaseMessagesURLPath                  = "/v1/case/messages"
 	CaseNotesURLPath                     = "/v1/case/notes"
+	CasePatientFeedbackURLPath           = "/v1/case/patient_feedback"
 	NotifyMeURLPath                      = "/v1/notifyme"
 	CheckEligibilityURLPath              = "/v1/check_eligibility"
 	CareProviderSelectionURLPath         = "/v1/care_provider_selection"
