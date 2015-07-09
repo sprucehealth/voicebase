@@ -102,6 +102,7 @@ func IntakeLayoutForVisit(
 		PatientVisitID:          visit.ID.Int64(),
 		CanAbandon:              !visit.IsFollowup,
 		Status:                  visit.Status,
+		IsSubmitted:             common.PatientVisitSubmitted(visit.Status),
 		ClientLayout:            visitLayout,
 		DoctorID:                doctorID,
 		RequireCreditCardIfFree: false,

@@ -89,6 +89,21 @@ func NonOpenPatientVisitStates() []string {
 	return append(TreatedPatientVisitStates(), SubmittedPatientVisitStates()...)
 }
 
+// PatientVisitSubmitted indicates whether the status represents a submitted or unsubmitted
+// visit. If the status is not understood, it treats the visit to be in the submitted
+// state as its the safest thing to do given the visit is treated as immutable in the submitted state.
+func PatientVisitSubmitted(status string) bool {
+	switch status {
+	case PVStatusSubmitted, PVStatusCharged, PVStatusRouted, PVStatusReviewing, PVStatusTriaged, PVStatusTreated:
+		return true
+	case PVStatusPending, PVStatusOpen, PVStatusPreSubmissionTriage, PVStatusDeleted:
+		return false
+	}
+
+	return true
+
+}
+
 type ByPatientVisitCreationDate []*PatientVisit
 
 func (c ByPatientVisitCreationDate) Len() int      { return len(c) }

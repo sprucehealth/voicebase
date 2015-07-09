@@ -1789,6 +1789,7 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 
 	jsonData, err := json.Marshal(items[0])
 	test.OK(t, err)
+
 	var card phContinueVisit
 	test.OK(t, json.Unmarshal(jsonData, &card))
 	testContinueVisitCard(t, &card, caseName1, 1, "", "")
@@ -2123,7 +2124,7 @@ func testContinueVisitCard(t *testing.T, card *phContinueVisit, caseName string,
 	} else {
 		test.Equals(t, doctorThumbnailURL, card.IconURL)
 	}
-	test.Equals(t, app_url.ContinueVisitAction(patientVisitID).String(), card.ActionURL.String())
+	test.Equals(t, app_url.ContinueVisitAction(patientVisitID, false).String(), card.ActionURL.String())
 }
 
 func testMeetCareTeamSection(t *testing.T, caseName string, sectionViewMap map[string]interface{}) {
