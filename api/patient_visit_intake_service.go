@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
@@ -68,11 +69,9 @@ func (d *DataService) PreviousPatientAnswersForQuestions(
 		return nil, nil
 	}
 
-	questionIDs := make([]int64, len(questionIDToAnswersMap))
-	i := 0
+	questionIDs := make([]int64, 0, len(questionIDToAnswersMap))
 	for questionID := range questionIDToAnswersMap {
-		questionIDs[i] = questionID
-		i++
+		questionIDs = append(questionIDs, questionID)
 	}
 
 	// create a mapping of questionID to questionTag to return the answers in a map
@@ -126,15 +125,14 @@ func (d *DataService) StoreAnswersForIntakes(intakes []IntakeInfo) error {
 }
 
 func (d *DataService) StorePhotoSectionsForQuestion(
-	questionID,
-	patientID,
-	patientVisitID int64,
+	questionID, patientID, patientVisitID int64,
 	sessionID string,
 	sessionCounter uint,
-	photoSections []*common.PhotoIntakeSection) error {
+	photoSections []*common.PhotoIntakeSection,
+) error {
 	tx, err := d.db.Begin()
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	incomingClock := &clientClock{
@@ -142,16 +140,17 @@ func (d *DataService) StorePhotoSectionsForQuestion(
 		sessionCounter: sessionCounter,
 	}
 
-	clientClockStatement, err := tx.Prepare(`SELECT client_clock
+	clientClockStatement, err := tx.Prepare(`
+		SELECT client_clock
 		FROM photo_intake_section
 		WHERE question_id = ?
-		AND patient_visit_id = ?
-		AND patient_id = ?
+			AND patient_visit_id = ?
+			AND patient_id = ?
 		LIMIT 1
 		FOR UPDATE`)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 	defer clientClockStatement.Close()
 
@@ -161,10 +160,9 @@ func (d *DataService) StorePhotoSectionsForQuestion(
 		questionID, patientVisitID, patientID)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	} else if !accept {
-		tx.Rollback()
-		return nil
+		return errors.Trace(tx.Rollback())
 	}
 
 	// delete any pre-existing photo intake sections
@@ -176,27 +174,26 @@ func (d *DataService) StorePhotoSectionsForQuestion(
 		questionID, patientID, patientVisitID)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
 	photoIntakeSectionStatement, err := tx.Prepare(`
-			INSERT INTO photo_intake_section
+		INSERT INTO photo_intake_section
 			(section_name, question_id, patient_id, patient_visit_id, client_clock)
-			VALUES (?,?,?,?,?)`)
+		VALUES (?,?,?,?,?)`)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 	defer photoIntakeSectionStatement.Close()
 
 	photoIntakeSlotStatement, err := tx.Prepare(`
 		INSERT INTO photo_intake_slot
-		(photo_slot_id, photo_id, photo_slot_name, photo_intake_section_id)
-		VALUES (?,?,?,?)
-		`)
+			(photo_slot_id, photo_id, photo_slot_name, photo_intake_section_id)
+		VALUES (?,?,?,?)`)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 	defer photoIntakeSlotStatement.Close()
 
@@ -206,13 +203,13 @@ func (d *DataService) StorePhotoSectionsForQuestion(
 			photoSection.Name, questionID, patientID, patientVisitID, incomingClock.String())
 		if err != nil {
 			tx.Rollback()
-			return err
+			return errors.Trace(err)
 		}
 
 		photoSectionID, err := res.LastInsertId()
 		if err != nil {
 			tx.Rollback()
-			return err
+			return errors.Trace(err)
 		}
 
 		for _, photoSlot := range photoSection.Photos {
@@ -220,19 +217,19 @@ func (d *DataService) StorePhotoSectionsForQuestion(
 			if err := d.claimMedia(tx, photoSlot.PhotoID,
 				common.ClaimerTypePhotoIntakeSection, photoSectionID); err != nil {
 				tx.Rollback()
-				return err
+				return errors.Trace(err)
 			}
 
 			_, err = photoIntakeSlotStatement.Exec(
 				photoSlot.SlotID, photoSlot.PhotoID, photoSlot.Name, photoSectionID)
 			if err != nil {
 				tx.Rollback()
-				return err
+				return errors.Trace(err)
 			}
 		}
 	}
 
-	return tx.Commit()
+	return errors.Trace(tx.Commit())
 }
 
 func (d *DataService) PatientPhotoSectionsForQuestionIDs(
@@ -315,7 +312,7 @@ func (d *DataService) PatientPhotoSectionsForQuestionIDs(
 		return nil, err
 	}
 
-	return photoSectionsByQuestion, rows.Err()
+	return photoSectionsByQuestion, nil
 }
 
 func (d *DataService) storeAnswers(tx *sql.Tx, infos []IntakeInfo) error {
@@ -464,14 +461,13 @@ func acceptIncomingWrite(
 	var existingClockValue clientClock
 	err := stmt.QueryRow(params...).Scan(&existingClockValue)
 	if err != sql.ErrNoRows && err != nil {
-		return false, err
+		return false, errors.Trace(err)
 	}
 
 	return existingClockValue.lessThan(incomingClockValue), nil
 }
 
 func insertAnswer(stmt *sql.Stmt, info IntakeInfo, answerToStore *common.AnswerIntake, clientClock string) (int64, error) {
-
 	vals := []interface{}{
 		info.Role().Value,
 		info.Context().Value,
