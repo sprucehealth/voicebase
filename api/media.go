@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/errors"
 )
 
 func (d *DataService) AddMedia(uploaderID int64, url, mimetype string) (int64, error) {
@@ -62,12 +63,12 @@ func (d *DataService) claimMedia(db db, mediaID int64, claimerType string, claim
 		INSERT INTO media_claim (media_id, claimer_type, claimer_id)
 		VALUES (?, ?, ?)`,
 		mediaID, claimerType, claimerID)
-	return err
+	return errors.Trace(err)
 }
 
 func (d *DataService) unclaimMedia(db db, mediaID int64, claimerType string, claimerID int64) error {
 	_, err := db.Exec(`
 		DELETE FROM media_claim WHERE media_id = ? AND claimer_type = ? AND claimer_id = ?`,
 		mediaID, claimerType, claimerID)
-	return err
+	return errors.Trace(err)
 }
