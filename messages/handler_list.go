@@ -140,6 +140,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		visits, err := h.dataAPI.GetVisitsForCase(cas.ID.Int64(), nil)
 		if err != nil {
 			errs <- err
+			return
 		}
 
 		visitMap = make(map[int64]*common.PatientVisit, len(visits))

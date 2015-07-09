@@ -404,6 +404,7 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 	case common.PVStatusOpen:
 	default:
 		response.SubmittedDate = &patientVisit.SubmittedDate
+		response.SubmittedTimestamp = patientVisit.SubmittedDate.Unix()
 	}
 
 	httputil.JSONResponse(w, http.StatusOK, response)
