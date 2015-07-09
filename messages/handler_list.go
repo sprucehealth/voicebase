@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
@@ -103,15 +104,57 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case api.RoleCC:
 		lcmOpts |= api.LCMOIncludePrivate | api.LCMOIncludeReadReceipts
 	}
-	msgs, err := h.dataAPI.ListCaseMessages(cas.ID.Int64(), lcmOpts)
-	if err != nil {
+
+	var msgs []*common.CaseMessage
+	var participants map[int64]*common.CaseMessageParticipant
+	errs := make(chan error, 3)
+	var wg sync.WaitGroup
+
+	// wait for 3 requests in parallel to finish before proceeding
+	wg.Add(3)
+
+	// get case messages
+	go func() {
+		defer wg.Done()
+		var err error
+		msgs, err = h.dataAPI.ListCaseMessages(cas.ID.Int64(), lcmOpts)
+		if err != nil {
+			errs <- err
+		}
+	}()
+
+	// get case message participants
+	go func() {
+		defer wg.Done()
+		var err error
+		participants, err = h.dataAPI.CaseMessageParticipants(cas.ID.Int64(), true)
+		if err != nil {
+			errs <- err
+		}
+	}()
+
+	// get all visits associated with the case
+	var visitMap map[int64]*common.PatientVisit
+	go func() {
+		defer wg.Done()
+		visits, err := h.dataAPI.GetVisitsForCase(cas.ID.Int64(), nil)
+		if err != nil {
+			errs <- err
+		}
+
+		visitMap = make(map[int64]*common.PatientVisit, len(visits))
+		for _, visit := range visits {
+			visitMap[visit.ID.Int64()] = visit
+		}
+	}()
+
+	wg.Wait()
+	select {
+	case err := <-errs:
 		apiservice.WriteError(err, w, r)
 		return
-	}
-	participants, err := h.dataAPI.CaseMessageParticipants(cas.ID.Int64(), true)
-	if err != nil {
-		apiservice.WriteError(err, w, r)
-		return
+	default:
+		// continue since we have no errors
 	}
 
 	if ctxt.Role == api.RoleCC {
@@ -183,11 +226,25 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			case common.AttachmentTypeResourceGuide:
 				a.URL = app_url.ViewResourceGuideAction(att.ItemID).String()
 			case common.AttachmentTypeFollowupVisit:
-				a.URL = app_url.ContinueVisitAction(att.ItemID).String()
+				isSubmitted := true
+				pv, ok := visitMap[att.ItemID]
+				if !ok {
+					golog.Errorf("Visit not found for case %d. Treating visit as being submitted", cas.ID.Int64())
+				} else {
+					isSubmitted = common.PatientVisitSubmitted(pv.Status)
+				}
+				a.URL = app_url.ContinueVisitAction(att.ItemID, isSubmitted).String()
 			case common.AttachmentTypeTreatmentPlan:
 				a.URL = app_url.ViewTreatmentPlanAction(att.ItemID).String()
 			case common.AttachmentTypeVisit:
-				a.URL = app_url.ContinueVisitAction(att.ItemID).String()
+				isSubmitted := true
+				pv, ok := visitMap[att.ItemID]
+				if !ok {
+					golog.Errorf("Visit not found for case %d. Treating visit as being submitted", cas.ID.Int64())
+				} else {
+					isSubmitted = common.PatientVisitSubmitted(pv.Status)
+				}
+				a.URL = app_url.ContinueVisitAction(att.ItemID, isSubmitted).String()
 			case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
 				if ok, err := h.dataAPI.MediaHasClaim(att.ItemID, common.ClaimerTypeConversationMessage, msg.ID); err != nil {
 					apiservice.WriteError(err, w, r)
@@ -199,6 +256,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 
 				a.MimeType = att.MimeType
+				var err error
 				a.URL, err = h.mediaStore.SignedURL(att.ItemID, h.expirationDuration)
 				if err != nil {
 					apiservice.WriteError(err, w, r)

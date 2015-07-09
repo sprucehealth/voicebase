@@ -64,6 +64,7 @@ type VisitIntakeInfo struct {
 	DoctorID                int64                                   `json:"care_provider_id,string,omitempty"`
 	CanAbandon              bool                                    `json:"can_abandon"`
 	Status                  string                                  `json:"status,omitempty"`
+	IsSubmitted             bool                                    `json:"is_submitted"`
 	RequireCreditCardIfFree bool                                    `json:"require_credit_card_if_free"`
 	ClientLayout            *info_intake.InfoIntakeLayout           `json:"health_condition,omitempty"`
 	SKUType                 *string                                 `json:"cost_item_type"`

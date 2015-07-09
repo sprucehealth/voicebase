@@ -223,7 +223,7 @@ func (v *incompleteVisitNotification) makeCaseNotificationView(data *caseData) (
 		Title:     fmt.Sprintf("Continue Your %s Visit", data.Case.Name),
 		Subtitle:  continueVisitMessage,
 		ID:        data.Notification.ID,
-		ActionURL: app_url.ContinueVisitAction(v.PatientVisitID),
+		ActionURL: app_url.ContinueVisitAction(v.PatientVisitID, false),
 	}
 	return nView, nView.Validate()
 }
@@ -243,7 +243,7 @@ func (v *incompleteVisitNotification) makeHomeCardView(dataAPI api.DataAPI, data
 		Title:       fmt.Sprintf("Continue Your %s Visit", data.Case.Name),
 		Subtitle:    subtitle,
 		IconURL:     iconURL,
-		ActionURL:   app_url.ContinueVisitAction(v.PatientVisitID),
+		ActionURL:   app_url.ContinueVisitAction(v.PatientVisitID, false),
 		Description: continueVisitMessage,
 		ButtonTitle: "Continue Visit",
 	}
@@ -278,7 +278,7 @@ func (v *incompleteFollowupVisitNotification) makeCaseNotificationView(data *cas
 		ID:            data.Notification.ID,
 		Title:         "Complete your follow-up visit",
 		IconURL:       app_url.IconCaseSmall,
-		ActionURL:     app_url.ContinueVisitAction(v.PatientVisitID),
+		ActionURL:     app_url.ContinueVisitAction(v.PatientVisitID, false),
 		CreationTime:  data.Notification.CreationDate,
 		CreationEpoch: data.Notification.CreationDate.Unix(),
 	}
@@ -318,7 +318,7 @@ func (v *startFollowupVisitNotification) makeCaseNotificationView(data *caseData
 		ID:            data.Notification.ID,
 		Title:         "Start your follow-up visit",
 		IconURL:       app_url.IconCaseSmall,
-		ActionURL:     app_url.ContinueVisitAction(v.PatientVisitID),
+		ActionURL:     app_url.ContinueVisitAction(v.PatientVisitID, false),
 		CreationTime:  data.Notification.CreationDate,
 		CreationEpoch: data.Notification.CreationDate.Unix(),
 	}

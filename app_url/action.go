@@ -1,6 +1,7 @@
 package app_url
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -16,7 +17,6 @@ type SpruceAction struct {
 
 func ParseSpruceAction(s string) (SpruceAction, error) {
 	sa := SpruceAction{}
-
 	ur, err := url.Parse(s)
 	if err != nil {
 		return sa, fmt.Errorf("app_url: unable to parse URL for spruce action '%s': %s", s, err)
@@ -26,7 +26,8 @@ func ParseSpruceAction(s string) (SpruceAction, error) {
 		return sa, fmt.Errorf("app_url: cannot parse path for spruce action '%s'", s)
 	}
 	sa.name = pathComponents[2]
-	sa.params, err = url.ParseQuery(ur.RawQuery)
+	sa.params = ur.Query()
+
 	return sa, err
 }
 
@@ -84,7 +85,22 @@ func (s *SpruceAction) UnmarshalJSON(data []byte) error {
 	if len(data) < 3 {
 		return nil
 	}
-	return s.UnmarshalText(data[1 : len(data)-1])
+
+	// first unmarshal the data into a string to convert any unicode
+	// escaped characters into the actual characters.
+	var str string
+	if err := json.Unmarshal(data, &str); err != nil {
+		return err
+	}
+
+	sa, err := ParseSpruceAction(str)
+	if err != nil {
+		golog.Errorf(err.Error())
+		return nil
+	}
+
+	*s = sa
+	return nil
 }
 
 func ClaimPatientCaseAction(patientCaseID int64) *SpruceAction {
@@ -215,8 +231,9 @@ func ViewPatientVisitAction(patientVisitID int64) *SpruceAction {
 	}
 }
 
-func ContinueVisitAction(patientVisitID int64) *SpruceAction {
+func ContinueVisitAction(patientVisitID int64, isSubmitted bool) *SpruceAction {
 	params := url.Values{}
+	params.Set("is_submitted", strconv.FormatBool(isSubmitted))
 	params.Set("patient_visit_id", strconv.FormatInt(patientVisitID, 10))
 	return &SpruceAction{
 		name:   "continue_visit",
