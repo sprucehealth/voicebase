@@ -19,8 +19,13 @@ const (
 	TONonHiddenOnly TaggingOption = 1 << iota
 	TOCommonOnly
 	TOPastTrigger
+	TOHidden
 	TONone TaggingOption = 0
 )
+
+func (to TaggingOption) Has(o TaggingOption) bool {
+	return (to & o) != 0
+}
 
 type Client interface {
 	CaseAssociations(ms []*model.TagMembership, start, end int64) ([]*response.TagAssociation, error)
@@ -125,7 +130,7 @@ func (tc *client) TagsFromText(conditionValues []string, ops TaggingOption) ([]*
 		q += ` WHERE (` + strings.Join(conditionFields, ` OR `) + `)`
 	}
 	interfaceValues := dbutil.AppendStringsToInterfaceSlice(nil, conditionValues)
-	if ops&TOCommonOnly != 0 {
+	if ops.Has(TOCommonOnly) {
 		if len(conditionValues) > 0 {
 			q += ` AND `
 		} else {
@@ -180,7 +185,7 @@ func (tc *client) TagsForCases(ids []int64, ops TaggingOption) (map[int64][]*res
 		SELECT tag.id, tag.tag_text, tag.common, tag_membership.case_id FROM tag_membership 
 			JOIN tag ON tag_membership.tag_id = tag.id 
 			WHERE tag_membership.case_id IN (` + dbutil.MySQLArgs(len(ids)) + `)`
-	if ops&TONonHiddenOnly != 0 {
+	if ops.Has(TONonHiddenOnly) {
 		q += ` AND tag_membership.hidden = false`
 	}
 	rows, err := tc.db.Query(q, dbutil.AppendInt64sToInterfaceSlice(nil, ids)...)
@@ -312,7 +317,7 @@ func (tc *client) TagMembershipQuery(qs string, ops TaggingOption) ([]*model.Tag
 		return nil, errors.Trace(err)
 	}
 
-	if ops&TOPastTrigger != 0 {
+	if ops.Has(TOPastTrigger) {
 		if !strings.Contains(sql, `WHERE`) {
 			sql += ` WHERE `
 		} else if qs != "" {

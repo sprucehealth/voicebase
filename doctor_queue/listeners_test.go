@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/notify"
+	"github.com/sprucehealth/backend/tagging/test"
 )
 
 type mockDataAPI_listener struct {
@@ -111,7 +112,8 @@ func testCaseAssignment(t *testing.T, role string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls)
+	taggingClient := &test.TestTaggingClient{}
+	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls, taggingClient)
 
 	ma := &common.Doctor{
 		ID:               encoding.NewObjectID(4),
@@ -219,7 +221,8 @@ func TestCaseAssignment_Multiple(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls)
+	taggingClient := &test.TestTaggingClient{}
+	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls, taggingClient)
 
 	// assign the case 2 times from the cc to the doctor
 	for i := 0; i < 2; i++ {
@@ -294,7 +297,8 @@ func TestCaseAssignment_Doctor_DeleteOnTP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls)
+	taggingClient := &test.TestTaggingClient{}
+	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls, taggingClient)
 
 	dispatcher.Publish(&doctor_treatment_plan.TreatmentPlanSubmittedEvent{
 		VisitID:       10,
@@ -338,7 +342,8 @@ func TestCaseAssignment_Doctor_PersistsInInbox(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls)
+	taggingClient := &test.TestTaggingClient{}
+	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls, taggingClient)
 
 	dispatcher.Publish(&messages.CaseAssignEvent{
 		Message: &common.CaseMessage{
@@ -433,7 +438,8 @@ func testMessage_PatientToCareTeam(t *testing.T, assignments []*common.CareProvi
 	if err != nil {
 		t.Fatal(err)
 	}
-	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls)
+	taggingClient := &test.TestTaggingClient{}
+	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls, taggingClient)
 
 	dispatcher.Publish(&messages.PostEvent{
 		Message: &common.CaseMessage{
@@ -503,7 +509,8 @@ func TestMessage_PatientToCareTeam_Multiple(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls)
+	taggingClient := &test.TestTaggingClient{}
+	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls, taggingClient)
 
 	for i := 0; i < 2; i++ {
 		dispatcher.Publish(&messages.PostEvent{
@@ -564,7 +571,8 @@ func testMessage_ProviderToPatient(t *testing.T, role string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls)
+	taggingClient := &test.TestTaggingClient{}
+	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls, taggingClient)
 
 	dispatcher.Publish(&messages.PostEvent{
 		Message: &common.CaseMessage{

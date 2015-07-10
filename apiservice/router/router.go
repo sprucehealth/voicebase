@@ -101,7 +101,7 @@ func New(conf *Config) http.Handler {
 	taggingClient := tagging.NewTaggingClient(conf.ApplicationDB)
 
 	// Initialize listneners
-	doctor_queue.InitListeners(conf.DataAPI, conf.AnalyticsLogger, conf.Dispatcher, conf.NotificationManager, conf.MetricsRegistry.Scope("doctor_queue"), conf.JBCQMinutesThreshold, conf.CustomerSupportEmail, conf.Cfg)
+	doctor_queue.InitListeners(conf.DataAPI, conf.AnalyticsLogger, conf.Dispatcher, conf.NotificationManager, conf.MetricsRegistry.Scope("doctor_queue"), conf.JBCQMinutesThreshold, conf.CustomerSupportEmail, conf.Cfg, taggingClient)
 	doctor_treatment_plan.InitListeners(conf.DataAPI, conf.Dispatcher)
 	notify.InitListeners(conf.DataAPI, conf.Dispatcher)
 	patient_case.InitListeners(conf.DataAPI, conf.Dispatcher, conf.NotificationManager)
@@ -232,7 +232,7 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.DoctorTPScheduledMessageURLPath, doctor_treatment_plan.NewScheduledMessageHandler(conf.DataAPI, conf.MediaStore, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.DoctorPharmacySearchURLPath, doctor.NewPharmacySearchHandler(conf.DataAPI, conf.ERxAPI))
 	authenticationRequired(conf, apipaths.DoctorVisitReviewURLPath, patient_file.NewDoctorPatientVisitReviewHandler(conf.DataAPI, conf.Dispatcher, conf.MediaStore, conf.AuthTokenExpiration))
-	authenticationRequired(conf, apipaths.DoctorVisitDiagnosisURLPath, patient_visit.NewDiagnosePatientHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher))
+	authenticationRequired(conf, apipaths.DoctorVisitDiagnosisURLPath, patient_visit.NewDiagnosePatientHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher, taggingClient))
 	authenticationRequired(conf, apipaths.DoctorVisitDiagnosisListURLPath, diaghandlers.NewDiagnosisListHandler(conf.DataAPI, conf.DiagnosisAPI, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.DoctorPatientCasesListURLPath, patient_file.NewPatientCaseListHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.DoctorDiagnosisURLPath, diaghandlers.NewDiagnosisHandler(conf.DataAPI, conf.DiagnosisAPI))

@@ -6,7 +6,6 @@ import (
 
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/tagging"
-	"github.com/sprucehealth/backend/tagging/model"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -25,12 +24,18 @@ const (
 	insuranceCoverageQuestionTag = "q_insurance_coverage"
 	insuredPatientEvent          = "insured_patient"
 	uninsuredPatientEvent        = "uninsured_patient"
+	InsuredTag                   = "Insured"
+	UninsuredTag                 = "Uninsured"
+	MedicaidTag                  = "Medicaid"
 )
 
 var (
 	// The answer tags for insurance question changed post buzz, so looking for the patient's answer
 	// to be one of two possible tags to indicate that the patient doens't have insurance.
 	noInsuranceAnswerTags = []string{"q_insurance_coverage_i_dont_have_insurance", "a_no_insurance"}
+
+	// The answer tag associated with the medicade answer
+	medicadeAnswerTag = "q_insurance_coverage_medicaid"
 )
 
 type medAffordabilityContext struct {
@@ -169,20 +174,22 @@ func processPatientAnswers(dataAPI api.DataAPI, apiDomain string, ev *patient.Vi
 
 			// Auto tag our case based on the instance question answer
 			var addTag, removeTag string
-			insuranceTagMembership := &model.TagMembership{CaseID: &ev.PatientCaseID, Hidden: false}
 			if isPatientInsured(question, answers) {
-				removeTag = "Uninsured"
-				addTag = "Insured"
+				removeTag = UninsuredTag
+				addTag = InsuredTag
+				if isMedicaid(question, answers) {
+					if err = tagging.ApplyCaseTag(taggingClient, MedicaidTag, ev.PatientCaseID, nil, tagging.TONone); err != nil {
+						golog.Errorf("CaseID: %d - %v", ev.PatientCaseID, err)
+					}
+				}
 			} else {
-				removeTag = "Insured"
-				addTag = "Uninsured"
+				removeTag = InsuredTag
+				addTag = UninsuredTag
 			}
-			err := taggingClient.DeleteTagCaseAssociation(removeTag, ev.PatientCaseID)
-			if err != nil {
+			if err := taggingClient.DeleteTagCaseAssociation(removeTag, ev.PatientCaseID); err != nil {
 				golog.Errorf("CaseID: %d - %v", ev.PatientCaseID, err)
 			}
-			_, err = taggingClient.InsertTagAssociation(&model.Tag{Text: addTag, Common: true}, insuranceTagMembership)
-			if err != nil {
+			if err = tagging.ApplyCaseTag(taggingClient, addTag, ev.PatientCaseID, nil, tagging.TONone); err != nil {
 				golog.Errorf("CaseID: %d - %v", ev.PatientCaseID, err)
 			}
 		}
@@ -270,27 +277,34 @@ func scheduleMessageBasedOnInsuranceAnswer(
 }
 
 func isPatientInsured(question *info_intake.Question, patientAnswers []common.Answer) bool {
-	var noInsurancePotentialAnswerID int64
-	// first determine the potentialAnswerId of the noInsurance choice
-	for _, potentialAnswer := range question.PotentialAnswers {
+	return !isAnswerTagSelected(question, patientAnswers, noInsuranceAnswerTags)
+}
 
-		for _, answerTag := range noInsuranceAnswerTags {
+func isMedicaid(question *info_intake.Question, patientAnswers []common.Answer) bool {
+	return isAnswerTagSelected(question, patientAnswers, []string{medicadeAnswerTag})
+}
+
+func isAnswerTagSelected(question *info_intake.Question, patientAnswers []common.Answer, desiredAnswerTags []string) bool {
+	var answerID int64
+	for _, potentialAnswer := range question.PotentialAnswers {
+		for _, answerTag := range desiredAnswerTags {
 			if potentialAnswer.AnswerTag == answerTag {
-				noInsurancePotentialAnswerID = potentialAnswer.AnswerID
+				answerID = potentialAnswer.AnswerID
 				break
 			}
 		}
 	}
 
-	// now determine if the patient selected it
-	for _, answer := range patientAnswers {
-		a := answer.(*common.AnswerIntake)
-		if a.PotentialAnswerID.Int64() == noInsurancePotentialAnswerID {
-			return false
+	if answerID != 0 {
+		for _, answer := range patientAnswers {
+			a := answer.(*common.AnswerIntake)
+			if a.PotentialAnswerID.Int64() == answerID {
+				return true
+			}
 		}
 	}
 
-	return true
+	return false
 }
 
 func determineAlert(visitID int64, question *info_intake.Question, patientAnswers []common.Answer) *common.Alert {
