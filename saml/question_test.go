@@ -86,3 +86,60 @@ func TestQuestionMultiTriage(t *testing.T) {
 		t.Fatalf("Expected screen type '%s' got '%s'", e, s2[0].Type)
 	}
 }
+
+func TestPhotoQuestion_Tips(t *testing.T) {
+	r := strings.NewReader(`
+		[patient section "Section"]
+
+		[MD section "Dr Dr Dr Dr"]
+
+		Main) Face [photo]
+		[photo slot "Face Front"]
+			[tip "Center your face in the dotted lines."]
+			[photo missing error message "A photo of the front of your face is required to continue."]
+			[initial camera direction "front"]
+		[photo slot "Side"]
+			[tip (inline) "Turn your face to the side."]
+			[tip subtext (inline) "Just move your face, not your phone."]
+			[tip style (inline) "point_left"]
+		[photo slot "Other Side"]
+			[tip (inline) "Now turn to the other side."]
+			[tip subtext (inline) "Just move your face, not your phone."]
+			[tip style (inline) "point_right"]
+	`)
+
+	intake, err := Parse(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	screens := intake.Sections[0].Subsections[0].Screens
+	if len(screens) != 1 {
+		t.Fatalf("Expected 1 screens, got %d. Should be 1 for the question and 2 per triage screen.", len(screens))
+	}
+
+	if len(screens[0].Questions) != 1 {
+		t.Fatalf("Expected 1 question got %d", len(screens[0].Questions))
+	} else if screens[0].Questions[0].Details.Type != "q_type_photo_section" {
+		t.Fatalf("Expected q_type_photo_section got %s", screens[0].Questions[0].Details.Type)
+	} else if len(screens[0].Questions[0].Details.PhotoSlots) != 3 {
+		t.Fatalf("Expected 3 slots got %d", len(screens[0].Questions[0].Details.PhotoSlots))
+	}
+
+	// expect inline tip to be specified
+	slots := screens[0].Questions[0].Details.PhotoSlots
+	if slots[0].ClientData.Tip != "Center your face in the dotted lines." {
+		t.Fatal("Expected tip to exist but didnt")
+	}
+
+	if slots[1].ClientData.Tips["inline"] == nil {
+		t.Fatal("Expected inline tip to exist but didnt")
+	} else if slots[1].ClientData.Tips["inline"].Tip != "Turn your face to the side." {
+		t.Fatal("Expected tip text for inline to exist but didnt")
+	} else if slots[1].ClientData.Tips["inline"].TipSubtext != "Just move your face, not your phone." {
+		t.Fatal("Expected tip subtext for inline to exist but didnt")
+	} else if slots[1].ClientData.Tips["inline"].TipStyle != "point_left" {
+		t.Fatal("Expected tip style for inline to exist but didnt")
+	}
+
+}

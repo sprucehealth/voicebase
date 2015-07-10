@@ -128,8 +128,8 @@ func (p *parser) checkForBlock(name string) bool {
 			if line[len(line)-1] != ']' {
 				p.err("Missing ] at end of line '%s'", line)
 			}
-			n, _ := p.parseSingleDirective(line)
-			if n == name {
+			d := p.parseSingleDirective(line)
+			if d.name == name {
 				return true
 			}
 		}
@@ -162,9 +162,9 @@ func (p *parser) readBlock(endMarkers []string, consumeEnd bool) (interface{}, b
 
 			}
 
-			name, value := p.parseSingleDirective(line)
+			dir := p.parseSingleDirective(line)
 			for _, m := range endMarkers {
-				if m == name {
+				if m == dir.name {
 					if !consumeEnd {
 						p.storedLine = line
 					}
@@ -172,12 +172,12 @@ func (p *parser) readBlock(endMarkers []string, consumeEnd bool) (interface{}, b
 				}
 			}
 
-			bp := blockParsers[name]
+			bp := blockParsers[dir.name]
 			if bp == nil {
 				p.err("Unknown top level directive '%s'", line)
 			}
-			p.trace("PARSING " + name)
-			return bp(p, value), false
+			p.trace("PARSING " + dir.name)
+			return bp(p, dir.value), false
 		}
 
 		p.trace("PARSING question")
@@ -236,23 +236,58 @@ func (p *parser) readLine() (string, bool) {
 	return "", true
 }
 
+// directive represents any directive specified in the saml
+type directive struct {
+	name     string
+	modifier string
+	value    string
+}
+
 // parseDirectives parses out any [directives] from the line and returns
 // the line with them removed
-func (p *parser) parseDirectives(line string) (map[string]string, string) {
-	directives := make(map[string]string)
+func (p *parser) parseDirectives(line string) (map[string]*directive, string) {
+	directives := make(map[string]*directive)
 	line = reDirective.ReplaceAllStringFunc(line, func(dir string) string {
 		dir = dir[1 : len(dir)-1]
 		dir = directiveReplacer.Replace(dir)
 
+		var name, modifier, value string
 		if ix := strings.IndexRune(dir, '"'); ix > 0 {
-			name := strings.ToLower(strings.TrimSpace(dir[:ix]))
-			value, err := strconv.Unquote(strings.TrimSpace(dir[ix:]))
+
+			// capture any modifier if present
+			var modifierIdx int
+			if modifierIdx = strings.IndexRune(dir[:ix], '('); modifierIdx > 0 {
+				// ensure that modifier is closed before the value begins
+				closeModifierIdx := strings.IndexRune(dir[modifierIdx:ix], ')')
+				if closeModifierIdx == -1 {
+					p.err("Bad directive %s: modifier not closed", dir)
+				}
+
+				modifier = strings.ToLower(strings.TrimSpace(dir[modifierIdx+1 : modifierIdx+closeModifierIdx]))
+			}
+
+			if modifierIdx > 0 {
+				name = strings.ToLower(strings.TrimSpace(dir[:modifierIdx]))
+			} else {
+				name = strings.ToLower(strings.TrimSpace(dir[:ix]))
+			}
+
+			var err error
+			value, err = strconv.Unquote(strings.TrimSpace(dir[ix:]))
 			if err != nil {
 				p.err("Bad directive %s: %s", dir, err.Error())
 			}
-			directives[name] = value
+			directives[name] = &directive{
+				name:     name,
+				value:    value,
+				modifier: modifier,
+			}
 		} else {
-			directives[strings.ToLower(dir)] = ""
+			name = strings.ToLower(dir)
+			directives[name] = &directive{
+				name:     name,
+				modifier: modifier,
+			}
 		}
 		return " "
 	})
@@ -261,13 +296,13 @@ func (p *parser) parseDirectives(line string) (map[string]string, string) {
 	return directives, line
 }
 
-func (p *parser) parseSingleDirective(line string) (string, string) {
+func (p *parser) parseSingleDirective(line string) *directive {
 	directives, _ := p.parseDirectives(line)
 	if len(directives) != 1 {
 		p.err("Expected a single directive")
 	}
-	for n, v := range directives {
-		return n, v
+	for _, v := range directives {
+		return v
 	}
 	panic("shouldn't get here")
 }

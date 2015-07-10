@@ -40,8 +40,8 @@ func screenTypeParser(p *parser, v, blockName string, scr *Screen) interface{} {
 		if line == "" {
 			break
 		}
-		name, value := p.parseSingleDirective(line)
-		if strings.HasPrefix(name, "triage ") {
+		dir := p.parseSingleDirective(line)
+		if strings.HasPrefix(dir.name, "triage ") {
 			if scr.ClientData == nil {
 				scr.ClientData = &ScreenClientData{}
 			}
@@ -49,9 +49,10 @@ func screenTypeParser(p *parser, v, blockName string, scr *Screen) interface{} {
 				scr.ClientData.Triage = &TriageParams{}
 			}
 		}
-		switch name {
+		value := dir.value
+		switch dir.name {
 		default:
-			p.err("Unknown screen directive '%s'", name)
+			p.err("Unknown screen directive '%s'", dir.name)
 		case "title":
 			scr.Title = value
 		case "type":

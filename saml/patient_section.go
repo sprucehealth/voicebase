@@ -14,12 +14,12 @@ func patientSectionParser(p *parser, v string) interface{} {
 		if line == "" {
 			break
 		}
-		name, value := p.parseSingleDirective(line)
-		switch name {
+		dir := p.parseSingleDirective(line)
+		switch dir.name {
 		default:
-			p.err("Unknown patient section directive '%s'", name)
+			p.err("Unknown patient section directive '%s'", dir.name)
 		case "transition message":
-			sec.TransitionToMessage = value
+			sec.TransitionToMessage = dir.value
 		}
 	}
 
