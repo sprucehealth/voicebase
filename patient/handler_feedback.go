@@ -4,16 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/cfg"
+	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/tagging"
-	"github.com/sprucehealth/backend/tagging/model"
 )
 
 const (
@@ -45,16 +46,16 @@ type feedbackSubmitRequest struct {
 	Comment *string `json:"comment,omitempty"`
 }
 
-// lowRatingTagThreshold is a Server configurable value for the threshold at which to tag the patient's case as LowRating
+// lowRatingTagThreshold is a Server configurable value for the threshold at which to tag the patient's case to be marked for follow up
 var lowRatingTagThreshold = &cfg.ValueDef{
 	Name:        "Patient.Feedback.LowRating.Tag.Threshold",
-	Description: "A value that represents the threshold for which if a patient feedback rating is equal to or below, the latest case for the patient will be tagged as LowRating.",
+	Description: "A value that represents the threshold for which if a patient feedback rating is equal to or below, the latest case for the patient will be marked for follow up.",
 	Type:        cfg.ValueTypeInt,
 	Default:     3,
 }
 
 const (
-	LowRatingTag string = "LowRating"
+	LowRatingTag = "LowRating"
 )
 
 type feedbackPromptResponse struct {
@@ -128,20 +129,17 @@ func (h *feedbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check to see if we need to tag the latest case for a low rating but don't block/fail the API on this.
-	go func() {
+	dispatch.RunAsync(func() {
 		lowRatingThreshold := h.cfgStore.Snapshot().Int(lowRatingTagThreshold.Name)
 		if req.Rating <= lowRatingThreshold {
-			if _, err = h.taggingClient.InsertTagAssociation(&model.Tag{Text: LowRatingTag}, &model.TagMembership{
-				CaseID: ptr.Int64(tp.PatientCaseID.Int64()),
-				// Place this tag in immediate trigger violation
-				TriggerTime: ptr.Time(time.Now()),
-				Hidden:      false,
-			}); err != nil {
+			if err := tagging.ApplyCaseTag(h.taggingClient, LowRatingTag, tp.PatientCaseID.Int64(), ptr.Time(time.Now()), tagging.TONone); err != nil {
 				golog.Errorf("%v", err)
 			}
 		}
-	}()
+		if err := tagging.ApplyCaseTag(h.taggingClient, "rating:"+strconv.FormatInt(int64(req.Rating), 10), tp.PatientCaseID.Int64(), nil, tagging.TONone); err != nil {
+			golog.Errorf("%v", err)
+		}
+	})
 
 	apiservice.WriteJSONSuccess(w)
 }

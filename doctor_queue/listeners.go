@@ -19,9 +19,11 @@ import (
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/tagging"
 )
 
 const (
+	UnsuitableTag         = "Unsuitable"
 	caseAssignmentMessage = "A Spruce patient case has been assigned to you."
 )
 
@@ -34,7 +36,7 @@ var PublicUnsuitableMessageEnabledDef = &cfg.ValueDef{
 
 func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispatcher *dispatch.Dispatcher,
 	notificationManager *notify.NotificationManager, statsRegistry metrics.Registry, jbcqMinutesThreshold int,
-	customerSupportEmail string, cfgStore cfg.Store) {
+	customerSupportEmail string, cfgStore cfg.Store, taggingClient tagging.Client) {
 	initJumpBallCaseQueueListeners(dataAPI, analyticsLogger, dispatcher, statsRegistry, jbcqMinutesThreshold)
 
 	routeSuccess := metrics.NewCounter()
@@ -171,6 +173,12 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			routeFailure.Inc(1)
 			return err
 		}
+
+		dispatch.RunAsync(func() {
+			if err := tagging.ApplyCaseTag(taggingClient, UnsuitableTag, ev.CaseID, nil, tagging.TONone); err != nil {
+				golog.Errorf("Unable to tag case as unsuitable: %s", err)
+			}
+		})
 
 		// mark the visit as complete once the doctor submits a diagnosis to indicate that the
 		// patient was unsuitable for spruce

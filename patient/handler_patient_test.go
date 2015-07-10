@@ -15,67 +15,9 @@ import (
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/ratelimit"
-	"github.com/sprucehealth/backend/tagging"
-	"github.com/sprucehealth/backend/tagging/model"
-	"github.com/sprucehealth/backend/tagging/response"
+	taggingTest "github.com/sprucehealth/backend/tagging/test"
 	"github.com/sprucehealth/backend/test"
 )
-
-type mockTaggingClient_PatientVisitHandler struct {
-	TagsCreated map[int64][]*model.TagMembership
-}
-
-func (t *mockTaggingClient_PatientVisitHandler) CaseAssociations(ms []*model.TagMembership, start, end int64) ([]*response.TagAssociation, error) {
-	return nil, nil
-}
-func (t *mockTaggingClient_PatientVisitHandler) CaseTagMemberships(caseID int64) (map[string]*model.TagMembership, error) {
-	return nil, nil
-}
-func (t *mockTaggingClient_PatientVisitHandler) DeleteTag(id int64) (int64, error) {
-	return 0, nil
-}
-func (t *mockTaggingClient_PatientVisitHandler) DeleteTagCaseAssociation(text string, caseID int64) error {
-	return nil
-}
-func (t *mockTaggingClient_PatientVisitHandler) DeleteTagCaseMembership(tagID, caseID int64) error {
-	return nil
-}
-func (t *mockTaggingClient_PatientVisitHandler) InsertTagAssociation(tag *model.Tag, membership *model.TagMembership) (int64, error) {
-	return 0, nil
-}
-func (t *mockTaggingClient_PatientVisitHandler) TagMembershipQuery(query string, ops tagging.TaggingOption) ([]*model.TagMembership, error) {
-	return nil, nil
-}
-func (t *mockTaggingClient_PatientVisitHandler) TagFromText(tagText string) (*response.Tag, error) {
-	return nil, nil
-}
-func (t *mockTaggingClient_PatientVisitHandler) TagsFromText(tagText []string, ops tagging.TaggingOption) ([]*response.Tag, error) {
-	return nil, nil
-}
-func (t *mockTaggingClient_PatientVisitHandler) InsertTagSavedSearch(ss *model.TagSavedSearch) (int64, error) {
-	return 0, nil
-}
-func (t *mockTaggingClient_PatientVisitHandler) DeleteTagSavedSearch(ssID int64) (int64, error) {
-	return 0, nil
-}
-func (t *mockTaggingClient_PatientVisitHandler) InsertTag(tag *model.Tag) (int64, error) {
-	return 0, nil
-}
-func (t *mockTaggingClient_PatientVisitHandler) TagSavedSearchs() ([]*model.TagSavedSearch, error) {
-	return nil, nil
-}
-func (t *mockTaggingClient_PatientVisitHandler) UpdateTag(tag *model.TagUpdate) error {
-	return nil
-}
-func (t *mockTaggingClient_PatientVisitHandler) UpdateTagCaseMembership(membership *model.TagMembershipUpdate) error {
-	return nil
-}
-func (t *mockTaggingClient_PatientVisitHandler) TagsForCases(ids []int64, ops tagging.TaggingOption) (map[int64][]*response.Tag, error) {
-	return nil, nil
-}
-func (t *mockTaggingClient_PatientVisitHandler) Tags(ids []int64) (map[int64]*response.Tag, error) {
-	return make(map[int64]*response.Tag), nil
-}
 
 type mockDataAPI_PatientVisitHandler struct {
 	api.DataAPI
@@ -201,7 +143,7 @@ func TestAbandonVisit_Successful(t *testing.T) {
 	r, err := http.NewRequest("DELETE", "api.spruce.local/visit?patient_visit_id=1", nil)
 	test.OK(t, err)
 
-	h := NewPatientVisitHandler(m, nil, nil, nil, "", nil, nil, time.Duration(0), &mockTaggingClient_PatientVisitHandler{})
+	h := NewPatientVisitHandler(m, nil, nil, nil, "", nil, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
 	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
@@ -222,7 +164,7 @@ func TestAbandonVisit_Idempotent(t *testing.T) {
 	r, err := http.NewRequest("DELETE", "api.spruce.local/case?patient_visit_id=1", nil)
 	test.OK(t, err)
 
-	h := NewPatientVisitHandler(m, nil, nil, nil, "", nil, nil, time.Duration(0), &mockTaggingClient_PatientVisitHandler{})
+	h := NewPatientVisitHandler(m, nil, nil, nil, "", nil, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
 	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 }
@@ -256,7 +198,7 @@ func TestCreateVisit_FirstAvailable(t *testing.T) {
 		},
 	}
 
-	h := NewPatientVisitHandler(m, nil, nil, nil, "", &dispatch.Dispatcher{}, nil, time.Duration(0), &mockTaggingClient_PatientVisitHandler{})
+	h := NewPatientVisitHandler(m, nil, nil, nil, "", &dispatch.Dispatcher{}, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
 	w := httptest.NewRecorder()
 	jsonData, err := json.Marshal(&PatientVisitRequestData{})
 	test.OK(t, err)
@@ -304,7 +246,7 @@ func TestCreateVisit_DoctorPicked(t *testing.T) {
 		},
 	}
 
-	h := NewPatientVisitHandler(m, nil, nil, nil, "", &dispatch.Dispatcher{}, nil, time.Duration(0), &mockTaggingClient_PatientVisitHandler{})
+	h := NewPatientVisitHandler(m, nil, nil, nil, "", &dispatch.Dispatcher{}, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
 	w := httptest.NewRecorder()
 	jsonData, err := json.Marshal(&PatientVisitRequestData{})
 	test.OK(t, err)
@@ -478,7 +420,7 @@ func testForbiddenDelete(t *testing.T, status string) {
 	r, err := http.NewRequest("DELETE", "api.spruce.local/case?patient_visit_id=1", nil)
 	test.OK(t, err)
 
-	h := NewPatientVisitHandler(m, nil, nil, nil, "", nil, nil, time.Duration(0), &mockTaggingClient_PatientVisitHandler{})
+	h := NewPatientVisitHandler(m, nil, nil, nil, "", nil, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
 	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusForbidden, w.Code)
 }
