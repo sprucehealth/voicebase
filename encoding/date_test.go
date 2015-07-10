@@ -12,15 +12,15 @@ type DateExampleObject struct {
 const (
 	testDateString = `{
 		"date" : "1987-11-08"
-				}`
+	}`
 
 	testDateStringWithEmptyValue = `{
 		"date" : ""
-				}`
+	}`
 
 	testDateStringWithNullValue = `{
 		"date" : null
-		}`
+	}`
 )
 
 func TestDateMarshal(t *testing.T) {
