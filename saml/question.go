@@ -82,10 +82,10 @@ func questionParser(p *parser, line string) interface{} {
 				p.err("Missing ] at end of line '%s'", line)
 			}
 
-			name, value := p.parseSingleDirective(line)
-			if name != "photo slot" && len(que.Details.PhotoSlots) != 0 {
+			dir := p.parseSingleDirective(line)
+			if dir.name != "photo slot" && len(que.Details.PhotoSlots) != 0 {
 				ps := que.Details.PhotoSlots[len(que.Details.PhotoSlots)-1]
-				switch name {
+				switch dir.name {
 				case "required":
 					ps.Required = boolPtr(true)
 					continue
@@ -94,17 +94,41 @@ func questionParser(p *parser, line string) interface{} {
 					continue
 				}
 				if ps.ClientData == nil {
-					ps.ClientData = &PhotoSlotClientData{}
+					ps.ClientData = &PhotoSlotClientData{
+						Tips: make(map[string]*PhotoTip),
+					}
 				}
-				switch name {
+				value := dir.value
+				switch dir.name {
 				default:
 					p.err("Unknown photo slot attribute '%s'", line)
 				case "tip":
-					ps.ClientData.Tip = value
+					if dir.modifier != "" {
+						if ps.ClientData.Tips[dir.modifier] == nil {
+							ps.ClientData.Tips[dir.modifier] = &PhotoTip{}
+						}
+						ps.ClientData.Tips[dir.modifier].Tip = value
+					} else {
+						ps.ClientData.Tip = value
+					}
 				case "tip subtext":
-					ps.ClientData.TipSubtext = value
+					if dir.modifier != "" {
+						if ps.ClientData.Tips[dir.modifier] == nil {
+							ps.ClientData.Tips[dir.modifier] = &PhotoTip{}
+						}
+						ps.ClientData.Tips[dir.modifier].TipSubtext = value
+					} else {
+						ps.ClientData.TipSubtext = value
+					}
 				case "tip style":
-					ps.ClientData.TipStyle = value
+					if dir.modifier != "" {
+						if ps.ClientData.Tips[dir.modifier] == nil {
+							ps.ClientData.Tips[dir.modifier] = &PhotoTip{}
+						}
+						ps.ClientData.Tips[dir.modifier].TipStyle = dir.value
+					} else {
+						ps.ClientData.TipStyle = value
+					}
 				case "overlay image url":
 					ps.ClientData.OverlayImageURL = value
 				case "photo missing error message":
@@ -121,7 +145,8 @@ func questionParser(p *parser, line string) interface{} {
 				continue
 			}
 
-			switch name {
+			value := dir.value
+			switch dir.name {
 			default:
 				p.err("Unknown question attribute '%s'", line)
 			case "subtitle":
@@ -224,7 +249,7 @@ func questionParser(p *parser, line string) interface{} {
 
 		// Answer directives
 		directives, line := p.parseDirectives(line)
-		for name, value := range directives {
+		for name, dir := range directives {
 			switch name {
 			default:
 				p.err("Unknown answer directive [%s]", name)
@@ -232,7 +257,7 @@ func questionParser(p *parser, line string) interface{} {
 				if ans.ClientData == nil {
 					ans.ClientData = &AnswerClientData{}
 				}
-				ans.ClientData.PlaceholderText = value
+				ans.ClientData.PlaceholderText = dir.value
 			case "help":
 				if ans.ClientData == nil {
 					ans.ClientData = &AnswerClientData{}
@@ -240,11 +265,11 @@ func questionParser(p *parser, line string) interface{} {
 				if ans.ClientData.Popup == nil {
 					ans.ClientData.Popup = &Popup{}
 				}
-				ans.ClientData.Popup.Text = value
+				ans.ClientData.Popup.Text = dir.value
 			case "summary":
-				ans.Summary = value
+				ans.Summary = dir.value
 			case "tag":
-				ans.Tag = value
+				ans.Tag = dir.value
 			case "textbox":
 				ans.Type = "a_type_multiple_choice_other_free_text"
 			case "none":

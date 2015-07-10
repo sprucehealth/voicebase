@@ -15,21 +15,21 @@ func viewParser(p *parser, v string) interface{} {
 		if line == "" {
 			continue
 		}
-		name, value := p.parseSingleDirective(line)
-		name = strings.Replace(name, " ", "_", -1)
-		switch name {
+		dir := p.parseSingleDirective(line)
+		dir.name = strings.Replace(dir.name, " ", "_", -1)
+		switch dir.name {
 		default:
-			p.err("Unknown view attribute '%s'", name)
+			p.err("Unknown view attribute '%s'", dir.name)
 		case "end_view":
 			return View(view)
 		case "element_style", "text":
-			view[name] = value
+			view[dir.name] = dir.value
 		case "number":
-			n, err := strconv.Atoi(value)
+			n, err := strconv.Atoi(dir.value)
 			if err != nil {
-				p.err("Expected a number for %s, found '%s'", name, value)
+				p.err("Expected a number for %s, found '%s'", dir.name, dir.value)
 			}
-			view[name] = n
+			view[dir.name] = n
 		}
 	}
 }
