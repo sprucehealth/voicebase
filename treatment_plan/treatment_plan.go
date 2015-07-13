@@ -179,7 +179,7 @@ func treatmentPlanResponse(dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor
 					Style: views.SubheaderStyle,
 				},
 				&tpTextView{
-					Text: "Your prescriptions will soon be ready for pick up at your pharmacy. We recommend waiting to hear from your care coordinator about potential discounts before going to get them.",
+					Text: "Your prescriptions have been sent to your pharmacy. We suggest calling ahead to ask about price. If it seems expensive, message your care coordinator for help.",
 				},
 			)
 		}
