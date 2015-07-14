@@ -132,7 +132,7 @@ func TestPromotionReferralRouteQueryParamsToTemplate(t *testing.T) {
 	_, err = testData.DataAPI.CreateReferralProgramTemplate(&common.ReferralProgramTemplate{
 		Role:            api.RolePatient,
 		Status:          common.ReferralProgramStatus("Active"),
-		PromotionCodeID: &promoCodeID1,
+		PromotionCodeID: &promoCodeID2,
 		Data:            rp,
 	})
 	test.OK(t, err)
