@@ -9,7 +9,6 @@ var Perms = require("./permissions.js");
 var React = require("react");
 var Routing = require("../../libs/routing.js");
 var Utils = require("../../libs/utils.js");
-var $ = require("jquery");
 
 module.exports = {
 	Page: React.createClass({displayName: "FavoriteTreatmentPlanPage",

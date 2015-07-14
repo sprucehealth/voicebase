@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"math"
 	"math/rand"
 	"reflect"
 	"strconv"
@@ -978,26 +979,44 @@ func (d *DataService) ReferralProgramTemplateRouteQuery(params *RouteQueryParams
 	} else {
 		cs = append(cs, `state IS NULL`)
 	}
-	suffix := `
-		ORDER BY dim_match_count DESC, priority DESC
-		LIMIT 1`
+	suffix := `ORDER BY dim_match_count DESC, priority DESC`
 	q = q + strings.Join(cs, " AND ") + suffix
-	var routeID, promotionCodeID, dimMatchCount int64
-	var priority int64
-	if err := d.db.QueryRow(q, vs...).Scan(&routeID, &promotionCodeID, &priority, &dimMatchCount); err == sql.ErrNoRows {
-		template, err := d.DefaultReferralProgramTemplate(common.PromotionTypes)
-		return nil, template, err
-	} else if err != nil {
+
+	rows, err := d.db.Query(q, vs...)
+	if err != nil {
 		return nil, nil, errors.Trace(err)
 	}
+	defer rows.Close()
 
+	var prrs []*common.PromotionReferralRoute
+	lPriority := math.MinInt64
+	for rows.Next() {
+		var dimMatch int64
+		prr := &common.PromotionReferralRoute{}
+		if err := rows.Scan(&prr.ID, &prr.PromotionCodeID, &prr.Priority, &dimMatch); err != nil {
+			return nil, nil, errors.Trace(err)
+		} else if prr.Priority < lPriority {
+			break
+		}
+		lPriority = prr.Priority
+		prrs = append(prrs, prr)
+	}
+
+	if rows.Err() != nil {
+		return nil, nil, errors.Trace(err)
+	} else if len(prrs) == 0 {
+		template, err := d.DefaultReferralProgramTemplate(common.PromotionTypes)
+		return nil, template, errors.Trace(err)
+	}
+
+	prr := prrs[rand.Int63n(int64(len(prrs)))]
 	var data []byte
 	var referralType string
 	template := &common.ReferralProgramTemplate{}
-	err := d.db.QueryRow(`
+	err = d.db.QueryRow(`
 		SELECT id, role_type_id, referral_type, referral_data, status, promotion_code_id, created
 		FROM referral_program_template
-		WHERE promotion_code_id = ?`, promotionCodeID).Scan(
+		WHERE promotion_code_id = ?`, prr.PromotionCodeID).Scan(
 		&template.ID,
 		&template.RoleTypeID,
 		&referralType,
@@ -1021,7 +1040,7 @@ func (d *DataService) ReferralProgramTemplateRouteQuery(params *RouteQueryParams
 		return nil, nil, errors.Trace(err)
 	}
 
-	return &routeID, template, nil
+	return &prr.ID, template, nil
 }
 
 func (d *DataService) RouteQueryParamsForAccount(accountID int64) (*RouteQueryParams, error) {
