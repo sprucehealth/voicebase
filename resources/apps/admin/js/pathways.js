@@ -11,7 +11,6 @@ var React = require("react/addons");
 var Routing = require("../../libs/routing.js");
 var Utils = require("../../libs/utils.js");
 var Financial = require("./financial.js");
-var $ = require("jquery");
 
 var ReactCSSTransitionGroup = React.addons.CSSTransitionGroup;
 

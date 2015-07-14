@@ -268,7 +268,7 @@ func TestPromotionReferralRouteDeprecationDisplayFullLoop(t *testing.T) {
 
 	arp, err = testData.DataAPI.ActiveReferralProgramForAccount(patient.AccountID.Int64(), common.PromotionTypes)
 	test.OK(t, err)
-	test.Equals(t, *arp.PromotionReferralRouteID, rid2)
+	test.Equals(t, rid2, *arp.PromotionReferralRouteID)
 }
 
 func setupPromotionReferralRouteTest(t *testing.T, testData *test_integration.TestData) {
