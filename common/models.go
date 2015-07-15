@@ -34,30 +34,29 @@ type PhoneNumber struct {
 }
 
 type Patient struct {
-	ID                 encoding.ObjectID      `json:"id,omitempty"`
-	IsUnlinked         bool                   `json:"is_unlinked,omitempty"`
-	FirstName          string                 `json:"first_name,omitempty"`
-	LastName           string                 `json:"last_name,omiempty"`
-	MiddleName         string                 `json:"middle_name,omitempty"`
-	Suffix             string                 `json:"suffix,omitempty"`
-	Prefix             string                 `json:"prefix,omitempty"`
-	DOB                encoding.Date          `json:"dob,omitempty"`
-	Email              string                 `json:"email,omitempty"`
-	Gender             string                 `json:"gender,omitempty"`
-	ZipCode            string                 `json:"zip_code,omitempty"`
-	CityFromZipCode    string                 `json:"-"`
-	StateFromZipCode   string                 `json:"state_code,omitempty"`
-	PrimaryPhoneNumber string                 `json:"primary_phone_number"`
-	PhoneNumbers       []*PhoneNumber         `json:"phone_numbers,omitempty"`
-	Status             string                 `json:"-"`
-	AccountID          encoding.ObjectID      `json:"account_id,omitempty"`
-	ERxPatientID       encoding.ObjectID      `json:"erx_patient_id"`
-	PaymentCustomerID  string                 `json:"-"`
-	Pharmacy           *pharmacy.PharmacyData `json:"pharmacy,omitempty"`
-	PatientAddress     *Address               `json:"address,omitempty"`
-	PersonID           int64                  `json:"person_id"`
-	PromptStatus       PushPromptStatus       `json:"prompt_status"`
-	Training           bool                   `json:"is_training"`
+	ID                encoding.ObjectID      `json:"id,omitempty"`
+	IsUnlinked        bool                   `json:"is_unlinked,omitempty"`
+	FirstName         string                 `json:"first_name,omitempty"`
+	LastName          string                 `json:"last_name,omiempty"`
+	MiddleName        string                 `json:"middle_name,omitempty"`
+	Suffix            string                 `json:"suffix,omitempty"`
+	Prefix            string                 `json:"prefix,omitempty"`
+	DOB               encoding.Date          `json:"dob,omitempty"`
+	Email             string                 `json:"email,omitempty"`
+	Gender            string                 `json:"gender,omitempty"`
+	ZipCode           string                 `json:"zip_code,omitempty"`
+	CityFromZipCode   string                 `json:"-"`
+	StateFromZipCode  string                 `json:"state_code,omitempty"`
+	PhoneNumbers      []*PhoneNumber         `json:"phone_numbers,omitempty"`
+	Status            string                 `json:"-"`
+	AccountID         encoding.ObjectID      `json:"account_id,omitempty"`
+	ERxPatientID      encoding.ObjectID      `json:"erx_patient_id"`
+	PaymentCustomerID string                 `json:"-"`
+	Pharmacy          *pharmacy.PharmacyData `json:"pharmacy,omitempty"`
+	PatientAddress    *Address               `json:"address,omitempty"`
+	PersonID          int64                  `json:"person_id"`
+	PromptStatus      PushPromptStatus       `json:"prompt_status"`
+	Training          bool                   `json:"is_training"`
 }
 
 type PCP struct {
