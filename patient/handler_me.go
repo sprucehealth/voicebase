@@ -17,8 +17,13 @@ type meHandler struct {
 	dispatcher *dispatch.Dispatcher
 }
 
+type patientWrapper struct {
+	*common.Patient
+	PrimaryPhoneNumber string `json:"primary_phone_number"`
+}
+
 type meResponse struct {
-	Patient       *common.Patient `json:"patient"`
+	Patient       *patientWrapper `json:"patient"`
 	Token         string          `json:"token"`
 	ActionsNeeded []*ActionNeeded `json:"actions_needed,omitempty"`
 }
@@ -53,9 +58,17 @@ func (m *meHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// should have been checked before we even got this far.
 		golog.Errorf("Failed to get auth token when already authenticated: %s", err)
 	}
+
+	var primaryPhoneNumber string
+	if len(patient.PhoneNumbers) > 0 {
+		primaryPhoneNumber = patient.PhoneNumbers[0].Phone.String()
+	}
 	res := &meResponse{
-		Patient: patient,
-		Token:   token,
+		Patient: &patientWrapper{
+			Patient:            patient,
+			PrimaryPhoneNumber: primaryPhoneNumber,
+		},
+		Token: token,
 	}
 
 	if showFeedback(m.dataAPI, patient.ID.Int64()) {
