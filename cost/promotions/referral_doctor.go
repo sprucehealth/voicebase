@@ -16,6 +16,7 @@ type routeDoctorReferralProgram struct {
 	SubmittedCount       int                   `json:"visit_submitted_count"`
 }
 
+// NewDoctorReferralProgram returns a new initialized instance of the routeDoctorReferralProgram
 func NewDoctorReferralProgram(accountID int64, title, description, group string,
 	promotion *routeDoctorPromotion) ReferralProgram {
 	return &routeDoctorReferralProgram{

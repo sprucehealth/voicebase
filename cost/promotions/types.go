@@ -9,11 +9,17 @@ import (
 )
 
 const (
-	DefaultPromotionImageURL    string = "https://d2bln09x7zhlg8.cloudfront.net/icon_share_default_160_x_160.png"
-	DefaultPromotionImageWidth  int    = 80
-	DefaultPromotionImageHeight int    = 80
+	// DefaultPromotionImageURL represents the fallback URL to use for legacy promotions or promotions that did not provide an image URL
+	DefaultPromotionImageURL = "https://d2bln09x7zhlg8.cloudfront.net/icon_share_default_160_x_160.png"
+
+	// DefaultPromotionImageWidth represents the fallback Width to use in association with DefaultPromotionImageURL
+	DefaultPromotionImageWidth = 80
+
+	// DefaultPromotionImageHeight represents the fallback Height to use in association with DefaultPromotionImageURL
+	DefaultPromotionImageHeight = 80
 )
 
+// Promotion is an interface that is intended to capture all the functionality required by the system to generically interact with and service requests related to promotions
 type Promotion interface {
 	// Functionality related methods
 	TypeName() string
@@ -30,8 +36,10 @@ type Promotion interface {
 	ImageURL() string
 	ImageWidth() int
 	ImageHeight() int
+	IsPatientVisible() bool
 }
 
+// ReferralProgram is an interface that is intended to capture all the functionality required by the system to generically interact with and service requests related to referral programs
 type ReferralProgram interface {
 	HomeCardText() string
 	HomeCardImageURL() *app_url.SpruceAsset
@@ -49,13 +57,23 @@ type ReferralProgram interface {
 }
 
 var (
+	// ErrPromotionOnlyForNewUsers should be returned when a promo is being applied that is intended only for new users to a non new user account
 	ErrPromotionOnlyForNewUsers = &promotionError{ErrorMsg: "This code is only valid for new users"}
-	ErrPromotionAlreadyApplied  = &promotionError{ErrorMsg: "This promotion has already been applied to your account"}
-	ErrPromotionAlreadyExists   = &promotionError{ErrorMsg: "Promotion already exists"}
-	ErrPromotionExpired         = &promotionError{ErrorMsg: "Sorry, promotion code is no longer valid"}
-	ErrInvalidCode              = &promotionError{ErrorMsg: "You entered an invalid promotion code"}
+
+	// ErrPromotionAlreadyApplied should be returned when a promo is being applied to an account that has previously applied the promotion
+	ErrPromotionAlreadyApplied = &promotionError{ErrorMsg: "This promotion has already been applied to your account"}
+
+	// ErrPromotionTypeMaxClaimed should be returned when a promo is being applied to an account that has already claimed the max ammount allowed by this promotion group
+	ErrPromotionTypeMaxClaimed = &promotionError{ErrorMsg: "The limit on this promotion type has already been reached by your account"}
+
+	// ErrPromotionExpired should be returned when a promo is being applied that has expired
+	ErrPromotionExpired = &promotionError{ErrorMsg: "Sorry, promotion code is no longer valid"}
+
+	// ErrInvalidCode should be returned when a promo code is being applied that doesn't map to a valid promotion
+	ErrInvalidCode = &promotionError{ErrorMsg: "You entered an invalid promotion code"}
 )
 
+// NewPercentOffVisitPromotion returns a new initialized instance of percentDiscountPromotion
 func NewPercentOffVisitPromotion(percentOffValue int,
 	group, displayMsg, shortMsg, successMsg, imageURL string,
 	imageWidth, ImageHeight int,
@@ -75,6 +93,7 @@ func NewPercentOffVisitPromotion(percentOffValue int,
 	}
 }
 
+// NewMoneyOffVisitPromotion returns a new initialized instance of moneyDiscountPromotion
 func NewMoneyOffVisitPromotion(discountValue int,
 	group, displayMsg, shortMsg, successMsg, imageURL string,
 	imageWidth, ImageHeight int,
@@ -94,6 +113,7 @@ func NewMoneyOffVisitPromotion(discountValue int,
 	}
 }
 
+// NewAccountCreditPromotion returns a new initialized instance of accountCreditPromotion
 func NewAccountCreditPromotion(creditValue int, group, displayMsg, shortMsg, successMsg, imageURL string,
 	imageWidth, ImageHeight int,
 	forNewUser bool) Promotion {
@@ -112,6 +132,7 @@ func NewAccountCreditPromotion(creditValue int, group, displayMsg, shortMsg, suc
 	}
 }
 
+// NewRouteDoctorPromotion returns a new initialized instance of routeDoctorPromotion
 func NewRouteDoctorPromotion(doctorID int64,
 	doctorLongDisplayName,
 	doctorShortDisplayName,

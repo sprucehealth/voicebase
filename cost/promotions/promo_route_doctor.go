@@ -20,6 +20,10 @@ type routeDoctorPromotion struct {
 	DiscountUnit           DiscountUnit `json:"discount_unit"`
 }
 
+func (r *routeDoctorPromotion) IsPatientVisible() bool {
+	return false
+}
+
 type context struct {
 	DoctorShortDisplayName string
 	DoctorLongDisplayName  string

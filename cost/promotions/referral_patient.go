@@ -194,6 +194,7 @@ func (g *givePercentOffReferralProgram) ReferredAccountSubmittedVisit(accountID,
 	return nil
 }
 
+// NewGiveReferralProgram returns a new initialized instance of a ReferralProgram. The type of referral program generated is based off the internal data of the provided Promotion. e.g: (percentOffType -> givePercentOffReferralProgram, moneyOffType -> giveMoneyOffReferralProgram)
 func NewGiveReferralProgram(title, description, group string, homeCard *HomeCardConfig, promotion Promotion, shareTextParams *ShareTextParams) (ReferralProgram, error) {
 	grp := giveReferralProgram{
 		referralProgramParams: referralProgramParams{
@@ -205,7 +206,7 @@ func NewGiveReferralProgram(title, description, group string, homeCard *HomeCard
 		Group: group,
 	}
 	switch promotion.TypeName() {
-	case "promo_percent_off":
+	case percentOffType:
 		pdp, ok := promotion.(*percentDiscountPromotion)
 		if !ok {
 			return nil, errors.New("Unable to cast promotion data as percentDiscountPromotion")
@@ -214,7 +215,7 @@ func NewGiveReferralProgram(title, description, group string, homeCard *HomeCard
 			giveReferralProgram: grp,
 			Promotion:           pdp,
 		}, nil
-	case "promo_money_off":
+	case moneyOffType:
 		mdp, ok := promotion.(*moneyDiscountPromotion)
 		if !ok {
 			return nil, errors.New("Unable to cast promotion data as moneyDiscountPromotion")

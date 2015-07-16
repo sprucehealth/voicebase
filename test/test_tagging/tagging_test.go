@@ -339,7 +339,7 @@ func TestTagsForCases(t *testing.T) {
 	tags, err = client.TagsForCases([]int64{caseID}, tagging.TONonHiddenOnly)
 	test.OK(t, err)
 	test.Equals(t, 1, len(tags))
-	test.Equals(t, 5, len(tags[caseID]))
+	test.Equals(t, 6, len(tags[caseID]))
 }
 
 func TestCCTagRoundTrip(t *testing.T) {

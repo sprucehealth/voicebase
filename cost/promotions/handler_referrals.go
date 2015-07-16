@@ -13,6 +13,7 @@ type referralProgramHandler struct {
 	dataAPI api.DataAPI
 }
 
+// ShareTextInfo represents the data that the client should use to populate the various "Share" aspects of the app such as Refer A Friend via Facebook
 type ShareTextInfo struct {
 	EmailSubject string `json:"email_subject"`
 	EmailBody    string `json:"email_body"`
@@ -23,6 +24,7 @@ type ShareTextInfo struct {
 	Default      string `json:"default"`
 }
 
+// ReferralDisplayInfo represents the display info to be consumed by the client when rendering the Refer A Friend views
 type ReferralDisplayInfo struct {
 	CTATitle           string          `json:"account_screen_cta_title"`
 	NavBarTitle        string          `json:"nav_bar_title"`
@@ -39,6 +41,7 @@ type ReferralDisplayInfo struct {
 	ReferralProgram    ReferralProgram `json:"-"`
 }
 
+// NewReferralProgramHandler returns a new instance of the referralProgramHandler
 func NewReferralProgramHandler(dataAPI api.DataAPI, domain string) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(&referralProgramHandler{
