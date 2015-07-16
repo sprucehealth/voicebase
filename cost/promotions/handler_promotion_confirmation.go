@@ -76,7 +76,7 @@ func (h *promotionConfirmationHandler) serveGET(w http.ResponseWriter, r *http.R
 	}
 
 	var p *common.Promotion
-	title := "Congratulations!"
+	var title string
 	if promoCode.IsReferral {
 		rp, err := h.dataAPI.ReferralProgram(promoCode.ID, common.PromotionTypes)
 		if err != nil {
@@ -95,7 +95,7 @@ func (h *promotionConfirmationHandler) serveGET(w http.ResponseWriter, r *http.R
 				apiservice.WriteError(fmt.Errorf("Unable to locate referral program owner for Account ID %d. Checked both patient and doctor records.", rp.AccountID), w, r)
 				return
 			}
-			title = "Welcome to Spruce!"
+			title = "Welcome to Spruce"
 		} else if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -116,9 +116,19 @@ func (h *promotionConfirmationHandler) serveGET(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// If the confirmation requested is from a promotion and not a referal populate the title accordingly
+	if !promoCode.IsReferral {
+		title = promotion.DisplayMessage()
+	}
+
+	imageURL := promotion.ImageURL()
+	if imageURL == "" {
+		imageURL = DefaultPromotionImageURL
+	}
+
 	httputil.JSONResponse(w, http.StatusOK, &PromotionConfirmationGETResponse{
 		Title:       title,
-		ImageURL:    "spruce:///image/icon_case_large",
+		ImageURL:    imageURL,
 		BodyText:    promotion.SuccessMessage(),
 		ButtonTitle: "Let's Go",
 	})

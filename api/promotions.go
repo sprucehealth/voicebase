@@ -938,6 +938,7 @@ func (d *DataService) PromotionReferralRoutes(lifecycles []string) ([]*common.Pr
 	return routes, errors.Trace(rows.Err())
 }
 
+// RouteQueryParams represents all the data needed to query the promotion_referral_route table
 type RouteQueryParams struct {
 	Age      *int64
 	Gender   *common.PRRGender
@@ -945,6 +946,7 @@ type RouteQueryParams struct {
 	State    *string
 }
 
+// ReferralProgramTemplateRouteQuery utilizes the provided params to find the most relevant referral program for the user.
 func (d *DataService) ReferralProgramTemplateRouteQuery(params *RouteQueryParams) (*int64, *common.ReferralProgramTemplate, error) {
 	q := `
 		SELECT id, promotion_code_id, priority,
@@ -979,7 +981,7 @@ func (d *DataService) ReferralProgramTemplateRouteQuery(params *RouteQueryParams
 	} else {
 		cs = append(cs, `state IS NULL`)
 	}
-	suffix := `ORDER BY dim_match_count DESC, priority DESC`
+	suffix := ` ORDER BY dim_match_count DESC, priority DESC`
 	q = q + strings.Join(cs, " AND ") + suffix
 
 	rows, err := d.db.Query(q, vs...)
@@ -990,16 +992,23 @@ func (d *DataService) ReferralProgramTemplateRouteQuery(params *RouteQueryParams
 
 	var prrs []*common.PromotionReferralRoute
 	lPriority := math.MinInt64
+	lDimMatch := math.MaxInt32
+	firstElement := true
 	for rows.Next() {
-		var dimMatch int64
+		var dimMatch int
 		prr := &common.PromotionReferralRoute{}
 		if err := rows.Scan(&prr.ID, &prr.PromotionCodeID, &prr.Priority, &dimMatch); err != nil {
 			return nil, nil, errors.Trace(err)
-		} else if prr.Priority < lPriority {
+
+			// Stop building out possible matches if the priority has changed or the dimension match count has changed and it is not the first element
+		} else if (prr.Priority != lPriority || lDimMatch != dimMatch) && !firstElement {
 			break
 		}
+
+		lDimMatch = dimMatch
 		lPriority = prr.Priority
 		prrs = append(prrs, prr)
+		firstElement = false
 	}
 
 	if rows.Err() != nil {
@@ -1043,6 +1052,7 @@ func (d *DataService) ReferralProgramTemplateRouteQuery(params *RouteQueryParams
 	return &prr.ID, template, nil
 }
 
+// RouteQueryParamsForAccount given the provided account crates the param structure needed to route the account to the correct referral program
 func (d *DataService) RouteQueryParamsForAccount(accountID int64) (*RouteQueryParams, error) {
 	patient, err := d.GetPatientFromAccountID(accountID)
 	if err != nil {
