@@ -420,7 +420,7 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 		var createRow = function(attr) {
 			var val = attr.value;
 			if (attr.name == "DriversLicenseFile" || attr.name == "CVFile" || attr.name == "ClaimsHistoryFile") {
-				val = <a href={"/admin/doctors/" + this.props.doctor.id + "/dl/" + attr.name}>Download</a>;
+				val = <a href={"/admin/providers/" + this.props.doctor.id + "/dl/" + attr.name}>Download</a>;
 			}
 			return (
 				<tr key={attr.name}>
