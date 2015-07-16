@@ -5,9 +5,12 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/test"
 )
 
 type mockDataAPI_prefillQuestions struct {
@@ -26,7 +29,6 @@ func (m *mockDataAPI_prefillQuestions) AnswersForQuestions(questionIDs []int64, 
 }
 
 func TestPrefillQuestions(t *testing.T) {
-
 	visitLayout := &info_intake.InfoIntakeLayout{
 		Sections: []*info_intake.Section{
 			{
@@ -217,4 +219,107 @@ func TestPrefillQuestions(t *testing.T) {
 	} else if questions[3].PrefilledWithPreviousAnswers {
 		t.Fatal("Didn't exist the question to indicate that it was prefilled with answers")
 	}
+}
+
+type mockDataAPI_pathwayForPatient struct {
+	api.DataAPI
+	pathways map[string]*common.Pathway // pathway tag -> pathway
+}
+
+func (d *mockDataAPI_pathwayForPatient) PathwayForTag(tag string, opts api.PathwayOption) (*common.Pathway, error) {
+	if p := d.pathways[tag]; p != nil {
+		return p, nil
+	}
+	return nil, api.ErrNotFound("pathway")
+}
+
+func TestPathwayForPatient(t *testing.T) {
+	dataAPI := &mockDataAPI_pathwayForPatient{
+		pathways: map[string]*common.Pathway{
+			"acne": {
+				ID:  1,
+				Tag: "acne",
+				Details: &common.PathwayDetails{
+					AgeRestrictions: []*common.PathwayAgeRestriction{
+						{
+							MaxAgeOfRange: ptr.Int(12),
+							VisitAllowed:  false,
+							Alert: &common.PathwayAlert{
+								Message: "Sorry!",
+							},
+						},
+						{
+							MaxAgeOfRange:       ptr.Int(17),
+							VisitAllowed:        true,
+							AlternatePathwayTag: "teen_acne",
+						},
+						{
+							MaxAgeOfRange: ptr.Int(70),
+							VisitAllowed:  true,
+						},
+						{
+							MaxAgeOfRange: nil,
+							VisitAllowed:  false,
+							Alert: &common.PathwayAlert{
+								Message: "Not Sorry!",
+							},
+						},
+					},
+				},
+			},
+			"teen_acne": {
+				ID:  2,
+				Tag: "teen_acne",
+			},
+			"other": {
+				ID:      3,
+				Tag:     "other",
+				Details: &common.PathwayDetails{},
+			},
+		},
+	}
+
+	// Adolescent
+	_, err := pathwayForPatient(dataAPI, "acne", &common.Patient{
+		DOB: encoding.Date{Year: time.Now().Year() - 11, Month: 1, Day: 1},
+	})
+	test.Assert(t, err != nil, "Should not allow adolescents for acne pathway")
+	test.Equals(t, "Sorry!", err.(*apiservice.SpruceError).UserError)
+
+	// Teen
+	pathway, err := pathwayForPatient(dataAPI, "acne", &common.Patient{
+		DOB: encoding.Date{Year: time.Now().Year() - 17, Month: 1, Day: 1},
+	})
+	test.OK(t, err)
+	test.Equals(t, "teen_acne", pathway.Tag)
+
+	// Adult
+	pathway, err = pathwayForPatient(dataAPI, "acne", &common.Patient{
+		DOB: encoding.Date{Year: time.Now().Year() - 18, Month: 1, Day: 1},
+	})
+	test.OK(t, err)
+	test.Equals(t, "acne", pathway.Tag)
+
+	// Senior
+	_, err = pathwayForPatient(dataAPI, "acne", &common.Patient{
+		DOB: encoding.Date{Year: time.Now().Year() - 75, Month: 1, Day: 1},
+	})
+	test.Assert(t, err != nil, "Should not allow sensiors for acne pathway")
+	test.Equals(t, "Not Sorry!", err.(*apiservice.SpruceError).UserError)
+
+	// When no explicit restrictions should not allow anyone younger than 18
+
+	// < 18
+	_, err = pathwayForPatient(dataAPI, "other", &common.Patient{
+		DOB: encoding.Date{Year: time.Now().Year() - 15, Month: 1, Day: 1},
+	})
+	test.Assert(t, err != nil, "Should not allow < 18 for pathway without explicit restrictions")
+	test.Equals(t, "Sorry, we do not support the chosen condition for people under 18.", err.(*apiservice.SpruceError).UserError)
+
+	// >= 18
+	pathway, err = pathwayForPatient(dataAPI, "other", &common.Patient{
+		DOB: encoding.Date{Year: time.Now().Year() - 18, Month: 1, Day: 1},
+	})
+	test.OK(t, err)
+	test.Equals(t, "other", pathway.Tag)
 }

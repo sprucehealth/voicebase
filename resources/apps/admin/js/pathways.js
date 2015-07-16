@@ -46,7 +46,7 @@ module.exports = {
 				id: "saml",
 				url: "/admin/pathways/saml",
 				name: "SAML"
-			}
+			},
 		]],
 		pages: {
 			list: function(): any {
@@ -118,13 +118,13 @@ var GlobalFTPPage = React.createClass({displayName: "GlobalFTPPage",
 		var content = []
 		for(var i = 0; i < this.state.ftps.length; ++i) {
 			content.push(<tr><td>
-												<a href={"/admin/treatment_plan/favorite/" + this.state.ftps[i].id + "/info"} onClick={this.onNavigate}>
-													{this.state.ftps[i].name}
-												</a>
-											</td></tr>)
+					<a href={"/admin/treatment_plan/favorite/" + this.state.ftps[i].id + "/info"} onClick={this.onNavigate}>
+						{this.state.ftps[i].name}
+					</a>
+				</td></tr>)
 		}
 		return (
-			<div className="container" style={{marginTop: 10}}>
+			<div style={{marginTop: 10}}>
 				<div className="row">
 					<div className="col-sm-12 col-md-12 col-lg-9">
 						<h2>Global Favorite Treatment Plans</h2>
@@ -190,7 +190,7 @@ var DiagnosisSets = React.createClass({displayName: "DiagnosisSets",
 				pathwayName = {this.state.pathwayName} />
 		}
 		return (
-			<div className="container" style={{marginTop: 10}}>
+			<div style={{marginTop: 10}}>
 				<div className="row">
 					<div className="col-sm-12 col-md-12 col-lg-9">
 						<h2>Diagnosis Sets</h2>
@@ -410,7 +410,6 @@ var AddDiagnosisModal = React.createClass({displayName: "AddDiagnosisModal",
 		};
 	},
 	onAdd: function(e) {
-
 		if (this.props.existingDiagnosisCodes[this.state.icd10Code]) {
 			this.setState({error: "code already exists in set"})
 			return true;
@@ -530,9 +529,9 @@ var IntakeTemplatesPage = React.createClass({displayName: "IntakeTemplatesPage",
 
 			var items = data.items
 			for (var i = 0; i < items.length; i++) {
-				if (items[i].SKUType == sku) {                  
+				if (items[i].SKUType == sku) {
 					if (items[i].LayoutPurpose == "CONDITION_INTAKE") {
-						intake_versions.push(items[i].Version)  
+						intake_versions.push(items[i].Version)
 					} else if (items[i].LayoutPurpose == "REVIEW") {
 						review_versions.push(items[i].Version)
 					}
@@ -802,15 +801,15 @@ var PreviewMenu = React.createClass({
 	handleBackButtonClick: function() {
 		this.props.handleBackButtonClick();
 	},
-	render: function() { 
+	render: function() {
 		var backButtonStyle = {
 			cursor: 'pointer'
 		};
 		var backButton;
 		if (!this.props.isTopLevel) {
 			backButton = (
-				<div 
-					key="pathways_menu_preview_back_button_row" 
+				<div
+					key="pathways_menu_preview_back_button_row"
 					style={backButtonStyle}
 					onClick={this.handleBackButtonClick}
 				>
@@ -822,8 +821,8 @@ var PreviewMenu = React.createClass({
 		this.props.menu.items.forEach(function(item) {
 			if (item.pathway_tag) {
 				rows.push(
-					<div 
-						key={item.pathway_tag} 
+					<div
+						key={item.pathway_tag}
 						className="pathways_menu_preview_pathway_row"
 						onClick={this.handlePathwayClick.bind(this, item.pathway_tag)}
 					>
@@ -832,12 +831,12 @@ var PreviewMenu = React.createClass({
 				);
 			} else {
 				rows.push(
-					<div 
-						key={item.title} 
+					<div
+						key={item.title}
 						className="pathways_menu_preview_submenu_row"
 						onClick={this.handleSubmenuClick.bind(this, item)}
 					>
-						<PreviewSubmenuRow 
+						<PreviewSubmenuRow
 							onSubmenuClick={this.handleSubmenuClick}
 							menuItem={item}
 						/>
@@ -896,7 +895,7 @@ var PreviewMenuContainer = React.createClass({
 		}
 		return (
 			<ReactCSSTransitionGroup transitionName="animatable_preview_menu" key="animatable_preview_menu_container">
-				<PreviewMenu 
+				<PreviewMenu
 					key={this.state.menuStack[0].title}
 					menu={this.state.menuStack[0]}
 					isTopLevel={this.state.menuStack.length === 1 ? true : false}
@@ -1157,44 +1156,42 @@ var ListPage = React.createClass({displayName: "ListPage",
 	},
 	render: function(): any {
 		return (
-			<div className="container">
+			<div>
 				{Perms.has(Perms.PathwaysEdit) ? <AddPathwayModal onSuccess={this.onAddPathway} /> : null}
-				<div className="row">
-					<div className="col-sm-12 col-md-12 table-responsive">
-						<div>
-							{Perms.has(Perms.PathwaysEdit) ? <div className="pull-right"><button className="btn btn-default" data-toggle="modal" data-target="#add-pathway-modal">+</button></div> : null}
-							<h2>Pathways</h2>
-						</div>
-						{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
-						{this.state.busy ? <Utils.LoadingAnimation /> : null}
-						<table className="table">
-							<thead>
-								<tr>
-									<th>Name</th>
-									<th>Tag</th>
-									<th>Branch of Medicine</th>
-									<th>Status</th>
-								</tr>
-							</thead>
-							<tbody>
-							{this.state.pathways.map(function(p) {
-								return (
-									<tr key={p.tag}>
-										<td>
-											<a href={"pathways/details/"+p.id} onClick={this.onNavigate}>{p.name}</a>
-											{Perms.has(Perms.PathwaysEdit) ?
-												<small> [<a href="#" onClick={this.onRename.bind(this, p)}>rename</a>]</small>
-											: null}
-										</td>
-										<td>{p.tag}</td>
-										<td>{p.medicine_branch}</td>
-										<td>{p.status}</td>
-									</tr>
-								);
-							}.bind(this))}
-							</tbody>
-						</table>
+				<div>
+					<div>
+						{Perms.has(Perms.PathwaysEdit) ? <div className="pull-right"><button className="btn btn-default" data-toggle="modal" data-target="#add-pathway-modal">+</button></div> : null}
+						<h2>Pathways</h2>
 					</div>
+					{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
+					{this.state.busy ? <Utils.LoadingAnimation /> : null}
+					<table className="table">
+						<thead>
+							<tr>
+								<th>Name</th>
+								<th>Tag</th>
+								<th>Branch of Medicine</th>
+								<th>Status</th>
+							</tr>
+						</thead>
+						<tbody>
+						{this.state.pathways.map(function(p) {
+							return (
+								<tr key={p.tag}>
+									<td>
+										<a href={"pathways/details/"+p.id} onClick={this.onNavigate}>{p.name}</a>
+										{Perms.has(Perms.PathwaysEdit) ?
+											<small> [<a href="#" onClick={this.onRename.bind(this, p)}>rename</a>]</small>
+										: null}
+									</td>
+									<td>{p.tag}</td>
+									<td>{p.medicine_branch}</td>
+									<td>{p.status}</td>
+								</tr>
+							);
+						}.bind(this))}
+						</tbody>
+					</table>
 				</div>
 			</div>
 		);
@@ -1296,7 +1293,7 @@ var DetailsPage = React.createClass({displayName: "DetailsPage",
 						details_busy: false,
 						details_error: null,
 						pathway: data.pathway,
-						details_json: JSON.stringify(data.details, null, 4)
+						details_json: JSON.stringify(data.pathway.details, null, 4)
 					});
 				} else {
 					this.setState({details_busy: false, details_error: error.message});
@@ -1336,55 +1333,51 @@ var DetailsPage = React.createClass({displayName: "DetailsPage",
 	},
 	render: function(): any {
 		return (
-			<div className="container">
-				<div className="row">
-					<div className="col-sm-12 col-md-12">
-						{this.state.pathway ?
+			<div>
+				{this.state.pathway ?
+					<div>
+						<h2>{this.state.pathway.name} Pathway</h2>
+						<form role="form" onSubmit={this.onDetailsSubmit} method="PUT">
 							<div>
-								<h2>{this.state.pathway.name} Pathway</h2>
-								<form role="form" onSubmit={this.onDetailsSubmit} method="PUT">
-									<div>
-										{Perms.has(Perms.PathwaysEdit) ?
-											<Forms.TextArea name="json" required label="Pathway Details JSON" value={this.state.details_json} rows="20" onChange={this.onDetailsChange} tabs={true} />
-										:
-											<pre>{this.state.details_json}</pre>
-										}
-									</div>
-									<div className="text-right">
-										{this.state.details_error ? <Utils.Alert type="danger">{this.state.details_error}</Utils.Alert> : null}
-										{this.state.details_busy ? <Utils.LoadingAnimation /> : null}
-										{Perms.has(Perms.STPEdit) ?
-											<button type="submit" className="btn btn-primary">Save</button>
-										:null}
-									</div>
-								</form>
-								<form role="form" onSubmit={this.onSTPSubmit} method="PUT">
-									<div>
-										{Perms.has(Perms.STPEdit) ?
-											<Forms.TextArea name="stp_json" required label="Sample Treatment Plan JSON" value={this.state.stp_json} rows="20" onChange={this.onSTPChange} tabs={true} />
-										:
-											<pre>{this.state.stp_json}</pre>
-										}
-									</div>
-									<div className="text-right">
-										{this.state.stp_error ? <Utils.Alert type="danger">{this.state.stp_error}</Utils.Alert> : null}
-										{this.state.stp_success_text ? <Utils.Alert type="success">{this.state.stp_success_text}</Utils.Alert> : null}
-										{this.state.stp_busy ? <Utils.LoadingAnimation /> : null}
-										{Perms.has(Perms.STPEdit) ?
-											<button type="submit" className="btn btn-primary">Save</button>
-										:null}
-									</div>
-								</form>
+								{Perms.has(Perms.PathwaysEdit) ?
+									<Forms.TextArea name="json" required label="Pathway Details JSON" value={this.state.details_json} rows={20} onChange={this.onDetailsChange} tabs={true} />
+								:
+									<pre>{this.state.details_json}</pre>
+								}
 							</div>
-						:
+							<div className="text-right">
+								{this.state.details_error ? <Utils.Alert type="danger">{this.state.details_error}</Utils.Alert> : null}
+								{this.state.details_busy ? <Utils.LoadingAnimation /> : null}
+								{Perms.has(Perms.STPEdit) ?
+									<button type="submit" className="btn btn-primary">Save</button>
+								:null}
+							</div>
+						</form>
+						<form role="form" onSubmit={this.onSTPSubmit} method="PUT">
 							<div>
-								<h2>Pathway</h2>
-								{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
-								{this.state.busy ? <Utils.LoadingAnimation /> : null}
+								{Perms.has(Perms.STPEdit) ?
+									<Forms.TextArea name="stp_json" required label="Sample Treatment Plan JSON" value={this.state.stp_json} rows={20} onChange={this.onSTPChange} tabs={true} />
+								:
+									<pre>{this.state.stp_json}</pre>
+								}
 							</div>
-						}
+							<div className="text-right">
+								{this.state.stp_error ? <Utils.Alert type="danger">{this.state.stp_error}</Utils.Alert> : null}
+								{this.state.stp_success_text ? <Utils.Alert type="success">{this.state.stp_success_text}</Utils.Alert> : null}
+								{this.state.stp_busy ? <Utils.LoadingAnimation /> : null}
+								{Perms.has(Perms.STPEdit) ?
+									<button type="submit" className="btn btn-primary">Save</button>
+								:null}
+							</div>
+						</form>
 					</div>
-				</div>
+				:
+					<div>
+						<h2>Pathway</h2>
+						{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
+						{this.state.busy ? <Utils.LoadingAnimation /> : null}
+					</div>
+				}
 			</div>
 		);
 	}

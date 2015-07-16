@@ -38,7 +38,7 @@ module.exports = {
 			// this.props.router.off("route", this.navCallback);
 		},
 		search: function(q) {
-			this.props.router.navigate("/drugs?q=" + encodeURIComponent(q), {replace: true}); // TODO: replacing until back tracking works
+			this.props.router.navigate("/carecoordinator/drugs?q=" + encodeURIComponent(q), {replace: true}); // TODO: replacing until back tracking works
 			if (q == "") {
 				this.setState({results: null});
 			} else {
@@ -67,19 +67,22 @@ module.exports = {
 		},
 		render: function(): any {
 			return (
-				<div className="container doctor-search">
-					<div className="row">
-						<div className="col-md-3">&nbsp;</div>
-						<div className="col-md-6">
+				<div>
+					<div>
+						<div style={{maxWidth: 400, margin: "0 auto", textAlign: "center"}} >
 							<h2>Search drugs</h2>
 							<form onSubmit={this.onSearchSubmit}>
 								<div className="form-group">
-									<input required autofocus type="text" className="form-control" name="q" value={this.state.query} onChange={this.onQueryChange} />
+									<input required autofocus
+										type = "text"
+										className = "form-control"
+										name = "q"
+										value = {this.state.query}
+										onChange = {this.onQueryChange} />
 								</div>
 								<button type="submit" className="btn btn-primary btn-lg center-block">Search</button>
 							</form>
 						</div>
-						<div className="col-md-3">&nbsp;</div>
 					</div>
 
 					<div className="search-results">

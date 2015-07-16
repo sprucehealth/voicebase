@@ -167,8 +167,8 @@ func (u *patientUpdate) Validate() error {
 	if len(u.PhoneNumbers) == 0 {
 		return apiservice.NewValidationError("at least one phone number is required")
 	}
-	if err := u.DOB.Validate(); err != nil {
-		return err
+	if ok, reason := u.DOB.Validate(); !ok {
+		return apiservice.NewValidationError("invalid birthday, " + reason)
 	}
 	if u.Address == nil {
 		return apiservice.NewValidationError("address is required")

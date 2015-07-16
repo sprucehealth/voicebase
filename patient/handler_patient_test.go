@@ -183,7 +183,8 @@ func TestCreateVisit_FirstAvailable(t *testing.T) {
 			ID: encoding.NewObjectID(123),
 		},
 		pathway: &common.Pathway{
-			Tag: api.AcnePathwayTag,
+			Tag:     api.AcnePathwayTag,
+			Details: &common.PathwayDetails{},
 		},
 		sku: &common.SKU{
 			Type: "visit",
@@ -228,7 +229,8 @@ func TestCreateVisit_DoctorPicked(t *testing.T) {
 			ID: encoding.NewObjectID(123),
 		},
 		pathway: &common.Pathway{
-			Tag: api.AcnePathwayTag,
+			Tag:     api.AcnePathwayTag,
+			Details: &common.PathwayDetails{},
 		},
 		sku: &common.SKU{
 			Type: "visit",
@@ -276,7 +278,8 @@ func TestCreatePatient_DoctorPicked(t *testing.T) {
 			ID: encoding.NewObjectID(123),
 		},
 		pathway: &common.Pathway{
-			Tag: api.AcnePathwayTag,
+			Tag:     api.AcnePathwayTag,
+			Details: &common.PathwayDetails{},
 		},
 		sku: &common.SKU{
 			Type: "visit",
@@ -346,7 +349,8 @@ func TestCreatePatient_FirstAvailable(t *testing.T) {
 			ID: encoding.NewObjectID(123),
 		},
 		pathway: &common.Pathway{
-			Tag: api.AcnePathwayTag,
+			Tag:     api.AcnePathwayTag,
+			Details: &common.PathwayDetails{},
 		},
 		sku: &common.SKU{
 			Type: "visit",

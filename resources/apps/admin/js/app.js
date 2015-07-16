@@ -9,7 +9,6 @@ var Accounts = require("./accounts.js");
 var Analytics = require("./analytics.js");
 var Dashboard = require("./dashboard.js");
 var Doctors = require("./doctors.js");
-var Drugs = require("./drugs.js");
 var FavoriteTreatmentPlan = require("./favorite_treatment_plan.js");
 var Financial = require("./financial.js");
 var Guides = require("./guides.js");
@@ -59,10 +58,6 @@ var AdminRouter = Backbone.Router.extend({
 			this.current = "account";
 			this.params = {accountID: accountID, page: page};
 		},
-		"drugs": function() {
-			this.current = "drugs";
-			this.params = {};
-		},
 		"pathways": function() {
 			this.current = "pathways";
 			this.params = {page: "list"};
@@ -103,9 +98,13 @@ var AdminRouter = Backbone.Router.extend({
 			this.current = "settings";
 			this.params = {page: page};
 		},
+		"carecoordinator/drugs": function() {
+			this.current = "carecoordinator";
+			this.params = {page: "drugs"};
+		},
 		"carecoordinator/tags/:page": function(page) {
 			this.current = "carecoordinator";
-			this.params = {page: page};
+			this.params = {page: "tags_"+page};
 		},
 		"marketing/:page": function(page) {
 			this.current = "marketing";
@@ -152,12 +151,6 @@ var Admin = React.createClass({displayName: "Admin",
 			});
 		}
 
-		leftMenuItems.push({
-			id: "drugs",
-			url: "drugs",
-			name: "Drugs"
-		});
-
 		if (Perms.has(Perms.PathwaysView)) {
 			leftMenuItems.push({
 				id: "pathways",
@@ -177,7 +170,7 @@ var Admin = React.createClass({displayName: "Admin",
 		if (Perms.has(Perms.CareCoordinatorView)) {
 			leftMenuItems.push({
 				id: "carecoordinator",
-				url: "carecoordinator/tags/manage",
+				url: "carecoordinator/drugs",
 				name: "Care Coordinator"
 			});
 		}
@@ -236,9 +229,6 @@ var Admin = React.createClass({displayName: "Admin",
 		account: function() {
 			return <Accounts.Account router={this.props.router} accountID={this.props.router.params.accountID} page={this.props.router.params.page} />;
 		},
-		drugs: function() {
-			return <Drugs.DrugSearch router={this.props.router} accountID={this.props.router.params.accountID} />;
-		},
 		pathways: function() {
 			return <Pathways.Page router={this.props.router} page={this.props.router.params.page} pathwayID={this.props.router.params.pathwayID} />;
 		},
@@ -252,7 +242,7 @@ var Admin = React.createClass({displayName: "Admin",
 			return <Visit.Page router={this.props.router} page={this.props.router.params.page} caseID={this.props.router.params.caseID} visitID={this.props.router.params.visitID} />;
 		},
 		carecoordinator: function() {
-			return <CareCoordinator.Page router={this.props.router} page={this.props.router.params.page} />;
+			return <CareCoordinator.Page router={this.props.router} page={this.props.router.params.page} accountID={this.props.router.params.accountID} />;
 		},
 		marketing: function() {
 			return <Marketing.Page router={this.props.router} page={this.props.router.params.page} />;

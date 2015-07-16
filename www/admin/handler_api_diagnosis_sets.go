@@ -81,7 +81,6 @@ func (d *diagnosisSetsHandler) patch(rd *diagnosisSetUpdateRequest, w http.Respo
 }
 
 func (d *diagnosisSetsHandler) get(pathwayTag string, w http.ResponseWriter, r *http.Request) {
-
 	title, diagnosisCodeIDs, err := d.dataAPI.CommonDiagnosisSet(pathwayTag)
 	if !api.IsErrNotFound(err) && err != nil {
 		www.InternalServerError(w, r, err)

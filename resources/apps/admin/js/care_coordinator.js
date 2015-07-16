@@ -2,13 +2,14 @@
 
 var Accounts = require("./accounts.js");
 var AdminAPI = require("./api.js");
+var Drugs = require("./drugs.js");
 var Forms = require("../../libs/forms.js");
+var Modals = require("../../libs/modals.js");
 var Nav = require("../../libs/nav.js");
 var Perms = require("./permissions.js");
 var Routing = require("../../libs/routing.js");
 var Time = require("../../libs/time.js");
 var Utils = require("../../libs/utils.js");
-var Modals = require("../../libs/modals.js");
 
 module.exports = {
 	Page: React.createClass({displayName: "CareCoordinatorPage",
@@ -17,12 +18,17 @@ module.exports = {
 			var items = [];
 			if (Perms.has(Perms.CareCoordinatorView)) {
 				items.push({
-					id: "manage",
+					id: "drugs",
+					url: "/carecoordinator/drugs",
+					name: "Drugs"
+				});
+				items.push({
+					id: "tags_manage",
 					url: "/carecoordinator/tags/manage",
 					name: "Manage Tags"
 				});
 				items.push({
-					id: "saved_searches",
+					id: "tags_saved_searches",
 					url: "/carecoordinator/tags/saved_searches",
 					name: "Saved Searches"
 				});
@@ -30,10 +36,13 @@ module.exports = {
 			return [items];
 		},
 		pages: {
-			manage: function(): any {
+			drugs: function(): any {
+				return <Drugs.DrugSearch router={this.props.router} accountID={this.props.router.params.accountID} />;
+			},
+			tags_manage: function(): any {
 				return <ManageCareCoordinatorTagsPage router={this.props.router} />
 			},
-			saved_searches: function(): any {
+			tags_saved_searches: function(): any {
 				return <CareCoordinatorSavedSearchesPage router={this.props.router} />
 			},
 		},
