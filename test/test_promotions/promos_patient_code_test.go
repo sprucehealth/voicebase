@@ -104,19 +104,19 @@ func TestPatientPromoCode_ApplyZerovaluePromotion(t *testing.T) {
     "value": 0
   }`, `promo_money_off`)
 
-	res, err = patientClient.ApplyPromoCode(&promotions.PatientPromotionPOSTRequest{
+	_, err = patientClient.ApplyPromoCode(&promotions.PatientPromotionPOSTRequest{
 		PromoCode: promoCode,
 	})
-	test.OK(t, err)
-	test.Equals(t, 0, len(res.ActivePromotions))
-	test.Equals(t, 0, len(res.ExpiredPromotions))
+	sperr, ok := err.(*apiservice.SpruceError)
+	test.Assert(t, ok, "Could not convert to spruce error")
+	test.Equals(t, http.StatusNotFound, sperr.HTTPStatusCode)
 
 	patient, err := testData.DataAPI.Patient(patientVisit.PatientID.Int64(), true)
 	test.OK(t, err)
 
 	var status string
 	test.OK(t, testData.DB.QueryRow(`SELECT status FROM account_promotion WHERE account_id = ?`, patient.AccountID.Int64()).Scan(&status))
-	test.Equals(t, common.PSCompleted.String(), status)
+	test.Equals(t, common.PSPending.String(), status)
 }
 
 func TestPatientPromoCode_ApplyBadPromotion(t *testing.T) {

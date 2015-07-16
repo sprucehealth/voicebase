@@ -123,6 +123,7 @@ func (p *promoCodeParams) ImageHeight() int {
 	return p.ImgHeight
 }
 
+// ShareTextParams represents the information used to create the social share aspects in the client
 type ShareTextParams struct {
 	Facebook     string `json:"facebook"`
 	Twitter      string `json:"twitter"`
@@ -132,6 +133,7 @@ type ShareTextParams struct {
 	EmailSubject string `json:"email_subject"`
 }
 
+// HomeCardConfig represents the home card data associated with promotions in the client
 type HomeCardConfig struct {
 	Text     string               `json:"text"`
 	ImageURL *app_url.SpruceAsset `json:"image_url"`
@@ -196,7 +198,7 @@ func canAssociatePromotionWithAccount(accountID, codeID int64, forNewUser bool, 
 	if count, err := dataAPI.PromotionCountInGroupForAccount(accountID, group); err != nil {
 		return err
 	} else if promotionGroup.MaxAllowedPromos <= count {
-		return ErrPromotionAlreadyExists
+		return ErrPromotionTypeMaxClaimed
 	}
 
 	if forNewUser {
@@ -250,15 +252,18 @@ func GeneratePromoCode(dataAPI api.DataAPI) (string, error) {
 	return "", errors.New("Unable to generate promo code")
 }
 
+// IsNewPatient determines if the associated patient is "new" (No associated visits)
 func IsNewPatient(patientID int64, dataAPI api.DataAPI) (bool, error) {
 	anyVisitsSubmitted, err := dataAPI.AnyVisitSubmitted(patientID)
 	return !anyVisitsSubmitted, err
 }
 
+// ReferralContext represents the context in which a referal was made
 type ReferralContext struct {
 	ReferralURL string
 }
 
+// PopulateReferralLink uses the supplied context and template to build out the appropriate referral link
 func PopulateReferralLink(strTemplate string, ctxt *ReferralContext) (string, error) {
 	tmpl, err := template.New("").Parse(strTemplate)
 	if err != nil {
@@ -273,6 +278,7 @@ func PopulateReferralLink(strTemplate string, ctxt *ReferralContext) (string, er
 	return b.String(), nil
 }
 
+// CreateReferralProgramFromTemplate utilizes the supplied template to create a referral program for the indicated account
 func CreateReferralProgramFromTemplate(routeID *int64, referralProgramTemplate *common.ReferralProgramTemplate, accountID int64, dataAPI api.DataAPI) (*common.ReferralProgram, error) {
 	rp := referralProgramTemplate.Data.(ReferralProgram)
 	rp.SetOwnerAccountID(accountID)
@@ -303,6 +309,12 @@ func CreateReferralProgramFromTemplate(routeID *int64, referralProgramTemplate *
 	return referralProgram, nil
 }
 
+// CreateReferralDisplayInfo generates the ReferralDisplayInfo struct required to display a referral in the client.
+// TODO: This could do for a little refactoring. It is currently very side effecty
+// 1. If an active referral program exists for the indicated account then that is used to build the view
+// 2. If there is no active refeerral program then PromotionReferralRoute info is used to find the appropriate referral program template
+// 3. If the indicated account does not have an account code associated with it then one is generated and associated with the account
+// 4. The account code is then used to generate the referral link
 func CreateReferralDisplayInfo(dataAPI api.DataAPI, webDomain string, accountID int64) (*ReferralDisplayInfo, error) {
 	referralProgram, err := dataAPI.ActiveReferralProgramForAccount(accountID, common.PromotionTypes)
 	if err != nil && !api.IsErrNotFound(err) {

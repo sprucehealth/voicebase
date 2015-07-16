@@ -67,6 +67,7 @@ func CreateReferralProgramForDoctor(doctor *common.Doctor, dataAPI api.DataAPI, 
 	return nil
 }
 
+// PromotionDisplayInfo represents the information the client should use to display a given promotion
 type PromotionDisplayInfo struct {
 	Title    string
 	ImageURL string

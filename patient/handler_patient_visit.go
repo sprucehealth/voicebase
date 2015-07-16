@@ -270,7 +270,7 @@ func (s *patientVisitHandler) applyVisitTags(caseID, patientID int64) error {
 	if err := s.applyCaseTag("state:"+patient.StateFromZipCode, caseID, true); err != nil {
 		return err
 	}
-	if err := s.applyCaseTag("patient:"+strconv.FormatInt(patient.ID.Int64(), 10), caseID, true); err != nil {
+	if err := s.applyCaseTag("patient:"+strconv.FormatInt(patient.ID.Int64(), 10), caseID, false); err != nil {
 		return err
 	}
 	monthI := time.Now().Month()

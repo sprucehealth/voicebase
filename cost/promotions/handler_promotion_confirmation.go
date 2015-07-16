@@ -16,10 +16,12 @@ type promotionConfirmationHandler struct {
 	dataAPI api.DataAPI
 }
 
+// PromotionConfirmationGETRequest represents the data expected to be sent to the promotionConfirmationHandler in a GET request, it is exported for client consumption.
 type PromotionConfirmationGETRequest struct {
 	Code string `schema:"code,required"`
 }
 
+// PromotionConfirmationGETResponse represents the data returned from a successful GET request to the promotionConfirmationHandler, it is exported for client consumption.
 type PromotionConfirmationGETResponse struct {
 	Title       string `json:"title"`
 	ImageURL    string `json:"image_url"`
@@ -27,6 +29,7 @@ type PromotionConfirmationGETResponse struct {
 	ButtonTitle string `json:"button_title"`
 }
 
+// NewPromotionConfirmationHandler returns a new instance of the promotionConfirmationHandler
 func NewPromotionConfirmationHandler(dataAPI api.DataAPI) http.Handler {
 	return apiservice.NoAuthorizationRequired(
 		httputil.SupportedMethods(&promotionConfirmationHandler{

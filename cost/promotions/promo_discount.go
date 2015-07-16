@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
+// DiscountUnit represents to units in which a discount is to be represented e.g ('%','USD')
 type DiscountUnit string
 
 func (d DiscountUnit) String() string {
@@ -14,8 +15,11 @@ func (d DiscountUnit) String() string {
 }
 
 const (
+	// PercentUnit is the DiscountUnit associated with percent based discounts
 	PercentUnit DiscountUnit = "%"
-	USDUnit     DiscountUnit = "USD"
+
+	// USDUnit is the DiscountUnit associated with USD based discounts
+	USDUnit DiscountUnit = "USD"
 )
 
 type consumableDiscountPromotion struct {
@@ -31,6 +35,10 @@ type moneyDiscountPromotion consumableDiscountPromotion
 type discountPromotion interface {
 	Promotion
 	getValue() int
+}
+
+func (d *percentDiscountPromotion) IsPatientVisible() bool {
+	return d.DiscountValue > 0
 }
 
 func (d *percentDiscountPromotion) Validate() error {
@@ -63,6 +71,10 @@ func (d *percentDiscountPromotion) Apply(cost *common.CostBreakdown) (bool, erro
 
 func (d *percentDiscountPromotion) IsConsumed() bool {
 	return d.Consumed
+}
+
+func (d *moneyDiscountPromotion) IsPatientVisible() bool {
+	return d.DiscountValue > 0
 }
 
 func (d *moneyDiscountPromotion) Validate() error {
@@ -112,15 +124,9 @@ func associate(promotion discountPromotion, forNewUser bool, accountID, codeID i
 		return err
 	}
 
-	status := common.PSPending
-	// if the promotion value is 0, assume the promotion has been completed.
-	if promotion.getValue() == 0 {
-		status = common.PSCompleted
-	}
-
 	if err := dataAPI.CreateAccountPromotion(&common.AccountPromotion{
 		AccountID: accountID,
-		Status:    status,
+		Status:    common.PSPending,
 		Group:     promotion.Group(),
 		CodeID:    codeID,
 		Data:      promotion,

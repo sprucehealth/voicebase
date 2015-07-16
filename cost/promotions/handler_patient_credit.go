@@ -17,6 +17,7 @@ type creditsRequestData struct {
 	Credit    int   `json:"credit"`
 }
 
+// NewPatientCreditsHandler returns a new initialzed instance of the creditsHandler
 func NewPatientCreditsHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(apiservice.AuthorizationRequired(&creditsHandler{
 		dataAPI: dataAPI,
@@ -45,5 +46,4 @@ func (c *creditsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	apiservice.WriteJSONSuccess(w)
-
 }

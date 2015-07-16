@@ -21,20 +21,24 @@ type patientPromotionsHandler struct {
 	analyticsLogger analytics.Logger
 }
 
+// PatientPromotionGETResponse represents the data returned from a successful GET request to the patientPromotionsHandler, it is exported for client consumption.
 type PatientPromotionGETResponse struct {
 	ActivePromotions  []*responses.ClientPromotion `json:"active_promotions"`
 	ExpiredPromotions []*responses.ClientPromotion `json:"expired_promotions"`
 }
 
+// PatientPromotionPOSTRequest represents the data expected to be sent to the patientPromotionsHandler in a POST request, it is exported for client consumption.
 type PatientPromotionPOSTRequest struct {
 	PromoCode string `json:"promo_code"`
 }
 
+// PatientPromotionPOSTErrorResponse represents the data returned from a non standard POST request to the patientPromotionsHandler, it is exported for client consumption.
 type PatientPromotionPOSTErrorResponse struct {
 	UserError string `json:"user_error"`
 	RequestID int64  `json:"request_id,string"`
 }
 
+// NewPatientPromotionsHandler rreturns a new initialized instance of the patientPromotionsHandler
 func NewPatientPromotionsHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, analyticsLogger analytics.Logger) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
@@ -84,6 +88,12 @@ func (h *patientPromotionsHandler) serveGET(w http.ResponseWriter, r *http.Reque
 			apiservice.WriteError(errors.New("Unable to cast promotion data into Promotion type"), w, r)
 			return
 		}
+
+		// If we are listing promtions and the promotion is makred as not patient visible then ignore it
+		if !promotion.IsPatientVisible() {
+			continue
+		}
+
 		var expireEpoch int64
 		if p.Expires != nil {
 			containsTokens = true
@@ -137,8 +147,9 @@ func (h *patientPromotionsHandler) servePOST(w http.ResponseWriter, r *http.Requ
 	}
 
 	// If this isn't a referral code then check if the promotion is still active.
+	var p *common.Promotion
 	if !promoCode.IsReferral {
-		p, err := h.dataAPI.Promotion(promoCode.ID, common.PromotionTypes)
+		p, err = h.dataAPI.Promotion(promoCode.ID, common.PromotionTypes)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -151,6 +162,28 @@ func (h *patientPromotionsHandler) servePOST(w http.ResponseWriter, r *http.Requ
 			})
 			return
 		}
+	} else {
+		arp, err := h.dataAPI.ActiveReferralProgramForAccount(ctxt.AccountID, common.PromotionTypes)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+
+		if arp.CodeID == promoCode.ID {
+			httputil.JSONResponse(w, http.StatusNotFound, &PatientPromotionPOSTErrorResponse{
+				UserError: fmt.Sprintf("%s has not been applied. A referral code cannot be claimed by the referrer ;)", rd.PromoCode),
+				RequestID: ctxt.RequestID,
+			})
+			return
+		}
+
+		rp, err := h.dataAPI.ReferralProgram(promoCode.ID, common.PromotionTypes)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+		referralProgram := rp.Data.(ReferralProgram)
+		p = referralProgram.PromotionForReferredAccount(promoCode.Code)
 	}
 
 	patient, err := h.dataAPI.GetPatientFromAccountID(ctxt.AccountID)
@@ -180,5 +213,16 @@ func (h *patientPromotionsHandler) servePOST(w http.ResponseWriter, r *http.Requ
 		apiservice.WriteError(err, w, r)
 		return
 	}
+
+	// If the promotion isn't patient visible then we don't want to return success and then have the GET return an empty list. This would be a confusing experience.
+	// To fix this we will return a 404 here with a message explaining that it was applied before the empty screen is shown. Returning this error is the only way currently to display a message to the user.
+	if p, ok := p.Data.(Promotion); ok && !p.IsPatientVisible() {
+		httputil.JSONResponse(w, http.StatusNotFound, &PatientPromotionPOSTErrorResponse{
+			UserError: fmt.Sprintf("The promo code %s has been associated with your account.", rd.PromoCode),
+			RequestID: ctxt.RequestID,
+		})
+		return
+	}
+
 	h.serveGET(w, r)
 }
