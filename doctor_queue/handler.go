@@ -41,7 +41,7 @@ func NewQueueHandler(dataAPI api.DataAPI) http.Handler {
 			apiservice.NoAuthorizationRequired(
 				&queueHandler{
 					dataAPI: dataAPI,
-				}), []string{api.RoleDoctor, api.RoleCC}),
+				}), api.RoleDoctor, api.RoleCC),
 		httputil.Get)
 }
 

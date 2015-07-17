@@ -46,7 +46,7 @@ func NewPatientCareTeamsHandler(dataAPI api.DataAPI, apiDomain string) http.Hand
 				&patientCareTeamHandler{
 					dataAPI:   dataAPI,
 					apiDomain: apiDomain,
-				}), []string{api.RoleDoctor, api.RolePatient, api.RoleCC}),
+				}), api.RoleDoctor, api.RolePatient, api.RoleCC),
 		httputil.Get)
 }
 

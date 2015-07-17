@@ -221,12 +221,12 @@ func TestPrefillQuestions(t *testing.T) {
 	}
 }
 
-type mockDataAPI_pathwayForPatient struct {
+type mockDataAPIPathwayForPatient struct {
 	api.DataAPI
 	pathways map[string]*common.Pathway // pathway tag -> pathway
 }
 
-func (d *mockDataAPI_pathwayForPatient) PathwayForTag(tag string, opts api.PathwayOption) (*common.Pathway, error) {
+func (d *mockDataAPIPathwayForPatient) PathwayForTag(tag string, opts api.PathwayOption) (*common.Pathway, error) {
 	if p := d.pathways[tag]; p != nil {
 		return p, nil
 	}
@@ -234,7 +234,7 @@ func (d *mockDataAPI_pathwayForPatient) PathwayForTag(tag string, opts api.Pathw
 }
 
 func TestPathwayForPatient(t *testing.T) {
-	dataAPI := &mockDataAPI_pathwayForPatient{
+	dataAPI := &mockDataAPIPathwayForPatient{
 		pathways: map[string]*common.Pathway{
 			"acne": {
 				ID:  1,

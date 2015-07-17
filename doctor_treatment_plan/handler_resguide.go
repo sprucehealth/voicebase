@@ -34,7 +34,7 @@ func NewResourceGuideHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatche
 				dataAPI:    dataAPI,
 				dispatcher: dispatcher,
 			}),
-			[]string{api.RoleDoctor},
+			api.RoleDoctor,
 		),
 		httputil.Get, httputil.Put, httputil.Delete)
 }

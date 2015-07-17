@@ -23,7 +23,7 @@ func NewReplaceCardHandler(
 				&replaceCardHandler{
 					dataAPI:    dataAPI,
 					paymentAPI: paymentAPI,
-				}), []string{api.RolePatient}), httputil.Put)
+				}), api.RolePatient), httputil.Put)
 }
 
 type replaceCardRequestData struct {

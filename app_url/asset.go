@@ -7,12 +7,14 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
+// Image assets available in the app. Only these assets should ever be used.
 var (
 	IconBlueTreatmentPlan       = &SpruceAsset{name: "icon_blue_treatment_plan"}
 	IconBlueTriage              = &SpruceAsset{name: "icon_blue_triage"}
 	IconBlueSuccess             = &SpruceAsset{name: "icon_blue_success"}
 	IconCaseLarge               = &SpruceAsset{name: "icon_case_large"}
 	IconCaseSmall               = &SpruceAsset{name: "icon_case_small"}
+	IconConsentLarge            = &SpruceAsset{name: "icon_consent_large"}
 	IconFAQ                     = &SpruceAsset{name: "icon_faq_large"}
 	IconGuide                   = &SpruceAsset{name: "icon_guide"}
 	IconHomeConversationNormal  = &SpruceAsset{name: "icon_home_conversation_normal"}

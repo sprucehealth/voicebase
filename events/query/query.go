@@ -106,9 +106,9 @@ func (seq *ServerEventQuery) SQL() (string, []interface{}) {
 	return q, conditionValues
 }
 
-func ServerEventsByVisitID(visitID *int64) *ServerEventQuery {
+func ServerEventsByVisitID(visitID int64) *ServerEventQuery {
 	return &ServerEventQuery{
 		TimestampQuery: TimestampQuery{},
-		VisitID:        visitID,
+		VisitID:        &visitID,
 	}
 }

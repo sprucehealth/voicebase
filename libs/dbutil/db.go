@@ -5,6 +5,12 @@ import (
 	"strings"
 )
 
+// Scanner is the interface implemented by both sql.Row and sql.Rows. It's useful
+// for creating generic scan functions that can accept either.
+type Scanner interface {
+	Scan(vals ...interface{}) error
+}
+
 // MySQLArgs returns n mysql arguments for a database query.
 func MySQLArgs(n int) string {
 	if n <= 0 {

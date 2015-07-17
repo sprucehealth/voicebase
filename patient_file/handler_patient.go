@@ -25,7 +25,7 @@ func NewDoctorPatientHandler(
 			apiservice.AuthorizationRequired(&doctorPatientHandler{
 				dataAPI:              dataAPI,
 				addressValidationAPI: addressValidationAPI,
-			}), []string{api.RoleDoctor, api.RoleCC}),
+			}), api.RoleDoctor, api.RoleCC),
 		httputil.Get, httputil.Put)
 }
 

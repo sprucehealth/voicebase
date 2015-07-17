@@ -32,7 +32,8 @@ func NewTreatmentGuideHandler(dataAPI api.DataAPI) http.Handler {
 			apiservice.AuthorizationRequired(
 				&treatmentGuideHandler{
 					dataAPI: dataAPI,
-				}), []string{api.RolePatient, api.RoleDoctor, api.RoleCC}),
+				}),
+			api.RolePatient, api.RoleDoctor, api.RoleCC),
 		httputil.Get)
 }
 

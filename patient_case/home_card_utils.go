@@ -25,7 +25,9 @@ const (
 	noCards = 0
 )
 
-func getHomeCards(cases []*common.PatientCase,
+func getHomeCards(
+	patient *common.Patient,
+	cases []*common.PatientCase,
 	cityStateInfo *address.CityState,
 	isSpruceAvailable bool,
 	dataAPI api.DataAPI,
@@ -39,7 +41,7 @@ func getHomeCards(cases []*common.PatientCase,
 	if len(cases) == 0 {
 		views, err = homeCardsForUnAuthenticatedUser(dataAPI, cityStateInfo, isSpruceAvailable, r)
 	} else {
-		views, err = homeCardsForAuthenticatedUser(dataAPI, cases, cityStateInfo, apiCDNDomain, webDomain, r)
+		views, err = homeCardsForAuthenticatedUser(dataAPI, patient, cases, cityStateInfo, apiCDNDomain, webDomain, r)
 	}
 
 	if err != nil {
@@ -64,15 +66,8 @@ func homeCardsForUnAuthenticatedUser(
 	isSpruceAvailable bool,
 	r *http.Request,
 ) ([]common.ClientView, error) {
-
-	// TODO: assume Acne
-	pathway, err := dataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
-	if err != nil {
-		return nil, err
-	}
-
 	views := make([]common.ClientView, 2)
-	views[1] = getLearnAboutSpruceSection(pathway.Tag)
+	views[1] = getLearnAboutSpruceSection()
 
 	if isSpruceAvailable {
 		views[0] = getStartVisitCard()
@@ -95,19 +90,13 @@ func homeCardsForUnAuthenticatedUser(
 
 func homeCardsForAuthenticatedUser(
 	dataAPI api.DataAPI,
+	patient *common.Patient,
 	cases []*common.PatientCase,
 	cityStateInfo *address.CityState,
 	apiCDNDomain string,
 	webDomain string,
 	r *http.Request,
 ) ([]common.ClientView, error) {
-
-	// If we're authenticated then we need account information to look up appropriate promotions/refer a friend
-	patient, err := dataAPI.Patient(cases[0].PatientID.Int64(), true)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-
 	// get notifications for all cases for a patient
 	notificationMap, err := dataAPI.NotificationsForCases(patient.ID.Int64(), NotifyTypes)
 	if err != nil {
@@ -281,8 +270,7 @@ func homeCardsForAuthenticatedUser(
 		views = append(views, getSendUsMessageSection())
 	}
 	if auxillaryCardOptions&learnMoreAboutSpruceCard != 0 {
-		// TODO: For now default to showing the sample treatment plan for Acne
-		views = append(views, getLearnAboutSpruceSection(api.AcnePathwayTag))
+		views = append(views, getLearnAboutSpruceSection())
 	}
 	return views, nil
 }
@@ -414,7 +402,7 @@ func getNotifyMeConfirmationCard(state string) common.ClientView {
 	}
 }
 
-func getLearnAboutSpruceSection(pathwayTag string) common.ClientView {
+func getLearnAboutSpruceSection() common.ClientView {
 	return &phSectionView{
 		Views: []common.ClientView{
 			&phSmallIconText{

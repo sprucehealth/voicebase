@@ -21,7 +21,7 @@ func NewAlertsHandler(dataAPI api.DataAPI) http.Handler {
 			apiservice.AuthorizationRequired(
 				&alertsHandler{
 					dataAPI: dataAPI,
-				}), []string{api.RoleDoctor}),
+				}), api.RoleDoctor),
 		httputil.Get)
 
 }

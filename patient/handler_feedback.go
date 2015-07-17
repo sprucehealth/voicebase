@@ -73,7 +73,7 @@ func NewFeedbackPromptHandler(dataAPI api.DataAPI) http.Handler {
 			apiservice.NoAuthorizationRequired(&feedbackPromptHandler{
 				dataAPI: dataAPI,
 			}),
-			[]string{api.RolePatient}),
+			api.RolePatient),
 		httputil.Get)
 }
 
@@ -87,7 +87,7 @@ func NewFeedbackHandler(dataAPI api.DataAPI, taggingClient tagging.Client, cfgSt
 				taggingClient: taggingClient,
 				cfgStore:      cfgStore,
 			}),
-			[]string{api.RolePatient}),
+			api.RolePatient),
 		httputil.Post)
 }
 

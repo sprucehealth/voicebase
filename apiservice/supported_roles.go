@@ -7,7 +7,9 @@ type supportedRolesHandler struct {
 	h     http.Handler
 }
 
-func SupportedRoles(h http.Handler, roles []string) http.Handler {
+// SupportedRoles wraps an HTTP handler with a filter that checks that the
+// incoming request is made by one of the required roles.
+func SupportedRoles(h http.Handler, roles ...string) http.Handler {
 	return &supportedRolesHandler{
 		h:     h,
 		roles: roles,

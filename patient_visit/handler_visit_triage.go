@@ -9,7 +9,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -40,7 +39,7 @@ func NewPreSubmissionTriageHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dis
 				&presubmissionTriageHandler{
 					dataAPI:    dataAPI,
 					dispatcher: dispatcher,
-				}), []string{api.RolePatient}), httputil.Put)
+				}), api.RolePatient), httputil.Put)
 }
 
 func (p *presubmissionTriageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -64,10 +63,11 @@ func (p *presubmissionTriageHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 	par.Go(func() error {
 		// update the patient visit status
 		updatedStatus := common.PVStatusPreSubmissionTriage
-		return errors.Trace(p.dataAPI.UpdatePatientVisit(rd.PatientVisitID, &api.PatientVisitUpdate{
+		_, err := p.dataAPI.UpdatePatientVisit(rd.PatientVisitID, &api.PatientVisitUpdate{
 			ClosedDate: ptr.Time(time.Now()),
 			Status:     &updatedStatus,
-		}))
+		})
+		return err
 	})
 	par.Go(func() error {
 		updatedStatus := common.PCStatusPreSubmissionTriage

@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/conc"
@@ -22,6 +23,7 @@ import (
 	"github.com/sprucehealth/backend/tagging/model"
 )
 
+// Case tag identifiers
 const (
 	ExistingPatientTag = "ExistingPatient"
 	NewPatientTag      = "NewPatient"
@@ -73,11 +75,30 @@ type VisitIntakeInfo struct {
 	SubmissionConfirmation  *info_intake.SubmissionConfirmationText `json:"submission_confirmation,omitempty"`
 	Checkout                *info_intake.CheckoutText               `json:"checkout,omitempty"`
 	Title                   string                                  `json:"title,omitempty"`
+	ParentalConsentRequired bool                                    `json:"parental_consent_required"`
+	ParentalConsentGranted  bool                                    `json:"parental_consent_granted"`
+	ParentalConsentInfo     *ParentalConsentInfo                    `json:"parental_consent_info,omitempty"`
 }
 
 type PatientVisitSubmittedResponse struct {
 	PatientVisitID int64  `json:"patient_visit_id,string"`
 	Status         string `json:"status,omitempty"`
+}
+
+// ParentalConsentInfo is the content to show when informing the patient they need parental consent to continue.
+type ParentalConsentInfo struct {
+	ScreenTitle string                  `json:"screen_title"`
+	FooterText  string                  `json:"footer_text"`
+	Body        ParentalConsentInfoBody `json:"body"`
+}
+
+// ParentalConsentInfoBody is the body content for the parental consent info
+type ParentalConsentInfoBody struct {
+	Title        string                `json:"title"`
+	IconURL      *app_url.SpruceAsset  `json:"icon_url"`
+	Message      string                `json:"message"`
+	ButtonText   string                `json:"button_text"`
+	ButtonAction *app_url.SpruceAction `json:"button_action"`
 }
 
 func NewPatientVisitHandler(
@@ -104,7 +125,7 @@ func NewPatientVisitHandler(
 					mediaStore:           mediaStore,
 					expirationDuration:   expirationDuration,
 					taggingClient:        taggingClient,
-				}), []string{api.RolePatient}),
+				}), api.RolePatient),
 		httputil.Get, httputil.Post, httputil.Put, httputil.Delete)
 }
 
@@ -133,9 +154,20 @@ func (s *patientVisitHandler) deletePatientVisit(w http.ResponseWriter, r *http.
 		return
 	}
 
+	patientID, err := s.dataAPI.GetPatientIDFromAccountID(apiservice.GetContext(r).AccountID)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
 	visit, err := s.dataAPI.GetPatientVisitFromID(requestData.PatientVisitID)
 	if err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
+		return
+	}
+
+	// make sure the patient making the request owns the visit
+	if visit.PatientID.Int64() != patientID {
+		apiservice.WriteAccessNotAllowedError(w, r)
 		return
 	}
 
@@ -151,7 +183,7 @@ func (s *patientVisitHandler) deletePatientVisit(w http.ResponseWriter, r *http.
 
 	// update the visit to mark it as deleted
 	visitStatus := common.PVStatusDeleted
-	if err := s.dataAPI.UpdatePatientVisit(visit.ID.Int64(), &api.PatientVisitUpdate{
+	if _, err := s.dataAPI.UpdatePatientVisit(visit.ID.Int64(), &api.PatientVisitUpdate{
 		Status: &visitStatus,
 	}); err != nil {
 		apiservice.WriteError(err, w, r)
@@ -326,7 +358,7 @@ func (s *patientVisitHandler) applyCaseTag(tag string, caseID int64, hidden bool
 }
 
 func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Request) {
-	patientID, err := s.dataAPI.GetPatientIDFromAccountID(apiservice.GetContext(r).AccountID)
+	patient, err := s.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -351,12 +383,12 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 			return
 		}
 	} else {
-
+		// TODO DEPRECATED: remove this once we force upgrade the patient app
 		// return the last created patient visit for the active case for the assumed ACNE pathway.
 		// NOTE: the call to get a visit without a patient_visit_id only exists for backwards compatibility
 		// reasons where v1.0 of the iOS client assumed a single visit existed for the patient
 		// and so did not pass in a patient_visit_id parameter
-		patientCases, err := s.dataAPI.CasesForPathway(patientID, api.AcnePathwayTag, []string{common.PCStatusActive.String(), common.PCStatusOpen.String()})
+		patientCases, err := s.dataAPI.CasesForPathway(patient.ID.Int64(), api.AcnePathwayTag, []string{common.PCStatusActive.String(), common.PCStatusOpen.String()})
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -390,7 +422,7 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	intakeInfo, err := IntakeLayoutForVisit(s.dataAPI, s.apiDomain, s.mediaStore, s.expirationDuration, patientVisit)
+	intakeInfo, err := IntakeLayoutForVisit(s.dataAPI, s.apiDomain, s.mediaStore, s.expirationDuration, patientVisit, patient, api.RolePatient)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -460,15 +492,20 @@ func submitVisit(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, patient *
 		return nil, apiservice.NewError("PatientID from auth token and patient id from patient visit don't match", http.StatusForbidden)
 	}
 
-	// nothing to do if the visit is already sumitted
+	// nothing to do if the visit is already submitted
 	switch visit.Status {
 	case common.PVStatusSubmitted, common.PVStatusCharged, common.PVStatusRouted:
 		return visit, nil
 	}
 
 	// do not support the submitting of a case that is in another state
-	if visit.Status != common.PVStatusOpen {
+	if visit.Status != common.PVStatusOpen && visit.Status != common.PVStatusPendingParentalConsent {
 		return nil, apiservice.NewValidationError("Cannot submit a case that is not in the open state. Current status of case = " + visit.Status)
+	}
+
+	// don't let a minor who doesn't yet have parental consent submit a visit
+	if patient.DOB.Age() < 18 && !patient.HasParentalConsent {
+		return nil, apiservice.NewValidationError("Cannot submit a visit until a parent or guardian has given consent.")
 	}
 
 	if err := dataAPI.SubmitPatientVisitWithID(visitID); err != nil {

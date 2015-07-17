@@ -48,7 +48,7 @@ func NewPatientPromotionsHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, analy
 				authAPI:         authAPI,
 				analyticsLogger: analyticsLogger,
 			}),
-			[]string{api.RolePatient}),
+			api.RolePatient),
 		httputil.Get, httputil.Post)
 }
 

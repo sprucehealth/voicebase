@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/libs/ptr"
 	patientpkg "github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
@@ -36,9 +37,7 @@ func TestIntake_PrefillQuestions(t *testing.T) {
 		allergyQuestion.QuestionID: &apiservice.QuestionAnswerItem{
 			QuestionID: allergyQuestion.QuestionID,
 			AnswerIntakes: []*apiservice.AnswerItem{
-				&apiservice.AnswerItem{
-					AnswerText: answerText,
-				},
+				{AnswerText: answerText},
 			},
 		},
 	}
@@ -167,14 +166,13 @@ func createFollowupAndGetVisitLayout(patient *common.Patient, caseID int64, test
 	// indicate the followup visit to be in the open state as that
 	// is the state the user would find the visit in if they were to
 	// start the followup visit
-	open := common.PVStatusOpen
-	err = testData.DataAPI.UpdatePatientVisit(
+	_, err = testData.DataAPI.UpdatePatientVisit(
 		followupVisitID,
 		&api.PatientVisitUpdate{
-			Status: &open,
+			Status: ptr.String(common.PVStatusOpen),
 		})
 	test.OK(t, err)
-	followupVisit.Status = open
+	followupVisit.Status = common.PVStatusOpen
 
 	// get the followup visit layout populated with any patient answers
 	intakeInfo, err := patientpkg.IntakeLayoutForVisit(
@@ -182,7 +180,7 @@ func createFollowupAndGetVisitLayout(patient *common.Patient, caseID int64, test
 		testData.Config.APIDomain,
 		testData.Config.MediaStore,
 		testData.Config.AuthTokenExpiration,
-		followupVisit)
+		followupVisit, nil, api.RoleDoctor)
 	test.OK(t, err)
 
 	return followupVisit, intakeInfo.ClientLayout

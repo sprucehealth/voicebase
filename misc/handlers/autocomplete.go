@@ -19,7 +19,6 @@ type autocompleteHandler struct {
 const allergicMedicationsQuestionTag = "q_allergic_medication_entry"
 
 func NewAutocompleteHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
-
 	a := &autocompleteHandler{
 		dataAPI: dataAPI,
 		erxAPI:  erxAPI,
@@ -27,7 +26,7 @@ func NewAutocompleteHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			apiservice.SupportedRoles(a,
-				[]string{api.RolePatient, api.RoleDoctor})),
+				api.RolePatient, api.RoleDoctor)),
 		httputil.Get)
 }
 

@@ -25,7 +25,7 @@ func NewItemHandler(dataAPI api.DataAPI) http.Handler {
 			apiservice.NoAuthorizationRequired(
 				&itemHandler{
 					dataAPI: dataAPI,
-				}), []string{api.RoleCC}),
+				}), api.RoleCC),
 		httputil.Put)
 }
 

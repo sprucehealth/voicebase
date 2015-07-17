@@ -5,10 +5,18 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/environment"
-	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
+
+// SError interface makes it possible for any package to describe an error
+// without having to depend on the utility methods in this package
+type SError interface {
+	IsUserError() bool
+	UserError() string
+	Error() string
+	HTTPStatusCode() int
+}
 
 type SpruceError struct {
 	DeveloperError     string `json:"developer_error,omitempty"`
@@ -113,7 +121,7 @@ func WriteError(err error, w http.ResponseWriter, r *http.Request) {
 			HTTPStatusCode:     err.HTTPStatusCode,
 			RequestID:          GetContext(r).RequestID,
 		}, w, r)
-	case errors.SError:
+	case SError:
 		writeSpruceError(&SpruceError{
 			UserError:      err.UserError(),
 			DeveloperError: err.Error(),

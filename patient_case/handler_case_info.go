@@ -22,7 +22,7 @@ func NewCaseInfoHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
 				&caseInfoHandler{
 					dataAPI:   dataAPI,
 					apiDomain: apiDomain,
-				}, []string{api.RolePatient, api.RoleDoctor})),
+				}, api.RolePatient, api.RoleDoctor)),
 		httputil.Get)
 }
 

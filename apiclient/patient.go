@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/patient"
+	"github.com/sprucehealth/backend/pharmacy"
 )
 
 type PatientClient struct {
@@ -119,4 +120,33 @@ func (pc *PatientClient) PromotionConfirmation(req *promotions.PromotionConfirma
 	var res promotions.PromotionConfirmationGETResponse
 	err := pc.do("GET", apipaths.PromotionsConfirmationURLPath, url.Values{"code": []string{req.Code}}, nil, &res, nil)
 	return res, err
+}
+
+// ParentalConsentStepReached updates the status of the state to reflect that the parental consent step has been reached in the intake flow.
+func (pc *PatientClient) ParentalConsentStepReached(visitID int64) error {
+	return pc.do("POST", apipaths.PatientVisitReachedConsentStep, nil,
+		&struct {
+			VisitID int64 `json:"patient_visit_id,string"`
+		}{
+			VisitID: visitID,
+		}, nil, nil)
+}
+
+// Visit fetches information about a visit
+func (pc *PatientClient) Visit(id int64) (*patient.PatientVisitResponse, error) {
+	var res patient.PatientVisitResponse
+	err := pc.do("GET", apipaths.PatientVisitURLPath,
+		url.Values{"patient_visit_id": []string{strconv.FormatInt(id, 10)}},
+		nil, &res, nil)
+	return &res, err
+}
+
+// SelectPharmacy updates a patient's pharmacy selection
+func (pc *PatientClient) SelectPharmacy(pharmacy *pharmacy.PharmacyData) error {
+	return pc.do("POST", apipaths.PatientPharmacyURLPath, nil, &pharmacy, nil, nil)
+}
+
+// Update updates parts of the patient's account
+func (pc *PatientClient) Update(update *patient.UpdateRequest) error {
+	return pc.do("POST", apipaths.PatientUpdateURLPath, nil, &update, nil, nil)
 }

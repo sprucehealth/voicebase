@@ -26,7 +26,7 @@ func NewSavedNoteHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) h
 				&savedNoteHandler{
 					dataAPI:    dataAPI,
 					dispatcher: dispatcher,
-				}, []string{api.RoleDoctor})),
+				}, api.RoleDoctor)),
 		httputil.Put)
 }
 

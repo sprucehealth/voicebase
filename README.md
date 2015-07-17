@@ -341,3 +341,13 @@ Error:
 Solution:
 
 You need to set up the `carefront` user with access to the database `carefront_db` (as described above).
+
+
+Updating and Creating Comment Diagrams
+--------------------------------------
+
+Sometimes a diagram is more useful than words to describe a bit of
+functionality (for instance the flow of visit status). A great tool
+to work with ascii diagrams is [Monodraw](http://monodraw.helftone.com/).
+The existing diagrams in their original file format can be found on
+Google Drive under Engineering/Backend/Diagrams.

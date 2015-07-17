@@ -29,7 +29,7 @@ func NewInboxHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&inboxHandler{
 				dataAPI: dataAPI,
-			}), []string{api.RoleDoctor, api.RoleCC}),
+			}), api.RoleDoctor, api.RoleCC),
 		httputil.Get)
 }
 
@@ -72,7 +72,7 @@ func NewUnassignedHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&unassignedHandler{
 				dataAPI: dataAPI,
-			}), []string{api.RoleDoctor, api.RoleCC}),
+			}), api.RoleDoctor, api.RoleCC),
 		httputil.Get)
 }
 
@@ -114,7 +114,7 @@ func NewHistoryHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&historyHandler{
 				dataAPI: dataAPI,
-			}), []string{api.RoleDoctor, api.RoleCC}),
+			}), api.RoleDoctor, api.RoleCC),
 		httputil.Get)
 }
 

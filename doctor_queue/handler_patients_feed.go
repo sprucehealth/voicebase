@@ -54,7 +54,7 @@ func NewPatientsFeedHandler(dataAPI api.DataAPI, taggingClient tagging.Client) h
 				&patientsFeedHandler{
 					dataAPI:       dataAPI,
 					taggingClient: taggingClient,
-				}), []string{api.RoleDoctor, api.RoleCC}),
+				}), api.RoleDoctor, api.RoleCC),
 		httputil.Get)
 }
 

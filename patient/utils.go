@@ -9,6 +9,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/errors"
@@ -26,7 +27,10 @@ func IntakeLayoutForVisit(
 	apiDomain string,
 	mediaStore *media.Store,
 	expirationDuration time.Duration,
-	visit *common.PatientVisit) (*VisitIntakeInfo, error) {
+	visit *common.PatientVisit,
+	patient *common.Patient,
+	viewerRole string,
+) (*VisitIntakeInfo, error) {
 
 	var visitLayout *info_intake.InfoIntakeLayout
 	var doctorID int64
@@ -78,7 +82,7 @@ func IntakeLayoutForVisit(
 		title = visitLayout.Header.Title
 	}
 
-	return &VisitIntakeInfo{
+	info := &VisitIntakeInfo{
 		PatientVisitID:          visit.ID.Int64(),
 		CanAbandon:              !visit.IsFollowup,
 		Status:                  visit.Status,
@@ -91,7 +95,30 @@ func IntakeLayoutForVisit(
 		SubmissionConfirmation:  visitLayout.DeprecatedSubmissionConfirmation,
 		Checkout:                visitLayout.DeprecatedCheckout,
 		Title:                   title,
-	}, nil
+	}
+
+	if patient != nil {
+		info.ParentalConsentRequired = patient.DOB.Age() < 18
+		info.ParentalConsentGranted = patient.HasParentalConsent
+		if viewerRole == api.RolePatient && info.ParentalConsentRequired && !info.ParentalConsentGranted {
+			info.ParentalConsentInfo = &ParentalConsentInfo{
+				ScreenTitle: "Parental Consent",
+				FooterText:  "Your parent will have access to your visit, treatment plan and messages with your care team.",
+				Body: ParentalConsentInfoBody{
+					Title:      "Text your parent a link to get their consent for your visit.",
+					IconURL:    app_url.IconConsentLarge,
+					Message:    "Before submitting your visit, we need a parent to consent to your treatment. As part of their approval, your parent will need to provide a valid photo ID.",
+					ButtonText: "Text Link",
+					// TODO: update this with the proper pathway and signed URL once we have the web side done
+					ButtonAction: app_url.ComposeSMSAction(
+						"Hey, I'd like to see a dermatologist for my acne. With Spruce I can see a board-certified " +
+							"dermatologist from my phone but need your approval: https://sprucehealth.com/parental-consent?sig=xxx"),
+				},
+			}
+		}
+	}
+
+	return info, nil
 }
 
 func populateLayoutWithAnswers(
@@ -299,7 +326,7 @@ func createPatientVisit(
 	// age they might need to be taken to an alternate pathway.
 	pathway, err := pathwayForPatient(dataAPI, pathwayTag, patient)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	var patientVisit *common.PatientVisit
@@ -308,12 +335,12 @@ func createPatientVisit(
 	// check for them against the possible alternate pathway based on age
 	patientCases, err := dataAPI.CasesForPathway(patient.ID.Int64(), pathwayTag, []string{common.PCStatusOpen.String(), common.PCStatusActive.String()})
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	if len(patientCases) == 0 && pathway.Tag != pathwayTag {
 		patientCases, err = dataAPI.CasesForPathway(patient.ID.Int64(), pathway.Tag, []string{common.PCStatusOpen.String(), common.PCStatusActive.String()})
 		if err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 	}
 
@@ -323,20 +350,20 @@ func createPatientVisit(
 		// patient visit against a case.
 		patientVisits, err := dataAPI.GetVisitsForCase(patientCases[0].ID.Int64(), common.OpenPatientVisitStates())
 		if err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		} else if len(patientVisits) > 0 {
 			sort.Sort(sort.Reverse(common.ByPatientVisitCreationDate(patientVisits)))
 			patientVisit = patientVisits[0]
 		}
 	} else if n != 0 {
-		return nil, fmt.Errorf("Only a single active case per pathway can exist for now. Pathway %s has %d active cases.", pathway.Tag, len(patientCases))
+		return nil, errors.Trace(fmt.Errorf("Only a single active case per pathway can exist for now. Pathway %s has %d active cases.", pathway.Tag, len(patientCases)))
 	}
 
 	visitCreated := false
 	if patientVisit == nil {
 		sku, err := dataAPI.SKUForPathway(pathway.Tag, common.SCVisit)
 		if err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 
 		// start a new visit
@@ -348,7 +375,7 @@ func createPatientVisit(
 			api.LanguageIDEnglish,
 			sku.Type)
 		if err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 
 		patientVisit = &common.PatientVisit{
@@ -361,21 +388,21 @@ func createPatientVisit(
 
 		_, err = dataAPI.CreatePatientVisit(patientVisit, ptr.Int64NilZero(doctorID))
 		if err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 
 		// assign the doctor to the case if the doctor is specified
 		if doctorID > 0 {
 			if err := dataAPI.AddDoctorToPatientCase(doctorID, patientVisit.PatientCaseID.Int64()); err != nil {
-				return nil, err
+				return nil, errors.Trace(err)
 			}
 		}
 		visitCreated = true
 	}
 
-	intakeInfo, err := IntakeLayoutForVisit(dataAPI, apiDomain, mediaStore, expirationDuration, patientVisit)
+	intakeInfo, err := IntakeLayoutForVisit(dataAPI, apiDomain, mediaStore, expirationDuration, patientVisit, patient, api.RolePatient)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	if visitCreated {

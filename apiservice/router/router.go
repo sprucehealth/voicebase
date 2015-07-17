@@ -51,6 +51,7 @@ import (
 	"github.com/sprucehealth/backend/treatment_plan"
 )
 
+// Config is all services and configuration values used by the app api handlers.
 type Config struct {
 	DataAPI                  api.DataAPI
 	AuthAPI                  api.AuthAPI
@@ -166,6 +167,7 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.PatientVisitTriageURLPath, patient_visit.NewPreSubmissionTriageHandler(conf.DataAPI, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.PatientVisitMessageURLPath, patient_visit.NewMessageHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.PatientVisitPhotoAnswerURLPath, patient_visit.NewPhotoAnswerIntakeHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.PatientVisitReachedConsentStep, patient_visit.NewReachedConsentStep(conf.DataAPI))
 	authenticationRequired(conf, apipaths.PatientTreatmentsURLPath, treatment_plan.NewTreatmentsHandler(conf.DataAPI))
 	noAuthenticationRequired(conf, apipaths.CheckEligibilityURLPath, patient.NewCheckCareProvidingEligibilityHandler(conf.DataAPI, addressValidationAPI, conf.AnalyticsLogger))
 
