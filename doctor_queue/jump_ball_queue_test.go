@@ -13,7 +13,7 @@ import (
 	"github.com/sprucehealth/backend/patient_visit"
 )
 
-type mockDataAPI_JBCQ struct {
+type mockDataAPIJBCQ struct {
 	api.DataAPI
 	pc              *common.PatientCase
 	tempClaimedItem *api.DoctorQueueItem
@@ -24,24 +24,24 @@ type mockDataAPI_JBCQ struct {
 	updatesExecuted []*api.DoctorQueueUpdate
 }
 
-func (m *mockDataAPI_JBCQ) GetPatientCaseFromPatientVisitID(id int64) (*common.PatientCase, error) {
+func (m *mockDataAPIJBCQ) GetPatientCaseFromPatientVisitID(id int64) (*common.PatientCase, error) {
 	return m.pc, nil
 }
-func (m *mockDataAPI_JBCQ) ExtendClaimForDoctor(doctorID, patientID, caseID int64, duration time.Duration) error {
+func (m *mockDataAPIJBCQ) ExtendClaimForDoctor(doctorID, patientID, caseID int64, duration time.Duration) error {
 	m.extendClaim = true
 	return nil
 }
-func (m *mockDataAPI_JBCQ) GetTempClaimedCaseInQueue(caseID int64) (*api.DoctorQueueItem, error) {
+func (m *mockDataAPIJBCQ) GetTempClaimedCaseInQueue(caseID int64) (*api.DoctorQueueItem, error) {
 	return m.tempClaimedItem, nil
 }
-func (m *mockDataAPI_JBCQ) Patient(id int64, basicInfoOnly bool) (*common.Patient, error) {
+func (m *mockDataAPIJBCQ) Patient(id int64, basicInfoOnly bool) (*common.Patient, error) {
 	return m.patient, nil
 }
-func (m *mockDataAPI_JBCQ) UpdateDoctorQueue(updates []*api.DoctorQueueUpdate) error {
+func (m *mockDataAPIJBCQ) UpdateDoctorQueue(updates []*api.DoctorQueueUpdate) error {
 	m.updatesExecuted = append(m.updatesExecuted, updates...)
 	return nil
 }
-func (m *mockDataAPI_JBCQ) TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(doctorID int64, pc *common.PatientCase) error {
+func (m *mockDataAPIJBCQ) TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(doctorID int64, pc *common.PatientCase) error {
 	m.permanentClaim = true
 	return nil
 }
@@ -49,7 +49,7 @@ func (m *mockDataAPI_JBCQ) TransitionToPermanentAssignmentOfDoctorToCaseAndPatie
 // TestClaimExtension_DiagnosisModified ensures that an existing claim is extended
 // upon diagnosis modification
 func TestClaimExtension_DiagnosisModified(t *testing.T) {
-	m := &mockDataAPI_JBCQ{
+	m := &mockDataAPIJBCQ{
 		pc: &common.PatientCase{},
 	}
 
@@ -88,7 +88,7 @@ func TestPermanentClaim_CaseAssignment(t *testing.T) {
 }
 
 func testPermanentClaimOnEvent(ev interface{}, t *testing.T) {
-	m := &mockDataAPI_JBCQ{
+	m := &mockDataAPIJBCQ{
 		pc:              &common.PatientCase{},
 		patient:         &common.Patient{},
 		tempClaimedItem: &api.DoctorQueueItem{},

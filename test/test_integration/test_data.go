@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -56,8 +57,10 @@ func init() {
 	dispatch.Testing = true
 	golog.Default().SetLevel(golog.WARN)
 	environment.SetCurrent(environment.Test)
+	rand.Seed(time.Now().Unix())
 }
 
+// SMS represents the SMS data
 type SMS struct {
 	From, To, Text string
 }
@@ -505,6 +508,7 @@ func (d *TestData) bootstrapData() {
 
 }
 
+// SetupTest bootstraps the integration test system
 func SetupTest(t *testing.T) *TestData {
 	CheckIfRunningLocally(t)
 	t.Parallel()
