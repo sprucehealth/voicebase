@@ -16,7 +16,7 @@ func NewDataAccess(db *sql.DB) Financial {
 }
 
 const (
-	maxItems = 1000
+	maxItems = 10000
 )
 
 func (d *dataAccess) IncomingItems(from, to time.Time) ([]*IncomingItem, error) {
