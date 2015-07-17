@@ -11,29 +11,41 @@ import (
 )
 
 const (
+	// DateSeparator is the default separator between parts of a date
 	DateSeparator = "-"
-	DateFormat    = "YYYY-MM-DD"
+	// DateFormat is the default format for a date
+	DateFormat = "YYYY-MM-DD"
 )
 
+// Date holds a date (year, month, day). It is better to use Date rather than Time
+// when the time is irrelevant (e.g. birthday). This makes it less likely that
+// timezone issues or other calculations makes the date cross a day boundary.
 type Date struct {
+	// Month must be [1,12]
 	Month int
-	Day   int
-	Year  int
+	// Day must be [1,31]
+	Day int
+	// Year must be [1900,2200]
+	Year int
 }
 
-func (d Date) Validate() error {
-	if d.Year < 1900 {
-		return fmt.Errorf("Invalid year %d in date", d.Year)
+// Validate returns false and a reason iff the date is not valid (e.g. month not [1,12]).
+// Only basic checks are done, the day is not checked for the specific month (leap year)
+// or that a month with 30 days does not use day 31.
+func (d Date) Validate() (bool, string) {
+	if d.Year < 1900 || d.Year > 2200 {
+		return false, fmt.Sprintf("Invalid year %d in date", d.Year)
 	}
 	if d.Month < 1 || d.Month > 12 {
-		return fmt.Errorf("Invalid month %d in date", d.Month)
+		return false, fmt.Sprintf("Invalid month %d in date", d.Month)
 	}
 	if d.Day < 1 || d.Day > 31 {
-		return fmt.Errorf("Invalid day %d in date", d.Day)
+		return false, fmt.Sprintf("Invalid day %d in date", d.Day)
 	}
-	return nil
+	return true, ""
 }
 
+// UnmarshalJSON implements json.Unmarshaler
 func (d *Date) UnmarshalJSON(data []byte) error {
 	strDate := string(data)
 
@@ -74,8 +86,8 @@ func (d *Date) UnmarshalJSON(data []byte) error {
 		Day:   dateDay,
 	}
 
-	if err := date.Validate(); err != nil {
-		return err
+	if ok, msg := date.Validate(); !ok {
+		return fmt.Errorf("encoding.Date#UnmarshalJSON: " + msg)
 	}
 
 	*d = date
@@ -83,6 +95,7 @@ func (d *Date) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON implements json.Marshaler
 func (d Date) MarshalJSON() ([]byte, error) {
 	if d.Month == 0 && d.Year == 0 && d.Day == 0 {
 		return []byte(`null`), nil
@@ -91,6 +104,8 @@ func (d Date) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%d-%02d-%02d"`, d.Year, d.Month, d.Day)), nil
 }
 
+// Scan implements sql.Scanner. It expects src to be nil or of type
+// string, time.Time, or []byte.
 func (d *Date) Scan(src interface{}) error {
 	if src == nil {
 		*d = Date{}
@@ -113,6 +128,7 @@ func (d *Date) Scan(src interface{}) error {
 	return fmt.Errorf("encoding: can't scan type %T into Date", src)
 }
 
+// Value implements sql/driver.Value. It returns nil on nil or zero date or time.Time.
 func (d *Date) Value() (driver.Value, error) {
 	if d == nil {
 		return nil, nil
@@ -123,14 +139,17 @@ func (d *Date) Value() (driver.Value, error) {
 	return d.ToTime(), nil
 }
 
+// ToTime returns a time.Time with the date of the object and time of 00:00:00 UTC
 func (d Date) ToTime() time.Time {
 	return time.Date(d.Year, time.Month(d.Month), d.Day, 0, 0, 0, 0, time.UTC)
 }
 
+// String implements fmt.Stringer
 func (d Date) String() string {
 	return fmt.Sprintf(`%d-%02d-%02d`, d.Year, d.Month, d.Day)
 }
 
+// Age returns the number of years since the Date until today (age if Date represent a date of birth).
 func (d Date) Age() int {
 	now := time.Now()
 	age := now.Year() - d.Year
@@ -141,10 +160,12 @@ func (d Date) Age() int {
 	return age
 }
 
+// IsZero returns true iff every component of the date is zero.
 func (d Date) IsZero() bool {
 	return d.Year == 0 && d.Month == 0 && d.Day == 0
 }
 
+// NewDateFromTime returns a Date with the date components from the provided time.
 func NewDateFromTime(dateTime time.Time) Date {
 	dateYear, dateMonth, dateDay := dateTime.Date()
 	d := Date{
@@ -155,6 +176,8 @@ func NewDateFromTime(dateTime time.Time) Date {
 	return d
 }
 
+// NewDateFromComponents returns a date by parsing the provided string components.
+// It validates the date after parsing.
 func NewDateFromComponents(dateYear, dateMonth, dateDay string) (Date, error) {
 	var d Date
 	var err error
@@ -171,6 +194,10 @@ func NewDateFromComponents(dateYear, dateMonth, dateDay string) (Date, error) {
 	d.Year, err = strconv.Atoi(dateYear)
 	if err != nil {
 		return d, err
+	}
+
+	if ok, msg := d.Validate(); !ok {
+		return d, fmt.Errorf("encoding.NewDateFromComponents: " + msg)
 	}
 
 	return d, nil

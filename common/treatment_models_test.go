@@ -1,8 +1,9 @@
 package common
 
 import (
-	"github.com/sprucehealth/backend/encoding"
 	"testing"
+
+	"github.com/sprucehealth/backend/encoding"
 )
 
 func TestTreatmentEquals(t *testing.T) {
@@ -284,7 +285,7 @@ func TestTreatmentEquals_NoErxData(t *testing.T) {
 func TestTreatmentListEquals(t *testing.T) {
 	treatmentList1 := &TreatmentList{
 		Treatments: []*Treatment{
-			&Treatment{
+			{
 				ID: encoding.NewObjectID(5),
 				DrugDBIDs: map[string]string{
 					"lexi_gen_product_id":  "12345",
@@ -305,7 +306,7 @@ func TestTreatmentListEquals(t *testing.T) {
 					Int64Value: 5,
 				},
 			},
-			&Treatment{
+			{
 				ID: encoding.NewObjectID(5),
 				DrugDBIDs: map[string]string{
 					"lexi_gen_product_id":  "12345",
@@ -335,7 +336,7 @@ func TestTreatmentListEquals(t *testing.T) {
 
 	treatmentList2 := &TreatmentList{
 		Treatments: []*Treatment{
-			&Treatment{
+			{
 				ID: encoding.NewObjectID(5),
 				DrugDBIDs: map[string]string{
 					"lexi_gen_product_id":  "12345",
@@ -356,7 +357,7 @@ func TestTreatmentListEquals(t *testing.T) {
 					Int64Value: 5,
 				},
 			},
-			&Treatment{
+			{
 				ID: encoding.NewObjectID(5),
 				DrugDBIDs: map[string]string{
 					"lexi_gen_product_id":  "12345",
@@ -392,7 +393,7 @@ func TestTreatmentListEquals(t *testing.T) {
 func TestTreatmentListEquals_DifferentLength(t *testing.T) {
 	treatmentList1 := &TreatmentList{
 		Treatments: []*Treatment{
-			&Treatment{
+			{
 				ID: encoding.NewObjectID(5),
 				DrugDBIDs: map[string]string{
 					"lexi_gen_product_id":  "12345",
@@ -418,7 +419,7 @@ func TestTreatmentListEquals_DifferentLength(t *testing.T) {
 
 	treatmentList2 := &TreatmentList{
 		Treatments: []*Treatment{
-			&Treatment{
+			{
 				ID: encoding.NewObjectID(5),
 				DrugDBIDs: map[string]string{
 					"lexi_gen_product_id":  "12345",
@@ -439,7 +440,7 @@ func TestTreatmentListEquals_DifferentLength(t *testing.T) {
 					Int64Value: 5,
 				},
 			},
-			&Treatment{
+			{
 				ID: encoding.NewObjectID(5),
 				DrugDBIDs: map[string]string{
 					"lexi_gen_product_id":  "12345",

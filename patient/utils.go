@@ -16,9 +16,11 @@ import (
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/media"
 )
 
+// IntakeLayoutForVisit returns the intake layout info for the provided visit.
 func IntakeLayoutForVisit(
 	dataAPI api.DataAPI,
 	apiDomain string,
@@ -249,6 +251,60 @@ func populateAnswers(question *info_intake.Question, answers []common.Answer) ([
 	return items, nil
 }
 
+// pathwayForPatient validates the age of the patient against the pathway's restrictions and
+// optionally returns an alternate pathway if the age range specifies one.
+func pathwayForPatient(dataAPI api.DataAPI, pathwayTag string, patient *common.Patient) (*common.Pathway, error) {
+	pathway, err := dataAPI.PathwayForTag(pathwayTag, api.POWithDetails)
+	if err != nil {
+		return nil, err
+	}
+
+	// Make sure that the patient is elligible for the selected pathway (e.g. age), and
+	// see if their is an alternate pathway matching their age (e.g. teen acne).
+	if pathway.Details != nil && len(pathway.Details.AgeRestrictions) != 0 {
+		age := patient.DOB.Age()
+		// The age restrictions are guaranteed to be ordered .
+		var ageRes *common.PathwayAgeRestriction
+		for _, ar := range pathway.Details.AgeRestrictions {
+			if ar.MaxAgeOfRange == nil || age <= *ar.MaxAgeOfRange {
+				// Only the last range should be nil so it's a catch all if nothing else has yet matched.
+				ageRes = ar
+				break
+			}
+		}
+		// One range should have matched so this is just a sanity check.
+		if ageRes == nil {
+			return nil, fmt.Errorf("age ranges for pathway %s are invalid", pathway.Tag)
+		}
+		if !ageRes.VisitAllowed {
+			// The app shouldn't have let the patient start a visit and should have shown this same alert message, but
+			// checking it on the server side as well is always good practice.
+			return nil, &apiservice.SpruceError{
+				DeveloperError: fmt.Sprintf("Pathway %s does not allow patients with age %d to start a visit", pathway.Tag, age),
+				UserError:      ageRes.Alert.Message,
+				HTTPStatusCode: http.StatusBadRequest,
+			}
+		}
+		// The age ranges can specify an alternate pathway that should be used to start a visit.
+		// This unfortunate situations occurs because when someone is first shown the pathway menu we don't
+		// yet have their age so can't direct them to the appropriate pathway.
+		if ageRes.AlternatePathwayTag != "" {
+			pathway, err = dataAPI.PathwayForTag(ageRes.AlternatePathwayTag, api.PONone)
+			if err != nil {
+				return nil, err
+			}
+		}
+	} else if patient.DOB.Age() < 18 {
+		// For pathways without explicit age restrictions don't allow anyone under 18
+		return nil, &apiservice.SpruceError{
+			DeveloperError: "No explicit age ranges listed so not allowing anyone under 18.",
+			UserError:      "Sorry, we do not support the chosen condition for people under 18.",
+			HTTPStatusCode: http.StatusBadRequest,
+		}
+	}
+	return pathway, nil
+}
+
 func createPatientVisit(
 	patient *common.Patient,
 	doctorID int64,
@@ -261,39 +317,46 @@ func createPatientVisit(
 	r *http.Request,
 	context *apiservice.VisitLayoutContext,
 ) (*PatientVisitResponse, error) {
+	// We have to resolve the pathway first because it's possible that for the patient's
+	// age they might need to be taken to an alternate pathway.
+	pathway, err := pathwayForPatient(dataAPI, pathwayTag, patient)
+	if err != nil {
+		return nil, err
+	}
 
 	var patientVisit *common.PatientVisit
 
+	// First check for cases on the pathway the patient chose from the menu and if none then
+	// check for them against the possible alternate pathway based on age
 	patientCases, err := dataAPI.CasesForPathway(patient.ID.Int64(), pathwayTag, []string{common.PCStatusOpen.String(), common.PCStatusActive.String()})
 	if err != nil {
 		return nil, err
-	} else if err == nil {
-		switch l := len(patientCases); {
-		case l == 0:
-		case l == 1:
-			// if there exists open visits against an active case for this pathwayTag, return
-			// the last created patient visit. Technically, the patient should not have more than a single open
-			// patient visit against a case.
-			patientVisits, err := dataAPI.GetVisitsForCase(patientCases[0].ID.Int64(), common.OpenPatientVisitStates())
-			if err != nil {
-				return nil, err
-			} else if len(patientVisits) > 0 {
-				sort.Sort(sort.Reverse(common.ByPatientVisitCreationDate(patientVisits)))
-				patientVisit = patientVisits[0]
-			}
-		default:
-			return nil, fmt.Errorf("Only a single active case per pathway can exist for now. Pathway %s has %d active cases.", pathwayTag, len(patientCases))
+	}
+	if len(patientCases) == 0 && pathway.Tag != pathwayTag {
+		patientCases, err = dataAPI.CasesForPathway(patient.ID.Int64(), pathway.Tag, []string{common.PCStatusOpen.String(), common.PCStatusActive.String()})
+		if err != nil {
+			return nil, err
 		}
+	}
+
+	if n := len(patientCases); n == 1 {
+		// if there exists open visits against an active case for this pathwayTag, return
+		// the last created patient visit. Technically, the patient should not have more than a single open
+		// patient visit against a case.
+		patientVisits, err := dataAPI.GetVisitsForCase(patientCases[0].ID.Int64(), common.OpenPatientVisitStates())
+		if err != nil {
+			return nil, err
+		} else if len(patientVisits) > 0 {
+			sort.Sort(sort.Reverse(common.ByPatientVisitCreationDate(patientVisits)))
+			patientVisit = patientVisits[0]
+		}
+	} else if n != 0 {
+		return nil, fmt.Errorf("Only a single active case per pathway can exist for now. Pathway %s has %d active cases.", pathway.Tag, len(patientCases))
 	}
 
 	visitCreated := false
 	if patientVisit == nil {
-		pathway, err := dataAPI.PathwayForTag(pathwayTag, api.PONone)
-		if err != nil {
-			return nil, err
-		}
-
-		sku, err := dataAPI.SKUForPathway(pathwayTag, common.SCVisit)
+		sku, err := dataAPI.SKUForPathway(pathway.Tag, common.SCVisit)
 		if err != nil {
 			return nil, err
 		}
@@ -318,11 +381,7 @@ func createPatientVisit(
 			SKUType:         sku.Type,
 		}
 
-		var dID *int64
-		if doctorID != 0 {
-			dID = &doctorID
-		}
-		_, err = dataAPI.CreatePatientVisit(patientVisit, dID)
+		_, err = dataAPI.CreatePatientVisit(patientVisit, ptr.Int64NilZero(doctorID))
 		if err != nil {
 			return nil, err
 		}

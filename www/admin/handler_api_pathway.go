@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -27,6 +28,8 @@ type updatePathwayRequest struct {
 	Details *common.PathwayDetails `json:"details"`
 }
 
+// NewPathwayHandler returns an HTTP handler that supports GET for requesting
+// pathway details and PATCH for updating the pathway details.
 func NewPathwayHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&pathwayHandler{
 		dataAPI: dataAPI,
@@ -38,7 +41,7 @@ func (h *pathwayHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case httputil.Get:
 		h.get(w, r)
 	case httputil.Patch:
-		h.put(w, r)
+		h.patch(w, r)
 	}
 }
 
@@ -70,6 +73,18 @@ func (h *pathwayHandler) get(w http.ResponseWriter, r *http.Request) {
 			},
 			DidYouKnow:     []string{},
 			WhatIsIncluded: []string{},
+			AgeRestrictions: []*common.PathwayAgeRestriction{
+				{
+					VisitAllowed:  false,
+					MaxAgeOfRange: ptr.Int(17),
+					Alert: &common.PathwayAlert{
+						Type:        "age_alert:error",
+						Message:     "Sorry, we don't currently support the chosen condition for patients under 18.",
+						ButtonTitle: "OK",
+					},
+				},
+				{VisitAllowed: true},
+			},
 		}
 	}
 
@@ -78,7 +93,7 @@ func (h *pathwayHandler) get(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *pathwayHandler) put(w http.ResponseWriter, r *http.Request) {
+func (h *pathwayHandler) patch(w http.ResponseWriter, r *http.Request) {
 	pathwayID, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
@@ -104,6 +119,10 @@ func (h *pathwayHandler) put(w http.ResponseWriter, r *http.Request) {
 	update := &api.PathwayUpdate{
 		Name:    req.Name,
 		Details: req.Details,
+	}
+	if ok, reason := req.Details.Validate(); !ok {
+		www.APIBadRequestError(w, r, reason)
+		return
 	}
 	if err := h.dataAPI.UpdatePathway(pathwayID, update); err != nil {
 		www.APIInternalError(w, r, err)
