@@ -42,11 +42,7 @@ func (ber ErrBadExpr) Error() string {
 }
 
 func IsErrBadExpression(err error) bool {
-	traced, ok := err.(errors.Traced)
-	if ok {
-		err = traced.Err
-	}
-	_, ok = err.(ErrBadExpression)
+	_, ok := errors.Cause(err).(ErrBadExpression)
 	return ok
 }
 

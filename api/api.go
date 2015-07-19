@@ -43,19 +43,18 @@ const (
 	DiagnosePurpose        = "DIAGNOSE"
 )
 
+// ErrNotFound is used to signal that an object is not found. The
+// string value will be the name of the type of object.
 type ErrNotFound string
 
+// Error implements the error interface.
 func (e ErrNotFound) Error() string {
 	return fmt.Sprintf("object of type '%s' not found", string(e))
 }
 
+// IsErrNotFound returns true iff the provided error is api.ErrNotFound.
 func IsErrNotFound(err error) bool {
-	// Make sure we're comparing the actual error that was returned rather than a trace wrapper
-	traced, ok := err.(errors.Traced)
-	if ok {
-		err = traced.Err
-	}
-	_, ok = err.(ErrNotFound)
+	_, ok := errors.Cause(err).(ErrNotFound)
 	return ok
 }
 
