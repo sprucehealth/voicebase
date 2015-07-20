@@ -10,6 +10,65 @@ import (
 	"github.com/sprucehealth/backend/test/test_integration"
 )
 
+func TestPromotionGroups(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	_, err := testData.DB.Exec(`INSERT INTO promotion_group (name, max_allowed_promos) VALUES ('attribution', 1)`)
+	test.OK(t, err)
+	_, err = testData.DB.Exec(`INSERT INTO promotion_group (name, max_allowed_promos) VALUES ('credit', 5)`)
+	test.OK(t, err)
+
+	groups, err := testData.DataAPI.PromotionGroups()
+	test.OK(t, err)
+
+	// Test that we get our two groups back
+	test.Equals(t, 2, len(groups))
+
+	// Test that we are returning them in a same ordering
+	test.Equals(t, `attribution`, groups[0].Name)
+	test.Equals(t, `credit`, groups[1].Name)
+}
+
+func TestPromotionGroup(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	_, err := testData.DB.Exec(`INSERT INTO promotion_group (name, max_allowed_promos) VALUES ('attribution', 1)`)
+	test.OK(t, err)
+	_, err = testData.DB.Exec(`INSERT INTO promotion_group (name, max_allowed_promos) VALUES ('credit', 5)`)
+	test.OK(t, err)
+
+	group, err := testData.DataAPI.PromotionGroup(`attribution`)
+	test.OK(t, err)
+
+	// Test that we are returning them in a same ordering
+	test.Equals(t, `attribution`, group.Name)
+	test.Equals(t, 1, group.MaxAllowedPromos)
+	test.Assert(t, group.ID != 0, "Expected a non zero ID")
+}
+
+func TestCreatePromotionGroup(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	testData.DataAPI.CreatePromotionGroup(&common.PromotionGroup{
+		Name:             "Foo",
+		MaxAllowedPromos: 1,
+	})
+
+	group, err := testData.DataAPI.PromotionGroup(`Foo`)
+	test.OK(t, err)
+
+	// Test that we are returning them in a same ordering
+	test.Equals(t, `Foo`, group.Name)
+	test.Equals(t, 1, group.MaxAllowedPromos)
+	test.Assert(t, group.ID != 0, "Expected a non zero ID")
+}
+
 func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()
@@ -28,9 +87,9 @@ func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 	})
 
 	// create a percent discount promotion
-	displayMsg := "5% off visit for new Spruce Users"
-	successMsg := "Successfully claimed 5% coupon code"
-	promoCode1 := createPromotion(promotions.NewPercentOffVisitPromotion(5,
+	displayMsg := "50% off visit for new Spruce Users"
+	successMsg := "Successfully claimed 50% coupon code"
+	promoCode1 := createPromotion(promotions.NewPercentOffVisitPromotion(50,
 		"convert",
 		displayMsg,
 		displayMsg,
@@ -41,9 +100,9 @@ func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 		true), testData, t)
 
 	// create a dollar off discount promotion
-	displayMsg = "$25 off visit for new Spruce Users"
-	successMsg = "Successfully claimed $25 coupon code"
-	promoCode2 := createPromotion(promotions.NewMoneyOffVisitPromotion(2500,
+	displayMsg = "$5 off visit for new Spruce Users"
+	successMsg = "Successfully claimed $5 coupon code"
+	promoCode2 := createPromotion(promotions.NewMoneyOffVisitPromotion(500,
 		"new_user",
 		displayMsg,
 		displayMsg,
@@ -73,7 +132,7 @@ func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 	promoCode3 := createPromotion(promotion, testData, t)
 
 	// create an account credits promotion
-	promoCode4 := createPromotion(promotions.NewAccountCreditPromotion(1200,
+	promoCode4 := createPromotion(promotions.NewAccountCreditPromotion(300,
 		"convert",
 		displayMsg,
 		displayMsg,
@@ -84,7 +143,7 @@ func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 		true), testData, t)
 
 	// create another account credits promotion
-	promoCode5 := createPromotion(promotions.NewAccountCreditPromotion(1000,
+	promoCode5 := createPromotion(promotions.NewAccountCreditPromotion(700,
 		"convert",
 		displayMsg,
 		displayMsg,
@@ -100,29 +159,24 @@ func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 	test_integration.AddTestPharmacyForPatient(pr.Patient.ID.Int64(), testData, t)
 
 	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode1, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, false)
-	// give enough time for the promotion to get associated with the new user
 	test.OK(t, err)
 
 	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode2, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, false)
-	// give enough time for the promotion to get associated with the new user
 	test.OK(t, err)
 
 	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode3, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, false)
-	// give enough time for the promotion to get associated with the new user
 	test.OK(t, err)
 
 	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode4, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, false)
-	// give enough time for the promotion to get associated with the new user
 	test.OK(t, err)
 
 	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode5, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, false)
-	// give enough time for the promotion to get associated with the new user
 	test.OK(t, err)
 
-	// at this point the patient should have $22 in credit
+	// at this point the patient should have $10 in credit
 	patientCredit, err := testData.DataAPI.AccountCredit(pr.Patient.AccountID.Int64())
 	test.OK(t, err)
-	test.Equals(t, 2200, patientCredit.Credit)
+	test.Equals(t, 1000, patientCredit.Credit)
 
 	// at this point the patient should have 2 pending promotions
 	pendingPromotions, err := testData.DataAPI.PendingPromotionsForAccount(pr.Patient.AccountID.Int64(), common.PromotionTypes)
@@ -135,9 +189,8 @@ func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 	test.Equals(t, 1, len(careTeamMembers))
 	test.Equals(t, dr.DoctorID, careTeamMembers[0].ProviderID)
 
-	// the cost of the visit should be $8 after the percent promotion and the account credits
+	// the cost of the visit should be $5 after the percent promotion, money promotion and the account credits
 	cost, lineItems := test_integration.QueryCost(pr.Patient.AccountID.Int64(), test_integration.SKUAcneVisit, testData, t)
-	test.Equals(t, "$16", cost)
-	test.Equals(t, 3, len(lineItems))
-
+	test.Equals(t, "$5", cost)
+	test.Equals(t, 4, len(lineItems))
 }

@@ -255,7 +255,7 @@ func CreateRandomPromotion(t *testing.T, testData *test_integration.TestData, ex
 	if api.IsErrNotFound(err) {
 		_, err = testData.DataAPI.CreatePromotionGroup(&common.PromotionGroup{
 			Name:             promotionData.Group(),
-			MaxAllowedPromos: 99,
+			MaxAllowedPromos: 1,
 		})
 		test.OK(t, err)
 	}

@@ -33,7 +33,6 @@ func totalCostForItems(
 	costBreakdown.CalculateTotal()
 
 	if launchPromoStartDate != nil && !launchPromoStartDate.IsZero() {
-
 		patientID, err := dataAPI.GetPatientIDFromAccountID(accountID)
 		if err != nil {
 			return nil, err
@@ -56,8 +55,7 @@ func totalCostForItems(
 		}
 	}
 
-	if err := applyPromotion(costBreakdown,
-		updateState, accountID, dataAPI, analyticsLogger); err != nil {
+	if err := applyPromotions(costBreakdown, updateState, accountID, dataAPI, analyticsLogger); err != nil {
 		return nil, err
 	}
 
@@ -82,19 +80,14 @@ func addLaunchPromoToCost(costBreakdown *common.CostBreakdown) {
 	}
 }
 
-func applyPromotion(costBreakdown *common.CostBreakdown,
-	updateState bool, accountID int64, dataAPI api.DataAPI, analyticsLogger analytics.Logger) error {
-
+func applyPromotions(costBreakdown *common.CostBreakdown, updateState bool, accountID int64, dataAPI api.DataAPI, analyticsLogger analytics.Logger) error {
 	// check for any pending promotions
 	pendingPromotions, err := dataAPI.PendingPromotionsForAccount(accountID, common.PromotionTypes)
 	if err != nil {
 		return err
 	}
 
-	// TODO: Sort the pending promotions based on the items in the cost breakdown
-	// so that we can apply the best promotion applicable to the item
-
-	// apply any promotion associated with the patient account
+	// apply any promotions associated with the patient account
 	for _, pendingPromotion := range pendingPromotions {
 		promotion := pendingPromotion.Data.(promotions.Promotion)
 		applied, err := promotion.Apply(costBreakdown)
@@ -115,7 +108,7 @@ func applyPromotion(costBreakdown *common.CostBreakdown,
 				pendingPromotion.CodeID, &api.AccountPromotionUpdate{
 					PromotionData: pendingPromotion.Data,
 					Status:        promotionStatus,
-				}); err != nil {
+				}, api.APOPendingOnly); err != nil {
 				return err
 			}
 
@@ -134,7 +127,6 @@ func applyPromotion(costBreakdown *common.CostBreakdown,
 					ExtraJSON: string(jsonData),
 				},
 			})
-
 		}
 	}
 

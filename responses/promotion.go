@@ -2,6 +2,7 @@ package responses
 
 import "github.com/sprucehealth/backend/common"
 
+// ClientPromotion represents the data neede dy a client to correctly display a promotion
 type ClientPromotion struct {
 	Code                 string `json:"display_code"`
 	Description          string `json:"description"`
@@ -9,6 +10,7 @@ type ClientPromotion struct {
 	ExpirationDate       int64  `json:"expiration_date"`
 }
 
+// Promotion represents a promotion within the system
 type Promotion struct {
 	Code    string       `json:"code"`
 	CodeID  int64        `json:"code_id,string"`
@@ -19,6 +21,7 @@ type Promotion struct {
 	Created int64        `json:"created"`
 }
 
+// TransformPromotion transforms the provided data record to the corresponding response format
 func TransformPromotion(p *common.Promotion) *Promotion {
 	promo := &Promotion{
 		Code:    p.Code,
@@ -35,6 +38,7 @@ func TransformPromotion(p *common.Promotion) *Promotion {
 	return promo
 }
 
+// PromotionReferralRoute represents a route to a promotion within the system
 type PromotionReferralRoute struct {
 	ID              int64               `json:"id,string"`
 	PromotionCodeID int64               `json:"promotion_code_id,string"`
@@ -49,8 +53,9 @@ type PromotionReferralRoute struct {
 	Pharmacy        *string             `json:"pharmacy"`
 }
 
+// TransformPromotionReferralRoute transforms the provided data record to the corresponding response format
 func TransformPromotionReferralRoute(r *common.PromotionReferralRoute) *PromotionReferralRoute {
-	route := &PromotionReferralRoute{
+	return &PromotionReferralRoute{
 		ID:              r.ID,
 		PromotionCodeID: r.PromotionCodeID,
 		Created:         r.Created.Unix(),
@@ -63,9 +68,9 @@ func TransformPromotionReferralRoute(r *common.PromotionReferralRoute) *Promotio
 		State:           r.State,
 		Pharmacy:        r.Pharmacy,
 	}
-	return route
 }
 
+// ReferralProgramTemplate represents a referral program template within the system
 type ReferralProgramTemplate struct {
 	ID              int64                        `json:"id,string"`
 	Role            string                       `json:"role"`
@@ -76,8 +81,9 @@ type ReferralProgramTemplate struct {
 	PromotionCodeID *int64                       `json:"promotion_code_id,string"`
 }
 
+// TransformReferralProgramTemplate transforms the provided data record to the corresponding response format
 func TransformReferralProgramTemplate(r *common.ReferralProgramTemplate) *ReferralProgramTemplate {
-	template := &ReferralProgramTemplate{
+	return &ReferralProgramTemplate{
 		ID:              r.ID,
 		Role:            r.Role,
 		RoleTypeID:      r.RoleTypeID,
@@ -86,5 +92,20 @@ func TransformReferralProgramTemplate(r *common.ReferralProgramTemplate) *Referr
 		Status:          r.Status,
 		PromotionCodeID: r.PromotionCodeID,
 	}
-	return template
+}
+
+// PromotionGroup represents a promotion group within the system
+type PromotionGroup struct {
+	ID               int64  `json:"id,string"`
+	Name             string `json:"name"`
+	MaxAllowedPromos int    `json:"max_allowed_promos"`
+}
+
+// TransformPromotionGroup transforms the provided data record to the corresponding response format
+func TransformPromotionGroup(pg *common.PromotionGroup) *PromotionGroup {
+	return &PromotionGroup{
+		ID:               pg.ID,
+		Name:             pg.Name,
+		MaxAllowedPromos: pg.MaxAllowedPromos,
+	}
 }

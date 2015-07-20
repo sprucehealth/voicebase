@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/sprucehealth/backend/analytics"
@@ -21,13 +22,13 @@ type patientPromotionsHandler struct {
 	analyticsLogger analytics.Logger
 }
 
-// PatientPromotionGETResponse represents the data returned from a successful GET request to the patientPromotionsHandler, it is exported for client consumption.
+// PatientPromotionGETResponse represents the data returned from a successful GET request to the patientPromotionsHandler
 type PatientPromotionGETResponse struct {
 	ActivePromotions  []*responses.ClientPromotion `json:"active_promotions"`
 	ExpiredPromotions []*responses.ClientPromotion `json:"expired_promotions"`
 }
 
-// PatientPromotionPOSTRequest represents the data expected to be sent to the patientPromotionsHandler in a POST request, it is exported for client consumption.
+// PatientPromotionPOSTRequest represents the data expected to be sent to the patientPromotionsHandler in a POST request
 type PatientPromotionPOSTRequest struct {
 	PromoCode string `json:"promo_code"`
 }
@@ -76,6 +77,7 @@ func (h *patientPromotionsHandler) serveGET(w http.ResponseWriter, r *http.Reque
 		apiservice.WriteError(err, w, r)
 		return
 	}
+	sort.Sort(sort.Reverse(common.AccountPromotionByCreation(pendingPromotions)))
 
 	var descSuffix string
 	var containsTokens bool
@@ -90,27 +92,30 @@ func (h *patientPromotionsHandler) serveGET(w http.ResponseWriter, r *http.Reque
 		}
 
 		// If we are listing promtions and the promotion is makred as not patient visible then ignore it
-		if !promotion.IsPatientVisible() {
+		if !promotion.IsZeroValue() {
 			continue
 		}
 
 		var expireEpoch int64
 		if p.Expires != nil {
 			containsTokens = true
-			descSuffix = "Expires <expiration_date>"
+			descSuffix = " - Expires <expiration_date>"
 			expireEpoch = p.Expires.Unix()
+		} else {
+			containsTokens = false
+			descSuffix = ""
 		}
 		if p.Expires != nil && (*p.Expires).Unix() < now {
 			expiredPromotions = append(expiredPromotions, &responses.ClientPromotion{
 				Code:                 p.Code,
-				Description:          promotion.SuccessMessage() + " Your discount will be applied at checkout. " + descSuffix,
+				Description:          promotion.SuccessMessage() + descSuffix,
 				DescriptionHasTokens: containsTokens,
 				ExpirationDate:       expireEpoch,
 			})
 		} else {
 			activePromotions = append(activePromotions, &responses.ClientPromotion{
 				Code:                 p.Code,
-				Description:          promotion.SuccessMessage() + " Your discount will be applied at checkout. " + descSuffix,
+				Description:          promotion.SuccessMessage() + descSuffix,
 				DescriptionHasTokens: containsTokens,
 				ExpirationDate:       expireEpoch,
 			})
@@ -127,6 +132,10 @@ func (h *patientPromotionsHandler) parsePOSTRequest(r *http.Request) (*PatientPr
 	rd := &PatientPromotionPOSTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
+	}
+
+	if rd.PromoCode == "" {
+		return nil, errors.New("promo_code required")
 	}
 
 	return rd, nil
@@ -198,12 +207,35 @@ func (h *patientPromotionsHandler) servePOST(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	accountPromotions, err := h.dataAPI.PendingPromotionsForAccount(ctxt.AccountID, common.PromotionTypes)
-	for _, ap := range accountPromotions {
-		_, err := h.dataAPI.DeleteAccountPromotion(ap.AccountID, ap.CodeID)
+	promotionGroup, err := h.dataAPI.PromotionGroup(p.Group)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	count, err := h.dataAPI.PromotionCountInGroupForAccount(ctxt.AccountID, p.Group)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	// If the patient has reached their maximum for this promotion group then move the oldest unclaimed promo to the DELETED state
+	// If this doesn't free up space then a failure should occur during AssociatePromoCode
+	if promotionGroup.MaxAllowedPromos == count {
+		accountPromotions, err := h.dataAPI.PendingPromotionsForAccount(ctxt.AccountID, common.PromotionTypes)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
+		}
+		for _, ap := range accountPromotions {
+			if ap.GroupID == promotionGroup.ID {
+				_, err := h.dataAPI.DeleteAccountPromotion(ap.AccountID, ap.CodeID)
+				if err != nil {
+					apiservice.WriteError(err, w, r)
+					return
+				}
+				break
+			}
 		}
 	}
 
@@ -216,7 +248,7 @@ func (h *patientPromotionsHandler) servePOST(w http.ResponseWriter, r *http.Requ
 
 	// If the promotion isn't patient visible then we don't want to return success and then have the GET return an empty list. This would be a confusing experience.
 	// To fix this we will return a 404 here with a message explaining that it was applied before the empty screen is shown. Returning this error is the only way currently to display a message to the user.
-	if p, ok := p.Data.(Promotion); ok && !p.IsPatientVisible() {
+	if p, ok := p.Data.(Promotion); ok && !p.IsZeroValue() {
 		httputil.JSONResponse(w, http.StatusNotFound, &PatientPromotionPOSTErrorResponse{
 			UserError: fmt.Sprintf("The promo code %s has been associated with your account.", rd.PromoCode),
 			RequestID: ctxt.RequestID,

@@ -37,7 +37,7 @@ type discountPromotion interface {
 	getValue() int
 }
 
-func (d *percentDiscountPromotion) IsPatientVisible() bool {
+func (d *percentDiscountPromotion) IsZeroValue() bool {
 	return d.DiscountValue > 0
 }
 
@@ -73,7 +73,7 @@ func (d *percentDiscountPromotion) IsConsumed() bool {
 	return d.Consumed
 }
 
-func (d *moneyDiscountPromotion) IsPatientVisible() bool {
+func (d *moneyDiscountPromotion) IsZeroValue() bool {
 	return d.DiscountValue > 0
 }
 
@@ -98,7 +98,6 @@ func (d *moneyDiscountPromotion) Associate(accountID, codeID int64, expires *tim
 }
 
 func (d *moneyDiscountPromotion) Apply(cost *common.CostBreakdown) (bool, error) {
-
 	applied, err := applyDiscount(cost, d, USDUnit, d.DiscountValue)
 	if err != nil {
 		return false, err
@@ -151,11 +150,6 @@ func applyDiscount(cost *common.CostBreakdown, promotion Promotion, discountUnit
 		return false, nil
 	}
 
-	// Only Apply to cost if no other promotion has already been applied
-	if visitItemCost.PromoApplied {
-		return false, nil
-	}
-
 	// Only Apply if not already consumed
 	if promotion.IsConsumed() {
 		return false, nil
@@ -176,7 +170,6 @@ func applyDiscount(cost *common.CostBreakdown, promotion Promotion, discountUnit
 			Amount:   -visitItemCost.LineItems[0].Cost.Amount * discountValue / 100,
 		}
 	default:
-
 		if discountValue == 0 {
 			return true, nil
 		}
@@ -197,11 +190,13 @@ func applyDiscount(cost *common.CostBreakdown, promotion Promotion, discountUnit
 		}
 	}
 
-	//  Create line item and append to cost breakdown
-	cost.LineItems = append(cost.LineItems, &common.LineItem{
-		Description: promotion.ShortMessage(),
-		Cost:        discount,
-	})
+	//  Create line item and append to cost breakdown if it's visible to the patient
+	if promotion.IsZeroValue() {
+		cost.LineItems = append(cost.LineItems, &common.LineItem{
+			Description: promotion.ShortMessage(),
+			Cost:        discount,
+		})
+	}
 
 	// mark that we applied a promotion to the visitItemCost
 	visitItemCost.PromoApplied = true

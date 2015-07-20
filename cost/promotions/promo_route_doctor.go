@@ -20,7 +20,7 @@ type routeDoctorPromotion struct {
 	DiscountUnit           DiscountUnit `json:"discount_unit"`
 }
 
-func (r *routeDoctorPromotion) IsPatientVisible() bool {
+func (r *routeDoctorPromotion) IsZeroValue() bool {
 	return false
 }
 

@@ -709,6 +709,14 @@ module.exports = {
 	},
 
 	// Promotion
+	promotionGroups: function(cb: ajaxCB) {
+		this.ajax({
+			type: "GET",
+			contentType: "application/json",
+			url: "/promotion/group",
+			dataType: "json"
+		}, cb);
+	},
 	promotions: function(types: Array<string>, cb: ajaxCB) {
 		var url = "/promotion?"
 		for(var i = 0; i < types.length; i++){

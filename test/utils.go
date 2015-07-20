@@ -1,4 +1,4 @@
-// Test utils inspired from https://github.com/benbjohnson/testing
+// Package test utils inspired from https://github.com/benbjohnson/testing
 package test
 
 import (
