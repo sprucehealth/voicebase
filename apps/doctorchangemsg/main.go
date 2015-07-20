@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -30,17 +31,7 @@ var dbPassword = flag.String("db_password", "", "mysql database password")
 var apiDomain = flag.String("api_domain", "", "api domain")
 var listCSV = flag.String("csv", "list.csv", "csv")
 var ccID = flag.Int64("cc_id", 24, "care coordinator id")
-
-const msg = `Hi {{.PatientFirstName}},
-
-I’m writing to let you know that Dr. Gordon-Spratt is no longer practicing on Spruce because she is moving to Michigan. To ensure that you can continue to receive care, Dr. Beth McLellan — another dermatologist on Spruce — will be the physician on your care team going forward. 
-
-Dr. McLellan is an Assistant Professor at the Albert Einstein College of Medicine (Division of Dermatology) and also maintains an in-person practice in the Bronx. She has a reputation for providing excellent care for Spruce patients, and I’m sure you’ll enjoy working with her.
-
-Please let me know if you have any questions!
-
-Warmly,
-Holly`
+var msgFile = flag.String("msg_file", "", "file that contains message to send to patient")
 
 type context struct {
 	PatientFirstName string
@@ -85,6 +76,12 @@ func main() {
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
+
+	msgData, err := ioutil.ReadFile(*msgFile)
+	if err != nil {
+		golog.Fatalf(err.Error())
+	}
+	msg := string(msgData)
 
 	tmpl, err := template.New("").Parse(msg)
 	if err != nil {
