@@ -131,7 +131,8 @@ func (d *DataService) UpdateBankAccount(id int64, update *BankAccountUpdate) (in
 	if args.IsEmpty() {
 		return 0, nil
 	}
-	res, err := d.db.Exec(`UPDATE back_account SET `+args.Columns()+` WHERE id = ?`, args.Values()...)
+	values := append(args.Values(), id)
+	res, err := d.db.Exec(`UPDATE bank_account SET `+args.Columns()+` WHERE id = ?`, values...)
 	if err != nil {
 		return 0, err
 	}

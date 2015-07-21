@@ -26,7 +26,7 @@ func TestBanking(t *testing.T) {
 		VerifyAmount2:     999,
 		VerifyTransfer1ID: "12345",
 		VerifyTransfer2ID: "54321",
-		VerifyExpires:     time.Now().Add(time.Hour),
+		VerifyExpires:     time.Date(2015, 1, 2, 3, 4, 5, 0, time.UTC),
 		Verified:          false,
 	}
 	bankAccountID, err := testData.DataAPI.AddBankAccount(bankAccount)
@@ -43,10 +43,9 @@ func TestBanking(t *testing.T) {
 	test.Equals(t, bankAccount.VerifyAmount2, bankAccounts[0].VerifyAmount2)
 	test.Equals(t, bankAccount.VerifyTransfer1ID, bankAccounts[0].VerifyTransfer1ID)
 	test.Equals(t, bankAccount.VerifyTransfer2ID, bankAccounts[0].VerifyTransfer2ID)
-	test.Equals(t, bankAccount.VerifyExpires, bankAccounts[0].VerifyExpires)
+	test.Equals(t, bankAccount.VerifyExpires.Unix(), bankAccounts[0].VerifyExpires.Unix())
 	test.Equals(t, bankAccount.Verified, bankAccounts[0].Verified)
 
-	// testData.DataAPI.UpdateBankAccountVerficiation(bankAccountID, amount1, amount2, transfer1ID, transfer2ID, expires, verified)
 	n, err := testData.DataAPI.UpdateBankAccount(bankAccountID, &api.BankAccountUpdate{
 		VerifyAmount1:     ptr.Int(0),
 		VerifyAmount2:     ptr.Int(0),
