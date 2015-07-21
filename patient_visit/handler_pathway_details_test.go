@@ -13,8 +13,10 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/test/config"
 )
 
 type pathwayDetailsHandlerDataAPI struct {
@@ -188,10 +190,12 @@ func TestPathwayDetailsHandler(t *testing.T) {
 			},
 		},
 	}
-	h := NewPathwayDetailsHandler(dataAPI, "api.spruce.local", nil)
+
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.GlobalFirstVisitFreeDisabled})
+	test.OK(t, err)
+	h := NewPathwayDetailsHandler(dataAPI, "api.spruce.local", cfgStore)
 
 	// Unauthenticated
-
 	r, err := http.NewRequest("GET", "/?pathway_id=acne,arachnophobia,hypochondria,eczema", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -242,8 +246,9 @@ func TestPathwayDetailsHandler(t *testing.T) {
 	}
 
 	// Unauthenticated with launch promo
-	launchPromoDate := time.Now()
-	h = NewPathwayDetailsHandler(dataAPI, "api.spruce.local", &launchPromoDate)
+	cfgStore, err = cfg.NewLocalStore([]*cfg.ValueDef{config.GlobalFirstVisitFreeEnabled})
+	test.OK(t, err)
+	h = NewPathwayDetailsHandler(dataAPI, "api.spruce.local", cfgStore)
 	r, err = http.NewRequest("GET", "/?pathway_id=acne", nil)
 	if err != nil {
 		t.Fatal(err)

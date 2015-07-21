@@ -48,7 +48,6 @@ module.exports = {
 	},
 
 	// Doctors / care providers
-
 	doctor: function(id: string, cb: ajaxCB) {
 		this.ajax({
 			type: "GET",
@@ -786,6 +785,16 @@ module.exports = {
 			dataType: "json",
 		}, cb);
 	},
+	updateReferralTemplate: function(id: number, status: string, cb: ajaxCB) {
+		var url = "/promotion/referral_template"
+		this.ajax({
+			type: "PUT",
+			contentType: "application/json",
+			url: url,
+			dataType: "json",
+			data: JSON.stringify({id: id, status: status})
+		}, cb);
+	},
 	promotionReferralTemplates: function(statuses: string, cb: ajaxCB) {
 		var url = "/promotion/referral_template?"
 		for(var i = 0; i < statuses.length; i++){
@@ -798,7 +807,7 @@ module.exports = {
 			dataType: "json",
 		}, cb);
 	},
-	addPromotionReferralTemplates: function(promotionCodeID: number, title: string, description: string, defaultText: string, facebook: string, twitter: string, sms: string, email_subject: string, email_body: string, text: string, cb: ajaxCB) {
+	addPromotionReferralTemplate: function(promotionCodeID: number, title: string, description: string, defaultText: string, facebook: string, twitter: string, sms: string, email_subject: string, email_body: string, text: string, cb: ajaxCB) {
 		var url = "/promotion/referral_template"
 		var data  = {
 			promotion_code_id: promotionCodeID,

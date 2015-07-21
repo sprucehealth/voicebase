@@ -21,15 +21,9 @@ import (
 	patientpkg "github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/patient_case"
 	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/test/config"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
-
-var globalFirstVisitFreeDisabled = &cfg.ValueDef{
-	Name:        "Global.First.Visit.Free.Enabled",
-	Description: "A value that represents if the first visit should be free for all patients.",
-	Type:        cfg.ValueTypeBool,
-	Default:     false,
-}
 
 func TestFollowup_CreateAndSubmit(t *testing.T) {
 	testData := test_integration.SetupTest(t)
@@ -297,7 +291,7 @@ func submitVisit(patientID, patientVisitID int64, stubSQSQueue *common.SQSQueue,
 		}, nil
 	}
 
-	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{globalFirstVisitFreeDisabled})
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.GlobalFirstVisitFreeDisabled})
 	test.OK(t, err)
 
 	test_integration.SubmitPatientVisitForPatient(patientID, patientVisitID, testData, t)

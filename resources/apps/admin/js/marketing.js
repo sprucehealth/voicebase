@@ -679,7 +679,88 @@ var PromotionReferralRoute = React.createClass({displayName: "PromotionReferralR
 // END: Promotion Referral Route Management
 
 // BEGIN: Promotion Referral Template Management
-var AddPromotionTemplateModal = React.createClass({displayName: "AddPromotionTemplateModal",
+var SetDefaultPromotionReferralTemplateModal = React.createClass({displayName: "SetDefaultPromotionReferralTemplateModal",
+	DefaultStatus: "Default",
+	getInitialState: function(): any {
+		return {
+			error: null,
+			busy: false,
+		};
+	},
+	onConfirm: function(): any {
+		AdminAPI.updateReferralTemplate(parseInt(this.props.referralTemplate.id), this.DefaultStatus, function(success, data, error){
+			if (this.isMounted()) {
+				if (!success) {
+					this.setState({
+						error: error.message
+					});
+				} else {
+					this.setState({
+						error: null,
+					});
+					this.props.onSuccess();
+					$("#set-promotion-referral-template-default-modal").modal('hide');
+				}
+			}
+		}.bind(this));
+		return true;
+	},
+	render: function(): any {
+		return (
+			<Modals.ModalForm id="set-promotion-referral-template-default-modal" title={this.props.referralTemplate ? "Set Promotion Referral Template " + this.props.referralTemplate.id + " as Default?" : ""}
+				cancelButtonTitle="Cancel" submitButtonTitle="Confirm"
+				onSubmit={this.onConfirm}>
+
+				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
+				{this.state.busy ? <Utils.LoadingAnimation /> : null}
+				<p>This will cause all patients who are not routed to a specific promotion to recieve this promotion.</p>
+			</Modals.ModalForm>
+		);
+	}
+});
+
+var SetInactivePromotionReferralTemplateModal = React.createClass({displayName: "SetDefaultPromotionReferralTemplateModal",
+	InactiveStatus: "Inactive",
+	getInitialState: function(): any {
+		return {
+			error: null,
+			busy: false,
+		};
+	},
+	onConfirm: function(): any {
+		AdminAPI.updateReferralTemplate(parseInt(this.props.referralTemplate.id), this.InactiveStatus, function(success, data, error){
+			if (this.isMounted()) {
+				if (!success) {
+					this.setState({
+						error: error.message
+					});
+				} else {
+					this.setState({
+						error: null,
+					});
+					this.props.onSuccess();
+					$("#set-promotion-referral-template-inactive-modal").modal('hide');
+				}
+			}
+		}.bind(this));
+		return true;
+	},
+	render: function(): any {
+		return (
+			<Modals.ModalForm id="set-promotion-referral-template-inactive-modal" title={this.props.referralTemplate ? "Set Promotion Referral Template " + this.props.referralTemplate.id + " as Inactive?" : ""}
+				cancelButtonTitle="Cancel" submitButtonTitle="Confirm"
+				onSubmit={this.onConfirm}>
+
+				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
+				{this.state.busy ? <Utils.LoadingAnimation /> : null}
+				<p>This will cause all patient promotions derived from this template to be inactivated and assigned a new one upon next login.</p>
+			</Modals.ModalForm>
+		);
+	}
+});
+
+
+var AddPromotionReferralTemplateModal = React.createClass({displayName: "AddPromotionReferralTemplateModal",
 	getInitialState: function(): any {
 		return {
 			error: null,
@@ -781,7 +862,7 @@ var AddPromotionTemplateModal = React.createClass({displayName: "AddPromotionTem
 	},
 	onAdd: function(): any {
 		if(this.validateSubmitState()){
-			AdminAPI.addPromotionReferralTemplates(
+			AdminAPI.addPromotionReferralTemplate(
 				parseInt(this.state.promotionCodeID), 
 				this.state.title, 
 				this.state.description, 
@@ -842,7 +923,7 @@ var PromotionReferralTemplateOverview = React.createClass({displayName: "Promoti
 	mixins: [Routing.RouterNavigateMixin],
 	getInitialState: function(): any {
 		return {
-			statuses: ["Active"],
+			statuses: ["Active","Default"],
 		};
 	},
 	componentWillMount: function() {
@@ -867,15 +948,27 @@ var PromotionReferralTemplateOverview = React.createClass({displayName: "Promoti
 			}
 		}.bind(this));
 	},
+	setTemplateForSetDefault: function(referralTemplateForSetDefault) {
+		this.setState({
+			referralTemplateForSetDefault: referralTemplateForSetDefault
+		})
+	},
+	setTemplateForSetInactive: function(referralTemplateForSetInactive) {
+		this.setState({
+			referralTemplateForSetInactive: referralTemplateForSetInactive
+		})
+	},
 	render: function(): any {
 		return (
 			<div className="container-flow" style={{marginTop: 10}}>
-				{Perms.has(Perms.MarketingEdit) ? <AddPromotionTemplateModal onSuccess={this.fetchPromotionReferralTemplates} /> : null}
+				{Perms.has(Perms.MarketingEdit) ? <AddPromotionReferralTemplateModal onSuccess={this.fetchPromotionReferralTemplates} /> : null}
+				{Perms.has(Perms.MarketingEdit) ? <SetDefaultPromotionReferralTemplateModal referralTemplate={this.state.referralTemplateForSetDefault} onSuccess={this.fetchPromotionReferralTemplates} /> : null}
+				{Perms.has(Perms.MarketingEdit) ? <SetInactivePromotionReferralTemplateModal referralTemplate={this.state.referralTemplateForSetInactive} onSuccess={this.fetchPromotionReferralTemplates} /> : null}
 				<h2>Promotion Referral Templates</h2>
 				{Perms.has(Perms.MarketingEdit) ? <div className="row pull-right"><button className="btn btn-default" data-toggle="modal" data-target="#add-promotion-referral-template-modal">+</button></div> : null}
 				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
 				{this.state.busy ? <Utils.LoadingAnimation /> : null}
-				{(Perms.has(Perms.MarketingView) &&	this.state.referralTemplates)? <PromotionReferralTemplateList router={this.props.router} referralTemplates={this.state.referralTemplates} /> : null}
+				{(Perms.has(Perms.MarketingView) &&	this.state.referralTemplates)? <PromotionReferralTemplateList router={this.props.router} referralTemplates={this.state.referralTemplates} setTemplateForSetDefault={this.setTemplateForSetDefault} setTemplateForSetInactive={this.setTemplateForSetInactive}/> : null}
 			</div>
 		);
 	}
@@ -891,7 +984,7 @@ var PromotionReferralTemplateList = React.createClass({displayName: "PromotionRe
 			<div>
 				{this.state.busy ? <Utils.LoadingAnimation /> : null}
 				{this.props.referralTemplates ? 
-							this.props.referralTemplates.map(function(t){return <PromotionReferralTemplate key={t.id} referralTemplate={t} />}.bind(this))
+							this.props.referralTemplates.map(function(t){return <PromotionReferralTemplate key={t.id} referralTemplate={t} onSetDefault={this.props.setTemplateForSetDefault} onSetInactive={this.props.setTemplateForSetInactive}/>}.bind(this))
 							: null}
 			</div>
 		);
@@ -903,18 +996,30 @@ var PromotionReferralTemplate = React.createClass({displayName: "PromotionReferr
 	getInitialState: function(): any {
 		return {};
 	},
+	onSetDefault: function(referralTemplate): any {
+		this.props.onSetDefault(referralTemplate);
+		$("#set-promotion-referral-template-default-modal").modal('show');
+	},
+	onSetInactive: function(referralTemplate): any {
+		this.props.onSetInactive(referralTemplate);
+		$("#set-promotion-referral-template-inactive-modal").modal('show');
+	},
 	render: function(): any {
+		var showSetDefault = Perms.has(Perms.MarketingEdit) && this.props.referralTemplate.status != "Default"
+		var showSetInactive = Perms.has(Perms.MarketingEdit) && this.props.referralTemplate.status != "Default"
 		return (
 			<div className="card">
 				<table className="table">
 					<tbody>
-						<tr><td>Template ID</td><td>{this.props.referralTemplate.id}</td></tr>
-						<tr><td>Promotion Code ID</td><td>{this.props.referralTemplate.promotion_code_id}</td></tr>
-						<tr><td>Status</td><td>{this.props.referralTemplate.status}</td></tr>
-						<tr><td>Created</td><td>{(new Date(this.props.referralTemplate.created * 1000)).toString()}</td></tr>
-						<tr><td>Title</td><td>{this.props.referralTemplate.data.title}</td></tr>
-						<tr><td>Group</td><td>{this.props.referralTemplate.data.group}</td></tr>
-						<tr><td>Description</td><td>{this.props.referralTemplate.data.description}</td></tr>
+						<tr><td>Template ID</td><td>{this.props.referralTemplate.id}</td>
+						{ showSetInactive ? <td><div className="pull-right btn btn-default" onClick={this.onSetInactive.bind(this, this.props.referralTemplate)} data-target="#set-promotion-referral-template-inactive-modal">Set Inactive</div></td> : null}
+						{ showSetDefault ? <td><div className="pull-right btn btn-default" onClick={this.onSetDefault.bind(this, this.props.referralTemplate)} data-target="#set-promotion-referral-template-default-modal">Make Default</div></td> : null}</tr>
+						<tr><td>Status</td><td>{this.props.referralTemplate.status}</td>{ showSetInactive ? <td></td> : null}{ showSetDefault ? <td></td> : null}</tr>
+						<tr><td>Promotion Code ID</td><td>{this.props.referralTemplate.promotion_code_id}</td>{ showSetInactive ? <td></td> : null}{ showSetDefault ? <td></td> : null}</tr>
+						<tr><td>Created</td><td>{(new Date(this.props.referralTemplate.created * 1000)).toString()}</td>{ showSetInactive ? <td></td> : null}{ showSetDefault ? <td></td> : null}</tr>
+						<tr><td>Title</td><td>{this.props.referralTemplate.data.title}</td>{ showSetInactive ? <td></td> : null}{ showSetDefault ? <td></td> : null}</tr>
+						<tr><td>Group</td><td>{this.props.referralTemplate.data.group}</td>{ showSetInactive ? <td></td> : null}{ showSetDefault ? <td></td> : null}</tr>
+						<tr><td>Description</td><td>{this.props.referralTemplate.data.description}</td>{ showSetDefault ? <td></td> : null}</tr>
 					</tbody>
 				</table>
 				<table className="table">

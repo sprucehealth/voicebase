@@ -20,14 +20,17 @@ type referralProgramTemplateHandler struct {
 	dataAPI api.DataAPI
 }
 
+// ReferralProgramTemplateGETRequest represents the data expected in a sucessful GET request
 type ReferralProgramTemplateGETRequest struct {
 	Statuses common.ReferralProgramStatusList `json:"statuses"`
 }
 
+// ReferralProgramTemplateGETResponse represents the data returned in a sucessful GET request
 type ReferralProgramTemplateGETResponse struct {
 	ReferralProgramTemplates []*responses.ReferralProgramTemplate `json:"referral_program_templates"`
 }
 
+// ReferralProgramTemplatePOSTRequest represents the data expected in a sucessful POST request
 type ReferralProgramTemplatePOSTRequest struct {
 	PromotionCodeID int64                       `json:"promotion_code_id"`
 	Title           string                      `json:"title"`
@@ -37,30 +40,45 @@ type ReferralProgramTemplatePOSTRequest struct {
 	HomeCard        *promotions.HomeCardConfig  `json:"home_card"`
 }
 
+// ReferralProgramTemplatePOSTResponse represents the data returned in a sucessful POST request
 type ReferralProgramTemplatePOSTResponse struct {
-	ID int64 `json:"id"`
+	ID int64 `json:"id,string"`
 }
 
+// ReferralProgramTemplatePUTRequest represents the data expected in a sucessful PUT request
+type ReferralProgramTemplatePUTRequest struct {
+	ID     int64  `json:"id"`
+	Status string `json:"status"`
+}
+
+// NewReferralProgramTemplateHandler returns an initialized instance of referralProgramTemplateHandler
 func NewReferralProgramTemplateHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&referralProgramTemplateHandler{dataAPI: dataAPI}, httputil.Get, httputil.Post)
+	return httputil.SupportedMethods(&referralProgramTemplateHandler{dataAPI: dataAPI}, httputil.Get, httputil.Post, httputil.Put)
 }
 
 func (h *referralProgramTemplateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		req, err := h.parseGETRequest(r)
+		rd, err := h.parseGETRequest(r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
-		h.serveGET(w, r, req)
+		h.serveGET(w, r, rd)
 	case "POST":
-		req, err := h.parsePOSTRequest(r)
+		rd, err := h.parsePOSTRequest(r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
-		h.servePOST(w, r, req)
+		h.servePOST(w, r, rd)
+	case "PUT":
+		rd, err := h.parsePUTRequest(r)
+		if err != nil {
+			www.APIBadRequestError(w, r, err.Error())
+			return
+		}
+		h.servePUT(w, r, rd)
 	}
 }
 
@@ -76,9 +94,9 @@ func (h *referralProgramTemplateHandler) parseGETRequest(r *http.Request) (*Refe
 	return rd, nil
 }
 
-func (h *referralProgramTemplateHandler) serveGET(w http.ResponseWriter, r *http.Request, req *ReferralProgramTemplateGETRequest) {
+func (h *referralProgramTemplateHandler) serveGET(w http.ResponseWriter, r *http.Request, rd *ReferralProgramTemplateGETRequest) {
 	var err error
-	templates, err := h.dataAPI.ReferralProgramTemplates(req.Statuses, common.PromotionTypes)
+	templates, err := h.dataAPI.ReferralProgramTemplates(rd.Statuses, common.PromotionTypes)
 	if api.IsErrNotFound(err) {
 		httputil.JSONResponse(w, http.StatusOK, &ReferralProgramTemplateGETResponse{ReferralProgramTemplates: []*responses.ReferralProgramTemplate{}})
 		return
@@ -106,8 +124,8 @@ func (h *referralProgramTemplateHandler) parsePOSTRequest(r *http.Request) (*Ref
 	return rd, nil
 }
 
-func (h *referralProgramTemplateHandler) servePOST(w http.ResponseWriter, r *http.Request, req *ReferralProgramTemplatePOSTRequest) {
-	p, err := h.dataAPI.Promotion(req.PromotionCodeID, common.PromotionTypes)
+func (h *referralProgramTemplateHandler) servePOST(w http.ResponseWriter, r *http.Request, rd *ReferralProgramTemplatePOSTRequest) {
+	p, err := h.dataAPI.Promotion(rd.PromotionCodeID, common.PromotionTypes)
 	if api.IsErrNotFound(err) {
 		www.APIBadRequestError(w, r, err.Error())
 		return
@@ -127,7 +145,7 @@ func (h *referralProgramTemplateHandler) servePOST(w http.ResponseWriter, r *htt
 		return
 	}
 
-	referralProgram, err := promotions.NewGiveReferralProgram(req.Title, req.Description, req.Group, req.HomeCard, promotionData, req.ShareText)
+	referralProgram, err := promotions.NewGiveReferralProgram(rd.Title, rd.Description, rd.Group, rd.HomeCard, promotionData, rd.ShareText)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
@@ -136,7 +154,7 @@ func (h *referralProgramTemplateHandler) servePOST(w http.ResponseWriter, r *htt
 		Role:            api.RolePatient,
 		Data:            referralProgram,
 		Status:          common.RSActive,
-		PromotionCodeID: &req.PromotionCodeID,
+		PromotionCodeID: &rd.PromotionCodeID,
 	}
 
 	id, err := h.dataAPI.CreateReferralProgramTemplate(referralProgramTemplate)
@@ -145,4 +163,74 @@ func (h *referralProgramTemplateHandler) servePOST(w http.ResponseWriter, r *htt
 		return
 	}
 	httputil.JSONResponse(w, http.StatusOK, &ReferralProgramTemplatePOSTResponse{ID: id})
+}
+
+func (h *referralProgramTemplateHandler) parsePUTRequest(r *http.Request) (*ReferralProgramTemplatePUTRequest, error) {
+	rd := &ReferralProgramTemplatePUTRequest{}
+	if err := json.NewDecoder(r.Body).Decode(&rd); err != nil {
+		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
+	}
+
+	if rd.Status == "" || rd.ID == 0 {
+		return nil, errors.New("id, status required")
+	}
+
+	return rd, nil
+}
+
+func (h *referralProgramTemplateHandler) servePUT(w http.ResponseWriter, r *http.Request, rd *ReferralProgramTemplatePUTRequest) {
+	rps, err := common.GetReferralProgramStatus(rd.Status)
+	if err != nil {
+		www.APIBadRequestError(w, r, err.Error())
+		return
+	}
+
+	if rps != common.RSDefault {
+		rpt, err := h.dataAPI.ReferralProgramTemplate(rd.ID, common.PromotionTypes)
+		if api.IsErrNotFound(err) {
+			www.APIBadRequestError(w, r, err.Error())
+			return
+		} else if err != nil {
+			www.APIInternalError(w, r, err)
+			return
+		}
+
+		if rpt.Status == common.RSDefault {
+			www.APIBadRequestError(w, r, "The Default Referral Program Template cannot have it's status modified.")
+			return
+		}
+	}
+
+	if rps == common.RSDefault {
+		if err := h.dataAPI.SetDefaultReferralProgramTemplate(rd.ID); api.IsErrNotFound(err) {
+			www.APIBadRequestError(w, r, err.Error())
+			return
+		} else if err != nil {
+			www.APIInternalError(w, r, err)
+			return
+		}
+	} else if rps == common.RSInactive {
+		if err := h.dataAPI.InactivateReferralProgramTemplate(rd.ID); api.IsErrNotFound(err) {
+			www.APIBadRequestError(w, r, err.Error())
+			return
+		} else if err != nil {
+			www.APIInternalError(w, r, err)
+			return
+		}
+	} else {
+		aff, err := h.dataAPI.UpdateReferralProgramTemplate(&common.ReferralProgramTemplateUpdate{
+			ID:     rd.ID,
+			Status: rps,
+		})
+		if err != nil {
+			www.APIInternalError(w, r, err)
+			return
+		}
+		if aff == 0 {
+			www.APIBadRequestError(w, r, api.ErrNotFound(`referral_program_template`).Error())
+			return
+		}
+	}
+
+	httputil.JSONResponse(w, http.StatusOK, struct{}{})
 }

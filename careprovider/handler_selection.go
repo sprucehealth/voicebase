@@ -103,6 +103,7 @@ func (c *careProviderSelection) Validate(namespace string) error {
 	return nil
 }
 
+// NewSelectionHandler returns an initialized instance of selectionHandler
 func NewSelectionHandler(dataAPI api.DataAPI, apiDomain string, selectionCount int) http.Handler {
 	if selectionCount == 0 {
 		selectionCount = defaultSelectionCount
@@ -122,7 +123,14 @@ func (c *selectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := apiservice.DecodeRequestData(&rd, r); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
 		return
-	} else if err := rd.Validate(); err != nil {
+	}
+
+	// TEMP HACK: Due to a client issue for the GALDERMA work we will assume a missing pathway_id is health_condition_acne
+	if rd.PathwayTag == "" {
+		rd.PathwayTag = api.AcnePathwayTag
+	}
+
+	if err := rd.Validate(); err != nil {
 		apiservice.WriteValidationError(err.Error(), w, r)
 		return
 	}

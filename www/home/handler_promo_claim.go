@@ -13,8 +13,17 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
+)
+
+const (
+	// PromoCodeKey represents the key associated with the branch link and url for the provided promo code
+	PromoCodeKey = "promo_code"
+
+	// SourceKey represent the key associated with the branch link and url for the provided install source
+	SourceKey = "source"
 )
 
 type refContext struct {
@@ -127,10 +136,28 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// If page is being loaded from an iPhone, iPod touch or android device, then redirect to the branch link directly.
 	if strings.Contains(r.UserAgent(), "iPhone") || strings.Contains(r.UserAgent(), "iPod") || strings.Contains(strings.ToLower(r.UserAgent()), "android") {
-		earl, err := h.branchClient.URL(map[string]interface{}{
-			"promo_code": code.Code,
-			"source":     referralBranchSource,
-		})
+		// Grab any parameters associated with our URL and throw them onto the branch link
+		branchParams := map[string]interface{}{
+			PromoCodeKey: code.Code,
+			SourceKey:    referralBranchSource,
+		}
+
+		if err := r.ParseForm(); err != nil {
+			golog.Errorf("Failed to parse form for request %s, no failing request but params will not be provided to branch.", r.URL.String())
+		}
+		for k, v := range r.Form {
+			if k == PromoCodeKey || k == SourceKey {
+				golog.Infof("Not attaching URL query param %s:%s to branch link as %s is a managed param.", k, v, k)
+			} else {
+				if len(v) == 1 {
+					branchParams[k] = v[0]
+				} else if len(v) > 1 {
+					branchParams[k] = v
+				}
+			}
+		}
+
+		earl, err := h.branchClient.URL(branchParams)
 		if err != nil {
 			www.InternalServerError(w, r, err)
 			return

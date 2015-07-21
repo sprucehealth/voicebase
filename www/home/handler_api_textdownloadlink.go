@@ -23,8 +23,9 @@ type textDownloadLinkAPIHandler struct {
 }
 
 type textDownloadLinkAPIRequest struct {
-	Number string `json:"number"`
-	Code   string `json:"code"`
+	Number string              `json:"number"`
+	Code   string              `json:"code"`
+	Params map[string][]string `json:"params"`
 }
 
 type textDownloadLinkAPIResponse struct {
@@ -32,6 +33,7 @@ type textDownloadLinkAPIResponse struct {
 	Error   string `json:"error"`
 }
 
+// NewTextDownloadLinkAPIHandler returns an initialized instance of textDownloadLinkAPIHandler
 func NewTextDownloadLinkAPIHandler(smsAPI api.SMSAPI, fromNumber string, branchClient branch.Client, rateLimiter ratelimit.KeyedRateLimiter) http.Handler {
 	return httputil.SupportedMethods(&textDownloadLinkAPIHandler{
 		smsAPI:       smsAPI,
@@ -79,10 +81,24 @@ func (h *textDownloadLinkAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	earl, err := h.branchClient.URL(map[string]interface{}{
-		"promo_code": req.Code,
-		"source":     referralBranchSource,
-	})
+	// Grab any parameters associated with our URL and throw them onto the branch link
+	branchParams := map[string]interface{}{
+		PromoCodeKey: req.Code,
+		SourceKey:    referralBranchSource,
+	}
+	for k, v := range req.Params {
+		if k == PromoCodeKey || k == SourceKey {
+			golog.Infof("Not attaching URL query param %s:%s to branch link as %s is a managed param.", k, v, k)
+		} else {
+			if len(v) == 1 {
+				branchParams[k] = v[0]
+			} else if len(v) > 1 {
+				branchParams[k] = v
+			}
+		}
+	}
+
+	earl, err := h.branchClient.URL(branchParams)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return

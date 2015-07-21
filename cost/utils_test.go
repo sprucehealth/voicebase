@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/test/config"
 )
 
 type mockDataAPITotalCost struct {
@@ -34,13 +35,6 @@ func (m *mockDataAPITotalCost) AccountCredit(id int64) (*common.AccountCredit, e
 	return &m.accountCredit, nil
 }
 
-var globalFirstVisitFreeDisabled = &cfg.ValueDef{
-	Name:        "Global.First.Visit.Free.Enabled",
-	Description: "A value that represents if the first visit should be free for all patients.",
-	Type:        cfg.ValueTypeBool,
-	Default:     false,
-}
-
 // TestTotalCost_NoLaunchPromo ensures that querying for cost without a launch promo works as expected
 func TestTotalCost_NoLaunchPromo(t *testing.T) {
 	m := &mockDataAPITotalCost{
@@ -57,7 +51,7 @@ func TestTotalCost_NoLaunchPromo(t *testing.T) {
 		},
 	}
 
-	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{globalFirstVisitFreeDisabled})
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.GlobalFirstVisitFreeDisabled})
 	test.OK(t, err)
 
 	costBreakdown, err := totalCostForItems([]string{"test"}, 0, false, m, nil, cfgStore)
@@ -91,7 +85,7 @@ func TestLaunchPromo_NoVisitsSubmitted(t *testing.T) {
 		},
 	}
 
-	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{GlobalFirstVisitFreeEnabled})
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.GlobalFirstVisitFreeEnabled})
 	test.OK(t, err)
 
 	costBreakdown, err := totalCostForItems([]string{"test"}, 0, false, m, nil, cfgStore)
@@ -132,7 +126,7 @@ func TestLaunchPromo_VisitSubmittedButNotCharged(t *testing.T) {
 		},
 	}
 
-	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{GlobalFirstVisitFreeEnabled})
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.GlobalFirstVisitFreeEnabled})
 	test.OK(t, err)
 
 	costBreakdown, err := totalCostForItems([]string{"test"}, 0, true, m, nil, cfgStore)
@@ -171,7 +165,7 @@ func TestLaunchPromo_FirstVisit_AccountCredit(t *testing.T) {
 		},
 	}
 
-	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{GlobalFirstVisitFreeEnabled})
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.GlobalFirstVisitFreeEnabled})
 	test.OK(t, err)
 
 	costBreakdown, err := totalCostForItems([]string{"test"}, 0, true, m, nil, cfgStore)
@@ -215,7 +209,7 @@ func TestLaunchPromo_SecondVisitOnwards(t *testing.T) {
 		},
 	}
 
-	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{GlobalFirstVisitFreeEnabled})
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.GlobalFirstVisitFreeEnabled})
 	test.OK(t, err)
 
 	costBreakdown, err := totalCostForItems([]string{"test"}, 0, false, m, nil, cfgStore)
@@ -253,7 +247,7 @@ func TestLaunchPromo_SecondVisitOnward_OnCharge(t *testing.T) {
 		},
 	}
 
-	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{GlobalFirstVisitFreeEnabled})
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.GlobalFirstVisitFreeEnabled})
 	test.OK(t, err)
 
 	costBreakdown, err := totalCostForItems([]string{"test"}, 0, true, m, nil, cfgStore)

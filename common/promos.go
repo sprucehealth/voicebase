@@ -8,21 +8,25 @@ import (
 )
 
 var (
+	// PromotionTypes is a global value that contains a mapping beteen type names and the concrete implementaion into which they should be cast
 	PromotionTypes = make(map[string]reflect.Type)
 )
 
+// PromotionGroup represents a logical grouping for promotions to provide artificial limitations
 type PromotionGroup struct {
 	ID               int64
 	Name             string
 	MaxAllowedPromos int
 }
 
+// PromoCode represents the text code that maps to a promotin
 type PromoCode struct {
 	ID         int64
 	Code       string
 	IsReferral bool
 }
 
+// Promotion represents the information that makes up a user facing promotion of some or not value.
 type Promotion struct {
 	Code    string
 	CodeID  int64
@@ -62,6 +66,7 @@ func (a AccountPromotionByCreation) Swap(i, j int) {
 	a[i], a[j] = a[j], a[i]
 }
 
+// ReferralProgramTemplate represents a base referral_program that is cloned when assigned to an account
 type ReferralProgramTemplate struct {
 	ID              int64
 	Role            string
@@ -70,6 +75,12 @@ type ReferralProgramTemplate struct {
 	Created         time.Time
 	Status          ReferralProgramStatus
 	PromotionCodeID *int64
+}
+
+// ReferralProgramTemplateUpdate represents the data available for an UPDATE of a ReferralProgramTemplate record
+type ReferralProgramTemplateUpdate struct {
+	ID     int64
+	Status ReferralProgramStatus
 }
 
 type ReferralProgram struct {

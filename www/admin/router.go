@@ -468,6 +468,7 @@ func SetupRoutes(r *mux.Router, config *Config) {
 		map[string][]string{
 			httputil.Get:  []string{PermMarketingView},
 			httputil.Post: []string{PermMarketingEdit},
+			httputil.Put:  []string{PermMarketingEdit},
 		}, NewReferralProgramTemplateHandler(config.DataAPI), nil)))
 
 	if !environment.IsProd() {
