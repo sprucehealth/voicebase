@@ -1,18 +1,24 @@
 {
-	"name": "shared",
-	"version": "0.0.1",
-	"description": "Shared",
-	"repository": "https://github.com/SpruceHealth/backend",
-	"dependencies": {
-		"react": "^0.13.3"
-	},
-	"author": "Spruce Health Inc.",
-	"browserify": {
-		"transform": [
-			["reactify", {"stripTypes": true}]
-		]
-	},
-	"jest": {
-		"rootDir": "./"
-	}
+  "name": "shared",
+  "version": "0.0.1",
+  "description": "Shared",
+  "repository": "https://github.com/SpruceHealth/backend",
+  "dependencies": {
+    "object-assign": "^3.0.0",
+    "react": "^0.13.3"
+  },
+  "author": "Spruce Health Inc.",
+  "browserify": {
+    "transform": [
+      [
+        "reactify",
+        {
+          "stripTypes": true
+        }
+      ]
+    ]
+  },
+  "jest": {
+    "rootDir": "./"
+  }
 }

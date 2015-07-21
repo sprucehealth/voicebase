@@ -1,0 +1,44 @@
+{
+  "name": "parental-consent",
+  "version": "0.0.1",
+  "description": "Parental Consent",
+  "repository": "https://github.com/SpruceHealth/backend",
+  "main": "js/app.js",
+  "dependencies": {
+    "backbone": "^1.1.2",
+    "jquery": "^1.11.3",
+    "object-assign": "^2.1.1",
+    "react": "^0.13.3",
+    "reflux": "^0.2.11",
+    "spin.js": "^2.3.2",
+    "underscore": "^1.8.2"
+  },
+  "devDependencies": {
+    "browserify": "^9.0.4",
+    "reactify": "^1.1.0",
+    "uglify-js": "^2.4.20",
+    "watchify": "^3.1.0",
+    "flow": "^0.2.3"
+  },
+  "scripts": {
+    "start": "watchify -o ../../static/js/parental-consent.dev.js -v -d .",
+    "build": "NODE_ENV=production browserify -t [reactify --strip-types] -e js/app.js | uglifyjs -c -m -o ../../static/js/parental-consent.min.js",
+    "build-dev": "browserify -t [reactify --strip-types] -e js/app.js -o ../../static/js/parental-consent.dev.js",
+    "flow": "flow check",
+    "test": "jest"
+  },
+  "author": "Spruce Health Inc.",
+  "browserify": {
+    "transform": [
+      [
+        "reactify",
+        {
+          "stripTypes": true
+        }
+      ]
+    ]
+  },
+  "jest": {
+    "rootDir": "./js"
+  }
+}

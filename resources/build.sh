@@ -1,6 +1,6 @@
 #!/bin/bash
 
-APPS="admin dronboard home"
+APPS="admin dronboard home parental-consent"
 RESOURCEPATH="$(cd "$(dirname "$0")/.."; pwd)/resources"
 
 if [ "$1" != "" ]; then

@@ -89,6 +89,10 @@ func SetupRoutes(
 		}
 	}))
 
+	parentalConsentHandler := newParentalConsentHandler(dataAPI, templateLoader)
+	r.Handle("/parental-consent", parentalConsentHandler)
+	r.Handle("/parental-consent/{page:.*}", parentalConsentHandler)
+
 	// Email
 	r.Handle("/e/optout", newEmailOptoutHandler(dataAPI, authAPI, signer, templateLoader))
 

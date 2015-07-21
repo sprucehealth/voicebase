@@ -58,3 +58,6 @@ resources/node_modules/*
 resources/static/css/base.css
 resources/static/css/home.css
 resources/static/css/admin.css
+resources/static/css/parental-consent.css
+resources/apps/npm-debug.log
+resources/npm-debug.log

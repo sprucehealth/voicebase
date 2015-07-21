@@ -93,12 +93,13 @@ type Config struct {
 	BranchClient        branch.Client
 }
 
+// New returns the root handler for the www web app
 func New(c *Config) httputil.ContextHandler {
 	if c.StaticResourceURL == "" {
 		c.StaticResourceURL = "/static"
 	}
 
-	c.TemplateLoader.MustLoadTemplate("base.html", "", map[string]interface{}{
+	c.TemplateLoader.RegisterFunctions(map[string]interface{}{
 		"staticURL": func(path string) string {
 			return c.StaticResourceURL + path
 		},
@@ -106,6 +107,7 @@ func New(c *Config) httputil.ContextHandler {
 			return environment.GetCurrent() == env
 		},
 	})
+	c.TemplateLoader.MustLoadTemplate("base.html", "", nil)
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.Handle("/login", www.NewLoginHandler(c.AuthAPI, c.SMSAPI, c.FromNumber, c.TwoFactorExpiration,
