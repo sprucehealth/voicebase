@@ -34,7 +34,8 @@ func GetPatientLayoutForPatientVisit(
 	visit *common.PatientVisit,
 	languageID int64,
 	dataAPI api.DataAPI,
-	apiDomain string) (*info_intake.InfoIntakeLayout, error) {
+	apiDomain string,
+) (*info_intake.InfoIntakeLayout, error) {
 	layoutVersion, err := dataAPI.GetPatientLayout(visit.LayoutVersionID.Int64(), languageID)
 	if err != nil {
 		return nil, err
@@ -81,7 +82,7 @@ func GetPatientLayoutForPatientVisit(
 				SmallThumbnailURL: "",
 			}
 			context.CheckoutHeaderText = "In 24 hours your doctor will review your visit and create your treatment plan."
-			context.SubmissionConfirmationText = fmt.Sprintf("Your doctor will review your visit and respond in 24 hours.")
+			context.SubmissionConfirmationText = "Your doctor will review your visit and respond in 24 hours."
 		} else {
 			context.Doctor = &doctorInfo{
 				Description:       doctor.ShortDisplayName,
@@ -104,7 +105,7 @@ func GetPatientLayoutForPatientVisit(
 	if err := json.Unmarshal(layoutVersion.Layout, patientVisitLayout); err != nil {
 		return nil, err
 	}
-	return patientVisitLayout, err
+	return patientVisitLayout, nil
 }
 
 func applyLayoutToContext(context *VisitLayoutContext, layout []byte) ([]byte, error) {

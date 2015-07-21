@@ -11,11 +11,13 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
 )
 
 func init() {
 	dispatch.Testing = true
+	conc.Testing = true
 }
 
 type pushMockAPI struct {

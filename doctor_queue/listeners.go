@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/doctor"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/libs/cfg"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/messages"
@@ -174,7 +175,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			return err
 		}
 
-		dispatch.RunAsync(func() {
+		conc.Go(func() {
 			if err := tagging.ApplyCaseTag(taggingClient, UnsuitableTag, ev.CaseID, nil, tagging.TONone); err != nil {
 				golog.Errorf("Unable to tag case as unsuitable: %s", err)
 			}

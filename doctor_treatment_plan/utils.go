@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -308,7 +309,7 @@ func validateTreatments(treatments []*common.Treatment,
 			descriptions[i] = drugDescription
 
 			// asynhcronously save the drug description to the database
-			dispatch.RunAsync(func() {
+			conc.Go(func() {
 				if err := dataAPI.SetDrugDescription(drugDescription); err != nil {
 					golog.Errorf("Unable to save drug description %s", err.Error())
 				}

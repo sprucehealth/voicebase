@@ -36,6 +36,7 @@ import (
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/cfg"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -55,6 +56,7 @@ var once sync.Once
 func init() {
 	apiservice.Testing = true
 	dispatch.Testing = true
+	conc.Testing = true
 	golog.Default().SetLevel(golog.WARN)
 	environment.SetCurrent(environment.Test)
 	rand.Seed(time.Now().Unix())

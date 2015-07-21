@@ -1,16 +1,16 @@
 package careprovider
 
 import (
-	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
-	"sync"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/errors"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/views"
 )
@@ -133,42 +133,27 @@ func (c *selectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var wg sync.WaitGroup
-	errors := make(chan error, 2)
-	wg.Add(2)
+	p := conc.NewParallel()
 
 	// pick N doctors and the imageURLs for the first available option
 	// in parallel.
 	doctors := make([]*common.Doctor, 0, c.selectionCount)
-	go func() {
-		defer wg.Done()
-
+	p.Go(func() error {
+		var err error
 		doctors, err = c.dataAPI.Doctors(doctorIDs)
-		if err != nil {
-			errors <- err
-			return
-		}
-	}()
+		return errors.Trace(err)
+	})
 
 	var imageURLs []string
-	numImages := 6
-	go func() {
-		defer wg.Done()
-
+	p.Go(func() error {
 		var err error
-		imageURLs, err = c.randomlyPickDoctorThumbnails(numImages, doctorIDs)
-		if err != nil {
-			errors <- err
-		}
-	}()
+		imageURLs, err = c.randomlyPickDoctorThumbnails(6, doctorIDs)
+		return errors.Trace(err)
+	})
 
-	// wait for both pieces of work to complete
-	wg.Wait()
-	select {
-	case err := <-errors:
+	if err := p.Wait(); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
-	default:
 	}
 
 	// populate views

@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -216,7 +217,7 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 		return
 	}
 
-	dispatch.RunAsync(func() {
+	conc.Go(func() {
 		// Apply the relevant tags to the case for this visit but don't block returning success to the user if something fails
 		if err := s.applyVisitTags(visit.PatientCaseID.Int64(), visit.PatientID.Int64()); err != nil {
 			golog.Errorf("%v", err)

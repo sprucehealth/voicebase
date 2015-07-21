@@ -6,7 +6,7 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
-	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -41,7 +41,7 @@ func (n *NotificationManager) pushNotificationToUser(
 
 		pushEndpoint := pushConfigData.PushEndpoint
 		// send push notifications in parallel
-		dispatch.RunAsync(func() {
+		conc.Go(func() {
 			note := renderNotification(notificationConfig, msg, notificationCount)
 			js, err := json.Marshal(note)
 			if err != nil {

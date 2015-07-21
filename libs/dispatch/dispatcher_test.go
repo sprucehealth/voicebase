@@ -4,30 +4,10 @@ import (
 	"errors"
 	"sync"
 	"testing"
-	"time"
 )
 
 type TestEvent struct {
 	Foo string
-}
-
-func TestRunAsync(t *testing.T) {
-	var success bool
-	done := make(chan bool, 1)
-
-	RunAsync(func() {
-		success = true
-		done <- true
-	})
-
-	select {
-	case <-done:
-		if !success {
-			t.Fatal("Success should be true but was false")
-		}
-	case <-time.After(time.Second):
-		t.Fatal("Expected function never ran")
-	}
 }
 
 func TestDispatcher(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -231,7 +231,7 @@ func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI 
 
 	// If executing async then explicitly return nil error to avoid a race condition
 	if async {
-		dispatch.RunAsync(associationAction)
+		conc.Go(associationAction)
 		return promotion.Data.(Promotion).SuccessMessage(), nil
 	}
 
@@ -268,7 +268,7 @@ func PatientSignedup(accountID int64, email string, dataAPI api.DataAPI, analyti
 		}
 	}
 
-	dispatch.RunAsync(func() {
+	conc.Go(func() {
 		if err := dataAPI.MarkParkedAccountAsAccountCreated(parkedAccount.ID); err != nil {
 			golog.Errorf(err.Error())
 			return
@@ -303,7 +303,6 @@ func PatientSignedup(accountID int64, email string, dataAPI api.DataAPI, analyti
 				}),
 			},
 		})
-
 	})
 
 	return promotion.Data.(Promotion).SuccessMessage(), nil
