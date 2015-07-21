@@ -55,6 +55,7 @@ var lowRatingTagThreshold = &cfg.ValueDef{
 }
 
 const (
+	// LowRatingTag is the tag to be applied to feedback that matches the qualifications to be "low"
 	LowRatingTag = "LowRating"
 )
 
@@ -65,6 +66,7 @@ type feedbackPromptResponse struct {
 	SubmitButtonText   string `json:"submit_button_text"`
 }
 
+// NewFeedbackPromptHandler returns an initialized instance of feedbackPromptHandler
 func NewFeedbackPromptHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
@@ -75,6 +77,7 @@ func NewFeedbackPromptHandler(dataAPI api.DataAPI) http.Handler {
 		httputil.Get)
 }
 
+// NewFeedbackHandler returns an initialized instance of feedbackHandler
 func NewFeedbackHandler(dataAPI api.DataAPI, taggingClient tagging.Client, cfgStore cfg.Store) http.Handler {
 	cfgStore.Register(lowRatingTagThreshold)
 	return httputil.SupportedMethods(

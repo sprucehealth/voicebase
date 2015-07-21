@@ -4,6 +4,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
+// InfoIntakeLayout represents the information related to the intake section of a given clinical_pathway. This contains all questions and transitions/metadata
 type InfoIntakeLayout struct {
 	PathwayTag  string               `json:"health_condition"`
 	PathwayID   int64                `json:"health_condition_id,string,omitempty"`
@@ -21,18 +22,21 @@ type InfoIntakeLayout struct {
 	DeprecatedCheckout               *CheckoutText               `json:"checkout,omitempty"`
 }
 
+// NonPhotoQuestionIDs returns the IDs of all non photo questions in the intake
 func (i *InfoIntakeLayout) NonPhotoQuestionIDs() []int64 {
 	return i.questionIDs(func(q *Question) bool {
 		return q.QuestionType != QuestionTypePhotoSection
 	})
 }
 
+// PhotoQuestionIDs returns the IDs of all photo questions in the intake
 func (i *InfoIntakeLayout) PhotoQuestionIDs() []int64 {
 	return i.questionIDs(func(q *Question) bool {
 		return q.QuestionType == QuestionTypePhotoSection
 	})
 }
 
+// Questions retuns a slice of questions contained within the intake
 func (i *InfoIntakeLayout) Questions() []*Question {
 	var questions []*Question
 	for _, section := range i.Sections {
@@ -50,6 +54,7 @@ func (i *InfoIntakeLayout) Questions() []*Question {
 	return questions
 }
 
+// Answers returns a map of question ID to answer slice representing the mapping of potential_answer(s) to quesiton ID
 func (i *InfoIntakeLayout) Answers() map[int64][]common.Answer {
 	answers := make(map[int64][]common.Answer)
 	for _, section := range i.Sections {

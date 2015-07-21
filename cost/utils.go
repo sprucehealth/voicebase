@@ -8,16 +8,30 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
+	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/golog"
 )
+
+var (
+	// BuzzLaunchDate represents the date on which we launched the buzz lightyear iteration of the product
+	BuzzLaunchDate = time.Date(2015, time.March, 31, 0, 0, 0, 0, time.UTC)
+)
+
+// GlobalFirstVisitFreeEnabled is a Server configurable flag for determining if the first visit for all patients should be free
+var GlobalFirstVisitFreeEnabled = &cfg.ValueDef{
+	Name:        "Global.First.Visit.Free.Enabled",
+	Description: "A value that represents if the first visit should be free for all patients.",
+	Type:        cfg.ValueTypeBool,
+	Default:     true,
+}
 
 func totalCostForItems(
 	skuTypes []string,
 	accountID int64,
 	updateState bool,
 	dataAPI api.DataAPI,
-	launchPromoStartDate *time.Time,
 	analyticsLogger analytics.Logger,
+	cfgStore cfg.Store,
 ) (*common.CostBreakdown, error) {
 
 	costBreakdown := &common.CostBreakdown{}
@@ -32,13 +46,13 @@ func totalCostForItems(
 	}
 	costBreakdown.CalculateTotal()
 
-	if launchPromoStartDate != nil && !launchPromoStartDate.IsZero() {
+	if cfgStore.Snapshot().Bool(GlobalFirstVisitFreeEnabled.Name) {
 		patientID, err := dataAPI.GetPatientIDFromAccountID(accountID)
 		if err != nil {
 			return nil, err
 		}
 
-		visits, err := dataAPI.VisitsSubmittedForPatientSince(patientID, *launchPromoStartDate)
+		visits, err := dataAPI.VisitsSubmittedForPatientSince(patientID, BuzzLaunchDate)
 		if err != nil {
 			return nil, err
 		}

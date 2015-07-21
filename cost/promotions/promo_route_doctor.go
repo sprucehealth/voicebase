@@ -21,7 +21,7 @@ type routeDoctorPromotion struct {
 }
 
 func (r *routeDoctorPromotion) IsZeroValue() bool {
-	return false
+	return r.DiscountValue <= 0
 }
 
 type context struct {

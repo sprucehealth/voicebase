@@ -13,7 +13,7 @@ type accountCreditPromotion struct {
 }
 
 func (a *accountCreditPromotion) IsZeroValue() bool {
-	return a.CreditValue > 0
+	return a.CreditValue <= 0
 }
 
 func (a *accountCreditPromotion) TypeName() string {

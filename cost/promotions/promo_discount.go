@@ -38,7 +38,7 @@ type discountPromotion interface {
 }
 
 func (d *percentDiscountPromotion) IsZeroValue() bool {
-	return d.DiscountValue > 0
+	return d.DiscountValue <= 0
 }
 
 func (d *percentDiscountPromotion) Validate() error {
@@ -74,7 +74,7 @@ func (d *percentDiscountPromotion) IsConsumed() bool {
 }
 
 func (d *moneyDiscountPromotion) IsZeroValue() bool {
-	return d.DiscountValue > 0
+	return d.DiscountValue <= 0
 }
 
 func (d *moneyDiscountPromotion) Validate() error {
@@ -191,7 +191,7 @@ func applyDiscount(cost *common.CostBreakdown, promotion Promotion, discountUnit
 	}
 
 	//  Create line item and append to cost breakdown if it's visible to the patient
-	if promotion.IsZeroValue() {
+	if !promotion.IsZeroValue() {
 		cost.LineItems = append(cost.LineItems, &common.LineItem{
 			Description: promotion.ShortMessage(),
 			Cost:        discount,

@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/stripe"
@@ -31,6 +32,7 @@ var (
 	waitTimeSeconds   int64 = 20
 )
 
+// Worker represents the data needed to perform the async operations related to cost
 type Worker struct {
 	dataAPI              api.DataAPI
 	launchPromoStartDate *time.Time
@@ -45,13 +47,15 @@ type Worker struct {
 	receiptSendSuccess   *metrics.Counter
 	receiptSendFailure   *metrics.Counter
 	timePeriodInSeconds  int
+	cfgStore             cfg.Store
 	stopChan             chan bool
 }
 
+// NewWorker returns an initialized instance of Worker
 func NewWorker(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispatcher *dispatch.Dispatcher,
 	stripeCli apiservice.StripeClient, emailService email.Service,
 	queue *common.SQSQueue, metricsRegistry metrics.Registry,
-	timePeriodInSeconds int, supportEmail string, launchPromoStartDate *time.Time) *Worker {
+	timePeriodInSeconds int, supportEmail string, cfgStore cfg.Store) *Worker {
 	if timePeriodInSeconds == 0 {
 		timePeriodInSeconds = defaultTimePeriod
 	}
@@ -67,23 +71,24 @@ func NewWorker(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispatcher
 	metricsRegistry.Add("receipt_send/failure", receiptSendFailure)
 
 	return &Worker{
-		dataAPI:              dataAPI,
-		analyticsLogger:      analyticsLogger,
-		dispatcher:           dispatcher,
-		stripeCli:            stripeCli,
-		emailService:         emailService,
-		supportEmail:         supportEmail,
-		queue:                queue,
-		chargeSuccess:        chargeSuccess,
-		chargeFailure:        chargeFailure,
-		receiptSendSuccess:   receiptSendSuccess,
-		receiptSendFailure:   receiptSendFailure,
-		timePeriodInSeconds:  timePeriodInSeconds,
-		stopChan:             make(chan bool),
-		launchPromoStartDate: launchPromoStartDate,
+		dataAPI:             dataAPI,
+		analyticsLogger:     analyticsLogger,
+		dispatcher:          dispatcher,
+		stripeCli:           stripeCli,
+		emailService:        emailService,
+		supportEmail:        supportEmail,
+		queue:               queue,
+		chargeSuccess:       chargeSuccess,
+		chargeFailure:       chargeFailure,
+		receiptSendSuccess:  receiptSendSuccess,
+		receiptSendFailure:  receiptSendFailure,
+		timePeriodInSeconds: timePeriodInSeconds,
+		cfgStore:            cfgStore,
+		stopChan:            make(chan bool),
 	}
 }
 
+// Start begins the async operations performed by the worker in a goroutine
 func (w *Worker) Start() {
 	go func() {
 		for {
@@ -100,10 +105,12 @@ func (w *Worker) Start() {
 	}()
 }
 
+// Stop stops the routine that the worker is currently running
 func (w *Worker) Stop() {
 	close(w.stopChan)
 }
 
+// Do is the actual operation performed by the worker
 func (w *Worker) Do() error {
 
 	// keep going until there are no messages left to consume
@@ -167,7 +174,7 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 	}
 
 	// get the cost of the visit
-	costBreakdown, err := totalCostForItems([]string{m.SKUType}, m.AccountID, true, w.dataAPI, w.launchPromoStartDate, w.analyticsLogger)
+	costBreakdown, err := totalCostForItems([]string{m.SKUType}, m.AccountID, true, w.dataAPI, w.analyticsLogger, w.cfgStore)
 	if err != nil {
 		return err
 	}
