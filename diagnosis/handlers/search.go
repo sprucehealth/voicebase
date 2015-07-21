@@ -5,11 +5,12 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/diagnosis"
+	"github.com/sprucehealth/backend/errors"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
@@ -166,37 +167,24 @@ func (s *searchHandler) createResponseFromDiagnoses(
 
 	// make requests in parallel to get indicators for any codeIDS
 	// with additional details and synonyms for diagnoses
-	wg := sync.WaitGroup{}
-	wg.Add(2)
-	errors := make(chan error, 2)
+	p := conc.NewParallel()
 
 	var codeIDsWithDetails map[string]bool
-	go func(codeIDs []string) {
+	p.Go(func() error {
 		var err error
 		codeIDsWithDetails, err = s.dataAPI.DiagnosesThatHaveDetails(codeIDs)
-		if err != nil {
-			errors <- err
-		}
-		wg.Done()
-	}(codeIDs)
+		return errors.Trace(err)
+	})
 
 	var synonymMap map[string][]string
-	go func(codeIDs []string) {
+	p.Go(func() error {
 		var err error
 		synonymMap, err = s.diagnosisAPI.SynonymsForDiagnoses(codeIDs)
-		if err != nil {
-			errors <- err
-		}
-		wg.Done()
-	}(codeIDs)
+		return errors.Trace(err)
+	})
 
-	// wait for both calls to finish
-	// and return any errors gathered
-	wg.Wait()
-	select {
-	case err := <-errors:
+	if err := p.Wait(); err != nil {
 		return nil, err
-	default:
 	}
 
 	items := make([]*ResultItem, len(diagnoses))

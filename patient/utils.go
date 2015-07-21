@@ -1,19 +1,19 @@
 package patient
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"sort"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
@@ -28,66 +28,44 @@ func IntakeLayoutForVisit(
 	expirationDuration time.Duration,
 	visit *common.PatientVisit) (*VisitIntakeInfo, error) {
 
-	errs := make(chan error, 3)
 	var visitLayout *info_intake.InfoIntakeLayout
 	var doctorID int64
 	var msg string
-	var wg sync.WaitGroup
-	wg.Add(3)
 
-	go func() {
-		defer wg.Done()
-		var err error
-
+	p := conc.NewParallel()
+	p.Go(func() error {
 		// if there is an active patient visit record, then ensure to lookup the layout to send to the patient
 		// based on what layout was shown to the patient at the time of opening of the patient visit, NOT the current
 		// based on what is the current active layout because that may have potentially changed and we want to ensure
 		// to not confuse the patient by changing the question structure under their feet for this particular patient visit
 		// in other words, want to show them what they have already seen in terms of a flow.
+		var err error
 		visitLayout, err = apiservice.GetPatientLayoutForPatientVisit(visit, api.LanguageIDEnglish, dataAPI, apiDomain)
 		if err != nil {
-			errs <- err
+			return errors.Trace(err)
 		}
-
-		if err := populateLayoutWithAnswers(
-			visitLayout,
-			dataAPI,
-			mediaStore,
-			expirationDuration,
-			visit); err != nil {
-			errs <- err
-		}
-	}()
-
-	go func() {
-		defer wg.Done()
-
+		return errors.Trace(populateLayoutWithAnswers(visitLayout, dataAPI, mediaStore, expirationDuration, visit))
+	})
+	p.Go(func() error {
 		doctorMember, err := dataAPI.GetActiveCareTeamMemberForCase(api.RoleDoctor, visit.PatientCaseID.Int64())
 		if err != nil && !api.IsErrNotFound(err) {
-			errs <- err
+			return errors.Trace(err)
 		}
-
 		if doctorMember != nil {
 			doctorID = doctorMember.ProviderID
 		}
-	}()
-
-	go func() {
-		defer wg.Done()
+		return nil
+	})
+	p.Go(func() error {
 		var err error
-
 		msg, err = dataAPI.GetMessageForPatientVisit(visit.ID.Int64())
 		if err != nil && !api.IsErrNotFound(err) {
-			errs <- err
+			return errors.Trace(err)
 		}
-	}()
-
-	wg.Wait()
-
-	select {
-	case err := <-errs:
-		return nil, err
-	default:
+		return nil
+	})
+	if err := p.Wait(); err != nil {
+		return nil, errors.Trace(err)
 	}
 
 	additionalMessage := &AdditionalMessage{

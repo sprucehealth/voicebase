@@ -4,14 +4,16 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/errors"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/ptr"
 )
 
 const (
@@ -58,27 +60,16 @@ func (p *presubmissionTriageHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(2)
-	errs := make(chan error, 2)
-
-	go func() {
-		defer wg.Done()
-
+	par := conc.NewParallel()
+	par.Go(func() error {
 		// update the patient visit status
-		now := time.Now()
 		updatedStatus := common.PVStatusPreSubmissionTriage
-		if err := p.dataAPI.UpdatePatientVisit(rd.PatientVisitID, &api.PatientVisitUpdate{
-			ClosedDate: &now,
+		return errors.Trace(p.dataAPI.UpdatePatientVisit(rd.PatientVisitID, &api.PatientVisitUpdate{
+			ClosedDate: ptr.Time(time.Now()),
 			Status:     &updatedStatus,
-		}); err != nil {
-			errs <- err
-		}
-	}()
-
-	go func() {
-		defer wg.Done()
-
+		}))
+	})
+	par.Go(func() error {
 		updatedStatus := common.PCStatusPreSubmissionTriage
 		var timeoutDate *time.Time
 		now := time.Now()
@@ -97,16 +88,14 @@ func (p *presubmissionTriageHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 				Time:  timeoutDate,
 			},
 		}); err != nil {
-			errs <- err
-			return
+			return err
 		}
 
 		title := rd.Title
 		if title == "" {
 			patientCase, err := p.dataAPI.GetPatientCaseFromID(visit.PatientCaseID.Int64())
 			if err != nil {
-				errs <- err
-				return
+				return err
 			}
 
 			title = fmt.Sprintf("Your %s visit has ended and you should seek medical care today.", strings.ToLower(patientCase.Name))
@@ -119,8 +108,7 @@ func (p *presubmissionTriageHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 
 		zipcode, _, err := p.dataAPI.PatientLocation(visit.PatientID.Int64())
 		if err != nil {
-			errs <- err
-			return
+			return err
 		}
 
 		actionURL := rd.ActionURL
@@ -137,15 +125,13 @@ func (p *presubmissionTriageHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 			ActionMessage: actionMessage,
 			ActionURL:     actionURL,
 		})
-	}()
 
-	select {
-	case err := <-errs:
+		return nil
+	})
+	if err := par.Wait(); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
-	default:
 	}
 
-	wg.Wait()
 	apiservice.WriteJSONSuccess(w)
 }

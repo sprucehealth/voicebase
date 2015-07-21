@@ -10,7 +10,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/cfg"
-	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ptr"
@@ -129,7 +129,7 @@ func (h *feedbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dispatch.RunAsync(func() {
+	conc.Go(func() {
 		lowRatingThreshold := h.cfgStore.Snapshot().Int(lowRatingTagThreshold.Name)
 		if req.Rating <= lowRatingThreshold {
 			if err := tagging.ApplyCaseTag(h.taggingClient, LowRatingTag, tp.PatientCaseID.Int64(), ptr.Time(time.Now()), tagging.TONone); err != nil {

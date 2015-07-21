@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -235,7 +236,7 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 	}
 
 	// Tag the case appropriately but don't block the case diagnosis
-	dispatch.RunAsync(func() {
+	conc.Go(func() {
 		doctor, err := d.dataAPI.Doctor(doctorID, true)
 		if err != nil {
 			golog.Errorf("When attempting to get doctor to tag case: %v", err)

@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/media"
@@ -107,55 +107,41 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var msgs []*common.CaseMessage
 	var participants map[int64]*common.CaseMessageParticipant
-	errs := make(chan error, 3)
-	var wg sync.WaitGroup
 
-	// wait for 3 requests in parallel to finish before proceeding
-	wg.Add(3)
+	p := conc.NewParallel()
 
 	// get case messages
-	go func() {
-		defer wg.Done()
+	p.Go(func() error {
 		var err error
 		msgs, err = h.dataAPI.ListCaseMessages(cas.ID.Int64(), lcmOpts)
-		if err != nil {
-			errs <- err
-		}
-	}()
+		return err
+	})
 
 	// get case message participants
-	go func() {
-		defer wg.Done()
+	p.Go(func() error {
 		var err error
 		participants, err = h.dataAPI.CaseMessageParticipants(cas.ID.Int64(), true)
-		if err != nil {
-			errs <- err
-		}
-	}()
+		return err
+	})
 
 	// get all visits associated with the case
 	var visitMap map[int64]*common.PatientVisit
-	go func() {
-		defer wg.Done()
+	p.Go(func() error {
 		visits, err := h.dataAPI.GetVisitsForCase(cas.ID.Int64(), nil)
 		if err != nil {
-			errs <- err
-			return
+			return err
 		}
 
 		visitMap = make(map[int64]*common.PatientVisit, len(visits))
 		for _, visit := range visits {
 			visitMap[visit.ID.Int64()] = visit
 		}
-	}()
+		return nil
+	})
 
-	wg.Wait()
-	select {
-	case err := <-errs:
+	if err := p.Wait(); err != nil {
 		apiservice.WriteError(err, w, r)
 		return
-	default:
-		// continue since we have no errors
 	}
 
 	if ctxt.Role == api.RoleCC {

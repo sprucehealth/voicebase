@@ -5,9 +5,15 @@ import (
 
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/events/model"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/test"
 )
+
+func init() {
+	dispatch.Testing = true
+	conc.Testing = true
+}
 
 type TestEventClient struct {
 	InsertWebRequestEventCalled bool
@@ -59,10 +65,6 @@ func newEvent(es []analytics.Event) *eventable {
 
 func (e *eventable) Events() []analytics.Event {
 	return e.events
-}
-
-func init() {
-	dispatch.Testing = true
 }
 
 func TestListenersNonWritableEventLogging(t *testing.T) {
