@@ -125,8 +125,8 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ctx.Title = promo.Title
 	}
 
-	// If page is being loaded from an iPhone or iPod touch then redirect to the branch link directly.
-	if strings.Contains(r.UserAgent(), "iPhone") || strings.Contains(r.UserAgent(), "iPod") {
+	// If page is being loaded from an iPhone, iPod touch or android device, then redirect to the branch link directly.
+	if strings.Contains(r.UserAgent(), "iPhone") || strings.Contains(r.UserAgent(), "iPod") || strings.Contains(strings.ToLower(r.UserAgent()), "android") {
 		earl, err := h.branchClient.URL(map[string]interface{}{
 			"promo_code": code.Code,
 			"source":     referralBranchSource,
