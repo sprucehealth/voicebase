@@ -32,6 +32,7 @@ type Promotion struct {
 	Created time.Time
 }
 
+// AccountPromotion represents a promotion that has been associated with an account
 type AccountPromotion struct {
 	ID        int64
 	AccountID int64
@@ -44,6 +45,21 @@ type AccountPromotion struct {
 	Expires   *time.Time
 	Created   time.Time
 	Data      Typed
+}
+
+// AccountPromotionByCreation facilitates the sorting of promotions by creation date
+type AccountPromotionByCreation []*AccountPromotion
+
+func (a AccountPromotionByCreation) Len() int {
+	return len(a)
+}
+
+func (a AccountPromotionByCreation) Less(i, j int) bool {
+	return a[i].Created.Unix() < a[j].Created.Unix()
+}
+
+func (a AccountPromotionByCreation) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
 }
 
 type ReferralProgramTemplate struct {

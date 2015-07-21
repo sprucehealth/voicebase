@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
@@ -244,7 +245,7 @@ func TestPromotionConfirmationHandlerGETPromotionImage(t *testing.T) {
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
 		DataAPI:         &api.DataService{},
 		lookupPromoCode: &common.PromoCode{ID: 1, Code: "foo", IsReferral: false},
-		promotion:       createPromotion("imageURL"),
+		promotion:       createPromotion("imageURL", "", nil, 0),
 	}
 	promoConfHandler := NewPromotionConfirmationHandler(dataAPI)
 	handler := test_handler.MockHandler{
@@ -269,7 +270,7 @@ func TestPromotionConfirmationHandlerGETPromotionNoImage(t *testing.T) {
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
 		DataAPI:         &api.DataService{},
 		lookupPromoCode: &common.PromoCode{ID: 1, Code: "foo", IsReferral: false},
-		promotion:       createPromotion(""),
+		promotion:       createPromotion("", "", nil, 0),
 	}
 	promoConfHandler := NewPromotionConfirmationHandler(dataAPI)
 	handler := test_handler.MockHandler{
@@ -299,11 +300,13 @@ func createReferralProgram(accountID int64, imageURL string) *common.ReferralPro
 	}
 }
 
-func createPromotion(imageURL string) *common.Promotion {
-	p := NewPercentOffVisitPromotion(0,
+func createPromotion(imageURL, group string, expires *time.Time, value int) *common.Promotion {
+	p := NewPercentOffVisitPromotion(value,
 		"group", "displayMsg", "shortMsg", "successMsg", imageURL,
 		1, 1, true)
 	return &common.Promotion{
-		Data: p,
+		Data:    p,
+		Expires: expires,
+		Group:   group,
 	}
 }

@@ -12,7 +12,7 @@ type accountCreditPromotion struct {
 	CreditValue int `json:"value"`
 }
 
-func (a *accountCreditPromotion) IsPatientVisible() bool {
+func (a *accountCreditPromotion) IsZeroValue() bool {
 	return a.CreditValue > 0
 }
 

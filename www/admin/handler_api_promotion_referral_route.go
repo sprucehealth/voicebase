@@ -19,10 +19,12 @@ type promotionReferralRouteHandler struct {
 	dataAPI api.DataAPI
 }
 
+// PromotionReferralRoutePUTRequest represents the expected structure of a PUT request
 type PromotionReferralRoutePUTRequest struct {
 	Lifecycle string `json:"lifecycle"`
 }
 
+// NewPromotionReferralRouteHandler returns an initialized instance of thpromotionReferralRouteHandlere
 func NewPromotionReferralRouteHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(&promotionReferralRouteHandler{dataAPI: dataAPI}, httputil.Put)
 }

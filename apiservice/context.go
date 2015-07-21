@@ -11,6 +11,7 @@ var (
 	requestContext = map[*http.Request]*Context{}
 )
 
+// CacheKey represents a type used to key a cache map
 type CacheKey int
 
 const (
@@ -35,6 +36,7 @@ const (
 	Account
 )
 
+// Context represents the context associated with a web request
 type Context struct {
 	AccountID        int64
 	Role             string
@@ -43,6 +45,7 @@ type Context struct {
 	RequestCache     map[CacheKey]interface{}
 }
 
+// GetContext returns the context associated with the provided request
 func GetContext(req *http.Request) *Context {
 	ctxMu.Lock()
 	defer ctxMu.Unlock()
@@ -55,6 +58,7 @@ func GetContext(req *http.Request) *Context {
 	return ctx
 }
 
+// DeleteContext removes the context associated with the provided request from the backing map
 func DeleteContext(req *http.Request) {
 	ctxMu.Lock()
 	delete(requestContext, req)

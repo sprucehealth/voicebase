@@ -59,17 +59,34 @@ module.exports = {
 var AddPromotionModal = React.createClass({displayName: "AddPromotionModal",
 	// Eventually these should be fetched from an API,
 	promoTypes: [{name: "Percent Off", value:"promo_percent_off"}, {name: "Money Off", value: "promo_money_off"}],
-	groups: [{name: "New Users", value:"new_user"}],
 	valueDescriptorByType: {"promo_money_off": "cents", "promo_percent_off": "%"},
+	zeroValueAllowedGroups: {"attribution": true},
 	getInitialState: function(): any {
+		var groups = [{name: "", value: ""}]
 		return {
 			error: null,
 			busy: false,
 			promoTypes: this.promoTypes,
 			promoTypesSelectedValue: this.promoTypes[0].value,
-			groups: this.groups,
-			groupSelectedValue: this.groups[0].value,
+			groups: groups,
+			groupSelectedValue: groups[0].value,
 		};
+	},
+	componentWillMount: function(): any {
+		document.title = "Marketing | Promotions";
+		AdminAPI.promotionGroups(function(success, data, error){
+			if(success) {
+				var groups = []
+				for(var i = 0; i < data.promotion_groups.length; i++){
+					groups.push({name: data.promotion_groups[i].name + " - Max Allowed " + data.promotion_groups[i].max_allowed_promos.toString(), value: data.promotion_groups[i].name})
+				}
+				if(groups.length > 0) {
+					this.setState({groups: groups, groupSelectedValue: groups[0].value})
+				}
+			} else {
+				this.setState({error: error.message})
+			}
+		}.bind(this))
 	},
 	onPromoTypeChange: function(e): any {
 		e.preventDefault();
@@ -128,10 +145,10 @@ var AddPromotionModal = React.createClass({displayName: "AddPromotionModal",
 			displayMessage: e.target.value,
 		});
 	},
-	onShortMessageChange: function(e): any {
+	onLineItemDescriptionChange: function(e): any {
 		e.preventDefault();
 		this.setState({
-			shortMessage: e.target.value,
+			lineItemDescription: e.target.value,
 		});
 	},
 	onSuccessMessageChange: function(e): any {
@@ -169,7 +186,7 @@ var AddPromotionModal = React.createClass({displayName: "AddPromotionModal",
 				this.state.groupSelectedValue, 
 				{
 					display_msg: this.state.displayMessage, 
-					short_msg: this.state.shortMessage,
+					short_msg: this.state.lineItemDescription,
 					success_msg: this.state.successMessage,
 					image_url: this.state.imageURL,
 					image_width: parseInt(this.state.imageWidth),
@@ -209,14 +226,16 @@ var AddPromotionModal = React.createClass({displayName: "AddPromotionModal",
 			this.setState({error: "imageHeight must be an Integer"});
 		} else if (!this.state.displayMessage) {
 			this.setState({error: "displayMessage required"});
-		} else if (!this.state.shortMessage) {
-			this.setState({error: "shortMessage required"});
+		} else if (!this.state.lineItemDescription) {
+			this.setState({error: "lineItemDescription required"});
 		} else if (!this.state.successMessage) {
 			this.setState({error: "successMessage required"});
 		} else if (this.valueDescriptorByType[this.state.promoTypesSelectedValue] && !this.state.val) {
 			this.setState({error: "value required"});
 		} else if (this.valueDescriptorByType[this.state.promoTypesSelectedValue] && !Utils.isInteger(this.state.val)) {
 			this.setState({error: "value must be an Integer"});
+		} else if (this.zeroValueAllowedGroups[this.state.promoTypesSelectedValue] != true && parseInt(this.state.val) <= 0) {
+			this.setState({error: "this promotion group requires a positive non zero value"});
 		} else {
 			return true;
 		}
@@ -239,7 +258,7 @@ var AddPromotionModal = React.createClass({displayName: "AddPromotionModal",
 				{this.state.imageURL ? <Forms.FormInput label="Image Width" value={this.state.imageWidth} onChange={this.onImageWidthChange} /> : null}
 				{this.state.imageURL ? <Forms.FormInput label="Image Height" value={this.state.imageHeight} onChange={this.onImageHeightChange} /> : null}
 				<Forms.FormInput label="Display Message" value={this.state.displayMessage} onChange={this.onDisplayMessageChange} />
-				<Forms.FormInput label="Short Message" value={this.state.shortMessage} onChange={this.onShortMessageChange} />
+				<Forms.FormInput label="Line Item Description" value={this.state.lineItemDescription} onChange={this.onLineItemDescriptionChange} />
 				<Forms.FormInput label="Success Message" value={this.state.successMessage} onChange={this.onSuccessMessageChange} />
 				{this.valueDescriptorByType[this.state.promoTypesSelectedValue] ? <Forms.FormInput label={"Value - (" + this.valueDescriptorByType[this.state.promoTypesSelectedValue] + ")"} value={this.state.val} onChange={this.onValueChange} /> : null}
 				<Forms.FormDatePicker label="*Expires" value={this.state.expires} onChange={this.onExpiresChange} />
@@ -326,14 +345,14 @@ var Promotion = React.createClass({displayName: "Promotion",
 						<tr><td>Promotion Code ID:</td><td>{this.props.promotion.code_id}</td></tr>
 						<tr><td>Group:</td><td>{this.props.promotion.data.group}</td></tr>
 						<tr><td>Message:</td><td>{this.props.promotion.data.display_msg}</td></tr>
-						<tr><td>Short Message:</td><td>{this.props.promotion.data.short_msg}</td></tr>
+						<tr><td>Line Item Description:</td><td>{this.props.promotion.data.short_msg}</td></tr>
 						<tr><td>Success Message:</td><td>{this.props.promotion.data.success_msg}</td></tr>
 						{this.props.promotion.data.image_url ? <tr><td>Image:</td><td><img src={this.props.promotion.data.image_url} /></td></tr> : null}
 						{this.props.promotion.data.image_url ? <tr><td>Image Height:</td><td>{this.props.promotion.data.image_width || "Undefined"} </td></tr> : null}
 						{this.props.promotion.data.image_url ? <tr><td>Image Width:</td><td>{this.props.promotion.data.image_height || "Undefined"} </td></tr> : null}
 						<tr><td>Code:</td><td>{this.props.promotion.code}</td></tr>
-						<tr><td>Type:</td><td>{this.props.promotion.type}</td></tr>
-						<tr><td>Value:</td><td>{this.props.promotion.data.value}</td></tr>
+						{this.props.promotion.data.value != 0 ? <tr><td>Type:</td><td>{this.props.promotion.type}</td></tr> : null}
+						{this.props.promotion.data.value != 0 ? <tr><td>Type:</td><td>{this.props.promotion.data.value}</td></tr> : null}
 						<tr><td>Created:</td><td>{(new Date(this.props.promotion.created * 1000)).toString()}</td></tr>
 						<tr><td>Expires:</td><td>{this.props.promotion.expires ? (new Date(this.props.promotion.expires * 1000)).toString() : "Never"}</td></tr>
 					</tbody>
@@ -373,7 +392,7 @@ var AddPromotionReferralRouteModal = React.createClass({displayName: "AddPromoti
 			error: null,
 		};
 		if(!Utils.isInteger(e.target.value) && e.target.value != "") {
-			state.error = "Promotion Code ID must be an Integer"; 
+			state.error = "Promotion Code ID must be an Integer";
 		}
 		this.setState(state);
 	},

@@ -820,6 +820,7 @@ type PromotionsAPI interface {
 	Promotion(codeID int64, types map[string]reflect.Type) (*common.Promotion, error)
 	PromotionCountInGroupForAccount(accountID int64, group string) (int, error)
 	PromotionGroup(name string) (*common.PromotionGroup, error)
+	PromotionGroups() ([]*common.PromotionGroup, error)
 	PromotionReferralRoutes(lifecycles []string) ([]*common.PromotionReferralRoute, error)
 	Promotions(codeIDs []int64, promoTypes []string, types map[string]reflect.Type) ([]*common.Promotion, error)
 	ReferralProgram(codeID int64, types map[string]reflect.Type) (*common.ReferralProgram, error)
@@ -827,7 +828,7 @@ type PromotionsAPI interface {
 	ReferralProgramTemplates(statuses common.ReferralProgramStatusList, types map[string]reflect.Type) ([]*common.ReferralProgramTemplate, error)
 	RouteQueryParamsForAccount(accountID int64) (*RouteQueryParams, error)
 	TrackAccountReferral(referralTracking *common.ReferralTrackingEntry) error
-	UpdateAccountPromotion(accountID, promoCodeID int64, update *AccountPromotionUpdate) error
+	UpdateAccountPromotion(accountID, promoCodeID int64, update *AccountPromotionUpdate, apo AccountPromotionOption) error
 	UpdateAccountReferral(accountID int64, status common.ReferralTrackingStatus) error
 	UpdateCredit(accountID int64, credit int, currency string) error
 	UpdatePromotionReferralRoute(routeUpdate *common.PromotionReferralRouteUpdate) (int64, error)

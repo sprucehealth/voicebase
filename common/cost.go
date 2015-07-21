@@ -7,13 +7,16 @@ import (
 	"time"
 )
 
+// Currency represents a monetary system
 type Currency string
 
 const (
+	// USD is a Curreny representing the United States Dollar
 	USD          Currency = "USD"
 	smallestUnit          = 100.0
 )
 
+// GetCurrency returns the Currency type the maps to the provided string. An error is returned if there is no match.
 func GetCurrency(s string) (Currency, error) {
 	switch c := Currency(s); c {
 	case USD:
@@ -26,6 +29,7 @@ func (c Currency) String() string {
 	return string(c)
 }
 
+// Scan implements the sql.Scanner interface to load Currencies from a data store and provide validation
 func (c *Currency) Scan(src interface{}) error {
 	var err error
 	switch t := src.(type) {
@@ -39,6 +43,7 @@ func (c *Currency) Scan(src interface{}) error {
 	return err
 }
 
+// Cost represents a monetary system and value
 type Cost struct {
 	Currency string `json:"currency"`
 	Amount   int    `json:"amount"`
@@ -54,6 +59,7 @@ func (c Cost) String() string {
 	return string(strconv.AppendFloat(marshalledValue, math.Abs(float64(c.Amount))/smallestUnit, 'f', -1, 64))
 }
 
+// Charge created the string description associated with the costs "Charge"
 func (c Cost) Charge() string {
 	isNegative := c.Amount < 0
 	var marshalledValue []byte
@@ -63,6 +69,8 @@ func (c Cost) Charge() string {
 	return string(strconv.AppendFloat(marshalledValue, math.Abs(float64(c.Amount))/smallestUnit, 'f', -1, 64))
 }
 
+// ItemCost represents the mapping between item to charge for an the charge itself
+// This structure also houses a destailed breakdown of the charges/costs associated with the item
 type ItemCost struct {
 	ID           int64            `json:"-"`
 	SKUType      string           `json:"-"`
@@ -72,6 +80,7 @@ type ItemCost struct {
 	LineItems    []*LineItem      `json:"line_items"`
 }
 
+// LineItem represents an individual charge delta to be reported
 type LineItem struct {
 	ID          int64  `json:"-"`
 	Description string `json:"description"`
@@ -79,6 +88,7 @@ type LineItem struct {
 	SKUType     string `json:"-"`
 }
 
+// CostBreakdown represents a collection of ItemCosts and LineItems that make up a TotalCost
 type CostBreakdown struct {
 	ItemCosts []*ItemCost `json:"-"`
 	LineItems []*LineItem `json:"line_items"`
@@ -98,25 +108,35 @@ func lineItemsTotal(lis []*LineItem) Cost {
 	}
 }
 
+// TotalCost returns a totaled cost gained from the more genualr line item breakdown
 func (ic *ItemCost) TotalCost() Cost {
 	return lineItemsTotal(ic.LineItems)
 }
 
+// CalculateTotal performs an in place operation updating the interal total cost state
 func (c *CostBreakdown) CalculateTotal() {
 	c.TotalCost = lineItemsTotal(c.LineItems)
+	if c.TotalCost.Amount < 0 {
+		c.TotalCost.Amount = 0
+	}
 }
 
+// PatientReceiptStatus is a representation of the state of the charge
 type PatientReceiptStatus string
 
 const (
+	// PRChargePending is the status of an item when it still needs to be charged
 	PRChargePending PatientReceiptStatus = "CHARGE_PENDING"
-	PRCharged       PatientReceiptStatus = "CHARGED"
+
+	// PRCharged is the status of an item when it has been charged
+	PRCharged PatientReceiptStatus = "CHARGED"
 )
 
 func (p PatientReceiptStatus) String() string {
 	return string(p)
 }
 
+// Scan implements the sql.Scanner interface to load PatientReceiptStatus from a data store and provide validation
 func (p *PatientReceiptStatus) Scan(src interface{}) error {
 	var err error
 	switch v := src.(type) {
@@ -131,6 +151,7 @@ func (p *PatientReceiptStatus) Scan(src interface{}) error {
 	return err
 }
 
+// GetPatientReceiptStatus returns the PatientReceiptStatus type the maps to the provided string. An error is returned if there is no match.
 func GetPatientReceiptStatus(s string) (PatientReceiptStatus, error) {
 	switch p := PatientReceiptStatus(s); p {
 	case PRChargePending, PRCharged:
@@ -139,6 +160,7 @@ func GetPatientReceiptStatus(s string) (PatientReceiptStatus, error) {
 	return PatientReceiptStatus(""), fmt.Errorf("PatientReceiptStatus %s unknown", s)
 }
 
+// PatientReceipt represents the patient facing description of their total charge
 type PatientReceipt struct {
 	ID                int64                `json:"id,string"`
 	ReferenceNumber   string               `json:"reference_number"`
@@ -152,6 +174,7 @@ type PatientReceipt struct {
 	CostBreakdown     *CostBreakdown       `json:"costs"`
 }
 
+// DoctorTransaction represents a transaction performed in respect to it's impact on the providing doctor
 type DoctorTransaction struct {
 	ID         int64
 	DoctorID   int64

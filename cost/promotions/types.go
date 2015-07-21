@@ -36,7 +36,7 @@ type Promotion interface {
 	ImageURL() string
 	ImageWidth() int
 	ImageHeight() int
-	IsPatientVisible() bool
+	IsZeroValue() bool
 }
 
 // ReferralProgram is an interface that is intended to capture all the functionality required by the system to generically interact with and service requests related to referral programs

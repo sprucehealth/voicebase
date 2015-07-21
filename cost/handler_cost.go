@@ -29,6 +29,7 @@ type costResponse struct {
 	IsFree    bool               `json:"is_free"`
 }
 
+// NewCostHandler returns an initialized instance of costHandler
 func NewCostHandler(
 	dataAPI api.DataAPI,
 	analyticsLogger analytics.Logger,
