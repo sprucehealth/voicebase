@@ -2,18 +2,18 @@ package cost
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type costHandler struct {
-	dataAPI              api.DataAPI
-	analyticsLogger      analytics.Logger
-	launchPromoStartDate *time.Time
+	dataAPI         api.DataAPI
+	analyticsLogger analytics.Logger
+	cfgStore        cfg.Store
 }
 
 type displayLineItem struct {
@@ -30,16 +30,13 @@ type costResponse struct {
 }
 
 // NewCostHandler returns an initialized instance of costHandler
-func NewCostHandler(
-	dataAPI api.DataAPI,
-	analyticsLogger analytics.Logger,
-	launchPromoStartDate *time.Time) http.Handler {
+func NewCostHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger, cfgStore cfg.Store) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&costHandler{
-				dataAPI:              dataAPI,
-				analyticsLogger:      analyticsLogger,
-				launchPromoStartDate: launchPromoStartDate,
+				dataAPI:         dataAPI,
+				analyticsLogger: analyticsLogger,
+				cfgStore:        cfgStore,
 			}), []string{api.RolePatient}), httputil.Get)
 }
 
@@ -52,7 +49,7 @@ func (c *costHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	costBreakdown, err := totalCostForItems([]string{skuType}, accountID, false, c.dataAPI, c.launchPromoStartDate, c.analyticsLogger)
+	costBreakdown, err := totalCostForItems([]string{skuType}, accountID, false, c.dataAPI, c.analyticsLogger, c.cfgStore)
 	if api.IsErrNotFound(err) {
 		apiservice.WriteResourceNotFoundError("cost not found", w, r)
 		return

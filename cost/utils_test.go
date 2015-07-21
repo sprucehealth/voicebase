@@ -7,34 +7,43 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/cfg"
+	"github.com/sprucehealth/backend/test"
 )
 
-type mockDataAPI_totalCost struct {
+type mockDataAPITotalCost struct {
 	api.DataAPI
 	itemCost      *common.ItemCost
 	visits        []*common.PatientVisit
 	accountCredit common.AccountCredit
 }
 
-func (m *mockDataAPI_totalCost) GetActiveItemCost(skuType string) (*common.ItemCost, error) {
+func (m *mockDataAPITotalCost) GetActiveItemCost(skuType string) (*common.ItemCost, error) {
 	return m.itemCost, nil
 }
-func (m *mockDataAPI_totalCost) GetPatientIDFromAccountID(accountID int64) (int64, error) {
+func (m *mockDataAPITotalCost) GetPatientIDFromAccountID(accountID int64) (int64, error) {
 	return 0, nil
 }
-func (m *mockDataAPI_totalCost) VisitsSubmittedForPatientSince(patientID int64, since time.Time) ([]*common.PatientVisit, error) {
+func (m *mockDataAPITotalCost) VisitsSubmittedForPatientSince(patientID int64, since time.Time) ([]*common.PatientVisit, error) {
 	return m.visits, nil
 }
-func (m *mockDataAPI_totalCost) PendingPromotionsForAccount(id int64, types map[string]reflect.Type) ([]*common.AccountPromotion, error) {
+func (m *mockDataAPITotalCost) PendingPromotionsForAccount(id int64, types map[string]reflect.Type) ([]*common.AccountPromotion, error) {
 	return nil, nil
 }
-func (m *mockDataAPI_totalCost) AccountCredit(id int64) (*common.AccountCredit, error) {
+func (m *mockDataAPITotalCost) AccountCredit(id int64) (*common.AccountCredit, error) {
 	return &m.accountCredit, nil
+}
+
+var globalFirstVisitFreeDisabled = &cfg.ValueDef{
+	Name:        "Global.First.Visit.Free.Enabled",
+	Description: "A value that represents if the first visit should be free for all patients.",
+	Type:        cfg.ValueTypeBool,
+	Default:     false,
 }
 
 // TestTotalCost_NoLaunchPromo ensures that querying for cost without a launch promo works as expected
 func TestTotalCost_NoLaunchPromo(t *testing.T) {
-	m := &mockDataAPI_totalCost{
+	m := &mockDataAPITotalCost{
 		itemCost: &common.ItemCost{
 			LineItems: []*common.LineItem{
 				{
@@ -48,7 +57,10 @@ func TestTotalCost_NoLaunchPromo(t *testing.T) {
 		},
 	}
 
-	costBreakdown, err := totalCostForItems([]string{"test"}, 0, false, m, nil, nil)
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{globalFirstVisitFreeDisabled})
+	test.OK(t, err)
+
+	costBreakdown, err := totalCostForItems([]string{"test"}, 0, false, m, nil, cfgStore)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -65,7 +77,7 @@ func TestTotalCost_NoLaunchPromo(t *testing.T) {
 // TestLaunchPromo_NoVisitsSubmitted ensures that querying for cost when launch promo is running and no visit has been submitted
 // by patient since the launch promo start gives the visit for free to patient
 func TestLaunchPromo_NoVisitsSubmitted(t *testing.T) {
-	m := &mockDataAPI_totalCost{
+	m := &mockDataAPITotalCost{
 		itemCost: &common.ItemCost{
 			LineItems: []*common.LineItem{
 				{
@@ -79,9 +91,10 @@ func TestLaunchPromo_NoVisitsSubmitted(t *testing.T) {
 		},
 	}
 
-	startDate := time.Now()
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{GlobalFirstVisitFreeEnabled})
+	test.OK(t, err)
 
-	costBreakdown, err := totalCostForItems([]string{"test"}, 0, false, m, &startDate, nil)
+	costBreakdown, err := totalCostForItems([]string{"test"}, 0, false, m, nil, cfgStore)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -100,7 +113,7 @@ func TestLaunchPromo_NoVisitsSubmitted(t *testing.T) {
 // TestLaunchPromo_VisitSubmittedButNotCharged ensures that querying for cost with the intent to commit the cost
 // for a visit that was just submitted during launch promo is indeed free.
 func TestLaunchPromo_VisitSubmittedButNotCharged(t *testing.T) {
-	m := &mockDataAPI_totalCost{
+	m := &mockDataAPITotalCost{
 		itemCost: &common.ItemCost{
 			LineItems: []*common.LineItem{
 				{
@@ -119,9 +132,10 @@ func TestLaunchPromo_VisitSubmittedButNotCharged(t *testing.T) {
 		},
 	}
 
-	startDate := time.Now()
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{GlobalFirstVisitFreeEnabled})
+	test.OK(t, err)
 
-	costBreakdown, err := totalCostForItems([]string{"test"}, 0, true, m, &startDate, nil)
+	costBreakdown, err := totalCostForItems([]string{"test"}, 0, true, m, nil, cfgStore)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -140,7 +154,7 @@ func TestLaunchPromo_VisitSubmittedButNotCharged(t *testing.T) {
 // TestLaunchPromo_FirstVisit_AccountCredit ensures that no account credit is used
 // for first visit during launch promo.
 func TestLaunchPromo_FirstVisit_AccountCredit(t *testing.T) {
-	m := &mockDataAPI_totalCost{
+	m := &mockDataAPITotalCost{
 		itemCost: &common.ItemCost{
 			LineItems: []*common.LineItem{
 				{
@@ -157,9 +171,10 @@ func TestLaunchPromo_FirstVisit_AccountCredit(t *testing.T) {
 		},
 	}
 
-	startDate := time.Now()
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{GlobalFirstVisitFreeEnabled})
+	test.OK(t, err)
 
-	costBreakdown, err := totalCostForItems([]string{"test"}, 0, true, m, &startDate, nil)
+	costBreakdown, err := totalCostForItems([]string{"test"}, 0, true, m, nil, cfgStore)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -178,7 +193,7 @@ func TestLaunchPromo_FirstVisit_AccountCredit(t *testing.T) {
 // TestLaunchPromo_SecondVisitOnwards ensures that during the launch promo all visits beyond the first
 // are charged for.
 func TestLaunchPromo_SecondVisitOnwards(t *testing.T) {
-	m := &mockDataAPI_totalCost{
+	m := &mockDataAPITotalCost{
 		itemCost: &common.ItemCost{
 			LineItems: []*common.LineItem{
 				{
@@ -200,9 +215,10 @@ func TestLaunchPromo_SecondVisitOnwards(t *testing.T) {
 		},
 	}
 
-	startDate := time.Now()
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{GlobalFirstVisitFreeEnabled})
+	test.OK(t, err)
 
-	costBreakdown, err := totalCostForItems([]string{"test"}, 0, false, m, &startDate, nil)
+	costBreakdown, err := totalCostForItems([]string{"test"}, 0, false, m, nil, cfgStore)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -219,7 +235,7 @@ func TestLaunchPromo_SecondVisitOnwards(t *testing.T) {
 // TestLaunchPromo_SecondVisitOnward_OnCharge ensures that when attempting to commit cost
 // all visits beyond the first one are charged for.
 func TestLaunchPromo_SecondVisitOnward_OnCharge(t *testing.T) {
-	m := &mockDataAPI_totalCost{
+	m := &mockDataAPITotalCost{
 		itemCost: &common.ItemCost{
 			LineItems: []*common.LineItem{
 				{
@@ -237,9 +253,10 @@ func TestLaunchPromo_SecondVisitOnward_OnCharge(t *testing.T) {
 		},
 	}
 
-	startDate := time.Now()
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{GlobalFirstVisitFreeEnabled})
+	test.OK(t, err)
 
-	costBreakdown, err := totalCostForItems([]string{"test"}, 0, true, m, &startDate, nil)
+	costBreakdown, err := totalCostForItems([]string{"test"}, 0, true, m, nil, cfgStore)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

@@ -97,6 +97,7 @@ type Config struct {
 	mux                      apiservice.QueryableMux
 }
 
+// New returns an initialized instance of the apiservice router conforming to the http.Handler interface
 func New(conf *Config) http.Handler {
 	taggingClient := tagging.NewTaggingClient(conf.ApplicationDB)
 
@@ -140,7 +141,7 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.PatientMeURLPath, patient.NewMeHandler(conf.DataAPI, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.PatientCareTeamURLPath, patient.NewCareTeamHandler(conf.DataAPI, conf.APICDNDomain))
 	authenticationRequired(conf, apipaths.PatientCareTeamsURLPath, patient_file.NewPatientCareTeamsHandler(conf.DataAPI, conf.APICDNDomain))
-	authenticationRequired(conf, apipaths.PatientCostURLPath, cost.NewCostHandler(conf.DataAPI, conf.AnalyticsLogger, conf.LaunchPromoStartDate))
+	authenticationRequired(conf, apipaths.PatientCostURLPath, cost.NewCostHandler(conf.DataAPI, conf.AnalyticsLogger, conf.Cfg))
 	authenticationRequired(conf, apipaths.PatientCreditsURLPath, promotions.NewPatientCreditsHandler(conf.DataAPI))
 	noAuthenticationRequired(conf, apipaths.PatientSignupURLPath, patient.NewSignupHandler(
 		conf.DataAPI, conf.AuthAPI, conf.APICDNDomain, conf.AnalyticsLogger, conf.Dispatcher, conf.AuthTokenExpiration,

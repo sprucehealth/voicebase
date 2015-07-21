@@ -13,11 +13,19 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/cost/promotions"
+	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/stripe"
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
+
+var globalFirstVisitFreeDisabled = &cfg.ValueDef{
+	Name:        "Global.First.Visit.Free.Enabled",
+	Description: "A value that represents if the first visit should be free for all patients.",
+	Type:        cfg.ValueTypeBool,
+	Default:     false,
+}
 
 func createPromotion(promotion promotions.Promotion, testData *test_integration.TestData, t *testing.T) string {
 	promoCode, err := promotions.GeneratePromoCode(testData.DataAPI)
@@ -71,7 +79,10 @@ func startAndSubmitVisit(patientID int64, patientAccountID int64,
 		}, nil
 	}
 	test_integration.SubmitPatientVisitForPatient(patientID, pv.PatientVisitID, testData, t)
-	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 0, "", nil)
+
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{globalFirstVisitFreeDisabled})
+	test.OK(t, err)
+	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 0, "", cfgStore)
 	w.Do()
 	return pv.PatientVisitID
 }

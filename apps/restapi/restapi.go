@@ -67,6 +67,8 @@ func buildRESTAPI(
 	metricsRegistry metrics.Registry,
 	applicationDB *sql.DB,
 ) http.Handler {
+	// Register the configs that will be used in different parts of the system
+	registerCfgs(cfgStore)
 	awsConfig := conf.AWS()
 
 	surescriptsPharmacySearch, err := pharmacy.NewSurescriptsPharmacySearch(conf.PharmacyDB)
@@ -282,7 +284,7 @@ func buildRESTAPI(
 		metricsRegistry.Scope("visit_queue"),
 		conf.VisitWorkerTimePeriodSeconds,
 		conf.Support.CustomerSupportEmail,
-		launchPromoStartDate,
+		cfgStore,
 	).Start()
 
 	doctor_queue.NewWorker(
@@ -316,4 +318,8 @@ func buildRESTAPI(
 		h = httputil.CompressResponse(h)
 	}
 	return h
+}
+
+func registerCfgs(cfgStore cfg.Store) {
+	cfgStore.Register(cost.GlobalFirstVisitFreeEnabled)
 }

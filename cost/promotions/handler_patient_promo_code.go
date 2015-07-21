@@ -91,8 +91,8 @@ func (h *patientPromotionsHandler) serveGET(w http.ResponseWriter, r *http.Reque
 			return
 		}
 
-		// If we are listing promtions and the promotion is makred as not patient visible then ignore it
-		if !promotion.IsZeroValue() {
+		// If we are listing promtions and the promotion has no value to the patient then ignore it
+		if promotion.IsZeroValue() {
 			continue
 		}
 
@@ -246,9 +246,9 @@ func (h *patientPromotionsHandler) servePOST(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// If the promotion isn't patient visible then we don't want to return success and then have the GET return an empty list. This would be a confusing experience.
+	// If the promotion doesn't have any value for them then we don't want to return success and then have the GET return an empty list. This would be a confusing experience.
 	// To fix this we will return a 404 here with a message explaining that it was applied before the empty screen is shown. Returning this error is the only way currently to display a message to the user.
-	if p, ok := p.Data.(Promotion); ok && !p.IsZeroValue() {
+	if p, ok := p.Data.(Promotion); ok && p.IsZeroValue() {
 		httputil.JSONResponse(w, http.StatusNotFound, &PatientPromotionPOSTErrorResponse{
 			UserError: fmt.Sprintf("The promo code %s has been associated with your account.", rd.PromoCode),
 			RequestID: ctxt.RequestID,

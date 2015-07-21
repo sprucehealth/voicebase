@@ -7,10 +7,18 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost"
+	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/stripe"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
+
+var globalFirstVisitFreeDisabled = &cfg.ValueDef{
+	Name:        "Global.First.Visit.Free.Enabled",
+	Description: "A value that represents if the first visit should be free for all patients.",
+	Type:        cfg.ValueTypeBool,
+	Default:     false,
+}
 
 func TestSucessfulCaseCharge(t *testing.T) {
 	testData := test_integration.SetupTest(t)
@@ -26,8 +34,11 @@ func TestSucessfulCaseCharge(t *testing.T) {
 		}, nil
 	}
 
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{globalFirstVisitFreeDisabled})
+	test.OK(t, err)
+
 	// set an exceptionally high time period (1 day) so that the worker only runs once
-	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "", nil)
+	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "", cfgStore)
 	w.Do()
 
 	// at this point there should be a patient receipt, with a stripe charge and a credit card set, the status should be email sent
@@ -82,8 +93,11 @@ func TestSuccessfulCharge_AlreadyExists(t *testing.T) {
 		}, nil
 	}
 
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{globalFirstVisitFreeDisabled})
+	test.OK(t, err)
+
 	// set an exceptionally high time period (1 day) so that the worker only runs once
-	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "", nil)
+	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "", cfgStore)
 	w.Do()
 
 	// lets make sure no charge was made and that just one patient receipt exists
@@ -113,8 +127,11 @@ func TestFailedCharge_StripeFailure(t *testing.T) {
 		return nil, errors.New("charge error")
 	}
 
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{globalFirstVisitFreeDisabled})
+	test.OK(t, err)
+
 	// set an exceptionally high time period (1 day) so that the worker only runs once
-	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "", nil)
+	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "", cfgStore)
 	w.Do()
 
 	// at this point the patient receipt should indicate that a charge is still pending
@@ -192,7 +209,11 @@ func TestFailedCharge_ChargeExists(t *testing.T) {
 			ID: "charge_test",
 		}, nil
 	}
-	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "", nil)
+
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{globalFirstVisitFreeDisabled})
+	test.OK(t, err)
+
+	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "", cfgStore)
 	w.Do()
 
 	test.Equals(t, false, wasCustomerCharged)

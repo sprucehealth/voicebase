@@ -16,12 +16,20 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/libs/awsutil"
+	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/stripe"
 	patientpkg "github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/patient_case"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
+
+var globalFirstVisitFreeDisabled = &cfg.ValueDef{
+	Name:        "Global.First.Visit.Free.Enabled",
+	Description: "A value that represents if the first visit should be free for all patients.",
+	Type:        cfg.ValueTypeBool,
+	Default:     false,
+}
 
 func TestFollowup_CreateAndSubmit(t *testing.T) {
 	testData := test_integration.SetupTest(t)
@@ -289,9 +297,12 @@ func submitVisit(patientID, patientVisitID int64, stubSQSQueue *common.SQSQueue,
 		}, nil
 	}
 
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{globalFirstVisitFreeDisabled})
+	test.OK(t, err)
+
 	test_integration.SubmitPatientVisitForPatient(patientID, patientVisitID, testData, t)
 	// wait for the patient's card to be charged, and the followup visit to be routed
 	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher,
-		stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 0, "", nil)
+		stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 0, "", cfgStore)
 	w.Do()
 }
