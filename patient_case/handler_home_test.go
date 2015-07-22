@@ -56,6 +56,14 @@ func (m *mockHomeHandlerDataAPI) GetPatientIDFromAccountID(accountID int64) (int
 func (m *mockHomeHandlerDataAPI) GetCasesForPatient(patientID int64, states []string) ([]*common.PatientCase, error) {
 	return m.patientCases, nil
 }
+func (m *mockHomeHandlerDataAPI) GetPatientVisitFromID(visitID int64) (*common.PatientVisit, error) {
+	for _, v := range m.patientVisits {
+		if v.ID.Int64() == visitID {
+			return v, nil
+		}
+	}
+	return nil, api.ErrNotFound("patient_visit")
+}
 func (m *mockHomeHandlerDataAPI) PathwayForTag(tag string, opts api.PathwayOption) (*common.Pathway, error) {
 	return m.pathwayMap[tag], nil
 }
@@ -72,7 +80,16 @@ func (m *mockHomeHandlerDataAPI) DoesActiveTreatmentPlanForCaseExist(caseID int6
 	return true, nil
 }
 func (m *mockHomeHandlerDataAPI) GetVisitsForCase(caseID int64, statuses []string) ([]*common.PatientVisit, error) {
-	return m.patientVisits, nil
+	var visits []*common.PatientVisit
+	for _, v := range m.patientVisits {
+		for _, s := range statuses {
+			if v.Status == s {
+				visits = append(visits, v)
+				continue
+			}
+		}
+	}
+	return visits, nil
 }
 func (m *mockHomeHandlerDataAPI) GetTreatmentPlansForCase(caseID int64) ([]*common.TreatmentPlan, error) {
 	return m.treatmentPlans, nil
@@ -316,8 +333,16 @@ func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 		},
 	}
 
+	dataAPI.patientVisits = []*common.PatientVisit{
+		{
+			ID:     encoding.NewObjectID(patientVisitID),
+			Status: common.PVStatusOpen,
+		},
+	}
+
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, r)
+	test.Equals(t, http.StatusOK, w.Code)
 
 	var jsonMap map[string]interface{}
 	test.OK(t, json.NewDecoder(w.Body).Decode(&jsonMap))
@@ -408,8 +433,16 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 		},
 	}
 
+	dataAPI.patientVisits = []*common.PatientVisit{
+		{
+			ID:     encoding.NewObjectID(patientVisitID),
+			Status: common.PVStatusOpen,
+		},
+	}
+
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, r)
+	test.Equals(t, http.StatusOK, w.Code)
 
 	var jsonMap map[string]interface{}
 	test.OK(t, json.NewDecoder(w.Body).Decode(&jsonMap))
@@ -1777,6 +1810,17 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 					PatientVisitID: 2,
 				},
 			},
+		},
+	}
+
+	dataAPI.patientVisits = []*common.PatientVisit{
+		{
+			ID:     encoding.NewObjectID(1),
+			Status: common.PVStatusOpen,
+		},
+		{
+			ID:     encoding.NewObjectID(2),
+			Status: common.PVStatusOpen,
 		},
 	}
 

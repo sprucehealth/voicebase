@@ -140,7 +140,7 @@ func TestTeenFlow(t *testing.T) {
 	// Make sure visit info updates to reflect consent being granted
 	cvRes, err = pc.Visit(cvRes.PatientVisitID)
 	test.OK(t, err)
-	test.Equals(t, common.PVStatusPendingParentalConsent, cvRes.Status)
+	test.Equals(t, common.PVStatusReceivedParentalConsent, cvRes.Status)
 	test.Equals(t, true, cvRes.ParentalConsentGranted)
 	test.Equals(t, true, cvRes.ParentalConsentRequired)
 	test.Assert(t, cvRes.ParentalConsentInfo == nil, "Parental consent info shouldn't be included when no consent required")

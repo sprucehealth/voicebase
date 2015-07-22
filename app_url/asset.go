@@ -14,6 +14,7 @@ var (
 	IconBlueSuccess             = &SpruceAsset{name: "icon_blue_success"}
 	IconCaseLarge               = &SpruceAsset{name: "icon_case_large"}
 	IconCaseSmall               = &SpruceAsset{name: "icon_case_small"}
+	IconConsent                 = &SpruceAsset{name: "icon_consent"}
 	IconConsentLarge            = &SpruceAsset{name: "icon_consent_large"}
 	IconFAQ                     = &SpruceAsset{name: "icon_faq_large"}
 	IconGuide                   = &SpruceAsset{name: "icon_guide"}

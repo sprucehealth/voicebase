@@ -229,25 +229,50 @@ func (v *incompleteVisitNotification) makeCaseNotificationView(data *caseData) (
 }
 
 func (v *incompleteVisitNotification) makeHomeCardView(dataAPI api.DataAPI, data *caseData) (common.ClientView, error) {
-	doctorAssignment := findActiveDoctor(data.CareTeamMembers)
-	continueVisitMessage := determineContinueVisitMessage(doctorAssignment)
-
-	iconURL := app_url.IconCaseLarge.String()
-	subtitle := "With the First Available Doctor"
-	if doctorAssignment != nil {
-		iconURL = app_url.ThumbnailURL(data.APIDomain, doctorAssignment.ProviderRole, doctorAssignment.ProviderID)
-		subtitle = "With " + doctorAssignment.LongDisplayName
+	visit, err := dataAPI.GetPatientVisitFromID(v.PatientVisitID)
+	if err != nil {
+		return nil, err
 	}
+
+	if visit.Status == common.PVStatusPendingParentalConsent {
+		actionURL := app_url.ComposeSMSAction("TODO: message goes here")
+		view := &phCaseView{
+			Title:     data.Case.Name + " Visit",
+			Subtitle:  "Waiting for Parental Consent",
+			CaseID:    data.Case.ID.Int64(),
+			IconURL:   app_url.IconConsentLarge.String(),
+			ActionURL: actionURL,
+			NotificationView: &phCaseNotificationStandardView{
+				IconURL:     app_url.IconConsent.String(),
+				Title:       "A parent needs to consent to your treatment and provide a valid photo ID before you can submit your visit.",
+				ButtonTitle: "Send a Reminder",
+				ActionURL:   actionURL,
+			},
+		}
+		return view, view.Validate()
+	}
+
+	doctorAssignment := findActiveDoctor(data.CareTeamMembers)
 
 	nView := &phContinueVisit{
-		Title:       fmt.Sprintf("Continue Your %s Visit", data.Case.Name),
-		Subtitle:    subtitle,
-		IconURL:     iconURL,
-		ActionURL:   app_url.ContinueVisitAction(v.PatientVisitID, false),
-		Description: continueVisitMessage,
-		ButtonTitle: "Continue Visit",
+		ActionURL: app_url.ContinueVisitAction(v.PatientVisitID, false),
 	}
-
+	if doctorAssignment == nil {
+		nView.IconURL = app_url.IconCaseLarge.String()
+		nView.Subtitle = "With the First Available Doctor"
+	} else {
+		nView.IconURL = app_url.ThumbnailURL(data.APIDomain, doctorAssignment.ProviderRole, doctorAssignment.ProviderID)
+		nView.Subtitle = "With " + doctorAssignment.LongDisplayName
+	}
+	if visit.Status == common.PVStatusReceivedParentalConsent {
+		nView.Title = fmt.Sprintf("Complete Your %s Visit", data.Case.Name)
+		nView.Description = "Your parent has provided consent for your visit. Complete your visit to get personalized treatment."
+		nView.ButtonTitle = "Complete Visit"
+	} else {
+		nView.Title = fmt.Sprintf("Continue Your %s Visit", data.Case.Name)
+		nView.Description = determineContinueVisitMessage(doctorAssignment)
+		nView.ButtonTitle = "Continue Visit"
+	}
 	return nView, nView.Validate()
 }
 
