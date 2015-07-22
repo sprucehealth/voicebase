@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sprucehealth/backend/libs/golog"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -32,6 +34,26 @@ type PhotoAnswerIntakeRequestData struct {
 	PatientVisitID int64                            `json:"patient_visit_id,string"`
 }
 
+func (r *PhotoAnswerIntakeRequestData) Validate() (bool, string) {
+	// TODO: the validation isn't comprehensive as I'm not sure right now what all to check.
+	if r.PatientVisitID <= 0 {
+		return false, "patient visit ID is required"
+	}
+	for _, pq := range r.PhotoQuestions {
+		if pq.QuestionID <= 0 {
+			return false, "question ID is required"
+		}
+		for _, ps := range pq.PhotoSections {
+			for _, p := range ps.Photos {
+				if p.PhotoID <= 0 {
+					return false, "photo ID is required"
+				}
+			}
+		}
+	}
+	return true, ""
+}
+
 func NewPhotoAnswerIntakeHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(apiservice.AuthorizationRequired(
 		&photoAnswerIntakeHandler{
@@ -52,6 +74,14 @@ func (p *photoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	var requestData PhotoAnswerIntakeRequestData
 	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
 		apiservice.WriteBadRequestError(err, w, r)
+		return
+	}
+
+	if valid, reason := requestData.Validate(); !valid {
+		// FIXME: logging this for now as we've been seeing likely bad requests recently. can remove
+		//        after no longer needed for debug.
+		golog.Warningf("invalid request to photo answer intake: %s", reason)
+		apiservice.WriteValidationError(reason, w, r)
 		return
 	}
 
@@ -89,7 +119,7 @@ func (p *photoAnswerIntakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 			return
 		}
 
-		photoSlotIDMapping := make(map[int64]bool)
+		photoSlotIDMapping := make(map[int64]bool, len(photoSlots))
 		for _, photoSlot := range photoSlots {
 			photoSlotIDMapping[photoSlot.ID] = true
 		}
