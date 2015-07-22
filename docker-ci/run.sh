@@ -46,7 +46,7 @@ echo "VET"
 echo $PKGS | xargs go vet
 
 echo "LINT"
-echo $PKGS | xargs -n 1 golint
+echo $PKGS | xargs -n 1 golint | grep -v "_test.go"
 
 echo "BUILDING TESTS"
 echo $PKGS | xargs go test -i
