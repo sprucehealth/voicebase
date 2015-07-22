@@ -9,6 +9,9 @@ ln -s /mem/mysql /var/lib/mysql
 mkdir -p /tmp/consul
 tmux new -d -s consul 'GOMAXPROCS=2 /usr/local/bin/consul agent -data-dir /tmp/consul -bootstrap -server'
 
+# Start Memcached (used by rate limiter tests)
+memcached -m 4 -d -u nobody
+
 export PATH=/usr/local/go/bin:$PATH
 export CF_LOCAL_DB_INSTANCE=127.0.0.1
 export CF_LOCAL_DB_PORT=3306
@@ -17,6 +20,7 @@ export CF_LOCAL_DB_PASSWORD=
 export DOSESPOT_USER_ID=407
 export USER=`whoami`
 export TEST_CONSUL_ADDRESS=127.0.0.1:8500
+export TEST_MEMCACHED=127.0.0.1:11211
 
 export GOPATH=/workspace/go
 export PATH=$GOPATH/bin:$PATH
