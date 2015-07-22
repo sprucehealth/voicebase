@@ -23,7 +23,8 @@ func NewAssignHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http
 				&assignHandler{
 					dataAPI:    dataAPI,
 					dispatcher: dispatcher,
-				}), []string{api.RoleDoctor, api.RoleCC}),
+				}),
+			api.RoleDoctor, api.RoleCC),
 		httputil.Post)
 }
 

@@ -1,12 +1,23 @@
 package common
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/sprucehealth/backend/encoding"
 )
 
+// Constants for possible visit statuses. Flow between states:
+//
+// PENDING  ┌───▶PENDING_PARENTAL_CONSENT
+//    │     │                │                 ┌────────▶TRIAGED
+//    │     │        ┌───────┘                 │
+//    ▼     │        ▼                         │
+//  OPEN────┴───▶SUBMITTED──┬──▶ROUTED────▶REVIEWING────▶TREATED
+//    │                     │      ▲
+//    │                     │      │
+//    ├────▶DELETED         └──▶CHARGED
+//    │
+//    └────▶PRE_SUBMISSION_TRIAGE
 const (
 	// PVStatusOpen is the state used to indicate an unsubmitted visit.
 	PVStatusOpen = "OPEN"
@@ -17,6 +28,11 @@ const (
 
 	// PVStatusPending is the state used to indicate a followup visit that is created but not yet opened by the patient.
 	PVStatusPending = "PENDING"
+
+	// PVStatusPendingParentalConsent is the state used to indicate a visit is waiting for a parent or
+	// guardian to consent to a patient to be treated by Spruce. The visit will transition to SUBMITTED once
+	// approval has been granted.
+	PVStatusPendingParentalConsent = "PENDING_PARENTAL_CONSENT"
 
 	// PVStatusSubmitted is the state used to indicate a visit that is submitted by the patient, but has not
 	// yet been routed to the unassigned queue or the doctors queue. The visit will transition from
@@ -48,43 +64,22 @@ const (
 	PVStatusDeleted = "DELETED"
 )
 
-func NextPatientVisitStatus(currentStatus string) (string, error) {
-	switch currentStatus {
-	case PVStatusPending:
-		return PVStatusOpen, nil
-	case PVStatusOpen:
-		return PVStatusSubmitted, nil
-	case PVStatusSubmitted:
-		return PVStatusReviewing, nil
-	case PVStatusCharged:
-		return PVStatusRouted, nil
-	case PVStatusRouted:
-		return PVStatusReviewing, nil
-	case PVStatusPreSubmissionTriage:
-		return PVStatusPreSubmissionTriage, nil
-	case PVStatusDeleted:
-		return PVStatusDeleted, nil
-	case PVStatusReviewing:
-		return "", fmt.Errorf("Ambiguous next step given it could be %s or %s", PVStatusTreated, PVStatusTriaged)
-	case PVStatusTriaged, PVStatusTreated:
-		return "", fmt.Errorf("No defined next step from %s", currentStatus)
-	}
-
-	return "", fmt.Errorf("Unknown current state: %s", currentStatus)
-}
-
+// SubmittedPatientVisitStates returns the set of visit statuses for a submitted visit
 func SubmittedPatientVisitStates() []string {
 	return []string{PVStatusSubmitted, PVStatusCharged, PVStatusRouted, PVStatusReviewing}
 }
 
+// TreatedPatientVisitStates returns the set of visit statuses for a treated visit (including triage)
 func TreatedPatientVisitStates() []string {
 	return []string{PVStatusTreated, PVStatusTriaged}
 }
 
+// OpenPatientVisitStates returns the set of visit statuses for open or pending visits
 func OpenPatientVisitStates() []string {
-	return []string{PVStatusPending, PVStatusOpen}
+	return []string{PVStatusPending, PVStatusOpen, PVStatusPendingParentalConsent}
 }
 
+// NonOpenPatientVisitStates returns the union of the set "treated statuses | submitted statuses"
 func NonOpenPatientVisitStates() []string {
 	return append(TreatedPatientVisitStates(), SubmittedPatientVisitStates()...)
 }
@@ -104,6 +99,7 @@ func PatientVisitSubmitted(status string) bool {
 
 }
 
+// ByPatientVisitCreationDate implements sort.Interface to sort a slice of visits by creation date
 type ByPatientVisitCreationDate []*PatientVisit
 
 func (c ByPatientVisitCreationDate) Len() int      { return len(c) }
@@ -112,6 +108,7 @@ func (c ByPatientVisitCreationDate) Less(i, j int) bool {
 	return c[i].CreationDate.Before(c[j].CreationDate)
 }
 
+// PatientVisit is the model for a visit started by a patient
 type PatientVisit struct {
 	ID              encoding.ObjectID `json:"patient_visit_id,omitempty"`
 	PatientCaseID   encoding.ObjectID `json:"case_id"`
@@ -126,6 +123,7 @@ type PatientVisit struct {
 	SKUType         string            `json:"-"`
 }
 
+// ByVisitSummaryCreationDate implements sort.Interface to sort a slice of visit summaries by creation date
 type ByVisitSummaryCreationDate []*VisitSummary
 
 func (c ByVisitSummaryCreationDate) Len() int      { return len(c) }
@@ -134,6 +132,7 @@ func (c ByVisitSummaryCreationDate) Less(i, j int) bool {
 	return c[i].CreationDate.Before(c[j].CreationDate)
 }
 
+// ByVisitSummarySubmissionDate implements sort.Interface to sort a slice of visit summaries by submission date
 type ByVisitSummarySubmissionDate []*VisitSummary
 
 func (c ByVisitSummarySubmissionDate) Len() int      { return len(c) }

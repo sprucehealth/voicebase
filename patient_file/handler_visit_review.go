@@ -71,7 +71,7 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, e
 		// update the status of the case and the item in the doctor's queue
 		if patientVisit.Status == common.PVStatusRouted {
 			pvStatus := common.PVStatusReviewing
-			if err := p.DataAPI.UpdatePatientVisit(requestData.PatientVisitID, &api.PatientVisitUpdate{Status: &pvStatus}); err != nil {
+			if _, err := p.DataAPI.UpdatePatientVisit(requestData.PatientVisitID, &api.PatientVisitUpdate{Status: &pvStatus}); err != nil {
 				return false, err
 			}
 			if err := p.DataAPI.MarkPatientVisitAsOngoingInDoctorQueue(doctorID, requestData.PatientVisitID); err != nil {
@@ -100,13 +100,13 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	ctxt := apiservice.GetContext(r)
 	patientVisit := ctxt.RequestCache[apiservice.PatientVisit].(*common.PatientVisit)
 
-	renderedLayout, err := VisitReviewLayout(p.DataAPI, p.mediaStore, p.expirationDuration, patientVisit, r.Host)
+	patient, err := p.DataAPI.GetPatientFromID(patientVisit.PatientID.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	patient, err := p.DataAPI.GetPatientFromID(patientVisit.PatientID.Int64())
+	renderedLayout, err := VisitReviewLayout(p.DataAPI, patient, p.mediaStore, p.expirationDuration, patientVisit, r.Host)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -122,13 +122,13 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 
 func VisitReviewLayout(
 	dataAPI api.DataAPI,
+	pat *common.Patient,
 	mediaStore *media.Store,
 	expirationDuration time.Duration,
 	visit *common.PatientVisit,
 	apiDomain string,
 ) (map[string]interface{}, error) {
-
-	intakeInfo, err := patient.IntakeLayoutForVisit(dataAPI, apiDomain, mediaStore, expirationDuration, visit)
+	intakeInfo, err := patient.IntakeLayoutForVisit(dataAPI, apiDomain, mediaStore, expirationDuration, visit, pat, api.RoleDoctor)
 	if err != nil {
 		return nil, err
 	}

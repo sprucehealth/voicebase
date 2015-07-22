@@ -201,23 +201,28 @@ type CaseRouteAPI interface {
 }
 
 type PatientUpdate struct {
-	FirstName        *string
-	MiddleName       *string
-	LastName         *string
-	Prefix           *string
-	Suffix           *string
-	DOB              *encoding.Date
-	Gender           *string
-	PhoneNumbers     []*common.PhoneNumber
-	Address          *common.Address
-	ERxID            *int64
-	StripeCustomerID *string
+	FirstName          *string
+	MiddleName         *string
+	LastName           *string
+	Prefix             *string
+	Suffix             *string
+	DOB                *encoding.Date
+	Gender             *string
+	PhoneNumbers       []*common.PhoneNumber
+	Address            *common.Address
+	ERxID              *int64
+	StripeCustomerID   *string
+	HasParentalConsent *bool
 }
 
+// PatientVisitUpdate is the set of values that can be updated for a visit
 type PatientVisitUpdate struct {
 	Status          *string
 	LayoutVersionID *int64
 	ClosedDate      *time.Time
+
+	// RequiredStatus if not-nil provides the required value for the status for the update to succeed
+	RequiredStatus *string
 }
 
 type ItemAge struct {
@@ -242,7 +247,7 @@ type PatientVisitAPI interface {
 	SetMessageForPatientVisit(patientVisitID int64, message string) error
 	GetMessageForPatientVisit(patientVisitID int64) (string, error)
 	GetPatientIDFromTreatmentPlanID(treatmentPlanID int64) (int64, error)
-	UpdatePatientVisit(id int64, update *PatientVisitUpdate) error
+	UpdatePatientVisit(id int64, update *PatientVisitUpdate) (int, error)
 	UpdatePatientVisits(ids []int64, update *PatientVisitUpdate) error
 	ClosePatientVisit(patientVisitID int64, event string) error
 	SubmitPatientVisitWithID(patientVisitID int64) error
@@ -847,6 +852,16 @@ type PatientFeedbackAPI interface {
 	PatientFeedback(feedbackFor string) ([]*common.PatientFeedback, error)
 }
 
+// ParentalConsent are DAL functions for dealing with parent/child treatment consent
+type ParentalConsent interface {
+	// LinkParentChild creates a relationship between the patient accounts but does not grant consent to be treated
+	LinkParentChild(parentPatientID, childPatientID int64, relationship string) error
+	// GrantParentChildConsent records that the parent consented to their child being treated
+	GrantParentChildConsent(parentPatientID, childPatientID int64) error
+	// ParentChildConsent returns the consent status between parent and child
+	ParentChildConsent(parentPatientID, childPatientID int64) (bool, error)
+}
+
 type DataAPI interface {
 	AnalyticsAPI
 	BankingAPI
@@ -867,6 +882,7 @@ type DataAPI interface {
 	MediaAPI
 	MedicalRecordAPI
 	NotificationAPI
+	ParentalConsent
 	Pathways
 	PatientAPI
 	PatientCaseAPI

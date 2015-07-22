@@ -270,7 +270,7 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 
 	// update the patient visit to indicate that it was successfully charged
 	pvStatus := common.PVStatusCharged
-	if err := w.dataAPI.UpdatePatientVisit(m.PatientVisitID, &api.PatientVisitUpdate{Status: &pvStatus}); err != nil {
+	if _, err := w.dataAPI.UpdatePatientVisit(m.PatientVisitID, &api.PatientVisitUpdate{Status: &pvStatus}); err != nil {
 		return err
 	}
 

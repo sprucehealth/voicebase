@@ -7,8 +7,20 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 )
 
+// CaseStatus is the current state of a case
 type CaseStatus string
 
+// Constants for possible case statuses. Flow between states:
+//
+//                      ┌───▶UNSUITABLE
+//                      │
+// OPEN───────▶ACTIVE───┴───▶INACTIVE
+//   │
+//   ├────────▶DELETED
+//   │
+//   ├────────▶PRE_SUBMISSION_TRIAGE
+//   │
+//   └────────▶PRE_SUBMISSION_TRIAGE_DELETED
 const (
 	// PCStatusOpen is the state used to indicate a case that has not been submitted to the doctor yet
 	// and is considered unfinished by the patient.
@@ -41,10 +53,12 @@ const (
 	PCStatusPreSubmissionTriageDeleted CaseStatus = "PRE_SUBMISSION_TRIAGE_DELETED"
 )
 
+// String implements fmt.Stringer
 func (cs CaseStatus) String() string {
 	return string(cs)
 }
 
+// Scan implements sql.Scanner. It expects src to be on-nil and of type string or []byte
 func (cs *CaseStatus) Scan(src interface{}) error {
 	switch v := src.(type) {
 	case string:
@@ -114,6 +128,7 @@ type CaseMessageParticipant struct {
 	Person *Person
 }
 
+// ReadReceipt is the time when a person read a case message
 type ReadReceipt struct {
 	PersonID int64
 	Time     time.Time
@@ -130,6 +145,7 @@ type TrainingCase struct {
 	TemplateName      string
 }
 
+// ByPatientCaseCreationDate implements sort.Interface to sort a slice of cases by creation date
 type ByPatientCaseCreationDate []*PatientCase
 
 func (c ByPatientCaseCreationDate) Len() int      { return len(c) }

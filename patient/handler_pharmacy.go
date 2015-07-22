@@ -15,20 +15,13 @@ type pharmacyHandler struct {
 
 func NewPharmacyHandler(dataAPI api.DataAPI) http.Handler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(&pharmacyHandler{
-			dataAPI: dataAPI,
-		}), httputil.Post)
+		apiservice.SupportedRoles(
+			apiservice.NoAuthorizationRequired(&pharmacyHandler{
+				dataAPI: dataAPI,
+			}), api.RolePatient), httputil.Post)
 }
 
-func (u *pharmacyHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.RolePatient {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-
-	return true, nil
-}
 func (u *pharmacyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	var pharmacy pharmacy.PharmacyData
 	if err := apiservice.DecodeRequestData(&pharmacy, r); err != nil {
 		apiservice.WriteError(err, w, r)

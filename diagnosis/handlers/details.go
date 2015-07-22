@@ -22,7 +22,7 @@ func NewDiagnosisHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) http.H
 					dataAPI:      dataAPI,
 					diagnosisAPI: diagnosisAPI,
 				},
-			), []string{api.RoleDoctor}), httputil.Get)
+			), api.RoleDoctor), httputil.Get)
 }
 
 func (d *diagnosisHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

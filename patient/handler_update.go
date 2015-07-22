@@ -59,7 +59,7 @@ func NewUpdateHandler(dataAPI api.DataAPI, addressValidator address.Validator) h
 				dataAPI:          dataAPI,
 				addressValidator: addressValidator,
 			}),
-			[]string{api.RolePatient},
+			api.RolePatient,
 		), httputil.Post, httputil.Put)
 }
 

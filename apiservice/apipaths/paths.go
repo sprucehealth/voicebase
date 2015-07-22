@@ -1,5 +1,6 @@
 package apipaths
 
+// URL paths for app api endpoints
 const (
 	AnalyticsURLPath                     = "/v1/event/client"
 	AppEventURLPath                      = "/v1/app_event"
@@ -96,6 +97,7 @@ const (
 	PatientVisitMessageURLPath           = "/v1/patient/visit/message"
 	PatientVisitPhotoAnswerURLPath       = "/v1/patient/visit/photo_answer"
 	PatientVisitsListURLPath             = "/v1/patient/visits/list"
+	PatientVisitReachedConsentStep       = "/v1/patient/visit/reached_consent_step"
 	PatientVisitTriageURLPath            = "/v1/patient/visit/triage"
 	PatientVisitURLPath                  = "/v1/patient/visit"
 	PharmacySearchURLPath                = "/v1/pharmacy_search"
@@ -119,9 +121,4 @@ const (
 	TPResourceGuideURLPath               = "/v1/treatment_plans/resourceguides"
 	PathwaySTPURLPath                    = "/v1/sample_treatment_plan"
 	RXGuideURLPath                       = "/v1/rx_guide"
-)
-
-// FIXME: these paths are in support of older apps. remove once not needed
-const (
-	DeprecatedDoctorSavedMessagesURLPath = "/v1/doctor/saved_messages" // pre Buzz Lightyear
 )

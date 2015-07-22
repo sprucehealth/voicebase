@@ -66,7 +66,7 @@ func NewDiagnosisListHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API, di
 					dataAPI:      dataAPI,
 					diagnosisAPI: diagnosisAPI,
 					dispatcher:   dispatcher,
-				}), []string{api.RoleDoctor, api.RoleCC}),
+				}), api.RoleDoctor, api.RoleCC),
 		httputil.Get, httputil.Put)
 }
 

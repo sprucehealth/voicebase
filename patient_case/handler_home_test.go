@@ -47,6 +47,9 @@ type mockHomeHandlerDataAPI struct {
 func (m *mockHomeHandlerDataAPI) State(stateCode string) (string, string, error) {
 	return m.stateName, m.stateName, nil
 }
+func (m *mockHomeHandlerDataAPI) GetPatientFromAccountID(accountID int64) (*common.Patient, error) {
+	return m.patient, nil
+}
 func (m *mockHomeHandlerDataAPI) GetPatientIDFromAccountID(accountID int64) (int64, error) {
 	return 1, nil
 }

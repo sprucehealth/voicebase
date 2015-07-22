@@ -27,9 +27,9 @@ type mockDataAPI_PreSubmissionTriageHandler struct {
 func (m *mockDataAPI_PreSubmissionTriageHandler) GetPatientVisitFromID(id int64) (*common.PatientVisit, error) {
 	return m.visit, nil
 }
-func (m *mockDataAPI_PreSubmissionTriageHandler) UpdatePatientVisit(id int64, update *api.PatientVisitUpdate) error {
+func (m *mockDataAPI_PreSubmissionTriageHandler) UpdatePatientVisit(id int64, update *api.PatientVisitUpdate) (int, error) {
 	m.visitUpdate = update
-	return nil
+	return 1, nil
 }
 func (m *mockDataAPI_PreSubmissionTriageHandler) UpdatePatientCase(id int64, update *api.PatientCaseUpdate) error {
 	m.caseUpdate = update

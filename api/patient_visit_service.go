@@ -759,7 +759,7 @@ func (d *DataService) StartNewTreatmentPlan(patientVisitID int64, tp *common.Tre
 	return treatmentPlanID, err
 }
 
-func (d *DataService) UpdatePatientVisit(id int64, update *PatientVisitUpdate) error {
+func (d *DataService) UpdatePatientVisit(id int64, update *PatientVisitUpdate) (int, error) {
 	return updatePatientVisit(d.db, id, update)
 }
 
@@ -770,7 +770,7 @@ func (d *DataService) UpdatePatientVisits(ids []int64, update *PatientVisitUpdat
 	}
 
 	for _, visitID := range ids {
-		if err := updatePatientVisit(tx, visitID, update); err != nil {
+		if _, err := updatePatientVisit(tx, visitID, update); err != nil {
 			tx.Rollback()
 			return err
 		}
@@ -779,7 +779,7 @@ func (d *DataService) UpdatePatientVisits(ids []int64, update *PatientVisitUpdat
 	return tx.Commit()
 }
 
-func updatePatientVisit(d db, id int64, update *PatientVisitUpdate) error {
+func updatePatientVisit(d db, id int64, update *PatientVisitUpdate) (int, error) {
 	args := dbutil.MySQLVarArgs()
 	if update.Status != nil {
 		args.Append("status", *update.Status)
@@ -791,10 +791,20 @@ func updatePatientVisit(d db, id int64, update *PatientVisitUpdate) error {
 		args.Append("closed_date", *update.ClosedDate)
 	}
 	if args.IsEmpty() {
-		return nil
+		return 0, nil
 	}
-	_, err := d.Exec(`UPDATE patient_visit SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), id)...)
-	return err
+	values := append(args.Values(), id)
+	var where string
+	if update.RequiredStatus != nil {
+		where = " AND status = ?"
+		values = append(values, *update.RequiredStatus)
+	}
+	res, err := d.Exec(`UPDATE patient_visit SET `+args.Columns()+` WHERE id = ?`+where, values...)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+	n, err := res.RowsAffected()
+	return int(n), errors.Trace(err)
 }
 
 func (d *DataService) ClosePatientVisit(patientVisitID int64, event string) error {

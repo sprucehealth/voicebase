@@ -407,12 +407,11 @@ func NotifyMeAction() *SpruceAction {
 // ViewVisitScreen indicates to the client the screen within
 // the visit to navigate to.
 func ViewVisitScreen(screenID string) *SpruceAction {
-	params := url.Values{
-		"screen_id": []string{screenID},
-	}
 	return &SpruceAction{
-		name:   "view_visit_screen",
-		params: params,
+		name: "view_visit_screen",
+		params: url.Values{
+			"screen_id": []string{screenID},
+		},
 	}
 }
 
@@ -420,4 +419,15 @@ func ViewVisitScreen(screenID string) *SpruceAction {
 // to the additional message screen from the visit overview.
 func ViewVisitMessage() *SpruceAction {
 	return &SpruceAction{name: "view_visit_message"}
+}
+
+// ComposeSMSAction prompts the app to request the user to send an SMS message. The
+// content of the message is prepopulated with the provided text.
+func ComposeSMSAction(message string) *SpruceAction {
+	return &SpruceAction{
+		name: "compose_sms",
+		params: url.Values{
+			"message": []string{message},
+		},
+	}
 }

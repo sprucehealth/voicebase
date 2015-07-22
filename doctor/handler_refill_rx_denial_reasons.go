@@ -17,7 +17,7 @@ func NewRefillRxDenialReasonsHandler(dataAPI api.DataAPI) http.Handler {
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&refillRxDenialReasonsHandler{
 				dataAPI: dataAPI,
-			}), []string{api.RoleDoctor, api.RoleCC}),
+			}), api.RoleDoctor, api.RoleCC),
 		httputil.Get)
 }
 

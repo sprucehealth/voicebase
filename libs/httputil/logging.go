@@ -172,6 +172,7 @@ func (h *loggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				UserAgent:    r.UserAgent(),
 				ResponseTime: int(responseTime),
 				Server:       hostname,
+				Referrer:     r.Referer(),
 			},
 		})
 	}()

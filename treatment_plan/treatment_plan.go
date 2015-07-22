@@ -22,7 +22,8 @@ func NewTreatmentPlanHandler(dataAPI api.DataAPI) http.Handler {
 			apiservice.AuthorizationRequired(
 				&treatmentPlanHandler{
 					dataAPI: dataAPI,
-				}), []string{api.RolePatient, api.RoleDoctor}),
+				}),
+			api.RolePatient, api.RoleDoctor),
 		httputil.Get)
 }
 

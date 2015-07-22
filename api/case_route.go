@@ -2,7 +2,6 @@ package api
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -11,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 )
@@ -30,12 +30,12 @@ func (c CaseClaimForbidden) Error() string {
 // InsertUnclaimedItemIntoQueue inserts an unclaimed case into the queue for eligible doctors to consume
 func (d *DataService) InsertUnclaimedItemIntoQueue(queueItem *DoctorQueueItem) error {
 	if err := queueItem.Validate(); err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	tx, err := d.db.Begin()
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	_, err = tx.Exec(`
@@ -54,19 +54,19 @@ func (d *DataService) InsertUnclaimedItemIntoQueue(queueItem *DoctorQueueItem) e
 		strings.Join(queueItem.Tags, tagSeparator))
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
 	// update the status of the patient visit to indicate that it was routed if we are dealing with a visit
 	if queueItem.EventType == DQEventTypePatientVisit {
 		pvStatus := common.PVStatusRouted
-		if err := updatePatientVisit(tx, queueItem.ItemID, &PatientVisitUpdate{Status: &pvStatus}); err != nil {
+		if _, err := updatePatientVisit(tx, queueItem.ItemID, &PatientVisitUpdate{Status: &pvStatus}); err != nil {
 			tx.Rollback()
-			return err
+			return errors.Trace(err)
 		}
 	}
 
-	return tx.Commit()
+	return errors.Trace(tx.Commit())
 }
 
 // TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient does as the name says - it temporarily assigns a case and the patient file to an eligible doctor such
@@ -194,7 +194,7 @@ func (d *DataService) ExtendClaimForDoctor(doctorID, patientID, patientCaseID in
 func (d *DataService) PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorID int64, patientCase *common.PatientCase, queueItem *DoctorQueueItem) error {
 	tx, err := d.db.Begin()
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	err = func() error {
@@ -208,7 +208,7 @@ func (d *DataService) PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorID int6
 			StatusActive).Scan(&currentDoctorForPatient); err == sql.ErrNoRows {
 			return CaseClaimForbidden("Doctor cannot claim case becase doctor is not assigned to patient file")
 		} else if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 
 		// update the state on the patient case to mark it as being claimed
@@ -217,14 +217,14 @@ func (d *DataService) PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorID int6
 			SET claimed = 1
 			WHERE id = ?`, patientCase.ID.Int64())
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 
 		// update the patient visit (if that is the item we are working with) to indicate that it was routed
 		if queueItem.EventType == DQEventTypePatientVisit {
 			pvStatus := common.PVStatusRouted
-			if err := updatePatientVisit(tx, queueItem.ItemID, &PatientVisitUpdate{Status: &pvStatus}); err != nil {
-				return err
+			if _, err := updatePatientVisit(tx, queueItem.ItemID, &PatientVisitUpdate{Status: &pvStatus}); err != nil {
+				return errors.Trace(err)
 			}
 		}
 
@@ -236,9 +236,9 @@ func (d *DataService) PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorID int6
 			WHERE patient_case_id = ? AND role_type_id = ?`,
 			patientCase.ID.Int64(), d.roleTypeMapping[RoleDoctor]).Scan(&existingDoctorID)
 		if err != sql.ErrNoRows && err != nil {
-			return err
+			return errors.Trace(err)
 		} else if existingDoctorID != 0 && existingDoctorID != doctorID {
-			return errors.New("Existing doctor for this case is different than incoming doctor for this case")
+			return errors.Trace(errors.New("Existing doctor for this case is different than incoming doctor for this case"))
 		} else if err == sql.ErrNoRows {
 			// assign doctor to patient case
 			_, err = tx.Exec(`
@@ -246,23 +246,22 @@ func (d *DataService) PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorID int6
 					(provider_id, role_type_id, patient_case_id, status)
 				VALUES (?,?,?,?)`, doctorID, d.roleTypeMapping[RoleDoctor], patientCase.ID.Int64(), StatusActive)
 			if err != nil {
-				return err
+				return errors.Trace(err)
 			}
 		}
 
 		// insert item into doctor queue
 		if err := insertItemIntoDoctorQueue(tx, queueItem, false); err != nil {
-			return err
+			return errors.Trace(err)
 		}
 		return nil
 	}()
-
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
-	return tx.Commit()
+	return errors.Trace(tx.Commit())
 }
 
 // TransitionToPermanentAssignmentOfDoctorToCaseAndPatient transitions from a temporary claim to a permanent claim on the patient case and the patient file. The item

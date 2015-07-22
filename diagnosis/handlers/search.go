@@ -53,7 +53,7 @@ func NewSearchHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) http.Hand
 			apiservice.NoAuthorizationRequired(&searchHandler{
 				dataAPI:      dataAPI,
 				diagnosisAPI: diagnosisAPI,
-			}), httputil.Get), []string{api.RoleDoctor})
+			}), httputil.Get), api.RoleDoctor)
 }
 
 func (s *searchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

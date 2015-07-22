@@ -72,7 +72,9 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	ctxt := apiservice.GetContext(r)
 	if ctxt.AccountID == 0 {
-		items, err := getHomeCards(nil, cityStateInfo, isSpruceAvailable, h.dataAPI, h.apiCDNDomain, h.webDomain, r)
+		// Not authenticated
+
+		items, err := getHomeCards(nil, nil, cityStateInfo, isSpruceAvailable, h.dataAPI, h.apiCDNDomain, h.webDomain, r)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
@@ -82,18 +84,22 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			ShowActionButton: isSpruceAvailable,
 			Items:            items})
 		return
-	} else if ctxt.Role != api.RolePatient {
+	}
+
+	// Authenticated
+
+	if ctxt.Role != api.RolePatient {
 		apiservice.WriteAccessNotAllowedError(w, r)
 		return
 	}
 
-	patientID, err := h.dataAPI.GetPatientIDFromAccountID(ctxt.AccountID)
+	patient, err := h.dataAPI.GetPatientFromAccountID(ctxt.AccountID)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	patientCases, err := h.dataAPI.GetCasesForPatient(patientID, []string{
+	patientCases, err := h.dataAPI.GetCasesForPatient(patient.ID.Int64(), []string{
 		common.PCStatusOpen.String(),
 		common.PCStatusActive.String(),
 		common.PCStatusInactive.String(),
@@ -103,13 +109,13 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	items, err := getHomeCards(patientCases, cityStateInfo, isSpruceAvailable, h.dataAPI, h.apiCDNDomain, h.webDomain, r)
+	items, err := getHomeCards(patient, patientCases, cityStateInfo, isSpruceAvailable, h.dataAPI, h.apiCDNDomain, h.webDomain, r)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
 	httputil.JSONResponse(w, http.StatusOK, &homeResponse{
-		ShowActionButton: isSpruceAvailable,
+		ShowActionButton: isSpruceAvailable && patient.DOB.Age() >= 18,
 		Items:            items})
 }

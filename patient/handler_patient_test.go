@@ -45,9 +45,15 @@ func (m *mockDataAPI_PatientVisitHandler) UpdatePatientCase(id int64, update *ap
 	m.caseUpdate = update
 	return nil
 }
-func (m *mockDataAPI_PatientVisitHandler) UpdatePatientVisit(id int64, update *api.PatientVisitUpdate) error {
+func (m *mockDataAPI_PatientVisitHandler) UpdatePatientVisit(id int64, update *api.PatientVisitUpdate) (int, error) {
 	m.visitUpdate = update
-	return nil
+	return 0, nil
+}
+func (m *mockDataAPI_PatientVisitHandler) GetPatientIDFromAccountID(accountID int64) (int64, error) {
+	if m.patient != nil {
+		return m.patient.ID.Int64(), nil
+	}
+	return 0, nil
 }
 func (m *mockDataAPI_PatientVisitHandler) GetPatientFromAccountID(accountID int64) (*common.Patient, error) {
 	return m.patient, nil

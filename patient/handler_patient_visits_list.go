@@ -8,7 +8,6 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
-	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/media"
 )
@@ -35,37 +34,44 @@ func NewVisitsListHandler(
 	mediaStore *media.Store, expirationDuration time.Duration,
 ) http.Handler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(
-			&visitsListHandler{
-				dataAPI:            dataAPI,
-				apiDomain:          apiDomain,
-				dispatcher:         dispatcher,
-				mediaStore:         mediaStore,
-				expirationDuration: expirationDuration,
-			}), httputil.Get)
-}
-
-func (v *visitsListHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.RolePatient {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-
-	return true, nil
+		apiservice.SupportedRoles(
+			apiservice.NoAuthorizationRequired(
+				&visitsListHandler{
+					dataAPI:            dataAPI,
+					apiDomain:          apiDomain,
+					dispatcher:         dispatcher,
+					mediaStore:         mediaStore,
+					expirationDuration: expirationDuration,
+				}), api.RolePatient), httputil.Get)
 }
 
 func (v *visitsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	requestData := visitsListRequestData{}
+	var requestData visitsListRequestData
 	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
-		golog.Errorf(err.Error())
 		apiservice.WriteValidationError(err.Error(), w, r)
+		return
+	}
+
+	patient, err := v.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+	pcase, err := v.dataAPI.GetPatientCaseFromID(requestData.CaseID)
+	if err != nil {
+		apiservice.WriteError(err, w, r)
+		return
+	}
+
+	// Make sure case is owned by patient
+	if patient.ID.Int64() != pcase.PatientID.Int64() {
+		apiservice.WriteAccessNotAllowedError(w, r)
 		return
 	}
 
 	var states []string
 	if requestData.Completed {
-		states = common.SubmittedPatientVisitStates()
-		states = append(states, common.TreatedPatientVisitStates()...)
+		states = append(common.SubmittedPatientVisitStates(), common.TreatedPatientVisitStates()...)
 	}
 	visits, err := v.dataAPI.GetVisitsForCase(requestData.CaseID, states)
 	if err != nil {
@@ -82,7 +88,7 @@ func (v *visitsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		intakeInfo, err := IntakeLayoutForVisit(v.dataAPI, v.apiDomain, v.mediaStore, v.expirationDuration, visit)
+		intakeInfo, err := IntakeLayoutForVisit(v.dataAPI, v.apiDomain, v.mediaStore, v.expirationDuration, visit, patient, api.RolePatient)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
