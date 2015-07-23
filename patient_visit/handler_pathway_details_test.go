@@ -13,6 +13,8 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/test"
 )
 
 type pathwayDetailsHandlerDataAPI struct {
@@ -40,6 +42,7 @@ type pathwayDetailsRes struct {
 		FAQ *struct {
 			Views []interface{} `json:"views"`
 		} `json:"faq"`
+		AgeRestrictions []*pathwayAgeRestriction `json:"age_restrictions,omitempty"`
 	} `json:"pathway_details_screens"`
 }
 
@@ -96,6 +99,30 @@ func TestPathwayDetailsHandler(t *testing.T) {
 					DidYouKnow:     []string{"BEEEEES"},
 					FAQ: []common.FAQ{
 						{Question: "Why?", Answer: "Because"},
+					},
+					AgeRestrictions: []*common.PathwayAgeRestriction{
+						{
+							MaxAgeOfRange: ptr.Int(12),
+							VisitAllowed:  false,
+							Alert: &common.PathwayAlert{
+								Message: "Sorry!",
+							},
+						},
+						{
+							MaxAgeOfRange: ptr.Int(17),
+							VisitAllowed:  true,
+						},
+						{
+							MaxAgeOfRange: ptr.Int(70),
+							VisitAllowed:  true,
+						},
+						{
+							MaxAgeOfRange: nil,
+							VisitAllowed:  false,
+							Alert: &common.PathwayAlert{
+								Message: "Not Sorry!",
+							},
+						},
 					},
 				},
 			},
@@ -193,6 +220,11 @@ func TestPathwayDetailsHandler(t *testing.T) {
 			} else if len(p.Screen.Views) != 4 {
 				t.Fatalf("Expected 4 views within screen but got %d", len(p.Screen.Views))
 			}
+			test.Equals(t, 4, len(p.AgeRestrictions))
+			test.Equals(t, 12, *p.AgeRestrictions[0].MaxAgeOfRange)
+			test.Equals(t, false, p.AgeRestrictions[0].VisitAllowed)
+			test.Equals(t, 17, *p.AgeRestrictions[1].MaxAgeOfRange)
+			test.Equals(t, true, p.AgeRestrictions[1].VisitAllowed)
 		case "arachnophobia":
 			if p.Screen.Type != "generic_message" {
 				t.Fatal("Expected arachnophobia pathway screen type to be generic_message")

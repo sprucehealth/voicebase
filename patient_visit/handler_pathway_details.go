@@ -28,9 +28,23 @@ type pathwayDetailsResponse struct {
 }
 
 type pathwayDetails struct {
-	PathwayTag string                `json:"pathway_id"`
-	Screen     *pathwayDetailsScreen `json:"screen"`
-	FAQ        *pathwayFAQ           `json:"faq,omitempty"`
+	PathwayTag      string                   `json:"pathway_id"`
+	Screen          *pathwayDetailsScreen    `json:"screen"`
+	FAQ             *pathwayFAQ              `json:"faq,omitempty"`
+	AgeRestrictions []*pathwayAgeRestriction `json:"age_restrictions,omitempty"`
+}
+
+type pathwayAgeRestriction struct {
+	MaxAgeOfRange *int          `json:"max_age_of_range"`
+	VisitAllowed  bool          `json:"visit_allowed"`
+	Alert         *pathwayAlert `json:"alert,omitempty"`
+}
+
+type pathwayAlert struct {
+	Type        string `json:"type"`
+	Title       string `json:"title,omitempty"`
+	Message     string `json:"message"`
+	ButtonTitle string `json:"button_title"`
 }
 
 type pathwayDetailsScreen struct {
@@ -105,7 +119,6 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 	res := &pathwayDetailsResponse{}
 	for _, p := range pathways {
-
 		sku, err := h.dataAPI.SKUForPathway(p.Tag, common.SCVisit)
 		if err != nil {
 			golog.Errorf("Failed to lookup sku for pathway %s: %s", p.Name, err)
@@ -118,8 +131,8 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 		var screen *pathwayDetailsScreen
 		var faq *pathwayFAQ
+		var ageRestrictions []*pathwayAgeRestriction
 		if pcase := activeCases[p.Tag]; pcase != nil {
-
 			switch {
 			case pcase.Status == common.PCStatusOpen:
 				screen = openCaseScreen(pcase, p, h.apiDomain)
@@ -168,15 +181,36 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				apiservice.WriteError(err, w, r)
 				return
 			}
+
+			if len(p.Details.AgeRestrictions) != 0 {
+				ageRestrictions = make([]*pathwayAgeRestriction, len(p.Details.AgeRestrictions))
+				for i, ar := range p.Details.AgeRestrictions {
+					var alert *pathwayAlert
+					if ar.Alert != nil {
+						alert = &pathwayAlert{
+							Type:        ar.Alert.Type,
+							Title:       ar.Alert.Title,
+							Message:     ar.Alert.Message,
+							ButtonTitle: ar.Alert.ButtonTitle,
+						}
+					}
+					ageRestrictions[i] = &pathwayAgeRestriction{
+						MaxAgeOfRange: ar.MaxAgeOfRange,
+						VisitAllowed:  ar.VisitAllowed,
+						Alert:         alert,
+					}
+				}
+			}
 		}
 		if err := views.Validate(screen.Views, "pathway_details"); err != nil {
 			apiservice.WriteError(err, w, r)
 			return
 		}
 		res.Pathways = append(res.Pathways, &pathwayDetails{
-			PathwayTag: p.Tag,
-			Screen:     screen,
-			FAQ:        faq,
+			PathwayTag:      p.Tag,
+			Screen:          screen,
+			FAQ:             faq,
+			AgeRestrictions: ageRestrictions,
 		})
 	}
 
