@@ -81,6 +81,7 @@ func (h *textDownloadLinkAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 	branchParams := map[string]interface{}{
 		SourceKey: referralBranchSource,
 	}
+
 	if req.Code != "" {
 		if _, err := h.dataAPI.LookupPromoCode(req.Code); err == nil {
 			branchParams[PromoCodeKey] = req.Code
@@ -105,7 +106,7 @@ func (h *textDownloadLinkAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if err := h.smsAPI.Send(h.fromNumber, string(number), "To get the Spruce iOS app follow this link "+earl); err != nil {
+	if err := h.smsAPI.Send(h.fromNumber, string(number), "To get the Spruce app follow this link "+earl); err != nil {
 		// TODO: should unpack this error
 		// "The 'To' number abc is not a valid phone number"
 		www.APIInternalError(w, r, err)

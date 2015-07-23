@@ -60,7 +60,6 @@ var AddPromotionModal = React.createClass({displayName: "AddPromotionModal",
 	// Eventually these should be fetched from an API,
 	promoTypes: [{name: "Percent Off", value:"promo_percent_off"}, {name: "Money Off", value: "promo_money_off"}],
 	valueDescriptorByType: {"promo_money_off": "cents", "promo_percent_off": "%"},
-	zeroValueAllowedGroups: {"attribution": true},
 	getInitialState: function(): any {
 		var groups = [{name: "", value: ""}]
 		return {
@@ -234,8 +233,6 @@ var AddPromotionModal = React.createClass({displayName: "AddPromotionModal",
 			this.setState({error: "value required"});
 		} else if (this.valueDescriptorByType[this.state.promoTypesSelectedValue] && !Utils.isInteger(this.state.val)) {
 			this.setState({error: "value must be an Integer"});
-		} else if (this.zeroValueAllowedGroups[this.state.promoTypesSelectedValue] != true && parseInt(this.state.val) <= 0) {
-			this.setState({error: "this promotion group requires a positive non zero value"});
 		} else {
 			return true;
 		}

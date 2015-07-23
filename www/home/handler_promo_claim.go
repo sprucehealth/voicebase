@@ -120,7 +120,7 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				www.InternalServerError(w, r, err)
 				return
 			}
-			if promo != nil {
+			if promo == nil {
 				ctx.Message = "Sorry, the referral code is no longer active."
 				www.TemplateResponse(w, http.StatusOK, h.refTemplate, &www.BaseTemplateContext{
 					Environment: environment.GetCurrent(),
