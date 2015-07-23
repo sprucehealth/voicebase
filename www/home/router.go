@@ -93,7 +93,7 @@ func SetupRoutes(
 
 	// API
 	r.Handle("/api/forms/{form:[0-9a-z-]+}", protect(NewFormsAPIHandler(dataAPI)))
-	r.Handle("/api/textdownloadlink", protect(NewTextDownloadLinkAPIHandler(smsAPI, fromSMSNumber, branchClient, rateLimiters.Get("textdownloadlink"))))
+	r.Handle("/api/textdownloadlink", protect(NewTextDownloadLinkAPIHandler(dataAPI, smsAPI, fromSMSNumber, branchClient, rateLimiters.Get("textdownloadlink"))))
 
 	// Analytics
 	ah := newAnalyticsHandler(analyticsLogger, metricsRegistry.Scope("analytics"))

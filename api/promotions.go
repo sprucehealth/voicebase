@@ -25,7 +25,9 @@ const (
 )
 
 var (
-	errPromoCodeDoesNotExist = errors.New("Promotion code does not exist")
+	// ErrValidAccountCodeNoActiveReferralProgram is a value to be returned when the provided code is a valid promo code but does not map to an active referral program
+	ErrValidAccountCodeNoActiveReferralProgram = errors.New("The provided code was a valid account code but did not map to an active referral program.")
+	errPromoCodeDoesNotExist                   = errors.New("Promotion code does not exist")
 )
 
 // AccountPromotionOption represents an option for promotion manipulation
@@ -57,7 +59,9 @@ func (d *DataService) LookupPromoCode(code string) (*common.PromoCode, error) {
 		if !IsErrNotFound(err) {
 			// If the account has generated an account code then it should have an associated active referral_program
 			referralProgram, err := d.ActiveReferralProgramForAccount(account.ID, common.PromotionTypes)
-			if err != nil {
+			if IsErrNotFound(err) {
+				return nil, ErrValidAccountCodeNoActiveReferralProgram
+			} else if err != nil {
 				return nil, errors.Trace(err)
 			}
 
@@ -504,6 +508,7 @@ func (d *DataService) InactivateReferralProgramTemplate(id int64) error {
 	varArgs := dbutil.MySQLVarArgs()
 	varArgs.Append(`status`, common.RSInactive.String())
 	if _, err := tx.Exec(`UPDATE referral_program SET `+varArgs.Columns()+` WHERE referral_program_template_id = ?`, append(varArgs.Values(), id)...); err != nil {
+		tx.Rollback()
 		return errors.Trace(err)
 	}
 
@@ -523,7 +528,8 @@ func (d *DataService) updateReferralProgramTemplate(db db, rpt *common.ReferralP
 		return 0, errors.Trace(err)
 	}
 
-	return errors.TraceInt64Err(res.RowsAffected())
+	n, err := res.RowsAffected()
+	return n, errors.Trace(err)
 }
 
 // ReferralProgram returns the referral_program record matching the provided promotion_code ID and maps to the provided type map
@@ -1224,7 +1230,8 @@ func (d *DataService) ReferralProgramTemplateRouteQuery(params *RouteQueryParams
 	err = d.db.QueryRow(`
 		SELECT id, role_type_id, referral_type, referral_data, status, promotion_code_id, created
 		FROM referral_program_template
-		WHERE promotion_code_id = ?`, prr.PromotionCodeID).Scan(
+		WHERE promotion_code_id = ?
+		AND status = ?`, prr.PromotionCodeID, common.RSActive.String()).Scan(
 		&template.ID,
 		&template.RoleTypeID,
 		&referralType,
@@ -1233,7 +1240,11 @@ func (d *DataService) ReferralProgramTemplateRouteQuery(params *RouteQueryParams
 		&template.PromotionCodeID,
 		&template.Created)
 	if err == sql.ErrNoRows {
-		return nil, nil, errors.Trace(ErrNotFound("referral_program_template"))
+		defaultTemplate, err := d.DefaultReferralProgramTemplate(common.PromotionTypes)
+		if err != nil {
+			return nil, nil, errors.Trace(err)
+		}
+		return nil, defaultTemplate, nil
 	} else if err != nil {
 		return nil, nil, errors.Trace(err)
 	}

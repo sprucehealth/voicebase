@@ -20,6 +20,7 @@ type textDownloadLinkAPIHandler struct {
 	fromNumber   string
 	branchClient branch.Client
 	rateLimiter  ratelimit.KeyedRateLimiter
+	dataAPI      api.DataAPI
 }
 
 type textDownloadLinkAPIRequest struct {
@@ -34,12 +35,13 @@ type textDownloadLinkAPIResponse struct {
 }
 
 // NewTextDownloadLinkAPIHandler returns an initialized instance of textDownloadLinkAPIHandler
-func NewTextDownloadLinkAPIHandler(smsAPI api.SMSAPI, fromNumber string, branchClient branch.Client, rateLimiter ratelimit.KeyedRateLimiter) http.Handler {
+func NewTextDownloadLinkAPIHandler(dataAPI api.DataAPI, smsAPI api.SMSAPI, fromNumber string, branchClient branch.Client, rateLimiter ratelimit.KeyedRateLimiter) http.Handler {
 	return httputil.SupportedMethods(&textDownloadLinkAPIHandler{
 		smsAPI:       smsAPI,
 		fromNumber:   fromNumber,
 		branchClient: branchClient,
 		rateLimiter:  rateLimiter,
+		dataAPI:      dataAPI,
 	}, httputil.Post)
 }
 
@@ -55,12 +57,6 @@ func (h *textDownloadLinkAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 	var req textDownloadLinkAPIRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		www.APIBadRequestError(w, r, "could not decode request body")
-		return
-	}
-
-	// Not a user error
-	if req.Code == "" {
-		www.APIBadRequestError(w, r, "missing code")
 		return
 	}
 
@@ -83,9 +79,14 @@ func (h *textDownloadLinkAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 
 	// Grab any parameters associated with our URL and throw them onto the branch link
 	branchParams := map[string]interface{}{
-		PromoCodeKey: req.Code,
-		SourceKey:    referralBranchSource,
+		SourceKey: referralBranchSource,
 	}
+	if req.Code != "" {
+		if _, err := h.dataAPI.LookupPromoCode(req.Code); err == nil {
+			branchParams[PromoCodeKey] = req.Code
+		}
+	}
+
 	for k, v := range req.Params {
 		if k == PromoCodeKey || k == SourceKey {
 			golog.Infof("Not attaching URL query param %s:%s to branch link as %s is a managed param.", k, v, k)

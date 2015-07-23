@@ -66,80 +66,86 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			},
 		})
 		return
-	} else if err != nil {
+	} else if err != nil && err != api.ErrValidAccountCodeNoActiveReferralProgram {
 		www.InternalServerError(w, r, err)
 		return
 	}
 
-	ctx := &refContext{
-		Code:       code.Code,
-		IsReferral: code.IsReferral,
-	}
+	ctx := &refContext{}
+	if code != nil {
+		ctx.Code = code.Code
+		ctx.IsReferral = code.IsReferral
 
-	if code.IsReferral {
-		ref, err := h.dataAPI.ReferralProgram(code.ID, common.PromotionTypes)
-		if err != nil {
-			www.InternalServerError(w, r, err)
-			return
-		}
-
-		if ref == nil || ref.Status == common.RSInactive {
-			ctx.Message = "Sorry, the referral code is no longer active."
-			www.TemplateResponse(w, http.StatusOK, h.refTemplate, &www.BaseTemplateContext{
-				Environment: environment.GetCurrent(),
-				Title:       "Referral | Spruce",
-				SubContext: &homeContext{
-					SubContext: ctx,
-				},
-			})
-			return
-		}
-
-		patient, err := h.dataAPI.GetPatientFromAccountID(ref.AccountID)
-		if api.IsErrNotFound(err) {
-			dr, err := h.dataAPI.GetDoctorFromAccountID(ref.AccountID)
-			if api.IsErrNotFound(err) {
-				www.InternalServerError(w, r, fmt.Errorf("neither doctor nor patient found for account ID %d", ref.AccountID))
-				return
-			} else if err != nil {
+		if code.IsReferral {
+			ref, err := h.dataAPI.ReferralProgram(code.ID, common.PromotionTypes)
+			if err != nil {
 				www.InternalServerError(w, r, err)
 				return
 			}
-			ctx.Title = "Start a visit with " + dr.LongDisplayName + " on Spruce."
-		} else if err != nil {
-			www.InternalServerError(w, r, err)
-			return
+
+			if ref == nil || ref.Status == common.RSInactive {
+				ctx.Message = "Sorry, the referral code is no longer active."
+				www.TemplateResponse(w, http.StatusOK, h.refTemplate, &www.BaseTemplateContext{
+					Environment: environment.GetCurrent(),
+					Title:       "Referral | Spruce",
+					SubContext: &homeContext{
+						SubContext: ctx,
+					},
+				})
+				return
+			}
+
+			patient, err := h.dataAPI.GetPatientFromAccountID(ref.AccountID)
+			if api.IsErrNotFound(err) {
+				dr, err := h.dataAPI.GetDoctorFromAccountID(ref.AccountID)
+				if api.IsErrNotFound(err) {
+					www.InternalServerError(w, r, fmt.Errorf("neither doctor nor patient found for account ID %d", ref.AccountID))
+					return
+				} else if err != nil {
+					www.InternalServerError(w, r, err)
+					return
+				}
+				ctx.Title = "Start a visit with " + dr.LongDisplayName + " on Spruce."
+			} else if err != nil {
+				www.InternalServerError(w, r, err)
+				return
+			} else {
+				ctx.Title = "Your friend " + patient.FirstName + " has given you a free visit with a board-certified dermatologist."
+			}
 		} else {
-			ctx.Title = "Your friend " + patient.FirstName + " has given you a free visit with a board-certified dermatologist."
+			promo, err := promotions.LookupPromoCode(ctx.Code, h.dataAPI, h.analyticsLogger)
+			if err == promotions.ErrPromotionExpired {
+				promo = nil
+			} else if err != promotions.ErrInvalidCode && err != nil {
+				www.InternalServerError(w, r, err)
+				return
+			}
+			if promo != nil {
+				ctx.Message = "Sorry, the referral code is no longer active."
+				www.TemplateResponse(w, http.StatusOK, h.refTemplate, &www.BaseTemplateContext{
+					Environment: environment.GetCurrent(),
+					Title:       "Referral | Spruce",
+					SubContext: &homeContext{
+						SubContext: ctx,
+					},
+				})
+				return
+			}
+			ctx.Title = promo.Title
 		}
 	} else {
-		promo, err := promotions.LookupPromoCode(ctx.Code, h.dataAPI, h.analyticsLogger)
-		if err == promotions.ErrPromotionExpired {
-			promo = nil
-		} else if err != promotions.ErrInvalidCode && err != nil {
-			www.InternalServerError(w, r, err)
-			return
-		}
-		if promo == nil {
-			ctx.Message = "Sorry, the referral code is no longer active."
-			www.TemplateResponse(w, http.StatusOK, h.refTemplate, &www.BaseTemplateContext{
-				Environment: environment.GetCurrent(),
-				Title:       "Referral | Spruce",
-				SubContext: &homeContext{
-					SubContext: ctx,
-				},
-			})
-			return
-		}
-		ctx.Title = promo.Title
+		ctx.Title = "Welcome to Spruce"
 	}
 
 	// If page is being loaded from an iPhone, iPod touch or android device, then redirect to the branch link directly.
 	if strings.Contains(r.UserAgent(), "iPhone") || strings.Contains(r.UserAgent(), "iPod") || strings.Contains(strings.ToLower(r.UserAgent()), "android") {
 		// Grab any parameters associated with our URL and throw them onto the branch link
 		branchParams := map[string]interface{}{
-			PromoCodeKey: code.Code,
-			SourceKey:    referralBranchSource,
+			SourceKey: referralBranchSource,
+		}
+
+		if code != nil {
+			branchParams[PromoCodeKey] = code.Code
 		}
 
 		if err := r.ParseForm(); err != nil {

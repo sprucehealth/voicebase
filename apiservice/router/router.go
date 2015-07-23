@@ -270,7 +270,7 @@ func New(conf *Config) http.Handler {
 
 	// Miscellaneous APIs
 	authenticationRequired(conf, apipaths.AppEventURLPath, app_event.NewHandler(conf.Dispatcher))
-	noAuthenticationRequired(conf, apipaths.PromotionsConfirmationURLPath, promotions.NewPromotionConfirmationHandler(conf.DataAPI))
+	noAuthenticationRequired(conf, apipaths.PromotionsConfirmationURLPath, promotions.NewPromotionConfirmationHandler(conf.DataAPI, conf.AnalyticsLogger))
 	authenticationRequired(conf, apipaths.PatienPromoCodeURLPath, promotions.NewPatientPromotionsHandler(conf.DataAPI, conf.AuthAPI, conf.AnalyticsLogger))
 	authenticationRequired(conf, apipaths.ReferralsURLPath, promotions.NewReferralProgramHandler(conf.DataAPI, conf.WebDomain))
 

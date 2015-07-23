@@ -13,30 +13,13 @@ var New = errors.New
 
 // Trace returns an error wrapped in a struct to track where the error is generated.
 func Trace(err error) error {
-	return trace(err, 2)
-}
-
-// TraceInt64Err returns the provided int64 and an error wrapped in a struct to track where the error is generated.
-func TraceInt64Err(i int64, err error) (int64, error) {
-	return i, trace(err, 2)
-}
-
-// Traces returns the stack trace for an error.
-func Traces(e error) []string {
-	if e, ok := e.(aerr); ok {
-		return e.trace
-	}
-	return nil
-}
-
-func trace(err error, callerSkip int) error {
 	// Just incase we get a nil make sure it doesn't turn into an error.
 	if err == nil {
 		return nil
 	}
 
 	trace := "unknown"
-	_, file, line, ok := runtime.Caller(callerSkip)
+	_, file, line, ok := runtime.Caller(1)
 	if ok {
 		short := file
 		depth := 0
@@ -55,4 +38,12 @@ func trace(err error, callerSkip int) error {
 	e := wrap(err)
 	e.trace = append(e.trace, trace)
 	return e
+}
+
+// Traces returns the stack trace for an error.
+func Traces(e error) []string {
+	if e, ok := e.(aerr); ok {
+		return e.trace
+	}
+	return nil
 }
