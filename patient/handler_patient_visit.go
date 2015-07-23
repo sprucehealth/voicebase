@@ -503,14 +503,14 @@ func submitVisit(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, patient *
 		return visit, nil
 	}
 
-	// do not support the submitting of a case that is in another state
-	if visit.Status != common.PVStatusOpen && visit.Status != common.PVStatusPendingParentalConsent {
-		return nil, apiservice.NewValidationError("Cannot submit a case that is not in the open state. Current status of case = " + visit.Status)
-	}
-
 	// don't let a minor who doesn't yet have parental consent submit a visit
 	if patient.DOB.Age() < 18 && !patient.HasParentalConsent {
 		return nil, apiservice.NewValidationError("Cannot submit a visit until a parent or guardian has given consent.")
+	}
+
+	// do not support the submitting of a case that is in another state
+	if visit.Status != common.PVStatusOpen && visit.Status != common.PVStatusReceivedParentalConsent {
+		return nil, apiservice.NewValidationError("Cannot submit a case that is not in the open state. Current status of case = " + visit.Status)
 	}
 
 	if err := dataAPI.SubmitPatientVisitWithID(visitID); err != nil {

@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/errors"
 )
 
@@ -34,6 +35,16 @@ func (d *DataService) GrantParentChildConsent(parentPatientID, childPatientID in
 	}
 
 	_, err = tx.Exec(`UPDATE patient SET has_parental_consent = ? WHERE id = ?`, true, childPatientID)
+	if err != nil {
+		tx.Rollback()
+		return errors.Trace(err)
+	}
+
+	// Update any visits pending consent
+	// TODO: This doesn't feel appropriate here but it's the only way to get it into the transaction.
+	//       Once we have a better non-transactional story (background repair) this seems safest.
+	_, err = tx.Exec(`UPDATE patient_visit SET status = ? WHERE patient_id = ? AND status = ?`,
+		common.PVStatusReceivedParentalConsent, childPatientID, common.PVStatusPendingParentalConsent)
 	if err != nil {
 		tx.Rollback()
 		return errors.Trace(err)

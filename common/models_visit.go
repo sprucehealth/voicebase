@@ -8,7 +8,10 @@ import (
 
 // Constants for possible visit statuses. Flow between states:
 //
-// PENDING  ┌───▶PENDING_PARENTAL_CONSENT
+//          ┌───▶PENDING_PARENTAL_CONSENT
+//          │                │
+//          │                ▼
+// PENDING  │    RECEIVED_PARENTAL_CONSENT
 //    │     │                │                 ┌────────▶TRIAGED
 //    │     │        ┌───────┘                 │
 //    ▼     │        ▼                         │
@@ -33,6 +36,10 @@ const (
 	// guardian to consent to a patient to be treated by Spruce. The visit will transition to SUBMITTED once
 	// approval has been granted.
 	PVStatusPendingParentalConsent = "PENDING_PARENTAL_CONSENT"
+
+	// PVStatusReceivedParentalConsent is the state used to indicate a visit is that was previously waiting
+	// parental consent (status of PENDING_PARENTAL_CONSENT) has now received consent and can continue to submission.
+	PVStatusReceivedParentalConsent = "RECEIVED_PARENTAL_CONSENT"
 
 	// PVStatusSubmitted is the state used to indicate a visit that is submitted by the patient, but has not
 	// yet been routed to the unassigned queue or the doctors queue. The visit will transition from
@@ -76,7 +83,7 @@ func TreatedPatientVisitStates() []string {
 
 // OpenPatientVisitStates returns the set of visit statuses for open or pending visits
 func OpenPatientVisitStates() []string {
-	return []string{PVStatusPending, PVStatusOpen, PVStatusPendingParentalConsent}
+	return []string{PVStatusPending, PVStatusOpen, PVStatusPendingParentalConsent, PVStatusReceivedParentalConsent}
 }
 
 // NonOpenPatientVisitStates returns the union of the set "treated statuses | submitted statuses"
