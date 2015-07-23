@@ -39,20 +39,14 @@
 		display: inline-block;
 		background-size: contain;
 		width: 186px;
-		height: 54px;
+		height: 60px;
 	}
-	.home-appstore {
-		background-image: url("../img/home/home_app_button@2x.png");
+	.home-ios {
+		background-image: url("../img/home/home_ios_button@2x.png");
 	}
-	.home-appstore:hover {
-		background-image: url("../img/home/home_app_button_hover@2x.png");
-	}
-	.home-freevisit {
-		background-image: url("../img/home/home_freevisit_button@2x.png");
+	.home-android {
+		background-image: url("../img/home/home_android_button@2x.png");
 		margin-left: 15px;
-	}
-	.home-freevisit:hover {
-		background-image: url("../img/home/home_freevisit_button_hover@2x.png");
 	}
 }
 
@@ -248,7 +242,7 @@
 	}
 	.home-top-buttons span {
 		width: 138px;
-		height: 40px;
+		height: 45px;
 	}
 	#home-press img {
 		zoom: 0.5;
