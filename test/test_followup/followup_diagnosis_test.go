@@ -70,7 +70,7 @@ func TestFollowup_Diagnose(t *testing.T) {
 		t)
 
 	// lets have the patient submit the followup
-	patientIntakeRequestData := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
+	patientIntakeRequestData := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout.InfoIntakeLayout, t)
 	test_integration.SubmitAnswersIntakeForPatient(patientID, patientAccountID, patientIntakeRequestData, testData, t)
 	test_integration.SubmitPatientVisitForPatient(patientID, followupVisit.ID.Int64(), testData, t)
 

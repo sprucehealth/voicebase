@@ -88,15 +88,14 @@ func NonOpenPatientVisitStates() []string {
 // visit. If the status is not understood, it treats the visit to be in the submitted
 // state as its the safest thing to do given the visit is treated as immutable in the submitted state.
 func PatientVisitSubmitted(status string) bool {
-	switch status {
-	case PVStatusSubmitted, PVStatusCharged, PVStatusRouted, PVStatusReviewing, PVStatusTriaged, PVStatusTreated:
-		return true
-	case PVStatusPending, PVStatusOpen, PVStatusPreSubmissionTriage, PVStatusDeleted:
-		return false
+
+	for _, openStatus := range OpenPatientVisitStates() {
+		if status == openStatus {
+			return false
+		}
 	}
 
 	return true
-
 }
 
 // ByPatientVisitCreationDate implements sort.Interface to sort a slice of visits by creation date

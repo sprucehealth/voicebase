@@ -21,7 +21,7 @@ func TestCaseRoute_DoctorInCareTeam(t *testing.T) {
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.ID.Int64(), testData, t)
-	intakeData := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
+	intakeData := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout.InfoIntakeLayout, t)
 	test_integration.SubmitAnswersIntakeForPatient(pr.Patient.ID.Int64(), pr.Patient.AccountID.Int64(),
 		intakeData, testData, t)
 

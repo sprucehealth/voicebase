@@ -62,6 +62,11 @@ type AdditionalMessage struct {
 	Message string `json:"message"`
 }
 
+type clientLayout struct {
+	*info_intake.InfoIntakeLayout
+	ParentalConsentInfo *ParentalConsentInfo `json:"parental_consent_info,omitempty"`
+}
+
 type VisitIntakeInfo struct {
 	PatientVisitID          int64                                   `json:"patient_visit_id,string"`
 	DoctorID                int64                                   `json:"care_provider_id,string,omitempty"`
@@ -69,7 +74,7 @@ type VisitIntakeInfo struct {
 	Status                  string                                  `json:"status,omitempty"`
 	IsSubmitted             bool                                    `json:"is_submitted"`
 	RequireCreditCardIfFree bool                                    `json:"require_credit_card_if_free"`
-	ClientLayout            *info_intake.InfoIntakeLayout           `json:"health_condition,omitempty"`
+	ClientLayout            *clientLayout                           `json:"health_condition,omitempty"`
 	SKUType                 *string                                 `json:"cost_item_type"`
 	AdditionalMessage       *AdditionalMessage                      `json:"additional_message,omitempty"`
 	SubmissionConfirmation  *info_intake.SubmissionConfirmationText `json:"submission_confirmation,omitempty"`

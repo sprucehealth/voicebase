@@ -153,7 +153,7 @@ func CreateRandomPatientVisitInState(state string, t *testing.T, testData *TestD
 	AddTestPharmacyForPatient(pr.Patient.ID.Int64(), testData, t)
 	AddTestAddressForPatient(pr.Patient.ID.Int64(), testData, t)
 
-	intakeData := PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
+	intakeData := PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout.InfoIntakeLayout, t)
 	SubmitAnswersIntakeForPatient(pr.Patient.ID.Int64(), pr.Patient.AccountID.Int64(),
 		intakeData, testData, t)
 	SubmitPatientVisitForPatient(pr.Patient.ID.Int64(), pv.PatientVisitID, testData, t)
@@ -291,7 +291,7 @@ func CreateRandomPatientVisitAndPickTPForPathway(t *testing.T, testData *TestDat
 	pv, err := pc.CreatePatientVisit(pathway.Tag, 0, SetupTestHeaders())
 	test.OK(t, err)
 
-	intakeData := PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
+	intakeData := PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout.InfoIntakeLayout, t)
 	SubmitAnswersIntakeForPatient(patient.ID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
 	SubmitPatientVisitForPatient(patient.ID.Int64(), pv.PatientVisitID, testData, t)
 	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
@@ -304,6 +304,7 @@ func CreateRandomPatientVisitAndPickTPForPathway(t *testing.T, testData *TestDat
 		role = api.RoleCC
 	}
 	tp, err := responses.TransformTPFromResponse(testData.DataAPI, doctorPickTreatmentPlanResponse.TreatmentPlan, doctor.ID.Int64(), role)
+
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -312,7 +313,7 @@ func CreateRandomPatientVisitAndPickTPForPathway(t *testing.T, testData *TestDat
 
 func CreatePatientVisitAndPickTP(t *testing.T, testData *TestData, patient *common.Patient, doctor *common.Doctor) (*patient.PatientVisitResponse, *common.TreatmentPlan) {
 	pv := CreatePatientVisitForPatient(patient.ID.Int64(), testData, t)
-	intakeData := PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
+	intakeData := PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout.InfoIntakeLayout, t)
 	SubmitAnswersIntakeForPatient(patient.ID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
 	SubmitPatientVisitForPatient(patient.ID.Int64(), pv.PatientVisitID, testData, t)
 	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
@@ -334,7 +335,7 @@ func CreatePatientVisitAndPickTP(t *testing.T, testData *TestData, patient *comm
 func CreateAndSubmitPatientVisitWithSpecifiedAnswers(answers map[int64]*apiservice.QuestionAnswerItem, testData *TestData, t *testing.T) *patient.PatientVisitResponse {
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	pv := CreatePatientVisitForPatient(pr.Patient.ID.Int64(), testData, t)
-	answerIntake := PrepareAnswersForQuestionsWithSomeSpecifiedAnswers(pv.PatientVisitID, pv.ClientLayout, answers, t)
+	answerIntake := PrepareAnswersForQuestionsWithSomeSpecifiedAnswers(pv.PatientVisitID, pv.ClientLayout.InfoIntakeLayout, answers, t)
 	SubmitAnswersIntakeForPatient(pr.Patient.ID.Int64(),
 		pr.Patient.AccountID.Int64(),
 		answerIntake, testData, t)

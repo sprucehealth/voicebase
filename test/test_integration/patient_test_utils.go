@@ -192,7 +192,7 @@ func PrepareAnswersForQuestionsInPatientVisit(visitID int64, visitLayout *info_i
 }
 
 func PrepareAnswersForQuestionsInPatientVisitWithoutAlerts(pv *patientAPIService.PatientVisitResponse, t *testing.T) *apiservice.IntakeData {
-	return prepareAnswersForVisitIntake(pv.PatientVisitID, pv.ClientLayout, false, nil, t)
+	return prepareAnswersForVisitIntake(pv.PatientVisitID, pv.ClientLayout.InfoIntakeLayout, false, nil, t)
 }
 
 func PrepareAnswersForQuestionsWithSomeSpecifiedAnswers(visitID int64, visitLayout *info_intake.InfoIntakeLayout,
