@@ -398,8 +398,11 @@ func createPatientVisit(
 
 		// assign the doctor to the case if the doctor is specified
 		if doctorID > 0 {
+			// FIXME: if there's an error at this point then the visit is still created but the VisitStartedEvent is
+			// never published this there's no notification for the visit. As such, if this fails then it's better
+			// to log the error but continue since the patient will be able to continue the visit anyway.
 			if err := dataAPI.AddDoctorToPatientCase(doctorID, patientVisit.PatientCaseID.Int64()); err != nil {
-				return nil, errors.Trace(err)
+				golog.Errorf("Failed to add doctor %d to patient case %d: %s", doctorID, patientVisit.PatientCaseID.Int64(), err)
 			}
 		}
 		visitCreated = true
