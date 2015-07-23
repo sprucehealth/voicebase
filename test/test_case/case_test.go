@@ -32,7 +32,7 @@ func TestCaseUpdate_PresubmissionTriage(t *testing.T) {
 
 	updatedStatus := common.PCStatusPreSubmissionTriage
 	now := time.Now()
-	timeoutDate := time.Now().Add(24 * time.Hour)
+	timeoutDate := time.Now().Add(24 * time.Hour).Truncate(time.Second)
 	test.OK(t, testData.DataAPI.UpdatePatientCase(tp.PatientCaseID.Int64(), &api.PatientCaseUpdate{
 		Status:     &updatedStatus,
 		ClosedDate: &now,
