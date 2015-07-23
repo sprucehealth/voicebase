@@ -83,11 +83,13 @@ func IntakeLayoutForVisit(
 	}
 
 	info := &VisitIntakeInfo{
-		PatientVisitID:          visit.ID.Int64(),
-		CanAbandon:              !visit.IsFollowup,
-		Status:                  visit.Status,
-		IsSubmitted:             common.PatientVisitSubmitted(visit.Status),
-		ClientLayout:            visitLayout,
+		PatientVisitID: visit.ID.Int64(),
+		CanAbandon:     !visit.IsFollowup,
+		Status:         visit.Status,
+		IsSubmitted:    common.PatientVisitSubmitted(visit.Status),
+		ClientLayout: &clientLayout{
+			InfoIntakeLayout: visitLayout,
+		},
 		DoctorID:                doctorID,
 		RequireCreditCardIfFree: false,
 		SKUType:                 visitLayout.DeprecatedSKUType,
@@ -115,6 +117,9 @@ func IntakeLayoutForVisit(
 							"dermatologist from my phone but need your approval: https://sprucehealth.com/parental-consent?sig=xxx"),
 				},
 			}
+
+			info.ClientLayout.ParentalConsentInfo = info.ParentalConsentInfo
+
 		}
 	}
 

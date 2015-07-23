@@ -113,7 +113,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	test.Equals(t, 1, len(lineItems))
 
 	// now lets go ahead and submit responses to the visit
-	answerIntakeBody := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
+	answerIntakeBody := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout.InfoIntakeLayout, t)
 	test_integration.SubmitAnswersIntakeForPatient(patientID, patientAccountID, answerIntakeBody, testData, t)
 
 	// now lets go ahead and submit the visit to the doctor. This should route the followup visit

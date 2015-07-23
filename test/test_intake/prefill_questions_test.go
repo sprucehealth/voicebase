@@ -42,7 +42,7 @@ func TestIntake_PrefillQuestions(t *testing.T) {
 		},
 	}
 
-	rb := test_integration.PrepareAnswersForQuestionsWithSomeSpecifiedAnswers(pv.PatientVisitID, pv.ClientLayout, specificAnswers, t)
+	rb := test_integration.PrepareAnswersForQuestionsWithSomeSpecifiedAnswers(pv.PatientVisitID, pv.ClientLayout.InfoIntakeLayout, specificAnswers, t)
 	test_integration.SubmitAnswersIntakeForPatient(
 		patient.ID.Int64(),
 		patient.AccountID.Int64(),
@@ -183,5 +183,5 @@ func createFollowupAndGetVisitLayout(patient *common.Patient, caseID int64, test
 		followupVisit, nil, api.RoleDoctor)
 	test.OK(t, err)
 
-	return followupVisit, intakeInfo.ClientLayout
+	return followupVisit, intakeInfo.ClientLayout.InfoIntakeLayout
 }

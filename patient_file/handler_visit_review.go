@@ -133,7 +133,7 @@ func VisitReviewLayout(
 		return nil, err
 	}
 
-	context, err := buildContext(dataAPI, intakeInfo.ClientLayout, visit)
+	context, err := buildContext(dataAPI, intakeInfo.ClientLayout.InfoIntakeLayout, visit)
 	if err != nil {
 		return nil, err
 	}

@@ -69,7 +69,7 @@ func setupPromotionsTest(testData *test_integration.TestData, t *testing.T) {
 func startAndSubmitVisit(patientID int64, patientAccountID int64,
 	stubSQSQueue *common.SQSQueue, testData *test_integration.TestData, t *testing.T) int64 {
 	pv := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
-	answerIntake := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout, t)
+	answerIntake := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout.InfoIntakeLayout, t)
 	test_integration.SubmitAnswersIntakeForPatient(patientID, patientAccountID, answerIntake, testData, t)
 
 	stubStripe := testData.Config.PaymentAPI.(*test_integration.StripeStub)

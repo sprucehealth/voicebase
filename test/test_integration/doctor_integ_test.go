@@ -240,7 +240,7 @@ func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
-	intakeData := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout, t)
+	intakeData := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout.InfoIntakeLayout, t)
 	SubmitAnswersIntakeForPatient(patient.ID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.ID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitID, doctor, testData, t)
@@ -286,7 +286,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
-	intakeData := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout, t)
+	intakeData := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout.InfoIntakeLayout, t)
 	SubmitAnswersIntakeForPatient(patient.ID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
 	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.ID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
 	StartReviewingPatientVisit(patientVisitResponse.PatientVisitID, doctor, testData, t)
@@ -353,7 +353,7 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	patient, err := testData.DataAPI.GetPatientFromID(patientSignedupResponse.Patient.ID.Int64())
 	test.OK(t, err)
 
-	intakeData := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout, t)
+	intakeData := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout.InfoIntakeLayout, t)
 	SubmitAnswersIntakeForPatient(patient.ID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
 
 	// get patient to submit the visit
