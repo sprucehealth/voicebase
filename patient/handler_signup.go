@@ -18,6 +18,7 @@ import (
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -337,8 +338,82 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		if attrData.PromoCode != "" {
 			// To provide a good account creation experience don't block on promo code association
-			async := true
-			promotions.AssociatePromoCode(newPatient.Email, newPatient.StateFromZipCode, attrData.PromoCode, s.dataAPI, s.authAPI, s.analyticsLogger, async)
+			conc.Go(func() {
+				promoCode, err := s.dataAPI.LookupPromoCode(attrData.PromoCode)
+				if api.IsErrNotFound(err) {
+					golog.Warningf("Promotion code in attribution data could not be found %s", attrData.PromoCode)
+					return
+				} else if err != nil {
+					golog.Errorf("Unable to lookup attribution promo code %s at account creation time: %v", attrData.PromoCode, err)
+					return
+				}
+				code := promoCode.Code
+				codeID := promoCode.ID
+				if promoCode.IsReferral {
+					rp, err := s.dataAPI.ReferralProgram(promoCode.ID, common.PromotionTypes)
+					if err != nil {
+						golog.Errorf(err.Error())
+						return
+					}
+					if err := rp.Data.(promotions.ReferralProgram).ReferredAccountAssociatedCode(accountID, promoCode.ID, s.dataAPI); err != nil {
+						golog.Errorf(err.Error())
+						return
+					}
+					if rp.TemplateID != nil {
+						rpt, err := s.dataAPI.ReferralProgramTemplate(*rp.TemplateID, common.PromotionTypes)
+						if err != nil {
+							golog.Errorf(err.Error())
+							return
+						}
+						if rpt.PromotionCodeID != nil {
+							promotion, err := s.dataAPI.Promotion(*rpt.PromotionCodeID, common.PromotionTypes)
+							if err != nil {
+								golog.Errorf(err.Error())
+								return
+							}
+							code = promotion.Code
+							codeID = promotion.CodeID
+						}
+					}
+					s.analyticsLogger.WriteEvents([]analytics.Event{
+						&analytics.ServerEvent{
+							Event:     "referral_code_account_created",
+							Timestamp: analytics.Time(time.Now()),
+							AccountID: rp.AccountID,
+							ExtraJSON: analytics.JSONString(struct {
+								CreatedAccountID int64  `json:"created_account_id"`
+								Code             string `json:"code"`
+								CodeID           int64  `json:"code_id"`
+							}{
+								CreatedAccountID: accountID,
+								Code:             code,
+								CodeID:           codeID,
+							}),
+						},
+					})
+				}
+
+				s.analyticsLogger.WriteEvents([]analytics.Event{
+					&analytics.ServerEvent{
+						Event:     "promo_code_account_created",
+						Timestamp: analytics.Time(time.Now()),
+						AccountID: accountID,
+						ExtraJSON: analytics.JSONString(struct {
+							Code   string `json:"code"`
+							CodeID int64  `json:"code_id"`
+						}{
+							Code:   code,
+							CodeID: promoCode.ID,
+						}),
+					},
+				})
+
+				async := false
+				_, err = promotions.AssociatePromoCode(newPatient.Email, newPatient.StateFromZipCode, attrData.PromoCode, s.dataAPI, s.authAPI, s.analyticsLogger, async)
+				if err != nil {
+					golog.Errorf("Unable associate promo code %s at account creation time: %v", attrData.PromoCode, err)
+				}
+			})
 		}
 	}
 

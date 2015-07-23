@@ -785,7 +785,7 @@ module.exports = {
 			dataType: "json",
 		}, cb);
 	},
-	updateReferralTemplate: function(id: number, status: string, cb: ajaxCB) {
+	updateReferralTemplate: function(id: string, status: string, cb: ajaxCB) {
 		var url = "/promotion/referral_template"
 		this.ajax({
 			type: "PUT",

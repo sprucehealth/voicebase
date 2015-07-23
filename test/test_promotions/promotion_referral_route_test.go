@@ -175,6 +175,84 @@ func TestPromotionReferralRouteQueryParamsToTemplate(t *testing.T) {
 	test.Equals(t, rid, *routeID)
 }
 
+func TestPromotionReferralRouteQueryParamsToInactiveTemplate(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	setupPromotionReferralRouteTest(t, testData)
+
+	promo := promotions.NewPercentOffVisitPromotion(
+		100,
+		"new_user",
+		"displayMsg",
+		"shortMsg",
+		"successMsg",
+		"imageURL",
+		1,
+		1,
+		true)
+	rp, err := promotions.NewGiveReferralProgram("title", "description", "group", nil, promo, nil)
+	test.OK(t, err)
+	code1 := "TestPromotionReferralRoute1"
+	promoCodeID1, err := testData.DataAPI.CreatePromotion(&common.Promotion{
+		Code:  code1,
+		Group: "new_user",
+		Data:  promo,
+	})
+	test.OK(t, err)
+
+	code2 := "TestPromotionReferralRoute2"
+	promoCodeID2, err := testData.DataAPI.CreatePromotion(&common.Promotion{
+		Code:  code2,
+		Group: "new_user",
+		Data:  promo,
+	})
+	test.OK(t, err)
+
+	_, err = testData.DataAPI.CreateReferralProgramTemplate(&common.ReferralProgramTemplate{
+		Role:            api.RolePatient,
+		Status:          common.ReferralProgramStatus("Inactive"),
+		PromotionCodeID: &promoCodeID1,
+		Data:            rp,
+	})
+	test.OK(t, err)
+
+	defaultTemplateID, err := testData.DataAPI.CreateReferralProgramTemplate(&common.ReferralProgramTemplate{
+		Role:            api.RolePatient,
+		Status:          common.ReferralProgramStatus("Default"),
+		PromotionCodeID: &promoCodeID2,
+		Data:            rp,
+	})
+	test.OK(t, err)
+
+	gender := common.PRRGender("M")
+	al := 1
+	au := 1000
+	state := "FL"
+	_, err = testData.DataAPI.InsertPromotionReferralRoute(&common.PromotionReferralRoute{
+		PromotionCodeID: promoCodeID1,
+		Priority:        100,
+		Lifecycle:       common.PRRLifecycle("ACTIVE"),
+		Gender:          &gender,
+		AgeLower:        &al,
+		AgeUpper:        &au,
+		State:           &state,
+		Pharmacy:        nil,
+	})
+	test.OK(t, err)
+
+	pvr := test_integration.CreateRandomPatientVisitInState("FL", t, testData)
+	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(pvr.PatientVisitID)
+	test.OK(t, err)
+	params, err := testData.DataAPI.RouteQueryParamsForAccount(patient.AccountID.Int64())
+	test.OK(t, err)
+	routeID, template, err := testData.DataAPI.ReferralProgramTemplateRouteQuery(params)
+	test.OK(t, err)
+	test.Equals(t, defaultTemplateID, template.ID)
+	test.Assert(t, routeID == nil, "Expected nil route id")
+}
+
 func TestPromotionReferralRouteDeprecationDisplayFullLoop(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close()

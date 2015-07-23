@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -13,7 +15,8 @@ import (
 )
 
 type promotionConfirmationHandler struct {
-	dataAPI api.DataAPI
+	dataAPI         api.DataAPI
+	analyticsLogger analytics.Logger
 }
 
 // PromotionConfirmationGETRequest represents the data expected to be sent to the promotionConfirmationHandler in a GET request, it is exported for client consumption.
@@ -30,10 +33,11 @@ type PromotionConfirmationGETResponse struct {
 }
 
 // NewPromotionConfirmationHandler returns a new instance of the promotionConfirmationHandler
-func NewPromotionConfirmationHandler(dataAPI api.DataAPI) http.Handler {
+func NewPromotionConfirmationHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger) http.Handler {
 	return apiservice.NoAuthorizationRequired(
 		httputil.SupportedMethods(&promotionConfirmationHandler{
-			dataAPI: dataAPI,
+			dataAPI:         dataAPI,
+			analyticsLogger: analyticsLogger,
 		}, httputil.Get))
 }
 
@@ -77,6 +81,8 @@ func (h *promotionConfirmationHandler) serveGET(w http.ResponseWriter, r *http.R
 
 	var p *common.Promotion
 	var title string
+	code := promoCode.Code
+	codeID := promoCode.ID
 	if promoCode.IsReferral {
 		rp, err := h.dataAPI.ReferralProgram(promoCode.ID, common.PromotionTypes)
 		if err != nil {
@@ -102,6 +108,36 @@ func (h *promotionConfirmationHandler) serveGET(w http.ResponseWriter, r *http.R
 		} else {
 			title = fmt.Sprintf("Your friend %s has given you a free visit.", patient.FirstName)
 		}
+
+		rpt, err := h.dataAPI.ReferralProgramTemplate(*rp.TemplateID, common.PromotionTypes)
+		if err != nil {
+			apiservice.WriteError(err, w, r)
+			return
+		}
+		if rpt.PromotionCodeID != nil {
+			promotion, err := h.dataAPI.Promotion(*rpt.PromotionCodeID, common.PromotionTypes)
+			if err != nil {
+				apiservice.WriteError(err, w, r)
+				return
+			}
+			code = promotion.Code
+			codeID = promotion.CodeID
+		}
+
+		h.analyticsLogger.WriteEvents([]analytics.Event{
+			&analytics.ServerEvent{
+				Event:     "referral_code_install_confirmation",
+				Timestamp: analytics.Time(time.Now()),
+				AccountID: rp.AccountID,
+				ExtraJSON: analytics.JSONString(struct {
+					Code   string `json:"code"`
+					CodeID int64  `json:"code_id"`
+				}{
+					Code:   code,
+					CodeID: codeID,
+				}),
+			},
+		})
 	} else {
 		p, err = h.dataAPI.Promotion(promoCode.ID, common.PromotionTypes)
 		if err != nil {
@@ -109,6 +145,20 @@ func (h *promotionConfirmationHandler) serveGET(w http.ResponseWriter, r *http.R
 			return
 		}
 	}
+
+	h.analyticsLogger.WriteEvents([]analytics.Event{
+		&analytics.ServerEvent{
+			Event:     "promo_code_install_confirmation",
+			Timestamp: analytics.Time(time.Now()),
+			ExtraJSON: analytics.JSONString(struct {
+				Code   string `json:"code"`
+				CodeID int64  `json:"code_id"`
+			}{
+				Code:   code,
+				CodeID: codeID,
+			}),
+		},
+	})
 
 	promotion, ok := p.Data.(Promotion)
 	if !ok {

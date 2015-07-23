@@ -47,7 +47,7 @@ type ReferralProgramTemplatePOSTResponse struct {
 
 // ReferralProgramTemplatePUTRequest represents the data expected in a sucessful PUT request
 type ReferralProgramTemplatePUTRequest struct {
-	ID     int64  `json:"id"`
+	ID     int64  `json:"id,string"`
 	Status string `json:"status"`
 }
 

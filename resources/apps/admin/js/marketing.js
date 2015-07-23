@@ -688,7 +688,7 @@ var SetDefaultPromotionReferralTemplateModal = React.createClass({displayName: "
 		};
 	},
 	onConfirm: function(): any {
-		AdminAPI.updateReferralTemplate(parseInt(this.props.referralTemplate.id), this.DefaultStatus, function(success, data, error){
+		AdminAPI.updateReferralTemplate(this.props.referralTemplate.id, this.DefaultStatus, function(success, data, error){
 			if (this.isMounted()) {
 				if (!success) {
 					this.setState({
@@ -728,7 +728,7 @@ var SetInactivePromotionReferralTemplateModal = React.createClass({displayName: 
 		};
 	},
 	onConfirm: function(): any {
-		AdminAPI.updateReferralTemplate(parseInt(this.props.referralTemplate.id), this.InactiveStatus, function(success, data, error){
+		AdminAPI.updateReferralTemplate(this.props.referralTemplate.id, this.InactiveStatus, function(success, data, error){
 			if (this.isMounted()) {
 				if (!success) {
 					this.setState({
