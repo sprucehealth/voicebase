@@ -22,7 +22,8 @@ module.exports = {
 		},
 		handleSubmit: function(e: Event) {
 			e.preventDefault();
-			API.textDownloadLink(this.props.code, this.state.number, function(success, data, error) {
+			console.log(this.props.code, Utils.getQueryParams())
+			API.textDownloadLink(this.props.code, Utils.getQueryParams(), this.state.number, function(success, data, error) {
 				if (this.isMounted()) {
 					if (!success) {
 						this.setState({error: error.message});

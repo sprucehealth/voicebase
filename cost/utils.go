@@ -20,7 +20,7 @@ var (
 // GlobalFirstVisitFreeEnabled is a Server configurable flag for determining if the first visit for all patients should be free
 var GlobalFirstVisitFreeEnabled = &cfg.ValueDef{
 	Name:        "Global.First.Visit.Free.Enabled",
-	Description: "A value that represents if the first visit should be free for all patients.",
+	Description: "Enable or disable the first visit free promotion for all patients and visit types.",
 	Type:        cfg.ValueTypeBool,
 	Default:     true,
 }

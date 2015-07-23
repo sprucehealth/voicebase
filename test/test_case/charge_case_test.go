@@ -10,15 +10,9 @@ import (
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/stripe"
 	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/test/config"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
-
-var globalFirstVisitFreeDisabled = &cfg.ValueDef{
-	Name:        "Global.First.Visit.Free.Enabled",
-	Description: "A value that represents if the first visit should be free for all patients.",
-	Type:        cfg.ValueTypeBool,
-	Default:     false,
-}
 
 func TestSucessfulCaseCharge(t *testing.T) {
 	testData := test_integration.SetupTest(t)
@@ -34,7 +28,7 @@ func TestSucessfulCaseCharge(t *testing.T) {
 		}, nil
 	}
 
-	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{globalFirstVisitFreeDisabled})
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.GlobalFirstVisitFreeDisabled})
 	test.OK(t, err)
 
 	// set an exceptionally high time period (1 day) so that the worker only runs once
@@ -93,7 +87,7 @@ func TestSuccessfulCharge_AlreadyExists(t *testing.T) {
 		}, nil
 	}
 
-	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{globalFirstVisitFreeDisabled})
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.GlobalFirstVisitFreeDisabled})
 	test.OK(t, err)
 
 	// set an exceptionally high time period (1 day) so that the worker only runs once
@@ -127,7 +121,7 @@ func TestFailedCharge_StripeFailure(t *testing.T) {
 		return nil, errors.New("charge error")
 	}
 
-	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{globalFirstVisitFreeDisabled})
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.GlobalFirstVisitFreeDisabled})
 	test.OK(t, err)
 
 	// set an exceptionally high time period (1 day) so that the worker only runs once
@@ -210,7 +204,7 @@ func TestFailedCharge_ChargeExists(t *testing.T) {
 		}, nil
 	}
 
-	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{globalFirstVisitFreeDisabled})
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.GlobalFirstVisitFreeDisabled})
 	test.OK(t, err)
 
 	w := cost.NewWorker(testData.DataAPI, testData.Config.AnalyticsLogger, testData.Config.Dispatcher, stubStripe, nil, stubSQSQueue, metrics.NewRegistry(), 24*60*60, "", cfgStore)

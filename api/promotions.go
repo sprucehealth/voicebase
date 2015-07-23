@@ -310,7 +310,7 @@ func (d *DataService) CreateReferralProgramTemplate(template *common.ReferralPro
 
 	res, err := tx.Exec(`
 		INSERT INTO referral_program_template (role_type_id, referral_type, referral_data, status, promotion_code_id)
-		VALUES (?,?,?,?,?)
+			VALUES (?,?,?,?,?)
 		`, d.roleTypeMapping[template.Role], template.Data.TypeName(), jsonData, template.Status.String(), template.PromotionCodeID)
 	if err != nil {
 		tx.Rollback()
@@ -326,13 +326,45 @@ func (d *DataService) CreateReferralProgramTemplate(template *common.ReferralPro
 	return template.ID, errors.Trace(tx.Commit())
 }
 
+// ReferralProgramTemplate returns the referral_program_template records matching the provided ID
+func (d *DataService) ReferralProgramTemplate(id int64, types map[string]reflect.Type) (*common.ReferralProgramTemplate, error) {
+	var data []byte
+	var referralType string
+	template := &common.ReferralProgramTemplate{}
+	if err := d.db.QueryRow(`
+		SELECT id, role_type_id, referral_type, referral_data, status, promotion_code_id, created
+			FROM referral_program_template
+			WHERE id = ?`, id).Scan(
+		&template.ID,
+		&template.RoleTypeID,
+		&referralType,
+		&data,
+		&template.Status,
+		&template.PromotionCodeID,
+		&template.Created); err == sql.ErrNoRows {
+		return nil, errors.Trace(ErrNotFound(`referral_program_template`))
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	referralDataType, ok := types[referralType]
+	if !ok {
+		return nil, errors.Trace(fmt.Errorf("Unable to find referral type: %s", referralType))
+	}
+
+	template.Data = reflect.New(referralDataType).Interface().(common.Typed)
+	err := json.Unmarshal(data, &template.Data)
+
+	return template, errors.Trace(err)
+}
+
 // ReferralProgramTemplates returns the referral_program_template records matching the provided ReferralProgramStatuses
 func (d *DataService) ReferralProgramTemplates(statuses common.ReferralProgramStatusList, types map[string]reflect.Type) ([]*common.ReferralProgramTemplate, error) {
 	rows, err := d.db.Query(`
 		SELECT id, role_type_id, referral_type, referral_data, status, promotion_code_id, created
-		FROM referral_program_template
-		WHERE status IN (`+dbutil.MySQLArgs(len(statuses))+`)
-		ORDER BY id DESC`, dbutil.AppendStringsToInterfaceSlice(nil, []string(statuses))...)
+			FROM referral_program_template
+			WHERE status IN (`+dbutil.MySQLArgs(len(statuses))+`)
+			ORDER BY id DESC`, dbutil.AppendStringsToInterfaceSlice(nil, []string(statuses))...)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound(`referral_program_template`))
 	} else if err != nil {
@@ -379,8 +411,8 @@ func (d *DataService) DefaultReferralProgramTemplate(types map[string]reflect.Ty
 	var data []byte
 	err := d.db.QueryRow(`
 		SELECT id, role_type_id, referral_type, referral_data, status, promotion_code_id, created
-		FROM referral_program_template
-		WHERE status = ?`, common.RSDefault.String()).Scan(
+			FROM referral_program_template
+			WHERE status = ?`, common.RSDefault.String()).Scan(
 		&template.ID,
 		&template.RoleTypeID,
 		&referralType,
@@ -405,6 +437,93 @@ func (d *DataService) DefaultReferralProgramTemplate(types map[string]reflect.Ty
 	}
 
 	return &template, nil
+}
+
+// SetDefaultReferralProgramTemplate declares a the referral_program_template matching the provided ID as DEFAULT
+// This will move the existing DEFAULT template to the ACTIVE
+// This is all performed within the context of a transaction
+func (d *DataService) SetDefaultReferralProgramTemplate(id int64) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	// Get the old default so we can inactivate it
+	oldDefaultTemplate, err := d.DefaultReferralProgramTemplate(common.PromotionTypes)
+	if err != nil {
+		tx.Rollback()
+		return errors.Trace(err)
+	}
+
+	// Move the indicated template to the DEFAULT state
+	if aff, err := d.updateReferralProgramTemplate(tx, &common.ReferralProgramTemplateUpdate{
+		ID:     id,
+		Status: common.RSDefault,
+	}); err != nil {
+		tx.Rollback()
+		return errors.Trace(err)
+	} else if aff == 0 {
+		tx.Rollback()
+		return errors.Trace(ErrNotFound(`referral_program_template`))
+	}
+
+	// Move the old template to the Active state
+	if aff, err := d.updateReferralProgramTemplate(tx, &common.ReferralProgramTemplateUpdate{
+		ID:     oldDefaultTemplate.ID,
+		Status: common.RSActive,
+	}); err != nil {
+		tx.Rollback()
+		return errors.Trace(err)
+	} else if aff == 0 {
+		tx.Rollback()
+		return errors.Trace(errors.New(`Old default referral_program_template was not updated`))
+	}
+
+	return errors.Trace(tx.Commit())
+}
+
+// InactivateReferralProgramTemplate moves the referral_program_template to the INACTIVE state and move any associated referral_program records to the INACTIVE state
+func (d *DataService) InactivateReferralProgramTemplate(id int64) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	// Move the old template to the Active state
+	if aff, err := d.updateReferralProgramTemplate(tx, &common.ReferralProgramTemplateUpdate{
+		ID:     id,
+		Status: common.RSInactive,
+	}); err != nil {
+		tx.Rollback()
+		return errors.Trace(err)
+	} else if aff == 0 {
+		tx.Rollback()
+		return errors.Trace(ErrNotFound(`referral_program_template`))
+	}
+
+	varArgs := dbutil.MySQLVarArgs()
+	varArgs.Append(`status`, common.RSInactive.String())
+	if _, err := tx.Exec(`UPDATE referral_program SET `+varArgs.Columns()+` WHERE referral_program_template_id = ?`, append(varArgs.Values(), id)...); err != nil {
+		return errors.Trace(err)
+	}
+
+	return errors.Trace(tx.Commit())
+}
+
+// UpdateReferralProgramTemplate updates the referral_program_template to the state indicated in the provided update structure and matching the structure's ID and returns the number of rows affected
+func (d *DataService) UpdateReferralProgramTemplate(rpt *common.ReferralProgramTemplateUpdate) (int64, error) {
+	return d.updateReferralProgramTemplate(d.db, rpt)
+}
+
+func (d *DataService) updateReferralProgramTemplate(db db, rpt *common.ReferralProgramTemplateUpdate) (int64, error) {
+	varArgs := dbutil.MySQLVarArgs()
+	varArgs.Append(`status`, rpt.Status.String())
+	res, err := db.Exec(`UPDATE referral_program_template SET `+varArgs.Columns()+` WHERE id = ?`, append(varArgs.Values(), rpt.ID)...)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	return errors.TraceInt64Err(res.RowsAffected())
 }
 
 // ReferralProgram returns the referral_program record matching the provided promotion_code ID and maps to the provided type map

@@ -814,6 +814,7 @@ type PromotionsAPI interface {
 	CreateReferralProgramTemplate(template *common.ReferralProgramTemplate) (int64, error)
 	DefaultReferralProgramTemplate(types map[string]reflect.Type) (*common.ReferralProgramTemplate, error)
 	DeleteAccountPromotion(accountID, promotionCodeID int64) (int64, error)
+	InactivateReferralProgramTemplate(id int64) error
 	InsertPromotionReferralRoute(route *common.PromotionReferralRoute) (int64, error)
 	LookupPromoCode(code string) (*common.PromoCode, error)
 	MarkParkedAccountAsAccountCreated(id int64) error
@@ -829,9 +830,11 @@ type PromotionsAPI interface {
 	PromotionReferralRoutes(lifecycles []string) ([]*common.PromotionReferralRoute, error)
 	Promotions(codeIDs []int64, promoTypes []string, types map[string]reflect.Type) ([]*common.Promotion, error)
 	ReferralProgram(codeID int64, types map[string]reflect.Type) (*common.ReferralProgram, error)
+	ReferralProgramTemplate(id int64, types map[string]reflect.Type) (*common.ReferralProgramTemplate, error)
 	ReferralProgramTemplateRouteQuery(params *RouteQueryParams) (*int64, *common.ReferralProgramTemplate, error)
 	ReferralProgramTemplates(statuses common.ReferralProgramStatusList, types map[string]reflect.Type) ([]*common.ReferralProgramTemplate, error)
 	RouteQueryParamsForAccount(accountID int64) (*RouteQueryParams, error)
+	SetDefaultReferralProgramTemplate(id int64) error
 	TrackAccountReferral(referralTracking *common.ReferralTrackingEntry) error
 	UpdateAccountPromotion(accountID, promoCodeID int64, update *AccountPromotionUpdate, apo AccountPromotionOption) error
 	UpdateAccountReferral(accountID int64, status common.ReferralTrackingStatus) error
@@ -839,6 +842,7 @@ type PromotionsAPI interface {
 	UpdatePromotionReferralRoute(routeUpdate *common.PromotionReferralRouteUpdate) (int64, error)
 	UpdateReferralProgram(accountID, codeID int64, data common.Typed) error
 	UpdateReferralProgramStatusesForRoute(routeID int64, newStatus common.ReferralProgramStatus) (int64, error)
+	UpdateReferralProgramTemplate(rpt *common.ReferralProgramTemplateUpdate) (int64, error)
 }
 
 type TextAPI interface {

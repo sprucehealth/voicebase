@@ -17,14 +17,8 @@ import (
 	"github.com/sprucehealth/backend/libs/stripe"
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/test/config"
 )
-
-var globalFirstVisitFreeDisabled = &cfg.ValueDef{
-	Name:        "Global.First.Visit.Free.Enabled",
-	Description: "A value that represents if the first visit should be free for all patients.",
-	Type:        cfg.ValueTypeBool,
-	Default:     false,
-}
 
 func TestApplePay(t *testing.T) {
 	testData := SetupTest(t)
@@ -100,7 +94,7 @@ func TestApplePay(t *testing.T) {
 	test.Equals(t, 1, len(cards))
 	test.Equals(t, true, cards[0].ApplePay)
 
-	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{globalFirstVisitFreeDisabled})
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.GlobalFirstVisitFreeDisabled})
 	test.OK(t, err)
 
 	// start the worker to charge the card that the patient submitted the visit with

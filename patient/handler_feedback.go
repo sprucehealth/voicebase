@@ -49,7 +49,7 @@ type feedbackSubmitRequest struct {
 // lowRatingTagThreshold is a Server configurable value for the threshold at which to tag the patient's case to be marked for follow up
 var lowRatingTagThreshold = &cfg.ValueDef{
 	Name:        "Patient.Feedback.LowRating.Tag.Threshold",
-	Description: "A value that represents the threshold for which if a patient feedback rating is equal to or below, the latest case for the patient will be marked for follow up.",
+	Description: "The threshold for which if a patient feedback rating is equal to or below, the latest case for the patient will be marked for follow up.",
 	Type:        cfg.ValueTypeInt,
 	Default:     3,
 }

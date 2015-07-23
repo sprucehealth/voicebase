@@ -12,6 +12,8 @@ import (
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/careprovider"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/cost"
+	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/views"
@@ -21,6 +23,7 @@ type pathwayDetailsHandler struct {
 	dataAPI              api.DataAPI
 	apiDomain            string
 	launchPromoStartDate *time.Time
+	cfgStore             cfg.Store
 }
 
 type pathwayDetailsResponse struct {
@@ -65,12 +68,13 @@ type pathwayFAQ struct {
 	Views []views.View `json:"views"`
 }
 
-func NewPathwayDetailsHandler(dataAPI api.DataAPI, apiDomain string, launchPromoStartDate *time.Time) http.Handler {
+// NewPathwayDetailsHandler returns an initialized instance of pathwayDetailsHandler
+func NewPathwayDetailsHandler(dataAPI api.DataAPI, apiDomain string, cfgStore cfg.Store) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&pathwayDetailsHandler{
-			dataAPI:              dataAPI,
-			apiDomain:            apiDomain,
-			launchPromoStartDate: launchPromoStartDate,
+			dataAPI:   dataAPI,
+			apiDomain: apiDomain,
+			cfgStore:  cfgStore,
 		}),
 		httputil.Get)
 }
@@ -159,7 +163,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				return
 			}
 
-			screen, err = merchandisingScreen(p, imageURLs, cost, h.apiDomain, patientID, h.launchPromoStartDate, h.dataAPI)
+			screen, err = merchandisingScreen(p, imageURLs, cost, h.apiDomain, patientID, h.launchPromoStartDate, h.dataAPI, h.cfgStore)
 			if err != nil {
 				apiservice.WriteError(err, w, r)
 				return
@@ -222,7 +226,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	httputil.JSONResponse(w, http.StatusOK, res)
 }
 
-func merchandisingScreen(pathway *common.Pathway, doctorImageURLs []string, cost *common.ItemCost, apiDomain string, patientID int64, launchPromoStartDate *time.Time, dataAPI api.DataAPI) (*pathwayDetailsScreen, error) {
+func merchandisingScreen(pathway *common.Pathway, doctorImageURLs []string, itemCost *common.ItemCost, apiDomain string, patientID int64, launchPromoStartDate *time.Time, dataAPI api.DataAPI, cfgStore cfg.Store) (*pathwayDetailsScreen, error) {
 	if pathway.Details.WhoWillTreatMe == "" {
 		golog.Errorf("Field WhoWillTreatMe missing for pathway %d '%s'", pathway.ID, pathway.Name)
 	}
@@ -282,19 +286,21 @@ func merchandisingScreen(pathway *common.Pathway, doctorImageURLs []string, cost
 		},
 	}
 
-	card, err := addLimitedTimeOfferCard(launchPromoStartDate, patientID, dataAPI)
-	if err != nil {
-		return nil, err
-	}
+	if cfgStore.Snapshot().Bool(cost.GlobalFirstVisitFreeEnabled.Name) {
+		card, err := limitedTimeFirstVisitFreeCard(patientID, dataAPI)
+		if err != nil {
+			return nil, err
+		}
 
-	if card != nil {
-		newCardViews := []views.View{card}
-		cardViews = append(newCardViews, cardViews...)
+		if card != nil {
+			newCardViews := []views.View{card}
+			cardViews = append(newCardViews, cardViews...)
+		}
 	}
 
 	var headerButtonTitle string
-	if cost != nil {
-		headerButtonTitle = cost.TotalCost().String()
+	if itemCost != nil {
+		headerButtonTitle = itemCost.TotalCost().String()
 	}
 
 	return &pathwayDetailsScreen{
@@ -307,13 +313,8 @@ func merchandisingScreen(pathway *common.Pathway, doctorImageURLs []string, cost
 	}, nil
 }
 
-func addLimitedTimeOfferCard(launchPromoStartDate *time.Time, patientID int64, dataAPI api.DataAPI) (views.View, error) {
-
-	// nothing to add if no launch promo start date specified
-	if launchPromoStartDate == nil {
-		return nil, nil
-	}
-
+// limitedTimeFirstVisitFreeCard returns the card for the first visit free promotion. If the patient is not eligible it will return nil
+func limitedTimeFirstVisitFreeCard(patientID int64, dataAPI api.DataAPI) (views.View, error) {
 	limitedTimeOfferCard := &views.Card{
 		Title: "Limited time offer",
 		Views: []views.View{
@@ -328,7 +329,8 @@ func addLimitedTimeOfferCard(launchPromoStartDate *time.Time, patientID int64, d
 		return limitedTimeOfferCard, nil
 	}
 
-	visits, err := dataAPI.VisitsSubmittedForPatientSince(patientID, *launchPromoStartDate)
+	// check if the patient has any submitted visits
+	visits, err := dataAPI.VisitsSubmittedForPatientSince(patientID, time.Unix(1, 0))
 	if err != nil {
 		return nil, err
 	}

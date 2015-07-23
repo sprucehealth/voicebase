@@ -28,12 +28,12 @@ module.exports = {
 			dataType: "json"
 		}, cb);
 	},
-	textDownloadLink: function(code: string, number: string, cb: ajaxCB) {
+	textDownloadLink: function(code: string, params: any, number: string, cb: ajaxCB) {
 		this.ajax({
 			type: "POST",
 			contentType: "application/json",
 			url: "/textdownloadlink",
-			data: JSON.stringify({code: code, number: number}),
+			data: JSON.stringify({code: code, params: params, number: number}),
 			dataType: "json"
 		}, cb);
 	}
