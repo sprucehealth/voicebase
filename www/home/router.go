@@ -84,6 +84,11 @@ func SetupRoutes(
 	r.Handle("/meet-the-doctors", protect(newStaticHandler(r, templateLoader, "home/meet-the-doctors.html", "Meet the Doctors | Spruce", nil)))
 	r.Handle("/providers", protect(newStaticHandler(r, templateLoader, "home/providers.html", "For Providers | Spruce", nil)))
 	r.Handle("/terms", protect(newStaticHandler(r, templateLoader, "home/terms.html", "Terms & Conditions | Spruce", nil)))
+	r.Handle("/app", protect(newStaticHandler(r, templateLoader, "home/referral.html", "Get the App | Spruce", func() interface{} {
+		return &refContext{
+			Title: "See a dermatologist, right from your phone.",
+		}
+	})))
 
 	// Email
 	r.Handle("/e/optout", protect(newEmailOptoutHandler(dataAPI, authAPI, signer, templateLoader)))
