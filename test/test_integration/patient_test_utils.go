@@ -22,7 +22,7 @@ import (
 	"github.com/sprucehealth/backend/test"
 )
 
-func SignupRandomTestPatientWithPharmacyAndAddress(t *testing.T, testData *TestData) *patientAPIService.PatientSignedupResponse {
+func SignupRandomTestPatientWithPharmacyAndAddress(t *testing.T, testData *TestData) *patientAPIService.SignedupResponse {
 	stubAddressValidationAPI := testData.Config.AddressValidator.(*address.StubAddressValidationService)
 	stubAddressValidationAPI.CityStateToReturn = &address.CityState{
 		City:              "San Francisco",
@@ -35,7 +35,7 @@ func SignupRandomTestPatientWithPharmacyAndAddress(t *testing.T, testData *TestD
 	return pr
 }
 
-func SignupRandomTestPatient(t *testing.T, testData *TestData) *patientAPIService.PatientSignedupResponse {
+func SignupRandomTestPatient(t *testing.T, testData *TestData) *patientAPIService.SignedupResponse {
 	stubAddressValidationAPI := testData.Config.AddressValidator.(*address.StubAddressValidationService)
 	stubAddressValidationAPI.CityStateToReturn = &address.CityState{
 		City:              "San Francisco",
@@ -46,7 +46,7 @@ func SignupRandomTestPatient(t *testing.T, testData *TestData) *patientAPIServic
 	return pr
 }
 
-func SignupTestPatientWithEmail(email string, t *testing.T, testData *TestData) *patientAPIService.PatientSignedupResponse {
+func SignupTestPatientWithEmail(email string, t *testing.T, testData *TestData) *patientAPIService.SignedupResponse {
 	stubAddressValidationAPI := testData.Config.AddressValidator.(*address.StubAddressValidationService)
 	stubAddressValidationAPI.CityStateToReturn = &address.CityState{
 		City:              "San Francisco",
@@ -57,7 +57,7 @@ func SignupTestPatientWithEmail(email string, t *testing.T, testData *TestData) 
 	return pr
 }
 
-func SignupRandomTestPatientInState(state string, t *testing.T, testData *TestData) *patientAPIService.PatientSignedupResponse {
+func SignupRandomTestPatientInState(state string, t *testing.T, testData *TestData) *patientAPIService.SignedupResponse {
 	stubAddressValidationAPI := testData.Config.AddressValidator.(*address.StubAddressValidationService)
 	stubAddressValidationAPI.CityStateToReturn = &address.CityState{City: "TestCity",
 		State:             state,
@@ -67,7 +67,7 @@ func SignupRandomTestPatientInState(state string, t *testing.T, testData *TestDa
 	return pr
 }
 
-func signupRandomTestPatient(email string, t *testing.T, testData *TestData) *patientAPIService.PatientSignedupResponse {
+func signupRandomTestPatient(email string, t *testing.T, testData *TestData) *patientAPIService.SignedupResponse {
 	requestBody := bytes.NewBufferString("first_name=Test&last_name=Test&email=")
 
 	if email == "" {
@@ -94,7 +94,7 @@ func signupRandomTestPatient(email string, t *testing.T, testData *TestData) *pa
 		t.Fatalf("Expected %d but got %d", http.StatusOK, res.StatusCode)
 	}
 
-	signedupPatientResponse := &patientAPIService.PatientSignedupResponse{}
+	signedupPatientResponse := &patientAPIService.SignedupResponse{}
 	err = json.Unmarshal(body, signedupPatientResponse)
 	if err != nil {
 		t.Fatal("Unable to parse response from patient signed up")

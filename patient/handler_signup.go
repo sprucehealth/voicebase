@@ -30,6 +30,7 @@ var (
 	acceptableWindow = 10 * time.Minute
 )
 
+// SignupHandler represents the data associated with the handler that will process patient signup requests
 type SignupHandler struct {
 	dataAPI            api.DataAPI
 	authAPI            api.AuthAPI
@@ -52,13 +53,15 @@ type promotionConfirmationContent struct {
 	ButtonTitle string `json:"button_title"`
 }
 
-type PatientSignedupResponse struct {
+// SignedupResponse represents the data returned by a successful POST request
+type SignedupResponse struct {
 	Token                        string                        `json:"token"`
 	Patient                      *common.Patient               `json:"patient,omitempty"`
 	PatientVisitData             *PatientVisitResponse         `json:"patient_visit_data,omitempty"`
 	PromotionConfirmationContent *promotionConfirmationContent `json:"promotion_confirmation_content"`
 }
 
+// SignupPatientRequestData represents the data associated with a sucessful POST request
 type SignupPatientRequestData struct {
 	Email               string `schema:"email,required" json:"email"`
 	Password            string `schema:"password,required" json:"password"`
@@ -87,6 +90,7 @@ type attributionData struct {
 	PromoCode string `json:"promo_code"`
 }
 
+// NewSignupHandler returns and initialized instance of SignupHandler
 func NewSignupHandler(
 	dataAPI api.DataAPI,
 	authAPI api.AuthAPI,
@@ -329,92 +333,9 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Due to a legacy issue of a POST API call using URL params we need to decode the attribution data from a URL param string into our map
 	if requestData.AttributionDataJSON != "" {
-		var attrData attributionData
-		if err := json.Unmarshal([]byte(requestData.AttributionDataJSON), &attrData); err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
-		if attrData.PromoCode != "" {
-			// To provide a good account creation experience don't block on promo code association
-			conc.Go(func() {
-				promoCode, err := s.dataAPI.LookupPromoCode(attrData.PromoCode)
-				if api.IsErrNotFound(err) {
-					golog.Warningf("Promotion code in attribution data could not be found %s", attrData.PromoCode)
-					return
-				} else if err != nil {
-					golog.Errorf("Unable to lookup attribution promo code %s at account creation time: %v", attrData.PromoCode, err)
-					return
-				}
-				code := promoCode.Code
-				codeID := promoCode.ID
-				if promoCode.IsReferral {
-					rp, err := s.dataAPI.ReferralProgram(promoCode.ID, common.PromotionTypes)
-					if err != nil {
-						golog.Errorf(err.Error())
-						return
-					}
-					if err := rp.Data.(promotions.ReferralProgram).ReferredAccountAssociatedCode(accountID, promoCode.ID, s.dataAPI); err != nil {
-						golog.Errorf(err.Error())
-						return
-					}
-					if rp.TemplateID != nil {
-						rpt, err := s.dataAPI.ReferralProgramTemplate(*rp.TemplateID, common.PromotionTypes)
-						if err != nil {
-							golog.Errorf(err.Error())
-							return
-						}
-						if rpt.PromotionCodeID != nil {
-							promotion, err := s.dataAPI.Promotion(*rpt.PromotionCodeID, common.PromotionTypes)
-							if err != nil {
-								golog.Errorf(err.Error())
-								return
-							}
-							code = promotion.Code
-							codeID = promotion.CodeID
-						}
-					}
-					s.analyticsLogger.WriteEvents([]analytics.Event{
-						&analytics.ServerEvent{
-							Event:     "referral_code_account_created",
-							Timestamp: analytics.Time(time.Now()),
-							AccountID: rp.AccountID,
-							ExtraJSON: analytics.JSONString(struct {
-								CreatedAccountID int64  `json:"created_account_id"`
-								Code             string `json:"code"`
-								CodeID           int64  `json:"code_id"`
-							}{
-								CreatedAccountID: accountID,
-								Code:             code,
-								CodeID:           codeID,
-							}),
-						},
-					})
-				}
-
-				s.analyticsLogger.WriteEvents([]analytics.Event{
-					&analytics.ServerEvent{
-						Event:     "promo_code_account_created",
-						Timestamp: analytics.Time(time.Now()),
-						AccountID: accountID,
-						ExtraJSON: analytics.JSONString(struct {
-							Code   string `json:"code"`
-							CodeID int64  `json:"code_id"`
-						}{
-							Code:   code,
-							CodeID: promoCode.ID,
-						}),
-					},
-				})
-
-				async := false
-				_, err = promotions.AssociatePromoCode(newPatient.Email, newPatient.StateFromZipCode, attrData.PromoCode, s.dataAPI, s.authAPI, s.analyticsLogger, async)
-				if err != nil {
-					golog.Errorf("Unable associate promo code %s at account creation time: %v", attrData.PromoCode, err)
-				}
-			})
-		}
+		// To provide a good account creation experience don't block on promo code association/metric emission
+		conc.Go(func() { s.applyAttribution(r, accountID, newPatient, requestData) })
 	}
 
 	headers := apiservice.ExtractSpruceHeaders(r)
@@ -430,10 +351,105 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	s.statSucceeded.Inc(1)
 
-	httputil.JSONResponse(w, http.StatusOK, PatientSignedupResponse{
+	httputil.JSONResponse(w, http.StatusOK, SignedupResponse{
 		Token:                        token,
 		Patient:                      newPatient,
 		PatientVisitData:             pvData,
 		PromotionConfirmationContent: promoContent,
 	})
+}
+
+func (s *SignupHandler) applyAttribution(r *http.Request, accountID int64, newPatient *common.Patient, requestData SignupPatientRequestData) {
+	var attrData attributionData
+	if err := json.Unmarshal([]byte(requestData.AttributionDataJSON), &attrData); err != nil {
+		golog.Errorf(err.Error())
+		return
+	}
+
+	// Also dump everything that came along into a map to stick onto metrics
+	var attributionMap map[string]interface{}
+	if err := json.Unmarshal([]byte(requestData.AttributionDataJSON), &attributionMap); err != nil {
+		golog.Errorf(err.Error())
+		return
+	}
+	if attrData.PromoCode != "" {
+		promoCode, err := s.dataAPI.LookupPromoCode(attrData.PromoCode)
+		if api.IsErrNotFound(err) {
+			golog.Warningf("Promotion code in attribution data could not be found %s", attrData.PromoCode)
+			return
+		} else if err != nil {
+			golog.Errorf("Unable to lookup attribution promo code %s at account creation time: %v", attrData.PromoCode, err)
+			return
+		}
+		code := promoCode.Code
+		codeID := promoCode.ID
+		if promoCode.IsReferral {
+			rp, err := s.dataAPI.ReferralProgram(promoCode.ID, common.PromotionTypes)
+			if err != nil {
+				golog.Errorf(err.Error())
+				return
+			}
+			if err := rp.Data.(promotions.ReferralProgram).ReferredAccountAssociatedCode(accountID, promoCode.ID, s.dataAPI); err != nil {
+				golog.Errorf(err.Error())
+				return
+			}
+			if rp.TemplateID != nil {
+				rpt, err := s.dataAPI.ReferralProgramTemplate(*rp.TemplateID, common.PromotionTypes)
+				if err != nil {
+					golog.Errorf(err.Error())
+					return
+				}
+				if rpt.PromotionCodeID != nil {
+					promotion, err := s.dataAPI.Promotion(*rpt.PromotionCodeID, common.PromotionTypes)
+					if err != nil {
+						golog.Errorf(err.Error())
+						return
+					}
+					code = promotion.Code
+					codeID = promotion.CodeID
+				}
+			}
+			s.analyticsLogger.WriteEvents([]analytics.Event{
+				&analytics.ServerEvent{
+					Event:     "referral_code_account_created",
+					Timestamp: analytics.Time(time.Now()),
+					AccountID: rp.AccountID,
+					ExtraJSON: analytics.JSONString(struct {
+						CreatedAccountID int64                  `json:"created_account_id"`
+						Code             string                 `json:"code"`
+						CodeID           int64                  `json:"code_id"`
+						AttributionData  map[string]interface{} `json:"attribution_data"`
+					}{
+						CreatedAccountID: accountID,
+						Code:             code,
+						CodeID:           codeID,
+						AttributionData:  attributionMap,
+					}),
+				},
+			})
+		}
+
+		s.analyticsLogger.WriteEvents([]analytics.Event{
+			&analytics.ServerEvent{
+				Event:     "promo_code_account_created",
+				Timestamp: analytics.Time(time.Now()),
+				AccountID: accountID,
+				ExtraJSON: analytics.JSONString(struct {
+					Code            string                 `json:"code"`
+					CodeID          int64                  `json:"code_id"`
+					AttributionData map[string]interface{} `json:"attribution_data"`
+				}{
+					Code:            code,
+					CodeID:          promoCode.ID,
+					AttributionData: attributionMap,
+				}),
+			},
+		})
+
+		async := false
+		_, err = promotions.AssociatePromoCode(newPatient.Email, newPatient.StateFromZipCode, attrData.PromoCode, s.dataAPI, s.authAPI, s.analyticsLogger, async)
+		if err != nil {
+			golog.Errorf("Unable associate promo code %s at account creation time: %v", attrData.PromoCode, err)
+		}
+	}
 }

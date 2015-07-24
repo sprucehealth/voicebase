@@ -94,7 +94,7 @@ func getPatientReceipt(patientID, patientVisitID int64, testData *test_integrati
 // is because for some of the promotions we need to assume that the visit has been created at the time of signup (which is
 // what is happening in most cases). This is because the route doctor promotion assumes the existence of a case to assign the doctor
 // from the promotion to the case care team.
-func signupPatientWithVisit(email string, testData *test_integration.TestData, t *testing.T) *patient.PatientSignedupResponse {
+func signupPatientWithVisit(email string, testData *test_integration.TestData, t *testing.T) *patient.SignedupResponse {
 	// lets signup a patient with state code provided
 	params := url.Values{}
 	params.Set("first_name", "test")
@@ -118,7 +118,7 @@ func signupPatientWithVisit(email string, testData *test_integration.TestData, t
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
-	var respData patient.PatientSignedupResponse
+	var respData patient.SignedupResponse
 	err = json.NewDecoder(resp.Body).Decode(&respData)
 	test.OK(t, err)
 	test.Equals(t, true, respData.PatientVisitData != nil)

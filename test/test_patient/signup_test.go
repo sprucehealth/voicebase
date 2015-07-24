@@ -79,7 +79,7 @@ func TestPatientSignup_CreateVisit(t *testing.T) {
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
-	var respData patientpkg.PatientSignedupResponse
+	var respData patientpkg.SignedupResponse
 	err = json.NewDecoder(resp.Body).Decode(&respData)
 	test.OK(t, err)
 	test.Equals(t, true, respData.PatientVisitData != nil)
@@ -125,7 +125,7 @@ func TestPatientSignup_Idempotent(t *testing.T) {
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
-	var respData patientpkg.PatientSignedupResponse
+	var respData patientpkg.SignedupResponse
 	err = json.NewDecoder(resp.Body).Decode(&respData)
 	test.OK(t, err)
 	patientID := respData.Patient.ID.Int64()
@@ -142,7 +142,7 @@ func TestPatientSignup_Idempotent(t *testing.T) {
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
-	respData = patientpkg.PatientSignedupResponse{}
+	respData = patientpkg.SignedupResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&respData)
 	test.OK(t, err)
 	// ensure that this is the same patient as in the previous call
@@ -213,7 +213,7 @@ func TestPatientSignup_WithDoctorPicked(t *testing.T) {
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
-	var respData patientpkg.PatientSignedupResponse
+	var respData patientpkg.SignedupResponse
 	err = json.NewDecoder(resp.Body).Decode(&respData)
 	test.OK(t, err)
 	patientID := respData.Patient.ID.Int64()

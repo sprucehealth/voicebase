@@ -88,8 +88,8 @@ func (pc *PatientClient) TreatmentPlanForCase(caseID int64) (*TreatmentPlanViews
 	return &res, err
 }
 
-func (pc *PatientClient) SignUp(req *patient.SignupPatientRequestData) (*patient.PatientSignedupResponse, error) {
-	var res patient.PatientSignedupResponse
+func (pc *PatientClient) SignUp(req *patient.SignupPatientRequestData) (*patient.SignedupResponse, error) {
+	var res patient.SignedupResponse
 	err := pc.do("POST", apipaths.PatientSignupURLPath, nil, req, &res, nil)
 	return &res, err
 }
