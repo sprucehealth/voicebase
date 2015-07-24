@@ -22,7 +22,7 @@ var GlobalFirstVisitFreeEnabled = &cfg.ValueDef{
 	Name:        "Global.First.Visit.Free.Enabled",
 	Description: "Enable or disable the first visit free promotion for all patients and visit types.",
 	Type:        cfg.ValueTypeBool,
-	Default:     true,
+	Default:     false,
 }
 
 func totalCostForItems(
