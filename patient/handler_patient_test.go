@@ -337,7 +337,7 @@ func TestCreatePatient_DoctorPicked(t *testing.T) {
 
 	test.Equals(t, http.StatusOK, w.Code)
 
-	var res PatientSignedupResponse
+	var res SignedupResponse
 	test.OK(t, json.Unmarshal(w.Body.Bytes(), &res))
 	test.Equals(t, visitID, res.PatientVisitData.PatientVisitID)
 	test.Equals(t, doctorID, res.PatientVisitData.DoctorID)
@@ -404,7 +404,7 @@ func TestCreatePatient_FirstAvailable(t *testing.T) {
 
 	test.Equals(t, http.StatusOK, w.Code)
 
-	var res PatientSignedupResponse
+	var res SignedupResponse
 	test.OK(t, json.Unmarshal(w.Body.Bytes(), &res))
 	test.Equals(t, visitID, res.PatientVisitData.PatientVisitID)
 	test.Equals(t, true, res.PatientVisitData.DoctorID == 0)
