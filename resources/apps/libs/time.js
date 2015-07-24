@@ -202,6 +202,10 @@ module.exports = {
 
 		return buf.slice(w).join("")
 	},
+
+	isTimestampBeforeNow: function(epoch: number): any {
+		return epoch < ((new Date).getTime()/1000)
+	},
 }
 
 var unitMap = {

@@ -7,6 +7,7 @@ var Nav = require("../../libs/nav.js");
 var React = require("react");
 var Routing = require("../../libs/routing.js");
 var Utils = require("../../libs/utils.js");
+var Time = require("../../libs/time.js");
 var Perms = require("./permissions.js");
 require('date-utils');
 
@@ -264,11 +265,63 @@ var AddPromotionModal = React.createClass({displayName: "AddPromotionModal",
 	}
 });
 
+var UpdatePromotionModal = React.createClass({displayName: "UpdatePromotionModal",
+	getInitialState: function(): any {
+		return {
+			error: null,
+			busy: false,
+			expires: null,
+		};
+	},
+	onSubmit: function(): any {
+		this.setState({
+			busy: true
+		});
+		AdminAPI.updatePromotion(this.props.promotion.code_id, this.state.expires && this.state.expires != "" ? new Date(this.state.expires).getTime() / 1000 : null, function(success, data, error){
+			if (this.isMounted()) {
+				if (!success) {
+					this.setState({
+						error: error.message,
+						busy: false,
+					});
+				} else {
+					this.setState({
+						error: null,
+						busy: false,
+					});
+					this.props.onSuccess();
+					$("#update-promotion-modal").modal('hide');
+				}
+			}
+		}.bind(this));
+		return true;
+	},
+	onExpiresChange: function(e): any {
+		e.preventDefault();
+		this.setState({
+			expires: e.target.value,
+		});
+	},
+	render: function(): any {
+		return (
+			<Modals.ModalForm id="update-promotion-modal" title={this.props.promotion ? "Update Promotion " + this.props.promotion.code + "?" : ""}
+				cancelButtonTitle="Cancel" submitButtonTitle="Update"
+				onSubmit={this.onSubmit}>
+
+				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
+				{this.state.busy ? <Utils.LoadingAnimation /> : null}
+				<Forms.FormDatePicker label="*Expires" value={this.state.expires} onChange={this.onExpiresChange} />
+			</Modals.ModalForm>
+		);
+	}
+});
+
 var PromotionOverview = React.createClass({displayName: "PromotionOverview",
 	mixins: [Routing.RouterNavigateMixin],
 	getInitialState: function(): any {
 		return {
 			types: [],
+			showExpired: false,
 		};
 	},
 	componentWillMount: function() {
@@ -298,15 +351,28 @@ var PromotionOverview = React.createClass({displayName: "PromotionOverview",
 			types: types,
 		})
 	},
+	toggleExpired: function(e) {
+		e.preventDefault();
+		this.setState({
+			showExpired: !this.state.showExpired
+		})
+	},
+	setPromotionForUpdate: function(promotion) {
+		this.setState({
+			promotionForUpdate: promotion
+		})
+	},
 	render: function(): any {
 		return (
 			<div className="container-flow" style={{marginTop: 10}}>
 				{Perms.has(Perms.MarketingEdit) ? <AddPromotionModal onSuccess={this.fetchPromotions} /> : null}
+				{Perms.has(Perms.MarketingEdit) ? <UpdatePromotionModal onSuccess={this.fetchPromotions} promotion={this.state.promotionForUpdate}/> : null}
 				<h2>Promotions</h2>
+				{Perms.has(Perms.MarketingView) ? <a href="#" onClick={this.toggleExpired}>{this.state.showExpired ? "[Hide Expired]" : "[Show Expired]"}</a>: null }
 				{Perms.has(Perms.MarketingEdit) ? <div className="pull-right"><button className="btn btn-default" data-toggle="modal" data-target="#add-promotion-modal">+</button></div> : null}
 				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
 				{this.state.busy ? <Utils.LoadingAnimation /> : null}
-				{(Perms.has(Perms.MarketingView) &&	this.state.promotions)? <PromotionList router={this.props.router} promotions={this.state.promotions}/> : null}
+				{(Perms.has(Perms.MarketingView) &&	this.state.promotions)? <PromotionList router={this.props.router} promotions={this.state.promotions} showExpired={this.state.showExpired} setForUpdate={this.setPromotionForUpdate}/> : null}
 			</div>
 		);
 	}
@@ -323,7 +389,10 @@ var PromotionList = React.createClass({displayName: "PromotionList",
 		return (
 			<div>
 				{this.state.busy ? <Utils.LoadingAnimation /> : null}
-				{this.props.promotions ? this.props.promotions.map(function(p){return <Promotion key={p.code_id} promotion={p}/>}.bind(this)) : null}
+				{this.props.promotions ? this.props.promotions.map(function(p){
+					return (this.props.showExpired || p.expires == null || !Time.isTimestampBeforeNow(p.expires)) ? <Promotion key={p.code_id} promotion={p} setForUpdate={this.props.setForUpdate}/> : null
+					}.bind(this)) : null
+				}
 			</div>
 		);
 	}
@@ -334,24 +403,29 @@ var Promotion = React.createClass({displayName: "Promotion",
 	getInitialState: function(): any {
 		return {};
 	},
+	onEdit: function(promotion, e): any {
+		e.preventDefault();
+		this.props.setForUpdate(promotion)
+		$("#update-promotion-modal").modal('show');
+	},
 	render: function(): any {
 		return (
 			<div className="card">
 				<table className="table">
 					<tbody>
-						<tr><td>Promotion Code ID:</td><td>{this.props.promotion.code_id}</td></tr>
-						<tr><td>Group:</td><td>{this.props.promotion.data.group}</td></tr>
-						<tr><td>Message:</td><td>{this.props.promotion.data.display_msg}</td></tr>
-						<tr><td>Line Item Description:</td><td>{this.props.promotion.data.short_msg}</td></tr>
-						<tr><td>Success Message:</td><td>{this.props.promotion.data.success_msg}</td></tr>
-						{this.props.promotion.data.image_url ? <tr><td>Image:</td><td><img src={this.props.promotion.data.image_url} /></td></tr> : null}
-						{this.props.promotion.data.image_url ? <tr><td>Image Height:</td><td>{this.props.promotion.data.image_width || "Undefined"} </td></tr> : null}
-						{this.props.promotion.data.image_url ? <tr><td>Image Width:</td><td>{this.props.promotion.data.image_height || "Undefined"} </td></tr> : null}
-						<tr><td>Code:</td><td>{this.props.promotion.code}</td></tr>
-						{this.props.promotion.data.value != 0 ? <tr><td>Type:</td><td>{this.props.promotion.type}</td></tr> : null}
-						{this.props.promotion.data.value != 0 ? <tr><td>Type:</td><td>{this.props.promotion.data.value}</td></tr> : null}
-						<tr><td>Created:</td><td>{(new Date(this.props.promotion.created * 1000)).toString()}</td></tr>
-						<tr><td>Expires:</td><td>{this.props.promotion.expires ? (new Date(this.props.promotion.expires * 1000)).toString() : "Never"}</td></tr>
+						<tr><td>Promotion Code ID:</td><td>{this.props.promotion.code_id}</td><td><a href="#" onClick={this.onEdit.bind(this,this.props.promotion)}>Edit</a></td></tr>
+						<tr><td>Group:</td><td>{this.props.promotion.data.group}</td><td></td></tr>
+						<tr><td>Message:</td><td>{this.props.promotion.data.display_msg}</td><td></td></tr>
+						<tr><td>Line Item Description:</td><td>{this.props.promotion.data.short_msg}</td><td></td></tr>
+						<tr><td>Success Message:</td><td>{this.props.promotion.data.success_msg}</td><td></td></tr>
+						{this.props.promotion.data.image_url ? <tr><td>Image:</td><td><img src={this.props.promotion.data.image_url} /></td><td></td></tr> : null}
+						{this.props.promotion.data.image_url ? <tr><td>Image Height:</td><td>{this.props.promotion.data.image_width || "Undefined"} </td><td></td></tr> : null}
+						{this.props.promotion.data.image_url ? <tr><td>Image Width:</td><td>{this.props.promotion.data.image_height || "Undefined"} </td><td></td></tr> : null}
+						<tr><td>Code:</td><td>{this.props.promotion.code}</td><td></td></tr>
+						{this.props.promotion.data.value != 0 ? <tr><td>Type:</td><td>{this.props.promotion.type}</td><td></td></tr> : null}
+						{this.props.promotion.data.value != 0 ? <tr><td>Type:</td><td>{this.props.promotion.data.value}</td><td></td></tr> : null}
+						<tr><td>Created:</td><td>{(new Date(this.props.promotion.created * 1000)).toString()}</td><td></td></tr>
+						<tr><td>Expires:</td><td>{this.props.promotion.expires ? (new Date(this.props.promotion.expires * 1000)).toString() : "Never"}</td><td></td></tr>
 					</tbody>
 				</table>
 			</div>

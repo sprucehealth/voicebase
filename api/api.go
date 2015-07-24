@@ -839,6 +839,7 @@ type PromotionsAPI interface {
 	UpdateAccountPromotion(accountID, promoCodeID int64, update *AccountPromotionUpdate, apo AccountPromotionOption) error
 	UpdateAccountReferral(accountID int64, status common.ReferralTrackingStatus) error
 	UpdateCredit(accountID int64, credit int, currency string) error
+	UpdatePromotion(pu *common.PromotionUpdate) (int64, error)
 	UpdatePromotionReferralRoute(routeUpdate *common.PromotionReferralRouteUpdate) (int64, error)
 	UpdateReferralProgram(accountID, codeID int64, data common.Typed) error
 	UpdateReferralProgramStatusesForRoute(routeID int64, newStatus common.ReferralProgramStatus) (int64, error)

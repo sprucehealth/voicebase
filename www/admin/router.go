@@ -450,6 +450,10 @@ func SetupRoutes(r *mux.Router, config *Config) {
 		map[string][]string{
 			httputil.Get:  []string{PermMarketingView},
 			httputil.Post: []string{PermMarketingEdit},
+		}, NewPromotionsHandler(config.DataAPI), nil)))
+	r.Handle("/admin/api/promotion/{id:[0-9]+}", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Put: []string{PermMarketingEdit},
 		}, NewPromotionHandler(config.DataAPI), nil)))
 	r.Handle("/admin/api/promotion/group", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
 		map[string][]string{

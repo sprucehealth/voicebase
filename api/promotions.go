@@ -236,6 +236,15 @@ func (d *DataService) Promotion(codeID int64, types map[string]reflect.Type) (*c
 	return &promotion, nil
 }
 
+// UpdatePromotion applied the provided update to the promotin record matching the provided promotion_code_id and returns the count of rows affected
+func (d *DataService) UpdatePromotion(pu *common.PromotionUpdate) (int64, error) {
+	varArgs := dbutil.MySQLVarArgs()
+	varArgs.Append(`expires`, pu.Expires)
+	res, err := d.db.Exec(`UPDATE promotion SET `+varArgs.Columns()+` WHERE promotion_code_id = ?`, append(varArgs.Values(), pu.CodeID)...)
+	aff, err := res.RowsAffected()
+	return aff, errors.Trace(err)
+}
+
 // Promotions returns the promotion records matching the provided promotion_code IDs and maps to the provided type map
 func (d *DataService) Promotions(codeIDs []int64, promoTypes []string, types map[string]reflect.Type) ([]*common.Promotion, error) {
 	q := `
