@@ -415,10 +415,11 @@ func ViewVisitScreen(screenID string) *SpruceAction {
 	}
 }
 
-// ViewVisitMessage indicates to the client to navigate
-// to the additional message screen from the visit overview.
-func ViewVisitMessage() *SpruceAction {
-	return &SpruceAction{name: "view_visit_message"}
+// CompleteVisit indicates to the client to end
+// the visit and proceed to the next step after visit
+// completion.
+func CompleteVisit() *SpruceAction {
+	return &SpruceAction{name: "complete_visit"}
 }
 
 // ComposeSMSAction prompts the app to request the user to send an SMS message. The
