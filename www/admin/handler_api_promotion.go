@@ -2,18 +2,16 @@ package admin
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
-	"reflect"
+	"strconv"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/responses"
-
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -21,121 +19,55 @@ type promotionHandler struct {
 	dataAPI api.DataAPI
 }
 
-type PromotionGETRequest struct {
-	Types []string `schema:"type"`
+// PromotionPUTRequest represents the data expected to be associated with a successful PUT request
+type PromotionPUTRequest struct {
+	Expires *int64 `json:"expires"`
 }
 
-type PromotionGETResponse struct {
-	Promotions []*responses.Promotion `json:"promotions"`
-}
-
-type PromotionPOSTRequest struct {
-	Code          string `json:"code"`
-	DataJSON      string `json:"data_json"`
-	PromotionType string `json:"promo_type"`
-	Group         string `json:"group"`
-	Expires       *int64 `json:"expires"`
-}
-
-type PromotionPOSTResponse struct {
-	PromoCodeID int64 `json:"promotion_code_id"`
-}
-
+// NewPromotionHandler returns an initialized instance of promotionHandler
 func NewPromotionHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&promotionHandler{dataAPI: dataAPI}, httputil.Get, httputil.Post)
+	return httputil.SupportedMethods(&promotionHandler{dataAPI: dataAPI}, httputil.Put)
 }
 
 func (h *promotionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+	if err != nil {
+		www.APINotFound(w, r)
+		return
+	}
 	switch r.Method {
-	case "GET":
-		req, err := h.parseGETRequest(r)
+	case httputil.Put:
+		req, err := h.parsePUTRequest(r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
-		h.serveGET(w, r, req)
-	case "POST":
-		req, err := h.parsePOSTRequest(r)
-		if err != nil {
-			www.APIBadRequestError(w, r, err.Error())
-			return
-		}
-		h.servePOST(w, r, req)
+		h.servePUT(w, r, req, id)
 	}
 }
 
-func (h *promotionHandler) parseGETRequest(r *http.Request) (*PromotionGETRequest, error) {
-	rd := &PromotionGETRequest{}
-	if err := r.ParseForm(); err != nil {
-		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
-	}
-	if err := schema.NewDecoder().Decode(rd, r.Form); err != nil {
-		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
-	}
-	return rd, nil
-}
-
-func (h *promotionHandler) serveGET(w http.ResponseWriter, r *http.Request, req *PromotionGETRequest) {
-	promotions, err := h.dataAPI.Promotions(nil, req.Types, common.PromotionTypes)
-	if api.IsErrNotFound(err) {
-		httputil.JSONResponse(w, http.StatusOK, &PromotionGETResponse{Promotions: []*responses.Promotion{}})
-		return
-	} else if err != nil {
-		www.APIInternalError(w, r, err)
-		return
-	}
-
-	resps := make([]*responses.Promotion, len(promotions))
-	for i, v := range promotions {
-		resps[i] = responses.TransformPromotion(v)
-	}
-	httputil.JSONResponse(w, http.StatusOK, &PromotionGETResponse{Promotions: resps})
-}
-
-func (h *promotionHandler) parsePOSTRequest(r *http.Request) (*PromotionPOSTRequest, error) {
-	rd := &PromotionPOSTRequest{}
+func (h *promotionHandler) parsePUTRequest(r *http.Request) (*PromotionPUTRequest, error) {
+	rd := &PromotionPUTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
 	}
 
-	if rd.Code == "" || rd.DataJSON == "" || rd.PromotionType == "" || rd.Group == "" {
-		return nil, errors.New("code, data_json, promo_type, group required")
-	}
 	return rd, nil
 }
 
-func (h *promotionHandler) servePOST(w http.ResponseWriter, r *http.Request, req *PromotionPOSTRequest) {
-	// Check if the code already exists
-	if _, err := h.dataAPI.LookupPromoCode(req.Code); !api.IsErrNotFound(err) {
-		www.APIBadRequestError(w, r, fmt.Sprintf("PromoCode %q is already in use by another promotion.", req.Code))
-		return
-	}
-
-	promo := &common.Promotion{
-		Code:  req.Code,
-		Group: req.Group,
-	}
-
+func (h *promotionHandler) servePUT(w http.ResponseWriter, r *http.Request, req *PromotionPUTRequest, id int64) {
+	var t *time.Time
 	if req.Expires != nil {
-		t := time.Unix(*req.Expires, 0)
-		promo.Expires = &t
+		t = ptr.Time(time.Unix(*req.Expires, 0))
 	}
-	promotionDataType, ok := common.PromotionTypes[req.PromotionType]
-	if !ok {
-		www.APIBadRequestError(w, r, fmt.Sprintf("Unable to find promotion type: %s", req.PromotionType))
-		return
-	}
-
-	promo.Data = reflect.New(promotionDataType).Interface().(common.Typed)
-	if err := json.Unmarshal([]byte(req.DataJSON), &promo.Data); err != nil {
-		www.APIBadRequestError(w, r, fmt.Sprintf("Unable to parse promotion data: %s - %v", req.DataJSON, err))
-		return
-	}
-
-	promoCodeID, err := h.dataAPI.CreatePromotion(promo)
+	_, err := h.dataAPI.UpdatePromotion(&common.PromotionUpdate{
+		CodeID:  id,
+		Expires: t,
+	})
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
 	}
-	httputil.JSONResponse(w, http.StatusOK, &PromotionPOSTResponse{PromoCodeID: promoCodeID})
+
+	httputil.JSONResponse(w, http.StatusOK, struct{}{})
 }

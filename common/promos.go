@@ -36,6 +36,12 @@ type Promotion struct {
 	Created time.Time
 }
 
+// PromotionUpdate represents the data to be applied to an UPDATE statement of a promotion record matching the provided promotion_code_id
+type PromotionUpdate struct {
+	CodeID  int64
+	Expires *time.Time
+}
+
 // AccountPromotion represents a promotion that has been associated with an account
 type AccountPromotion struct {
 	ID        int64

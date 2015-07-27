@@ -19,7 +19,7 @@ import (
 	"github.com/sprucehealth/backend/test/test_handler"
 )
 
-type mockedDataAPI_promotionHandler struct {
+type mockedDataAPI_promotionsHandler struct {
 	api.DataAPI
 	promotions           []*common.Promotion
 	promotionsErr        error
@@ -30,16 +30,16 @@ type mockedDataAPI_promotionHandler struct {
 	lookupPromoCodeParam string
 }
 
-func (m *mockedDataAPI_promotionHandler) Promotions(codeIDs []int64, promoTypes []string, types map[string]reflect.Type) ([]*common.Promotion, error) {
+func (m *mockedDataAPI_promotionsHandler) Promotions(codeIDs []int64, promoTypes []string, types map[string]reflect.Type) ([]*common.Promotion, error) {
 	return m.promotions, m.promotionsErr
 }
 
-func (m *mockedDataAPI_promotionHandler) CreatePromotion(promotion *common.Promotion) (int64, error) {
+func (m *mockedDataAPI_promotionsHandler) CreatePromotion(promotion *common.Promotion) (int64, error) {
 	m.createPromotionParam = promotion
 	return 1, m.createPromotionErr
 }
 
-func (m *mockedDataAPI_promotionHandler) LookupPromoCode(code string) (*common.PromoCode, error) {
+func (m *mockedDataAPI_promotionsHandler) LookupPromoCode(code string) (*common.PromoCode, error) {
 	m.lookupPromoCodeParam = code
 	return m.lookupPromoCode, m.lookupPromoCodeErr
 }
@@ -56,7 +56,7 @@ func TestPromotionHandlerGETQueriesDataLayer(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?", nil)
 	test.OK(t, err)
 	promotion := &common.Promotion{Data: &TestTyped{Name: "TestType"}, Created: time.Now()}
-	promoHandler := NewPromotionHandler(&mockedDataAPI_promotionHandler{
+	promoHandler := NewPromotionsHandler(&mockedDataAPI_promotionsHandler{
 		DataAPI:    &api.DataService{},
 		promotions: []*common.Promotion{promotion},
 	})
@@ -64,7 +64,7 @@ func TestPromotionHandlerGETQueriesDataLayer(t *testing.T) {
 		H: promoHandler,
 	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionGETResponse{Promotions: []*responses.Promotion{responses.TransformPromotion(promotion)}})
+	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionsGETResponse{Promotions: []*responses.Promotion{responses.TransformPromotion(promotion)}})
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
@@ -73,7 +73,7 @@ func TestPromotionHandlerGETQueriesDataLayer(t *testing.T) {
 func TestPromotionHandlerGETNoPromotions(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?", nil)
 	test.OK(t, err)
-	promoHandler := NewPromotionHandler(&mockedDataAPI_promotionHandler{
+	promoHandler := NewPromotionsHandler(&mockedDataAPI_promotionsHandler{
 		DataAPI:       &api.DataService{},
 		promotionsErr: api.ErrNotFound(`promotion`),
 	})
@@ -81,7 +81,7 @@ func TestPromotionHandlerGETNoPromotions(t *testing.T) {
 		H: promoHandler,
 	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionGETResponse{[]*responses.Promotion{}})
+	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionsGETResponse{[]*responses.Promotion{}})
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
@@ -90,7 +90,7 @@ func TestPromotionHandlerGETNoPromotions(t *testing.T) {
 func TestPromotionHandlerGETQueryErr(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?", nil)
 	test.OK(t, err)
-	promoHandler := NewPromotionHandler(&mockedDataAPI_promotionHandler{
+	promoHandler := NewPromotionsHandler(&mockedDataAPI_promotionsHandler{
 		DataAPI:       &api.DataService{},
 		promotionsErr: errors.New("Broked"),
 	})
@@ -106,7 +106,7 @@ func TestPromotionHandlerGETQueryErr(t *testing.T) {
 func TestPromotionHandlerGETBadParams(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?not_real=should_error", nil)
 	test.OK(t, err)
-	promoHandler := NewPromotionHandler(&mockedDataAPI_promotionHandler{DataAPI: &api.DataService{}})
+	promoHandler := NewPromotionsHandler(&mockedDataAPI_promotionsHandler{DataAPI: &api.DataService{}})
 	handler := test_handler.MockHandler{
 		H: promoHandler,
 	}
@@ -117,7 +117,7 @@ func TestPromotionHandlerGETBadParams(t *testing.T) {
 }
 
 func TestPromotionHandlerPOSTWritesDataLayerNoExpiration(t *testing.T) {
-	req, err := json.Marshal(&PromotionPOSTRequest{
+	req, err := json.Marshal(&PromotionsPOSTRequest{
 		Code:          "Foo",
 		DataJSON:      "{}",
 		PromotionType: "promo_percent_off",
@@ -125,12 +125,12 @@ func TestPromotionHandlerPOSTWritesDataLayerNoExpiration(t *testing.T) {
 	})
 	r, err := http.NewRequest("POST", "mock.api.request", bytes.NewReader(req))
 	test.OK(t, err)
-	promoHandler := NewPromotionHandler(&mockedDataAPI_promotionHandler{DataAPI: &api.DataService{}, lookupPromoCodeErr: api.ErrNotFound(`promotion_code`)})
+	promoHandler := NewPromotionsHandler(&mockedDataAPI_promotionsHandler{DataAPI: &api.DataService{}, lookupPromoCodeErr: api.ErrNotFound(`promotion_code`)})
 	handler := test_handler.MockHandler{
 		H: promoHandler,
 	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionPOSTResponse{PromoCodeID: 1})
+	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionsPOSTResponse{PromoCodeID: 1})
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
@@ -138,7 +138,7 @@ func TestPromotionHandlerPOSTWritesDataLayerNoExpiration(t *testing.T) {
 
 func TestPromotionHandlerPOSTWritesDataLayerExpiration(t *testing.T) {
 	var n int64
-	req, err := json.Marshal(&PromotionPOSTRequest{
+	req, err := json.Marshal(&PromotionsPOSTRequest{
 		Code:          "Foo",
 		DataJSON:      "{}",
 		PromotionType: "promo_percent_off",
@@ -147,12 +147,12 @@ func TestPromotionHandlerPOSTWritesDataLayerExpiration(t *testing.T) {
 	})
 	r, err := http.NewRequest("POST", "mock.api.request", bytes.NewReader(req))
 	test.OK(t, err)
-	promoHandler := NewPromotionHandler(&mockedDataAPI_promotionHandler{DataAPI: &api.DataService{}, lookupPromoCodeErr: api.ErrNotFound(`promotion_code`)})
+	promoHandler := NewPromotionsHandler(&mockedDataAPI_promotionsHandler{DataAPI: &api.DataService{}, lookupPromoCodeErr: api.ErrNotFound(`promotion_code`)})
 	handler := test_handler.MockHandler{
 		H: promoHandler,
 	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionPOSTResponse{PromoCodeID: 1})
+	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionsPOSTResponse{PromoCodeID: 1})
 	handler.ServeHTTP(responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
@@ -160,7 +160,7 @@ func TestPromotionHandlerPOSTWritesDataLayerExpiration(t *testing.T) {
 
 func TestPromotionHandlerPOSTBadPromoType(t *testing.T) {
 	var n int64
-	req, err := json.Marshal(&PromotionPOSTRequest{
+	req, err := json.Marshal(&PromotionsPOSTRequest{
 		Code:          "Foo",
 		DataJSON:      "{}",
 		PromotionType: "not_real",
@@ -169,7 +169,7 @@ func TestPromotionHandlerPOSTBadPromoType(t *testing.T) {
 	})
 	r, err := http.NewRequest("POST", "mock.api.request", bytes.NewReader(req))
 	test.OK(t, err)
-	promoHandler := NewPromotionHandler(&mockedDataAPI_promotionHandler{DataAPI: &api.DataService{}, lookupPromoCodeErr: api.ErrNotFound(`promotion_code`)})
+	promoHandler := NewPromotionsHandler(&mockedDataAPI_promotionsHandler{DataAPI: &api.DataService{}, lookupPromoCodeErr: api.ErrNotFound(`promotion_code`)})
 	handler := test_handler.MockHandler{
 		H: promoHandler,
 	}
@@ -180,7 +180,7 @@ func TestPromotionHandlerPOSTBadPromoType(t *testing.T) {
 }
 
 func TestPromotionHandlerPOSTDataLayerErr(t *testing.T) {
-	req, err := json.Marshal(&PromotionPOSTRequest{
+	req, err := json.Marshal(&PromotionsPOSTRequest{
 		Code:          "Foo",
 		DataJSON:      "{}",
 		PromotionType: "promo_percent_off",
@@ -188,7 +188,7 @@ func TestPromotionHandlerPOSTDataLayerErr(t *testing.T) {
 	})
 	r, err := http.NewRequest("POST", "mock.api.request", bytes.NewReader(req))
 	test.OK(t, err)
-	promoHandler := NewPromotionHandler(&mockedDataAPI_promotionHandler{
+	promoHandler := NewPromotionsHandler(&mockedDataAPI_promotionsHandler{
 		DataAPI:            &api.DataService{},
 		createPromotionErr: errors.New("Foo"),
 		lookupPromoCodeErr: api.ErrNotFound(`promotion_code`),
@@ -205,7 +205,7 @@ func TestPromotionHandlerPOSTDataLayerErr(t *testing.T) {
 func TestPromotionHandlerPOSTRequiredParams(t *testing.T) {
 	r, err := http.NewRequest("POST", "mock.api.request", strings.NewReader("{}"))
 	test.OK(t, err)
-	promoHandler := NewPromotionHandler(&mockedDataAPI_promotionHandler{DataAPI: &api.DataService{}})
+	promoHandler := NewPromotionsHandler(&mockedDataAPI_promotionsHandler{DataAPI: &api.DataService{}})
 	handler := test_handler.MockHandler{
 		H: promoHandler,
 	}
@@ -216,7 +216,7 @@ func TestPromotionHandlerPOSTRequiredParams(t *testing.T) {
 }
 
 func TestPromotionHandlerPOSTCodeAlreadyExists(t *testing.T) {
-	req, err := json.Marshal(&PromotionPOSTRequest{
+	req, err := json.Marshal(&PromotionsPOSTRequest{
 		Code:          "Foo",
 		DataJSON:      "{}",
 		PromotionType: "promo_percent_off",
@@ -224,8 +224,8 @@ func TestPromotionHandlerPOSTCodeAlreadyExists(t *testing.T) {
 	})
 	r, err := http.NewRequest("POST", "mock.api.request", bytes.NewReader(req))
 	test.OK(t, err)
-	mh := &mockedDataAPI_promotionHandler{DataAPI: &api.DataService{}}
-	promoHandler := NewPromotionHandler(mh)
+	mh := &mockedDataAPI_promotionsHandler{DataAPI: &api.DataService{}}
+	promoHandler := NewPromotionsHandler(mh)
 	handler := test_handler.MockHandler{
 		H: promoHandler,
 	}

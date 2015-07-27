@@ -728,6 +728,16 @@ module.exports = {
 			dataType: "json"
 		}, cb);
 	},
+	updatePromotion: function(id: string, expires: ?number, cb: ajaxCB) {
+		var url = "/promotion/"+encodeURIComponent(id)
+		this.ajax({
+			type: "PUT",
+			contentType: "application/json",
+			url: url,
+			data: JSON.stringify({expires: expires}),
+			dataType: "json"
+		}, cb);
+	},
 	addPromotion: function(code: string, promoType: string, group: string, promotionData: any, expires: ?Date, cb: ajaxCB) {
 		var url = "/promotion"
 		var data = {code: code, promo_type: promoType, group: group, data_json: JSON.stringify(promotionData), expires: null}
