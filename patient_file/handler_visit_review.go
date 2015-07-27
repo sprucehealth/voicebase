@@ -17,20 +17,22 @@ import (
 )
 
 type doctorPatientVisitReviewHandler struct {
-	DataAPI            api.DataAPI
+	dataAPI            api.DataAPI
 	dispatcher         *dispatch.Dispatcher
 	mediaStore         *media.Store
 	expirationDuration time.Duration
+	webDomain          string
 }
 
-func NewDoctorPatientVisitReviewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, mediaStore *media.Store, expirationDuration time.Duration) http.Handler {
+func NewDoctorPatientVisitReviewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, mediaStore *media.Store, expirationDuration time.Duration, webDomain string) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(
 			&doctorPatientVisitReviewHandler{
-				DataAPI:            dataAPI,
+				dataAPI:            dataAPI,
 				dispatcher:         dispatcher,
 				mediaStore:         mediaStore,
 				expirationDuration: expirationDuration,
+				webDomain:          webDomain,
 			}), httputil.Get)
 }
 
@@ -47,7 +49,7 @@ type VisitReviewResponse struct {
 func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, error) {
 	ctxt := apiservice.GetContext(r)
 
-	doctorID, err := p.DataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
+	doctorID, err := p.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
 	if err != nil {
 		return false, err
 	}
@@ -61,7 +63,7 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, e
 	}
 	ctxt.RequestCache[apiservice.RequestData] = requestData
 
-	patientVisit, err := p.DataAPI.GetPatientVisitFromID(requestData.PatientVisitID)
+	patientVisit, err := p.dataAPI.GetPatientVisitFromID(requestData.PatientVisitID)
 	if err != nil {
 		return false, err
 	}
@@ -71,10 +73,10 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, e
 		// update the status of the case and the item in the doctor's queue
 		if patientVisit.Status == common.PVStatusRouted {
 			pvStatus := common.PVStatusReviewing
-			if _, err := p.DataAPI.UpdatePatientVisit(requestData.PatientVisitID, &api.PatientVisitUpdate{Status: &pvStatus}); err != nil {
+			if _, err := p.dataAPI.UpdatePatientVisit(requestData.PatientVisitID, &api.PatientVisitUpdate{Status: &pvStatus}); err != nil {
 				return false, err
 			}
-			if err := p.DataAPI.MarkPatientVisitAsOngoingInDoctorQueue(doctorID, requestData.PatientVisitID); err != nil {
+			if err := p.dataAPI.MarkPatientVisitAsOngoingInDoctorQueue(doctorID, requestData.PatientVisitID); err != nil {
 				return false, err
 			}
 		}
@@ -89,7 +91,7 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, e
 
 	// ensure that the doctor is authorized to work on this case
 	if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorID,
-		patientVisit.PatientID.Int64(), patientVisit.PatientCaseID.Int64(), p.DataAPI); err != nil {
+		patientVisit.PatientID.Int64(), patientVisit.PatientCaseID.Int64(), p.dataAPI); err != nil {
 		return false, err
 	}
 
@@ -100,13 +102,13 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	ctxt := apiservice.GetContext(r)
 	patientVisit := ctxt.RequestCache[apiservice.PatientVisit].(*common.PatientVisit)
 
-	patient, err := p.DataAPI.GetPatientFromID(patientVisit.PatientID.Int64())
+	patient, err := p.dataAPI.GetPatientFromID(patientVisit.PatientID.Int64())
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
 	}
 
-	renderedLayout, err := VisitReviewLayout(p.DataAPI, patient, p.mediaStore, p.expirationDuration, patientVisit, r.Host)
+	renderedLayout, err := VisitReviewLayout(p.dataAPI, patient, p.mediaStore, p.expirationDuration, patientVisit, r.Host, p.webDomain)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -127,8 +129,9 @@ func VisitReviewLayout(
 	expirationDuration time.Duration,
 	visit *common.PatientVisit,
 	apiDomain string,
+	webDomain string,
 ) (map[string]interface{}, error) {
-	intakeInfo, err := patient.IntakeLayoutForVisit(dataAPI, apiDomain, mediaStore, expirationDuration, visit, pat, api.RoleDoctor)
+	intakeInfo, err := patient.IntakeLayoutForVisit(dataAPI, apiDomain, webDomain, mediaStore, expirationDuration, visit, pat, api.RoleDoctor)
 	if err != nil {
 		return nil, err
 	}

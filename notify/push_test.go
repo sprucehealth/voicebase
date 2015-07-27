@@ -20,14 +20,17 @@ func init() {
 	conc.Testing = true
 }
 
-type pushMockAPI struct {
+type pushMockDataAPI struct {
 	api.DataAPI
-	api.AuthAPI
 
 	pushConfigData []*common.PushConfigData
 }
 
-func (m *pushMockAPI) GetPushConfigDataForAccount(accountID int64) ([]*common.PushConfigData, error) {
+type pushMockAuthAPI struct {
+	api.AuthAPI
+}
+
+func (m *pushMockDataAPI) GetPushConfigDataForAccount(accountID int64) ([]*common.PushConfigData, error) {
 	return m.pushConfigData, nil
 }
 
@@ -43,7 +46,7 @@ func TestPushNotificationsLive(t *testing.T) {
 	}
 	snsCli := sns.New(awsConfig)
 
-	mockAPI := &pushMockAPI{
+	dataAPI := &pushMockDataAPI{
 		pushConfigData: []*common.PushConfigData{{
 			PushEndpoint:   endpoint,
 			Platform:       common.IOS,
@@ -51,12 +54,13 @@ func TestPushNotificationsLive(t *testing.T) {
 			AppEnvironment: "staging",
 		}},
 	}
+	authAPI := &pushMockAuthAPI{}
 	configs := &config.NotificationConfigs{
 		"iOS-patient-staging": &config.NotificationConfig{
 			Platform: common.IOS,
 		},
 	}
-	m := NewManager(mockAPI, mockAPI, snsCli, nil, nil, "", configs, metrics.NewRegistry())
+	m := NewManager(dataAPI, authAPI, snsCli, nil, nil, "", configs, metrics.NewRegistry())
 	if err := m.pushNotificationToUser(1, api.RolePatient, &Message{ShortMessage: "test"}, 3); err != nil {
 		t.Fatal(err)
 	}

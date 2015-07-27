@@ -12,7 +12,7 @@ import (
 
 func TestPromotionReferralRouteCreation(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	setupPromotionReferralRouteTest(t, testData)
@@ -70,7 +70,7 @@ func TestPromotionReferralRouteCreation(t *testing.T) {
 
 func TestPromotionReferralRouteQueryParamCreation(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	setupPromotionReferralRouteTest(t, testData)
@@ -88,7 +88,7 @@ func TestPromotionReferralRouteQueryParamCreation(t *testing.T) {
 
 func TestPromotionReferralRouteQueryParamsToTemplate(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	setupPromotionReferralRouteTest(t, testData)
@@ -177,7 +177,7 @@ func TestPromotionReferralRouteQueryParamsToTemplate(t *testing.T) {
 
 func TestPromotionReferralRouteQueryParamsToInactiveTemplate(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	setupPromotionReferralRouteTest(t, testData)
@@ -255,7 +255,7 @@ func TestPromotionReferralRouteQueryParamsToInactiveTemplate(t *testing.T) {
 
 func TestPromotionReferralRouteDeprecationDisplayFullLoop(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	setupPromotionReferralRouteTest(t, testData)

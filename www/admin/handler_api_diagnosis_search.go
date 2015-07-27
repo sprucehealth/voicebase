@@ -3,6 +3,7 @@ package admin
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -28,19 +29,19 @@ const (
 	maxResults = 100
 )
 
-func NewDiagnosisSearchHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) http.Handler {
-	return httputil.SupportedMethods(&diagnosisSearchHandler{
+func newDiagnosisSearchHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&diagnosisSearchHandler{
 		dataAPI:      dataAPI,
 		diagnosisAPI: diagnosisAPI,
 	}, httputil.Get)
 }
 
-func (d *diagnosisSearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (d *diagnosisSearchHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var response diagnosisSearchResult
 
 	query := r.FormValue("q")
 
-	// account := context.Get(r, www.CKAccount).(*common.Account)
+	// account := www.MustCtxAccount(ctx)
 	// audit.LogAction(account.ID, "AdminAPI", "DiagnosisSearch", map[string]interface{}{"query": query})
 
 	if query == "" {

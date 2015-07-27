@@ -20,7 +20,7 @@ import (
 
 func TestAddCardsForPatient(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)

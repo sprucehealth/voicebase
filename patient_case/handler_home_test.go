@@ -44,6 +44,9 @@ type mockHomeHandlerDataAPI struct {
 
 // overriding all the data access methods that are relevant to the home API
 
+func (m *mockHomeHandlerDataAPI) CreateToken(purpose, key, token string, expire time.Duration) (string, error) {
+	return purpose + key + token, nil
+}
 func (m *mockHomeHandlerDataAPI) State(stateCode string) (string, string, error) {
 	return m.stateName, m.stateName, nil
 }

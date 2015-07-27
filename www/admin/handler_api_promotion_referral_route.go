@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sprucehealth/backend/common"
-
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -25,19 +25,19 @@ type PromotionReferralRoutePUTRequest struct {
 }
 
 // NewPromotionReferralRouteHandler returns an initialized instance of thpromotionReferralRouteHandlere
-func NewPromotionReferralRouteHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&promotionReferralRouteHandler{dataAPI: dataAPI}, httputil.Put)
+func newPromotionReferralRouteHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&promotionReferralRouteHandler{dataAPI: dataAPI}, httputil.Put)
 }
 
-func (h *promotionReferralRouteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+func (h *promotionReferralRouteHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return
 	}
 
 	switch r.Method {
-	case "PUT":
+	case httputil.Put:
 		req, err := h.parsePUTRequest(r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())

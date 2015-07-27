@@ -13,7 +13,7 @@ import (
 
 func TestForcedUpgrade(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	minimumAppVersionConfigs := config.MinimumAppVersionConfigs(map[string]*config.MinimumAppVersionConfig{
 		"Patient-Dev": &config.MinimumAppVersionConfig{

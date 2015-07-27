@@ -16,7 +16,7 @@ import (
 
 func TestScheduledMessage_InsuredPatient(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// UNINSURED PATIENT SCENARIO
@@ -145,7 +145,7 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 
 func TestScheduledMessage_TreatmentPlanViewed(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// Now lets go ahead and add a message template for visit charged

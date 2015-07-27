@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/common"
@@ -30,7 +31,7 @@ type loginHandler struct {
 
 func NewLoginHandler(authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, twoFactorExpiration int,
 	templateLoader *TemplateLoader, rateLimiter ratelimit.KeyedRateLimiter, metricsRegistry metrics.Registry,
-) http.Handler {
+) httputil.ContextHandler {
 	h := &loginHandler{
 		authAPI:                   authAPI,
 		smsAPI:                    smsAPI,
@@ -49,10 +50,10 @@ func NewLoginHandler(authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, 
 	metricsRegistry.Add("success-2fa-required", h.statSuccess2FARequired)
 	metricsRegistry.Add("success-2fa-not-required", h.statSuccess2FANotRequired)
 	metricsRegistry.Add("success-2fa-verified", h.statSuccess2FAVerified)
-	return httputil.SupportedMethods(h, httputil.Get, httputil.Post)
+	return httputil.ContextSupportedMethods(h, httputil.Get, httputil.Post)
 }
 
-func (h *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *loginHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	next, valid := validateRedirectURL(r.FormValue("next"))
 	if !valid {
@@ -176,7 +177,7 @@ type loginVerifyHandler struct {
 	statFailureExpired      *metrics.Counter
 }
 
-func NewLoginVerifyHandler(authAPI api.AuthAPI, templateLoader *TemplateLoader, metricsRegistry metrics.Registry) http.Handler {
+func NewLoginVerifyHandler(authAPI api.AuthAPI, templateLoader *TemplateLoader, metricsRegistry metrics.Registry) httputil.ContextHandler {
 	h := &loginVerifyHandler{
 		authAPI:                 authAPI,
 		template:                templateLoader.MustLoadTemplate("login_verify.html", "base.html", nil),
@@ -189,10 +190,10 @@ func NewLoginVerifyHandler(authAPI api.AuthAPI, templateLoader *TemplateLoader, 
 	metricsRegistry.Add("failure-invalid-token", h.statFailureInvalidToken)
 	metricsRegistry.Add("failure-invalid-code", h.statFailureInvalidCode)
 	metricsRegistry.Add("failure-expired", h.statFailureExpired)
-	return httputil.SupportedMethods(h, httputil.Get, httputil.Post)
+	return httputil.ContextSupportedMethods(h, httputil.Get, httputil.Post)
 }
 
-func (h *loginVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *loginVerifyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	// TODO: rate-limit this endpoint and only allow a small number of attempts
 
 	next, valid := validateRedirectURL(r.FormValue("next"))
@@ -312,13 +313,13 @@ type logoutHandler struct {
 	authAPI api.AuthAPI
 }
 
-func NewLogoutHandler(authAPI api.AuthAPI) http.Handler {
-	return httputil.SupportedMethods(&logoutHandler{
+func NewLogoutHandler(authAPI api.AuthAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&logoutHandler{
 		authAPI: authAPI,
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *logoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *logoutHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	next, valid := validateRedirectURL(r.FormValue("next"))
 	if !valid {
 		next = "/"

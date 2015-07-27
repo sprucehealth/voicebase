@@ -10,7 +10,7 @@ import (
 
 func TestSearchDiagnosis(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	diagnosisService := setupDiagnosisService(t)
 	testData.Config.DiagnosisAPI = diagnosisService
 	testData.AdminConfig.DiagnosisAPI = diagnosisService

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/common"
@@ -16,14 +16,14 @@ type analyticsReportsListAPIHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewAnalyticsReportsListAPIHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&analyticsReportsListAPIHandler{
+func newAnalyticsReportsListAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&analyticsReportsListAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *analyticsReportsListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
+func (h *analyticsReportsListAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
 
 	if r.Method == httputil.Post {
 		audit.LogAction(account.ID, "AdminAPI", "CreateAnalyticsReport", nil)

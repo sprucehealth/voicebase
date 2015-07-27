@@ -10,6 +10,8 @@ import (
 	"bytes"
 	"net/http"
 	"testing"
+
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 )
 
 // ----------------------------------------------------------------------------
@@ -527,7 +529,7 @@ func TestUrlBuilding(t *testing.T) {
 		}
 	}
 
-	ArticleHandler := func(w http.ResponseWriter, r *http.Request) {
+	ArticleHandler := func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	router := NewRouter()
@@ -576,10 +578,10 @@ func TestSubRouting(t *testing.T) {
 	}
 
 	u, _ := router.Get("products").URL()
-	builtUrl := u.String()
+	builtURL := u.String()
 	// Yay, subroute aware of the domain when building!
-	if builtUrl != url {
-		t.Errorf("Expected %q, got %q.", url, builtUrl)
+	if builtURL != url {
+		t.Errorf("Expected %q, got %q.", url, builtURL)
 	}
 }
 
@@ -621,7 +623,7 @@ func TestRedirectSlash(t *testing.T) {
 		t.Errorf("Expected 123.")
 	}
 	rsp := NewRecorder()
-	routeMatch.Handler.ServeHTTP(rsp, request)
+	routeMatch.Handler.ServeHTTP(context.Background(), rsp, request)
 	if rsp.HeaderMap.Get("Location") != "http://localhost/foo/123/" {
 		t.Errorf("Expected redirect header.")
 	}
@@ -640,7 +642,7 @@ func TestRedirectSlash(t *testing.T) {
 		t.Errorf("Expected 123.")
 	}
 	rsp = NewRecorder()
-	routeMatch.Handler.ServeHTTP(rsp, request)
+	routeMatch.Handler.ServeHTTP(context.Background(), rsp, request)
 	if rsp.HeaderMap.Get("Location") != "http://localhost/foo/123" {
 		t.Errorf("Expected redirect header.")
 	}

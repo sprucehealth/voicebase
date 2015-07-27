@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/responses"
-
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -46,11 +46,11 @@ type PromotionsPOSTResponse struct {
 }
 
 // NewPromotionsHandler returns an initialized instance of promotionHandler
-func NewPromotionsHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&promotionsHandler{dataAPI: dataAPI}, httputil.Get, httputil.Post)
+func newPromotionsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&promotionsHandler{dataAPI: dataAPI}, httputil.Get, httputil.Post)
 }
 
-func (h *promotionsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *promotionsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
 		req, err := h.parseGETRequest(r)

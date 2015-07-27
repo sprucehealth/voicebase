@@ -139,10 +139,6 @@
 			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
 		},
 		{
-			"ImportPath": "github.com/gorilla/mux",
-			"Rev": "660d31f8602b95058fed6833debf113e85350868"
-		},
-		{
 			"ImportPath": "github.com/hashicorp/consul/api",
 			"Comment": "v0.5.0-163-g26f03ea",
 			"Rev": "26f03ea30d28fbbaa8033b20d8fed4edc603d150"
@@ -209,6 +205,10 @@
 		{
 			"ImportPath": "golang.org/x/crypto/ssh",
 			"Rev": "c84e1f8e3a7e322d497cd16c0e8a13c7e127baf3"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "b71143c25f0aad5f54981684b715686d34c56d25"
 		},
 		{
 			"ImportPath": "gopkg.in/yaml.v2",

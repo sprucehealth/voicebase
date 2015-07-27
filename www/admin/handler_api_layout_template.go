@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/sprucehealth/backend/common"
-
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
 )
@@ -28,11 +28,11 @@ type layoutTemplateGETRequest struct {
 
 type layoutTemplateGETResponse map[string]interface{}
 
-func NewLayoutTemplateHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&layoutTemplateHandler{dataAPI: dataAPI}, httputil.Get)
+func newLayoutTemplateHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&layoutTemplateHandler{dataAPI: dataAPI}, httputil.Get)
 }
 
-func (h *layoutTemplateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *layoutTemplateHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		requestData, err := h.parseGETRequest(r)

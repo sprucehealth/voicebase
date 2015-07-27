@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -16,8 +17,8 @@ type diagnosisSetsHandler struct {
 	diagnosisAPI diagnosis.API
 }
 
-func NewDiagnosisSetsHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) http.Handler {
-	return httputil.SupportedMethods(&diagnosisSetsHandler{
+func newDiagnosisSetsHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&diagnosisSetsHandler{
 		dataAPI:      dataAPI,
 		diagnosisAPI: diagnosisAPI,
 	}, httputil.Get, httputil.Patch)
@@ -41,8 +42,8 @@ type diagnosisSetUpdateRequest struct {
 	Create     []string `json:"create,omitempty"`
 }
 
-func (d *diagnosisSetsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// account := context.Get(r, www.CKAccount).(*common.Account)
+func (d *diagnosisSetsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	// account := www.MustCtxAccount(ctx)
 	// audit.LogAction(account.ID, "AdminAPI", "ListDiagnosisSets", nil)
 
 	switch r.Method {

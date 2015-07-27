@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
@@ -19,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/www"
 )
@@ -118,8 +119,8 @@ func (r *registerForm) Validate() map[string]string {
 	return errors
 }
 
-func NewRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher, signer *sig.Signer, templateLoader *www.TemplateLoader) http.Handler {
-	return httputil.SupportedMethods(&registerHandler{
+func newRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher, signer *sig.Signer, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&registerHandler{
 		router:     router,
 		dataAPI:    dataAPI,
 		authAPI:    authAPI,
@@ -130,7 +131,7 @@ func NewRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.Aut
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *registerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *registerHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	if !validateRequestSignature(h.signer, r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return

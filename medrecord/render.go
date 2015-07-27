@@ -520,7 +520,7 @@ func (r *Renderer) Render(patient *common.Patient) ([]byte, error) {
 		}
 
 		for _, visit := range visits {
-			layout, err := patient_file.VisitReviewLayout(r.DataAPI, patient, r.MediaStore, r.ExpirationDuration, visit, r.APIDomain)
+			layout, err := patient_file.VisitReviewLayout(r.DataAPI, patient, r.MediaStore, r.ExpirationDuration, visit, r.APIDomain, r.WebDomain)
 			if err != nil {
 				return nil, err
 			}

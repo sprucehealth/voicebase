@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/audit"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/email/campaigns"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -30,22 +29,22 @@ type emailTestSendResponse struct {
 	Error   string `json:"error"`
 }
 
-func NewEmailTestSendHandler(emailService email.Service, signer *sig.Signer, webDomain string) http.Handler {
-	return httputil.SupportedMethods(&emailTestSendHandler{
+func newEmailTestSendHandler(emailService email.Service, signer *sig.Signer, webDomain string) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&emailTestSendHandler{
 		emailService: emailService,
 		signer:       signer,
 		webDomain:    webDomain,
 	}, httputil.Post)
 }
 
-func (h *emailTestSendHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *emailTestSendHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var req emailTestSendRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		www.APIBadRequestError(w, r, "Failed to parse request body")
 		return
 	}
 
-	account := context.Get(r, www.CKAccount).(*common.Account)
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "SendTestEmail", map[string]interface{}{"type": req.Type})
 
 	vars := campaigns.VarsForAccount(account.ID, req.Type, h.signer, h.webDomain)

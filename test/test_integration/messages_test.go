@@ -11,7 +11,7 @@ import (
 
 func TestPersonCreation(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// Make sure a person row is inserted when creating a patient
@@ -37,7 +37,7 @@ func TestPersonCreation(t *testing.T) {
 
 func TestCaseMessages(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	cc, _, _ := SignupRandomTestCC(t, testData, true)

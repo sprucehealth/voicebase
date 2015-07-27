@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
@@ -43,30 +43,29 @@ func (a *providerSearchAuthAPI) CreateAccount(email, password, role string) (int
 func TestHandlerProviderSearchAPI(t *testing.T) {
 	dataAPI := &providerSearchDataAPI{}
 	authAPI := &providerSearchAuthAPI{}
-	h := NewProviderSearchAPIHandler(dataAPI, authAPI)
+	h := newProviderSearchAPIHandler(dataAPI, authAPI)
 
 	body := &bytes.Buffer{}
 	r, err := http.NewRequest("POST", "/", body)
 	test.OK(t, err)
 	account := &common.Account{Role: api.RoleAdmin, ID: 1}
-	context.Set(r, www.CKAccount, account)
-	defer context.Clear(r)
+	ctx := www.CtxWithAccount(context.Background(), account)
 
 	// This error comes from the JSON decoder
 	body.Reset()
 	test.OK(t, json.NewEncoder(body).Encode(&createProviderRequest{}))
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusBadRequest, w.Code)
-	test.Equals(t, "{\"error\":{\"code\":0,\"message\":\"Phone number has to be atleast 10 digits long\"}}\n", w.Body.String())
+	test.Equals(t, "{\"error\":{\"type\":\"bad_request\",\"message\":\"Phone number has to be atleast 10 digits long\"}}\n", w.Body.String())
 
 	// This error comes from .validate()
 	body.Reset()
 	test.OK(t, json.NewEncoder(body).Encode(&createProviderRequest{Role: "blah", CellPhone: "415-555-5555"}))
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusBadRequest, w.Code)
-	test.Equals(t, "{\"error\":{\"code\":0,\"message\":\"role must be MA or DOCTOR\"}}\n", w.Body.String())
+	test.Equals(t, "{\"error\":{\"type\":\"bad_request\",\"message\":\"role must be MA or DOCTOR\"}}\n", w.Body.String())
 
 	body.Reset()
 	test.OK(t, json.NewEncoder(body).Encode(&createProviderRequest{
@@ -79,7 +78,7 @@ func TestHandlerProviderSearchAPI(t *testing.T) {
 		Gender:    "female",
 	}))
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 	test.Equals(t, "{\"account_id\":\"1\",\"provider_id\":\"2\"}\n", w.Body.String())
 }

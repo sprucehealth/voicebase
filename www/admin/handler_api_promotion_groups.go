@@ -3,10 +3,10 @@ package admin
 import (
 	"net/http"
 
-	"github.com/sprucehealth/backend/responses"
-
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -19,12 +19,12 @@ type PromotionGroupsGETResponse struct {
 	PromotionGroups []*responses.PromotionGroup `json:"promotion_groups"`
 }
 
-// NewPromotionGroupsHandler returns a new initialized instance of promotionGroupsHandler
-func NewPromotionGroupsHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&promotionGroupsHandler{dataAPI: dataAPI}, httputil.Get)
+// newPromotionGroupsHandler returns a new initialized instance of promotionGroupsHandler
+func newPromotionGroupsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&promotionGroupsHandler{dataAPI: dataAPI}, httputil.Get)
 }
 
-func (h *promotionGroupsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *promotionGroupsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
 		h.serveGET(w, r)

@@ -3,7 +3,8 @@ package cfg
 import (
 	"net/http"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 // contextKeyType creates a unique type to be used in the request context
@@ -13,14 +14,13 @@ var contextKey contextKeyType
 
 // HTTPHandler returns a wrapped handler that sets a snapshot of
 // the cfg store in the request context.
-func HTTPHandler(h http.Handler, store Store) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		context.Set(r, contextKey, store.Snapshot())
-		h.ServeHTTP(w, r)
+func HTTPHandler(h httputil.ContextHandler, store Store) httputil.ContextHandler {
+	return httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		h.ServeHTTP(context.WithValue(ctx, contextKey, store.Snapshot()), w, r)
 	})
 }
 
 // Context returns the Snapshot of config values for an HTTP request.
-func Context(r *http.Request) Snapshot {
-	return context.Get(r, contextKey).(Snapshot)
+func Context(ctx context.Context) Snapshot {
+	return ctx.Value(contextKey).(Snapshot)
 }

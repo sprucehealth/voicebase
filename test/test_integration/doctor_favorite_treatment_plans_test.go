@@ -17,7 +17,7 @@ import (
 
 func TestFavoriteTreatmentPlan(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
@@ -104,7 +104,7 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 
 func TestFTP_MultiplePathways(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
@@ -224,7 +224,7 @@ func TestFTP_MultiplePathways(t *testing.T) {
 // from the FTP has its content source deleted and getting the TP still works
 func TestFavoriteTreatmentPlan_DeletingFTP(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
@@ -271,7 +271,7 @@ func TestFavoriteTreatmentPlan_DeletingFTP(t *testing.T) {
 // the content source gets deleted while TP remains unaltered
 func TestFavoriteTreatmentPlan_DeletingFTP_ActiveTP(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
@@ -331,7 +331,7 @@ func TestFavoriteTreatmentPlan_DeletingFTP_ActiveTP(t *testing.T) {
 
 func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
@@ -385,7 +385,7 @@ func TestFavoriteTreatmentPlan_PickingAFavoriteTreatmentPlan(t *testing.T) {
 
 func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
@@ -452,7 +452,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify(t *testing.T) {
 // with the contents of the favorite treatment plan
 func TestFavoriteTreatmentPlan_BreakingMappingOnModify_PrefillRestOfData(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
@@ -488,7 +488,7 @@ func TestFavoriteTreatmentPlan_BreakingMappingOnModify_PrefillRestOfData(t *test
 // favorite treatment plan with
 func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
@@ -606,7 +606,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 
 func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimen(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
@@ -691,7 +691,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimen(t *testing.
 
 func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)

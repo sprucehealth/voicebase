@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
+	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
-	"github.com/sprucehealth/backend/responses"
-
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
-	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -55,11 +55,11 @@ type ReferralProgramTemplatePUTRequest struct {
 }
 
 // NewReferralProgramTemplateHandler returns an initialized instance of referralProgramTemplateHandler
-func NewReferralProgramTemplateHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&referralProgramTemplateHandler{dataAPI: dataAPI}, httputil.Get, httputil.Post, httputil.Put)
+func newReferralProgramTemplateHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&referralProgramTemplateHandler{dataAPI: dataAPI}, httputil.Get, httputil.Post, httputil.Put)
 }
 
-func (h *referralProgramTemplateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *referralProgramTemplateHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		rd, err := h.parseGETRequest(r)

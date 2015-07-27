@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/tagging"
 	"github.com/sprucehealth/backend/tagging/model"
 	"github.com/sprucehealth/backend/tagging/query"
 	"github.com/sprucehealth/backend/tagging/response"
 	"github.com/sprucehealth/backend/www"
-
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type tagSavedSearchsHandler struct {
@@ -28,11 +28,11 @@ type tagSavedSearchsPOSTRequest struct {
 	Query string `json:"query"`
 }
 
-func NewTagSavedSearchesHandler(taggingClient tagging.Client) http.Handler {
-	return httputil.SupportedMethods(&tagSavedSearchsHandler{taggingClient: taggingClient}, httputil.Get, httputil.Post)
+func newTagSavedSearchesHandler(taggingClient tagging.Client) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&tagSavedSearchsHandler{taggingClient: taggingClient}, httputil.Get, httputil.Post)
 }
 
-func (h *tagSavedSearchsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *tagSavedSearchsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		h.serveGET(w, r)

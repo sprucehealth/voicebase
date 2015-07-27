@@ -14,7 +14,7 @@ import (
 // open case can exist per pathway
 func TestPatientVisit_MultiplePathways(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// create a doctor

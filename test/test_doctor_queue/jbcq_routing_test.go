@@ -14,7 +14,7 @@ import (
 // to claim access to the patient case
 func TestJBCQRouting_AuthUrlInDoctorQueue(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	d1 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
 	doctor, err := testData.DataAPI.GetDoctorFromID(d1.DoctorID)
@@ -31,7 +31,7 @@ func TestJBCQRouting_AuthUrlInDoctorQueue(t *testing.T) {
 
 func TestJBCQRouting_ItemDescription(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	d1 := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
 	doctor, err := testData.DataAPI.GetDoctorFromID(d1.DoctorID)
@@ -50,7 +50,7 @@ func TestJBCQRouting_ItemDescription(t *testing.T) {
 // an elligible item
 func TestJBCQRouting_MultipleDocsInSameState(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	// lets go ahead and register 4 doctors in the state of CA
 	doctorID1 := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
@@ -75,7 +75,7 @@ func TestJBCQRouting_MultipleDocsInSameState(t *testing.T) {
 
 func TestJBCQRouting_MultipleDocsDifferentStates(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// lets add the care providing states that we are testing the scenarios in

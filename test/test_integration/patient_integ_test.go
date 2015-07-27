@@ -18,14 +18,14 @@ import (
 
 func TestPatientRegistration(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 }
 
 func TestPatientVisitCreation(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
@@ -67,7 +67,7 @@ func TestPatientVisitCreation(t *testing.T) {
 
 func TestPatientVisitSubmission(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
@@ -94,7 +94,7 @@ func TestPatientAutocompleteForDrugs(t *testing.T) {
 	t.Skip("Flakey test. Probably DoseSpot's fault.")
 
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	// use a real dosespot service before instantiating the server
 	testData.Config.ERxAPI = testData.ERxAPI
 	testData.StartAPIServer(t)
@@ -126,7 +126,7 @@ func TestPatientAutocompleteForDrugs(t *testing.T) {
 
 func TestPatientUpdate(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	signedupPatientResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)

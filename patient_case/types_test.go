@@ -42,7 +42,7 @@ func TestNotifications(t *testing.T) {
 		CaseID:    1,
 		Role:      api.RoleCC,
 	}
-	_, err := n.makeHomeCardView(dataAPI, caseData)
+	_, err := n.makeHomeCardView(dataAPI, "", caseData)
 	test.OK(t, err)
 
 	// Care provider is not in care team
@@ -52,7 +52,7 @@ func TestNotifications(t *testing.T) {
 		CaseID:    1,
 		Role:      api.RoleCC,
 	}
-	_, err = n.makeHomeCardView(dataAPI, caseData)
+	_, err = n.makeHomeCardView(dataAPI, "", caseData)
 	test.OK(t, err)
 }
 
@@ -71,17 +71,17 @@ func TestIncompleteVisitNotification(t *testing.T) {
 
 	n := &incompleteVisitNotification{PatientVisitID: 1}
 
-	view, err := n.makeHomeCardView(dataAPI, caseData)
+	view, err := n.makeHomeCardView(dataAPI, "", caseData)
 	test.OK(t, err)
 	test.Assert(t, strings.Contains(fmt.Sprintf("%+v", view), "With the First Available Doctor"), "Expected normal incomplete visit card, got %+v", view)
 
 	dataAPI.patientVisits[0].Status = common.PVStatusPendingParentalConsent
-	view, err = n.makeHomeCardView(dataAPI, caseData)
+	view, err = n.makeHomeCardView(dataAPI, "", caseData)
 	test.OK(t, err)
 	test.Assert(t, strings.Contains(fmt.Sprintf("%+v", view), "Waiting for Parental Consent"), "Expected waiting for consent card, got %+v", view)
 
 	dataAPI.patientVisits[0].Status = common.PVStatusReceivedParentalConsent
-	view, err = n.makeHomeCardView(dataAPI, caseData)
+	view, err = n.makeHomeCardView(dataAPI, "", caseData)
 	test.OK(t, err)
 	test.Assert(t, strings.Contains(fmt.Sprintf("%+v", view), "Your parent has provided consent"), "Expected received consent card, got %+v", view)
 }

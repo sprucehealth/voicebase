@@ -29,7 +29,7 @@ const (
 
 func TestPrevPrescriptions(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
@@ -259,7 +259,7 @@ const (
 
 func TestPrevAcne(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient

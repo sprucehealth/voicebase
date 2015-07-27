@@ -18,7 +18,7 @@ import (
 
 func TestMAAccess_PatientInfo(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
@@ -36,7 +36,7 @@ func TestMAAccess_PatientInfo(t *testing.T) {
 
 func TestMAAccess_VisitReview(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
@@ -77,7 +77,7 @@ func TestMAAccess_VisitReview(t *testing.T) {
 
 func TestMAAccess_Diagnosis(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
@@ -107,7 +107,7 @@ func TestMAAccess_Diagnosis(t *testing.T) {
 
 func TestMAAccess_TreatmentPlan(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
@@ -209,7 +209,7 @@ func TestMAAccess_TreatmentPlan(t *testing.T) {
 
 func TestMAAccess_CaseMessages(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)

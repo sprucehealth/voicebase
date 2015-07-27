@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/errors"
+	"github.com/sprucehealth/backend/patient"
 )
 
 const (
@@ -34,7 +35,7 @@ type notification interface {
 	common.Typed
 	canRenderCaseNotificationView() bool
 	makeCaseNotificationView(data *caseData) (common.ClientView, error)
-	makeHomeCardView(dataAPI api.DataAPI, data *caseData) (common.ClientView, error)
+	makeHomeCardView(dataAPI api.DataAPI, webDomain string, data *caseData) (common.ClientView, error)
 }
 
 //
@@ -70,7 +71,7 @@ func (t *treatmentPlanNotification) makeCaseNotificationView(data *caseData) (co
 	return nView, nView.Validate()
 }
 
-func (t *treatmentPlanNotification) makeHomeCardView(dataAPI api.DataAPI, data *caseData) (common.ClientView, error) {
+func (t *treatmentPlanNotification) makeHomeCardView(dataAPI api.DataAPI, webDomain string, data *caseData) (common.ClientView, error) {
 
 	doctorAssignment := findActiveDoctor(data.CareTeamMembers)
 	nView := &phCaseNotificationStandardView{
@@ -119,7 +120,7 @@ func (m *messageNotification) makeCaseNotificationView(data *caseData) (common.C
 	return nView, nView.Validate()
 }
 
-func (m *messageNotification) makeHomeCardView(dataAPI api.DataAPI, data *caseData) (common.ClientView, error) {
+func (m *messageNotification) makeHomeCardView(dataAPI api.DataAPI, webDomain string, data *caseData) (common.ClientView, error) {
 	var provider *common.CareProviderAssignment
 	for _, assignment := range data.CareTeamMembers {
 		if assignment.ProviderID == m.DoctorID {
@@ -181,7 +182,7 @@ func (v *visitSubmittedNotification) makeCaseNotificationView(data *caseData) (c
 	return nil, nil
 }
 
-func (v *visitSubmittedNotification) makeHomeCardView(dataAPI api.DataAPI, data *caseData) (common.ClientView, error) {
+func (v *visitSubmittedNotification) makeHomeCardView(dataAPI api.DataAPI, webDomain string, data *caseData) (common.ClientView, error) {
 	title := visitSubmittedTitle
 	iconURL := app_url.IconCaseLarge.String()
 	doctorAssignment := findActiveDoctor(data.CareTeamMembers)
@@ -228,14 +229,18 @@ func (v *incompleteVisitNotification) makeCaseNotificationView(data *caseData) (
 	return nView, nView.Validate()
 }
 
-func (v *incompleteVisitNotification) makeHomeCardView(dataAPI api.DataAPI, data *caseData) (common.ClientView, error) {
+func (v *incompleteVisitNotification) makeHomeCardView(dataAPI api.DataAPI, webDomain string, data *caseData) (common.ClientView, error) {
 	visit, err := dataAPI.GetPatientVisitFromID(v.PatientVisitID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	if visit.Status == common.PVStatusPendingParentalConsent {
-		actionURL := app_url.ComposeSMSAction("TODO: message goes here")
+		consentURL, err := patient.ParentalConsentURL(dataAPI, webDomain, data.Case.PatientID.Int64())
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		actionURL := app_url.ComposeSMSAction("Hey, I'd like to see a dermatologist for my acne. With Spruce I can see a board-certified dermatologist from my phone but need your approval:\n" + consentURL)
 		view := &phCaseView{
 			Title:     data.Case.Name + " Visit",
 			Subtitle:  "Waiting for Parental Consent",
@@ -249,7 +254,7 @@ func (v *incompleteVisitNotification) makeHomeCardView(dataAPI api.DataAPI, data
 				ActionURL:   actionURL,
 			},
 		}
-		return view, view.Validate()
+		return view, errors.Trace(view.Validate())
 	}
 
 	doctorAssignment := findActiveDoctor(data.CareTeamMembers)
@@ -273,7 +278,7 @@ func (v *incompleteVisitNotification) makeHomeCardView(dataAPI api.DataAPI, data
 		nView.Description = determineContinueVisitMessage(doctorAssignment)
 		nView.ButtonTitle = "Continue Visit"
 	}
-	return nView, nView.Validate()
+	return nView, errors.Trace(nView.Validate())
 }
 
 func determineContinueVisitMessage(doctorAssignment *common.CareProviderAssignment) string {
@@ -310,7 +315,7 @@ func (v *incompleteFollowupVisitNotification) makeCaseNotificationView(data *cas
 	return nView, nView.Validate()
 }
 
-func (v *incompleteFollowupVisitNotification) makeHomeCardView(dataAPI api.DataAPI, data *caseData) (common.ClientView, error) {
+func (v *incompleteFollowupVisitNotification) makeHomeCardView(dataAPI api.DataAPI, webDomain string, data *caseData) (common.ClientView, error) {
 	doctorMember := findActiveDoctor(data.CareTeamMembers)
 
 	nView := &phCaseNotificationStandardView{
@@ -350,7 +355,7 @@ func (v *startFollowupVisitNotification) makeCaseNotificationView(data *caseData
 	return nView, nView.Validate()
 }
 
-func (v *startFollowupVisitNotification) makeHomeCardView(dataAPI api.DataAPI, data *caseData) (common.ClientView, error) {
+func (v *startFollowupVisitNotification) makeHomeCardView(dataAPI api.DataAPI, webDomain string, data *caseData) (common.ClientView, error) {
 	doctorMember := findActiveDoctor(data.CareTeamMembers)
 
 	nView := &phCaseNotificationStandardView{
@@ -380,7 +385,7 @@ func (v *preSubmissionTriageNotification) TypeName() string {
 
 func (v *preSubmissionTriageNotification) canRenderCaseNotificationView() bool { return false }
 
-func (v *preSubmissionTriageNotification) makeHomeCardView(dataAPI api.DataAPI, data *caseData) (common.ClientView, error) {
+func (v *preSubmissionTriageNotification) makeHomeCardView(dataAPI api.DataAPI, webDomain string, data *caseData) (common.ClientView, error) {
 	return &phSectionView{
 		Title: v.Title,
 		Views: []common.ClientView{

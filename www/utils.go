@@ -4,11 +4,13 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 const (
@@ -33,36 +35,37 @@ func validateRedirectURL(urlString string) (string, bool) {
 }
 
 // NewAuthCookie returns a new auth cookie using the provided token and
-// HOST from the request as the domain.
+// HOST from the request as the domain. By default the cookie has no
+// max-age and as such is a session only cookie.
 func NewAuthCookie(token string, r *http.Request) *http.Cookie {
 	return NewCookie(authCookieName, token, r)
 }
 
 // NewCookie returns a cookie that has a path of '/' and domain equal to
-// the HOST of the request.
+// the HOST of the request. By default the cookie is HTTP only (can't access
+// it through Javascript), and the cookie has no max-age so exists for
+// the current browser session only.
 func NewCookie(name, value string, r *http.Request) *http.Cookie {
 	domain := r.Host
 	if i := strings.IndexByte(domain, ':'); i > 0 {
 		domain = domain[:i]
 	}
 	return &http.Cookie{
-		Name:   name,
-		Value:  value,
-		Path:   "/",
-		Domain: domain,
-		Secure: true,
-		// Expires: time.Time
-		// MaxAge : int
+		Name:     name,
+		Value:    value,
+		Path:     "/",
+		Domain:   domain,
+		Secure:   true,
+		HttpOnly: true,
 	}
 }
 
-// TombstoneAuthCookie returns an empty valued auth cookie. Since there's
-// no way to tell a browser to delete a cookie the next best thing is to
-// write a tombstone (same name, empty value).
+// TombstoneAuthCookie returns an empty valued auth cookie. It has a max age
+// set to tell the browser to delete the cookie immediately.
 func TombstoneAuthCookie(r *http.Request) *http.Cookie {
 	c := NewAuthCookie("", r)
 	c.MaxAge = -1
-	c.Value = ""
+	c.Expires = time.Now().Add(-time.Hour)
 	return c
 }
 
@@ -81,48 +84,90 @@ func ValidateAuth(authAPI api.AuthAPI, r *http.Request) (*common.Account, error)
 
 type authRequiredFilter struct {
 	authAPI       api.AuthAPI
+	okHandler     httputil.ContextHandler
+	failedHandler httputil.ContextHandler
+}
+
+type roleRequiredHandler struct {
 	roles         []string
-	okHandler     http.Handler
-	failedHandler http.Handler
+	okHandler     httputil.ContextHandler
+	failedHandler httputil.ContextHandler
 }
 
-func AuthRequiredFilter(authAPI api.AuthAPI, roles []string, failed http.Handler) func(http.Handler) http.Handler {
-	return func(h http.Handler) http.Handler {
-		return AuthRequiredHandler(authAPI, roles, h, failed)
-	}
+type apiAuthRequiredFilter struct {
+	authAPI api.AuthAPI
+	h       httputil.ContextHandler
 }
 
-func AuthRequiredHandler(authAPI api.AuthAPI, roles []string, ok, failed http.Handler) http.Handler {
+// APIRoleRequiredHandler returns a handler that can be used to restrict access to
+// an API handler to only requests from a user matching a set of roles. The request must
+// already have passed through the authentication handler.
+func APIRoleRequiredHandler(h httputil.ContextHandler, roles ...string) httputil.ContextHandler {
+	return RoleRequiredHandler(h, httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		APIForbidden(w, r)
+	}), roles...)
+}
+
+// RoleRequiredHandler returns a handler that can be used to restrict access to
+// a handler to only requests from a user matching a set of roles. The request must
+// already have passed through the authentication handler.
+func RoleRequiredHandler(ok, failed httputil.ContextHandler, roles ...string) httputil.ContextHandler {
 	if failed == nil {
 		failed = loginRedirectHandler
 	}
-	return &authRequiredFilter{
-		authAPI:       authAPI,
+	return &roleRequiredHandler{
 		roles:         roles,
 		okHandler:     ok,
 		failedHandler: failed,
 	}
 }
 
-func (h *authRequiredFilter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// APIAuthRequiredHandler returns a filter that can be used to restrict access to
+// an API handler only requests that are authenticated.
+func APIAuthRequiredHandler(h httputil.ContextHandler, authAPI api.AuthAPI) httputil.ContextHandler {
+	return AuthRequiredHandler(h, httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		APIForbidden(w, r)
+	}), authAPI)
+}
+
+// AuthRequiredHandler returns a filter that can be used to restrict access to
+// a handler only requests that are authenticated.
+func AuthRequiredHandler(ok, failed httputil.ContextHandler, authAPI api.AuthAPI) httputil.ContextHandler {
+	if failed == nil {
+		failed = loginRedirectHandler
+	}
+	return &authRequiredFilter{
+		authAPI:       authAPI,
+		okHandler:     ok,
+		failedHandler: failed,
+	}
+}
+
+func (h roleRequiredHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := MustCtxAccount(ctx)
+	for _, role := range h.roles {
+		if account.Role == role {
+			h.okHandler.ServeHTTP(ctx, w, r)
+			return
+		}
+	}
+	h.failedHandler.ServeHTTP(ctx, w, r)
+}
+
+func (h *authRequiredFilter) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	account, err := ValidateAuth(h.authAPI, r)
 	switch err {
 	case nil:
-		for _, role := range h.roles {
-			if role == account.Role {
-				context.Set(r, CKAccount, account)
-				h.okHandler.ServeHTTP(w, r)
-				return
-			}
-		}
+		h.okHandler.ServeHTTP(CtxWithAccount(ctx, account), w, r)
+		return
 	case http.ErrNoCookie, api.ErrTokenDoesNotExist, api.ErrTokenExpired:
 	default:
 		// Log any other error
 		golog.Errorf("Failed to validate auth: %s", err.Error())
 	}
-	h.failedHandler.ServeHTTP(w, r)
+	h.failedHandler.ServeHTTP(ctx, w, r)
 }
 
-var loginRedirectHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+var loginRedirectHandler = httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/login?next="+url.QueryEscape(r.URL.Path), http.StatusSeeOther)
 })

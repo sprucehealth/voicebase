@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/common"
@@ -25,23 +25,23 @@ type createPathwayRequest struct {
 	Pathway *common.Pathway `json:"pathway"`
 }
 
-func NewPathwaysListHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&pathwaysListHandler{
+func newPathwaysListHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&pathwaysListHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *pathwaysListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *pathwaysListHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		h.get(w, r)
+		h.get(ctx, w, r)
 	case "POST":
-		h.post(w, r)
+		h.post(ctx, w, r)
 	}
 }
 
-func (h *pathwaysListHandler) get(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
+func (h *pathwaysListHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "GetPathwayList", nil)
 
 	var activeOnly bool
@@ -68,8 +68,8 @@ func (h *pathwaysListHandler) get(w http.ResponseWriter, r *http.Request) {
 	httputil.JSONResponse(w, http.StatusOK, &pathwaysListResponse{Pathways: pathways})
 }
 
-func (h *pathwaysListHandler) post(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
+func (h *pathwaysListHandler) post(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "CreatePathway", nil)
 
 	var req createPathwayRequest

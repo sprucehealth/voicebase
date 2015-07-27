@@ -5,11 +5,11 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/www"
 )
@@ -30,8 +30,8 @@ type uploadHandler struct {
 	required bool
 }
 
-func NewUploadCVHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) http.Handler {
-	return httputil.SupportedMethods(&uploadHandler{
+func newUploadCVHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&uploadHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		store:    store,
@@ -44,8 +44,8 @@ func NewUploadCVHandler(router *mux.Router, dataAPI api.DataAPI, store storage.S
 	}, httputil.Get, httputil.Post)
 }
 
-func NewUploadLicenseHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) http.Handler {
-	return httputil.SupportedMethods(&uploadHandler{
+func newUploadLicenseHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&uploadHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		store:    store,
@@ -59,8 +59,8 @@ func NewUploadLicenseHandler(router *mux.Router, dataAPI api.DataAPI, store stor
 	}, httputil.Get, httputil.Post)
 }
 
-func NewUploadClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) http.Handler {
-	return httputil.SupportedMethods(&uploadHandler{
+func newUploadClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&uploadHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		store:    store,
@@ -74,7 +74,7 @@ func NewUploadClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, stor
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *uploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *uploadHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	u, err := h.router.Get(h.nextURL).URLPath()
 	if err != nil {
 		www.InternalServerError(w, r, err)
@@ -82,7 +82,7 @@ func (h *uploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	nextURL := u.String()
 
-	account := context.Get(r, www.CKAccount).(*common.Account)
+	account := www.MustCtxAccount(ctx)
 	doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
 		www.InternalServerError(w, r, err)

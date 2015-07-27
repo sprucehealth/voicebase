@@ -4,12 +4,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -17,20 +16,20 @@ type adminsPermissionsAPIHandler struct {
 	authAPI api.AuthAPI
 }
 
-func NewAdminsPermissionsAPIHandler(authAPI api.AuthAPI) http.Handler {
-	return httputil.SupportedMethods(&adminsPermissionsAPIHandler{
+func newAdminsPermissionsAPIHandler(authAPI api.AuthAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&adminsPermissionsAPIHandler{
 		authAPI: authAPI,
 	}, httputil.Get)
 }
 
-func (h *adminsPermissionsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	accountID, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+func (h *adminsPermissionsAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	accountID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return
 	}
 
-	account := context.Get(r, www.CKAccount).(*common.Account)
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "GetAdminPermissions", map[string]interface{}{"param_account_id": accountID})
 
 	// Verify account exists and is the correct role

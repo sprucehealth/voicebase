@@ -7,12 +7,12 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -36,8 +36,8 @@ type cellVerifyRequest struct {
 	Code   string `json:"code"`
 }
 
-func NewCellVerifyHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, templateLoader *www.TemplateLoader) http.Handler {
-	return httputil.SupportedMethods(&cellVerifyHandler{
+func newCellVerifyHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&cellVerifyHandler{
 		router:     router,
 		dataAPI:    dataAPI,
 		authAPI:    authAPI,
@@ -48,8 +48,8 @@ func NewCellVerifyHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.A
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *cellVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
+func (h *cellVerifyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
 
 	numbers, err := h.authAPI.GetPhoneNumbersForAccount(account.ID)
 	if err != nil {

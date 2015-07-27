@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -15,8 +16,8 @@ import (
 )
 
 const (
-	VisitStatusUncompleted = "uncompleted"
-	VisitStatusSubmitted   = "submitted"
+	visitStatusUncompleted = "uncompleted"
+	visitStatusSubmitted   = "submitted"
 )
 
 type caseVisitsHandler struct {
@@ -34,11 +35,11 @@ type caseVisitsGETResponse struct {
 	VisitSummaries []*responses.PHISafeVisitSummary `json:"visit_summaries"`
 }
 
-func NewCaseVisitsHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&caseVisitsHandler{dataAPI: dataAPI}, httputil.Get)
+func newCaseVisitsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&caseVisitsHandler{dataAPI: dataAPI}, httputil.Get)
 }
 
-func (h *caseVisitsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *caseVisitsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		rd, err := h.parseGETRequest(w, r)
@@ -69,9 +70,9 @@ func (h *caseVisitsHandler) parseGETRequest(w http.ResponseWriter, r *http.Reque
 func (h *caseVisitsHandler) serveGET(w http.ResponseWriter, r *http.Request, rd *caseVisitsGETRequest) {
 	var includedStatuses []string
 	switch {
-	case rd.Status == VisitStatusUncompleted:
+	case rd.Status == visitStatusUncompleted:
 		includedStatuses = []string{common.PVStatusRouted, common.PVStatusCharged, common.PVStatusReviewing, common.PVStatusSubmitted}
-	case rd.Status == VisitStatusSubmitted:
+	case rd.Status == visitStatusSubmitted:
 		includedStatuses = []string{common.PVStatusRouted, common.PVStatusCharged, common.PVStatusReviewing, common.PVStatusSubmitted, common.PVStatusTreated}
 	}
 	includedStatuses = append(includedStatuses, rd.Statuses...)

@@ -5,12 +5,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -18,20 +17,20 @@ type analyticsReportsAPIHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewAnalyticsReportsAPIHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&analyticsReportsAPIHandler{
+func newAnalyticsReportsAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&analyticsReportsAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *analyticsReportsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+func (h *analyticsReportsAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return
 	}
 
-	account := context.Get(r, www.CKAccount).(*common.Account)
+	account := www.MustCtxAccount(ctx)
 
 	if r.Method == httputil.Post {
 		audit.LogAction(account.ID, "AdminAPI", "UpdateAnalyticsReport", map[string]interface{}{"report_id": id})

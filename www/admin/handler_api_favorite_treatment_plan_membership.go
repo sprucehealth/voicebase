@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/responses"
-
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
+	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -40,13 +40,13 @@ type ftpMembershipDELETERequest struct {
 	PathwayID  int64
 }
 
-func NewFTPMembershipHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&ftpMembershipHandler{dataAPI: dataAPI},
+func newFTPMembershipHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&ftpMembershipHandler{dataAPI: dataAPI},
 		httputil.Get, httputil.Post, httputil.Delete)
 }
 
-func (h *ftpMembershipHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ftpID, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+func (h *ftpMembershipHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	ftpID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return
@@ -146,7 +146,7 @@ func (h *ftpMembershipHandler) serveDELETE(w http.ResponseWriter, r *http.Reques
 	httputil.JSONResponse(w, http.StatusOK, true)
 }
 
-type FullName struct {
+type fullName struct {
 	FirstName string
 	LastName  string
 }
@@ -175,9 +175,9 @@ func (h *ftpMembershipHandler) serveGET(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	doctorMap := make(map[int64]FullName)
+	doctorMap := make(map[int64]fullName)
 	for _, d := range doctors {
-		doctorMap[d.ID.Int64()] = FullName{
+		doctorMap[d.ID.Int64()] = fullName{
 			FirstName: d.FirstName,
 			LastName:  d.LastName,
 		}

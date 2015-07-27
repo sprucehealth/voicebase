@@ -3,7 +3,7 @@ package admin
 import (
 	"net/http"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/common"
@@ -15,16 +15,16 @@ type adminsListAPIHandler struct {
 	authAPI api.AuthAPI
 }
 
-func NewAdminsListAPIHandler(authAPI api.AuthAPI) http.Handler {
-	return httputil.SupportedMethods(&adminsListAPIHandler{
+func newAdminsListAPIHandler(authAPI api.AuthAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&adminsListAPIHandler{
 		authAPI: authAPI,
 	}, httputil.Get)
 }
 
-func (h *adminsListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *adminsListAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	query := r.FormValue("q")
 
-	account := context.Get(r, www.CKAccount).(*common.Account)
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "ListAdmins", map[string]interface{}{"query": query})
 
 	var accounts []*common.Account

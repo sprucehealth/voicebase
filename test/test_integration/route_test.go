@@ -14,7 +14,7 @@ import (
 // explicitly defines how it handles authorization and authentication
 func TestAuthSetup(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// get a list of all the paths registered with the mux

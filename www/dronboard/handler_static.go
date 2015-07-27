@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
 )
@@ -13,13 +14,13 @@ type staticTemplateHandler struct {
 	context  interface{}
 }
 
-func NewStaticTemplateHandler(template *template.Template, context interface{}) http.Handler {
-	return httputil.SupportedMethods(&staticTemplateHandler{
+func newStaticTemplateHandler(template *template.Template, context interface{}) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&staticTemplateHandler{
 		template: template,
 		context:  context,
 	}, httputil.Get)
 }
 
-func (h *staticTemplateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *staticTemplateHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	www.TemplateResponse(w, http.StatusOK, h.template, h.context)
 }

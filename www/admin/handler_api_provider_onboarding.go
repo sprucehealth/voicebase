@@ -9,13 +9,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/www"
 )
@@ -33,20 +32,20 @@ type providerOnboardingURLAPIHandler struct {
 	signer  *sig.Signer
 }
 
-func NewProviderOnboardingURLAPIHandler(r *mux.Router, dataAPI api.DataAPI, signer *sig.Signer, cfgStore cfg.Store) http.Handler {
+func newProviderOnboardingURLAPIHandler(r *mux.Router, dataAPI api.DataAPI, signer *sig.Signer, cfgStore cfg.Store) httputil.ContextHandler {
 	cfgStore.Register(onboardTimeExpirationDef)
-	return httputil.SupportedMethods(&providerOnboardingURLAPIHandler{
+	return httputil.ContextSupportedMethods(&providerOnboardingURLAPIHandler{
 		router:  r,
 		dataAPI: dataAPI,
 		signer:  signer,
 	}, httputil.Get)
 }
 
-func (h *providerOnboardingURLAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
+func (h *providerOnboardingURLAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "GenerateProviderOnboardingURL", nil)
 
-	cfgSnap := cfg.Context(r)
+	cfgSnap := cfg.Context(ctx)
 
 	nonceBytes := make([]byte, 8)
 	if _, err := rand.Read(nonceBytes); err != nil {

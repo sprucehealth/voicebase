@@ -11,7 +11,7 @@ import (
 
 func TestCommonDiagnosisSet(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	// create pathway
 	pathway := &common.Pathway{

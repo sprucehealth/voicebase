@@ -13,7 +13,7 @@ import (
 
 func TestPatientCareProvidingEllgibility(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	resp, err := http.Get(testData.APIServer.URL + apipaths.CheckEligibilityURLPath + "?zip_code=94115")
@@ -69,7 +69,7 @@ func TestPatientCareProvidingEllgibility(t *testing.T) {
 
 func TestSpruceAvailableInState(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dr, _, _ := SignupRandomTestDoctor(t, testData)

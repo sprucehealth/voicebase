@@ -11,7 +11,7 @@ import (
 
 func TestPatientCaseNoteInteraction(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dr := test_integration.SignupRandomTestDoctorInState("PA", t, testData)

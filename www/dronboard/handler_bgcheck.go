@@ -6,11 +6,10 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -51,8 +50,8 @@ func (r *bgCheckForm) Validate() map[string]string {
 	return errors
 }
 
-func NewBackgroundCheckHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) http.Handler {
-	return httputil.SupportedMethods(&bgCheckHandler{
+func newBackgroundCheckHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&bgCheckHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		template: templateLoader.MustLoadTemplate("dronboard/backgroundcheck.html", "dronboard/base.html", nil),
@@ -60,8 +59,8 @@ func NewBackgroundCheckHandler(router *mux.Router, dataAPI api.DataAPI, template
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *bgCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
+func (h *bgCheckHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
 	doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
 		www.InternalServerError(w, r, err)

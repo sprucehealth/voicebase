@@ -5,21 +5,23 @@
 package mux
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"path"
+	"regexp"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context" // NewRouter returns a new router instance.
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
-// NewRouter returns a new router instance.
 func NewRouter() *Router {
-	return &Router{namedRoutes: make(map[string]*Route), KeepContext: false}
+	return &Router{namedRoutes: make(map[string]*Route)}
 }
 
 // Router registers routes to be matched and dispatches a handler.
 //
-// It implements the http.Handler interface, so it can be registered to serve
+// It implements the httputil.ContextHandler interface, so it can be registered to serve
 // requests:
 //
 //     var router = mux.NewRouter()
@@ -37,7 +39,7 @@ func NewRouter() *Router {
 // This will send all incoming requests to the router.
 type Router struct {
 	// Configurable Handler to be used when no route matches.
-	NotFoundHandler http.Handler
+	NotFoundHandler httputil.ContextHandler
 	// Parent route, if this is a subrouter.
 	parent parentRoute
 	// Routes to be matched, in order.
@@ -46,8 +48,6 @@ type Router struct {
 	namedRoutes map[string]*Route
 	// See Router.StrictSlash(). This defines the flag for new routes.
 	strictSlash bool
-	// If true, do not clear the request context after handling the request
-	KeepContext bool
 }
 
 // Match matches registered routes against the request.
@@ -64,7 +64,7 @@ func (r *Router) Match(req *http.Request, match *RouteMatch) bool {
 //
 // When there is a match, the route variables can be retrieved calling
 // mux.Vars(request).
-func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (r *Router) ServeHTTP(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 	// Clean path to canonical form and redirect.
 	if p := cleanPath(req.URL.Path); p != req.URL.Path {
 
@@ -80,22 +80,19 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	var match RouteMatch
-	var handler http.Handler
+	var handler httputil.ContextHandler
 	if r.Match(req, &match) {
 		handler = match.Handler
-		setVars(req, match.Vars)
-		setCurrentRoute(req, match.Route)
+		ctx = setVars(ctx, match.Vars)
+		ctx = setCurrentRoute(ctx, match.Route)
 	}
 	if handler == nil {
 		handler = r.NotFoundHandler
 		if handler == nil {
-			handler = http.NotFoundHandler()
+			handler = httputil.NotFoundHandler()
 		}
 	}
-	if !r.KeepContext {
-		defer context.Clear(req)
-	}
-	handler.ServeHTTP(w, req)
+	handler.ServeHTTP(ctx, w, req)
 }
 
 // Get returns a route registered with the given name.
@@ -172,14 +169,13 @@ func (r *Router) NewRoute() *Route {
 
 // Handle registers a new route with a matcher for the URL path.
 // See Route.Path() and Route.Handler().
-func (r *Router) Handle(path string, handler http.Handler) *Route {
+func (r *Router) Handle(path string, handler httputil.ContextHandler) *Route {
 	return r.NewRoute().Path(path).Handler(handler)
 }
 
 // HandleFunc registers a new route with a matcher for the URL path.
 // See Route.Path() and Route.HandlerFunc().
-func (r *Router) HandleFunc(path string, f func(http.ResponseWriter,
-	*http.Request)) *Route {
+func (r *Router) HandleFunc(path string, f func(context.Context, http.ResponseWriter, *http.Request)) *Route {
 	return r.NewRoute().Path(path).HandlerFunc(f)
 }
 
@@ -231,10 +227,56 @@ func (r *Router) Schemes(schemes ...string) *Route {
 	return r.NewRoute().Schemes(schemes...)
 }
 
-// BuildVars registers a new route with a custom function for modifying
+// BuildVarsFunc registers a new route with a custom function for modifying
 // route variables before building a URL.
 func (r *Router) BuildVarsFunc(f BuildVarsFunc) *Route {
 	return r.NewRoute().BuildVarsFunc(f)
+}
+
+// Walk walks the router and all its sub-routers, calling walkFn for each route
+// in the tree. The routes are walked in the order they were added. Sub-routers
+// are explored depth-first.
+func (r *Router) Walk(walkFn WalkFunc) error {
+	return r.walk(walkFn, []*Route{})
+}
+
+// ErrSkipRouter is used as a return value from WalkFuncs to indicate that the
+// router that walk is about to descend down to should be skipped.
+var ErrSkipRouter = errors.New("mux: skip this router")
+
+// WalkFunc is the type of the function called for each route visited by Walk.
+// At every invocation, it is given the current route, and the current router,
+// and a list of ancestor routes that lead to the current route.
+type WalkFunc func(route *Route, router *Router, ancestors []*Route) error
+
+func (r *Router) walk(walkFn WalkFunc, ancestors []*Route) error {
+	for _, t := range r.routes {
+		if t.regexp == nil || t.regexp.path == nil || t.regexp.path.template == "" {
+			continue
+		}
+
+		err := walkFn(t, r, ancestors)
+		if err == ErrSkipRouter {
+			continue
+		}
+		for _, sr := range t.matchers {
+			if h, ok := sr.(*Router); ok {
+				err := h.walk(walkFn, ancestors)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		if h, ok := t.handler.(*Router); ok {
+			ancestors = append(ancestors, t)
+			err := h.walk(walkFn, ancestors)
+			if err != nil {
+				return err
+			}
+			ancestors = ancestors[:len(ancestors)-1]
+		}
+	}
+	return nil
 }
 
 // ----------------------------------------------------------------------------
@@ -244,7 +286,7 @@ func (r *Router) BuildVarsFunc(f BuildVarsFunc) *Route {
 // RouteMatch stores information about a matched route.
 type RouteMatch struct {
 	Route   *Route
-	Handler http.Handler
+	Handler httputil.ContextHandler
 	Vars    map[string]string
 }
 
@@ -255,28 +297,28 @@ const (
 	routeKey
 )
 
-// Vars returns the route variables for the current request, if any.
-func Vars(r *http.Request) map[string]string {
-	if rv := context.Get(r, varsKey); rv != nil {
+// Vars returns the route variables for the context, if any.
+func Vars(ctx context.Context) map[string]string {
+	if rv := ctx.Value(varsKey); rv != nil {
 		return rv.(map[string]string)
 	}
 	return nil
 }
 
 // CurrentRoute returns the matched route for the current request, if any.
-func CurrentRoute(r *http.Request) *Route {
-	if rv := context.Get(r, routeKey); rv != nil {
+func CurrentRoute(ctx context.Context) *Route {
+	if rv := ctx.Value(routeKey); rv != nil {
 		return rv.(*Route)
 	}
 	return nil
 }
 
-func setVars(r *http.Request, val interface{}) {
-	context.Set(r, varsKey, val)
+func setVars(ctx context.Context, val interface{}) context.Context {
+	return context.WithValue(ctx, varsKey, val)
 }
 
-func setCurrentRoute(r *http.Request, val interface{}) {
-	context.Set(r, routeKey, val)
+func setCurrentRoute(ctx context.Context, val interface{}) context.Context {
+	return context.WithValue(ctx, routeKey, val)
 }
 
 // ----------------------------------------------------------------------------
@@ -313,16 +355,40 @@ func uniqueVars(s1, s2 []string) error {
 	return nil
 }
 
-// mapFromPairs converts variadic string parameters to a string map.
-func mapFromPairs(pairs ...string) (map[string]string, error) {
+func checkPairs(pairs ...string) (int, error) {
 	length := len(pairs)
 	if length%2 != 0 {
-		return nil, fmt.Errorf(
+		return length, fmt.Errorf(
 			"mux: number of parameters must be multiple of 2, got %v", pairs)
+	}
+	return length, nil
+}
+
+// mapFromPairs converts variadic string parameters to a string map.
+func mapFromPairsToString(pairs ...string) (map[string]string, error) {
+	length, err := checkPairs(pairs...)
+	if err != nil {
+		return nil, err
 	}
 	m := make(map[string]string, length/2)
 	for i := 0; i < length; i += 2 {
 		m[pairs[i]] = pairs[i+1]
+	}
+	return m, nil
+}
+
+func mapFromPairsToRegex(pairs ...string) (map[string]*regexp.Regexp, error) {
+	length, err := checkPairs(pairs...)
+	if err != nil {
+		return nil, err
+	}
+	m := make(map[string]*regexp.Regexp, length/2)
+	for i := 0; i < length; i += 2 {
+		regex, err := regexp.Compile(pairs[i+1])
+		if err != nil {
+			return nil, err
+		}
+		m[pairs[i]] = regex
 	}
 	return m, nil
 }
@@ -337,9 +403,8 @@ func matchInArray(arr []string, value string) bool {
 	return false
 }
 
-// matchMap returns true if the given key/value pairs exist in a given map.
-func matchMap(toCheck map[string]string, toMatch map[string][]string,
-	canonicalKey bool) bool {
+// matchMapWithString returns true if the given key/value pairs exist in a given map.
+func matchMapWithString(toCheck map[string]string, toMatch map[string][]string, canonicalKey bool) bool {
 	for k, v := range toCheck {
 		// Check if key exists.
 		if canonicalKey {
@@ -353,6 +418,34 @@ func matchMap(toCheck map[string]string, toMatch map[string][]string,
 			valueExists := false
 			for _, value := range values {
 				if v == value {
+					valueExists = true
+					break
+				}
+			}
+			if !valueExists {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// matchMapWithRegex returns true if the given key/value pairs exist in a given map compiled against
+// the given regex
+func matchMapWithRegex(toCheck map[string]*regexp.Regexp, toMatch map[string][]string, canonicalKey bool) bool {
+	for k, v := range toCheck {
+		// Check if key exists.
+		if canonicalKey {
+			k = http.CanonicalHeaderKey(k)
+		}
+		if values := toMatch[k]; values == nil {
+			return false
+		} else if v != nil {
+			// If value was defined as an empty string we only check that the
+			// key exists. Otherwise we also check for equality.
+			valueExists := false
+			for _, value := range values {
+				if v.MatchString(value) {
 					valueExists = true
 					break
 				}

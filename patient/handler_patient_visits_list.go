@@ -15,6 +15,7 @@ import (
 type visitsListHandler struct {
 	dataAPI            api.DataAPI
 	apiDomain          string
+	webDomain          string
 	dispatcher         *dispatch.Dispatcher
 	mediaStore         *media.Store
 	expirationDuration time.Duration
@@ -30,7 +31,7 @@ type visitsListResponse struct {
 }
 
 func NewVisitsListHandler(
-	dataAPI api.DataAPI, apiDomain string, dispatcher *dispatch.Dispatcher,
+	dataAPI api.DataAPI, apiDomain, webDomain string, dispatcher *dispatch.Dispatcher,
 	mediaStore *media.Store, expirationDuration time.Duration,
 ) http.Handler {
 	return httputil.SupportedMethods(
@@ -39,6 +40,7 @@ func NewVisitsListHandler(
 				&visitsListHandler{
 					dataAPI:            dataAPI,
 					apiDomain:          apiDomain,
+					webDomain:          webDomain,
 					dispatcher:         dispatcher,
 					mediaStore:         mediaStore,
 					expirationDuration: expirationDuration,
@@ -88,7 +90,7 @@ func (v *visitsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		intakeInfo, err := IntakeLayoutForVisit(v.dataAPI, v.apiDomain, v.mediaStore, v.expirationDuration, visit, patient, api.RolePatient)
+		intakeInfo, err := IntakeLayoutForVisit(v.dataAPI, v.apiDomain, v.webDomain, v.mediaStore, v.expirationDuration, visit, patient, api.RolePatient)
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return

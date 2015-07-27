@@ -15,7 +15,7 @@ import (
 // Test registering device token for first time
 func TestRegisteringToken_Patient(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
@@ -28,7 +28,7 @@ func TestRegisteringToken_Patient(t *testing.T) {
 
 func TestRegisteringToken_Doctor(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
@@ -44,7 +44,7 @@ func TestRegisteringToken_Doctor(t *testing.T) {
 
 func TestRegisteringToken_SameToken(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
@@ -66,7 +66,7 @@ func TestRegisteringToken_SameToken(t *testing.T) {
 
 func TestRegisteringToken_SameTokenDifferentUser(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
@@ -103,7 +103,7 @@ func TestRegisteringToken_SameTokenDifferentUser(t *testing.T) {
 
 func TestRegisteringToken_DifferentToken(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
@@ -123,7 +123,7 @@ func TestRegisteringToken_DifferentToken(t *testing.T) {
 
 func TestRegisteringToken_DeleteOnLogout(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
@@ -168,7 +168,7 @@ func TestRegisteringToken_DeleteOnLogout(t *testing.T) {
 // Test using appropriate notification config based on spruce header
 func TestRegisteringToken_NoConfig(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)

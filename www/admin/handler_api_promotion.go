@@ -7,10 +7,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/www"
 )
@@ -25,12 +26,12 @@ type PromotionPUTRequest struct {
 }
 
 // NewPromotionHandler returns an initialized instance of promotionHandler
-func NewPromotionHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&promotionHandler{dataAPI: dataAPI}, httputil.Put)
+func newPromotionHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&promotionHandler{dataAPI: dataAPI}, httputil.Put)
 }
 
-func (h *promotionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+func (h *promotionHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return

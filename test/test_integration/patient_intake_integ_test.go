@@ -60,7 +60,7 @@ func getAnswerWithTagAndExpectedType(answerTag, answerType string, questionID in
 
 func TestSingleSelectIntake(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// signup a random test patient for which to answer questions
@@ -116,7 +116,7 @@ func TestSingleSelectIntake(t *testing.T) {
 func TestMultipleChoiceIntake(t *testing.T) {
 
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// signup a random test patient for which to answer questions
@@ -180,7 +180,7 @@ func TestMultipleChoiceIntake(t *testing.T) {
 func TestSingleEntryIntake(t *testing.T) {
 
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// signup a random test patient for which to answer questions
@@ -224,7 +224,7 @@ func TestSingleEntryIntake(t *testing.T) {
 
 func TestFreeTextEntryIntake(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// signup a random test patient for which to answer questions
@@ -257,7 +257,7 @@ func TestFreeTextEntryIntake(t *testing.T) {
 // should reject the older response and keep the newer response intact
 func TestIntake_ClientOrdering(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// signup a random test patient for which to answer questions

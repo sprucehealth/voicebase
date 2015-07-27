@@ -13,10 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/environment"
-
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/analytics"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/idgen"
 )
@@ -62,39 +61,38 @@ func (w *loggingResponseWriter) Write(bytes []byte) (int, error) {
 // must be used to guarantee that a request ID exists. If a request ID does
 // not exist because a handler has not been wrapped with RequestIDHandler then
 // this function will panic.
-func RequestID(r *http.Request) int64 {
-	reqID, _ := context.Get(r, requestIDContextKey).(int64)
+func RequestID(ctx context.Context) int64 {
+	reqID, _ := ctx.Value(requestIDContextKey).(int64)
 	return reqID
 }
 
 type requestIDHandler struct {
-	h http.Handler
+	h ContextHandler
 }
 
 // RequestIDHandler wraps a handler to provide generation of a unique
 // request ID per request. The ID is available by calling RequestID(request).
-func RequestIDHandler(h http.Handler) http.Handler {
+func RequestIDHandler(h ContextHandler) ContextHandler {
 	return &requestIDHandler{h: h}
 }
 
-func (h *requestIDHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *requestIDHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	requestID, err := idgen.NewID()
 	if err != nil {
 		requestID = 0
 		golog.Errorf("Failed to generate request ID: %s", err.Error())
 	}
-	context.Set(r, requestIDContextKey, requestID)
-	h.h.ServeHTTP(w, r)
+	h.h.ServeHTTP(context.WithValue(ctx, requestIDContextKey, requestID), w, r)
 }
 
 type loggingHandler struct {
-	h    http.Handler
+	h    ContextHandler
 	log  golog.Logger
 	alog analytics.Logger
 }
 
 // LoggingHandler wraps a handler to provide request logging.
-func LoggingHandler(h http.Handler, log golog.Logger, alog analytics.Logger) http.Handler {
+func LoggingHandler(h ContextHandler, log golog.Logger, alog analytics.Logger) ContextHandler {
 	if environment.IsTest() {
 		return h
 	}
@@ -105,7 +103,7 @@ func LoggingHandler(h http.Handler, log golog.Logger, alog analytics.Logger) htt
 	}
 }
 
-func (h *loggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *loggingHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	logrw := &loggingResponseWriter{
 		ResponseWriter: w,
 		statusCode:     http.StatusOK,
@@ -125,7 +123,7 @@ func (h *loggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		responseTime := time.Since(startTime).Nanoseconds() / 1e3
 
-		reqID := RequestID(r)
+		reqID := RequestID(ctx)
 		remoteAddr := r.RemoteAddr
 		if idx := strings.LastIndex(remoteAddr, ":"); idx > 0 {
 			remoteAddr = remoteAddr[:idx]
@@ -177,5 +175,5 @@ func (h *loggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		})
 	}()
 
-	h.h.ServeHTTP(logrw, r)
+	h.h.ServeHTTP(ctx, logrw, r)
 }

@@ -27,7 +27,7 @@ import (
 
 func TestFollowup_CreateAndSubmit(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
 		QueueService: &awsutil.SQS{},
@@ -210,7 +210,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 
 func TestFollowup_LayoutVersionUpdateOnRead(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// create doctor

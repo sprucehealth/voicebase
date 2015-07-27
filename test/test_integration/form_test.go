@@ -9,7 +9,7 @@ import (
 
 func TestForm(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	test.OK(t, testData.DataAPI.RecordForm(&common.NotifyMeForm{
 		Email:     "test@test.com",

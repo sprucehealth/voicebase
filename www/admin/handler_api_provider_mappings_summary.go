@@ -3,10 +3,9 @@ package admin
 import (
 	"net/http"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
 )
@@ -19,14 +18,14 @@ type providerMappingsSummaryResponse struct {
 	Summary []*api.CareProviderStatePathwayMappingSummary `json:"summary"`
 }
 
-func NewProviderMappingsSummaryHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&providerMappingsSummaryHandler{
+func newProviderMappingsSummaryHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&providerMappingsSummaryHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get)
 }
 
-func (h *providerMappingsSummaryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
+func (h *providerMappingsSummaryHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
 
 	audit.LogAction(account.ID, "AdminAPI", "CareProviderStatePathwayMappingsSummary", nil)
 

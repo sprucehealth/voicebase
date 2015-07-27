@@ -5,11 +5,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
 )
@@ -64,16 +65,16 @@ func TestHandlerProviderFTPGETSuccess(t *testing.T) {
 	dataAPI := mockedDataAPI_handlerProviderFTP{DataAPI: &api.DataService{}, ftp: ftp, memberships: memberships, doctors: doctors}
 	tresp, err := responses.TransformFTPToResponse(dataAPI, nil, 1, ftp, "")
 	test.OK(t, err)
-	providerFTPHandler := NewProviderFTPHandler(dataAPI, nil)
+	providerFTPHandler := newProviderFTPHandler(dataAPI, nil)
 	resp := providerFTPGETResponse{
 		FavoriteTreatmentPlans: map[string][]*responses.FavoriteTreatmentPlan{
 			"Pathway": []*responses.FavoriteTreatmentPlan{tresp, tresp},
 		},
 	}
 	m := mux.NewRouter()
-	m.HandleFunc(`/admin/api/providers/{id:[0-9]+}/treatment_plan/favorite`, providerFTPHandler.ServeHTTP)
+	m.Handle(`/admin/api/providers/{id:[0-9]+}/treatment_plan/favorite`, providerFTPHandler)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, resp)
-	m.ServeHTTP(responseWriter, r)
+	m.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }

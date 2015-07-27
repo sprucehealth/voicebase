@@ -4,12 +4,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
-	"github.com/sprucehealth/backend/responses"
-	"github.com/sprucehealth/backend/www"
-
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
+	"github.com/sprucehealth/backend/responses"
+	"github.com/sprucehealth/backend/www"
 )
 
 type caseVisitHandler struct {
@@ -20,12 +20,12 @@ type caseVisitGETResponse struct {
 	VisitSummary *responses.PHISafeVisitSummary `json:"visit_summary"`
 }
 
-func NewCaseVisitHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&caseVisitHandler{dataAPI: dataAPI}, httputil.Get)
+func newCaseVisitHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&caseVisitHandler{dataAPI: dataAPI}, httputil.Get)
 }
 
-func (h *caseVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	visitID, err := strconv.ParseInt(mux.Vars(r)["visitID"], 10, 64)
+func (h *caseVisitHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	visitID, err := strconv.ParseInt(mux.Vars(ctx)["visitID"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return

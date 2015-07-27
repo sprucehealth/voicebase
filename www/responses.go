@@ -18,6 +18,11 @@ const (
 	HTMLContentType = "text/html; charset=utf-8"
 )
 
+// Non-standard response status codes
+const (
+	HTTPStatusAPIError = 490
+)
+
 // TODO: make this internal and more informative
 var errorTemplate = template.Must(template.New("").Parse(`<!DOCTYPE html>
 <html>
@@ -39,7 +44,7 @@ type errorContext struct {
 
 // APIError represents an error for an API request
 type APIError struct {
-	Code    int    `json:"code"`
+	Type    string `json:"type"`
 	Message string `json:"message"`
 }
 
@@ -76,20 +81,30 @@ func TemplateResponse(w http.ResponseWriter, code int, tmpl Template, ctx interf
 // The provided error is logged but not returned in the response.
 func APIInternalError(w http.ResponseWriter, r *http.Request, err error) {
 	golog.LogDepthf(1, golog.ERR, err.Error())
-	httputil.JSONResponse(w, http.StatusInternalServerError, &APIErrorResponse{APIError{Message: "Internal server error"}})
+	httputil.JSONResponse(w, http.StatusInternalServerError, &APIErrorResponse{APIError{Type: "internal_error", Message: "Internal server error"}})
 }
 
 // APIBadRequestError writes a JSON error response with the given message as content and status code of 400.
 func APIBadRequestError(w http.ResponseWriter, r *http.Request, msg string) {
-	httputil.JSONResponse(w, http.StatusBadRequest, &APIErrorResponse{APIError{Message: msg}})
+	httputil.JSONResponse(w, http.StatusBadRequest, &APIErrorResponse{APIError{Type: "bad_request", Message: msg}})
 }
 
 // APINotFound writes a JSON error response with the message "Not found" and status code of 404.
 func APINotFound(w http.ResponseWriter, r *http.Request) {
-	httputil.JSONResponse(w, http.StatusNotFound, &APIErrorResponse{APIError{Message: "Not found"}})
+	httputil.JSONResponse(w, http.StatusNotFound, &APIErrorResponse{APIError{Type: "not_found", Message: "Resource not found"}})
 }
 
 // APIForbidden writes a JSON error response with the message "Access not allowed" and status code of 403.
 func APIForbidden(w http.ResponseWriter, r *http.Request) {
-	httputil.JSONResponse(w, http.StatusForbidden, &APIErrorResponse{APIError{Message: "Access not allowed"}})
+	httputil.JSONResponse(w, http.StatusForbidden, &APIErrorResponse{APIError{Type: "forbidden", Message: "Access not allowed"}})
+}
+
+// APIGeneralError writes a general API error response with status code HTTPStatusAPIError.
+func APIGeneralError(w http.ResponseWriter, r *http.Request, etype, msg string) {
+	httputil.JSONResponse(w, HTTPStatusAPIError, &APIErrorResponse{
+		Error: APIError{
+			Message: msg,
+			Type:    etype,
+		},
+	})
 }

@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/www"
 )
@@ -30,23 +30,23 @@ type updatePathwayRequest struct {
 
 // NewPathwayHandler returns an HTTP handler that supports GET for requesting
 // pathway details and PATCH for updating the pathway details.
-func NewPathwayHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&pathwayHandler{
+func newPathwayHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&pathwayHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Patch)
 }
 
-func (h *pathwayHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *pathwayHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		h.get(w, r)
+		h.get(ctx, w, r)
 	case httputil.Patch:
-		h.patch(w, r)
+		h.patch(ctx, w, r)
 	}
 }
 
-func (h *pathwayHandler) get(w http.ResponseWriter, r *http.Request) {
-	pathwayID, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+func (h *pathwayHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	pathwayID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return
@@ -58,7 +58,7 @@ func (h *pathwayHandler) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	account := context.Get(r, www.CKAccount).(*common.Account)
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "GetPathway", map[string]interface{}{"pathway_id": pathwayID})
 
 	if pathway.Details == nil {
@@ -93,8 +93,8 @@ func (h *pathwayHandler) get(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *pathwayHandler) patch(w http.ResponseWriter, r *http.Request) {
-	pathwayID, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+func (h *pathwayHandler) patch(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	pathwayID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return
@@ -113,7 +113,7 @@ func (h *pathwayHandler) patch(w http.ResponseWriter, r *http.Request) {
 	}
 	pathway.Details = req.Details
 
-	account := context.Get(r, www.CKAccount).(*common.Account)
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "UpdatePathway", map[string]interface{}{"pathway_id": pathwayID})
 
 	update := &api.PathwayUpdate{

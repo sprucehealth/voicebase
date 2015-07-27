@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 )
 
 // compressedResponseTypes lists the mimetypes for resposnes that should be compressed.
@@ -15,43 +17,43 @@ var compressedResponseTypes = []string{
 }
 
 type decompressRequestHandler struct {
-	h http.Handler
+	h ContextHandler
 }
 
 // DecompressRequest wraps a handler to take care of decompressing
 // requests when Content-Ending is gzip.
-func DecompressRequest(h http.Handler) http.Handler {
+func DecompressRequest(h ContextHandler) ContextHandler {
 	return &decompressRequestHandler{h: h}
 }
 
-func (ch *decompressRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (ch *decompressRequestHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" && r.Header.Get("Content-Encoding") == "gzip" {
 		r.Body = &gzipReadCloser{rc: r.Body}
 		defer r.Body.Close() // Only closes the gzip reader. The http server handles closing the real Body.
 	}
-	ch.h.ServeHTTP(w, r)
+	ch.h.ServeHTTP(ctx, w, r)
 }
 
 type compressResponseHandler struct {
-	h http.Handler
+	h ContextHandler
 }
 
 // CompressResponse wraps a handler to take care of compressing
 // responses when the content-type is of a compressible type (e.g. json, html)
-func CompressResponse(h http.Handler) http.Handler {
+func CompressResponse(h ContextHandler) ContextHandler {
 	return &compressResponseHandler{h: h}
 }
 
-func (ch *compressResponseHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (ch *compressResponseHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-		ch.h.ServeHTTP(w, r)
+		ch.h.ServeHTTP(ctx, w, r)
 		return
 	}
 
 	rw := &gzipResponseWriter{ResponseWriter: w}
 	defer rw.Close() // Only closes the gzip writer. The http server handles closing the real ResponseWriter.
 
-	ch.h.ServeHTTP(rw, r)
+	ch.h.ServeHTTP(ctx, rw, r)
 }
 
 type gzipReadCloser struct {

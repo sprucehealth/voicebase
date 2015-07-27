@@ -17,7 +17,7 @@ import (
 // This includes items in the unclaimed case queue as well as items in a doctor's inbox
 func TestMAQueue_UnassignedTab(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
@@ -74,7 +74,7 @@ func TestMAQueue_UnassignedTab(t *testing.T) {
 // in their queue, along with their own items
 func TestMAQueue_CompletedTab(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)

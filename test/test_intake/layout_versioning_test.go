@@ -14,7 +14,7 @@ import (
 
 func TestLayoutVersioning_MajorUpgrade(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// specify the intake to upload
@@ -157,7 +157,7 @@ func TestLayoutVersioning_MajorUpgrade(t *testing.T) {
 
 func TestLayoutVersioning_MinorUpgrade(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// need to first do a major upgrade to be able to test minor upgrades
@@ -231,7 +231,7 @@ func TestLayoutVersioning_MinorUpgrade(t *testing.T) {
 
 func TestLayoutVersioning_IncompatiblePatchUpgrades(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// need to first do a major upgrade to be able to test minor upgrades
@@ -278,7 +278,7 @@ func TestLayoutVersioning_IncompatiblePatchUpgrades(t *testing.T) {
 
 func TestLayoutVersioning_PatchUpgrade(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// need to first do a major upgrade to be able to test minor upgrades
@@ -370,7 +370,7 @@ func TestLayoutVersioning_PatchUpgrade(t *testing.T) {
 
 func TestLayoutVersioning_DiagnosisLayout(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// ensure that we can successfully upload a diagnosis layout by itself
@@ -421,7 +421,7 @@ func TestLayoutVersioning_DiagnosisLayout(t *testing.T) {
 
 func TestLayoutVersioning_MajorUpgradeValidation(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// ensure that a major upgrade requires both layouts to be present
@@ -468,7 +468,7 @@ func TestLayoutVersioning_MajorUpgradeValidation(t *testing.T) {
 
 func TestLayoutVersioning_FollowupSupport(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// add a followup layout and ensure that both followup and new-visit layouts stay active
@@ -613,7 +613,7 @@ func insertLayoutVersion(t *testing.T, testData *test_integration.TestData, purp
 
 func TestLayoutVersionMappingDataAccess(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	skuType := "test_sku"
 	skuID, err := testData.DataAPI.CreateSKU(&common.SKU{
@@ -683,7 +683,7 @@ func TestLayoutVersionMappingDataAccess(t *testing.T) {
 
 func TestLayoutTemplateDataAccess(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	skuType := "test_sku"

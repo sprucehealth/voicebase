@@ -25,7 +25,7 @@ func (as attachments) Less(a, b int) bool { return as[a].Type < as[b].Type }
 
 func TestScheduledMessage(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
@@ -137,7 +137,7 @@ func TestScheduledMessage(t *testing.T) {
 
 func TestScheduledMessageSend(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
@@ -205,7 +205,7 @@ func TestScheduledMessageSend(t *testing.T) {
 
 func TestFavoriteTPScheduledMessage(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)

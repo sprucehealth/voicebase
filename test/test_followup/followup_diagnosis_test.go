@@ -17,7 +17,7 @@ import (
 
 func TestFollowup_Diagnose(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// create doctor

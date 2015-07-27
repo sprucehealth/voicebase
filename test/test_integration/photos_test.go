@@ -10,7 +10,7 @@ import (
 
 func TestPhotoUpload(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)

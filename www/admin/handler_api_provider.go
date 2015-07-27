@@ -4,12 +4,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -17,20 +17,20 @@ type providerAPIHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewProviderAPIHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&providerAPIHandler{
+func newProviderAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&providerAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get)
 }
 
-func (h *providerAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	doctorID, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+func (h *providerAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	doctorID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return
 	}
 
-	account := context.Get(r, www.CKAccount).(*common.Account)
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "GetDoctor", map[string]interface{}{"doctor_id": doctorID})
 
 	doctor, err := h.dataAPI.GetDoctorFromID(doctorID)

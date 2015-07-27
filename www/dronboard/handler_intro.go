@@ -4,8 +4,9 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/www"
 )
@@ -17,8 +18,8 @@ type introHandler struct {
 	template *template.Template
 }
 
-func NewIntroHandler(router *mux.Router, signer *sig.Signer, templateLoader *www.TemplateLoader) http.Handler {
-	return httputil.SupportedMethods(&introHandler{
+func newIntroHandler(router *mux.Router, signer *sig.Signer, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&introHandler{
 		router:   router,
 		nextStep: "doctor-register-account",
 		template: templateLoader.MustLoadTemplate("dronboard/intro.html", "dronboard/base.html", nil),
@@ -26,7 +27,7 @@ func NewIntroHandler(router *mux.Router, signer *sig.Signer, templateLoader *www
 	}, httputil.Get)
 }
 
-func (h *introHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *introHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	if !validateRequestSignature(h.signer, r) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return

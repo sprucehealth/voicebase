@@ -13,7 +13,7 @@ import (
 
 func TestDoctorQueue(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	accountID, err := testData.AuthAPI.CreateAccount("cc1@sprucehealth.com", "abc", api.RoleCC)
 	test.OK(t, err)

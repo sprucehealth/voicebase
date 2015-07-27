@@ -24,7 +24,7 @@ func jsonString(v interface{}) string {
 
 func TestTreatmentPlanStatus(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
@@ -52,7 +52,7 @@ func TestTreatmentPlanStatus(t *testing.T) {
 
 func TestTreatmentPlan_MarkPatientViewed(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
@@ -70,7 +70,7 @@ func TestTreatmentPlan_MarkPatientViewed(t *testing.T) {
 
 func TestTreatmentPlanList(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
@@ -104,7 +104,7 @@ func TestTreatmentPlanList(t *testing.T) {
 
 func TestTreatmentPlanViews(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.Config.ERxRouting = true
 	testData.StartAPIServer(t)
 
@@ -167,7 +167,7 @@ func TestTreatmentPlanViews(t *testing.T) {
 
 func TestTreatmentPlanList_DiffTPStates(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.Config.ERxRouting = true
 	testData.StartAPIServer(t)
 
@@ -218,7 +218,7 @@ func TestTreatmentPlanList_DiffTPStates(t *testing.T) {
 
 func TestTreatmentPlanList_DraftTest(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 
@@ -259,7 +259,7 @@ func TestTreatmentPlanList_DraftTest(t *testing.T) {
 
 func TestTreatmentPlanList_FavTP(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
@@ -312,7 +312,7 @@ func TestTreatmentPlanList_FavTP(t *testing.T) {
 
 func TestTreatmentPlanDelete(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
@@ -337,7 +337,7 @@ func TestTreatmentPlanDelete(t *testing.T) {
 
 func TestTreatmentPlanDelete_ActiveTP(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
@@ -371,7 +371,7 @@ func TestTreatmentPlanDelete_ActiveTP(t *testing.T) {
 
 func TestTreatmentPlanDelete_DifferentDoctor(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
@@ -408,7 +408,7 @@ func TestTreatmentPlanDelete_DifferentDoctor(t *testing.T) {
 // This test is to ensure that draft and active TPs are being queried for separately for each case
 func TestTreatmentPlan_MultipleCases(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
@@ -452,7 +452,7 @@ func TestTreatmentPlan_MultipleCases(t *testing.T) {
 
 func TestTreatmentPlanSections(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
@@ -535,7 +535,7 @@ func TestTreatmentPlanSections(t *testing.T) {
 // This test is to ensure that draft and active TPs are being queried for separately for each case
 func TestTreatmentPlan_GlobalTreatmentPlanAddition(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)

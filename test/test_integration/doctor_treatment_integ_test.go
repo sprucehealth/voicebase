@@ -19,7 +19,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 	t.Skip("Flakey test. Probably DoseSpot's fault.")
 
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	// use a real dosespot service before instantiating the server
 	testData.Config.ERxAPI = testData.ERxAPI
 	testData.StartAPIServer(t)
@@ -59,7 +59,7 @@ func TestNewTreatmentSelection(t *testing.T) {
 
 func TestDispenseUnitIds(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	// use a real dosespot service before instantiating the server
 	testData.Config.ERxAPI = testData.ERxAPI
 	testData.StartAPIServer(t)
@@ -103,7 +103,7 @@ func TestDispenseUnitIds(t *testing.T) {
 
 func TestAddTreatments(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// get the current primary doctor
@@ -194,7 +194,7 @@ func TestAddTreatments(t *testing.T) {
 // provider in the event that the drug description is not found in our database
 func TestAddTreatments_FallbackToSelectMedication(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dr, _, _ := SignupRandomTestDoctor(t, testData)
@@ -252,7 +252,7 @@ func TestAddTreatments_FallbackToSelectMedication(t *testing.T) {
 func TestTreatmentTemplates(t *testing.T) {
 
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// get the current primary doctor
@@ -424,7 +424,7 @@ func TestTreatmentTemplates(t *testing.T) {
 func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// get the current primary doctor
@@ -638,7 +638,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 	t.Skip("Skipping test for now until long term fix as defined in https://github.com/SpruceHealth/backend/pull/657 is resolved.")
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	// use a real dosespot service before instantiating the server
 	testData.Config.ERxAPI = testData.ERxAPI
 	testData.StartAPIServer(t)

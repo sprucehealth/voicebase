@@ -22,7 +22,7 @@ import (
 
 func TestApplePay(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	// setup the test to have a cost for the acne_visit SKU
 	// so that the card is actually charged

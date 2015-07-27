@@ -10,7 +10,7 @@ import (
 
 func TestCaseList_PreSubmissionTriaged(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)

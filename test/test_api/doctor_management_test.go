@@ -12,7 +12,7 @@ import (
 
 func TestAvailableStates(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	// No doctors registered sanity check
 	states, err := testData.DataAPI.AvailableStates()

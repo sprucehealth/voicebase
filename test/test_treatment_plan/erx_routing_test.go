@@ -16,7 +16,7 @@ import (
 
 func TestERXRouting_RXStarted(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.Config.ERxRouting = true
 	testData.StartAPIServer(t)
 
@@ -114,7 +114,7 @@ func TestERXRouting_RXStarted(t *testing.T) {
 
 func TestERXRouting_RXSent(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.Config.ERxRouting = true
 	testData.StartAPIServer(t)
 
@@ -212,7 +212,7 @@ func TestERXRouting_RXSent(t *testing.T) {
 
 func TestERxRouting_CaseMessageExistsAlready(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.Config.ERxRouting = true
 	testData.StartAPIServer(t)
 

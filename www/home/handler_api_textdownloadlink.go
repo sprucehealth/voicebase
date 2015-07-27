@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/branch"
 	"github.com/sprucehealth/backend/common"
@@ -34,9 +35,8 @@ type textDownloadLinkAPIResponse struct {
 	Error   string `json:"error"`
 }
 
-// NewTextDownloadLinkAPIHandler returns an initialized instance of textDownloadLinkAPIHandler
-func NewTextDownloadLinkAPIHandler(dataAPI api.DataAPI, smsAPI api.SMSAPI, fromNumber string, branchClient branch.Client, rateLimiter ratelimit.KeyedRateLimiter) http.Handler {
-	return httputil.SupportedMethods(&textDownloadLinkAPIHandler{
+func newTextDownloadLinkAPIHandler(dataAPI api.DataAPI, smsAPI api.SMSAPI, fromNumber string, branchClient branch.Client, rateLimiter ratelimit.KeyedRateLimiter) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&textDownloadLinkAPIHandler{
 		smsAPI:       smsAPI,
 		fromNumber:   fromNumber,
 		branchClient: branchClient,
@@ -45,7 +45,7 @@ func NewTextDownloadLinkAPIHandler(dataAPI api.DataAPI, smsAPI api.SMSAPI, fromN
 	}, httputil.Post)
 }
 
-func (h *textDownloadLinkAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *textDownloadLinkAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	// Rate limit by remote IP address
 	if ok, err := h.rateLimiter.Check("ref:"+r.RemoteAddr, 1); err != nil {
 		golog.Errorf("Rate limit check failed: %s", err.Error())

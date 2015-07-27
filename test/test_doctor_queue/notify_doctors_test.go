@@ -14,7 +14,7 @@ import (
 
 func TestNotifyDoctorsOfUnclaimedCases(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// lets register multiple doctors in CA
@@ -88,7 +88,7 @@ func TestNotifyDoctorsOfUnclaimedCases(t *testing.T) {
 
 func TestNotifyDoctorsOfUnclaimedCases_SnoozeNotifications(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// lets register a doctor in CA
@@ -172,7 +172,7 @@ func TestNotifyDoctorsOfUnclaimedCases_SnoozeNotifications(t *testing.T) {
 // to notify of case routes to other states
 func TestNotifyDoctorsOfUnclaimedCases_AvoidOverlap(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// lets setup the scenario to have 1 doctor registered in PA
@@ -215,7 +215,7 @@ func TestNotifyDoctorsOfUnclaimedCases_AvoidOverlap(t *testing.T) {
 // of unclaimed cases submitted in the states they are activated in
 func TestNotifyDoctorsOfUnclaimedCases_NotifyFlag(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// lets create three doctors in three different state

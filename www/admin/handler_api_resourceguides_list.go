@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/common"
@@ -22,25 +22,25 @@ type resourceGuideList struct {
 	Guides   map[string][]*common.ResourceGuide `json:"guides"`
 }
 
-func NewResourceGuidesListAPIHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&resourceGuidesListAPIHandler{
+func newResourceGuidesListAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&resourceGuidesListAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Put, httputil.Post)
 }
 
-func (h *resourceGuidesListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *resourceGuidesListAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "PUT":
-		h.put(w, r)
+		h.put(ctx, w, r)
 	case "GET":
-		h.get(w, r)
+		h.get(ctx, w, r)
 	case "POST":
-		h.post(w, r)
+		h.post(ctx, w, r)
 	}
 }
 
-func (h *resourceGuidesListAPIHandler) get(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
+func (h *resourceGuidesListAPIHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "ListResourceGuides", nil)
 
 	withLayouts, _ := strconv.ParseBool(r.FormValue("with_layouts"))
@@ -74,8 +74,8 @@ func (h *resourceGuidesListAPIHandler) get(w http.ResponseWriter, r *http.Reques
 	})
 }
 
-func (h *resourceGuidesListAPIHandler) put(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
+func (h *resourceGuidesListAPIHandler) put(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "ImportResourceGuides", nil)
 
 	if err := r.ParseMultipartForm(maxMemory); err != nil {
@@ -114,8 +114,8 @@ func (h *resourceGuidesListAPIHandler) put(w http.ResponseWriter, r *http.Reques
 	httputil.JSONResponse(w, http.StatusOK, true)
 }
 
-func (h *resourceGuidesListAPIHandler) post(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
+func (h *resourceGuidesListAPIHandler) post(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "CreateResourceGuide", nil)
 
 	guide := &common.ResourceGuide{}

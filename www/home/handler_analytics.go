@@ -10,8 +10,10 @@ import (
 
 	resources "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/cookieo9/resources-go"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -103,7 +105,7 @@ type analyticsHandler struct {
 	statEventsDropped  *metrics.Counter
 }
 
-func newAnalyticsHandler(logger analytics.Logger, statsRegistry metrics.Registry) http.Handler {
+func newAnalyticsHandler(logger analytics.Logger, statsRegistry metrics.Registry) httputil.ContextHandler {
 	h := &analyticsHandler{
 		logger:             logger,
 		statEventsReceived: metrics.NewCounter(),
@@ -114,7 +116,7 @@ func newAnalyticsHandler(logger analytics.Logger, statsRegistry metrics.Registry
 	return h
 }
 
-func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *analyticsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	now := time.Now().UTC()
 	nowUnix := float64(now.UnixNano()) / 1e9
 

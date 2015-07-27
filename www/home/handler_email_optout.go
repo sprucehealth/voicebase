@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -21,9 +22,9 @@ type emailOptoutHandler struct {
 	template *template.Template
 }
 
-func newEmailOptoutHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, signer *sig.Signer, templateLoader *www.TemplateLoader) http.Handler {
+func newEmailOptoutHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, signer *sig.Signer, templateLoader *www.TemplateLoader) httputil.ContextHandler {
 	t := templateLoader.MustLoadTemplate("home/email-optout.html", "home/base.html", nil)
-	return httputil.SupportedMethods(&emailOptoutHandler{
+	return httputil.ContextSupportedMethods(&emailOptoutHandler{
 		dataAPI:  dataAPI,
 		authAPI:  authAPI,
 		signer:   signer,
@@ -31,8 +32,8 @@ func newEmailOptoutHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, signer *sig
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *emailOptoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx := &struct {
+func (h *emailOptoutHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	tmplCtx := &struct {
 		Unsubscribed bool
 		Email        string
 		Error        string
@@ -46,24 +47,24 @@ func (h *emailOptoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			accountID, _ := strconv.ParseInt(r.FormValue("id"), 10, 64)
 			if err := h.dataAPI.EmailUpdateOptOut(accountID, "all", true); err != nil {
 				golog.Errorf(err.Error())
-				ctx.Error = "Internal error. Please try again later."
+				tmplCtx.Error = "Internal error. Please try again later."
 			} else {
-				ctx.Unsubscribed = true
+				tmplCtx.Unsubscribed = true
 			}
 		}
 	case httputil.Post:
-		account, err := h.authAPI.AccountForEmail(strings.ToLower(strings.TrimSpace(ctx.Email)))
+		account, err := h.authAPI.AccountForEmail(strings.ToLower(strings.TrimSpace(tmplCtx.Email)))
 		if err == api.ErrLoginDoesNotExist {
-			ctx.Error = "No account found for the entered email."
+			tmplCtx.Error = "No account found for the entered email."
 		} else if err != nil {
 			golog.Errorf(err.Error())
-			ctx.Error = "Internal error. Please try again later."
+			tmplCtx.Error = "Internal error. Please try again later."
 		} else {
 			if err := h.dataAPI.EmailUpdateOptOut(account.ID, "all", true); err != nil {
 				golog.Errorf(err.Error())
-				ctx.Error = "Internal error. Please try again later."
+				tmplCtx.Error = "Internal error. Please try again later."
 			} else {
-				ctx.Unsubscribed = true
+				tmplCtx.Unsubscribed = true
 			}
 		}
 	}
@@ -71,7 +72,7 @@ func (h *emailOptoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Environment: environment.GetCurrent(),
 		Title:       "Email Optout | Spruce",
 		SubContext: &homeContext{
-			SubContext: ctx,
+			SubContext: tmplCtx,
 		},
 	})
 }

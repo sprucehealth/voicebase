@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -27,14 +27,14 @@ type accountResponse struct {
 	Account *common.Account `json:"account"`
 }
 
-func NewAccountHandler(authAPI api.AuthAPI) http.Handler {
-	return httputil.SupportedMethods(&accountHandler{
+func newAccountHandler(authAPI api.AuthAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&accountHandler{
 		authAPI: authAPI,
 	}, httputil.Get, httputil.Patch)
 }
 
-func (h *accountHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	reqAccountID, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+func (h *accountHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	reqAccountID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
 	if err != nil {
 		www.APINotFound(w, r)
 		return
@@ -48,8 +48,8 @@ func (h *accountHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	account := context.Get(r, www.CKAccount).(*common.Account)
-	perms := context.Get(r, www.CKPermissions).(www.Permissions)
+	account := www.MustCtxAccount(ctx)
+	perms := www.MustCtxPermissions(ctx)
 
 	if r.Method == httputil.Patch {
 		if !accountWriteAccess(reqAccount, perms) {

@@ -14,7 +14,7 @@ import (
 // the user can still create another case for the same pathway.
 func TestPreSubmissionTriage(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	pr := test_integration.SignupRandomTestPatient(t, testData)

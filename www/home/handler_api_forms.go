@@ -6,11 +6,12 @@ import (
 	"net/http"
 	"reflect"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -18,14 +19,14 @@ type formsAPIHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewFormsAPIHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&formsAPIHandler{
+func newFormsAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&formsAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Post)
 }
 
-func (h *formsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	formName := mux.Vars(r)["form"]
+func (h *formsAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	formName := mux.Vars(ctx)["form"]
 	formType := common.Forms[formName]
 	if formType == nil {
 		golog.Warningf("Form %s not found", formName)
@@ -42,7 +43,7 @@ func (h *formsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		www.APIInternalError(w, r, err)
 		return
 	}
-	requestID := httputil.RequestID(r)
+	requestID := httputil.RequestID(ctx)
 	if err := h.dataAPI.RecordForm(form, "home", requestID); err != nil {
 		www.APIInternalError(w, r, err)
 		return

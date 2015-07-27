@@ -8,11 +8,10 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/www"
 )
@@ -54,8 +53,8 @@ func (f *claimsHistoryForm) Validate() map[string]string {
 	return errors
 }
 
-func NewClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) http.Handler {
-	return httputil.SupportedMethods(&claimsHistoryHandler{
+func newClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&claimsHistoryHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		store:    store,
@@ -66,8 +65,8 @@ func NewClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store stor
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *claimsHistoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
+func (h *claimsHistoryHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
 	doctor, err := h.dataAPI.GetDoctorFromAccountID(account.ID)
 	if err != nil {
 		www.InternalServerError(w, r, err)

@@ -9,12 +9,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
-	"github.com/sprucehealth/backend/test/test_handler"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -45,16 +45,13 @@ func TestPromotionReferralRoutesHandlerGETQueriesDataLayer(t *testing.T) {
 		Priority:        1,
 		Lifecycle:       "ACTIVE",
 	}
-	promoReferralRoutesHandler := NewPromotionReferralRoutesHandler(&mockedDataAPI_promotionReferralRoutesHandler{
+	handler := newPromotionReferralRoutesHandler(&mockedDataAPI_promotionReferralRoutesHandler{
 		DataAPI:                 &api.DataService{},
 		promotionReferralRoutes: []*common.PromotionReferralRoute{route},
 	})
-	handler := test_handler.MockHandler{
-		H: promoReferralRoutesHandler,
-	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionReferralRoutesGETResponse{PromotionReferralRoutes: []*responses.PromotionReferralRoute{responses.TransformPromotionReferralRoute(route)}})
-	handler.ServeHTTP(responseWriter, r)
+	httputil.JSONResponse(expectedWriter, http.StatusOK, &promotionReferralRoutesGETResponse{PromotionReferralRoutes: []*responses.PromotionReferralRoute{responses.TransformPromotionReferralRoute(route)}})
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }
@@ -62,31 +59,25 @@ func TestPromotionReferralRoutesHandlerGETQueriesDataLayer(t *testing.T) {
 func TestPromotionReferralRoutesHandlerGETRequiredLifecycle(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	promoReferralRoutesHandler := NewPromotionReferralRoutesHandler(&mockedDataAPI_promotionReferralRoutesHandler{
+	handler := newPromotionReferralRoutesHandler(&mockedDataAPI_promotionReferralRoutesHandler{
 		DataAPI: &api.DataService{},
 	})
-	handler := test_handler.MockHandler{
-		H: promoReferralRoutesHandler,
-	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusBadRequest, struct{}{})
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 }
 
 func TestPromotionReferralRoutesHandlerGETNoRecords(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?lifecycles=ACTIVE", nil)
 	test.OK(t, err)
-	promoReferralRoutesHandler := NewPromotionReferralRoutesHandler(&mockedDataAPI_promotionReferralRoutesHandler{
+	handler := newPromotionReferralRoutesHandler(&mockedDataAPI_promotionReferralRoutesHandler{
 		DataAPI:                    &api.DataService{},
 		promotionReferralRoutesErr: api.ErrNotFound(`promotion_referral_route`),
 	})
-	handler := test_handler.MockHandler{
-		H: promoReferralRoutesHandler,
-	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionReferralRoutesGETResponse{PromotionReferralRoutes: []*responses.PromotionReferralRoute{}})
-	handler.ServeHTTP(responseWriter, r)
+	httputil.JSONResponse(expectedWriter, http.StatusOK, &promotionReferralRoutesGETResponse{PromotionReferralRoutes: []*responses.PromotionReferralRoute{}})
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }
@@ -94,21 +85,18 @@ func TestPromotionReferralRoutesHandlerGETNoRecords(t *testing.T) {
 func TestPromotionReferralRoutesHandlerGETQueryErr(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?lifecycles=ACTIVE", nil)
 	test.OK(t, err)
-	promoReferralRoutesHandler := NewPromotionReferralRoutesHandler(&mockedDataAPI_promotionReferralRoutesHandler{
+	handler := newPromotionReferralRoutesHandler(&mockedDataAPI_promotionReferralRoutesHandler{
 		DataAPI:                    &api.DataService{},
 		promotionReferralRoutesErr: errors.New("Foo"),
 	})
-	handler := test_handler.MockHandler{
-		H: promoReferralRoutesHandler,
-	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusInternalServerError, struct{}{})
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 }
 
 func TestPromotionReferralRoutesHandlerPOSTQueriesDataLayer(t *testing.T) {
-	req, err := json.Marshal(&PromotionReferralRoutesPOSTRequest{
+	req, err := json.Marshal(&promotionReferralRoutesPOSTRequest{
 		PromotionCodeID: 1,
 		Priority:        1,
 		Lifecycle:       "ACTIVE",
@@ -119,13 +107,10 @@ func TestPromotionReferralRoutesHandlerPOSTQueriesDataLayer(t *testing.T) {
 	mh := &mockedDataAPI_promotionReferralRoutesHandler{
 		DataAPI: &api.DataService{},
 	}
-	promoReferralRoutesHandler := NewPromotionReferralRoutesHandler(mh)
-	handler := test_handler.MockHandler{
-		H: promoReferralRoutesHandler,
-	}
+	handler := newPromotionReferralRoutesHandler(mh)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, struct{}{})
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 	test.Equals(t, int64(1), mh.insertPromotionReferralRoutesParam.PromotionCodeID)
@@ -134,25 +119,22 @@ func TestPromotionReferralRoutesHandlerPOSTQueriesDataLayer(t *testing.T) {
 }
 
 func TestPromotionReferralRoutesHandlerPOSTRequiredParams(t *testing.T) {
-	req, err := json.Marshal(&PromotionReferralRoutesPOSTRequest{})
+	req, err := json.Marshal(&promotionReferralRoutesPOSTRequest{})
 	test.OK(t, err)
 	r, err := http.NewRequest("POST", "mock.api.request", bytes.NewReader(req))
 	test.OK(t, err)
-	promoReferralRoutesHandler := NewPromotionReferralRoutesHandler(&mockedDataAPI_promotionReferralRoutesHandler{
+	handler := newPromotionReferralRoutesHandler(&mockedDataAPI_promotionReferralRoutesHandler{
 		DataAPI: &api.DataService{},
 	})
-	handler := test_handler.MockHandler{
-		H: promoReferralRoutesHandler,
-	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	www.APIBadRequestError(expectedWriter, r, errors.New("promotion_code_id, priority, lifecycle required").Error())
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }
 
 func TestPromotionReferralRoutesHandlerPOSTDataLayerErr(t *testing.T) {
-	req, err := json.Marshal(&PromotionReferralRoutesPOSTRequest{
+	req, err := json.Marshal(&promotionReferralRoutesPOSTRequest{
 		PromotionCodeID: 1,
 		Priority:        1,
 		Lifecycle:       "ACTIVE",
@@ -164,13 +146,10 @@ func TestPromotionReferralRoutesHandlerPOSTDataLayerErr(t *testing.T) {
 		DataAPI: &api.DataService{},
 		insertPromotionReferralRoutesErr: errors.New("Foo"),
 	}
-	promoReferralRoutesHandler := NewPromotionReferralRoutesHandler(mh)
-	handler := test_handler.MockHandler{
-		H: promoReferralRoutesHandler,
-	}
+	handler := newPromotionReferralRoutesHandler(mh)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	www.APIInternalError(expectedWriter, r, errors.New("Foo"))
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }

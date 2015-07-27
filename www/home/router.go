@@ -6,19 +6,22 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/branch"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
+	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/www"
 )
 
 const passCookieName = "hp"
 
+// SetupRoutes configures all routes for the home website using the provided mux.
 func SetupRoutes(
 	r *mux.Router,
 	dataAPI api.DataAPI,
@@ -32,6 +35,7 @@ func SetupRoutes(
 	analyticsLogger analytics.Logger,
 	templateLoader *www.TemplateLoader,
 	experimentIDs map[string]string,
+	mediaStore *media.Store,
 	metricsRegistry metrics.Registry,
 ) {
 	templateLoader.MustLoadTemplate("home/base.html", "base.html", map[string]interface{}{
@@ -62,43 +66,43 @@ func SetupRoutes(
 		},
 	})
 
-	var protect func(http.Handler) http.Handler
-	if password != "" {
-		protect = PasswordProtectFilter(password, templateLoader)
-	} else {
-		protect = func(h http.Handler) http.Handler { return h }
-	}
-
 	faqCtx := func() interface{} {
 		return &faqContext{
 			Sections: faq(dataAPI),
 		}
 	}
 
-	r.Handle("/", protect(newStaticHandler(r, templateLoader, "home/home.html", "Spruce", nil)))
-	r.Handle("/about", protect(newStaticHandler(r, templateLoader, "home/about.html", "About | Spruce", nil)))
-	r.Handle("/conditions-treated", protect(newStaticHandler(r, templateLoader, "home/conditions.html", "Conditions Treated | Spruce", nil)))
-	r.Handle("/contact", protect(newStaticHandler(r, templateLoader, "home/contact.html", "Contact | Spruce", nil)))
-	r.Handle("/faq", protect(newStaticHandler(r, templateLoader, "home/faq.html", "FAQ | Spruce", faqCtx)))
-	r.Handle("/free-visit-terms", protect(newStaticHandler(r, templateLoader, "home/free-visit-terms.html", "Free Visit Terms & Conditions | Spruce", nil)))
-	r.Handle("/meet-the-doctors", protect(newStaticHandler(r, templateLoader, "home/meet-the-doctors.html", "Meet the Doctors | Spruce", nil)))
-	r.Handle("/providers", protect(newStaticHandler(r, templateLoader, "home/providers.html", "For Providers | Spruce", nil)))
-	r.Handle("/terms", protect(newStaticHandler(r, templateLoader, "home/terms.html", "Terms & Conditions | Spruce", nil)))
-	r.Handle("/app", protect(newStaticHandler(r, templateLoader, "home/referral.html", "Get the App | Spruce", func() interface{} {
+	r.Handle("/", newStaticHandler(r, templateLoader, "home/home.html", "Spruce", nil))
+	r.Handle("/about", newStaticHandler(r, templateLoader, "home/about.html", "About | Spruce", nil))
+	r.Handle("/conditions-treated", newStaticHandler(r, templateLoader, "home/conditions.html", "Conditions Treated | Spruce", nil))
+	r.Handle("/contact", newStaticHandler(r, templateLoader, "home/contact.html", "Contact | Spruce", nil))
+	r.Handle("/faq", newStaticHandler(r, templateLoader, "home/faq.html", "FAQ | Spruce", faqCtx))
+	r.Handle("/free-visit-terms", newStaticHandler(r, templateLoader, "home/free-visit-terms.html", "Free Visit Terms & Conditions | Spruce", nil))
+	r.Handle("/meet-the-doctors", newStaticHandler(r, templateLoader, "home/meet-the-doctors.html", "Meet the Doctors | Spruce", nil))
+	r.Handle("/providers", newStaticHandler(r, templateLoader, "home/providers.html", "For Providers | Spruce", nil))
+	r.Handle("/terms", newStaticHandler(r, templateLoader, "home/terms.html", "Terms & Conditions | Spruce", nil))
+	r.Handle("/app", newStaticHandler(r, templateLoader, "home/referral.html", "Get the App | Spruce", func() interface{} {
 		return &refContext{
 			Title: "See a dermatologist, right from your phone.",
 		}
-	})))
+	}))
 
 	// Email
-	r.Handle("/e/optout", protect(newEmailOptoutHandler(dataAPI, authAPI, signer, templateLoader)))
+	r.Handle("/e/optout", newEmailOptoutHandler(dataAPI, authAPI, signer, templateLoader))
 
 	// Referrals
-	r.Handle("/r/{code}", protect(newPromoClaimHandler(dataAPI, authAPI, branchClient, analyticsLogger, templateLoader)))
+	r.Handle("/r/{code}", newPromoClaimHandler(dataAPI, authAPI, branchClient, analyticsLogger, templateLoader))
 
 	// API
-	r.Handle("/api/forms/{form:[0-9a-z-]+}", protect(NewFormsAPIHandler(dataAPI)))
-	r.Handle("/api/textdownloadlink", protect(NewTextDownloadLinkAPIHandler(dataAPI, smsAPI, fromSMSNumber, branchClient, rateLimiters.Get("textdownloadlink"))))
+	apiAuthFilter := func(h httputil.ContextHandler) httputil.ContextHandler {
+		return www.APIAuthRequiredHandler(h, authAPI)
+	}
+	r.Handle("/api/auth/sign-in", newSignInAPIHandler(authAPI))
+	r.Handle("/api/auth/sign-up", newSignUpAPIHandler(dataAPI, authAPI))
+	r.Handle("/api/forms/{form:[0-9a-z-]+}", newFormsAPIHandler(dataAPI))
+	r.Handle("/api/textdownloadlink", newTextDownloadLinkAPIHandler(dataAPI, smsAPI, fromSMSNumber, branchClient, rateLimiters.Get("textdownloadlink")))
+	r.Handle("/api/parental-consent", apiAuthFilter(newParentalConsentAPIHAndler(dataAPI)))
+	r.Handle("/api/parental-consent/image", apiAuthFilter(newParentalConsentImageAPIHAndler(dataAPI, mediaStore)))
 
 	// Analytics
 	ah := newAnalyticsHandler(analyticsLogger, metricsRegistry.Scope("analytics"))
@@ -106,7 +110,7 @@ func SetupRoutes(
 	r.Handle("/a/logo.png", ah) // For remote event tracking "pixels" (e.g. email)
 }
 
-func PasswordProtectFilter(pass string, templateLoader *www.TemplateLoader) func(http.Handler) http.Handler {
+func passwordProtectFilter(pass string, templateLoader *www.TemplateLoader) func(http.Handler) http.Handler {
 	tmpl := templateLoader.MustLoadTemplate("home/pass.html", "base.html", nil)
 	return func(h http.Handler) http.Handler {
 		return &passwordProtectHandler{

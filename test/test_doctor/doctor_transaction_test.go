@@ -21,7 +21,7 @@ var globalFirstVisitFreeDisabled = &cfg.ValueDef{
 
 func TestDoctorTransaction_TreatmentPlanCreated(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dr := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
@@ -57,7 +57,7 @@ func TestDoctorTransaction_TreatmentPlanCreated(t *testing.T) {
 
 func TestDoctorTransaction_ItemCostExists_TreatmentPlanCreated(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	patientVisit, stubSQSQueue, _ := test_integration.SetupTestWithActiveCostAndVisitSubmitted(testData, t)
 	// now lets go ahead and start the work to consume the message
@@ -99,7 +99,7 @@ func TestDoctorTransaction_ItemCostExists_TreatmentPlanCreated(t *testing.T) {
 
 func TestDoctorTransaction_MarkedUnsuitable(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dr := test_integration.SignupRandomTestDoctorInState("CA", t, testData)

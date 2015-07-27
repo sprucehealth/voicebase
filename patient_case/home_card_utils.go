@@ -173,6 +173,7 @@ func homeCardsForAuthenticatedUser(
 		case len(caseNotifications) == 1, l == 1:
 			hView, err := caseNotifications[0].Data.(notification).makeHomeCardView(
 				dataAPI,
+				webDomain,
 				&caseData{
 					APIDomain:       apiCDNDomain,
 					Notification:    caseNotifications[0],

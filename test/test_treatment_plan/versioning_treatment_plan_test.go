@@ -20,7 +20,7 @@ import (
 // and that the content source and the parent are created as expected
 func TestVersionTreatmentPlan_NewTP(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
@@ -98,7 +98,7 @@ func TestVersionTreatmentPlan_NewTP(t *testing.T) {
 // when versioning a treatment plan
 func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
@@ -218,7 +218,7 @@ func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 // and submit them with no problem
 func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
@@ -335,7 +335,7 @@ func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 // This test is to ensure that we don't allow versioning from an inactive treatment plan
 func TestVersionTreatmentPlan_PickingFromInactiveTP(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
@@ -382,7 +382,7 @@ func TestVersionTreatmentPlan_PickingFromInactiveTP(t *testing.T) {
 // version a treatment plan
 func TestVersionTreatmentPlan_PickFromFTP(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
@@ -414,7 +414,7 @@ func TestVersionTreatmentPlan_PickFromFTP(t *testing.T) {
 // This test is to ensure that the most active treatment plan is shared with the patient
 func TestVersionTreatmentPlan_TPForPatient(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
@@ -451,7 +451,7 @@ func TestVersionTreatmentPlan_TPForPatient(t *testing.T) {
 // unless the data has actually changed
 func TestVersionTreatmentPlan_DeviationFromFTP(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
@@ -513,7 +513,7 @@ func TestVersionTreatmentPlan_DeviationFromFTP(t *testing.T) {
 
 func TestVersionTreatmentPlan_DeleteOlderDraft(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)

@@ -13,7 +13,7 @@ import (
 
 func TestParentalConsent(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	accountID, err := testData.AuthAPI.CreateAccount("patient@sprucehealth.com", "12345", api.RolePatient)
 	test.OK(t, err)
@@ -35,35 +35,35 @@ func TestParentalConsent(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, false, patient.HasParentalConsent)
 
-	consent, err := testData.DataAPI.ParentChildConsent(parentPatientID, patientID)
+	consent, err := testData.DataAPI.ParentalConsent(parentPatientID, patientID)
 	test.Assert(t, err != nil, "Expected error for non-existant link between parent and child")
 	test.Assert(t, api.IsErrNotFound(err), "Expected IsErrNotFound")
-	test.Equals(t, false, consent)
+	test.Equals(t, (*common.ParentalConsent)(nil), consent)
 
-	test.OK(t, testData.DataAPI.LinkParentChild(parentPatientID, patientID, "likely-just-a-friend"))
+	test.OK(t, testData.DataAPI.GrantParentChildConsent(parentPatientID, patientID, "likely-just-a-friend"))
 
 	patient, err = testData.DataAPI.Patient(patientID, true)
 	test.OK(t, err)
 	test.Equals(t, false, patient.HasParentalConsent)
 
-	consent, err = testData.DataAPI.ParentChildConsent(parentPatientID, patientID)
+	consent, err = testData.DataAPI.ParentalConsent(parentPatientID, patientID)
 	test.OK(t, err)
-	test.Equals(t, false, consent)
+	test.Equals(t, true, consent.Consented)
 
-	test.OK(t, testData.DataAPI.GrantParentChildConsent(parentPatientID, patientID))
+	test.OK(t, testData.DataAPI.ParentalConsentCompletedForPatient(patientID))
 
 	patient, err = testData.DataAPI.Patient(patientID, true)
 	test.OK(t, err)
 	test.Equals(t, true, patient.HasParentalConsent)
 
-	consent, err = testData.DataAPI.ParentChildConsent(parentPatientID, patientID)
+	consent, err = testData.DataAPI.ParentalConsent(parentPatientID, patientID)
 	test.OK(t, err)
-	test.Equals(t, true, consent)
+	test.Equals(t, true, consent.Consented)
 }
 
 func TestParentalConsentProof(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	pr := test_integration.SignupRandomTestPatient(t, testData)
@@ -101,7 +101,7 @@ func TestParentalConsentProof(t *testing.T) {
 
 func TestPatientParentID(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	accountID, err := testData.AuthAPI.CreateAccount("patient@sprucehealth.com", "12345", api.RolePatient)
 	test.OK(t, err)
@@ -121,7 +121,7 @@ func TestPatientParentID(t *testing.T) {
 	}
 	test.OK(t, testData.DataAPI.RegisterPatient(patient))
 	parentPatientID := patient.ID.Int64()
-	test.OK(t, testData.DataAPI.LinkParentChild(parentPatientID, patientID, "likely-just-a-friend"))
+	test.OK(t, testData.DataAPI.GrantParentChildConsent(parentPatientID, patientID, "likely-just-a-friend"))
 
 	id, err := testData.DataAPI.PatientParentID(patientID)
 	test.OK(t, err)

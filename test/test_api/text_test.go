@@ -10,7 +10,7 @@ import (
 
 func TestLocalizedText(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	tags := []string{
 		"txt_feedback_screen_title",
@@ -28,7 +28,7 @@ func TestLocalizedText(t *testing.T) {
 
 func TestUpdateLocalizedText(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	tags := []string{
 		"txt_feedback_screen_title",

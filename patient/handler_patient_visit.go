@@ -37,6 +37,7 @@ type patientVisitHandler struct {
 	paymentAPI           apiservice.StripeClient
 	addressValidationAPI address.Validator
 	apiDomain            string
+	webDomain            string
 	dispatcher           *dispatch.Dispatcher
 	mediaStore           *media.Store
 	expirationDuration   time.Duration
@@ -112,6 +113,7 @@ func NewPatientVisitHandler(
 	paymentAPI apiservice.StripeClient,
 	addressValidationAPI address.Validator,
 	apiDomain string,
+	webDomain string,
 	dispatcher *dispatch.Dispatcher,
 	mediaStore *media.Store,
 	expirationDuration time.Duration,
@@ -126,6 +128,7 @@ func NewPatientVisitHandler(
 					paymentAPI:           paymentAPI,
 					addressValidationAPI: addressValidationAPI,
 					apiDomain:            apiDomain,
+					webDomain:            webDomain,
 					dispatcher:           dispatcher,
 					mediaStore:           mediaStore,
 					expirationDuration:   expirationDuration,
@@ -427,7 +430,7 @@ func (s *patientVisitHandler) getPatientVisit(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	intakeInfo, err := IntakeLayoutForVisit(s.dataAPI, s.apiDomain, s.mediaStore, s.expirationDuration, patientVisit, patient, api.RolePatient)
+	intakeInfo, err := IntakeLayoutForVisit(s.dataAPI, s.apiDomain, s.webDomain, s.mediaStore, s.expirationDuration, patientVisit, patient, api.RolePatient)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
 		return
@@ -471,6 +474,7 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(w http.ResponseWriter
 		rq.PathwayTag,
 		s.dataAPI,
 		s.apiDomain,
+		s.webDomain,
 		s.dispatcher,
 		s.mediaStore,
 		s.expirationDuration, r, nil)
@@ -504,7 +508,7 @@ func submitVisit(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, patient *
 	}
 
 	// don't let a minor who doesn't yet have parental consent submit a visit
-	if patient.DOB.Age() < 18 && !patient.HasParentalConsent {
+	if patient.IsUnder18() && !patient.HasParentalConsent {
 		return nil, apiservice.NewValidationError("Cannot submit a visit until a parent or guardian has given consent.")
 	}
 

@@ -15,7 +15,7 @@ import (
 
 func TestPromotionPercentReferralUpdates(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	setupPromotionReferralTest(t, testData)
 
@@ -79,7 +79,7 @@ func TestPromotionPercentReferralUpdates(t *testing.T) {
 
 func TestPromotionMoneyReferralUpdates(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	setupPromotionReferralTest(t, testData)
 
@@ -146,7 +146,7 @@ func TestPromotionMoneyReferralUpdates(t *testing.T) {
 
 func TestPromotionApplyOwnReferralCode(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	setupPromotionReferralTest(t, testData)
 

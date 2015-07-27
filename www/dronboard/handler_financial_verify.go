@@ -5,14 +5,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sprucehealth/backend/libs/ptr"
-
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/stripe"
 	"github.com/sprucehealth/backend/www"
 )
@@ -49,8 +48,8 @@ func (r *financialsVerifyForm) Validate() map[string]string {
 	return errors
 }
 
-func NewFinancialVerifyHandler(router *mux.Router, dataAPI api.DataAPI, supportEmail string, stripeCli *stripe.Client, templateLoader *www.TemplateLoader) http.Handler {
-	return httputil.SupportedMethods(&financialsVerifyHandler{
+func newFinancialVerifyHandler(router *mux.Router, dataAPI api.DataAPI, supportEmail string, stripeCli *stripe.Client, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&financialsVerifyHandler{
 		router:       router,
 		dataAPI:      dataAPI,
 		stripeCli:    stripeCli,
@@ -59,8 +58,8 @@ func NewFinancialVerifyHandler(router *mux.Router, dataAPI api.DataAPI, supportE
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *financialsVerifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
+func (h *financialsVerifyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
 	bankAccounts, err := h.dataAPI.ListBankAccounts(account.ID)
 	if err != nil {
 		www.InternalServerError(w, r, err)

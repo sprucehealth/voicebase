@@ -16,7 +16,7 @@ import (
 
 func TestReferrals_DoctorProgramCreation(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// create a doctor and see if a referral program gets created for the doctor

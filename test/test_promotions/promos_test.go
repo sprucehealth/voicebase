@@ -13,7 +13,7 @@ import (
 
 func TestPromotion_NewUserPercentOff(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
 		QueueService: &awsutil.SQS{},
@@ -93,7 +93,7 @@ func TestPromotion_NewUserPercentOff(t *testing.T) {
 
 func TestPromotion_ExistingUserPercentOff(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	setupPromotionsTest(testData, t)
 
@@ -125,7 +125,7 @@ func TestPromotion_ExistingUserPercentOff(t *testing.T) {
 
 func TestPromotion_NewUserDollarOff(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
 		QueueService: &awsutil.SQS{},
@@ -204,7 +204,7 @@ func TestPromotion_NewUserDollarOff(t *testing.T) {
 
 func TestPromotion_ExistingUserDollarOff(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	setupPromotionsTest(testData, t)
 
@@ -236,7 +236,7 @@ func TestPromotion_ExistingUserDollarOff(t *testing.T) {
 
 func TestPromotion_NewUserAccountCredit(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
 		QueueService: &awsutil.SQS{},
@@ -320,7 +320,7 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 
 func TestPromotion_ExistingUserAccountCredit(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
 		QueueService: &awsutil.SQS{},
@@ -356,7 +356,7 @@ func TestPromotion_ExistingUserAccountCredit(t *testing.T) {
 
 func TestPromotion_NewUserRouteToDoctor(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
 		QueueService: &awsutil.SQS{},
@@ -452,7 +452,7 @@ func TestPromotion_NewUserRouteToDoctor(t *testing.T) {
 
 func TestPromotion_ExistingUserRouteToDoctor(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
 		QueueService: &awsutil.SQS{},
@@ -504,7 +504,7 @@ func TestPromotion_ExistingUserRouteToDoctor(t *testing.T) {
 // state
 func TestPromotion_ExistingUserRouteToDoctor_Uneligible(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
 		QueueService: &awsutil.SQS{},

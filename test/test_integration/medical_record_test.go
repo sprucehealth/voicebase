@@ -27,7 +27,7 @@ func (d *diagnosisTestSvc) DiagnosisForCodeIDs(codeIDs []string) (map[string]*di
 
 func TestMedicalRecordWorker(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
@@ -74,7 +74,7 @@ func TestMedicalRecordWorker(t *testing.T) {
 
 func TestMedicalRecordWorker_VisitOpen(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// create a visit in the open state with no questions answered
