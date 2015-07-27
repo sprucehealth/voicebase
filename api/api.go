@@ -857,6 +857,13 @@ type PatientFeedbackAPI interface {
 	PatientFeedback(feedbackFor string) ([]*common.PatientFeedback, error)
 }
 
+// ParentalConsentProof represents the photoIDs for
+// ID verification.
+type ParentalConsentProof struct {
+	SelfiePhotoID       *int64
+	GovernmentIDPhotoID *int64
+}
+
 // ParentalConsent are DAL functions for dealing with parent/child treatment consent
 type ParentalConsent interface {
 	// LinkParentChild creates a relationship between the patient accounts but does not grant consent to be treated
@@ -865,6 +872,11 @@ type ParentalConsent interface {
 	GrantParentChildConsent(parentPatientID, childPatientID int64) error
 	// ParentChildConsent returns the consent status between parent and child
 	ParentChildConsent(parentPatientID, childPatientID int64) (bool, error)
+	// UpsertParentConsentProof updates the proof of parental consent based on the
+	// data present in the object if it already exists, and inserts otherwise.
+	UpsertParentConsentProof(parentPatientID int64, proof *ParentalConsentProof) (int64, error)
+	// ParentConsentProof returns an object that corresponds to the proof of ID verification.
+	ParentConsentProof(parentPatientID int64) (*ParentalConsentProof, error)
 }
 
 type DataAPI interface {
