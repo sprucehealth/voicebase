@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/schedmsg"
 )
@@ -154,6 +155,21 @@ func processPatientAnswers(dataAPI api.DataAPI, apiDomain string, ev *patient.Vi
 	}
 
 	var alerts []*common.Alert
+
+	// add alert if patient is under 18
+	patient, err := dataAPI.GetPatientFromID(ev.PatientID)
+	if err != nil {
+		golog.Errorf("Unable to get patient: %s", err)
+		return
+	}
+
+	if patient.IsUnder18() {
+		alerts = append(alerts, &common.Alert{
+			VisitID: ev.VisitID,
+			Message: "Patient is under 18",
+		})
+	}
+
 	for questionID, answers := range patientAnswersForQuestions {
 		question := questionIDToQuestion[questionID]
 		toAlert := question.ToAlert
@@ -166,7 +182,7 @@ func processPatientAnswers(dataAPI api.DataAPI, apiDomain string, ev *patient.Vi
 		}
 
 		if isInsuranceQuestion {
-			if err := scheduleMessageBasedOnInsuranceAnswer(dataAPI, question, answers, ev); err != nil {
+			if err := scheduleMessageBasedOnInsuranceAnswer(dataAPI, patient, question, answers, ev); err != nil {
 				if !environment.IsTest() {
 					golog.Errorf("Failed to schedule insurance message for visit %d: %s", ev.VisitID, err)
 				}
@@ -210,6 +226,7 @@ func processPatientAnswers(dataAPI api.DataAPI, apiDomain string, ev *patient.Vi
 // of the message.
 func scheduleMessageBasedOnInsuranceAnswer(
 	dataAPI api.DataAPI,
+	patient *common.Patient,
 	question *info_intake.Question,
 	answers []common.Answer,
 	ev *patient.VisitSubmittedEvent) error {
@@ -222,12 +239,6 @@ func scheduleMessageBasedOnInsuranceAnswer(
 	maAssignment, err := dataAPI.GetActiveCareTeamMemberForCase(api.RoleCC, ev.PatientCaseID)
 	if err != nil {
 		golog.Infof("Unable to get ma in the care team: %s", err)
-		return err
-	}
-
-	patient, err := dataAPI.GetPatientFromID(ev.PatientID)
-	if err != nil {
-		golog.Errorf("Unable to get patient: %s", err)
 		return err
 	}
 
@@ -356,7 +367,7 @@ func determineAlert(visitID int64, question *info_intake.Question, patientAnswer
 	if alertMsg != "" {
 		return &common.Alert{
 			VisitID:    visitID,
-			QuestionID: question.QuestionID,
+			QuestionID: ptr.Int64(question.QuestionID),
 			Message:    alertMsg,
 		}
 	}

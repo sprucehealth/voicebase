@@ -116,6 +116,6 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.JSONResponse(w, http.StatusOK, &homeResponse{
-		ShowActionButton: isSpruceAvailable && patient.DOB.Age() >= 18,
+		ShowActionButton: isSpruceAvailable && !patient.IsUnder18(),
 		Items:            items})
 }
