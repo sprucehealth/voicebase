@@ -195,11 +195,14 @@ func (g *givePercentOffReferralProgram) ReferredAccountSubmittedVisit(accountID,
 }
 
 // NewGiveReferralProgram returns a new initialized instance of a ReferralProgram. The type of referral program generated is based off the internal data of the provided Promotion. e.g: (percentOffType -> givePercentOffReferralProgram, moneyOffType -> giveMoneyOffReferralProgram)
-func NewGiveReferralProgram(title, description, group string, homeCard *HomeCardConfig, promotion Promotion, shareTextParams *ShareTextParams) (ReferralProgram, error) {
+func NewGiveReferralProgram(title, description, group string, homeCard *HomeCardConfig, promotion Promotion, shareTextParams *ShareTextParams, imageURL string, imageWidth, imageHeight int) (ReferralProgram, error) {
 	grp := giveReferralProgram{
 		referralProgramParams: referralProgramParams{
 			Title:       title,
 			Description: description,
+			ImgURL:      imageURL,
+			ImgWidth:    imageWidth,
+			ImgHeight:   imageHeight,
 			ShareText:   shareTextParams,
 			HomeCard:    homeCard,
 		},

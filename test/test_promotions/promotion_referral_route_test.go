@@ -103,7 +103,7 @@ func TestPromotionReferralRouteQueryParamsToTemplate(t *testing.T) {
 		1,
 		1,
 		true)
-	rp, err := promotions.NewGiveReferralProgram("title", "description", "group", nil, promo, nil)
+	rp, err := promotions.NewGiveReferralProgram("title", "description", "group", nil, promo, nil, "", 0, 0)
 	test.OK(t, err)
 	code1 := "TestPromotionReferralRoute1"
 	promoCodeID1, err := testData.DataAPI.CreatePromotion(&common.Promotion{
@@ -192,7 +192,7 @@ func TestPromotionReferralRouteQueryParamsToInactiveTemplate(t *testing.T) {
 		1,
 		1,
 		true)
-	rp, err := promotions.NewGiveReferralProgram("title", "description", "group", nil, promo, nil)
+	rp, err := promotions.NewGiveReferralProgram("title", "description", "group", nil, promo, nil, "", 0, 0)
 	test.OK(t, err)
 	code1 := "TestPromotionReferralRoute1"
 	promoCodeID1, err := testData.DataAPI.CreatePromotion(&common.Promotion{
@@ -270,7 +270,7 @@ func TestPromotionReferralRouteDeprecationDisplayFullLoop(t *testing.T) {
 		1,
 		1,
 		true)
-	rp, err := promotions.NewGiveReferralProgram("title", "description", "group", nil, promo, &promotions.ShareTextParams{})
+	rp, err := promotions.NewGiveReferralProgram("title", "description", "group", nil, promo, &promotions.ShareTextParams{}, "", 0, 0)
 	test.OK(t, err)
 	code1 := "TestPromotionReferralRoute1"
 	promoCodeID1, err := testData.DataAPI.CreatePromotion(&common.Promotion{

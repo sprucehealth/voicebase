@@ -43,6 +43,9 @@ type Promotion interface {
 type ReferralProgram interface {
 	HomeCardText() string
 	HomeCardImageURL() *app_url.SpruceAsset
+	ImageURL() string
+	ImageWidth() int
+	ImageHeight() int
 	TypeName() string
 	Title() string
 	Description() string
