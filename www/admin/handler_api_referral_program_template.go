@@ -38,6 +38,9 @@ type ReferralProgramTemplatePOSTRequest struct {
 	ShareText       *promotions.ShareTextParams `json:"share_text"`
 	Group           string                      `json:"group"`
 	HomeCard        *promotions.HomeCardConfig  `json:"home_card"`
+	ImageURL        string                      `json:"image_url"`
+	ImageWidth      int                         `json:"image_width"`
+	ImageHeight     int                         `json:"image_height"`
 }
 
 // ReferralProgramTemplatePOSTResponse represents the data returned in a sucessful POST request
@@ -145,7 +148,7 @@ func (h *referralProgramTemplateHandler) servePOST(w http.ResponseWriter, r *htt
 		return
 	}
 
-	referralProgram, err := promotions.NewGiveReferralProgram(rd.Title, rd.Description, rd.Group, rd.HomeCard, promotionData, rd.ShareText)
+	referralProgram, err := promotions.NewGiveReferralProgram(rd.Title, rd.Description, rd.Group, rd.HomeCard, promotionData, rd.ShareText, rd.ImageURL, rd.ImageWidth, rd.ImageHeight)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return

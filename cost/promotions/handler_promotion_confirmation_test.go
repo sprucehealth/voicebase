@@ -350,7 +350,7 @@ func createReferralProgram(accountID int64, imageURL string) *common.ReferralPro
 	rp, _ := NewGiveReferralProgram("title", "description", "group", nil,
 		NewPercentOffVisitPromotion(0,
 			"group", "displayMsg", "shortMsg", "successMsg", imageURL,
-			1, 1, true), nil)
+			1, 1, true), nil, "", 0, 0)
 	return &common.ReferralProgram{
 		AccountID:  accountID,
 		Data:       rp,

@@ -861,6 +861,34 @@ var AddPromotionReferralTemplateModal = React.createClass({displayName: "AddProm
 			description: e.target.value
 		});
 	},
+	onImageURLChange: function(e): any {
+		e.preventDefault();
+		this.setState({
+			imageURL: e.target.value,
+		});
+	},
+	onImageWidthChange: function(e): any {
+		e.preventDefault();
+		var state = {
+			imageWidth: e.target.value,
+			error: null,
+		};
+		if(!Utils.isInteger(e.target.value) && e.target.value != "") {
+			state.error = "Image Width must be an Integer"; 
+		}
+		this.setState(state);
+	},
+	onImageHeightChange: function(e): any {
+		e.preventDefault();
+		var state = {
+			imageHeight: e.target.value,
+			error: null,
+		};
+		if(!Utils.isInteger(e.target.value) && e.target.value != "") {
+			state.error = "Image Height must be an Integer"; 
+		}
+		this.setState(state);
+	},
 	onDefaultChange: function(e): any {
 		e.preventDefault();
 		this.setState({
@@ -912,6 +940,12 @@ var AddPromotionReferralTemplateModal = React.createClass({displayName: "AddProm
 			this.setState({error: "title required"});
 		} else if (!this.state.description) {
 			this.setState({error: "description required"});
+		} else if (this.state.imageURL && (!this.state.imageWidth || !this.state.imageHeight)) {
+			this.setState({error: "imageWidth and imageHeight required if imageURL present"});
+		} else if (this.state.imageWidth && !Utils.isInteger(this.state.imageWidth)) {
+			this.setState({error: "imageWidth must be an Integer"});
+		} else if (this.state.imageHeight && !Utils.isInteger(this.state.imageHeight)) {
+			this.setState({error: "imageHeight must be an Integer"});
 		} else if (!this.state.default) {
 			this.setState({error: "default required"});
 		} else if (!this.state.facebook) {
@@ -936,7 +970,10 @@ var AddPromotionReferralTemplateModal = React.createClass({displayName: "AddProm
 			AdminAPI.addPromotionReferralTemplate(
 				parseInt(this.state.promotionCodeID), 
 				this.state.title, 
-				this.state.description, 
+				this.state.description,
+				this.state.imageURL,
+				parseInt(this.state.imageWidth),
+				parseInt(this.state.imageHeight),
 				this.state.default, 
 				this.state.facebook, 
 				this.state.twitter, 
@@ -974,6 +1011,10 @@ var AddPromotionReferralTemplateModal = React.createClass({displayName: "AddProm
 				<Forms.FormInput label="Promotion Code ID" value={this.state.promotionCodeID} onChange={this.onPromotionCodeIDChange} />
 				<Forms.FormInput label="Title" value={this.state.title} onChange={this.onTitleChange} />
 				<Forms.FormInput label="Description" value={this.state.description} onChange={this.onDescriptionChange} />
+				<Forms.FormInput label="*Image URL" value={this.state.imageURL} onChange={this.onImageURLChange} />
+				{this.state.imageURL ? <img src={this.state.imageURL} /> : null}
+				{this.state.imageURL ? <Forms.FormInput label="Image Width" value={this.state.imageWidth} onChange={this.onImageWidthChange} /> : null}
+				{this.state.imageURL ? <Forms.FormInput label="Image Height" value={this.state.imageHeight} onChange={this.onImageHeightChange} /> : null}
 				<h4 className="modal-title">Share Text</h4>
 				<hr/>
 				<Forms.FormInput label="Default" value={this.state.default} onChange={this.onDefaultChange} />
@@ -1091,6 +1132,9 @@ var PromotionReferralTemplate = React.createClass({displayName: "PromotionReferr
 						<tr><td>Title</td><td>{this.props.referralTemplate.data.title}</td>{ showSetInactive ? <td></td> : null}{ showSetDefault ? <td></td> : null}</tr>
 						<tr><td>Group</td><td>{this.props.referralTemplate.data.group}</td>{ showSetInactive ? <td></td> : null}{ showSetDefault ? <td></td> : null}</tr>
 						<tr><td>Description</td><td>{this.props.referralTemplate.data.description}</td>{ showSetDefault ? <td></td> : null}</tr>
+						{this.props.referralTemplate.data.image_url ? <tr><td>Image:</td><td><img src={this.props.referralTemplate.data.image_url} /></td><td></td></tr> : null}
+						{this.props.referralTemplate.data.image_url ? <tr><td>Image Height:</td><td>{this.props.referralTemplate.data.image_width || "Undefined"} </td><td></td></tr> : null}
+						{this.props.referralTemplate.data.image_url ? <tr><td>Image Width:</td><td>{this.props.referralTemplate.data.image_height || "Undefined"} </td><td></td></tr> : null}
 					</tbody>
 				</table>
 				<table className="table">

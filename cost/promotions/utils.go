@@ -143,12 +143,36 @@ type referralProgramParams struct {
 	Title          string           `json:"title"`
 	Description    string           `json:"description"`
 	HomeCard       *HomeCardConfig  `json:"home_card"`
+	ImgURL         string           `json:"image_url,omitempty"`
+	ImgWidth       int              `json:"image_width,omitempty"`
+	ImgHeight      int              `json:"image_height,omitempty"`
 	ShareText      *ShareTextParams `json:"share_text_params"`
 	OwnerAccountID int64            `json:"owner_account_id"`
 }
 
 func (r *referralProgramParams) Validate() error {
 	return nil
+}
+
+func (r *referralProgramParams) ImageURL() string {
+	if r.ImgURL == "" {
+		return DefaultPromotionImageURL
+	}
+	return r.ImgURL
+}
+
+func (r *referralProgramParams) ImageWidth() int {
+	if r.ImgWidth == 0 {
+		return DefaultPromotionImageWidth
+	}
+	return r.ImgWidth
+}
+
+func (r *referralProgramParams) ImageHeight() int {
+	if r.ImgHeight == 0 {
+		return DefaultPromotionImageHeight
+	}
+	return r.ImgHeight
 }
 
 const (
@@ -393,12 +417,6 @@ func CreateReferralDisplayInfo(dataAPI api.DataAPI, webDomain string, accountID 
 		golog.Errorf(err.Error())
 	}
 
-	p := promotionReferralProgram.PromotionForReferredAccount(referralProgram.Code)
-	promotion, ok := p.Data.(Promotion)
-	if !ok {
-		return nil, errors.Trace(errors.New("Unable to cast promotion data into Promotion type"))
-	}
-
 	displayURL := referralURL.Host + referralURL.Path
 	if displayURL[:4] == "www." {
 		displayURL = displayURL[4:]
@@ -413,9 +431,9 @@ func CreateReferralDisplayInfo(dataAPI api.DataAPI, webDomain string, accountID 
 		URLDisplayText:     displayURL,
 		ButtonTitle:        "Share Link",
 		DismissButtonTitle: "Okay",
-		ImageURL:           promotion.ImageURL(),
-		ImageWidth:         promotion.ImageWidth(),
-		ImageHeight:        promotion.ImageHeight(),
+		ImageURL:           promotionReferralProgram.ImageURL(),
+		ImageWidth:         promotionReferralProgram.ImageWidth(),
+		ImageHeight:        promotionReferralProgram.ImageHeight(),
 		ShareText: &ShareTextInfo{
 			EmailSubject: emailSubject,
 			EmailBody:    emailBody,

@@ -817,12 +817,15 @@ module.exports = {
 			dataType: "json",
 		}, cb);
 	},
-	addPromotionReferralTemplate: function(promotionCodeID: number, title: string, description: string, defaultText: string, facebook: string, twitter: string, sms: string, email_subject: string, email_body: string, text: string, cb: ajaxCB) {
+	addPromotionReferralTemplate: function(promotionCodeID: number, title: string, description: string, imageURL: string, imageWidth: number, imageHeight: number, defaultText: string, facebook: string, twitter: string, sms: string, email_subject: string, email_body: string, text: string, cb: ajaxCB) {
 		var url = "/promotion/referral_template"
 		var data  = {
 			promotion_code_id: promotionCodeID,
 			title: title,
 			description: description,
+			image_url: imageURL,
+			image_width: imageWidth,
+			image_height: imageHeight,
 			group: "new_user",
 			share_text: {
 				default: defaultText,

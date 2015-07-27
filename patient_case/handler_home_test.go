@@ -2005,6 +2005,9 @@ func setupMockAccessors(t *testing.T) (*mockHomeHandlerDataAPI, *mockHandlerHome
 		},
 		promotions.NewPercentOffVisitPromotion(100, "new_user", "Test", "Test", "Test", "MyImageURL", 60, 60, true),
 		&promotions.ShareTextParams{},
+		"",
+		0,
+		0,
 	)
 	test.OK(t, err)
 	var ac uint64 = 12345

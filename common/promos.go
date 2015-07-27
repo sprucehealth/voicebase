@@ -89,6 +89,7 @@ type ReferralProgramTemplateUpdate struct {
 	Status ReferralProgramStatus
 }
 
+// ReferralProgram represents a mapping between a promotion and the account allowed to refer that promotion
 type ReferralProgram struct {
 	TemplateID               *int64
 	AccountID                int64
@@ -100,6 +101,7 @@ type ReferralProgram struct {
 	PromotionReferralRouteID *int64
 }
 
+// ReferralTrackingEntry represents a historical tracking of referral links/codes
 type ReferralTrackingEntry struct {
 	CodeID             int64
 	ClaimingAccountID  int64

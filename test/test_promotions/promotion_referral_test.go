@@ -38,7 +38,7 @@ func TestPromotionPercentReferralUpdates(t *testing.T) {
 	})
 	test.OK(t, err)
 
-	grp, err := promotions.NewGiveReferralProgram("title", "description", "group", nil, promo, &promotions.ShareTextParams{})
+	grp, err := promotions.NewGiveReferralProgram("title", "description", "group", nil, promo, &promotions.ShareTextParams{}, "", 0, 0)
 	test.OK(t, err)
 	_, err = testData.DataAPI.CreateReferralProgramTemplate(&common.ReferralProgramTemplate{
 		Role:            api.RolePatient,
@@ -102,7 +102,7 @@ func TestPromotionMoneyReferralUpdates(t *testing.T) {
 	})
 	test.OK(t, err)
 
-	grp, err := promotions.NewGiveReferralProgram("title", "description", "group", nil, promo, &promotions.ShareTextParams{})
+	grp, err := promotions.NewGiveReferralProgram("title", "description", "group", nil, promo, &promotions.ShareTextParams{}, "referralImage", 120, 130)
 	test.OK(t, err)
 	_, err = testData.DataAPI.CreateReferralProgramTemplate(&common.ReferralProgramTemplate{
 		Role:            api.RolePatient,
@@ -119,8 +119,11 @@ func TestPromotionMoneyReferralUpdates(t *testing.T) {
 	patient, err := testData.DataAPI.Patient(patientVisit.PatientID.Int64(), false)
 	test.OK(t, err)
 
-	_, err = promotions.CreateReferralDisplayInfo(testData.DataAPI, "www.spruce.local", patient.AccountID.Int64())
+	display, err := promotions.CreateReferralDisplayInfo(testData.DataAPI, "www.spruce.local", patient.AccountID.Int64())
 	test.OK(t, err)
+	test.Equals(t, display.ImageURL, "referralImage")
+	test.Equals(t, display.ImageWidth, 120)
+	test.Equals(t, display.ImageHeight, 130)
 
 	rp, err := testData.DataAPI.ActiveReferralProgramForAccount(patient.AccountID.Int64(), common.PromotionTypes)
 	test.OK(t, err)
@@ -166,7 +169,7 @@ func TestPromotionApplyOwnReferralCode(t *testing.T) {
 	})
 	test.OK(t, err)
 
-	grp, err := promotions.NewGiveReferralProgram("title", "description", "group", nil, promo, &promotions.ShareTextParams{})
+	grp, err := promotions.NewGiveReferralProgram("title", "description", "group", nil, promo, &promotions.ShareTextParams{}, "", 0, 0)
 	test.OK(t, err)
 	_, err = testData.DataAPI.CreateReferralProgramTemplate(&common.ReferralProgramTemplate{
 		Role:            api.RolePatient,
