@@ -24,6 +24,7 @@ type mockDataAPI_processPatientAnswers struct {
 	templates     []*common.ScheduledMessageTemplate
 
 	messageScheduled *common.ScheduledMessage
+	alertsAdded      []*common.Alert
 }
 
 func (d *mockDataAPI_processPatientAnswers) GetPatientLayout(layoutVersionID, languageID int64) (*api.LayoutVersion, error) {
@@ -45,6 +46,7 @@ func (d *mockDataAPI_processPatientAnswers) GetCasesForPatient(patientID int64, 
 	return d.cases, nil
 }
 func (d *mockDataAPI_processPatientAnswers) AddAlertsForVisit(visitID int64, alerts []*common.Alert) error {
+	d.alertsAdded = alerts
 	return nil
 }
 func (d *mockDataAPI_processPatientAnswers) ScheduledMessageTemplates(eventType string) ([]*common.ScheduledMessageTemplate, error) {
@@ -400,4 +402,78 @@ func TestProcessAnswers_MedicaidTag(t *testing.T) {
 	if m.messageScheduled != nil {
 		t.Fatal("Expected no message to get scheduled for a subsequent visit")
 	}
+}
+
+func TestAlerts_Under18(t *testing.T) {
+	layoutData := &info_intake.InfoIntakeLayout{
+		Sections: []*info_intake.Section{
+			{
+				Screens: []*info_intake.Screen{
+					{
+						Questions: []*info_intake.Question{
+							{
+								QuestionID:  10,
+								QuestionTag: insuranceCoverageQuestionTag,
+								PotentialAnswers: []*info_intake.PotentialAnswer{
+									{
+										AnswerTag: medicadeAnswerTag,
+										AnswerID:  5,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	jsonData, err := json.Marshal(layoutData)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	m := &mockDataAPI_processPatientAnswers{
+		layoutVersion: &api.LayoutVersion{
+			Layout: jsonData,
+		},
+		answers: map[int64][]common.Answer{
+			10: []common.Answer{
+				&common.AnswerIntake{
+					PotentialAnswerID: encoding.NewObjectID(5),
+				},
+			},
+		},
+		maAssignment: &common.CareProviderAssignment{
+			ProviderRole: api.RoleCC,
+		},
+		doctor: &common.Doctor{},
+		patient: &common.Patient{
+			DOB: encoding.Date{
+				Month: 1,
+				Day:   2,
+				Year:  2002,
+			},
+		},
+		cases: []*common.PatientCase{
+			{
+				ID: encoding.NewObjectID(2),
+			},
+		},
+	}
+
+	caseID := encoding.NewObjectID(1)
+	ev := &patient.VisitSubmittedEvent{
+		Visit: &common.PatientVisit{
+			PatientCaseID: caseID,
+		},
+		PatientCaseID: caseID.Int64(),
+	}
+
+	taggingClient := &taggingTest.TestTaggingClient{}
+	processPatientAnswers(m, "api.spruce.local", ev, taggingClient)
+
+	// ensure that there exists an under 18 alert
+	test.Equals(t, 1, len(m.alertsAdded))
+	test.Equals(t, "Patient is under 18", m.alertsAdded[0].Message)
 }

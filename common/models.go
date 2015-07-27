@@ -60,6 +60,11 @@ type Patient struct {
 	HasParentalConsent bool                   `json:"has_parental_consent"`
 }
 
+// IsUnder18 indicates whether or not patient is under 18 years of age.
+func (p *Patient) IsUnder18() bool {
+	return p.DOB.Age() < 18
+}
+
 type PCP struct {
 	PatientID     int64  `json:"-"`
 	PhysicianName string `json:"physician_full_name"`
@@ -100,7 +105,7 @@ type Card struct {
 type Alert struct {
 	ID           int64
 	VisitID      int64
-	QuestionID   int64
+	QuestionID   *int64
 	Message      string
 	CreationDate time.Time
 }

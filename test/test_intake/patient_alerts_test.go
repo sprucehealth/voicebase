@@ -62,7 +62,7 @@ func TestPatientAlerts(t *testing.T) {
 	// lets go through the alerts and ensure that our response was inserted
 	alertFound := false
 	for _, alert := range alerts {
-		if alert.QuestionID == aItem.QuestionID {
+		if alert.QuestionID != nil && *alert.QuestionID == aItem.QuestionID {
 			alertFound = true
 			if !strings.Contains(alert.Message, answerText) {
 				t.Fatal("Alert message different than what was expected")
