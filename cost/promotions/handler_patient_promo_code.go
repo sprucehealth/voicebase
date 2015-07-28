@@ -58,9 +58,9 @@ func (*patientPromotionsHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 func (h *patientPromotionsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "GET":
+	case httputil.Get:
 		h.serveGET(w, r)
-	case "POST":
+	case httputil.Post:
 		rd, err := h.parsePOSTRequest(r)
 		if err != nil {
 			apiservice.WriteBadRequestError(err, w, r)
