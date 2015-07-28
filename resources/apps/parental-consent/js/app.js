@@ -14,6 +14,7 @@ var ContentContainer = require("./ContentContainer.js")
 var EmailRelationshipConsentView = require("./EmailRelationshipConsentView.js")
 var PhotoIdentificationView = require("./PhotoIdentificationView.js")
 var ConfirmationView = require("./ConfirmationView.js")
+window.FAQ = require("./faq.js");
 
 window.React = React; // export for http://fb.me/react-devtools
 Backbone.jQuery = jQuery;
@@ -71,7 +72,7 @@ var nextRouteAfterRouteForStore = function(currentRoute: string, store: Parental
 	var index: number = sectionIndexForRouteAndStore(currentRoute, store)
 	if (index !== -1) {
 		nextRoute = routeForSectionIndexAndStore(index + 1, store)
-	} 
+	}
 	if (Utils.isEmpty(nextRoute)) {
 		console.log("something's gone wrong and we can't determine the next route")
 	}
@@ -150,18 +151,18 @@ var DemographicsPage = React.createClass({displayName: "DemographicsPage",
 	},
 	render: function(): any {
 		return (
-			<ContentContainer 
+			<ContentContainer
 				busy={false}
 				showSectionedProgressBar={true}
 				currentSectionIndex={0}
 				numSections={calculateNumSectionsForStore(this.state.store)}
 				content={(
 					<div>
-						<TitleView 
-							title={"Authorization for " + this.state.store.childDetails.firstName + "'s Visit"} 
+						<TitleView
+							title={"Authorization for " + this.state.store.childDetails.firstName + "'s Visit"}
 							subtitle="First we need to know some basic information about you."
 							text="" />
-						<DemographicsView 
+						<DemographicsView
 							onFormSubmit={this.handleSubmit} />
 					</div>
 				)} />
@@ -186,14 +187,14 @@ var EmailAndConsentPage = React.createClass({displayName: "EmailAndConsentPage",
 		var store: ParentalConsentStoreType = this.state.store
 		var t = this
 		return (
-			<ContentContainer 
+			<ContentContainer
 				busy={store.numBlockingOperations > 0}
 				showSectionedProgressBar={true}
 				currentSectionIndex={1}
 				numSections={calculateNumSectionsForStore(this.state.store)}
 				content={(
 					<div>
-						<TitleView 
+						<TitleView
 							title={"Authorization for " + this.state.store.childDetails.firstName + "'s Visit"}
 							subtitle="Now create your Spruce account so you can log in and view your child’s care record."
 							text="" />
@@ -219,14 +220,14 @@ var PhotoIdentificationPage = React.createClass({displayName: "PhotoIdentificati
 	},
 	render: function(): any {
 		return (
-			<ContentContainer 
+			<ContentContainer
 				busy={false}
 				showSectionedProgressBar={true}
 				currentSectionIndex={2}
 				numSections={calculateNumSectionsForStore(this.state.store)}
 				content={(
 					<div>
-						<TitleView 
+						<TitleView
 							title={"Authorization for " + this.state.store.childDetails.firstName + "'s Visit"}
 							subtitle="Upload a photo of your government issued photo ID."
 							text="To protect the safety of minors on Spruce, we need to be confident that adults responsible for them are of age to consent to treatment." />
@@ -245,7 +246,7 @@ var ConfirmationPage = React.createClass({displayName: "ConfirmationPage",
 	],
 	render: function(): any {
 		return (
-			<ContentContainer 
+			<ContentContainer
 				busy={false}
 				showSectionedProgressBar={false}
 				content={(

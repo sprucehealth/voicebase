@@ -119,6 +119,16 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	r.Handle(`/pc/{childid:\d+}`, parentalConsentHandler)
 	r.Handle(`/pc/{childid:\d+}/{page:.*}`, parentalConsentHandler)
 
+	config.TemplateLoader.MustLoadTemplate("home/parental-base.html", "base.html", nil)
+	// Parental Consent
+	parentalFaqCtx := func() interface{} {
+		return &faqContext{
+			Sections: parentalFaq(),
+		}
+	}
+	r.Handle("/parental-landing", newParentalLandingHandler(config.DataAPI, config.TemplateLoader, "home/parental-landing.html", "Parental Consent | Spruce", nil))
+	r.Handle("/parental-faq", newParentalLandingHandler(config.DataAPI, config.TemplateLoader, "home/parental-faq.html", "Parental Consent FAQ | Spruce", parentalFaqCtx))
+
 	// Email
 	r.Handle("/e/optout", newEmailOptoutHandler(config.DataAPI, config.AuthAPI, config.Signer, config.TemplateLoader))
 
@@ -412,6 +422,113 @@ func faq(dataAPI api.DataAPI) []*faqSection {
 				{
 					Question: "How will you keep the things I share private?",
 					Answer:   "<p>Spruce is a HIPAA-compliant service, and all personal and medical information is protected according to the highest industry standards. We incorporate multiple layers of security, and encrypt your data both “over the wire” (when transmitted to and from your device) and “at rest” in the database (which itself is protected by strict access controls and physical measures).</p>",
+				},
+			},
+		},
+	}
+}
+
+func parentalFaq() []*faqSection {
+	return []*faqSection{
+		{
+			Title: "General",
+			Questions: []*faqQuestion{
+				{
+					Question: "Why did I get sent this? How did you get my details?",
+					Answer: `
+						<p>
+						You were sent this because your child (or legal dependent) found Spruce and wanted to start a visit with a board-certified dermatologist to treat their acne in an affordable and convenient way. Before a doctor can treat their case, we would like to obtain parental consent, like any in-person dermatologist would.
+						</p>`,
+				},
+				{
+					Question: "How did my child find out about Spruce?",
+					Answer: `
+						<p>
+						Your child may have discovered Spruce through a variety of means.  Dermatologists have been treating patients on Spruce since 2014 for acne, psoriasis, eczema, rash, bug bites, and a range of other skin conditions. Your child may have heard about Spruce through one of our existing patients. Additionally, Spruce has been featured in a variety of high-quality news outlets and publications and actively uses digital advertising.
+						</p>`,
+				},
+				{
+					Question: "Does my child really need to see a dermatologist for acne?",
+					Answer: `
+						<p>
+						If your child has been using over-the-counter products to treat their acne without results, it’s time to consult a dermatologist. According to the American Academy of Dermatology, 99&#37; of acne cases are treatable. A dermatologist can diagnose the type of acne your child has and prescribe an appropriate skin care regimen.
+						</p>`,
+				},
+				{
+					Question: "Are smartphone photos good enough for diagnosis? ",
+					Answer: `<p>
+						The quality of cameras in phones has greatly improved over the past few years. Research shows that your dermatologist can use photos to diagnose you with a degree of accuracy that’s comparable to going to the office in person.
+						</p>
+						<p>
+						To ensure that's the case, we utilize the best available photo technology that your device has to offer so that your doctor on Spruce will have the most accurate view of your skin.
+						</p>`,
+				},
+			},
+		},
+		{
+			Title: "Parental Consent",
+			Questions: []*faqQuestion{
+				{
+					Question: "How do I provide my consent? ",
+					Answer: `
+						<p>
+						You can provide consent by confirming your identity with Spruce and creating an account. This will allow you to keep tabs on your child’s care and will act as your acknowledgement of Spruce’s terms, privacy policy, and consent to the use of telehealth.
+						</p>
+						<p>
+						If you do not wish to consent to your child’s treatment on Spruce, talk to your child and let them know that they won’t be able to continue their visit or be treated by a dermatologist on Spruce.
+						</p>`,
+				},
+				{
+					Question: "Why do you need a photo of my ID?",
+					Answer: `
+						<p>
+						We are committed to protecting the safety of children on Spruce. To do this, we need to be confident that the adults responsible for them are of age to consent to treatment. Your photo ID will only be used for this purpose.
+						</p>`,
+				},
+				{
+					Question: "How do I know what’s happening between my child and their doctor? ",
+					Answer: `
+						<p>
+						You’ll have access to your child’s care record on Spruce which includes their visit information, treatment plan, and messages with their care team.
+						</p>`,
+				},
+			},
+		},
+		{
+			Title: "Visits",
+			Questions: []*faqQuestion{
+				{
+					Question: "Are prescription costs included in the price of a visit?",
+					Answer: `
+						<p>
+						Prescription costs are not included in the price of a visit. Just like an in-person doctor's visit, medications are paid for by your insurance company or as an out-of-pocket expense. Your care coordinator can work with your child’s doctor and/or their covering insurance company to ensure that your treatment plan is affordable.
+						</p>`,
+				},
+				{
+					Question: "Can I use my insurance to pay for the visit?",
+					Answer: `
+						<p>
+						Your insurance cannot be used to pay for the visit but &mdash; just like an in-person doctor’s visit &mdash; it will be applied to any medications you’re prescribed when you pick them up at the pharmacy.
+						</p>`,
+				},
+			},
+		},
+		{
+			Title: "Information & Privacy",
+			Questions: []*faqQuestion{
+				{
+					Question: "Is this secure? How do you keep my child’s information private?",
+					Answer: `
+						<p>
+						Spruce is a HIPAA-compliant service, and all personal and medical information is protected according to the highest industry standards. We incorporate multiple layers of security, and encrypt your data both "over the wire" (when transmitted to and from your device) and "at rest" in the database (which itself is protected by strict access controls and physical measures).
+						</p>`,
+				},
+				{
+					Question: "How can I keep my primary care physician in the loop?",
+					Answer: `
+						<p>
+						Spruce enables you to download your care record, which you can then print or share with your PCP (or any other doctor). You can do this by clicking on the 'Care Record' tab, then 'Export Care Record'.
+						</p>`,
 				},
 			},
 		},

@@ -2,6 +2,7 @@ package home
 
 import (
 	"fmt"
+	"html"
 	"html/template"
 	"net/http"
 	"strconv"
@@ -158,5 +159,41 @@ func (h *parentalConsentHandler) ServeHTTP(ctx context.Context, w http.ResponseW
 				Types: idProof,
 			},
 		},
+	})
+}
+
+type parentalLandingHandler struct {
+	dataAPI  api.DataAPI
+	template *template.Template
+	title    string
+	ctx      interface{}
+}
+
+func newParentalLandingHandler(dataAPI api.DataAPI, templateLoader *www.TemplateLoader, tmpl, title string, ctxFun func() interface{}) httputil.ContextHandler {
+	var ctx interface{}
+	if ctxFun != nil {
+		ctx = ctxFun()
+	}
+	return httputil.ContextSupportedMethods(&parentalLandingHandler{
+		dataAPI:  dataAPI,
+		title:    title,
+		template: templateLoader.MustLoadTemplate(tmpl, "home/parental-base.html", nil),
+		ctx:      ctx,
+	}, httputil.Get)
+}
+
+func (h *parentalLandingHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	// account := context.Get(r, www.CKAccount).(*common.Account)
+	www.TemplateResponse(w, http.StatusOK, h.template, &struct {
+		Account     *common.Account
+		Environment string
+		Title       template.HTML
+		SubContext  interface{}
+	}{
+		// Account:     account,
+		Environment: environment.GetCurrent(),
+		Title:       template.HTML(html.EscapeString(h.title)),
+		// TODO: go build gives an error here about SubContext not being a field of *home.faqContext
+		SubContext: h.ctx,
 	})
 }
