@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
@@ -24,6 +25,9 @@ const (
 
 	// SourceKey represent the key associated with the branch link and url for the provided install source
 	SourceKey = "source"
+
+	// ProviderIDKey represents the key associated with the branch link and id of the referring provider.
+	ProviderIDKey = "provider_id"
 )
 
 type refContext struct {
@@ -72,6 +76,7 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := &refContext{}
+	var providerID int64
 	if code != nil {
 		ctx.Code = code.Code
 		ctx.IsReferral = code.IsReferral
@@ -106,6 +111,7 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				ctx.Title = "Start a visit with " + dr.LongDisplayName + " on Spruce."
+				providerID = dr.ID.Int64()
 			} else if err != nil {
 				www.InternalServerError(w, r, err)
 				return
@@ -146,6 +152,10 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		if code != nil {
 			branchParams[PromoCodeKey] = code.Code
+		}
+
+		if providerID > 0 {
+			branchParams[ProviderIDKey] = strconv.FormatInt(providerID, 10)
 		}
 
 		if err := r.ParseForm(); err != nil {
