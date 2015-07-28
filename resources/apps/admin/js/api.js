@@ -261,7 +261,8 @@ module.exports = {
 			contentType: "application/json",
 			url: "/analytics/query",
 			data: JSON.stringify({query: q}),
-			dataType: "json"
+			dataType: "json",
+			timeout: 300000, // 5 minutes
 		}, cb);
 	},
 	listAnalyticsReports: function(cb: ajaxCB) {
@@ -283,7 +284,8 @@ module.exports = {
 			type: "POST",
 			contentType: "application/json",
 			url: "/analytics/reports/" + encodeURIComponent(id) + "/run",
-			dataType: "json"
+			dataType: "json",
+			timeout: 300000, // 5 minutes
 		}, cb);
 	},
 	createAnalyticsReport: function(name: string, query: string, presentation: string, cb: ajaxCB) {
