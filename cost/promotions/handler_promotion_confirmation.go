@@ -109,19 +109,21 @@ func (h *promotionConfirmationHandler) serveGET(w http.ResponseWriter, r *http.R
 			title = fmt.Sprintf("Your friend %s has given you a free visit.", patient.FirstName)
 		}
 
-		rpt, err := h.dataAPI.ReferralProgramTemplate(*rp.TemplateID, common.PromotionTypes)
-		if err != nil {
-			apiservice.WriteError(err, w, r)
-			return
-		}
-		if rpt.PromotionCodeID != nil {
-			promotion, err := h.dataAPI.Promotion(*rpt.PromotionCodeID, common.PromotionTypes)
+		if rp.TemplateID != nil {
+			rpt, err := h.dataAPI.ReferralProgramTemplate(*rp.TemplateID, common.PromotionTypes)
 			if err != nil {
 				apiservice.WriteError(err, w, r)
 				return
 			}
-			code = promotion.Code
-			codeID = promotion.CodeID
+			if rpt.PromotionCodeID != nil {
+				promotion, err := h.dataAPI.Promotion(*rpt.PromotionCodeID, common.PromotionTypes)
+				if err != nil {
+					apiservice.WriteError(err, w, r)
+					return
+				}
+				code = promotion.Code
+				codeID = promotion.CodeID
+			}
 		}
 
 		h.analyticsLogger.WriteEvents([]analytics.Event{
