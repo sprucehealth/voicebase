@@ -330,7 +330,7 @@ func TestPatientPromotionsHandlerPOSTClaimOwnReferralCode(t *testing.T) {
 	test.OK(t, err)
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 12345
-	rp := createReferralProgram(ctxt.AccountID, "imageURL")
+	rp := createReferralProgram(ctxt.AccountID, "imageURL", ptr.Int64(12345))
 	rp.CodeID = 12345
 	dataAPI := &mockDataAPIPatientPromotionsHandler{
 		DataAPI:                         &api.DataService{},
@@ -356,7 +356,7 @@ func TestPatientPromotionsHandlerPOSTReferralProgramErr(t *testing.T) {
 	dataAPI := &mockDataAPIPatientPromotionsHandler{
 		DataAPI:                         &api.DataService{},
 		lookupPromoCode:                 &common.PromoCode{ID: 12345, Code: "Foo", IsReferral: true},
-		activeReferralProgramForAccount: createReferralProgram(ctxt.AccountID, "imageURL"),
+		activeReferralProgramForAccount: createReferralProgram(ctxt.AccountID, "imageURL", ptr.Int64(12345)),
 		referralProgramErr:              errors.New("foo"),
 	}
 	handler := test_handler.MockHandler{

@@ -162,7 +162,7 @@ func TestPromotionConfirmationHandlerGETReferralGetPatientFromAccountIDErr(t *te
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
 		DataAPI:                    &api.DataService{},
 		lookupPromoCode:            &common.PromoCode{ID: 1, Code: "foo", IsReferral: true},
-		referralProgram:            createReferralProgram(2, "imageURL"),
+		referralProgram:            createReferralProgram(2, "imageURL", ptr.Int64(12345)),
 		getPatientFromAccountIDErr: errors.New("Foo"),
 	}
 	promoConfHandler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
@@ -182,7 +182,7 @@ func TestPromotionConfirmationHandlerGETReferralPatientNotFoundGetDoctorFromAcco
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
 		DataAPI:                    &api.DataService{},
 		lookupPromoCode:            &common.PromoCode{ID: 1, Code: "foo", IsReferral: true},
-		referralProgram:            createReferralProgram(2, "imageURL"),
+		referralProgram:            createReferralProgram(2, "imageURL", ptr.Int64(12345)),
 		getPatientFromAccountIDErr: api.ErrNotFound(`patient`),
 		getDoctorFromAccountIDErr:  errors.New("Foo"),
 	}
@@ -203,7 +203,7 @@ func TestPromotionConfirmationHandlerGETReferralProgramTemplateErr(t *testing.T)
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
 		DataAPI:                    &api.DataService{},
 		lookupPromoCode:            &common.PromoCode{ID: 1, Code: "foo", IsReferral: true},
-		referralProgram:            createReferralProgram(2, "imageURL"),
+		referralProgram:            createReferralProgram(2, "imageURL", ptr.Int64(12345)),
 		getPatientFromAccountID:    &common.Patient{FirstName: "FirstName"},
 		referralProgramTemplateErr: errors.New("Foo"),
 	}
@@ -224,7 +224,7 @@ func TestPromotionConfirmationHandlerGETReferralPromotionErr(t *testing.T) {
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
 		DataAPI:                 &api.DataService{},
 		lookupPromoCode:         &common.PromoCode{ID: 1, Code: "foo", IsReferral: true},
-		referralProgram:         createReferralProgram(2, "imageURL"),
+		referralProgram:         createReferralProgram(2, "imageURL", ptr.Int64(12345)),
 		getPatientFromAccountID: &common.Patient{FirstName: "FirstName"},
 		referralProgramTemplate: &common.ReferralProgramTemplate{PromotionCodeID: ptr.Int64(10)},
 		promotionErr:            errors.New("Foo"),
@@ -246,7 +246,7 @@ func TestPromotionConfirmationHandlerGETReferralImageProvided(t *testing.T) {
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
 		DataAPI:                 &api.DataService{},
 		lookupPromoCode:         &common.PromoCode{ID: 1, Code: "foo", IsReferral: true},
-		referralProgram:         createReferralProgram(2, "imageURL"),
+		referralProgram:         createReferralProgram(2, "imageURL", ptr.Int64(12345)),
 		getPatientFromAccountID: &common.Patient{FirstName: "FirstName"},
 		referralProgramTemplate: &common.ReferralProgramTemplate{PromotionCodeID: ptr.Int64(10)},
 		promotion:               createPromotion("imageURL", "", nil, 0),
@@ -274,7 +274,35 @@ func TestPromotionConfirmationHandlerGETReferralDoctorImageNotProvided(t *testin
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
 		DataAPI:                    &api.DataService{},
 		lookupPromoCode:            &common.PromoCode{ID: 1, Code: "foo", IsReferral: true},
-		referralProgram:            createReferralProgram(2, ""),
+		referralProgram:            createReferralProgram(2, "", ptr.Int64(12345)),
+		getPatientFromAccountIDErr: api.ErrNotFound(`patient`),
+		referralProgramTemplate:    &common.ReferralProgramTemplate{PromotionCodeID: ptr.Int64(10)},
+		promotion:                  createPromotion("", "", nil, 0),
+	}
+	promoConfHandler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
+	handler := test_handler.MockHandler{
+		H: promoConfHandler,
+	}
+
+	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
+	handler.ServeHTTP(responseWriter, r)
+	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionConfirmationGETResponse{
+		Title:       "Welcome to Spruce",
+		ImageURL:    DefaultPromotionImageURL,
+		BodyText:    "successMsg",
+		ButtonTitle: "Let's Go",
+	})
+	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
+	test.Equals(t, http.StatusOK, responseWriter.Code)
+}
+
+func TestPromotionConfirmationHandlerGETDoctorReferralProgramNoTemplateID(t *testing.T) {
+	r, err := http.NewRequest("GET", "mock.api.request?code=foo", nil)
+	test.OK(t, err)
+	dataAPI := &mockDataAPIPromotionConfirmationHandler{
+		DataAPI:                    &api.DataService{},
+		lookupPromoCode:            &common.PromoCode{ID: 1, Code: "foo", IsReferral: true},
+		referralProgram:            createReferralProgram(2, "", nil),
 		getPatientFromAccountIDErr: api.ErrNotFound(`patient`),
 		referralProgramTemplate:    &common.ReferralProgramTemplate{PromotionCodeID: ptr.Int64(10)},
 		promotion:                  createPromotion("", "", nil, 0),
@@ -314,7 +342,7 @@ func TestPromotionConfirmationHandlerGETPromotionImage(t *testing.T) {
 	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionConfirmationGETResponse{
 		Title:       "displayMsg",
 		ImageURL:    "imageURL",
-		BodyText:    "successMsg",
+		BodyText:    "promoSuccessMsg",
 		ButtonTitle: "Let's Go",
 	})
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
@@ -339,14 +367,14 @@ func TestPromotionConfirmationHandlerGETPromotionNoImage(t *testing.T) {
 	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionConfirmationGETResponse{
 		Title:       "displayMsg",
 		ImageURL:    DefaultPromotionImageURL,
-		BodyText:    "successMsg",
+		BodyText:    "promoSuccessMsg",
 		ButtonTitle: "Let's Go",
 	})
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 	test.Equals(t, http.StatusOK, responseWriter.Code)
 }
 
-func createReferralProgram(accountID int64, imageURL string) *common.ReferralProgram {
+func createReferralProgram(accountID int64, imageURL string, templateID *int64) *common.ReferralProgram {
 	rp, _ := NewGiveReferralProgram("title", "description", "group", nil,
 		NewPercentOffVisitPromotion(0,
 			"group", "displayMsg", "shortMsg", "successMsg", imageURL,
@@ -354,13 +382,13 @@ func createReferralProgram(accountID int64, imageURL string) *common.ReferralPro
 	return &common.ReferralProgram{
 		AccountID:  accountID,
 		Data:       rp,
-		TemplateID: ptr.Int64(12345),
+		TemplateID: templateID,
 	}
 }
 
 func createPromotion(imageURL, group string, expires *time.Time, value int) *common.Promotion {
 	p := NewPercentOffVisitPromotion(value,
-		"group", "displayMsg", "shortMsg", "successMsg", imageURL,
+		"group", "displayMsg", "shortMsg", "promoSuccessMsg", imageURL,
 		1, 1, true)
 	return &common.Promotion{
 		Data:    p,
