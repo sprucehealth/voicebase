@@ -879,8 +879,8 @@ type ParentalConsent interface {
 	// ParentalConsentCompletedForPatient updates the patient record and visits to reflect consent has been granted
 	// and all necessary information has been recorded (identification photos).
 	ParentalConsentCompletedForPatient(childPatientID int64) error
-	// ParentalConsent returns the consent status between parent and child
-	ParentalConsent(parentPatientID, childPatientID int64) (*common.ParentalConsent, error)
+	// ParentalConsent returns the consent status for a given child
+	ParentalConsent(childPatientID int64) ([]*common.ParentalConsent, error)
 	// AllParentalConsent returns the full set of parent/child consent relationships which
 	// is a mapping from child's patient ID to the ParentalConsent model.
 	AllParentalConsent(parentPatientID int64) (map[int64]*common.ParentalConsent, error)
@@ -889,8 +889,6 @@ type ParentalConsent interface {
 	UpsertParentConsentProof(parentPatientID int64, proof *ParentalConsentProof) (int64, error)
 	// ParentConsentProof returns an object that corresponds to the proof of ID verification.
 	ParentConsentProof(parentPatientID int64) (*ParentalConsentProof, error)
-	// PatientParent returns the patient record mapped to the provided patient's parent
-	PatientParentID(childPatientID int64) (int64, error)
 }
 
 // Tokens is a set of DAL functions that let you create temporary tokens to use for validation.

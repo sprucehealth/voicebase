@@ -98,16 +98,20 @@ func sendToPatientParent(childPatientID int64, emailType string, vars map[int64]
 		return errors.Trace(fmt.Errorf("Failed to send %s email to parent account of child patient id %d: %s", emailType, childPatientID, err))
 	}
 	if patient.IsUnder18() && patient.HasParentalConsent {
-		parentID, err := dataAPI.PatientParentID(childPatientID)
+		consents, err := dataAPI.ParentalConsent(childPatientID)
 		if err != nil {
 			return errors.Trace(fmt.Errorf("Failed to send %s email to parent account of child account %d: %s", emailType, patient.AccountID.Int64(), err))
 		}
-		parent, err := dataAPI.Patient(parentID, true)
-		if err != nil {
-			return errors.Trace(fmt.Errorf("Failed to send %s email to parent account of child account %d: %s", emailType, patient.AccountID.Int64(), err))
-		}
-		if _, err := emailService.Send([]int64{parent.AccountID.Int64()}, minorTreatmentPlanIssuedEmailType, nil, &mandrill.Message{}, opt); err != nil {
-			return errors.Trace(fmt.Errorf("Failed to send %s issued email to account %d: %s", emailType, parent.AccountID.Int64(), err))
+
+		// notify all parents that have granted consent
+		for _, consent := range consents {
+			parent, err := dataAPI.Patient(consent.ParentPatientID, true)
+			if err != nil {
+				return errors.Trace(fmt.Errorf("Failed to send %s email to parent account of child account %d: %s", emailType, patient.AccountID.Int64(), err))
+			}
+			if _, err := emailService.Send([]int64{parent.AccountID.Int64()}, minorTreatmentPlanIssuedEmailType, nil, &mandrill.Message{}, opt); err != nil {
+				return errors.Trace(fmt.Errorf("Failed to send %s issued email to account %d: %s", emailType, parent.AccountID.Int64(), err))
+			}
 		}
 	}
 	return nil

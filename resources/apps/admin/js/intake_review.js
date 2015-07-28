@@ -197,6 +197,7 @@ module.exports = {
 		this.generatedTags = {}
 		review.visit_review = {type: "d_visit_review:sections_list", sections: []}
 		review.visit_review.sections.push(this.alertSection())
+		review.visit_review.sections.push(this.parentInformationSection())
 		var photoSection = -1
 		for(var i = 0; i < intake.sections.length; i++) {
 
@@ -543,6 +544,96 @@ module.exports = {
 			type: "d_visit_review:standard_section"
 		}
 	},
+
+	parentInformationSection: function(): any {
+		return {
+			subsections: [
+				{
+					rows: [
+						{
+							left_view: {
+								content_config: {
+									key: "parent_name:key"
+								},
+								type: "d_visit_review:title_labels_list"
+							},
+							right_view: {
+								content_config: {
+									key: "parent_name:value"
+								},
+								type: "d_visit_review:content_labels_list"
+							},
+							type: "d_visit_review:standard_two_column_row"
+						},
+						{
+							left_view: {
+								content_config: {
+									key: "parent_dob:key"
+								},
+								type: "d_visit_review:title_labels_list"
+							},
+							right_view: {
+								content_config: {
+									key: "parent_dob:value"
+								},
+								type: "d_visit_review:content_labels_list"
+							},
+							type: "d_visit_review:standard_two_column_row"
+						},
+						{
+							left_view: {
+								content_config: {
+									key: "parent_gender:key"
+								},
+								type: "d_visit_review:title_labels_list"
+							},
+							right_view: {
+								content_config: {
+									key: "parent_gender:value"
+								},
+								type: "d_visit_review:content_labels_list"
+							},
+							type: "d_visit_review:standard_two_column_row"
+						},
+						{
+							left_view: {
+								content_config: {
+									key: "parent_relationship:key"
+								},
+								type: "d_visit_review:title_labels_list"
+							},
+							right_view: {
+								content_config: {
+									key: "parent_relationship:value"
+								},
+								type: "d_visit_review:content_labels_list"
+							},
+							type: "d_visit_review:standard_two_column_row"
+						}															
+					],
+					title: "Demographics",
+					type: "d_visit_review:standard_subsection",
+				},
+				{
+					type: "d_visit_review:standard_photo_subsection",
+					view: {
+						type: "d_visit_review:title_photos_items_list",
+						content_config: {
+							key: "parent_photo_verification"
+						}
+					}
+				}
+			],
+			title: "Parent Information",
+			type: "d_visit_review:standard_section",
+			content_config: {
+				condition : {
+					op: "key_exists",
+					key: "parent_information_included"
+				}
+			}
+		}
+	},		
 
 	submitLayout: function(intake: Intake, review: Review, pathway: string, statusCB: ?StatusCB): void {
 		// Reset our tag info

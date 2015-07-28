@@ -6,10 +6,10 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/auth"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/responses"
 )
 
 type meHandler struct {
@@ -17,15 +17,10 @@ type meHandler struct {
 	dispatcher *dispatch.Dispatcher
 }
 
-type patientWrapper struct {
-	*common.Patient
-	PrimaryPhoneNumber string `json:"primary_phone_number"`
-}
-
 type meResponse struct {
-	Patient       *patientWrapper `json:"patient"`
-	Token         string          `json:"token"`
-	ActionsNeeded []*ActionNeeded `json:"actions_needed,omitempty"`
+	Patient       *responses.Patient `json:"patient"`
+	Token         string             `json:"token"`
+	ActionsNeeded []*ActionNeeded    `json:"actions_needed,omitempty"`
 }
 
 func NewMeHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
@@ -59,16 +54,9 @@ func (m *meHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		golog.Errorf("Failed to get auth token when already authenticated: %s", err)
 	}
 
-	var primaryPhoneNumber string
-	if len(patient.PhoneNumbers) > 0 {
-		primaryPhoneNumber = patient.PhoneNumbers[0].Phone.String()
-	}
 	res := &meResponse{
-		Patient: &patientWrapper{
-			Patient:            patient,
-			PrimaryPhoneNumber: primaryPhoneNumber,
-		},
-		Token: token,
+		Patient: responses.TransformPatient(patient),
+		Token:   token,
 	}
 
 	if showFeedback(m.dataAPI, patient.ID.Int64()) {

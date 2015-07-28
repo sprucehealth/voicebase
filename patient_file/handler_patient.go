@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/surescripts"
 )
 
@@ -67,7 +68,7 @@ type requestResponstData struct {
 }
 
 type patientResponse struct {
-	Patient *common.Patient `json:"patient"`
+	Patient *responses.Patient `json:"patient"`
 }
 
 func (d *doctorPatientHandler) IsAuthorized(r *http.Request) (bool, error) {
@@ -116,7 +117,7 @@ func (d *doctorPatientHandler) getPatientInformation(w http.ResponseWriter, r *h
 	patient := ctxt.RequestCache[apiservice.Patient].(*common.Patient)
 
 	httputil.JSONResponse(w, http.StatusOK, &patientResponse{
-		Patient: patient,
+		Patient: responses.TransformPatient(patient),
 	})
 }
 

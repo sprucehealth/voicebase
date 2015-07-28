@@ -35,9 +35,13 @@ func (m *mockDataAPIListeners) Patient(id int64, basic bool) (*common.Patient, e
 	return m.patients[m.patientCallCount], m.patientErrs[m.patientCallCount]
 }
 
-func (m *mockDataAPIListeners) PatientParentID(id int64) (int64, error) {
+func (m *mockDataAPIListeners) ParentalConsent(id int64) ([]*common.ParentalConsent, error) {
 	m.patientParentIDParam = id
-	return m.patientParentID, m.patientParentIDErr
+	return []*common.ParentalConsent{
+		{
+			ParentPatientID: m.patientParentID,
+		},
+	}, m.patientParentIDErr
 }
 
 func TestEmailCampaignWelcomeOnSignup(t *testing.T) {

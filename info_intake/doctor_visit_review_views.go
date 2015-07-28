@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/mapstructure"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/errors"
 )
 
 // This TypeRegistry contains all views pertaining to the DVisitReview namespace
@@ -210,8 +211,11 @@ func (d *DVisitReviewTitlePhotosItemsListView) Render(context *common.ViewContex
 }
 
 type DVisitReviewStandardSectionView struct {
-	Title       string        `json:"title"`
-	Subsections []common.View `json:"subsections"`
+	Title         string        `json:"title"`
+	Subsections   []common.View `json:"subsections"`
+	ContentConfig struct {
+		common.ViewCondition `json:"condition"`
+	} `json:"content_config"`
 }
 
 func (d *DVisitReviewStandardSectionView) TypeName() string {
@@ -219,13 +223,18 @@ func (d *DVisitReviewStandardSectionView) TypeName() string {
 }
 
 func (d *DVisitReviewStandardSectionView) Render(context *common.ViewContext) (map[string]interface{}, error) {
+	if d.ContentConfig.ViewCondition.Op != "" {
+		if result, err := common.EvaluateConditionForView(d, d.ContentConfig.ViewCondition, context); err != nil || !result {
+			return nil, errors.Trace(err)
+		}
+	}
 	renderedView := make(map[string]interface{})
 	renderedSubsections := make([]interface{}, 0)
 
 	for _, subsection := range d.Subsections {
 		renderedSubsection, err := subsection.Render(context)
 		if err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 		if renderedSubsection != nil {
 			renderedSubsections = append(renderedSubsections, renderedSubsection)

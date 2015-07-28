@@ -3,11 +3,14 @@ package patient_file
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/media"
 )
 
 // This interface is used to populate the ViewContext with data pertaining to a single question
@@ -220,14 +223,19 @@ func populatePatientPhotos(answeredPhotoSections []common.Answer, question *info
 
 func buildContext(
 	dataAPI api.DataAPI,
+	mediaStore *media.Store,
+	expirationDuration time.Duration,
 	visitLayout *info_intake.InfoIntakeLayout,
+	pat *common.Patient,
 	visit *common.PatientVisit) (*common.ViewContext, error) {
 
 	context, err := populateContextForRenderingLayout(
 		visitLayout.Answers(),
 		visitLayout.Questions(),
 		dataAPI,
-		visit.PatientID.Int64(),
+		mediaStore,
+		expirationDuration,
+		pat,
 		visit.ID.Int64())
 	return context, errors.Trace(err)
 }
@@ -235,7 +243,12 @@ func buildContext(
 func populateContextForRenderingLayout(
 	answers map[int64][]common.Answer,
 	questions []*info_intake.Question,
-	dataAPI api.DataAPI, patientID, patientVisitID int64) (*common.ViewContext, error) {
+	dataAPI api.DataAPI,
+	mediaStore *media.Store,
+	expirationDuration time.Duration,
+	patient *common.Patient,
+	patientVisitID int64,
+) (*common.ViewContext, error) {
 	context := common.NewViewContext(nil)
 
 	// populate alerts
@@ -264,6 +277,13 @@ func populateContextForRenderingLayout(
 		context.Set("visit_message:empty_state_text", "Patient did not specify")
 	}
 
+	// only populate parent info if patient is under 18 and has parental consent
+	if patient.IsUnder18() && patient.HasParentalConsent {
+		if err := populateParentInfo(dataAPI, mediaStore, expirationDuration, patient, context); err != nil {
+			return nil, errors.Trace(err)
+		}
+	}
+
 	// go through each question
 	for _, question := range questions {
 		contextPopulator, ok := patientQAPopulators[question.QuestionType]
@@ -277,4 +297,99 @@ func populateContextForRenderingLayout(
 	}
 
 	return context, nil
+}
+
+func populateParentInfo(
+	dataAPI api.DataAPI,
+	mediaStore *media.Store,
+	expirationDuration time.Duration,
+	patient *common.Patient,
+	context *common.ViewContext,
+) error {
+
+	consents, err := dataAPI.ParentalConsent(patient.ID.Int64())
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	if len(consents) == 0 {
+		return nil
+	}
+
+	// TODO: For now assuming we have parental consent by just a single parent.
+	consent := consents[0]
+
+	par := conc.NewParallel()
+
+	// get parent patient info
+	var parentPatient *common.Patient
+	par.Go(func() error {
+		var err error
+		parentPatient, err = dataAPI.GetPatientFromID(consent.ParentPatientID)
+		return errors.Trace(err)
+	})
+
+	var proof *api.ParentalConsentProof
+	par.Go(func() error {
+		var err error
+		proof, err = dataAPI.ParentConsentProof(consent.ParentPatientID)
+		return errors.Trace(err)
+	})
+
+	if err := par.Wait(); err != nil {
+		return errors.Trace(err)
+	}
+
+	// indicate the fact that parent information is included
+	context.Set("parent_information_included", true)
+
+	// Parent name
+	context.Set("parent_name:key", "Name")
+	context.Set("parent_name:value", fmt.Sprintf("%s %s", parentPatient.FirstName, parentPatient.LastName))
+
+	// Parent dob
+	context.Set("parent_dob:key", "Date of Birth")
+	context.Set("parent_dob:value", fmt.Sprintf("%02d/%02d/%d", parentPatient.DOB.Month, parentPatient.DOB.Day, parentPatient.DOB.Year))
+
+	// Parent gender
+	context.Set("parent_gender:key", "Gender")
+	context.Set("parent_gender:value", strings.ToTitle(parentPatient.Gender))
+
+	// Parent relationship
+	context.Set("parent_relationship:key", "Gender")
+	context.Set("parent_relationship:value", consent.Relationship)
+
+	// Parent Photo ID
+	photoSection := info_intake.TitlePhotoListData{
+		Title:  "ID Verification",
+		Photos: make([]info_intake.PhotoData, 0, 2),
+	}
+
+	// Include parent photo ids if present
+	if proof.GovernmentIDPhotoID != nil {
+
+		signedURL, err := mediaStore.SignedURL(*proof.GovernmentIDPhotoID, expirationDuration)
+		if err != nil {
+			return errors.Trace(err)
+		}
+
+		photoSection.Photos = append(photoSection.Photos, info_intake.PhotoData{
+			Title:    "ID Verification",
+			PhotoURL: signedURL,
+		})
+	}
+
+	if proof.SelfiePhotoID != nil {
+		signedURL, err := mediaStore.SignedURL(*proof.SelfiePhotoID, expirationDuration)
+		if err != nil {
+			return errors.Trace(err)
+		}
+
+		photoSection.Photos = append(photoSection.Photos, info_intake.PhotoData{
+			Title:    "ID Verification",
+			PhotoURL: signedURL,
+		})
+	}
+
+	return nil
 }

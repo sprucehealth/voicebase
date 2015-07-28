@@ -35,10 +35,8 @@ func TestParentalConsent(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, false, patient.HasParentalConsent)
 
-	consent, err := testData.DataAPI.ParentalConsent(parentPatientID, patientID)
-	test.Assert(t, err != nil, "Expected error for non-existant link between parent and child")
-	test.Assert(t, api.IsErrNotFound(err), "Expected IsErrNotFound")
-	test.Equals(t, (*common.ParentalConsent)(nil), consent)
+	consents, err := testData.DataAPI.ParentalConsent(patientID)
+	test.Assert(t, len(consents) == 0, "Expected no link between parent and child")
 
 	test.OK(t, testData.DataAPI.GrantParentChildConsent(parentPatientID, patientID, "likely-just-a-friend"))
 
@@ -46,9 +44,10 @@ func TestParentalConsent(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, false, patient.HasParentalConsent)
 
-	consent, err = testData.DataAPI.ParentalConsent(parentPatientID, patientID)
+	consents, err = testData.DataAPI.ParentalConsent(patientID)
 	test.OK(t, err)
-	test.Equals(t, true, consent.Consented)
+	test.Equals(t, 1, len(consents))
+	test.Equals(t, true, consents[0].Consented)
 
 	test.OK(t, testData.DataAPI.ParentalConsentCompletedForPatient(patientID))
 
@@ -56,9 +55,10 @@ func TestParentalConsent(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, true, patient.HasParentalConsent)
 
-	consent, err = testData.DataAPI.ParentalConsent(parentPatientID, patientID)
+	consents, err = testData.DataAPI.ParentalConsent(patientID)
 	test.OK(t, err)
-	test.Equals(t, true, consent.Consented)
+	test.Equals(t, 1, len(consents))
+	test.Equals(t, true, consents[0].Consented)
 }
 
 func TestParentalConsentProof(t *testing.T) {
@@ -111,8 +111,8 @@ func TestPatientParentID(t *testing.T) {
 	test.OK(t, testData.DataAPI.RegisterPatient(patient))
 	patientID := patient.ID.Int64()
 
-	_, err = testData.DataAPI.PatientParentID(patientID)
-	test.Assert(t, api.IsErrNotFound(err), "Expected no patient_parent record to be found")
+	consents, err := testData.DataAPI.ParentalConsent(patientID)
+	test.Assert(t, len(consents) == 0, "Expected no patient_parent record to be found")
 
 	accountID, err = testData.AuthAPI.CreateAccount("parent@sprucehealth.com", "12345", api.RolePatient)
 	test.OK(t, err)
@@ -123,7 +123,8 @@ func TestPatientParentID(t *testing.T) {
 	parentPatientID := patient.ID.Int64()
 	test.OK(t, testData.DataAPI.GrantParentChildConsent(parentPatientID, patientID, "likely-just-a-friend"))
 
-	id, err := testData.DataAPI.PatientParentID(patientID)
+	consents, err = testData.DataAPI.ParentalConsent(patientID)
 	test.OK(t, err)
-	test.Equals(t, parentPatientID, id)
+	test.Equals(t, 1, len(consents))
+	test.Equals(t, parentPatientID, consents[0].ParentPatientID)
 }

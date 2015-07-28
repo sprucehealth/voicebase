@@ -122,13 +122,23 @@ func (h *parentalConsentAPIHandler) get(ctx context.Context, w http.ResponseWrit
 		return
 	}
 
-	consented, err := h.dataAPI.ParentalConsent(parentPatientID, req.ChildPatientID)
-	if err != nil && !api.IsErrNotFound(err) {
+	consents, err := h.dataAPI.ParentalConsent(req.ChildPatientID)
+	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
 	}
+
+	// find the consent by the parent
+	var consented *common.ParentalConsent
+	for _, consent := range consents {
+		if consent.ParentPatientID == parentPatientID {
+			consented = consent
+			break
+		}
+	}
+
 	// Make sure parent has access to the child. Either a link exists (consent) or the provide token is valid.
-	if api.IsErrNotFound(err) && !patient.ValidateParentalConsentToken(h.dataAPI, parentalConsentCookie(req.ChildPatientID, r), req.ChildPatientID) {
+	if consented == nil && !patient.ValidateParentalConsentToken(h.dataAPI, parentalConsentCookie(req.ChildPatientID, r), req.ChildPatientID) {
 		www.APIForbidden(w, r)
 		return
 	}
@@ -139,17 +149,24 @@ func (h *parentalConsentAPIHandler) get(ctx context.Context, w http.ResponseWrit
 		return
 	}
 
-	if consented == nil {
-		consented = &common.ParentalConsent{}
+	var c bool
+	if consented != nil {
+		c = consented.Consented
 	}
+
+	var relationship string
+	if consented != nil {
+		relationship = consented.Relationship
+	}
+
 	res := &parentalConsentAPIGETResponse{
 		Children: []*childResponse{
 			{
 				ChildPatientID: child.ID.Int64(),
 				ChildFirstName: child.FirstName,
 				ChildGender:    child.Gender,
-				Consented:      consented.Consented,
-				Relationship:   consented.Relationship,
+				Consented:      c,
+				Relationship:   relationship,
 			},
 		},
 	}

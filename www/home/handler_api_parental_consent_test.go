@@ -57,11 +57,11 @@ func (a *mockDataAPI_parentalConsent) GrantParentChildConsent(parentPatientID, c
 	return nil
 }
 
-func (a *mockDataAPI_parentalConsent) ParentalConsent(parentPatientID, childPatientID int64) (*common.ParentalConsent, error) {
+func (a *mockDataAPI_parentalConsent) ParentalConsent(childPatientID int64) ([]*common.ParentalConsent, error) {
 	if a.consent == nil {
-		return nil, api.ErrNotFound("consent")
+		return nil, nil
 	}
-	return a.consent, nil
+	return []*common.ParentalConsent{a.consent}, nil
 }
 
 func (a *mockDataAPI_parentalConsent) ParentConsentProof(parentPatientID int64) (*api.ParentalConsentProof, error) {
@@ -167,7 +167,6 @@ func TestParentalConsentAPIHandler_GET(t *testing.T) {
 	test.Equals(t, http.StatusForbidden, w.Code)
 
 	// Access by token (not consented)
-
 	r, err = http.NewRequest("GET", "/?"+params.Encode(), nil)
 	test.OK(t, err)
 	token, err := patient.GenerateParentalConsentToken(dataAPI, 2)
@@ -181,8 +180,9 @@ func TestParentalConsentAPIHandler_GET(t *testing.T) {
 	// Access by parent/child link (consented)
 
 	dataAPI.consent = &common.ParentalConsent{
-		Consented:    true,
-		Relationship: "someone",
+		ParentPatientID: 1,
+		Consented:       true,
+		Relationship:    "someone",
 	}
 	r, err = http.NewRequest("GET", "/?"+params.Encode(), nil)
 	test.OK(t, err)
