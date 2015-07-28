@@ -221,8 +221,11 @@ func (d *regimenHandler) ensureLinkedRegimenStepExistsInMasterList(regimenStep *
 	// its possible that the step is not present in the active global list but exists as a
 	// step from the past
 	parentRegimenStep, err := d.dataAPI.GetRegimenStepForDoctor(regimenStep.ParentID.Int64(), doctorID)
-	if err != nil {
+	if api.IsErrNotFound(err) {
 		regimenStep.ParentID = encoding.ObjectID{}
+		return nil
+	} else if err != nil {
+		return err
 	}
 
 	// if the parent regimen step does exist, ensure that the text matches up, and if not break the linkage
