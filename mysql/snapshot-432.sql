@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.6.25, for osx10.10 (x86_64)
 --
--- Host: 127.0.0.1    Database: database_25220
+-- Host: 127.0.0.1    Database: database_24736
 -- ------------------------------------------------------
 -- Server version	5.6.25
 
@@ -2058,6 +2058,28 @@ CREATE TABLE `notification_prompt_status` (
   PRIMARY KEY (`id`),
   KEY `account_id` (`account_id`),
   CONSTRAINT `notification_prompt_status_ibfk_1` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `parent_consent_proof`
+--
+
+DROP TABLE IF EXISTS `parent_consent_proof`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `parent_consent_proof` (
+  `patient_id` int(10) unsigned NOT NULL,
+  `governmentid_media_id` int(10) unsigned DEFAULT NULL,
+  `selfie_media_id` int(10) unsigned DEFAULT NULL,
+  `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_modified` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`patient_id`),
+  KEY `governmentid_media` (`governmentid_media_id`),
+  KEY `selfie_media` (`selfie_media_id`),
+  CONSTRAINT `governmentid_media` FOREIGN KEY (`governmentid_media_id`) REFERENCES `media` (`id`),
+  CONSTRAINT `patient_id` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`),
+  CONSTRAINT `selfie_media` FOREIGN KEY (`selfie_media_id`) REFERENCES `media` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -4188,4 +4210,4 @@ CREATE TABLE `visit_diagnosis_set` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-07-27 16:45:34
+-- Dump completed on 2015-07-27 16:45:38

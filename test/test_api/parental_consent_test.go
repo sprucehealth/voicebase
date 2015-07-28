@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -58,4 +59,42 @@ func TestParentalConsent(t *testing.T) {
 	consent, err = testData.DataAPI.ParentChildConsent(parentPatientID, patientID)
 	test.OK(t, err)
 	test.Equals(t, true, consent)
+}
+
+func TestParentalConsentProof(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+	testData.StartAPIServer(t)
+
+	pr := test_integration.SignupRandomTestPatient(t, testData)
+
+	governmentIDPhotoID, _ := test_integration.UploadPhoto(t, testData, pr.Patient.AccountID.Int64())
+	selfiePhotoID, _ := test_integration.UploadPhoto(t, testData, pr.Patient.AccountID.Int64())
+
+	rowsAffected, err := testData.DataAPI.UpsertParentConsentProof(
+		pr.Patient.ID.Int64(),
+		&api.ParentalConsentProof{
+			GovernmentIDPhotoID: ptr.Int64(governmentIDPhotoID),
+		})
+	test.OK(t, err)
+	test.Equals(t, int64(1), rowsAffected)
+
+	// check if the proof was inserted as expected
+	proof, err := testData.DataAPI.ParentConsentProof(pr.Patient.ID.Int64())
+	test.OK(t, err)
+	test.Equals(t, governmentIDPhotoID, *proof.GovernmentIDPhotoID)
+	test.Equals(t, true, proof.SelfiePhotoID == nil)
+
+	// now try to update (if rowsAffected was 2 then row was updated)
+	rowsAffected, err = testData.DataAPI.UpsertParentConsentProof(
+		pr.Patient.ID.Int64(), &api.ParentalConsentProof{
+			SelfiePhotoID: ptr.Int64(selfiePhotoID),
+		})
+	test.OK(t, err)
+	test.Equals(t, int64(2), rowsAffected)
+
+	proof, err = testData.DataAPI.ParentConsentProof(pr.Patient.ID.Int64())
+	test.OK(t, err)
+	test.Equals(t, governmentIDPhotoID, *proof.GovernmentIDPhotoID)
+	test.Equals(t, selfiePhotoID, *proof.SelfiePhotoID)
 }

@@ -20,10 +20,19 @@ const (
 )
 
 const (
-	ClaimerTypeConversationMessage                   = "conversation_message"
-	ClaimerTypePhotoIntakeSection                    = "patient_intake_photo_section"
-	ClaimerTypeTreatmentPlanScheduledMessage         = "tp_scheduled_message"
+	// ClaimerTypeConversationMessage is used to represent a media object claim by a case message
+	ClaimerTypeConversationMessage = "conversation_message"
+	// ClaimerTypePhotoIntakSection is used to represent a media object claim by a photo intake section
+	ClaimerTypePhotoIntakeSection = "patient_intake_photo_section"
+	// ClaimerTypeTreatmentPlanScheduledMessage is used to represent a media object claim by a media
+	// attachment in a scheduled message in a treatment plan
+	ClaimerTypeTreatmentPlanScheduledMessage = "tp_scheduled_message"
+	// ClaimerTypeFavoriteTreatmentPlanScheduledMessage is used to represent a media object claim
+	// by a media attached in a scheduled message part of a favorite treatment plan
 	ClaimerTypeFavoriteTreatmentPlanScheduledMessage = "ftp_scheduled_message"
+	// ClaimerTypeParentalConsentProof is used to represent a media object claim
+	// by a photoID attached as part of parental consent proof
+	ClaimerTypeParentalConsentProof = "parental_consent_proof"
 )
 
 type PhoneNumber struct {
