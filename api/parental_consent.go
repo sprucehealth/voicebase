@@ -67,6 +67,8 @@ func (d *DataService) ParentChildConsent(parentPatientID, childPatientID int64) 
 	return consent, nil
 }
 
+// UpsertParentConsentProof performs and INSERT ON DUPLICATE KEY UPDATE. In which it INSERTS a new record if one does not already exist for the provided patient ID and
+// 	UPDATES any existing record to match the provided record.
 func (d *DataService) UpsertParentConsentProof(parentPatientID int64, proof *ParentalConsentProof) (int64, error) {
 	if proof.GovernmentIDPhotoID == nil && proof.SelfiePhotoID == nil {
 		return 0, errors.Trace(errors.New("Atleast governmentIDPhotoID or selfiePhotoID must be specified for upsert."))
@@ -123,6 +125,7 @@ func (d *DataService) UpsertParentConsentProof(parentPatientID int64, proof *Par
 	return rowsAffected, errors.Trace(tx.Commit())
 }
 
+// ParentConsentProof returns the ParentalConsentProof record mapped to the provided patient_id
 func (d *DataService) ParentConsentProof(parentPatientID int64) (*ParentalConsentProof, error) {
 	var proof ParentalConsentProof
 	if err := d.db.QueryRow(`
@@ -137,4 +140,14 @@ func (d *DataService) ParentConsentProof(parentPatientID int64) (*ParentalConsen
 	}
 
 	return &proof, nil
+}
+
+// PatientParentID returns the patient id mapped to the provided patient's parent
+func (d *DataService) PatientParentID(childPatientID int64) (int64, error) {
+	var parentID int64
+	err := d.db.QueryRow(`SELECT parent_patient_id FROM patient_parent WHERE patient_id = ?`, childPatientID).Scan(&parentID)
+	if err == sql.ErrNoRows {
+		return 0, errors.Trace(ErrNotFound(`patient_parent`))
+	}
+	return parentID, errors.Trace(err)
 }

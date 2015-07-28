@@ -877,6 +877,8 @@ type ParentalConsent interface {
 	UpsertParentConsentProof(parentPatientID int64, proof *ParentalConsentProof) (int64, error)
 	// ParentConsentProof returns an object that corresponds to the proof of ID verification.
 	ParentConsentProof(parentPatientID int64) (*ParentalConsentProof, error)
+	// PatientParent returns the patient record mapped to the provided patient's parent
+	PatientParentID(childPatientID int64) (int64, error)
 }
 
 type DataAPI interface {

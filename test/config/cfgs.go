@@ -17,3 +17,51 @@ var GlobalFirstVisitFreeEnabled = &cfg.ValueDef{
 	Type:        cfg.ValueTypeBool,
 	Default:     true,
 }
+
+// WelcomeEmailEnabled allows a suer to enable or disable the welcome email campaigne
+var WelcomeEmailEnabled = &cfg.ValueDef{
+	Name:        "Email.Campaign.Welcome.Enabled",
+	Description: "Enable or disable the welcome email.",
+	Type:        cfg.ValueTypeBool,
+	Default:     true,
+}
+
+// WelcomeEmailDisabled allows a suer to enable or disable the welcome email campaigne
+var WelcomeEmailDisabled = &cfg.ValueDef{
+	Name:        "Email.Campaign.Welcome.Enabled",
+	Description: "Enable or disable the welcome email.",
+	Type:        cfg.ValueTypeBool,
+	Default:     false,
+}
+
+// MinorTreatmentPlanIssuedEmailEnabled allows a user to enable or disable the email notifying the parent account when a minor attached to their account has been issued a treatment plan.
+var MinorTreatmentPlanIssuedEmailEnabled = &cfg.ValueDef{
+	Name:        "Email.Campaign.Minor.Treatment.Plan.Issued.Enabled",
+	Description: "Enable or disable the email notifying the parent account when a minor attached to their account has been issued a treatment plan.",
+	Type:        cfg.ValueTypeBool,
+	Default:     true,
+}
+
+// MinorTreatmentPlanIssuedEmailDisabled allows a user to enable or disable the email notifying the parent account when a minor attached to their account has been issued a treatment plan.
+var MinorTreatmentPlanIssuedEmailDisabled = &cfg.ValueDef{
+	Name:        "Email.Campaign.Minor.Treatment.Plan.Issued.Enabled",
+	Description: "Enable or disable the email notifying the parent account when a minor attached to their account has been issued a treatment plan.",
+	Type:        cfg.ValueTypeBool,
+	Default:     false,
+}
+
+// MinorTriagedEmailEnabledDef allows a user to enable or disable the email notifying the parent account when a minor attached to their account has been triaged.
+var MinorTriagedEmailEnabled = &cfg.ValueDef{
+	Name:        "Email.Campaign.Minor.Triaged.Enabled",
+	Description: "Enable or disable the email notifying the parent account when a minor attached to their account has been triaged.",
+	Type:        cfg.ValueTypeBool,
+	Default:     true,
+}
+
+// MinorTriagedEmailDisabled allows a user to enable or disable the email notifying the parent account when a minor attached to their account has been triaged.
+var MinorTriagedEmailDisabled = &cfg.ValueDef{
+	Name:        "Email.Campaign.Minor.Triaged.Enabled",
+	Description: "Enable or disable the email notifying the parent account when a minor attached to their account has been triaged.",
+	Type:        cfg.ValueTypeBool,
+	Default:     false,
+}

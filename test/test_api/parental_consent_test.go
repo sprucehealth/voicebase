@@ -98,3 +98,32 @@ func TestParentalConsentProof(t *testing.T) {
 	test.Equals(t, governmentIDPhotoID, *proof.GovernmentIDPhotoID)
 	test.Equals(t, selfiePhotoID, *proof.SelfiePhotoID)
 }
+
+func TestPatientParentID(t *testing.T) {
+	testData := test_integration.SetupTest(t)
+	defer testData.Close()
+
+	accountID, err := testData.AuthAPI.CreateAccount("patient@sprucehealth.com", "12345", api.RolePatient)
+	test.OK(t, err)
+	patient := &common.Patient{
+		AccountID: encoding.NewObjectID(accountID),
+	}
+	test.OK(t, testData.DataAPI.RegisterPatient(patient))
+	patientID := patient.ID.Int64()
+
+	_, err = testData.DataAPI.PatientParentID(patientID)
+	test.Assert(t, api.IsErrNotFound(err), "Expected no patient_parent record to be found")
+
+	accountID, err = testData.AuthAPI.CreateAccount("parent@sprucehealth.com", "12345", api.RolePatient)
+	test.OK(t, err)
+	patient = &common.Patient{
+		AccountID: encoding.NewObjectID(accountID),
+	}
+	test.OK(t, testData.DataAPI.RegisterPatient(patient))
+	parentPatientID := patient.ID.Int64()
+	test.OK(t, testData.DataAPI.LinkParentChild(parentPatientID, patientID, "likely-just-a-friend"))
+
+	id, err := testData.DataAPI.PatientParentID(patientID)
+	test.OK(t, err)
+	test.Equals(t, parentPatientID, id)
+}

@@ -21,11 +21,17 @@ var whitelistDef = &cfg.ValueDef{
 	Multi:       true,
 }
 
+// Option represents email related options
 type Option int
 
 const (
+	// CanOptOut is an Option the indicates that the recipient can have opted out of reciept
 	CanOptOut Option = 1 << iota
+
+	// OnlyOnce is an Option for asserting a message is only sent once
 	OnlyOnce
+
+	// Async is an Option for performing the email dispatch asynchronously
 	Async
 )
 
@@ -33,14 +39,17 @@ func (o Option) has(opt Option) bool {
 	return o&opt == opt
 }
 
+// Mandrill describes methods needed to interact with Mandrill correctly
 type Mandrill interface {
 	SendMessageTemplate(name string, content []mandrill.Var, msg *mandrill.Message, async bool) ([]*mandrill.SendMessageResponse, error)
 }
 
+// Service describes the methods needed to provide email services
 type Service interface {
 	Send(accountIDs []int64, emailType string, vars map[int64][]mandrill.Var, msg *mandrill.Message, opt Option) ([]*mandrill.SendMessageResponse, error)
 }
 
+// OptoutChecker represents a type intended to perform the opt out check before sending
 type OptoutChecker struct {
 	dataAPI    api.DataAPI
 	svc        Mandrill
@@ -50,6 +59,7 @@ type OptoutChecker struct {
 	dispatcher dispatch.Publisher
 }
 
+// NewOptoutChecker returns an initialized instance of OptoutChecker
 func NewOptoutChecker(dataAPI api.DataAPI, svc Mandrill, cfgStore cfg.Store, dispatcher dispatch.Publisher) *OptoutChecker {
 	cfgStore.Register(whitelistDef)
 	oc := &OptoutChecker{
@@ -63,6 +73,7 @@ func NewOptoutChecker(dataAPI api.DataAPI, svc Mandrill, cfgStore cfg.Store, dis
 	return oc
 }
 
+// Send performs the actual sending operation associated with the email distribution
 func (oc *OptoutChecker) Send(accountIDs []int64, emailType string, vars map[int64][]mandrill.Var, msg *mandrill.Message, opt Option) ([]*mandrill.SendMessageResponse, error) {
 	whitelist := oc.wl.Load().([]*regexp.Regexp)
 	if v := oc.cfg.Snapshot().String(whitelistDef.Name); v != oc.wlVal.Load().(string) {
