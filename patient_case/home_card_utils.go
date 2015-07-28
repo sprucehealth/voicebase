@@ -259,7 +259,7 @@ func homeCardsForAuthenticatedUser(
 	}
 	if auxillaryCardOptions&referralCard != 0 {
 		spruceHeaders := apiservice.ExtractSpruceHeaders(r)
-		view, err := getShareSpruceSection(spruceHeaders.AppVersion, dataAPI, webDomain, patient.AccountID.Int64())
+		view, err := getShareSpruceSection(spruceHeaders, dataAPI, webDomain, patient.AccountID.Int64())
 		if err != nil {
 			return nil, err
 		} else if view != nil {
@@ -327,11 +327,17 @@ func getMeetCareTeamSection(careTeamAssignments []*common.CareProviderAssignment
 	return sectionView
 }
 
-func getShareSpruceSection(currentAppVersion *common.Version, dataAPI api.DataAPI, webDomain string, accountID int64) (common.ClientView, error) {
+func getShareSpruceSection(spruceHeaders *apiservice.SpruceHeaders, dataAPI api.DataAPI, webDomain string, accountID int64) (common.ClientView, error) {
+
 	// FIXME: Improve the way we do app version/view mapping.
 	// The current version checking mechanism will be difficult to maintain
 	// Version 1.1.0 - Initial refer a friend spruce action homecard version
 	// Version 2.0.2 - Improved direct refer a friend link homecard
+	// Android - don't show any share spruce section at all
+
+	if spruceHeaders.Platform == common.Android {
+		return nil, nil
+	}
 
 	// The initial refer a friend launch version
 	referFriendLaunchVersion110 := &common.Version{
@@ -352,7 +358,7 @@ func getShareSpruceSection(currentAppVersion *common.Version, dataAPI api.DataAP
 		return nil, errors.Trace(err)
 	}
 	switch {
-	case currentAppVersion.GreaterThanOrEqualTo(referFriendLaunchVersion110) && currentAppVersion.LessThan(referFriendVersion202):
+	case spruceHeaders.AppVersion.GreaterThanOrEqualTo(referFriendLaunchVersion110) && spruceHeaders.AppVersion.LessThan(referFriendVersion202):
 		return &phSectionView{
 			Views: []common.ClientView{
 				&phSmallIconText{
@@ -363,7 +369,7 @@ func getShareSpruceSection(currentAppVersion *common.Version, dataAPI api.DataAP
 				},
 			},
 		}, nil
-	case currentAppVersion.GreaterThanOrEqualTo(referFriendVersion202):
+	case spruceHeaders.AppVersion.GreaterThanOrEqualTo(referFriendVersion202):
 		return &phReferFriend{
 			ReferFriendContent: referralDisplayInfo,
 		}, nil
