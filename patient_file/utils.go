@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/info_intake"
 )
 
@@ -82,7 +83,7 @@ func populateSingleEntryAnswers(patientAnswers []common.Answer, question *info_i
 	}
 
 	if len(patientAnswers) > 1 {
-		return fmt.Errorf("Expected just one answer for question %s instead we have  %d", question.QuestionTag, len(patientAnswers))
+		return errors.Trace(fmt.Errorf("Expected just one answer for question %s instead we have  %d", question.QuestionTag, len(patientAnswers)))
 	}
 
 	pAnswer := patientAnswers[0].(*common.AnswerIntake)
@@ -228,12 +229,7 @@ func buildContext(
 		dataAPI,
 		visit.PatientID.Int64(),
 		visit.ID.Int64())
-
-	if err != nil {
-		return nil, err
-	}
-
-	return context, err
+	return context, errors.Trace(err)
 }
 
 func populateContextForRenderingLayout(
@@ -245,7 +241,7 @@ func populateContextForRenderingLayout(
 	// populate alerts
 	alerts, err := dataAPI.AlertsForVisit(patientVisitID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	} else if len(alerts) > 0 {
 		alertsArray := make([]string, len(alerts))
 		for i, alert := range alerts {
@@ -259,7 +255,7 @@ func populateContextForRenderingLayout(
 	// populate message for patient visit if one exists
 	message, err := dataAPI.GetMessageForPatientVisit(patientVisitID)
 	if err != nil && !api.IsErrNotFound(err) {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	if message != "" {
 		context.Set("q_anything_else_acne:answers", message)
@@ -272,11 +268,11 @@ func populateContextForRenderingLayout(
 	for _, question := range questions {
 		contextPopulator, ok := patientQAPopulators[question.QuestionType]
 		if !ok {
-			return nil, fmt.Errorf("Context populator not found for question with type %s", question.QuestionType)
+			return nil, errors.Trace(fmt.Errorf("Context populator not found for question with type %s", question.QuestionType))
 		}
 
 		if err := contextPopulator.populateViewContextWithPatientQA(answers[question.QuestionID], question, context); err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 	}
 

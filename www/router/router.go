@@ -120,7 +120,7 @@ func New(c *Config) httputil.ContextHandler {
 	router.Handle("/privacy", StaticHTMLHandler("terms.html"))
 	router.Handle("/medication-affordability", StaticHTMLHandler("medafford.html"))
 
-	home.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.SMSAPI, c.FromNumber, c.BranchClient, c.RateLimiters, c.Signer, c.WebPassword, c.AnalyticsLogger, c.TemplateLoader, c.ExperimentIDs, c.MediaStore, c.MetricsRegistry.Scope("home"))
+	home.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.SMSAPI, c.FromNumber, c.BranchClient, c.RateLimiters, c.Signer, c.WebPassword, c.AnalyticsLogger, c.TemplateLoader, c.ExperimentIDs, c.MediaStore, c.Dispatcher, c.MetricsRegistry.Scope("home"))
 	passreset.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.SMSAPI, c.FromNumber, c.EmailService, c.SupportEmail, c.WebDomain, c.TemplateLoader, c.MetricsRegistry.Scope("reset-password"))
 	dronboard.SetupRoutes(router, &dronboard.Config{
 		DataAPI:         c.DataAPI,

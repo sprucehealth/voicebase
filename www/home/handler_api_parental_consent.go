@@ -8,13 +8,15 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/www"
 )
 
 type parentalConsentAPIHandler struct {
-	dataAPI api.DataAPI
+	dataAPI    api.DataAPI
+	dispatcher dispatch.Publisher
 }
 
 type parentalConsentAPIPOSTRequest struct {
@@ -47,10 +49,11 @@ func (r *parentalConsentAPIPOSTRequest) Validate() (bool, string) {
 	return true, ""
 }
 
-func newParentalConsentAPIHAndler(dataAPI api.DataAPI) httputil.ContextHandler {
+func newParentalConsentAPIHAndler(dataAPI api.DataAPI, dispatcher dispatch.Publisher) httputil.ContextHandler {
 	return httputil.ContextSupportedMethods(
 		www.APIRoleRequiredHandler(&parentalConsentAPIHandler{
-			dataAPI: dataAPI,
+			dataAPI:    dataAPI,
+			dispatcher: dispatcher,
 		}, api.RolePatient), httputil.Post, httputil.Get)
 }
 
@@ -99,7 +102,7 @@ func (h *parentalConsentAPIHandler) post(ctx context.Context, w http.ResponseWri
 			return
 		}
 	} else if proof.IsComplete() {
-		if err := h.dataAPI.ParentalConsentCompletedForPatient(req.ChildPatientID); err != nil {
+		if err := patient.ParentalConsentCompleted(h.dataAPI, h.dispatcher, parentPatientID, req.ChildPatientID); err != nil {
 			www.APIInternalError(w, r, err)
 			return
 		}

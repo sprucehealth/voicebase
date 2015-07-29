@@ -135,7 +135,7 @@ func TestTeenFlow(t *testing.T) {
 	test.Assert(t, err != nil, "Should not be able to submit visit requiring consent before consent is granted")
 	test.Assert(t, strings.Contains(err.Error(), "consent"), "Expected consent failure, got %s", err)
 
-	test.OK(t, testData.DataAPI.ParentalConsentCompletedForPatient(patientID))
+	test.OK(t, patient.ParentalConsentCompleted(testData.DataAPI, testData.Config.Dispatcher, parentPatientID, patientID))
 
 	// Make sure visit info updates to reflect consent being granted
 	cvRes, err = pc.Visit(cvRes.PatientVisitID)

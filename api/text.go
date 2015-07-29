@@ -20,17 +20,17 @@ func (d *DataService) LocalizedText(langID int64, tags []string) (map[string]str
 	for rows.Next() {
 		var tag, text string
 		if err := rows.Scan(&tag, &text); err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 		textMap[tag] = text
 	}
-	return textMap, rows.Err()
+	return textMap, errors.Trace(rows.Err())
 }
 
 func (d *DataService) UpdateLocalizedText(langID int64, tagText map[string]string) error {
 	tx, err := d.db.Begin()
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	stmt, err := tx.Prepare(`
@@ -40,15 +40,15 @@ func (d *DataService) UpdateLocalizedText(langID int64, tagText map[string]strin
 			AND app_text_id = (SELECT id FROM app_text WHERE app_text_tag = ?)`)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
 	for tag, text := range tagText {
 		if _, err := stmt.Exec(text, langID, tag); err != nil {
 			tx.Rollback()
-			return err
+			return errors.Trace(err)
 		}
 	}
 
-	return tx.Commit()
+	return errors.Trace(tx.Commit())
 }

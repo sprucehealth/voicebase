@@ -44,6 +44,13 @@ type mockHomeHandlerDataAPI struct {
 
 // overriding all the data access methods that are relevant to the home API
 
+func (m *mockHomeHandlerDataAPI) LocalizedText(langID int64, tags []string) (map[string]string, error) {
+	text := make(map[string]string, len(tags))
+	for _, t := range tags {
+		text[t] = t
+	}
+	return text, nil
+}
 func (m *mockHomeHandlerDataAPI) CreateToken(purpose, key, token string, expire time.Duration) (string, error) {
 	return purpose + key + token, nil
 }

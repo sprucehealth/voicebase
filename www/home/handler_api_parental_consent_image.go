@@ -8,8 +8,10 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/media"
+	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -22,6 +24,7 @@ const maxConsentImageRequestMemory = 5 * 1024 * 1024
 
 type parentalConsentImageAPIHandler struct {
 	dataAPI    api.DataAPI
+	dispatcher dispatch.Publisher
 	mediaStore *media.Store
 }
 
@@ -33,10 +36,11 @@ type imageTypeResponse struct {
 	URL string `json:"url"`
 }
 
-func newParentalConsentImageAPIHAndler(dataAPI api.DataAPI, mediaStore *media.Store) httputil.ContextHandler {
+func newParentalConsentImageAPIHAndler(dataAPI api.DataAPI, dispatcher dispatch.Publisher, mediaStore *media.Store) httputil.ContextHandler {
 	return httputil.ContextSupportedMethods(
 		www.APIRoleRequiredHandler(&parentalConsentImageAPIHandler{
 			dataAPI:    dataAPI,
+			dispatcher: dispatcher,
 			mediaStore: mediaStore,
 		}, api.RolePatient), httputil.Post, httputil.Get)
 }
@@ -129,7 +133,7 @@ func (h *parentalConsentImageAPIHandler) post(ctx context.Context, w http.Respon
 		}
 		for childPatientID, consent := range consent {
 			if consent.Consented {
-				if err := h.dataAPI.ParentalConsentCompletedForPatient(childPatientID); err != nil {
+				if err := patient.ParentalConsentCompleted(h.dataAPI, h.dispatcher, parentPatientID, childPatientID); err != nil {
 					www.APIInternalError(w, r, err)
 					return
 				}

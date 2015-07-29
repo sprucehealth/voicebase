@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/branch"
+	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
@@ -36,6 +37,7 @@ func SetupRoutes(
 	templateLoader *www.TemplateLoader,
 	experimentIDs map[string]string,
 	mediaStore *media.Store,
+	dispatcher dispatch.Publisher,
 	metricsRegistry metrics.Registry,
 ) {
 	templateLoader.MustLoadTemplate("home/base.html", "base.html", map[string]interface{}{
@@ -101,8 +103,8 @@ func SetupRoutes(
 	r.Handle("/api/auth/sign-up", newSignUpAPIHandler(dataAPI, authAPI))
 	r.Handle("/api/forms/{form:[0-9a-z-]+}", newFormsAPIHandler(dataAPI))
 	r.Handle("/api/textdownloadlink", newTextDownloadLinkAPIHandler(dataAPI, smsAPI, fromSMSNumber, branchClient, rateLimiters.Get("textdownloadlink")))
-	r.Handle("/api/parental-consent", apiAuthFilter(newParentalConsentAPIHAndler(dataAPI)))
-	r.Handle("/api/parental-consent/image", apiAuthFilter(newParentalConsentImageAPIHAndler(dataAPI, mediaStore)))
+	r.Handle("/api/parental-consent", apiAuthFilter(newParentalConsentAPIHAndler(dataAPI, dispatcher)))
+	r.Handle("/api/parental-consent/image", apiAuthFilter(newParentalConsentImageAPIHAndler(dataAPI, dispatcher, mediaStore)))
 
 	// Analytics
 	ah := newAnalyticsHandler(analyticsLogger, metricsRegistry.Scope("analytics"))

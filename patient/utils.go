@@ -104,21 +104,19 @@ func IntakeLayoutForVisit(
 		info.ParentalConsentRequired = patient.IsUnder18()
 		info.ParentalConsentGranted = patient.HasParentalConsent
 		if viewerRole == api.RolePatient && info.ParentalConsentRequired && !info.ParentalConsentGranted {
-			consentURL, err := ParentalConsentURL(dataAPI, webDomain, patient.ID.Int64())
+			actionURL, err := ParentalConsentRequestSMSAction(dataAPI, webDomain, patient.ID.Int64())
 			if err != nil {
-				return nil, err
+				return nil, errors.Trace(err)
 			}
 			info.ParentalConsentInfo = &ParentalConsentInfo{
 				ScreenTitle: "Parental Consent",
 				FooterText:  "Your parent will have access to your visit, treatment plan and messages with your care team.",
 				Body: ParentalConsentInfoBody{
-					Title:      "Text your parent a link to get their consent for your visit.",
-					IconURL:    app_url.IconConsentLarge,
-					Message:    "Before submitting your visit, we need a parent to consent to your treatment. As part of their approval, your parent will need to provide a valid photo ID.",
-					ButtonText: "Text Link",
-					ButtonAction: app_url.ComposeSMSAction(
-						"Hey, I'd like to see a dermatologist for my acne. With Spruce I can see a board-certified " +
-							"dermatologist from my phone but need your approval: " + consentURL),
+					Title:        "Text your parent a link to get their consent for your visit.",
+					IconURL:      app_url.IconConsentLarge,
+					Message:      "Before submitting your visit, we need a parent to consent to your treatment. As part of their approval, your parent will need to provide a valid photo ID.",
+					ButtonText:   "Text Link",
+					ButtonAction: actionURL,
 				},
 			}
 			info.ClientLayout.ParentalConsentInfo = info.ParentalConsentInfo
@@ -142,7 +140,7 @@ func populateLayoutWithAnswers(
 	photoQuestionIDs := visitLayout.PhotoQuestionIDs()
 	photosForVisit, err := dataAPI.PatientPhotoSectionsForQuestionIDs(photoQuestionIDs, patientID, visitID)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	// create photoURLs for each answer
@@ -151,14 +149,14 @@ func populateLayoutWithAnswers(
 			ps := photoSection.(*common.PhotoIntakeSection)
 			for _, intakeSlot := range ps.Photos {
 				if ok, err := dataAPI.MediaHasClaim(intakeSlot.PhotoID, common.ClaimerTypePhotoIntakeSection, ps.ID); err != nil {
-					return err
+					return errors.Trace(err)
 				} else if !ok {
-					return errors.New("ClaimerID does not match PhotoIntakeSectionID")
+					return errors.Trace(errors.New("ClaimerID does not match PhotoIntakeSectionID"))
 				}
 
 				intakeSlot.PhotoURL, err = mediaStore.SignedURL(intakeSlot.PhotoID, expirationDuration)
 				if err != nil {
-					return err
+					return errors.Trace(err)
 				}
 			}
 		}
@@ -171,7 +169,7 @@ func populateLayoutWithAnswers(
 		PatientVisitID: visitID,
 	})
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	// merge answers into one map
@@ -203,7 +201,7 @@ func populateLayoutWithAnswers(
 		previousAnswers, err := dataAPI.PreviousPatientAnswersForQuestions(
 			prefillQuestionTags, patientID, patientVisit.CreationDate)
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 
 		// populate the questions with previous answers by the patient
@@ -211,7 +209,7 @@ func populateLayoutWithAnswers(
 
 			populatedAnswers, err := populateAnswers(questionsToPrefill[questionTag], answers)
 			if err != nil {
-				return err
+				return errors.Trace(err)
 			}
 
 			questionsToPrefill[questionTag].Answers = populatedAnswers
@@ -256,7 +254,7 @@ func populateAnswers(question *info_intake.Question, answers []common.Answer) ([
 			items[i] = ai
 
 		default:
-			return nil, fmt.Errorf("Expected answer of type common.AnswerIntake but got type %T", a)
+			return nil, errors.Trace(fmt.Errorf("Expected answer of type common.AnswerIntake but got type %T", a))
 		}
 	}
 
@@ -268,7 +266,7 @@ func populateAnswers(question *info_intake.Question, answers []common.Answer) ([
 func pathwayForPatient(dataAPI api.DataAPI, pathwayTag string, patient *common.Patient) (*common.Pathway, error) {
 	pathway, err := dataAPI.PathwayForTag(pathwayTag, api.POWithDetails)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	// Make sure that the patient is elligible for the selected pathway (e.g. age), and
@@ -303,7 +301,7 @@ func pathwayForPatient(dataAPI api.DataAPI, pathwayTag string, patient *common.P
 		if ageRes.AlternatePathwayTag != "" {
 			pathway, err = dataAPI.PathwayForTag(ageRes.AlternatePathwayTag, api.PONone)
 			if err != nil {
-				return nil, err
+				return nil, errors.Trace(err)
 			}
 		}
 	} else if patient.IsUnder18() {

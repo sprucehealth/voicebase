@@ -59,7 +59,6 @@ func NewManager(dataAPI api.DataAPI, authAPI api.AuthAPI, snsClient snsiface.SNS
 }
 
 func (n *NotificationManager) NotifyDoctor(role string, doctorID, accountID int64, msg *Message) error {
-
 	phoneNumbers, err := n.authAPI.GetPhoneNumbersForAccount(accountID)
 	if err != nil {
 		return err

@@ -11,14 +11,16 @@ import (
 	"github.com/sprucehealth/backend/patient"
 )
 
+// Prefixes for generating unique IDs for push notifications.
 const (
-	CNTreatmentPlan       = "treatment_plan"
-	CNMessage             = "message"
-	CNVisitSubmitted      = "visit_submitted"
-	CNIncompleteVisit     = "incomplete_visit"
-	CNIncompleteFollowup  = "incomplete_followup"
-	CNStartFollowup       = "start_followup"
-	CNPreSubmissionTriage = "pre_submission_triage"
+	CNIncompleteFollowup       = "incomplete_followup"
+	CNIncompleteVisit          = "incomplete_visit"
+	CNMessage                  = "message"
+	CNParentalConsentCompleted = "parental_consent_completed"
+	CNPreSubmissionTriage      = "pre_submission_triage"
+	CNStartFollowup            = "start_followup"
+	CNTreatmentPlan            = "treatment_plan"
+	CNVisitSubmitted           = "visit_submitted"
 )
 
 type caseData struct {
@@ -236,11 +238,10 @@ func (v *incompleteVisitNotification) makeHomeCardView(dataAPI api.DataAPI, webD
 	}
 
 	if visit.Status == common.PVStatusPendingParentalConsent {
-		consentURL, err := patient.ParentalConsentURL(dataAPI, webDomain, data.Case.PatientID.Int64())
+		actionURL, err := patient.ParentalConsentRequestSMSAction(dataAPI, webDomain, data.Case.PatientID.Int64())
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		actionURL := app_url.ComposeSMSAction("Hey, I'd like to see a dermatologist for my acne. With Spruce I can see a board-certified dermatologist from my phone but need your approval:\n" + consentURL)
 		view := &phCaseView{
 			Title:     data.Case.Name + " Visit",
 			Subtitle:  "Waiting for Parental Consent",
