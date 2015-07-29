@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/patient"
 )
 
+// InitListeners subscribes dispatch events
 func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 	// Notify the doctor when a patient submits a new visit
 	dispatcher.Subscribe(func(ev *patient.AccountLoggedOutEvent) error {

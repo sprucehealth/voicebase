@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
@@ -79,7 +80,7 @@ func TestParentalConsentImageAPIHandler_POST(t *testing.T) {
 	test.OK(t, err)
 	mediaStore := media.NewStore("XXX", signer, storage.NewTestStore(nil))
 
-	h := newParentalConsentImageAPIHAndler(dataAPI, mediaStore)
+	h := newParentalConsentImageAPIHAndler(dataAPI, dispatch.New(), mediaStore)
 
 	account := &common.Account{ID: 1, Role: api.RolePatient}
 	ctx := www.CtxWithAccount(context.Background(), account)
@@ -132,7 +133,7 @@ func TestParentalConsentImageAPIHandler_GET(t *testing.T) {
 	test.OK(t, err)
 	mediaStore := media.NewStore("XXX", signer, storage.NewTestStore(nil))
 
-	h := newParentalConsentImageAPIHAndler(dataAPI, mediaStore)
+	h := newParentalConsentImageAPIHAndler(dataAPI, dispatch.New(), mediaStore)
 
 	account := &common.Account{ID: 1, Role: api.RolePatient}
 	ctx := www.CtxWithAccount(context.Background(), account)

@@ -17,9 +17,11 @@ import (
 )
 
 const (
-	treatmentPlanViewedEvent            = "treatment_plan_viewed"
-	notifyTreatmentPlanCreatedEmailType = "notify-treatment-plan-created"
-	notifyNewMessageEmailType           = "notify-new-message"
+	treatmentPlanViewedEvent                = "treatment_plan_viewed"
+	notifyTreatmentPlanCreatedEmailType     = "notify-treatment-plan-created"
+	notifyNewMessageEmailType               = "notify-new-message"
+	notifyParentalConsentCompletedEmailType = "notify-parental-consent-completed"
+	txtParentalConsentCompletedNotification = "parental_consent_completed_notification"
 )
 
 type treatmentPlanViewedContext struct {
@@ -27,11 +29,17 @@ type treatmentPlanViewedContext struct {
 	ProviderShortDisplayName string
 }
 
+// PatientNotifier can send push notifications to a patient.
+type PatientNotifier interface {
+	NotifyPatient(patient *common.Patient, msg *notify.Message) error
+}
+
 func init() {
 	schedmsg.MustRegisterEvent(treatmentPlanViewedEvent)
 }
 
-func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notificationManager *notify.NotificationManager) {
+// InitListeners subscribes to dispatched events.
+func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notificationManager PatientNotifier) {
 	dispatcher.Subscribe(func(ev *messages.PostEvent) error {
 
 		// delete any pending visit submitted notifications for case
@@ -399,4 +407,27 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 		return nil
 	})
 
+	// Notify a minor patient when their parent completes the consent flow
+	dispatcher.SubscribeAsync(func(ev *patient.ParentalConsentCompletedEvent) error {
+		text, err := dataAPI.LocalizedText(api.LanguageIDEnglish, []string{txtParentalConsentCompletedNotification})
+		if err != nil {
+			golog.Errorf("Failed to get localized text: %s", err)
+			return nil
+		}
+		patient, err := dataAPI.Patient(ev.ChildPatientID, true)
+		if err != nil {
+			golog.Errorf("Failed to get patient: %s", err)
+			return err
+		}
+		msg := &notify.Message{
+			ShortMessage: text[txtParentalConsentCompletedNotification],
+			EmailType:    notifyParentalConsentCompletedEmailType,
+			PushID:       fmt.Sprintf("%s:%d", CNParentalConsentCompleted, ev.ChildPatientID),
+		}
+		if err := notificationManager.NotifyPatient(patient, msg); err != nil {
+			golog.Errorf("Failed to notify patient: %s", err)
+			return err
+		}
+		return nil
+	})
 }

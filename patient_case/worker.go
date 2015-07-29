@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -69,7 +70,7 @@ func (w *worker) Do() error {
 	cases, err := w.dataAPI.TimedOutCases()
 	if err != nil {
 		golog.Errorf("Unable to get cases that have timed out: %s", err.Error())
-		return err
+		return errors.Trace(err)
 	}
 
 	for _, pc := range cases {
@@ -100,7 +101,7 @@ func (w *worker) Do() error {
 			TimeoutDate: timeoutDate,
 		}); err != nil {
 			golog.Errorf("Unable to update patient case: %s", err.Error())
-			return err
+			return errors.Trace(err)
 		}
 	}
 

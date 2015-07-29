@@ -7,27 +7,58 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/errors"
+	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
 const (
 	parentalConsentTokenPurpose    = "ParentalConsent"
 	parentalConsentTokenExpiration = time.Hour * 24 * 14
+	txtParentalConsentRequestSMS   = "parental_consent_request_sms"
 )
+
+// ParentalConsentCompleted takes care of updating a child's patient account and visits
+// once a parent has completed the consent flow.
+func ParentalConsentCompleted(dataAPI api.DataAPI, publisher dispatch.Publisher, parentPatientID, childPatientID int64) error {
+	if err := dataAPI.ParentalConsentCompletedForPatient(childPatientID); err != nil {
+		return errors.Trace(err)
+	}
+	publisher.PublishAsync(&ParentalConsentCompletedEvent{
+		ParentPatientID: parentPatientID,
+		ChildPatientID:  childPatientID,
+	})
+	return nil
+}
 
 // ParentalConsentURL returns the URL for the parental consent web page
 func ParentalConsentURL(tokensAPI api.Tokens, webDomain string, childPatientID int64) (string, error) {
 	token, err := GenerateParentalConsentToken(tokensAPI, childPatientID)
 	if err != nil {
-		return "", err
+		return "", errors.Trace(err)
 	}
 	params := url.Values{"t": []string{token}}
 	return fmt.Sprintf("https://%s/pc/%d?%s", webDomain, childPatientID, params.Encode()), nil
 }
 
+// ParentalConsentRequestSMSAction returns the action URL for requesting consent from a parent for a child to get treatment.
+func ParentalConsentRequestSMSAction(dataAPI api.DataAPI, webDomain string, childPatientID int64) (*app_url.SpruceAction, error) {
+	consentURL, err := ParentalConsentURL(dataAPI, webDomain, childPatientID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	text, err := dataAPI.LocalizedText(api.LanguageIDEnglish, []string{txtParentalConsentRequestSMS})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return app_url.ComposeSMSAction(fmt.Sprintf(text[txtParentalConsentRequestSMS], consentURL)), nil
+}
+
 // GenerateParentalConsentToken returns a token that can be used to validate access to the parent/child consent flow
 func GenerateParentalConsentToken(tokensAPI api.Tokens, childPatientID int64) (string, error) {
-	return tokensAPI.CreateToken(parentalConsentTokenPurpose, strconv.FormatInt(childPatientID, 10), "", parentalConsentTokenExpiration)
+	token, err := tokensAPI.CreateToken(parentalConsentTokenPurpose, strconv.FormatInt(childPatientID, 10), "", parentalConsentTokenExpiration)
+	return token, errors.Trace(err)
 }
 
 // ValidateParentalConsentToken returns true iff the token is valid for the child's patient ID

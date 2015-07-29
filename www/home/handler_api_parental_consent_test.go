@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/test"
@@ -82,7 +83,7 @@ func (a *mockDataAPI_parentalConsent) Patient(id int64, basicInfoOnly bool) (*co
 func TestParentalConsentAPIHandler_POST(t *testing.T) {
 	dataAPI := &mockDataAPI_parentalConsent{}
 
-	h := newParentalConsentAPIHAndler(dataAPI)
+	h := newParentalConsentAPIHAndler(dataAPI, dispatch.New())
 
 	account := &common.Account{ID: 1, Role: api.RolePatient}
 	ctx := www.CtxWithAccount(context.Background(), account)
@@ -151,7 +152,7 @@ func TestParentalConsentAPIHandler_GET(t *testing.T) {
 		},
 	}
 
-	h := newParentalConsentAPIHAndler(dataAPI)
+	h := newParentalConsentAPIHAndler(dataAPI, dispatch.New())
 
 	account := &common.Account{ID: 1, Role: api.RolePatient}
 	ctx := www.CtxWithAccount(context.Background(), account)
