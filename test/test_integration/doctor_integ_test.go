@@ -21,7 +21,7 @@ import (
 
 func TestDoctorRegistration(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	SignupRandomTestDoctor(t, testData)
@@ -29,7 +29,7 @@ func TestDoctorRegistration(t *testing.T) {
 
 func TestDoctorAuthentication(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	_, email, password := SignupRandomTestDoctor(t, testData)
@@ -63,7 +63,7 @@ func TestDoctorAuthentication(t *testing.T) {
 
 func TestDoctorTwoFactorAuthentication(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dres, email, password := SignupRandomTestDoctor(t, testData)
@@ -176,7 +176,7 @@ func TestDoctorTwoFactorAuthentication(t *testing.T) {
 
 func TestDoctorDrugSearch(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	// use a real dosespot service before instantiating the server
 	testData.Config.ERxAPI = testData.ERxAPI
@@ -222,7 +222,7 @@ func TestDoctorDrugSearch(t *testing.T) {
 
 func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// get the current primary doctor
@@ -268,7 +268,7 @@ func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
 
 func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// get the current primary doctor
@@ -339,7 +339,7 @@ func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
 
 func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	patientSignedupResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)

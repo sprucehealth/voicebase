@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/stripe"
 	"github.com/sprucehealth/backend/www"
 )
@@ -38,8 +38,8 @@ func (r *financialsForm) Validate() map[string]string {
 	return errors
 }
 
-func NewFinancialsHandler(router *mux.Router, dataAPI api.DataAPI, stripeCli *stripe.Client, templateLoader *www.TemplateLoader) http.Handler {
-	return httputil.SupportedMethods(&financialsHandler{
+func newFinancialsHandler(router *mux.Router, dataAPI api.DataAPI, stripeCli *stripe.Client, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&financialsHandler{
 		router:    router,
 		dataAPI:   dataAPI,
 		stripeCli: stripeCli,
@@ -47,8 +47,8 @@ func NewFinancialsHandler(router *mux.Router, dataAPI api.DataAPI, stripeCli *st
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *financialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
+func (h *financialsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
 
 	// If the doctor already set a bank account then skip this step
 	bankAccounts, err := h.dataAPI.ListBankAccounts(account.ID)

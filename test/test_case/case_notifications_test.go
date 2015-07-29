@@ -11,7 +11,7 @@ import (
 
 func TestCaseNotifications_IncompleteVisit(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.ID.Int64(), testData, t)
@@ -34,7 +34,7 @@ func TestCaseNotifications_IncompleteVisit(t *testing.T) {
 
 func TestCaseNotifications_VisitSubmitted(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
@@ -60,7 +60,7 @@ func TestCaseNotifications_VisitSubmitted(t *testing.T) {
 // pertaining to case messages and their corresponding notifications
 func TestCaseNotifications_Message(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
@@ -140,7 +140,7 @@ func TestCaseNotifications_Message(t *testing.T) {
 
 func TestCaseNotifications_MessageFromMA(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
@@ -170,7 +170,7 @@ func TestCaseNotifications_MessageFromMA(t *testing.T) {
 
 func TestCaseNotifications_TreatmentPlan(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)

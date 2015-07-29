@@ -32,7 +32,7 @@ const (
 // for refill requests coming in for patients that exist on the Spruce platform.
 func TestRefill_ExistingPatient(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// create doctor with clinicianId specicified
@@ -284,7 +284,7 @@ func TestRefill_ExistingPatient(t *testing.T) {
 func TestRefill_Approve(t *testing.T) {
 
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// create doctor with clinicianId specicified
@@ -506,7 +506,7 @@ func TestRefill_Approve(t *testing.T) {
 // that the system does not allow approving of refill requests for controlled substances.
 func TestRefill_Approve_ControlledSubstance(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// create doctor with clinicianId specicified
@@ -670,7 +670,7 @@ func TestRefill_Approve_ControlledSubstance(t *testing.T) {
 // by inserting an errored prescription entry into the doctor queue.
 func TestRefill_Approve_ErrorSending(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// create doctor with clinicianId specicified
@@ -891,7 +891,7 @@ func TestRefill_Approve_ErrorSending(t *testing.T) {
 func testRefill_Deny(isControlledSubstance bool, t *testing.T) {
 
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// create doctor with clinicianId specicified
@@ -1128,7 +1128,7 @@ func TestRefill_Deny_ControlledSubstance(t *testing.T) {
 func TestRefill_Deny_DNTF_NoTreatment(t *testing.T) {
 
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// create doctor with clinicianId specicified
@@ -1571,7 +1571,7 @@ func setupRefill_Deny_DNTF(t *testing.T, testData *TestData, endErxStatus common
 // request works as expected for a non-Spruce patient.
 func TestRefill_Deny_DNTF_NonSprucePatient(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	unlinkedTreatment := setupRefill_Deny_DNTF(t, testData, common.StatusEvent{Status: api.ERXStatusSent}, false)
@@ -1595,7 +1595,7 @@ func TestRefill_Deny_DNTF_NonSprucePatient(t *testing.T) {
 // respond with a new request taht is picked from a templated treatment.
 func TestRefill_Deny_DNTF_NonSprucePatient_FromTemplate(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	unlinkedTreatment := setupRefill_Deny_DNTF(t, testData, common.StatusEvent{Status: api.ERXStatusSent}, true)
@@ -1620,7 +1620,7 @@ func TestRefill_Deny_DNTF_NonSprucePatient_FromTemplate(t *testing.T) {
 // to the pharmacy.
 func TestRefill_Deny_DNTF_NonSprucePatient_Error(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	errorMessage := "this is a test error message"
@@ -2027,7 +2027,7 @@ func setupRefill_Deny_DNTF_ExistingPatient(t *testing.T, testData *TestData, end
 // coming in for an existing treatment.
 func TestRefill_Deny_DNTF_ExistingPatient(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	linkedTreatment := setupRefill_Deny_DNTF_ExistingPatient(t, testData, common.StatusEvent{Status: api.ERXStatusSent}, false)
@@ -2048,7 +2048,7 @@ func TestRefill_Deny_DNTF_ExistingPatient(t *testing.T) {
 // coming in for an existing treatment where the new rx is picked from a templated treatment.
 func TestRefill_Deny_DNTF_ExistingPatient_TemplatedTreatment(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	linkedTreatment := setupRefill_Deny_DNTF_ExistingPatient(t, testData, common.StatusEvent{Status: api.ERXStatusSent}, true)
@@ -2069,7 +2069,7 @@ func TestRefill_Deny_DNTF_ExistingPatient_TemplatedTreatment(t *testing.T) {
 // has an error in being routed to the pharmacy.
 func TestRefill_DNTF_ExistingPatient_Error(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	errorMessage := "this is a test error message"
@@ -2107,7 +2107,7 @@ func TestRefill_DNTF_ExistingPatient_Error(t *testing.T) {
 // when working with refill requests in a batch.
 func TestRefill_Status_MultipleRefills(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// create doctor with clinicianId specicified
@@ -2342,7 +2342,7 @@ func TestRefill_Status_MultipleRefills(t *testing.T) {
 // when the refill request comes from a different pharmacy than the pharmacy where the medication was originaly dispensed.
 func TestRefill_DifferentPharmacy(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// create doctor with clinicianId specicified
@@ -2553,7 +2553,7 @@ func TestRefill_DifferentPharmacy(t *testing.T) {
 
 func TestRefill_ExistingPatient_NonexistentTreatment(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// create doctor with clinicianId specicified
@@ -2721,7 +2721,7 @@ func TestRefill_ExistingPatient_NonexistentTreatment(t *testing.T) {
 // work as expected for non spruce patients.
 func TestRefill_NonSprucePatient(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// create doctor with clinicianId specicified

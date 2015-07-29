@@ -6,9 +6,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -25,12 +26,12 @@ type homeContext struct {
 	SubContext   interface{}
 }
 
-func newStaticHandler(router *mux.Router, templateLoader *www.TemplateLoader, tmpl, title string, ctxFun func() interface{}) http.Handler {
+func newStaticHandler(router *mux.Router, templateLoader *www.TemplateLoader, tmpl, title string, ctxFun func() interface{}) httputil.ContextHandler {
 	var ctx interface{}
 	if ctxFun != nil {
 		ctx = ctxFun()
 	}
-	return httputil.SupportedMethods(&staticHandler{
+	return httputil.ContextSupportedMethods(&staticHandler{
 		router: router,
 		title:  title,
 		template: templateLoader.MustLoadTemplate(tmpl, "home/base.html", map[string]interface{}{
@@ -47,7 +48,7 @@ func newStaticHandler(router *mux.Router, templateLoader *www.TemplateLoader, tm
 	}, httputil.Get)
 }
 
-func (h *staticHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *staticHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	www.TemplateResponse(w, http.StatusOK, h.template, &www.BaseTemplateContext{
 		Environment: environment.GetCurrent(),
 		Title:       template.HTML(html.EscapeString(h.title)),

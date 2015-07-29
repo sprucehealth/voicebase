@@ -11,7 +11,7 @@ import (
 
 func TestFTPMembershipsNone(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctor := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
 	memberships, err := testData.DataAPI.FTPMembershipsForDoctor(doctor.DoctorID)
@@ -21,7 +21,7 @@ func TestFTPMembershipsNone(t *testing.T) {
 
 func TestFTPMembershipCreation(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	pID := initializePathway(t, testData, "pathway")
 	doctor := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
@@ -43,7 +43,7 @@ func TestFTPMembershipCreation(t *testing.T) {
 
 func TestFTPMembershipDeletion(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	pID := initializePathway(t, testData, "pathway")
 	doctor := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
@@ -61,7 +61,7 @@ func TestFTPMembershipDeletion(t *testing.T) {
 
 func TestFTPMembershipMultiplePathwayMemberships(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	initializePathway(t, testData, "pathway")
 	pID2 := initializePathway(t, testData, "pathway2")
@@ -80,7 +80,7 @@ func TestFTPMembershipMultiplePathwayMemberships(t *testing.T) {
 
 func TestFTPMembershipQuery(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	pID := initializePathway(t, testData, "pathway")
 	pID2 := initializePathway(t, testData, "pathway2")

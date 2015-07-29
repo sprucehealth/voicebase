@@ -7,13 +7,13 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/tagging"
 	"github.com/sprucehealth/backend/tagging/model"
 	"github.com/sprucehealth/backend/tagging/response"
 	"github.com/sprucehealth/backend/www"
-
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type tagHandler struct {
@@ -47,11 +47,11 @@ type tagDELETERequest struct {
 	ID int64 `schema:"id,required"`
 }
 
-func NewTagHandler(taggingClient tagging.Client) http.Handler {
-	return httputil.SupportedMethods(&tagHandler{taggingClient: taggingClient}, httputil.Get, httputil.Put, httputil.Post, httputil.Delete)
+func newTagHandler(taggingClient tagging.Client) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&tagHandler{taggingClient: taggingClient}, httputil.Get, httputil.Put, httputil.Post, httputil.Delete)
 }
 
-func (h *tagHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *tagHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "DELETE":
 		req, err := h.parseDELETERequest(r)

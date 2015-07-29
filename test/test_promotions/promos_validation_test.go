@@ -12,7 +12,7 @@ import (
 
 func TestPromotion_OnePromotionPerParkedAccount(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	setupPromotionsTest(testData, t)
 
@@ -62,7 +62,7 @@ func TestPromotion_OnePromotionPerParkedAccount(t *testing.T) {
 
 func TestPromotion_MoreMoneyThanCost(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	setupPromotionsTest(testData, t)
 
@@ -94,7 +94,7 @@ func TestPromotion_MoreMoneyThanCost(t *testing.T) {
 
 func TestPromotion_NonNewUser(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
 		QueueService: &awsutil.SQS{},
@@ -137,7 +137,7 @@ func TestPromotion_NonNewUser(t *testing.T) {
 
 func TestPromotion_SamePromotionCodeApplyAttempt(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	setupPromotionsTest(testData, t)
 

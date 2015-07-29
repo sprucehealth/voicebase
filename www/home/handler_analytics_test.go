@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/analytics"
 )
 
@@ -20,7 +21,7 @@ func TestAnalyticsHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(context.Background(), w, r)
 
 	if !bytes.Equal(w.Body.Bytes(), logoImage) {
 		t.Error("Body did not match logo image")

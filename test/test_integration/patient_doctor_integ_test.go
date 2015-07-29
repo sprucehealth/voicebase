@@ -19,7 +19,7 @@ import (
 
 func TestPatientVisitReview(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.Config.ERxRouting = true
 	testData.StartAPIServer(t)
 

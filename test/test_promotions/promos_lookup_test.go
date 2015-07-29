@@ -12,7 +12,7 @@ import (
 
 func TestPromotion_Lookup(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	// create group
 	_, err := testData.DataAPI.CreatePromotionGroup(&common.PromotionGroup{

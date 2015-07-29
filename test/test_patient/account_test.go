@@ -14,7 +14,7 @@ import (
 
 func TestAccount_PCP(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
@@ -70,7 +70,7 @@ func TestAccount_PCP(t *testing.T) {
 
 func TestAccount_EmergencyContacts(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)

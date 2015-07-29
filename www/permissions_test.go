@@ -5,8 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type mockAPI struct {
@@ -47,10 +48,10 @@ func TestPermissionsHandler(t *testing.T) {
 		},
 	}
 
-	okHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	okHandler := httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	failedHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	failedHandler := httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 	})
 
@@ -60,10 +61,8 @@ func TestPermissionsHandler(t *testing.T) {
 
 	r, _ := http.NewRequest("GET", "/", nil)
 	account := &common.Account{ID: 1}
-	context.Set(r, CKAccount, account)
-	defer context.Delete(r, CKAccount)
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(CtxWithAccount(context.Background(), account), w, r)
 	if w.Code != http.StatusOK {
 		t.Fatalf("GET request failed")
 	}
@@ -72,10 +71,8 @@ func TestPermissionsHandler(t *testing.T) {
 
 	r, _ = http.NewRequest("GET", "/", nil)
 	account = &common.Account{ID: 2}
-	context.Set(r, CKAccount, account)
-	defer context.Delete(r, CKAccount)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(CtxWithAccount(context.Background(), account), w, r)
 	if w.Code == http.StatusOK {
 		t.Fatalf("GET request should have failed")
 	}
@@ -84,10 +81,8 @@ func TestPermissionsHandler(t *testing.T) {
 
 	r, _ = http.NewRequest("POST", "/", nil)
 	account = &common.Account{ID: 1}
-	context.Set(r, CKAccount, account)
-	defer context.Delete(r, CKAccount)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(CtxWithAccount(context.Background(), account), w, r)
 	if w.Code == http.StatusForbidden {
 		t.Fatalf("POST request should have been allowed")
 	}

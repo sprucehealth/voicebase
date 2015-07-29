@@ -10,7 +10,7 @@ import (
 
 func TestDrugDetails(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	if _, err := testData.DataAPI.DrugDetails(1); !api.IsErrNotFound(err) {
 		t.Errorf("Expected no results error when fetching non-existant drug details. Got %+v", err)

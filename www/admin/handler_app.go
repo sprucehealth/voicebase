@@ -4,7 +4,7 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/environment"
@@ -16,15 +16,15 @@ type appHandler struct {
 	template *template.Template
 }
 
-func NewAppHandler(templateLoader *www.TemplateLoader) http.Handler {
-	return httputil.SupportedMethods(&appHandler{
+func newAppHandler(templateLoader *www.TemplateLoader) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&appHandler{
 		template: templateLoader.MustLoadTemplate("admin/app.html", "admin/base.html", nil),
 	}, httputil.Get)
 }
 
-func (h *appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
-	perms := context.Get(r, www.CKPermissions).(www.Permissions)
+func (h *appHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
+	perms := www.MustCtxPermissions(ctx)
 
 	audit.LogAction(account.ID, "Admin", "LoadAdminApp", nil)
 

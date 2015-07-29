@@ -13,7 +13,7 @@ import (
 
 func TestInsertTagAssociation(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	patientCase, _ := createPatientCaseAndAssignToDoctor(t, testData)
 	patientCase2, _ := createPatientCaseAndAssignToDoctor(t, testData)
@@ -58,7 +58,7 @@ func TestInsertTagAssociation(t *testing.T) {
 
 func TestGetTags(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	patientCase, _ := createPatientCaseAndAssignToDoctor(t, testData)
 
@@ -106,7 +106,7 @@ func TestGetTags(t *testing.T) {
 
 func TestDeleteTag(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	patientCase, _ := createPatientCaseAndAssignToDoctor(t, testData)
 
@@ -136,7 +136,7 @@ func TestDeleteTag(t *testing.T) {
 
 func TestTagAssociations(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	patientCase, _ := createPatientCaseAndAssignToDoctor(t, testData)
 	patientCase2, _ := createPatientCaseAndAssignToDoctor(t, testData)
@@ -253,7 +253,7 @@ func TestTagAssociations(t *testing.T) {
 
 func TestDeleteTagCaseAssociation(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	patientCase, _ := createPatientCaseAndAssignToDoctor(t, testData)
 
@@ -288,7 +288,7 @@ func TestDeleteTagCaseAssociation(t *testing.T) {
 
 func TestTagsMapping(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	patientCase, _ := createPatientCaseAndAssignToDoctor(t, testData)
 
@@ -316,7 +316,7 @@ func TestTagsMapping(t *testing.T) {
 
 func TestTagsForCases(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	patientCase, _ := createPatientCaseAndAssignToDoctor(t, testData)
 
@@ -344,7 +344,7 @@ func TestTagsForCases(t *testing.T) {
 
 func TestCCTagRoundTrip(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	taggingCli := tagging.NewTaggingClient(testData.DB)
@@ -379,7 +379,7 @@ func TestCCTagRoundTrip(t *testing.T) {
 
 func TestCCTagCaseMembershipAndAssociationRoundTrip(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	cc, _, _ := test_integration.SignupRandomTestCC(t, testData, true)

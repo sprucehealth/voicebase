@@ -10,7 +10,7 @@ import (
 
 func TestRecipients(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	pAccountID := test_integration.SignupRandomTestPatient(t, testData).Patient.AccountID.Int64()
@@ -42,7 +42,7 @@ func TestRecipients(t *testing.T) {
 
 func TestOptout(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	pAccountID := test_integration.SignupRandomTestPatient(t, testData).Patient.AccountID.Int64()
@@ -76,7 +76,7 @@ func TestOptout(t *testing.T) {
 
 func TestOnlyOnce(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	pAccountID := test_integration.SignupRandomTestPatient(t, testData).Patient.AccountID.Int64()

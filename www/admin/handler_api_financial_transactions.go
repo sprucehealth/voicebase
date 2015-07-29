@@ -5,9 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/audit"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/financial"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -43,14 +42,14 @@ var (
 	dateSeperators = []rune{'-', '/'}
 )
 
-func NewIncomingFinancialItemsHandler(financialAccess financial.Financial) http.Handler {
-	return httputil.SupportedMethods(&incomingFinancialItemsAPIHandler{
+func newIncomingFinancialItemsHandler(financialAccess financial.Financial) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&incomingFinancialItemsAPIHandler{
 		financialAccess: financialAccess,
 	}, httputil.Get)
 }
 
-func NewOutgoingFinancialItemsHandler(financialAccess financial.Financial) http.Handler {
-	return httputil.SupportedMethods(&outgoingFinancialItemsAPIHandler{
+func newOutgoingFinancialItemsHandler(financialAccess financial.Financial) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&outgoingFinancialItemsAPIHandler{
 		financialAccess: financialAccess,
 	}, httputil.Get)
 }
@@ -95,14 +94,14 @@ func parseRequest(r *http.Request) (*financialTransactionsRequest, error) {
 	}, nil
 }
 
-func (f *incomingFinancialItemsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (f *incomingFinancialItemsAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	rd, err := parseRequest(r)
 	if err != nil {
 		www.APIBadRequestError(w, r, err.Error())
 		return
 	}
 
-	account := context.Get(r, www.CKAccount).(*common.Account)
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "IncomingFinancialItems", map[string]interface{}{
 		"from": rd.From,
 		"to":   rd.To,
@@ -119,14 +118,14 @@ func (f *incomingFinancialItemsAPIHandler) ServeHTTP(w http.ResponseWriter, r *h
 	})
 }
 
-func (f *outgoingFinancialItemsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (f *outgoingFinancialItemsAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	rd, err := parseRequest(r)
 	if err != nil {
 		www.APIBadRequestError(w, r, err.Error())
 		return
 	}
 
-	account := context.Get(r, www.CKAccount).(*common.Account)
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "OutgoingFinancialItems", map[string]interface{}{
 		"from": rd.From,
 		"to":   rd.To,

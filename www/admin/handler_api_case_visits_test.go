@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
-	"github.com/sprucehealth/backend/test/test_handler"
 )
 
 type mockedDataAPI_handlerCaseVisit struct {
@@ -26,12 +26,9 @@ func (d mockedDataAPI_handlerCaseVisit) VisitSummaries(visitStatuses []string, f
 func TestHandlerCaseVisitNoStatusRequired(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	caseVisitHandler := NewCaseVisitsHandler(mockedDataAPI_handlerCaseVisit{DataAPI: &api.DataService{}})
-	handler := test_handler.MockHandler{
-		H: caseVisitHandler,
-	}
+	handler := newCaseVisitsHandler(mockedDataAPI_handlerCaseVisit{DataAPI: &api.DataService{}})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, http.StatusOK, responseWriter.Code)
 }
 
@@ -59,13 +56,10 @@ func TestHandlerCaseVisitSuccessfulGET(t *testing.T) {
 		DoctorLastName:    nil,
 		LockType:          nil,
 	}
-	caseVisitHandler := NewCaseVisitsHandler(mockedDataAPI_handlerCaseVisit{DataAPI: &api.DataService{}, Summaries: []*common.VisitSummary{summary}})
-	handler := test_handler.MockHandler{
-		H: caseVisitHandler,
-	}
+	handler := newCaseVisitsHandler(mockedDataAPI_handlerCaseVisit{DataAPI: &api.DataService{}, Summaries: []*common.VisitSummary{summary}})
 	resp := caseVisitsGETResponse{
 		VisitSummaries: []*responses.PHISafeVisitSummary{
-			&responses.PHISafeVisitSummary{
+			{
 				VisitID:         1,
 				CaseID:          1,
 				CreationEpoch:   summary.CreationDate.Unix(),
@@ -86,7 +80,7 @@ func TestHandlerCaseVisitSuccessfulGET(t *testing.T) {
 	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, resp)
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }
 
@@ -114,13 +108,10 @@ func TestHandlerCaseVisitSuccessfulGETMultiStatus(t *testing.T) {
 		DoctorLastName:    nil,
 		LockType:          nil,
 	}
-	caseVisitHandler := NewCaseVisitsHandler(mockedDataAPI_handlerCaseVisit{DataAPI: &api.DataService{}, Summaries: []*common.VisitSummary{summary}})
-	handler := test_handler.MockHandler{
-		H: caseVisitHandler,
-	}
+	handler := newCaseVisitsHandler(mockedDataAPI_handlerCaseVisit{DataAPI: &api.DataService{}, Summaries: []*common.VisitSummary{summary}})
 	resp := caseVisitsGETResponse{
 		VisitSummaries: []*responses.PHISafeVisitSummary{
-			&responses.PHISafeVisitSummary{
+			{
 				VisitID:         1,
 				CaseID:          1,
 				CreationEpoch:   summary.CreationDate.Unix(),
@@ -141,7 +132,7 @@ func TestHandlerCaseVisitSuccessfulGETMultiStatus(t *testing.T) {
 	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, resp)
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }
 
@@ -169,13 +160,10 @@ func TestHandlerCaseVisitSuccessfulGETDateRange(t *testing.T) {
 		DoctorLastName:    nil,
 		LockType:          nil,
 	}
-	caseVisitHandler := NewCaseVisitsHandler(mockedDataAPI_handlerCaseVisit{DataAPI: &api.DataService{}, Summaries: []*common.VisitSummary{summary}})
-	handler := test_handler.MockHandler{
-		H: caseVisitHandler,
-	}
+	handler := newCaseVisitsHandler(mockedDataAPI_handlerCaseVisit{DataAPI: &api.DataService{}, Summaries: []*common.VisitSummary{summary}})
 	resp := caseVisitsGETResponse{
 		VisitSummaries: []*responses.PHISafeVisitSummary{
-			&responses.PHISafeVisitSummary{
+			{
 				VisitID:         1,
 				CaseID:          1,
 				CreationEpoch:   summary.CreationDate.Unix(),
@@ -196,6 +184,6 @@ func TestHandlerCaseVisitSuccessfulGETDateRange(t *testing.T) {
 	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, resp)
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }

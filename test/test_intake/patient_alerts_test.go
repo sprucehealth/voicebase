@@ -12,7 +12,7 @@ import (
 
 func TestPatientAlerts(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	test_integration.SignupRandomTestCC(t, testData, true)
@@ -77,7 +77,7 @@ func TestPatientAlerts(t *testing.T) {
 
 func TestPatientAlerts_NoAlerts(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	patientSignedupResponse := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientSignedupResponse.Patient.ID.Int64(), testData, t)

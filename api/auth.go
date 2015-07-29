@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
+// Authentication errors
 var (
 	ErrInvalidPassword    = errors.New("api: invalid password")
 	ErrInvalidRoleType    = errors.New("api: invalid role type")

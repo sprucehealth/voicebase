@@ -17,7 +17,7 @@ import (
 
 func TestRegimenForPatientVisit(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
@@ -152,7 +152,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 
 func TestRegimenForPatientVisit_AddOnlyToPatientVisit(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
@@ -201,7 +201,7 @@ func TestRegimenForPatientVisit_AddOnlyToPatientVisit(t *testing.T) {
 
 func TestRegimenForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
@@ -239,7 +239,7 @@ func TestRegimenForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 func TestRegimenForPatientVisit_TextDifferentForLinkedItem(t *testing.T) {
 
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
@@ -298,7 +298,7 @@ func TestRegimenForPatientVisit_TextDifferentForLinkedItem(t *testing.T) {
 func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) {
 
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
@@ -344,7 +344,7 @@ func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) 
 
 func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 
@@ -426,7 +426,7 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 func TestRegimenForPatientVisit_TrackingSourceId(t *testing.T) {
 
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	_, treatmentPlan, doctor := setupTestForRegimenCreation(t, testData)
 

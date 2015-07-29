@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 )
 
 type routeTest struct {
@@ -160,6 +160,15 @@ func TestHost(t *testing.T) {
 			vars:        map[string]string{"category": "a", "product": "product_name", "id": "1"},
 			host:        "",
 			path:        "/a/product_name/1",
+			shouldMatch: true,
+		},
+		{
+			title:       "Path route with multiple patterns with pipe, match",
+			route:       new(Route).Path("/{category:a|b/c}/{product}/{id:[0-9]+}"),
+			request:     newRequest("GET", "http://localhost/b/c/product_name/1"),
+			vars:        map[string]string{"category": "b/c", "product": "product_name", "id": "1"},
+			host:        "",
+			path:        "/b/c/product_name/1",
 			shouldMatch: true,
 		},
 	}
@@ -425,6 +434,24 @@ func TestHeaders(t *testing.T) {
 			path:        "",
 			shouldMatch: false,
 		},
+		{
+			title:       "Headers route, regex header values to match",
+			route:       new(Route).Headers("foo", "ba[zr]"),
+			request:     newRequestHeaders("GET", "http://localhost", map[string]string{"foo": "bar"}),
+			vars:        map[string]string{},
+			host:        "",
+			path:        "",
+			shouldMatch: false,
+		},
+		{
+			title:       "Headers route, regex header values to match",
+			route:       new(Route).HeadersRegexp("foo", "ba[zr]"),
+			request:     newRequestHeaders("GET", "http://localhost", map[string]string{"foo": "baz"}),
+			vars:        map[string]string{},
+			host:        "",
+			path:        "",
+			shouldMatch: true,
+		},
 	}
 
 	for _, test := range tests {
@@ -542,6 +569,96 @@ func TestQueries(t *testing.T) {
 			host:        "",
 			path:        "",
 			shouldMatch: false,
+		},
+		{
+			title:       "Queries route with regexp pattern with quantifier, match",
+			route:       new(Route).Queries("foo", "{v1:[0-9]{1}}"),
+			request:     newRequest("GET", "http://localhost?foo=1"),
+			vars:        map[string]string{"v1": "1"},
+			host:        "",
+			path:        "",
+			shouldMatch: true,
+		},
+		{
+			title:       "Queries route with regexp pattern with quantifier, additional variable in query string, match",
+			route:       new(Route).Queries("foo", "{v1:[0-9]{1}}"),
+			request:     newRequest("GET", "http://localhost?bar=2&foo=1"),
+			vars:        map[string]string{"v1": "1"},
+			host:        "",
+			path:        "",
+			shouldMatch: true,
+		},
+		{
+			title:       "Queries route with regexp pattern with quantifier, regexp does not match",
+			route:       new(Route).Queries("foo", "{v1:[0-9]{1}}"),
+			request:     newRequest("GET", "http://localhost?foo=12"),
+			vars:        map[string]string{},
+			host:        "",
+			path:        "",
+			shouldMatch: false,
+		},
+		{
+			title:       "Queries route with regexp pattern with quantifier, additional variable in query string, regexp does not match",
+			route:       new(Route).Queries("foo", "{v1:[0-9]{1}}"),
+			request:     newRequest("GET", "http://localhost?foo=12"),
+			vars:        map[string]string{},
+			host:        "",
+			path:        "",
+			shouldMatch: false,
+		},
+		{
+			title:       "Queries route with empty value, should match",
+			route:       new(Route).Queries("foo", ""),
+			request:     newRequest("GET", "http://localhost?foo=bar"),
+			vars:        map[string]string{},
+			host:        "",
+			path:        "",
+			shouldMatch: true,
+		},
+		{
+			title:       "Queries route with empty value and no parameter in request, should not match",
+			route:       new(Route).Queries("foo", ""),
+			request:     newRequest("GET", "http://localhost"),
+			vars:        map[string]string{},
+			host:        "",
+			path:        "",
+			shouldMatch: false,
+		},
+		{
+			title:       "Queries route with empty value and empty parameter in request, should match",
+			route:       new(Route).Queries("foo", ""),
+			request:     newRequest("GET", "http://localhost?foo="),
+			vars:        map[string]string{},
+			host:        "",
+			path:        "",
+			shouldMatch: true,
+		},
+		{
+			title:       "Queries route with overlapping value, should not match",
+			route:       new(Route).Queries("foo", "bar"),
+			request:     newRequest("GET", "http://localhost?foo=barfoo"),
+			vars:        map[string]string{},
+			host:        "",
+			path:        "",
+			shouldMatch: false,
+		},
+		{
+			title:       "Queries route with no parameter in request, should not match",
+			route:       new(Route).Queries("foo", "{bar}"),
+			request:     newRequest("GET", "http://localhost"),
+			vars:        map[string]string{},
+			host:        "",
+			path:        "",
+			shouldMatch: false,
+		},
+		{
+			title:       "Queries route with empty parameter in request, should match",
+			route:       new(Route).Queries("foo", "{bar}"),
+			request:     newRequest("GET", "http://localhost?foo="),
+			vars:        map[string]string{"foo": ""},
+			host:        "",
+			path:        "",
+			shouldMatch: true,
 		},
 	}
 
@@ -792,6 +909,81 @@ func TestStrictSlash(t *testing.T) {
 	}
 }
 
+func TestWalkSingleDepth(t *testing.T) {
+	r0 := NewRouter()
+	r1 := NewRouter()
+	r2 := NewRouter()
+
+	r0.Path("/g")
+	r0.Path("/o")
+	r0.Path("/d").Handler(r1)
+	r0.Path("/r").Handler(r2)
+	r0.Path("/a")
+
+	r1.Path("/z")
+	r1.Path("/i")
+	r1.Path("/l")
+	r1.Path("/l")
+
+	r2.Path("/i")
+	r2.Path("/l")
+	r2.Path("/l")
+
+	paths := []string{"g", "o", "r", "i", "l", "l", "a"}
+	depths := []int{0, 0, 0, 1, 1, 1, 0}
+	i := 0
+	err := r0.Walk(func(route *Route, router *Router, ancestors []*Route) error {
+		matcher := route.matchers[0].(*routeRegexp)
+		if matcher.template == "/d" {
+			return ErrSkipRouter
+		}
+		if len(ancestors) != depths[i] {
+			t.Errorf(`Expected depth of %d at i = %d; got %d`, depths[i], i, len(ancestors))
+		}
+		if matcher.template != "/"+paths[i] {
+			t.Errorf(`Expected "/%s" at i = %d; got "%s"`, paths[i], i, matcher.template)
+		}
+		i++
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+	if i != len(paths) {
+		t.Errorf("Expected %d routes, found %d", len(paths), i)
+	}
+}
+
+func TestWalkNested(t *testing.T) {
+	router := NewRouter()
+
+	g := router.Path("/g").Subrouter()
+	o := g.PathPrefix("/o").Subrouter()
+	r := o.PathPrefix("/r").Subrouter()
+	i := r.PathPrefix("/i").Subrouter()
+	l1 := i.PathPrefix("/l").Subrouter()
+	l2 := l1.PathPrefix("/l").Subrouter()
+	l2.Path("/a")
+
+	paths := []string{"/g", "/g/o", "/g/o/r", "/g/o/r/i", "/g/o/r/i/l", "/g/o/r/i/l/l", "/g/o/r/i/l/l/a"}
+	idx := 0
+	err := router.Walk(func(route *Route, router *Router, ancestors []*Route) error {
+		path := paths[idx]
+		tpl := route.regexp.path.template
+		if tpl != path {
+			t.Errorf(`Expected %s got %s`, path, tpl)
+		}
+		idx++
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+	if idx != len(paths) {
+		t.Errorf("Expected %d routes, found %d", len(paths), idx)
+	}
+}
+
 // ----------------------------------------------------------------------------
 // Helpers
 // ----------------------------------------------------------------------------
@@ -866,36 +1058,6 @@ func testRoute(t *testing.T, test routeTest) {
 	}
 }
 
-// Tests that the context is cleared or not cleared properly depending on
-// the configuration of the router
-func TestKeepContext(t *testing.T) {
-	func1 := func(w http.ResponseWriter, r *http.Request) {}
-
-	r := NewRouter()
-	r.HandleFunc("/", func1).Name("func1")
-
-	req, _ := http.NewRequest("GET", "http://localhost/", nil)
-	context.Set(req, "t", 1)
-
-	res := new(http.ResponseWriter)
-	r.ServeHTTP(*res, req)
-
-	if _, ok := context.GetOk(req, "t"); ok {
-		t.Error("Context should have been cleared at end of request")
-	}
-
-	r.KeepContext = true
-
-	req, _ = http.NewRequest("GET", "http://localhost/", nil)
-	context.Set(req, "t", 1)
-
-	r.ServeHTTP(*res, req)
-	if _, ok := context.GetOk(req, "t"); !ok {
-		t.Error("Context should NOT have been cleared at end of request")
-	}
-
-}
-
 type TestA301ResponseWriter struct {
 	hh     http.Header
 	status int
@@ -916,8 +1078,8 @@ func (ho TestA301ResponseWriter) WriteHeader(code int) {
 func Test301Redirect(t *testing.T) {
 	m := make(http.Header)
 
-	func1 := func(w http.ResponseWriter, r *http.Request) {}
-	func2 := func(w http.ResponseWriter, r *http.Request) {}
+	func1 := func(ctx context.Context, w http.ResponseWriter, r *http.Request) {}
+	func2 := func(ctx context.Context, w http.ResponseWriter, r *http.Request) {}
 
 	r := NewRouter()
 	r.HandleFunc("/api/", func2).Name("func2")
@@ -929,7 +1091,7 @@ func Test301Redirect(t *testing.T) {
 		hh:     m,
 		status: 0,
 	}
-	r.ServeHTTP(&res, req)
+	r.ServeHTTP(context.Background(), &res, req)
 
 	if "http://localhost/api/?abc=def" != res.hh["Location"][0] {
 		t.Errorf("Should have complete URL with query string")
@@ -939,10 +1101,10 @@ func Test301Redirect(t *testing.T) {
 // https://plus.google.com/101022900381697718949/posts/eWy6DjFJ6uW
 func TestSubrouterHeader(t *testing.T) {
 	expected := "func1 response"
-	func1 := func(w http.ResponseWriter, r *http.Request) {
+	func1 := func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, expected)
 	}
-	func2 := func(http.ResponseWriter, *http.Request) {}
+	func2 := func(context.Context, http.ResponseWriter, *http.Request) {}
 
 	r := NewRouter()
 	s := r.Headers("SomeSpecialHeader", "").Subrouter()
@@ -960,7 +1122,7 @@ func TestSubrouterHeader(t *testing.T) {
 		t.Errorf("Expecting func1 handler, got %s", match.Route.GetName())
 	}
 	resp := NewRecorder()
-	match.Handler.ServeHTTP(resp, req)
+	match.Handler.ServeHTTP(context.Background(), resp, req)
 	if resp.Body.String() != expected {
 		t.Errorf("Expecting %q", expected)
 	}

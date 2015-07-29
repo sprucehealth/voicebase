@@ -20,7 +20,7 @@ type requestData struct {
 
 func TestDoctorUpdateToPatientAddress(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
@@ -101,7 +101,7 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 func TestDoctorFailedUpdate(t *testing.T) {
 
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
@@ -169,7 +169,7 @@ func TestDoctorFailedUpdate(t *testing.T) {
 
 func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
@@ -268,7 +268,7 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 
 func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
@@ -282,7 +282,7 @@ func TestDoctorUpdateToTopLevelInformation(t *testing.T) {
 
 func TestCCUpdateToTopLevelInformation(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dr, _, _ := SignupRandomTestCC(t, testData, true)
@@ -376,7 +376,7 @@ func testDoctorUpdateToTopLevelInformation(t *testing.T, doctor *common.Doctor, 
 func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
 
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData)
@@ -433,7 +433,7 @@ func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
 func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
@@ -507,7 +507,7 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 func TestDoctorPharmacyUpdateForbidden(t *testing.T) {
 
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	signedupDoctorResponse, _, _ := SignupRandomTestDoctor(t, testData)

@@ -53,7 +53,7 @@ func uploadMedia(t *testing.T, testData *TestData, accountID int64) (int64, stri
 
 func TestMediaUpload(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)

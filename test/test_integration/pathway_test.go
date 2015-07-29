@@ -10,7 +10,7 @@ import (
 
 func TestPathways(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	pathway := &common.Pathway{
 		Tag:            "zombie",
@@ -39,7 +39,7 @@ func TestPathways(t *testing.T) {
 
 func TestPathwayMenu(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	menu := &common.PathwayMenu{
 		Title: "What are you here to see the doctor for today?",
@@ -86,7 +86,7 @@ func TestPathwayMenu(t *testing.T) {
 
 func TestPathwaySTP(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	// create pathway
 	pathway := &common.Pathway{

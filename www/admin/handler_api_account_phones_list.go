@@ -4,12 +4,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -17,14 +17,14 @@ type accountPhonesListHandler struct {
 	authAPI api.AuthAPI
 }
 
-func NewAccountPhonesListHandler(authAPI api.AuthAPI) http.Handler {
-	return httputil.SupportedMethods(&accountPhonesListHandler{
+func newAccountPhonesListHandler(authAPI api.AuthAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&accountPhonesListHandler{
 		authAPI: authAPI,
 	}, httputil.Get)
 }
 
-func (h *accountPhonesListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	reqAccountID, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+func (h *accountPhonesListHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	reqAccountID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
@@ -38,9 +38,9 @@ func (h *accountPhonesListHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	account := context.Get(r, www.CKAccount).(*common.Account)
+	account := www.MustCtxAccount(ctx)
 
-	perms := context.Get(r, www.CKPermissions).(www.Permissions)
+	perms := www.MustCtxPermissions(ctx)
 	if !accountReadAccess(reqAccount, perms) {
 		audit.LogAction(account.ID, "AdminAPI", "ListAccountPhoneNumbers", map[string]interface{}{"denied": true, "req_account_id": reqAccountID})
 		www.APIForbidden(w, r)

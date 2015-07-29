@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
@@ -22,13 +23,13 @@ type cfgUpdate struct {
 	Snapshot cfg.Snapshot `json:"values"`
 }
 
-func NewCFGHandler(cfg cfg.Store) http.Handler {
-	return httputil.SupportedMethods(&cfgHandler{
+func newCFGHandler(cfg cfg.Store) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&cfgHandler{
 		cfg: cfg,
 	}, httputil.Get, httputil.Patch)
 }
 
-func (h *cfgHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *cfgHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
 		httputil.JSONResponse(w, http.StatusOK, &cfgResponse{

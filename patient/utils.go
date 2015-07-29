@@ -25,6 +25,7 @@ import (
 func IntakeLayoutForVisit(
 	dataAPI api.DataAPI,
 	apiDomain string,
+	webDomain string,
 	mediaStore *media.Store,
 	expirationDuration time.Duration,
 	visit *common.PatientVisit,
@@ -100,9 +101,13 @@ func IntakeLayoutForVisit(
 	}
 
 	if patient != nil {
-		info.ParentalConsentRequired = patient.DOB.Age() < 18
+		info.ParentalConsentRequired = patient.IsUnder18()
 		info.ParentalConsentGranted = patient.HasParentalConsent
 		if viewerRole == api.RolePatient && info.ParentalConsentRequired && !info.ParentalConsentGranted {
+			consentURL, err := ParentalConsentURL(dataAPI, webDomain, patient.ID.Int64())
+			if err != nil {
+				return nil, err
+			}
 			info.ParentalConsentInfo = &ParentalConsentInfo{
 				ScreenTitle: "Parental Consent",
 				FooterText:  "Your parent will have access to your visit, treatment plan and messages with your care team.",
@@ -111,15 +116,12 @@ func IntakeLayoutForVisit(
 					IconURL:    app_url.IconConsentLarge,
 					Message:    "Before submitting your visit, we need a parent to consent to your treatment. As part of their approval, your parent will need to provide a valid photo ID.",
 					ButtonText: "Text Link",
-					// TODO: update this with the proper pathway and signed URL once we have the web side done
 					ButtonAction: app_url.ComposeSMSAction(
 						"Hey, I'd like to see a dermatologist for my acne. With Spruce I can see a board-certified " +
-							"dermatologist from my phone but need your approval: https://sprucehealth.com/parental-consent?sig=xxx"),
+							"dermatologist from my phone but need your approval: " + consentURL),
 				},
 			}
-
 			info.ClientLayout.ParentalConsentInfo = info.ParentalConsentInfo
-
 		}
 	}
 
@@ -304,7 +306,7 @@ func pathwayForPatient(dataAPI api.DataAPI, pathwayTag string, patient *common.P
 				return nil, err
 			}
 		}
-	} else if patient.DOB.Age() < 18 {
+	} else if patient.IsUnder18() {
 		// For pathways without explicit age restrictions don't allow anyone under 18
 		return nil, &apiservice.SpruceError{
 			DeveloperError: "No explicit age ranges listed so not allowing anyone under 18.",
@@ -321,6 +323,7 @@ func createPatientVisit(
 	pathwayTag string,
 	dataAPI api.DataAPI,
 	apiDomain string,
+	webDomain string,
 	dispatcher *dispatch.Dispatcher,
 	mediaStore *media.Store,
 	expirationDuration time.Duration,
@@ -408,7 +411,7 @@ func createPatientVisit(
 		visitCreated = true
 	}
 
-	intakeInfo, err := IntakeLayoutForVisit(dataAPI, apiDomain, mediaStore, expirationDuration, patientVisit, patient, api.RolePatient)
+	intakeInfo, err := IntakeLayoutForVisit(dataAPI, apiDomain, webDomain, mediaStore, expirationDuration, patientVisit, patient, api.RolePatient)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

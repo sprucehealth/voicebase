@@ -17,7 +17,7 @@ import (
 
 func TestCaseUpdate_PresubmissionTriage(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
@@ -65,7 +65,7 @@ func TestCaseUpdate_PresubmissionTriage(t *testing.T) {
 
 func TestCase_TimedOut(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
@@ -95,7 +95,7 @@ func TestCase_TimedOut(t *testing.T) {
 // This test is to ensure that a case transitions from open to active upon submission
 func TestCase_OpenToActiveTransition(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	pr := test_integration.SignupRandomTestPatient(t, testData)
@@ -119,7 +119,7 @@ func TestCase_OpenToActiveTransition(t *testing.T) {
 // works as expected
 func TestCase_Filtering(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	pr := test_integration.SignupRandomTestPatient(t, testData)
@@ -157,7 +157,7 @@ func TestCase_Filtering(t *testing.T) {
 
 func TestCaseInfo_MessagingTPFlag(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
@@ -226,7 +226,7 @@ func TestCaseInfo_MessagingTPFlag(t *testing.T) {
 
 func TestCaseInfo_DiagnosisField(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)

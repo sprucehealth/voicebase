@@ -15,7 +15,7 @@ import (
 
 func TestResourceGuide(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	sec1 := common.ResourceGuideSection{
 		Title:   "Section 1",

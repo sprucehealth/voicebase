@@ -17,7 +17,6 @@ func init() {
 
 type mockAPIMeHandler struct {
 	api.DataAPI
-	api.AuthAPI
 	feedbackRecorded bool
 	tp               []*common.TreatmentPlan
 }

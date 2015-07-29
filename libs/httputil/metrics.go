@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 )
 
 type metricsResponseWriter struct {
@@ -28,11 +29,11 @@ func (w *metricsResponseWriter) Write(bytes []byte) (int, error) {
 
 type metricsHandler struct {
 	statResponseCodeMap map[int]*metrics.Counter
-	h                   http.Handler
+	h                   ContextHandler
 }
 
 // MetricsHandler wraps a handler to provides stats counters on response codes.
-func MetricsHandler(h http.Handler, metricsRegistry metrics.Registry) http.Handler {
+func MetricsHandler(h ContextHandler, metricsRegistry metrics.Registry) ContextHandler {
 	m := &metricsHandler{
 		h: h,
 		statResponseCodeMap: map[int]*metrics.Counter{
@@ -52,7 +53,7 @@ func MetricsHandler(h http.Handler, metricsRegistry metrics.Registry) http.Handl
 	return m
 }
 
-func (m *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (m *metricsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	metricsrw := &metricsResponseWriter{
 		ResponseWriter: w,
 		statusCode:     http.StatusOK,
@@ -71,5 +72,5 @@ func (m *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	m.h.ServeHTTP(metricsrw, r)
+	m.h.ServeHTTP(ctx, metricsrw, r)
 }

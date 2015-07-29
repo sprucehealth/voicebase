@@ -18,7 +18,7 @@ import (
 
 func TestTrainingCase(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// Upload the latest versions of the review and intake

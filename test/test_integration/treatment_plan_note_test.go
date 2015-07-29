@@ -10,7 +10,7 @@ import (
 
 func TestTreatmentPlanNote(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dres, _, _ := SignupRandomTestDoctor(t, testData)
@@ -47,7 +47,7 @@ func TestTreatmentPlanNote(t *testing.T) {
 
 func TestVersionedTreatmentPlanNote(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dres, _, _ := SignupRandomTestDoctor(t, testData)
@@ -110,7 +110,7 @@ func TestVersionedTreatmentPlanNote(t *testing.T) {
 
 func TestTreatmentPlanNoteDeviation(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dres, _, _ := SignupRandomTestDoctor(t, testData)

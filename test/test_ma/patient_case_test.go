@@ -15,7 +15,7 @@ import (
 // of every patient care team
 func TestMA_PartOfCareTeam(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
 	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
@@ -36,7 +36,7 @@ func TestMA_PartOfCareTeam(t *testing.T) {
 // This test is to ensure that every patient message is routed to the MA on the patient's care team
 func TestMA_RoutePatientMsgsToMA(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
@@ -95,7 +95,7 @@ func TestMA_RoutePatientMsgsToMA(t *testing.T) {
 // This test is to ensure that the MA can assign any case to a doctor
 func TestMA_AssignToDoctor(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
@@ -168,7 +168,7 @@ func TestMA_AssignToDoctor(t *testing.T) {
 
 func TestMA_DoctorAssignToMA(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
@@ -215,7 +215,7 @@ func TestMA_DoctorAssignToMA(t *testing.T) {
 // and that the patient cannot see these private messages
 func TestMA_PrivateMessages(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
@@ -288,7 +288,7 @@ func TestMA_PrivateMessages(t *testing.T) {
 // when the doctor marks the case as being unsuitable
 func TestMA_AssignOnMarkingCaseAsUnsuitable_NonPublicMessage(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// Set our public config to enabled
@@ -321,7 +321,7 @@ func TestMA_AssignOnMarkingCaseAsUnsuitable_NonPublicMessage(t *testing.T) {
 
 func TestMA_AssignOnMarkingCaseAsUnsuitable_PublicMessage(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// Set our public config to enabled

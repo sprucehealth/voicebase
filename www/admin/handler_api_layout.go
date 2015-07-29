@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/mapstructure"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
@@ -17,7 +18,7 @@ import (
 )
 
 const (
-	maxMemoryUsage = 2 * 1024 * 1024 // MB
+	maxMemoryUsage = 2 * 1024 * 1024
 	intake         = "intake"
 	review         = "review"
 	diagnose       = "diagnose"
@@ -27,8 +28,8 @@ type layoutUploadHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewLayoutUploadHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&layoutUploadHandler{dataAPI: dataAPI}, httputil.Post)
+func newLayoutUploadHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&layoutUploadHandler{dataAPI: dataAPI}, httputil.Post)
 }
 
 type layoutInfo struct {
@@ -38,7 +39,7 @@ type layoutInfo struct {
 	UpgradeType common.VersionComponent
 }
 
-func (h *layoutUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *layoutUploadHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(maxMemoryUsage); err != nil {
 		www.APIBadRequestError(w, r, "Failed to parse form.")
 		return

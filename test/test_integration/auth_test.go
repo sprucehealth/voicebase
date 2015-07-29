@@ -14,7 +14,7 @@ import (
 
 func TestAuth(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	email, pass, pass2 := "someone@somewhere.com", "somepass", "newPass"
 
@@ -105,7 +105,7 @@ func TestAuth(t *testing.T) {
 
 func TestAuth_MultiLogin(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	email, pass := "someone@somewhere.com", "somepass"
 	platform := api.Platform("test")
@@ -150,7 +150,7 @@ func TestAuth_MultiLogin(t *testing.T) {
 
 func TestAuth_ExtendedAuth(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	expireDuration := time.Second
 	renewDuration := time.Second / 2
@@ -230,7 +230,7 @@ func TestAuth_ExtendedAuth(t *testing.T) {
 
 func TestLostPassword(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	cli := PatientClient(testData, t, 0)
@@ -260,7 +260,7 @@ func updateAuthToken(testData *TestData, t *testing.T, updatedTime time.Time, ac
 
 func TestTrackAppDeviceInfo(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// signup doctor

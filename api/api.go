@@ -858,20 +858,32 @@ type PatientFeedbackAPI interface {
 }
 
 // ParentalConsentProof represents the photoIDs for
-// ID verification.
+// ID verification. If anything is added to this struct/table then
+// the IsComplete method must be updated.
 type ParentalConsentProof struct {
 	SelfiePhotoID       *int64
 	GovernmentIDPhotoID *int64
 }
 
+// IsComplete returns true iff all pieces of proof have been completed
+func (pcp *ParentalConsentProof) IsComplete() bool {
+	return pcp.SelfiePhotoID != nil && pcp.GovernmentIDPhotoID != nil
+}
+
 // ParentalConsent are DAL functions for dealing with parent/child treatment consent
 type ParentalConsent interface {
-	// LinkParentChild creates a relationship between the patient accounts but does not grant consent to be treated
-	LinkParentChild(parentPatientID, childPatientID int64, relationship string) error
-	// GrantParentChildConsent records that the parent consented to their child being treated
-	GrantParentChildConsent(parentPatientID, childPatientID int64) error
-	// ParentChildConsent returns the consent status between parent and child
-	ParentChildConsent(parentPatientID, childPatientID int64) (bool, error)
+	// GrantParentChildConsent creates a relationship between the patient accounts and consents to treatment.
+	// However, this doesn't update the patient because we can't allow the patient to do a visit until
+	// we've also collected the parent's identification photos.
+	GrantParentChildConsent(parentPatientID, childPatientID int64, relationship string) error
+	// ParentalConsentCompletedForPatient updates the patient record and visits to reflect consent has been granted
+	// and all necessary information has been recorded (identification photos).
+	ParentalConsentCompletedForPatient(childPatientID int64) error
+	// ParentalConsent returns the consent status between parent and child
+	ParentalConsent(parentPatientID, childPatientID int64) (*common.ParentalConsent, error)
+	// AllParentalConsent returns the full set of parent/child consent relationships which
+	// is a mapping from child's patient ID to the ParentalConsent model.
+	AllParentalConsent(parentPatientID int64) (map[int64]*common.ParentalConsent, error)
 	// UpsertParentConsentProof updates the proof of parental consent based on the
 	// data present in the object if it already exists, and inserts otherwise.
 	UpsertParentConsentProof(parentPatientID int64, proof *ParentalConsentProof) (int64, error)
@@ -879,6 +891,24 @@ type ParentalConsent interface {
 	ParentConsentProof(parentPatientID int64) (*ParentalConsentProof, error)
 	// PatientParent returns the patient record mapped to the provided patient's parent
 	PatientParentID(childPatientID int64) (int64, error)
+}
+
+// Tokens is a set of DAL functions that let you create temporary tokens to use for validation.
+// The functionality is similar (and mostly equivalent) to using signatures, but it allows for
+// shorter (read nicer) tokens and to invalidate tokens outside of just an expiration.
+//
+// NOTE: this functional overlaps with the temp tokens in AuthAPI but this is more generic.
+// They may merge at some point, but for now it's simplest to just have them separate.
+type Tokens interface {
+	// CreateToken creates a new token for the specific purpose and key. The key can be used
+	// by the caller to store what the token is protecting. For instance, it could be an account ID.
+	// If the token is not provided (empty) then one will be generated.
+	CreateToken(purpose, key, token string, expire time.Duration) (string, error)
+	// ValidateToken returns the key for the token if it's valid. Otherwise it returns ErrTokenDoesNotExist
+	ValidateToken(purpose, token string) (string, error)
+	// DeleteToken deletes a specific token and returns number of rows deleted.
+	// It's useful for invalidation / revoking access.
+	DeleteToken(purpose, token string) (int, error)
 }
 
 type DataAPI interface {
@@ -914,6 +944,7 @@ type DataAPI interface {
 	SearchAPI
 	SKUs
 	TextAPI
+	Tokens
 	TrainingCasesAPI
 }
 

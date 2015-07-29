@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/go-proxy-protocol/proxyproto"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 // The local cert and key are only used when the Debug config
@@ -64,7 +66,11 @@ J15BERU7hluvxXOZn5wenPP0DcDqZX/34dNPE58CKtzlDP/UlpSqzQ==
 -----END RSA PRIVATE KEY-----`)
 )
 
-func serve(conf *mainConfig, hand http.Handler) {
+func serve(conf *mainConfig, chand httputil.ContextHandler) {
+	hand := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		chand.ServeHTTP(context.Background(), w, r)
+	})
+
 	server := &http.Server{
 		Addr:    conf.ListenAddr,
 		Handler: hand,

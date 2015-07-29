@@ -9,7 +9,7 @@ import (
 
 func TestNoPotentialAnswerForQuestionTypes(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// no free text question type should have potential answers associated with it
@@ -44,7 +44,7 @@ func TestNoPotentialAnswerForQuestionTypes(t *testing.T) {
 // be able to show additional pieces of content in the question
 func TestAdditionalFieldsInAutocompleteQuestion(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// signup a random test patient for which to answer questions

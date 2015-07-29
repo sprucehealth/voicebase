@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/events"
 	"github.com/sprucehealth/backend/events/model"
@@ -36,11 +37,11 @@ type serverEventsGETResponse struct {
 	Events []*analytics.ServerEvent `json:"events"`
 }
 
-func NewServerEventsHandler(eventsClient events.Client) http.Handler {
-	return httputil.SupportedMethods(&serverEventsHandler{eventsClient: eventsClient}, httputil.Get)
+func newServerEventsHandler(eventsClient events.Client) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&serverEventsHandler{eventsClient: eventsClient}, httputil.Get)
 }
 
-func (h *serverEventsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *serverEventsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		req, err := h.parseGETRequest(r)

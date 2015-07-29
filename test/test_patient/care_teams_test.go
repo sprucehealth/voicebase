@@ -16,7 +16,7 @@ import (
 
 func TestGetCaseCareTeamsDataAccess(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	patientCase, doctor := createPatientCaseAndAssignToDoctor(t, testData)
 
@@ -40,7 +40,7 @@ func TestGetCaseCareTeamsDataAccess(t *testing.T) {
 // TestGetCareTeamsForPatient tests the /v1/patient/care_teams endpoint
 func TestGetCareTeamsForPatient(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	patientCase, doctor := createPatientCaseAndAssignToDoctor(t, testData)
 

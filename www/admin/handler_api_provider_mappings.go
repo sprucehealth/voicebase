@@ -4,10 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
 )
@@ -20,14 +19,14 @@ type providerMappingsResponse struct {
 	Mappings []*api.CareProviderStatePathway `json:"mappings"`
 }
 
-func NewProviderMappingsHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&providerMappingsHandler{
+func newProviderMappingsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&providerMappingsHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get)
 }
 
-func (h *providerMappingsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
+func (h *providerMappingsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
 
 	audit.LogAction(account.ID, "AdminAPI", "ListCareProviderStatePathwayMappings", nil)
 

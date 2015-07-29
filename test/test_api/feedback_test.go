@@ -12,7 +12,7 @@ import (
 
 func TestFeedback(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	accountID, err := testData.AuthAPI.CreateAccount("fdsafdsafdsa@fewffdasfdsajewlkfwe.com", "fdasfda", api.RolePatient)
 	test.OK(t, err)

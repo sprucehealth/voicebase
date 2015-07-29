@@ -9,7 +9,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
+
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 // Route stores information to match a request and build URLs.
@@ -17,7 +21,7 @@ type Route struct {
 	// Parent where the route was registered (a Router).
 	parent parentRoute
 	// Request handler for the route.
-	handler http.Handler
+	handler httputil.ContextHandler
 	// List of matchers.
 	matchers []matcher
 	// Manager for the variables from host and path.
@@ -81,7 +85,7 @@ func (r *Route) BuildOnly() *Route {
 // Handler --------------------------------------------------------------------
 
 // Handler sets a handler for the route.
-func (r *Route) Handler(handler http.Handler) *Route {
+func (r *Route) Handler(handler httputil.ContextHandler) *Route {
 	if r.err == nil {
 		r.handler = handler
 	}
@@ -89,12 +93,12 @@ func (r *Route) Handler(handler http.Handler) *Route {
 }
 
 // HandlerFunc sets a handler function for the route.
-func (r *Route) HandlerFunc(f func(http.ResponseWriter, *http.Request)) *Route {
-	return r.Handler(http.HandlerFunc(f))
+func (r *Route) HandlerFunc(f func(context.Context, http.ResponseWriter, *http.Request)) *Route {
+	return r.Handler(httputil.ContextHandlerFunc(f))
 }
 
 // GetHandler returns the handler for the route, if any.
-func (r *Route) GetHandler() http.Handler {
+func (r *Route) GetHandler() httputil.ContextHandler {
 	return r.handler
 }
 
@@ -188,7 +192,7 @@ func (r *Route) addRegexpMatcher(tpl string, matchHost, matchPrefix, matchQuery 
 type headerMatcher map[string]string
 
 func (m headerMatcher) Match(r *http.Request, match *RouteMatch) bool {
-	return matchMap(m, r.Header, true)
+	return matchMapWithString(m, r.Header, true)
 }
 
 // Headers adds a matcher for request header values.
@@ -199,13 +203,44 @@ func (m headerMatcher) Match(r *http.Request, match *RouteMatch) bool {
 //               "X-Requested-With", "XMLHttpRequest")
 //
 // The above route will only match if both request header values match.
+// Alternatively, you can provide a regular expression and match the header as follows:
+//
+//     r.Headers("Content-Type", "application/(text|json)",
+//               "X-Requested-With", "XMLHttpRequest")
+//
+// The above route will the same as the previous example, with the addition of matching
+// application/text as well.
 //
 // It the value is an empty string, it will match any value if the key is set.
 func (r *Route) Headers(pairs ...string) *Route {
 	if r.err == nil {
 		var headers map[string]string
-		headers, r.err = mapFromPairs(pairs...)
+		headers, r.err = mapFromPairsToString(pairs...)
 		return r.addMatcher(headerMatcher(headers))
+	}
+	return r
+}
+
+// headerRegexMatcher matches the request against the route given a regex for the header
+type headerRegexMatcher map[string]*regexp.Regexp
+
+func (m headerRegexMatcher) Match(r *http.Request, match *RouteMatch) bool {
+	return matchMapWithRegex(m, r.Header, true)
+}
+
+// HeadersRegexp expressions can be used with headers as well.
+// It accepts a sequence of key/value pairs, where the value has regex support. For example
+//     r := mux.NewRouter()
+//     r.HeadersRegexp("Content-Type", "application/(text|json)",
+//               "X-Requested-With", "XMLHttpRequest")
+//
+// The above route will only match if both the request header matches both regular expressions.
+// It the value is an empty string, it will match any value if the key is set.
+func (r *Route) HeadersRegexp(pairs ...string) *Route {
+	if r.err == nil {
+		var headers map[string]*regexp.Regexp
+		headers, r.err = mapFromPairsToRegex(pairs...)
+		return r.addMatcher(headerRegexMatcher(headers))
 	}
 	return r
 }
@@ -214,7 +249,7 @@ func (r *Route) Headers(pairs ...string) *Route {
 
 // Host adds a matcher for the URL host.
 // It accepts a template with zero or more URL variables enclosed by {}.
-// Variables can define an optional regexp pattern to me matched:
+// Variables can define an optional regexp pattern to be matched:
 //
 // - {name} matches anything until the next dot.
 //
@@ -239,6 +274,7 @@ func (r *Route) Host(tpl string) *Route {
 // MatcherFunc is the function signature used by custom matchers.
 type MatcherFunc func(*http.Request, *RouteMatch) bool
 
+// Match calls the custom matcher.
 func (m MatcherFunc) Match(r *http.Request, match *RouteMatch) bool {
 	return m(r, match)
 }
@@ -272,7 +308,7 @@ func (r *Route) Methods(methods ...string) *Route {
 // Path adds a matcher for the URL path.
 // It accepts a template with zero or more URL variables enclosed by {}. The
 // template must start with a "/".
-// Variables can define an optional regexp pattern to me matched:
+// Variables can define an optional regexp pattern to be matched:
 //
 // - {name} matches anything until the next slash.
 //
@@ -323,7 +359,7 @@ func (r *Route) PathPrefix(tpl string) *Route {
 //
 // It the value is an empty string, it will match any value if the key is set.
 //
-// Variables can define an optional regexp pattern to me matched:
+// Variables can define an optional regexp pattern to be matched:
 //
 // - {name} matches anything until the next slash.
 //
@@ -336,7 +372,7 @@ func (r *Route) Queries(pairs ...string) *Route {
 		return nil
 	}
 	for i := 0; i < length; i += 2 {
-		if r.err = r.addRegexpMatcher(pairs[i]+"="+pairs[i+1], false, true, true); r.err != nil {
+		if r.err = r.addRegexpMatcher(pairs[i]+"="+pairs[i+1], false, false, true); r.err != nil {
 			return r
 		}
 	}
@@ -511,7 +547,7 @@ func (r *Route) URLPath(pairs ...string) (*url.URL, error) {
 // prepareVars converts the route variable pairs into a map. If the route has a
 // BuildVarsFunc, it is invoked.
 func (r *Route) prepareVars(pairs ...string) (map[string]string, error) {
-	m, err := mapFromPairs(pairs...)
+	m, err := mapFromPairsToString(pairs...)
 	if err != nil {
 		return nil, err
 	}

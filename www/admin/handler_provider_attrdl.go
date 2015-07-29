@@ -6,12 +6,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/www"
 )
@@ -22,16 +21,16 @@ type providerAttrDownloadHandler struct {
 	store   storage.Store
 }
 
-func NewProviderAttrDownloadHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store) http.Handler {
-	return httputil.SupportedMethods(&providerAttrDownloadHandler{
+func newProviderAttrDownloadHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&providerAttrDownloadHandler{
 		router:  router,
 		dataAPI: dataAPI,
 		store:   store,
 	}, httputil.Get)
 }
 
-func (h *providerAttrDownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
+func (h *providerAttrDownloadHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(ctx)
 
 	providerID, err := strconv.ParseInt(vars["id"], 10, 64)
 	if err != nil {
@@ -41,7 +40,7 @@ func (h *providerAttrDownloadHandler) ServeHTTP(w http.ResponseWriter, r *http.R
 
 	attrName := vars["attr"]
 
-	account := context.Get(r, www.CKAccount).(*common.Account)
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "Admin", "DownloadProviderAttributeFile", map[string]interface{}{"provider_id": providerID, "attribute": attrName})
 
 	attr, err := h.dataAPI.DoctorAttributes(providerID, []string{attrName})

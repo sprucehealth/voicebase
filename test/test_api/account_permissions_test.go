@@ -10,7 +10,7 @@ import (
 
 func TestAccountPermissions(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	perms, err := testData.AuthAPI.AvailableAccountPermissions()
 	test.OK(t, err)

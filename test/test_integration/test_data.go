@@ -20,9 +20,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/libs/httputil"
+
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/BurntSushi/toml"
 	resources "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/cookieo9/resources-go"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
@@ -40,6 +41,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
@@ -102,7 +104,6 @@ func (p *TestCookieJar) Cookies(u *url.URL) []*http.Cookie {
 }
 
 type TestData struct {
-	T              *testing.T
 	DataAPI        api.DataAPI
 	AuthAPI        api.AuthAPI
 	SMSAPI         *SMSAPI
@@ -198,8 +199,12 @@ func (d *TestData) AdminAuthPostWithRequest(req *http.Request, creds *AdminCrede
 	authRequest, err := http.NewRequest("POST", d.AdminAPIServer.URL+`/login`, bytes.NewBufferString(values.Encode()))
 	authRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := client.Do(authRequest)
-	test.OK(d.T, err)
-	test.Equals(d.T, http.StatusOK, resp.StatusCode)
+	if err != nil {
+		return nil, err
+	}
+	if http.StatusOK != resp.StatusCode {
+		return nil, fmt.Errorf("expected 200 got %d", resp.StatusCode)
+	}
 	return client.Do(req)
 }
 
@@ -252,12 +257,12 @@ func (d *TestData) StartAPIServer(t *testing.T) {
 
 	// setup the restapi and adminapi servers
 	d.APIServer = httptest.NewServer(router.New(d.Config))
-	d.AdminAPIServer = httptest.NewServer(www_router.New(d.AdminConfig))
+	d.AdminAPIServer = httptest.NewServer(httputil.FromContextHandler(www_router.New(d.AdminConfig)))
 
-	d.bootstrapData()
+	d.bootstrapData(t)
 }
 
-func (d *TestData) Close() {
+func (d *TestData) Close(t *testing.T) {
 	d.DB.Close()
 
 	if d.APIServer != nil {
@@ -279,7 +284,7 @@ func (d *TestData) Close() {
 		fmt.Sprintf("CF_LOCAL_DB_PASSWORD=%s", d.DBConfig.Password),
 	)
 	err := cmd.Run()
-	test.OK(d.T, err)
+	test.OK(t, err)
 }
 
 func setupTest() (*TestData, error) {
@@ -401,6 +406,7 @@ func setupTest() (*TestData, error) {
 		TwoFactorExpiration: 60,
 		Cfg:                 cfgStore,
 		ApplicationDB:       testData.DB,
+		Signer:              signer,
 	}
 
 	stubDrOnboardBody := func() {
@@ -429,53 +435,59 @@ func setupTest() (*TestData, error) {
 	return testData, nil
 }
 
-func (d *TestData) bootstrapData() {
+func (d *TestData) bootstrapData(t *testing.T) {
 	// FIX: We shouldn't have to signup this doctor, but currently
 	// tests expect a default doctor to exist. Probably should get rid of this and update
 	// tests to instantiate a doctor if one is needed
-	SignupRandomTestDoctorInState("CA", d.T, d)
+	SignupRandomTestDoctorInState("CA", t, d)
 
-	_, email, password := SignupRandomTestAdmin(d.T, d)
+	_, email, password := SignupRandomTestAdmin(t, d)
 	d.AdminUser = &AdminCredentials{Email: email, Password: password}
 
 	// Upload first versions of the intake, review and diagnosis layouts
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	AddFileToMultipartWriter(writer, "intake", "intake-1-0-0.json", IntakeFileLocation, d.T)
-	AddFileToMultipartWriter(writer, "review", "review-1-0-0.json", ReviewFileLocation, d.T)
-	AddFileToMultipartWriter(writer, "diagnose", "diagnose-1-0-0.json", DiagnosisFileLocation, d.T)
+	AddFileToMultipartWriter(writer, "intake", "intake-1-0-0.json", IntakeFileLocation, t)
+	AddFileToMultipartWriter(writer, "review", "review-1-0-0.json", ReviewFileLocation, t)
+	AddFileToMultipartWriter(writer, "diagnose", "diagnose-1-0-0.json", DiagnosisFileLocation, t)
 
 	// specify the app versions and the platform information
-	AddFieldToMultipartWriter(writer, "patient_app_version", "0.9.5", d.T)
-	AddFieldToMultipartWriter(writer, "doctor_app_version", "1.2.3", d.T)
-	AddFieldToMultipartWriter(writer, "platform", "iOS", d.T)
+	AddFieldToMultipartWriter(writer, "patient_app_version", "0.9.5", t)
+	AddFieldToMultipartWriter(writer, "doctor_app_version", "1.2.3", t)
+	AddFieldToMultipartWriter(writer, "platform", "iOS", t)
 
 	err := writer.Close()
-	test.OK(d.T, err)
+	test.OK(t, err)
 
 	resp, err := d.AdminAuthPost(d.AdminAPIServer.URL+`/admin/api/layout`, writer.FormDataContentType(), body, d.AdminUser)
-	test.OK(d.T, err)
+	test.OK(t, err)
 	defer resp.Body.Close()
-	test.Equals(d.T, http.StatusOK, resp.StatusCode)
+	if resp.StatusCode != http.StatusOK {
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		t.Fatalf("Expected 200 got %d: %s", resp.StatusCode, string(b))
+	}
 
 	// lets create the layout pair for followup visits
 	body = &bytes.Buffer{}
 	writer = multipart.NewWriter(body)
-	AddFileToMultipartWriter(writer, "intake", "followup-intake-1-0-0.json", FollowupIntakeFileLocation, d.T)
-	AddFileToMultipartWriter(writer, "review", "followup-review-1-0-0.json", FollowupReviewFileLocation, d.T)
+	AddFileToMultipartWriter(writer, "intake", "followup-intake-1-0-0.json", FollowupIntakeFileLocation, t)
+	AddFileToMultipartWriter(writer, "review", "followup-review-1-0-0.json", FollowupReviewFileLocation, t)
 
 	// specify the app versions and the platform information
-	AddFieldToMultipartWriter(writer, "patient_app_version", "1.0.0", d.T)
-	AddFieldToMultipartWriter(writer, "doctor_app_version", "1.0.0", d.T)
-	AddFieldToMultipartWriter(writer, "platform", "iOS", d.T)
+	AddFieldToMultipartWriter(writer, "patient_app_version", "1.0.0", t)
+	AddFieldToMultipartWriter(writer, "doctor_app_version", "1.0.0", t)
+	AddFieldToMultipartWriter(writer, "platform", "iOS", t)
 
 	err = writer.Close()
-	test.OK(d.T, err)
+	test.OK(t, err)
 
 	resp, err = d.AdminAuthPost(d.AdminAPIServer.URL+`/admin/api/layout`, writer.FormDataContentType(), body, d.AdminUser)
-	test.OK(d.T, err)
+	test.OK(t, err)
 	defer resp.Body.Close()
-	test.Equals(d.T, http.StatusOK, resp.StatusCode)
+	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	// create drug descriptions for a handful of drugs
 	// that we can easily reference when creating treatments in tests.
@@ -505,7 +517,7 @@ func (d *TestData) bootstrapData() {
 			DrugRoute:       drugRoute,
 			GenericDrugName: drugName,
 		})
-		test.OK(d.T, err)
+		test.OK(t, err)
 	}
 
 }

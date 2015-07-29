@@ -75,7 +75,7 @@ func insertPhotoSlotVersion(questionID, languageID, ordering int64, name, photo_
 
 func TestVersionedQuestionDataAccess(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
 	vqs, err := testData.DataAPI.VersionedQuestions([]*api.QuestionQueryParams{&api.QuestionQueryParams{QuestionTag: "myTag", LanguageID: EN, Version: 1}})
@@ -87,7 +87,7 @@ func TestVersionedQuestionDataAccess(t *testing.T) {
 
 func TestVersionedQuestionMultipleDataAccess(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
 	insertQuestionVersion("myTag", "questionText2", "questionType", 2, nil, false, testData, t)
@@ -114,7 +114,7 @@ func TestVersionedQuestionMultipleDataAccess(t *testing.T) {
 
 func TestVersionedQuestionFromID(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
 
@@ -126,7 +126,7 @@ func TestVersionedQuestionFromID(t *testing.T) {
 
 func TestVersionedQuestionFromIDNoRows(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	_, err := testData.DataAPI.VersionedQuestionFromID(10000)
@@ -135,7 +135,7 @@ func TestVersionedQuestionFromIDNoRows(t *testing.T) {
 
 func TestInsertVersionedQuestion(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	clientData := `{
@@ -175,7 +175,7 @@ func TestInsertVersionedQuestion(t *testing.T) {
 
 func TestInsertVersionedQuestionNoAnswers(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
@@ -193,7 +193,7 @@ func TestInsertVersionedQuestionNoAnswers(t *testing.T) {
 
 func TestVersionedQuestionRequiredTracked(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, true, testData, t)
@@ -205,7 +205,7 @@ func TestVersionedQuestionRequiredTracked(t *testing.T) {
 
 func TestInsertVersionedQuestionRequiredTracked(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
@@ -224,7 +224,7 @@ func TestInsertVersionedQuestionRequiredTracked(t *testing.T) {
 
 func TestInsertVersionedQuestionVersionsParent(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	pqid := insertQuestionVersion("parentTag", "questionText", "questionType", 1, nil, false, testData, t)
@@ -252,7 +252,7 @@ func TestInsertVersionedQuestionVersionsParent(t *testing.T) {
 
 func TestInsertVersionedQuestionVersionsAdditionalFields(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
@@ -279,7 +279,7 @@ func TestInsertVersionedQuestionVersionsAdditionalFields(t *testing.T) {
 
 func TestInsertVersionedQuestionVersionsParentsAdditionalFields(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	pqid := insertQuestionVersion("myTag2", "questionText", "questionType", 1, nil, false, testData, t)
@@ -311,7 +311,7 @@ func TestInsertVersionedQuestionVersionsParentsAdditionalFields(t *testing.T) {
 
 func TestInsertVersionedQuestionCorrectlyQueriesMultipleAdditionalFields(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
@@ -341,7 +341,7 @@ func TestInsertVersionedQuestionCorrectlyQueriesMultipleAdditionalFields(t *test
 
 func TestGetQuestionInfoForTagsCorrectlyMergesMultipleAdditionalFields(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
@@ -359,7 +359,7 @@ func TestGetQuestionInfoForTagsCorrectlyMergesMultipleAdditionalFields(t *testin
 //answerTag, answerText, answerType, status string, ordering, questionID, version int64
 func TestVersionedAnswerDataAccess(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
 	insertAnswerVersion("myTag", "answerText", "answerType", 1, qid, "", testData, t)
@@ -371,7 +371,7 @@ func TestVersionedAnswerDataAccess(t *testing.T) {
 
 func TestVersionedAnswerMultipleDataAccess(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
 	qid2 := insertQuestionVersion("myTag", "questionText", "questionType", 2, nil, false, testData, t)
@@ -398,7 +398,7 @@ func TestVersionedAnswerMultipleDataAccess(t *testing.T) {
 
 func TestVersionedAnswerFromID(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
 	aid := insertAnswerVersion("myTag", "answerText", "answerType", 1, qid, "", testData, t)
@@ -410,7 +410,7 @@ func TestVersionedAnswerFromID(t *testing.T) {
 
 func TestVersionedAnswerFromIDNoRows(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	_, err := testData.DataAPI.VersionedAnswerFromID(10000)
@@ -419,7 +419,7 @@ func TestVersionedAnswerFromIDNoRows(t *testing.T) {
 
 func TestPhotoSlotInfoRetrieval(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
@@ -439,7 +439,7 @@ func TestPhotoSlotInfoRetrieval(t *testing.T) {
 
 func TestPhotoSlotInfoRetrievalNoClientData(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
@@ -455,7 +455,7 @@ func TestPhotoSlotInfoRetrievalNoClientData(t *testing.T) {
 
 func TestVersionedPhotoSlotRetrieval(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
@@ -471,7 +471,7 @@ func TestVersionedPhotoSlotRetrieval(t *testing.T) {
 
 func TestVersionedPhotoSlotInsertion(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
@@ -502,7 +502,7 @@ func TestVersionedPhotoSlotInsertion(t *testing.T) {
 
 func TestVersionedPhotoSlotInsertionNoClientData(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)

@@ -5,9 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/audit"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
 )
@@ -29,20 +28,20 @@ type analyticsQueryAPIHandler struct {
 	db *sql.DB
 }
 
-func NewAnalyticsQueryAPIHandler(db *sql.DB) http.Handler {
-	return httputil.SupportedMethods(&analyticsQueryAPIHandler{
+func newAnalyticsQueryAPIHandler(db *sql.DB) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&analyticsQueryAPIHandler{
 		db: db,
 	}, httputil.Post)
 }
 
-func (h *analyticsQueryAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *analyticsQueryAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var req analyticsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		www.APIInternalError(w, r, err)
 		return
 	}
 
-	account := context.Get(r, www.CKAccount).(*common.Account)
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "AnalyticsQuery", map[string]interface{}{
 		"query":  req.Query,
 		"params": req.Params,

@@ -19,7 +19,7 @@ import (
 
 func TestPatientSignup_WithStateCode(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	stubAddressValidationAPI := testData.Config.AddressValidator.(*address.StubAddressValidationService)
 	// dont return any city state info so as to ensure that the call to sign patient up
@@ -49,7 +49,7 @@ func TestPatientSignup_WithStateCode(t *testing.T) {
 
 func TestPatientSignup_CreateVisit(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	stubAddressValidationAPI := testData.Config.AddressValidator.(*address.StubAddressValidationService)
 	// dont return any city state info so as to ensure that the call to sign patient up
@@ -96,7 +96,7 @@ func TestPatientSignup_CreateVisit(t *testing.T) {
 
 func TestPatientSignup_Idempotent(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	stubAddressValidationAPI := testData.Config.AddressValidator.(*address.StubAddressValidationService)
 	// dont return any city state info so as to ensure that the call to sign patient up
@@ -180,7 +180,7 @@ func TestPatientSignup_Idempotent(t *testing.T) {
 
 func TestPatientSignup_WithDoctorPicked(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	stubAddressValidationAPI := testData.Config.AddressValidator.(*address.StubAddressValidationService)
 	// dont return any city state info so as to ensure that the call to sign patient up

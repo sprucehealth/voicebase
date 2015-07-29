@@ -12,7 +12,7 @@ import (
 
 func TestTPResourceGuides(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
@@ -56,7 +56,7 @@ func TestTPResourceGuides(t *testing.T) {
 
 func TestFTPResourceGuides(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)

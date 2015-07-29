@@ -8,10 +8,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -30,7 +31,7 @@ func TestPromotionReferralRouteHandlerPUTQueriesDataLayer(t *testing.T) {
 	mh := &mockedDataAPI_promotionReferralRouteHandler{
 		DataAPI: &api.DataService{},
 	}
-	promoReferralRouteHandler := NewPromotionReferralRouteHandler(mh)
+	promoReferralRouteHandler := newPromotionReferralRouteHandler(mh)
 	req, err := json.Marshal(&PromotionReferralRoutePUTRequest{
 		Lifecycle: "DEPRECATED",
 	})
@@ -38,10 +39,10 @@ func TestPromotionReferralRouteHandlerPUTQueriesDataLayer(t *testing.T) {
 	r, err := http.NewRequest("PUT", "/admin/api/promotion/referral_route/1", bytes.NewReader(req))
 	test.OK(t, err)
 	m := mux.NewRouter()
-	m.HandleFunc(`/admin/api/promotion/referral_route/{id:[0-9]+}`, promoReferralRouteHandler.ServeHTTP)
+	m.Handle(`/admin/api/promotion/referral_route/{id:[0-9]+}`, promoReferralRouteHandler)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, struct{}{})
-	m.ServeHTTP(responseWriter, r)
+	m.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 	test.Equals(t, int64(1), mh.updatePromotionReferralRouteParam.ID)
@@ -52,7 +53,7 @@ func TestPromotionReferralRouteHandlerPUTIDRequired(t *testing.T) {
 	mh := &mockedDataAPI_promotionReferralRouteHandler{
 		DataAPI: &api.DataService{},
 	}
-	promoReferralRouteHandler := NewPromotionReferralRouteHandler(mh)
+	promoReferralRouteHandler := newPromotionReferralRouteHandler(mh)
 	req, err := json.Marshal(&PromotionReferralRoutePUTRequest{
 		Lifecycle: "DEPRECATED",
 	})
@@ -60,10 +61,10 @@ func TestPromotionReferralRouteHandlerPUTIDRequired(t *testing.T) {
 	r, err := http.NewRequest("PUT", "/admin/api/promotion/referral_route", bytes.NewReader(req))
 	test.OK(t, err)
 	m := mux.NewRouter()
-	m.HandleFunc(`/admin/api/promotion/referral_route`, promoReferralRouteHandler.ServeHTTP)
+	m.Handle(`/admin/api/promotion/referral_route`, promoReferralRouteHandler)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusNotFound, struct{}{})
-	m.ServeHTTP(responseWriter, r)
+	m.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 }
 
@@ -71,16 +72,16 @@ func TestPromotionReferralRouteHandlerPUTLifecycleRequired(t *testing.T) {
 	mh := &mockedDataAPI_promotionReferralRouteHandler{
 		DataAPI: &api.DataService{},
 	}
-	promoReferralRouteHandler := NewPromotionReferralRouteHandler(mh)
+	promoReferralRouteHandler := newPromotionReferralRouteHandler(mh)
 	req, err := json.Marshal(&PromotionReferralRoutePUTRequest{})
 	test.OK(t, err)
 	r, err := http.NewRequest("PUT", "/admin/api/promotion/referral_route/1", bytes.NewReader(req))
 	test.OK(t, err)
 	m := mux.NewRouter()
-	m.HandleFunc(`/admin/api/promotion/referral_route/{id:[0-9]+}`, promoReferralRouteHandler.ServeHTTP)
+	m.Handle(`/admin/api/promotion/referral_route/{id:[0-9]+}`, promoReferralRouteHandler)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusBadRequest, struct{}{})
-	m.ServeHTTP(responseWriter, r)
+	m.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 }
 
@@ -89,7 +90,7 @@ func TestPromotionReferralRouteHandlerPUTDataLayerErr(t *testing.T) {
 		DataAPI: &api.DataService{},
 		updatePromotionReferralRouteErr: errors.New("Foo"),
 	}
-	promoReferralRouteHandler := NewPromotionReferralRouteHandler(mh)
+	promoReferralRouteHandler := newPromotionReferralRouteHandler(mh)
 	req, err := json.Marshal(&PromotionReferralRoutePUTRequest{
 		Lifecycle: "DEPRECATED",
 	})
@@ -97,9 +98,9 @@ func TestPromotionReferralRouteHandlerPUTDataLayerErr(t *testing.T) {
 	r, err := http.NewRequest("PUT", "/admin/api/promotion/referral_route/1", bytes.NewReader(req))
 	test.OK(t, err)
 	m := mux.NewRouter()
-	m.HandleFunc(`/admin/api/promotion/referral_route/{id:[0-9]+}`, promoReferralRouteHandler.ServeHTTP)
+	m.Handle(`/admin/api/promotion/referral_route/{id:[0-9]+}`, promoReferralRouteHandler)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusInternalServerError, struct{}{})
-	m.ServeHTTP(responseWriter, r)
+	m.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 }

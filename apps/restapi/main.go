@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"log"
+	"math/rand"
 	"net/http"
 	_ "net/http/pprof"
 	"strconv"
@@ -10,9 +11,9 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
 	consulapi "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/hashicorp/consul/api"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/analytics/analisteners"
@@ -28,11 +29,17 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mandrill"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 const (
 	defaultMaxInMemoryPhotoMB = 2
@@ -321,8 +328,8 @@ func main() {
 	router.Host(webDomain).Handler(webMux)
 
 	// Redirect any unknown domains to the website. This will most likely be a
-	// bare domain without a subdomain (e.g. sprucehealth.com -> www.sprucehealth.com).
-	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// apex domain (e.g. sprucehealth.com -> www.sprucehealth.com).
+	router.NotFoundHandler = httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		if r.Host != apiDomain && r.Host != webDomain {
 			// If apex domain (e.g. sprucehealth.com) then just rewrite host
 			if idx := strings.IndexByte(r.Host, '.'); idx == strings.LastIndex(r.Host, ".") {

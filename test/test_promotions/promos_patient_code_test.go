@@ -18,7 +18,7 @@ import (
 
 func TestPatientPromoCode_ApplyPromotion(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	pvr := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
@@ -51,7 +51,7 @@ func TestPatientPromoCode_ApplyPromotion(t *testing.T) {
 
 func TestPatientPromoCode_ApplyExpiredPromotion(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	pvr := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
@@ -81,7 +81,7 @@ func TestPatientPromoCode_ApplyExpiredPromotion(t *testing.T) {
 
 func TestPatientPromoCode_ApplyZerovaluePromotion(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	pvr := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
@@ -121,7 +121,7 @@ func TestPatientPromoCode_ApplyZerovaluePromotion(t *testing.T) {
 
 func TestPatientPromoCode_ApplyBadPromotion(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	pvr := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
@@ -140,7 +140,7 @@ func TestPatientPromoCode_ApplyBadPromotion(t *testing.T) {
 
 func TestPatientPromoCode_ApplyMultiplePromotion(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	pvr := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
@@ -193,7 +193,7 @@ func TestPatientPromoCode_ApplyMultiplePromotion(t *testing.T) {
 
 func TestPatientPromoCode_ExistingExpiredPromotion(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	pvr := test_integration.CreateRandomPatientVisitInState("CA", t, testData)

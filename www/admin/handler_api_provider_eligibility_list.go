@@ -5,14 +5,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sprucehealth/backend/encoding"
-
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -39,20 +37,20 @@ type providerEligibilityUpdateRequest struct {
 	Update []*statePathwayMappingUpdate `json:"update,omitempty"`
 }
 
-func NewProviderEligibilityListAPIHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&providerEligibilityListAPIHandler{
+func newProviderEligibilityListAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&providerEligibilityListAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Patch)
 }
 
-func (h *providerEligibilityListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	doctorID, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+func (h *providerEligibilityListAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	doctorID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
 	}
 
-	account := context.Get(r, www.CKAccount).(*common.Account)
+	account := www.MustCtxAccount(ctx)
 
 	switch r.Method {
 	case httputil.Get:

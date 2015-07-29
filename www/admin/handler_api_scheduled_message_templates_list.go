@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/common"
@@ -16,14 +16,14 @@ type schedMessageTemplatesListAPIHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewSchedMessageTemplatesListAPIHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&schedMessageTemplatesListAPIHandler{
+func newSchedMessageTemplatesListAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&schedMessageTemplatesListAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *schedMessageTemplatesListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
+func (h *schedMessageTemplatesListAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
 
 	if r.Method == "POST" {
 		audit.LogAction(account.ID, "AdminAPI", "CreateScheduledMessageTemplate", nil)

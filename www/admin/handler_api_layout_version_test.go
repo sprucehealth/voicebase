@@ -5,10 +5,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/test"
-	"github.com/sprucehealth/backend/test/test_handler"
 )
 
 type mockedDataAPI_handlerLayoutVersion struct {
@@ -34,14 +34,11 @@ func TestLayoutVersionHandlerSuccessGET(t *testing.T) {
 
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	layoutVersionHandler := NewLayoutVersionHandler(mockedDataAPI_handlerLayoutVersion{&api.DataService{}, items})
-	handler := test_handler.MockHandler{
-		H: layoutVersionHandler,
-	}
+	handler := newLayoutVersionHandler(mockedDataAPI_handlerLayoutVersion{&api.DataService{}, items})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, map[string]interface{}{
 		"items": items,
 	})
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }

@@ -16,7 +16,7 @@ func TestDiagnosisSet(t *testing.T) {
 	diagnosisService := setupDiagnosisService(t)
 
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.Config.DiagnosisAPI = diagnosisService
 	testData.AdminConfig.DiagnosisAPI = diagnosisService
 	testData.StartAPIServer(t)
@@ -190,7 +190,7 @@ func TestDiagnosisSet_Followup(t *testing.T) {
 	diagnosisService := setupDiagnosisService(t)
 
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.Config.DiagnosisAPI = diagnosisService
 	testData.StartAPIServer(t)
 
@@ -273,7 +273,7 @@ func TestDiagnosisSet_Followup(t *testing.T) {
 func TestDiagnosisSet_MarkUnsuitable(t *testing.T) {
 	diagnosisService := setupDiagnosisService(t)
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.Config.DiagnosisAPI = diagnosisService
 	testData.StartAPIServer(t)
 

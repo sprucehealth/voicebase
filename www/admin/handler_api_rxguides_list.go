@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/common"
@@ -18,19 +18,19 @@ type rxGuidesListAPIHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewRXGuideListAPIHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&rxGuidesListAPIHandler{
+func newRXGuideListAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&rxGuidesListAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Put)
 }
 
-func (h *rxGuidesListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *rxGuidesListAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	if r.Method == "PUT" {
-		h.put(w, r)
+		h.put(ctx, w, r)
 		return
 	}
 
-	account := context.Get(r, www.CKAccount).(*common.Account)
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "ListRXGuides", nil)
 
 	drugs, err := h.dataAPI.ListDrugDetails()
@@ -41,8 +41,8 @@ func (h *rxGuidesListAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	httputil.JSONResponse(w, http.StatusOK, drugs)
 }
 
-func (h *rxGuidesListAPIHandler) put(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
+func (h *rxGuidesListAPIHandler) put(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "ImportRXGuides", nil)
 
 	if err := r.ParseMultipartForm(maxMemory); err != nil {

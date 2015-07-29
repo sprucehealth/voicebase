@@ -35,6 +35,7 @@ type SignupHandler struct {
 	dataAPI            api.DataAPI
 	authAPI            api.AuthAPI
 	apiDomain          string
+	webDomain          string
 	analyticsLogger    analytics.Logger
 	dispatcher         *dispatch.Dispatcher
 	addressAPI         address.Validator
@@ -95,6 +96,7 @@ func NewSignupHandler(
 	dataAPI api.DataAPI,
 	authAPI api.AuthAPI,
 	apiDomain string,
+	webDomain string,
 	analyticsLogger analytics.Logger,
 	dispatcher *dispatch.Dispatcher,
 	expirationDuration time.Duration,
@@ -107,6 +109,7 @@ func NewSignupHandler(
 		dataAPI:            dataAPI,
 		authAPI:            authAPI,
 		apiDomain:          apiDomain,
+		webDomain:          webDomain,
 		analyticsLogger:    analyticsLogger,
 		dispatcher:         dispatcher,
 		addressAPI:         addressAPI,
@@ -310,6 +313,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			requestData.PathwayTag,
 			s.dataAPI,
 			s.apiDomain,
+			s.webDomain,
 			s.dispatcher,
 			s.mediaStore,
 			s.expirationDuration,

@@ -5,10 +5,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -36,19 +35,19 @@ type drugSearchResult struct {
 	Strengths []*drugStrength `json:"strengths"`
 }
 
-func NewDrugSearchAPIHandler(dataAPI api.DataAPI, eRxAPI erx.ERxAPI) http.Handler {
-	return httputil.SupportedMethods(&drugSearchAPIHandler{
+func newDrugSearchAPIHandler(dataAPI api.DataAPI, eRxAPI erx.ERxAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&drugSearchAPIHandler{
 		dataAPI: dataAPI,
 		eRxAPI:  eRxAPI,
 	}, httputil.Get)
 }
 
-func (h *drugSearchAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *drugSearchAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var results []*drugSearchResult
 
 	query := r.FormValue("q")
 
-	account := context.Get(r, www.CKAccount).(*common.Account)
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "SearchDrugs", map[string]interface{}{"query": query})
 
 	if query != "" {

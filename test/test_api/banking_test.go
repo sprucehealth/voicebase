@@ -13,7 +13,7 @@ import (
 
 func TestBanking(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	accountID, err := testData.AuthAPI.CreateAccount("test+perms@sprucehealth.com", "xyz", api.RoleAdmin)
 	test.OK(t, err)

@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -26,26 +27,26 @@ import (
 )
 
 var (
-	NoteRXDescription          = regexp.MustCompile(`note:rx_\d+_description`)
-	NoteAdditionalInfo         = regexp.MustCompile(`note:additional_info_\d+`)
-	ScheduledMessageDuration   = regexp.MustCompile(`scheduled_message_\d+_duration`)
-	ScheduledMessageUnit       = regexp.MustCompile(`scheduled_message_\d+_unit`)
-	ScheduledMessageAttachment = regexp.MustCompile(`scheduled_message_\d+_attachment`)
-	ScheduledMessage           = regexp.MustCompile(`scheduled_message_\d+`)
-	RXName                     = regexp.MustCompile(`rx_\d+_name`)
-	RXDosage                   = regexp.MustCompile(`rx_\d+_dosage`)
-	RXDispenseType             = regexp.MustCompile(`rx_\d+_dispense_type`)
-	RXDispenseNumber           = regexp.MustCompile(`rx_\d+_dispense_number`)
-	RXRefills                  = regexp.MustCompile(`rx_\d+_refills`)
-	RXSubstitutions            = regexp.MustCompile(`rx_\d+_substitutions`)
-	RXSig                      = regexp.MustCompile(`rx_\d+_sig`)
-	RXRoute                    = regexp.MustCompile(`rx_\d+_route`)
-	RXForm                     = regexp.MustCompile(`rx_\d+_form`)
-	RXGenericName              = regexp.MustCompile(`rx_\d+_generic_name`)
-	SectionTitle               = regexp.MustCompile(`section_\d+_title`)
-	SectionStep                = regexp.MustCompile(`section_\d+_step_\d+`)
-	ResourceGuide              = regexp.MustCompile(`resource_guide_\d+`)
-	Digits                     = regexp.MustCompile(`\d+`)
+	noteRXDescriptionRE          = regexp.MustCompile(`note:rx_\d+_description`)
+	noteAdditionalInfoRE         = regexp.MustCompile(`note:additional_info_\d+`)
+	scheduledMessageDurationRE   = regexp.MustCompile(`scheduled_message_\d+_duration`)
+	scheduledMessageUnitRE       = regexp.MustCompile(`scheduled_message_\d+_unit`)
+	scheduledMessageAttachmentRE = regexp.MustCompile(`scheduled_message_\d+_attachment`)
+	scheduledMessageRE           = regexp.MustCompile(`scheduled_message_\d+`)
+	rxNameRE                     = regexp.MustCompile(`rx_\d+_name`)
+	rxDosageRE                   = regexp.MustCompile(`rx_\d+_dosage`)
+	rxDispenseTypeRE             = regexp.MustCompile(`rx_\d+_dispense_type`)
+	rxDispenseNumberRE           = regexp.MustCompile(`rx_\d+_dispense_number`)
+	rxRefillsRE                  = regexp.MustCompile(`rx_\d+_refills`)
+	rxSubstitutionsRE            = regexp.MustCompile(`rx_\d+_substitutions`)
+	rxSigRE                      = regexp.MustCompile(`rx_\d+_sig`)
+	rxRouteRE                    = regexp.MustCompile(`rx_\d+_route`)
+	rxFormRE                     = regexp.MustCompile(`rx_\d+_form`)
+	rxGenericNameRE              = regexp.MustCompile(`rx_\d+_generic_name`)
+	sectionTitleRE               = regexp.MustCompile(`section_\d+_title`)
+	sectionStepRE                = regexp.MustCompile(`section_\d+_step_\d+`)
+	resourceGuideRE              = regexp.MustCompile(`resource_guide_\d+`)
+	digitsRE                     = regexp.MustCompile(`\d+`)
 )
 
 type ftp struct {
@@ -155,11 +156,11 @@ func newFTP() *ftp {
 	}
 }
 
-func NewTreatmentPlanCSVHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
-	return httputil.SupportedMethods(&treatmentPlanCSVHandler{dataAPI: dataAPI, erxAPI: erxAPI}, httputil.Put)
+func newTreatmentPlanCSVHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&treatmentPlanCSVHandler{dataAPI: dataAPI, erxAPI: erxAPI}, httputil.Put)
 }
 
-func (h *treatmentPlanCSVHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *treatmentPlanCSVHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "PUT":
 		requestData, err := h.parsePUTRequest(r)
@@ -540,19 +541,19 @@ func parseFTP(colData [][]string, column int, errs chan error, complete chan *ft
 			ftp.Note.ConditionDescription = d
 		case "note:md_recommendation" == t:
 			ftp.Note.MDRecommendation = d
-		case NoteRXDescription.MatchString(t):
+		case noteRXDescriptionRE.MatchString(t):
 			if d != "" {
-				ftp.Note.RXDescriptions[Digits.FindString(t)] = d
+				ftp.Note.RXDescriptions[digitsRE.FindString(t)] = d
 			}
-		case NoteAdditionalInfo.MatchString(t):
+		case noteAdditionalInfoRE.MatchString(t):
 			if d != "" {
-				ftp.Note.AdditionalInfo[Digits.FindString(t)] = d
+				ftp.Note.AdditionalInfo[digitsRE.FindString(t)] = d
 			}
 		case "note:closing" == t:
 			ftp.Note.Closing = d
-		case ScheduledMessageDuration.MatchString(t):
+		case scheduledMessageDurationRE.MatchString(t):
 			if d != "" {
-				si := Digits.FindString(t)
+				si := digitsRE.FindString(t)
 				sm, ok := ftp.ScheduledMessages[si]
 				if !ok {
 					sm = scheduledMessage{}
@@ -560,9 +561,9 @@ func parseFTP(colData [][]string, column int, errs chan error, complete chan *ft
 				sm.Duration = d
 				ftp.ScheduledMessages[si] = sm
 			}
-		case ScheduledMessageUnit.MatchString(t):
+		case scheduledMessageUnitRE.MatchString(t):
 			if d != "" {
-				si := Digits.FindString(t)
+				si := digitsRE.FindString(t)
 				sm, ok := ftp.ScheduledMessages[si]
 				if !ok {
 					sm = scheduledMessage{}
@@ -570,9 +571,9 @@ func parseFTP(colData [][]string, column int, errs chan error, complete chan *ft
 				sm.Unit = d
 				ftp.ScheduledMessages[si] = sm
 			}
-		case ScheduledMessageAttachment.MatchString(t):
+		case scheduledMessageAttachmentRE.MatchString(t):
 			if d != "" {
-				si := Digits.FindString(t)
+				si := digitsRE.FindString(t)
 				sm, ok := ftp.ScheduledMessages[si]
 				if !ok {
 					sm = scheduledMessage{}
@@ -580,9 +581,9 @@ func parseFTP(colData [][]string, column int, errs chan error, complete chan *ft
 				sm.Attachment = d
 				ftp.ScheduledMessages[si] = sm
 			}
-		case ScheduledMessage.MatchString(t):
+		case scheduledMessageRE.MatchString(t):
 			if d != "" {
-				si := Digits.FindString(t)
+				si := digitsRE.FindString(t)
 				sm, ok := ftp.ScheduledMessages[si]
 				if !ok {
 					sm = scheduledMessage{}
@@ -590,9 +591,9 @@ func parseFTP(colData [][]string, column int, errs chan error, complete chan *ft
 				sm.Message = d
 				ftp.ScheduledMessages[si] = sm
 			}
-		case RXDosage.MatchString(t):
+		case rxDosageRE.MatchString(t):
 			if d != "" {
-				ri := Digits.FindString(t)
+				ri := digitsRE.FindString(t)
 				r, ok := ftp.RXs[ri]
 				if !ok {
 					r = rx{}
@@ -600,9 +601,9 @@ func parseFTP(colData [][]string, column int, errs chan error, complete chan *ft
 				r.Dosage = d
 				ftp.RXs[ri] = r
 			}
-		case RXName.MatchString(t):
+		case rxNameRE.MatchString(t):
 			if d != "" {
-				ri := Digits.FindString(t)
+				ri := digitsRE.FindString(t)
 				r, ok := ftp.RXs[ri]
 				if !ok {
 					r = rx{}
@@ -610,9 +611,9 @@ func parseFTP(colData [][]string, column int, errs chan error, complete chan *ft
 				r.Name = d
 				ftp.RXs[ri] = r
 			}
-		case RXRefills.MatchString(t):
+		case rxRefillsRE.MatchString(t):
 			if d != "" {
-				ri := Digits.FindString(t)
+				ri := digitsRE.FindString(t)
 				r, ok := ftp.RXs[ri]
 				if !ok {
 					r = rx{}
@@ -620,9 +621,9 @@ func parseFTP(colData [][]string, column int, errs chan error, complete chan *ft
 				r.Refills = d
 				ftp.RXs[ri] = r
 			}
-		case RXDispenseNumber.MatchString(t):
+		case rxDispenseNumberRE.MatchString(t):
 			if d != "" {
-				ri := Digits.FindString(t)
+				ri := digitsRE.FindString(t)
 				r, ok := ftp.RXs[ri]
 				if !ok {
 					r = rx{}
@@ -630,9 +631,9 @@ func parseFTP(colData [][]string, column int, errs chan error, complete chan *ft
 				r.DispenseNumber = d
 				ftp.RXs[ri] = r
 			}
-		case RXDispenseType.MatchString(t):
+		case rxDispenseTypeRE.MatchString(t):
 			if d != "" {
-				ri := Digits.FindString(t)
+				ri := digitsRE.FindString(t)
 				r, ok := ftp.RXs[ri]
 				if !ok {
 					r = rx{}
@@ -640,9 +641,9 @@ func parseFTP(colData [][]string, column int, errs chan error, complete chan *ft
 				r.DispenseType = d
 				ftp.RXs[ri] = r
 			}
-		case RXSubstitutions.MatchString(t):
+		case rxSubstitutionsRE.MatchString(t):
 			if d != "" {
-				ri := Digits.FindString(t)
+				ri := digitsRE.FindString(t)
 				r, ok := ftp.RXs[ri]
 				if !ok {
 					r = rx{}
@@ -650,9 +651,9 @@ func parseFTP(colData [][]string, column int, errs chan error, complete chan *ft
 				r.Substitutions = d
 				ftp.RXs[ri] = r
 			}
-		case RXSig.MatchString(t):
+		case rxSigRE.MatchString(t):
 			if d != "" {
-				ri := Digits.FindString(t)
+				ri := digitsRE.FindString(t)
 				r, ok := ftp.RXs[ri]
 				if !ok {
 					r = rx{}
@@ -660,9 +661,9 @@ func parseFTP(colData [][]string, column int, errs chan error, complete chan *ft
 				r.Sig = d
 				ftp.RXs[ri] = r
 			}
-		case SectionTitle.MatchString(t):
+		case sectionTitleRE.MatchString(t):
 			if d != "" {
-				si := Digits.FindString(t)
+				si := digitsRE.FindString(t)
 				s, ok := ftp.Sections[si]
 				if !ok {
 					s = section{Steps: make([]step, 0)}
@@ -670,9 +671,9 @@ func parseFTP(colData [][]string, column int, errs chan error, complete chan *ft
 				s.Title = d
 				ftp.Sections[si] = s
 			}
-		case SectionStep.MatchString(t):
+		case sectionStepRE.MatchString(t):
 			if d != "" {
-				si := Digits.FindAllString(t, 2)
+				si := digitsRE.FindAllString(t, 2)
 				if len(si) != 2 {
 					errs <- fmt.Errorf("Expected to find 2 digits in section step type `%s` but found %d", t, len(si))
 					return
@@ -689,7 +690,7 @@ func parseFTP(colData [][]string, column int, errs chan error, complete chan *ft
 				s.Steps = append(s.Steps, step{Text: d, Order: order})
 				ftp.Sections[si[0]] = s
 			}
-		case ResourceGuide.MatchString(t):
+		case resourceGuideRE.MatchString(t):
 			if d != "" {
 				ftp.ResourceGuideTags = append(ftp.ResourceGuideTags, d)
 			}

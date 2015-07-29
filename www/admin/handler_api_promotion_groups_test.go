@@ -6,12 +6,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
-	"github.com/sprucehealth/backend/test/test_handler"
 )
 
 type mockedDataAPIPromotionGroupsHandler struct {
@@ -27,22 +27,19 @@ func (m *mockedDataAPIPromotionGroupsHandler) PromotionGroups() ([]*common.Promo
 func TestPromotionGroupsHandlerGETPromotionGroupsErr(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?", nil)
 	test.OK(t, err)
-	promoHandler := NewPromotionGroupsHandler(&mockedDataAPIPromotionGroupsHandler{
+	handler := newPromotionGroupsHandler(&mockedDataAPIPromotionGroupsHandler{
 		DataAPI:            &api.DataService{},
 		promotionGroupsErr: errors.New("Foo"),
 	})
-	handler := test_handler.MockHandler{
-		H: promoHandler,
-	}
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
 
 func TestPromotionGroupsHandlerGETPromotionGroups(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?", nil)
 	test.OK(t, err)
-	promoHandler := NewPromotionGroupsHandler(&mockedDataAPIPromotionGroupsHandler{
+	handler := newPromotionGroupsHandler(&mockedDataAPIPromotionGroupsHandler{
 		DataAPI: &api.DataService{},
 		promotionGroups: []*common.PromotionGroup{
 			&common.PromotionGroup{
@@ -57,9 +54,6 @@ func TestPromotionGroupsHandlerGETPromotionGroups(t *testing.T) {
 			},
 		},
 	})
-	handler := test_handler.MockHandler{
-		H: promoHandler,
-	}
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionGroupsGETResponse{PromotionGroups: []*responses.PromotionGroup{
 		&responses.PromotionGroup{
@@ -73,7 +67,7 @@ func TestPromotionGroupsHandlerGETPromotionGroups(t *testing.T) {
 			MaxAllowedPromos: 1,
 		},
 	}})
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, http.StatusOK, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 }

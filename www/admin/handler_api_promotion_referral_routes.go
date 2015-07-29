@@ -7,11 +7,11 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
-	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/responses"
-
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -19,15 +19,15 @@ type promotionReferralRoutesHandler struct {
 	dataAPI api.DataAPI
 }
 
-type PromotionReferralRoutesGETRequest struct {
+type promotionReferralRoutesGETRequest struct {
 	Lifecycles []string `schema:"lifecycles,required"`
 }
 
-type PromotionReferralRoutesGETResponse struct {
+type promotionReferralRoutesGETResponse struct {
 	PromotionReferralRoutes []*responses.PromotionReferralRoute `json:"promotion_referral_routes"`
 }
 
-type PromotionReferralRoutesPOSTRequest struct {
+type promotionReferralRoutesPOSTRequest struct {
 	PromotionCodeID int64   `json:"promotion_code_id"`
 	Priority        int     `json:"priority"`
 	Lifecycle       string  `json:"lifecycle"`
@@ -38,11 +38,11 @@ type PromotionReferralRoutesPOSTRequest struct {
 	Pharmacy        *string `json:"pharmacy"`
 }
 
-func NewPromotionReferralRoutesHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&promotionReferralRoutesHandler{dataAPI: dataAPI}, httputil.Get, httputil.Post)
+func newPromotionReferralRoutesHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&promotionReferralRoutesHandler{dataAPI: dataAPI}, httputil.Get, httputil.Post)
 }
 
-func (h *promotionReferralRoutesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *promotionReferralRoutesHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		req, err := h.parseGETRequest(r)
@@ -61,8 +61,8 @@ func (h *promotionReferralRoutesHandler) ServeHTTP(w http.ResponseWriter, r *htt
 	}
 }
 
-func (h *promotionReferralRoutesHandler) parseGETRequest(r *http.Request) (*PromotionReferralRoutesGETRequest, error) {
-	rd := &PromotionReferralRoutesGETRequest{}
+func (h *promotionReferralRoutesHandler) parseGETRequest(r *http.Request) (*promotionReferralRoutesGETRequest, error) {
+	rd := &promotionReferralRoutesGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
 	}
@@ -72,10 +72,10 @@ func (h *promotionReferralRoutesHandler) parseGETRequest(r *http.Request) (*Prom
 	return rd, nil
 }
 
-func (h *promotionReferralRoutesHandler) serveGET(w http.ResponseWriter, r *http.Request, req *PromotionReferralRoutesGETRequest) {
+func (h *promotionReferralRoutesHandler) serveGET(w http.ResponseWriter, r *http.Request, req *promotionReferralRoutesGETRequest) {
 	routes, err := h.dataAPI.PromotionReferralRoutes(req.Lifecycles)
 	if api.IsErrNotFound(err) {
-		httputil.JSONResponse(w, http.StatusOK, &PromotionReferralRoutesGETResponse{PromotionReferralRoutes: []*responses.PromotionReferralRoute{}})
+		httputil.JSONResponse(w, http.StatusOK, &promotionReferralRoutesGETResponse{PromotionReferralRoutes: []*responses.PromotionReferralRoute{}})
 		return
 	} else if err != nil {
 		www.APIInternalError(w, r, err)
@@ -86,11 +86,11 @@ func (h *promotionReferralRoutesHandler) serveGET(w http.ResponseWriter, r *http
 	for i, v := range routes {
 		resps[i] = responses.TransformPromotionReferralRoute(v)
 	}
-	httputil.JSONResponse(w, http.StatusOK, &PromotionReferralRoutesGETResponse{PromotionReferralRoutes: resps})
+	httputil.JSONResponse(w, http.StatusOK, &promotionReferralRoutesGETResponse{PromotionReferralRoutes: resps})
 }
 
-func (h *promotionReferralRoutesHandler) parsePOSTRequest(r *http.Request) (*PromotionReferralRoutesPOSTRequest, error) {
-	rd := &PromotionReferralRoutesPOSTRequest{}
+func (h *promotionReferralRoutesHandler) parsePOSTRequest(r *http.Request) (*promotionReferralRoutesPOSTRequest, error) {
+	rd := &promotionReferralRoutesPOSTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
 	}
@@ -101,7 +101,7 @@ func (h *promotionReferralRoutesHandler) parsePOSTRequest(r *http.Request) (*Pro
 	return rd, nil
 }
 
-func (h *promotionReferralRoutesHandler) servePOST(w http.ResponseWriter, r *http.Request, req *PromotionReferralRoutesPOSTRequest) {
+func (h *promotionReferralRoutesHandler) servePOST(w http.ResponseWriter, r *http.Request, req *promotionReferralRoutesPOSTRequest) {
 	var err error
 	lifecycle, err := common.GetPRRLifecycle(req.Lifecycle)
 	if err != nil {

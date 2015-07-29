@@ -17,7 +17,7 @@ import (
 func TestIntake_PrefillQuestions(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	testData.StartAPIServer(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
@@ -178,6 +178,7 @@ func createFollowupAndGetVisitLayout(patient *common.Patient, caseID int64, test
 	intakeInfo, err := patientpkg.IntakeLayoutForVisit(
 		testData.DataAPI,
 		testData.Config.APIDomain,
+		testData.Config.WebDomain,
 		testData.Config.MediaStore,
 		testData.Config.AuthTokenExpiration,
 		followupVisit, nil, api.RoleDoctor)

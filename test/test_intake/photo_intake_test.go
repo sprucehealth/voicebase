@@ -24,7 +24,7 @@ var (
 
 func TestPhotoIntake(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
@@ -91,7 +91,7 @@ func TestPhotoIntake(t *testing.T) {
 
 func TestPhotoIntake_AllSections(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
@@ -172,7 +172,7 @@ func TestPhotoIntake_AllSections(t *testing.T) {
 
 func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
@@ -244,7 +244,7 @@ func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 
 func TestPhotoIntake_MultiplePhotos(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
@@ -315,7 +315,7 @@ func TestPhotoIntake_MultiplePhotos(t *testing.T) {
 
 func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
@@ -418,7 +418,7 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 
 func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
@@ -517,7 +517,7 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 
 func TestPhotoIntake_MistmatchedSlotId(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient

@@ -7,13 +7,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -37,14 +37,14 @@ type providerProfileAPIHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewProviderProfileAPIHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&providerProfileAPIHandler{
+func newProviderProfileAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&providerProfileAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Put)
 }
 
-func (h *providerProfileAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	doctorID, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+func (h *providerProfileAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	doctorID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
@@ -59,7 +59,7 @@ func (h *providerProfileAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	account := context.Get(r, www.CKAccount).(*common.Account)
+	account := www.MustCtxAccount(ctx)
 
 	switch r.Method {
 	case httputil.Get:

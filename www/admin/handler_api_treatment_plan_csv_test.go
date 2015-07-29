@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/test"
-	"github.com/sprucehealth/backend/test/test_handler"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -26,13 +26,10 @@ func TestHandlerTreatmentPlanCSVRequiresParams(t *testing.T) {
 	r, err := http.NewRequest("PUT", "mock.api.request", strings.NewReader("Foo"))
 	r.Header.Set("Content-Type", "multipart/form-data;boundary=---------------------------")
 	test.OK(t, err)
-	treatmentPlanCSVHandler := NewTreatmentPlanCSVHandler(mockedDataAPI_handlerTreatmentPlanCSV{DataAPI: &api.DataService{}}, mockedERXAPI_handlerTreatmentPlanCSV{ERxAPI: &erx.DoseSpotService{}})
-	handler := test_handler.MockHandler{
-		H: treatmentPlanCSVHandler,
-	}
+	handler := newTreatmentPlanCSVHandler(mockedDataAPI_handlerTreatmentPlanCSV{DataAPI: &api.DataService{}}, mockedERXAPI_handlerTreatmentPlanCSV{ERxAPI: &erx.DoseSpotService{}})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	www.APIBadRequestError(expectedWriter, r, fmt.Errorf("multipart: NextPart: EOF").Error())
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 

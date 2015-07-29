@@ -3,9 +3,12 @@ package cfg
 import (
 	"net/http"
 	"testing"
+
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
-func TestHTTPHandler(t *testing.T) {
+func TestGorillaHTTPHandler(t *testing.T) {
 	store, err := NewLocalStore([]*ValueDef{
 		{
 			Name:    "int",
@@ -17,8 +20,8 @@ func TestHTTPHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 	var snap Snapshot
-	h := HTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		snap = Context(r)
+	h := HTTPHandler(httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		snap = Context(ctx)
 	}), store)
 
 	req, err := http.NewRequest("GET", "/", nil)
@@ -28,7 +31,7 @@ func TestHTTPHandler(t *testing.T) {
 
 	// Should return default
 
-	h.ServeHTTP(nil, req)
+	h.ServeHTTP(context.Background(), nil, req)
 	if v := snap.Int("int"); v != 123 {
 		t.Fatalf("Expected 123, got %d", v)
 	}
@@ -41,7 +44,7 @@ func TestHTTPHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h.ServeHTTP(nil, req)
+	h.ServeHTTP(context.Background(), nil, req)
 	if v := snap.Int("int"); v != 777 {
 		t.Fatalf("Expected 777, got %d", v)
 	}

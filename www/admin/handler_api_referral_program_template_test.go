@@ -9,13 +9,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
-	"github.com/sprucehealth/backend/test/test_handler"
 )
 
 type mockedDataAPI_referralProgramTemplateHandler struct {
@@ -53,13 +53,10 @@ func TestReferralProgramTemplateHandlerGETQueriesDataLayer(t *testing.T) {
 		DataAPI:                  &api.DataService{},
 		referralProgramTemplates: []*common.ReferralProgramTemplate{template},
 	}
-	referralTemplateHandler := NewReferralProgramTemplateHandler(mh)
-	handler := test_handler.MockHandler{
-		H: referralTemplateHandler,
-	}
+	handler := newReferralProgramTemplateHandler(mh)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, &ReferralProgramTemplateGETResponse{ReferralProgramTemplates: []*responses.ReferralProgramTemplate{responses.TransformReferralProgramTemplate(template)}})
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	var exp common.ReferralProgramStatusList
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
@@ -74,13 +71,10 @@ func TestReferralProgramTemplateHandlerGETQueriesDataLayerParams(t *testing.T) {
 		DataAPI:                  &api.DataService{},
 		referralProgramTemplates: []*common.ReferralProgramTemplate{template},
 	}
-	referralTemplateHandler := NewReferralProgramTemplateHandler(mh)
-	handler := test_handler.MockHandler{
-		H: referralTemplateHandler,
-	}
+	handler := newReferralProgramTemplateHandler(mh)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, &ReferralProgramTemplateGETResponse{ReferralProgramTemplates: []*responses.ReferralProgramTemplate{responses.TransformReferralProgramTemplate(template)}})
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	var exp common.ReferralProgramStatusList = []string{"Active"}
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
@@ -106,13 +100,10 @@ func TestReferralProgramTemplateHandlerPOSTQueriesDataLayer(t *testing.T) {
 			Created: time.Now(),
 		},
 	}
-	referralTemplateHandler := NewReferralProgramTemplateHandler(mh)
-	handler := test_handler.MockHandler{
-		H: referralTemplateHandler,
-	}
+	handler := newReferralProgramTemplateHandler(mh)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, &ReferralProgramTemplatePOSTResponse{ID: 1})
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 	test.Equals(t, int64(1), mh.promotionParam)
@@ -129,12 +120,9 @@ func TestReferralProgramTemplateHandlerPOSTParamsRequired(t *testing.T) {
 		DataAPI:   &api.DataService{},
 		promotion: &common.Promotion{Data: &TestTyped{Name: "TestType"}, Created: time.Now()},
 	}
-	referralTemplateHandler := NewReferralProgramTemplateHandler(mh)
-	handler := test_handler.MockHandler{
-		H: referralTemplateHandler,
-	}
+	handler := newReferralProgramTemplateHandler(mh)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusBadRequest, &ReferralProgramTemplatePOSTResponse{ID: 1})
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, expectedWriter.Code, responseWriter.Code)
 }

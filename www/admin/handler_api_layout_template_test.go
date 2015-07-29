@@ -5,11 +5,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/test"
-	"github.com/sprucehealth/backend/test/test_handler"
 )
 
 type mockedDataAPI_handlerLayoutTemplate struct {
@@ -27,12 +27,9 @@ func TestLayoutTemplateHandlerSuccessGET(t *testing.T) {
 	template := []byte(`{"Template":"output"}`)
 	resp := make(map[string]string)
 	resp["Template"] = "output"
-	layoutTemplateHandler := NewLayoutTemplateHandler(mockedDataAPI_handlerLayoutTemplate{&api.DataService{}, template})
-	handler := test_handler.MockHandler{
-		H: layoutTemplateHandler,
-	}
+	handler := newLayoutTemplateHandler(mockedDataAPI_handlerLayoutTemplate{&api.DataService{}, template})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, resp)
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }

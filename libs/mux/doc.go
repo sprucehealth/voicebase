@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 /*
-Package gorilla/mux implements a request router and dispatcher.
+Package mux implements a request router and dispatcher.
 
 The name mux stands for "HTTP request multiplexer". Like the standard
 http.ServeMux, mux.Router matches incoming requests against a list of
@@ -20,7 +20,7 @@ or other conditions. The main features are:
 	  parent route matches. This is useful to define groups of routes that
 	  share common conditions like a host, a path prefix or other repeated
 	  attributes. As a bonus, this optimizes request matching.
-	* It implements the http.Handler interface so it is compatible with the
+	* It implements the httputil.ContextHandler interface so it is compatible with the
 	  standard http.ServeMux.
 
 Let's start registering a couple of URL paths and handlers:
@@ -171,6 +171,13 @@ All variables defined in the route are required, and their values must
 conform to the corresponding patterns. These requirements guarantee that a
 generated URL will always match a registered route -- the only exception is
 for explicitly defined "build-only" routes which never match.
+
+Regex support also exists for matching Headers within a route. For example, we could do:
+
+	r.HeadersRegexp("Content-Type", "application/(text|json)")
+
+...and the route will match both requests with a Content-Type of `application/json` as well as
+`application/text`
 
 There's also a way to build only the URL host or path for a route:
 use the methods URLHost() or URLPath() instead. For the previous route,

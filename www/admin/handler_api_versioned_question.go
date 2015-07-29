@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context" // The base handler struct to handle requests for interacting with versioned questions
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -14,7 +15,6 @@ import (
 	"github.com/sprucehealth/backend/www"
 )
 
-// The base handler struct to handle requests for interacting with versioned questions
 type versionedQuestionHandler struct {
 	dataAPI api.DataAPI
 }
@@ -72,18 +72,18 @@ type versionedPhotoSlotPOSTRequest struct {
 
 type versionedAdditionalQuestionFieldsPOSTRequest map[string]interface{}
 
-// NewPatientCareTeamsHandler returns a new handler to access the question bank
+// newVersionedQuestionHandler returns a new handler to access the question bank
 // Authorization Required: true
 // Supported Roles: ADMIN_ROLE
 // Supported Method: GET, POST
-func NewVersionedQuestionHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(
+func newVersionedQuestionHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(
 		&versionedQuestionHandler{
 			dataAPI: dataAPI,
 		}, httputil.Get, httputil.Post)
 }
 
-func (h *versionedQuestionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *versionedQuestionHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		requestData, err := h.parseGETRequest(r)

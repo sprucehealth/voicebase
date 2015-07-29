@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -116,8 +116,8 @@ func (r *credentialsForm) Validate() map[string]string {
 	return errors
 }
 
-func NewCredentialsHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) http.Handler {
-	return httputil.SupportedMethods(&credentialsHandler{
+func newCredentialsHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&credentialsHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		template: templateLoader.MustLoadTemplate("dronboard/creds.html", "dronboard/base.html", nil),
@@ -125,8 +125,8 @@ func NewCredentialsHandler(router *mux.Router, dataAPI api.DataAPI, templateLoad
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *credentialsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
+func (h *credentialsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
 
 	form := &credentialsForm{}
 	var errors map[string]string

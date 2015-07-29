@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/common"
@@ -66,28 +66,28 @@ func (r *createProviderRequest) validate() (string, bool) {
 	return "", true
 }
 
-func NewProviderSearchAPIHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
-	return httputil.SupportedMethods(&providerSearchAPIHandler{
+func newProviderSearchAPIHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&providerSearchAPIHandler{
 		dataAPI: dataAPI,
 		authAPI: authAPI,
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *providerSearchAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *providerSearchAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		h.get(w, r)
+		h.get(ctx, w, r)
 	case httputil.Post:
-		h.post(w, r)
+		h.post(ctx, w, r)
 	}
 }
 
-func (h *providerSearchAPIHandler) get(w http.ResponseWriter, r *http.Request) {
+func (h *providerSearchAPIHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var results []*common.DoctorSearchResult
 
 	query := r.FormValue("q")
 
-	account := context.Get(r, www.CKAccount).(*common.Account)
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "SearchProviders", map[string]interface{}{"query": query})
 
 	if query != "" {
@@ -106,8 +106,8 @@ func (h *providerSearchAPIHandler) get(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *providerSearchAPIHandler) post(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
+func (h *providerSearchAPIHandler) post(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "CreateProvider", nil)
 
 	var req createProviderRequest

@@ -7,11 +7,10 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -89,8 +88,8 @@ func (f *insuranceForm) Validate() map[string]string {
 	return errors
 }
 
-func NewInsuranceHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) http.Handler {
-	return httputil.SupportedMethods(&insuranceHandler{
+func newInsuranceHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&insuranceHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		template: templateLoader.MustLoadTemplate("dronboard/insurance.html", "dronboard/base.html", nil),
@@ -98,7 +97,7 @@ func NewInsuranceHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *insuranceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *insuranceHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	form := &insuranceForm{}
 	var errors map[string]string
 
@@ -115,7 +114,7 @@ func (h *insuranceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		errors = form.Validate()
 		if len(errors) == 0 {
-			account := context.Get(r, www.CKAccount).(*common.Account)
+			account := www.MustCtxAccount(ctx)
 			doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(account.ID)
 			if err != nil {
 				www.InternalServerError(w, r, err)
@@ -155,7 +154,7 @@ func (h *insuranceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		// Pull up old information if available
-		account := context.Get(r, www.CKAccount).(*common.Account)
+		account := www.MustCtxAccount(ctx)
 		doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(account.ID)
 		if err != nil {
 			www.InternalServerError(w, r, err)

@@ -33,6 +33,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/ratelimit"
+	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/medrecord"
@@ -96,6 +97,7 @@ type Config struct {
 	Cfg                      cfg.Store
 	ApplicationDB            *sql.DB
 	mux                      apiservice.QueryableMux
+	Signer                   *sig.Signer
 }
 
 // New returns an initialized instance of the apiservice router conforming to the http.Handler interface
@@ -145,7 +147,7 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.PatientCostURLPath, cost.NewCostHandler(conf.DataAPI, conf.AnalyticsLogger, conf.Cfg))
 	authenticationRequired(conf, apipaths.PatientCreditsURLPath, promotions.NewPatientCreditsHandler(conf.DataAPI))
 	noAuthenticationRequired(conf, apipaths.PatientSignupURLPath, patient.NewSignupHandler(
-		conf.DataAPI, conf.AuthAPI, conf.APICDNDomain, conf.AnalyticsLogger, conf.Dispatcher, conf.AuthTokenExpiration,
+		conf.DataAPI, conf.AuthAPI, conf.APICDNDomain, conf.WebDomain, conf.AnalyticsLogger, conf.Dispatcher, conf.AuthTokenExpiration,
 		conf.MediaStore, conf.RateLimiters.Get("patient-signup"), addressValidationAPI,
 		conf.MetricsRegistry.Scope("patient.signup")))
 	noAuthenticationRequired(conf, apipaths.PatientAuthenticateURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher,
@@ -158,11 +160,12 @@ func New(conf *Config) http.Handler {
 		conf.PaymentAPI,
 		conf.AddressValidator,
 		conf.APICDNDomain,
+		conf.WebDomain,
 		conf.Dispatcher,
 		conf.MediaStore,
 		conf.AuthTokenExpiration,
 		taggingClient))
-	authenticationRequired(conf, apipaths.PatientVisitsListURLPath, patient.NewVisitsListHandler(conf.DataAPI, conf.APICDNDomain, conf.Dispatcher, conf.MediaStore, conf.AuthTokenExpiration))
+	authenticationRequired(conf, apipaths.PatientVisitsListURLPath, patient.NewVisitsListHandler(conf.DataAPI, conf.APICDNDomain, conf.WebDomain, conf.Dispatcher, conf.MediaStore, conf.AuthTokenExpiration))
 	authenticationRequired(conf, apipaths.PatientVisitIntakeURLPath, patient_visit.NewAnswerIntakeHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.PatientVisitTriageURLPath, patient_visit.NewPreSubmissionTriageHandler(conf.DataAPI, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.PatientVisitMessageURLPath, patient_visit.NewMessageHandler(conf.DataAPI))
@@ -234,7 +237,7 @@ func New(conf *Config) http.Handler {
 	authenticationRequired(conf, apipaths.DoctorTreatmentPlansListURLPath, doctor_treatment_plan.NewDeprecatedListHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.DoctorTPScheduledMessageURLPath, doctor_treatment_plan.NewScheduledMessageHandler(conf.DataAPI, conf.MediaStore, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.DoctorPharmacySearchURLPath, doctor.NewPharmacySearchHandler(conf.DataAPI, conf.ERxAPI))
-	authenticationRequired(conf, apipaths.DoctorVisitReviewURLPath, patient_file.NewDoctorPatientVisitReviewHandler(conf.DataAPI, conf.Dispatcher, conf.MediaStore, conf.AuthTokenExpiration))
+	authenticationRequired(conf, apipaths.DoctorVisitReviewURLPath, patient_file.NewDoctorPatientVisitReviewHandler(conf.DataAPI, conf.Dispatcher, conf.MediaStore, conf.AuthTokenExpiration, conf.WebDomain))
 	authenticationRequired(conf, apipaths.DoctorVisitDiagnosisURLPath, patient_visit.NewDiagnosePatientHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.DoctorVisitDiagnosisListURLPath, diaghandlers.NewDiagnosisListHandler(conf.DataAPI, conf.DiagnosisAPI, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.DoctorPatientCasesListURLPath, patient_file.NewPatientCaseListHandler(conf.DataAPI))

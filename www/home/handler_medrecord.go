@@ -1,4 +1,4 @@
-package medrecord
+package home
 
 import (
 	"encoding/base64"
@@ -8,53 +8,52 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sprucehealth/backend/environment"
-
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/www"
 )
 
-type downloadHandler struct {
+type medRecordDownloadHandler struct {
 	dataAPI api.DataAPI
 	store   storage.Store
 }
 
-type photoHandler struct {
+type medRecordPhotoHandler struct {
 	dataAPI    api.DataAPI
 	mediaStore *media.Store
 	signer     *sig.Signer
 }
 
-func NewWebDownloadHandler(dataAPI api.DataAPI, store storage.Store) http.Handler {
+func NewMedRecordWebDownloadHandler(dataAPI api.DataAPI, store storage.Store) httputil.ContextHandler {
 	if store == nil {
 		log.Fatalf("Medical record handler storage is nil")
 	}
-	return httputil.SupportedMethods(&downloadHandler{
+	return httputil.ContextSupportedMethods(&medRecordDownloadHandler{
 		dataAPI: dataAPI,
 		store:   store,
 	}, httputil.Get)
 }
 
-func NewPhotoHandler(dataAPI api.DataAPI, mediaStore *media.Store, signer *sig.Signer) http.Handler {
+func NewMedRecordPhotoHandler(dataAPI api.DataAPI, mediaStore *media.Store, signer *sig.Signer) httputil.ContextHandler {
 	if mediaStore == nil {
 		log.Fatalf("Medical record photo handler storage is nil")
 	}
-	return httputil.SupportedMethods(&photoHandler{
+	return httputil.ContextSupportedMethods(&medRecordPhotoHandler{
 		dataAPI:    dataAPI,
 		mediaStore: mediaStore,
 		signer:     signer,
 	}, httputil.Get)
 }
 
-func (h *downloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
+func (h *medRecordDownloadHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
 	patientID, err := h.dataAPI.GetPatientIDFromAccountID(account.ID)
 	if err != nil {
 		www.InternalServerError(w, r, err)
@@ -94,8 +93,8 @@ func (h *downloadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	io.Copy(w, rc)
 }
 
-func (h *photoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	mediaID, err := strconv.ParseInt(mux.Vars(r)["media"], 10, 64)
+func (h *medRecordPhotoHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	mediaID, err := strconv.ParseInt(mux.Vars(ctx)["media"], 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -107,7 +106,7 @@ func (h *photoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	account := context.Get(r, www.CKAccount).(*common.Account)
+	account := www.MustCtxAccount(ctx)
 
 	// Always validate signature in prod. In other environments
 	// alow admins to view the images.

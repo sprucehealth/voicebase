@@ -12,7 +12,7 @@ import (
 
 func TestPromotionGroups(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	_, err := testData.DB.Exec(`INSERT INTO promotion_group (name, max_allowed_promos) VALUES ('attribution', 1)`)
@@ -33,7 +33,7 @@ func TestPromotionGroups(t *testing.T) {
 
 func TestPromotionGroup(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	_, err := testData.DB.Exec(`INSERT INTO promotion_group (name, max_allowed_promos) VALUES ('attribution', 1)`)
@@ -52,7 +52,7 @@ func TestPromotionGroup(t *testing.T) {
 
 func TestCreatePromotionGroup(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	testData.DataAPI.CreatePromotionGroup(&common.PromotionGroup{
@@ -71,7 +71,7 @@ func TestCreatePromotionGroup(t *testing.T) {
 
 func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	stubSQSQueue := &common.SQSQueue{
 		QueueURL:     "visit_url",
 		QueueService: &awsutil.SQS{},

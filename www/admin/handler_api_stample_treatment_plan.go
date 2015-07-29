@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
@@ -24,11 +25,11 @@ type stpPUTRequest struct {
 	SampleTreatmentPlan json.RawMessage `json:"sample_treatment_plan"`
 }
 
-func NewSampleTreatmentPlanHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&stpHandler{dataAPI: dataAPI}, httputil.Get, httputil.Put)
+func newSampleTreatmentPlanHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&stpHandler{dataAPI: dataAPI}, httputil.Get, httputil.Put)
 }
 
-func (h *stpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *stpHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		requestData, err := h.parseGETRequest(r)

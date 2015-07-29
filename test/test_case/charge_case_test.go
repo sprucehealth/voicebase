@@ -16,7 +16,7 @@ import (
 
 func TestSucessfulCaseCharge(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	patientVisit, stubSQSQueue, _ := test_integration.SetupTestWithActiveCostAndVisitSubmitted(testData, t)
 
@@ -57,7 +57,7 @@ func TestSucessfulCaseCharge(t *testing.T) {
 
 func TestSuccessfulCharge_AlreadyExists(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	patientVisit, stubSQSQueue, _ := test_integration.SetupTestWithActiveCostAndVisitSubmitted(testData, t)
 
@@ -111,7 +111,7 @@ func TestSuccessfulCharge_AlreadyExists(t *testing.T) {
 }
 func TestFailedCharge_StripeFailure(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	patientVisit, stubSQSQueue, _ := test_integration.SetupTestWithActiveCostAndVisitSubmitted(testData, t)
 
@@ -160,7 +160,7 @@ func TestFailedCharge_StripeFailure(t *testing.T) {
 
 func TestFailedCharge_ChargeExists(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 
 	patientVisit, stubSQSQueue, _ := test_integration.SetupTestWithActiveCostAndVisitSubmitted(testData, t)
 

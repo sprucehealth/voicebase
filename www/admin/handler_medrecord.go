@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -18,15 +19,15 @@ type medicalRecordHandler struct {
 	r       *medrecord.Renderer
 }
 
-func NewMedicalRecordHandler(
+func newMedicalRecordHandler(
 	dataAPI api.DataAPI,
 	diagnosisSvc diagnosis.API,
 	mediaStore *media.Store,
 	apiDomain string,
 	webDomain string,
 	signer *sig.Signer,
-) http.Handler {
-	return httputil.SupportedMethods(
+) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(
 		&medicalRecordHandler{
 			dataAPI: dataAPI,
 			r: &medrecord.Renderer{
@@ -41,7 +42,7 @@ func NewMedicalRecordHandler(
 		}, httputil.Get)
 }
 
-func (h *medicalRecordHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *medicalRecordHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	patientID, err := strconv.ParseInt(r.FormValue("patient_id"), 10, 64)
 	if err != nil {
 		http.NotFound(w, r)

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -26,13 +27,13 @@ type globalFTPGETRequest struct {
 	Lifecycles []string `schema:"lifecycles"`
 }
 
-func NewGlobalFTPHandler(
+func newGlobalFTPHandler(
 	dataAPI api.DataAPI,
-	mediaStore *media.Store) http.Handler {
-	return httputil.SupportedMethods(&globalFTPHandler{dataAPI: dataAPI, mediaStore: mediaStore}, httputil.Get)
+	mediaStore *media.Store) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&globalFTPHandler{dataAPI: dataAPI, mediaStore: mediaStore}, httputil.Get)
 }
 
-func (h *globalFTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *globalFTPHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		request, err := h.parseGETRequest(r)

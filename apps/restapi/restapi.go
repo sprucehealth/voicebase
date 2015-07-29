@@ -3,11 +3,10 @@ package main
 import (
 	"database/sql"
 	"log"
-	"math/rand"
-	"net/http"
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
 	"github.com/sprucehealth/backend/address"
@@ -66,7 +65,7 @@ func buildRESTAPI(
 	cfgStore cfg.Store,
 	metricsRegistry metrics.Registry,
 	applicationDB *sql.DB,
-) http.Handler {
+) httputil.ContextHandler {
 	// Register the configs that will be used in different parts of the system
 	registerCfgs(cfgStore)
 	awsConfig := conf.AWS()
@@ -211,6 +210,7 @@ func buildRESTAPI(
 		SMSFromNumber:            conf.Twilio.FromNumber,
 		Cfg:                      cfgStore,
 		ApplicationDB:            applicationDB,
+		Signer:                   signer,
 	})
 
 	if !environment.IsProd() {
@@ -310,10 +310,7 @@ func buildRESTAPI(
 		metricsRegistry.Scope("email-campaigns-worker"),
 	).Start()
 
-	// seeding random number generator based on time the main function runs
-	rand.Seed(time.Now().UTC().UnixNano())
-
-	h := httputil.DecompressRequest(cfg.HTTPHandler(mux, cfgStore))
+	h := httputil.DecompressRequest(httputil.ToContextHandler(context.ClearHandler(mux)))
 	if compressResponse {
 		h = httputil.CompressResponse(h)
 	}

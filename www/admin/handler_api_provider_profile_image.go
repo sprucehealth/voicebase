@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/www"
 )
@@ -21,22 +21,22 @@ type providerProfileImageAPIHandler struct {
 	imageStore storage.Store
 }
 
-func NewProviderProfileImageAPIHandler(dataAPI api.DataAPI, imageStore storage.Store) http.Handler {
-	return httputil.SupportedMethods(&providerProfileImageAPIHandler{
+func newProviderProfileImageAPIHandler(dataAPI api.DataAPI, imageStore storage.Store) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&providerProfileImageAPIHandler{
 		dataAPI:    dataAPI,
 		imageStore: imageStore,
 	}, httputil.Get, httputil.Put)
 }
 
-func (h *providerProfileImageAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	doctorID, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+func (h *providerProfileImageAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	doctorID, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
 	}
 
 	var imageSuffix string
-	profileImageType := mux.Vars(r)["type"]
+	profileImageType := mux.Vars(ctx)["type"]
 	switch profileImageType {
 	case "thumbnail":
 		// Note: for legacy reasons (when we used to have small and large thumbnails), continuing to upload
@@ -58,7 +58,7 @@ func (h *providerProfileImageAPIHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		return
 	}
 
-	account := context.Get(r, www.CKAccount).(*common.Account)
+	account := www.MustCtxAccount(ctx)
 
 	if r.Method == httputil.Put {
 		audit.LogAction(account.ID, "AdminAPI", "UpdateProviderThumbnail", map[string]interface{}{"doctor_id": doctorID, "type": profileImageType})

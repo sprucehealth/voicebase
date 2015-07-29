@@ -3,6 +3,7 @@ package test
 
 import (
 	"fmt"
+	"net/http/httptest"
 	"reflect"
 	"runtime"
 	"testing"
@@ -26,6 +27,14 @@ func OK(t testing.TB, err error) {
 func Equals(t testing.TB, exp, act interface{}) {
 	if !reflect.DeepEqual(exp, act) {
 		t.Fatalf("["+CallerString(1)+"]\nexp: %T\n\t%#v\ngot: %T\n\t%#v", exp, exp, act, act)
+	}
+}
+
+// HTTPResponseCode fails the test if the response code does not match. Upon failure it
+// will output the response body for easier debugging.
+func HTTPResponseCode(t testing.TB, exp int, res *httptest.ResponseRecorder) {
+	if res.Code != exp {
+		t.Fatalf("["+CallerString(1)+"]\nexp status code: %d\ngot: %d\nbody: %s", exp, res.Code, res.Body.String())
 	}
 }
 

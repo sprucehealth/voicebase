@@ -16,7 +16,7 @@ import (
 
 func TestTeenFlow(t *testing.T) {
 	testData := SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// Assuming test setup created at least one pathway
@@ -128,14 +128,14 @@ func TestTeenFlow(t *testing.T) {
 	test.OK(t, err)
 	parentPatientID := suRes.Patient.ID.Int64()
 
-	test.OK(t, testData.DataAPI.LinkParentChild(parentPatientID, patientID, "sensei"))
+	test.OK(t, testData.DataAPI.GrantParentChildConsent(parentPatientID, patientID, "sensei"))
 
 	// Still shouldn't be able to submit the visit
 	err = pc.SubmitPatientVisit(cvRes.PatientVisitID)
 	test.Assert(t, err != nil, "Should not be able to submit visit requiring consent before consent is granted")
 	test.Assert(t, strings.Contains(err.Error(), "consent"), "Expected consent failure, got %s", err)
 
-	test.OK(t, testData.DataAPI.GrantParentChildConsent(parentPatientID, patientID))
+	test.OK(t, testData.DataAPI.ParentalConsentCompletedForPatient(patientID))
 
 	// Make sure visit info updates to reflect consent being granted
 	cvRes, err = pc.Visit(cvRes.PatientVisitID)

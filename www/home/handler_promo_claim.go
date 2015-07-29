@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/mux"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context" // PromoCodeKey represents the key associated with the branch link and url for the provided promo code
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/branch"
@@ -16,11 +16,11 @@ import (
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/www"
 )
 
 const (
-	// PromoCodeKey represents the key associated with the branch link and url for the provided promo code
 	PromoCodeKey = "promo_code"
 
 	// SourceKey represent the key associated with the branch link and url for the provided install source
@@ -45,8 +45,8 @@ type promoClaimHandler struct {
 	refTemplate     *template.Template
 }
 
-func newPromoClaimHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, branchClient branch.Client, analyticsLogger analytics.Logger, templateLoader *www.TemplateLoader) http.Handler {
-	return httputil.SupportedMethods(&promoClaimHandler{
+func newPromoClaimHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, branchClient branch.Client, analyticsLogger analytics.Logger, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&promoClaimHandler{
 		dataAPI:         dataAPI,
 		authAPI:         authAPI,
 		branchClient:    branchClient,
@@ -55,10 +55,10 @@ func newPromoClaimHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, branchClient
 	}, httputil.Get, httputil.Post)
 }
 
-func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	code, err := h.dataAPI.LookupPromoCode(mux.Vars(r)["code"])
+func (h *promoClaimHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	code, err := h.dataAPI.LookupPromoCode(mux.Vars(ctx)["code"])
 	if api.IsErrNotFound(err) {
-		ctx := &refContext{
+		tmplCtx := &refContext{
 			Message: "Sorry, the promotion or referral code is no longer active.",
 		}
 		www.TemplateResponse(w, http.StatusOK, h.refTemplate, &www.BaseTemplateContext{
@@ -66,7 +66,7 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Title:       template.HTML("Claim a Promotion"),
 			SubContext: &homeContext{
 				NoBaseHeader: true,
-				SubContext:   ctx,
+				SubContext:   tmplCtx,
 			},
 		})
 		return
@@ -75,11 +75,11 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := &refContext{}
+	tmplCtx := &refContext{}
 	var providerID int64
 	if code != nil {
-		ctx.Code = code.Code
-		ctx.IsReferral = code.IsReferral
+		tmplCtx.Code = code.Code
+		tmplCtx.IsReferral = code.IsReferral
 
 		if code.IsReferral {
 			ref, err := h.dataAPI.ReferralProgram(code.ID, common.PromotionTypes)
@@ -89,12 +89,12 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if ref == nil || ref.Status == common.RSInactive {
-				ctx.Message = "Sorry, the referral code is no longer active."
+				tmplCtx.Message = "Sorry, the referral code is no longer active."
 				www.TemplateResponse(w, http.StatusOK, h.refTemplate, &www.BaseTemplateContext{
 					Environment: environment.GetCurrent(),
 					Title:       "Referral | Spruce",
 					SubContext: &homeContext{
-						SubContext: ctx,
+						SubContext: tmplCtx,
 					},
 				})
 				return
@@ -110,16 +110,16 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					www.InternalServerError(w, r, err)
 					return
 				}
-				ctx.Title = "Start a visit with " + dr.LongDisplayName + " on Spruce."
+				tmplCtx.Title = "Start a visit with " + dr.LongDisplayName + " on Spruce."
 				providerID = dr.ID.Int64()
 			} else if err != nil {
 				www.InternalServerError(w, r, err)
 				return
 			} else {
-				ctx.Title = "Your friend " + patient.FirstName + " has given you a free visit with a board-certified dermatologist."
+				tmplCtx.Title = "Your friend " + patient.FirstName + " has given you a free visit with a board-certified dermatologist."
 			}
 		} else {
-			promo, err := promotions.LookupPromoCode(ctx.Code, h.dataAPI, h.analyticsLogger)
+			promo, err := promotions.LookupPromoCode(tmplCtx.Code, h.dataAPI, h.analyticsLogger)
 			if err == promotions.ErrPromotionExpired {
 				promo = nil
 			} else if err != promotions.ErrInvalidCode && err != nil {
@@ -127,20 +127,20 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if promo == nil {
-				ctx.Message = "Sorry, the referral code is no longer active."
+				tmplCtx.Message = "Sorry, the referral code is no longer active."
 				www.TemplateResponse(w, http.StatusOK, h.refTemplate, &www.BaseTemplateContext{
 					Environment: environment.GetCurrent(),
 					Title:       "Referral | Spruce",
 					SubContext: &homeContext{
-						SubContext: ctx,
+						SubContext: tmplCtx,
 					},
 				})
 				return
 			}
-			ctx.Title = promo.Title
+			tmplCtx.Title = promo.Title
 		}
 	} else {
-		ctx.Title = "Welcome to Spruce"
+		tmplCtx.Title = "Welcome to Spruce"
 	}
 
 	// If page is being loaded from an iPhone, iPod touch or android device, then redirect to the branch link directly.
@@ -186,7 +186,7 @@ func (h *promoClaimHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Environment: environment.GetCurrent(),
 		Title:       "Referral | Spruce",
 		SubContext: &homeContext{
-			SubContext: ctx,
+			SubContext: tmplCtx,
 		},
 	})
 }

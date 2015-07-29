@@ -19,36 +19,40 @@ import (
 	"github.com/sprucehealth/backend/libs/ratelimit"
 )
 
-type mockAPIAuthenticationHandler struct {
+type mockDataAPIAuthenticationHandler struct {
 	api.DataAPI
-	api.AuthAPI
 	feedbackRecorded bool
 	tp               []*common.TreatmentPlan
 }
 
-func (m *mockAPIAuthenticationHandler) Authenticate(login, password string) (*common.Account, error) {
-	return &common.Account{ID: 1}, nil
-}
-
-func (m *mockAPIAuthenticationHandler) CreateToken(accountID int64, platform api.Platform, opt api.CreateTokenOption) (string, error) {
-	return "TOKEN", nil
-}
-
-func (m *mockAPIAuthenticationHandler) GetPatientFromAccountID(accountID int64) (*common.Patient, error) {
+func (m *mockDataAPIAuthenticationHandler) GetPatientFromAccountID(accountID int64) (*common.Patient, error) {
 	return &common.Patient{AccountID: encoding.NewObjectID(1), ID: encoding.NewObjectID(1)}, nil
 }
 
-func (m *mockAPIAuthenticationHandler) PatientFeedbackRecorded(patientID int64, feedbackFor string) (bool, error) {
+func (m *mockDataAPIAuthenticationHandler) PatientFeedbackRecorded(patientID int64, feedbackFor string) (bool, error) {
 	return m.feedbackRecorded, nil
 }
 
-func (m *mockAPIAuthenticationHandler) GetActiveTreatmentPlansForPatient(patientID int64) ([]*common.TreatmentPlan, error) {
+func (m *mockDataAPIAuthenticationHandler) GetActiveTreatmentPlansForPatient(patientID int64) ([]*common.TreatmentPlan, error) {
 	return m.tp, nil
 }
 
+type mockAuthAPIAuthenticationHandler struct {
+	api.AuthAPI
+}
+
+func (m *mockAuthAPIAuthenticationHandler) Authenticate(login, password string) (*common.Account, error) {
+	return &common.Account{ID: 1}, nil
+}
+
+func (m *mockAuthAPIAuthenticationHandler) CreateToken(accountID int64, platform api.Platform, opt api.CreateTokenOption) (string, error) {
+	return "TOKEN", nil
+}
+
 func TestAuthenticationHandlerFeedback(t *testing.T) {
-	mockAPI := &mockAPIAuthenticationHandler{}
-	handler := NewAuthenticationHandler(mockAPI, mockAPI, dispatch.New(), "", ratelimit.NullKeyed{}, metrics.NewRegistry())
+	dataAPI := &mockDataAPIAuthenticationHandler{}
+	authAPI := &mockAuthAPIAuthenticationHandler{}
+	handler := NewAuthenticationHandler(dataAPI, authAPI, dispatch.New(), "", ratelimit.NullKeyed{}, metrics.NewRegistry())
 
 	// No treatment plans so shouldn't show feedback
 
@@ -66,7 +70,7 @@ func TestAuthenticationHandlerFeedback(t *testing.T) {
 	// Unviewed treatment plan shouldn't trigger feedback
 
 	tm := time.Now()
-	mockAPI.tp = []*common.TreatmentPlan{{ID: encoding.NewObjectID(1), PatientCaseID: encoding.NewObjectID(1), PatientViewed: false, SentDate: &tm}}
+	dataAPI.tp = []*common.TreatmentPlan{{ID: encoding.NewObjectID(1), PatientCaseID: encoding.NewObjectID(1), PatientViewed: false, SentDate: &tm}}
 
 	res = AuthenticationResponse{}
 	err = testJSONHandler(handler,
@@ -81,7 +85,7 @@ func TestAuthenticationHandlerFeedback(t *testing.T) {
 
 	// Viewed treatment plan should show feedback since hasn't been recorded yet
 
-	mockAPI.tp = []*common.TreatmentPlan{{ID: encoding.NewObjectID(1), PatientCaseID: encoding.NewObjectID(1), PatientViewed: true, SentDate: &tm}}
+	dataAPI.tp = []*common.TreatmentPlan{{ID: encoding.NewObjectID(1), PatientCaseID: encoding.NewObjectID(1), PatientViewed: true, SentDate: &tm}}
 
 	res = AuthenticationResponse{}
 	err = testJSONHandler(handler,
@@ -99,7 +103,7 @@ func TestAuthenticationHandlerFeedback(t *testing.T) {
 
 	// Shouldn't show feedback prompt is already recorded
 
-	mockAPI.feedbackRecorded = true
+	dataAPI.feedbackRecorded = true
 
 	res = AuthenticationResponse{}
 	err = testJSONHandler(handler,

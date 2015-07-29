@@ -13,7 +13,7 @@ import (
 // multiple doctors works as expected
 func TestDoctorsMultiQuery(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dr1, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
@@ -35,7 +35,7 @@ func TestDoctorsMultiQuery(t *testing.T) {
 // for a given pathway/state combination
 func TestDoctors_AvailableForCareProvidingState(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dr1, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
@@ -95,7 +95,7 @@ func TestDoctors_AvailableForCareProvidingState(t *testing.T) {
 // careProvidingStateID
 func TestDoctors_EligibleQuery(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dr1, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
@@ -148,7 +148,7 @@ func TestDoctors_EligibleQuery(t *testing.T) {
 // doctorIDs
 func TestDoctors_ListAvailableDoctors(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)

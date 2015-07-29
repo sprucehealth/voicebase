@@ -149,7 +149,7 @@ func TestAbandonVisit_Successful(t *testing.T) {
 	r, err := http.NewRequest("DELETE", "api.spruce.local/visit?patient_visit_id=1", nil)
 	test.OK(t, err)
 
-	h := NewPatientVisitHandler(m, nil, nil, nil, "", nil, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
+	h := NewPatientVisitHandler(m, nil, nil, nil, "", "", nil, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
 	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
@@ -170,7 +170,7 @@ func TestAbandonVisit_Idempotent(t *testing.T) {
 	r, err := http.NewRequest("DELETE", "api.spruce.local/case?patient_visit_id=1", nil)
 	test.OK(t, err)
 
-	h := NewPatientVisitHandler(m, nil, nil, nil, "", nil, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
+	h := NewPatientVisitHandler(m, nil, nil, nil, "", "", nil, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
 	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 }
@@ -205,7 +205,7 @@ func TestCreateVisit_FirstAvailable(t *testing.T) {
 		},
 	}
 
-	h := NewPatientVisitHandler(m, nil, nil, nil, "", &dispatch.Dispatcher{}, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
+	h := NewPatientVisitHandler(m, nil, nil, nil, "", "", &dispatch.Dispatcher{}, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
 	w := httptest.NewRecorder()
 	jsonData, err := json.Marshal(&PatientVisitRequestData{})
 	test.OK(t, err)
@@ -254,7 +254,7 @@ func TestCreateVisit_DoctorPicked(t *testing.T) {
 		},
 	}
 
-	h := NewPatientVisitHandler(m, nil, nil, nil, "", &dispatch.Dispatcher{}, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
+	h := NewPatientVisitHandler(m, nil, nil, nil, "", "", &dispatch.Dispatcher{}, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
 	w := httptest.NewRecorder()
 	jsonData, err := json.Marshal(&PatientVisitRequestData{})
 	test.OK(t, err)
@@ -310,7 +310,7 @@ func TestCreatePatient_DoctorPicked(t *testing.T) {
 		token: "token",
 	}
 
-	h := NewSignupHandler(m, mAuth, "", nil, &dispatch.Dispatcher{}, time.Duration(0), nil, &ratelimit.NullKeyed{}, nil, metrics.NewRegistry())
+	h := NewSignupHandler(m, mAuth, "", "", nil, &dispatch.Dispatcher{}, time.Duration(0), nil, &ratelimit.NullKeyed{}, nil, metrics.NewRegistry())
 	w := httptest.NewRecorder()
 
 	jsonData, err := json.Marshal(&SignupPatientRequestData{
@@ -378,7 +378,7 @@ func TestCreatePatient_FirstAvailable(t *testing.T) {
 		token: "token",
 	}
 
-	h := NewSignupHandler(m, mAuth, "", nil, &dispatch.Dispatcher{}, time.Duration(0), nil, &ratelimit.NullKeyed{}, nil, metrics.NewRegistry())
+	h := NewSignupHandler(m, mAuth, "", "", nil, &dispatch.Dispatcher{}, time.Duration(0), nil, &ratelimit.NullKeyed{}, nil, metrics.NewRegistry())
 	w := httptest.NewRecorder()
 
 	jsonData, err := json.Marshal(&SignupPatientRequestData{
@@ -430,7 +430,7 @@ func testForbiddenDelete(t *testing.T, status string) {
 	r, err := http.NewRequest("DELETE", "api.spruce.local/case?patient_visit_id=1", nil)
 	test.OK(t, err)
 
-	h := NewPatientVisitHandler(m, nil, nil, nil, "", nil, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
+	h := NewPatientVisitHandler(m, nil, nil, nil, "", "", nil, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
 	h.ServeHTTP(w, r)
 	test.Equals(t, http.StatusForbidden, w.Code)
 }

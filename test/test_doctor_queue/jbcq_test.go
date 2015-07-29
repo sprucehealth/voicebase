@@ -22,7 +22,7 @@ import (
 // temporarily claimed by a doctor
 func TestJBCQ_TempCaseClaim(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	iassert := test_integration.NewAssertion(testData, t)
 
@@ -62,7 +62,7 @@ func TestJBCQ_TempCaseClaim(t *testing.T) {
 // then any attempt by a second doctor to claim the case is forbidden
 func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctorID := test_integration.GetDoctorIDOfCurrentDoctor(testData, t)
@@ -137,7 +137,7 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 // and then once a doctor temporarily claims the case, the claim can be extended as expected
 func TestJBCQ_Claim(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	iassert := test_integration.NewAssertion(testData, t)
 
@@ -235,7 +235,7 @@ func TestJBCQ_Claim(t *testing.T) {
 // case in the event that the visit is marked as unsuitable for spruce
 func TestJBCQ_AssignOnMarkingUnsuitableForSpruce(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctor, err := testData.DataAPI.GetDoctorFromID(test_integration.GetDoctorIDOfCurrentDoctor(testData, t))
@@ -258,7 +258,7 @@ func TestJBCQ_AssignOnMarkingUnsuitableForSpruce(t *testing.T) {
 // if a doctor sends a message to the patient while the case is unclaimed.
 func TestJBCQ_PermanentlyAssigningCaseOnMessagePost(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	doctor, err := testData.DataAPI.GetDoctorFromID(test_integration.GetDoctorIDOfCurrentDoctor(testData, t))
@@ -305,7 +305,7 @@ func TestJBCQ_PermanentlyAssigningCaseOnMessagePost(t *testing.T) {
 // period of inactivity has elapsed
 func TestJBCQ_RevokingAccessOnClaimExpiration(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(test_integration.GetDoctorIDOfCurrentDoctor(testData, t))
 	test.OK(t, err)

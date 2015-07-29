@@ -14,7 +14,7 @@ import (
 // doctorA cannot open caseB but can see caseB in the list.
 func TestMultipleCases_JBCQ_JBCQ(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// have a single patient submit two different cases with the first available
@@ -74,7 +74,7 @@ func TestMultipleCases_JBCQ_JBCQ(t *testing.T) {
 // by the doctor in the patient file
 func TestMultipleCases_Submitted_Started(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// have a single patient submit 1 case, and then start but not complete another case
@@ -103,7 +103,7 @@ func TestMultipleCases_Submitted_Started(t *testing.T) {
 // the same doctor is able to pick up and complete both
 func TestMultipleCases_SameDoctorPicksUpCase(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// submit acne case
@@ -143,7 +143,7 @@ func TestMultipleCases_SameDoctorPicksUpCase(t *testing.T) {
 // then the two doctors cannot mistakely modify each others cases.
 func TestMultipleCases_DoctorsAssigned(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
@@ -213,7 +213,7 @@ func TestMultipleCases_DoctorsAssigned(t *testing.T) {
 // assigned to a doctor, then the interaction works as expected
 func TestMultipleCases_JBCQ_Assigned(t *testing.T) {
 	testData := test_integration.SetupTest(t)
-	defer testData.Close()
+	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
 	// submit a case to the unassigned queue

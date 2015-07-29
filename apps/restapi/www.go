@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"io"
 	"log"
-	"net/http"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/cookieo9/resources-go"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-librato/librato"
@@ -20,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
@@ -47,7 +47,7 @@ func buildWWW(
 	compressResponse bool,
 	metricsRegistry metrics.Registry,
 	cfgStore cfg.Store,
-) http.Handler {
+) httputil.ContextHandler {
 	stripeCli := &stripe.Client{
 		SecretKey:      conf.Stripe.SecretKey,
 		PublishableKey: conf.Stripe.PublishableKey,

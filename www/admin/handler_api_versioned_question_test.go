@@ -9,12 +9,12 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
-	"github.com/sprucehealth/backend/test/test_handler"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -59,26 +59,20 @@ func (m mockedDataAPI_versionedQuestionHandler) MaxQuestionVersion(questionTag s
 func TestQuestionHandlerRequiresParams(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?language_id=1", nil)
 	test.OK(t, err)
-	questionHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}})
-	handler := test_handler.MockHandler{
-		H: questionHandler,
-	}
+	handler := newVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	www.APIBadRequestError(expectedWriter, r, fmt.Errorf("insufficent parameters supplied to form complete query").Error())
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 
 func TestQuestionHandlerRequiresCompleteTagQuery(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?language_id=1", nil)
 	test.OK(t, err)
-	questionHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}})
-	handler := test_handler.MockHandler{
-		H: questionHandler,
-	}
+	handler := newVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	www.APIBadRequestError(expectedWriter, r, fmt.Errorf("insufficent parameters supplied to form complete query").Error())
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 
@@ -86,11 +80,7 @@ func TestQuestionHandlerCanQueryByID(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?id=1&language_id=1", nil)
 	test.OK(t, err)
 	dbmodel := buildDummyVersionedQuestion("dummy")
-	questionHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}, vq: dbmodel, vaqfs: []*common.VersionedAdditionalQuestionField{}, vpss: []*common.VersionedPhotoSlot{}})
-	handler := test_handler.MockHandler{
-		H: questionHandler,
-	}
-
+	handler := newVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}, vq: dbmodel, vaqfs: []*common.VersionedAdditionalQuestionField{}, vpss: []*common.VersionedPhotoSlot{}})
 	response := versionedQuestionGETResponse{
 		VersionedQuestion: responses.NewVersionedQuestionFromDBModel(dbmodel),
 	}
@@ -100,7 +90,7 @@ func TestQuestionHandlerCanQueryByID(t *testing.T) {
 
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, response)
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 	test.Equals(t, http.StatusOK, responseWriter.Code)
 }
@@ -110,10 +100,7 @@ func TestQuestionHandlerCanQueryByTagSet(t *testing.T) {
 	test.OK(t, err)
 	dbmodel := buildDummyVersionedQuestion("dummy2")
 	va := buildDummyVersionedAnswer("answer")
-	questionHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}, vq: dbmodel, vas: []*common.VersionedAnswer{va}, vaqfs: []*common.VersionedAdditionalQuestionField{}, vpss: []*common.VersionedPhotoSlot{}})
-	handler := test_handler.MockHandler{
-		H: questionHandler,
-	}
+	handler := newVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}, vq: dbmodel, vas: []*common.VersionedAnswer{va}, vaqfs: []*common.VersionedAdditionalQuestionField{}, vpss: []*common.VersionedPhotoSlot{}})
 
 	response := versionedQuestionGETResponse{
 		VersionedQuestion: responses.NewVersionedQuestionFromDBModel(dbmodel),
@@ -128,7 +115,7 @@ func TestQuestionHandlerCanQueryByTagSet(t *testing.T) {
 
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, response)
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 
@@ -139,10 +126,7 @@ func TestQuestionHandlerCanQueryByTagSetNoVersion(t *testing.T) {
 	dbmodel.Version = 99
 	va := buildDummyVersionedAnswer("answer")
 	vps := buildDummyVersionedPhotoSlot("photo_slot")
-	questionHandler := NewVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}, vq: dbmodel, vas: []*common.VersionedAnswer{va}, vaqfs: []*common.VersionedAdditionalQuestionField{}, maxVersion: dbmodel.Version, vpss: []*common.VersionedPhotoSlot{vps}})
-	handler := test_handler.MockHandler{
-		H: questionHandler,
-	}
+	handler := newVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}, vq: dbmodel, vas: []*common.VersionedAnswer{va}, vaqfs: []*common.VersionedAdditionalQuestionField{}, maxVersion: dbmodel.Version, vpss: []*common.VersionedPhotoSlot{vps}})
 
 	response := versionedQuestionGETResponse{
 		VersionedQuestion: responses.NewVersionedQuestionFromDBModel(dbmodel),
@@ -159,7 +143,7 @@ func TestQuestionHandlerCanQueryByTagSetNoVersion(t *testing.T) {
 
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, response)
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 

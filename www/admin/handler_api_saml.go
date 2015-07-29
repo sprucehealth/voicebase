@@ -5,9 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/audit"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/saml"
 	"github.com/sprucehealth/backend/www"
@@ -20,12 +19,12 @@ type samlRequest struct {
 	SAML string `json:"saml"`
 }
 
-func NewSAMLAPIHandler() http.Handler {
-	return httputil.SupportedMethods(&samlAPIHandler{}, httputil.Post)
+func newSAMLAPIHandler() httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&samlAPIHandler{}, httputil.Post)
 }
 
-func (h *samlAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
+func (h *samlAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "SAMLTransform", nil)
 
 	var req samlRequest

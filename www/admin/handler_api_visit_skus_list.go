@@ -4,10 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/audit"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
 )
@@ -20,22 +19,21 @@ type visitSKUListResponse struct {
 	SKUs []string `json:"skus"`
 }
 
-func NewVisitSKUListHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(&visitSKUListHandler{
+func newVisitSKUListHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.ContextSupportedMethods(&visitSKUListHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get)
 }
 
-func (h *visitSKUListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
+func (h *visitSKUListHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		h.get(w, r)
+		h.get(ctx, w, r)
 	}
 }
 
-func (h *visitSKUListHandler) get(w http.ResponseWriter, r *http.Request) {
-	account := context.Get(r, www.CKAccount).(*common.Account)
+func (h *visitSKUListHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := www.MustCtxAccount(ctx)
 	audit.LogAction(account.ID, "AdminAPI", "GetVisitSKUList", nil)
 
 	var activeOnly bool
