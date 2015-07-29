@@ -1,15 +1,19 @@
 package doctor
 
 import (
+	"fmt"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/patient_visit"
+	"github.com/sprucehealth/backend/tagging"
 )
 
-func InitListeners(dataAPI api.DataAPI, apiDomain string, dispatcher *dispatch.Dispatcher) {
+// InitListeners bootstraps the listeners related to doctor related events
+func InitListeners(dataAPI api.DataAPI, apiDomain string, dispatcher *dispatch.Dispatcher, taggingClient tagging.Client) {
 	dispatcher.SubscribeAsync(func(ev *doctor_treatment_plan.TreatmentPlanSubmittedEvent) error {
 		// check for any submitted/treated visits for the case
 		states := common.SubmittedPatientVisitStates()
@@ -33,6 +37,14 @@ func InitListeners(dataAPI api.DataAPI, apiDomain string, dispatcher *dispatch.D
 				ev.TreatmentPlan.PatientID, visit); err != nil {
 				return err
 			}
+		}
+
+		doctor, err := dataAPI.Doctor(ev.TreatmentPlan.DoctorID.Int64(), true)
+		if err != nil {
+			return fmt.Errorf("When attempting to get doctor to tag case: %v", err)
+		}
+		if err := tagging.ApplyCaseTag(taggingClient, "doctor:"+firstInitialLastName(doctor.FirstName, doctor.LastName), ev.TreatmentPlan.PatientCaseID.Int64(), nil, tagging.TONone); err != nil {
+			return fmt.Errorf("%v", err)
 		}
 		return nil
 	})
@@ -81,4 +93,13 @@ func createDoctorTransaction(dataAPI api.DataAPI, doctorID, patientID int64, vis
 	}
 
 	return nil
+}
+
+func firstInitialLastName(first, last string) string {
+	var fLast string
+	if first != "" {
+		fLast = first[:1]
+	}
+	fLast += last
+	return fLast
 }

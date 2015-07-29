@@ -7,28 +7,24 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
-	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/tagging"
 )
 
 type diagnosePatientHandler struct {
-	dataAPI       api.DataAPI
-	authAPI       api.AuthAPI
-	dispatcher    *dispatch.Dispatcher
-	taggingClient tagging.Client
+	dataAPI    api.DataAPI
+	authAPI    api.AuthAPI
+	dispatcher *dispatch.Dispatcher
 }
 
-func NewDiagnosePatientHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher, taggingClient tagging.Client) http.Handler {
+func NewDiagnosePatientHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher) http.Handler {
 	cacheInfoForUnsuitableVisit(dataAPI)
 	return httputil.SupportedMethods(apiservice.AuthorizationRequired(
 		&diagnosePatientHandler{
-			dataAPI:       dataAPI,
-			authAPI:       authAPI,
-			dispatcher:    dispatcher,
-			taggingClient: taggingClient,
+			dataAPI:    dataAPI,
+			authAPI:    authAPI,
+			dispatcher: dispatcher,
 		}), httputil.Get, httputil.Post)
 }
 
@@ -235,26 +231,5 @@ func (d *diagnosePatientHandler) diagnosePatient(w http.ResponseWriter, r *http.
 		})
 	}
 
-	// Tag the case appropriately but don't block the case diagnosis
-	conc.Go(func() {
-		doctor, err := d.dataAPI.Doctor(doctorID, true)
-		if err != nil {
-			golog.Errorf("When attempting to get doctor to tag case: %v", err)
-			return
-		}
-		if err := tagging.ApplyCaseTag(d.taggingClient, "doctor:"+firstInitialLastName(doctor.FirstName, doctor.LastName), patientVisit.PatientCaseID.Int64(), nil, tagging.TONone); err != nil {
-			golog.Errorf("%v", err)
-		}
-	})
-
 	apiservice.WriteJSONSuccess(w)
-}
-
-func firstInitialLastName(first, last string) string {
-	var fLast string
-	if first != "" {
-		fLast = first[:1]
-	}
-	fLast += last
-	return fLast
 }
