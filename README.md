@@ -230,6 +230,18 @@ server needs, and try installing those.
 
 > The admin website will be at: https://www.spruce.loc:8443/admin/
 
+### Flow (Static Type Checker)
+
+Flow is a static type checker for JavaScript. It runs in our integration tests, so it's important that pull requests pass its checks before merge.
+
+During development, you can run a built-in routine to automatically run flow each time a file is saved:
+
+1. `cd` to `resources/app`
+2. `flow start --lib libs-flow`
+3. It takes about 25 seconds (at the time of this writing) to do the intial check. Checks there after will be much faster.
+4. While the server is running, just enter `flow` in the terminal to see the current list of errors.
+5. `flow stop` to stop the flow routine
+
 Events setup (optional)
 ---------------------------------
 
