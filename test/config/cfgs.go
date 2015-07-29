@@ -65,3 +65,19 @@ var MinorTriagedEmailDisabled = &cfg.ValueDef{
 	Type:        cfg.ValueTypeBool,
 	Default:     false,
 }
+
+// ParentWelcomeEmailEnabled allows a user to enable or disable the email welcoming parents post consent.
+var ParentWelcomeEmailEnabled = &cfg.ValueDef{
+	Name:        "Email.Campaign.Parent.Welcome.Enabled",
+	Description: "Enable or disable the email welcoming parents after consenting.",
+	Type:        cfg.ValueTypeBool,
+	Default:     true,
+}
+
+// ParentWelcomeEmailDisabled allows a user to enable or disable the email welcoming parents post consent.
+var ParentWelcomeEmailDisabled = &cfg.ValueDef{
+	Name:        "Email.Campaign.Parent.Welcome.Enabled",
+	Description: "Enable or disable the email welcoming parents after consenting.",
+	Type:        cfg.ValueTypeBool,
+	Default:     false,
+}
