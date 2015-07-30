@@ -8,7 +8,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
-func (d *DataService) CreateTrainingCaseSet(status string) (int64, error) {
+func (d *dataService) CreateTrainingCaseSet(status string) (int64, error) {
 	res, err := d.db.Exec(`
 		INSERT INTO training_case_set (status)
 		VALUES (?)`, status)
@@ -19,7 +19,7 @@ func (d *DataService) CreateTrainingCaseSet(status string) (int64, error) {
 	return res.LastInsertId()
 }
 
-func (d *DataService) ClaimTrainingSet(doctorID int64, pathwayTag string) error {
+func (d *dataService) ClaimTrainingSet(doctorID int64, pathwayTag string) error {
 	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
 	if err != nil {
 		return err
@@ -153,7 +153,7 @@ func (d *DataService) ClaimTrainingSet(doctorID int64, pathwayTag string) error 
 	return tx.Commit()
 }
 
-func (d *DataService) QueueTrainingCase(tCase *common.TrainingCase) error {
+func (d *dataService) QueueTrainingCase(tCase *common.TrainingCase) error {
 	_, err := d.db.Exec(`
 		INSERT INTO training_case
 		(training_case_set_id, patient_visit_id, template_name) 
@@ -161,12 +161,12 @@ func (d *DataService) QueueTrainingCase(tCase *common.TrainingCase) error {
 	return err
 }
 
-func (d *DataService) UpdateTrainingCaseSetStatus(id int64, status string) error {
+func (d *dataService) UpdateTrainingCaseSetStatus(id int64, status string) error {
 	_, err := d.db.Exec(`UPDATE training_case_set SET status = ? WHERE id = ?`, status, id)
 	return err
 }
 
-func (d *DataService) TrainingCaseSetCount(status string) (int, error) {
+func (d *dataService) TrainingCaseSetCount(status string) (int, error) {
 	var count int
 	err := d.db.QueryRow(`SELECT count(*) from training_case_set where status = ?`, status).Scan(&count)
 	if err != nil {

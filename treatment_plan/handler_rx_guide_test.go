@@ -35,7 +35,7 @@ func (m mockedDataAPIHandlerRXGuide) QueryDrugDetails(query *api.DrugDetailsQuer
 func TestHandlerRXGuideRequiresParams(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	rxGuideHandler := NewRXGuideHandler(mockedDataAPIHandlerRXGuide{DataAPI: &api.DataService{}})
+	rxGuideHandler := NewRXGuideHandler(mockedDataAPIHandlerRXGuide{})
 	handler := test_handler.MockHandler{
 		H: rxGuideHandler,
 	}
@@ -47,7 +47,7 @@ func TestHandlerRXGuideRequiresParams(t *testing.T) {
 func TestHandlerRXGuideSuccess(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?generic_name=generic_name&route=route&dosage=dosage", nil)
 	test.OK(t, err)
-	dataAPI := mockedDataAPIHandlerRXGuide{DataAPI: &api.DataService{}}
+	dataAPI := mockedDataAPIHandlerRXGuide{}
 	rxGuideHandler := NewRXGuideHandler(dataAPI)
 	handler := test_handler.MockHandler{
 		H: rxGuideHandler,

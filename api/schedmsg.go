@@ -12,7 +12,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
-func (d *DataService) CreateScheduledMessage(msg *common.ScheduledMessage) (int64, error) {
+func (d *dataService) CreateScheduledMessage(msg *common.ScheduledMessage) (int64, error) {
 	return createScheduledMessage(d.db, msg)
 }
 
@@ -47,7 +47,7 @@ func deleteScheduledMessage(db db, id int64) error {
 	return err
 }
 
-func (d *DataService) ScheduledMessage(id int64, messageTypes map[string]reflect.Type) (*common.ScheduledMessage, error) {
+func (d *dataService) ScheduledMessage(id int64, messageTypes map[string]reflect.Type) (*common.ScheduledMessage, error) {
 	var scheduledMsg common.ScheduledMessage
 	var msgType string
 	var msgJSON []byte
@@ -87,7 +87,7 @@ func (d *DataService) ScheduledMessage(id int64, messageTypes map[string]reflect
 	return &scheduledMsg, nil
 }
 
-func (d *DataService) CreateScheduledMessageTemplate(template *common.ScheduledMessageTemplate) error {
+func (d *dataService) CreateScheduledMessageTemplate(template *common.ScheduledMessageTemplate) error {
 	if template == nil {
 		return errors.New("No scheduled message template specified")
 	}
@@ -100,7 +100,7 @@ func (d *DataService) CreateScheduledMessageTemplate(template *common.ScheduledM
 	return err
 }
 
-func (d *DataService) UpdateScheduledMessageTemplate(template *common.ScheduledMessageTemplate) error {
+func (d *dataService) UpdateScheduledMessageTemplate(template *common.ScheduledMessageTemplate) error {
 	if template == nil {
 		return errors.New("No scheduled message template specified")
 	}
@@ -113,7 +113,7 @@ func (d *DataService) UpdateScheduledMessageTemplate(template *common.ScheduledM
 	return err
 }
 
-func (d *DataService) ScheduledMessageTemplate(id int64) (*common.ScheduledMessageTemplate, error) {
+func (d *dataService) ScheduledMessageTemplate(id int64) (*common.ScheduledMessageTemplate, error) {
 	var scheduledMessageTemplate common.ScheduledMessageTemplate
 	err := d.db.QueryRow(`
 		SELECT id, name, event, message, schedule_period, created
@@ -135,7 +135,7 @@ func (d *DataService) ScheduledMessageTemplate(id int64) (*common.ScheduledMessa
 	return &scheduledMessageTemplate, nil
 }
 
-func (d *DataService) ListScheduledMessageTemplates() ([]*common.ScheduledMessageTemplate, error) {
+func (d *dataService) ListScheduledMessageTemplates() ([]*common.ScheduledMessageTemplate, error) {
 	rows, err := d.db.Query(`
 		SELECT id, name, event, message, schedule_period, created
 		FROM scheduled_message_template`)
@@ -162,12 +162,12 @@ func (d *DataService) ListScheduledMessageTemplates() ([]*common.ScheduledMessag
 	return scheduledMessageTemplates, rows.Err()
 }
 
-func (d *DataService) DeleteScheduledMessageTemplate(id int64) error {
+func (d *dataService) DeleteScheduledMessageTemplate(id int64) error {
 	_, err := d.db.Exec(`DELETE FROM scheduled_message_template WHERE id = ?`, id)
 	return err
 }
 
-func (d *DataService) ScheduledMessageTemplates(eventType string) ([]*common.ScheduledMessageTemplate, error) {
+func (d *dataService) ScheduledMessageTemplates(eventType string) ([]*common.ScheduledMessageTemplate, error) {
 	var scheduledMessageTemplates []*common.ScheduledMessageTemplate
 	rows, err := d.db.Query(`
 		SELECT id, name, event, schedule_period, message, created
@@ -195,7 +195,7 @@ func (d *DataService) ScheduledMessageTemplates(eventType string) ([]*common.Sch
 	return scheduledMessageTemplates, rows.Err()
 }
 
-func (d *DataService) RandomlyPickAndStartProcessingScheduledMessage(messageTypes map[string]reflect.Type) (*common.ScheduledMessage, error) {
+func (d *dataService) RandomlyPickAndStartProcessingScheduledMessage(messageTypes map[string]reflect.Type) (*common.ScheduledMessage, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return nil, err
@@ -258,7 +258,7 @@ func (d *DataService) RandomlyPickAndStartProcessingScheduledMessage(messageType
 	return d.ScheduledMessage(msgID, messageTypes)
 }
 
-func (d *DataService) UpdateScheduledMessage(id int64, status common.ScheduledMessageStatus) error {
+func (d *dataService) UpdateScheduledMessage(id int64, status common.ScheduledMessageStatus) error {
 	_, err := d.db.Exec(`UPDATE scheduled_message SET status = ? WHERE id = ?`, status.String(), id)
 	return err
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
-func (d *DataService) AnswersForQuestions(questionIDs []int64, info IntakeInfo) (answerIntakes map[int64][]common.Answer, err error) {
+func (d *dataService) AnswersForQuestions(questionIDs []int64, info IntakeInfo) (answerIntakes map[int64][]common.Answer, err error) {
 	if len(questionIDs) == 0 {
 		return nil, nil
 	}
@@ -30,7 +30,7 @@ func (d *DataService) AnswersForQuestions(questionIDs []int64, info IntakeInfo) 
 		AND `+info.Role().Column+` = ? and `+info.Context().Column+` = ?`, vals...)
 }
 
-func (d *DataService) PreviousPatientAnswersForQuestions(
+func (d *dataService) PreviousPatientAnswersForQuestions(
 	questionTags []string,
 	patientID int64,
 	beforeTime time.Time) (map[string][]common.Answer, error) {
@@ -106,7 +106,7 @@ func (d *DataService) PreviousPatientAnswersForQuestions(
 	return questionTagToAnswersMap, nil
 }
 
-func (d *DataService) StoreAnswersForIntakes(intakes []IntakeInfo) error {
+func (d *dataService) StoreAnswersForIntakes(intakes []IntakeInfo) error {
 	if len(intakes) == 0 {
 		return nil
 	}
@@ -124,7 +124,7 @@ func (d *DataService) StoreAnswersForIntakes(intakes []IntakeInfo) error {
 	return tx.Commit()
 }
 
-func (d *DataService) StorePhotoSectionsForQuestion(
+func (d *dataService) StorePhotoSectionsForQuestion(
 	questionID, patientID, patientVisitID int64,
 	sessionID string,
 	sessionCounter uint,
@@ -232,7 +232,7 @@ func (d *DataService) StorePhotoSectionsForQuestion(
 	return errors.Trace(tx.Commit())
 }
 
-func (d *DataService) PatientPhotoSectionsForQuestionIDs(
+func (d *dataService) PatientPhotoSectionsForQuestionIDs(
 	questionIDs []int64,
 	patientID,
 	patientVisitID int64) (map[int64][]common.Answer, error) {
@@ -315,7 +315,7 @@ func (d *DataService) PatientPhotoSectionsForQuestionIDs(
 	return photoSectionsByQuestion, nil
 }
 
-func (d *DataService) storeAnswers(tx *sql.Tx, infos []IntakeInfo) error {
+func (d *dataService) storeAnswers(tx *sql.Tx, infos []IntakeInfo) error {
 
 	// optimization: keep track of the different variations
 	// of the prepared statements so as to ensure to create
@@ -535,7 +535,7 @@ func insertAnswersForSubQuestions(
 	return err
 }
 
-func (d *DataService) getAnswersForQuestionsBasedOnQuery(query string, args ...interface{}) (map[int64][]common.Answer, error) {
+func (d *dataService) getAnswersForQuestionsBasedOnQuery(query string, args ...interface{}) (map[int64][]common.Answer, error) {
 	rows, err := d.db.Query(query, args...)
 	if err != nil {
 		return nil, err

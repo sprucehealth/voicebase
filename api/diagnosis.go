@@ -11,7 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
-func (d *DataService) DiagnosesThatHaveDetails(codeIDs []string) (map[string]bool, error) {
+func (d *dataService) DiagnosesThatHaveDetails(codeIDs []string) (map[string]bool, error) {
 	if len(codeIDs) == 0 {
 		return nil, nil
 	}
@@ -38,7 +38,7 @@ func (d *DataService) DiagnosesThatHaveDetails(codeIDs []string) (map[string]boo
 	return codeIDsWithIntake, rows.Err()
 }
 
-func (d *DataService) LayoutVersionIDsForDiagnosisCodes(codes map[string]*common.Version) (map[string]int64, error) {
+func (d *dataService) LayoutVersionIDsForDiagnosisCodes(codes map[string]*common.Version) (map[string]int64, error) {
 	if len(codes) == 0 {
 		return nil, nil
 	}
@@ -74,7 +74,7 @@ func (d *DataService) LayoutVersionIDsForDiagnosisCodes(codes map[string]*common
 	return layoutVersionIDs, nil
 }
 
-func (d *DataService) ActiveDiagnosisDetailsIntakeVersion(codeID string) (*common.Version, error) {
+func (d *dataService) ActiveDiagnosisDetailsIntakeVersion(codeID string) (*common.Version, error) {
 	var version common.Version
 	err := d.db.QueryRow(`
 		SELECT major, minor, patch
@@ -91,7 +91,7 @@ func (d *DataService) ActiveDiagnosisDetailsIntakeVersion(codeID string) (*commo
 	return &version, nil
 }
 
-func (d *DataService) ActiveDiagnosisDetailsIntake(codeID string, types map[string]reflect.Type) (*common.DiagnosisDetailsIntake, error) {
+func (d *dataService) ActiveDiagnosisDetailsIntake(codeID string, types map[string]reflect.Type) (*common.DiagnosisDetailsIntake, error) {
 	row := d.db.QueryRow(`
 		SELECT dq.id, type, layout, diagnosis_code_id, major, minor, patch, active, created
 		FROM diagnosis_details_layout as dq
@@ -99,7 +99,7 @@ func (d *DataService) ActiveDiagnosisDetailsIntake(codeID string, types map[stri
 	return scanDiagnosisDetailsIntake(row, types)
 }
 
-func (d *DataService) DetailsIntakeVersionForDiagnoses(codeIDs []string) (map[string]*common.Version, error) {
+func (d *dataService) DetailsIntakeVersionForDiagnoses(codeIDs []string) (map[string]*common.Version, error) {
 	if len(codeIDs) == 0 {
 		return nil, nil
 	}
@@ -133,7 +133,7 @@ func (d *DataService) DetailsIntakeVersionForDiagnoses(codeIDs []string) (map[st
 	return layoutVersions, rows.Err()
 }
 
-func (d *DataService) DiagnosisDetailsIntake(ids []int64, types map[string]reflect.Type) (map[int64]*common.DiagnosisDetailsIntake, error) {
+func (d *dataService) DiagnosisDetailsIntake(ids []int64, types map[string]reflect.Type) (map[int64]*common.DiagnosisDetailsIntake, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -216,7 +216,7 @@ func scanDiagnosisDetailsIntake(row *sql.Row, types map[string]reflect.Type) (*c
 	return &dqi, nil
 }
 
-func (d *DataService) SetDiagnosisDetailsIntake(template, info *common.DiagnosisDetailsIntake) error {
+func (d *dataService) SetDiagnosisDetailsIntake(template, info *common.DiagnosisDetailsIntake) error {
 	// validation
 	if template.CodeID == "" {
 		return errors.New("CodeID not specified")
@@ -313,7 +313,7 @@ func (d *DataService) SetDiagnosisDetailsIntake(template, info *common.Diagnosis
 	return tx.Commit()
 }
 
-func (d *DataService) CommonDiagnosisSet(pathwayTag string) (string, []string, error) {
+func (d *dataService) CommonDiagnosisSet(pathwayTag string) (string, []string, error) {
 	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
 	if err != nil {
 		return "", nil, err
@@ -352,7 +352,7 @@ func (d *DataService) CommonDiagnosisSet(pathwayTag string) (string, []string, e
 	return title, diagnosisCodeIDs, rows.Err()
 }
 
-func (d *DataService) PatchCommonDiagnosisSet(pathwayTag string, patch *DiagnosisSetPatch) error {
+func (d *dataService) PatchCommonDiagnosisSet(pathwayTag string, patch *DiagnosisSetPatch) error {
 	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
 	if err != nil {
 		return err

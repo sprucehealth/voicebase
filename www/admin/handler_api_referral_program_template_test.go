@@ -50,7 +50,6 @@ func TestReferralProgramTemplateHandlerGETQueriesDataLayer(t *testing.T) {
 	test.OK(t, err)
 	template := &common.ReferralProgramTemplate{Created: time.Now()}
 	mh := &mockedDataAPI_referralProgramTemplateHandler{
-		DataAPI:                  &api.DataService{},
 		referralProgramTemplates: []*common.ReferralProgramTemplate{template},
 	}
 	handler := newReferralProgramTemplateHandler(mh)
@@ -68,7 +67,6 @@ func TestReferralProgramTemplateHandlerGETQueriesDataLayerParams(t *testing.T) {
 	test.OK(t, err)
 	template := &common.ReferralProgramTemplate{Created: time.Now()}
 	mh := &mockedDataAPI_referralProgramTemplateHandler{
-		DataAPI:                  &api.DataService{},
 		referralProgramTemplates: []*common.ReferralProgramTemplate{template},
 	}
 	handler := newReferralProgramTemplateHandler(mh)
@@ -94,7 +92,6 @@ func TestReferralProgramTemplateHandlerPOSTQueriesDataLayer(t *testing.T) {
 	r, err := http.NewRequest("POST", "mock.api.request?", bytes.NewReader(req))
 	test.OK(t, err)
 	mh := &mockedDataAPI_referralProgramTemplateHandler{
-		DataAPI: &api.DataService{},
 		promotion: &common.Promotion{
 			Data:    promotions.NewMoneyOffVisitPromotion(1000, "group", "displayMsg", "shortMsg", "successMsg", "", 0, 0, true),
 			Created: time.Now(),
@@ -117,7 +114,6 @@ func TestReferralProgramTemplateHandlerPOSTParamsRequired(t *testing.T) {
 	r, err := http.NewRequest("POST", "mock.api.request?", bytes.NewReader(req))
 	test.OK(t, err)
 	mh := &mockedDataAPI_referralProgramTemplateHandler{
-		DataAPI:   &api.DataService{},
 		promotion: &common.Promotion{Data: &TestTyped{Name: "TestType"}, Created: time.Now()},
 	}
 	handler := newReferralProgramTemplateHandler(mh)

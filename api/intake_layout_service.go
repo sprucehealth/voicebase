@@ -12,7 +12,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
-func (d *DataService) GetQuestionType(questionID int64) (string, error) {
+func (d *dataService) GetQuestionType(questionID int64) (string, error) {
 	var questionType string
 	err := d.db.QueryRow(
 		`SELECT question_type FROM question
@@ -20,7 +20,7 @@ func (d *DataService) GetQuestionType(questionID int64) (string, error) {
 	return questionType, err
 }
 
-func (d *DataService) IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMinor int, pathwayID int64, skuType string) ([]byte, int64, error) {
+func (d *dataService) IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMinor int, pathwayID int64, skuType string) ([]byte, int64, error) {
 
 	skuID, err := d.skuIDFromType(skuType)
 	if err != nil {
@@ -79,7 +79,7 @@ func (d *DataService) IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMino
 	return layout, layoutVersionID, nil
 }
 
-func (d *DataService) ReviewLayoutForIntakeLayoutVersionID(layoutVersionID, pathwayID int64, skuType string) ([]byte, int64, error) {
+func (d *dataService) ReviewLayoutForIntakeLayoutVersionID(layoutVersionID, pathwayID int64, skuType string) ([]byte, int64, error) {
 	// identify the MAJOR, MINOR id of the given layoutVersionID
 	var intakeMajor, intakeMinor int
 	if err := d.db.QueryRow(`
@@ -94,7 +94,7 @@ func (d *DataService) ReviewLayoutForIntakeLayoutVersionID(layoutVersionID, path
 	return d.ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMinor, pathwayID, skuType)
 }
 
-func (d *DataService) ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMinor int, pathwayID int64, skuType string) ([]byte, int64, error) {
+func (d *dataService) ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMinor int, pathwayID int64, skuType string) ([]byte, int64, error) {
 	skuID, err := d.skuIDFromType(skuType)
 	if err != nil {
 		return nil, 0, err
@@ -152,7 +152,7 @@ func (d *DataService) ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMino
 	return layout, layoutVersionID, nil
 }
 
-func (d *DataService) IntakeLayoutForAppVersion(appVersion *common.Version, platform common.Platform, pathwayID, languageID int64, skuType string) ([]byte, int64, error) {
+func (d *dataService) IntakeLayoutForAppVersion(appVersion *common.Version, platform common.Platform, pathwayID, languageID int64, skuType string) ([]byte, int64, error) {
 
 	if appVersion == nil || appVersion.IsZero() {
 		return nil, 0, errors.New("No app version specified")
@@ -189,7 +189,7 @@ func (d *DataService) IntakeLayoutForAppVersion(appVersion *common.Version, plat
 	return layout, layoutVersionID, nil
 }
 
-func (d *DataService) majorLayoutVersionSupportedByAppVersion(appVersion *common.Version, platform common.Platform, pathwayID int64, role, purpose string, skuType string) (int, error) {
+func (d *dataService) majorLayoutVersionSupportedByAppVersion(appVersion *common.Version, platform common.Platform, pathwayID int64, role, purpose string, skuType string) (int, error) {
 	skuID, err := d.skuIDFromType(skuType)
 	if err != nil {
 		return 0, err
@@ -224,7 +224,7 @@ func (d *DataService) majorLayoutVersionSupportedByAppVersion(appVersion *common
 	return intakeMajor, nil
 }
 
-func (d *DataService) IntakeLayoutVersionIDForAppVersion(appVersion *common.Version, platform common.Platform, pathwayID, languageID int64, skuType string) (int64, error) {
+func (d *dataService) IntakeLayoutVersionIDForAppVersion(appVersion *common.Version, platform common.Platform, pathwayID, languageID int64, skuType string) (int64, error) {
 	if appVersion == nil || appVersion.IsZero() {
 		return 0, errors.New("No app version specified")
 	}
@@ -258,7 +258,7 @@ func (d *DataService) IntakeLayoutVersionIDForAppVersion(appVersion *common.Vers
 	return layoutVersionID, nil
 }
 
-func (d *DataService) GetActiveDoctorDiagnosisLayout(pathwayID int64) (*LayoutVersion, error) {
+func (d *dataService) GetActiveDoctorDiagnosisLayout(pathwayID int64) (*LayoutVersion, error) {
 	var layoutVersion LayoutVersion
 	err := d.db.QueryRow(`
 		SELECT diagnosis_layout_version.id, layout, layout_version_id, major, minor, patch
@@ -276,7 +276,7 @@ func (d *DataService) GetActiveDoctorDiagnosisLayout(pathwayID int64) (*LayoutVe
 	return &layoutVersion, nil
 }
 
-func (d *DataService) CreateLayoutMapping(intakeMajor, intakeMinor, reviewMajor, reviewMinor int, pathwayID int64, skuType string) error {
+func (d *dataService) CreateLayoutMapping(intakeMajor, intakeMinor, reviewMajor, reviewMinor int, pathwayID int64, skuType string) error {
 	skuID, err := d.skuIDFromType(skuType)
 	if err != nil {
 		return err
@@ -289,7 +289,7 @@ func (d *DataService) CreateLayoutMapping(intakeMajor, intakeMinor, reviewMajor,
 	return err
 }
 
-func (d *DataService) CreateAppVersionMapping(appVersion *common.Version, platform common.Platform,
+func (d *dataService) CreateAppVersionMapping(appVersion *common.Version, platform common.Platform,
 	layoutMajor int, role, purpose string, pathwayID int64, skuType string) error {
 
 	if appVersion == nil || appVersion.IsZero() {
@@ -310,7 +310,7 @@ func (d *DataService) CreateAppVersionMapping(appVersion *common.Version, platfo
 	return err
 }
 
-func (d *DataService) GetLayoutVersionIDOfActiveDiagnosisLayout(pathwayID int64) (int64, error) {
+func (d *dataService) GetLayoutVersionIDOfActiveDiagnosisLayout(pathwayID int64) (int64, error) {
 	var layoutVersionID int64
 	err := d.db.QueryRow(`
 		SELECT layout_version_id
@@ -325,7 +325,7 @@ func (d *DataService) GetLayoutVersionIDOfActiveDiagnosisLayout(pathwayID int64)
 
 }
 
-func (d *DataService) getActiveDoctorLayoutForPurpose(pathwayID int64, purpose string) ([]byte, int64, error) {
+func (d *dataService) getActiveDoctorLayoutForPurpose(pathwayID int64, purpose string) ([]byte, int64, error) {
 	var layoutBlob []byte
 	var layoutVersionID int64
 	row := d.db.QueryRow(`
@@ -342,7 +342,7 @@ func (d *DataService) getActiveDoctorLayoutForPurpose(pathwayID int64, purpose s
 	return layoutBlob, layoutVersionID, err
 }
 
-func (d *DataService) GetPatientLayout(layoutVersionID, languageID int64) (*LayoutVersion, error) {
+func (d *dataService) GetPatientLayout(layoutVersionID, languageID int64) (*LayoutVersion, error) {
 	var layoutVersion LayoutVersion
 	err := d.db.QueryRow(`
 		SELECT patient_layout_version.id, layout, layout_version_id, major, minor, patch
@@ -359,7 +359,7 @@ func (d *DataService) GetPatientLayout(layoutVersionID, languageID int64) (*Layo
 	return &layoutVersion, nil
 }
 
-func (d *DataService) LayoutTemplateVersionBeyondVersion(versionInfo *VersionInfo, role, purpose string, pathwayID int64, skuID *int64) (*LayoutTemplateVersion, error) {
+func (d *dataService) LayoutTemplateVersionBeyondVersion(versionInfo *VersionInfo, role, purpose string, pathwayID int64, skuID *int64) (*LayoutTemplateVersion, error) {
 	cols := make([]string, 0, 8)
 	vals := make([]interface{}, 0, 9)
 	cols = append(cols, "layout_purpose = ?", "role = ?", "status in (?, ?)", "clinical_pathway_id = ?")
@@ -408,7 +408,7 @@ func (d *DataService) LayoutTemplateVersionBeyondVersion(versionInfo *VersionInf
 	return &layoutVersion, nil
 }
 
-func (d *DataService) CreateLayoutTemplateVersion(layout *LayoutTemplateVersion) error {
+func (d *dataService) CreateLayoutTemplateVersion(layout *LayoutTemplateVersion) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -444,7 +444,7 @@ func (d *DataService) CreateLayoutTemplateVersion(layout *LayoutTemplateVersion)
 	return tx.Commit()
 }
 
-func (d *DataService) CreateLayoutVersion(layout *LayoutVersion) error {
+func (d *dataService) CreateLayoutVersion(layout *LayoutVersion) error {
 	var tableName string
 	cols := []string{"major", "minor", "patch", "layout_version_id", "clinical_pathway_id", "language_id", "status"}
 	vals := []interface{}{layout.Version.Major, layout.Version.Minor, layout.Version.Patch, layout.LayoutTemplateVersionID,
@@ -502,7 +502,7 @@ func (d *DataService) CreateLayoutVersion(layout *LayoutVersion) error {
 	return errors.Trace(tx.Commit())
 }
 
-func (d *DataService) UpdateActiveLayouts(purpose string, version *common.Version, layoutTemplateID int64, clientLayoutIDs []int64,
+func (d *dataService) UpdateActiveLayouts(purpose string, version *common.Version, layoutTemplateID int64, clientLayoutIDs []int64,
 	pathwayID int64, skuID *int64) error {
 	var tableName string
 
@@ -607,7 +607,7 @@ func (d *DataService) UpdateActiveLayouts(purpose string, version *common.Versio
 	return tx.Commit()
 }
 
-func (d *DataService) GetSectionIDsForPathway(pathwayID int64) ([]int64, error) {
+func (d *dataService) GetSectionIDsForPathway(pathwayID int64) ([]int64, error) {
 	rows, err := d.db.Query(`SELECT id FROM section WHERE clinical_pathway_id = ?`, pathwayID)
 	if err != nil {
 		return nil, err
@@ -625,7 +625,7 @@ func (d *DataService) GetSectionIDsForPathway(pathwayID int64) ([]int64, error) 
 	return sectionIDs, rows.Err()
 }
 
-func (d *DataService) GetSectionInfo(sectionTag string, languageID int64) (id int64, title string, err error) {
+func (d *dataService) GetSectionInfo(sectionTag string, languageID int64) (id int64, title string, err error) {
 	err = d.db.QueryRow(`
 		SELECT section.id, ltext
 		FROM section
@@ -653,7 +653,7 @@ type AnswerQueryParams struct {
 	LanguageID int64
 }
 
-func (d *DataService) VersionedPhotoSlots(questionID, languageID int64) ([]*common.VersionedPhotoSlot, error) {
+func (d *dataService) VersionedPhotoSlots(questionID, languageID int64) ([]*common.VersionedPhotoSlot, error) {
 	rows, err := d.db.Query(
 		`SELECT id, name_text, photo_slot_type, required, client_data, ordering, status, language_id, question_id FROM photo_slot
 			WHERE question_id = ?
@@ -674,11 +674,11 @@ func (d *DataService) VersionedPhotoSlots(questionID, languageID int64) ([]*comm
 	return photoSlots, rows.Err()
 }
 
-func (d *DataService) InsertVersionedPhotoSlot(vps *common.VersionedPhotoSlot) (int64, error) {
+func (d *dataService) InsertVersionedPhotoSlot(vps *common.VersionedPhotoSlot) (int64, error) {
 	return d.insertVersionedPhotoSlot(d.db, vps)
 }
 
-func (d *DataService) insertVersionedPhotoSlot(db db, vps *common.VersionedPhotoSlot) (int64, error) {
+func (d *dataService) insertVersionedPhotoSlot(db db, vps *common.VersionedPhotoSlot) (int64, error) {
 	res, err := db.Exec(`
 		INSERT INTO photo_slot
 			(question_id, required, status, ordering, language_id, name_text, photo_slot_type, client_data)
@@ -694,7 +694,7 @@ func (d *DataService) insertVersionedPhotoSlot(db db, vps *common.VersionedPhoto
 }
 
 // VersionedQuestionFromID retrieves a single record from the question table relating to a specific versioned answer
-func (d *DataService) VersionedQuestionFromID(id int64) (*common.VersionedQuestion, error) {
+func (d *dataService) VersionedQuestionFromID(id int64) (*common.VersionedQuestion, error) {
 	vq := &common.VersionedQuestion{}
 	var parentID sql.NullInt64
 	var err error
@@ -717,7 +717,7 @@ func (d *DataService) VersionedQuestionFromID(id int64) (*common.VersionedQuesti
 }
 
 // VersionedQuestions retrieves a set of records from the question table relating to a specific set of versioned questions based on versioning info
-func (d *DataService) VersionedQuestions(questionQueryParams []*QuestionQueryParams) ([]*common.VersionedQuestion, error) {
+func (d *dataService) VersionedQuestions(questionQueryParams []*QuestionQueryParams) ([]*common.VersionedQuestion, error) {
 	if len(questionQueryParams) == 0 {
 		return nil, nil
 	}
@@ -757,7 +757,7 @@ func (d *DataService) VersionedQuestions(questionQueryParams []*QuestionQueryPar
 	return versionedQuestions, nil
 }
 
-func (d *DataService) InsertVersionedQuestion(vq *common.VersionedQuestion, vas []*common.VersionedAnswer, vpss []*common.VersionedPhotoSlot, vaqf *common.VersionedAdditionalQuestionField) (int64, error) {
+func (d *dataService) InsertVersionedQuestion(vq *common.VersionedQuestion, vas []*common.VersionedAnswer, vpss []*common.VersionedPhotoSlot, vaqf *common.VersionedAdditionalQuestionField) (int64, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, err
@@ -779,7 +779,7 @@ func (d *DataService) InsertVersionedQuestion(vq *common.VersionedQuestion, vas 
 }
 
 // InsertVersionedQuestion inserts a new versioned question
-func (d *DataService) insertVersionedQuestionWithVersionedParents(db db, vq *common.VersionedQuestion, vas []*common.VersionedAnswer, vpss []*common.VersionedPhotoSlot, vaqf *common.VersionedAdditionalQuestionField) (int64, error) {
+func (d *dataService) insertVersionedQuestionWithVersionedParents(db db, vq *common.VersionedQuestion, vas []*common.VersionedAnswer, vpss []*common.VersionedPhotoSlot, vaqf *common.VersionedAdditionalQuestionField) (int64, error) {
 	if vq.ParentQuestionID != nil && *vq.ParentQuestionID != 0 {
 		pvq, err := d.VersionedQuestionFromID(*vq.ParentQuestionID)
 		if err != nil {
@@ -844,7 +844,7 @@ func (d *DataService) insertVersionedQuestionWithVersionedParents(db db, vq *com
 }
 
 // QuestionIDFromTag returns the id of described question
-func (d *DataService) QuestionIDFromTag(questionTag string, languageID, version int64) (int64, error) {
+func (d *dataService) QuestionIDFromTag(questionTag string, languageID, version int64) (int64, error) {
 	var id int64
 	err := d.db.QueryRow(`SELECT id FROM question WHERE question_tag = ? AND language_id = ? AND version = ?`, questionTag, languageID, version).Scan(&id)
 	if err != nil {
@@ -858,7 +858,7 @@ func (d *DataService) QuestionIDFromTag(questionTag string, languageID, version 
 }
 
 // MaxQuestionVersion returns the latest version of the described question
-func (d *DataService) MaxQuestionVersion(questionTag string, languageID int64) (int64, error) {
+func (d *dataService) MaxQuestionVersion(questionTag string, languageID int64) (int64, error) {
 	var maxVersion sql.NullInt64
 	err := d.db.QueryRow(`SELECT MAX(version) max FROM question WHERE question_tag = ? AND language_id = ?`, questionTag, languageID).Scan(&maxVersion)
 	if err != nil {
@@ -869,7 +869,7 @@ func (d *DataService) MaxQuestionVersion(questionTag string, languageID int64) (
 
 // insertVersionedQuestionInTransaction inserts and auto versions the related question set if one is related
 // NOTE: Any values in the ID or VERSION fields will be ignored
-func (d *DataService) insertVersionedQuestion(db db, versionedQuestion *common.VersionedQuestion) (int64, error) {
+func (d *dataService) insertVersionedQuestion(db db, versionedQuestion *common.VersionedQuestion) (int64, error) {
 	// Note: This initial version does not take into account concurrent modifiers or perform retries.
 	// 	It relies on the constraints and transactional safety to reject the loser during concurrent modification
 	currentVersion, err := d.MaxQuestionVersion(versionedQuestion.QuestionTag, versionedQuestion.LanguageID)
@@ -898,7 +898,7 @@ func (d *DataService) insertVersionedQuestion(db db, versionedQuestion *common.V
 }
 
 // VersionedAnswerFromID retrieves a single record from the potential_answer table relating to a specific versioned answer
-func (d *DataService) VersionedAnswerFromID(id int64) (*common.VersionedAnswer, error) {
+func (d *dataService) VersionedAnswerFromID(id int64) (*common.VersionedAnswer, error) {
 	va := &common.VersionedAnswer{}
 	if err := d.db.QueryRow(
 		`SELECT id, potential_answer_tag, COALESCE(to_alert,0), ordering, question_id, language_id,
@@ -915,12 +915,12 @@ func (d *DataService) VersionedAnswerFromID(id int64) (*common.VersionedAnswer, 
 }
 
 // VersionedAnswers looks up a given set of versioned answer
-func (d *DataService) VersionedAnswers(answerQueryParams []*AnswerQueryParams) ([]*common.VersionedAnswer, error) {
+func (d *dataService) VersionedAnswers(answerQueryParams []*AnswerQueryParams) ([]*common.VersionedAnswer, error) {
 	return d.versionedAnswers(d.db, answerQueryParams)
 }
 
 // versionedAnswersInTransaction looks up a given set of versioned answers in the context of a transaction
-func (d *DataService) versionedAnswers(db db, answerQueryParams []*AnswerQueryParams) ([]*common.VersionedAnswer, error) {
+func (d *dataService) versionedAnswers(db db, answerQueryParams []*AnswerQueryParams) ([]*common.VersionedAnswer, error) {
 	if len(answerQueryParams) == 0 {
 		return nil, nil
 	}
@@ -965,7 +965,7 @@ func (d *DataService) versionedAnswers(db db, answerQueryParams []*AnswerQueryPa
 }
 
 // VersionedAnswerTagsForQuestion returns a unique set of answer tags associated with the given question id
-func (d *DataService) VersionedAnswerTagsForQuestion(questionID int64) ([]string, error) {
+func (d *dataService) VersionedAnswerTagsForQuestion(questionID int64) ([]string, error) {
 	rows, err := d.db.Query(`SELECT DISTINCT(potential_answer_tag) FROM potential_answer WHERE question_id = ?`, questionID)
 	if err != nil {
 		return nil, err
@@ -985,7 +985,7 @@ func (d *DataService) VersionedAnswerTagsForQuestion(questionID int64) ([]string
 }
 
 // insertVersionedAnswer inserts or a new versioned answer record
-func (d *DataService) insertVersionedAnswer(db db, versionedAnswer *common.VersionedAnswer) (int64, error) {
+func (d *dataService) insertVersionedAnswer(db db, versionedAnswer *common.VersionedAnswer) (int64, error) {
 	cols := []string{`potential_answer_tag`, `language_id`, `answer_type`, `ordering`, `question_id`, `status`,
 		`to_alert`, `answer_text`, `answer_summary_text`, `client_data`}
 	vals := []interface{}{versionedAnswer.AnswerTag, versionedAnswer.LanguageID, versionedAnswer.AnswerType, versionedAnswer.Ordering, versionedAnswer.QuestionID, versionedAnswer.Status,
@@ -1000,7 +1000,7 @@ func (d *DataService) insertVersionedAnswer(db db, versionedAnswer *common.Versi
 }
 
 // VersionedAdditionalQuestionFields returns a set of additional fields for the question
-func (d *DataService) VersionedAdditionalQuestionFields(questionID, languageID int64) ([]*common.VersionedAdditionalQuestionField, error) {
+func (d *dataService) VersionedAdditionalQuestionFields(questionID, languageID int64) ([]*common.VersionedAdditionalQuestionField, error) {
 	rows, err := d.db.Query(`SELECT id, question_id, json, language_id FROM additional_question_fields WHERE question_id = ? AND language_id = ?`, questionID, languageID)
 	if err != nil {
 		return nil, err
@@ -1025,7 +1025,7 @@ func (d *DataService) VersionedAdditionalQuestionFields(questionID, languageID i
 	return vaqfs, rows.Err()
 }
 
-func (d *DataService) flattenVersionedAdditionalQuestionFields(vaqfs []*common.VersionedAdditionalQuestionField) (*common.VersionedAdditionalQuestionField, error) {
+func (d *dataService) flattenVersionedAdditionalQuestionFields(vaqfs []*common.VersionedAdditionalQuestionField) (*common.VersionedAdditionalQuestionField, error) {
 	if len(vaqfs) == 0 {
 		return nil, nil
 	}
@@ -1055,7 +1055,7 @@ func (d *DataService) flattenVersionedAdditionalQuestionFields(vaqfs []*common.V
 }
 
 // insertVersionedAdditionalQuestionField inserts a json blob additional question field for the question record
-func (d *DataService) insertVersionedAdditionalQuestionField(db db, vaqf *common.VersionedAdditionalQuestionField) (int64, error) {
+func (d *dataService) insertVersionedAdditionalQuestionField(db db, vaqf *common.VersionedAdditionalQuestionField) (int64, error) {
 	res, err := db.Exec(`INSERT INTO additional_question_fields (question_id, json, language_id) VALUES (?, ?, ?)`, vaqf.QuestionID, vaqf.JSON, vaqf.LanguageID)
 	if err != nil {
 		return 0, err
@@ -1063,7 +1063,7 @@ func (d *DataService) insertVersionedAdditionalQuestionField(db db, vaqf *common
 	return res.LastInsertId()
 }
 
-func (d *DataService) GetQuestionInfo(questionTag string, languageID, version int64) (*info_intake.Question, error) {
+func (d *dataService) GetQuestionInfo(questionTag string, languageID, version int64) (*info_intake.Question, error) {
 	questionInfos, err := d.GetQuestionInfoForTags([]string{questionTag}, languageID)
 	if err != nil {
 		return nil, err
@@ -1073,7 +1073,7 @@ func (d *DataService) GetQuestionInfo(questionTag string, languageID, version in
 	return nil, ErrNotFound("question_info")
 }
 
-func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageID int64) ([]*info_intake.Question, error) {
+func (d *dataService) GetQuestionInfoForTags(questionTags []string, languageID int64) ([]*info_intake.Question, error) {
 	queries := make([]*QuestionQueryParams, len(questionTags))
 	for i, tag := range questionTags {
 		version, err := d.MaxQuestionVersion(tag, languageID)
@@ -1095,7 +1095,7 @@ func (d *DataService) GetQuestionInfoForTags(questionTags []string, languageID i
 	return d.getQuestionInfoForQuestionSet(versionedQuestions, languageID)
 }
 
-func (d *DataService) getQuestionInfoForQuestionSet(versionedQuestions []*common.VersionedQuestion, languageID int64) ([]*info_intake.Question, error) {
+func (d *dataService) getQuestionInfoForQuestionSet(versionedQuestions []*common.VersionedQuestion, languageID int64) ([]*info_intake.Question, error) {
 
 	var questionInfos []*info_intake.Question
 	for _, vq := range versionedQuestions {
@@ -1147,7 +1147,7 @@ func (d *DataService) getQuestionInfoForQuestionSet(versionedQuestions []*common
 	return questionInfos, nil
 }
 
-func (d *DataService) GetAnswerInfo(questionID, languageID int64) ([]*info_intake.PotentialAnswer, error) {
+func (d *dataService) GetAnswerInfo(questionID, languageID int64) ([]*info_intake.PotentialAnswer, error) {
 	versionedAnswers, err := d.VersionedAnswers([]*AnswerQueryParams{&AnswerQueryParams{LanguageID: languageID, QuestionID: questionID}})
 	if err != nil {
 		return nil, err
@@ -1156,7 +1156,7 @@ func (d *DataService) GetAnswerInfo(questionID, languageID int64) ([]*info_intak
 	return getAnswerInfosFromAnswerSet(versionedAnswers)
 }
 
-func (d *DataService) GetAnswerInfoForTags(answerTags []string, languageID int64) ([]*info_intake.PotentialAnswer, error) {
+func (d *dataService) GetAnswerInfoForTags(answerTags []string, languageID int64) ([]*info_intake.PotentialAnswer, error) {
 	params := dbutil.AppendStringsToInterfaceSlice(nil, answerTags)
 	params = append(params, languageID)
 	params = append(params, languageID)
@@ -1252,7 +1252,7 @@ func getAnswerInfosFromAnswerSet(answerSet []*common.VersionedAnswer) ([]*info_i
 	return answerInfos, nil
 }
 
-func (d *DataService) GetSupportedLanguages() ([]string, []int64, error) {
+func (d *dataService) GetSupportedLanguages() ([]string, []int64, error) {
 	rows, err := d.db.Query(`SELECT id,language FROM languages_supported`)
 	if err != nil {
 		return nil, nil, err
@@ -1274,7 +1274,7 @@ func (d *DataService) GetSupportedLanguages() ([]string, []int64, error) {
 	return languagesSupported, languagesSupportedIds, rows.Err()
 }
 
-func (d *DataService) GetPhotoSlotsInfo(questionID, languageID int64) ([]*info_intake.PhotoSlot, error) {
+func (d *dataService) GetPhotoSlotsInfo(questionID, languageID int64) ([]*info_intake.PhotoSlot, error) {
 	versionedPhotoSlots, err := d.VersionedPhotoSlots(questionID, languageID)
 	if err != nil {
 		return nil, err
@@ -1292,7 +1292,7 @@ func (d *DataService) GetPhotoSlotsInfo(questionID, languageID int64) ([]*info_i
 	return photoSlotInfoList, nil
 }
 
-func (d *DataService) LatestAppVersionSupported(pathwayID int64, skuID *int64, platform common.Platform, role, purpose string) (*common.Version, error) {
+func (d *dataService) LatestAppVersionSupported(pathwayID int64, skuID *int64, platform common.Platform, role, purpose string) (*common.Version, error) {
 	var version common.Version
 	vals := []interface{}{pathwayID, platform.String(), role, purpose}
 	whereClause := "clinical_pathway_id = ? AND platform = ? AND role = ? AND purpose = ?"
@@ -1320,7 +1320,7 @@ type LayoutVersionInfo struct {
 	Version       *common.Version
 }
 
-func (d *DataService) LayoutVersions() ([]*LayoutVersionInfo, error) {
+func (d *dataService) LayoutVersions() ([]*LayoutVersionInfo, error) {
 	rows, err := d.db.Query(
 		`SELECT tag, sku.type, layout_purpose, major, minor, patch FROM layout_version
 			JOIN clinical_pathway ON clinical_pathway.id = clinical_pathway_id
@@ -1353,7 +1353,7 @@ func (d *DataService) LayoutVersions() ([]*LayoutVersionInfo, error) {
 	return items, rows.Err()
 }
 
-func (d *DataService) LayoutTemplate(pathway, sku, purpose string, version *common.Version) ([]byte, error) {
+func (d *dataService) LayoutTemplate(pathway, sku, purpose string, version *common.Version) ([]byte, error) {
 	var jsonBytes []byte
 	if err := d.db.QueryRow(`
 		SELECT layout FROM layout_version

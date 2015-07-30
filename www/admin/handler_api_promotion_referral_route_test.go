@@ -28,9 +28,7 @@ func (m *mockedDataAPI_promotionReferralRouteHandler) UpdatePromotionReferralRou
 }
 
 func TestPromotionReferralRouteHandlerPUTQueriesDataLayer(t *testing.T) {
-	mh := &mockedDataAPI_promotionReferralRouteHandler{
-		DataAPI: &api.DataService{},
-	}
+	mh := &mockedDataAPI_promotionReferralRouteHandler{}
 	promoReferralRouteHandler := newPromotionReferralRouteHandler(mh)
 	req, err := json.Marshal(&PromotionReferralRoutePUTRequest{
 		Lifecycle: "DEPRECATED",
@@ -50,9 +48,7 @@ func TestPromotionReferralRouteHandlerPUTQueriesDataLayer(t *testing.T) {
 }
 
 func TestPromotionReferralRouteHandlerPUTIDRequired(t *testing.T) {
-	mh := &mockedDataAPI_promotionReferralRouteHandler{
-		DataAPI: &api.DataService{},
-	}
+	mh := &mockedDataAPI_promotionReferralRouteHandler{}
 	promoReferralRouteHandler := newPromotionReferralRouteHandler(mh)
 	req, err := json.Marshal(&PromotionReferralRoutePUTRequest{
 		Lifecycle: "DEPRECATED",
@@ -69,9 +65,7 @@ func TestPromotionReferralRouteHandlerPUTIDRequired(t *testing.T) {
 }
 
 func TestPromotionReferralRouteHandlerPUTLifecycleRequired(t *testing.T) {
-	mh := &mockedDataAPI_promotionReferralRouteHandler{
-		DataAPI: &api.DataService{},
-	}
+	mh := &mockedDataAPI_promotionReferralRouteHandler{}
 	promoReferralRouteHandler := newPromotionReferralRouteHandler(mh)
 	req, err := json.Marshal(&PromotionReferralRoutePUTRequest{})
 	test.OK(t, err)
@@ -87,7 +81,6 @@ func TestPromotionReferralRouteHandlerPUTLifecycleRequired(t *testing.T) {
 
 func TestPromotionReferralRouteHandlerPUTDataLayerErr(t *testing.T) {
 	mh := &mockedDataAPI_promotionReferralRouteHandler{
-		DataAPI: &api.DataService{},
 		updatePromotionReferralRouteErr: errors.New("Foo"),
 	}
 	promoReferralRouteHandler := newPromotionReferralRouteHandler(mh)

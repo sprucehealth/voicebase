@@ -28,7 +28,7 @@ func (c CaseClaimForbidden) Error() string {
 }
 
 // InsertUnclaimedItemIntoQueue inserts an unclaimed case into the queue for eligible doctors to consume
-func (d *DataService) InsertUnclaimedItemIntoQueue(queueItem *DoctorQueueItem) error {
+func (d *dataService) InsertUnclaimedItemIntoQueue(queueItem *DoctorQueueItem) error {
 	if err := queueItem.Validate(); err != nil {
 		return errors.Trace(err)
 	}
@@ -72,7 +72,7 @@ func (d *DataService) InsertUnclaimedItemIntoQueue(queueItem *DoctorQueueItem) e
 // TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient does as the name says - it temporarily assigns a case and the patient file to an eligible doctor such
 // that the doctor has exclusive access to the patient case. Note that its possible that the doctor already has access to the patient file, in which case
 // the existing access to the patient file is maintained, while temporary access is added for the patient case.
-func (d *DataService) TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorID int64, patientCase *common.PatientCase, duration time.Duration) error {
+func (d *dataService) TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorID int64, patientCase *common.PatientCase, duration time.Duration) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -139,7 +139,7 @@ func (d *DataService) TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctor
 // ExtendClaimForDoctor extends an existing claim on a case for a doctor. The method ensures to check that the current owner of the case is indeed the doctor
 // before extending the claim. Note that the claim on the patient file as well as the case is atomically extended given that the access to the global information
 // should go hand in hand with access to the patient case in this situation.
-func (d *DataService) ExtendClaimForDoctor(doctorID, patientID, patientCaseID int64, duration time.Duration) error {
+func (d *dataService) ExtendClaimForDoctor(doctorID, patientID, patientCaseID int64, duration time.Duration) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -191,7 +191,7 @@ func (d *DataService) ExtendClaimForDoctor(doctorID, patientID, patientCaseID in
 
 // PermanentlyAssignDoctorToCaseAndRouteToQueue assigns a case to a doctor that already has access to the patient file information. The call fails
 // if the doctor does not have access to the patient file.
-func (d *DataService) PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorID int64, patientCase *common.PatientCase, queueItem *DoctorQueueItem) error {
+func (d *dataService) PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorID int64, patientCase *common.PatientCase, queueItem *DoctorQueueItem) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return errors.Trace(err)
@@ -266,7 +266,7 @@ func (d *DataService) PermanentlyAssignDoctorToCaseAndRouteToQueue(doctorID int6
 
 // TransitionToPermanentAssignmentOfDoctorToCaseAndPatient transitions from a temporary claim to a permanent claim on the patient case and the patient file. The item
 // is consequently deleted from the unclaimed case queue.
-func (d *DataService) TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(doctorID int64, patientCase *common.PatientCase) error {
+func (d *dataService) TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(doctorID int64, patientCase *common.PatientCase) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		tx.Rollback()
@@ -346,7 +346,7 @@ func (d *DataService) TransitionToPermanentAssignmentOfDoctorToCaseAndPatient(do
 	return tx.Commit()
 }
 
-func (d *DataService) GetClaimedItemsInQueue() ([]*DoctorQueueItem, error) {
+func (d *dataService) GetClaimedItemsInQueue() ([]*DoctorQueueItem, error) {
 	rows, err := d.db.Query(`
 		SELECT id, event_type, item_id, patient_case_id, enqueue_date, status,
 			doctor_id, patient_id, expires, description, short_description, action_url
@@ -391,7 +391,7 @@ func (d *DataService) GetClaimedItemsInQueue() ([]*DoctorQueueItem, error) {
 	return claimedItemsQueue, rows.Err()
 }
 
-func (d *DataService) GetTempClaimedCaseInQueue(patientCaseID int64) (*DoctorQueueItem, error) {
+func (d *dataService) GetTempClaimedCaseInQueue(patientCaseID int64) (*DoctorQueueItem, error) {
 	var queueItem DoctorQueueItem
 	var actionURL string
 	var tags sql.NullString
@@ -435,7 +435,7 @@ func (d *DataService) GetTempClaimedCaseInQueue(patientCaseID int64) (*DoctorQue
 	return &queueItem, nil
 }
 
-func (d *DataService) GetAllItemsInUnclaimedQueue() ([]*DoctorQueueItem, error) {
+func (d *dataService) GetAllItemsInUnclaimedQueue() ([]*DoctorQueueItem, error) {
 	rows, err := d.db.Query(`
 		SELECT id, event_type, item_id, patient_case_id, patient_id, enqueue_date, status, description, short_description, action_url, tags
 		FROM unclaimed_case_queue
@@ -448,7 +448,7 @@ func (d *DataService) GetAllItemsInUnclaimedQueue() ([]*DoctorQueueItem, error) 
 	return getUnclaimedItemsFromRows(rows)
 }
 
-func (d *DataService) OldestUnclaimedItems(maxItems int) ([]*ItemAge, error) {
+func (d *dataService) OldestUnclaimedItems(maxItems int) ([]*ItemAge, error) {
 	rows, err := d.db.Query(`
 		SELECT id, enqueue_date
 		FROM unclaimed_case_queue
@@ -522,7 +522,7 @@ func getUnclaimedItemsFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 	return queueItems, rows.Err()
 }
 
-func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorID int64) ([]*DoctorQueueItem, error) {
+func (d *dataService) GetElligibleItemsInUnclaimedQueue(doctorID int64) ([]*DoctorQueueItem, error) {
 	// first get the list of care providing state ids where the doctor is registered to serve
 	rows, err := d.db.Query(`
 		SELECT care_providing_state_id
@@ -566,7 +566,7 @@ func (d *DataService) GetElligibleItemsInUnclaimedQueue(doctorID int64) ([]*Doct
 }
 
 // RevokeDoctorAccessToCase removes the temporary access that the doctor has so that the item can be picked up by another doctor from the jbcq
-func (d *DataService) RevokeDoctorAccessToCase(patientCaseID, patientID, doctorID int64) error {
+func (d *dataService) RevokeDoctorAccessToCase(patientCaseID, patientID, doctorID int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -599,7 +599,7 @@ func (d *DataService) RevokeDoctorAccessToCase(patientCaseID, patientID, doctorI
 	return tx.Commit()
 }
 
-func (d *DataService) CareProvidingStatesWithUnclaimedCases() ([]int64, error) {
+func (d *dataService) CareProvidingStatesWithUnclaimedCases() ([]int64, error) {
 	rows, err := d.db.Query(`
 			SELECT DISTINCT care_providing_state_id
 			FROM unclaimed_case_queue
@@ -630,7 +630,7 @@ func (c ByLastNotified) Less(i, j int) bool {
 		(c[j].LastNotified != nil && c[i].LastNotified.Before(*c[j].LastNotified))
 }
 
-func (d *DataService) DoctorsToNotifyInCareProvidingState(careProvidingStateID int64, avoidDoctorsRegisteredInStates []int64, timeThreshold time.Time) ([]*DoctorNotify, error) {
+func (d *dataService) DoctorsToNotifyInCareProvidingState(careProvidingStateID int64, avoidDoctorsRegisteredInStates []int64, timeThreshold time.Time) ([]*DoctorNotify, error) {
 
 	doctorsToExclude := make(map[int64]bool)
 	// identify doctors to exclude based on the states we are avoiding
@@ -688,17 +688,17 @@ func (d *DataService) DoctorsToNotifyInCareProvidingState(careProvidingStateID i
 	return doctorsToNotify, rows.Err()
 }
 
-func (d *DataService) RecordDoctorNotifiedOfUnclaimedCases(doctorID int64) error {
+func (d *dataService) RecordDoctorNotifiedOfUnclaimedCases(doctorID int64) error {
 	_, err := d.db.Exec(`REPLACE INTO doctor_case_notification (doctor_id) values (?)`, doctorID)
 	return err
 }
 
-func (d *DataService) RecordCareProvidingStateNotified(careProvidingStateID int64) error {
+func (d *dataService) RecordCareProvidingStateNotified(careProvidingStateID int64) error {
 	_, err := d.db.Exec(`REPLACE INTO care_providing_state_notification (care_providing_state_id) values (?)`, careProvidingStateID)
 	return err
 }
 
-func (d *DataService) LastNotifiedTimeForCareProvidingState(careProvidingStateID int64) (time.Time, error) {
+func (d *dataService) LastNotifiedTimeForCareProvidingState(careProvidingStateID int64) (time.Time, error) {
 	var lastNotifiedTime time.Time
 	err := d.db.QueryRow(`
 		SELECT last_notified

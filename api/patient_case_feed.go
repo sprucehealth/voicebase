@@ -10,7 +10,7 @@ import (
 )
 
 // PatientCaseFeed returns the feed items for the indicated case ids with visits in the specified bounds. If nil is provided then all items will be returned
-func (d *DataService) PatientCaseFeed(caseIDs []int64, start, end *time.Time) ([]*common.PatientCaseFeedItem, error) {
+func (d *dataService) PatientCaseFeed(caseIDs []int64, start, end *time.Time) ([]*common.PatientCaseFeedItem, error) {
 	q := `
 		SELECT pca.patient_case_id, pc.clinical_pathway_id, pc.name,
 			COALESCE(pv.submitted_date, pv.creation_date),
@@ -68,7 +68,7 @@ func (d *DataService) PatientCaseFeed(caseIDs []int64, start, end *time.Time) ([
 	return items, rows.Err()
 }
 
-func (d *DataService) PatientCaseFeedForDoctor(doctorID int64) ([]*common.PatientCaseFeedItem, error) {
+func (d *dataService) PatientCaseFeedForDoctor(doctorID int64) ([]*common.PatientCaseFeedItem, error) {
 	var doctorName string
 	err := d.db.QueryRow(`SELECT long_display_name FROM doctor WHERE id = ?`, doctorID).Scan(&doctorName)
 	if err == sql.ErrNoRows {

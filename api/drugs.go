@@ -11,7 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
-func (d *DataService) SetDrugDescription(description *DrugDescription) error {
+func (d *dataService) SetDrugDescription(description *DrugDescription) error {
 	// validate
 	if description.InternalName == "" {
 		return errors.New("missing internal name for drug description")
@@ -32,7 +32,7 @@ func (d *DataService) SetDrugDescription(description *DrugDescription) error {
 	return err
 }
 
-func (d *DataService) DrugDescriptions(queries []*DrugDescriptionQuery) ([]*DrugDescription, error) {
+func (d *dataService) DrugDescriptions(queries []*DrugDescriptionQuery) ([]*DrugDescription, error) {
 	if len(queries) == 0 {
 		return nil, nil
 	}
@@ -81,7 +81,7 @@ func drugNameStrength(name, strength string) string {
 	return name + " " + strength
 }
 
-func (d *DataService) MultiQueryDrugDetailIDs(queries []*DrugDetailsQuery) ([]int64, error) {
+func (d *dataService) MultiQueryDrugDetailIDs(queries []*DrugDetailsQuery) ([]int64, error) {
 	if len(queries) == 0 {
 		return nil, nil
 	}
@@ -153,7 +153,7 @@ func (d *DataService) MultiQueryDrugDetailIDs(queries []*DrugDetailsQuery) ([]in
 	return bestIDs, rows.Err()
 }
 
-func (d *DataService) DrugDetails(id int64) (*common.DrugDetails, error) {
+func (d *dataService) DrugDetails(id int64) (*common.DrugDetails, error) {
 	row := d.db.QueryRow(`SELECT json FROM drug_details WHERE id = ?`, id)
 
 	var js []byte
@@ -171,7 +171,7 @@ func (d *DataService) DrugDetails(id int64) (*common.DrugDetails, error) {
 	return &details, nil
 }
 
-func (d *DataService) QueryDrugDetails(query *DrugDetailsQuery) (*common.DrugDetails, error) {
+func (d *dataService) QueryDrugDetails(query *DrugDetailsQuery) (*common.DrugDetails, error) {
 	if query.GenericName == "" || query.Route == "" {
 		return nil, ErrNotFound("drug_details")
 	}
@@ -231,7 +231,7 @@ func (d *DataService) QueryDrugDetails(query *DrugDetailsQuery) (*common.DrugDet
 	return &details, nil
 }
 
-func (d *DataService) ListDrugDetails() ([]*common.DrugDetails, error) {
+func (d *dataService) ListDrugDetails() ([]*common.DrugDetails, error) {
 	rows, err := d.db.Query(`SELECT id, json FROM drug_details ORDER BY generic_drug_name`)
 	if err != nil {
 		return nil, err
@@ -254,7 +254,7 @@ func (d *DataService) ListDrugDetails() ([]*common.DrugDetails, error) {
 	return drugs, nil
 }
 
-func (d *DataService) SetDrugDetails(details []*common.DrugDetails) error {
+func (d *dataService) SetDrugDetails(details []*common.DrugDetails) error {
 	if len(details) == 0 {
 		return nil
 	}

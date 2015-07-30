@@ -9,11 +9,11 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
-func (d *DataService) TreatmentPlanScheduledMessage(id int64) (*common.TreatmentPlanScheduledMessage, error) {
+func (d *dataService) TreatmentPlanScheduledMessage(id int64) (*common.TreatmentPlanScheduledMessage, error) {
 	return d.treatmentPlanScheduledMessage(id, "treatment_plan")
 }
 
-func (d *DataService) treatmentPlanScheduledMessage(id int64, tbl string) (*common.TreatmentPlanScheduledMessage, error) {
+func (d *dataService) treatmentPlanScheduledMessage(id int64, tbl string) (*common.TreatmentPlanScheduledMessage, error) {
 	row := d.db.QueryRow(`
 			SELECT id, scheduled_days, message, scheduled_message_id, treatment_plan_id
 			FROM `+tbl+`_scheduled_message
@@ -59,7 +59,7 @@ func (d *DataService) treatmentPlanScheduledMessage(id int64, tbl string) (*comm
 	return m, nil
 }
 
-func (d *DataService) CreateTreatmentPlanScheduledMessage(msg *common.TreatmentPlanScheduledMessage) (int64, error) {
+func (d *dataService) CreateTreatmentPlanScheduledMessage(msg *common.TreatmentPlanScheduledMessage) (int64, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, err
@@ -74,7 +74,7 @@ func (d *DataService) CreateTreatmentPlanScheduledMessage(msg *common.TreatmentP
 	return id, tx.Commit()
 }
 
-func (d *DataService) createTreatmentPlanScheduledMessage(tx *sql.Tx, tbl, claimerType string, id int64, msg *common.TreatmentPlanScheduledMessage) (int64, error) {
+func (d *dataService) createTreatmentPlanScheduledMessage(tx *sql.Tx, tbl, claimerType string, id int64, msg *common.TreatmentPlanScheduledMessage) (int64, error) {
 	if msg.TreatmentPlanID <= 0 {
 		return 0, errors.New("missing TreatmentPlanID")
 	}
@@ -129,11 +129,11 @@ func (d *DataService) createTreatmentPlanScheduledMessage(tx *sql.Tx, tbl, claim
 	return msg.ID, nil
 }
 
-func (d *DataService) ListTreatmentPlanScheduledMessages(treatmentPlanID int64) ([]*common.TreatmentPlanScheduledMessage, error) {
+func (d *dataService) ListTreatmentPlanScheduledMessages(treatmentPlanID int64) ([]*common.TreatmentPlanScheduledMessage, error) {
 	return d.listTreatmentPlanScheduledMessages("treatment_plan", treatmentPlanID)
 }
 
-func (d *DataService) listTreatmentPlanScheduledMessages(tbl string, treatmentPlanID int64) ([]*common.TreatmentPlanScheduledMessage, error) {
+func (d *dataService) listTreatmentPlanScheduledMessages(tbl string, treatmentPlanID int64) ([]*common.TreatmentPlanScheduledMessage, error) {
 	var rows *sql.Rows
 	var err error
 	if tbl == "treatment_plan" {
@@ -203,7 +203,7 @@ func (d *DataService) listTreatmentPlanScheduledMessages(tbl string, treatmentPl
 	return msgs, nil
 }
 
-func (d *DataService) DeleteTreatmentPlanScheduledMessage(treatmentPlanID, messageID int64) error {
+func (d *dataService) DeleteTreatmentPlanScheduledMessage(treatmentPlanID, messageID int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -219,7 +219,7 @@ func (d *DataService) DeleteTreatmentPlanScheduledMessage(treatmentPlanID, messa
 	return tx.Commit()
 }
 
-func (d *DataService) deleteTreatmentPlanScheduledMessage(tx *sql.Tx, tbl, claimerType string, treatmentPlanID, messageID int64) error {
+func (d *dataService) deleteTreatmentPlanScheduledMessage(tx *sql.Tx, tbl, claimerType string, treatmentPlanID, messageID int64) error {
 	var smID *int64
 	if tbl != "dr_favorite_treatment_plan" {
 		if err := tx.QueryRow(
@@ -258,7 +258,7 @@ func (d *DataService) deleteTreatmentPlanScheduledMessage(tx *sql.Tx, tbl, claim
 	return nil
 }
 
-func (d *DataService) ReplaceTreatmentPlanScheduledMessage(id int64, msg *common.TreatmentPlanScheduledMessage) error {
+func (d *dataService) ReplaceTreatmentPlanScheduledMessage(id int64, msg *common.TreatmentPlanScheduledMessage) error {
 	if id <= 0 {
 		return errors.New("message id required")
 	}
@@ -281,7 +281,7 @@ func (d *DataService) ReplaceTreatmentPlanScheduledMessage(id int64, msg *common
 	return tx.Commit()
 }
 
-func (d *DataService) UpdateTreatmentPlanScheduledMessage(id int64, smID *int64) error {
+func (d *dataService) UpdateTreatmentPlanScheduledMessage(id int64, smID *int64) error {
 	_, err := d.db.Exec(`
 		UPDATE treatment_plan_scheduled_message
 		SET scheduled_message_id = ? WHERE id = ?`,
@@ -289,11 +289,11 @@ func (d *DataService) UpdateTreatmentPlanScheduledMessage(id int64, smID *int64)
 	return err
 }
 
-func (d *DataService) listFavoriteTreatmentPlanScheduledMessages(ftpID int64) ([]*common.TreatmentPlanScheduledMessage, error) {
+func (d *dataService) listFavoriteTreatmentPlanScheduledMessages(ftpID int64) ([]*common.TreatmentPlanScheduledMessage, error) {
 	return d.listTreatmentPlanScheduledMessages("dr_favorite_treatment_plan", ftpID)
 }
 
-func (d *DataService) SetFavoriteTreatmentPlanScheduledMessages(ftpID int64, msgs []*common.TreatmentPlanScheduledMessage) error {
+func (d *dataService) SetFavoriteTreatmentPlanScheduledMessages(ftpID int64, msgs []*common.TreatmentPlanScheduledMessage) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -317,7 +317,7 @@ func (d *DataService) SetFavoriteTreatmentPlanScheduledMessages(ftpID int64, msg
 	return tx.Commit()
 }
 
-func (d *DataService) DeleteFavoriteTreatmentPlanScheduledMessages(ftpID int64) error {
+func (d *dataService) DeleteFavoriteTreatmentPlanScheduledMessages(ftpID int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err

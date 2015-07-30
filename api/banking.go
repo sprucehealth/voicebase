@@ -8,7 +8,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
-func (d *DataService) AddBankAccount(bankAccount *common.BankAccount) (int64, error) {
+func (d *dataService) AddBankAccount(bankAccount *common.BankAccount) (int64, error) {
 	res, err := d.db.Exec(`
 		INSERT INTO bank_account (
 			account_id, stripe_recipient_id, default_account, verify_amount_1, verify_amount_2,
@@ -36,12 +36,12 @@ func (d *DataService) AddBankAccount(bankAccount *common.BankAccount) (int64, er
 	return bankAccount.ID, nil
 }
 
-func (d *DataService) DeleteBankAccount(id int64) error {
+func (d *dataService) DeleteBankAccount(id int64) error {
 	_, err := d.db.Exec(`DELETE FROM bank_account WHERE id = ?`, id)
 	return err
 }
 
-func (d *DataService) ListBankAccounts(userAccountID int64) ([]*common.BankAccount, error) {
+func (d *dataService) ListBankAccounts(userAccountID int64) ([]*common.BankAccount, error) {
 	rows, err := d.db.Query(`
 		SELECT id, stripe_recipient_id, creation_date, default_account, verified,
 			verify_amount_1, verify_amount_2, verify_transfer1_id, verify_transfer2_id, verify_expires
@@ -82,7 +82,7 @@ func (d *DataService) ListBankAccounts(userAccountID int64) ([]*common.BankAccou
 	return accounts, nil
 }
 
-func (d *DataService) UpdateBankAccount(id int64, update *BankAccountUpdate) (int, error) {
+func (d *dataService) UpdateBankAccount(id int64, update *BankAccountUpdate) (int, error) {
 	args := dbutil.MySQLVarArgs()
 	if update.StripeRecipientID != nil {
 		args.Append("stripe_recipient_id", *update.StripeRecipientID)

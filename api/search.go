@@ -6,7 +6,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
-func (d *DataService) SearchDoctors(query string) ([]*common.DoctorSearchResult, error) {
+func (d *dataService) SearchDoctors(query string) ([]*common.DoctorSearchResult, error) {
 	// TODO: this is VERY inefficient but works for now due to the small number of doctors.
 	query = "%" + strings.ToLower(query) + "%"
 	rows, err := d.db.Query(`

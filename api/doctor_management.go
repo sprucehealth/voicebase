@@ -8,7 +8,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
-func (d *DataService) AvailableStates() ([]*common.State, error) {
+func (d *dataService) AvailableStates() ([]*common.State, error) {
 	rows, err := d.db.Query(`
 		SELECT DISTINCT state, long_state
 		FROM care_provider_state_elligibility cpse
@@ -30,7 +30,7 @@ func (d *DataService) AvailableStates() ([]*common.State, error) {
 
 // SpruceAvailableInState checks to see if atleast one doctor is registered in the state
 // to see patient for any condition.
-func (d *DataService) SpruceAvailableInState(state string) (bool, error) {
+func (d *dataService) SpruceAvailableInState(state string) (bool, error) {
 	var id int64
 	err := d.db.QueryRow(`
 		SELECT care_provider_state_elligibility.id
@@ -45,7 +45,7 @@ func (d *DataService) SpruceAvailableInState(state string) (bool, error) {
 	return err == nil, err
 }
 
-func (d *DataService) GetCareProvidingStateID(stateAbbreviation, pathwayTag string) (int64, error) {
+func (d *dataService) GetCareProvidingStateID(stateAbbreviation, pathwayTag string) (int64, error) {
 	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
 	if err != nil {
 		return 0, err
@@ -63,7 +63,7 @@ func (d *DataService) GetCareProvidingStateID(stateAbbreviation, pathwayTag stri
 	return careProvidingStateID, nil
 }
 
-func (d *DataService) AddCareProvidingState(stateAbbreviation, fullStateName, pathwayTag string) (int64, error) {
+func (d *dataService) AddCareProvidingState(stateAbbreviation, fullStateName, pathwayTag string) (int64, error) {
 	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
 	if err != nil {
 		return 0, err
@@ -79,14 +79,14 @@ func (d *DataService) AddCareProvidingState(stateAbbreviation, fullStateName, pa
 	return res.LastInsertId()
 }
 
-func (d *DataService) MakeDoctorElligibleinCareProvidingState(careProvidingStateID, doctorID int64) error {
+func (d *dataService) MakeDoctorElligibleinCareProvidingState(careProvidingStateID, doctorID int64) error {
 	_, err := d.db.Exec(
 		`REPLACE INTO care_provider_state_elligibility (role_type_id, provider_id, care_providing_state_id) VALUES (?,?,?)`,
 		d.roleTypeMapping[RoleDoctor], doctorID, careProvidingStateID)
 	return err
 }
 
-func (d *DataService) GetDoctorWithEmail(email string) (*common.Doctor, error) {
+func (d *dataService) GetDoctorWithEmail(email string) (*common.Doctor, error) {
 	var doctorID int64
 	if err := d.db.QueryRow(
 		`SELECT id FROM doctor WHERE account_id = (SELECT id FROM account WHERE email = ?)`, email,
@@ -106,7 +106,7 @@ func (d *DataService) GetDoctorWithEmail(email string) (*common.Doctor, error) {
 
 // DoctorIDsInCareProvidingState returns a slice of doctorIDs that are considered available
 // and eligible to see patients in the state/pathway combination indicated by careProvidingStateID.
-func (d *DataService) DoctorIDsInCareProvidingState(careProvidingStateID int64) ([]int64, error) {
+func (d *dataService) DoctorIDsInCareProvidingState(careProvidingStateID int64) ([]int64, error) {
 	rows, err := d.db.Query(`
 		SELECT provider_id
 		FROM care_provider_state_elligibility
@@ -132,7 +132,7 @@ func (d *DataService) DoctorIDsInCareProvidingState(careProvidingStateID int64) 
 
 // EligibleDoctorIDs returns a slice of doctor IDs (from the provided list) for the doctors that are eligible to see
 // patients in the state/pathway combination indicated by the careProvidingStateID.
-func (d *DataService) EligibleDoctorIDs(doctorIDs []int64, careProvidingStateID int64) ([]int64, error) {
+func (d *dataService) EligibleDoctorIDs(doctorIDs []int64, careProvidingStateID int64) ([]int64, error) {
 	if len(doctorIDs) == 0 {
 		return nil, nil
 	}
@@ -166,7 +166,7 @@ func (d *DataService) EligibleDoctorIDs(doctorIDs []int64, careProvidingStateID 
 }
 
 // AvailableDoctorIDs returns a maximum of N available doctor IDs where N is capped at a 100.
-func (d *DataService) AvailableDoctorIDs(n int) ([]int64, error) {
+func (d *dataService) AvailableDoctorIDs(n int) ([]int64, error) {
 	if n == 0 {
 		return nil, nil
 	} else if n > 100 {
@@ -195,7 +195,7 @@ func (d *DataService) AvailableDoctorIDs(n int) ([]int64, error) {
 	return doctorIDs, rows.Err()
 }
 
-func (d *DataService) CareProviderStatePathwayMappings(query *CareProviderStatePathwayMappingQuery) ([]*CareProviderStatePathway, error) {
+func (d *dataService) CareProviderStatePathwayMappings(query *CareProviderStatePathwayMappingQuery) ([]*CareProviderStatePathway, error) {
 	var where []string
 	var vals []interface{}
 	if query != nil {
@@ -254,7 +254,7 @@ func (d *DataService) CareProviderStatePathwayMappings(query *CareProviderStateP
 	return providers, rows.Err()
 }
 
-func (d *DataService) CareProviderStatePathwayMappingSummary() ([]*CareProviderStatePathwayMappingSummary, error) {
+func (d *dataService) CareProviderStatePathwayMappingSummary() ([]*CareProviderStatePathwayMappingSummary, error) {
 	rows, err := d.db.Query(`
 		SELECT state, clinical_pathway_id,
 			(SELECT COUNT(1)
@@ -282,7 +282,7 @@ func (d *DataService) CareProviderStatePathwayMappingSummary() ([]*CareProviderS
 	return summary, rows.Err()
 }
 
-func (d *DataService) UpdateCareProviderStatePathwayMapping(patch *CareProviderStatePathwayMappingPatch) error {
+func (d *dataService) UpdateCareProviderStatePathwayMapping(patch *CareProviderStatePathwayMappingPatch) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -340,7 +340,7 @@ func (d *DataService) UpdateCareProviderStatePathwayMapping(patch *CareProviderS
 	return tx.Commit()
 }
 
-func (d *DataService) careProviderStatePathwayMappingUpdate(tx *sql.Tx, updates []*CareProviderStatePathwayMappingUpdate) error {
+func (d *dataService) careProviderStatePathwayMappingUpdate(tx *sql.Tx, updates []*CareProviderStatePathwayMappingUpdate) error {
 	var cols []string
 	var vals []interface{}
 	for _, u := range updates {

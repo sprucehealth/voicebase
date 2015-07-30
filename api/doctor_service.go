@@ -15,7 +15,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
-func (d *DataService) RegisterProvider(provider *common.Doctor, role string) (int64, error) {
+func (d *dataService) RegisterProvider(provider *common.Doctor, role string) (int64, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, err
@@ -109,12 +109,12 @@ func (d *DataService) RegisterProvider(provider *common.Doctor, role string) (in
 	return lastID, errors.Trace(tx.Commit())
 }
 
-func (d *DataService) GetDoctorFromID(doctorID int64) (*common.Doctor, error) {
+func (d *dataService) GetDoctorFromID(doctorID int64) (*common.Doctor, error) {
 	return d.queryDoctor(`doctor.id = ? AND (account_phone.phone IS NULL OR account_phone.phone_type = ?)`,
 		doctorID, PhoneCell)
 }
 
-func (d *DataService) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, error) {
+func (d *dataService) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, error) {
 	if !basicInfoOnly {
 		return d.GetDoctorFromID(id)
 	}
@@ -128,7 +128,7 @@ func (d *DataService) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, erro
 		WHERE d.id = ?`, id))
 }
 
-func (d *DataService) Doctors(ids []int64) ([]*common.Doctor, error) {
+func (d *dataService) Doctors(ids []int64) ([]*common.Doctor, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -163,7 +163,7 @@ func (d *DataService) Doctors(ids []int64) ([]*common.Doctor, error) {
 	return doctors, errors.Trace(rows.Err())
 }
 
-func (d *DataService) ListCareProviders(opt ListCareProvidersOption) ([]*common.Doctor, error) {
+func (d *dataService) ListCareProviders(opt ListCareProvidersOption) ([]*common.Doctor, error) {
 	var vals []interface{}
 	var where string
 	if opt.Has(LCPOptDoctorsOnly) {
@@ -197,7 +197,7 @@ func (d *DataService) ListCareProviders(opt ListCareProvidersOption) ([]*common.
 	return doctors, errors.Trace(rows.Err())
 }
 
-func (d *DataService) scanDoctor(s scannable) (*common.Doctor, error) {
+func (d *dataService) scanDoctor(s scannable) (*common.Doctor, error) {
 	var doctor common.Doctor
 	var smallThumbnailID, largeThumbnailID, heroImageID sql.NullString
 	var shortTitle, longTitle, shortDisplayName, longDisplayName sql.NullString
@@ -227,17 +227,17 @@ func (d *DataService) scanDoctor(s scannable) (*common.Doctor, error) {
 	return &doctor, nil
 }
 
-func (d *DataService) GetDoctorFromAccountID(accountID int64) (*common.Doctor, error) {
+func (d *dataService) GetDoctorFromAccountID(accountID int64) (*common.Doctor, error) {
 	return d.queryDoctor(`doctor.account_id = ? AND (account_phone.phone IS NULL OR account_phone.phone_type = ?)`,
 		accountID, PhoneCell)
 }
 
-func (d *DataService) GetDoctorFromDoseSpotClinicianID(clinicianID int64) (*common.Doctor, error) {
+func (d *dataService) GetDoctorFromDoseSpotClinicianID(clinicianID int64) (*common.Doctor, error) {
 	return d.queryDoctor(`doctor.clinician_id = ? AND (account_phone.phone IS NULL OR account_phone.phone_type = ?)`,
 		clinicianID, PhoneCell)
 }
 
-func (d *DataService) GetAccountIDFromDoctorID(doctorID int64) (int64, error) {
+func (d *dataService) GetAccountIDFromDoctorID(doctorID int64) (int64, error) {
 	var accountID int64
 	err := d.db.QueryRow(`select account_id from doctor where id = ?`, doctorID).Scan(&accountID)
 	if err == sql.ErrNoRows {
@@ -246,11 +246,11 @@ func (d *DataService) GetAccountIDFromDoctorID(doctorID int64) (int64, error) {
 	return accountID, err
 }
 
-func (d *DataService) GetFirstDoctorWithAClinicianID() (*common.Doctor, error) {
+func (d *dataService) GetFirstDoctorWithAClinicianID() (*common.Doctor, error) {
 	return d.queryDoctor(`doctor.clinician_id is not null AND (account_phone.phone IS NULL OR account_phone.phone_type = ?) LIMIT 1`, PhoneCell)
 }
 
-func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*common.Doctor, error) {
+func (d *dataService) queryDoctor(where string, queryParams ...interface{}) (*common.Doctor, error) {
 	row := d.db.QueryRow(fmt.Sprintf(`
 		SELECT doctor.id, doctor.account_id, phone, first_name, last_name, middle_name, suffix,
 			prefix, short_title, long_title, short_display_name, long_display_name, account.email,
@@ -336,13 +336,13 @@ func (d *DataService) queryDoctor(where string, queryParams ...interface{}) (*co
 	return doctor, nil
 }
 
-func (d *DataService) GetDoctorIDFromAccountID(accountID int64) (int64, error) {
+func (d *dataService) GetDoctorIDFromAccountID(accountID int64) (int64, error) {
 	var doctorID int64
 	err := d.db.QueryRow("SELECT id FROM doctor WHERE account_id = ?", accountID).Scan(&doctorID)
 	return doctorID, err
 }
 
-func (d *DataService) GetRegimenStepsForDoctor(doctorID int64) ([]*common.DoctorInstructionItem, error) {
+func (d *dataService) GetRegimenStepsForDoctor(doctorID int64) ([]*common.DoctorInstructionItem, error) {
 	rows, err := d.db.Query(`
 		SELECT id, text, status
 		FROM dr_regimen_step where doctor_id = ? AND status = ?`, doctorID, StatusActive)
@@ -366,7 +366,7 @@ func (d *DataService) GetRegimenStepsForDoctor(doctorID int64) ([]*common.Doctor
 	return steps, rows.Err()
 }
 
-func (d *DataService) GetRegimenStepForDoctor(regimenStepID, doctorID int64) (*common.DoctorInstructionItem, error) {
+func (d *dataService) GetRegimenStepForDoctor(regimenStepID, doctorID int64) (*common.DoctorInstructionItem, error) {
 	var regimenStep common.DoctorInstructionItem
 	err := d.db.QueryRow(`
 		SELECT id, text, status
@@ -380,7 +380,7 @@ func (d *DataService) GetRegimenStepForDoctor(regimenStepID, doctorID int64) (*c
 	return &regimenStep, err
 }
 
-func (d *DataService) AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorID int64) error {
+func (d *dataService) AddRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorID int64) error {
 	res, err := d.db.Exec(`insert into dr_regimen_step (text, doctor_id,status) values (?,?,?)`, regimenStep.Text, doctorID, StatusActive)
 	if err != nil {
 		return err
@@ -395,7 +395,7 @@ func (d *DataService) AddRegimenStepForDoctor(regimenStep *common.DoctorInstruct
 	return nil
 }
 
-func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorID int64) error {
+func (d *dataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstructionItem, doctorID int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -448,7 +448,7 @@ func (d *DataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstr
 	return tx.Commit()
 }
 
-func (d *DataService) MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorInstructionItem, doctorID int64) error {
+func (d *dataService) MarkRegimenStepsToBeDeleted(regimenSteps []*common.DoctorInstructionItem, doctorID int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -509,7 +509,7 @@ type DoctorQueueUpdate struct {
 	CurrentState string
 }
 
-func (d *DataService) UpdateDoctorQueue(updates []*DoctorQueueUpdate) error {
+func (d *dataService) UpdateDoctorQueue(updates []*DoctorQueueUpdate) error {
 	if len(updates) == 0 {
 		return nil
 	}
@@ -628,7 +628,7 @@ func replaceItemInDoctorQueue(tx *sql.Tx, dqi *DoctorQueueItem, currentState str
 	return insertItemIntoDoctorQueue(tx, dqi, false)
 }
 
-func (d *DataService) MarkPatientVisitAsOngoingInDoctorQueue(doctorID, patientVisitID int64) error {
+func (d *dataService) MarkPatientVisitAsOngoingInDoctorQueue(doctorID, patientVisitID int64) error {
 	_, err := d.db.Exec(`
 		UPDATE doctor_queue SET status = ? WHERE event_type = ? AND item_id = ? AND doctor_id = ?`,
 		StatusOngoing,
@@ -640,7 +640,7 @@ func (d *DataService) MarkPatientVisitAsOngoingInDoctorQueue(doctorID, patientVi
 
 // CompleteVisitOnTreatmentPlanGeneration updates the doctor queue upon the generation of a treatment plan to create a completed item as well as
 // clear out any submitted visit by the patient pertaining to the case.
-func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(
+func (d *dataService) CompleteVisitOnTreatmentPlanGeneration(
 	doctorID, patientVisitID, treatmentPlanID int64,
 	updates []*DoctorQueueUpdate) error {
 	tx, err := d.db.Begin()
@@ -702,7 +702,7 @@ func (d *DataService) CompleteVisitOnTreatmentPlanGeneration(
 	return tx.Commit()
 }
 
-func (d *DataService) GetPendingItemsInDoctorQueue(doctorID int64) ([]*DoctorQueueItem, error) {
+func (d *dataService) GetPendingItemsInDoctorQueue(doctorID int64) ([]*DoctorQueueItem, error) {
 	rows, err := d.db.Query(fmt.Sprintf(`
 		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url, tags
 		FROM doctor_queue
@@ -715,7 +715,7 @@ func (d *DataService) GetPendingItemsInDoctorQueue(doctorID int64) ([]*DoctorQue
 	return populateDoctorQueueFromRows(rows)
 }
 
-func (d *DataService) GetPendingItemsInCCQueues() ([]*DoctorQueueItem, error) {
+func (d *dataService) GetPendingItemsInCCQueues() ([]*DoctorQueueItem, error) {
 	rows, err := d.db.Query(`
 		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id,
 			description, short_description, action_url, tags
@@ -734,7 +734,7 @@ func (d *DataService) GetPendingItemsInCCQueues() ([]*DoctorQueueItem, error) {
 	return populateDoctorQueueFromRows(rows)
 }
 
-func (d *DataService) GetCompletedItemsInDoctorQueue(doctorID int64) ([]*DoctorQueueItem, error) {
+func (d *dataService) GetCompletedItemsInDoctorQueue(doctorID int64) ([]*DoctorQueueItem, error) {
 	rows, err := d.db.Query(fmt.Sprintf(`
 		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url, tags
 		FROM doctor_queue
@@ -747,7 +747,7 @@ func (d *DataService) GetCompletedItemsInDoctorQueue(doctorID int64) ([]*DoctorQ
 	return populateDoctorQueueFromRows(rows)
 }
 
-func (d *DataService) GetPendingItemsForClinic() ([]*DoctorQueueItem, error) {
+func (d *dataService) GetPendingItemsForClinic() ([]*DoctorQueueItem, error) {
 	// get all the items in in the unassigned queue
 	unclaimedQueueItems, err := d.GetAllItemsInUnclaimedQueue()
 	if err != nil {
@@ -778,7 +778,7 @@ func (d *DataService) GetPendingItemsForClinic() ([]*DoctorQueueItem, error) {
 	return queueItems, nil
 }
 
-func (d *DataService) GetCompletedItemsForClinic() ([]*DoctorQueueItem, error) {
+func (d *dataService) GetCompletedItemsForClinic() ([]*DoctorQueueItem, error) {
 	rows, err := d.db.Query(`
 		SELECT id, event_type, item_id, enqueue_date, status, doctor_id, patient_id, description, short_description, action_url, tags
 		FROM doctor_queue
@@ -834,7 +834,7 @@ func populateDoctorQueueFromRows(rows *sql.Rows) ([]*DoctorQueueItem, error) {
 	return doctorQueue, rows.Err()
 }
 
-func (d *DataService) GetMedicationDispenseUnits(languageID int64) ([]int64, []string, error) {
+func (d *dataService) GetMedicationDispenseUnits(languageID int64) ([]int64, []string, error) {
 	rows, err := d.db.Query(`select dispense_unit.id, ltext from dispense_unit inner join localized_text on app_text_id = dispense_unit_text_id where language_id=?`, languageID)
 	if err != nil {
 		return nil, nil, err
@@ -854,7 +854,7 @@ func (d *DataService) GetMedicationDispenseUnits(languageID int64) ([]int64, []s
 	return dispenseUnitIDs, dispenseUnits, rows.Err()
 }
 
-func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorID, treatmentPlanID int64) error {
+func (d *dataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorID, treatmentPlanID int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -984,7 +984,7 @@ func (d *DataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 	return tx.Commit()
 }
 
-func (d *DataService) DeleteTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorID int64) error {
+func (d *dataService) DeleteTreatmentTemplates(doctorTreatmentTemplates []*common.DoctorTreatmentTemplate, doctorID int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -1007,7 +1007,7 @@ func (d *DataService) DeleteTreatmentTemplates(doctorTreatmentTemplates []*commo
 	return tx.Commit()
 }
 
-func (d *DataService) GetTreatmentTemplates(doctorID int64) ([]*common.DoctorTreatmentTemplate, error) {
+func (d *dataService) GetTreatmentTemplates(doctorID int64) ([]*common.DoctorTreatmentTemplate, error) {
 	rows, err := d.db.Query(`
 		SELECT dtt.id, dtt.name, drug_internal_name, dosage_strength, type,
 			dispense_value, dispense_unit_id, ltext, refills, substitutions_allowed,
@@ -1057,7 +1057,7 @@ func (d *DataService) GetTreatmentTemplates(doctorID int64) ([]*common.DoctorTre
 	return treatmentTemplates, rows.Err()
 }
 
-func (d *DataService) SetTreatmentPlanNote(doctorID, treatmentPlanID int64, note string) error {
+func (d *dataService) SetTreatmentPlanNote(doctorID, treatmentPlanID int64, note string) error {
 	// Use NULL for empty note
 	msg := sql.NullString{
 		String: note,
@@ -1068,7 +1068,7 @@ func (d *DataService) SetTreatmentPlanNote(doctorID, treatmentPlanID int64, note
 	return err
 }
 
-func (d *DataService) GetTreatmentPlanNote(treatmentPlanID int64) (string, error) {
+func (d *dataService) GetTreatmentPlanNote(treatmentPlanID int64) (string, error) {
 	var note sql.NullString
 	row := d.db.QueryRow(`SELECT note FROM treatment_plan WHERE id = ?`, treatmentPlanID)
 	err := row.Scan(&note)
@@ -1078,13 +1078,13 @@ func (d *DataService) GetTreatmentPlanNote(treatmentPlanID int64) (string, error
 	return note.String, err
 }
 
-func (d *DataService) getIDForNameFromTable(tableName, drugComponentName string) (int64, error) {
+func (d *dataService) getIDForNameFromTable(tableName, drugComponentName string) (int64, error) {
 	var id int64
 	err := d.db.QueryRow(`SELECT id FROM `+dbutil.EscapeMySQLName(tableName)+` WHERE name = ?`, drugComponentName).Scan(&id)
 	return id, err
 }
 
-func (d *DataService) getOrInsertNameInTable(db db, tableName, drugComponentName string) (int64, error) {
+func (d *dataService) getOrInsertNameInTable(db db, tableName, drugComponentName string) (int64, error) {
 	id, err := d.getIDForNameFromTable(tableName, drugComponentName)
 	if err == nil {
 		return id, nil
@@ -1110,7 +1110,7 @@ type DoctorUpdate struct {
 	DosespotClinicianID *int64
 }
 
-func (d *DataService) UpdateDoctor(doctorID int64, update *DoctorUpdate) error {
+func (d *dataService) UpdateDoctor(doctorID int64, update *DoctorUpdate) error {
 	args := dbutil.MySQLVarArgs()
 
 	if update.ShortTitle != nil {
@@ -1149,7 +1149,7 @@ func (d *DataService) UpdateDoctor(doctorID int64, update *DoctorUpdate) error {
 	return err
 }
 
-func (d *DataService) DoctorAttributes(doctorID int64, names []string) (map[string]string, error) {
+func (d *dataService) DoctorAttributes(doctorID int64, names []string) (map[string]string, error) {
 	var rows *sql.Rows
 	var err error
 	if len(names) == 0 {
@@ -1173,7 +1173,7 @@ func (d *DataService) DoctorAttributes(doctorID int64, names []string) (map[stri
 	return attr, rows.Err()
 }
 
-func (d *DataService) UpdateDoctorAttributes(doctorID int64, attributes map[string]string) error {
+func (d *dataService) UpdateDoctorAttributes(doctorID int64, attributes map[string]string) error {
 	if len(attributes) == 0 {
 		return nil
 	}
@@ -1208,11 +1208,11 @@ func (d *DataService) UpdateDoctorAttributes(doctorID int64, attributes map[stri
 	return tx.Commit()
 }
 
-func (d *DataService) AddMedicalLicenses(licenses []*common.MedicalLicense) error {
+func (d *dataService) AddMedicalLicenses(licenses []*common.MedicalLicense) error {
 	return d.addMedicalLicenses(d.db, licenses)
 }
 
-func (d *DataService) addMedicalLicenses(db db, licenses []*common.MedicalLicense) error {
+func (d *dataService) addMedicalLicenses(db db, licenses []*common.MedicalLicense) error {
 	if len(licenses) == 0 {
 		return nil
 	}
@@ -1230,7 +1230,7 @@ func (d *DataService) addMedicalLicenses(db db, licenses []*common.MedicalLicens
 	return err
 }
 
-func (d *DataService) UpdateMedicalLicenses(doctorID int64, licenses []*common.MedicalLicense) error {
+func (d *dataService) UpdateMedicalLicenses(doctorID int64, licenses []*common.MedicalLicense) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -1249,7 +1249,7 @@ func (d *DataService) UpdateMedicalLicenses(doctorID int64, licenses []*common.M
 	return tx.Commit()
 }
 
-func (d *DataService) MedicalLicenses(doctorID int64) ([]*common.MedicalLicense, error) {
+func (d *dataService) MedicalLicenses(doctorID int64) ([]*common.MedicalLicense, error) {
 	rows, err := d.db.Query(`
 		SELECT id, state, license_number, status, expiration_date
 		FROM doctor_medical_license
@@ -1275,7 +1275,7 @@ func (d *DataService) MedicalLicenses(doctorID int64) ([]*common.MedicalLicense,
 	return licenses, nil
 }
 
-func (d *DataService) CareProviderProfile(accountID int64) (*common.CareProviderProfile, error) {
+func (d *dataService) CareProviderProfile(accountID int64) (*common.CareProviderProfile, error) {
 	row := d.db.QueryRow(`
 		SELECT full_name, why_spruce, qualifications, undergraduate_school, graduate_school,
 			medical_school, residency, fellowship, experience, creation_date, modified_date
@@ -1297,7 +1297,7 @@ func (d *DataService) CareProviderProfile(accountID int64) (*common.CareProvider
 	return &profile, nil
 }
 
-func (d *DataService) UpdateCareProviderProfile(accountID int64, profile *common.CareProviderProfile) error {
+func (d *dataService) UpdateCareProviderProfile(accountID int64, profile *common.CareProviderProfile) error {
 	_, err := d.db.Exec(`
 		REPLACE INTO care_provider_profile (
 			account_id, full_name, why_spruce, qualifications, undergraduate_school,
@@ -1309,7 +1309,7 @@ func (d *DataService) UpdateCareProviderProfile(accountID int64, profile *common
 	return err
 }
 
-func (d *DataService) GetOldestTreatmentPlanInStatuses(max int, statuses []common.TreatmentPlanStatus) ([]*TreatmentPlanAge, error) {
+func (d *dataService) GetOldestTreatmentPlanInStatuses(max int, statuses []common.TreatmentPlanStatus) ([]*TreatmentPlanAge, error) {
 	var whereClause string
 	var params []interface{}
 
@@ -1347,7 +1347,7 @@ func (d *DataService) GetOldestTreatmentPlanInStatuses(max int, statuses []commo
 	return tpAges, rows.Err()
 }
 
-func (d *DataService) ListTreatmentPlanResourceGuides(tpID int64) ([]*common.ResourceGuide, error) {
+func (d *dataService) ListTreatmentPlanResourceGuides(tpID int64) ([]*common.ResourceGuide, error) {
 	rows, err := d.db.Query(`
 		SELECT id, section_id, ordinal, title, photo_url
 		FROM treatment_plan_resource_guide
@@ -1371,7 +1371,7 @@ func (d *DataService) ListTreatmentPlanResourceGuides(tpID int64) ([]*common.Res
 	return guides, rows.Err()
 }
 
-func (d *DataService) AddResourceGuidesToTreatmentPlan(tpID int64, guideIDs []int64) error {
+func (d *dataService) AddResourceGuidesToTreatmentPlan(tpID int64, guideIDs []int64) error {
 	if len(guideIDs) == 0 {
 		return nil
 	}
@@ -1409,7 +1409,7 @@ func addResourceGuidesToTreatmentPlan(tx *sql.Tx, tpID int64, guideIDs []int64) 
 	return err
 }
 
-func (d *DataService) RemoveResourceGuidesFromTreatmentPlan(tpID int64, guideIDs []int64) error {
+func (d *dataService) RemoveResourceGuidesFromTreatmentPlan(tpID int64, guideIDs []int64) error {
 	if len(guideIDs) == 0 {
 		return nil
 	}

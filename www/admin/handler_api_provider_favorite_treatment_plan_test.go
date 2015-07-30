@@ -62,7 +62,7 @@ func TestHandlerProviderFTPGETSuccess(t *testing.T) {
 			LastName:  "DLN2",
 		},
 	}
-	dataAPI := mockedDataAPI_handlerProviderFTP{DataAPI: &api.DataService{}, ftp: ftp, memberships: memberships, doctors: doctors}
+	dataAPI := mockedDataAPI_handlerProviderFTP{ftp: ftp, memberships: memberships, doctors: doctors}
 	tresp, err := responses.TransformFTPToResponse(dataAPI, nil, 1, ftp, "")
 	test.OK(t, err)
 	providerFTPHandler := newProviderFTPHandler(dataAPI, nil)

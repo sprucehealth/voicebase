@@ -7,7 +7,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
-func (d *DataService) AnalyticsReport(id int64) (*common.AnalyticsReport, error) {
+func (d *dataService) AnalyticsReport(id int64) (*common.AnalyticsReport, error) {
 	var rep common.AnalyticsReport
 	if err := d.db.QueryRow(
 		`SELECT id, owner_account_id, name, query, presentation, created, modified
@@ -24,7 +24,7 @@ func (d *DataService) AnalyticsReport(id int64) (*common.AnalyticsReport, error)
 	return &rep, nil
 }
 
-func (d *DataService) ListAnalyticsReports() ([]*common.AnalyticsReport, error) {
+func (d *dataService) ListAnalyticsReports() ([]*common.AnalyticsReport, error) {
 	rows, err := d.db.Query(`
 		SELECT id, owner_account_id, name, created, modified
 		FROM analytics_report
@@ -46,7 +46,7 @@ func (d *DataService) ListAnalyticsReports() ([]*common.AnalyticsReport, error) 
 	return reports, rows.Err()
 }
 
-func (d *DataService) CreateAnalyticsReport(ownerAccountID int64, name, query, presentation string) (int64, error) {
+func (d *dataService) CreateAnalyticsReport(ownerAccountID int64, name, query, presentation string) (int64, error) {
 	res, err := d.db.Exec(`
 		INSERT INTO analytics_report (owner_account_id, name, query, presentation)
 		VALUES (?, ?, ?, ?)`,
@@ -57,7 +57,7 @@ func (d *DataService) CreateAnalyticsReport(ownerAccountID int64, name, query, p
 	return res.LastInsertId()
 }
 
-func (d *DataService) UpdateAnalyticsReport(id int64, name, query, presentation *string) error {
+func (d *dataService) UpdateAnalyticsReport(id int64, name, query, presentation *string) error {
 	var cols []string
 	var vals []interface{}
 	if name != nil {

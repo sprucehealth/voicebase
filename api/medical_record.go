@@ -8,7 +8,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
-func (d *DataService) MedicalRecordsForPatient(patientID int64) ([]*common.MedicalRecord, error) {
+func (d *dataService) MedicalRecordsForPatient(patientID int64) ([]*common.MedicalRecord, error) {
 	rows, err := d.db.Query(`
 		SELECT id, status, error, storage_url, requested_timestamp, completed_timestamp
 		FROM patient_exported_medical_record
@@ -37,7 +37,7 @@ func (d *DataService) MedicalRecordsForPatient(patientID int64) ([]*common.Medic
 	return records, rows.Err()
 }
 
-func (d *DataService) MedicalRecord(id int64) (*common.MedicalRecord, error) {
+func (d *dataService) MedicalRecord(id int64) (*common.MedicalRecord, error) {
 	row := d.db.QueryRow(`
 		SELECT patient_id, status, error, storage_url, requested_timestamp, completed_timestamp
 		FROM patient_exported_medical_record
@@ -59,7 +59,7 @@ func (d *DataService) MedicalRecord(id int64) (*common.MedicalRecord, error) {
 	return r, nil
 }
 
-func (d *DataService) CreateMedicalRecord(patientID int64) (int64, error) {
+func (d *dataService) CreateMedicalRecord(patientID int64) (int64, error) {
 	res, err := d.db.Exec(`
 		INSERT INTO patient_exported_medical_record (patient_id, status)
 		VALUES (?, ?)`, patientID, common.MRPending.String())
@@ -69,7 +69,7 @@ func (d *DataService) CreateMedicalRecord(patientID int64) (int64, error) {
 	return res.LastInsertId()
 }
 
-func (d *DataService) UpdateMedicalRecord(id int64, update *MedicalRecordUpdate) error {
+func (d *dataService) UpdateMedicalRecord(id int64, update *MedicalRecordUpdate) error {
 	args := dbutil.MySQLVarArgs()
 	if update.Status != nil {
 		switch *update.Status {
