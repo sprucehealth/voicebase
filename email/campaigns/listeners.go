@@ -55,6 +55,7 @@ func InitListeners(dispatch *dispatch.Dispatcher, cfgStore cfg.Store, emailServi
 	cfgStore.Register(welcomeEmailEnabledDef)
 	cfgStore.Register(minorTreatmentPlanIssuedEmailEnabledDef)
 	cfgStore.Register(minorTriagedEmailEnabledDef)
+	cfgStore.Register(parentWelcomeEmailEnabledDef)
 	dispatch.SubscribeAsync(func(ev *patient.SignupEvent) error {
 		if cfgStore.Snapshot().Bool(welcomeEmailEnabledDef.Name) {
 			if _, err := emailService.Send([]int64{ev.AccountID}, patientSignupEmailType, nil, &mandrill.Message{}, email.OnlyOnce|email.CanOptOut); err != nil {
