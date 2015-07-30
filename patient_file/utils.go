@@ -353,10 +353,10 @@ func populateParentInfo(
 
 	// Parent gender
 	context.Set("parent_gender:key", "Gender")
-	context.Set("parent_gender:value", strings.ToTitle(parentPatient.Gender))
+	context.Set("parent_gender:value", strings.Title(parentPatient.Gender))
 
 	// Parent relationship
-	context.Set("parent_relationship:key", "Gender")
+	context.Set("parent_relationship:key", "Relationship")
 	context.Set("parent_relationship:value", consent.Relationship)
 
 	// Parent Photo ID
