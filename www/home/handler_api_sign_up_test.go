@@ -23,7 +23,7 @@ func (a *mockDataAPI_signUp) RegisterPatient(p *common.Patient) error {
 	return nil
 }
 
-func (a *mockDataAPI_signUp) AvailableStates() ([]*common.State, error) {
+func (a *mockDataAPI_signUp) ListStates() ([]*common.State, error) {
 	return []*common.State{{Abbreviation: "CA"}}, nil
 }
 
