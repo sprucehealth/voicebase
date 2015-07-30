@@ -82,7 +82,7 @@ func ValidateAuth(authAPI api.AuthAPI, r *http.Request) (*common.Account, error)
 	return authAPI.ValidateToken(c.Value, api.Web)
 }
 
-type authRequiredFilter struct {
+type authRequiredHandler struct {
 	authAPI       api.AuthAPI
 	okHandler     httputil.ContextHandler
 	failedHandler httputil.ContextHandler
@@ -136,7 +136,7 @@ func AuthRequiredHandler(ok, failed httputil.ContextHandler, authAPI api.AuthAPI
 	if failed == nil {
 		failed = loginRedirectHandler
 	}
-	return &authRequiredFilter{
+	return &authRequiredHandler{
 		authAPI:       authAPI,
 		okHandler:     ok,
 		failedHandler: failed,
@@ -154,7 +154,7 @@ func (h roleRequiredHandler) ServeHTTP(ctx context.Context, w http.ResponseWrite
 	h.failedHandler.ServeHTTP(ctx, w, r)
 }
 
-func (h *authRequiredFilter) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *authRequiredHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	account, err := ValidateAuth(h.authAPI, r)
 	switch err {
 	case nil:
@@ -169,5 +169,5 @@ func (h *authRequiredFilter) ServeHTTP(ctx context.Context, w http.ResponseWrite
 }
 
 var loginRedirectHandler = httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/login?next="+url.QueryEscape(r.URL.Path), http.StatusSeeOther)
+	RedirectToSignIn(w, r)
 })

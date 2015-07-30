@@ -50,24 +50,7 @@
 		BaseStaticURL: {{staticURL ""}},
 		Environment: {{.Environment}}
 	};
-	var ParentalConsentHydration = {
-		ChildDetails: {
-			firstName: "Timmy",
-			gender: "male",
-			patientID: "12345"
-		},
-		ParentalConsent: { // Same as `GET /api/parental-consent?child_patient_id=123` response
-			"consented": false,
-			"relationship": "mother",
-		},
-		IsParentSignedIn: false,                                                                                                                                                     
-		IdentityVerificationImages: { // Same as `GET /api/parental-consent/image` response
-			"types": {
-				"governmentid": "https://images.duckduckgo.com/iu/?u=http%3A%2F%2Fwondrouspics.com%2Fwp-content%2Fuploads%2F2011%2F12%2FCute-Kitten2.jpg%23cute%2520kittens&f=1",
-				"selfie": "https://images.duckduckgo.com/iu/?u=http%3A%2F%2Fwallpaperspoints.com%2Fwp-content%2Fuploads%2F2013%2F05%2Fcute-cat-photo.jpg&f=1",
-			}
-		}
-	};
+	var ParentalConsentHydration = {{.Hydration}};
 	</script>
 	<script type="text/javascript">
 		/* Modernizr 2.8.3 (Custom Build) | MIT & BSD

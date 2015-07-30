@@ -83,7 +83,7 @@ func (r *Router) ServeHTTP(ctx context.Context, w http.ResponseWriter, req *http
 	var handler httputil.ContextHandler
 	if r.Match(req, &match) {
 		handler = match.Handler
-		ctx = setVars(ctx, match.Vars)
+		ctx = SetVars(ctx, match.Vars)
 		ctx = setCurrentRoute(ctx, match.Route)
 	}
 	if handler == nil {
@@ -313,7 +313,8 @@ func CurrentRoute(ctx context.Context) *Route {
 	return nil
 }
 
-func setVars(ctx context.Context, val interface{}) context.Context {
+// SetVars sets the route variables for the context. It should only be used for tests.
+func SetVars(ctx context.Context, val map[string]string) context.Context {
 	return context.WithValue(ctx, varsKey, val)
 }
 

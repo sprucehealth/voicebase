@@ -122,7 +122,26 @@ func New(c *Config) httputil.ContextHandler {
 	router.Handle("/privacy", StaticHTMLHandler("terms.html"))
 	router.Handle("/medication-affordability", StaticHTMLHandler("medafford.html"))
 
-	home.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.SMSAPI, c.FromNumber, c.BranchClient, c.RateLimiters, c.Signer, c.WebPassword, c.AnalyticsLogger, c.TemplateLoader, c.ExperimentIDs, c.MediaStore, c.Dispatcher, c.MetricsRegistry.Scope("home"))
+	home.SetupRoutes(router, &home.Config{
+		DataAPI:         c.DataAPI,
+		AuthAPI:         c.AuthAPI,
+		SMSAPI:          c.SMSAPI,
+		DiagnosisSvc:    c.DiagnosisAPI,
+		WebDomain:       c.WebDomain,
+		APIDomain:       c.APIDomain,
+		FromSMSNumber:   c.FromNumber,
+		BranchClient:    c.BranchClient,
+		RateLimiters:    c.RateLimiters,
+		Signer:          c.Signer,
+		Password:        c.WebPassword,
+		AnalyticsLogger: c.AnalyticsLogger,
+		TemplateLoader:  c.TemplateLoader,
+		ExperimentIDs:   c.ExperimentIDs,
+		MediaStore:      c.MediaStore,
+		Stores:          c.Stores,
+		Dispatcher:      c.Dispatcher,
+		MetricsRegistry: c.MetricsRegistry.Scope("home"),
+	})
 	passreset.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.SMSAPI, c.FromNumber, c.EmailService, c.SupportEmail, c.WebDomain, c.TemplateLoader, c.MetricsRegistry.Scope("reset-password"))
 	dronboard.SetupRoutes(router, &dronboard.Config{
 		DataAPI:         c.DataAPI,
@@ -157,21 +176,6 @@ func New(c *Config) httputil.ContextHandler {
 		EventsClient:    c.EventsClient,
 		Cfg:             c.Cfg,
 	})
-
-	patientAuthFilter := func(h httputil.ContextHandler) httputil.ContextHandler {
-		return www.AuthRequiredHandler(www.RoleRequiredHandler(h, nil, api.RolePatient), nil, c.AuthAPI)
-	}
-	router.Handle("/patient/medical-record", patientAuthFilter(home.NewMedRecordWebDownloadHandler(c.DataAPI, c.Stores["medicalrecords"])))
-	if environment.IsProd() {
-		router.Handle("/patient/medical-record/media/{media:[0-9]+}",
-			patientAuthFilter(home.NewMedRecordPhotoHandler(c.DataAPI, c.MediaStore, c.Signer)))
-	} else {
-		adminAuthFilter := func(h httputil.ContextHandler) httputil.ContextHandler {
-			return www.AuthRequiredHandler(www.RoleRequiredHandler(h, nil, api.RoleAdmin), nil, c.AuthAPI)
-		}
-		router.Handle("/patient/medical-record/media/{media:[0-9]+}",
-			adminAuthFilter(home.NewMedRecordPhotoHandler(c.DataAPI, c.MediaStore, c.Signer)))
-	}
 
 	secureRedirectHandler := httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		if !environment.IsTest() && r.Header.Get("X-Forwarded-Proto") != "https" {

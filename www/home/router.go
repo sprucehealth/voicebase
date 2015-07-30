@@ -5,45 +5,55 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/branch"
+	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
+	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/media"
+	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/www"
 )
 
 const passCookieName = "hp"
 
+// Config is all the dependencies and settings for the home routes
+type Config struct {
+	DataAPI         api.DataAPI
+	AuthAPI         api.AuthAPI
+	SMSAPI          api.SMSAPI
+	DiagnosisSvc    diagnosis.API
+	WebDomain       string
+	APIDomain       string
+	FromSMSNumber   string
+	BranchClient    branch.Client
+	RateLimiters    ratelimit.KeyedRateLimiters
+	Signer          *sig.Signer
+	Password        string
+	AnalyticsLogger analytics.Logger
+	TemplateLoader  *www.TemplateLoader
+	ExperimentIDs   map[string]string
+	MediaStore      *media.Store
+	Stores          storage.StoreMap
+	Dispatcher      dispatch.Publisher
+	MetricsRegistry metrics.Registry
+}
+
 // SetupRoutes configures all routes for the home website using the provided mux.
-func SetupRoutes(
-	r *mux.Router,
-	dataAPI api.DataAPI,
-	authAPI api.AuthAPI,
-	smsAPI api.SMSAPI,
-	fromSMSNumber string,
-	branchClient branch.Client,
-	rateLimiters ratelimit.KeyedRateLimiters,
-	signer *sig.Signer,
-	password string,
-	analyticsLogger analytics.Logger,
-	templateLoader *www.TemplateLoader,
-	experimentIDs map[string]string,
-	mediaStore *media.Store,
-	dispatcher dispatch.Publisher,
-	metricsRegistry metrics.Registry,
-) {
-	templateLoader.MustLoadTemplate("home/base.html", "base.html", map[string]interface{}{
+func SetupRoutes(r *mux.Router, config *Config) {
+	config.TemplateLoader.MustLoadTemplate("home/base.html", "base.html", map[string]interface{}{
 		"availableStates": func() string {
 			// TODO: should cache this as it's mostly static
-			states, err := dataAPI.AvailableStates()
+			states, err := config.DataAPI.AvailableStates()
 			if err != nil {
 				golog.Errorf("Failed to get list of available states: %s", err)
 				// Seems like the safest fallback and doesn't seem useful to error the
@@ -70,48 +80,64 @@ func SetupRoutes(
 
 	faqCtx := func() interface{} {
 		return &faqContext{
-			Sections: faq(dataAPI),
+			Sections: faq(config.DataAPI),
 		}
 	}
 
-	r.Handle("/", newStaticHandler(r, templateLoader, "home/home.html", "Spruce", nil))
-	r.Handle("/about", newStaticHandler(r, templateLoader, "home/about.html", "About | Spruce", nil))
-	r.Handle("/conditions-treated", newStaticHandler(r, templateLoader, "home/conditions.html", "Conditions Treated | Spruce", nil))
-	r.Handle("/contact", newStaticHandler(r, templateLoader, "home/contact.html", "Contact | Spruce", nil))
-	r.Handle("/faq", newStaticHandler(r, templateLoader, "home/faq.html", "FAQ | Spruce", faqCtx))
-	r.Handle("/free-visit-terms", newStaticHandler(r, templateLoader, "home/free-visit-terms.html", "Free Visit Terms & Conditions | Spruce", nil))
-	r.Handle("/meet-the-doctors", newStaticHandler(r, templateLoader, "home/meet-the-doctors.html", "Meet the Doctors | Spruce", nil))
-	r.Handle("/providers", newStaticHandler(r, templateLoader, "home/providers.html", "For Providers | Spruce", nil))
-	r.Handle("/terms", newStaticHandler(r, templateLoader, "home/terms.html", "Terms & Conditions | Spruce", nil))
-	r.Handle("/app", newStaticHandler(r, templateLoader, "home/referral.html", "Get the App | Spruce", func() interface{} {
+	r.Handle("/", newStaticHandler(r, config.TemplateLoader, "home/home.html", "Spruce", nil))
+	r.Handle("/about", newStaticHandler(r, config.TemplateLoader, "home/about.html", "About | Spruce", nil))
+	r.Handle("/conditions-treated", newStaticHandler(r, config.TemplateLoader, "home/conditions.html", "Conditions Treated | Spruce", nil))
+	r.Handle("/contact", newStaticHandler(r, config.TemplateLoader, "home/contact.html", "Contact | Spruce", nil))
+	r.Handle("/faq", newStaticHandler(r, config.TemplateLoader, "home/faq.html", "FAQ | Spruce", faqCtx))
+	r.Handle("/free-visit-terms", newStaticHandler(r, config.TemplateLoader, "home/free-visit-terms.html", "Free Visit Terms & Conditions | Spruce", nil))
+	r.Handle("/meet-the-doctors", newStaticHandler(r, config.TemplateLoader, "home/meet-the-doctors.html", "Meet the Doctors | Spruce", nil))
+	r.Handle("/providers", newStaticHandler(r, config.TemplateLoader, "home/providers.html", "For Providers | Spruce", nil))
+	r.Handle("/terms", newStaticHandler(r, config.TemplateLoader, "home/terms.html", "Terms & Conditions | Spruce", nil))
+	r.Handle("/app", newStaticHandler(r, config.TemplateLoader, "home/referral.html", "Get the App | Spruce", func() interface{} {
 		return &refContext{
 			Title: "See a dermatologist, right from your phone.",
 		}
 	}))
 
-	parentalConsentHandler := newParentalConsentHandler(dataAPI, templateLoader)
-	r.Handle("/parental-consent", parentalConsentHandler)
-	r.Handle("/parental-consent/{page:.*}", parentalConsentHandler)
+	authFilter := func(h httputil.ContextHandler) httputil.ContextHandler {
+		return www.AuthRequiredHandler(h, nil, config.AuthAPI)
+	}
+	authOptionalFilter := func(h httputil.ContextHandler) httputil.ContextHandler {
+		return www.AuthRequiredHandler(h, h, config.AuthAPI)
+	}
+	r.Handle("/patient/medical-record", authFilter(newMedRecordWebDownloadHandler(config.DataAPI, config.Stores["medicalrecords"])))
+	r.Handle(`/pc/{childid:\d+}/medrecord`, authFilter(newParentalMedicalRecordHandler(config.DataAPI, &medrecord.Renderer{
+		DataAPI:            config.DataAPI,
+		DiagnosisSvc:       config.DiagnosisSvc,
+		MediaStore:         config.MediaStore,
+		APIDomain:          config.APIDomain,
+		WebDomain:          config.WebDomain,
+		Signer:             config.Signer,
+		ExpirationDuration: time.Hour,
+	})))
+	parentalConsentHandler := authOptionalFilter(newParentalConsentHandler(config.DataAPI, config.MediaStore, config.TemplateLoader))
+	r.Handle(`/pc/{childid:\d+}`, parentalConsentHandler)
+	r.Handle(`/pc/{childid:\d+}/{page:.*}`, parentalConsentHandler)
 
 	// Email
-	r.Handle("/e/optout", newEmailOptoutHandler(dataAPI, authAPI, signer, templateLoader))
+	r.Handle("/e/optout", newEmailOptoutHandler(config.DataAPI, config.AuthAPI, config.Signer, config.TemplateLoader))
 
 	// Referrals
-	r.Handle("/r/{code}", newPromoClaimHandler(dataAPI, authAPI, branchClient, analyticsLogger, templateLoader))
+	r.Handle("/r/{code}", newPromoClaimHandler(config.DataAPI, config.AuthAPI, config.BranchClient, config.AnalyticsLogger, config.TemplateLoader))
 
 	// API
 	apiAuthFilter := func(h httputil.ContextHandler) httputil.ContextHandler {
-		return www.APIAuthRequiredHandler(h, authAPI)
+		return www.APIAuthRequiredHandler(h, config.AuthAPI)
 	}
-	r.Handle("/api/auth/sign-in", newSignInAPIHandler(authAPI))
-	r.Handle("/api/auth/sign-up", newSignUpAPIHandler(dataAPI, authAPI))
-	r.Handle("/api/forms/{form:[0-9a-z-]+}", newFormsAPIHandler(dataAPI))
-	r.Handle("/api/textdownloadlink", newTextDownloadLinkAPIHandler(dataAPI, smsAPI, fromSMSNumber, branchClient, rateLimiters.Get("textdownloadlink")))
-	r.Handle("/api/parental-consent", apiAuthFilter(newParentalConsentAPIHAndler(dataAPI, dispatcher)))
-	r.Handle("/api/parental-consent/image", apiAuthFilter(newParentalConsentImageAPIHAndler(dataAPI, dispatcher, mediaStore)))
+	r.Handle("/api/auth/sign-in", newSignInAPIHandler(config.AuthAPI))
+	r.Handle("/api/auth/sign-up", newSignUpAPIHandler(config.DataAPI, config.AuthAPI))
+	r.Handle("/api/forms/{form:[0-9a-z-]+}", newFormsAPIHandler(config.DataAPI))
+	r.Handle("/api/textdownloadlink", newTextDownloadLinkAPIHandler(config.DataAPI, config.SMSAPI, config.FromSMSNumber, config.BranchClient, config.RateLimiters.Get("textdownloadlink")))
+	r.Handle("/api/parental-consent", apiAuthFilter(newParentalConsentAPIHAndler(config.DataAPI, config.Dispatcher)))
+	r.Handle("/api/parental-consent/image", apiAuthFilter(newParentalConsentImageAPIHAndler(config.DataAPI, config.Dispatcher, config.MediaStore)))
 
 	// Analytics
-	ah := newAnalyticsHandler(analyticsLogger, metricsRegistry.Scope("analytics"))
+	ah := newAnalyticsHandler(config.AnalyticsLogger, config.MetricsRegistry.Scope("analytics"))
 	r.Handle("/a/events", ah)   // For javascript originating events
 	r.Handle("/a/logo.png", ah) // For remote event tracking "pixels" (e.g. email)
 }
