@@ -72,7 +72,7 @@ func (m *mockDataAPIPromotionConfirmationHandler) ReferralProgramTemplate(id int
 func TestPromotionConfirmationHandlerGETRequiresParams(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	dataAPI := &mockDataAPIPromotionConfirmationHandler{DataAPI: &api.DataService{}}
+	dataAPI := &mockDataAPIPromotionConfirmationHandler{}
 	promoConfHandler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
 	handler := test_handler.MockHandler{
 		H: promoConfHandler,
@@ -87,7 +87,6 @@ func TestPromotionConfirmationHandlerGETNoPromotion(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?code=foo", nil)
 	test.OK(t, err)
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
-		DataAPI:            &api.DataService{},
 		lookupPromoCodeErr: api.ErrNotFound(`promotion_code`),
 	}
 	promoConfHandler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
@@ -105,7 +104,6 @@ func TestPromotionConfirmationHandlerGETCodeLookupErr(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?code=foo", nil)
 	test.OK(t, err)
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
-		DataAPI:            &api.DataService{},
 		lookupPromoCodeErr: errors.New("Foo"),
 	}
 	promoConfHandler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
@@ -122,7 +120,6 @@ func TestPromotionConfirmationHandlerGETPromotionLookupErr(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?code=foo", nil)
 	test.OK(t, err)
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
-		DataAPI:         &api.DataService{},
 		lookupPromoCode: &common.PromoCode{ID: 1, Code: "foo", IsReferral: false},
 		promotionErr:    errors.New("Foo"),
 	}
@@ -141,7 +138,6 @@ func TestPromotionConfirmationHandlerGETReferralLookupErr(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?code=foo", nil)
 	test.OK(t, err)
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
-		DataAPI:            &api.DataService{},
 		lookupPromoCode:    &common.PromoCode{ID: 1, Code: "foo", IsReferral: true},
 		referralProgramErr: errors.New("Foo"),
 	}
@@ -160,7 +156,6 @@ func TestPromotionConfirmationHandlerGETReferralGetPatientFromAccountIDErr(t *te
 	r, err := http.NewRequest("GET", "mock.api.request?code=foo", nil)
 	test.OK(t, err)
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
-		DataAPI:                    &api.DataService{},
 		lookupPromoCode:            &common.PromoCode{ID: 1, Code: "foo", IsReferral: true},
 		referralProgram:            createReferralProgram(2, "imageURL", ptr.Int64(12345)),
 		getPatientFromAccountIDErr: errors.New("Foo"),
@@ -180,7 +175,6 @@ func TestPromotionConfirmationHandlerGETReferralPatientNotFoundGetDoctorFromAcco
 	r, err := http.NewRequest("GET", "mock.api.request?code=foo", nil)
 	test.OK(t, err)
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
-		DataAPI:                    &api.DataService{},
 		lookupPromoCode:            &common.PromoCode{ID: 1, Code: "foo", IsReferral: true},
 		referralProgram:            createReferralProgram(2, "imageURL", ptr.Int64(12345)),
 		getPatientFromAccountIDErr: api.ErrNotFound(`patient`),
@@ -201,7 +195,6 @@ func TestPromotionConfirmationHandlerGETReferralProgramTemplateErr(t *testing.T)
 	r, err := http.NewRequest("GET", "mock.api.request?code=foo", nil)
 	test.OK(t, err)
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
-		DataAPI:                    &api.DataService{},
 		lookupPromoCode:            &common.PromoCode{ID: 1, Code: "foo", IsReferral: true},
 		referralProgram:            createReferralProgram(2, "imageURL", ptr.Int64(12345)),
 		getPatientFromAccountID:    &common.Patient{FirstName: "FirstName"},
@@ -222,7 +215,6 @@ func TestPromotionConfirmationHandlerGETReferralPromotionErr(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?code=foo", nil)
 	test.OK(t, err)
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
-		DataAPI:                 &api.DataService{},
 		lookupPromoCode:         &common.PromoCode{ID: 1, Code: "foo", IsReferral: true},
 		referralProgram:         createReferralProgram(2, "imageURL", ptr.Int64(12345)),
 		getPatientFromAccountID: &common.Patient{FirstName: "FirstName"},
@@ -244,7 +236,6 @@ func TestPromotionConfirmationHandlerGETReferralImageProvided(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?code=foo", nil)
 	test.OK(t, err)
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
-		DataAPI:                 &api.DataService{},
 		lookupPromoCode:         &common.PromoCode{ID: 1, Code: "foo", IsReferral: true},
 		referralProgram:         createReferralProgram(2, "imageURL", ptr.Int64(12345)),
 		getPatientFromAccountID: &common.Patient{FirstName: "FirstName"},
@@ -272,7 +263,6 @@ func TestPromotionConfirmationHandlerGETReferralDoctorImageNotProvided(t *testin
 	r, err := http.NewRequest("GET", "mock.api.request?code=foo", nil)
 	test.OK(t, err)
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
-		DataAPI:                    &api.DataService{},
 		lookupPromoCode:            &common.PromoCode{ID: 1, Code: "foo", IsReferral: true},
 		referralProgram:            createReferralProgram(2, "", ptr.Int64(12345)),
 		getPatientFromAccountIDErr: api.ErrNotFound(`patient`),
@@ -300,7 +290,6 @@ func TestPromotionConfirmationHandlerGETDoctorReferralProgramNoTemplateID(t *tes
 	r, err := http.NewRequest("GET", "mock.api.request?code=foo", nil)
 	test.OK(t, err)
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
-		DataAPI:                    &api.DataService{},
 		lookupPromoCode:            &common.PromoCode{ID: 1, Code: "foo", IsReferral: true},
 		referralProgram:            createReferralProgram(2, "", nil),
 		getPatientFromAccountIDErr: api.ErrNotFound(`patient`),
@@ -328,7 +317,6 @@ func TestPromotionConfirmationHandlerGETPromotionImage(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?code=foo", nil)
 	test.OK(t, err)
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
-		DataAPI:         &api.DataService{},
 		lookupPromoCode: &common.PromoCode{ID: 1, Code: "foo", IsReferral: false},
 		promotion:       createPromotion("imageURL", "", nil, 0),
 	}
@@ -353,7 +341,6 @@ func TestPromotionConfirmationHandlerGETPromotionNoImage(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?code=foo", nil)
 	test.OK(t, err)
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
-		DataAPI:         &api.DataService{},
 		lookupPromoCode: &common.PromoCode{ID: 1, Code: "foo", IsReferral: false},
 		promotion:       createPromotion("", "", nil, 0),
 	}

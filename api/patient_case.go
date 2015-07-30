@@ -15,7 +15,7 @@ import (
 	"github.com/sprucehealth/backend/patient_case/model"
 )
 
-func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseID int64) ([]*common.CareProviderAssignment, error) {
+func (d *dataService) GetDoctorsAssignedToPatientCase(patientCaseID int64) ([]*common.CareProviderAssignment, error) {
 	rows, err := d.db.Query(`
 		SELECT provider_id, status, creation_date, expires
 		FROM patient_case_care_provider_assignment
@@ -38,7 +38,7 @@ func (d *DataService) GetDoctorsAssignedToPatientCase(patientCaseID int64) ([]*c
 	return assignments, rows.Err()
 }
 
-func (d *DataService) TimedOutCases() ([]*common.PatientCase, error) {
+func (d *dataService) TimedOutCases() ([]*common.PatientCase, error) {
 	rows, err := d.db.Query(`
 		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed
 		FROM patient_case pc
@@ -63,7 +63,7 @@ func (d *DataService) TimedOutCases() ([]*common.PatientCase, error) {
 
 // GetActiveMembersOfCareTeamForCase returns the care providers that are permanently part of the patient care team
 // It also populates the actual provider object so as to make it possible for the client to use this information as is seen fit
-func (d *DataService) GetActiveMembersOfCareTeamForCase(patientCaseID int64, fillInDetails bool) ([]*common.CareProviderAssignment, error) {
+func (d *dataService) GetActiveMembersOfCareTeamForCase(patientCaseID int64, fillInDetails bool) ([]*common.CareProviderAssignment, error) {
 	rows, err := d.db.Query(`
 		SELECT provider_id, role_type_tag, status, creation_date
 		FROM patient_case_care_provider_assignment
@@ -77,7 +77,7 @@ func (d *DataService) GetActiveMembersOfCareTeamForCase(patientCaseID int64, fil
 	return d.getMembersOfCareTeam(rows, fillInDetails)
 }
 
-func (d *DataService) GetActiveCareTeamMemberForCase(role string, patientCaseID int64) (*common.CareProviderAssignment, error) {
+func (d *dataService) GetActiveCareTeamMemberForCase(role string, patientCaseID int64) (*common.CareProviderAssignment, error) {
 	rows, err := d.db.Query(`
 		SELECT provider_id, role_type_tag, status, creation_date
 		FROM patient_case_care_provider_assignment
@@ -108,7 +108,7 @@ func (d *DataService) GetActiveCareTeamMemberForCase(role string, patientCaseID 
 // AddDoctorToPatientCase adds the provided doctor to the care team of the case
 // after ensuring that the doctor is registered in the patient's state
 // for the pathway pertaining to the patient case.
-func (d *DataService) AddDoctorToPatientCase(doctorID, caseID int64) error {
+func (d *dataService) AddDoctorToPatientCase(doctorID, caseID int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -154,7 +154,7 @@ func (d *DataService) AddDoctorToPatientCase(doctorID, caseID int64) error {
 	return tx.Commit()
 }
 
-func (d *DataService) assignCareProviderToPatientFileAndCase(tx *sql.Tx, providerID, roleTypeID int64, patientCase *common.PatientCase) error {
+func (d *dataService) assignCareProviderToPatientFileAndCase(tx *sql.Tx, providerID, roleTypeID int64, patientCase *common.PatientCase) error {
 	pathwayID, err := d.pathwayIDFromTag(patientCase.PathwayTag)
 	if err != nil {
 		return err
@@ -189,7 +189,7 @@ func (d *DataService) assignCareProviderToPatientFileAndCase(tx *sql.Tx, provide
 	return err
 }
 
-func (d *DataService) CasesForPathway(patientID int64, pathwayTag string, states []string) ([]*common.PatientCase, error) {
+func (d *dataService) CasesForPathway(patientID int64, pathwayTag string, states []string) ([]*common.PatientCase, error) {
 	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -224,7 +224,7 @@ func (d *DataService) CasesForPathway(patientID int64, pathwayTag string, states
 	return patientCases, errors.Trace(rows.Err())
 }
 
-func (d *DataService) GetPatientCaseFromPatientVisitID(patientVisitID int64) (*common.PatientCase, error) {
+func (d *dataService) GetPatientCaseFromPatientVisitID(patientVisitID int64) (*common.PatientCase, error) {
 	row := d.db.QueryRow(`
 		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed
 		FROM patient_case pc
@@ -234,7 +234,7 @@ func (d *DataService) GetPatientCaseFromPatientVisitID(patientVisitID int64) (*c
 	return d.getPatientCaseFromRow(row)
 }
 
-func (d *DataService) GetPatientCaseFromID(patientCaseID int64) (*common.PatientCase, error) {
+func (d *dataService) GetPatientCaseFromID(patientCaseID int64) (*common.PatientCase, error) {
 	row := d.db.QueryRow(`
 		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed
 		FROM patient_case pc
@@ -243,7 +243,7 @@ func (d *DataService) GetPatientCaseFromID(patientCaseID int64) (*common.Patient
 	return d.getPatientCaseFromRow(row)
 }
 
-func (d *DataService) GetCasesForPatient(patientID int64, states []string) ([]*common.PatientCase, error) {
+func (d *dataService) GetCasesForPatient(patientID int64, states []string) ([]*common.PatientCase, error) {
 	vals := []interface{}{patientID}
 	var whereClause string
 	if len(states) > 0 {
@@ -278,7 +278,7 @@ func (d *DataService) GetCasesForPatient(patientID int64, states []string) ([]*c
 }
 
 // Utility function for populating assignment refernces with their provider's data
-func (d *DataService) populateAssignmentInfoFromProviderID(assignment *common.CareProviderAssignment, providerID int64) error {
+func (d *dataService) populateAssignmentInfoFromProviderID(assignment *common.CareProviderAssignment, providerID int64) error {
 	doctor, err := d.Doctor(assignment.ProviderID, true)
 	if err != nil {
 		return err
@@ -295,7 +295,7 @@ func (d *DataService) populateAssignmentInfoFromProviderID(assignment *common.Ca
 }
 
 // CaseCareTeams returns care teams for a given set of cases.
-func (d *DataService) CaseCareTeams(caseIDs []int64) (map[int64]*common.PatientCareTeam, error) {
+func (d *dataService) CaseCareTeams(caseIDs []int64) (map[int64]*common.PatientCareTeam, error) {
 	if len(caseIDs) == 0 {
 		return nil, nil
 	}
@@ -341,7 +341,7 @@ func (d *DataService) CaseCareTeams(caseIDs []int64) (map[int64]*common.PatientC
 	return careTeams, rows.Err()
 }
 
-func (d *DataService) DoesCaseExistForPatient(patientID, patientCaseID int64) (bool, error) {
+func (d *dataService) DoesCaseExistForPatient(patientID, patientCaseID int64) (bool, error) {
 	var id int64
 	err := d.db.QueryRow(`
 		SELECT id
@@ -354,7 +354,7 @@ func (d *DataService) DoesCaseExistForPatient(patientID, patientCaseID int64) (b
 	return err == nil, err
 }
 
-func (d *DataService) DoesActiveTreatmentPlanForCaseExist(patientCaseID int64) (bool, error) {
+func (d *dataService) DoesActiveTreatmentPlanForCaseExist(patientCaseID int64) (bool, error) {
 	var id int64
 	err := d.db.QueryRow(`
 		SELECT id
@@ -367,7 +367,7 @@ func (d *DataService) DoesActiveTreatmentPlanForCaseExist(patientCaseID int64) (
 	return err == nil, err
 }
 
-func (d *DataService) GetActiveTreatmentPlanForCase(patientCaseID int64) (*common.TreatmentPlan, error) {
+func (d *dataService) GetActiveTreatmentPlanForCase(patientCaseID int64) (*common.TreatmentPlan, error) {
 	rows, err := d.db.Query(`
 		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status, patient_viewed, sent_date
 		FROM treatment_plan
@@ -392,7 +392,7 @@ func (d *DataService) GetActiveTreatmentPlanForCase(patientCaseID int64) (*commo
 	return nil, fmt.Errorf("Expected just one active treatment plan for case instead got %d", len(treatmentPlans))
 }
 
-func (d *DataService) GetTreatmentPlansForCase(caseID int64) ([]*common.TreatmentPlan, error) {
+func (d *dataService) GetTreatmentPlansForCase(caseID int64) ([]*common.TreatmentPlan, error) {
 	rows, err := d.db.Query(`
 		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status,patient_viewed, sent_date
 		FROM treatment_plan
@@ -406,7 +406,7 @@ func (d *DataService) GetTreatmentPlansForCase(caseID int64) ([]*common.Treatmen
 	return getTreatmentPlansFromRows(rows)
 }
 
-func (d *DataService) GetVisitsForCase(patientCaseID int64, statuses []string) ([]*common.PatientVisit, error) {
+func (d *dataService) GetVisitsForCase(patientCaseID int64, statuses []string) ([]*common.PatientVisit, error) {
 	vals := []interface{}{patientCaseID}
 	var whereClauseStatusFilter string
 	if len(statuses) > 0 {
@@ -428,7 +428,7 @@ func (d *DataService) GetVisitsForCase(patientCaseID int64, statuses []string) (
 	return d.getPatientVisitFromRows(rows)
 }
 
-func (d *DataService) getPatientCaseFromRow(s scannable) (*common.PatientCase, error) {
+func (d *dataService) getPatientCaseFromRow(s scannable) (*common.PatientCase, error) {
 	var patientCase common.PatientCase
 	var pathwayID int64
 	err := s.Scan(
@@ -455,14 +455,14 @@ func (d *DataService) getPatientCaseFromRow(s scannable) (*common.PatientCase, e
 	return &patientCase, nil
 }
 
-func (d *DataService) DeleteDraftTreatmentPlanByDoctorForCase(doctorID, patientCaseID int64) error {
+func (d *dataService) DeleteDraftTreatmentPlanByDoctorForCase(doctorID, patientCaseID int64) error {
 	_, err := d.db.Exec(`
 		DELETE FROM treatment_plan
 		WHERE doctor_id = ? AND status = ? AND patient_case_id = ?`, doctorID, common.TPStatusDraft.String(), patientCaseID)
 	return err
 }
 
-func (d *DataService) GetNotificationsForCase(patientCaseID int64, notificationTypeRegistry map[string]reflect.Type) ([]*common.CaseNotification, error) {
+func (d *dataService) GetNotificationsForCase(patientCaseID int64, notificationTypeRegistry map[string]reflect.Type) ([]*common.CaseNotification, error) {
 	rows, err := d.db.Query(`
 		SELECT id, patient_case_id, notification_type, uid, creation_date, data
 		FROM case_notification
@@ -486,7 +486,7 @@ func (d *DataService) GetNotificationsForCase(patientCaseID int64, notificationT
 	return notificationItems, rows.Err()
 }
 
-func (d *DataService) NotificationsForCases(
+func (d *dataService) NotificationsForCases(
 	patientID int64,
 	notificationTypeRegistry map[string]reflect.Type) (map[int64][]*common.CaseNotification, error) {
 
@@ -545,7 +545,7 @@ func scanCaseNotification(rows *sql.Rows, typeRegistry map[string]reflect.Type) 
 	return &item, nil
 }
 
-func (d *DataService) GetNotificationCountForCase(patientCaseID int64) (int64, error) {
+func (d *dataService) GetNotificationCountForCase(patientCaseID int64) (int64, error) {
 	var notificationCount int64
 	if err := d.db.QueryRow(`select count(*) from case_notification where patient_case_id = ?`, patientCaseID).Scan(&notificationCount); err == sql.ErrNoRows {
 		return 0, ErrNotFound("case_notification")
@@ -555,7 +555,7 @@ func (d *DataService) GetNotificationCountForCase(patientCaseID int64) (int64, e
 	return notificationCount, nil
 }
 
-func (d *DataService) InsertCaseNotification(notificationItem *common.CaseNotification) error {
+func (d *dataService) InsertCaseNotification(notificationItem *common.CaseNotification) error {
 	notificationData, err := json.Marshal(notificationItem.Data)
 	if err != nil {
 		return err
@@ -566,12 +566,12 @@ func (d *DataService) InsertCaseNotification(notificationItem *common.CaseNotifi
 	return err
 }
 
-func (d *DataService) DeleteCaseNotification(uid string, patientCaseID int64) error {
+func (d *dataService) DeleteCaseNotification(uid string, patientCaseID int64) error {
 	_, err := d.db.Exec(`delete from case_notification where uid = ? and patient_case_id = ?`, uid, patientCaseID)
 	return err
 }
 
-func (d *DataService) createPatientCase(tx *sql.Tx, patientCase *common.PatientCase) error {
+func (d *dataService) createPatientCase(tx *sql.Tx, patientCase *common.PatientCase) error {
 	if patientCase.Name == "" {
 		pathway, err := d.PathwayForTag(patientCase.PathwayTag, PONone)
 		if err != nil {
@@ -611,7 +611,7 @@ func (d *DataService) createPatientCase(tx *sql.Tx, patientCase *common.PatientC
 	return d.assignCareProviderToPatientFileAndCase(tx, cc[rand.Intn(len(cc))].ID.Int64(), d.roleTypeMapping[RoleCC], patientCase)
 }
 
-func (d *DataService) UpdatePatientCase(id int64, update *PatientCaseUpdate) error {
+func (d *dataService) UpdatePatientCase(id int64, update *PatientCaseUpdate) error {
 	args := dbutil.MySQLVarArgs()
 	if update.Status != nil {
 		args.Append("status", update.Status.String())
@@ -630,7 +630,7 @@ func (d *DataService) UpdatePatientCase(id int64, update *PatientCaseUpdate) err
 }
 
 // InsertPatientCaseNote inserts the provided case note record
-func (d *DataService) InsertPatientCaseNote(n *model.PatientCaseNote) (int64, error) {
+func (d *dataService) InsertPatientCaseNote(n *model.PatientCaseNote) (int64, error) {
 	res, err := d.db.Exec(`INSERT INTO patient_case_note (case_id, author_doctor_id, note_text) VALUES (?, ?, ?)`,
 		n.CaseID, n.AuthorDoctorID, n.NoteText)
 	if err != nil {
@@ -640,7 +640,7 @@ func (d *DataService) InsertPatientCaseNote(n *model.PatientCaseNote) (int64, er
 }
 
 // UpdatePatientCaseNote updates the record for the indicated note
-func (d *DataService) UpdatePatientCaseNote(nu *model.PatientCaseNoteUpdate) (int64, error) {
+func (d *dataService) UpdatePatientCaseNote(nu *model.PatientCaseNoteUpdate) (int64, error) {
 	res, err := d.db.Exec(`UPDATE patient_case_note SET note_text = ? WHERE id = ?`, nu.NoteText, nu.ID)
 	if err != nil {
 		return 0, errors.Trace(err)
@@ -649,7 +649,7 @@ func (d *DataService) UpdatePatientCaseNote(nu *model.PatientCaseNoteUpdate) (in
 }
 
 // DeletePatientCaseNote deletes the record for the indicated note
-func (d *DataService) DeletePatientCaseNote(id int64) (int64, error) {
+func (d *dataService) DeletePatientCaseNote(id int64) (int64, error) {
 	res, err := d.db.Exec(`DELETE FROM patient_case_note WHERE id = ?`, id)
 	if err != nil {
 		return 0, errors.Trace(err)
@@ -658,7 +658,7 @@ func (d *DataService) DeletePatientCaseNote(id int64) (int64, error) {
 }
 
 // PatientCaseNote retrieves the record for the indicated note
-func (d *DataService) PatientCaseNote(id int64) (*model.PatientCaseNote, error) {
+func (d *dataService) PatientCaseNote(id int64) (*model.PatientCaseNote, error) {
 	caseNote := &model.PatientCaseNote{}
 	if err := d.db.QueryRow(
 		`SELECT id, case_id, created, modified, author_doctor_id, note_text
@@ -672,7 +672,7 @@ func (d *DataService) PatientCaseNote(id int64) (*model.PatientCaseNote, error) 
 }
 
 // PatientCaseNotes returns a map from case id to list of notes for the given case
-func (d *DataService) PatientCaseNotes(caseIDs []int64) (map[int64][]*model.PatientCaseNote, error) {
+func (d *dataService) PatientCaseNotes(caseIDs []int64) (map[int64][]*model.PatientCaseNote, error) {
 	if len(caseIDs) == 0 {
 		return nil, nil
 	}

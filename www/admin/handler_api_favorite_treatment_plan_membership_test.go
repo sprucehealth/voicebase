@@ -85,7 +85,7 @@ func TestHandlerFTPMembershipGETSuccess(t *testing.T) {
 			LastName:  "DLN2",
 		},
 	}
-	ftpMembershipHandler := newFTPMembershipHandler(mockedDataAPI_handlerFTPMembership{DataAPI: &api.DataService{}, ftp: ftp, memberships: memberships, doctors: doctors})
+	ftpMembershipHandler := newFTPMembershipHandler(mockedDataAPI_handlerFTPMembership{ftp: ftp, memberships: memberships, doctors: doctors})
 	resp := ftpMembershipGETResponse{
 		Name: "Foo",
 		Memberships: []*responses.FavoriteTreatmentPlanMembership{
@@ -120,7 +120,7 @@ func TestHandlerFTPMembershipGETSuccess(t *testing.T) {
 func TestHandlerFTPMembershipPOST(t *testing.T) {
 	r, err := http.NewRequest("POST", "/admin/api/treatment_plan/favorite/1/membership", strings.NewReader(`{"requests":[{"doctor_id":"2","pathway_tag":"foo"},{"doctor_id":"1","pathway_tag":"foo"}]}`))
 	test.OK(t, err)
-	ftpMembershipHandler := newFTPMembershipHandler(mockedDataAPI_handlerFTPMembership{DataAPI: &api.DataService{}})
+	ftpMembershipHandler := newFTPMembershipHandler(mockedDataAPI_handlerFTPMembership{})
 	m := mux.NewRouter()
 	m.Handle(`/admin/api/treatment_plan/favorite/{id:[0-9]+}/membership`, ftpMembershipHandler)
 	responseWriter := httptest.NewRecorder()
@@ -132,7 +132,7 @@ func TestHandlerFTPMembershipPOST(t *testing.T) {
 func TestHandlerFTPMembershipDELETE(t *testing.T) {
 	r, err := http.NewRequest("DELETE", "/admin/api/treatment_plan/favorite/1/membership", strings.NewReader(`{"doctor_id":"1","pathway_tag":"foo"}`))
 	test.OK(t, err)
-	ftpMembershipHandler := newFTPMembershipHandler(mockedDataAPI_handlerFTPMembership{DataAPI: &api.DataService{}})
+	ftpMembershipHandler := newFTPMembershipHandler(mockedDataAPI_handlerFTPMembership{})
 	m := mux.NewRouter()
 	m.Handle(`/admin/api/treatment_plan/favorite/{id:[0-9]+}/membership`, ftpMembershipHandler)
 	responseWriter := httptest.NewRecorder()

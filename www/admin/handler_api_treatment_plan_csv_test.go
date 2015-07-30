@@ -26,7 +26,7 @@ func TestHandlerTreatmentPlanCSVRequiresParams(t *testing.T) {
 	r, err := http.NewRequest("PUT", "mock.api.request", strings.NewReader("Foo"))
 	r.Header.Set("Content-Type", "multipart/form-data;boundary=---------------------------")
 	test.OK(t, err)
-	handler := newTreatmentPlanCSVHandler(mockedDataAPI_handlerTreatmentPlanCSV{DataAPI: &api.DataService{}}, mockedERXAPI_handlerTreatmentPlanCSV{ERxAPI: &erx.DoseSpotService{}})
+	handler := newTreatmentPlanCSVHandler(mockedDataAPI_handlerTreatmentPlanCSV{}, mockedERXAPI_handlerTreatmentPlanCSV{})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	www.APIBadRequestError(expectedWriter, r, fmt.Errorf("multipart: NextPart: EOF").Error())
 	handler.ServeHTTP(context.Background(), responseWriter, r)

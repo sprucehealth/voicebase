@@ -64,7 +64,7 @@ const (
 	PendingTaskPatientCard          = "PATIENT_CARD"
 )
 
-type DataService struct {
+type dataService struct {
 	db                           *sql.DB
 	roleTypeMapping              map[string]int64
 	roleIDMapping                map[int64]string
@@ -80,7 +80,7 @@ type DataService struct {
 }
 
 func NewDataService(DB *sql.DB, cfgStore cfg.Store, metricsRegistry metrics.Registry) (DataAPI, error) {
-	dataService := &DataService{
+	dataService := &dataService{
 		db:                DB,
 		roleTypeMapping:   make(map[string]int64),
 		roleIDMapping:     make(map[int64]string),
@@ -127,7 +127,7 @@ func registerCfgValues(cfgStore cfg.Store) {
 	cfgStore.Register(doctorFTPQueryMaxThreads)
 }
 
-func (d *DataService) skuTypeFromID(id int64) (string, error) {
+func (d *dataService) skuTypeFromID(id int64) (string, error) {
 	d.skuMapMu.RLock()
 	skuType, ok := d.skuIDToTypeMap[id]
 	d.skuMapMu.RUnlock()
@@ -150,7 +150,7 @@ func (d *DataService) skuTypeFromID(id int64) (string, error) {
 	return skuType, nil
 }
 
-func (d *DataService) skuIDFromType(skuType string) (int64, error) {
+func (d *dataService) skuIDFromType(skuType string) (int64, error) {
 	d.skuMapMu.RLock()
 	skuID, ok := d.skuTypeToIDMap[skuType]
 	d.skuMapMu.RUnlock()
@@ -173,7 +173,7 @@ func (d *DataService) skuIDFromType(skuType string) (int64, error) {
 	return skuID, nil
 }
 
-func (d *DataService) pathwayTagFromID(id int64) (string, error) {
+func (d *dataService) pathwayTagFromID(id int64) (string, error) {
 	d.pathwayMapMu.RLock()
 	tag, ok := d.pathwayIDToTagMap[id]
 	d.pathwayMapMu.RUnlock()
@@ -195,7 +195,7 @@ func (d *DataService) pathwayTagFromID(id int64) (string, error) {
 	return tag, nil
 }
 
-func (d *DataService) pathwayIDFromTag(tag string) (int64, error) {
+func (d *dataService) pathwayIDFromTag(tag string) (int64, error) {
 	tag = strings.ToLower(tag)
 
 	d.pathwayMapMu.RLock()
@@ -266,7 +266,7 @@ var possibleTreatmentTables = map[treatmentType]string{
 	doctorFavoriteTreatmentType:    "dr_favorite_treatment",
 }
 
-func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatment, params map[string]interface{}, db db) error {
+func (d *dataService) addTreatment(tType treatmentType, treatment *common.Treatment, params map[string]interface{}, db db) error {
 	medicationType := treatmentRX
 	if treatment.OTC {
 		medicationType = treatmentOTC
@@ -400,7 +400,7 @@ func (d *DataService) addTreatment(tType treatmentType, treatment *common.Treatm
 	return nil
 }
 
-func (d *DataService) includeDrugNameComponentIfNonZero(drugNameComponent, tableName, columnName string, columnsAndData map[string]interface{}, db db) error {
+func (d *dataService) includeDrugNameComponentIfNonZero(drugNameComponent, tableName, columnName string, columnsAndData map[string]interface{}, db db) error {
 	if drugNameComponent != "" {
 		componentID, err := d.getOrInsertNameInTable(db, tableName, drugNameComponent)
 		if err != nil {

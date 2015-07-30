@@ -10,7 +10,7 @@ import (
 
 // CreateToken creates a new token for the specific purpose and key. The key can be used
 // by the caller to store what the token is protecting. For instance, it could be an account ID.
-func (d *DataService) CreateToken(purpose, key, token string, expire time.Duration) (string, error) {
+func (d *dataService) CreateToken(purpose, key, token string, expire time.Duration) (string, error) {
 	if token == "" {
 		var err error
 		token, err = common.GenerateToken()
@@ -28,7 +28,7 @@ func (d *DataService) CreateToken(purpose, key, token string, expire time.Durati
 }
 
 // ValidateToken returns the key for the token if it's valid. Otherwise it returns ErrTokenDoesNotExist
-func (d *DataService) ValidateToken(purpose, token string) (string, error) {
+func (d *dataService) ValidateToken(purpose, token string) (string, error) {
 	row := d.db.QueryRow(`
 		SELECT "expires", "key"
 		FROM "token"
@@ -50,7 +50,7 @@ func (d *DataService) ValidateToken(purpose, token string) (string, error) {
 
 // DeleteToken deletes a specific token and returns number of rows deleted.
 // It's useful for invalidation / revoking access.
-func (d *DataService) DeleteToken(purpose, token string) (int, error) {
+func (d *dataService) DeleteToken(purpose, token string) (int, error) {
 	res, err := d.db.Exec(`DELETE FROM "token" WHERE "token" = ? AND "purpose" = ?`, token, purpose)
 	if err != nil {
 		return 0, errors.Trace(err)

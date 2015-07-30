@@ -11,7 +11,7 @@ import (
 // GrantParentChildConsent creates a relationship between the patient accounts and consents to treatment.
 // However, this doesn't update the patient because we can't allow the patient to do a visit until
 // we've also collected the parent's identification photos.
-func (d *DataService) GrantParentChildConsent(parentPatientID, childPatientID int64, relationship string) error {
+func (d *dataService) GrantParentChildConsent(parentPatientID, childPatientID int64, relationship string) error {
 	_, err := d.db.Exec(`INSERT IGNORE INTO patient_parent (patient_id, parent_patient_id, relationship, consented) VALUES (?, ?, ?, ?)`,
 		childPatientID, parentPatientID, relationship, true)
 	return errors.Trace(err)
@@ -19,7 +19,7 @@ func (d *DataService) GrantParentChildConsent(parentPatientID, childPatientID in
 
 // ParentalConsentCompletedForPatient updates the patient record and visits to reflect consent has been granted
 // and all necessary information has been recorded (identification photos).
-func (d *DataService) ParentalConsentCompletedForPatient(childPatientID int64) error {
+func (d *dataService) ParentalConsentCompletedForPatient(childPatientID int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return errors.Trace(err)
@@ -41,7 +41,7 @@ func (d *DataService) ParentalConsentCompletedForPatient(childPatientID int64) e
 }
 
 // ParentalConsent returns the consent status for a given child
-func (d *DataService) ParentalConsent(childPatientID int64) ([]*common.ParentalConsent, error) {
+func (d *dataService) ParentalConsent(childPatientID int64) ([]*common.ParentalConsent, error) {
 	var consents []*common.ParentalConsent
 	rows, err := d.db.Query(`SELECT parent_patient_id, consented, relationship FROM patient_parent WHERE patient_id = ?`,
 		childPatientID)
@@ -67,7 +67,7 @@ func (d *DataService) ParentalConsent(childPatientID int64) ([]*common.ParentalC
 
 // AllParentalConsent returns the full set of parent/child consent relationships which
 // is a mapping from child's patient ID to the ParentalConsent model.
-func (d *DataService) AllParentalConsent(parentPatientID int64) (map[int64]*common.ParentalConsent, error) {
+func (d *dataService) AllParentalConsent(parentPatientID int64) (map[int64]*common.ParentalConsent, error) {
 	rows, err := d.db.Query(`SELECT patient_id, consented, relationship FROM patient_parent WHERE parent_patient_id = ?`, parentPatientID)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -87,7 +87,7 @@ func (d *DataService) AllParentalConsent(parentPatientID int64) (map[int64]*comm
 
 // UpsertParentConsentProof performs and INSERT ON DUPLICATE KEY UPDATE. In which it INSERTS a new record if one does not already exist for the provided patient ID and
 // 	UPDATES any existing record to match the provided record.
-func (d *DataService) UpsertParentConsentProof(parentPatientID int64, proof *ParentalConsentProof) (int64, error) {
+func (d *dataService) UpsertParentConsentProof(parentPatientID int64, proof *ParentalConsentProof) (int64, error) {
 	if proof.GovernmentIDPhotoID == nil && proof.SelfiePhotoID == nil {
 		return 0, errors.Trace(errors.New("Atleast governmentIDPhotoID or selfiePhotoID must be specified for upsert."))
 	}
@@ -144,7 +144,7 @@ func (d *DataService) UpsertParentConsentProof(parentPatientID int64, proof *Par
 }
 
 // ParentConsentProof returns the ParentalConsentProof record mapped to the provided patient_id
-func (d *DataService) ParentConsentProof(parentPatientID int64) (*ParentalConsentProof, error) {
+func (d *dataService) ParentConsentProof(parentPatientID int64) (*ParentalConsentProof, error) {
 	var proof ParentalConsentProof
 	if err := d.db.QueryRow(`
 		SELECT governmentid_media_id, selfie_media_id

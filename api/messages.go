@@ -10,7 +10,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
-func (d *DataService) GetPeople(id []int64) (map[int64]*common.Person, error) {
+func (d *dataService) GetPeople(id []int64) (map[int64]*common.Person, error) {
 	if len(id) == 0 {
 		return map[int64]*common.Person{}, nil
 	}
@@ -36,7 +36,7 @@ func (d *DataService) GetPeople(id []int64) (map[int64]*common.Person, error) {
 	return people, nil
 }
 
-func (d *DataService) GetPersonIDByRole(roleType string, roleID int64) (int64, error) {
+func (d *dataService) GetPersonIDByRole(roleType string, roleID int64) (int64, error) {
 	var id int64
 	err := d.db.QueryRow(
 		`SELECT person.id FROM person WHERE role_type_id = ? AND role_id = ?`,
@@ -47,7 +47,7 @@ func (d *DataService) GetPersonIDByRole(roleType string, roleID int64) (int64, e
 	return id, errors.Trace(err)
 }
 
-func (d *DataService) CaseMessageForAttachment(itemType string, itemID, senderPersonID, patientCaseID int64) (*common.CaseMessage, error) {
+func (d *dataService) CaseMessageForAttachment(itemType string, itemID, senderPersonID, patientCaseID int64) (*common.CaseMessage, error) {
 	var message common.CaseMessage
 	err := d.db.QueryRow(`
 		SELECT patient_case_message.id, patient_case_message.patient_case_id, tstamp, person_id, body, private, event_text
@@ -86,7 +86,7 @@ func (d *DataService) CaseMessageForAttachment(itemType string, itemID, senderPe
 	return &message, nil
 }
 
-func (d *DataService) CaseMessagesRead(messageIDs []int64, personID int64) error {
+func (d *dataService) CaseMessagesRead(messageIDs []int64, personID int64) error {
 	if len(messageIDs) == 0 {
 		return nil
 	}
@@ -103,7 +103,7 @@ func (d *DataService) CaseMessagesRead(messageIDs []int64, personID int64) error
 	return errors.Trace(err)
 }
 
-func (d *DataService) ListCaseMessages(caseID int64, opts ListCaseMessagesOption) ([]*common.CaseMessage, error) {
+func (d *dataService) ListCaseMessages(caseID int64, opts ListCaseMessagesOption) ([]*common.CaseMessage, error) {
 	var clause string
 
 	if !opts.has(LCMOIncludePrivate) {
@@ -181,7 +181,7 @@ func (d *DataService) ListCaseMessages(caseID int64, opts ListCaseMessagesOption
 	return messages, nil
 }
 
-func (d *DataService) caseMessageReadReceipts(msgIDs []interface{}) (map[int64][]*common.ReadReceipt, error) {
+func (d *dataService) caseMessageReadReceipts(msgIDs []interface{}) (map[int64][]*common.ReadReceipt, error) {
 	rows, err := d.db.Query(`
 		SELECT "message_id", "person_id", "timestamp"
 		FROM "patient_case_message_read"
@@ -203,7 +203,7 @@ func (d *DataService) caseMessageReadReceipts(msgIDs []interface{}) (map[int64][
 	return receipts, errors.Trace(rows.Err())
 }
 
-func (d *DataService) GetCaseIDFromMessageID(messageID int64) (int64, error) {
+func (d *dataService) GetCaseIDFromMessageID(messageID int64) (int64, error) {
 	var caseID int64
 	err := d.db.QueryRow(`SELECT patient_case_id FROM patient_case_message WHERE id = ?`, messageID).Scan(&caseID)
 	if err == sql.ErrNoRows {
@@ -212,7 +212,7 @@ func (d *DataService) GetCaseIDFromMessageID(messageID int64) (int64, error) {
 	return caseID, errors.Trace(err)
 }
 
-func (d *DataService) CreateCaseMessage(msg *common.CaseMessage) (int64, error) {
+func (d *dataService) CreateCaseMessage(msg *common.CaseMessage) (int64, error) {
 	if msg.CaseID <= 0 {
 		return 0, errors.New("api.CreateCaseMessage: missing CaseID")
 	}
@@ -282,7 +282,7 @@ func (d *DataService) CreateCaseMessage(msg *common.CaseMessage) (int64, error) 
 	return msg.ID, errors.Trace(tx.Commit())
 }
 
-func (d *DataService) CaseMessageParticipants(caseID int64, withRoleObjects bool) (map[int64]*common.CaseMessageParticipant, error) {
+func (d *dataService) CaseMessageParticipants(caseID int64, withRoleObjects bool) (map[int64]*common.CaseMessageParticipant, error) {
 	rows, err := d.db.Query(`
 		SELECT person_id, role_type_tag, role_id
 		FROM patient_case_message_participant
@@ -327,7 +327,7 @@ func (d *DataService) CaseMessageParticipants(caseID int64, withRoleObjects bool
 	return participants, nil
 }
 
-func (d *DataService) UnreadMessageCount(caseID, personID int64) (int, error) {
+func (d *dataService) UnreadMessageCount(caseID, personID int64) (int, error) {
 	row := d.db.QueryRow(`
 		SELECT count(1)
 		FROM patient_case_message cm
@@ -340,7 +340,7 @@ func (d *DataService) UnreadMessageCount(caseID, personID int64) (int, error) {
 	return count, err
 }
 
-func (d *DataService) populateDoctorOrPatientForPeople(people map[int64]*common.Person) error {
+func (d *dataService) populateDoctorOrPatientForPeople(people map[int64]*common.Person) error {
 	for _, p := range people {
 		var err error
 		switch p.RoleType {

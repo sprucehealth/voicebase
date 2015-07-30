@@ -48,7 +48,7 @@ func (apo AccountPromotionOption) Has(o AccountPromotionOption) bool {
 
 // LookupPromoCode returns the promotion_code record of the indicated promo code.
 // If the code provided maps to an account_code then the promo code for that account's active referral_program will be returned
-func (d *DataService) LookupPromoCode(code string) (*common.PromoCode, error) {
+func (d *dataService) LookupPromoCode(code string) (*common.PromoCode, error) {
 	// Determine if the code provided is an account_code and if so we should return the promo_code of the active referral_program for that account
 	// We know account codes are purely numeric. So if that doesn't pass we know to treat it as a standard promo_code
 	if accountCode, err := strconv.ParseInt(code, 10, 64); err == nil {
@@ -81,7 +81,7 @@ func (d *DataService) LookupPromoCode(code string) (*common.PromoCode, error) {
 }
 
 // PromoCodeForAccountExists determines if an account has claimed a given promo code
-func (d *DataService) PromoCodeForAccountExists(accountID, codeID int64) (bool, error) {
+func (d *dataService) PromoCodeForAccountExists(accountID, codeID int64) (bool, error) {
 	var id int64
 	if err := d.db.QueryRow(`SELECT promotion_code_id FROM account_promotion
 		WHERE account_id = ? AND promotion_code_id = ? AND status != ? LIMIT 1`, accountID, codeID, common.PSDeleted.String()).
@@ -94,7 +94,7 @@ func (d *DataService) PromoCodeForAccountExists(accountID, codeID int64) (bool, 
 }
 
 // PromotionCountInGroupForAccount returns the number of promotions claimed in a given group by a user
-func (d *DataService) PromotionCountInGroupForAccount(accountID int64, group string) (int, error) {
+func (d *dataService) PromotionCountInGroupForAccount(accountID int64, group string) (int, error) {
 	var count int
 	if err := d.db.QueryRow(`
 		SELECT count(*)
@@ -112,7 +112,7 @@ func (d *DataService) PromotionCountInGroupForAccount(accountID int64, group str
 }
 
 // PromoCodePrefixes returns the set of available promo code prefixes
-func (d *DataService) PromoCodePrefixes() ([]string, error) {
+func (d *dataService) PromoCodePrefixes() ([]string, error) {
 	rows, err := d.db.Query(`SELECT prefix FROM promo_code_prefix where status = 'ACTIVE'`)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -133,13 +133,13 @@ func (d *DataService) PromoCodePrefixes() ([]string, error) {
 }
 
 // CreatePromoCodePrefix inserts a new promo_code_prefix record with the provided prefix
-func (d *DataService) CreatePromoCodePrefix(prefix string) error {
+func (d *dataService) CreatePromoCodePrefix(prefix string) error {
 	_, err := d.db.Exec(`INSERT INTO promo_code_prefix (prefix, status) VALUES (?,?)`, prefix, StatusActive)
 	return errors.Trace(err)
 }
 
 // CreatePromotionGroup inserts a new promotion_group matching the dynamic aspects of the provided promotionGroup
-func (d *DataService) CreatePromotionGroup(promotionGroup *common.PromotionGroup) (int64, error) {
+func (d *dataService) CreatePromotionGroup(promotionGroup *common.PromotionGroup) (int64, error) {
 	res, err := d.db.Exec(`INSERT INTO promotion_group (name, max_allowed_promos) VALUES (?, ?)`, promotionGroup.Name, promotionGroup.MaxAllowedPromos)
 	if err != nil {
 		return 0, errors.Trace(err)
@@ -152,7 +152,7 @@ func (d *DataService) CreatePromotionGroup(promotionGroup *common.PromotionGroup
 }
 
 // PromotionGroup returns the promotion_group data record matching the provided name
-func (d *DataService) PromotionGroup(name string) (*common.PromotionGroup, error) {
+func (d *dataService) PromotionGroup(name string) (*common.PromotionGroup, error) {
 	var promotionGroup common.PromotionGroup
 	if err := d.db.QueryRow(`SELECT id, name, max_allowed_promos FROM promotion_group WHERE name = ?`, name).
 		Scan(&promotionGroup.ID, &promotionGroup.Name, &promotionGroup.MaxAllowedPromos); err == sql.ErrNoRows {
@@ -165,7 +165,7 @@ func (d *DataService) PromotionGroup(name string) (*common.PromotionGroup, error
 }
 
 // PromotionGroups returns all promotion_group records
-func (d *DataService) PromotionGroups() ([]*common.PromotionGroup, error) {
+func (d *dataService) PromotionGroups() ([]*common.PromotionGroup, error) {
 	rows, err := d.db.Query(`SELECT name, max_allowed_promos FROM promotion_group ORDER BY name ASC`)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -185,7 +185,7 @@ func (d *DataService) PromotionGroups() ([]*common.PromotionGroup, error) {
 }
 
 // CreatePromotion inserts a new promotino record matching the dynamic aspects of the provided promotion and returns the ID of the record
-func (d *DataService) CreatePromotion(promotion *common.Promotion) (int64, error) {
+func (d *dataService) CreatePromotion(promotion *common.Promotion) (int64, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, errors.Trace(err)
@@ -201,7 +201,7 @@ func (d *DataService) CreatePromotion(promotion *common.Promotion) (int64, error
 }
 
 // Promotion returns the promotion record matching the provided promotion_code ID and maps to the provided type map
-func (d *DataService) Promotion(codeID int64, types map[string]reflect.Type) (*common.Promotion, error) {
+func (d *dataService) Promotion(codeID int64, types map[string]reflect.Type) (*common.Promotion, error) {
 	var promotion common.Promotion
 	var promotionType string
 	var data []byte
@@ -237,7 +237,7 @@ func (d *DataService) Promotion(codeID int64, types map[string]reflect.Type) (*c
 }
 
 // UpdatePromotion applied the provided update to the promotin record matching the provided promotion_code_id and returns the count of rows affected
-func (d *DataService) UpdatePromotion(pu *common.PromotionUpdate) (int64, error) {
+func (d *dataService) UpdatePromotion(pu *common.PromotionUpdate) (int64, error) {
 	varArgs := dbutil.MySQLVarArgs()
 	varArgs.Append(`expires`, pu.Expires)
 	res, err := d.db.Exec(`UPDATE promotion SET `+varArgs.Columns()+` WHERE promotion_code_id = ?`, append(varArgs.Values(), pu.CodeID)...)
@@ -246,7 +246,7 @@ func (d *DataService) UpdatePromotion(pu *common.PromotionUpdate) (int64, error)
 }
 
 // Promotions returns the promotion records matching the provided promotion_code IDs and maps to the provided type map
-func (d *DataService) Promotions(codeIDs []int64, promoTypes []string, types map[string]reflect.Type) ([]*common.Promotion, error) {
+func (d *dataService) Promotions(codeIDs []int64, promoTypes []string, types map[string]reflect.Type) ([]*common.Promotion, error) {
 	q := `
 		SELECT promotion_code.code, promotion_code.id, promo_type, promo_data, promotion_group.name, expires, created
 		FROM promotion
@@ -310,7 +310,7 @@ func (d *DataService) Promotions(codeIDs []int64, promoTypes []string, types map
 }
 
 // CreateReferralProgramTemplate inserts a new referral_program_template record that matched the dynamic aspects of the provided template and returns the ID of the record
-func (d *DataService) CreateReferralProgramTemplate(template *common.ReferralProgramTemplate) (int64, error) {
+func (d *dataService) CreateReferralProgramTemplate(template *common.ReferralProgramTemplate) (int64, error) {
 	jsonData, err := json.Marshal(template.Data)
 	if err != nil {
 		return 0, errors.Trace(err)
@@ -340,7 +340,7 @@ func (d *DataService) CreateReferralProgramTemplate(template *common.ReferralPro
 }
 
 // ReferralProgramTemplate returns the referral_program_template records matching the provided ID
-func (d *DataService) ReferralProgramTemplate(id int64, types map[string]reflect.Type) (*common.ReferralProgramTemplate, error) {
+func (d *dataService) ReferralProgramTemplate(id int64, types map[string]reflect.Type) (*common.ReferralProgramTemplate, error) {
 	var data []byte
 	var referralType string
 	template := &common.ReferralProgramTemplate{}
@@ -372,7 +372,7 @@ func (d *DataService) ReferralProgramTemplate(id int64, types map[string]reflect
 }
 
 // ReferralProgramTemplates returns the referral_program_template records matching the provided ReferralProgramStatuses
-func (d *DataService) ReferralProgramTemplates(statuses common.ReferralProgramStatusList, types map[string]reflect.Type) ([]*common.ReferralProgramTemplate, error) {
+func (d *dataService) ReferralProgramTemplates(statuses common.ReferralProgramStatusList, types map[string]reflect.Type) ([]*common.ReferralProgramTemplate, error) {
 	rows, err := d.db.Query(`
 		SELECT id, role_type_id, referral_type, referral_data, status, promotion_code_id, created
 			FROM referral_program_template
@@ -418,7 +418,7 @@ func (d *DataService) ReferralProgramTemplates(statuses common.ReferralProgramSt
 }
 
 // DefaultReferralProgramTemplate returns the referral_program_template record that maps to the common.RSDefault status
-func (d *DataService) DefaultReferralProgramTemplate(types map[string]reflect.Type) (*common.ReferralProgramTemplate, error) {
+func (d *dataService) DefaultReferralProgramTemplate(types map[string]reflect.Type) (*common.ReferralProgramTemplate, error) {
 	var template common.ReferralProgramTemplate
 	var referralType string
 	var data []byte
@@ -455,7 +455,7 @@ func (d *DataService) DefaultReferralProgramTemplate(types map[string]reflect.Ty
 // SetDefaultReferralProgramTemplate declares a the referral_program_template matching the provided ID as DEFAULT
 // This will move the existing DEFAULT template to the ACTIVE
 // This is all performed within the context of a transaction
-func (d *DataService) SetDefaultReferralProgramTemplate(id int64) error {
+func (d *dataService) SetDefaultReferralProgramTemplate(id int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return errors.Trace(err)
@@ -496,7 +496,7 @@ func (d *DataService) SetDefaultReferralProgramTemplate(id int64) error {
 }
 
 // InactivateReferralProgramTemplate moves the referral_program_template to the INACTIVE state and move any associated referral_program records to the INACTIVE state
-func (d *DataService) InactivateReferralProgramTemplate(id int64) error {
+func (d *dataService) InactivateReferralProgramTemplate(id int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return errors.Trace(err)
@@ -525,11 +525,11 @@ func (d *DataService) InactivateReferralProgramTemplate(id int64) error {
 }
 
 // UpdateReferralProgramTemplate updates the referral_program_template to the state indicated in the provided update structure and matching the structure's ID and returns the number of rows affected
-func (d *DataService) UpdateReferralProgramTemplate(rpt *common.ReferralProgramTemplateUpdate) (int64, error) {
+func (d *dataService) UpdateReferralProgramTemplate(rpt *common.ReferralProgramTemplateUpdate) (int64, error) {
 	return d.updateReferralProgramTemplate(d.db, rpt)
 }
 
-func (d *DataService) updateReferralProgramTemplate(db db, rpt *common.ReferralProgramTemplateUpdate) (int64, error) {
+func (d *dataService) updateReferralProgramTemplate(db db, rpt *common.ReferralProgramTemplateUpdate) (int64, error) {
 	varArgs := dbutil.MySQLVarArgs()
 	varArgs.Append(`status`, rpt.Status.String())
 	res, err := db.Exec(`UPDATE referral_program_template SET `+varArgs.Columns()+` WHERE id = ?`, append(varArgs.Values(), rpt.ID)...)
@@ -542,7 +542,7 @@ func (d *DataService) updateReferralProgramTemplate(db db, rpt *common.ReferralP
 }
 
 // ReferralProgram returns the referral_program record matching the provided promotion_code ID and maps to the provided type map
-func (d *DataService) ReferralProgram(codeID int64, types map[string]reflect.Type) (*common.ReferralProgram, error) {
+func (d *dataService) ReferralProgram(codeID int64, types map[string]reflect.Type) (*common.ReferralProgram, error) {
 	var referralProgram common.ReferralProgram
 	var referralType string
 	var referralData []byte
@@ -579,7 +579,7 @@ func (d *DataService) ReferralProgram(codeID int64, types map[string]reflect.Typ
 }
 
 // ActiveReferralProgramForAccount returns the referral_program record matching the provided account ID and maps to the provided type map and common.RSActive status
-func (d *DataService) ActiveReferralProgramForAccount(accountID int64, types map[string]reflect.Type) (*common.ReferralProgram, error) {
+func (d *dataService) ActiveReferralProgramForAccount(accountID int64, types map[string]reflect.Type) (*common.ReferralProgram, error) {
 	var referralProgram common.ReferralProgram
 	var referralType string
 	var referralData []byte
@@ -616,7 +616,7 @@ func (d *DataService) ActiveReferralProgramForAccount(accountID int64, types map
 }
 
 // PendingPromotionsForAccount returns the promotion record matching the provided account ID and maps to the provided type map and common.PSPending status
-func (d *DataService) PendingPromotionsForAccount(accountID int64, types map[string]reflect.Type) ([]*common.AccountPromotion, error) {
+func (d *dataService) PendingPromotionsForAccount(accountID int64, types map[string]reflect.Type) ([]*common.AccountPromotion, error) {
 	rows, err := d.db.Query(`
 			SELECT promotion_code.code, account_id, promotion_code_id, promotion_group_id, promo_type, promo_data, expires, created, status
 			FROM account_promotion
@@ -665,7 +665,7 @@ func (d *DataService) PendingPromotionsForAccount(accountID int64, types map[str
 }
 
 // DeleteAccountPromotion updates the account_promotion record matching the provided account ID and promotion_code ID to the status of common.PSDeleted and returns the number of rows affected
-func (d *DataService) DeleteAccountPromotion(accountID, promotionCodeID int64) (int64, error) {
+func (d *dataService) DeleteAccountPromotion(accountID, promotionCodeID int64) (int64, error) {
 	res, err := d.db.Exec(`UPDATE account_promotion SET status = ? WHERE account_id = ? AND promotion_code_id = ?`, common.PSDeleted.String(), accountID, promotionCodeID)
 	if err != nil {
 		return 0, errors.Trace(err)
@@ -679,7 +679,7 @@ func (d *DataService) DeleteAccountPromotion(accountID, promotionCodeID int64) (
 // 2. A new promotion_code record will be inserted matching the promotion_code.Code in the provided referral_program
 // Notes:
 // All of the described functionality is performed within a single transaction and any failure will result in a rollback
-func (d *DataService) CreateReferralProgram(referralProgram *common.ReferralProgram) error {
+func (d *dataService) CreateReferralProgram(referralProgram *common.ReferralProgram) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return errors.Trace(err)
@@ -722,7 +722,7 @@ func (d *DataService) CreateReferralProgram(referralProgram *common.ReferralProg
 }
 
 // UpdateReferralProgramStatusesForRoute updates all referral_program records for the provided promotion_referral_route ID to the provided status and returns the number of rows affected
-func (d *DataService) UpdateReferralProgramStatusesForRoute(routeID int64, newStatus common.ReferralProgramStatus) (int64, error) {
+func (d *dataService) UpdateReferralProgramStatusesForRoute(routeID int64, newStatus common.ReferralProgramStatus) (int64, error) {
 	res, err := d.db.Exec(`
 		UPDATE referral_program
 		SET status = ?
@@ -735,7 +735,7 @@ func (d *DataService) UpdateReferralProgramStatusesForRoute(routeID int64, newSt
 }
 
 // UpdateReferralProgram updates the referral_program record matching the provided account ID and promotion_code ID with the provided common.Typed data. (This populates the referral_data field of the record)
-func (d *DataService) UpdateReferralProgram(accountID int64, codeID int64, data common.Typed) error {
+func (d *dataService) UpdateReferralProgram(accountID int64, codeID int64, data common.Typed) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return errors.Trace(err)
@@ -795,7 +795,7 @@ func createPromotion(tx *sql.Tx, promotion *common.Promotion) (int64, error) {
 // If a promotion_code ID is not provided then one is look up by attempting to match the provided account_promotion.Code field with the promotion_code table
 // If an account_promotion_group ID is not provided then one is look up by attempting to match the provided account_promotion.Group field with the account_promotion_group table
 // The provided account_promotion.Data field is marshalled to JSON before insertion
-func (d *DataService) CreateAccountPromotion(accountPromotion *common.AccountPromotion) error {
+func (d *dataService) CreateAccountPromotion(accountPromotion *common.AccountPromotion) error {
 	// lookup code based on id
 	if accountPromotion.CodeID == 0 {
 		if err := d.db.QueryRow(`SELECT id from promotion_code where code = ?`, accountPromotion.Code).
@@ -830,7 +830,7 @@ func (d *DataService) CreateAccountPromotion(accountPromotion *common.AccountPro
 }
 
 // UpdateAccountPromotion updates the account_promotion record matching the provided with the account ID and promotion code ID to the state represented in the provided AccountPromotionUpdate
-func (d *DataService) UpdateAccountPromotion(accountID, promoCodeID int64, update *AccountPromotionUpdate, apo AccountPromotionOption) error {
+func (d *dataService) UpdateAccountPromotion(accountID, promoCodeID int64, update *AccountPromotionUpdate, apo AccountPromotionOption) error {
 	if update == nil {
 		return nil
 	}
@@ -864,7 +864,7 @@ func (d *DataService) UpdateAccountPromotion(accountID, promoCodeID int64, updat
 // Notes:
 // The credit changes are also audited into the account_credit_history table
 // The described functionality is performed withing the context of a transaction and rolledback on failure
-func (d *DataService) UpdateCredit(accountID int64, credit int, description string) error {
+func (d *dataService) UpdateCredit(accountID int64, credit int, description string) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return errors.Trace(err)
@@ -907,7 +907,7 @@ func (d *DataService) UpdateCredit(accountID int64, credit int, description stri
 }
 
 // AccountCredit returns the account_credit record matching the provided account ID
-func (d *DataService) AccountCredit(accountID int64) (*common.AccountCredit, error) {
+func (d *dataService) AccountCredit(accountID int64) (*common.AccountCredit, error) {
 	var accountCredit common.AccountCredit
 	err := d.db.QueryRow(`SELECT account_id, credit FROM account_credit WHERE account_id = ?`, accountID).
 		Scan(&accountCredit.AccountID, &accountCredit.Credit)
@@ -919,7 +919,7 @@ func (d *DataService) AccountCredit(accountID int64) (*common.AccountCredit, err
 }
 
 // PendingReferralTrackingForAccount returns the account_referral_tracking matching the provided account_id and the common.RTSPending state
-func (d *DataService) PendingReferralTrackingForAccount(accountID int64) (*common.ReferralTrackingEntry, error) {
+func (d *dataService) PendingReferralTrackingForAccount(accountID int64) (*common.ReferralTrackingEntry, error) {
 	var entry common.ReferralTrackingEntry
 
 	if err := d.db.QueryRow(`
@@ -940,7 +940,7 @@ func (d *DataService) PendingReferralTrackingForAccount(accountID int64) (*commo
 }
 
 // TrackAccountReferral replaces into the account_referral_tracking table matching the dynamic aspects of the provided account_referral_tracking
-func (d *DataService) TrackAccountReferral(referralTracking *common.ReferralTrackingEntry) error {
+func (d *dataService) TrackAccountReferral(referralTracking *common.ReferralTrackingEntry) error {
 	_, err := d.db.Exec(`
 		REPLACE INTO account_referral_tracking
 		(promotion_code_id, claiming_account_id, referring_account_id, status)
@@ -949,13 +949,13 @@ func (d *DataService) TrackAccountReferral(referralTracking *common.ReferralTrac
 }
 
 // UpdateAccountReferral updated the account_referral_tracking record matching the provided account ID to the provided status
-func (d *DataService) UpdateAccountReferral(accountID int64, status common.ReferralTrackingStatus) error {
+func (d *dataService) UpdateAccountReferral(accountID int64, status common.ReferralTrackingStatus) error {
 	_, err := d.db.Exec(`UPDATE account_referral_tracking SET status = ? WHERE claiming_account_id = ?`, status.String(), accountID)
 	return errors.Trace(err)
 }
 
 // CreateParkedAccount insert ignores a parked_account record matching the dynamic aspects of the provided parked_account and returns the ID of the record
-func (d *DataService) CreateParkedAccount(parkedAccount *common.ParkedAccount) (int64, error) {
+func (d *dataService) CreateParkedAccount(parkedAccount *common.ParkedAccount) (int64, error) {
 	parkedAccount.Email = normalizeEmail(parkedAccount.Email)
 	res, err := d.db.Exec(`INSERT IGNORE INTO parked_account (email, state, promotion_code_id, account_created) VALUES (?,?,?,?)`,
 		parkedAccount.Email, parkedAccount.State, parkedAccount.CodeID, parkedAccount.AccountCreated)
@@ -967,7 +967,7 @@ func (d *DataService) CreateParkedAccount(parkedAccount *common.ParkedAccount) (
 }
 
 // ParkedAccount returns the parked_account record matching the provided email
-func (d *DataService) ParkedAccount(email string) (*common.ParkedAccount, error) {
+func (d *dataService) ParkedAccount(email string) (*common.ParkedAccount, error) {
 	var parkedAccount common.ParkedAccount
 	if err := d.db.QueryRow(`
 		SELECT parked_account.id, email, state, promotion_code_id, code, is_referral, account_created
@@ -991,13 +991,13 @@ func (d *DataService) ParkedAccount(email string) (*common.ParkedAccount, error)
 }
 
 // MarkParkedAccountAsAccountCreated updates the account_created field of the parked_account record matching the provided ID to true
-func (d *DataService) MarkParkedAccountAsAccountCreated(id int64) error {
+func (d *dataService) MarkParkedAccountAsAccountCreated(id int64) error {
 	_, err := d.db.Exec(`UPDATE parked_account set account_created = 1 WHERE id = ?`, id)
 	return errors.Trace(err)
 }
 
 // AccountCode returns the account_code associated with the indicated account. This may be nil as it is a nullable field. This indicates that one has never been associated
-func (d *DataService) AccountCode(accountID int64) (*uint64, error) {
+func (d *dataService) AccountCode(accountID int64) (*uint64, error) {
 	var code *uint64
 	if err := d.db.QueryRow("SELECT account_code FROM account WHERE id = ?", accountID).Scan(&code); err != nil {
 		if err == sql.ErrNoRows {
@@ -1009,7 +1009,7 @@ func (d *DataService) AccountCode(accountID int64) (*uint64, error) {
 }
 
 // AccountForAccountCode returns the account associated with the indicated promo code
-func (d *DataService) AccountForAccountCode(accountCode uint64) (*common.Account, error) {
+func (d *dataService) AccountForAccountCode(accountCode uint64) (*common.Account, error) {
 	account := &common.Account{}
 	if err := d.db.QueryRow(`
 		SELECT account.id, role_type_tag, email, registration_date, two_factor_enabled, account_code
@@ -1026,7 +1026,7 @@ func (d *DataService) AccountForAccountCode(accountCode uint64) (*common.Account
 
 // AssociateRandomAccountCode generates a random account code and updates the indicated account record with the new code and returns the new code
 // This will return an error if an account code already exists
-func (d *DataService) AssociateRandomAccountCode(accountID int64) (uint64, error) {
+func (d *dataService) AssociateRandomAccountCode(accountID int64) (uint64, error) {
 	// guard against changing an already associated account code
 	if code, err := d.AccountCode(accountID); err != nil {
 		return 0, errors.Trace(err)
@@ -1064,7 +1064,7 @@ func (d *DataService) AssociateRandomAccountCode(accountID int64) (uint64, error
 }
 
 // InsertPromotionReferralRoute inserts a promotion_referral_route record matching the dynamic aspects of the provided route and returns the ID of the record
-func (d *DataService) InsertPromotionReferralRoute(route *common.PromotionReferralRoute) (int64, error) {
+func (d *dataService) InsertPromotionReferralRoute(route *common.PromotionReferralRoute) (int64, error) {
 	res, err := d.db.Exec(`
 		INSERT INTO promotion_referral_route
 		(promotion_code_id, priority, lifecycle, gender, age_lower, age_upper, state, pharmacy)
@@ -1084,7 +1084,7 @@ func (d *DataService) InsertPromotionReferralRoute(route *common.PromotionReferr
 }
 
 // UpdatePromotionReferralRoute updates the corresponding route record and returns the count of affected rows
-func (d *DataService) UpdatePromotionReferralRoute(routeUpdate *common.PromotionReferralRouteUpdate) (int64, error) {
+func (d *dataService) UpdatePromotionReferralRoute(routeUpdate *common.PromotionReferralRouteUpdate) (int64, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, errors.Trace(err)
@@ -1118,7 +1118,7 @@ func (d *DataService) UpdatePromotionReferralRoute(routeUpdate *common.Promotion
 }
 
 // PromotionReferralRoutes returns all promotion_referral_route records within the provided lifecycle slice
-func (d *DataService) PromotionReferralRoutes(lifecycles []string) ([]*common.PromotionReferralRoute, error) {
+func (d *dataService) PromotionReferralRoutes(lifecycles []string) ([]*common.PromotionReferralRoute, error) {
 	rows, err := d.db.Query(`
 		SELECT id, promotion_code_id, created, modified, priority, lifecycle, gender, age_lower, age_upper, state, pharmacy
 		FROM promotion_referral_route
@@ -1161,7 +1161,7 @@ type RouteQueryParams struct {
 }
 
 // ReferralProgramTemplateRouteQuery utilizes the provided params to find the most relevant referral_program_template and returns that record
-func (d *DataService) ReferralProgramTemplateRouteQuery(params *RouteQueryParams) (*int64, *common.ReferralProgramTemplate, error) {
+func (d *dataService) ReferralProgramTemplateRouteQuery(params *RouteQueryParams) (*int64, *common.ReferralProgramTemplate, error) {
 	q := `
 		SELECT id, promotion_code_id, priority,
 			IF(gender IS NULL, 0, 1) +
@@ -1272,7 +1272,7 @@ func (d *DataService) ReferralProgramTemplateRouteQuery(params *RouteQueryParams
 }
 
 // RouteQueryParamsForAccount given the provided account creates and returns the param structure needed to route the account to the correct referral program
-func (d *DataService) RouteQueryParamsForAccount(accountID int64) (*RouteQueryParams, error) {
+func (d *dataService) RouteQueryParamsForAccount(accountID int64) (*RouteQueryParams, error) {
 	patient, err := d.GetPatientFromAccountID(accountID)
 	if err != nil {
 		return nil, errors.Trace(err)

@@ -5,7 +5,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
-func (d *DataService) LocalizedText(langID int64, tags []string) (map[string]string, error) {
+func (d *dataService) LocalizedText(langID int64, tags []string) (map[string]string, error) {
 	rows, err := d.db.Query(`
 			SELECT at.app_text_tag, lt.ltext
 			FROM app_text at
@@ -27,7 +27,7 @@ func (d *DataService) LocalizedText(langID int64, tags []string) (map[string]str
 	return textMap, errors.Trace(rows.Err())
 }
 
-func (d *DataService) UpdateLocalizedText(langID int64, tagText map[string]string) error {
+func (d *dataService) UpdateLocalizedText(langID int64, tagText map[string]string) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return errors.Trace(err)

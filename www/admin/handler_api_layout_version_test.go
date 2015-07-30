@@ -34,7 +34,7 @@ func TestLayoutVersionHandlerSuccessGET(t *testing.T) {
 
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	handler := newLayoutVersionHandler(mockedDataAPI_handlerLayoutVersion{&api.DataService{}, items})
+	handler := newLayoutVersionHandler(mockedDataAPI_handlerLayoutVersion{items: items})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, map[string]interface{}{
 		"items": items,

@@ -7,7 +7,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
-func (d *DataService) State(state string) (full string, short string, err error) {
+func (d *dataService) State(state string) (full string, short string, err error) {
 	err = d.db.QueryRow(
 		`SELECT full_name, abbreviation FROM state WHERE full_name = ? OR abbreviation = ?`,
 		strings.Title(state), strings.ToUpper(state)).Scan(&full, &short)
@@ -19,7 +19,7 @@ func (d *DataService) State(state string) (full string, short string, err error)
 	return full, short, nil
 }
 
-func (d *DataService) ListStates() ([]*common.State, error) {
+func (d *dataService) ListStates() ([]*common.State, error) {
 	rows, err := d.db.Query(`SELECT full_name, abbreviation, country FROM state ORDER BY full_name`)
 	if err != nil {
 		return nil, err

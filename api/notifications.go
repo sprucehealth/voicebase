@@ -7,7 +7,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
-func (d *DataService) GetPushConfigData(deviceToken string) (*common.PushConfigData, error) {
+func (d *dataService) GetPushConfigData(deviceToken string) (*common.PushConfigData, error) {
 	rows, err := d.db.Query(`
 		SELECT id, account_id, device_token, push_endpoint, platform, platform_version,
 			app_version, app_type, app_env, app_version, device, device_model,
@@ -34,7 +34,7 @@ func (d *DataService) GetPushConfigData(deviceToken string) (*common.PushConfigD
 	return nil, fmt.Errorf("Expected 1 push config data but got %d", len(pushConfigDataList))
 }
 
-func (d *DataService) SnoozeConfigsForAccount(accountID int64) ([]*common.SnoozeConfig, error) {
+func (d *dataService) SnoozeConfigsForAccount(accountID int64) ([]*common.SnoozeConfig, error) {
 	rows, err := d.db.Query(`
 		SELECT account_id, start_hour, num_hours
 		FROM communication_snooze
@@ -60,7 +60,7 @@ func (d *DataService) SnoozeConfigsForAccount(accountID int64) ([]*common.Snooze
 	return snoozeConfigs, rows.Err()
 }
 
-func (d *DataService) DeletePushCommunicationPreferenceForAccount(accountID int64) error {
+func (d *dataService) DeletePushCommunicationPreferenceForAccount(accountID int64) error {
 	_, err := d.db.Exec(`delete from push_config where account_id=?`, accountID)
 	if err != nil {
 		return err
@@ -69,7 +69,7 @@ func (d *DataService) DeletePushCommunicationPreferenceForAccount(accountID int6
 	return err
 }
 
-func (d *DataService) GetPushConfigDataForAccount(accountID int64) ([]*common.PushConfigData, error) {
+func (d *dataService) GetPushConfigDataForAccount(accountID int64) ([]*common.PushConfigData, error) {
 	rows, err := d.db.Query(`select id, account_id, device_token, push_endpoint, platform, platform_version, app_version, app_type, app_env, app_version, device, device_model, device_id, creation_date from push_config where account_id = ?`, accountID)
 	if err != nil {
 		return nil, err
@@ -92,7 +92,7 @@ func getPushConfigDataFromRows(rows *sql.Rows) ([]*common.PushConfigData, error)
 	return pushConfigs, rows.Err()
 }
 
-func (d *DataService) GetCommunicationPreferencesForAccount(accountID int64) ([]*common.CommunicationPreference, error) {
+func (d *dataService) GetCommunicationPreferencesForAccount(accountID int64) ([]*common.CommunicationPreference, error) {
 	rows, err := d.db.Query(`select id, account_id, communication_type, creation_date, status from communication_preference where account_id=? and status=?`, accountID, StatusActive)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func (d *DataService) GetCommunicationPreferencesForAccount(accountID int64) ([]
 	return communicationPreferences, rows.Err()
 }
 
-func (d *DataService) SetOrReplacePushConfigData(pushConfigData *common.PushConfigData) error {
+func (d *dataService) SetOrReplacePushConfigData(pushConfigData *common.PushConfigData) error {
 	// begin transaction
 	tx, err := d.db.Begin()
 	if err != nil {
@@ -164,12 +164,12 @@ func (d *DataService) SetOrReplacePushConfigData(pushConfigData *common.PushConf
 	return tx.Commit()
 }
 
-func (d *DataService) SetPushPromptStatus(accountID int64, pStatus common.PushPromptStatus) error {
+func (d *dataService) SetPushPromptStatus(accountID int64, pStatus common.PushPromptStatus) error {
 	_, err := d.db.Exec(`replace into notification_prompt_status (prompt_status, account_id) values (?,?)`, pStatus.String(), accountID)
 	return err
 }
 
-func (d *DataService) GetPushPromptStatus(accountID int64) (common.PushPromptStatus, error) {
+func (d *dataService) GetPushPromptStatus(accountID int64) (common.PushPromptStatus, error) {
 	var pStatusString string
 	if err := d.db.QueryRow(`select prompt_status from notification_prompt_status where account_id = ?`, accountID).Scan(&pStatusString); err == sql.ErrNoRows {
 		return common.Unprompted, nil

@@ -82,7 +82,6 @@ func TestScheduledMessage_FromActiveDoctor(t *testing.T) {
 	doctorOnTPID := int64(500)
 
 	data := &mockedDataAPI_WorkerTest{
-		DataAPI: &api.DataService{},
 		PCase: &common.PatientCase{
 			ID: encoding.NewObjectID(1),
 		},
@@ -132,7 +131,7 @@ func TestScheduledMessage_FromActiveDoctor(t *testing.T) {
 }
 
 func TestCaseNotReassignedOnTPScheduledMessageNoCC(t *testing.T) {
-	data := &mockedDataAPI_WorkerTest{DataAPI: &api.DataService{}}
+	data := &mockedDataAPI_WorkerTest{}
 	publisher := &TestPublisher{}
 	worker := NewWorker(data, nil, publisher, metrics.NewRegistry(), 1)
 	data.TP = &common.TreatmentPlan{Status: api.StatusActive, DoctorID: encoding.NewObjectID(1), PatientCaseID: encoding.NewObjectID(1), PatientID: 1}
@@ -157,7 +156,7 @@ func TestCaseNotReassignedOnTPScheduledMessageNoCC(t *testing.T) {
 }
 
 func TestCaseReassignedOnTPScheduledMessageCC(t *testing.T) {
-	data := &mockedDataAPI_WorkerTest{DataAPI: &api.DataService{}}
+	data := &mockedDataAPI_WorkerTest{}
 	publisher := &TestPublisher{}
 	worker := NewWorker(data, nil, publisher, metrics.NewRegistry(), 1)
 	data.TP = &common.TreatmentPlan{Status: api.StatusActive, DoctorID: encoding.NewObjectID(1), PatientCaseID: encoding.NewObjectID(1), PatientID: 1}

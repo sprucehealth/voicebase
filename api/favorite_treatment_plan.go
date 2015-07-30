@@ -26,7 +26,7 @@ type ftpPathwaysPair struct {
 	pathways []string
 }
 
-func (d *DataService) FavoriteTreatmentPlansForDoctor(doctorID int64, pathwayTag string) (map[string][]*common.FavoriteTreatmentPlan, error) {
+func (d *dataService) FavoriteTreatmentPlansForDoctor(doctorID int64, pathwayTag string) (map[string][]*common.FavoriteTreatmentPlan, error) {
 	// Collect a list of FTP memberships for the given doctor
 	q :=
 		`SELECT ftp.id, cp.tag
@@ -127,7 +127,7 @@ func (d *DataService) FavoriteTreatmentPlansForDoctor(doctorID int64, pathwayTag
 	return ftpsByPathway, nil
 }
 
-func (d *DataService) FavoriteTreatmentPlan(id int64) (*common.FavoriteTreatmentPlan, error) {
+func (d *dataService) FavoriteTreatmentPlan(id int64) (*common.FavoriteTreatmentPlan, error) {
 	var ftp common.FavoriteTreatmentPlan
 	var note sql.NullString
 	err := d.db.QueryRow(`
@@ -166,7 +166,7 @@ func (d *DataService) FavoriteTreatmentPlan(id int64) (*common.FavoriteTreatment
 	return &ftp, nil
 }
 
-func (d *DataService) GlobalFavoriteTreatmentPlans(lifecycles []string) ([]*common.FavoriteTreatmentPlan, error) {
+func (d *dataService) GlobalFavoriteTreatmentPlans(lifecycles []string) ([]*common.FavoriteTreatmentPlan, error) {
 	if len(lifecycles) == 0 {
 		return nil, errors.New("No lifecycles provided for gloal FTP query. Cannot complete.")
 	}
@@ -218,7 +218,7 @@ func (d *DataService) GlobalFavoriteTreatmentPlans(lifecycles []string) ([]*comm
 	return ftps, rows.Err()
 }
 
-func (d *DataService) InsertFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentPlan, pathwayTag string, treatmentPlanID int64) (int64, error) {
+func (d *dataService) InsertFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentPlan, pathwayTag string, treatmentPlanID int64) (int64, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, err
@@ -233,7 +233,7 @@ func (d *DataService) InsertFavoriteTreatmentPlan(ftp *common.FavoriteTreatmentP
 	return id, tx.Commit()
 }
 
-func (d *DataService) insertFavoriteTreatmentPlan(db db, ftp *common.FavoriteTreatmentPlan, pathwayTag string, treatmentPlanID int64) (int64, error) {
+func (d *dataService) insertFavoriteTreatmentPlan(db db, ftp *common.FavoriteTreatmentPlan, pathwayTag string, treatmentPlanID int64) (int64, error) {
 	if ftp.Lifecycle == "" {
 		ftp.Lifecycle = "ACTIVE"
 	}
@@ -360,7 +360,7 @@ func (d *DataService) insertFavoriteTreatmentPlan(db db, ftp *common.FavoriteTre
 }
 
 // Note: This should be removed once we remove the dependency on the spreadsheet
-func (d *DataService) InsertGlobalFTPsAndUpdateMemberships(ftpsByPathwayID map[int64][]*common.FavoriteTreatmentPlan) error {
+func (d *dataService) InsertGlobalFTPsAndUpdateMemberships(ftpsByPathwayID map[int64][]*common.FavoriteTreatmentPlan) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -457,7 +457,7 @@ func (d *DataService) InsertGlobalFTPsAndUpdateMemberships(ftpsByPathwayID map[i
 	return tx.Commit()
 }
 
-func (d *DataService) DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanID, doctorID int64, pathwayTag string) error {
+func (d *dataService) DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanID, doctorID int64, pathwayTag string) error {
 	pathway, err := d.PathwayForTag(pathwayTag, PONone)
 	if err != nil {
 		return err
@@ -476,11 +476,11 @@ func (d *DataService) DeleteFavoriteTreatmentPlan(favoriteTreatmentPlanID, docto
 	return tx.Commit()
 }
 
-func (d *DataService) CreateFTPMembership(ftpID, doctorID, pathwayID int64) (int64, error) {
+func (d *dataService) CreateFTPMembership(ftpID, doctorID, pathwayID int64) (int64, error) {
 	return d.createFTPMembership(d.db, ftpID, doctorID, pathwayID)
 }
 
-func (d *DataService) CreateFTPMemberships(memberships []*common.FTPMembership) error {
+func (d *dataService) CreateFTPMemberships(memberships []*common.FTPMembership) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -497,7 +497,7 @@ func (d *DataService) CreateFTPMemberships(memberships []*common.FTPMembership) 
 	return tx.Commit()
 }
 
-func (d *DataService) createFTPMembership(db db, ftpID, doctorID, pathwayID int64) (int64, error) {
+func (d *dataService) createFTPMembership(db db, ftpID, doctorID, pathwayID int64) (int64, error) {
 	res, err := db.Exec(`
 		INSERT INTO dr_favorite_treatment_plan_membership
 			(dr_favorite_treatment_plan_id, doctor_id, clinical_pathway_id)
@@ -509,11 +509,11 @@ func (d *DataService) createFTPMembership(db db, ftpID, doctorID, pathwayID int6
 	return res.LastInsertId()
 }
 
-func (d *DataService) DeleteFTPMembership(ftpID, doctorID, pathwayID int64) (int64, error) {
+func (d *dataService) DeleteFTPMembership(ftpID, doctorID, pathwayID int64) (int64, error) {
 	return d.deleteFTPMembership(d.db, ftpID, doctorID, pathwayID)
 }
 
-func (d *DataService) deleteFTPMembership(db db, ftpID, doctorID, pathwayID int64) (int64, error) {
+func (d *dataService) deleteFTPMembership(db db, ftpID, doctorID, pathwayID int64) (int64, error) {
 	res, err := db.Exec(`
 		DELETE FROM dr_favorite_treatment_plan_membership
 			WHERE dr_favorite_treatment_plan_id = ?
@@ -537,11 +537,11 @@ func (d *DataService) deleteFTPMembership(db db, ftpID, doctorID, pathwayID int6
 	return res.RowsAffected()
 }
 
-func (d *DataService) FTPMemberships(ftpID int64) ([]*common.FTPMembership, error) {
+func (d *dataService) FTPMemberships(ftpID int64) ([]*common.FTPMembership, error) {
 	return d.ftpMemberships(d.db, ftpID)
 }
 
-func (d *DataService) ftpMemberships(db db, ftpID int64) ([]*common.FTPMembership, error) {
+func (d *dataService) ftpMemberships(db db, ftpID int64) ([]*common.FTPMembership, error) {
 	var memberships []*common.FTPMembership
 	rows, err := db.Query(`
 		SELECT id, dr_favorite_treatment_plan_id, doctor_id, clinical_pathway_id
@@ -562,11 +562,11 @@ func (d *DataService) ftpMemberships(db db, ftpID int64) ([]*common.FTPMembershi
 	return memberships, rows.Err()
 }
 
-func (d *DataService) FTPMembershipsForDoctor(doctorID int64) ([]*common.FTPMembership, error) {
+func (d *dataService) FTPMembershipsForDoctor(doctorID int64) ([]*common.FTPMembership, error) {
 	return d.ftpMembershipsForDoctor(d.db, doctorID)
 }
 
-func (d *DataService) ftpMembershipsForDoctor(db db, doctorID int64) ([]*common.FTPMembership, error) {
+func (d *dataService) ftpMembershipsForDoctor(db db, doctorID int64) ([]*common.FTPMembership, error) {
 	var memberships []*common.FTPMembership
 	rows, err := db.Query(`
 		SELECT id, dr_favorite_treatment_plan_id, doctor_id, clinical_pathway_id
@@ -587,7 +587,7 @@ func (d *DataService) ftpMembershipsForDoctor(db db, doctorID int64) ([]*common.
 	return memberships, rows.Err()
 }
 
-func (d *DataService) GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlanID int64) ([]*common.Treatment, error) {
+func (d *dataService) GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlanID int64) ([]*common.Treatment, error) {
 	rows, err := d.db.Query(`
 		SELECT dr_favorite_treatment.id,  drug_internal_name, dosage_strength, type,
 			dispense_value, dispense_unit_id, ltext, refills, substitutions_allowed,
@@ -636,7 +636,7 @@ func (d *DataService) GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlan
 	return treatments, rows.Err()
 }
 
-func (d *DataService) GetRegimenPlanInFavoriteTreatmentPlan(favoriteTreatmentPlanID int64) (*common.RegimenPlan, error) {
+func (d *dataService) GetRegimenPlanInFavoriteTreatmentPlan(favoriteTreatmentPlanID int64) (*common.RegimenPlan, error) {
 	regimenPlanRows, err := d.db.Query(`
 		SELECT r.id, title, dr_regimen_step_id, text
 		FROM dr_favorite_regimen r
@@ -652,7 +652,7 @@ func (d *DataService) GetRegimenPlanInFavoriteTreatmentPlan(favoriteTreatmentPla
 	return getRegimenPlanFromRows(regimenPlanRows)
 }
 
-func (d *DataService) listFavoriteTreatmentPlanResourceGuides(ftpID int64) ([]*common.ResourceGuide, error) {
+func (d *dataService) listFavoriteTreatmentPlanResourceGuides(ftpID int64) ([]*common.ResourceGuide, error) {
 	rows, err := d.db.Query(`
 		SELECT id, section_id, ordinal, title, photo_url
 		FROM dr_favorite_treatment_plan_resource_guide

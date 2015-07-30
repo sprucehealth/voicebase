@@ -8,7 +8,7 @@ import (
 	"database/sql"
 )
 
-func (d *DataService) EmailUpdateOptOut(accountID int64, emailType string, optout bool) error {
+func (d *dataService) EmailUpdateOptOut(accountID int64, emailType string, optout bool) error {
 	if !optout {
 		_, err := d.db.Exec(`DELETE FROM account_email_optout WHERE account_id = ? AND type = ?`, accountID, emailType)
 		return err
@@ -17,7 +17,7 @@ func (d *DataService) EmailUpdateOptOut(accountID int64, emailType string, optou
 	return err
 }
 
-func (d *DataService) EmailRecipients(accountIDs []int64) ([]*Recipient, error) {
+func (d *dataService) EmailRecipients(accountIDs []int64) ([]*Recipient, error) {
 	rows, err := d.db.Query(`
 		SELECT a.id, a.email, p.first_name || ' ' || p.last_name, d.first_name || ' ' || d.last_name
 		FROM account a
@@ -48,7 +48,7 @@ func (d *DataService) EmailRecipients(accountIDs []int64) ([]*Recipient, error) 
 	return rcpt, rows.Err()
 }
 
-func (d *DataService) EmailRecipientsWithOptOut(accountIDs []int64, emailType string, onlyOnce bool) ([]*Recipient, error) {
+func (d *dataService) EmailRecipientsWithOptOut(accountIDs []int64, emailType string, onlyOnce bool) ([]*Recipient, error) {
 	var rows *sql.Rows
 	var err error
 	if !onlyOnce {
@@ -94,7 +94,7 @@ func (d *DataService) EmailRecipientsWithOptOut(accountIDs []int64, emailType st
 	return rcpt, rows.Err()
 }
 
-func (d *DataService) EmailRecordSend(accountIDs []int64, emailType string) error {
+func (d *dataService) EmailRecordSend(accountIDs []int64, emailType string) error {
 	reps := make([]string, len(accountIDs))
 	vals := make([]interface{}, 0, len(accountIDs)*2)
 	for i, id := range accountIDs {
@@ -107,7 +107,7 @@ func (d *DataService) EmailRecordSend(accountIDs []int64, emailType string) erro
 	return err
 }
 
-func (d *DataService) EmailCampaignState(key string) ([]byte, error) {
+func (d *dataService) EmailCampaignState(key string) ([]byte, error) {
 	var data []byte
 	row := d.db.QueryRow(`SELECT "data" FROM email_campaign_state WHERE "key" = ?`, key)
 	err := row.Scan(&data)
@@ -117,7 +117,7 @@ func (d *DataService) EmailCampaignState(key string) ([]byte, error) {
 	return data, err
 }
 
-func (d *DataService) UpdateEmailCampaignState(key string, state []byte) error {
+func (d *dataService) UpdateEmailCampaignState(key string, state []byte) error {
 	_, err := d.db.Exec(`REPLACE INTO email_campaign_state ("key", "data")  VALUES (?, ?)`, key, state)
 	return err
 }

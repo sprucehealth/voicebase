@@ -59,7 +59,7 @@ func (m mockedDataAPI_versionedQuestionHandler) MaxQuestionVersion(questionTag s
 func TestQuestionHandlerRequiresParams(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?language_id=1", nil)
 	test.OK(t, err)
-	handler := newVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}})
+	handler := newVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	www.APIBadRequestError(expectedWriter, r, fmt.Errorf("insufficent parameters supplied to form complete query").Error())
 	handler.ServeHTTP(context.Background(), responseWriter, r)
@@ -69,7 +69,7 @@ func TestQuestionHandlerRequiresParams(t *testing.T) {
 func TestQuestionHandlerRequiresCompleteTagQuery(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?language_id=1", nil)
 	test.OK(t, err)
-	handler := newVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}})
+	handler := newVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	www.APIBadRequestError(expectedWriter, r, fmt.Errorf("insufficent parameters supplied to form complete query").Error())
 	handler.ServeHTTP(context.Background(), responseWriter, r)
@@ -80,7 +80,7 @@ func TestQuestionHandlerCanQueryByID(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?id=1&language_id=1", nil)
 	test.OK(t, err)
 	dbmodel := buildDummyVersionedQuestion("dummy")
-	handler := newVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}, vq: dbmodel, vaqfs: []*common.VersionedAdditionalQuestionField{}, vpss: []*common.VersionedPhotoSlot{}})
+	handler := newVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{vq: dbmodel, vaqfs: []*common.VersionedAdditionalQuestionField{}, vpss: []*common.VersionedPhotoSlot{}})
 	response := versionedQuestionGETResponse{
 		VersionedQuestion: responses.NewVersionedQuestionFromDBModel(dbmodel),
 	}
@@ -100,7 +100,7 @@ func TestQuestionHandlerCanQueryByTagSet(t *testing.T) {
 	test.OK(t, err)
 	dbmodel := buildDummyVersionedQuestion("dummy2")
 	va := buildDummyVersionedAnswer("answer")
-	handler := newVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}, vq: dbmodel, vas: []*common.VersionedAnswer{va}, vaqfs: []*common.VersionedAdditionalQuestionField{}, vpss: []*common.VersionedPhotoSlot{}})
+	handler := newVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{vq: dbmodel, vas: []*common.VersionedAnswer{va}, vaqfs: []*common.VersionedAdditionalQuestionField{}, vpss: []*common.VersionedPhotoSlot{}})
 
 	response := versionedQuestionGETResponse{
 		VersionedQuestion: responses.NewVersionedQuestionFromDBModel(dbmodel),
@@ -126,7 +126,7 @@ func TestQuestionHandlerCanQueryByTagSetNoVersion(t *testing.T) {
 	dbmodel.Version = 99
 	va := buildDummyVersionedAnswer("answer")
 	vps := buildDummyVersionedPhotoSlot("photo_slot")
-	handler := newVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{DataAPI: &api.DataService{}, vq: dbmodel, vas: []*common.VersionedAnswer{va}, vaqfs: []*common.VersionedAdditionalQuestionField{}, maxVersion: dbmodel.Version, vpss: []*common.VersionedPhotoSlot{vps}})
+	handler := newVersionedQuestionHandler(mockedDataAPI_versionedQuestionHandler{vq: dbmodel, vas: []*common.VersionedAnswer{va}, vaqfs: []*common.VersionedAdditionalQuestionField{}, maxVersion: dbmodel.Version, vpss: []*common.VersionedPhotoSlot{vps}})
 
 	response := versionedQuestionGETResponse{
 		VersionedQuestion: responses.NewVersionedQuestionFromDBModel(dbmodel),

@@ -14,7 +14,7 @@ func (o ResourceGuideListOption) Has(opt ResourceGuideListOption) bool {
 	return o&opt != 0
 }
 
-func (d *DataService) GetResourceGuide(id int64) (*common.ResourceGuide, error) {
+func (d *dataService) GetResourceGuide(id int64) (*common.ResourceGuide, error) {
 	var guide common.ResourceGuide
 	var layout []byte
 	row := d.db.QueryRow(`SELECT id, section_id, ordinal, title, photo_url, active, tag, layout FROM resource_guide WHERE id = ?`, id)
@@ -39,7 +39,7 @@ func (d *DataService) GetResourceGuide(id int64) (*common.ResourceGuide, error) 
 	return &guide, nil
 }
 
-func (d *DataService) GetResourceGuideFromTag(tag string) (*common.ResourceGuide, error) {
+func (d *dataService) GetResourceGuideFromTag(tag string) (*common.ResourceGuide, error) {
 	var guide common.ResourceGuide
 	var layout []byte
 	row := d.db.QueryRow(`SELECT id, section_id, ordinal, title, photo_url, active, tag, layout FROM resource_guide WHERE tag = ?`, tag)
@@ -64,7 +64,7 @@ func (d *DataService) GetResourceGuideFromTag(tag string) (*common.ResourceGuide
 	return &guide, nil
 }
 
-func (d *DataService) ListResourceGuideSections() ([]*common.ResourceGuideSection, error) {
+func (d *dataService) ListResourceGuideSections() ([]*common.ResourceGuideSection, error) {
 	rows, err := d.db.Query(`SELECT id, ordinal, title FROM resource_guide_section ORDER BY ordinal`)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func (d *DataService) ListResourceGuideSections() ([]*common.ResourceGuideSectio
 	return sections, rows.Err()
 }
 
-func (d *DataService) ListResourceGuides(opt ResourceGuideListOption) ([]*common.ResourceGuideSection, map[int64][]*common.ResourceGuide, error) {
+func (d *dataService) ListResourceGuides(opt ResourceGuideListOption) ([]*common.ResourceGuideSection, map[int64][]*common.ResourceGuide, error) {
 	sections, err := d.ListResourceGuideSections()
 	if err != nil {
 		return nil, nil, err
@@ -140,7 +140,7 @@ func (d *DataService) ListResourceGuides(opt ResourceGuideListOption) ([]*common
 	return sections, guides, rows.Err()
 }
 
-func (d *DataService) ReplaceResourceGuides(sections []*common.ResourceGuideSection, guides map[int64][]*common.ResourceGuide) error {
+func (d *dataService) ReplaceResourceGuides(sections []*common.ResourceGuideSection, guides map[int64][]*common.ResourceGuide) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -190,7 +190,7 @@ func (d *DataService) ReplaceResourceGuides(sections []*common.ResourceGuideSect
 	return tx.Commit()
 }
 
-func (d *DataService) CreateResourceGuideSection(sec *common.ResourceGuideSection) (int64, error) {
+func (d *dataService) CreateResourceGuideSection(sec *common.ResourceGuideSection) (int64, error) {
 	if sec.Title == "" || sec.Ordinal == 0 {
 		return 0, fmt.Errorf("api.CreateResourceGuideSection: Title and Ordinal may not be empty")
 	}
@@ -202,7 +202,7 @@ func (d *DataService) CreateResourceGuideSection(sec *common.ResourceGuideSectio
 	return sec.ID, err
 }
 
-func (d *DataService) UpdateResourceGuideSection(sec *common.ResourceGuideSection) error {
+func (d *dataService) UpdateResourceGuideSection(sec *common.ResourceGuideSection) error {
 	if sec.ID <= 0 {
 		return fmt.Errorf("api.UpdateResourceGuideSection: ID may not be 0")
 	}
@@ -220,7 +220,7 @@ func (d *DataService) UpdateResourceGuideSection(sec *common.ResourceGuideSectio
 	return err
 }
 
-func (d *DataService) CreateResourceGuide(guide *common.ResourceGuide) (int64, error) {
+func (d *dataService) CreateResourceGuide(guide *common.ResourceGuide) (int64, error) {
 	if guide.Title == "" || guide.PhotoURL == "" || guide.Layout == nil {
 		return 0, fmt.Errorf("api.CreateResourceGuide: Title, PhotoURL, and Layout may not be empty")
 	}
@@ -240,7 +240,7 @@ func (d *DataService) CreateResourceGuide(guide *common.ResourceGuide) (int64, e
 	return guide.ID, err
 }
 
-func (d *DataService) UpdateResourceGuide(id int64, update *ResourceGuideUpdate) error {
+func (d *dataService) UpdateResourceGuide(id int64, update *ResourceGuideUpdate) error {
 	args := dbutil.MySQLVarArgs()
 	if update.Title != nil {
 		args.Append("title", *update.Title)

@@ -125,7 +125,6 @@ func TestPatientPromotionsHandlerGETPendingPromotionsErr(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
 	dataAPI := &mockDataAPIPatientPromotionsHandler{
-		DataAPI: &api.DataService{},
 		pendingPromotionsForAccountErr: errors.New("Foo"),
 	}
 	handler := test_handler.MockHandler{
@@ -141,7 +140,6 @@ func TestPatientPromotionsHandlerGETNoPromotions(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
 	dataAPI := &mockDataAPIPatientPromotionsHandler{
-		DataAPI:                     &api.DataService{},
 		pendingPromotionsForAccount: []*common.AccountPromotion{},
 	}
 	handler := test_handler.MockHandler{
@@ -166,7 +164,6 @@ func TestPatientPromotionsHandlerGETActiveAndExpiredPromosNonPatientVisible(t *t
 	activeCreditPromo := createAccountPromotion("ActivePromo2", "credit", nil, 1)
 	expiredCreditPromo := createAccountPromotion("ExpiredPromo2", "credit", ptr.Time(time.Unix(time.Now().Unix()-1, 0)), 1)
 	dataAPI := &mockDataAPIPatientPromotionsHandler{
-		DataAPI: &api.DataService{},
 		pendingPromotionsForAccount: []*common.AccountPromotion{
 			activeZeroValueAttributionPromo,
 			expiredNewUserPromo,
@@ -213,9 +210,7 @@ func TestPatientPromotionsHandlerPOSTPromoCodeRequired(t *testing.T) {
 	test.OK(t, err)
 	r, err := http.NewRequest("POST", "mock.api.request", bytes.NewReader(rb))
 	test.OK(t, err)
-	dataAPI := &mockDataAPIPatientPromotionsHandler{
-		DataAPI: &api.DataService{},
-	}
+	dataAPI := &mockDataAPIPatientPromotionsHandler{}
 	handler := test_handler.MockHandler{
 		H: NewPatientPromotionsHandler(dataAPI, &mockAuthAPIPatientPromotionsHandler{}, &analytics.NullLogger{}),
 	}
@@ -231,7 +226,6 @@ func TestPatientPromotionsHandlerPOSTLookupPromoCodeErr(t *testing.T) {
 	r, err := http.NewRequest("POST", "mock.api.request", bytes.NewReader(rb))
 	test.OK(t, err)
 	dataAPI := &mockDataAPIPatientPromotionsHandler{
-		DataAPI:            &api.DataService{},
 		lookupPromoCodeErr: errors.New("Foo"),
 	}
 	handler := test_handler.MockHandler{
@@ -250,7 +244,6 @@ func TestPatientPromotionsHandlerPOSTLookupPromoCodeNotFound(t *testing.T) {
 	r, err := http.NewRequest("POST", "mock.api.request", bytes.NewReader(rb))
 	test.OK(t, err)
 	dataAPI := &mockDataAPIPatientPromotionsHandler{
-		DataAPI:            &api.DataService{},
 		lookupPromoCodeErr: api.ErrNotFound(`promotion_code`),
 	}
 	handler := test_handler.MockHandler{
@@ -268,7 +261,6 @@ func TestPatientPromotionsHandlerPOSTPromotionErr(t *testing.T) {
 	r, err := http.NewRequest("POST", "mock.api.request", bytes.NewReader(rb))
 	test.OK(t, err)
 	dataAPI := &mockDataAPIPatientPromotionsHandler{
-		DataAPI:         &api.DataService{},
 		lookupPromoCode: &common.PromoCode{ID: 1, Code: "Foo", IsReferral: false},
 		promotionErr:    errors.New("foo"),
 	}
@@ -288,7 +280,6 @@ func TestPatientPromotionsHandlerPOSTPromotionExpired(t *testing.T) {
 	r, err := http.NewRequest("POST", "mock.api.request", bytes.NewReader(rb))
 	test.OK(t, err)
 	dataAPI := &mockDataAPIPatientPromotionsHandler{
-		DataAPI:         &api.DataService{},
 		lookupPromoCode: &common.PromoCode{ID: 1, Code: "Foo", IsReferral: false},
 		promotion:       createPromotion("imageURL", "test_group", ptr.Time(time.Unix(time.Now().Unix()-1, 0)), 1),
 	}
@@ -309,7 +300,6 @@ func TestPatientPromotionsHandlerPOSTActiveReferralProgramErr(t *testing.T) {
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 12345
 	dataAPI := &mockDataAPIPatientPromotionsHandler{
-		DataAPI:                            &api.DataService{},
 		lookupPromoCode:                    &common.PromoCode{ID: 1, Code: "Foo", IsReferral: true},
 		activeReferralProgramForAccountErr: errors.New("foo"),
 	}
@@ -333,7 +323,6 @@ func TestPatientPromotionsHandlerPOSTClaimOwnReferralCode(t *testing.T) {
 	rp := createReferralProgram(ctxt.AccountID, "imageURL", ptr.Int64(12345))
 	rp.CodeID = 12345
 	dataAPI := &mockDataAPIPatientPromotionsHandler{
-		DataAPI:                         &api.DataService{},
 		lookupPromoCode:                 &common.PromoCode{ID: rp.CodeID, Code: "Foo", IsReferral: true},
 		activeReferralProgramForAccount: rp,
 	}
@@ -354,7 +343,6 @@ func TestPatientPromotionsHandlerPOSTReferralProgramErr(t *testing.T) {
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 12345
 	dataAPI := &mockDataAPIPatientPromotionsHandler{
-		DataAPI:                         &api.DataService{},
 		lookupPromoCode:                 &common.PromoCode{ID: 12345, Code: "Foo", IsReferral: true},
 		activeReferralProgramForAccount: createReferralProgram(ctxt.AccountID, "imageURL", ptr.Int64(12345)),
 		referralProgramErr:              errors.New("foo"),
@@ -377,7 +365,6 @@ func TestPatientPromotionsHandlerPOSTGetPatientFromAccountIDErr(t *testing.T) {
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 12345
 	dataAPI := &mockDataAPIPatientPromotionsHandler{
-		DataAPI:                    &api.DataService{},
 		lookupPromoCode:            &common.PromoCode{ID: 12345, Code: "Foo", IsReferral: false},
 		promotion:                  createPromotion("imageURL", "test_group", nil, 1),
 		getPatientFromAccountIDErr: errors.New("foo"),
@@ -400,7 +387,6 @@ func TestPatientPromotionsHandlerPOSTPatientLocationErr(t *testing.T) {
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 12345
 	dataAPI := &mockDataAPIPatientPromotionsHandler{
-		DataAPI:                 &api.DataService{},
 		lookupPromoCode:         &common.PromoCode{ID: 12345, Code: "Foo", IsReferral: false},
 		promotion:               createPromotion("imageURL", "test_group", nil, 1),
 		getPatientFromAccountID: &common.Patient{ID: encoding.NewObjectID(54321)},
@@ -424,7 +410,6 @@ func TestPatientPromotionsHandlerPOSTPromotionGroupErr(t *testing.T) {
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 12345
 	dataAPI := &mockDataAPIPatientPromotionsHandler{
-		DataAPI:                 &api.DataService{},
 		lookupPromoCode:         &common.PromoCode{ID: 12345, Code: "Foo", IsReferral: false},
 		promotion:               createPromotion("imageURL", "test_group", nil, 1),
 		getPatientFromAccountID: &common.Patient{ID: encoding.NewObjectID(54321)},
@@ -449,7 +434,6 @@ func TestPatientPromotionsHandlerPOSTPromotionCountInGroupForAccountErr(t *testi
 	ctxt := apiservice.GetContext(r)
 	ctxt.AccountID = 12345
 	dataAPI := &mockDataAPIPatientPromotionsHandler{
-		DataAPI:                            &api.DataService{},
 		lookupPromoCode:                    &common.PromoCode{ID: 12345, Code: "Foo", IsReferral: false},
 		promotion:                          createPromotion("imageURL", "test_group", nil, 1),
 		getPatientFromAccountID:            &common.Patient{ID: encoding.NewObjectID(54321)},

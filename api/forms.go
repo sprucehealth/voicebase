@@ -7,7 +7,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
-func (d *DataService) RecordForm(form Form, source string, requestID int64) error {
+func (d *dataService) RecordForm(form Form, source string, requestID int64) error {
 	tableName, columns, values := form.TableColumnValues()
 	columns = append(columns, "source", "request_id")
 	values = append(values, source, requestID)
@@ -16,7 +16,7 @@ func (d *DataService) RecordForm(form Form, source string, requestID int64) erro
 	return err
 }
 
-func (d *DataService) FormEntryExists(tableName, uniqueKey string) (bool, error) {
+func (d *dataService) FormEntryExists(tableName, uniqueKey string) (bool, error) {
 	var count int64
 	err := d.db.QueryRow(`SELECT COUNT(*) FROM `+dbutil.EscapeMySQLName(tableName)+` WHERE unique_key = ?`, uniqueKey).Scan(&count)
 	if err != nil {

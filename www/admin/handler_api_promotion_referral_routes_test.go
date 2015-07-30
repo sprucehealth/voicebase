@@ -46,7 +46,6 @@ func TestPromotionReferralRoutesHandlerGETQueriesDataLayer(t *testing.T) {
 		Lifecycle:       "ACTIVE",
 	}
 	handler := newPromotionReferralRoutesHandler(&mockedDataAPI_promotionReferralRoutesHandler{
-		DataAPI:                 &api.DataService{},
 		promotionReferralRoutes: []*common.PromotionReferralRoute{route},
 	})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
@@ -59,9 +58,7 @@ func TestPromotionReferralRoutesHandlerGETQueriesDataLayer(t *testing.T) {
 func TestPromotionReferralRoutesHandlerGETRequiredLifecycle(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	handler := newPromotionReferralRoutesHandler(&mockedDataAPI_promotionReferralRoutesHandler{
-		DataAPI: &api.DataService{},
-	})
+	handler := newPromotionReferralRoutesHandler(&mockedDataAPI_promotionReferralRoutesHandler{})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusBadRequest, struct{}{})
 	handler.ServeHTTP(context.Background(), responseWriter, r)
@@ -72,7 +69,6 @@ func TestPromotionReferralRoutesHandlerGETNoRecords(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?lifecycles=ACTIVE", nil)
 	test.OK(t, err)
 	handler := newPromotionReferralRoutesHandler(&mockedDataAPI_promotionReferralRoutesHandler{
-		DataAPI:                    &api.DataService{},
 		promotionReferralRoutesErr: api.ErrNotFound(`promotion_referral_route`),
 	})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
@@ -86,7 +82,6 @@ func TestPromotionReferralRoutesHandlerGETQueryErr(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?lifecycles=ACTIVE", nil)
 	test.OK(t, err)
 	handler := newPromotionReferralRoutesHandler(&mockedDataAPI_promotionReferralRoutesHandler{
-		DataAPI:                    &api.DataService{},
 		promotionReferralRoutesErr: errors.New("Foo"),
 	})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
@@ -104,9 +99,7 @@ func TestPromotionReferralRoutesHandlerPOSTQueriesDataLayer(t *testing.T) {
 	test.OK(t, err)
 	r, err := http.NewRequest("POST", "mock.api.request", bytes.NewReader(req))
 	test.OK(t, err)
-	mh := &mockedDataAPI_promotionReferralRoutesHandler{
-		DataAPI: &api.DataService{},
-	}
+	mh := &mockedDataAPI_promotionReferralRoutesHandler{}
 	handler := newPromotionReferralRoutesHandler(mh)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, struct{}{})
@@ -123,9 +116,7 @@ func TestPromotionReferralRoutesHandlerPOSTRequiredParams(t *testing.T) {
 	test.OK(t, err)
 	r, err := http.NewRequest("POST", "mock.api.request", bytes.NewReader(req))
 	test.OK(t, err)
-	handler := newPromotionReferralRoutesHandler(&mockedDataAPI_promotionReferralRoutesHandler{
-		DataAPI: &api.DataService{},
-	})
+	handler := newPromotionReferralRoutesHandler(&mockedDataAPI_promotionReferralRoutesHandler{})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	www.APIBadRequestError(expectedWriter, r, errors.New("promotion_code_id, priority, lifecycle required").Error())
 	handler.ServeHTTP(context.Background(), responseWriter, r)
@@ -143,7 +134,6 @@ func TestPromotionReferralRoutesHandlerPOSTDataLayerErr(t *testing.T) {
 	r, err := http.NewRequest("POST", "mock.api.request", bytes.NewReader(req))
 	test.OK(t, err)
 	mh := &mockedDataAPI_promotionReferralRoutesHandler{
-		DataAPI: &api.DataService{},
 		insertPromotionReferralRoutesErr: errors.New("Foo"),
 	}
 	handler := newPromotionReferralRoutesHandler(mh)

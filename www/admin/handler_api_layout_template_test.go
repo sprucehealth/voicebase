@@ -27,7 +27,7 @@ func TestLayoutTemplateHandlerSuccessGET(t *testing.T) {
 	template := []byte(`{"Template":"output"}`)
 	resp := make(map[string]string)
 	resp["Template"] = "output"
-	handler := newLayoutTemplateHandler(mockedDataAPI_handlerLayoutTemplate{&api.DataService{}, template})
+	handler := newLayoutTemplateHandler(mockedDataAPI_handlerLayoutTemplate{template: template})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, resp)
 	handler.ServeHTTP(context.Background(), responseWriter, r)

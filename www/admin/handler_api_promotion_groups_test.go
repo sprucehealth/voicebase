@@ -28,7 +28,6 @@ func TestPromotionGroupsHandlerGETPromotionGroupsErr(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?", nil)
 	test.OK(t, err)
 	handler := newPromotionGroupsHandler(&mockedDataAPIPromotionGroupsHandler{
-		DataAPI:            &api.DataService{},
 		promotionGroupsErr: errors.New("Foo"),
 	})
 	responseWriter := httptest.NewRecorder()
@@ -40,7 +39,6 @@ func TestPromotionGroupsHandlerGETPromotionGroups(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?", nil)
 	test.OK(t, err)
 	handler := newPromotionGroupsHandler(&mockedDataAPIPromotionGroupsHandler{
-		DataAPI: &api.DataService{},
 		promotionGroups: []*common.PromotionGroup{
 			&common.PromotionGroup{
 				ID:               1,

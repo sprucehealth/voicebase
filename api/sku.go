@@ -6,7 +6,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
-func (d *DataService) SKUForPathway(pathwayTag string, category common.SKUCategoryType) (*common.SKU, error) {
+func (d *dataService) SKUForPathway(pathwayTag string, category common.SKUCategoryType) (*common.SKU, error) {
 
 	// we assume the form of a SKU to be <pathway_tag>_<sku_category>
 	skuType := pathwayTag + "_" + category.String()
@@ -27,7 +27,7 @@ func (d *DataService) SKUForPathway(pathwayTag string, category common.SKUCatego
 	return scanSKU(row)
 }
 
-func (d *DataService) SKU(skuType string) (*common.SKU, error) {
+func (d *dataService) SKU(skuType string) (*common.SKU, error) {
 	row := d.db.QueryRow(`
 		SELECT sku.id, sku.type, sku_category.type
 		FROM sku
@@ -47,7 +47,7 @@ func scanSKU(s scannable) (*common.SKU, error) {
 	return &sku, nil
 }
 
-func (d *DataService) CategoryForSKU(skuType string) (*common.SKUCategoryType, error) {
+func (d *dataService) CategoryForSKU(skuType string) (*common.SKUCategoryType, error) {
 
 	var skuCategory common.SKUCategoryType
 	if err := d.db.QueryRow(`
@@ -64,7 +64,7 @@ func (d *DataService) CategoryForSKU(skuType string) (*common.SKUCategoryType, e
 	return &skuCategory, nil
 }
 
-func (d *DataService) CreateSKU(sku *common.SKU) (int64, error) {
+func (d *dataService) CreateSKU(sku *common.SKU) (int64, error) {
 	// ensure that the category exists
 	var categoryID int64
 	err := d.db.QueryRow(`

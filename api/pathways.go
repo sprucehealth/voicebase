@@ -11,7 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
-func (d *DataService) Pathway(id int64, opts PathwayOption) (*common.Pathway, error) {
+func (d *dataService) Pathway(id int64, opts PathwayOption) (*common.Pathway, error) {
 	if opts&POWithDetails != 0 {
 		return scanPathway(opts,
 			d.db.QueryRow(`SELECT id, tag, name, medicine_branch, status, details_json FROM clinical_pathway WHERE id = ?`, id))
@@ -20,7 +20,7 @@ func (d *DataService) Pathway(id int64, opts PathwayOption) (*common.Pathway, er
 		d.db.QueryRow(`SELECT id, tag, name, medicine_branch, status FROM clinical_pathway WHERE id = ?`, id))
 }
 
-func (d *DataService) PathwayForTag(tag string, opts PathwayOption) (*common.Pathway, error) {
+func (d *dataService) PathwayForTag(tag string, opts PathwayOption) (*common.Pathway, error) {
 	if opts&POWithDetails != 0 {
 		return scanPathway(opts,
 			d.db.QueryRow(`SELECT id, tag, name, medicine_branch, status, details_json FROM clinical_pathway WHERE tag = ?`, tag))
@@ -29,7 +29,7 @@ func (d *DataService) PathwayForTag(tag string, opts PathwayOption) (*common.Pat
 		d.db.QueryRow(`SELECT id, tag, name, medicine_branch, status FROM clinical_pathway WHERE tag = ?`, tag))
 }
 
-func (d *DataService) PathwaysForTags(tags []string, opts PathwayOption) (map[string]*common.Pathway, error) {
+func (d *dataService) PathwaysForTags(tags []string, opts PathwayOption) (map[string]*common.Pathway, error) {
 	var withDetailsQuery string
 	if opts&POWithDetails != 0 {
 		withDetailsQuery = ", details_json"
@@ -54,7 +54,7 @@ func (d *DataService) PathwaysForTags(tags []string, opts PathwayOption) (map[st
 	return pathways, rows.Err()
 }
 
-func (d *DataService) ListPathways(opts PathwayOption) ([]*common.Pathway, error) {
+func (d *dataService) ListPathways(opts PathwayOption) ([]*common.Pathway, error) {
 	var withDetailsQuery string
 	if opts&POWithDetails != 0 {
 		withDetailsQuery = ", details_json"
@@ -88,7 +88,7 @@ func (d *DataService) ListPathways(opts PathwayOption) ([]*common.Pathway, error
 	return pathways, rows.Err()
 }
 
-func (d *DataService) CreatePathway(pathway *common.Pathway) error {
+func (d *dataService) CreatePathway(pathway *common.Pathway) error {
 	if pathway.Tag == "" {
 		return errors.New("pathway tag required")
 	}
@@ -120,7 +120,7 @@ func (d *DataService) CreatePathway(pathway *common.Pathway) error {
 	return err
 }
 
-func (d *DataService) PathwayMenu() (*common.PathwayMenu, error) {
+func (d *dataService) PathwayMenu() (*common.PathwayMenu, error) {
 	var js []byte
 	row := d.db.QueryRow(`
 		SELECT json
@@ -137,7 +137,7 @@ func (d *DataService) PathwayMenu() (*common.PathwayMenu, error) {
 	return menu, json.Unmarshal(js, menu)
 }
 
-func (d *DataService) UpdatePathway(id int64, update *PathwayUpdate) error {
+func (d *dataService) UpdatePathway(id int64, update *PathwayUpdate) error {
 	args := dbutil.MySQLVarArgs()
 
 	if update.Name != nil {
@@ -162,7 +162,7 @@ func (d *DataService) UpdatePathway(id int64, update *PathwayUpdate) error {
 	return err
 }
 
-func (d *DataService) UpdatePathwayMenu(menu *common.PathwayMenu) error {
+func (d *dataService) UpdatePathwayMenu(menu *common.PathwayMenu) error {
 	js, err := json.Marshal(menu)
 	if err != nil {
 		return err
@@ -188,7 +188,7 @@ func (d *DataService) UpdatePathwayMenu(menu *common.PathwayMenu) error {
 	return tx.Commit()
 }
 
-func (d *DataService) CreatePathwaySTP(pathwayTag string, stp []byte) error {
+func (d *dataService) CreatePathwaySTP(pathwayTag string, stp []byte) error {
 	_, err := d.db.Exec(`
 		UPDATE clinical_pathway
 		SET stp_json = ?
@@ -196,7 +196,7 @@ func (d *DataService) CreatePathwaySTP(pathwayTag string, stp []byte) error {
 	return err
 }
 
-func (d *DataService) PathwaySTP(pathwayTag string) ([]byte, error) {
+func (d *dataService) PathwaySTP(pathwayTag string) ([]byte, error) {
 	var stp []byte
 	if err := d.db.QueryRow(`
 		SELECT stp_json

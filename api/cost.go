@@ -10,7 +10,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 )
 
-func (d *DataService) GetItemCost(id int64) (*common.ItemCost, error) {
+func (d *dataService) GetItemCost(id int64) (*common.ItemCost, error) {
 	row := d.db.QueryRow(`
 		SELECT item_cost.id, sku_id, status
 		FROM item_cost
@@ -18,7 +18,7 @@ func (d *DataService) GetItemCost(id int64) (*common.ItemCost, error) {
 	return d.getItemCostFromRow(row)
 }
 
-func (d *DataService) GetActiveItemCost(skuType string) (*common.ItemCost, error) {
+func (d *dataService) GetActiveItemCost(skuType string) (*common.ItemCost, error) {
 	skuID, err := d.skuIDFromType(skuType)
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func (d *DataService) GetActiveItemCost(skuType string) (*common.ItemCost, error
 	return d.getItemCostFromRow(row)
 }
 
-func (d *DataService) getItemCostFromRow(row *sql.Row) (*common.ItemCost, error) {
+func (d *dataService) getItemCostFromRow(row *sql.Row) (*common.ItemCost, error) {
 	var itemCost common.ItemCost
 	var skuID int64
 	err := row.Scan(
@@ -78,7 +78,7 @@ func (d *DataService) getItemCostFromRow(row *sql.Row) (*common.ItemCost, error)
 	return &itemCost, rows.Err()
 }
 
-func (d *DataService) CreatePatientReceipt(receipt *common.PatientReceipt) error {
+func (d *dataService) CreatePatientReceipt(receipt *common.PatientReceipt) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -130,7 +130,7 @@ func (d *DataService) CreatePatientReceipt(receipt *common.PatientReceipt) error
 	return tx.Commit()
 }
 
-func (d *DataService) UpdatePatientReceipt(id int64, update *PatientReceiptUpdate) error {
+func (d *dataService) UpdatePatientReceipt(id int64, update *PatientReceiptUpdate) error {
 	args := dbutil.MySQLVarArgs()
 	if update.Status != nil {
 		args.Append("status", update.Status.String())
@@ -145,7 +145,7 @@ func (d *DataService) UpdatePatientReceipt(id int64, update *PatientReceiptUpdat
 	return err
 }
 
-func (d *DataService) GetPatientReceipt(patientID, itemID int64, skuType string, includeLineItems bool) (*common.PatientReceipt, error) {
+func (d *dataService) GetPatientReceipt(patientID, itemID int64, skuType string, includeLineItems bool) (*common.PatientReceipt, error) {
 	skuID, err := d.skuIDFromType(skuType)
 	if err != nil {
 		return nil, err
@@ -207,7 +207,7 @@ func (d *DataService) GetPatientReceipt(patientID, itemID int64, skuType string,
 	return &patientReceipt, nil
 }
 
-func (d *DataService) CreateDoctorTransaction(transaction *common.DoctorTransaction) error {
+func (d *dataService) CreateDoctorTransaction(transaction *common.DoctorTransaction) error {
 	skuID, err := d.skuIDFromType(transaction.SKUType)
 	if err != nil {
 		return err
@@ -230,7 +230,7 @@ func (d *DataService) CreateDoctorTransaction(transaction *common.DoctorTransact
 	return nil
 }
 
-func (d *DataService) TransactionsForDoctor(doctorID int64) ([]*common.DoctorTransaction, error) {
+func (d *dataService) TransactionsForDoctor(doctorID int64) ([]*common.DoctorTransaction, error) {
 	rows, err := d.db.Query(`
 		SELECT doctor_transaction.id, doctor_id, item_cost_id, item_id, sku_id, patient_id 
 		FROM doctor_transaction
@@ -266,7 +266,7 @@ func (d *DataService) TransactionsForDoctor(doctorID int64) ([]*common.DoctorTra
 	return transactions, rows.Err()
 }
 
-func (d *DataService) TransactionForItem(itemID, doctorID int64, skuType string) (*common.DoctorTransaction, error) {
+func (d *dataService) TransactionForItem(itemID, doctorID int64, skuType string) (*common.DoctorTransaction, error) {
 	skuID, err := d.skuIDFromType(skuType)
 	if err != nil {
 		return nil, err
@@ -294,7 +294,7 @@ func (d *DataService) TransactionForItem(itemID, doctorID int64, skuType string)
 	return &item, nil
 }
 
-func (d *DataService) VisitSKUs(activeOnly bool) ([]string, error) {
+func (d *dataService) VisitSKUs(activeOnly bool) ([]string, error) {
 
 	var statusClause string
 	if activeOnly {

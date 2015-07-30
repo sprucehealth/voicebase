@@ -26,7 +26,7 @@ func (d mockedDataAPI_handlerCaseVisit) VisitSummaries(visitStatuses []string, f
 func TestHandlerCaseVisitNoStatusRequired(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	handler := newCaseVisitsHandler(mockedDataAPI_handlerCaseVisit{DataAPI: &api.DataService{}})
+	handler := newCaseVisitsHandler(mockedDataAPI_handlerCaseVisit{})
 	responseWriter := httptest.NewRecorder()
 	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, http.StatusOK, responseWriter.Code)
@@ -56,7 +56,7 @@ func TestHandlerCaseVisitSuccessfulGET(t *testing.T) {
 		DoctorLastName:    nil,
 		LockType:          nil,
 	}
-	handler := newCaseVisitsHandler(mockedDataAPI_handlerCaseVisit{DataAPI: &api.DataService{}, Summaries: []*common.VisitSummary{summary}})
+	handler := newCaseVisitsHandler(mockedDataAPI_handlerCaseVisit{Summaries: []*common.VisitSummary{summary}})
 	resp := caseVisitsGETResponse{
 		VisitSummaries: []*responses.PHISafeVisitSummary{
 			{
@@ -108,7 +108,7 @@ func TestHandlerCaseVisitSuccessfulGETMultiStatus(t *testing.T) {
 		DoctorLastName:    nil,
 		LockType:          nil,
 	}
-	handler := newCaseVisitsHandler(mockedDataAPI_handlerCaseVisit{DataAPI: &api.DataService{}, Summaries: []*common.VisitSummary{summary}})
+	handler := newCaseVisitsHandler(mockedDataAPI_handlerCaseVisit{Summaries: []*common.VisitSummary{summary}})
 	resp := caseVisitsGETResponse{
 		VisitSummaries: []*responses.PHISafeVisitSummary{
 			{
@@ -160,7 +160,7 @@ func TestHandlerCaseVisitSuccessfulGETDateRange(t *testing.T) {
 		DoctorLastName:    nil,
 		LockType:          nil,
 	}
-	handler := newCaseVisitsHandler(mockedDataAPI_handlerCaseVisit{DataAPI: &api.DataService{}, Summaries: []*common.VisitSummary{summary}})
+	handler := newCaseVisitsHandler(mockedDataAPI_handlerCaseVisit{Summaries: []*common.VisitSummary{summary}})
 	resp := caseVisitsGETResponse{
 		VisitSummaries: []*responses.PHISafeVisitSummary{
 			{
