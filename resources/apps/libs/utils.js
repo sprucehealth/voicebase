@@ -1,6 +1,7 @@
 /* @flow */
 
 var React = require("react");
+var objectAssign = require("object-assign");
 
 function staticURL(path: string): string {
 	return Spruce.BaseStaticURL + path
@@ -205,5 +206,38 @@ module.exports = {
 		render: function(): any {
 			return <img src={staticURL("/img/loading.gif")} />;
 		}
-	})
+	}),
+
+	mergeProperties: function(): any {
+		var res = {};
+		for (var i = 0; i < arguments.length; ++i) {
+			if (arguments[i]) {
+				objectAssign(res, arguments[i]);
+			}
+		}
+		return res;
+	},
+
+	isEmpty: function(data: any): bool {
+		if(typeof(data) == 'number' || typeof(data) == 'boolean') { 
+			return false; 
+		}
+		if(typeof(data) == 'undefined' || data === null) {
+			return true; 
+		}
+		if(typeof(data.length) != 'undefined') {
+			return data.length == 0;
+		}
+		var count = 0;
+		for (var i in data) {
+			if(data.hasOwnProperty(i)) {
+				count ++;
+			}
+		}
+		return count == 0;
+	},
+
+	capitalizeFirstLetter: function (str: string): string {
+	    return str.charAt(0).toUpperCase() + str.slice(1);
+	},
 }

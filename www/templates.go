@@ -31,6 +31,7 @@ type TemplateLoader struct {
 	templates map[string]*tmpl
 	mu        sync.Mutex
 	opener    func(path string) (io.ReadCloser, error)
+	funcMap   map[string]interface{}
 }
 
 func NewTemplateLoader(opener func(path string) (io.ReadCloser, error)) *TemplateLoader {
@@ -45,6 +46,18 @@ func NewTemplateLoader(opener func(path string) (io.ReadCloser, error)) *Templat
 
 func (t *TemplateLoader) SetOpener(opener func(path string) (io.ReadCloser, error)) {
 	t.opener = opener
+}
+
+// RegisterFunctions updates the default set of functions that get registered for loaded templates.
+func (t *TemplateLoader) RegisterFunctions(funcMap map[string]interface{}) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.funcMap == nil {
+		t.funcMap = make(map[string]interface{})
+	}
+	for k, v := range funcMap {
+		t.funcMap[k] = v
+	}
 }
 
 func (t *TemplateLoader) MustLoadTemplate(path, parent string, funcMap map[string]interface{}) *template.Template {
@@ -81,6 +94,9 @@ func (t *TemplateLoader) LoadTemplate(path, parent string, funcMap map[string]in
 		}
 	} else {
 		p = template.New("")
+	}
+	if t.funcMap != nil {
+		p = p.Funcs(t.funcMap)
 	}
 	if funcMap != nil {
 		p = p.Funcs(funcMap)
