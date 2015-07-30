@@ -390,6 +390,7 @@ func populateParentInfo(
 			PhotoURL: signedURL,
 		})
 	}
+	context.Set("parent_photo_verification", []info_intake.TitlePhotoListData{photoSection})
 
 	return nil
 }
