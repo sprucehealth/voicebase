@@ -36,10 +36,18 @@ var minorTriagedEmailEnabledDef = &cfg.ValueDef{
 	Default:     false,
 }
 
+var parentWelcomeEmailEnabledDef = &cfg.ValueDef{
+	Name:        "Email.Campaign.Parent.Welcome.Enabled",
+	Description: "Enable or disable the email welcoming parents after consenting.",
+	Type:        cfg.ValueTypeBool,
+	Default:     false,
+}
+
 const (
 	patientSignupEmailType            = "welcome"
 	minorTreatmentPlanIssuedEmailType = "minor-treatment-plan-issued"
 	minorTriagedEmailType             = "minor-triaged"
+	parentWelcomeEmailType            = "parent-welcome"
 )
 
 // InitListeners bootstraps the listeners related to email campaigns triggered by events in the system
@@ -67,6 +75,17 @@ func InitListeners(dispatch *dispatch.Dispatcher, cfgStore cfg.Store, emailServi
 		if cfgStore.Snapshot().Bool(minorTriagedEmailEnabledDef.Name) {
 			if err := sendToPatientParent(ev.PatientID, minorTriagedEmailType, nil, &mandrill.Message{}, email.CanOptOut, emailService, dataAPI); err != nil {
 				golog.Errorf("%s", err)
+			}
+		}
+		return nil
+	})
+	// Send the consenting parent a welcome email but only do it once
+	dispatch.SubscribeAsync(func(ev *patient.ParentalConsentCompletedEvent) error {
+		if cfgStore.Snapshot().Bool(parentWelcomeEmailEnabledDef.Name) {
+			if patient, err := dataAPI.Patient(ev.ParentPatientID, true); err != nil {
+				golog.Errorf("Failed to send welcome email to account for patient %d: %s", ev.ParentPatientID, err)
+			} else if _, err := emailService.Send([]int64{patient.AccountID.Int64()}, parentWelcomeEmailType, nil, &mandrill.Message{}, email.OnlyOnce|email.CanOptOut); err != nil {
+				golog.Errorf("Failed to send welcome email to account for patient %d: %s", ev.ParentPatientID, err)
 			}
 		}
 		return nil
