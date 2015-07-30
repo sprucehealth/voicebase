@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-librato/librato"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/email"
@@ -19,6 +20,7 @@ import (
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/stripe"
 	"github.com/sprucehealth/backend/media"
+	"github.com/sprucehealth/backend/patient/identification"
 	"github.com/sprucehealth/backend/tagging"
 	"github.com/sprucehealth/backend/www"
 )
@@ -59,6 +61,8 @@ const (
 	PermSTPView                 = "stp.view"
 	PermPromotionView           = "promo.view"
 	PermPromotionEdit           = "promo.edit"
+	PermAccountView             = "account.view"
+	PermAccountEdit             = "account.edit"
 )
 
 const (
@@ -85,6 +89,7 @@ type Config struct {
 	MetricsRegistry metrics.Registry
 	EventsClient    events.Client
 	Cfg             cfg.Store
+	AnalyticsLogger analytics.Logger
 }
 
 // SetupRoutes configures all the admin handler routes using the provided router and config.
@@ -93,6 +98,9 @@ func SetupRoutes(r *mux.Router, config *Config) {
 
 	noPermsRequired := www.NoPermissionsRequiredFilter(config.AuthAPI)
 	taggingClient := tagging.NewTaggingClient(config.ApplicationDB)
+
+	// Initialize business logic services
+	identificationService := identification.NewPatientIdentificationService(config.DataAPI, config.AuthAPI, config.AnalyticsLogger)
 
 	authFilter := func(h httputil.ContextHandler) httputil.ContextHandler {
 		return www.AuthRequiredHandler(www.RoleRequiredHandler(h, nil, api.RoleAdmin), nil, config.AuthAPI)
@@ -477,6 +485,12 @@ func SetupRoutes(r *mux.Router, config *Config) {
 			httputil.Post: []string{PermMarketingEdit},
 			httputil.Put:  []string{PermMarketingEdit},
 		}, newReferralProgramTemplateHandler(config.DataAPI), nil)))
+
+	// Patient Interaction
+	r.Handle("/admin/api/patient/{id:[0-9]+}/account/needs_id_verification", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Post: []string{PermAccountEdit},
+		}, newPatientAccountNeedsVerifyIDHandler(identificationService), nil)))
 
 	if !environment.IsProd() {
 		r.Handle(`/admin/medrecord`, apiAuthFilter(noPermsRequired(
