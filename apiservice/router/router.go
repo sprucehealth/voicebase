@@ -58,6 +58,7 @@ type Config struct {
 	AuthAPI                  api.AuthAPI
 	Dispatcher               *dispatch.Dispatcher
 	AuthTokenExpiration      time.Duration
+	MediaAccessExpiration    time.Duration
 	AddressValidator         address.Validator
 	PharmacySearchAPI        pharmacy.PharmacySearchAPI
 	DiagnosisAPI             diagnosis.API
@@ -230,6 +231,7 @@ func New(conf *Config) http.Handler {
 	// Doctor: Patient file APIs
 	authenticationRequired(conf, apipaths.DoctorPatientTreatmentsURLPath, patient_file.NewDoctorPatientTreatmentsHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.DoctorPatientInfoURLPath, patient_file.NewDoctorPatientHandler(conf.DataAPI, conf.AddressValidator))
+	authenticationRequired(conf, apipaths.DoctorPatientParentInfoURLPath, patient_file.NewPatientParentHandler(conf.DataAPI, conf.MediaStore, conf.MediaAccessExpiration))
 	authenticationRequired(conf, apipaths.DoctorPatientAppInfoURLPath, patient_file.NewPatientAppInfoHandler(conf.DataAPI, conf.AuthAPI))
 	authenticationRequired(conf, apipaths.DoctorPatientVisitsURLPath, patient_file.NewPatientVisitsHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.DoctorPatientPharmacyURLPath, patient_file.NewDoctorUpdatePatientPharmacyHandler(conf.DataAPI))

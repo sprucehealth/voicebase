@@ -40,17 +40,29 @@ func (d *DataService) ParentalConsentCompletedForPatient(childPatientID int64) e
 	return errors.Trace(tx.Commit())
 }
 
-// ParentalConsent returns the consent status between parent and child
-func (d *DataService) ParentalConsent(parentPatientID, childPatientID int64) (*common.ParentalConsent, error) {
-	var consent common.ParentalConsent
-	row := d.db.QueryRow(`SELECT consented, relationship FROM patient_parent WHERE patient_id = ? AND parent_patient_id = ?`,
-		childPatientID, parentPatientID)
-	if err := row.Scan(&consent.Consented, &consent.Relationship); err == sql.ErrNoRows {
-		return nil, errors.Trace(ErrNotFound("patient_parent"))
-	} else if err != nil {
+// ParentalConsent returns the consent status for a given child
+func (d *DataService) ParentalConsent(childPatientID int64) ([]*common.ParentalConsent, error) {
+	var consents []*common.ParentalConsent
+	rows, err := d.db.Query(`SELECT parent_patient_id, consented, relationship FROM patient_parent WHERE patient_id = ?`,
+		childPatientID)
+	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	return &consent, nil
+	defer rows.Close()
+
+	for rows.Next() {
+		var consent common.ParentalConsent
+		if err := rows.Scan(
+			&consent.ParentPatientID,
+			&consent.Consented,
+			&consent.Relationship,
+		); err != nil {
+			return nil, errors.Trace(err)
+		}
+		consents = append(consents, &consent)
+	}
+
+	return consents, errors.Trace(rows.Err())
 }
 
 // AllParentalConsent returns the full set of parent/child consent relationships which
@@ -146,14 +158,4 @@ func (d *DataService) ParentConsentProof(parentPatientID int64) (*ParentalConsen
 	}
 
 	return &proof, nil
-}
-
-// PatientParentID returns the patient id mapped to the provided patient's parent
-func (d *DataService) PatientParentID(childPatientID int64) (int64, error) {
-	var parentID int64
-	err := d.db.QueryRow(`SELECT parent_patient_id FROM patient_parent WHERE patient_id = ?`, childPatientID).Scan(&parentID)
-	if err == sql.ErrNoRows {
-		return 0, errors.Trace(ErrNotFound(`patient_parent`))
-	}
-	return parentID, errors.Trace(err)
 }

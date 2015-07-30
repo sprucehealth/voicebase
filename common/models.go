@@ -840,9 +840,3 @@ type FTPMembership struct {
 	ClinicalPathwayID    int64
 	CreatorID            *int64
 }
-
-// ParentalConsent represents a parent/child relationship having to do with consent to treatment.
-type ParentalConsent struct {
-	Consented    bool
-	Relationship string
-}
