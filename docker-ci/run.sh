@@ -93,6 +93,7 @@ go tool cover -func=coverage-$BUILD_NUMBER.out | grep "total:"
 # Test static resources
 echo "TESTING STATIC RESOURCES"
 flow --version
+npm version
 resources/build.sh
 (cd resources/apps ; time flow check)
 

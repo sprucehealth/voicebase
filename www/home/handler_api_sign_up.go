@@ -85,7 +85,7 @@ func (h *signUpAPIHAndler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 		www.APIBadRequestError(w, r, err.Error())
 		return
 	}
-	states, err := h.dataAPI.AvailableStates()
+	states, err := h.dataAPI.ListStates()
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
