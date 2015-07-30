@@ -91,13 +91,6 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 	},
 
 	//
-	// Store callbacks
-	//
-	onStoreUpdate: function(store: ParentalConsentStoreType) {
-		debugger;
-	},
-
-	//
 	// User interaction callbacks
 	// 
 	handleSubmit: function(e: any) {
@@ -260,7 +253,7 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 		return (
 			<div style={uploadFormStyle}>
 				<form encType="multipart/form-data" ref="governmentIDForm">
-					<input type="hidden" name="type" value="photo_id" />
+					<input type="hidden" name="type" value="governmentid" />
 					<div className="formFieldRow hasBottomDivider hasTopDivider" style={{marginTop: "20px"}}>
 						<div style={uploadContentContainerStyle} className="flexBox justifyContentStartLeft">
 							<div style={imageViewContainerStyle}>
@@ -308,6 +301,7 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 					</div>
 				</form>	
 				<form encType="multipart/form-data" ref="selfieForm">
+					<input type="hidden" name="type" value="selfie" />
 					<div className="formFieldRow hasBottomDivider">
 						<div style={uploadContentContainerStyle} className="flexBox">
 							<div style={imageViewContainerStyle}>

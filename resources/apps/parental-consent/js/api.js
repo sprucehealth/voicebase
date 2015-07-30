@@ -23,30 +23,14 @@ module.exports = {
 	},
 
 	uploadPhoto: function(formData: any, cb: ajaxCB) {
-		// TODO: remove before shipping
-		// setTimeout(function() {
-		// 	cb(false, null, {message: "sample error"})
-		// }, 1000);
-
-		// TODO: remove before shipping
-		var mockResponse: ParentalConsentUploadImageResponse = {
-			url: "http://www.nicenicejpg.com/600/400"
-		}
-		setTimeout(function() {
-			cb(true, mockResponse, null)
-		}, 1000);
-
-		//
-		// TODO: uncomment this!!!
-		//
-		// this.ajax({
-		// 	type: "POST",
-		// 	cache: false,
-		// 	contentType: false,
-		// 	processData: false,
-		// 	url: "/parental-consent/image/",
-		// 	data: formData
-		// }, cb);
+		this.ajax({
+			type: "POST",
+			cache: false,
+			contentType: false,
+			processData: false,
+			url: "/parental-consent/image",
+			data: formData
+		}, cb);
 	},
 
 	getParentalConsentImages: function(formData: any, cb: ajaxCB) {
@@ -80,19 +64,6 @@ module.exports = {
 	},
 
 	signUp: function(request: ParentalConsentSignUpRequest, cb: ajaxCB) {
-		// TODO: remove before shipping
-		// setTimeout(function() {
-		// 	cb(false, {}, {message: "sample error during sign up"})
-		// }, 1000);
-
-		// TODO: remove before shipping
-		// setTimeout(function() {
-		// 	cb(true, {}, null)
-		// }, 1000);
-
-		//
-		// TODO: uncomment this!!!
-		//		
 		this.ajax({
 			type: "POST",
 			contentType: "application/json",
@@ -126,56 +97,23 @@ module.exports = {
 	},
 
 	submitConsent: function(request: ParentalConsentConsentRequest, cb: ajaxCB) {
-		// TODO: remove before shipping
-		// setTimeout(function() {
-		// 	cb(false, {}, {message: "sample error during consent submission"})
-		// }, 1000);
-
-		// TODO: remove before shipping
-		setTimeout(function() {
-			cb(true, {}, null)
-		}, 1000);
-
-		//
-		// TODO: uncomment this!!!
-		//
-		// this.ajax({
-		// 	type: "POST",
-		// 	contentType: "application/json",
-		// 	url: "/auth/parental-consent",
-		// 	data: JSON.stringify(request),
-		// 	dataType: "json"
-		// }, cb);
+		this.ajax({
+			type: "POST",
+			contentType: "application/json",
+			url: "/parental-consent",
+			data: JSON.stringify(request),
+			dataType: "json"
+		}, cb);
 	},
 
-	getConsentStatus: function(cb: ajaxCB) {
-		// TODO: remove before shipping
-		// setTimeout(function() {
-		// 	cb(false, {}, {message: "sample error"})
-		// }, 1000);
-
-		// TODO: remove before shipping
-		var mockResponse: ParentalConsentConsentResponse = {
-			consented: true,
-			relationship: "mother",
-		}
-		// var mockResponse: ParentalConsentConsentResponse = {
-		// 	consented: false,
-		// }
-		setTimeout(function() {
-			cb(true, mockResponse, null)
-		}, 1000);
-
-		//
-		// TODO: uncomment this!!!
-		//
-		// this.ajax({
-		// 	type: "POST",
-		// 	contentType: "application/json",
-		// 	url: "/auth/parental-consent",
-		// 	data: JSON.stringify(request),
-		// 	dataType: "json"
-		// }, cb);
+	getConsentStatus: function(request: any, cb: ajaxCB) {
+		this.ajax({
+			type: "GET",
+			contentType: "application/json",
+			url: "/parental-consent",
+			data: JSON.stringify(request),
+			dataType: "json"
+		}, cb);
 	},
 };
 

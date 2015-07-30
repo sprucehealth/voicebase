@@ -58,8 +58,11 @@ var externalState: ParentalConsentStoreType = {
 			mobile_phone: "",
 		},
 		relationship: "",
+		consents: {
+			consentedToConsentToUseOfTelehealth: ParentalConsentHydration.ParentalConsent.consented,
+			consentedToTermsAndPrivacy: ParentalConsentHydration.ParentalConsent.consented,
+		},
 	},
-	consent: ParentalConsentHydration.ParentalConsent,
 	identityVerification: {
 		serverGovernmentIDThumbnailURL: ParentalConsentHydration.IdentityVerificationImages.types.governmentid,
 		serverSelfieThumbnailURL: ParentalConsentHydration.IdentityVerificationImages.types.selfie,
@@ -129,14 +132,11 @@ var ParentalConsentStore = Reflux.createStore({
 	onSubmitEmailRelationshipConsent: function(unused) {
 
 		var userInput: ParentalConsentAllUserInput = externalState.userInput
-		var consent: any = externalState.consent
-		var relationship: any = Utils.isEmpty(consent.relationship) ? userInput.relationship : consent.relationship
+		var relationship: any = userInput.relationship
 
-		var childDetails: any = externalState.childDetails.childPatientID
 		var consentRequest: ParentalConsentConsentRequest = {
-			child_patient_id: childDetails.patientID,
+			child_patient_id: externalState.childDetails.childPatientID,
 			relationship: relationship,
-			token: externalState.Token,
 		}
 
 		var signUpRequest: ParentalConsentSignUpRequest = {

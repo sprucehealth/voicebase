@@ -1,6 +1,7 @@
 /* @flow */
 
 var React = require("react");
+var Reflux = require('reflux')
 var Utils = require("../../libs/utils.js");
 var Constants = require("./Constants.js");
 var SubmitButtonView = require("./SubmitButtonView.js");
@@ -12,7 +13,10 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 	//
 	// Action callbacks
 	//
-	mixins: [React.addons.LinkedStateMixin],
+	mixins: [
+		React.addons.LinkedStateMixin,
+		Reflux.connect(ParentalConsentStore, 'store'),
+	],
 	propTypes: {
 		collectEmailAndPassword: React.PropTypes.bool.isRequired,
 		collectRelationship: React.PropTypes.bool.isRequired,
@@ -25,6 +29,29 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 			consentedToUseOfTelehealth: false,
 		}
 	},
+	componentDidMount: function() {
+		var store: ParentalConsentStoreType = this.state.store
+		if (store.userInput && store.userInput.emailPassword) {
+			this.setState({
+				email: store.userInput.emailPassword.email,
+				password: store.userInput.emailPassword.password,
+			});
+		}
+		if (store.userInput && store.userInput.consents) {
+			this.setState({
+				consentedToTermsAndPrivacy: store.userInput.consents.consentedToTermsAndPrivacy,
+				consentedToUseOfTelehealth: store.userInput.consents.consentedToConsentToUseOfTelehealth,
+			});
+		}
+		if (store.userInput && store.userInput.relationship) {
+			this.setState({
+				relationship: store.userInput.relationship,
+			});
+		}
+	},
+	componentWillUnmount: function() {
+		this.saveDataToStore()
+	},
 
 	//
 	// User interaction callbacks
@@ -35,17 +62,7 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 		this.setState({submitButtonPressedOnce: true})
 		if (this.shouldAllowSubmit()) {
 
-			if (this.props.collectEmailAndPassword) {
-				var emailPassword: ParentalConsentEmailPassword = {
-					email: this.state.email,
-					password: this.state.password,
-				}
-				ParentalConsentActions.saveEmailAndPassword(emailPassword)
-			}
-
-			if (this.props.collectRelationship) {
-				ParentalConsentActions.saveRelationship(this.state.relationship)
-			}
+			this.saveDataToStore()
 
 			ParentalConsentActions.submitEmailRelationshipConsent.triggerPromise().then(function(response: any) {
 				t.props.onFormSubmit({})
@@ -53,6 +70,19 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 				alert(err.message)
 			});
 
+		}
+	},
+	saveDataToStore: function() {
+		if (this.props.collectEmailAndPassword) {
+			var emailPassword: ParentalConsentEmailPassword = {
+				email: this.state.email,
+				password: this.state.password,
+			}
+			ParentalConsentActions.saveEmailAndPassword(emailPassword)
+		}
+
+		if (this.props.collectRelationship) {
+			ParentalConsentActions.saveRelationship(this.state.relationship)
 		}
 	},
 
@@ -154,7 +184,7 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 			};
 			var style = Utils.mergeProperties(selectContainerStyle, relationshipHighlighted ? orangeBottomDividerStyle : null)
 			topContent = (
-				<div className="formFieldRow hasBottomDivider" style={style}>
+				<div className="formFieldRow hasBottomDivider hasTopDivider" style={style}>
 					<select 
 						className={this.isRelationshipFieldValid() ? null : "emptyState"}
 						defaultValue="" 
@@ -188,10 +218,10 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 				<div style={individualAgreementContainerStyle} className="flexBox justifyContentSpaceBetween hasBottomDivider">
 					<div style={checkboxLabelContainerStyle}>
 						<div>
-							<a href={Spruce.BaseStaticURL + "/terms"}>Terms & Privacy Policy</a>
+							<a href="https://d2bln09x7zhlg8.cloudfront.net/terms">Terms & Privacy Policy</a>
 						</div>
 						<div style={checkboxLabelSubtextStyle}>
-							<label for="termsAndPrivacyCheckbox"> 
+							<label htmlFor="termsAndPrivacyCheckbox"> 
 								Terms of use and how Spruce protects your privacy
 							</label>
 						</div>
@@ -210,10 +240,10 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 				<div style={individualAgreementContainerStyle} className="flexBox justifyContentSpaceBetween hasBottomDivider">
 					<div style={checkboxLabelContainerStyle}>
 						<div>
-							<a href={Spruce.BaseStaticURL + "/consent"}>Consent to Use of Telehealth</a>
+							<a href="https://d2bln09x7zhlg8.cloudfront.net/consent">Consent to Use of Telehealth</a>
 						</div>
 						<div style={checkboxLabelSubtextStyle}>
-							<label for="consentToUseOfTelehealth"> 
+							<label htmlFor="consentToUseOfTelehealth"> 
 								You understand the benefits and risks of remote physician treatment.
 							</label>
 						</div>

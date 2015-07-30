@@ -32,7 +32,6 @@ type ParentalConsentSignInRequest = {
 type ParentalConsentConsentRequest = {
 	child_patient_id: string;
 	relationship: string;
-	token: string;
 };
 
 type ParentalConsentConsentResponse = {
@@ -55,10 +54,13 @@ type ParentalConsentAllUserInput = {
 	emailPassword: ParentalConsentEmailPassword;
 	demographics: ParentalConsentDemographics;
 	relationship: string;
+	consents: {
+		consentedToTermsAndPrivacy: bool;
+		consentedToConsentToUseOfTelehealth: bool;
+	};
 };
 
 type ParentalConsentStoreType = {
-	Token: string;
 	childDetails: {
 		firstName: string;
 		possessivePronoun: string;
@@ -72,8 +74,6 @@ type ParentalConsentStoreType = {
 		isSignedIn: bool;
 	};
 	userInput: ParentalConsentAllUserInput;
-	consent: {
-	};
 	identityVerification: {
 		serverGovernmentIDThumbnailURL: string;
 		serverSelfieThumbnailURL: string;
