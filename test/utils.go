@@ -34,7 +34,7 @@ func Equals(t testing.TB, exp, act interface{}) {
 // will output the response body for easier debugging.
 func HTTPResponseCode(t testing.TB, exp int, res *httptest.ResponseRecorder) {
 	if res.Code != exp {
-		t.Fatalf("["+CallerString(1)+"]\nexp status code: %d\ngot: %d\nbody: %s", exp, res.Code, res.Body.String())
+		t.Fatalf("["+CallerString(1)+"]\nexp status code: %d\ngot status code: %d\nbody: %s", exp, res.Code, res.Body.String())
 	}
 }
 

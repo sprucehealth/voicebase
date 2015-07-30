@@ -2,7 +2,6 @@ package medrecord
 
 import (
 	"bytes"
-	"encoding/base64"
 	"fmt"
 	"html/template"
 	"sort"
@@ -14,21 +13,13 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/treatment_plan"
 )
-
-func signedMediaURL(signer *sig.Signer, webDomain string, patientID, mediaID int64) (string, error) {
-	sig, err := signer.Sign([]byte(fmt.Sprintf("patient:%d:media:%d", patientID, mediaID)))
-	if err != nil {
-		return "", err
-	}
-	sigStr := base64.URLEncoding.EncodeToString(sig)
-	return fmt.Sprintf("https://%s/patient/medical-record/media/%d?s=%s", webDomain, mediaID, sigStr), nil
-}
 
 type visitContext struct {
 	Visit            *common.PatientVisit
@@ -67,8 +58,14 @@ type templateContext struct {
 	Patient           *common.Patient
 	PCP               *common.PCP
 	EmergencyContacts []*common.EmergencyContact
+	Parent            *parentContext
 	Cases             []*caseContext
 	Agreements        map[string]time.Time
+}
+
+type parentContext struct {
+	Patient *common.Patient
+	Consent *common.ParentalConsent
 }
 
 var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
@@ -89,34 +86,98 @@ var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
 <html>
 <head>
 	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+	<meta http-equiv="X-UA-Compatible" content="IE=Edge">
 	<title>Medical Record</title>
 	<link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
 	<style type="text/css">
 	html,body {
 		padding-top: 20px;
 		padding-bottom: 20px;
+		font-family: HelveticaNeue;
+		font-size: 14px;
+		line-height: 26px;
+		color: #000000;
+		background-color: #fff;
+	}
+	font-300 {
+		font-family: HelveticaNeue; /*MuseoSans-300;*/
+	}
+	font-bold {
+		font-family: HelveticaNeue-Bold;
+	}
+	font-size-14 {
+		font-size: 14px;
+		line-height: 26px;
+	}
+	font-size-16 {
+		font-size: 16px;
+		line-height: 19px;
+	}
+	color-dark {
+		color: #1E333A;
+	}
+	strong {
+		font-family: HelveticaNeue-Bold;
 	}
 	h1 {
 		margin-bottom: 20px;
+		padding: 10px;
+		border-radius: 4px;
+		background: #1E333A;
+		font-family: HelveticaNeue-Bold;
+		font-size: 16px;
+		color: #FFFFFF;
+		line-height: 19px;
+		text-align: center;
+	}
+	div.table-wrapper {
+		border: 1px solid #DAE6EB;
+		border-radius: 4px;
+		margin-bottom: 20px;
+	}
+	.box {
+		border: 1px solid #DAE6EB;
+		border-radius: 4px;
+		margin-bottom: 20px;
+	}
+	.box-header {
+		font-family: HelveticaNeue-Bold;
+		font-size: 18px;
+		line-height: 20px;
+		border-bottom: 1px solid #DAE6EB;
+		padding: 15px 12px;
+	}
+	.box-body {
+		padding: 12px;
+	}
+	table.table {
+		border: 0;
+		margin-bottom: 0;
+	}
+	table.table th {
+		font-family: HelveticaNeue-Bold;
+		border-right: 1px solid #DAE6EB;
 	}
 	.case {
-		border: 1px solid #ccc;
-		padding: 13px;
 		margin-bottom: 25px;
 	}
-	.case h2 {
-		background-color: #444;
-		color: #fff;
-		padding: 10px;
-		margin: -14px -14px 10px -14px;
-	}
-	.case h2 span {
-		float: right;
-		font-size: 20px;
-		line-height: 31px;
+	h2 {
+		background: #F1F5F6;
+		border-radius: 4px;
+		font-family: HelveticaNeue-Bold;
+		font-size: 16px;
+		color: #1E333A;
+		line-height: 19px;
+		padding: 12px;
+		text-align: center;
 	}
 	.title-labels-list {
 		font-weight: bold;
+	}
+	.title-labels-list,
+	.content-labels-list {
+		margin-top: 10px;
 	}
 	.title-photos-items-list img {
 		width: 100%;
@@ -137,30 +198,42 @@ var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
 		font-weight: normal;
 	}
 	.section {
+		border: 1px solid #DAE6EB;
+		border-radius: 4px;
+		margin-bottom: 20px;
 	}
 	.section h3,
 	.treatment-plan > h3 {
-		border-radius: 5px;
-		background-color: #eee;
-		padding: 10px;
+		margin: 0;
+		padding: 15px;
+		border-bottom: 1px solid #DAE6EB;
+		font-family: HelveticaNeue-Bold;
+		font-size: 18px;
+		color: #1E333A;
+		line-height: 20px;
 	}
 	.standard-section {
 
 	}
 	.standard-subsection,
-	.standard-photos-subsection,
+	.standard-photos-subsection {
+		padding: 15px;
+	}
 	.treatment-plan .doctor,
 	.treatment-plan .header,
 	.treatment-plan .treatments,
 	.treatment-plan .instructions {
-		margin-left: 10px;
+		padding: 15px;
+		margin: 10px 0;
+		border: 1px solid #DAE6EB;
+		border-radius: 4px;
 	}
 	.treatment-plan > div > .title {
-		font-size: 24px;
-		line-height: 30px;
-		margin-top: 20px;
-		border-bottom: 1px solid #444;
-		margin-bottom: 15px;
+		font-family: HelveticaNeue-Bold;
+		font-size: 18px;
+		color: #1E333A;
+		line-height: 20px;
+		margin-bottom: 10px;
 	}
 	.treatment-plan .button-footer {
 		margin-top: 20px;
@@ -177,7 +250,7 @@ var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
 		color: red;
 	}
 	.check-x-items-list .checked {
-		color: #0a0;
+		color: #000;
 	}
 	.check-x-items-list .notchecked {
 		color: #aaa;
@@ -207,6 +280,13 @@ var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
 	.prescription .title {
 		font-weight: bold;
 	}
+	.message-body {
+		border: 0;
+		background-color: #fff;
+		font-family: HelveticaNeue;
+		padding: 0;
+		margin: 0;
+	}
 	</style>
 	<style type="text/css" media="print">
 	.print {
@@ -216,16 +296,27 @@ var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
 </head>
 <body>
 	<div class="container">
-		<div class="pull-right print">
-			<button type="button" class="btn btn-default btn-lg" onclick="javascript:window.print()">
-				<span class="glyphicon glyphicon-print"></span> print
-			</button>
+		<div style="margin-bottom:15px;">
+			<div class="pull-right print">
+				<button type="button" class="btn btn-default btn-lg" onclick="javascript:window.print()">
+					<span class="glyphicon glyphicon-print"></span> print
+				</button>
+			</div>
+			<div>
+				<img src="https://d2bln09x7zhlg8.cloudfront.net/logo@2x.png" width="150" height="41" alt="spruce" />
+			</div>
+			<div class="clearfix"></div>
 		</div>
+
+		<p class="font-300 font-size-16 color-dark">
+			The care record contains all information pertaining to your case(s), including symptoms, medical history, treatment plan and messages. If you have any questions or concerns, please contact support at support@sprucehealth.com or 800-975-7618.
+		</p>
 
 		<h1>Patient Information</h1>
 
 		<div class="row">
-			<div class="col-md-6 col-sm-6">
+			<div class="col-md-4 col-sm-12">
+				<div class="table-wrapper">
 				<table role="table" class="table">
 				<tr>
 					<th>Name</th>
@@ -244,40 +335,40 @@ var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
 					<td>{{.Patient.Email}}</td>
 				</tr>
 				<tr>
-					<th>Primary Care Provider</th>
+					<th>Phone</th>
 					<td>
-						{{with .PCP}}
+						{{range $i, $num := .Patient.PhoneNumbers}}
+							{{if $i}}<br>{{end}}
+							{{.Phone}}
+						{{end}}
+					</td>
+				</tr>
+				</table>
+				</div>
+			</div>
+			<div class="col-md-4 col-sm-12">
+				<div class="table-wrapper">
+				<table role="table" class="table">
+				<tr>
+					<td><strong>Primary Care Provider</strong></td>
+				</tr>
+				{{with .PCP}}
+				<tr>
+					<td>
 						<strong>Physician name:</strong> {{.PhysicianName}}<br>
 						<strong>Practice name:</strong> {{.PracticeName}}<br>
 						<strong>Email:</strong> {{.Email}}<br>
 						<strong>Phone number:</strong> {{.PhoneNumber}}<br>
 						<strong>Fax number:</strong> {{.FaxNumber}}
-						{{end}}
 					</td>
 				</tr>
-				<tr>
-					<th>Emergency Contacts</th>
-					<td>
-						{{range .EmergencyContacts}}
-						<strong>Name:</strong> {{.FullName}}<br>
-						<strong>Phone number:</strong> {{.PhoneNumber}}<br>
-						<strong>Relationship:</strong> {{.Relationship}}
-						{{end}}
-					</td>
-				</tr>
+				{{end}}
 				</table>
+				</div>
 			</div>
-			<div class="col-md-6 col-sm-6">
+			<div class="col-md-4 col-sm-12">
+				<div class="table-wrapper">
 				<table role="table" class="table">
-				<tr>
-					<th>Phone Numbers</th>
-					<td>
-						{{range $i, $num := .Patient.PhoneNumbers}}
-							{{if $i}}<br>{{end}}
-							<strong>{{.Type}}:</strong> {{.Phone}}
-						{{end}}
-					</td>
-				</tr>
 				<tr>
 					<th>Address</th>
 					<td>
@@ -303,61 +394,101 @@ var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
 					</td>
 				</tr>
 				</table>
+				</div>
 			</div>
 		</div>
 
-		{{if .Cases}}
-		<h1>Cases</h1>
+		{{with .Parent}}
+		<h1>Parent Information</h1>
+		<div class="table-wrapper">
+			<table role="table" class="table">
+			<tr>
+				<th>Name</th><td>{{.Patient.FirstName}} {{.Patient.LastName}}</td>
+			</tr>
+			<tr>
+				<th>Gender</th><td>{{.Patient.Gender}}</td>
+			</tr>
+			<tr>
+				<th>DOB</th><td>{{formatDOB .Patient.DOB}}</td>
+			</tr>
+			<tr>
+				<th>Phone</th>
+				<td>
+					{{range $i, $num := .Patient.PhoneNumbers}}
+						{{if $i}}<br>{{end}}
+						{{.Phone}}
+					{{end}}
+				</td>
+			</tr>
+			<tr>
+				<th>Relationship to Patient</th><td>{{.Consent.Relationship}}</td>
+			</tr>
+			</table>
+		</div>
 		{{end}}
 
 		{{range .Cases}}
 		<div class="case">
-			<h2>
-				{{.Case.Name}} Case
-				<span>{{.Case.Status}}</span>
-			</h2>
+			<h1>{{.Case.Name}} Case</h1>
 
-			{{with .CareTeam}}
-				<div class="section care-team">
-					<h3>Care Team</h3>
-					<table class="table" role="table">
-					{{range .}}
-					<tr>
-						<th>{{.ProviderRole}}</th><td>{{.LongDisplayName}}</td>
-					</tr>
-					{{end}}
-					</table>
-				</div>
-			{{end}}
-
+			{{$careTeam := .CareTeam}}
 			{{range .Visits}}
 				<div class="visit">
-					<h3>
-						{{if .Visit.IsFollowup}}Follow-up {{end}}Visit
-						<span>Submitted {{.Visit.SubmittedDate|formatDateTime}}</span>
-					</h3>
-
-					{{$diagnosisDetails := .DiagnosisDetails}}
-					{{with .DiagnosisSet}}
-						<div class="diagnosis section">
-							<h3>Diagnosis</h3>
-							<div class="standard-subsection">
-								{{if .Unsuitable}}
-									<strong>Unsuitable for Spruce:</strong> {{.UnsuitableReason}}
-								{{else}}
-									{{range .Items}}
-										{{with index $diagnosisDetails .CodeID}}
-										<strong>{{.Code}}</strong> {{.Description}}<br>
+					<div class="row">
+						<div class="col-md-6 col-sm-12">
+							<div class="box">
+								<div class="box-header">
+									{{if .Visit.IsFollowup}}Follow-up {{end}}Visit
+								</div>
+								<div class="box-body">
+									<div><strong>Submitted:</strong> {{.Visit.SubmittedDate|formatDateTime}}</div>
+									{{$diagnosisDetails := .DiagnosisDetails}}
+									{{with .DiagnosisSet}}
+									<div>
+										<strong>Diagnosis:</strong>
+										{{if .Unsuitable}}
+											Unsuitable for Spruce: {{.UnsuitableReason}}
+										{{else}}
+											{{range .Items}}
+												{{with index $diagnosisDetails .CodeID}}
+												{{.Code}} {{.Description}}<br>
+												{{end}}
+											{{end}}
+											{{with .Notes}}
+											<h4>Notes</h4>
+											<pre>{{.}}</pre>
+											{{end}}
 										{{end}}
+									</div>
 									{{end}}
-									{{with .Notes}}
-									<h4>Notes</h4>
-									<pre>{{.}}
-									{{end}}
-								{{end}}
+								</div>
 							</div>
 						</div>
-					{{end}}
+
+						<div class="col-md-6 col-sm-12">
+							{{with $careTeam}}
+								<div class="box">
+									<div class="box-header">Care Team</div>
+									<div class="box-body">
+										{{range .}}
+											<div>
+												{{if eq .ProviderRole "DOCTOR"}}
+													<strong>Doctor:</strong>
+												{{else if eq .ProviderRole "MA"}}
+													<strong>Care Coordinator:</strong>
+												{{else}}
+													<strong>{{.ProviderRole}}:</strong>
+												{{end}}
+												{{.LongDisplayName}}
+											</div>
+										{{end}}
+										</table>
+									</div>
+								</div>
+							{{end}}
+						</div>
+					</div>
+
 
 					{{.IntakeHTML}}
 				</div>
@@ -365,42 +496,26 @@ var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
 
 			{{range .TreatmentPlans}}
 				<div class="treatment-plan">
-					<hr>
-					<h3>
-						{{.TreatmentPlan.Status.String|titleCase}} Treatment Plan
-						{{with .TreatmentPlan.SentDate}}
-							<span>Sent {{.|formatDateTime}}
-						{{else}}
-							{{with .TreatmentPlan.CreationDate}}
-							<span>Created {{.|formatDateTime}}
-							{{end}}
-						{{end}}
-					</h3>
-					<div class="doctor">
-						<h4>Doctor</h4>
-						<div>{{.Doctor.LongDisplayName}}</div>
-						<div>{{.Doctor.LongTitle}}</div>
-					</div>
-					{{with .TreatmentPlan.Note}}
-					<div class="note">
-						<h4>Note</h4>
-						<pre>{{.}}</pre>
-					</div>
-					{{end}}
+					<h2>{{.TreatmentPlan.Status.String|titleCase}} Treatment Plan</h2>
+
 					{{.HTML}}
 				</div>
 			{{end}}
 
 			{{with .Messages}}
-				<div class="messages">
-					<h3>Messages</h3>
+				<div class="box" style="margin-top: 15px;">
+					<div class="box-header">
+						Messages
+					</div>
+					<div class="box-body">
 					{{range .}}
 						<div class="message">
-							<div class="header">
+							<strong>
 								<span class="sender">{{.SenderName}}</span>
 								<span class="time">at {{formatDateTime .Time}}</span>
-							</div>
-							<pre class="body">{{.Body}}</pre>
+							</strong>
+							<br>
+							<pre class="message-body">{{.Body}}</pre>
 							<div class="media row">
 								{{range .Media}}
 									<div class="col-xs-4">
@@ -418,6 +533,7 @@ var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
 							</div>
 						</div>
 					{{end}}
+					</div>
 				</div>
 			{{end}}
 		</div>
@@ -426,6 +542,7 @@ var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
 </body>
 </html>`))
 
+// Renderer can render a patient's medical record as HTML.
 type Renderer struct {
 	DataAPI            api.DataAPI
 	DiagnosisSvc       diagnosis.API
@@ -436,6 +553,7 @@ type Renderer struct {
 	ExpirationDuration time.Duration
 }
 
+// Renders returns the HTML version of a medical record for a patient.
 func (r *Renderer) Render(patient *common.Patient) ([]byte, error) {
 	ctx := &templateContext{
 		Patient: patient,
@@ -443,35 +561,59 @@ func (r *Renderer) Render(patient *common.Patient) ([]byte, error) {
 
 	ag, err := r.DataAPI.PatientAgreements(patient.ID.Int64())
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	ctx.Agreements = ag
 
 	pcp, err := r.DataAPI.GetPatientPCP(patient.ID.Int64())
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	ctx.PCP = pcp
 
 	ec, err := r.DataAPI.GetPatientEmergencyContacts(patient.ID.Int64())
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	ctx.EmergencyContacts = ec
 
+	if patient.IsUnder18() {
+		consent, err := r.DataAPI.ParentalConsent(patient.ID.Int64())
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		var con *common.ParentalConsent
+		// Find either the first parent if none consented or then one that consented
+		for _, c := range consent {
+			if con == nil || c.Consented {
+				con = c
+			}
+		}
+		if con != nil {
+			parent, err := r.DataAPI.Patient(con.ParentPatientID, false)
+			if err != nil {
+				return nil, errors.Trace(err)
+			}
+			ctx.Parent = &parentContext{
+				Patient: parent,
+				Consent: con,
+			}
+		}
+	}
+
 	cases, err := r.DataAPI.GetCasesForPatient(patient.ID.Int64(), append(common.SubmittedPatientCaseStates(), common.PCStatusUnsuitable.String()))
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	for _, pcase := range cases {
 		visits, err := r.DataAPI.GetVisitsForCase(pcase.ID.Int64(), common.TreatedPatientVisitStates())
 		if err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 		careTeam, err := r.DataAPI.GetActiveMembersOfCareTeamForCase(pcase.ID.Int64(), true)
 		if err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 
 		caseCtx := &caseContext{
@@ -482,12 +624,12 @@ func (r *Renderer) Render(patient *common.Patient) ([]byte, error) {
 
 		msgs, err := r.DataAPI.ListCaseMessages(pcase.ID.Int64(), api.LCMOIncludePrivate)
 		if err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 		if len(msgs) != 0 {
 			pars, err := r.DataAPI.CaseMessageParticipants(pcase.ID.Int64(), true)
 			if err != nil {
-				return nil, err
+				return nil, errors.Trace(err)
 			}
 
 			for _, m := range msgs {
@@ -505,9 +647,9 @@ func (r *Renderer) Render(patient *common.Patient) ([]byte, error) {
 				for _, a := range m.Attachments {
 					switch a.ItemType {
 					case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
-						mediaURL, err := signedMediaURL(r.Signer, r.WebDomain, pcase.PatientID.Int64(), a.ItemID)
+						mediaURL, err := r.MediaStore.SignedURL(a.ItemID, r.ExpirationDuration)
 						if err != nil {
-							return nil, err
+							return nil, errors.Trace(err)
 						}
 						msg.Media = append(msg.Media, &caseMedia{
 							Type: a.ItemType,
@@ -522,7 +664,7 @@ func (r *Renderer) Render(patient *common.Patient) ([]byte, error) {
 		for _, visit := range visits {
 			layout, err := patient_file.VisitReviewLayout(r.DataAPI, patient, r.MediaStore, r.ExpirationDuration, visit, r.APIDomain, r.WebDomain)
 			if err != nil {
-				return nil, err
+				return nil, errors.Trace(err)
 			}
 
 			visitCtx := &visitContext{
@@ -532,7 +674,7 @@ func (r *Renderer) Render(patient *common.Patient) ([]byte, error) {
 			visitCtx.DiagnosisSet, err = r.DataAPI.ActiveDiagnosisSet(visit.ID.Int64())
 			if !api.IsErrNotFound(err) {
 				if err != nil {
-					return nil, err
+					return nil, errors.Trace(err)
 				}
 				codeIDs := make([]string, len(visitCtx.DiagnosisSet.Items))
 				for i, d := range visitCtx.DiagnosisSet.Items {
@@ -540,7 +682,7 @@ func (r *Renderer) Render(patient *common.Patient) ([]byte, error) {
 				}
 				visitCtx.DiagnosisDetails, err = r.DiagnosisSvc.DiagnosisForCodeIDs(codeIDs)
 				if err != nil {
-					return nil, err
+					return nil, errors.Trace(err)
 				}
 			}
 
@@ -548,13 +690,14 @@ func (r *Renderer) Render(patient *common.Patient) ([]byte, error) {
 
 			buf := &bytes.Buffer{}
 			lr := &intakeLayoutRenderer{
-				wr:        buf,
-				webDomain: r.WebDomain,
-				signer:    r.Signer,
-				patientID: patient.ID.Int64(),
+				wr:         buf,
+				webDomain:  r.WebDomain,
+				patientID:  patient.ID.Int64(),
+				mediaStore: r.MediaStore,
+				expiration: r.ExpirationDuration,
 			}
 			if err := lr.render(layout); err != nil {
-				return nil, err
+				return nil, errors.Trace(err)
 			}
 
 			visitCtx.IntakeHTML = template.HTML(buf.String())
@@ -564,7 +707,7 @@ func (r *Renderer) Render(patient *common.Patient) ([]byte, error) {
 		if api.IsErrNotFound(err) {
 			continue
 		} else if err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 
 		sort.Sort(byStatus(treatmentPlans))
@@ -577,13 +720,13 @@ func (r *Renderer) Render(patient *common.Patient) ([]byte, error) {
 
 			doctor, err := r.DataAPI.GetDoctorFromID(tp.DoctorID.Int64())
 			if err != nil {
-				return nil, err
+				return nil, errors.Trace(err)
 			}
 			tpCtx.Doctor = doctor
 
 			buf := &bytes.Buffer{}
 			if err := treatment_plan.RenderTreatmentPlan(buf, r.DataAPI, tp, doctor, patient); err != nil {
-				return nil, err
+				return nil, errors.Trace(err)
 			}
 			tpCtx.HTML = template.HTML(buf.String())
 		}
@@ -592,7 +735,7 @@ func (r *Renderer) Render(patient *common.Patient) ([]byte, error) {
 	buf := &bytes.Buffer{}
 
 	if err := mrTemplate.Execute(buf, ctx); err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	return buf.Bytes(), nil
@@ -605,10 +748,11 @@ func (tp byStatus) Swap(i, j int)      { tp[i], tp[j] = tp[j], tp[i] }
 func (tp byStatus) Less(i, j int) bool { return tp[i].Status == common.TPStatusActive }
 
 type intakeLayoutRenderer struct {
-	wr        *bytes.Buffer
-	webDomain string
-	signer    *sig.Signer
-	patientID int64
+	wr         *bytes.Buffer
+	webDomain  string
+	patientID  int64
+	mediaStore *media.Store
+	expiration time.Duration
 }
 
 func (lr *intakeLayoutRenderer) render(layout map[string]interface{}) error {
@@ -678,18 +822,20 @@ func (lr *intakeLayoutRenderer) renderView(view common.View) error {
 			lr.wr.WriteString(`</div>`)
 			lr.wr.WriteString(`<div class="row">`)
 			for _, p := range it.Photos {
-				mediaURL, err := signedMediaURL(lr.signer, lr.webDomain, lr.patientID, p.PhotoID)
+				mediaURL, err := lr.mediaStore.SignedURL(p.PhotoID, lr.expiration)
 				if err != nil {
 					return err
 				}
-				lr.wr.WriteString(fmt.Sprintf(`<div class="col-xs-4"><img src="%s"></div>`, mediaURL))
+				lr.wr.WriteString(fmt.Sprintf(`<div class="col-xs-4"><a href="%s"><img src="%s&width=640"></a></div>`, mediaURL, mediaURL))
 			}
 			lr.wr.WriteString(`</div>`)
 		}
 		lr.wr.WriteString(`</div>`)
 	case *info_intake.DVisitReviewStandardSectionView:
 		lr.wr.WriteString(`<div class="standard-section">`)
-		lr.wr.WriteString(`<h3>` + v.Title + `</h3>`)
+		if v.Title != "" {
+			lr.wr.WriteString(`<h3>` + v.Title + `</h3>`)
+		}
 		for _, s := range v.Subsections {
 			if err := lr.renderView(s); err != nil {
 				return err
@@ -699,7 +845,9 @@ func (lr *intakeLayoutRenderer) renderView(view common.View) error {
 	case *info_intake.DVisitReviewStandardSubsectionView:
 		if len(v.Rows) != 0 {
 			lr.wr.WriteString(`<div class="standard-subsection">`)
-			lr.wr.WriteString(`<h4>` + v.Title + `</h4>`)
+			if v.Title != "" && v.Title != "Alerts" { // The "Alerts" title gets repeated twice
+				lr.wr.WriteString(`<h4>` + v.Title + `</h4>`)
+			}
 			for _, r := range v.Rows {
 				if err := lr.renderView(r); err != nil {
 					return err

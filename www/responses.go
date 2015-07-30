@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -107,4 +108,9 @@ func APIGeneralError(w http.ResponseWriter, r *http.Request, etype, msg string) 
 			Type:    etype,
 		},
 	})
+}
+
+// RedirectToSignIn returns a temporary redirect to the sign in screen using the current path as "next"
+func RedirectToSignIn(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/login?next="+url.QueryEscape(r.URL.Path), http.StatusSeeOther)
 }
