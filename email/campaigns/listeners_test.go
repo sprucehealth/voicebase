@@ -1,6 +1,7 @@
 package campaigns
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -44,6 +45,10 @@ func (m *mockDataAPIListeners) ParentalConsent(id int64) ([]*common.ParentalCons
 	}, m.patientParentIDErr
 }
 
+const (
+	emailWebDomain = "www.spruce.test"
+)
+
 func TestEmailCampaignWelcomeOnSignup(t *testing.T) {
 	dispatch.Testing = true
 	dispatcher := dispatch.New()
@@ -53,7 +58,7 @@ func TestEmailCampaignWelcomeOnSignup(t *testing.T) {
 	dataAPI := &mockDataAPIListeners{}
 	var accountID int64 = 12345
 	var vars map[int64][]mandrill.Var
-	InitListeners(dispatcher, cfgStore, emailService, dataAPI)
+	InitListeners(dispatcher, cfgStore, emailService, dataAPI, emailWebDomain)
 	dispatcher.PublishAsync(&patient.SignupEvent{AccountID: accountID})
 	emails := emailService.Reset()
 	test.Equals(t, 1, len(emails))
@@ -70,7 +75,7 @@ func TestEmailCampaignWelcomeOnSignupCfgDisabled(t *testing.T) {
 	test.OK(t, err)
 	emailService := &email.TestService{}
 	dataAPI := &mockDataAPIListeners{}
-	InitListeners(dispatcher, cfgStore, emailService, dataAPI)
+	InitListeners(dispatcher, cfgStore, emailService, dataAPI, emailWebDomain)
 	dispatcher.PublishAsync(&patient.SignupEvent{AccountID: 12345})
 	test.Equals(t, 0, len(emailService.Reset()))
 }
@@ -78,33 +83,42 @@ func TestEmailCampaignWelcomeOnSignupCfgDisabled(t *testing.T) {
 func TestEmailCampaignMinorTreatmentPlanIssued(t *testing.T) {
 	dispatch.Testing = true
 	dispatcher := dispatch.New()
-	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.MinorTreatmentPlanIssuedEmailEnabled})
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.MinorTreatmentPlanIssuedEmailEnabled, parentFrequentlyAskedQuestionsURLPathDef})
 	test.OK(t, err)
 	emailService := &email.TestService{}
 	var parentPatientID int64 = 54321
 	var parentAccountID int64 = 56789
+	patientFirstName := "Child"
+	parentFirstName := "Parent"
 	dataAPI := &mockDataAPIListeners{
 		patients: []*common.Patient{
 			&common.Patient{
 				HasParentalConsent: true,
 				DOB:                encoding.Date{Month: 1, Day: 1, Year: time.Now().Year() - 16},
+				FirstName:          patientFirstName,
 			},
 			&common.Patient{
 				AccountID: encoding.NewObjectID(parentAccountID),
+				FirstName: parentFirstName,
 			},
 		},
 		patientErrs:     []error{nil, nil},
 		patientParentID: parentPatientID,
 	}
 	var patientID int64 = 12345
-	var vars map[int64][]mandrill.Var
-	InitListeners(dispatcher, cfgStore, emailService, dataAPI)
+	InitListeners(dispatcher, cfgStore, emailService, dataAPI, emailWebDomain)
 	dispatcher.PublishAsync(&doctor_treatment_plan.TreatmentPlanActivatedEvent{PatientID: patientID})
 	emails := emailService.Reset()
 	test.Equals(t, 1, len(emails))
 	test.Equals(t, minorTreatmentPlanIssuedEmailType, emails[0].Type)
 	test.Equals(t, []int64{parentAccountID}, emails[0].AccountIDs)
-	test.Equals(t, vars, emails[0].Vars)
+	test.Equals(t, map[int64][]mandrill.Var{
+		parentAccountID: []mandrill.Var{
+			mandrill.Var{Name: varParentFirstNameName, Content: parentFirstName},
+			mandrill.Var{Name: varPatientFirstNameName, Content: patientFirstName},
+			mandrill.Var{Name: varParentFrequentlyAskedQuestionsURLName, Content: "https://" + strings.Join([]string{emailWebDomain, cfgStore.Snapshot().String(parentFrequentlyAskedQuestionsURLPathDef.Name)}, "/")},
+		},
+	}, emails[0].Vars)
 	test.Equals(t, &mandrill.Message{}, emails[0].Msg)
 	test.Equals(t, 2, len(dataAPI.patientParams))
 	test.Equals(t, patientID, dataAPI.patientParams[0])
@@ -119,7 +133,7 @@ func TestEmailCampaignMinorTreatmentPlanIssuedCfgDisabled(t *testing.T) {
 	test.OK(t, err)
 	emailService := &email.TestService{}
 	dataAPI := &mockDataAPIListeners{}
-	InitListeners(dispatcher, cfgStore, emailService, dataAPI)
+	InitListeners(dispatcher, cfgStore, emailService, dataAPI, emailWebDomain)
 	dispatcher.PublishAsync(&doctor_treatment_plan.TreatmentPlanActivatedEvent{PatientID: 12345})
 	test.Equals(t, 0, len(emailService.Reset()))
 }
@@ -127,33 +141,42 @@ func TestEmailCampaignMinorTreatmentPlanIssuedCfgDisabled(t *testing.T) {
 func TestEmailCampaignMinorTriaged(t *testing.T) {
 	dispatch.Testing = true
 	dispatcher := dispatch.New()
-	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.MinorTriagedEmailEnabled})
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.MinorTriagedEmailEnabled, parentFrequentlyAskedQuestionsURLPathDef})
 	test.OK(t, err)
 	emailService := &email.TestService{}
 	var parentPatientID int64 = 54321
 	var parentAccountID int64 = 56789
+	patientFirstName := "Child"
+	parentFirstName := "Parent"
 	dataAPI := &mockDataAPIListeners{
 		patients: []*common.Patient{
 			&common.Patient{
 				HasParentalConsent: true,
 				DOB:                encoding.Date{Month: 1, Day: 1, Year: time.Now().Year() - 16},
+				FirstName:          patientFirstName,
 			},
 			&common.Patient{
 				AccountID: encoding.NewObjectID(parentAccountID),
+				FirstName: parentFirstName,
 			},
 		},
 		patientErrs:     []error{nil, nil},
 		patientParentID: parentPatientID,
 	}
 	var patientID int64 = 12345
-	var vars map[int64][]mandrill.Var
-	InitListeners(dispatcher, cfgStore, emailService, dataAPI)
+	InitListeners(dispatcher, cfgStore, emailService, dataAPI, emailWebDomain)
 	dispatcher.PublishAsync(&patient_visit.PatientVisitMarkedUnsuitableEvent{PatientID: patientID})
 	emails := emailService.Reset()
 	test.Equals(t, 1, len(emails))
-	test.Equals(t, minorTreatmentPlanIssuedEmailType, emails[0].Type)
+	test.Equals(t, minorTriagedEmailType, emails[0].Type)
 	test.Equals(t, []int64{parentAccountID}, emails[0].AccountIDs)
-	test.Equals(t, vars, emails[0].Vars)
+	test.Equals(t, map[int64][]mandrill.Var{
+		parentAccountID: []mandrill.Var{
+			mandrill.Var{Name: varParentFirstNameName, Content: parentFirstName},
+			mandrill.Var{Name: varPatientFirstNameName, Content: patientFirstName},
+			mandrill.Var{Name: varParentFrequentlyAskedQuestionsURLName, Content: "https://" + strings.Join([]string{emailWebDomain, cfgStore.Snapshot().String(parentFrequentlyAskedQuestionsURLPathDef.Name)}, "/")},
+		},
+	}, emails[0].Vars)
 	test.Equals(t, &mandrill.Message{}, emails[0].Msg)
 	test.Equals(t, 2, len(dataAPI.patientParams))
 	test.Equals(t, patientID, dataAPI.patientParams[0])
@@ -168,7 +191,7 @@ func TestEmailCampaignMinorTriagedCfgDisabled(t *testing.T) {
 	test.OK(t, err)
 	emailService := &email.TestService{}
 	dataAPI := &mockDataAPIListeners{}
-	InitListeners(dispatcher, cfgStore, emailService, dataAPI)
+	InitListeners(dispatcher, cfgStore, emailService, dataAPI, emailWebDomain)
 	dispatcher.PublishAsync(&patient_visit.PatientVisitMarkedUnsuitableEvent{PatientID: 12345})
 	test.Equals(t, 0, len(emailService.Reset()))
 }
@@ -176,31 +199,47 @@ func TestEmailCampaignMinorTriagedCfgDisabled(t *testing.T) {
 func TestEmailCampaignParentWelcome(t *testing.T) {
 	dispatch.Testing = true
 	dispatcher := dispatch.New()
-	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.ParentWelcomeEmailEnabled})
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.ParentWelcomeEmailEnabled, parentFrequentlyAskedQuestionsURLPathDef})
 	test.OK(t, err)
 	emailService := &email.TestService{}
 	var parentPatientID int64 = 12345
 	var parentAccountID int64 = 56789
+	patientFirstName := "Child"
+	parentFirstName := "Parent"
 	dataAPI := &mockDataAPIListeners{
 		patients: []*common.Patient{
 			&common.Patient{
+				HasParentalConsent: true,
+				DOB:                encoding.Date{Month: 1, Day: 1, Year: time.Now().Year() - 16},
+				FirstName:          patientFirstName,
+			},
+			&common.Patient{
 				AccountID: encoding.NewObjectID(parentAccountID),
-				DOB:       encoding.Date{Month: 1, Day: 1, Year: time.Now().Year() - 16},
+				FirstName: parentFirstName,
 			},
 		},
-		patientErrs: []error{nil},
+		patientErrs:     []error{nil, nil},
+		patientParentID: parentPatientID,
 	}
-	var vars map[int64][]mandrill.Var
-	InitListeners(dispatcher, cfgStore, emailService, dataAPI)
-	dispatcher.PublishAsync(&patient.ParentalConsentCompletedEvent{ParentPatientID: parentPatientID})
+	var patientID int64 = 12345
+	InitListeners(dispatcher, cfgStore, emailService, dataAPI, emailWebDomain)
+	dispatcher.PublishAsync(&patient.ParentalConsentCompletedEvent{ChildPatientID: patientID})
 	emails := emailService.Reset()
 	test.Equals(t, 1, len(emails))
 	test.Equals(t, parentWelcomeEmailType, emails[0].Type)
 	test.Equals(t, []int64{parentAccountID}, emails[0].AccountIDs)
-	test.Equals(t, vars, emails[0].Vars)
+	test.Equals(t, map[int64][]mandrill.Var{
+		parentAccountID: []mandrill.Var{
+			mandrill.Var{Name: varParentFirstNameName, Content: parentFirstName},
+			mandrill.Var{Name: varPatientFirstNameName, Content: patientFirstName},
+			mandrill.Var{Name: varParentFrequentlyAskedQuestionsURLName, Content: "https://" + strings.Join([]string{emailWebDomain, cfgStore.Snapshot().String(parentFrequentlyAskedQuestionsURLPathDef.Name)}, "/")},
+		},
+	}, emails[0].Vars)
 	test.Equals(t, &mandrill.Message{}, emails[0].Msg)
-	test.Equals(t, 1, len(dataAPI.patientParams))
-	test.Equals(t, parentPatientID, dataAPI.patientParams[0])
+	test.Equals(t, 2, len(dataAPI.patientParams))
+	test.Equals(t, patientID, dataAPI.patientParams[0])
+	test.Equals(t, parentPatientID, dataAPI.patientParams[1])
+	test.Equals(t, patientID, dataAPI.patientParentIDParam)
 }
 
 func TestEmailCampaignParentWelcomeCfgDisabled(t *testing.T) {
@@ -210,7 +249,7 @@ func TestEmailCampaignParentWelcomeCfgDisabled(t *testing.T) {
 	test.OK(t, err)
 	emailService := &email.TestService{}
 	dataAPI := &mockDataAPIListeners{}
-	InitListeners(dispatcher, cfgStore, emailService, dataAPI)
+	InitListeners(dispatcher, cfgStore, emailService, dataAPI, emailWebDomain)
 	dispatcher.PublishAsync(&patient.ParentalConsentCompletedEvent{ParentPatientID: 12345})
 	test.Equals(t, 0, len(emailService.Reset()))
 }
