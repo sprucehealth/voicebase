@@ -58,7 +58,7 @@ type identitiyImageContext struct {
 func checkParentalConsentAccessToken(w http.ResponseWriter, r *http.Request, dataAPI api.DataAPI, childPatientID int64) bool {
 	token := r.FormValue("t")
 	fromCookie := false
-	if token != "" {
+	if token == "" {
 		token = parentalConsentCookie(childPatientID, r)
 		fromCookie = true
 	}
