@@ -73,17 +73,17 @@ $color-white-90: #E7F2F9;   // White with 90% opacity
     font-weight: normal;
     font-style: normal;
 }*/
-// @font-face {
-//     font-family: 'MuseoSans-500';
-//     src: url('../fonts/MuseoSans_500-webfont.eot');
-//     src: url('../fonts/MuseoSans_500-webfont.eot?#iefix') format('embedded-opentype'),
-//          url('../fonts/MuseoSans_500-webfont.woff2') format('woff2'),
-//          url('../fonts/MuseoSans_500-webfont.woff') format('woff'),
-//          url('../fonts/MuseoSans_500-webfont.ttf') format('truetype'),
-//          url('../fonts/MuseoSans_500-webfont.svg#museo_sans500') format('svg');
-//     font-weight: normal;
-//     font-style: normal;
-// }
+@font-face {
+    font-family: 'MuseoSans-500';
+    src: url('../fonts/MuseoSans_500-webfont.eot');
+    src: url('../fonts/MuseoSans_500-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/MuseoSans_500-webfont.woff2') format('woff2'),
+         url('../fonts/MuseoSans_500-webfont.woff') format('woff'),
+         url('../fonts/MuseoSans_500-webfont.ttf') format('truetype'),
+         url('../fonts/MuseoSans_500-webfont.svg#museo_sans500') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
 // @font-face {
 //     font-family: 'MuseoSans-500-Italic';
 //     src: url('../fonts/MuseoSans_500_Italic-webfont.eot');
