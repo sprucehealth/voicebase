@@ -119,7 +119,9 @@ func (h *parentalConsentHandler) ServeHTTP(ctx context.Context, w http.ResponseW
 			www.RedirectToSignIn(w, r)
 			return
 		}
-		hasAccess = true
+		if consent != nil {
+			hasAccess = true
+		}
 		proof, err := h.dataAPI.ParentConsentProof(parentPatientID)
 		if err == nil {
 			if proof.SelfiePhotoID != nil {

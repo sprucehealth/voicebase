@@ -6,6 +6,7 @@ import (
 	"io"
 	"math/big"
 	"os"
+	"strings"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sqs"
@@ -38,7 +39,7 @@ func GenerateToken() (string, error) {
 	if _, err := rand.Read(tokBytes); err != nil {
 		return "", err
 	}
-	tok := base64.URLEncoding.EncodeToString(tokBytes)
+	tok := strings.TrimRight(base64.URLEncoding.EncodeToString(tokBytes), "=")
 	return tok, nil
 }
 
