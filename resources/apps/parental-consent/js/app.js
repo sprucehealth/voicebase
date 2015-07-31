@@ -14,7 +14,6 @@ var ContentContainer = require("./ContentContainer.js")
 var EmailRelationshipConsentView = require("./EmailRelationshipConsentView.js")
 var PhotoIdentificationView = require("./PhotoIdentificationView.js")
 var ConfirmationView = require("./ConfirmationView.js")
-window.FAQ = require("./faq.js");
 
 window.React = React; // export for http://fb.me/react-devtools
 Backbone.jQuery = jQuery;
@@ -100,6 +99,7 @@ var ParentalConsentRouter = Backbone.Router.extend({
 });
 
 var ParentalConsent = React.createClass({displayName: "ParentalConsent",
+	mixins: [Routing.RouterNavigateMixin],
 	pages: {
 		demographics: function() {
 			return <DemographicsPage router={this.props.router} />
@@ -126,6 +126,12 @@ var ParentalConsent = React.createClass({displayName: "ParentalConsent",
 	},
 	render: function(): any {
 		var page = this.pages[this.props.router.current];
+		if (!page) {
+			var route = routeForSectionIndexAndStore(0, ParentalConsentStore.getCurrentState());
+			// The navigate can't happen inside of render so set a short timeout to happen outside.
+			setTimeout(function() { this.navigate(route); }.bind(this), 1);
+			return <div></div>
+		}
 		return (
 			<div>{page ? page.bind(this)() : "Page Not Found"}</div>
 		);

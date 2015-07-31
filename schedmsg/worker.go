@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sprucehealth/backend/errors"
+
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
@@ -95,39 +97,35 @@ func (w *Worker) ConsumeMessage() (bool, error) {
 	if api.IsErrNotFound(err) {
 		return false, nil
 	} else if err != nil {
-		return false, err
+		return false, errors.Trace(err)
 	}
 
 	w.statAge.Update(time.Since(scheduledMessage.Scheduled).Nanoseconds() / 1e9)
 
 	if err := w.processMessage(scheduledMessage); err != nil {
-		switch err {
-		case patient.ErrInitialVisitNotTreated, patient.ErrFollowupNotSupportedOnApp, patient.ErrNoInitialVisitFound, patient.ErrOpenFollowupExists:
+		switch errors.Cause(err) {
+		case api.ErrNotFound("sku"), patient.ErrInitialVisitNotTreated, patient.ErrFollowupNotSupportedOnApp, patient.ErrNoInitialVisitFound, patient.ErrOpenFollowupExists:
 			// Record this as a success since it's a handled error
 			w.statSucceeded.Inc(1)
 			golog.Errorf("Can't send scheduled message %d: %s", scheduledMessage.ID, err.Error())
 			if err := w.dataAPI.UpdateScheduledMessage(scheduledMessage.ID, common.SMError); err != nil {
-				golog.Errorf(err.Error())
-				return false, err
+				return false, errors.Trace(err)
 			}
-			return false, err
+			return false, errors.Trace(err)
 		}
 		w.statFailed.Inc(1)
-		golog.Errorf(err.Error())
 		// revert the status back to being in the scheduled state
 		if err := w.dataAPI.UpdateScheduledMessage(scheduledMessage.ID, common.SMScheduled); err != nil {
-			golog.Errorf(err.Error())
-			return false, err
+			return false, errors.Trace(err)
 		}
-		return false, err
+		return false, errors.Trace(err)
 	}
 
 	w.statSucceeded.Inc(1)
 
 	// update the status to indicate that the message was succesfully sent
 	if err := w.dataAPI.UpdateScheduledMessage(scheduledMessage.ID, common.SMSent); err != nil {
-		golog.Errorf(err.Error())
-		return false, err
+		return false, errors.Trace(err)
 	}
 
 	return true, nil
@@ -140,13 +138,12 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 
 		patientCase, err := w.dataAPI.GetPatientCaseFromID(appMessage.PatientCaseID)
 		if err != nil {
-			golog.Errorf(err.Error())
-			return err
+			return errors.Trace(err)
 		}
 
 		people, err := w.dataAPI.GetPeople([]int64{appMessage.SenderPersonID})
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 
 		msg := &common.CaseMessage{
@@ -157,8 +154,7 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 
 		if err := messages.CreateMessageAndAttachments(msg, appMessage.Attachments,
 			appMessage.SenderPersonID, appMessage.ProviderID, appMessage.SenderRole, w.dataAPI); err != nil {
-			golog.Errorf(err.Error())
-			return err
+			return errors.Trace(err)
 		}
 
 		w.publisher.Publish(&messages.PostEvent{
@@ -174,26 +170,26 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 		// were scheduled. It's fine. Just want to make sure not to send the messages.
 		tp, err := w.dataAPI.GetAbridgedTreatmentPlan(sm.TreatmentPlanID, 0)
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 		if tp.Status != api.StatusActive {
-			golog.Infof("Treatmnet plan %d not active when trying to send scheduled message %d", sm.TreatmentPlanID, sm.MessageID)
+			golog.Infof("Treatment plan %d not active when trying to send scheduled message %d", sm.TreatmentPlanID, sm.MessageID)
 			return nil
 		}
 
 		msg, err := w.dataAPI.TreatmentPlanScheduledMessage(sm.MessageID)
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 
 		pcase, err := w.dataAPI.GetPatientCaseFromID(tp.PatientCaseID.Int64())
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 
 		careTeams, err := w.dataAPI.CaseCareTeams([]int64{pcase.ID.Int64()})
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 		if len(careTeams) != 1 {
 			return fmt.Errorf("Expected to find 1 care team for patient case %d but found %d", pcase.ID.Int64(), len(careTeams))
@@ -211,7 +207,7 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 			case api.RoleCC:
 				careCoordinator, err = w.dataAPI.Doctor(x.ProviderID, true)
 				if err != nil {
-					return err
+					return errors.Trace(err)
 				}
 			case api.RoleDoctor:
 				activeDoctorID = x.ProviderID
@@ -221,17 +217,17 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 		if careCoordinator == nil {
 			golog.Errorf("Unable to find care coordinator in care team for patient case %d - continuing but this is suspicious. This case will not be reassigned.", tp.PatientCaseID.Int64())
 		} else if activeDoctorID == 0 {
-			return fmt.Errorf("Unable to find active doctor on the case care team on behalf of whom to send the scheduled treatment plan (id: %d) message.", sm.TreatmentPlanID)
+			return errors.Trace(fmt.Errorf("Unable to find active doctor on the case care team on behalf of whom to send the scheduled treatment plan (id: %d) message.", sm.TreatmentPlanID))
 		}
 
 		personID, err := w.dataAPI.GetPersonIDByRole(api.RoleDoctor, activeDoctorID)
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 
 		people, err := w.dataAPI.GetPeople([]int64{personID})
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 
 		// Create follow-up visits when necessary
@@ -239,12 +235,12 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 			if a.ItemType == common.AttachmentTypeFollowupVisit {
 				pat, err := w.dataAPI.GetPatientFromID(tp.PatientID)
 				if err != nil {
-					return err
+					return errors.Trace(err)
 				}
 
 				fvisit, err := patient.CreatePendingFollowup(pat, pcase, w.dataAPI, w.authAPI, w.publisher)
 				if err != nil {
-					return err
+					return errors.Trace(err)
 				}
 
 				a.ItemID = fvisit.ID.Int64()
@@ -261,7 +257,7 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 
 		msg.ID, err = w.dataAPI.CreateCaseMessage(cmsg)
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 
 		w.publisher.Publish(&messages.PostEvent{
@@ -281,7 +277,7 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 			})
 		}
 	default:
-		return fmt.Errorf("Unknown message type: %s", schedMsg.Message.TypeName())
+		return errors.Trace(fmt.Errorf("Unknown message type: %s", schedMsg.Message.TypeName()))
 	}
 
 	return nil

@@ -7,10 +7,10 @@
 {{define "content"}}
 <div id="parent-top" class="section top">
     <div class="container">
-        <h1>[Child name] would like to see a board-certified dermatologist on Spruce to treat [his/her] acne.</h1>
-        <p class="header-subtext">Before a doctor can treat [his/her] case, we need to obtain parental consent as any in-person dermatologist’s office would.</p>
+        <h1>{{.ChildFirstName}} would like to see a board-certified dermatologist on Spruce to treat {{.ChildPossessivePronoun}} acne.</h1>
+        <p class="header-subtext">Before a doctor can treat {{.ChildPossessivePronoun}} case, we need to obtain parental consent as any in-person dermatologist’s office would.</p>
         {{/*TODO: Set the correct link below AND at the bottom of the page */}}
-        <a class="flexy-btn--white" href="/parental-consent">
+        <a class="flexy-btn--white" href="/pc/{{.ChildID}}/start">
             <div class="item0"></div>
             <span class="item1">GET STARTED</span>
             <img class="disclosure-arrow item2" src="{{staticURL "/img/pc/right_arrow_sblue@2x.png"}}" />
@@ -136,7 +136,7 @@
             <img class="disclosure-arrow item2" src="{{staticURL "/img/pc/right_arrow_sblue@2x.png"}}" />
         </a>
     <h1>Still have questions? Check out the parent FAQs</h1>
-        <a class="flexy-btn--transparent-white" href="/parental-faq">
+        <a class="flexy-btn--transparent-white" href="/pc/faq">
             <div class="item0"></div>
             <span class="item1">VIEW PARENT FAQs</span>
             <img class="disclosure-arrow item2" src="{{staticURL "/img/pc/right_arrow_white@2x.png"}}" />
@@ -145,7 +145,7 @@
 </div>
 <div id="parent-footer" class="section footer">
     <div class="container">
-        <a class="footer-link" href="/parental-faq">PARENT FAQ</a><br><br>
+        <a class="footer-link" href="/pc/faq">PARENT FAQ</a><br><br>
         <a class="footer-link" href="/contact">CONTACT</a><br><br>
         <a class="footer-link" href="/about">THE COMPANY</a><br><br>
         <a class="footer-link" href="/terms">TERMS &amp; PRIVACY</a><br><br>
