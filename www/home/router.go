@@ -93,6 +93,7 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	r.Handle("/meet-the-doctors", newStaticHandler(r, config.TemplateLoader, "home/meet-the-doctors.html", "Meet the Doctors | Spruce", nil))
 	r.Handle("/providers", newStaticHandler(r, config.TemplateLoader, "home/providers.html", "For Providers | Spruce", nil))
 	r.Handle("/terms", newStaticHandler(r, config.TemplateLoader, "home/terms.html", "Terms & Conditions | Spruce", nil))
+	r.Handle("/terms/2015-03-31", newStaticHandler(r, config.TemplateLoader, "home/terms-2015-03-31.html", "Terms & Conditions | Spruce", nil))
 	r.Handle("/app", newStaticHandler(r, config.TemplateLoader, "home/referral.html", "Get the App | Spruce", func() interface{} {
 		return &refContext{
 			Title: "See a dermatologist, right from your phone.",
