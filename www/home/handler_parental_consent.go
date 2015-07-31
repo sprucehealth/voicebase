@@ -152,7 +152,10 @@ func (h *parentalConsentHandler) ServeHTTP(ctx context.Context, w http.ResponseW
 	}
 
 	child, err := h.dataAPI.Patient(childPatientID, true)
-	if err != nil {
+	if api.IsErrNotFound(err) {
+		http.NotFound(w, r)
+		return
+	} else if err != nil {
 		www.InternalServerError(w, r, err)
 		return
 	}
