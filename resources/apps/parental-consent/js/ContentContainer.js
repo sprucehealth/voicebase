@@ -93,10 +93,10 @@ var ContentContainer = React.createClass({displayName: "ContentContainer",
 			<div>
 				<SpinnerView busy={this.props.busy}/>
 				<Header />
-				{this.props.showSectionedProgressBar ? 
-					<SectionedProgressBar 
+				{this.props.showSectionedProgressBar ?
+					<SectionedProgressBar
 						currentSectionIndex={this.props.currentSectionIndex ? this.props.currentSectionIndex : 0}
-						numSections={numSections} 
+						numSections={numSections}
 						maxWidth={maxContentWidth} />
 				: null}
 				<div style={contentPaneStyle}>

@@ -4,14 +4,14 @@ var Reflux = require('reflux');
 var ParentalConsentAPI = require("./api.js")
 
 var Actions = Reflux.createActions({
-  uploadGovernmentID: { sync: true, children: ['completed', 'failed'] }, // sync: true is a workaround for: https://github.com/spoike/refluxjs/issues/352
-  uploadSelfie: { sync: true, children: ['completed', 'failed'] },
-  saveDemographics: {},
-  saveRelationship: {},
-  saveEmailAndPassword: {},
-  submitEmailRelationshipConsent: { asyncResult: true },
-  signUp: { asyncResult: true },
-  submitConsent: { asyncResult: true },
+	uploadGovernmentID: { sync: true, children: ['completed', 'failed'] }, // sync: true is a workaround for: https://github.com/spoike/refluxjs/issues/352
+	uploadSelfie: { sync: true, children: ['completed', 'failed'] },
+	saveDemographics: {},
+	saveRelationship: {},
+	saveEmailAndPassword: {},
+	submitEmailRelationshipConsent: { asyncResult: true },
+	signUp: { asyncResult: true },
+	submitConsent: { asyncResult: true },
 });
 
 Actions.uploadGovernmentID.listen(function(formData: FormData) {

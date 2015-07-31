@@ -1,6 +1,5 @@
 /* @flow */
 
-// var React = require("react");
 var React = require("react/addons");
 var Reflux = require('reflux');
 var Utils = require("../../libs/utils.js");
@@ -43,10 +42,6 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 				relationship: store.userInput.relationship,
 			});
 		}
-
-		debugger
-		// console.log(Formatter)
-
 	},
 
 	//

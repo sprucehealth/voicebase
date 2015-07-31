@@ -9,7 +9,7 @@ var ParentalConsentActions = require('./ParentalConsentActions.js')
 var ParentalConsentStore = require('./ParentalConsentStore.js');
 
 var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelationshipConsentView",
-	
+
 	//
 	// Action callbacks
 	//
@@ -55,7 +55,7 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 
 	//
 	// User interaction callbacks
-	// 
+	//
 	handleSubmit: function(e: any) {
 		e.preventDefault();
 		var t = this
@@ -127,7 +127,7 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 			width: "80%",
 		}
 		var checkboxLabelSubtextStyle = {
-			color: Constants.placeholderTextColor, 
+			color: Constants.placeholderTextColor,
 			marginTop: "4",
 		}
 		var checkboxOuterContainerStyle = {
@@ -156,7 +156,7 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 			topContent = (
 				<div>
 					<div className="formFieldRow hasBottomDivider" style={emailHighlighted ? orangeBottomDividerStyle : null}>
-					  <input type="email" 
+					  <input type="email"
 							 mozactionhint="next"
 							 autoComplete="email"
 							 autoCorrect="on"
@@ -165,7 +165,7 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 							 />
 					</div>
 					<div className="formFieldRow hasBottomDivider" style={passwordHighlighted ? orangeBottomDividerStyle : null}>
-					  <input type="password" 
+					  <input type="password"
 							 mozactionhint="next"
 							 autoComplete="new-password"
 							 placeholder="Password"
@@ -185,9 +185,9 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 			var style = Utils.mergeProperties(selectContainerStyle, relationshipHighlighted ? orangeBottomDividerStyle : null)
 			topContent = (
 				<div className="formFieldRow hasBottomDivider hasTopDivider" style={style}>
-					<select 
+					<select
 						className={this.isRelationshipFieldValid() ? null : "emptyState"}
-						defaultValue="" 
+						defaultValue=""
 						valueLink={this.linkState('relationship')}>
 						<option value="">Relationship to Child</option>
 						<option value="mother">Mother</option>
@@ -202,13 +202,13 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 		var consentToUseOfTelehealthHighlighted: bool = (this.state.submitButtonPressedOnce ? !this.isContentToUseOfTelehealthFieldValid() : false)
 
 		return (
-			<form 
+			<form
 				onSubmit={this.handleSubmit}
 				style={{marginTop: "13"}}>
 				{topContent}
 				<div className="hasBottomDivider"
 					style={{
-						paddingTop: "32", 
+						paddingTop: "32",
 						paddingBottom: "16",
 						fontFamily: "MuseoSans-500",
 						color: (termsAndPrivacyHighlighted || consentToUseOfTelehealthHighlighted ? "#F5A623" : ""),
@@ -221,14 +221,14 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 							<a href="https://d2bln09x7zhlg8.cloudfront.net/terms">Terms & Privacy Policy</a>
 						</div>
 						<div style={checkboxLabelSubtextStyle}>
-							<label htmlFor="termsAndPrivacyCheckbox"> 
+							<label htmlFor="termsAndPrivacyCheckbox">
 								Terms of use and how Spruce protects your privacy
 							</label>
 						</div>
 					</div>
 					<div style={checkboxOuterContainerStyle}>
 						<div style={checkboxInnerContainerStyle}>
-							<input 
+							<input
 								type="checkbox"
 								id="termsAndPrivacyCheckbox"
 								checkedLink={this.linkState('consentedToTermsAndPrivacy')}
@@ -243,15 +243,15 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 							<a href="https://d2bln09x7zhlg8.cloudfront.net/consent">Consent to Use of Telehealth</a>
 						</div>
 						<div style={checkboxLabelSubtextStyle}>
-							<label htmlFor="consentToUseOfTelehealth"> 
+							<label htmlFor="consentToUseOfTelehealth">
 								You understand the benefits and risks of remote physician treatment.
 							</label>
 						</div>
 					</div>
 					<div style={checkboxOuterContainerStyle}>
 						<div style={checkboxInnerContainerStyle}>
-							<input 
-								type="checkbox" 
+							<input
+								type="checkbox"
 								id="consentToUseOfTelehealth"
 								checkedLink={this.linkState('consentedToConsentToUseOfTelehealth')}
 								className={(consentToUseOfTelehealthHighlighted ? "error" : null)} />
@@ -259,7 +259,7 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 					</div>
 				</div>
 				<div>
-					<SubmitButtonView 
+					<SubmitButtonView
 						title="NEXT"
 						appearsDisabled={!this.shouldAllowSubmit()}/>
 				</div>

@@ -92,7 +92,7 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 
 	//
 	// User interaction callbacks
-	// 
+	//
 	handleSubmit: function(e: any) {
 		e.preventDefault();
 		this.setState({submitButtonPressedOnce: true})
@@ -111,13 +111,13 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 
 			// Update the thumbnail
 			var file = files[0];
-			var imageType = /image.*/; 
+			var imageType = /image.*/;
 			if (!file.type.match(imageType)) {
 				console.log("might not be an image");
-			}           
+			}
 			var reader = new FileReader();
 			var t = this;
-			reader.onload = function(event: any) { 
+			reader.onload = function(event: any) {
 				var fileReader: FileReader = event.target
 				t.setState({localGovernmentIDThumbnailSrc: fileReader.result})
 			}
@@ -138,13 +138,13 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 
 			// Update the thumbnail
 			var file = files[0];
-			var imageType = /image.*/;     
+			var imageType = /image.*/;
 			if (!file.type.match(imageType)) {
 				console.log("might not be an image");
-			}           
+			}
 			var reader = new FileReader();
 			var t = this;
-			reader.onload = function(event: any) { 
+			reader.onload = function(event: any) {
 				var fileReader: FileReader = event.target
 				t.setState({localSelfieThumbnailSrc: fileReader.result})
 			}
@@ -159,8 +159,8 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 	// Internal
 	//
 	shouldAllowSubmit: function(): bool {
-		return !this.state.isGovernmentIDUploading 
-			&& !this.state.isSelfieUploading 
+		return !this.state.isGovernmentIDUploading
+			&& !this.state.isSelfieUploading
 			&& this.isGovernmentIDFieldValid()
 			&& this.isSelfieFieldValid();
 	},
@@ -181,7 +181,7 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 		var uploadFormStyle = {
 			width: "100%",
 			height: "100%",
-		}		
+		}
 		var fileUploadContainerStyle = {
 			width: "100%",
 			height: "100%",
@@ -221,7 +221,7 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 		}
 
 		var placeholderSrc = "http://cl.ly/image/2A1S3t1F0t0j/parental_consent_photo_capture@2x.png"
-		
+
 		var governmentIDThumbnailSrc
 		if (!Utils.isEmpty(this.state.localGovernmentIDThumbnailSrc)) {
 			governmentIDThumbnailSrc = this.state.localGovernmentIDThumbnailSrc
@@ -280,7 +280,7 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 									}}>
 										<div id="governmentIDSpinner"></div>
 									</div>
-								</div>			
+								</div>
 								<img src={governmentIDThumbnailSrc} style={photoUploadThumbnailStyle} />
 							</div>
 							<div style={Utils.mergeProperties(uploadLabelStyle, {
@@ -290,16 +290,16 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 							</div>
 						</div>
 						<div style={fileUploadContainerStyle}>
-							<input 
-								type="file" 
-								accept="image/*" 
-								onChange={this.handleGovernmentIDSelection} 
-								name="file" 
-								style={fileUploadInputStyle} 
+							<input
+								type="file"
+								accept="image/*"
+								onChange={this.handleGovernmentIDSelection}
+								name="file"
+								style={fileUploadInputStyle}
 								disabled={this.state.isGovernmentIDUploading} />
 						</div>
 					</div>
-				</form>	
+				</form>
 				<form encType="multipart/form-data" ref="selfieForm">
 					<input type="hidden" name="type" value="selfie" />
 					<div className="formFieldRow hasBottomDivider">
@@ -327,7 +327,7 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 									}}>
 										<div id="selfieSpinner"></div>
 									</div>
-								</div>	
+								</div>
 								<img src={selfieThumbnailSrc} style={photoUploadThumbnailStyle} />
 							</div>
 							<div style={Utils.mergeProperties(uploadLabelStyle, {
@@ -337,19 +337,19 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 							</div>
 						</div>
 						<div style={fileUploadContainerStyle}>
-							<input 
-								type="file" 
-								accept="image/*" 
-								onChange={this.handleSelfieSelection} 
-								name="file" 
-								style={fileUploadInputStyle} 
+							<input
+								type="file"
+								accept="image/*"
+								onChange={this.handleSelfieSelection}
+								name="file"
+								style={fileUploadInputStyle}
 								disabled={this.state.isSelfieUploading} />
-						</div> 
+						</div>
 					</div>
 				</form>
 				<div>
 					<form onSubmit={this.handleSubmit}>
-						<SubmitButtonView 
+						<SubmitButtonView
 							title={submitButtonTitle}
 							appearsDisabled={submitButtonDisabled}/>
 					</form>
