@@ -92,6 +92,7 @@ func (w *Worker) Start() {
 			}
 			if err := w.Do(); err != nil {
 				golog.Errorf(err.Error())
+				time.Sleep(time.Minute)
 			}
 		}
 	}()
