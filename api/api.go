@@ -792,6 +792,7 @@ type ScheduledMessageAPI interface {
 	ScheduledMessageTemplates(eventType string) ([]*common.ScheduledMessageTemplate, error)
 	UpdateScheduledMessage(id int64, status common.ScheduledMessageStatus) error
 	UpdateScheduledMessageTemplate(*common.ScheduledMessageTemplate) error
+	DeactivateScheduledMessagesForPatient(patientID int64) (int64, error)
 }
 
 type AccountPromotionUpdate struct {

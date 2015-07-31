@@ -395,12 +395,12 @@ func (m *auth) AccountForEmail(email string) (*common.Account, error) {
 	email = normalizeEmail(email)
 	var account common.Account
 	if err := m.db.QueryRow(`
-		SELECT account.id, role_type_tag, email, registration_date, two_factor_enabled
+		SELECT account.id, role_type_tag, email, registration_date, two_factor_enabled, account_code
 		FROM account
 		INNER JOIN role_type ON role_type_id = role_type.id
 		WHERE email = ?`, email,
 	).Scan(
-		&account.ID, &account.Role, &account.Email, &account.Registered, &account.TwoFactorEnabled,
+		&account.ID, &account.Role, &account.Email, &account.Registered, &account.TwoFactorEnabled, &account.AccountCode,
 	); err == sql.ErrNoRows {
 		return nil, ErrLoginDoesNotExist
 	} else if err != nil {
@@ -414,12 +414,12 @@ func (m *auth) GetAccount(id int64) (*common.Account, error) {
 		ID: id,
 	}
 	if err := m.db.QueryRow(`
-		SELECT role_type_tag, email, registration_date, two_factor_enabled, account_code
+		SELECT account.id, role_type_tag, email, registration_date, two_factor_enabled, account_code
 		FROM account
 		INNER JOIN role_type ON role_type_id = role_type.id
 		WHERE account.id = ?`, id,
 	).Scan(
-		&account.Role, &account.Email, &account.Registered, &account.TwoFactorEnabled, &account.AccountCode,
+		&account.ID, &account.Role, &account.Email, &account.Registered, &account.TwoFactorEnabled, &account.AccountCode,
 	); err == sql.ErrNoRows {
 		return nil, ErrNotFound("account")
 	} else if err != nil {

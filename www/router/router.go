@@ -175,6 +175,7 @@ func New(c *Config) httputil.ContextHandler {
 		MediaStore:      c.MediaStore,
 		EventsClient:    c.EventsClient,
 		Cfg:             c.Cfg,
+		AnalyticsLogger: c.AnalyticsLogger,
 	})
 
 	secureRedirectHandler := httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {

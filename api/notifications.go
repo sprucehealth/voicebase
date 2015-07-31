@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/errors"
 )
 
 func (d *dataService) GetPushConfigData(deviceToken string) (*common.PushConfigData, error) {
@@ -61,12 +62,12 @@ func (d *dataService) SnoozeConfigsForAccount(accountID int64) ([]*common.Snooze
 }
 
 func (d *dataService) DeletePushCommunicationPreferenceForAccount(accountID int64) error {
-	_, err := d.db.Exec(`delete from push_config where account_id=?`, accountID)
+	_, err := d.db.Exec(`DELETE FROM push_config WHERE account_id=?`, accountID)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
-	_, err = d.db.Exec(`delete from communication_preference where communication_type = ? and account_id = ?`, common.Push.String(), accountID)
-	return err
+	_, err = d.db.Exec(`DELETE FROM communication_preference WHERE communication_type = ? AND account_id = ?`, common.Push.String(), accountID)
+	return errors.Trace(err)
 }
 
 func (d *dataService) GetPushConfigDataForAccount(accountID int64) ([]*common.PushConfigData, error) {
