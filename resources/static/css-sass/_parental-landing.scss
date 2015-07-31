@@ -1,14 +1,7 @@
 $color-white-90: #E7F2F9;   // White with 90% opacity
 
-#parent-header {
-    box-shadow: 0px 2px 2px 0px rgba(0,0,0,0.10);
-}
-
-#img-logo {
-    width: 123px;
-    height: 33px;
-    margin-top: 10px;
-    margin-bottom: 8px;
+.margin {
+    margin: 5px auto;
 }
 
 .section {
@@ -31,19 +24,38 @@ $color-white-90: #E7F2F9;   // White with 90% opacity
     // height: 355px;
     padding-bottom: 0px;
     overflow: hidden;
+    h3 {
+        margin-top: 20px;
+    }
 }
 
 .infoblock {
-    margin-top: 25px;
+    // margin-bottom: 10px;
 }
 
 .doctors {
-    margin: 20px;
+    margin: 10px;
 }
-
 
 #parent-bottom {
     background-color: $color-spruceBlue;
+}
+
+.row {
+    div {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+}
+
+.next-step-number {
+    margin: auto 10px;
+    float: left;
+}
+
+.next-step-text {
+    margin: auto 10px;
+    margin-left: 58px
 }
 
 #parent-footer {
@@ -74,7 +86,7 @@ h3 {
     @include fontSize-16();
     @include font-500();
     color: $color-spruceDarkest;
-    margin-top: 20px;
+    margin-top: 10px;
 }
 
 p {
@@ -128,35 +140,19 @@ p {
     }
 }
 
-// .iphone {
-//     background-image: url("../../static/img/pc/iphone_full.png");
-//     background-size: 213px 436px;
-//     width: 213px;
-//     overflow: hidden;
-//     margin: auto;
-//     img {
-//         width: 184px;
-//         height: 304px;
-//         position: relative;
-//         overflow: hidden;
-//         margin: auto;
-//         top: 53px;
-//         // left: 14px;
-//     }
-// }
 #iphone-image {
     width: 217px;
     height: 253px;
     // position: relative;
     overflow: hidden;
     margin: auto;
-    // top: 53px;
-    // left: 14px;
+    margin-top: 10px;
 }
 
 .icon {
     width: 68px;
     height: 68px;
+    margin: 10px;
 }
 
 .icon-step {
