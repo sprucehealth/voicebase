@@ -2,16 +2,8 @@
 {{define "head"}}
 {{end}}
 {{define "tail"}}
-<script type="text/javascript">
-    $(function() {
-        var faq = {{.SubContext}};
-        React.render(React.createElement(FAQ.Component, {faq: faq}), $('#faq')[0]);
-    });
-</script>
 {{end}}
 {{define "content"}}
-{{/* TODO: Ensure that javascript on this page formats the FAQ correctly. */}}
-
 <div class="container">
     <div id="faq">
         <div>

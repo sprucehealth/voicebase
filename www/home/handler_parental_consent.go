@@ -21,9 +21,10 @@ import (
 )
 
 type parentalConsentHandler struct {
-	dataAPI    api.DataAPI
-	mediaStore *media.Store
-	template   *template.Template
+	dataAPI         api.DataAPI
+	mediaStore      *media.Store
+	template        *template.Template
+	landingTemplate *template.Template
 }
 
 type parentalConsentContext struct {
@@ -54,11 +55,31 @@ type identitiyImageContext struct {
 	Types map[string]string `json:"types"`
 }
 
+func checkParentalConsentAccessToken(w http.ResponseWriter, r *http.Request, dataAPI api.DataAPI, childPatientID int64) bool {
+	token := r.FormValue("t")
+	fromCookie := false
+	if token != "" {
+		token = parentalConsentCookie(childPatientID, r)
+		fromCookie = true
+	}
+	if token == "" {
+		return false
+	}
+	hasAccess := patient.ValidateParentalConsentToken(dataAPI, token, childPatientID)
+	if hasAccess && !fromCookie {
+		// Only set the cookie if the token is actually valid
+		cookie := newParentalConsentCookie(childPatientID, token, r)
+		http.SetCookie(w, cookie)
+	}
+	return hasAccess
+}
+
 func newParentalConsentHandler(dataAPI api.DataAPI, mediaStore *media.Store, templateLoader *www.TemplateLoader) httputil.ContextHandler {
 	return httputil.ContextSupportedMethods(&parentalConsentHandler{
-		dataAPI:    dataAPI,
-		mediaStore: mediaStore,
-		template:   templateLoader.MustLoadTemplate("home/parental-consent.html", "", nil),
+		dataAPI:         dataAPI,
+		mediaStore:      mediaStore,
+		template:        templateLoader.MustLoadTemplate("home/parental-consent.html", "", nil),
+		landingTemplate: templateLoader.MustLoadTemplate("home/parental-landing.html", "home/parental-base.html", nil),
 	}, httputil.Get)
 }
 
@@ -71,18 +92,7 @@ func (h *parentalConsentHandler) ServeHTTP(ctx context.Context, w http.ResponseW
 		http.NotFound(w, r)
 		return
 	}
-	token := r.FormValue("t")
-	if token != "" {
-		cookie := newParentalConsentCookie(childPatientID, token, r)
-		http.SetCookie(w, cookie)
-	} else {
-		token = parentalConsentCookie(childPatientID, r)
-	}
-
-	var hasAccess bool
-	if token != "" {
-		hasAccess = patient.ValidateParentalConsentToken(h.dataAPI, token, childPatientID)
-	}
+	hasAccess := checkParentalConsentAccessToken(w, r, h.dataAPI, childPatientID)
 
 	var consent *common.ParentalConsent
 	var parentPatientID int64
@@ -153,6 +163,39 @@ func (h *parentalConsentHandler) ServeHTTP(ctx context.Context, w http.ResponseW
 		return
 	}
 
+	if page := mux.Vars(ctx)["page"]; page == "" {
+		pronoun := "they"
+		possessivePronoun := "their"
+		switch child.Gender {
+		case "male":
+			pronoun = "he"
+			possessivePronoun = "his"
+		case "female":
+			pronoun = "she"
+			possessivePronoun = "her"
+		}
+		www.TemplateResponse(w, http.StatusOK, h.landingTemplate, &struct {
+			Environment string
+			Title       template.HTML
+			SubContext  interface{}
+		}{
+			Environment: environment.GetCurrent(),
+			Title:       "Parental Consent | Spruce",
+			SubContext: struct {
+				ChildID                int64
+				ChildFirstName         string
+				ChildPronoun           string
+				ChildPossessivePronoun string
+			}{
+				ChildID:                child.ID.Int64(),
+				ChildFirstName:         child.FirstName,
+				ChildPronoun:           pronoun,
+				ChildPossessivePronoun: possessivePronoun,
+			},
+		})
+		return
+	}
+
 	www.TemplateResponse(w, http.StatusOK, h.template, &parentalConsentContext{
 		Environment: environment.GetCurrent(),
 		Hydration: &parentalConsentHydration{
@@ -194,17 +237,14 @@ func newParentalLandingHandler(dataAPI api.DataAPI, templateLoader *www.Template
 }
 
 func (h *parentalLandingHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	// account := context.Get(r, www.CKAccount).(*common.Account)
 	www.TemplateResponse(w, http.StatusOK, h.template, &struct {
 		Account     *common.Account
 		Environment string
 		Title       template.HTML
 		SubContext  interface{}
 	}{
-		// Account:     account,
 		Environment: environment.GetCurrent(),
 		Title:       template.HTML(html.EscapeString(h.title)),
-		// TODO: go build gives an error here about SubContext not being a field of *home.faqContext
-		SubContext: h.ctx,
+		SubContext:  h.ctx,
 	})
 }

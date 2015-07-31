@@ -106,6 +106,13 @@ func SetupRoutes(r *mux.Router, config *Config) {
 		return www.AuthRequiredHandler(h, h, config.AuthAPI)
 	}
 	r.Handle("/patient/medical-record", authFilter(newMedRecordWebDownloadHandler(config.DataAPI, config.Stores["medicalrecords"])))
+
+	// Parental Consent
+	parentalFaqCtx := func() interface{} {
+		return &faqContext{
+			Sections: parentalFaq(),
+		}
+	}
 	r.Handle(`/pc/{childid:\d+}/medrecord`, authFilter(newParentalMedicalRecordHandler(config.DataAPI, &medrecord.Renderer{
 		DataAPI:            config.DataAPI,
 		DiagnosisSvc:       config.DiagnosisSvc,
@@ -115,19 +122,11 @@ func SetupRoutes(r *mux.Router, config *Config) {
 		Signer:             config.Signer,
 		ExpirationDuration: time.Hour,
 	})))
+	config.TemplateLoader.MustLoadTemplate("home/parental-base.html", "base.html", nil)
+	r.Handle("/pc/faq", newParentalLandingHandler(config.DataAPI, config.TemplateLoader, "home/parental-faq.html", "Parental Consent FAQ | Spruce", parentalFaqCtx))
 	parentalConsentHandler := authOptionalFilter(newParentalConsentHandler(config.DataAPI, config.MediaStore, config.TemplateLoader))
 	r.Handle(`/pc/{childid:\d+}`, parentalConsentHandler)
 	r.Handle(`/pc/{childid:\d+}/{page:.*}`, parentalConsentHandler)
-
-	config.TemplateLoader.MustLoadTemplate("home/parental-base.html", "base.html", nil)
-	// Parental Consent
-	parentalFaqCtx := func() interface{} {
-		return &faqContext{
-			Sections: parentalFaq(),
-		}
-	}
-	r.Handle("/parental-landing", newParentalLandingHandler(config.DataAPI, config.TemplateLoader, "home/parental-landing.html", "Parental Consent | Spruce", nil))
-	r.Handle("/parental-faq", newParentalLandingHandler(config.DataAPI, config.TemplateLoader, "home/parental-faq.html", "Parental Consent FAQ | Spruce", parentalFaqCtx))
 
 	// Email
 	r.Handle("/e/optout", newEmailOptoutHandler(config.DataAPI, config.AuthAPI, config.Signer, config.TemplateLoader))
