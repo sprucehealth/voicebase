@@ -11,7 +11,7 @@ module.exports = {
 			return (
 				<div>
 					{this.props.faq.Sections.map(function(s) {
-						return <FAQSection key={s.Title} title={s.Title} questions={s.Questions} />
+						return <FAQSection key={s.Title} title={s.Title} anchor={s.Anchor} questions={s.Questions} />
 					})}
 				</div>
 			);
@@ -23,6 +23,7 @@ var FAQSection = React.createClass({displayName: "FAQSection",
 	render: function(): any {
 		return (
 			<div className="section">
+				{this.props.anchor ? <a name={this.props.anchor}></a> : null}
 				<h3>{this.props.title}</h3>
 				{this.props.questions.map(function(q) {
 					return (

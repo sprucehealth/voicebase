@@ -20,6 +20,7 @@
 	<div id="faq">
 		<div>
 			{{range .SubContext.Sections}}
+				{{with .Anchor}}<a name="{{.}}"></a>{{end}}
 				<h3>{{.Title}}</h3>
 
 				{{range .Questions}}
