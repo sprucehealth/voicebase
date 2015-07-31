@@ -2,43 +2,51 @@
 {{define "head"}}
 {{end}}
 {{define "tail"}}
+	<script type="text/javascript">
+	var FAQ = {Sections: {{.Sections}} };
+	</script>
+	{{if isEnv "dev"}}
+	<script src="{{staticURL "/js/parental-consent.dev.js"}}" type="text/javascript"></script>
+	{{else}}
+	<script src="{{staticURL "/js/parental-consent.min.js"}}" type="text/javascript"></script>
+	{{end}}
 {{end}}
 {{define "content"}}
 <div class="container">
-    <div id="faq">
-        <div>
-            {{range .Sections}}
-                <h3>{{.Title}}</h3>
+	<div id="faq">
+		<div>
+			{{range .Sections}}
+				<h3>{{.Title}}</h3>
 
-                {{range .Questions}}
-                <hr>
-                <div class="qa">
-                    <div class="question">{{.Question}}</div>
-                    <div class="answer">{{.Answer}}</div>
-                </div>
-                {{end}}
-                <hr>
-            {{end}}
-        </div>
-    </div>
+				{{range .Questions}}
+				<hr>
+				<div class="qa">
+					<div class="question">{{.Question}}</div>
+					<div class="answer">{{.Answer}}</div>
+				</div>
+				{{end}}
+				<hr>
+			{{end}}
+		</div>
+	</div>
 </div>
 
 <div id="faq-bottom">
-    <div class="container">
-        <h2>Can't find what you're looking for?</h2>
-        <h3>A support team member would be happy to answer your question.</h3>
-        <a class="flexy-btn--white" href="/contact">
-            <span class="item1">GET IN TOUCH</span>
-        </a>
-    </div>
+	<div class="container">
+		<h2>Can't find what you're looking for?</h2>
+		<h3>A support team member would be happy to answer your question.</h3>
+		<a class="flexy-btn--white" href="/contact">
+			<span class="item1">GET IN TOUCH</span>
+		</a>
+	</div>
 </div>
 <div id="parent-footer" class="section footer">
-    <div class="container">
-        <a class="footer-link" href="/parental-faq">PARENT FAQ</a><br><br>
-        <a class="footer-link" href="/contact">CONTACT</a><br><br>
-        <a class="footer-link" href="/about">THE COMPANY</a><br><br>
-        <a class="footer-link" href="/terms">TERMS &amp; PRIVACY</a><br><br>
-        <span class="footer-copyright">&copy; SPRUCE HEALTH 2015</span><br>
-    </div>
+	<div class="container">
+		<a class="footer-link" href="/parental-faq">PARENT FAQ</a><br><br>
+		<a class="footer-link" href="/contact">CONTACT</a><br><br>
+		<a class="footer-link" href="/about">THE COMPANY</a><br><br>
+		<a class="footer-link" href="/terms">TERMS &amp; PRIVACY</a><br><br>
+		<span class="footer-copyright">&copy; SPRUCE HEALTH 2015</span><br>
+	</div>
 </div>
 {{end}}

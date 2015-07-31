@@ -1,65 +1,65 @@
 {{define "baseHead"}}
-    <link rel="shortcut icon" href="{{staticURL "/img/_favicon/favicon.ico"}}">
-    <link rel="icon" type="image/png" href="{{staticURL "/img/_favicon/favicon_64.png"}}">
-    <link rel="apple-touch-icon-precomposed" href="{{staticURL "/img/_favicon/favicon_64.png"}}">
+	<link rel="shortcut icon" href="{{staticURL "/img/_favicon/favicon.ico"}}">
+	<link rel="icon" type="image/png" href="{{staticURL "/img/_favicon/favicon_64.png"}}">
+	<link rel="apple-touch-icon-precomposed" href="{{staticURL "/img/_favicon/favicon_64.png"}}">
 
-    {{if isEnv "dev"}}
-    <link rel="stylesheet" type="text/css" href="{{staticURL "/css/parental-consent.css"}}">
-    {{else}}
-    <link rel="stylesheet" type="text/css" href="{{staticURL "/css/parental-consent.min.css"}}">
-    {{end}}
-    <script type="text/javascript">
-    var Spruce = {
-        BaseStaticURL: {{staticURL ""}}
-    };
-    </script>
+	{{if isEnv "dev"}}
+	<link rel="stylesheet" type="text/css" href="{{staticURL "/css/parental-consent.css"}}">
+	{{else}}
+	<link rel="stylesheet" type="text/css" href="{{staticURL "/css/parental-consent.min.css"}}">
+	{{end}}
+	<script type="text/javascript">
+	var Spruce = {
+		BaseStaticURL: {{staticURL ""}}
+	};
+	</script>
 
-    {{if isEnv "prod"}}
-    <script>(function() {
-        var _fbq = window._fbq || (window._fbq = []);
-        if (!_fbq.loaded) {
-            var fbds = document.createElement('script');
-            fbds.async = true;
-            fbds.src = '//connect.facebook.net/en_US/fbds.js';
-            var s = document.getElementsByTagName('script')[0];
-            s.parentNode.insertBefore(fbds, s);
-            _fbq.loaded = true;
-        }
-        _fbq.push(['addPixelId', '771397612967860']);
-    })();
-    window._fbq = window._fbq || [];
-    window._fbq.push(['track', 'PixelInitialized', {}]);
-    </script>
-    <noscript><img height="1" width="1" alt="" style="display:none" src="https://www.facebook.com/tr?id=771397612967860&amp;ev=PixelInitialized" /></noscript>
-    {{end}}
+	{{if isEnv "prod"}}
+	<script>(function() {
+		var _fbq = window._fbq || (window._fbq = []);
+		if (!_fbq.loaded) {
+			var fbds = document.createElement('script');
+			fbds.async = true;
+			fbds.src = '//connect.facebook.net/en_US/fbds.js';
+			var s = document.getElementsByTagName('script')[0];
+			s.parentNode.insertBefore(fbds, s);
+			_fbq.loaded = true;
+		}
+		_fbq.push(['addPixelId', '771397612967860']);
+	})();
+	window._fbq = window._fbq || [];
+	window._fbq.push(['track', 'PixelInitialized', {}]);
+	</script>
+	<noscript><img height="1" width="1" alt="" style="display:none" src="https://www.facebook.com/tr?id=771397612967860&amp;ev=PixelInitialized" /></noscript>
+	{{end}}
 
-    {{if isEnv "prod"}}
-    <script type="text/javascript">
-    var Spruce = {
-        BaseStaticURL: {{staticURL ""}},
-        Environment: {{.Environment}}
-    };
-    </script>
-    {{end}}
+	{{if isEnv "prod"}}
+	<script type="text/javascript">
+	var Spruce = {
+		BaseStaticURL: {{staticURL ""}},
+		Environment: {{.Environment}}
+	};
+	</script>
+	{{end}}
 
-    {{template "head" .}}
+	{{template "head" .}}
 {{end}}
 
 {{define "head"}}{{end}}
 
 {{define "baseTail"}}
-    {{template "tail" .}}
+	{{template "tail" .}}
 {{end}}
 
 {{define "baseBody"}}
-    <div id="base">
-        <div id="parent-header" class="header">
-            <a href="/">
-                <img id="img-logo" src="{{staticURL "/img/pc/header_logo@2x.png"}}" />
-            </a>
-        </div>
+	<div id="base">
+		<div id="parent-header" class="header">
+			<a href="/">
+				<img id="img-logo" src="{{staticURL "/img/pc/header_logo@2x.png"}}" />
+			</a>
+		</div>
 
-        {{template "content" .}}
+		{{template "content" .}}
 
-    </div>
+	</div>
 {{end}}

@@ -14,6 +14,7 @@ var ContentContainer = require("./ContentContainer.js")
 var EmailRelationshipConsentView = require("./EmailRelationshipConsentView.js")
 var PhotoIdentificationView = require("./PhotoIdentificationView.js")
 var ConfirmationView = require("./ConfirmationView.js")
+var FAQ = require("./FAQ.js");
 
 window.React = React; // export for http://fb.me/react-devtools
 Backbone.jQuery = jQuery;
@@ -264,6 +265,12 @@ var ConfirmationPage = React.createClass({displayName: "ConfirmationPage",
 });
 
 jQuery(function() {
+	var el = document.getElementById("faq");
+	if (el) {
+		React.render(React.createElement(FAQ.Component, {faq: window.FAQ}), el);
+		return;
+	}
+
 	var router = new ParentalConsentRouter();
 	router.root = "/pc/" + ParentalConsentHydration.ChildDetails.patientID + "/";
 	React.render(React.createElement(ParentalConsent, {

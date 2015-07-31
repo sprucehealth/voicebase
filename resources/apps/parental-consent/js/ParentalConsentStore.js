@@ -6,43 +6,59 @@ var Utils = require("../../libs/utils.js");
 
 var ParentalConsentActions = require('./ParentalConsentActions.js')
 
-// TODO:
-// Before shipping!!!
-// Insert actual token
+var hydration = {
+	ChildDetails: {},
+	ParentalConsent: {
+		consented: false,
+	},
+	IdentityVerificationImages: {
+		types: {
+			governmentid: "",
+			selfie: "",
+		}
+	},
+	IsParentSignedIn: false,
+};
+if (typeof ParentalConsentHydration != "undefined") {
+	hydration = ParentalConsentHydration;
+}
 
 var PhotoIdentificationAlreadySubmittedAtPageLoad = false
-if (ParentalConsentHydration.IdentityVerificationImages) {
-	var IdentityVerificationImages: ParentalConsentGetImagesResponse = ParentalConsentHydration.IdentityVerificationImages
+if (hydration.IdentityVerificationImages) {
+	var IdentityVerificationImages: ParentalConsentGetImagesResponse = hydration.IdentityVerificationImages
 	PhotoIdentificationAlreadySubmittedAtPageLoad = !Utils.isEmpty(IdentityVerificationImages.types.governmentid) && !Utils.isEmpty(IdentityVerificationImages.types.selfie)
 }
 
 var possessivePronoun: string = "their"
-if (ParentalConsentHydration.ChildDetails.gender === "male") {
+if (hydration.ChildDetails.gender === "male") {
 	possessivePronoun = "his"
-} else if (ParentalConsentHydration.ChildDetails.gender === "female") {
+} else if (hydration.ChildDetails.gender === "female") {
 	possessivePronoun = "her"
 }
 
-var personalPronoun: string = ParentalConsentHydration.ChildDetails.firstName // using first name is intentional: "he/she is now able to..." -> "Jimmy is now able to..."
-if (ParentalConsentHydration.ChildDetails.gender === "male") {
+var personalPronoun: string = hydration.ChildDetails.firstName // using first name is intentional: "he/she is now able to..." -> "Jimmy is now able to..."
+if (hydration.ChildDetails.gender === "male") {
 	personalPronoun = "he"
-} else if (ParentalConsentHydration.ChildDetails.gender === "female") {
+} else if (hydration.ChildDetails.gender === "female") {
 	personalPronoun = "she"
+}
+if (!personalPronoun) {
+	personalPronoun = "they";
 }
 
 var externalState: ParentalConsentStoreType = {
 	Token: "",
 	childDetails: {
-		firstName: ParentalConsentHydration.ChildDetails.firstName,
+		firstName: hydration.ChildDetails.firstName,
 		possessivePronoun: possessivePronoun,
 		personalPronoun: personalPronoun,
-		childPatientID: ParentalConsentHydration.ChildDetails.patientID,
+		childPatientID: hydration.ChildDetails.patientID,
 	},
 	PhotoIdentificationAlreadySubmittedAtPageLoad: PhotoIdentificationAlreadySubmittedAtPageLoad,
-	ConsentWasAlreadySubmittedAtPageLoad: ParentalConsentHydration.ParentalConsent.consented,
+	ConsentWasAlreadySubmittedAtPageLoad: hydration.ParentalConsent.consented,
 	parentAccount: {
-		WasSignedInAtPageLoad: ParentalConsentHydration.IsParentSignedIn,
-		isSignedIn: ParentalConsentHydration.IsParentSignedIn,
+		WasSignedInAtPageLoad: hydration.IsParentSignedIn,
+		isSignedIn: hydration.IsParentSignedIn,
 	},
 	userInput: {
 		emailPassword: {
@@ -59,13 +75,13 @@ var externalState: ParentalConsentStoreType = {
 		},
 		relationship: "",
 		consents: {
-			consentedToConsentToUseOfTelehealth: ParentalConsentHydration.ParentalConsent.consented,
-			consentedToTermsAndPrivacy: ParentalConsentHydration.ParentalConsent.consented,
+			consentedToConsentToUseOfTelehealth: hydration.ParentalConsent.consented,
+			consentedToTermsAndPrivacy: hydration.ParentalConsent.consented,
 		},
 	},
 	identityVerification: {
-		serverGovernmentIDThumbnailURL: ParentalConsentHydration.IdentityVerificationImages.types.governmentid,
-		serverSelfieThumbnailURL: ParentalConsentHydration.IdentityVerificationImages.types.selfie,
+		serverGovernmentIDThumbnailURL: hydration.IdentityVerificationImages.types.governmentid,
+		serverSelfieThumbnailURL: hydration.IdentityVerificationImages.types.selfie,
 	},
 	numBlockingOperations: 0,
 };
