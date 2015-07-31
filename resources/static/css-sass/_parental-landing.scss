@@ -1,0 +1,165 @@
+$color-white-90: #E7F2F9;   // White with 90% opacity
+
+#parent-header {
+    box-shadow: 0px 2px 2px 0px rgba(0,0,0,0.10);
+}
+
+#img-logo {
+    width: 123px;
+    height: 33px;
+    margin-top: 10px;
+    margin-bottom: 8px;
+}
+
+.section {
+    padding-bottom: 20px;
+}
+
+.shaded {
+    background-color: $color-greyLight;
+}
+
+.white {
+    background-color: $color-white;
+}
+
+#parent-top {
+    background-color: $color-spruceBlue;
+}
+
+#parent-image {
+    // height: 355px;
+    padding-bottom: 0px;
+    overflow: hidden;
+}
+
+.infoblock {
+    margin-top: 25px;
+}
+
+.doctors {
+    margin: 20px;
+}
+
+
+#parent-bottom {
+    background-color: $color-spruceBlue;
+}
+
+#parent-footer {
+    background-color: $color-spruceDarkest;
+    padding-top: 42px;
+    padding-bottom: 92px;
+}
+
+
+// Text Styling
+
+h1 {
+    @include fontSize-20();
+    @include font-700();
+    color: $color-white;
+    margin-top: 18px;
+}
+
+h2 {
+    @include fontSize-16();
+    @include font-700();
+    color: $color-spruceBlue;
+    margin-top: 26px;
+    text-transform: uppercase;
+}
+
+h3 {
+    @include fontSize-16();
+    @include font-500();
+    color: $color-spruceDarkest;
+    margin-top: 20px;
+}
+
+p {
+    @include fontSize-16();
+    @include font-300();
+    color: $color-spruceDarkest;
+}
+
+.header-subtext {
+    @include fontSize-16();
+    @include font-500();
+    color: $color-white;
+}
+
+.learn-more {
+    @include fontSize-16();
+    @include font-700();
+    color: $color-white;
+}
+
+.next-step {
+    text-align: left;
+}
+
+.footer-link {
+    @include fontSize-14();
+    @include font-500();
+    color: $color-white;
+}
+
+.footer-copyright {
+    @include fontSize-14();
+    @include font-500();
+    color: $color-spruceLight;
+}
+
+
+// Image styling
+
+.disclosure-arrow {
+    vertical-align: middle;
+    text-align: right;
+    width: 8px;
+    height: 14px;
+}
+
+.down-arrow {
+    img {
+        width: 14px;
+        height: 8px;
+    }
+}
+
+// .iphone {
+//     background-image: url("../../static/img/pc/iphone_full.png");
+//     background-size: 213px 436px;
+//     width: 213px;
+//     overflow: hidden;
+//     margin: auto;
+//     img {
+//         width: 184px;
+//         height: 304px;
+//         position: relative;
+//         overflow: hidden;
+//         margin: auto;
+//         top: 53px;
+//         // left: 14px;
+//     }
+// }
+#iphone-image {
+    width: 217px;
+    height: 253px;
+    // position: relative;
+    overflow: hidden;
+    margin: auto;
+    // top: 53px;
+    // left: 14px;
+}
+
+.icon {
+    width: 68px;
+    height: 68px;
+}
+
+.icon-step {
+    width: 28px;
+    height: 28px;
+}

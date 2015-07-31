@@ -1,0 +1,52 @@
+{{define "base-menu-faq-class"}}active{{end}}
+{{define "head"}}
+{{end}}
+{{define "tail"}}
+<script type="text/javascript">
+    $(function() {
+        var faq = {{.SubContext}};
+        React.render(React.createElement(FAQ.Component, {faq: faq}), $('#faq')[0]);
+    });
+</script>
+{{end}}
+{{define "content"}}
+{{/* TODO: Ensure that javascript on this page formats the FAQ correctly. */}}
+
+<div class="container">
+    <div id="faq">
+        <div>
+            {{range .Sections}}
+                <h3>{{.Title}}</h3>
+
+                {{range .Questions}}
+                <hr>
+                <div class="qa">
+                    <div class="question">{{.Question}}</div>
+                    <div class="answer">{{.Answer}}</div>
+                </div>
+                {{end}}
+                <hr>
+            {{end}}
+        </div>
+    </div>
+</div>
+
+<div id="faq-bottom">
+    <div class="container">
+        <h2>Can't find what you're looking for?</h2>
+        <h3>A support team member would be happy to answer your question.</h3>
+        <a class="flexy-btn--white" href="/contact">
+            <span class="item1">GET IN TOUCH</span>
+        </a>
+    </div>
+</div>
+<div id="parent-footer" class="section footer">
+    <div class="container">
+        <a class="footer-link" href="/parental-faq">PARENT FAQ</a><br><br>
+        <a class="footer-link" href="/contact">CONTACT</a><br><br>
+        <a class="footer-link" href="/about">THE COMPANY</a><br><br>
+        <a class="footer-link" href="/terms">TERMS &amp; PRIVACY</a><br><br>
+        <span class="footer-copyright">&copy; SPRUCE HEALTH 2015</span><br>
+    </div>
+</div>
+{{end}}

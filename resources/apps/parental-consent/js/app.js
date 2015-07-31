@@ -14,6 +14,7 @@ var ContentContainer = require("./ContentContainer.js")
 var EmailRelationshipConsentView = require("./EmailRelationshipConsentView.js")
 var PhotoIdentificationView = require("./PhotoIdentificationView.js")
 var ConfirmationView = require("./ConfirmationView.js")
+window.FAQ = require("./faq.js");
 
 window.React = React; // export for http://fb.me/react-devtools
 Backbone.jQuery = jQuery;
