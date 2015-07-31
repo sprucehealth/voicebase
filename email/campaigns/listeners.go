@@ -2,6 +2,7 @@ package campaigns
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -43,19 +44,30 @@ var parentWelcomeEmailEnabledDef = &cfg.ValueDef{
 	Default:     false,
 }
 
+var parentFrequentlyAskedQuestionsURLPathDef = &cfg.ValueDef{
+	Name:        "Parent.Frequently.Asked.Question.URL.Path",
+	Description: "Change the path applied to the web domain for the location of the parent FAQ.",
+	Type:        cfg.ValueTypeString,
+	Default:     "/pc/faq",
+}
+
 const (
-	patientSignupEmailType            = "welcome"
-	minorTreatmentPlanIssuedEmailType = "minor-treatment-plan-issued"
-	minorTriagedEmailType             = "minor-triaged"
-	parentWelcomeEmailType            = "parent-welcome"
+	patientSignupEmailType                   = "welcome"
+	minorTreatmentPlanIssuedEmailType        = "minor-treatment-plan-issued"
+	minorTriagedEmailType                    = "minor-triaged"
+	parentWelcomeEmailType                   = "parent-welcome"
+	varParentFirstNameName                   = "parent_first_name"
+	varPatientFirstNameName                  = "patient_first_name"
+	varParentFrequentlyAskedQuestionsURLName = "spruce_parent_faq_url"
 )
 
 // InitListeners bootstraps the listeners related to email campaigns triggered by events in the system
-func InitListeners(dispatch *dispatch.Dispatcher, cfgStore cfg.Store, emailService email.Service, dataAPI api.DataAPI) {
+func InitListeners(dispatch *dispatch.Dispatcher, cfgStore cfg.Store, emailService email.Service, dataAPI api.DataAPI, webDomain string) {
 	cfgStore.Register(welcomeEmailEnabledDef)
 	cfgStore.Register(minorTreatmentPlanIssuedEmailEnabledDef)
 	cfgStore.Register(minorTriagedEmailEnabledDef)
 	cfgStore.Register(parentWelcomeEmailEnabledDef)
+	cfgStore.Register(parentFrequentlyAskedQuestionsURLPathDef)
 	dispatch.SubscribeAsync(func(ev *patient.SignupEvent) error {
 		if cfgStore.Snapshot().Bool(welcomeEmailEnabledDef.Name) {
 			if _, err := emailService.Send([]int64{ev.AccountID}, patientSignupEmailType, nil, &mandrill.Message{}, email.OnlyOnce|email.CanOptOut); err != nil {
@@ -66,7 +78,7 @@ func InitListeners(dispatch *dispatch.Dispatcher, cfgStore cfg.Store, emailServi
 	})
 	dispatch.SubscribeAsync(func(ev *doctor_treatment_plan.TreatmentPlanActivatedEvent) error {
 		if cfgStore.Snapshot().Bool(minorTreatmentPlanIssuedEmailEnabledDef.Name) {
-			if err := sendToPatientParent(ev.PatientID, minorTreatmentPlanIssuedEmailType, nil, &mandrill.Message{}, email.CanOptOut, emailService, dataAPI); err != nil {
+			if err := sendToPatientParent(ev.PatientID, minorTreatmentPlanIssuedEmailType, webDomain, email.CanOptOut, emailService, dataAPI, cfgStore); err != nil {
 				golog.Errorf("%s", err)
 			}
 		}
@@ -74,7 +86,7 @@ func InitListeners(dispatch *dispatch.Dispatcher, cfgStore cfg.Store, emailServi
 	})
 	dispatch.SubscribeAsync(func(ev *patient_visit.PatientVisitMarkedUnsuitableEvent) error {
 		if cfgStore.Snapshot().Bool(minorTriagedEmailEnabledDef.Name) {
-			if err := sendToPatientParent(ev.PatientID, minorTriagedEmailType, nil, &mandrill.Message{}, email.CanOptOut, emailService, dataAPI); err != nil {
+			if err := sendToPatientParent(ev.PatientID, minorTriagedEmailType, webDomain, email.CanOptOut, emailService, dataAPI, cfgStore); err != nil {
 				golog.Errorf("%s", err)
 			}
 		}
@@ -83,17 +95,16 @@ func InitListeners(dispatch *dispatch.Dispatcher, cfgStore cfg.Store, emailServi
 	// Send the consenting parent a welcome email but only do it once
 	dispatch.SubscribeAsync(func(ev *patient.ParentalConsentCompletedEvent) error {
 		if cfgStore.Snapshot().Bool(parentWelcomeEmailEnabledDef.Name) {
-			if patient, err := dataAPI.Patient(ev.ParentPatientID, true); err != nil {
-				golog.Errorf("Failed to send welcome email to account for patient %d: %s", ev.ParentPatientID, err)
-			} else if _, err := emailService.Send([]int64{patient.AccountID.Int64()}, parentWelcomeEmailType, nil, &mandrill.Message{}, email.OnlyOnce|email.CanOptOut); err != nil {
-				golog.Errorf("Failed to send welcome email to account for patient %d: %s", ev.ParentPatientID, err)
+			if err := sendToPatientParent(ev.ChildPatientID, parentWelcomeEmailType, webDomain, email.CanOptOut, emailService, dataAPI, cfgStore); err != nil {
+				golog.Errorf("%s", err)
 			}
 		}
 		return nil
 	})
 }
 
-func sendToPatientParent(childPatientID int64, emailType string, vars map[int64][]mandrill.Var, msg *mandrill.Message, opt email.Option, emailService email.Service, dataAPI api.DataAPI) error {
+func sendToPatientParent(childPatientID int64, emailType, webDomain string, opt email.Option, emailService email.Service, dataAPI api.DataAPI, cfgStore cfg.Store) error {
+	faqURL := "https://" + strings.Join([]string{webDomain, cfgStore.Snapshot().String(parentFrequentlyAskedQuestionsURLPathDef.Name)}, "/")
 	patient, err := dataAPI.Patient(childPatientID, true)
 	if err != nil {
 		return errors.Trace(fmt.Errorf("Failed to send %s email to parent account of child patient id %d: %s", emailType, childPatientID, err))
@@ -110,7 +121,18 @@ func sendToPatientParent(childPatientID int64, emailType string, vars map[int64]
 			if err != nil {
 				return errors.Trace(fmt.Errorf("Failed to send %s email to parent account of child account %d: %s", emailType, patient.AccountID.Int64(), err))
 			}
-			if _, err := emailService.Send([]int64{parent.AccountID.Int64()}, minorTreatmentPlanIssuedEmailType, nil, &mandrill.Message{}, opt); err != nil {
+			if _, err := emailService.Send(
+				[]int64{parent.AccountID.Int64()},
+				emailType,
+				map[int64][]mandrill.Var{
+					parent.AccountID.Int64(): []mandrill.Var{
+						mandrill.Var{Name: varParentFirstNameName, Content: parent.FirstName},
+						mandrill.Var{Name: varPatientFirstNameName, Content: patient.FirstName},
+						mandrill.Var{Name: varParentFrequentlyAskedQuestionsURLName, Content: faqURL},
+					},
+				},
+				&mandrill.Message{},
+				opt); err != nil {
 				return errors.Trace(fmt.Errorf("Failed to send %s issued email to account %d: %s", emailType, parent.AccountID.Int64(), err))
 			}
 		}

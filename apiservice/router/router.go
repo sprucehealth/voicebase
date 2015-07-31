@@ -115,7 +115,7 @@ func New(conf *Config) http.Handler {
 	doctor.InitListeners(conf.DataAPI, conf.APICDNDomain, conf.Dispatcher, taggingClient)
 	cost.InitListeners(conf.DataAPI, conf.Dispatcher)
 	auth.InitListeners(conf.AuthAPI, conf.Dispatcher)
-	campaigns.InitListeners(conf.Dispatcher, conf.Cfg, conf.EmailService, conf.DataAPI)
+	campaigns.InitListeners(conf.Dispatcher, conf.Cfg, conf.EmailService, conf.DataAPI, conf.WebDomain)
 
 	conf.mux = apiservice.NewQueryableMux()
 
