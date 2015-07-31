@@ -2,16 +2,21 @@
 
 // var React = require("react");
 var React = require("react/addons");
+var Reflux = require('reflux');
 var Utils = require("../../libs/utils.js");
 var SubmitButtonView = require("./SubmitButtonView.js");
 var ParentalConsentActions = require('./ParentalConsentActions.js')
+var ParentalConsentStore = require('./ParentalConsentStore.js');
 
 var DemographicsView = React.createClass({displayName: "DemographicsView",
-	
+
 	//
 	// React
 	//
-	mixins: [React.addons.LinkedStateMixin],
+	mixins: [
+		React.addons.LinkedStateMixin,
+		Reflux.connect(ParentalConsentStore, 'store'),
+	],
 	propTypes: {
 		onFormSubmit: React.PropTypes.func.isRequired,
 	},
@@ -20,10 +25,33 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 			submitButtonPressedOnce: false,
 		}
 	},
+	componentDidMount: function() {
+		var store: ParentalConsentStoreType = this.state.store
+		var userInputDemographics: ParentalConsentDemographics = store.userInput.demographics
+		if (userInputDemographics) {
+			this.setState({
+				firstName: userInputDemographics.first_name,
+				lastName: userInputDemographics.last_name,
+				dob: userInputDemographics.dob,
+				gender: userInputDemographics.gender,
+				stateOfResidence: userInputDemographics.state,
+				phone: userInputDemographics.mobile_phone,
+			});
+		}
+		if (store.userInput.relationship) {
+			this.setState({
+				relationship: store.userInput.relationship,
+			});
+		}
+
+		debugger
+		// console.log(Formatter)
+
+	},
 
 	//
 	// User interaction callbacks
-	// 
+	//
 	handleSubmit: function(e: any) {
 		e.preventDefault();
 		this.setState({submitButtonPressedOnce: true})
@@ -34,11 +62,16 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 				dob: this.state.dob,
 				gender: this.state.gender,
 				state: this.state.stateOfResidence,
-				mobile_phone: this.phone,
+				mobile_phone: this.state.phone,
 			}
 			ParentalConsentActions.saveDemographics(demographics)
+			ParentalConsentActions.saveRelationship(this.state.relationship)
 			this.props.onFormSubmit({})
 		}
+	},
+	onDateBlur: function() {
+		// var date = Date.parse(this.state.dob)
+		// console.log(date.toString("yyyy-MM-dd"))
 	},
 
 	//
@@ -104,57 +137,67 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 			return (<option value={state.value} key={state.value}>{state.name}</option>)
 		});
 
+
 		return (
-			<form 
+			<form
 			onSubmit={this.handleSubmit}
-			style={{marginTop: "13"}}
+			style={{
+				marginTop: "8",
+				fontSize: "14px",
+				lineHeight: "17px",
+			}}
 			autoComplete="on">
-				<div className="formFieldRow hasBottomDivider" style={firstNameHighlighted ? orangeBottomDividerStyle : null}>
-					<input type="text" 
-					autoCapitalize="words" 
-					mozactionhint="next"
-					autoComplete="given-name"
-					autoCorrect="on"
-					inputmode="latin-name"
-					placeholder="Your First Name"
-					valueLink={this.linkState('firstName')}
-					/>
+				<div style={{
+					textAlign: "center",
+					marginBottom: "22px",
+				}}>
+					<a href={"/login?next=%2Fpc%2F" + ParentalConsentHydration.ChildDetails.patientID}>Sign in to an existing Spruce account.</a>
+				</div>
+				<div className="formFieldRow hasBottomDivider hasTopDivider" style={firstNameHighlighted ? orangeBottomDividerStyle : null}>
+					<input type="text"
+						autoCapitalize="words"
+						mozactionhint="next"
+						autoComplete="given-name"
+						autoCorrect="on"
+						inputmode="latin-name"
+						placeholder="Your First Name"
+						valueLink={this.linkState('firstName')} />
 				</div>
 				<div className="formFieldRow hasBottomDivider" style={lastNameHighlighted ? orangeBottomDividerStyle : null}>
-					<input type="text" 
-					autoCapitalize="words" 
-					mozactionhint="next"
-					autoComplete="family-name"
-					autoCorrect="on"
-					inputmode="latin-name"
-					placeholder="Your Last Name"
-					valueLink={this.linkState('lastName')}
-					/>
-				</div>
+					<input type="text"
+						autoCapitalize="words"
+						mozactionhint="next"
+						autoComplete="family-name"
+						autoCorrect="on"
+						inputmode="latin-name"
+						placeholder="Your Last Name"
+						valueLink={this.linkState('lastName')} />
+					</div>
 				<div className="formFieldRow hasBottomDivider" style={dobHighlighted ? orangeBottomDividerStyle : null}>
 					<input
 						type="text"
-						placeholder="MM/DD/YYYY"
+						placeholder="YYYY-MM-DD"
 						className={this.isDOBFieldValid() ? null : "emptyState"}
 						valueLink={this.linkState('dob')}
-						autoComplete="bday"/>
+						autoComplete="bday"
+						onBlur={this.onDateBlur}/>
 				</div>
 				<div className="formFieldRow hasBottomDivider" style={Utils.mergeProperties(selectContainerStyle, genderHighlighted ? orangeBottomDividerStyle : null)}>
-					<select 
+					<select
 						className={this.isGenderFieldValid() ? null : "emptyState"}
-						name="gender" 
-						defaultValue="invalid" 
-						autoComplete="sex" 
+						name="gender"
+						defaultValue=""
+						autoComplete="sex"
 						valueLink={this.linkState('gender')}>
-						<option value="invalid">Gender</option>
+						<option value="">Gender</option>
 						<option value="male">Male</option>
 						<option value="female">Female</option>
 					</select>
 				</div>
 				<div className="formFieldRow hasBottomDivider" style={Utils.mergeProperties(selectContainerStyle, relationshipHighlighted ? orangeBottomDividerStyle : null)}>
-					<select 
+					<select
 						className={this.isRelationshipFieldValid() ? null : "emptyState"}
-						defaultValue="" 
+						defaultValue=""
 						valueLink={this.linkState('relationship')}>
 						<option value="">Relationship to Child</option>
 						<option value="mother">Mother</option>
@@ -163,15 +206,15 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 					</select>
 				</div>
 				<div className="formFieldRow hasBottomDivider" autoComplete="state" style={Utils.mergeProperties(selectContainerStyle, stateOfResidenceHighlighted ? orangeBottomDividerStyle : null)}>
-					<select 
+					<select
 						className={this.isStateOfResidenceFieldValid() ? null : "emptyState"}
-						defaultValue="invalid" 
+						defaultValue=""
 						valueLink={this.linkState('stateOfResidence')}>
 						{stateOfResidenceOptions}
 					</select>
 				</div>
 				<div className="formFieldRow hasBottomDivider" style={phoneHighlighted ? orangeBottomDividerStyle : null}>
-					<input type="tel" 
+					<input type="tel"
 						mozactionhint="done"
 						autoComplete="tel"
 						inputmode="tel"
@@ -179,7 +222,7 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 						valueLink={this.linkState('phone')}/>
 				</div>
 				<div>
-					<SubmitButtonView 
+					<SubmitButtonView
 						title="NEXT"
 						appearsDisabled={submitButtonDisabled}/>
 				</div>

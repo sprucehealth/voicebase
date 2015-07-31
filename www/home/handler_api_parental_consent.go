@@ -8,7 +8,9 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/www"
@@ -81,8 +83,12 @@ func (h *parentalConsentAPIHandler) post(ctx context.Context, w http.ResponseWri
 	}
 	token := parentalConsentCookie(req.ChildPatientID, r)
 	if !patient.ValidateParentalConsentToken(h.dataAPI, token, req.ChildPatientID) {
-		www.APIForbidden(w, r)
-		return
+		if !environment.IsDev() {
+			www.APIForbidden(w, r)
+			return
+		}
+		// In dev let it work anyway but log it so it's obviousl what's happening
+		golog.Errorf("Token is invalid but allowing in dev")
 	}
 	if ok, reason := req.Validate(); !ok {
 		www.APIGeneralError(w, r, "invalid_request", reason)

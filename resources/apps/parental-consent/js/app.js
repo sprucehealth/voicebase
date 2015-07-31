@@ -21,15 +21,12 @@ Backbone.jQuery = jQuery;
 var calculateNumSectionsForStore = function(store: ParentalConsentStoreType): number {
 	var numSections = 4
 	if (store.parentAccount && store.parentAccount.WasSignedInAtPageLoad) {
-		console.log("removing section due to WasSignedInAtPageLoad")
 		numSections = numSections - 1
 	}
 	if (store.parentAccount && store.parentAccount.ParentalConsent && store.parentAccount.ParentalConsent.consented) {
-		console.log("removing section due to PhotoIdentificationAlreadySubmittedAtPageLoad")
 		numSections = numSections - 1
 	}
 	if (store.PhotoIdentificationAlreadySubmittedAtPageLoad) {
-		console.log("removing section due to PhotoIdentificationAlreadySubmittedAtPageLoad")
 		numSections = numSections - 1
 	}
 	return numSections
@@ -38,14 +35,12 @@ var calculateNumSectionsForStore = function(store: ParentalConsentStoreType): nu
 var sectionRoutesForStore = function(store: ParentalConsentStoreType): Array<string> {
 	var sections = []
 	if (!store.parentAccount || !store.parentAccount.WasSignedInAtPageLoad) {
-		console.log("adding demographics due to !WasSignedInAtPageLoad")
 		sections.push("demographics")
 	}
 	if (!store.ConsentWasAlreadySubmittedAtPageLoad) {
 		sections.push("consent")
 	}
 	if (!store.PhotoIdentificationAlreadySubmittedAtPageLoad) {
-		console.log("adding identification due to !PhotoIdentificationAlreadySubmittedAtPageLoad")
 		sections.push("identification")
 	}
 	sections.push("confirmation")
@@ -71,7 +66,7 @@ var nextRouteAfterRouteForStore = function(currentRoute: string, store: Parental
 	var index: number = sectionIndexForRouteAndStore(currentRoute, store)
 	if (index !== -1) {
 		nextRoute = routeForSectionIndexAndStore(index + 1, store)
-	} 
+	}
 	if (Utils.isEmpty(nextRoute)) {
 		console.log("something's gone wrong and we can't determine the next route")
 	}
@@ -93,7 +88,7 @@ var ParentalConsentRouter = Backbone.Router.extend({
 			this.params = {};
 		},
 		"identification": function() {
-			this.current = "photoIDs";
+			this.current = "identification";
 			this.params = {};
 		},
 		"confirmation": function() {
@@ -111,7 +106,7 @@ var ParentalConsent = React.createClass({displayName: "ParentalConsent",
 		consent: function() {
 			return <EmailAndConsentPage router={this.props.router} />
 		},
-		photoIDs: function() {
+		identification: function() {
 			return <PhotoIdentificationPage router={this.props.router} />
 		},
 		confirmation: function() {
@@ -150,18 +145,18 @@ var DemographicsPage = React.createClass({displayName: "DemographicsPage",
 	},
 	render: function(): any {
 		return (
-			<ContentContainer 
+			<ContentContainer
 				busy={false}
 				showSectionedProgressBar={true}
 				currentSectionIndex={0}
 				numSections={calculateNumSectionsForStore(this.state.store)}
 				content={(
 					<div>
-						<TitleView 
-							title={"Authorization for " + this.state.store.childDetails.firstName + "'s Visit"} 
+						<TitleView
+							title={"Authorization for " + this.state.store.childDetails.firstName + "'s Visit"}
 							subtitle="First we need to know some basic information about you."
 							text="" />
-						<DemographicsView 
+						<DemographicsView
 							onFormSubmit={this.handleSubmit} />
 					</div>
 				)} />
@@ -186,14 +181,14 @@ var EmailAndConsentPage = React.createClass({displayName: "EmailAndConsentPage",
 		var store: ParentalConsentStoreType = this.state.store
 		var t = this
 		return (
-			<ContentContainer 
+			<ContentContainer
 				busy={store.numBlockingOperations > 0}
 				showSectionedProgressBar={true}
 				currentSectionIndex={1}
 				numSections={calculateNumSectionsForStore(this.state.store)}
 				content={(
 					<div>
-						<TitleView 
+						<TitleView
 							title={"Authorization for " + this.state.store.childDetails.firstName + "'s Visit"}
 							subtitle="Now create your Spruce account so you can log in and view your child’s care record."
 							text="" />
@@ -219,14 +214,14 @@ var PhotoIdentificationPage = React.createClass({displayName: "PhotoIdentificati
 	},
 	render: function(): any {
 		return (
-			<ContentContainer 
+			<ContentContainer
 				busy={false}
 				showSectionedProgressBar={true}
 				currentSectionIndex={2}
 				numSections={calculateNumSectionsForStore(this.state.store)}
 				content={(
 					<div>
-						<TitleView 
+						<TitleView
 							title={"Authorization for " + this.state.store.childDetails.firstName + "'s Visit"}
 							subtitle="Upload a photo of your government issued photo ID."
 							text="To protect the safety of minors on Spruce, we need to be confident that adults responsible for them are of age to consent to treatment." />
@@ -243,9 +238,12 @@ var ConfirmationPage = React.createClass({displayName: "ConfirmationPage",
 		Routing.RouterNavigateMixin,
 		Reflux.connect(ParentalConsentStore, 'store'),
 	],
+	handleSubmit: function() {
+		window.location = "/pc/" + ParentalConsentHydration.ChildDetails.patientID + "/medrecord"
+	},
 	render: function(): any {
 		return (
-			<ContentContainer 
+			<ContentContainer
 				busy={false}
 				showSectionedProgressBar={false}
 				content={(
@@ -260,7 +258,7 @@ var ConfirmationPage = React.createClass({displayName: "ConfirmationPage",
 
 jQuery(function() {
 	var router = new ParentalConsentRouter();
-	router.root = "/parental-consent/";
+	router.root = "/pc/" + ParentalConsentHydration.ChildDetails.patientID + "/";
 	React.render(React.createElement(ParentalConsent, {
 		router: router
 	}), document.getElementById('base-content'));

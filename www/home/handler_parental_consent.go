@@ -39,14 +39,14 @@ type parentalConsentHydration struct {
 }
 
 type patientContext struct {
-	ID        string
-	FirstName string
-	Gender    string
+	PatientID string `json:"patientID"`
+	FirstName string `json:"firstName"`
+	Gender    string `json:"gender"`
 }
 
 type consentContext struct {
-	Consented    bool
-	Relationship string
+	Consented    bool   `json:"consented"`
+	Relationship string `json:"relationship"`
 }
 
 type identitiyImageContext struct {
@@ -65,13 +65,23 @@ func (h *parentalConsentHandler) ServeHTTP(ctx context.Context, w http.ResponseW
 	// The person may not be signed in which is fine. Account will be nil then.
 	account, _ := www.CtxAccount(ctx)
 
-	token := r.FormValue("t")
 	childPatientID, err := strconv.ParseInt(mux.Vars(ctx)["childid"], 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	hasAccess := patient.ValidateParentalConsentToken(h.dataAPI, token, childPatientID)
+	token := r.FormValue("t")
+	if token != "" {
+		cookie := newParentalConsentCookie(childPatientID, token, r)
+		http.SetCookie(w, cookie)
+	} else {
+		token = parentalConsentCookie(childPatientID, r)
+	}
+
+	var hasAccess bool
+	if token != "" {
+		hasAccess = patient.ValidateParentalConsentToken(h.dataAPI, token, childPatientID)
+	}
 
 	var consent *common.ParentalConsent
 	var parentPatientID int64
@@ -116,7 +126,8 @@ func (h *parentalConsentHandler) ServeHTTP(ctx context.Context, w http.ResponseW
 				}
 			}
 		}
-	} else {
+	}
+	if consent == nil {
 		consent = &common.ParentalConsent{}
 	}
 
@@ -145,7 +156,7 @@ func (h *parentalConsentHandler) ServeHTTP(ctx context.Context, w http.ResponseW
 		Environment: environment.GetCurrent(),
 		Hydration: &parentalConsentHydration{
 			ChildDetails: &patientContext{
-				ID:        child.ID.String(),
+				PatientID: child.ID.String(),
 				FirstName: child.FirstName,
 				Gender:    child.Gender,
 			},
