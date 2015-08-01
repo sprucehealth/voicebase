@@ -1,6 +1,7 @@
 package campaigns
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -88,11 +89,13 @@ func TestEmailCampaignMinorTreatmentPlanIssued(t *testing.T) {
 	emailService := &email.TestService{}
 	var parentPatientID int64 = 54321
 	var parentAccountID int64 = 56789
+	var patientID int64 = 12345
 	patientFirstName := "Child"
 	parentFirstName := "Parent"
 	dataAPI := &mockDataAPIListeners{
 		patients: []*common.Patient{
 			&common.Patient{
+				ID:                 encoding.NewObjectID(patientID),
 				HasParentalConsent: true,
 				DOB:                encoding.Date{Month: 1, Day: 1, Year: time.Now().Year() - 16},
 				FirstName:          patientFirstName,
@@ -105,7 +108,6 @@ func TestEmailCampaignMinorTreatmentPlanIssued(t *testing.T) {
 		patientErrs:     []error{nil, nil},
 		patientParentID: parentPatientID,
 	}
-	var patientID int64 = 12345
 	InitListeners(dispatcher, cfgStore, emailService, dataAPI, emailWebDomain)
 	dispatcher.PublishAsync(&doctor_treatment_plan.TreatmentPlanActivatedEvent{PatientID: patientID})
 	emails := emailService.Reset()
@@ -117,6 +119,7 @@ func TestEmailCampaignMinorTreatmentPlanIssued(t *testing.T) {
 			mandrill.Var{Name: varParentFirstNameName, Content: parentFirstName},
 			mandrill.Var{Name: varPatientFirstNameName, Content: patientFirstName},
 			mandrill.Var{Name: varParentFrequentlyAskedQuestionsURLName, Content: "https://" + strings.Join([]string{emailWebDomain, cfgStore.Snapshot().String(parentFrequentlyAskedQuestionsURLPathDef.Name)}, "/")},
+			mandrill.Var{Name: varPatientMedrecordURLName, Content: "https://" + emailWebDomain + fmt.Sprintf("/pc/%d/medrecord", patientID)},
 		},
 	}, emails[0].Vars)
 	test.Equals(t, &mandrill.Message{}, emails[0].Msg)
@@ -146,11 +149,13 @@ func TestEmailCampaignMinorTriaged(t *testing.T) {
 	emailService := &email.TestService{}
 	var parentPatientID int64 = 54321
 	var parentAccountID int64 = 56789
+	var patientID int64 = 12345
 	patientFirstName := "Child"
 	parentFirstName := "Parent"
 	dataAPI := &mockDataAPIListeners{
 		patients: []*common.Patient{
 			&common.Patient{
+				ID:                 encoding.NewObjectID(patientID),
 				HasParentalConsent: true,
 				DOB:                encoding.Date{Month: 1, Day: 1, Year: time.Now().Year() - 16},
 				FirstName:          patientFirstName,
@@ -163,7 +168,6 @@ func TestEmailCampaignMinorTriaged(t *testing.T) {
 		patientErrs:     []error{nil, nil},
 		patientParentID: parentPatientID,
 	}
-	var patientID int64 = 12345
 	InitListeners(dispatcher, cfgStore, emailService, dataAPI, emailWebDomain)
 	dispatcher.PublishAsync(&patient_visit.PatientVisitMarkedUnsuitableEvent{PatientID: patientID})
 	emails := emailService.Reset()
@@ -175,6 +179,7 @@ func TestEmailCampaignMinorTriaged(t *testing.T) {
 			mandrill.Var{Name: varParentFirstNameName, Content: parentFirstName},
 			mandrill.Var{Name: varPatientFirstNameName, Content: patientFirstName},
 			mandrill.Var{Name: varParentFrequentlyAskedQuestionsURLName, Content: "https://" + strings.Join([]string{emailWebDomain, cfgStore.Snapshot().String(parentFrequentlyAskedQuestionsURLPathDef.Name)}, "/")},
+			mandrill.Var{Name: varPatientMedrecordURLName, Content: "https://" + emailWebDomain + fmt.Sprintf("/pc/%d/medrecord", patientID)},
 		},
 	}, emails[0].Vars)
 	test.Equals(t, &mandrill.Message{}, emails[0].Msg)
@@ -204,11 +209,13 @@ func TestEmailCampaignParentWelcome(t *testing.T) {
 	emailService := &email.TestService{}
 	var parentPatientID int64 = 12345
 	var parentAccountID int64 = 56789
+	var patientID int64 = 12345
 	patientFirstName := "Child"
 	parentFirstName := "Parent"
 	dataAPI := &mockDataAPIListeners{
 		patients: []*common.Patient{
 			&common.Patient{
+				ID:                 encoding.NewObjectID(patientID),
 				HasParentalConsent: true,
 				DOB:                encoding.Date{Month: 1, Day: 1, Year: time.Now().Year() - 16},
 				FirstName:          patientFirstName,
@@ -221,7 +228,6 @@ func TestEmailCampaignParentWelcome(t *testing.T) {
 		patientErrs:     []error{nil, nil},
 		patientParentID: parentPatientID,
 	}
-	var patientID int64 = 12345
 	InitListeners(dispatcher, cfgStore, emailService, dataAPI, emailWebDomain)
 	dispatcher.PublishAsync(&patient.ParentalConsentCompletedEvent{ChildPatientID: patientID})
 	emails := emailService.Reset()
@@ -233,6 +239,7 @@ func TestEmailCampaignParentWelcome(t *testing.T) {
 			mandrill.Var{Name: varParentFirstNameName, Content: parentFirstName},
 			mandrill.Var{Name: varPatientFirstNameName, Content: patientFirstName},
 			mandrill.Var{Name: varParentFrequentlyAskedQuestionsURLName, Content: "https://" + strings.Join([]string{emailWebDomain, cfgStore.Snapshot().String(parentFrequentlyAskedQuestionsURLPathDef.Name)}, "/")},
+			mandrill.Var{Name: varPatientMedrecordURLName, Content: "https://" + emailWebDomain + fmt.Sprintf("/pc/%d/medrecord", patientID)},
 		},
 	}, emails[0].Vars)
 	test.Equals(t, &mandrill.Message{}, emails[0].Msg)

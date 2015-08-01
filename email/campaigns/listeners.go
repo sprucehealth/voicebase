@@ -56,9 +56,10 @@ const (
 	minorTreatmentPlanIssuedEmailType        = "minor-treatment-plan-issued"
 	minorTriagedEmailType                    = "minor-triaged"
 	parentWelcomeEmailType                   = "parent-welcome"
-	varParentFirstNameName                   = "parent_first_name"
 	varPatientFirstNameName                  = "patient_first_name"
-	varParentFrequentlyAskedQuestionsURLName = "spruce_parent_faq_url"
+	varPatientMedrecordURLName               = "patient_med_record_url"
+	varParentFrequentlyAskedQuestionsURLName = "parent_faq_url"
+	varParentFirstNameName                   = "parent_first_name"
 )
 
 // InitListeners bootstraps the listeners related to email campaigns triggered by events in the system
@@ -109,6 +110,7 @@ func sendToPatientParent(childPatientID int64, emailType, webDomain string, opt 
 	if err != nil {
 		return errors.Trace(fmt.Errorf("Failed to send %s email to parent account of child patient id %d: %s", emailType, childPatientID, err))
 	}
+	medRecordURL := "https://" + webDomain + fmt.Sprintf("/pc/%d/medrecord", patient.ID.Int64())
 	if patient.IsUnder18() && patient.HasParentalConsent {
 		consents, err := dataAPI.ParentalConsent(childPatientID)
 		if err != nil {
@@ -129,6 +131,7 @@ func sendToPatientParent(childPatientID int64, emailType, webDomain string, opt 
 						mandrill.Var{Name: varParentFirstNameName, Content: parent.FirstName},
 						mandrill.Var{Name: varPatientFirstNameName, Content: patient.FirstName},
 						mandrill.Var{Name: varParentFrequentlyAskedQuestionsURLName, Content: faqURL},
+						mandrill.Var{Name: varPatientMedrecordURLName, Content: medRecordURL},
 					},
 				},
 				&mandrill.Message{},
