@@ -33,15 +33,6 @@
 	<noscript><img height="1" width="1" alt="" style="display:none" src="https://www.facebook.com/tr?id=771397612967860&amp;ev=PixelInitialized" /></noscript>
 	{{end}}
 
-	{{if isEnv "prod"}}
-	<script type="text/javascript">
-	var Spruce = {
-		BaseStaticURL: {{staticURL ""}},
-		Environment: {{.Environment}}
-	};
-	</script>
-	{{end}}
-
 	{{template "head" .}}
 {{end}}
 
