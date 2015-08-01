@@ -215,6 +215,7 @@ type faqContext struct {
 }
 
 type faqSection struct {
+	Anchor    string
 	Title     string
 	Questions []*faqQuestion
 }
@@ -250,6 +251,7 @@ func faq(dataAPI api.DataAPI) []*faqSection {
 			stateList = strings.Join(out, ", ") + ", and " + states[len(states)-1].Name
 		}
 	}
+	stateOrList := strings.Replace(stateList, " and ", " or ", -1)
 
 	return []*faqSection{
 		{
@@ -272,10 +274,13 @@ func faq(dataAPI api.DataAPI) []*faqSection {
 					Question: "How do I use Spruce?",
 					Answer: `
 						<p>
-						Getting treated by a doctor on Spruce is easy and fast. Once you’ve downloaded the app and created an account, all you have to do is take some photos of your symptoms and answer questions about your skin and medical history.
+						Getting treated by a doctor on Spruce is easy and fast. Once you’ve downloaded the app and created an account, all you have to do is take some photos of the affected areas and answer questions about your skin and medical history.
 						</p>
 						<p>
 						A board-certified dermatologist will then carefully review your information and create a personalized treatment plan within 24 hours. Any prescriptions in your treatment plan will be sent digitally to your preferred pharmacy.
+						</p>
+						<p>
+						If you would like to be treated for acne and are 13 to 18 years old, your parent or guardian will need to provide consent to your treatment on Spruce before a doctor reviews your case. Once you’ve downloaded the app and created an account, you will be guided through the process of obtaining parental consent in-app. You can learn more in our section for <a href="#under18">Patients Under 18</a>.
 						</p>`,
 				},
 				{
@@ -284,7 +289,7 @@ func faq(dataAPI api.DataAPI) []*faqSection {
 				},
 				{
 					Question: "Can people under 18 use Spruce?",
-					Answer:   "<p>At this time, Spruce is only accepting patients 18 and older.</p>",
+					Answer:   "<p>Spruce is available to patients 18 and older for treatment of our full range of dermatological concerns. Spruce is available to patients between the ages of 13 and 18 for the treatment of acne, provided that their parent has given consent for their treatment on Spruce.</p>",
 				},
 				{
 					Question: "Are smartphone photos good enough for diagnosis?",
@@ -422,6 +427,48 @@ func faq(dataAPI api.DataAPI) []*faqSection {
 				{
 					Question: "How will you keep the things I share private?",
 					Answer:   "<p>Spruce is a HIPAA-compliant service, and all personal and medical information is protected according to the highest industry standards. We incorporate multiple layers of security, and encrypt your data both “over the wire” (when transmitted to and from your device) and “at rest” in the database (which itself is protected by strict access controls and physical measures).</p>",
+				},
+			},
+		},
+		{
+			Anchor: "under18",
+			Title:  "Patients Under 18",
+			Questions: []*faqQuestion{
+				{
+					Question: "Can I be treated by a dermatologist on Spruce?",
+					Answer: template.HTML(`
+						<p>You can be treated on Spruce for acne if:</p>
+						<ul>
+						<li>You are between the ages of 13 and 18;</li>
+						<li>You live in ` + stateOrList + `; and</li>
+						<li>A parent provides consent for your treatment.</li>
+						</ul>`),
+				},
+				{
+					Question: "What does Spruce treat for patients under 18?",
+					Answer:   "<p>At this time, patients between the ages of 13 and 18 can only be treated for acne on Spruce.</p>",
+				},
+				{
+					Question: "Do I need Spruce for my acne?",
+					Answer:   `<p>If you have been using over-the-counter products to treat your acne without results, it’s time to consult a dermatologist. According to the American Academy of Dermatology, 99% of acne cases are treatable. A dermatologist can diagnose the type of acne you have and prescribe an appropriate skin care regimen.</p>`,
+				},
+				{
+					Question: "How do I obtain consent from my parent or guardian?",
+					Answer:   `<p>Once you have downloaded the app, created an account, and submitted your information, you will be guided through the process of obtaining consent from your parent or guardian. </p>`,
+				},
+				{
+					Question: "I am a parent - how can I arrange for my teen to be treated on Spruce? ",
+					Answer: `
+						<p>Your child can be treated on Spruce by downloading the Spruce app on their smartphone, creating an account, taking several photos, and answering questions about their skin and medical history. If you’d like, you can walk through this with them, but supervising the entire process is not necessary.</p>
+						<p>Before a doctor reviews the case, your child will need to prompt you to provide parental consent. As their parent, you will be guided through the consent process, which can be completed on your phone or desktop and which will also present you with the option to pay for the cost of the visit on your child’s behalf.</p>
+					`,
+				},
+				{
+					Question: "I am a parent - how do I stay informed about my child’s treatment on Spruce?",
+					Answer: `
+						<p>As part of providing your consent, you’ll create a Spruce parent account, which you can use to log in and view your child’s care record. The care record includes your child's visit information, treatment plan, and messages with their care team.</p>
+						<p>We’ll notify you via email of any major updates in your child’s case, and you can always contact us with any questions at <a href="mailto:support@sprucehealth.com">support@sprucehealth.com</a>.</p>
+					`,
 				},
 			},
 		},
