@@ -317,7 +317,7 @@ var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
 		<h1>Patient Information</h1>
 
 		<div class="row">
-			<div class="col-md-4 col-sm-12">
+			<div class="col-md-6 col-sm-12">
 				<div class="table-wrapper">
 				<table role="table" class="table">
 				<tr>
@@ -336,45 +336,28 @@ var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
 					<th>Email</th>
 					<td>{{.Patient.Email}}</td>
 				</tr>
+				{{with .Patient.PhoneNumbers}}
 				<tr>
 					<th>Phone</th>
 					<td>
-						{{range $i, $num := .Patient.PhoneNumbers}}
+						{{range $i, $num := .}}
 							{{if $i}}<br>{{end}}
 							{{.Phone}}
 						{{end}}
-					</td>
-				</tr>
-				</table>
-				</div>
-			</div>
-			<div class="col-md-4 col-sm-12">
-				<div class="table-wrapper">
-				<table role="table" class="table">
-				<tr>
-					<td><strong>Primary Care Provider</strong></td>
-				</tr>
-				{{with .PCP}}
-				<tr>
-					<td>
-						<strong>Physician name:</strong> {{.PhysicianName}}<br>
-						<strong>Practice name:</strong> {{.PracticeName}}<br>
-						<strong>Email:</strong> {{.Email}}<br>
-						<strong>Phone number:</strong> {{.PhoneNumber}}<br>
-						<strong>Fax number:</strong> {{.FaxNumber}}
 					</td>
 				</tr>
 				{{end}}
 				</table>
 				</div>
 			</div>
-			<div class="col-md-4 col-sm-12">
+			<div class="col-md-6 col-sm-12">
 				<div class="table-wrapper">
 				<table role="table" class="table">
+				{{with .Patient.PatientAddress}}
 				<tr>
 					<th>Address</th>
 					<td>
-						{{with .Patient.PatientAddress}}
+						{{with .}}
 							{{.AddressLine1}}<br>
 							{{with .AddressLine2}}{{.}}<br>{{end}}
 							{{.City}}, {{.State}}<br>
@@ -382,6 +365,7 @@ var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
 						{{end}}
 					</td>
 				</tr>
+				{{end}}
 				<tr>
 					<th>Preferred Pharmacy</th>
 					<td>
@@ -544,6 +528,19 @@ var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
 </body>
 </html>`))
 
+// RenderOption is the options type for the medical record renderer.
+type RenderOption int
+
+// Render options for the medical record
+const (
+	ROIncludeUnsubmittedVisits RenderOption = 1 << iota
+)
+
+// Has returns true if the option is set
+func (o RenderOption) Has(ro RenderOption) bool {
+	return o&ro != 0
+}
+
 // Renderer can render a patient's medical record as HTML.
 type Renderer struct {
 	DataAPI            api.DataAPI
@@ -555,8 +552,8 @@ type Renderer struct {
 	ExpirationDuration time.Duration
 }
 
-// Renders returns the HTML version of a medical record for a patient.
-func (r *Renderer) Render(patient *common.Patient) ([]byte, error) {
+// Render returns the HTML version of a medical record for a patient.
+func (r *Renderer) Render(patient *common.Patient, opt RenderOption) ([]byte, error) {
 	ctx := &templateContext{
 		Patient: patient,
 	}
@@ -603,13 +600,22 @@ func (r *Renderer) Render(patient *common.Patient) ([]byte, error) {
 		}
 	}
 
-	cases, err := r.DataAPI.GetCasesForPatient(patient.ID.Int64(), append(common.SubmittedPatientCaseStates(), common.PCStatusUnsuitable.String()))
+	caseStatuses := append(common.SubmittedPatientCaseStates(), common.PCStatusUnsuitable.String())
+	visitStatuses := common.TreatedPatientVisitStates()
+
+	if opt.Has(ROIncludeUnsubmittedVisits) {
+		caseStatuses = append(caseStatuses, common.OpenPatientCaseStates()...)
+		visitStatuses = append(visitStatuses, common.OpenPatientVisitStates()...)
+		visitStatuses = append(visitStatuses, common.SubmittedPatientVisitStates()...)
+	}
+
+	cases, err := r.DataAPI.GetCasesForPatient(patient.ID.Int64(), caseStatuses)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 
 	for _, pcase := range cases {
-		visits, err := r.DataAPI.GetVisitsForCase(pcase.ID.Int64(), common.TreatedPatientVisitStates())
+		visits, err := r.DataAPI.GetVisitsForCase(pcase.ID.Int64(), visitStatuses)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}

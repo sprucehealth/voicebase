@@ -4,12 +4,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sprucehealth/backend/common"
-
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
+	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/www"
 )
 
@@ -19,7 +19,7 @@ type parentalMedicalRecordHandler struct {
 }
 
 type medicalRecordRenderer interface {
-	Render(*common.Patient) ([]byte, error)
+	Render(*common.Patient, medrecord.RenderOption) ([]byte, error)
 }
 
 func newParentalMedicalRecordHandler(
@@ -75,7 +75,7 @@ func (h *parentalMedicalRecordHandler) ServeHTTP(ctx context.Context, w http.Res
 		www.InternalServerError(w, r, err)
 		return
 	}
-	html, err := h.r.Render(patient)
+	html, err := h.r.Render(patient, medrecord.ROIncludeUnsubmittedVisits)
 	if err != nil {
 		www.InternalServerError(w, r, err)
 		return

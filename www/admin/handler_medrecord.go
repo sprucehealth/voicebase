@@ -56,7 +56,7 @@ func (h *medicalRecordHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	html, err := h.r.Render(patient)
+	html, err := h.r.Render(patient, medrecord.ROIncludeUnsubmittedVisits)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
