@@ -367,7 +367,6 @@ func populateParentInfo(
 
 	// Include parent photo ids if present
 	if proof.GovernmentIDPhotoID != nil {
-
 		signedURL, err := mediaStore.SignedURL(*proof.GovernmentIDPhotoID, expirationDuration)
 		if err != nil {
 			return errors.Trace(err)
@@ -375,6 +374,7 @@ func populateParentInfo(
 
 		photoSection.Photos = append(photoSection.Photos, info_intake.PhotoData{
 			Title:    "ID Verification",
+			PhotoID:  *proof.GovernmentIDPhotoID,
 			PhotoURL: signedURL,
 		})
 	}
@@ -387,6 +387,7 @@ func populateParentInfo(
 
 		photoSection.Photos = append(photoSection.Photos, info_intake.PhotoData{
 			Title:    "ID Verification",
+			PhotoID:  *proof.SelfiePhotoID,
 			PhotoURL: signedURL,
 		})
 	}
