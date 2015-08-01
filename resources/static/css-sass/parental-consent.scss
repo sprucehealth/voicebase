@@ -286,7 +286,6 @@ body {
     margin: 0px;
     background-color: $color-white;
     color: $color-black;
-    text-align: center;
 }
 input, select, textarea, button{font-family:inherit;}
 a {
@@ -295,18 +294,44 @@ a {
 a:link, a:visited, a:hover, a:active {
     text-decoration: none;
 }
+
+#parent-header {
+    text-align: center;
+    box-shadow: 0px 2px 2px 0px rgba(0,0,0,0.10);
+}
+
+#img-logo {
+    width: 123px;
+    height: 33px;
+    margin-top: 10px;
+    margin-bottom: 8px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .container {
     max-width: $parental-max-width;
     margin: auto;
+    text-align: center;
 }
 
 
 // Button styling
 
 .flexy-btn {
+    // display: -webkit-box;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: -webkit-flex;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+       -moz-align-items: center;
+        -ms-align-items: center;
+    -webkit-align-items: center;
+            align-items: center;
+       -moz-justify-content: space-between;
+        -ms-justify-content: space-between;
+    -webkit-justify-content: space-between;
+            justify-content: space-between;
     border-radius: 110px;
     margin: 15px auto;
     height: 52px;
@@ -324,8 +349,7 @@ a:link, a:visited, a:hover, a:active {
 
 .flexy-btn--white:hover,
 .flexy-btn--white:active,
-.flexy-btn--white:focus,
-.flexy-btn--white:link {
+.flexy-btn--white:focus {
     @extend .flexy-btn--white;
     background-color: $color-white-90;
 }
@@ -339,8 +363,7 @@ a:link, a:visited, a:hover, a:active {
 
 .flexy-btn--transparent-white:hover,
 .flexy-btn--transparent-white:active,
-.flexy-btn--transparent-white:focus,
-.flexy-btn--transparent-white:link {
+.flexy-btn--transparent-white:focus {
     @extend .flexy-btn--transparent-white;
     border: 2px solid $color-white-90;
     color: $color-white-90;
@@ -355,18 +378,27 @@ a:link, a:visited, a:hover, a:active {
 
 .item0 {
     @extend .arrow-item;
-    order: 0;
+       -moz-order: 0;
+        -ms-order: 0;
+    -webkit-order: 0;
+            order: 0;
 }
 
 .item1 {
-    order: 1;
+       -moz-order: 1;
+        -ms-order: 1;
+    -webkit-order: 1;
+            order: 1;
     flex-grow: 3;
     opacity: 1;
 }
 
 .item2 {
     @extend .arrow-item;
-    order: 2;
+       -moz-order: 2;
+        -ms-order: 2;
+    -webkit-order: 2;
+            order: 2;
 }
 
 // Form styling
