@@ -90,14 +90,16 @@ type BaseConfig struct {
 	awsAuthOnce sync.Once
 }
 
+// These variables are set during linking
 var (
 	GitBranch       string
 	GitRevision     string
 	BuildTime       string
-	BuildNumber     string // Travis-CI build
+	BuildNumber     string // CI build number
 	MigrationNumber string // The database needs to match this migration number for this build
 )
 
+// VersionInfo is a set of build version variables set during linking
 var VersionInfo map[string]string
 
 func init() {
@@ -335,6 +337,7 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 	return extraArgs, nil
 }
 
+// SetupLogging configures golog and the stdlib log package
 func (c *BaseConfig) SetupLogging() {
 	log.SetFlags(log.Lshortfile)
 	if c.Syslog {
