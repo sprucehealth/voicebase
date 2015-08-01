@@ -15,12 +15,9 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
-	"strings"
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/sprucehealth/backend/libs/httputil"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/BurntSushi/toml"
 	resources "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/cookieo9/resources-go"
@@ -41,6 +38,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
@@ -309,21 +307,21 @@ func setupTest() (*TestData, error) {
 	}
 
 	setupScript := os.Getenv(spruceProjectDirEnv) + "/src/github.com/sprucehealth/backend/test/test_integration/setup_integration_test.sh"
+	dbConfig.Name = fmt.Sprintf("test_%d_%d", time.Now().Unix(), rand.Int())
 	cmd := exec.Command(setupScript)
-	var out bytes.Buffer
-	cmd.Stdout = &out
+	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("CF_LOCAL_DB_INSTANCE=%s", dbConfig.Host),
 		fmt.Sprintf("CF_LOCAL_DB_PORT=%d", dbConfig.Port),
 		fmt.Sprintf("CF_LOCAL_DB_USERNAME=%s", dbConfig.User),
 		fmt.Sprintf("CF_LOCAL_DB_PASSWORD=%s", dbConfig.Password),
+		fmt.Sprintf("TEST_DB=%s", dbConfig.Name),
 	)
 	if err := cmd.Run(); err != nil {
 		return nil, err
 	}
 
-	dbConfig.Name = strings.TrimSpace(out.String())
 	db, err := dbConfig.ConnectMySQL(nil)
 	if err != nil {
 		return nil, err
