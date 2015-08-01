@@ -2,6 +2,13 @@
 {{end}}
 
 {{define "tail"}}
+	<script type="text/javascript">
+		$('#learn-more-link').click(function(event) {
+			$('html, body').animate({
+				scrollTop: $("#parent-image").offset().top
+			}, 500);
+		});
+	</script>
 {{end}}
 
 {{define "content"}}
@@ -9,18 +16,19 @@
 	<div class="container">
 		<h1>{{.ChildFirstName}} would like to see a board-certified dermatologist on Spruce to treat {{.ChildPossessivePronoun}} acne.</h1>
 		<p class="header-subtext">Before a doctor can treat {{.ChildPossessivePronoun}} case, we need to obtain parental consent as any in-person dermatologist’s office would.</p>
-		{{/*TODO: Set the correct link below AND at the bottom of the page */}}
 		<a class="flexy-btn--white" href="/pc/{{.ChildID}}/start">
 			<div class="item0"></div>
 			<span class="item1">GET STARTED</span>
 			<img class="disclosure-arrow item2" src="{{staticURL "/img/pc/right_arrow_sblue@2x.png"}}" />
 		</a>
-		<div class="learn-more">
-			LEARN MORE
-		</div>
-		<div class="down-arrow">
-			<img src="{{staticURL "/img/pc/down_arrow@2x.png"}}" />
-		</div>
+		<a id="learn-more-link" href="#more">
+			<div class="learn-more">
+				LEARN MORE
+			</div>
+			<div class="down-arrow">
+				<img src="{{staticURL "/img/pc/down_arrow@2x.png"}}" />
+			</div>
+		</a>
 	</div>
 </div>
 <div id="parent-image" class="section shaded">
@@ -83,45 +91,38 @@
 	</div>
 </div>
 <div id="parent-stay-informed" class="section shaded">
-	<div class="container">
-		<h2>STAY INFORMED</h2>
-		<img class="icon" src="{{staticURL "/img/pc/icon_stayinformed.png"}}" />
-		<p>As part of providing your consent, you’ll create a Spruce parent account, which you can use to log in and view your child’s care record. The care record includes your child's visit information, treatment plan, and messages with their care team.</p>
-		<p>We’ll notify you via email of any major updates in your child’s case, and you can always contact us with any questions.</p>
-	</div>
-</div>
 <div id="parent-next-steps" class="section white">
 	<div class="container">
 		<h2>WHAT HAPPENS NEXT</h2>
-		<div class="row next-step">
-			<div class="col-xs-2">
+		<div class="next-step">
+			<div class="next-step-number">
 				<img class="icon-step" src="{{staticURL "/img/pc/icon_step_1@2x.png"}}" />
 			</div>
-			<div class="col-xs-10">
+			<div class="next-step-text">
 				<p>You provide consent for your child’s visit by creating a Spruce account and uploading a photo of your ID (so we can verify that you are of age to consent to the medical treatment of a minor).</p>
 			</div>
 		</div>
-		<div class="row next-step">
-			<div class="col-xs-2">
+		<div class="next-step">
+			<div class="next-step-number">
 				<img class="icon-step" src="{{staticURL "/img/pc/icon_step_2@2x.png"}}" />
 			</div>
-			<div class="col-xs-10">
+			<div class="next-step-text">
 				<p>Your child pays for and submits their visit in the Spruce app.</p>
 			</div>
 		</div>
-		<div class="row next-step">
-			<div class="col-xs-2">
+		<div class="next-step">
+			<div class="next-step-number">
 				<img class="icon-step" src="{{staticURL "/img/pc/icon_step_3@2x.png"}}" />
 			</div>
-			<div class="col-xs-10">
+			<div class="next-step-text">
 				<p>We’ll notify you via email when their case has been treated by a dermatologist and for any other major updates to their case.</p>
 			</div>
 		</div>
-		<div class="row next-step">
-			<div class="col-xs-2">
+		<div class="next-step">
+			<div class="next-step-number">
 				<img class="icon-step" src="{{staticURL "/img/pc/icon_step_4@2x.png"}}" />
 			</div>
-			<div class="col-xs-10">
+			<div class="next-step-text">
 				<p>You can sign in to your account anytime to view your child’s treatment plan and messages with their care team.</p>
 			</div>
 		</div>
