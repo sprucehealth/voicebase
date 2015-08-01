@@ -76,14 +76,12 @@ func checkParentalConsentAccessToken(w http.ResponseWriter, r *http.Request, dat
 
 func newParentalConsentHandler(dataAPI api.DataAPI, mediaStore *media.Store, templateLoader *www.TemplateLoader) httputil.ContextHandler {
 	return httputil.ContextSupportedMethods(
-		www.RoleRequiredHandler(
-			&parentalConsentHandler{
-				dataAPI:         dataAPI,
-				mediaStore:      mediaStore,
-				template:        templateLoader.MustLoadTemplate("home/parental-consent.html", "", nil),
-				landingTemplate: templateLoader.MustLoadTemplate("home/parental-landing.html", "home/parental-base.html", nil),
-			}, nil, api.RolePatient),
-		httputil.Get)
+		&parentalConsentHandler{
+			dataAPI:         dataAPI,
+			mediaStore:      mediaStore,
+			template:        templateLoader.MustLoadTemplate("home/parental-consent.html", "", nil),
+			landingTemplate: templateLoader.MustLoadTemplate("home/parental-landing.html", "home/parental-base.html", nil),
+		}, httputil.Get)
 }
 
 func (h *parentalConsentHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
@@ -101,6 +99,10 @@ func (h *parentalConsentHandler) ServeHTTP(ctx context.Context, w http.ResponseW
 	var parentPatientID int64
 	idProof := map[string]string{}
 	if account != nil {
+		if account.Role != api.RolePatient {
+			www.RedirectToSignIn(w, r)
+			return
+		}
 		parentPatientID, err = h.dataAPI.GetPatientIDFromAccountID(account.ID)
 		if err != nil {
 			www.InternalServerError(w, r, err)
