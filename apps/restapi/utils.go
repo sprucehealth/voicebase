@@ -258,7 +258,7 @@ func (loggingSMSAPI) Send(fromNumber, toNumber, text string) error {
 	return nil
 }
 
-func snsLogHandler(snsCli snsiface.SNSAPI, topic string, subHandler golog.Handler, rateLimiter ratelimit.KeyedRateLimiter) golog.Handler {
+func snsLogHandler(snsCli snsiface.SNSAPI, topic, name string, subHandler golog.Handler, rateLimiter ratelimit.KeyedRateLimiter) golog.Handler {
 	jsonFmt := golog.JSONFormatter()
 	longFmt := golog.LongFormFormatter()
 	return golog.HandlerFunc(func(e *golog.Entry) (err error) {
@@ -300,7 +300,7 @@ func snsLogHandler(snsCli snsiface.SNSAPI, topic string, subHandler golog.Handle
 			_, err = snsCli.Publish(&sns.PublishInput{
 				Message:          ptr.String(string(msg)),
 				MessageStructure: ptr.String("json"),
-				Subject:          ptr.String("[backend] " + short),
+				Subject:          ptr.String(fmt.Sprintf("[%s] %s", name, short)),
 				TopicARN:         &topic,
 			})
 			if err != nil && subHandler != nil {
