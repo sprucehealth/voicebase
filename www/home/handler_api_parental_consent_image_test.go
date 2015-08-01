@@ -39,6 +39,10 @@ func (a *mockDataAPI_parentalConsentImage) UpsertParentConsentProof(parentPatien
 	return 1, nil
 }
 
+func (a *mockDataAPI_parentalConsentImage) GetPersonIDByRole(role string, roleID int64) (int64, error) {
+	return roleID + 100, nil
+}
+
 func (a *mockDataAPI_parentalConsentImage) ParentConsentProof(parentPatientID int64) (*api.ParentalConsentProof, error) {
 	if a.proof == nil {
 		return nil, api.ErrNotFound("proof")
