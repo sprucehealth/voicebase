@@ -1,34 +1,25 @@
 {{define "baseHead"}}
 <link rel="stylesheet" type="text/css" href="{{staticURL "/css/home.css"}}">
 <style type="text/css">
-	html, body {
-		background: -webkit-linear-gradient(#5E7D8F, #ffffff); /* For Safari 5.1 to 6.0 */
-		background: -o-linear-gradient(#5E7D8F, #ffffff); /* For Opera 11.1 to 12.0 */
-		background: -moz-linear-gradient(#5E7D8F, #ffffff); /* For Firefox 3.6 to 15 */
-		background: linear-gradient(#5E7D8F, #ffffff); /* Standard syntax */
-		background-attachment: fixed;
-		height: 100%;
-	}
-	body {
-		padding-top: 40px;
-		padding-bottom: 40px;
-	}
+html, body {
+	background-color: white;
+}
 </style>
 {{end}}
 
 {{define "baseBody"}}
 	<div id="base-content" class="container">
 		<form class="form-signin" role="form" action="" method="POST">
-			<img src="{{staticURL "/img/login/logo300@2x.png"}}" width="300" height="81" alt="Spruce logo"><br>
+			<img src="{{staticURL "/img/logo@2x.png"}}" width="225" height="61" alt="Spruce logo"><br>
 			{{if .Error}}
 				<div class="text-danger">{{.Error}}</div>
 			{{end}}
 			<input type="hidden" name="next" value="{{.Next}}">
 			<input type="email" class="form-control" name="email" value="{{.Email}}" placeholder="Email Address" required autofocus>
 			<input type="password" class="form-control" name="password" placeholder="Password" required>
-			<button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
-			<div class="text-right">
-				<a href="/reset-password" class="forgot-password">Forgot password</a>
+			<button class="btn btn-lg btn-primary btn-block" type="submit">SIGN IN</button>
+			<div id="login-forgot-password" class="text-center">
+				<a href="/reset-password" class="forgot-password">Forgot Password?</a>
 			</div>
 		</form>
 	</div>
