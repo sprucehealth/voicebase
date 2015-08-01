@@ -159,7 +159,7 @@ func (w *Worker) processMessage(msg *queueMessage) error {
 		return err
 	}
 
-	recordFile, err := w.renderer.Render(patient)
+	recordFile, err := w.renderer.Render(patient, 0)
 	if err != nil {
 		return fmt.Errorf("Failed to render medical record: %s", err)
 	}

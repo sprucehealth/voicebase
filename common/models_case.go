@@ -86,10 +86,17 @@ type PatientCase struct {
 	Claimed bool `json:"claimed"`
 }
 
+// DeletedPatientCaseStates returns all the states considered deleted for a case
 func DeletedPatientCaseStates() []string {
 	return []string{PCStatusDeleted.String(), PCStatusPreSubmissionTriageDeleted.String()}
 }
 
+// OpenPatientCaseStates returns all the states considered open for a case
+func OpenPatientCaseStates() []string {
+	return []string{PCStatusOpen.String()}
+}
+
+// SubmittedPatientCaseStates returns all the states considered submitted for a case
 func SubmittedPatientCaseStates() []string {
 	return []string{PCStatusActive.String(), PCStatusInactive.String()}
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/mux"
+	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/www"
 )
@@ -33,7 +34,7 @@ func (m *mockDataAPI_parentalMedicalRecord) Patient(id int64, basic bool) (*comm
 
 type medRecordRenderer struct{}
 
-func (r *medRecordRenderer) Render(p *common.Patient) ([]byte, error) {
+func (r *medRecordRenderer) Render(p *common.Patient, opt medrecord.RenderOption) ([]byte, error) {
 	return nil, nil
 }
 
