@@ -669,7 +669,7 @@ type NotificationAPI interface {
 }
 
 type MediaAPI interface {
-	AddMedia(uploaderID int64, url, mimetype string) (int64, error)
+	AddMedia(ownerPersonID int64, url, mimetype string) (int64, error)
 	GetMedia(mediaID int64) (*common.Media, error)
 	ClaimMedia(mediaID int64, claimerType string, claimerID int64) error
 	MediaHasClaim(mediaID int64, claimerType string, claimerID int64) (bool, error)

@@ -101,7 +101,17 @@ func (h *parentalConsentImageAPIHandler) post(ctx context.Context, w http.Respon
 		return
 	}
 
-	mediaID, err := h.dataAPI.AddMedia(account.ID, mediaURL, mimeType)
+	patientID, err := h.dataAPI.GetPatientIDFromAccountID(account.ID)
+	if err != nil {
+		www.APIInternalError(w, r, err)
+		return
+	}
+	personID, err := h.dataAPI.GetPersonIDByRole(api.RolePatient, patientID)
+	if err != nil {
+		www.APIInternalError(w, r, err)
+		return
+	}
+	mediaID, err := h.dataAPI.AddMedia(personID, mediaURL, mimeType)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
