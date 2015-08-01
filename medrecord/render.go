@@ -248,6 +248,8 @@ var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
 	}
 	.alert {
 		color: red;
+		padding: 0;
+		margin: 0;
 	}
 	.check-x-items-list .checked {
 		color: #000;
