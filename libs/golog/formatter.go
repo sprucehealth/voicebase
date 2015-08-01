@@ -89,6 +89,28 @@ func LogfmtFormatter() Formatter {
 	})
 }
 
+// LongFormFormatter returns a Formatter that formats an entry over multiple
+// lines which would be suitable for medium such as email.
+func LongFormFormatter() Formatter {
+	return FormatterFunc(func(e *Entry) []byte {
+		buf := &bytes.Buffer{}
+		buf.WriteString(e.Time.Format(time.Stamp))
+		buf.WriteString(" [")
+		buf.WriteString(e.Lvl.String())
+		buf.WriteString("] ")
+		if e.Src != "" {
+			buf.WriteString(e.Src)
+			buf.WriteByte(' ')
+		}
+		buf.WriteString(e.Msg)
+		buf.WriteByte('\n')
+		for i := 0; i < len(e.Ctx); i += 2 {
+			buf.WriteString(fmt.Sprintf("%v: %v\n", e.Ctx[i], e.Ctx[i+1]))
+		}
+		return buf.Bytes()
+	})
+}
+
 // TerminalFormatter returns a Formatter that transforms a lot
 // entry into a color highlited text representation for
 // displaying in a terminal.

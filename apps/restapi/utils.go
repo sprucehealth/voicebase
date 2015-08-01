@@ -1,14 +1,20 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/subosito/twilio"
 	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/surescripts/pharmacy"
 )
 
@@ -152,6 +158,7 @@ type mainConfig struct {
 	Memcached                    map[string]*memcachedClusterConfig
 	RateLimiters                 map[string]*rateLimiterConfig
 	BranchKey                    string
+	ErrorLogSNSTopic             string
 	// Secret keys used for generating signatures
 	SecretSignatureKeys []string
 }
@@ -249,4 +256,62 @@ type loggingSMSAPI struct{}
 func (loggingSMSAPI) Send(fromNumber, toNumber, text string) error {
 	golog.Infof("SMS: from=%s to=%s text=%s", fromNumber, toNumber, text)
 	return nil
+}
+
+func snsLogHandler(snsCli snsiface.SNSAPI, topic string, subHandler golog.Handler, rateLimiter ratelimit.KeyedRateLimiter) golog.Handler {
+	jsonFmt := golog.JSONFormatter()
+	longFmt := golog.LongFormFormatter()
+	return golog.HandlerFunc(func(e *golog.Entry) (err error) {
+		if subHandler != nil {
+			defer func() {
+				err = subHandler.Log(e)
+			}()
+		}
+		if e.Lvl != golog.ERR && e.Lvl != golog.CRIT {
+			return nil
+		}
+
+		if rateLimiter != nil {
+			key := e.Src
+			if key == "" {
+				key = e.Msg
+			}
+			ok, err := rateLimiter.Check(key, 1)
+			if err != nil || !ok {
+				return nil
+			}
+		}
+
+		// The Entry shouldn't be used after this function returns so we
+		// need to do the formatting before starting the goroutine.
+		jsonMsg := string(jsonFmt.Format(e))
+		longFmt := string(longFmt.Format(e))
+		short := fmt.Sprintf("%s %s %s", e.Lvl.String(), e.Src, e.Msg)
+		conc.Go(func() {
+			msg, err := json.Marshal(&struct {
+				Default string `json:"default"`
+				Email   string `json:"email"`
+				SMS     string `json:"sms"`
+			}{
+				Default: jsonMsg,
+				Email:   longFmt,
+				SMS:     short,
+			})
+			_, err = snsCli.Publish(&sns.PublishInput{
+				Message:          ptr.String(string(msg)),
+				MessageStructure: ptr.String("json"),
+				Subject:          ptr.String("[backend] " + short),
+				TopicARN:         &topic,
+			})
+			if err != nil && subHandler != nil {
+				// Pass errors publishing to the underlying error handler
+				subHandler.Log(&golog.Entry{
+					Lvl: golog.ERR,
+					Msg: fmt.Sprintf("Failed to publish to error SNS: %s", err),
+					Src: golog.Caller(0),
+				})
+			}
+		})
+		return nil
+	})
 }

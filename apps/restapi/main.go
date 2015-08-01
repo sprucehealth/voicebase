@@ -251,8 +251,9 @@ func main() {
 
 	analisteners.InitListeners(alog, dispatcher, eventsClient)
 
+	snsCli := sns.New(conf.AWS())
 	if conf.OfficeNotifySNSTopic != "" {
-		initNotifyListener(dispatcher, sns.New(conf.AWS()), conf.OfficeNotifySNSTopic)
+		initNotifyListener(dispatcher, snsCli, conf.OfficeNotifySNSTopic)
 	}
 
 	var memcacheCli *memcache.Client
@@ -347,6 +348,10 @@ func main() {
 	})
 
 	conf.SetupLogging()
+
+	if conf.ErrorLogSNSTopic != "" {
+		golog.Default().SetHandler(snsLogHandler(snsCli, conf.ErrorLogSNSTopic, golog.Default().Handler(), rateLimiters.Get("errorsns")))
+	}
 
 	serve(&conf, router)
 }
