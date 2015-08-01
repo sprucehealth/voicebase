@@ -69,7 +69,7 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 	governmentIDUploadStarted: function() {
 		this.setState({isGovernmentIDUploading: true})
 	},
-	governmentIDUploadCompleted: function() {
+	governmentIDUploadCompleted: function(response: ParentalConsentUploadImageResponse) {
 		this.setState({isGovernmentIDUploading: false})
 	},
 	governmentIDUploadFailed: function(error: any) {
@@ -83,7 +83,7 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 	selfieUploadStarted: function() {
 		this.setState({isSelfieUploading: true})
 	},
-	selfieUploadCompleted: function() {
+	selfieUploadCompleted: function(response: ParentalConsentUploadImageResponse) {
 		this.setState({isSelfieUploading: false})
 	},
 	selfieUploadFailed: function(error: any) {
@@ -109,19 +109,23 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 			var formData = new FormData(governmentIDForm)
 			ParentalConsentActions.uploadGovernmentID(formData);
 
-			// Update the thumbnail
-			var file = files[0];
-			var imageType = /image.*/;
-			if (!file.type.match(imageType)) {
-				console.log("might not be an image");
-			}
-			var reader = new FileReader();
-			var t = this;
-			reader.onload = function(event: any) {
-				var fileReader: FileReader = event.target
-				t.setState({localGovernmentIDThumbnailSrc: fileReader.result})
-			}
-			reader.readAsDataURL(file);
+			// JS: commented out because there's a bug in iOS that causes the page to crash (likely out-of-memory)
+			// I'm leaving this here in case it becomes feasible in the future to just use the local image as the thumbnail
+			// See more here: http://stackoverflow.com/questions/26668950/safari-crash-while-taking-photo-in-iphone-4s-ios-8-1
+			// Example to test this on device: http://jsbin.com/gowiwe/edit?html,js,console,output
+
+			// var file = files[0];
+			// var imageType = /image.*/;
+			// if (!file.type.match(imageType)) {
+			// 	console.log("might not be an image");
+			// }
+			// var reader = new FileReader();
+			// var t = this;
+			// reader.onload = function(event: any) {
+			// 	var fileReader: FileReader = event.target
+			// 	t.setState({localGovernmentIDThumbnailSrc: fileReader.result})
+			// }
+			// reader.readAsDataURL(file);
 		} else {
 			// When the user presses Cancel on that attach file dialog, the files array comes back empty
 			// Do nothing, since we don't have a way to delete photos via the API
@@ -136,19 +140,23 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 			var formData = new FormData(selfieForm)
 			ParentalConsentActions.uploadSelfie(formData);
 
-			// Update the thumbnail
-			var file = files[0];
-			var imageType = /image.*/;
-			if (!file.type.match(imageType)) {
-				console.log("might not be an image");
-			}
-			var reader = new FileReader();
-			var t = this;
-			reader.onload = function(event: any) {
-				var fileReader: FileReader = event.target
-				t.setState({localSelfieThumbnailSrc: fileReader.result})
-			}
-			reader.readAsDataURL(file);
+			// JS: commented out because there's a bug in iOS that causes the page to crash (likely out-of-memory)
+			// I'm leaving this here in case it becomes feasible in the future to just use the local image as the thumbnail
+			// See more here: http://stackoverflow.com/questions/26668950/safari-crash-while-taking-photo-in-iphone-4s-ios-8-1
+			// Example to test this on device: http://jsbin.com/gowiwe/edit?html,js,console,output
+
+			// var file = files[0];
+			// var imageType = /image.*/;
+			// if (!file.type.match(imageType)) {
+			// 	console.log("might not be an image");
+			// }
+			// var reader = new FileReader();
+			// var t = this;
+			// reader.onload = function(event: any) {
+			// 	var fileReader: FileReader = event.target
+			// 	t.setState({localSelfieThumbnailSrc: fileReader.result})
+			// }
+			// reader.readAsDataURL(file);
 		} else {
 			// When the user presses Cancel on that attach file dialog, the files array comes back empty
 			// Do nothing, since we don't have a way to delete photos via the API
@@ -204,15 +212,16 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 			position: "relative",
 			zIndex: "1",
 		}
+		var thumbnailDimension = 64;
 		var imageViewContainerStyle = {
-			minWidth: "64px",
+			minWidth: thumbnailDimension,
 			marginRight: "16px",
 			marginTop: "16px",
 			marginBottom: "16px",
 		}
 		var photoUploadThumbnailStyle = {
-			width: "64px",
-			height: "64px",
+			width: thumbnailDimension,
+			height: thumbnailDimension,
 			objectFit: "contain",
 		}
 		var uploadLabelStyle = {
@@ -223,21 +232,17 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 		var placeholderSrc = "http://cl.ly/image/2A1S3t1F0t0j/parental_consent_photo_capture@2x.png"
 
 		var governmentIDThumbnailSrc
-		if (!Utils.isEmpty(this.state.localGovernmentIDThumbnailSrc)) {
-			governmentIDThumbnailSrc = this.state.localGovernmentIDThumbnailSrc
-		} else if (!Utils.isEmpty(store.identityVerification.serverGovernmentIDThumbnailURL)) {
-			governmentIDThumbnailSrc = store.identityVerification.serverGovernmentIDThumbnailURL
+		if (!Utils.isEmpty(store.identityVerification.serverGovernmentIDThumbnailURL)) {
+			governmentIDThumbnailSrc = store.identityVerification.serverGovernmentIDThumbnailURL + "&width=" + thumbnailDimension + "&height=" + thumbnailDimension
 		} else {
 			governmentIDThumbnailSrc = placeholderSrc;
 		}
 
 		var selfieThumbnailSrc
-		if (!Utils.isEmpty(this.state.localSelfieThumbnailSrc)) {
-			selfieThumbnailSrc = this.state.localSelfieThumbnailSrc
-		} else if (!Utils.isEmpty(store.identityVerification.serverSelfieThumbnailURL)) {
-			selfieThumbnailSrc = store.identityVerification.serverSelfieThumbnailURL
+		if (!Utils.isEmpty(store.identityVerification.serverSelfieThumbnailURL)) {
+			selfieThumbnailSrc = store.identityVerification.serverSelfieThumbnailURL + "&width=" + thumbnailDimension + "&height=" + thumbnailDimension
 		} else {
-			selfieThumbnailSrc = placeholderSrc;
+			selfieThumbnailSrc = placeholderSrc
 		}
 
 		var governmentIDSpinnerContainerDisplay = this.state.isGovernmentIDUploading ? "" : "none"

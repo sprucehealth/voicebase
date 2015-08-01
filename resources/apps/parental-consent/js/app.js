@@ -247,7 +247,9 @@ var ConfirmationPage = React.createClass({displayName: "ConfirmationPage",
 		Reflux.connect(ParentalConsentStore, 'store'),
 	],
 	handleSubmit: function() {
-		window.location = "/pc/" + ParentalConsentHydration.ChildDetails.patientID + "/medrecord"
+		if (ParentalConsentHydration.ChildDetails && ParentalConsentHydration.ChildDetails.patientID) {
+			window.location = "/pc/" + ParentalConsentHydration.ChildDetails.patientID + "/medrecord"
+		}
 	},
 	render: function(): any {
 		return (
