@@ -20,7 +20,7 @@ const (
 	treatmentPlanViewedEvent                = "treatment_plan_viewed"
 	notifyTreatmentPlanCreatedEmailType     = "notify-treatment-plan-created"
 	notifyNewMessageEmailType               = "notify-new-message"
-	notifyParentalConsentCompletedEmailType = "notify-parental-consent-completed"
+	notifyParentalConsentCompletedEmailType = "minor-no-push-parent-consent-confirmation"
 	txtParentalConsentCompletedNotification = "parental_consent_completed_notification"
 )
 
