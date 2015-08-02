@@ -1,6 +1,7 @@
 /* @flow */
 
 var React = require("react");
+var Utils = require("../../libs/utils.js");
 
 var Header = React.createClass({displayName: "Header",
 	render: function(): any {
@@ -22,7 +23,7 @@ var Header = React.createClass({displayName: "Header",
 					}}>
 					<a href="https://www.sprucehealth.com">
 						<img 
-							src="https://dlzz6qy5jmbag.cloudfront.net/web/11/img/logo-small.png"
+							src={Utils.staticURL("/img/pc/logo@2x.png")}
 							style={{
 								width: "123px",
 								height: "33px",

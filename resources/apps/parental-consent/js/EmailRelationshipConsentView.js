@@ -177,9 +177,9 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 		} else if (this.props.collectRelationship) {
 			var relationshipHighlighted: bool = (this.state.submitButtonPressedOnce ? !this.isRelationshipFieldValid() : false)
 			var selectContainerStyle = {
-				backgroundImage: "url(https://cl.ly/image/1i120V2m2K0u/select_arrow@2x.png)",
+				backgroundImage: "url(/static/img/pc/select_arrow@2x.png)",
 				backgroundRepeat: "no-repeat",
-				backgroundSize: "10px 7px",
+				backgroundSize: "12px 7px",
 				backgroundPosition: "right",
 			};
 			var style = Utils.mergeProperties(selectContainerStyle, relationshipHighlighted ? orangeBottomDividerStyle : null)

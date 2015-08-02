@@ -443,29 +443,17 @@ $placeholderTextColor: rgba(#1E333A, 0.4);
 .formFieldRow input[type=text], .formFieldRow input[type=tel], .formFieldRow input[type=email], .formFieldRow input[type=password] {
     width: 100%;
     text-align: left;
-    line-height: 50px;
+    min-height: 56px;
     border: none;
-}
-.formFieldRow input[type=date] {
-    text-align: left;
-    width: 100%;
-    line-height: 50px;
-    border: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-}
-input::-webkit-inner-spin-button {
-  display: none; // Gets rid of the annoying up/down arrows
 }
 .formFieldRow select {
-    line-height: 50px;
+    line-height: 56px;
     width: 100%;
     background: transparent;
     border: 0px solid #ccc;
     -webkit-appearance: none;
     -moz-appearance: none;
-    appearance: none;;
+    appearance: none;
     font-size: $formFieldFontSize;
 }
 
@@ -486,7 +474,7 @@ textarea:focus, input:focus {
 input[type=checkbox] {
     content:"";
     display:inline-block;
-    background-image: url(http://cl.ly/image/0b2b350Y1J3u/checkbox_spritesheet@2x.png);
+    background-image: url(../img/pc/checkbox_spritesheet@2x.png);
     background-repeat: no-repeat;
     background-position: -22px 0px;
     background-color: #fff;
@@ -507,7 +495,7 @@ input[type=checkbox] {
 input[type=checkbox].error {
     content:"";
     display:inline-block;
-    background-image: url(http://cl.ly/image/0b2b350Y1J3u/checkbox_spritesheet@2x.png);
+    background-image: url(../img/pc/checkbox_spritesheet@2x.png);
     background-repeat: no-repeat;
     background-position: -44px 0px;
     background-color: #fff;
@@ -527,7 +515,7 @@ input[type=checkbox].error {
 
 
 input[type=checkbox]:checked {
-    background-image: url(http://cl.ly/image/0b2b350Y1J3u/checkbox_spritesheet@2x.png);
+    background-image: url(../img/pc/checkbox_spritesheet@2x.png);
     background-repeat: no-repeat;
     background-position: 0px 0px;
     background-color: #fff;

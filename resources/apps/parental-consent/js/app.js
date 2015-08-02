@@ -20,7 +20,7 @@ window.React = React; // export for http://fb.me/react-devtools
 Backbone.jQuery = jQuery;
 
 var calculateNumSectionsForStore = function(store: ParentalConsentStoreType): number {
-	var numSections = 4
+	var numSections = 3
 	if (store.parentAccount && store.parentAccount.WasSignedInAtPageLoad) {
 		numSections = numSections - 1
 	}
@@ -151,6 +151,9 @@ var DemographicsPage = React.createClass({displayName: "DemographicsPage",
 		var nextRoute: string = nextRouteAfterRouteForStore(currentRoute, this.state.store)
 		this.props.router.navigate(nextRoute, {trigger: true});
 	},
+	componentWillMount: function() {
+		window.scrollTo(0,0);
+	},
 	render: function(): any {
 		return (
 			<ContentContainer
@@ -184,6 +187,9 @@ var EmailAndConsentPage = React.createClass({displayName: "EmailAndConsentPage",
 	},
 	getInitialState: function() {
 		return {}
+	},
+	componentWillMount: function() {
+		window.scrollTo(0,0);
 	},
 	render: function(): any {
 		var store: ParentalConsentStoreType = this.state.store
@@ -220,6 +226,9 @@ var PhotoIdentificationPage = React.createClass({displayName: "PhotoIdentificati
 		var nextRoute: string = nextRouteAfterRouteForStore(currentRoute, this.state.store)
 		this.props.router.navigate(nextRoute, {trigger: true});
 	},
+	componentWillMount: function() {
+		window.scrollTo(0,0);
+	},
 	render: function(): any {
 		return (
 			<ContentContainer
@@ -250,6 +259,9 @@ var ConfirmationPage = React.createClass({displayName: "ConfirmationPage",
 		if (ParentalConsentHydration.ChildDetails && ParentalConsentHydration.ChildDetails.patientID) {
 			window.location = "/pc/" + ParentalConsentHydration.ChildDetails.patientID + "/medrecord"
 		}
+	},
+	componentWillMount: function() {
+		window.scrollTo(0,0);
 	},
 	render: function(): any {
 		return (
