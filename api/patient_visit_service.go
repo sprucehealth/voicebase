@@ -35,7 +35,7 @@ var treatmentQuery = `
 var visitSummaryQuery = `
 	SELECT p.account_id, pv.id, pv.patient_case_id, pv.creation_date, pv.submitted_date, cpa.creation_date,
 			role_type.role_type_tag, cpa.status, cp.name, pc.requested_doctor_id, p.first_name, p.last_name,
-			pc.name, sku.type, pl.state, pv.status, doctor.id, doctor.first_name, doctor.last_name
+			p.dob_year, p.dob_month, p.dob_day, pc.name, sku.type, pl.state, pv.status, doctor.id, doctor.first_name, doctor.last_name
 		FROM patient_visit pv
 		JOIN patient_case pc ON pv.patient_case_id = pc.id
 		JOIN clinical_pathway cp ON pv.clinical_pathway_id = cp.id
@@ -365,7 +365,8 @@ func (d *dataService) sanitizeVisitSummaryRows(rows *sql.Rows) (map[int64]*commo
 		if err := rows.Scan(
 			&sm.PatientAccountID, &sm.VisitID, &sm.CaseID, &sm.CreationDate, &sm.SubmittedDate,
 			&sm.LockTakenDate, &sm.RoleTypeTag, &sm.LockType, &sm.PathwayName, &sm.RequestedDoctorID,
-			&sm.PatientFirstName, &sm.PatientLastName, &sm.CaseName, &sm.SKUType, &sm.SubmissionState,
+			&sm.PatientFirstName, &sm.PatientLastName, &sm.PatientDOB.Year, &sm.PatientDOB.Month, &sm.PatientDOB.Day,
+			&sm.CaseName, &sm.SKUType, &sm.SubmissionState,
 			&sm.Status, &sm.DoctorID, &sm.DoctorFirstName, &sm.DoctorLastName,
 		); err != nil {
 			return nil, err
