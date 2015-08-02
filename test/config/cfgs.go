@@ -1,6 +1,10 @@
 package config
 
-import "github.com/sprucehealth/backend/libs/cfg"
+import (
+	"time"
+
+	"github.com/sprucehealth/backend/libs/cfg"
+)
 
 // GlobalFirstVisitFreeDisabled is a disabled test config
 var GlobalFirstVisitFreeDisabled = &cfg.ValueDef{
@@ -80,4 +84,13 @@ var ParentWelcomeEmailDisabled = &cfg.ValueDef{
 	Description: "Enable or disable the email welcoming parents after consenting.",
 	Type:        cfg.ValueTypeBool,
 	Default:     false,
+}
+
+// AbandonedVisitThreshold indicates the duration of the visit in the OPEN state
+// after which it is considered abandoned.
+var AbandonedVisitThreshold = &cfg.ValueDef{
+	Name:        "Email.Campaign.AbandonedVisit.After",
+	Description: "Age of an open visit after which it's considered abandoned. Set to 0 to disable.",
+	Type:        cfg.ValueTypeDuration,
+	Default:     time.Hour * 24 * 7,
 }
