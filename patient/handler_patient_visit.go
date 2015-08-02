@@ -25,10 +25,11 @@ import (
 
 // Case tag identifiers
 const (
-	ExistingPatientTag = "ExistingPatient"
-	NewPatientTag      = "NewPatient"
-	InitialVisitTag    = "InitialVisit"
-	FollowupVisitTag   = "FollowUpVisit"
+	TagExistingPatient = "ExistingPatient"
+	TagNewPatient      = "NewPatient"
+	TagSupervised      = "Supervised"
+	TagInitialVisit    = "InitialVisit"
+	TagFollowupVisit   = "FollowUpVisit"
 )
 
 type patientVisitHandler struct {
@@ -259,7 +260,7 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 
 	conc.Go(func() {
 		// Apply the relevant tags to the case for this visit but don't block returning success to the user if something fails
-		if err := s.applyVisitTags(visit.PatientCaseID.Int64(), visit.PatientID.Int64()); err != nil {
+		if err := s.applyVisitTags(visit, patient); err != nil {
 			golog.Errorf("%v", err)
 		}
 	})
@@ -267,7 +268,10 @@ func (s *patientVisitHandler) submitPatientVisit(w http.ResponseWriter, r *http.
 	apiservice.WriteJSONSuccess(w)
 }
 
-func (s *patientVisitHandler) applyVisitTags(caseID, patientID int64) error {
+func (s *patientVisitHandler) applyVisitTags(visit *common.PatientVisit, patient *common.Patient) error {
+	patientID := visit.PatientID.Int64()
+	caseID := visit.PatientCaseID.Int64()
+
 	cases, err := s.dataAPI.GetCasesForPatient(patientID, nil)
 	if err != nil {
 		return fmt.Errorf("An error occured while attempting to apply tags to a new visit for case %d and getting cases for the patient. This error likely means the tags should be applied by hand after investigation - %v", caseID, err)
@@ -283,31 +287,34 @@ func (s *patientVisitHandler) applyVisitTags(caseID, patientID int64) error {
 			currentCase = v
 		}
 		if existing {
-			if err := s.swapCaseTag(NewPatientTag, ExistingPatientTag, v.ID.Int64(), false); err != nil {
+			if err := s.swapCaseTag(TagNewPatient, TagExistingPatient, v.ID.Int64(), false); err != nil {
 				return err
 			}
 		} else {
-			if err := s.applyCaseTag(NewPatientTag, v.ID.Int64(), false); err != nil {
+			if err := s.applyCaseTag(TagNewPatient, v.ID.Int64(), false); err != nil {
 				return err
 			}
 		}
 	}
 	if len(visits) > 1 {
-		if err := s.swapCaseTag(FollowupVisitTag, InitialVisitTag, caseID, false); err != nil {
+		if err := s.swapCaseTag(TagFollowupVisit, TagInitialVisit, caseID, false); err != nil {
 			return err
 		}
 	} else {
-		if err := s.applyCaseTag(InitialVisitTag, caseID, false); err != nil {
+		if err := s.applyCaseTag(TagInitialVisit, caseID, false); err != nil {
 			return err
 		}
 	}
 	if currentCase == nil {
 		return fmt.Errorf("Was unable to locate case %d in existing case set. Unable to proceed with tag application.", caseID)
 	}
-	patient, err := s.dataAPI.Patient(patientID, false)
-	if err != nil {
-		return fmt.Errorf("An error occurred while attemping to retrieve the patient for case %d, - %v", caseID, err)
+
+	if patient.IsUnder18() {
+		if err := s.applyCaseTag(TagSupervised, caseID, false); err != nil {
+			return err
+		}
 	}
+
 	if err := s.applyCaseTag("state:"+patient.StateFromZipCode, caseID, true); err != nil {
 		return err
 	}
@@ -342,6 +349,7 @@ func (s *patientVisitHandler) applyVisitTags(caseID, patientID int64) error {
 	if err := s.applyCaseTag("pathwayTag:"+currentCase.PathwayTag, caseID, true); err != nil {
 		return err
 	}
+
 	return nil
 }
 
