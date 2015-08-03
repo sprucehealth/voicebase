@@ -316,8 +316,13 @@ func populateParentInfo(
 		return nil
 	}
 
-	// TODO: For now assuming we have parental consent by just a single parent.
-	consent := consents[0]
+	// Find the parent that actually gave consent (should only be one)
+	var consent *common.ParentalConsent
+	for _, c := range consents {
+		if consent == nil || c.Consented {
+			consent = c
+		}
+	}
 
 	par := conc.NewParallel()
 

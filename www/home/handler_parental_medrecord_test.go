@@ -39,7 +39,11 @@ func (r *medRecordRenderer) Render(p *common.Patient, opt medrecord.RenderOption
 }
 
 func TestParentalMedicalRecordHandler(t *testing.T) {
-	dataAPI := &mockDataAPI_parentalMedicalRecord{}
+	dataAPI := &mockDataAPI_parentalMedicalRecord{
+		patient: &common.Patient{
+			HasParentalConsent: true,
+		},
+	}
 	renderer := &medRecordRenderer{}
 	h := newParentalMedicalRecordHandler(dataAPI, renderer)
 	account := &common.Account{
@@ -65,4 +69,14 @@ func TestParentalMedicalRecordHandler(t *testing.T) {
 	w = httptest.NewRecorder()
 	h.ServeHTTP(ctx, w, r)
 	test.HTTPResponseCode(t, http.StatusOK, w)
+
+	// Parent has not yet completed flow
+
+	dataAPI.patient.HasParentalConsent = false
+	dataAPI.consent = []*common.ParentalConsent{{ParentPatientID: 1}}
+	r, err = http.NewRequest("GET", "/", nil)
+	test.OK(t, err)
+	w = httptest.NewRecorder()
+	h.ServeHTTP(ctx, w, r)
+	test.HTTPResponseCode(t, http.StatusSeeOther, w)
 }

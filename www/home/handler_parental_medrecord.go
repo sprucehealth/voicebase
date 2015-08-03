@@ -1,6 +1,7 @@
 package home
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -73,6 +74,12 @@ func (h *parentalMedicalRecordHandler) ServeHTTP(ctx context.Context, w http.Res
 		return
 	} else if err != nil {
 		www.InternalServerError(w, r, err)
+		return
+	}
+	// If the patient doesn't have consent yet then redirect back to the flow
+	// as it's not yet complete.
+	if !patient.HasParentalConsent {
+		http.Redirect(w, r, fmt.Sprintf("/pc/%d/start", patient.ID.Int64()), http.StatusSeeOther)
 		return
 	}
 	html, err := h.r.Render(patient, medrecord.ROIncludeUnsubmittedVisits)
