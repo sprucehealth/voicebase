@@ -55,7 +55,21 @@ func TestEmailCampaignWelcomeOnSignup(t *testing.T) {
 	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.WelcomeEmailEnabled})
 	test.OK(t, err)
 	emailService := &email.TestService{}
-	dataAPI := &mockDataAPIListeners{}
+	dataAPI := &mockDataAPIListeners{
+		patients: []*common.Patient{
+			{
+				DOB: encoding.Date{
+					Year:  1920,
+					Month: 1,
+					Day:   1,
+				},
+			},
+		},
+		patientErrs: []error{
+			nil,
+		},
+	}
+
 	var accountID int64 = 12345
 	var vars map[int64][]mandrill.Var
 	InitListeners(dispatcher, cfgStore, emailService, dataAPI, emailWebDomain)
@@ -63,6 +77,39 @@ func TestEmailCampaignWelcomeOnSignup(t *testing.T) {
 	emails := emailService.Reset()
 	test.Equals(t, 1, len(emails))
 	test.Equals(t, patientSignupEmailType, emails[0].Type)
+	test.Equals(t, []int64{accountID}, emails[0].AccountIDs)
+	test.Equals(t, vars, emails[0].Vars)
+	test.Equals(t, &mandrill.Message{}, emails[0].Msg)
+}
+
+func TestEmailCampaignWelcomeUnder18OnSignup(t *testing.T) {
+	dispatch.Testing = true
+	dispatcher := dispatch.New()
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.WelcomeEmailEnabled})
+	test.OK(t, err)
+	emailService := &email.TestService{}
+	dataAPI := &mockDataAPIListeners{
+		patients: []*common.Patient{
+			{
+				DOB: encoding.Date{
+					Year:  2014,
+					Month: 1,
+					Day:   1,
+				},
+			},
+		},
+		patientErrs: []error{
+			nil,
+		},
+	}
+
+	var accountID int64 = 12345
+	var vars map[int64][]mandrill.Var
+	InitListeners(dispatcher, cfgStore, emailService, dataAPI, emailWebDomain)
+	dispatcher.PublishAsync(&patient.SignupEvent{AccountID: accountID})
+	emails := emailService.Reset()
+	test.Equals(t, 1, len(emails))
+	test.Equals(t, patientUnder18SignupEmailType, emails[0].Type)
 	test.Equals(t, []int64{accountID}, emails[0].AccountIDs)
 	test.Equals(t, vars, emails[0].Vars)
 	test.Equals(t, &mandrill.Message{}, emails[0].Msg)

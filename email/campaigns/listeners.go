@@ -45,6 +45,7 @@ var parentWelcomeEmailEnabledDef = &cfg.ValueDef{
 
 const (
 	patientSignupEmailType                   = "welcome"
+	patientUnder18SignupEmailType            = "welcome-email-under-18"
 	minorTreatmentPlanIssuedEmailType        = "minor-treatment-plan-issued"
 	minorTriagedEmailType                    = "minor-triaged"
 	parentWelcomeEmailType                   = "parent-welcome"
@@ -65,8 +66,21 @@ func InitListeners(dispatch *dispatch.Dispatcher, cfgStore cfg.Store, emailServi
 
 	dispatch.SubscribeAsync(func(ev *patient.SignupEvent) error {
 		if cfgStore.Snapshot().Bool(welcomeEmailEnabledDef.Name) {
-			if _, err := emailService.Send([]int64{ev.AccountID}, patientSignupEmailType, nil, &mandrill.Message{}, email.OnlyOnce|email.CanOptOut); err != nil {
+
+			patient, err := dataAPI.Patient(ev.PatientID, true)
+			if err != nil {
 				golog.Errorf("Failed to send welcome email to account %d: %s", ev.AccountID, err)
+				return nil
+			}
+
+			if patient.IsUnder18() {
+				if _, err := emailService.Send([]int64{ev.AccountID}, patientUnder18SignupEmailType, nil, &mandrill.Message{}, email.OnlyOnce|email.CanOptOut); err != nil {
+					golog.Errorf("Failed to send welcome email to account %d: %s", ev.AccountID, err)
+				}
+			} else {
+				if _, err := emailService.Send([]int64{ev.AccountID}, patientSignupEmailType, nil, &mandrill.Message{}, email.OnlyOnce|email.CanOptOut); err != nil {
+					golog.Errorf("Failed to send welcome email to account %d: %s", ev.AccountID, err)
+				}
 			}
 		}
 		return nil
