@@ -38,7 +38,7 @@ var ConfirmationView = React.createClass({displayName: "ConfirmationView",
 					Thanks for helping {firstName} take care of {possessivePronoun} acne. {Utils.capitalizeFirstLetter(personalPronoun)} is now able to pay for and submit {possessivePronoun} visit.
 				</div>
 				<div style={{textAlign: "center"}}>
-					<img src="http://cl.ly/image/343j3u1z2n0T/completion_check@2x.png" style={{width: "100px", height: "100px"}}/>
+					<img src={Utils.staticURL("/img/pc/completion_check@2x.png")} style={{width: "100px", height: "100px"}}/>
 				</div>
 				<div style={{marginTop: "26px", textAlign: "center"}}>
 					Before {this.state.store.childDetails.firstName} submits {possessivePronoun} visit to a dermatologist, you can review the information that {personalPronoun} has entered so far.

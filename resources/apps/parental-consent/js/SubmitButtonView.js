@@ -25,6 +25,7 @@ var SubmitButtonView = React.createClass({displayName: "SubmitButtonView",
 			WebkitBorderTopRightRadius: "26px",
 			WebkitBorderBottomLeftRadius: "26px",
 			WebkitBorderBottomRightRadius: "26px",
+			fontFamily: "MuseoSans-700",
 		}
 		return (
 			<button

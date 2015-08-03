@@ -87,7 +87,12 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 		this.setState({isSelfieUploading: false})
 	},
 	selfieUploadFailed: function(error: any) {
-		this.setState({isSelfieUploading: false})
+		alert(error.message)
+		// TODO: don't clear out the image if it fails-- instead retry
+		this.setState({
+			isSelfieUploading: false,
+			localSelfieThumbnailSrc: "",
+		})
 	},
 
 	//
@@ -186,10 +191,10 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 
 		var store: ParentalConsentStoreType = this.state.store
 
-		var uploadFormStyle = {
-			width: "100%",
-			height: "100%",
+		var formStyle = {
+			margin: 0,
 		}
+
 		var fileUploadContainerStyle = {
 			width: "100%",
 			height: "100%",
@@ -229,7 +234,7 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 			marginBottom: "auto",
 		}
 
-		var placeholderSrc = "http://cl.ly/image/2A1S3t1F0t0j/parental_consent_photo_capture@2x.png"
+		var placeholderSrc = Utils.staticURL("/img/pc/parental_consent_photo_capture@2x.png")
 
 		var governmentIDThumbnailSrc
 		if (!Utils.isEmpty(store.identityVerification.serverGovernmentIDThumbnailURL)) {
@@ -255,34 +260,44 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 		var governmentIDHighlighted: bool = (this.state.submitButtonPressedOnce ? !this.isGovernmentIDFieldValid() : false)
 		var selfieHighlighted: bool = (this.state.submitButtonPressedOnce ? !this.isSelfieFieldValid() : false)
 
+		var spinnerContainerStyle = {
+			position: "absolute",
+			top: 0,
+			left: 0,
+			width: "100%",
+			height: "100%",
+			backgroundColor: "rgba(0,0,0,0.1)",
+			verticalAlign: "middle",
+			zIndex: "9999",
+			margin: "0px",
+		}
+		var spinnerStyle = {
+			width: "100%",
+			height: "100%",
+			backgroundColor: "rgba(0,0,0,0.7)",
+			margin: "auto",
+			display: "inline-block",
+			position: "absolute",
+			left: "50%",
+			top: "50%",
+			transform: "translate(-50%,-50%)",
+			WebkitTransform: "translate(-50%,-50%)",
+		}
+
 		return (
-			<div style={uploadFormStyle}>
-				<form encType="multipart/form-data" ref="governmentIDForm">
+			<div style={{
+				width: "100%",
+				height: "100%",
+			}}>
+				<form encType="multipart/form-data" ref="governmentIDForm" style={formStyle}>
 					<input type="hidden" name="type" value="governmentid" />
 					<div className="formFieldRow hasBottomDivider hasTopDivider" style={{marginTop: "20px"}}>
 						<div style={uploadContentContainerStyle} className="flexBox justifyContentStartLeft">
 							<div style={imageViewContainerStyle}>
-								<div style={{
-									width: "100%",
-									height: "100%",
-									backgroundColor: "rgba(0,0,0,0.1)",
-									verticalAlign: "middle",
-									zIndex: "9999",
-									margin: "0px",
-									display: governmentIDSpinnerContainerDisplay,
-								}}>
-									<div style={{
-										width: "100%",
-										height: "100%",
-										backgroundColor: "rgba(0,0,0,0.7)",
-										margin: "auto",
-										display: "inline-block",
-										position: "absolute",
-										left: "50%",
-										top: "50%",
-										transform: "translate(-50%,-50%)",
-										WebkitTransform: "translate(-50%,-50%)",
-									}}>
+								<div style={Utils.mergeProperties(spinnerContainerStyle, {
+									display: governmentIDSpinnerContainerDisplay
+								})}>
+									<div style={spinnerStyle}>
 										<div id="governmentIDSpinner"></div>
 									</div>
 								</div>
@@ -305,31 +320,15 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 						</div>
 					</div>
 				</form>
-				<form encType="multipart/form-data" ref="selfieForm">
+				<form encType="multipart/form-data" ref="selfieForm" style={formStyle}>
 					<input type="hidden" name="type" value="selfie" />
 					<div className="formFieldRow hasBottomDivider">
 						<div style={uploadContentContainerStyle} className="flexBox">
 							<div style={imageViewContainerStyle}>
-								<div style={{
-									width: "100%",
-									height: "100%",
-									backgroundColor: "rgba(0,0,0,0.1)",
-									verticalAlign: "middle",
-									zIndex: "9999",
-									margin: "0px",
-									display: spinnerSpinnerContainerDisplay,
-								}}>
-									<div style={{
-										width: "100%",
-										height: "100%",
-										backgroundColor: "rgba(0,0,0,0.7)",
-										margin: "auto",
-										display: "inline-block",
-										position: "absolute",
-										left: "50%",
-										top: "50%",
-										transform: "translate(-50%,-50%)",
-									}}>
+								<div style={Utils.mergeProperties(spinnerContainerStyle, {
+									display: spinnerSpinnerContainerDisplay
+								})}>
+									<div style={spinnerStyle}>
 										<div id="selfieSpinner"></div>
 									</div>
 								</div>
@@ -344,7 +343,7 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 						<div style={fileUploadContainerStyle}>
 							<input
 								type="file"
-								accept="image/*"
+								accept="image/jpeg, image/jpg, image/png, image/x-png"
 								onChange={this.handleSelfieSelection}
 								name="file"
 								style={fileUploadInputStyle}

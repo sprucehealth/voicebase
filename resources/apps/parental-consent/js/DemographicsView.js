@@ -3,6 +3,8 @@
 var React = require("react/addons");
 var Reflux = require('reflux');
 var Utils = require("../../libs/utils.js");
+var Formatter = require('../../libs/formatter.js');
+
 var SubmitButtonView = require("./SubmitButtonView.js");
 var ParentalConsentActions = require('./ParentalConsentActions.js')
 var ParentalConsentStore = require('./ParentalConsentStore.js');
@@ -42,6 +44,16 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 				relationship: store.userInput.relationship,
 			});
 		}
+
+		var dobInputFormatter = new Formatter.Formatter(React.findDOMNode(this.refs.dobInput), {
+			'pattern': '{{99}}-{{99}}-{{99}}',
+			'changeCallback': this.onDateChange
+		});
+
+		var phoneInputFormatter = new Formatter.Formatter(React.findDOMNode(this.refs.phoneInput), {
+			'pattern': '{{999}}-{{999}}-{{9999}}',
+			'changeCallback': this.onPhoneChange
+		});
 	},
 
 	//
@@ -59,14 +71,20 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 				state: this.state.stateOfResidence,
 				mobile_phone: this.state.phone,
 			}
-			ParentalConsentActions.saveDemographics(demographics)
 			ParentalConsentActions.saveRelationship(this.state.relationship)
-			this.props.onFormSubmit({})
+			var t = this
+			ParentalConsentActions.saveDemographics.triggerPromise(demographics).then(function(response: any) {
+				t.props.onFormSubmit({})
+			}).catch(function(err: ajaxError) {
+				alert(err.message)
+			});
 		}
 	},
-	onDateBlur: function() {
-		// var date = Date.parse(this.state.dob)
-		// console.log(date.toString("yyyy-MM-dd"))
+	onDateChange: function(newValue: string) {
+		this.setState({dob: newValue})
+	},
+	onPhoneChange: function(newValue: string) {
+		this.setState({phone: newValue})
 	},
 
 	//
@@ -105,9 +123,9 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 
 	render: function(): any {
 		var selectContainerStyle = {
-			backgroundImage: "url(https://cl.ly/image/1i120V2m2K0u/select_arrow@2x.png)",
+			backgroundImage: "url(/static/img/pc/select_arrow@2x.png)",
 			backgroundRepeat: "no-repeat",
-			backgroundSize: "10px 7px",
+			backgroundSize: "12px 7px",
 			backgroundPosition: "right",
 		};
 
@@ -146,11 +164,11 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 					textAlign: "center",
 					marginBottom: "22px",
 				}}>
-					<a href={"/login?next=%2Fpc%2F" + ParentalConsentHydration.ChildDetails.patientID}>Sign in to an existing Spruce account.</a>
+					<a href={"/login?next=%2Fpc%2F" + ParentalConsentHydration.ChildDetails.patientID + "%2Fconsent"}>Sign in to an existing Spruce account.</a>
 				</div>
 				<div className="formFieldRow hasBottomDivider hasTopDivider" style={firstNameHighlighted ? orangeBottomDividerStyle : null}>
 					<input type="text"
-						autoCapitalize="words"
+						// autoCapitalize="words" // for some reason autoCapitalized was causing the first _two_ letters to be capitalized on Mobile Safari iOS 8.4
 						mozactionhint="next"
 						autoComplete="given-name"
 						autoCorrect="on"
@@ -160,7 +178,7 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 				</div>
 				<div className="formFieldRow hasBottomDivider" style={lastNameHighlighted ? orangeBottomDividerStyle : null}>
 					<input type="text"
-						autoCapitalize="words"
+						// autoCapitalize="words" // for some reason autoCapitalized was causing the first _two_ letters to be capitalized on Mobile Safari iOS 8.4
 						mozactionhint="next"
 						autoComplete="family-name"
 						autoCorrect="on"
@@ -171,11 +189,11 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 				<div className="formFieldRow hasBottomDivider" style={dobHighlighted ? orangeBottomDividerStyle : null}>
 					<input
 						type="text"
-						placeholder="YYYY-MM-DD"
+						placeholder="Date of Birth (MM-DD-YY)"
 						className={this.isDOBFieldValid() ? null : "emptyState"}
-						valueLink={this.linkState('dob')}
 						autoComplete="bday"
-						onBlur={this.onDateBlur}/>
+						valueLink={this.linkState('dob')}
+						ref="dobInput" />
 				</div>
 				<div className="formFieldRow hasBottomDivider" style={Utils.mergeProperties(selectContainerStyle, genderHighlighted ? orangeBottomDividerStyle : null)}>
 					<select
@@ -214,7 +232,8 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 						autoComplete="tel"
 						inputmode="tel"
 						placeholder="Mobile Phone #"
-						valueLink={this.linkState('phone')}/>
+						valueLink={this.linkState('phone')}
+						ref="phoneInput" />
 				</div>
 				<div>
 					<SubmitButtonView

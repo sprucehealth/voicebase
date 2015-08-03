@@ -128,8 +128,36 @@ var ParentalConsentStore = Reflux.createStore({
 	// Demographics screen
 	//
 	onSaveDemographics: function(demographics: ParentalConsentDemographics) {
-		externalState.userInput.demographics = demographics
-		this.trigger(externalState)
+
+		// NOTE: this is an inaccurate way to do this (better: use a library), but since the server is also checking age, we'll get by
+		// From: http://stackoverflow.com/questions/4060004/calculate-age-in-javascript/7091965#7091965
+		function getAge(dateString) {
+			var today = new Date();
+			var birthDate = new Date(dateString);
+			var age = today.getFullYear() - birthDate.getFullYear();
+			var m = today.getMonth() - birthDate.getMonth();
+			if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+				age--;
+			}
+			return age;
+		}
+
+		if (this.validateMMDDYY(demographics.dob)) {
+			var YYYYMMDD = this.YYYYMMDDFromMMDDYY(demographics.dob)
+			if (getAge(YYYYMMDD) >= 18) {
+				externalState.userInput.demographics = demographics
+				this.trigger(externalState)
+				ParentalConsentActions.saveDemographics.completed()
+			} else {
+				ParentalConsentActions.saveDemographics.failed({message: "You must be 18 years or older."})
+			}
+		} else {
+			ParentalConsentActions.saveDemographics.failed({message: "Please enter a valid date of birth."})
+		}
+	},
+	validateMMDDYY: function(MMDDYY: string): bool {
+		var regex = new RegExp(/^((0?[13578]|10|12)(-|\/)(([1-9])|(0[1-9])|([12])([0-9]?)|(3[01]?))(-|\/)((19)([2-9])(\d{1})|(20)([01])(\d{1})|([8901])(\d{1}))|(0?[2469]|11)(-|\/)(([1-9])|(0[1-9])|([12])([0-9]?)|(3[0]?))(-|\/)((19)([2-9])(\d{1})|(20)([01])(\d{1})|([8901])(\d{1})))$/)
+		return regex.test(MMDDYY)
 	},
 
 	//
@@ -142,6 +170,24 @@ var ParentalConsentStore = Reflux.createStore({
 	//
 	// Email/Relationship/Consent screen
 	//
+	YYYYMMDDFromMMDDYY: function(MMDDYY: string): string {
+		var dateIsValid = this.validateMMDDYY(MMDDYY)
+		var YYYYMMDD: string = ""
+		if (dateIsValid) {
+			var components = MMDDYY.split("-");
+			// Not Y2.1k safe
+			var YYYY
+			var d = new Date()
+			var currentYYInt: number = d.getFullYear() % 100
+			if (parseInt(components[2]) > currentYYInt) {
+				YYYY = "19" + components[2]
+			} else {
+				YYYY = "20" + components[2]
+			}
+			YYYYMMDD = YYYY + "-" + components[0] + "-" + components[1]
+		}
+		return YYYYMMDD
+	},
 	onSaveEmailAndPassword: function(emailPassword: ParentalConsentEmailPassword) {
 		externalState.userInput.emailPassword = emailPassword
 	},
@@ -155,13 +201,15 @@ var ParentalConsentStore = Reflux.createStore({
 			relationship: relationship,
 		}
 
+		var YYYYMMDD: string = this.YYYYMMDDFromMMDDYY(userInput.demographics.dob)
+
 		var signUpRequest: ParentalConsentSignUpRequest = {
 			email: userInput.emailPassword.email,
 			password: userInput.emailPassword.password,
 			state: userInput.demographics.state,
 			first_name: userInput.demographics.first_name,
 			last_name: userInput.demographics.last_name,
-			dob: userInput.demographics.dob,
+			dob: YYYYMMDD,
 			gender: userInput.demographics.gender,
 			mobile_phone: userInput.demographics.mobile_phone,
 		}
@@ -185,18 +233,22 @@ var ParentalConsentStore = Reflux.createStore({
 		if (externalState.parentAccount.isSignedIn) {
 		    submitConsent()
 		} else {
-			externalState.numBlockingOperations = externalState.numBlockingOperations + 1
-			t.trigger(externalState)
-			ParentalConsentActions.signUp.triggerPromise(signUpRequest).then(function(response: any) {
-				externalState.parentAccount.isSignedIn = true;
-				externalState.numBlockingOperations = externalState.numBlockingOperations - 1
-			    submitConsent()
-			    t.trigger(externalState)
-			}).catch(function(err: ajaxError) {
-				externalState.numBlockingOperations = externalState.numBlockingOperations - 1
+			if (Utils.isEmpty(YYYYMMDD)) {
+				ParentalConsentActions.submitEmailRelationshipConsent.failed({message: "Please provide a valid date of birth."})
+			} else {
+				externalState.numBlockingOperations = externalState.numBlockingOperations + 1
 				t.trigger(externalState)
-				ParentalConsentActions.submitEmailRelationshipConsent.failed(err)
-			});
+				ParentalConsentActions.signUp.triggerPromise(signUpRequest).then(function(response: any) {
+					externalState.parentAccount.isSignedIn = true;
+					externalState.numBlockingOperations = externalState.numBlockingOperations - 1
+				    submitConsent()
+				    t.trigger(externalState)
+				}).catch(function(err: ajaxError) {
+					externalState.numBlockingOperations = externalState.numBlockingOperations - 1
+					t.trigger(externalState)
+					ParentalConsentActions.submitEmailRelationshipConsent.failed(err)
+				});
+			}
 		}
 	}
 });
