@@ -427,7 +427,7 @@ var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
 									{{if .Visit.IsFollowup}}Follow-up {{end}}Visit
 								</div>
 								<div class="box-body">
-									<div><strong>Submitted:</strong> {{.Visit.SubmittedDate|formatDateTime}}</div>
+									{{if not .Visit.SubmittedDate.IsZero}}<div><strong>Submitted:</strong> {{.Visit.SubmittedDate|formatDateTime}}</div>{{end}}
 									{{$diagnosisDetails := .DiagnosisDetails}}
 									{{with .DiagnosisSet}}
 									<div>
