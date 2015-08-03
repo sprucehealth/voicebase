@@ -83,6 +83,10 @@ func (av abandonedVisitCampaign) Run(dataAPI api.DataAPI, cfgSnap cfg.Snapshot) 
 		Accounts: make(map[int64][]mandrill.Var),
 	}
 	for _, v := range visits {
+		// skip sending abandoned cart emails to patients under 18
+		if v.PatientDOB.Age() < 18 {
+			continue
+		}
 		ci.Accounts[v.PatientAccountID] = []mandrill.Var{
 			{Name: "CaseName", Content: v.CaseName},
 		}

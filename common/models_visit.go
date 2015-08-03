@@ -166,6 +166,7 @@ type VisitSummary struct {
 	PatientAccountID  int64
 	PatientFirstName  string
 	PatientLastName   string
+	PatientDOB        encoding.Date
 	CaseName          string
 	SKUType           string
 	SubmissionState   *string
