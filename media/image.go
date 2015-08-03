@@ -23,7 +23,7 @@ const (
 	flipHorizontal
 )
 
-type SubImage interface {
+type subImage interface {
 	SubImage(r image.Rectangle) image.Image
 }
 
@@ -106,7 +106,7 @@ func resizeImage(img image.Image, width, height int) (image.Image, error) {
 		// SubImage method.
 		x0 := (resizeWidth - width) / 2
 		y0 := (resizeHeight - height) / 2
-		resizedImg = resizedImg.(SubImage).SubImage(image.Rect(x0, y0, x0+width, y0+height))
+		resizedImg = resizedImg.(subImage).SubImage(image.Rect(x0, y0, x0+width, y0+height))
 	}
 
 	return resizedImg, nil

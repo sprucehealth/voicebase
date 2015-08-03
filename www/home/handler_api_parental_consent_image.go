@@ -2,6 +2,9 @@ package home
 
 import (
 	"fmt"
+	"image"
+	_ "image/jpeg"
+	_ "image/png"
 	"net/http"
 	"time"
 
@@ -76,7 +79,7 @@ func (h *parentalConsentImageAPIHandler) post(ctx context.Context, w http.Respon
 		return
 	}
 
-	file, fileHandler, err := r.FormFile("file")
+	file, _, err := r.FormFile("file")
 	if err != nil {
 		if err == http.ErrMissingFile {
 			www.APIBadRequestError(w, r, "File is required")
@@ -87,10 +90,31 @@ func (h *parentalConsentImageAPIHandler) post(ctx context.Context, w http.Respon
 	}
 	defer file.Close()
 
-	mimeType := fileHandler.Header.Get("Content-Type")
-
 	size, err := common.SeekerSize(file)
 	if err != nil {
+		www.APIInternalError(w, r, err)
+		return
+	}
+
+	// Attempt to decode the header of the image to make sure it's a valid format and to get the mimetype.
+	_, imgFmt, err := image.DecodeConfig(file)
+	if err != nil {
+		www.APIGeneralError(w, r, "invalid_image", "Corrupt or unsupported image format")
+		return
+	}
+
+	var mimeType string
+	switch imgFmt {
+	case "jpeg":
+		mimeType = "image/jpeg"
+	case "png":
+		mimeType = "image/png"
+	default:
+		www.APIGeneralError(w, r, "invalid_image", "Unsupported image format")
+		return
+	}
+
+	if _, err := file.Seek(0, 0); err != nil {
 		www.APIInternalError(w, r, err)
 		return
 	}
