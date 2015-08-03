@@ -2,7 +2,6 @@ package campaigns
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
@@ -84,7 +83,7 @@ func TestEmailCampaignWelcomeOnSignupCfgDisabled(t *testing.T) {
 func TestEmailCampaignMinorTreatmentPlanIssued(t *testing.T) {
 	dispatch.Testing = true
 	dispatcher := dispatch.New()
-	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.MinorTreatmentPlanIssuedEmailEnabled, parentFrequentlyAskedQuestionsURLPathDef})
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.MinorTreatmentPlanIssuedEmailEnabled})
 	test.OK(t, err)
 	emailService := &email.TestService{}
 	var parentPatientID int64 = 54321
@@ -118,8 +117,8 @@ func TestEmailCampaignMinorTreatmentPlanIssued(t *testing.T) {
 		parentAccountID: []mandrill.Var{
 			mandrill.Var{Name: varParentFirstNameName, Content: parentFirstName},
 			mandrill.Var{Name: varPatientFirstNameName, Content: patientFirstName},
-			mandrill.Var{Name: varParentFrequentlyAskedQuestionsURLName, Content: "https://" + strings.Join([]string{emailWebDomain, cfgStore.Snapshot().String(parentFrequentlyAskedQuestionsURLPathDef.Name)}, "/")},
-			mandrill.Var{Name: varPatientMedrecordURLName, Content: "https://" + emailWebDomain + fmt.Sprintf("/pc/%d/medrecord", patientID)},
+			mandrill.Var{Name: varParentFrequentlyAskedQuestionsURLName, Content: "https://" + emailWebDomain + faqURLPath},
+			mandrill.Var{Name: varPatientMedrecordURLName, Content: "https://" + emailWebDomain + fmt.Sprintf(medRecordURLPathFormatString, patientID)},
 		},
 	}, emails[0].Vars)
 	test.Equals(t, &mandrill.Message{}, emails[0].Msg)
@@ -144,7 +143,7 @@ func TestEmailCampaignMinorTreatmentPlanIssuedCfgDisabled(t *testing.T) {
 func TestEmailCampaignMinorTriaged(t *testing.T) {
 	dispatch.Testing = true
 	dispatcher := dispatch.New()
-	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.MinorTriagedEmailEnabled, parentFrequentlyAskedQuestionsURLPathDef})
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.MinorTriagedEmailEnabled})
 	test.OK(t, err)
 	emailService := &email.TestService{}
 	var parentPatientID int64 = 54321
@@ -178,8 +177,8 @@ func TestEmailCampaignMinorTriaged(t *testing.T) {
 		parentAccountID: []mandrill.Var{
 			mandrill.Var{Name: varParentFirstNameName, Content: parentFirstName},
 			mandrill.Var{Name: varPatientFirstNameName, Content: patientFirstName},
-			mandrill.Var{Name: varParentFrequentlyAskedQuestionsURLName, Content: "https://" + strings.Join([]string{emailWebDomain, cfgStore.Snapshot().String(parentFrequentlyAskedQuestionsURLPathDef.Name)}, "/")},
-			mandrill.Var{Name: varPatientMedrecordURLName, Content: "https://" + emailWebDomain + fmt.Sprintf("/pc/%d/medrecord", patientID)},
+			mandrill.Var{Name: varParentFrequentlyAskedQuestionsURLName, Content: "https://" + emailWebDomain + faqURLPath},
+			mandrill.Var{Name: varPatientMedrecordURLName, Content: "https://" + emailWebDomain + fmt.Sprintf(medRecordURLPathFormatString, patientID)},
 		},
 	}, emails[0].Vars)
 	test.Equals(t, &mandrill.Message{}, emails[0].Msg)
@@ -204,7 +203,7 @@ func TestEmailCampaignMinorTriagedCfgDisabled(t *testing.T) {
 func TestEmailCampaignParentWelcome(t *testing.T) {
 	dispatch.Testing = true
 	dispatcher := dispatch.New()
-	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.ParentWelcomeEmailEnabled, parentFrequentlyAskedQuestionsURLPathDef})
+	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.ParentWelcomeEmailEnabled})
 	test.OK(t, err)
 	emailService := &email.TestService{}
 	var parentPatientID int64 = 12345
@@ -238,8 +237,8 @@ func TestEmailCampaignParentWelcome(t *testing.T) {
 		parentAccountID: []mandrill.Var{
 			mandrill.Var{Name: varParentFirstNameName, Content: parentFirstName},
 			mandrill.Var{Name: varPatientFirstNameName, Content: patientFirstName},
-			mandrill.Var{Name: varParentFrequentlyAskedQuestionsURLName, Content: "https://" + strings.Join([]string{emailWebDomain, cfgStore.Snapshot().String(parentFrequentlyAskedQuestionsURLPathDef.Name)}, "/")},
-			mandrill.Var{Name: varPatientMedrecordURLName, Content: "https://" + emailWebDomain + fmt.Sprintf("/pc/%d/medrecord", patientID)},
+			mandrill.Var{Name: varParentFrequentlyAskedQuestionsURLName, Content: "https://" + emailWebDomain + faqURLPath},
+			mandrill.Var{Name: varPatientMedrecordURLName, Content: "https://" + emailWebDomain + fmt.Sprintf(medRecordURLPathFormatString, patientID)},
 		},
 	}, emails[0].Vars)
 	test.Equals(t, &mandrill.Message{}, emails[0].Msg)

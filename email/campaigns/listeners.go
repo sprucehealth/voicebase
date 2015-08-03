@@ -2,7 +2,6 @@ package campaigns
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -44,13 +43,6 @@ var parentWelcomeEmailEnabledDef = &cfg.ValueDef{
 	Default:     false,
 }
 
-var parentFrequentlyAskedQuestionsURLPathDef = &cfg.ValueDef{
-	Name:        "Parent.Frequently.Asked.Question.URL.Path",
-	Description: "Change the path applied to the web domain for the location of the parent FAQ.",
-	Type:        cfg.ValueTypeString,
-	Default:     "/pc/faq",
-}
-
 const (
 	patientSignupEmailType                   = "welcome"
 	minorTreatmentPlanIssuedEmailType        = "minor-treatment-plan-issued"
@@ -60,6 +52,8 @@ const (
 	varPatientMedrecordURLName               = "patient_med_record_url"
 	varParentFrequentlyAskedQuestionsURLName = "parent_faq_url"
 	varParentFirstNameName                   = "parent_first_name"
+	faqURLPath                               = "/pc/faq"
+	medRecordURLPathFormatString             = "/pc/%d/medrecord"
 )
 
 // InitListeners bootstraps the listeners related to email campaigns triggered by events in the system
@@ -68,7 +62,7 @@ func InitListeners(dispatch *dispatch.Dispatcher, cfgStore cfg.Store, emailServi
 	cfgStore.Register(minorTreatmentPlanIssuedEmailEnabledDef)
 	cfgStore.Register(minorTriagedEmailEnabledDef)
 	cfgStore.Register(parentWelcomeEmailEnabledDef)
-	cfgStore.Register(parentFrequentlyAskedQuestionsURLPathDef)
+
 	dispatch.SubscribeAsync(func(ev *patient.SignupEvent) error {
 		if cfgStore.Snapshot().Bool(welcomeEmailEnabledDef.Name) {
 			if _, err := emailService.Send([]int64{ev.AccountID}, patientSignupEmailType, nil, &mandrill.Message{}, email.OnlyOnce|email.CanOptOut); err != nil {
@@ -105,12 +99,12 @@ func InitListeners(dispatch *dispatch.Dispatcher, cfgStore cfg.Store, emailServi
 }
 
 func sendToPatientParent(childPatientID int64, emailType, webDomain string, opt email.Option, emailService email.Service, dataAPI api.DataAPI, cfgStore cfg.Store) error {
-	faqURL := "https://" + strings.Join([]string{webDomain, cfgStore.Snapshot().String(parentFrequentlyAskedQuestionsURLPathDef.Name)}, "/")
+	faqURL := httpsURL(webDomain, faqURLPath)
 	patient, err := dataAPI.Patient(childPatientID, true)
 	if err != nil {
 		return errors.Trace(fmt.Errorf("Failed to send %s email to parent account of child patient id %d: %s", emailType, childPatientID, err))
 	}
-	medRecordURL := "https://" + webDomain + fmt.Sprintf("/pc/%d/medrecord", patient.ID.Int64())
+	medRecordURL := httpsURL(webDomain, medRecordURLPathFormatString, patient.ID.Int64())
 	if patient.IsUnder18() && patient.HasParentalConsent {
 		consents, err := dataAPI.ParentalConsent(childPatientID)
 		if err != nil {
@@ -141,4 +135,8 @@ func sendToPatientParent(childPatientID int64, emailType, webDomain string, opt 
 		}
 	}
 	return nil
+}
+
+func httpsURL(domain, pathFormatString string, args ...interface{}) string {
+	return `https://` + domain + fmt.Sprintf(pathFormatString, args...)
 }
