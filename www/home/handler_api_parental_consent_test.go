@@ -26,7 +26,7 @@ type mockDataAPI_parentalConsent struct {
 	proof        *api.ParentalConsentProof
 	updated      bool
 	consent      *common.ParentalConsent
-	patient      *common.Patient
+	patients     []*common.Patient
 	tokens       map[string]string
 }
 
@@ -49,7 +49,21 @@ func (a *mockDataAPI_parentalConsent) ValidateToken(purpose, token string) (stri
 }
 
 func (a *mockDataAPI_parentalConsent) GetPatientIDFromAccountID(accountID int64) (int64, error) {
-	return accountID, nil
+	for _, p := range a.patients {
+		if p.AccountID.Int64() == accountID {
+			return p.ID.Int64(), nil
+		}
+	}
+	return 0, api.ErrNotFound("patient_id")
+}
+
+func (a *mockDataAPI_parentalConsent) GetPatientFromAccountID(accountID int64) (*common.Patient, error) {
+	for _, p := range a.patients {
+		if p.AccountID.Int64() == accountID {
+			return p, nil
+		}
+	}
+	return nil, api.ErrNotFound("patient")
 }
 
 func (a *mockDataAPI_parentalConsent) GrantParentChildConsent(parentPatientID, childPatientID int64, relationship string) error {
@@ -77,16 +91,31 @@ func (a *mockDataAPI_parentalConsent) ParentalConsentCompletedForPatient(patient
 }
 
 func (a *mockDataAPI_parentalConsent) Patient(id int64, basicInfoOnly bool) (*common.Patient, error) {
-	return a.patient, nil
+	for _, p := range a.patients {
+		if p.ID.Int64() == id {
+			return p, nil
+		}
+	}
+	return nil, api.ErrNotFound("patient")
 }
 
 func TestParentalConsentAPIHandler_POST(t *testing.T) {
-	dataAPI := &mockDataAPI_parentalConsent{}
+	dobOver18 := encoding.Date{Year: 1970}
+	dobUnder18 := encoding.Date{Year: time.Now().Year() - 15}
+	patients := []*common.Patient{
+		// Parent
+		{ID: encoding.NewObjectID(1), AccountID: encoding.NewObjectID(1), DOB: dobOver18},
+		// Child
+		{ID: encoding.NewObjectID(2), AccountID: encoding.NewObjectID(2), DOB: dobUnder18},
+	}
+	dataAPI := &mockDataAPI_parentalConsent{patients: patients}
 
 	h := newParentalConsentAPIHAndler(dataAPI, dispatch.New())
 
 	account := &common.Account{ID: 1, Role: api.RolePatient}
 	ctx := www.CtxWithAccount(context.Background(), account)
+
+	// Forbidden
 
 	body, err := json.Marshal(&parentalConsentAPIPOSTRequest{
 		ChildPatientID: 2,
@@ -100,7 +129,9 @@ func TestParentalConsentAPIHandler_POST(t *testing.T) {
 	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusForbidden, w.Code)
 
-	*dataAPI = mockDataAPI_parentalConsent{}
+	// Success
+
+	*dataAPI = mockDataAPI_parentalConsent{patients: patients}
 	body, err = json.Marshal(&parentalConsentAPIPOSTRequest{
 		ChildPatientID: 2,
 		Relationship:   "handler",
@@ -124,6 +155,7 @@ func TestParentalConsentAPIHandler_POST(t *testing.T) {
 			SelfiePhotoID:       ptr.Int64(111),
 			GovernmentIDPhotoID: ptr.Int64(222),
 		},
+		patients: patients,
 	}
 	body, err = json.Marshal(&parentalConsentAPIPOSTRequest{
 		ChildPatientID: 2,
@@ -140,15 +172,43 @@ func TestParentalConsentAPIHandler_POST(t *testing.T) {
 	test.HTTPResponseCode(t, http.StatusOK, w)
 	test.Equals(t, "handler", dataAPI.relationship)
 	test.Equals(t, true, dataAPI.updated)
+
+	// Disallow underage parent or guardian
+
+	*dataAPI = mockDataAPI_parentalConsent{patients: patients}
+	patients[0].DOB = dobUnder18
+	body, err = json.Marshal(&parentalConsentAPIPOSTRequest{
+		ChildPatientID: 2,
+		Relationship:   "handler",
+	})
+	test.OK(t, err)
+	r, err = http.NewRequest("POST", "/", bytes.NewReader(body))
+	test.OK(t, err)
+	token, err = patient.GenerateParentalConsentToken(dataAPI, 2)
+	test.OK(t, err)
+	r.AddCookie(newParentalConsentCookie(2, token, r))
+	w = httptest.NewRecorder()
+	h.ServeHTTP(ctx, w, r)
+	test.Equals(t, www.HTTPStatusAPIError, w.Code)
+	test.Equals(t, "{\"error\":{\"type\":\"under_age\",\"message\":\"A parent or guardian must be 18 or older\"}}\n", w.Body.String())
 }
 
 func TestParentalConsentAPIHandler_GET(t *testing.T) {
+	dobOver18 := encoding.Date{Year: 1970}
+	dobUnder18 := encoding.Date{Year: time.Now().Year() - 15}
 	dataAPI := &mockDataAPI_parentalConsent{
-		patient: &common.Patient{
-			ID:        encoding.NewObjectID(2),
-			FirstName: "Timmy",
-			LastName:  "Little",
-			Gender:    "male",
+		patients: []*common.Patient{
+			// Parent
+			{ID: encoding.NewObjectID(1), AccountID: encoding.NewObjectID(1), DOB: dobOver18},
+			// Child
+			{
+				ID:        encoding.NewObjectID(2),
+				AccountID: encoding.NewObjectID(2),
+				FirstName: "Timmy",
+				LastName:  "Little",
+				Gender:    "male",
+				DOB:       dobUnder18,
+			},
 		},
 	}
 

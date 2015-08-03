@@ -60,22 +60,15 @@ func newParentalConsentAPIHAndler(dataAPI api.DataAPI, dispatcher dispatch.Publi
 }
 
 func (h *parentalConsentAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	account := www.MustCtxAccount(ctx)
-	parentPatientID, err := h.dataAPI.GetPatientIDFromAccountID(account.ID)
-	if err != nil {
-		www.APIInternalError(w, r, err)
-		return
-	}
-
 	switch r.Method {
 	case httputil.Post:
-		h.post(ctx, w, r, parentPatientID)
+		h.post(ctx, w, r)
 	case httputil.Get:
-		h.get(ctx, w, r, parentPatientID)
+		h.get(ctx, w, r)
 	}
 }
 
-func (h *parentalConsentAPIHandler) post(ctx context.Context, w http.ResponseWriter, r *http.Request, parentPatientID int64) {
+func (h *parentalConsentAPIHandler) post(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var req parentalConsentAPIPOSTRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		www.APIBadRequestError(w, r, err.Error())
@@ -95,20 +88,31 @@ func (h *parentalConsentAPIHandler) post(ctx context.Context, w http.ResponseWri
 		return
 	}
 
-	if err := h.dataAPI.GrantParentChildConsent(parentPatientID, req.ChildPatientID, req.Relationship); err != nil {
+	account := www.MustCtxAccount(ctx)
+	parent, err := h.dataAPI.GetPatientFromAccountID(account.ID)
+	if err != nil {
+		www.APIInternalError(w, r, err)
+		return
+	}
+	if parent.IsUnder18() {
+		www.APIGeneralError(w, r, "under_age", "A parent or guardian must be 18 or older")
+		return
+	}
+
+	if err := h.dataAPI.GrantParentChildConsent(parent.ID.Int64(), req.ChildPatientID, req.Relationship); err != nil {
 		www.APIInternalError(w, r, err)
 		return
 	}
 
 	// It's possible this is a second child for the same parent in which case we'll already have identification photos.
-	proof, err := h.dataAPI.ParentConsentProof(parentPatientID)
+	proof, err := h.dataAPI.ParentConsentProof(parent.ID.Int64())
 	if err != nil {
 		if !api.IsErrNotFound(err) {
 			www.APIInternalError(w, r, err)
 			return
 		}
 	} else if proof.IsComplete() {
-		if err := patient.ParentalConsentCompleted(h.dataAPI, h.dispatcher, parentPatientID, req.ChildPatientID); err != nil {
+		if err := patient.ParentalConsentCompleted(h.dataAPI, h.dispatcher, parent.ID.Int64(), req.ChildPatientID); err != nil {
 			www.APIInternalError(w, r, err)
 			return
 		}
@@ -117,7 +121,7 @@ func (h *parentalConsentAPIHandler) post(ctx context.Context, w http.ResponseWri
 	httputil.JSONResponse(w, http.StatusOK, parentalConsentAPIPOSTResponse{})
 }
 
-func (h *parentalConsentAPIHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request, parentPatientID int64) {
+func (h *parentalConsentAPIHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var req parentalconsentAPIGETRequest
 	if err := r.ParseForm(); err != nil {
 		www.APIBadRequestError(w, r, "Bad request")
@@ -125,6 +129,13 @@ func (h *parentalConsentAPIHandler) get(ctx context.Context, w http.ResponseWrit
 	}
 	if err := schema.NewDecoder().Decode(&req, r.Form); err != nil {
 		www.APIBadRequestError(w, r, err.Error())
+		return
+	}
+
+	account := www.MustCtxAccount(ctx)
+	parentPatientID, err := h.dataAPI.GetPatientIDFromAccountID(account.ID)
+	if err != nil {
+		www.APIInternalError(w, r, err)
 		return
 	}
 
