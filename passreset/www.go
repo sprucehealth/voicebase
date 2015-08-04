@@ -53,7 +53,7 @@ type resetHandler struct {
 }
 
 func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, emailService email.Service, supportEmail, webDomain string, templateLoader *www.TemplateLoader, metricsRegistry metrics.Registry) {
-	templateLoader.MustLoadTemplate("password_reset/base.html", "base.html", nil)
+	templateLoader.MustLoadTemplate("auth/base.html", "base.html", nil)
 
 	ph := &promptHandler{
 		r:                   r,
@@ -62,7 +62,7 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI
 		emailService:        emailService,
 		supportEmail:        supportEmail,
 		webDomain:           webDomain,
-		template:            templateLoader.MustLoadTemplate("password_reset/prompt.html", "password_reset/base.html", nil),
+		template:            templateLoader.MustLoadTemplate("auth/passreset-prompt.html", "auth/base.html", nil),
 		statUnknownEmail:    metrics.NewCounter(),
 		statEmailSendFailed: metrics.NewCounter(),
 	}
@@ -76,7 +76,7 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI
 		smsAPI:           smsAPI,
 		fromNumber:       fromNumber,
 		supportEmail:     supportEmail,
-		template:         templateLoader.MustLoadTemplate("password_reset/verify.html", "password_reset/base.html", nil),
+		template:         templateLoader.MustLoadTemplate("auth/passreset-verify.html", "auth/base.html", nil),
 		statInvalidToken: metrics.NewCounter(),
 		statExpiredToken: metrics.NewCounter(),
 	}
@@ -89,7 +89,7 @@ func SetupRoutes(r *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI
 		authAPI:          authAPI,
 		emailService:     emailService,
 		supportEmail:     supportEmail,
-		template:         templateLoader.MustLoadTemplate("password_reset/reset.html", "password_reset/base.html", nil),
+		template:         templateLoader.MustLoadTemplate("auth/passreset.html", "auth/base.html", nil),
 		statInvalidToken: metrics.NewCounter(),
 		statExpiredToken: metrics.NewCounter(),
 	}

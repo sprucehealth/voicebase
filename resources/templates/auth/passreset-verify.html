@@ -1,5 +1,5 @@
 {{define "phonenumber"}}
-<p><!-- TODO: phone icon --> <span class="phonenumber">(***)-***-**{{.}}</span></p>
+<p><span class="phonenumber">(***)-***-**{{.}}</span></p>
 {{end}}
 
 {{define "body"}}
@@ -10,8 +10,6 @@
 
 			{{template "phonenumber" .LastTwoDigits}}
 
-			<hr>
-
 			{{range .Errors}}
 			<div class="alert alert-danger" role="alert">{{.}}</div>
 			{{end}}
@@ -20,40 +18,21 @@
 				<input type="hidden" name="action" value="validate">
 				<input type="hidden" name="token" value="{{.Token}}">
 				<input type="hidden" name="email" value="{{.Email}}">
-				<div class="form-group">
-					<label class="control-label" for="code">Code you received</label>
-					<input required type="number" id="code" name="code" value="{{.Code}}" class="form-control">
-				</div>
-				<button class="btn btn-primary center-block">Verify</button>
+				<input required type="number" id="code" name="code" value="{{.Code}}" placeholder="Code you received" class="last form-control">
+				<button class="btn btn-primary center-block">VERIFY</button>
 			</form>
 		{{else}}
 			<p>To verify this account belongs to you we'll send a verification code to your phone:</p>
 
 			{{template "phonenumber" .LastTwoDigits}}
 
-			{{if false}}
-			<hr>
-
-			<!-- Left here but disabled since we will want voice but it's not implemented yet -->
-			<p>Select how you'd like to receive your access code:</p>
-
-			<form method="POST" action="" role="form">
-			<input type="hidden" name="action" value="send">
-			<input type="hidden" name="token" value="{{.Token}}">
-			<input type="hidden" name="email" value="{{.Email}}">
-			<input type="radio" name="method" value="sms" checked> Text message<br>
-			<input type="radio" name="method" value="voice"> Voice call<br>
-			<button class="btn btn-primary center-block">Send Code</button>
-			</form>
-			{{else}}
 			<form method="POST" action="" role="form">
 			<input type="hidden" name="action" value="send">
 			<input type="hidden" name="token" value="{{.Token}}">
 			<input type="hidden" name="email" value="{{.Email}}">
 			<input type="hidden" name="method" value="sms" checked>
-			<button class="btn btn-primary center-block">Send Code</button>
+			<button class="btn btn-primary center-block">SEND CODE</button>
 			</form>
-			{{end}}
 		{{end}}
 	{{else}}
 		<p>There is no phone number associated with your account. Please contact support

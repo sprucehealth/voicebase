@@ -1,0 +1,18 @@
+{{define "body"}}
+	{{if .Sent}}
+		<p>An email with a link to reset your password has been sent to <strong>{{.Email}}</strong>. Please check your inbox.</p>
+
+		<p>If the email does not arrive you can <a href="">try sending the email again</a> or contact <a href="mailto:{{.SupportEmail}}">Spruce&nbsp;Support</a>.</p>
+	{{else}}
+		<p>We’ll send you an email with instructions to reset your password.</p>
+
+		<form action="" method="POST" role="form">
+			{{with .Error}}<div class="alert alert-danger" role="alert">{{.}}</div>{{end}}
+
+			<div class="form-group {{if .Error}}has-error has-feedback{{end}}">
+				<input required type="email" id="email" name="email" placeholder="Email address" value="{{.Email}}" class="last form-control" autocapitalize="off">
+			</div>
+			<button class="center-block btn btn-primary">SEND EMAIL</button>
+		</form>
+	{{end}}
+{{end}}

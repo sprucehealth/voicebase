@@ -13,14 +13,8 @@
 		<form method="POST" action="" role="form">
 			<input type="hidden" name="token" value="{{.Token}}">
 			<input type="hidden" name="email" value="{{.Email}}">
-			<div class="form-group">
-				<label class="control-label" for="password1">New Password</label>
-				<input required type="password" id="password1" name="password1" class="form-control">
-			</div>
-			<div class="form-group">
-				<label class="control-label" for="password2">Confirm Password</label>
-				<input required type="password" id="password2" name="password2" class="form-control">
-			</div>
-		<button class="btn btn-primary center-block">Reset Password</button>
+			<input required type="password" id="password1" name="password1" placeholder="New Password" class="form-control">
+			<input required type="password" id="password2" name="password2" placeholder="Confirm Password" class="last form-control">
+		<button class="btn btn-primary center-block">RESET PASSWORD</button>
 	{{end}}
 {{end}}

@@ -1,0 +1,11 @@
+{{define "body"}}
+	<form role="form" action="" method="POST">
+		<h2>2 Step Verification</h2>
+		<p>A text message with your code has been sent to:<br>(***)&nbsp;***-**{{.LastTwoPhone}}</p>
+		{{if .Error}}
+			<div class="text-danger">{{.Error}}</div>
+		{{end}}
+		<input type="code" class="last form-control" name="code" placeholder="Enter Code" required autofocus>
+		<button class="btn btn-lg btn-primary btn-block" type="submit">VERIFY</button>
+	</form>
+{{end}}

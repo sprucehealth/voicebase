@@ -1,16 +1,18 @@
-.form-signin {
-	@include fontSize-smaller();
-	max-width: 600px;
-	margin: 0 auto;
-	padding: 40px 10px 0 10px;
-	text-align: center;
+#auth-root {
+	@include fontSize-smallest();
+	@include font-300();
 	color: $color-spruceDarkest;
+	max-width: 500px;
+	margin: 30px auto 0 auto;
+	padding: 20px;
+	text-align: center;
 
 	img {
 		margin-bottom: 30px;
 	}
 	p {
 		margin-bottom: 15px;
+		color: #65777D;
 	}
 	.forgot-password {
 		font-size: 18px;
@@ -38,17 +40,8 @@
 	button {
 		@include font-700();
 		@include fontSize-smallest();
-		margin-top: 20px;
-	}
-	input[type="email"] {
-		margin-bottom: -1px;
-		border-bottom-right-radius: 0;
-		border-bottom-left-radius: 0;
-	}
-	input[type="password"] {
-		margin-bottom: 10px;
-		border-top-left-radius: 0;
-		border-top-right-radius: 0;
+		margin-top: 30px;
+		width: 100%;
 	}
 
 	#login-forgot-password {

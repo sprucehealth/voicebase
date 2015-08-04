@@ -21,7 +21,8 @@ const (
 	resetPasswordExpires    = 10 * 60 // seconds
 )
 
-func SendPasswordResetEmail(authAPI api.AuthAPI, emailService email.Service, domain string, accountID int64) error {
+// SendPasswordResetEmail sends the password reset email for an account
+func SendPasswordResetEmail(authAPI api.AuthAPI, emailService email.Service, webDomain string, accountID int64) error {
 	// Generate a temporary token that allows access to the password reset page
 	token, err := authAPI.CreateTempToken(accountID, lostPasswordExpires, api.LostPassword, "")
 	if err != nil {
@@ -36,13 +37,14 @@ func SendPasswordResetEmail(authAPI api.AuthAPI, emailService email.Service, dom
 		GlobalMergeVars: []mandrill.Var{
 			{
 				Name:    "ResetURL",
-				Content: fmt.Sprintf("https://%s/reset-password/verify?%s", domain, params.Encode()),
+				Content: fmt.Sprintf("https://%s/reset-password/verify?%s", webDomain, params.Encode()),
 			},
 		},
 	}, 0)
 	return err
 }
 
+// SendPasswordHasBeenResetEmail sends the email for when a password is reset through the reset password flow
 func SendPasswordHasBeenResetEmail(emailService email.Service, accountID int64) error {
 	_, err := emailService.Send([]int64{accountID}, successEmailType, nil, &mandrill.Message{}, 0)
 	return err

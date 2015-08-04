@@ -1,0 +1,17 @@
+{{define "baseHead"}}
+	<link rel="stylesheet" type="text/css" href="{{staticURL "/css/home.css"}}">
+	<style type="text/css">
+		html, body {
+			background-color: #FFF;
+		}
+	</style>
+	{{template "head" .}}
+{{end}}
+{{define "head"}}{{end}}
+
+{{define "baseBody"}}
+	<div id="auth-root">
+		<img src="{{staticURL "/img/logo@2x.png"}}" width="205" height="55" alt="Spruce"><br>
+
+		{{template "body" .}}
+{{end}}
