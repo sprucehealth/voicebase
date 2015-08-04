@@ -37,6 +37,9 @@
 	.form-control.last {
 		border-bottom: 1px solid #DAE6EB;
 	}
+	input {
+		-webkit-appearance: none;
+	}
 	button {
 		@include font-700();
 		@include fontSize-smallest();
