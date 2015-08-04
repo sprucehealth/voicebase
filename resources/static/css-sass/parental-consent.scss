@@ -327,7 +327,7 @@ a:link, a:visited, a:hover, a:active {
 // Button styling
 
 .flexy-btn {
-    // display: -webkit-box;
+    display: -webkit-box;   // 2009 spec
     display: -moz-box;
     display: -ms-flexbox;
     display: -webkit-flex;
@@ -386,6 +386,7 @@ a:link, a:visited, a:hover, a:active {
 
 .item0 {
     @extend .arrow-item;
+    box-ordinal-group: 0;   // 2009 spec
        -moz-order: 0;
         -ms-order: 0;
     -webkit-order: 0;
@@ -393,6 +394,7 @@ a:link, a:visited, a:hover, a:active {
 }
 
 .item1 {
+    box-ordinal-group: 1;   // 2009 spec
        -moz-order: 1;
         -ms-order: 1;
     -webkit-order: 1;
@@ -402,6 +404,7 @@ a:link, a:visited, a:hover, a:active {
 }
 
 .item2 {
+    box-ordinal-group: 2;   // 2009 spec
     @extend .arrow-item;
        -moz-order: 2;
         -ms-order: 2;
