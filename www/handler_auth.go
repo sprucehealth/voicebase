@@ -37,7 +37,7 @@ func NewLoginHandler(authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, 
 		smsAPI:                    smsAPI,
 		fromNumber:                fromNumber,
 		twoFactorExpiration:       twoFactorExpiration,
-		template:                  templateLoader.MustLoadTemplate("login.html", "base.html", nil),
+		template:                  templateLoader.MustLoadTemplate("auth/sign-in.html", "auth/base.html", nil),
 		rateLimiter:               rateLimiter,
 		statSuccess2FARequired:    metrics.NewCounter(),
 		statSuccess2FANotRequired: metrics.NewCounter(),
@@ -180,7 +180,7 @@ type loginVerifyHandler struct {
 func NewLoginVerifyHandler(authAPI api.AuthAPI, templateLoader *TemplateLoader, metricsRegistry metrics.Registry) httputil.ContextHandler {
 	h := &loginVerifyHandler{
 		authAPI:                 authAPI,
-		template:                templateLoader.MustLoadTemplate("login_verify.html", "base.html", nil),
+		template:                templateLoader.MustLoadTemplate("auth/sign-in-verify.html", "auth/base.html", nil),
 		statSuccess:             metrics.NewCounter(),
 		statFailureInvalidToken: metrics.NewCounter(),
 		statFailureInvalidCode:  metrics.NewCounter(),

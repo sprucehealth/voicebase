@@ -110,6 +110,7 @@ func New(c *Config) httputil.ContextHandler {
 	c.TemplateLoader.MustLoadTemplate("base.html", "", nil)
 
 	router := mux.NewRouter().StrictSlash(true)
+	c.TemplateLoader.MustLoadTemplate("auth/base.html", "base.html", nil)
 	router.Handle("/login", www.NewLoginHandler(c.AuthAPI, c.SMSAPI, c.FromNumber, c.TwoFactorExpiration,
 		c.TemplateLoader, c.RateLimiters.Get("login"), c.MetricsRegistry.Scope("login")))
 	router.Handle("/login/verify", www.NewLoginVerifyHandler(c.AuthAPI, c.TemplateLoader, c.MetricsRegistry.Scope("login-verify")))
