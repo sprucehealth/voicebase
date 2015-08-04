@@ -311,7 +311,7 @@ var mrTemplate = template.Must(template.New("").Funcs(map[string]interface{}{
 		</div>
 
 		<p class="font-300 font-size-16 color-dark">
-			The care record contains all information pertaining to your case(s), including symptoms, medical history, treatment plan and messages. If you have any questions or concerns, please contact support at support@sprucehealth.com or 800-975-7618.
+			This care record contains all information pertaining to the case(s) submitted, including symptoms, medical history, treatment plan and messages. If you have any questions or concerns, please contact support at support@sprucehealth.com or 800-975-7618.
 		</p>
 
 		<h1>Patient Information</h1>
