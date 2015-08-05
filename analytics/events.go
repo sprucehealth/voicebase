@@ -91,7 +91,7 @@ type WebRequestEvent struct {
 	Service      string `json:"service"`
 	Path         string `json:"path"`
 	Timestamp    Time   `json:"time"`
-	RequestID    int64  `json:"request_id"`
+	RequestID    uint64 `json:"request_id"`
 	StatusCode   int    `json:"status_code"`
 	Method       string `json:"method"`
 	URL          string `json:"url"`

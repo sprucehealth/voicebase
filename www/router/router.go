@@ -190,12 +190,48 @@ func New(c *Config) httputil.ContextHandler {
 		router.ServeHTTP(ctx, w, r)
 	})
 
-	h := httputil.DecompressRequest(
-		httputil.RequestIDHandler(
-			httputil.LoggingHandler(
-				secureRedirectHandler,
-				golog.Default(),
-				c.AnalyticsLogger)))
+	webRequestLogger := func(ctx context.Context, ev *httputil.RequestEvent) {
+		av := &analytics.WebRequestEvent{
+			Service:      "www",
+			RequestID:    httputil.RequestID(ctx),
+			Path:         ev.URL.Path,
+			Timestamp:    analytics.Time(ev.Timestamp),
+			StatusCode:   ev.StatusCode,
+			Method:       ev.Request.Method,
+			URL:          ev.URL.String(),
+			RemoteAddr:   ev.RemoteAddr,
+			ContentType:  ev.ResponseHeaders.Get("Content-Type"),
+			UserAgent:    ev.Request.UserAgent(),
+			Referrer:     ev.Request.Referer(),
+			ResponseTime: int(ev.ResponseTime.Nanoseconds() / 1e3),
+			Server:       ev.ServerHostname,
+		}
+		log := golog.Context(
+			"Method", av.Method,
+			"URL", av.URL,
+			"UserAgent", av.UserAgent,
+			"RequestID", av.RequestID,
+			"RemoteAddr", av.RemoteAddr,
+			"StatusCode", av.StatusCode,
+		)
+		account, ok := www.CtxAccount(ctx)
+		if ok {
+			log = log.Context("AccountID", account.ID, "Role", account.Role)
+			av.AccountID = account.ID
+		}
+		if ev.Panic != nil {
+			log.Criticalf("http: panic: %v\n%s", ev.Panic, ev.StackTrace)
+		} else {
+			log.Infof("webrequest")
+		}
+		c.AnalyticsLogger.WriteEvents([]analytics.Event{av})
+	}
+
+	h := httputil.SecurityHandler(secureRedirectHandler)
+	if !environment.IsTest() {
+		h = httputil.LoggingHandler(h, webRequestLogger)
+	}
+	h = httputil.DecompressRequest(httputil.RequestIDHandler(h))
 	if c.CompressResponse {
 		h = httputil.CompressResponse(h)
 	}

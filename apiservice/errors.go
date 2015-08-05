@@ -23,7 +23,7 @@ type SpruceError struct {
 	UserError          string `json:"user_error,omitempty"`
 	DeveloperErrorCode int64  `json:"developer_code,string,omitempty"`
 	HTTPStatusCode     int    `json:"-"`
-	RequestID          int64  `json:"request_id,string,omitempty"`
+	RequestID          uint64 `json:"request_id,string,omitempty"`
 }
 
 func (s *SpruceError) Error() string {

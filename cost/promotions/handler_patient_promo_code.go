@@ -36,7 +36,7 @@ type PatientPromotionPOSTRequest struct {
 // PatientPromotionPOSTErrorResponse represents the data returned from a non standard POST request to the patientPromotionsHandler, it is exported for client consumption.
 type PatientPromotionPOSTErrorResponse struct {
 	UserError string `json:"user_error"`
-	RequestID int64  `json:"request_id,string"`
+	RequestID uint64 `json:"request_id,string"`
 }
 
 // NewPatientPromotionsHandler rreturns a new initialized instance of the patientPromotionsHandler

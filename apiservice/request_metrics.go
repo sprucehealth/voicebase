@@ -143,7 +143,7 @@ func (h *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// write the requestID to the response header so that we have a way to track
 	// back to a particular request for which the response was generated
-	customResponseWriter.Header().Set("S-Request-ID", strconv.FormatInt(ctx.RequestID, 10))
+	customResponseWriter.Header().Set("S-Request-ID", strconv.FormatUint(ctx.RequestID, 10))
 
 	defer func() {
 		err := recover()

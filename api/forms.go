@@ -7,7 +7,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
-func (d *dataService) RecordForm(form Form, source string, requestID int64) error {
+func (d *dataService) RecordForm(form Form, source string, requestID uint64) error {
 	tableName, columns, values := form.TableColumnValues()
 	columns = append(columns, "source", "request_id")
 	values = append(values, source, requestID)

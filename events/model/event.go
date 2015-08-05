@@ -116,7 +116,7 @@ type WebRequestEvent struct {
 	Service      string
 	Path         string
 	Timestamp    time.Time
-	RequestID    int64
+	RequestID    uint64
 	StatusCode   int
 	Method       string
 	URL          string

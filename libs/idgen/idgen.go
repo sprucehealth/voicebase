@@ -28,10 +28,10 @@ const (
 )
 
 var (
-	datacenterID int64
-	workerID     int64
-	seq          int64
-	lastTime     int64
+	datacenterID uint64
+	workerID     uint64
+	seq          uint64
+	lastTime     uint64
 	mu           sync.Mutex
 )
 
@@ -53,8 +53,8 @@ func init() {
 			for _, a := range addr {
 				if ip, ok := a.(*net.IPNet); ok {
 					if ip4 := ip.IP.To4(); ip4 != nil {
-						datacenterID = int64((ip4[len(ip4)-1] >> workerIDBits) & datacenterMask)
-						workerID = int64(ip4[len(ip4)-1] & workerMask)
+						datacenterID = uint64((ip4[len(ip4)-1] >> workerIDBits) & datacenterMask)
+						workerID = uint64(ip4[len(ip4)-1] & workerMask)
 					}
 				}
 			}
@@ -62,8 +62,8 @@ func init() {
 	}
 }
 
-func now() int64 {
-	return time.Now().UnixNano() / 1e6 // ms
+func now() uint64 {
+	return uint64(time.Now().UnixNano() / 1e6) // ms
 }
 
 // NewID returns a 64-bit signed globally unique ID. It does so by combining
@@ -73,7 +73,7 @@ func now() int64 {
 // is used for the time to give more headroom. The IDs are locally orderable
 // and globally K-orderable in time (unordered within a millisecond but strong
 // ordering beyond a millisecond)
-func NewID() (int64, error) {
+func NewID() (uint64, error) {
 	mu.Lock()
 
 	t := now()
