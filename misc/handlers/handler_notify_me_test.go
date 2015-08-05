@@ -22,7 +22,7 @@ func (t *testForm) TableColumnValues() (string, []string, []interface{}) {
 	return "test_form", []string{"email", "state", "platform", "device_id"}, []interface{}{t.Email, t.State, t.Platform, t.DeviceID}
 }
 
-func (n *notifyMeHandlerDataAPI) RecordForm(form api.Form, source string, requestID int64) error {
+func (n *notifyMeHandlerDataAPI) RecordForm(form api.Form, source string, requestID uint64) error {
 	n.recordedForm = form
 	return nil
 }

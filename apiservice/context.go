@@ -41,7 +41,7 @@ type Context struct {
 	AccountID        int64
 	Role             string
 	RequestStartTime time.Time
-	RequestID        int64
+	RequestID        uint64
 	RequestCache     map[CacheKey]interface{}
 }
 

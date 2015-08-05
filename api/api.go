@@ -1027,7 +1027,7 @@ type Form interface {
 }
 
 type FormAPI interface {
-	RecordForm(form Form, source string, requestID int64) error
+	RecordForm(form Form, source string, requestID uint64) error
 	FormEntryExists(tableName, uniqueKey string) (bool, error)
 }
 
