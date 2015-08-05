@@ -254,6 +254,17 @@ func merchandisingScreen(pathway *common.Pathway, doctorImageURLs []string, item
 			},
 		},
 		&views.Card{
+			Title: "Who will treat me?",
+			Views: []views.View{
+				&views.DoctorProfilePhotos{
+					PhotoURLs: doctorImageURLs,
+				},
+				&views.BodyText{
+					Text: pathway.Details.WhoWillTreatMe,
+				},
+			},
+		},
+		&views.Card{
 			Title: "What's included?",
 			Views: []views.View{
 				&views.CheckboxTextList{
@@ -262,17 +273,6 @@ func merchandisingScreen(pathway *common.Pathway, doctorImageURLs []string, item
 				&views.OutlinedButton{
 					Title:  "Sample Treatment Plan",
 					TapURL: app_url.ViewSampleTreatmentPlanAction(pathway.Tag),
-				},
-			},
-		},
-		&views.Card{
-			Title: "Who will treat me?",
-			Views: []views.View{
-				&views.DoctorProfilePhotos{
-					PhotoURLs: doctorImageURLs,
-				},
-				&views.BodyText{
-					Text: pathway.Details.WhoWillTreatMe,
 				},
 			},
 		},
