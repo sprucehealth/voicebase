@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context" // PromoCodeKey represents the key associated with the branch link and url for the provided promo code
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/branch"
@@ -21,6 +21,7 @@ import (
 )
 
 const (
+	// PromoCodeKey represents the key associated with the branch link and url for the provided promo code
 	PromoCodeKey = "promo_code"
 
 	// SourceKey represent the key associated with the branch link and url for the provided install source

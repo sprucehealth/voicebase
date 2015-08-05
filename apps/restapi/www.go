@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/cookieo9/resources-go"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-librato/librato"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
@@ -47,6 +48,7 @@ func buildWWW(
 	compressResponse bool,
 	metricsRegistry metrics.Registry,
 	cfgStore cfg.Store,
+	memcacheClient *memcache.Client,
 ) httputil.ContextHandler {
 	stripeCli := &stripe.Client{
 		SecretKey:      conf.Stripe.SecretKey,
@@ -76,7 +78,7 @@ func buildWWW(
 		}
 	}
 
-	branchClient := branch.NewBranchClient(conf.BranchKey)
+	branchClient := branch.NewMemcachedBranchClient(conf.BranchKey, memcacheClient)
 
 	return cfg.HTTPHandler(router.New(&router.Config{
 		DataAPI:             dataAPI,
