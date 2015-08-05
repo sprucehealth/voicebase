@@ -14,6 +14,7 @@ type addressValidationWithCacheWrapper struct {
 	mc                       *memcache.Client
 }
 
+// NewAddressValidationWithCacheWrapper returns an initialized instance of addressValidationWithCacheWrapper wrapping the provided validator and memcache.Client
 func NewAddressValidationWithCacheWrapper(validator Validator, mc *memcache.Client) Validator {
 	if mc == nil {
 		return validator

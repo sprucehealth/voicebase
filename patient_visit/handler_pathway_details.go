@@ -242,6 +242,18 @@ func merchandisingScreen(pathway *common.Pathway, doctorImageURLs []string, item
 
 	cardViews := []views.View{
 		&views.Card{
+			Title: "Is this right for me?",
+			Views: []views.View{
+				&views.BodyText{
+					Text: pathway.Details.RightForMe,
+				},
+				&views.OutlinedButton{
+					Title:  "Read More",
+					TapURL: app_url.ViewPathwayFAQ(pathway.Tag),
+				},
+			},
+		},
+		&views.Card{
 			Title: "What's included?",
 			Views: []views.View{
 				&views.CheckboxTextList{
@@ -261,18 +273,6 @@ func merchandisingScreen(pathway *common.Pathway, doctorImageURLs []string, item
 				},
 				&views.BodyText{
 					Text: pathway.Details.WhoWillTreatMe,
-				},
-			},
-		},
-		&views.Card{
-			Title: "Is this right for me?",
-			Views: []views.View{
-				&views.BodyText{
-					Text: pathway.Details.RightForMe,
-				},
-				&views.OutlinedButton{
-					Title:  "Read More",
-					TapURL: app_url.ViewPathwayFAQ(pathway.Tag),
 				},
 			},
 		},
