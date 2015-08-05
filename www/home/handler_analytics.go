@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/analytics"
+	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
@@ -105,6 +106,11 @@ type analyticsHandler struct {
 	statEventsDropped  *metrics.Counter
 }
 
+type analyticsAPIRequest struct {
+	CurrentTime float64 `json:"current_time"`
+	Events      []event `json:"events"`
+}
+
 func newAnalyticsHandler(logger analytics.Logger, statsRegistry metrics.Registry) httputil.ContextHandler {
 	h := &analyticsHandler{
 		logger:             logger,
@@ -123,11 +129,8 @@ func (h *analyticsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 	var currentTime float64
 	var events []event
 
-	if r.Method == "POST" {
-		var req struct {
-			CurrentTime float64 `json:"current_time"`
-			Events      []event `json:"events"`
-		}
+	if r.Method == httputil.Post {
+		var req analyticsAPIRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			golog.Errorf("Failed to decode analytics POST body: %s", err.Error())
 			www.APIBadRequestError(w, r, "Failed to decode body")
@@ -156,10 +159,12 @@ func (h *analyticsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 
 	h.statEventsReceived.Inc(uint64(len(events)))
 
+	account, _ := www.CtxAccount(ctx)
+
 	var eventsOut []analytics.Event
 	for _, ev := range events {
 		name, err := analytics.MangleEventName(ev.Name)
-		if err != nil || ev.Properties == nil {
+		if err != nil {
 			continue
 		}
 		// Calculate delta time for the event from the client provided current time.
@@ -177,17 +182,25 @@ func (h *analyticsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 		}
 		// TODO: at the moment there is no session ID for web requests so just use the remote address
 		sessionID := r.RemoteAddr
-		evo := &analytics.ServerEvent{
-			Event:     name,
-			Timestamp: analytics.Time(tm),
-			SessionID: sessionID,
-			AccountID: ev.Properties.popInt64("account_id"),
-			Role:      ev.Properties.popString("role"),
+		evo := &analytics.ClientEvent{
+			Event:       "js:" + name,
+			Timestamp:   analytics.Time(tm),
+			SessionID:   sessionID,
+			Error:       ev.Properties.popString("error"),
+			ScreenID:    ev.Properties.popString("screen_id"),
+			TimeSpent:   ev.Properties.popFloat64Ptr("time_spent"),
+			AppType:     ev.Properties.popString("app_type"),
+			AppVersion:  config.GitBranch,
+			AppBuild:    config.BuildNumber,
+			DeviceModel: r.UserAgent(),
+		}
+		if account != nil {
+			evo.AccountID = account.ID
 		}
 		// Put anything left over into ExtraJSON if it's a valid format
 		for k, v := range ev.Properties {
 			switch v.(type) {
-			case string, float64, bool:
+			case string, float64, int, int64, uint64, bool:
 			default:
 				delete(ev.Properties, k)
 			}
@@ -208,11 +221,13 @@ func (h *analyticsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 		h.logger.WriteEvents(eventsOut)
 	}
 
-	if r.Method == "GET" {
+	if r.Method == httputil.Get {
 		w.Header().Set("Content-Type", logoContentType)
 		w.Header().Set("Content-Length", strconv.Itoa(len(logoImage)))
 		if _, err := w.Write(logoImage); err != nil {
 			golog.Errorf("Failed to write logo image: %s", err.Error())
 		}
+	} else {
+		httputil.JSONResponse(w, http.StatusOK, struct{}{})
 	}
 }

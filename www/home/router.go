@@ -148,7 +148,7 @@ func SetupRoutes(r *mux.Router, config *Config) {
 
 	// Analytics
 	ah := newAnalyticsHandler(config.AnalyticsLogger, config.MetricsRegistry.Scope("analytics"))
-	r.Handle("/a/events", ah)   // For javascript originating events
+	r.Handle("/api/events", ah) // For javascript originating events
 	r.Handle("/a/logo.png", ah) // For remote event tracking "pixels" (e.g. email)
 }
 

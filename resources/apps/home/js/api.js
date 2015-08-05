@@ -36,7 +36,7 @@ module.exports = {
 			data: JSON.stringify({code: code, params: params, number: number}),
 			dataType: "json"
 		}, cb);
-	}
+	},
 };
 
 var noError: ajaxError = {message: ""};
