@@ -3,6 +3,10 @@
 var React = require("react");
 var Reflux = require('reflux')
 var Utils = require("../../libs/utils.js");
+
+var Analytics = require("../../libs/analytics.js");
+var AnalyticsScreenName = "consent"
+
 var Constants = require("./Constants.js");
 var SubmitButtonView = require("./SubmitButtonView.js");
 var ParentalConsentActions = require('./ParentalConsentActions.js')
@@ -11,11 +15,13 @@ var ParentalConsentStore = require('./ParentalConsentStore.js');
 var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelationshipConsentView",
 
 	//
-	// Action callbacks
+	// React
 	//
 	mixins: [
 		React.addons.LinkedStateMixin,
 		Reflux.connect(ParentalConsentStore, 'store'),
+		Reflux.listenTo(ParentalConsentActions.submitEmailRelationshipConsent.completed, 'submitEmailRelationshipConsentCompleted'),
+		Reflux.listenTo(ParentalConsentActions.submitEmailRelationshipConsent.failed, 'submitEmailRelationshipConsentFailed'),
 	],
 	propTypes: {
 		collectEmailAndPassword: React.PropTypes.bool.isRequired,
@@ -30,6 +36,8 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 		}
 	},
 	componentDidMount: function() {
+		Analytics.record(AnalyticsScreenName + "_viewed", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName})
+		
 		var store: ParentalConsentStoreType = this.state.store
 		if (store.userInput && store.userInput.emailPassword) {
 			this.setState({
@@ -54,6 +62,18 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 	},
 
 	//
+	// Action callbacks
+	//
+	submitEmailRelationshipConsentCompleted: function() {
+		Analytics.record(AnalyticsScreenName + "_submission_succeeded", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName})
+		this.props.onFormSubmit({})
+	},
+	submitEmailRelationshipConsentFailed: function(error: ajaxError) {
+		Analytics.record(AnalyticsScreenName + "_submission_failed", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName, "error": error.message})
+		alert(error.message)
+	},
+
+	//
 	// User interaction callbacks
 	//
 	handleSubmit: function(e: any) {
@@ -61,15 +81,11 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 		var t = this
 		this.setState({submitButtonPressedOnce: true})
 		if (this.shouldAllowSubmit()) {
-
 			this.saveDataToStore()
-
-			ParentalConsentActions.submitEmailRelationshipConsent.triggerPromise().then(function(response: any) {
-				t.props.onFormSubmit({})
-			}).catch(function(err: ajaxError) {
-				alert(err.message)
-			});
-
+			ParentalConsentActions.submitEmailRelationshipConsent()
+		} else {
+			var error: ajaxError = {type: "client_validation", message: "didn't pass client-side validation"}
+			Analytics.record(AnalyticsScreenName + "_submission_failed", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName, "error": error.message})
 		}
 	},
 	saveDataToStore: function() {
@@ -218,7 +234,10 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 				<div style={individualAgreementContainerStyle} className="flexBox justifyContentSpaceBetween hasBottomDivider">
 					<div style={checkboxLabelContainerStyle}>
 						<div>
-							<a href="https://d2bln09x7zhlg8.cloudfront.net/terms">Terms & Privacy Policy</a>
+							<a href="https://d2bln09x7zhlg8.cloudfront.net/terms" onClick={function (e: any) {
+								// Warning: this is a synchronous request
+								Analytics.record(AnalyticsScreenName + "_terms_link_clicked", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName}, true)
+							}}>Terms & Privacy Policy</a>
 						</div>
 						<div style={checkboxLabelSubtextStyle}>
 							<label htmlFor="termsAndPrivacyCheckbox">
@@ -232,6 +251,9 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 								type="checkbox"
 								id="termsAndPrivacyCheckbox"
 								checkedLink={this.linkState('consentedToTermsAndPrivacy')}
+								onClick={function(){
+									Analytics.record(AnalyticsScreenName + "_terms_checkbox_clicked", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName, "new_checked_value": !this.state.consentedToTermsAndPrivacy})
+								}.bind(this)}
 								className={(termsAndPrivacyHighlighted ? "error" : null)} />
 						</div>
 					</div>
@@ -240,7 +262,10 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 				<div style={individualAgreementContainerStyle} className="flexBox justifyContentSpaceBetween hasBottomDivider">
 					<div style={checkboxLabelContainerStyle}>
 						<div>
-							<a href="https://d2bln09x7zhlg8.cloudfront.net/consent">Consent to Use of Telehealth</a>
+							<a href="https://d2bln09x7zhlg8.cloudfront.net/consent" onClick={function (e: any) {
+								// Warning: this is a synchronous request
+								Analytics.record(AnalyticsScreenName + "_telehealth_consent_link_clicked", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName}, true)
+							}}>Consent to Use of Telehealth</a>
 						</div>
 						<div style={checkboxLabelSubtextStyle}>
 							<label htmlFor="consentToUseOfTelehealth">
@@ -254,6 +279,9 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 								type="checkbox"
 								id="consentToUseOfTelehealth"
 								checkedLink={this.linkState('consentedToConsentToUseOfTelehealth')}
+								onClick={function(){
+									Analytics.record(AnalyticsScreenName + "_telehealth_consent_checkbox_clicked", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName, "new_checked_value": !this.state.consentedToConsentToUseOfTelehealth})
+								}.bind(this)}
 								className={(consentToUseOfTelehealthHighlighted ? "error" : null)} />
 						</div>
 					</div>

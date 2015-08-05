@@ -3,6 +3,10 @@
 var React = require("react");
 var Utils = require("../../libs/utils.js");
 
+var Analytics = require("../../libs/analytics.js");
+var AnalyticsScreenName = "confirmation"
+var Constants = require("./Constants.js");
+
 var Header = React.createClass({displayName: "Header",
 	render: function(): any {
 		return (
@@ -21,7 +25,10 @@ var Header = React.createClass({displayName: "Header",
 						paddingTop: "10px",
 						paddingBottom: "8px",
 					}}>
-					<a href="https://www.sprucehealth.com">
+					<a href="https://www.sprucehealth.com" onClick={function (e: any) {
+						// Warning: this is a synchronous request
+						Analytics.record("spruce_logo_clicked", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName}, true)
+					}}>
 						<img 
 							src={Utils.staticURL("/img/pc/logo@2x.png")}
 							style={{

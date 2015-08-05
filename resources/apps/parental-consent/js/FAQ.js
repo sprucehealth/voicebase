@@ -3,10 +3,17 @@
 var React = require('react/addons');
 var Utils = require("../../libs/utils.js");
 
+var Analytics = require("../../libs/analytics.js");
+var AnalyticsScreenName = "faq"
+var Constants = require("./Constants.js");
+
 var ReactCSSTransitionGroup = React.addons.CSSTransitionGroup;
 
 module.exports = {
 	Component: React.createClass({displayName: "FAQComponent",
+		componentDidMount: function() {
+			Analytics.record(AnalyticsScreenName + "_viewed", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName})
+		},
 		render: function(): any {
 			return (
 				<div>
