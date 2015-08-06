@@ -131,7 +131,7 @@ func replaceAccountPhoneNumbers(tx *sql.Tx, accountID int64, numbers []*common.P
 
 	inserts := dbutil.MySQLMultiInsert(len(numbers))
 	for _, p := range numbers {
-		inserts.Append(accountID, p.Phone.String(), p.Type, p.Status, p.Verified)
+		inserts.Append(accountID, p.Phone.String(), p.Type.String(), p.Status, p.Verified)
 	}
 	_, err = tx.Exec(`
 			INSERT INTO account_phone (account_id, phone, phone_type, status, verified)
@@ -1234,10 +1234,14 @@ func (d *dataService) getPatientBasedOnQuery(table, joins, where string, queryPa
 		p.StateFromZipCode = state.String
 
 		if phone.String() != "" {
+			phoneNumberType, err := common.GetPhoneNumberType(phoneType.String)
+			if err != nil {
+				return nil, errors.Trace(err)
+			}
 			p.PhoneNumbers = []*common.PhoneNumber{
 				&common.PhoneNumber{
 					Phone: phone,
-					Type:  phoneType.String,
+					Type:  phoneNumberType,
 				},
 			}
 		}

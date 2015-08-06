@@ -270,16 +270,16 @@ func populatePatientForDoseSpot(currentPatient *common.Patient) (*patient, error
 
 	if len(currentPatient.PhoneNumbers) > 0 {
 		newPatient.PrimaryPhone = currentPatient.PhoneNumbers[0].Phone.String()
-		newPatient.PrimaryPhoneType = currentPatient.PhoneNumbers[0].Type
+		newPatient.PrimaryPhoneType = currentPatient.PhoneNumbers[0].Type.String()
 
 		if len(currentPatient.PhoneNumbers) > 1 {
 			newPatient.PhoneAdditional1 = currentPatient.PhoneNumbers[1].Phone.String()
-			newPatient.PhoneAdditionalType1 = currentPatient.PhoneNumbers[1].Type
+			newPatient.PhoneAdditionalType1 = currentPatient.PhoneNumbers[1].Type.String()
 		}
 
 		if len(currentPatient.PhoneNumbers) > 2 {
 			newPatient.PhoneAdditional2 = currentPatient.PhoneNumbers[2].Phone.String()
-			newPatient.PhoneAdditionalType2 = currentPatient.PhoneNumbers[2].Type
+			newPatient.PhoneAdditionalType2 = currentPatient.PhoneNumbers[2].Type.String()
 		}
 	}
 
@@ -368,7 +368,7 @@ func ensurePatientInformationIsConsistent(currentPatient *common.Patient, patien
 		return errors.New("PATIENT_INFO_MISTMATCH: primaryPhone")
 	}
 
-	if currentPatient.PhoneNumbers[0].Type != patientFromDoseSpot.PrimaryPhoneType {
+	if currentPatient.PhoneNumbers[0].Type.String() != patientFromDoseSpot.PrimaryPhoneType {
 		return errors.New("PATIENT_INFO_MISTMATCH: primaryPhoneType")
 	}
 
@@ -713,6 +713,10 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientID int64) (*common.Patient
 	}
 
 	// not worrying about suffix/prefix for now
+	patientPhoneNumberType, err := common.GetPhoneNumberType(response.PatientUpdates[0].Patient.PrimaryPhoneType)
+	if err != nil {
+		return nil, err
+	}
 	newPatient := &common.Patient{
 		ERxPatientID: encoding.NewObjectID(response.PatientUpdates[0].Patient.PatientID),
 		FirstName:    response.PatientUpdates[0].Patient.FirstName,
@@ -731,22 +735,30 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientID int64) (*common.Patient
 		PhoneNumbers: []*common.PhoneNumber{
 			{
 				Phone: parsePhone(response.PatientUpdates[0].Patient.PrimaryPhone),
-				Type:  response.PatientUpdates[0].Patient.PrimaryPhoneType,
+				Type:  patientPhoneNumberType,
 			},
 		},
 	}
 
 	if response.PatientUpdates[0].Patient.PhoneAdditional1 != "" {
+		patientAdditionalPhoneNumberType1, err := common.GetPhoneNumberType(response.PatientUpdates[0].Patient.PrimaryPhoneType)
+		if err != nil {
+			return nil, err
+		}
 		newPatient.PhoneNumbers = append(newPatient.PhoneNumbers, &common.PhoneNumber{
 			Phone: parsePhone(response.PatientUpdates[0].Patient.PhoneAdditional1),
-			Type:  response.PatientUpdates[0].Patient.PhoneAdditionalType1,
+			Type:  patientAdditionalPhoneNumberType1,
 		})
 	}
 
 	if response.PatientUpdates[0].Patient.PhoneAdditional2 != "" {
+		patientAdditionalPhoneNumberType2, err := common.GetPhoneNumberType(response.PatientUpdates[0].Patient.PrimaryPhoneType)
+		if err != nil {
+			return nil, err
+		}
 		newPatient.PhoneNumbers = append(newPatient.PhoneNumbers, &common.PhoneNumber{
 			Phone: parsePhone(response.PatientUpdates[0].Patient.PhoneAdditional2),
-			Type:  response.PatientUpdates[0].Patient.PhoneAdditionalType2,
+			Type:  patientAdditionalPhoneNumberType2,
 		})
 	}
 

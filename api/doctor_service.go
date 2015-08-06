@@ -88,7 +88,7 @@ func (d *dataService) RegisterProvider(provider *common.Doctor, role string) (in
 
 	if provider.CellPhone != "" {
 		_, err = tx.Exec(`INSERT INTO account_phone (phone, phone_type, account_id, status) VALUES (?,?,?,?) `,
-			provider.CellPhone.String(), PhoneCell, provider.AccountID.Int64(), StatusActive)
+			provider.CellPhone.String(), common.PNTCell.String(), provider.AccountID.Int64(), StatusActive)
 		if err != nil {
 			tx.Rollback()
 			return 0, errors.Trace(err)
@@ -111,7 +111,7 @@ func (d *dataService) RegisterProvider(provider *common.Doctor, role string) (in
 
 func (d *dataService) GetDoctorFromID(doctorID int64) (*common.Doctor, error) {
 	return d.queryDoctor(`doctor.id = ? AND (account_phone.phone IS NULL OR account_phone.phone_type = ?)`,
-		doctorID, PhoneCell)
+		doctorID, common.PNTCell.String())
 }
 
 func (d *dataService) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, error) {
@@ -229,12 +229,12 @@ func (d *dataService) scanDoctor(s scannable) (*common.Doctor, error) {
 
 func (d *dataService) GetDoctorFromAccountID(accountID int64) (*common.Doctor, error) {
 	return d.queryDoctor(`doctor.account_id = ? AND (account_phone.phone IS NULL OR account_phone.phone_type = ?)`,
-		accountID, PhoneCell)
+		accountID, common.PNTCell.String())
 }
 
 func (d *dataService) GetDoctorFromDoseSpotClinicianID(clinicianID int64) (*common.Doctor, error) {
 	return d.queryDoctor(`doctor.clinician_id = ? AND (account_phone.phone IS NULL OR account_phone.phone_type = ?)`,
-		clinicianID, PhoneCell)
+		clinicianID, common.PNTCell.String())
 }
 
 func (d *dataService) GetAccountIDFromDoctorID(doctorID int64) (int64, error) {
@@ -247,7 +247,7 @@ func (d *dataService) GetAccountIDFromDoctorID(doctorID int64) (int64, error) {
 }
 
 func (d *dataService) GetFirstDoctorWithAClinicianID() (*common.Doctor, error) {
-	return d.queryDoctor(`doctor.clinician_id is not null AND (account_phone.phone IS NULL OR account_phone.phone_type = ?) LIMIT 1`, PhoneCell)
+	return d.queryDoctor(`doctor.clinician_id is not null AND (account_phone.phone IS NULL OR account_phone.phone_type = ?) LIMIT 1`, common.PNTCell.String())
 }
 
 func (d *dataService) queryDoctor(where string, queryParams ...interface{}) (*common.Doctor, error) {

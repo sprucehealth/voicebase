@@ -170,7 +170,7 @@ func (h *verifyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 
 	var toNumber string
 	for _, n := range numbers {
-		if n.Type == api.PhoneCell {
+		if n.Type == common.PNTCell {
 			toNumber = n.Phone.String()
 			break
 		}

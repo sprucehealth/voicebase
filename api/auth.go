@@ -381,7 +381,7 @@ func (m *auth) ReplacePhoneNumbersForAccount(accountID int64, numbers []*common.
 	for _, n := range numbers {
 		_, err = tx.Exec(`
 			INSERT INTO account_phone (account_id, phone, phone_type, status, verified)
-			VALUES (?, ?, ?, ?, ?)`, accountID, n.Phone.String(), n.Type, n.Status, n.Verified)
+			VALUES (?, ?, ?, ?, ?)`, accountID, n.Phone.String(), n.Type.String(), n.Status, n.Verified)
 		if err != nil {
 			tx.Rollback()
 			return err

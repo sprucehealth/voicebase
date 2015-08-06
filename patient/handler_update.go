@@ -11,16 +11,19 @@ import (
 	"github.com/sprucehealth/backend/surescripts"
 )
 
+// UpdateHandler handles requests related to patient record updates
 type UpdateHandler struct {
 	dataAPI          api.DataAPI
 	addressValidator address.Validator
 }
 
+// PhoneNumber represents the valid forms of phone number input from the client
 type PhoneNumber struct {
 	Type   string `json:"phone_type,omitempty"`
 	Number string `json:"phone"`
 }
 
+// UpdateRequest represents the expected data associated with a successful PUT request
 type UpdateRequest struct {
 	PhoneNumbers []PhoneNumber   `json:"phone_numbers"`
 	Address      *common.Address `json:"address"`
@@ -52,6 +55,7 @@ func (r *UpdateRequest) transformRequestToUpdate(dataAPI api.DataAPI, validator 
 	return &update, nil
 }
 
+// NewUpdateHandler returns an initialized instance of UpdateHandler
 func NewUpdateHandler(dataAPI api.DataAPI, addressValidator address.Validator) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
@@ -118,9 +122,13 @@ func transformPhoneNumbers(pn []PhoneNumber) ([]*common.PhoneNumber, error) {
 		if err != nil {
 			return nil, err
 		}
+		phoneNumberType, err := common.GetPhoneNumberType(phone.Type)
+		if err != nil {
+			return nil, err
+		}
 		numbers = append(numbers, &common.PhoneNumber{
 			Phone: num,
-			Type:  phone.Type,
+			Type:  phoneNumberType,
 		})
 	}
 	return numbers, nil

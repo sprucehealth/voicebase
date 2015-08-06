@@ -254,7 +254,7 @@ func TestNotifyDoctorsOfUnclaimedCases_NotifyFlag(t *testing.T) {
 	err = testData.AuthAPI.ReplacePhoneNumbersForAccount(doctor1.AccountID.Int64(), []*common.PhoneNumber{
 		&common.PhoneNumber{
 			Phone:  common.Phone("734-846-5520"),
-			Type:   api.PhoneCell,
+			Type:   common.PNTCell,
 			Status: api.StatusActive,
 		},
 	})
@@ -276,7 +276,7 @@ func TestNotifyDoctorsOfUnclaimedCases_NotifyFlag(t *testing.T) {
 	err = testData.AuthAPI.ReplacePhoneNumbersForAccount(doctor2.AccountID.Int64(), []*common.PhoneNumber{
 		&common.PhoneNumber{
 			Phone:  common.Phone("734-846-5521"),
-			Type:   api.PhoneCell,
+			Type:   common.PNTCell,
 			Status: api.StatusActive,
 		},
 	})
@@ -311,7 +311,7 @@ func TestNotifyDoctorsOfUnclaimedCases_NotifyFlag(t *testing.T) {
 	err = testData.AuthAPI.ReplacePhoneNumbersForAccount(doctor3.AccountID.Int64(), []*common.PhoneNumber{
 		&common.PhoneNumber{
 			Phone:  common.Phone("734-846-5525"),
-			Type:   api.PhoneCell,
+			Type:   common.PNTCell,
 			Status: api.StatusActive,
 		},
 	})
