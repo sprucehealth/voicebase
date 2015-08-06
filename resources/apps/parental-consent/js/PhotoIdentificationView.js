@@ -399,7 +399,7 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 						<div style={fileUploadContainerStyle}>
 							<input
 								type="file"
-								accept="image/jpeg, image/jpg, image/png, image/x-png"
+								accept="image/*"
 								onChange={this.handleSelfieSelection}
 								name="file"
 								style={fileUploadInputStyle}
