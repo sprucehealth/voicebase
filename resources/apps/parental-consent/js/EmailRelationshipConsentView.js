@@ -12,6 +12,8 @@ var SubmitButtonView = require("./SubmitButtonView.js");
 var ParentalConsentActions = require('./ParentalConsentActions.js')
 var ParentalConsentStore = require('./ParentalConsentStore.js');
 
+var IsIOS = navigator.userAgent.indexOf('iPhone') >= 0;
+
 var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelationshipConsentView",
 
 	//
@@ -71,6 +73,9 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 	submitEmailRelationshipConsentFailed: function(error: ajaxError) {
 		Analytics.record(AnalyticsScreenName + "_submission_failed", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName, "error": error.message})
 		alert(error.message)
+		if (error.type === "account_exists") {
+			this.setState({showSignInCTA: true})
+		}
 	},
 
 	//
@@ -80,13 +85,20 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 		e.preventDefault();
 		var t = this
 		this.setState({submitButtonPressedOnce: true})
-		if (this.shouldAllowSubmit()) {
-			this.saveDataToStore()
-			ParentalConsentActions.submitEmailRelationshipConsent()
+
+		var hasConsented = this.state.store.userInput.consents.consentedToTermsAndPrivacy && this.state.store.userInput.consents.consentedToConsentToUseOfTelehealth
+		var justRegisteredOrJustConsented = (this.state.store.parentAccount.isSignedIn && !this.state.store.parentAccount.WasSignedInAtPageLoad) || hasConsented
+		if (justRegisteredOrJustConsented) {
+			this.props.onFormSubmit({})
 		} else {
-			var error: ajaxError = {type: "client_validation", message: "didn't pass client-side validation"}
-			Analytics.record(AnalyticsScreenName + "_submission_failed", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName, "error": error.message})
-		}
+			if (this.shouldAllowSubmit()) {
+				this.saveDataToStore()
+				ParentalConsentActions.submitEmailRelationshipConsent()
+			} else {
+				var error: ajaxError = {type: "client_validation", message: "didn't pass client-side validation"}
+				Analytics.record(AnalyticsScreenName + "_submission_failed", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName, "error": error.message})
+			}
+		}		
 	},
 	saveDataToStore: function() {
 		if (this.props.collectEmailAndPassword) {
@@ -107,6 +119,12 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 	// Internal
 	//
 	shouldAllowSubmit: function(): bool {
+		var hasConsented = this.state.store.consentedToTermsAndPrivacy && this.state.store.consentedToConsentToUseOfTelehealth
+		var justRegisteredOrJustConsented = (this.state.store.parentAccount.isSignedIn && !this.state.store.parentAccount.WasSignedInAtPageLoad) || hasConsented
+		if (justRegisteredOrJustConsented) {
+			return true
+		}
+
 		var emailPasswordValid = (this.isEmailFieldValid() && this.isPasswordFieldValid()) || !this.props.collectEmailAndPassword
 		var relationshipValid = this.isRelationshipFieldValid || !this.props.collectRelationship
 		return emailPasswordValid
@@ -127,11 +145,13 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 		return this.state.consentedToTermsAndPrivacy
 	},
 	isContentToUseOfTelehealthFieldValid: function(): bool {
-		return this.state.consentedToConsentToUseOfTelehealth
+		return this.state.consentedToUseOfTelehealth
 	},
 
 
 	render: function(): any {
+		var hasConsented = this.state.store.userInput.consents.consentedToTermsAndPrivacy && this.state.store.userInput.consents.consentedToConsentToUseOfTelehealth
+		var justRegisteredOrJustConsented = (this.state.store.parentAccount.isSignedIn && !this.state.store.parentAccount.WasSignedInAtPageLoad) || hasConsented
 
 		var individualAgreementContainerStyle = {
 			paddingTop: "16px",
@@ -165,6 +185,12 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 			borderBottomWidth: "2px",
 		}
 
+		var autoCapitalize = "sentences"
+		if (IsIOS) {
+			// We're turning off auto capitalization because for some reason on Mobile Safari
+			autoCapitalize = "off"
+		}
+
 		var topContent
 		if (this.props.collectEmailAndPassword) {
 			var emailHighlighted: bool = (this.state.submitButtonPressedOnce ? !this.isEmailFieldValid() : false)
@@ -172,21 +198,23 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 			topContent = (
 				<div>
 					<div className="formFieldRow hasBottomDivider" style={emailHighlighted ? orangeBottomDividerStyle : null}>
-					  <input type="email"
-							 mozactionhint="next"
-							 autoComplete="email"
-							 autoCorrect="on"
-							 placeholder="Email Address"
-							 valueLink={this.linkState('email')}
-							 />
+						<input
+							disabled={justRegisteredOrJustConsented}
+						 	type="email"
+							mozactionhint="next"
+							autoCorrect="on"
+							placeholder="Email Address"
+							valueLink={this.linkState('email')}
+							autoCapitalize={autoCapitalize} />
 					</div>
 					<div className="formFieldRow hasBottomDivider" style={passwordHighlighted ? orangeBottomDividerStyle : null}>
-					  <input type="password"
-							 mozactionhint="next"
-							 autoComplete="new-password"
-							 placeholder="Password"
-							 valueLink={this.linkState('password')}
-							 />
+						<input 
+							disabled={justRegisteredOrJustConsented}
+							type="password"
+							mozactionhint="next"
+							placeholder="Password"
+							valueLink={this.linkState('password')}
+							autoCapitalize={autoCapitalize} />
 					</div>
 				</div>
 			)
@@ -202,6 +230,7 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 			topContent = (
 				<div className="formFieldRow hasBottomDivider hasTopDivider" style={style}>
 					<select
+						disabled={justRegisteredOrJustConsented}
 						className={this.isRelationshipFieldValid() ? null : "emptyState"}
 						defaultValue=""
 						valueLink={this.linkState('relationship')}>
@@ -217,10 +246,28 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 		var termsAndPrivacyHighlighted: bool = (this.state.submitButtonPressedOnce ? !this.isTermsAndPrivacyFieldValid() : false)
 		var consentToUseOfTelehealthHighlighted: bool = (this.state.submitButtonPressedOnce ? !this.isContentToUseOfTelehealthFieldValid() : false)
 
+		var signInURL = "/login?email=" + this.state.email + "&next=%2Fpc%2F" + ParentalConsentHydration.ChildDetails.patientID + "%2Fconsent"
+
+		var signInCTA = null
+		if (this.state.showSignInCTA) {
+			signInCTA = (
+				<div style={{
+					textAlign: "center",
+					marginBottom: "22px",
+				}}>
+					<a href={signInURL} onClick={function (e: any) {
+						// Warning: this is a synchronous request
+						Analytics.record(AnalyticsScreenName + "_sign_in_link_clicked", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName})
+					}}>Sign in to an existing Spruce account.</a>
+				</div>)
+		}
+
 		return (
 			<form
+				autoComplete="off"
 				onSubmit={this.handleSubmit}
 				style={{marginTop: "13"}}>
+				{signInCTA}
 				{topContent}
 				<div className="hasBottomDivider"
 					style={{
@@ -248,6 +295,7 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 					<div style={checkboxOuterContainerStyle}>
 						<div style={checkboxInnerContainerStyle}>
 							<input
+								disabled={justRegisteredOrJustConsented}
 								type="checkbox"
 								id="termsAndPrivacyCheckbox"
 								checkedLink={this.linkState('consentedToTermsAndPrivacy')}
@@ -276,11 +324,12 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 					<div style={checkboxOuterContainerStyle}>
 						<div style={checkboxInnerContainerStyle}>
 							<input
+								disabled={justRegisteredOrJustConsented}
 								type="checkbox"
 								id="consentToUseOfTelehealth"
-								checkedLink={this.linkState('consentedToConsentToUseOfTelehealth')}
+								checkedLink={this.linkState('consentedToUseOfTelehealth')}
 								onClick={function(){
-									Analytics.record(AnalyticsScreenName + "_telehealth_consent_checkbox_clicked", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName, "new_checked_value": !this.state.consentedToConsentToUseOfTelehealth})
+									Analytics.record(AnalyticsScreenName + "_telehealth_consent_checkbox_clicked", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName, "new_checked_value": !this.state.consentedToUseOfTelehealth})
 								}.bind(this)}
 								className={(consentToUseOfTelehealthHighlighted ? "error" : null)} />
 						</div>

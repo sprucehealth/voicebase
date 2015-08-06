@@ -14,7 +14,9 @@ var ParentalConsentActions = require('./ParentalConsentActions.js')
 var ParentalConsentStore = require('./ParentalConsentStore.js');
 
 var IsAndroid = navigator.userAgent.indexOf('Android') >= 0;
-var IsIOS = navigator.userAgent.indexOf('iPhone') >= 0;
+
+// Based on: https://developer.mozilla.org/en-US/docs/Browser_detection_using_the_user_agent
+var IsMobileSafari = navigator.userAgent.indexOf('Chrome') == 0 && navigator.userAgent.indexOf('Chromium') == 0 && navigator.userAgent.indexOf('Safari') >= 0 && navigator.userAgent.indexOf('iPhone') >= 0;
 
 var DemographicsView = React.createClass({displayName: "DemographicsView",
 
@@ -60,7 +62,7 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 			{"*": "{{99}}-{{99}}-{{9999}}"},
 			{".{8}": "{{99}}-{{99}}-{{99}}"}
 		]
-		if (!IsAndroid && !IsIOS) {
+		if (!IsAndroid && !IsMobileSafari) {
 			// Note: there is likely something fundamentally wrong with this, because
 			// React does not guarantee that a node we fetch here will always exist in the dom as the DOB and Phone Inputs
 			// This may be why it doesn't work on Android Browser
@@ -86,7 +88,10 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 	handleSubmit: function(e: any) {
 		e.preventDefault();
 		this.setState({submitButtonPressedOnce: true})
-		if (this.shouldAllowSubmit()) {
+		if (this.state.store.parentAccount.isSignedIn) {
+			this.props.onFormSubmit({})
+			return
+		} else if (this.shouldAllowSubmit()) {
 			var demographics: ParentalConsentDemographics = {
 				first_name: this.state.firstName,
 				last_name: this.state.lastName,
@@ -134,6 +139,10 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 	// Internal
 	//
 	shouldAllowSubmit: function(): bool {
+		if (this.state.store.parentAccount.isSignedIn) {
+			return true
+		}
+
 		return this.isFirstNameFieldValid()
 			&& this.isLastNameFieldValid()
 			&& this.isDOBFieldValid()
@@ -166,6 +175,8 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 
 	render: function(): any {
 
+		var isSignedIn = this.state.store.parentAccount.isSignedIn
+
 		var selectContainerStyle = {
 			backgroundImage: "url(" + Utils.staticURL("/img/pc/select_arrow@2x.png") + ")",
 			backgroundRepeat: "no-repeat",
@@ -175,39 +186,53 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 
 		var dateInput = null
 		var phoneInput = null
-		if (IsAndroid || IsIOS) {
+		if (IsAndroid || IsMobileSafari) {
 			dateInput = (
 				<div style={{position: "relative"}}>
-					<div style={{position: "absolute", lineHeight: "56px", fontSize: "16px", color: "RGBA(30, 51, 58, 0.4)", marginLeft: (IsIOS ? "7px" : null)}}>
+					<div style={{
+						position: "absolute",
+						lineHeight: "56px",
+						fontSize: "16px",
+						color: "RGBA(30, 51, 58, 0.4)",
+						marginLeft: (IsMobileSafari ? "7px" : null),
+					}}>
 						{(Utils.isEmpty(this.state.dob) ? "Date of Birth" : null)}
 					</div>
-					<input type="date" valueLink={this.linkState('dob')} style={Utils.mergeProperties({height: "56px"}, selectContainerStyle)}/>
+					<input 
+						type="date" 
+						disabled={isSignedIn}
+						valueLink={this.linkState('dob')} 
+						style={Utils.mergeProperties({
+							height: "56px",
+							width: "100%",
+							border: "none",
+						}, selectContainerStyle)}/>
 				</div>);
-			phoneInput = (<input type="tel"
-						mozactionhint="done"
-						autoComplete="tel"
-						inputmode="tel"
-						placeholder="Mobile Phone #"
-						valueLink={this.linkState('phone')}
-						ref="phoneInput" />)
+			phoneInput = (<input 
+				type="tel"
+				disabled={isSignedIn}
+				mozactionhint="done"
+				inputmode="tel"
+				placeholder="Mobile Phone #"
+				valueLink={this.linkState('phone')}
+				ref="phoneInput" />)
 		} else {
 			dateInput = (<input
-						type="text"
-						placeholder="Date of Birth (MM-DD-YY)"
-						className={this.isDOBFieldValid() ? null : "emptyState"}
-						autoComplete="bday"
-						valueLink={this.linkState('dob')}
-						ref="dobInput" />)
-			phoneInput = (<input type="tel"
-						mozactionhint="done"
-						autoComplete="tel"
-						inputmode="tel"
-						placeholder="Mobile Phone #"
-						valueLink={this.linkState('phone')}
-						ref="phoneInput" />)
+				disabled={isSignedIn}
+				type="text"
+				placeholder="Date of Birth (MM-DD-YY)"
+				className={this.isDOBFieldValid() ? null : "emptyState"}
+				valueLink={this.linkState('dob')}
+				ref="dobInput" />)
+			phoneInput = (<input 
+				disabled={isSignedIn}
+				type="tel"
+				mozactionhint="done"
+				inputmode="tel"
+				placeholder="Mobile Phone #"
+				valueLink={this.linkState('phone')}
+				ref="phoneInput" />)
 		}
-
-		var submitButtonDisabled = !this.shouldAllowSubmit()
 
 		var orangeBottomDividerStyle = {
 			borderBottomColor: "#F5A623",
@@ -228,16 +253,15 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 			return (<option value={state.value} key={state.value}>{state.name}</option>)
 		});
 
-
 		return (
 			<form
-			onSubmit={this.handleSubmit}
-			style={{
-				marginTop: "8",
-				fontSize: "14px",
-				lineHeight: "17px",
-			}}
-			autoComplete="on">
+				onSubmit={this.handleSubmit}
+				autoComplete="off"
+				style={{
+					marginTop: "8",
+					fontSize: "14px",
+					lineHeight: "17px",
+				}}>
 				<div style={{
 					textAlign: "center",
 					marginBottom: "22px",
@@ -249,9 +273,9 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 				</div>
 				<div className="formFieldRow hasBottomDivider hasTopDivider" style={firstNameHighlighted ? orangeBottomDividerStyle : null}>
 					<input type="text"
-						// autoCapitalize="words" // for some reason autoCapitalized was causing the first _two_ letters to be capitalized on Mobile Safari iOS 8.4
+						disabled={isSignedIn}
+						autoCapitalize={IsMobileSafari ? null : "words"} // for some reason autoCapitalized was causing the first _two_ letters to be capitalized on Mobile Safari iOS 8.4
 						mozactionhint="next"
-						autoComplete="given-name"
 						autoCorrect="on"
 						inputmode="latin-name"
 						placeholder="Your First Name"
@@ -259,9 +283,9 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 				</div>
 				<div className="formFieldRow hasBottomDivider" style={lastNameHighlighted ? orangeBottomDividerStyle : null}>
 					<input type="text"
-						// autoCapitalize="words" // for some reason autoCapitalized was causing the first _two_ letters to be capitalized on Mobile Safari iOS 8.4
+						disabled={isSignedIn}
+						autoCapitalize={IsMobileSafari ? null : "words"} // for some reason autoCapitalized was causing the first _two_ letters to be capitalized on Mobile Safari iOS 8.4
 						mozactionhint="next"
-						autoComplete="family-name"
 						autoCorrect="on"
 						inputmode="latin-name"
 						placeholder="Your Last Name"
@@ -272,10 +296,10 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 				</div>
 				<div className="formFieldRow hasBottomDivider" style={Utils.mergeProperties(selectContainerStyle, genderHighlighted ? orangeBottomDividerStyle : null)}>
 					<select
+						disabled={isSignedIn}
 						className={this.isGenderFieldValid() ? null : "emptyState"}
 						name="gender"
 						defaultValue=""
-						autoComplete="sex"
 						valueLink={this.linkState('gender')}>
 						<option value="">Gender</option>
 						<option value="male">Male</option>
@@ -284,6 +308,7 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 				</div>
 				<div className="formFieldRow hasBottomDivider" style={Utils.mergeProperties(selectContainerStyle, relationshipHighlighted ? orangeBottomDividerStyle : null)}>
 					<select
+						disabled={isSignedIn}
 						className={this.isRelationshipFieldValid() ? null : "emptyState"}
 						defaultValue=""
 						valueLink={this.linkState('relationship')}>
@@ -293,8 +318,9 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 						<option value="other">Other Legal Guardian</option>
 					</select>
 				</div>
-				<div className="formFieldRow hasBottomDivider" autoComplete="state" style={Utils.mergeProperties(selectContainerStyle, stateOfResidenceHighlighted ? orangeBottomDividerStyle : null)}>
+				<div className="formFieldRow hasBottomDivider" style={Utils.mergeProperties(selectContainerStyle, stateOfResidenceHighlighted ? orangeBottomDividerStyle : null)}>
 					<select
+						disabled={isSignedIn}
 						className={this.isStateOfResidenceFieldValid() ? null : "emptyState"}
 						defaultValue=""
 						valueLink={this.linkState('stateOfResidence')}>
@@ -307,7 +333,7 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 				<div>
 					<SubmitButtonView
 						title="NEXT"
-						appearsDisabled={submitButtonDisabled}/>
+						appearsDisabled={!this.shouldAllowSubmit()}/>
 				</div>
 			</form>
 		);
