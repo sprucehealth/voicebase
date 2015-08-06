@@ -52,9 +52,9 @@ func (a *mockDataAPI_parentalConsentImage) ParentConsentProof(parentPatientID in
 	return a.proof, nil
 }
 
-func (a *mockDataAPI_parentalConsentImage) ParentalConsentCompletedForPatient(patientID int64) error {
+func (a *mockDataAPI_parentalConsentImage) ParentalConsentCompletedForPatient(patientID int64) (bool, error) {
 	a.updated = true
-	return nil
+	return true, nil
 }
 
 func (a *mockDataAPI_parentalConsentImage) AllParentalConsent(parentPatientID int64) (map[int64]*common.ParentalConsent, error) {

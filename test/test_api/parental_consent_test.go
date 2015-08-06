@@ -38,7 +38,17 @@ func TestParentalConsent(t *testing.T) {
 	consents, err := testData.DataAPI.ParentalConsent(patientID)
 	test.Assert(t, len(consents) == 0, "Expected no link between parent and child")
 
-	test.OK(t, testData.DataAPI.GrantParentChildConsent(parentPatientID, patientID, "likely-just-a-friend"))
+	newConsent, err := testData.DataAPI.GrantParentChildConsent(parentPatientID, patientID, "likely-just-a-friend")
+	test.OK(t, err)
+	test.Equals(t, true, newConsent)
+
+	newConsent, err = testData.DataAPI.GrantParentChildConsent(parentPatientID, patientID, "likely-just-a-friend")
+	test.OK(t, err)
+	test.Equals(t, false, newConsent)
+
+	newConsent, err = testData.DataAPI.GrantParentChildConsent(parentPatientID, patientID, "other")
+	test.OK(t, err)
+	test.Equals(t, false, newConsent)
 
 	patient, err = testData.DataAPI.Patient(patientID, true)
 	test.OK(t, err)
@@ -49,7 +59,13 @@ func TestParentalConsent(t *testing.T) {
 	test.Equals(t, 1, len(consents))
 	test.Equals(t, true, consents[0].Consented)
 
-	test.OK(t, testData.DataAPI.ParentalConsentCompletedForPatient(patientID))
+	newConsent, err = testData.DataAPI.ParentalConsentCompletedForPatient(patientID)
+	test.OK(t, err)
+	test.Equals(t, true, newConsent)
+
+	newConsent, err = testData.DataAPI.ParentalConsentCompletedForPatient(patientID)
+	test.OK(t, err)
+	test.Equals(t, false, newConsent)
 
 	patient, err = testData.DataAPI.Patient(patientID, true)
 	test.OK(t, err)
@@ -121,7 +137,9 @@ func TestPatientParentID(t *testing.T) {
 	}
 	test.OK(t, testData.DataAPI.RegisterPatient(patient))
 	parentPatientID := patient.ID.Int64()
-	test.OK(t, testData.DataAPI.GrantParentChildConsent(parentPatientID, patientID, "likely-just-a-friend"))
+	newConsent, err := testData.DataAPI.GrantParentChildConsent(parentPatientID, patientID, "likely-just-a-friend")
+	test.OK(t, err)
+	test.Equals(t, true, newConsent)
 
 	consents, err = testData.DataAPI.ParentalConsent(patientID)
 	test.OK(t, err)

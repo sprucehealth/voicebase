@@ -10,34 +10,45 @@ import (
 
 // GrantParentChildConsent creates a relationship between the patient accounts and consents to treatment.
 // However, this doesn't update the patient because we can't allow the patient to do a visit until
-// we've also collected the parent's identification photos.
-func (d *dataService) GrantParentChildConsent(parentPatientID, childPatientID int64, relationship string) error {
-	_, err := d.db.Exec(`INSERT IGNORE INTO patient_parent (patient_id, parent_patient_id, relationship, consented) VALUES (?, ?, ?, ?)`,
+// we've also collected the parent's identification photos. It returns true iff consent had not preivously
+// been granted.
+func (d *dataService) GrantParentChildConsent(parentPatientID, childPatientID int64, relationship string) (bool, error) {
+	res, err := d.db.Exec(`INSERT IGNORE INTO patient_parent (patient_id, parent_patient_id, relationship, consented) VALUES (?, ?, ?, ?)`,
 		childPatientID, parentPatientID, relationship, true)
-	return errors.Trace(err)
+	if err != nil {
+		return false, errors.Trace(err)
+	}
+	n, err := res.RowsAffected()
+	return n != 0, errors.Trace(err)
 }
 
 // ParentalConsentCompletedForPatient updates the patient record and visits to reflect consent has been granted
-// and all necessary information has been recorded (identification photos).
-func (d *dataService) ParentalConsentCompletedForPatient(childPatientID int64) error {
+// and all necessary information has been recorded (identification photos). It returns true iff consent had not
+// previously been completed for the patient.
+func (d *dataService) ParentalConsentCompletedForPatient(childPatientID int64) (bool, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
-		return errors.Trace(err)
+		return false, errors.Trace(err)
 	}
-	_, err = tx.Exec(`UPDATE patient SET has_parental_consent = ? WHERE id = ?`, true, childPatientID)
+	res, err := tx.Exec(`UPDATE patient SET has_parental_consent = ? WHERE id = ? AND has_parental_consent = ?`, true, childPatientID, false)
 	if err != nil {
 		tx.Rollback()
-		return errors.Trace(err)
+		return false, errors.Trace(err)
 	}
-
+	if n, err := res.RowsAffected(); err != nil {
+		tx.Rollback()
+		return false, errors.Trace(err)
+	} else if n == 0 {
+		tx.Rollback()
+		return false, nil
+	}
 	_, err = tx.Exec(`UPDATE patient_visit SET status = ? WHERE patient_id = ? AND status = ?`,
 		common.PVStatusReceivedParentalConsent, childPatientID, common.PVStatusPendingParentalConsent)
 	if err != nil {
 		tx.Rollback()
-		return errors.Trace(err)
+		return false, errors.Trace(err)
 	}
-
-	return errors.Trace(tx.Commit())
+	return true, errors.Trace(tx.Commit())
 }
 
 // ParentalConsent returns the consent status for a given child

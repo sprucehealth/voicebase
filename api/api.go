@@ -875,11 +875,13 @@ func (pcp *ParentalConsentProof) IsComplete() bool {
 type ParentalConsent interface {
 	// GrantParentChildConsent creates a relationship between the patient accounts and consents to treatment.
 	// However, this doesn't update the patient because we can't allow the patient to do a visit until
-	// we've also collected the parent's identification photos.
-	GrantParentChildConsent(parentPatientID, childPatientID int64, relationship string) error
+	// we've also collected the parent's identification photos. It returns true iff consent had not preivously
+	// been granted.
+	GrantParentChildConsent(parentPatientID, childPatientID int64, relationship string) (bool, error)
 	// ParentalConsentCompletedForPatient updates the patient record and visits to reflect consent has been granted
-	// and all necessary information has been recorded (identification photos).
-	ParentalConsentCompletedForPatient(childPatientID int64) error
+	// and all necessary information has been recorded (identification photos).  It returns true iff consent had not
+	// previously been completed for the patient.
+	ParentalConsentCompletedForPatient(childPatientID int64) (bool, error)
 	// ParentalConsent returns the consent status for a given child
 	ParentalConsent(childPatientID int64) ([]*common.ParentalConsent, error)
 	// AllParentalConsent returns the full set of parent/child consent relationships which

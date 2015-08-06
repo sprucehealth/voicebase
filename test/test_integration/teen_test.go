@@ -128,7 +128,9 @@ func TestTeenFlow(t *testing.T) {
 	test.OK(t, err)
 	parentPatientID := suRes.Patient.ID.Int64()
 
-	test.OK(t, testData.DataAPI.GrantParentChildConsent(parentPatientID, patientID, "sensei"))
+	ok, err := testData.DataAPI.GrantParentChildConsent(parentPatientID, patientID, "sensei")
+	test.OK(t, err)
+	test.Equals(t, true, ok)
 
 	// Still shouldn't be able to submit the visit
 	err = pc.SubmitPatientVisit(cvRes.PatientVisitID)
