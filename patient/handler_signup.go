@@ -254,7 +254,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		newPatient.PhoneNumbers = append(newPatient.PhoneNumbers,
 			&common.PhoneNumber{
 				Phone: data.patientPhone,
-				Type:  api.PhoneCell,
+				Type:  common.PNTCell,
 			})
 	}
 

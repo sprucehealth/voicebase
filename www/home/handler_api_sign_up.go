@@ -122,7 +122,7 @@ func (h *signUpAPIHAndler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 		PhoneNumbers: []*common.PhoneNumber{
 			{
 				Phone:    req.MobilePhone,
-				Type:     api.PhoneCell,
+				Type:     common.PNTCell,
 				Status:   api.StatusActive,
 				Verified: false,
 			},

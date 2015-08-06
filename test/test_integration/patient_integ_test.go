@@ -134,7 +134,7 @@ func TestPatientUpdate(t *testing.T) {
 	pat, err := testData.DataAPI.GetPatientFromID(signedupPatientResponse.Patient.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 1, len(pat.PhoneNumbers))
-	test.Equals(t, &common.PhoneNumber{Phone: "734-846-5522", Type: "Cell", Status: "", Verified: false}, pat.PhoneNumbers[0])
+	test.Equals(t, &common.PhoneNumber{Phone: "734-846-5522", Type: common.PNTCell, Status: "", Verified: false}, pat.PhoneNumbers[0])
 
 	patientCli := PatientClient(testData, t, signedupPatientResponse.Patient.ID.Int64())
 
@@ -142,7 +142,7 @@ func TestPatientUpdate(t *testing.T) {
 		PhoneNumbers: []patient.PhoneNumber{
 			{
 				Number: "415-555-5555",
-				Type:   "Home",
+				Type:   "home",
 			},
 		},
 	}))
@@ -150,5 +150,5 @@ func TestPatientUpdate(t *testing.T) {
 	pat, err = testData.DataAPI.GetPatientFromID(signedupPatientResponse.Patient.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, 1, len(pat.PhoneNumbers))
-	test.Equals(t, &common.PhoneNumber{Phone: "415-555-5555", Type: "Home", Status: "", Verified: false}, pat.PhoneNumbers[0])
+	test.Equals(t, &common.PhoneNumber{Phone: "415-555-5555", Type: common.PNTHome, Status: "", Verified: false}, pat.PhoneNumbers[0])
 }

@@ -279,7 +279,7 @@ func (h *loginVerifyHandler) ServeHTTP(ctx context.Context, w http.ResponseWrite
 
 	var toNumber string
 	for _, n := range numbers {
-		if n.Type == api.PhoneCell {
+		if n.Type == common.PNTCell {
 			toNumber = n.Phone.String()
 			break
 		}

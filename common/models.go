@@ -22,7 +22,7 @@ const (
 const (
 	// ClaimerTypeConversationMessage is used to represent a media object claim by a case message
 	ClaimerTypeConversationMessage = "conversation_message"
-	// ClaimerTypePhotoIntakSection is used to represent a media object claim by a photo intake section
+	// ClaimerTypePhotoIntakeSection is used to represent a media object claim by a photo intake section
 	ClaimerTypePhotoIntakeSection = "patient_intake_photo_section"
 	// ClaimerTypeTreatmentPlanScheduledMessage is used to represent a media object claim by a media
 	// attachment in a scheduled message in a treatment plan
@@ -35,11 +35,54 @@ const (
 	ClaimerTypeParentalConsentProof = "parental_consent_proof"
 )
 
+// PhoneNumberType preresents the type of phone number associated with the account
+type PhoneNumberType string
+
+const (
+	// PNTCell represents a cell phone number
+	PNTCell PhoneNumberType = "CELL"
+
+	// PNTWork represents a work phone number
+	PNTWork PhoneNumberType = "WORK"
+
+	// PNTHome represents a home phone number
+	PNTHome PhoneNumberType = "HOME"
+
+	// PNTEmpty represents an empty phone number type
+	PNTEmpty PhoneNumberType = ""
+)
+
+// GetPhoneNumberType returns the GetPhoneNumberType the maps to the provided string
+func GetPhoneNumberType(s string) (PhoneNumberType, error) {
+	switch t := PhoneNumberType(strings.ToUpper(s)); t {
+	case PNTCell, PNTWork, PNTHome, PNTEmpty:
+		return t, nil
+	}
+	return PhoneNumberType(""), fmt.Errorf("Unkown phone number type: %s", s)
+}
+
+func (t PhoneNumberType) String() string {
+	return string(t)
+}
+
+// Scan allows for scanning of PhoneNumberType from a database conforming to the sql.Scanner interface
+func (t *PhoneNumberType) Scan(src interface{}) error {
+	var err error
+	switch ts := src.(type) {
+	case string:
+		*t, err = GetPhoneNumberType(ts)
+	case []byte:
+		*t, err = GetPhoneNumberType(string(ts))
+	}
+	return err
+}
+
+// PhoneNumber represents a phone number mapped to an account
 type PhoneNumber struct {
-	Phone    Phone  `json:"phone,omitempty"`
-	Type     string `json:"phone_type,omitempty"`
-	Status   string `json:"status"`
-	Verified bool   `json:"verified"`
+	Phone    Phone           `json:"phone,omitempty"`
+	Type     PhoneNumberType `json:"phone_type,omitempty"`
+	Status   string          `json:"status"`
+	Verified bool            `json:"verified"`
 }
 
 type Patient struct {
@@ -208,7 +251,7 @@ type PatientCareTeam struct {
 
 type TreatmentPlanStatus string
 
-var (
+const (
 	TPStatusDraft     TreatmentPlanStatus = "DRAFT"
 	TPStatusSubmitted TreatmentPlanStatus = "SUBMITTED"
 	TPStatusActive    TreatmentPlanStatus = "ACTIVE"

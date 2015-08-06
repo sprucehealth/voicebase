@@ -59,7 +59,7 @@ func (h *cellVerifyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter
 
 	var cell common.Phone
 	for _, n := range numbers {
-		if n.Status == api.StatusActive && n.Type == api.PhoneCell {
+		if n.Status == api.StatusActive && n.Type == common.PNTCell {
 			cell = n.Phone
 			if n.Verified {
 				// A cell number if already verified so go to the next step
@@ -102,7 +102,7 @@ func (h *cellVerifyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter
 			if err := h.authAPI.ReplacePhoneNumbersForAccount(account.ID, []*common.PhoneNumber{
 				&common.PhoneNumber{
 					Phone:    cell,
-					Type:     api.PhoneCell,
+					Type:     common.PNTCell,
 					Status:   api.StatusActive,
 					Verified: true,
 				},
@@ -132,7 +132,7 @@ func (h *cellVerifyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter
 		if err := h.authAPI.ReplacePhoneNumbersForAccount(account.ID, []*common.PhoneNumber{
 			&common.PhoneNumber{
 				Phone:    phone,
-				Type:     api.PhoneCell,
+				Type:     common.PNTCell,
 				Status:   api.StatusActive,
 				Verified: false,
 			},

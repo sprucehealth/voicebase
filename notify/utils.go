@@ -1,9 +1,6 @@
 package notify
 
-import (
-	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/common"
-)
+import "github.com/sprucehealth/backend/common"
 
 // ByCommunicationPrefernce represents a sorting utility to sort communication preferences
 // in the following order of preference: PUSH, SMS, EMAIL
@@ -34,7 +31,7 @@ func (b ByCommunicationPreference) Less(i, j int) bool {
 
 func phoneNumberForPatient(patient *common.Patient) string {
 	for _, phoneNumber := range patient.PhoneNumbers {
-		if phoneNumber.Type == api.PhoneCell {
+		if phoneNumber.Type == common.PNTCell {
 			return patient.PhoneNumbers[0].Phone.String()
 		}
 	}

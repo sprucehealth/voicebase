@@ -21,13 +21,6 @@ const (
 	RolePatient = "PATIENT"
 )
 
-// Phone number types
-const (
-	PhoneCell = "Cell"
-	PhoneHome = "Home"
-	PhoneWork = "Work"
-)
-
 const (
 	LanguageIDEnglish = 1
 	PatientUnlinked   = "UNLINKED"

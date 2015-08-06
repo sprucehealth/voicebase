@@ -66,7 +66,7 @@ func (n *NotificationManager) NotifyDoctor(role string, doctorID, accountID int6
 
 	var cellPhone string
 	for _, phoneNumber := range phoneNumbers {
-		if phoneNumber.Type == api.PhoneCell {
+		if phoneNumber.Type == common.PNTCell {
 			cellPhone = phoneNumber.Phone.String()
 			break
 		}
