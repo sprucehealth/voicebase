@@ -99,25 +99,26 @@ func (h *parentalConsentAPIHandler) post(ctx context.Context, w http.ResponseWri
 		return
 	}
 
-	if err := h.dataAPI.GrantParentChildConsent(parent.ID.Int64(), req.ChildPatientID, req.Relationship); err != nil {
+	newConsent, err := h.dataAPI.GrantParentChildConsent(parent.ID.Int64(), req.ChildPatientID, req.Relationship)
+	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
 	}
-
-	// It's possible this is a second child for the same parent in which case we'll already have identification photos.
-	proof, err := h.dataAPI.ParentConsentProof(parent.ID.Int64())
-	if err != nil {
-		if !api.IsErrNotFound(err) {
-			www.APIInternalError(w, r, err)
-			return
-		}
-	} else if proof.IsComplete() {
-		if err := patient.ParentalConsentCompleted(h.dataAPI, h.dispatcher, parent.ID.Int64(), req.ChildPatientID); err != nil {
-			www.APIInternalError(w, r, err)
-			return
+	if newConsent {
+		// It's possible this is a second child for the same parent in which case we'll already have identification photos.
+		proof, err := h.dataAPI.ParentConsentProof(parent.ID.Int64())
+		if err != nil {
+			if !api.IsErrNotFound(err) {
+				www.APIInternalError(w, r, err)
+				return
+			}
+		} else if proof.IsComplete() {
+			if err := patient.ParentalConsentCompleted(h.dataAPI, h.dispatcher, parent.ID.Int64(), req.ChildPatientID); err != nil {
+				www.APIInternalError(w, r, err)
+				return
+			}
 		}
 	}
-
 	httputil.JSONResponse(w, http.StatusOK, parentalConsentAPIPOSTResponse{})
 }
 

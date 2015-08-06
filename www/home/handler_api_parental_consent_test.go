@@ -66,9 +66,9 @@ func (a *mockDataAPI_parentalConsent) GetPatientFromAccountID(accountID int64) (
 	return nil, api.ErrNotFound("patient")
 }
 
-func (a *mockDataAPI_parentalConsent) GrantParentChildConsent(parentPatientID, childPatientID int64, relationship string) error {
+func (a *mockDataAPI_parentalConsent) GrantParentChildConsent(parentPatientID, childPatientID int64, relationship string) (bool, error) {
 	a.relationship = relationship
-	return nil
+	return true, nil
 }
 
 func (a *mockDataAPI_parentalConsent) ParentalConsent(childPatientID int64) ([]*common.ParentalConsent, error) {
@@ -85,9 +85,9 @@ func (a *mockDataAPI_parentalConsent) ParentConsentProof(parentPatientID int64) 
 	return a.proof, nil
 }
 
-func (a *mockDataAPI_parentalConsent) ParentalConsentCompletedForPatient(patientID int64) error {
+func (a *mockDataAPI_parentalConsent) ParentalConsentCompletedForPatient(patientID int64) (bool, error) {
 	a.updated = true
-	return nil
+	return true, nil
 }
 
 func (a *mockDataAPI_parentalConsent) Patient(id int64, basicInfoOnly bool) (*common.Patient, error) {

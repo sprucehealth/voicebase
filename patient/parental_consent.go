@@ -22,13 +22,16 @@ const (
 // ParentalConsentCompleted takes care of updating a child's patient account and visits
 // once a parent has completed the consent flow.
 func ParentalConsentCompleted(dataAPI api.DataAPI, publisher dispatch.Publisher, parentPatientID, childPatientID int64) error {
-	if err := dataAPI.ParentalConsentCompletedForPatient(childPatientID); err != nil {
+	newlyCompleted, err := dataAPI.ParentalConsentCompletedForPatient(childPatientID)
+	if err != nil {
 		return errors.Trace(err)
 	}
-	publisher.PublishAsync(&ParentalConsentCompletedEvent{
-		ParentPatientID: parentPatientID,
-		ChildPatientID:  childPatientID,
-	})
+	if newlyCompleted {
+		publisher.PublishAsync(&ParentalConsentCompletedEvent{
+			ParentPatientID: parentPatientID,
+			ChildPatientID:  childPatientID,
+		})
+	}
 	return nil
 }
 
