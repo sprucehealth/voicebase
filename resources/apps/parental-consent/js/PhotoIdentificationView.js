@@ -3,6 +3,10 @@
 var React = require("react");
 var Reflux = require('reflux');
 var Utils = require("../../libs/utils.js");
+
+var Analytics = require("../../libs/analytics.js");
+var AnalyticsScreenName = "photo_upload"
+
 var Constants = require("./Constants.js");
 var ParentalConsentActions = require('./ParentalConsentActions.js');
 var ParentalConsentStore = require('./ParentalConsentStore.js');
@@ -31,9 +35,12 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 			isGovernmentIDUploading: false,
 			isSelfieUploading: false,
 			submitButtonPressedOnce: false,
+			showHavingTroubleInstructions: false,
 		}
 	},
 	componentDidMount: function() {
+		Analytics.record(AnalyticsScreenName + "_viewed", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName})
+		
 		// NOTE: to adjust this, go to https://fgnass.github.io/spin.js/, and copy the `opts` var from that page
 		var opts = {
 		  lines: 11 // The number of lines to draw
@@ -62,17 +69,26 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 		target = document.getElementById('selfieSpinner');
 		spinner = new Spinner(opts).spin(target);
 	},
+	componentDidUpdate: function() {
+		if (this.shouldScrollBottom) {
+			window.scrollTo(0,document.body.scrollHeight);
+			this.shouldScrollBottom = false
+		}
+	},
 
 	//
 	// Action callbacks
 	//
 	governmentIDUploadStarted: function() {
+		Analytics.record(AnalyticsScreenName + "_government_id_upload_started", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName})
 		this.setState({isGovernmentIDUploading: true})
 	},
 	governmentIDUploadCompleted: function(response: ParentalConsentUploadImageResponse) {
+		Analytics.record(AnalyticsScreenName + "_government_id_upload_succeeded", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName})
 		this.setState({isGovernmentIDUploading: false})
 	},
-	governmentIDUploadFailed: function(error: any) {
+	governmentIDUploadFailed: function(error: ajaxError) {
+		Analytics.record(AnalyticsScreenName + "_government_id_upload_failed", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName, "error": error.message})
 		alert(error.message)
 		// TODO: don't clear out the image if it fails-- instead retry
 		this.setState({
@@ -81,12 +97,15 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 		})
 	},
 	selfieUploadStarted: function() {
+		Analytics.record(AnalyticsScreenName + "_selfie_upload_started", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName})
 		this.setState({isSelfieUploading: true})
 	},
 	selfieUploadCompleted: function(response: ParentalConsentUploadImageResponse) {
+		Analytics.record(AnalyticsScreenName + "_selfie_upload_succeeded", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName})
 		this.setState({isSelfieUploading: false})
 	},
-	selfieUploadFailed: function(error: any) {
+	selfieUploadFailed: function(error: ajaxError) {
+		Analytics.record(AnalyticsScreenName + "_selfie_upload_failed", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName, "error": error.message})
 		alert(error.message)
 		// TODO: don't clear out the image if it fails-- instead retry
 		this.setState({
@@ -98,11 +117,16 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 	//
 	// User interaction callbacks
 	//
+	shouldScrollBottom: false,
 	handleSubmit: function(e: any) {
 		e.preventDefault();
 		this.setState({submitButtonPressedOnce: true})
 		if (this.shouldAllowSubmit()) {
+			Analytics.record(AnalyticsScreenName + "_submission_succeeded", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName})
 			this.props.onFormSubmit({})
+		} else {
+			var error: ajaxError = {type: "client_validation", message: "didn't pass client-side validation"}
+			Analytics.record(AnalyticsScreenName + "_submission_failed", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName, "error": error.message})
 		}
 	},
 	handleGovernmentIDSelection: function(e: any) {
@@ -166,6 +190,11 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 			// When the user presses Cancel on that attach file dialog, the files array comes back empty
 			// Do nothing, since we don't have a way to delete photos via the API
 		}
+	},
+	handleHavingTroubleClick: function() {
+		Analytics.record(AnalyticsScreenName + "_troubleshooting_clicked", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName})
+		this.shouldScrollBottom = true
+		this.setState({showHavingTroubleInstructions: true})
 	},
 
 	//
@@ -284,6 +313,33 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 			WebkitTransform: "translate(-50%,-50%)",
 		}
 
+		var havingTroubleCTA
+		var isIOS = navigator.userAgent.indexOf('iPhone') >= 0;
+		if (isIOS) {
+			havingTroubleCTA = (<div style={{
+					fontFamily: "MuseoSans-500-Italic",
+					cursor: "pointer",
+					color: (this.state.showHavingTroubleInstructions ? "#728289" : "#0BA5C5"),
+					textAlign: "center",
+				}} onClick={this.handleHavingTroubleClick}>
+					Having trouble uploading photos?
+				</div>)
+		}
+
+		var havingTroubleSection = null
+		if (this.state.showHavingTroubleInstructions) {
+			havingTroubleSection = (<div style={{
+					color: "#728289",
+					fontSize: "14px",
+					fontFamily: "MuseoSans-500",
+					textAlign: "center",
+				}}>
+					<p style={{marginTop: 0}}>Try one of the options below:</p>
+					<p>1. Close a few browser tabs and try again</p>
+					<p>2. Take photos with the Camera app and then upload photos from your Photo Library</p>
+				</div>)
+		}
+
 		return (
 			<div style={{
 				width: "100%",
@@ -358,6 +414,8 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 							appearsDisabled={submitButtonDisabled}/>
 					</form>
 				</div>
+				{havingTroubleCTA}
+				{havingTroubleSection}
 			</div>
 		);
 	}

@@ -3,6 +3,9 @@
 var React = require("react");
 var Reflux = require('reflux')
 
+var Analytics = require("../../libs/analytics.js");
+var AnalyticsScreenName = "confirmation"
+
 var Utils = require("../../libs/utils.js");
 var Constants = require("./Constants.js");
 
@@ -19,6 +22,9 @@ var ConfirmationView = React.createClass({displayName: "ConfirmationView",
 	handleSubmit: function(e: any) {
 		e.preventDefault();
 		this.props.onFormSubmit({})
+	},
+	componentDidMount: function() {
+		Analytics.record(AnalyticsScreenName + "_viewed", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName})
 	},
 	render: function(): any {
 		var firstName: string = this.state.store.childDetails.firstName

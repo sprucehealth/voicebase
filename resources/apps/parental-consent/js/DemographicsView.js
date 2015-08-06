@@ -5,9 +5,16 @@ var Reflux = require('reflux');
 var Utils = require("../../libs/utils.js");
 var Formatter = require('../../libs/formatter.js');
 
+var Analytics = require("../../libs/analytics.js");
+var AnalyticsScreenName = "demographics"
+var Constants = require("./Constants.js");
+
 var SubmitButtonView = require("./SubmitButtonView.js");
 var ParentalConsentActions = require('./ParentalConsentActions.js')
 var ParentalConsentStore = require('./ParentalConsentStore.js');
+
+var IsAndroid = navigator.userAgent.indexOf('Android') >= 0;
+var IsIOS = navigator.userAgent.indexOf('iPhone') >= 0;
 
 var DemographicsView = React.createClass({displayName: "DemographicsView",
 
@@ -17,6 +24,8 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 	mixins: [
 		React.addons.LinkedStateMixin,
 		Reflux.connect(ParentalConsentStore, 'store'),
+		Reflux.listenTo(ParentalConsentActions.saveDemographics.completed, 'saveDemographicsCompleted'),
+		Reflux.listenTo(ParentalConsentActions.saveDemographics.failed, 'saveDemographicsFailed'),
 	],
 	propTypes: {
 		onFormSubmit: React.PropTypes.func.isRequired,
@@ -27,6 +36,8 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 		}
 	},
 	componentDidMount: function() {
+		Analytics.record(AnalyticsScreenName + "_viewed", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName}, true)
+
 		var store: ParentalConsentStoreType = this.state.store
 		var userInputDemographics: ParentalConsentDemographics = store.userInput.demographics
 		if (userInputDemographics) {
@@ -45,15 +56,28 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 			});
 		}
 
-		var dobInputFormatter = new Formatter.Formatter(React.findDOMNode(this.refs.dobInput), {
-			'pattern': '{{99}}-{{99}}-{{99}}',
-			'changeCallback': this.onDateChange
-		});
+		var patterns = [
+			{"*": "{{99}}-{{99}}-{{9999}}"},
+			{".{8}": "{{99}}-{{99}}-{{99}}"}
+		]
+		if (!IsAndroid && !IsIOS) {
+			// Note: there is likely something fundamentally wrong with this, because
+			// React does not guarantee that a node we fetch here will always exist in the dom as the DOB and Phone Inputs
+			// This may be why it doesn't work on Android Browser
+			// We could try setting this up in componentDidUpdate, but we'll need to tear down the old instance first
+			
+			var dobInputFormatter = new Formatter.Formatter(React.findDOMNode(this.refs.dobInput), {
+				'patterns': patterns,
+				'changeCallback': this.onDateChange
+			});
+		}
 
-		var phoneInputFormatter = new Formatter.Formatter(React.findDOMNode(this.refs.phoneInput), {
-			'pattern': '{{999}}-{{999}}-{{9999}}',
-			'changeCallback': this.onPhoneChange
-		});
+		if (!IsAndroid) {
+			var phoneInputFormatter = new Formatter.Formatter(React.findDOMNode(this.refs.phoneInput), {
+				'pattern': '{{999}}-{{999}}-{{9999}}',
+				'changeCallback': this.onPhoneChange
+			});
+		}
 	},
 
 	//
@@ -72,12 +96,21 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 				mobile_phone: this.state.phone,
 			}
 			ParentalConsentActions.saveRelationship(this.state.relationship)
-			var t = this
-			ParentalConsentActions.saveDemographics.triggerPromise(demographics).then(function(response: any) {
-				t.props.onFormSubmit({})
-			}).catch(function(err: ajaxError) {
-				alert(err.message)
-			});
+			ParentalConsentActions.saveDemographics(demographics)
+			Analytics.record(AnalyticsScreenName + "_submission_succeeded", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName})
+		} else {
+			Analytics.record(AnalyticsScreenName + "_submission_failed", {
+				"app_type": Constants.AnalyticsAppType,
+				"screen_id": AnalyticsScreenName, 
+				"error": "didn't pass client-side validation",
+				"isFirstNameFieldValid": this.isFirstNameFieldValid(),
+				"isLastNameFieldValid": this.isLastNameFieldValid(),
+				"isDOBFieldValid": this.isDOBFieldValid(),
+				"isGenderFieldValid": this.isGenderFieldValid(),
+				"isRelationshipFieldValid": this.isRelationshipFieldValid(),
+				"isStateOfResidenceFieldValid": this.isStateOfResidenceFieldValid(),
+				"isPhoneFieldValid": this.isPhoneFieldValid(),
+			})
 		}
 	},
 	onDateChange: function(newValue: string) {
@@ -85,6 +118,16 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 	},
 	onPhoneChange: function(newValue: string) {
 		this.setState({phone: newValue})
+	},
+
+	//
+	// Action callbacks
+	//
+	saveDemographicsCompleted: function() {
+		this.props.onFormSubmit({})
+	},
+	saveDemographicsFailed: function(err: ajaxError) {
+		alert(err.message)
 	},
 
 	//
@@ -122,12 +165,47 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 	},
 
 	render: function(): any {
+
 		var selectContainerStyle = {
 			backgroundImage: "url(/static/img/pc/select_arrow@2x.png)",
 			backgroundRepeat: "no-repeat",
 			backgroundSize: "12px 7px",
 			backgroundPosition: "right",
 		};
+
+		var dateInput = null
+		var phoneInput = null
+		if (IsAndroid || IsIOS) {
+			dateInput = (
+				<div style={{position: "relative"}}>
+					<div style={{position: "absolute", lineHeight: "56px", fontSize: "16px", color: "RGBA(30, 51, 58, 0.4)", marginLeft: (IsIOS ? "7px" : null)}}>
+						{(Utils.isEmpty(this.state.dob) ? "Date of Birth" : null)}
+					</div>
+					<input type="date" valueLink={this.linkState('dob')} style={Utils.mergeProperties({height: "56px"}, selectContainerStyle)}/>
+				</div>);
+			phoneInput = (<input type="tel"
+						mozactionhint="done"
+						autoComplete="tel"
+						inputmode="tel"
+						placeholder="Mobile Phone #"
+						valueLink={this.linkState('phone')}
+						ref="phoneInput" />)
+		} else {
+			dateInput = (<input
+						type="text"
+						placeholder="Date of Birth (MM-DD-YY)"
+						className={this.isDOBFieldValid() ? null : "emptyState"}
+						autoComplete="bday"
+						valueLink={this.linkState('dob')}
+						ref="dobInput" />)
+			phoneInput = (<input type="tel"
+						mozactionhint="done"
+						autoComplete="tel"
+						inputmode="tel"
+						placeholder="Mobile Phone #"
+						valueLink={this.linkState('phone')}
+						ref="phoneInput" />)
+		}
 
 		var submitButtonDisabled = !this.shouldAllowSubmit()
 
@@ -164,7 +242,10 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 					textAlign: "center",
 					marginBottom: "22px",
 				}}>
-					<a href={"/login?next=%2Fpc%2F" + ParentalConsentHydration.ChildDetails.patientID + "%2Fconsent"}>Sign in to an existing Spruce account.</a>
+					<a href={"/login?next=%2Fpc%2F" + ParentalConsentHydration.ChildDetails.patientID + "%2Fconsent"} onClick={function (e: any) {
+						// Warning: this is a synchronous request
+						Analytics.record(AnalyticsScreenName + "_sign_in_link_clicked", {"app_type": Constants.AnalyticsAppType, "screen_id": AnalyticsScreenName})
+					}}>Sign in to an existing Spruce account.</a>
 				</div>
 				<div className="formFieldRow hasBottomDivider hasTopDivider" style={firstNameHighlighted ? orangeBottomDividerStyle : null}>
 					<input type="text"
@@ -187,13 +268,7 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 						valueLink={this.linkState('lastName')} />
 					</div>
 				<div className="formFieldRow hasBottomDivider" style={dobHighlighted ? orangeBottomDividerStyle : null}>
-					<input
-						type="text"
-						placeholder="Date of Birth (MM-DD-YY)"
-						className={this.isDOBFieldValid() ? null : "emptyState"}
-						autoComplete="bday"
-						valueLink={this.linkState('dob')}
-						ref="dobInput" />
+					{dateInput}
 				</div>
 				<div className="formFieldRow hasBottomDivider" style={Utils.mergeProperties(selectContainerStyle, genderHighlighted ? orangeBottomDividerStyle : null)}>
 					<select
@@ -226,14 +301,8 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 						{stateOfResidenceOptions}
 					</select>
 				</div>
-				<div className="formFieldRow hasBottomDivider" style={phoneHighlighted ? orangeBottomDividerStyle : null}>
-					<input type="tel"
-						mozactionhint="done"
-						autoComplete="tel"
-						inputmode="tel"
-						placeholder="Mobile Phone #"
-						valueLink={this.linkState('phone')}
-						ref="phoneInput" />
+				<div className="formFieldRow hasBottomDivider" style={Utils.mergeProperties(phoneHighlighted ? orangeBottomDividerStyle : null, {height: "56px"})}>
+					{phoneInput}
 				</div>
 				<div>
 					<SubmitButtonView

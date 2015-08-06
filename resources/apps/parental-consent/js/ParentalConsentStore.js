@@ -1,9 +1,8 @@
 /* @flow */
 
 var Reflux = require('reflux')
-var ParentalConsentAPI = require("./api.js")
 var Utils = require("../../libs/utils.js");
-
+var ParentalConsentAPI = require("./api.js")
 var ParentalConsentActions = require('./ParentalConsentActions.js')
 
 var hydration = {
@@ -142,8 +141,8 @@ var ParentalConsentStore = Reflux.createStore({
 			return age;
 		}
 
-		if (this.validateMMDDYY(demographics.dob)) {
-			var YYYYMMDD = this.YYYYMMDDFromMMDDYY(demographics.dob)
+		if (this.validateUserInputDOB(demographics.dob)) {
+			var YYYYMMDD = this.YYYYMMDDFromUserInputDOB(demographics.dob)
 			if (getAge(YYYYMMDD) >= 18) {
 				externalState.userInput.demographics = demographics
 				this.trigger(externalState)
@@ -155,9 +154,8 @@ var ParentalConsentStore = Reflux.createStore({
 			ParentalConsentActions.saveDemographics.failed({message: "Please enter a valid date of birth."})
 		}
 	},
-	validateMMDDYY: function(MMDDYY: string): bool {
-		var regex = new RegExp(/^((0?[13578]|10|12)(-|\/)(([1-9])|(0[1-9])|([12])([0-9]?)|(3[01]?))(-|\/)((19)([2-9])(\d{1})|(20)([01])(\d{1})|([8901])(\d{1}))|(0?[2469]|11)(-|\/)(([1-9])|(0[1-9])|([12])([0-9]?)|(3[0]?))(-|\/)((19)([2-9])(\d{1})|(20)([01])(\d{1})|([8901])(\d{1})))$/)
-		return regex.test(MMDDYY)
+	validateUserInputDOB: function(userInputDOB: string): bool {
+		return (!Utils.isEmpty(userInputDOB) && (userInputDOB.length == 8 || userInputDOB.length == 10))
 	},
 
 	//
@@ -170,21 +168,46 @@ var ParentalConsentStore = Reflux.createStore({
 	//
 	// Email/Relationship/Consent screen
 	//
-	YYYYMMDDFromMMDDYY: function(MMDDYY: string): string {
-		var dateIsValid = this.validateMMDDYY(MMDDYY)
+	YYYYfromYY: function(YY: string): string {
+		// Not Y2.1k safe
+		var YYYY
+		var d = new Date()
+		var currentYYInt: number = d.getFullYear() % 100
+		if (parseInt(YY) > currentYYInt) {
+			YYYY = "19" + YY
+		} else {
+			YYYY = "20" + YY
+		}
+		return YYYY
+	},
+	YYYYMMDDFromUserInputDOB: function(userInputDOB: string): string {
+		var dateIsValid = this.validateUserInputDOB(userInputDOB)
 		var YYYYMMDD: string = ""
 		if (dateIsValid) {
-			var components = MMDDYY.split("-");
-			// Not Y2.1k safe
-			var YYYY
-			var d = new Date()
-			var currentYYInt: number = d.getFullYear() % 100
-			if (parseInt(components[2]) > currentYYInt) {
-				YYYY = "19" + components[2]
-			} else {
-				YYYY = "20" + components[2]
+			var components = userInputDOB.split("-");
+
+			var YYYY = ""
+			var MM = ""
+			var DD = ""
+			if (components.length == 3 && components[0].length === 2) {
+				if (components && components[2] && components[2].length == 2) {
+					YYYY = this.YYYYfromYY(components[2])
+				} else if (components && components[2] && components[2].length == 4) {
+					YYYY = components[2]
+				}
+				MM = components[0] 
+				DD = components[1]
+			} else if (components.length > 0 && components[0].length === 4) {
+				YYYY = components[0]
+				MM = components[1] 
+				DD = components[2]
 			}
-			YYYYMMDD = YYYY + "-" + components[0] + "-" + components[1]
+				
+			YYYYMMDD = YYYY + "-" + MM + "-" + DD
+			var date = new Date(YYYYMMDD)
+			if (date === null) {
+				YYYYMMDD = ""
+			}
 		}
 		return YYYYMMDD
 	},
@@ -198,20 +221,21 @@ var ParentalConsentStore = Reflux.createStore({
 
 		var consentRequest: ParentalConsentConsentRequest = {
 			child_patient_id: externalState.childDetails.childPatientID,
-			relationship: relationship,
+			relationship: relationship.trim(),
 		}
 
-		var YYYYMMDD: string = this.YYYYMMDDFromMMDDYY(userInput.demographics.dob)
+		var YYYYMMDD: string = this.YYYYMMDDFromUserInputDOB(userInput.demographics.dob)
+
 
 		var signUpRequest: ParentalConsentSignUpRequest = {
-			email: userInput.emailPassword.email,
-			password: userInput.emailPassword.password,
-			state: userInput.demographics.state,
-			first_name: userInput.demographics.first_name,
-			last_name: userInput.demographics.last_name,
+			email: userInput.emailPassword.email.trim(),
+			password: userInput.emailPassword.password.trim(),
+			state: userInput.demographics.state.trim(),
+			first_name: userInput.demographics.first_name.trim(),
+			last_name: userInput.demographics.last_name.trim(),
 			dob: YYYYMMDD,
-			gender: userInput.demographics.gender,
-			mobile_phone: userInput.demographics.mobile_phone,
+			gender: userInput.demographics.gender.trim(),
+			mobile_phone: userInput.demographics.mobile_phone.trim(),
 		}
 
 		var t = this
@@ -219,14 +243,17 @@ var ParentalConsentStore = Reflux.createStore({
 		var submitConsent = function () {
 			externalState.numBlockingOperations = externalState.numBlockingOperations + 1
 			t.trigger(externalState)
-			ParentalConsentActions.submitConsent.triggerPromise(consentRequest).then(function(response: any) {
-				externalState.numBlockingOperations = externalState.numBlockingOperations - 1
-				t.trigger(externalState)
-				ParentalConsentActions.submitEmailRelationshipConsent.completed()
-			}).catch(function(err: ajaxError) {
-				externalState.numBlockingOperations = externalState.numBlockingOperations - 1
-				t.trigger(externalState)
-				ParentalConsentActions.submitEmailRelationshipConsent.failed(err)
+
+			ParentalConsentAPI.submitConsent(consentRequest, function(success, data, error) {
+				if (!success) {
+					externalState.numBlockingOperations = externalState.numBlockingOperations - 1
+					t.trigger(externalState)
+					ParentalConsentActions.submitEmailRelationshipConsent.failed(error)
+				} else {
+					externalState.numBlockingOperations = externalState.numBlockingOperations - 1
+					t.trigger(externalState)
+					ParentalConsentActions.submitEmailRelationshipConsent.completed()
+				}
 			});
 		}
 
@@ -238,15 +265,17 @@ var ParentalConsentStore = Reflux.createStore({
 			} else {
 				externalState.numBlockingOperations = externalState.numBlockingOperations + 1
 				t.trigger(externalState)
-				ParentalConsentActions.signUp.triggerPromise(signUpRequest).then(function(response: any) {
-					externalState.parentAccount.isSignedIn = true;
-					externalState.numBlockingOperations = externalState.numBlockingOperations - 1
-				    submitConsent()
-				    t.trigger(externalState)
-				}).catch(function(err: ajaxError) {
-					externalState.numBlockingOperations = externalState.numBlockingOperations - 1
-					t.trigger(externalState)
-					ParentalConsentActions.submitEmailRelationshipConsent.failed(err)
+				ParentalConsentAPI.signUp(signUpRequest, function(success, data, error) {
+					if (!success) {
+						externalState.numBlockingOperations = externalState.numBlockingOperations - 1
+						t.trigger(externalState)
+						ParentalConsentActions.submitEmailRelationshipConsent.failed(error)
+					} else {
+						externalState.parentAccount.isSignedIn = true;
+						externalState.numBlockingOperations = externalState.numBlockingOperations - 1
+					    t.trigger(externalState)
+					    submitConsent()
+					}
 				});
 			}
 		}

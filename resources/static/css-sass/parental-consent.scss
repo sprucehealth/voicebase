@@ -17,106 +17,106 @@ $color-white-90: #E7F2F9;   // White with 90% opacity
 
 @mixin border-radius($radius) {
   -webkit-border-radius: $radius;
-     -moz-border-radius: $radius;
-      -ms-border-radius: $radius;
-          border-radius: $radius;
+	 -moz-border-radius: $radius;
+	  -ms-border-radius: $radius;
+		  border-radius: $radius;
 }
 
 /*@mixin linear-gradient($from, $to) {
-    background: -webkit-linear-gradient($from, $to);
-    background: -o-linear-gradient($from, $to);
-    background: -moz-linear-gradient($from, $to);
-    background: linear-gradient($from, $to);
+	background: -webkit-linear-gradient($from, $to);
+	background: -o-linear-gradient($from, $to);
+	background: -moz-linear-gradient($from, $to);
+	background: linear-gradient($from, $to);
 }*/
 
 /*@font-face {
-    font-family: 'MuseoSans-100';
-    src: url('../fonts/MuseoSans_100-webfont.eot');
-    src: url('../fonts/MuseoSans_100-webfont.eot?#iefix') format('embedded-opentype'),
-         url('../fonts/MuseoSans_100-webfont.woff2') format('woff2'),
-         url('../fonts/MuseoSans_100-webfont.woff') format('woff'),
-         url('../fonts/MuseoSans_100-webfont.ttf') format('truetype'),
-         url('../fonts/MuseoSans_100-webfont.svg#museo_sans100') format('svg');
-    font-weight: normal;
-    font-style: normal;
+	font-family: 'MuseoSans-100';
+	src: url('../fonts/MuseoSans_100-webfont.eot');
+	src: url('../fonts/MuseoSans_100-webfont.eot?#iefix') format('embedded-opentype'),
+		 url('../fonts/MuseoSans_100-webfont.woff2') format('woff2'),
+		 url('../fonts/MuseoSans_100-webfont.woff') format('woff'),
+		 url('../fonts/MuseoSans_100-webfont.ttf') format('truetype'),
+		 url('../fonts/MuseoSans_100-webfont.svg#museo_sans100') format('svg');
+	font-weight: normal;
+	font-style: normal;
 }
 @font-face {
-    font-family: 'MuseoSans-100-Italic';
-    src: url('../fonts/MuseoSans_100_Italic-webfont.eot');
-    src: url('../fonts/MuseoSans_100_Italic-webfont.eot?#iefix') format('embedded-opentype'),
-         url('../fonts/MuseoSans_100_Italic-webfont.woff2') format('woff2'),
-         url('../fonts/MuseoSans_100_Italic-webfont.woff') format('woff'),
-         url('../fonts/MuseoSans_100_Italic-webfont.ttf') format('truetype'),
-         url('../fonts/MuseoSans_100_Italic-webfont.svg#museo_sans100_italic') format('svg');
-    font-weight: normal;
-    font-style: normal;
+	font-family: 'MuseoSans-100-Italic';
+	src: url('../fonts/MuseoSans_100_Italic-webfont.eot');
+	src: url('../fonts/MuseoSans_100_Italic-webfont.eot?#iefix') format('embedded-opentype'),
+		 url('../fonts/MuseoSans_100_Italic-webfont.woff2') format('woff2'),
+		 url('../fonts/MuseoSans_100_Italic-webfont.woff') format('woff'),
+		 url('../fonts/MuseoSans_100_Italic-webfont.ttf') format('truetype'),
+		 url('../fonts/MuseoSans_100_Italic-webfont.svg#museo_sans100_italic') format('svg');
+	font-weight: normal;
+	font-style: normal;
 }*/
 @font-face {
-    font-family: 'MuseoSans-300';
-    src: url('../fonts/MuseoSans_300-webfont.eot');
-    src: url('../fonts/MuseoSans_300-webfont.eot?#iefix') format('embedded-opentype'),
-         url('../fonts/MuseoSans_300-webfont.woff2') format('woff2'),
-         url('../fonts/MuseoSans_300-webfont.woff') format('woff'),
-         url('../fonts/MuseoSans_300-webfont.ttf') format('truetype'),
-         url('../fonts/MuseoSans_300-webfont.svg#museo_sans300') format('svg');
-    font-weight: normal;
-    font-style: normal;
+	font-family: 'MuseoSans-300';
+	src: url('../fonts/MuseoSans_300-webfont.eot');
+	src: url('../fonts/MuseoSans_300-webfont.eot?#iefix') format('embedded-opentype'),
+		 url('../fonts/MuseoSans_300-webfont.woff2') format('woff2'),
+		 url('../fonts/MuseoSans_300-webfont.woff') format('woff'),
+		 url('../fonts/MuseoSans_300-webfont.ttf') format('truetype'),
+		 url('../fonts/MuseoSans_300-webfont.svg#museo_sans300') format('svg');
+	font-weight: normal;
+	font-style: normal;
 }
 /*@font-face {
-    font-family: 'MuseoSans-300-Italic';
-    src: url('../fonts/MuseoSans_300_Italic-webfont.eot');
-    src: url('../fonts/MuseoSans_300_Italic-webfont.eot?#iefix') format('embedded-opentype'),
-         url('../fonts/MuseoSans_300_Italic-webfont.woff2') format('woff2'),
-         url('../fonts/MuseoSans_300_Italic-webfont.woff') format('woff'),
-         url('../fonts/MuseoSans_300_Italic-webfont.ttf') format('truetype'),
-         url('../fonts/MuseoSans_300_Italic-webfont.svg#museo_sans300_italic') format('svg');
-    font-weight: normal;
-    font-style: normal;
+	font-family: 'MuseoSans-300-Italic';
+	src: url('../fonts/MuseoSans_300_Italic-webfont.eot');
+	src: url('../fonts/MuseoSans_300_Italic-webfont.eot?#iefix') format('embedded-opentype'),
+		 url('../fonts/MuseoSans_300_Italic-webfont.woff2') format('woff2'),
+		 url('../fonts/MuseoSans_300_Italic-webfont.woff') format('woff'),
+		 url('../fonts/MuseoSans_300_Italic-webfont.ttf') format('truetype'),
+		 url('../fonts/MuseoSans_300_Italic-webfont.svg#museo_sans300_italic') format('svg');
+	font-weight: normal;
+	font-style: normal;
 }*/
 @font-face {
-    font-family: 'MuseoSans-500';
-    src: url('../fonts/MuseoSans_500-webfont.eot');
-    src: url('../fonts/MuseoSans_500-webfont.eot?#iefix') format('embedded-opentype'),
-         url('../fonts/MuseoSans_500-webfont.woff2') format('woff2'),
-         url('../fonts/MuseoSans_500-webfont.woff') format('woff'),
-         url('../fonts/MuseoSans_500-webfont.ttf') format('truetype'),
-         url('../fonts/MuseoSans_500-webfont.svg#museo_sans500') format('svg');
-    font-weight: normal;
-    font-style: normal;
+	font-family: 'MuseoSans-500';
+	src: url('../fonts/MuseoSans_500-webfont.eot');
+	src: url('../fonts/MuseoSans_500-webfont.eot?#iefix') format('embedded-opentype'),
+		 url('../fonts/MuseoSans_500-webfont.woff2') format('woff2'),
+		 url('../fonts/MuseoSans_500-webfont.woff') format('woff'),
+		 url('../fonts/MuseoSans_500-webfont.ttf') format('truetype'),
+		 url('../fonts/MuseoSans_500-webfont.svg#museo_sans500') format('svg');
+	font-weight: normal;
+	font-style: normal;
 }
-// @font-face {
-//     font-family: 'MuseoSans-500-Italic';
-//     src: url('../fonts/MuseoSans_500_Italic-webfont.eot');
-//     src: url('../fonts/MuseoSans_500_Italic-webfont.eot?#iefix') format('embedded-opentype'),
-//          url('../fonts/MuseoSans_500_Italic-webfont.woff2') format('woff2'),
-//          url('../fonts/MuseoSans_500_Italic-webfont.woff') format('woff'),
-//          url('../fonts/MuseoSans_500_Italic-webfont.ttf') format('truetype'),
-//          url('../fonts/MuseoSans_500_Italic-webfont.svg#museo_sans500_italic') format('svg');
-//     font-weight: normal;
-//     font-style: normal;
-// }
 @font-face {
-    font-family: 'MuseoSans-700';
-    src: url('../fonts/MuseoSans_700-webfont.eot');
-    src: url('../fonts/MuseoSans_700-webfont.eot?#iefix') format('embedded-opentype'),
-         url('../fonts/MuseoSans_700-webfont.woff2') format('woff2'),
-         url('../fonts/MuseoSans_700-webfont.woff') format('woff'),
-         url('../fonts/MuseoSans_700-webfont.ttf') format('truetype'),
-         url('../fonts/MuseoSans_700-webfont.svg#museo_sans700') format('svg');
-    font-weight: normal;
-    font-style: normal;
+	font-family: 'MuseoSans-500-Italic';
+	src: url('../fonts/MuseoSans_500_Italic-webfont.eot');
+	src: url('../fonts/MuseoSans_500_Italic-webfont.eot?#iefix') format('embedded-opentype'),
+		 url('../fonts/MuseoSans_500_Italic-webfont.woff2') format('woff2'),
+		 url('../fonts/MuseoSans_500_Italic-webfont.woff') format('woff'),
+		 url('../fonts/MuseoSans_500_Italic-webfont.ttf') format('truetype'),
+		 url('../fonts/MuseoSans_500_Italic-webfont.svg#museo_sans500_italic') format('svg');
+	font-weight: normal;
+	font-style: normal;
 }
-// @font-face {
-//     font-family: 'MuseoSans-700-Italic';
-//     src: url('../fonts/MuseoSans_700_Italic-webfont.eot');
-//     src: url('../fonts/MuseoSans_700_Italic-webfont.eot?#iefix') format('embedded-opentype'),
-//          url('../fonts/MuseoSans_700_Italic-webfont.woff2') format('woff2'),
-//          url('../fonts/MuseoSans_700_Italic-webfont.woff') format('woff'),
-//          url('../fonts/MuseoSans_700_Italic-webfont.ttf') format('truetype'),
-//          url('../fonts/MuseoSans_700_Italic-webfont.svg#museo_sans700_italic') format('svg');
-//     font-weight: normal;
-//     font-style: normal;
-// }
+@font-face {
+	font-family: 'MuseoSans-700';
+	src: url('../fonts/MuseoSans_700-webfont.eot');
+	src: url('../fonts/MuseoSans_700-webfont.eot?#iefix') format('embedded-opentype'),
+		 url('../fonts/MuseoSans_700-webfont.woff2') format('woff2'),
+		 url('../fonts/MuseoSans_700-webfont.woff') format('woff'),
+		 url('../fonts/MuseoSans_700-webfont.ttf') format('truetype'),
+		 url('../fonts/MuseoSans_700-webfont.svg#museo_sans700') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'MuseoSans-700-Italic';
+	src: url('../fonts/MuseoSans_700_Italic-webfont.eot');
+	src: url('../fonts/MuseoSans_700_Italic-webfont.eot?#iefix') format('embedded-opentype'),
+		 url('../fonts/MuseoSans_700_Italic-webfont.woff2') format('woff2'),
+		 url('../fonts/MuseoSans_700_Italic-webfont.woff') format('woff'),
+		 url('../fonts/MuseoSans_700_Italic-webfont.ttf') format('truetype'),
+	url('../fonts/MuseoSans_700_Italic-webfont.svg#museo_sans700_italic') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
 // @font-face {
 //     font-family: 'MuseoSans-900';
 //     src: url('../fonts/MuseoSans_900-webfont.eot');
@@ -141,21 +141,21 @@ $color-white-90: #E7F2F9;   // White with 90% opacity
 // }
 
 @mixin font-300 {
-    font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
 }
 @mixin font-500 {
-    font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
 }
 // @mixin font-500-Italic {
 //     font-family: 'MuseoSans-500-Italic', Helvetica, Arial, sans-serif;
 // }
 @mixin font-700 {
-    font-family: 'MuseoSans-700', Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-700', Helvetica, Arial, sans-serif;
 }
 
 @mixin fontSize-14 {
-    font-size: 14px;
-    line-height: 17px;
+	font-size: 14px;
+	line-height: 17px;
 }
 // @mixin fontSize-smallest {
 //     font-size: 18px;
@@ -174,12 +174,12 @@ $color-white-90: #E7F2F9;   // White with 90% opacity
   line-height: 24px;
 }
 @mixin fontSize-20 {
-    font-size: 20px;
-    line-height: 24px;
+	font-size: 20px;
+	line-height: 24px;
 }
 @mixin fontSize-18 {
-    font-size: 18px;
-    line-height: 22px;
+	font-size: 18px;
+	line-height: 22px;
 }
 // @mixin fontSize-small {
 //     font-size: 22px;
@@ -190,226 +190,226 @@ $color-white-90: #E7F2F9;   // White with 90% opacity
 //     }
 // }
 @mixin fontSize-base {
-    font-size: 16px;
-    line-height: 19px;
-    @media screen and (max-width: $phone-max-width) {
-        font-size: 16px;
-        line-height: 19px;
-    }
+	font-size: 16px;
+	line-height: 19px;
+	@media screen and (max-width: $phone-max-width) {
+		font-size: 16px;
+		line-height: 19px;
+	}
 }
 /*@mixin fontSize-large {
-    font-size: 26px;
-    line-height: 31px;
-    @media screen and (max-width: $phone-max-width) {
-        font-size: 24px;
-        line-height: 29px;
-    }
+	font-size: 26px;
+	line-height: 31px;
+	@media screen and (max-width: $phone-max-width) {
+		font-size: 24px;
+		line-height: 29px;
+	}
 }
 @mixin fontSize-larger {
-    font-size: 28px;
-    line-height: 33px;
-    @media screen and (max-width: $phone-max-width) {
-        font-size: 24px;
-        line-height: 29px;
-    }
+	font-size: 28px;
+	line-height: 33px;
+	@media screen and (max-width: $phone-max-width) {
+		font-size: 24px;
+		line-height: 29px;
+	}
 }
 @mixin fontSize-largest {
-    font-size: 32px;
-    line-height: 38px;
-    @media screen and (max-width: $phone-max-width) {
-        font-size: 24px;
-        line-height: 29px;
-    }
+	font-size: 32px;
+	line-height: 38px;
+	@media screen and (max-width: $phone-max-width) {
+		font-size: 24px;
+		line-height: 29px;
+	}
 }
 @mixin fontSize-jumbo {
-    font-size: 40px;
-    line-height: 48px;
-    @media screen and (max-width: $phone-max-width) {
-        font-size: 28px;
-        line-height: 33px;
-    }
+	font-size: 40px;
+	line-height: 48px;
+	@media screen and (max-width: $phone-max-width) {
+		font-size: 28px;
+		line-height: 33px;
+	}
 }
 
 .fontSize-micro {
-    @include fontSize-micro();
+	@include fontSize-micro();
 }
 .fontSize-smallest {
-    @include fontSize-smallest();
+	@include fontSize-smallest();
 }
 .fontSize-smaller {
-    @include fontSize-smaller();
+	@include fontSize-smaller();
 }
 .fontSize-small {
-    @include fontSize-small();
+	@include fontSize-small();
 }*/
 .fontSize-base {
-    @include fontSize-base();
+	@include fontSize-base();
 }
 /*.fontSize-large {
-    @include fontSize-large();
+	@include fontSize-large();
 }
 .fontSize-larger {
-    @include fontSize-larger();
+	@include fontSize-larger();
 }
 .fontSize-largest {
-    @include fontSize-largest();
+	@include fontSize-largest();
 }
 .fontSize-jumbo {
-    @include fontSize-jumbo();
+	@include fontSize-jumbo();
 }
 
 .u-textAlignLeft {
-    text-align: left;
+	text-align: left;
 }
 .u-textAlignCenter {
-    text-align: center;
+	text-align: center;
 }
 .u-textAlignRight {
-    text-align: right;
+	text-align: right;
 }
 .u-blockAlignCenter {
-    margin-left: auto;
-    margin-right: auto;
+	margin-left: auto;
+	margin-right: auto;
 }
 
 .u-colorSpruceDarkest {
-    color: $color-spruceDarkest;
+	color: $color-spruceDarkest;
 }*/
 
 @import '_parental-landing';
 @import '_parental-faq';
 
 body {
-  	font-family: Helvetica, Arial, sans-serif;
-    @include font-300();
-    @include fontSize-base();
-    margin: 0px;
-    background-color: $color-white;
-    color: $color-black;
+	font-family: Helvetica, Arial, sans-serif;
+	@include font-300();
+	@include fontSize-base();
+	margin: 0px;
+	background-color: $color-white;
+	color: $color-black;
 }
 input, select, textarea, button{font-family:inherit;}
 a {
 	 color: $color-spruceBlue;
 }
 a:link, a:visited, a:hover, a:active {
-    text-decoration: none;
+	text-decoration: none;
 }
 
 #parent-header {
-    text-align: center;
-    box-shadow: 0px 2px 2px 0px rgba(0,0,0,0.10);
+	text-align: center;
+	box-shadow: 0px 2px 2px 0px rgba(0,0,0,0.10);
 }
 
 #img-logo {
-    width: 123px;
-    height: 33px;
-    margin-top: 10px;
-    margin-bottom: 8px;
-    margin-left: auto;
-    margin-right: auto;
+	width: 123px;
+	height: 33px;
+	margin-top: 10px;
+	margin-bottom: 8px;
+	margin-left: auto;
+	margin-right: auto;
 }
 
 .container {
-    max-width: $parental-max-width;
-    margin: auto;
-    text-align: center;
+	max-width: $parental-max-width;
+	margin: auto;
+	text-align: center;
 }
 
 .margin {
-    margin: 5px auto;
+	margin: 5px auto;
 }
 
 .section {
-    padding-bottom: 20px;
+	padding-bottom: 20px;
 }
 
 
 // Button styling
 
 .flexy-btn {
-    display: -webkit-box;   // 2009 spec
-    display: -moz-box;
-    display: -ms-flexbox;
-    display: -webkit-flex;
-    display: flex;
-       -moz-align-items: center;
-        -ms-align-items: center;
-    -webkit-align-items: center;
-            align-items: center;
-       -moz-justify-content: space-between;
-        -ms-justify-content: space-between;
-    -webkit-justify-content: space-between;
-            justify-content: space-between;
-    border-radius: 110px;
-    margin: 15px auto;
-    height: 52px;
-    min-width: 200px;
-    max-width: 254px;
-    @include font-700();
-    @include fontSize-16();
+	display: -webkit-box;   // 2009 spec
+	display: -moz-box;
+	display: -ms-flexbox;
+	display: -webkit-flex;
+	display: flex;
+	   -moz-align-items: center;
+		-ms-align-items: center;
+	-webkit-align-items: center;
+			align-items: center;
+	   -moz-justify-content: space-between;
+		-ms-justify-content: space-between;
+	-webkit-justify-content: space-between;
+			justify-content: space-between;
+	border-radius: 110px;
+	margin: 15px auto;
+	height: 52px;
+	min-width: 200px;
+	max-width: 254px;
+	@include font-700();
+	@include fontSize-16();
 }
 
 .flexy-btn--white {
-    @extend .flexy-btn;
-    background-color: $color-white;
-    color: $color-spruceBlue;
+	@extend .flexy-btn;
+	background-color: $color-white;
+	color: $color-spruceBlue;
 }
 
 .flexy-btn--white:hover,
 .flexy-btn--white:active,
 .flexy-btn--white:focus {
-    @extend .flexy-btn--white;
-    background-color: $color-white-90;
+	@extend .flexy-btn--white;
+	background-color: $color-white-90;
 }
 
 .flexy-btn--transparent-white {
-    @extend .flexy-btn;
-    background-color: transparent;
-    border: 2px solid $color-white;
-    color: $color-white;
+	@extend .flexy-btn;
+	background-color: transparent;
+	border: 2px solid $color-white;
+	color: $color-white;
 }
 
 .flexy-btn--transparent-white:hover,
 .flexy-btn--transparent-white:active,
 .flexy-btn--transparent-white:focus {
-    @extend .flexy-btn--transparent-white;
-    border: 2px solid $color-white-90;
-    color: $color-white-90;
+	@extend .flexy-btn--transparent-white;
+	border: 2px solid $color-white-90;
+	color: $color-white-90;
 }
 
 .arrow-item {
-    margin: 20px;
-    width: 8px;
-    height: 14px;
-    opacity: 1;
+	margin: 20px;
+	width: 8px;
+	height: 14px;
+	opacity: 1;
 }
 
 .item0 {
-    @extend .arrow-item;
-    box-ordinal-group: 0;   // 2009 spec
-       -moz-order: 0;
-        -ms-order: 0;
-    -webkit-order: 0;
-            order: 0;
+	@extend .arrow-item;
+	box-ordinal-group: 0;   // 2009 spec
+	   -moz-order: 0;
+		-ms-order: 0;
+	-webkit-order: 0;
+			order: 0;
 }
 
 .item1 {
-    box-ordinal-group: 1;   // 2009 spec
-       -moz-order: 1;
-        -ms-order: 1;
-    -webkit-order: 1;
-            order: 1;
-    flex-grow: 3;
-    opacity: 1;
+	box-ordinal-group: 1;   // 2009 spec
+	   -moz-order: 1;
+		-ms-order: 1;
+	-webkit-order: 1;
+			order: 1;
+	flex-grow: 3;
+	opacity: 1;
 }
 
 .item2 {
-    box-ordinal-group: 2;   // 2009 spec
-    @extend .arrow-item;
-       -moz-order: 2;
-        -ms-order: 2;
-    -webkit-order: 2;
-            order: 2;
+	box-ordinal-group: 2;   // 2009 spec
+	@extend .arrow-item;
+	   -moz-order: 2;
+		-ms-order: 2;
+	-webkit-order: 2;
+			order: 2;
 }
 
 // Form styling
@@ -418,124 +418,134 @@ $formFieldFontSize: 16px;
 $placeholderTextColor: rgba(#1E333A, 0.4);
 
 .flexBox {
-    display: -webkit-box;
-    display: -moz-box;
-    display: -ms-flexbox;
-    display: -webkit-flex;
-    display: flex;
+	display: -webkit-box;
+	display: -moz-box;
+	display: -ms-flexbox;
+	display: -webkit-flex;
+	display: flex;
 }
 
 .justifyContentSpaceBetween {
-    -moz-justify-content: space-between;
-    -webkit-justify-content: space-between;
-    justify-content: space-between;
+	-moz-justify-content: space-between;
+	-webkit-justify-content: space-between;
+	justify-content: space-between;
 }
 
 .justifyContentStartLeft {
-    -moz-justify-content: start-left;
-    -webkit-justify-content: start-left;
-    justify-content: start-left;
+	-moz-justify-content: start-left;
+	-webkit-justify-content: start-left;
+	justify-content: start-left;
 }
 
 .formFieldRow {
-    width: 100%;
-    text-align: left;
-    position: relative;
+	width: 100%;
+	text-align: left;
+	position: relative;
 }
 .formFieldRow .emptyState {
-    color: $placeholderTextColor;
+	color: $placeholderTextColor;
 }
 .formFieldRow input {
-    font-size: $formFieldFontSize;
+	font-size: $formFieldFontSize;
 }
 .formFieldRow input::-webkit-input-placeholder {
-    color: $placeholderTextColor;
+	color: $placeholderTextColor;
 }
 .formFieldRow input[type=text], .formFieldRow input[type=tel], .formFieldRow input[type=email], .formFieldRow input[type=password] {
-    width: 100%;
-    text-align: left;
-    min-height: 56px;
-    border: none;
+	width: 100%;
+	text-align: left;
+	min-height: 56px;
+	border: none;
 }
-.formFieldRow select {
-    line-height: 56px;
+.formFieldRow input[type=date] {
+    text-align: left;
     width: 100%;
-    background: transparent;
-    border: 0px solid #ccc;
+    line-height: 50px;
+    border: none;
+    background-color: white;
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
-    font-size: $formFieldFontSize;
+}
+.formFieldRow select {
+	line-height: 56px;
+	width: 100%;
+	background: transparent;
+	border: 0px solid #ccc;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+	font-size: $formFieldFontSize;
 }
 
 .hasTopDivider {
-    border-top-width: 1px;
-    border-top-color: #e4edf0;
-    border-top-style: solid;
+	border-top-width: 1px;
+	border-top-color: #e4edf0;
+	border-top-style: solid;
 }
 .hasBottomDivider {
-    border-bottom-width: 1px;
-    border-bottom-color: #e4edf0;
-    border-bottom-style: solid;
+	border-bottom-width: 1px;
+	border-bottom-color: #e4edf0;
+	border-bottom-style: solid;
 }
 textarea:focus, input:focus {
-    outline: 0;
+	outline: 0;
 }
 
 input[type=checkbox] {
-    content:"";
-    display:inline-block;
-    background-image: url(../img/pc/checkbox_spritesheet@2x.png);
-    background-repeat: no-repeat;
-    background-position: -22px 0px;
-    background-color: #fff;
-    background-size: 64px 20px;
-    width:20px;
-    height:20px;
-    cursor: pointer;
-    -webkit-appearance: none;
-    appearance: none;
-    box-sizing: border-box;
-    position: relative;
-    box-sizing: content-box;
-    border-width: 0;
-    -webkit-border-radius: 0;
-    margin: 0px;
+	content:"";
+	display:inline-block;
+	background-image: url(../img/pc/checkbox_spritesheet@2x.png);
+	background-repeat: no-repeat;
+	background-position: -22px 0px;
+	background-color: #fff;
+	background-size: 64px 20px;
+	width:20px;
+	height:20px;
+	cursor: pointer;
+	-webkit-appearance: none;
+	appearance: none;
+	box-sizing: border-box;
+	position: relative;
+	box-sizing: content-box;
+	border-width: 0;
+	-webkit-border-radius: 0;
+	margin: 0px;
 }
 
 input[type=checkbox].error {
-    content:"";
-    display:inline-block;
-    background-image: url(../img/pc/checkbox_spritesheet@2x.png);
-    background-repeat: no-repeat;
-    background-position: -44px 0px;
-    background-color: #fff;
-    background-size: 64px 20px;
-    width:20px;
-    height:20px;
-    cursor: pointer;
-    -webkit-appearance: none;
-    appearance: none;
-    box-sizing: border-box;
-    position: relative;
-    box-sizing: content-box;
-    border-width: 0;
-    -webkit-border-radius: 0;
-    margin: 0px;
+	content:"";
+	display:inline-block;
+	background-image: url(../img/pc/checkbox_spritesheet@2x.png);
+	background-repeat: no-repeat;
+	background-position: -44px 0px;
+	background-color: #fff;
+	background-size: 64px 20px;
+	width:20px;
+	height:20px;
+	cursor: pointer;
+	-webkit-appearance: none;
+	appearance: none;
+	box-sizing: border-box;
+	position: relative;
+	box-sizing: content-box;
+	border-width: 0;
+	-webkit-border-radius: 0;
+	margin: 0px;
 }
 
 
 input[type=checkbox]:checked {
-    background-image: url(../img/pc/checkbox_spritesheet@2x.png);
-    background-repeat: no-repeat;
-    background-position: 0px 0px;
-    background-color: #fff;
-    background-size: 64px 20px;
-    width:20px;
-    height:20px;
+	background-image: url(../img/pc/checkbox_spritesheet@2x.png);
+	background-repeat: no-repeat;
+	background-position: 0px 0px;
+	background-color: #fff;
+	background-size: 64px 20px;
+	width:20px;
+	height:20px;
 }
 
 input[type="checkbox"]:focus{
-    outline: 0 none;
-    box-shadow: none;
+	outline: 0 none;
+	box-shadow: none;
 }
