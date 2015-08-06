@@ -1111,8 +1111,10 @@ var DoctorEligibilityPage = React.createClass({displayName: "DoctorEligibilityPa
 			}
 		}.bind(this));
 	},
-	handleAdd: function(mapping) {
-		this.state.creates.push(mapping);
+	handleAdd: function(mappings) {
+		for(var i = 0; i < mappings.length; i++) {
+			this.state.creates.push(mappings[i]);
+		}
 		this.setState({creates: this.state.creates});
 	},
 	handleCancelCreate: function(index, e) {
@@ -1233,7 +1235,8 @@ var AddMappingModal = React.createClass({displayName: "AddMappingModal",
 			state: "",
 			pathwayTag: "",
 			notify: false,
-			unavailable: false
+			unavailable: false,
+			allUnavailable: true,
 		}
 	},
 	componentWillReceiveProps: function(nextProps) {
@@ -1253,21 +1256,36 @@ var AddMappingModal = React.createClass({displayName: "AddMappingModal",
 	onChangeUnvailable: function(e, value) {
 		this.setState({error: "", unavailable: value});
 	},
+	onChangeAllUnvailable: function(e, value) {
+		this.setState({error: "", allUnavailable: value});
+	},
 	onAdd: function(e) {
+		var mappings = []
 		if (!this.state.state) {
 			this.setState({error: "state is required"});
 			return true;
 		}
-		if (!this.state.pathwayTag) {
-			this.setState({error: "pathway is required"});
-			return true;
+		if(!this.state.allUnavailable){
+			if (!this.state.pathwayTag) {
+				this.setState({error: "pathway is required"});
+				return true;
+			}
+			mappings.push({
+				state_code: this.state.state,
+				pathway_tag: this.state.pathwayTag,
+				notify: this.state.notify,
+				unavailable: this.state.unavailable
+			});
+		} else {
+			for(var i = 0; i < this.props.pathways.length; i++){
+				mappings.push({
+					state_code: this.state.state,
+					pathway_tag: this.props.pathways[i].tag,
+					notify: false,
+					unavailable: true,
+				});
+			}
 		}
-		var mapping = {
-			state_code: this.state.state,
-			pathway_tag: this.state.pathwayTag,
-			notify: this.state.notify,
-			unavailable: this.state.unavailable
-		};
 		this.setState({
 			busy: true,
 			error: "",
@@ -1276,7 +1294,7 @@ var AddMappingModal = React.createClass({displayName: "AddMappingModal",
 			notify: false,
 			unavailable: false
 		});
-		this.props.onSuccess(mapping);
+		this.props.onSuccess(mappings);
 		return false;
 	},
 	render: function(): any {
@@ -1299,20 +1317,29 @@ var AddMappingModal = React.createClass({displayName: "AddMappingModal",
 					required = {true}
 					onChange = {this.onChangeState}
 					opts = {Utils.states} />
-				<Forms.FormSelect
-					label = "Pathway"
-					value = {this.state.pathwayTag}
-					required = {true}
-					onChange = {this.onChangePathway}
-					opts = {pathwayOpts} />
 				<Forms.Checkbox
-					label = "Notify"
-					checked = {this.state.notify}
-					onChange = {this.onChangeNotify} />
-				<Forms.Checkbox
-					label = "Unavailable"
-					checked = {this.state.unavailable}
-					onChange = {this.onChangeUnvailable} />
+					label = "All Pathways Unavailable"
+					checked = {this.state.allUnavailable}
+					onChange = {this.onChangeAllUnvailable} />
+				{ !this.state.allUnavailable ?
+					<div>
+						<br></br>
+						<Forms.FormSelect
+							label = "Pathway"
+							value = {this.state.pathwayTag}
+							required = {true}
+							onChange = {this.onChangePathway}
+							opts = {pathwayOpts} />
+						<Forms.Checkbox
+							label = "Notify"
+							checked = {this.state.notify}
+							onChange = {this.onChangeNotify} />
+						<Forms.Checkbox
+							label = "Unavailable"
+							checked = {this.state.unavailable}
+							onChange = {this.onChangeUnvailable} />
+					</div>
+						: null }
 			</Modals.ModalForm>
 		);
 	}
