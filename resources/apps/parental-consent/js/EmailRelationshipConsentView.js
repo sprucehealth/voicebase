@@ -193,7 +193,7 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 		} else if (this.props.collectRelationship) {
 			var relationshipHighlighted: bool = (this.state.submitButtonPressedOnce ? !this.isRelationshipFieldValid() : false)
 			var selectContainerStyle = {
-				backgroundImage: "url(/static/img/pc/select_arrow@2x.png)",
+				backgroundImage: "url(" + Utils.staticURL("/img/pc/select_arrow@2x.png") + ")",
 				backgroundRepeat: "no-repeat",
 				backgroundSize: "12px 7px",
 				backgroundPosition: "right",
