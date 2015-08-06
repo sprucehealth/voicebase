@@ -6,6 +6,7 @@ var React = require("react");
 var Routing = require("../../libs/routing.js");
 var Reflux = require('reflux');
 var Utils = require("../../libs/utils.js");
+var Analytics = require("../../libs/analytics.js");
 
 var ParentalConsentStore = require('./ParentalConsentStore.js');
 var TitleView = require("./TitleView.js")
@@ -15,9 +16,28 @@ var EmailRelationshipConsentView = require("./EmailRelationshipConsentView.js")
 var PhotoIdentificationView = require("./PhotoIdentificationView.js")
 var ConfirmationView = require("./ConfirmationView.js")
 var FAQ = require("./FAQ.js");
+var Constants = require("./Constants.js");
 
 window.React = React; // export for http://fb.me/react-devtools
 Backbone.jQuery = jQuery;
+
+// From: http://stackoverflow.com/a/10556743/670400
+window.onerror = function(msg: string, url: string, line: number, col: ?number, error: ?Error) {
+	// Note that col & error are new to the HTML 5 spec and may not be 
+	// supported in every browser.  It worked for me in Chrome.
+	var properties = {
+		"app_type": Constants.AnalyticsAppType, 
+		"error": msg,
+		"url": url,
+		"line": line,
+		"col": col,
+		"stack": error && error.stack ? JSON.stringify(error.stack) : null,
+	}
+	Analytics.record("window_error", properties)
+
+	var suppressErrorAlert = false;
+	return suppressErrorAlert;
+};
 
 var calculateNumSectionsForStore = function(store: ParentalConsentStoreType): number {
 	var numSections = 3
