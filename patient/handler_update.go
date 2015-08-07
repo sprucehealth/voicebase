@@ -122,7 +122,7 @@ func transformPhoneNumbers(pn []PhoneNumber) ([]*common.PhoneNumber, error) {
 		if err != nil {
 			return nil, err
 		}
-		phoneNumberType, err := common.GetPhoneNumberType(phone.Type)
+		phoneNumberType, err := common.ParsePhoneNumberType(phone.Type)
 		if err != nil {
 			return nil, err
 		}

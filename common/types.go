@@ -3,6 +3,7 @@ package common
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 type ByStatusTimestamp []StatusEvent
@@ -30,7 +31,7 @@ func (p Platform) String() string {
 	return string(p)
 }
 
-func GetPlatform(p string) (Platform, error) {
+func ParsePlatform(p string) (Platform, error) {
 	switch p {
 	case "android":
 		return Android, nil
@@ -42,7 +43,7 @@ func GetPlatform(p string) (Platform, error) {
 
 func (p *Platform) UnmarshalText(text []byte) error {
 	var err error
-	*p, err = GetPlatform(string(text))
+	*p, err = ParsePlatform(string(text))
 	return err
 }
 
@@ -54,7 +55,7 @@ func (p *Platform) Scan(src interface{}) error {
 	}
 
 	var err error
-	*p, err = GetPlatform(string(str))
+	*p, err = ParsePlatform(string(str))
 
 	return err
 }
@@ -79,12 +80,12 @@ func (c *CommunicationType) Scan(src interface{}) error {
 	}
 
 	var err error
-	*c, err = GetCommunicationType(string(str))
+	*c, err = ParseCommunicationType(string(str))
 
 	return err
 }
 
-func GetCommunicationType(c string) (CommunicationType, error) {
+func ParseCommunicationType(c string) (CommunicationType, error) {
 	switch c {
 	case "SMS":
 		return SMS, nil
@@ -108,8 +109,8 @@ const (
 	Declined   PushPromptStatus = "DECLINED"
 )
 
-func GetPushPromptStatus(promptStatus string) (PushPromptStatus, error) {
-	switch promptStatus {
+func ParsePushPromptStatus(promptStatus string) (PushPromptStatus, error) {
+	switch strings.ToUpper(promptStatus) {
 	case "UNPROMPTED":
 		return Unprompted, nil
 	case "ACCEPTED":
@@ -137,17 +138,17 @@ func (l *MedicalLicenseStatus) Scan(src interface{}) error {
 	var err error
 	switch s := src.(type) {
 	case string:
-		*l, err = GetMedicalLicenseStatus(s)
+		*l, err = ParseMedicalLicenseStatus(s)
 	case []byte:
-		*l, err = GetMedicalLicenseStatus(string(s))
+		*l, err = ParseMedicalLicenseStatus(string(s))
 	default:
 		return fmt.Errorf("common: can't scan type %T into MedicalLicenseStatus", src)
 	}
 	return err
 }
 
-func GetMedicalLicenseStatus(s string) (MedicalLicenseStatus, error) {
-	switch l := MedicalLicenseStatus(s); l {
+func ParseMedicalLicenseStatus(s string) (MedicalLicenseStatus, error) {
+	switch l := MedicalLicenseStatus(strings.ToUpper(s)); l {
 	case MLActive, MLInactive, MLTemporary, MLPending:
 		return l, nil
 	}
@@ -170,17 +171,17 @@ func (s *MedicalRecordStatus) Scan(src interface{}) error {
 	var err error
 	switch v := src.(type) {
 	case string:
-		*s, err = GetMedicalRecordStatus(v)
+		*s, err = ParseMedicalRecordStatus(v)
 	case []byte:
-		*s, err = GetMedicalRecordStatus(string(v))
+		*s, err = ParseMedicalRecordStatus(string(v))
 	default:
 		return fmt.Errorf("common: can't scan type %T into MedicalRecordStatus", src)
 	}
 	return err
 }
 
-func GetMedicalRecordStatus(str string) (MedicalRecordStatus, error) {
-	switch s := MedicalRecordStatus(str); s {
+func ParseMedicalRecordStatus(str string) (MedicalRecordStatus, error) {
+	switch s := MedicalRecordStatus(strings.ToUpper(str)); s {
 	case MRPending, MRError, MRSuccess:
 		return s, nil
 	}

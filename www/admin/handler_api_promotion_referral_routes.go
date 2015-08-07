@@ -103,7 +103,7 @@ func (h *promotionReferralRoutesHandler) parsePOSTRequest(r *http.Request) (*pro
 
 func (h *promotionReferralRoutesHandler) servePOST(w http.ResponseWriter, r *http.Request, req *promotionReferralRoutesPOSTRequest) {
 	var err error
-	lifecycle, err := common.GetPRRLifecycle(req.Lifecycle)
+	lifecycle, err := common.ParsePRRLifecycle(req.Lifecycle)
 	if err != nil {
 		www.APIBadRequestError(w, r, err.Error())
 		return
@@ -111,7 +111,7 @@ func (h *promotionReferralRoutesHandler) servePOST(w http.ResponseWriter, r *htt
 
 	var gender *common.PRRGender
 	if req.Gender != nil {
-		prrg, err := common.GetPRRGender(*req.Gender)
+		prrg, err := common.ParsePRRGender(*req.Gender)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return

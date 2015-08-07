@@ -11,12 +11,23 @@ import (
 )
 
 const (
-	AttachmentTypeAudio         = "audio"
+	// AttachmentTypeAudio describes the communication attachment type as being audio
+	AttachmentTypeAudio = "audio"
+
+	// AttachmentTypeFollowupVisit describes the communication attachment type as being a follow up visit
 	AttachmentTypeFollowupVisit = "followup_visit"
-	AttachmentTypePhoto         = "photo"
+
+	// AttachmentTypePhoto describes the communication attachment type as being a photo
+	AttachmentTypePhoto = "photo"
+
+	// AttachmentTypeResourceGuide describes the communication attachment type as being a resource guide
 	AttachmentTypeResourceGuide = "resource_guide"
+
+	// AttachmentTypeTreatmentPlan describes the communication attachment type as being a treatment plan
 	AttachmentTypeTreatmentPlan = "treatment_plan"
-	AttachmentTypeVisit         = "visit"
+
+	// AttachmentTypeVisit describes the communication attachment type as being an individual visit
+	AttachmentTypeVisit = "visit"
 )
 
 const (
@@ -52,8 +63,8 @@ const (
 	PNTEmpty PhoneNumberType = ""
 )
 
-// GetPhoneNumberType returns the GetPhoneNumberType the maps to the provided string
-func GetPhoneNumberType(s string) (PhoneNumberType, error) {
+// ParsePhoneNumberType returns the PhoneNumberType the maps to the provided string
+func ParsePhoneNumberType(s string) (PhoneNumberType, error) {
 	switch t := PhoneNumberType(strings.ToUpper(s)); t {
 	case PNTCell, PNTWork, PNTHome, PNTEmpty:
 		return t, nil
@@ -70,9 +81,9 @@ func (t *PhoneNumberType) Scan(src interface{}) error {
 	var err error
 	switch ts := src.(type) {
 	case string:
-		*t, err = GetPhoneNumberType(ts)
+		*t, err = ParsePhoneNumberType(ts)
 	case []byte:
-		*t, err = GetPhoneNumberType(string(ts))
+		*t, err = ParsePhoneNumberType(string(ts))
 	}
 	return err
 }
@@ -259,7 +270,7 @@ const (
 	TPStatusRXStarted TreatmentPlanStatus = "RX_STARTED"
 )
 
-func GetTreatmentPlanStatus(s string) (TreatmentPlanStatus, error) {
+func ParseTreatmentPlanStatus(s string) (TreatmentPlanStatus, error) {
 	switch t := TreatmentPlanStatus(s); t {
 	case TPStatusDraft, TPStatusSubmitted, TPStatusActive, TPStatusInactive, TPStatusRXStarted:
 		return t, nil
@@ -275,9 +286,9 @@ func (t *TreatmentPlanStatus) Scan(src interface{}) error {
 	var err error
 	switch ts := src.(type) {
 	case string:
-		*t, err = GetTreatmentPlanStatus(ts)
+		*t, err = ParseTreatmentPlanStatus(ts)
 	case []byte:
-		*t, err = GetTreatmentPlanStatus(string(ts))
+		*t, err = ParseTreatmentPlanStatus(string(ts))
 	}
 	return err
 }

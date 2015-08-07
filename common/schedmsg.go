@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -34,9 +35,9 @@ var (
 	SMTreatmanPlanMessageType = "treatment_plan_message"
 )
 
-// GetScheduledMessageStatus returns the ScheduledMessageStatus that maps to the provided string
-func GetScheduledMessageStatus(s string) (ScheduledMessageStatus, error) {
-	sm := ScheduledMessageStatus(s)
+// ParseScheduledMessageStatus returns the ScheduledMessageStatus that maps to the provided string
+func ParseScheduledMessageStatus(s string) (ScheduledMessageStatus, error) {
+	sm := ScheduledMessageStatus(strings.ToUpper(s))
 	switch sm {
 	case SMScheduled, SMProcessing, SMSent, SMError, SMDeactivated:
 		return sm, nil
@@ -54,9 +55,9 @@ func (s *ScheduledMessageStatus) Scan(src interface{}) error {
 	var err error
 	switch sm := src.(type) {
 	case string:
-		*s, err = GetScheduledMessageStatus(sm)
+		*s, err = ParseScheduledMessageStatus(sm)
 	case []byte:
-		*s, err = GetScheduledMessageStatus(string(sm))
+		*s, err = ParseScheduledMessageStatus(string(sm))
 	}
 	return err
 }

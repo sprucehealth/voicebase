@@ -1234,7 +1234,7 @@ func (d *dataService) getPatientBasedOnQuery(table, joins, where string, queryPa
 		p.StateFromZipCode = state.String
 
 		if phone.String() != "" {
-			phoneNumberType, err := common.GetPhoneNumberType(phoneType.String)
+			phoneNumberType, err := common.ParsePhoneNumberType(phoneType.String)
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
