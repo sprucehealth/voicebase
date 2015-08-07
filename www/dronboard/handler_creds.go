@@ -85,7 +85,7 @@ func (r *credentialsForm) Validate() map[string]string {
 				errors[fmt.Sprintf("StateLicenses.%d", i)] = "Missing value"
 				continue
 			} else if l.Status != "" {
-				status, err := common.GetMedicalLicenseStatus(l.Status)
+				status, err := common.ParseMedicalLicenseStatus(l.Status)
 				if err == nil {
 					l.status = status
 				} else {

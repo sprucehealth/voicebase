@@ -713,7 +713,7 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientID int64) (*common.Patient
 	}
 
 	// not worrying about suffix/prefix for now
-	patientPhoneNumberType, err := common.GetPhoneNumberType(response.PatientUpdates[0].Patient.PrimaryPhoneType)
+	patientPhoneNumberType, err := common.ParsePhoneNumberType(response.PatientUpdates[0].Patient.PrimaryPhoneType)
 	if err != nil {
 		return nil, err
 	}
@@ -741,7 +741,7 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientID int64) (*common.Patient
 	}
 
 	if response.PatientUpdates[0].Patient.PhoneAdditional1 != "" {
-		patientAdditionalPhoneNumberType1, err := common.GetPhoneNumberType(response.PatientUpdates[0].Patient.PrimaryPhoneType)
+		patientAdditionalPhoneNumberType1, err := common.ParsePhoneNumberType(response.PatientUpdates[0].Patient.PrimaryPhoneType)
 		if err != nil {
 			return nil, err
 		}
@@ -752,7 +752,7 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientID int64) (*common.Patient
 	}
 
 	if response.PatientUpdates[0].Patient.PhoneAdditional2 != "" {
-		patientAdditionalPhoneNumberType2, err := common.GetPhoneNumberType(response.PatientUpdates[0].Patient.PrimaryPhoneType)
+		patientAdditionalPhoneNumberType2, err := common.ParsePhoneNumberType(response.PatientUpdates[0].Patient.PrimaryPhoneType)
 		if err != nil {
 			return nil, err
 		}

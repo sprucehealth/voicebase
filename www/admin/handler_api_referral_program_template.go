@@ -182,7 +182,7 @@ func (h *referralProgramTemplateHandler) parsePUTRequest(r *http.Request) (*Refe
 }
 
 func (h *referralProgramTemplateHandler) servePUT(w http.ResponseWriter, r *http.Request, rd *ReferralProgramTemplatePUTRequest) {
-	rps, err := common.GetReferralProgramStatus(rd.Status)
+	rps, err := common.ParseReferralProgramStatus(rd.Status)
 	if err != nil {
 		www.APIBadRequestError(w, r, err.Error())
 		return

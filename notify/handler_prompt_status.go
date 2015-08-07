@@ -32,7 +32,7 @@ func (p *promptStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	pStatus, err := common.GetPushPromptStatus(rData.PromptStatus)
+	pStatus, err := common.ParsePushPromptStatus(rData.PromptStatus)
 	if err != nil {
 		apiservice.WriteValidationError("Invalid prompt_status", w, r)
 		return

@@ -61,7 +61,7 @@ func (h *promotionReferralRouteHandler) parsePUTRequest(r *http.Request) (*Promo
 }
 
 func (h *promotionReferralRouteHandler) servePUT(w http.ResponseWriter, r *http.Request, req *PromotionReferralRoutePUTRequest, id int64) {
-	lifecycle, err := common.GetPRRLifecycle(req.Lifecycle)
+	lifecycle, err := common.ParsePRRLifecycle(req.Lifecycle)
 	if err != nil {
 		www.APIBadRequestError(w, r, err.Error())
 		return

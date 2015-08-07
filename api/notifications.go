@@ -177,5 +177,5 @@ func (d *dataService) GetPushPromptStatus(accountID int64) (common.PushPromptSta
 	} else if err != nil {
 		return common.PushPromptStatus(""), err
 	}
-	return common.GetPushPromptStatus(pStatusString)
+	return common.ParsePushPromptStatus(pStatusString)
 }

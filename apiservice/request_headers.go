@@ -63,7 +63,7 @@ func ExtractSpruceHeaders(r *http.Request) *SpruceHeaders {
 		sOSDataComponents := strings.Split(hdr, ";")
 		if len(sOSDataComponents) > 0 {
 			var err error
-			sHeaders.Platform, err = common.GetPlatform(sOSDataComponents[0])
+			sHeaders.Platform, err = common.ParsePlatform(sOSDataComponents[0])
 			if err != nil {
 				golog.Warningf("Unable to determine platfrom from request header %s. Ignoring error for now: %s", sOSDataComponents[0], err)
 				sHeaders.Platform = ("")

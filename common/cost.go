@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -16,8 +17,8 @@ const (
 	smallestUnit          = 100.0
 )
 
-// GetCurrency returns the Currency type the maps to the provided string. An error is returned if there is no match.
-func GetCurrency(s string) (Currency, error) {
+// ParseCurrency returns the Currency type the maps to the provided string. An error is returned if there is no match.
+func ParseCurrency(s string) (Currency, error) {
 	switch c := Currency(s); c {
 	case USD:
 		return c, nil
@@ -34,9 +35,9 @@ func (c *Currency) Scan(src interface{}) error {
 	var err error
 	switch t := src.(type) {
 	case []byte:
-		*c, err = GetCurrency(string(t))
+		*c, err = ParseCurrency(string(t))
 	case string:
-		*c, err = GetCurrency(t)
+		*c, err = ParseCurrency(t)
 	default:
 		return fmt.Errorf("common: Cannot scan %T into Currency", src)
 	}
@@ -141,9 +142,9 @@ func (p *PatientReceiptStatus) Scan(src interface{}) error {
 	var err error
 	switch v := src.(type) {
 	case []byte:
-		*p, err = GetPatientReceiptStatus(string(v))
+		*p, err = ParsePatientReceiptStatus(string(v))
 	case string:
-		*p, err = GetPatientReceiptStatus(v)
+		*p, err = ParsePatientReceiptStatus(v)
 	default:
 		return fmt.Errorf("common: Unable to scan %T into PatientReceiptStatus", src)
 
@@ -151,9 +152,9 @@ func (p *PatientReceiptStatus) Scan(src interface{}) error {
 	return err
 }
 
-// GetPatientReceiptStatus returns the PatientReceiptStatus type the maps to the provided string. An error is returned if there is no match.
-func GetPatientReceiptStatus(s string) (PatientReceiptStatus, error) {
-	switch p := PatientReceiptStatus(s); p {
+// ParsePatientReceiptStatus returns the PatientReceiptStatus type the maps to the provided string. An error is returned if there is no match.
+func ParsePatientReceiptStatus(s string) (PatientReceiptStatus, error) {
+	switch p := PatientReceiptStatus(strings.ToUpper(s)); p {
 	case PRChargePending, PRCharged:
 		return p, nil
 	}

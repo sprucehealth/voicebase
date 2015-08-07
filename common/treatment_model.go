@@ -18,7 +18,7 @@ var (
 	TStatusDeleted  TreatmentStatus = "DELETED"
 )
 
-func GetTreatmentStatus(t string) (TreatmentStatus, error) {
+func ParseTreatmentStatus(t string) (TreatmentStatus, error) {
 	switch ts := TreatmentStatus(t); ts {
 	case TStatusCreated, TStatusInactive, TStatusSent, TStatusDeleted:
 		return ts, nil
@@ -34,9 +34,9 @@ func (t *TreatmentStatus) Scan(src interface{}) error {
 	var err error
 	switch ts := src.(type) {
 	case string:
-		*t, err = GetTreatmentStatus(ts)
+		*t, err = ParseTreatmentStatus(ts)
 	case []byte:
-		*t, err = GetTreatmentStatus(string(ts))
+		*t, err = ParseTreatmentStatus(string(ts))
 	}
 	return err
 }

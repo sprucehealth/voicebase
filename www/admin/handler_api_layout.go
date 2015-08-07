@@ -713,7 +713,7 @@ func parsePlatform(r *http.Request, rData *requestData) error {
 	}
 
 	var err error
-	if rData.platform, err = common.GetPlatform(platform); err != nil {
+	if rData.platform, err = common.ParsePlatform(platform); err != nil {
 		return err
 	}
 

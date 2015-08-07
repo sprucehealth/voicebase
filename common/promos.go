@@ -110,6 +110,7 @@ type ReferralTrackingEntry struct {
 	Status             ReferralTrackingStatus
 }
 
+// PromotionReferralRoute represents a routing between a set of promotion routing criteria and a given promotin
 type PromotionReferralRoute struct {
 	ID              int64
 	PromotionCodeID int64
@@ -124,16 +125,19 @@ type PromotionReferralRoute struct {
 	Pharmacy        *string
 }
 
+// PromotionReferralRouteUpdate represents the mutable fields on a promotion_referral_route record
 type PromotionReferralRouteUpdate struct {
 	ID        int64
 	Lifecycle PRRLifecycle
 }
 
+// AccountCredit represents the attributes of credit to be applied to an account
 type AccountCredit struct {
 	AccountID int64
 	Credit    int
 }
 
+// ParkedAccount represents a known email and account that has yet to be activated but can have attributes associated with it
 type ParkedAccount struct {
 	ID             int64
 	CodeID         int64
@@ -144,11 +148,17 @@ type ParkedAccount struct {
 	AccountCreated bool
 }
 
+// PRRLifecycle represents the lifecycle of a promotion_referral_route
 type PRRLifecycle string
 
 const (
-	PRRLifecycleActive     PRRLifecycle = "ACTIVE"
+	// PRRLifecycleActive represents the lifecycle where a promotion_referral_route will actively route new users to it
+	PRRLifecycleActive PRRLifecycle = "ACTIVE"
+
+	// PRRLifecycleNoNewUsers represents the lifecycle where a promotion_referral_route will actively not route new users but will allow existing users to retain state
 	PRRLifecycleNoNewUsers PRRLifecycle = "NO_NEW_USERS"
+
+	// PRRLifecycleDeprecated represents the lifecycle where a promotion_referral_route has been disabled and all owners will be moved off
 	PRRLifecycleDeprecated PRRLifecycle = "DEPRECATED"
 )
 
@@ -156,8 +166,9 @@ func (p PRRLifecycle) String() string {
 	return string(p)
 }
 
-func GetPRRLifecycle(s string) (PRRLifecycle, error) {
-	switch rs := PRRLifecycle(s); rs {
+// ParsePRRLifecycle returns the PRRLifecycle that maps to the provided string
+func ParsePRRLifecycle(s string) (PRRLifecycle, error) {
+	switch rs := PRRLifecycle(strings.ToUpper(s)); rs {
 	case PRRLifecycleActive, PRRLifecycleNoNewUsers, PRRLifecycleDeprecated:
 		return rs, nil
 	}
@@ -165,6 +176,7 @@ func GetPRRLifecycle(s string) (PRRLifecycle, error) {
 	return PRRLifecycle(""), fmt.Errorf("%s is not a PRRLifecycle", s)
 }
 
+// Scan allows for PRRLifecycle to be utilized in database queries and confirms the sql.Scanner interface
 func (p *PRRLifecycle) Scan(src interface{}) error {
 
 	str, ok := src.([]byte)
@@ -173,15 +185,19 @@ func (p *PRRLifecycle) Scan(src interface{}) error {
 	}
 
 	var err error
-	*p, err = GetPRRLifecycle(string(str))
+	*p, err = ParsePRRLifecycle(string(str))
 
 	return err
 }
 
+// PRRGender represents the available set of gender states for a promotion_referral_route
 type PRRGender string
 
 const (
-	PRRGenderMale   PRRGender = "M"
+	// PRRGenderMale represents the Male gender to match for a promotion_referral_route
+	PRRGenderMale PRRGender = "M"
+
+	// PRRGenderFemale represents the Female gender to match for a promotion_referral_route
 	PRRGenderFemale PRRGender = "F"
 )
 
@@ -189,7 +205,8 @@ func (p PRRGender) String() string {
 	return string(p)
 }
 
-func GetPRRGender(s string) (PRRGender, error) {
+// ParsePRRGender returns the PRRGender that maps to the provided string
+func ParsePRRGender(s string) (PRRGender, error) {
 	switch rs := PRRGender(s); rs {
 	case PRRGenderMale, PRRGenderFemale:
 		return rs, nil
@@ -205,6 +222,7 @@ func GetPRRGender(s string) (PRRGender, error) {
 	return PRRGender(""), fmt.Errorf("%s is not a PRRGender", s)
 }
 
+// Scan allows for PRRGender to be utilized in database queries and confirms the sql.Scanner interface
 func (p *PRRGender) Scan(src interface{}) error {
 	str, ok := src.([]byte)
 	if !ok {
@@ -212,26 +230,35 @@ func (p *PRRGender) Scan(src interface{}) error {
 	}
 
 	var err error
-	*p, err = GetPRRGender(string(str))
+	*p, err = ParsePRRGender(string(str))
 
 	return err
 }
 
+// ReferralProgramStatus represents the available status field values for a refferal_program record
 type ReferralProgramStatus string
+
+// ReferralProgramStatusList is an alias for a list of ReferralProgramStatus
 type ReferralProgramStatusList []string
 
 const (
-	RSActive   ReferralProgramStatus = "Active"
-	RSInactive ReferralProgramStatus = "Inactive"
-	RSDefault  ReferralProgramStatus = "Default"
+	// RSActive is the ReferralProgramStatus associated with a referral_program that can be actively shared and claimed by users
+	RSActive ReferralProgramStatus = "ACTIVE"
+
+	// RSInactive is the ReferralProgramStatus associated with a referral_program that can be actively shared and claimed by users
+	RSInactive ReferralProgramStatus = "INACTIVE"
+
+	// RSDefault represents the default referral program to apply to users who do not match a route
+	RSDefault ReferralProgramStatus = "DEFAULT"
 )
 
 func (p ReferralProgramStatus) String() string {
 	return string(p)
 }
 
-func GetReferralProgramStatus(s string) (ReferralProgramStatus, error) {
-	switch rs := ReferralProgramStatus(s); rs {
+// ParseReferralProgramStatus returns the ReferralProgramStatus that maps to the provided string
+func ParseReferralProgramStatus(s string) (ReferralProgramStatus, error) {
+	switch rs := ReferralProgramStatus(strings.ToUpper(s)); rs {
 	case RSActive, RSInactive, RSDefault:
 		return rs, nil
 	}
@@ -239,6 +266,7 @@ func GetReferralProgramStatus(s string) (ReferralProgramStatus, error) {
 	return ReferralProgramStatus(""), fmt.Errorf("%s is not a ReferralProgramStatus", s)
 }
 
+// Scan allows for ReferralProgramStatus to be utilized in database queries and confirms the sql.Scanner interface
 func (p *ReferralProgramStatus) Scan(src interface{}) error {
 
 	str, ok := src.([]byte)
@@ -247,26 +275,35 @@ func (p *ReferralProgramStatus) Scan(src interface{}) error {
 	}
 
 	var err error
-	*p, err = GetReferralProgramStatus(string(str))
+	*p, err = ParseReferralProgramStatus(string(str))
 
 	return err
 }
 
+// PromotionStatus represents the available status field values for a promotion record
 type PromotionStatus string
 
 const (
-	PSPending   PromotionStatus = "Pending"
-	PSCompleted PromotionStatus = "Completed"
-	PSExpired   PromotionStatus = "Expired"
-	PSDeleted   PromotionStatus = "Deleted"
+	// PSPending represents that a promotion has been applied to an account but not consumed
+	PSPending PromotionStatus = "PENDING"
+
+	// PSCompleted represents that a promotion has been consumed by an account
+	PSCompleted PromotionStatus = "COMPLETED"
+
+	// PSExpired represents that a promotion has passed it's expiration
+	PSExpired PromotionStatus = "EXPIRED"
+
+	// PSDeleted represents that a promotion has been removed from an account before being cosumed
+	PSDeleted PromotionStatus = "DELETED"
 )
 
 func (p PromotionStatus) String() string {
 	return string(p)
 }
 
-func GetPromotionStatus(s string) (PromotionStatus, error) {
-	switch ps := PromotionStatus(s); ps {
+// ParsePromotionStatus returns the PromotionStatus that maps to the provided string
+func ParsePromotionStatus(s string) (PromotionStatus, error) {
+	switch ps := PromotionStatus(strings.ToUpper(s)); ps {
 	case PSPending, PSCompleted, PSExpired:
 		return ps, nil
 	}
@@ -274,32 +311,37 @@ func GetPromotionStatus(s string) (PromotionStatus, error) {
 	return PromotionStatus(""), fmt.Errorf("%s is not a PromotionStatus", s)
 }
 
+// Scan allows for PromotionStatus to be utilized in database queries and confirms the sql.Scanner interface
 func (p *PromotionStatus) Scan(src interface{}) error {
-
 	str, ok := src.([]byte)
 	if !ok {
 		return fmt.Errorf("Cannot scan type %T into PromotionStatus when string expected", src)
 	}
 
 	var err error
-	*p, err = GetPromotionStatus(string(str))
+	*p, err = ParsePromotionStatus(string(str))
 
 	return err
 }
 
+// ReferralTrackingStatus represents the status field associated with a referral_tracking_entry
 type ReferralTrackingStatus string
 
 const (
-	RTSPending   ReferralTrackingStatus = "Pending"
-	RTSCompleted ReferralTrackingStatus = "Completed"
+	// RTSPending represents that a referal_program has been shared but no visit completed
+	RTSPending ReferralTrackingStatus = "PENDING"
+
+	// RTSCompleted represents that a referal_program has been shared and a visit completed
+	RTSCompleted ReferralTrackingStatus = "COMPLETED"
 )
 
 func (r ReferralTrackingStatus) String() string {
 	return string(r)
 }
 
-func GetReferralTrackingStatus(s string) (ReferralTrackingStatus, error) {
-	switch rt := ReferralTrackingStatus(s); rt {
+// ParseReferralTrackingStatus returns the ReferralTrackingStatus that maps to the provided string
+func ParseReferralTrackingStatus(s string) (ReferralTrackingStatus, error) {
+	switch rt := ReferralTrackingStatus(strings.ToUpper(s)); rt {
 	case RTSPending, RTSCompleted:
 		return rt, nil
 	}
@@ -307,15 +349,15 @@ func GetReferralTrackingStatus(s string) (ReferralTrackingStatus, error) {
 	return ReferralTrackingStatus(""), fmt.Errorf("%s is not a ReferralTrackingStatus", s)
 }
 
+// Scan allows for ReferralTrackingStatus to be utilized in database queries and confirms the sql.Scanner interface
 func (r *ReferralTrackingStatus) Scan(src interface{}) error {
-
 	str, ok := src.([]byte)
 	if !ok {
 		return fmt.Errorf("Cannot scan type %T into ReferralTrackingStatus when string expected", src)
 	}
 
 	var err error
-	*r, err = GetReferralTrackingStatus(string(str))
+	*r, err = ParseReferralTrackingStatus(string(str))
 
 	return err
 }
