@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost"
+	"github.com/sprucehealth/backend/diagnosis/handlers"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/stripe"
 	"github.com/sprucehealth/backend/test"
@@ -105,13 +106,19 @@ func TestDoctorTransaction_MarkedUnsuitable(t *testing.T) {
 	dr := test_integration.SignupRandomTestDoctorInState("CA", t, testData)
 	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
+	dc := test_integration.DoctorClient(testData, t, dr.DoctorID)
+	test.OK(t, err)
 
 	pv, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	test.OK(t, err)
 
 	// lets mark the visit as being unsuitable for spruce
-	answerBody := test_integration.PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, pv.PatientVisitID)
-	test_integration.SubmitPatientVisitDiagnosisWithIntake(pv.PatientVisitID, doctor.AccountID.Int64(), answerBody, testData, t)
+	test.OK(t, dc.CreateDiagnosisSet(&handlers.DiagnosisListRequestData{
+		VisitID: pv.PatientVisitID,
+		CaseManagement: handlers.CaseManagementItem{
+			Unsuitable: true,
+		},
+	}))
 
 	tranasactions, err := testData.DataAPI.TransactionsForDoctor(dr.DoctorID)
 	test.OK(t, err)

@@ -22,7 +22,6 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/erx"
-	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
 )
@@ -242,25 +241,6 @@ func MarkUnsuitableForSpruce(testData *TestData, t *testing.T, patientVisitID, d
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 }
 
-func SubmitPatientVisitDiagnosis(patientVisitID int64, doctor *common.Doctor, testData *TestData, t *testing.T) {
-
-	intakeData := PrepareAnswersForDiagnosis(testData, t, patientVisitID)
-	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(patientVisitID)
-	test.OK(t, err)
-
-	SubmitPatientVisitDiagnosisWithIntake(patientVisit.ID.Int64(), doctor.AccountID.Int64(), intakeData, testData, t)
-
-	// now, get diagnosis layout again and check to ensure that the doctor successfully diagnosed the patient with the expected answers
-	diagnosisLayout, err := patient_visit.GetDiagnosisLayout(testData.DataAPI, patientVisit, doctor.ID.Int64())
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	CompareDiagnosisWithDoctorIntake(intakeData, diagnosisLayout, testData, t)
-
-	return
-}
-
 func CompareDiagnosisWithDoctorIntake(answerIntakeBody *apiservice.IntakeData, diagnosisLayout *info_intake.DiagnosisIntake, testData *TestData, t *testing.T) {
 
 	if diagnosisLayout == nil {
@@ -284,18 +264,6 @@ func CompareDiagnosisWithDoctorIntake(answerIntakeBody *apiservice.IntakeData, d
 		}
 	}
 
-}
-
-func SubmitPatientVisitDiagnosisWithIntake(patientVisitID, doctorAccountID int64, intakeData *apiservice.IntakeData, testData *TestData, t *testing.T) {
-	requestData, err := json.Marshal(intakeData)
-	if err != nil {
-		t.Fatal("Unable to marshal request body")
-	}
-
-	resp, err := testData.AuthPost(testData.APIServer.URL+apipaths.DoctorVisitDiagnosisURLPath, "application/json", bytes.NewBuffer(requestData), doctorAccountID)
-	test.OK(t, err)
-	defer resp.Body.Close()
-	test.Equals(t, http.StatusOK, resp.StatusCode)
 }
 
 func StartReviewingPatientVisit(patientVisitID int64, doctor *common.Doctor, testData *TestData, t *testing.T) {

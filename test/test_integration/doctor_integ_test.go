@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
-	"strconv"
 	"testing"
 
 	"github.com/sprucehealth/backend/apiservice/apipaths"
@@ -15,7 +14,6 @@ import (
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/misc/handlers"
-	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -218,123 +216,6 @@ func TestDoctorDrugSearch(t *testing.T) {
 			t.Fatalf("Suggestion structure not filled in with data as expected. %q", suggestion)
 		}
 	}
-}
-
-func TestDoctorDiagnosisOfPatientVisit_Unsuitable(t *testing.T) {
-	testData := SetupTest(t)
-	defer testData.Close(t)
-	testData.StartAPIServer(t)
-
-	// get the current primary doctor
-	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
-
-	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
-	if err != nil {
-		t.Fatal("Unable to get doctor from doctor id " + err.Error())
-	}
-
-	// get patient to start a visit but don't pick a treatment plan yet.
-	patientSignedupResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.ID.Int64(), testData, t)
-	patient, err := testData.DataAPI.GetPatientFromID(patientSignedupResponse.Patient.ID.Int64())
-	if err != nil {
-		t.Fatal("Unable to get patient from id: " + err.Error())
-	}
-	intakeData := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout.InfoIntakeLayout, t)
-	SubmitAnswersIntakeForPatient(patient.ID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.ID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
-	StartReviewingPatientVisit(patientVisitResponse.PatientVisitID, doctor, testData, t)
-
-	intakeData = PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, patientVisitResponse.PatientVisitID)
-	SubmitPatientVisitDiagnosisWithIntake(patientVisitResponse.PatientVisitID, doctor.AccountID.Int64(), intakeData, testData, t)
-
-	// the patient visit should have its state set to TRIAGED
-	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(patientVisitResponse.PatientVisitID)
-	if err != nil {
-		t.Fatal(err.Error())
-	} else if patientVisit.Status != common.PVStatusTriaged {
-		t.Fatalf("Expected status to be %s but it was %s instead", common.PVStatusTriaged, patientVisit.Status)
-	}
-
-	// ensure that there is no longer a pending item in the doctor queue
-	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctorID)
-	if err != nil {
-		t.Fatalf(err.Error())
-	} else if len(pendingItems) != 0 {
-		t.Fatalf("Expected no pending items instead got %d", len(pendingItems))
-	}
-
-}
-
-func TestDoctorDiagnosisOfPatientVisit(t *testing.T) {
-	testData := SetupTest(t)
-	defer testData.Close(t)
-	testData.StartAPIServer(t)
-
-	// get the current primary doctor
-	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
-
-	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
-	if err != nil {
-		t.Fatal("Unable to get doctor from doctor id " + err.Error())
-	}
-
-	// get patient to start a visit but don't pick a treatment plan yet.
-	patientSignedupResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.ID.Int64(), testData, t)
-	patient, err := testData.DataAPI.GetPatientFromID(patientSignedupResponse.Patient.ID.Int64())
-	if err != nil {
-		t.Fatal("Unable to get patient from id: " + err.Error())
-	}
-	intakeData := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout.InfoIntakeLayout, t)
-	SubmitAnswersIntakeForPatient(patient.ID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.ID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
-	StartReviewingPatientVisit(patientVisitResponse.PatientVisitID, doctor, testData, t)
-
-	// doctor now attempts to diagnose patient visit
-	requestParams := bytes.NewBufferString("?patient_visit_id=")
-	requestParams.WriteString(strconv.FormatInt(patientVisitResponse.PatientVisitID, 10))
-	diagnosisResponse := patient_visit.GetDiagnosisResponse{}
-
-	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(patientVisitResponse.PatientVisitID)
-	test.OK(t, err)
-
-	resp, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorVisitDiagnosisURLPath+requestParams.String(), doctor.AccountID.Int64())
-	if err != nil {
-		t.Fatal("Something went wrong when trying to get diagnoses layout for doctor to diagnose patient visit: " + err.Error())
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected response code 200 instead got %d", resp.StatusCode)
-	} else if err = json.NewDecoder(resp.Body).Decode(&diagnosisResponse); err != nil {
-		t.Fatal("Unable to unmarshal response for diagnosis of patient visit: " + err.Error())
-	} else if diagnosisResponse.DiagnosisLayout == nil || diagnosisResponse.DiagnosisLayout.PatientVisitID != patientVisit.ID.Int64() {
-		t.Fatal("Diagnosis response not as expected")
-	} else {
-		// no doctor answers should exist yet
-		for _, section := range diagnosisResponse.DiagnosisLayout.InfoIntakeLayout.Sections {
-			for _, question := range section.Questions {
-				if len(question.Answers) > 0 {
-					t.Fatalf("Expected no answers to exist yet given that diagnosis has not taken place yet answers exist!")
-				}
-			}
-		}
-	}
-
-	// Now, actually diagnose the patient visit and check the response to ensure that the doctor diagnosis was returned in the response
-	// prepapre a response for the doctor
-	SubmitPatientVisitDiagnosis(patientVisitResponse.PatientVisitID, doctor, testData, t)
-
-	// now lets pick a tretament plan and then try to get the diagnosis summary again
-	PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitID, doctor, nil, testData, t)
-
-	// now lets pick a different treatment plan and ensure that the diagnosis summary gets linked to this new
-	// treatment plan.
-	PickATreatmentPlanForPatientVisit(patientVisitResponse.PatientVisitID, doctor, nil, testData, t)
-
-	// lets attempt to diagnose the patient again
-	SubmitPatientVisitDiagnosis(patientVisitResponse.PatientVisitID, doctor, testData, t)
 }
 
 func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {

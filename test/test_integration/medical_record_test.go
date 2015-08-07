@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/diagnosis"
+	"github.com/sprucehealth/backend/diagnosis/handlers"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/media"
@@ -33,15 +34,23 @@ func TestMedicalRecordWorker(t *testing.T) {
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)
+	dc := DoctorClient(testData, t, doctor.ID.Int64())
 
 	visit, treatmentPlan := CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(visit.PatientVisitID)
 	test.OK(t, err)
-
+	test.OK(t, dc.CreateDiagnosisSet(&handlers.DiagnosisListRequestData{
+		VisitID: visit.PatientVisitID,
+		Diagnoses: []*handlers.DiagnosisInputItem{
+			{
+				CodeID: "diag_l730",
+			},
+		},
+	}))
 	AddTreatmentsToTreatmentPlan(treatmentPlan.ID.Int64(), doctor, t, testData)
 	_, guideIDs := CreateTestResourceGuides(t, testData)
 	test.OK(t, testData.DataAPI.AddResourceGuidesToTreatmentPlan(treatmentPlan.ID.Int64(), guideIDs))
-	SubmitPatientVisitDiagnosis(visit.PatientVisitID, doctor, testData, t)
+
 	SubmitPatientVisitBackToPatient(treatmentPlan.ID.Int64(), doctor, testData, t)
 
 	diagSvc := &diagnosisTestSvc{

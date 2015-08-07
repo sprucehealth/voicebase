@@ -56,7 +56,6 @@ const (
 	DoctorTreatmentTemplatesURLPath      = "/v1/doctor/treatment/templates"
 	DoctorDiagnosisURLPath               = "/v1/doctor/diagnosis"
 	DoctorDiagnosisSearchURLPath         = "/v1/doctor/diagnosis/search"
-	DoctorVisitDiagnosisURLPath          = "/v1/doctor/visit/diagnosis"
 	DoctorVisitDiagnosisListURLPath      = "/v1/doctor/visit/diagnosis/list"
 	DoctorVisitReviewURLPath             = "/v1/doctor/visit/review"
 	DoctorVisitTreatmentsURLPath         = "/v1/doctor/visit/treatment/treatments"

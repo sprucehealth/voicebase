@@ -1,7 +1,6 @@
 package test_doctor_queue
 
 import (
-	"bytes"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -13,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/diagnosis/handlers"
 	"github.com/sprucehealth/backend/doctor_queue"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
@@ -101,25 +101,17 @@ func TestJBCQ_ForbiddenClaimAttempt(t *testing.T) {
 	resp.Body.Close()
 
 	// attempt for doctor2 to diagnose the visit
-	answerIntakeRequest := test_integration.PrepareAnswersForDiagnosis(testData, t, vp.PatientVisitID)
-	jsonData, err := json.Marshal(&answerIntakeRequest)
-	test.OK(t, err)
-
 	// ensure that doctor2 is forbidden from diagnosing the visit for the same reason
-	resp, err = testData.AuthPost(testData.APIServer.URL+apipaths.DoctorVisitDiagnosisURLPath, "application/json", bytes.NewReader(jsonData), doctor2.AccountID.Int64())
-	test.OK(t, err)
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusForbidden {
-		t.Fatalf("Expected response code %d but got %d", http.StatusForbidden, resp.StatusCode)
-	} else if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
-		t.Fatal(err)
-	} else if errorResponse["developer_code"] == nil {
-		t.Fatal("Expected developer code but got none")
-	} else if developerErrorCode, ok := errorResponse["developer_code"].(string); !ok {
-		t.Fatal("Expected developer code to be an string but it wasnt")
-	} else if developerErrorCode != strconv.FormatInt(apiservice.DeveloperErrorJBCQForbidden, 10) {
-		t.Fatalf("Expected developer code to be %d but it was %s instead", apiservice.DeveloperErrorJBCQForbidden, developerErrorCode)
-	}
+	err = doctor2Cli.CreateDiagnosisSet(&handlers.DiagnosisListRequestData{
+		VisitID: vp.PatientVisitID,
+		CaseManagement: handlers.CaseManagementItem{
+			Unsuitable: true,
+		},
+	})
+	test.Equals(t, true, err != nil)
+	sErr := err.(*apiservice.SpruceError)
+	test.Equals(t, int64(apiservice.DeveloperErrorJBCQForbidden), sErr.DeveloperErrorCode)
+	test.Equals(t, http.StatusForbidden, sErr.HTTPStatusCode)
 
 	// ensure that doctor2 is forbiddden from picking a treatment plan for the same reason
 	if _, err := doctor2Cli.PickTreatmentPlanForVisit(vp.PatientVisitID, nil); err == nil {
@@ -175,7 +167,17 @@ func TestJBCQ_Claim(t *testing.T) {
 	}
 
 	// CHECK CLAIM EXTENSION AFTER DIAGNOSING PATIENT
-	test_integration.SubmitPatientVisitDiagnosis(pv.PatientVisitID, doctor, testData, t)
+	if err := cli.CreateDiagnosisSet(&handlers.DiagnosisListRequestData{
+		VisitID: pv.PatientVisitID,
+		Diagnoses: []*handlers.DiagnosisInputItem{
+			{
+				CodeID: "diag_l780",
+			},
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
 	claimExpirationTime2 := getExpiresTimeFromDoctorForCase(testData, t, patientCase.ID.Int64())
 	if claimExpirationTime2 == nil || !claimExpirationTime.Before(*claimExpirationTime2) {
 		t.Fatal("Expected the claim to have been extended but it wasn't")
@@ -240,12 +242,16 @@ func TestJBCQ_AssignOnMarkingUnsuitableForSpruce(t *testing.T) {
 
 	doctor, err := testData.DataAPI.GetDoctorFromID(test_integration.GetDoctorIDOfCurrentDoctor(testData, t))
 	test.OK(t, err)
+	doctorCLI := test_integration.DoctorClient(testData, t, doctor.ID.Int64())
 
 	pv := test_integration.CreateRandomPatientVisitInState("CA", t, testData)
 	test_integration.StartReviewingPatientVisit(pv.PatientVisitID, doctor, testData, t)
-
-	intakeData := test_integration.PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData, t, pv.PatientVisitID)
-	test_integration.SubmitPatientVisitDiagnosisWithIntake(pv.PatientVisitID, doctor.AccountID.Int64(), intakeData, testData, t)
+	test.OK(t, doctorCLI.CreateDiagnosisSet(&handlers.DiagnosisListRequestData{
+		VisitID: pv.PatientVisitID,
+		CaseManagement: handlers.CaseManagementItem{
+			Unsuitable: true,
+		},
+	}))
 
 	// at this point the patient case should be considered claimed
 	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)

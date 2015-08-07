@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/demo"
+	"github.com/sprucehealth/backend/diagnosis/handlers"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -59,6 +60,7 @@ func TestTrainingCase(t *testing.T) {
 	test.OK(t, err)
 	defer resp.Body.Close()
 	test.Equals(t, http.StatusOK, resp.StatusCode)
+	doctorCli := test_integration.DoctorClient(testData, t, dr.DoctorID)
 
 	// now the doctor should have non-zero number of pending cases in their inbox
 	pendingVisits, err := testData.DataAPI.GetPendingItemsInDoctorQueue(dr.DoctorID)
@@ -70,7 +72,14 @@ func TestTrainingCase(t *testing.T) {
 	test.OK(t, err)
 	test_integration.GrantDoctorAccessToPatientCase(t, testData, doctor, patientVisit.PatientCaseID.Int64())
 	test_integration.StartReviewingPatientVisit(patientVisit.ID.Int64(), doctor, testData, t)
-	test_integration.SubmitPatientVisitDiagnosis(patientVisit.ID.Int64(), doctor, testData, t)
+	test.OK(t, doctorCli.CreateDiagnosisSet(&handlers.DiagnosisListRequestData{
+		VisitID: patientVisit.ID.Int64(),
+		Diagnoses: []*handlers.DiagnosisInputItem{
+			{
+				CodeID: "diag_l730",
+			},
+		},
+	}))
 	tp := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
 		ParentID:   patientVisit.ID,
 		ParentType: common.TPParentTypePatientVisit,

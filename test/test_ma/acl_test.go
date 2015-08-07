@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/diagnosis/handlers"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/test"
@@ -83,26 +84,25 @@ func TestMAAccess_Diagnosis(t *testing.T) {
 	mr, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
 	ma, err := testData.DataAPI.GetDoctorFromID(mr.DoctorID)
 	test.OK(t, err)
+	mc := test_integration.DoctorClient(testData, t, ma.ID.Int64())
 
 	// MA should be able to get diagnosis information for a patient visit
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
 	pv, _ := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
-	test_integration.SubmitPatientVisitDiagnosis(pv.PatientVisitID, doctor, testData, t)
-	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorVisitDiagnosisURLPath+"?patient_visit_id="+strconv.FormatInt(pv.PatientVisitID, 10), ma.AccountID.Int64())
+	_, err = mc.ListDiagnosis(pv.PatientVisitID)
 	test.OK(t, err)
-	defer res.Body.Close()
-	test.Equals(t, http.StatusOK, res.StatusCode)
 
 	// MA should not be able to modify diagnosis information
-	answerRequest := test_integration.PrepareAnswersForDiagnosis(testData, t, pv.PatientVisitID)
-	jsonData, err := json.Marshal(answerRequest)
-	test.OK(t, err)
-	res, err = testData.AuthPost(testData.APIServer.URL+apipaths.DoctorVisitDiagnosisURLPath, "application/json", bytes.NewReader(jsonData), ma.AccountID.Int64())
-	test.OK(t, err)
-	defer res.Body.Close()
-	test.Equals(t, http.StatusForbidden, res.StatusCode)
+	test.Equals(t, true, mc.CreateDiagnosisSet(&handlers.DiagnosisListRequestData{
+		VisitID: pv.PatientVisitID,
+		Diagnoses: []*handlers.DiagnosisInputItem{
+			{
+				CodeID: "diag_l730",
+			},
+		},
+	}) != nil)
 }
 
 func TestMAAccess_TreatmentPlan(t *testing.T) {

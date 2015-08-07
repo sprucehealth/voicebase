@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"sort"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -11,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/patient_visit"
 )
 
@@ -199,7 +201,10 @@ func (d *diagnosisListHandler) putDiagnosisList(w http.ResponseWriter, r *http.R
 	}
 
 	if rd.CaseManagement.Unsuitable {
-		err = d.dataAPI.ClosePatientVisit(rd.VisitID, common.PVStatusTriaged)
+		_, err = d.dataAPI.UpdatePatientVisit(rd.VisitID, &api.PatientVisitUpdate{
+			Status:     ptr.String(common.PVStatusTriaged),
+			ClosedDate: ptr.Time(time.Now()),
+		})
 		if err != nil {
 			apiservice.WriteError(err, w, r)
 			return
