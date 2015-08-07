@@ -1,15 +1,15 @@
 /* @flow */
 
-var Accounts = require("./accounts.js");
-var AdminAPI = require("./api.js");
-var Drugs = require("./drugs.js");
-var Forms = require("../../libs/forms.js");
-var Modals = require("../../libs/modals.js");
-var Nav = require("../../libs/nav.js");
-var Perms = require("./permissions.js");
-var Routing = require("../../libs/routing.js");
-var Time = require("../../libs/time.js");
-var Utils = require("../../libs/utils.js");
+import * as Accounts from "./accounts"
+import * as AdminAPI from  "./api"
+import * as Drugs from "./drugs"
+import * as Forms from  "../../libs/forms"
+import * as Modals from  "../../libs/modals"
+import * as Nav from  "../../libs/nav"
+import * as Perms from  "./permissions"
+import * as Routing from  "../../libs/routing"
+import * as Time from  "../../libs/time"
+import * as Utils from  "../../libs/utils"
 
 module.exports = {
 	Page: React.createClass({displayName: "CareCoordinatorPage",
@@ -81,15 +81,15 @@ var AddTagModal = React.createClass({displayName: "AddTagModal",
 		}
 		if (this.props.existingTags.indexOf(this.state.tagText) != -1) {
 			this.setState({error: "tag " + this.state.tagText + " already exists"});
-			return true; 
+			return true;
 		}
 		this.setState({busy: true, error: null});
-		AdminAPI.tags(this.state.tagText, false, function(success, data, error){
+		AdminAPI.tags(this.state.tagText, false, (success, data, error) => {
 			if (this.isMounted()) {
-				if(success) {
-					if(data.tags.length == 1) {
+				if (success) {
+					if (data.tags.length == 1) {
 						// If we find the tag then we know it already exists and just isn't common
-						AdminAPI.updateTag(data.tags[0].id, true, function(success, data, error) {
+						AdminAPI.updateTag(data.tags[0].id, true, (success, data, error) => {
 							if (this.isMounted()) {
 								if (!success) {
 									this.setState({busy: false, error: error.message});
@@ -99,7 +99,7 @@ var AddTagModal = React.createClass({displayName: "AddTagModal",
 								this.props.onSuccess();
 								$("#add-tag-modal").modal('hide');
 							}
-						}.bind(this));
+						});
 					} else if (data.tags.length == 0) {
 						// If we didn't find the tag then we know it's pure new and should add it as common
 						AdminAPI.addTag(this.state.tagText, true, function(success, data, error) {
@@ -124,8 +124,8 @@ var AddTagModal = React.createClass({displayName: "AddTagModal",
 						})
 				}
 			}
-		}.bind(this));
-		return true;	
+		});
+		return true;
 	},
 	onTagTextChange: function(e): void {
 		e.preventDefault();
@@ -282,11 +282,11 @@ var AddSavedSearchModal = React.createClass({displayName: "AddSavedSearchModal",
 		}
 		if (this.state.savedSearchTitleText.length > 50) {
 			this.setState({error: "title cannot be more than 50 characters"});
-			return true; 
+			return true;
 		}
 		if (this.props.existingSavedSearchTitles.indexOf(this.state.savedSearchTitleText) != -1) {
 			this.setState({error: "title " + this.state.savedSearchTitleText + " already exists"});
-			return true; 
+			return true;
 		}
 		AdminAPI.addTagSearch(this.state.savedSearchTitleText, this.state.savedSeearchQueryText, function(success, data, error){
 			if (this.isMounted()) {

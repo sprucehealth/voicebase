@@ -1,3 +1,5 @@
+/* @flow */
+
 // This library is adapted from the Go time pkg
 
 module.exports = {
