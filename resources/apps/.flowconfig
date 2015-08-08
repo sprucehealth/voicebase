@@ -1,4 +1,9 @@
 [ignore]
+.*/node_modules/babelify/.*
+.*/node_modules/browserify/.*
+.*/node_modules/reactify/.*
+.*/node_modules/uglify-js/.*
+.*/node_modules/watchify/.*
 
 [include]
 

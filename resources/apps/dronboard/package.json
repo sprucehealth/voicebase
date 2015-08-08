@@ -9,17 +9,15 @@
 		"object-assign": "^2.0.0"
 	},
 	"devDependencies": {
-		"browserify": "^9.0.4",
+		"browserify": "^11.0.1",
 		"reactify": "^1.1.0",
-		"uglify-js": "^2.4.20",
-		"watchify": "^3.1.0",
-		"flow": "^0.2.3"
+		"uglify-js": "^2.4.24",
+		"watchify": "^3.3.1"
 	},
 	"scripts": {
 		"start": "watchify -o ../../static/js/dronboard.dev.js -v -d .",
 		"build": "NODE_ENV=production browserify -t [reactify --strip-types] -e js/app.js | uglifyjs -c -m -o ../../static/js/dronboard.min.js",
 		"build-dev": "browserify -t [reactify --strip-types] -e js/app.js -o ../../static/js/dronboard.dev.js",
-		"flow": "flow check",
 		"test": "jest"
 	},
 	"author": "Spruce Health Inc.",
