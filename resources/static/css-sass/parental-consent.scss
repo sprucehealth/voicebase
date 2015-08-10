@@ -447,6 +447,7 @@ $placeholderTextColor: rgba(#1E333A, 0.4);
 }
 .formFieldRow input {
 	font-size: $formFieldFontSize;
+    background-color: transparent;
 }
 .formFieldRow input::-webkit-input-placeholder {
 	color: $placeholderTextColor;
@@ -454,7 +455,7 @@ $placeholderTextColor: rgba(#1E333A, 0.4);
 .formFieldRow input[type=text], .formFieldRow input[type=tel], .formFieldRow input[type=email], .formFieldRow input[type=password] {
 	width: 100%;
 	text-align: left;
-	min-height: 56px;
+	min-height: 54px;
 	border: none;
 }
 .formFieldRow input[type=date] {
@@ -462,7 +463,6 @@ $placeholderTextColor: rgba(#1E333A, 0.4);
     width: 100%;
     line-height: 50px;
     border: none;
-    background-color: white;
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;

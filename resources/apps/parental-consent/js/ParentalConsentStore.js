@@ -128,6 +128,15 @@ var ParentalConsentStore = Reflux.createStore({
 	//
 	onSaveDemographics: function(demographics: ParentalConsentDemographics) {
 
+		var phone = (demographics.mobile_phone ? demographics.mobile_phone.replace(/\D/g,'') : "");
+		var phoneIsValid = phone
+			&& !Utils.isEmpty(phone)
+			&& (phone.length === 10 || (phone.length === 11 && phone.substring(0, 1) === "1"))
+		if (!phoneIsValid) {
+			ParentalConsentActions.saveDemographics.failed({message: "Please enter a 10-digit phone number (ex: 415-555-1212)."})
+			return;
+		}
+
 		// NOTE: this is an inaccurate way to do this (better: use a library), but since the server is also checking age, we'll get by
 		// From: http://stackoverflow.com/questions/4060004/calculate-age-in-javascript/7091965#7091965
 		function getAge(dateString) {
@@ -226,7 +235,6 @@ var ParentalConsentStore = Reflux.createStore({
 
 		var YYYYMMDD: string = this.YYYYMMDDFromUserInputDOB(userInput.demographics.dob)
 
-
 		var signUpRequest: ParentalConsentSignUpRequest = {
 			email: userInput.emailPassword.email.trim(),
 			password: userInput.emailPassword.password.trim(),
@@ -250,6 +258,8 @@ var ParentalConsentStore = Reflux.createStore({
 					t.trigger(externalState)
 					ParentalConsentActions.submitEmailRelationshipConsent.failed(error)
 				} else {
+					externalState.userInput.consents.consentedToConsentToUseOfTelehealth = true
+					externalState.userInput.consents.consentedToTermsAndPrivacy = true
 					externalState.numBlockingOperations = externalState.numBlockingOperations - 1
 					t.trigger(externalState)
 					ParentalConsentActions.submitEmailRelationshipConsent.completed()
