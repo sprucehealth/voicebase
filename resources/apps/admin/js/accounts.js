@@ -1,11 +1,11 @@
 /* @flow */
 
-var AdminAPI = require("./api.js");
-var Forms = require("../../libs/forms.js");
-var Nav = require("../../libs/nav.js");
-var Perms = require("./permissions.js");
-var React = require("react");
-var Routing = require("../../libs/routing.js");
+import * as AdminAPI from "./api"
+import * as Forms from "../../libs/forms"
+import * as Nav from "../../libs/nav"
+import * as Perms from "./permissions"
+import * as React from "react"
+import * as Routing from "../../libs/routing"
 
 module.exports = {
 	AccountList: React.createClass({displayName: "AccountList",
@@ -23,7 +23,7 @@ module.exports = {
 			if (q == "") {
 				this.setState({results: null})
 			} else {
-				AdminAPI.searchAdmins(q, function(success, res, error) {
+				AdminAPI.searchAdmins(q, (success, res, error) => {
 					if (this.isMounted()) {
 						if (!success) {
 							// TODO
@@ -32,7 +32,7 @@ module.exports = {
 						}
 						this.setState({results: res.accounts || []});
 					}
-				}.bind(this));
+				});
 			}
 		},
 		onSearchSubmit: function(e: Event): void {
@@ -87,7 +87,7 @@ module.exports = {
 			};
 		},
 		componentWillMount: function() {
-			AdminAPI.adminAccount(this.props.accountID, function(success, data, error) {
+			AdminAPI.adminAccount(this.props.accountID, (success, data, error) => {
 				if (this.isMounted()) {
 					if (!success) {
 						// TODO
@@ -96,7 +96,7 @@ module.exports = {
 					}
 					this.setState({account: data.account});
 				}
-			}.bind(this));
+			});
 		},
 		render: function(): any {
 			if (this.state.account == null) {
@@ -121,7 +121,7 @@ var AccountSearchResults = React.createClass({displayName: "AccountSearchResults
 			return (<div className="no-results">No Results</div>);
 		}
 
-		var results = this.props.results.map(function (res) {
+		var results = this.props.results.map(res => {
 			return (
 				<div className="row" key={res.id}>
 					<div className="col-md-3">&nbsp;</div>
@@ -131,7 +131,7 @@ var AccountSearchResults = React.createClass({displayName: "AccountSearchResults
 					<div className="col-md-3">&nbsp;</div>
 				</div>
 			);
-		}.bind(this))
+		})
 
 		return (
 			<div className="search-results">{results}</div>
@@ -161,31 +161,31 @@ var AccountPermissionsPage = React.createClass({displayName: "AccountPermissions
 		this.loadPermissions();
 	},
 	loadGroups: function() {
-		AdminAPI.adminGroups(this.props.account.id, function(success, data, error) {
+		AdminAPI.adminGroups(this.props.account.id, (success, data, error) => {
 			if (this.isMounted()) {
 				if (!success) {
 					// TODO
 					alert("Failed to fetch account groups: " + error.message);
 					return;
 				}
-				this.setState({groups: data.groups.sort(function(a, b) { return a.name > b.name; })});
+				this.setState({groups: data.groups.sort((a, b) => { return a.name > b.name; })});
 			}
-		}.bind(this));
+		});
 	},
 	loadPermissions: function() {
-		AdminAPI.adminPermissions(this.props.account.id, function(success, data, error) {
+		AdminAPI.adminPermissions(this.props.account.id, (success, data, error) => {
 			if (this.isMounted()) {
 				if (!success) {
 					// TODO
 					alert("Failed to fetch account permissions: " + error.message);
 					return;
 				}
-				this.setState({permissions: data.permissions.sort(function(a, b) { return a > b; })});
+				this.setState({permissions: data.permissions.sort((a, b) => { return a > b })});
 			}
-		}.bind(this));
+		});
 	},
 	updateGroups: function(updates) {
-		AdminAPI.updateAdminGroups(this.props.account.id, updates, function(success, data, error) {
+		AdminAPI.updateAdminGroups(this.props.account.id, updates, (success, data, error) => {
 			if (this.isMounted()) {
 				if (!success) {
 					// TODO
@@ -195,7 +195,7 @@ var AccountPermissionsPage = React.createClass({displayName: "AccountPermissions
 				this.loadGroups();
 				this.loadPermissions();
 			}
-		}.bind(this));
+		});
 	},
 	onRemoveGroup: function(group) {
 		var updates = {};
@@ -235,21 +235,21 @@ var AccountGroups = React.createClass({displayName: "AccountGroups",
 		};
 	},
 	componentWillMount: function() {
-		AdminAPI.availableGroups(true, function(success, data, error) {
+		AdminAPI.availableGroups(true, (success, data, error) => {
 			if (this.isMounted()) {
 				if (!success) {
 					// TODO
 					alert("Failed to fetch available groups: " + error.message);
 					return;
 				}
-				var groupOptions = data.groups.map(function(g) { return {value: g.id, name: g.name} });
+				var groupOptions = data.groups.map(g => { return {value: g.id, name: g.name} });
 				this.setState({
 					availableGroups: data.groups,
 					groupOptions: groupOptions,
 					addingValue: groupOptions[0].value
 				});
 			}
-		}.bind(this));
+		});
 	},
 	onAdd: function(e) {
 		e.preventDefault();
@@ -274,13 +274,13 @@ var AccountGroups = React.createClass({displayName: "AccountGroups",
 	render: function() {
 		return (
 			<div className="groups">
-				{this.props.groups.map(function(group) {
+				{this.props.groups.map((group) => {
 					return (
 						<div key={group.id}>
 							{this.props.allowEdit ? <a href="#" onClick={this.onRemove.bind(this, group.id)}><span className="glyphicon glyphicon-remove" /></a> : null} {group.name}
 						</div>
 					);
-				}.bind(this))}
+				})}
 				{this.state.adding ?
 					<div>
 						<form onSubmit={this.onSubmit}>
@@ -305,9 +305,9 @@ var AccountPermissions = React.createClass({displayName: "AccountPermissions",
 	render: function() {
 		return (
 			<div className="permissions">
-				{this.props.permissions.map(function(perm) {
+				{this.props.permissions.map(perm => {
 					return <div key={perm}>{perm}</div>;
-				}.bind(this))}
+				})}
 			</div>
 		);
 	}

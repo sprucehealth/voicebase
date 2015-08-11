@@ -1,11 +1,11 @@
 /* @flow */
 
-var AdminAPI = require("./api.js");
-var Forms = require("../../libs/forms.js");
-var Nav = require("../../libs/nav.js");
-var Perms = require("./permissions.js");
-var Routing = require("../../libs/routing.js");
-var Utils = require("../../libs/utils.js");
+import * as AdminAPI from "./api"
+import * as Forms from "../../libs/forms"
+import * as Nav from "../../libs/nav"
+import * as Perms from "./permissions"
+import * as Routing from "../../libs/routing"
+import * as Utils from "../../libs/utils"
 
 module.exports = {
 	Analytics: React.createClass({displayName: "Analytics",
@@ -58,7 +58,7 @@ module.exports = {
 			this.setState({filter: e.target.value});
 		},
 		loadReports: function() {
-			AdminAPI.listAnalyticsReports(function(success, data, error) {
+			AdminAPI.listAnalyticsReports((success, data, error) => {
 				if (this.isMounted()) {
 					if (!success) {
 						// TODO
@@ -72,7 +72,7 @@ module.exports = {
 						this.navigate("/analytics/reports/" + data[0].id);
 					}
 				}
-			}.bind(this));
+			});
 		},
 		onSaveReport: function(report: any): void {
 			this.loadReports();
@@ -155,7 +155,7 @@ var AnalyticsQuery = React.createClass({displayName: "AnalyticsQuery",
 			this.setState({error: "", results: null})
 		} else {
 			this.setState({running: true, error: ""});
-			AdminAPI.analyticsQuery(q, function(success, res, error) {
+			AdminAPI.analyticsQuery(q, (success, res, error) => {
 				if (this.isMounted()) {
 					this.setState({running: false});
 					if (!success) {
@@ -175,7 +175,7 @@ var AnalyticsQuery = React.createClass({displayName: "AnalyticsQuery",
 						});
 					}
 				}
-			}.bind(this));
+			});
 		}
 	},
 	onSubmit: function(e: Event) {
