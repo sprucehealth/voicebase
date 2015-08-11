@@ -408,7 +408,7 @@ func TestCCTagCaseMembershipAndAssociationRoundTrip(t *testing.T) {
 		CaseID: &caseID,
 	})
 	test.OK(t, err)
-	triggerTime := time.Now().Unix() - 1
+	triggerTime := time.Now().Unix() - 5
 	test.OK(t, doctorCli.PutTagCaseMembership(&tagging.TagCaseMembershipPUTRequest{
 		CaseID:      caseID,
 		TagID:       postTagCaseAssociationResp.TagID,
