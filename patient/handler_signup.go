@@ -185,6 +185,9 @@ func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.
 	if err != nil {
 		return nil, apiservice.NewValidationError(err.Error())
 	}
+	if data.patientDOB.Age() < 13 {
+		return nil, apiservice.NewValidationError("Sorry, you must be 13 or older to sign up for Spruce.")
+	}
 	return data, nil
 }
 
