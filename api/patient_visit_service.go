@@ -791,6 +791,9 @@ func updatePatientVisit(d db, id int64, update *PatientVisitUpdate) (int, error)
 	if update.ClosedDate != nil {
 		args.Append("closed_date", *update.ClosedDate)
 	}
+	if update.SubmittedDate != nil {
+		args.Append("submitted_date", *update.SubmittedDate)
+	}
 	if args.IsEmpty() {
 		return 0, nil
 	}
@@ -806,11 +809,6 @@ func updatePatientVisit(d db, id int64, update *PatientVisitUpdate) (int, error)
 	}
 	n, err := res.RowsAffected()
 	return int(n), errors.Trace(err)
-}
-
-func (d *dataService) ClosePatientVisit(patientVisitID int64, event string) error {
-	_, err := d.db.Exec(`UPDATE patient_visit SET status = ?, closed_date = now() WHERE id = ?`, event, patientVisitID)
-	return err
 }
 
 func (d *dataService) ActivateTreatmentPlan(treatmentPlanID, doctorID int64) error {
@@ -840,11 +838,6 @@ func (d *dataService) ActivateTreatmentPlan(treatmentPlanID, doctorID int64) err
 	}
 
 	return tx.Commit()
-}
-
-func (d *dataService) SubmitPatientVisitWithID(patientVisitID int64) error {
-	_, err := d.db.Exec("UPDATE patient_visit SET status='SUBMITTED', submitted_date=now() WHERE id = ? AND STATUS IN ('OPEN', 'PHOTOS_REJECTED')", patientVisitID)
-	return err
 }
 
 func (d *dataService) CreateRegimenPlanForTreatmentPlan(regimenPlan *common.RegimenPlan) error {

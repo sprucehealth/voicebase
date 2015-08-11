@@ -18,6 +18,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/tagging"
 	"github.com/sprucehealth/backend/tagging/model"
@@ -521,11 +522,16 @@ func submitVisit(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, patient *
 	}
 
 	// do not support the submitting of a case that is in another state
-	if visit.Status != common.PVStatusOpen && visit.Status != common.PVStatusReceivedParentalConsent {
+	switch visit.Status {
+	case common.PVStatusOpen, common.PVStatusReceivedParentalConsent:
+	default:
 		return nil, apiservice.NewValidationError("Cannot submit a case that is not in the open state. Current status of case = " + visit.Status)
 	}
 
-	if err := dataAPI.SubmitPatientVisitWithID(visitID); err != nil {
+	if _, err := dataAPI.UpdatePatientVisit(visitID, &api.PatientVisitUpdate{
+		Status:        ptr.String(common.PVStatusSubmitted),
+		SubmittedDate: ptr.Time(time.Now()),
+	}); err != nil {
 		return nil, err
 	}
 

@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost"
+	"github.com/sprucehealth/backend/diagnosis/handlers"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/stripe"
@@ -41,6 +42,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
+	doctorCLI := test_integration.DoctorClient(testData, t, dr.DoctorID)
 
 	// create and submit visit for patient
 	pv, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
@@ -58,7 +60,14 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	test.Equals(t, patientpkg.ErrInitialVisitNotTreated, err)
 
 	// now lets treat the initial visit
-	test_integration.SubmitPatientVisitDiagnosis(pv.PatientVisitID, doctor, testData, t)
+	test.OK(t, doctorCLI.CreateDiagnosisSet(&handlers.DiagnosisListRequestData{
+		VisitID: pv.PatientVisitID,
+		Diagnoses: []*handlers.DiagnosisInputItem{
+			{
+				CodeID: "diag_l783",
+			},
+		},
+	}))
 	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
 
 	// now lets try to create a followup visit
@@ -164,7 +173,14 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 	test.Equals(t, common.PVStatusReviewing, followupVisit.Status)
 
 	// now lets get the doctor to submit diagnosis for the followup visit
-	test_integration.SubmitPatientVisitDiagnosis(followupVisit.ID.Int64(), doctor, testData, t)
+	test.OK(t, doctorCLI.CreateDiagnosisSet(&handlers.DiagnosisListRequestData{
+		VisitID: followupVisit.ID.Int64(),
+		Diagnoses: []*handlers.DiagnosisInputItem{
+			{
+				CodeID: "diag_l783",
+			},
+		},
+	}))
 
 	// start treatment plan
 	newTP := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
@@ -217,6 +233,7 @@ func TestFollowup_LayoutVersionUpdateOnRead(t *testing.T) {
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
+	doctorCLI := test_integration.DoctorClient(testData, t, dr.DoctorID)
 
 	// create and submit visit for patient\
 	pv, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
@@ -229,7 +246,14 @@ func TestFollowup_LayoutVersionUpdateOnRead(t *testing.T) {
 	patientAccountID := patient.AccountID.Int64()
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 	// now lets treat the initial visit
-	test_integration.SubmitPatientVisitDiagnosis(pv.PatientVisitID, doctor, testData, t)
+	test.OK(t, doctorCLI.CreateDiagnosisSet(&handlers.DiagnosisListRequestData{
+		VisitID: pv.PatientVisitID,
+		Diagnoses: []*handlers.DiagnosisInputItem{
+			{
+				CodeID: "diag_l783",
+			},
+		},
+	}))
 	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
 
 	// now lets try to create a followup visit

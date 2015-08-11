@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/diagnosis/handlers"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/ptr"
 	patientpkg "github.com/sprucehealth/backend/patient"
@@ -22,6 +23,7 @@ func TestIntake_PrefillQuestions(t *testing.T) {
 	dr, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 	doctor, err := testData.DataAPI.GetDoctorFromID(dr.DoctorID)
 	test.OK(t, err)
+	doctorCLI := test_integration.DoctorClient(testData, t, dr.DoctorID)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.ID.Int64(), testData, t)
 
@@ -56,7 +58,14 @@ func TestIntake_PrefillQuestions(t *testing.T) {
 	visit, err := testData.DataAPI.GetPatientVisitFromID(pv.PatientVisitID)
 	test_integration.GrantDoctorAccessToPatientCase(t, testData, doctor, visit.PatientCaseID.Int64())
 	test_integration.StartReviewingPatientVisit(pv.PatientVisitID, doctor, testData, t)
-	test_integration.SubmitPatientVisitDiagnosis(pv.PatientVisitID, doctor, testData, t)
+	test.OK(t, doctorCLI.CreateDiagnosisSet(&handlers.DiagnosisListRequestData{
+		VisitID: pv.PatientVisitID,
+		Diagnoses: []*handlers.DiagnosisInputItem{
+			{
+				CodeID: "diag_l783",
+			},
+		},
+	}))
 	tp := test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
 		ParentID:   visit.ID,
 		ParentType: common.TPParentTypePatientVisit,
@@ -115,7 +124,14 @@ func TestIntake_PrefillQuestions(t *testing.T) {
 	// now lets go ahead and have the doctor diagnose the visit and submit it back
 	// to the patient
 	test_integration.StartReviewingPatientVisit(followupVisitID, doctor, testData, t)
-	test_integration.SubmitPatientVisitDiagnosis(followupVisitID, doctor, testData, t)
+	test.OK(t, doctorCLI.CreateDiagnosisSet(&handlers.DiagnosisListRequestData{
+		VisitID: pv.PatientVisitID,
+		Diagnoses: []*handlers.DiagnosisInputItem{
+			{
+				CodeID: "diag_l783",
+			},
+		},
+	}))
 	tp = test_integration.PickATreatmentPlan(&common.TreatmentPlanParent{
 		ParentID:   tp.TreatmentPlan.ID,
 		ParentType: common.TPParentTypeTreatmentPlan,

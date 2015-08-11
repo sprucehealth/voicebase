@@ -213,6 +213,7 @@ type PatientVisitUpdate struct {
 	Status          *string
 	LayoutVersionID *int64
 	ClosedDate      *time.Time
+	SubmittedDate   *time.Time
 
 	// RequiredStatus if not-nil provides the required value for the status for the update to succeed
 	RequiredStatus *string
@@ -242,8 +243,6 @@ type PatientVisitAPI interface {
 	GetPatientIDFromTreatmentPlanID(treatmentPlanID int64) (int64, error)
 	UpdatePatientVisit(id int64, update *PatientVisitUpdate) (int, error)
 	UpdatePatientVisits(ids []int64, update *PatientVisitUpdate) error
-	ClosePatientVisit(patientVisitID int64, event string) error
-	SubmitPatientVisitWithID(patientVisitID int64) error
 	AddTreatmentsForTreatmentPlan(treatments []*common.Treatment, doctorID, treatmentPlanID, patientID int64) error
 	GetTreatmentsBasedOnTreatmentPlanID(treatmentPlanID int64) ([]*common.Treatment, error)
 	GetTreatmentBasedOnPrescriptionID(erxID int64) (*common.Treatment, error)
