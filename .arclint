@@ -1,0 +1,9 @@
+{
+	"linters": {
+		"golint": {
+			"type": "golint",
+			"include": "(\\.go$)",
+			"exclude": "(_test\\.go$|Godeps)"
+		}
+	}
+}

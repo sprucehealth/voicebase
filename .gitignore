@@ -48,9 +48,8 @@ apps/saml/saml
 apps/securesvc/securesvc
 apps/syslogidx/syslogidx
 diagnosis/ingester/ingester
-resources/apps/npm-debug.log
+npm-debug.log
 resources/node_modules/*
-resources/npm-debug.log
 resources/static/css/*.min.css
 resources/static/css/admin.css
 resources/static/css/base.css
