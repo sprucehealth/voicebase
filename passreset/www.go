@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/email"
+	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/www"
@@ -168,6 +169,19 @@ func (h *verifyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 		return
 	}
 
+	// redirect the user to the password reset screen in the event no phone number
+	// for the account exists.
+	if len(numbers) == 0 {
+
+		url, err := generateResetPasswordURL(w, r, h.r, h.authAPI, account)
+		if err != nil {
+			www.InternalServerError(w, r, err)
+			return
+		}
+		http.Redirect(w, r, url, http.StatusSeeOther)
+		return
+	}
+
 	var toNumber string
 	for _, n := range numbers {
 		if n.Type == common.PNTCell {
@@ -247,25 +261,12 @@ func (h *verifyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 				golog.Errorf("Failed to delete lost password code token: %s", err.Error())
 			}
 
-			resetToken, err := h.authAPI.CreateTempToken(account.ID, resetPasswordExpires, api.PasswordReset, "")
+			url, err := generateResetPasswordURL(w, r, h.r, h.authAPI, account)
 			if err != nil {
 				www.InternalServerError(w, r, err)
 				return
 			}
-
-			params := url.Values{
-				"token": []string{resetToken},
-			}
-			if emailAddress != "" {
-				params.Set("email", emailAddress)
-			}
-			u, err := h.r.Get("reset-password").URLPath()
-			if err != nil {
-				www.InternalServerError(w, r, err)
-				return
-			}
-			u.RawQuery = params.Encode()
-			http.Redirect(w, r, u.String(), http.StatusSeeOther)
+			http.Redirect(w, r, url, http.StatusSeeOther)
 			return
 		}
 	}
@@ -320,6 +321,26 @@ func (h *resetHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *
 			Errors:       errors,
 			SupportEmail: h.supportEmail,
 		}})
+}
+
+func generateResetPasswordURL(w http.ResponseWriter, r *http.Request, router *mux.Router, authAPI api.AuthAPI, account *common.Account) (string, error) {
+	resetToken, err := authAPI.CreateTempToken(account.ID, resetPasswordExpires, api.PasswordReset, "")
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+
+	params := url.Values{
+		"token": []string{resetToken},
+	}
+	if account.Email != "" {
+		params.Set("email", account.Email)
+	}
+	u, err := router.Get("reset-password").URLPath()
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+	u.RawQuery = params.Encode()
+	return u.String(), nil
 }
 
 func validateToken(w http.ResponseWriter, r *http.Request, router *mux.Router, authAPI api.AuthAPI, purpose api.AuthTokenPurpose, statInvalidToken, statExpiredToken *metrics.Counter) (*common.Account, string, string, bool) {

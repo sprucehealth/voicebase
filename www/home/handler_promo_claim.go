@@ -179,7 +179,7 @@ func (h *promoClaimHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter
 			www.InternalServerError(w, r, err)
 			return
 		}
-		http.Redirect(w, r, earl, http.StatusFound)
+		http.Redirect(w, r, earl, http.StatusSeeOther)
 		return
 	}
 

@@ -182,6 +182,15 @@ func (c *selectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					},
 				},
 			}
+
+			// validate all views
+			for _, selectionView := range response.Options {
+				if err := selectionView.Validate(selectionNamespace); err != nil {
+					apiservice.WriteError(err, w, r)
+					return
+				}
+			}
+
 			httputil.JSONResponse(w, http.StatusOK, response)
 			return
 		}
