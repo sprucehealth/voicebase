@@ -69,7 +69,7 @@ func (sm *contextSupportedMethods) ServeHTTP(ctx context.Context, w http.Respons
 // otherwise it's 405 Method Not Allowed.
 func SupportedMethodsResponse(w http.ResponseWriter, r *http.Request, methods []string) {
 	w.Header().Set("Allow", strings.Join(methods, ", "))
-	if r.Method == "OPTIONS" {
+	if r.Method == Options {
 		w.WriteHeader(http.StatusOK)
 	} else {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

@@ -67,6 +67,7 @@ type SMS struct {
 	From, To, Text string
 }
 
+// SMSAPI is a mock SMS client for testing
 type SMSAPI struct {
 	Sent []*SMS
 	mu   sync.Mutex
@@ -111,6 +112,7 @@ type TestData struct {
 	Config         *router.Config
 	AdminConfig    *www_router.Config
 	DB             *sql.DB
+	APIRouter      *mux.Router
 	APIServer      *httptest.Server
 	AdminAPIServer *httptest.Server
 	AdminUser      *AdminCredentials
@@ -254,7 +256,8 @@ func (d *TestData) StartAPIServer(t *testing.T) {
 	}
 
 	// setup the restapi and adminapi servers
-	d.APIServer = httptest.NewServer(router.New(d.Config))
+	d.APIRouter = router.New(d.Config)
+	d.APIServer = httptest.NewServer(httputil.FromContextHandler(d.APIRouter))
 	d.AdminAPIServer = httptest.NewServer(httputil.FromContextHandler(www_router.New(d.AdminConfig)))
 
 	d.bootstrapData(t)

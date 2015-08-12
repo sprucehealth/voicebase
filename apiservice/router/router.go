@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns/snsiface"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
 	"github.com/sprucehealth/backend/address"
@@ -32,6 +33,8 @@ import (
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
@@ -97,12 +100,12 @@ type Config struct {
 	SMSFromNumber            string
 	Cfg                      cfg.Store
 	ApplicationDB            *sql.DB
-	mux                      apiservice.QueryableMux
+	mux                      *mux.Router
 	Signer                   *sig.Signer
 }
 
 // New returns an initialized instance of the apiservice router conforming to the http.Handler interface
-func New(conf *Config) http.Handler {
+func New(conf *Config) *mux.Router {
 	taggingClient := tagging.NewTaggingClient(conf.ApplicationDB)
 
 	// Initialize listneners
@@ -117,7 +120,7 @@ func New(conf *Config) http.Handler {
 	auth.InitListeners(conf.AuthAPI, conf.Dispatcher)
 	campaigns.InitListeners(conf.Dispatcher, conf.Cfg, conf.EmailService, conf.DataAPI, conf.WebDomain)
 
-	conf.mux = apiservice.NewQueryableMux()
+	conf.mux = mux.NewRouter()
 
 	addressValidationAPI := address.NewAddressValidationWithCacheWrapper(conf.AddressValidator, conf.MemcacheClient)
 
@@ -301,18 +304,15 @@ func New(conf *Config) http.Handler {
 		authenticationRequired(conf, apipaths.TrainingCasesURLPath, demo.NewTrainingCasesHandler(conf.DataAPI))
 	}
 
-	return apiservice.MetricsHandler(
-		conf.mux,
-		conf.Dispatcher,
-		conf.MetricsRegistry.Scope("restapi"))
+	return conf.mux
 }
 
 // Add an authenticated metriced handler to the mux
 func authenticationRequired(conf *Config, path string, h http.Handler) {
-	conf.mux.Handle(path, apiservice.AuthenticationRequiredHandler(h, conf.AuthAPI))
+	conf.mux.Handle(path, httputil.ToContextHandler(context.ClearHandler(apiservice.AuthenticationRequiredHandler(h, conf.AuthAPI))))
 }
 
 // Add an unauthenticated metriced handler to the mux
 func noAuthenticationRequired(conf *Config, path string, h http.Handler) {
-	conf.mux.Handle(path, apiservice.NoAuthenticationRequiredHandler(h, conf.AuthAPI))
+	conf.mux.Handle(path, httputil.ToContextHandler(context.ClearHandler(apiservice.NoAuthenticationRequiredHandler(h, conf.AuthAPI))))
 }

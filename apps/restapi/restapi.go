@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
 	"github.com/sprucehealth/backend/address"
@@ -311,7 +310,10 @@ func buildRESTAPI(
 		metricsRegistry.Scope("email-campaigns-worker"),
 	).Start()
 
-	h := httputil.DecompressRequest(httputil.ToContextHandler(context.ClearHandler(mux)))
+	h := httputil.RequestIDHandler(mux)
+	h = httputil.SecurityHandler(h)
+	h = httputil.MetricsHandler(h, metricsRegistry.Scope("restapi"))
+	h = httputil.DecompressRequest(h)
 	if compressResponse {
 		h = httputil.CompressResponse(h)
 	}

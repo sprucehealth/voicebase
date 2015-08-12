@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -17,19 +18,13 @@ func TestAuthSetup(t *testing.T) {
 	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
-	// get a list of all the paths registered with the mux
-	res, err := http.Get(testData.APIServer.URL + "/listpaths")
-	test.OK(t, err)
-	defer res.Body.Close()
-	test.Equals(t, http.StatusOK, res.StatusCode)
-	var jsonData map[string]interface{}
-	err = json.NewDecoder(res.Body).Decode(&jsonData)
-	test.OK(t, err)
-
-	// ensure that there is atleast one path registered otherwise there's
-	// something wrong in the setup
-	registeredPaths := jsonData["paths"].([]interface{})
-	test.Equals(t, true, len(registeredPaths) > 0)
+	var paths []string
+	test.OK(t, testData.APIRouter.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+		ur, err := route.URLPath()
+		test.OK(t, err)
+		paths = append(paths, ur.Path)
+		return nil
+	}))
 
 	// iterate over each registered path and ensure that we get the expected
 	// response when verifying that the endpoint explicitly defines how
@@ -38,10 +33,9 @@ func TestAuthSetup(t *testing.T) {
 	var pathsNotSetupForAuthentication []string
 	queryForAuthentication := "?test=authentication"
 	queryForAuthorization := "?test=authorization"
-	for _, registeredPath := range registeredPaths {
+	for _, path := range paths {
 		// verify that the registered path explicitly defines
 		// how to handle authentication
-		path := registeredPath.(string)
 		if !runTestQuery(path, queryForAuthentication, testData, t) {
 			pathsNotSetupForAuthentication = append(pathsNotSetupForAuthentication, path)
 		}
