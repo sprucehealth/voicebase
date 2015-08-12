@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
@@ -84,6 +85,28 @@ func (d *dataService) MakeDoctorElligibleinCareProvidingState(careProvidingState
 		`REPLACE INTO care_provider_state_elligibility (role_type_id, provider_id, care_providing_state_id) VALUES (?,?,?)`,
 		d.roleTypeMapping[RoleDoctor], doctorID, careProvidingStateID)
 	return err
+}
+
+func (d *dataService) CareProviderEligible(careProviderID int64, role, state, pathwayTag string) (bool, error) {
+	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
+	if err != nil {
+		return false, errors.Trace(err)
+	}
+
+	var id int64
+	err = d.db.QueryRow(`
+		SELECT cpse.id 
+		FROM care_provider_state_elligibility cpse
+		INNER JOIN care_providing_state cps ON cps.id = cpse.care_providing_state_id
+		WHERE cps.state = ?
+			AND cpse.provider_id = ?
+			AND cpse.role_type_id = ?
+			AND cps.clinical_pathway_id = ?`,
+		state, careProviderID, d.roleTypeMapping[role], pathwayID).Scan(&id)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	return (id > 0), errors.Trace(err)
 }
 
 func (d *dataService) GetDoctorWithEmail(email string) (*common.Doctor, error) {

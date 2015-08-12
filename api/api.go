@@ -419,6 +419,9 @@ type DoctorManagementAPI interface {
 	GetCareProvidingStateID(stateAbbreviation, pathwayTag string) (int64, error)
 	AddCareProvidingState(stateAbbreviation, fullStateName, pathwayTag string) (int64, error)
 	MakeDoctorElligibleinCareProvidingState(careProvidingStateID, doctorID int64) error
+	// CareProviderEligible returns true if the provided care provider is eligible
+	// to see patients in the provided pathway,state combination.
+	CareProviderEligible(careProviderID int64, role, state, pathwayTag string) (bool, error)
 	GetDoctorWithEmail(email string) (*common.Doctor, error)
 	DoctorIDsInCareProvidingState(careProvidingStateID int64) ([]int64, error)
 	EligibleDoctorIDs(doctorIDs []int64, careProvidingStateID int64) ([]int64, error)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"strings"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -11,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/views"
 )
@@ -27,12 +29,14 @@ type selectionHandler struct {
 }
 
 type selectionRequest struct {
-	StateCode  string `schema:"state_code"`
-	Zipcode    string `schema:"zip_code"`
-	PathwayTag string `schema:"pathway_id"`
+	StateCode      string `schema:"state_code"`
+	Zipcode        string `schema:"zip_code"`
+	PathwayTag     string `schema:"pathway_id"`
+	CareProviderID int64  `schema:"care_provider_id"`
 }
 
 type selectionResponse struct {
+	Message string       `json:"message,omitempty"`
 	Options []views.View `json:"options"`
 }
 
@@ -135,6 +139,54 @@ func (c *selectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// if care provider has been specified, check if the care provider
+	// is eligible to see patients for the pathway, state combination
+	var msg string
+	if rd.CareProviderID > 0 {
+		eligible, err := c.dataAPI.CareProviderEligible(rd.CareProviderID, api.RoleDoctor, rd.StateCode, rd.PathwayTag)
+		if err != nil {
+			golog.Errorf(err.Error())
+		}
+
+		doctor, err := c.dataAPI.Doctor(rd.CareProviderID, true)
+		if err != nil {
+			golog.Errorf(err.Error())
+		}
+
+		if !eligible {
+			// populate message to indicate to patient that the doctor
+			// is not eligible to treat patient.
+			state, _, err := c.dataAPI.State(rd.StateCode)
+			if err != nil {
+				golog.Errorf(err.Error())
+			}
+
+			pathway, err := c.dataAPI.PathwayForTag(rd.PathwayTag, api.PONone)
+			if err != nil {
+				golog.Errorf(err.Error())
+			}
+
+			if state != "" && doctor != nil && pathway != nil {
+				msg = fmt.Sprintf("Sorry, %s is not current treating patients for %s in %s. Please select from another board-certified dermatologist below, or choose \"First Available\".",
+					doctor.ShortDisplayName, strings.ToLower(pathway.Name), state)
+			}
+		} else if doctor != nil {
+			response := &selectionResponse{
+				Options: []views.View{
+					&careProviderSelection{
+						ImageURL:       app_url.ThumbnailURL(c.apiDomain, api.RoleDoctor, doctor.ID.Int64()),
+						Title:          doctor.ShortDisplayName,
+						Description:    doctor.LongTitle,
+						ButtonTitle:    fmt.Sprintf("Choose %s", doctor.ShortDisplayName),
+						CareProviderID: doctor.ID.Int64(),
+					},
+				},
+			}
+			httputil.JSONResponse(w, http.StatusOK, response)
+			return
+		}
+	}
+
 	doctorIDs, err := c.pickNDoctors(c.selectionCount, &rd, r)
 	if err != nil {
 		apiservice.WriteError(err, w, r)
@@ -166,6 +218,7 @@ func (c *selectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// populate views
 	response := &selectionResponse{
+		Message: msg,
 		Options: make([]views.View, 1+len(doctors)),
 	}
 

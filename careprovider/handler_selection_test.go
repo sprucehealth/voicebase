@@ -24,6 +24,10 @@ type mockDataAPI_SelectionHandler struct {
 	doctorIDsInCareProvidingState []int64
 	availableDoctorIDs            []int64
 	careProvidingStateError       error
+	state                         string
+	careProviderEligible          bool
+	doctor                        *common.Doctor
+	pathway                       *common.Pathway
 }
 
 func (m *mockDataAPI_SelectionHandler) Doctors(doctorIDs []int64) ([]*common.Doctor, error) {
@@ -53,6 +57,18 @@ func (m *mockDataAPI_SelectionHandler) GetCareProvidingStateID(stateCode, pathwa
 }
 func (m *mockDataAPI_SelectionHandler) AvailableDoctorIDs(n int) ([]int64, error) {
 	return m.availableDoctorIDs, nil
+}
+func (m *mockDataAPI_SelectionHandler) State(state string) (string, string, error) {
+	return m.state, m.state, nil
+}
+func (m *mockDataAPI_SelectionHandler) CareProviderEligible(doctorID int64, role, state, pathwayTag string) (bool, error) {
+	return m.careProviderEligible, nil
+}
+func (m *mockDataAPI_SelectionHandler) Doctor(id int64, basicInfoOnly bool) (*common.Doctor, error) {
+	return m.doctor, nil
+}
+func (m *mockDataAPI_SelectionHandler) PathwayForTag(tag string, options api.PathwayOption) (*common.Pathway, error) {
+	return m.pathway, nil
 }
 
 // This test is to ensure that we don't pick the same doctor thumbnail URL
@@ -262,6 +278,122 @@ func TestSelection_Unauthenticated_SufficientDoctors(t *testing.T) {
 	careProviderID, err = strconv.ParseInt(options[2].(map[string]interface{})["care_provider_id"].(string), 10, 64)
 	test.OK(t, err)
 	testCareProviderSelection(options[2], doctorMap[careProviderID], t)
+}
+
+// This test ensures that if an ineligible care provider is specified,
+// then a message is included to indicate to the patient why the care coordinator
+// cannot be picked, and the patient is then provided with other options.
+func TestSelection_CareProviderSpecified_NotEligible(t *testing.T) {
+	doctors := generateDoctors(20)
+	doctorMap := make(map[int64]*common.Doctor)
+	for _, doctor := range doctors {
+		doctorMap[doctor.ID.Int64()] = doctor
+	}
+
+	availableDoctorIDs := make([]int64, 20)
+	for i, doctor := range doctors {
+		availableDoctorIDs[i] = doctor.ID.Int64()
+	}
+
+	doctorIDsInCareProvidingState := make([]int64, 10)
+	for i := 0; i < 10; i++ {
+		doctorIDsInCareProvidingState[i] = doctors[i].ID.Int64()
+	}
+
+	m := &mockDataAPI_SelectionHandler{
+		doctorIDsInCareProvidingState: doctorIDsInCareProvidingState,
+		availableDoctorIDs:            availableDoctorIDs,
+		doctorMap:                     doctorMap,
+		doctor: &common.Doctor{
+			ShortDisplayName: "Dr. Test",
+		},
+		state: "California",
+		pathway: &common.Pathway{
+			Name: "Acne",
+		},
+	}
+
+	h := NewSelectionHandler(m, "api.spruce.local", 3)
+	w := httptest.NewRecorder()
+	r, err := http.NewRequest("GET", "api.spruce.local?state_code=CA&pathway_id=acne&care_provider_id=4", nil)
+	test.OK(t, err)
+
+	h.ServeHTTP(w, r)
+	test.Equals(t, http.StatusOK, w.Code)
+
+	// unmarshal the response to check the output
+	var jsonMap map[string]interface{}
+	test.OK(t, json.Unmarshal(w.Body.Bytes(), &jsonMap))
+
+	msg := jsonMap["message"].(string)
+	test.Equals(t, "Sorry, Dr. Test is not current treating patients for acne in California. Please select from another board-certified dermatologist below, or choose \"First Available\".", msg)
+
+	options := jsonMap["options"].([]interface{})
+	test.Equals(t, 4, len(options))
+
+	testFirstAvailableOption(options[0], make([]string, 6), t)
+	careProviderID, err := strconv.ParseInt(options[1].(map[string]interface{})["care_provider_id"].(string), 10, 64)
+	test.OK(t, err)
+	testCareProviderSelection(options[1], doctorMap[careProviderID], t)
+	careProviderID, err = strconv.ParseInt(options[2].(map[string]interface{})["care_provider_id"].(string), 10, 64)
+	test.OK(t, err)
+	testCareProviderSelection(options[2], doctorMap[careProviderID], t)
+	careProviderID, err = strconv.ParseInt(options[2].(map[string]interface{})["care_provider_id"].(string), 10, 64)
+	test.OK(t, err)
+	testCareProviderSelection(options[2], doctorMap[careProviderID], t)
+}
+
+// This test ensures that if an eligible care provider is specified to the care provider selection API,
+// then a single response of just the eligible care provider is returned.
+func TestSelection_CareProviderSpecified_Eligible(t *testing.T) {
+	doctors := generateDoctors(20)
+	doctorMap := make(map[int64]*common.Doctor)
+	for _, doctor := range doctors {
+		doctorMap[doctor.ID.Int64()] = doctor
+	}
+
+	availableDoctorIDs := make([]int64, 20)
+	for i, doctor := range doctors {
+		availableDoctorIDs[i] = doctor.ID.Int64()
+	}
+
+	doctorIDsInCareProvidingState := make([]int64, 10)
+	for i := 0; i < 10; i++ {
+		doctorIDsInCareProvidingState[i] = doctors[i].ID.Int64()
+	}
+
+	m := &mockDataAPI_SelectionHandler{
+		doctorIDsInCareProvidingState: doctorIDsInCareProvidingState,
+		availableDoctorIDs:            availableDoctorIDs,
+		doctorMap:                     doctorMap,
+		doctor: &common.Doctor{
+			ID:               encoding.NewObjectID(10),
+			ShortDisplayName: "Dr. Test",
+			LongTitle:        "Dermatologist",
+		},
+		careProviderEligible: true,
+		state:                "California",
+	}
+
+	h := NewSelectionHandler(m, "api.spruce.local", 3)
+	w := httptest.NewRecorder()
+	r, err := http.NewRequest("GET", "api.spruce.local?state_code=CA&pathway_id=acne&care_provider_id=4", nil)
+	test.OK(t, err)
+
+	h.ServeHTTP(w, r)
+	test.Equals(t, http.StatusOK, w.Code)
+
+	// unmarshal the response to check the output
+	var jsonMap map[string]interface{}
+	test.OK(t, json.Unmarshal(w.Body.Bytes(), &jsonMap))
+
+	test.Equals(t, true, jsonMap["message"] == nil)
+
+	options := jsonMap["options"].([]interface{})
+	test.Equals(t, 1, len(options))
+
+	test.OK(t, err)
+	testCareProviderSelection(options[0], m.doctor, t)
 }
 
 // Test to ensure that doctor selection works as expected when a patient
