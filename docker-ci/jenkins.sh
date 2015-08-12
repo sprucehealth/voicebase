@@ -13,6 +13,9 @@ find . -name 'cover.out' -exec rm '{}' \;
 
 docker build --rm --force-rm -t $NAME docker-ci
 
+# get the uid of the user running the job to be able to properly manage permissions
+PARENT_UID=$(id -u)
+
 # origin/master -> master
 BRANCH=$(echo $GIT_BRANCH | cut -d'/' -f2)
 MEMPATH="/mnt/mem/jenkins/$BUILD_TAG"
@@ -29,6 +32,7 @@ docker run --rm=true --name=$NAME \
 	-e "DEPLOY_TO_S3=$DEPLOY_TO_S3" \
 	-e "FULLCOVERAGE=$FULLCOVERAGE" \
 	-e "TEST_S3_BUCKET=$TEST_S3_BUCKET" \
+	-e "PARENT_UID=$PARENT_UID" \
 	-v $MEMPATH:/mem \
 	-v `pwd`:/workspace/go/src/github.com/sprucehealth/backend \
     $NAME

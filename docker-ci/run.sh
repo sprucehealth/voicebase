@@ -5,6 +5,8 @@ mv /var/lib/mysql /mem/mysql
 ln -s /mem/mysql /var/lib/mysql
 /etc/init.d/mysql start
 
+su ci
+
 # Start Consul
 mkdir -p /tmp/consul
 tmux new -d -s consul 'GOMAXPROCS=2 /usr/local/bin/consul agent -data-dir /tmp/consul -bootstrap -server'
