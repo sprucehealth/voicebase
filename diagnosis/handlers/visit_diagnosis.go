@@ -218,6 +218,18 @@ func (d *diagnosisListHandler) putDiagnosisList(w http.ResponseWriter, r *http.R
 			Reason:         rd.CaseManagement.Reason,
 		})
 	} else {
+		// move the visit back into the reviewing state if it was previously triaged
+		// but now was being modified.
+		if visit.Status == common.PVStatusTriaged {
+			_, err = d.dataAPI.UpdatePatientVisit(rd.VisitID, &api.PatientVisitUpdate{
+				Status: ptr.String(common.PVStatusReviewing),
+			})
+			if err != nil {
+				apiservice.WriteError(err, w, r)
+				return
+			}
+		}
+
 		d.dispatcher.Publish(&patient_visit.DiagnosisModifiedEvent{
 			DoctorID:       doctorID,
 			PatientID:      visit.PatientID.Int64(),
