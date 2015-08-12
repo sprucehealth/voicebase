@@ -185,68 +185,68 @@ func TestTagAssociations(t *testing.T) {
 
 	ms, err := client.TagMembershipQuery(`A`, tagging.TONone)
 	test.OK(t, err)
-	associations, err := client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
+	associations, err := client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix()+60)
 	test.OK(t, err)
 	test.Equals(t, 3, len(associations))
 
 	ms, err = client.TagMembershipQuery(`B`, tagging.TONone)
 	test.OK(t, err)
-	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
+	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix()+60)
 	test.OK(t, err)
 	test.Equals(t, 2, len(associations))
 
 	ms, err = client.TagMembershipQuery(`C`, tagging.TONone)
 	test.OK(t, err)
-	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
+	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix()+60)
 	test.OK(t, err)
 	test.Equals(t, 1, len(associations))
 
 	ms, err = client.TagMembershipQuery(`A | B | D`, tagging.TONone)
 	test.OK(t, err)
-	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
+	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix()+60)
 	test.OK(t, err)
 	test.Equals(t, 3, len(associations))
 
 	ms, err = client.TagMembershipQuery(`!D`, tagging.TONone)
 	test.OK(t, err)
-	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
+	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix()+60)
 	test.OK(t, err)
 	test.Equals(t, 2, len(associations))
 
 	ms, err = client.TagMembershipQuery(`A AND (E OR F)`, tagging.TONone)
 	test.OK(t, err)
-	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
+	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix()+60)
 	test.OK(t, err)
 	test.Equals(t, 2, len(associations))
 
 	ms, err = client.TagMembershipQuery(`A AND (E OR F AND (NOT D))`, tagging.TONone)
 	test.OK(t, err)
-	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
+	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix()+60)
 	test.OK(t, err)
 	test.Equals(t, 1, len(associations))
 
 	ms, err = client.TagMembershipQuery(`A OR (E OR F AND (NOT D))`, tagging.TONone)
 	test.OK(t, err)
-	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
+	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix()+60)
 	test.OK(t, err)
 	test.Equals(t, 3, len(associations))
 
 	ms, err = client.TagMembershipQuery(`!A`, tagging.TONone)
 	test.OK(t, err)
-	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
+	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix()+60)
 	test.OK(t, err)
 	test.Equals(t, 0, len(associations))
 
 	ms, err = client.TagMembershipQuery(`NotValid`, tagging.TONone)
 	test.OK(t, err)
-	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix())
+	associations, err = client.CaseAssociations(ms, time.Unix(1, 0).Unix(), time.Now().Unix()+60)
 	test.OK(t, err)
 	test.Equals(t, 0, len(associations))
 
 	// Test that we can timebound our query by visit
 	ms, err = client.TagMembershipQuery(`A`, tagging.TONone)
 	test.OK(t, err)
-	associations, err = client.CaseAssociations(ms, time.Now().Unix()+1, time.Now().Unix()+2)
+	associations, err = client.CaseAssociations(ms, time.Now().Unix()+60, time.Now().Unix()+62)
 	test.OK(t, err)
 	test.Equals(t, 0, len(associations))
 }
@@ -418,7 +418,7 @@ func TestCCTagCaseMembershipAndAssociationRoundTrip(t *testing.T) {
 	getTagCaseAssociationResp, err := doctorCli.TagCaseAssociations(&tagging.TagCaseAssociationGETRequest{
 		Query:       "",
 		Start:       time.Unix(1, 0).Unix(),
-		End:         time.Now().Unix(),
+		End:         time.Now().Unix() + 60,
 		PastTrigger: true,
 	})
 	test.OK(t, err)

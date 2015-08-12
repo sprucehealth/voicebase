@@ -9,6 +9,7 @@ import (
 )
 
 func TestDoctorCaseHistory(t *testing.T) {
+	t.Skip("No external test dependencies pretty please :kill it with fire:")
 	testData := SetupTest(t)
 	defer testData.Close(t)
 	testData.StartAPIServer(t)

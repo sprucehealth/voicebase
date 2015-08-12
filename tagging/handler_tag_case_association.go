@@ -20,6 +20,7 @@ type tagCaseAssociationHandler struct {
 	taggingClient Client
 }
 
+// TagCaseAssociationGETRequest represents the data expected to be associated with a sucessful GET request
 type TagCaseAssociationGETRequest struct {
 	Query       string `schema:"query"`
 	Start       int64  `schema:"start,required"`
@@ -27,10 +28,12 @@ type TagCaseAssociationGETRequest struct {
 	PastTrigger bool   `schema:"past_trigger"`
 }
 
+// TagCaseAssociationGETResponse represents the data expected to be returned from a sucessful GET request
 type TagCaseAssociationGETResponse struct {
 	Associations []*response.TagAssociation `json:"associations"`
 }
 
+// TagCaseAssociationPOSTRequest represents the data expected to be associated with a sucessful POST request
 type TagCaseAssociationPOSTRequest struct {
 	Text        string `json:"text"`
 	Common      bool   `json:"common"`
@@ -39,15 +42,18 @@ type TagCaseAssociationPOSTRequest struct {
 	Hidden      bool   `json:"hidden"`
 }
 
+// TagCaseAssociationPOSTResponse represents the data expected to be returned from a sucessful POST request
 type TagCaseAssociationPOSTResponse struct {
 	TagID int64 `json:"tag_id,string"`
 }
 
+// TagCaseAssociationDELETERequest represents the data expected to be associated with a sucessful DELETE request
 type TagCaseAssociationDELETERequest struct {
 	Text   string `schema:"text,required"`
 	CaseID int64  `schema:"case_id,required"`
 }
 
+// NewTagCaseAssociationHandler returns an initialized instance of tagCaseAssociationHandler
 func NewTagCaseAssociationHandler(taggingClient Client) http.Handler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(&tagCaseAssociationHandler{taggingClient: taggingClient}),
