@@ -7,10 +7,12 @@ import (
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/app_worker"
@@ -310,8 +312,46 @@ func buildRESTAPI(
 		metricsRegistry.Scope("email-campaigns-worker"),
 	).Start()
 
+	webRequestLogger := func(ctx context.Context, ev *httputil.RequestEvent) {
+		av := &analytics.WebRequestEvent{
+			Service:      "restapi",
+			RequestID:    httputil.RequestID(ctx),
+			Path:         ev.URL.Path,
+			Timestamp:    analytics.Time(ev.Timestamp),
+			StatusCode:   ev.StatusCode,
+			Method:       ev.Request.Method,
+			URL:          ev.URL.String(),
+			RemoteAddr:   ev.RemoteAddr,
+			ContentType:  ev.ResponseHeaders.Get("Content-Type"),
+			UserAgent:    ev.Request.UserAgent(),
+			Referrer:     ev.Request.Referer(),
+			ResponseTime: int(ev.ResponseTime.Nanoseconds() / 1e3),
+			Server:       ev.ServerHostname,
+		}
+		log := golog.Context(
+			"Method", av.Method,
+			"URL", av.URL,
+			"UserAgent", av.UserAgent,
+			"RequestID", av.RequestID,
+			"RemoteAddr", av.RemoteAddr,
+			"StatusCode", av.StatusCode,
+		)
+		rctx := apiservice.GetContext(ev.Request)
+		if rctx.AccountID != 0 {
+			log = log.Context("AccountID", rctx.AccountID, "Role", rctx.Role)
+			av.AccountID = rctx.AccountID
+		}
+		if ev.Panic != nil {
+			log.Criticalf("http: panic: %v\n%s", ev.Panic, ev.StackTrace)
+		} else {
+			log.Infof("apirequest")
+		}
+		dispatcher.PublishAsync(av)
+	}
+
 	h := httputil.RequestIDHandler(mux)
 	h = httputil.SecurityHandler(h)
+	h = httputil.LoggingHandler(h, webRequestLogger)
 	h = httputil.MetricsHandler(h, metricsRegistry.Scope("restapi"))
 	h = httputil.DecompressRequest(h)
 	if compressResponse {

@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -112,6 +113,7 @@ func (h *requestIDHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 		requestID = 0
 		golog.Errorf("Failed to generate request ID: %s", err.Error())
 	}
+	w.Header().Set("S-Request-ID", strconv.FormatUint(requestID, 10))
 	h.h.ServeHTTP(context.WithValue(ctx, requestIDContextKey, requestID), w, r)
 }
 
