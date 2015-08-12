@@ -9,7 +9,6 @@ import (
 )
 
 func TestDoctorCaseHistory(t *testing.T) {
-	t.Skip("No external test dependencies pretty please :kill it with fire:")
 	testData := SetupTest(t)
 	defer testData.Close(t)
 	testData.StartAPIServer(t)
@@ -90,7 +89,7 @@ func TestDoctorCaseHistory(t *testing.T) {
 
 	// MA should see all cases  or a filtered set depending on params
 	s := time.Unix(1, 0)
-	now := time.Now()
+	now := time.Now().Add(time.Minute)
 	items, err = testData.DataAPI.PatientCaseFeed(nil, &s, &now)
 	test.OK(t, err)
 	test.Equals(t, 2, len(items))
