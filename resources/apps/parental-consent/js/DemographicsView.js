@@ -262,7 +262,6 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 					fontSize: "14px",
 					lineHeight: "17px",
 				}}>
-				Hello!
 				<div style={{
 					textAlign: "center",
 					marginBottom: "22px",
