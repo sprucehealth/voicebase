@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/reslib"
 	"github.com/sprucehealth/backend/test"
@@ -56,7 +57,7 @@ func TestResourceGuide(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, err := http.NewRequest("GET", fmt.Sprintf("/?resource_id=%d", guide1.ID), nil)
 	test.OK(t, err)
-	h.ServeHTTP(res, req)
+	h.ServeHTTP(context.Background(), res, req)
 	if res.Code != 200 {
 		t.Fatalf("Expected 200 response got %d", res.Code)
 	}
@@ -70,7 +71,7 @@ func TestResourceGuide(t *testing.T) {
 	res = httptest.NewRecorder()
 	req, err = http.NewRequest("GET", "/", nil)
 	test.OK(t, err)
-	hList.ServeHTTP(res, req)
+	hList.ServeHTTP(context.Background(), res, req)
 	if res.Code != 200 {
 		t.Fatalf("Expected 200 response got %d", res.Code)
 	}

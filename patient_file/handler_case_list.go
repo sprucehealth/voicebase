@@ -3,6 +3,7 @@ package patient_file
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -22,18 +23,21 @@ type caseListRequest struct {
 	PatientID int64 `schema:"patient_id,required"`
 }
 
-func NewPatientCaseListHandler(dataAPI api.DataAPI) http.Handler {
+func NewPatientCaseListHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
-			apiservice.AuthorizationRequired(
-				&caseListHandler{
-					dataAPI: dataAPI,
-				}), api.RoleDoctor, api.RoleCC),
+			apiservice.RequestCacheHandler(
+				apiservice.AuthorizationRequired(
+					&caseListHandler{
+						dataAPI: dataAPI,
+					})),
+			api.RoleDoctor, api.RoleCC),
 		httputil.Get)
 }
 
-func (c *caseListHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
+func (c *caseListHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+	account := apiservice.MustCtxAccount(ctx)
+	requestCache := apiservice.MustCtxCache(ctx)
 
 	rd := &caseListRequest{}
 	if err := apiservice.DecodeRequestData(rd, r); err != nil {
@@ -41,31 +45,31 @@ func (c *caseListHandler) IsAuthorized(r *http.Request) (bool, error) {
 	} else if rd.PatientID == 0 {
 		return false, apiservice.NewValidationError("patient_id required")
 	}
-	ctxt.RequestCache[apiservice.RequestData] = rd
+	requestCache[apiservice.CKRequestData] = rd
 
-	doctorID, err := c.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
+	doctorID, err := c.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.DoctorID] = doctorID
+	requestCache[apiservice.CKDoctorID] = doctorID
 
 	// ensure doctor/ma has access to read patient file
-	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, doctorID, rd.PatientID, c.dataAPI); err != nil {
+	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, account.Role, doctorID, rd.PatientID, c.dataAPI); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (c *caseListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	rd := ctxt.RequestCache[apiservice.RequestData].(*caseListRequest)
-	doctorID := ctxt.RequestCache[apiservice.DoctorID].(int64)
+func (c *caseListHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	rd := requestCache[apiservice.CKRequestData].(*caseListRequest)
+	doctorID := requestCache[apiservice.CKDoctorID].(int64)
 
 	// get a list of cases for the patient
 	cases, err := c.dataAPI.GetCasesForPatient(rd.PatientID, []string{common.PCStatusActive.String(), common.PCStatusInactive.String()})
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -79,7 +83,7 @@ func (c *caseListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// get the visits for the case
 		visits, err := c.dataAPI.GetVisitsForCase(pc.ID.Int64(), common.NonOpenPatientVisitStates())
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
@@ -97,21 +101,21 @@ func (c *caseListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		activeTPs, err := c.dataAPI.GetAbridgedTreatmentPlanList(doctorID, pc.ID.Int64(), common.ActiveTreatmentPlanStates())
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		item.ActiveTPs = populateTPList(activeTPs)
 
 		inactiveTPs, err := c.dataAPI.GetAbridgedTreatmentPlanList(doctorID, pc.ID.Int64(), common.InactiveTreatmentPlanStates())
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		item.InactiveTPs = populateTPList(inactiveTPs)
 
 		draftTreatmentPlans, err := c.dataAPI.GetAbridgedTreatmentPlanListInDraftForDoctor(doctorID, pc.ID.Int64())
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		item.DraftTPs = populateTPList(draftTreatmentPlans)

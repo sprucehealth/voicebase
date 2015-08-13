@@ -3,14 +3,15 @@ package apiservice
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 // Authorized interface helps ensure that caller of every handler is authorized
 // to process the call it is intended for.
 type Authorized interface {
-	IsAuthorized(r *http.Request) (bool, error)
-	http.Handler
+	IsAuthorized(ctx context.Context, r *http.Request) (bool, error)
+	httputil.ContextHandler
 }
 
 type isAuthorizedHandler struct {
@@ -18,31 +19,31 @@ type isAuthorizedHandler struct {
 }
 
 type DELETEAuthorizer interface {
-	IsDELETEAuthorized(r *http.Request) (bool, error)
+	IsDELETEAuthorized(ctx context.Context, r *http.Request) (bool, error)
 }
 
 type GETAuthorizer interface {
-	IsGETAuthorized(r *http.Request) (bool, error)
+	IsGETAuthorized(ctx context.Context, r *http.Request) (bool, error)
 }
 
 type PATCHAuthorizer interface {
-	IsPATCHAuthorized(r *http.Request) (bool, error)
+	IsPATCHAuthorized(ctx context.Context, r *http.Request) (bool, error)
 }
 
 type POSTAuthorizer interface {
-	IsPOSTAuthorized(r *http.Request) (bool, error)
+	IsPOSTAuthorized(ctx context.Context, r *http.Request) (bool, error)
 }
 
 type PUTAuthorizer interface {
-	IsPUTAuthorized(r *http.Request) (bool, error)
+	IsPUTAuthorized(ctx context.Context, r *http.Request) (bool, error)
 }
 
 type methodGranularAuthorizedHandler struct {
-	h http.Handler
+	h httputil.ContextHandler
 }
 
-func (h *methodGranularAuthorizedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if verifyAuthSetupInTest(w, r, h.h, authorization, VerifyAuthCode) {
+func (h *methodGranularAuthorizedHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	if verifyAuthSetupInTest(ctx, w, r, h.h, authorization, VerifyAuthCode) {
 		return
 	}
 
@@ -52,84 +53,84 @@ func (h *methodGranularAuthorizedHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	case httputil.Delete:
 		auther, ok := h.h.(DELETEAuthorizer)
 		if ok {
-			authorized, err = auther.IsDELETEAuthorized(r)
+			authorized, err = auther.IsDELETEAuthorized(ctx, r)
 		}
 	case httputil.Get:
 		auther, ok := h.h.(GETAuthorizer)
 		if ok {
-			authorized, err = auther.IsGETAuthorized(r)
+			authorized, err = auther.IsGETAuthorized(ctx, r)
 		}
 	case httputil.Patch:
 		auther, ok := h.h.(PATCHAuthorizer)
 		if ok {
-			authorized, err = auther.IsPATCHAuthorized(r)
+			authorized, err = auther.IsPATCHAuthorized(ctx, r)
 		}
 	case httputil.Post:
 		auther, ok := h.h.(POSTAuthorizer)
 		if ok {
-			authorized, err = auther.IsPOSTAuthorized(r)
+			authorized, err = auther.IsPOSTAuthorized(ctx, r)
 		}
 	case httputil.Put:
 		auther, ok := h.h.(PUTAuthorizer)
 		if ok {
-			authorized, err = auther.IsPUTAuthorized(r)
+			authorized, err = auther.IsPUTAuthorized(ctx, r)
 		}
 	default:
-		WriteAccessNotAllowedError(w, r)
+		WriteAccessNotAllowedError(ctx, w, r)
 		return
 	}
 
 	if IsBadRequestError(err) {
-		WriteBadRequestError(err, w, r)
+		WriteBadRequestError(ctx, err, w, r)
 		return
 	} else if err != nil {
-		WriteError(err, w, r)
+		WriteError(ctx, err, w, r)
 		return
 	}
 
 	if !authorized {
-		WriteAccessNotAllowedError(w, r)
+		WriteAccessNotAllowedError(ctx, w, r)
 		return
 	}
 
-	h.h.ServeHTTP(w, r)
+	h.h.ServeHTTP(ctx, w, r)
 }
 
-func MethodGranularAuthorizationRequired(h http.Handler) http.Handler {
+func MethodGranularAuthorizationRequired(h httputil.ContextHandler) httputil.ContextHandler {
 	return &methodGranularAuthorizedHandler{
 		h: h,
 	}
 }
 
-func NoAuthorizationRequired(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if verifyAuthSetupInTest(w, r, h, authorization, VerifyAuthCode) {
+func NoAuthorizationRequired(h httputil.ContextHandler) httputil.ContextHandler {
+	return httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		if verifyAuthSetupInTest(ctx, w, r, h, authorization, VerifyAuthCode) {
 			return
 		}
 
-		h.ServeHTTP(w, r)
+		h.ServeHTTP(ctx, w, r)
 	})
 }
 
-func AuthorizationRequired(h Authorized) http.Handler {
+func AuthorizationRequired(h Authorized) httputil.ContextHandler {
 	return &isAuthorizedHandler{
 		h: h,
 	}
 }
 
-func (i *isAuthorizedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if verifyAuthSetupInTest(w, r, i.h, authorization, VerifyAuthCode) {
+func (i *isAuthorizedHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	if verifyAuthSetupInTest(ctx, w, r, i.h, authorization, VerifyAuthCode) {
 		return
 	}
 
 	// handler has to be authorized
-	if authorized, err := i.h.IsAuthorized(r); err != nil {
-		WriteError(err, w, r)
+	if authorized, err := i.h.IsAuthorized(ctx, r); err != nil {
+		WriteError(ctx, err, w, r)
 		return
 	} else if !authorized {
-		WriteAccessNotAllowedError(w, r)
+		WriteAccessNotAllowedError(ctx, w, r)
 		return
 	}
 
-	i.h.ServeHTTP(w, r)
+	i.h.ServeHTTP(ctx, w, r)
 }

@@ -3,6 +3,7 @@ package treatment_plan
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -18,36 +19,31 @@ type treatmentsViewsResponse struct {
 	TreatmentViews []views.View `json:"treatment_views"`
 }
 
-func NewTreatmentsHandler(dataAPI api.DataAPI) http.Handler {
+func NewTreatmentsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(
-			&treatmentsHandler{
+		apiservice.SupportedRoles(
+			apiservice.NoAuthorizationRequired(&treatmentsHandler{
 				dataAPI: dataAPI,
-			}), httputil.Get)
+			}),
+			api.RoleDoctor),
+		httputil.Get)
+
 }
 
-func (t *treatmentsHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.RolePatient {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-
-	return true, nil
-}
-
-func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	patientID, err := t.dataAPI.GetPatientIDFromAccountID(apiservice.GetContext(r).AccountID)
+func (t *treatmentsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := apiservice.MustCtxAccount(ctx)
+	patientID, err := t.dataAPI.GetPatientIDFromAccountID(account.ID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	tps, err := t.dataAPI.GetActiveTreatmentPlansForPatient(patientID)
 	if api.IsErrNotFound(err) || (err == nil && len(tps) == 0) {
-		apiservice.WriteResourceNotFoundError("No treatment plan found", w, r)
+		apiservice.WriteResourceNotFoundError(ctx, "No treatment plan found", w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -58,13 +54,13 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	treatmentPlan.TreatmentList = &common.TreatmentList{}
 	treatmentPlan.TreatmentList.Treatments, err = t.dataAPI.GetTreatmentsBasedOnTreatmentPlanID(treatmentPlan.ID.Int64())
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	tViews := GenerateViewsForTreatments(treatmentPlan.TreatmentList, treatmentPlan.ID.Int64(), t.dataAPI, true)
 	if err := views.Validate(tViews, treatmentViewNamespace); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

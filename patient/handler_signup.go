@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
@@ -104,7 +105,7 @@ func NewSignupHandler(
 	rateLimiter ratelimit.KeyedRateLimiter,
 	addressAPI address.Validator,
 	metricsRegistry metrics.Registry,
-) http.Handler {
+) httputil.ContextHandler {
 	sh := &SignupHandler{
 		dataAPI:            dataAPI,
 		authAPI:            authAPI,
@@ -191,15 +192,15 @@ func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.
 	return data, nil
 }
 
-func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *SignupHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	}
 
 	var requestData SignupPatientRequestData
 	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	}
 
@@ -207,7 +208,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	data, err := s.validate(&requestData, r)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -220,10 +221,10 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// and we're still within an acceptable window of the registration date
 		account, err := s.authAPI.Authenticate(requestData.Email, requestData.Password)
 		if err != nil {
-			apiservice.WriteValidationError("An account with the specified email address already exists.", w, r)
+			apiservice.WriteValidationError(ctx, "An account with the specified email address already exists.", w, r)
 			return
 		} else if account.Registered.Add(acceptableWindow).Before(time.Now()) {
-			apiservice.WriteValidationError("An account with the specified email address already exists.", w, r)
+			apiservice.WriteValidationError(ctx, "An account with the specified email address already exists.", w, r)
 			return
 		}
 
@@ -231,11 +232,11 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		accountID = account.ID
 		patientID, err = s.dataAPI.GetPatientIDFromAccountID(accountID)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 	} else if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -270,14 +271,14 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			PhoneNumbers: newPatient.PhoneNumbers,
 		}
 		if err := s.dataAPI.UpdatePatient(patientID, patientUpdate, false); err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		newPatient.ID = encoding.NewObjectID(patientID)
 	} else {
 		// then, register the signed up user as a patient
 		if err := s.dataAPI.RegisterPatient(newPatient); err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 	}
@@ -291,7 +292,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		err = s.dataAPI.TrackPatientAgreements(newPatient.ID.Int64(), patientAgreements)
 		if err != nil {
-			apiservice.WriteError(errors.New("Unable to track patient agreements: "+err.Error()), w, r)
+			apiservice.WriteError(ctx, errors.New("Unable to track patient agreements: "+err.Error()), w, r)
 			return
 		}
 	}
@@ -303,7 +304,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	token, err := s.authAPI.CreateToken(accountID, api.Mobile, 0)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -322,7 +323,7 @@ func (s *SignupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			s.expirationDuration,
 			r, nil)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 	}

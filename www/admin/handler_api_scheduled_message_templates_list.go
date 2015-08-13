@@ -17,7 +17,7 @@ type schedMessageTemplatesListAPIHandler struct {
 }
 
 func newSchedMessageTemplatesListAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&schedMessageTemplatesListAPIHandler{
+	return httputil.SupportedMethods(&schedMessageTemplatesListAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Post)
 }

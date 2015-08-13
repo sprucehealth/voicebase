@@ -7,8 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 )
 
@@ -82,7 +84,8 @@ func testPatientUpdate(method string, t *testing.T) {
 
 	w := httptest.NewRecorder()
 
-	h.ServeHTTP(w, r)
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient})
+	h.ServeHTTP(ctx, w, r)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected 200 but got %d", w.Code)
 	} else if len(m.updateAttempted.PhoneNumbers) != 1 {

@@ -15,7 +15,7 @@ type staticTemplateHandler struct {
 }
 
 func newStaticTemplateHandler(template *template.Template, context interface{}) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&staticTemplateHandler{
+	return httputil.SupportedMethods(&staticTemplateHandler{
 		template: template,
 		context:  context,
 	}, httputil.Get)

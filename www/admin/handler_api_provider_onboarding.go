@@ -34,7 +34,7 @@ type providerOnboardingURLAPIHandler struct {
 
 func newProviderOnboardingURLAPIHandler(r *mux.Router, dataAPI api.DataAPI, signer *sig.Signer, cfgStore cfg.Store) httputil.ContextHandler {
 	cfgStore.Register(onboardTimeExpirationDef)
-	return httputil.ContextSupportedMethods(&providerOnboardingURLAPIHandler{
+	return httputil.SupportedMethods(&providerOnboardingURLAPIHandler{
 		router:  r,
 		dataAPI: dataAPI,
 		signer:  signer,

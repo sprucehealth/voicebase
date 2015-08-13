@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
@@ -69,7 +70,7 @@ type pathwayFAQ struct {
 }
 
 // NewPathwayDetailsHandler returns an initialized instance of pathwayDetailsHandler
-func NewPathwayDetailsHandler(dataAPI api.DataAPI, apiDomain string, cfgStore cfg.Store) http.Handler {
+func NewPathwayDetailsHandler(dataAPI api.DataAPI, apiDomain string, cfgStore cfg.Store) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&pathwayDetailsHandler{
 			dataAPI:   dataAPI,
@@ -79,7 +80,7 @@ func NewPathwayDetailsHandler(dataAPI api.DataAPI, apiDomain string, cfgStore cf
 		httputil.Get)
 }
 
-func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *pathwayDetailsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	pathwayTags := strings.Split(r.FormValue("pathway_id"), ",")
 	if len(pathwayTags) == 0 {
 		// empty response for an empty request (eye for an eye)
@@ -90,7 +91,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	}
 	pathways, err := h.dataAPI.PathwaysForTags(pathwayTags, api.POWithDetails|api.POActiveOnly)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -98,17 +99,17 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	activeCases := make(map[string]*common.PatientCase)
 	var activeCaseIDs []int64
 
-	ctx := apiservice.GetContext(r)
-	if ctx.AccountID != 0 && ctx.Role == api.RolePatient {
-		patientID, err = h.dataAPI.GetPatientIDFromAccountID(ctx.AccountID)
+	account, ok := apiservice.CtxAccount(ctx)
+	if ok && account.Role == api.RolePatient {
+		patientID, err = h.dataAPI.GetPatientIDFromAccountID(account.ID)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
 		cases, err := h.dataAPI.GetCasesForPatient(patientID, []string{common.PCStatusActive.String(), common.PCStatusOpen.String()})
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		activeCaseIDs = make([]int64, len(cases))
@@ -146,7 +147,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				if !fetchedCareTeams {
 					careTeams, err = h.dataAPI.CaseCareTeams(activeCaseIDs)
 					if err != nil {
-						apiservice.WriteError(err, w, r)
+						apiservice.WriteError(ctx, err, w, r)
 						return
 					}
 					fetchedCareTeams = true
@@ -159,13 +160,13 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		} else {
 			imageURLs, err := careprovider.RandomDoctorURLs(4, h.dataAPI, h.apiDomain, nil)
 			if err != nil {
-				apiservice.WriteError(err, w, r)
+				apiservice.WriteError(ctx, err, w, r)
 				return
 			}
 
 			screen, err = merchandisingScreen(p, imageURLs, cost, h.apiDomain, patientID, h.launchPromoStartDate, h.dataAPI, h.cfgStore)
 			if err != nil {
-				apiservice.WriteError(err, w, r)
+				apiservice.WriteError(ctx, err, w, r)
 				return
 			}
 			faq = &pathwayFAQ{
@@ -182,7 +183,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				)
 			}
 			if err := views.Validate(faq.Views, "faq"); err != nil {
-				apiservice.WriteError(err, w, r)
+				apiservice.WriteError(ctx, err, w, r)
 				return
 			}
 
@@ -207,7 +208,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			}
 		}
 		if err := views.Validate(screen.Views, "pathway_details"); err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		res.Pathways = append(res.Pathways, &pathwayDetails{

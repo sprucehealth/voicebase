@@ -73,7 +73,7 @@ func (r *signUpAPIRequest) Validate(states []*common.State) (bool, string) {
 }
 
 func newSignUpAPIHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&signUpAPIHAndler{
+	return httputil.SupportedMethods(&signUpAPIHAndler{
 		dataAPI: dataAPI,
 		authAPI: authAPI,
 	}, httputil.Post)

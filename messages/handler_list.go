@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
@@ -57,19 +58,21 @@ func NewListHandler(
 	dataAPI api.DataAPI,
 	apiDomain string,
 	mediaStore *media.Store,
-	expirationDuration time.Duration) http.Handler {
+	expirationDuration time.Duration) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(
-			&listHandler{
-				dataAPI:            dataAPI,
-				apiDomain:          apiDomain,
-				mediaStore:         mediaStore,
-				expirationDuration: expirationDuration,
-			}), httputil.Get)
+		apiservice.RequestCacheHandler(
+			apiservice.AuthorizationRequired(
+				&listHandler{
+					dataAPI:            dataAPI,
+					apiDomain:          apiDomain,
+					mediaStore:         mediaStore,
+					expirationDuration: expirationDuration,
+				})),
+		httputil.Get)
 }
 
-func (h *listHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
+func (h *listHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+	requestCache := apiservice.MustCtxCache(ctx)
 
 	caseID, err := strconv.ParseInt(r.FormValue("case_id"), 10, 64)
 	if err != nil {
@@ -82,23 +85,24 @@ func (h *listHandler) IsAuthorized(r *http.Request) (bool, error) {
 	} else if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.PatientCase] = cas
+	requestCache[apiservice.CKPatientCase] = cas
 
-	personID, _, err := validateAccess(h.dataAPI, r, cas)
+	personID, _, err := validateAccess(h.dataAPI, r, apiservice.MustCtxAccount(ctx), cas)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.PersonID] = personID
+	requestCache[apiservice.CKPersonID] = personID
 
 	return true, nil
 }
 
-func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	cas := ctxt.RequestCache[apiservice.PatientCase].(*common.PatientCase)
+func (h *listHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := apiservice.MustCtxAccount(ctx)
+	requestCache := apiservice.MustCtxCache(ctx)
+	cas := requestCache[apiservice.CKPatientCase].(*common.PatientCase)
 
 	var lcmOpts api.ListCaseMessagesOption
-	switch ctxt.Role {
+	switch account.Role {
 	case api.RoleDoctor:
 		lcmOpts |= api.LCMOIncludePrivate
 	case api.RoleCC:
@@ -140,11 +144,11 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err := p.Wait(); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
-	if ctxt.Role == api.RoleCC {
+	if account.Role == api.RoleCC {
 		// Look up any people in the read receipts that we don't already have as a participant.
 		var peopleIDs []int64
 		for _, m := range msgs {
@@ -157,7 +161,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if len(peopleIDs) != 0 {
 			rrPeople, err := h.dataAPI.GetPeople(peopleIDs)
 			if err != nil {
-				apiservice.WriteError(err, w, r)
+				apiservice.WriteError(ctx, err, w, r)
 				return
 			}
 			if participants == nil {
@@ -234,7 +238,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				a.URL = app_url.ContinueVisitAction(att.ItemID, isSubmitted).String()
 			case common.AttachmentTypePhoto, common.AttachmentTypeAudio:
 				if ok, err := h.dataAPI.MediaHasClaim(att.ItemID, common.ClaimerTypeConversationMessage, msg.ID); err != nil {
-					apiservice.WriteError(err, w, r)
+					apiservice.WriteError(ctx, err, w, r)
 					return
 				} else if !ok {
 					// This should never happen but best to make sure
@@ -246,7 +250,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				var err error
 				a.URL, err = h.mediaStore.SignedURL(att.ItemID, h.expirationDuration)
 				if err != nil {
-					apiservice.WriteError(err, w, r)
+					apiservice.WriteError(ctx, err, w, r)
 					return
 				}
 			default:
@@ -277,7 +281,7 @@ func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update read statuses if necessary
-	personID := ctxt.RequestCache[apiservice.PersonID].(int64)
+	personID := requestCache[apiservice.CKPersonID].(int64)
 	if err := h.dataAPI.CaseMessagesRead(msgIDs, personID); err != nil {
 		golog.Errorf("Failed to update case message read statuses: %s", err)
 	}

@@ -20,7 +20,7 @@ type pathwayMenuHandler struct {
 }
 
 func newPathwayMenuHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&pathwayMenuHandler{
+	return httputil.SupportedMethods(&pathwayMenuHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Put)
 }

@@ -19,7 +19,7 @@ type rxGuidesListAPIHandler struct {
 }
 
 func newRXGuideListAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&rxGuidesListAPIHandler{
+	return httputil.SupportedMethods(&rxGuidesListAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Put)
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -44,23 +45,24 @@ type Attachment struct {
 	URL      string `json:"url,omitempty"`
 }
 
-func NewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
+func NewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(
-			&handler{
-				dataAPI:    dataAPI,
-				dispatcher: dispatcher}),
+		apiservice.RequestCacheHandler(
+			apiservice.AuthorizationRequired(
+				&handler{
+					dataAPI:    dataAPI,
+					dispatcher: dispatcher})),
 		httputil.Post)
 }
 
-func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
+func (h *handler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+	requestCache := apiservice.MustCtxCache(ctx)
 
 	var req PostMessageRequest
 	if err := apiservice.DecodeRequestData(&req, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error())
 	}
-	ctxt.RequestCache[apiservice.RequestData] = &req
+	requestCache[apiservice.CKRequestData] = &req
 
 	if err := req.Validate(); err != nil {
 		return false, apiservice.NewValidationError(err.Error())
@@ -70,28 +72,28 @@ func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.PatientCase] = cas
+	requestCache[apiservice.CKPatientCase] = cas
 
-	personID, doctorID, err := validateAccess(h.dataAPI, r, cas)
+	personID, doctorID, err := validateAccess(h.dataAPI, r, apiservice.MustCtxAccount(ctx), cas)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.PersonID] = personID
-	ctxt.RequestCache[apiservice.DoctorID] = doctorID
+	requestCache[apiservice.CKPersonID] = personID
+	requestCache[apiservice.CKDoctorID] = doctorID
 
 	return true, nil
 }
 
-func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	req := ctxt.RequestCache[apiservice.RequestData].(*PostMessageRequest)
-	personID := ctxt.RequestCache[apiservice.PersonID].(int64)
-	doctorID := ctxt.RequestCache[apiservice.DoctorID].(int64)
-	cas := ctxt.RequestCache[apiservice.PatientCase].(*common.PatientCase)
+func (h *handler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	req := requestCache[apiservice.CKRequestData].(*PostMessageRequest)
+	personID := requestCache[apiservice.CKPersonID].(int64)
+	doctorID := requestCache[apiservice.CKDoctorID].(int64)
+	cas := requestCache[apiservice.CKPatientCase].(*common.PatientCase)
 
 	people, err := h.dataAPI.GetPeople([]int64{personID})
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	person := people[personID]
@@ -102,8 +104,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Body:     req.Message,
 	}
 
-	if err := CreateMessageAndAttachments(msg, req.Attachments, personID, doctorID, ctxt.Role, h.dataAPI); err != nil {
-		apiservice.WriteError(err, w, r)
+	account := apiservice.MustCtxAccount(ctx)
+	if err := CreateMessageAndAttachments(msg, req.Attachments, personID, doctorID, account.Role, h.dataAPI); err != nil {
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

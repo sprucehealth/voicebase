@@ -19,7 +19,7 @@ type schedMessageTemplatesAPIHandler struct {
 }
 
 func newSchedMessageTemplatesAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&schedMessageTemplatesAPIHandler{
+	return httputil.SupportedMethods(&schedMessageTemplatesAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Put, httputil.Delete)
 }

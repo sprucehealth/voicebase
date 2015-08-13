@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -13,7 +14,6 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
-	"github.com/sprucehealth/backend/test/test_handler"
 )
 
 type mockedDataAPI_careProvider struct {
@@ -32,13 +32,10 @@ func (m mockedDataAPI_careProvider) Doctor(doctorID int64, long bool) (*common.D
 func TestHandlerCareProviderGETRequiresProviderID(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	careProviderHandler := NewCareProviderHandler(mockedDataAPI_careProvider{DataAPI: &mockedDataAPI_careProvider{}, doctor: nil, doctorError: nil}, "api.spruce.local")
-	handler := test_handler.MockHandler{
-		H: careProviderHandler,
-	}
+	handler := NewCareProviderHandler(mockedDataAPI_careProvider{DataAPI: &mockedDataAPI_careProvider{}, doctor: nil, doctorError: nil}, "api.spruce.local")
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteError(apiservice.NewValidationError("RequestID: 0, Error: Unable to parse input parameters: The following parameters are missing: provider_id, StatusCode: 400"), expectedWriter, r)
-	handler.ServeHTTP(responseWriter, r)
+	apiservice.WriteError(context.Background(), apiservice.NewValidationError("RequestID: 0, Error: Unable to parse input parameters: The following parameters are missing: provider_id, StatusCode: 400"), expectedWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 
@@ -46,27 +43,21 @@ func TestHandlerCareProviderGETSuccess(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?provider_id=9", nil)
 	test.OK(t, err)
 	doctor := buildDummyDoctor("foo")
-	careProviderHandler := NewCareProviderHandler(mockedDataAPI_careProvider{DataAPI: &mockedDataAPI_careProvider{}, doctor: doctor, doctorError: nil}, "api.spruce.local")
-	handler := test_handler.MockHandler{
-		H: careProviderHandler,
-	}
+	handler := NewCareProviderHandler(mockedDataAPI_careProvider{DataAPI: &mockedDataAPI_careProvider{}, doctor: doctor, doctorError: nil}, "api.spruce.local")
 	response := responses.NewCareProviderFromDoctorDBModel(doctor, "api.spruce.local")
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, response)
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 
 func TestHandlerCareProviderGETNoRecord(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?provider_id=9", nil)
 	test.OK(t, err)
-	careProviderHandler := NewCareProviderHandler(mockedDataAPI_careProvider{DataAPI: &mockedDataAPI_careProvider{}, doctor: nil, doctorError: api.ErrNotFound("Foo")}, "api.spruce.local")
-	handler := test_handler.MockHandler{
-		H: careProviderHandler,
-	}
+	handler := NewCareProviderHandler(mockedDataAPI_careProvider{DataAPI: &mockedDataAPI_careProvider{}, doctor: nil, doctorError: api.ErrNotFound("Foo")}, "api.spruce.local")
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteResourceNotFoundError(fmt.Sprintf("No care provider exists for ID %d", 9), expectedWriter, r)
-	handler.ServeHTTP(responseWriter, r)
+	apiservice.WriteResourceNotFoundError(context.Background(), fmt.Sprintf("No care provider exists for ID %d", 9), expectedWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }
 

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"sort"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -15,13 +16,15 @@ type alertsHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewAlertsHandler(dataAPI api.DataAPI) http.Handler {
+func NewAlertsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
-			apiservice.AuthorizationRequired(
-				&alertsHandler{
-					dataAPI: dataAPI,
-				}), api.RoleDoctor),
+			apiservice.RequestCacheHandler(
+				apiservice.AuthorizationRequired(
+					&alertsHandler{
+						dataAPI: dataAPI,
+					})),
+			api.RoleDoctor),
 		httputil.Get)
 
 }
@@ -36,20 +39,21 @@ type alertsResponse struct {
 	Alerts []*responses.Alert `json:"alerts"`
 }
 
-func (a *alertsHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
+func (a *alertsHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	account := apiservice.MustCtxAccount(ctx)
 
 	requestData := &alertsRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error())
 	}
-	ctxt.RequestCache[apiservice.RequestData] = requestData
+	requestCache[apiservice.CKRequestData] = requestData
 
 	if requestData.PatientID == 0 && requestData.CaseID == 0 && requestData.VisitID == 0 {
 		return false, apiservice.NewValidationError("patient_id or case_id or patient_visit_id must be specified")
 	}
 
-	doctorID, err := a.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
+	doctorID, err := a.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
 		return false, err
 	}
@@ -63,7 +67,7 @@ func (a *alertsHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 		if err := apiservice.ValidateAccessToPatientCase(
 			r.Method,
-			ctxt.Role,
+			account.Role,
 			doctorID,
 			pc.PatientID.Int64(),
 			pc.ID.Int64(),
@@ -78,7 +82,7 @@ func (a *alertsHandler) IsAuthorized(r *http.Request) (bool, error) {
 
 		if err := apiservice.ValidateAccessToPatientCase(
 			r.Method,
-			ctxt.Role,
+			account.Role,
 			doctorID,
 			visit.PatientID.Int64(),
 			visit.PatientCaseID.Int64(),
@@ -88,7 +92,7 @@ func (a *alertsHandler) IsAuthorized(r *http.Request) (bool, error) {
 	case requestData.PatientID > 0:
 		if err := apiservice.ValidateDoctorAccessToPatientFile(
 			r.Method,
-			ctxt.Role,
+			account.Role,
 			doctorID,
 			requestData.PatientID,
 			a.dataAPI); err != nil {
@@ -96,14 +100,14 @@ func (a *alertsHandler) IsAuthorized(r *http.Request) (bool, error) {
 		}
 	}
 
-	ctxt.RequestCache[apiservice.RequestData] = requestData
+	requestCache[apiservice.CKRequestData] = requestData
 
 	return true, nil
 }
 
-func (a *alertsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	rd := ctxt.RequestCache[apiservice.RequestData].(*alertsRequestData)
+func (a *alertsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	rd := requestCache[apiservice.CKRequestData].(*alertsRequestData)
 
 	visitID := rd.VisitID
 	var err error
@@ -117,7 +121,7 @@ func (a *alertsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		visitID, err = a.getVisitIDFromCaseID(rd.CaseID)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
@@ -126,7 +130,7 @@ func (a *alertsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		cases, err := a.dataAPI.GetCasesForPatient(rd.PatientID, common.SubmittedPatientCaseStates())
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
@@ -137,7 +141,7 @@ func (a *alertsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			visitID, err = a.getVisitIDFromCaseID(caseID)
 			if err != nil {
-				apiservice.WriteError(err, w, r)
+				apiservice.WriteError(ctx, err, w, r)
 				return
 			}
 		}
@@ -145,7 +149,7 @@ func (a *alertsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	alerts, err := a.dataAPI.AlertsForVisit(visitID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

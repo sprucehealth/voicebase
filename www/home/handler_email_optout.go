@@ -24,7 +24,7 @@ type emailOptoutHandler struct {
 
 func newEmailOptoutHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, signer *sig.Signer, templateLoader *www.TemplateLoader) httputil.ContextHandler {
 	t := templateLoader.MustLoadTemplate("home/email-optout.html", "home/base.html", nil)
-	return httputil.ContextSupportedMethods(&emailOptoutHandler{
+	return httputil.SupportedMethods(&emailOptoutHandler{
 		dataAPI:  dataAPI,
 		authAPI:  authAPI,
 		signer:   signer,

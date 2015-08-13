@@ -3,6 +3,7 @@ package promotions
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -42,28 +43,22 @@ type ReferralDisplayInfo struct {
 }
 
 // NewReferralProgramHandler returns a new instance of the referralProgramHandler
-func NewReferralProgramHandler(dataAPI api.DataAPI, domain string) http.Handler {
+func NewReferralProgramHandler(dataAPI api.DataAPI, domain string) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(&referralProgramHandler{
-			dataAPI: dataAPI,
-			domain:  domain,
-		}),
+		apiservice.SupportedRoles(
+			apiservice.NoAuthorizationRequired(&referralProgramHandler{
+				dataAPI: dataAPI,
+				domain:  domain,
+			}),
+			api.RolePatient),
 		httputil.Get)
 }
 
-func (p *referralProgramHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.RolePatient {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-	return true, nil
-}
-
-func (p *referralProgramHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	referralDisplayInfo, err := CreateReferralDisplayInfo(p.dataAPI, p.domain, ctxt.AccountID)
+func (p *referralProgramHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := apiservice.MustCtxAccount(ctx)
+	referralDisplayInfo, err := CreateReferralDisplayInfo(p.dataAPI, p.domain, account.ID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

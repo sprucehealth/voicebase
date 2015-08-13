@@ -3,6 +3,7 @@ package patient_file
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -20,30 +21,32 @@ type doctorPatientHandler struct {
 
 func NewDoctorPatientHandler(
 	dataAPI api.DataAPI,
-	addressValidationAPI address.Validator) http.Handler {
+	addressValidationAPI address.Validator) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
-			apiservice.AuthorizationRequired(&doctorPatientHandler{
-				dataAPI:              dataAPI,
-				addressValidationAPI: addressValidationAPI,
-			}), api.RoleDoctor, api.RoleCC),
+			apiservice.RequestCacheHandler(
+				apiservice.AuthorizationRequired(&doctorPatientHandler{
+					dataAPI:              dataAPI,
+					addressValidationAPI: addressValidationAPI,
+				})),
+			api.RoleDoctor, api.RoleCC),
 		httputil.Get, httputil.Put)
 }
 
-func (d *doctorPatientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	req := ctxt.RequestCache[apiservice.RequestData].(*requestResponstData)
+func (d *doctorPatientHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	req := requestCache[apiservice.CKRequestData].(*requestResponstData)
 
 	if err := req.PatientUpdate.Validate(); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	switch r.Method {
 	case httputil.Get:
-		d.getPatientInformation(w, r)
+		d.getPatientInformation(ctx, w, r)
 	case httputil.Put:
-		d.updatePatientInformation(w, r)
+		d.updatePatientInformation(ctx, w, r)
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
@@ -71,20 +74,21 @@ type patientResponse struct {
 	Patient *responses.Patient `json:"patient"`
 }
 
-func (d *doctorPatientHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
+func (d *doctorPatientHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+	account := apiservice.MustCtxAccount(ctx)
+	requestCache := apiservice.MustCtxCache(ctx)
 
 	requestData := &requestResponstData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error())
 	}
-	ctxt.RequestCache[apiservice.RequestData] = requestData
+	requestCache[apiservice.CKRequestData] = requestData
 
-	doctor, err := d.dataAPI.GetDoctorFromAccountID(ctxt.AccountID)
+	doctor, err := d.dataAPI.GetDoctorFromAccountID(account.ID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.Doctor] = doctor
+	requestCache[apiservice.CKDoctor] = doctor
 
 	patientID := requestData.PatientID
 	if requestData.PatientUpdate != nil {
@@ -95,11 +99,11 @@ func (d *doctorPatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.Patient] = patient
+	requestCache[apiservice.CKPatient] = patient
 
-	if ctxt.Role == api.RoleDoctor {
+	if account.Role == api.RoleDoctor {
 		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method,
-			ctxt.Role,
+			account.Role,
 			doctor.ID.Int64(),
 			patient.ID.Int64(),
 			d.dataAPI); err != nil {
@@ -112,19 +116,19 @@ func (d *doctorPatientHandler) IsAuthorized(r *http.Request) (bool, error) {
 	return true, nil
 }
 
-func (d *doctorPatientHandler) getPatientInformation(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	patient := ctxt.RequestCache[apiservice.Patient].(*common.Patient)
+func (d *doctorPatientHandler) getPatientInformation(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	patient := requestCache[apiservice.CKPatient].(*common.Patient)
 
 	httputil.JSONResponse(w, http.StatusOK, &patientResponse{
 		Patient: responses.TransformPatient(patient),
 	})
 }
 
-func (d *doctorPatientHandler) updatePatientInformation(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	req := ctxt.RequestCache[apiservice.RequestData].(*requestResponstData)
-	patient := ctxt.RequestCache[apiservice.Patient].(*common.Patient)
+func (d *doctorPatientHandler) updatePatientInformation(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	req := requestCache[apiservice.CKRequestData].(*requestResponstData)
+	patient := requestCache[apiservice.CKPatient].(*common.Patient)
 
 	patient.FirstName = req.PatientUpdate.FirstName
 	patient.LastName = req.PatientUpdate.LastName
@@ -137,7 +141,7 @@ func (d *doctorPatientHandler) updatePatientInformation(w http.ResponseWriter, r
 	patient.PhoneNumbers = req.PatientUpdate.PhoneNumbers
 
 	if err := surescripts.ValidatePatientInformation(patient, d.addressValidationAPI, d.dataAPI); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	}
 
@@ -154,7 +158,7 @@ func (d *doctorPatientHandler) updatePatientInformation(w http.ResponseWriter, r
 		Address:      req.PatientUpdate.Address,
 	}
 	if err := d.dataAPI.UpdatePatient(patient.ID.Int64(), update, true); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

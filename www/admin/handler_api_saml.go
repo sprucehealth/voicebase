@@ -20,7 +20,7 @@ type samlRequest struct {
 }
 
 func newSAMLAPIHandler() httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&samlAPIHandler{}, httputil.Post)
+	return httputil.SupportedMethods(&samlAPIHandler{}, httputil.Post)
 }
 
 func (h *samlAPIHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {

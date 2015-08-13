@@ -5,6 +5,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -60,43 +61,47 @@ type DiagnosisOutputItem struct {
 	Answers             []*apiservice.QuestionAnswerItem `json:"answers,omitempty"`
 }
 
-func NewDiagnosisListHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API, dispatcher *dispatch.Dispatcher) http.Handler {
+func NewDiagnosisListHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
-			apiservice.AuthorizationRequired(
-				&diagnosisListHandler{
-					dataAPI:      dataAPI,
-					diagnosisAPI: diagnosisAPI,
-					dispatcher:   dispatcher,
-				}), api.RoleDoctor, api.RoleCC),
+			apiservice.RequestCacheHandler(
+				apiservice.AuthorizationRequired(
+					&diagnosisListHandler{
+						dataAPI:      dataAPI,
+						diagnosisAPI: diagnosisAPI,
+						dispatcher:   dispatcher,
+					})),
+			api.RoleDoctor, api.RoleCC),
 		httputil.Get, httputil.Put)
 }
 
-func (d *diagnosisListHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
+func (d *diagnosisListHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	account := apiservice.MustCtxAccount(ctx)
+
 	rd := &DiagnosisListRequestData{}
 	if err := apiservice.DecodeRequestData(rd, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error())
 	} else if rd.VisitID == 0 {
 		return false, apiservice.NewValidationError("patient_visit_id required")
 	}
-	ctxt.RequestCache[apiservice.RequestData] = rd
+	requestCache[apiservice.CKRequestData] = rd
 
-	doctorID, err := d.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
+	doctorID, err := d.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.DoctorID] = doctorID
+	requestCache[apiservice.CKDoctorID] = doctorID
 
 	patientVisit, err := d.dataAPI.GetPatientVisitFromID(rd.VisitID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.PatientVisit] = patientVisit
+	requestCache[apiservice.CKPatientVisit] = patientVisit
 
 	if err := apiservice.ValidateAccessToPatientCase(
 		r.Method,
-		ctxt.Role,
+		account.Role,
 		doctorID,
 		patientVisit.PatientID.Int64(),
 		patientVisit.PatientCaseID.Int64(),
@@ -107,20 +112,20 @@ func (d *diagnosisListHandler) IsAuthorized(r *http.Request) (bool, error) {
 	return true, nil
 }
 
-func (d *diagnosisListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (d *diagnosisListHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		d.getDiagnosisList(w, r)
+		d.getDiagnosisList(ctx, w, r)
 	case "PUT":
-		d.putDiagnosisList(w, r)
+		d.putDiagnosisList(ctx, w, r)
 	}
 }
 
-func (d *diagnosisListHandler) putDiagnosisList(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	visit := ctxt.RequestCache[apiservice.PatientVisit].(*common.PatientVisit)
-	doctorID := ctxt.RequestCache[apiservice.DoctorID].(int64)
-	rd := ctxt.RequestCache[apiservice.RequestData].(*DiagnosisListRequestData)
+func (d *diagnosisListHandler) putDiagnosisList(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	visit := requestCache[apiservice.CKPatientVisit].(*common.PatientVisit)
+	doctorID := requestCache[apiservice.CKDoctorID].(int64)
+	rd := requestCache[apiservice.CKRequestData].(*DiagnosisListRequestData)
 
 	// populate new diagnosis set
 	set := &common.VisitDiagnosisSet{
@@ -140,7 +145,7 @@ func (d *diagnosisListHandler) putDiagnosisList(w http.ResponseWriter, r *http.R
 
 	layoutVersionIDs, err := d.dataAPI.LayoutVersionIDsForDiagnosisCodes(codes)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -161,7 +166,7 @@ func (d *diagnosisListHandler) putDiagnosisList(w http.ResponseWriter, r *http.R
 	}
 
 	if err := d.dataAPI.CreateDiagnosisSet(set); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -196,7 +201,7 @@ func (d *diagnosisListHandler) putDiagnosisList(w http.ResponseWriter, r *http.R
 	}
 
 	if err := d.dataAPI.StoreAnswersForIntakes(intakes); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -206,7 +211,7 @@ func (d *diagnosisListHandler) putDiagnosisList(w http.ResponseWriter, r *http.R
 			ClosedDate: ptr.Time(time.Now()),
 		})
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
@@ -225,7 +230,7 @@ func (d *diagnosisListHandler) putDiagnosisList(w http.ResponseWriter, r *http.R
 				Status: ptr.String(common.PVStatusReviewing),
 			})
 			if err != nil {
-				apiservice.WriteError(err, w, r)
+				apiservice.WriteError(ctx, err, w, r)
 				return
 			}
 		}
@@ -241,10 +246,10 @@ func (d *diagnosisListHandler) putDiagnosisList(w http.ResponseWriter, r *http.R
 	apiservice.WriteJSONSuccess(w)
 }
 
-func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	doctorID := ctxt.RequestCache[apiservice.DoctorID].(int64)
-	visit := ctxt.RequestCache[apiservice.PatientVisit].(*common.PatientVisit)
+func (d *diagnosisListHandler) getDiagnosisList(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	doctorID := requestCache[apiservice.CKDoctorID].(int64)
+	visit := requestCache[apiservice.CKPatientVisit].(*common.PatientVisit)
 
 	diagnosisSet, err := d.dataAPI.ActiveDiagnosisSet(visit.ID.Int64())
 	if api.IsErrNotFound(err) && visit.IsFollowup {
@@ -257,7 +262,7 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 			visit.PatientCaseID.Int64(),
 			common.TreatedPatientVisitStates())
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
@@ -269,7 +274,7 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 			httputil.JSONResponse(w, http.StatusOK, DiagnosisListResponse{})
 			return
 		} else if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
@@ -277,7 +282,7 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 		httputil.JSONResponse(w, http.StatusOK, DiagnosisListResponse{})
 		return
 	} else if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -292,19 +297,19 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 
 	diagnosisMap, err := d.diagnosisAPI.DiagnosisForCodeIDs(codeIDs)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	diagnosisDetailsIntakes, err := d.dataAPI.DiagnosisDetailsIntake(layoutVersionIDs, diagnosis.DetailTypes)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	activeLayoutVersions, err := d.dataAPI.DetailsIntakeVersionForDiagnoses(codeIDs)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -321,7 +326,7 @@ func (d *diagnosisListHandler) getDiagnosisList(w http.ResponseWriter, r *http.R
 					LVersionID:           *item.LayoutVersionID,
 				})
 			if err != nil {
-				apiservice.WriteError(err, w, r)
+				apiservice.WriteError(ctx, err, w, r)
 				return
 			}
 		}

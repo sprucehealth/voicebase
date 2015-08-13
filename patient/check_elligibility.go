@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
@@ -20,7 +21,7 @@ type checkCareProvidingElligibilityHandler struct {
 }
 
 func NewCheckCareProvidingEligibilityHandler(dataAPI api.DataAPI,
-	addressValidationAPI address.Validator, analyticsLogger analytics.Logger) http.Handler {
+	addressValidationAPI address.Validator, analyticsLogger analytics.Logger) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&checkCareProvidingElligibilityHandler{
@@ -35,10 +36,10 @@ type CheckCareProvidingElligibilityRequestData struct {
 	StateCode string `schema:"state_code"`
 }
 
-func (c *checkCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (c *checkCareProvidingElligibilityHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var requestData CheckCareProvidingElligibilityRequestData
 	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	}
 
@@ -50,19 +51,19 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 	if requestData.StateCode == "" {
 		cityStateInfo, err = c.addressValidationAPI.ZipcodeLookup(requestData.ZipCode)
 		if err == address.ErrInvalidZipcode {
-			apiservice.WriteValidationError("Enter a valid zipcode", w, r)
+			apiservice.WriteValidationError(ctx, "Enter a valid zipcode", w, r)
 			return
 		} else if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 	} else {
 		state, _, err := c.dataAPI.State(requestData.StateCode)
 		if api.IsErrNotFound(err) {
-			apiservice.WriteValidationError("Enter valid state code", w, r)
+			apiservice.WriteValidationError(ctx, "Enter valid state code", w, r)
 			return
 		} else if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
@@ -73,13 +74,13 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(w http.ResponseWriter,
 	}
 
 	if cityStateInfo.StateAbbreviation == "" {
-		apiservice.WriteValidationError("Enter valid zipcode or state code", w, r)
+		apiservice.WriteValidationError(ctx, "Enter valid zipcode or state code", w, r)
 		return
 	}
 
 	isAvailable, err := c.dataAPI.SpruceAvailableInState(cityStateInfo.StateAbbreviation)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

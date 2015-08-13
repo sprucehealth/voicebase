@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -97,7 +98,6 @@ func NewResourceNotFoundError(msg string, r *http.Request) error {
 	return &SpruceError{
 		UserError:      msg,
 		HTTPStatusCode: http.StatusNotFound,
-		RequestID:      GetContext(r).RequestID,
 	}
 }
 
@@ -105,31 +105,22 @@ func wrapInternalError(err error, code int, r *http.Request) error {
 	return &SpruceError{
 		DeveloperError: err.Error(),
 		UserError:      genericUserErrorMessage,
-		RequestID:      GetContext(r).RequestID,
 		HTTPStatusCode: code,
 	}
 }
 
-func WriteError(err error, w http.ResponseWriter, r *http.Request) {
+func WriteError(ctx context.Context, err error, w http.ResponseWriter, r *http.Request) {
 	switch err := err.(type) {
 	case *SpruceError:
-		err.RequestID = GetContext(r).RequestID
-		writeSpruceError(&SpruceError{
-			UserError:          err.UserError,
-			DeveloperError:     err.DeveloperError,
-			DeveloperErrorCode: err.DeveloperErrorCode,
-			HTTPStatusCode:     err.HTTPStatusCode,
-			RequestID:          GetContext(r).RequestID,
-		}, w, r)
+		writeSpruceError(ctx, err, w, r)
 	case SError:
-		writeSpruceError(&SpruceError{
+		writeSpruceError(ctx, &SpruceError{
 			UserError:      err.UserError(),
 			DeveloperError: err.Error(),
 			HTTPStatusCode: err.HTTPStatusCode(),
-			RequestID:      GetContext(r).RequestID,
 		}, w, r)
 	default:
-		writeSpruceError(wrapInternalError(err, http.StatusInternalServerError, r).(*SpruceError), w, r)
+		writeSpruceError(ctx, wrapInternalError(err, http.StatusInternalServerError, r).(*SpruceError), w, r)
 	}
 }
 
@@ -155,36 +146,34 @@ func WriteUserError(w http.ResponseWriter, httpStatusCode int, errorString strin
 	httputil.JSONResponse(w, httpStatusCode, userError)
 }
 
-func WriteValidationError(msg string, w http.ResponseWriter, r *http.Request) {
-	writeSpruceError(NewValidationError(msg).(*SpruceError), w, r)
+func WriteValidationError(ctx context.Context, msg string, w http.ResponseWriter, r *http.Request) {
+	writeSpruceError(ctx, NewValidationError(msg).(*SpruceError), w, r)
 }
 
 // WriteBadRequestError is used for errors that occur during parsing of the HTTP request.
-func WriteBadRequestError(err error, w http.ResponseWriter, r *http.Request) {
-	writeSpruceError(wrapInternalError(err, http.StatusBadRequest, r).(*SpruceError), w, r)
+func WriteBadRequestError(ctx context.Context, err error, w http.ResponseWriter, r *http.Request) {
+	writeSpruceError(ctx, wrapInternalError(err, http.StatusBadRequest, r).(*SpruceError), w, r)
 }
 
 // WriteAccessNotAllowedError is used when the user is authenticated but not
 // authorized to access a given resource. Hopefully the user will never see
 // this since the client shouldn't present the option to begin with.
-func WriteAccessNotAllowedError(w http.ResponseWriter, r *http.Request) {
-	writeSpruceError(&SpruceError{
+func WriteAccessNotAllowedError(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	writeSpruceError(ctx, &SpruceError{
 		UserError:      "Access not permitted",
-		RequestID:      GetContext(r).RequestID,
 		HTTPStatusCode: http.StatusForbidden,
 	}, w, r)
 }
 
-func WriteResourceNotFoundError(msg string, w http.ResponseWriter, r *http.Request) {
-	writeSpruceError(&SpruceError{
+func WriteResourceNotFoundError(ctx context.Context, msg string, w http.ResponseWriter, r *http.Request) {
+	writeSpruceError(ctx, &SpruceError{
 		UserError:      msg,
-		RequestID:      GetContext(r).RequestID,
 		HTTPStatusCode: http.StatusNotFound,
 	}, w, r)
 }
 
-func writeSpruceError(err *SpruceError, w http.ResponseWriter, r *http.Request) {
-	err.RequestID = GetContext(r).RequestID
+func writeSpruceError(ctx context.Context, err *SpruceError, w http.ResponseWriter, r *http.Request) {
+	err.RequestID = httputil.RequestID(ctx)
 	var msg = err.DeveloperError
 	if msg == "" {
 		msg = err.UserError

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -53,33 +54,36 @@ func NewPatientParentHandler(
 	dataAPI api.DataAPI,
 	mediaStore *media.Store,
 	expirationDuration time.Duration,
-) http.Handler {
+) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
-			apiservice.AuthorizationRequired(
-				&patientParentHandler{
-					dataAPI:            dataAPI,
-					mediaStore:         mediaStore,
-					expirationDuration: expirationDuration,
-				}), api.RoleDoctor, api.RoleCC),
+			apiservice.RequestCacheHandler(
+				apiservice.AuthorizationRequired(
+					&patientParentHandler{
+						dataAPI:            dataAPI,
+						mediaStore:         mediaStore,
+						expirationDuration: expirationDuration,
+					})),
+			api.RoleDoctor, api.RoleCC),
 		httputil.Get)
 }
 
-func (p *patientParentHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
+func (p *patientParentHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	account := apiservice.MustCtxAccount(ctx)
 
 	var rd patientParentRequest
 	if err := apiservice.DecodeRequestData(&rd, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error())
 	}
-	ctxt.RequestCache[apiservice.RequestData] = rd
+	requestCache[apiservice.CKRequestData] = rd
 
 	par := conc.NewParallel()
 
 	var doctor *common.Doctor
 	par.Go(func() error {
 		var err error
-		doctor, err = p.dataAPI.GetDoctorFromAccountID(ctxt.AccountID)
+		doctor, err = p.dataAPI.GetDoctorFromAccountID(account.ID)
 		return errors.Trace(err)
 	})
 
@@ -94,13 +98,13 @@ func (p *patientParentHandler) IsAuthorized(r *http.Request) (bool, error) {
 		return false, errors.Trace(err)
 	}
 
-	ctxt.RequestCache[apiservice.Doctor] = doctor
-	ctxt.RequestCache[apiservice.Patient] = patient
+	requestCache[apiservice.CKDoctor] = doctor
+	requestCache[apiservice.CKPatient] = patient
 
-	if ctxt.Role == api.RoleDoctor {
+	if account.Role == api.RoleDoctor {
 		if err := apiservice.ValidateDoctorAccessToPatientFile(
 			r.Method,
-			ctxt.Role,
+			account.Role,
 			doctor.ID.Int64(),
 			patient.ID.Int64(),
 			p.dataAPI,
@@ -112,13 +116,13 @@ func (p *patientParentHandler) IsAuthorized(r *http.Request) (bool, error) {
 	return true, nil
 }
 
-func (p *patientParentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	patient := ctxt.RequestCache[apiservice.Patient].(*common.Patient)
+func (p *patientParentHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	patient := requestCache[apiservice.CKPatient].(*common.Patient)
 
 	consents, err := p.dataAPI.ParentalConsent(patient.ID.Int64())
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -126,13 +130,13 @@ func (p *patientParentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	for i, consent := range consents {
 		parent, err := p.dataAPI.GetPatientFromID(consent.ParentPatientID)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
 		proof, err := p.dataAPI.ParentConsentProof(parent.ID.Int64())
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		pItems[i] = &parentItem{
@@ -152,7 +156,7 @@ func (p *patientParentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		if proof.SelfiePhotoID != nil {
 			signedURL, err := p.mediaStore.SignedURL(*proof.SelfiePhotoID, p.expirationDuration)
 			if err != nil {
-				apiservice.WriteError(err, w, r)
+				apiservice.WriteError(ctx, err, w, r)
 				return
 			}
 
@@ -162,7 +166,7 @@ func (p *patientParentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		if proof.GovernmentIDPhotoID != nil {
 			signedURL, err := p.mediaStore.SignedURL(*proof.GovernmentIDPhotoID, p.expirationDuration)
 			if err != nil {
-				apiservice.WriteError(err, w, r)
+				apiservice.WriteError(ctx, err, w, r)
 				return
 			}
 

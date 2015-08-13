@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -26,25 +27,28 @@ type appInfo struct {
 	LastSeen        time.Time       `json:"last_seen"`
 }
 
-func NewPatientAppInfoHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) http.Handler {
+func NewPatientAppInfoHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
-			apiservice.AuthorizationRequired(
-				&patientAppInfoHandler{
-					dataAPI: dataAPI,
-					authAPI: authAPI,
-				}), api.RoleDoctor, api.RoleCC),
+			apiservice.RequestCacheHandler(
+				apiservice.AuthorizationRequired(
+					&patientAppInfoHandler{
+						dataAPI: dataAPI,
+						authAPI: authAPI,
+					})),
+			api.RoleDoctor, api.RoleCC),
 		httputil.Get)
 }
 
-func (p *patientAppInfoHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
+func (p *patientAppInfoHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	account := apiservice.MustCtxAccount(ctx)
 
-	doctorID, err := p.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
+	doctorID, err := p.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.DoctorID] = doctorID
+	requestCache[apiservice.CKDoctorID] = doctorID
 
 	patientIDStr := r.FormValue("patient_id")
 	if patientIDStr == "" {
@@ -55,12 +59,12 @@ func (p *patientAppInfoHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if err != nil {
 		return false, apiservice.NewValidationError(err.Error())
 	}
-	ctxt.RequestCache[apiservice.PatientID] = patientID
+	requestCache[apiservice.CKPatientID] = patientID
 
 	// ensure that the doctor has access to the patient file
 	if err := apiservice.ValidateDoctorAccessToPatientFile(
 		r.Method,
-		ctxt.Role,
+		account.Role,
 		doctorID,
 		patientID,
 		p.dataAPI); err != nil {
@@ -70,22 +74,22 @@ func (p *patientAppInfoHandler) IsAuthorized(r *http.Request) (bool, error) {
 	return true, nil
 }
 
-func (p *patientAppInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	patientID := ctxt.RequestCache[apiservice.PatientID].(int64)
+func (p *patientAppInfoHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	patientID := requestCache[apiservice.CKPatientID].(int64)
 
 	patient, err := p.dataAPI.Patient(patientID, true)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	aInfo, err := p.authAPI.LatestAppInfo(patient.AccountID.Int64())
 	if api.IsErrNotFound(err) {
-		apiservice.WriteResourceNotFoundError("app info not found for patient", w, r)
+		apiservice.WriteResourceNotFoundError(ctx, "app info not found for patient", w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

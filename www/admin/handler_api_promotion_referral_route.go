@@ -26,7 +26,7 @@ type PromotionReferralRoutePUTRequest struct {
 
 // NewPromotionReferralRouteHandler returns an initialized instance of thpromotionReferralRouteHandlere
 func newPromotionReferralRouteHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&promotionReferralRouteHandler{dataAPI: dataAPI}, httputil.Put)
+	return httputil.SupportedMethods(&promotionReferralRouteHandler{dataAPI: dataAPI}, httputil.Put)
 }
 
 func (h *promotionReferralRouteHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
@@ -38,7 +38,7 @@ func (h *promotionReferralRouteHandler) ServeHTTP(ctx context.Context, w http.Re
 
 	switch r.Method {
 	case httputil.Put:
-		req, err := h.parsePUTRequest(r)
+		req, err := h.parsePUTRequest(ctx, r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
@@ -47,7 +47,7 @@ func (h *promotionReferralRouteHandler) ServeHTTP(ctx context.Context, w http.Re
 	}
 }
 
-func (h *promotionReferralRouteHandler) parsePUTRequest(r *http.Request) (*PromotionReferralRoutePUTRequest, error) {
+func (h *promotionReferralRouteHandler) parsePUTRequest(ctx context.Context, r *http.Request) (*PromotionReferralRoutePUTRequest, error) {
 	rd := &PromotionReferralRoutePUTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)

@@ -20,7 +20,7 @@ type visitSKUListResponse struct {
 }
 
 func newVisitSKUListHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&visitSKUListHandler{
+	return httputil.SupportedMethods(&visitSKUListHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get)
 }

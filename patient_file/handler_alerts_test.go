@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -63,10 +64,8 @@ func TestAlerts_NoParams(t *testing.T) {
 	r, err := http.NewRequest("GET", "api.spruce.loc/alerts", nil)
 	test.OK(t, err)
 
-	ctxt := apiservice.GetContext(r)
-	ctxt.Role = api.RoleDoctor
-
-	h.ServeHTTP(w, r)
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RoleDoctor})
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusBadRequest, w.Code)
 }
 
@@ -103,10 +102,8 @@ func TestAlerts_ByVisitID(t *testing.T) {
 	r, err := http.NewRequest("GET", "api.spruce.loc/alerts?patient_visit_id=5&patient_id=10&case_id=11", nil)
 	test.OK(t, err)
 
-	ctxt := apiservice.GetContext(r)
-	ctxt.Role = api.RoleDoctor
-
-	h.ServeHTTP(w, r)
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RoleDoctor})
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var res alertsResponse
@@ -160,10 +157,8 @@ func TestAlerts_ByCaseID(t *testing.T) {
 	r, err := http.NewRequest("GET", "api.spruce.loc/alerts?patient_id=10&case_id=11", nil)
 	test.OK(t, err)
 
-	ctxt := apiservice.GetContext(r)
-	ctxt.Role = api.RoleDoctor
-
-	h.ServeHTTP(w, r)
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RoleDoctor})
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var res alertsResponse
@@ -227,10 +222,8 @@ func TestAlerts_ByPatientID(t *testing.T) {
 	r, err := http.NewRequest("GET", "api.spruce.loc/alerts?patient_id=10", nil)
 	test.OK(t, err)
 
-	ctxt := apiservice.GetContext(r)
-	ctxt.Role = api.RoleDoctor
-
-	h.ServeHTTP(w, r)
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RoleDoctor})
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var res alertsResponse

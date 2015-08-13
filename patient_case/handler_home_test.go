@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -195,7 +196,7 @@ func TestHome_UnAuthenticated_Eligible(t *testing.T) {
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(context.Background(), w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 	testUnauthenticatedExperience(t, w)
 
@@ -203,7 +204,7 @@ func TestHome_UnAuthenticated_Eligible(t *testing.T) {
 	r, err = http.NewRequest("GET", "/?state_code=CA", nil)
 	test.OK(t, err)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(context.Background(), w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 	testUnauthenticatedExperience(t, w)
 }
@@ -229,7 +230,7 @@ func TestHome_UnAuthenticated_Ineligible(t *testing.T) {
 
 	test.OK(t, err)
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(context.Background(), w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 	var jsonMap map[string]interface{}
 	test.OK(t, json.NewDecoder(w.Body).Decode(&jsonMap))
@@ -267,7 +268,7 @@ func TestHome_UnAuthenticated_Ineligible_NotifyConfirmation(t *testing.T) {
 	setRequestHeaders(r)
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(context.Background(), w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 	var jsonMap map[string]interface{}
 	test.OK(t, json.NewDecoder(w.Body).Decode(&jsonMap))
@@ -296,9 +297,7 @@ func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 	test.OK(t, err)
 	setRequestHeaders(r)
 
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 
 	caseName := "Rash"
 	patientVisitID := int64(10)
@@ -351,7 +350,7 @@ func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var jsonMap map[string]interface{}
@@ -387,9 +386,7 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 	test.OK(t, err)
 	setRequestHeaders(r)
 
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 
 	caseName := "Rash"
 	patientVisitID := int64(10)
@@ -451,7 +448,7 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var jsonMap map[string]interface{}
@@ -487,9 +484,7 @@ func TestHome_Authenticated_CaseTriaged(t *testing.T) {
 	test.OK(t, err)
 	setRequestHeaders(r)
 
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 
 	caseName := "Rash"
 	now := time.Now()
@@ -541,7 +536,7 @@ func TestHome_Authenticated_CaseTriaged(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 
 	var jsonMap map[string]interface{}
 	test.OK(t, json.NewDecoder(w.Body).Decode(&jsonMap))
@@ -579,9 +574,7 @@ func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 
 	caseName := "Rash"
 	patientVisitID := int64(10)
@@ -628,7 +621,7 @@ func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// there should be two items (the case card and the referral card)
@@ -668,9 +661,7 @@ func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 
 	caseName := "Rash"
 	patientVisitID := int64(10)
@@ -727,7 +718,7 @@ func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// there should be two items (the case card and the referral card)
@@ -767,9 +758,7 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 
 	caseName := "Rash"
 
@@ -821,7 +810,7 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// there should be two items (the case card and the referral card)
@@ -862,9 +851,7 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 
 	caseName := "Rash"
 
@@ -927,7 +914,7 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// there should be two items (the case card and the referral card)
@@ -968,9 +955,7 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 
 	caseName := "Rash"
 
@@ -1032,7 +1017,7 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// there should be two items (the case card and the referral card)
@@ -1074,9 +1059,7 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 
 	caseName := "Rash"
 
@@ -1146,7 +1129,7 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// there should be three items (the case card, meet the care team and the referral card)
@@ -1190,9 +1173,7 @@ func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 
 	caseName := "Rash"
 
@@ -1268,7 +1249,7 @@ func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var jsonMap map[string]interface{}
@@ -1309,9 +1290,7 @@ func TestHome_Authenticated_NoUpdates(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 
 	caseName := "Rash"
 
@@ -1356,7 +1335,7 @@ func TestHome_Authenticated_NoUpdates(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var jsonMap map[string]interface{}
@@ -1394,9 +1373,7 @@ func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 
 	caseName := "Rash"
 
@@ -1455,7 +1432,7 @@ func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// there should be two items (the case card and the referral card)
@@ -1497,9 +1474,7 @@ func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 
 	caseName := "Rash"
 
@@ -1578,7 +1553,7 @@ func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// there should be two items (the case card and the referral card)
@@ -1620,9 +1595,7 @@ func TestHome_Authenticated_CompletedCase_ReferAFriend_2_0_2(t *testing.T) {
 	r.Header.Set("S-Version", "Patient;test;2.0.2")
 
 	// authenticated
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 
 	caseName := "Rash"
 	accountCode := uint64(1234567)
@@ -1702,7 +1675,7 @@ func TestHome_Authenticated_CompletedCase_ReferAFriend_2_0_2(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// there should be two items (the case card and the referral card)
@@ -1744,9 +1717,7 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 
 	caseName1 := "Rash"
 	caseName2 := "Bed Bugs"
@@ -1835,7 +1806,7 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var jsonMap map[string]interface{}
@@ -1875,9 +1846,7 @@ func TestHome_MultipleCases_TPPending(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 
 	caseName1 := "Rash"
 	caseName2 := "Bed Bugs"
@@ -1983,7 +1952,7 @@ func TestHome_MultipleCases_TPPending(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var jsonMap map[string]interface{}

@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -93,12 +93,13 @@ func TestPathwayMenuHandler(t *testing.T) {
 
 	// Unauthenticated
 
+	ctx := context.Background()
 	r, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	wr := httptest.NewRecorder()
-	h.ServeHTTP(wr, r)
+	h.ServeHTTP(ctx, wr, r)
 	if wr.Code != http.StatusOK {
 		t.Fatalf("Expected 200, got %d: %s", wr.Code, wr.Body.String())
 	}
@@ -148,12 +149,9 @@ func TestPathwayMenuHandler(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx := apiservice.GetContext(r)
-	ctx.AccountID = 1
-	ctx.Role = api.RolePatient
-	defer context.Clear(r)
+	ctx = apiservice.CtxWithAccount(ctx, &common.Account{ID: 1, Role: api.RolePatient})
 	wr = httptest.NewRecorder()
-	h.ServeHTTP(wr, r)
+	h.ServeHTTP(ctx, wr, r)
 	if wr.Code != http.StatusOK {
 		t.Fatalf("Expected 200, got %d: %s", wr.Code, wr.Body.String())
 	}

@@ -47,7 +47,7 @@ type promoClaimHandler struct {
 }
 
 func newPromoClaimHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, branchClient branch.Client, analyticsLogger analytics.Logger, templateLoader *www.TemplateLoader) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&promoClaimHandler{
+	return httputil.SupportedMethods(&promoClaimHandler{
 		dataAPI:         dataAPI,
 		authAPI:         authAPI,
 		branchClient:    branchClient,

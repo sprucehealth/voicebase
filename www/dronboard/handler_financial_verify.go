@@ -49,7 +49,7 @@ func (r *financialsVerifyForm) Validate() map[string]string {
 }
 
 func newFinancialVerifyHandler(router *mux.Router, dataAPI api.DataAPI, supportEmail string, stripeCli *stripe.Client, templateLoader *www.TemplateLoader) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&financialsVerifyHandler{
+	return httputil.SupportedMethods(&financialsVerifyHandler{
 		router:       router,
 		dataAPI:      dataAPI,
 		stripeCli:    stripeCli,

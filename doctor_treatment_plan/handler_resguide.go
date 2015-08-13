@@ -3,6 +3,7 @@ package doctor_treatment_plan
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -27,20 +28,22 @@ type ResourceGuideResponse struct {
 	Guides []*responses.ResourceGuide `json:"resource_guides"`
 }
 
-func NewResourceGuideHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
+func NewResourceGuideHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
-			apiservice.AuthorizationRequired(&resourceGuideHandler{
-				dataAPI:    dataAPI,
-				dispatcher: dispatcher,
-			}),
+			apiservice.RequestCacheHandler(
+				apiservice.AuthorizationRequired(&resourceGuideHandler{
+					dataAPI:    dataAPI,
+					dispatcher: dispatcher,
+				})),
 			api.RoleDoctor,
 		),
 		httputil.Get, httputil.Put, httputil.Delete)
 }
 
-func (h *resourceGuideHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
+func (h *resourceGuideHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	account := apiservice.MustCtxAccount(ctx)
 
 	req := &ResourceGuideRequest{}
 	if err := apiservice.DecodeRequestData(req, r); err != nil {
@@ -48,59 +51,59 @@ func (h *resourceGuideHandler) IsAuthorized(r *http.Request) (bool, error) {
 	} else if req.TreatmentPlanID == 0 {
 		return false, apiservice.NewValidationError("treatment_plan_id must be specified")
 	}
-	ctxt.RequestCache[apiservice.RequestData] = req
+	requestCache[apiservice.CKRequestData] = req
 
-	doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(apiservice.GetContext(r).AccountID)
+	doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(apiservice.MustCtxAccount(ctx).ID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.DoctorID] = doctorID
+	requestCache[apiservice.CKDoctorID] = doctorID
 
 	patientID, err := h.dataAPI.GetPatientIDFromTreatmentPlanID(req.TreatmentPlanID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.PatientID] = patientID
+	requestCache[apiservice.CKPatientID] = patientID
 
 	tp, err := h.dataAPI.GetAbridgedTreatmentPlan(req.TreatmentPlanID, doctorID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.TreatmentPlan] = tp
+	requestCache[apiservice.CKTreatmentPlan] = tp
 
-	if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorID, patientID, tp.PatientCaseID.Int64(), h.dataAPI); err != nil {
+	if err := apiservice.ValidateAccessToPatientCase(r.Method, account.Role, doctorID, patientID, tp.PatientCaseID.Int64(), h.dataAPI); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (h *resourceGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	tp := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
+func (h *resourceGuideHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	tp := requestCache[apiservice.CKTreatmentPlan].(*common.TreatmentPlan)
 
 	if !tp.InDraftMode() {
-		apiservice.WriteValidationError("treatment plan must be in draft mode", w, r)
+		apiservice.WriteValidationError(ctx, "treatment plan must be in draft mode", w, r)
 		return
 	}
 
 	switch r.Method {
 	case "GET":
-		h.listResourceGuides(w, r)
+		h.listResourceGuides(ctx, w, r)
 	case "PUT":
-		h.addResourceGuides(w, r)
+		h.addResourceGuides(ctx, w, r)
 	case "DELETE":
-		h.removeResourceGuide(w, r)
+		h.removeResourceGuide(ctx, w, r)
 	}
 }
 
-func (h *resourceGuideHandler) listResourceGuides(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	req := ctxt.RequestCache[apiservice.RequestData].(*ResourceGuideRequest)
+func (h *resourceGuideHandler) listResourceGuides(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	req := requestCache[apiservice.CKRequestData].(*ResourceGuideRequest)
 
 	guides, err := h.dataAPI.ListTreatmentPlanResourceGuides(req.TreatmentPlanID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -118,16 +121,16 @@ func (h *resourceGuideHandler) listResourceGuides(w http.ResponseWriter, r *http
 	httputil.JSONResponse(w, http.StatusOK, res)
 }
 
-func (h *resourceGuideHandler) addResourceGuides(w http.ResponseWriter, r *http.Request) {
-	ctx := apiservice.GetContext(r)
-	req := ctx.RequestCache[apiservice.RequestData].(*ResourceGuideRequest)
+func (h *resourceGuideHandler) addResourceGuides(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	req := requestCache[apiservice.CKRequestData].(*ResourceGuideRequest)
+	doctorID := requestCache[apiservice.CKDoctorID].(int64)
 	ids := make([]int64, len(req.GuideIDs))
-	doctorID := ctx.RequestCache[apiservice.DoctorID].(int64)
 	for i, id := range req.GuideIDs {
 		ids[i] = id.Int64()
 	}
 	if err := h.dataAPI.AddResourceGuidesToTreatmentPlan(req.TreatmentPlanID, ids); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -140,13 +143,13 @@ func (h *resourceGuideHandler) addResourceGuides(w http.ResponseWriter, r *http.
 	apiservice.WriteJSONSuccess(w)
 }
 
-func (h *resourceGuideHandler) removeResourceGuide(w http.ResponseWriter, r *http.Request) {
-	ctx := apiservice.GetContext(r)
-	req := ctx.RequestCache[apiservice.RequestData].(*ResourceGuideRequest)
-	doctorID := ctx.RequestCache[apiservice.DoctorID].(int64)
+func (h *resourceGuideHandler) removeResourceGuide(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	req := requestCache[apiservice.CKRequestData].(*ResourceGuideRequest)
+	doctorID := requestCache[apiservice.CKDoctorID].(int64)
 
 	if err := h.dataAPI.RemoveResourceGuidesFromTreatmentPlan(req.TreatmentPlanID, []int64{req.GuideID}); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

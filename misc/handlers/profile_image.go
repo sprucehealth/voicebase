@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -26,7 +27,7 @@ type profileImageRequest struct {
 	Height int    `schema:"height"`
 }
 
-func NewProfileImageHandler(dataAPI api.DataAPI, staticBaseURL string, imageStore storage.Store) http.Handler {
+func NewProfileImageHandler(dataAPI api.DataAPI, staticBaseURL string, imageStore storage.Store) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&profileImageHandler{
@@ -36,10 +37,10 @@ func NewProfileImageHandler(dataAPI api.DataAPI, staticBaseURL string, imageStor
 			}), httputil.Get)
 }
 
-func (h *profileImageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *profileImageHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var req profileImageRequest
 	if err := apiservice.DecodeRequestData(&req, r); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	}
 
@@ -58,7 +59,7 @@ func (h *profileImageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		http.NotFound(w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -76,7 +77,7 @@ func (h *profileImageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	rc, headers, err := h.imageStore.GetReader(storeID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	defer rc.Close()

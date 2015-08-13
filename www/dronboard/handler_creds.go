@@ -117,7 +117,7 @@ func (r *credentialsForm) Validate() map[string]string {
 }
 
 func newCredentialsHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&credentialsHandler{
+	return httputil.SupportedMethods(&credentialsHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		template: templateLoader.MustLoadTemplate("dronboard/creds.html", "dronboard/base.html", nil),

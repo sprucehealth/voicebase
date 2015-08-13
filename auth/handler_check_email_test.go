@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/ratelimit"
@@ -34,7 +35,7 @@ func TestCheckEmailHandler(t *testing.T) {
 	// Test missing email argument
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
-	h.ServeHTTP(rec, req)
+	h.ServeHTTP(context.Background(), rec, req)
 	if rec.Code != http.StatusOK {
 		t.Errorf("Expected code %d got %d", http.StatusOK, rec.Code)
 	}
@@ -45,7 +46,7 @@ func TestCheckEmailHandler(t *testing.T) {
 	// Test available email
 	rec = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/?email=unused@somewhere.com", nil)
-	h.ServeHTTP(rec, req)
+	h.ServeHTTP(context.Background(), rec, req)
 	if rec.Code != http.StatusOK {
 		t.Errorf("Expected code %d got %d", http.StatusOK, rec.Code)
 	}
@@ -56,7 +57,7 @@ func TestCheckEmailHandler(t *testing.T) {
 	// Test unavailable email
 	rec = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/?email=used@somewhere.com", nil)
-	h.ServeHTTP(rec, req)
+	h.ServeHTTP(context.Background(), rec, req)
 	if rec.Code != http.StatusOK {
 		t.Errorf("Expected code %d got %d", http.StatusOK, rec.Code)
 	}

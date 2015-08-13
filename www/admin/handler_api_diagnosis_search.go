@@ -30,7 +30,7 @@ const (
 )
 
 func newDiagnosisSearchHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&diagnosisSearchHandler{
+	return httputil.SupportedMethods(&diagnosisSearchHandler{
 		dataAPI:      dataAPI,
 		diagnosisAPI: diagnosisAPI,
 	}, httputil.Get)

@@ -2,11 +2,9 @@ package router
 
 import (
 	"database/sql"
-	"net/http"
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns/snsiface"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
 	"github.com/sprucehealth/backend/address"
@@ -308,11 +306,11 @@ func New(conf *Config) *mux.Router {
 }
 
 // Add an authenticated metriced handler to the mux
-func authenticationRequired(conf *Config, path string, h http.Handler) {
-	conf.mux.Handle(path, httputil.ToContextHandler(context.ClearHandler(apiservice.AuthenticationRequiredHandler(h, conf.AuthAPI))))
+func authenticationRequired(conf *Config, path string, h httputil.ContextHandler) {
+	conf.mux.Handle(path, apiservice.AuthenticationRequiredHandler(h, conf.AuthAPI))
 }
 
 // Add an unauthenticated metriced handler to the mux
-func noAuthenticationRequired(conf *Config, path string, h http.Handler) {
-	conf.mux.Handle(path, httputil.ToContextHandler(context.ClearHandler(apiservice.NoAuthenticationRequiredHandler(h, conf.AuthAPI))))
+func noAuthenticationRequired(conf *Config, path string, h httputil.ContextHandler) {
+	conf.mux.Handle(path, apiservice.NoAuthenticationRequiredHandler(h, conf.AuthAPI))
 }

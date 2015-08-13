@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -20,31 +21,26 @@ type RequestResponse struct {
 	MedicalRecordID int64 `json:"medical_record_id"`
 }
 
-func NewRequestAPIHandler(dataAPI api.DataAPI, queue *common.SQSQueue) http.Handler {
+func NewRequestAPIHandler(dataAPI api.DataAPI, queue *common.SQSQueue) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(&apiHandler{
-			dataAPI: dataAPI,
-			queue:   queue,
-		}), httputil.Post)
+		apiservice.SupportedRoles(
+			apiservice.NoAuthorizationRequired(&apiHandler{
+				dataAPI: dataAPI,
+				queue:   queue,
+			}), api.RolePatient), httputil.Post)
 }
 
-func (h *apiHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.RolePatient {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-	return true, nil
-}
-
-func (h *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	patientID, err := h.dataAPI.GetPatientIDFromAccountID(apiservice.GetContext(r).AccountID)
+func (h *apiHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := apiservice.MustCtxAccount(ctx)
+	patientID, err := h.dataAPI.GetPatientIDFromAccountID(account.ID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	mrID, err := h.dataAPI.CreateMedicalRecord(patientID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -53,7 +49,7 @@ func (h *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		PatientID:       patientID,
 	})
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	jsStr := string(js)
@@ -61,7 +57,7 @@ func (h *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		QueueURL:    &h.queue.QueueURL,
 		MessageBody: &jsStr,
 	}); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

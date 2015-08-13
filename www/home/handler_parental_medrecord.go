@@ -27,7 +27,7 @@ func newParentalMedicalRecordHandler(
 	dataAPI api.DataAPI,
 	renderer medicalRecordRenderer,
 ) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(
+	return httputil.SupportedMethods(
 		www.RoleRequiredHandler(
 			&parentalMedicalRecordHandler{
 				dataAPI: dataAPI,

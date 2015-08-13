@@ -24,7 +24,7 @@ type cfgUpdate struct {
 }
 
 func newCFGHandler(cfg cfg.Store) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&cfgHandler{
+	return httputil.SupportedMethods(&cfgHandler{
 		cfg: cfg,
 	}, httputil.Get, httputil.Patch)
 }

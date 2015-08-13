@@ -40,7 +40,7 @@ type imageTypeResponse struct {
 }
 
 func newParentalConsentImageAPIHAndler(dataAPI api.DataAPI, dispatcher dispatch.Publisher, mediaStore *media.Store) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(
+	return httputil.SupportedMethods(
 		www.APIRoleRequiredHandler(&parentalConsentImageAPIHandler{
 			dataAPI:    dataAPI,
 			dispatcher: dispatcher,

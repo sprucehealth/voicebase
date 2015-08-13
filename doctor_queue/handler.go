@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
@@ -35,7 +36,7 @@ type DisplayFeedItem struct {
 	DisplayTypes []string              `json:"display_types,omitempty"`
 }
 
-func NewQueueHandler(dataAPI api.DataAPI) http.Handler {
+func NewQueueHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(
@@ -49,19 +50,20 @@ type DoctorQueueRequestData struct {
 	State string `schema:"state"`
 }
 
-func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (d *queueHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	requestData := &DoctorQueueRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteValidationError("Unable to parse input parameters", w, r)
+		apiservice.WriteValidationError(ctx, "Unable to parse input parameters", w, r)
 		return
 	} else if requestData.State == "" {
-		apiservice.WriteValidationError("State (local,global,completed) required", w, r)
+		apiservice.WriteValidationError(ctx, "State (local,global,completed) required", w, r)
 		return
 	}
 
-	doctorID, err := d.dataAPI.GetDoctorIDFromAccountID(apiservice.GetContext(r).AccountID)
+	account := apiservice.MustCtxAccount(ctx)
+	doctorID, err := d.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -73,40 +75,40 @@ func (d *queueHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case stateLocal:
 		queueItems, err = d.dataAPI.GetPendingItemsInDoctorQueue(doctorID)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 	case stateGlobal:
-		if apiservice.GetContext(r).Role == api.RoleCC {
+		if account.Role == api.RoleCC {
 			queueItems, err = d.dataAPI.GetPendingItemsForClinic()
 			if err != nil {
-				apiservice.WriteError(err, w, r)
+				apiservice.WriteError(ctx, err, w, r)
 				return
 			}
 		} else {
 			addAuthURL = true
 			queueItems, err = d.dataAPI.GetElligibleItemsInUnclaimedQueue(doctorID)
 			if err != nil && !api.IsErrNotFound(err) {
-				apiservice.WriteError(err, w, r)
+				apiservice.WriteError(ctx, err, w, r)
 				return
 			}
 		}
 	case stateCompleted:
-		if apiservice.GetContext(r).Role == api.RoleCC {
+		if account.Role == api.RoleCC {
 			queueItems, err = d.dataAPI.GetCompletedItemsForClinic()
 			if err != nil {
-				apiservice.WriteError(err, w, r)
+				apiservice.WriteError(ctx, err, w, r)
 				return
 			}
 		} else {
 			queueItems, err = d.dataAPI.GetCompletedItemsInDoctorQueue(doctorID)
 			if err != nil {
-				apiservice.WriteError(err, w, r)
+				apiservice.WriteError(ctx, err, w, r)
 				return
 			}
 		}
 	default:
-		apiservice.WriteValidationError("Unexpected state value. Can only be local, global or completed", w, r)
+		apiservice.WriteValidationError(ctx, "Unexpected state value. Can only be local, global or completed", w, r)
 		return
 	}
 

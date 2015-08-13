@@ -20,7 +20,7 @@ type formsAPIHandler struct {
 }
 
 func newFormsAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&formsAPIHandler{
+	return httputil.SupportedMethods(&formsAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Post)
 }

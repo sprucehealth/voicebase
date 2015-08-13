@@ -18,7 +18,7 @@ type accountPhonesListHandler struct {
 }
 
 func newAccountPhonesListHandler(authAPI api.AuthAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&accountPhonesListHandler{
+	return httputil.SupportedMethods(&accountPhonesListHandler{
 		authAPI: authAPI,
 	}, httputil.Get)
 }

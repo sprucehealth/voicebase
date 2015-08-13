@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -34,41 +35,41 @@ type ListResponse struct {
 	Sections []*Section `json:"sections"`
 }
 
-func NewHandler(dataAPI api.DataAPI) http.Handler {
+func NewHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&handler{
 			dataAPI: dataAPI,
 		}), httputil.Get)
 }
 
-func NewListHandler(dataAPI api.DataAPI) http.Handler {
+func NewListHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&listHandler{
 			dataAPI: dataAPI,
 		}), httputil.Get)
 }
 
-func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *handler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.FormValue("resource_id"), 10, 64)
 	if err != nil {
-		apiservice.WriteValidationError("resource_id required and must be an integer", w, r)
+		apiservice.WriteValidationError(ctx, "resource_id required and must be an integer", w, r)
 		return
 	}
 	guide, err := h.dataAPI.GetResourceGuide(id)
 	if api.IsErrNotFound(err) {
-		apiservice.WriteResourceNotFoundError("Guide not found", w, r)
+		apiservice.WriteResourceNotFoundError(ctx, "Guide not found", w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(errors.New("Failed to fetch resource guide: "+err.Error()), w, r)
+		apiservice.WriteError(ctx, errors.New("Failed to fetch resource guide: "+err.Error()), w, r)
 		return
 	}
 	httputil.JSONResponse(w, http.StatusOK, guide.Layout)
 }
 
-func (h *listHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *listHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	sections, guides, err := h.dataAPI.ListResourceGuides(api.RGActiveOnly)
 	if err != nil {
-		apiservice.WriteError(errors.New("Failed to fetch resources: "+err.Error()), w, r)
+		apiservice.WriteError(ctx, errors.New("Failed to fetch resources: "+err.Error()), w, r)
 		return
 	}
 	res := ListResponse{

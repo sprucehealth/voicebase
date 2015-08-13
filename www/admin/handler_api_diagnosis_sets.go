@@ -18,7 +18,7 @@ type diagnosisSetsHandler struct {
 }
 
 func newDiagnosisSetsHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&diagnosisSetsHandler{
+	return httputil.SupportedMethods(&diagnosisSetsHandler{
 		dataAPI:      dataAPI,
 		diagnosisAPI: diagnosisAPI,
 	}, httputil.Get, httputil.Patch)

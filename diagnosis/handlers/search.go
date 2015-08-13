@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/diagnosis"
@@ -47,7 +48,7 @@ type AbridgedDiagnosis struct {
 	HasDetails bool   `json:"has_details"`
 }
 
-func NewSearchHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) http.Handler {
+func NewSearchHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) httputil.ContextHandler {
 	return apiservice.SupportedRoles(
 		httputil.SupportedMethods(
 			apiservice.NoAuthorizationRequired(&searchHandler{
@@ -56,7 +57,7 @@ func NewSearchHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) http.Hand
 			}), httputil.Get), api.RoleDoctor)
 }
 
-func (s *searchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *searchHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 
 	query := r.FormValue("query")
 	pathwayTag := s.determinePathwayTag(r)
@@ -66,13 +67,13 @@ func (s *searchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if len(query) == 0 {
 		title, diagnosisCodeIDs, err := s.dataAPI.CommonDiagnosisSet(pathwayTag)
 		if err != nil && !api.IsErrNotFound(err) {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
 		diagnosesMap, err := s.diagnosisAPI.DiagnosisForCodeIDs(diagnosisCodeIDs)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
@@ -83,7 +84,7 @@ func (s *searchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		response, err := s.createResponseFromDiagnoses(diagnosesList, true, title)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
@@ -98,7 +99,7 @@ func (s *searchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if numResults := r.FormValue("max_results"); numResults == "" {
 		maxResults = defaultMaxResults
 	} else if maxResults, err = strconv.Atoi(numResults); err != nil {
-		apiservice.WriteValidationError(
+		apiservice.WriteValidationError(ctx,
 			fmt.Sprintf("Invalid max_results parameter: %s", err.Error()), w, r)
 		return
 	}
@@ -110,7 +111,7 @@ func (s *searchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if resemblesCode(query) {
 		diagnoses, err = s.diagnosisAPI.SearchDiagnosesByCode(query, maxResults)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		queriedUsingDiagnosisCode = (len(diagnoses) > 0)
@@ -123,7 +124,7 @@ func (s *searchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if len(diagnoses) == 0 {
 		diagnoses, err = s.diagnosisAPI.SearchDiagnoses(query, maxResults)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 	}
@@ -132,7 +133,7 @@ func (s *searchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if len(diagnoses) == 0 {
 		diagnoses, err = s.diagnosisAPI.FuzzyTextSearchDiagnoses(query, maxResults)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 	}
@@ -149,7 +150,7 @@ func (s *searchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	response, err := s.createResponseFromDiagnoses(diagnoses, queriedUsingDiagnosisCode, title)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

@@ -7,7 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/ptr"
@@ -94,9 +96,7 @@ func TestPatientParentHandler(t *testing.T) {
 	}
 
 	signer, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	ms := media.NewStore("https://test.com", signer, nil)
 	dur := 5 * time.Minute
@@ -105,16 +105,13 @@ func TestPatientParentHandler(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	r, err := http.NewRequest("GET", "http://test.com?patient_id=2", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
-	h.ServeHTTP(w, r)
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RoleDoctor})
+	h.ServeHTTP(ctx, w, r)
 
 	var res patientParentResponse
-	if err := json.NewDecoder(w.Body).Decode(&res); err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, json.NewDecoder(w.Body).Decode(&res))
 	test.Equals(t, 1, len(res.Parents))
 	test.Equals(t, "Joe", res.Parents[0].FirstName)
 	test.Equals(t, "Schmoe", res.Parents[0].LastName)

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
@@ -91,7 +92,7 @@ func TestSelection_RandomPhotoSelection(t *testing.T) {
 	r, err := http.NewRequest("GET", "api.spruce.local?state_code=CA&pathway_id=acne", nil)
 	test.OK(t, err)
 
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(context.Background(), w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -156,7 +157,7 @@ func TestSelection_Unauthenticated_NoDoctors(t *testing.T) {
 	r, err := http.NewRequest("GET", "api.spruce.local?state_code=CA&pathway_id=acne", nil)
 	test.OK(t, err)
 
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(context.Background(), w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -196,7 +197,7 @@ func TestSelection_Unauthenticated_NotEnoughDoctors(t *testing.T) {
 	r, err := http.NewRequest("GET", "api.spruce.local?state_code=CA&pathway_id=acne", nil)
 	test.OK(t, err)
 
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(context.Background(), w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -257,7 +258,7 @@ func TestSelection_Unauthenticated_SufficientDoctors(t *testing.T) {
 	r, err := http.NewRequest("GET", "api.spruce.local?state_code=CA&pathway_id=acne", nil)
 	test.OK(t, err)
 
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(context.Background(), w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -318,7 +319,7 @@ func TestSelection_CareProviderSpecified_NotEligible(t *testing.T) {
 	r, err := http.NewRequest("GET", "api.spruce.local?state_code=CA&pathway_id=acne&care_provider_id=4", nil)
 	test.OK(t, err)
 
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(context.Background(), w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -380,7 +381,7 @@ func TestSelection_CareProviderSpecified_Eligible(t *testing.T) {
 	r, err := http.NewRequest("GET", "api.spruce.local?state_code=CA&pathway_id=acne&care_provider_id=4", nil)
 	test.OK(t, err)
 
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(context.Background(), w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -442,11 +443,11 @@ func TestSelection_Authenticated_SingleCase(t *testing.T) {
 	test.OK(t, err)
 
 	// authenticated state
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
-
-	h.ServeHTTP(w, r)
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{
+		ID:   1,
+		Role: api.RolePatient,
+	})
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -513,11 +514,11 @@ func TestSelection_Authenticated_SingleCase_DoctorEligible(t *testing.T) {
 	test.OK(t, err)
 
 	// authenticated state
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
-
-	h.ServeHTTP(w, r)
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{
+		ID:   1,
+		Role: api.RolePatient,
+	})
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -589,11 +590,11 @@ func TestSelection_Authenticated_DoctorEligible_NotSufficientDoctors(t *testing.
 	test.OK(t, err)
 
 	// authenticated state
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
-
-	h.ServeHTTP(w, r)
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{
+		ID:   1,
+		Role: api.RolePatient,
+	})
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -649,11 +650,11 @@ func TestSelection_Authenticated_DoctorEligible_NoOtherDoctors(t *testing.T) {
 	test.OK(t, err)
 
 	// authenticated state
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
-
-	h.ServeHTTP(w, r)
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{
+		ID:   1,
+		Role: api.RolePatient,
+	})
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -719,11 +720,11 @@ func TestSelection_Authenticated_MultipleCases_AllDoctorsEligible(t *testing.T) 
 	test.OK(t, err)
 
 	// authenticated state
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
-
-	h.ServeHTTP(w, r)
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{
+		ID:   1,
+		Role: api.RolePatient,
+	})
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output
@@ -806,11 +807,11 @@ func TestSelection_Authenticated_MultipleCases_SomeDoctorsEligible(t *testing.T)
 	test.OK(t, err)
 
 	// authenticated state
-	ctxt := apiservice.GetContext(r)
-	ctxt.AccountID = 1
-	ctxt.Role = api.RolePatient
-
-	h.ServeHTTP(w, r)
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{
+		ID:   1,
+		Role: api.RolePatient,
+	})
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	// unmarshal the response to check the output

@@ -23,7 +23,7 @@ type ftpGETResponse struct {
 }
 
 func newFTPHandler(dataAPI api.DataAPI, mediaStore *media.Store) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&ftpHandler{dataAPI: dataAPI, mediaStore: mediaStore}, httputil.Get)
+	return httputil.SupportedMethods(&ftpHandler{dataAPI: dataAPI, mediaStore: mediaStore}, httputil.Get)
 }
 
 func (h *ftpHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {

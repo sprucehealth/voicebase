@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -54,48 +55,41 @@ type TagCaseAssociationDELETERequest struct {
 }
 
 // NewTagCaseAssociationHandler returns an initialized instance of tagCaseAssociationHandler
-func NewTagCaseAssociationHandler(taggingClient Client) http.Handler {
+func NewTagCaseAssociationHandler(taggingClient Client) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(&tagCaseAssociationHandler{taggingClient: taggingClient}),
+		apiservice.SupportedRoles(
+			apiservice.NoAuthorizationRequired(&tagCaseAssociationHandler{taggingClient: taggingClient}),
+			api.RoleCC),
 		httputil.Get, httputil.Post, httputil.Delete)
 }
 
-func (*tagCaseAssociationHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.RoleCC {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-
-	return true, nil
-}
-
-func (h *tagCaseAssociationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *tagCaseAssociationHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
-		req, err := h.parsePOSTRequest(r)
+		req, err := h.parsePOSTRequest(ctx, r)
 		if err != nil {
-			apiservice.WriteBadRequestError(err, w, r)
+			apiservice.WriteBadRequestError(ctx, err, w, r)
 			return
 		}
-		h.servePOST(w, r, req)
+		h.servePOST(ctx, w, r, req)
 	case "GET":
-		req, err := h.parseGETRequest(r)
+		req, err := h.parseGETRequest(ctx, r)
 		if err != nil {
-			apiservice.WriteBadRequestError(err, w, r)
+			apiservice.WriteBadRequestError(ctx, err, w, r)
 			return
 		}
-		h.serveGET(w, r, req)
+		h.serveGET(ctx, w, r, req)
 	case "DELETE":
-		req, err := h.parseDELETERequest(r)
+		req, err := h.parseDELETERequest(ctx, r)
 		if err != nil {
-			apiservice.WriteBadRequestError(err, w, r)
+			apiservice.WriteBadRequestError(ctx, err, w, r)
 			return
 		}
-		h.serveDELETE(w, r, req)
+		h.serveDELETE(ctx, w, r, req)
 	}
 }
 
-func (h *tagCaseAssociationHandler) parseGETRequest(r *http.Request) (*TagCaseAssociationGETRequest, error) {
+func (h *tagCaseAssociationHandler) parseGETRequest(ctx context.Context, r *http.Request) (*TagCaseAssociationGETRequest, error) {
 	rd := &TagCaseAssociationGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -106,7 +100,7 @@ func (h *tagCaseAssociationHandler) parseGETRequest(r *http.Request) (*TagCaseAs
 	return rd, nil
 }
 
-func (h *tagCaseAssociationHandler) serveGET(w http.ResponseWriter, r *http.Request, req *TagCaseAssociationGETRequest) {
+func (h *tagCaseAssociationHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, req *TagCaseAssociationGETRequest) {
 	if len(strings.TrimSpace(req.Query)) == 0 && !req.PastTrigger {
 		httputil.JSONResponse(w, http.StatusOK, &TagCaseAssociationGETResponse{
 			Associations: []*response.TagAssociation{},
@@ -120,17 +114,17 @@ func (h *tagCaseAssociationHandler) serveGET(w http.ResponseWriter, r *http.Requ
 	}
 	memberships, err := h.taggingClient.TagMembershipQuery(req.Query, ops)
 	if query.IsErrBadExpression(err) {
-		apiservice.WriteBadRequestError(err, w, r)
+		apiservice.WriteBadRequestError(ctx, err, w, r)
 		return
 	}
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	associations, err := h.taggingClient.CaseAssociations(memberships, req.Start, req.End)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -139,7 +133,7 @@ func (h *tagCaseAssociationHandler) serveGET(w http.ResponseWriter, r *http.Requ
 	})
 }
 
-func (h *tagCaseAssociationHandler) parsePOSTRequest(r *http.Request) (*TagCaseAssociationPOSTRequest, error) {
+func (h *tagCaseAssociationHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*TagCaseAssociationPOSTRequest, error) {
 	rd := &TagCaseAssociationPOSTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -151,7 +145,7 @@ func (h *tagCaseAssociationHandler) parsePOSTRequest(r *http.Request) (*TagCaseA
 	return rd, nil
 }
 
-func (h *tagCaseAssociationHandler) servePOST(w http.ResponseWriter, r *http.Request, req *TagCaseAssociationPOSTRequest) {
+func (h *tagCaseAssociationHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request, req *TagCaseAssociationPOSTRequest) {
 	membership := &model.TagMembership{
 		CaseID: req.CaseID,
 		Hidden: req.Hidden,
@@ -166,7 +160,7 @@ func (h *tagCaseAssociationHandler) servePOST(w http.ResponseWriter, r *http.Req
 		Common: req.Common,
 	}, membership)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -175,7 +169,7 @@ func (h *tagCaseAssociationHandler) servePOST(w http.ResponseWriter, r *http.Req
 	})
 }
 
-func (h *tagCaseAssociationHandler) parseDELETERequest(r *http.Request) (*TagCaseAssociationDELETERequest, error) {
+func (h *tagCaseAssociationHandler) parseDELETERequest(ctx context.Context, r *http.Request) (*TagCaseAssociationDELETERequest, error) {
 	rd := &TagCaseAssociationDELETERequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -186,9 +180,9 @@ func (h *tagCaseAssociationHandler) parseDELETERequest(r *http.Request) (*TagCas
 	return rd, nil
 }
 
-func (h *tagCaseAssociationHandler) serveDELETE(w http.ResponseWriter, r *http.Request, req *TagCaseAssociationDELETERequest) {
+func (h *tagCaseAssociationHandler) serveDELETE(ctx context.Context, w http.ResponseWriter, r *http.Request, req *TagCaseAssociationDELETERequest) {
 	if err := h.taggingClient.DeleteTagCaseAssociation(req.Text, req.CaseID); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

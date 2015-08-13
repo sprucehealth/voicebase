@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
@@ -19,7 +20,7 @@ type itemRequest struct {
 	ID     string `json:"id"`
 }
 
-func NewItemHandler(dataAPI api.DataAPI) http.Handler {
+func NewItemHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(
@@ -29,35 +30,35 @@ func NewItemHandler(dataAPI api.DataAPI) http.Handler {
 		httputil.Put)
 }
 
-func (h *itemHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *itemHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var rd itemRequest
 	if err := apiservice.DecodeRequestData(&rd, r); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	} else if rd.Action != "remove" {
-		apiservice.WriteValidationError(fmt.Sprintf("%s action not supported", rd.Action), w, r)
+		apiservice.WriteValidationError(ctx, fmt.Sprintf("%s action not supported", rd.Action), w, r)
 		return
 	}
 
 	qid, err := queueItemPartsFromID(rd.ID)
 	if err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	}
 
 	switch qid.eventType {
 	case api.DQEventTypeCaseAssignment, api.DQEventTypeCaseMessage:
 		if qid.status != api.DQItemStatusPending {
-			apiservice.WriteAccessNotAllowedError(w, r)
+			apiservice.WriteAccessNotAllowedError(ctx, w, r)
 			return
 		}
 	case api.DQEventTypePatientVisit:
 		if qid.status != api.DQItemStatusPending && qid.status != api.DQItemStatusOngoing {
-			apiservice.WriteAccessNotAllowedError(w, r)
+			apiservice.WriteAccessNotAllowedError(ctx, w, r)
 			return
 		}
 	default:
-		apiservice.WriteAccessNotAllowedError(w, r)
+		apiservice.WriteAccessNotAllowedError(ctx, w, r)
 		return
 	}
 
@@ -74,20 +75,20 @@ func (h *itemHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	if qid.eventType == api.DQEventTypePatientVisit {
-		accountID := apiservice.GetContext(r).AccountID
-		cc, err := h.dataAPI.GetDoctorFromAccountID(accountID)
+		account := apiservice.MustCtxAccount(ctx)
+		cc, err := h.dataAPI.GetDoctorFromAccountID(account.ID)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		visit, err := h.dataAPI.GetPatientVisitFromID(qid.itemID)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		patient, err := h.dataAPI.Patient(visit.PatientID.Int64(), true)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		updates = append(updates, &api.DoctorQueueUpdate{
@@ -107,7 +108,7 @@ func (h *itemHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.dataAPI.UpdateDoctorQueue(updates); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

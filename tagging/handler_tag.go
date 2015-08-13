@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/tagging/response"
-
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/tagging/response"
 )
 
 type tagHandler struct {
@@ -30,41 +30,34 @@ type TagDELETERequest struct {
 	ID int64 `schema:"id,required"`
 }
 
-func NewTagHandler(taggingClient Client) http.Handler {
+func NewTagHandler(taggingClient Client) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(&tagHandler{taggingClient: taggingClient}),
+		apiservice.SupportedRoles(
+			apiservice.NoAuthorizationRequired(&tagHandler{taggingClient: taggingClient}),
+			api.RoleCC),
 		httputil.Get, httputil.Delete)
 }
 
-func (*tagHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.RoleCC {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-
-	return true, nil
-}
-
-func (h *tagHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *tagHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "DELETE":
-		req, err := h.parseDELETERequest(r)
+		req, err := h.parseDELETERequest(ctx, r)
 		if err != nil {
-			apiservice.WriteBadRequestError(err, w, r)
+			apiservice.WriteBadRequestError(ctx, err, w, r)
 			return
 		}
-		h.serveDELETE(w, r, req)
+		h.serveDELETE(ctx, w, r, req)
 	case "GET":
-		req, err := h.parseGETRequest(r)
+		req, err := h.parseGETRequest(ctx, r)
 		if err != nil {
-			apiservice.WriteBadRequestError(err, w, r)
+			apiservice.WriteBadRequestError(ctx, err, w, r)
 			return
 		}
-		h.serveGET(w, r, req)
+		h.serveGET(ctx, w, r, req)
 	}
 }
 
-func (h *tagHandler) parseGETRequest(r *http.Request) (*TagGETRequest, error) {
+func (h *tagHandler) parseGETRequest(ctx context.Context, r *http.Request) (*TagGETRequest, error) {
 	rd := &TagGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -75,7 +68,7 @@ func (h *tagHandler) parseGETRequest(r *http.Request) (*TagGETRequest, error) {
 	return rd, nil
 }
 
-func (h *tagHandler) serveGET(w http.ResponseWriter, r *http.Request, req *TagGETRequest) {
+func (h *tagHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, req *TagGETRequest) {
 	text := make([]string, 0, len(req.Text))
 	for _, v := range req.Text {
 		trimmed := strings.TrimSpace(v)
@@ -97,7 +90,7 @@ func (h *tagHandler) serveGET(w http.ResponseWriter, r *http.Request, req *TagGE
 	}
 	tags, err := h.taggingClient.TagsFromText(text, ops)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -106,7 +99,7 @@ func (h *tagHandler) serveGET(w http.ResponseWriter, r *http.Request, req *TagGE
 	})
 }
 
-func (h *tagHandler) parseDELETERequest(r *http.Request) (*TagDELETERequest, error) {
+func (h *tagHandler) parseDELETERequest(ctx context.Context, r *http.Request) (*TagDELETERequest, error) {
 	rd := &TagDELETERequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -117,9 +110,9 @@ func (h *tagHandler) parseDELETERequest(r *http.Request) (*TagDELETERequest, err
 	return rd, nil
 }
 
-func (h *tagHandler) serveDELETE(w http.ResponseWriter, r *http.Request, req *TagDELETERequest) {
+func (h *tagHandler) serveDELETE(ctx context.Context, w http.ResponseWriter, r *http.Request, req *TagDELETERequest) {
 	if _, err := h.taggingClient.DeleteTag(req.ID); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

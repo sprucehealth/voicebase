@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -14,12 +15,14 @@ type doctorPatientTreatmentsHandler struct {
 	DataAPI api.DataAPI
 }
 
-func NewDoctorPatientTreatmentsHandler(dataAPI api.DataAPI) http.Handler {
+func NewDoctorPatientTreatmentsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(
-			&doctorPatientTreatmentsHandler{
-				DataAPI: dataAPI,
-			}), httputil.Get)
+		apiservice.RequestCacheHandler(
+			apiservice.AuthorizationRequired(
+				&doctorPatientTreatmentsHandler{
+					DataAPI: dataAPI,
+				})),
+		httputil.Get)
 }
 
 type requestData struct {
@@ -32,9 +35,10 @@ type doctorPatientTreatmentsResponse struct {
 	RefillRequests         []*common.RefillRequestItem `json:"refill_requests,omitempty"`
 }
 
-func (d *doctorPatientTreatmentsHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.RoleDoctor {
+func (d *doctorPatientTreatmentsHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	account := apiservice.MustCtxAccount(ctx)
+	if account.Role != api.RoleDoctor {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 
@@ -42,46 +46,46 @@ func (d *doctorPatientTreatmentsHandler) IsAuthorized(r *http.Request) (bool, er
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error())
 	}
-	ctxt.RequestCache[apiservice.RequestData] = requestData
+	requestCache[apiservice.CKRequestData] = requestData
 
-	currentDoctor, err := d.DataAPI.GetDoctorFromAccountID(apiservice.GetContext(r).AccountID)
+	currentDoctor, err := d.DataAPI.GetDoctorFromAccountID(account.ID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.Doctor] = currentDoctor
+	requestCache[apiservice.CKDoctor] = currentDoctor
 
 	patient, err := d.DataAPI.GetPatientFromID(requestData.PatientID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.Patient] = patient
+	requestCache[apiservice.CKPatient] = patient
 
-	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, ctxt.Role, currentDoctor.ID.Int64(), patient.ID.Int64(), d.DataAPI); err != nil {
+	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, account.Role, currentDoctor.ID.Int64(), patient.ID.Int64(), d.DataAPI); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (d *doctorPatientTreatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	requestData := ctxt.RequestCache[apiservice.RequestData].(*requestData)
+func (d *doctorPatientTreatmentsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	requestData := requestCache[apiservice.CKRequestData].(*requestData)
 
 	treatments, err := d.DataAPI.GetTreatmentsForPatient(requestData.PatientID)
 	if err != nil {
-		apiservice.WriteError(errors.New("Unable to get treatments for patient: "+err.Error()), w, r)
+		apiservice.WriteError(ctx, errors.New("Unable to get treatments for patient: "+err.Error()), w, r)
 		return
 	}
 
 	refillRequests, err := d.DataAPI.GetRefillRequestsForPatient(requestData.PatientID)
 	if err != nil {
-		apiservice.WriteError(errors.New("Unable to get refill requests for patient: "+err.Error()), w, r)
+		apiservice.WriteError(ctx, errors.New("Unable to get refill requests for patient: "+err.Error()), w, r)
 		return
 	}
 
 	unlinkedDNTFTreatments, err := d.DataAPI.GetUnlinkedDNTFTreatmentsForPatient(requestData.PatientID)
 	if err != nil {
-		apiservice.WriteError(errors.New("Unable to get unlinked dntf treatments for patient: "+err.Error()), w, r)
+		apiservice.WriteError(ctx, errors.New("Unable to get unlinked dntf treatments for patient: "+err.Error()), w, r)
 		return
 	}
 

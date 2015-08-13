@@ -3,6 +3,7 @@ package patient_case
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -17,48 +18,51 @@ type careTeamRequestData struct {
 	CaseID int64 `schema:"case_id"`
 }
 
-func NewCareTeamHandler(dataAPI api.DataAPI) http.Handler {
+func NewCareTeamHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(&careTeamHandler{
-			dataAPI: dataAPI,
-		}), httputil.Get)
+		apiservice.RequestCacheHandler(
+			apiservice.AuthorizationRequired(&careTeamHandler{
+				dataAPI: dataAPI,
+			})),
+		httputil.Get)
 }
 
-func (c *careTeamHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
+func (c *careTeamHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	account := apiservice.MustCtxAccount(ctx)
 
 	requestData := &careTeamRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error())
 	}
-	ctxt.RequestCache[apiservice.RequestData] = requestData
+	requestCache[apiservice.CKRequestData] = requestData
 
 	patientCase, err := c.dataAPI.GetPatientCaseFromID(requestData.CaseID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.PatientCase] = patientCase
+	requestCache[apiservice.CKPatientCase] = patientCase
 
-	doctorID, err := c.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
+	doctorID, err := c.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.DoctorID] = doctorID
+	requestCache[apiservice.CKDoctorID] = doctorID
 
-	if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorID, patientCase.PatientID.Int64(), patientCase.ID.Int64(), c.dataAPI); err != nil {
+	if err := apiservice.ValidateAccessToPatientCase(r.Method, account.Role, doctorID, patientCase.PatientID.Int64(), patientCase.ID.Int64(), c.dataAPI); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (c *careTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	patientCase := ctxt.RequestCache[apiservice.PatientCase].(*common.PatientCase)
+func (c *careTeamHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	patientCase := requestCache[apiservice.CKPatientCase].(*common.PatientCase)
 
 	assignments, err := c.dataAPI.GetActiveMembersOfCareTeamForCase(patientCase.ID.Int64(), false)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -69,7 +73,7 @@ func (c *careTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			case api.RoleDoctor, api.RoleCC:
 				doctor, err := c.dataAPI.GetDoctorFromID(assignment.ProviderID)
 				if err != nil {
-					apiservice.WriteError(err, w, r)
+					apiservice.WriteError(ctx, err, w, r)
 					return
 				}
 				doctors = append(doctors, doctor)

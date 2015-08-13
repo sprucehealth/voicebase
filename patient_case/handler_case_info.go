@@ -3,6 +3,7 @@ package patient_case
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -15,7 +16,7 @@ type caseInfoHandler struct {
 	apiDomain string
 }
 
-func NewCaseInfoHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
+func NewCaseInfoHandler(dataAPI api.DataAPI, apiDomain string) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			apiservice.SupportedRoles(
@@ -40,36 +41,36 @@ type caseInfoResponseData struct {
 	} `json:"case_config"`
 }
 
-func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (c *caseInfoHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	requestData := &caseInfoRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	} else if requestData.CaseID == 0 {
-		apiservice.WriteValidationError("case_id must be specified", w, r)
+		apiservice.WriteValidationError(ctx, "case_id must be specified", w, r)
 		return
 	}
 
 	patientCase, err := c.dataAPI.GetPatientCaseFromID(requestData.CaseID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	responseData := &caseInfoResponseData{}
 
-	ctxt := apiservice.GetContext(r)
-	switch ctxt.Role {
+	account := apiservice.MustCtxAccount(ctx)
+	switch account.Role {
 	case api.RolePatient:
-		patientID, err := c.dataAPI.GetPatientIDFromAccountID(ctxt.AccountID)
+		patientID, err := c.dataAPI.GetPatientIDFromAccountID(account.ID)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
 		// ensure that the case is owned by the patient
 		if patientID != patientCase.PatientID.Int64() {
-			apiservice.WriteAccessNotAllowedError(w, r)
+			apiservice.WriteAccessNotAllowedError(ctx, w, r)
 			return
 		}
 
@@ -80,7 +81,7 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// treatment plan is enabled if one exists
 		activeTreatmentPlanExists, err := c.dataAPI.DoesActiveTreatmentPlanForCaseExist(patientCase.ID.Int64())
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
@@ -91,21 +92,21 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case api.RoleDoctor:
-		doctorID, err := c.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
+		doctorID, err := c.dataAPI.GetDoctorIDFromAccountID(account.ID)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
-		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorID, patientCase.PatientID.Int64(), requestData.CaseID, c.dataAPI); err != nil {
-			apiservice.WriteError(err, w, r)
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, account.Role, doctorID, patientCase.PatientID.Int64(), requestData.CaseID, c.dataAPI); err != nil {
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 	}
 
 	patientVisits, err := c.dataAPI.GetVisitsForCase(patientCase.ID.Int64(), nil)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -115,7 +116,7 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if visit.Status == common.PVStatusTreated {
 			diagnosis, err = c.dataAPI.DiagnosisForVisit(visit.ID.Int64())
 			if !api.IsErrNotFound(err) && err != nil {
-				apiservice.WriteError(err, w, r)
+				apiservice.WriteError(ctx, err, w, r)
 				return
 			}
 			break
@@ -134,7 +135,7 @@ func (c *caseInfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// get the care team for case
 		members, err := c.dataAPI.GetActiveMembersOfCareTeamForCase(requestData.CaseID, true)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 

@@ -38,7 +38,7 @@ type providerEligibilityUpdateRequest struct {
 }
 
 func newProviderEligibilityListAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&providerEligibilityListAPIHandler{
+	return httputil.SupportedMethods(&providerEligibilityListAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Patch)
 }

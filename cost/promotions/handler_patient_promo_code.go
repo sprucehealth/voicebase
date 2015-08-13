@@ -8,6 +8,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -40,7 +41,7 @@ type PatientPromotionPOSTErrorResponse struct {
 }
 
 // NewPatientPromotionsHandler rreturns a new initialized instance of the patientPromotionsHandler
-func NewPatientPromotionsHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, analyticsLogger analytics.Logger) http.Handler {
+func NewPatientPromotionsHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, analyticsLogger analytics.Logger) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.AuthorizationRequired(&patientPromotionsHandler{
@@ -52,29 +53,29 @@ func NewPatientPromotionsHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, analy
 		httputil.Get, httputil.Post)
 }
 
-func (*patientPromotionsHandler) IsAuthorized(r *http.Request) (bool, error) {
+func (*patientPromotionsHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
 	return true, nil
 }
 
-func (h *patientPromotionsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *patientPromotionsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		h.serveGET(w, r)
+		h.serveGET(ctx, w, r)
 	case httputil.Post:
-		rd, err := h.parsePOSTRequest(r)
+		rd, err := h.parsePOSTRequest(ctx, r)
 		if err != nil {
-			apiservice.WriteBadRequestError(err, w, r)
+			apiservice.WriteBadRequestError(ctx, err, w, r)
 			return
 		}
-		h.servePOST(w, r, rd)
+		h.servePOST(ctx, w, r, rd)
 	}
 }
 
-func (h *patientPromotionsHandler) serveGET(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	pendingPromotions, err := h.dataAPI.PendingPromotionsForAccount(ctxt.AccountID, common.PromotionTypes)
+func (h *patientPromotionsHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := apiservice.MustCtxAccount(ctx)
+	pendingPromotions, err := h.dataAPI.PendingPromotionsForAccount(account.ID, common.PromotionTypes)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	sort.Sort(sort.Reverse(common.AccountPromotionByCreation(pendingPromotions)))
@@ -87,7 +88,7 @@ func (h *patientPromotionsHandler) serveGET(w http.ResponseWriter, r *http.Reque
 	for _, p := range pendingPromotions {
 		promotion, ok := p.Data.(Promotion)
 		if !ok {
-			apiservice.WriteError(errors.New("Unable to cast promotion data into Promotion type"), w, r)
+			apiservice.WriteError(ctx, errors.New("Unable to cast promotion data into Promotion type"), w, r)
 			return
 		}
 
@@ -128,7 +129,7 @@ func (h *patientPromotionsHandler) serveGET(w http.ResponseWriter, r *http.Reque
 	})
 }
 
-func (h *patientPromotionsHandler) parsePOSTRequest(r *http.Request) (*PatientPromotionPOSTRequest, error) {
+func (h *patientPromotionsHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*PatientPromotionPOSTRequest, error) {
 	rd := &PatientPromotionPOSTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -141,97 +142,98 @@ func (h *patientPromotionsHandler) parsePOSTRequest(r *http.Request) (*PatientPr
 	return rd, nil
 }
 
-func (h *patientPromotionsHandler) servePOST(w http.ResponseWriter, r *http.Request, rd *PatientPromotionPOSTRequest) {
-	ctxt := apiservice.GetContext(r)
+func (h *patientPromotionsHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *PatientPromotionPOSTRequest) {
 	promoCode, err := h.dataAPI.LookupPromoCode(rd.PromoCode)
 	if api.IsErrNotFound(err) {
 		httputil.JSONResponse(w, http.StatusNotFound, &PatientPromotionPOSTErrorResponse{
 			UserError: fmt.Sprintf("Sorry, the promo code %q is not valid.", rd.PromoCode),
-			RequestID: ctxt.RequestID,
+			RequestID: httputil.RequestID(ctx),
 		})
 		return
 	} else if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
+
+	account := apiservice.MustCtxAccount(ctx)
 
 	// If this isn't a referral code then check if the promotion is still active.
 	var p *common.Promotion
 	if !promoCode.IsReferral {
 		p, err = h.dataAPI.Promotion(promoCode.ID, common.PromotionTypes)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
 		if p.Expires != nil && (*p.Expires).Unix() < time.Now().Unix() {
 			httputil.JSONResponse(w, http.StatusNotFound, &PatientPromotionPOSTErrorResponse{
 				UserError: fmt.Sprintf("Sorry, the promo code %q is no longer active.", rd.PromoCode),
-				RequestID: ctxt.RequestID,
+				RequestID: httputil.RequestID(ctx),
 			})
 			return
 		}
 	} else {
-		arp, err := h.dataAPI.ActiveReferralProgramForAccount(ctxt.AccountID, common.PromotionTypes)
+		arp, err := h.dataAPI.ActiveReferralProgramForAccount(account.ID, common.PromotionTypes)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
 		if arp.CodeID == promoCode.ID {
 			httputil.JSONResponse(w, http.StatusNotFound, &PatientPromotionPOSTErrorResponse{
 				UserError: fmt.Sprintf("%s has not been applied. A referral code cannot be claimed by the referrer ;)", rd.PromoCode),
-				RequestID: ctxt.RequestID,
+				RequestID: httputil.RequestID(ctx),
 			})
 			return
 		}
 
 		rp, err := h.dataAPI.ReferralProgram(promoCode.ID, common.PromotionTypes)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		referralProgram := rp.Data.(ReferralProgram)
 		p = referralProgram.PromotionForReferredAccount(promoCode.Code)
 	}
 
-	patient, err := h.dataAPI.GetPatientFromAccountID(ctxt.AccountID)
+	patient, err := h.dataAPI.GetPatientFromAccountID(account.ID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	_, state, err := h.dataAPI.PatientLocation(patient.ID.Int64())
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	promotionGroup, err := h.dataAPI.PromotionGroup(p.Group)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
-	count, err := h.dataAPI.PromotionCountInGroupForAccount(ctxt.AccountID, p.Group)
+	count, err := h.dataAPI.PromotionCountInGroupForAccount(account.ID, p.Group)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	// If the patient has reached their maximum for this promotion group then move the oldest unclaimed promo to the DELETED state
 	// If this doesn't free up space then a failure should occur during AssociatePromoCode
 	if promotionGroup.MaxAllowedPromos == count {
-		accountPromotions, err := h.dataAPI.PendingPromotionsForAccount(ctxt.AccountID, common.PromotionTypes)
+		accountPromotions, err := h.dataAPI.PendingPromotionsForAccount(account.ID, common.PromotionTypes)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		for _, ap := range accountPromotions {
 			if ap.GroupID == promotionGroup.ID {
 				_, err := h.dataAPI.DeleteAccountPromotion(ap.AccountID, ap.CodeID)
 				if err != nil {
-					apiservice.WriteError(err, w, r)
+					apiservice.WriteError(ctx, err, w, r)
 					return
 				}
 				break
@@ -242,7 +244,7 @@ func (h *patientPromotionsHandler) servePOST(w http.ResponseWriter, r *http.Requ
 	// Associate the promo code then return it as if it was a get request. We know we are operating on the logged in account so perform this action synchronously
 	async := false
 	if _, err := AssociatePromoCode(patient.Email, state, rd.PromoCode, h.dataAPI, h.authAPI, h.analyticsLogger, async); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -251,10 +253,10 @@ func (h *patientPromotionsHandler) servePOST(w http.ResponseWriter, r *http.Requ
 	if p, ok := p.Data.(Promotion); ok && p.IsZeroValue() {
 		httputil.JSONResponse(w, http.StatusNotFound, &PatientPromotionPOSTErrorResponse{
 			UserError: fmt.Sprintf("The promo code %s has been associated with your account.", rd.PromoCode),
-			RequestID: ctxt.RequestID,
+			RequestID: httputil.RequestID(ctx),
 		})
 		return
 	}
 
-	h.serveGET(w, r)
+	h.serveGET(ctx, w, r)
 }

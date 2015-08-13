@@ -3,6 +3,7 @@ package doctor_treatment_plan
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -12,7 +13,7 @@ type medicationDispenseUnitsHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewMedicationDispenseUnitsHandler(dataAPI api.DataAPI) http.Handler {
+func NewMedicationDispenseUnitsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(
 			&medicationDispenseUnitsHandler{
@@ -29,18 +30,18 @@ type MedicationDispenseUnitItem struct {
 	Text string `json:"text"`
 }
 
-func (m *medicationDispenseUnitsHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.RoleDoctor {
+func (m *medicationDispenseUnitsHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+	if apiservice.MustCtxAccount(ctx).Role != api.RoleDoctor {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 
 	return true, nil
 }
 
-func (m *medicationDispenseUnitsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (m *medicationDispenseUnitsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	dispenseUnitIDs, dispenseUnits, err := m.dataAPI.GetMedicationDispenseUnits(api.LanguageIDEnglish)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	medicationDispenseUnitResponse := &MedicationDispenseUnitsResponse{}

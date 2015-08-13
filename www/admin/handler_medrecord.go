@@ -27,7 +27,7 @@ func newMedicalRecordHandler(
 	webDomain string,
 	signer *sig.Signer,
 ) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(
+	return httputil.SupportedMethods(
 		&medicalRecordHandler{
 			dataAPI: dataAPI,
 			r: &medrecord.Renderer{

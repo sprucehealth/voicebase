@@ -28,7 +28,7 @@ type accountResponse struct {
 }
 
 func newAccountHandler(authAPI api.AuthAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&accountHandler{
+	return httputil.SupportedMethods(&accountHandler{
 		authAPI: authAPI,
 	}, httputil.Get, httputil.Patch)
 }

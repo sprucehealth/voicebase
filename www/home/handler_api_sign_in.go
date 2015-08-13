@@ -32,7 +32,7 @@ func (r *signInAPIRequest) Validate() (bool, string) {
 }
 
 func newSignInAPIHandler(authAPI api.AuthAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&signInAPIHandler{
+	return httputil.SupportedMethods(&signInAPIHandler{
 		authAPI: authAPI,
 	}, httputil.Post)
 }

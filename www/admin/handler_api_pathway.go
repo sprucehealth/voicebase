@@ -31,7 +31,7 @@ type updatePathwayRequest struct {
 // NewPathwayHandler returns an HTTP handler that supports GET for requesting
 // pathway details and PATCH for updating the pathway details.
 func newPathwayHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&pathwayHandler{
+	return httputil.SupportedMethods(&pathwayHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Patch)
 }

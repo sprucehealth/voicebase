@@ -21,7 +21,7 @@ type caseVisitGETResponse struct {
 }
 
 func newCaseVisitHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&caseVisitHandler{dataAPI: dataAPI}, httputil.Get)
+	return httputil.SupportedMethods(&caseVisitHandler{dataAPI: dataAPI}, httputil.Get)
 }
 
 func (h *caseVisitHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {

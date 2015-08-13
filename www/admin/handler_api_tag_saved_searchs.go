@@ -29,24 +29,24 @@ type tagSavedSearchsPOSTRequest struct {
 }
 
 func newTagSavedSearchesHandler(taggingClient tagging.Client) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&tagSavedSearchsHandler{taggingClient: taggingClient}, httputil.Get, httputil.Post)
+	return httputil.SupportedMethods(&tagSavedSearchsHandler{taggingClient: taggingClient}, httputil.Get, httputil.Post)
 }
 
 func (h *tagSavedSearchsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		h.serveGET(w, r)
+		h.serveGET(ctx, w, r)
 	case "POST":
-		req, err := h.parsePOSTRequest(r)
+		req, err := h.parsePOSTRequest(ctx, r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
-		h.servePOST(w, r, req)
+		h.servePOST(ctx, w, r, req)
 	}
 }
 
-func (h *tagSavedSearchsHandler) serveGET(w http.ResponseWriter, r *http.Request) {
+func (h *tagSavedSearchsHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	savedSearches, err := h.taggingClient.TagSavedSearchs()
 	if err != nil {
 		www.APIInternalError(w, r, err)
@@ -63,7 +63,7 @@ func (h *tagSavedSearchsHandler) serveGET(w http.ResponseWriter, r *http.Request
 	})
 }
 
-func (h *tagSavedSearchsHandler) parsePOSTRequest(r *http.Request) (*tagSavedSearchsPOSTRequest, error) {
+func (h *tagSavedSearchsHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*tagSavedSearchsPOSTRequest, error) {
 	rd := &tagSavedSearchsPOSTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -81,7 +81,7 @@ func (h *tagSavedSearchsHandler) parsePOSTRequest(r *http.Request) (*tagSavedSea
 	return rd, nil
 }
 
-func (h *tagSavedSearchsHandler) servePOST(w http.ResponseWriter, r *http.Request, req *tagSavedSearchsPOSTRequest) {
+func (h *tagSavedSearchsHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request, req *tagSavedSearchsPOSTRequest) {
 	if _, err := h.taggingClient.InsertTagSavedSearch(&model.TagSavedSearch{
 		Title: req.Title,
 		Query: req.Query,

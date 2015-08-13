@@ -36,7 +36,7 @@ type textDownloadLinkAPIResponse struct {
 }
 
 func newTextDownloadLinkAPIHandler(dataAPI api.DataAPI, smsAPI api.SMSAPI, fromNumber string, branchClient branch.Client, rateLimiter ratelimit.KeyedRateLimiter) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&textDownloadLinkAPIHandler{
+	return httputil.SupportedMethods(&textDownloadLinkAPIHandler{
 		smsAPI:       smsAPI,
 		fromNumber:   fromNumber,
 		branchClient: branchClient,

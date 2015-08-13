@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
@@ -16,13 +17,14 @@ type treatmentPlanHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewTreatmentPlanHandler(dataAPI api.DataAPI) http.Handler {
+func NewTreatmentPlanHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
-			apiservice.AuthorizationRequired(
-				&treatmentPlanHandler{
-					dataAPI: dataAPI,
-				}),
+			apiservice.RequestCacheHandler(
+				apiservice.AuthorizationRequired(
+					&treatmentPlanHandler{
+						dataAPI: dataAPI,
+					})),
 			api.RolePatient, api.RoleDoctor),
 		httputil.Get)
 }
@@ -38,26 +40,27 @@ type TreatmentPlanViewsResponse struct {
 	InstructionViews []views.View `json:"instruction_views,omitempty"`
 }
 
-func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
-
+func (p *treatmentPlanHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
 	requestData := &TreatmentPlanRequest{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error())
 	}
-	ctxt.RequestCache[apiservice.RequestData] = requestData
 
-	switch ctxt.Role {
+	requestCache := apiservice.MustCtxCache(ctx)
+	requestCache[apiservice.CKRequestData] = requestData
+
+	account := apiservice.MustCtxAccount(ctx)
+	switch account.Role {
 	case api.RolePatient:
 		if requestData.TreatmentPlanID == 0 && requestData.PatientCaseID == 0 {
 			return false, apiservice.NewValidationError("either treatment_plan_id or patient_case_id must be specified")
 		}
 
-		patient, err := p.dataAPI.GetPatientFromAccountID(ctxt.AccountID)
+		patient, err := p.dataAPI.GetPatientFromAccountID(account.ID)
 		if err != nil {
 			return false, err
 		}
-		ctxt.RequestCache[apiservice.Patient] = patient
+		requestCache[apiservice.CKPatient] = patient
 
 		var treatmentPlan *common.TreatmentPlan
 		if requestData.TreatmentPlanID != 0 {
@@ -70,7 +73,7 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 		} else if err != nil {
 			return false, err
 		}
-		ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
+		requestCache[apiservice.CKTreatmentPlan] = treatmentPlan
 
 		if treatmentPlan.PatientID != patient.ID.Int64() {
 			return false, apiservice.NewAccessForbiddenError()
@@ -84,24 +87,24 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		ctxt.RequestCache[apiservice.Doctor] = doctor
+		requestCache[apiservice.CKDoctor] = doctor
 
 	case api.RoleDoctor:
 		if requestData.TreatmentPlanID == 0 {
 			return false, apiservice.NewValidationError("treatment_plan_id must be specified")
 		}
 
-		doctor, err := p.dataAPI.GetDoctorFromAccountID(ctxt.AccountID)
+		doctor, err := p.dataAPI.GetDoctorFromAccountID(account.ID)
 		if err != nil {
 			return false, err
 		}
-		ctxt.RequestCache[apiservice.Doctor] = doctor
+		requestCache[apiservice.CKDoctor] = doctor
 
 		patient, err := p.dataAPI.GetPatientFromTreatmentPlanID(requestData.TreatmentPlanID)
 		if err != nil {
 			return false, err
 		}
-		ctxt.RequestCache[apiservice.Patient] = patient
+		requestCache[apiservice.CKPatient] = patient
 
 		treatmentPlan, err := p.dataAPI.GetTreatmentPlanForPatient(patient.ID.Int64(), requestData.TreatmentPlanID)
 		if api.IsErrNotFound(err) {
@@ -109,9 +112,9 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 		} else if err != nil {
 			return false, err
 		}
-		ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
+		requestCache[apiservice.CKTreatmentPlan] = treatmentPlan
 
-		if err = apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctor.ID.Int64(), patient.ID.Int64(),
+		if err = apiservice.ValidateAccessToPatientCase(r.Method, account.Role, doctor.ID.Int64(), patient.ID.Int64(),
 			treatmentPlan.PatientCaseID.Int64(), p.dataAPI); err != nil {
 			return false, err
 		}
@@ -121,21 +124,21 @@ func (p *treatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
 	return true, nil
 }
 
-func (p *treatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	doctor := ctxt.RequestCache[apiservice.Doctor].(*common.Doctor)
-	patient := ctxt.RequestCache[apiservice.Patient].(*common.Patient)
-	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
+func (p *treatmentPlanHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	doctor := requestCache[apiservice.CKDoctor].(*common.Doctor)
+	patient := requestCache[apiservice.CKPatient].(*common.Patient)
+	treatmentPlan := requestCache[apiservice.CKTreatmentPlan].(*common.TreatmentPlan)
 
 	err := populateTreatmentPlan(p.dataAPI, treatmentPlan)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	res, err := treatmentPlanResponse(p.dataAPI, treatmentPlan, doctor, patient)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	httputil.JSONResponse(w, http.StatusOK, res)

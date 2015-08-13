@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -101,16 +102,16 @@ func newAnalyticsHandler(publisher dispatch.Publisher, statsRegistry metrics.Reg
 	return h
 }
 
-func NewAnalyticsHandler(publisher dispatch.Publisher, statsRegistry metrics.Registry) http.Handler {
+func NewAnalyticsHandler(publisher dispatch.Publisher, statsRegistry metrics.Registry) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		NoAuthorizationRequired(newAnalyticsHandler(publisher, statsRegistry)),
 		httputil.Post)
 }
 
-func (h *analyticsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *analyticsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var req eventRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		WriteBadRequestError(err, w, r)
+		WriteBadRequestError(ctx, err, w, r)
 		return
 	}
 

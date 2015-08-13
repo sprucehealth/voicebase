@@ -23,7 +23,7 @@ type resourceGuideList struct {
 }
 
 func newResourceGuidesListAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&resourceGuidesListAPIHandler{
+	return httputil.SupportedMethods(&resourceGuidesListAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Put, httputil.Post)
 }

@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -51,10 +52,11 @@ func TestUnreadCountHandler(t *testing.T) {
 
 	r, err := http.NewRequest("GET", "/?case_id=1", nil)
 	test.OK(t, err)
-	ctx := apiservice.GetContext(r)
-	ctx.Role = api.RolePatient
+	ctx := apiservice.CtxWithAccount(
+		context.Background(),
+		&common.Account{Role: api.RolePatient, ID: 1})
 	w := httptest.NewRecorder()
-	hand.ServeHTTP(w, r)
+	hand.ServeHTTP(ctx, w, r)
 	test.Equals(t, w.Code, http.StatusOK)
 	test.Equals(t, "{\"unread_count\":4}\n", w.Body.String())
 }

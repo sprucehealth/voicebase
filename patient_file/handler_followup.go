@@ -6,6 +6,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -26,19 +27,22 @@ type followupRequestData struct {
 	CaseID int64 `json:"case_id,string"`
 }
 
-func NewFollowupHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, expirationDuration time.Duration, dispatcher *dispatch.Dispatcher) http.Handler {
+func NewFollowupHandler(dataAPI api.DataAPI, authAPI api.AuthAPI, expirationDuration time.Duration, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(&followupHandler{
-			dataAPI:            dataAPI,
-			authAPI:            authAPI,
-			dispatcher:         dispatcher,
-			expirationDuration: expirationDuration,
-		}), httputil.Post)
+		apiservice.RequestCacheHandler(
+			apiservice.AuthorizationRequired(&followupHandler{
+				dataAPI:            dataAPI,
+				authAPI:            authAPI,
+				dispatcher:         dispatcher,
+				expirationDuration: expirationDuration,
+			})),
+		httputil.Post)
 }
 
-func (f *followupHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.RoleDoctor && ctxt.Role != api.RoleCC {
+func (f *followupHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+	account := apiservice.MustCtxAccount(ctx)
+	requestCache := apiservice.MustCtxCache(ctx)
+	if account.Role != api.RoleDoctor && account.Role != api.RoleCC {
 		return false, nil
 	}
 
@@ -46,22 +50,22 @@ func (f *followupHandler) IsAuthorized(r *http.Request) (bool, error) {
 	if err := apiservice.DecodeRequestData(&rd, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error())
 	}
-	ctxt.RequestCache[apiservice.RequestData] = rd
+	requestCache[apiservice.CKRequestData] = rd
 
-	doctorID, err := f.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
+	doctorID, err := f.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.DoctorID] = doctorID
+	requestCache[apiservice.CKDoctorID] = doctorID
 
 	patientCase, err := f.dataAPI.GetPatientCaseFromID(rd.CaseID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.PatientCase] = patientCase
+	requestCache[apiservice.CKPatientCase] = patientCase
 
-	if ctxt.Role == api.RoleDoctor {
-		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorID,
+	if account.Role == api.RoleDoctor {
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, account.Role, doctorID,
 			patientCase.PatientID.Int64(), patientCase.ID.Int64(), f.dataAPI); err != nil {
 			return false, err
 		}
@@ -70,33 +74,34 @@ func (f *followupHandler) IsAuthorized(r *http.Request) (bool, error) {
 	return true, nil
 }
 
-func (f *followupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	patientCase := ctxt.RequestCache[apiservice.PatientCase].(*common.PatientCase)
-	doctorID := ctxt.RequestCache[apiservice.DoctorID].(int64)
+func (f *followupHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	patientCase := requestCache[apiservice.CKPatientCase].(*common.PatientCase)
+	doctorID := requestCache[apiservice.CKDoctorID].(int64)
+	account := apiservice.MustCtxAccount(ctx)
 
 	patient, err := f.dataAPI.GetPatientFromID(patientCase.PatientID.Int64())
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	// first create the followup visit
 	followupVisit, err := patientpkg.CreatePendingFollowup(patient, patientCase, f.dataAPI, f.authAPI, f.dispatcher)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
-	personID, err := f.dataAPI.GetPersonIDByRole(ctxt.Role, doctorID)
+	personID, err := f.dataAPI.GetPersonIDByRole(account.Role, doctorID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	body, err := bodyOfCaseMessageForFollowup(patientCase.ID.Int64(), patient, f.dataAPI)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -114,16 +119,16 @@ func (f *followupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Title: "Follow-up Visit",
 		},
 	},
-		personID, doctorID, ctxt.Role, f.dataAPI)
+		personID, doctorID, account.Role, f.dataAPI)
 
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	people, err := f.dataAPI.GetPeople([]int64{personID})
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	person := people[personID]

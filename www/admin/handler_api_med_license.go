@@ -31,7 +31,7 @@ type licenseReqRes struct {
 }
 
 func newMedicalLicenseAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&medicalLicenseAPIHandler{
+	return httputil.SupportedMethods(&medicalLicenseAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Put)
 }

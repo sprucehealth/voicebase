@@ -18,7 +18,7 @@ type successHandler struct {
 }
 
 func newSuccessHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&successHandler{
+	return httputil.SupportedMethods(&successHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		template: templateLoader.MustLoadTemplate("dronboard/success.html", "dronboard/base.html", nil),

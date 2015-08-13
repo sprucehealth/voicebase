@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -201,7 +201,7 @@ func TestPathwayDetailsHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(context.Background(), w, r)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status 200 got %d", w.Code)
 	}
@@ -254,7 +254,7 @@ func TestPathwayDetailsHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(context.Background(), w, r)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status 200 got %d", w.Code)
 	}
@@ -290,12 +290,9 @@ func TestPathwayDetailsHandler(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx := apiservice.GetContext(r)
-	ctx.AccountID = 1
-	ctx.Role = api.RolePatient
-	defer context.Clear(r)
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status 200 got %d", w.Code)
 	}
@@ -341,15 +338,11 @@ func TestPathwayDetailsHandler(t *testing.T) {
 	// Authenticated with launch promo (no visits since launch)
 	dataAPI.pathways["hypochondria"].Details = dataAPI.pathways["acne"].Details
 	r, err = http.NewRequest("GET", "/?pathway_id=hypochondria", nil)
-	ctx = apiservice.GetContext(r)
-	ctx.AccountID = 1
-	ctx.Role = api.RolePatient
-	defer context.Clear(r)
 	if err != nil {
 		t.Fatal(err)
 	}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status 200 got %d", w.Code)
 	}
@@ -384,12 +377,8 @@ func TestPathwayDetailsHandler(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx = apiservice.GetContext(r)
-	ctx.AccountID = 1
-	ctx.Role = api.RolePatient
-	defer context.Clear(r)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status 200 got %d", w.Code)
 	}

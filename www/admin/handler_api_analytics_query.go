@@ -29,7 +29,7 @@ type analyticsQueryAPIHandler struct {
 }
 
 func newAnalyticsQueryAPIHandler(db *sql.DB) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&analyticsQueryAPIHandler{
+	return httputil.SupportedMethods(&analyticsQueryAPIHandler{
 		db: db,
 	}, httputil.Post)
 }

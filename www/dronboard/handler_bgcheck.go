@@ -51,7 +51,7 @@ func (r *bgCheckForm) Validate() map[string]string {
 }
 
 func newBackgroundCheckHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&bgCheckHandler{
+	return httputil.SupportedMethods(&bgCheckHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		template: templateLoader.MustLoadTemplate("dronboard/backgroundcheck.html", "dronboard/base.html", nil),

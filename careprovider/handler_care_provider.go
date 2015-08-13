@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -19,7 +20,7 @@ type careProviderHandler struct {
 	apiDomain string
 }
 
-func NewCareProviderHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
+func NewCareProviderHandler(dataAPI api.DataAPI, apiDomain string) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&careProviderHandler{
@@ -28,19 +29,19 @@ func NewCareProviderHandler(dataAPI api.DataAPI, apiDomain string) http.Handler 
 			}), httputil.Get)
 }
 
-func (h *careProviderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *careProviderHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		requestData, err := h.parseGETRequest(r)
+		requestData, err := h.parseGETRequest(ctx, r)
 		if err != nil {
-			apiservice.WriteValidationError(err.Error(), w, r)
+			apiservice.WriteValidationError(ctx, err.Error(), w, r)
 			return
 		}
-		h.serveGET(w, r, requestData)
+		h.serveGET(ctx, w, r, requestData)
 	}
 }
 
-func (h *careProviderHandler) parseGETRequest(r *http.Request) (*careProviderGETRequest, error) {
+func (h *careProviderHandler) parseGETRequest(ctx context.Context, r *http.Request) (*careProviderGETRequest, error) {
 	rd := &careProviderGETRequest{}
 	if err := apiservice.DecodeRequestData(rd, r); err != nil {
 		return nil, apiservice.NewValidationError(err.Error())
@@ -48,13 +49,13 @@ func (h *careProviderHandler) parseGETRequest(r *http.Request) (*careProviderGET
 	return rd, nil
 }
 
-func (h *careProviderHandler) serveGET(w http.ResponseWriter, r *http.Request, rd *careProviderGETRequest) {
+func (h *careProviderHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *careProviderGETRequest) {
 	careProvider, err := h.dataAPI.Doctor(rd.ProviderID, false)
 	if api.IsErrNotFound(err) {
-		apiservice.WriteResourceNotFoundError(fmt.Sprintf("No care provider exists for ID %d", rd.ProviderID), w, r)
+		apiservice.WriteResourceNotFoundError(ctx, fmt.Sprintf("No care provider exists for ID %d", rd.ProviderID), w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	response := responses.NewCareProviderFromDoctorDBModel(careProvider, h.apiDomain)

@@ -3,6 +3,7 @@ package doctor
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/auth"
@@ -34,18 +35,19 @@ func NewTwoFactorHandler(
 	apiDomain,
 	fromNumber string,
 	twoFactorExpiration int,
-) http.Handler {
-	return apiservice.AuthorizationRequired(&twoFactorHandler{
-		dataAPI:             dataAPI,
-		authAPI:             authAPI,
-		smsAPI:              smsAPI,
-		apiDomain:           apiDomain,
-		fromNumber:          fromNumber,
-		twoFactorExpiration: twoFactorExpiration,
-	})
+) httputil.ContextHandler {
+	return apiservice.RequestCacheHandler(
+		apiservice.AuthorizationRequired(&twoFactorHandler{
+			dataAPI:             dataAPI,
+			authAPI:             authAPI,
+			smsAPI:              smsAPI,
+			apiDomain:           apiDomain,
+			fromNumber:          fromNumber,
+			twoFactorExpiration: twoFactorExpiration,
+		}))
 }
 
-func (d *twoFactorHandler) IsAuthorized(r *http.Request) (bool, error) {
+func (d *twoFactorHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
 	if r.Method != httputil.Post {
 		return false, apiservice.NewResourceNotFoundError("", r)
 	}
@@ -59,22 +61,22 @@ func (d *twoFactorHandler) IsAuthorized(r *http.Request) (bool, error) {
 	} else if err != nil {
 		return false, err
 	}
-	context := apiservice.GetContext(r)
-	context.RequestCache[apiservice.Account] = account
-	context.RequestCache[apiservice.RequestData] = &req
+	requestCache := apiservice.MustCtxCache(ctx)
+	requestCache[apiservice.CKAccount] = account
+	requestCache[apiservice.CKRequestData] = &req
 	return true, nil
 }
 
-func (d *twoFactorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	context := apiservice.GetContext(r)
-	account := context.RequestCache[apiservice.Account].(*common.Account)
-	req := context.RequestCache[apiservice.RequestData].(*TwoFactorRequest)
+func (d *twoFactorHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	account := requestCache[apiservice.CKAccount].(*common.Account)
+	req := requestCache[apiservice.CKRequestData].(*TwoFactorRequest)
 
 	appHeaders := apiservice.ExtractSpruceHeaders(r)
 
 	if req.Resend {
 		if _, err := auth.SendTwoFactorCode(d.authAPI, d.smsAPI, d.fromNumber, account.ID, appHeaders.DeviceID, d.twoFactorExpiration); err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		apiservice.WriteJSONSuccess(w)
@@ -88,10 +90,10 @@ func (d *twoFactorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		apiservice.WriteUserError(w, http.StatusForbidden, "Invalid verification code")
 		return
 	} else if err == api.ErrTokenExpired {
-		apiservice.WriteError(apiservice.NewAccessForbiddenError(), w, r)
+		apiservice.WriteError(ctx, apiservice.NewAccessForbiddenError(), w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -103,13 +105,13 @@ func (d *twoFactorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	token, err := d.authAPI.CreateToken(account.ID, api.Mobile, 0)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	doctor, err := d.dataAPI.GetDoctorFromAccountID(account.ID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/cfg"
@@ -67,7 +68,7 @@ type feedbackPromptResponse struct {
 }
 
 // NewFeedbackPromptHandler returns an initialized instance of feedbackPromptHandler
-func NewFeedbackPromptHandler(dataAPI api.DataAPI) http.Handler {
+func NewFeedbackPromptHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&feedbackPromptHandler{
@@ -78,7 +79,7 @@ func NewFeedbackPromptHandler(dataAPI api.DataAPI) http.Handler {
 }
 
 // NewFeedbackHandler returns an initialized instance of feedbackHandler
-func NewFeedbackHandler(dataAPI api.DataAPI, taggingClient tagging.Client, cfgStore cfg.Store) http.Handler {
+func NewFeedbackHandler(dataAPI api.DataAPI, taggingClient tagging.Client, cfgStore cfg.Store) httputil.ContextHandler {
 	cfgStore.Register(lowRatingTagThreshold)
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
@@ -91,10 +92,10 @@ func NewFeedbackHandler(dataAPI api.DataAPI, taggingClient tagging.Client, cfgSt
 		httputil.Post)
 }
 
-func (h *feedbackPromptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *feedbackPromptHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	text, err := h.dataAPI.LocalizedText(api.LanguageIDEnglish, feedbackTextTags)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	res := &feedbackPromptResponse{
@@ -106,20 +107,20 @@ func (h *feedbackPromptHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	httputil.JSONResponse(w, http.StatusOK, res)
 }
 
-func (h *feedbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *feedbackHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var req feedbackSubmitRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		apiservice.WriteBadRequestError(err, w, r)
+		apiservice.WriteBadRequestError(ctx, err, w, r)
 		return
 	}
-	patientID, err := h.dataAPI.GetPatientIDFromAccountID(apiservice.GetContext(r).AccountID)
+	patientID, err := h.dataAPI.GetPatientIDFromAccountID(apiservice.MustCtxAccount(ctx).ID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	tp, err := latestActiveTreatmentPlan(h.dataAPI, patientID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	if tp == nil {
@@ -128,7 +129,7 @@ func (h *feedbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.dataAPI.RecordPatientFeedback(patientID, fmt.Sprintf("case:%d", tp.PatientCaseID.Int64()), req.Rating, req.Comment); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

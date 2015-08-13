@@ -3,6 +3,7 @@ package patient
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -16,7 +17,7 @@ type replaceCardHandler struct {
 
 func NewReplaceCardHandler(
 	dataAPI api.DataAPI,
-	paymentAPI apiservice.StripeClient) http.Handler {
+	paymentAPI apiservice.StripeClient) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(
@@ -34,33 +35,33 @@ type replaceCardResponse struct {
 	Cards []*common.Card
 }
 
-func (p *replaceCardHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *replaceCardHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var rd replaceCardRequestData
 	if err := apiservice.DecodeRequestData(&rd, r); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	}
 
 	if rd.Card == nil {
-		apiservice.WriteValidationError("Card not specified", w, r)
+		apiservice.WriteValidationError(ctx, "Card not specified", w, r)
 		return
 	} else if rd.Card.Token == "" {
-		apiservice.WriteValidationError("unique card token not specified", w, r)
+		apiservice.WriteValidationError(ctx, "unique card token not specified", w, r)
 		return
 	}
 	// make the card being added a default
 	rd.Card.IsDefault = true
 
 	// check if the patient has any existing card to be deleted
-	patient, err := p.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
+	patient, err := p.dataAPI.GetPatientFromAccountID(apiservice.MustCtxAccount(ctx).ID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	cards, err := p.dataAPI.GetCardsForPatient(patient.ID.Int64())
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -73,7 +74,7 @@ func (p *replaceCardHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		rd.Card,
 		patient,
 		enforceAddressRequirement); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -85,7 +86,7 @@ func (p *replaceCardHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			patient,
 			switchDefaultCard,
 			p.dataAPI, p.paymentAPI); err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 	}

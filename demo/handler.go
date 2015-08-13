@@ -3,6 +3,7 @@ package demo
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -12,7 +13,7 @@ type demoVisitHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewTrainingCasesHandler(dataAPI api.DataAPI) http.Handler {
+func NewTrainingCasesHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(
@@ -22,16 +23,17 @@ func NewTrainingCasesHandler(dataAPI api.DataAPI) http.Handler {
 		httputil.Post)
 }
 
-func (d *demoVisitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	doctorID, err := d.dataAPI.GetDoctorIDFromAccountID(apiservice.GetContext(r).AccountID)
+func (d *demoVisitHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := apiservice.MustCtxAccount(ctx)
+	doctorID, err := d.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	// TODO: don't assume acne
 	if err := d.dataAPI.ClaimTrainingSet(doctorID, api.AcnePathwayTag); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

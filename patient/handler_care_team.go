@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"sort"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -16,37 +17,31 @@ type careTeamHandler struct {
 	apiDomain string
 }
 
-func NewCareTeamHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
+func NewCareTeamHandler(dataAPI api.DataAPI, apiDomain string) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(&careTeamHandler{
-			dataAPI:   dataAPI,
-			apiDomain: apiDomain,
-		}), httputil.Get)
+		apiservice.SupportedRoles(
+			apiservice.NoAuthorizationRequired(&careTeamHandler{
+				dataAPI:   dataAPI,
+				apiDomain: apiDomain,
+			}),
+			api.RolePatient),
+		httputil.Get)
 }
 
 type careTeamResponse struct {
 	CareTeam []*responses.PatientCareTeamMember `json:"care_team"`
 }
 
-func (c *careTeamHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.RolePatient {
-		return false, nil
-	}
-
-	return true, nil
-}
-
-func (c *careTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	patientID, err := c.dataAPI.GetPatientIDFromAccountID(apiservice.GetContext(r).AccountID)
+func (c *careTeamHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	patientID, err := c.dataAPI.GetPatientIDFromAccountID(apiservice.MustCtxAccount(ctx).ID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	cases, err := c.dataAPI.GetCasesForPatient(patientID, append(common.SubmittedPatientCaseStates(), common.PCStatusOpen.String()))
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -57,7 +52,7 @@ func (c *careTeamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	careTeams, err := c.dataAPI.CaseCareTeams(caseIDs)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

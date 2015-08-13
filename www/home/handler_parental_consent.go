@@ -75,7 +75,7 @@ func checkParentalConsentAccessToken(w http.ResponseWriter, r *http.Request, dat
 }
 
 func newParentalConsentHandler(dataAPI api.DataAPI, mediaStore *media.Store, templateLoader *www.TemplateLoader) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(
+	return httputil.SupportedMethods(
 		&parentalConsentHandler{
 			dataAPI:         dataAPI,
 			mediaStore:      mediaStore,
@@ -238,7 +238,7 @@ func newParentalLandingHandler(dataAPI api.DataAPI, templateLoader *www.Template
 	if ctxFun != nil {
 		ctx = ctxFun()
 	}
-	return httputil.ContextSupportedMethods(&parentalLandingHandler{
+	return httputil.SupportedMethods(&parentalLandingHandler{
 		dataAPI:  dataAPI,
 		title:    title,
 		template: templateLoader.MustLoadTemplate(tmpl, "home/parental-base.html", nil),

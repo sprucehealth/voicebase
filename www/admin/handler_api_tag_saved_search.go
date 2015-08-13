@@ -16,7 +16,7 @@ type tagSavedSearchHandler struct {
 }
 
 func newTagSavedSearchHandler(taggingClient tagging.Client) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&tagSavedSearchHandler{taggingClient: taggingClient}, httputil.Delete)
+	return httputil.SupportedMethods(&tagSavedSearchHandler{taggingClient: taggingClient}, httputil.Delete)
 }
 
 func (h *tagSavedSearchHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {

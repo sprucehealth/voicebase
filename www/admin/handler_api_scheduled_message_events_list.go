@@ -13,7 +13,7 @@ import (
 type schedMessageEventsListAPIHandler struct{}
 
 func newSchedMessageEventsListAPIHandler() httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&schedMessageEventsListAPIHandler{},
+	return httputil.SupportedMethods(&schedMessageEventsListAPIHandler{},
 		httputil.Get)
 }
 

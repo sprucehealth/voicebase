@@ -5,6 +5,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/erx"
@@ -18,7 +19,7 @@ type autocompleteHandler struct {
 
 const allergicMedicationsQuestionTag = "q_allergic_medication_entry"
 
-func NewAutocompleteHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
+func NewAutocompleteHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) httputil.ContextHandler {
 	a := &autocompleteHandler{
 		dataAPI: dataAPI,
 		erxAPI:  erxAPI,
@@ -45,29 +46,29 @@ type Suggestion struct {
 	DrugInternalName string `json:"drug_internal_name,omitempty"`
 }
 
-func (s *autocompleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *autocompleteHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	requestData := &AutocompleteRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	}
 
 	vq, err := s.dataAPI.VersionedQuestionFromID(requestData.QuestionID)
 	if !api.IsErrNotFound(err) && err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	} else if vq != nil && vq.QuestionTag == allergicMedicationsQuestionTag {
-		s.handleAutocompleteForAllergicMedications(requestData, w, r)
+		s.handleAutocompleteForAllergicMedications(ctx, requestData, w, r)
 		return
 	}
 
-	s.handleAutocompleteForDrugs(requestData, w, r)
+	s.handleAutocompleteForDrugs(ctx, requestData, w, r)
 }
 
-func (s *autocompleteHandler) handleAutocompleteForAllergicMedications(requestData *AutocompleteRequestData, w http.ResponseWriter, r *http.Request) {
+func (s *autocompleteHandler) handleAutocompleteForAllergicMedications(ctx context.Context, requestData *AutocompleteRequestData, w http.ResponseWriter, r *http.Request) {
 	searchResults, err := s.erxAPI.SearchForAllergyRelatedMedications(requestData.SearchString)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	autocompleteResponse := &AutocompleteResponse{
@@ -82,25 +83,26 @@ func (s *autocompleteHandler) handleAutocompleteForAllergicMedications(requestDa
 	httputil.JSONResponse(w, http.StatusOK, autocompleteResponse)
 }
 
-func (s *autocompleteHandler) handleAutocompleteForDrugs(requestData *AutocompleteRequestData, w http.ResponseWriter, r *http.Request) {
+func (s *autocompleteHandler) handleAutocompleteForDrugs(ctx context.Context, requestData *AutocompleteRequestData, w http.ResponseWriter, r *http.Request) {
 	var searchResults []string
 	var err error
-	switch apiservice.GetContext(r).Role {
+	account := apiservice.MustCtxAccount(ctx)
+	switch account.Role {
 	case api.RoleDoctor:
-		doctor, e := s.dataAPI.GetDoctorFromAccountID(apiservice.GetContext(r).AccountID)
+		doctor, e := s.dataAPI.GetDoctorFromAccountID(account.ID)
 		if e != nil {
-			apiservice.WriteError(e, w, r)
+			apiservice.WriteError(ctx, e, w, r)
 			return
 		}
 		searchResults, err = s.erxAPI.GetDrugNamesForDoctor(doctor.DoseSpotClinicianID, requestData.SearchString)
 	case api.RolePatient:
 		searchResults, err = s.erxAPI.GetDrugNamesForPatient(requestData.SearchString)
 	default:
-		apiservice.WriteAccessNotAllowedError(w, r)
+		apiservice.WriteAccessNotAllowedError(ctx, w, r)
 		return
 	}
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

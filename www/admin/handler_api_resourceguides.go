@@ -18,7 +18,7 @@ type resourceGuidesAPIHandler struct {
 }
 
 func newResourceGuidesAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&resourceGuidesAPIHandler{
+	return httputil.SupportedMethods(&resourceGuidesAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Patch)
 }

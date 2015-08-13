@@ -11,16 +11,15 @@ import (
 
 const AttachmentTypePrefix = "attachment:"
 
-func validateAccess(dataAPI api.DataAPI, r *http.Request, patientCase *common.PatientCase) (personID, doctorID int64, err error) {
-	ctx := apiservice.GetContext(r)
-	switch ctx.Role {
+func validateAccess(dataAPI api.DataAPI, r *http.Request, account *common.Account, patientCase *common.PatientCase) (personID, doctorID int64, err error) {
+	switch account.Role {
 	case api.RoleDoctor:
-		doctorID, err = dataAPI.GetDoctorIDFromAccountID(ctx.AccountID)
+		doctorID, err = dataAPI.GetDoctorIDFromAccountID(account.ID)
 		if err != nil {
 			return 0, 0, err
 		}
 
-		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctx.Role, doctorID, patientCase.PatientID.Int64(), patientCase.ID.Int64(), dataAPI); err != nil {
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, account.Role, doctorID, patientCase.PatientID.Int64(), patientCase.ID.Int64(), dataAPI); err != nil {
 			return 0, 0, err
 		}
 
@@ -29,7 +28,7 @@ func validateAccess(dataAPI api.DataAPI, r *http.Request, patientCase *common.Pa
 			return 0, 0, err
 		}
 	case api.RolePatient:
-		patientID, err := dataAPI.GetPatientIDFromAccountID(ctx.AccountID)
+		patientID, err := dataAPI.GetPatientIDFromAccountID(account.ID)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -43,7 +42,7 @@ func validateAccess(dataAPI api.DataAPI, r *http.Request, patientCase *common.Pa
 	case api.RoleCC:
 		// For messaging, we let the MA POST as well as GET from the message thread given
 		// they will be an active participant in the thread.
-		doctorID, err = dataAPI.GetDoctorIDFromAccountID(ctx.AccountID)
+		doctorID, err = dataAPI.GetDoctorIDFromAccountID(account.ID)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -54,7 +53,7 @@ func validateAccess(dataAPI api.DataAPI, r *http.Request, patientCase *common.Pa
 		}
 
 	default:
-		return 0, 0, errors.New("Unknown role " + ctx.Role)
+		return 0, 0, errors.New("Unknown role " + account.Role)
 	}
 
 	return personID, doctorID, nil

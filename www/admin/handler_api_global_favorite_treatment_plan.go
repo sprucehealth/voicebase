@@ -30,13 +30,13 @@ type globalFTPGETRequest struct {
 func newGlobalFTPHandler(
 	dataAPI api.DataAPI,
 	mediaStore *media.Store) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&globalFTPHandler{dataAPI: dataAPI, mediaStore: mediaStore}, httputil.Get)
+	return httputil.SupportedMethods(&globalFTPHandler{dataAPI: dataAPI, mediaStore: mediaStore}, httputil.Get)
 }
 
 func (h *globalFTPHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		request, err := h.parseGETRequest(r)
+		request, err := h.parseGETRequest(ctx, r)
 		if err != nil {
 			www.APIBadRequestError(w, r, "Unable to parse request")
 			return
@@ -45,7 +45,7 @@ func (h *globalFTPHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 	}
 }
 
-func (h *globalFTPHandler) parseGETRequest(r *http.Request) (*globalFTPGETRequest, error) {
+func (h *globalFTPHandler) parseGETRequest(ctx context.Context, r *http.Request) (*globalFTPGETRequest, error) {
 	rd := &globalFTPGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)

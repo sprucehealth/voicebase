@@ -38,7 +38,7 @@ type providerProfileAPIHandler struct {
 }
 
 func newProviderProfileAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&providerProfileAPIHandler{
+	return httputil.SupportedMethods(&providerProfileAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Put)
 }

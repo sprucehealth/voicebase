@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/tagging/model"
 	"github.com/sprucehealth/backend/tagging/response"
-
-	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type tagCaseMembershipHandler struct {
@@ -39,48 +39,41 @@ type TagCaseMembershipPUTRequest struct {
 	TriggerTime *int64 `json:"trigger_time"`
 }
 
-func NewTagCaseMembershipHandler(taggingClient Client) http.Handler {
+func NewTagCaseMembershipHandler(taggingClient Client) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(&tagCaseMembershipHandler{taggingClient: taggingClient}),
+		apiservice.SupportedRoles(
+			apiservice.NoAuthorizationRequired(&tagCaseMembershipHandler{taggingClient: taggingClient}),
+			api.RoleCC),
 		httputil.Get, httputil.Delete, httputil.Put)
 }
 
-func (*tagCaseMembershipHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.RoleCC {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-
-	return true, nil
-}
-
-func (h *tagCaseMembershipHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *tagCaseMembershipHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		req, err := h.parseGETRequest(r)
+		req, err := h.parseGETRequest(ctx, r)
 		if err != nil {
-			apiservice.WriteBadRequestError(err, w, r)
+			apiservice.WriteBadRequestError(ctx, err, w, r)
 			return
 		}
-		h.serveGET(w, r, req)
+		h.serveGET(ctx, w, r, req)
 	case "DELETE":
-		req, err := h.parseDELETERequest(r)
+		req, err := h.parseDELETERequest(ctx, r)
 		if err != nil {
-			apiservice.WriteBadRequestError(err, w, r)
+			apiservice.WriteBadRequestError(ctx, err, w, r)
 			return
 		}
-		h.serveDELETE(w, r, req)
+		h.serveDELETE(ctx, w, r, req)
 	case "PUT":
-		req, err := h.parsePUTRequest(r)
+		req, err := h.parsePUTRequest(ctx, r)
 		if err != nil {
-			apiservice.WriteBadRequestError(err, w, r)
+			apiservice.WriteBadRequestError(ctx, err, w, r)
 			return
 		}
-		h.servePUT(w, r, req)
+		h.servePUT(ctx, w, r, req)
 	}
 }
 
-func (h *tagCaseMembershipHandler) parseGETRequest(r *http.Request) (*TagCaseMembershipGETRequest, error) {
+func (h *tagCaseMembershipHandler) parseGETRequest(ctx context.Context, r *http.Request) (*TagCaseMembershipGETRequest, error) {
 	rd := &TagCaseMembershipGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -91,10 +84,10 @@ func (h *tagCaseMembershipHandler) parseGETRequest(r *http.Request) (*TagCaseMem
 	return rd, nil
 }
 
-func (h *tagCaseMembershipHandler) serveGET(w http.ResponseWriter, r *http.Request, req *TagCaseMembershipGETRequest) {
+func (h *tagCaseMembershipHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, req *TagCaseMembershipGETRequest) {
 	tagMemberships, err := h.taggingClient.CaseTagMemberships(req.CaseID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -108,7 +101,7 @@ func (h *tagCaseMembershipHandler) serveGET(w http.ResponseWriter, r *http.Reque
 	})
 }
 
-func (h *tagCaseMembershipHandler) parseDELETERequest(r *http.Request) (*TagCaseMembershipDELETERequest, error) {
+func (h *tagCaseMembershipHandler) parseDELETERequest(ctx context.Context, r *http.Request) (*TagCaseMembershipDELETERequest, error) {
 	rd := &TagCaseMembershipDELETERequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -119,16 +112,16 @@ func (h *tagCaseMembershipHandler) parseDELETERequest(r *http.Request) (*TagCase
 	return rd, nil
 }
 
-func (h *tagCaseMembershipHandler) serveDELETE(w http.ResponseWriter, r *http.Request, req *TagCaseMembershipDELETERequest) {
+func (h *tagCaseMembershipHandler) serveDELETE(ctx context.Context, w http.ResponseWriter, r *http.Request, req *TagCaseMembershipDELETERequest) {
 	if err := h.taggingClient.DeleteTagCaseMembership(req.TagID, req.CaseID); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	httputil.JSONResponse(w, http.StatusOK, struct{}{})
 }
 
-func (h *tagCaseMembershipHandler) parsePUTRequest(r *http.Request) (*TagCaseMembershipPUTRequest, error) {
+func (h *tagCaseMembershipHandler) parsePUTRequest(ctx context.Context, r *http.Request) (*TagCaseMembershipPUTRequest, error) {
 	rd := &TagCaseMembershipPUTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -140,7 +133,7 @@ func (h *tagCaseMembershipHandler) parsePUTRequest(r *http.Request) (*TagCaseMem
 	return rd, nil
 }
 
-func (h *tagCaseMembershipHandler) servePUT(w http.ResponseWriter, r *http.Request, req *TagCaseMembershipPUTRequest) {
+func (h *tagCaseMembershipHandler) servePUT(ctx context.Context, w http.ResponseWriter, r *http.Request, req *TagCaseMembershipPUTRequest) {
 	memUpdate := &model.TagMembershipUpdate{
 		CaseID: &req.CaseID,
 		TagID:  req.TagID,
@@ -150,7 +143,7 @@ func (h *tagCaseMembershipHandler) servePUT(w http.ResponseWriter, r *http.Reque
 		memUpdate.TriggerTime = &t
 	}
 	if err := h.taggingClient.UpdateTagCaseMembership(memUpdate); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	httputil.JSONResponse(w, http.StatusOK, struct{}{})

@@ -67,7 +67,7 @@ func (r *createProviderRequest) validate() (string, bool) {
 }
 
 func newProviderSearchAPIHandler(dataAPI api.DataAPI, authAPI api.AuthAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&providerSearchAPIHandler{
+	return httputil.SupportedMethods(&providerSearchAPIHandler{
 		dataAPI: dataAPI,
 		authAPI: authAPI,
 	}, httputil.Get, httputil.Post)

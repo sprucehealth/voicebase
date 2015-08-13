@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/test"
 )
@@ -34,7 +35,7 @@ func TestPathwaySTPHandler(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("GET", "api.spruce.local/pathwaystp", nil)
 	test.OK(t, err)
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(context.Background(), w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var sampleData struct {

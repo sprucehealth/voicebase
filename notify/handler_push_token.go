@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns/snsiface"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -23,7 +24,7 @@ type requestData struct {
 	DeviceToken string `schema:"device_token,required" json:"device_token"`
 }
 
-func NewNotificationHandler(dataAPI api.DataAPI, configs *config.NotificationConfigs, snsClient snsiface.SNSAPI) http.Handler {
+func NewNotificationHandler(dataAPI api.DataAPI, configs *config.NotificationConfigs, snsClient snsiface.SNSAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&notificationHandler{
@@ -33,15 +34,15 @@ func NewNotificationHandler(dataAPI api.DataAPI, configs *config.NotificationCon
 			}), httputil.Post)
 }
 
-func (n *notificationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (n *notificationHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	rData := &requestData{}
 	if err := apiservice.DecodeRequestData(rData, r); err != nil {
-		apiservice.WriteBadRequestError(err, w, r)
+		apiservice.WriteBadRequestError(ctx, err, w, r)
 		return
 	}
 
 	if rData.DeviceToken == "" {
-		apiservice.WriteValidationError("Device token required", w, r)
+		apiservice.WriteValidationError(ctx, "Device token required", w, r)
 		return
 	}
 
@@ -49,7 +50,7 @@ func (n *notificationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	// we need the minimum headers set to be able to accept the token
 	if sHeaders.Platform == "" || sHeaders.AppEnvironment == "" || sHeaders.AppType == "" {
-		apiservice.WriteValidationError("Unable to determine which endpoint to use for push notifications: need platform, app-environment and app-type to be set in request header", w, r)
+		apiservice.WriteValidationError(ctx, "Unable to determine which endpoint to use for push notifications: need platform, app-environment and app-type to be set in request header", w, r)
 		return
 	}
 
@@ -57,14 +58,14 @@ func (n *notificationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	configName := config.DetermineNotificationConfigName(sHeaders.Platform, sHeaders.AppType, sHeaders.AppEnvironment)
 	notificationConfig, err := n.notificationConfigs.Get(configName)
 	if err != nil {
-		apiservice.WriteError(errors.New("Unable to find right notification config for "+configName), w, r)
+		apiservice.WriteError(ctx, errors.New("Unable to find right notification config for "+configName), w, r)
 		return
 	}
 
 	// lookup any existing push config associated with this device token
 	existingPushConfigData, err := n.dataAPI.GetPushConfigData(rData.DeviceToken)
 	if err != nil && !api.IsErrNotFound(err) {
-		apiservice.WriteError(errors.New("Unable to get push config data for device token: "+err.Error()), w, r)
+		apiservice.WriteError(ctx, errors.New("Unable to get push config data for device token: "+err.Error()), w, r)
 		return
 	}
 
@@ -80,14 +81,14 @@ func (n *notificationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 			Token: &rData.DeviceToken,
 		})
 		if err != nil {
-			apiservice.WriteError(errors.New("Unable to register token for push notifications: "+err.Error()), w, r)
+			apiservice.WriteError(ctx, errors.New("Unable to register token for push notifications: "+err.Error()), w, r)
 			return
 		}
 		pushEndpoint = *res.EndpointARN
 	}
 
 	newPushConfigData := &common.PushConfigData{
-		AccountID:       apiservice.GetContext(r).AccountID,
+		AccountID:       apiservice.MustCtxAccount(ctx).ID,
 		DeviceToken:     rData.DeviceToken,
 		PushEndpoint:    pushEndpoint,
 		Platform:        sHeaders.Platform,
@@ -102,7 +103,7 @@ func (n *notificationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	// update the device token for the user
 	if err := n.dataAPI.SetOrReplacePushConfigData(newPushConfigData); err != nil {
-		apiservice.WriteError(errors.New("Unable to update push config data: "+err.Error()), w, r)
+		apiservice.WriteError(ctx, errors.New("Unable to update push config data: "+err.Error()), w, r)
 		return
 	}
 

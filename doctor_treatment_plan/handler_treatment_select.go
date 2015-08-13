@@ -3,6 +3,7 @@ package doctor_treatment_plan
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -16,7 +17,7 @@ type selectHandler struct {
 	erxAPI  erx.ERxAPI
 }
 
-func NewMedicationSelectHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
+func NewMedicationSelectHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(&selectHandler{
 			dataAPI: dataAPI,
@@ -33,18 +34,18 @@ type NewTreatmentResponse struct {
 	Treatment *common.Treatment `json:"treatment"`
 }
 
-func (m *selectHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.RoleDoctor {
+func (m *selectHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+	if apiservice.MustCtxAccount(ctx).Role != api.RoleDoctor {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 
 	return true, nil
 }
 
-func (m *selectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (m *selectHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	requestData := new(NewTreatmentRequestData)
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	}
 
@@ -53,15 +54,15 @@ func (m *selectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	doctor, err := m.dataAPI.GetDoctorFromAccountID(apiservice.GetContext(r).AccountID)
+	doctor, err := m.dataAPI.GetDoctorFromAccountID(apiservice.MustCtxAccount(ctx).ID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	medication, err := m.erxAPI.SelectMedication(doctor.DoseSpotClinicianID, requestData.MedicationName, requestData.MedicationStrength)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -81,7 +82,7 @@ func (m *selectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// and use it as source of authority to describe a treatment that a
 	// doctor adds to the treatment plan
 	if err := m.dataAPI.SetDrugDescription(description); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

@@ -3,11 +3,11 @@ package tagging
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/tagging/response"
-
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/tagging/response"
 )
 
 type tagSavedSearchHandler struct {
@@ -18,32 +18,25 @@ type tagSavedSearchGETResponse struct {
 	SavedSearches []*response.TagSavedSearch `json:"saved_searches"`
 }
 
-func NewTagSavedSearchHandler(taggingClient Client) http.Handler {
+func NewTagSavedSearchHandler(taggingClient Client) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(&tagSavedSearchHandler{taggingClient: taggingClient}),
+		apiservice.SupportedRoles(
+			apiservice.NoAuthorizationRequired(&tagSavedSearchHandler{taggingClient: taggingClient}),
+			api.RoleCC),
 		httputil.Get)
 }
 
-func (p *tagSavedSearchHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.RoleCC {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-
-	return true, nil
-}
-
-func (h *tagSavedSearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *tagSavedSearchHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		h.serveGET(w, r)
+		h.serveGET(ctx, w, r)
 	}
 }
 
-func (h *tagSavedSearchHandler) serveGET(w http.ResponseWriter, r *http.Request) {
+func (h *tagSavedSearchHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	savedSearches, err := h.taggingClient.TagSavedSearchs()
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

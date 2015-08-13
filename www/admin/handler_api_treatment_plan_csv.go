@@ -157,13 +157,13 @@ func newFTP() *ftp {
 }
 
 func newTreatmentPlanCSVHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&treatmentPlanCSVHandler{dataAPI: dataAPI, erxAPI: erxAPI}, httputil.Put)
+	return httputil.SupportedMethods(&treatmentPlanCSVHandler{dataAPI: dataAPI, erxAPI: erxAPI}, httputil.Put)
 }
 
 func (h *treatmentPlanCSVHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "PUT":
-		requestData, err := h.parsePUTRequest(r)
+		requestData, err := h.parsePUTRequest(ctx, r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
@@ -172,7 +172,7 @@ func (h *treatmentPlanCSVHandler) ServeHTTP(ctx context.Context, w http.Response
 	}
 }
 
-func (h *treatmentPlanCSVHandler) parsePUTRequest(r *http.Request) (*treatmentPlanCSVPUTRequest, error) {
+func (h *treatmentPlanCSVHandler) parsePUTRequest(ctx context.Context, r *http.Request) (*treatmentPlanCSVPUTRequest, error) {
 	var err error
 	rd := &treatmentPlanCSVPUTRequest{}
 	if err := r.ParseMultipartForm(maxMemory); err != nil {

@@ -3,6 +3,7 @@ package doctor_treatment_plan
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -19,13 +20,15 @@ type treatmentsHandler struct {
 	dispatcher *dispatch.Dispatcher
 }
 
-func NewTreatmentsHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher) http.Handler {
+func NewTreatmentsHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(&treatmentsHandler{
-			dataAPI:    dataAPI,
-			erxAPI:     erxAPI,
-			dispatcher: dispatcher,
-		}), httputil.Post)
+		apiservice.RequestCacheHandler(
+			apiservice.AuthorizationRequired(&treatmentsHandler{
+				dataAPI:    dataAPI,
+				erxAPI:     erxAPI,
+				dispatcher: dispatcher,
+			})),
+		httputil.Post)
 }
 
 type GetTreatmentsResponse struct {
@@ -41,9 +44,10 @@ type AddTreatmentsRequestBody struct {
 	TreatmentPlanID encoding.ObjectID   `json:"treatment_plan_id"`
 }
 
-func (t *treatmentsHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.RoleDoctor {
+func (t *treatmentsHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+	account := apiservice.MustCtxAccount(ctx)
+	requestCache := apiservice.MustCtxCache(ctx)
+	if account.Role != api.RoleDoctor {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 
@@ -53,35 +57,35 @@ func (t *treatmentsHandler) IsAuthorized(r *http.Request) (bool, error) {
 	} else if requestData.TreatmentPlanID.Int64() == 0 {
 		return false, apiservice.NewValidationError("treatment_plan_id must be specified")
 	}
-	ctxt.RequestCache[apiservice.RequestData] = requestData
+	requestCache[apiservice.CKRequestData] = requestData
 
-	doctor, err := t.dataAPI.GetDoctorFromAccountID(apiservice.GetContext(r).AccountID)
+	doctor, err := t.dataAPI.GetDoctorFromAccountID(apiservice.MustCtxAccount(ctx).ID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.Doctor] = doctor
+	requestCache[apiservice.CKDoctor] = doctor
 
 	treatmentPlan, err := t.dataAPI.GetAbridgedTreatmentPlan(requestData.TreatmentPlanID.Int64(), doctor.ID.Int64())
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
+	requestCache[apiservice.CKTreatmentPlan] = treatmentPlan
 
-	if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctor.ID.Int64(), treatmentPlan.PatientID, treatmentPlan.PatientCaseID.Int64(), t.dataAPI); err != nil {
+	if err := apiservice.ValidateAccessToPatientCase(r.Method, account.Role, doctor.ID.Int64(), treatmentPlan.PatientID, treatmentPlan.PatientCaseID.Int64(), t.dataAPI); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	requestData := ctxt.RequestCache[apiservice.RequestData].(*AddTreatmentsRequestBody)
-	doctor := ctxt.RequestCache[apiservice.Doctor].(*common.Doctor)
-	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
+func (t *treatmentsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	requestData := requestCache[apiservice.CKRequestData].(*AddTreatmentsRequestBody)
+	doctor := requestCache[apiservice.CKDoctor].(*common.Doctor)
+	treatmentPlan := requestCache[apiservice.CKTreatmentPlan].(*common.TreatmentPlan)
 
 	if !treatmentPlan.InDraftMode() {
-		apiservice.WriteValidationError("treatment plan must be in draft mode", w, r)
+		apiservice.WriteValidationError(ctx, "treatment plan must be in draft mode", w, r)
 		return
 	}
 
@@ -90,7 +94,7 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		t.dataAPI,
 		t.erxAPI,
 		doctor.DoseSpotClinicianID); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -107,13 +111,13 @@ func (t *treatmentsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		doctor.ID.Int64(),
 		requestData.TreatmentPlanID.Int64(),
 		treatmentPlan.PatientID); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	treatments, err := t.dataAPI.GetTreatmentsBasedOnTreatmentPlanID(requestData.TreatmentPlanID.Int64())
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

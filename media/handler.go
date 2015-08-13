@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -53,7 +54,7 @@ func NewHandler(
 	cacheStore storage.DeterministicStore,
 	expirationDuration time.Duration,
 	metricsRegistry metrics.Registry,
-) http.Handler {
+) httputil.ContextHandler {
 	h := &handler{
 		dataAPI:            dataAPI,
 		store:              store,
@@ -70,11 +71,14 @@ func NewHandler(
 	metricsRegistry.Add("latency/total", h.statTotalLatency)
 	metricsRegistry.Add("latency/resize", h.statResizeLatency)
 	metricsRegistry.Add("latency/write", h.statWriteLatency)
-	return httputil.SupportedMethods(apiservice.AuthorizationRequired(h), httputil.Get, httputil.Post)
+	return httputil.SupportedMethods(
+		apiservice.RequestCacheHandler(
+			apiservice.AuthorizationRequired(h)),
+		httputil.Get, httputil.Post)
 }
 
-func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
+func (h *handler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+	requestCache := apiservice.MustCtxCache(ctx)
 	switch r.Method {
 	case "GET":
 		req := &mediaRequest{}
@@ -87,22 +91,25 @@ func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
 		if !h.store.ValidateSignature(req.MediaID, req.ExpireTime, req.Signature) {
 			return false, apiservice.NewAccessForbiddenError()
 		}
-		ctxt.RequestCache[apiservice.RequestData] = req
+		requestCache[apiservice.CKRequestData] = req
 	case "POST":
-		role := ctxt.Role
+		account, ok := apiservice.CtxAccount(ctx)
+		if !ok {
+			return false, apiservice.NewAccessForbiddenError()
+		}
 		var personID int64
-		switch role {
+		switch account.Role {
 		case api.RoleDoctor, api.RoleCC:
-			doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
+			doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(account.ID)
 			if err != nil {
 				return false, err
 			}
-			personID, err = h.dataAPI.GetPersonIDByRole(role, doctorID)
+			personID, err = h.dataAPI.GetPersonIDByRole(account.Role, doctorID)
 			if err != nil {
 				return false, err
 			}
 		case api.RolePatient:
-			patientID, err := h.dataAPI.GetPatientIDFromAccountID(ctxt.AccountID)
+			patientID, err := h.dataAPI.GetPatientIDFromAccountID(account.ID)
 			if err != nil {
 				return false, err
 			}
@@ -113,17 +120,17 @@ func (h *handler) IsAuthorized(r *http.Request) (bool, error) {
 		default:
 			return false, apiservice.NewAccessForbiddenError()
 		}
-		ctxt.RequestCache[apiservice.PersonID] = personID
+		requestCache[apiservice.CKPersonID] = personID
 	}
 	return true, nil
 }
 
-func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *handler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		h.get(w, r)
+		h.get(ctx, w, r)
 	case "POST":
-		h.post(w, r)
+		h.post(ctx, w, r)
 	}
 }
 
@@ -136,18 +143,17 @@ func copyWithHeaders(w http.ResponseWriter, r io.Reader, headers http.Header, la
 	io.Copy(w, r)
 }
 
-func (h *handler) get(w http.ResponseWriter, r *http.Request) {
-	ctx := apiservice.GetContext(r)
-	req := ctx.RequestCache[apiservice.RequestData].(*mediaRequest)
+func (h *handler) get(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	req := apiservice.MustCtxCache(ctx)[apiservice.CKRequestData].(*mediaRequest)
 
 	startTime := time.Now()
 
 	media, err := h.dataAPI.GetMedia(req.MediaID)
 	if api.IsErrNotFound(err) {
-		apiservice.WriteResourceNotFoundError("Media not found", w, r)
+		apiservice.WriteResourceNotFoundError(ctx, "Media not found", w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -157,7 +163,7 @@ func (h *handler) get(w http.ResponseWriter, r *http.Request) {
 	if req.Width <= 0 && req.Height <= 0 {
 		rc, headers, err := h.store.GetReader(media.URL)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		defer rc.Close()
@@ -186,7 +192,7 @@ func (h *handler) get(w http.ResponseWriter, r *http.Request) {
 
 	rc, _, err := h.store.GetReader(media.URL)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	defer rc.Close()
@@ -194,7 +200,7 @@ func (h *handler) get(w http.ResponseWriter, r *http.Request) {
 	resizeStartTime := time.Now()
 	resizedImg, err := resizeImageFromReader(rc, req.Width, req.Height)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	h.statResizeLatency.Update(time.Since(resizeStartTime).Nanoseconds() / 1e3)
@@ -213,7 +219,7 @@ func (h *handler) get(w http.ResponseWriter, r *http.Request) {
 	if err := jpeg.Encode(buf, resizedImg, &jpeg.Options{
 		Quality: jpegQuality,
 	}); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -230,9 +236,9 @@ func (h *handler) get(w http.ResponseWriter, r *http.Request) {
 	h.statTotalLatency.Update(time.Since(startTime).Nanoseconds() / 1e3)
 }
 
-func (h *handler) post(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	personID := ctxt.RequestCache[apiservice.PersonID].(int64)
+func (h *handler) post(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	personID := requestCache[apiservice.CKPersonID].(int64)
 	file, handler, err := r.FormFile("media")
 	if err != nil {
 		file, handler, err = r.FormFile("photo")
@@ -245,13 +251,13 @@ func (h *handler) post(w http.ResponseWriter, r *http.Request) {
 
 	size, err := common.SeekerSize(file)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	uid := make([]byte, 16)
 	if _, err := rand.Read(uid); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -260,19 +266,19 @@ func (h *handler) post(w http.ResponseWriter, r *http.Request) {
 
 	url, err := h.store.PutReader(name, file, size, contentType, nil)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	id, err := h.dataAPI.AddMedia(personID, url, contentType)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	signedURL, err := h.store.SignedURL(id, h.expirationDuration)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	res := &uploadResponse{

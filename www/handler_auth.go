@@ -50,7 +50,7 @@ func NewLoginHandler(authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, 
 	metricsRegistry.Add("success-2fa-required", h.statSuccess2FARequired)
 	metricsRegistry.Add("success-2fa-not-required", h.statSuccess2FANotRequired)
 	metricsRegistry.Add("success-2fa-verified", h.statSuccess2FAVerified)
-	return httputil.ContextSupportedMethods(h, httputil.Get, httputil.Post)
+	return httputil.SupportedMethods(h, httputil.Get, httputil.Post)
 }
 
 func (h *loginHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
@@ -190,7 +190,7 @@ func NewLoginVerifyHandler(authAPI api.AuthAPI, templateLoader *TemplateLoader, 
 	metricsRegistry.Add("failure-invalid-token", h.statFailureInvalidToken)
 	metricsRegistry.Add("failure-invalid-code", h.statFailureInvalidCode)
 	metricsRegistry.Add("failure-expired", h.statFailureExpired)
-	return httputil.ContextSupportedMethods(h, httputil.Get, httputil.Post)
+	return httputil.SupportedMethods(h, httputil.Get, httputil.Post)
 }
 
 func (h *loginVerifyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
@@ -314,7 +314,7 @@ type logoutHandler struct {
 }
 
 func NewLogoutHandler(authAPI api.AuthAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&logoutHandler{
+	return httputil.SupportedMethods(&logoutHandler{
 		authAPI: authAPI,
 	}, httputil.Get, httputil.Post)
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -16,70 +17,74 @@ type assignHandler struct {
 	dispatcher *dispatch.Dispatcher
 }
 
-func NewAssignHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
+func NewAssignHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
-			apiservice.AuthorizationRequired(
-				&assignHandler{
-					dataAPI:    dataAPI,
-					dispatcher: dispatcher,
-				}),
+			apiservice.RequestCacheHandler(
+				apiservice.AuthorizationRequired(
+					&assignHandler{
+						dataAPI:    dataAPI,
+						dispatcher: dispatcher,
+					})),
 			api.RoleDoctor, api.RoleCC),
 		httputil.Post)
 }
 
-func (a *assignHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
+func (a *assignHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	account := apiservice.MustCtxAccount(ctx)
 
 	requestData := &PostMessageRequest{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error())
 	}
-	ctxt.RequestCache[apiservice.RequestData] = requestData
+	requestCache[apiservice.CKRequestData] = requestData
 
-	doctor, err := a.dataAPI.GetDoctorFromAccountID(ctxt.AccountID)
+	doctor, err := a.dataAPI.GetDoctorFromAccountID(account.ID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.Doctor] = doctor
+	requestCache[apiservice.CKDoctor] = doctor
 
 	patientCase, err := a.dataAPI.GetPatientCaseFromID(requestData.CaseID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.PatientCase] = patientCase
+	requestCache[apiservice.CKPatientCase] = patientCase
 
-	personID, doctorID, err := validateAccess(a.dataAPI, r, patientCase)
+	personID, doctorID, err := validateAccess(a.dataAPI, r, apiservice.MustCtxAccount(ctx), patientCase)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.PersonID] = personID
-	ctxt.RequestCache[apiservice.DoctorID] = doctorID
+	requestCache[apiservice.CKPersonID] = personID
+	requestCache[apiservice.CKDoctorID] = doctorID
 
 	return true, nil
 }
 
-func (a *assignHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	requestData := ctxt.RequestCache[apiservice.RequestData].(*PostMessageRequest)
-	patientCase := ctxt.RequestCache[apiservice.PatientCase].(*common.PatientCase)
-	personID := ctxt.RequestCache[apiservice.PersonID].(int64)
-	doctorID := ctxt.RequestCache[apiservice.DoctorID].(int64)
+func (a *assignHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	requestData := requestCache[apiservice.CKRequestData].(*PostMessageRequest)
+	patientCase := requestCache[apiservice.CKPatientCase].(*common.PatientCase)
+	personID := requestCache[apiservice.CKPersonID].(int64)
+	doctorID := requestCache[apiservice.CKDoctorID].(int64)
+
+	account := apiservice.MustCtxAccount(ctx)
 
 	if requestData.CaseID == 0 {
-		apiservice.WriteValidationError("case_id is required", w, r)
+		apiservice.WriteValidationError(ctx, "case_id is required", w, r)
 		return
 	}
 
 	// MA can only assign a case that is already claimed
-	if ctxt.Role == api.RoleCC && !patientCase.Claimed {
-		apiservice.WriteValidationError("Care coordinator cannot assign a case to a doctor for a case that is not currently claimed by a doctor", w, r)
+	if account.Role == api.RoleCC && !patientCase.Claimed {
+		apiservice.WriteValidationError(ctx, "Care coordinator cannot assign a case to a doctor for a case that is not currently claimed by a doctor", w, r)
 		return
 	}
 
 	people, err := a.dataAPI.GetPeople([]int64{personID})
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	person := people[personID]
@@ -87,14 +92,14 @@ func (a *assignHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var longDisplayName string
 	var doctor *common.Doctor
 	var ma *common.Doctor
-	switch ctxt.Role {
+	switch account.Role {
 	case api.RoleCC:
-		ma = ctxt.RequestCache[apiservice.Doctor].(*common.Doctor)
+		ma = requestCache[apiservice.CKDoctor].(*common.Doctor)
 
 		// identify the doctor for the case
 		assignments, err := a.dataAPI.GetDoctorsAssignedToPatientCase(patientCase.ID.Int64())
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
@@ -102,7 +107,7 @@ func (a *assignHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if doctorAssignment.Status == api.StatusActive {
 				doctor, err = a.dataAPI.GetDoctorFromID(doctorAssignment.ProviderID)
 				if err != nil {
-					apiservice.WriteError(err, w, r)
+					apiservice.WriteError(ctx, err, w, r)
 					return
 				}
 				longDisplayName = doctor.LongDisplayName
@@ -110,18 +115,18 @@ func (a *assignHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case api.RoleDoctor:
-		doctor = ctxt.RequestCache[apiservice.Doctor].(*common.Doctor)
+		doctor = requestCache[apiservice.CKDoctor].(*common.Doctor)
 
 		careTeam, err := a.dataAPI.GetActiveMembersOfCareTeamForCase(patientCase.ID.Int64(), false)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		for _, cp := range careTeam {
 			if cp.ProviderRole == api.RoleCC {
 				ma, err = a.dataAPI.Doctor(cp.ProviderID, true)
 				if err != nil {
-					apiservice.WriteError(err, w, r)
+					apiservice.WriteError(ctx, err, w, r)
 					return
 				}
 				break
@@ -129,7 +134,7 @@ func (a *assignHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if ma == nil {
-			apiservice.WriteError(fmt.Errorf("No CC assigned to case %d", patientCase.ID.Int64()), w, r)
+			apiservice.WriteError(ctx, fmt.Errorf("No CC assigned to case %d", patientCase.ID.Int64()), w, r)
 			return
 		}
 
@@ -144,8 +149,8 @@ func (a *assignHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		EventText: fmt.Sprintf("assigned to %s", longDisplayName),
 	}
 
-	if err := CreateMessageAndAttachments(msg, requestData.Attachments, personID, doctorID, ctxt.Role, a.dataAPI); err != nil {
-		apiservice.WriteError(err, w, r)
+	if err := CreateMessageAndAttachments(msg, requestData.Attachments, personID, doctorID, account.Role, a.dataAPI); err != nil {
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

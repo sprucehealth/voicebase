@@ -3,6 +3,7 @@ package patient
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -19,7 +20,7 @@ type pharmacySearchHandler struct {
 	dataAPI           api.DataAPI
 }
 
-func NewPharmacySearchHandler(dataAPI api.DataAPI, pharmacySearchAPI pharmacy.PharmacySearchAPI) http.Handler {
+func NewPharmacySearchHandler(dataAPI api.DataAPI, pharmacySearchAPI pharmacy.PharmacySearchAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&pharmacySearchHandler{
 			dataAPI:           dataAPI,
@@ -38,10 +39,10 @@ type PharmacyTextSearchResponse struct {
 	Pharmacies []*pharmacy.PharmacyData `json:"pharmacy_results"`
 }
 
-func (p *pharmacySearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *pharmacySearchHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var requestData PharmacyTextSearchRequestData
 	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	}
 
@@ -52,7 +53,7 @@ func (p *pharmacySearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 	pharmacies, err := p.pharmacySearchAPI.GetPharmaciesAroundSearchLocation(requestData.Latitude, requestData.Longitude, searchRadius, numResults)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

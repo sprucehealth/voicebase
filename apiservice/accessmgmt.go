@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -26,26 +27,27 @@ var (
 )
 
 // AccountDoctorHasAccessToCase validates a given doctor account's access to a patient case, this will also optionally populate the case and doctorID attributes of the provided context
-func AccountDoctorHasAccessToCase(accountID, caseID int64, accountRole string, requiredAccess RecordAccessRequired, dataAPI api.DataAPI, ctxt *Context) (bool, error) {
+func AccountDoctorHasAccessToCase(ctx context.Context, accountID, caseID int64, accountRole string, requiredAccess RecordAccessRequired, dataAPI api.DataAPI) (bool, error) {
 	doctorID, err := dataAPI.GetDoctorIDFromAccountID(accountID)
 	if err != nil {
 		return false, err
 	}
-	return DoctorHasAccessToCase(doctorID, caseID, accountRole, requiredAccess, dataAPI, ctxt)
+	return DoctorHasAccessToCase(ctx, doctorID, caseID, accountRole, requiredAccess, dataAPI)
 }
 
 // DoctorHasAccessToCase validates a given doctor's access to a patient case, this will also optionally populate the case and doctorID attributes of the provided context
-func DoctorHasAccessToCase(doctorID, caseID int64, accountRole string, requiredAccess RecordAccessRequired, dataAPI api.DataAPI, ctxt *Context) (bool, error) {
-	if ctxt != nil {
-		ctxt.RequestCache[DoctorID] = doctorID
+func DoctorHasAccessToCase(ctx context.Context, doctorID, caseID int64, accountRole string, requiredAccess RecordAccessRequired, dataAPI api.DataAPI) (bool, error) {
+	requestCache, _ := CtxCache(ctx)
+	if requestCache != nil {
+		requestCache[CKDoctorID] = doctorID
 	}
 
 	patientCase, err := dataAPI.GetPatientCaseFromID(caseID)
 	if err != nil {
 		return false, err
 	}
-	if ctxt != nil {
-		ctxt.RequestCache[PatientCase] = patientCase
+	if requestCache != nil {
+		requestCache[CKPatientCase] = patientCase
 	}
 
 	if requiredAccess.Has(WriteAccessRequired) {

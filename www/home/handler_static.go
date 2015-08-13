@@ -31,7 +31,7 @@ func newStaticHandler(router *mux.Router, templateLoader *www.TemplateLoader, tm
 	if ctxFun != nil {
 		ctx = ctxFun()
 	}
-	return httputil.ContextSupportedMethods(&staticHandler{
+	return httputil.SupportedMethods(&staticHandler{
 		router: router,
 		title:  title,
 		template: templateLoader.MustLoadTemplate(tmpl, "home/base.html", map[string]interface{}{

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -17,13 +18,16 @@ type cardsHandler struct {
 	addressValidationAPI address.Validator
 }
 
-func NewCardsHandler(dataAPI api.DataAPI, paymentAPI apiservice.StripeClient, addressValidationAPI address.Validator) http.Handler {
+func NewCardsHandler(dataAPI api.DataAPI, paymentAPI apiservice.StripeClient, addressValidationAPI address.Validator) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(&cardsHandler{
-			dataAPI:              dataAPI,
-			paymentAPI:           paymentAPI,
-			addressValidationAPI: addressValidationAPI,
-		}), httputil.Get, httputil.Delete, httputil.Post, httputil.Put)
+		apiservice.SupportedRoles(
+			apiservice.NoAuthorizationRequired(&cardsHandler{
+				dataAPI:              dataAPI,
+				paymentAPI:           paymentAPI,
+				addressValidationAPI: addressValidationAPI,
+			}),
+			api.RolePatient),
+		httputil.Get, httputil.Delete, httputil.Post, httputil.Put)
 }
 
 type PatientCardsRequestData struct {
@@ -34,113 +38,106 @@ type PatientCardsResponse struct {
 	Cards []*common.Card `json:"cards"`
 }
 
-func (p *cardsHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.RolePatient {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-	return true, nil
-}
-
-func (p *cardsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *cardsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		p.getCardsForPatient(w, r)
+		p.getCardsForPatient(ctx, w, r)
 	case httputil.Delete:
-		p.deleteCardForPatient(w, r)
+		p.deleteCardForPatient(ctx, w, r)
 	case httputil.Put:
-		p.makeCardDefaultForPatient(w, r)
+		p.makeCardDefaultForPatient(ctx, w, r)
 	case httputil.Post:
-		p.addCardForPatient(w, r)
+		p.addCardForPatient(ctx, w, r)
 	default:
 		http.NotFound(w, r)
 	}
 }
 
-func (p *cardsHandler) getCardsForPatient(w http.ResponseWriter, r *http.Request) {
-	patient, err := p.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
+func (p *cardsHandler) getCardsForPatient(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	patient, err := p.dataAPI.GetPatientFromAccountID(apiservice.MustCtxAccount(ctx).ID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	cards, err := getCardsAndReconcileWithPaymentService(patient, p.dataAPI, p.paymentAPI)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	httputil.JSONResponse(w, http.StatusOK, PatientCardsResponse{Cards: cards})
 }
 
-func (p *cardsHandler) makeCardDefaultForPatient(w http.ResponseWriter, r *http.Request) {
+func (p *cardsHandler) makeCardDefaultForPatient(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	requestData := &PatientCardsRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	}
 
 	card, err := p.dataAPI.GetCardFromID(requestData.CardID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
-	patient, err := p.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
+	patient, err := p.dataAPI.GetPatientFromAccountID(apiservice.MustCtxAccount(ctx).ID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	pendingTaskID, err := p.dataAPI.CreatePendingTask(api.PendingTaskPatientCard, api.StatusUpdating, patient.ID.Int64())
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	if patient.PaymentCustomerID == "" {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	if err := p.dataAPI.MakeCardDefaultForPatient(patient.ID.Int64(), card); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	if err := p.paymentAPI.MakeCardDefaultForCustomer(card.ThirdPartyID, patient.PaymentCustomerID); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	if err := p.dataAPI.UpdateDefaultAddressForPatient(patient.ID.Int64(), card.BillingAddress); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	if err := p.dataAPI.DeletePendingTask(pendingTaskID); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	cards, err := getCardsAndReconcileWithPaymentService(patient, p.dataAPI, p.paymentAPI)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	httputil.JSONResponse(w, http.StatusOK, PatientCardsResponse{Cards: cards})
 }
 
-func (p *cardsHandler) deleteCardForPatient(w http.ResponseWriter, r *http.Request) {
+func (p *cardsHandler) deleteCardForPatient(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	requestData := &PatientCardsRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
-	patient, err := p.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
+	patient, err := p.dataAPI.GetPatientFromAccountID(apiservice.MustCtxAccount(ctx).ID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -151,14 +148,14 @@ func (p *cardsHandler) deleteCardForPatient(w http.ResponseWriter, r *http.Reque
 		switchDefaultCard,
 		p.dataAPI,
 		p.paymentAPI); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	cards, err := getCardsAndReconcileWithPaymentService(
 		patient, p.dataAPI, p.paymentAPI)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -167,20 +164,20 @@ func (p *cardsHandler) deleteCardForPatient(w http.ResponseWriter, r *http.Reque
 	})
 }
 
-func (p *cardsHandler) addCardForPatient(w http.ResponseWriter, r *http.Request) {
+func (p *cardsHandler) addCardForPatient(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	cardToAdd := &common.Card{}
 	if err := json.NewDecoder(r.Body).Decode(&cardToAdd); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	}
 
 	//  look up the payment service customer id for the patient
-	patient, err := p.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
+	patient, err := p.dataAPI.GetPatientFromAccountID(apiservice.MustCtxAccount(ctx).ID)
 	if api.IsErrNotFound(err) {
-		apiservice.WriteResourceNotFoundError("no patient found", w, r)
+		apiservice.WriteResourceNotFoundError(ctx, "no patient found", w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -194,13 +191,13 @@ func (p *cardsHandler) addCardForPatient(w http.ResponseWriter, r *http.Request)
 		cardToAdd,
 		patient,
 		enforceAddressRequirement); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	cards, err := getCardsAndReconcileWithPaymentService(patient, p.dataAPI, p.paymentAPI)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

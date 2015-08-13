@@ -54,7 +54,7 @@ func (f *claimsHistoryForm) Validate() map[string]string {
 }
 
 func newClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&claimsHistoryHandler{
+	return httputil.SupportedMethods(&claimsHistoryHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		store:    store,

@@ -19,7 +19,7 @@ type introHandler struct {
 }
 
 func newIntroHandler(router *mux.Router, signer *sig.Signer, templateLoader *www.TemplateLoader) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&introHandler{
+	return httputil.SupportedMethods(&introHandler{
 		router:   router,
 		nextStep: "doctor-register-account",
 		template: templateLoader.MustLoadTemplate("dronboard/intro.html", "dronboard/base.html", nil),

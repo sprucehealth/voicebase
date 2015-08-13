@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
@@ -47,7 +48,7 @@ type PatientsFeedResponse struct {
 	Items []*PatientsFeedItem `json:"items"`
 }
 
-func NewPatientsFeedHandler(dataAPI api.DataAPI, taggingClient tagging.Client) http.Handler {
+func NewPatientsFeedHandler(dataAPI api.DataAPI, taggingClient tagging.Client) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(
@@ -58,19 +59,19 @@ func NewPatientsFeedHandler(dataAPI api.DataAPI, taggingClient tagging.Client) h
 		httputil.Get)
 }
 
-func (h *patientsFeedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *patientsFeedHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		req, err := h.parseGETRequest(r)
+		req, err := h.parseGETRequest(ctx, r)
 		if err != nil {
-			apiservice.WriteBadRequestError(err, w, r)
+			apiservice.WriteBadRequestError(ctx, err, w, r)
 			return
 		}
-		h.serveGET(w, r, req)
+		h.serveGET(ctx, w, r, req)
 	}
 }
 
-func (h *patientsFeedHandler) parseGETRequest(r *http.Request) (*CaseFeedGETRequest, error) {
+func (h *patientsFeedHandler) parseGETRequest(ctx context.Context, r *http.Request) (*CaseFeedGETRequest, error) {
 	rd := &CaseFeedGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -82,8 +83,8 @@ func (h *patientsFeedHandler) parseGETRequest(r *http.Request) (*CaseFeedGETRequ
 	return rd, nil
 }
 
-func (h *patientsFeedHandler) serveGET(w http.ResponseWriter, r *http.Request, rd *CaseFeedGETRequest) {
-	ctx := apiservice.GetContext(r)
+func (h *patientsFeedHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *CaseFeedGETRequest) {
+	account := apiservice.MustCtxAccount(ctx)
 
 	// Query items. MA gets all items. Doctors get only the cases they're involved with.
 	var items []*common.PatientCaseFeedItem
@@ -93,16 +94,16 @@ func (h *patientsFeedHandler) serveGET(w http.ResponseWriter, r *http.Request, r
 	if rd.PastTrigger {
 		ops = tagging.TOPastTrigger
 	}
-	if ctx.Role == api.RoleCC {
+	if account.Role == api.RoleCC {
 		//Only CC can access tag search functionality
 		if rd.IsTagQuery() {
 			memberships, err := h.taggingClient.TagMembershipQuery(rd.Query, ops)
 			if query.IsErrBadExpression(err) {
-				apiservice.WriteBadRequestError(err, w, r)
+				apiservice.WriteBadRequestError(ctx, err, w, r)
 				return
 			}
 			if err != nil {
-				apiservice.WriteError(err, w, r)
+				apiservice.WriteError(ctx, err, w, r)
 				return
 			}
 
@@ -129,21 +130,21 @@ func (h *patientsFeedHandler) serveGET(w http.ResponseWriter, r *http.Request, r
 		if (rd.IsTagQuery() && len(caseIDs) > 0) || !rd.IsTagQuery() {
 			items, err = h.dataAPI.PatientCaseFeed(caseIDs, start, end)
 			if err != nil {
-				apiservice.WriteError(err, w, r)
+				apiservice.WriteError(ctx, err, w, r)
 				return
 			}
 		}
 	} else {
 		var doctorID int64
-		doctorID, err = h.dataAPI.GetDoctorIDFromAccountID(ctx.AccountID)
+		doctorID, err = h.dataAPI.GetDoctorIDFromAccountID(account.ID)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		items, err = h.dataAPI.PatientCaseFeedForDoctor(doctorID)
 	}
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -157,7 +158,7 @@ func (h *patientsFeedHandler) serveGET(w http.ResponseWriter, r *http.Request, r
 
 	caseTagsByCaseID, err := h.taggingClient.TagsForCases(caseIDs, tagging.TONonHiddenOnly)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

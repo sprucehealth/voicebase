@@ -22,7 +22,7 @@ type providerAttrDownloadHandler struct {
 }
 
 func newProviderAttrDownloadHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&providerAttrDownloadHandler{
+	return httputil.SupportedMethods(&providerAttrDownloadHandler{
 		router:  router,
 		dataAPI: dataAPI,
 		store:   store,

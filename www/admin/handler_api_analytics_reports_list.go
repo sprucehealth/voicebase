@@ -17,7 +17,7 @@ type analyticsReportsListAPIHandler struct {
 }
 
 func newAnalyticsReportsListAPIHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&analyticsReportsListAPIHandler{
+	return httputil.SupportedMethods(&analyticsReportsListAPIHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get, httputil.Post)
 }

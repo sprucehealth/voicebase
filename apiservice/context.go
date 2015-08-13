@@ -2,65 +2,94 @@ package apiservice
 
 import (
 	"net/http"
-	"sync"
-	"time"
+
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
-var (
-	ctxMu          sync.Mutex
-	requestContext = map[*http.Request]*Context{}
+type contextKey int
+
+const (
+	ckAccount contextKey = iota
+	ckCache
 )
 
 // CacheKey represents a type used to key a cache map
 type CacheKey int
 
+// Available cache keys
 const (
-	Patient CacheKey = iota
-	PatientID
-	PersonID
-	Doctor
-	DoctorID
-	PatientCase
-	PatientCaseID
-	PatientVisit
-	PatientVisitID
-	TreatmentPlan
-	TreatmentPlanID
-	Treatment
-	TreatmentID
-	RefillRequestID
-	RefillRequest
-	RequestData
-	ERxSource
-	FavoriteTreatmentPlan
-	Account
+	CKPatient CacheKey = iota
+	CKPatientID
+	CKPersonID
+	CKDoctor
+	CKDoctorID
+	CKPatientCase
+	CKPatientCaseID
+	CKPatientVisit
+	CKPatientVisitID
+	CKTreatmentPlan
+	CKTreatmentPlanID
+	CKTreatment
+	CKTreatmentID
+	CKRefillRequestID
+	CKRefillRequest
+	CKRequestData
+	CKERxSource
+	CKFavoriteTreatmentPlan
+	CKAccount
 )
 
-// Context represents the context associated with a web request
-type Context struct {
-	AccountID        int64
-	Role             string
-	RequestStartTime time.Time
-	RequestID        uint64
-	RequestCache     map[CacheKey]interface{}
+// MustCtxAccount returns the account from the context or panics if it's missing or wrong type.
+func MustCtxAccount(ctx context.Context) *common.Account {
+	return ctx.Value(ckAccount).(*common.Account)
 }
 
-// GetContext returns the context associated with the provided request
-func GetContext(req *http.Request) *Context {
-	ctxMu.Lock()
-	defer ctxMu.Unlock()
-	if ctx := requestContext[req]; ctx != nil {
-		return ctx
+// MustCtxCache returns the request cache from the context or panics if it's missing or wrong type.
+func MustCtxCache(ctx context.Context) map[CacheKey]interface{} {
+	return ctx.Value(ckCache).(map[CacheKey]interface{})
+}
+
+// CtxAccount returns the account from the context and true. Otherwise it returns false.
+func CtxAccount(ctx context.Context) (*common.Account, bool) {
+	v := ctx.Value(ckAccount)
+	if v == nil {
+		return nil, false
 	}
-	ctx := &Context{}
-	ctx.RequestCache = make(map[CacheKey]interface{})
-	requestContext[req] = ctx
-	return ctx
+	return v.(*common.Account), true
 }
 
-// DeleteContext removes the context associated with the provided request from the backing map
-func DeleteContext(req *http.Request) {
-	ctxMu.Lock()
-	delete(requestContext, req)
-	ctxMu.Unlock()
+// CtxCache returns the request cache from the context and true. Otherwise it returns false.
+func CtxCache(ctx context.Context) (map[CacheKey]interface{}, bool) {
+	v := ctx.Value(ckCache)
+	if v == nil {
+		return nil, false
+	}
+	return v.(map[CacheKey]interface{}), true
+}
+
+// CtxWithAccount returns a new context that includes the account
+func CtxWithAccount(ctx context.Context, a *common.Account) context.Context {
+	return context.WithValue(ctx, ckAccount, a)
+}
+
+// CtxWithCache returns a new context that includes a request cache. If the cache
+// is nil then a new map is allocated.
+func CtxWithCache(ctx context.Context, c map[CacheKey]interface{}) context.Context {
+	if c == nil {
+		c = make(map[CacheKey]interface{})
+	}
+	return context.WithValue(ctx, ckCache, c)
+}
+
+// RequestCacheHandler wraps a handler to provide a cache in the request cache
+func RequestCacheHandler(h httputil.ContextHandler) httputil.ContextHandler {
+	return httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		_, ok := CtxCache(ctx)
+		if !ok {
+			ctx = CtxWithCache(ctx, nil)
+		}
+		h.ServeHTTP(ctx, w, r)
+	})
 }

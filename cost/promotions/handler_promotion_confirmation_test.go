@@ -8,13 +8,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/test"
-	"github.com/sprucehealth/backend/test/test_handler"
 )
 
 type mockDataAPIPromotionConfirmationHandler struct {
@@ -73,13 +73,9 @@ func TestPromotionConfirmationHandlerGETRequiresParams(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{}
-	promoConfHandler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
-	handler := test_handler.MockHandler{
-		H: promoConfHandler,
-	}
-
+	handler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
 }
 
@@ -89,13 +85,9 @@ func TestPromotionConfirmationHandlerGETNoPromotion(t *testing.T) {
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
 		lookupPromoCodeErr: api.ErrNotFound(`promotion_code`),
 	}
-	promoConfHandler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
-	handler := test_handler.MockHandler{
-		H: promoConfHandler,
-	}
-
+	handler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, "foo", dataAPI.lookupPromoCodeParam)
 	test.Equals(t, http.StatusNotFound, responseWriter.Code)
 }
@@ -106,13 +98,9 @@ func TestPromotionConfirmationHandlerGETCodeLookupErr(t *testing.T) {
 	dataAPI := &mockDataAPIPromotionConfirmationHandler{
 		lookupPromoCodeErr: errors.New("Foo"),
 	}
-	promoConfHandler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
-	handler := test_handler.MockHandler{
-		H: promoConfHandler,
-	}
-
+	handler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
 
@@ -123,13 +111,9 @@ func TestPromotionConfirmationHandlerGETPromotionLookupErr(t *testing.T) {
 		lookupPromoCode: &common.PromoCode{ID: 1, Code: "foo", IsReferral: false},
 		promotionErr:    errors.New("Foo"),
 	}
-	promoConfHandler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
-	handler := test_handler.MockHandler{
-		H: promoConfHandler,
-	}
-
+	handler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, int64(1), dataAPI.promotionParam)
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
@@ -141,13 +125,9 @@ func TestPromotionConfirmationHandlerGETReferralLookupErr(t *testing.T) {
 		lookupPromoCode:    &common.PromoCode{ID: 1, Code: "foo", IsReferral: true},
 		referralProgramErr: errors.New("Foo"),
 	}
-	promoConfHandler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
-	handler := test_handler.MockHandler{
-		H: promoConfHandler,
-	}
-
+	handler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, int64(1), dataAPI.referralProgramParam)
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
@@ -160,13 +140,9 @@ func TestPromotionConfirmationHandlerGETReferralGetPatientFromAccountIDErr(t *te
 		referralProgram:            createReferralProgram(2, "imageURL", ptr.Int64(12345)),
 		getPatientFromAccountIDErr: errors.New("Foo"),
 	}
-	promoConfHandler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
-	handler := test_handler.MockHandler{
-		H: promoConfHandler,
-	}
-
+	handler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, int64(2), dataAPI.getPatientFromAccountIDParam)
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
@@ -180,13 +156,9 @@ func TestPromotionConfirmationHandlerGETReferralPatientNotFoundGetDoctorFromAcco
 		getPatientFromAccountIDErr: api.ErrNotFound(`patient`),
 		getDoctorFromAccountIDErr:  errors.New("Foo"),
 	}
-	promoConfHandler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
-	handler := test_handler.MockHandler{
-		H: promoConfHandler,
-	}
-
+	handler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, int64(2), dataAPI.getDoctorFromAccountIDParam)
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
@@ -200,13 +172,9 @@ func TestPromotionConfirmationHandlerGETReferralProgramTemplateErr(t *testing.T)
 		getPatientFromAccountID:    &common.Patient{FirstName: "FirstName"},
 		referralProgramTemplateErr: errors.New("Foo"),
 	}
-	promoConfHandler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
-	handler := test_handler.MockHandler{
-		H: promoConfHandler,
-	}
-
+	handler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, int64(12345), dataAPI.referralProgramTemplateParam)
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
@@ -221,13 +189,9 @@ func TestPromotionConfirmationHandlerGETReferralPromotionErr(t *testing.T) {
 		referralProgramTemplate: &common.ReferralProgramTemplate{PromotionCodeID: ptr.Int64(10)},
 		promotionErr:            errors.New("Foo"),
 	}
-	promoConfHandler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
-	handler := test_handler.MockHandler{
-		H: promoConfHandler,
-	}
-
+	handler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, int64(10), dataAPI.promotionParam)
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
@@ -242,13 +206,9 @@ func TestPromotionConfirmationHandlerGETReferralImageProvided(t *testing.T) {
 		referralProgramTemplate: &common.ReferralProgramTemplate{PromotionCodeID: ptr.Int64(10)},
 		promotion:               createPromotion("imageURL", "", nil, 0),
 	}
-	promoConfHandler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
-	handler := test_handler.MockHandler{
-		H: promoConfHandler,
-	}
-
+	handler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionConfirmationGETResponse{
 		Title:       "Your friend FirstName has given you a free visit.",
 		ImageURL:    "imageURL",
@@ -269,13 +229,9 @@ func TestPromotionConfirmationHandlerGETReferralDoctorImageNotProvided(t *testin
 		referralProgramTemplate:    &common.ReferralProgramTemplate{PromotionCodeID: ptr.Int64(10)},
 		promotion:                  createPromotion("", "", nil, 0),
 	}
-	promoConfHandler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
-	handler := test_handler.MockHandler{
-		H: promoConfHandler,
-	}
-
+	handler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionConfirmationGETResponse{
 		Title:       "Welcome to Spruce",
 		ImageURL:    DefaultPromotionImageURL,
@@ -296,13 +252,9 @@ func TestPromotionConfirmationHandlerGETDoctorReferralProgramNoTemplateID(t *tes
 		referralProgramTemplate:    &common.ReferralProgramTemplate{PromotionCodeID: ptr.Int64(10)},
 		promotion:                  createPromotion("", "", nil, 0),
 	}
-	promoConfHandler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
-	handler := test_handler.MockHandler{
-		H: promoConfHandler,
-	}
-
+	handler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionConfirmationGETResponse{
 		Title:       "Welcome to Spruce",
 		ImageURL:    DefaultPromotionImageURL,
@@ -320,13 +272,9 @@ func TestPromotionConfirmationHandlerGETPromotionImage(t *testing.T) {
 		lookupPromoCode: &common.PromoCode{ID: 1, Code: "foo", IsReferral: false},
 		promotion:       createPromotion("imageURL", "", nil, 0),
 	}
-	promoConfHandler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
-	handler := test_handler.MockHandler{
-		H: promoConfHandler,
-	}
-
+	handler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionConfirmationGETResponse{
 		Title:       "displayMsg",
 		ImageURL:    "imageURL",
@@ -344,13 +292,9 @@ func TestPromotionConfirmationHandlerGETPromotionNoImage(t *testing.T) {
 		lookupPromoCode: &common.PromoCode{ID: 1, Code: "foo", IsReferral: false},
 		promotion:       createPromotion("", "", nil, 0),
 	}
-	promoConfHandler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
-	handler := test_handler.MockHandler{
-		H: promoConfHandler,
-	}
-
+	handler := NewPromotionConfirmationHandler(dataAPI, &analytics.NullLogger{})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	httputil.JSONResponse(expectedWriter, http.StatusOK, &PromotionConfirmationGETResponse{
 		Title:       "displayMsg",
 		ImageURL:    DefaultPromotionImageURL,

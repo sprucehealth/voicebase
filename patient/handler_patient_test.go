@@ -8,6 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/apiservice"
+
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
+
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
@@ -149,8 +153,10 @@ func TestAbandonVisit_Successful(t *testing.T) {
 	r, err := http.NewRequest("DELETE", "api.spruce.local/visit?patient_visit_id=1", nil)
 	test.OK(t, err)
 
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient})
+
 	h := NewPatientVisitHandler(m, nil, nil, nil, "", "", nil, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	test.Equals(t, true, m.caseUpdate != nil)
@@ -166,12 +172,14 @@ func TestAbandonVisit_Idempotent(t *testing.T) {
 		},
 	}
 
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient})
+
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("DELETE", "api.spruce.local/case?patient_visit_id=1", nil)
 	test.OK(t, err)
 
 	h := NewPatientVisitHandler(m, nil, nil, nil, "", "", nil, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 }
 
@@ -205,6 +213,8 @@ func TestCreateVisit_FirstAvailable(t *testing.T) {
 		},
 	}
 
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient})
+
 	h := NewPatientVisitHandler(m, nil, nil, nil, "", "", &dispatch.Dispatcher{}, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
 	w := httptest.NewRecorder()
 	jsonData, err := json.Marshal(&PatientVisitRequestData{})
@@ -212,7 +222,7 @@ func TestCreateVisit_FirstAvailable(t *testing.T) {
 	r, err := http.NewRequest("POST", "api.spruce.local", bytes.NewBuffer(jsonData))
 	test.OK(t, err)
 
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 
 	test.Equals(t, http.StatusOK, w.Code)
 
@@ -254,6 +264,8 @@ func TestCreateVisit_DoctorPicked(t *testing.T) {
 		},
 	}
 
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient})
+
 	h := NewPatientVisitHandler(m, nil, nil, nil, "", "", &dispatch.Dispatcher{}, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
 	w := httptest.NewRecorder()
 	jsonData, err := json.Marshal(&PatientVisitRequestData{})
@@ -261,7 +273,7 @@ func TestCreateVisit_DoctorPicked(t *testing.T) {
 	r, err := http.NewRequest("POST", "api.spruce.local", bytes.NewBuffer(jsonData))
 	test.OK(t, err)
 
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 
 	test.Equals(t, http.StatusOK, w.Code)
 
@@ -310,6 +322,8 @@ func TestCreatePatient_DoctorPicked(t *testing.T) {
 		token: "token",
 	}
 
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient})
+
 	h := NewSignupHandler(m, mAuth, "", "", nil, &dispatch.Dispatcher{}, time.Duration(0), nil, &ratelimit.NullKeyed{}, nil, metrics.NewRegistry())
 	w := httptest.NewRecorder()
 
@@ -333,7 +347,7 @@ func TestCreatePatient_DoctorPicked(t *testing.T) {
 	test.OK(t, err)
 	r.Header.Set("Content-Type", "application/json")
 
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 
 	test.Equals(t, http.StatusOK, w.Code)
 
@@ -378,6 +392,8 @@ func TestCreatePatient_FirstAvailable(t *testing.T) {
 		token: "token",
 	}
 
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient})
+
 	h := NewSignupHandler(m, mAuth, "", "", nil, &dispatch.Dispatcher{}, time.Duration(0), nil, &ratelimit.NullKeyed{}, nil, metrics.NewRegistry())
 	w := httptest.NewRecorder()
 
@@ -400,7 +416,7 @@ func TestCreatePatient_FirstAvailable(t *testing.T) {
 	test.OK(t, err)
 	r.Header.Set("Content-Type", "application/json")
 
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 
 	test.Equals(t, http.StatusOK, w.Code)
 
@@ -426,11 +442,13 @@ func testForbiddenDelete(t *testing.T, status string) {
 		},
 	}
 
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient})
+
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("DELETE", "api.spruce.local/case?patient_visit_id=1", nil)
 	test.OK(t, err)
 
 	h := NewPatientVisitHandler(m, nil, nil, nil, "", "", nil, nil, time.Duration(0), &taggingTest.TestTaggingClient{})
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusForbidden, w.Code)
 }

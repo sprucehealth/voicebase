@@ -31,7 +31,7 @@ type uploadHandler struct {
 }
 
 func newUploadCVHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&uploadHandler{
+	return httputil.SupportedMethods(&uploadHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		store:    store,
@@ -45,7 +45,7 @@ func newUploadCVHandler(router *mux.Router, dataAPI api.DataAPI, store storage.S
 }
 
 func newUploadLicenseHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&uploadHandler{
+	return httputil.SupportedMethods(&uploadHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		store:    store,
@@ -60,7 +60,7 @@ func newUploadLicenseHandler(router *mux.Router, dataAPI api.DataAPI, store stor
 }
 
 func newUploadClaimsHistoryHandler(router *mux.Router, dataAPI api.DataAPI, store storage.Store, templateLoader *www.TemplateLoader) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&uploadHandler{
+	return httputil.SupportedMethods(&uploadHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		store:    store,

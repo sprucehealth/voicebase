@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -21,7 +22,7 @@ type pathwaySTPResponse struct {
 	SampleTreatmentPlan interface{} `json:"sample_treatment_plan"`
 }
 
-func NewPathwaySTPHandler(dataAPI api.DataAPI) http.Handler {
+func NewPathwaySTPHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&pathwaySTPHandler{
@@ -29,25 +30,25 @@ func NewPathwaySTPHandler(dataAPI api.DataAPI) http.Handler {
 			}), httputil.Get)
 }
 
-func (p *pathwaySTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *pathwaySTPHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var rd pathwaySTPRequest
 	if err := apiservice.DecodeRequestData(&rd, r); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	}
 
 	stp, err := p.dataAPI.PathwaySTP(rd.PathwayTag)
 	if api.IsErrNotFound(err) {
-		apiservice.WriteResourceNotFoundError("Oops! Something went wrong and we couldn't find the correct Sample Treatment Plan.", w, r)
+		apiservice.WriteResourceNotFoundError(ctx, "Oops! Something went wrong and we couldn't find the correct Sample Treatment Plan.", w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	var stpJSON map[string]interface{}
 	if err := json.Unmarshal(stp, &stpJSON); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

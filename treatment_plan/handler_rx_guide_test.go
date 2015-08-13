@@ -5,10 +5,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/test"
-	"github.com/sprucehealth/backend/test/test_handler"
 )
 
 type mockedDataAPIHandlerRXGuide struct {
@@ -35,12 +35,9 @@ func (m mockedDataAPIHandlerRXGuide) QueryDrugDetails(query *api.DrugDetailsQuer
 func TestHandlerRXGuideRequiresParams(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	rxGuideHandler := NewRXGuideHandler(mockedDataAPIHandlerRXGuide{})
-	handler := test_handler.MockHandler{
-		H: rxGuideHandler,
-	}
+	handler := NewRXGuideHandler(mockedDataAPIHandlerRXGuide{})
 	responseWriter := httptest.NewRecorder()
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, http.StatusBadRequest, responseWriter.Code)
 }
 
@@ -48,12 +45,10 @@ func TestHandlerRXGuideSuccess(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?generic_name=generic_name&route=route&dosage=dosage", nil)
 	test.OK(t, err)
 	dataAPI := mockedDataAPIHandlerRXGuide{}
-	rxGuideHandler := NewRXGuideHandler(dataAPI)
-	handler := test_handler.MockHandler{
-		H: rxGuideHandler,
-	}
+	handler := NewRXGuideHandler(dataAPI)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	treatmentGuideResponse(dataAPI, "generic_name", "route", "", "dosage", "", nil, nil, expectedWriter, r)
-	handler.ServeHTTP(responseWriter, r)
+	ctx := context.Background()
+	treatmentGuideResponse(ctx, dataAPI, "generic_name", "route", "", "dosage", "", nil, nil, expectedWriter, r)
+	handler.ServeHTTP(ctx, responseWriter, r)
 	test.Equals(t, string(expectedWriter.Body.Bytes()), string(responseWriter.Body.Bytes()))
 }

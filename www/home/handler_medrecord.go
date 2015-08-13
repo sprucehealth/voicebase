@@ -22,7 +22,7 @@ func newMedRecordWebDownloadHandler(dataAPI api.DataAPI, store storage.Store) ht
 	if store == nil {
 		log.Fatalf("Medical record handler storage is nil")
 	}
-	return httputil.ContextSupportedMethods(
+	return httputil.SupportedMethods(
 		www.RoleRequiredHandler(
 			&medRecordDownloadHandler{
 				dataAPI: dataAPI,

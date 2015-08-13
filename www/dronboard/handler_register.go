@@ -120,7 +120,7 @@ func (r *registerForm) Validate() map[string]string {
 }
 
 func newRegisterHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher, signer *sig.Signer, templateLoader *www.TemplateLoader) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&registerHandler{
+	return httputil.SupportedMethods(&registerHandler{
 		router:     router,
 		dataAPI:    dataAPI,
 		authAPI:    authAPI,

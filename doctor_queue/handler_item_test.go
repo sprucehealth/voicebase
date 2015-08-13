@@ -8,7 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -74,7 +76,8 @@ func testQueueUpdate(t *testing.T, expStatus, expCount int, id string) {
 	}
 	r.Header.Set("Content-Type", "application/json")
 
-	h.ServeHTTP(w, r)
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RoleCC, ID: 1})
+	h.ServeHTTP(ctx, w, r)
 	if w.Code != expStatus {
 		t.Fatalf("Expected %d but got %d [%s]", expStatus, w.Code, golog.Caller(1))
 	} else if len(m.updatesRequested) != expCount {

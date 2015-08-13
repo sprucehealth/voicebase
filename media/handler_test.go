@@ -12,7 +12,9 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
@@ -69,12 +71,15 @@ func TestHandlerGet(t *testing.T) {
 
 	// Missing arguments
 
+	ctx := apiservice.CtxWithAccount(
+		context.Background(),
+		&common.Account{Role: api.RolePatient, ID: 1})
 	r, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("Expected status %d for empty request, got %d", http.StatusBadRequest, w.Code)
 	}
@@ -86,7 +91,7 @@ func TestHandlerGet(t *testing.T) {
 		t.Fatal(err)
 	}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	if w.Code != http.StatusForbidden {
 		t.Fatalf("Expected status %d for bad signature, got %d", http.StatusForbidden, w.Code)
 	}
@@ -107,7 +112,7 @@ func TestHandlerGet(t *testing.T) {
 		t.Fatal(err)
 	}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	if w.Code != http.StatusForbidden {
 		t.Fatalf("Expected status %d for bad signature, got %d", http.StatusForbidden, w.Code)
 	}
@@ -123,7 +128,7 @@ func TestHandlerGet(t *testing.T) {
 		t.Fatal(err)
 	}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status %d for valid request, got %d", http.StatusOK, w.Code)
 	}
@@ -138,7 +143,7 @@ func TestHandlerGet(t *testing.T) {
 		t.Fatal(err)
 	}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status %d for valid request, got %d", http.StatusOK, w.Code)
 	}
@@ -155,7 +160,7 @@ func TestHandlerGet(t *testing.T) {
 		t.Fatal(err)
 	}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status %d for valid request, got %d", http.StatusOK, w.Code)
 	}
@@ -172,7 +177,7 @@ func TestHandlerGet(t *testing.T) {
 		t.Fatal(err)
 	}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status %d for valid request, got %d", http.StatusOK, w.Code)
 	}

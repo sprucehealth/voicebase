@@ -24,13 +24,12 @@ func (r *routeDoctorPromotion) IsZeroValue() bool {
 	return r.DiscountValue <= 0
 }
 
-type context struct {
+type doctorContext struct {
 	DoctorShortDisplayName string
 	DoctorLongDisplayName  string
 }
 
 func (r *routeDoctorPromotion) Validate() error {
-
 	if err := r.promoCodeParams.Validate(); err != nil {
 		return err
 	}
@@ -47,7 +46,7 @@ func (r *routeDoctorPromotion) Validate() error {
 		return errors.New("long display name of doctor required")
 	}
 
-	ctxt := &context{
+	ctxt := &doctorContext{
 		DoctorShortDisplayName: r.DoctorShortDisplayName,
 		DoctorLongDisplayName:  r.DoctorLongDisplayName,
 	}

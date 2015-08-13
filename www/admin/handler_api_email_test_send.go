@@ -30,7 +30,7 @@ type emailTestSendResponse struct {
 }
 
 func newEmailTestSendHandler(emailService email.Service, signer *sig.Signer, webDomain string) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&emailTestSendHandler{
+	return httputil.SupportedMethods(&emailTestSendHandler{
 		emailService: emailService,
 		signer:       signer,
 		webDomain:    webDomain,

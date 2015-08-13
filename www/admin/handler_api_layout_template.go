@@ -29,13 +29,13 @@ type layoutTemplateGETRequest struct {
 type layoutTemplateGETResponse map[string]interface{}
 
 func newLayoutTemplateHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&layoutTemplateHandler{dataAPI: dataAPI}, httputil.Get)
+	return httputil.SupportedMethods(&layoutTemplateHandler{dataAPI: dataAPI}, httputil.Get)
 }
 
 func (h *layoutTemplateHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		requestData, err := h.parseGETRequest(r)
+		requestData, err := h.parseGETRequest(ctx, r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
@@ -44,7 +44,7 @@ func (h *layoutTemplateHandler) ServeHTTP(ctx context.Context, w http.ResponseWr
 	}
 }
 
-func (h *layoutTemplateHandler) parseGETRequest(r *http.Request) (*layoutTemplateGETRequest, error) {
+func (h *layoutTemplateHandler) parseGETRequest(ctx context.Context, r *http.Request) (*layoutTemplateGETRequest, error) {
 	rd := &layoutTemplateGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)

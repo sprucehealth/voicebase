@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/test"
 )
@@ -51,10 +52,7 @@ func testNotifyMeHandler(httpVerb string, t *testing.T) {
 	jsonData, err := json.Marshal(rd)
 	test.OK(t, err)
 
-	server := httptest.NewServer(h)
-	defer server.Close()
-
-	r, err := http.NewRequest(httpVerb, server.URL, bytes.NewReader(jsonData))
+	r, err := http.NewRequest(httpVerb, "/", bytes.NewReader(jsonData))
 	test.OK(t, err)
 	r.Header.Add("S-Version", "Patient;test;1.0.0")
 	r.Header.Add("S-OS", "iOS;7.1")
@@ -63,9 +61,10 @@ func testNotifyMeHandler(httpVerb string, t *testing.T) {
 	r.Header.Add("S-Device-ID", deviceID)
 	r.Header.Set("Content-Type", "application/json")
 
-	res, err := http.DefaultClient.Do(r)
+	res := httptest.NewRecorder()
+	h.ServeHTTP(context.Background(), res, r)
 	test.OK(t, err)
-	test.Equals(t, http.StatusOK, res.StatusCode)
+	test.HTTPResponseCode(t, http.StatusOK, res)
 
 	_, _, values := dataAPI.recordedForm.TableColumnValues()
 	test.Equals(t, rd.Email, values[0])

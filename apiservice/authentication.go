@@ -4,17 +4,19 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
 )
 
 type authenticatedHandler struct {
-	h        http.Handler
+	h        httputil.ContextHandler
 	authAPI  api.AuthAPI
 	optional bool
 }
 
-func NoAuthenticationRequiredHandler(h http.Handler, authAPI api.AuthAPI) http.Handler {
+func NoAuthenticationRequiredHandler(h httputil.ContextHandler, authAPI api.AuthAPI) httputil.ContextHandler {
 	return &authenticatedHandler{
 		h:        h,
 		authAPI:  authAPI,
@@ -22,7 +24,7 @@ func NoAuthenticationRequiredHandler(h http.Handler, authAPI api.AuthAPI) http.H
 	}
 }
 
-func AuthenticationRequiredHandler(h http.Handler, authAPI api.AuthAPI) http.Handler {
+func AuthenticationRequiredHandler(h httputil.ContextHandler, authAPI api.AuthAPI) httputil.ContextHandler {
 	return &authenticatedHandler{
 		h:        h,
 		authAPI:  authAPI,
@@ -30,23 +32,20 @@ func AuthenticationRequiredHandler(h http.Handler, authAPI api.AuthAPI) http.Han
 	}
 }
 
-func (a *authenticatedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if verifyAuthSetupInTest(w, r, a.h, authentication, VerifyAuthCode) {
+func (a *authenticatedHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	if verifyAuthSetupInTest(ctx, w, r, a.h, authentication, VerifyAuthCode) {
 		return
 	}
 
-	ctx := GetContext(r)
 	account, err := a.checkAuth(r)
-
 	if err == nil {
-		ctx.AccountID = account.ID
-		ctx.Role = account.Role
+		ctx = CtxWithAccount(ctx, account)
 	} else if !a.optional {
-		HandleAuthError(err, w, r)
+		HandleAuthError(ctx, err, w, r)
 		return
 	}
 
-	a.h.ServeHTTP(w, r)
+	a.h.ServeHTTP(ctx, w, r)
 }
 
 // checkAuth parses the "Authorization: token xxx" header and check the token for validity

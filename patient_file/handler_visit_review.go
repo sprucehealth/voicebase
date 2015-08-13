@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/mapstructure"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -24,16 +25,18 @@ type doctorPatientVisitReviewHandler struct {
 	webDomain          string
 }
 
-func NewDoctorPatientVisitReviewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, mediaStore *media.Store, expirationDuration time.Duration, webDomain string) http.Handler {
+func NewDoctorPatientVisitReviewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, mediaStore *media.Store, expirationDuration time.Duration, webDomain string) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(
-			&doctorPatientVisitReviewHandler{
-				dataAPI:            dataAPI,
-				dispatcher:         dispatcher,
-				mediaStore:         mediaStore,
-				expirationDuration: expirationDuration,
-				webDomain:          webDomain,
-			}), httputil.Get)
+		apiservice.RequestCacheHandler(
+			apiservice.AuthorizationRequired(
+				&doctorPatientVisitReviewHandler{
+					dataAPI:            dataAPI,
+					dispatcher:         dispatcher,
+					mediaStore:         mediaStore,
+					expirationDuration: expirationDuration,
+					webDomain:          webDomain,
+				})),
+		httputil.Get)
 }
 
 type visitReviewRequestData struct {
@@ -46,14 +49,15 @@ type VisitReviewResponse struct {
 	PatientVisitReview map[string]interface{} `json:"visit_review"`
 }
 
-func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
+func (p *doctorPatientVisitReviewHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	account := apiservice.MustCtxAccount(ctx)
 
-	doctorID, err := p.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
+	doctorID, err := p.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.DoctorID] = doctorID
+	requestCache[apiservice.CKDoctorID] = doctorID
 
 	requestData := &visitReviewRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
@@ -61,15 +65,15 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, e
 	} else if requestData.PatientVisitID == 0 {
 		return false, apiservice.NewValidationError("patient_visit_id must be specified")
 	}
-	ctxt.RequestCache[apiservice.RequestData] = requestData
+	requestCache[apiservice.CKRequestData] = requestData
 
 	patientVisit, err := p.dataAPI.GetPatientVisitFromID(requestData.PatientVisitID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.PatientVisit] = patientVisit
+	requestCache[apiservice.CKPatientVisit] = patientVisit
 
-	if ctxt.Role == api.RoleDoctor {
+	if account.Role == api.RoleDoctor {
 		// update the status of the case and the item in the doctor's queue
 		if patientVisit.Status == common.PVStatusRouted {
 			pvStatus := common.PVStatusReviewing
@@ -85,12 +89,12 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, e
 			PatientVisit: patientVisit,
 			PatientID:    patientVisit.PatientID.Int64(),
 			DoctorID:     doctorID,
-			Role:         ctxt.Role,
+			Role:         account.Role,
 		})
 	}
 
 	// ensure that the doctor is authorized to work on this case
-	if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorID,
+	if err := apiservice.ValidateAccessToPatientCase(r.Method, account.Role, doctorID,
 		patientVisit.PatientID.Int64(), patientVisit.PatientCaseID.Int64(), p.dataAPI); err != nil {
 		return false, err
 	}
@@ -98,19 +102,19 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(r *http.Request) (bool, e
 	return true, nil
 }
 
-func (p *doctorPatientVisitReviewHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	patientVisit := ctxt.RequestCache[apiservice.PatientVisit].(*common.PatientVisit)
+func (p *doctorPatientVisitReviewHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	patientVisit := requestCache[apiservice.CKPatientVisit].(*common.PatientVisit)
 
 	patient, err := p.dataAPI.GetPatientFromID(patientVisit.PatientID.Int64())
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	renderedLayout, err := VisitReviewLayout(p.dataAPI, patient, p.mediaStore, p.expirationDuration, patientVisit, r.Host, p.webDomain)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

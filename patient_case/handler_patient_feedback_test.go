@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -34,14 +35,14 @@ func TestPatientFeedbackHandler(t *testing.T) {
 
 	r, err := http.NewRequest("GET", "/?case_id=1", nil)
 	test.OK(t, err)
-	apiservice.GetContext(r).Role = api.RolePatient
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusForbidden, w.Code)
 
-	apiservice.GetContext(r).Role = api.RoleCC
+	ctx = apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 2, Role: api.RoleCC})
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 	test.Equals(t, "{\"feedback\":[{\"rating\":4,\"comment\":\"RULEZ!\",\"created_timestamp\":12341234}]}\n", w.Body.String())
 }

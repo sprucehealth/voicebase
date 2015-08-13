@@ -27,7 +27,7 @@ type PromotionPUTRequest struct {
 
 // NewPromotionHandler returns an initialized instance of promotionHandler
 func newPromotionHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&promotionHandler{dataAPI: dataAPI}, httputil.Put)
+	return httputil.SupportedMethods(&promotionHandler{dataAPI: dataAPI}, httputil.Put)
 }
 
 func (h *promotionHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
@@ -38,7 +38,7 @@ func (h *promotionHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 	}
 	switch r.Method {
 	case httputil.Put:
-		req, err := h.parsePUTRequest(r)
+		req, err := h.parsePUTRequest(ctx, r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
@@ -47,7 +47,7 @@ func (h *promotionHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 	}
 }
 
-func (h *promotionHandler) parsePUTRequest(r *http.Request) (*PromotionPUTRequest, error) {
+func (h *promotionHandler) parsePUTRequest(ctx context.Context, r *http.Request) (*PromotionPUTRequest, error) {
 	rd := &PromotionPUTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)

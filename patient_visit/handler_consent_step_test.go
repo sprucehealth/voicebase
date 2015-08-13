@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/gorilla/context"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -39,7 +39,7 @@ func TestReachedConsentStepHandler(t *testing.T) {
 	dataAPI := &mockConsentDataAPI{
 		visit: &common.PatientVisit{},
 	}
-	h := context.ClearHandler(NewReachedConsentStep(dataAPI))
+	h := NewReachedConsentStep(dataAPI)
 	b, err := json.Marshal(&reachedConsentStepPostRequest{VisitID: 1})
 	test.OK(t, err)
 
@@ -47,10 +47,10 @@ func TestReachedConsentStepHandler(t *testing.T) {
 
 	dataAPI.visit.PatientID = encoding.NewObjectID(2)
 	r, err := http.NewRequest("POST", "/", bytes.NewReader(b))
-	apiservice.GetContext(r).Role = api.RolePatient
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 	test.OK(t, err)
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusForbidden, w.Code)
 
 	// Should succeed
@@ -58,10 +58,9 @@ func TestReachedConsentStepHandler(t *testing.T) {
 	dataAPI.visit.Status = common.PVStatusOpen
 	dataAPI.visit.PatientID = encoding.NewObjectID(1)
 	r, err = http.NewRequest("POST", "/", bytes.NewReader(b))
-	apiservice.GetContext(r).Role = api.RolePatient
 	test.OK(t, err)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 	test.Equals(t, common.PVStatusPendingParentalConsent, dataAPI.visit.Status)
 
@@ -70,10 +69,9 @@ func TestReachedConsentStepHandler(t *testing.T) {
 	dataAPI.visit.Status = common.PVStatusPendingParentalConsent
 	dataAPI.visit.PatientID = encoding.NewObjectID(1)
 	r, err = http.NewRequest("POST", "/", bytes.NewReader(b))
-	apiservice.GetContext(r).Role = api.RolePatient
 	test.OK(t, err)
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 	test.Equals(t, common.PVStatusPendingParentalConsent, dataAPI.visit.Status)
 }

@@ -21,17 +21,17 @@ type PromotionGroupsGETResponse struct {
 
 // newPromotionGroupsHandler returns a new initialized instance of promotionGroupsHandler
 func newPromotionGroupsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&promotionGroupsHandler{dataAPI: dataAPI}, httputil.Get)
+	return httputil.SupportedMethods(&promotionGroupsHandler{dataAPI: dataAPI}, httputil.Get)
 }
 
 func (h *promotionGroupsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		h.serveGET(w, r)
+		h.serveGET(ctx, w, r)
 	}
 }
 
-func (h *promotionGroupsHandler) serveGET(w http.ResponseWriter, r *http.Request) {
+func (h *promotionGroupsHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	promotionGroups, err := h.dataAPI.PromotionGroups()
 	if err != nil {
 		www.APIInternalError(w, r, err)

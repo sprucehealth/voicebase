@@ -52,7 +52,7 @@ func (r *parentalConsentAPIPOSTRequest) Validate() (bool, string) {
 }
 
 func newParentalConsentAPIHAndler(dataAPI api.DataAPI, dispatcher dispatch.Publisher) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(
+	return httputil.SupportedMethods(
 		www.APIRoleRequiredHandler(&parentalConsentAPIHandler{
 			dataAPI:    dataAPI,
 			dispatcher: dispatcher,

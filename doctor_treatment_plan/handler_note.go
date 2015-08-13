@@ -3,6 +3,8 @@ package doctor_treatment_plan
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/dispatch"
@@ -19,7 +21,7 @@ type DoctorSavedNoteRequestData struct {
 	Message         string `json:"message"`
 }
 
-func NewSavedNoteHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
+func NewSavedNoteHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			apiservice.SupportedRoles(
@@ -30,32 +32,32 @@ func NewSavedNoteHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) h
 		httputil.Put)
 }
 
-func (h *savedNoteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *savedNoteHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Put:
-		h.put(w, r)
+		h.put(ctx, w, r)
 	default:
 		httputil.SupportedMethodsResponse(w, r, []string{"PUT"})
 	}
 }
 
-func (h *savedNoteHandler) put(w http.ResponseWriter, r *http.Request) {
-	ctx := apiservice.GetContext(r)
-	doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(ctx.AccountID)
+func (h *savedNoteHandler) put(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := apiservice.MustCtxAccount(ctx)
+	doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	var req DoctorSavedNoteRequestData
 	if err := apiservice.DecodeRequestData(&req, r); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	}
 
 	// Update message for a treatment plan
 	if err := h.dataAPI.SetTreatmentPlanNote(doctorID, req.TreatmentPlanID, req.Message); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

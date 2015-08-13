@@ -12,6 +12,7 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
@@ -22,13 +23,13 @@ const (
 
 type pingHandler struct{}
 
-func NewPingHandler() http.Handler {
+func NewPingHandler() httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			pingHandler{}), httputil.Get)
 }
 
-func (pingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (pingHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	if _, err := w.Write([]byte(pong)); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

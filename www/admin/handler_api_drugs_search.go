@@ -36,7 +36,7 @@ type drugSearchResult struct {
 }
 
 func newDrugSearchAPIHandler(dataAPI api.DataAPI, eRxAPI erx.ERxAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&drugSearchAPIHandler{
+	return httputil.SupportedMethods(&drugSearchAPIHandler{
 		dataAPI: dataAPI,
 		eRxAPI:  eRxAPI,
 	}, httputil.Get)

@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/test"
-	"github.com/sprucehealth/backend/test/test_handler"
 )
 
 type mockedDataAPI_handlerCareTeams struct {
@@ -57,75 +57,47 @@ func (d mockedDataAPI_handlerCareTeams) CaseCareTeams(caseIDs []int64) (map[int6
 func TestDoctorRequiresPatientID(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{nil, 1, 2, false}, "api.spruce.local")
-	handler := test_handler.MockHandler{
-		H: careTeamHandler,
-		Setup: func() {
-			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.RoleDoctor
-			ctxt.AccountID = 1
-		},
-	}
+	handler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{nil, 1, 2, false}, "api.spruce.local")
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RoleDoctor})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteError(apiservice.NewValidationError("patient_id required"), expectedWriter, r)
-	handler.ServeHTTP(responseWriter, r)
+	apiservice.WriteError(ctx, apiservice.NewValidationError("patient_id required"), expectedWriter, r)
+	handler.ServeHTTP(ctx, responseWriter, r)
 	test.Equals(t, expectedWriter.Body, responseWriter.Body)
 }
 
 func TestDoctorCannotAccessUnownedPatient(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?patient_id=32", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{nil, 1, 2, false}, "api.spruce.local")
+	handler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{nil, 1, 2, false}, "api.spruce.local")
 	verifyDoctorAccessToPatientFileFn = cannotAccess
-	handler := test_handler.MockHandler{
-		H: careTeamHandler,
-		Setup: func() {
-			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.RoleDoctor
-			ctxt.AccountID = 1
-		},
-	}
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RoleDoctor})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteError(apiservice.NewAccessForbiddenError(), expectedWriter, r)
-	handler.ServeHTTP(responseWriter, r)
+	apiservice.WriteError(ctx, apiservice.NewAccessForbiddenError(), expectedWriter, r)
+	handler.ServeHTTP(ctx, responseWriter, r)
 	test.Equals(t, expectedWriter.Body, responseWriter.Body)
 }
 
 func TestPatientCannotAccessUnownedCase(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?case_id=1", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{nil, 1, 2, false}, "api.spruce.local")
-	handler := test_handler.MockHandler{
-		H: careTeamHandler,
-		Setup: func() {
-			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.RolePatient
-			ctxt.AccountID = 1
-		},
-	}
+	handler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{nil, 1, 2, false}, "api.spruce.local")
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
-	apiservice.WriteAccessNotAllowedError(expectedWriter, r)
-	handler.ServeHTTP(responseWriter, r)
+	apiservice.WriteAccessNotAllowedError(ctx, expectedWriter, r)
+	handler.ServeHTTP(ctx, responseWriter, r)
 	test.Equals(t, expectedWriter.Body, responseWriter.Body)
 }
 
 func TestDoctorCanFetchAllCareTeams(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?patient_id=32", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{nil, 1, 2, false}, "api.spruce.local")
+	handler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{nil, 1, 2, false}, "api.spruce.local")
 	verifyDoctorAccessToPatientFileFn = canAccess
-	handler := test_handler.MockHandler{
-		H: careTeamHandler,
-		Setup: func() {
-			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.RoleDoctor
-			ctxt.AccountID = 1
-		},
-	}
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RoleDoctor})
 	getCareTeamsForPatientByCaseResponse = buildDummyGetCareTeamsForPatientByCaseResponse(2)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local"))
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(ctx, responseWriter, r)
 	// TODO: We can't verify the JSON output here as maps do not serialize determinisitically
 	// test.Equals(t, expectedWriter.Body, responseWriter.Body)
 	test.Equals(t, 2, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local").CareTeams))
@@ -134,21 +106,14 @@ func TestDoctorCanFetchAllCareTeams(t *testing.T) {
 func TestPatientCanFetchAllCareTeams(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{nil, 1, 2, false}, "api.spruce.local")
+	handler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{nil, 1, 2, false}, "api.spruce.local")
 	verifyDoctorAccessToPatientFileFn = canAccess
-	handler := test_handler.MockHandler{
-		H: careTeamHandler,
-		Setup: func() {
-			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.RolePatient
-			ctxt.AccountID = 1
-		},
-	}
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 	getCareTeamsForPatientByCaseResponse = buildDummyGetCareTeamsForPatientByCaseResponse(2)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local"))
 
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(ctx, responseWriter, r)
 	// TODO: We can't verify the JSON output here as maps do not serialize determinisitically
 	// test.Equals(t, expectedWriter.Body, responseWriter.Body)
 	test.Equals(t, 2, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local").CareTeams))
@@ -157,20 +122,13 @@ func TestPatientCanFetchAllCareTeams(t *testing.T) {
 func TestMACanFetchAllCareTeams(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?patient_id=32", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{nil, 1, 2, false}, "api.spruce.local")
+	handler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{nil, 1, 2, false}, "api.spruce.local")
 	verifyDoctorAccessToPatientFileFn = canAccess
-	handler := test_handler.MockHandler{
-		H: careTeamHandler,
-		Setup: func() {
-			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.RoleCC
-			ctxt.AccountID = 1
-		},
-	}
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RoleCC})
 	getCareTeamsForPatientByCaseResponse = buildDummyGetCareTeamsForPatientByCaseResponse(2)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local"))
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(ctx, responseWriter, r)
 	// TODO: We can't verify the JSON output here as maps do not serialize determinisitically
 	// test.Equals(t, expectedWriter.Body, responseWriter.Body)
 	test.Equals(t, 2, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 0, "api.spruce.local").CareTeams))
@@ -179,20 +137,13 @@ func TestMACanFetchAllCareTeams(t *testing.T) {
 func TestDoctorCanFilterCareTeamsByCase(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?patient_id=1&case_id=1", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{nil, 1, 2, true}, "api.spruce.local")
+	handler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{nil, 1, 2, true}, "api.spruce.local")
 	verifyDoctorAccessToPatientFileFn = canAccess
-	handler := test_handler.MockHandler{
-		H: careTeamHandler,
-		Setup: func() {
-			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.RoleDoctor
-			ctxt.AccountID = 1
-		},
-	}
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RoleDoctor})
 	getCareTeamsForPatientByCaseResponse = buildDummyGetCareTeamsForPatientByCaseResponse(2)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1, "api.spruce.local"))
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(ctx, responseWriter, r)
 	test.Equals(t, expectedWriter.Body, responseWriter.Body)
 	test.Equals(t, 1, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1, "api.spruce.local").CareTeams))
 }
@@ -200,20 +151,13 @@ func TestDoctorCanFilterCareTeamsByCase(t *testing.T) {
 func TestPatientCanFilterCareTeamsByCase(t *testing.T) {
 	r, err := http.NewRequest("GET", "mock.api.request?case_id=1", nil)
 	test.OK(t, err)
-	careTeamHandler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{nil, 1, 2, true}, "api.spruce.local")
+	handler := NewPatientCareTeamsHandler(mockedDataAPI_handlerCareTeams{nil, 1, 2, true}, "api.spruce.local")
 	verifyDoctorAccessToPatientFileFn = canAccess
-	handler := test_handler.MockHandler{
-		H: careTeamHandler,
-		Setup: func() {
-			ctxt := apiservice.GetContext(r)
-			ctxt.Role = api.RolePatient
-			ctxt.AccountID = 1
-		},
-	}
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 	getCareTeamsForPatientByCaseResponse = buildDummyGetCareTeamsForPatientByCaseResponse(2)
 	expectedWriter, responseWriter := httptest.NewRecorder(), httptest.NewRecorder()
 	httputil.JSONResponse(expectedWriter, http.StatusOK, createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1, "api.spruce.local"))
-	handler.ServeHTTP(responseWriter, r)
+	handler.ServeHTTP(ctx, responseWriter, r)
 	test.Equals(t, expectedWriter.Body, responseWriter.Body)
 	test.Equals(t, 1, len(createCareTeamsResponse(getCareTeamsForPatientByCaseResponse, 1, "api.spruce.local").CareTeams))
 }

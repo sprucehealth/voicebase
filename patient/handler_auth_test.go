@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
@@ -58,6 +59,7 @@ func TestAuthenticationHandlerFeedback(t *testing.T) {
 
 	var res AuthenticationResponse
 	err := testJSONHandler(handler,
+		context.Background(),
 		newJSONTestRequest("POST", "/x/authenticate", &AuthRequestData{Login: "X", Password: "Y"}),
 		&res)
 	if err != nil {
@@ -74,6 +76,7 @@ func TestAuthenticationHandlerFeedback(t *testing.T) {
 
 	res = AuthenticationResponse{}
 	err = testJSONHandler(handler,
+		context.Background(),
 		newJSONTestRequest("POST", "/x/authenticate", &AuthRequestData{Login: "X", Password: "Y"}),
 		&res)
 	if err != nil {
@@ -89,6 +92,7 @@ func TestAuthenticationHandlerFeedback(t *testing.T) {
 
 	res = AuthenticationResponse{}
 	err = testJSONHandler(handler,
+		context.Background(),
 		newJSONTestRequest("POST", "/x/authenticate", &AuthRequestData{Login: "X", Password: "Y"}),
 		&res)
 	if err != nil {
@@ -107,6 +111,7 @@ func TestAuthenticationHandlerFeedback(t *testing.T) {
 
 	res = AuthenticationResponse{}
 	err = testJSONHandler(handler,
+		context.Background(),
 		newJSONTestRequest("POST", "/x/authenticate", &AuthRequestData{Login: "X", Password: "Y"}),
 		&res)
 	if err != nil {
@@ -136,9 +141,9 @@ func newJSONTestRequest(method, path string, body interface{}) *http.Request {
 	return rq
 }
 
-func testJSONHandler(handler http.Handler, req *http.Request, res interface{}) error {
+func testJSONHandler(handler httputil.ContextHandler, ctx context.Context, req *http.Request, res interface{}) error {
 	rw := httptest.NewRecorder()
-	handler.ServeHTTP(rw, req)
+	handler.ServeHTTP(ctx, rw, req)
 	if rw.Code != http.StatusOK {
 		return fmt.Errorf("Expected status %d, got %d", http.StatusOK, rw.Code)
 	}

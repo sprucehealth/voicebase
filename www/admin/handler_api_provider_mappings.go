@@ -20,7 +20,7 @@ type providerMappingsResponse struct {
 }
 
 func newProviderMappingsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&providerMappingsHandler{
+	return httputil.SupportedMethods(&providerMappingsHandler{
 		dataAPI: dataAPI,
 	}, httputil.Get)
 }

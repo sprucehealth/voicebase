@@ -10,6 +10,7 @@ import (
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
@@ -57,11 +58,11 @@ func GetAuthTokenFromHeader(r *http.Request) (string, error) {
 	return parts[1], nil
 }
 
-func HandleAuthError(err error, w http.ResponseWriter, r *http.Request) {
+func HandleAuthError(ctx context.Context, err error, w http.ResponseWriter, r *http.Request) {
 	switch err {
 	case ErrBadAuthHeader, ErrNoAuthHeader, api.ErrTokenExpired, api.ErrTokenDoesNotExist:
 		golog.Context("AuthEvent", AuthEventInvalidToken).Infof(err.Error())
-		WriteError(NewAuthTimeoutError(), w, r)
+		WriteError(ctx, NewAuthTimeoutError(), w, r)
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
 	}

@@ -3,6 +3,7 @@ package doctor_treatment_plan
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/erx"
@@ -14,7 +15,7 @@ type medicationStrengthSearchHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewMedicationStrengthSearchHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
+func NewMedicationStrengthSearchHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.AuthorizationRequired(&medicationStrengthSearchHandler{
 			dataAPI: dataAPI,
@@ -30,29 +31,29 @@ type MedicationStrengthSearchResponse struct {
 	MedicationStrengths []string `json:"dosage_strength_options"`
 }
 
-func (m *medicationStrengthSearchHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.RoleDoctor {
+func (m *medicationStrengthSearchHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+	if apiservice.MustCtxAccount(ctx).Role != api.RoleDoctor {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 	return true, nil
 }
 
-func (m *medicationStrengthSearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (m *medicationStrengthSearchHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	requestData := new(MedicationStrengthRequestData)
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	}
 
-	doctor, err := m.dataAPI.GetDoctorFromAccountID(apiservice.GetContext(r).AccountID)
+	doctor, err := m.dataAPI.GetDoctorFromAccountID(apiservice.MustCtxAccount(ctx).ID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	medicationStrengths, err := m.erxAPI.SearchForMedicationStrength(doctor.DoseSpotClinicianID, requestData.MedicationName)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

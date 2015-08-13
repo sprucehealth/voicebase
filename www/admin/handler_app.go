@@ -17,7 +17,7 @@ type appHandler struct {
 }
 
 func newAppHandler(templateLoader *www.TemplateLoader) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&appHandler{
+	return httputil.SupportedMethods(&appHandler{
 		template: templateLoader.MustLoadTemplate("admin/app.html", "admin/base.html", nil),
 	}, httputil.Get)
 }

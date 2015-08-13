@@ -16,7 +16,7 @@ type adminsListAPIHandler struct {
 }
 
 func newAdminsListAPIHandler(authAPI api.AuthAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&adminsListAPIHandler{
+	return httputil.SupportedMethods(&adminsListAPIHandler{
 		authAPI: authAPI,
 	}, httputil.Get)
 }

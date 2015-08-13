@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -37,14 +39,14 @@ func TestMeHandlerFeedback(t *testing.T) {
 	mockAPI := &mockAPIMeHandler{}
 	handler := NewMeHandler(mockAPI, dispatch.New())
 
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient, ID: 1})
+
 	// No treatment plans so shouldn't show feedback
 
 	var res meResponse
 	req := newJSONTestRequest("GET", "/", nil)
-	defer apiservice.DeleteContext(req)
-	*apiservice.GetContext(req) = apiservice.Context{Role: api.RolePatient, AccountID: 1}
 	req.Header.Set("Authorization", "token abc")
-	err := testJSONHandler(handler, req, &res)
+	err := testJSONHandler(handler, ctx, req, &res)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,10 +61,8 @@ func TestMeHandlerFeedback(t *testing.T) {
 
 	res = meResponse{}
 	req = newJSONTestRequest("GET", "/", nil)
-	defer apiservice.DeleteContext(req)
-	*apiservice.GetContext(req) = apiservice.Context{Role: api.RolePatient, AccountID: 1}
 	req.Header.Set("Authorization", "token abc")
-	err = testJSONHandler(handler, req, &res)
+	err = testJSONHandler(handler, ctx, req, &res)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,10 +76,8 @@ func TestMeHandlerFeedback(t *testing.T) {
 
 	res = meResponse{}
 	req = newJSONTestRequest("GET", "/", nil)
-	defer apiservice.DeleteContext(req)
-	*apiservice.GetContext(req) = apiservice.Context{Role: api.RolePatient, AccountID: 1}
 	req.Header.Set("Authorization", "token abc")
-	err = testJSONHandler(handler, req, &res)
+	err = testJSONHandler(handler, ctx, req, &res)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -96,10 +94,8 @@ func TestMeHandlerFeedback(t *testing.T) {
 
 	res = meResponse{}
 	req = newJSONTestRequest("GET", "/", nil)
-	defer apiservice.DeleteContext(req)
-	*apiservice.GetContext(req) = apiservice.Context{Role: api.RolePatient, AccountID: 1}
 	req.Header.Set("Authorization", "token abc")
-	err = testJSONHandler(handler, req, &res)
+	err = testJSONHandler(handler, ctx, req, &res)
 	if err != nil {
 		t.Fatal(err)
 	}

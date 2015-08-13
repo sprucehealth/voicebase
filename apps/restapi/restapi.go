@@ -336,10 +336,10 @@ func buildRESTAPI(
 			"RemoteAddr", av.RemoteAddr,
 			"StatusCode", av.StatusCode,
 		)
-		rctx := apiservice.GetContext(ev.Request)
-		if rctx.AccountID != 0 {
-			log = log.Context("AccountID", rctx.AccountID, "Role", rctx.Role)
-			av.AccountID = rctx.AccountID
+		account, ok := apiservice.CtxAccount(ctx)
+		if ok {
+			log = log.Context("AccountID", account.ID, "Role", account.Role)
+			av.AccountID = account.ID
 		}
 		if ev.Panic != nil {
 			log.Criticalf("http: panic: %v\n%s", ev.Panic, ev.StackTrace)

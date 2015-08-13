@@ -19,7 +19,7 @@ type analyticsReportsRunAPIHandler struct {
 }
 
 func newAnalyticsReportsRunAPIHandler(dataAPI api.DataAPI, db *sql.DB) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&analyticsReportsRunAPIHandler{
+	return httputil.SupportedMethods(&analyticsReportsRunAPIHandler{
 		dataAPI: dataAPI,
 		db:      db,
 	}, httputil.Post)

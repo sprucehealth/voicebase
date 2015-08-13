@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
@@ -13,7 +14,7 @@ type staticJSONHandler struct {
 	imageTag      string
 }
 
-func NewFeaturedDoctorsHandler(staticBaseURL string) http.Handler {
+func NewFeaturedDoctorsHandler(staticBaseURL string) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&staticJSONHandler{
@@ -22,7 +23,7 @@ func NewFeaturedDoctorsHandler(staticBaseURL string) http.Handler {
 			}), httputil.Get)
 }
 
-func NewPatientFAQHandler(staticBaseURL string) http.Handler {
+func NewPatientFAQHandler(staticBaseURL string) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&staticJSONHandler{
@@ -31,7 +32,7 @@ func NewPatientFAQHandler(staticBaseURL string) http.Handler {
 			}), httputil.Get)
 }
 
-func NewPricingFAQHandler(staticBaseURL string) http.Handler {
+func NewPricingFAQHandler(staticBaseURL string) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&staticJSONHandler{
@@ -40,6 +41,6 @@ func NewPricingFAQHandler(staticBaseURL string) http.Handler {
 			}), httputil.Get)
 }
 
-func (f *staticJSONHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (f *staticJSONHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("%s%s", f.staticBaseURL, f.imageTag), http.StatusSeeOther)
 }

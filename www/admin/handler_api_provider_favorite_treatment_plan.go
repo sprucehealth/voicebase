@@ -26,7 +26,7 @@ type providerFTPGETResponse struct {
 }
 
 func newProviderFTPHandler(dataAPI api.DataAPI, mediaStore *media.Store) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&providerFTPHandler{dataAPI: dataAPI, mediaStore: mediaStore}, httputil.Get)
+	return httputil.SupportedMethods(&providerFTPHandler{dataAPI: dataAPI, mediaStore: mediaStore}, httputil.Get)
 }
 
 func (h *providerFTPHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -25,7 +26,7 @@ type ClaimPatientCaseRequestData struct {
 	PatientCaseID encoding.ObjectID `json:"case_id"`
 }
 
-func NewClaimPatientCaseAccessHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger, statsRegistry metrics.Registry) http.Handler {
+func NewClaimPatientCaseAccessHandler(dataAPI api.DataAPI, analyticsLogger analytics.Logger, statsRegistry metrics.Registry) httputil.ContextHandler {
 	tempClaimSuccess := metrics.NewCounter()
 	tempClaimFailure := metrics.NewCounter()
 
@@ -33,53 +34,46 @@ func NewClaimPatientCaseAccessHandler(dataAPI api.DataAPI, analyticsLogger analy
 	statsRegistry.Add("temp_claim/failure", tempClaimFailure)
 
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(&claimPatientCaseAccessHandler{
-			dataAPI:          dataAPI,
-			analyticsLogger:  analyticsLogger,
-			tempClaimSuccess: tempClaimSuccess,
-			tempClaimFailure: tempClaimFailure,
-		}), httputil.Post)
+		apiservice.SupportedRoles(
+			apiservice.NoAuthorizationRequired(&claimPatientCaseAccessHandler{
+				dataAPI:          dataAPI,
+				analyticsLogger:  analyticsLogger,
+				tempClaimSuccess: tempClaimSuccess,
+				tempClaimFailure: tempClaimFailure,
+			}), api.RoleDoctor), httputil.Post)
 }
 
-func (c *claimPatientCaseAccessHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.RoleDoctor {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-
-	return true, nil
-}
-
-func (c *claimPatientCaseAccessHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
+func (c *claimPatientCaseAccessHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := apiservice.MustCtxAccount(ctx)
 
 	// only the doctor is authorized to claim the ase
-	if ctxt.Role != api.RoleDoctor {
-		apiservice.WriteAccessNotAllowedError(w, r)
+	if account.Role != api.RoleDoctor {
+		apiservice.WriteAccessNotAllowedError(ctx, w, r)
 		return
 	}
 
 	requestData := ClaimPatientCaseRequestData{}
 	if err := apiservice.DecodeRequestData(&requestData, r); err != nil {
-		apiservice.WriteValidationError("Unable to parse input parameters", w, r)
+		apiservice.WriteValidationError(ctx, "Unable to parse input parameters", w, r)
 		return
 	} else if requestData.PatientCaseID.Int64() == 0 {
-		apiservice.WriteValidationError("case_id must be specified", w, r)
+		apiservice.WriteValidationError(ctx, "case_id must be specified", w, r)
 		return
 	}
 
-	doctorID, err := c.dataAPI.GetDoctorIDFromAccountID(apiservice.GetContext(r).AccountID)
+	doctorID, err := c.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	patientCase, err := c.dataAPI.GetPatientCaseFromID(requestData.PatientCaseID.Int64())
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
-	err = apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorID, patientCase.PatientID.Int64(), patientCase.ID.Int64(), c.dataAPI)
+	err = apiservice.ValidateAccessToPatientCase(r.Method, account.Role, doctorID, patientCase.PatientID.Int64(), patientCase.ID.Int64(), c.dataAPI)
 	if err == nil {
 		// doctor already has access, in which case we return success
 		apiservice.WriteJSONSuccess(w)
@@ -91,17 +85,17 @@ func (c *claimPatientCaseAccessHandler) ServeHTTP(w http.ResponseWriter, r *http
 		// this means that the doctor does not have permissions yet,
 		// in which case this doctor can be granted access to the case
 	default:
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	// to grant access to the patient case, patient case has to be in unclaimed state
 	if patientCase.Claimed {
-		apiservice.WriteAccessNotAllowedError(w, r)
+		apiservice.WriteAccessNotAllowedError(ctx, w, r)
 		return
 	} else if err := c.dataAPI.TemporarilyClaimCaseAndAssignDoctorToCaseAndPatient(doctorID, patientCase, ExpireDuration); err != nil {
 		c.tempClaimFailure.Inc(1)
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

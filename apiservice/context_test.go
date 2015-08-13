@@ -1,25 +1,30 @@
 package apiservice
 
 import (
-	"net/http"
 	"testing"
+
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
+	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/test"
 )
 
 func TestContext(t *testing.T) {
-	req, _ := http.NewRequest("GET", "/", nil)
-	ctx := GetContext(req)
-	if ctx == nil {
-		t.Fatal("Expected a valid empty Context from first call to GetContext")
-	}
-	if ctx.AccountID != 0 {
-		t.Fatal("Expected AccountId of 0 on new Context")
-	}
-	ctx.AccountID = 123
-	if ctx2 := GetContext(req); ctx2.AccountID != ctx.AccountID {
-		t.Fatal("Write to context failed")
-	}
-	DeleteContext(req)
-	if ctx := GetContext(req); ctx.AccountID != 0 {
-		t.Fatal("DeleteContext failed")
-	}
+	account, ok := CtxAccount(context.Background())
+	test.Equals(t, false, ok)
+	test.Equals(t, (*common.Account)(nil), account)
+
+	account, ok = CtxAccount(CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient, ID: 1}))
+	test.Equals(t, true, ok)
+	test.Assert(t, account != nil, "Account should not be nil")
+	test.Equals(t, int64(1), account.ID)
+	test.Equals(t, api.RolePatient, account.Role)
+
+	cache, ok := CtxCache(context.Background())
+	test.Equals(t, false, ok)
+	test.Assert(t, cache == nil, "Cache should be nil")
+
+	cache, ok = CtxCache(CtxWithCache(context.Background(), nil))
+	test.Equals(t, true, ok)
+	test.Assert(t, cache != nil, "Cache should not be nil")
 }

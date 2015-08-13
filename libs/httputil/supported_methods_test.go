@@ -10,7 +10,7 @@ import (
 )
 
 func TestSupportedMethods(t *testing.T) {
-	h := ContextSupportedMethods(ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {}), Get, Put)
+	h := SupportedMethods(ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {}), Get, Put)
 	ctx := context.Background()
 
 	r, err := http.NewRequest(Get, "/", nil)

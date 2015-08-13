@@ -37,7 +37,7 @@ type cellVerifyRequest struct {
 }
 
 func newCellVerifyHandler(router *mux.Router, dataAPI api.DataAPI, authAPI api.AuthAPI, smsAPI api.SMSAPI, fromNumber string, templateLoader *www.TemplateLoader) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&cellVerifyHandler{
+	return httputil.SupportedMethods(&cellVerifyHandler{
 		router:     router,
 		dataAPI:    dataAPI,
 		authAPI:    authAPI,

@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
@@ -108,7 +110,7 @@ func (c *careProviderSelection) Validate(namespace string) error {
 }
 
 // NewSelectionHandler returns an initialized instance of selectionHandler
-func NewSelectionHandler(dataAPI api.DataAPI, apiDomain string, selectionCount int) http.Handler {
+func NewSelectionHandler(dataAPI api.DataAPI, apiDomain string, selectionCount int) httputil.ContextHandler {
 	if selectionCount == 0 {
 		selectionCount = defaultSelectionCount
 	}
@@ -122,10 +124,10 @@ func NewSelectionHandler(dataAPI api.DataAPI, apiDomain string, selectionCount i
 			}), httputil.Get)
 }
 
-func (c *selectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (c *selectionHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var rd selectionRequest
 	if err := apiservice.DecodeRequestData(&rd, r); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	}
 
@@ -135,7 +137,7 @@ func (c *selectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := rd.Validate(); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	}
 
@@ -186,7 +188,7 @@ func (c *selectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			// validate all views
 			for _, selectionView := range response.Options {
 				if err := selectionView.Validate(selectionNamespace); err != nil {
-					apiservice.WriteError(err, w, r)
+					apiservice.WriteError(ctx, err, w, r)
 					return
 				}
 			}
@@ -196,9 +198,10 @@ func (c *selectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	doctorIDs, err := c.pickNDoctors(c.selectionCount, &rd, r)
+	account, _ := apiservice.CtxAccount(ctx)
+	doctorIDs, err := c.pickNDoctors(c.selectionCount, &rd, account)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -221,7 +224,7 @@ func (c *selectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err := p.Wait(); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -250,7 +253,7 @@ func (c *selectionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// validate all views
 	for _, selectionView := range response.Options {
 		if err := selectionView.Validate(selectionNamespace); err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 	}
@@ -262,7 +265,7 @@ func (c *selectionHandler) randomlyPickDoctorThumbnails(n int, pickedDoctorList 
 	return RandomDoctorURLs(n, c.dataAPI, c.apiDomain, pickedDoctorList)
 }
 
-func (c *selectionHandler) pickNDoctors(n int, rd *selectionRequest, r *http.Request) ([]int64, error) {
+func (c *selectionHandler) pickNDoctors(n int, rd *selectionRequest, account *common.Account) ([]int64, error) {
 	careProvidingStateID, err := c.dataAPI.GetCareProvidingStateID(rd.StateCode, rd.PathwayTag)
 	if api.IsErrNotFound(err) {
 		return nil, nil
@@ -274,15 +277,13 @@ func (c *selectionHandler) pickNDoctors(n int, rd *selectionRequest, r *http.Req
 
 	// if authenticated, first include
 	// any eligible doctors from your past cases
-	ctxt := apiservice.GetContext(r)
-	if ctxt.AccountID > 0 {
-
+	if account != nil {
 		// only patient is allowed to access this API in authenticated mode
-		if ctxt.Role != api.RolePatient {
+		if account.Role != api.RolePatient {
 			return nil, apiservice.NewAccessForbiddenError()
 		}
 
-		patientID, err := c.dataAPI.GetPatientIDFromAccountID(ctxt.AccountID)
+		patientID, err := c.dataAPI.GetPatientIDFromAccountID(account.ID)
 		if err != nil {
 			return nil, err
 		}

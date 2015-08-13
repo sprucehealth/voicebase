@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -24,29 +25,23 @@ type patientFeedback struct {
 	Created int64  `json:"created_timestamp"`
 }
 
-func NewPatientFeedbackHandler(dataAPI api.DataAPI) http.Handler {
+func NewPatientFeedbackHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(&patientFeedbackHandler{
-			dataAPI: dataAPI,
-		}), httputil.Get)
+		apiservice.SupportedRoles(
+			apiservice.NoAuthorizationRequired(&patientFeedbackHandler{
+				dataAPI: dataAPI,
+			}), api.RoleCC), httputil.Get)
 }
 
-func (h *patientFeedbackHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.RoleCC {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-	return true, nil
-}
-
-func (h *patientFeedbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *patientFeedbackHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	caseID, err := strconv.ParseInt(r.FormValue("case_id"), 10, 64)
 	if err != nil {
-		apiservice.WriteBadRequestError(errors.New("case_id required"), w, r)
+		apiservice.WriteBadRequestError(ctx, errors.New("case_id required"), w, r)
 		return
 	}
 	feedback, err := h.dataAPI.PatientFeedback("case:" + strconv.FormatInt(caseID, 10))
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	res := &patientFeedbackResponse{

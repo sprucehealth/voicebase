@@ -43,13 +43,13 @@ var (
 )
 
 func newIncomingFinancialItemsHandler(financialAccess financial.Financial) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&incomingFinancialItemsAPIHandler{
+	return httputil.SupportedMethods(&incomingFinancialItemsAPIHandler{
 		financialAccess: financialAccess,
 	}, httputil.Get)
 }
 
 func newOutgoingFinancialItemsHandler(financialAccess financial.Financial) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&outgoingFinancialItemsAPIHandler{
+	return httputil.SupportedMethods(&outgoingFinancialItemsAPIHandler{
 		financialAccess: financialAccess,
 	}, httputil.Get)
 }

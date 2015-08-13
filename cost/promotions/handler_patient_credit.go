@@ -3,6 +3,7 @@ package promotions
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -18,30 +19,24 @@ type creditsRequestData struct {
 }
 
 // NewPatientCreditsHandler returns a new initialzed instance of the creditsHandler
-func NewPatientCreditsHandler(dataAPI api.DataAPI) http.Handler {
-	return httputil.SupportedMethods(apiservice.AuthorizationRequired(&creditsHandler{
-		dataAPI: dataAPI,
-	}), httputil.Put)
+func NewPatientCreditsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+	return httputil.SupportedMethods(
+		apiservice.SupportedRoles(
+			apiservice.NoAuthorizationRequired(&creditsHandler{dataAPI: dataAPI}),
+			api.RoleAdmin),
+		httputil.Put)
 }
 
-func (c *creditsHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.RoleAdmin {
-		return false, apiservice.NewAccessForbiddenError()
-	}
-
-	return true, nil
-}
-
-func (c *creditsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (c *creditsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var rd creditsRequestData
 
 	if err := apiservice.DecodeRequestData(&rd, r); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	}
 
 	if err := c.dataAPI.UpdateCredit(rd.PatientID, rd.Credit, USDUnit.String()); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
@@ -15,7 +16,7 @@ type careProviderProfileHandler struct {
 	apiDomain string
 }
 
-func NewProfileHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
+func NewProfileHandler(dataAPI api.DataAPI, apiDomain string) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(
 			&careProviderProfileHandler{
@@ -24,7 +25,7 @@ func NewProfileHandler(dataAPI api.DataAPI, apiDomain string) http.Handler {
 			}), httputil.Get)
 }
 
-func (h *careProviderProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *careProviderProfileHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	// We only have doctors for providers so provider_id is actually the doctor ID, but
 	// to future compatibility have the param be provider_id.
 	doctorID, err := strconv.ParseInt(r.FormValue("provider_id"), 10, 64)
@@ -37,12 +38,12 @@ func (h *careProviderProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		http.NotFound(w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	profile, err := h.dataAPI.CareProviderProfile(doctor.AccountID.Int64())
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -149,7 +150,7 @@ func (h *careProviderProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 
 	for _, v := range views {
 		if err := v.Validate(); err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 	}

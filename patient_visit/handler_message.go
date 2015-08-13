@@ -3,6 +3,7 @@ package patient_visit
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -17,30 +18,33 @@ type messageRequestData struct {
 	Message        string `schema:"message" json:"message"`
 }
 
-func NewMessageHandler(dataAPI api.DataAPI) http.Handler {
+func NewMessageHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(&messageHandler{
-			dataAPI: dataAPI,
-		}), httputil.Get, httputil.Put)
+		apiservice.RequestCacheHandler(
+			apiservice.AuthorizationRequired(&messageHandler{
+				dataAPI: dataAPI,
+			})),
+		httputil.Get, httputil.Put)
 }
 
-func (m *messageHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
-	if ctxt.Role != api.RolePatient {
+func (m *messageHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+	account := apiservice.MustCtxAccount(ctx)
+	requestCache := apiservice.MustCtxCache(ctx)
+	if account.Role != api.RolePatient {
 		return false, nil
 	}
 
-	patientID, err := m.dataAPI.GetPatientIDFromAccountID(ctxt.AccountID)
+	patientID, err := m.dataAPI.GetPatientIDFromAccountID(account.ID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.PatientID] = patientID
+	requestCache[apiservice.CKPatientID] = patientID
 
 	requestData := &messageRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error())
 	}
-	ctxt.RequestCache[apiservice.RequestData] = requestData
+	requestCache[apiservice.CKRequestData] = requestData
 
 	patientVisit, err := m.dataAPI.GetPatientVisitFromID(requestData.PatientVisitID)
 	if err != nil {
@@ -48,23 +52,23 @@ func (m *messageHandler) IsAuthorized(r *http.Request) (bool, error) {
 	} else if patientVisit.PatientID.Int64() != patientID {
 		return false, apiservice.NewAccessForbiddenError()
 	}
-	ctxt.RequestCache[apiservice.PatientVisit] = patientVisit
+	requestCache[apiservice.CKPatientVisit] = patientVisit
 
 	return true, nil
 }
 
-func (m *messageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	requestData := ctxt.RequestCache[apiservice.RequestData].(*messageRequestData)
+func (m *messageHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	requestData := requestCache[apiservice.CKRequestData].(*messageRequestData)
 
 	switch r.Method {
 	case httputil.Get:
 		message, err := m.dataAPI.GetMessageForPatientVisit(requestData.PatientVisitID)
 		if api.IsErrNotFound(err) {
-			apiservice.WriteResourceNotFoundError("message not found", w, r)
+			apiservice.WriteResourceNotFoundError(ctx, "message not found", w, r)
 			return
 		} else if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		httputil.JSONResponse(w, http.StatusOK, struct {
@@ -74,7 +78,7 @@ func (m *messageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		})
 	case httputil.Put:
 		if err := m.dataAPI.SetMessageForPatientVisit(requestData.PatientVisitID, requestData.Message); err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		apiservice.WriteJSONSuccess(w)

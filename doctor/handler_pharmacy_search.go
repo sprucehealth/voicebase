@@ -3,6 +3,7 @@ package doctor
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/erx"
@@ -15,7 +16,7 @@ type pharmacySearchHandler struct {
 	erxAPI  erx.ERxAPI
 }
 
-func NewPharmacySearchHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) http.Handler {
+func NewPharmacySearchHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&pharmacySearchHandler{
@@ -34,22 +35,22 @@ type PharmacySearchResponse struct {
 	PharmacyResults []*pharmacy.PharmacyData `json:"pharmacy_results"`
 }
 
-func (d *pharmacySearchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (d *pharmacySearchHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	requestData := &PharmacySearchRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	}
 
-	doctor, err := d.dataAPI.GetDoctorFromAccountID(apiservice.GetContext(r).AccountID)
+	doctor, err := d.dataAPI.GetDoctorFromAccountID(apiservice.MustCtxAccount(ctx).ID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	pharmacyResults, err := d.erxAPI.SearchForPharmacies(doctor.DoseSpotClinicianID, "", "", requestData.ZipcodeString, "", requestData.PharmacyTypes)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	httputil.JSONResponse(w, http.StatusOK, &PharmacySearchResponse{PharmacyResults: pharmacyResults})

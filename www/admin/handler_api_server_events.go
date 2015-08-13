@@ -38,22 +38,22 @@ type serverEventsGETResponse struct {
 }
 
 func newServerEventsHandler(eventsClient events.Client) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&serverEventsHandler{eventsClient: eventsClient}, httputil.Get)
+	return httputil.SupportedMethods(&serverEventsHandler{eventsClient: eventsClient}, httputil.Get)
 }
 
 func (h *serverEventsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		req, err := h.parseGETRequest(r)
+		req, err := h.parseGETRequest(ctx, r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
-		h.serveGET(w, r, req)
+		h.serveGET(ctx, w, r, req)
 	}
 }
 
-func (h *serverEventsHandler) parseGETRequest(r *http.Request) (*serverEventsGETRequest, error) {
+func (h *serverEventsHandler) parseGETRequest(ctx context.Context, r *http.Request) (*serverEventsGETRequest, error) {
 	rd := &serverEventsGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -65,7 +65,7 @@ func (h *serverEventsHandler) parseGETRequest(r *http.Request) (*serverEventsGET
 	return rd, nil
 }
 
-func (h *serverEventsHandler) serveGET(w http.ResponseWriter, r *http.Request, req *serverEventsGETRequest) {
+func (h *serverEventsHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, req *serverEventsGETRequest) {
 	events, err := h.eventsClient.ServerEvents(&query.ServerEventQuery{
 		TimestampQuery:  query.TimestampQuery{Begin: req.Begin, End: req.End},
 		Event:           req.Event,

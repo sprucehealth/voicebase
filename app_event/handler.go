@@ -3,6 +3,7 @@ package app_event
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -23,22 +24,23 @@ type EventRequestData struct {
 // way for the client to send events of what the user is doing
 // ("viewing", "updating", "deleting", etc. a resource) for the server to appropriately
 // act on the event
-func NewHandler(dispatcher *dispatch.Dispatcher) http.Handler {
+func NewHandler(dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
 	return httputil.SupportedMethods(apiservice.NoAuthorizationRequired(&eventHandler{
 		dispatcher: dispatcher,
 	}), httputil.Post)
 }
 
-func (e *eventHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (e *eventHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	requestData := &EventRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
-		apiservice.WriteValidationError(err.Error(), w, r)
+		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
 	}
 
+	account := apiservice.MustCtxAccount(ctx)
 	e.dispatcher.Publish(&AppEvent{
-		AccountID:  apiservice.GetContext(r).AccountID,
-		Role:       apiservice.GetContext(r).Role,
+		AccountID:  account.ID,
+		Role:       account.Role,
 		Resource:   requestData.Resource,
 		ResourceID: requestData.ResourceID,
 		Action:     requestData.Action,

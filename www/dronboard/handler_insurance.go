@@ -89,7 +89,7 @@ func (f *insuranceForm) Validate() map[string]string {
 }
 
 func newInsuranceHandler(router *mux.Router, dataAPI api.DataAPI, templateLoader *www.TemplateLoader) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&insuranceHandler{
+	return httputil.SupportedMethods(&insuranceHandler{
 		router:   router,
 		dataAPI:  dataAPI,
 		template: templateLoader.MustLoadTemplate("dronboard/insurance.html", "dronboard/base.html", nil),

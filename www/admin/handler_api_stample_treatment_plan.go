@@ -26,20 +26,20 @@ type stpPUTRequest struct {
 }
 
 func newSampleTreatmentPlanHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&stpHandler{dataAPI: dataAPI}, httputil.Get, httputil.Put)
+	return httputil.SupportedMethods(&stpHandler{dataAPI: dataAPI}, httputil.Get, httputil.Put)
 }
 
 func (h *stpHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		requestData, err := h.parseGETRequest(r)
+		requestData, err := h.parseGETRequest(ctx, r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
 		h.serveGET(w, r, requestData)
 	case "PUT":
-		requestData, err := h.parsePUTRequest(r)
+		requestData, err := h.parsePUTRequest(ctx, r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
@@ -48,7 +48,7 @@ func (h *stpHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *ht
 	}
 }
 
-func (h *stpHandler) parseGETRequest(r *http.Request) (*stpGETRequest, error) {
+func (h *stpHandler) parseGETRequest(ctx context.Context, r *http.Request) (*stpGETRequest, error) {
 	rd := &stpGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -60,7 +60,7 @@ func (h *stpHandler) parseGETRequest(r *http.Request) (*stpGETRequest, error) {
 	return rd, nil
 }
 
-func (h *stpHandler) parsePUTRequest(r *http.Request) (*stpPUTRequest, error) {
+func (h *stpHandler) parsePUTRequest(ctx context.Context, r *http.Request) (*stpPUTRequest, error) {
 	rd := &stpPUTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)

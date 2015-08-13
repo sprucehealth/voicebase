@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
@@ -26,25 +27,26 @@ type treatmentGuideHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewTreatmentGuideHandler(dataAPI api.DataAPI) http.Handler {
+func NewTreatmentGuideHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
-			apiservice.AuthorizationRequired(
-				&treatmentGuideHandler{
-					dataAPI: dataAPI,
-				}),
+			apiservice.RequestCacheHandler(
+				apiservice.AuthorizationRequired(
+					&treatmentGuideHandler{
+						dataAPI: dataAPI,
+					})),
 			api.RolePatient, api.RoleDoctor, api.RoleCC),
 		httputil.Get)
 }
 
-func (h *treatmentGuideHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
-
+func (h *treatmentGuideHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
 	requestData := new(TreatmentGuideRequestData)
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error())
 	}
-	ctxt.RequestCache[apiservice.RequestData] = requestData
+
+	requestCache := apiservice.MustCtxCache(ctx)
+	requestCache[apiservice.CKRequestData] = requestData
 
 	treatment, err := h.dataAPI.GetTreatmentFromID(requestData.TreatmentID)
 	if err != nil {
@@ -52,34 +54,35 @@ func (h *treatmentGuideHandler) IsAuthorized(r *http.Request) (bool, error) {
 	} else if treatment == nil {
 		return false, apiservice.NewResourceNotFoundError("treatment not found", r)
 	}
-	ctxt.RequestCache[apiservice.Treatment] = treatment
+	requestCache[apiservice.CKTreatment] = treatment
 
 	treatmentPlan, err := h.dataAPI.GetTreatmentPlanForPatient(treatment.PatientID.Int64(), treatment.TreatmentPlanID.Int64())
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
+	requestCache[apiservice.CKTreatmentPlan] = treatmentPlan
 
-	switch ctxt.Role {
+	account := apiservice.MustCtxAccount(ctx)
+	switch account.Role {
 	case api.RolePatient:
-		patientID, err := h.dataAPI.GetPatientIDFromAccountID(ctxt.AccountID)
+		patientID, err := h.dataAPI.GetPatientIDFromAccountID(account.ID)
 		if err != nil {
 			return false, err
 		}
-		ctxt.RequestCache[apiservice.PatientID] = patientID
+		requestCache[apiservice.CKPatientID] = patientID
 
 		if treatment.PatientID.Int64() != patientID {
 			return false, apiservice.NewAccessForbiddenError()
 		}
 
 	case api.RoleDoctor:
-		doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
+		doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(account.ID)
 		if err != nil {
 			return false, err
 		}
-		ctxt.RequestCache[apiservice.DoctorID] = doctorID
+		requestCache[apiservice.CKDoctorID] = doctorID
 
-		if err := apiservice.ValidateAccessToPatientCase(r.Method, ctxt.Role, doctorID, treatmentPlan.PatientID, treatmentPlan.PatientCaseID.Int64(), h.dataAPI); err != nil {
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, account.Role, doctorID, treatmentPlan.PatientID, treatmentPlan.PatientCaseID.Int64(), h.dataAPI); err != nil {
 			return false, err
 		}
 
@@ -92,15 +95,15 @@ func (h *treatmentGuideHandler) IsAuthorized(r *http.Request) (bool, error) {
 	return true, nil
 }
 
-func (h *treatmentGuideHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	treatment := ctxt.RequestCache[apiservice.Treatment].(*common.Treatment)
-	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
+func (h *treatmentGuideHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	treatment := requestCache[apiservice.CKTreatment].(*common.Treatment)
+	treatmentPlan := requestCache[apiservice.CKTreatmentPlan].(*common.TreatmentPlan)
 
-	treatmentGuideResponse(h.dataAPI, treatment.GenericDrugName, treatment.DrugRoute, treatment.DrugForm, treatment.DosageStrength, treatment.DrugDBIDs[erx.NDC], treatment, treatmentPlan, w, r)
+	treatmentGuideResponse(ctx, h.dataAPI, treatment.GenericDrugName, treatment.DrugRoute, treatment.DrugForm, treatment.DosageStrength, treatment.DrugDBIDs[erx.NDC], treatment, treatmentPlan, w, r)
 }
 
-func treatmentGuideResponse(dataAPI api.DataAPI, genericName, route, form, dosage, ndc string, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan, w http.ResponseWriter, r *http.Request) {
+func treatmentGuideResponse(ctx context.Context, dataAPI api.DataAPI, genericName, route, form, dosage, ndc string, treatment *common.Treatment, treatmentPlan *common.TreatmentPlan, w http.ResponseWriter, r *http.Request) {
 	details, err := dataAPI.QueryDrugDetails(&api.DrugDetailsQuery{
 		NDC:         ndc,
 		GenericName: genericName,
@@ -108,16 +111,16 @@ func treatmentGuideResponse(dataAPI api.DataAPI, genericName, route, form, dosag
 		Form:        form,
 	})
 	if api.IsErrNotFound(err) {
-		apiservice.WriteResourceNotFoundError("No details available", w, r)
+		apiservice.WriteResourceNotFoundError(ctx, "No details available", w, r)
 		return
 	} else if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	tgViews, err := treatmentGuideViews(details, dosage, treatment, treatmentPlan)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	httputil.JSONResponse(w, http.StatusOK, map[string][]views.View{"views": tgViews})

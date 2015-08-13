@@ -77,7 +77,7 @@ type versionedAdditionalQuestionFieldsPOSTRequest map[string]interface{}
 // Supported Roles: ADMIN_ROLE
 // Supported Method: GET, POST
 func newVersionedQuestionHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(
+	return httputil.SupportedMethods(
 		&versionedQuestionHandler{
 			dataAPI: dataAPI,
 		}, httputil.Get, httputil.Post)
@@ -86,14 +86,14 @@ func newVersionedQuestionHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 func (h *versionedQuestionHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		requestData, err := h.parseGETRequest(r)
+		requestData, err := h.parseGETRequest(ctx, r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
 		h.serveGET(w, r, requestData)
 	case "POST":
-		requestData, err := h.parsePOSTRequest(r)
+		requestData, err := h.parsePOSTRequest(ctx, r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
@@ -106,7 +106,7 @@ func (h *versionedQuestionHandler) ServeHTTP(ctx context.Context, w http.Respons
 // Valid combinations inclde
 //	ID - Returns a question that maps to a specific ID
 //	Tag & Version - Returns a question that maps to a specific tag and version
-func (h *versionedQuestionHandler) parseGETRequest(r *http.Request) (*versionedQuestionGETRequest, error) {
+func (h *versionedQuestionHandler) parseGETRequest(ctx context.Context, r *http.Request) (*versionedQuestionGETRequest, error) {
 	rd := &versionedQuestionGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -200,7 +200,7 @@ func (h *versionedQuestionHandler) serveGETPOSTPostFetch(w http.ResponseWriter, 
 	httputil.JSONResponse(w, http.StatusOK, response)
 }
 
-func (h *versionedQuestionHandler) parsePOSTRequest(r *http.Request) (*versionedQuestionPOSTRequest, error) {
+func (h *versionedQuestionHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*versionedQuestionPOSTRequest, error) {
 	rd := &versionedQuestionPOSTRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)

@@ -29,7 +29,7 @@ type patientAccountNeedsVerifyIDPOSTRequest struct {
 }
 
 func newPatientAccountNeedsVerifyIDHandler(needsIDMarker needsIDMarker) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&patientAccountNeedsVerifyIDHandler{needsIDMarker: needsIDMarker}, httputil.Post)
+	return httputil.SupportedMethods(&patientAccountNeedsVerifyIDHandler{needsIDMarker: needsIDMarker}, httputil.Post)
 }
 
 func (h *patientAccountNeedsVerifyIDHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
@@ -41,7 +41,7 @@ func (h *patientAccountNeedsVerifyIDHandler) ServeHTTP(ctx context.Context, w ht
 
 	switch r.Method {
 	case httputil.Post:
-		rd, err := h.parsePOSTRequest(r)
+		rd, err := h.parsePOSTRequest(ctx, r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
@@ -50,7 +50,7 @@ func (h *patientAccountNeedsVerifyIDHandler) ServeHTTP(ctx context.Context, w ht
 	}
 }
 
-func (h *patientAccountNeedsVerifyIDHandler) parsePOSTRequest(r *http.Request) (*patientAccountNeedsVerifyIDPOSTRequest, error) {
+func (h *patientAccountNeedsVerifyIDHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*patientAccountNeedsVerifyIDPOSTRequest, error) {
 	rd := &patientAccountNeedsVerifyIDPOSTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)

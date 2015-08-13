@@ -3,6 +3,7 @@ package patient
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/auth"
@@ -23,27 +24,22 @@ type meResponse struct {
 	ActionsNeeded []*ActionNeeded    `json:"actions_needed,omitempty"`
 }
 
-func NewMeHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) http.Handler {
+func NewMeHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(
-			&meHandler{
-				dataAPI:    dataAPI,
-				dispatcher: dispatcher,
-			}), httputil.Get)
+		apiservice.SupportedRoles(
+			apiservice.NoAuthorizationRequired(
+				&meHandler{
+					dataAPI:    dataAPI,
+					dispatcher: dispatcher,
+				}),
+			api.RolePatient),
+		httputil.Get)
 }
 
-func (m *meHandler) IsAuthorized(r *http.Request) (bool, error) {
-	if apiservice.GetContext(r).Role != api.RolePatient {
-		return false, nil
-	}
-
-	return true, nil
-}
-
-func (m *meHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	patient, err := m.dataAPI.GetPatientFromAccountID(apiservice.GetContext(r).AccountID)
+func (m *meHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	patient, err := m.dataAPI.GetPatientFromAccountID(apiservice.MustCtxAccount(ctx).ID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

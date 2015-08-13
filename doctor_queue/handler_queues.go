@@ -3,6 +3,7 @@ package doctor_queue
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
@@ -24,7 +25,7 @@ type inboxHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewInboxHandler(dataAPI api.DataAPI) http.Handler {
+func NewInboxHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&inboxHandler{
@@ -33,41 +34,41 @@ func NewInboxHandler(dataAPI api.DataAPI) http.Handler {
 		httputil.Get)
 }
 
-func (i *inboxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx := apiservice.GetContext(r)
+func (i *inboxHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := apiservice.MustCtxAccount(ctx)
 
 	var queueItems []*api.DoctorQueueItem
 
-	if ctx.Role == api.RoleCC {
+	if account.Role == api.RoleCC {
 		// Care coordinates see a unified inbox across all CC accounts
 		var err error
 		queueItems, err = i.dataAPI.GetPendingItemsInCCQueues()
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 	} else {
-		doctorID, err := i.dataAPI.GetDoctorIDFromAccountID(ctx.AccountID)
+		doctorID, err := i.dataAPI.GetDoctorIDFromAccountID(account.ID)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
 		queueItems, err = i.dataAPI.GetPendingItemsInDoctorQueue(doctorID)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 	}
 
-	transformQueueItems(i.dataAPI, queueItems, false, w, r)
+	transformQueueItems(ctx, i.dataAPI, queueItems, false, w, r)
 }
 
 type unassignedHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewUnassignedHandler(dataAPI api.DataAPI) http.Handler {
+func NewUnassignedHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&unassignedHandler{
@@ -76,40 +77,40 @@ func NewUnassignedHandler(dataAPI api.DataAPI) http.Handler {
 		httputil.Get)
 }
 
-func (u *unassignedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
+func (u *unassignedHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := apiservice.MustCtxAccount(ctx)
 
-	doctorID, err := u.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
+	doctorID, err := u.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	var queueItems []*api.DoctorQueueItem
 	var addAuthURL bool
-	if ctxt.Role == api.RoleCC {
+	if account.Role == api.RoleCC {
 		queueItems, err = u.dataAPI.GetPendingItemsForClinic()
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 	} else {
 		addAuthURL = true
 		queueItems, err = u.dataAPI.GetElligibleItemsInUnclaimedQueue(doctorID)
 		if err != nil && !api.IsErrNotFound(err) {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 	}
 
-	transformQueueItems(u.dataAPI, queueItems, addAuthURL, w, r)
+	transformQueueItems(ctx, u.dataAPI, queueItems, addAuthURL, w, r)
 }
 
 type historyHandler struct {
 	dataAPI api.DataAPI
 }
 
-func NewHistoryHandler(dataAPI api.DataAPI) http.Handler {
+func NewHistoryHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&historyHandler{
@@ -118,34 +119,35 @@ func NewHistoryHandler(dataAPI api.DataAPI) http.Handler {
 		httputil.Get)
 }
 
-func (h *historyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
+func (h *historyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	account := apiservice.MustCtxAccount(ctx)
 
-	doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
+	doctorID, err := h.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	var queueItems []*api.DoctorQueueItem
-	if ctxt.Role == api.RoleCC {
+	if account.Role == api.RoleCC {
 		queueItems, err = h.dataAPI.GetCompletedItemsForClinic()
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 	} else {
 		queueItems, err = h.dataAPI.GetCompletedItemsInDoctorQueue(doctorID)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 	}
 
-	transformQueueItems(h.dataAPI, queueItems, false, w, r)
+	transformQueueItems(ctx, h.dataAPI, queueItems, false, w, r)
 }
 
 func transformQueueItems(
+	ctx context.Context,
 	dataAPI api.DataAPI,
 	queueItems []*api.DoctorQueueItem,
 	addAuthURL bool,
@@ -164,7 +166,7 @@ func transformQueueItems(
 
 	patientMap, err := dataAPI.Patients(patientIDs)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

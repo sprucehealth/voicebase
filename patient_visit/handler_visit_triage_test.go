@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
@@ -58,7 +59,7 @@ func TestVisitTriage_OpenVisit(t *testing.T) {
 	r, err := http.NewRequest("PUT", "api.spruce.local/triage", nil)
 	test.OK(t, err)
 
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(context.Background(), w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 }
 
@@ -98,7 +99,7 @@ func TestVisitTriage_Customize(t *testing.T) {
 		return nil
 	})
 
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(context.Background(), w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 	test.Equals(t, expectedActionMessage, receivedEvent.ActionMessage)
 	test.Equals(t, expectedTitle, receivedEvent.Title)
@@ -129,7 +130,7 @@ func TestVisitTriage_Abandon(t *testing.T) {
 	test.OK(t, err)
 	r.Header.Set("Content-Type", "application/json")
 
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(context.Background(), w, r)
 
 	test.Equals(t, true, m.caseUpdate.TimeoutDate.Valid)
 	test.Equals(t, common.PCStatusPreSubmissionTriageDeleted, *m.caseUpdate.Status)
@@ -162,7 +163,7 @@ func TestVisitTriage_TriagedVisit(t *testing.T) {
 		return nil
 	})
 
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(context.Background(), w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 	test.Equals(t, expectedActionMessage, receivedEvent.ActionMessage)
 	test.Equals(t, expectedTitle, receivedEvent.Title)
@@ -185,6 +186,6 @@ func TestVisitTriage_SubmittedVisit(t *testing.T) {
 	r, err := http.NewRequest("PUT", "api.spruce.local/triage", nil)
 	test.OK(t, err)
 
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(context.Background(), w, r)
 	test.Equals(t, http.StatusBadRequest, w.Code)
 }

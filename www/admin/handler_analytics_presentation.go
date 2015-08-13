@@ -18,7 +18,7 @@ type analyticsPresentationIframeHandler struct {
 }
 
 func newAnalyticsPresentationIframeHandler(dataAPI api.DataAPI, templateLoader *www.TemplateLoader) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&analyticsPresentationIframeHandler{
+	return httputil.SupportedMethods(&analyticsPresentationIframeHandler{
 		dataAPI:  dataAPI,
 		template: templateLoader.MustLoadTemplate("admin/analytics_presentation_iframe.html", "base.html", nil),
 	}, httputil.Get)

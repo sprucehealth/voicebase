@@ -3,6 +3,7 @@ package settings
 import (
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -21,14 +22,14 @@ type upgradeInfo struct {
 	Required   bool   `json:"required"`
 }
 
-func NewHandler(minimumAppVersionConfigs *config.MinimumAppVersionConfigs) http.Handler {
+func NewHandler(minimumAppVersionConfigs *config.MinimumAppVersionConfigs) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&handler{
 			minimumAppVersionConfigs: minimumAppVersionConfigs,
 		}), httputil.Get)
 }
 
-func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *handler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	sHeaders := apiservice.ExtractSpruceHeaders(r)
 
 	if h.minimumAppVersionConfigs != nil {

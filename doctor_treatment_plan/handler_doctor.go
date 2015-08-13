@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -34,18 +35,20 @@ func NewDoctorTreatmentPlanHandler(
 	erxRoutingQueue *common.SQSQueue,
 	erxStatusQueue *common.SQSQueue,
 	routeErx bool,
-) http.Handler {
+) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.AuthorizationRequired(
-			&doctorTreatmentPlanHandler{
-				dataAPI:         dataAPI,
-				erxAPI:          erxAPI,
-				mediaStore:      mediaStore,
-				dispatcher:      dispatcher,
-				erxRoutingQueue: erxRoutingQueue,
-				erxStatusQueue:  erxStatusQueue,
-				routeErx:        routeErx,
-			}), httputil.Get, httputil.Put, httputil.Post, httputil.Delete)
+		apiservice.RequestCacheHandler(
+			apiservice.AuthorizationRequired(
+				&doctorTreatmentPlanHandler{
+					dataAPI:         dataAPI,
+					erxAPI:          erxAPI,
+					mediaStore:      mediaStore,
+					dispatcher:      dispatcher,
+					erxRoutingQueue: erxRoutingQueue,
+					erxStatusQueue:  erxStatusQueue,
+					routeErx:        routeErx,
+				})),
+		httputil.Get, httputil.Put, httputil.Post, httputil.Delete)
 }
 
 type TreatmentPlanRequestData struct {
@@ -63,20 +66,21 @@ type DoctorTreatmentPlanResponse struct {
 	TreatmentPlan *responses.TreatmentPlan `json:"treatment_plan"`
 }
 
-func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error) {
-	ctxt := apiservice.GetContext(r)
+func (d *doctorTreatmentPlanHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	account := apiservice.MustCtxAccount(ctx)
 
 	requestData := &TreatmentPlanRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error())
 	}
-	ctxt.RequestCache[apiservice.RequestData] = requestData
+	requestCache[apiservice.CKRequestData] = requestData
 
-	doctorID, err := d.dataAPI.GetDoctorIDFromAccountID(ctxt.AccountID)
+	doctorID, err := d.dataAPI.GetDoctorIDFromAccountID(account.ID)
 	if err != nil {
 		return false, err
 	}
-	ctxt.RequestCache[apiservice.DoctorID] = doctorID
+	requestCache[apiservice.CKDoctorID] = doctorID
 
 	switch r.Method {
 	case httputil.Get:
@@ -88,11 +92,11 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 		if err != nil {
 			return false, err
 		}
-		ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
+		requestCache[apiservice.CKTreatmentPlan] = treatmentPlan
 
 		if err := apiservice.ValidateAccessToPatientCase(
 			r.Method,
-			ctxt.Role,
+			account.Role,
 			doctorID,
 			treatmentPlan.PatientID,
 			treatmentPlan.PatientCaseID.Int64(),
@@ -115,11 +119,11 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 		if err != nil {
 			return false, err
 		}
-		ctxt.RequestCache[apiservice.TreatmentPlan] = treatmentPlan
+		requestCache[apiservice.CKTreatmentPlan] = treatmentPlan
 
 		if err := apiservice.ValidateAccessToPatientCase(
 			r.Method,
-			ctxt.Role,
+			account.Role,
 			doctorID,
 			treatmentPlan.PatientID,
 			treatmentPlan.PatientCaseID.Int64(),
@@ -157,17 +161,17 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 		default:
 			return false, apiservice.NewValidationError("Expected the parent type to either by PATIENT_VISIT or TREATMENT_PLAN")
 		}
-		ctxt.RequestCache[apiservice.PatientVisitID] = patientVisitID
+		requestCache[apiservice.CKPatientVisitID] = patientVisitID
 
 		patientCase, err := d.dataAPI.GetPatientCaseFromPatientVisitID(patientVisitID)
 		if err != nil {
 			return false, err
 		}
-		ctxt.RequestCache[apiservice.PatientCase] = patientCase
+		requestCache[apiservice.CKPatientCase] = patientCase
 
 		if err := apiservice.ValidateAccessToPatientCase(
 			r.Method,
-			ctxt.Role,
+			account.Role,
 			doctorID,
 			patientCase.PatientID.Int64(),
 			patientCase.ID.Int64(),
@@ -182,44 +186,44 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(r *http.Request) (bool, error)
 	return true, nil
 }
 
-func (d *doctorTreatmentPlanHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (d *doctorTreatmentPlanHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case httputil.Get:
-		d.getTreatmentPlan(w, r)
+		d.getTreatmentPlan(ctx, w, r)
 	case httputil.Post:
-		d.pickATreatmentPlan(w, r)
+		d.pickATreatmentPlan(ctx, w, r)
 	case httputil.Put:
-		d.submitTreatmentPlan(w, r)
+		d.submitTreatmentPlan(ctx, w, r)
 	case httputil.Delete:
-		d.deleteTreatmentPlan(w, r)
+		d.deleteTreatmentPlan(ctx, w, r)
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
-func (d *doctorTreatmentPlanHandler) deleteTreatmentPlan(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
+func (d *doctorTreatmentPlanHandler) deleteTreatmentPlan(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	treatmentPlan := requestCache[apiservice.CKTreatmentPlan].(*common.TreatmentPlan)
 
 	// Ensure treatment plan is a draft
 	if !treatmentPlan.InDraftMode() {
-		apiservice.WriteValidationError("only draft treatment plan can be deleted", w, r)
+		apiservice.WriteValidationError(ctx, "only draft treatment plan can be deleted", w, r)
 		return
 	}
 
 	// Delete treatment plan
 	if err := d.dataAPI.DeleteTreatmentPlan(treatmentPlan.ID.Int64()); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	apiservice.WriteJSONSuccess(w)
 }
 
-func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	requestData := ctxt.RequestCache[apiservice.RequestData].(*TreatmentPlanRequestData)
-	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
+func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	requestData := requestCache[apiservice.CKRequestData].(*TreatmentPlanRequestData)
+	treatmentPlan := requestCache[apiservice.CKTreatmentPlan].(*common.TreatmentPlan)
 
 	// First check request to support older apps
 	// FIXME: remove this when no longer needed
@@ -228,11 +232,11 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 		var err error
 		note, err = d.dataAPI.GetTreatmentPlanNote(requestData.TreatmentPlanID)
 		if err != nil && !api.IsErrNotFound(err) {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		if note == "" {
-			apiservice.WriteValidationError("Please include a personal note to the patient before submitting the treatment plan.", w, r)
+			apiservice.WriteValidationError(ctx, "Please include a personal note to the patient before submitting the treatment plan.", w, r)
 			return
 		}
 	}
@@ -244,14 +248,14 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 		// treatment plan. In this case we expect the patient visit to be in the REVIEWING state.
 		patientVisitID = treatmentPlan.Parent.ParentID.Int64()
 		if err := apiservice.EnsurePatientVisitInExpectedStatus(d.dataAPI, patientVisitID, common.PVStatusReviewing); err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 	case common.TPParentTypeTreatmentPlan:
 		var err error
 		patientVisitID, err = d.dataAPI.GetPatientVisitIDFromTreatmentPlanID(requestData.TreatmentPlanID)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
@@ -259,15 +263,15 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 		// treatment plan
 		treatmentPlan, err := d.dataAPI.GetAbridgedTreatmentPlan(treatmentPlan.Parent.ParentID.Int64(), treatmentPlan.DoctorID.Int64())
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		} else if treatmentPlan.Status != api.StatusActive {
-			apiservice.WriteValidationError(fmt.Sprintf("Expected the parent treatment plan to be in the active state but its in %s state", treatmentPlan.Status), w, r)
+			apiservice.WriteValidationError(ctx, fmt.Sprintf("Expected the parent treatment plan to be in the active state but its in %s state", treatmentPlan.Status), w, r)
 			return
 		}
 
 	default:
-		apiservice.WriteValidationError(fmt.Sprintf("Parent of treatment plan is unexpected parent of type %s", treatmentPlan.Parent.ParentType), w, r)
+		apiservice.WriteValidationError(ctx, fmt.Sprintf("Parent of treatment plan is unexpected parent of type %s", treatmentPlan.Parent.ParentType), w, r)
 		return
 	}
 
@@ -276,7 +280,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 	if err := d.dataAPI.UpdateTreatmentPlan(treatmentPlan.ID.Int64(), &api.TreatmentPlanUpdate{
 		Status: &status,
 	}); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	d.dispatcher.Publish(&TreatmentPlanSubmittedEvent{
@@ -295,18 +299,18 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 		}
 	} else {
 		if err := d.dataAPI.ActivateTreatmentPlan(treatmentPlan.ID.Int64(), treatmentPlan.DoctorID.Int64()); err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
 		doctor, err := d.dataAPI.GetDoctorFromID(treatmentPlan.DoctorID.Int64())
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
 		if err := sendCaseMessageAndPublishTPActivatedEvent(d.dataAPI, d.dispatcher, treatmentPlan, doctor, note); err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 	}
@@ -314,17 +318,17 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(w http.ResponseWriter, 
 	apiservice.WriteJSONSuccess(w)
 }
 
-func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	requestData := ctxt.RequestCache[apiservice.RequestData].(*TreatmentPlanRequestData)
-	doctorID := ctxt.RequestCache[apiservice.DoctorID].(int64)
-	treatmentPlan := ctxt.RequestCache[apiservice.TreatmentPlan].(*common.TreatmentPlan)
+func (d *doctorTreatmentPlanHandler) getTreatmentPlan(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	requestData := requestCache[apiservice.CKRequestData].(*TreatmentPlanRequestData)
+	doctorID := requestCache[apiservice.CKDoctorID].(int64)
+	treatmentPlan := requestCache[apiservice.CKTreatmentPlan].(*common.TreatmentPlan)
 
 	// only return the small amount of information retreived about the treatment plan
 	if requestData.Abridged {
 		tpRes, err := responses.TransformTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, treatmentPlan)
 		if err != nil {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		httputil.JSONResponse(w, http.StatusOK, &DoctorTreatmentPlanResponse{TreatmentPlan: tpRes})
@@ -332,31 +336,31 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(w http.ResponseWriter, r *
 	}
 
 	if err := populateTreatmentPlan(treatmentPlan, doctorID, d.dataAPI, parseSections(requestData.Sections)); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	tpRes, err := responses.TransformTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, treatmentPlan)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 	httputil.JSONResponse(w, http.StatusOK,
 		&DoctorTreatmentPlanResponse{TreatmentPlan: tpRes})
 }
 
-func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r *http.Request) {
-	ctxt := apiservice.GetContext(r)
-	requestData := ctxt.RequestCache[apiservice.RequestData].(*TreatmentPlanRequestData)
-	doctorID := ctxt.RequestCache[apiservice.DoctorID].(int64)
-	patientVisitID := ctxt.RequestCache[apiservice.PatientVisitID].(int64)
-	patientCase := ctxt.RequestCache[apiservice.PatientCase].(*common.PatientCase)
+func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	requestCache := apiservice.MustCtxCache(ctx)
+	requestData := requestCache[apiservice.CKRequestData].(*TreatmentPlanRequestData)
+	doctorID := requestCache[apiservice.CKDoctorID].(int64)
+	patientVisitID := requestCache[apiservice.CKPatientVisitID].(int64)
+	patientCase := requestCache[apiservice.CKPatientCase].(*common.PatientCase)
 
 	if requestData.TPContentSource != nil {
 		switch requestData.TPContentSource.Type {
 		case common.TPContentSourceTypeFTP, common.TPContentSourceTypeTreatmentPlan:
 		default:
-			apiservice.WriteValidationError("Invalid content source for treatment plan", w, r)
+			apiservice.WriteValidationError(ctx, "Invalid content source for treatment plan", w, r)
 			return
 		}
 	}
@@ -370,25 +374,25 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 	}
 
 	if err := copyContentSourceIntoTreatmentPlan(tp, d.dataAPI, doctorID); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	treatmentPlanID, err := d.dataAPI.StartNewTreatmentPlan(patientVisitID, tp)
 	if err != nil {
-		apiservice.WriteError(fmt.Errorf("Unable to start new treatment plan for patient visit: %s", err.Error()), w, r)
+		apiservice.WriteError(ctx, fmt.Errorf("Unable to start new treatment plan for patient visit: %s", err.Error()), w, r)
 		return
 	}
 
 	// get the treatment plan just created so that it populates it with all the necessary metadata
 	tp, err = d.dataAPI.GetAbridgedTreatmentPlan(treatmentPlanID, doctorID)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
 	if err := populateTreatmentPlan(tp, doctorID, d.dataAPI, AllSections); err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -403,7 +407,7 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(w http.ResponseWriter, r
 
 	tpRes, err := responses.TransformTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, tp)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

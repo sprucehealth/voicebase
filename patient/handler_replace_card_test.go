@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -122,7 +123,8 @@ func TestReplaceCard_NoCardExists(t *testing.T) {
 		paymentAPI: p,
 	}
 
-	h.ServeHTTP(w, r)
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient})
+	h.ServeHTTP(ctx, w, r)
 
 	// ensure that customerID was set
 	if m.patient.PaymentCustomerID != "12345" {
@@ -194,7 +196,8 @@ func TestReplaceCard_CardExists(t *testing.T) {
 		paymentAPI: p,
 	}
 
-	h.ServeHTTP(w, r)
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient})
+	h.ServeHTTP(ctx, w, r)
 
 	// ensure that card was added
 	if m.cardAdded == nil {

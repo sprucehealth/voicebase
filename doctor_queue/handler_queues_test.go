@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -74,9 +75,9 @@ func TestInbox_CC(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("GET", "api.spruce.local/inbox", nil)
 	test.OK(t, err)
-	apiservice.GetContext(r).Role = api.RoleCC
 
-	h.ServeHTTP(w, r)
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RoleCC})
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var res struct {
@@ -90,19 +91,19 @@ func TestInbox_CC(t *testing.T) {
 }
 
 func TestInbox_Tags(t *testing.T) {
-	m := &mockDataAPI_DoctorQueue{}
-
-	m.inboxItems = []*api.DoctorQueueItem{
-		{
-			Description: "Testing",
-			Tags:        []string{"test"},
-			PatientID:   1,
+	m := &mockDataAPI_DoctorQueue{
+		inboxItems: []*api.DoctorQueueItem{
+			{
+				Description: "Testing",
+				Tags:        []string{"test"},
+				PatientID:   1,
+			},
 		},
-	}
-	m.patients = map[int64]*common.Patient{
-		1: {
-			FirstName: "kunal",
-			LastName:  "jham",
+		patients: map[int64]*common.Patient{
+			1: {
+				FirstName: "kunal",
+				LastName:  "jham",
+			},
 		},
 	}
 
@@ -111,7 +112,8 @@ func TestInbox_Tags(t *testing.T) {
 	r, err := http.NewRequest("GET", "api.spruce.local/inbox", nil)
 	test.OK(t, err)
 
-	h.ServeHTTP(w, r)
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RoleDoctor})
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var res struct {
@@ -146,7 +148,8 @@ func TestUnassigned_Tags(t *testing.T) {
 	r, err := http.NewRequest("GET", "api.spruce.local/unassigned", nil)
 	test.OK(t, err)
 
-	h.ServeHTTP(w, r)
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RoleCC})
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var res struct {
@@ -181,7 +184,8 @@ func TestCompleted_Tags(t *testing.T) {
 	r, err := http.NewRequest("GET", "api.spruce.local/history", nil)
 	test.OK(t, err)
 
-	h.ServeHTTP(w, r)
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RoleCC})
+	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
 
 	var res struct {

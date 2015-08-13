@@ -5,8 +5,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/test"
 )
 
 type authAPIStub struct {
@@ -24,86 +27,58 @@ func (a *authAPIStub) ValidateToken(token string, platform api.Platform) (*commo
 }
 
 func TestNoAuthenticationRequiredHandler(t *testing.T) {
-	var ctx *Context
+	var account *common.Account
 	apiStub := &authAPIStub{}
-	h := NoAuthenticationRequiredHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx = GetContext(r)
+	h := NoAuthenticationRequiredHandler(httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		account, _ = CtxAccount(ctx)
 		w.WriteHeader(http.StatusAccepted)
 	}), apiStub)
 
 	r, err := http.NewRequest("GET", "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
-	if w.Code != http.StatusAccepted {
-		t.Fatalf("Expected %d, got %d", http.StatusAccepted, w.Code)
-	}
-	if ctx == nil {
-		t.Fatal("Context not set")
-	}
-	if ctx.Role != "" || ctx.AccountID != 0 {
-		t.Fatal("Expected empty context")
-	}
+	h.ServeHTTP(context.Background(), w, r)
+	test.HTTPResponseCode(t, http.StatusAccepted, w)
+	test.Equals(t, (*common.Account)(nil), account)
 
 	// Make sure the request is authenticated if a valid token is included
-	ctx = nil
 	r, err = http.NewRequest("GET", "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	r.Header.Set("Authorization", "token abc")
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, r)
-	if w.Code != http.StatusAccepted {
-		t.Fatalf("Expected %d, got %d", http.StatusAccepted, w.Code)
-	}
-	if ctx == nil {
-		t.Fatal("Context not set")
-	}
-	if ctx.Role != api.RolePatient || ctx.AccountID != 1 {
-		t.Fatalf("Expected role PATIENT and account ID 1, got %+v", ctx)
-	}
+	h.ServeHTTP(context.Background(), w, r)
+	test.HTTPResponseCode(t, http.StatusAccepted, w)
+	test.Assert(t, account != nil, "Account not set")
+	test.Equals(t, api.RolePatient, account.Role)
+	test.Equals(t, int64(1), account.ID)
 }
 
 func TestAuthenticationRequiredHandler(t *testing.T) {
-	var ctx *Context
+	var account *common.Account
+	var called bool
 	apiStub := &authAPIStub{}
-	h := AuthenticationRequiredHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx = GetContext(r)
+	h := AuthenticationRequiredHandler(httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		account, _ = CtxAccount(ctx)
+		called = true
 		w.WriteHeader(http.StatusAccepted)
 	}), apiStub)
 
 	r, err := http.NewRequest("GET", "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
-	if w.Code != http.StatusForbidden {
-		t.Fatalf("Expected %d, got %d", http.StatusAccepted, w.Code)
-	}
+	h.ServeHTTP(context.Background(), w, r)
+	test.HTTPResponseCode(t, http.StatusForbidden, w)
 	// Make sure handler isn't called
-	if ctx != nil {
-		t.Fatal("Context should not have been set")
-	}
+	test.Equals(t, false, called)
 
 	// Make sure the request is authenticated if a valid token is included
 	r, err = http.NewRequest("GET", "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	r.Header.Set("Authorization", "token abc")
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, r)
-	if w.Code != http.StatusAccepted {
-		t.Fatalf("Expected %d, got %d", http.StatusAccepted, w.Code)
-	}
-	if ctx == nil {
-		t.Fatal("Context not set")
-	}
-	if ctx.Role != api.RolePatient || ctx.AccountID != 1 {
-		t.Fatalf("Expected role PATIENT and account ID 1, got %+v", ctx)
-	}
+	h.ServeHTTP(context.Background(), w, r)
+	test.HTTPResponseCode(t, http.StatusAccepted, w)
+	test.Assert(t, account != nil, "Account not set")
+	test.Equals(t, api.RolePatient, account.Role)
+	test.Equals(t, int64(1), account.ID)
 }

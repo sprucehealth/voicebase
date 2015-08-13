@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
@@ -42,7 +43,7 @@ func (p *pathwayMenuPathway) TypeName() string {
 	return "pathway"
 }
 
-func NewPathwayMenuHandler(dataAPI api.DataAPI) http.Handler {
+func NewPathwayMenuHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&pathwayMenuHandler{
 			dataAPI: dataAPI,
@@ -50,12 +51,10 @@ func NewPathwayMenuHandler(dataAPI api.DataAPI) http.Handler {
 		httputil.Get)
 }
 
-func (h *pathwayMenuHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx := apiservice.GetContext(r)
-
+func (h *pathwayMenuHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	menu, err := h.dataAPI.PathwayMenu()
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
@@ -67,10 +66,11 @@ func (h *pathwayMenuHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var patient *common.Patient
-	if ctx.AccountID != 0 && ctx.Role == api.RolePatient {
-		patient, err = h.dataAPI.GetPatientFromAccountID(ctx.AccountID)
+	account, ok := apiservice.CtxAccount(ctx)
+	if ok && account.Role == api.RolePatient {
+		patient, err = h.dataAPI.GetPatientFromAccountID(account.ID)
 		if err != nil && !api.IsErrNotFound(err) {
-			apiservice.WriteError(err, w, r)
+			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 	}
@@ -82,7 +82,7 @@ func (h *pathwayMenuHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	container, err := transformMenu(menuCtx, menu)
 	if err != nil {
-		apiservice.WriteError(err, w, r)
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

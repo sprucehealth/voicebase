@@ -22,7 +22,7 @@ type providerProfileImageAPIHandler struct {
 }
 
 func newProviderProfileImageAPIHandler(dataAPI api.DataAPI, imageStore storage.Store) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&providerProfileImageAPIHandler{
+	return httputil.SupportedMethods(&providerProfileImageAPIHandler{
 		dataAPI:    dataAPI,
 		imageStore: imageStore,
 	}, httputil.Get, httputil.Put)

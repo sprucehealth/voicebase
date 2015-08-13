@@ -56,27 +56,27 @@ type ReferralProgramTemplatePUTRequest struct {
 
 // NewReferralProgramTemplateHandler returns an initialized instance of referralProgramTemplateHandler
 func newReferralProgramTemplateHandler(dataAPI api.DataAPI) httputil.ContextHandler {
-	return httputil.ContextSupportedMethods(&referralProgramTemplateHandler{dataAPI: dataAPI}, httputil.Get, httputil.Post, httputil.Put)
+	return httputil.SupportedMethods(&referralProgramTemplateHandler{dataAPI: dataAPI}, httputil.Get, httputil.Post, httputil.Put)
 }
 
 func (h *referralProgramTemplateHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		rd, err := h.parseGETRequest(r)
+		rd, err := h.parseGETRequest(ctx, r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
 		h.serveGET(w, r, rd)
 	case "POST":
-		rd, err := h.parsePOSTRequest(r)
+		rd, err := h.parsePOSTRequest(ctx, r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
 		h.servePOST(w, r, rd)
 	case "PUT":
-		rd, err := h.parsePUTRequest(r)
+		rd, err := h.parsePUTRequest(ctx, r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())
 			return
@@ -85,7 +85,7 @@ func (h *referralProgramTemplateHandler) ServeHTTP(ctx context.Context, w http.R
 	}
 }
 
-func (h *referralProgramTemplateHandler) parseGETRequest(r *http.Request) (*ReferralProgramTemplateGETRequest, error) {
+func (h *referralProgramTemplateHandler) parseGETRequest(ctx context.Context, r *http.Request) (*ReferralProgramTemplateGETRequest, error) {
 	rd := &ReferralProgramTemplateGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -115,7 +115,7 @@ func (h *referralProgramTemplateHandler) serveGET(w http.ResponseWriter, r *http
 	httputil.JSONResponse(w, http.StatusOK, &ReferralProgramTemplateGETResponse{ReferralProgramTemplates: resps})
 }
 
-func (h *referralProgramTemplateHandler) parsePOSTRequest(r *http.Request) (*ReferralProgramTemplatePOSTRequest, error) {
+func (h *referralProgramTemplateHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*ReferralProgramTemplatePOSTRequest, error) {
 	rd := &ReferralProgramTemplatePOSTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -168,7 +168,7 @@ func (h *referralProgramTemplateHandler) servePOST(w http.ResponseWriter, r *htt
 	httputil.JSONResponse(w, http.StatusOK, &ReferralProgramTemplatePOSTResponse{ID: id})
 }
 
-func (h *referralProgramTemplateHandler) parsePUTRequest(r *http.Request) (*ReferralProgramTemplatePUTRequest, error) {
+func (h *referralProgramTemplateHandler) parsePUTRequest(ctx context.Context, r *http.Request) (*ReferralProgramTemplatePUTRequest, error) {
 	rd := &ReferralProgramTemplatePUTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
