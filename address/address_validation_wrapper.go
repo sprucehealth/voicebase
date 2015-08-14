@@ -3,8 +3,8 @@ package address
 import (
 	"encoding/json"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
 	"github.com/sprucehealth/backend/libs/golog"
+	"gopkgs.com/memcache.v2"
 )
 
 const zipLookupCacheExpireSeconds = 60 * 60 * 24 * 29 // Must be less than 1 month or memcached will consider it an epoch

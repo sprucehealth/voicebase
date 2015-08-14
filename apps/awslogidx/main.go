@@ -57,11 +57,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-	consulapi "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/hashicorp/consul/api"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/reporter"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	consulapi "github.com/hashicorp/consul/api"
+	"github.com/samuel/go-metrics/metrics"
+	"github.com/samuel/go-metrics/reporter"
 	"github.com/sprucehealth/backend/consul"
 	"github.com/sprucehealth/backend/libs/golog"
 )

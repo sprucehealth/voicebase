@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -20,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/test"
+	"golang.org/x/net/context"
 )
 
 type mockHomeHandlerDataAPI struct {

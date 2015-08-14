@@ -3,12 +3,12 @@ package doctor
 import (
 	"net/http"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/pharmacy"
+	"golang.org/x/net/context"
 )
 
 type pharmacySearchHandler struct {

@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
+	"golang.org/x/net/context"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 )
 

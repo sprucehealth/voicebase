@@ -8,8 +8,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/crypto/ssh"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/crypto/ssh/agent"
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
 )
 
 type sshCommander struct {

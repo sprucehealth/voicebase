@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/cfg"
@@ -16,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/tagging"
+	"golang.org/x/net/context"
 )
 
 const (

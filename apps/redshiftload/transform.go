@@ -8,8 +8,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/s3"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-librato/librato"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/samuel/go-librato/librato"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/golog"
 )

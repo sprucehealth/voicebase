@@ -8,14 +8,14 @@ import (
 	"strconv"
 	"time"
 
-	resources "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/cookieo9/resources-go"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
+	resources "github.com/cookieo9/resources-go"
+	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
+	"golang.org/x/net/context"
 )
 
 var (

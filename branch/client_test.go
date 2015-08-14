@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
 	"github.com/sprucehealth/backend/test"
+	"gopkgs.com/memcache.v2"
 )
 
 type recordingTransport struct {

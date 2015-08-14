@@ -1,7 +1,7 @@
 package awsutil
 
 import (
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns"
+	"github.com/aws/aws-sdk-go/service/sns"
 )
 
 type SNS struct {

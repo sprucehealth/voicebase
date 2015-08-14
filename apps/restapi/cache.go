@@ -5,8 +5,8 @@ import (
 	"hash/fnv"
 	"sync"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
 	"github.com/sprucehealth/backend/libs/awsutil"
+	"gopkgs.com/memcache.v2"
 )
 
 type tcpAddr string

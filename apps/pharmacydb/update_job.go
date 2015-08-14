@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/s3"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/lib/pq"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/lib/pq"
 	"github.com/sprucehealth/backend/consul"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"

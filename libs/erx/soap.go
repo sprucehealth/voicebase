@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/samuel/go-metrics/metrics"
 )
 
 const (

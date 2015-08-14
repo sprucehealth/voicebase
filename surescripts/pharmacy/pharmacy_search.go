@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/lib/pq"
+	_ "github.com/lib/pq"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/pharmacy"
 )

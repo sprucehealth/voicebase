@@ -12,7 +12,7 @@ import (
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/pharmacy"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 )
 
 func (d *dataService) AddRefillRequestStatusEvent(refillRequestStatus common.StatusEvent) error {

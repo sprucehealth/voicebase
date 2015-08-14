@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context" // The base handler struct to handle requests for interacting with versioned questions
+	"github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/www"
+	"golang.org/x/net/context" // The base handler struct to handle requests for interacting with versioned questions
 )
 
 type versionedQuestionHandler struct {

@@ -3,10 +3,10 @@ package ratelimit
 import (
 	"net/http"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
+	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"golang.org/x/net/context"
 )
 
 func Handler(h httputil.ContextHandler, rl RateLimiter, statsRegistry metrics.Registry) httputil.ContextHandler {

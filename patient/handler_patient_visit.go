@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -23,6 +22,7 @@ import (
 	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/tagging"
 	"github.com/sprucehealth/backend/tagging/model"
+	"golang.org/x/net/context"
 )
 
 // Case tag identifiers

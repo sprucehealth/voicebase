@@ -19,9 +19,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/BurntSushi/toml"
-	resources "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/cookieo9/resources-go"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/BurntSushi/toml"
+	resources "github.com/cookieo9/resources-go"
+	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"

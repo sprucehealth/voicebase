@@ -21,7 +21,7 @@ if [ "$BUILD_NUMBER" = "" ]; then
 fi
 TIME=$(date)
 LATEST_MIGRATION=$(ls -r ../../mysql/snapshot-*.sql | cut -d- -f 2  | cut -d. -f1 | sort -nr | head -1)
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
+GO15VENDOREXPERIMENT=1 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
 	go build -a -tags netgo -ldflags " \
 		-w \
 		-X github.com/sprucehealth/backend/common/config.GitRevision '$REV' \

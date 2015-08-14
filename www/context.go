@@ -1,8 +1,8 @@
 package www
 
 import (
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/common"
+	"golang.org/x/net/context"
 )
 
 type contextKey int

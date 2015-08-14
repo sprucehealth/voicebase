@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
-	_ "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/lib/pq"
+	"github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
 )
 
 type DB struct {

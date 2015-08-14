@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/sprucehealth/backend/libs/cmd"
 	"github.com/sprucehealth/backend/libs/cmd/cryptsetup"
 	"github.com/sprucehealth/backend/libs/cmd/lvm"

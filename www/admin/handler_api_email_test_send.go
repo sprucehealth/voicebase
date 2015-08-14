@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/email/campaigns"
@@ -12,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/mandrill"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/www"
+	"golang.org/x/net/context"
 )
 
 type emailTestSendHandler struct {

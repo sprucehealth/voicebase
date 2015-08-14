@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/errors"

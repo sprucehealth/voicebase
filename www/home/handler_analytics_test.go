@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
+	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/test"
+	"golang.org/x/net/context"
 )
 
 func TestAnalyticsHandler(t *testing.T) {

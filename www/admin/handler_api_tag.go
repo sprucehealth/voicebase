@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/schema"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
+	"github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/tagging"
 	"github.com/sprucehealth/backend/tagging/model"
 	"github.com/sprucehealth/backend/tagging/response"
 	"github.com/sprucehealth/backend/www"
+	"golang.org/x/net/context"
 )
 
 type tagHandler struct {

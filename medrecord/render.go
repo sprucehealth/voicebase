@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/mapstructure"
+	"github.com/SpruceHealth/mapstructure"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/diagnosis"

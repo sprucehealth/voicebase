@@ -10,11 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns"
-	consulapi "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/hashicorp/consul/api"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
+	"github.com/aws/aws-sdk-go/service/sns"
+	consulapi "github.com/hashicorp/consul/api"
+	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/analytics/analisteners"
 	"github.com/sprucehealth/backend/api"
@@ -35,6 +33,8 @@ import (
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
+	"golang.org/x/net/context"
+	"gopkgs.com/memcache.v2"
 )
 
 func init() {

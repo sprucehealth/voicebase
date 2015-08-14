@@ -4,9 +4,8 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sns/snsiface"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
+	"github.com/aws/aws-sdk-go/service/sns/snsiface"
+	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
@@ -51,6 +50,7 @@ import (
 	"github.com/sprucehealth/backend/settings"
 	"github.com/sprucehealth/backend/tagging"
 	"github.com/sprucehealth/backend/treatment_plan"
+	"gopkgs.com/memcache.v2"
 )
 
 // Config is all services and configuration values used by the app api handlers.

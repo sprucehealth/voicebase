@@ -6,9 +6,11 @@ Setting up your environment & running the `gotour`
 ---------------------------------
 
 	$ brew update
-	$ brew doctor # ensure there are no issues with Brew or your system
+	$ brew doctor # ensure there are no issues with Homebrew or your system
 	$ brew install go
 	$ brew install mercurial
+	# Add the following two lines to ~/.profile
+	$ export GO15VENDOREXPERIMENT=1
 	$ export GOPATH=$HOME/go
 	$ go get golang.org/x/tour/gotour
 	$ $HOME/go/bin/gotour # runs the gotour executable and opens it in a browser window

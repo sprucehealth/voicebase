@@ -1,9 +1,10 @@
 package notify
 
 import (
-	"github.com/sprucehealth/backend/common"
 	"sort"
 	"testing"
+
+	"github.com/sprucehealth/backend/common"
 )
 
 func TestSortingCommunicationPreference(t *testing.T) {

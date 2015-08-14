@@ -12,8 +12,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"golang.org/x/net/context"
 )
 
 // Route stores information to match a request and build URLs.

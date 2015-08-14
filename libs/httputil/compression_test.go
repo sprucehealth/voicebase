@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
+	"golang.org/x/net/context"
 )
 
 func TestDecompressRequest(t *testing.T) {

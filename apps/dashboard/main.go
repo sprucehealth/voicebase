@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/lib/pq"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkg.in/yaml.v2"
+	_ "github.com/lib/pq"
 	"github.com/sprucehealth/backend/libs/geckoboard"
 	"github.com/sprucehealth/backend/libs/golog"
+	"gopkg.in/yaml.v2"
 )
 
 const (

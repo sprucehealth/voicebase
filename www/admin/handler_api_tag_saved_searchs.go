@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/tagging"
 	"github.com/sprucehealth/backend/tagging/model"
 	"github.com/sprucehealth/backend/tagging/query"
 	"github.com/sprucehealth/backend/tagging/response"
 	"github.com/sprucehealth/backend/www"
+	"golang.org/x/net/context"
 )
 
 type tagSavedSearchsHandler struct {

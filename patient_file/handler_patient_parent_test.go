@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -16,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/test"
+	"golang.org/x/net/context"
 )
 
 type mockDataAPI_patientParentHandler struct {

@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkg.in/yaml.v2"
 	"github.com/sprucehealth/backend/saml"
+	"gopkg.in/yaml.v2"
 )
 
 var (

@@ -3,7 +3,7 @@ package awsutil
 import (
 	"testing"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/aws/aws-sdk-go/service/sqs"
 )
 
 func TestSQSStub(t *testing.T) {

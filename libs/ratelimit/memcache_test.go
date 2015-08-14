@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
+	"gopkgs.com/memcache.v2"
 )
 
 func TestMemcache(t *testing.T) {

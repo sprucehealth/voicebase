@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/environment"
@@ -17,6 +16,7 @@ import (
 	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/www"
+	"golang.org/x/net/context"
 )
 
 type parentalConsentHandler struct {

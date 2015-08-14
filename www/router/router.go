@@ -5,10 +5,9 @@ import (
 	"io"
 	"net/http"
 
-	resources "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/cookieo9/resources-go"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-librato/librato"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
+	resources "github.com/cookieo9/resources-go"
+	"github.com/samuel/go-librato/librato"
+	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/branch"
@@ -32,6 +31,7 @@ import (
 	"github.com/sprucehealth/backend/www/admin"
 	"github.com/sprucehealth/backend/www/dronboard"
 	"github.com/sprucehealth/backend/www/home"
+	"golang.org/x/net/context"
 )
 
 var robotsTXT = []byte(`Sitemap: https://www.sprucehealth.com/sitemap.xml

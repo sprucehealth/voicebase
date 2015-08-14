@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/www"
+	"golang.org/x/net/context"
 )
 
 type mockedDataAPI_handlerTreatmentPlanCSV struct {

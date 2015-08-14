@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/go-proxy-protocol/proxyproto"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
+	"github.com/SpruceHealth/go-proxy-protocol/proxyproto"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"golang.org/x/net/context"
 )
 
 // The local cert and key are only used when the Debug config
@@ -97,6 +97,8 @@ func serve(conf *mainConfig, chand httputil.ContextHandler) {
 			PreferServerCipherSuites: true,
 			CipherSuites: []uint16{
 				// Do not include RC4 or 3DES
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
 				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 				tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,

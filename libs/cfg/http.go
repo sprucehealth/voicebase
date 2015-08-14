@@ -3,8 +3,8 @@ package cfg
 import (
 	"net/http"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"golang.org/x/net/context"
 )
 
 // contextKeyType creates a unique type to be used in the request context

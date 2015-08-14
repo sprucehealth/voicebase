@@ -16,9 +16,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/idgen"
+	"golang.org/x/net/context"
 )
 
 var requestEventPool = sync.Pool{

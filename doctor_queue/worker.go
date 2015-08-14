@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/notify"

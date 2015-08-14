@@ -26,18 +26,16 @@ export USER=`whoami`
 export TEST_CONSUL_ADDRESS=127.0.0.1:8500
 export TEST_MEMCACHED=127.0.0.1:11211
 
+export GO15VENDOREXPERIMENT=1
 export GOPATH=/workspace/go
 export PATH=$GOPATH/bin:$PATH
 cd $GOPATH/src/github.com/sprucehealth/backend
-
-# TODO(samuel): remove this after Go 1.5 which will do it automatically based on CPUs.
-export GOPMAXPROCS=4
 
 go get github.com/golang/lint/golint
 
 # Find all directories that contain Go files (all packages). This lets us
 # exclude everything under the vendoring directory.
-PKGS=$(find . -name '*.go' | grep -v Godeps | xargs -n 1 dirname | sort | uniq)
+PKGS=$(find . -name '*.go' | grep -v vendor/ | xargs -n 1 dirname | sort | uniq)
 echo $PKGS
 
 echo "BUILDING"

@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/hashicorp/consul/api"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
+	"github.com/hashicorp/consul/api"
+	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 

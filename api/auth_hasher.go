@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/crypto/bcrypt"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const defaultBcryptCost = 10

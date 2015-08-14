@@ -6,8 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
+	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/common"
@@ -16,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/www"
+	"golang.org/x/net/context"
 )
 
 type promptHandler struct {

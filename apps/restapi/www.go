@@ -5,10 +5,9 @@ import (
 	"io"
 	"log"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/cookieo9/resources-go"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-librato/librato"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
+	"github.com/cookieo9/resources-go"
+	"github.com/samuel/go-librato/librato"
+	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
@@ -28,6 +27,7 @@ import (
 	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/www"
 	"github.com/sprucehealth/backend/www/router"
+	"gopkgs.com/memcache.v2"
 )
 
 func buildWWW(

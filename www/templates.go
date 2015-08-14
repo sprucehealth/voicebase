@@ -10,7 +10,7 @@ import (
 	"path"
 	"sync"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/cookieo9/resources-go"
+	"github.com/cookieo9/resources-go"
 )
 
 type resourceFileSystem struct{}

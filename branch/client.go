@@ -8,9 +8,9 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/gopkgs.com/memcache.v2"
 	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"gopkgs.com/memcache.v2"
 )
 
 const (

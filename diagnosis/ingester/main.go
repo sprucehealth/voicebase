@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	_ "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/sprucehealth/backend/diagnosis/icd10"
 	"github.com/sprucehealth/backend/libs/golog"
 )

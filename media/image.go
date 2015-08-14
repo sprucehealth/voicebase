@@ -7,8 +7,8 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/bamiaux/rez"
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/rwcarlsen/goexif/exif"
+	"github.com/bamiaux/rez"
+	"github.com/rwcarlsen/goexif/exif"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 

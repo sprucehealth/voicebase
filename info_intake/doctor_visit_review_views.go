@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/SpruceHealth/mapstructure"
+	"github.com/SpruceHealth/mapstructure"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/errors"
 )

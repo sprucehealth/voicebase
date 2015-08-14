@@ -4,7 +4,7 @@
 		{
 			"name": "Build restapi",
 			"selector": "source.go",
-			"shell_cmd": "go build -i -v",
+			"shell_cmd": "GO15VENDOREXPERIMENT=1 go build -i -v",
 			"working_dir": "$project_path/apps/restapi"
 		},
 		{
@@ -39,7 +39,8 @@
 			"env":
 			{
 				"GOPATH": "$HOME/workspace/spruce/backend",
-				"PATH": "$GOPATH/bin:/usr/local/bin:$PATH"
+				"PATH": "$GOPATH/bin:/usr/local/bin:$PATH",
+				"GO15VENDOREXPERIMENT": "1"
 			},
 			"oracle_scope":
 			[
@@ -51,7 +52,8 @@
 			"env":
 			{
 				"GOPATH": "$HOME/workspace/spruce/backend",
-				"PATH": "$HOME/workspace/spruce/backend/bin:$PATH"
+				"PATH": "$HOME/workspace/spruce/backend/bin:$PATH",
+				"GO15VENDOREXPERIMENT": "1"
 			}
 		}
 	}

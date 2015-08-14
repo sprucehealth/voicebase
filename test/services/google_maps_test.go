@@ -1,8 +1,9 @@
 package services
 
 import (
-	"github.com/sprucehealth/backend/libs/maps"
 	"testing"
+
+	"github.com/sprucehealth/backend/libs/maps"
 )
 
 func TestGoogleMapsForConvertingZipcodeToCityState(t *testing.T) {

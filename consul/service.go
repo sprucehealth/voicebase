@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	consulapi "github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/hashicorp/consul/api"
+	consulapi "github.com/hashicorp/consul/api"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
