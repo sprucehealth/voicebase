@@ -422,7 +422,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 		msg := &notify.Message{
 			ShortMessage: text[txtParentalConsentCompletedNotification],
 			EmailType:    notifyParentalConsentCompletedEmailType,
-			PushID:       fmt.Sprintf("%s:%s", CNParentalConsentCompleted, ev.ChildPatientID),
+			PushID:       fmt.Sprintf("%s:%s", CNVisitAuthorized, ev.ChildPatientID),
 		}
 		if err := notificationManager.NotifyPatient(patient, msg); err != nil {
 			golog.Errorf("Failed to notify patient: %s", err)

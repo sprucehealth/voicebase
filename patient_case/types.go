@@ -13,14 +13,14 @@ import (
 
 // Prefixes for generating unique IDs for push notifications.
 const (
-	CNIncompleteFollowup       = "incomplete_followup"
-	CNIncompleteVisit          = "incomplete_visit"
-	CNMessage                  = "message"
-	CNParentalConsentCompleted = "parental_consent_completed"
-	CNPreSubmissionTriage      = "pre_submission_triage"
-	CNStartFollowup            = "start_followup"
-	CNTreatmentPlan            = "treatment_plan"
-	CNVisitSubmitted           = "visit_submitted"
+	CNIncompleteFollowup  = "incomplete_followup"
+	CNIncompleteVisit     = "incomplete_visit"
+	CNMessage             = "message"
+	CNVisitAuthorized     = "visit_authorized"
+	CNPreSubmissionTriage = "pre_submission_triage"
+	CNStartFollowup       = "start_followup"
+	CNTreatmentPlan       = "treatment_plan"
+	CNVisitSubmitted      = "visit_submitted"
 )
 
 type caseData struct {
