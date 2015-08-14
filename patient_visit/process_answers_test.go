@@ -36,13 +36,13 @@ func (d *mockDataAPI_processPatientAnswers) AnswersForQuestions(questionIDs []in
 func (d *mockDataAPI_processPatientAnswers) GetActiveCareTeamMemberForCase(role string, patientCaseID int64) (*common.CareProviderAssignment, error) {
 	return d.maAssignment, nil
 }
-func (d *mockDataAPI_processPatientAnswers) GetPatientFromID(id int64) (*common.Patient, error) {
+func (d *mockDataAPI_processPatientAnswers) GetPatientFromID(id common.PatientID) (*common.Patient, error) {
 	return d.patient, nil
 }
 func (d *mockDataAPI_processPatientAnswers) GetDoctorFromID(id int64) (*common.Doctor, error) {
 	return d.doctor, nil
 }
-func (d *mockDataAPI_processPatientAnswers) GetCasesForPatient(patientID int64, states []string) ([]*common.PatientCase, error) {
+func (d *mockDataAPI_processPatientAnswers) GetCasesForPatient(patientID common.PatientID, states []string) ([]*common.PatientCase, error) {
 	return d.cases, nil
 }
 func (d *mockDataAPI_processPatientAnswers) AddAlertsForVisit(visitID int64, alerts []*common.Alert) error {
@@ -109,7 +109,7 @@ func testProcessAnswersForInsurance(t *testing.T, event string, answerTag string
 		answers: map[int64][]common.Answer{
 			10: []common.Answer{
 				&common.AnswerIntake{
-					PotentialAnswerID: encoding.NewObjectID(5),
+					PotentialAnswerID: encoding.DeprecatedNewObjectID(5),
 				},
 			},
 		},
@@ -125,12 +125,12 @@ func testProcessAnswersForInsurance(t *testing.T, event string, answerTag string
 		},
 		cases: []*common.PatientCase{
 			{
-				ID: encoding.NewObjectID(1),
+				ID: encoding.DeprecatedNewObjectID(1),
 			},
 		},
 	}
 
-	caseID := encoding.NewObjectID(1)
+	caseID := encoding.DeprecatedNewObjectID(1)
 	ev := &patient.VisitSubmittedEvent{
 		Visit: &common.PatientVisit{
 			PatientCaseID: caseID,
@@ -201,7 +201,7 @@ func TestProcessAnswers_SecondCase(t *testing.T) {
 		answers: map[int64][]common.Answer{
 			10: []common.Answer{
 				&common.AnswerIntake{
-					PotentialAnswerID: encoding.NewObjectID(5),
+					PotentialAnswerID: encoding.DeprecatedNewObjectID(5),
 				},
 			},
 		},
@@ -217,15 +217,15 @@ func TestProcessAnswers_SecondCase(t *testing.T) {
 		},
 		cases: []*common.PatientCase{
 			{
-				ID: encoding.NewObjectID(2),
+				ID: encoding.DeprecatedNewObjectID(2),
 			},
 			{
-				ID: encoding.NewObjectID(1),
+				ID: encoding.DeprecatedNewObjectID(1),
 			},
 		},
 	}
 
-	caseID := encoding.NewObjectID(1)
+	caseID := encoding.DeprecatedNewObjectID(1)
 	ev := &patient.VisitSubmittedEvent{
 		Visit: &common.PatientVisit{
 			PatientCaseID: caseID,
@@ -284,7 +284,7 @@ func TestProcessAnswers_FollowupVisit(t *testing.T) {
 		answers: map[int64][]common.Answer{
 			10: []common.Answer{
 				&common.AnswerIntake{
-					PotentialAnswerID: encoding.NewObjectID(5),
+					PotentialAnswerID: encoding.DeprecatedNewObjectID(5),
 				},
 			},
 		},
@@ -300,12 +300,12 @@ func TestProcessAnswers_FollowupVisit(t *testing.T) {
 		},
 		cases: []*common.PatientCase{
 			{
-				ID: encoding.NewObjectID(2),
+				ID: encoding.DeprecatedNewObjectID(2),
 			},
 		},
 	}
 
-	caseID := encoding.NewObjectID(1)
+	caseID := encoding.DeprecatedNewObjectID(1)
 	ev := &patient.VisitSubmittedEvent{
 		Visit: &common.PatientVisit{
 			PatientCaseID: caseID,
@@ -362,7 +362,7 @@ func TestProcessAnswers_MedicaidTag(t *testing.T) {
 		answers: map[int64][]common.Answer{
 			10: []common.Answer{
 				&common.AnswerIntake{
-					PotentialAnswerID: encoding.NewObjectID(5),
+					PotentialAnswerID: encoding.DeprecatedNewObjectID(5),
 				},
 			},
 		},
@@ -378,12 +378,12 @@ func TestProcessAnswers_MedicaidTag(t *testing.T) {
 		},
 		cases: []*common.PatientCase{
 			{
-				ID: encoding.NewObjectID(2),
+				ID: encoding.DeprecatedNewObjectID(2),
 			},
 		},
 	}
 
-	caseID := encoding.NewObjectID(1)
+	caseID := encoding.DeprecatedNewObjectID(1)
 	ev := &patient.VisitSubmittedEvent{
 		Visit: &common.PatientVisit{
 			PatientCaseID: caseID,
@@ -440,7 +440,7 @@ func TestAlerts_Under18(t *testing.T) {
 		answers: map[int64][]common.Answer{
 			10: []common.Answer{
 				&common.AnswerIntake{
-					PotentialAnswerID: encoding.NewObjectID(5),
+					PotentialAnswerID: encoding.DeprecatedNewObjectID(5),
 				},
 			},
 		},
@@ -457,12 +457,12 @@ func TestAlerts_Under18(t *testing.T) {
 		},
 		cases: []*common.PatientCase{
 			{
-				ID: encoding.NewObjectID(2),
+				ID: encoding.DeprecatedNewObjectID(2),
 			},
 		},
 	}
 
-	caseID := encoding.NewObjectID(1)
+	caseID := encoding.DeprecatedNewObjectID(1)
 	ev := &patient.VisitSubmittedEvent{
 		Visit: &common.PatientVisit{
 			PatientCaseID: caseID,

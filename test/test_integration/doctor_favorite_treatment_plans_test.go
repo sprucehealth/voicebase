@@ -63,7 +63,7 @@ func TestFavoriteTreatmentPlan(t *testing.T) {
 				DosageStrength:          "Strength1",
 				DispenseValue:           5,
 				DispenseUnitDescription: "Tablet",
-				DispenseUnitID:          encoding.NewObjectID(19),
+				DispenseUnitID:          encoding.DeprecatedNewObjectID(19),
 				NumberRefills: encoding.NullInt64{
 					IsValid:    true,
 					Int64Value: 5,
@@ -176,7 +176,7 @@ func TestFTP_MultiplePathways(t *testing.T) {
 		DosageStrength:          "Strength1",
 		DispenseValue:           5,
 		DispenseUnitDescription: "Tablet",
-		DispenseUnitID:          encoding.NewObjectID(19),
+		DispenseUnitID:          encoding.DeprecatedNewObjectID(19),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 5,
@@ -241,7 +241,7 @@ func TestFavoriteTreatmentPlan_DeletingFTP(t *testing.T) {
 	// lets start a new TP based on FTP
 	responseData := PickATreatmentPlan(&common.TreatmentPlanParent{
 		ParentType: common.TPParentTypePatientVisit,
-		ParentID:   encoding.NewObjectID(patientVisitResponse.PatientVisitID),
+		ParentID:   encoding.DeprecatedNewObjectID(patientVisitResponse.PatientVisitID),
 	}, &common.TreatmentPlanContentSource{
 		Type: common.TPContentSourceTypeFTP,
 		ID:   favoriteTreatmentPlan.ID,
@@ -288,7 +288,7 @@ func TestFavoriteTreatmentPlan_DeletingFTP_ActiveTP(t *testing.T) {
 	// lets start a new TP based on FTP
 	responseData := PickATreatmentPlan(&common.TreatmentPlanParent{
 		ParentType: common.TPParentTypePatientVisit,
-		ParentID:   encoding.NewObjectID(patientVisitResponse.PatientVisitID),
+		ParentID:   encoding.DeprecatedNewObjectID(patientVisitResponse.PatientVisitID),
 	}, &common.TreatmentPlanContentSource{
 		Type: common.TPContentSourceTypeFTP,
 		ID:   favoriteTreatmentPlan.ID,
@@ -561,7 +561,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan(t *testing.T) {
 		DosageStrength:          "Strength1",
 		DispenseValue:           5,
 		DispenseUnitDescription: "Tablet",
-		DispenseUnitID:          encoding.NewObjectID(19),
+		DispenseUnitID:          encoding.DeprecatedNewObjectID(19),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 5,
@@ -647,7 +647,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_EmptyRegimen(t *testing.
 		DosageStrength:          "Strength1",
 		DispenseValue:           5,
 		DispenseUnitDescription: "Tablet",
-		DispenseUnitID:          encoding.NewObjectID(19),
+		DispenseUnitID:          encoding.DeprecatedNewObjectID(19),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 5,
@@ -740,7 +740,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 		DosageStrength:          "Strength1",
 		DispenseValue:           5,
 		DispenseUnitDescription: "Tablet",
-		DispenseUnitID:          encoding.NewObjectID(19),
+		DispenseUnitID:          encoding.DeprecatedNewObjectID(19),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 5,

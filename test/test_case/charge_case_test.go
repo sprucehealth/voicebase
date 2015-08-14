@@ -36,7 +36,7 @@ func TestSucessfulCaseCharge(t *testing.T) {
 	w.Do()
 
 	// at this point there should be a patient receipt, with a stripe charge and a credit card set, the status should be email sent
-	patientReceipt, err := testData.DataAPI.GetPatientReceipt(patientVisit.PatientID.Int64(), patientVisit.ID.Int64(), patientVisit.SKUType, true)
+	patientReceipt, err := testData.DataAPI.GetPatientReceipt(patientVisit.PatientID, patientVisit.ID.Int64(), patientVisit.SKUType, true)
 	test.OK(t, err)
 	test.Equals(t, true, patientReceipt != nil)
 	test.Equals(t, "charge_test", patientReceipt.StripeChargeID)
@@ -69,7 +69,7 @@ func TestSuccessfulCharge_AlreadyExists(t *testing.T) {
 		ReferenceNumber: "12345",
 		SKUType:         patientVisit.SKUType,
 		ItemID:          patientVisit.ID.Int64(),
-		PatientID:       patientVisit.PatientID.Int64(),
+		PatientID:       patientVisit.PatientID,
 		Status:          common.PRCharged,
 		CostBreakdown:   &common.CostBreakdown{},
 		ItemCostID:      itemCost.ID,
@@ -97,10 +97,10 @@ func TestSuccessfulCharge_AlreadyExists(t *testing.T) {
 	// lets make sure no charge was made and that just one patient receipt exists
 	test.Equals(t, false, wasChargeMade)
 	var count int
-	err = testData.DB.QueryRow(`select count(*) from patient_receipt where patient_id = ?`, patientVisit.PatientID.Int64()).Scan(&count)
+	err = testData.DB.QueryRow(`select count(*) from patient_receipt where patient_id = ?`, patientVisit.PatientID).Scan(&count)
 	test.OK(t, err)
 	test.Equals(t, 1, count)
-	patientReceipt, err = testData.DataAPI.GetPatientReceipt(patientVisit.PatientID.Int64(), patientVisit.ID.Int64(), patientVisit.SKUType, true)
+	patientReceipt, err = testData.DataAPI.GetPatientReceipt(patientVisit.PatientID, patientVisit.ID.Int64(), patientVisit.SKUType, true)
 	test.OK(t, err)
 	test.Equals(t, common.PRCharged, patientReceipt.Status)
 
@@ -129,7 +129,7 @@ func TestFailedCharge_StripeFailure(t *testing.T) {
 	w.Do()
 
 	// at this point the patient receipt should indicate that a charge is still pending
-	patientReceipt, err := testData.DataAPI.GetPatientReceipt(patientVisit.PatientID.Int64(), patientVisit.ID.Int64(), patientVisit.SKUType, false)
+	patientReceipt, err := testData.DataAPI.GetPatientReceipt(patientVisit.PatientID, patientVisit.ID.Int64(), patientVisit.SKUType, false)
 	test.OK(t, err)
 	test.Equals(t, common.PRChargePending, patientReceipt.Status)
 	test.Equals(t, "", patientReceipt.StripeChargeID)
@@ -144,10 +144,10 @@ func TestFailedCharge_StripeFailure(t *testing.T) {
 
 	// at this point the charge should go through and there should be just 1 patient receipt existing for the patient
 	var count int
-	err = testData.DB.QueryRow(`select count(*) from patient_receipt where patient_id = ?`, patientVisit.PatientID.Int64()).Scan(&count)
+	err = testData.DB.QueryRow(`select count(*) from patient_receipt where patient_id = ?`, patientVisit.PatientID).Scan(&count)
 	test.OK(t, err)
 	test.Equals(t, 1, count)
-	patientReceipt, err = testData.DataAPI.GetPatientReceipt(patientVisit.PatientID.Int64(), patientVisit.ID.Int64(), patientVisit.SKUType, true)
+	patientReceipt, err = testData.DataAPI.GetPatientReceipt(patientVisit.PatientID, patientVisit.ID.Int64(), patientVisit.SKUType, true)
 	test.OK(t, err)
 	test.Equals(t, common.PRCharged, patientReceipt.Status)
 	test.Equals(t, "charge_test", patientReceipt.StripeChargeID)
@@ -172,7 +172,7 @@ func TestFailedCharge_ChargeExists(t *testing.T) {
 		ReferenceNumber: "12345",
 		SKUType:         patientVisit.SKUType,
 		ItemID:          patientVisit.ID.Int64(),
-		PatientID:       patientVisit.PatientID.Int64(),
+		PatientID:       patientVisit.PatientID,
 		Status:          common.PRChargePending,
 		CostBreakdown:   &common.CostBreakdown{},
 		ItemCostID:      itemCost.ID,
@@ -211,7 +211,7 @@ func TestFailedCharge_ChargeExists(t *testing.T) {
 	w.Do()
 
 	test.Equals(t, false, wasCustomerCharged)
-	patientReceipt, err = testData.DataAPI.GetPatientReceipt(patientVisit.PatientID.Int64(), patientVisit.ID.Int64(), patientVisit.SKUType, true)
+	patientReceipt, err = testData.DataAPI.GetPatientReceipt(patientVisit.PatientID, patientVisit.ID.Int64(), patientVisit.SKUType, true)
 	test.OK(t, err)
 	test.Equals(t, common.PRCharged, patientReceipt.Status)
 	test.Equals(t, "charge_test1234", patientReceipt.StripeChargeID)

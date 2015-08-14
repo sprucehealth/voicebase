@@ -40,7 +40,7 @@ func deleteCard(
 
 	// mark the card as inactive instead of deleting it initially so that we have room to identify
 	// situations where the call fails and things are left in an inconsistent state
-	if err := dataAPI.MarkCardInactiveForPatient(patient.ID.Int64(), card); err != nil {
+	if err := dataAPI.MarkCardInactiveForPatient(patient.ID, card); err != nil {
 		return err
 	}
 
@@ -48,13 +48,13 @@ func deleteCard(
 
 	// switch over the default card to the last added card if we are currently deleting the default card
 	if card.IsDefault && switchDefaultCard {
-		latestCard, err := dataAPI.MakeLatestCardDefaultForPatient(patient.ID.Int64())
+		latestCard, err := dataAPI.MakeLatestCardDefaultForPatient(patient.ID)
 		if err != nil {
 			return err
 		}
 
 		if latestCard != nil {
-			if err := dataAPI.UpdateDefaultAddressForPatient(patient.ID.Int64(), latestCard.BillingAddress); err != nil {
+			if err := dataAPI.UpdateDefaultAddressForPatient(patient.ID, latestCard.BillingAddress); err != nil {
 				return err
 			}
 		}
@@ -65,7 +65,7 @@ func deleteCard(
 		return err
 	}
 
-	if err := dataAPI.DeleteCardForPatient(patient.ID.Int64(), card); err != nil {
+	if err := dataAPI.DeleteCardForPatient(patient.ID, card); err != nil {
 		return err
 	}
 
@@ -84,7 +84,7 @@ func deleteCard(
 }
 
 func getCardsAndReconcileWithPaymentService(patient *common.Patient, dataAPI api.DataAPI, paymentAPI apiservice.StripeClient) ([]*common.Card, error) {
-	localCards, err := dataAPI.GetCardsForPatient(patient.ID.Int64())
+	localCards, err := dataAPI.GetCardsForPatient(patient.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +188,7 @@ func addCardForPatient(
 
 		// save customer id to database
 		customerID := customer.ID
-		if err := dataAPI.UpdatePatient(patient.ID.Int64(), &api.PatientUpdate{
+		if err := dataAPI.UpdatePatient(patient.ID, &api.PatientUpdate{
 			StripeCustomerID: &customerID,
 		}, false); err != nil {
 			return err
@@ -205,7 +205,7 @@ func addCardForPatient(
 
 	cardToAdd.ThirdPartyID = stripeCard.ID
 	cardToAdd.Fingerprint = stripeCard.Fingerprint
-	if err := dataAPI.AddCardForPatient(patient.ID.Int64(), cardToAdd); err != nil {
+	if err := dataAPI.AddCardForPatient(patient.ID, cardToAdd); err != nil {
 		return err
 	}
 
@@ -218,7 +218,7 @@ func addCardForPatient(
 	}
 
 	if cardToAdd.BillingAddress != nil {
-		if err := dataAPI.UpdateDefaultAddressForPatient(patient.ID.Int64(), cardToAdd.BillingAddress); err != nil {
+		if err := dataAPI.UpdateDefaultAddressForPatient(patient.ID, cardToAdd.BillingAddress); err != nil {
 			return err
 		}
 	}

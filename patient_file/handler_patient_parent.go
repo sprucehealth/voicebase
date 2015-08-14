@@ -22,7 +22,7 @@ type patientParentHandler struct {
 }
 
 type patientParentRequest struct {
-	PatientID int64 `schema:"patient_id,required"`
+	PatientID common.PatientID `schema:"patient_id,required"`
 }
 
 type consentProof struct {
@@ -106,7 +106,7 @@ func (p *patientParentHandler) IsAuthorized(ctx context.Context, r *http.Request
 			r.Method,
 			account.Role,
 			doctor.ID.Int64(),
-			patient.ID.Int64(),
+			patient.ID,
 			p.dataAPI,
 		); err != nil {
 			return false, err
@@ -120,7 +120,7 @@ func (p *patientParentHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 	requestCache := apiservice.MustCtxCache(ctx)
 	patient := requestCache[apiservice.CKPatient].(*common.Patient)
 
-	consents, err := p.dataAPI.ParentalConsent(patient.ID.Int64())
+	consents, err := p.dataAPI.ParentalConsent(patient.ID)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
@@ -134,7 +134,7 @@ func (p *patientParentHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 			return
 		}
 
-		proof, err := p.dataAPI.ParentConsentProof(parent.ID.Int64())
+		proof, err := p.dataAPI.ParentConsentProof(parent.ID)
 		if err != nil {
 			apiservice.WriteError(ctx, err, w, r)
 			return

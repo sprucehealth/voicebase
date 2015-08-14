@@ -177,7 +177,7 @@ func (s *patientVisitHandler) deletePatientVisit(ctx context.Context, w http.Res
 	}
 
 	// make sure the patient making the request owns the visit
-	if visit.PatientID.Int64() != patientID {
+	if visit.PatientID != patientID {
 		apiservice.WriteAccessNotAllowedError(ctx, w, r)
 		return
 	}
@@ -245,7 +245,7 @@ func (s *patientVisitHandler) submitPatientVisit(ctx context.Context, w http.Res
 			return
 		}
 		// Refetch the patient object to get latest address
-		patient, err = s.dataAPI.GetPatientFromID(patient.ID.Int64())
+		patient, err = s.dataAPI.GetPatientFromID(patient.ID)
 		if err != nil {
 			apiservice.WriteError(ctx, err, w, r)
 			return
@@ -271,7 +271,7 @@ func (s *patientVisitHandler) submitPatientVisit(ctx context.Context, w http.Res
 }
 
 func (s *patientVisitHandler) applyVisitTags(visit *common.PatientVisit, patient *common.Patient) error {
-	patientID := visit.PatientID.Int64()
+	patientID := visit.PatientID
 	caseID := visit.PatientCaseID.Int64()
 
 	cases, err := s.dataAPI.GetCasesForPatient(patientID, nil)
@@ -406,7 +406,7 @@ func (s *patientVisitHandler) getPatientVisit(ctx context.Context, w http.Respon
 		// NOTE: the call to get a visit without a patient_visit_id only exists for backwards compatibility
 		// reasons where v1.0 of the iOS client assumed a single visit existed for the patient
 		// and so did not pass in a patient_visit_id parameter
-		patientCases, err := s.dataAPI.CasesForPathway(patient.ID.Int64(), api.AcnePathwayTag, []string{common.PCStatusActive.String(), common.PCStatusOpen.String()})
+		patientCases, err := s.dataAPI.CasesForPathway(patient.ID, api.AcnePathwayTag, []string{common.PCStatusActive.String(), common.PCStatusOpen.String()})
 		if err != nil {
 			apiservice.WriteError(ctx, err, w, r)
 			return
@@ -537,7 +537,7 @@ func submitVisit(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, patient *
 	}
 
 	dispatcher.Publish(&VisitSubmittedEvent{
-		PatientID:     patient.ID.Int64(),
+		PatientID:     patient.ID,
 		AccountID:     patient.AccountID.Int64(),
 		VisitID:       visitID,
 		PatientCaseID: visit.PatientCaseID.Int64(),

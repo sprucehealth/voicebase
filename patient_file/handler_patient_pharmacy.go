@@ -7,7 +7,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/pharmacy"
 )
@@ -27,7 +26,7 @@ func NewDoctorUpdatePatientPharmacyHandler(dataAPI api.DataAPI) httputil.Context
 }
 
 type DoctorUpdatePatientPharmacyRequestData struct {
-	PatientID encoding.ObjectID      `json:"patient_id"`
+	PatientID common.PatientID       `json:"patient_id"`
 	Pharmacy  *pharmacy.PharmacyData `json:"pharmacy"`
 }
 
@@ -45,7 +44,7 @@ func (d *doctorUpdatePatientPharmacyHandler) IsAuthorized(ctx context.Context, r
 	}
 	requestCache[apiservice.CKRequestData] = requestData
 
-	patient, err := d.dataAPI.GetPatientFromID(requestData.PatientID.Int64())
+	patient, err := d.dataAPI.GetPatientFromID(requestData.PatientID)
 	if err != nil {
 		return false, err
 	}
@@ -57,7 +56,7 @@ func (d *doctorUpdatePatientPharmacyHandler) IsAuthorized(ctx context.Context, r
 	}
 	requestCache[apiservice.CKDoctor] = doctor
 
-	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, account.Role, doctor.ID.Int64(), patient.ID.Int64(), d.dataAPI); err != nil {
+	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, account.Role, doctor.ID.Int64(), patient.ID, d.dataAPI); err != nil {
 		return false, err
 	}
 
@@ -69,7 +68,7 @@ func (d *doctorUpdatePatientPharmacyHandler) ServeHTTP(ctx context.Context, w ht
 	patient := requestCache[apiservice.CKPatient].(*common.Patient)
 	requestData := requestCache[apiservice.CKRequestData].(*DoctorUpdatePatientPharmacyRequestData)
 
-	if err := d.dataAPI.UpdatePatientPharmacy(patient.ID.Int64(), requestData.Pharmacy); err != nil {
+	if err := d.dataAPI.UpdatePatientPharmacy(patient.ID, requestData.Pharmacy); err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
 	}

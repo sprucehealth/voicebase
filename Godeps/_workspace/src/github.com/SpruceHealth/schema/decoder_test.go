@@ -5,25 +5,32 @@
 package schema
 
 import (
-	//"reflect"
+	"errors"
+	"reflect"
+	"strings"
 	"testing"
 )
 
+type IntAlias int
+
 // All cases we want to cover, in a nutshell.
 type S1 struct {
-	F01 int     `schema:"f1"`
-	F02 *int    `schema:"f2"`
-	F03 []int   `schema:"f3"`
-	F04 []*int  `schema:"f4"`
-	F05 *[]int  `schema:"f5"`
-	F06 *[]*int `schema:"f6"`
-	F07 S2      `schema:"f7"`
-	F08 *S1     `schema:"f8"`
-	F09 int     `schema:"-"`
-	F10 []S1    `schema:"f10"`
-	F11 []*S1   `schema:"f11"`
-	F12 *[]S1   `schema:"f12"`
-	F13 *[]*S1  `schema:"f13"`
+	F01 int        `schema:"f1"`
+	F02 *int       `schema:"f2"`
+	F03 []int      `schema:"f3"`
+	F04 []*int     `schema:"f4"`
+	F05 *[]int     `schema:"f5"`
+	F06 *[]*int    `schema:"f6"`
+	F07 S2         `schema:"f7"`
+	F08 *S1        `schema:"f8"`
+	F09 int        `schema:"-"`
+	F10 []S1       `schema:"f10"`
+	F11 []*S1      `schema:"f11"`
+	F12 *[]S1      `schema:"f12"`
+	F13 *[]*S1     `schema:"f13"`
+	F14 int        `schema:"f14"`
+	F15 IntAlias   `schema:"f15"`
+	F16 []IntAlias `schema:"f16"`
 }
 
 type S2 struct {
@@ -49,6 +56,9 @@ func TestAll(t *testing.T) {
 		"f12.0.f12.1.f6": {"123", "124"},
 		"f13.0.f13.0.f6": {"131", "132"},
 		"f13.0.f13.1.f6": {"133", "134"},
+		"f14":            {},
+		"f15":            {"151"},
+		"f16":            {"161", "162"},
 	}
 	f2 := 2
 	f41, f42 := 41, 42
@@ -59,6 +69,8 @@ func TestAll(t *testing.T) {
 	f111, f112, f113, f114 := 111, 112, 113, 114
 	f121, f122, f123, f124 := 121, 122, 123, 124
 	f131, f132, f133, f134 := 131, 132, 133, 134
+	var f151 IntAlias = 151
+	var f161, f162 IntAlias = 161, 162
 	e := S1{
 		F01: 1,
 		F02: &f2,
@@ -109,6 +121,9 @@ func TestAll(t *testing.T) {
 				},
 			},
 		},
+		F14: 0,
+		F15: f151,
+		F16: []IntAlias{f161, f162},
 	}
 
 	s := &S1{}
@@ -286,6 +301,19 @@ func TestAll(t *testing.T) {
 				}
 			}
 		}
+	}
+	if s.F14 != e.F14 {
+		t.Errorf("f14: expected %v, got %v", e.F14, s.F14)
+	}
+	if s.F15 != e.F15 {
+		t.Errorf("f15: expected %v, got %v", e.F15, s.F15)
+	}
+	if s.F16 == nil {
+		t.Errorf("f16: nil")
+	} else if len(s.F16) != len(e.F16) {
+		t.Error("f16: expected len %d, got %d", len(e.F16), len(s.F16))
+	} else if !reflect.DeepEqual(s.F16, e.F16) {
+		t.Error("f16: expected %v, got %v", e.F16, s.F16)
 	}
 }
 
@@ -1028,5 +1056,278 @@ func TestAllNT(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// ----------------------------------------------------------------------------
+
+type S12A struct {
+	ID []int
+}
+
+func TestCSVSlice(t *testing.T) {
+	data := map[string][]string{
+		"ID": {"0,1"},
+	}
+
+	s := S12A{}
+	NewDecoder().Decode(&s, data)
+	if len(s.ID) != 2 {
+		t.Errorf("Expected two values in the result list, got %+v", s.ID)
+	}
+	if s.ID[0] != 0 || s.ID[1] != 1 {
+		t.Errorf("Expected []{0, 1} got %+v", s)
+	}
+}
+
+type S12B struct {
+	ID []string
+}
+
+//Decode should not split on , into a slice for string only
+func TestCSVStringSlice(t *testing.T) {
+	data := map[string][]string{
+		"ID": {"0,1"},
+	}
+
+	s := S12B{}
+	NewDecoder().Decode(&s, data)
+	if len(s.ID) != 1 {
+		t.Errorf("Expected one value in the result list, got %+v", s.ID)
+	}
+	if s.ID[0] != "0,1" {
+		t.Errorf("Expected []{0, 1} got %+v", s)
+	}
+}
+
+//Invalid data provided by client should not panic (github issue 33)
+func TestInvalidDataProvidedByClient(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("Panicked calling decoder.Decode: %v", r)
+		}
+	}()
+
+	type S struct {
+		f string
+	}
+
+	data := map[string][]string{
+		"f.f": {"v"},
+	}
+
+	err := NewDecoder().Decode(new(S), data)
+	if err == nil {
+		t.Errorf("invalid path in decoder.Decode should return an error.")
+	}
+}
+
+// underlying cause of error in issue 33
+func TestInvalidPathInCacheParsePath(t *testing.T) {
+	type S struct {
+		f string
+	}
+
+	typ := reflect.ValueOf(new(S)).Elem().Type()
+	c := newCache()
+	_, err := c.parsePath("f.f", typ)
+	if err == nil {
+		t.Errorf("invalid path in cache.parsePath should return an error.")
+	}
+}
+
+// issue 32
+func TestDecodeToTypedField(t *testing.T) {
+	type Aa bool
+	s1 := &struct{ Aa }{}
+	v1 := map[string][]string{"Aa": {"true"}}
+	NewDecoder().Decode(s1, v1)
+	if s1.Aa != Aa(true) {
+		t.Errorf("s1: expected %v, got %v", true, s1.Aa)
+	}
+}
+
+// issue 37
+func TestRegisterConverter(t *testing.T) {
+	type Aa int
+	type Bb int
+	s1 := &struct {
+		Aa
+		Bb
+	}{}
+	decoder := NewDecoder()
+
+	decoder.RegisterConverter(s1.Aa, func(s string) reflect.Value { return reflect.ValueOf(1) })
+	decoder.RegisterConverter(s1.Bb, func(s string) reflect.Value { return reflect.ValueOf(2) })
+
+	v1 := map[string][]string{"Aa": {"4"}, "Bb": {"5"}}
+	decoder.Decode(s1, v1)
+
+	if s1.Aa != Aa(1) {
+		t.Errorf("s1.Aa: expected %v, got %v", 1, s1.Aa)
+	}
+	if s1.Bb != Bb(2) {
+		t.Errorf("s1.Bb: expected %v, got %v", 2, s1.Bb)
+	}
+}
+
+// Issue #40
+func TestRegisterConverterSlice(t *testing.T) {
+	decoder := NewDecoder()
+	decoder.RegisterConverter([]string{}, func(input string) reflect.Value {
+		return reflect.ValueOf(strings.Split(input, ","))
+	})
+
+	result := struct {
+		Multiple []string `schema:"multiple"`
+	}{}
+
+	expected := []string{"one", "two", "three"}
+	decoder.Decode(&result, map[string][]string{
+		"multiple": []string{"one,two,three"},
+	})
+	for i := range expected {
+		if got, want := expected[i], result.Multiple[i]; got != want {
+			t.Errorf("%d: got %s, want %s", got, want)
+		}
+	}
+}
+
+type S13 struct {
+	Value []S14
+}
+
+type S14 struct {
+	F1 string
+	F2 string
+}
+
+func (n *S14) UnmarshalText(text []byte) error {
+	textParts := strings.Split(string(text), " ")
+	if len(textParts) < 2 {
+		return errors.New("Not a valid name!")
+	}
+
+	n.F1, n.F2 = textParts[0], textParts[len(textParts)-1]
+	return nil
+}
+
+type S15 struct {
+	Value []S16
+}
+
+type S16 struct {
+	F1 string
+	F2 string
+}
+
+func TestCustomTypeSlice(t *testing.T) {
+	data := map[string][]string{
+		"Value.0": []string{"Louisa May Alcott"},
+		"Value.1": []string{"Florence Nightingale"},
+		"Value.2": []string{"Clara Barton"},
+	}
+
+	s := S13{}
+	decoder := NewDecoder()
+
+	if err := decoder.Decode(&s, data); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(s.Value) != 3 {
+		t.Fatalf("Expected 3 values in the result list, got %+v", s.Value)
+	}
+	if s.Value[0].F1 != "Louisa" || s.Value[0].F2 != "Alcott" {
+		t.Errorf("Expected S14{'Louisa', 'Alcott'} got %+v", s.Value[0])
+	}
+	if s.Value[1].F1 != "Florence" || s.Value[1].F2 != "Nightingale" {
+		t.Errorf("Expected S14{'Florence', 'Nightingale'} got %+v", s.Value[1])
+	}
+	if s.Value[2].F1 != "Clara" || s.Value[2].F2 != "Barton" {
+		t.Errorf("Expected S14{'Clara', 'Barton'} got %+v", s.Value[2])
+	}
+}
+
+func TestCustomTypeSliceWithError(t *testing.T) {
+	data := map[string][]string{
+		"Value.0": []string{"Louisa May Alcott"},
+		"Value.1": []string{"Florence Nightingale"},
+		"Value.2": []string{"Clara"},
+	}
+
+	s := S13{}
+	decoder := NewDecoder()
+
+	if err := decoder.Decode(&s, data); err == nil {
+		t.Error("Not detecting error in conversion")
+	}
+}
+
+func TestNoTextUnmarshalerTypeSlice(t *testing.T) {
+	data := map[string][]string{
+		"Value.0": []string{"Louisa May Alcott"},
+		"Value.1": []string{"Florence Nightingale"},
+		"Value.2": []string{"Clara Barton"},
+	}
+
+	s := S15{}
+	decoder := NewDecoder()
+
+	if err := decoder.Decode(&s, data); err == nil {
+		t.Error("Not detecting when there's no converter")
+	}
+}
+
+// ----------------------------------------------------------------------------
+
+type S17 struct {
+	Value S14
+}
+
+type S18 struct {
+	Value S16
+}
+
+func TestCustomType(t *testing.T) {
+	data := map[string][]string{
+		"Value": []string{"Louisa May Alcott"},
+	}
+
+	s := S17{}
+	decoder := NewDecoder()
+
+	if err := decoder.Decode(&s, data); err != nil {
+		t.Fatal(err)
+	}
+
+	if s.Value.F1 != "Louisa" || s.Value.F2 != "Alcott" {
+		t.Errorf("Expected S14{'Louisa', 'Alcott'} got %+v", s.Value)
+	}
+}
+
+func TestCustomTypeWithError(t *testing.T) {
+	data := map[string][]string{
+		"Value": []string{"Louisa"},
+	}
+
+	s := S17{}
+	decoder := NewDecoder()
+
+	if err := decoder.Decode(&s, data); err == nil {
+		t.Error("Not detecting error in conversion")
+	}
+}
+
+func TestNoTextUnmarshalerType(t *testing.T) {
+	data := map[string][]string{
+		"Value": []string{"Louisa May Alcott"},
+	}
+
+	s := S18{}
+	decoder := NewDecoder()
+
+	if err := decoder.Decode(&s, data); err == nil {
+		t.Error("Not detecting when there's no converter")
 	}
 }

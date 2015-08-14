@@ -15,7 +15,7 @@ func TestNotifications(t *testing.T) {
 	dataAPI := &mockHomeHandlerDataAPI{
 		doctors: map[int64]*common.Doctor{
 			2: {
-				ID:              encoding.NewObjectID(2),
+				ID:              encoding.DeprecatedNewObjectID(2),
 				LongDisplayName: "Care Coordinator",
 				IsCC:            true,
 			},
@@ -60,7 +60,7 @@ func TestIncompleteVisitNotification(t *testing.T) {
 	dataAPI := &mockHomeHandlerDataAPI{
 		patientVisits: []*common.PatientVisit{
 			{
-				ID:     encoding.NewObjectID(1),
+				ID:     encoding.DeprecatedNewObjectID(1),
 				Status: common.PVStatusOpen,
 			},
 		},

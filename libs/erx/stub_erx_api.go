@@ -63,12 +63,12 @@ func (s *StubErxService) StartPrescribingPatient(clinicianID int64, Patient *com
 
 	// walk through the treatments and assign them each a prescription id
 	// assumption here is that there are as many prescription ids to return as there are treatments
-	Patient.ERxPatientID = encoding.NewObjectID(s.PatientErxID)
+	Patient.ERxPatientID = encoding.DeprecatedNewObjectID(s.PatientErxID)
 	for i, treatment := range Treatments {
 		if treatment.ERx == nil {
 			treatment.ERx = &common.ERxData{}
 		}
-		treatment.ERx.PrescriptionID = encoding.NewObjectID(s.PrescriptionIDsToReturn[i])
+		treatment.ERx.PrescriptionID = encoding.DeprecatedNewObjectID(s.PrescriptionIDsToReturn[i])
 	}
 
 	return nil
@@ -103,7 +103,7 @@ func (s *StubErxService) GetTransmissionErrorDetails(clinicianID int64) ([]*comm
 	for i, prescriptionID := range s.TransmissionErrorsForPrescriptionIds {
 		transmissionErrors[i] = &common.Treatment{
 			ERx: &common.ERxData{
-				PrescriptionID:        encoding.NewObjectID(prescriptionID),
+				PrescriptionID:        encoding.DeprecatedNewObjectID(prescriptionID),
 				TransmissionErrorDate: &timestamp,
 			},
 		}

@@ -53,7 +53,7 @@ func (d *doctorPatientHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 }
 
 type patientUpdate struct {
-	PatientID    int64                 `json:"id,string"`
+	PatientID    common.PatientID      `json:"id"`
 	FirstName    string                `json:"first_name,omitempty"`
 	LastName     string                `json:"last_name,omiempty"`
 	MiddleName   string                `json:"middle_name,omitempty"`
@@ -66,8 +66,8 @@ type patientUpdate struct {
 }
 
 type requestResponstData struct {
-	PatientUpdate *patientUpdate `json:"patient"`
-	PatientID     int64          `schema:"patient_id,required" json:"-"`
+	PatientUpdate *patientUpdate   `json:"patient"`
+	PatientID     common.PatientID `schema:"patient_id,required" json:"-"`
 }
 
 type patientResponse struct {
@@ -105,7 +105,7 @@ func (d *doctorPatientHandler) IsAuthorized(ctx context.Context, r *http.Request
 		if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method,
 			account.Role,
 			doctor.ID.Int64(),
-			patient.ID.Int64(),
+			patient.ID,
 			d.dataAPI); err != nil {
 			return false, err
 		}
@@ -157,7 +157,7 @@ func (d *doctorPatientHandler) updatePatientInformation(ctx context.Context, w h
 		PhoneNumbers: req.PatientUpdate.PhoneNumbers,
 		Address:      req.PatientUpdate.Address,
 	}
-	if err := d.dataAPI.UpdatePatient(patient.ID.Int64(), update, true); err != nil {
+	if err := d.dataAPI.UpdatePatient(patient.ID, update, true); err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
 	}

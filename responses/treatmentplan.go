@@ -36,7 +36,7 @@ type TreatmentPlan struct {
 	ID                     encoding.ObjectID           `json:"id,omitempty"`
 	DoctorID               encoding.ObjectID           `json:"doctor_id,omitempty"`
 	PatientCaseID          encoding.ObjectID           `json:"case_id"`
-	PatientID              int64                       `json:"patient_id,string,omitempty"`
+	PatientID              common.PatientID            `json:"patient_id,omitempty"`
 	Status                 common.TreatmentPlanStatus  `json:"status,omitempty"`
 	CreationEpoch          int64                       `json:"creation_epoch,string"`
 	DeprecatedCreationDate time.Time                   `json:"creation_date"`
@@ -304,7 +304,7 @@ func TransformTPFromResponse(mLookup mediaLookup, tp *TreatmentPlan, doctorID in
 
 	if tp.Parent != nil {
 		tp2.Parent = &common.TreatmentPlanParent{
-			ParentID:     encoding.NewObjectID(tp.Parent.ID),
+			ParentID:     encoding.DeprecatedNewObjectID(tp.Parent.ID),
 			ParentType:   tp.Parent.Type,
 			CreationDate: tp.Parent.DeprecatedCreationDate,
 		}
@@ -312,7 +312,7 @@ func TransformTPFromResponse(mLookup mediaLookup, tp *TreatmentPlan, doctorID in
 
 	if tp.ContentSource != nil {
 		tp2.ContentSource = &common.TreatmentPlanContentSource{
-			ID:          encoding.NewObjectID(tp.ContentSource.ID),
+			ID:          encoding.DeprecatedNewObjectID(tp.ContentSource.ID),
 			Type:        tp.ContentSource.Type,
 			HasDeviated: tp.ContentSource.Deviated,
 		}

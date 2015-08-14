@@ -36,7 +36,7 @@ func (m *mockDataAPI_listener) UpdateDoctorQueue(updates []*api.DoctorQueueUpdat
 func (m *mockDataAPI_listener) UpdatePatientCaseFeedItem(item *common.PatientCaseFeedItem) error {
 	return nil
 }
-func (m *mockDataAPI_listener) Patient(id int64, basicInfoOnly bool) (*common.Patient, error) {
+func (m *mockDataAPI_listener) Patient(id common.PatientID, basicInfoOnly bool) (*common.Patient, error) {
 	return m.patient, nil
 }
 func (m *mockDataAPI_listener) GetActiveMembersOfCareTeamForCase(caseID int64, basicInfoOnly bool) ([]*common.CareProviderAssignment, error) {
@@ -116,12 +116,12 @@ func testCaseAssignment(t *testing.T, role string) {
 	InitListeners(m, nil, dispatcher, notifyManager, metrics.NewRegistry(), 0, "", ls, taggingClient)
 
 	ma := &common.Doctor{
-		ID:               encoding.NewObjectID(4),
+		ID:               encoding.DeprecatedNewObjectID(4),
 		ShortDisplayName: "Care Coordinator",
 	}
 
 	doctor := &common.Doctor{
-		ID:               encoding.NewObjectID(2),
+		ID:               encoding.DeprecatedNewObjectID(2),
 		ShortDisplayName: "Doctor",
 	}
 
@@ -142,8 +142,8 @@ func testCaseAssignment(t *testing.T, role string) {
 			RoleID:   1,
 		},
 		Case: &common.PatientCase{
-			PatientID: encoding.NewObjectID(5),
-			ID:        encoding.NewObjectID(10),
+			PatientID: common.NewPatientID(5),
+			ID:        encoding.DeprecatedNewObjectID(10),
 			Claimed:   true,
 		},
 		MA:     ma,
@@ -235,16 +235,16 @@ func TestCaseAssignment_Multiple(t *testing.T) {
 				RoleID:   1,
 			},
 			Case: &common.PatientCase{
-				PatientID: encoding.NewObjectID(5),
-				ID:        encoding.NewObjectID(10),
+				PatientID: common.NewPatientID(5),
+				ID:        encoding.DeprecatedNewObjectID(10),
 				Claimed:   true,
 			},
 			MA: &common.Doctor{
-				ID:               encoding.NewObjectID(4),
+				ID:               encoding.DeprecatedNewObjectID(4),
 				ShortDisplayName: "Care Coordinator",
 			},
 			Doctor: &common.Doctor{
-				ID:               encoding.NewObjectID(2),
+				ID:               encoding.DeprecatedNewObjectID(2),
 				ShortDisplayName: "Doctor",
 			},
 		})
@@ -354,16 +354,16 @@ func TestCaseAssignment_Doctor_PersistsInInbox(t *testing.T) {
 			RoleID:   1,
 		},
 		Case: &common.PatientCase{
-			PatientID: encoding.NewObjectID(5),
-			ID:        encoding.NewObjectID(10),
+			PatientID: common.NewPatientID(5),
+			ID:        encoding.DeprecatedNewObjectID(10),
 			Claimed:   true,
 		},
 		MA: &common.Doctor{
-			ID:               encoding.NewObjectID(4),
+			ID:               encoding.DeprecatedNewObjectID(4),
 			ShortDisplayName: "Care Coordinator",
 		},
 		Doctor: &common.Doctor{
-			ID:               encoding.NewObjectID(2),
+			ID:               encoding.DeprecatedNewObjectID(2),
 			ShortDisplayName: "Doctor",
 		},
 	})
@@ -450,8 +450,8 @@ func testMessage_PatientToCareTeam(t *testing.T, assignments []*common.CareProvi
 			RoleID:   1,
 		},
 		Case: &common.PatientCase{
-			PatientID: encoding.NewObjectID(5),
-			ID:        encoding.NewObjectID(10),
+			PatientID: common.NewPatientID(5),
+			ID:        encoding.DeprecatedNewObjectID(10),
 			Claimed:   true,
 		},
 	})
@@ -522,8 +522,8 @@ func TestMessage_PatientToCareTeam_Multiple(t *testing.T) {
 				RoleID:   11,
 			},
 			Case: &common.PatientCase{
-				PatientID: encoding.NewObjectID(5),
-				ID:        encoding.NewObjectID(10),
+				PatientID: common.NewPatientID(5),
+				ID:        encoding.DeprecatedNewObjectID(10),
 				Claimed:   true,
 			},
 		})
@@ -583,8 +583,8 @@ func testMessage_ProviderToPatient(t *testing.T, role string) {
 			RoleID:   11,
 		},
 		Case: &common.PatientCase{
-			PatientID: encoding.NewObjectID(5),
-			ID:        encoding.NewObjectID(10),
+			PatientID: common.NewPatientID(5),
+			ID:        encoding.DeprecatedNewObjectID(10),
 			Claimed:   true,
 		},
 	})

@@ -203,7 +203,7 @@ func (h *patientPromotionsHandler) servePOST(ctx context.Context, w http.Respons
 		return
 	}
 
-	_, state, err := h.dataAPI.PatientLocation(patient.ID.Int64())
+	_, state, err := h.dataAPI.PatientLocation(patient.ID)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return

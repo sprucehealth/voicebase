@@ -15,7 +15,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/responses"
@@ -39,7 +38,7 @@ type mockDataAPIPatientPromotionsHandler struct {
 	promotionParam                              int64
 	promotionErr                                error
 	promotion                                   *common.Promotion
-	patientLocationParam                        int64
+	patientLocationParam                        common.PatientID
 	patientLocationErr                          error
 	patientLocationState                        string
 	promotionGroupParam                         string
@@ -82,7 +81,7 @@ func (m *mockDataAPIPatientPromotionsHandler) Promotion(codeID int64, types map[
 	return m.promotion, m.promotionErr
 }
 
-func (m *mockDataAPIPatientPromotionsHandler) PatientLocation(patientID int64) (zipcode string, state string, err error) {
+func (m *mockDataAPIPatientPromotionsHandler) PatientLocation(patientID common.PatientID) (zipcode string, state string, err error) {
 	m.patientLocationParam = patientID
 	return "", m.patientLocationState, m.patientLocationErr
 }
@@ -356,13 +355,13 @@ func TestPatientPromotionsHandlerPOSTPatientLocationErr(t *testing.T) {
 	dataAPI := &mockDataAPIPatientPromotionsHandler{
 		lookupPromoCode:         &common.PromoCode{ID: 12345, Code: "Foo", IsReferral: false},
 		promotion:               createPromotion("imageURL", "test_group", nil, 1),
-		getPatientFromAccountID: &common.Patient{ID: encoding.NewObjectID(54321)},
+		getPatientFromAccountID: &common.Patient{ID: common.NewPatientID(54321)},
 		patientLocationErr:      errors.New("foo"),
 	}
 	handler := NewPatientPromotionsHandler(dataAPI, &mockAuthAPIPatientPromotionsHandler{}, &analytics.NullLogger{})
 	responseWriter := httptest.NewRecorder()
 	handler.ServeHTTP(ctx, responseWriter, r)
-	test.Equals(t, int64(54321), dataAPI.patientLocationParam)
+	test.Equals(t, common.NewPatientID(54321), dataAPI.patientLocationParam)
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
 
@@ -375,7 +374,7 @@ func TestPatientPromotionsHandlerPOSTPromotionGroupErr(t *testing.T) {
 	dataAPI := &mockDataAPIPatientPromotionsHandler{
 		lookupPromoCode:         &common.PromoCode{ID: 12345, Code: "Foo", IsReferral: false},
 		promotion:               createPromotion("imageURL", "test_group", nil, 1),
-		getPatientFromAccountID: &common.Patient{ID: encoding.NewObjectID(54321)},
+		getPatientFromAccountID: &common.Patient{ID: common.NewPatientID(54321)},
 		patientLocationState:    "CA",
 		promotionGroupErr:       errors.New("foo"),
 	}
@@ -395,7 +394,7 @@ func TestPatientPromotionsHandlerPOSTPromotionCountInGroupForAccountErr(t *testi
 	dataAPI := &mockDataAPIPatientPromotionsHandler{
 		lookupPromoCode:                    &common.PromoCode{ID: 12345, Code: "Foo", IsReferral: false},
 		promotion:                          createPromotion("imageURL", "test_group", nil, 1),
-		getPatientFromAccountID:            &common.Patient{ID: encoding.NewObjectID(54321)},
+		getPatientFromAccountID:            &common.Patient{ID: common.NewPatientID(54321)},
 		patientLocationState:               "CA",
 		promotionGroup:                     &common.PromotionGroup{Name: "test_group", MaxAllowedPromos: 1},
 		promotionCountInGroupForAccountErr: errors.New("foo"),

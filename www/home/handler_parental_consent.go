@@ -5,7 +5,6 @@ import (
 	"html"
 	"html/template"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
@@ -55,7 +54,7 @@ type identitiyImageContext struct {
 	Types map[string]string `json:"types"`
 }
 
-func checkParentalConsentAccessToken(w http.ResponseWriter, r *http.Request, dataAPI api.DataAPI, childPatientID int64) bool {
+func checkParentalConsentAccessToken(w http.ResponseWriter, r *http.Request, dataAPI api.DataAPI, childPatientID common.PatientID) bool {
 	token := r.FormValue("t")
 	fromCookie := false
 	if token == "" {
@@ -88,7 +87,7 @@ func (h *parentalConsentHandler) ServeHTTP(ctx context.Context, w http.ResponseW
 	// The person may not be signed in which is fine. Account will be nil then.
 	account, _ := www.CtxAccount(ctx)
 
-	childPatientID, err := strconv.ParseInt(mux.Vars(ctx)["childid"], 10, 64)
+	childPatientID, err := common.ParsePatientID(mux.Vars(ctx)["childid"])
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -96,7 +95,7 @@ func (h *parentalConsentHandler) ServeHTTP(ctx context.Context, w http.ResponseW
 	hasAccess := checkParentalConsentAccessToken(w, r, h.dataAPI, childPatientID)
 
 	var consent *common.ParentalConsent
-	var parentPatientID int64
+	var parentPatientID common.PatientID
 	idProof := map[string]string{}
 	if account != nil {
 		if account.Role != api.RolePatient {
@@ -169,7 +168,7 @@ func (h *parentalConsentHandler) ServeHTTP(ctx context.Context, w http.ResponseW
 
 	// Already approved so jump straight to medical record
 	if child.HasParentalConsent {
-		http.Redirect(w, r, fmt.Sprintf("/pc/%d/medrecord", childPatientID), http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("/pc/%s/medrecord", childPatientID), http.StatusSeeOther)
 		return
 	}
 

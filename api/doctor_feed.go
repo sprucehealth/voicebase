@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/common"
 )
 
 // Doctor queue event types
@@ -63,7 +64,7 @@ func ParseDoctorQueueType(s string) DoctorQueueType {
 type DoctorQueueItem struct {
 	ID                   int64
 	DoctorID             int64
-	PatientID            int64
+	PatientID            common.PatientID
 	EventType            string
 	EnqueueDate          time.Time
 	Expires              *time.Time
@@ -82,7 +83,7 @@ func (dqi *DoctorQueueItem) Validate() error {
 	if dqi.DoctorID == 0 && dqi.PatientCaseID == 0 {
 		return errors.New("atleast doctor_id or patient_case_id required")
 	}
-	if dqi.PatientID == 0 {
+	if !dqi.PatientID.IsValid {
 		return errors.New("missing patient id")
 	}
 	if dqi.Description == "" {

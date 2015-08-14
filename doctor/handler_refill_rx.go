@@ -101,7 +101,7 @@ func (d *refillRxHandler) IsAuthorized(ctx context.Context, r *http.Request) (bo
 	}
 	requestCache[apiservice.CKDoctor] = doctor
 
-	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, account.Role, doctor.ID.Int64(), refillRequest.Patient.ID.Int64(), d.dataAPI); err != nil {
+	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, account.Role, doctor.ID.Int64(), refillRequest.Patient.ID, d.dataAPI); err != nil {
 		return false, err
 	}
 
@@ -260,7 +260,7 @@ func (d *refillRxHandler) resolveRefillRequest(ctx context.Context, w http.Respo
 				return
 			}
 
-			if err := d.addTreatmentInEventOfDNTF(originatingTreatmentFound, requestData.Treatment, refillRequest.Doctor.ID.Int64(), refillRequest.Patient.ID.Int64(), refillRequest.ID); err != nil {
+			if err := d.addTreatmentInEventOfDNTF(originatingTreatmentFound, requestData.Treatment, refillRequest.Doctor.ID.Int64(), refillRequest.Patient.ID, refillRequest.ID); err != nil {
 				apiservice.WriteError(ctx, err, w, r)
 				return
 			}
@@ -308,7 +308,7 @@ func (d *refillRxHandler) resolveRefillRequest(ctx context.Context, w http.Respo
 
 			// queue up job for status checking
 			if err := apiservice.QueueUpJob(d.erxStatusQueue, &common.PrescriptionStatusCheckMessage{
-				PatientID:      refillRequest.Patient.ID.Int64(),
+				PatientID:      refillRequest.Patient.ID,
 				DoctorID:       doctor.ID.Int64(),
 				EventCheckType: eventCheckType,
 			}); err != nil {
@@ -342,7 +342,7 @@ func (d *refillRxHandler) resolveRefillRequest(ctx context.Context, w http.Respo
 	// Queue up job to check for whether or not the response to this refill request
 	// was successfully transmitted to the pharmacy
 	if err := apiservice.QueueUpJob(d.erxStatusQueue, &common.PrescriptionStatusCheckMessage{
-		PatientID:      refillRequest.Patient.ID.Int64(),
+		PatientID:      refillRequest.Patient.ID,
 		DoctorID:       refillRequest.Doctor.ID.Int64(),
 		EventCheckType: common.RefillRxType,
 	}); err != nil {
@@ -366,9 +366,9 @@ func (d *refillRxHandler) addStatusEvent(originatingTreatmentFound bool, treatme
 	return d.dataAPI.AddErxStatusEventForDNTFTreatment(statusEvent)
 }
 
-func (d *refillRxHandler) addTreatmentInEventOfDNTF(originatingTreatmentFound bool, treatment *common.Treatment, doctorID, patientID, refillRequestID int64) error {
-	treatment.PatientID = encoding.NewObjectID(patientID)
-	treatment.DoctorID = encoding.NewObjectID(doctorID)
+func (d *refillRxHandler) addTreatmentInEventOfDNTF(originatingTreatmentFound bool, treatment *common.Treatment, doctorID int64, patientID common.PatientID, refillRequestID int64) error {
+	treatment.PatientID = patientID
+	treatment.DoctorID = encoding.DeprecatedNewObjectID(doctorID)
 	if originatingTreatmentFound {
 		return d.dataAPI.AddTreatmentToTreatmentPlanInEventOfDNTF(treatment, refillRequestID)
 	}

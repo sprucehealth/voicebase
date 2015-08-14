@@ -117,7 +117,7 @@ func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 		TreatmentPlanID:  treatmentPlan.ID,
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
-		DispenseUnitID:   encoding.NewObjectID(26),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -251,7 +251,7 @@ func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 		TreatmentPlanID:  tpResponse.TreatmentPlan.ID,
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
-		DispenseUnitID:   encoding.NewObjectID(26),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,

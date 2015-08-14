@@ -20,9 +20,9 @@ func TestCaseRoute_DoctorInCareTeam(t *testing.T) {
 
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
-	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.ID.Int64(), testData, t)
+	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.ID, testData, t)
 	intakeData := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout.InfoIntakeLayout, t)
-	test_integration.SubmitAnswersIntakeForPatient(pr.Patient.ID.Int64(), pr.Patient.AccountID.Int64(),
+	test_integration.SubmitAnswersIntakeForPatient(pr.Patient.ID, pr.Patient.AccountID.Int64(),
 		intakeData, testData, t)
 
 	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
@@ -32,7 +32,7 @@ func TestCaseRoute_DoctorInCareTeam(t *testing.T) {
 	// add the doctor to the case for the patient
 	test.OK(t, testData.DataAPI.AddDoctorToPatientCase(doctorID, patientCase.ID.Int64()))
 
-	test_integration.SubmitPatientVisitForPatient(pr.Patient.ID.Int64(), pv.PatientVisitID, testData, t)
+	test_integration.SubmitPatientVisitForPatient(pr.Patient.ID, pv.PatientVisitID, testData, t)
 
 	// there should exist an item in the local queue of the doctor
 	pendingItems, err := testData.DataAPI.GetPendingItemsInDoctorQueue(doctorID)

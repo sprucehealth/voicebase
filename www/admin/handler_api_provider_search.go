@@ -133,7 +133,7 @@ func (h *providerSearchAPIHandler) post(ctx context.Context, w http.ResponseWrit
 	}
 
 	id, err := h.dataAPI.RegisterProvider(&common.Doctor{
-		AccountID: encoding.NewObjectID(accountID),
+		AccountID: encoding.DeprecatedNewObjectID(accountID),
 		Email:     req.Email,
 		DOB:       req.DOB,
 		FirstName: req.FirstName,

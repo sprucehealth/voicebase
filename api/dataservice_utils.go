@@ -381,7 +381,7 @@ func (d *dataService) addTreatment(tType treatmentType, treatment *common.Treatm
 	}
 
 	// update the treatment object with the information
-	treatment.ID = encoding.NewObjectID(treatmentID)
+	treatment.ID = encoding.DeprecatedNewObjectID(treatmentID)
 
 	st, err := db.Prepare(fmt.Sprintf(`INSERT INTO %s_drug_db_id (drug_db_id_tag, drug_db_id, %s_id) VALUES (?, ?, ?)`,
 		possibleTreatmentTables[tType], possibleTreatmentTables[tType]))

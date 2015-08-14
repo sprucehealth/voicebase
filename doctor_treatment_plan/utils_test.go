@@ -56,7 +56,7 @@ func TestValidateDuplicateTreatments(t *testing.T) {
 			DrugInternalName:    "Name (Form - Route)",
 			DosageStrength:      "10%",
 			DispenseValue:       10,
-			DispenseUnitID:      encoding.NewObjectID(10),
+			DispenseUnitID:      encoding.DeprecatedNewObjectID(10),
 			PatientInstructions: "aegihag",
 			DrugDBIDs: map[string]string{
 				"aegkhajg": "lakegh",
@@ -66,7 +66,7 @@ func TestValidateDuplicateTreatments(t *testing.T) {
 			DrugInternalName:    "Name (Form - Route)",
 			DosageStrength:      "10%",
 			DispenseValue:       10,
-			DispenseUnitID:      encoding.NewObjectID(10),
+			DispenseUnitID:      encoding.DeprecatedNewObjectID(10),
 			PatientInstructions: "aegihag",
 			DrugDBIDs: map[string]string{
 				"aegkhajg": "lakegh",

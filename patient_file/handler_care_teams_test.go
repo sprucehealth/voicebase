@@ -10,7 +10,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/test"
 )
@@ -28,26 +27,26 @@ func (d mockedDataAPI_handlerCareTeams) GetDoctorIDFromAccountID(accountID int64
 
 func (d mockedDataAPI_handlerCareTeams) GetPatientFromAccountID(accountID int64) (*common.Patient, error) {
 	return &common.Patient{
-		ID: encoding.NewObjectID(d.patientAccountID),
+		ID: common.NewPatientID(uint64(d.patientAccountID)),
 	}, nil
 }
 
-func (d mockedDataAPI_handlerCareTeams) DoesCaseExistForPatient(p, c int64) (bool, error) {
+func (d mockedDataAPI_handlerCareTeams) DoesCaseExistForPatient(common.PatientID, int64) (bool, error) {
 	return d.canAccess, nil
 }
 
-func canAccess(httpMethod, role string, doctorID, patientID int64, dataAPI api.DataAPI) error {
+func canAccess(httpMethod, role string, doctorID int64, patientID common.PatientID, dataAPI api.DataAPI) error {
 	return nil
 }
 
-func cannotAccess(httpMethod, role string, doctorID, patientID int64, dataAPI api.DataAPI) error {
+func cannotAccess(httpMethod, role string, doctorID int64, patientID common.PatientID, dataAPI api.DataAPI) error {
 	return apiservice.NewAccessForbiddenError()
 }
 
 var getCareTeamsForPatientByCaseResponse map[int64]*common.PatientCareTeam
 var casesForPatient []*common.PatientCase
 
-func (d mockedDataAPI_handlerCareTeams) GetCasesForPatient(patientID int64, states []string) ([]*common.PatientCase, error) {
+func (d mockedDataAPI_handlerCareTeams) GetCasesForPatient(patientID common.PatientID, states []string) ([]*common.PatientCase, error) {
 	return casesForPatient, nil
 }
 func (d mockedDataAPI_handlerCareTeams) CaseCareTeams(caseIDs []int64) (map[int64]*common.PatientCareTeam, error) {

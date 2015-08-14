@@ -52,21 +52,21 @@ func IsErrNotFound(err error) bool {
 }
 
 type PatientAPI interface {
-	Patient(id int64, basicInfoOnly bool) (*common.Patient, error)
-	Patients(ids []int64) (map[int64]*common.Patient, error)
-	GetPatientFromID(patientID int64) (patient *common.Patient, err error)
+	Patient(id common.PatientID, basicInfoOnly bool) (*common.Patient, error)
+	Patients(ids []common.PatientID) (map[common.PatientID]*common.Patient, error)
+	GetPatientFromID(patientID common.PatientID) (patient *common.Patient, err error)
 	GetPatientFromAccountID(accountID int64) (patient *common.Patient, err error)
 	GetPatientFromErxPatientID(erxPatientID int64) (*common.Patient, error)
-	PatientLocation(patientID int64) (zipcode string, state string, err error)
-	AnyVisitSubmitted(patientID int64) (bool, error)
+	PatientLocation(patientID common.PatientID) (zipcode string, state string, err error)
+	AnyVisitSubmitted(patientID common.PatientID) (bool, error)
 	RegisterPatient(patient *common.Patient) error
-	UpdatePatient(id int64, update *PatientUpdate, updateFromDoctor bool) error
+	UpdatePatient(id common.PatientID, update *PatientUpdate, updateFromDoctor bool) error
 	CreateUnlinkedPatientFromRefillRequest(patient *common.Patient, doctor *common.Doctor, pathwayTag string) error
-	GetPatientIDFromAccountID(accountID int64) (int64, error)
-	AddDoctorToCareTeamForPatient(patientID, doctorID int64, pathwayTag string) error
-	UpdatePatientPharmacy(patientID int64, pharmacyDetails *pharmacy.PharmacyData) error
-	TrackPatientAgreements(patientID int64, agreements map[string]bool) error
-	PatientAgreements(patientID int64) (map[string]time.Time, error)
+	GetPatientIDFromAccountID(accountID int64) (common.PatientID, error)
+	AddDoctorToCareTeamForPatient(patientID common.PatientID, doctorID int64, pathwayTag string) error
+	UpdatePatientPharmacy(patientID common.PatientID, pharmacyDetails *pharmacy.PharmacyData) error
+	TrackPatientAgreements(patientID common.PatientID, agreements map[string]bool) error
+	PatientAgreements(patientID common.PatientID) (map[string]time.Time, error)
 	GetPatientFromPatientVisitID(patientVisitID int64) (patient *common.Patient, err error)
 	GetPatientFromTreatmentPlanID(treatmentPlanID int64) (patient *common.Patient, err error)
 	GetPatientsForIDs(patientIDs []int64) ([]*common.Patient, error)
@@ -75,23 +75,23 @@ type PatientAPI interface {
 	AddPharmacy(pharmacyDetails *pharmacy.PharmacyData) error
 	CreatePendingTask(workType, status string, itemID int64) (int64, error)
 	DeletePendingTask(pendingTaskID int64) error
-	AddCardForPatient(patientID int64, card *common.Card) error
-	MarkCardInactiveForPatient(patientID int64, card *common.Card) error
-	DeleteCardForPatient(patientID int64, card *common.Card) error
-	MakeLatestCardDefaultForPatient(patientID int64) (*common.Card, error)
-	MakeCardDefaultForPatient(patientID int64, card *common.Card) error
-	GetCardsForPatient(patientID int64) ([]*common.Card, error)
-	GetDefaultCardForPatient(patientID int64) (*common.Card, error)
+	AddCardForPatient(patientID common.PatientID, card *common.Card) error
+	MarkCardInactiveForPatient(patientID common.PatientID, card *common.Card) error
+	DeleteCardForPatient(patientID common.PatientID, card *common.Card) error
+	MakeLatestCardDefaultForPatient(patientID common.PatientID) (*common.Card, error)
+	MakeCardDefaultForPatient(patientID common.PatientID, card *common.Card) error
+	GetCardsForPatient(patientID common.PatientID) ([]*common.Card, error)
+	GetDefaultCardForPatient(patientID common.PatientID) (*common.Card, error)
 	GetCardFromID(cardID int64) (*common.Card, error)
 	GetCardFromThirdPartyID(thirdPartyID string) (*common.Card, error)
-	UpdateDefaultAddressForPatient(patientID int64, address *common.Address) error
+	UpdateDefaultAddressForPatient(patientID common.PatientID, address *common.Address) error
 	DeleteAddress(addressID int64) error
 	UpdatePatientPCP(pcp *common.PCP) error
-	DeletePatientPCP(patientID int64) error
-	UpdatePatientEmergencyContacts(patientID int64, emergencyContacts []*common.EmergencyContact) error
-	GetPatientPCP(patientID int64) (*common.PCP, error)
-	GetPatientEmergencyContacts(patientID int64) ([]*common.EmergencyContact, error)
-	GetActiveMembersOfCareTeamForPatient(patientID int64, fillInDetails bool) ([]*common.CareProviderAssignment, error)
+	DeletePatientPCP(patientID common.PatientID) error
+	UpdatePatientEmergencyContacts(patientID common.PatientID, emergencyContacts []*common.EmergencyContact) error
+	GetPatientPCP(patientID common.PatientID) (*common.PCP, error)
+	GetPatientEmergencyContacts(patientID common.PatientID) ([]*common.EmergencyContact, error)
+	GetActiveMembersOfCareTeamForPatient(patientID common.PatientID, fillInDetails bool) ([]*common.CareProviderAssignment, error)
 }
 
 type PathwayOption int
@@ -128,9 +128,9 @@ type MedicalRecordUpdate struct {
 }
 
 type MedicalRecordAPI interface {
-	MedicalRecordsForPatient(patientID int64) ([]*common.MedicalRecord, error)
+	MedicalRecordsForPatient(patientID common.PatientID) ([]*common.MedicalRecord, error)
 	MedicalRecord(id int64) (*common.MedicalRecord, error)
-	CreateMedicalRecord(patientID int64) (int64, error)
+	CreateMedicalRecord(patientID common.PatientID) (int64, error)
 	UpdateMedicalRecord(id int64, update *MedicalRecordUpdate) error
 }
 
@@ -141,7 +141,7 @@ type PatientCaseUpdate struct {
 }
 
 type PatientCaseAPI interface {
-	CasesForPathway(patientID int64, pathwayTag string, states []string) ([]*common.PatientCase, error)
+	CasesForPathway(patientID common.PatientID, pathwayTag string, states []string) ([]*common.PatientCase, error)
 	TimedOutCases() ([]*common.PatientCase, error)
 	GetDoctorsAssignedToPatientCase(patientCaseID int64) ([]*common.CareProviderAssignment, error)
 	GetActiveCareTeamMemberForCase(role string, patientCaseID int64) (*common.CareProviderAssignment, error)
@@ -153,11 +153,11 @@ type PatientCaseAPI interface {
 	GetActiveTreatmentPlanForCase(patientCaseID int64) (*common.TreatmentPlan, error)
 	GetTreatmentPlansForCase(patientCaseID int64) ([]*common.TreatmentPlan, error)
 	DeleteDraftTreatmentPlanByDoctorForCase(doctorID, patientCaseID int64) error
-	GetCasesForPatient(patientID int64, states []string) ([]*common.PatientCase, error)
+	GetCasesForPatient(patientID common.PatientID, states []string) ([]*common.PatientCase, error)
 	CaseCareTeams(caseIDs []int64) (map[int64]*common.PatientCareTeam, error)
 	GetVisitsForCase(patientCaseID int64, statuses []string) ([]*common.PatientVisit, error)
 	GetNotificationsForCase(patientCaseID int64, notificationTypeRegistry map[string]reflect.Type) ([]*common.CaseNotification, error)
-	NotificationsForCases(patientID int64, notificationTypeRegistry map[string]reflect.Type) (map[int64][]*common.CaseNotification, error)
+	NotificationsForCases(patientID common.PatientID, notificationTypeRegistry map[string]reflect.Type) (map[int64][]*common.CaseNotification, error)
 	GetNotificationCountForCase(patientCaseID int64) (int64, error)
 	InsertCaseNotification(caseNotificationItem *common.CaseNotification) error
 	DeleteCaseNotification(uid string, patientCaseID int64) error
@@ -230,23 +230,23 @@ type TreatmentPlanUpdate struct {
 }
 
 type PatientVisitAPI interface {
-	GetPatientIDFromPatientVisitID(patientVisitID int64) (int64, error)
+	GetPatientIDFromPatientVisitID(patientVisitID int64) (common.PatientID, error)
 	GetPatientVisitIDFromTreatmentPlanID(treatmentPlanID int64) (int64, error)
 	GetPatientVisitFromID(patientVisitID int64) (*common.PatientVisit, error)
-	GetPatientVisitForSKU(patientID int64, skuType string) (*common.PatientVisit, error)
-	VisitsSubmittedForPatientSince(patientID int64, since time.Time) ([]*common.PatientVisit, error)
+	GetPatientVisitForSKU(patientID common.PatientID, skuType string) (*common.PatientVisit, error)
+	VisitsSubmittedForPatientSince(patientID common.PatientID, since time.Time) ([]*common.PatientVisit, error)
 	GetPatientCaseIDFromPatientVisitID(patientVisitID int64) (int64, error)
 	PendingFollowupVisitForCase(caseID int64) (*common.PatientVisit, error)
 	CreatePatientVisit(visit *common.PatientVisit, requestedDoctorID *int64) (int64, error)
 	SetMessageForPatientVisit(patientVisitID int64, message string) error
 	GetMessageForPatientVisit(patientVisitID int64) (string, error)
-	GetPatientIDFromTreatmentPlanID(treatmentPlanID int64) (int64, error)
+	GetPatientIDFromTreatmentPlanID(treatmentPlanID int64) (common.PatientID, error)
 	UpdatePatientVisit(id int64, update *PatientVisitUpdate) (int, error)
 	UpdatePatientVisits(ids []int64, update *PatientVisitUpdate) error
-	AddTreatmentsForTreatmentPlan(treatments []*common.Treatment, doctorID, treatmentPlanID, patientID int64) error
+	AddTreatmentsForTreatmentPlan(treatments []*common.Treatment, doctorID, treatmentPlanID int64, patientID common.PatientID) error
 	GetTreatmentsBasedOnTreatmentPlanID(treatmentPlanID int64) ([]*common.Treatment, error)
 	GetTreatmentBasedOnPrescriptionID(erxID int64) (*common.Treatment, error)
-	GetTreatmentsForPatient(patientID int64) ([]*common.Treatment, error)
+	GetTreatmentsForPatient(patientID common.PatientID) ([]*common.Treatment, error)
 	GetTreatmentFromID(treatmentID int64) (*common.Treatment, error)
 	UpdateTreatmentWithPharmacyAndErxID(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorID int64) error
 	AddErxStatusEvent(treatments []*common.Treatment, prescriptionStatus common.StatusEvent) error
@@ -256,7 +256,7 @@ type PatientVisitAPI interface {
 	GetOldestVisitsInStatuses(max int, statuses []string) ([]*ItemAge, error)
 	UpdateDiagnosisForVisit(id, doctorID int64, diagnosis string) error
 	DiagnosisForVisit(visitID int64) (string, error)
-	DoesCaseExistForPatient(patientID, patientCaseID int64) (bool, error)
+	DoesCaseExistForPatient(patientID common.PatientID, patientCaseID int64) (bool, error)
 
 	AddAlertsForVisit(visitID int64, alerts []*common.Alert) error
 	AlertsForVisit(visitID int64) ([]*common.Alert, error)
@@ -264,8 +264,8 @@ type PatientVisitAPI interface {
 	// treatment plan
 	UpdateTreatmentPlan(treatmentPlanID int64, update *TreatmentPlanUpdate) error
 	MarkTPDeviatedFromContentSource(treatmentPlanID int64) error
-	GetActiveTreatmentPlansForPatient(patientID int64) ([]*common.TreatmentPlan, error)
-	GetTreatmentPlanForPatient(patientID, treatmentPlanID int64) (*common.TreatmentPlan, error)
+	GetActiveTreatmentPlansForPatient(patientID common.PatientID) ([]*common.TreatmentPlan, error)
+	GetTreatmentPlanForPatient(patientID common.PatientID, treatmentPlanID int64) (*common.TreatmentPlan, error)
 	IsRevisedTreatmentPlan(treatmentPlanID int64) (bool, error)
 	StartRXRoutingForTreatmentsAndTreatmentPlan(treatments []*common.Treatment, pharmacySentTo *pharmacy.PharmacyData, treatmentPlanID, doctorID int64) error
 	CreateRegimenPlanForTreatmentPlan(regimenPlan *common.RegimenPlan) error
@@ -293,27 +293,27 @@ type RefillRequestDenialReason struct {
 
 type PrescriptionsAPI interface {
 	GetPendingRefillRequestStatusEventsForClinic() ([]common.StatusEvent, error)
-	GetApprovedOrDeniedRefillRequestsForPatient(patientID int64) ([]common.StatusEvent, error)
+	GetApprovedOrDeniedRefillRequestsForPatient(patientID common.PatientID) ([]common.StatusEvent, error)
 	GetRefillStatusEventsForRefillRequest(refillRequestID int64) ([]common.StatusEvent, error)
 	CreateRefillRequest(*common.RefillRequestItem) error
 	AddRefillRequestStatusEvent(refillRequestStatus common.StatusEvent) error
 	FilterOutRefillRequestsThatExist(queueItemIDs []int64) ([]int64, error)
 	GetRefillRequestFromID(refillRequestID int64) (*common.RefillRequestItem, error)
 	GetRefillRequestFromPrescriptionID(prescriptionID int64) (*common.RefillRequestItem, error)
-	GetRefillRequestsForPatient(patientID int64) ([]*common.RefillRequestItem, error)
+	GetRefillRequestsForPatient(patientID common.PatientID) ([]*common.RefillRequestItem, error)
 	GetRefillRequestDenialReasons() ([]*RefillRequestDenialReason, error)
 	MarkRefillRequestAsApproved(prescriptionID, approvedRefillCount, rxRefillRequestID int64, comments string) error
 	MarkRefillRequestAsDenied(prescriptionID, denialReasonID, rxRefillRequestID int64, comments string) error
 	LinkRequestedPrescriptionToOriginalTreatment(requestedTreatment *common.Treatment, patient *common.Patient) error
 	AddUnlinkedTreatmentInEventOfDNTF(treatment *common.Treatment, refillRequestID int64) error
 	GetUnlinkedDNTFTreatment(treatmentID int64) (*common.Treatment, error)
-	GetUnlinkedDNTFTreatmentsForPatient(patientID int64) ([]*common.Treatment, error)
+	GetUnlinkedDNTFTreatmentsForPatient(patientID common.PatientID) ([]*common.Treatment, error)
 	GetUnlinkedDNTFTreatmentFromPrescriptionID(prescriptionID int64) (*common.Treatment, error)
 	AddTreatmentToTreatmentPlanInEventOfDNTF(treatment *common.Treatment, refillRequestID int64) error
 	UpdateUnlinkedDNTFTreatmentWithPharmacyAndErxID(treatment *common.Treatment, pharmacySentTo *pharmacy.PharmacyData, doctorID int64) error
 	AddErxStatusEventForDNTFTreatment(statusEvent common.StatusEvent) error
 	GetErxStatusEventsForDNTFTreatment(treatmentID int64) ([]common.StatusEvent, error)
-	GetErxStatusEventsForDNTFTreatmentBasedOnPatientID(patientID int64) ([]common.StatusEvent, error)
+	GetErxStatusEventsForDNTFTreatmentBasedOnPatientID(patientID common.PatientID) ([]common.StatusEvent, error)
 }
 
 type DrugDetailsQuery struct {
@@ -547,8 +547,8 @@ type IntakeInfo interface {
 }
 
 type IntakeAPI interface {
-	PatientPhotoSectionsForQuestionIDs(questionIDs []int64, patientID, patientVisitID int64) (map[int64][]common.Answer, error)
-	PreviousPatientAnswersForQuestions(questionTags []string, patientID int64, beforeTime time.Time) (map[string][]common.Answer, error)
+	PatientPhotoSectionsForQuestionIDs(questionIDs []int64, patientID common.PatientID, patientVisitID int64) (map[int64][]common.Answer, error)
+	PreviousPatientAnswersForQuestions(questionTags []string, patientID common.PatientID, beforeTime time.Time) (map[string][]common.Answer, error)
 	AnswersForQuestions(questionIDs []int64, info IntakeInfo) (map[int64][]common.Answer, error)
 	StoreAnswersForIntakes(intakes []IntakeInfo) error
 	StorePhotoSectionsForQuestion(questionID, patientID, patientVisitID int64, sessionID string, sessionCounter uint, photoSections []*common.PhotoIntakeSection) error
@@ -659,7 +659,7 @@ type NotificationAPI interface {
 	GetPushConfigDataForAccount(accountID int64) ([]*common.PushConfigData, error)
 	SetOrReplacePushConfigData(pConfigData *common.PushConfigData) error
 	GetCommunicationPreferencesForAccount(accountID int64) ([]*common.CommunicationPreference, error)
-	SetPushPromptStatus(patientID int64, pStatus common.PushPromptStatus) error
+	SetPushPromptStatus(accountID int64, pStatus common.PushPromptStatus) error
 	SnoozeConfigsForAccount(accountID int64) ([]*common.SnoozeConfig, error)
 }
 
@@ -731,7 +731,7 @@ type CostAPI interface {
 	GetActiveItemCost(skuType string) (*common.ItemCost, error)
 	GetItemCost(id int64) (*common.ItemCost, error)
 	CreatePatientReceipt(receipt *common.PatientReceipt) error
-	GetPatientReceipt(patientID, itemID int64, skuType string, includeLineItems bool) (*common.PatientReceipt, error)
+	GetPatientReceipt(patientID common.PatientID, itemID int64, skuType string, includeLineItems bool) (*common.PatientReceipt, error)
 	UpdatePatientReceipt(id int64, update *PatientReceiptUpdate) error
 	CreateDoctorTransaction(*common.DoctorTransaction) error
 	TransactionsForDoctor(doctorID int64) ([]*common.DoctorTransaction, error)
@@ -787,7 +787,7 @@ type ScheduledMessageAPI interface {
 	ScheduledMessageTemplates(eventType string) ([]*common.ScheduledMessageTemplate, error)
 	UpdateScheduledMessage(id int64, status common.ScheduledMessageStatus) error
 	UpdateScheduledMessageTemplate(*common.ScheduledMessageTemplate) error
-	DeactivateScheduledMessagesForPatient(patientID int64) (int64, error)
+	DeactivateScheduledMessagesForPatient(patientID common.PatientID) (int64, error)
 }
 
 type AccountPromotionUpdate struct {
@@ -848,8 +848,8 @@ type TextAPI interface {
 }
 
 type PatientFeedbackAPI interface {
-	PatientFeedbackRecorded(patientID int64, feedbackFor string) (bool, error)
-	RecordPatientFeedback(patientID int64, feedbackFor string, rating int, comment *string) error
+	PatientFeedbackRecorded(patientID common.PatientID, feedbackFor string) (bool, error)
+	RecordPatientFeedback(patientID common.PatientID, feedbackFor string, rating int, comment *string) error
 	PatientFeedback(feedbackFor string) ([]*common.PatientFeedback, error)
 }
 
@@ -872,21 +872,21 @@ type ParentalConsent interface {
 	// However, this doesn't update the patient because we can't allow the patient to do a visit until
 	// we've also collected the parent's identification photos. It returns true iff consent had not preivously
 	// been granted.
-	GrantParentChildConsent(parentPatientID, childPatientID int64, relationship string) (bool, error)
+	GrantParentChildConsent(parentPatientID, childPatientID common.PatientID, relationship string) (bool, error)
 	// ParentalConsentCompletedForPatient updates the patient record and visits to reflect consent has been granted
 	// and all necessary information has been recorded (identification photos).  It returns true iff consent had not
 	// previously been completed for the patient.
-	ParentalConsentCompletedForPatient(childPatientID int64) (bool, error)
+	ParentalConsentCompletedForPatient(childPatientID common.PatientID) (bool, error)
 	// ParentalConsent returns the consent status for a given child
-	ParentalConsent(childPatientID int64) ([]*common.ParentalConsent, error)
+	ParentalConsent(childPatientID common.PatientID) ([]*common.ParentalConsent, error)
 	// AllParentalConsent returns the full set of parent/child consent relationships which
 	// is a mapping from child's patient ID to the ParentalConsent model.
-	AllParentalConsent(parentPatientID int64) (map[int64]*common.ParentalConsent, error)
+	AllParentalConsent(parentPatientID common.PatientID) (map[common.PatientID]*common.ParentalConsent, error)
 	// UpsertParentConsentProof updates the proof of parental consent based on the
 	// data present in the object if it already exists, and inserts otherwise.
-	UpsertParentConsentProof(parentPatientID int64, proof *ParentalConsentProof) (int64, error)
+	UpsertParentConsentProof(parentPatientID common.PatientID, proof *ParentalConsentProof) (int64, error)
 	// ParentConsentProof returns an object that corresponds to the proof of ID verification.
-	ParentConsentProof(parentPatientID int64) (*ParentalConsentProof, error)
+	ParentConsentProof(parentPatientID common.PatientID) (*ParentalConsentProof, error)
 }
 
 // Tokens is a set of DAL functions that let you create temporary tokens to use for validation.

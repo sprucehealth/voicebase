@@ -168,7 +168,7 @@ func (h *patientsFeedHandler) serveGET(ctx context.Context, w http.ResponseWrite
 	for i, it := range items {
 		res.Items[i] = &PatientsFeedItem{
 			// Generate an ID unique to the contents of the item
-			ID:               fmt.Sprintf("%d:%d:%d:%d", it.DoctorID, it.PatientID, it.CaseID, it.LastVisitID),
+			ID:               fmt.Sprintf("%d:%s:%d:%d", it.DoctorID, it.PatientID, it.CaseID, it.LastVisitID),
 			PatientFirstName: it.PatientFirstName,
 			PatientLastName:  it.PatientLastName,
 			LastVisitTime:    it.LastVisitTime.Unix(),

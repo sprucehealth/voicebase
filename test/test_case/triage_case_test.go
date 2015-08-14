@@ -18,7 +18,7 @@ func TestPreSubmissionTriage(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	pr := test_integration.SignupRandomTestPatient(t, testData)
-	pc := test_integration.PatientClient(testData, t, pr.Patient.ID.Int64())
+	pc := test_integration.PatientClient(testData, t, pr.Patient.ID)
 
 	pv, err := pc.CreatePatientVisit(api.AcnePathwayTag, 0, setupTestHeaders())
 	test.OK(t, err)
@@ -38,7 +38,7 @@ func TestPreSubmissionTriage(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, true, pv.PatientVisitID != pv2.PatientVisitID)
 
-	cases, err := testData.DataAPI.GetCasesForPatient(pr.Patient.ID.Int64(), nil)
+	cases, err := testData.DataAPI.GetCasesForPatient(pr.Patient.ID, nil)
 	test.OK(t, err)
 	test.Equals(t, 2, len(cases))
 }

@@ -15,8 +15,8 @@ type patientVisitsHandler struct {
 }
 
 type request struct {
-	PatientID int64 `schema:"patient_id,required"`
-	CaseID    int64 `schema:"case_id"`
+	PatientID common.PatientID `schema:"patient_id,required"`
+	CaseID    int64            `schema:"case_id"`
 }
 
 // HACK: patientVisitItem embeds the patientVisit struct and then adds the health_condition_id
@@ -61,7 +61,7 @@ func (p *patientVisitsHandler) IsAuthorized(ctx context.Context, r *http.Request
 	}
 	requestCache[apiservice.CKPatient] = patient
 
-	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, account.Role, doctor.ID.Int64(), patient.ID.Int64(), p.DataAPI); err != nil {
+	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, account.Role, doctor.ID.Int64(), patient.ID, p.DataAPI); err != nil {
 		return false, err
 	}
 
@@ -74,7 +74,7 @@ func (p *patientVisitsHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 	requestData := requestCache[apiservice.CKRequestData].(*request)
 	var patientCase *common.PatientCase
 	if requestData.CaseID == 0 {
-		cases, err := p.DataAPI.GetCasesForPatient(patient.ID.Int64(), []string{common.PCStatusActive.String(), common.PCStatusInactive.String()})
+		cases, err := p.DataAPI.GetCasesForPatient(patient.ID, []string{common.PCStatusActive.String(), common.PCStatusInactive.String()})
 		if err != nil {
 			apiservice.WriteError(ctx, err, w, r)
 			return

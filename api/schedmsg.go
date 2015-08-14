@@ -265,11 +265,11 @@ func (d *dataService) UpdateScheduledMessage(id int64, status common.ScheduledMe
 }
 
 // DeactivateScheduledMessagesForPatient moves all scheduled messages that map to the provided patient id to the DEACTIVATED state and returns the number of rows affected
-func (d *dataService) DeactivateScheduledMessagesForPatient(patientID int64) (int64, error) {
+func (d *dataService) DeactivateScheduledMessagesForPatient(patientID common.PatientID) (int64, error) {
 	args := dbutil.MySQLVarArgs()
 	args.Append(`status`, common.SMDeactivated.String())
 	res, err := d.db.Exec(`
-		UPDATE scheduled_message SET `+args.Columns()+` 
+		UPDATE scheduled_message SET `+args.Columns()+`
 		WHERE patient_id = ?
 		AND status = (?)`, append(args.Values(), patientID, common.SMScheduled.String())...)
 	if err != nil {

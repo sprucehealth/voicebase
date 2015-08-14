@@ -35,7 +35,7 @@ func (u *pharmacyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 		return
 	}
 
-	if err := u.dataAPI.UpdatePatientPharmacy(patient.ID.Int64(), &pharmacy); err != nil {
+	if err := u.dataAPI.UpdatePatientPharmacy(patient.ID, &pharmacy); err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
 	}

@@ -95,7 +95,7 @@ func CreatePendingFollowup(
 		PatientCaseID:   patientCase.ID,
 		PathwayTag:      pathway.Tag,
 		Status:          common.PVStatusPending,
-		LayoutVersionID: encoding.NewObjectID(layoutVersionID),
+		LayoutVersionID: encoding.DeprecatedNewObjectID(layoutVersionID),
 		SKUType:         sku.Type,
 		IsFollowup:      true,
 	}
@@ -129,7 +129,7 @@ func checkLayoutVersionForFollowup(dataAPI api.DataAPI, publisher dispatch.Publi
 			return err
 		} else if layoutVersionID != visit.LayoutVersionID.Int64() {
 			layoutVersionToUpdate = &layoutVersionID
-			visit.LayoutVersionID = encoding.NewObjectID(layoutVersionID)
+			visit.LayoutVersionID = encoding.DeprecatedNewObjectID(layoutVersionID)
 		}
 
 		// update the layout and the status for this visit

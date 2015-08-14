@@ -49,7 +49,7 @@ func (m *messageHandler) IsAuthorized(ctx context.Context, r *http.Request) (boo
 	patientVisit, err := m.dataAPI.GetPatientVisitFromID(requestData.PatientVisitID)
 	if err != nil {
 		return false, err
-	} else if patientVisit.PatientID.Int64() != patientID {
+	} else if patientVisit.PatientID != patientID {
 		return false, apiservice.NewAccessForbiddenError()
 	}
 	requestCache[apiservice.CKPatientVisit] = patientVisit

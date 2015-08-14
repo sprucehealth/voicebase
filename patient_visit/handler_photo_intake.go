@@ -134,7 +134,7 @@ func (p *photoAnswerIntakeHandler) ServeHTTP(ctx context.Context, w http.Respons
 		}
 
 		if err := p.dataAPI.StorePhotoSectionsForQuestion(
-			photoIntake.QuestionID, patientID, requestData.PatientVisitID,
+			photoIntake.QuestionID, patientID.Int64(), requestData.PatientVisitID,
 			requestData.SessionID,
 			requestData.SessionCounter,
 			photoIntake.PhotoSections,

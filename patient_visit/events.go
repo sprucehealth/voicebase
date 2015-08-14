@@ -4,10 +4,11 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/analytics"
+	"github.com/sprucehealth/backend/common"
 )
 
 type DiagnosisModifiedEvent struct {
-	PatientID       int64
+	PatientID       common.PatientID
 	DoctorID        int64
 	PatientVisitID  int64
 	TreatmentPlanID int64
@@ -19,7 +20,7 @@ func (e *DiagnosisModifiedEvent) Events() []analytics.Event {
 		&analytics.ServerEvent{
 			Event:           "diagnosis_modified",
 			Timestamp:       analytics.Time(time.Now()),
-			PatientID:       e.PatientID,
+			PatientID:       e.PatientID.Int64(),
 			DoctorID:        e.DoctorID,
 			VisitID:         e.PatientVisitID,
 			CaseID:          e.PatientCaseID,
@@ -30,7 +31,7 @@ func (e *DiagnosisModifiedEvent) Events() []analytics.Event {
 
 type PatientVisitMarkedUnsuitableEvent struct {
 	PatientVisitID int64
-	PatientID      int64
+	PatientID      common.PatientID
 	CaseID         int64
 	DoctorID       int64
 	Reason         string
@@ -41,7 +42,7 @@ func (e *PatientVisitMarkedUnsuitableEvent) Events() []analytics.Event {
 		&analytics.ServerEvent{
 			Event:     "visit_marked_unsuitable",
 			Timestamp: analytics.Time(time.Now()),
-			PatientID: e.PatientID,
+			PatientID: e.PatientID.Int64(),
 			DoctorID:  e.DoctorID,
 			VisitID:   e.PatientVisitID,
 			CaseID:    e.CaseID,

@@ -173,7 +173,7 @@ func (d *doctorTreatmentPlanHandler) IsAuthorized(ctx context.Context, r *http.R
 			r.Method,
 			account.Role,
 			doctorID,
-			patientCase.PatientID.Int64(),
+			patientCase.PatientID,
 			patientCase.ID.Int64(),
 			d.dataAPI); err != nil {
 			return false, err
@@ -366,9 +366,9 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(ctx context.Context, w h
 	}
 
 	tp := &common.TreatmentPlan{
-		PatientID:     patientCase.PatientID.Int64(),
+		PatientID:     patientCase.PatientID,
 		PatientCaseID: patientCase.ID,
-		DoctorID:      encoding.NewObjectID(doctorID),
+		DoctorID:      encoding.DeprecatedNewObjectID(doctorID),
 		Parent:        requestData.TPParent,
 		ContentSource: requestData.TPContentSource,
 	}

@@ -113,7 +113,7 @@ func (h *handler) IsAuthorized(ctx context.Context, r *http.Request) (bool, erro
 			if err != nil {
 				return false, err
 			}
-			personID, err = h.dataAPI.GetPersonIDByRole(api.RolePatient, patientID)
+			personID, err = h.dataAPI.GetPersonIDByRole(api.RolePatient, patientID.Int64())
 			if err != nil {
 				return false, err
 			}

@@ -61,10 +61,10 @@ func (m *mockHomeHandlerDataAPI) State(stateCode string) (string, string, error)
 func (m *mockHomeHandlerDataAPI) GetPatientFromAccountID(accountID int64) (*common.Patient, error) {
 	return m.patient, nil
 }
-func (m *mockHomeHandlerDataAPI) GetPatientIDFromAccountID(accountID int64) (int64, error) {
-	return 1, nil
+func (m *mockHomeHandlerDataAPI) GetPatientIDFromAccountID(accountID int64) (common.PatientID, error) {
+	return common.NewPatientID(1), nil
 }
-func (m *mockHomeHandlerDataAPI) GetCasesForPatient(patientID int64, states []string) ([]*common.PatientCase, error) {
+func (m *mockHomeHandlerDataAPI) GetCasesForPatient(patientID common.PatientID, states []string) ([]*common.PatientCase, error) {
 	return m.patientCases, nil
 }
 func (m *mockHomeHandlerDataAPI) GetPatientVisitFromID(visitID int64) (*common.PatientVisit, error) {
@@ -81,7 +81,7 @@ func (m *mockHomeHandlerDataAPI) PathwayForTag(tag string, opts api.PathwayOptio
 func (m *mockHomeHandlerDataAPI) SpruceAvailableInState(stateAbbreviation string) (bool, error) {
 	return m.isElligible, nil
 }
-func (m *mockHomeHandlerDataAPI) NotificationsForCases(patientID int64, types map[string]reflect.Type) (map[int64][]*common.CaseNotification, error) {
+func (m *mockHomeHandlerDataAPI) NotificationsForCases(patientID common.PatientID, types map[string]reflect.Type) (map[int64][]*common.CaseNotification, error) {
 	return m.caseNotifications, nil
 }
 func (m *mockHomeHandlerDataAPI) CaseCareTeams(caseIDs []int64) (map[int64]*common.PatientCareTeam, error) {
@@ -108,13 +108,13 @@ func (m *mockHomeHandlerDataAPI) GetTreatmentPlansForCase(caseID int64) ([]*comm
 func (m *mockHomeHandlerDataAPI) FormEntryExists(tableName, uniqueKey string) (bool, error) {
 	return m.formEntryExists, nil
 }
-func (m *mockHomeHandlerDataAPI) PatientLocation(patientID int64) (zipcode string, state string, err error) {
+func (m *mockHomeHandlerDataAPI) PatientLocation(patientID common.PatientID) (zipcode string, state string, err error) {
 	return m.patientZipcode, "", nil
 }
 func (m *mockHomeHandlerDataAPI) DefaultReferralProgramTemplate(types map[string]reflect.Type) (*common.ReferralProgramTemplate, error) {
 	return m.referralProgramTemplate, m.activeReferralProgramTemplateErr
 }
-func (m *mockHomeHandlerDataAPI) Patient(id int64, basicInfoOnly bool) (*common.Patient, error) {
+func (m *mockHomeHandlerDataAPI) Patient(id common.PatientID, basicInfoOnly bool) (*common.Patient, error) {
 	return m.patient, nil
 }
 func (m *mockHomeHandlerDataAPI) ActiveReferralProgramForAccount(accountID int64, types map[string]reflect.Type) (*common.ReferralProgram, error) {
@@ -304,8 +304,8 @@ func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:         encoding.NewObjectID(1),
-			PatientID:  encoding.NewObjectID(2),
+			ID:         encoding.DeprecatedNewObjectID(1),
+			PatientID:  common.NewPatientID(2),
 			PathwayTag: "rash",
 			Name:       caseName,
 			Status:     common.PCStatusOpen,
@@ -313,7 +313,7 @@ func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 	}
 
 	dataAPI.patient = &common.Patient{
-		AccountID: encoding.NewObjectID(1),
+		AccountID: encoding.DeprecatedNewObjectID(1),
 	}
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
@@ -344,7 +344,7 @@ func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 
 	dataAPI.patientVisits = []*common.PatientVisit{
 		{
-			ID:     encoding.NewObjectID(patientVisitID),
+			ID:     encoding.DeprecatedNewObjectID(patientVisitID),
 			Status: common.PVStatusOpen,
 		},
 	}
@@ -393,8 +393,8 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:         encoding.NewObjectID(1),
-			PatientID:  encoding.NewObjectID(2),
+			ID:         encoding.DeprecatedNewObjectID(1),
+			PatientID:  common.NewPatientID(2),
 			PathwayTag: "rash",
 			Name:       caseName,
 			Status:     common.PCStatusOpen,
@@ -402,7 +402,7 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 	}
 
 	dataAPI.patient = &common.Patient{
-		AccountID: encoding.NewObjectID(1),
+		AccountID: encoding.DeprecatedNewObjectID(1),
 	}
 
 	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, 1)
@@ -442,7 +442,7 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 
 	dataAPI.patientVisits = []*common.PatientVisit{
 		{
-			ID:     encoding.NewObjectID(patientVisitID),
+			ID:     encoding.DeprecatedNewObjectID(patientVisitID),
 			Status: common.PVStatusOpen,
 		},
 	}
@@ -491,8 +491,8 @@ func TestHome_Authenticated_CaseTriaged(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:         encoding.NewObjectID(1),
-			PatientID:  encoding.NewObjectID(2),
+			ID:         encoding.DeprecatedNewObjectID(1),
+			PatientID:  common.NewPatientID(2),
 			PathwayTag: "rash",
 			Name:       caseName,
 			Status:     common.PCStatusPreSubmissionTriage,
@@ -501,7 +501,7 @@ func TestHome_Authenticated_CaseTriaged(t *testing.T) {
 	}
 
 	dataAPI.patient = &common.Patient{
-		AccountID: encoding.NewObjectID(1),
+		AccountID: encoding.DeprecatedNewObjectID(1),
 	}
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
@@ -581,8 +581,8 @@ func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:         encoding.NewObjectID(1),
-			PatientID:  encoding.NewObjectID(2),
+			ID:         encoding.DeprecatedNewObjectID(1),
+			PatientID:  common.NewPatientID(2),
 			PathwayTag: "rash",
 			Name:       caseName,
 			Status:     common.PCStatusActive,
@@ -590,7 +590,7 @@ func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 	}
 
 	dataAPI.patient = &common.Patient{
-		AccountID: encoding.NewObjectID(1),
+		AccountID: encoding.DeprecatedNewObjectID(1),
 	}
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
@@ -670,8 +670,8 @@ func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:         encoding.NewObjectID(1),
-			PatientID:  encoding.NewObjectID(2),
+			ID:         encoding.DeprecatedNewObjectID(1),
+			PatientID:  common.NewPatientID(2),
 			PathwayTag: "rash",
 			Name:       caseName,
 			Status:     common.PCStatusActive,
@@ -680,7 +680,7 @@ func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 	}
 
 	dataAPI.patient = &common.Patient{
-		AccountID: encoding.NewObjectID(1),
+		AccountID: encoding.DeprecatedNewObjectID(1),
 	}
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
@@ -764,8 +764,8 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:         encoding.NewObjectID(1),
-			PatientID:  encoding.NewObjectID(2),
+			ID:         encoding.DeprecatedNewObjectID(1),
+			PatientID:  common.NewPatientID(2),
 			PathwayTag: "rash",
 			Name:       caseName,
 			Status:     common.PCStatusActive,
@@ -773,7 +773,7 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 	}
 
 	dataAPI.patient = &common.Patient{
-		AccountID: encoding.NewObjectID(1),
+		AccountID: encoding.DeprecatedNewObjectID(1),
 	}
 
 	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleCC, 1)
@@ -857,15 +857,15 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:         encoding.NewObjectID(1),
-			PatientID:  encoding.NewObjectID(2),
+			ID:         encoding.DeprecatedNewObjectID(1),
+			PatientID:  common.NewPatientID(2),
 			PathwayTag: "rash",
 			Name:       caseName,
 			Status:     common.PCStatusActive,
 		},
 	}
 	dataAPI.patient = &common.Patient{
-		AccountID: encoding.NewObjectID(1),
+		AccountID: encoding.DeprecatedNewObjectID(1),
 	}
 
 	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleCC, 1)
@@ -961,8 +961,8 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:         encoding.NewObjectID(1),
-			PatientID:  encoding.NewObjectID(2),
+			ID:         encoding.DeprecatedNewObjectID(1),
+			PatientID:  common.NewPatientID(2),
 			PathwayTag: "rash",
 			Name:       caseName,
 			Status:     common.PCStatusActive,
@@ -971,7 +971,7 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 	}
 
 	dataAPI.patient = &common.Patient{
-		AccountID: encoding.NewObjectID(1),
+		AccountID: encoding.DeprecatedNewObjectID(1),
 	}
 
 	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleCC, 1)
@@ -1065,8 +1065,8 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:         encoding.NewObjectID(1),
-			PatientID:  encoding.NewObjectID(2),
+			ID:         encoding.DeprecatedNewObjectID(1),
+			PatientID:  common.NewPatientID(2),
 			PathwayTag: "rash",
 			Name:       caseName,
 			Status:     common.PCStatusActive,
@@ -1075,13 +1075,13 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 	}
 
 	dataAPI.patient = &common.Patient{
-		AccountID: encoding.NewObjectID(1),
+		AccountID: encoding.DeprecatedNewObjectID(1),
 	}
 
 	dataAPI.patientVisits = []*common.PatientVisit{
 		{
-			ID:            encoding.NewObjectID(1),
-			PatientCaseID: encoding.NewObjectID(1),
+			ID:            encoding.DeprecatedNewObjectID(1),
+			PatientCaseID: encoding.DeprecatedNewObjectID(1),
 			Status:        common.PVStatusTreated,
 		},
 	}
@@ -1179,8 +1179,8 @@ func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:         encoding.NewObjectID(1),
-			PatientID:  encoding.NewObjectID(2),
+			ID:         encoding.DeprecatedNewObjectID(1),
+			PatientID:  common.NewPatientID(2),
 			PathwayTag: "rash",
 			Name:       caseName,
 			Status:     common.PCStatusActive,
@@ -1189,13 +1189,13 @@ func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 	}
 
 	dataAPI.patient = &common.Patient{
-		AccountID: encoding.NewObjectID(1),
+		AccountID: encoding.DeprecatedNewObjectID(1),
 	}
 
 	dataAPI.patientVisits = []*common.PatientVisit{
 		{
-			ID:            encoding.NewObjectID(1),
-			PatientCaseID: encoding.NewObjectID(1),
+			ID:            encoding.DeprecatedNewObjectID(1),
+			PatientCaseID: encoding.DeprecatedNewObjectID(1),
 			Status:        common.PVStatusTreated,
 		},
 	}
@@ -1296,8 +1296,8 @@ func TestHome_Authenticated_NoUpdates(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:         encoding.NewObjectID(1),
-			PatientID:  encoding.NewObjectID(2),
+			ID:         encoding.DeprecatedNewObjectID(1),
+			PatientID:  common.NewPatientID(2),
 			PathwayTag: "rash",
 			Name:       caseName,
 			Status:     common.PCStatusActive,
@@ -1306,7 +1306,7 @@ func TestHome_Authenticated_NoUpdates(t *testing.T) {
 	}
 
 	dataAPI.patient = &common.Patient{
-		AccountID: encoding.NewObjectID(1),
+		AccountID: encoding.DeprecatedNewObjectID(1),
 	}
 
 	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, 2)
@@ -1379,8 +1379,8 @@ func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:         encoding.NewObjectID(1),
-			PatientID:  encoding.NewObjectID(2),
+			ID:         encoding.DeprecatedNewObjectID(1),
+			PatientID:  common.NewPatientID(2),
 			PathwayTag: "rash",
 			Name:       caseName,
 			Status:     common.PCStatusActive,
@@ -1389,13 +1389,13 @@ func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 	}
 
 	dataAPI.patient = &common.Patient{
-		AccountID: encoding.NewObjectID(1),
+		AccountID: encoding.DeprecatedNewObjectID(1),
 	}
 
 	dataAPI.patientVisits = []*common.PatientVisit{
 		{
-			ID:            encoding.NewObjectID(1),
-			PatientCaseID: encoding.NewObjectID(1),
+			ID:            encoding.DeprecatedNewObjectID(1),
+			PatientCaseID: encoding.DeprecatedNewObjectID(1),
 			Status:        common.PVStatusTreated,
 		},
 	}
@@ -1480,8 +1480,8 @@ func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:         encoding.NewObjectID(1),
-			PatientID:  encoding.NewObjectID(2),
+			ID:         encoding.DeprecatedNewObjectID(1),
+			PatientID:  common.NewPatientID(2),
 			PathwayTag: "rash",
 			Name:       caseName,
 			Status:     common.PCStatusActive,
@@ -1490,13 +1490,13 @@ func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 	}
 
 	dataAPI.patient = &common.Patient{
-		AccountID: encoding.NewObjectID(1),
+		AccountID: encoding.DeprecatedNewObjectID(1),
 	}
 
 	dataAPI.patientVisits = []*common.PatientVisit{
 		{
-			ID:            encoding.NewObjectID(1),
-			PatientCaseID: encoding.NewObjectID(1),
+			ID:            encoding.DeprecatedNewObjectID(1),
+			PatientCaseID: encoding.DeprecatedNewObjectID(1),
 			Status:        common.PVStatusTreated,
 		},
 	}
@@ -1602,8 +1602,8 @@ func TestHome_Authenticated_CompletedCase_ReferAFriend_2_0_2(t *testing.T) {
 	dataAPI.accountCode = &accountCode
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:         encoding.NewObjectID(1),
-			PatientID:  encoding.NewObjectID(2),
+			ID:         encoding.DeprecatedNewObjectID(1),
+			PatientID:  common.NewPatientID(2),
 			PathwayTag: "rash",
 			Name:       caseName,
 			Status:     common.PCStatusActive,
@@ -1612,13 +1612,13 @@ func TestHome_Authenticated_CompletedCase_ReferAFriend_2_0_2(t *testing.T) {
 	}
 
 	dataAPI.patient = &common.Patient{
-		AccountID: encoding.NewObjectID(1),
+		AccountID: encoding.DeprecatedNewObjectID(1),
 	}
 
 	dataAPI.patientVisits = []*common.PatientVisit{
 		{
-			ID:            encoding.NewObjectID(1),
-			PatientCaseID: encoding.NewObjectID(1),
+			ID:            encoding.DeprecatedNewObjectID(1),
+			PatientCaseID: encoding.DeprecatedNewObjectID(1),
 			Status:        common.PVStatusTreated,
 		},
 	}
@@ -1724,15 +1724,15 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:         encoding.NewObjectID(1),
-			PatientID:  encoding.NewObjectID(2),
+			ID:         encoding.DeprecatedNewObjectID(1),
+			PatientID:  common.NewPatientID(2),
 			PathwayTag: "rash",
 			Name:       caseName1,
 			Status:     common.PCStatusOpen,
 		},
 		{
-			ID:         encoding.NewObjectID(2),
-			PatientID:  encoding.NewObjectID(2),
+			ID:         encoding.DeprecatedNewObjectID(2),
+			PatientID:  common.NewPatientID(2),
 			PathwayTag: "rash",
 			Name:       caseName2,
 			Status:     common.PCStatusOpen,
@@ -1740,7 +1740,7 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 	}
 
 	dataAPI.patient = &common.Patient{
-		AccountID: encoding.NewObjectID(1),
+		AccountID: encoding.DeprecatedNewObjectID(1),
 	}
 
 	maDisplayName := "Care Coordinator"
@@ -1796,11 +1796,11 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 
 	dataAPI.patientVisits = []*common.PatientVisit{
 		{
-			ID:     encoding.NewObjectID(1),
+			ID:     encoding.DeprecatedNewObjectID(1),
 			Status: common.PVStatusOpen,
 		},
 		{
-			ID:     encoding.NewObjectID(2),
+			ID:     encoding.DeprecatedNewObjectID(2),
 			Status: common.PVStatusOpen,
 		},
 	}
@@ -1853,16 +1853,16 @@ func TestHome_MultipleCases_TPPending(t *testing.T) {
 
 	dataAPI.patientCases = []*common.PatientCase{
 		{
-			ID:         encoding.NewObjectID(1),
-			PatientID:  encoding.NewObjectID(2),
+			ID:         encoding.DeprecatedNewObjectID(1),
+			PatientID:  common.NewPatientID(2),
 			PathwayTag: "rash",
 			Name:       caseName1,
 			Status:     common.PCStatusActive,
 			Claimed:    true,
 		},
 		{
-			ID:         encoding.NewObjectID(2),
-			PatientID:  encoding.NewObjectID(2),
+			ID:         encoding.DeprecatedNewObjectID(2),
+			PatientID:  common.NewPatientID(2),
 			PathwayTag: "rash",
 			Name:       caseName2,
 			Status:     common.PCStatusActive,
@@ -1871,7 +1871,7 @@ func TestHome_MultipleCases_TPPending(t *testing.T) {
 	}
 
 	dataAPI.patient = &common.Patient{
-		AccountID: encoding.NewObjectID(1),
+		AccountID: encoding.DeprecatedNewObjectID(1),
 	}
 
 	maDisplayName := "Care Coordinator"

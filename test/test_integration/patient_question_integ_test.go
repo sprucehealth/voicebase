@@ -49,7 +49,7 @@ func TestAdditionalFieldsInAutocompleteQuestion(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	patientSignedUpResponse := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.ID.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedUpResponse.Patient.ID, testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {

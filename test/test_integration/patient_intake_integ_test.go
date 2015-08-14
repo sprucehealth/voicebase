@@ -65,7 +65,7 @@ func TestSingleSelectIntake(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := CreatePatientVisitForPatient(pr.Patient.ID.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(pr.Patient.ID, testData, t)
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
@@ -87,10 +87,10 @@ func TestSingleSelectIntake(t *testing.T) {
 		},
 	}
 	// now, lets go ahead and answer the question for the patient
-	SubmitAnswersIntakeForPatient(pr.Patient.ID.Int64(), pr.Patient.AccountID.Int64(), &rb, testData, t)
+	SubmitAnswersIntakeForPatient(pr.Patient.ID, pr.Patient.AccountID.Int64(), &rb, testData, t)
 
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = GetPatientVisitForPatient(pr.Patient.ID.Int64(), testData, t)
+	patientVisitResponse = GetPatientVisitForPatient(pr.Patient.ID, testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
@@ -121,7 +121,7 @@ func TestMultipleChoiceIntake(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := CreatePatientVisitForPatient(pr.Patient.ID.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(pr.Patient.ID, testData, t)
 
 	// now lets go ahead and try and answer the question about the reason for visit given that it is
 	// single select
@@ -145,10 +145,10 @@ func TestMultipleChoiceIntake(t *testing.T) {
 	}
 	intakeData.Questions = []*apiservice.QuestionAnswerItem{qaItem}
 
-	SubmitAnswersIntakeForPatient(pr.Patient.ID.Int64(), pr.Patient.AccountID.Int64(), &intakeData, testData, t)
+	SubmitAnswersIntakeForPatient(pr.Patient.ID, pr.Patient.AccountID.Int64(), &intakeData, testData, t)
 
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = GetPatientVisitForPatient(pr.Patient.ID.Int64(), testData, t)
+	patientVisitResponse = GetPatientVisitForPatient(pr.Patient.ID, testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
@@ -185,7 +185,7 @@ func TestSingleEntryIntake(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := CreatePatientVisitForPatient(pr.Patient.ID.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(pr.Patient.ID, testData, t)
 
 	questionID := getQuestionWithTagAndExpectedType("q_other_skin_condition_entry", "q_type_single_entry", t, testData)
 	potentialAnswerID := getAnswerWithTagAndExpectedType("a_other_skin_condition_entry", "a_type_single_entry", questionID, testData, t)
@@ -197,10 +197,10 @@ func TestSingleEntryIntake(t *testing.T) {
 		AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: potentialAnswerID, AnswerText: "testAnswer"}},
 	}
 	intakeData.Questions = []*apiservice.QuestionAnswerItem{qaItem}
-	SubmitAnswersIntakeForPatient(pr.Patient.ID.Int64(), pr.Patient.AccountID.Int64(), &intakeData, testData, t)
+	SubmitAnswersIntakeForPatient(pr.Patient.ID, pr.Patient.AccountID.Int64(), &intakeData, testData, t)
 
 	// now, get the patient visit again to ensure that a patient answer was registered for the intended question
-	patientVisitResponse = GetPatientVisitForPatient(pr.Patient.ID.Int64(), testData, t)
+	patientVisitResponse = GetPatientVisitForPatient(pr.Patient.ID, testData, t)
 
 	// lets go through the questions to find the one for which the patient answer should be present
 	for _, section := range patientVisitResponse.ClientLayout.Sections {
@@ -229,11 +229,11 @@ func TestFreeTextEntryIntake(t *testing.T) {
 
 	// signup a random test patient for which to answer questions
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := CreatePatientVisitForPatient(pr.Patient.ID.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(pr.Patient.ID, testData, t)
 	freeTextResponse := "This is a free text response that should be accepted as a response for free text."
 	submitFreeTextResponseForPatient(
 		patientVisitResponse,
-		pr.Patient.ID.Int64(),
+		pr.Patient.ID,
 		pr.Patient.AccountID.Int64(),
 		freeTextResponse,
 		testData,
@@ -244,7 +244,7 @@ func TestFreeTextEntryIntake(t *testing.T) {
 	updatedFreeTextResponse := "This is an updated free text response"
 	submitFreeTextResponseForPatient(
 		patientVisitResponse,
-		pr.Patient.ID.Int64(),
+		pr.Patient.ID,
 		pr.Patient.AccountID.Int64(),
 		updatedFreeTextResponse,
 		testData,
@@ -263,7 +263,7 @@ func TestIntake_ClientOrdering(t *testing.T) {
 	// signup a random test patient for which to answer questions
 	pr := SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	pv := CreatePatientVisitForPatient(
-		pr.Patient.ID.Int64(),
+		pr.Patient.ID,
 		testData,
 		t)
 
@@ -285,7 +285,7 @@ func TestIntake_ClientOrdering(t *testing.T) {
 	}
 
 	SubmitAnswersIntakeForPatient(
-		pr.Patient.ID.Int64(),
+		pr.Patient.ID,
 		pr.Patient.AccountID.Int64(),
 		&rb,
 		testData, t)
@@ -307,14 +307,14 @@ func TestIntake_ClientOrdering(t *testing.T) {
 		},
 	}
 
-	SubmitAnswersIntakeForPatient(pr.Patient.ID.Int64(), pr.Patient.AccountID.Int64(), &rb, testData, t)
+	SubmitAnswersIntakeForPatient(pr.Patient.ID, pr.Patient.AccountID.Int64(), &rb, testData, t)
 
 	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(pv.PatientVisitID)
 	test.OK(t, err)
 
 	// the second response should be rejected given that it was an older response
 	answers, err := testData.DataAPI.AnswersForQuestions([]int64{questionID}, &api.PatientIntake{
-		PatientID:      pr.Patient.ID.Int64(),
+		PatientID:      pr.Patient.ID,
 		PatientVisitID: patientVisit.ID.Int64(),
 		LVersionID:     patientVisit.LayoutVersionID.Int64(),
 	})
@@ -324,7 +324,7 @@ func TestIntake_ClientOrdering(t *testing.T) {
 
 func submitFreeTextResponseForPatient(
 	patientVisitResponse *patient.PatientVisitResponse,
-	patientID, patientAccountID int64,
+	patientID common.PatientID, patientAccountID int64,
 	freeTextResponse string,
 	testData *TestData,
 	t *testing.T) {

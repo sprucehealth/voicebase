@@ -122,7 +122,7 @@ func TestAddTreatments(t *testing.T) {
 		TreatmentPlanID:  treatmentPlan.ID,
 		DosageStrength:   "Strength1",
 		DispenseValue:    1,
-		DispenseUnitID:   encoding.NewObjectID(26),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -145,7 +145,7 @@ func TestAddTreatments(t *testing.T) {
 		TreatmentPlanID:  treatmentPlan.ID,
 		DosageStrength:   "Strength2",
 		DispenseValue:    2,
-		DispenseUnitID:   encoding.NewObjectID(27),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(27),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 3,
@@ -208,7 +208,7 @@ func TestAddTreatments_FallbackToSelectMedication(t *testing.T) {
 		DrugInternalName: "Drug10 (Route10 - Form10)",
 		DosageStrength:   "Strength1",
 		DispenseValue:    1,
-		DispenseUnitID:   encoding.NewObjectID(26),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -269,7 +269,7 @@ func TestTreatmentTemplates(t *testing.T) {
 		DrugInternalName: "Drug1 (Route1 - Form1)",
 		DosageStrength:   "Strength1",
 		DispenseValue:    1,
-		DispenseUnitID:   encoding.NewObjectID(26),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -342,7 +342,7 @@ func TestTreatmentTemplates(t *testing.T) {
 		DrugInternalName: "Drug2 (Route2 - Form2)",
 		DosageStrength:   "Strength2",
 		DispenseValue:    1,
-		DispenseUnitID:   encoding.NewObjectID(26),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -443,7 +443,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		DrugInternalName: "Drug1 (Route1 - Form1)",
 		DosageStrength:   "Strength1",
 		DispenseValue:    1,
-		DispenseUnitID:   encoding.NewObjectID(26),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -506,7 +506,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		DrugInternalName: "Drug2 (Route2 - Form2)",
 		DosageStrength:   "Strength2",
 		DispenseValue:    1,
-		DispenseUnitID:   encoding.NewObjectID(26),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -586,8 +586,8 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 	}
 
 	// now, lets go ahead and add a treatment to the patient visit from a favorite treatment
-	treatment1.DoctorTreatmentTemplateID = encoding.NewObjectID(treatmentTemplatesResponse.TreatmentTemplates[0].ID.Int64())
-	treatment2.DoctorTreatmentTemplateID = encoding.NewObjectID(treatmentTemplatesResponse.TreatmentTemplates[1].ID.Int64())
+	treatment1.DoctorTreatmentTemplateID = encoding.DeprecatedNewObjectID(treatmentTemplatesResponse.TreatmentTemplates[0].ID.Int64())
+	treatment2.DoctorTreatmentTemplateID = encoding.DeprecatedNewObjectID(treatmentTemplatesResponse.TreatmentTemplates[1].ID.Int64())
 	getTreatmentsResponse = AddAndGetTreatmentsForPatientVisit(testData, []*common.Treatment{treatment1, treatment2}, doctor.AccountID.Int64(), treatmentPlan.ID.Int64(), t)
 
 	if len(getTreatmentsResponse.TreatmentList.Treatments) != 2 {
@@ -598,7 +598,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 		t.Fatal("Expected the doctorFavoriteId to be set for both treatments given that they were added from favorites")
 	}
 
-	treatmentTemplate.ID = encoding.NewObjectID(getTreatmentsResponse.TreatmentList.Treatments[0].DoctorTreatmentTemplateID.Int64())
+	treatmentTemplate.ID = encoding.DeprecatedNewObjectID(getTreatmentsResponse.TreatmentList.Treatments[0].DoctorTreatmentTemplateID.Int64())
 	treatmentTemplate.Treatment = getTreatmentsResponse.TreatmentList.Treatments[0]
 	treatmentTemplatesRequest.TreatmentTemplates = []*common.DoctorTreatmentTemplate{treatmentTemplate}
 	treatmentTemplatesRequest.TreatmentPlanID = treatmentPlan.ID
@@ -657,7 +657,7 @@ func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
 		DrugInternalName: "Drug1 (Route1 - Form1)",
 		DosageStrength:   "Strength1",
 		DispenseValue:    1,
-		DispenseUnitID:   encoding.NewObjectID(26),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/errors"
@@ -54,7 +55,7 @@ const (
 	varParentFrequentlyAskedQuestionsURLName = "parent_faq_url"
 	varParentFirstNameName                   = "parent_first_name"
 	faqURLPath                               = "/pc/faq"
-	medRecordURLPathFormatString             = "/pc/%d/medrecord"
+	medRecordURLPathFormatString             = "/pc/%s/medrecord"
 )
 
 // InitListeners bootstraps the listeners related to email campaigns triggered by events in the system
@@ -112,13 +113,13 @@ func InitListeners(dispatch *dispatch.Dispatcher, cfgStore cfg.Store, emailServi
 	})
 }
 
-func sendToPatientParent(childPatientID int64, emailType, webDomain string, opt email.Option, emailService email.Service, dataAPI api.DataAPI, cfgStore cfg.Store) error {
+func sendToPatientParent(childPatientID common.PatientID, emailType, webDomain string, opt email.Option, emailService email.Service, dataAPI api.DataAPI, cfgStore cfg.Store) error {
 	faqURL := httpsURL(webDomain, faqURLPath)
 	patient, err := dataAPI.Patient(childPatientID, true)
 	if err != nil {
-		return errors.Trace(fmt.Errorf("Failed to send %s email to parent account of child patient id %d: %s", emailType, childPatientID, err))
+		return errors.Trace(fmt.Errorf("Failed to send %s email to parent account of child patient id %s: %s", emailType, childPatientID, err))
 	}
-	medRecordURL := httpsURL(webDomain, medRecordURLPathFormatString, patient.ID.Int64())
+	medRecordURL := httpsURL(webDomain, medRecordURLPathFormatString, patient.ID)
 	if patient.IsUnder18() && patient.HasParentalConsent {
 		consents, err := dataAPI.ParentalConsent(childPatientID)
 		if err != nil {

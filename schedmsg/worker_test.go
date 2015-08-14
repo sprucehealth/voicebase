@@ -83,14 +83,14 @@ func TestScheduledMessage_FromActiveDoctor(t *testing.T) {
 
 	data := &mockedDataAPI_WorkerTest{
 		PCase: &common.PatientCase{
-			ID: encoding.NewObjectID(1),
+			ID: encoding.DeprecatedNewObjectID(1),
 		},
 		TPSM: &common.TreatmentPlanScheduledMessage{},
 		TP: &common.TreatmentPlan{
 			Status:        api.StatusActive,
-			DoctorID:      encoding.NewObjectID(doctorOnTPID),
-			PatientCaseID: encoding.NewObjectID(1),
-			PatientID:     1,
+			DoctorID:      encoding.DeprecatedNewObjectID(doctorOnTPID),
+			PatientCaseID: encoding.DeprecatedNewObjectID(1),
+			PatientID:     common.NewPatientID(1),
 		},
 		PersonID: map[int64]int64{
 			activeDoctorOnCareTeamID: activeDoctorOnCareTeamID,
@@ -134,9 +134,9 @@ func TestCaseNotReassignedOnTPScheduledMessageNoCC(t *testing.T) {
 	data := &mockedDataAPI_WorkerTest{}
 	publisher := &TestPublisher{}
 	worker := NewWorker(data, nil, publisher, metrics.NewRegistry(), 1)
-	data.TP = &common.TreatmentPlan{Status: api.StatusActive, DoctorID: encoding.NewObjectID(1), PatientCaseID: encoding.NewObjectID(1), PatientID: 1}
+	data.TP = &common.TreatmentPlan{Status: api.StatusActive, DoctorID: encoding.DeprecatedNewObjectID(1), PatientCaseID: encoding.DeprecatedNewObjectID(1), PatientID: common.NewPatientID(1)}
 	data.TPSM = &common.TreatmentPlanScheduledMessage{}
-	data.PCase = &common.PatientCase{ID: encoding.NewObjectID(1)}
+	data.PCase = &common.PatientCase{ID: encoding.DeprecatedNewObjectID(1)}
 	data.CareTeams = map[int64]*common.PatientCareTeam{1: {Assignments: make([]*common.CareProviderAssignment, 0)}}
 	data.PersonID = map[int64]int64{
 		1: 1,
@@ -159,16 +159,16 @@ func TestCaseReassignedOnTPScheduledMessageCC(t *testing.T) {
 	data := &mockedDataAPI_WorkerTest{}
 	publisher := &TestPublisher{}
 	worker := NewWorker(data, nil, publisher, metrics.NewRegistry(), 1)
-	data.TP = &common.TreatmentPlan{Status: api.StatusActive, DoctorID: encoding.NewObjectID(1), PatientCaseID: encoding.NewObjectID(1), PatientID: 1}
+	data.TP = &common.TreatmentPlan{Status: api.StatusActive, DoctorID: encoding.DeprecatedNewObjectID(1), PatientCaseID: encoding.DeprecatedNewObjectID(1), PatientID: common.NewPatientID(1)}
 	data.TPSM = &common.TreatmentPlanScheduledMessage{}
-	data.PCase = &common.PatientCase{ID: encoding.NewObjectID(1)}
+	data.PCase = &common.PatientCase{ID: encoding.DeprecatedNewObjectID(1)}
 	data.CareTeams = map[int64]*common.PatientCareTeam{1: {Assignments: []*common.CareProviderAssignment{&common.CareProviderAssignment{ProviderRole: api.RoleCC, ProviderID: 1}, &common.CareProviderAssignment{ProviderRole: api.RoleDoctor, ProviderID: 1}}}}
 	data.PersonID = map[int64]int64{
 		1: 1,
 	}
 	data.People = map[int64]*common.Person{1: &common.Person{Doctor: &common.Doctor{}}}
 	data.CaseMessageID = 1
-	data.Doc = &common.Doctor{ID: encoding.NewObjectID(99)}
+	data.Doc = &common.Doctor{ID: encoding.DeprecatedNewObjectID(99)}
 	msg := &common.ScheduledMessage{
 		Message: &TreatmentPlanMessage{},
 	}

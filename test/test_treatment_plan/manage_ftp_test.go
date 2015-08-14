@@ -32,7 +32,7 @@ func TestManageFTP(t *testing.T) {
 		DosageStrength:          "Strength1",
 		DispenseValue:           5,
 		DispenseUnitDescription: "Tablet",
-		DispenseUnitID:          encoding.NewObjectID(19),
+		DispenseUnitID:          encoding.DeprecatedNewObjectID(19),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 5,

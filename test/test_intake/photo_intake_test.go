@@ -28,7 +28,7 @@ func TestPhotoIntake(t *testing.T) {
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
-	patientID := patient.ID.Int64()
+	patientID := patient.ID
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 
 	// simulate photo upload
@@ -95,7 +95,7 @@ func TestPhotoIntake_AllSections(t *testing.T) {
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
-	patientID := patient.ID.Int64()
+	patientID := patient.ID
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 
 	// simulate photo upload
@@ -176,7 +176,7 @@ func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
-	patientID := patient.ID.Int64()
+	patientID := patient.ID
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 
 	// simulate photo upload
@@ -248,7 +248,7 @@ func TestPhotoIntake_MultiplePhotos(t *testing.T) {
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
-	patientID := patient.ID.Int64()
+	patientID := patient.ID
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 
 	// simulate photo upload
@@ -319,7 +319,7 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
-	patientID := patient.ID.Int64()
+	patientID := patient.ID
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 
 	// simulate photo upload
@@ -422,7 +422,7 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
-	patientID := patient.ID.Int64()
+	patientID := patient.ID
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 
 	// simulate photo upload
@@ -521,7 +521,7 @@ func TestPhotoIntake_MistmatchedSlotId(t *testing.T) {
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
-	patientID := patient.ID.Int64()
+	patientID := patient.ID
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 
 	// simulate photo upload

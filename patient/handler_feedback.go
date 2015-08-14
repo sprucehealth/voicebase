@@ -124,7 +124,7 @@ func (h *feedbackHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 		return
 	}
 	if tp == nil {
-		golog.Errorf("Feedback submitted with no active treatment plan for patient %d", patientID)
+		golog.Errorf("Feedback submitted with no active treatment plan for patient %s", patientID)
 		apiservice.WriteJSONSuccess(w)
 		return
 	}

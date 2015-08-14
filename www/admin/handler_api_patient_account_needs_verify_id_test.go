@@ -10,18 +10,19 @@ import (
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/test"
 )
 
 type mockedNeedsIDMarker struct {
-	markForNeedsIDVerificationPatientIDParam int64
+	markForNeedsIDVerificationPatientIDParam common.PatientID
 	markForNeedsIDVerificationPromoCodeParam string
 	markForNeedsIDVerificationErr            error
 }
 
-func (m *mockedNeedsIDMarker) MarkForNeedsIDVerification(patientID int64, promoCode string) error {
+func (m *mockedNeedsIDMarker) MarkForNeedsIDVerification(patientID common.PatientID, promoCode string) error {
 	m.markForNeedsIDVerificationPatientIDParam = patientID
 	m.markForNeedsIDVerificationPromoCodeParam = promoCode
 	return m.markForNeedsIDVerificationErr
@@ -68,7 +69,7 @@ func TestPatientAccountNeedsVerifyIDHandlerPOSTSuccess(t *testing.T) {
 	test.Equals(t, expectedWriter.Body.String(), responseWriter.Body.String())
 	test.Equals(t, http.StatusOK, responseWriter.Code)
 	test.Equals(t, promoCode, ms.markForNeedsIDVerificationPromoCodeParam)
-	test.Equals(t, int64(100), ms.markForNeedsIDVerificationPatientIDParam)
+	test.Equals(t, uint64(100), ms.markForNeedsIDVerificationPatientIDParam.Uint64())
 }
 
 func TestPatientAccountNeedsVerifyIDHandlerPOSTNotFoundResource(t *testing.T) {

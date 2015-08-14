@@ -36,7 +36,7 @@ func (i *Assertion) ProviderIsAssignedToCase(patientCaseID, providerID int64, ex
 	}
 }
 
-func (i *Assertion) ProviderIsMemberOfCareTeam(patientID, providerID, caseID int64, expectedStatus string) {
+func (i *Assertion) ProviderIsMemberOfCareTeam(providerID, caseID int64, expectedStatus string) {
 	careTeams, err := i.testData.DataAPI.CaseCareTeams([]int64{caseID})
 	if err != nil {
 		i.Fatal(err)

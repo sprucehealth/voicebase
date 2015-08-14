@@ -5,7 +5,6 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/patient"
@@ -29,8 +28,8 @@ func (m *mockDataAPI_listeners) LocalizedText(langID int64, tags []string) (map[
 	return text, nil
 }
 
-func (m *mockDataAPI_listeners) Patient(id int64, basicOnly bool) (*common.Patient, error) {
-	if m.patient == nil || id != m.patient.ID.Int64() {
+func (m *mockDataAPI_listeners) Patient(id common.PatientID, basicOnly bool) (*common.Patient, error) {
+	if m.patient == nil || id != m.patient.ID {
 		return nil, api.ErrNotFound("patient")
 	}
 	return m.patient, nil
@@ -50,7 +49,7 @@ func (m *mockNotificationManager_listeners) NotifyPatient(patient *common.Patien
 func TestListeners(t *testing.T) {
 	dataAPI := &mockDataAPI_listeners{
 		patient: &common.Patient{
-			ID: encoding.NewObjectID(1),
+			ID: common.NewPatientID(1),
 		},
 	}
 	dispatcher := dispatch.New()
@@ -58,8 +57,8 @@ func TestListeners(t *testing.T) {
 	InitListeners(dataAPI, dispatcher, nm)
 
 	test.OK(t, dispatcher.Publish(&patient.ParentalConsentCompletedEvent{
-		ChildPatientID:  1,
-		ParentPatientID: 2,
+		ChildPatientID:  common.NewPatientID(1),
+		ParentPatientID: common.NewPatientID(2),
 	}))
 	test.Assert(t, nm.patient != nil, "Notification not sent or patient is nil")
 	test.Assert(t, nm.msg != nil, "Notification not sent or message is nil")

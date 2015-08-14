@@ -3,7 +3,7 @@ package api
 import "github.com/sprucehealth/backend/common"
 
 type PatientIntake struct {
-	PatientID      int64
+	PatientID      common.PatientID
 	PatientVisitID int64
 	LVersionID     int64
 	SID            string

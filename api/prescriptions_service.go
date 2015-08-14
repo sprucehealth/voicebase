@@ -64,7 +64,7 @@ func (d *dataService) GetPendingRefillRequestStatusEventsForClinic() ([]common.S
 	return getRefillStatusEventsFromRows(rows)
 }
 
-func (d *dataService) GetApprovedOrDeniedRefillRequestsForPatient(patientID int64) ([]common.StatusEvent, error) {
+func (d *dataService) GetApprovedOrDeniedRefillRequestsForPatient(patientID common.PatientID) ([]common.StatusEvent, error) {
 	rows, err := d.db.Query(`
 		SELECT rx_refill_request_id, rx_refill_status, rx_refill_status_date, event_details, erx_id
 		FROM rx_refill_status_events
@@ -331,7 +331,7 @@ func (d *dataService) GetRefillRequestFromPrescriptionID(prescriptionID int64) (
 	return refillRequests[0], nil
 }
 
-func (d *dataService) GetRefillRequestsForPatient(patientID int64) ([]*common.RefillRequestItem, error) {
+func (d *dataService) GetRefillRequestsForPatient(patientID common.PatientID) ([]*common.RefillRequestItem, error) {
 	// get the refill request
 	rows, err := d.db.Query(`select rx_refill_request.id, rx_refill_request.erx_request_queue_item_id,rx_refill_request.reference_number, rx_refill_request.erx_id,
 		approved_refill_amount, patient_id, request_date, doctor_id, requested_treatment_id,
@@ -352,7 +352,8 @@ func (d *dataService) getRefillRequestsFromRow(rows *sql.Rows) ([]*common.Refill
 	var refillRequests []*common.RefillRequestItem
 	for rows.Next() {
 		var refillRequest common.RefillRequestItem
-		var patientID, doctorID, pharmacyDispensedTreatmentID int64
+		var doctorID, pharmacyDispensedTreatmentID int64
+		var patientID common.PatientID
 		var requestedTreatmentID, approvedRefillAmount, prescriptionID sql.NullInt64
 		var denyReason, comments sql.NullString
 
@@ -456,7 +457,7 @@ func (d *dataService) getTreatmentForRefillRequest(tableName string, treatmentID
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
-	treatment.ID = encoding.NewObjectID(treatmentID)
+	treatment.ID = encoding.DeprecatedNewObjectID(treatmentID)
 	treatment.ERx.PrescriptionID = erxID
 	treatment.DrugName = drugName.String
 	treatment.DrugForm = drugForm.String
@@ -662,7 +663,7 @@ func (d *dataService) GetUnlinkedDNTFTreatmentFromPrescriptionID(prescriptionID 
 	return treatments[0], err
 }
 
-func (d *dataService) GetUnlinkedDNTFTreatmentsForPatient(patientID int64) ([]*common.Treatment, error) {
+func (d *dataService) GetUnlinkedDNTFTreatmentsForPatient(patientID common.PatientID) ([]*common.Treatment, error) {
 	rows, err := d.db.Query(`select unlinked_dntf_treatment.id, unlinked_dntf_treatment.erx_id, unlinked_dntf_treatment.drug_internal_name, unlinked_dntf_treatment.dosage_strength, unlinked_dntf_treatment.type,
 			unlinked_dntf_treatment.dispense_value, unlinked_dntf_treatment.dispense_unit_id, ltext, unlinked_dntf_treatment.refills, unlinked_dntf_treatment.substitutions_allowed,
 			unlinked_dntf_treatment.days_supply, unlinked_dntf_treatment.pharmacy_id, unlinked_dntf_treatment.pharmacy_notes, unlinked_dntf_treatment.patient_instructions, unlinked_dntf_treatment.creation_date, unlinked_dntf_treatment.erx_sent_date,
@@ -691,7 +692,8 @@ func (d *dataService) GetUnlinkedDNTFTreatmentsForPatient(patientID int64) ([]*c
 func (d *dataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*common.Treatment, error) {
 	var treatments []*common.Treatment
 	for rows.Next() {
-		var dispenseUnitID, doctorID, patientID, unlinkedDntfTreatmentID, pharmacyID, erxID encoding.ObjectID
+		var dispenseUnitID, doctorID, unlinkedDntfTreatmentID, pharmacyID, erxID encoding.ObjectID
+		var patientID common.PatientID
 		var dispenseValue encoding.HighPrecisionFloat64
 		var drugInternalName, dosageStrength, treatmentType, dispenseUnitDescription, pharmacyNotes, patientInstructions string
 		var status common.TreatmentStatus
@@ -749,7 +751,7 @@ func (d *dataService) getUnlinkedDNTFTreatmentsFromRow(rows *sql.Rows) ([]*commo
 			return nil, err
 		}
 
-		treatment.Patient, err = d.GetPatientFromID(treatment.PatientID.Int64())
+		treatment.Patient, err = d.GetPatientFromID(treatment.PatientID)
 		if err != nil {
 			return nil, err
 		}
@@ -860,7 +862,7 @@ func (d *dataService) GetErxStatusEventsForDNTFTreatment(treatmentID int64) ([]c
 	return statusEvents, rows.Err()
 }
 
-func (d *dataService) GetErxStatusEventsForDNTFTreatmentBasedOnPatientID(patientID int64) ([]common.StatusEvent, error) {
+func (d *dataService) GetErxStatusEventsForDNTFTreatmentBasedOnPatientID(patientID common.PatientID) ([]common.StatusEvent, error) {
 	rows, err := d.db.Query(`
 		SELECT un.unlinked_dntf_treatment_id, unlinked_dntf_treatment.erx_id, un.erx_status, un.status, un.creation_date
 		FROM unlinked_dntf_treatment_status_events un

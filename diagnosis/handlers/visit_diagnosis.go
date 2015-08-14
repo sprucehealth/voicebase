@@ -103,7 +103,7 @@ func (d *diagnosisListHandler) IsAuthorized(ctx context.Context, r *http.Request
 		r.Method,
 		account.Role,
 		doctorID,
-		patientVisit.PatientID.Int64(),
+		patientVisit.PatientID,
 		patientVisit.PatientCaseID.Int64(),
 		d.dataAPI); err != nil {
 		return false, err
@@ -217,7 +217,7 @@ func (d *diagnosisListHandler) putDiagnosisList(ctx context.Context, w http.Resp
 
 		d.dispatcher.Publish(&patient_visit.PatientVisitMarkedUnsuitableEvent{
 			DoctorID:       doctorID,
-			PatientID:      visit.PatientID.Int64(),
+			PatientID:      visit.PatientID,
 			CaseID:         visit.PatientCaseID.Int64(),
 			PatientVisitID: visit.ID.Int64(),
 			Reason:         rd.CaseManagement.Reason,
@@ -237,7 +237,7 @@ func (d *diagnosisListHandler) putDiagnosisList(ctx context.Context, w http.Resp
 
 		d.dispatcher.Publish(&patient_visit.DiagnosisModifiedEvent{
 			DoctorID:       doctorID,
-			PatientID:      visit.PatientID.Int64(),
+			PatientID:      visit.PatientID,
 			PatientVisitID: rd.VisitID,
 			PatientCaseID:  visit.PatientCaseID.Int64(),
 		})

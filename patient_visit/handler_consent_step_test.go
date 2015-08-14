@@ -12,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -21,8 +20,8 @@ type mockConsentDataAPI struct {
 	visit *common.PatientVisit
 }
 
-func (m *mockConsentDataAPI) GetPatientIDFromAccountID(accountID int64) (int64, error) {
-	return 1, nil
+func (m *mockConsentDataAPI) GetPatientIDFromAccountID(accountID int64) (common.PatientID, error) {
+	return common.NewPatientID(1), nil
 }
 func (m *mockConsentDataAPI) GetPatientVisitFromID(visitID int64) (*common.PatientVisit, error) {
 	return m.visit, nil
@@ -45,7 +44,7 @@ func TestReachedConsentStepHandler(t *testing.T) {
 
 	// Make sure the handler validates ownership of the visit
 
-	dataAPI.visit.PatientID = encoding.NewObjectID(2)
+	dataAPI.visit.PatientID = common.NewPatientID(2)
 	r, err := http.NewRequest("POST", "/", bytes.NewReader(b))
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
 	test.OK(t, err)
@@ -56,7 +55,7 @@ func TestReachedConsentStepHandler(t *testing.T) {
 	// Should succeed
 
 	dataAPI.visit.Status = common.PVStatusOpen
-	dataAPI.visit.PatientID = encoding.NewObjectID(1)
+	dataAPI.visit.PatientID = common.NewPatientID(1)
 	r, err = http.NewRequest("POST", "/", bytes.NewReader(b))
 	test.OK(t, err)
 	w = httptest.NewRecorder()
@@ -67,7 +66,7 @@ func TestReachedConsentStepHandler(t *testing.T) {
 	// Request should be idempotent
 
 	dataAPI.visit.Status = common.PVStatusPendingParentalConsent
-	dataAPI.visit.PatientID = encoding.NewObjectID(1)
+	dataAPI.visit.PatientID = common.NewPatientID(1)
 	r, err = http.NewRequest("POST", "/", bytes.NewReader(b))
 	test.OK(t, err)
 	w = httptest.NewRecorder()

@@ -30,7 +30,7 @@ func (m *mockDataAPI_LayoutForPatientVisit) GetPatientCaseFromID(caseID int64) (
 func (m *mockDataAPI_LayoutForPatientVisit) GetActiveCareTeamMemberForCase(role string, caseID int64) (*common.CareProviderAssignment, error) {
 	return m.doctorMember, nil
 }
-func (m *mockDataAPI_LayoutForPatientVisit) Patient(patientID int64, basicInfoOnly bool) (*common.Patient, error) {
+func (m *mockDataAPI_LayoutForPatientVisit) Patient(patientID common.PatientID, basicInfoOnly bool) (*common.Patient, error) {
 	return m.patient, nil
 }
 func (m *mockDataAPI_LayoutForPatientVisit) Doctor(doctorID int64, basicInfoOnly bool) (*common.Doctor, error) {
@@ -122,7 +122,7 @@ func TestTemplatedLayout_DoctorPicked(t *testing.T) {
 			ProviderID: 1,
 		},
 		doctor: &common.Doctor{
-			ID:               encoding.NewObjectID(2),
+			ID:               encoding.DeprecatedNewObjectID(2),
 			ShortDisplayName: "Dr. X",
 		},
 	}
@@ -215,7 +215,7 @@ func TestTemplatedLayout_FollowupVisit(t *testing.T) {
 			ProviderID: 1,
 		},
 		doctor: &common.Doctor{
-			ID:               encoding.NewObjectID(2),
+			ID:               encoding.DeprecatedNewObjectID(2),
 			ShortDisplayName: "Dr. X",
 		},
 		patient: &common.Patient{

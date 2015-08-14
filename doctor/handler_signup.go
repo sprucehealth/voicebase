@@ -109,7 +109,7 @@ func (d *signupDoctorHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 	}
 
 	doctorToRegister := &common.Doctor{
-		AccountID:           encoding.NewObjectID(accountID),
+		AccountID:           encoding.DeprecatedNewObjectID(accountID),
 		FirstName:           requestData.FirstName,
 		LastName:            requestData.LastName,
 		Gender:              requestData.Gender,

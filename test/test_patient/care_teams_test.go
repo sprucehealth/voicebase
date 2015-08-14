@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 	"testing"
 
 	"github.com/sprucehealth/backend/apiservice/apipaths"
@@ -33,7 +32,7 @@ func TestGetCaseCareTeamsDataAccess(t *testing.T) {
 	} else if len(careTeams[patientCase.ID.Int64()].Assignments) != 1 {
 		t.Fatalf("Expected 1 doctor to exist in care team instead got %d", len(careTeams[patientCase.ID.Int64()].Assignments))
 	} else if careTeams[patientCase.ID.Int64()].Assignments[0].ProviderID != doctor.ID.Int64() {
-		t.Fatalf("Expected the doctor in the care team to be %v instead found %v", doctor.ID.Int64Value, careTeams[patientCase.ID.Int64()].Assignments[0].ProviderID)
+		t.Fatalf("Expected the doctor in the care team to be %v instead found %v", doctor.ID.Int64(), careTeams[patientCase.ID.Int64()].Assignments[0].ProviderID)
 	}
 }
 
@@ -45,7 +44,7 @@ func TestGetCareTeamsForPatient(t *testing.T) {
 	patientCase, doctor := createPatientCaseAndAssignToDoctor(t, testData)
 
 	// Verify that the doctor belongs to our care team, and there is only one care team.
-	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.PatientCareTeamsURLPath+"?patient_id="+strconv.FormatInt(patientCase.PatientID.Int64Value, 10), doctor.AccountID.Int64())
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.PatientCareTeamsURLPath+"?patient_id="+patientCase.PatientID.String(), doctor.AccountID.Int64())
 	test.Equals(t, http.StatusOK, res.StatusCode)
 	test.OK(t, err)
 	body, err := ioutil.ReadAll(res.Body)
@@ -56,9 +55,9 @@ func TestGetCareTeamsForPatient(t *testing.T) {
 	if len(response.CareTeams) != 1 {
 		t.Fatalf("Expected 1 care team to exist but found %v", len(response.CareTeams))
 	} else if len(response.CareTeams[0].Members) != 1 {
-		t.Fatalf("Expected 1 member to be assigned to the patients care team but found %v", len(response.CareTeams[patientCase.ID.Int64Value].Members))
-	} else if response.CareTeams[0].Members[0].ProviderID != doctor.ID.Int64Value {
-		t.Fatalf("Expected the doctor assigned to the care team to be %v but found %v", doctor.ID.Int64Value, response.CareTeams[patientCase.ID.Int64Value].Members[0].ProviderID)
+		t.Fatalf("Expected 1 member to be assigned to the patients care team but found %v", len(response.CareTeams[patientCase.ID.Int64()].Members))
+	} else if response.CareTeams[0].Members[0].ProviderID != doctor.ID.Int64() {
+		t.Fatalf("Expected the doctor assigned to the care team to be %v but found %v", doctor.ID.Int64(), response.CareTeams[patientCase.ID.Int64()].Members[0].ProviderID)
 	}
 }
 

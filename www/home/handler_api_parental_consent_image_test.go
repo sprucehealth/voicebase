@@ -23,13 +23,13 @@ import (
 type mockDataAPI_parentalConsentImage struct {
 	api.DataAPI
 	proof    *api.ParentalConsentProof
-	consent  map[int64]*common.ParentalConsent
+	consent  map[common.PatientID]*common.ParentalConsent
 	updated  bool
 	mimeType string
 }
 
-func (a *mockDataAPI_parentalConsentImage) GetPatientIDFromAccountID(accountID int64) (int64, error) {
-	return accountID, nil
+func (a *mockDataAPI_parentalConsentImage) GetPatientIDFromAccountID(accountID int64) (common.PatientID, error) {
+	return common.NewPatientID(uint64(accountID)), nil
 }
 
 func (a *mockDataAPI_parentalConsentImage) AddMedia(accountID int64, mediaURL, mimeType string) (int64, error) {
@@ -37,7 +37,7 @@ func (a *mockDataAPI_parentalConsentImage) AddMedia(accountID int64, mediaURL, m
 	return 1, nil
 }
 
-func (a *mockDataAPI_parentalConsentImage) UpsertParentConsentProof(parentPatientID int64, proof *api.ParentalConsentProof) (int64, error) {
+func (a *mockDataAPI_parentalConsentImage) UpsertParentConsentProof(parentPatientID common.PatientID, proof *api.ParentalConsentProof) (int64, error) {
 	return 1, nil
 }
 
@@ -45,19 +45,19 @@ func (a *mockDataAPI_parentalConsentImage) GetPersonIDByRole(role string, roleID
 	return roleID + 100, nil
 }
 
-func (a *mockDataAPI_parentalConsentImage) ParentConsentProof(parentPatientID int64) (*api.ParentalConsentProof, error) {
+func (a *mockDataAPI_parentalConsentImage) ParentConsentProof(parentPatientID common.PatientID) (*api.ParentalConsentProof, error) {
 	if a.proof == nil {
 		return nil, api.ErrNotFound("proof")
 	}
 	return a.proof, nil
 }
 
-func (a *mockDataAPI_parentalConsentImage) ParentalConsentCompletedForPatient(patientID int64) (bool, error) {
+func (a *mockDataAPI_parentalConsentImage) ParentalConsentCompletedForPatient(patientID common.PatientID) (bool, error) {
 	a.updated = true
 	return true, nil
 }
 
-func (a *mockDataAPI_parentalConsentImage) AllParentalConsent(parentPatientID int64) (map[int64]*common.ParentalConsent, error) {
+func (a *mockDataAPI_parentalConsentImage) AllParentalConsent(parentPatientID common.PatientID) (map[common.PatientID]*common.ParentalConsent, error) {
 	return a.consent, nil
 }
 
@@ -116,8 +116,8 @@ func TestParentalConsentImageAPIHandler_POST(t *testing.T) {
 			SelfiePhotoID:       ptr.Int64(1),
 			GovernmentIDPhotoID: ptr.Int64(2),
 		},
-		consent: map[int64]*common.ParentalConsent{
-			2: &common.ParentalConsent{
+		consent: map[common.PatientID]*common.ParentalConsent{
+			common.NewPatientID(2): &common.ParentalConsent{
 				Consented: true,
 			},
 		},
@@ -140,8 +140,8 @@ func TestParentalConsentImageAPIHandler_POST(t *testing.T) {
 			SelfiePhotoID:       ptr.Int64(1),
 			GovernmentIDPhotoID: ptr.Int64(2),
 		},
-		consent: map[int64]*common.ParentalConsent{
-			2: &common.ParentalConsent{
+		consent: map[common.PatientID]*common.ParentalConsent{
+			common.NewPatientID(2): &common.ParentalConsent{
 				Consented: true,
 			},
 		},

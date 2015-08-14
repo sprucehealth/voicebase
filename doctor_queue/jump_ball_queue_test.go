@@ -34,7 +34,7 @@ func (m *mockDataAPIJBCQ) ExtendClaimForDoctor(doctorID, patientID, caseID int64
 func (m *mockDataAPIJBCQ) GetTempClaimedCaseInQueue(caseID int64) (*api.DoctorQueueItem, error) {
 	return m.tempClaimedItem, nil
 }
-func (m *mockDataAPIJBCQ) Patient(id int64, basicInfoOnly bool) (*common.Patient, error) {
+func (m *mockDataAPIJBCQ) Patient(id common.PatientID, basicInfoOnly bool) (*common.Patient, error) {
 	return m.patient, nil
 }
 func (m *mockDataAPIJBCQ) UpdateDoctorQueue(updates []*api.DoctorQueueUpdate) error {

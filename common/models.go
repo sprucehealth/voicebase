@@ -3,6 +3,7 @@ package common
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -96,8 +97,42 @@ type PhoneNumber struct {
 	Verified bool            `json:"verified"`
 }
 
+// NewPatientID returns a new PatientID using the provided value. If id is 0
+// then the returned PatiendID is tagged as invalid.
+func NewPatientID(id uint64) PatientID {
+	return PatientID{
+		ObjectID: encoding.ObjectID{
+			Uint64Value: id,
+			IsValid:     id != 0,
+		},
+	}
+}
+
+// ParsePatientID parses a string version of a patient ID. If the string
+// does not represent a valid ID then an error is returned and the PatientID
+// is returned with IsValid == false.
+func ParsePatientID(id string) (PatientID, error) {
+	i, err := strconv.ParseUint(id, 10, 64)
+	return PatientID{
+		ObjectID: encoding.ObjectID{
+			Uint64Value: i,
+			IsValid:     err == nil,
+		},
+	}, err
+}
+
+// PatientID is the ID for a patient object
+type PatientID struct {
+	encoding.ObjectID
+}
+
+// String implements fmt.Stringer
+func (id PatientID) String() string {
+	return strconv.FormatUint(id.Uint64(), 10)
+}
+
 type Patient struct {
-	ID                 encoding.ObjectID      `json:"id,omitempty"`
+	ID                 PatientID              `json:"id,omitempty"`
 	IsUnlinked         bool                   `json:"is_unlinked,omitempty"`
 	FirstName          string                 `json:"first_name,omitempty"`
 	LastName           string                 `json:"last_name,omiempty"`
@@ -129,12 +164,12 @@ func (p *Patient) IsUnder18() bool {
 }
 
 type PCP struct {
-	PatientID     int64  `json:"-"`
-	PhysicianName string `json:"physician_full_name"`
-	PhoneNumber   string `json:"phone_number"`
-	PracticeName  string `json:"practice_name,omitempty"`
-	Email         string `json:"email,omitempty"`
-	FaxNumber     string `json:"fax_number,omitempty"`
+	PatientID     PatientID `json:"-"`
+	PhysicianName string    `json:"physician_full_name"`
+	PhoneNumber   string    `json:"phone_number"`
+	PracticeName  string    `json:"practice_name,omitempty"`
+	Email         string    `json:"email,omitempty"`
+	FaxNumber     string    `json:"fax_number,omitempty"`
 }
 
 func (p PCP) IsZero() bool {
@@ -142,11 +177,11 @@ func (p PCP) IsZero() bool {
 }
 
 type EmergencyContact struct {
-	ID           int64  `json:"id,string"`
-	PatientID    int64  `json:"-"`
-	FullName     string `json:"full_name"`
-	PhoneNumber  string `json:"phone_number"`
-	Relationship string `json:"relationship"`
+	ID           int64     `json:"id,string"`
+	PatientID    PatientID `json:"-"`
+	FullName     string    `json:"full_name"`
+	PhoneNumber  string    `json:"phone_number"`
+	Relationship string    `json:"relationship"`
 }
 
 type Card struct {
@@ -249,7 +284,7 @@ type CareProviderAssignment struct {
 	LongDisplayName  string     `json:"long_display_name,omitempty"`
 	SmallThumbnailID string     `json:"-"`
 	LargeThumbnailID string     `json:"-"`
-	PatientID        int64      `json:"-"`
+	PatientID        PatientID  `json:"-"`
 	PathwayTag       string     `json:"-"`
 	Status           string     `json:"-"`
 	CreationDate     time.Time  `json:"assignment_date"`
@@ -397,7 +432,7 @@ type TreatmentPlan struct {
 	ID                encoding.ObjectID                `json:"id,omitempty"`
 	DoctorID          encoding.ObjectID                `json:"doctor_id,omitempty"`
 	PatientCaseID     encoding.ObjectID                `json:"case_id"`
-	PatientID         int64                            `json:"patient_id,omitempty,string"`
+	PatientID         PatientID                        `json:"patient_id,omitempty"`
 	Status            TreatmentPlanStatus              `json:"status,omitempty"`
 	CreationDate      time.Time                        `json:"creation_date"`
 	SentDate          *time.Time                       `json:"sent_date,omitempty"`
@@ -661,7 +696,7 @@ type Notification struct {
 
 type HealthLogItem struct {
 	ID        int64
-	PatientID int64
+	PatientID PatientID
 	UID       string // Unique ID scoped to the patient.
 	Timestamp time.Time
 	Data      Typed
@@ -796,7 +831,7 @@ type CareProviderProfile struct {
 
 type MedicalRecord struct {
 	ID         int64               `json:"id,string"`
-	PatientID  int64               `json:"patient_id,string"`
+	PatientID  PatientID           `json:"patient_id"`
 	Status     MedicalRecordStatus `json:"status"`
 	Error      string              `json:"error,omitempty"`
 	StorageURL string              `json:"storage_url"`
@@ -822,7 +857,7 @@ type AccountGroup struct {
 
 type PatientCaseFeedItem struct {
 	DoctorID         int64     `json:"doctor_id,string"`
-	PatientID        int64     `json:"patient_id,string"`
+	PatientID        PatientID `json:"patient_id"`
 	PatientFirstName string    `json:"patient_first_name"`
 	PatientLastName  string    `json:"patient_last_name"`
 	CaseID           int64     `json:"case_id,string"`

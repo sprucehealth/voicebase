@@ -338,7 +338,7 @@ func AddTreatmentsToTreatmentPlan(treatmentPlanID int64, doctor *common.Doctor, 
 		DosageStrength:          "Strength1",
 		DispenseValue:           5,
 		DispenseUnitDescription: "Tablet",
-		DispenseUnitID:          encoding.NewObjectID(19),
+		DispenseUnitID:          encoding.DeprecatedNewObjectID(19),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 5,
@@ -358,7 +358,7 @@ func AddTreatmentsToTreatmentPlan(treatmentPlanID int64, doctor *common.Doctor, 
 func AddRegimenPlanForTreatmentPlan(treatmentPlanID int64, doctor *common.Doctor, t *testing.T, testData *TestData) {
 
 	regimenPlanRequest := &common.RegimenPlan{
-		TreatmentPlanID: encoding.NewObjectID(treatmentPlanID),
+		TreatmentPlanID: encoding.DeprecatedNewObjectID(treatmentPlanID),
 	}
 
 	regimenStep1 := &common.DoctorInstructionItem{

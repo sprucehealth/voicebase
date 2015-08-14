@@ -167,12 +167,12 @@ func createAnswersToStoreForQuestion(role string, roleID, questionID, contextID,
 	answersToStore := make([]*common.AnswerIntake, len(answerIntakes))
 	for i, answerIntake := range answerIntakes {
 		answersToStore[i] = &common.AnswerIntake{
-			RoleID:            encoding.NewObjectID(roleID),
+			RoleID:            encoding.DeprecatedNewObjectID(roleID),
 			Role:              role,
-			QuestionID:        encoding.NewObjectID(questionID),
-			ContextID:         encoding.NewObjectID(contextID),
-			LayoutVersionID:   encoding.NewObjectID(layoutVersionID),
-			PotentialAnswerID: encoding.NewObjectID(answerIntake.PotentialAnswerID),
+			QuestionID:        encoding.DeprecatedNewObjectID(questionID),
+			ContextID:         encoding.DeprecatedNewObjectID(contextID),
+			LayoutVersionID:   encoding.DeprecatedNewObjectID(layoutVersionID),
+			PotentialAnswerID: encoding.DeprecatedNewObjectID(answerIntake.PotentialAnswerID),
 			AnswerText:        answerIntake.AnswerText,
 		}
 	}

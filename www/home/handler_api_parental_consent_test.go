@@ -48,13 +48,13 @@ func (a *mockDataAPI_parentalConsent) ValidateToken(purpose, token string) (stri
 	return "", api.ErrTokenDoesNotExist
 }
 
-func (a *mockDataAPI_parentalConsent) GetPatientIDFromAccountID(accountID int64) (int64, error) {
+func (a *mockDataAPI_parentalConsent) GetPatientIDFromAccountID(accountID int64) (common.PatientID, error) {
 	for _, p := range a.patients {
 		if p.AccountID.Int64() == accountID {
-			return p.ID.Int64(), nil
+			return p.ID, nil
 		}
 	}
-	return 0, api.ErrNotFound("patient_id")
+	return common.PatientID{}, api.ErrNotFound("patient_id")
 }
 
 func (a *mockDataAPI_parentalConsent) GetPatientFromAccountID(accountID int64) (*common.Patient, error) {
@@ -66,33 +66,33 @@ func (a *mockDataAPI_parentalConsent) GetPatientFromAccountID(accountID int64) (
 	return nil, api.ErrNotFound("patient")
 }
 
-func (a *mockDataAPI_parentalConsent) GrantParentChildConsent(parentPatientID, childPatientID int64, relationship string) (bool, error) {
+func (a *mockDataAPI_parentalConsent) GrantParentChildConsent(parentPatientID, childPatientID common.PatientID, relationship string) (bool, error) {
 	a.relationship = relationship
 	return true, nil
 }
 
-func (a *mockDataAPI_parentalConsent) ParentalConsent(childPatientID int64) ([]*common.ParentalConsent, error) {
+func (a *mockDataAPI_parentalConsent) ParentalConsent(childPatientID common.PatientID) ([]*common.ParentalConsent, error) {
 	if a.consent == nil {
 		return nil, nil
 	}
 	return []*common.ParentalConsent{a.consent}, nil
 }
 
-func (a *mockDataAPI_parentalConsent) ParentConsentProof(parentPatientID int64) (*api.ParentalConsentProof, error) {
+func (a *mockDataAPI_parentalConsent) ParentConsentProof(parentPatientID common.PatientID) (*api.ParentalConsentProof, error) {
 	if a.proof == nil {
 		return nil, api.ErrNotFound("proof")
 	}
 	return a.proof, nil
 }
 
-func (a *mockDataAPI_parentalConsent) ParentalConsentCompletedForPatient(patientID int64) (bool, error) {
+func (a *mockDataAPI_parentalConsent) ParentalConsentCompletedForPatient(patientID common.PatientID) (bool, error) {
 	a.updated = true
 	return true, nil
 }
 
-func (a *mockDataAPI_parentalConsent) Patient(id int64, basicInfoOnly bool) (*common.Patient, error) {
+func (a *mockDataAPI_parentalConsent) Patient(id common.PatientID, basicInfoOnly bool) (*common.Patient, error) {
 	for _, p := range a.patients {
-		if p.ID.Int64() == id {
+		if p.ID == id {
 			return p, nil
 		}
 	}
@@ -104,9 +104,9 @@ func TestParentalConsentAPIHandler_POST(t *testing.T) {
 	dobUnder18 := encoding.Date{Year: time.Now().Year() - 15}
 	patients := []*common.Patient{
 		// Parent
-		{ID: encoding.NewObjectID(1), AccountID: encoding.NewObjectID(1), DOB: dobOver18},
+		{ID: common.NewPatientID(1), AccountID: encoding.DeprecatedNewObjectID(1), DOB: dobOver18},
 		// Child
-		{ID: encoding.NewObjectID(2), AccountID: encoding.NewObjectID(2), DOB: dobUnder18},
+		{ID: common.NewPatientID(2), AccountID: encoding.DeprecatedNewObjectID(2), DOB: dobUnder18},
 	}
 	dataAPI := &mockDataAPI_parentalConsent{patients: patients}
 
@@ -118,33 +118,33 @@ func TestParentalConsentAPIHandler_POST(t *testing.T) {
 	// Forbidden
 
 	body, err := json.Marshal(&parentalConsentAPIPOSTRequest{
-		ChildPatientID: 2,
+		ChildPatientID: common.NewPatientID(2),
 		Relationship:   "handler",
 	})
 	test.OK(t, err)
 	r, err := http.NewRequest("POST", "/", bytes.NewReader(body))
 	test.OK(t, err)
-	r.AddCookie(newParentalConsentCookie(2, "abc", r))
+	r.AddCookie(newParentalConsentCookie(common.NewPatientID(2), "abc", r))
 	w := httptest.NewRecorder()
 	h.ServeHTTP(ctx, w, r)
-	test.Equals(t, http.StatusForbidden, w.Code)
+	test.HTTPResponseCode(t, http.StatusForbidden, w)
 
 	// Success
 
 	*dataAPI = mockDataAPI_parentalConsent{patients: patients}
 	body, err = json.Marshal(&parentalConsentAPIPOSTRequest{
-		ChildPatientID: 2,
+		ChildPatientID: common.NewPatientID(2),
 		Relationship:   "handler",
 	})
 	test.OK(t, err)
 	r, err = http.NewRequest("POST", "/", bytes.NewReader(body))
 	test.OK(t, err)
-	token, err := patient.GenerateParentalConsentToken(dataAPI, 2)
+	token, err := patient.GenerateParentalConsentToken(dataAPI, common.NewPatientID(2))
 	test.OK(t, err)
-	r.AddCookie(newParentalConsentCookie(2, token, r))
+	r.AddCookie(newParentalConsentCookie(common.NewPatientID(2), token, r))
 	w = httptest.NewRecorder()
 	h.ServeHTTP(ctx, w, r)
-	test.Equals(t, http.StatusOK, w.Code)
+	test.HTTPResponseCode(t, http.StatusOK, w)
 	test.Equals(t, "handler", dataAPI.relationship)
 	test.Equals(t, false, dataAPI.updated)
 
@@ -158,15 +158,15 @@ func TestParentalConsentAPIHandler_POST(t *testing.T) {
 		patients: patients,
 	}
 	body, err = json.Marshal(&parentalConsentAPIPOSTRequest{
-		ChildPatientID: 2,
+		ChildPatientID: common.NewPatientID(2),
 		Relationship:   "handler",
 	})
 	test.OK(t, err)
 	r, err = http.NewRequest("POST", "/", bytes.NewReader(body))
 	test.OK(t, err)
-	token, err = patient.GenerateParentalConsentToken(dataAPI, 2)
+	token, err = patient.GenerateParentalConsentToken(dataAPI, common.NewPatientID(2))
 	test.OK(t, err)
-	r.AddCookie(newParentalConsentCookie(2, token, r))
+	r.AddCookie(newParentalConsentCookie(common.NewPatientID(2), token, r))
 	w = httptest.NewRecorder()
 	h.ServeHTTP(ctx, w, r)
 	test.HTTPResponseCode(t, http.StatusOK, w)
@@ -178,15 +178,15 @@ func TestParentalConsentAPIHandler_POST(t *testing.T) {
 	*dataAPI = mockDataAPI_parentalConsent{patients: patients}
 	patients[0].DOB = dobUnder18
 	body, err = json.Marshal(&parentalConsentAPIPOSTRequest{
-		ChildPatientID: 2,
+		ChildPatientID: common.NewPatientID(2),
 		Relationship:   "handler",
 	})
 	test.OK(t, err)
 	r, err = http.NewRequest("POST", "/", bytes.NewReader(body))
 	test.OK(t, err)
-	token, err = patient.GenerateParentalConsentToken(dataAPI, 2)
+	token, err = patient.GenerateParentalConsentToken(dataAPI, common.NewPatientID(2))
 	test.OK(t, err)
-	r.AddCookie(newParentalConsentCookie(2, token, r))
+	r.AddCookie(newParentalConsentCookie(common.NewPatientID(2), token, r))
 	w = httptest.NewRecorder()
 	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, www.HTTPStatusAPIError, w.Code)
@@ -199,11 +199,11 @@ func TestParentalConsentAPIHandler_GET(t *testing.T) {
 	dataAPI := &mockDataAPI_parentalConsent{
 		patients: []*common.Patient{
 			// Parent
-			{ID: encoding.NewObjectID(1), AccountID: encoding.NewObjectID(1), DOB: dobOver18},
+			{ID: common.NewPatientID(1), AccountID: encoding.DeprecatedNewObjectID(1), DOB: dobOver18},
 			// Child
 			{
-				ID:        encoding.NewObjectID(2),
-				AccountID: encoding.NewObjectID(2),
+				ID:        common.NewPatientID(2),
+				AccountID: encoding.DeprecatedNewObjectID(2),
 				FirstName: "Timmy",
 				LastName:  "Little",
 				Gender:    "male",
@@ -229,9 +229,9 @@ func TestParentalConsentAPIHandler_GET(t *testing.T) {
 	// Access by token (not consented)
 	r, err = http.NewRequest("GET", "/?"+params.Encode(), nil)
 	test.OK(t, err)
-	token, err := patient.GenerateParentalConsentToken(dataAPI, 2)
+	token, err := patient.GenerateParentalConsentToken(dataAPI, common.NewPatientID(2))
 	test.OK(t, err)
-	r.AddCookie(newParentalConsentCookie(2, token, r))
+	r.AddCookie(newParentalConsentCookie(common.NewPatientID(2), token, r))
 	w = httptest.NewRecorder()
 	h.ServeHTTP(ctx, w, r)
 	test.Equals(t, http.StatusOK, w.Code)
@@ -240,7 +240,7 @@ func TestParentalConsentAPIHandler_GET(t *testing.T) {
 	// Access by parent/child link (consented)
 
 	dataAPI.consent = &common.ParentalConsent{
-		ParentPatientID: 1,
+		ParentPatientID: common.NewPatientID(1),
 		Consented:       true,
 		Relationship:    "someone",
 	}

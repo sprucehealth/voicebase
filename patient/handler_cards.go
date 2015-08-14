@@ -99,7 +99,7 @@ func (p *cardsHandler) makeCardDefaultForPatient(ctx context.Context, w http.Res
 		return
 	}
 
-	if err := p.dataAPI.MakeCardDefaultForPatient(patient.ID.Int64(), card); err != nil {
+	if err := p.dataAPI.MakeCardDefaultForPatient(patient.ID, card); err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
@@ -109,7 +109,7 @@ func (p *cardsHandler) makeCardDefaultForPatient(ctx context.Context, w http.Res
 		return
 	}
 
-	if err := p.dataAPI.UpdateDefaultAddressForPatient(patient.ID.Int64(), card.BillingAddress); err != nil {
+	if err := p.dataAPI.UpdateDefaultAddressForPatient(patient.ID, card.BillingAddress); err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
 	}

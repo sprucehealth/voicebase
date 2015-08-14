@@ -84,7 +84,7 @@ func (dc *DoctorClient) ReviewVisit(patientVisitID int64) (*patient_file.VisitRe
 
 func (dc *DoctorClient) ClaimCase(caseID int64) error {
 	return dc.do("POST", apipaths.DoctorCaseClaimURLPath, nil, &doctor_queue.ClaimPatientCaseRequestData{
-		PatientCaseID: encoding.NewObjectID(caseID),
+		PatientCaseID: encoding.DeprecatedNewObjectID(caseID),
 	}, nil, nil)
 }
 
@@ -117,7 +117,7 @@ func (dc *DoctorClient) SelectMedication(name, strength string) (*doctor_treatme
 func (dc *DoctorClient) AddTreatmentsToTreatmentPlan(treatments []*common.Treatment, tpID int64) (*doctor_treatment_plan.GetTreatmentsResponse, error) {
 	var res doctor_treatment_plan.GetTreatmentsResponse
 	req := &doctor_treatment_plan.AddTreatmentsRequestBody{
-		TreatmentPlanID: encoding.NewObjectID(tpID),
+		TreatmentPlanID: encoding.DeprecatedNewObjectID(tpID),
 		Treatments:      treatments,
 	}
 
@@ -137,7 +137,7 @@ func (dc *DoctorClient) DeleteTreatmentPlan(id int64) error {
 func (dc *DoctorClient) PickTreatmentPlanForVisit(visitID int64, ftp *responses.FavoriteTreatmentPlan) (*responses.TreatmentPlan, error) {
 	req := &doctor_treatment_plan.TreatmentPlanRequestData{
 		TPParent: &common.TreatmentPlanParent{
-			ParentID:   encoding.NewObjectID(visitID),
+			ParentID:   encoding.DeprecatedNewObjectID(visitID),
 			ParentType: common.TPParentTypePatientVisit,
 		},
 	}
@@ -294,13 +294,13 @@ func (dc *DoctorClient) SearchDiagnosis(query string) (*diaghandlers.DiagnosisSe
 
 }
 
-func (dc *DoctorClient) CasesForPatient(patientID int64) ([]*responses.Case, error) {
+func (dc *DoctorClient) CasesForPatient(patientID common.PatientID) ([]*responses.Case, error) {
 	var res struct {
 		Cases []*responses.Case `json:"cases"`
 	}
 	err := dc.do("GET", apipaths.DoctorPatientCasesListURLPath,
 		url.Values{
-			"patient_id": []string{strconv.FormatInt(patientID, 10)},
+			"patient_id": []string{patientID.String()},
 		}, nil, &res, nil)
 	return res.Cases, err
 }
@@ -348,7 +348,7 @@ func (dc *DoctorClient) AddResourceGuidesToTreatmentPlan(tpID int64, guideIDs []
 		GuideIDs:        make([]encoding.ObjectID, len(guideIDs)),
 	}
 	for i, id := range guideIDs {
-		req.GuideIDs[i] = encoding.NewObjectID(id)
+		req.GuideIDs[i] = encoding.DeprecatedNewObjectID(id)
 	}
 	return dc.do("PUT", apipaths.TPResourceGuideURLPath, nil, req, nil, nil)
 }

@@ -14,7 +14,7 @@ type creditsHandler struct {
 }
 
 type creditsRequestData struct {
-	PatientID int64 `json:"patient_id,string"`
+	AccountID int64 `json:"account_id,string"`
 	Credit    int   `json:"credit"`
 }
 
@@ -35,7 +35,7 @@ func (c *creditsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		return
 	}
 
-	if err := c.dataAPI.UpdateCredit(rd.PatientID, rd.Credit, USDUnit.String()); err != nil {
+	if err := c.dataAPI.UpdateCredit(rd.AccountID, rd.Credit, USDUnit.String()); err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
 	}

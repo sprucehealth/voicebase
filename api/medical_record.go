@@ -8,7 +8,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
-func (d *dataService) MedicalRecordsForPatient(patientID int64) ([]*common.MedicalRecord, error) {
+func (d *dataService) MedicalRecordsForPatient(patientID common.PatientID) ([]*common.MedicalRecord, error) {
 	rows, err := d.db.Query(`
 		SELECT id, status, error, storage_url, requested_timestamp, completed_timestamp
 		FROM patient_exported_medical_record
@@ -59,7 +59,7 @@ func (d *dataService) MedicalRecord(id int64) (*common.MedicalRecord, error) {
 	return r, nil
 }
 
-func (d *dataService) CreateMedicalRecord(patientID int64) (int64, error) {
+func (d *dataService) CreateMedicalRecord(patientID common.PatientID) (int64, error) {
 	res, err := d.db.Exec(`
 		INSERT INTO patient_exported_medical_record (patient_id, status)
 		VALUES (?, ?)`, patientID, common.MRPending.String())

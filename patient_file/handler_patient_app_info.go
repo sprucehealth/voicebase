@@ -55,10 +55,12 @@ func (p *patientAppInfoHandler) IsAuthorized(ctx context.Context, r *http.Reques
 		return false, apiservice.NewValidationError("patient_id not specified")
 	}
 
-	patientID, err := strconv.ParseInt(patientIDStr, 10, 64)
+	patientIDInt, err := strconv.ParseUint(patientIDStr, 10, 64)
 	if err != nil {
 		return false, apiservice.NewValidationError(err.Error())
 	}
+
+	patientID := common.NewPatientID(patientIDInt)
 	requestCache[apiservice.CKPatientID] = patientID
 
 	// ensure that the doctor has access to the patient file
@@ -76,7 +78,7 @@ func (p *patientAppInfoHandler) IsAuthorized(ctx context.Context, r *http.Reques
 
 func (p *patientAppInfoHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	requestCache := apiservice.MustCtxCache(ctx)
-	patientID := requestCache[apiservice.CKPatientID].(int64)
+	patientID := requestCache[apiservice.CKPatientID].(common.PatientID)
 
 	patient, err := p.dataAPI.Patient(patientID, true)
 	if err != nil {

@@ -52,7 +52,7 @@ func TestPromotionPercentReferralUpdates(t *testing.T) {
 	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(pvr.PatientVisitID)
 	test.OK(t, err)
 
-	patient, err := testData.DataAPI.Patient(patientVisit.PatientID.Int64(), false)
+	patient, err := testData.DataAPI.Patient(patientVisit.PatientID, false)
 	test.OK(t, err)
 
 	_, err = promotions.CreateReferralDisplayInfo(testData.DataAPI, "www.spruce.local", patient.AccountID.Int64())
@@ -116,7 +116,7 @@ func TestPromotionMoneyReferralUpdates(t *testing.T) {
 	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(pvr.PatientVisitID)
 	test.OK(t, err)
 
-	patient, err := testData.DataAPI.Patient(patientVisit.PatientID.Int64(), false)
+	patient, err := testData.DataAPI.Patient(patientVisit.PatientID, false)
 	test.OK(t, err)
 
 	display, err := promotions.CreateReferralDisplayInfo(testData.DataAPI, "www.spruce.local", patient.AccountID.Int64())
@@ -183,7 +183,7 @@ func TestPromotionApplyOwnReferralCode(t *testing.T) {
 	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(pvr.PatientVisitID)
 	test.OK(t, err)
 
-	patient, err := testData.DataAPI.Patient(patientVisit.PatientID.Int64(), false)
+	patient, err := testData.DataAPI.Patient(patientVisit.PatientID, false)
 	test.OK(t, err)
 
 	promotions.CreateReferralDisplayInfo(testData.DataAPI, "www.spruce.local", patient.AccountID.Int64())
@@ -191,7 +191,7 @@ func TestPromotionApplyOwnReferralCode(t *testing.T) {
 	rp, err := testData.DataAPI.ActiveReferralProgramForAccount(patient.AccountID.Int64(), common.PromotionTypes)
 	test.OK(t, err)
 
-	patientClient := test_integration.PatientClient(testData, t, patientVisit.PatientID.Int64())
+	patientClient := test_integration.PatientClient(testData, t, patientVisit.PatientID)
 	_, err = patientClient.ApplyPromoCode(&promotions.PatientPromotionPOSTRequest{
 		PromoCode: rp.Code,
 	})

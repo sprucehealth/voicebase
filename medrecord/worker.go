@@ -153,7 +153,7 @@ func (w *Worker) processMessage(msg *queueMessage) error {
 
 	patient, err := w.dataAPI.GetPatientFromID(mr.PatientID)
 	if api.IsErrNotFound(err) {
-		golog.Errorf("Patient %d does not exist for medical record %d", mr.PatientID, mr.ID)
+		golog.Errorf("Patient %s does not exist for medical record %d", mr.PatientID, mr.ID)
 		return nil
 	} else if err != nil {
 		return err

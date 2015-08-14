@@ -281,7 +281,7 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 	return nil
 }
 
-func (w *Worker) retrieveOrCreatePatientReceipt(patientID, patientVisitID, itemCostID int64,
+func (w *Worker) retrieveOrCreatePatientReceipt(patientID common.PatientID, patientVisitID, itemCostID int64,
 	skuType string, costBreakdown *common.CostBreakdown) (*common.PatientReceipt, error) {
 	// check if a receipt exists in the databse
 	var pReceipt *common.PatientReceipt

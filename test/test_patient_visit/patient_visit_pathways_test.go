@@ -22,7 +22,7 @@ func TestPatientVisit_MultiplePathways(t *testing.T) {
 
 	// create a patient
 	pr := test_integration.SignupRandomTestPatient(t, testData)
-	pc := test_integration.PatientClient(testData, t, pr.Patient.ID.Int64())
+	pc := test_integration.PatientClient(testData, t, pr.Patient.ID)
 
 	// create new pathway
 	p1 := &common.Pathway{
@@ -82,7 +82,7 @@ func TestPatientVisit_MultiplePathways(t *testing.T) {
 	test.OK(t, err)
 
 	// at this point the patient should have 2 open cases
-	cases, err := testData.DataAPI.GetCasesForPatient(pr.Patient.ID.Int64(), nil)
+	cases, err := testData.DataAPI.GetCasesForPatient(pr.Patient.ID, nil)
 	test.OK(t, err)
 	test.Equals(t, 2, len(cases))
 	test.Equals(t, common.PCStatusOpen, cases[0].Status)

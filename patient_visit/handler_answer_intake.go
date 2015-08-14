@@ -56,7 +56,7 @@ func (a *answerIntakeHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 		return
 	}
 
-	if patientVisit.PatientID.Int64() != patientID {
+	if patientVisit.PatientID != patientID {
 		apiservice.WriteAccessNotAllowedError(ctx, w, r)
 		return
 	}
@@ -68,7 +68,7 @@ func (a *answerIntakeHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 			api.RolePatient,
 			qItem,
 			rd.PatientVisitID,
-			patientID,
+			patientID.Int64(),
 			patientVisit.LayoutVersionID.Int64())
 	}
 

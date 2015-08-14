@@ -67,7 +67,7 @@ type Treatment struct {
 	IsControlledSubstance     bool                          `json:"-"`
 	SupplementalInstructions  []*DoctorInstructionItem      `json:"supplemental_instructions,omitempty"`
 	Doctor                    *Doctor                       `json:"doctor,omitempty"`
-	PatientID                 encoding.ObjectID             `json:"patient_id,omitempty"`
+	PatientID                 PatientID                     `json:"patient_id,omitempty"`
 	Patient                   *Patient                      `json:"patient,omitempty"`
 	DoctorID                  encoding.ObjectID             `json:"doctor_id,omitempty"`
 	OriginatingTreatmentID    int64                         `json:"-"`

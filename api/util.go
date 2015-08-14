@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 )
 
@@ -244,7 +245,7 @@ func FillQuestions(questions []*info_intake.Question, dataAPI DataAPI, languageI
 	return nil
 }
 
-func accountIDForPatient(db db, patientID int64) (int64, error) {
+func accountIDForPatient(db db, patientID common.PatientID) (int64, error) {
 	var accountID int64
 	err := db.QueryRow(`SELECT account_id FROM patient WHERE id = ?`, patientID).Scan(&accountID)
 	if err == sql.ErrNoRows {

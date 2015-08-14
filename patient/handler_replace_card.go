@@ -59,7 +59,7 @@ func (p *replaceCardHandler) ServeHTTP(ctx context.Context, w http.ResponseWrite
 		return
 	}
 
-	cards, err := p.dataAPI.GetCardsForPatient(patient.ID.Int64())
+	cards, err := p.dataAPI.GetCardsForPatient(patient.ID)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return

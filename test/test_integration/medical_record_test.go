@@ -65,7 +65,7 @@ func TestMedicalRecordWorker(t *testing.T) {
 		testData.Config.EmailService, "from@somewhere.com",
 		"apidomain", "webdomain", signer, store, mediaStore, 60, nil)
 
-	mrID, err := PatientClient(testData, t, patient.ID.Int64()).RequestMedicalRecord()
+	mrID, err := PatientClient(testData, t, patient.ID).RequestMedicalRecord()
 	test.OK(t, err)
 
 	emailService := testData.Config.EmailService.(*email.TestService)
@@ -88,7 +88,7 @@ func TestMedicalRecordWorker_VisitOpen(t *testing.T) {
 
 	// create a visit in the open state with no questions answered
 	pr := SignupRandomTestPatient(t, testData)
-	pv := CreatePatientVisitForPatient(pr.Patient.ID.Int64(), testData, t)
+	pv := CreatePatientVisitForPatient(pr.Patient.ID, testData, t)
 
 	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
@@ -105,7 +105,7 @@ func TestMedicalRecordWorker_VisitOpen(t *testing.T) {
 		testData.Config.EmailService, "from@somewhere.com",
 		"apidomain", "webdomain", signer, store, mediaStore, 60, nil)
 
-	_, err = PatientClient(testData, t, patient.ID.Int64()).RequestMedicalRecord()
+	_, err = PatientClient(testData, t, patient.ID).RequestMedicalRecord()
 	test.OK(t, err)
 
 	emailService := testData.Config.EmailService.(*email.TestService)

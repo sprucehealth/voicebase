@@ -132,14 +132,14 @@ func (w *ERxStatusWorker) Do() (bool, error) {
 		switch statusCheckMessage.EventCheckType {
 		case common.RefillRxType:
 			// check if there are any treatments for this patient that do not have a completed status
-			prescriptionStatuses, err = w.dataAPI.GetApprovedOrDeniedRefillRequestsForPatient(patient.ID.Int64())
+			prescriptionStatuses, err = w.dataAPI.GetApprovedOrDeniedRefillRequestsForPatient(patient.ID)
 			if err != nil {
 				golog.Errorf("Error getting prescription events for patient: %s", err.Error())
 				w.statFailure.Inc(1)
 				continue
 			}
 		case common.UnlinkedDNTFTreatmentType:
-			prescriptionStatuses, err = w.dataAPI.GetErxStatusEventsForDNTFTreatmentBasedOnPatientID(patient.ID.Int64())
+			prescriptionStatuses, err = w.dataAPI.GetErxStatusEventsForDNTFTreatmentBasedOnPatientID(patient.ID)
 			if err != nil {
 				golog.Errorf("Error getting prescriptiopn status events for dntf treatment for patient: %+v", err)
 				w.statFailure.Inc(1)

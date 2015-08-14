@@ -1,3 +1,13 @@
+// Package idgen provides 64-bit unsigned globally unique ID generation. It does
+// so by combining the current time in milliseconds, datacenter ID, machine ID,
+// and a sequence number. The datacenter+machine ID must be globally unique.
+// Checks are made for time moving backwards and the sequence number wrapping.
+// A custom epoch is used for the time to give more headroom. The IDs are locally
+// orderable and globally K-orderable in time (unordered within a millisecond but
+// strong ordering beyond a millisecond).
+//
+// - A maximum of 4,096 IDs can be generated per millisecond per worker.
+// - IDs will roll over over in the year 2153
 package idgen
 
 import (
@@ -10,11 +20,15 @@ import (
 )
 
 var (
+	// ErrTimeRanBackwards signifies that an ID could not be generated
+	// because the system time ran backwards.
 	ErrTimeRanBackwards = errors.New("analytics: time went backwards")
 )
 
 const (
-	sequenceBits     = 12
+	// |---------42---------||-----5----||---5--||---12---|
+	//  time in milliseconds  datacenter  worker  sequence
+	sequenceBits     = 12 // 4,096 IDs per millisecond max per worker
 	workerIDBits     = 5
 	workerShift      = sequenceBits
 	workerMask       = 1<<workerIDBits - 1
@@ -66,13 +80,7 @@ func now() uint64 {
 	return uint64(time.Now().UnixNano() / 1e6) // ms
 }
 
-// NewID returns a 64-bit signed globally unique ID. It does so by combining
-// the current time in milliseconds, datacenter ID, machine ID, and a sequence
-// number. The datacenter+machine ID must be globally unique. Checks are made
-// for time moving backwards and the sequence number wrapping. A custom epoch
-// is used for the time to give more headroom. The IDs are locally orderable
-// and globally K-orderable in time (unordered within a millisecond but strong
-// ordering beyond a millisecond)
+// NewID returns a 64-bit unsigned globally unique ID.
 func NewID() (uint64, error) {
 	mu.Lock()
 

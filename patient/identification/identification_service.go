@@ -19,7 +19,7 @@ const (
 // Service describes the methods required to provide patient identification related services to the back end
 type Service interface {
 	// MarkForNeedsIDVerification moves the patient's account into an unusable state by modifying the associated email, creating a parked account, and associating a promo code.
-	MarkForNeedsIDVerification(patientID int64, promoCode string) error
+	MarkForNeedsIDVerification(patientID common.PatientID, promoCode string) error
 }
 
 // PatientIdentificationService is a service layer struct that encapsulates logic related to identification related operations.
@@ -40,7 +40,7 @@ func NewPatientIdentificationService(dataAPI api.DataAPI, authAPI api.AuthAPI, a
 }
 
 // MarkForNeedsIDVerification moves the patient's account into an unusable state by modifying the associated email, creating a parked account, and associating a promo code.
-func (s *patientIdentificationService) MarkForNeedsIDVerification(patientID int64, promoCode string) error {
+func (s *patientIdentificationService) MarkForNeedsIDVerification(patientID common.PatientID, promoCode string) error {
 	patient, err := s.dataAPI.Patient(patientID, true)
 	if err != nil {
 		return errors.Trace(err)

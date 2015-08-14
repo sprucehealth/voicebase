@@ -208,7 +208,7 @@ func permanentlyAssignCaseToDoctor(
 		return err
 	}
 
-	patient, err := dataAPI.Patient(pc.PatientID.Int64(), true)
+	patient, err := dataAPI.Patient(pc.PatientID, true)
 	if err != nil {
 		golog.Errorf("Unable to load patient: %s", err.Error())
 		return err
@@ -219,13 +219,13 @@ func permanentlyAssignCaseToDoctor(
 			Action: api.DQActionInsert,
 			QueueItem: &api.DoctorQueueItem{
 				DoctorID:         doctorID,
-				PatientID:        pc.PatientID.Int64(),
+				PatientID:        pc.PatientID,
 				ItemID:           tempClaimedItem.ItemID,
 				Status:           api.DQItemStatusOngoing,
 				EventType:        api.DQEventTypePatientVisit,
 				Description:      fmt.Sprintf("Continue reviewing visit with %s %s", patient.FirstName, patient.LastName),
 				ShortDescription: fmt.Sprintf("New visit"),
-				ActionURL:        app_url.ViewPatientVisitInfoAction(pc.PatientID.Int64(), tempClaimedItem.ItemID, pc.ID.Int64()),
+				ActionURL:        app_url.ViewPatientVisitInfoAction(pc.PatientID, tempClaimedItem.ItemID, pc.ID.Int64()),
 				Tags:             tempClaimedItem.Tags,
 			},
 		},

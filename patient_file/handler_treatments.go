@@ -26,7 +26,7 @@ func NewDoctorPatientTreatmentsHandler(dataAPI api.DataAPI) httputil.ContextHand
 }
 
 type requestData struct {
-	PatientID int64 `schema:"patient_id,required"`
+	PatientID common.PatientID `schema:"patient_id,required"`
 }
 
 type doctorPatientTreatmentsResponse struct {
@@ -60,7 +60,7 @@ func (d *doctorPatientTreatmentsHandler) IsAuthorized(ctx context.Context, r *ht
 	}
 	requestCache[apiservice.CKPatient] = patient
 
-	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, account.Role, currentDoctor.ID.Int64(), patient.ID.Int64(), d.DataAPI); err != nil {
+	if err := apiservice.ValidateDoctorAccessToPatientFile(r.Method, account.Role, currentDoctor.ID.Int64(), patient.ID, d.DataAPI); err != nil {
 		return false, err
 	}
 

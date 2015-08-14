@@ -18,9 +18,9 @@ func TestPatientAlerts(t *testing.T) {
 	test_integration.SignupRandomTestCC(t, testData, true)
 
 	patientSignedupResponse := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientSignedupResponse.Patient.ID.Int64(), testData, t)
+	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientSignedupResponse.Patient.ID, testData, t)
 
-	patient, err := testData.DataAPI.GetPatientFromID(patientSignedupResponse.Patient.ID.Int64())
+	patient, err := testData.DataAPI.GetPatientFromID(patientSignedupResponse.Patient.ID)
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
@@ -48,8 +48,8 @@ func TestPatientAlerts(t *testing.T) {
 		}
 	}
 
-	test_integration.SubmitAnswersIntakeForPatient(patient.ID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
-	test_integration.SubmitPatientVisitForPatient(patientSignedupResponse.Patient.ID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
+	test_integration.SubmitAnswersIntakeForPatient(patient.ID, patient.AccountID.Int64(), intakeData, testData, t)
+	test_integration.SubmitPatientVisitForPatient(patientSignedupResponse.Patient.ID, patientVisitResponse.PatientVisitID, testData, t)
 
 	// now there should be atlest 1 alert for the patient
 	alerts, err := testData.DataAPI.AlertsForVisit(patientVisitResponse.PatientVisitID)
@@ -80,16 +80,16 @@ func TestPatientAlerts_NoAlerts(t *testing.T) {
 	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	patientSignedupResponse := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientSignedupResponse.Patient.ID.Int64(), testData, t)
+	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientSignedupResponse.Patient.ID, testData, t)
 
-	patient, err := testData.DataAPI.GetPatientFromID(patientSignedupResponse.Patient.ID.Int64())
+	patient, err := testData.DataAPI.GetPatientFromID(patientSignedupResponse.Patient.ID)
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
 
 	intakeData := test_integration.PrepareAnswersForQuestionsInPatientVisitWithoutAlerts(patientVisitResponse, t)
-	test_integration.SubmitAnswersIntakeForPatient(patient.ID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
-	test_integration.SubmitPatientVisitForPatient(patientSignedupResponse.Patient.ID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
+	test_integration.SubmitAnswersIntakeForPatient(patient.ID, patient.AccountID.Int64(), intakeData, testData, t)
+	test_integration.SubmitPatientVisitForPatient(patientSignedupResponse.Patient.ID, patientVisitResponse.PatientVisitID, testData, t)
 
 	// at this point, no alerts should exist for the patient since we chose not to answer questions that would result in patient alerts
 	alerts, err := testData.DataAPI.AlertsForVisit(patientVisitResponse.PatientVisitID)

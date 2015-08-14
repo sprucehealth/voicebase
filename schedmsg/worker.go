@@ -197,7 +197,7 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 
 		_, ok := careTeams[pcase.ID.Int64()]
 		if !ok {
-			return fmt.Errorf("No care team found for patient %d for case %d", tp.PatientID, tp.PatientCaseID.Int64())
+			return fmt.Errorf("No care team found for patient %s for case %d", tp.PatientID, tp.PatientCaseID.Int64())
 		}
 
 		var careCoordinator *common.Doctor

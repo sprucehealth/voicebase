@@ -20,15 +20,15 @@ type mockDataAPI_parentalMedicalRecord struct {
 	patient *common.Patient
 }
 
-func (m *mockDataAPI_parentalMedicalRecord) GetPatientIDFromAccountID(accountID int64) (int64, error) {
-	return accountID, nil
+func (m *mockDataAPI_parentalMedicalRecord) GetPatientIDFromAccountID(accountID int64) (common.PatientID, error) {
+	return common.NewPatientID(uint64(accountID)), nil
 }
 
-func (m *mockDataAPI_parentalMedicalRecord) ParentalConsent(childPatientID int64) ([]*common.ParentalConsent, error) {
+func (m *mockDataAPI_parentalMedicalRecord) ParentalConsent(childPatientID common.PatientID) ([]*common.ParentalConsent, error) {
 	return m.consent, nil
 }
 
-func (m *mockDataAPI_parentalMedicalRecord) Patient(id int64, basic bool) (*common.Patient, error) {
+func (m *mockDataAPI_parentalMedicalRecord) Patient(id common.PatientID, basic bool) (*common.Patient, error) {
 	return m.patient, nil
 }
 
@@ -63,7 +63,7 @@ func TestParentalMedicalRecordHandler(t *testing.T) {
 
 	// Parent does have access
 
-	dataAPI.consent = []*common.ParentalConsent{{ParentPatientID: 1}}
+	dataAPI.consent = []*common.ParentalConsent{{ParentPatientID: common.NewPatientID(1)}}
 	r, err = http.NewRequest("GET", "/", nil)
 	test.OK(t, err)
 	w = httptest.NewRecorder()
@@ -73,7 +73,7 @@ func TestParentalMedicalRecordHandler(t *testing.T) {
 	// Parent has not yet completed flow
 
 	dataAPI.patient.HasParentalConsent = false
-	dataAPI.consent = []*common.ParentalConsent{{ParentPatientID: 1}}
+	dataAPI.consent = []*common.ParentalConsent{{ParentPatientID: common.NewPatientID(1)}}
 	r, err = http.NewRequest("GET", "/", nil)
 	test.OK(t, err)
 	w = httptest.NewRecorder()

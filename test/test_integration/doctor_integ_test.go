@@ -228,17 +228,17 @@ func TestDoctorSubmissionOfPatientVisitReview(t *testing.T) {
 	doctorID := GetDoctorIDOfCurrentDoctor(testData, t)
 
 	// get patient to start a visit
-	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.ID.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(patientSignedupResponse.Patient.ID, testData, t)
 
 	// submit answers to questions in patient visit
-	patient, err := testData.DataAPI.GetPatientFromID(patientSignedupResponse.Patient.ID.Int64())
+	patient, err := testData.DataAPI.GetPatientFromID(patientSignedupResponse.Patient.ID)
 	test.OK(t, err)
 
 	intakeData := PrepareAnswersForQuestionsInPatientVisit(patientVisitResponse.PatientVisitID, patientVisitResponse.ClientLayout.InfoIntakeLayout, t)
-	SubmitAnswersIntakeForPatient(patient.ID.Int64(), patient.AccountID.Int64(), intakeData, testData, t)
+	SubmitAnswersIntakeForPatient(patient.ID, patient.AccountID.Int64(), intakeData, testData, t)
 
 	// get patient to submit the visit
-	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.ID.Int64(), patientVisitResponse.PatientVisitID, testData, t)
+	SubmitPatientVisitForPatient(patientSignedupResponse.Patient.ID, patientVisitResponse.PatientVisitID, testData, t)
 
 	doctor, err := testData.DataAPI.GetDoctorFromID(doctorID)
 	test.OK(t, err)

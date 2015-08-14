@@ -100,7 +100,7 @@ func (h *homeHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *h
 		return
 	}
 
-	patientCases, err := h.dataAPI.GetCasesForPatient(patient.ID.Int64(), []string{
+	patientCases, err := h.dataAPI.GetCasesForPatient(patient.ID, []string{
 		common.PCStatusOpen.String(),
 		common.PCStatusActive.String(),
 		common.PCStatusInactive.String(),

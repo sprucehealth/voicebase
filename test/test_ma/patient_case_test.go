@@ -54,7 +54,7 @@ func TestMA_RoutePatientMsgsToMA(t *testing.T) {
 	test.OK(t, err)
 
 	doctorCli := test_integration.DoctorClient(testData, t, dr.DoctorID)
-	patientCli := test_integration.PatientClient(testData, t, patient.ID.Int64())
+	patientCli := test_integration.PatientClient(testData, t, patient.ID)
 
 	_, err = patientCli.PostCaseMessage(tp.PatientCaseID.Int64(), "foo", nil)
 	test.OK(t, err)
@@ -232,7 +232,7 @@ func TestMA_PrivateMessages(t *testing.T) {
 
 	maCli := test_integration.DoctorClient(testData, t, ma.ID.Int64())
 	doctorCli := test_integration.DoctorClient(testData, t, doctor.ID.Int64())
-	patientCli := test_integration.PatientClient(testData, t, patient.ID.Int64())
+	patientCli := test_integration.PatientClient(testData, t, patient.ID)
 
 	expectedMessage := "m1"
 	req := &messages.PostMessageRequest{

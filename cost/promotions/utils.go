@@ -277,7 +277,7 @@ func GeneratePromoCode(dataAPI api.DataAPI) (string, error) {
 }
 
 // IsNewPatient determines if the associated patient is "new" (No associated visits)
-func IsNewPatient(patientID int64, dataAPI api.DataAPI) (bool, error) {
+func IsNewPatient(patientID common.PatientID, dataAPI api.DataAPI) (bool, error) {
 	anyVisitsSubmitted, err := dataAPI.AnyVisitSubmitted(patientID)
 	return !anyVisitsSubmitted, err
 }

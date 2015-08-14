@@ -25,7 +25,7 @@ func TestPatientPromoCode_ApplyPromotion(t *testing.T) {
 	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(pvr.PatientVisitID)
 	test.OK(t, err)
 
-	patientClient := test_integration.PatientClient(testData, t, patientVisit.PatientID.Int64())
+	patientClient := test_integration.PatientClient(testData, t, patientVisit.PatientID)
 	res, err := patientClient.ActivePromotions()
 	test.OK(t, err)
 	test.Equals(t, 0, len(res.ActivePromotions))
@@ -58,7 +58,7 @@ func TestPatientPromoCode_ApplyExpiredPromotion(t *testing.T) {
 	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(pvr.PatientVisitID)
 	test.OK(t, err)
 
-	patientClient := test_integration.PatientClient(testData, t, patientVisit.PatientID.Int64())
+	patientClient := test_integration.PatientClient(testData, t, patientVisit.PatientID)
 	past := time.Unix(time.Now().Unix()-1000, 0)
 	promoCode := CreateRandomPromotion(t, testData, &past, `{
     "display_msg": "display_msg",
@@ -88,7 +88,7 @@ func TestPatientPromoCode_ApplyZerovaluePromotion(t *testing.T) {
 	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(pvr.PatientVisitID)
 	test.OK(t, err)
 
-	patientClient := test_integration.PatientClient(testData, t, patientVisit.PatientID.Int64())
+	patientClient := test_integration.PatientClient(testData, t, patientVisit.PatientID)
 	res, err := patientClient.ActivePromotions()
 	test.OK(t, err)
 	test.Equals(t, 0, len(res.ActivePromotions))
@@ -111,7 +111,7 @@ func TestPatientPromoCode_ApplyZerovaluePromotion(t *testing.T) {
 	test.Assert(t, ok, "Could not convert to spruce error")
 	test.Equals(t, http.StatusNotFound, sperr.HTTPStatusCode)
 
-	patient, err := testData.DataAPI.Patient(patientVisit.PatientID.Int64(), true)
+	patient, err := testData.DataAPI.Patient(patientVisit.PatientID, true)
 	test.OK(t, err)
 
 	var status string
@@ -128,7 +128,7 @@ func TestPatientPromoCode_ApplyBadPromotion(t *testing.T) {
 	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(pvr.PatientVisitID)
 	test.OK(t, err)
 
-	patientClient := test_integration.PatientClient(testData, t, patientVisit.PatientID.Int64())
+	patientClient := test_integration.PatientClient(testData, t, patientVisit.PatientID)
 	_, err = patientClient.ApplyPromoCode(&promotions.PatientPromotionPOSTRequest{
 		PromoCode: "DoesNotExist",
 	})
@@ -147,7 +147,7 @@ func TestPatientPromoCode_ApplyMultiplePromotion(t *testing.T) {
 	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(pvr.PatientVisitID)
 	test.OK(t, err)
 
-	patientClient := test_integration.PatientClient(testData, t, patientVisit.PatientID.Int64())
+	patientClient := test_integration.PatientClient(testData, t, patientVisit.PatientID)
 	res, err := patientClient.ActivePromotions()
 	test.OK(t, err)
 	test.Equals(t, 0, len(res.ActivePromotions))
@@ -200,7 +200,7 @@ func TestPatientPromoCode_ExistingExpiredPromotion(t *testing.T) {
 	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(pvr.PatientVisitID)
 	test.OK(t, err)
 
-	patientClient := test_integration.PatientClient(testData, t, patientVisit.PatientID.Int64())
+	patientClient := test_integration.PatientClient(testData, t, patientVisit.PatientID)
 	res, err := patientClient.ActivePromotions()
 	test.OK(t, err)
 	test.Equals(t, 0, len(res.ActivePromotions))

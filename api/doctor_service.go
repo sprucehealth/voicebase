@@ -70,7 +70,7 @@ func (d *dataService) RegisterProvider(provider *common.Doctor, role string) (in
 		return 0, errors.Trace(err)
 	}
 
-	provider.ID = encoding.NewObjectID(lastID)
+	provider.ID = encoding.DeprecatedNewObjectID(lastID)
 
 	if provider.Address != nil {
 		provider.Address.ID, err = addAddress(tx, provider.Address)
@@ -391,7 +391,7 @@ func (d *dataService) AddRegimenStepForDoctor(regimenStep *common.DoctorInstruct
 	}
 
 	// assign an id given that its a new regimen step
-	regimenStep.ID = encoding.NewObjectID(instructionID)
+	regimenStep.ID = encoding.DeprecatedNewObjectID(instructionID)
 	return nil
 }
 
@@ -444,7 +444,7 @@ func (d *dataService) UpdateRegimenStepForDoctor(regimenStep *common.DoctorInstr
 	}
 
 	// update the regimenStep Id
-	regimenStep.ID = encoding.NewObjectID(instructionID)
+	regimenStep.ID = encoding.DeprecatedNewObjectID(instructionID)
 	return tx.Commit()
 }
 
@@ -928,7 +928,7 @@ func (d *dataService) AddTreatmentTemplates(doctorTreatmentTemplates []*common.D
 		}
 
 		// update the treatment object with the information
-		doctorTreatmentTemplate.ID = encoding.NewObjectID(drTreatmentTemplateID)
+		doctorTreatmentTemplate.ID = encoding.DeprecatedNewObjectID(drTreatmentTemplateID)
 
 		// add drug db ids to the table
 		for drugDbTag, drugDBID := range doctorTreatmentTemplate.Treatment.DrugDBIDs {

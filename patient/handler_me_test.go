@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
-
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -24,14 +23,14 @@ type mockAPIMeHandler struct {
 }
 
 func (m *mockAPIMeHandler) GetPatientFromAccountID(accountID int64) (*common.Patient, error) {
-	return &common.Patient{AccountID: encoding.NewObjectID(1), ID: encoding.NewObjectID(1)}, nil
+	return &common.Patient{AccountID: encoding.DeprecatedNewObjectID(1), ID: common.NewPatientID(1)}, nil
 }
 
-func (m *mockAPIMeHandler) PatientFeedbackRecorded(patientID int64, feedbackFor string) (bool, error) {
+func (m *mockAPIMeHandler) PatientFeedbackRecorded(patientID common.PatientID, feedbackFor string) (bool, error) {
 	return m.feedbackRecorded, nil
 }
 
-func (m *mockAPIMeHandler) GetActiveTreatmentPlansForPatient(patientID int64) ([]*common.TreatmentPlan, error) {
+func (m *mockAPIMeHandler) GetActiveTreatmentPlansForPatient(patientID common.PatientID) ([]*common.TreatmentPlan, error) {
 	return m.tp, nil
 }
 
@@ -57,7 +56,7 @@ func TestMeHandlerFeedback(t *testing.T) {
 	// Unviewed treatment plan shouldn't trigger feedback
 
 	tm := time.Now()
-	mockAPI.tp = []*common.TreatmentPlan{{ID: encoding.NewObjectID(1), PatientCaseID: encoding.NewObjectID(1), PatientViewed: false, SentDate: &tm}}
+	mockAPI.tp = []*common.TreatmentPlan{{ID: encoding.DeprecatedNewObjectID(1), PatientCaseID: encoding.DeprecatedNewObjectID(1), PatientViewed: false, SentDate: &tm}}
 
 	res = meResponse{}
 	req = newJSONTestRequest("GET", "/", nil)
@@ -72,7 +71,7 @@ func TestMeHandlerFeedback(t *testing.T) {
 
 	// Viewed treatment plan should show feedback since hasn't been recorded yet
 
-	mockAPI.tp = []*common.TreatmentPlan{{ID: encoding.NewObjectID(1), PatientCaseID: encoding.NewObjectID(1), PatientViewed: true, SentDate: &tm}}
+	mockAPI.tp = []*common.TreatmentPlan{{ID: encoding.DeprecatedNewObjectID(1), PatientCaseID: encoding.DeprecatedNewObjectID(1), PatientViewed: true, SentDate: &tm}}
 
 	res = meResponse{}
 	req = newJSONTestRequest("GET", "/", nil)

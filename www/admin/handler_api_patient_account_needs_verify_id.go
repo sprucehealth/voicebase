@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/www"
@@ -16,7 +16,7 @@ import (
 
 // NeedsIDMarker describes the interface needed to mark an account as needing verification
 type needsIDMarker interface {
-	MarkForNeedsIDVerification(patientID int64, promoCode string) error
+	MarkForNeedsIDVerification(patientID common.PatientID, promoCode string) error
 }
 
 type patientAccountNeedsVerifyIDHandler struct {
@@ -33,8 +33,8 @@ func newPatientAccountNeedsVerifyIDHandler(needsIDMarker needsIDMarker) httputil
 }
 
 func (h *patientAccountNeedsVerifyIDHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(mux.Vars(ctx)["id"], 10, 64)
-	if err != nil || id == 0 {
+	id, err := common.ParsePatientID(mux.Vars(ctx)["id"])
+	if err != nil {
 		www.APINotFound(w, r)
 		return
 	}
@@ -61,7 +61,7 @@ func (h *patientAccountNeedsVerifyIDHandler) parsePOSTRequest(ctx context.Contex
 	return rd, nil
 }
 
-func (h *patientAccountNeedsVerifyIDHandler) servePOST(w http.ResponseWriter, r *http.Request, rd *patientAccountNeedsVerifyIDPOSTRequest, id int64) {
+func (h *patientAccountNeedsVerifyIDHandler) servePOST(w http.ResponseWriter, r *http.Request, rd *patientAccountNeedsVerifyIDPOSTRequest, id common.PatientID) {
 	if err := h.needsIDMarker.MarkForNeedsIDVerification(id, rd.PromoCode); api.IsErrNotFound(err) {
 		www.APIBadRequestError(w, r, err.Error())
 		return

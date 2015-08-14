@@ -145,7 +145,7 @@ func (d *dataService) UpdatePatientReceipt(id int64, update *PatientReceiptUpdat
 	return err
 }
 
-func (d *dataService) GetPatientReceipt(patientID, itemID int64, skuType string, includeLineItems bool) (*common.PatientReceipt, error) {
+func (d *dataService) GetPatientReceipt(patientID common.PatientID, itemID int64, skuType string, includeLineItems bool) (*common.PatientReceipt, error) {
 	skuID, err := d.skuIDFromType(skuType)
 	if err != nil {
 		return nil, err

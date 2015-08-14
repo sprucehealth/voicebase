@@ -41,7 +41,7 @@ func (m *mockDataAPI_handlerAlerts) GetDoctorIDFromAccountID(accountID int64) (i
 func (m *mockDataAPI_handlerAlerts) CaseCareTeams(caseIDs []int64) (map[int64]*common.PatientCareTeam, error) {
 	return m.careTeamsByCase, nil
 }
-func (m *mockDataAPI_handlerAlerts) GetCasesForPatient(patientID int64, states []string) ([]*common.PatientCase, error) {
+func (m *mockDataAPI_handlerAlerts) GetCasesForPatient(patientID common.PatientID, states []string) ([]*common.PatientCase, error) {
 	return m.cases, nil
 }
 func (m *mockDataAPI_handlerAlerts) GetVisitsForCase(caseID int64, states []string) ([]*common.PatientVisit, error) {
@@ -133,11 +133,11 @@ func TestAlerts_ByCaseID(t *testing.T) {
 		visit: &common.PatientVisit{},
 		visits: []*common.PatientVisit{
 			{
-				ID:           encoding.NewObjectID(10),
+				ID:           encoding.DeprecatedNewObjectID(10),
 				CreationDate: time.Now().Add(-10 * time.Hour),
 			},
 			{
-				ID:           encoding.NewObjectID(9),
+				ID:           encoding.DeprecatedNewObjectID(9),
 				CreationDate: time.Now().Add(-2 * time.Hour),
 			},
 		},
@@ -188,21 +188,21 @@ func TestAlerts_ByPatientID(t *testing.T) {
 		visit: &common.PatientVisit{},
 		visits: []*common.PatientVisit{
 			{
-				ID:           encoding.NewObjectID(10),
+				ID:           encoding.DeprecatedNewObjectID(10),
 				CreationDate: time.Now().Add(-10 * time.Hour),
 			},
 			{
-				ID:           encoding.NewObjectID(9),
+				ID:           encoding.DeprecatedNewObjectID(9),
 				CreationDate: time.Now().Add(-2 * time.Hour),
 			},
 		},
 		cases: []*common.PatientCase{
 			{
-				ID:           encoding.NewObjectID(8),
+				ID:           encoding.DeprecatedNewObjectID(8),
 				CreationDate: time.Now().Add(-10 * time.Hour),
 			},
 			{
-				ID:           encoding.NewObjectID(7),
+				ID:           encoding.DeprecatedNewObjectID(7),
 				CreationDate: time.Now().Add(-2 * time.Hour),
 			},
 		},

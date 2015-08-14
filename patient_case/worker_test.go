@@ -42,11 +42,11 @@ func TestWorker_ActiveInactive(t *testing.T) {
 		updates: make(map[int64]*api.PatientCaseUpdate),
 		timedoutCases: []*common.PatientCase{
 			{
-				ID:     encoding.NewObjectID(1),
+				ID:     encoding.DeprecatedNewObjectID(1),
 				Status: common.PCStatusActive,
 			},
 			{
-				ID:     encoding.NewObjectID(2),
+				ID:     encoding.DeprecatedNewObjectID(2),
 				Status: common.PCStatusActive,
 			},
 		},
@@ -71,11 +71,11 @@ func TestWorker_TriageDeleted(t *testing.T) {
 		updates: make(map[int64]*api.PatientCaseUpdate),
 		timedoutCases: []*common.PatientCase{
 			{
-				ID:     encoding.NewObjectID(1),
+				ID:     encoding.DeprecatedNewObjectID(1),
 				Status: common.PCStatusPreSubmissionTriage,
 			},
 			{
-				ID:     encoding.NewObjectID(2),
+				ID:     encoding.DeprecatedNewObjectID(2),
 				Status: common.PCStatusPreSubmissionTriage,
 			},
 		},
@@ -100,11 +100,11 @@ func TestWorker_Idempotent(t *testing.T) {
 		updates: make(map[int64]*api.PatientCaseUpdate),
 		timedoutCases: []*common.PatientCase{
 			{
-				ID:     encoding.NewObjectID(1),
+				ID:     encoding.DeprecatedNewObjectID(1),
 				Status: common.PCStatusPreSubmissionTriageDeleted,
 			},
 			{
-				ID:     encoding.NewObjectID(2),
+				ID:     encoding.DeprecatedNewObjectID(2),
 				Status: common.PCStatusInactive,
 			},
 		},

@@ -107,7 +107,7 @@ func (p *presubmissionTriageHandler) ServeHTTP(ctx context.Context, w http.Respo
 			actionMessage = "How to find a local care provider"
 		}
 
-		zipcode, _, err := p.dataAPI.PatientLocation(visit.PatientID.Int64())
+		zipcode, _, err := p.dataAPI.PatientLocation(visit.PatientID)
 		if err != nil {
 			return err
 		}

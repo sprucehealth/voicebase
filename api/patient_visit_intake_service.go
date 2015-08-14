@@ -32,7 +32,7 @@ func (d *dataService) AnswersForQuestions(questionIDs []int64, info IntakeInfo) 
 
 func (d *dataService) PreviousPatientAnswersForQuestions(
 	questionTags []string,
-	patientID int64,
+	patientID common.PatientID,
 	beforeTime time.Time) (map[string][]common.Answer, error) {
 
 	if len(questionTags) == 0 {
@@ -234,7 +234,7 @@ func (d *dataService) StorePhotoSectionsForQuestion(
 
 func (d *dataService) PatientPhotoSectionsForQuestionIDs(
 	questionIDs []int64,
-	patientID,
+	patientID common.PatientID,
 	patientVisitID int64) (map[int64][]common.Answer, error) {
 	if len(questionIDs) == 0 {
 		return nil, nil

@@ -39,7 +39,7 @@ func (m *mockDataAPI_PreSubmissionTriageHandler) UpdatePatientCase(id int64, upd
 func (m *mockDataAPI_PreSubmissionTriageHandler) GetPatientCaseFromID(id int64) (*common.PatientCase, error) {
 	return m.patientCase, nil
 }
-func (m *mockDataAPI_PreSubmissionTriageHandler) PatientLocation(patientID int64) (string, string, error) {
+func (m *mockDataAPI_PreSubmissionTriageHandler) PatientLocation(patientID common.PatientID) (string, string, error) {
 	return m.zipCode, "", nil
 }
 

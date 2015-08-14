@@ -20,8 +20,8 @@ type patientCareTeamHandler struct {
 
 // The request structure expected for use with the handler returned from NewPatientCareTeamHandler
 type patientCareTeamRequest struct {
-	PatientID int64 `schema:"patient_id"`
-	CaseID    int64 `schema:"case_id"`
+	PatientID common.PatientID `schema:"patient_id"`
+	CaseID    int64            `schema:"case_id"`
 }
 
 // The response for requests services by the handler returned from NewPatientCareTeamHandler
@@ -74,7 +74,7 @@ func (h *patientCareTeamHandler) IsAuthorized(ctx context.Context, r *http.Reque
 	default:
 		return false, nil
 	case api.RoleDoctor, api.RoleCC:
-		if rd.PatientID == 0 {
+		if !rd.PatientID.IsValid {
 			return false, apiservice.NewValidationError("patient_id required")
 		}
 
@@ -90,7 +90,7 @@ func (h *patientCareTeamHandler) IsAuthorized(ctx context.Context, r *http.Reque
 			return false, err
 		}
 		// Populate the patient id aspect of our request to that it is consumed in a uniform way regardless of user type
-		rd.PatientID = patient.ID.Int64Value
+		rd.PatientID = patient.ID
 	}
 
 	// If we have requested a case we don't have access to, throw an error

@@ -238,7 +238,7 @@ func (v *incompleteVisitNotification) makeHomeCardView(dataAPI api.DataAPI, webD
 	}
 
 	if visit.Status == common.PVStatusPendingParentalConsent {
-		actionURL, err := patient.ParentalConsentRequestSMSAction(dataAPI, webDomain, data.Case.PatientID.Int64())
+		actionURL, err := patient.ParentalConsentRequestSMSAction(dataAPI, webDomain, data.Case.PatientID)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}

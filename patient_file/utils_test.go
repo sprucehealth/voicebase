@@ -119,31 +119,31 @@ func TestOtherFreeTextPopulation(t *testing.T) {
 
 	answersSelected := []*common.AnswerIntake{
 		{
-			QuestionID:        encoding.NewObjectID(101),
-			PotentialAnswerID: encoding.NewObjectID(1),
+			QuestionID:        encoding.DeprecatedNewObjectID(101),
+			PotentialAnswerID: encoding.DeprecatedNewObjectID(1),
 		},
 		{
-			QuestionID:        encoding.NewObjectID(101),
-			PotentialAnswerID: encoding.NewObjectID(1),
+			QuestionID:        encoding.DeprecatedNewObjectID(101),
+			PotentialAnswerID: encoding.DeprecatedNewObjectID(1),
 			AnswerText:        "other1",
 		},
 		{
-			QuestionID:        encoding.NewObjectID(101),
-			PotentialAnswerID: encoding.NewObjectID(1),
+			QuestionID:        encoding.DeprecatedNewObjectID(101),
+			PotentialAnswerID: encoding.DeprecatedNewObjectID(1),
 			AnswerText:        "other2",
 		},
 		{
-			QuestionID:        encoding.NewObjectID(101),
-			PotentialAnswerID: encoding.NewObjectID(1),
+			QuestionID:        encoding.DeprecatedNewObjectID(101),
+			PotentialAnswerID: encoding.DeprecatedNewObjectID(1),
 			AnswerText:        "other3",
 		},
 		{
-			QuestionID:        encoding.NewObjectID(101),
-			PotentialAnswerID: encoding.NewObjectID(3),
+			QuestionID:        encoding.DeprecatedNewObjectID(101),
+			PotentialAnswerID: encoding.DeprecatedNewObjectID(3),
 		},
 		{
-			QuestionID:        encoding.NewObjectID(101),
-			PotentialAnswerID: encoding.NewObjectID(3),
+			QuestionID:        encoding.DeprecatedNewObjectID(101),
+			PotentialAnswerID: encoding.DeprecatedNewObjectID(3),
 			AnswerText:        "other4",
 		},
 	}

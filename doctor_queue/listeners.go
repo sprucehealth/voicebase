@@ -307,13 +307,13 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 		switch ev.EventType {
 		case common.RefillRxType:
 			eventTypeString = api.DQEventTypeRefillTransmissionError
-			actionURL = app_url.ViewRefillRequestAction(ev.Patient.ID.Int64(), ev.ItemID)
+			actionURL = app_url.ViewRefillRequestAction(ev.Patient.ID, ev.ItemID)
 		case common.UnlinkedDNTFTreatmentType:
 			eventTypeString = api.DQEventTypeUnlinkedDNTFTransmissionError
-			actionURL = app_url.ViewDNTFTransmissionErrorAction(ev.Patient.ID.Int64(), ev.ItemID)
+			actionURL = app_url.ViewDNTFTransmissionErrorAction(ev.Patient.ID, ev.ItemID)
 		case common.ERxType:
 			eventTypeString = api.DQEventTypeTransmissionError
-			actionURL = app_url.ViewTransmissionErrorAction(ev.Patient.ID.Int64(), ev.ItemID)
+			actionURL = app_url.ViewTransmissionErrorAction(ev.Patient.ID, ev.ItemID)
 		}
 
 		if err := dataAPI.UpdateDoctorQueue([]*api.DoctorQueueUpdate{
@@ -321,7 +321,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 				Action: api.DQActionInsert,
 				QueueItem: &api.DoctorQueueItem{
 					DoctorID:         ev.DoctorID,
-					PatientID:        ev.Patient.ID.Int64(),
+					PatientID:        ev.Patient.ID,
 					ItemID:           ev.ItemID,
 					Status:           api.StatusPending,
 					EventType:        eventTypeString,
@@ -367,17 +367,17 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			eventType = api.DQEventTypeTransmissionError
 			description = fmt.Sprintf("%s resolved error for %s %s", ev.Doctor.ShortDisplayName, ev.Patient.FirstName, ev.Patient.LastName)
 			shortDescription = fmt.Sprintf("Prescription error resolved by %s", ev.Doctor.ShortDisplayName)
-			actionURL = app_url.ViewTransmissionErrorAction(ev.Patient.ID.Int64(), ev.ItemID)
+			actionURL = app_url.ViewTransmissionErrorAction(ev.Patient.ID, ev.ItemID)
 		case common.RefillRxType:
 			eventType = api.DQEventTypeRefillTransmissionError
 			description = fmt.Sprintf("%s resolved refill request error for %s %s", ev.Doctor.ShortDisplayName, ev.Patient.FirstName, ev.Patient.LastName)
 			shortDescription = fmt.Sprintf("Refill request error resolved by %s", ev.Doctor.ShortDisplayName)
-			actionURL = app_url.ViewRefillRequestAction(ev.Patient.ID.Int64(), ev.ItemID)
+			actionURL = app_url.ViewRefillRequestAction(ev.Patient.ID, ev.ItemID)
 		case common.UnlinkedDNTFTreatmentType:
 			eventType = api.DQEventTypeUnlinkedDNTFTransmissionError
 			description = fmt.Sprintf("%s resolved error for %s %s", ev.Doctor.ShortDisplayName, ev.Patient.FirstName, ev.Patient.LastName)
 			shortDescription = fmt.Sprintf("Prescription error resolved by %s", ev.Doctor.ShortDisplayName)
-			actionURL = app_url.ViewDNTFTransmissionErrorAction(ev.Patient.ID.Int64(), ev.ItemID)
+			actionURL = app_url.ViewDNTFTransmissionErrorAction(ev.Patient.ID, ev.ItemID)
 		}
 
 		if err := dataAPI.UpdateDoctorQueue([]*api.DoctorQueueUpdate{
@@ -386,7 +386,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 				CurrentState: api.DQItemStatusPending,
 				QueueItem: &api.DoctorQueueItem{
 					DoctorID:         ev.Doctor.ID.Int64(),
-					PatientID:        ev.Patient.ID.Int64(),
+					PatientID:        ev.Patient.ID,
 					ItemID:           ev.ItemID,
 					EventType:        eventType,
 					Status:           api.DQItemStatusTreated,
@@ -409,13 +409,13 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 				Action: api.DQActionInsert,
 				QueueItem: &api.DoctorQueueItem{
 					DoctorID:         ev.DoctorID,
-					PatientID:        ev.Patient.ID.Int64(),
+					PatientID:        ev.Patient.ID,
 					ItemID:           ev.RefillRequestID,
 					EventType:        api.DQEventTypeRefillRequest,
 					Status:           api.StatusPending,
 					Description:      fmt.Sprintf("Refill request for %s %s", ev.Patient.FirstName, ev.Patient.LastName),
 					ShortDescription: "Refill request",
-					ActionURL:        app_url.ViewRefillRequestAction(ev.Patient.ID.Int64(), ev.RefillRequestID),
+					ActionURL:        app_url.ViewRefillRequestAction(ev.Patient.ID, ev.RefillRequestID),
 				},
 			},
 		}); err != nil {
@@ -467,13 +467,13 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 				CurrentState: api.DQItemStatusPending,
 				QueueItem: &api.DoctorQueueItem{
 					DoctorID:         ev.Doctor.ID.Int64(),
-					PatientID:        ev.Patient.ID.Int64(),
+					PatientID:        ev.Patient.ID,
 					ItemID:           ev.RefillRequestID,
 					EventType:        api.DQEventTypeRefillRequest,
 					Status:           ev.Status,
 					Description:      description,
 					ShortDescription: shortDescription,
-					ActionURL:        app_url.ViewRefillRequestAction(ev.Patient.ID.Int64(), ev.RefillRequestID),
+					ActionURL:        app_url.ViewRefillRequestAction(ev.Patient.ID, ev.RefillRequestID),
 				},
 			},
 		}); err != nil {
@@ -500,7 +500,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			}
 		}
 
-		patient, err := dataAPI.Patient(ev.Case.PatientID.Int64(), true)
+		patient, err := dataAPI.Patient(ev.Case.PatientID, true)
 		if err != nil {
 			golog.Errorf("Patient lookup failed: %s", err.Error())
 			return nil
@@ -539,13 +539,13 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 					Action: api.DQActionInsert,
 					QueueItem: &api.DoctorQueueItem{
 						DoctorID:         ev.Person.RoleID,
-						PatientID:        ev.Case.PatientID.Int64(),
+						PatientID:        ev.Case.PatientID,
 						ItemID:           ev.Case.ID.Int64(),
 						EventType:        api.DQEventTypeCaseMessage,
 						Status:           api.DQItemStatusReplied,
 						Description:      fmt.Sprintf("%s replied to %s %s", doctor.ShortDisplayName, patient.FirstName, patient.LastName),
 						ShortDescription: fmt.Sprintf("Messaged by %s", doctor.ShortDisplayName),
-						ActionURL:        app_url.ViewPatientMessagesAction(patient.ID.Int64(), ev.Case.ID.Int64()),
+						ActionURL:        app_url.ViewPatientMessagesAction(patient.ID, ev.Case.ID.Int64()),
 						Tags:             []string{ev.Case.Name},
 					},
 				},
@@ -580,13 +580,13 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 				Dedupe: true,
 				QueueItem: &api.DoctorQueueItem{
 					DoctorID:         maID,
-					PatientID:        ev.Case.PatientID.Int64(),
+					PatientID:        ev.Case.PatientID,
 					ItemID:           ev.Message.CaseID,
 					EventType:        api.DQEventTypeCaseMessage,
 					Status:           api.DQItemStatusPending,
 					Description:      fmt.Sprintf("Message from %s %s", patient.FirstName, patient.LastName),
 					ShortDescription: "New message",
-					ActionURL:        app_url.ViewPatientMessagesAction(patient.ID.Int64(), ev.Case.ID.Int64()),
+					ActionURL:        app_url.ViewPatientMessagesAction(patient.ID, ev.Case.ID.Int64()),
 					Tags:             []string{ev.Case.Name},
 				},
 			},
@@ -627,7 +627,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			assignedProviderRole = api.RoleDoctor
 		}
 
-		patient, err := dataAPI.Patient(ev.Case.PatientID.Int64(), true)
+		patient, err := dataAPI.Patient(ev.Case.PatientID, true)
 		if err != nil {
 			golog.Errorf("Unable to get patient info: %s", err.Error())
 			return err
@@ -658,14 +658,14 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 				Action: api.DQActionInsert,
 				QueueItem: &api.DoctorQueueItem{
 					DoctorID:  ev.Person.RoleID,
-					PatientID: ev.Case.PatientID.Int64(),
+					PatientID: ev.Case.PatientID,
 					ItemID:    ev.Case.ID.Int64(),
 					EventType: api.DQEventTypeCaseAssignment,
 					Status:    api.DQItemStatusReplied,
 					Description: fmt.Sprintf("%s assigned %s %s's case to %s", assigneeProvider.ShortDisplayName,
 						patient.FirstName, patient.LastName, assignedProvider.ShortDisplayName),
 					ShortDescription: fmt.Sprintf("Assigned to %s", assignedProvider.ShortDisplayName),
-					ActionURL:        app_url.ViewPatientMessagesAction(patient.ID.Int64(), ev.Case.ID.Int64()),
+					ActionURL:        app_url.ViewPatientMessagesAction(patient.ID, ev.Case.ID.Int64()),
 					Tags:             []string{ev.Case.Name},
 				},
 			},
@@ -682,14 +682,14 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 				Dedupe: true,
 				QueueItem: &api.DoctorQueueItem{
 					DoctorID:  assignedProvider.ID.Int64(),
-					PatientID: ev.Case.PatientID.Int64(),
+					PatientID: ev.Case.PatientID,
 					ItemID:    ev.Case.ID.Int64(),
 					EventType: api.DQEventTypeCaseAssignment,
 					Status:    api.DQItemStatusPending,
 					Description: fmt.Sprintf("%s %s's case assigned to %s", patient.FirstName, patient.LastName,
 						assignedProvider.ShortDisplayName),
 					ShortDescription: fmt.Sprintf("Reassigned by %s", assigneeProvider.ShortDisplayName),
-					ActionURL:        app_url.ViewPatientMessagesAction(patient.ID.Int64(), ev.Case.ID.Int64()),
+					ActionURL:        app_url.ViewPatientMessagesAction(patient.ID, ev.Case.ID.Int64()),
 					Tags:             []string{ev.Case.Name},
 				},
 			},

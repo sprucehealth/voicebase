@@ -104,7 +104,7 @@ func IntakeLayoutForVisit(
 		info.ParentalConsentRequired = patient.IsUnder18()
 		info.ParentalConsentGranted = patient.HasParentalConsent
 		if viewerRole == api.RolePatient && info.ParentalConsentRequired && !info.ParentalConsentGranted {
-			actionURL, err := ParentalConsentRequestSMSAction(dataAPI, webDomain, patient.ID.Int64())
+			actionURL, err := ParentalConsentRequestSMSAction(dataAPI, webDomain, patient.ID)
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
@@ -134,7 +134,7 @@ func populateLayoutWithAnswers(
 	patientVisit *common.PatientVisit,
 ) error {
 
-	patientID := patientVisit.PatientID.Int64()
+	patientID := patientVisit.PatientID
 	visitID := patientVisit.ID.Int64()
 
 	photoQuestionIDs := visitLayout.PhotoQuestionIDs()
@@ -241,7 +241,7 @@ func populateAnswers(question *info_intake.Question, answers []common.Answer) ([
 			// so that we can map it to one of the potential answers of the new version of the question
 			for _, pa := range question.PotentialAnswers {
 				if pa.Answer == a.PotentialAnswer {
-					ai.PotentialAnswerID = encoding.NewObjectID(pa.AnswerID)
+					ai.PotentialAnswerID = encoding.DeprecatedNewObjectID(pa.AnswerID)
 				}
 			}
 
@@ -339,12 +339,12 @@ func createPatientVisit(
 
 	// First check for cases on the pathway the patient chose from the menu and if none then
 	// check for them against the possible alternate pathway based on age
-	patientCases, err := dataAPI.CasesForPathway(patient.ID.Int64(), pathwayTag, []string{common.PCStatusOpen.String(), common.PCStatusActive.String()})
+	patientCases, err := dataAPI.CasesForPathway(patient.ID, pathwayTag, []string{common.PCStatusOpen.String(), common.PCStatusActive.String()})
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	if len(patientCases) == 0 && pathway.Tag != pathwayTag {
-		patientCases, err = dataAPI.CasesForPathway(patient.ID.Int64(), pathway.Tag, []string{common.PCStatusOpen.String(), common.PCStatusActive.String()})
+		patientCases, err = dataAPI.CasesForPathway(patient.ID, pathway.Tag, []string{common.PCStatusOpen.String(), common.PCStatusActive.String()})
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -388,7 +388,7 @@ func createPatientVisit(
 			PatientID:       patient.ID,
 			PathwayTag:      pathway.Tag,
 			Status:          common.PVStatusOpen,
-			LayoutVersionID: encoding.NewObjectID(layoutVersionID),
+			LayoutVersionID: encoding.DeprecatedNewObjectID(layoutVersionID),
 			SKUType:         sku.Type,
 		}
 
@@ -416,7 +416,7 @@ func createPatientVisit(
 
 	if visitCreated {
 		dispatcher.Publish(&VisitStartedEvent{
-			PatientID:     patient.ID.Int64(),
+			PatientID:     patient.ID,
 			VisitID:       patientVisit.ID.Int64(),
 			PatientCaseID: patientVisit.PatientCaseID.Int64(),
 		})
@@ -427,7 +427,7 @@ func createPatientVisit(
 	}, nil
 }
 
-func showFeedback(dataAPI api.DataAPI, patientID int64) bool {
+func showFeedback(dataAPI api.DataAPI, patientID common.PatientID) bool {
 	tp, err := latestActiveTreatmentPlan(dataAPI, patientID)
 	if err != nil {
 		golog.Errorf(err.Error())
@@ -440,18 +440,18 @@ func showFeedback(dataAPI api.DataAPI, patientID int64) bool {
 	feedbackFor := "case:" + strconv.FormatInt(tp.PatientCaseID.Int64(), 10)
 	recorded, err := dataAPI.PatientFeedbackRecorded(patientID, feedbackFor)
 	if err != nil {
-		golog.Errorf("Failed to get feedback for patient %d %s: %s", patientID, feedbackFor, err)
+		golog.Errorf("Failed to get feedback for patient %s %s: %s", patientID, feedbackFor, err)
 		return false
 	}
 
 	return !recorded
 }
 
-func latestActiveTreatmentPlan(dataAPI api.DataAPI, patientID int64) (*common.TreatmentPlan, error) {
+func latestActiveTreatmentPlan(dataAPI api.DataAPI, patientID common.PatientID) (*common.TreatmentPlan, error) {
 	// Only show the feedback prompt if the patient has viewed the latest active treatment plan
 	tps, err := dataAPI.GetActiveTreatmentPlansForPatient(patientID)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get active treatment plans for patient %d: %s", patientID, err)
+		return nil, fmt.Errorf("Failed to get active treatment plans for patient %s: %s", patientID, err)
 	}
 	if len(tps) == 0 {
 		return nil, nil

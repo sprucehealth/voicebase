@@ -14,7 +14,7 @@ func TestCaseNotifications_IncompleteVisit(t *testing.T) {
 	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.ID.Int64(), testData, t)
+	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.ID, testData, t)
 
 	patientCase, err := testData.DataAPI.GetPatientCaseFromPatientVisitID(pv.PatientVisitID)
 	test.OK(t, err)
@@ -74,7 +74,7 @@ func TestCaseNotifications_Message(t *testing.T) {
 	test.OK(t, err)
 
 	doctorCli := test_integration.DoctorClient(testData, t, doctorID)
-	patientCli := test_integration.PatientClient(testData, t, patient.ID.Int64())
+	patientCli := test_integration.PatientClient(testData, t, patient.ID)
 
 	messageID1, err := doctorCli.PostCaseMessage(caseID, "foo", nil)
 	test.OK(t, err)

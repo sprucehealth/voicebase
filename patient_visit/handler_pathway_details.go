@@ -95,7 +95,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(ctx context.Context, w http.ResponseWr
 		return
 	}
 
-	var patientID int64
+	var patientID common.PatientID
 	activeCases := make(map[string]*common.PatientCase)
 	var activeCaseIDs []int64
 
@@ -227,7 +227,7 @@ func (h *pathwayDetailsHandler) ServeHTTP(ctx context.Context, w http.ResponseWr
 	httputil.JSONResponse(w, http.StatusOK, res)
 }
 
-func merchandisingScreen(pathway *common.Pathway, doctorImageURLs []string, itemCost *common.ItemCost, apiDomain string, patientID int64, launchPromoStartDate *time.Time, dataAPI api.DataAPI, cfgStore cfg.Store) (*pathwayDetailsScreen, error) {
+func merchandisingScreen(pathway *common.Pathway, doctorImageURLs []string, itemCost *common.ItemCost, apiDomain string, patientID common.PatientID, launchPromoStartDate *time.Time, dataAPI api.DataAPI, cfgStore cfg.Store) (*pathwayDetailsScreen, error) {
 	if pathway.Details.WhoWillTreatMe == "" {
 		golog.Errorf("Field WhoWillTreatMe missing for pathway %d '%s'", pathway.ID, pathway.Name)
 	}
@@ -315,7 +315,7 @@ func merchandisingScreen(pathway *common.Pathway, doctorImageURLs []string, item
 }
 
 // limitedTimeFirstVisitFreeCard returns the card for the first visit free promotion. If the patient is not eligible it will return nil
-func limitedTimeFirstVisitFreeCard(patientID int64, dataAPI api.DataAPI) (views.View, error) {
+func limitedTimeFirstVisitFreeCard(patientID common.PatientID, dataAPI api.DataAPI) (views.View, error) {
 	limitedTimeOfferCard := &views.Card{
 		Title: "Limited time offer",
 		Views: []views.View{
@@ -326,7 +326,7 @@ func limitedTimeFirstVisitFreeCard(patientID int64, dataAPI api.DataAPI) (views.
 	}
 
 	// always add limited time offer card for unauthenticated case.
-	if patientID == 0 {
+	if !patientID.IsValid {
 		return limitedTimeOfferCard, nil
 	}
 

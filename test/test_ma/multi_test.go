@@ -18,7 +18,7 @@ func TestPrimaryCC(t *testing.T) {
 	test_integration.SignupRandomTestCC(t, testData, false)
 
 	p := test_integration.SignupRandomTestPatient(t, testData)
-	pcli := test_integration.PatientClient(testData, t, p.Patient.ID.Int64())
+	pcli := test_integration.PatientClient(testData, t, p.Patient.ID)
 	res, err := pcli.CreatePatientVisit(api.AcnePathwayTag, 0, map[string][]string{
 		"S-Version":   []string{"Patient;Feature;1.0.0;000105"},
 		"S-OS":        []string{"iOS;7.1.1"},
@@ -37,7 +37,7 @@ func TestPrimaryCC(t *testing.T) {
 	cc, _, _ := test_integration.SignupRandomTestCC(t, testData, true)
 
 	p = test_integration.SignupRandomTestPatient(t, testData)
-	pcli = test_integration.PatientClient(testData, t, p.Patient.ID.Int64())
+	pcli = test_integration.PatientClient(testData, t, p.Patient.ID)
 	res, err = pcli.CreatePatientVisit(api.AcnePathwayTag, 0, map[string][]string{
 		"S-Version":   []string{"Patient;Feature;1.0.0;000105"},
 		"S-OS":        []string{"iOS;7.1.1"},

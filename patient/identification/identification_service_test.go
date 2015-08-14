@@ -12,27 +12,27 @@ import (
 
 type mockIdentificationServiceDataAPI struct {
 	api.DataAPI
-	patientParam                                     int64
+	patientParam                                     common.PatientID
 	patientErr                                       error
 	patient                                          *common.Patient
 	lookupPromoCodeParam                             string
 	lookupPromoCodeErr                               error
 	lookupPromoCode                                  *common.PromoCode
-	patientLocationParam                             int64
+	patientLocationParam                             common.PatientID
 	patientLocationErr                               error
 	patientLocationZip                               string
 	patientLocationState                             string
 	createParkedAccountParam                         *common.ParkedAccount
 	createParkedAccountErr                           error
 	createParkedAccount                              int64
-	deactivateScheduledMessagesForPatientParam       int64
+	deactivateScheduledMessagesForPatientParam       common.PatientID
 	deactivateScheduledMessagesForPatientErr         error
 	deactivateScheduledMessagesForPatient            int64
 	deletePushCommunicationPreferenceForAccountParam int64
 	deletePushCommunicationPreferenceForAccountErr   error
 }
 
-func (m *mockIdentificationServiceDataAPI) Patient(id int64, basicInfoOnly bool) (*common.Patient, error) {
+func (m *mockIdentificationServiceDataAPI) Patient(id common.PatientID, basicInfoOnly bool) (*common.Patient, error) {
 	m.patientParam = id
 	return m.patient, m.patientErr
 }
@@ -42,7 +42,7 @@ func (m *mockIdentificationServiceDataAPI) LookupPromoCode(code string) (*common
 	return m.lookupPromoCode, m.lookupPromoCodeErr
 }
 
-func (m *mockIdentificationServiceDataAPI) PatientLocation(patientID int64) (zipcode string, state string, err error) {
+func (m *mockIdentificationServiceDataAPI) PatientLocation(patientID common.PatientID) (zipcode string, state string, err error) {
 	m.patientLocationParam = patientID
 	return m.patientLocationZip, m.patientLocationState, m.patientLocationErr
 }
@@ -52,7 +52,7 @@ func (m *mockIdentificationServiceDataAPI) CreateParkedAccount(parkedAccount *co
 	return m.createParkedAccount, m.createParkedAccountErr
 }
 
-func (m *mockIdentificationServiceDataAPI) DeactivateScheduledMessagesForPatient(patientID int64) (int64, error) {
+func (m *mockIdentificationServiceDataAPI) DeactivateScheduledMessagesForPatient(patientID common.PatientID) (int64, error) {
 	m.deactivateScheduledMessagesForPatientParam = patientID
 	return m.deactivateScheduledMessagesForPatient, m.deactivateScheduledMessagesForPatientErr
 }
@@ -87,7 +87,7 @@ func (m *mockIdentificationServiceAuthAPI) UpdateAccount(accountID int64, email 
 
 // Begin MarkForNeedsIDVerification tests
 func TestMarkForNeedsIDVerificationHappyCase(t *testing.T) {
-	var patientID int64 = 1
+	patientID := common.NewPatientID(1)
 	var accountID int64 = 2
 	var promoCodeID int64 = 3
 	var parkedAccountID int64 = 5
@@ -96,7 +96,7 @@ func TestMarkForNeedsIDVerificationHappyCase(t *testing.T) {
 	promoCode := "Foo"
 	email := "not@verified.com"
 	dataAPI := &mockIdentificationServiceDataAPI{
-		patient:              &common.Patient{AccountID: encoding.NewObjectID(accountID)},
+		patient:              &common.Patient{AccountID: encoding.DeprecatedNewObjectID(accountID)},
 		lookupPromoCode:      &common.PromoCode{ID: promoCodeID},
 		patientLocationState: state,
 		createParkedAccount:  parkedAccountID,
@@ -124,7 +124,7 @@ func TestMarkForNeedsIDVerificationHappyCase(t *testing.T) {
 }
 
 func TestMarkForNeedsIDVerificationIdempotent(t *testing.T) {
-	var patientID int64 = 1
+	patientID := common.NewPatientID(1)
 	var accountID int64 = 2
 	var promoCodeID int64 = 3
 	var parkedAccountID int64 = 5
@@ -134,7 +134,7 @@ func TestMarkForNeedsIDVerificationIdempotent(t *testing.T) {
 	promoCode := "Foo"
 	email := "not@verified.com"
 	dataAPI := &mockIdentificationServiceDataAPI{
-		patient:              &common.Patient{AccountID: encoding.NewObjectID(accountID)},
+		patient:              &common.Patient{AccountID: encoding.DeprecatedNewObjectID(accountID)},
 		lookupPromoCode:      &common.PromoCode{ID: promoCodeID},
 		patientLocationState: state,
 		createParkedAccount:  parkedAccountID,

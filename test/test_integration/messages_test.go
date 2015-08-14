@@ -54,7 +54,7 @@ func TestCaseMessages(t *testing.T) {
 	test.OK(t, err)
 
 	doctorCli := DoctorClient(testData, t, doctorID)
-	patientCli := PatientClient(testData, t, patient.ID.Int64())
+	patientCli := PatientClient(testData, t, patient.ID)
 	ccCli := DoctorClient(testData, t, cc.DoctorID)
 
 	test.OK(t, doctorCli.UpdateTreatmentPlanNote(treatmentPlan.ID.Int64(), "foo"))

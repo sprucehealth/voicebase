@@ -69,7 +69,7 @@ func (c *caseInfoHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 		}
 
 		// ensure that the case is owned by the patient
-		if patientID != patientCase.PatientID.Int64() {
+		if patientID != patientCase.PatientID {
 			apiservice.WriteAccessNotAllowedError(ctx, w, r)
 			return
 		}
@@ -98,7 +98,7 @@ func (c *caseInfoHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 			return
 		}
 
-		if err := apiservice.ValidateAccessToPatientCase(r.Method, account.Role, doctorID, patientCase.PatientID.Int64(), requestData.CaseID, c.dataAPI); err != nil {
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, account.Role, doctorID, patientCase.PatientID, requestData.CaseID, c.dataAPI); err != nil {
 			apiservice.WriteError(ctx, err, w, r)
 			return
 		}

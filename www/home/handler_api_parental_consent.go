@@ -22,14 +22,14 @@ type parentalConsentAPIHandler struct {
 }
 
 type parentalConsentAPIPOSTRequest struct {
-	ChildPatientID int64  `json:"child_patient_id,string"`
-	Relationship   string `json:"relationship"`
+	ChildPatientID common.PatientID `json:"child_patient_id"`
+	Relationship   string           `json:"relationship"`
 }
 
 type parentalConsentAPIPOSTResponse struct{}
 
 type parentalconsentAPIGETRequest struct {
-	ChildPatientID int64 `schema:"child_patient_id,required"`
+	ChildPatientID common.PatientID `schema:"child_patient_id,required"`
 }
 
 type parentalConsentAPIGETResponse struct {
@@ -37,11 +37,11 @@ type parentalConsentAPIGETResponse struct {
 }
 
 type childResponse struct {
-	ChildPatientID int64  `json:"child_patient_id,string"`
-	ChildFirstName string `json:"child_first_name"`
-	ChildGender    string `json:"child_gender"`
-	Consented      bool   `json:"consented"`
-	Relationship   string `json:"relationship,omitempty"`
+	ChildPatientID common.PatientID `json:"child_patient_id"`
+	ChildFirstName string           `json:"child_first_name"`
+	ChildGender    string           `json:"child_gender"`
+	Consented      bool             `json:"consented"`
+	Relationship   string           `json:"relationship,omitempty"`
 }
 
 func (r *parentalConsentAPIPOSTRequest) Validate() (bool, string) {
@@ -99,21 +99,21 @@ func (h *parentalConsentAPIHandler) post(ctx context.Context, w http.ResponseWri
 		return
 	}
 
-	newConsent, err := h.dataAPI.GrantParentChildConsent(parent.ID.Int64(), req.ChildPatientID, req.Relationship)
+	newConsent, err := h.dataAPI.GrantParentChildConsent(parent.ID, req.ChildPatientID, req.Relationship)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
 	}
 	if newConsent {
 		// It's possible this is a second child for the same parent in which case we'll already have identification photos.
-		proof, err := h.dataAPI.ParentConsentProof(parent.ID.Int64())
+		proof, err := h.dataAPI.ParentConsentProof(parent.ID)
 		if err != nil {
 			if !api.IsErrNotFound(err) {
 				www.APIInternalError(w, r, err)
 				return
 			}
 		} else if proof.IsComplete() {
-			if err := patient.ParentalConsentCompleted(h.dataAPI, h.dispatcher, parent.ID.Int64(), req.ChildPatientID); err != nil {
+			if err := patient.ParentalConsentCompleted(h.dataAPI, h.dispatcher, parent.ID, req.ChildPatientID); err != nil {
 				www.APIInternalError(w, r, err)
 				return
 			}
@@ -180,7 +180,7 @@ func (h *parentalConsentAPIHandler) get(ctx context.Context, w http.ResponseWrit
 	res := &parentalConsentAPIGETResponse{
 		Children: []*childResponse{
 			{
-				ChildPatientID: child.ID.Int64(),
+				ChildPatientID: child.ID,
 				ChildFirstName: child.FirstName,
 				ChildGender:    child.Gender,
 				Consented:      c,

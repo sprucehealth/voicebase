@@ -45,7 +45,7 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 	patient, err := testData.DataAPI.GetPatientFromPatientVisitID(patientVisitResponse.PatientVisitID)
 	test.OK(t, err)
 
-	err = testData.DataAPI.UpdatePatientPharmacy(patient.ID.Int64(), patientPharmacy)
+	err = testData.DataAPI.UpdatePatientPharmacy(patient.ID, patientPharmacy)
 	if err != nil {
 		t.Fatal("Unable to add patient's preferred pharmacy")
 	}
@@ -81,7 +81,7 @@ func TestDoctorUpdateToPatientAddress(t *testing.T) {
 		t.Fatal("Unable to make successfull call to update patient information")
 	}
 
-	patient, err = testData.DataAPI.GetPatientFromID(patient.ID.Int64())
+	patient, err = testData.DataAPI.GetPatientFromID(patient.ID)
 	if err != nil {
 		t.Fatal("Unable to get back patient information from database: " + err.Error())
 	}
@@ -191,7 +191,7 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 		Postal:       "94115",
 	}
 
-	err = testData.DataAPI.UpdatePatientPharmacy(patient.ID.Int64(), patientPharmacy)
+	err = testData.DataAPI.UpdatePatientPharmacy(patient.ID, patientPharmacy)
 	if err != nil {
 		t.Fatal("Unable to add patient's preferred pharmacy")
 	}
@@ -240,7 +240,7 @@ func TestDoctorUpdateToPhoneNumbers(t *testing.T) {
 		t.Fatal("Unable to make successfull call to update patient information")
 	}
 
-	patient, err = testData.DataAPI.GetPatientFromID(patient.ID.Int64())
+	patient, err = testData.DataAPI.GetPatientFromID(patient.ID)
 	if err != nil {
 		t.Fatal("Unable to get back patient information from database: " + err.Error())
 	}
@@ -316,7 +316,7 @@ func testDoctorUpdateToTopLevelInformation(t *testing.T, doctor *common.Doctor, 
 		Postal:       "94115",
 	}
 
-	err = testData.DataAPI.UpdatePatientPharmacy(patient.ID.Int64(), patientPharmacy)
+	err = testData.DataAPI.UpdatePatientPharmacy(patient.ID, patientPharmacy)
 	if err != nil {
 		t.Fatal("Unable to add patient's preferred pharmacy")
 	}
@@ -356,7 +356,7 @@ func testDoctorUpdateToTopLevelInformation(t *testing.T, doctor *common.Doctor, 
 		t.Fatal("Unable to make successfull call to update patient information")
 	}
 
-	updatedPatient, err := testData.DataAPI.GetPatientFromID(patient.ID.Int64())
+	updatedPatient, err := testData.DataAPI.GetPatientFromID(patient.ID)
 	if err != nil {
 		t.Fatal("Unable to get back patient information from database: " + err.Error())
 	}
@@ -391,7 +391,7 @@ func TestDoctorUpdatePatientInformationForbidden(t *testing.T) {
 		Postal:       "94115",
 	}
 
-	err := testData.DataAPI.UpdatePatientPharmacy(signedupPatientResponse.Patient.ID.Int64(), patientPharmacy)
+	err := testData.DataAPI.UpdatePatientPharmacy(signedupPatientResponse.Patient.ID, patientPharmacy)
 	if err != nil {
 		t.Fatal("Unable to add patient's preferred pharmacy")
 	}
@@ -455,7 +455,7 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 		Postal:       "94115",
 	}
 
-	err = testData.DataAPI.UpdatePatientPharmacy(patient.ID.Int64(), patientPharmacy)
+	err = testData.DataAPI.UpdatePatientPharmacy(patient.ID, patientPharmacy)
 	if err != nil {
 		t.Fatal("Unable to add patient's preferred pharmacy")
 	}
@@ -490,7 +490,7 @@ func TestDoctorPatientPharmacyUpdateHandler(t *testing.T) {
 		t.Fatal("Unable to make successful call to update patient information")
 	}
 
-	patient, err = testData.DataAPI.GetPatientFromID(patient.ID.Int64())
+	patient, err = testData.DataAPI.GetPatientFromID(patient.ID)
 	if err != nil {
 		t.Fatal("Unable to get patient based on id: " + err.Error())
 	}
@@ -522,7 +522,7 @@ func TestDoctorPharmacyUpdateForbidden(t *testing.T) {
 		Postal:       "94115",
 	}
 
-	err := testData.DataAPI.UpdatePatientPharmacy(signedupPatientResponse.Patient.ID.Int64(), patientPharmacy)
+	err := testData.DataAPI.UpdatePatientPharmacy(signedupPatientResponse.Patient.ID, patientPharmacy)
 	if err != nil {
 		t.Fatal("Unable to add patient's preferred pharmacy")
 	}

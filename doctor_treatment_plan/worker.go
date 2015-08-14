@@ -23,7 +23,7 @@ var (
 
 type erxRouteMessage struct {
 	TreatmentPlanID int64
-	PatientID       int64
+	PatientID       common.PatientID
 	DoctorID        int64
 	Message         string
 }
@@ -168,7 +168,7 @@ func (w *Worker) processMessage(msg *erxRouteMessage) error {
 		}
 
 		erxID := patient.ERxPatientID.Int64()
-		if err := w.dataAPI.UpdatePatient(patient.ID.Int64(), &api.PatientUpdate{
+		if err := w.dataAPI.UpdatePatient(patient.ID, &api.PatientUpdate{
 			ERxID: &erxID,
 		}, false); err != nil {
 			return errors.Trace(err)
@@ -243,7 +243,7 @@ func (w *Worker) sendPrescriptionsToPharmacy(treatments []*common.Treatment, pat
 
 	//  Queue up notification to patient
 	if err := apiservice.QueueUpJob(w.erxStatusQueue, &common.PrescriptionStatusCheckMessage{
-		PatientID:      patient.ID.Int64(),
+		PatientID:      patient.ID,
 		DoctorID:       doctor.ID.Int64(),
 		EventCheckType: common.ERxType,
 	}); err != nil {

@@ -22,10 +22,10 @@ type mockDataAPITotalCost struct {
 func (m *mockDataAPITotalCost) GetActiveItemCost(skuType string) (*common.ItemCost, error) {
 	return m.itemCost, nil
 }
-func (m *mockDataAPITotalCost) GetPatientIDFromAccountID(accountID int64) (int64, error) {
-	return 0, nil
+func (m *mockDataAPITotalCost) GetPatientIDFromAccountID(accountID int64) (common.PatientID, error) {
+	return common.PatientID{}, nil
 }
-func (m *mockDataAPITotalCost) VisitsSubmittedForPatientSince(patientID int64, since time.Time) ([]*common.PatientVisit, error) {
+func (m *mockDataAPITotalCost) VisitsSubmittedForPatientSince(patientID common.PatientID, since time.Time) ([]*common.PatientVisit, error) {
 	return m.visits, nil
 }
 func (m *mockDataAPITotalCost) PendingPromotionsForAccount(id int64, types map[string]reflect.Type) ([]*common.AccountPromotion, error) {

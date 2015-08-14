@@ -38,10 +38,10 @@ func (m *mockDataAPI_SelectionHandler) Doctors(doctorIDs []int64) ([]*common.Doc
 	}
 	return doctors, nil
 }
-func (m *mockDataAPI_SelectionHandler) GetPatientIDFromAccountID(accountID int64) (int64, error) {
-	return 1, nil
+func (m *mockDataAPI_SelectionHandler) GetPatientIDFromAccountID(accountID int64) (common.PatientID, error) {
+	return common.NewPatientID(1), nil
 }
-func (m *mockDataAPI_SelectionHandler) GetCasesForPatient(patientID int64, states []string) ([]*common.PatientCase, error) {
+func (m *mockDataAPI_SelectionHandler) GetCasesForPatient(patientID common.PatientID, states []string) ([]*common.PatientCase, error) {
 	return nil, nil
 }
 func (m *mockDataAPI_SelectionHandler) CaseCareTeams(caseIDs []int64) (map[int64]*common.PatientCareTeam, error) {
@@ -368,7 +368,7 @@ func TestSelection_CareProviderSpecified_Eligible(t *testing.T) {
 		availableDoctorIDs:            availableDoctorIDs,
 		doctorMap:                     doctorMap,
 		doctor: &common.Doctor{
-			ID:               encoding.NewObjectID(10),
+			ID:               encoding.DeprecatedNewObjectID(10),
 			ShortDisplayName: "Dr. Test",
 			LongTitle:        "Dermatologist",
 		},
@@ -853,7 +853,7 @@ func generateDoctors(n int) []*common.Doctor {
 	doctors := make([]*common.Doctor, n)
 	for i := 0; i < n; i++ {
 		doctors[i] = &common.Doctor{
-			ID:               encoding.NewObjectID(int64(i + 1)),
+			ID:               encoding.DeprecatedNewObjectID(int64(i + 1)),
 			ShortDisplayName: fmt.Sprintf("doctorDisplay%d", i),
 			LongTitle:        fmt.Sprintf("doctorTitle%d", i),
 		}

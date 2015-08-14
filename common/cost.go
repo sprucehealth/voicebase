@@ -167,7 +167,7 @@ type PatientReceipt struct {
 	ReferenceNumber   string               `json:"reference_number"`
 	SKUType           string               `json:"item_type"`
 	ItemID            int64                `json:"item_id,string"`
-	PatientID         int64                `json:"-"`
+	PatientID         PatientID            `json:"-"`
 	StripeChargeID    string               `json:"-"`
 	CreationTimestamp time.Time            `json:"creation_timestamp"`
 	Status            PatientReceiptStatus `json:"-"`
@@ -182,6 +182,6 @@ type DoctorTransaction struct {
 	ItemCostID *int64
 	SKUType    string
 	ItemID     int64
-	PatientID  int64
+	PatientID  PatientID
 	Created    time.Time
 }

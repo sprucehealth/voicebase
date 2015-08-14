@@ -66,7 +66,7 @@ func (s *ScheduledMessageStatus) Scan(src interface{}) error {
 type ScheduledMessage struct {
 	ID        int64
 	Event     string
-	PatientID int64
+	PatientID PatientID
 	Message   Typed
 	Created   time.Time
 	Scheduled time.Time

@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 )
 
@@ -155,8 +156,8 @@ func transformQueueItems(
 	r *http.Request,
 ) {
 	// collect the set of patient ids
-	patientIDs := make([]int64, 0, len(queueItems))
-	patientIDMap := make(map[int64]bool)
+	patientIDs := make([]common.PatientID, 0, len(queueItems))
+	patientIDMap := make(map[common.PatientID]bool)
 	for _, item := range queueItems {
 		if !patientIDMap[item.PatientID] {
 			patientIDMap[item.PatientID] = true

@@ -75,12 +75,12 @@ func TestHandlerFTPMembershipGETSuccess(t *testing.T) {
 	}
 	doctors := []*common.Doctor{
 		&common.Doctor{
-			ID:        encoding.ObjectID{Int64Value: 1},
+			ID:        encoding.NewObjectID(1),
 			FirstName: "DFN1",
 			LastName:  "DLN1",
 		},
 		&common.Doctor{
-			ID:        encoding.ObjectID{Int64Value: 2},
+			ID:        encoding.NewObjectID(2),
 			FirstName: "DFN2",
 			LastName:  "DLN2",
 		},

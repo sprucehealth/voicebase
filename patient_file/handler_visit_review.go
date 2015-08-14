@@ -95,7 +95,7 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(ctx context.Context, r *h
 
 	// ensure that the doctor is authorized to work on this case
 	if err := apiservice.ValidateAccessToPatientCase(r.Method, account.Role, doctorID,
-		patientVisit.PatientID.Int64(), patientVisit.PatientCaseID.Int64(), p.dataAPI); err != nil {
+		patientVisit.PatientID, patientVisit.PatientCaseID.Int64(), p.dataAPI); err != nil {
 		return false, err
 	}
 
@@ -106,7 +106,7 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(ctx context.Context, w http.
 	requestCache := apiservice.MustCtxCache(ctx)
 	patientVisit := requestCache[apiservice.CKPatientVisit].(*common.PatientVisit)
 
-	patient, err := p.dataAPI.GetPatientFromID(patientVisit.PatientID.Int64())
+	patient, err := p.dataAPI.GetPatientFromID(patientVisit.PatientID)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return

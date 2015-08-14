@@ -314,7 +314,7 @@ func (d *dataService) CaseMessageParticipants(caseID int64, withRoleObjects bool
 			var err error
 			switch p.Person.RoleType {
 			case RolePatient:
-				p.Person.Patient, err = d.GetPatientFromID(p.Person.RoleID)
+				p.Person.Patient, err = d.GetPatientFromID(common.NewPatientID(uint64(p.Person.RoleID)))
 			case RoleDoctor, RoleCC:
 				p.Person.Doctor, err = d.GetDoctorFromID(p.Person.RoleID)
 			}
@@ -345,7 +345,7 @@ func (d *dataService) populateDoctorOrPatientForPeople(people map[int64]*common.
 		var err error
 		switch p.RoleType {
 		case RolePatient:
-			p.Patient, err = d.GetPatientFromID(p.RoleID)
+			p.Patient, err = d.GetPatientFromID(common.NewPatientID(uint64(p.RoleID)))
 		case RoleDoctor, RoleCC:
 			p.Doctor, err = d.GetDoctorFromID(p.RoleID)
 		}

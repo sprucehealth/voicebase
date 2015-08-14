@@ -189,7 +189,7 @@ func (d *dataService) assignCareProviderToPatientFileAndCase(tx *sql.Tx, provide
 	return err
 }
 
-func (d *dataService) CasesForPathway(patientID int64, pathwayTag string, states []string) ([]*common.PatientCase, error) {
+func (d *dataService) CasesForPathway(patientID common.PatientID, pathwayTag string, states []string) ([]*common.PatientCase, error) {
 	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -243,7 +243,7 @@ func (d *dataService) GetPatientCaseFromID(patientCaseID int64) (*common.Patient
 	return d.getPatientCaseFromRow(row)
 }
 
-func (d *dataService) GetCasesForPatient(patientID int64, states []string) ([]*common.PatientCase, error) {
+func (d *dataService) GetCasesForPatient(patientID common.PatientID, states []string) ([]*common.PatientCase, error) {
 	vals := []interface{}{patientID}
 	var whereClause string
 	if len(states) > 0 {
@@ -341,7 +341,7 @@ func (d *dataService) CaseCareTeams(caseIDs []int64) (map[int64]*common.PatientC
 	return careTeams, rows.Err()
 }
 
-func (d *dataService) DoesCaseExistForPatient(patientID, patientCaseID int64) (bool, error) {
+func (d *dataService) DoesCaseExistForPatient(patientID common.PatientID, patientCaseID int64) (bool, error) {
 	var id int64
 	err := d.db.QueryRow(`
 		SELECT id
@@ -487,7 +487,7 @@ func (d *dataService) GetNotificationsForCase(patientCaseID int64, notificationT
 }
 
 func (d *dataService) NotificationsForCases(
-	patientID int64,
+	patientID common.PatientID,
 	notificationTypeRegistry map[string]reflect.Type) (map[int64][]*common.CaseNotification, error) {
 
 	rows, err := d.db.Query(`
@@ -598,7 +598,7 @@ func (d *dataService) createPatientCase(tx *sql.Tx, patientCase *common.PatientC
 	if err != nil {
 		return err
 	}
-	patientCase.ID = encoding.NewObjectID(patientCaseID)
+	patientCase.ID = encoding.DeprecatedNewObjectID(patientCaseID)
 
 	// Assign a random primary CC to the case care team
 	cc, err := d.ListCareProviders(LCPOptPrimaryCCOnly)

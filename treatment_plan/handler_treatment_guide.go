@@ -56,7 +56,7 @@ func (h *treatmentGuideHandler) IsAuthorized(ctx context.Context, r *http.Reques
 	}
 	requestCache[apiservice.CKTreatment] = treatment
 
-	treatmentPlan, err := h.dataAPI.GetTreatmentPlanForPatient(treatment.PatientID.Int64(), treatment.TreatmentPlanID.Int64())
+	treatmentPlan, err := h.dataAPI.GetTreatmentPlanForPatient(treatment.PatientID, treatment.TreatmentPlanID.Int64())
 	if err != nil {
 		return false, err
 	}
@@ -71,7 +71,7 @@ func (h *treatmentGuideHandler) IsAuthorized(ctx context.Context, r *http.Reques
 		}
 		requestCache[apiservice.CKPatientID] = patientID
 
-		if treatment.PatientID.Int64() != patientID {
+		if treatment.PatientID != patientID {
 			return false, apiservice.NewAccessForbiddenError()
 		}
 

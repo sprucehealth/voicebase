@@ -84,7 +84,7 @@ func TestPatientSignup_CreateVisit(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, true, respData.PatientVisitData != nil)
 
-	patientVisit, err := testData.DataAPI.GetPatientVisitForSKU(respData.Patient.ID.Int64(), test_integration.SKUAcneVisit)
+	patientVisit, err := testData.DataAPI.GetPatientVisitForSKU(respData.Patient.ID, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, patientVisit.ID.Int64(), respData.PatientVisitData.PatientVisitID)
 
@@ -216,7 +216,7 @@ func TestPatientSignup_WithDoctorPicked(t *testing.T) {
 	var respData patientpkg.SignedupResponse
 	err = json.NewDecoder(resp.Body).Decode(&respData)
 	test.OK(t, err)
-	patientID := respData.Patient.ID.Int64()
+	patientID := respData.Patient.ID
 
 	// there should be a single case for the patient
 	cases, err := testData.DataAPI.GetCasesForPatient(patientID, nil)

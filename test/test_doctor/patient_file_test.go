@@ -20,7 +20,7 @@ func TestCaseList_PreSubmissionTriaged(t *testing.T) {
 	// create a case that gets submitted to a doctor
 	p1 := test_integration.CreatePathway(t, testData, "pathway")
 	pr := test_integration.SignupRandomTestPatient(t, testData)
-	patient, err := testData.DataAPI.GetPatientFromID(pr.Patient.ID.Int64())
+	patient, err := testData.DataAPI.GetPatientFromID(pr.Patient.ID)
 	test.OK(t, err)
 	_, tp := test_integration.CreateRandomPatientVisitAndPickTPForPathway(t, testData, p1, patient, doctor)
 
@@ -34,7 +34,7 @@ func TestCaseList_PreSubmissionTriaged(t *testing.T) {
 
 	// only a single case should be returned to the doctor (not the triaged one)
 	dc := test_integration.DoctorClient(testData, t, dr.DoctorID)
-	cases, err := dc.CasesForPatient(pr.Patient.ID.Int64())
+	cases, err := dc.CasesForPatient(pr.Patient.ID)
 	test.OK(t, err)
 	test.Equals(t, 1, len(cases))
 	test.Equals(t, cases[0].ID, tp.PatientCaseID.Int64())

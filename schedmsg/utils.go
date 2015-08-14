@@ -22,7 +22,7 @@ func MustRegisterEvent(event string) {
 }
 
 type CaseInfo struct {
-	PatientID     int64
+	PatientID     common.PatientID
 	PatientCaseID int64
 	SenderRole    string
 	ProviderID    int64

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -26,13 +27,13 @@ func (t *mockTokens_consent) ValidateToken(purpose, token string) (string, error
 
 func TestParentalConsentToken(t *testing.T) {
 	tokens := &mockTokens_consent{}
-	token, err := GenerateParentalConsentToken(tokens, 1)
+	token, err := GenerateParentalConsentToken(tokens, common.NewPatientID(1))
 	test.OK(t, err)
 	test.Equals(t, "ParentalConsent1", token)
-	test.Equals(t, true, ValidateParentalConsentToken(tokens, token, 1))
-	test.Equals(t, false, ValidateParentalConsentToken(tokens, token, 2))
-	test.Equals(t, false, ValidateParentalConsentToken(tokens, "abc", 1))
-	url, err := ParentalConsentURL(tokens, "domain", 3)
+	test.Equals(t, true, ValidateParentalConsentToken(tokens, token, common.NewPatientID(1)))
+	test.Equals(t, false, ValidateParentalConsentToken(tokens, token, common.NewPatientID(2)))
+	test.Equals(t, false, ValidateParentalConsentToken(tokens, "abc", common.NewPatientID(1)))
+	url, err := ParentalConsentURL(tokens, "domain", common.NewPatientID(3))
 	test.OK(t, err)
 	test.Equals(t, "https://domain/pc/3?t=ParentalConsent3", url)
 }

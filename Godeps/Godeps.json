@@ -35,7 +35,7 @@
 		},
 		{
 			"ImportPath": "github.com/SpruceHealth/schema",
-			"Rev": "9b7cb5f7ba0210ce20c8582fb22331b58444636a"
+			"Rev": "833816004ecf3a6652f009c4fadeae60e366929c"
 		},
 		{
 			"ImportPath": "github.com/aws/aws-sdk-go/aws",

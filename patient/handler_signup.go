@@ -214,7 +214,7 @@ func (s *SignupHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 
 	// first, create an account for the user
 	var update bool
-	var patientID int64
+	var patientID common.PatientID
 	accountID, err := s.authAPI.CreateAccount(requestData.Email, requestData.Password, api.RolePatient)
 	if err == api.ErrLoginAlreadyExists {
 		// if the account already exits, treat the signup as an update if the login credentials match
@@ -241,7 +241,7 @@ func (s *SignupHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 	}
 
 	newPatient := &common.Patient{
-		AccountID:        encoding.NewObjectID(accountID),
+		AccountID:        encoding.DeprecatedNewObjectID(accountID),
 		Email:            requestData.Email,
 		FirstName:        requestData.FirstName,
 		LastName:         requestData.LastName,
@@ -274,7 +274,7 @@ func (s *SignupHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
-		newPatient.ID = encoding.NewObjectID(patientID)
+		newPatient.ID = patientID
 	} else {
 		// then, register the signed up user as a patient
 		if err := s.dataAPI.RegisterPatient(newPatient); err != nil {
@@ -290,7 +290,7 @@ func (s *SignupHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 			patientAgreements[strings.TrimSpace(agreement)] = true
 		}
 
-		err = s.dataAPI.TrackPatientAgreements(newPatient.ID.Int64(), patientAgreements)
+		err = s.dataAPI.TrackPatientAgreements(newPatient.ID, patientAgreements)
 		if err != nil {
 			apiservice.WriteError(ctx, errors.New("Unable to track patient agreements: "+err.Error()), w, r)
 			return
@@ -349,7 +349,7 @@ func (s *SignupHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 	headers := apiservice.ExtractSpruceHeaders(r)
 	s.dispatcher.PublishAsync(&SignupEvent{
 		AccountID:     newPatient.AccountID.Int64(),
-		PatientID:     newPatient.ID.Int64(),
+		PatientID:     newPatient.ID,
 		SpruceHeaders: headers,
 	})
 	s.dispatcher.PublishAsync(&auth.AuthenticatedEvent{

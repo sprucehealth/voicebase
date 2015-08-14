@@ -44,7 +44,7 @@ func TestRefill_ExistingPatient(t *testing.T) {
 	erxPatientID := int64(60)
 
 	// add an erx patient id to the patient
-	err := testData.DataAPI.UpdatePatient(signedupPatientResponse.Patient.ID.Int64(),
+	err := testData.DataAPI.UpdatePatient(signedupPatientResponse.Patient.ID,
 		&api.PatientUpdate{
 			ERxID: &erxPatientID,
 		}, false)
@@ -91,7 +91,7 @@ func TestRefill_ExistingPatient(t *testing.T) {
 		DosageStrength:          "10 mg",
 		DispenseValue:           5,
 		DispenseUnitDescription: "Tablet",
-		DispenseUnitID:          encoding.NewObjectID(19),
+		DispenseUnitID:          encoding.DeprecatedNewObjectID(19),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 5,
@@ -105,16 +105,16 @@ func TestRefill_ExistingPatient(t *testing.T) {
 		OTC:                 false,
 
 		ERx: &common.ERxData{
-			PrescriptionID:     encoding.NewObjectID(5504),
+			PrescriptionID:     encoding.DeprecatedNewObjectID(5504),
 			PrescriptionStatus: "Requested",
 			ErxPharmacyID:      1234,
-			PharmacyLocalID:    encoding.NewObjectID(pharmacyToReturn.LocalID),
+			PharmacyLocalID:    encoding.DeprecatedNewObjectID(pharmacyToReturn.LocalID),
 			ErxLastDateFilled:  &testTime,
 		},
 	}
 
 	// add this treatment to the treatment plan
-	err = testData.DataAPI.AddTreatmentsForTreatmentPlan([]*common.Treatment{treatment1}, doctor.ID.Int64(), treatmentPlanID, signedupPatientResponse.Patient.ID.Int64())
+	err = testData.DataAPI.AddTreatmentsForTreatmentPlan([]*common.Treatment{treatment1}, doctor.ID.Int64(), treatmentPlanID, signedupPatientResponse.Patient.ID)
 	if err != nil {
 		t.Fatal("Unable to add treatment for patient visit: " + err.Error())
 	}
@@ -156,7 +156,7 @@ func TestRefill_ExistingPatient(t *testing.T) {
 			ERx: &common.ERxData{
 				ErxSentDate:         &fiveMinutesBeforeTestTime,
 				DoseSpotClinicianID: clinicianID,
-				PrescriptionID:      encoding.NewObjectID(prescriptionIDForRequestedPrescription),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(prescriptionIDForRequestedPrescription),
 				ErxPharmacyID:       1234,
 			},
 		},
@@ -183,7 +183,7 @@ func TestRefill_ExistingPatient(t *testing.T) {
 			OTC: false,
 			ERx: &common.ERxData{
 				ErxLastDateFilled:   &testTime,
-				PrescriptionID:      encoding.NewObjectID(5504),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyID:       1234,
 				DoseSpotClinicianID: clinicianID,
@@ -313,7 +313,7 @@ func TestRefill_Approve(t *testing.T) {
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		ERxPatientID: encoding.NewObjectID(12345),
+		ERxPatientID: encoding.DeprecatedNewObjectID(12345),
 	}
 
 	err := testData.DataAPI.AddPharmacy(pharmacyToReturn)
@@ -349,7 +349,7 @@ func TestRefill_Approve(t *testing.T) {
 			ERx: &common.ERxData{
 				ErxSentDate:         &fiveMinutesBeforeTestTime,
 				DoseSpotClinicianID: clinicianID,
-				PrescriptionID:      encoding.NewObjectID(prescriptionIDForRequestedPrescription),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(prescriptionIDForRequestedPrescription),
 				ErxPharmacyID:       1234,
 			},
 		},
@@ -377,7 +377,7 @@ func TestRefill_Approve(t *testing.T) {
 			ERx: &common.ERxData{
 				ErxLastDateFilled:   &testTime,
 				DoseSpotClinicianID: clinicianID,
-				PrescriptionID:      encoding.NewObjectID(5504),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyID:       1234,
 			},
@@ -534,7 +534,7 @@ func TestRefill_Approve_ControlledSubstance(t *testing.T) {
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		ERxPatientID: encoding.NewObjectID(12345),
+		ERxPatientID: encoding.DeprecatedNewObjectID(12345),
 	}
 
 	err := testData.DataAPI.AddPharmacy(pharmacyToReturn)
@@ -571,7 +571,7 @@ func TestRefill_Approve_ControlledSubstance(t *testing.T) {
 			ERx: &common.ERxData{
 				ErxSentDate:         &fiveMinutesBeforeTestTime,
 				DoseSpotClinicianID: clinicianID,
-				PrescriptionID:      encoding.NewObjectID(prescriptionIDForRequestedPrescription),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(prescriptionIDForRequestedPrescription),
 				ErxPharmacyID:       1234,
 			},
 		},
@@ -599,7 +599,7 @@ func TestRefill_Approve_ControlledSubstance(t *testing.T) {
 			ERx: &common.ERxData{
 				ErxLastDateFilled:   &testTime,
 				DoseSpotClinicianID: clinicianID,
-				PrescriptionID:      encoding.NewObjectID(5504),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyID:       1234,
 			},
@@ -700,7 +700,7 @@ func TestRefill_Approve_ErrorSending(t *testing.T) {
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		ERxPatientID: encoding.NewObjectID(12345),
+		ERxPatientID: encoding.DeprecatedNewObjectID(12345),
 	}
 
 	err := testData.DataAPI.AddPharmacy(pharmacyToReturn)
@@ -736,7 +736,7 @@ func TestRefill_Approve_ErrorSending(t *testing.T) {
 			ERx: &common.ERxData{
 				ErxSentDate:         &fiveMinutesBeforeTestTime,
 				DoseSpotClinicianID: clinicianID,
-				PrescriptionID:      encoding.NewObjectID(prescriptionIDForRequestedPrescription),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(prescriptionIDForRequestedPrescription),
 				ErxPharmacyID:       1234,
 			},
 		},
@@ -763,7 +763,7 @@ func TestRefill_Approve_ErrorSending(t *testing.T) {
 			ERx: &common.ERxData{
 				ErxLastDateFilled:   &testTime,
 				DoseSpotClinicianID: clinicianID,
-				PrescriptionID:      encoding.NewObjectID(5504),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyID:       1234,
 			},
@@ -919,7 +919,7 @@ func testRefill_Deny(isControlledSubstance bool, t *testing.T) {
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		ERxPatientID: encoding.NewObjectID(12345),
+		ERxPatientID: encoding.DeprecatedNewObjectID(12345),
 	}
 
 	err := testData.DataAPI.AddPharmacy(pharmacyToReturn)
@@ -957,7 +957,7 @@ func testRefill_Deny(isControlledSubstance bool, t *testing.T) {
 			ERx: &common.ERxData{
 				ErxSentDate:         &fiveMinutesBeforeTestTime,
 				DoseSpotClinicianID: clinicianID,
-				PrescriptionID:      encoding.NewObjectID(prescriptionIDForRequestedPrescription),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(prescriptionIDForRequestedPrescription),
 				ErxPharmacyID:       1234,
 			},
 		},
@@ -982,7 +982,7 @@ func testRefill_Deny(isControlledSubstance bool, t *testing.T) {
 			OTC: false,
 			ERx: &common.ERxData{
 				ErxLastDateFilled:   &testTime,
-				PrescriptionID:      encoding.NewObjectID(5504),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyID:       1234,
 				DoseSpotClinicianID: clinicianID,
@@ -1154,7 +1154,7 @@ func TestRefill_Deny_DNTF_NoTreatment(t *testing.T) {
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		ERxPatientID: encoding.NewObjectID(12345),
+		ERxPatientID: encoding.DeprecatedNewObjectID(12345),
 	}
 
 	err := testData.DataAPI.AddPharmacy(pharmacyToReturn)
@@ -1191,7 +1191,7 @@ func TestRefill_Deny_DNTF_NoTreatment(t *testing.T) {
 			ERx: &common.ERxData{
 				ErxSentDate:         &fiveMinutesBeforeTestTime,
 				DoseSpotClinicianID: clinicianID,
-				PrescriptionID:      encoding.NewObjectID(prescriptionIDForRequestedPrescription),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(prescriptionIDForRequestedPrescription),
 				ErxPharmacyID:       1234,
 			},
 		},
@@ -1216,7 +1216,7 @@ func TestRefill_Deny_DNTF_NoTreatment(t *testing.T) {
 			OTC: false,
 			ERx: &common.ERxData{
 				ErxLastDateFilled:   &testTime,
-				PrescriptionID:      encoding.NewObjectID(5504),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyID:       1234,
 				DoseSpotClinicianID: clinicianID,
@@ -1324,7 +1324,7 @@ func setupRefill_Deny_DNTF(t *testing.T, testData *TestData, endErxStatus common
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		ERxPatientID: encoding.NewObjectID(12345),
+		ERxPatientID: encoding.DeprecatedNewObjectID(12345),
 	}
 
 	err := testData.DataAPI.AddPharmacy(pharmacyToReturn)
@@ -1344,7 +1344,7 @@ func setupRefill_Deny_DNTF(t *testing.T, testData *TestData, endErxStatus common
 		DosageStrength: "10 mg",
 		DispenseValue:  1,
 		DaysSupply:     encoding.NullInt64{},
-		DispenseUnitID: encoding.NewObjectID(12),
+		DispenseUnitID: encoding.DeprecatedNewObjectID(12),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -1412,7 +1412,7 @@ func setupRefill_Deny_DNTF(t *testing.T, testData *TestData, endErxStatus common
 			ERx: &common.ERxData{
 				ErxSentDate:         &fiveMinutesBeforeTestTime,
 				DoseSpotClinicianID: clinicianID,
-				PrescriptionID:      encoding.NewObjectID(prescriptionIDForRequestedPrescription),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(prescriptionIDForRequestedPrescription),
 				ErxPharmacyID:       1234,
 			},
 		},
@@ -1437,7 +1437,7 @@ func setupRefill_Deny_DNTF(t *testing.T, testData *TestData, endErxStatus common
 			OTC: false,
 			ERx: &common.ERxData{
 				ErxLastDateFilled:   &testTime,
-				PrescriptionID:      encoding.NewObjectID(5504),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyID:       1234,
 				DoseSpotClinicianID: clinicianID,
@@ -1511,7 +1511,7 @@ func setupRefill_Deny_DNTF(t *testing.T, testData *TestData, endErxStatus common
 	test.Equals(t, api.RXRefillStatusDenied, refillRequest.RxHistory[0].Status)
 
 	// get unlinked treatment
-	unlinkedDNTFTreatmentStatusEvents, err := testData.DataAPI.GetErxStatusEventsForDNTFTreatmentBasedOnPatientID(refillRequest.Patient.ID.Int64())
+	unlinkedDNTFTreatmentStatusEvents, err := testData.DataAPI.GetErxStatusEventsForDNTFTreatmentBasedOnPatientID(refillRequest.Patient.ID)
 	test.OK(t, err)
 	test.Equals(t, 2, len(unlinkedDNTFTreatmentStatusEvents))
 
@@ -1680,7 +1680,7 @@ func setupRefill_Deny_DNTF_ExistingPatient(t *testing.T, testData *TestData, end
 	erxPatientID := int64(60)
 
 	// add an erx patient id to the patient
-	err = testData.DataAPI.UpdatePatient(patient.ID.Int64(), &api.PatientUpdate{
+	err = testData.DataAPI.UpdatePatient(patient.ID, &api.PatientUpdate{
 		ERxID: &erxPatientID,
 	}, false)
 	if err != nil {
@@ -1720,7 +1720,7 @@ func setupRefill_Deny_DNTF_ExistingPatient(t *testing.T, testData *TestData, end
 		},
 		DosageStrength: "10 mg",
 		DispenseValue:  1,
-		DispenseUnitID: encoding.NewObjectID(12),
+		DispenseUnitID: encoding.DeprecatedNewObjectID(12),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -1738,7 +1738,7 @@ func setupRefill_Deny_DNTF_ExistingPatient(t *testing.T, testData *TestData, end
 
 		treatmentTemplatesRequest := &doctor_treatment_plan.DoctorTreatmentTemplatesRequest{
 			TreatmentTemplates: []*common.DoctorTreatmentTemplate{treatmentTemplate},
-			TreatmentPlanID:    encoding.NewObjectID(treatmentPlanID),
+			TreatmentPlanID:    encoding.DeprecatedNewObjectID(treatmentPlanID),
 		}
 		data, err := json.Marshal(&treatmentTemplatesRequest)
 		test.OK(t, err)
@@ -1768,7 +1768,7 @@ func setupRefill_Deny_DNTF_ExistingPatient(t *testing.T, testData *TestData, end
 		DosageStrength:          "10 mg",
 		DispenseValue:           5,
 		DispenseUnitDescription: "Tablet",
-		DispenseUnitID:          encoding.NewObjectID(19),
+		DispenseUnitID:          encoding.DeprecatedNewObjectID(19),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 5,
@@ -1778,16 +1778,16 @@ func setupRefill_Deny_DNTF_ExistingPatient(t *testing.T, testData *TestData, end
 		PatientInstructions:  "Take once daily",
 		OTC:                  false,
 		ERx: &common.ERxData{
-			PrescriptionID:     encoding.NewObjectID(5504),
+			PrescriptionID:     encoding.DeprecatedNewObjectID(5504),
 			PrescriptionStatus: "Requested",
 			ErxPharmacyID:      1234,
-			PharmacyLocalID:    encoding.NewObjectID(pharmacyToReturn.LocalID),
+			PharmacyLocalID:    encoding.DeprecatedNewObjectID(pharmacyToReturn.LocalID),
 			ErxLastDateFilled:  &testTime,
 		},
 	}
 
 	// add this treatment to the treatment plan
-	err = testData.DataAPI.AddTreatmentsForTreatmentPlan([]*common.Treatment{treatment1}, doctor.ID.Int64(), treatmentPlanID, patient.ID.Int64())
+	err = testData.DataAPI.AddTreatmentsForTreatmentPlan([]*common.Treatment{treatment1}, doctor.ID.Int64(), treatmentPlanID, patient.ID)
 	test.OK(t, err)
 
 	// insert erxStatusEvent for this treatment to indicate that it was sent
@@ -1828,7 +1828,7 @@ func setupRefill_Deny_DNTF_ExistingPatient(t *testing.T, testData *TestData, end
 			ERx: &common.ERxData{
 				ErxSentDate:         &fiveMinutesBeforeTestTime,
 				DoseSpotClinicianID: clinicianID,
-				PrescriptionID:      encoding.NewObjectID(prescriptionIDForRequestedPrescription),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(prescriptionIDForRequestedPrescription),
 				ErxPharmacyID:       1234,
 			},
 		},
@@ -1854,7 +1854,7 @@ func setupRefill_Deny_DNTF_ExistingPatient(t *testing.T, testData *TestData, end
 			OTC:                 false,
 			ERx: &common.ERxData{
 				ErxLastDateFilled:   &testTime,
-				PrescriptionID:      encoding.NewObjectID(5504),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyID:       1234,
 				DoseSpotClinicianID: clinicianID,
@@ -1942,7 +1942,7 @@ func setupRefill_Deny_DNTF_ExistingPatient(t *testing.T, testData *TestData, end
 	}
 
 	// get unlinked treatment
-	unlinkedDNTFTreatmentStatusEvents, err := testData.DataAPI.GetErxStatusEventsForDNTFTreatmentBasedOnPatientID(refillRequest.Patient.ID.Int64())
+	unlinkedDNTFTreatmentStatusEvents, err := testData.DataAPI.GetErxStatusEventsForDNTFTreatmentBasedOnPatientID(refillRequest.Patient.ID)
 	if err != nil {
 		t.Fatalf("Unable to get status events for dntf treatment: %+v", err)
 	}
@@ -2136,7 +2136,7 @@ func TestRefill_Status_MultipleRefills(t *testing.T) {
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		ERxPatientID: encoding.NewObjectID(12345),
+		ERxPatientID: encoding.DeprecatedNewObjectID(12345),
 	}
 
 	err := testData.DataAPI.AddPharmacy(pharmacyToReturn)
@@ -2175,7 +2175,7 @@ func TestRefill_Status_MultipleRefills(t *testing.T) {
 				ERx: &common.ERxData{
 					ErxSentDate:         &fiveMinutesBeforeTestTime,
 					DoseSpotClinicianID: clinicianID,
-					PrescriptionID:      encoding.NewObjectID(prescriptionIDForRequestedPrescription + i),
+					PrescriptionID:      encoding.DeprecatedNewObjectID(prescriptionIDForRequestedPrescription + i),
 					ErxPharmacyID:       1234,
 				},
 			},
@@ -2200,7 +2200,7 @@ func TestRefill_Status_MultipleRefills(t *testing.T) {
 				OTC: false,
 				ERx: &common.ERxData{
 					DoseSpotClinicianID: clinicianID,
-					PrescriptionID:      encoding.NewObjectID(5504),
+					PrescriptionID:      encoding.DeprecatedNewObjectID(5504),
 					PrescriptionStatus:  "Requested",
 					ErxPharmacyID:       1234,
 					ErxLastDateFilled:   &testTime,
@@ -2352,7 +2352,7 @@ func TestRefill_DifferentPharmacy(t *testing.T) {
 	erxPatientID := int64(60)
 
 	// add an erx patient id to the patient
-	err := testData.DataAPI.UpdatePatient(signedupPatientResponse.Patient.ID.Int64(), &api.PatientUpdate{
+	err := testData.DataAPI.UpdatePatient(signedupPatientResponse.Patient.ID, &api.PatientUpdate{
 		ERxID: &erxPatientID,
 	}, false)
 	if err != nil {
@@ -2406,7 +2406,7 @@ func TestRefill_DifferentPharmacy(t *testing.T) {
 		DosageStrength:          "10 mg",
 		DispenseValue:           5,
 		DispenseUnitDescription: "Tablet",
-		DispenseUnitID:          encoding.NewObjectID(19),
+		DispenseUnitID:          encoding.DeprecatedNewObjectID(19),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 5,
@@ -2419,15 +2419,15 @@ func TestRefill_DifferentPharmacy(t *testing.T) {
 		OTC: false,
 		ERx: &common.ERxData{
 			ErxLastDateFilled:  &testTime,
-			PrescriptionID:     encoding.NewObjectID(5504),
+			PrescriptionID:     encoding.DeprecatedNewObjectID(5504),
 			PrescriptionStatus: "Requested",
 			ErxPharmacyID:      1234,
-			PharmacyLocalID:    encoding.NewObjectID(pharmacyToReturn.LocalID),
+			PharmacyLocalID:    encoding.DeprecatedNewObjectID(pharmacyToReturn.LocalID),
 		},
 	}
 
 	// add this treatment to the treatment plan
-	err = testData.DataAPI.AddTreatmentsForTreatmentPlan([]*common.Treatment{treatment1}, doctor.ID.Int64(), treatmentPlanID, signedupPatientResponse.Patient.ID.Int64())
+	err = testData.DataAPI.AddTreatmentsForTreatmentPlan([]*common.Treatment{treatment1}, doctor.ID.Int64(), treatmentPlanID, signedupPatientResponse.Patient.ID)
 	test.OK(t, err)
 
 	// insert erxStatusEvent for this treatment to indicate that it was sent
@@ -2464,7 +2464,7 @@ func TestRefill_DifferentPharmacy(t *testing.T) {
 			ERx: &common.ERxData{
 				DoseSpotClinicianID: clinicianID,
 				ErxSentDate:         &fiveMinutesBeforeTestTime,
-				PrescriptionID:      encoding.NewObjectID(prescriptionIDForRequestedPrescription),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(prescriptionIDForRequestedPrescription),
 				ErxPharmacyID:       1234,
 			},
 		},
@@ -2489,7 +2489,7 @@ func TestRefill_DifferentPharmacy(t *testing.T) {
 			OTC: false,
 			ERx: &common.ERxData{
 				ErxLastDateFilled:   &testTime,
-				PrescriptionID:      encoding.NewObjectID(5504),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyID:       12345678,
 				DoseSpotClinicianID: clinicianID,
@@ -2563,7 +2563,7 @@ func TestRefill_ExistingPatient_NonexistentTreatment(t *testing.T) {
 	erxPatientID := int64(60)
 
 	// add an erx patient id to the patient
-	err := testData.DataAPI.UpdatePatient(signedupPatientResponse.Patient.ID.Int64(), &api.PatientUpdate{
+	err := testData.DataAPI.UpdatePatient(signedupPatientResponse.Patient.ID, &api.PatientUpdate{
 		ERxID: &erxPatientID,
 	}, false)
 	if err != nil {
@@ -2602,7 +2602,7 @@ func TestRefill_ExistingPatient_NonexistentTreatment(t *testing.T) {
 			ERx: &common.ERxData{
 				DoseSpotClinicianID: clinicianID,
 				ErxSentDate:         &testTime,
-				PrescriptionID:      encoding.NewObjectID(prescriptionIDForRequestedPrescription),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(prescriptionIDForRequestedPrescription),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyID:       123,
 			},
@@ -2628,7 +2628,7 @@ func TestRefill_ExistingPatient_NonexistentTreatment(t *testing.T) {
 			PatientInstructions: "Take once daily",
 			OTC:                 false,
 			ERx: &common.ERxData{
-				PrescriptionID:      encoding.NewObjectID(5504),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyID:       123,
 				ErxSentDate:         &testTime,
@@ -2761,7 +2761,7 @@ func TestRefill_NonSprucePatient(t *testing.T) {
 			ERx: &common.ERxData{
 				DoseSpotClinicianID: clinicianID,
 				ErxSentDate:         &testTime,
-				PrescriptionID:      encoding.NewObjectID(5504),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyID:       123,
 			},
@@ -2790,7 +2790,7 @@ func TestRefill_NonSprucePatient(t *testing.T) {
 			OTC:                  false,
 			ERx: &common.ERxData{
 				DoseSpotClinicianID: clinicianID,
-				PrescriptionID:      encoding.NewObjectID(5504),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyID:       123,
 				ErxSentDate:         &testTime,
@@ -2817,7 +2817,7 @@ func TestRefill_NonSprucePatient(t *testing.T) {
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		ERxPatientID: encoding.NewObjectID(12345),
+		ERxPatientID: encoding.DeprecatedNewObjectID(12345),
 		Pharmacy:     pharmacyToReturn,
 	}
 

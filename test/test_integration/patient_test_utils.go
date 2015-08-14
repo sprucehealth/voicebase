@@ -30,8 +30,8 @@ func SignupRandomTestPatientWithPharmacyAndAddress(t *testing.T, testData *TestD
 		StateAbbreviation: "CA",
 	}
 	pr := signupRandomTestPatient("", t, testData)
-	AddTestPharmacyForPatient(pr.Patient.ID.Int64(), testData, t)
-	AddTestAddressForPatient(pr.Patient.ID.Int64(), testData, t)
+	AddTestPharmacyForPatient(pr.Patient.ID, testData, t)
+	AddTestAddressForPatient(pr.Patient.ID, testData, t)
 	return pr
 }
 
@@ -103,7 +103,7 @@ func signupRandomTestPatient(email string, t *testing.T, testData *TestData) *pa
 	return signedupPatientResponse
 }
 
-func GetPatientVisitForPatient(patientID int64, testData *TestData, t *testing.T) *patientAPIService.PatientVisitResponse {
+func GetPatientVisitForPatient(patientID common.PatientID, testData *TestData, t *testing.T) *patientAPIService.PatientVisitResponse {
 	patientVisit, err := testData.DataAPI.GetPatientVisitForSKU(patientID, SKUAcneVisit)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -148,7 +148,7 @@ func QueryPatientVisit(patientVisitID, patientAccountID int64, headers map[strin
 	return pv
 }
 
-func CreatePatientVisitForPatient(patientID int64, testData *TestData, t *testing.T) *patientAPIService.PatientVisitResponse {
+func CreatePatientVisitForPatient(patientID common.PatientID, testData *TestData, t *testing.T) *patientAPIService.PatientVisitResponse {
 	patient, err := testData.DataAPI.GetPatientFromID(patientID)
 	if err != nil {
 		t.Fatalf("Unable to get patient information given the patient id: %s [%s]", err.Error(), test.CallerString(1))
@@ -267,7 +267,7 @@ func prepareAnswersForVisitIntake(visitID int64, visitLayout *info_intake.InfoIn
 	return &intakeData
 }
 
-func SubmitAnswersIntakeForPatient(patientID, patientAccountID int64, intakeData *apiservice.IntakeData, testData *TestData, t *testing.T) {
+func SubmitAnswersIntakeForPatient(patientID common.PatientID, patientAccountID int64, intakeData *apiservice.IntakeData, testData *TestData, t *testing.T) {
 	jsonData, err := json.Marshal(intakeData)
 	if err != nil {
 		t.Fatalf("Unable to marshal answer intake body: %s", err)
@@ -283,7 +283,7 @@ func SubmitAnswersIntakeForPatient(patientID, patientAccountID int64, intakeData
 	}
 }
 
-func SubmitPatientVisitForPatient(patientID, patientVisitID int64, testData *TestData, t *testing.T) {
+func SubmitPatientVisitForPatient(patientID common.PatientID, patientVisitID int64, testData *TestData, t *testing.T) {
 	patient, err := testData.DataAPI.GetPatientFromID(patientID)
 	if err != nil {
 		t.Fatal("Unable to get patient information given the patient id: " + err.Error())
@@ -336,7 +336,7 @@ func QueryCost(accountID int64, skuType string, testData *TestData, t *testing.T
 	return response.Total.Value, response.LineItems
 }
 
-func AddCreditCardForPatient(patientID int64, testData *TestData, t *testing.T) {
+func AddCreditCardForPatient(patientID common.PatientID, testData *TestData, t *testing.T) {
 	err := testData.DataAPI.AddCardForPatient(patientID, &common.Card{
 		ThirdPartyID: "thirdparty",
 		Fingerprint:  "fingerprint",

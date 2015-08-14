@@ -64,7 +64,7 @@ func (p *treatmentPlanHandler) IsAuthorized(ctx context.Context, r *http.Request
 
 		var treatmentPlan *common.TreatmentPlan
 		if requestData.TreatmentPlanID != 0 {
-			treatmentPlan, err = p.dataAPI.GetTreatmentPlanForPatient(patient.ID.Int64(), requestData.TreatmentPlanID)
+			treatmentPlan, err = p.dataAPI.GetTreatmentPlanForPatient(patient.ID, requestData.TreatmentPlanID)
 		} else {
 			treatmentPlan, err = p.dataAPI.GetActiveTreatmentPlanForCase(requestData.PatientCaseID)
 		}
@@ -75,7 +75,7 @@ func (p *treatmentPlanHandler) IsAuthorized(ctx context.Context, r *http.Request
 		}
 		requestCache[apiservice.CKTreatmentPlan] = treatmentPlan
 
-		if treatmentPlan.PatientID != patient.ID.Int64() {
+		if treatmentPlan.PatientID != patient.ID {
 			return false, apiservice.NewAccessForbiddenError()
 		}
 
@@ -106,7 +106,7 @@ func (p *treatmentPlanHandler) IsAuthorized(ctx context.Context, r *http.Request
 		}
 		requestCache[apiservice.CKPatient] = patient
 
-		treatmentPlan, err := p.dataAPI.GetTreatmentPlanForPatient(patient.ID.Int64(), requestData.TreatmentPlanID)
+		treatmentPlan, err := p.dataAPI.GetTreatmentPlanForPatient(patient.ID, requestData.TreatmentPlanID)
 		if api.IsErrNotFound(err) {
 			return false, apiservice.NewResourceNotFoundError("treatment plan not found", r)
 		} else if err != nil {
@@ -114,7 +114,7 @@ func (p *treatmentPlanHandler) IsAuthorized(ctx context.Context, r *http.Request
 		}
 		requestCache[apiservice.CKTreatmentPlan] = treatmentPlan
 
-		if err = apiservice.ValidateAccessToPatientCase(r.Method, account.Role, doctor.ID.Int64(), patient.ID.Int64(),
+		if err = apiservice.ValidateAccessToPatientCase(r.Method, account.Role, doctor.ID.Int64(), patient.ID,
 			treatmentPlan.PatientCaseID.Int64(), p.dataAPI); err != nil {
 			return false, err
 		}

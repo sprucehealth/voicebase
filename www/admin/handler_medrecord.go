@@ -2,11 +2,11 @@ package admin
 
 import (
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/sig"
@@ -43,7 +43,7 @@ func newMedicalRecordHandler(
 }
 
 func (h *medicalRecordHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	patientID, err := strconv.ParseInt(r.FormValue("patient_id"), 10, 64)
+	patientID, err := common.ParsePatientID(r.FormValue("patient_id"))
 	if err != nil {
 		http.NotFound(w, r)
 		return

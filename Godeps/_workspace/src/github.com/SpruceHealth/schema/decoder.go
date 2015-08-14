@@ -5,6 +5,7 @@
 package schema
 
 import (
+	"encoding"
 	"errors"
 	"fmt"
 	"reflect"
@@ -23,7 +24,7 @@ type Decoder struct {
 	ignoreUnknownKeys bool
 }
 
-// SetAliasTag changes the tag used to locate custome field aliases.
+// SetAliasTag changes the tag used to locate custom field aliases.
 // The default tag is "schema".
 func (d *Decoder) SetAliasTag(tag string) {
 	d.cache.tag = tag
@@ -55,7 +56,7 @@ func (d *Decoder) IgnoreUnknownKeys(i bool) {
 
 // RegisterConverter registers a converter function for a custom type.
 func (d *Decoder) RegisterConverter(value interface{}, converterFunc Converter) {
-	d.cache.conv[reflect.TypeOf(value)] = converterFunc
+	d.cache.regconv[reflect.TypeOf(value)] = converterFunc
 }
 
 // Decode decodes a map[string][]string to a struct.
@@ -127,8 +128,7 @@ func (d *Decoder) checkRequiredFieldsAtTopLevel(t reflect.Type, src map[string][
 }
 
 // decode fills a struct field using a parsed path.
-func (d *Decoder) decode(v reflect.Value, path string, parts []pathPart,
-	values []string) error {
+func (d *Decoder) decode(v reflect.Value, path string, parts []pathPart, values []string) error {
 	// Get the field walking the struct fields by index.
 	for _, name := range parts[0].path {
 		if v.Type().Kind() == reflect.Ptr {
@@ -169,18 +169,24 @@ func (d *Decoder) decode(v reflect.Value, path string, parts []pathPart,
 		return d.decode(v.Index(idx), path, parts[1:], values)
 	}
 
-	// Simple case.
-	if t.Kind() == reflect.Slice {
+	// Get the converter early in case there is one for a slice type.
+	conv := d.cache.converter(t)
+	if conv == nil && t.Kind() == reflect.Slice {
 		var items []reflect.Value
 		elemT := t.Elem()
 		isPtrElem := elemT.Kind() == reflect.Ptr
 		if isPtrElem {
 			elemT = elemT.Elem()
 		}
-		conv := d.cache.conv[elemT]
+
+		// Try to get a converter for the element type.
+		conv := d.cache.converter(elemT)
 		if conv == nil {
+			// As we are not dealing with slice of structs here, we don't need to check if the type
+			// implements TextUnmarshaler interface
 			return fmt.Errorf("schema: converter not found for %v", elemT)
 		}
+
 		for key, value := range values {
 			if value == "" {
 				if d.zeroEmpty {
@@ -192,31 +198,85 @@ func (d *Decoder) decode(v reflect.Value, path string, parts []pathPart,
 					ptr.Elem().Set(item)
 					item = ptr
 				}
+				if item.Type() != elemT && !isPtrElem {
+					item = item.Convert(elemT)
+				}
 				items = append(items, item)
 			} else {
-				// If a single value is invalid should we give up
-				// or set a zero value?
-				return ConversionError{path, key}
+				if strings.Contains(value, ",") {
+					values := strings.Split(value, ",")
+					for _, value := range values {
+						if value == "" {
+							if d.zeroEmpty {
+								items = append(items, reflect.Zero(elemT))
+							}
+						} else if item := conv(value); item.IsValid() {
+							if isPtrElem {
+								ptr := reflect.New(elemT)
+								ptr.Elem().Set(item)
+								item = ptr
+							}
+							if item.Type() != elemT && !isPtrElem {
+								item = item.Convert(elemT)
+							}
+							items = append(items, item)
+						} else {
+							return ConversionError{
+								Key:   path,
+								Index: key,
+							}
+						}
+					}
+				} else {
+					return ConversionError{
+						Key:   path,
+						Index: key,
+					}
+				}
 			}
 		}
 		value := reflect.Append(reflect.MakeSlice(t, 0, 0), items...)
 		v.Set(value)
 	} else {
-		// Use the last value provided
-		val := values[len(values)-1]
+		val := ""
+		// Use the last value provided if any values were provided
+		if len(values) > 0 {
+			val = values[len(values)-1]
+		}
 
 		if val == "" {
 			if d.zeroEmpty {
 				v.Set(reflect.Zero(t))
 			}
-		} else if conv := d.cache.conv[t]; conv != nil {
+		} else if conv != nil {
 			if value := conv(val); value.IsValid() {
-				v.Set(value)
+				v.Set(value.Convert(t))
 			} else {
-				return ConversionError{path, -1}
+				return ConversionError{
+					Key:   path,
+					Index: -1,
+				}
 			}
 		} else {
-			return fmt.Errorf("schema: converter not found for %v", t)
+			// When there's no registered conversion for the custom type, we will check if the type
+			// implements the TextUnmarshaler interface. As the UnmarshalText function should be applied
+			// to the pointer of the type, we convert the value to pointer.
+			if v.CanAddr() {
+				v = v.Addr()
+			}
+
+			if u, ok := v.Interface().(encoding.TextUnmarshaler); ok {
+				if err := u.UnmarshalText([]byte(val)); err != nil {
+					return ConversionError{
+						Key:   path,
+						Index: -1,
+						Err:   err,
+					}
+				}
+
+			} else {
+				return fmt.Errorf("schema: converter not found for %v", t)
+			}
 		}
 	}
 	return nil
@@ -228,14 +288,24 @@ func (d *Decoder) decode(v reflect.Value, path string, parts []pathPart,
 type ConversionError struct {
 	Key   string // key from the source map.
 	Index int    // index for multi-value fields; -1 for single-value fields.
+	Err   error  // low-level error (when it exists)
 }
 
 func (e ConversionError) Error() string {
+	var output string
+
 	if e.Index < 0 {
-		return fmt.Sprintf("schema: error converting value for %q", e.Key)
+		output = fmt.Sprintf("schema: error converting value for %q", e.Key)
+	} else {
+		output = fmt.Sprintf("schema: error converting value for index %d of %q",
+			e.Index, e.Key)
 	}
-	return fmt.Sprintf("schema: error converting value for index %d of %q",
-		e.Index, e.Key)
+
+	if e.Err != nil {
+		output = fmt.Sprintf("%s. Details: %s", output, e.Err)
+	}
+
+	return output
 }
 
 type MissingFieldError []string

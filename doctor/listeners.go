@@ -70,8 +70,7 @@ func InitListeners(dataAPI api.DataAPI, apiDomain string, dispatcher *dispatch.D
 
 }
 
-func createDoctorTransaction(dataAPI api.DataAPI, doctorID, patientID int64, visit *common.PatientVisit) error {
-
+func createDoctorTransaction(dataAPI api.DataAPI, doctorID int64, patientID common.PatientID, visit *common.PatientVisit) error {
 	var itemCostID *int64
 	// lookup the patient receipt to get the itemCostID associated with the
 	// visit. If one doesn't exist, then treat it as no cost existing for the visit

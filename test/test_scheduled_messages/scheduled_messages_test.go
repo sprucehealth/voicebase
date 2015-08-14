@@ -18,14 +18,14 @@ func TestScheduledMessageDeactivateForPatient(t *testing.T) {
 	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(pvr.PatientVisitID)
 	test.OK(t, err)
 
-	insertScheduledMessage(t, testData, patientVisit.PatientID.Int64(), common.SMScheduled)
-	insertScheduledMessage(t, testData, patientVisit.PatientID.Int64(), common.SMScheduled)
-	insertScheduledMessage(t, testData, patientVisit.PatientID.Int64(), common.SMScheduled)
-	insertScheduledMessage(t, testData, patientVisit.PatientID.Int64(), common.SMSent)
-	insertScheduledMessage(t, testData, patientVisit.PatientID.Int64(), common.SMError)
-	insertScheduledMessage(t, testData, patientVisit.PatientID.Int64(), common.SMProcessing)
+	insertScheduledMessage(t, testData, patientVisit.PatientID, common.SMScheduled)
+	insertScheduledMessage(t, testData, patientVisit.PatientID, common.SMScheduled)
+	insertScheduledMessage(t, testData, patientVisit.PatientID, common.SMScheduled)
+	insertScheduledMessage(t, testData, patientVisit.PatientID, common.SMSent)
+	insertScheduledMessage(t, testData, patientVisit.PatientID, common.SMError)
+	insertScheduledMessage(t, testData, patientVisit.PatientID, common.SMProcessing)
 
-	aff, err := testData.DataAPI.DeactivateScheduledMessagesForPatient(patientVisit.PatientID.Int64())
+	aff, err := testData.DataAPI.DeactivateScheduledMessagesForPatient(patientVisit.PatientID)
 	test.OK(t, err)
 	test.Equals(t, int64(3), aff)
 }
@@ -34,7 +34,7 @@ type testTyped struct{}
 
 func (t testTyped) TypeName() string { return "test" }
 
-func insertScheduledMessage(t *testing.T, testData *test_integration.TestData, patientID int64, status common.ScheduledMessageStatus) {
+func insertScheduledMessage(t *testing.T, testData *test_integration.TestData, patientID common.PatientID, status common.ScheduledMessageStatus) {
 	_, err := testData.DataAPI.CreateScheduledMessage(&common.ScheduledMessage{
 		Event:     "test_event",
 		PatientID: patientID,

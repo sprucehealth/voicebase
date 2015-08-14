@@ -53,16 +53,16 @@ func (m *mockDataAPI_PatientVisitHandler) UpdatePatientVisit(id int64, update *a
 	m.visitUpdate = update
 	return 0, nil
 }
-func (m *mockDataAPI_PatientVisitHandler) GetPatientIDFromAccountID(accountID int64) (int64, error) {
+func (m *mockDataAPI_PatientVisitHandler) GetPatientIDFromAccountID(accountID int64) (common.PatientID, error) {
 	if m.patient != nil {
-		return m.patient.ID.Int64(), nil
+		return m.patient.ID, nil
 	}
-	return 0, nil
+	return common.PatientID{}, nil
 }
 func (m *mockDataAPI_PatientVisitHandler) GetPatientFromAccountID(accountID int64) (*common.Patient, error) {
 	return m.patient, nil
 }
-func (m *mockDataAPI_PatientVisitHandler) CasesForPathway(patientID int64, pathwayTag string, states []string) ([]*common.PatientCase, error) {
+func (m *mockDataAPI_PatientVisitHandler) CasesForPathway(patientID common.PatientID, pathwayTag string, states []string) ([]*common.PatientCase, error) {
 	return m.cases, nil
 }
 func (m *mockDataAPI_PatientVisitHandler) GetVisitsForCase(patientCaseID int64, states []string) ([]*common.PatientVisit, error) {
@@ -94,10 +94,10 @@ func (m *mockDataAPI_PatientVisitHandler) GetActiveCareTeamMemberForCase(role st
 func (m *mockDataAPI_PatientVisitHandler) GetPatientLayout(versionID, languageID int64) (*api.LayoutVersion, error) {
 	return m.patientLayout, nil
 }
-func (m *mockDataAPI_PatientVisitHandler) PreviousPatientAnswersForQuestions(questionTags []string, patientID int64, beforeTime time.Time) (map[string][]common.Answer, error) {
+func (m *mockDataAPI_PatientVisitHandler) PreviousPatientAnswersForQuestions(questionTags []string, patientID common.PatientID, beforeTime time.Time) (map[string][]common.Answer, error) {
 	return nil, nil
 }
-func (m *mockDataAPI_PatientVisitHandler) PatientPhotoSectionsForQuestionIDs(questionIDs []int64, patientID, patientVisitID int64) (map[int64][]common.Answer, error) {
+func (m *mockDataAPI_PatientVisitHandler) PatientPhotoSectionsForQuestionIDs(questionIDs []int64, patientID common.PatientID, patientVisitID int64) (map[int64][]common.Answer, error) {
 	return nil, nil
 }
 func (m *mockDataAPI_PatientVisitHandler) AnswersForQuestions(questionIDs []int64, info api.IntakeInfo) (map[int64][]common.Answer, error) {
@@ -106,7 +106,7 @@ func (m *mockDataAPI_PatientVisitHandler) AnswersForQuestions(questionIDs []int6
 func (m *mockDataAPI_PatientVisitHandler) RegisterPatient(*common.Patient) error {
 	return nil
 }
-func (m *mockDataAPI_PatientVisitHandler) TrackPatientAgreements(patientID int64, agreements map[string]bool) error {
+func (m *mockDataAPI_PatientVisitHandler) TrackPatientAgreements(patientID common.PatientID, agreements map[string]bool) error {
 	return nil
 }
 func (m *mockDataAPI_PatientVisitHandler) ParkedAccount(email string) (*common.ParkedAccount, error) {
@@ -194,7 +194,7 @@ func TestCreateVisit_FirstAvailable(t *testing.T) {
 
 	m := &mockDataAPI_PatientVisitHandler{
 		patient: &common.Patient{
-			ID: encoding.NewObjectID(123),
+			ID: common.NewPatientID(123),
 		},
 		pathway: &common.Pathway{
 			Tag:     api.AcnePathwayTag,
@@ -207,8 +207,8 @@ func TestCreateVisit_FirstAvailable(t *testing.T) {
 			Layout: intakeData,
 		},
 		createVisitFunc: func(visit *common.PatientVisit) (int64, error) {
-			visit.ID = encoding.NewObjectID(visitID)
-			visit.PatientCaseID = encoding.NewObjectID(caseID)
+			visit.ID = encoding.DeprecatedNewObjectID(visitID)
+			visit.PatientCaseID = encoding.DeprecatedNewObjectID(caseID)
 			return visitID, nil
 		},
 	}
@@ -242,7 +242,7 @@ func TestCreateVisit_DoctorPicked(t *testing.T) {
 
 	m := &mockDataAPI_PatientVisitHandler{
 		patient: &common.Patient{
-			ID: encoding.NewObjectID(123),
+			ID: common.NewPatientID(123),
 		},
 		pathway: &common.Pathway{
 			Tag:     api.AcnePathwayTag,
@@ -258,8 +258,8 @@ func TestCreateVisit_DoctorPicked(t *testing.T) {
 			Layout: intakeData,
 		},
 		createVisitFunc: func(visit *common.PatientVisit) (int64, error) {
-			visit.ID = encoding.NewObjectID(visitID)
-			visit.PatientCaseID = encoding.NewObjectID(caseID)
+			visit.ID = encoding.DeprecatedNewObjectID(visitID)
+			visit.PatientCaseID = encoding.DeprecatedNewObjectID(caseID)
 			return visitID, nil
 		},
 	}
@@ -293,7 +293,7 @@ func TestCreatePatient_DoctorPicked(t *testing.T) {
 
 	m := &mockDataAPI_PatientVisitHandler{
 		patient: &common.Patient{
-			ID: encoding.NewObjectID(123),
+			ID: common.NewPatientID(123),
 		},
 		pathway: &common.Pathway{
 			Tag:     api.AcnePathwayTag,
@@ -309,8 +309,8 @@ func TestCreatePatient_DoctorPicked(t *testing.T) {
 			Layout: intakeData,
 		},
 		createVisitFunc: func(visit *common.PatientVisit) (int64, error) {
-			visit.ID = encoding.NewObjectID(visitID)
-			visit.PatientCaseID = encoding.NewObjectID(caseID)
+			visit.ID = encoding.DeprecatedNewObjectID(visitID)
+			visit.PatientCaseID = encoding.DeprecatedNewObjectID(caseID)
 			return visitID, nil
 		},
 	}
@@ -366,7 +366,7 @@ func TestCreatePatient_FirstAvailable(t *testing.T) {
 
 	m := &mockDataAPI_PatientVisitHandler{
 		patient: &common.Patient{
-			ID: encoding.NewObjectID(123),
+			ID: common.NewPatientID(123),
 		},
 		pathway: &common.Pathway{
 			Tag:     api.AcnePathwayTag,
@@ -379,8 +379,8 @@ func TestCreatePatient_FirstAvailable(t *testing.T) {
 			Layout: intakeData,
 		},
 		createVisitFunc: func(visit *common.PatientVisit) (int64, error) {
-			visit.ID = encoding.NewObjectID(visitID)
-			visit.PatientCaseID = encoding.NewObjectID(caseID)
+			visit.ID = encoding.DeprecatedNewObjectID(visitID)
+			visit.PatientCaseID = encoding.DeprecatedNewObjectID(caseID)
 			return visitID, nil
 		},
 	}

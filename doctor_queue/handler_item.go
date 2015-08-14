@@ -86,7 +86,7 @@ func (h *itemHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *h
 			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
-		patient, err := h.dataAPI.Patient(visit.PatientID.Int64(), true)
+		patient, err := h.dataAPI.Patient(visit.PatientID, true)
 		if err != nil {
 			apiservice.WriteError(ctx, err, w, r)
 			return
@@ -99,10 +99,10 @@ func (h *itemHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *h
 				DoctorID:         cc.ID.Int64(),
 				ItemID:           qid.itemID,
 				QueueType:        api.DQTDoctorQueue,
-				PatientID:        visit.PatientID.Int64(),
+				PatientID:        visit.PatientID,
 				Description:      fmt.Sprintf("%s removed visit for %s %s from queue", cc.ShortDisplayName, patient.FirstName, patient.LastName),
 				ShortDescription: "Visit removed from queue",
-				ActionURL:        app_url.ViewPatientVisitInfoAction(visit.PatientID.Int64(), qid.itemID, visit.PatientCaseID.Int64()),
+				ActionURL:        app_url.ViewPatientVisitInfoAction(visit.PatientID, qid.itemID, visit.PatientCaseID.Int64()),
 			},
 		})
 	}

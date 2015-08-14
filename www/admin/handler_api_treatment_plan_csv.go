@@ -319,7 +319,7 @@ func (h *treatmentPlanCSVHandler) createGlobalFTPs(ftps []*ftp) error {
 			}
 			treatment.NumberRefills = numberRefills
 			treatment.DispenseValue = encoding.HighPrecisionFloat64(dispenseValue)
-			treatment.DispenseUnitID = encoding.NewObjectID(dispenseUnitID)
+			treatment.DispenseUnitID = encoding.DeprecatedNewObjectID(dispenseUnitID)
 			treatment.SubstitutionsAllowed = strings.ToLower(ftp.RXs[k].Substitutions) == "yes" || strings.ToLower(ftp.RXs[k].Substitutions) == "true"
 			treatment.PatientInstructions = ftp.RXs[k].Sig
 			treatmentList.Treatments = append(treatmentList.Treatments, treatment)

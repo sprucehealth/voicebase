@@ -51,7 +51,7 @@ func TestTeenFlow(t *testing.T) {
 		},
 	}))
 
-	pc := PatientClient(testData, t, 0)
+	pc := PatientClient(testData, t, common.PatientID{})
 	suRes, err := pc.SignUp(&patient.SignupPatientRequestData{
 		Email:     "patient@sprucehealth.com",
 		Password:  "12345",
@@ -65,7 +65,7 @@ func TestTeenFlow(t *testing.T) {
 	})
 	test.OK(t, err)
 	test.Assert(t, suRes.Token != "", "Auth token not returned")
-	patientID := suRes.Patient.ID.Int64()
+	patientID := suRes.Patient.ID
 	pc.AuthToken = suRes.Token
 
 	cvRes, err := pc.CreatePatientVisit(pathway.Tag, 0, SetupTestHeaders())
@@ -126,7 +126,7 @@ func TestTeenFlow(t *testing.T) {
 		StateCode: "CA",
 	})
 	test.OK(t, err)
-	parentPatientID := suRes.Patient.ID.Int64()
+	parentPatientID := suRes.Patient.ID
 
 	ok, err := testData.DataAPI.GrantParentChildConsent(parentPatientID, patientID, "sensei")
 	test.OK(t, err)

@@ -21,22 +21,22 @@ import (
 
 type mockDataAPIListeners struct {
 	api.DataAPI
-	patientParams        []int64
+	patientParams        []common.PatientID
 	patientErrs          []error
 	patients             []*common.Patient
 	patientCallCount     int
-	patientParentIDParam int64
+	patientParentIDParam common.PatientID
 	patientParentIDErr   error
-	patientParentID      int64
+	patientParentID      common.PatientID
 }
 
-func (m *mockDataAPIListeners) Patient(id int64, basic bool) (*common.Patient, error) {
+func (m *mockDataAPIListeners) Patient(id common.PatientID, basic bool) (*common.Patient, error) {
 	defer func() { m.patientCallCount++ }()
 	m.patientParams = append(m.patientParams, id)
 	return m.patients[m.patientCallCount], m.patientErrs[m.patientCallCount]
 }
 
-func (m *mockDataAPIListeners) ParentalConsent(id int64) ([]*common.ParentalConsent, error) {
+func (m *mockDataAPIListeners) ParentalConsent(id common.PatientID) ([]*common.ParentalConsent, error) {
 	m.patientParentIDParam = id
 	return []*common.ParentalConsent{
 		{
@@ -133,21 +133,21 @@ func TestEmailCampaignMinorTreatmentPlanIssued(t *testing.T) {
 	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.MinorTreatmentPlanIssuedEmailEnabled})
 	test.OK(t, err)
 	emailService := &email.TestService{}
-	var parentPatientID int64 = 54321
+	parentPatientID := common.NewPatientID(54321)
 	var parentAccountID int64 = 56789
-	var patientID int64 = 12345
+	patientID := common.NewPatientID(12345)
 	patientFirstName := "Child"
 	parentFirstName := "Parent"
 	dataAPI := &mockDataAPIListeners{
 		patients: []*common.Patient{
 			&common.Patient{
-				ID:                 encoding.NewObjectID(patientID),
+				ID:                 patientID,
 				HasParentalConsent: true,
 				DOB:                encoding.Date{Month: 1, Day: 1, Year: time.Now().Year() - 16},
 				FirstName:          patientFirstName,
 			},
 			&common.Patient{
-				AccountID: encoding.NewObjectID(parentAccountID),
+				AccountID: encoding.DeprecatedNewObjectID(parentAccountID),
 				FirstName: parentFirstName,
 			},
 		},
@@ -183,7 +183,7 @@ func TestEmailCampaignMinorTreatmentPlanIssuedCfgDisabled(t *testing.T) {
 	emailService := &email.TestService{}
 	dataAPI := &mockDataAPIListeners{}
 	InitListeners(dispatcher, cfgStore, emailService, dataAPI, emailWebDomain)
-	dispatcher.PublishAsync(&doctor_treatment_plan.TreatmentPlanActivatedEvent{PatientID: 12345})
+	dispatcher.PublishAsync(&doctor_treatment_plan.TreatmentPlanActivatedEvent{PatientID: common.NewPatientID(12345)})
 	test.Equals(t, 0, len(emailService.Reset()))
 }
 
@@ -193,21 +193,21 @@ func TestEmailCampaignMinorTriaged(t *testing.T) {
 	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.MinorTriagedEmailEnabled})
 	test.OK(t, err)
 	emailService := &email.TestService{}
-	var parentPatientID int64 = 54321
+	parentPatientID := common.NewPatientID(54321)
 	var parentAccountID int64 = 56789
-	var patientID int64 = 12345
+	patientID := common.NewPatientID(12345)
 	patientFirstName := "Child"
 	parentFirstName := "Parent"
 	dataAPI := &mockDataAPIListeners{
 		patients: []*common.Patient{
 			&common.Patient{
-				ID:                 encoding.NewObjectID(patientID),
+				ID:                 patientID,
 				HasParentalConsent: true,
 				DOB:                encoding.Date{Month: 1, Day: 1, Year: time.Now().Year() - 16},
 				FirstName:          patientFirstName,
 			},
 			&common.Patient{
-				AccountID: encoding.NewObjectID(parentAccountID),
+				AccountID: encoding.DeprecatedNewObjectID(parentAccountID),
 				FirstName: parentFirstName,
 			},
 		},
@@ -243,7 +243,7 @@ func TestEmailCampaignMinorTriagedCfgDisabled(t *testing.T) {
 	emailService := &email.TestService{}
 	dataAPI := &mockDataAPIListeners{}
 	InitListeners(dispatcher, cfgStore, emailService, dataAPI, emailWebDomain)
-	dispatcher.PublishAsync(&patient_visit.PatientVisitMarkedUnsuitableEvent{PatientID: 12345})
+	dispatcher.PublishAsync(&patient_visit.PatientVisitMarkedUnsuitableEvent{PatientID: common.NewPatientID(12345)})
 	test.Equals(t, 0, len(emailService.Reset()))
 }
 
@@ -253,21 +253,21 @@ func TestEmailCampaignParentWelcome(t *testing.T) {
 	cfgStore, err := cfg.NewLocalStore([]*cfg.ValueDef{config.ParentWelcomeEmailEnabled})
 	test.OK(t, err)
 	emailService := &email.TestService{}
-	var parentPatientID int64 = 12345
+	parentPatientID := common.NewPatientID(54321)
 	var parentAccountID int64 = 56789
-	var patientID int64 = 12345
+	patientID := common.NewPatientID(12345)
 	patientFirstName := "Child"
 	parentFirstName := "Parent"
 	dataAPI := &mockDataAPIListeners{
 		patients: []*common.Patient{
 			&common.Patient{
-				ID:                 encoding.NewObjectID(patientID),
+				ID:                 patientID,
 				HasParentalConsent: true,
 				DOB:                encoding.Date{Month: 1, Day: 1, Year: time.Now().Year() - 16},
 				FirstName:          patientFirstName,
 			},
 			&common.Patient{
-				AccountID: encoding.NewObjectID(parentAccountID),
+				AccountID: encoding.DeprecatedNewObjectID(parentAccountID),
 				FirstName: parentFirstName,
 			},
 		},
@@ -303,6 +303,6 @@ func TestEmailCampaignParentWelcomeCfgDisabled(t *testing.T) {
 	emailService := &email.TestService{}
 	dataAPI := &mockDataAPIListeners{}
 	InitListeners(dispatcher, cfgStore, emailService, dataAPI, emailWebDomain)
-	dispatcher.PublishAsync(&patient.ParentalConsentCompletedEvent{ParentPatientID: 12345})
+	dispatcher.PublishAsync(&patient.ParentalConsentCompletedEvent{ParentPatientID: common.NewPatientID(12345)})
 	test.Equals(t, 0, len(emailService.Reset()))
 }

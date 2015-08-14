@@ -64,7 +64,7 @@ func (h *parentalConsentImageAPIHandler) ServeHTTP(ctx context.Context, w http.R
 	}
 }
 
-func (h *parentalConsentImageAPIHandler) post(ctx context.Context, w http.ResponseWriter, r *http.Request, account *common.Account, parentPatientID int64) {
+func (h *parentalConsentImageAPIHandler) post(ctx context.Context, w http.ResponseWriter, r *http.Request, account *common.Account, parentPatientID common.PatientID) {
 	if err := r.ParseMultipartForm(maxConsentImageRequestMemory); err != nil {
 		www.APIBadRequestError(w, r, "Failed to parse request")
 		return
@@ -119,7 +119,7 @@ func (h *parentalConsentImageAPIHandler) post(ctx context.Context, w http.Respon
 		return
 	}
 
-	mediaURL, err := h.mediaStore.PutReader(fmt.Sprintf("parental-consent-proof-%d-%s", parentPatientID, imageType), file, size, mimeType, nil)
+	mediaURL, err := h.mediaStore.PutReader(fmt.Sprintf("parental-consent-proof-%s-%s", parentPatientID, imageType), file, size, mimeType, nil)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
@@ -130,7 +130,7 @@ func (h *parentalConsentImageAPIHandler) post(ctx context.Context, w http.Respon
 		www.APIInternalError(w, r, err)
 		return
 	}
-	personID, err := h.dataAPI.GetPersonIDByRole(api.RolePatient, patientID)
+	personID, err := h.dataAPI.GetPersonIDByRole(api.RolePatient, patientID.Int64())
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
@@ -183,7 +183,7 @@ func (h *parentalConsentImageAPIHandler) post(ctx context.Context, w http.Respon
 	httputil.JSONResponse(w, http.StatusOK, res)
 }
 
-func (h *parentalConsentImageAPIHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request, parentPatientID int64) {
+func (h *parentalConsentImageAPIHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request, parentPatientID common.PatientID) {
 	proof, err := h.dataAPI.ParentConsentProof(parentPatientID)
 	if err != nil && !api.IsErrNotFound(err) {
 		www.APIInternalError(w, r, err)

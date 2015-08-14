@@ -23,7 +23,7 @@ func TestAvailableStates(t *testing.T) {
 	test.OK(t, err)
 
 	doctor := &common.Doctor{
-		AccountID: encoding.NewObjectID(accountID),
+		AccountID: encoding.DeprecatedNewObjectID(accountID),
 		Address:   &common.Address{},
 	}
 	_, err = testData.DataAPI.RegisterProvider(doctor, api.RoleDoctor)
@@ -53,7 +53,7 @@ func TestCareProviderEligible(t *testing.T) {
 	test.OK(t, err)
 
 	doctor := &common.Doctor{
-		AccountID: encoding.NewObjectID(accountID),
+		AccountID: encoding.DeprecatedNewObjectID(accountID),
 		Address:   &common.Address{},
 	}
 	_, err = testData.DataAPI.RegisterProvider(doctor, api.RoleDoctor)

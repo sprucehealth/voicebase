@@ -31,10 +31,10 @@ const (
 }`
 )
 
-func TestObjectIdMarshal(t *testing.T) {
+func TestObjectIDMarshal(t *testing.T) {
 	objID := ObjectID{
-		Int64Value: 12345,
-		IsValid:    true,
+		Uint64Value: 12345,
+		IsValid:     true,
 	}
 
 	e1 := &ExampleObject{
@@ -66,7 +66,7 @@ func TestObjectIdMarshal(t *testing.T) {
 	}
 }
 
-func TestObjectIdUnmarshal(t *testing.T) {
+func TestObjectIDUnmarshal(t *testing.T) {
 	testObject := &ExampleObject{}
 	err := json.Unmarshal([]byte(testObjectString), testObject)
 	if err != nil {

@@ -406,7 +406,7 @@ func (d *DoseSpotService) UpdatePatientInformation(clinicianID int64, currentPat
 	// }
 
 	// populate the prescription id into the patient object
-	currentPatient.ERxPatientID = encoding.NewObjectID(response.PatientUpdates[0].Patient.PatientID)
+	currentPatient.ERxPatientID = encoding.DeprecatedNewObjectID(response.PatientUpdates[0].Patient.PatientID)
 	return nil
 }
 
@@ -474,7 +474,7 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianID int64, currentPati
 	// }
 
 	// populate the prescription id into the patient object
-	currentPatient.ERxPatientID = encoding.NewObjectID(response.PatientUpdates[0].Patient.PatientID)
+	currentPatient.ERxPatientID = encoding.DeprecatedNewObjectID(response.PatientUpdates[0].Patient.PatientID)
 
 	// go through and assign medication ids to all prescriptions
 	for _, patientUpdate := range response.PatientUpdates {
@@ -489,7 +489,7 @@ func (d *DoseSpotService) StartPrescribingPatient(clinicianID int64, currentPati
 					if treatment.ERx == nil {
 						treatment.ERx = &common.ERxData{}
 					}
-					treatment.ERx.PrescriptionID = encoding.NewObjectID(medication.DoseSpotPrescriptionID)
+					treatment.ERx.PrescriptionID = encoding.DeprecatedNewObjectID(medication.DoseSpotPrescriptionID)
 				}
 			}
 		}
@@ -619,8 +619,8 @@ func (d *DoseSpotService) GetTransmissionErrorDetails(clinicianID int64) ([]*com
 		dispenseValueFloat, _ := strconv.ParseFloat(transmissionError.Medication.Dispense, 64)
 		medicationsWithErrors[i] = &common.Treatment{
 			ERx: &common.ERxData{
-				ErxMedicationID:       encoding.NewObjectID(transmissionError.Medication.MedicationID),
-				PrescriptionID:        encoding.NewObjectID(transmissionError.Medication.DoseSpotPrescriptionID),
+				ErxMedicationID:       encoding.DeprecatedNewObjectID(transmissionError.Medication.MedicationID),
+				PrescriptionID:        encoding.DeprecatedNewObjectID(transmissionError.Medication.DoseSpotPrescriptionID),
 				PrescriptionStatus:    transmissionError.Medication.Status,
 				ErxSentDate:           &transmissionError.Medication.DatePrescribed.DateTime,
 				TransmissionErrorDate: &transmissionError.ErrorDateTimeStamp.DateTime,
@@ -632,7 +632,7 @@ func (d *DoseSpotService) GetTransmissionErrorDetails(clinicianID int64) ([]*com
 				LexiSynonymTypeID: strconv.FormatInt(transmissionError.Medication.LexiSynonymTypeID, 10),
 				LexiDrugSynID:     strconv.FormatInt(transmissionError.Medication.LexiDrugSynID, 10),
 			},
-			DispenseUnitID:       encoding.NewObjectID(transmissionError.Medication.DispenseUnitID),
+			DispenseUnitID:       encoding.DeprecatedNewObjectID(transmissionError.Medication.DispenseUnitID),
 			StatusDetails:        transmissionError.ErrorDetails,
 			DrugName:             transmissionError.Medication.DrugName,
 			DosageStrength:       transmissionError.Medication.Strength,
@@ -718,7 +718,7 @@ func (d *DoseSpotService) GetPatientDetails(erxPatientID int64) (*common.Patient
 		return nil, err
 	}
 	newPatient := &common.Patient{
-		ERxPatientID: encoding.NewObjectID(response.PatientUpdates[0].Patient.PatientID),
+		ERxPatientID: encoding.DeprecatedNewObjectID(response.PatientUpdates[0].Patient.PatientID),
 		FirstName:    response.PatientUpdates[0].Patient.FirstName,
 		LastName:     response.PatientUpdates[0].Patient.LastName,
 		Gender:       response.PatientUpdates[0].Patient.Gender,
@@ -921,7 +921,7 @@ func convertMedicationIntoTreatment(medicationItem *medication) *common.Treatmen
 		IsControlledSubstance:   err == nil && scheduleInt > 0,
 		DaysSupply:              medicationItem.DaysSupply,
 		DispenseValue:           encoding.HighPrecisionFloat64(dispenseValue),
-		DispenseUnitID:          encoding.NewObjectID(medicationItem.DispenseUnitID),
+		DispenseUnitID:          encoding.DeprecatedNewObjectID(medicationItem.DispenseUnitID),
 		DispenseUnitDescription: medicationItem.DispenseUnitDescription,
 		PatientInstructions:     medicationItem.Instructions,
 		SubstitutionsAllowed:    !medicationItem.NoSubstitutions,
@@ -929,10 +929,10 @@ func convertMedicationIntoTreatment(medicationItem *medication) *common.Treatmen
 		DrugRoute:               medicationItem.Route,
 		DosageStrength:          medicationItem.Strength,
 		ERx: &common.ERxData{
-			PrescriptionID:      encoding.NewObjectID(medicationItem.DoseSpotPrescriptionID),
+			PrescriptionID:      encoding.DeprecatedNewObjectID(medicationItem.DoseSpotPrescriptionID),
 			ErxPharmacyID:       medicationItem.PharmacyID,
 			PrescriptionStatus:  medicationItem.PrescriptionStatus,
-			ErxMedicationID:     encoding.NewObjectID(medicationItem.MedicationID),
+			ErxMedicationID:     encoding.DeprecatedNewObjectID(medicationItem.MedicationID),
 			DoseSpotClinicianID: medicationItem.ClinicianID,
 		},
 	}

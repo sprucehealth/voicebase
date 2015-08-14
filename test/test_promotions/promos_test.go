@@ -49,7 +49,7 @@ func TestPromotion_NewUserPercentOff(t *testing.T) {
 	// now lets create a patient with this email address
 	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
 	patientAccountID := pr.Patient.AccountID.Int64()
-	patientID := pr.Patient.ID.Int64()
+	patientID := pr.Patient.ID
 
 	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
@@ -161,7 +161,7 @@ func TestPromotion_NewUserDollarOff(t *testing.T) {
 	// now lets create a patient with this email address
 	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
 	patientAccountID := pr.Patient.AccountID.Int64()
-	patientID := pr.Patient.ID.Int64()
+	patientID := pr.Patient.ID
 	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 	test_integration.AddTestAddressForPatient(patientID, testData, t)
@@ -272,7 +272,7 @@ func TestPromotion_NewUserAccountCredit(t *testing.T) {
 	// now lets create a patient with this email address
 	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
 	patientAccountID := pr.Patient.AccountID.Int64()
-	patientID := pr.Patient.ID.Int64()
+	patientID := pr.Patient.ID
 	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 	test_integration.AddTestAddressForPatient(patientID, testData, t)
@@ -401,7 +401,7 @@ func TestPromotion_NewUserRouteToDoctor(t *testing.T) {
 	// now lets create a patient with this email address
 	pr := signupPatientWithVisit("kunal@test.com", testData, t)
 	patientAccountID := pr.Patient.AccountID.Int64()
-	patientID := pr.Patient.ID.Int64()
+	patientID := pr.Patient.ID
 	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 	test_integration.AddTestAddressForPatient(patientID, testData, t)
@@ -485,15 +485,15 @@ func TestPromotion_ExistingUserRouteToDoctor(t *testing.T) {
 
 	// now lets make sure that an existing user can claim the code as well
 	pr := signupPatientWithVisit("Gdgkngng@gmail.com", testData, t)
-	test_integration.AddTestAddressForPatient(pr.Patient.ID.Int64(), testData, t)
-	test_integration.AddTestPharmacyForPatient(pr.Patient.ID.Int64(), testData, t)
+	test_integration.AddTestAddressForPatient(pr.Patient.ID, testData, t)
+	test_integration.AddTestPharmacyForPatient(pr.Patient.ID, testData, t)
 
 	// lets have this user claim the code
 	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, true)
 	test.OK(t, err)
 
 	// at this point there should be a doctor part of the user's care team
-	careTeamMembers, err := testData.DataAPI.GetActiveMembersOfCareTeamForPatient(pr.Patient.ID.Int64(), false)
+	careTeamMembers, err := testData.DataAPI.GetActiveMembersOfCareTeamForPatient(pr.Patient.ID, false)
 	test.OK(t, err)
 	test.Equals(t, 1, len(careTeamMembers))
 	test.Equals(t, dr.DoctorID, careTeamMembers[0].ProviderID)
@@ -538,7 +538,7 @@ func TestPromotion_ExistingUserRouteToDoctor_Uneligible(t *testing.T) {
 	// now lets create a patient with this email address
 	pr := test_integration.SignupTestPatientWithEmail("kunal@test.com", t, testData)
 	patientAccountID := pr.Patient.AccountID.Int64()
-	patientID := pr.Patient.ID.Int64()
+	patientID := pr.Patient.ID
 	test_integration.AddTestPharmacyForPatient(patientID, testData, t)
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
 	test_integration.AddTestAddressForPatient(patientID, testData, t)

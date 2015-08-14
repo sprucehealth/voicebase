@@ -95,7 +95,7 @@ func (h *UpdateHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 	}
 }
 
-func (h *UpdateHandler) postOrPUT(ctx context.Context, w http.ResponseWriter, r *http.Request, patientID int64, req *UpdateRequest) {
+func (h *UpdateHandler) postOrPUT(ctx context.Context, w http.ResponseWriter, r *http.Request, patientID common.PatientID, req *UpdateRequest) {
 	if req.isZero() {
 		apiservice.WriteJSONSuccess(w)
 		return

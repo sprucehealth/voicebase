@@ -52,7 +52,7 @@ const (
 )
 
 type PrescriptionStatusCheckMessage struct {
-	PatientID      int64
+	PatientID      PatientID
 	DoctorID       int64
 	EventCheckType ERxSourceType
 }

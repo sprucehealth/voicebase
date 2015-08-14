@@ -344,7 +344,7 @@ func CreateTreatmentFromMedication(medication *erx.MedicationSelectResponse, med
 			erx.LexiSynonymTypeID: strconv.FormatInt(medication.LexiSynonymTypeID, 10),
 			erx.NDC:               medication.RepresentativeNDC,
 		},
-		DispenseUnitID:          encoding.NewObjectID(medication.DispenseUnitID),
+		DispenseUnitID:          encoding.DeprecatedNewObjectID(medication.DispenseUnitID),
 		DispenseUnitDescription: medication.DispenseUnitDescription,
 		DosageStrength:          medicationStrength,
 		DrugInternalName:        medicationName,

@@ -53,9 +53,9 @@ func CreateRegimenPlanForTreatmentPlan(regimenPlan *common.RegimenPlan, testData
 	return rp
 }
 
-func GetListOfTreatmentPlansForPatient(patientID, doctorAccountID int64, testData *TestData, t *testing.T) *doctor_treatment_plan.TreatmentPlansResponse {
+func GetListOfTreatmentPlansForPatient(patientID common.PatientID, doctorAccountID int64, testData *TestData, t *testing.T) *doctor_treatment_plan.TreatmentPlansResponse {
 	response := &doctor_treatment_plan.TreatmentPlansResponse{}
-	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorTreatmentPlansListURLPath+"?patient_id="+strconv.FormatInt(patientID, 10), doctorAccountID)
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorTreatmentPlansListURLPath+"?patient_id="+patientID.String(), doctorAccountID)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -162,7 +162,7 @@ func ValidateRegimenRequestAgainstResponse(doctorRegimenRequest, doctorRegimenRe
 				t.Fatal("Regimen steps in each section are expected to have an id")
 			}
 			if regimenStep.ParentID.IsValid && regimenStepsMapping[regimenStep.ParentID.Int64()] == false {
-				t.Fatalf("There exists a regimen step in a section that is not present in the global list. Id of regimen step %d", regimenStep.ID.Int64Value)
+				t.Fatalf("There exists a regimen step in a section that is not present in the global list. ID of regimen step %s", regimenStep.ID)
 			}
 		}
 	}
@@ -210,7 +210,7 @@ func CreateFavoriteTreatmentPlan(treatmentPlanID int64, testData *TestData, doct
 	// reason we do this is because the regimen steps have to exist before treatment plan can be favorited,
 	// and the only way we can create regimen steps today is in the context of a patient visit
 	regimenPlanRequest := &common.RegimenPlan{
-		TreatmentPlanID: encoding.NewObjectID(treatmentPlanID),
+		TreatmentPlanID: encoding.DeprecatedNewObjectID(treatmentPlanID),
 	}
 
 	regimenStep1 := &common.DoctorInstructionItem{
@@ -264,7 +264,7 @@ func CreateFavoriteTreatmentPlan(treatmentPlanID int64, testData *TestData, doct
 		DosageStrength:          "Strength1",
 		DispenseValue:           5,
 		DispenseUnitDescription: "Tablet",
-		DispenseUnitID:          encoding.NewObjectID(19),
+		DispenseUnitID:          encoding.DeprecatedNewObjectID(19),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 5,

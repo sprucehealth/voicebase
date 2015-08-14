@@ -306,8 +306,7 @@ func populateParentInfo(
 	patient *common.Patient,
 	context *common.ViewContext,
 ) error {
-
-	consents, err := dataAPI.ParentalConsent(patient.ID.Int64())
+	consents, err := dataAPI.ParentalConsent(patient.ID)
 	if err != nil {
 		return errors.Trace(err)
 	}

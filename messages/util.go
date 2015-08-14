@@ -19,7 +19,7 @@ func validateAccess(dataAPI api.DataAPI, r *http.Request, account *common.Accoun
 			return 0, 0, err
 		}
 
-		if err := apiservice.ValidateAccessToPatientCase(r.Method, account.Role, doctorID, patientCase.PatientID.Int64(), patientCase.ID.Int64(), dataAPI); err != nil {
+		if err := apiservice.ValidateAccessToPatientCase(r.Method, account.Role, doctorID, patientCase.PatientID, patientCase.ID.Int64(), dataAPI); err != nil {
 			return 0, 0, err
 		}
 
@@ -32,10 +32,10 @@ func validateAccess(dataAPI api.DataAPI, r *http.Request, account *common.Accoun
 		if err != nil {
 			return 0, 0, err
 		}
-		if patientCase.PatientID.Int64() != patientID {
+		if patientCase.PatientID != patientID {
 			return 0, 0, apiservice.NewValidationError("Not authorized")
 		}
-		personID, err = dataAPI.GetPersonIDByRole(api.RolePatient, patientID)
+		personID, err = dataAPI.GetPersonIDByRole(api.RolePatient, patientID.Int64())
 		if err != nil {
 			return 0, 0, err
 		}

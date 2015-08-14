@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -68,7 +68,7 @@ func main() {
 			golog.Fatalf(err.Error())
 		}
 
-		childPatientID, err := strconv.ParseInt(strings.TrimSpace(row[0]), 10, 64)
+		childPatientID, err := common.ParsePatientID(strings.TrimSpace(row[0]))
 		if err != nil {
 			golog.Fatalf(err.Error())
 		}

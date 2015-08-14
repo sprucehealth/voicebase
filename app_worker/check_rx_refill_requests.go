@@ -305,6 +305,6 @@ func linkPharmacyToPrescription(dataAPI api.DataAPI, eRxAPI erx.ERxAPI, prescrip
 			return err
 		}
 	}
-	prescription.ERx.PharmacyLocalID = encoding.NewObjectID(pharmacyDetails.LocalID)
+	prescription.ERx.PharmacyLocalID = encoding.DeprecatedNewObjectID(pharmacyDetails.LocalID)
 	return nil
 }

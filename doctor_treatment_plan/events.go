@@ -8,7 +8,7 @@ import (
 )
 
 type NewTreatmentPlanStartedEvent struct {
-	PatientID       int64
+	PatientID       common.PatientID
 	DoctorID        int64
 	Case            *common.PatientCase
 	CaseID          int64
@@ -21,7 +21,7 @@ func (e *NewTreatmentPlanStartedEvent) Events() []analytics.Event {
 		&analytics.ServerEvent{
 			Event:           "treatment_plan_started",
 			Timestamp:       analytics.Time(time.Now()),
-			PatientID:       e.PatientID,
+			PatientID:       e.PatientID.Int64(),
 			DoctorID:        e.DoctorID,
 			VisitID:         e.VisitID,
 			CaseID:          e.CaseID,
@@ -37,7 +37,7 @@ type TreatmentPlanUpdatedEvent struct {
 }
 
 type TreatmentPlanActivatedEvent struct {
-	PatientID     int64
+	PatientID     common.PatientID
 	DoctorID      int64
 	VisitID       int64
 	TreatmentPlan *common.TreatmentPlan
@@ -50,7 +50,7 @@ func (e *TreatmentPlanActivatedEvent) Events() []analytics.Event {
 		&analytics.ServerEvent{
 			Event:           "treatment_plan_activated",
 			Timestamp:       analytics.Time(time.Now()),
-			PatientID:       e.PatientID,
+			PatientID:       e.PatientID.Int64(),
 			DoctorID:        e.DoctorID,
 			VisitID:         e.VisitID,
 			CaseID:          e.TreatmentPlan.PatientCaseID.Int64(),
@@ -69,7 +69,7 @@ func (e *TreatmentPlanSubmittedEvent) Events() []analytics.Event {
 		&analytics.ServerEvent{
 			Event:           "treatment_plan_submitted",
 			Timestamp:       analytics.Time(time.Now()),
-			PatientID:       e.TreatmentPlan.PatientID,
+			PatientID:       e.TreatmentPlan.PatientID.Int64(),
 			DoctorID:        e.TreatmentPlan.DoctorID.Int64(),
 			VisitID:         e.VisitID,
 			CaseID:          e.TreatmentPlan.PatientCaseID.Int64(),

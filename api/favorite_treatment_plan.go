@@ -277,7 +277,7 @@ func (d *dataService) insertFavoriteTreatmentPlan(db db, ftp *common.FavoriteTre
 		}
 	}
 
-	ftp.ID = encoding.NewObjectID(favoriteTreatmentPlanID)
+	ftp.ID = encoding.DeprecatedNewObjectID(favoriteTreatmentPlanID)
 
 	// Add all treatments
 	if ftp.TreatmentList != nil {

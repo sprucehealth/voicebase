@@ -27,14 +27,14 @@ type mockDataAPIAuthenticationHandler struct {
 }
 
 func (m *mockDataAPIAuthenticationHandler) GetPatientFromAccountID(accountID int64) (*common.Patient, error) {
-	return &common.Patient{AccountID: encoding.NewObjectID(1), ID: encoding.NewObjectID(1)}, nil
+	return &common.Patient{AccountID: encoding.DeprecatedNewObjectID(1), ID: common.NewPatientID(1)}, nil
 }
 
-func (m *mockDataAPIAuthenticationHandler) PatientFeedbackRecorded(patientID int64, feedbackFor string) (bool, error) {
+func (m *mockDataAPIAuthenticationHandler) PatientFeedbackRecorded(patientID common.PatientID, feedbackFor string) (bool, error) {
 	return m.feedbackRecorded, nil
 }
 
-func (m *mockDataAPIAuthenticationHandler) GetActiveTreatmentPlansForPatient(patientID int64) ([]*common.TreatmentPlan, error) {
+func (m *mockDataAPIAuthenticationHandler) GetActiveTreatmentPlansForPatient(patientID common.PatientID) ([]*common.TreatmentPlan, error) {
 	return m.tp, nil
 }
 
@@ -72,7 +72,7 @@ func TestAuthenticationHandlerFeedback(t *testing.T) {
 	// Unviewed treatment plan shouldn't trigger feedback
 
 	tm := time.Now()
-	dataAPI.tp = []*common.TreatmentPlan{{ID: encoding.NewObjectID(1), PatientCaseID: encoding.NewObjectID(1), PatientViewed: false, SentDate: &tm}}
+	dataAPI.tp = []*common.TreatmentPlan{{ID: encoding.DeprecatedNewObjectID(1), PatientCaseID: encoding.DeprecatedNewObjectID(1), PatientViewed: false, SentDate: &tm}}
 
 	res = AuthenticationResponse{}
 	err = testJSONHandler(handler,
@@ -88,7 +88,7 @@ func TestAuthenticationHandlerFeedback(t *testing.T) {
 
 	// Viewed treatment plan should show feedback since hasn't been recorded yet
 
-	dataAPI.tp = []*common.TreatmentPlan{{ID: encoding.NewObjectID(1), PatientCaseID: encoding.NewObjectID(1), PatientViewed: true, SentDate: &tm}}
+	dataAPI.tp = []*common.TreatmentPlan{{ID: encoding.DeprecatedNewObjectID(1), PatientCaseID: encoding.DeprecatedNewObjectID(1), PatientViewed: true, SentDate: &tm}}
 
 	res = AuthenticationResponse{}
 	err = testJSONHandler(handler,

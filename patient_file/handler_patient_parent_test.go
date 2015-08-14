@@ -28,22 +28,22 @@ type mockDataAPI_patientParentHandler struct {
 	careTeams map[int64]*common.PatientCareTeam
 }
 
-func (m *mockDataAPI_patientParentHandler) ParentalConsent(childPatientID int64) ([]*common.ParentalConsent, error) {
+func (m *mockDataAPI_patientParentHandler) ParentalConsent(childPatientID common.PatientID) ([]*common.ParentalConsent, error) {
 	return []*common.ParentalConsent{m.consent}, nil
 }
-func (m *mockDataAPI_patientParentHandler) GetPatientFromID(id int64) (*common.Patient, error) {
+func (m *mockDataAPI_patientParentHandler) GetPatientFromID(common.PatientID) (*common.Patient, error) {
 	return m.patient, nil
 }
-func (m *mockDataAPI_patientParentHandler) ParentConsentProof(patientID int64) (*api.ParentalConsentProof, error) {
+func (m *mockDataAPI_patientParentHandler) ParentConsentProof(common.PatientID) (*api.ParentalConsentProof, error) {
 	return m.proof, nil
 }
 func (m *mockDataAPI_patientParentHandler) GetDoctorFromAccountID(accountID int64) (*common.Doctor, error) {
 	return m.doctor, nil
 }
-func (m *mockDataAPI_patientParentHandler) Patient(id int64, basicInfoOnly bool) (*common.Patient, error) {
+func (m *mockDataAPI_patientParentHandler) Patient(common.PatientID, bool) (*common.Patient, error) {
 	return m.patient, nil
 }
-func (m *mockDataAPI_patientParentHandler) GetCasesForPatient(id int64, states []string) ([]*common.PatientCase, error) {
+func (m *mockDataAPI_patientParentHandler) GetCasesForPatient(id common.PatientID, states []string) ([]*common.PatientCase, error) {
 	return m.cases, nil
 }
 func (m *mockDataAPI_patientParentHandler) CaseCareTeams(caseIDs []int64) (map[int64]*common.PatientCareTeam, error) {
@@ -72,11 +72,11 @@ func TestPatientParentHandler(t *testing.T) {
 			},
 		},
 		doctor: &common.Doctor{
-			ID: encoding.NewObjectID(2),
+			ID: encoding.DeprecatedNewObjectID(2),
 		},
 		cases: []*common.PatientCase{
 			{
-				ID: encoding.NewObjectID(1),
+				ID: encoding.DeprecatedNewObjectID(1),
 			},
 		},
 		careTeams: map[int64]*common.PatientCareTeam{

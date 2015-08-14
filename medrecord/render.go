@@ -558,26 +558,26 @@ func (r *Renderer) Render(patient *common.Patient, opt RenderOption) ([]byte, er
 		Patient: patient,
 	}
 
-	ag, err := r.DataAPI.PatientAgreements(patient.ID.Int64())
+	ag, err := r.DataAPI.PatientAgreements(patient.ID)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	ctx.Agreements = ag
 
-	pcp, err := r.DataAPI.GetPatientPCP(patient.ID.Int64())
+	pcp, err := r.DataAPI.GetPatientPCP(patient.ID)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	ctx.PCP = pcp
 
-	ec, err := r.DataAPI.GetPatientEmergencyContacts(patient.ID.Int64())
+	ec, err := r.DataAPI.GetPatientEmergencyContacts(patient.ID)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	ctx.EmergencyContacts = ec
 
 	if patient.IsUnder18() {
-		consent, err := r.DataAPI.ParentalConsent(patient.ID.Int64())
+		consent, err := r.DataAPI.ParentalConsent(patient.ID)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -609,7 +609,7 @@ func (r *Renderer) Render(patient *common.Patient, opt RenderOption) ([]byte, er
 		visitStatuses = append(visitStatuses, common.SubmittedPatientVisitStates()...)
 	}
 
-	cases, err := r.DataAPI.GetCasesForPatient(patient.ID.Int64(), caseStatuses)
+	cases, err := r.DataAPI.GetCasesForPatient(patient.ID, caseStatuses)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

@@ -116,7 +116,7 @@ func main() {
 			golog.Fatalf(err.Error())
 		}
 
-		patient, err := dataAPI.Patient(pc.PatientID.Int64(), true)
+		patient, err := dataAPI.Patient(pc.PatientID, true)
 		if err != nil {
 			golog.Fatalf(err.Error())
 		}
@@ -132,7 +132,7 @@ func main() {
 
 		scheduledMessage := &common.ScheduledMessage{
 			Event:     "doctor_change",
-			PatientID: patient.ID.Int64(),
+			PatientID: patient.ID,
 			Message: &schedmsg.CaseMessage{
 				Message:        b.String(),
 				PatientCaseID:  caseID,

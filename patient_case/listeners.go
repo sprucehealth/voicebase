@@ -68,7 +68,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 				return err
 			}
 
-			patient, err := dataAPI.GetPatientFromID(ev.Case.PatientID.Int64())
+			patient, err := dataAPI.GetPatientFromID(ev.Case.PatientID)
 			if err != nil {
 				golog.Errorf("Unable to get patient from id: %s", err)
 				return err
@@ -305,7 +305,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 				return err
 			}
 
-			treatmentPlan, err := dataAPI.GetTreatmentPlanForPatient(patient.ID.Int64(), ev.ResourceID)
+			treatmentPlan, err := dataAPI.GetTreatmentPlanForPatient(patient.ID, ev.ResourceID)
 			if api.IsErrNotFound(err) {
 				golog.Warningf("Treatment plan %d doesnt exist", ev.ResourceID)
 				return nil
@@ -349,7 +349,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 					ProviderShortDisplayName: ma.ShortDisplayName,
 				},
 				&schedmsg.CaseInfo{
-					PatientID:     patient.ID.Int64(),
+					PatientID:     patient.ID,
 					PatientCaseID: treatmentPlan.PatientCaseID.Int64(),
 					SenderRole:    api.RoleCC,
 					ProviderID:    ma.ID.Int64(),
@@ -422,7 +422,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 		msg := &notify.Message{
 			ShortMessage: text[txtParentalConsentCompletedNotification],
 			EmailType:    notifyParentalConsentCompletedEmailType,
-			PushID:       fmt.Sprintf("%s:%d", CNParentalConsentCompleted, ev.ChildPatientID),
+			PushID:       fmt.Sprintf("%s:%s", CNParentalConsentCompleted, ev.ChildPatientID),
 		}
 		if err := notificationManager.NotifyPatient(patient, msg); err != nil {
 			golog.Errorf("Failed to notify patient: %s", err)

@@ -18,18 +18,18 @@ func TestParentalConsent(t *testing.T) {
 	accountID, err := testData.AuthAPI.CreateAccount("patient@sprucehealth.com", "12345", api.RolePatient)
 	test.OK(t, err)
 	patient := &common.Patient{
-		AccountID: encoding.NewObjectID(accountID),
+		AccountID: encoding.DeprecatedNewObjectID(accountID),
 	}
 	test.OK(t, testData.DataAPI.RegisterPatient(patient))
-	patientID := patient.ID.Int64()
+	patientID := patient.ID
 
 	accountID, err = testData.AuthAPI.CreateAccount("parent@sprucehealth.com", "12345", api.RolePatient)
 	test.OK(t, err)
 	patient = &common.Patient{
-		AccountID: encoding.NewObjectID(accountID),
+		AccountID: encoding.DeprecatedNewObjectID(accountID),
 	}
 	test.OK(t, testData.DataAPI.RegisterPatient(patient))
-	parentPatientID := patient.ID.Int64()
+	parentPatientID := patient.ID
 
 	patient, err = testData.DataAPI.Patient(patientID, true)
 	test.OK(t, err)
@@ -88,7 +88,7 @@ func TestParentalConsentProof(t *testing.T) {
 	selfiePhotoID, _ := test_integration.UploadPhoto(t, testData, pr.Patient.AccountID.Int64())
 
 	rowsAffected, err := testData.DataAPI.UpsertParentConsentProof(
-		pr.Patient.ID.Int64(),
+		pr.Patient.ID,
 		&api.ParentalConsentProof{
 			GovernmentIDPhotoID: ptr.Int64(governmentIDPhotoID),
 		})
@@ -96,20 +96,20 @@ func TestParentalConsentProof(t *testing.T) {
 	test.Equals(t, int64(1), rowsAffected)
 
 	// check if the proof was inserted as expected
-	proof, err := testData.DataAPI.ParentConsentProof(pr.Patient.ID.Int64())
+	proof, err := testData.DataAPI.ParentConsentProof(pr.Patient.ID)
 	test.OK(t, err)
 	test.Equals(t, governmentIDPhotoID, *proof.GovernmentIDPhotoID)
 	test.Equals(t, true, proof.SelfiePhotoID == nil)
 
 	// now try to update (if rowsAffected was 2 then row was updated)
 	rowsAffected, err = testData.DataAPI.UpsertParentConsentProof(
-		pr.Patient.ID.Int64(), &api.ParentalConsentProof{
+		pr.Patient.ID, &api.ParentalConsentProof{
 			SelfiePhotoID: ptr.Int64(selfiePhotoID),
 		})
 	test.OK(t, err)
 	test.Equals(t, int64(2), rowsAffected)
 
-	proof, err = testData.DataAPI.ParentConsentProof(pr.Patient.ID.Int64())
+	proof, err = testData.DataAPI.ParentConsentProof(pr.Patient.ID)
 	test.OK(t, err)
 	test.Equals(t, governmentIDPhotoID, *proof.GovernmentIDPhotoID)
 	test.Equals(t, selfiePhotoID, *proof.SelfiePhotoID)
@@ -122,10 +122,10 @@ func TestPatientParentID(t *testing.T) {
 	accountID, err := testData.AuthAPI.CreateAccount("patient@sprucehealth.com", "12345", api.RolePatient)
 	test.OK(t, err)
 	patient := &common.Patient{
-		AccountID: encoding.NewObjectID(accountID),
+		AccountID: encoding.DeprecatedNewObjectID(accountID),
 	}
 	test.OK(t, testData.DataAPI.RegisterPatient(patient))
-	patientID := patient.ID.Int64()
+	patientID := patient.ID
 
 	consents, err := testData.DataAPI.ParentalConsent(patientID)
 	test.Assert(t, len(consents) == 0, "Expected no patient_parent record to be found")
@@ -133,10 +133,10 @@ func TestPatientParentID(t *testing.T) {
 	accountID, err = testData.AuthAPI.CreateAccount("parent@sprucehealth.com", "12345", api.RolePatient)
 	test.OK(t, err)
 	patient = &common.Patient{
-		AccountID: encoding.NewObjectID(accountID),
+		AccountID: encoding.DeprecatedNewObjectID(accountID),
 	}
 	test.OK(t, testData.DataAPI.RegisterPatient(patient))
-	parentPatientID := patient.ID.Int64()
+	parentPatientID := patient.ID
 	newConsent, err := testData.DataAPI.GrantParentChildConsent(parentPatientID, patientID, "likely-just-a-friend")
 	test.OK(t, err)
 	test.Equals(t, true, newConsent)

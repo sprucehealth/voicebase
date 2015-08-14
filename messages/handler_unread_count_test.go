@@ -23,8 +23,8 @@ func (d *unreadCountDataAPI) GetPatientCaseFromID(id int64) (*common.PatientCase
 	return d.pcase, nil
 }
 
-func (d *unreadCountDataAPI) GetPatientIDFromAccountID(accountID int64) (int64, error) {
-	return 2, nil
+func (d *unreadCountDataAPI) GetPatientIDFromAccountID(accountID int64) (common.PatientID, error) {
+	return common.NewPatientID(2), nil
 }
 
 func (d *unreadCountDataAPI) GetPersonIDByRole(roleType string, roleID int64) (int64, error) {
@@ -44,8 +44,8 @@ func (d *unreadCountDataAPI) UnreadMessageCount(caseID, personID int64) (int, er
 func TestUnreadCountHandler(t *testing.T) {
 	dataAPI := &unreadCountDataAPI{
 		pcase: &common.PatientCase{
-			ID:        encoding.NewObjectID(1),
-			PatientID: encoding.NewObjectID(2),
+			ID:        encoding.DeprecatedNewObjectID(1),
+			PatientID: common.NewPatientID(2),
 		},
 	}
 	hand := NewUnreadCountHandler(dataAPI)

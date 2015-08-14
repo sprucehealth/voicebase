@@ -114,7 +114,7 @@ func (h *signUpAPIHAndler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 	}
 
 	patient := &common.Patient{
-		AccountID: encoding.NewObjectID(accountID),
+		AccountID: encoding.DeprecatedNewObjectID(accountID),
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
 		DOB:       req.DOB,

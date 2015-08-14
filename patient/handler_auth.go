@@ -183,7 +183,7 @@ func (h *AuthenticationHandler) authenticate(ctx context.Context, w http.Respons
 		Token:   token,
 		Patient: patient,
 	}
-	if showFeedback(h.dataAPI, patient.ID.Int64()) {
+	if showFeedback(h.dataAPI, patient.ID) {
 		res.ActionsNeeded = append(res.ActionsNeeded, &ActionNeeded{Type: actionNeededSimpleFeedbackPrompt})
 	}
 	httputil.JSONResponse(w, http.StatusOK, res)

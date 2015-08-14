@@ -25,7 +25,7 @@ type mockDataAPI_DemoListener struct {
 	doctorLookupByID    func(id int64) (*common.Doctor, error)
 }
 
-func (m *mockDataAPI_DemoListener) GetPatientFromID(id int64) (*common.Patient, error) {
+func (m *mockDataAPI_DemoListener) GetPatientFromID(id common.PatientID) (*common.Patient, error) {
 	return m.patient, nil
 }
 func (m *mockDataAPI_DemoListener) GetDoctorFromID(id int64) (*common.Doctor, error) {
@@ -129,7 +129,7 @@ func TestAutomaticTP_DefaultDoctor_NoFTP(t *testing.T) {
 
 	mDoctorCLI := &mockDoctorCLI{
 		tp: &responses.TreatmentPlan{
-			ID: encoding.NewObjectID(124),
+			ID: encoding.DeprecatedNewObjectID(124),
 		},
 	}
 
@@ -170,7 +170,7 @@ func TestAutomaticTP_DefaultDoctor_FTPForPathway(t *testing.T) {
 
 	mDoctorCLI := &mockDoctorCLI{
 		tp: &responses.TreatmentPlan{
-			ID: encoding.NewObjectID(124),
+			ID: encoding.DeprecatedNewObjectID(124),
 		},
 		ftpsList: []*responses.FavoriteTreatmentPlan{
 			{
@@ -224,7 +224,7 @@ func TestAutomaticTP_DoctorPicked_NoFTP(t *testing.T) {
 		doctorLookupByID: func(id int64) (*common.Doctor, error) {
 			doctorIDLookedup = id
 			return &common.Doctor{
-				ID:    encoding.NewObjectID(id),
+				ID:    encoding.DeprecatedNewObjectID(id),
 				Email: "doctorPicked@test.com",
 			}, nil
 		},
@@ -232,7 +232,7 @@ func TestAutomaticTP_DoctorPicked_NoFTP(t *testing.T) {
 
 	mDoctorCLI := &mockDoctorCLI{
 		tp: &responses.TreatmentPlan{
-			ID: encoding.NewObjectID(124),
+			ID: encoding.DeprecatedNewObjectID(124),
 		},
 	}
 
@@ -268,7 +268,7 @@ func TestAutomaticTP_DoctorPicked_FTPForPathway(t *testing.T) {
 		doctorLookupByID: func(id int64) (*common.Doctor, error) {
 			doctorIDLookedup = id
 			return &common.Doctor{
-				ID:    encoding.NewObjectID(id),
+				ID:    encoding.DeprecatedNewObjectID(id),
 				Email: "doctorPicked@test.com",
 			}, nil
 		},
@@ -276,7 +276,7 @@ func TestAutomaticTP_DoctorPicked_FTPForPathway(t *testing.T) {
 
 	mDoctorCLI := &mockDoctorCLI{
 		tp: &responses.TreatmentPlan{
-			ID: encoding.NewObjectID(124),
+			ID: encoding.DeprecatedNewObjectID(124),
 		},
 		ftpsList: []*responses.FavoriteTreatmentPlan{
 			{
@@ -321,7 +321,7 @@ func testAutomaticTP_PairDoctorBasedOnName(t *testing.T, patientEmail, doctorEma
 
 	mDoctorCLI := &mockDoctorCLI{
 		tp: &responses.TreatmentPlan{
-			ID: encoding.NewObjectID(124),
+			ID: encoding.DeprecatedNewObjectID(124),
 		},
 	}
 

@@ -39,16 +39,16 @@ func TestAddCardsForPatient(t *testing.T) {
 	stubPaymentsService := testData.Config.PaymentAPI.(*StripeStub)
 	stubPaymentsService.CustomerToReturn = customerToAdd
 
-	patient, err := testData.DataAPI.GetPatientFromID(signedupPatientResponse.Patient.ID.Int64())
+	patient, err := testData.DataAPI.GetPatientFromID(signedupPatientResponse.Patient.ID)
 	test.OK(t, err)
 
 	card1, localCards := addCard(t, testData, patient.AccountID.Int64(), stubPaymentsService, nil)
 
 	// check to ensure there is no pending task left
-	checkPendingTaskCount(t, testData, patient.ID.Int64())
+	checkPendingTaskCount(t, testData, patient.ID)
 
 	//  get the patient address to see what the address is
-	patient, err = testData.DataAPI.GetPatientFromID(patient.ID.Int64())
+	patient, err = testData.DataAPI.GetPatientFromID(patient.ID)
 	test.OK(t, err)
 
 	checkBillingAddress(t, patient, card1.BillingAddress)
@@ -63,8 +63,8 @@ func TestAddCardsForPatient(t *testing.T) {
 
 	card2, localCards := addCard(t, testData, patient.AccountID.Int64(), stubPaymentsService, localCards)
 
-	checkPendingTaskCount(t, testData, patient.ID.Int64())
-	patient, err = testData.DataAPI.GetPatientFromID(patient.ID.Int64())
+	checkPendingTaskCount(t, testData, patient.ID)
+	patient, err = testData.DataAPI.GetPatientFromID(patient.ID)
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
@@ -116,7 +116,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	}
 	localCards = patientCardsResponse.Cards
 
-	patient, err = testData.DataAPI.GetPatientFromID(patient.ID.Int64())
+	patient, err = testData.DataAPI.GetPatientFromID(patient.ID)
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
@@ -148,7 +148,7 @@ func TestAddCardsForPatient(t *testing.T) {
 		t.Fatal("Expected the only remaining card to be the default")
 	}
 
-	patient, err = testData.DataAPI.GetPatientFromID(patient.ID.Int64())
+	patient, err = testData.DataAPI.GetPatientFromID(patient.ID)
 	if err != nil {
 		t.Fatal("Unable to get patient from id " + err.Error())
 	}
@@ -162,7 +162,7 @@ func TestAddCardsForPatient(t *testing.T) {
 		t.Fatalf("expected to be 0 cards but there was %d ", len(localCards))
 	}
 
-	patient, err = testData.DataAPI.GetPatientFromID(patient.ID.Int64())
+	patient, err = testData.DataAPI.GetPatientFromID(patient.ID)
 	if err != nil {
 		t.Fatal("Unable to get patient from id: " + err.Error())
 	}
@@ -221,7 +221,7 @@ func TestAddCardsForPatient(t *testing.T) {
 		t.Fatalf("Expected to get 2 cards but instead got %d", len(localCards))
 	}
 
-	patient, err = testData.DataAPI.GetPatientFromID(patient.ID.Int64())
+	patient, err = testData.DataAPI.GetPatientFromID(patient.ID)
 	if err != nil {
 		t.Fatal("Unable to get patient for id ", err.Error())
 	}
@@ -352,7 +352,7 @@ func addCard(t *testing.T, testData *TestData, patientAccountID int64, stripeStu
 	return card, patientCardsResponse.Cards
 }
 
-func checkPendingTaskCount(t *testing.T, testData *TestData, patientID int64) {
+func checkPendingTaskCount(t *testing.T, testData *TestData, patientID common.PatientID) {
 	var pendingTaskCount int64
 	err := testData.DB.QueryRow(`select count(*) from pending_task where item_id = ?`, patientID).Scan(&pendingTaskCount)
 	if err != nil {

@@ -29,7 +29,7 @@ func (m *mockDataAPI_itemHandler) UpdateDoctorQueue(updates []*api.DoctorQueueUp
 
 func (m *mockDataAPI_itemHandler) GetDoctorFromAccountID(accountID int64) (*common.Doctor, error) {
 	return &common.Doctor{
-		ID:               encoding.NewObjectID(accountID),
+		ID:               encoding.DeprecatedNewObjectID(accountID),
 		ShortDisplayName: "CC Name",
 	}, nil
 }
@@ -52,11 +52,11 @@ func testQueueUpdate(t *testing.T, expStatus, expCount int, id string) {
 			LastName:  "Last",
 		},
 		doctor: &common.Doctor{
-			ID:               encoding.NewObjectID(1),
+			ID:               encoding.DeprecatedNewObjectID(1),
 			ShortDisplayName: "CP Name",
 		},
 		visit: &common.PatientVisit{
-			PatientCaseID: encoding.NewObjectID(1),
+			PatientCaseID: encoding.DeprecatedNewObjectID(1),
 		},
 	}
 	h := NewItemHandler(m)

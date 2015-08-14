@@ -66,7 +66,7 @@ func (f *followupHandler) IsAuthorized(ctx context.Context, r *http.Request) (bo
 
 	if account.Role == api.RoleDoctor {
 		if err := apiservice.ValidateAccessToPatientCase(r.Method, account.Role, doctorID,
-			patientCase.PatientID.Int64(), patientCase.ID.Int64(), f.dataAPI); err != nil {
+			patientCase.PatientID, patientCase.ID.Int64(), f.dataAPI); err != nil {
 			return false, err
 		}
 	}
@@ -80,7 +80,7 @@ func (f *followupHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 	doctorID := requestCache[apiservice.CKDoctorID].(int64)
 	account := apiservice.MustCtxAccount(ctx)
 
-	patient, err := f.dataAPI.GetPatientFromID(patientCase.PatientID.Int64())
+	patient, err := f.dataAPI.GetPatientFromID(patientCase.PatientID)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return

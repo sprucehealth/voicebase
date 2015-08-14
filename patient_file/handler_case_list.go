@@ -20,7 +20,7 @@ type caseListHandler struct {
 }
 
 type caseListRequest struct {
-	PatientID int64 `schema:"patient_id,required"`
+	PatientID common.PatientID `schema:"patient_id,required"`
 }
 
 func NewPatientCaseListHandler(dataAPI api.DataAPI) httputil.ContextHandler {
@@ -42,7 +42,7 @@ func (c *caseListHandler) IsAuthorized(ctx context.Context, r *http.Request) (bo
 	rd := &caseListRequest{}
 	if err := apiservice.DecodeRequestData(rd, r); err != nil {
 		return false, apiservice.NewValidationError(err.Error())
-	} else if rd.PatientID == 0 {
+	} else if !rd.PatientID.IsValid {
 		return false, apiservice.NewValidationError("patient_id required")
 	}
 	requestCache[apiservice.CKRequestData] = rd

@@ -1,9 +1,11 @@
 package cost
 
+import "github.com/sprucehealth/backend/common"
+
 type VisitMessage struct {
 	PatientVisitID int64
 	IsFollowup     bool
-	PatientID      int64
+	PatientID      common.PatientID
 	AccountID      int64
 	ItemCostID     int64
 	PatientCaseID  int64

@@ -19,7 +19,7 @@ type mockDataAPI_DoctorQueue struct {
 	ccInboxItems    []*api.DoctorQueueItem
 	unassignedItems []*api.DoctorQueueItem
 	historyItems    []*api.DoctorQueueItem
-	patients        map[int64]*common.Patient
+	patients        map[common.PatientID]*common.Patient
 }
 
 func (m *mockDataAPI_DoctorQueue) GetDoctorIDFromAccountID(accountID int64) (int64, error) {
@@ -50,7 +50,7 @@ func (m *mockDataAPI_DoctorQueue) GetCompletedItemsInDoctorQueue(doctorID int64)
 	return m.historyItems, nil
 }
 
-func (m *mockDataAPI_DoctorQueue) Patients([]int64) (map[int64]*common.Patient, error) {
+func (m *mockDataAPI_DoctorQueue) Patients([]common.PatientID) (map[common.PatientID]*common.Patient, error) {
 	return m.patients, nil
 }
 
@@ -61,11 +61,11 @@ func TestInbox_CC(t *testing.T) {
 		{
 			Description: "Testing",
 			Tags:        []string{"test"},
-			PatientID:   1,
+			PatientID:   common.NewPatientID(1),
 		},
 	}
-	m.patients = map[int64]*common.Patient{
-		1: {
+	m.patients = map[common.PatientID]*common.Patient{
+		common.NewPatientID(1): {
 			FirstName: "kunal",
 			LastName:  "jham",
 		},
@@ -96,11 +96,11 @@ func TestInbox_Tags(t *testing.T) {
 			{
 				Description: "Testing",
 				Tags:        []string{"test"},
-				PatientID:   1,
+				PatientID:   common.NewPatientID(1),
 			},
 		},
-		patients: map[int64]*common.Patient{
-			1: {
+		patients: map[common.PatientID]*common.Patient{
+			common.NewPatientID(1): {
 				FirstName: "kunal",
 				LastName:  "jham",
 			},
@@ -133,11 +133,11 @@ func TestUnassigned_Tags(t *testing.T) {
 		{
 			Description: "Testing",
 			Tags:        []string{"test"},
-			PatientID:   1,
+			PatientID:   common.NewPatientID(1),
 		},
 	}
-	m.patients = map[int64]*common.Patient{
-		1: {
+	m.patients = map[common.PatientID]*common.Patient{
+		common.NewPatientID(1): {
 			FirstName: "kunal",
 			LastName:  "jham",
 		},
@@ -169,11 +169,11 @@ func TestCompleted_Tags(t *testing.T) {
 		{
 			Description: "Testing",
 			Tags:        []string{"test"},
-			PatientID:   1,
+			PatientID:   common.NewPatientID(1),
 		},
 	}
-	m.patients = map[int64]*common.Patient{
-		1: {
+	m.patients = map[common.PatientID]*common.Patient{
+		common.NewPatientID(1): {
 			FirstName: "kunal",
 			LastName:  "jham",
 		},

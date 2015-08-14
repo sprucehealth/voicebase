@@ -15,7 +15,7 @@ type listHandler struct {
 }
 
 type listHandlerRequestData struct {
-	PatientID int64 `schema:"patient_id"`
+	PatientID common.PatientID `schema:"patient_id"`
 }
 
 type TreatmentPlansResponse struct {
@@ -43,8 +43,8 @@ func (l *listHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, 
 	}
 	requestCache[apiservice.CKRequestData] = requestData
 
-	if requestData.PatientID == 0 {
-		return false, apiservice.NewValidationError("PatientId required")
+	if !requestData.PatientID.IsValid {
+		return false, apiservice.NewValidationError("patient_id required")
 	}
 
 	doctorID, err := l.dataAPI.GetDoctorIDFromAccountID(apiservice.MustCtxAccount(ctx).ID)

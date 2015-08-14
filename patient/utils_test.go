@@ -18,10 +18,10 @@ type mockDataAPI_prefillQuestions struct {
 	answers map[string][]common.Answer
 }
 
-func (m *mockDataAPI_prefillQuestions) PreviousPatientAnswersForQuestions(questionTags []string, id int64, before time.Time) (map[string][]common.Answer, error) {
+func (m *mockDataAPI_prefillQuestions) PreviousPatientAnswersForQuestions(questionTags []string, patientID common.PatientID, before time.Time) (map[string][]common.Answer, error) {
 	return m.answers, nil
 }
-func (m *mockDataAPI_prefillQuestions) PatientPhotoSectionsForQuestionIDs(questionIDs []int64, patientID, visitID int64) (map[int64][]common.Answer, error) {
+func (m *mockDataAPI_prefillQuestions) PatientPhotoSectionsForQuestionIDs(questionIDs []int64, patientID common.PatientID, visitID int64) (map[int64][]common.Answer, error) {
 	return nil, nil
 }
 func (m *mockDataAPI_prefillQuestions) AnswersForQuestions(questionIDs []int64, i api.IntakeInfo) (map[int64][]common.Answer, error) {
@@ -118,56 +118,56 @@ func TestPrefillQuestions(t *testing.T) {
 		answers: map[string][]common.Answer{
 			"q_free_text_tag": []common.Answer{
 				&common.AnswerIntake{
-					AnswerIntakeID: encoding.NewObjectID(10),
-					QuestionID:     encoding.NewObjectID(90),
+					AnswerIntakeID: encoding.DeprecatedNewObjectID(10),
+					QuestionID:     encoding.DeprecatedNewObjectID(90),
 					AnswerText:     freeTextResponse,
 				},
 			},
 			"q_multiple_choice_tag": []common.Answer{
 				&common.AnswerIntake{
-					AnswerIntakeID:    encoding.NewObjectID(11),
-					QuestionID:        encoding.NewObjectID(91),
+					AnswerIntakeID:    encoding.DeprecatedNewObjectID(11),
+					QuestionID:        encoding.DeprecatedNewObjectID(91),
 					PotentialAnswer:   "Option 1",
-					PotentialAnswerID: encoding.NewObjectID(6),
+					PotentialAnswerID: encoding.DeprecatedNewObjectID(6),
 				},
 				&common.AnswerIntake{
-					AnswerIntakeID:    encoding.NewObjectID(12),
-					QuestionID:        encoding.NewObjectID(91),
+					AnswerIntakeID:    encoding.DeprecatedNewObjectID(12),
+					QuestionID:        encoding.DeprecatedNewObjectID(91),
 					PotentialAnswer:   "Option 2",
-					PotentialAnswerID: encoding.NewObjectID(7),
+					PotentialAnswerID: encoding.DeprecatedNewObjectID(7),
 				},
 				&common.AnswerIntake{
-					AnswerIntakeID: encoding.NewObjectID(12),
-					QuestionID:     encoding.NewObjectID(91),
+					AnswerIntakeID: encoding.DeprecatedNewObjectID(12),
+					QuestionID:     encoding.DeprecatedNewObjectID(91),
 					AnswerText:     freeTextResponse,
 				},
 			},
 			"q_single_select_tag": []common.Answer{
 				&common.AnswerIntake{
-					AnswerIntakeID:    encoding.NewObjectID(12),
-					QuestionID:        encoding.NewObjectID(92),
+					AnswerIntakeID:    encoding.DeprecatedNewObjectID(12),
+					QuestionID:        encoding.DeprecatedNewObjectID(92),
 					PotentialAnswer:   "Option 1",
-					PotentialAnswerID: encoding.NewObjectID(8),
+					PotentialAnswerID: encoding.DeprecatedNewObjectID(8),
 				},
 			},
 			"q_multiple_choice_tag_unmatched_answer": []common.Answer{
 				&common.AnswerIntake{
-					AnswerIntakeID:    encoding.NewObjectID(13),
-					QuestionID:        encoding.NewObjectID(103),
+					AnswerIntakeID:    encoding.DeprecatedNewObjectID(13),
+					QuestionID:        encoding.DeprecatedNewObjectID(103),
 					PotentialAnswer:   "Option 1",
-					PotentialAnswerID: encoding.NewObjectID(9),
+					PotentialAnswerID: encoding.DeprecatedNewObjectID(9),
 				},
 				&common.AnswerIntake{
-					AnswerIntakeID:    encoding.NewObjectID(14),
-					QuestionID:        encoding.NewObjectID(103),
+					AnswerIntakeID:    encoding.DeprecatedNewObjectID(14),
+					QuestionID:        encoding.DeprecatedNewObjectID(103),
 					PotentialAnswer:   "Option 2",
-					PotentialAnswerID: encoding.NewObjectID(10),
+					PotentialAnswerID: encoding.DeprecatedNewObjectID(10),
 				},
 				&common.AnswerIntake{
-					AnswerIntakeID:    encoding.NewObjectID(14),
-					QuestionID:        encoding.NewObjectID(103),
+					AnswerIntakeID:    encoding.DeprecatedNewObjectID(14),
+					QuestionID:        encoding.DeprecatedNewObjectID(103),
 					PotentialAnswer:   "Option 4",
-					PotentialAnswerID: encoding.NewObjectID(11),
+					PotentialAnswerID: encoding.DeprecatedNewObjectID(11),
 				},
 			},
 		},

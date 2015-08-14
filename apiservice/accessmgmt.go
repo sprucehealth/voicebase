@@ -51,13 +51,13 @@ func DoctorHasAccessToCase(ctx context.Context, doctorID, caseID int64, accountR
 	}
 
 	if requiredAccess.Has(WriteAccessRequired) {
-		if err := ValidateWriteAccessToPatientCase(httputil.Post, accountRole, doctorID, patientCase.PatientID.Int64(), patientCase.ID.Int64(), dataAPI); err != nil {
+		if err := ValidateWriteAccessToPatientCase(httputil.Post, accountRole, doctorID, patientCase.PatientID, patientCase.ID.Int64(), dataAPI); err != nil {
 			return false, err
 		}
 		requiredAccess = requiredAccess ^ WriteAccessRequired
 	}
 	if requiredAccess.Has(ReadAccessRequired) {
-		if err := ValidateReadAccessToPatientCase(httputil.Get, accountRole, doctorID, patientCase.PatientID.Int64(), patientCase.ID.Int64(), dataAPI); err != nil {
+		if err := ValidateReadAccessToPatientCase(httputil.Get, accountRole, doctorID, patientCase.PatientID, patientCase.ID.Int64(), dataAPI); err != nil {
 			return false, err
 		}
 		requiredAccess = requiredAccess ^ ReadAccessRequired
@@ -65,7 +65,7 @@ func DoctorHasAccessToCase(ctx context.Context, doctorID, caseID int64, accountR
 	return requiredAccess == 0, nil
 }
 
-func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorID, patientID int64, dataAPI api.DataAPI) error {
+func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorID int64, patientID common.PatientID, dataAPI api.DataAPI) error {
 
 	switch role {
 	case api.RoleCC:
@@ -109,15 +109,15 @@ func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorID, patien
 	return AccessForbiddenError
 }
 
-func ValidateReadAccessToPatientCase(httpMethod, role string, doctorID, patientID, patientCaseID int64, dataAPI api.DataAPI) error {
+func ValidateReadAccessToPatientCase(httpMethod, role string, doctorID int64, patientID common.PatientID, patientCaseID int64, dataAPI api.DataAPI) error {
 	return ValidateAccessToPatientCase(httputil.Get, role, doctorID, patientID, patientCaseID, dataAPI)
 }
 
-func ValidateWriteAccessToPatientCase(httpMethod, role string, doctorID, patientID, patientCaseID int64, dataAPI api.DataAPI) error {
+func ValidateWriteAccessToPatientCase(httpMethod, role string, doctorID int64, patientID common.PatientID, patientCaseID int64, dataAPI api.DataAPI) error {
 	return ValidateAccessToPatientCase(httputil.Post, role, doctorID, patientID, patientCaseID, dataAPI)
 }
 
-func ValidateAccessToPatientCase(httpMethod, role string, doctorID, patientID, patientCaseID int64, dataAPI api.DataAPI) error {
+func ValidateAccessToPatientCase(httpMethod, role string, doctorID int64, patientID common.PatientID, patientCaseID int64, dataAPI api.DataAPI) error {
 	switch role {
 	case api.RoleCC:
 		if httpMethod == httputil.Get {
@@ -142,7 +142,7 @@ func ValidateAccessToPatientCase(httpMethod, role string, doctorID, patientID, p
 // ValidateAccessToPatientCase checks to ensure that the doctor has read access to the patient case. A doctor
 // has read access so long as the the doctor is assigned to the patient as one of their doctors, and
 // the case is not temporarily claimed by another doctor for exclusive access
-func validateReadAccessToPatientCase(httpMethod, role string, doctorID, patientID, patientCaseID int64, dataAPI api.DataAPI) error {
+func validateReadAccessToPatientCase(httpMethod, role string, doctorID int64, patientID common.PatientID, patientCaseID int64, dataAPI api.DataAPI) error {
 	patientCase, err := dataAPI.GetPatientCaseFromID(patientCaseID)
 	if err != nil {
 		return err
@@ -176,7 +176,7 @@ func validateReadAccessToPatientCase(httpMethod, role string, doctorID, patientI
 // ValidateWriteAccessToPatientCase checks to ensure that the doctor has write access to the patient case. A doctor
 // has write access so long as the doctor is explicitly assigned to the case,
 // and the access has not expired if the doctor is granted temporary access
-func validateWriteAccessToPatientCase(httpMethod, role string, doctorID, patientID, patientCaseID int64, dataAPI api.DataAPI) error {
+func validateWriteAccessToPatientCase(httpMethod, role string, doctorID int64, patientID common.PatientID, patientCaseID int64, dataAPI api.DataAPI) error {
 
 	doctorAssignments, err := dataAPI.GetDoctorsAssignedToPatientCase(patientCaseID)
 	if err != nil {

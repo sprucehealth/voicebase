@@ -121,7 +121,7 @@ func TestMAAccess_TreatmentPlan(t *testing.T) {
 	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
 
 	// MA should be able to view a list of treatment plans
-	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorTreatmentPlansListURLPath+"?patient_id="+strconv.FormatInt(tp.PatientID, 10), ma.AccountID.Int64())
+	res, err := testData.AuthGet(testData.APIServer.URL+apipaths.DoctorTreatmentPlansListURLPath+"?patient_id="+tp.PatientID.String(), ma.AccountID.Int64())
 	test.OK(t, err)
 	defer res.Body.Close()
 	test.Equals(t, http.StatusOK, res.StatusCode)
@@ -161,7 +161,7 @@ func TestMAAccess_TreatmentPlan(t *testing.T) {
 		DrugInternalName: "DrugName (DrugRoute - DrugForm)",
 		DosageStrength:   "10 mg",
 		DispenseValue:    1,
-		DispenseUnitID:   encoding.NewObjectID(26),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -227,7 +227,7 @@ func TestMAAccess_CaseMessages(t *testing.T) {
 
 	doctorCli := test_integration.DoctorClient(testData, t, dr.DoctorID)
 	maCli := test_integration.DoctorClient(testData, t, ma.ID.Int64())
-	patientCli := test_integration.PatientClient(testData, t, patient.ID.Int64())
+	patientCli := test_integration.PatientClient(testData, t, patient.ID)
 
 	_, err = doctorCli.PostCaseMessage(tp.PatientCaseID.Int64(), "foo", nil)
 	test.OK(t, err)

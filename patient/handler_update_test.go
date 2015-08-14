@@ -21,10 +21,10 @@ type mockDataAPI_UpdateHandler struct {
 	updateAttempted *api.PatientUpdate
 }
 
-func (m *mockDataAPI_UpdateHandler) GetPatientIDFromAccountID(id int64) (int64, error) {
-	return 1, nil
+func (m *mockDataAPI_UpdateHandler) GetPatientIDFromAccountID(id int64) (common.PatientID, error) {
+	return common.NewPatientID(1), nil
 }
-func (m *mockDataAPI_UpdateHandler) UpdatePatient(id int64, update *api.PatientUpdate, updateFromDoctor bool) error {
+func (m *mockDataAPI_UpdateHandler) UpdatePatient(id common.PatientID, update *api.PatientUpdate, updateFromDoctor bool) error {
 	m.updateAttempted = update
 	return nil
 }

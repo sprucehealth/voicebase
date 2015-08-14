@@ -73,7 +73,7 @@ func (cs *CaseStatus) Scan(src interface{}) error {
 
 type PatientCase struct {
 	ID                encoding.ObjectID `json:"case_id"`
-	PatientID         encoding.ObjectID `json:"patient_id"`
+	PatientID         PatientID         `json:"patient_id"`
 	PathwayTag        string            `json:"pathway_id"`
 	Name              string            `json:"name"`
 	CreationDate      time.Time         `json:"creation_date"`
@@ -162,7 +162,7 @@ func (c ByPatientCaseCreationDate) Less(i, j int) bool {
 }
 
 type PatientFeedback struct {
-	PatientID int64
+	PatientID PatientID
 	Rating    int
 	Comment   string
 	Created   time.Time

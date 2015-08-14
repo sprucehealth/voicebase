@@ -52,7 +52,7 @@ func (h *reachedConsentStepHandler) ServeHTTP(ctx context.Context, w http.Respon
 	}
 
 	// Verify the visit is owned by the patient making the request
-	if patientID != visit.PatientID.Int64() {
+	if patientID != visit.PatientID {
 		apiservice.WriteAccessNotAllowedError(ctx, w, r)
 		return
 	}

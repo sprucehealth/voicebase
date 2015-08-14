@@ -48,11 +48,11 @@ type pathwayDetailsRes struct {
 	} `json:"pathway_details_screens"`
 }
 
-func (api *pathwayDetailsHandlerDataAPI) GetPatientIDFromAccountID(accountID int64) (int64, error) {
-	return 1, nil
+func (api *pathwayDetailsHandlerDataAPI) GetPatientIDFromAccountID(accountID int64) (common.PatientID, error) {
+	return common.NewPatientID(1), nil
 }
 
-func (api *pathwayDetailsHandlerDataAPI) GetCasesForPatient(patientID int64, states []string) ([]*common.PatientCase, error) {
+func (api *pathwayDetailsHandlerDataAPI) GetCasesForPatient(patientID common.PatientID, states []string) ([]*common.PatientCase, error) {
 	return api.pathwayCases, nil
 }
 
@@ -83,7 +83,7 @@ func (api *pathwayDetailsHandlerDataAPI) SKUForPathway(pathwayTag string, catego
 func (api *pathwayDetailsHandlerDataAPI) AvailableDoctorIDs(n int) ([]int64, error) {
 	return []int64{1, 2, 3}, nil
 }
-func (api *pathwayDetailsHandlerDataAPI) VisitsSubmittedForPatientSince(patientID int64, since time.Time) ([]*common.PatientVisit, error) {
+func (api *pathwayDetailsHandlerDataAPI) VisitsSubmittedForPatientSince(patientID common.PatientID, since time.Time) ([]*common.PatientVisit, error) {
 	return api.visits, nil
 }
 
@@ -156,19 +156,19 @@ func TestPathwayDetailsHandler(t *testing.T) {
 		},
 		pathwayCases: []*common.PatientCase{
 			{
-				ID:         encoding.NewObjectID(111),
+				ID:         encoding.DeprecatedNewObjectID(111),
 				Name:       "Acne",
 				PathwayTag: "acne",
 				Status:     common.PCStatusActive,
 			},
 			{
-				ID:         encoding.NewObjectID(222),
+				ID:         encoding.DeprecatedNewObjectID(222),
 				Name:       "Arachnophobia",
 				PathwayTag: "arachnophobia",
 				Status:     common.PCStatusOpen,
 			},
 			{
-				ID:         encoding.NewObjectID(333),
+				ID:         encoding.DeprecatedNewObjectID(333),
 				Name:       "Eczema",
 				PathwayTag: "eczema",
 				Status:     common.PCStatusActive,

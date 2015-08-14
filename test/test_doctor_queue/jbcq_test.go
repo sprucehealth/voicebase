@@ -43,7 +43,7 @@ func TestJBCQ_TempCaseClaim(t *testing.T) {
 	iassert.ProviderIsAssignedToCase(patientCase.ID.Int64(), doctorID, api.StatusTemp)
 
 	// ensure that doctor is temporarily assigned to patient file
-	iassert.ProviderIsMemberOfCareTeam(patientCase.PatientID.Int64Value, doctorID, patientCase.ID.Int64Value, api.StatusTemp)
+	iassert.ProviderIsMemberOfCareTeam(doctorID, patientCase.ID.Int64(), api.StatusTemp)
 
 	// ensure that item is still returned in the global case queue for this doctor
 	// given that it is currently claimed by this doctor

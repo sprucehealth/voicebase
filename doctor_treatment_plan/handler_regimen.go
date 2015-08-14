@@ -149,12 +149,12 @@ func (d *regimenHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	for _, regimenSection := range requestData.Sections {
 		for _, regimenStep := range regimenSection.Steps {
 			if newIds, ok := newStepToIDMapping[regimenStep.Text]; ok {
-				regimenStep.ParentID = encoding.NewObjectID(newIds[0])
+				regimenStep.ParentID = encoding.DeprecatedNewObjectID(newIds[0])
 				// update the list to move the item just used to the back of the queue
 				newStepToIDMapping[regimenStep.Text] = append(newIds[1:], newIds[0])
 			} else if updatedID, ok := updatedStepToIDMapping[regimenStep.ParentID.Int64()]; ok {
 				// update the parentId to point to the new updated regimen step
-				regimenStep.ParentID = encoding.NewObjectID(updatedID)
+				regimenStep.ParentID = encoding.DeprecatedNewObjectID(updatedID)
 			} else if regimenStep.State == common.StateModified || regimenStep.State == common.StateAdded {
 				// break any linkage to the parent step because the text is no longer the same and the regimen step does
 				// not exist in the master list

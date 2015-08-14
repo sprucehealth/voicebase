@@ -9,7 +9,7 @@ import (
 func TestTreatmentEquals(t *testing.T) {
 
 	treatment1 := &Treatment{
-		ID: encoding.NewObjectID(5),
+		ID: encoding.DeprecatedNewObjectID(5),
 		DrugDBIDs: map[string]string{
 			"lexi_gen_product_id":  "12345",
 			"lexi_drug_syn_id":     "56789",
@@ -19,7 +19,7 @@ func TestTreatmentEquals(t *testing.T) {
 		DrugName:         "Testing",
 		DosageStrength:   "50mg",
 		DispenseValue:    12,
-		DispenseUnitID:   encoding.NewObjectID(12),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(12),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -28,14 +28,14 @@ func TestTreatmentEquals(t *testing.T) {
 			IsValid:    true,
 			Int64Value: 5,
 		}, ERx: &ERxData{
-			PrescriptionID:     encoding.NewObjectID(20),
-			ErxMedicationID:    encoding.NewObjectID(25),
+			PrescriptionID:     encoding.DeprecatedNewObjectID(20),
+			ErxMedicationID:    encoding.DeprecatedNewObjectID(25),
 			PrescriptionStatus: "eRxSent",
 		},
 	}
 
 	treatment2 := &Treatment{
-		ID: encoding.NewObjectID(5),
+		ID: encoding.DeprecatedNewObjectID(5),
 		DrugDBIDs: map[string]string{
 			"lexi_gen_product_id":  "12345",
 			"lexi_drug_syn_id":     "56789",
@@ -45,7 +45,7 @@ func TestTreatmentEquals(t *testing.T) {
 		DrugName:         "Testing",
 		DosageStrength:   "50mg",
 		DispenseValue:    12,
-		DispenseUnitID:   encoding.NewObjectID(12),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(12),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -54,8 +54,8 @@ func TestTreatmentEquals(t *testing.T) {
 			IsValid:    true,
 			Int64Value: 5,
 		}, ERx: &ERxData{
-			PrescriptionID:     encoding.NewObjectID(20),
-			ErxMedicationID:    encoding.NewObjectID(25),
+			PrescriptionID:     encoding.DeprecatedNewObjectID(20),
+			ErxMedicationID:    encoding.DeprecatedNewObjectID(25),
 			PrescriptionStatus: "eRxSent",
 		},
 	}
@@ -66,7 +66,7 @@ func TestTreatmentEquals(t *testing.T) {
 	}
 
 	treatment3 := &Treatment{
-		ID: encoding.NewObjectID(5),
+		ID: encoding.DeprecatedNewObjectID(5),
 		DrugDBIDs: map[string]string{
 			"lexi_gen_product_id":  "12345",
 			"lexi_drug_syn_id":     "56789",
@@ -76,7 +76,7 @@ func TestTreatmentEquals(t *testing.T) {
 		DrugName:         "Testing",
 		DosageStrength:   "50mg",
 		DispenseValue:    12,
-		DispenseUnitID:   encoding.NewObjectID(12),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(12),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -85,8 +85,8 @@ func TestTreatmentEquals(t *testing.T) {
 			IsValid:    true,
 			Int64Value: 5,
 		}, ERx: &ERxData{
-			PrescriptionID:     encoding.NewObjectID(21),
-			ErxMedicationID:    encoding.NewObjectID(25),
+			PrescriptionID:     encoding.DeprecatedNewObjectID(21),
+			ErxMedicationID:    encoding.DeprecatedNewObjectID(25),
 			PrescriptionStatus: "eRxSent",
 		},
 	}
@@ -96,7 +96,7 @@ func TestTreatmentEquals(t *testing.T) {
 	}
 
 	treatment4 := &Treatment{
-		ID: encoding.NewObjectID(5),
+		ID: encoding.DeprecatedNewObjectID(5),
 		DrugDBIDs: map[string]string{
 			"lexi_gen_product_id":  "12345",
 			"lexi_drug_syn_id":     "56789",
@@ -106,7 +106,7 @@ func TestTreatmentEquals(t *testing.T) {
 		DrugName:         "Testing",
 		DosageStrength:   "50mg",
 		DispenseValue:    12,
-		DispenseUnitID:   encoding.NewObjectID(12),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(12),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -115,8 +115,8 @@ func TestTreatmentEquals(t *testing.T) {
 			IsValid:    true,
 			Int64Value: 5,
 		}, ERx: &ERxData{
-			PrescriptionID:     encoding.NewObjectID(20),
-			ErxMedicationID:    encoding.NewObjectID(26),
+			PrescriptionID:     encoding.DeprecatedNewObjectID(20),
+			ErxMedicationID:    encoding.DeprecatedNewObjectID(26),
 			PrescriptionStatus: "eRxSent",
 		},
 	}
@@ -126,7 +126,7 @@ func TestTreatmentEquals(t *testing.T) {
 	}
 
 	treatment5 := &Treatment{
-		ID: encoding.NewObjectID(5),
+		ID: encoding.DeprecatedNewObjectID(5),
 		DrugDBIDs: map[string]string{
 			"lexi_gen_product_id":  "123456",
 			"lexi_drug_syn_id":     "56789",
@@ -136,7 +136,7 @@ func TestTreatmentEquals(t *testing.T) {
 		DrugName:         "Testing",
 		DosageStrength:   "50mg",
 		DispenseValue:    12,
-		DispenseUnitID:   encoding.NewObjectID(12),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(12),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -145,8 +145,8 @@ func TestTreatmentEquals(t *testing.T) {
 			IsValid:    true,
 			Int64Value: 5,
 		}, ERx: &ERxData{
-			PrescriptionID:     encoding.NewObjectID(20),
-			ErxMedicationID:    encoding.NewObjectID(25),
+			PrescriptionID:     encoding.DeprecatedNewObjectID(20),
+			ErxMedicationID:    encoding.DeprecatedNewObjectID(25),
 			PrescriptionStatus: "eRxSent",
 		},
 	}
@@ -156,7 +156,7 @@ func TestTreatmentEquals(t *testing.T) {
 	}
 
 	treatment6 := &Treatment{
-		ID: encoding.NewObjectID(5),
+		ID: encoding.DeprecatedNewObjectID(5),
 		DrugDBIDs: map[string]string{
 			"lexi_gen_product_id":  "12345",
 			"lexi_drug_syn_id":     "56789",
@@ -166,7 +166,7 @@ func TestTreatmentEquals(t *testing.T) {
 		DrugName:         "Testing",
 		DosageStrength:   "50mg",
 		DispenseValue:    12,
-		DispenseUnitID:   encoding.NewObjectID(12),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(12),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -175,8 +175,8 @@ func TestTreatmentEquals(t *testing.T) {
 			IsValid:    true,
 			Int64Value: 5,
 		}, ERx: &ERxData{
-			PrescriptionID:     encoding.NewObjectID(20),
-			ErxMedicationID:    encoding.NewObjectID(25),
+			PrescriptionID:     encoding.DeprecatedNewObjectID(20),
+			ErxMedicationID:    encoding.DeprecatedNewObjectID(25),
 			PrescriptionStatus: "eRxSent",
 		},
 	}
@@ -186,7 +186,7 @@ func TestTreatmentEquals(t *testing.T) {
 	}
 
 	treatment7 := &Treatment{
-		ID: encoding.NewObjectID(5),
+		ID: encoding.DeprecatedNewObjectID(5),
 		DrugDBIDs: map[string]string{
 			"lexi_gen_product_id":  "12345",
 			"lexi_drug_syn_id":     "56789",
@@ -196,7 +196,7 @@ func TestTreatmentEquals(t *testing.T) {
 		DrugName:         "Testing",
 		DosageStrength:   "50mgs",
 		DispenseValue:    12,
-		DispenseUnitID:   encoding.NewObjectID(12),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(12),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -205,8 +205,8 @@ func TestTreatmentEquals(t *testing.T) {
 			IsValid:    true,
 			Int64Value: 5,
 		}, ERx: &ERxData{
-			PrescriptionID:     encoding.NewObjectID(20),
-			ErxMedicationID:    encoding.NewObjectID(25),
+			PrescriptionID:     encoding.DeprecatedNewObjectID(20),
+			ErxMedicationID:    encoding.DeprecatedNewObjectID(25),
 			PrescriptionStatus: "eRxSent",
 		},
 	}
@@ -233,7 +233,7 @@ func TestTreatmentEquals(t *testing.T) {
 
 func TestTreatmentEquals_NoErxData(t *testing.T) {
 	treatment1 := &Treatment{
-		ID: encoding.NewObjectID(5),
+		ID: encoding.DeprecatedNewObjectID(5),
 		DrugDBIDs: map[string]string{
 			"lexi_gen_product_id":  "12345",
 			"lexi_drug_syn_id":     "56789",
@@ -243,7 +243,7 @@ func TestTreatmentEquals_NoErxData(t *testing.T) {
 		DrugName:         "Testing",
 		DosageStrength:   "50mg",
 		DispenseValue:    12,
-		DispenseUnitID:   encoding.NewObjectID(12),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(12),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -255,7 +255,7 @@ func TestTreatmentEquals_NoErxData(t *testing.T) {
 	}
 
 	treatment2 := &Treatment{
-		ID: encoding.NewObjectID(5),
+		ID: encoding.DeprecatedNewObjectID(5),
 		DrugDBIDs: map[string]string{
 			"lexi_gen_product_id":  "12345",
 			"lexi_drug_syn_id":     "56789",
@@ -265,7 +265,7 @@ func TestTreatmentEquals_NoErxData(t *testing.T) {
 		DrugName:         "Testing",
 		DosageStrength:   "50mg",
 		DispenseValue:    12,
-		DispenseUnitID:   encoding.NewObjectID(12),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(12),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -286,7 +286,7 @@ func TestTreatmentListEquals(t *testing.T) {
 	treatmentList1 := &TreatmentList{
 		Treatments: []*Treatment{
 			{
-				ID: encoding.NewObjectID(5),
+				ID: encoding.DeprecatedNewObjectID(5),
 				DrugDBIDs: map[string]string{
 					"lexi_gen_product_id":  "12345",
 					"lexi_drug_syn_id":     "56789",
@@ -296,7 +296,7 @@ func TestTreatmentListEquals(t *testing.T) {
 				DrugName:         "Testing",
 				DosageStrength:   "50mg",
 				DispenseValue:    12,
-				DispenseUnitID:   encoding.NewObjectID(12),
+				DispenseUnitID:   encoding.DeprecatedNewObjectID(12),
 				NumberRefills: encoding.NullInt64{
 					IsValid:    true,
 					Int64Value: 1,
@@ -307,7 +307,7 @@ func TestTreatmentListEquals(t *testing.T) {
 				},
 			},
 			{
-				ID: encoding.NewObjectID(5),
+				ID: encoding.DeprecatedNewObjectID(5),
 				DrugDBIDs: map[string]string{
 					"lexi_gen_product_id":  "12345",
 					"lexi_drug_syn_id":     "56789",
@@ -317,7 +317,7 @@ func TestTreatmentListEquals(t *testing.T) {
 				DrugName:         "Testing",
 				DosageStrength:   "50mgs",
 				DispenseValue:    12,
-				DispenseUnitID:   encoding.NewObjectID(12),
+				DispenseUnitID:   encoding.DeprecatedNewObjectID(12),
 				NumberRefills: encoding.NullInt64{
 					IsValid:    true,
 					Int64Value: 1,
@@ -326,8 +326,8 @@ func TestTreatmentListEquals(t *testing.T) {
 					IsValid:    true,
 					Int64Value: 5,
 				}, ERx: &ERxData{
-					PrescriptionID:     encoding.NewObjectID(20),
-					ErxMedicationID:    encoding.NewObjectID(25),
+					PrescriptionID:     encoding.DeprecatedNewObjectID(20),
+					ErxMedicationID:    encoding.DeprecatedNewObjectID(25),
 					PrescriptionStatus: "eRxSent",
 				},
 			},
@@ -337,7 +337,7 @@ func TestTreatmentListEquals(t *testing.T) {
 	treatmentList2 := &TreatmentList{
 		Treatments: []*Treatment{
 			{
-				ID: encoding.NewObjectID(5),
+				ID: encoding.DeprecatedNewObjectID(5),
 				DrugDBIDs: map[string]string{
 					"lexi_gen_product_id":  "12345",
 					"lexi_drug_syn_id":     "56789",
@@ -347,7 +347,7 @@ func TestTreatmentListEquals(t *testing.T) {
 				DrugName:         "Testing",
 				DosageStrength:   "50mg",
 				DispenseValue:    12,
-				DispenseUnitID:   encoding.NewObjectID(12),
+				DispenseUnitID:   encoding.DeprecatedNewObjectID(12),
 				NumberRefills: encoding.NullInt64{
 					IsValid:    true,
 					Int64Value: 1,
@@ -358,7 +358,7 @@ func TestTreatmentListEquals(t *testing.T) {
 				},
 			},
 			{
-				ID: encoding.NewObjectID(5),
+				ID: encoding.DeprecatedNewObjectID(5),
 				DrugDBIDs: map[string]string{
 					"lexi_gen_product_id":  "12345",
 					"lexi_drug_syn_id":     "56789",
@@ -368,7 +368,7 @@ func TestTreatmentListEquals(t *testing.T) {
 				DrugName:         "Testing",
 				DosageStrength:   "50mgs",
 				DispenseValue:    12,
-				DispenseUnitID:   encoding.NewObjectID(12),
+				DispenseUnitID:   encoding.DeprecatedNewObjectID(12),
 				NumberRefills: encoding.NullInt64{
 					IsValid:    true,
 					Int64Value: 1,
@@ -377,8 +377,8 @@ func TestTreatmentListEquals(t *testing.T) {
 					IsValid:    true,
 					Int64Value: 5,
 				}, ERx: &ERxData{
-					PrescriptionID:     encoding.NewObjectID(20),
-					ErxMedicationID:    encoding.NewObjectID(25),
+					PrescriptionID:     encoding.DeprecatedNewObjectID(20),
+					ErxMedicationID:    encoding.DeprecatedNewObjectID(25),
 					PrescriptionStatus: "eRxSent",
 				},
 			},
@@ -394,7 +394,7 @@ func TestTreatmentListEquals_DifferentLength(t *testing.T) {
 	treatmentList1 := &TreatmentList{
 		Treatments: []*Treatment{
 			{
-				ID: encoding.NewObjectID(5),
+				ID: encoding.DeprecatedNewObjectID(5),
 				DrugDBIDs: map[string]string{
 					"lexi_gen_product_id":  "12345",
 					"lexi_drug_syn_id":     "56789",
@@ -404,7 +404,7 @@ func TestTreatmentListEquals_DifferentLength(t *testing.T) {
 				DrugName:         "Testing",
 				DosageStrength:   "50mg",
 				DispenseValue:    12,
-				DispenseUnitID:   encoding.NewObjectID(12),
+				DispenseUnitID:   encoding.DeprecatedNewObjectID(12),
 				NumberRefills: encoding.NullInt64{
 					IsValid:    true,
 					Int64Value: 1,
@@ -420,7 +420,7 @@ func TestTreatmentListEquals_DifferentLength(t *testing.T) {
 	treatmentList2 := &TreatmentList{
 		Treatments: []*Treatment{
 			{
-				ID: encoding.NewObjectID(5),
+				ID: encoding.DeprecatedNewObjectID(5),
 				DrugDBIDs: map[string]string{
 					"lexi_gen_product_id":  "12345",
 					"lexi_drug_syn_id":     "56789",
@@ -430,7 +430,7 @@ func TestTreatmentListEquals_DifferentLength(t *testing.T) {
 				DrugName:         "Testing",
 				DosageStrength:   "50mg",
 				DispenseValue:    12,
-				DispenseUnitID:   encoding.NewObjectID(12),
+				DispenseUnitID:   encoding.DeprecatedNewObjectID(12),
 				NumberRefills: encoding.NullInt64{
 					IsValid:    true,
 					Int64Value: 1,
@@ -441,7 +441,7 @@ func TestTreatmentListEquals_DifferentLength(t *testing.T) {
 				},
 			},
 			{
-				ID: encoding.NewObjectID(5),
+				ID: encoding.DeprecatedNewObjectID(5),
 				DrugDBIDs: map[string]string{
 					"lexi_gen_product_id":  "12345",
 					"lexi_drug_syn_id":     "56789",
@@ -451,7 +451,7 @@ func TestTreatmentListEquals_DifferentLength(t *testing.T) {
 				DrugName:         "Testing",
 				DosageStrength:   "50mgs",
 				DispenseValue:    12,
-				DispenseUnitID:   encoding.NewObjectID(12),
+				DispenseUnitID:   encoding.DeprecatedNewObjectID(12),
 				NumberRefills: encoding.NullInt64{
 					IsValid:    true,
 					Int64Value: 1,
@@ -460,8 +460,8 @@ func TestTreatmentListEquals_DifferentLength(t *testing.T) {
 					IsValid:    true,
 					Int64Value: 5,
 				}, ERx: &ERxData{
-					PrescriptionID:     encoding.NewObjectID(20),
-					ErxMedicationID:    encoding.NewObjectID(25),
+					PrescriptionID:     encoding.DeprecatedNewObjectID(20),
+					ErxMedicationID:    encoding.DeprecatedNewObjectID(25),
 					PrescriptionStatus: "eRxSent",
 				},
 			},

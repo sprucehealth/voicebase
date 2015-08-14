@@ -18,7 +18,7 @@ func TestDoctorQueue(t *testing.T) {
 	accountID, err := testData.AuthAPI.CreateAccount("cc1@sprucehealth.com", "abc", api.RoleCC)
 	test.OK(t, err)
 	cc1 := &common.Doctor{
-		AccountID: encoding.NewObjectID(accountID),
+		AccountID: encoding.DeprecatedNewObjectID(accountID),
 		Address:   &common.Address{},
 	}
 	_, err = testData.DataAPI.RegisterProvider(cc1, api.RoleDoctor)
@@ -27,7 +27,7 @@ func TestDoctorQueue(t *testing.T) {
 	accountID, err = testData.AuthAPI.CreateAccount("cc2@sprucehealth.com", "abc", api.RoleCC)
 	test.OK(t, err)
 	cc2 := &common.Doctor{
-		AccountID: encoding.NewObjectID(accountID),
+		AccountID: encoding.DeprecatedNewObjectID(accountID),
 		Address:   &common.Address{},
 	}
 	_, err = testData.DataAPI.RegisterProvider(cc2, api.RoleDoctor)
@@ -36,13 +36,13 @@ func TestDoctorQueue(t *testing.T) {
 	accountID, err = testData.AuthAPI.CreateAccount("test@sprucehealth.com", "abc", api.RolePatient)
 	test.OK(t, err)
 	patient := &common.Patient{
-		AccountID: encoding.NewObjectID(accountID),
+		AccountID: encoding.DeprecatedNewObjectID(accountID),
 	}
 	test.OK(t, testData.DataAPI.RegisterPatient(patient))
 
 	_, err = testData.DB.Exec(`
 		INSERT INTO patient_case (patient_id, status, name, clinical_pathway_id)
-		VALUES (?, ?, ?, ?)`, patient.ID.Int64(), common.PCStatusActive.String(), "Case Name", 1)
+		VALUES (?, ?, ?, ?)`, patient.ID, common.PCStatusActive.String(), "Case Name", 1)
 	test.OK(t, err)
 
 	// Unclaimed queue
@@ -51,7 +51,7 @@ func TestDoctorQueue(t *testing.T) {
 		CareProvidingStateID: 1,
 		ItemID:               1,
 		PatientCaseID:        1,
-		PatientID:            patient.ID.Int64(),
+		PatientID:            patient.ID,
 		EventType:            api.DQEventTypePatientVisit,
 		Status:               api.DQItemStatusOngoing,
 		Description:          "Some visit",
@@ -87,7 +87,7 @@ func TestDoctorQueue(t *testing.T) {
 			DoctorID:         cc1.ID.Int64(),
 			ItemID:           1,
 			PatientCaseID:    1,
-			PatientID:        1,
+			PatientID:        patient.ID,
 			EventType:        api.DQEventTypePatientVisit,
 			Status:           api.DQItemStatusOngoing,
 			Description:      "Some visit",
@@ -102,7 +102,7 @@ func TestDoctorQueue(t *testing.T) {
 			DoctorID:         cc2.ID.Int64(),
 			ItemID:           1,
 			PatientCaseID:    1,
-			PatientID:        1,
+			PatientID:        patient.ID,
 			EventType:        api.DQEventTypePatientVisit,
 			Status:           api.DQItemStatusOngoing,
 			Description:      "Some visit",

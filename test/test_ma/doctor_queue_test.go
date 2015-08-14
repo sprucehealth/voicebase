@@ -50,11 +50,11 @@ func TestMAQueue_UnassignedTab(t *testing.T) {
 
 	// create a random patient and permanently assign patient to doctor
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
-	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.ID.Int64(), testData, t)
-	testData.DataAPI.AddDoctorToCareTeamForPatient(pr.Patient.ID.Int64(), doctor.ID.Int64(), api.AcnePathwayTag)
+	pv := test_integration.CreatePatientVisitForPatient(pr.Patient.ID, testData, t)
+	testData.DataAPI.AddDoctorToCareTeamForPatient(pr.Patient.ID, doctor.ID.Int64(), api.AcnePathwayTag)
 
 	// submit the visit so that it gets routed directly to the doctor's inbox
-	test_integration.SubmitPatientVisitForPatient(pr.Patient.ID.Int64(), pv.PatientVisitID, testData, t)
+	test_integration.SubmitPatientVisitForPatient(pr.Patient.ID, pv.PatientVisitID, testData, t)
 
 	// now there should be 3 items in the ma's queue
 	res, err = testData.AuthGet(testData.APIServer.URL+apipaths.DoctorQueueURLPath+"?state=global", ma.AccountID.Int64())

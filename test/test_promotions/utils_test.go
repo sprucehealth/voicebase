@@ -60,7 +60,7 @@ func setupPromotionsTest(testData *test_integration.TestData, t *testing.T) {
 	test.OK(t, err)
 }
 
-func startAndSubmitVisit(patientID int64, patientAccountID int64,
+func startAndSubmitVisit(patientID common.PatientID, patientAccountID int64,
 	stubSQSQueue *common.SQSQueue, testData *test_integration.TestData, t *testing.T) int64 {
 	pv := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 	answerIntake := test_integration.PrepareAnswersForQuestionsInPatientVisit(pv.PatientVisitID, pv.ClientLayout.InfoIntakeLayout, t)
@@ -81,7 +81,7 @@ func startAndSubmitVisit(patientID int64, patientAccountID int64,
 	return pv.PatientVisitID
 }
 
-func getPatientReceipt(patientID, patientVisitID int64, testData *test_integration.TestData, t *testing.T) *common.PatientReceipt {
+func getPatientReceipt(patientID common.PatientID, patientVisitID int64, testData *test_integration.TestData, t *testing.T) *common.PatientReceipt {
 	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(patientVisitID)
 	test.OK(t, err)
 	patientReciept, err := testData.DataAPI.GetPatientReceipt(patientID, patientVisitID, patientVisit.SKUType, true)

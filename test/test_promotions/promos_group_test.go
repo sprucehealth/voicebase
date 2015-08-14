@@ -155,8 +155,8 @@ func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 
 	// now lets apply all these promotions to an existing patient's account
 	pr := signupPatientWithVisit("dagknag@gmail.com", testData, t)
-	test_integration.AddTestAddressForPatient(pr.Patient.ID.Int64(), testData, t)
-	test_integration.AddTestPharmacyForPatient(pr.Patient.ID.Int64(), testData, t)
+	test_integration.AddTestAddressForPatient(pr.Patient.ID, testData, t)
+	test_integration.AddTestPharmacyForPatient(pr.Patient.ID, testData, t)
 
 	_, err = promotions.AssociatePromoCode(pr.Patient.Email, "California", promoCode1, testData.DataAPI, testData.AuthAPI, testData.Config.AnalyticsLogger, false)
 	test.OK(t, err)
@@ -184,7 +184,7 @@ func TestPromotion_GroupWithMultiplePromotions(t *testing.T) {
 	test.Equals(t, 2, len(pendingPromotions))
 
 	// and the doctor added to their account
-	careTeamMembers, err := testData.DataAPI.GetActiveMembersOfCareTeamForPatient(pr.Patient.ID.Int64(), false)
+	careTeamMembers, err := testData.DataAPI.GetActiveMembersOfCareTeamForPatient(pr.Patient.ID, false)
 	test.OK(t, err)
 	test.Equals(t, 1, len(careTeamMembers))
 	test.Equals(t, dr.DoctorID, careTeamMembers[0].ProviderID)

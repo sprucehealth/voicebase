@@ -18,10 +18,10 @@ func TestFeedback(t *testing.T) {
 	test.OK(t, err)
 
 	patient := &common.Patient{
-		AccountID: encoding.NewObjectID(accountID),
+		AccountID: encoding.DeprecatedNewObjectID(accountID),
 	}
 	test.OK(t, testData.DataAPI.RegisterPatient(patient))
-	patientID := patient.ID.Int64()
+	patientID := patient.ID
 
 	found, err := testData.DataAPI.PatientFeedbackRecorded(patientID, "one")
 	test.OK(t, err)

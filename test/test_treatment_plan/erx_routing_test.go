@@ -32,7 +32,7 @@ func TestERXRouting_RXStarted(t *testing.T) {
 		TreatmentPlanID:  tp.ID,
 		DosageStrength:   "Strength1",
 		DispenseValue:    1,
-		DispenseUnitID:   encoding.NewObjectID(26),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -63,13 +63,13 @@ func TestERXRouting_RXStarted(t *testing.T) {
 
 	erxPatientID := int64(100)
 	treatmentPrescriptionID := int64(105)
-	err = testData.DataAPI.UpdatePatient(patient.ID.Int64(), &api.PatientUpdate{
+	err = testData.DataAPI.UpdatePatient(patient.ID, &api.PatientUpdate{
 		ERxID: &erxPatientID,
 	}, false)
 	test.OK(t, err)
 
 	treatmentsResponse.TreatmentList.Treatments[0].ERx = &common.ERxData{
-		PrescriptionID: encoding.NewObjectID(treatmentPrescriptionID),
+		PrescriptionID: encoding.DeprecatedNewObjectID(treatmentPrescriptionID),
 	}
 
 	pharmacySelection := &pharmacy.PharmacyData{
@@ -81,7 +81,7 @@ func TestERXRouting_RXStarted(t *testing.T) {
 		Phone:        "12345667",
 	}
 
-	err = testData.DataAPI.UpdatePatientPharmacy(patient.ID.Int64(), pharmacySelection)
+	err = testData.DataAPI.UpdatePatientPharmacy(patient.ID, pharmacySelection)
 	test.OK(t, err)
 
 	err = testData.DataAPI.StartRXRoutingForTreatmentsAndTreatmentPlan(treatmentsResponse.TreatmentList.Treatments, pharmacySelection, tp.ID.Int64(), doctor.ID.Int64())
@@ -130,7 +130,7 @@ func TestERXRouting_RXSent(t *testing.T) {
 		TreatmentPlanID:  tp.ID,
 		DosageStrength:   "Strength1",
 		DispenseValue:    1,
-		DispenseUnitID:   encoding.NewObjectID(26),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -160,13 +160,13 @@ func TestERXRouting_RXSent(t *testing.T) {
 
 	erxPatientID := int64(100)
 	treatmentPrescriptionID := int64(105)
-	err = testData.DataAPI.UpdatePatient(patient.ID.Int64(), &api.PatientUpdate{
+	err = testData.DataAPI.UpdatePatient(patient.ID, &api.PatientUpdate{
 		ERxID: &erxPatientID,
 	}, false)
 	test.OK(t, err)
 
 	treatmentsResponse.TreatmentList.Treatments[0].ERx = &common.ERxData{
-		PrescriptionID: encoding.NewObjectID(treatmentPrescriptionID),
+		PrescriptionID: encoding.DeprecatedNewObjectID(treatmentPrescriptionID),
 	}
 
 	pharmacySelection := &pharmacy.PharmacyData{
@@ -178,7 +178,7 @@ func TestERXRouting_RXSent(t *testing.T) {
 		Phone:        "12345667",
 	}
 
-	err = testData.DataAPI.UpdatePatientPharmacy(patient.ID.Int64(), pharmacySelection)
+	err = testData.DataAPI.UpdatePatientPharmacy(patient.ID, pharmacySelection)
 	test.OK(t, err)
 
 	err = testData.DataAPI.StartRXRoutingForTreatmentsAndTreatmentPlan(treatmentsResponse.TreatmentList.Treatments, pharmacySelection, tp.ID.Int64(), doctor.ID.Int64())
@@ -228,7 +228,7 @@ func TestERxRouting_CaseMessageExistsAlready(t *testing.T) {
 		TreatmentPlanID:  tp.ID,
 		DosageStrength:   "Strength1",
 		DispenseValue:    1,
-		DispenseUnitID:   encoding.NewObjectID(26),
+		DispenseUnitID:   encoding.DeprecatedNewObjectID(26),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 1,
@@ -257,13 +257,13 @@ func TestERxRouting_CaseMessageExistsAlready(t *testing.T) {
 	test.OK(t, err)
 
 	erxPatientID := int64(100)
-	err = testData.DataAPI.UpdatePatient(patient.ID.Int64(), &api.PatientUpdate{
+	err = testData.DataAPI.UpdatePatient(patient.ID, &api.PatientUpdate{
 		ERxID: &erxPatientID,
 	}, false)
 	test.OK(t, err)
 
 	treatmentsResponse.TreatmentList.Treatments[0].ERx = &common.ERxData{
-		PrescriptionID: encoding.NewObjectID(105),
+		PrescriptionID: encoding.DeprecatedNewObjectID(105),
 	}
 
 	pharmacySelection := &pharmacy.PharmacyData{
@@ -275,7 +275,7 @@ func TestERxRouting_CaseMessageExistsAlready(t *testing.T) {
 		Phone:        "12345667",
 	}
 
-	err = testData.DataAPI.UpdatePatientPharmacy(patient.ID.Int64(), pharmacySelection)
+	err = testData.DataAPI.UpdatePatientPharmacy(patient.ID, pharmacySelection)
 	test.OK(t, err)
 
 	err = testData.DataAPI.StartRXRoutingForTreatmentsAndTreatmentPlan(treatmentsResponse.TreatmentList.Treatments, pharmacySelection, tp.ID.Int64(), doctor.ID.Int64())

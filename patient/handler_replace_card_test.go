@@ -28,16 +28,16 @@ type mockDataAPI_replaceCard struct {
 func (m *mockDataAPI_replaceCard) GetPatientFromAccountID(id int64) (*common.Patient, error) {
 	return m.patient, nil
 }
-func (m *mockDataAPI_replaceCard) GetCardsForPatient(id int64) ([]*common.Card, error) {
+func (m *mockDataAPI_replaceCard) GetCardsForPatient(id common.PatientID) ([]*common.Card, error) {
 	return m.cards, nil
 }
 func (m *mockDataAPI_replaceCard) CreatePendingTask(workType, status string, itemID int64) (int64, error) {
 	return 0, nil
 }
-func (m *mockDataAPI_replaceCard) UpdatePatient(id int64, update *api.PatientUpdate, doctorUpdate bool) error {
+func (m *mockDataAPI_replaceCard) UpdatePatient(id common.PatientID, update *api.PatientUpdate, doctorUpdate bool) error {
 	return nil
 }
-func (m *mockDataAPI_replaceCard) AddCardForPatient(id int64, card *common.Card) error {
+func (m *mockDataAPI_replaceCard) AddCardForPatient(id common.PatientID, card *common.Card) error {
 	m.cardAdded = card
 	return nil
 }
@@ -47,10 +47,10 @@ func (m *mockDataAPI_replaceCard) MakeCardDefaultForCustomer(thirdPartyID, custo
 func (m *mockDataAPI_replaceCard) DeletePendingTask(id int64) error {
 	return nil
 }
-func (m *mockDataAPI_replaceCard) MarkCardInactiveForPatient(patientID int64, card *common.Card) error {
+func (m *mockDataAPI_replaceCard) MarkCardInactiveForPatient(patientID common.PatientID, card *common.Card) error {
 	return nil
 }
-func (m *mockDataAPI_replaceCard) DeleteCardForPatient(id int64, card *common.Card) error {
+func (m *mockDataAPI_replaceCard) DeleteCardForPatient(id common.PatientID, card *common.Card) error {
 	m.cardDeleted = card
 	return nil
 }
@@ -171,7 +171,7 @@ func TestReplaceCard_CardExists(t *testing.T) {
 	r.Header.Set("Content-Type", "application/json")
 
 	cardToReturn := &common.Card{
-		ID:           encoding.NewObjectID(10),
+		ID:           encoding.DeprecatedNewObjectID(10),
 		ThirdPartyID: "222",
 	}
 	m := &mockDataAPI_replaceCard{

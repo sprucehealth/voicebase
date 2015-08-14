@@ -77,12 +77,14 @@ func (d *dataService) ClaimTrainingSet(doctorID int64, pathwayTag string) error 
 		tx.Rollback()
 		return err
 	}
+	defer rows.Close()
 
 	var visitIDs []int64
-	var patientIDs []int64
+	var patientIDs []common.PatientID
 	var caseIDs []int64
 	for rows.Next() {
-		var visitID, patientID, caseID int64
+		var visitID, caseID int64
+		var patientID common.PatientID
 		if err := rows.Scan(&visitID, &patientID, &caseID); err != nil {
 			tx.Rollback()
 			return err
@@ -106,13 +108,13 @@ func (d *dataService) ClaimTrainingSet(doctorID int64, pathwayTag string) error 
 
 		if err := insertItemIntoDoctorQueue(tx, &DoctorQueueItem{
 			EventType:        DQEventTypePatientVisit,
-			PatientID:        patient.ID.Int64(),
+			PatientID:        patient.ID,
 			Status:           DQItemStatusPending,
 			DoctorID:         doctorID,
 			ItemID:           visitID,
 			Description:      fmt.Sprintf("New visit with %s %s", patient.FirstName, patient.LastName),
 			ShortDescription: "New visit",
-			ActionURL:        app_url.ViewPatientVisitInfoAction(patient.ID.Int64(), visitID, caseIDs[i]),
+			ActionURL:        app_url.ViewPatientVisitInfoAction(patient.ID, visitID, caseIDs[i]),
 			Tags:             []string{"Demo"},
 		}, false); err != nil {
 			tx.Rollback()

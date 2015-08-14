@@ -55,10 +55,10 @@ func TestApplePay(t *testing.T) {
 
 	// setup the patient to be in a state where the visit can be submitted
 	signedupPatientResponse := SignupRandomTestPatient(t, testData)
-	AddTestPharmacyForPatient(signedupPatientResponse.Patient.ID.Int64(), testData, t)
-	AddTestAddressForPatient(signedupPatientResponse.Patient.ID.Int64(), testData, t)
+	AddTestPharmacyForPatient(signedupPatientResponse.Patient.ID, testData, t)
+	AddTestAddressForPatient(signedupPatientResponse.Patient.ID, testData, t)
 
-	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.ID.Int64(), testData, t)
+	patientVisitResponse := CreatePatientVisitForPatient(signedupPatientResponse.Patient.ID, testData, t)
 
 	req := &patient.PatientVisitRequestData{
 		PatientVisitID: patientVisitResponse.PatientVisitID,
@@ -89,7 +89,7 @@ func TestApplePay(t *testing.T) {
 	test.Equals(t, http.StatusOK, resp.StatusCode)
 
 	// make sure that the card is the default card on file, and that its got apple pay set to 1
-	cards, err := testData.DataAPI.GetCardsForPatient(signedupPatientResponse.Patient.ID.Int64())
+	cards, err := testData.DataAPI.GetCardsForPatient(signedupPatientResponse.Patient.ID)
 	test.OK(t, err)
 	test.Equals(t, 1, len(cards))
 	test.Equals(t, true, cards[0].ApplePay)

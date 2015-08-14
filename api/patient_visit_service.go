@@ -47,11 +47,11 @@ var visitSummaryQuery = `
 		LEFT JOIN role_type ON role_type_id = role_type.id
 	`
 
-func (d *dataService) GetPatientIDFromPatientVisitID(patientVisitID int64) (int64, error) {
-	var patientID int64
+func (d *dataService) GetPatientIDFromPatientVisitID(patientVisitID int64) (common.PatientID, error) {
+	var patientID common.PatientID
 	err := d.db.QueryRow("select patient_id from patient_visit where id = ?", patientVisitID).Scan(&patientID)
 	if err == sql.ErrNoRows {
-		return 0, ErrNotFound("patient_visit")
+		return common.PatientID{}, ErrNotFound("patient_visit")
 	}
 	return patientID, err
 }
@@ -87,7 +87,7 @@ func (d *dataService) PendingFollowupVisitForCase(caseID int64) (*common.Patient
 	return d.getSinglePatientVisit(rows)
 }
 
-func (d *dataService) GetPatientVisitForSKU(patientID int64, skuType string) (*common.PatientVisit, error) {
+func (d *dataService) GetPatientVisitForSKU(patientID common.PatientID, skuType string) (*common.PatientVisit, error) {
 	skuID, err := d.skuIDFromType(skuType)
 	if err != nil {
 		return nil, err
@@ -123,7 +123,7 @@ func (d *dataService) GetPatientVisitFromID(patientVisitID int64) (*common.Patie
 	return d.getSinglePatientVisit(rows)
 }
 
-func (d *dataService) VisitsSubmittedForPatientSince(patientID int64, since time.Time) ([]*common.PatientVisit, error) {
+func (d *dataService) VisitsSubmittedForPatientSince(patientID common.PatientID, since time.Time) ([]*common.PatientVisit, error) {
 	vals := []interface{}{patientID, since}
 	vals = dbutil.AppendStringsToInterfaceSlice(vals, common.NonOpenPatientVisitStates())
 
@@ -222,7 +222,7 @@ func (d *dataService) CreatePatientVisit(visit *common.PatientVisit, requestedDo
 		// for now treating the creation of every new case as an unclaimed case because we don't have a notion of a
 		// new case for which the patient returns (and thus can be potentially claimed)
 		patientCase := &common.PatientCase{
-			PatientID:         encoding.NewObjectID(visit.PatientID.Int64()),
+			PatientID:         visit.PatientID,
 			PathwayTag:        visit.PathwayTag,
 			Status:            common.PCStatusOpen,
 			RequestedDoctorID: requestedDoctorID,
@@ -275,8 +275,8 @@ func (d *dataService) CreatePatientVisit(visit *common.PatientVisit, requestedDo
 	}
 
 	visit.CreationDate = time.Now()
-	visit.ID = encoding.NewObjectID(lastID)
-	visit.PatientCaseID = encoding.NewObjectID(caseID)
+	visit.ID = encoding.DeprecatedNewObjectID(lastID)
+	visit.PatientCaseID = encoding.DeprecatedNewObjectID(caseID)
 	return lastID, nil
 }
 
@@ -604,12 +604,12 @@ func (d *dataService) DeleteTreatmentPlan(treatmentPlanID int64) error {
 	return err
 }
 
-func (d *dataService) GetPatientIDFromTreatmentPlanID(treatmentPlanID int64) (int64, error) {
-	var patientID int64
+func (d *dataService) GetPatientIDFromTreatmentPlanID(treatmentPlanID int64) (common.PatientID, error) {
+	var patientID common.PatientID
 	err := d.db.QueryRow(`select patient_id from treatment_plan where id = ?`, treatmentPlanID).Scan(&patientID)
 
 	if err == sql.ErrNoRows {
-		return 0, ErrNotFound("treatment_plan")
+		return common.PatientID{}, ErrNotFound("treatment_plan")
 	}
 
 	return patientID, err
@@ -639,7 +639,7 @@ func (d *dataService) StartNewTreatmentPlan(patientVisitID int64, tp *common.Tre
 	if tp.DoctorID.Int64() == 0 {
 		return 0, errors.New("missing doctor_id")
 	}
-	if tp.PatientID == 0 {
+	if !tp.PatientID.IsValid {
 		return 0, errors.New("missing patient_id")
 	}
 	if tp.PatientCaseID.Int64() == 0 {
@@ -676,7 +676,7 @@ func (d *dataService) StartNewTreatmentPlan(patientVisitID int64, tp *common.Tre
 		tx.Rollback()
 		return 0, err
 	}
-	tp.ID = encoding.NewObjectID(treatmentPlanID)
+	tp.ID = encoding.DeprecatedNewObjectID(treatmentPlanID)
 
 	// track the patient visit that is the reason for which the treatment plan is being created
 	_, err = tx.Exec(`
@@ -723,7 +723,7 @@ func (d *dataService) StartNewTreatmentPlan(patientVisitID int64, tp *common.Tre
 	}
 
 	if tp.RegimenPlan != nil {
-		tp.RegimenPlan.TreatmentPlanID = encoding.NewObjectID(treatmentPlanID)
+		tp.RegimenPlan.TreatmentPlanID = encoding.DeprecatedNewObjectID(treatmentPlanID)
 		if err := createRegimenPlan(
 			tx,
 			tp.RegimenPlan); err != nil {
@@ -929,12 +929,12 @@ func (d *dataService) GetRegimenPlanForTreatmentPlan(treatmentPlanID int64) (*co
 	if err != nil {
 		return nil, err
 	}
-	regimenPlan.TreatmentPlanID = encoding.NewObjectID(treatmentPlanID)
+	regimenPlan.TreatmentPlanID = encoding.DeprecatedNewObjectID(treatmentPlanID)
 
 	return regimenPlan, nil
 }
 
-func (d *dataService) AddTreatmentsForTreatmentPlan(treatments []*common.Treatment, doctorID, treatmentPlanID, patientID int64) error {
+func (d *dataService) AddTreatmentsForTreatmentPlan(treatments []*common.Treatment, doctorID, treatmentPlanID int64, patientID common.PatientID) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
@@ -948,7 +948,7 @@ func (d *dataService) AddTreatmentsForTreatmentPlan(treatments []*common.Treatme
 	return tx.Commit()
 }
 
-func (d *dataService) addTreatmentsForTreatmentPlan(tx *sql.Tx, treatments []*common.Treatment, doctorID, tpID, patientID int64) error {
+func (d *dataService) addTreatmentsForTreatmentPlan(tx *sql.Tx, treatments []*common.Treatment, doctorID, tpID int64, patientID common.PatientID) error {
 	_, err := tx.Exec(`
 		UPDATE treatment
 		SET status = ?
@@ -958,7 +958,7 @@ func (d *dataService) addTreatmentsForTreatmentPlan(tx *sql.Tx, treatments []*co
 	}
 
 	for _, treatment := range treatments {
-		treatment.TreatmentPlanID = encoding.NewObjectID(tpID)
+		treatment.TreatmentPlanID = encoding.DeprecatedNewObjectID(tpID)
 		err = d.addTreatment(treatmentForPatientType, treatment, nil, tx)
 		if err != nil {
 			return err
@@ -1000,7 +1000,7 @@ func (d *dataService) GetTreatmentsBasedOnTreatmentPlanID(treatmentPlanID int64)
 			return nil, err
 		}
 
-		treatment.TreatmentPlanID = encoding.NewObjectID(treatmentPlanID)
+		treatment.TreatmentPlanID = encoding.DeprecatedNewObjectID(treatmentPlanID)
 		treatments = append(treatments, treatment)
 		treatmentIDs = append(treatmentIDs, treatment.ID.Int64())
 	}
@@ -1037,14 +1037,14 @@ func (d *dataService) GetTreatmentsBasedOnTreatmentPlanID(treatmentPlanID int64)
 	// assign the treatments the doctor favorite id if one exists
 	for _, treatment := range treatments {
 		if treatmentIDToFavoriteIDMapping[treatment.ID.Int64()] != 0 {
-			treatment.DoctorTreatmentTemplateID = encoding.NewObjectID(treatmentIDToFavoriteIDMapping[treatment.ID.Int64()])
+			treatment.DoctorTreatmentTemplateID = encoding.DeprecatedNewObjectID(treatmentIDToFavoriteIDMapping[treatment.ID.Int64()])
 		}
 	}
 
 	return treatments, nil
 }
 
-func (d *dataService) GetTreatmentsForPatient(patientID int64) ([]*common.Treatment, error) {
+func (d *dataService) GetTreatmentsForPatient(patientID common.PatientID) ([]*common.Treatment, error) {
 	rows, err := d.db.Query(
 		treatmentQuery+`
 		WHERE tp.patient_id = ?
@@ -1070,7 +1070,7 @@ func (d *dataService) GetTreatmentsForPatient(patientID int64) ([]*common.Treatm
 	return treatments, rows.Err()
 }
 
-func (d *dataService) GetTreatmentPlanForPatient(patientID, treatmentPlanID int64) (*common.TreatmentPlan, error) {
+func (d *dataService) GetTreatmentPlanForPatient(patientID common.PatientID, treatmentPlanID int64) (*common.TreatmentPlan, error) {
 	rows, err := d.db.Query(`
 		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status, patient_viewed, sent_date
 		FROM treatment_plan
@@ -1099,7 +1099,7 @@ func (d *dataService) GetTreatmentPlanForPatient(patientID, treatmentPlanID int6
 	return tp, nil
 }
 
-func (d *dataService) GetActiveTreatmentPlansForPatient(patientID int64) ([]*common.TreatmentPlan, error) {
+func (d *dataService) GetActiveTreatmentPlansForPatient(patientID common.PatientID) ([]*common.TreatmentPlan, error) {
 	rows, err := d.db.Query(`
 		SELECT id, doctor_id, patient_case_id, patient_id, creation_date, status, patient_viewed, sent_date
 		FROM treatment_plan
@@ -1642,7 +1642,7 @@ func (d *dataService) getTreatmentAndMetadataFromCurrentRow(rows *sql.Rows) (*co
 		return nil, err
 	}
 
-	treatment.Patient, err = d.GetPatientFromID(treatment.PatientID.Int64())
+	treatment.Patient, err = d.GetPatientFromID(treatment.PatientID)
 	if err != nil {
 		return nil, err
 	}

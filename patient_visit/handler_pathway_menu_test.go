@@ -32,7 +32,7 @@ func (api *pathwayMenuHandlerDataAPI) GetPatientFromAccountID(accountID int64) (
 	return api.patient, nil
 }
 
-func (api *pathwayMenuHandlerDataAPI) AnyVisitSubmitted(patientID int64) (bool, error) {
+func (api *pathwayMenuHandlerDataAPI) AnyVisitSubmitted(patientID common.PatientID) (bool, error) {
 	return api.hasSubmittedVisit, nil
 }
 

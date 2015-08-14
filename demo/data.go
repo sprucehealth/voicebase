@@ -25,7 +25,7 @@ var favoriteTreatmentPlans = map[string]*common.FavoriteTreatmentPlan{
 					GenericDrugName:  "tretinoin",
 					DosageStrength:   "0.025%",
 					DispenseValue:    encoding.HighPrecisionFloat64(1.0000000000),
-					DispenseUnitID:   encoding.NewObjectID(29),
+					DispenseUnitID:   encoding.DeprecatedNewObjectID(29),
 					NumberRefills: encoding.NullInt64{
 						IsValid:    true,
 						Int64Value: 2,
@@ -48,7 +48,7 @@ var favoriteTreatmentPlans = map[string]*common.FavoriteTreatmentPlan{
 					GenericDrugName:  "doxycycline",
 					DosageStrength:   "hyclate 100 mg",
 					DispenseValue:    encoding.HighPrecisionFloat64(180.0000000000),
-					DispenseUnitID:   encoding.NewObjectID(26),
+					DispenseUnitID:   encoding.DeprecatedNewObjectID(26),
 					NumberRefills: encoding.NullInt64{
 						IsValid:    true,
 						Int64Value: 0,

@@ -59,7 +59,7 @@ func GetPatientLayoutForPatientVisit(
 			return nil, err
 		}
 
-		patient, err := dataAPI.Patient(visit.PatientID.Int64(), true)
+		patient, err := dataAPI.Patient(visit.PatientID, true)
 		if err != nil {
 			return nil, err
 		}

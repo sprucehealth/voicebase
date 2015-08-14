@@ -3,7 +3,6 @@ package home
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/sprucehealth/backend/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/sprucehealth/backend/api"
@@ -37,7 +36,7 @@ func newParentalMedicalRecordHandler(
 }
 
 func (h *parentalMedicalRecordHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	childPatientID, err := strconv.ParseInt(mux.Vars(ctx)["childid"], 10, 64)
+	childPatientID, err := common.ParsePatientID(mux.Vars(ctx)["childid"])
 	if err != nil {
 		http.NotFound(w, r)
 		return

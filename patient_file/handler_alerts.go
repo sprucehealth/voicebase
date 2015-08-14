@@ -30,9 +30,9 @@ func NewAlertsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 }
 
 type alertsRequestData struct {
-	PatientID int64 `schema:"patient_id"`
-	CaseID    int64 `schema:"case_id"`
-	VisitID   int64 `schema:"patient_visit_id"`
+	PatientID common.PatientID `schema:"patient_id"`
+	CaseID    int64            `schema:"case_id"`
+	VisitID   int64            `schema:"patient_visit_id"`
 }
 
 type alertsResponse struct {
@@ -49,7 +49,7 @@ func (a *alertsHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool
 	}
 	requestCache[apiservice.CKRequestData] = requestData
 
-	if requestData.PatientID == 0 && requestData.CaseID == 0 && requestData.VisitID == 0 {
+	if !requestData.PatientID.IsValid && requestData.CaseID == 0 && requestData.VisitID == 0 {
 		return false, apiservice.NewValidationError("patient_id or case_id or patient_visit_id must be specified")
 	}
 
@@ -69,7 +69,7 @@ func (a *alertsHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool
 			r.Method,
 			account.Role,
 			doctorID,
-			pc.PatientID.Int64(),
+			pc.PatientID,
 			pc.ID.Int64(),
 			a.dataAPI); err != nil {
 			return false, err
@@ -84,12 +84,12 @@ func (a *alertsHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool
 			r.Method,
 			account.Role,
 			doctorID,
-			visit.PatientID.Int64(),
+			visit.PatientID,
 			visit.PatientCaseID.Int64(),
 			a.dataAPI); err != nil {
 			return false, err
 		}
-	case requestData.PatientID > 0:
+	case requestData.PatientID.IsValid:
 		if err := apiservice.ValidateDoctorAccessToPatientFile(
 			r.Method,
 			account.Role,
@@ -125,7 +125,7 @@ func (a *alertsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 			return
 		}
 
-	case rd.PatientID > 0:
+	case rd.PatientID.IsValid:
 		// get the alerts for the latest visitID of the latest submitted case for the patient
 
 		cases, err := a.dataAPI.GetCasesForPatient(rd.PatientID, common.SubmittedPatientCaseStates())

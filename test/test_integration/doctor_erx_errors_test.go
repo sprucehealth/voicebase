@@ -38,7 +38,7 @@ func getTestRefillRequest(refillRequestQueueItemID, erxPatientID, prescriptionID
 			SubstitutionsAllowed: true,
 			ERx: &common.ERxData{
 				DoseSpotClinicianID: clinicianID,
-				PrescriptionID:      encoding.NewObjectID(prescriptionID),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(prescriptionID),
 				ErxPharmacyID:       pharmacyID,
 			},
 		},
@@ -62,7 +62,7 @@ func getTestRefillRequest(refillRequestQueueItemID, erxPatientID, prescriptionID
 			}, PatientInstructions: "Take once daily",
 			OTC: false,
 			ERx: &common.ERxData{
-				PrescriptionID:      encoding.NewObjectID(5504),
+				PrescriptionID:      encoding.DeprecatedNewObjectID(5504),
 				PrescriptionStatus:  "Requested",
 				ErxPharmacyID:       pharmacyID,
 				DoseSpotClinicianID: clinicianID,
@@ -83,7 +83,7 @@ func getTestPreferredPharmacyAndTreatment() (*common.Treatment, *pharmacy.Pharma
 		DosageStrength:          "Strength1",
 		DispenseValue:           5,
 		DispenseUnitDescription: "Tablet",
-		DispenseUnitID:          encoding.NewObjectID(19),
+		DispenseUnitID:          encoding.DeprecatedNewObjectID(19),
 		NumberRefills: encoding.NullInt64{
 			IsValid:    true,
 			Int64Value: 5,
@@ -462,7 +462,7 @@ func TestRXError_Refill_ErrorAfterSentState(t *testing.T) {
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		ERxPatientID: encoding.NewObjectID(erxPatientID),
+		ERxPatientID: encoding.DeprecatedNewObjectID(erxPatientID),
 	}
 
 	refillRequestItem := getTestRefillRequest(refillRequestQueueItemID, erxPatientID, prescriptionIDForRequestedPrescription, doctor.DoseSpotClinicianID, pharmacyID)
@@ -576,7 +576,7 @@ func TestRXError_Refill_ErrorAfterSendingState(t *testing.T) {
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		ERxPatientID: encoding.NewObjectID(erxPatientID),
+		ERxPatientID: encoding.DeprecatedNewObjectID(erxPatientID),
 	}
 
 	refillRequestItem := getTestRefillRequest(refillRequestQueueItemID, erxPatientID, prescriptionIDForRequestedPrescription, doctor.DoseSpotClinicianID, pharmacyID)
@@ -673,7 +673,7 @@ func TestRXError_Refill_ErrorAfterErrorState(t *testing.T) {
 		Email:        "test@test.com",
 		Gender:       "male",
 		ZipCode:      "90210",
-		ERxPatientID: encoding.NewObjectID(erxPatientID),
+		ERxPatientID: encoding.DeprecatedNewObjectID(erxPatientID),
 	}
 
 	refillRequestItem := getTestRefillRequest(refillRequestQueueItemID, erxPatientID, prescriptionIDForRequestedPrescription, doctor.DoseSpotClinicianID, pharmacyID)

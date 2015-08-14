@@ -33,7 +33,7 @@ func TestPrevPrescriptions(t *testing.T) {
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
-	patientID := patient.ID.Int64()
+	patientID := patient.ID
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 
 	// lets get the question and answer information
@@ -58,24 +58,24 @@ func TestPrevPrescriptions(t *testing.T) {
 	requestData := &apiservice.IntakeData{
 		PatientVisitID: patientVisitResponse.PatientVisitID,
 		Questions: []*apiservice.QuestionAnswerItem{
-			&apiservice.QuestionAnswerItem{
+			{
 				QuestionID: qMapping[prevAcnePrescriptionsSelectTag],
 				AnswerIntakes: []*apiservice.AnswerItem{
-					&apiservice.AnswerItem{
+					{
 						PotentialAnswerID: aMapping[benzaclinTag],
 						SubQuestions: []*apiservice.QuestionAnswerItem{
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[usingPrevAcnePrescriptionTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[usingPrevPrescriptionYes],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[irritateSkinAcnePrescriptionTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[irritateYesPrescription],
 									},
 								},
@@ -263,7 +263,7 @@ func TestPrevAcne(t *testing.T) {
 	testData.StartAPIServer(t)
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 	patient := pr.Patient
-	patientID := patient.ID.Int64()
+	patientID := patient.ID
 	patientVisitResponse := test_integration.CreatePatientVisitForPatient(patientID, testData, t)
 
 	questionInfos, err := testData.DataAPI.GetQuestionInfoForTags([]string{acnePrevOTCSelectTag, acneOTCProductTriedTag, acneUsingPrevOTCTag, acneHowEffectivePrevOTCTag, acneIrritateSkinPrevOTCTag, acneAnythingElsePrevOTCTag}, api.LanguageIDEnglish)
@@ -383,42 +383,42 @@ func TestPrevAcne(t *testing.T) {
 					&apiservice.AnswerItem{
 						PotentialAnswerID: aMapping[otherPrevOTCTag],
 						SubQuestions: []*apiservice.QuestionAnswerItem{
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[acneOTCProductTriedTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										AnswerText: "Clean and clear",
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[acneUsingPrevOTCTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[acneUsingPrevOTCYesTag],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[acneHowEffectivePrevOTCTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[acneHowEffectiveVeryOTCTag],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[acneIrritateSkinPrevOTCTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[acneIrritateSkinYesPrevOTCTag],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[acneAnythingElsePrevOTCTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										AnswerText: "Nope nothing else",
 									},
 								},
@@ -428,42 +428,42 @@ func TestPrevAcne(t *testing.T) {
 					&apiservice.AnswerItem{
 						PotentialAnswerID: aMapping[otherPrevOTCTag],
 						SubQuestions: []*apiservice.QuestionAnswerItem{
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[acneOTCProductTriedTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										AnswerText: "Clean and clear",
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[acneUsingPrevOTCTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[acneUsingPrevOTCYesTag],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[acneHowEffectivePrevOTCTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[acneHowEffectiveVeryOTCTag],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[acneIrritateSkinPrevOTCTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[acneIrritateSkinYesPrevOTCTag],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[acneAnythingElsePrevOTCTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										AnswerText: "Nope nothing else",
 									},
 								},

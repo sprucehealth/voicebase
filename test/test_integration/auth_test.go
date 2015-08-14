@@ -9,6 +9,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -233,7 +234,7 @@ func TestLostPassword(t *testing.T) {
 	defer testData.Close(t)
 	testData.StartAPIServer(t)
 
-	cli := PatientClient(testData, t, 0)
+	cli := PatientClient(testData, t, common.PatientID{})
 
 	// Should silently ignore non-existant email (return success)
 	test.OK(t, cli.ResetPassword("does-not-exist@example.com"))
