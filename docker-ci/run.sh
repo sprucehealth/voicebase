@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+PHABRICATOR_COMMENT=".phabricator-comment"
+
 # Start MySQL
 mv /var/lib/mysql /mem/mysql
 ln -s /mem/mysql /var/lib/mysql
@@ -44,12 +46,12 @@ echo $PKGS | xargs go build -i
 echo "FMT"
 FMT=$(echo $PKGS | xargs go fmt)
 if [[ ! -z "$FMT" ]]; then
-    echo $FMT
+    echo $FMT | tee -a $PHABRICATOR_COMMENT
     exit 1
 fi
 
 echo "VET"
-echo $PKGS | xargs go vet
+echo $PKGS | xargs go vet | tee -a $PHABRICATOR_COMMENT
 
 echo "LINT"
 echo $PKGS | xargs -n 1 golint | grep -v "_test.go"
@@ -90,12 +92,12 @@ fi
 go run docker-ci/covermerge.go ./coverage-$BUILD_NUMBER.out ./
 go tool cover -html=coverage-$BUILD_NUMBER.out -o coverage.html
 cp coverage.html coverage-$BUILD_NUMBER.html
-go tool cover -func=coverage-$BUILD_NUMBER.out | grep "total:"
+go tool cover -func=coverage-$BUILD_NUMBER.out | grep "total:" | tee -a $PHABRICATOR_COMMENT
 
 # Test static resources
 echo "TESTING STATIC RESOURCES"
-flow --version
-npm version
+flow --version | tee -a $PHABRICATOR_COMMENT
+npm version | tee -a $PHABRICATOR_COMMENT
 resources/build.sh
 (cd resources/apps ; time flow check)
 
