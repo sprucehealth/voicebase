@@ -44,8 +44,6 @@ func deleteCard(
 		return err
 	}
 
-	currentPatientAddressID := patient.PatientAddress.ID
-
 	// switch over the default card to the last added card if we are currently deleting the default card
 	if card.IsDefault && switchDefaultCard {
 		latestCard, err := dataAPI.MakeLatestCardDefaultForPatient(patient.ID)
@@ -67,6 +65,11 @@ func deleteCard(
 
 	if err := dataAPI.DeleteCardForPatient(patient.ID, card); err != nil {
 		return err
+	}
+
+	var currentPatientAddressID int64
+	if patient.PatientAddress != nil {
+		currentPatientAddressID = patient.PatientAddress.ID
 	}
 
 	// delete the address only if this is not the patient's preferred address
