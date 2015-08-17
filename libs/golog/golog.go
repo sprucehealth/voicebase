@@ -202,9 +202,11 @@ func (l *logger) LogDepthf(calldepth int, lvl Level, format string, args ...inte
 	}
 	if l.L(lvl) {
 		entry := entryPool.Get().(*Entry)
-		entry.Time = time.Now()
-		entry.Lvl = lvl
-		entry.Ctx = l.ctx
+		*entry = Entry{
+			Time: time.Now(),
+			Lvl:  lvl,
+			Ctx:  l.ctx,
+		}
 		if len(args) == 0 {
 			entry.Msg = format
 		} else {

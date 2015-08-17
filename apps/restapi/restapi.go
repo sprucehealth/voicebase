@@ -349,10 +349,10 @@ func buildRESTAPI(
 		dispatcher.PublishAsync(av)
 	}
 
-	h := httputil.RequestIDHandler(mux)
-	h = httputil.SecurityHandler(h)
+	h := httputil.SecurityHandler(mux)
 	h = httputil.LoggingHandler(h, webRequestLogger)
 	h = httputil.MetricsHandler(h, metricsRegistry.Scope("restapi"))
+	h = httputil.RequestIDHandler(h)
 	h = httputil.DecompressRequest(h)
 	if compressResponse {
 		h = httputil.CompressResponse(h)
