@@ -304,7 +304,7 @@ Add the following to `~/.bashrc` or `~/.zshrc`:
 
 	export CF_LOCAL_DB_USERNAME='carefront'
 	export CF_LOCAL_DB_PASSWORD='changethis'
-	export CF_LOCAL_DB_INSTANCE='127.0.0.1'
+	export CF_LOCAL_DB_INSTANCE='localhost'
 	export DOSESPOT_USER_ID=407
 
 Then:
@@ -365,3 +365,19 @@ functionality (for instance the flow of visit status). A great tool
 to work with ascii diagrams is [Monodraw](http://monodraw.helftone.com/).
 The existing diagrams in their original file format can be found on
 Google Drive under Engineering/Backend/Diagrams.
+
+Creating a new migration
+--------------------------------------
+
+1. Make sure you've got the correct environment variables set up:
+
+	```
+	export CF_LOCAL_DB_INSTANCE="localhost"
+	export CF_LOCAL_DB_USERNAME="carefront"
+	export CF_LOCAL_DB_PASSWORD="changethis"
+	```
+
+2. Make sure the mysql server is started (`mysql.server start`)
+3. Create a `mysql/migration-X.sql` with your changes
+4. `./validate_schema.sh` -- this creates a `snapshot-X.sql` and `data-snapshot-X.sql`
+5. `./apply_schema local X` to apply it locally
