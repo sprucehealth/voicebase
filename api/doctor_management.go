@@ -348,7 +348,7 @@ func (d *dataService) UpdateCareProviderStatePathwayMapping(patch *CareProviderS
 				return err
 			}
 			_, err = tx.Exec(`
-				INSERT INTO care_provider_state_elligibility
+				INSERT IGNORE INTO care_provider_state_elligibility
 					(role_type_id, provider_id, care_providing_state_id, notify, unavailable)
 				VALUES (?, ?, ?, ?, ?)`,
 				d.roleTypeMapping[c.Provider.Role], c.Provider.ID, spID,
