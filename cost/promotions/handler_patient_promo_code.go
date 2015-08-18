@@ -175,12 +175,12 @@ func (h *patientPromotionsHandler) servePOST(ctx context.Context, w http.Respons
 		}
 	} else {
 		arp, err := h.dataAPI.ActiveReferralProgramForAccount(account.ID, common.PromotionTypes)
-		if err != nil {
+		if err != nil && !api.IsErrNotFound(err) {
 			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
-		if arp.CodeID == promoCode.ID {
+		if !api.IsErrNotFound(err) && arp.CodeID == promoCode.ID {
 			httputil.JSONResponse(w, http.StatusNotFound, &PatientPromotionPOSTErrorResponse{
 				UserError: fmt.Sprintf("%s has not been applied. A referral code cannot be claimed by the referrer ;)", rd.PromoCode),
 				RequestID: httputil.RequestID(ctx),

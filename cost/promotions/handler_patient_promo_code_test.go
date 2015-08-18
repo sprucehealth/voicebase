@@ -26,6 +26,7 @@ type mockDataAPIPatientPromotionsHandler struct {
 	lookupPromoCodeParam                        string
 	lookupPromoCodeErr                          error
 	lookupPromoCode                             *common.PromoCode
+	referralProgramParamCallCount               int
 	referralProgramParam                        int64
 	referralProgramErr                          error
 	referralProgram                             *common.ReferralProgram
@@ -67,6 +68,7 @@ func (m *mockDataAPIPatientPromotionsHandler) ActiveReferralProgramForAccount(ac
 }
 
 func (m *mockDataAPIPatientPromotionsHandler) ReferralProgram(codeID int64, types map[string]reflect.Type) (*common.ReferralProgram, error) {
+	m.referralProgramParamCallCount++
 	m.referralProgramParam = codeID
 	return m.referralProgram, m.referralProgramErr
 }
@@ -308,6 +310,26 @@ func TestPatientPromotionsHandlerPOSTClaimOwnReferralCode(t *testing.T) {
 	responseWriter := httptest.NewRecorder()
 	handler.ServeHTTP(ctx, responseWriter, r)
 	test.Equals(t, http.StatusNotFound, responseWriter.Code)
+}
+
+func TestPatientPromotionsHandlerPOSTClaimReferralNoActiveReferralProgramReferralProgramErr(t *testing.T) {
+	rb, err := json.Marshal(&PatientPromotionPOSTRequest{PromoCode: "Foo"})
+	test.OK(t, err)
+	r, err := http.NewRequest("POST", "mock.api.request", bytes.NewReader(rb))
+	test.OK(t, err)
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 12345, Role: api.RolePatient})
+	rp := createReferralProgram(12345, "imageURL", ptr.Int64(12345))
+	rp.CodeID = 12345
+	dataAPI := &mockDataAPIPatientPromotionsHandler{
+		lookupPromoCode:                    &common.PromoCode{ID: rp.CodeID, Code: "Foo", IsReferral: true},
+		activeReferralProgramForAccountErr: api.ErrNotFound("referral_program"),
+		referralProgramErr:                 errors.New("foo"),
+	}
+	handler := NewPatientPromotionsHandler(dataAPI, &mockAuthAPIPatientPromotionsHandler{}, &analytics.NullLogger{})
+	responseWriter := httptest.NewRecorder()
+	handler.ServeHTTP(ctx, responseWriter, r)
+	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
+	test.Equals(t, dataAPI.referralProgramParamCallCount, 1)
 }
 
 func TestPatientPromotionsHandlerPOSTReferralProgramErr(t *testing.T) {
