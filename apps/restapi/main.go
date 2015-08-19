@@ -350,7 +350,9 @@ func main() {
 	conf.SetupLogging()
 
 	if conf.ErrorLogSNSTopic != "" {
-		golog.Default().SetHandler(snsLogHandler(snsCli, conf.ErrorLogSNSTopic, strings.ToUpper(conf.Environment+"/"+conf.BaseConfig.AppName), golog.Default().Handler(), rateLimiters.Get("errorsns")))
+		golog.Default().SetHandler(snsLogHandler(
+			snsCli, conf.ErrorLogSNSTopic, strings.ToUpper(conf.Environment+"/"+conf.BaseConfig.AppName),
+			golog.Default().Handler(), rateLimiters.Get("errorsns"), metricsRegistry.Scope("errorsns")))
 	}
 
 	serve(&conf, router)

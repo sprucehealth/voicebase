@@ -9,6 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
+	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -258,9 +259,15 @@ func (loggingSMSAPI) Send(fromNumber, toNumber, text string) error {
 	return nil
 }
 
-func snsLogHandler(snsCli snsiface.SNSAPI, topic, name string, subHandler golog.Handler, rateLimiter ratelimit.KeyedRateLimiter) golog.Handler {
+func snsLogHandler(snsCli snsiface.SNSAPI, topic, name string, subHandler golog.Handler, rateLimiter ratelimit.KeyedRateLimiter, metricsRegistry metrics.Registry) golog.Handler {
 	jsonFmt := golog.JSONFormatter()
 	longFmt := golog.LongFormFormatter()
+	statTotal := metrics.NewCounter()
+	statFailed := metrics.NewCounter()
+	statRateLimited := metrics.NewCounter()
+	metricsRegistry.Add("total", statTotal)
+	metricsRegistry.Add("failed", statFailed)
+	metricsRegistry.Add("ratelimited", statRateLimited)
 	return golog.HandlerFunc(func(e *golog.Entry) (err error) {
 		if subHandler != nil {
 			defer func() {
@@ -271,6 +278,8 @@ func snsLogHandler(snsCli snsiface.SNSAPI, topic, name string, subHandler golog.
 			return nil
 		}
 
+		statTotal.Inc(1)
+
 		if rateLimiter != nil {
 			key := e.Src
 			if key == "" {
@@ -278,6 +287,7 @@ func snsLogHandler(snsCli snsiface.SNSAPI, topic, name string, subHandler golog.
 			}
 			ok, err := rateLimiter.Check(key, 1)
 			if err != nil || !ok {
+				statRateLimited.Inc(1)
 				return nil
 			}
 		}
@@ -297,13 +307,16 @@ func snsLogHandler(snsCli snsiface.SNSAPI, topic, name string, subHandler golog.
 				Email:   longFmt,
 				SMS:     short,
 			})
-			_, err = snsCli.Publish(&sns.PublishInput{
-				Message:          ptr.String(string(msg)),
-				MessageStructure: ptr.String("json"),
-				Subject:          ptr.String(fmt.Sprintf("[%s] %s", name, short)),
-				TopicArn:         &topic,
-			})
+			if err == nil {
+				_, err = snsCli.Publish(&sns.PublishInput{
+					Message:          ptr.String(string(msg)),
+					MessageStructure: ptr.String("json"),
+					Subject:          ptr.String(fmt.Sprintf("[%s] %s", name, short)),
+					TopicArn:         &topic,
+				})
+			}
 			if err != nil && subHandler != nil {
+				statFailed.Inc(1)
 				// Pass errors publishing to the underlying error handler
 				subHandler.Log(&golog.Entry{
 					Lvl: golog.ERR,
