@@ -15,6 +15,8 @@ type Stats struct {
 	Source          string `long:"stats_source" description:"Source for stats (e.g. hostname)"` // Stats Reporters
 	LibratoUsername string `long:"librato_username" description:"Librato Metrics username"`
 	LibratoToken    string `long:"librato_token" description:"Librato Metrics token"`
+	InfluxDBURL     string
+	InfluxDBName    string
 }
 
 var (
@@ -43,6 +45,13 @@ func (s *BaseConfig) StartReporters(statsRegistry metrics.Registry) {
 	if s.Stats.LibratoUsername != "" && s.Stats.LibratoToken != "" {
 		statsReporter := reporter.NewLibratoReporter(
 			filteredRegistry, time.Minute, true, s.Stats.LibratoUsername, s.Stats.LibratoToken, s.Stats.Source)
+		statsReporter.Start()
+	}
+	if s.Stats.InfluxDBURL != "" && s.Stats.InfluxDBName != "" {
+		tags := map[string]string{
+			"source": s.Stats.Source,
+		}
+		statsReporter := reporter.NewInfluxDBReporter(filteredRegistry, time.Minute, true, s.Stats.InfluxDBURL, s.Stats.InfluxDBName, tags)
 		statsReporter.Start()
 	}
 }
