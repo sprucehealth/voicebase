@@ -8,6 +8,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/sprucehealth/backend/libs/awsutil"
@@ -32,7 +34,9 @@ func setupAWS() error {
 		*awsRole = os.Getenv("AWS_ROLE")
 	}
 	if *awsRole != "" || *awsRole == "*" {
-		creds = credentials.NewEC2RoleCredentials(http.DefaultClient, "", time.Minute*10)
+		creds = ec2rolecreds.NewCredentials(ec2metadata.New(&ec2metadata.Config{
+			HTTPClient: &http.Client{Timeout: 2 * time.Second},
+		}), time.Minute*10)
 	} else if *awsAccessKey != "" && *awsSecretKey != "" {
 		creds = credentials.NewStaticCredentials(*awsAccessKey, *awsSecretKey, "")
 	} else {
@@ -49,7 +53,7 @@ func setupAWS() error {
 
 	awsConfig = &aws.Config{
 		Credentials: creds,
-		Region:      *awsRegion,
+		Region:      awsRegion,
 	}
 	s3Client = s3.New(awsConfig)
 	cwlClient = cloudwatchlogs.New(awsConfig)

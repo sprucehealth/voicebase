@@ -301,7 +301,7 @@ func snsLogHandler(snsCli snsiface.SNSAPI, topic, name string, subHandler golog.
 				Message:          ptr.String(string(msg)),
 				MessageStructure: ptr.String("json"),
 				Subject:          ptr.String(fmt.Sprintf("[%s] %s", name, short)),
-				TopicARN:         &topic,
+				TopicArn:         &topic,
 			})
 			if err != nil && subHandler != nil {
 				// Pass errors publishing to the underlying error handler

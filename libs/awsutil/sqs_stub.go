@@ -8,9 +8,11 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 )
 
 type SQS struct {
+	sqsiface.SQSAPI
 	handle   int
 	mu       sync.Mutex
 	Messages map[string]map[string]string
@@ -28,10 +30,10 @@ func (s *SQS) SendMessage(req *sqs.SendMessageInput) (*sqs.SendMessageOutput, er
 	if s.Messages == nil {
 		s.Messages = make(map[string]map[string]string)
 	}
-	q := s.Messages[*req.QueueURL]
+	q := s.Messages[*req.QueueUrl]
 	if q == nil {
 		q = make(map[string]string)
-		s.Messages[*req.QueueURL] = q
+		s.Messages[*req.QueueUrl] = q
 	}
 	q[s.newHandle()] = *req.MessageBody
 	return &sqs.SendMessageOutput{}, nil
@@ -47,10 +49,10 @@ func (s *SQS) ReceiveMessage(req *sqs.ReceiveMessageInput) (*sqs.ReceiveMessageO
 
 	var msgs []*sqs.Message
 	if s.Messages != nil && maxNumberOfMessages > 0 {
-		if q := s.Messages[*req.QueueURL]; q != nil {
+		if q := s.Messages[*req.QueueUrl]; q != nil {
 			for h, m := range q {
 				msgs = append(msgs, &sqs.Message{
-					MessageID:     aws.String(h),
+					MessageId:     aws.String(h),
 					ReceiptHandle: aws.String(h),
 					Body:          aws.String(m),
 				})
@@ -78,14 +80,14 @@ func (s *SQS) DeleteMessage(req *sqs.DeleteMessageInput) (*sqs.DeleteMessageOutp
 	if s.Messages == nil {
 		return &sqs.DeleteMessageOutput{}, nil
 	}
-	if q := s.Messages[*req.QueueURL]; q != nil {
+	if q := s.Messages[*req.QueueUrl]; q != nil {
 		delete(q, *req.ReceiptHandle)
 	}
 	return &sqs.DeleteMessageOutput{}, nil
 }
 
-func (s *SQS) GetQueueURL(req *sqs.GetQueueURLInput) (*sqs.GetQueueURLOutput, error) {
-	return &sqs.GetQueueURLOutput{QueueURL: req.QueueName}, nil
+func (s *SQS) GetQueueUrl(req *sqs.GetQueueUrlInput) (*sqs.GetQueueUrlOutput, error) {
+	return &sqs.GetQueueUrlOutput{QueueUrl: req.QueueName}, nil
 }
 func (s *SQS) AddPermission(*sqs.AddPermissionInput) (*sqs.AddPermissionOutput, error) {
 	return nil, errors.New("awstest.sqs: not implemented")

@@ -87,7 +87,7 @@ func (w *ERxStatusWorker) Stop() {
 
 func (w *ERxStatusWorker) Do() (bool, error) {
 	res, err := w.erxQueue.QueueService.ReceiveMessage(&sqs.ReceiveMessageInput{
-		QueueURL:          &w.erxQueue.QueueURL,
+		QueueUrl:          &w.erxQueue.QueueURL,
 		VisibilityTimeout: &msgVisibilityTimeout,
 		WaitTimeSeconds:   &waitTimeInSeconds,
 	})
@@ -159,7 +159,7 @@ func (w *ERxStatusWorker) Do() (bool, error) {
 		if len(prescriptionStatuses) == 0 {
 			golog.Infof("No prescription statuses to keep track of for patient")
 			_, err := w.erxQueue.QueueService.DeleteMessage(&sqs.DeleteMessageInput{
-				QueueURL:      &w.erxQueue.QueueURL,
+				QueueUrl:      &w.erxQueue.QueueURL,
 				ReceiptHandle: msg.ReceiptHandle,
 			})
 			if err != nil {
@@ -202,7 +202,7 @@ func (w *ERxStatusWorker) Do() (bool, error) {
 			// nothing to do if there are no pending treatments to work with
 			golog.Infof("There are no pending prescriptions for this patient")
 			_, err := w.erxQueue.QueueService.DeleteMessage(&sqs.DeleteMessageInput{
-				QueueURL:      &w.erxQueue.QueueURL,
+				QueueUrl:      &w.erxQueue.QueueURL,
 				ReceiptHandle: msg.ReceiptHandle,
 			})
 			if err != nil {
@@ -350,7 +350,7 @@ func (w *ERxStatusWorker) Do() (bool, error) {
 		if pendingTreatments == 0 && failed == 0 {
 			// delete message from queue because there are no more pending treatments for this patient
 			_, err := w.erxQueue.QueueService.DeleteMessage(&sqs.DeleteMessageInput{
-				QueueURL:      &w.erxQueue.QueueURL,
+				QueueUrl:      &w.erxQueue.QueueURL,
 				ReceiptHandle: msg.ReceiptHandle,
 			})
 			if err != nil {

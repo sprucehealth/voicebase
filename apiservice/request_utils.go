@@ -148,7 +148,7 @@ func QueueUpJob(queue *common.SQSQueue, msg interface{}) error {
 
 	for i := 0; i < numRetries; i++ {
 		_, err := queue.QueueService.SendMessage(&sqs.SendMessageInput{
-			QueueURL:    &queue.QueueURL,
+			QueueUrl:    &queue.QueueURL,
 			MessageBody: &jsonDataString,
 		})
 		if err != nil {

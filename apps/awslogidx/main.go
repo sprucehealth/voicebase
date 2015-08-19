@@ -229,15 +229,15 @@ func indexStream(groupName string, stream *cloudwatchlogs.LogStream, es *Elastic
 			res, err = cwlClient.GetLogEvents(&cloudwatchlogs.GetLogEventsInput{
 				LogGroupName:  &groupName,
 				LogStreamName: stream.LogStreamName,
-				StartFromHead: aws.Boolean(true),
-				StartTime:     aws.Long(info.LastEventTime),
+				StartFromHead: aws.Bool(true),
+				StartTime:     aws.Int64(info.LastEventTime),
 			})
 		} else {
 			log.Debugf("Fetching by token")
 			res, err = cwlClient.GetLogEvents(&cloudwatchlogs.GetLogEventsInput{
 				LogGroupName:  &groupName,
 				LogStreamName: stream.LogStreamName,
-				StartFromHead: aws.Boolean(true),
+				StartFromHead: aws.Bool(true),
 				NextToken:     &info.NextToken,
 			})
 		}
@@ -250,7 +250,7 @@ func indexStream(groupName string, stream *cloudwatchlogs.LogStream, es *Elastic
 		res, err = cwlClient.GetLogEvents(&cloudwatchlogs.GetLogEventsInput{
 			LogGroupName:  &groupName,
 			LogStreamName: stream.LogStreamName,
-			StartFromHead: aws.Boolean(true),
+			StartFromHead: aws.Bool(true),
 		})
 	}
 	if err != nil {

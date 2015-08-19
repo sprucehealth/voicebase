@@ -36,6 +36,7 @@ go get github.com/golang/lint/golint
 # Find all directories that contain Go files (all packages). This lets us
 # exclude everything under the vendoring directory.
 PKGS=$(find . -name '*.go' | grep -v vendor/ | xargs -n 1 dirname | sort | uniq)
+# TODO: PKGS=$(go list ./... | grep -v /vendor/) -- this requires some updates below however but should be more reliable way to get package list
 echo $PKGS
 
 echo "BUILDING"

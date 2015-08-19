@@ -4,31 +4,25 @@
 package sqs
 
 import (
-	"sync"
-
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awsutil"
+	"github.com/aws/aws-sdk-go/aws/service"
 )
 
-var oprw sync.Mutex
+const opAddPermission = "AddPermission"
 
 // AddPermissionRequest generates a request for the AddPermission operation.
-func (c *SQS) AddPermissionRequest(input *AddPermissionInput) (req *aws.Request, output *AddPermissionOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opAddPermission == nil {
-		opAddPermission = &aws.Operation{
-			Name:       "AddPermission",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SQS) AddPermissionRequest(input *AddPermissionInput) (req *service.Request, output *AddPermissionOutput) {
+	op := &service.Operation{
+		Name:       opAddPermission,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &AddPermissionInput{}
 	}
 
-	req = c.newRequest(opAddPermission, input, output)
+	req = c.newRequest(op, input, output)
 	output = &AddPermissionOutput{}
 	req.Data = output
 	return
@@ -58,26 +52,21 @@ func (c *SQS) AddPermission(input *AddPermissionInput) (*AddPermissionOutput, er
 	return out, err
 }
 
-var opAddPermission *aws.Operation
+const opChangeMessageVisibility = "ChangeMessageVisibility"
 
 // ChangeMessageVisibilityRequest generates a request for the ChangeMessageVisibility operation.
-func (c *SQS) ChangeMessageVisibilityRequest(input *ChangeMessageVisibilityInput) (req *aws.Request, output *ChangeMessageVisibilityOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opChangeMessageVisibility == nil {
-		opChangeMessageVisibility = &aws.Operation{
-			Name:       "ChangeMessageVisibility",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SQS) ChangeMessageVisibilityRequest(input *ChangeMessageVisibilityInput) (req *service.Request, output *ChangeMessageVisibilityOutput) {
+	op := &service.Operation{
+		Name:       opChangeMessageVisibility,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &ChangeMessageVisibilityInput{}
 	}
 
-	req = c.newRequest(opChangeMessageVisibility, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ChangeMessageVisibilityOutput{}
 	req.Data = output
 	return
@@ -119,26 +108,21 @@ func (c *SQS) ChangeMessageVisibility(input *ChangeMessageVisibilityInput) (*Cha
 	return out, err
 }
 
-var opChangeMessageVisibility *aws.Operation
+const opChangeMessageVisibilityBatch = "ChangeMessageVisibilityBatch"
 
 // ChangeMessageVisibilityBatchRequest generates a request for the ChangeMessageVisibilityBatch operation.
-func (c *SQS) ChangeMessageVisibilityBatchRequest(input *ChangeMessageVisibilityBatchInput) (req *aws.Request, output *ChangeMessageVisibilityBatchOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opChangeMessageVisibilityBatch == nil {
-		opChangeMessageVisibilityBatch = &aws.Operation{
-			Name:       "ChangeMessageVisibilityBatch",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SQS) ChangeMessageVisibilityBatchRequest(input *ChangeMessageVisibilityBatchInput) (req *service.Request, output *ChangeMessageVisibilityBatchOutput) {
+	op := &service.Operation{
+		Name:       opChangeMessageVisibilityBatch,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &ChangeMessageVisibilityBatchInput{}
 	}
 
-	req = c.newRequest(opChangeMessageVisibilityBatch, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ChangeMessageVisibilityBatchOutput{}
 	req.Data = output
 	return
@@ -163,26 +147,21 @@ func (c *SQS) ChangeMessageVisibilityBatch(input *ChangeMessageVisibilityBatchIn
 	return out, err
 }
 
-var opChangeMessageVisibilityBatch *aws.Operation
+const opCreateQueue = "CreateQueue"
 
 // CreateQueueRequest generates a request for the CreateQueue operation.
-func (c *SQS) CreateQueueRequest(input *CreateQueueInput) (req *aws.Request, output *CreateQueueOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opCreateQueue == nil {
-		opCreateQueue = &aws.Operation{
-			Name:       "CreateQueue",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SQS) CreateQueueRequest(input *CreateQueueInput) (req *service.Request, output *CreateQueueOutput) {
+	op := &service.Operation{
+		Name:       opCreateQueue,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &CreateQueueInput{}
 	}
 
-	req = c.newRequest(opCreateQueue, input, output)
+	req = c.newRequest(op, input, output)
 	output = &CreateQueueOutput{}
 	req.Data = output
 	return
@@ -219,26 +198,21 @@ func (c *SQS) CreateQueue(input *CreateQueueInput) (*CreateQueueOutput, error) {
 	return out, err
 }
 
-var opCreateQueue *aws.Operation
+const opDeleteMessage = "DeleteMessage"
 
 // DeleteMessageRequest generates a request for the DeleteMessage operation.
-func (c *SQS) DeleteMessageRequest(input *DeleteMessageInput) (req *aws.Request, output *DeleteMessageOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeleteMessage == nil {
-		opDeleteMessage = &aws.Operation{
-			Name:       "DeleteMessage",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SQS) DeleteMessageRequest(input *DeleteMessageInput) (req *service.Request, output *DeleteMessageOutput) {
+	op := &service.Operation{
+		Name:       opDeleteMessage,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeleteMessageInput{}
 	}
 
-	req = c.newRequest(opDeleteMessage, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeleteMessageOutput{}
 	req.Data = output
 	return
@@ -270,26 +244,21 @@ func (c *SQS) DeleteMessage(input *DeleteMessageInput) (*DeleteMessageOutput, er
 	return out, err
 }
 
-var opDeleteMessage *aws.Operation
+const opDeleteMessageBatch = "DeleteMessageBatch"
 
 // DeleteMessageBatchRequest generates a request for the DeleteMessageBatch operation.
-func (c *SQS) DeleteMessageBatchRequest(input *DeleteMessageBatchInput) (req *aws.Request, output *DeleteMessageBatchOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeleteMessageBatch == nil {
-		opDeleteMessageBatch = &aws.Operation{
-			Name:       "DeleteMessageBatch",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SQS) DeleteMessageBatchRequest(input *DeleteMessageBatchInput) (req *service.Request, output *DeleteMessageBatchOutput) {
+	op := &service.Operation{
+		Name:       opDeleteMessageBatch,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeleteMessageBatchInput{}
 	}
 
-	req = c.newRequest(opDeleteMessageBatch, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeleteMessageBatchOutput{}
 	req.Data = output
 	return
@@ -314,26 +283,21 @@ func (c *SQS) DeleteMessageBatch(input *DeleteMessageBatchInput) (*DeleteMessage
 	return out, err
 }
 
-var opDeleteMessageBatch *aws.Operation
+const opDeleteQueue = "DeleteQueue"
 
 // DeleteQueueRequest generates a request for the DeleteQueue operation.
-func (c *SQS) DeleteQueueRequest(input *DeleteQueueInput) (req *aws.Request, output *DeleteQueueOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeleteQueue == nil {
-		opDeleteQueue = &aws.Operation{
-			Name:       "DeleteQueue",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SQS) DeleteQueueRequest(input *DeleteQueueInput) (req *service.Request, output *DeleteQueueOutput) {
+	op := &service.Operation{
+		Name:       opDeleteQueue,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeleteQueueInput{}
 	}
 
-	req = c.newRequest(opDeleteQueue, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeleteQueueOutput{}
 	req.Data = output
 	return
@@ -362,26 +326,21 @@ func (c *SQS) DeleteQueue(input *DeleteQueueInput) (*DeleteQueueOutput, error) {
 	return out, err
 }
 
-var opDeleteQueue *aws.Operation
+const opGetQueueAttributes = "GetQueueAttributes"
 
 // GetQueueAttributesRequest generates a request for the GetQueueAttributes operation.
-func (c *SQS) GetQueueAttributesRequest(input *GetQueueAttributesInput) (req *aws.Request, output *GetQueueAttributesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetQueueAttributes == nil {
-		opGetQueueAttributes = &aws.Operation{
-			Name:       "GetQueueAttributes",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SQS) GetQueueAttributesRequest(input *GetQueueAttributesInput) (req *service.Request, output *GetQueueAttributesOutput) {
+	op := &service.Operation{
+		Name:       opGetQueueAttributes,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GetQueueAttributesInput{}
 	}
 
-	req = c.newRequest(opGetQueueAttributes, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetQueueAttributesOutput{}
 	req.Data = output
 	return
@@ -428,27 +387,22 @@ func (c *SQS) GetQueueAttributes(input *GetQueueAttributesInput) (*GetQueueAttri
 	return out, err
 }
 
-var opGetQueueAttributes *aws.Operation
+const opGetQueueUrl = "GetQueueUrl"
 
-// GetQueueURLRequest generates a request for the GetQueueURL operation.
-func (c *SQS) GetQueueURLRequest(input *GetQueueURLInput) (req *aws.Request, output *GetQueueURLOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetQueueURL == nil {
-		opGetQueueURL = &aws.Operation{
-			Name:       "GetQueueUrl",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+// GetQueueUrlRequest generates a request for the GetQueueUrl operation.
+func (c *SQS) GetQueueUrlRequest(input *GetQueueUrlInput) (req *service.Request, output *GetQueueUrlOutput) {
+	op := &service.Operation{
+		Name:       opGetQueueUrl,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
-		input = &GetQueueURLInput{}
+		input = &GetQueueUrlInput{}
 	}
 
-	req = c.newRequest(opGetQueueURL, input, output)
-	output = &GetQueueURLOutput{}
+	req = c.newRequest(op, input, output)
+	output = &GetQueueUrlOutput{}
 	req.Data = output
 	return
 }
@@ -461,32 +415,27 @@ func (c *SQS) GetQueueURLRequest(input *GetQueueURLInput) (req *aws.Request, out
 // must grant you permission to access the queue. For more information about
 // shared queue access, see AddPermission or go to Shared Queues (http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/acp-overview.html)
 // in the Amazon SQS Developer Guide.
-func (c *SQS) GetQueueURL(input *GetQueueURLInput) (*GetQueueURLOutput, error) {
-	req, out := c.GetQueueURLRequest(input)
+func (c *SQS) GetQueueUrl(input *GetQueueUrlInput) (*GetQueueUrlOutput, error) {
+	req, out := c.GetQueueUrlRequest(input)
 	err := req.Send()
 	return out, err
 }
 
-var opGetQueueURL *aws.Operation
+const opListDeadLetterSourceQueues = "ListDeadLetterSourceQueues"
 
 // ListDeadLetterSourceQueuesRequest generates a request for the ListDeadLetterSourceQueues operation.
-func (c *SQS) ListDeadLetterSourceQueuesRequest(input *ListDeadLetterSourceQueuesInput) (req *aws.Request, output *ListDeadLetterSourceQueuesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListDeadLetterSourceQueues == nil {
-		opListDeadLetterSourceQueues = &aws.Operation{
-			Name:       "ListDeadLetterSourceQueues",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SQS) ListDeadLetterSourceQueuesRequest(input *ListDeadLetterSourceQueuesInput) (req *service.Request, output *ListDeadLetterSourceQueuesOutput) {
+	op := &service.Operation{
+		Name:       opListDeadLetterSourceQueues,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &ListDeadLetterSourceQueuesInput{}
 	}
 
-	req = c.newRequest(opListDeadLetterSourceQueues, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListDeadLetterSourceQueuesOutput{}
 	req.Data = output
 	return
@@ -503,26 +452,21 @@ func (c *SQS) ListDeadLetterSourceQueues(input *ListDeadLetterSourceQueuesInput)
 	return out, err
 }
 
-var opListDeadLetterSourceQueues *aws.Operation
+const opListQueues = "ListQueues"
 
 // ListQueuesRequest generates a request for the ListQueues operation.
-func (c *SQS) ListQueuesRequest(input *ListQueuesInput) (req *aws.Request, output *ListQueuesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListQueues == nil {
-		opListQueues = &aws.Operation{
-			Name:       "ListQueues",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SQS) ListQueuesRequest(input *ListQueuesInput) (req *service.Request, output *ListQueuesOutput) {
+	op := &service.Operation{
+		Name:       opListQueues,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &ListQueuesInput{}
 	}
 
-	req = c.newRequest(opListQueues, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListQueuesOutput{}
 	req.Data = output
 	return
@@ -537,26 +481,21 @@ func (c *SQS) ListQueues(input *ListQueuesInput) (*ListQueuesOutput, error) {
 	return out, err
 }
 
-var opListQueues *aws.Operation
+const opPurgeQueue = "PurgeQueue"
 
 // PurgeQueueRequest generates a request for the PurgeQueue operation.
-func (c *SQS) PurgeQueueRequest(input *PurgeQueueInput) (req *aws.Request, output *PurgeQueueOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opPurgeQueue == nil {
-		opPurgeQueue = &aws.Operation{
-			Name:       "PurgeQueue",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SQS) PurgeQueueRequest(input *PurgeQueueInput) (req *service.Request, output *PurgeQueueOutput) {
+	op := &service.Operation{
+		Name:       opPurgeQueue,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &PurgeQueueInput{}
 	}
 
-	req = c.newRequest(opPurgeQueue, input, output)
+	req = c.newRequest(op, input, output)
 	output = &PurgeQueueOutput{}
 	req.Data = output
 	return
@@ -577,26 +516,21 @@ func (c *SQS) PurgeQueue(input *PurgeQueueInput) (*PurgeQueueOutput, error) {
 	return out, err
 }
 
-var opPurgeQueue *aws.Operation
+const opReceiveMessage = "ReceiveMessage"
 
 // ReceiveMessageRequest generates a request for the ReceiveMessage operation.
-func (c *SQS) ReceiveMessageRequest(input *ReceiveMessageInput) (req *aws.Request, output *ReceiveMessageOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opReceiveMessage == nil {
-		opReceiveMessage = &aws.Operation{
-			Name:       "ReceiveMessage",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SQS) ReceiveMessageRequest(input *ReceiveMessageInput) (req *service.Request, output *ReceiveMessageOutput) {
+	op := &service.Operation{
+		Name:       opReceiveMessage,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &ReceiveMessageInput{}
 	}
 
-	req = c.newRequest(opReceiveMessage, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ReceiveMessageOutput{}
 	req.Data = output
 	return
@@ -650,26 +584,21 @@ func (c *SQS) ReceiveMessage(input *ReceiveMessageInput) (*ReceiveMessageOutput,
 	return out, err
 }
 
-var opReceiveMessage *aws.Operation
+const opRemovePermission = "RemovePermission"
 
 // RemovePermissionRequest generates a request for the RemovePermission operation.
-func (c *SQS) RemovePermissionRequest(input *RemovePermissionInput) (req *aws.Request, output *RemovePermissionOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opRemovePermission == nil {
-		opRemovePermission = &aws.Operation{
-			Name:       "RemovePermission",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SQS) RemovePermissionRequest(input *RemovePermissionInput) (req *service.Request, output *RemovePermissionOutput) {
+	op := &service.Operation{
+		Name:       opRemovePermission,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &RemovePermissionInput{}
 	}
 
-	req = c.newRequest(opRemovePermission, input, output)
+	req = c.newRequest(op, input, output)
 	output = &RemovePermissionOutput{}
 	req.Data = output
 	return
@@ -683,26 +612,21 @@ func (c *SQS) RemovePermission(input *RemovePermissionInput) (*RemovePermissionO
 	return out, err
 }
 
-var opRemovePermission *aws.Operation
+const opSendMessage = "SendMessage"
 
 // SendMessageRequest generates a request for the SendMessage operation.
-func (c *SQS) SendMessageRequest(input *SendMessageInput) (req *aws.Request, output *SendMessageOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opSendMessage == nil {
-		opSendMessage = &aws.Operation{
-			Name:       "SendMessage",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SQS) SendMessageRequest(input *SendMessageInput) (req *service.Request, output *SendMessageOutput) {
+	op := &service.Operation{
+		Name:       opSendMessage,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &SendMessageInput{}
 	}
 
-	req = c.newRequest(opSendMessage, input, output)
+	req = c.newRequest(op, input, output)
 	output = &SendMessageOutput{}
 	req.Data = output
 	return
@@ -726,26 +650,21 @@ func (c *SQS) SendMessage(input *SendMessageInput) (*SendMessageOutput, error) {
 	return out, err
 }
 
-var opSendMessage *aws.Operation
+const opSendMessageBatch = "SendMessageBatch"
 
 // SendMessageBatchRequest generates a request for the SendMessageBatch operation.
-func (c *SQS) SendMessageBatchRequest(input *SendMessageBatchInput) (req *aws.Request, output *SendMessageBatchOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opSendMessageBatch == nil {
-		opSendMessageBatch = &aws.Operation{
-			Name:       "SendMessageBatch",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SQS) SendMessageBatchRequest(input *SendMessageBatchInput) (req *service.Request, output *SendMessageBatchOutput) {
+	op := &service.Operation{
+		Name:       opSendMessageBatch,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &SendMessageBatchInput{}
 	}
 
-	req = c.newRequest(opSendMessageBatch, input, output)
+	req = c.newRequest(op, input, output)
 	output = &SendMessageBatchOutput{}
 	req.Data = output
 	return
@@ -783,26 +702,21 @@ func (c *SQS) SendMessageBatch(input *SendMessageBatchInput) (*SendMessageBatchO
 	return out, err
 }
 
-var opSendMessageBatch *aws.Operation
+const opSetQueueAttributes = "SetQueueAttributes"
 
 // SetQueueAttributesRequest generates a request for the SetQueueAttributes operation.
-func (c *SQS) SetQueueAttributesRequest(input *SetQueueAttributesInput) (req *aws.Request, output *SetQueueAttributesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opSetQueueAttributes == nil {
-		opSetQueueAttributes = &aws.Operation{
-			Name:       "SetQueueAttributes",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SQS) SetQueueAttributesRequest(input *SetQueueAttributesInput) (req *service.Request, output *SetQueueAttributesOutput) {
+	op := &service.Operation{
+		Name:       opSetQueueAttributes,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &SetQueueAttributesInput{}
 	}
 
-	req = c.newRequest(opSetQueueAttributes, input, output)
+	req = c.newRequest(op, input, output)
 	output = &SetQueueAttributesOutput{}
 	req.Data = output
 	return
@@ -822,15 +736,13 @@ func (c *SQS) SetQueueAttributes(input *SetQueueAttributesInput) (*SetQueueAttri
 	return out, err
 }
 
-var opSetQueueAttributes *aws.Operation
-
 type AddPermissionInput struct {
 	// The AWS account number of the principal (http://docs.aws.amazon.com/general/latest/gr/glos-chap.html#P)
 	// who will be given permission. The principal must have an AWS account, but
 	// does not need to be signed up for Amazon SQS. For information about locating
 	// the AWS account identification, see Your AWS Identifiers (http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/AWSCredentials.html)
 	// in the Amazon SQS Developer Guide.
-	AWSAccountIDs []*string `locationName:"AWSAccountIds" locationNameList:"AWSAccountId" type:"list" flattened:"true" required:"true"`
+	AWSAccountIds []*string `locationNameList:"AWSAccountId" type:"list" flattened:"true" required:"true"`
 
 	// The action the client wants to allow for the specified principal. The following
 	// are valid values: * | SendMessage | ReceiveMessage | DeleteMessage | ChangeMessageVisibility
@@ -849,13 +761,23 @@ type AddPermissionInput struct {
 	Label *string `type:"string" required:"true"`
 
 	// The URL of the Amazon SQS queue to take action on.
-	QueueURL *string `locationName:"QueueUrl" type:"string" required:"true"`
+	QueueUrl *string `type:"string" required:"true"`
 
 	metadataAddPermissionInput `json:"-" xml:"-"`
 }
 
 type metadataAddPermissionInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s AddPermissionInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s AddPermissionInput) GoString() string {
+	return s.String()
 }
 
 type AddPermissionOutput struct {
@@ -866,6 +788,16 @@ type metadataAddPermissionOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s AddPermissionOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s AddPermissionOutput) GoString() string {
+	return s.String()
+}
+
 // This is used in the responses of batch API to give a detailed description
 // of the result of an action on each entry in the request.
 type BatchResultErrorEntry struct {
@@ -873,7 +805,7 @@ type BatchResultErrorEntry struct {
 	Code *string `type:"string" required:"true"`
 
 	// The id of an entry in a batch request.
-	ID *string `locationName:"Id" type:"string" required:"true"`
+	Id *string `type:"string" required:"true"`
 
 	// A message explaining why the action failed on this entry.
 	Message *string `type:"string"`
@@ -888,19 +820,39 @@ type metadataBatchResultErrorEntry struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s BatchResultErrorEntry) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s BatchResultErrorEntry) GoString() string {
+	return s.String()
+}
+
 type ChangeMessageVisibilityBatchInput struct {
 	// A list of receipt handles of the messages for which the visibility timeout
 	// must be changed.
 	Entries []*ChangeMessageVisibilityBatchRequestEntry `locationNameList:"ChangeMessageVisibilityBatchRequestEntry" type:"list" flattened:"true" required:"true"`
 
 	// The URL of the Amazon SQS queue to take action on.
-	QueueURL *string `locationName:"QueueUrl" type:"string" required:"true"`
+	QueueUrl *string `type:"string" required:"true"`
 
 	metadataChangeMessageVisibilityBatchInput `json:"-" xml:"-"`
 }
 
 type metadataChangeMessageVisibilityBatchInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s ChangeMessageVisibilityBatchInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ChangeMessageVisibilityBatchInput) GoString() string {
+	return s.String()
 }
 
 // For each message in the batch, the response contains a ChangeMessageVisibilityBatchResultEntry
@@ -920,6 +872,16 @@ type metadataChangeMessageVisibilityBatchOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ChangeMessageVisibilityBatchOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ChangeMessageVisibilityBatchOutput) GoString() string {
+	return s.String()
+}
+
 // Encloses a receipt handle and an entry id for each message in ChangeMessageVisibilityBatch.
 //
 //  All of the following parameters are list parameters that must be prefixed
@@ -936,7 +898,7 @@ type ChangeMessageVisibilityBatchRequestEntry struct {
 	// An identifier for this particular receipt handle. This is used to communicate
 	// the result. Note that the Ids of a batch request need to be unique within
 	// the request.
-	ID *string `locationName:"Id" type:"string" required:"true"`
+	Id *string `type:"string" required:"true"`
 
 	// A receipt handle.
 	ReceiptHandle *string `type:"string" required:"true"`
@@ -951,10 +913,20 @@ type metadataChangeMessageVisibilityBatchRequestEntry struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ChangeMessageVisibilityBatchRequestEntry) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ChangeMessageVisibilityBatchRequestEntry) GoString() string {
+	return s.String()
+}
+
 // Encloses the id of an entry in ChangeMessageVisibilityBatch.
 type ChangeMessageVisibilityBatchResultEntry struct {
 	// Represents a message whose visibility timeout has been changed successfully.
-	ID *string `locationName:"Id" type:"string" required:"true"`
+	Id *string `type:"string" required:"true"`
 
 	metadataChangeMessageVisibilityBatchResultEntry `json:"-" xml:"-"`
 }
@@ -963,9 +935,19 @@ type metadataChangeMessageVisibilityBatchResultEntry struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ChangeMessageVisibilityBatchResultEntry) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ChangeMessageVisibilityBatchResultEntry) GoString() string {
+	return s.String()
+}
+
 type ChangeMessageVisibilityInput struct {
 	// The URL of the Amazon SQS queue to take action on.
-	QueueURL *string `locationName:"QueueUrl" type:"string" required:"true"`
+	QueueUrl *string `type:"string" required:"true"`
 
 	// The receipt handle associated with the message whose visibility timeout should
 	// be changed. This parameter is returned by the ReceiveMessage action.
@@ -982,12 +964,32 @@ type metadataChangeMessageVisibilityInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ChangeMessageVisibilityInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ChangeMessageVisibilityInput) GoString() string {
+	return s.String()
+}
+
 type ChangeMessageVisibilityOutput struct {
 	metadataChangeMessageVisibilityOutput `json:"-" xml:"-"`
 }
 
 type metadataChangeMessageVisibilityOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s ChangeMessageVisibilityOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ChangeMessageVisibilityOutput) GoString() string {
+	return s.String()
 }
 
 type CreateQueueInput struct {
@@ -1025,10 +1027,20 @@ type metadataCreateQueueInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s CreateQueueInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateQueueInput) GoString() string {
+	return s.String()
+}
+
 // Returns the QueueUrl element of the created queue.
 type CreateQueueOutput struct {
 	// The URL for the created Amazon SQS queue.
-	QueueURL *string `locationName:"QueueUrl" type:"string"`
+	QueueUrl *string `type:"string"`
 
 	metadataCreateQueueOutput `json:"-" xml:"-"`
 }
@@ -1037,18 +1049,38 @@ type metadataCreateQueueOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s CreateQueueOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateQueueOutput) GoString() string {
+	return s.String()
+}
+
 type DeleteMessageBatchInput struct {
 	// A list of receipt handles for the messages to be deleted.
 	Entries []*DeleteMessageBatchRequestEntry `locationNameList:"DeleteMessageBatchRequestEntry" type:"list" flattened:"true" required:"true"`
 
 	// The URL of the Amazon SQS queue to take action on.
-	QueueURL *string `locationName:"QueueUrl" type:"string" required:"true"`
+	QueueUrl *string `type:"string" required:"true"`
 
 	metadataDeleteMessageBatchInput `json:"-" xml:"-"`
 }
 
 type metadataDeleteMessageBatchInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteMessageBatchInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteMessageBatchInput) GoString() string {
+	return s.String()
 }
 
 // For each message in the batch, the response contains a DeleteMessageBatchResultEntry
@@ -1068,12 +1100,22 @@ type metadataDeleteMessageBatchOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteMessageBatchOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteMessageBatchOutput) GoString() string {
+	return s.String()
+}
+
 // Encloses a receipt handle and an identifier for it.
 type DeleteMessageBatchRequestEntry struct {
 	// An identifier for this particular receipt handle. This is used to communicate
 	// the result. Note that the Ids of a batch request need to be unique within
 	// the request.
-	ID *string `locationName:"Id" type:"string" required:"true"`
+	Id *string `type:"string" required:"true"`
 
 	// A receipt handle.
 	ReceiptHandle *string `type:"string" required:"true"`
@@ -1085,10 +1127,20 @@ type metadataDeleteMessageBatchRequestEntry struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteMessageBatchRequestEntry) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteMessageBatchRequestEntry) GoString() string {
+	return s.String()
+}
+
 // Encloses the id an entry in DeleteMessageBatch.
 type DeleteMessageBatchResultEntry struct {
 	// Represents a successfully deleted message.
-	ID *string `locationName:"Id" type:"string" required:"true"`
+	Id *string `type:"string" required:"true"`
 
 	metadataDeleteMessageBatchResultEntry `json:"-" xml:"-"`
 }
@@ -1097,9 +1149,19 @@ type metadataDeleteMessageBatchResultEntry struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteMessageBatchResultEntry) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteMessageBatchResultEntry) GoString() string {
+	return s.String()
+}
+
 type DeleteMessageInput struct {
 	// The URL of the Amazon SQS queue to take action on.
-	QueueURL *string `locationName:"QueueUrl" type:"string" required:"true"`
+	QueueUrl *string `type:"string" required:"true"`
 
 	// The receipt handle associated with the message to delete.
 	ReceiptHandle *string `type:"string" required:"true"`
@@ -1111,6 +1173,16 @@ type metadataDeleteMessageInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteMessageInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteMessageInput) GoString() string {
+	return s.String()
+}
+
 type DeleteMessageOutput struct {
 	metadataDeleteMessageOutput `json:"-" xml:"-"`
 }
@@ -1119,15 +1191,35 @@ type metadataDeleteMessageOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteMessageOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteMessageOutput) GoString() string {
+	return s.String()
+}
+
 type DeleteQueueInput struct {
 	// The URL of the Amazon SQS queue to take action on.
-	QueueURL *string `locationName:"QueueUrl" type:"string" required:"true"`
+	QueueUrl *string `type:"string" required:"true"`
 
 	metadataDeleteQueueInput `json:"-" xml:"-"`
 }
 
 type metadataDeleteQueueInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteQueueInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteQueueInput) GoString() string {
+	return s.String()
 }
 
 type DeleteQueueOutput struct {
@@ -1138,18 +1230,38 @@ type metadataDeleteQueueOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteQueueOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteQueueOutput) GoString() string {
+	return s.String()
+}
+
 type GetQueueAttributesInput struct {
 	// A list of attributes to retrieve information for.
 	AttributeNames []*string `locationNameList:"AttributeName" type:"list" flattened:"true"`
 
 	// The URL of the Amazon SQS queue to take action on.
-	QueueURL *string `locationName:"QueueUrl" type:"string" required:"true"`
+	QueueUrl *string `type:"string" required:"true"`
 
 	metadataGetQueueAttributesInput `json:"-" xml:"-"`
 }
 
 type metadataGetQueueAttributesInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetQueueAttributesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetQueueAttributesInput) GoString() string {
+	return s.String()
 }
 
 // A list of returned queue attributes.
@@ -1164,37 +1276,67 @@ type metadataGetQueueAttributesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
-type GetQueueURLInput struct {
+// String returns the string representation
+func (s GetQueueAttributesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetQueueAttributesOutput) GoString() string {
+	return s.String()
+}
+
+type GetQueueUrlInput struct {
 	// The name of the queue whose URL must be fetched. Maximum 80 characters; alphanumeric
 	// characters, hyphens (-), and underscores (_) are allowed.
 	QueueName *string `type:"string" required:"true"`
 
 	// The AWS account ID of the account that created the queue.
-	QueueOwnerAWSAccountID *string `locationName:"QueueOwnerAWSAccountId" type:"string"`
+	QueueOwnerAWSAccountId *string `type:"string"`
 
-	metadataGetQueueURLInput `json:"-" xml:"-"`
+	metadataGetQueueUrlInput `json:"-" xml:"-"`
 }
 
-type metadataGetQueueURLInput struct {
+type metadataGetQueueUrlInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetQueueUrlInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetQueueUrlInput) GoString() string {
+	return s.String()
 }
 
 // For more information, see Responses (http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/UnderstandingResponses.html)
 // in the Amazon SQS Developer Guide.
-type GetQueueURLOutput struct {
+type GetQueueUrlOutput struct {
 	// The URL for the queue.
-	QueueURL *string `locationName:"QueueUrl" type:"string"`
+	QueueUrl *string `type:"string"`
 
-	metadataGetQueueURLOutput `json:"-" xml:"-"`
+	metadataGetQueueUrlOutput `json:"-" xml:"-"`
 }
 
-type metadataGetQueueURLOutput struct {
+type metadataGetQueueUrlOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetQueueUrlOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetQueueUrlOutput) GoString() string {
+	return s.String()
 }
 
 type ListDeadLetterSourceQueuesInput struct {
 	// The queue URL of a dead letter queue.
-	QueueURL *string `locationName:"QueueUrl" type:"string" required:"true"`
+	QueueUrl *string `type:"string" required:"true"`
 
 	metadataListDeadLetterSourceQueuesInput `json:"-" xml:"-"`
 }
@@ -1203,17 +1345,37 @@ type metadataListDeadLetterSourceQueuesInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListDeadLetterSourceQueuesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListDeadLetterSourceQueuesInput) GoString() string {
+	return s.String()
+}
+
 // A list of your dead letter source queues.
 type ListDeadLetterSourceQueuesOutput struct {
 	// A list of source queue URLs that have the RedrivePolicy queue attribute configured
 	// with a dead letter queue.
-	QueueURLs []*string `locationName:"queueUrls" locationNameList:"QueueUrl" type:"list" flattened:"true" required:"true"`
+	QueueUrls []*string `locationName:"queueUrls" locationNameList:"QueueUrl" type:"list" flattened:"true" required:"true"`
 
 	metadataListDeadLetterSourceQueuesOutput `json:"-" xml:"-"`
 }
 
 type metadataListDeadLetterSourceQueuesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s ListDeadLetterSourceQueuesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListDeadLetterSourceQueuesOutput) GoString() string {
+	return s.String()
 }
 
 type ListQueuesInput struct {
@@ -1228,16 +1390,36 @@ type metadataListQueuesInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListQueuesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListQueuesInput) GoString() string {
+	return s.String()
+}
+
 // A list of your queues.
 type ListQueuesOutput struct {
 	// A list of queue URLs, up to 1000 entries.
-	QueueURLs []*string `locationName:"QueueUrls" locationNameList:"QueueUrl" type:"list" flattened:"true"`
+	QueueUrls []*string `locationNameList:"QueueUrl" type:"list" flattened:"true"`
 
 	metadataListQueuesOutput `json:"-" xml:"-"`
 }
 
 type metadataListQueuesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s ListQueuesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListQueuesOutput) GoString() string {
+	return s.String()
 }
 
 // An Amazon SQS message.
@@ -1266,7 +1448,7 @@ type Message struct {
 
 	// A unique identifier for the message. Message IDs are considered unique across
 	// all AWS accounts for an extended period of time.
-	MessageID *string `locationName:"MessageId" type:"string"`
+	MessageId *string `type:"string"`
 
 	// An identifier associated with the act of receiving the message. A new receipt
 	// handle is returned every time you receive a message. When deleting a message,
@@ -1278,6 +1460,16 @@ type Message struct {
 
 type metadataMessage struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s Message) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s Message) GoString() string {
+	return s.String()
 }
 
 // The user-specified message attribute value. For string data types, the value
@@ -1315,10 +1507,20 @@ type metadataMessageAttributeValue struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s MessageAttributeValue) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s MessageAttributeValue) GoString() string {
+	return s.String()
+}
+
 type PurgeQueueInput struct {
 	// The queue URL of the queue to delete the messages from when using the PurgeQueue
 	// API.
-	QueueURL *string `locationName:"QueueUrl" type:"string" required:"true"`
+	QueueUrl *string `type:"string" required:"true"`
 
 	metadataPurgeQueueInput `json:"-" xml:"-"`
 }
@@ -1327,12 +1529,32 @@ type metadataPurgeQueueInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s PurgeQueueInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PurgeQueueInput) GoString() string {
+	return s.String()
+}
+
 type PurgeQueueOutput struct {
 	metadataPurgeQueueOutput `json:"-" xml:"-"`
 }
 
 type metadataPurgeQueueOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s PurgeQueueOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PurgeQueueOutput) GoString() string {
+	return s.String()
 }
 
 type ReceiveMessageInput struct {
@@ -1373,7 +1595,7 @@ type ReceiveMessageInput struct {
 	MessageAttributeNames []*string `locationNameList:"MessageAttributeName" type:"list" flattened:"true"`
 
 	// The URL of the Amazon SQS queue to take action on.
-	QueueURL *string `locationName:"QueueUrl" type:"string" required:"true"`
+	QueueUrl *string `type:"string" required:"true"`
 
 	// The duration (in seconds) that the received messages are hidden from subsequent
 	// retrieve requests after being retrieved by a ReceiveMessage request.
@@ -1391,6 +1613,16 @@ type metadataReceiveMessageInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ReceiveMessageInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ReceiveMessageInput) GoString() string {
+	return s.String()
+}
+
 // A list of received messages.
 type ReceiveMessageOutput struct {
 	// A list of messages.
@@ -1403,19 +1635,39 @@ type metadataReceiveMessageOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ReceiveMessageOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ReceiveMessageOutput) GoString() string {
+	return s.String()
+}
+
 type RemovePermissionInput struct {
 	// The identification of the permission to remove. This is the label added with
 	// the AddPermission action.
 	Label *string `type:"string" required:"true"`
 
 	// The URL of the Amazon SQS queue to take action on.
-	QueueURL *string `locationName:"QueueUrl" type:"string" required:"true"`
+	QueueUrl *string `type:"string" required:"true"`
 
 	metadataRemovePermissionInput `json:"-" xml:"-"`
 }
 
 type metadataRemovePermissionInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s RemovePermissionInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s RemovePermissionInput) GoString() string {
+	return s.String()
 }
 
 type RemovePermissionOutput struct {
@@ -1426,18 +1678,38 @@ type metadataRemovePermissionOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s RemovePermissionOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s RemovePermissionOutput) GoString() string {
+	return s.String()
+}
+
 type SendMessageBatchInput struct {
 	// A list of SendMessageBatchRequestEntry items.
 	Entries []*SendMessageBatchRequestEntry `locationNameList:"SendMessageBatchRequestEntry" type:"list" flattened:"true" required:"true"`
 
 	// The URL of the Amazon SQS queue to take action on.
-	QueueURL *string `locationName:"QueueUrl" type:"string" required:"true"`
+	QueueUrl *string `type:"string" required:"true"`
 
 	metadataSendMessageBatchInput `json:"-" xml:"-"`
 }
 
 type metadataSendMessageBatchInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s SendMessageBatchInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SendMessageBatchInput) GoString() string {
+	return s.String()
 }
 
 // For each message in the batch, the response contains a SendMessageBatchResultEntry
@@ -1458,6 +1730,16 @@ type metadataSendMessageBatchOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s SendMessageBatchOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SendMessageBatchOutput) GoString() string {
+	return s.String()
+}
+
 // Contains the details of a single Amazon SQS message along with a Id.
 type SendMessageBatchRequestEntry struct {
 	// The number of seconds for which the message has to be delayed.
@@ -1466,7 +1748,7 @@ type SendMessageBatchRequestEntry struct {
 	// An identifier for the message in this batch. This is used to communicate
 	// the result. Note that the Ids of a batch request need to be unique within
 	// the request.
-	ID *string `locationName:"Id" type:"string" required:"true"`
+	Id *string `type:"string" required:"true"`
 
 	// Each message attribute consists of a Name, Type, and Value. For more information,
 	// see Message Attribute Items (http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/SQSMessageAttributes.html#SQSMessageAttributesNTV).
@@ -1482,10 +1764,20 @@ type metadataSendMessageBatchRequestEntry struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s SendMessageBatchRequestEntry) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SendMessageBatchRequestEntry) GoString() string {
+	return s.String()
+}
+
 // Encloses a message ID for successfully enqueued message of a SendMessageBatch.
 type SendMessageBatchResultEntry struct {
 	// An identifier for the message in this batch.
-	ID *string `locationName:"Id" type:"string" required:"true"`
+	Id *string `type:"string" required:"true"`
 
 	// An MD5 digest of the non-URL-encoded message attribute string. This can be
 	// used to verify that Amazon SQS received the message batch correctly. Amazon
@@ -1500,13 +1792,23 @@ type SendMessageBatchResultEntry struct {
 	MD5OfMessageBody *string `type:"string" required:"true"`
 
 	// An identifier for the message.
-	MessageID *string `locationName:"MessageId" type:"string" required:"true"`
+	MessageId *string `type:"string" required:"true"`
 
 	metadataSendMessageBatchResultEntry `json:"-" xml:"-"`
 }
 
 type metadataSendMessageBatchResultEntry struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s SendMessageBatchResultEntry) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SendMessageBatchResultEntry) GoString() string {
+	return s.String()
 }
 
 type SendMessageInput struct {
@@ -1525,13 +1827,23 @@ type SendMessageInput struct {
 	MessageBody *string `type:"string" required:"true"`
 
 	// The URL of the Amazon SQS queue to take action on.
-	QueueURL *string `locationName:"QueueUrl" type:"string" required:"true"`
+	QueueUrl *string `type:"string" required:"true"`
 
 	metadataSendMessageInput `json:"-" xml:"-"`
 }
 
 type metadataSendMessageInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s SendMessageInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SendMessageInput) GoString() string {
+	return s.String()
 }
 
 // The MD5OfMessageBody and MessageId elements.
@@ -1551,13 +1863,23 @@ type SendMessageOutput struct {
 	// An element containing the message ID of the message sent to the queue. For
 	// more information, see Queue and Message Identifiers (http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/ImportantIdentifiers.html)
 	// in the Amazon SQS Developer Guide.
-	MessageID *string `locationName:"MessageId" type:"string"`
+	MessageId *string `type:"string"`
 
 	metadataSendMessageOutput `json:"-" xml:"-"`
 }
 
 type metadataSendMessageOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s SendMessageOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SendMessageOutput) GoString() string {
+	return s.String()
 }
 
 type SetQueueAttributesInput struct {
@@ -1588,13 +1910,23 @@ type SetQueueAttributesInput struct {
 	Attributes map[string]*string `locationName:"Attribute" locationNameKey:"Name" locationNameValue:"Value" type:"map" flattened:"true" required:"true"`
 
 	// The URL of the Amazon SQS queue to take action on.
-	QueueURL *string `locationName:"QueueUrl" type:"string" required:"true"`
+	QueueUrl *string `type:"string" required:"true"`
 
 	metadataSetQueueAttributesInput `json:"-" xml:"-"`
 }
 
 type metadataSetQueueAttributesInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s SetQueueAttributesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SetQueueAttributesInput) GoString() string {
+	return s.String()
 }
 
 type SetQueueAttributesOutput struct {
@@ -1604,3 +1936,42 @@ type SetQueueAttributesOutput struct {
 type metadataSetQueueAttributesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
+
+// String returns the string representation
+func (s SetQueueAttributesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SetQueueAttributesOutput) GoString() string {
+	return s.String()
+}
+
+const (
+	// @enum QueueAttributeName
+	QueueAttributeNamePolicy = "Policy"
+	// @enum QueueAttributeName
+	QueueAttributeNameVisibilityTimeout = "VisibilityTimeout"
+	// @enum QueueAttributeName
+	QueueAttributeNameMaximumMessageSize = "MaximumMessageSize"
+	// @enum QueueAttributeName
+	QueueAttributeNameMessageRetentionPeriod = "MessageRetentionPeriod"
+	// @enum QueueAttributeName
+	QueueAttributeNameApproximateNumberOfMessages = "ApproximateNumberOfMessages"
+	// @enum QueueAttributeName
+	QueueAttributeNameApproximateNumberOfMessagesNotVisible = "ApproximateNumberOfMessagesNotVisible"
+	// @enum QueueAttributeName
+	QueueAttributeNameCreatedTimestamp = "CreatedTimestamp"
+	// @enum QueueAttributeName
+	QueueAttributeNameLastModifiedTimestamp = "LastModifiedTimestamp"
+	// @enum QueueAttributeName
+	QueueAttributeNameQueueArn = "QueueArn"
+	// @enum QueueAttributeName
+	QueueAttributeNameApproximateNumberOfMessagesDelayed = "ApproximateNumberOfMessagesDelayed"
+	// @enum QueueAttributeName
+	QueueAttributeNameDelaySeconds = "DelaySeconds"
+	// @enum QueueAttributeName
+	QueueAttributeNameReceiveMessageWaitTimeSeconds = "ReceiveMessageWaitTimeSeconds"
+	// @enum QueueAttributeName
+	QueueAttributeNameRedrivePolicy = "RedrivePolicy"
+)

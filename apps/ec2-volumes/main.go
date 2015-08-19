@@ -12,6 +12,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/cmd/cryptsetup"
@@ -59,7 +61,9 @@ func main() {
 
 	creds := credentials.NewEnvCredentials()
 	if c, err := creds.Get(); err != nil || c.AccessKeyID == "" || c.SecretAccessKey == "" {
-		creds = credentials.NewEC2RoleCredentials(http.DefaultClient, "", time.Minute*10)
+		creds = ec2rolecreds.NewCredentials(ec2metadata.New(&ec2metadata.Config{
+			HTTPClient: &http.Client{Timeout: 2 * time.Second},
+		}), time.Minute*10)
 	}
 	if config.AZ == "" {
 		az, err := awsutil.GetMetadata(awsutil.MetadataAvailabilityZone)
@@ -70,7 +74,7 @@ func main() {
 	}
 	config.awsConfig = &aws.Config{
 		Credentials: creds,
-		Region:      config.AZ[:len(config.AZ)-1],
+		Region:      aws.String(config.AZ[:len(config.AZ)-1]),
 	}
 	config.ec2 = ec2.New(config.awsConfig)
 
@@ -169,7 +173,7 @@ func create() error {
 		}
 
 		res, err := config.ec2.DescribeSnapshots(&ec2.DescribeSnapshotsInput{
-			OwnerIDs: []*string{aws.String("self")},
+			OwnerIds: []*string{aws.String("self")},
 			Filters:  filters,
 		})
 		if err != nil {
@@ -206,14 +210,14 @@ func create() error {
 	for i := 0; i < count; i++ {
 		snap := ""
 		if len(snapshots) != 0 {
-			snap = *snapshots[i].SnapshotID
+			snap = *snapshots[i].SnapshotId
 		}
 
 		vol, err := config.ec2.CreateVolume(&ec2.CreateVolumeInput{
-			Size:             aws.Long(int64(size)),
+			Size:             aws.Int64(int64(size)),
 			AvailabilityZone: &config.AZ,
-			SnapshotID:       &snap,
-			IOPS:             aws.Long(int64(config.Iops)),
+			SnapshotId:       &snap,
+			Iops:             aws.Int64(int64(config.Iops)),
 		})
 		if err != nil {
 			return err
@@ -225,15 +229,15 @@ func create() error {
 			{Key: aws.String("Environment"), Value: &config.Environment},
 			{Key: aws.String("Total"), Value: aws.String(strconv.Itoa(count))},
 		}
-		fmt.Printf("Created volume %s (%s)\n", tag(tags, "Name"), *vol.VolumeID)
+		fmt.Printf("Created volume %s (%s)\n", tag(tags, "Name"), *vol.VolumeId)
 		if snapshotGroupName != "" {
 			tags = append(tags, &ec2.Tag{Key: aws.String("SnapshotGroup"), Value: &snapshotGroupName})
 		}
 		if _, err := config.ec2.CreateTags(&ec2.CreateTagsInput{
-			Resources: []*string{vol.VolumeID},
+			Resources: []*string{vol.VolumeId},
 			Tags:      tags,
 		}); err != nil {
-			log.Printf("Failed to create tags for %s", *vol.VolumeID)
+			log.Printf("Failed to create tags for %s", *vol.VolumeId)
 		}
 	}
 
@@ -275,7 +279,7 @@ func attach() error {
 		if n := len(res.Reservations[0].Instances); n > 1 {
 			return fmt.Errorf("more than one instance (%d) with name %s not found", n, instanceID)
 		}
-		instanceID = *res.Reservations[0].Instances[0].InstanceID
+		instanceID = *res.Reservations[0].Instances[0].InstanceId
 	}
 
 	vols, err := findGroup(name)
@@ -296,7 +300,7 @@ func attach() error {
 	// Make sure the volumes aren't already attached
 	for _, v := range vols {
 		if len(v.Attachments) != 0 {
-			return fmt.Errorf("volume %s (%s) is already attached to %s (%s)", *v.VolumeID, tag(v.Tags, "Name"), *v.Attachments[0].InstanceID, *v.Attachments[0].State)
+			return fmt.Errorf("volume %s (%s) is already attached to %s (%s)", *v.VolumeId, tag(v.Tags, "Name"), *v.Attachments[0].InstanceId, *v.Attachments[0].State)
 		}
 	}
 
@@ -306,10 +310,10 @@ func attach() error {
 			return err
 		}
 		dev := firstDevice[:len(firstDevice)-1] + string(firstDevice[len(firstDevice)-1]+uint8(num-1))
-		fmt.Printf("Attaching %s (%s) to %s as %s... ", *v.VolumeID, tag(v.Tags, "Name"), instanceID, dev)
+		fmt.Printf("Attaching %s (%s) to %s as %s... ", *v.VolumeId, tag(v.Tags, "Name"), instanceID, dev)
 		res, err := config.ec2.AttachVolume(&ec2.AttachVolumeInput{
-			VolumeID:   v.VolumeID,
-			InstanceID: &instanceID,
+			VolumeId:   v.VolumeId,
+			InstanceId: &instanceID,
 			Device:     &dev,
 		})
 		if err != nil {
@@ -336,8 +340,8 @@ func detach() error {
 
 	for _, v := range vols {
 		if len(v.Attachments) != 0 && *v.Attachments[0].State != "available" {
-			fmt.Printf("Detaching %s (%s) from %s... ", *v.VolumeID, tag(v.Tags, "Name"), *v.Attachments[0].InstanceID)
-			res, err := config.ec2.DetachVolume(&ec2.DetachVolumeInput{VolumeID: v.VolumeID})
+			fmt.Printf("Detaching %s (%s) from %s... ", *v.VolumeId, tag(v.Tags, "Name"), *v.Attachments[0].InstanceId)
+			res, err := config.ec2.DetachVolume(&ec2.DetachVolumeInput{VolumeId: v.VolumeId})
 			if err != nil {
 				return err
 			}
@@ -362,7 +366,7 @@ func gcSnapshots() error {
 	}
 
 	res, err := config.ec2.DescribeSnapshots(&ec2.DescribeSnapshotsInput{
-		OwnerIDs: []*string{aws.String("self")},
+		OwnerIds: []*string{aws.String("self")},
 		Filters: []*ec2.Filter{
 			{Name: aws.String("tag:Group"), Values: []*string{&name}},
 			{Name: aws.String("tag:Environment"), Values: []*string{&config.Environment}},
@@ -394,7 +398,7 @@ func gcSnapshots() error {
 			}
 		}
 		if toKeep <= 0 {
-			if _, err := config.ec2.DeleteSnapshot(&ec2.DeleteSnapshotInput{SnapshotID: s.SnapshotID}); err != nil {
+			if _, err := config.ec2.DeleteSnapshot(&ec2.DeleteSnapshotInput{SnapshotId: s.SnapshotId}); err != nil {
 				return err
 			}
 		}

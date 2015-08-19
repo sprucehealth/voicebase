@@ -16,6 +16,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/service/s3"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
@@ -96,11 +98,13 @@ func (c *appConfig) verify() {
 	} else {
 		creds = credentials.NewEnvCredentials()
 		if v, err := creds.Get(); err != nil || v.AccessKeyID == "" || v.SecretAccessKey == "" {
-			creds = credentials.NewEC2RoleCredentials(http.DefaultClient, "", time.Minute*10)
+			creds = ec2rolecreds.NewCredentials(ec2metadata.New(&ec2metadata.Config{
+				HTTPClient: &http.Client{Timeout: 2 * time.Second},
+			}), time.Minute*10)
 		}
 	}
 	c.awsConfig = &aws.Config{
-		Region:      "us-east-1",
+		Region:      aws.String("us-east-1"),
 		Credentials: creds,
 	}
 }

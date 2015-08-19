@@ -16,6 +16,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/go-sql-driver/mysql"
 	"github.com/sprucehealth/backend/libs/awsutil"
@@ -289,7 +291,9 @@ func main() {
 
 	creds := credentials.NewEnvCredentials()
 	if c, err := creds.Get(); err != nil || c.AccessKeyID == "" || c.SecretAccessKey == "" {
-		creds = credentials.NewEC2RoleCredentials(http.DefaultClient, "", time.Minute*10)
+		creds = ec2rolecreds.NewCredentials(ec2metadata.New(&ec2metadata.Config{
+			HTTPClient: &http.Client{Timeout: 2 * time.Second},
+		}), time.Minute*10)
 	}
 	if config.Region == "" {
 		az, err := awsutil.GetMetadata(awsutil.MetadataAvailabilityZone)
@@ -301,7 +305,7 @@ func main() {
 	}
 	config.awsConfig = &aws.Config{
 		Credentials: creds,
-		Region:      config.Region,
+		Region:      aws.String(config.Region),
 	}
 	config.ec2 = ec2.New(config.awsConfig)
 
@@ -331,10 +335,10 @@ func main() {
 		for _, v := range res.Volumes {
 			if len(v.Attachments) != 0 {
 				att := v.Attachments[0]
-				info("\t%s %s %s\n", *v.VolumeID, *att.Device, *att.State)
+				info("\t%s %s %s\n", *v.VolumeId, *att.Device, *att.State)
 				for j, d := range config.Devices {
 					if d == devMap(*att.Device) {
-						config.EBSVolumes[j] = v.VolumeID
+						config.EBSVolumes[j] = v.VolumeId
 						config.ebsVolumeInfo[j] = v
 						count--
 						break
@@ -347,7 +351,7 @@ func main() {
 		}
 	} else {
 		res, err := config.ec2.DescribeVolumes(&ec2.DescribeVolumesInput{
-			VolumeIDs: config.EBSVolumes,
+			VolumeIds: config.EBSVolumes,
 		})
 		if err != nil {
 			log.Fatalf("Failed to get volumes: %+v", err)
@@ -357,7 +361,7 @@ func main() {
 		}
 		config.ebsVolumeInfo = make([]*ec2.Volume, len(config.EBSVolumes))
 		for i, v := range res.Volumes {
-			if *config.EBSVolumes[i] != *v.VolumeID {
+			if *config.EBSVolumes[i] != *v.VolumeId {
 				log.Fatalf("VolumeID mismatch")
 			}
 			config.ebsVolumeInfo[i] = v
@@ -506,23 +510,23 @@ func unlockDB() error {
 func snapshotEBS(binlogName string, binlogPos int64) error {
 	timestamp := time.Now().Format(time.RFC3339)
 	for _, vol := range config.ebsVolumeInfo {
-		fmt.Printf("Snapshotting %s (%s)...", *vol.VolumeID, tag(vol.Tags, "Name"))
+		fmt.Printf("Snapshotting %s (%s)...", *vol.VolumeId, tag(vol.Tags, "Name"))
 		snap, err := config.ec2.CreateSnapshot(&ec2.CreateSnapshotInput{
-			VolumeID:    vol.VolumeID,
+			VolumeId:    vol.VolumeId,
 			Description: aws.String(fmt.Sprintf("%s %s", tag(vol.Tags, "Group"), timestamp)),
 		})
 		if err != nil {
-			log.Fatalf("Failed to create snapshot of %s: %+v", *vol.VolumeID, err)
+			log.Fatalf("Failed to create snapshot of %s: %+v", *vol.VolumeId, err)
 		}
-		fmt.Printf(" %s %s\n", *snap.SnapshotID, *snap.State)
+		fmt.Printf(" %s %s\n", *snap.SnapshotId, *snap.State)
 		tags := vol.Tags
 		tags = setTag(tags, "BinlogName", binlogName)
 		tags = setTag(tags, "BinlogPos", strconv.FormatInt(binlogPos, 10))
 		if _, err := config.ec2.CreateTags(&ec2.CreateTagsInput{
-			Resources: []*string{snap.SnapshotID},
+			Resources: []*string{snap.SnapshotId},
 			Tags:      tags,
 		}); err != nil {
-			log.Printf("Failed to tag snapshot %s: %+v", *snap.SnapshotID, err)
+			log.Printf("Failed to tag snapshot %s: %+v", *snap.SnapshotId, err)
 		}
 	}
 	return nil

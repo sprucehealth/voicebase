@@ -26,7 +26,7 @@ func PutMultiFrom(s3c *s3.S3, bucket, path string, rd io.Reader, contentType, co
 				_, err := s3c.AbortMultipartUpload(&s3.AbortMultipartUploadInput{
 					Bucket:   &bucket,
 					Key:      &path,
-					UploadID: multi.UploadID,
+					UploadId: multi.UploadId,
 				})
 				if err != nil {
 					golog.Errorf("Failed to abort multipart S3 upload: %s", err.Error())
@@ -71,28 +71,28 @@ func PutMultiFrom(s3c *s3.S3, bucket, path string, rd io.Reader, contentType, co
 			Bucket:        &bucket,
 			Key:           &path,
 			Body:          bytes.NewReader(buf.Bytes()),
-			ContentLength: aws.Long(int64(buf.Len())),
-			PartNumber:    aws.Long(int64(nChunk)),
-			UploadID:      multi.UploadID,
+			ContentLength: aws.Int64(int64(buf.Len())),
+			PartNumber:    aws.Int64(int64(nChunk)),
+			UploadId:      multi.UploadId,
 		})
 		if err != nil {
 			_, err := s3c.AbortMultipartUpload(&s3.AbortMultipartUploadInput{
 				Bucket:   &bucket,
 				Key:      &path,
-				UploadID: multi.UploadID,
+				UploadId: multi.UploadId,
 			})
 			if err != nil {
 				golog.Errorf("Failed to abort multipart S3 upload: %s", err.Error())
 			}
 			return err
 		}
-		parts = append(parts, &s3.CompletedPart{ETag: p.ETag, PartNumber: aws.Long(int64(nChunk))})
+		parts = append(parts, &s3.CompletedPart{ETag: p.ETag, PartNumber: aws.Int64(int64(nChunk))})
 	}
 
 	_, err := s3c.CompleteMultipartUpload(&s3.CompleteMultipartUploadInput{
 		Bucket:   &bucket,
 		Key:      &path,
-		UploadID: multi.UploadID,
+		UploadId: multi.UploadId,
 		MultipartUpload: &s3.CompletedMultipartUpload{
 			Parts: parts,
 		},
@@ -101,7 +101,7 @@ func PutMultiFrom(s3c *s3.S3, bucket, path string, rd io.Reader, contentType, co
 		_, err := s3c.AbortMultipartUpload(&s3.AbortMultipartUploadInput{
 			Bucket:   &bucket,
 			Key:      &path,
-			UploadID: multi.UploadID,
+			UploadId: multi.UploadId,
 		})
 		if err != nil {
 			golog.Errorf("Failed to abort multipart S3 upload: %s", err.Error())

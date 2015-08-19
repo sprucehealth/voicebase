@@ -10,17 +10,21 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 )
 
 func TestS3(t *testing.T) {
 	var creds *credentials.Credentials
 	creds = credentials.NewEnvCredentials()
 	if v, err := creds.Get(); err != nil || v.AccessKeyID == "" || v.SecretAccessKey == "" {
-		creds = credentials.NewEC2RoleCredentials(&http.Client{Timeout: 2 * time.Second}, "", time.Minute*5)
+		creds = ec2rolecreds.NewCredentials(ec2metadata.New(&ec2metadata.Config{
+			HTTPClient: &http.Client{Timeout: 2 * time.Second},
+		}), time.Minute*5)
 	}
 	awsConf := &aws.Config{
 		Credentials: creds,
-		Region:      "us-east-1",
+		Region:      aws.String("us-east-1"),
 	}
 	if _, err := awsConf.Credentials.Get(); err != nil {
 		t.Skip(err.Error())

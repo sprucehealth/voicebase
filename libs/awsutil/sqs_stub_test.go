@@ -12,7 +12,7 @@ func TestSQSStub(t *testing.T) {
 	queueURL := "qurl"
 	msgBody1 := "foo"
 	_, err := sq.SendMessage(&sqs.SendMessageInput{
-		QueueURL:    &queueURL,
+		QueueUrl:    &queueURL,
 		MessageBody: &msgBody1,
 	})
 	if err != nil {
@@ -20,7 +20,7 @@ func TestSQSStub(t *testing.T) {
 	}
 	msgBody2 := "var"
 	_, err = sq.SendMessage(&sqs.SendMessageInput{
-		QueueURL:    &queueURL,
+		QueueUrl:    &queueURL,
 		MessageBody: &msgBody2,
 	})
 	if err != nil {
@@ -28,7 +28,7 @@ func TestSQSStub(t *testing.T) {
 	}
 
 	n := int64(3)
-	res, err := sq.ReceiveMessage(&sqs.ReceiveMessageInput{QueueURL: &queueURL, MaxNumberOfMessages: &n})
+	res, err := sq.ReceiveMessage(&sqs.ReceiveMessageInput{QueueUrl: &queueURL, MaxNumberOfMessages: &n})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,11 +40,11 @@ func TestSQSStub(t *testing.T) {
 	}
 
 	handle := "1"
-	if _, err := sq.DeleteMessage(&sqs.DeleteMessageInput{QueueURL: &queueURL, ReceiptHandle: &handle}); err != nil {
+	if _, err := sq.DeleteMessage(&sqs.DeleteMessageInput{QueueUrl: &queueURL, ReceiptHandle: &handle}); err != nil {
 		t.Fatal(err)
 	}
 
-	res, err = sq.ReceiveMessage(&sqs.ReceiveMessageInput{QueueURL: &queueURL})
+	res, err = sq.ReceiveMessage(&sqs.ReceiveMessageInput{QueueUrl: &queueURL})
 	if err != nil {
 		t.Fatal(err)
 	}

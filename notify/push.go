@@ -53,7 +53,7 @@ func (n *NotificationManager) pushNotificationToUser(
 			_, err = n.snsClient.Publish(&sns.PublishInput{
 				Message:          &jsStr,
 				MessageStructure: &jsonStr,
-				TargetARN:        &pushEndpoint,
+				TargetArn:        &pushEndpoint,
 			})
 			if err != nil {
 				// don't return err so that we attempt to send push to as many devices as possible

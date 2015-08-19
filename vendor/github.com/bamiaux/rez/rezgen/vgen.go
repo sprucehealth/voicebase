@@ -12,7 +12,6 @@ import (
 
 type vertical struct {
 	xtaps int
-
 	// global data
 	zero  Operand
 	hbits Operand

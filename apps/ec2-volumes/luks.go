@@ -60,11 +60,11 @@ func luksMount() error {
 			status = *v.Attachments[0].State
 		}
 		if status != "attached" {
-			return fmt.Errorf("volume %s (%s) is not attached: %s", *v.VolumeID, tag(v.Tags, "Name"), status)
+			return fmt.Errorf("volume %s (%s) is not attached: %s", *v.VolumeId, tag(v.Tags, "Name"), status)
 		}
 		if instanceID == "" {
-			instanceID = *v.Attachments[0].InstanceID
-		} else if instanceID != *v.Attachments[0].InstanceID {
+			instanceID = *v.Attachments[0].InstanceId
+		} else if instanceID != *v.Attachments[0].InstanceId {
 			return fmt.Errorf("some volumes are attached to different instances")
 		}
 		devices = append(devices, *v.Attachments[0].Device)
@@ -72,7 +72,7 @@ func luksMount() error {
 	sort.Strings(devices)
 
 	res, err := config.ec2.DescribeInstances(&ec2.DescribeInstancesInput{
-		InstanceIDs: []*string{&instanceID},
+		InstanceIds: []*string{&instanceID},
 	})
 	if err != nil {
 		return err
@@ -81,7 +81,7 @@ func luksMount() error {
 		return fmt.Errorf("instance %s not found", instanceID)
 	}
 	inst := res.Reservations[0].Instances[0]
-	ip := *inst.PrivateIPAddress
+	ip := *inst.PrivateIpAddress
 	fmt.Printf("IP: %s\n", ip)
 
 	cmr, err := cmd.NewSSHCommander(fmt.Sprintf("%s@%s:22", config.User, ip), fmt.Sprintf("%s:22", config.Bastion))

@@ -54,7 +54,7 @@ func (h *apiHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *ht
 	}
 	jsStr := string(js)
 	if _, err := h.queue.QueueService.SendMessage(&sqs.SendMessageInput{
-		QueueURL:    &h.queue.QueueURL,
+		QueueUrl:    &h.queue.QueueURL,
 		MessageBody: &jsStr,
 	}); err != nil {
 		apiservice.WriteError(ctx, err, w, r)

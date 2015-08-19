@@ -1,8 +1,8 @@
 package figo
 
 import (
-	"fmt"
 	"bitbucket.org/pkg/inflect"
+	"fmt"
 )
 
 // PluralizeCount returns the plural or singular form depends on c.

@@ -24,7 +24,7 @@ func initNotifyListener(disp *dispatch.Dispatcher, snsCli *sns.SNS, topic string
 	disp.SubscribeAsync(func(ev *patient.VisitSubmittedEvent) error {
 		_, err := snsCli.Publish(&sns.PublishInput{
 			Message:   &noteJSON,
-			TargetARN: &topic,
+			TargetArn: &topic,
 		})
 		if err != nil {
 			golog.Warningf("SNS notification failed for party time: %s", err.Error())

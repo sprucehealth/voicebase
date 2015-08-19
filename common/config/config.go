@@ -22,6 +22,8 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/service/s3"
 	flags "github.com/jessevdk/go-flags"
 	"github.com/sprucehealth/backend/common"
@@ -150,9 +152,10 @@ func (c *BaseConfig) AWS() *aws.Config {
 		if c.AWSAccessKey != "" && c.AWSSecretKey != "" {
 			cred = credentials.NewStaticCredentials(c.AWSAccessKey, c.AWSSecretKey, "")
 		} else {
-			cred = credentials.NewEnvCredentials()
 			if v, err := cred.Get(); err != nil || v.AccessKeyID == "" || v.SecretAccessKey == "" {
-				cred = credentials.NewEC2RoleCredentials(&http.Client{Timeout: 2 * time.Second}, "", time.Minute*5)
+				cred = ec2rolecreds.NewCredentials(ec2metadata.New(&ec2metadata.Config{
+					HTTPClient: &http.Client{Timeout: 2 * time.Second},
+				}), time.Minute*5)
 			}
 		}
 
@@ -167,7 +170,7 @@ func (c *BaseConfig) AWS() *aws.Config {
 
 		c.awsConfig = &aws.Config{
 			Credentials: cred,
-			Region:      region,
+			Region:      aws.String(region),
 		}
 	})
 	// Return a copy

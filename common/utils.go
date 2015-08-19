@@ -64,13 +64,13 @@ type SQSQueue struct {
 
 func NewQueue(config *aws.Config, queueName string) (*SQSQueue, error) {
 	sq := sqs.New(config)
-	res, err := sq.GetQueueURL(&sqs.GetQueueURLInput{QueueName: &queueName})
+	res, err := sq.GetQueueUrl(&sqs.GetQueueUrlInput{QueueName: &queueName})
 	if err != nil {
 		return nil, err
 	}
 	return &SQSQueue{
 		QueueService: sq,
-		QueueURL:     *res.QueueURL,
+		QueueURL:     *res.QueueUrl,
 	}, nil
 }
 

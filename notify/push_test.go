@@ -41,7 +41,7 @@ func TestPushNotificationsLive(t *testing.T) {
 	}
 
 	awsConfig := &aws.Config{
-		Region:      "us-east-1",
+		Region:      aws.String("us-east-1"),
 		Credentials: credentials.NewEnvCredentials(),
 	}
 	snsCli := sns.New(awsConfig)

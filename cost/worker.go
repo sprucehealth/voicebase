@@ -130,7 +130,7 @@ func (w *Worker) Do() error {
 
 func (w *Worker) consumeMessage() (bool, error) {
 	res, err := w.queue.QueueService.ReceiveMessage(&sqs.ReceiveMessageInput{
-		QueueURL:            &w.queue.QueueURL,
+		QueueUrl:            &w.queue.QueueURL,
 		MaxNumberOfMessages: &batchSize,
 		VisibilityTimeout:   &visibilityTimeout,
 		WaitTimeSeconds:     &waitTimeSeconds,
@@ -152,7 +152,7 @@ func (w *Worker) consumeMessage() (bool, error) {
 			allMsgsConsumed = false
 		} else {
 			_, err := w.queue.QueueService.DeleteMessage(&sqs.DeleteMessageInput{
-				QueueURL:      &w.queue.QueueURL,
+				QueueUrl:      &w.queue.QueueURL,
 				ReceiptHandle: m.ReceiptHandle,
 			})
 			if err != nil {

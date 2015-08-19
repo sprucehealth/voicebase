@@ -28,7 +28,7 @@ func TestPutMultiSmall(t *testing.T) {
 	if bucket == "" {
 		t.Skip("Skipping aws.s3 tests. TEST_S3_BUCKET environment variable not set.")
 	}
-	s3c := s3.New(&aws.Config{Region: "us-east-1", Credentials: creds})
+	s3c := s3.New(&aws.Config{Region: aws.String("us-east-1"), Credentials: creds})
 
 	key := "test-object-1"
 
@@ -62,7 +62,7 @@ func TestPutMulti(t *testing.T) {
 	if bucket == "" {
 		t.Skip("Skipping aws.s3 tests. TEST_S3_BUCKET environment variable not set.")
 	}
-	s3c := s3.New(&aws.Config{Region: "us-east-1", Credentials: creds})
+	s3c := s3.New(&aws.Config{Region: aws.String("us-east-1"), Credentials: creds})
 
 	key := "test-object-1"
 

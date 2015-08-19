@@ -79,7 +79,7 @@ func (w *Worker) Start() {
 
 func (w *Worker) Do() (bool, error) {
 	res, err := w.erxRoutingQueue.QueueService.ReceiveMessage(&sqs.ReceiveMessageInput{
-		QueueURL:            &w.erxRoutingQueue.QueueURL,
+		QueueUrl:            &w.erxRoutingQueue.QueueURL,
 		MaxNumberOfMessages: &batchSize,
 		VisibilityTimeout:   &visibilityTimeout,
 		WaitTimeSeconds:     &defaultTimePeriodSeconds,
@@ -105,7 +105,7 @@ func (w *Worker) Do() (bool, error) {
 			msgsConsumed = false
 		} else {
 			_, err := w.erxRoutingQueue.QueueService.DeleteMessage(&sqs.DeleteMessageInput{
-				QueueURL:      &w.erxRoutingQueue.QueueURL,
+				QueueUrl:      &w.erxRoutingQueue.QueueURL,
 				ReceiptHandle: msg.ReceiptHandle,
 			})
 			if err != nil {

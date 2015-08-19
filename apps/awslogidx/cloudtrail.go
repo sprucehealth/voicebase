@@ -19,18 +19,18 @@ var (
 func startCloudTrailIndexer(es *ElasticSearch) error {
 	sq := sqs.New(awsConfig)
 
-	res, err := sq.GetQueueURL(&sqs.GetQueueURLInput{QueueName: cloudTrailSQSQueue})
+	res, err := sq.GetQueueUrl(&sqs.GetQueueUrlInput{QueueName: cloudTrailSQSQueue})
 	if err != nil {
 		return err
 	}
-	queueURL := *res.QueueURL
+	queueURL := *res.QueueUrl
 
 	visibilityTimeout := int64(120)
 	waitTimeSeconds := int64(20)
 	go func() {
 		for {
 			res, err := sq.ReceiveMessage(&sqs.ReceiveMessageInput{
-				QueueURL:          &queueURL,
+				QueueUrl:          &queueURL,
 				VisibilityTimeout: &visibilityTimeout,
 				WaitTimeSeconds:   &waitTimeSeconds,
 			})
@@ -116,7 +116,7 @@ func startCloudTrailIndexer(es *ElasticSearch) error {
 				}
 				if failed == 0 {
 					_, err := sq.DeleteMessage(&sqs.DeleteMessageInput{
-						QueueURL:      &queueURL,
+						QueueUrl:      &queueURL,
 						ReceiptHandle: m.ReceiptHandle,
 					})
 					if err != nil {

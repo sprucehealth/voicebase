@@ -2,9 +2,11 @@ package awsutil
 
 import (
 	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 )
 
 type SNS struct {
+	snsiface.SNSAPI
 	EndpointARN string
 }
 
@@ -18,7 +20,7 @@ func (*SNS) CreatePlatformApplication(*sns.CreatePlatformApplicationInput) (*sns
 	return nil, nil
 }
 func (s *SNS) CreatePlatformEndpoint(*sns.CreatePlatformEndpointInput) (*sns.CreatePlatformEndpointOutput, error) {
-	return &sns.CreatePlatformEndpointOutput{EndpointARN: &s.EndpointARN}, nil
+	return &sns.CreatePlatformEndpointOutput{EndpointArn: &s.EndpointARN}, nil
 }
 func (*SNS) CreateTopic(*sns.CreateTopicInput) (*sns.CreateTopicOutput, error) {
 	return nil, nil

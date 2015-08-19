@@ -4,31 +4,25 @@
 package sns
 
 import (
-	"sync"
-
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awsutil"
+	"github.com/aws/aws-sdk-go/aws/service"
 )
 
-var oprw sync.Mutex
+const opAddPermission = "AddPermission"
 
 // AddPermissionRequest generates a request for the AddPermission operation.
-func (c *SNS) AddPermissionRequest(input *AddPermissionInput) (req *aws.Request, output *AddPermissionOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opAddPermission == nil {
-		opAddPermission = &aws.Operation{
-			Name:       "AddPermission",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SNS) AddPermissionRequest(input *AddPermissionInput) (req *service.Request, output *AddPermissionOutput) {
+	op := &service.Operation{
+		Name:       opAddPermission,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &AddPermissionInput{}
 	}
 
-	req = c.newRequest(opAddPermission, input, output)
+	req = c.newRequest(op, input, output)
 	output = &AddPermissionOutput{}
 	req.Data = output
 	return
@@ -42,26 +36,21 @@ func (c *SNS) AddPermission(input *AddPermissionInput) (*AddPermissionOutput, er
 	return out, err
 }
 
-var opAddPermission *aws.Operation
+const opConfirmSubscription = "ConfirmSubscription"
 
 // ConfirmSubscriptionRequest generates a request for the ConfirmSubscription operation.
-func (c *SNS) ConfirmSubscriptionRequest(input *ConfirmSubscriptionInput) (req *aws.Request, output *ConfirmSubscriptionOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opConfirmSubscription == nil {
-		opConfirmSubscription = &aws.Operation{
-			Name:       "ConfirmSubscription",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SNS) ConfirmSubscriptionRequest(input *ConfirmSubscriptionInput) (req *service.Request, output *ConfirmSubscriptionOutput) {
+	op := &service.Operation{
+		Name:       opConfirmSubscription,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &ConfirmSubscriptionInput{}
 	}
 
-	req = c.newRequest(opConfirmSubscription, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ConfirmSubscriptionOutput{}
 	req.Data = output
 	return
@@ -78,26 +67,21 @@ func (c *SNS) ConfirmSubscription(input *ConfirmSubscriptionInput) (*ConfirmSubs
 	return out, err
 }
 
-var opConfirmSubscription *aws.Operation
+const opCreatePlatformApplication = "CreatePlatformApplication"
 
 // CreatePlatformApplicationRequest generates a request for the CreatePlatformApplication operation.
-func (c *SNS) CreatePlatformApplicationRequest(input *CreatePlatformApplicationInput) (req *aws.Request, output *CreatePlatformApplicationOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opCreatePlatformApplication == nil {
-		opCreatePlatformApplication = &aws.Operation{
-			Name:       "CreatePlatformApplication",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SNS) CreatePlatformApplicationRequest(input *CreatePlatformApplicationInput) (req *service.Request, output *CreatePlatformApplicationOutput) {
+	op := &service.Operation{
+		Name:       opCreatePlatformApplication,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &CreatePlatformApplicationInput{}
 	}
 
-	req = c.newRequest(opCreatePlatformApplication, input, output)
+	req = c.newRequest(op, input, output)
 	output = &CreatePlatformApplicationOutput{}
 	req.Data = output
 	return
@@ -122,26 +106,21 @@ func (c *SNS) CreatePlatformApplication(input *CreatePlatformApplicationInput) (
 	return out, err
 }
 
-var opCreatePlatformApplication *aws.Operation
+const opCreatePlatformEndpoint = "CreatePlatformEndpoint"
 
 // CreatePlatformEndpointRequest generates a request for the CreatePlatformEndpoint operation.
-func (c *SNS) CreatePlatformEndpointRequest(input *CreatePlatformEndpointInput) (req *aws.Request, output *CreatePlatformEndpointOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opCreatePlatformEndpoint == nil {
-		opCreatePlatformEndpoint = &aws.Operation{
-			Name:       "CreatePlatformEndpoint",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SNS) CreatePlatformEndpointRequest(input *CreatePlatformEndpointInput) (req *service.Request, output *CreatePlatformEndpointOutput) {
+	op := &service.Operation{
+		Name:       opCreatePlatformEndpoint,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &CreatePlatformEndpointInput{}
 	}
 
-	req = c.newRequest(opCreatePlatformEndpoint, input, output)
+	req = c.newRequest(op, input, output)
 	output = &CreatePlatformEndpointOutput{}
 	req.Data = output
 	return
@@ -167,26 +146,21 @@ func (c *SNS) CreatePlatformEndpoint(input *CreatePlatformEndpointInput) (*Creat
 	return out, err
 }
 
-var opCreatePlatformEndpoint *aws.Operation
+const opCreateTopic = "CreateTopic"
 
 // CreateTopicRequest generates a request for the CreateTopic operation.
-func (c *SNS) CreateTopicRequest(input *CreateTopicInput) (req *aws.Request, output *CreateTopicOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opCreateTopic == nil {
-		opCreateTopic = &aws.Operation{
-			Name:       "CreateTopic",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SNS) CreateTopicRequest(input *CreateTopicInput) (req *service.Request, output *CreateTopicOutput) {
+	op := &service.Operation{
+		Name:       opCreateTopic,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &CreateTopicInput{}
 	}
 
-	req = c.newRequest(opCreateTopic, input, output)
+	req = c.newRequest(op, input, output)
 	output = &CreateTopicOutput{}
 	req.Data = output
 	return
@@ -203,26 +177,21 @@ func (c *SNS) CreateTopic(input *CreateTopicInput) (*CreateTopicOutput, error) {
 	return out, err
 }
 
-var opCreateTopic *aws.Operation
+const opDeleteEndpoint = "DeleteEndpoint"
 
 // DeleteEndpointRequest generates a request for the DeleteEndpoint operation.
-func (c *SNS) DeleteEndpointRequest(input *DeleteEndpointInput) (req *aws.Request, output *DeleteEndpointOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeleteEndpoint == nil {
-		opDeleteEndpoint = &aws.Operation{
-			Name:       "DeleteEndpoint",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SNS) DeleteEndpointRequest(input *DeleteEndpointInput) (req *service.Request, output *DeleteEndpointOutput) {
+	op := &service.Operation{
+		Name:       opDeleteEndpoint,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeleteEndpointInput{}
 	}
 
-	req = c.newRequest(opDeleteEndpoint, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeleteEndpointOutput{}
 	req.Data = output
 	return
@@ -236,26 +205,21 @@ func (c *SNS) DeleteEndpoint(input *DeleteEndpointInput) (*DeleteEndpointOutput,
 	return out, err
 }
 
-var opDeleteEndpoint *aws.Operation
+const opDeletePlatformApplication = "DeletePlatformApplication"
 
 // DeletePlatformApplicationRequest generates a request for the DeletePlatformApplication operation.
-func (c *SNS) DeletePlatformApplicationRequest(input *DeletePlatformApplicationInput) (req *aws.Request, output *DeletePlatformApplicationOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeletePlatformApplication == nil {
-		opDeletePlatformApplication = &aws.Operation{
-			Name:       "DeletePlatformApplication",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SNS) DeletePlatformApplicationRequest(input *DeletePlatformApplicationInput) (req *service.Request, output *DeletePlatformApplicationOutput) {
+	op := &service.Operation{
+		Name:       opDeletePlatformApplication,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeletePlatformApplicationInput{}
 	}
 
-	req = c.newRequest(opDeletePlatformApplication, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeletePlatformApplicationOutput{}
 	req.Data = output
 	return
@@ -270,26 +234,21 @@ func (c *SNS) DeletePlatformApplication(input *DeletePlatformApplicationInput) (
 	return out, err
 }
 
-var opDeletePlatformApplication *aws.Operation
+const opDeleteTopic = "DeleteTopic"
 
 // DeleteTopicRequest generates a request for the DeleteTopic operation.
-func (c *SNS) DeleteTopicRequest(input *DeleteTopicInput) (req *aws.Request, output *DeleteTopicOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opDeleteTopic == nil {
-		opDeleteTopic = &aws.Operation{
-			Name:       "DeleteTopic",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SNS) DeleteTopicRequest(input *DeleteTopicInput) (req *service.Request, output *DeleteTopicOutput) {
+	op := &service.Operation{
+		Name:       opDeleteTopic,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &DeleteTopicInput{}
 	}
 
-	req = c.newRequest(opDeleteTopic, input, output)
+	req = c.newRequest(op, input, output)
 	output = &DeleteTopicOutput{}
 	req.Data = output
 	return
@@ -305,26 +264,21 @@ func (c *SNS) DeleteTopic(input *DeleteTopicInput) (*DeleteTopicOutput, error) {
 	return out, err
 }
 
-var opDeleteTopic *aws.Operation
+const opGetEndpointAttributes = "GetEndpointAttributes"
 
 // GetEndpointAttributesRequest generates a request for the GetEndpointAttributes operation.
-func (c *SNS) GetEndpointAttributesRequest(input *GetEndpointAttributesInput) (req *aws.Request, output *GetEndpointAttributesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetEndpointAttributes == nil {
-		opGetEndpointAttributes = &aws.Operation{
-			Name:       "GetEndpointAttributes",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SNS) GetEndpointAttributesRequest(input *GetEndpointAttributesInput) (req *service.Request, output *GetEndpointAttributesOutput) {
+	op := &service.Operation{
+		Name:       opGetEndpointAttributes,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GetEndpointAttributesInput{}
 	}
 
-	req = c.newRequest(opGetEndpointAttributes, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetEndpointAttributesOutput{}
 	req.Data = output
 	return
@@ -339,26 +293,21 @@ func (c *SNS) GetEndpointAttributes(input *GetEndpointAttributesInput) (*GetEndp
 	return out, err
 }
 
-var opGetEndpointAttributes *aws.Operation
+const opGetPlatformApplicationAttributes = "GetPlatformApplicationAttributes"
 
 // GetPlatformApplicationAttributesRequest generates a request for the GetPlatformApplicationAttributes operation.
-func (c *SNS) GetPlatformApplicationAttributesRequest(input *GetPlatformApplicationAttributesInput) (req *aws.Request, output *GetPlatformApplicationAttributesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetPlatformApplicationAttributes == nil {
-		opGetPlatformApplicationAttributes = &aws.Operation{
-			Name:       "GetPlatformApplicationAttributes",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SNS) GetPlatformApplicationAttributesRequest(input *GetPlatformApplicationAttributesInput) (req *service.Request, output *GetPlatformApplicationAttributesOutput) {
+	op := &service.Operation{
+		Name:       opGetPlatformApplicationAttributes,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GetPlatformApplicationAttributesInput{}
 	}
 
-	req = c.newRequest(opGetPlatformApplicationAttributes, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetPlatformApplicationAttributesOutput{}
 	req.Data = output
 	return
@@ -373,26 +322,21 @@ func (c *SNS) GetPlatformApplicationAttributes(input *GetPlatformApplicationAttr
 	return out, err
 }
 
-var opGetPlatformApplicationAttributes *aws.Operation
+const opGetSubscriptionAttributes = "GetSubscriptionAttributes"
 
 // GetSubscriptionAttributesRequest generates a request for the GetSubscriptionAttributes operation.
-func (c *SNS) GetSubscriptionAttributesRequest(input *GetSubscriptionAttributesInput) (req *aws.Request, output *GetSubscriptionAttributesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetSubscriptionAttributes == nil {
-		opGetSubscriptionAttributes = &aws.Operation{
-			Name:       "GetSubscriptionAttributes",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SNS) GetSubscriptionAttributesRequest(input *GetSubscriptionAttributesInput) (req *service.Request, output *GetSubscriptionAttributesOutput) {
+	op := &service.Operation{
+		Name:       opGetSubscriptionAttributes,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GetSubscriptionAttributesInput{}
 	}
 
-	req = c.newRequest(opGetSubscriptionAttributes, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetSubscriptionAttributesOutput{}
 	req.Data = output
 	return
@@ -405,26 +349,21 @@ func (c *SNS) GetSubscriptionAttributes(input *GetSubscriptionAttributesInput) (
 	return out, err
 }
 
-var opGetSubscriptionAttributes *aws.Operation
+const opGetTopicAttributes = "GetTopicAttributes"
 
 // GetTopicAttributesRequest generates a request for the GetTopicAttributes operation.
-func (c *SNS) GetTopicAttributesRequest(input *GetTopicAttributesInput) (req *aws.Request, output *GetTopicAttributesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opGetTopicAttributes == nil {
-		opGetTopicAttributes = &aws.Operation{
-			Name:       "GetTopicAttributes",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SNS) GetTopicAttributesRequest(input *GetTopicAttributesInput) (req *service.Request, output *GetTopicAttributesOutput) {
+	op := &service.Operation{
+		Name:       opGetTopicAttributes,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &GetTopicAttributesInput{}
 	}
 
-	req = c.newRequest(opGetTopicAttributes, input, output)
+	req = c.newRequest(op, input, output)
 	output = &GetTopicAttributesOutput{}
 	req.Data = output
 	return
@@ -438,32 +377,27 @@ func (c *SNS) GetTopicAttributes(input *GetTopicAttributesInput) (*GetTopicAttri
 	return out, err
 }
 
-var opGetTopicAttributes *aws.Operation
+const opListEndpointsByPlatformApplication = "ListEndpointsByPlatformApplication"
 
 // ListEndpointsByPlatformApplicationRequest generates a request for the ListEndpointsByPlatformApplication operation.
-func (c *SNS) ListEndpointsByPlatformApplicationRequest(input *ListEndpointsByPlatformApplicationInput) (req *aws.Request, output *ListEndpointsByPlatformApplicationOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListEndpointsByPlatformApplication == nil {
-		opListEndpointsByPlatformApplication = &aws.Operation{
-			Name:       "ListEndpointsByPlatformApplication",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"NextToken"},
-				OutputTokens:    []string{"NextToken"},
-				LimitToken:      "",
-				TruncationToken: "",
-			},
-		}
+func (c *SNS) ListEndpointsByPlatformApplicationRequest(input *ListEndpointsByPlatformApplicationInput) (req *service.Request, output *ListEndpointsByPlatformApplicationOutput) {
+	op := &service.Operation{
+		Name:       opListEndpointsByPlatformApplication,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"NextToken"},
+			OutputTokens:    []string{"NextToken"},
+			LimitToken:      "",
+			TruncationToken: "",
+		},
 	}
 
 	if input == nil {
 		input = &ListEndpointsByPlatformApplicationInput{}
 	}
 
-	req = c.newRequest(opListEndpointsByPlatformApplication, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListEndpointsByPlatformApplicationOutput{}
 	req.Data = output
 	return
@@ -490,32 +424,27 @@ func (c *SNS) ListEndpointsByPlatformApplicationPages(input *ListEndpointsByPlat
 	})
 }
 
-var opListEndpointsByPlatformApplication *aws.Operation
+const opListPlatformApplications = "ListPlatformApplications"
 
 // ListPlatformApplicationsRequest generates a request for the ListPlatformApplications operation.
-func (c *SNS) ListPlatformApplicationsRequest(input *ListPlatformApplicationsInput) (req *aws.Request, output *ListPlatformApplicationsOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListPlatformApplications == nil {
-		opListPlatformApplications = &aws.Operation{
-			Name:       "ListPlatformApplications",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"NextToken"},
-				OutputTokens:    []string{"NextToken"},
-				LimitToken:      "",
-				TruncationToken: "",
-			},
-		}
+func (c *SNS) ListPlatformApplicationsRequest(input *ListPlatformApplicationsInput) (req *service.Request, output *ListPlatformApplicationsOutput) {
+	op := &service.Operation{
+		Name:       opListPlatformApplications,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"NextToken"},
+			OutputTokens:    []string{"NextToken"},
+			LimitToken:      "",
+			TruncationToken: "",
+		},
 	}
 
 	if input == nil {
 		input = &ListPlatformApplicationsInput{}
 	}
 
-	req = c.newRequest(opListPlatformApplications, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListPlatformApplicationsOutput{}
 	req.Data = output
 	return
@@ -542,32 +471,27 @@ func (c *SNS) ListPlatformApplicationsPages(input *ListPlatformApplicationsInput
 	})
 }
 
-var opListPlatformApplications *aws.Operation
+const opListSubscriptions = "ListSubscriptions"
 
 // ListSubscriptionsRequest generates a request for the ListSubscriptions operation.
-func (c *SNS) ListSubscriptionsRequest(input *ListSubscriptionsInput) (req *aws.Request, output *ListSubscriptionsOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListSubscriptions == nil {
-		opListSubscriptions = &aws.Operation{
-			Name:       "ListSubscriptions",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"NextToken"},
-				OutputTokens:    []string{"NextToken"},
-				LimitToken:      "",
-				TruncationToken: "",
-			},
-		}
+func (c *SNS) ListSubscriptionsRequest(input *ListSubscriptionsInput) (req *service.Request, output *ListSubscriptionsOutput) {
+	op := &service.Operation{
+		Name:       opListSubscriptions,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"NextToken"},
+			OutputTokens:    []string{"NextToken"},
+			LimitToken:      "",
+			TruncationToken: "",
+		},
 	}
 
 	if input == nil {
 		input = &ListSubscriptionsInput{}
 	}
 
-	req = c.newRequest(opListSubscriptions, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListSubscriptionsOutput{}
 	req.Data = output
 	return
@@ -590,32 +514,27 @@ func (c *SNS) ListSubscriptionsPages(input *ListSubscriptionsInput, fn func(p *L
 	})
 }
 
-var opListSubscriptions *aws.Operation
+const opListSubscriptionsByTopic = "ListSubscriptionsByTopic"
 
 // ListSubscriptionsByTopicRequest generates a request for the ListSubscriptionsByTopic operation.
-func (c *SNS) ListSubscriptionsByTopicRequest(input *ListSubscriptionsByTopicInput) (req *aws.Request, output *ListSubscriptionsByTopicOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListSubscriptionsByTopic == nil {
-		opListSubscriptionsByTopic = &aws.Operation{
-			Name:       "ListSubscriptionsByTopic",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"NextToken"},
-				OutputTokens:    []string{"NextToken"},
-				LimitToken:      "",
-				TruncationToken: "",
-			},
-		}
+func (c *SNS) ListSubscriptionsByTopicRequest(input *ListSubscriptionsByTopicInput) (req *service.Request, output *ListSubscriptionsByTopicOutput) {
+	op := &service.Operation{
+		Name:       opListSubscriptionsByTopic,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"NextToken"},
+			OutputTokens:    []string{"NextToken"},
+			LimitToken:      "",
+			TruncationToken: "",
+		},
 	}
 
 	if input == nil {
 		input = &ListSubscriptionsByTopicInput{}
 	}
 
-	req = c.newRequest(opListSubscriptionsByTopic, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListSubscriptionsByTopicOutput{}
 	req.Data = output
 	return
@@ -638,32 +557,27 @@ func (c *SNS) ListSubscriptionsByTopicPages(input *ListSubscriptionsByTopicInput
 	})
 }
 
-var opListSubscriptionsByTopic *aws.Operation
+const opListTopics = "ListTopics"
 
 // ListTopicsRequest generates a request for the ListTopics operation.
-func (c *SNS) ListTopicsRequest(input *ListTopicsInput) (req *aws.Request, output *ListTopicsOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opListTopics == nil {
-		opListTopics = &aws.Operation{
-			Name:       "ListTopics",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-			Paginator: &aws.Paginator{
-				InputTokens:     []string{"NextToken"},
-				OutputTokens:    []string{"NextToken"},
-				LimitToken:      "",
-				TruncationToken: "",
-			},
-		}
+func (c *SNS) ListTopicsRequest(input *ListTopicsInput) (req *service.Request, output *ListTopicsOutput) {
+	op := &service.Operation{
+		Name:       opListTopics,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+		Paginator: &service.Paginator{
+			InputTokens:     []string{"NextToken"},
+			OutputTokens:    []string{"NextToken"},
+			LimitToken:      "",
+			TruncationToken: "",
+		},
 	}
 
 	if input == nil {
 		input = &ListTopicsInput{}
 	}
 
-	req = c.newRequest(opListTopics, input, output)
+	req = c.newRequest(op, input, output)
 	output = &ListTopicsOutput{}
 	req.Data = output
 	return
@@ -685,26 +599,21 @@ func (c *SNS) ListTopicsPages(input *ListTopicsInput, fn func(p *ListTopicsOutpu
 	})
 }
 
-var opListTopics *aws.Operation
+const opPublish = "Publish"
 
 // PublishRequest generates a request for the Publish operation.
-func (c *SNS) PublishRequest(input *PublishInput) (req *aws.Request, output *PublishOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opPublish == nil {
-		opPublish = &aws.Operation{
-			Name:       "Publish",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SNS) PublishRequest(input *PublishInput) (req *service.Request, output *PublishOutput) {
+	op := &service.Operation{
+		Name:       opPublish,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &PublishInput{}
 	}
 
-	req = c.newRequest(opPublish, input, output)
+	req = c.newRequest(op, input, output)
 	output = &PublishOutput{}
 	req.Data = output
 	return
@@ -726,26 +635,21 @@ func (c *SNS) Publish(input *PublishInput) (*PublishOutput, error) {
 	return out, err
 }
 
-var opPublish *aws.Operation
+const opRemovePermission = "RemovePermission"
 
 // RemovePermissionRequest generates a request for the RemovePermission operation.
-func (c *SNS) RemovePermissionRequest(input *RemovePermissionInput) (req *aws.Request, output *RemovePermissionOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opRemovePermission == nil {
-		opRemovePermission = &aws.Operation{
-			Name:       "RemovePermission",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SNS) RemovePermissionRequest(input *RemovePermissionInput) (req *service.Request, output *RemovePermissionOutput) {
+	op := &service.Operation{
+		Name:       opRemovePermission,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &RemovePermissionInput{}
 	}
 
-	req = c.newRequest(opRemovePermission, input, output)
+	req = c.newRequest(op, input, output)
 	output = &RemovePermissionOutput{}
 	req.Data = output
 	return
@@ -758,26 +662,21 @@ func (c *SNS) RemovePermission(input *RemovePermissionInput) (*RemovePermissionO
 	return out, err
 }
 
-var opRemovePermission *aws.Operation
+const opSetEndpointAttributes = "SetEndpointAttributes"
 
 // SetEndpointAttributesRequest generates a request for the SetEndpointAttributes operation.
-func (c *SNS) SetEndpointAttributesRequest(input *SetEndpointAttributesInput) (req *aws.Request, output *SetEndpointAttributesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opSetEndpointAttributes == nil {
-		opSetEndpointAttributes = &aws.Operation{
-			Name:       "SetEndpointAttributes",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SNS) SetEndpointAttributesRequest(input *SetEndpointAttributesInput) (req *service.Request, output *SetEndpointAttributesOutput) {
+	op := &service.Operation{
+		Name:       opSetEndpointAttributes,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &SetEndpointAttributesInput{}
 	}
 
-	req = c.newRequest(opSetEndpointAttributes, input, output)
+	req = c.newRequest(op, input, output)
 	output = &SetEndpointAttributesOutput{}
 	req.Data = output
 	return
@@ -792,26 +691,21 @@ func (c *SNS) SetEndpointAttributes(input *SetEndpointAttributesInput) (*SetEndp
 	return out, err
 }
 
-var opSetEndpointAttributes *aws.Operation
+const opSetPlatformApplicationAttributes = "SetPlatformApplicationAttributes"
 
 // SetPlatformApplicationAttributesRequest generates a request for the SetPlatformApplicationAttributes operation.
-func (c *SNS) SetPlatformApplicationAttributesRequest(input *SetPlatformApplicationAttributesInput) (req *aws.Request, output *SetPlatformApplicationAttributesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opSetPlatformApplicationAttributes == nil {
-		opSetPlatformApplicationAttributes = &aws.Operation{
-			Name:       "SetPlatformApplicationAttributes",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SNS) SetPlatformApplicationAttributesRequest(input *SetPlatformApplicationAttributesInput) (req *service.Request, output *SetPlatformApplicationAttributesOutput) {
+	op := &service.Operation{
+		Name:       opSetPlatformApplicationAttributes,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &SetPlatformApplicationAttributesInput{}
 	}
 
-	req = c.newRequest(opSetPlatformApplicationAttributes, input, output)
+	req = c.newRequest(op, input, output)
 	output = &SetPlatformApplicationAttributesOutput{}
 	req.Data = output
 	return
@@ -826,26 +720,21 @@ func (c *SNS) SetPlatformApplicationAttributes(input *SetPlatformApplicationAttr
 	return out, err
 }
 
-var opSetPlatformApplicationAttributes *aws.Operation
+const opSetSubscriptionAttributes = "SetSubscriptionAttributes"
 
 // SetSubscriptionAttributesRequest generates a request for the SetSubscriptionAttributes operation.
-func (c *SNS) SetSubscriptionAttributesRequest(input *SetSubscriptionAttributesInput) (req *aws.Request, output *SetSubscriptionAttributesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opSetSubscriptionAttributes == nil {
-		opSetSubscriptionAttributes = &aws.Operation{
-			Name:       "SetSubscriptionAttributes",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SNS) SetSubscriptionAttributesRequest(input *SetSubscriptionAttributesInput) (req *service.Request, output *SetSubscriptionAttributesOutput) {
+	op := &service.Operation{
+		Name:       opSetSubscriptionAttributes,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &SetSubscriptionAttributesInput{}
 	}
 
-	req = c.newRequest(opSetSubscriptionAttributes, input, output)
+	req = c.newRequest(op, input, output)
 	output = &SetSubscriptionAttributesOutput{}
 	req.Data = output
 	return
@@ -858,26 +747,21 @@ func (c *SNS) SetSubscriptionAttributes(input *SetSubscriptionAttributesInput) (
 	return out, err
 }
 
-var opSetSubscriptionAttributes *aws.Operation
+const opSetTopicAttributes = "SetTopicAttributes"
 
 // SetTopicAttributesRequest generates a request for the SetTopicAttributes operation.
-func (c *SNS) SetTopicAttributesRequest(input *SetTopicAttributesInput) (req *aws.Request, output *SetTopicAttributesOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opSetTopicAttributes == nil {
-		opSetTopicAttributes = &aws.Operation{
-			Name:       "SetTopicAttributes",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SNS) SetTopicAttributesRequest(input *SetTopicAttributesInput) (req *service.Request, output *SetTopicAttributesOutput) {
+	op := &service.Operation{
+		Name:       opSetTopicAttributes,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &SetTopicAttributesInput{}
 	}
 
-	req = c.newRequest(opSetTopicAttributes, input, output)
+	req = c.newRequest(op, input, output)
 	output = &SetTopicAttributesOutput{}
 	req.Data = output
 	return
@@ -890,26 +774,21 @@ func (c *SNS) SetTopicAttributes(input *SetTopicAttributesInput) (*SetTopicAttri
 	return out, err
 }
 
-var opSetTopicAttributes *aws.Operation
+const opSubscribe = "Subscribe"
 
 // SubscribeRequest generates a request for the Subscribe operation.
-func (c *SNS) SubscribeRequest(input *SubscribeInput) (req *aws.Request, output *SubscribeOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opSubscribe == nil {
-		opSubscribe = &aws.Operation{
-			Name:       "Subscribe",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SNS) SubscribeRequest(input *SubscribeInput) (req *service.Request, output *SubscribeOutput) {
+	op := &service.Operation{
+		Name:       opSubscribe,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &SubscribeInput{}
 	}
 
-	req = c.newRequest(opSubscribe, input, output)
+	req = c.newRequest(op, input, output)
 	output = &SubscribeOutput{}
 	req.Data = output
 	return
@@ -925,26 +804,21 @@ func (c *SNS) Subscribe(input *SubscribeInput) (*SubscribeOutput, error) {
 	return out, err
 }
 
-var opSubscribe *aws.Operation
+const opUnsubscribe = "Unsubscribe"
 
 // UnsubscribeRequest generates a request for the Unsubscribe operation.
-func (c *SNS) UnsubscribeRequest(input *UnsubscribeInput) (req *aws.Request, output *UnsubscribeOutput) {
-	oprw.Lock()
-	defer oprw.Unlock()
-
-	if opUnsubscribe == nil {
-		opUnsubscribe = &aws.Operation{
-			Name:       "Unsubscribe",
-			HTTPMethod: "POST",
-			HTTPPath:   "/",
-		}
+func (c *SNS) UnsubscribeRequest(input *UnsubscribeInput) (req *service.Request, output *UnsubscribeOutput) {
+	op := &service.Operation{
+		Name:       opUnsubscribe,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
 	}
 
 	if input == nil {
 		input = &UnsubscribeInput{}
 	}
 
-	req = c.newRequest(opUnsubscribe, input, output)
+	req = c.newRequest(op, input, output)
 	output = &UnsubscribeOutput{}
 	req.Data = output
 	return
@@ -962,13 +836,11 @@ func (c *SNS) Unsubscribe(input *UnsubscribeInput) (*UnsubscribeOutput, error) {
 	return out, err
 }
 
-var opUnsubscribe *aws.Operation
-
 type AddPermissionInput struct {
 	// The AWS account IDs of the users (principals) who will be given access to
 	// the specified actions. The users must have AWS accounts, but do not need
 	// to be signed up for this service.
-	AWSAccountID []*string `locationName:"AWSAccountId" type:"list" required:"true"`
+	AWSAccountId []*string `type:"list" required:"true"`
 
 	// The action you want to allow for the specified principal(s).
 	//
@@ -979,7 +851,7 @@ type AddPermissionInput struct {
 	Label *string `type:"string" required:"true"`
 
 	// The ARN of the topic whose access control policy you wish to modify.
-	TopicARN *string `locationName:"TopicArn" type:"string" required:"true"`
+	TopicArn *string `type:"string" required:"true"`
 
 	metadataAddPermissionInput `json:"-" xml:"-"`
 }
@@ -988,12 +860,32 @@ type metadataAddPermissionInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s AddPermissionInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s AddPermissionInput) GoString() string {
+	return s.String()
+}
+
 type AddPermissionOutput struct {
 	metadataAddPermissionOutput `json:"-" xml:"-"`
 }
 
 type metadataAddPermissionOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s AddPermissionOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s AddPermissionOutput) GoString() string {
+	return s.String()
 }
 
 // Input for ConfirmSubscription action.
@@ -1008,7 +900,7 @@ type ConfirmSubscriptionInput struct {
 	Token *string `type:"string" required:"true"`
 
 	// The ARN of the topic for which you wish to confirm a subscription.
-	TopicARN *string `locationName:"TopicArn" type:"string" required:"true"`
+	TopicArn *string `type:"string" required:"true"`
 
 	metadataConfirmSubscriptionInput `json:"-" xml:"-"`
 }
@@ -1017,16 +909,36 @@ type metadataConfirmSubscriptionInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ConfirmSubscriptionInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ConfirmSubscriptionInput) GoString() string {
+	return s.String()
+}
+
 // Response for ConfirmSubscriptions action.
 type ConfirmSubscriptionOutput struct {
 	// The ARN of the created subscription.
-	SubscriptionARN *string `locationName:"SubscriptionArn" type:"string"`
+	SubscriptionArn *string `type:"string"`
 
 	metadataConfirmSubscriptionOutput `json:"-" xml:"-"`
 }
 
 type metadataConfirmSubscriptionOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s ConfirmSubscriptionOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ConfirmSubscriptionOutput) GoString() string {
+	return s.String()
 }
 
 // Input for CreatePlatformApplication action.
@@ -1050,16 +962,36 @@ type metadataCreatePlatformApplicationInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s CreatePlatformApplicationInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreatePlatformApplicationInput) GoString() string {
+	return s.String()
+}
+
 // Response from CreatePlatformApplication action.
 type CreatePlatformApplicationOutput struct {
 	// PlatformApplicationArn is returned.
-	PlatformApplicationARN *string `locationName:"PlatformApplicationArn" type:"string"`
+	PlatformApplicationArn *string `type:"string"`
 
 	metadataCreatePlatformApplicationOutput `json:"-" xml:"-"`
 }
 
 type metadataCreatePlatformApplicationOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s CreatePlatformApplicationOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreatePlatformApplicationOutput) GoString() string {
+	return s.String()
 }
 
 // Input for CreatePlatformEndpoint action.
@@ -1073,7 +1005,7 @@ type CreatePlatformEndpointInput struct {
 
 	// PlatformApplicationArn returned from CreatePlatformApplication is used to
 	// create a an endpoint.
-	PlatformApplicationARN *string `locationName:"PlatformApplicationArn" type:"string" required:"true"`
+	PlatformApplicationArn *string `type:"string" required:"true"`
 
 	// Unique identifier created by the notification service for an app on a device.
 	// The specific name for Token will vary, depending on which notification service
@@ -1089,16 +1021,36 @@ type metadataCreatePlatformEndpointInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s CreatePlatformEndpointInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreatePlatformEndpointInput) GoString() string {
+	return s.String()
+}
+
 // Response from CreateEndpoint action.
 type CreatePlatformEndpointOutput struct {
 	// EndpointArn returned from CreateEndpoint action.
-	EndpointARN *string `locationName:"EndpointArn" type:"string"`
+	EndpointArn *string `type:"string"`
 
 	metadataCreatePlatformEndpointOutput `json:"-" xml:"-"`
 }
 
 type metadataCreatePlatformEndpointOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s CreatePlatformEndpointOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreatePlatformEndpointOutput) GoString() string {
+	return s.String()
 }
 
 // Input for CreateTopic action.
@@ -1117,10 +1069,20 @@ type metadataCreateTopicInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s CreateTopicInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateTopicInput) GoString() string {
+	return s.String()
+}
+
 // Response from CreateTopic action.
 type CreateTopicOutput struct {
 	// The Amazon Resource Name (ARN) assigned to the created topic.
-	TopicARN *string `locationName:"TopicArn" type:"string"`
+	TopicArn *string `type:"string"`
 
 	metadataCreateTopicOutput `json:"-" xml:"-"`
 }
@@ -1129,16 +1091,36 @@ type metadataCreateTopicOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s CreateTopicOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateTopicOutput) GoString() string {
+	return s.String()
+}
+
 // Input for DeleteEndpoint action.
 type DeleteEndpointInput struct {
 	// EndpointArn of endpoint to delete.
-	EndpointARN *string `locationName:"EndpointArn" type:"string" required:"true"`
+	EndpointArn *string `type:"string" required:"true"`
 
 	metadataDeleteEndpointInput `json:"-" xml:"-"`
 }
 
 type metadataDeleteEndpointInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteEndpointInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteEndpointInput) GoString() string {
+	return s.String()
 }
 
 type DeleteEndpointOutput struct {
@@ -1149,16 +1131,36 @@ type metadataDeleteEndpointOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteEndpointOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteEndpointOutput) GoString() string {
+	return s.String()
+}
+
 // Input for DeletePlatformApplication action.
 type DeletePlatformApplicationInput struct {
 	// PlatformApplicationArn of platform application object to delete.
-	PlatformApplicationARN *string `locationName:"PlatformApplicationArn" type:"string" required:"true"`
+	PlatformApplicationArn *string `type:"string" required:"true"`
 
 	metadataDeletePlatformApplicationInput `json:"-" xml:"-"`
 }
 
 type metadataDeletePlatformApplicationInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeletePlatformApplicationInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeletePlatformApplicationInput) GoString() string {
+	return s.String()
 }
 
 type DeletePlatformApplicationOutput struct {
@@ -1169,15 +1171,35 @@ type metadataDeletePlatformApplicationOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeletePlatformApplicationOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeletePlatformApplicationOutput) GoString() string {
+	return s.String()
+}
+
 type DeleteTopicInput struct {
 	// The ARN of the topic you want to delete.
-	TopicARN *string `locationName:"TopicArn" type:"string" required:"true"`
+	TopicArn *string `type:"string" required:"true"`
 
 	metadataDeleteTopicInput `json:"-" xml:"-"`
 }
 
 type metadataDeleteTopicInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteTopicInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteTopicInput) GoString() string {
+	return s.String()
 }
 
 type DeleteTopicOutput struct {
@@ -1188,13 +1210,23 @@ type metadataDeleteTopicOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s DeleteTopicOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteTopicOutput) GoString() string {
+	return s.String()
+}
+
 // Endpoint for mobile app and device.
 type Endpoint struct {
 	// Attributes for endpoint.
 	Attributes map[string]*string `type:"map"`
 
 	// EndpointArn for mobile app and device.
-	EndpointARN *string `locationName:"EndpointArn" type:"string"`
+	EndpointArn *string `type:"string"`
 
 	metadataEndpoint `json:"-" xml:"-"`
 }
@@ -1203,16 +1235,36 @@ type metadataEndpoint struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s Endpoint) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s Endpoint) GoString() string {
+	return s.String()
+}
+
 // Input for GetEndpointAttributes action.
 type GetEndpointAttributesInput struct {
 	// EndpointArn for GetEndpointAttributes input.
-	EndpointARN *string `locationName:"EndpointArn" type:"string" required:"true"`
+	EndpointArn *string `type:"string" required:"true"`
 
 	metadataGetEndpointAttributesInput `json:"-" xml:"-"`
 }
 
 type metadataGetEndpointAttributesInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetEndpointAttributesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetEndpointAttributesInput) GoString() string {
+	return s.String()
 }
 
 // Response from GetEndpointAttributes of the EndpointArn.
@@ -1237,16 +1289,36 @@ type metadataGetEndpointAttributesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GetEndpointAttributesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetEndpointAttributesOutput) GoString() string {
+	return s.String()
+}
+
 // Input for GetPlatformApplicationAttributes action.
 type GetPlatformApplicationAttributesInput struct {
 	// PlatformApplicationArn for GetPlatformApplicationAttributesInput.
-	PlatformApplicationARN *string `locationName:"PlatformApplicationArn" type:"string" required:"true"`
+	PlatformApplicationArn *string `type:"string" required:"true"`
 
 	metadataGetPlatformApplicationAttributesInput `json:"-" xml:"-"`
 }
 
 type metadataGetPlatformApplicationAttributesInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetPlatformApplicationAttributesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetPlatformApplicationAttributesInput) GoString() string {
+	return s.String()
 }
 
 // Response for GetPlatformApplicationAttributes action.
@@ -1269,16 +1341,36 @@ type metadataGetPlatformApplicationAttributesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GetPlatformApplicationAttributesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetPlatformApplicationAttributesOutput) GoString() string {
+	return s.String()
+}
+
 // Input for GetSubscriptionAttributes.
 type GetSubscriptionAttributesInput struct {
 	// The ARN of the subscription whose properties you want to get.
-	SubscriptionARN *string `locationName:"SubscriptionArn" type:"string" required:"true"`
+	SubscriptionArn *string `type:"string" required:"true"`
 
 	metadataGetSubscriptionAttributesInput `json:"-" xml:"-"`
 }
 
 type metadataGetSubscriptionAttributesInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetSubscriptionAttributesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetSubscriptionAttributesInput) GoString() string {
+	return s.String()
 }
 
 // Response for GetSubscriptionAttributes action.
@@ -1302,16 +1394,36 @@ type metadataGetSubscriptionAttributesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GetSubscriptionAttributesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetSubscriptionAttributesOutput) GoString() string {
+	return s.String()
+}
+
 // Input for GetTopicAttributes action.
 type GetTopicAttributesInput struct {
 	// The ARN of the topic whose properties you want to get.
-	TopicARN *string `locationName:"TopicArn" type:"string" required:"true"`
+	TopicArn *string `type:"string" required:"true"`
 
 	metadataGetTopicAttributesInput `json:"-" xml:"-"`
 }
 
 type metadataGetTopicAttributesInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetTopicAttributesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetTopicAttributesInput) GoString() string {
+	return s.String()
 }
 
 // Response for GetTopicAttributes action.
@@ -1337,6 +1449,16 @@ type metadataGetTopicAttributesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s GetTopicAttributesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetTopicAttributesOutput) GoString() string {
+	return s.String()
+}
+
 // Input for ListEndpointsByPlatformApplication action.
 type ListEndpointsByPlatformApplicationInput struct {
 	// NextToken string is used when calling ListEndpointsByPlatformApplication
@@ -1345,13 +1467,23 @@ type ListEndpointsByPlatformApplicationInput struct {
 	NextToken *string `type:"string"`
 
 	// PlatformApplicationArn for ListEndpointsByPlatformApplicationInput action.
-	PlatformApplicationARN *string `locationName:"PlatformApplicationArn" type:"string" required:"true"`
+	PlatformApplicationArn *string `type:"string" required:"true"`
 
 	metadataListEndpointsByPlatformApplicationInput `json:"-" xml:"-"`
 }
 
 type metadataListEndpointsByPlatformApplicationInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s ListEndpointsByPlatformApplicationInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListEndpointsByPlatformApplicationInput) GoString() string {
+	return s.String()
 }
 
 // Response for ListEndpointsByPlatformApplication action.
@@ -1370,6 +1502,16 @@ type metadataListEndpointsByPlatformApplicationOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListEndpointsByPlatformApplicationOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListEndpointsByPlatformApplicationOutput) GoString() string {
+	return s.String()
+}
+
 // Input for ListPlatformApplications action.
 type ListPlatformApplicationsInput struct {
 	// NextToken string is used when calling ListPlatformApplications action to
@@ -1381,6 +1523,16 @@ type ListPlatformApplicationsInput struct {
 
 type metadataListPlatformApplicationsInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s ListPlatformApplicationsInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListPlatformApplicationsInput) GoString() string {
+	return s.String()
 }
 
 // Response for ListPlatformApplications action.
@@ -1399,19 +1551,39 @@ type metadataListPlatformApplicationsOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListPlatformApplicationsOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListPlatformApplicationsOutput) GoString() string {
+	return s.String()
+}
+
 // Input for ListSubscriptionsByTopic action.
 type ListSubscriptionsByTopicInput struct {
 	// Token returned by the previous ListSubscriptionsByTopic request.
 	NextToken *string `type:"string"`
 
 	// The ARN of the topic for which you wish to find subscriptions.
-	TopicARN *string `locationName:"TopicArn" type:"string" required:"true"`
+	TopicArn *string `type:"string" required:"true"`
 
 	metadataListSubscriptionsByTopicInput `json:"-" xml:"-"`
 }
 
 type metadataListSubscriptionsByTopicInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s ListSubscriptionsByTopicInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListSubscriptionsByTopicInput) GoString() string {
+	return s.String()
 }
 
 // Response for ListSubscriptionsByTopic action.
@@ -1430,6 +1602,16 @@ type metadataListSubscriptionsByTopicOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListSubscriptionsByTopicOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListSubscriptionsByTopicOutput) GoString() string {
+	return s.String()
+}
+
 // Input for ListSubscriptions action.
 type ListSubscriptionsInput struct {
 	// Token returned by the previous ListSubscriptions request.
@@ -1440,6 +1622,16 @@ type ListSubscriptionsInput struct {
 
 type metadataListSubscriptionsInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s ListSubscriptionsInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListSubscriptionsInput) GoString() string {
+	return s.String()
 }
 
 // Response for ListSubscriptions action
@@ -1458,6 +1650,16 @@ type metadataListSubscriptionsOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s ListSubscriptionsOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListSubscriptionsOutput) GoString() string {
+	return s.String()
+}
+
 type ListTopicsInput struct {
 	// Token returned by the previous ListTopics request.
 	NextToken *string `type:"string"`
@@ -1467,6 +1669,16 @@ type ListTopicsInput struct {
 
 type metadataListTopicsInput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s ListTopicsInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListTopicsInput) GoString() string {
+	return s.String()
 }
 
 // Response for ListTopics action.
@@ -1483,6 +1695,16 @@ type ListTopicsOutput struct {
 
 type metadataListTopicsOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s ListTopicsOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListTopicsOutput) GoString() string {
+	return s.String()
 }
 
 // The user-specified message attribute value. For string data types, the value
@@ -1514,19 +1736,39 @@ type metadataMessageAttributeValue struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s MessageAttributeValue) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s MessageAttributeValue) GoString() string {
+	return s.String()
+}
+
 // Platform application object.
 type PlatformApplication struct {
 	// Attributes for platform application object.
 	Attributes map[string]*string `type:"map"`
 
 	// PlatformApplicationArn for platform application object.
-	PlatformApplicationARN *string `locationName:"PlatformApplicationArn" type:"string"`
+	PlatformApplicationArn *string `type:"string"`
 
 	metadataPlatformApplication `json:"-" xml:"-"`
 }
 
 type metadataPlatformApplication struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s PlatformApplication) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PlatformApplication) GoString() string {
+	return s.String()
 }
 
 // Input for Publish action.
@@ -1588,10 +1830,10 @@ type PublishInput struct {
 	Subject *string `type:"string"`
 
 	// Either TopicArn or EndpointArn, but not both.
-	TargetARN *string `locationName:"TargetArn" type:"string"`
+	TargetArn *string `type:"string"`
 
 	// The topic you want to publish to.
-	TopicARN *string `locationName:"TopicArn" type:"string"`
+	TopicArn *string `type:"string"`
 
 	metadataPublishInput `json:"-" xml:"-"`
 }
@@ -1600,12 +1842,22 @@ type metadataPublishInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s PublishInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PublishInput) GoString() string {
+	return s.String()
+}
+
 // Response for Publish action.
 type PublishOutput struct {
 	// Unique identifier assigned to the published message.
 	//
 	// Length Constraint: Maximum 100 characters
-	MessageID *string `locationName:"MessageId" type:"string"`
+	MessageId *string `type:"string"`
 
 	metadataPublishOutput `json:"-" xml:"-"`
 }
@@ -1614,13 +1866,23 @@ type metadataPublishOutput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s PublishOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PublishOutput) GoString() string {
+	return s.String()
+}
+
 // Input for RemovePermission action.
 type RemovePermissionInput struct {
 	// The unique label of the statement you want to remove.
 	Label *string `type:"string" required:"true"`
 
 	// The ARN of the topic whose access control policy you wish to modify.
-	TopicARN *string `locationName:"TopicArn" type:"string" required:"true"`
+	TopicArn *string `type:"string" required:"true"`
 
 	metadataRemovePermissionInput `json:"-" xml:"-"`
 }
@@ -1629,12 +1891,32 @@ type metadataRemovePermissionInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s RemovePermissionInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s RemovePermissionInput) GoString() string {
+	return s.String()
+}
+
 type RemovePermissionOutput struct {
 	metadataRemovePermissionOutput `json:"-" xml:"-"`
 }
 
 type metadataRemovePermissionOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s RemovePermissionOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s RemovePermissionOutput) GoString() string {
+	return s.String()
 }
 
 // Input for SetEndpointAttributes action.
@@ -1653,7 +1935,7 @@ type SetEndpointAttributesInput struct {
 	Attributes map[string]*string `type:"map" required:"true"`
 
 	// EndpointArn used for SetEndpointAttributes action.
-	EndpointARN *string `locationName:"EndpointArn" type:"string" required:"true"`
+	EndpointArn *string `type:"string" required:"true"`
 
 	metadataSetEndpointAttributesInput `json:"-" xml:"-"`
 }
@@ -1662,12 +1944,32 @@ type metadataSetEndpointAttributesInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s SetEndpointAttributesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SetEndpointAttributesInput) GoString() string {
+	return s.String()
+}
+
 type SetEndpointAttributesOutput struct {
 	metadataSetEndpointAttributesOutput `json:"-" xml:"-"`
 }
 
 type metadataSetEndpointAttributesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s SetEndpointAttributesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SetEndpointAttributesOutput) GoString() string {
+	return s.String()
 }
 
 // Input for SetPlatformApplicationAttributes action.
@@ -1690,7 +1992,7 @@ type SetPlatformApplicationAttributesInput struct {
 	Attributes map[string]*string `type:"map" required:"true"`
 
 	// PlatformApplicationArn for SetPlatformApplicationAttributes action.
-	PlatformApplicationARN *string `locationName:"PlatformApplicationArn" type:"string" required:"true"`
+	PlatformApplicationArn *string `type:"string" required:"true"`
 
 	metadataSetPlatformApplicationAttributesInput `json:"-" xml:"-"`
 }
@@ -1699,12 +2001,32 @@ type metadataSetPlatformApplicationAttributesInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s SetPlatformApplicationAttributesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SetPlatformApplicationAttributesInput) GoString() string {
+	return s.String()
+}
+
 type SetPlatformApplicationAttributesOutput struct {
 	metadataSetPlatformApplicationAttributesOutput `json:"-" xml:"-"`
 }
 
 type metadataSetPlatformApplicationAttributesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s SetPlatformApplicationAttributesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SetPlatformApplicationAttributesOutput) GoString() string {
+	return s.String()
 }
 
 // Input for SetSubscriptionAttributes action.
@@ -1719,7 +2041,7 @@ type SetSubscriptionAttributesInput struct {
 	AttributeValue *string `type:"string"`
 
 	// The ARN of the subscription to modify.
-	SubscriptionARN *string `locationName:"SubscriptionArn" type:"string" required:"true"`
+	SubscriptionArn *string `type:"string" required:"true"`
 
 	metadataSetSubscriptionAttributesInput `json:"-" xml:"-"`
 }
@@ -1728,12 +2050,32 @@ type metadataSetSubscriptionAttributesInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s SetSubscriptionAttributesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SetSubscriptionAttributesInput) GoString() string {
+	return s.String()
+}
+
 type SetSubscriptionAttributesOutput struct {
 	metadataSetSubscriptionAttributesOutput `json:"-" xml:"-"`
 }
 
 type metadataSetSubscriptionAttributesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s SetSubscriptionAttributesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SetSubscriptionAttributesOutput) GoString() string {
+	return s.String()
 }
 
 // Input for SetTopicAttributes action.
@@ -1748,7 +2090,7 @@ type SetTopicAttributesInput struct {
 	AttributeValue *string `type:"string"`
 
 	// The ARN of the topic to modify.
-	TopicARN *string `locationName:"TopicArn" type:"string" required:"true"`
+	TopicArn *string `type:"string" required:"true"`
 
 	metadataSetTopicAttributesInput `json:"-" xml:"-"`
 }
@@ -1757,12 +2099,32 @@ type metadataSetTopicAttributesInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s SetTopicAttributesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SetTopicAttributesInput) GoString() string {
+	return s.String()
+}
+
 type SetTopicAttributesOutput struct {
 	metadataSetTopicAttributesOutput `json:"-" xml:"-"`
 }
 
 type metadataSetTopicAttributesOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s SetTopicAttributesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SetTopicAttributesOutput) GoString() string {
+	return s.String()
 }
 
 // Input for Subscribe action.
@@ -1789,7 +2151,7 @@ type SubscribeInput struct {
 	Protocol *string `type:"string" required:"true"`
 
 	// The ARN of the topic you want to subscribe to.
-	TopicARN *string `locationName:"TopicArn" type:"string" required:"true"`
+	TopicArn *string `type:"string" required:"true"`
 
 	metadataSubscribeInput `json:"-" xml:"-"`
 }
@@ -1798,17 +2160,37 @@ type metadataSubscribeInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s SubscribeInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SubscribeInput) GoString() string {
+	return s.String()
+}
+
 // Response for Subscribe action.
 type SubscribeOutput struct {
 	// The ARN of the subscription, if the service was able to create a subscription
 	// immediately (without requiring endpoint owner confirmation).
-	SubscriptionARN *string `locationName:"SubscriptionArn" type:"string"`
+	SubscriptionArn *string `type:"string"`
 
 	metadataSubscribeOutput `json:"-" xml:"-"`
 }
 
 type metadataSubscribeOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s SubscribeOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SubscribeOutput) GoString() string {
+	return s.String()
 }
 
 // A wrapper type for the attributes of an Amazon SNS subscription.
@@ -1823,10 +2205,10 @@ type Subscription struct {
 	Protocol *string `type:"string"`
 
 	// The subscription's ARN.
-	SubscriptionARN *string `locationName:"SubscriptionArn" type:"string"`
+	SubscriptionArn *string `type:"string"`
 
 	// The ARN of the subscription's topic.
-	TopicARN *string `locationName:"TopicArn" type:"string"`
+	TopicArn *string `type:"string"`
 
 	metadataSubscription `json:"-" xml:"-"`
 }
@@ -1835,11 +2217,21 @@ type metadataSubscription struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s Subscription) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s Subscription) GoString() string {
+	return s.String()
+}
+
 // A wrapper type for the topic's Amazon Resource Name (ARN). To retrieve a
 // topic's attributes, use GetTopicAttributes.
 type Topic struct {
 	// The topic's ARN.
-	TopicARN *string `locationName:"TopicArn" type:"string"`
+	TopicArn *string `type:"string"`
 
 	metadataTopic `json:"-" xml:"-"`
 }
@@ -1848,10 +2240,20 @@ type metadataTopic struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s Topic) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s Topic) GoString() string {
+	return s.String()
+}
+
 // Input for Unsubscribe action.
 type UnsubscribeInput struct {
 	// The ARN of the subscription to be deleted.
-	SubscriptionARN *string `locationName:"SubscriptionArn" type:"string" required:"true"`
+	SubscriptionArn *string `type:"string" required:"true"`
 
 	metadataUnsubscribeInput `json:"-" xml:"-"`
 }
@@ -1860,10 +2262,30 @@ type metadataUnsubscribeInput struct {
 	SDKShapeTraits bool `type:"structure"`
 }
 
+// String returns the string representation
+func (s UnsubscribeInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UnsubscribeInput) GoString() string {
+	return s.String()
+}
+
 type UnsubscribeOutput struct {
 	metadataUnsubscribeOutput `json:"-" xml:"-"`
 }
 
 type metadataUnsubscribeOutput struct {
 	SDKShapeTraits bool `type:"structure"`
+}
+
+// String returns the string representation
+func (s UnsubscribeOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UnsubscribeOutput) GoString() string {
+	return s.String()
 }

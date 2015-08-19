@@ -77,14 +77,14 @@ func (n *notificationHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 	// if the device token exists and has changed, register the device token for the user to get the application endpoint
 	if existingPushConfigData == nil || rData.DeviceToken != existingPushConfigData.DeviceToken {
 		res, err := n.snsClient.CreatePlatformEndpoint(&sns.CreatePlatformEndpointInput{
-			PlatformApplicationARN: &notificationConfig.SNSApplicationEndpoint,
+			PlatformApplicationArn: &notificationConfig.SNSApplicationEndpoint,
 			Token: &rData.DeviceToken,
 		})
 		if err != nil {
 			apiservice.WriteError(ctx, errors.New("Unable to register token for push notifications: "+err.Error()), w, r)
 			return
 		}
-		pushEndpoint = *res.EndpointARN
+		pushEndpoint = *res.EndpointArn
 	}
 
 	newPushConfigData := &common.PushConfigData{

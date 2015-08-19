@@ -50,7 +50,7 @@ func (s *S3) LatchedExpire(enabled bool) {
 }
 
 func (s *S3) IDFromName(name string) string {
-	return fmt.Sprintf("s3://%s/%s%s%s", s.s3.Config.Region, s.bucket, s.prefix, name)
+	return fmt.Sprintf("s3://%s/%s%s%s", *s.s3.Config.Region, s.bucket, s.prefix, name)
 }
 
 func (s *S3) Put(name string, data []byte, contentType string, meta map[string]string) (string, error) {
@@ -82,7 +82,7 @@ func (s *S3) PutReader(name string, r io.ReadSeeker, size int64, contentType str
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("s3://%s/%s%s", s.s3.Config.Region, s.bucket, path), nil
+	return fmt.Sprintf("s3://%s/%s%s", *s.s3.Config.Region, s.bucket, path), nil
 }
 
 func (s *S3) Get(id string) ([]byte, http.Header, error) {
