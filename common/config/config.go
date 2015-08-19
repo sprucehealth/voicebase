@@ -152,6 +152,7 @@ func (c *BaseConfig) AWS() *aws.Config {
 		if c.AWSAccessKey != "" && c.AWSSecretKey != "" {
 			cred = credentials.NewStaticCredentials(c.AWSAccessKey, c.AWSSecretKey, "")
 		} else {
+			cred = credentials.NewEnvCredentials()
 			if v, err := cred.Get(); err != nil || v.AccessKeyID == "" || v.SecretAccessKey == "" {
 				cred = ec2rolecreds.NewCredentials(ec2metadata.New(&ec2metadata.Config{
 					HTTPClient: &http.Client{Timeout: 2 * time.Second},
