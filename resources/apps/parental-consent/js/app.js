@@ -4,7 +4,7 @@ var Backbone = require("backbone");
 var jQuery = require("jquery");
 var React = require("react");
 var Routing = require("../../libs/routing.js");
-var Reflux = require('reflux');
+var Reflux = require("reflux");
 var Utils = require("../../libs/utils.js");
 var Analytics = require("../../libs/analytics.js");
 

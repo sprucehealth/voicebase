@@ -1,9 +1,9 @@
 /* @flow */
 
-var React = require("react/addons");
-var Reflux = require('reflux');
-var Utils = require("../../libs/utils.js");
-var Formatter = require('../../libs/formatter.js');
+import * as React from "react/addons"
+import * as Reflux from "reflux"
+import * as Utils from "../../libs/utils.js"
+var MaskedInput = require('react-maskedinput')
 
 var Analytics = require("../../libs/analytics.js");
 var AnalyticsScreenName = "demographics"
@@ -60,29 +60,6 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 				relationship: store.userInput.relationship,
 			});
 		}
-
-		var patterns = [
-			{"*": "{{99}}-{{99}}-{{9999}}"},
-			{".{8}": "{{99}}-{{99}}-{{99}}"}
-		]
-		if (!IsAndroid && !IsMobileSafari) {
-			// Note: there is likely something fundamentally wrong with this, because
-			// React does not guarantee that a node we fetch here will always exist in the dom as the DOB and Phone Inputs
-			// This may be why it doesn't work on Android Browser
-			// We could try setting this up in componentDidUpdate, but we'll need to tear down the old instance first
-			
-			var dobInputFormatter = new Formatter.Formatter(React.findDOMNode(this.refs.dobInput), {
-				'patterns': patterns,
-				'changeCallback': this.onDateChange
-			});
-		}
-
-		if (!IsAndroid) {
-			var phoneInputFormatter = new Formatter.Formatter(React.findDOMNode(this.refs.phoneInput), {
-				'pattern': '{{999}}-{{999}}-{{9999}}',
-				'changeCallback': this.onPhoneChange
-			});
-		}
 	},
 
 	//
@@ -124,8 +101,11 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 	onDateChange: function(newValue: string) {
 		this.setState({dob: newValue})
 	},
-	onPhoneChange: function(newValue: string) {
-		this.setState({phone: newValue})
+	onTextInputDateChange: function(e: any) {
+		this.setState({dob: e.target.value})
+	},
+	onPhoneChange: function(e: any) {
+		this.setState({phone: e.target.value})
 	},
 
 	//
@@ -211,31 +191,24 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 							border: "none",
 						}, selectContainerStyle)}/>
 				</div>);
-			phoneInput = (<input 
-				type="tel"
-				disabled={isSignedIn}
-				mozactionhint="done"
-				inputmode="tel"
-				placeholder="Mobile Phone #"
-				valueLink={this.linkState('phone')}
-				ref="phoneInput" />)
 		} else {
-			dateInput = (<input
-				disabled={isSignedIn}
-				type="text"
-				placeholder="Date of Birth (MM-DD-YY)"
-				className={this.isDOBFieldValid() ? null : "emptyState"}
-				valueLink={this.linkState('dob')}
-				ref="dobInput" />)
-			phoneInput = (<input 
-				disabled={isSignedIn}
-				type="tel"
-				mozactionhint="done"
-				inputmode="tel"
-				placeholder="Mobile Phone #"
-				valueLink={this.linkState('phone')}
-				ref="phoneInput" />)
+			dateInput = (
+				<MaskedInput 
+					pattern="11-11-1111" 
+					placeholder="Date of Birth (MM-DD-YY)" 
+					onChange={this.onTextInputDateChange}
+					inputmode="tel"
+					type="tel"
+					className={this.isDOBFieldValid() ? null : "emptyState"} />)
 		}
+		phoneInput = (
+			<MaskedInput 
+				pattern="111-111-1111" 
+				placeholder="Mobile Phone #"
+				onChange={this.onPhoneChange}
+				inputmode="tel"
+				type="tel"
+				className={this.isPhoneFieldValid() ? null : "emptyState"} />)
 
 		var orangeBottomDividerStyle = {
 			borderBottomColor: "#F5A623",
