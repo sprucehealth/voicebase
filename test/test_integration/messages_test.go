@@ -3,6 +3,8 @@ package test_integration
 import (
 	"testing"
 
+	"github.com/sprucehealth/backend/appevent"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/messages"
@@ -139,6 +141,7 @@ func TestCaseMessages(t *testing.T) {
 		test.OK(t, err)
 		test.Equals(t, 3, len(msgs))
 		for _, m := range msgs {
+			test.Equals(t, 1, len(m.ReadReceipts))
 			for _, rr := range m.ReadReceipts {
 				var found bool
 				for _, p := range pars {
@@ -170,6 +173,9 @@ func TestCaseMessages(t *testing.T) {
 
 	// Test unread count
 	{
+		test.OK(t, patientCli.AppEvent(appevent.ViewedAction, "all_case_messages", caseID))
+		test.OK(t, doctorCli.AppEvent(appevent.ViewedAction, "all_case_messages", caseID))
+
 		// Initial unread counts should be 0
 		count, err := testData.DataAPI.UnreadMessageCount(caseID, doctor.PersonID)
 		test.OK(t, err)
@@ -190,8 +196,7 @@ func TestCaseMessages(t *testing.T) {
 		test.OK(t, err)
 		test.Equals(t, 0, count)
 
-		_, _, err = doctorCli.ListCaseMessages(caseID)
-		test.OK(t, err)
+		test.OK(t, doctorCli.AppEvent(appevent.ViewedAction, "all_case_messages", caseID))
 
 		// Now that the doctor read the message the unread count should be 0
 		count, err = testData.DataAPI.UnreadMessageCount(caseID, doctor.PersonID)

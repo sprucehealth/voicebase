@@ -7,7 +7,7 @@ import (
 
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/app_event"
+	"github.com/sprucehealth/backend/appevent"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/schedmsg"
 	"github.com/sprucehealth/backend/test"
@@ -174,13 +174,13 @@ func TestScheduledMessage_TreatmentPlanViewed(t *testing.T) {
 	// now lets go ahead and submit a visit
 	_, tp := test_integration.CreateRandomPatientVisitAndPickTP(t, testData, doctor)
 	patient, err := testData.DataAPI.GetPatientFromID(tp.PatientID)
+	patientCli := test_integration.PatientClient(testData, t, patient.ID)
 
 	// lets get the doctor to submit the treatment plan back to the patietn
 	test_integration.SubmitPatientVisitBackToPatient(tp.ID.Int64(), doctor, testData, t)
 
 	// now lets get the patient to view the treatment plan
-	test_integration.GenerateAppEvent(app_event.ViewedAction,
-		"treatment_plan", tp.ID.Int64(), patient.AccountID.Int64(), testData, t)
+	test.OK(t, patientCli.AppEvent(appevent.ViewedAction, "treatment_plan", tp.ID.Int64()))
 
 	// at this point there should be a scheduled message
 	var count int64

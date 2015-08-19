@@ -1,4 +1,4 @@
-package app_event
+package appevent
 
 const (
 	ViewedAction  = "viewed"

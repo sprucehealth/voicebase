@@ -3,7 +3,7 @@ package test_case
 import (
 	"testing"
 
-	"github.com/sprucehealth/backend/app_event"
+	"github.com/sprucehealth/backend/appevent"
 	"github.com/sprucehealth/backend/patient_case"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
@@ -116,7 +116,7 @@ func TestCaseNotifications_Message(t *testing.T) {
 	notificationID := notificationItems[1].ID
 
 	// now lets go ahead and have the patient read the message
-	test_integration.GenerateAppEvent(app_event.ViewedAction, "case_message", messageID2, patient.AccountID.Int64(), testData, t)
+	test.OK(t, patientCli.AppEvent(appevent.ViewedAction, "case_message", messageID2))
 
 	// there should only remain 1 notification item
 	notificationItems, err = testData.DataAPI.GetNotificationsForCase(caseID, testNotifyTypes)
@@ -129,7 +129,7 @@ func TestCaseNotifications_Message(t *testing.T) {
 	}
 
 	// read the remaining message
-	test_integration.GenerateAppEvent(app_event.ViewedAction, "case_message", messageID1, patient.AccountID.Int64(), testData, t)
+	test.OK(t, patientCli.AppEvent(appevent.ViewedAction, "case_message", messageID1))
 	notificationItems, err = testData.DataAPI.GetNotificationsForCase(caseID, testNotifyTypes)
 	if err != nil {
 		t.Fatal(err)
@@ -181,6 +181,7 @@ func TestCaseNotifications_TreatmentPlan(t *testing.T) {
 
 	patient, err := testData.DataAPI.GetPatientFromTreatmentPlanID(treatmentPlan.ID.Int64())
 	test.OK(t, err)
+	patientCli := test_integration.PatientClient(testData, t, patient.ID)
 
 	// there should now exist a notification item for the treatment plan
 	testNotifyTypes := getNotificationTypes()
@@ -195,7 +196,7 @@ func TestCaseNotifications_TreatmentPlan(t *testing.T) {
 	}
 
 	// now lets go ahead and mark that the patient read the treatment plan
-	test_integration.GenerateAppEvent(app_event.ViewedAction, "treatment_plan", treatmentPlan.ID.Int64(), patient.AccountID.Int64(), testData, t)
+	test.OK(t, patientCli.AppEvent(appevent.ViewedAction, "treatment_plan", treatmentPlan.ID.Int64()))
 
 	// now there should be no treatment plan notificatin left
 	notificationItems, err = testData.DataAPI.GetNotificationsForCase(treatmentPlan.PatientCaseID.Int64(), testNotifyTypes)

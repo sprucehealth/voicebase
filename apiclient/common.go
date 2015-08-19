@@ -10,6 +10,7 @@ import (
 
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
+	"github.com/sprucehealth/backend/appevent"
 	"github.com/sprucehealth/backend/passreset"
 )
 
@@ -19,9 +20,19 @@ type Config struct {
 	HostHeader string
 }
 
+// ResetPassword requests a password reset for the account matching the provided email
 func (c *Config) ResetPassword(email string) error {
 	req := &passreset.ForgotPasswordRequest{Email: email}
 	return c.do("POST", apipaths.ResetPasswordURLPath, nil, req, nil, nil)
+}
+
+// AppEvent posts an app_event to the server
+func (c *Config) AppEvent(action, resource string, resourceID int64) error {
+	return c.do("POST", apipaths.AppEventURLPath, nil, &appevent.EventRequestData{
+		Resource:   resource,
+		ResourceID: resourceID,
+		Action:     action,
+	}, nil, nil)
 }
 
 func (c *Config) do(method, path string, params url.Values, req, res interface{}, headers http.Header) error {

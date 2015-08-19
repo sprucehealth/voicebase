@@ -66,7 +66,6 @@ func DoctorHasAccessToCase(ctx context.Context, doctorID, caseID int64, accountR
 }
 
 func ValidateDoctorAccessToPatientFile(httpMethod, role string, doctorID int64, patientID common.PatientID, dataAPI api.DataAPI) error {
-
 	switch role {
 	case api.RoleCC:
 		if httpMethod == httputil.Get {

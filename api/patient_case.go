@@ -15,6 +15,17 @@ import (
 	"github.com/sprucehealth/backend/patient_case/model"
 )
 
+func (d *dataService) CaseIDForTreatmentPlan(treatmentPlanID int64) (int64, error) {
+	row := d.db.QueryRow(`SELECT patient_case_id FROM treatment_plan WHERE id = ?`, treatmentPlanID)
+	var caseID int64
+	if err := row.Scan(&caseID); err == sql.ErrNoRows {
+		return 0, errors.Trace(ErrNotFound("treatment_plan"))
+	} else if err != nil {
+		return 0, errors.Trace(err)
+	}
+	return caseID, nil
+}
+
 func (d *dataService) GetDoctorsAssignedToPatientCase(patientCaseID int64) ([]*common.CareProviderAssignment, error) {
 	rows, err := d.db.Query(`
 		SELECT provider_id, status, creation_date, expires

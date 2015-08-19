@@ -12,7 +12,7 @@ import (
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
-	"github.com/sprucehealth/backend/app_event"
+	"github.com/sprucehealth/backend/appevent"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/diagnosis/handlers"
@@ -51,6 +51,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 
 	patient, err := testData.DataAPI.GetPatientFromID(tp.PatientID)
 	test.OK(t, err)
+	patientCli := test_integration.PatientClient(testData, t, patient.ID)
 	patientID := patient.ID
 	patientAccountID := patient.AccountID.Int64()
 	test_integration.AddCreditCardForPatient(patientID, testData, t)
@@ -101,7 +102,7 @@ func TestFollowup_CreateAndSubmit(t *testing.T) {
 
 	// lets generate an app event to indicate that we have viewed the treatment plan so that the
 	// notification is cleared
-	test_integration.GenerateAppEvent(app_event.ViewedAction, "treatment_plan", tp.ID.Int64(), patientAccountID, testData, t)
+	test.OK(t, patientCli.AppEvent(appevent.ViewedAction, "treatment_plan", tp.ID.Int64()))
 
 	// at this point there should be a case notification that
 	// encourages the patient to complete their followup visit

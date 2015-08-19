@@ -16,7 +16,6 @@ import (
 	"github.com/sprucehealth/backend/apiclient"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
-	"github.com/sprucehealth/backend/app_event"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/doctor_queue"
@@ -395,22 +394,6 @@ func SetupTestWithActiveCostAndVisitSubmitted(testData *TestData, t *testing.T) 
 	}
 	test.OK(t, testData.DataAPI.AddCardForPatient(patientVisit.PatientID, card))
 	return patientVisit, stubSQSQueue, card
-}
-
-func GenerateAppEvent(action, resource string, resourceID, accountID int64, testData *TestData, t *testing.T) {
-	jsonData, err := json.Marshal(&app_event.EventRequestData{
-		Resource:   resource,
-		ResourceID: resourceID,
-		Action:     action,
-	})
-	test.OK(t, err)
-
-	res, err := testData.AuthPost(testData.APIServer.URL+apipaths.AppEventURLPath, "application/json", bytes.NewReader(jsonData), accountID)
-	test.OK(t, err)
-	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
-		t.Fatalf("Expected %d but got %d", http.StatusOK, res.StatusCode)
-	}
 }
 
 func DetermineQuestionIDForTag(questionTag string, version int64, testData *TestData, t *testing.T) int64 {

@@ -103,6 +103,18 @@ func (d *dataService) CaseMessagesRead(messageIDs []int64, personID int64) error
 	return errors.Trace(err)
 }
 
+func (d *dataService) AllCaseMessagesRead(caseID, personID int64, opts CaseMessagesReadOption) error {
+	var where string
+	if !opts.has(CMROIncludePrivate) {
+		where = `AND private = 0`
+	}
+	_, err := d.db.Exec(`
+		INSERT IGNORE INTO patient_case_message_read (message_id, person_id)
+		SELECT id, ? FROM patient_case_message WHERE patient_case_id = ? `+where,
+		personID, caseID)
+	return errors.Trace(err)
+}
+
 func (d *dataService) ListCaseMessages(caseID int64, opts ListCaseMessagesOption) ([]*common.CaseMessage, error) {
 	var clause string
 

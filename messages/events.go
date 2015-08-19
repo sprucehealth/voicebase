@@ -15,8 +15,3 @@ type CaseAssignEvent struct {
 	Doctor  *common.Doctor
 	Case    *common.PatientCase
 }
-
-type ReadEvent struct {
-	CaseID int64
-	Person *common.Person
-}

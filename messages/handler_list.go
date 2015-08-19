@@ -280,12 +280,6 @@ func (h *listHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *h
 		res.Participants = append(res.Participants, p)
 	}
 
-	// Update read statuses if necessary
-	personID := requestCache[apiservice.CKPersonID].(int64)
-	if err := h.dataAPI.CaseMessagesRead(msgIDs, personID); err != nil {
-		golog.Errorf("Failed to update case message read statuses: %s", err)
-	}
-
 	httputil.JSONResponse(w, http.StatusOK, res)
 }
 

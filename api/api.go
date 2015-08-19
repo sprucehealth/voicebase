@@ -241,6 +241,8 @@ type PatientVisitAPI interface {
 	SetMessageForPatientVisit(patientVisitID int64, message string) error
 	GetMessageForPatientVisit(patientVisitID int64) (string, error)
 	GetPatientIDFromTreatmentPlanID(treatmentPlanID int64) (common.PatientID, error)
+	// CaseIDForTreatmentPlan returns the case ID for a treatment plan
+	CaseIDForTreatmentPlan(treatmentPlanID int64) (int64, error)
 	UpdatePatientVisit(id int64, update *PatientVisitUpdate) (int, error)
 	UpdatePatientVisits(ids []int64, update *PatientVisitUpdate) error
 	AddTreatmentsForTreatmentPlan(treatments []*common.Treatment, doctorID, treatmentPlanID int64, patientID common.PatientID) error
@@ -631,12 +633,24 @@ type ListCaseMessagesOption int
 
 const (
 	// LCMOIncludePrivate returns private messages (between doctor and cc)
-	LCMOIncludePrivate = 1 << iota
+	LCMOIncludePrivate ListCaseMessagesOption = 1 << iota
 	// LCMOIncludeReadReceipts returns read receipts with the messages
 	LCMOIncludeReadReceipts
 )
 
 func (o ListCaseMessagesOption) has(opt ListCaseMessagesOption) bool {
+	return (o & opt) != 0
+}
+
+// CaseMessagesReadOption are options passed to AllCaseMessageRead
+type CaseMessagesReadOption int
+
+const (
+	// CMROIncludePrivate marks even private messages as read (otherwise only non-private messages are counted)
+	CMROIncludePrivate CaseMessagesReadOption = 1 << iota
+)
+
+func (o CaseMessagesReadOption) has(opt CaseMessagesReadOption) bool {
 	return (o & opt) != 0
 }
 
@@ -646,6 +660,9 @@ type CaseMessageAPI interface {
 	// CaseMessagesRead records that a person read each message. If they have previously
 	// read a message then the old timestamp is maintained (earliest read timestamp is used).
 	CaseMessagesRead(messageIDs []int64, personID int64) error
+	// AllCaseMessagesRead records all messages in a case as read. If they have previously
+	// read a message then the old timestamp is maintained (earliest read timestamp is used).
+	AllCaseMessagesRead(caseID, personID int64, opts CaseMessagesReadOption) error
 	CreateCaseMessage(msg *common.CaseMessage) (int64, error)
 	GetCaseIDFromMessageID(messageID int64) (int64, error)
 	ListCaseMessages(caseID int64, opts ListCaseMessagesOption) ([]*common.CaseMessage, error)

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/app_event"
+	"github.com/sprucehealth/backend/appevent"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/libs/dispatch"
@@ -290,10 +290,10 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 		return nil
 	})
 
-	dispatcher.Subscribe(func(ev *app_event.AppEvent) error {
+	dispatcher.Subscribe(func(ev *appevent.AppEvent) error {
 
 		// act on this event if it represents a patient having viewed a treatment plan
-		if ev.Resource == "treatment_plan" && ev.Role == api.RolePatient && ev.Action == app_event.ViewedAction {
+		if ev.Resource == "treatment_plan" && ev.Role == api.RolePatient && ev.Action == appevent.ViewedAction {
 
 			if ev.ResourceID == 0 {
 				return nil
@@ -362,7 +362,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 		}
 
 		// act on the event if it represents a patient having viewed a message
-		if ev.Resource == "case_message" && ev.Role == api.RolePatient && ev.Action == app_event.ViewedAction {
+		if ev.Resource == "case_message" && ev.Role == api.RolePatient && ev.Action == appevent.ViewedAction {
 
 			// nothing to do if the resourceID is not present
 			if ev.ResourceID == 0 {

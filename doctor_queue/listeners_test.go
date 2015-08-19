@@ -5,7 +5,7 @@ import (
 
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/app_event"
+	"github.com/sprucehealth/backend/appevent"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
@@ -373,8 +373,8 @@ func TestCaseAssignment_Doctor_PersistsInInbox(t *testing.T) {
 		t.Fatalf("Expected 4 items for update but got %d", len(m.updatesRequested))
 	}
 
-	dispatcher.Publish(&app_event.AppEvent{
-		Action:     app_event.ViewedAction,
+	dispatcher.Publish(&appevent.AppEvent{
+		Action:     appevent.ViewedAction,
 		Resource:   "all_case_messages",
 		ResourceID: 10,
 		Role:       api.RoleDoctor,

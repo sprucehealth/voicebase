@@ -11,7 +11,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
-	"github.com/sprucehealth/backend/app_event"
+	"github.com/sprucehealth/backend/appevent"
 	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/careprovider"
 	"github.com/sprucehealth/backend/common"
@@ -117,6 +117,7 @@ func New(conf *Config) *mux.Router {
 	cost.InitListeners(conf.DataAPI, conf.Dispatcher)
 	auth.InitListeners(conf.AuthAPI, conf.Dispatcher)
 	campaigns.InitListeners(conf.Dispatcher, conf.Cfg, conf.EmailService, conf.DataAPI, conf.WebDomain)
+	messages.InitListeners(conf.DataAPI, conf.Dispatcher)
 
 	conf.mux = mux.NewRouter()
 
@@ -274,7 +275,7 @@ func New(conf *Config) *mux.Router {
 	authenticationRequired(conf, apipaths.TagSavedSearchURLPath, tagging.NewTagSavedSearchHandler(taggingClient))
 
 	// Miscellaneous APIs
-	authenticationRequired(conf, apipaths.AppEventURLPath, app_event.NewHandler(conf.Dispatcher))
+	authenticationRequired(conf, apipaths.AppEventURLPath, appevent.NewHandler(conf.DataAPI, conf.Dispatcher))
 	noAuthenticationRequired(conf, apipaths.PromotionsConfirmationURLPath, promotions.NewPromotionConfirmationHandler(conf.DataAPI, conf.AnalyticsLogger))
 	authenticationRequired(conf, apipaths.PatienPromoCodeURLPath, promotions.NewPatientPromotionsHandler(conf.DataAPI, conf.AuthAPI, conf.AnalyticsLogger))
 	authenticationRequired(conf, apipaths.ReferralsURLPath, promotions.NewReferralProgramHandler(conf.DataAPI, conf.WebDomain))
