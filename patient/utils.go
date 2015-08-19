@@ -114,7 +114,7 @@ func IntakeLayoutForVisit(
 				Body: ParentalConsentInfoBody{
 					Title:        "Text your parent a link to get their consent for your visit.",
 					IconURL:      app_url.IconConsentLarge,
-					Message:      "Before submitting your visit, we need a parent to consent to your treatment. As part of their approval, your parent will need to provide a valid photo ID.",
+					Message:      "Before a doctor will review your case, we need a parent to consent to your treatment. As part of their approval, your parent will need to provide a valid photo ID that your care team will review.\n\nThe link will also give them access to detailed information about Spruce and treatment via telemedicine.",
 					ButtonText:   "Text Link",
 					ButtonAction: actionURL,
 				},

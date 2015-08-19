@@ -549,3 +549,17 @@ input[type="checkbox"]:focus{
 	outline: 0 none;
 	box-shadow: none;
 }
+
+// Borrowed from _index.scss
+
+#home-press {
+	padding-top: 1px;
+	padding-bottom: 35px;
+	background-color: #DAEDF6;
+	text-align: center;
+
+	img {
+		padding: 20px 30px;
+		zoom: 0.4;
+	}
+}

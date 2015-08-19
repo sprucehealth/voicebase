@@ -15,8 +15,11 @@ var ParentalConsentStore = require('./ParentalConsentStore.js');
 
 var IsAndroid = navigator.userAgent.indexOf('Android') >= 0;
 
-// Based on: https://developer.mozilla.org/en-US/docs/Browser_detection_using_the_user_agent
-var IsMobileSafari = navigator.userAgent.indexOf('Chrome') == 0 && navigator.userAgent.indexOf('Chromium') == 0 && navigator.userAgent.indexOf('Safari') >= 0 && navigator.userAgent.indexOf('iPhone') >= 0;
+var IsMobileSafari = navigator.userAgent.indexOf('Chrome') < 0
+	&& navigator.userAgent.indexOf('Chromium') < 0 
+	&& navigator.userAgent.indexOf('CriOS') < 0
+	&& navigator.userAgent.indexOf('Safari') >= 0 
+	&& navigator.userAgent.indexOf('AppleWebKit') >= 0;
 
 var DemographicsView = React.createClass({displayName: "DemographicsView",
 

@@ -2,13 +2,6 @@
 {{end}}
 
 {{define "tail"}}
-	<script type="text/javascript">
-		$('#learn-more-link').click(function(event) {
-			$('html, body').animate({
-				scrollTop: $("#parent-image").offset().top
-			}, 500);
-		});
-	</script>
 {{end}}
 
 {{define "content"}}
@@ -21,19 +14,23 @@
 			<span class="item1">GET STARTED</span>
 			<img class="disclosure-arrow item2" src="{{staticURL "/img/pc/right_arrow_sblue@2x.png"}}" />
 		</a>
-		<a id="learn-more-link" href="#more">
-			<div class="learn-more">
-				LEARN MORE
-			</div>
-			<div class="down-arrow">
-				<img src="{{staticURL "/img/pc/down_arrow@2x.png"}}" />
-			</div>
-		</a>
+	</div>
+</div>
+<div id="home-press" class="section">
+	<div class="container">
+		<h2 class="heading--spruceBlue">FEATURED IN</h2>
+		<a href="http://www.vogue.com/13226808/spruce-beauty-app-dermatology/"><img src="{{staticURL "/img/press/press_vogue_promo.png"}}" alt="Vogue"></a>
+		<a href="http://www.harpersbazaar.com/culture/features/a2701/best-beauty-apps/"><img src="{{staticURL "/img/press/press_bazaar_promo.png"}}" alt="Harpers Bazaar"></a>
+		<a href="http://www.cosmopolitan.com/health-fitness/news/a31548/theres-an-app-for-acne-and-it-works/"><img src="{{staticURL "/img/press/press_cosmo_promo.png"}}" alt="Cosmopolitan"></a>
+		<a href="http://www.self.com/flash/technology/2014/10/technology-answer-acne-problem/"><img src="{{staticURL "/img/press/press_self_promo_cropped.png"}}" alt="SELF"></a>
+		<a href="http://www.wired.com/2014/09/app-fights-acne-nearly-silly-sounds/"><img src="{{staticURL "/img/press/press_wired_promo.png"}}" alt="Wired"></a>
+		<a href="http://gizmodo.com/our-favorite-android-ios-and-windows-phone-apps-of-th-1640099169"><img src="{{staticURL "/img/press/press_gizmodo_promo.png"}}" alt="Gizmodo"></a>
+		<a href="http://nymag.com/thecut/2014/10/this-app-claims-it-can-stop-your-acne.html"><img src="{{staticURL "/img/press/press_nymag_promo.png"}}" alt="New York Magazine"></a>
 	</div>
 </div>
 <div id="parent-image" class="section shaded">
 	<div class="container">
-		<h3>With Spruce, your child’s acne can be professionally treated by a board-certified dermatologist right from their phone.</h3>
+		<h3>With Spruce, your child's acne can be professionally treated by a board-certified dermatologist right from their phone for only $40.</h3>
 		<img id="iphone-image" src="{{staticURL "/img/pc/CasePhone.png"}}" />
 	</div>
 </div>
@@ -84,13 +81,18 @@
 	<div class="container">
 		<h2>WHAT IT COSTS</h2>
 		<img class="icon" src="{{staticURL "/img/pc/icon_price.png"}}" />
-		<h3>A visit on Spruce is $40 and includes:</h3>
+		<p>The cost of a visit on Spruce is less than or equal to the out-of-pocket cost of seeing a dermatologist in person on most insurance plans.</p>
+	</div>
+</div>
+<div id="parent-included" class="section shaded">
+	<div class="container">
+		<h2>WHAT'S INCLUDED</h2>
+		<h3>A visit on Spruce includes:</h3>
 		<p>A response within 24 hours from a board-certified dermatologist</p>
 		<p>A diagnosis and personalized treatment plan</p>
 		<p>30 days of post-visit messaging with your care team</p>
 	</div>
 </div>
-<div id="parent-stay-informed" class="section shaded">
 <div id="parent-next-steps" class="section white">
 	<div class="container">
 		<h2>WHAT HAPPENS NEXT</h2>
