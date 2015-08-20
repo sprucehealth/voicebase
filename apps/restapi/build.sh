@@ -24,11 +24,11 @@ LATEST_MIGRATION=$(ls -r ../../mysql/snapshot-*.sql | cut -d- -f 2  | cut -d. -f
 GO15VENDOREXPERIMENT=1 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
 	go build -a -tags netgo -ldflags " \
 		-w \
-		-X github.com/sprucehealth/backend/common/config.GitRevision '$REV' \
-		-X github.com/sprucehealth/backend/common/config.GitBranch '$BRANCH' \
-		-X github.com/sprucehealth/backend/common/config.BuildTime '$TIME' \
-		-X github.com/sprucehealth/backend/common/config.BuildNumber '$BUILD_NUMBER' \
-		-X github.com/sprucehealth/backend/common/config.MigrationNumber '$LATEST_MIGRATION'" -o $APP
+		-X 'github.com/sprucehealth/backend/common/config.GitRevision=$REV' \
+		-X 'github.com/sprucehealth/backend/common/config.GitBranch=$BRANCH' \
+		-X 'github.com/sprucehealth/backend/common/config.BuildTime=$TIME' \
+		-X 'github.com/sprucehealth/backend/common/config.BuildNumber=$BUILD_NUMBER' \
+		-X 'github.com/sprucehealth/backend/common/config.MigrationNumber=$LATEST_MIGRATION'" -o $APP
 
 # Embed resources in the binary
 
