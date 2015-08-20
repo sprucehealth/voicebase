@@ -38,3 +38,14 @@ func TestSNSLogHandler(t *testing.T) {
 	test.OK(t, h.Log(&golog.Entry{Lvl: golog.CRIT, Msg: "Danger Danger", Src: "somewhere:123"}))
 	test.Assert(t, snsCli.msg != nil, "CRIT event not published")
 }
+
+func TestSanitizeSNSSubject(t *testing.T) {
+	cases := map[string]string{
+		"basic": "basic",
+		"no\nnew\rlines\ttabs\aor\bother\fcontrol": "no new lines tabs or other control",
+		"these!characters?are*likely(ok)":          "these!characters?are*likely(ok)",
+	}
+	for s, e := range cases {
+		test.Equals(t, e, sanitizeSNSSubject(s))
+	}
+}

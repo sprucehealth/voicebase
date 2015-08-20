@@ -259,6 +259,19 @@ func (loggingSMSAPI) Send(fromNumber, toNumber, text string) error {
 	return nil
 }
 
+// sanitizeSNSSubject cleans up a string to make it valid for an SNS event subject
+func sanitizeSNSSubject(s string) string {
+	buf := make([]byte, 0, len(s))
+	for _, r := range s {
+		if r < 32 || r >= 127 {
+			buf = append(buf, ' ')
+		} else {
+			buf = append(buf, byte(r))
+		}
+	}
+	return string(buf)
+}
+
 func snsLogHandler(snsCli snsiface.SNSAPI, topic, name string, subHandler golog.Handler, rateLimiter ratelimit.KeyedRateLimiter, metricsRegistry metrics.Registry) golog.Handler {
 	jsonFmt := golog.JSONFormatter()
 	longFmt := golog.LongFormFormatter()
@@ -308,10 +321,14 @@ func snsLogHandler(snsCli snsiface.SNSAPI, topic, name string, subHandler golog.
 				SMS:     short,
 			})
 			if err == nil {
+				subject := name + " :: " + sanitizeSNSSubject(short)
+				if len(subject) > 100 {
+					subject = subject[:100]
+				}
 				_, err = snsCli.Publish(&sns.PublishInput{
 					Message:          ptr.String(string(msg)),
 					MessageStructure: ptr.String("json"),
-					Subject:          ptr.String(fmt.Sprintf("[%s] %s", name, short)),
+					Subject:          &subject,
 					TopicArn:         &topic,
 				})
 			}
@@ -319,9 +336,10 @@ func snsLogHandler(snsCli snsiface.SNSAPI, topic, name string, subHandler golog.
 				statFailed.Inc(1)
 				// Pass errors publishing to the underlying error handler
 				subHandler.Log(&golog.Entry{
-					Lvl: golog.ERR,
-					Msg: fmt.Sprintf("Failed to publish to error SNS: %s", err),
-					Src: golog.Caller(0),
+					Time: time.Now(),
+					Lvl:  golog.ERR,
+					Msg:  fmt.Sprintf("Failed to publish to error SNS: %s", err),
+					Src:  golog.Caller(0),
 				})
 			}
 		})
