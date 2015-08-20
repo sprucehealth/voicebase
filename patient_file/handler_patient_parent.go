@@ -126,20 +126,25 @@ func (p *patientParentHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 		return
 	}
 
-	pItems := make([]*parentItem, len(consents))
-	for i, consent := range consents {
+	pItems := make([]*parentItem, 0, len(consents))
+	for _, consent := range consents {
 		parent, err := p.dataAPI.GetPatientFromID(consent.ParentPatientID)
 		if err != nil {
 			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 
+		// only include the parent information for the ones that
+		// provided consent.
 		proof, err := p.dataAPI.ParentConsentProof(parent.ID)
-		if err != nil {
+		if api.IsErrNotFound(err) {
+			continue
+		} else if err != nil {
 			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
-		pItems[i] = &parentItem{
+
+		pItem := &parentItem{
 			ID:           parent.ID.Int64(),
 			FirstName:    parent.FirstName,
 			LastName:     parent.LastName,
@@ -149,8 +154,10 @@ func (p *patientParentHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 			Email:        parent.Email,
 		}
 
+		pItems = append(pItems, pItem)
+
 		if len(parent.PhoneNumbers) > 0 {
-			pItems[i].CellPhone = parent.PhoneNumbers[0].Phone.String()
+			pItem.CellPhone = parent.PhoneNumbers[0].Phone.String()
 		}
 
 		if proof.SelfiePhotoID != nil {
@@ -160,7 +167,7 @@ func (p *patientParentHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 				return
 			}
 
-			pItems[i].Proof.SelfiePhotoURL = signedURL
+			pItem.Proof.SelfiePhotoURL = signedURL
 		}
 
 		if proof.GovernmentIDPhotoID != nil {
@@ -170,7 +177,7 @@ func (p *patientParentHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 				return
 			}
 
-			pItems[i].Proof.GovernmentIDPhotoURL = signedURL
+			pItem.Proof.GovernmentIDPhotoURL = signedURL
 		}
 	}
 
