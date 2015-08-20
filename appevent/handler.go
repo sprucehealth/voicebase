@@ -60,7 +60,12 @@ func (h *eventHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *
 			// resource_id is treatment plan ID
 			if account.Role == api.RolePatient {
 				p, err := h.dataAPI.GetPatientFromTreatmentPlanID(req.ResourceID)
-				if err != nil {
+				if api.IsErrNotFound(err) {
+					golog.Warningf("appevent action %s from account %d for resource %s:%d: treatment plan not found",
+						req.Action, account.ID, req.Resource, req.ResourceID)
+					apiservice.WriteResourceNotFoundError(ctx, "Treatment plan not found", w, r)
+					return
+				} else if err != nil {
 					apiservice.WriteError(ctx, err, w, r)
 					return
 				}
@@ -75,7 +80,12 @@ func (h *eventHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *
 		case "case_message":
 			// resource_id is message ID
 			caseID, err = h.dataAPI.GetCaseIDFromMessageID(req.ResourceID)
-			if err != nil {
+			if api.IsErrNotFound(err) {
+				golog.Warningf("appevent action %s from account %d for resource %s:%d: message not found",
+					req.Action, account.ID, req.Resource, req.ResourceID)
+				apiservice.WriteResourceNotFoundError(ctx, "Message not found", w, r)
+				return
+			} else if err != nil {
 				apiservice.WriteError(ctx, err, w, r)
 				return
 			}
@@ -88,7 +98,12 @@ func (h *eventHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *
 			switch account.Role {
 			case api.RolePatient:
 				c, err := h.dataAPI.GetPatientCaseFromID(caseID)
-				if err != nil {
+				if api.IsErrNotFound(err) {
+					golog.Warningf("appevent action %s from account %d for resource %s:%d: case not found",
+						req.Action, account.ID, req.Resource, req.ResourceID)
+					apiservice.WriteResourceNotFoundError(ctx, "Case not found", w, r)
+					return
+				} else if err != nil {
 					apiservice.WriteError(ctx, err, w, r)
 					return
 				}

@@ -475,13 +475,13 @@ func (d *dataService) GetPatientFromTreatmentPlanID(treatmentPlanID int64) (*com
 			AND (phone IS NULL OR (account_phone.status = 'ACTIVE'))
 			AND (zip_code IS NULL OR patient_location.status = 'ACTIVE')`, treatmentPlanID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	if len(patients) > 0 {
 		err = d.getOtherInfoForPatient(patients[0])
-		return patients[0], err
+		return patients[0], errors.Trace(err)
 	}
-	return nil, err
+	return nil, errors.Trace(ErrNotFound("patient"))
 }
 
 func (d *dataService) GetPatientFromPatientVisitID(patientVisitID int64) (*common.Patient, error) {
