@@ -3,6 +3,7 @@ package httputil
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/samuel/go-metrics/metrics"
 	"golang.org/x/net/context"
@@ -28,14 +29,16 @@ func (w *metricsResponseWriter) Write(bytes []byte) (int, error) {
 }
 
 type metricsHandler struct {
-	statResponseCodeMap map[int]*metrics.Counter
 	h                   ContextHandler
+	statLatency         metrics.Histogram
+	statResponseCodeMap map[int]*metrics.Counter
 }
 
 // MetricsHandler wraps a handler to provides stats counters on response codes.
 func MetricsHandler(h ContextHandler, metricsRegistry metrics.Registry) ContextHandler {
 	m := &metricsHandler{
-		h: h,
+		h:           h,
+		statLatency: metrics.NewBiasedHistogram(),
 		statResponseCodeMap: map[int]*metrics.Counter{
 			http.StatusOK:                  metrics.NewCounter(),
 			http.StatusBadRequest:          metrics.NewCounter(),
@@ -49,6 +52,7 @@ func MetricsHandler(h ContextHandler, metricsRegistry metrics.Registry) ContextH
 	for statusCode, counter := range m.statResponseCodeMap {
 		metricsRegistry.Add(fmt.Sprintf("requests/response/%d", statusCode), counter)
 	}
+	metricsRegistry.Add("requests/latency", m.statLatency)
 
 	return m
 }
@@ -58,8 +62,10 @@ func (m *metricsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		ResponseWriter: w,
 		statusCode:     http.StatusOK,
 	}
+	startTime := time.Now()
 
 	defer func() {
+		m.statLatency.Update(int64(time.Since(startTime) / 1e3))
 		if err := recover(); err != nil {
 			m.statResponseCodeMap[http.StatusInternalServerError].Inc(1)
 			if !metricsrw.wroteHeader {
