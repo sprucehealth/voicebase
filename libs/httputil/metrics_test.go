@@ -27,6 +27,10 @@ func TestMetricsHandler(t *testing.T) {
 	err = reg.Do(func(name string, value interface{}) error {
 		t.Logf("%s %+v", name, value)
 		switch name {
+		case "requests/total":
+			if v := value.(*metrics.Counter).Count(); v != 1 {
+				return fmt.Errorf("total requests should be 1 got %d", v)
+			}
 		case "requests/response/403":
 			if v := value.(*metrics.Counter).Count(); v != 1 {
 				return fmt.Errorf("403 response should be 1 got %d", v)

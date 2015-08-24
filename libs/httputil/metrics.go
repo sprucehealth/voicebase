@@ -31,14 +31,16 @@ func (w *metricsResponseWriter) Write(bytes []byte) (int, error) {
 type metricsHandler struct {
 	h                   ContextHandler
 	statLatency         metrics.Histogram
+	statRequests        *metrics.Counter
 	statResponseCodeMap map[int]*metrics.Counter
 }
 
 // MetricsHandler wraps a handler to provides stats counters on response codes.
 func MetricsHandler(h ContextHandler, metricsRegistry metrics.Registry) ContextHandler {
 	m := &metricsHandler{
-		h:           h,
-		statLatency: metrics.NewBiasedHistogram(),
+		h:            h,
+		statLatency:  metrics.NewBiasedHistogram(),
+		statRequests: metrics.NewCounter(),
 		statResponseCodeMap: map[int]*metrics.Counter{
 			http.StatusOK:                  metrics.NewCounter(),
 			http.StatusBadRequest:          metrics.NewCounter(),
@@ -52,12 +54,15 @@ func MetricsHandler(h ContextHandler, metricsRegistry metrics.Registry) ContextH
 	for statusCode, counter := range m.statResponseCodeMap {
 		metricsRegistry.Add(fmt.Sprintf("requests/response/%d", statusCode), counter)
 	}
+	metricsRegistry.Add("requests/total", m.statRequests)
 	metricsRegistry.Add("requests/latency", m.statLatency)
 
 	return m
 }
 
 func (m *metricsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	m.statRequests.Inc(1)
+
 	metricsrw := &metricsResponseWriter{
 		ResponseWriter: w,
 		statusCode:     http.StatusOK,
