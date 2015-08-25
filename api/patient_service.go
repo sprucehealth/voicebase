@@ -221,18 +221,6 @@ func (d *dataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 		}
 	}
 
-	// create additional phone numbers for patient
-	if len(patient.PhoneNumbers) > 1 {
-		for _, phoneNumber := range patient.PhoneNumbers[1:] {
-			_, err = tx.Exec(`INSERT INTO account_phone (account_id, phone, phone_type, status) VALUES (?,?,?,?)`,
-				patient.AccountID.Int64(), phoneNumber.Phone.String(), phoneNumber.Type, StatusInactive)
-			if err != nil {
-				tx.Rollback()
-				return errors.Trace(err)
-			}
-		}
-	}
-
 	// assign the erx patient id to the patient
 	_, err = tx.Exec(`UPDATE patient SET erx_patient_id = ? WHERE id = ?`, patient.ERxPatientID.Int64(), patient.ID.Int64())
 	if err != nil {
