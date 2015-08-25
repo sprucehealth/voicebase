@@ -3,10 +3,28 @@ package httputil
 import (
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"golang.org/x/net/context"
 )
+
+func TestRequestID(t *testing.T) {
+	h := RequestIDHandler(ContextHandlerFunc(
+		func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(strconv.FormatUint(RequestID(ctx), 10)))
+		}))
+	ctx := context.Background()
+	r, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+	h.ServeHTTP(ctx, w, r)
+	if _, err := strconv.ParseUint(w.Body.String(), 10, 64); err != nil {
+		t.Fatal(err)
+	}
+}
 
 func TestLoggingHandler(t *testing.T) {
 	var lastEvent RequestEvent

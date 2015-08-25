@@ -5,8 +5,14 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 
 	"golang.org/x/net/context"
+)
+
+var (
+	gzipReaderPool sync.Pool
+	gzipWriterPool sync.Pool
 )
 
 // compressedResponseTypes lists the mimetypes for resposnes that should be compressed.
@@ -58,30 +64,42 @@ func (ch *compressResponseHandler) ServeHTTP(ctx context.Context, w http.Respons
 
 type gzipReadCloser struct {
 	rc io.ReadCloser
-	zr io.ReadCloser
+	zr *gzip.Reader
 }
 
 func (gz *gzipReadCloser) Read(b []byte) (int, error) {
 	if gz.zr == nil {
-		var err error
-		gz.zr, err = gzip.NewReader(gz.rc)
-		if err != nil {
-			return 0, err
+		var zr *gzip.Reader
+		if r := gzipReaderPool.Get(); r != nil {
+			zr = r.(*gzip.Reader)
+			if err := zr.Reset(gz.rc); err != nil {
+				return 0, err
+			}
+		} else {
+			var err error
+			zr, err = gzip.NewReader(gz.rc)
+			if err != nil {
+				return 0, err
+			}
 		}
+		gz.zr = zr
 	}
 	return gz.zr.Read(b)
 }
 
 func (gz *gzipReadCloser) Close() error {
 	if gz.zr != nil {
-		return gz.zr.Close()
+		err := gz.zr.Close()
+		gzipReaderPool.Put(gz.zr)
+		gz.zr = nil
+		return err
 	}
 	return nil
 }
 
 type gzipResponseWriter struct {
 	http.ResponseWriter
-	zw            io.WriteCloser
+	zw            *gzip.Writer
 	wroteHeader   bool
 	notCompressed bool
 }
@@ -100,7 +118,12 @@ func (gz *gzipResponseWriter) Write(b []byte) (int, error) {
 	}
 
 	if gz.zw == nil {
-		gz.zw = gzip.NewWriter(gz.ResponseWriter)
+		if zw := gzipWriterPool.Get(); zw != nil {
+			gz.zw = zw.(*gzip.Writer)
+			gz.zw.Reset(gz.ResponseWriter)
+		} else {
+			gz.zw = gzip.NewWriter(gz.ResponseWriter)
+		}
 	}
 
 	return gz.zw.Write(b)
@@ -108,7 +131,11 @@ func (gz *gzipResponseWriter) Write(b []byte) (int, error) {
 
 func (gz *gzipResponseWriter) Close() error {
 	if gz.zw != nil {
-		return gz.zw.Close()
+		err := gz.zw.Close()
+		gz.zw.Reset(nil)
+		gzipWriterPool.Put(gz.zw)
+		gz.zw = nil
+		return err
 	}
 	return nil
 }

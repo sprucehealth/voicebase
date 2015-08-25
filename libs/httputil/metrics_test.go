@@ -14,6 +14,7 @@ func TestMetricsHandler(t *testing.T) {
 	reg := metrics.NewRegistry()
 	h := MetricsHandler(ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("foo"))
 	}), reg)
 	r, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
