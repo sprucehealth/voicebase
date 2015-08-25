@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/media"
@@ -223,6 +224,7 @@ func (h *scheduledMessageHandler) createMessage(ctx context.Context, w http.Resp
 	requestCache := apiservice.MustCtxCache(ctx)
 	req := requestCache[apiservice.CKRequestData].(*ScheduledMessageRequest)
 	account := apiservice.MustCtxAccount(ctx)
+	tp := requestCache[apiservice.CKTreatmentPlan].(*common.TreatmentPlan)
 
 	doctorID := requestCache[apiservice.CKDoctorID].(int64)
 	msg, err := responses.TransformScheduledMessageFromResponse(
@@ -249,6 +251,11 @@ func (h *scheduledMessageHandler) createMessage(ctx context.Context, w http.Resp
 		}
 	}
 
+	if err := validateTokensInMessage(h.dataAPI, msg, tp.PatientID, doctorID); err != nil {
+		apiservice.WriteError(ctx, err, w, r)
+		return
+	}
+
 	msgID, err := h.dataAPI.CreateTreatmentPlanScheduledMessage(msg)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
@@ -267,6 +274,8 @@ func (h *scheduledMessageHandler) updateMessage(ctx context.Context, w http.Resp
 	account := apiservice.MustCtxAccount(ctx)
 	requestCache := apiservice.MustCtxCache(ctx)
 	req := requestCache[apiservice.CKRequestData].(*ScheduledMessageRequest)
+	tp := requestCache[apiservice.CKTreatmentPlan].(*common.TreatmentPlan)
+
 	if req.Message.ID <= 0 {
 		apiservice.WriteBadRequestError(ctx, errors.New("id is required"), w, r)
 		return
@@ -282,6 +291,12 @@ func (h *scheduledMessageHandler) updateMessage(ctx context.Context, w http.Resp
 		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
+
+	if err := validateTokensInMessage(h.dataAPI, msg, tp.PatientID, doctorID); err != nil {
+		apiservice.WriteError(ctx, err, w, r)
+		return
+	}
+
 	if err := h.dataAPI.ReplaceTreatmentPlanScheduledMessage(req.Message.ID, msg); err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
@@ -294,6 +309,33 @@ func (h *scheduledMessageHandler) updateMessage(ctx context.Context, w http.Resp
 	})
 
 	httputil.JSONResponse(w, http.StatusOK, &ScheduledMessageIDResponse{MessageID: msg.ID})
+}
+
+func validateTokensInMessage(dataAPI api.DataAPI, msg *common.TreatmentPlanScheduledMessage, patientID common.PatientID, doctorID int64) error {
+	// replace any tokens in the message
+	p := conc.NewParallel()
+
+	var patient *common.Patient
+	p.Go(func() error {
+		var err error
+		patient, err = dataAPI.Patient(patientID, true)
+		return err
+	})
+
+	var doctor *common.Doctor
+	p.Go(func() error {
+		var err error
+		doctor, err = dataAPI.Doctor(doctorID, true)
+		return err
+	})
+
+	if err := p.Wait(); err != nil {
+		return err
+	}
+
+	t := newPatientDoctorTokenizer(patient, doctor)
+
+	return t.validate(msg.Message)
 }
 
 func (h *scheduledMessageHandler) deleteMessage(ctx context.Context, w http.ResponseWriter, r *http.Request) {

@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -225,18 +226,55 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(ctx context.Context, w 
 	requestData := requestCache[apiservice.CKRequestData].(*TreatmentPlanRequestData)
 	treatmentPlan := requestCache[apiservice.CKTreatmentPlan].(*common.TreatmentPlan)
 
-	// First check request to support older apps
-	// FIXME: remove this when no longer needed
-	note := requestData.Message
+	note, err := d.dataAPI.GetTreatmentPlanNote(requestData.TreatmentPlanID)
+	if err != nil && !api.IsErrNotFound(err) {
+		apiservice.WriteError(ctx, err, w, r)
+		return
+	}
 	if note == "" {
+		apiservice.WriteValidationError(ctx, "Please include a personal note to the patient before submitting the treatment plan.", w, r)
+		return
+	}
+
+	// replace any tokens in the note
+	p := conc.NewParallel()
+
+	var patient *common.Patient
+	p.Go(func() error {
 		var err error
-		note, err = d.dataAPI.GetTreatmentPlanNote(requestData.TreatmentPlanID)
-		if err != nil && !api.IsErrNotFound(err) {
+		patient, err = d.dataAPI.Patient(treatmentPlan.PatientID, true)
+		return err
+	})
+
+	var doctor *common.Doctor
+	p.Go(func() error {
+		var err error
+		doctor, err = d.dataAPI.Doctor(treatmentPlan.DoctorID.Int64(), true)
+		return err
+	})
+
+	if err := p.Wait(); err != nil {
+		apiservice.WriteError(ctx, err, w, r)
+		return
+	}
+
+	t := newPatientDoctorTokenizer(patient, doctor)
+	updatedNote, err := t.replace(note)
+	if err != nil {
+		apiservice.WriteError(ctx, err, w, r)
+		return
+	}
+
+	if updatedNote != note {
+		note = updatedNote
+
+		// update the note in the database
+		if err := d.dataAPI.SetTreatmentPlanNote(
+			treatmentPlan.DoctorID.Int64(),
+			requestData.TreatmentPlanID,
+			updatedNote,
+		); err != nil {
 			apiservice.WriteError(ctx, err, w, r)
-			return
-		}
-		if note == "" {
-			apiservice.WriteValidationError(ctx, "Please include a personal note to the patient before submitting the treatment plan.", w, r)
 			return
 		}
 	}

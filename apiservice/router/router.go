@@ -258,7 +258,7 @@ func New(conf *Config) *mux.Router {
 	authenticationRequired(conf, apipaths.DoctorCaseCareTeamURLPath, patient_case.NewCareTeamHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.DoctorPatientFollowupURLPath, patient_file.NewFollowupHandler(conf.DataAPI, conf.AuthAPI, conf.AuthTokenExpiration, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.TPResourceGuideURLPath, doctor_treatment_plan.NewResourceGuideHandler(conf.DataAPI, conf.Dispatcher))
-
+	authenticationRequired(conf, apipaths.DoctorTokensURLPath, doctor_treatment_plan.NewDoctorTokensHandler(conf.DataAPI))
 	// Patient Feedback
 	authenticationRequired(conf, apipaths.PatientFeedbackURLPath, patient.NewFeedbackHandler(conf.DataAPI, taggingClient, conf.Cfg))
 	authenticationRequired(conf, apipaths.PatientFeedbackPromptURLPath, patient.NewFeedbackPromptHandler(conf.DataAPI))

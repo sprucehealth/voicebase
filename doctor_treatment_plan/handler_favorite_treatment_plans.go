@@ -160,6 +160,7 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 	req *DoctorFavoriteTreatmentPlansRequestData,
 ) {
 	account := apiservice.MustCtxAccount(ctx)
+
 	ftp, err := responses.TransformFTPFromResponse(d.dataAPI, req.FavoriteTreatmentPlan, doctor.ID.Int64(), account.Role)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
@@ -193,14 +194,6 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 			req.PathwayTag = patientCase.PathwayTag
 		}
 
-		if ftp.Note == "" {
-			// NOTE: Empty out the tp note before comparing the FTP and TP if the FTP note is empty.
-			// Reason for this is that older clients don't send the note as part of the FTP and so the verification
-			// for the contents between FTP and TP being equal will fail.
-			// TODO: Remove this check once Buzz Lightyear doctor app version is deployed.
-			tp.Note = ""
-		}
-
 		if !ftp.EqualsTreatmentPlan(tp) {
 			apiservice.WriteValidationError(ctx, "Cannot associate a favorite treatment plan with a treatment plan when the contents of the two don't match", w, r)
 			return
@@ -215,6 +208,13 @@ func (d *doctorFavoriteTreatmentPlansHandler) addOrUpdateFavoriteTreatmentPlan(
 	// ensure that favorite treatment plan has a name
 	if err := ftp.Validate(); err != nil {
 		apiservice.WriteValidationError(ctx, err.Error(), w, r)
+		return
+	}
+
+	// ensure that any tokens in the note are valid
+	t := newTokenizerForValidation('{', '}')
+	if err := t.validate(ftp.Note); err != nil {
+		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 

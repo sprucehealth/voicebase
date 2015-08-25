@@ -29,6 +29,7 @@ const (
 	DoctorMedicationSearchURLPath        = "/v1/doctor/visit/treatment/medication_suggestions"
 	DoctorMedicationStrengthsURLPath     = "/v1/doctor/visit/treatment/medication_strengths"
 	DoctorPatientInfoURLPath             = "/v1/doctor/patient"
+	DoctorTokensURLPath                  = "/v1/doctor/tokens"
 	DoctorPatientParentInfoURLPath       = "/v1/doctor/patient/parents"
 	DoctorPatientAppInfoURLPath          = "/v1/doctor/patient/app_info"
 	DoctorPatientCasesListURLPath        = "/v1/doctor/patient/cases/list"

@@ -281,11 +281,21 @@ func (d *dataService) ReplaceTreatmentPlanScheduledMessage(id int64, msg *common
 	return tx.Commit()
 }
 
-func (d *dataService) UpdateTreatmentPlanScheduledMessage(id int64, smID *int64) error {
+func (d *dataService) UpdateTreatmentPlanScheduledMessage(id int64, update *TreatmentPlanScheduledMessageUpdate) error {
+	args := dbutil.MySQLVarArgs()
+
+	if update.ScheduledMessageID != nil {
+		args.Append("scheduled_message_id", *update.ScheduledMessageID)
+	}
+
+	if update.Message != nil {
+		args.Append("message", *update.Message)
+	}
+
 	_, err := d.db.Exec(`
 		UPDATE treatment_plan_scheduled_message
-		SET scheduled_message_id = ? WHERE id = ?`,
-		smID, id)
+		SET `+args.Columns()+` WHERE id = ?`,
+		append(args.Values(), id)...)
 	return err
 }
 

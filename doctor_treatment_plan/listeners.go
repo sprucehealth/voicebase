@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/schedmsg"
 )
 
@@ -31,7 +32,21 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 			ev.SectionUpdated)
 	})
 
-	dispatcher.Subscribe(func(ev *TreatmentPlanSubmittedEvent) error {
+	dispatcher.SubscribeAsync(func(ev *TreatmentPlanSubmittedEvent) error {
+
+		// get the patient and doctor to check for tokens in the messages
+		patient, err := dataAPI.Patient(ev.TreatmentPlan.PatientID, true)
+		if err != nil {
+			return err
+		}
+
+		doctor, err := dataAPI.Doctor(ev.TreatmentPlan.DoctorID.Int64(), true)
+		if err != nil {
+			return err
+		}
+
+		t := newPatientDoctorTokenizer(patient, doctor)
+
 		// Create a scheduled message for every message scheduled in the treatment plan
 		msgs, err := dataAPI.ListTreatmentPlanScheduledMessages(ev.TreatmentPlan.ID.Int64())
 		if err != nil {
@@ -42,6 +57,12 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 			// Should always be nil in this case because the treatment plan can only be submitted once,
 			// but it's probably good just to make sure to avoid duplicate messages.
 			if m.ScheduledMessageID != nil {
+				continue
+			}
+
+			tokenReplacedMessage, err := t.replace(m.Message)
+			if err != nil {
+				golog.Errorf("Failed to replace tokens in message for id %d: %s", m.ID, err)
 				continue
 			}
 
@@ -56,9 +77,13 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) {
 				Scheduled: now.Add(24 * time.Hour * time.Duration(m.ScheduledDays)),
 				Status:    common.SMScheduled,
 			})
+
 			if err != nil {
 				golog.Errorf("Failed to create scheduled message for %d: %d %s", m.ID, ev.TreatmentPlan.ID.Int64(), err.Error())
-			} else if err := dataAPI.UpdateTreatmentPlanScheduledMessage(m.ID, &id); err != nil {
+			} else if err := dataAPI.UpdateTreatmentPlanScheduledMessage(m.ID, &api.TreatmentPlanScheduledMessageUpdate{
+				ScheduledMessageID: &id,
+				Message:            ptr.String(tokenReplacedMessage),
+			}); err != nil {
 				golog.Errorf("Failed to update scheduled message %d: %s", m.ID, err.Error())
 			}
 		}

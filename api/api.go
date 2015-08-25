@@ -451,6 +451,14 @@ func (o ListCareProvidersOption) Has(opt ListCareProvidersOption) bool {
 	return o&opt == opt
 }
 
+// TreatmentPlanScheduledMessageUpdate is an update struct
+// used to indicate the fields to update for a particular
+// treatment plan scheduled message.
+type TreatmentPlanScheduledMessageUpdate struct {
+	ScheduledMessageID *int64
+	Message            *string
+}
+
 type DoctorAPI interface {
 	ListCareProviders(opt ListCareProvidersOption) ([]*common.Doctor, error)
 	RegisterProvider(provider *common.Doctor, role string) (int64, error)
@@ -505,7 +513,7 @@ type DoctorAPI interface {
 	ListTreatmentPlanScheduledMessages(treatmentPlanID int64) ([]*common.TreatmentPlanScheduledMessage, error)
 	DeleteTreatmentPlanScheduledMessage(treatmentPlanID, messageID int64) error
 	ReplaceTreatmentPlanScheduledMessage(id int64, msg *common.TreatmentPlanScheduledMessage) error
-	UpdateTreatmentPlanScheduledMessage(id int64, smID *int64) error
+	UpdateTreatmentPlanScheduledMessage(id int64, update *TreatmentPlanScheduledMessageUpdate) error
 
 	// Favorite treatment plan scheduled messages
 	SetFavoriteTreatmentPlanScheduledMessages(ftpID int64, msgs []*common.TreatmentPlanScheduledMessage) error
