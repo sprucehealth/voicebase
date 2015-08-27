@@ -121,6 +121,14 @@ func main() {
 			s := storage.NewS3(conf.AWS(), c.Bucket, c.Prefix)
 			s.LatchedExpire(c.LatchedExpire)
 			stores[name] = s
+		case "local":
+			s, err := storage.NewLocalStore(c.Path)
+			if err != nil {
+				log.Fatalf("Failed to create store %s: %s", name, err)
+			}
+			stores[name] = s
+		case "memory":
+			stores[name] = storage.NewTestStore(nil)
 		}
 	}
 

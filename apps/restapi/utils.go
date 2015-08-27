@@ -67,6 +67,8 @@ type supportConfig struct {
 
 type storageConfig struct {
 	Type string
+	// Local
+	Path string
 	// S3
 	Region        string
 	Bucket        string

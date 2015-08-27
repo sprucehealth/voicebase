@@ -35,6 +35,7 @@ func NewTestStore(objects map[string]*TestObject) DeterministicStore {
 		objects: objects,
 	}
 }
+
 func (s *testStore) IDFromName(name string) string {
 	return name
 }

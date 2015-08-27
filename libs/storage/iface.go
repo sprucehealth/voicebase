@@ -7,8 +7,10 @@ import (
 	"time"
 )
 
+// ErrNoObject is returned when an trying to Get an object that doesn't exist
 var ErrNoObject = errors.New("storage: no object")
 
+// Store is implemented by storage backends
 type Store interface {
 	Put(name string, data []byte, contentType string, meta map[string]string) (string, error)
 	PutReader(name string, r io.ReadSeeker, size int64, contentType string, meta map[string]string) (string, error)
@@ -25,8 +27,10 @@ type DeterministicStore interface {
 	IDFromName(name string) string
 }
 
+// StoreMap is a collection of named stores
 type StoreMap map[string]Store
 
+// MustGet returns the store from the map or panics
 func (sm StoreMap) MustGet(name string) Store {
 	s, ok := sm[name]
 	if !ok {
@@ -35,6 +39,7 @@ func (sm StoreMap) MustGet(name string) Store {
 	return s
 }
 
+// Get returns the store from the map if it exists and nil, false otherwise
 func (sm StoreMap) Get(name string) (Store, bool) {
 	s, ok := sm[name]
 	return s, ok
