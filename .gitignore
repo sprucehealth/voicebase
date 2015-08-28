@@ -37,16 +37,16 @@ _testmain.go
 *.bz2
 *.gz
 
-apps/awslogidx/awslogidx
-apps/ec2-consistent-snapshot/ec2-consistent-snapshot
-apps/ec2-volumes/ec2-volumes
-apps/pharmacydb/pharmacydb
-apps/redshiftload/redshiftload
-apps/restapi/resources.zip
-apps/restapi/restapi
-apps/saml/saml
-apps/securesvc/securesvc
-apps/syslogidx/syslogidx
+cmd/cli/awslogidx/awslogidx
+cmd/cli/doctorchangemsg/doctorchangemsg
+cmd/cli/ec2-consistent-snapshot/ec2-consistent-snapshot
+cmd/cli/ec2-volumes/ec2-volumes
+cmd/cli/pharmacydb/pharmacydb
+cmd/cli/redshiftload/redshiftload
+cmd/cli/saml/saml
+cmd/cli/syslogidx/syslogidx
+cmd/svc/ext/restapi/resources.zip
+cmd/svc/ext/restapi/restapi
 diagnosis/ingester/ingester
 npm-debug.log
 resources/node_modules/*

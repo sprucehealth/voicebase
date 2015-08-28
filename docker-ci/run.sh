@@ -60,7 +60,7 @@ echo $PKGS | xargs go test -i
 
 PKGSLIST=""
 for P in $PKGS; do
-    if [[ ! "$P" == *"/apps/"* ]] && [[ ! "$P" == *"/test/"* ]]; then
+    if [[ ! "$P" == *"/cmd/"* ]] && [[ ! "$P" == *"/test/"* ]]; then
         P="github.com/sprucehealth/backend$(echo $P | cut -c2-)"
         PKGSLIST+=",$P"
     fi
@@ -102,7 +102,7 @@ resources/build.sh
 
 # Build for deploy
 echo "BUILDING"
-cd apps/restapi
+cd cmd/svc/ext/restapi
 ./build.sh
 
 if [[ "$DEPLOY_TO_S3" != "" ]]; then
