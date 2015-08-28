@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	diaghandlers "github.com/sprucehealth/backend/diagnosis/handlers"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -93,7 +94,7 @@ func TestDiagnosisSet(t *testing.T) {
 		Diagnoses: []*diaghandlers.DiagnosisInputItem{
 			{
 				CodeID: codeID1,
-				LayoutVersion: &common.Version{
+				LayoutVersion: &encoding.Version{
 					Major: 1,
 					Minor: 0,
 					Patch: 0,
@@ -140,7 +141,7 @@ func TestDiagnosisSet(t *testing.T) {
 		Diagnoses: []*diaghandlers.DiagnosisInputItem{
 			{
 				CodeID: codeID1,
-				LayoutVersion: &common.Version{
+				LayoutVersion: &encoding.Version{
 					Major: 1,
 					Minor: 0,
 					Patch: 0,

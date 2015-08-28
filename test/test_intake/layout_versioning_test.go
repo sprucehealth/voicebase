@@ -8,6 +8,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -52,32 +53,32 @@ func TestLayoutVersioning_MajorUpgrade(t *testing.T) {
 	test.Equals(t, true, layout != nil)
 
 	// and an intake layout for the future app versions
-	layout, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 0, Minor: 9, Patch: 5}, common.IOS,
+	layout, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&encoding.Version{Major: 0, Minor: 9, Patch: 5}, common.IOS,
 		pathway.ID, api.LanguageIDEnglish, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layout != nil)
 	test.Equals(t, true, layoutID > 0)
 
-	layout, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 0, Patch: 0}, common.IOS,
+	layout, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&encoding.Version{Major: 2, Minor: 0, Patch: 0}, common.IOS,
 		pathway.ID, api.LanguageIDEnglish, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layout != nil)
 	test.Equals(t, true, layoutID > 0)
 
-	layout, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 0, Minor: 9, Patch: 6}, common.IOS,
+	layout, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&encoding.Version{Major: 0, Minor: 9, Patch: 6}, common.IOS,
 		pathway.ID, api.LanguageIDEnglish, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layout != nil)
 	test.Equals(t, true, layoutID > 0)
 
-	layout, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 15, Minor: 9, Patch: 5}, common.IOS,
+	layout, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&encoding.Version{Major: 15, Minor: 9, Patch: 5}, common.IOS,
 		pathway.ID, api.LanguageIDEnglish, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, true, layout != nil)
 	test.Equals(t, true, layoutID > 0)
 
 	// there should be no layout for a version prior to 0.9.5
-	_, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 0, Minor: 8, Patch: 5}, common.IOS,
+	_, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&encoding.Version{Major: 0, Minor: 8, Patch: 5}, common.IOS,
 		pathway.ID, api.LanguageIDEnglish, test_integration.SKUAcneVisit)
 	test.Equals(t, true, api.IsErrNotFound(err))
 
@@ -129,18 +130,18 @@ func TestLayoutVersioning_MajorUpgrade(t *testing.T) {
 	err = testData.DB.QueryRow(`select id from layout_version where status = 'ACTIVE' and major = 3 and minor = 0 and patch = 0 and layout_purpose = ?`, api.ReviewPurpose).Scan(&v2ReviewLayoutVersionID)
 	test.OK(t, err)
 
-	_, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 1, Minor: 9, Patch: 5}, common.IOS,
+	_, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&encoding.Version{Major: 1, Minor: 9, Patch: 5}, common.IOS,
 		pathway.ID, api.LanguageIDEnglish, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, v1IntakeLayoutVersionID, layoutID)
 
 	// patient version 1.9.6 should return the version 2.0 instead of 3.0
-	_, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 1, Minor: 9, Patch: 6}, common.IOS,
+	_, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&encoding.Version{Major: 1, Minor: 9, Patch: 6}, common.IOS,
 		pathway.ID, api.LanguageIDEnglish, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, v1IntakeLayoutVersionID, layoutID)
 
-	_, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 9, Patch: 5}, common.IOS,
+	_, layoutID, err = testData.DataAPI.IntakeLayoutForAppVersion(&encoding.Version{Major: 2, Minor: 9, Patch: 5}, common.IOS,
 		pathway.ID, api.LanguageIDEnglish, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, v2IntakeLayoutVersionID, layoutID)
@@ -219,7 +220,7 @@ func TestLayoutVersioning_MinorUpgrade(t *testing.T) {
 	pathway, err := testData.DataAPI.PathwayForTag(api.AcnePathwayTag, api.PONone)
 	test.OK(t, err)
 
-	_, layoutID, err := testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 9, Patch: 5}, common.IOS,
+	_, layoutID, err := testData.DataAPI.IntakeLayoutForAppVersion(&encoding.Version{Major: 2, Minor: 9, Patch: 5}, common.IOS,
 		pathway.ID, api.LanguageIDEnglish, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, upgradedIntakeLayoutVersionID, layoutID)
@@ -323,7 +324,7 @@ func TestLayoutVersioning_PatchUpgrade(t *testing.T) {
 	test.OK(t, err)
 
 	// ensure that the latet version being returned to a client is now the patched version
-	_, layoutID, err := testData.DataAPI.IntakeLayoutForAppVersion(&common.Version{Major: 2, Minor: 9, Patch: 5}, common.IOS,
+	_, layoutID, err := testData.DataAPI.IntakeLayoutForAppVersion(&encoding.Version{Major: 2, Minor: 9, Patch: 5}, common.IOS,
 		pathway.ID, api.LanguageIDEnglish, test_integration.SKUAcneVisit)
 	test.OK(t, err)
 	test.Equals(t, patchedIntakeLayoutVersionID, layoutID)
@@ -647,35 +648,35 @@ func TestLayoutVersionMappingDataAccess(t *testing.T) {
 
 	items, err := testData.DataAPI.LayoutVersions()
 	test.OK(t, err)
-	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 0}, items[0].Version)
+	test.Equals(t, &encoding.Version{Major: 1, Minor: 0, Patch: 0}, items[0].Version)
 	test.Equals(t, "pathway_tag", items[0].PathwayTag)
 	test.Equals(t, Intake, items[0].LayoutPurpose)
 
-	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 1}, items[1].Version)
+	test.Equals(t, &encoding.Version{Major: 1, Minor: 0, Patch: 1}, items[1].Version)
 	test.Equals(t, "pathway_tag", items[1].PathwayTag)
 	test.Equals(t, Intake, items[1].LayoutPurpose)
 
-	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 2}, items[2].Version)
+	test.Equals(t, &encoding.Version{Major: 1, Minor: 0, Patch: 2}, items[2].Version)
 	test.Equals(t, "pathway_tag", items[2].PathwayTag)
 	test.Equals(t, Review, items[2].LayoutPurpose)
 
-	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 3}, items[3].Version)
+	test.Equals(t, &encoding.Version{Major: 1, Minor: 0, Patch: 3}, items[3].Version)
 	test.Equals(t, "pathway_tag", items[3].PathwayTag)
 	test.Equals(t, Review, items[3].LayoutPurpose)
 
-	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 4}, items[4].Version)
+	test.Equals(t, &encoding.Version{Major: 1, Minor: 0, Patch: 4}, items[4].Version)
 	test.Equals(t, "pathway_tag", items[4].PathwayTag)
 	test.Equals(t, Diagnose, items[4].LayoutPurpose)
 
-	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 5}, items[5].Version)
+	test.Equals(t, &encoding.Version{Major: 1, Minor: 0, Patch: 5}, items[5].Version)
 	test.Equals(t, "pathway_tag", items[5].PathwayTag)
 	test.Equals(t, Diagnose, items[5].LayoutPurpose)
 
-	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 6}, items[6].Version)
+	test.Equals(t, &encoding.Version{Major: 1, Minor: 0, Patch: 6}, items[6].Version)
 	test.Equals(t, "pathway_tag2", items[6].PathwayTag)
 	test.Equals(t, Intake, items[6].LayoutPurpose)
 
-	test.Equals(t, &common.Version{Major: 1, Minor: 0, Patch: 7}, items[7].Version)
+	test.Equals(t, &encoding.Version{Major: 1, Minor: 0, Patch: 7}, items[7].Version)
 	test.Equals(t, "pathway_tag2", items[7].PathwayTag)
 	test.Equals(t, Intake, items[7].LayoutPurpose)
 
@@ -708,13 +709,13 @@ func TestLayoutTemplateDataAccess(t *testing.T) {
 	_, err = insertLayoutVersion(t, testData, Diagnose, skuID, cpID1, dblobID, 1, 0, 0)
 	test.OK(t, err)
 
-	template, err := testData.DataAPI.LayoutTemplate("pathway_tag", skuType, Intake, &common.Version{Major: 1, Minor: 0, Patch: 0})
+	template, err := testData.DataAPI.LayoutTemplate("pathway_tag", skuType, Intake, &encoding.Version{Major: 1, Minor: 0, Patch: 0})
 	test.OK(t, err)
 	test.Equals(t, "{iBlob}", string(template))
-	template, err = testData.DataAPI.LayoutTemplate("pathway_tag", skuType, Review, &common.Version{Major: 1, Minor: 0, Patch: 0})
+	template, err = testData.DataAPI.LayoutTemplate("pathway_tag", skuType, Review, &encoding.Version{Major: 1, Minor: 0, Patch: 0})
 	test.OK(t, err)
 	test.Equals(t, "{rBlob}", string(template))
-	template, err = testData.DataAPI.LayoutTemplate("pathway_tag", skuType, Diagnose, &common.Version{Major: 1, Minor: 0, Patch: 0})
+	template, err = testData.DataAPI.LayoutTemplate("pathway_tag", skuType, Diagnose, &encoding.Version{Major: 1, Minor: 0, Patch: 0})
 	test.OK(t, err)
 	test.Equals(t, "{dBlob}", string(template))
 }

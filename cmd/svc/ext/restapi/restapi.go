@@ -168,7 +168,7 @@ func buildRESTAPI(
 		launchPromoStartDate = &conf.LaunchPromo.StartDate
 	}
 
-	mux := router.New(&router.Config{
+	_, muxHandler := router.New(&router.Config{
 		DataAPI:                  dataAPI,
 		AuthAPI:                  authAPI,
 		Dispatcher:               dispatcher,
@@ -349,7 +349,7 @@ func buildRESTAPI(
 		dispatcher.PublishAsync(av)
 	}
 
-	h := httputil.SecurityHandler(mux)
+	h := httputil.SecurityHandler(muxHandler)
 	h = httputil.LoggingHandler(h, webRequestLogger)
 	h = httputil.MetricsHandler(h, metricsRegistry.Scope("restapi"))
 	h = httputil.RequestIDHandler(h)

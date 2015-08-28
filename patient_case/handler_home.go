@@ -75,7 +75,7 @@ func (h *homeHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *h
 	if !ok {
 		// Not authenticated
 
-		items, err := getHomeCards(nil, nil, cityStateInfo, isSpruceAvailable, h.dataAPI, h.apiCDNDomain, h.webDomain, r)
+		items, err := getHomeCards(ctx, nil, nil, cityStateInfo, isSpruceAvailable, h.dataAPI, h.apiCDNDomain, h.webDomain, r)
 		if err != nil {
 			apiservice.WriteError(ctx, err, w, r)
 			return
@@ -110,7 +110,7 @@ func (h *homeHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *h
 		return
 	}
 
-	items, err := getHomeCards(patient, patientCases, cityStateInfo, isSpruceAvailable, h.dataAPI, h.apiCDNDomain, h.webDomain, r)
+	items, err := getHomeCards(ctx, patient, patientCases, cityStateInfo, isSpruceAvailable, h.dataAPI, h.apiCDNDomain, h.webDomain, r)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return

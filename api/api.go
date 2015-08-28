@@ -361,11 +361,11 @@ type DiagnosisSetPatch struct {
 
 type DiagnosisAPI interface {
 	DiagnosesThatHaveDetails(codeIDs []string) (map[string]bool, error)
-	LayoutVersionIDsForDiagnosisCodes(codes map[string]*common.Version) (map[string]int64, error)
+	LayoutVersionIDsForDiagnosisCodes(codes map[string]*encoding.Version) (map[string]int64, error)
 	SetDiagnosisDetailsIntake(template, info *common.DiagnosisDetailsIntake) error
-	ActiveDiagnosisDetailsIntakeVersion(codeID string) (*common.Version, error)
+	ActiveDiagnosisDetailsIntakeVersion(codeID string) (*encoding.Version, error)
 	ActiveDiagnosisDetailsIntake(codeID string, types map[string]reflect.Type) (*common.DiagnosisDetailsIntake, error)
-	DetailsIntakeVersionForDiagnoses(codeIDs []string) (map[string]*common.Version, error)
+	DetailsIntakeVersionForDiagnoses(codeIDs []string) (map[string]*encoding.Version, error)
 	DiagnosisDetailsIntake(ids []int64, types map[string]reflect.Type) (map[int64]*common.DiagnosisDetailsIntake, error)
 	CommonDiagnosisSet(pathwayTag string) (string, []string, error)
 	PatchCommonDiagnosisSet(pathwayTag string, patch *DiagnosisSetPatch) error
@@ -573,7 +573,7 @@ type VersionInfo struct {
 type LayoutTemplateVersion struct {
 	ID        int64
 	Layout    []byte
-	Version   common.Version
+	Version   encoding.Version
 	Role      string
 	Purpose   string
 	PathwayID int64
@@ -584,7 +584,7 @@ type LayoutTemplateVersion struct {
 type LayoutVersion struct {
 	ID                      int64
 	Layout                  []byte
-	Version                 common.Version
+	Version                 encoding.Version
 	LayoutTemplateVersionID int64
 	Purpose                 string
 	PathwayID               int64
@@ -600,11 +600,11 @@ type IntakeLayoutAPI interface {
 	IntakeLayoutForReviewLayoutVersion(reviewMajor, reviewMinor int, pathwayID int64, skuType string) ([]byte, int64, error)
 	ReviewLayoutForIntakeLayoutVersionID(layoutVersionID int64, pathwayID int64, skuType string) ([]byte, int64, error)
 	ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMinor int, pathwayID int64, skuType string) ([]byte, int64, error)
-	IntakeLayoutForAppVersion(appVersion *common.Version, platform common.Platform, pathwayID, languageID int64, skuType string) ([]byte, int64, error)
-	IntakeLayoutVersionIDForAppVersion(appVersion *common.Version, platform common.Platform, pathwayID, languageID int64, skuType string) (int64, error)
-	CreateAppVersionMapping(appVersion *common.Version, platform common.Platform, layoutMajor int, role, purpose string, pathwayID int64, skuType string) error
-	UpdateActiveLayouts(purpose string, version *common.Version, layoutTemplateID int64, layoutIDs []int64, pathwayID int64, skuID *int64) error
-	LatestAppVersionSupported(pathwayID int64, skuID *int64, platform common.Platform, role, purpose string) (*common.Version, error)
+	IntakeLayoutForAppVersion(appVersion *encoding.Version, platform common.Platform, pathwayID, languageID int64, skuType string) ([]byte, int64, error)
+	IntakeLayoutVersionIDForAppVersion(appVersion *encoding.Version, platform common.Platform, pathwayID, languageID int64, skuType string) (int64, error)
+	CreateAppVersionMapping(appVersion *encoding.Version, platform common.Platform, layoutMajor int, role, purpose string, pathwayID int64, skuType string) error
+	UpdateActiveLayouts(purpose string, version *encoding.Version, layoutTemplateID int64, layoutIDs []int64, pathwayID int64, skuID *int64) error
+	LatestAppVersionSupported(pathwayID int64, skuID *int64, platform common.Platform, role, purpose string) (*encoding.Version, error)
 	LayoutTemplateVersionBeyondVersion(versionInfo *VersionInfo, role, purpose string, pathwayID int64, skuID *int64) (*LayoutTemplateVersion, error)
 	GetActiveDoctorDiagnosisLayout(pathwayID int64) (*LayoutVersion, error)
 	GetPatientLayout(layoutVersionID, languageID int64) (*LayoutVersion, error)
@@ -628,7 +628,7 @@ type IntakeLayoutAPI interface {
 	GetSupportedLanguages() (languagesSupported []string, languagesSupportedIds []int64, err error)
 	GetPhotoSlotsInfo(questionID, languageID int64) ([]*info_intake.PhotoSlot, error)
 	LayoutVersions() ([]*LayoutVersionInfo, error)
-	LayoutTemplate(pathwayTag, sku, purpose string, version *common.Version) ([]byte, error)
+	LayoutTemplate(pathwayTag, sku, purpose string, version *encoding.Version) ([]byte, error)
 }
 
 type PeopleAPI interface {
@@ -991,7 +991,7 @@ const (
 )
 
 type AppInfo struct {
-	Version         *common.Version
+	Version         *encoding.Version
 	Build           string
 	Platform        common.Platform
 	PlatformVersion string
@@ -1036,7 +1036,7 @@ type AuthAPI interface {
 	PermissionsForAccount(accountID int64) ([]string, error)
 	GroupsForAccount(accountID int64) ([]*common.AccountGroup, error)
 	UpdateGroupsForAccount(accountID int64, groups map[int64]bool) error
-	UpdateAppDevice(accountID int64, appVersion *common.Version, p common.Platform, platformVersion, device, deviceModel, build string) error
+	UpdateAppDevice(accountID int64, appVersion *encoding.Version, p common.Platform, platformVersion, device, deviceModel, build string) error
 	LatestAppInfo(accountID int64) (*AppInfo, error)
 }
 

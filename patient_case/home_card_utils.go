@@ -12,7 +12,9 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/errors"
+	"github.com/sprucehealth/backend/features"
 	"github.com/sprucehealth/backend/responses"
+	"golang.org/x/net/context"
 )
 
 type auxillaryHomeCard int
@@ -26,6 +28,7 @@ const (
 )
 
 func getHomeCards(
+	ctx context.Context,
 	patient *common.Patient,
 	cases []*common.PatientCase,
 	cityStateInfo *address.CityState,
@@ -39,9 +42,9 @@ func getHomeCards(
 	var err error
 
 	if len(cases) == 0 {
-		views, err = homeCardsForUnAuthenticatedUser(dataAPI, cityStateInfo, isSpruceAvailable, r)
+		views, err = homeCardsForUnAuthenticatedUser(ctx, dataAPI, cityStateInfo, isSpruceAvailable, r)
 	} else {
-		views, err = homeCardsForAuthenticatedUser(dataAPI, patient, cases, cityStateInfo, apiCDNDomain, webDomain, r)
+		views, err = homeCardsForAuthenticatedUser(ctx, dataAPI, patient, cases, cityStateInfo, apiCDNDomain, webDomain, r)
 	}
 
 	if err != nil {
@@ -61,6 +64,7 @@ func getHomeCards(
 }
 
 func homeCardsForUnAuthenticatedUser(
+	ctx context.Context,
 	dataAPI api.DataAPI,
 	cityStateInfo *address.CityState,
 	isSpruceAvailable bool,
@@ -89,6 +93,7 @@ func homeCardsForUnAuthenticatedUser(
 }
 
 func homeCardsForAuthenticatedUser(
+	ctx context.Context,
 	dataAPI api.DataAPI,
 	patient *common.Patient,
 	cases []*common.PatientCase,
@@ -259,8 +264,7 @@ func homeCardsForAuthenticatedUser(
 		views = append(views, getMeetCareTeamSection(careTeams[cases[0].ID.Int64()].Assignments, cases[0], apiCDNDomain))
 	}
 	if auxillaryCardOptions&referralCard != 0 {
-		spruceHeaders := apiservice.ExtractSpruceHeaders(r)
-		view, err := getShareSpruceSection(spruceHeaders, dataAPI, webDomain, patient.AccountID.Int64())
+		view, err := getShareSpruceSection(ctx, dataAPI, webDomain, patient.AccountID.Int64())
 		if err != nil {
 			return nil, err
 		} else if view != nil {
@@ -328,38 +332,25 @@ func getMeetCareTeamSection(careTeamAssignments []*common.CareProviderAssignment
 	return sectionView
 }
 
-func getShareSpruceSection(spruceHeaders *apiservice.SpruceHeaders, dataAPI api.DataAPI, webDomain string, accountID int64) (common.ClientView, error) {
-
-	// FIXME: Improve the way we do app version/view mapping.
-	// The current version checking mechanism will be difficult to maintain
-	// Version 1.1.0 - Initial refer a friend spruce action homecard version
-	// Version 2.0.2 - Improved direct refer a friend link homecard
+func getShareSpruceSection(ctx context.Context, dataAPI api.DataAPI, webDomain string, accountID int64) (common.ClientView, error) {
+	// iOS 1.1.0 - Initial refer a friend spruce action homecard version
+	// iOS 2.0.2 - Improved direct refer a friend link homecard
 	// Android - don't show any share spruce section at all
 
-	if spruceHeaders.Platform == common.Android {
-		return nil, nil
-	}
-
-	// The initial refer a friend launch version
-	referFriendLaunchVersion110 := &common.Version{
-		Major: 1,
-		Minor: 1,
-		Patch: 0,
-	}
-
-	// Improved refer a friend home card
-	referFriendVersion202 := &common.Version{
-		Major: 2,
-		Minor: 0,
-		Patch: 2,
-	}
-
-	referralDisplayInfo, err := promotions.CreateReferralDisplayInfo(dataAPI, webDomain, accountID)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-	switch {
-	case spruceHeaders.AppVersion.GreaterThanOrEqualTo(referFriendLaunchVersion110) && spruceHeaders.AppVersion.LessThan(referFriendVersion202):
+	feat := features.CtxSet(ctx)
+	if feat.Has(features.RAFHomeCard) {
+		referralDisplayInfo, err := promotions.CreateReferralDisplayInfo(dataAPI, webDomain, accountID)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		return &phReferFriend{
+			ReferFriendContent: referralDisplayInfo,
+		}, nil
+	} else if feat.Has(features.OldRAFHomeCard) {
+		referralDisplayInfo, err := promotions.CreateReferralDisplayInfo(dataAPI, webDomain, accountID)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
 		return &phSectionView{
 			Views: []common.ClientView{
 				&phSmallIconText{
@@ -369,10 +360,6 @@ func getShareSpruceSection(spruceHeaders *apiservice.SpruceHeaders, dataAPI api.
 					RoundedIcon: true,
 				},
 			},
-		}, nil
-	case spruceHeaders.AppVersion.GreaterThanOrEqualTo(referFriendVersion202):
-		return &phReferFriend{
-			ReferFriendContent: referralDisplayInfo,
 		}, nil
 	}
 

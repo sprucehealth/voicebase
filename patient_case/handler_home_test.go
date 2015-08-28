@@ -18,6 +18,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/features"
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 )
@@ -297,7 +298,7 @@ func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 	test.OK(t, err)
 	setRequestHeaders(r)
 
-	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
+	ctx := testContext(api.RolePatient, 1, []string{features.OldRAFHomeCard})
 
 	caseName := "Rash"
 	patientVisitID := int64(10)
@@ -386,7 +387,7 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 	test.OK(t, err)
 	setRequestHeaders(r)
 
-	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
+	ctx := testContext(api.RolePatient, 1, []string{features.OldRAFHomeCard})
 
 	caseName := "Rash"
 	patientVisitID := int64(10)
@@ -484,7 +485,7 @@ func TestHome_Authenticated_CaseTriaged(t *testing.T) {
 	test.OK(t, err)
 	setRequestHeaders(r)
 
-	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
+	ctx := testContext(api.RolePatient, 1, []string{features.OldRAFHomeCard})
 
 	caseName := "Rash"
 	now := time.Now()
@@ -574,7 +575,7 @@ func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
+	ctx := testContext(api.RolePatient, 1, []string{features.OldRAFHomeCard})
 
 	caseName := "Rash"
 	patientVisitID := int64(10)
@@ -661,7 +662,7 @@ func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
+	ctx := testContext(api.RolePatient, 1, []string{features.OldRAFHomeCard})
 
 	caseName := "Rash"
 	patientVisitID := int64(10)
@@ -758,7 +759,7 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
+	ctx := testContext(api.RolePatient, 1, []string{features.OldRAFHomeCard})
 
 	caseName := "Rash"
 
@@ -851,7 +852,7 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
+	ctx := testContext(api.RolePatient, 1, []string{features.OldRAFHomeCard})
 
 	caseName := "Rash"
 
@@ -955,7 +956,7 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
+	ctx := testContext(api.RolePatient, 1, []string{features.OldRAFHomeCard})
 
 	caseName := "Rash"
 
@@ -1059,7 +1060,7 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
+	ctx := testContext(api.RolePatient, 1, []string{features.OldRAFHomeCard})
 
 	caseName := "Rash"
 
@@ -1173,7 +1174,7 @@ func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
+	ctx := testContext(api.RolePatient, 1, []string{features.OldRAFHomeCard})
 
 	caseName := "Rash"
 
@@ -1290,7 +1291,7 @@ func TestHome_Authenticated_NoUpdates(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
+	ctx := testContext(api.RolePatient, 1, []string{features.OldRAFHomeCard})
 
 	caseName := "Rash"
 
@@ -1373,7 +1374,7 @@ func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
+	ctx := testContext(api.RolePatient, 1, []string{features.OldRAFHomeCard})
 
 	caseName := "Rash"
 
@@ -1474,7 +1475,7 @@ func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
+	ctx := testContext(api.RolePatient, 1, []string{features.OldRAFHomeCard})
 
 	caseName := "Rash"
 
@@ -1595,7 +1596,7 @@ func TestHome_Authenticated_CompletedCase_ReferAFriend_2_0_2(t *testing.T) {
 	r.Header.Set("S-Version", "Patient;test;2.0.2")
 
 	// authenticated
-	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
+	ctx := testContext(api.RolePatient, 1, []string{features.RAFHomeCard})
 
 	caseName := "Rash"
 	accountCode := uint64(1234567)
@@ -1717,7 +1718,7 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
+	ctx := testContext(api.RolePatient, 1, []string{features.OldRAFHomeCard})
 
 	caseName1 := "Rash"
 	caseName2 := "Bed Bugs"
@@ -1846,7 +1847,7 @@ func TestHome_MultipleCases_TPPending(t *testing.T) {
 	setRequestHeaders(r)
 
 	// authenticated
-	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RolePatient})
+	ctx := testContext(api.RolePatient, 1, []string{features.OldRAFHomeCard})
 
 	caseName1 := "Rash"
 	caseName2 := "Bed Bugs"
@@ -1971,6 +1972,17 @@ func setRequestHeaders(r *http.Request) {
 	r.Header.Add("S-OS", "iOS;7.1")
 	r.Header.Add("S-Device", "iPhone6,1")
 	r.Header.Add("S-Device-ID", "31540817651")
+}
+
+func testContext(role string, accountID int64, feats []string) context.Context {
+	fs := map[string]struct{}{}
+	for _, f := range feats {
+		fs[f] = struct{}{}
+	}
+	ctx := context.Background()
+	ctx = apiservice.CtxWithAccount(ctx, &common.Account{ID: accountID, Role: role})
+	ctx = features.CtxWithSet(ctx, features.MapSet(fs))
+	return ctx
 }
 
 func setupMockAccessors(t *testing.T) (*mockHomeHandlerDataAPI, *mockHandlerHomeAddressValidationAPI) {

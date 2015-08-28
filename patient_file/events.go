@@ -9,7 +9,7 @@ import (
 
 type PatientVisitOpenedEvent struct {
 	PatientVisit *common.PatientVisit
-	PatientID    int64
+	PatientID    common.PatientID
 	DoctorID     int64
 	Role         string
 }
@@ -19,7 +19,7 @@ func (e *PatientVisitOpenedEvent) Events() []analytics.Event {
 		&analytics.ServerEvent{
 			Event:     "visit_opened",
 			Timestamp: analytics.Time(time.Now()),
-			PatientID: e.PatientID,
+			PatientID: e.PatientID.Int64(),
 			DoctorID:  e.DoctorID,
 			VisitID:   e.PatientVisit.ID.Int64(),
 			CaseID:    e.PatientVisit.PatientCaseID.Int64(),

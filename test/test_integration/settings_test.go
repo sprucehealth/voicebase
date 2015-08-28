@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/apiservice/apipaths"
-	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -17,7 +17,7 @@ func TestForcedUpgrade(t *testing.T) {
 
 	minimumAppVersionConfigs := config.MinimumAppVersionConfigs(map[string]*config.MinimumAppVersionConfig{
 		"Patient-Dev": &config.MinimumAppVersionConfig{
-			AppVersion: &common.Version{Major: 1, Minor: 2, Patch: 0},
+			AppVersion: &encoding.Version{Major: 1, Minor: 2, Patch: 0},
 		},
 	})
 	testData.Config.MinimumAppVersionConfigs = &minimumAppVersionConfigs

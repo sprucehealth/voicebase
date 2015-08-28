@@ -1,4 +1,4 @@
-package common
+package encoding
 
 import (
 	"encoding/json"
@@ -21,26 +21,14 @@ func TestVersionParsing(t *testing.T) {
 	testVersionParsing("0-9-9", 0, 9, 9, t)
 
 	// unsuccessful parsing
-	if _, err := ParseVersion("a"); err == nil {
-		t.Fatal("Expected invalid version")
+	for _, s := range []string{"a", "..", "0-", "0.5.a", "0.5."} {
+		if _, err := ParseVersion(s); err == nil {
+			t.Fatalf("Expected invalid version while parsing '%s'", s)
+		}
 	}
-	if _, err := ParseVersion(".."); err == nil {
-		t.Fatal("Expected invalid version")
-	}
-	if _, err := ParseVersion("0-"); err == nil {
-		t.Fatal("Expected invalid version")
-	}
-	if _, err := ParseVersion("0.5.a"); err == nil {
-		t.Fatal("Expected invalid version")
-	}
-	if _, err := ParseVersion("0.5."); err == nil {
-		t.Fatal("Expected invalid version")
-	}
-
 }
 
 func TestVersionMarshalling(t *testing.T) {
-
 	v := Version{
 		Major: 10,
 		Minor: 2,
@@ -50,9 +38,11 @@ func TestVersionMarshalling(t *testing.T) {
 		"version": v,
 	})
 	test.OK(t, err)
-
 	test.Equals(t, `{"version":"10.2.0"}`, string(jsonData))
 
+	text, err := v.MarshalText()
+	test.OK(t, err)
+	test.Equals(t, "10.2.0", string(text))
 }
 
 func TestVersionUnmarshalling(t *testing.T) {
@@ -78,6 +68,9 @@ func TestVersionUnmarshalling(t *testing.T) {
 	test.Equals(t, 9, r2.V.Minor)
 	test.Equals(t, 8, r2.V.Patch)
 
+	var v Version
+	test.OK(t, v.UnmarshalText([]byte("1.2.3")))
+	test.Equals(t, "1.2.3", v.String())
 }
 
 func TestVersionLessThan(t *testing.T) {
@@ -104,7 +97,6 @@ func TestVersionLessThan(t *testing.T) {
 	testVersionNotLessThan(
 		Version{Major: 10, Minor: 0, Patch: 0},
 		Version{Major: 1, Minor: 2, Patch: 3}, t)
-
 }
 
 func testVersionLessThan(v1, v2 Version, t *testing.T) {
@@ -130,4 +122,20 @@ func testVersionParsing(ver string, major, minor, patch int, t *testing.T) {
 	} else if v.Patch != patch {
 		t.Fatal("Wrong patch component")
 	}
+}
+
+func TestVersionRangeContains(t *testing.T) {
+	// Range with no limits should allow everything
+	test.Equals(t, true, VersionRange{}.Contains(&Version{1, 0, 0}))
+	// Minimum only
+	test.Equals(t, true, VersionRange{MinVersion: &Version{1, 0, 0}}.Contains(&Version{1, 0, 0}))
+	test.Equals(t, false, VersionRange{MinVersion: &Version{1, 0, 0}}.Contains(&Version{0, 0, 9}))
+	// Maximum only
+	test.Equals(t, true, VersionRange{MaxVersion: &Version{1, 0, 0}}.Contains(&Version{0, 0, 9}))
+	test.Equals(t, false, VersionRange{MaxVersion: &Version{1, 0, 0}}.Contains(&Version{1, 0, 0}))
+	// Full range
+	test.Equals(t, true, VersionRange{MinVersion: &Version{1, 0, 0}, MaxVersion: &Version{2, 0, 0}}.Contains(&Version{1, 5, 0}))
+	test.Equals(t, false, VersionRange{MinVersion: &Version{1, 0, 0}, MaxVersion: &Version{1, 0, 0}}.Contains(&Version{1, 0, 0}))
+	test.Equals(t, false, VersionRange{MinVersion: &Version{1, 0, 0}, MaxVersion: &Version{2, 0, 0}}.Contains(&Version{0, 0, 9}))
+	test.Equals(t, false, VersionRange{MinVersion: &Version{1, 0, 0}, MaxVersion: &Version{2, 0, 0}}.Contains(&Version{2, 0, 1}))
 }

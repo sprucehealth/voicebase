@@ -275,7 +275,7 @@ func decodeImageAndExif(r io.Reader) (image.Image, *exif.Exif, error) {
 	}
 	// Make sure to consume all the data in case the image was just at the beginning and the
 	// exif data is at the end. This should in general be a noop, and I'm not sure exactly
-	// where the exif data is most commenly.
+	// where the exif data is most commonly.
 	io.Copy(ioutil.Discard, ir)
 	pw.Close()
 

@@ -27,15 +27,16 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	flags "github.com/jessevdk/go-flags"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
 type DosespotConfig struct {
-	ClinicID     int64  `long:"clinic_id" description:"Clinic Id for dosespot"`
+	ClinicID     int64  `long:"clinic_id" description:"Clinic ID for dosespot"`
 	ClinicKey    string `long:"clinic_key" description:"Clinic Key for dosespot"`
-	ProxyID      int64  `long:"proxy_id" description:"Proxy Id for dosespot"`
-	UserID       int64  `long:"user_id" description:"User Id for dosespot"`
+	ProxyID      int64  `long:"proxy_id" description:"Proxy ID for dosespot"`
+	UserID       int64  `long:"user_id" description:"User ID for dosespot"`
 	SOAPEndpoint string `long:"soap_endpoint" description:"SOAP endpoint"`
 	APIEndpoint  string `long:"api_endpoint" description:"API endpoint where soap actions are defined"`
 }
@@ -64,8 +65,8 @@ func (n NotificationConfigs) Get(configName string) (*NotificationConfig, error)
 type MinimumAppVersionConfigs map[string]*MinimumAppVersionConfig
 
 type MinimumAppVersionConfig struct {
-	AppVersion  *common.Version `long:"minimum_app_version" description:"Minimum app version that is supported"`
-	AppStoreURL string          `long:"app_store_url" description:"App Store URL to download the latest version of the app"`
+	AppVersion  *encoding.Version `long:"minimum_app_version" description:"Minimum app version that is supported"`
+	AppStoreURL string            `long:"app_store_url" description:"App Store URL to download the latest version of the app"`
 }
 
 func (m MinimumAppVersionConfigs) Get(configName string) (*MinimumAppVersionConfig, error) {

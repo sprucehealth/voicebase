@@ -63,7 +63,7 @@ func CreatePendingFollowup(
 	// Using the last app version information for the patient, create a followup visit
 	appInfo, err := authAPI.LatestAppInfo(patient.AccountID.Int64())
 	var platform common.Platform
-	var appVersion *common.Version
+	var appVersion *encoding.Version
 	if api.IsErrNotFound(err) {
 		// if last app version information is not present, then create a followup visit
 		// with the latest layout and assumption of iOS. this is okay because the

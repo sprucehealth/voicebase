@@ -8,6 +8,7 @@ import (
 	"reflect"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
 
@@ -38,7 +39,7 @@ func (d *dataService) DiagnosesThatHaveDetails(codeIDs []string) (map[string]boo
 	return codeIDsWithIntake, rows.Err()
 }
 
-func (d *dataService) LayoutVersionIDsForDiagnosisCodes(codes map[string]*common.Version) (map[string]int64, error) {
+func (d *dataService) LayoutVersionIDsForDiagnosisCodes(codes map[string]*encoding.Version) (map[string]int64, error) {
 	if len(codes) == 0 {
 		return nil, nil
 	}
@@ -74,8 +75,8 @@ func (d *dataService) LayoutVersionIDsForDiagnosisCodes(codes map[string]*common
 	return layoutVersionIDs, nil
 }
 
-func (d *dataService) ActiveDiagnosisDetailsIntakeVersion(codeID string) (*common.Version, error) {
-	var version common.Version
+func (d *dataService) ActiveDiagnosisDetailsIntakeVersion(codeID string) (*encoding.Version, error) {
+	var version encoding.Version
 	err := d.db.QueryRow(`
 		SELECT major, minor, patch
 		FROM diagnosis_details_layout_template
@@ -99,7 +100,7 @@ func (d *dataService) ActiveDiagnosisDetailsIntake(codeID string, types map[stri
 	return scanDiagnosisDetailsIntake(row, types)
 }
 
-func (d *dataService) DetailsIntakeVersionForDiagnoses(codeIDs []string) (map[string]*common.Version, error) {
+func (d *dataService) DetailsIntakeVersionForDiagnoses(codeIDs []string) (map[string]*encoding.Version, error) {
 	if len(codeIDs) == 0 {
 		return nil, nil
 	}
@@ -115,9 +116,9 @@ func (d *dataService) DetailsIntakeVersionForDiagnoses(codeIDs []string) (map[st
 	}
 	defer rows.Close()
 
-	layoutVersions := make(map[string]*common.Version)
+	layoutVersions := make(map[string]*encoding.Version)
 	for rows.Next() {
-		var version common.Version
+		var version encoding.Version
 		var codeID string
 		if err := rows.Scan(
 			&codeID,
@@ -150,7 +151,7 @@ func (d *dataService) DiagnosisDetailsIntake(ids []int64, types map[string]refle
 	intakes := make(map[int64]*common.DiagnosisDetailsIntake)
 	for rows.Next() {
 		var intake common.DiagnosisDetailsIntake
-		intake.Version = &common.Version{}
+		intake.Version = &encoding.Version{}
 		var intakeType string
 		var intakeLayout []byte
 
@@ -182,7 +183,7 @@ func (d *dataService) DiagnosisDetailsIntake(ids []int64, types map[string]refle
 
 func scanDiagnosisDetailsIntake(row *sql.Row, types map[string]reflect.Type) (*common.DiagnosisDetailsIntake, error) {
 	var dqi common.DiagnosisDetailsIntake
-	dqi.Version = &common.Version{}
+	dqi.Version = &encoding.Version{}
 	var dqiType string
 	var dqiData []byte
 

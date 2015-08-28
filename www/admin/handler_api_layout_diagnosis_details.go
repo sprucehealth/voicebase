@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/diagnosis"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
@@ -25,9 +26,9 @@ type diagnosisLayoutItems struct {
 }
 
 type diagnosisLayoutItem struct {
-	CodeID        string          `json:"code_id"`
-	LayoutVersion *common.Version `json:"layout_version"`
-	Questions     json.RawMessage `json:"questions"`
+	CodeID        string            `json:"code_id"`
+	LayoutVersion *encoding.Version `json:"layout_version"`
+	Questions     json.RawMessage   `json:"questions"`
 }
 
 func newDiagnosisDetailsIntakeUploadHandler(dataAPI api.DataAPI, diagnosisAPI diagnosis.API) httputil.ContextHandler {

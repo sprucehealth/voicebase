@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dbutil"
@@ -152,7 +153,7 @@ func (d *dataService) ReviewLayoutForIntakeLayoutVersion(intakeMajor, intakeMino
 	return layout, layoutVersionID, nil
 }
 
-func (d *dataService) IntakeLayoutForAppVersion(appVersion *common.Version, platform common.Platform, pathwayID, languageID int64, skuType string) ([]byte, int64, error) {
+func (d *dataService) IntakeLayoutForAppVersion(appVersion *encoding.Version, platform common.Platform, pathwayID, languageID int64, skuType string) ([]byte, int64, error) {
 
 	if appVersion == nil || appVersion.IsZero() {
 		return nil, 0, errors.New("No app version specified")
@@ -189,7 +190,7 @@ func (d *dataService) IntakeLayoutForAppVersion(appVersion *common.Version, plat
 	return layout, layoutVersionID, nil
 }
 
-func (d *dataService) majorLayoutVersionSupportedByAppVersion(appVersion *common.Version, platform common.Platform, pathwayID int64, role, purpose string, skuType string) (int, error) {
+func (d *dataService) majorLayoutVersionSupportedByAppVersion(appVersion *encoding.Version, platform common.Platform, pathwayID int64, role, purpose string, skuType string) (int, error) {
 	skuID, err := d.skuIDFromType(skuType)
 	if err != nil {
 		return 0, err
@@ -224,7 +225,7 @@ func (d *dataService) majorLayoutVersionSupportedByAppVersion(appVersion *common
 	return intakeMajor, nil
 }
 
-func (d *dataService) IntakeLayoutVersionIDForAppVersion(appVersion *common.Version, platform common.Platform, pathwayID, languageID int64, skuType string) (int64, error) {
+func (d *dataService) IntakeLayoutVersionIDForAppVersion(appVersion *encoding.Version, platform common.Platform, pathwayID, languageID int64, skuType string) (int64, error) {
 	if appVersion == nil || appVersion.IsZero() {
 		return 0, errors.New("No app version specified")
 	}
@@ -289,7 +290,7 @@ func (d *dataService) CreateLayoutMapping(intakeMajor, intakeMinor, reviewMajor,
 	return err
 }
 
-func (d *dataService) CreateAppVersionMapping(appVersion *common.Version, platform common.Platform,
+func (d *dataService) CreateAppVersionMapping(appVersion *encoding.Version, platform common.Platform,
 	layoutMajor int, role, purpose string, pathwayID int64, skuType string) error {
 
 	if appVersion == nil || appVersion.IsZero() {
@@ -502,7 +503,7 @@ func (d *dataService) CreateLayoutVersion(layout *LayoutVersion) error {
 	return errors.Trace(tx.Commit())
 }
 
-func (d *dataService) UpdateActiveLayouts(purpose string, version *common.Version, layoutTemplateID int64, clientLayoutIDs []int64,
+func (d *dataService) UpdateActiveLayouts(purpose string, version *encoding.Version, layoutTemplateID int64, clientLayoutIDs []int64,
 	pathwayID int64, skuID *int64) error {
 	var tableName string
 
@@ -1292,8 +1293,8 @@ func (d *dataService) GetPhotoSlotsInfo(questionID, languageID int64) ([]*info_i
 	return photoSlotInfoList, nil
 }
 
-func (d *dataService) LatestAppVersionSupported(pathwayID int64, skuID *int64, platform common.Platform, role, purpose string) (*common.Version, error) {
-	var version common.Version
+func (d *dataService) LatestAppVersionSupported(pathwayID int64, skuID *int64, platform common.Platform, role, purpose string) (*encoding.Version, error) {
+	var version encoding.Version
 	vals := []interface{}{pathwayID, platform.String(), role, purpose}
 	whereClause := "clinical_pathway_id = ? AND platform = ? AND role = ? AND purpose = ?"
 	if skuID != nil {
@@ -1317,7 +1318,7 @@ type LayoutVersionInfo struct {
 	PathwayTag    string
 	SKUType       string
 	LayoutPurpose string
-	Version       *common.Version
+	Version       *encoding.Version
 }
 
 func (d *dataService) LayoutVersions() ([]*LayoutVersionInfo, error) {
@@ -1343,7 +1344,7 @@ func (d *dataService) LayoutVersions() ([]*LayoutVersionInfo, error) {
 			PathwayTag:    tag,
 			SKUType:       skuType,
 			LayoutPurpose: purpose,
-			Version: &common.Version{
+			Version: &encoding.Version{
 				Major: major,
 				Minor: minor,
 				Patch: patch,
@@ -1353,7 +1354,7 @@ func (d *dataService) LayoutVersions() ([]*LayoutVersionInfo, error) {
 	return items, rows.Err()
 }
 
-func (d *dataService) LayoutTemplate(pathway, sku, purpose string, version *common.Version) ([]byte, error) {
+func (d *dataService) LayoutTemplate(pathway, sku, purpose string, version *encoding.Version) ([]byte, error) {
 	var jsonBytes []byte
 	if err := d.db.QueryRow(`
 		SELECT layout FROM layout_version

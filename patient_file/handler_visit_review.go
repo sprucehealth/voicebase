@@ -87,7 +87,7 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(ctx context.Context, r *h
 
 		p.dispatcher.Publish(&PatientVisitOpenedEvent{
 			PatientVisit: patientVisit,
-			PatientID:    patientVisit.PatientID.Int64(),
+			PatientID:    patientVisit.PatientID,
 			DoctorID:     doctorID,
 			Role:         account.Role,
 		})

@@ -105,11 +105,11 @@ func markTPDeviatedIfContentChanged(treatmentPlanID, doctorID int64, dataAPI api
 	}
 
 	if sectionToCheck&ScheduledMessagesSection == ScheduledMessagesSection {
-		return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID)
+		return errors.Trace(dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID))
 	}
 
 	if sectionToCheck&ResourceGuidesSection == ResourceGuidesSection {
-		return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID)
+		return errors.Trace(dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID))
 	}
 
 	var regimenPlanToCompare *common.RegimenPlan
@@ -144,7 +144,7 @@ func markTPDeviatedIfContentChanged(treatmentPlanID, doctorID int64, dataAPI api
 			return errors.Trace(err)
 		}
 		if !treatmentsToCompare.Equals(&common.TreatmentList{Treatments: treatments}) {
-			return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID)
+			return errors.Trace(dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID))
 		}
 	}
 
@@ -154,7 +154,7 @@ func markTPDeviatedIfContentChanged(treatmentPlanID, doctorID int64, dataAPI api
 			return errors.Trace(err)
 		}
 		if !regimenPlanToCompare.Equals(regimenPlan) {
-			return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID)
+			return errors.Trace(dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID))
 		}
 	}
 
@@ -170,7 +170,7 @@ func markTPDeviatedIfContentChanged(treatmentPlanID, doctorID int64, dataAPI api
 				return errors.Trace(err)
 			}
 			if ftp.Note != note {
-				return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID)
+				return errors.Trace(dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID))
 			}
 		case common.TPContentSourceTypeTreatmentPlan:
 			note1, err := dataAPI.GetTreatmentPlanNote(doctorTreatmentPlan.ContentSource.ID.Int64())
@@ -183,7 +183,7 @@ func markTPDeviatedIfContentChanged(treatmentPlanID, doctorID int64, dataAPI api
 			}
 
 			if note1 != note2 {
-				return dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID)
+				return errors.Trace(dataAPI.MarkTPDeviatedFromContentSource(treatmentPlanID))
 			}
 		}
 	}

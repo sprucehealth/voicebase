@@ -1,13 +1,13 @@
 package doctor_treatment_plan
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"golang.org/x/net/context"
@@ -229,7 +229,7 @@ func (d *regimenHandler) ensureLinkedRegimenStepExistsInMasterList(regimenStep *
 		regimenStep.ParentID = encoding.ObjectID{}
 		return nil
 	} else if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	// if the parent regimen step does exist, ensure that the text matches up, and if not break the linkage

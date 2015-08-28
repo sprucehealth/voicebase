@@ -11,6 +11,7 @@ import (
 	"github.com/SpruceHealth/mapstructure"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
@@ -35,8 +36,8 @@ func newLayoutUploadHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 type layoutInfo struct {
 	Data        []byte
 	FileName    string
-	Version     *common.Version
-	UpgradeType common.VersionComponent
+	Version     *encoding.Version
+	UpgradeType encoding.VersionComponent
 }
 
 func (h *layoutUploadHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
@@ -238,21 +239,21 @@ func (h *layoutUploadHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 	// Now that the layouts have been successfully created
 	// create any new mappings for the layouts
 
-	if rData.intakeUpgradeType == common.Major {
+	if rData.intakeUpgradeType == encoding.Major {
 		if err := h.dataAPI.CreateAppVersionMapping(rData.patientAppVersion, rData.platform, rData.intakeLayoutInfo.Version.Major, api.RolePatient, api.ConditionIntakePurpose, rData.pathwayID, rData.skuType); err != nil {
 			www.APIInternalError(w, r, err)
 			return
 		}
 	}
 
-	if rData.reviewUpgradeType == common.Major {
+	if rData.reviewUpgradeType == encoding.Major {
 		if err := h.dataAPI.CreateAppVersionMapping(rData.doctorAppVersion, rData.platform, rData.reviewLayoutInfo.Version.Major, api.RoleDoctor, api.ReviewPurpose, rData.pathwayID, rData.skuType); err != nil {
 			www.APIInternalError(w, r, err)
 			return
 		}
 	}
 
-	if rData.reviewUpgradeType == common.Major || rData.reviewUpgradeType == common.Minor {
+	if rData.reviewUpgradeType == encoding.Major || rData.reviewUpgradeType == encoding.Minor {
 		if err := h.dataAPI.CreateLayoutMapping(rData.intakeLayoutInfo.Version.Major, rData.intakeLayoutInfo.Version.Minor,
 			rData.reviewLayoutInfo.Version.Major, rData.reviewLayoutInfo.Version.Minor, rData.pathwayID, rData.skuType); err != nil {
 			www.APIInternalError(w, r, err)
@@ -282,10 +283,10 @@ type requestData struct {
 	skuType            string
 
 	// intake/review versioning specific
-	intakeUpgradeType common.VersionComponent
-	reviewUpgradeType common.VersionComponent
-	patientAppVersion *common.Version
-	doctorAppVersion  *common.Version
+	intakeUpgradeType encoding.VersionComponent
+	reviewUpgradeType encoding.VersionComponent
+	patientAppVersion *encoding.Version
+	doctorAppVersion  *encoding.Version
 	platform          common.Platform
 
 	// parsed layouts
@@ -435,12 +436,12 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 
 	// ensure that we have the right combination of upgrades
 	switch rData.intakeUpgradeType {
-	case common.Major, common.Minor:
-		if !(rData.reviewUpgradeType == common.Major || rData.reviewUpgradeType == common.Minor) {
+	case encoding.Major, encoding.Minor:
+		if !(rData.reviewUpgradeType == encoding.Major || rData.reviewUpgradeType == encoding.Minor) {
 			return errors.New("A major/minor upgrade for intake requires a major/minor upgrade on the review")
 		}
 	default:
-		if rData.reviewUpgradeType == common.Major || rData.reviewUpgradeType == common.Minor {
+		if rData.reviewUpgradeType == encoding.Major || rData.reviewUpgradeType == encoding.Minor {
 			return errors.New("A major/minor upgrade for review requires a major/minor upgrade on the intake")
 		}
 	}
@@ -448,13 +449,13 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 	// ensure that app version information is specified and valid
 	// if we are dealing with MAJOR upgrades
 	var err error
-	if rData.intakeUpgradeType == common.Major {
+	if rData.intakeUpgradeType == encoding.Major {
 		patientAppVersion := r.FormValue("patient_app_version")
 		if patientAppVersion == "" {
 			return errors.New("patient_app_version must be specified for MAJOR upgrades")
 		}
 
-		rData.patientAppVersion, err = common.ParseVersion(patientAppVersion)
+		rData.patientAppVersion, err = encoding.ParseVersion(patientAppVersion)
 		if err != nil {
 			return errors.New(err.Error())
 		}
@@ -470,13 +471,13 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 			return err
 		}
 	}
-	if rData.reviewUpgradeType == common.Major {
+	if rData.reviewUpgradeType == encoding.Major {
 		doctorAppVersion := r.FormValue("doctor_app_version")
 		if doctorAppVersion == "" {
 			return errors.New("doctor_app_version must be specified for MAJOR upgrades")
 		}
 
-		rData.doctorAppVersion, err = common.ParseVersion(doctorAppVersion)
+		rData.doctorAppVersion, err = encoding.ParseVersion(doctorAppVersion)
 		if err != nil {
 			return err
 		}
@@ -504,7 +505,7 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 
 		// validate the intakeLayout against the existing reviewLayout,
 		// given that we are dealing with a patch version upgrade for the intake layout
-		if rData.intakeUpgradeType == common.Patch {
+		if rData.intakeUpgradeType == encoding.Patch {
 			patchUpgrade = true
 			var rJS map[string]interface{}
 			var reviewLayout *info_intake.DVisitReviewSectionListView
@@ -534,7 +535,7 @@ func (rData *requestData) validateUpgradePathsAndLayouts(r *http.Request, dataAP
 
 		// validate the reviewLayout against the existing intakeLayout that it maps to,
 		// given that we are dealing with a patch version upgrade for the review layout
-		if rData.reviewUpgradeType == common.Patch {
+		if rData.reviewUpgradeType == encoding.Patch {
 			patchUpgrade = true
 			var infoIntake *info_intake.InfoIntakeLayout
 			data, _, err := dataAPI.IntakeLayoutForReviewLayoutVersion(rData.reviewLayoutInfo.Version.Major,
@@ -624,7 +625,7 @@ func validateIntakeReviewPair(r *http.Request, intakeLayout *info_intake.InfoInt
 
 // validateVersionedFileName validates an incoming layout file to be of the format
 // layoutType-X-Y-Z.json
-func validateVersionedFileName(fileName, layoutType string) (*common.Version, error) {
+func validateVersionedFileName(fileName, layoutType string) (*encoding.Version, error) {
 	invalidFileFormat := fmt.Errorf("Unknown versioned filename. Should be of the form condition-X-Y-Z.json or review-X-Y-Z.json.")
 	endIndex := strings.Index(fileName, ".json")
 	if endIndex < 0 {
@@ -636,7 +637,7 @@ func validateVersionedFileName(fileName, layoutType string) (*common.Version, er
 		return nil, invalidFileFormat
 	}
 
-	version, err := common.ParseVersion(fileName[i+len(layoutType)+1 : endIndex])
+	version, err := encoding.ParseVersion(fileName[i+len(layoutType)+1 : endIndex])
 	if err != nil {
 		return nil, invalidFileFormat
 	}
@@ -646,7 +647,7 @@ func validateVersionedFileName(fileName, layoutType string) (*common.Version, er
 
 // determinePatchType identifies the type of versioning the layout is to undergo
 // based on the expected version to upgrade to in the name of the file
-func determinePatchType(fileName, layoutType string, pathwayID int64, skuID *int64, dataAPI api.DataAPI) (common.VersionComponent, *common.Version, error) {
+func determinePatchType(fileName, layoutType string, pathwayID int64, skuID *int64, dataAPI api.DataAPI) (encoding.VersionComponent, *encoding.Version, error) {
 	var role, purpose string
 	switch layoutType {
 	case review:
@@ -656,12 +657,12 @@ func determinePatchType(fileName, layoutType string, pathwayID int64, skuID *int
 	case diagnose:
 		role, purpose = api.RoleDoctor, api.DiagnosePurpose
 	default:
-		return common.InvalidVersionComponent, nil, fmt.Errorf("Unknown layoutType: %s", layoutType)
+		return encoding.InvalidVersionComponent, nil, fmt.Errorf("Unknown layoutType: %s", layoutType)
 	}
 
 	incomingVersion, err := validateVersionedFileName(fileName, layoutType)
 	if err != nil {
-		return common.InvalidVersionComponent, nil, nil
+		return encoding.InvalidVersionComponent, nil, nil
 	}
 
 	determineLatestVersion := func(versionInfo *api.VersionInfo) error {
@@ -682,9 +683,9 @@ func determinePatchType(fileName, layoutType string, pathwayID int64, skuID *int
 			Minor: &(incomingVersion.Minor),
 		},
 	); err == nil {
-		return common.Patch, incomingVersion, nil
+		return encoding.Patch, incomingVersion, nil
 	} else if !api.IsErrNotFound(err) {
-		return common.InvalidVersionComponent, nil, err
+		return encoding.InvalidVersionComponent, nil, err
 	}
 
 	// determine the latest layout version for the MAJOR version component
@@ -693,17 +694,17 @@ func determinePatchType(fileName, layoutType string, pathwayID int64, skuID *int
 			Major: &(incomingVersion.Major),
 		},
 	); err == nil {
-		return common.Minor, incomingVersion, nil
+		return encoding.Minor, incomingVersion, nil
 	} else if !api.IsErrNotFound(err) {
-		return common.InvalidVersionComponent, nil, err
+		return encoding.InvalidVersionComponent, nil, err
 	}
 
 	// determine the latest layout version in the database
 	if err = determineLatestVersion(nil); err != nil && !api.IsErrNotFound(err) {
-		return common.InvalidVersionComponent, nil, err
+		return encoding.InvalidVersionComponent, nil, err
 	}
 
-	return common.Major, incomingVersion, nil
+	return encoding.Major, incomingVersion, nil
 }
 
 func parsePlatform(r *http.Request, rData *requestData) error {

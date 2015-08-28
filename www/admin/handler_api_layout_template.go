@@ -7,7 +7,7 @@ import (
 
 	"github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
 	"golang.org/x/net/context"
@@ -58,7 +58,7 @@ func (h *layoutTemplateHandler) parseGETRequest(ctx context.Context, r *http.Req
 
 func (h *layoutTemplateHandler) serveGET(w http.ResponseWriter, r *http.Request, req *layoutTemplateGETRequest) {
 	// get a map of layout versions and info
-	layoutTemplate, err := h.dataAPI.LayoutTemplate(req.PathwayTag, req.SKUType, req.Purpose, &common.Version{Major: req.Major, Minor: req.Minor, Patch: req.Patch})
+	layoutTemplate, err := h.dataAPI.LayoutTemplate(req.PathwayTag, req.SKUType, req.Purpose, &encoding.Version{Major: req.Major, Minor: req.Minor, Patch: req.Patch})
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return

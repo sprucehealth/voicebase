@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/diagnosis"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -32,7 +33,7 @@ type DiagnosisListRequestData struct {
 
 type DiagnosisInputItem struct {
 	CodeID         string                           `json:"code_id"`
-	LayoutVersion  *common.Version                  `json:"layout_version"`
+	LayoutVersion  *encoding.Version                `json:"layout_version"`
 	SessionID      string                           `json:"session_id"`
 	SessionCounter uint                             `json:"counter"`
 	Answers        []*apiservice.QuestionAnswerItem `json:"answers"`
@@ -55,8 +56,8 @@ type DiagnosisOutputItem struct {
 	Title               string                           `json:"title"`
 	Synonyms            string                           `json:"synonyms"`
 	HasDetails          bool                             `json:"has_details"`
-	LayoutVersion       *common.Version                  `json:"layout_version"`
-	LatestLayoutVersion *common.Version                  `json:"latest_layout_version"`
+	LayoutVersion       *encoding.Version                `json:"layout_version"`
+	LatestLayoutVersion *encoding.Version                `json:"latest_layout_version"`
 	Questions           []*info_intake.Question          `json:"questions,omitempty"`
 	Answers             []*apiservice.QuestionAnswerItem `json:"answers,omitempty"`
 }
@@ -136,7 +137,7 @@ func (d *diagnosisListHandler) putDiagnosisList(ctx context.Context, w http.Resp
 		UnsuitableReason: rd.CaseManagement.Reason,
 	}
 
-	codes := make(map[string]*common.Version)
+	codes := make(map[string]*encoding.Version)
 	for _, item := range rd.Diagnoses {
 		if item.LayoutVersion != nil {
 			codes[item.CodeID] = item.LayoutVersion

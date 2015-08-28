@@ -32,6 +32,7 @@ const (
 	DoctorTokensURLPath                  = "/v1/doctor/tokens"
 	DoctorPatientParentInfoURLPath       = "/v1/doctor/patient/parents"
 	DoctorPatientAppInfoURLPath          = "/v1/doctor/patient/app_info"
+	DoctorPatientCapabilities            = "/v1/doctor/patient/capabilities"
 	DoctorPatientCasesListURLPath        = "/v1/doctor/patient/cases/list"
 	DoctorPatientFollowupURLPath         = "/v1/doctor/patient/case/followup"
 	DoctorPatientPharmacyURLPath         = "/v1/doctor/patient/pharmacy"

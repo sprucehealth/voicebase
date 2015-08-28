@@ -5,7 +5,7 @@
 			"name": "Build restapi",
 			"selector": "source.go",
 			"shell_cmd": "GO15VENDOREXPERIMENT=1 go build -i -v",
-			"working_dir": "$project_path/apps/restapi"
+			"working_dir": "$project_path/cmd/svc/ext/restapi"
 		},
 		{
 			"name": "Build CSS",
@@ -44,7 +44,7 @@
 			},
 			"oracle_scope":
 			[
-				"github.com/sprucehealth/backend/apps/restapi"
+				"github.com/sprucehealth/backend/cmd/svc/ext/restapi"
 			]
 		},
 		"GoSublime":

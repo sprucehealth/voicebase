@@ -1,6 +1,10 @@
 package common
 
-import "time"
+import (
+	"time"
+
+	"github.com/sprucehealth/backend/encoding"
+)
 
 type VisitDiagnosisSet struct {
 	ID               int64
@@ -24,7 +28,7 @@ type DiagnosisDetailsIntake struct {
 	ID      int64
 	CodeID  string
 	Layout  Typed
-	Version *Version
+	Version *encoding.Version
 	Created time.Time
 	Active  bool
 }

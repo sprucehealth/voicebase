@@ -19,7 +19,7 @@ func TestAuthSetup(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	var paths []string
-	test.OK(t, testData.APIRouter.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+	test.OK(t, testData.APIMux.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
 		ur, err := route.URLPath()
 		test.OK(t, err)
 		paths = append(paths, ur.Path)

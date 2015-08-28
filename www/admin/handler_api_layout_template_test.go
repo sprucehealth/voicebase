@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
@@ -17,7 +17,7 @@ type mockedDataAPI_handlerLayoutTemplate struct {
 	template []byte
 }
 
-func (d mockedDataAPI_handlerLayoutTemplate) LayoutTemplate(pathway, sku, purpose string, version *common.Version) ([]byte, error) {
+func (d mockedDataAPI_handlerLayoutTemplate) LayoutTemplate(pathway, sku, purpose string, version *encoding.Version) ([]byte, error) {
 	return d.template, nil
 }
 

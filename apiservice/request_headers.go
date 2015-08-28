@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -22,7 +23,7 @@ const (
 type SpruceHeaders struct {
 	AppType          string // (Patient,Doctor,etc)
 	AppEnvironment   string // (Feature,Dev,Demo,Beta,etc)
-	AppVersion       *common.Version
+	AppVersion       *encoding.Version
 	AppBuild         string
 	Platform         common.Platform
 	PlatformVersion  string
@@ -48,7 +49,7 @@ func ExtractSpruceHeaders(r *http.Request) *SpruceHeaders {
 		}
 		if len(sVersionDataComponents) > 2 {
 			var err error
-			sHeaders.AppVersion, err = common.ParseVersion(sVersionDataComponents[2])
+			sHeaders.AppVersion, err = encoding.ParseVersion(sVersionDataComponents[2])
 			if err != nil {
 				golog.Warningf("Unable to parse app version %s: %s", sVersionDataComponents[2], err)
 			}

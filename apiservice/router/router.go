@@ -2,6 +2,8 @@ package router
 
 import (
 	"database/sql"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
@@ -17,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/careprovider"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/compat"
 	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/demo"
@@ -27,7 +30,9 @@ import (
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/email/campaigns"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/features"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
@@ -51,6 +56,7 @@ import (
 	"github.com/sprucehealth/backend/settings"
 	"github.com/sprucehealth/backend/tagging"
 	"github.com/sprucehealth/backend/treatment_plan"
+	"golang.org/x/net/context"
 )
 
 // Config is all services and configuration values used by the app api handlers.
@@ -98,12 +104,13 @@ type Config struct {
 	SMSFromNumber            string
 	Cfg                      cfg.Store
 	ApplicationDB            *sql.DB
-	mux                      *mux.Router
 	Signer                   *sig.Signer
+
+	mux *mux.Router
 }
 
 // New returns an initialized instance of the apiservice router conforming to the http.Handler interface
-func New(conf *Config) *mux.Router {
+func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 	taggingClient := tagging.NewTaggingClient(conf.ApplicationDB)
 
 	// Initialize listneners
@@ -118,6 +125,30 @@ func New(conf *Config) *mux.Router {
 	auth.InitListeners(conf.AuthAPI, conf.Dispatcher)
 	campaigns.InitListeners(conf.Dispatcher, conf.Cfg, conf.EmailService, conf.DataAPI, conf.WebDomain)
 	messages.InitListeners(conf.DataAPI, conf.Dispatcher)
+
+	// TODO: for now hardcoding this here until I can figure out the best place to store it.
+	// Possible config, possibly cfg, possible something else
+	var appFeatures compat.Features
+	appFeatures.Register([]*compat.Feature{
+		{
+			Name: features.MsgAttachGuide,
+			AppVersions: map[string]encoding.VersionRange{
+				"ios-patient": {MinVersion: &encoding.Version{2, 1, 0}},
+			},
+		},
+		{
+			Name: features.OldRAFHomeCard,
+			AppVersions: map[string]encoding.VersionRange{
+				"ios-patient": {MinVersion: &encoding.Version{1, 1, 0}, MaxVersion: &encoding.Version{2, 0, 2}},
+			},
+		},
+		{
+			Name: features.RAFHomeCard,
+			AppVersions: map[string]encoding.VersionRange{
+				"ios-patient": {MinVersion: &encoding.Version{2, 0, 2}},
+			},
+		},
+	})
 
 	conf.mux = mux.NewRouter()
 
@@ -259,6 +290,7 @@ func New(conf *Config) *mux.Router {
 	authenticationRequired(conf, apipaths.DoctorPatientFollowupURLPath, patient_file.NewFollowupHandler(conf.DataAPI, conf.AuthAPI, conf.AuthTokenExpiration, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.TPResourceGuideURLPath, doctor_treatment_plan.NewResourceGuideHandler(conf.DataAPI, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.DoctorTokensURLPath, doctor_treatment_plan.NewDoctorTokensHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.DoctorPatientCapabilities, patient_file.NewPatientCapabilitiesHandler(conf.DataAPI, conf.AuthAPI, appFeatures))
 	// Patient Feedback
 	authenticationRequired(conf, apipaths.PatientFeedbackURLPath, patient.NewFeedbackHandler(conf.DataAPI, taggingClient, conf.Cfg))
 	authenticationRequired(conf, apipaths.PatientFeedbackPromptURLPath, patient.NewFeedbackPromptHandler(conf.DataAPI))
@@ -303,7 +335,15 @@ func New(conf *Config) *mux.Router {
 		authenticationRequired(conf, apipaths.TrainingCasesURLPath, demo.NewTrainingCasesHandler(conf.DataAPI))
 	}
 
-	return conf.mux
+	// Lazily include the feature set for the requesting app to the context
+	handler := httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		ctx = features.CtxWithSet(ctx, features.LazySet(func() features.Set {
+			appInfo := apiservice.ExtractSpruceHeaders(r)
+			return appFeatures.Set(strings.ToLower(appInfo.Platform.String()+"-"+appInfo.AppType), appInfo.AppVersion)
+		}))
+		conf.mux.ServeHTTP(ctx, w, r)
+	})
+	return conf.mux, handler
 }
 
 // Add an authenticated metriced handler to the mux
