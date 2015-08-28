@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"gopkgs.com/memcache.v2"
+	"github.com/rainycape/memcache"
 )
 
 func TestMemcache(t *testing.T) {

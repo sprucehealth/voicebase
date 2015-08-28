@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/rainycape/memcache"
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
@@ -43,7 +44,6 @@ import (
 	"github.com/sprucehealth/backend/schedmsg"
 	"github.com/sprucehealth/backend/surescripts/pharmacy"
 	"golang.org/x/net/context"
-	"gopkgs.com/memcache.v2"
 )
 
 func buildRESTAPI(

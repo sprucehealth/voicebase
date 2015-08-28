@@ -12,6 +12,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/sns"
 	consulapi "github.com/hashicorp/consul/api"
+	"github.com/rainycape/memcache"
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/analytics/analisteners"
@@ -34,7 +35,6 @@ import (
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
 	"golang.org/x/net/context"
-	"gopkgs.com/memcache.v2"
 )
 
 func init() {

@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/sprucehealth/backend",
-	"GoVersion": "go1.5rc1",
+	"GoVersion": "go1.5",
 	"Packages": [
 		"./..."
 	],
@@ -150,6 +150,10 @@
 			"Rev": "8910d1c3a4bda5c97c50bc38543953f1f1e1f8bb"
 		},
 		{
+			"ImportPath": "github.com/rainycape/memcache",
+			"Rev": "1031fa0ce2f20c1c0e1e1b51951d8ea02c84fa05"
+		},
+		{
 			"ImportPath": "github.com/rwcarlsen/goexif/exif",
 			"Rev": "07696a806c8bc37bcff4af76fbc3f9e44a6941fc"
 		},
@@ -209,10 +213,6 @@
 		{
 			"ImportPath": "gopkg.in/yaml.v2",
 			"Rev": "a1c4bcb6c278a41992e2f4f0f29a44b4146daa5c"
-		},
-		{
-			"ImportPath": "gopkgs.com/memcache.v2",
-			"Rev": "756dcc4797c211469c686f72ea406f15b1864b69"
 		}
 	]
 }

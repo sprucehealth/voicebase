@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/cookieo9/resources-go"
+	"github.com/rainycape/memcache"
 	"github.com/samuel/go-librato/librato"
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
@@ -27,7 +28,6 @@ import (
 	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/www"
 	"github.com/sprucehealth/backend/www/router"
-	"gopkgs.com/memcache.v2"
 )
 
 func buildWWW(

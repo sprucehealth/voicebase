@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"time"
 
-	"gopkgs.com/memcache.v2"
+	"github.com/rainycape/memcache"
 )
 
 // Memcache implements a naïve single interval rate-limiter using memcached. It
