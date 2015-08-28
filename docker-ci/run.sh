@@ -114,11 +114,11 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
     cp restapi build/$CMD_NAME
     bzip2 -9 build/$CMD_NAME
     echo $GIT_COMMIT > build/$CMD_NAME.revision
-    cp ../../coverage-$BUILD_NUMBER.out build/$CMD_NAME.coverage
-    cp ../../coverage-$BUILD_NUMBER.html build/$CMD_NAME.coverage.html
+    cp ../../../../coverage-$BUILD_NUMBER.out build/$CMD_NAME.coverage
+    cp ../../../../coverage-$BUILD_NUMBER.html build/$CMD_NAME.coverage.html
     s3cmd --add-header "x-amz-acl:bucket-owner-full-control" -M --server-side-encryption put build/* s3://spruce-deploy/restapi/
 
-    cd ../../resources/static
+    cd ../../../../resources/static
     STATIC_PREFIX="s3://spruce-static/web/$BUILD_NUMBER"
     s3cmd --recursive -P --no-preserve -m "text/css" put css/* $STATIC_PREFIX/css/
     s3cmd --recursive -P --no-preserve -m "application/javascript" put js/* $STATIC_PREFIX/js/
