@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 	"text/scanner"
 
@@ -16,7 +17,7 @@ Query ::= Expr+
 Expr ::= Op[0,1] (PExpr | TExpr)
 TExpr ::= ID (Op (PExpr | []TExpr))[0,1]
 PExpr ::= `(` Expr `)`
-ID ::= AlphaNumeric+
+ID ::= (AlphaNumeric+:)*AlphaNumeric
 Op ::= ('AND' | 'OR' | 'NOT'| '&' | '|' | '!')
 */
 
@@ -25,6 +26,11 @@ const (
 	And
 	Or
 	Not
+)
+
+var (
+	// ErrUnexpectedEOF Represents when the query strign has come to an unexpected end
+	ErrUnexpectedEOF = errors.New("Unexpected EOF")
 )
 
 type ErrBadExpression interface {
@@ -197,6 +203,19 @@ func (o Op) SQL(field string) string {
 }
 
 type ID string
+
+const idScopeOperator = ":"
+
+var idRegex = regexp.MustCompile(`^(\w+:)*\w+$`)
+
+// Validate Asserts that the contents of the type match the expected pattern for an identifier
+func (id ID) Validate() error {
+	if !idRegex.Match([]byte(id)) {
+		return errors.Trace(fmt.Errorf("%s is not a valid identifier", id))
+	}
+	return nil
+}
+
 type PExpr Expression
 
 func (p *PExpr) String() string {
@@ -310,7 +329,7 @@ func scan(s string) ([]*Expression, error) {
 		var exp *Expression
 		exp, err = scanExpression(bt)
 		if err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 		es = append(es, exp)
 		_, err = bt.Peek()
@@ -340,15 +359,32 @@ func scanTExpr(s *BulkTokenizer) (*TExpr, error) {
 	var err error
 	tok, err := s.NextToken()
 	if err == io.EOF {
-		return nil, errors.New("Unexpected EOF")
+		return nil, errors.Trace(ErrUnexpectedEOF)
+	}
+	idtok, err := s.Peek()
+	for idtok == idScopeOperator {
+		t, err := s.NextToken()
+		if err == io.EOF {
+			return nil, errors.Trace(ErrUnexpectedEOF)
+		}
+		tok += t
+		t, err = s.NextToken()
+		if err == io.EOF {
+			return nil, errors.Trace(ErrUnexpectedEOF)
+		}
+		tok += t
+		idtok, err = s.Peek()
 	}
 	te.ID = ID(tok)
+	if err := te.ID.Validate(); err != nil {
+		return nil, errors.Trace(err)
+	}
 	t, err := s.Peek()
 	if err == io.EOF || t == ")" {
 		return te, nil
 	}
 	if te.O, err = scanOp(s); err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	if te.O == Not {
 		return nil, errors.New("Cannot use NOT as an infix operator.")
@@ -366,7 +402,7 @@ func scanTExpr(s *BulkTokenizer) (*TExpr, error) {
 func scanPExpr(s *BulkTokenizer) (*PExpr, error) {
 	tok, err := s.NextToken()
 	if err == io.EOF {
-		return nil, errors.New("Unexpected EOF")
+		return nil, errors.Trace(ErrUnexpectedEOF)
 	}
 	if tok != "(" {
 		return nil, fmt.Errorf("Expected '(' but found %s", tok)
@@ -377,7 +413,7 @@ func scanPExpr(s *BulkTokenizer) (*PExpr, error) {
 	}
 	tok, err = s.NextToken()
 	if err == io.EOF {
-		return nil, errors.New("Unexpected EOF")
+		return nil, errors.Trace(ErrUnexpectedEOF)
 	}
 	if tok != ")" {
 		return nil, fmt.Errorf("Expected ')' but found %s", tok)
@@ -388,7 +424,7 @@ func scanPExpr(s *BulkTokenizer) (*PExpr, error) {
 func scanOp(s *BulkTokenizer) (Op, error) {
 	tok, err := s.NextToken()
 	if err == io.EOF {
-		return 0, errors.New("Unexpected EOF")
+		return 0, errors.Trace(ErrUnexpectedEOF)
 	}
 	switch strings.ToLower(tok) {
 	case `and`, `&`:

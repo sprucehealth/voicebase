@@ -19,6 +19,13 @@ func TestTaggingQueryScanComplexQueries(t *testing.T) {
 				},
 			},
 		}},
+		{`A:B`, []*Expression{
+			&Expression{
+				TE: &TExpr{
+					ID: ID(`A:B`),
+				},
+			},
+		}},
 		{`(A)`, []*Expression{
 			&Expression{
 				PE: &PExpr{
@@ -28,13 +35,13 @@ func TestTaggingQueryScanComplexQueries(t *testing.T) {
 				},
 			},
 		}},
-		{`A AND B`, []*Expression{
+		{`A AND B:C`, []*Expression{
 			&Expression{
 				TE: &TExpr{
 					ID: ID(`A`),
 					O:  And,
 					TE: &TExpr{
-						ID: ID(`B`),
+						ID: ID(`B:C`),
 					},
 				},
 			},
@@ -94,7 +101,7 @@ func TestTaggingQueryScanComplexQueries(t *testing.T) {
 				},
 			},
 		}},
-		{`A & (B OR C | D)`, []*Expression{
+		{`A & (B OR C:E | D)`, []*Expression{
 			&Expression{
 				TE: &TExpr{
 					ID: ID(`A`),
@@ -104,7 +111,7 @@ func TestTaggingQueryScanComplexQueries(t *testing.T) {
 							ID: ID(`B`),
 							O:  Or,
 							TE: &TExpr{
-								ID: ID(`C`),
+								ID: ID(`C:E`),
 								O:  Or,
 								TE: &TExpr{
 									ID: ID(`D`),
