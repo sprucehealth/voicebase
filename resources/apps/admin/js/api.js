@@ -55,6 +55,15 @@ module.exports = {
 			dataType: "json"
 		}, cb);
 	},
+	updateDoctor: function(id: string, update: any, cb: ajaxCB) {
+		this.ajax({
+			type: "PATCH",
+			contentType: "application/json",
+			url: "/providers/" + encodeURIComponent(id),
+			data: JSON.stringify(update),
+			dataType: "json"
+		}, cb);
+	},
 	doctorAttributes: function(id: string, cb: ajaxCB) {
 		this.ajax({
 			type: "GET",

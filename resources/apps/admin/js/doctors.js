@@ -117,9 +117,14 @@ module.exports = {
 			doctor.account = account;
 			this.setState({doctor: doctor});
 		},
+		onPrescriberIDUpdate: function(updated_prescriber_id: any): void {
+			var doctor = this.state.doctor;
+			doctor.prescriber_id = updated_prescriber_id;
+			this.setState({doctor: doctor});
+		},
 		pages: {
 			info: function(): any {
-				return <DoctorInfoPage router={this.props.router} doctor={this.state.doctor} onAccountUpdate={this.onAccountUpdate} />;
+				return <DoctorInfoPage router={this.props.router} doctor={this.state.doctor} onAccountUpdate={this.onAccountUpdate} onPrescriberIDUpdate={this.onPrescriberIDUpdate} />;
 			},
 			licenses: function(): any {
 				return <DoctorLicensesPage router={this.props.router} doctor={this.state.doctor} />;
@@ -365,6 +370,7 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 			attributesError: null,
 			phoneNumbers: [],
 			phoneNumbersError: null,
+			error: null,
 			profileImageURL: {
 				"thumbnail": AdminAPI.doctorProfileImageURL(this.props.doctor.id, "thumbnail"),
 				"hero": AdminAPI.doctorProfileImageURL(this.props.doctor.id, "hero")
@@ -415,6 +421,22 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 					this.props.onAccountUpdate(data.account);
 				}
 			}.bind(this));
+	},
+	onUpdatePrescriberID: function(e: Event) {
+		e.preventDefault();
+		var newPrescriberID = window.prompt("Enter prescriber id");
+		if (newPrescriberID) {
+			this.setState({error: null});
+			AdminAPI.updateDoctor(this.props.doctor.id, {prescriber_id: newPrescriberID}, function(success, data, error) {
+				if (this.isMounted()) {
+					if (success) {
+						this.props.onPrescriberIDUpdate(newPrescriberID);
+					} else {
+						this.setState({error: error.message});
+					}
+				}
+			}.bind(this));
+		}
 	},
 	render: function(): any {
 		var createRow = function(attr) {
@@ -504,6 +526,7 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 				</table>
 				<h3>General Info</h3>
 				{this.state.attributesError ? <Utils.Alert type="danger">{this.state.attributesError}</Utils.Alert> : null}
+				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
 				<table className="table">
 					<tbody>
 						<tr>
@@ -521,6 +544,17 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 						<tr>
 							<td><strong>DEA</strong></td>
 							<td>{this.props.doctor.dea}</td>
+						</tr>
+						<tr>
+							<td><strong>Prescriber ID</strong></td>
+							<td> 
+								{
+									!!this.props.doctor.prescriber_id ?  
+										Perms.has(Perms.DoctorsEdit) ?
+											<a href="#" onClick={this.onUpdatePrescriberID}>SET</a> : this.props.doctor.prescriber_id
+									:<p>{this.props.doctor.prescriber_id}&nbsp;[<a href="#" onClick={this.onUpdatePrescriberID}>Update</a>]</p>
+								}
+							</td>
 						</tr>
 						{attrList.map(createRow)}
 					</tbody>

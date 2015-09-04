@@ -152,7 +152,8 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	r.Handle(`/admin/api/providers/{id:[0-9]+}`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{
-				httputil.Get: []string{PermDoctorsView},
+				httputil.Get:   []string{PermDoctorsView},
+				httputil.Patch: []string{PermDoctorsEdit},
 			},
 			newProviderAPIHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/providers/{id:[0-9]+}/attributes`, apiAuthFilter(

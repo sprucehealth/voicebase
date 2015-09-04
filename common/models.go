@@ -232,7 +232,7 @@ type Doctor struct {
 	PersonID         int64             `json:"person_id"`
 	PromptStatus     PushPromptStatus  `json:"prompt_status"`
 	// Doctor specific
-	DoseSpotClinicianID int64    `json:"-"`
+	DoseSpotClinicianID int64    `json:"prescriber_id,omitempty"`
 	Address             *Address `json:"address,omitempty"`
 	NPI                 string   `json:"npi,omitempty"`
 	DEA                 string   `json:"dea,omitempty"`
