@@ -550,9 +550,10 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 							<td> 
 								{
 									!!this.props.doctor.prescriber_id ?  
+										<p>{this.props.doctor.prescriber_id}&nbsp;[<a href="#" onClick={this.onUpdatePrescriberID}>Update</a>]</p>:
 										Perms.has(Perms.DoctorsEdit) ?
 											<a href="#" onClick={this.onUpdatePrescriberID}>SET</a> : this.props.doctor.prescriber_id
-									:<p>{this.props.doctor.prescriber_id}&nbsp;[<a href="#" onClick={this.onUpdatePrescriberID}>Update</a>]</p>
+									
 								}
 							</td>
 						</tr>
