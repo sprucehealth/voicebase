@@ -4,7 +4,8 @@
 {{define "body"}}
 	<form method="POST" action="" role="form" class="form-onboard">
 		<h2>Information for Malpractice Coverage</h2>
-		<p class="subtitle">Spruce pays for a malpractice insurance policy to cover your activity on the platform and give you peace of mind. The policy is via Lexington Insurance, one of the largest insurers, and is tailored for telemedicine risk. You can read more about the coverage <a href="/doctor-register/malpractice-faq" target="_new">here</a>. Please enter the information below to be added to our coverage roster.</p>
+
+		<p class="subtitle">​​If you are using the Spruce platform to exclusively diagnose and treat your existing patients or patients sourced through your personal marketing efforts, Spruce will guide you through the process of adding a telemedicine rider to your current malpractice policy (if necessary — it may already be covered). You can <a href="/doctor-register/background-check">skip</a> the remainder of this screen, as it does not apply.<br/><br/>If you are practicing as an independent contractor of Spruce Physicians, Spruce pays for a malpractice policy to cover your activity on the platform. The policy is via Lexington Insurance, one of the largest insurers, and is tailored for telemedicine risk. You can read more about the coverage <a href="/doctor-register/malpractice-faq" target="_new">here</a>. Please enter the information below to be added to our coverage roster.<br/><br/>If you are doing both — the “hybrid model” — please fill out the information below. The Lexington policy will cover the patients that Spruce Health sources through its marketing efforts.</p>
 
 		<div class="form-group {{if .FormErrors.CurrentInsurer}}has-error has-feedback{{end}}">
 			<label class="control-label" for="CurrentInsurer">Who is your current professional liability insurer?</label>
