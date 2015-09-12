@@ -78,6 +78,13 @@ module.exports = {
 			dataType: "json"
 		}, cb);
 	},
+	syncGlobalFTPsForDoctor: function(id: string, cb: ajaxCB) {
+		this.ajax({
+			type: "POST",
+			url: "/providers/" + encodeURIComponent(id) + "/treatment_plan/sync_sftps",
+			dataType: "json"
+		}, cb);
+	},
 	medicalLicenses: function(doctorID: string, cb: ajaxCB) {
 		this.ajax({
 			type: "GET",

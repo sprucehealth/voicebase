@@ -538,6 +538,10 @@ type FavoriteTreatmentPlanAPI interface {
 	DeleteFTPMembership(ftpID, doctorID, pathwayID int64) (int64, error)
 	FTPMemberships(ftpID int64) ([]*common.FTPMembership, error)
 	FTPMembershipsForDoctor(doctorID int64) ([]*common.FTPMembership, error)
+
+	// SyncGlobalFTPsForDoctor looks up the current set of Global FTPs and replaces all global FTPs
+	// the doctor currently has access to with the current set.
+	SyncGlobalFTPsForDoctor(doctorID int64) error
 	InsertGlobalFTPsAndUpdateMemberships(ftpsByPathwayID map[int64][]*common.FavoriteTreatmentPlan) error
 }
 

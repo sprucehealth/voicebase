@@ -2,13 +2,13 @@ package api
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dbutil"
 )
@@ -239,14 +239,15 @@ func (d *dataService) insertFavoriteTreatmentPlan(db db, ftp *common.FavoriteTre
 	}
 
 	pathway, pathwayErr := d.PathwayForTag(pathwayTag, PONone)
+	if pathwayErr != nil {
+		return 0, errors.Trace(pathwayErr)
+	}
 	cols := []string{"name", "creator_id", "note", "lifecycle"}
 	vals := []interface{}{ftp.Name, ftp.CreatorID, ftp.Note, ftp.Lifecycle}
 
 	// If updating treatment plan, delete the membership to the old FTP and create a new FTP with the new contents and a new membership
 	if ftp.ID.Int64() != 0 {
-		if pathwayErr != nil {
-			return 0, pathwayErr
-		}
+
 		if _, err := d.deleteFTPMembership(db, ftp.ID.Int64(), *ftp.CreatorID, pathway.ID); err != nil {
 			return 0, err
 		}
@@ -267,10 +268,14 @@ func (d *dataService) insertFavoriteTreatmentPlan(db db, ftp *common.FavoriteTre
 		return 0, err
 	}
 
+	// store the pathway with which the FTP is associated at time of creation
+	_, err = db.Exec(`
+		INSERT INTO ftp_pathway_membership (dr_favorite_treatment_plan_id, pathway_id) VALUES (?,?)`, favoriteTreatmentPlanID, pathway.ID)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
 	if ftp.CreatorID != nil {
-		if pathwayErr != nil {
-			return 0, pathwayErr
-		}
 		_, err = d.createFTPMembership(db, favoriteTreatmentPlanID, *ftp.CreatorID, pathway.ID)
 		if err != nil {
 			return 0, err
@@ -414,7 +419,14 @@ func (d *dataService) InsertGlobalFTPsAndUpdateMemberships(ftpsByPathwayID map[i
 					errs <- fmt.Errorf("Cannot insert FTP as global that already has an ID - %v, CreatorID - %v, or ParentID - %v", ftp.ID, ftp.CreatorID, ftp.ParentID)
 					return
 				}
-				ftpID, err := d.insertFavoriteTreatmentPlan(tx, ftp, "", 0)
+
+				pathwayTag, err := d.pathwayTagFromID(threadLocalPathwayID)
+				if err != nil {
+					errs <- err
+					return
+				}
+
+				ftpID, err := d.insertFavoriteTreatmentPlan(tx, ftp, pathwayTag, 0)
 				if err != nil {
 					errs <- err
 					return
@@ -585,6 +597,70 @@ func (d *dataService) ftpMembershipsForDoctor(db db, doctorID int64) ([]*common.
 		memberships = append(memberships, membership)
 	}
 	return memberships, rows.Err()
+}
+
+func (d *dataService) SyncGlobalFTPsForDoctor(doctorID int64) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	err = func() error {
+		// delete FTP memberships for any global FTPs
+		_, err = tx.Exec(`
+			DELETE dftpm.* 
+			FROM dr_favorite_treatment_plan_membership dftpm 
+			INNER JOIN dr_favorite_treatment_plan dftp on dftp.id = dftpm.dr_favorite_treatment_plan_id 
+			WHERE dftp.creator_id is null AND dftpm.doctor_id = ?`, doctorID)
+		if err != nil {
+			return errors.Trace(err)
+		}
+
+		// get a list of existing Global FTPs along with
+		// pathways they are intended to belong to
+		rows, err := tx.Query(`	
+			SELECT dftp.id, pathway_id
+			FROM dr_favorite_treatment_plan dftp
+			INNER JOIN ftp_pathway_membership fpm ON fpm.dr_favorite_treatment_plan_id = dftp.id
+			WHERE dftp.creator_id IS NULL AND lifecycle='ACTIVE'
+			FOR UPDATE`)
+		if err != nil {
+			return errors.Trace(err)
+		}
+
+		if err := rows.Err(); err != nil {
+			return errors.Trace(err)
+		}
+
+		// note that its possible for single FTP to be associated with multiple pathways, so account for that
+		ftpToPathwayIDsMapping := make(map[int64][]int64)
+		for rows.Next() {
+			var ftpID, pathwayID int64
+			if err := rows.Scan(&ftpID, &pathwayID); err != nil {
+				return errors.Trace(err)
+			}
+			ftpToPathwayIDsMapping[ftpID] = append(ftpToPathwayIDsMapping[ftpID], pathwayID)
+		}
+
+		// create the FTP memberships for the global FTPs for the doctor
+		for ftpID, pathwayIDs := range ftpToPathwayIDsMapping {
+			for _, pathwayID := range pathwayIDs {
+				_, err := d.createFTPMembership(tx, ftpID, doctorID, pathwayID)
+				if err != nil {
+					return errors.Trace(err)
+				}
+			}
+		}
+
+		return nil
+	}()
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (d *dataService) GetTreatmentsInFavoriteTreatmentPlan(favoriteTreatmentPlanID int64) ([]*common.Treatment, error) {

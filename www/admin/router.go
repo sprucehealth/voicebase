@@ -196,6 +196,12 @@ func SetupRoutes(r *mux.Router, config *Config) {
 				httputil.Get: []string{PermFTPView},
 			},
 			newProviderFTPHandler(config.DataAPI, config.MediaStore), nil)))
+	r.Handle(`/admin/api/providers/{id:[0-9]+}/treatment_plan/sync_sftps`, apiAuthFilter(
+		www.PermissionsRequiredHandler(config.AuthAPI,
+			map[string][]string{
+				httputil.Post: []string{PermDoctorsEdit},
+			},
+			newSyncGlobalFTPHandler(config.DataAPI), nil)))
 	r.Handle(`/admin/api/dronboarding`, apiAuthFilter(
 		noPermsRequired(newProviderOnboardingURLAPIHandler(r, config.DataAPI, config.Signer, config.Cfg))))
 	r.Handle(`/admin/api/guides/resources`, apiAuthFilter(

@@ -285,6 +285,10 @@ var DoctorFTPPage = React.createClass({displayName: "DoctorFTPPage",
 	},
 	componentWillMount: function() {
 		document.title = this.props.doctor.short_display_name + " | Doctors | Favorite Treatment Plans";
+		this.getFTPs();
+	},
+	getFTPs: function() {
+		this.setState({busy: true, ftp_fetch_error: false});
 		AdminAPI.doctorFavoriteTreatmentPlans(this.props.doctor.id, function(success, data, error) {
 			if (this.isMounted()) {
 				if (!success) {
@@ -292,9 +296,23 @@ var DoctorFTPPage = React.createClass({displayName: "DoctorFTPPage",
 					return;
 				}
 				this.setState({
+					busy: false,
 					ftps: data.favorite_treatment_plans,
 					ftp_fetch_error: null
 				});
+			}
+		}.bind(this));
+	},
+	syncGlobalFTPs: function(e: Event) {
+		this.setState({busy: true, ftp_fetch_error: false})
+		AdminAPI.syncGlobalFTPsForDoctor(this.props.doctor.id, function(success, data, error) {
+			if (this.isMounted) {
+				if (!success) {
+					this.setState({busy: false, ftp_fetch_error: error.message});
+				}
+
+				// refresh FTPs
+				this.getFTPs();
 			}
 		}.bind(this));
 	},
@@ -324,11 +342,17 @@ var DoctorFTPPage = React.createClass({displayName: "DoctorFTPPage",
 		}
 		return (
 			<div className="container" style={{marginTop: 10}}>
-				<div className="row">
-					<div className="col-sm-12 col-md-12 col-lg-9">
-						<h2>{this.props.doctor.short_display_name + " :: "}Favorite Treatment Plans</h2>
-					</div>
-				</div>
+
+			     <div className="row">
+                    <div className="col-sm-8 col-md-8 col-lg-8">
+                        <h2>{this.props.doctor.short_display_name + " :: "}Favorite Treatment Plans</h2>
+                    </div>
+                    {Perms.has(Perms.DoctorsEdit) ?
+                        <div className="col-sm-4 col-md-4 col-lg-4 "><button className="btn btn-default pull-right" onClick={this.syncGlobalFTPs}>Update SFTPs</button></div>
+                    : null}
+
+                </div>
+					
 
 				<div className="row">
 					<div className="col-md-12">
