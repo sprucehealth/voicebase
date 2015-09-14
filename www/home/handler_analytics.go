@@ -6,9 +6,10 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
-	resources "github.com/cookieo9/resources-go"
+	"github.com/cookieo9/resources-go"
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/common/config"
@@ -18,27 +19,13 @@ import (
 	"golang.org/x/net/context"
 )
 
-var (
-	logoImage       []byte
-	logoContentType string
-)
-
-func init() {
-	logoContentType = "image/png"
-	fi, err := resources.DefaultBundle.Open("static/img/logo-small.png")
-	if err != nil {
-		panic(err)
-	}
-	logoImage, err = ioutil.ReadAll(fi)
-	if err != nil {
-		panic(err)
-	}
-	fi.Close()
-}
-
 const (
 	invalidTimeThreshold = 60 * 60 * 24 * 30 // number of seconds after which an event is dropped
 )
+
+var once sync.Once
+var logoContentType string
+var logoImage []byte
 
 type properties map[string]interface{}
 
@@ -112,11 +99,25 @@ type analyticsAPIRequest struct {
 }
 
 func newAnalyticsHandler(logger analytics.Logger, statsRegistry metrics.Registry) httputil.ContextHandler {
+	once.Do(func() {
+		logoContentType = "image/png"
+		fi, err := resources.DefaultBundle.Open("static/img/logo-small.png")
+		if err != nil {
+			panic(err)
+		}
+		logoImage, err = ioutil.ReadAll(fi)
+		if err != nil {
+			panic(err)
+		}
+		fi.Close()
+	})
+
 	h := &analyticsHandler{
 		logger:             logger,
 		statEventsReceived: metrics.NewCounter(),
 		statEventsDropped:  metrics.NewCounter(),
 	}
+
 	statsRegistry.Add("events/received", h.statEventsReceived)
 	statsRegistry.Add("events/dropped", h.statEventsDropped)
 	return h

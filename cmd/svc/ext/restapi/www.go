@@ -55,10 +55,6 @@ func buildWWW(
 		PublishableKey: conf.Stripe.PublishableKey,
 	}
 
-	templateLoader := www.NewTemplateLoader(func(path string) (io.ReadCloser, error) {
-		return resources.DefaultBundle.Open("templates/" + path)
-	})
-
 	var err error
 	var analyticsDB *sql.DB
 	if conf.AnalyticsDB.Host != "" {
@@ -79,6 +75,11 @@ func buildWWW(
 	}
 
 	branchClient := branch.NewMemcachedBranchClient(conf.BranchKey, memcacheClient)
+
+	www.MustInitializeResources("resources")
+	templateLoader := www.NewTemplateLoader(func(path string) (io.ReadCloser, error) {
+		return resources.DefaultBundle.Open("templates/" + path)
+	})
 
 	return cfg.HTTPHandler(router.New(&router.Config{
 		DataAPI:             dataAPI,

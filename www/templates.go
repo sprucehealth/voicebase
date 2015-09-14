@@ -116,15 +116,21 @@ func (t *TemplateLoader) LoadTemplate(path, parent string, funcMap map[string]in
 	return tm.tmpl, nil
 }
 
-func init() {
+// MustInitializeResources ensures that resources can be loaded either
+// from the content embedded in the zipped binary or from a local path specified
+// via environment variable or resource path specified.
+func MustInitializeResources(resourcesRelativePath string) {
 	resources.DefaultBundle = nil
+
 	if p := os.Getenv("GOPATH"); p != "" {
-		ResourcesPath = path.Join(p, "src", "github.com", "sprucehealth", "backend", "resources")
+		ResourcesPath = path.Join(p, "src", "github.com", "sprucehealth", "backend", resourcesRelativePath)
 		resources.DefaultBundle = append(resources.DefaultBundle, resources.OpenFS(ResourcesPath))
 	}
+
 	if p := os.Getenv("RESOURCEPATH"); p != "" {
 		resources.DefaultBundle = append(resources.DefaultBundle, resources.OpenFS(p))
 	}
+
 	if exePath, err := resources.ExecutablePath(); err == nil {
 		if exe, err := resources.OpenZip(exePath); err == nil {
 			resources.DefaultBundle = append(resources.DefaultBundle, exe)
@@ -139,7 +145,7 @@ func init() {
 	fi.Close()
 }
 
-func (resourceFileSystem) Open(name string) (http.File, error) {
+func (r resourceFileSystem) Open(name string) (http.File, error) {
 	if ResourcesPath == "" {
 		return nil, os.ErrNotExist
 	}

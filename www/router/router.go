@@ -118,8 +118,8 @@ func New(c *Config) httputil.ContextHandler {
 	router.Handle("/robots.txt", RobotsTXTHandler())
 	router.Handle("/sitemap.xml", SitemapXMLHandler())
 	router.Handle("/favicon.ico", httputil.RedirectHandler(c.StaticResourceURL+"/img/_favicon/favicon.ico", http.StatusMovedPermanently))
-	router.PathPrefix("/static").Handler(httputil.StripPrefix("/static", httputil.FileServer(www.ResourceFileSystem)))
 
+	router.PathPrefix("/static").Handler(httputil.StripPrefix("/static", httputil.FileServer(www.ResourceFileSystem)))
 	router.Handle("/privacy", StaticHTMLHandler("terms.html"))
 	router.Handle("/medication-affordability", StaticHTMLHandler("medafford.html"))
 

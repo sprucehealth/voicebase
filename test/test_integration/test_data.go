@@ -60,6 +60,7 @@ func init() {
 	golog.Default().SetLevel(golog.WARN)
 	environment.SetCurrent(environment.Test)
 	rand.Seed(time.Now().Unix())
+	www.MustInitializeResources("resources")
 }
 
 // SMS represents the SMS data

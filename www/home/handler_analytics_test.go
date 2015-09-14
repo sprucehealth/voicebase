@@ -11,12 +11,15 @@ import (
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/backend/www"
 	"golang.org/x/net/context"
 )
 
 func TestAnalyticsHandler(t *testing.T) {
 	al := analytics.DebugLogger{T: t}
 	reg := metrics.NewRegistry()
+	www.MustInitializeResources("resources")
+
 	h := newAnalyticsHandler(al, reg)
 
 	r, err := http.NewRequest("GET", "/?event=abc&foo=bar", nil)
