@@ -208,6 +208,20 @@ type Alert struct {
 	CreationDate time.Time
 }
 
+// PracticeModel represents the attributes of the doctors practice
+// Note: Not 100% on the Is/Has convention but this collection felt right. Feel free to comment.
+type PracticeModel struct {
+	DoctorID             int64
+	IsSprucePC           bool
+	HasPracticeExtension bool
+}
+
+// PracticeModelUpdate represents the mutable aspect of the practice_model record
+type PracticeModelUpdate struct {
+	IsSprucePC           *bool
+	HasPracticeExtension *bool
+}
+
 // Doctor represents a care provider which can be either a Doctor or Care Coordinator.
 type Doctor struct {
 	ID               encoding.ObjectID `json:"id,omitempty"`

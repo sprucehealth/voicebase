@@ -2,7 +2,7 @@
 	"name": "home",
 	"version": "0.0.1",
 	"description": "Home",
-	"repository": "https://github.com/SpruceHealth/backend",
+	"repository": "https://github.com/sprucehealth/backend",
 	"main": "js/app.js",
 	"dependencies": {
 		"react": "^0.13.3",

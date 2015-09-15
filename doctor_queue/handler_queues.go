@@ -96,11 +96,19 @@ func (u *unassignedHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter
 			return
 		}
 	} else {
-		addAuthURL = true
-		queueItems, err = u.dataAPI.GetElligibleItemsInUnclaimedQueue(doctorID)
-		if err != nil && !api.IsErrNotFound(err) {
+		// Only allow doctors who's practice model includes Spruce PC to see the unassigned queue
+		practiceModel, err := u.dataAPI.PracticeModel(doctorID)
+		if err != nil {
 			apiservice.WriteError(ctx, err, w, r)
 			return
+		}
+		if practiceModel.IsSprucePC {
+			addAuthURL = true
+			queueItems, err = u.dataAPI.GetElligibleItemsInUnclaimedQueue(doctorID)
+			if err != nil && !api.IsErrNotFound(err) {
+				apiservice.WriteError(ctx, err, w, r)
+				return
+			}
 		}
 	}
 

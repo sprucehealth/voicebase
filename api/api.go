@@ -962,6 +962,7 @@ type DataAPI interface {
 	PatientCaseAPI
 	PatientVisitAPI
 	PeopleAPI
+	PracticeModelAPI
 	PrescriptionsAPI
 	PromotionsAPI
 	ResourceLibraryAPI
@@ -1061,4 +1062,10 @@ type LockAPI interface {
 	Locked() bool
 	Wait() bool
 	Release()
+}
+
+// PracticeModelAPI represents the methods needed to interact with the practice_model records and provide a DAL
+type PracticeModelAPI interface {
+	PracticeModel(doctorID int64) (*common.PracticeModel, error)
+	UpdatePracticeModel(doctorID int64, pmu *common.PracticeModelUpdate) (int64, error)
 }

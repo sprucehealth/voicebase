@@ -124,7 +124,7 @@ module.exports = {
 		},
 		pages: {
 			info: function(): any {
-				return <DoctorInfoPage router={this.props.router} doctor={this.state.doctor} onAccountUpdate={this.onAccountUpdate} onPrescriberIDUpdate={this.onPrescriberIDUpdate} />;
+				return <DoctorInfoPage router={this.props.router} doctor={this.state.doctor} onAccountUpdate={this.onAccountUpdate} onPrescriberIDUpdate={this.onPrescriberIDUpdate} onSprucePhysicianToggle={this.fetchDoctor} />;
 			},
 			licenses: function(): any {
 				return <DoctorLicensesPage router={this.props.router} doctor={this.state.doctor} />;
@@ -520,10 +520,11 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 				</div>
 				<h3>Two Factor Authentication</h3>
 				{this.state.twoFactorError ? <Utils.Alert type="danger">{this.state.twoFactorError}</Utils.Alert> : null}
-				<p>
-					{this.props.doctor.account.two_factor_enabled ? "Enabled" : "Disabled"}
-					&nbsp;[<a href="#" onClick={this.onTwoFactorToggle}>Toggle</a>]
-				</p>
+				<div>
+				  {this.props.doctor.account.two_factor_enabled ? <span className="success-text">Enabled</span> : <span className="alert-text">Disabled</span>}
+					&nbsp;[<a href="#" onClick={this.onTwoFactorToggle}>{this.props.doctor.account.two_factor_enabled ? "Disable" : "Enable"}</a>]
+				</div>
+				<DoctorPracticeModel doctorID={this.props.doctor.id}/>
 				<h3>Phone Numbers</h3>
 				{this.state.phoneNumbersError ? <Utils.Alert type="danger">{this.state.phoneNumbersError}</Utils.Alert> : null}
 				<table className="table">
@@ -573,7 +574,7 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 							<td><strong>Prescriber ID</strong></td>
 							<td> 
 								{
-									!!this.props.doctor.prescriber_id ?  
+									!this.props.doctor.prescriber_id ?  
 										<p>{this.props.doctor.prescriber_id}&nbsp;[<a href="#" onClick={this.onUpdatePrescriberID}>Update</a>]</p>:
 										Perms.has(Perms.DoctorsEdit) ?
 											<a href="#" onClick={this.onUpdatePrescriberID}>SET</a> : this.props.doctor.prescriber_id
@@ -584,6 +585,73 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 						{attrList.map(createRow)}
 					</tbody>
 				</table>
+			</div>
+		);
+	}
+});
+
+var DoctorPracticeModel = React.createClass({displayName: "DoctorPracticeModel",
+	getInitialState: function(): any {
+		return {
+			practiceModel: null,
+		};
+	},
+	componentWillMount: function() {
+		AdminAPI.practiceModel(this.props.doctorID, (success, data, error) => {
+			if (this.isMounted()) {
+				if (success) {
+					this.setState({practiceModel: data.practice_model});
+				} else {
+					this.setState({practiceModelError: "Failed to query practiceModel: " + error.message});
+				}
+			}
+		});
+	},
+	onPracticeModelUpdateToggle: function(practiceModel: any) {
+		this.setState({practiceModelError: null});
+		AdminAPI.updatePracticeModel(this.props.doctorID, 
+			{is_spruce_pc: practiceModel.is_spruce_pc,
+				has_practice_extension: practiceModel.has_practice_extension}, (success, data, error) => {
+				if (this.isMounted()) {
+					if (success) {
+						this.setState({practiceModel: data.practice_model});
+					} else {
+						this.setState({practiceModelError: error.message});
+					}
+				}
+			});
+	},
+	render: function(): any {
+		return (
+			<div>
+				<h3>Practice Model</h3>
+				{this.state.practiceModelError ? <Utils.Alert type="danger">{this.state.practiceModelError}</Utils.Alert> : null}
+				{this.state.practiceModel != null ?
+					<div>
+						<div>
+							Spruce Physician: {this.state.practiceModel.is_spruce_pc ? <span className="success-text">Enabled</span> : <span className="alert-text">Disabled</span>}
+							{Perms.has(Perms.DoctorsEdit) ? <span>&nbsp;[<a href="#" onClick={(e: Event) => {
+								e.preventDefault();
+								var pm = this.state.practiceModel
+								pm.is_spruce_pc = !pm.is_spruce_pc
+								this.onPracticeModelUpdateToggle(pm)}}>{this.state.practiceModel.is_spruce_pc ? "Disable" : "Enable"}</a>]</span> : null}
+							<ul>
+								<li>Unassigned Queue: {this.state.practiceModel.is_spruce_pc ? <span className="success-text">Enabled</span> : <span className="alert-text">Disabled</span>}</li>
+								<li>Doctor Selection: {this.state.practiceModel.is_spruce_pc ? <span className="success-text">Enabled</span> : <span className="alert-text">Disabled</span>}</li>
+							</ul>
+						</div>
+						<div>
+							Practice Extension: {this.state.practiceModel.has_practice_extension ? <span className="success-text">Enabled</span> : <span className="alert-text">Disabled</span>}
+							{Perms.has(Perms.DoctorsEdit) ? <span>&nbsp;[<a href="#" onClick={(e: Event) => {
+								e.preventDefault();
+								var pm = this.state.practiceModel
+								pm.has_practice_extension = !pm.has_practice_extension
+								this.onPracticeModelUpdateToggle(pm)}}>{this.state.practiceModel.has_practice_extension ? "Disable" : "Enable"}</a>]</span> : null}
+							<ul>
+								<li>Dr. Referral Link: {this.state.practiceModel.has_practice_extension ? <span className="success-text">Enabled</span> : <span className="alert-text">Disabled</span>}</li>
+							</ul>
+						</div>
+					</div> : null}
 			</div>
 		);
 	}

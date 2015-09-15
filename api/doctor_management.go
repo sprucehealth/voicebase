@@ -13,7 +13,9 @@ func (d *dataService) AvailableStates() ([]*common.State, error) {
 	rows, err := d.db.Query(`
 		SELECT DISTINCT state, long_state
 		FROM care_provider_state_elligibility cpse
-		INNER JOIN care_providing_state cps ON cps.id = cpse.care_providing_state_id`)
+		INNER JOIN care_providing_state cps ON cps.id = cpse.care_providing_state_id
+		INNER JOIN practice_model ON cpse.provider_id = practice_model.doctor_id
+		WHERE practice_model.spruce_pc = true`)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +31,7 @@ func (d *dataService) AvailableStates() ([]*common.State, error) {
 	return states, rows.Err()
 }
 
-// SpruceAvailableInState checks to see if atleast one doctor is registered in the state
+// SpruceAvailableInState checks to see if atleast one doctor is registered in the state as a spruce physician
 // to see patient for any condition.
 func (d *dataService) SpruceAvailableInState(state string) (bool, error) {
 	var id int64
@@ -37,8 +39,11 @@ func (d *dataService) SpruceAvailableInState(state string) (bool, error) {
 		SELECT care_provider_state_elligibility.id
 		FROM care_provider_state_elligibility
 		INNER JOIN care_providing_state ON care_providing_state_id = care_providing_state.id
-		WHERE (state = ? OR long_state = ?) AND role_type_id = ? LIMIT 1`, state, state,
-		d.roleTypeMapping[RoleDoctor]).Scan(&id)
+		INNER JOIN practice_model ON care_provider_state_elligibility.provider_id = practice_model.doctor_id
+		WHERE (state = ? OR long_state = ?) 
+		AND role_type_id = ? 
+		AND practice_model.spruce_pc = true
+		LIMIT 1`, state, state, d.roleTypeMapping[RoleDoctor]).Scan(&id)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
@@ -166,9 +171,11 @@ func (d *dataService) EligibleDoctorIDs(doctorIDs []int64, careProvidingStateID 
 	rows, err := d.db.Query(`
 		SELECT provider_id
 		FROM care_provider_state_elligibility
+		INNER JOIN practice_model ON practice_model.doctor_id = care_provider_state_elligibility.provider_id
 		WHERE unavailable = 0
 			AND role_type_id = ?
 			AND care_providing_state_id = ?
+			AND practice_model.spruce_pc = true
 			AND provider_id in (`+dbutil.MySQLArgs(len(doctorIDs))+`)`,
 		vals...)
 	if err != nil {

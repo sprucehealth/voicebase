@@ -2,7 +2,7 @@
   "name": "shared",
   "version": "0.0.1",
   "description": "Shared",
-  "repository": "https://github.com/SpruceHealth/backend",
+  "repository": "https://github.com/sprucehealth/backend",
   "dependencies": {
     "object-assign": "^3.0.0",
     "react": "^0.13.3"

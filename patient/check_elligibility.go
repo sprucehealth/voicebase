@@ -20,6 +20,7 @@ type checkCareProvidingElligibilityHandler struct {
 	analyticsLogger      analytics.Logger
 }
 
+// NewCheckCareProvidingEligibilityHandler returns and initialized instance of checkCareProvidingElligibilityHandler
 func NewCheckCareProvidingEligibilityHandler(dataAPI api.DataAPI,
 	addressValidationAPI address.Validator, analyticsLogger analytics.Logger) httputil.ContextHandler {
 	return httputil.SupportedMethods(
@@ -31,9 +32,12 @@ func NewCheckCareProvidingEligibilityHandler(dataAPI api.DataAPI,
 			}), httputil.Get)
 }
 
+// CheckCareProvidingElligibilityRequestData represents the data expected with a successful elligibility check request
 type CheckCareProvidingElligibilityRequestData struct {
 	ZipCode   string `schema:"zip_code"`
 	StateCode string `schema:"state_code"`
+	// Note: This will transition to the attribution tracking in a upcoming change
+	CareProviderID int64 `schema:"care_provider_id"`
 }
 
 func (c *checkCareProvidingElligibilityHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
@@ -45,6 +49,29 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(ctx context.Context, w
 
 	var cityStateInfo *address.CityState
 	var err error
+
+	// If a provider ID is given then assumte this is a practice extension case
+	if requestData.CareProviderID != 0 {
+		doctor, err := c.dataAPI.GetDoctorFromID(requestData.CareProviderID)
+		if api.IsErrNotFound(err) {
+			apiservice.WriteValidationError(ctx, "The provided doctor ID is not valid", w, r)
+			return
+		} else if err != nil {
+			apiservice.WriteError(ctx, err, w, r)
+			return
+		}
+
+		practiceModel, err := c.dataAPI.PracticeModel(doctor.ID.Int64())
+		if err != nil {
+			apiservice.WriteError(ctx, err, w, r)
+			return
+		}
+
+		if !practiceModel.HasPracticeExtension {
+			apiservice.WriteValidationError(ctx, "The requested doctor is not available for practice extension", w, r)
+			return
+		}
+	}
 
 	// resolve the provided zipcode to the state in the event that stateCode is not
 	// already provided by the client
@@ -78,10 +105,13 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(ctx context.Context, w
 		return
 	}
 
-	isAvailable, err := c.dataAPI.SpruceAvailableInState(cityStateInfo.StateAbbreviation)
-	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
-		return
+	isAvailable := true
+	if requestData.CareProviderID == 0 {
+		isAvailable, err = c.dataAPI.SpruceAvailableInState(cityStateInfo.StateAbbreviation)
+		if err != nil {
+			apiservice.WriteError(ctx, err, w, r)
+			return
+		}
 	}
 
 	responseData := &struct {

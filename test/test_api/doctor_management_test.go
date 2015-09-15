@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
 )
@@ -26,7 +27,9 @@ func TestAvailableStates(t *testing.T) {
 		AccountID: encoding.DeprecatedNewObjectID(accountID),
 		Address:   &common.Address{},
 	}
-	_, err = testData.DataAPI.RegisterProvider(doctor, api.RoleDoctor)
+	did, err := testData.DataAPI.RegisterProvider(doctor, api.RoleDoctor)
+	test.OK(t, err)
+	_, err = testData.DataAPI.UpdatePracticeModel(did, &common.PracticeModelUpdate{IsSprucePC: ptr.Bool(true)})
 	test.OK(t, err)
 
 	// Doctor registered but not elligible in any state
@@ -43,6 +46,12 @@ func TestAvailableStates(t *testing.T) {
 	test.Equals(t, 1, len(states))
 	test.Equals(t, "CA", states[0].Abbreviation)
 	test.Equals(t, "California", states[0].Name)
+
+	_, err = testData.DataAPI.UpdatePracticeModel(did, &common.PracticeModelUpdate{IsSprucePC: ptr.Bool(false)})
+	test.OK(t, err)
+	states, err = testData.DataAPI.AvailableStates()
+	test.OK(t, err)
+	test.Equals(t, 0, len(states))
 }
 
 func TestCareProviderEligible(t *testing.T) {
@@ -56,7 +65,9 @@ func TestCareProviderEligible(t *testing.T) {
 		AccountID: encoding.DeprecatedNewObjectID(accountID),
 		Address:   &common.Address{},
 	}
-	_, err = testData.DataAPI.RegisterProvider(doctor, api.RoleDoctor)
+	did, err := testData.DataAPI.RegisterProvider(doctor, api.RoleDoctor)
+	test.OK(t, err)
+	_, err = testData.DataAPI.UpdatePracticeModel(did, &common.PracticeModelUpdate{IsSprucePC: ptr.Bool(true)})
 	test.OK(t, err)
 
 	eligible, err := testData.DataAPI.CareProviderEligible(doctor.ID.Int64(), api.RoleDoctor, "CA", api.AcnePathwayTag)
@@ -72,4 +83,10 @@ func TestCareProviderEligible(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, true, eligible)
 
+	_, err = testData.DataAPI.UpdatePracticeModel(did, &common.PracticeModelUpdate{IsSprucePC: ptr.Bool(false)})
+	test.OK(t, err)
+
+	eligible, err = testData.DataAPI.CareProviderEligible(doctor.ID.Int64(), api.RoleDoctor, "CA", api.AcnePathwayTag)
+	test.OK(t, err)
+	test.Equals(t, true, eligible)
 }

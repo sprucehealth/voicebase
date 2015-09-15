@@ -16,7 +16,7 @@ Strings are stored in localized form by leveraging an `app_text` table to define
 ## Immutability
 Each layout, question or answer definition is considered immutable once created. Consequently each such component has to be versioned to be updated. This is for the simple reason that the meaning of a question or how the question was presented (via the layout) to the user cannot change.
 
-Today, we support the versioning of layout definitions (as documented in https://github.com/SpruceHealth/backend/issues/90). What we don't yet support is granular versioning on a question and answer, other than essentially creating a completely new question if it needs to be updated.
+Today, we support the versioning of layout definitions (as documented in https://github.com/sprucehealth/backend/issues/90). What we don't yet support is granular versioning on a question and answer, other than essentially creating a completely new question if it needs to be updated.
 
 # Piecing it together
 Below is a description of each step in the system, and how things fit together.
@@ -116,7 +116,7 @@ This object defines the conditional that needs to be met for a question to be sh
 Patients populate a cumulative medical history with every question they populate. As we introduce more conditions for patients, we may not need to ask input to certain questions again given that we already have answers to certain questions. Therefore, we needed a way in which to indicate that certain questions should be prefilled with previous answers to the same question (from another visit intake) if they existed. The `to_prefill` configuration on the question gives the flexibility to indicate if any question should be populated with this information. More information on the cumulative medical history can be found [here](https://docs.google.com/a/sprucehealth.com/document/d/1A-l5rwagelMq6tkXyHdV6s_vpkxq-hZDw5CidpxOzog/edit?usp=sharing).
 
 ### Layout validation and versioning
-This has been explained in detail in this [github issue](https://github.com/SpruceHealth/backend/issues/90).
+This has been explained in detail in this [github issue](https://github.com/sprucehealth/backend/issues/90).
 
 
 ### Diagnosis intake layout
@@ -180,7 +180,7 @@ The represent of patient answers to the doctor is decoupled from its input. This
 
 The doctor's review layout is defined as an array of views (and subviews) versus an array of questions (and subquestions). You can find the view definitions in the `info_intake` package in the `DVisitReviewTypeRegistry`. The view tree for the doctor is populated each time the doctor makes a call to get the visit for review. 
 
- *Note that while the patient input representation for the doctor is decoupled from the input, it is still linked to the intake layout in that the questions from the intake layout are keys to data that each view in the review layout is to be populated with. The intake and review layouts are thought of as pairs, as defined in the [layout versioning documentation](https://github.com/SpruceHealth/backend/issues/90).*
+ *Note that while the patient input representation for the doctor is decoupled from the input, it is still linked to the intake layout in that the questions from the intake layout are keys to data that each view in the review layout is to be populated with. The intake and review layouts are thought of as pairs, as defined in the [layout versioning documentation](https://github.com/sprucehealth/backend/issues/90).*
 
 ### Populating doctor answers for acne diagnosis
 This is done similarly to how answers are populated for the patient_visit object for the patient app today, specifically because the answers are shown inline to the questions themselves as opposed to a different rendering as in the case of the visit review by the doctor. *Note that the same note regarding separating layout and answers objects applies though.*

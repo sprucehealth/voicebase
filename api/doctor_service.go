@@ -72,6 +72,13 @@ func (d *dataService) RegisterProvider(provider *common.Doctor, role string) (in
 
 	provider.ID = encoding.DeprecatedNewObjectID(lastID)
 
+	// Initialize the providers practice model record with nothing enabled
+	_, err = tx.Exec(`INSERT INTO practice_model (doctor_id) VALUES (?)`, provider.ID)
+	if err != nil {
+		tx.Rollback()
+		return 0, errors.Trace(err)
+	}
+
 	if provider.Address != nil {
 		provider.Address.ID, err = addAddress(tx, provider.Address)
 		if err != nil {
@@ -1098,6 +1105,7 @@ func (d *dataService) getOrInsertNameInTable(db db, tableName, drugComponentName
 	return res.LastInsertId()
 }
 
+// DoctorUpdate represents the mutable aspects of the doctor record
 type DoctorUpdate struct {
 	ShortTitle          *string
 	LongTitle           *string
@@ -1355,7 +1363,7 @@ func (d *dataService) ListTreatmentPlanResourceGuides(tpID int64) ([]*common.Res
 		WHERE treatment_plan_id = ?`,
 		tpID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	defer rows.Close()
 
@@ -1363,12 +1371,12 @@ func (d *dataService) ListTreatmentPlanResourceGuides(tpID int64) ([]*common.Res
 	for rows.Next() {
 		g := &common.ResourceGuide{}
 		if err := rows.Scan(&g.ID, &g.SectionID, &g.Ordinal, &g.Title, &g.PhotoURL); err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 		guides = append(guides, g)
 	}
 
-	return guides, rows.Err()
+	return guides, errors.Trace(rows.Err())
 }
 
 func (d *dataService) AddResourceGuidesToTreatmentPlan(tpID int64, guideIDs []int64) error {
@@ -1378,15 +1386,15 @@ func (d *dataService) AddResourceGuidesToTreatmentPlan(tpID int64, guideIDs []in
 
 	tx, err := d.db.Begin()
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	if err := addResourceGuidesToTreatmentPlan(tx, tpID, guideIDs); err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
-	return tx.Commit()
+	return errors.Trace(tx.Commit())
 }
 
 func addResourceGuidesToTreatmentPlan(tx *sql.Tx, tpID int64, guideIDs []int64) error {
@@ -1397,16 +1405,16 @@ func addResourceGuidesToTreatmentPlan(tx *sql.Tx, tpID int64, guideIDs []int64) 
 			(treatment_plan_id, resource_guide_id)
 		VALUES (?, ?)`)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 	defer stmt.Close()
 	for _, id := range guideIDs {
 		if _, err := stmt.Exec(tpID, id); err != nil {
-			return err
+			return errors.Trace(err)
 		}
 	}
 
-	return err
+	return errors.Trace(err)
 }
 
 func (d *dataService) RemoveResourceGuidesFromTreatmentPlan(tpID int64, guideIDs []int64) error {
@@ -1419,7 +1427,7 @@ func (d *dataService) RemoveResourceGuidesFromTreatmentPlan(tpID int64, guideIDs
 			DELETE FROM treatment_plan_resource_guide
 			WHERE treatment_plan_id = ?
 				AND resource_guide_id = ?`, tpID, guideIDs[0])
-		return err
+		return errors.Trace(err)
 	}
 	vals := make([]interface{}, 1, len(guideIDs)+1)
 	vals[0] = tpID
@@ -1429,5 +1437,34 @@ func (d *dataService) RemoveResourceGuidesFromTreatmentPlan(tpID int64, guideIDs
 		WHERE treatment_plan_id = ?
 			AND resource_guide_id IN (`+dbutil.MySQLArgs(len(guideIDs))+`)`,
 		vals...)
-	return err
+	return errors.Trace(err)
+}
+
+func (d *dataService) PracticeModel(doctorID int64) (*common.PracticeModel, error) {
+	pm := &common.PracticeModel{}
+	err := d.db.QueryRow(`
+		SELECT doctor_id, spruce_pc, practice_extension 
+		FROM practice_model WHERE doctor_id = ?`, doctorID).Scan(&pm.DoctorID, &pm.IsSprucePC, &pm.HasPracticeExtension)
+	if err == sql.ErrNoRows {
+		// TODO: Think up a better way tp attach context to ErrNotFound
+		return nil, errors.Trace(ErrNotFound(fmt.Sprintf(`practice_model(doctor_id:%d)`, doctorID)))
+	}
+	return pm, errors.Trace(err)
+}
+
+func (d *dataService) UpdatePracticeModel(doctorID int64, pmu *common.PracticeModelUpdate) (int64, error) {
+	varArgs := dbutil.MySQLVarArgs()
+	if pmu.IsSprucePC != nil {
+		varArgs.Append(`spruce_pc`, *pmu.IsSprucePC)
+	}
+	if pmu.HasPracticeExtension != nil {
+		varArgs.Append(`practice_extension`, *pmu.HasPracticeExtension)
+	}
+	res, err := d.db.Exec(`
+		UPDATE practice_model SET `+varArgs.Columns()+` WHERE doctor_id = ?`, append(varArgs.Values(), doctorID)...)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+	aff, err := res.RowsAffected()
+	return aff, errors.Trace(err)
 }

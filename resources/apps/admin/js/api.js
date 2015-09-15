@@ -921,13 +921,30 @@ module.exports = {
 	},
 
 	// Email
-
 	sendTestEmail: function(type: string, cb: ajaxCB) {
 		this.ajax({
 			type: "POST",
 			contentType: "application/json",
 			url: "/email/test",
 			data: JSON.stringify({type: type}),
+			dataType: "json"
+		}, cb);
+	},
+
+	// Practice Model
+	practiceModel: function(providerID: string, cb: ajaxCB) {
+		this.ajax({
+			type: "GET",
+			url: "/providers/" + encodeURIComponent(providerID) + "/practice_model",
+			dataType: "json"
+		}, cb);
+	},
+	updatePracticeModel: function(providerID: string, update: any, cb: ajaxCB) {
+		this.ajax({
+			type: "PUT",
+			contentType: "application/json",
+			url: "/providers/" + encodeURIComponent(providerID) + "/practice_model",
+			data: JSON.stringify(update),
 			dataType: "json"
 		}, cb);
 	},

@@ -19,6 +19,7 @@ type mockDataAPI_DoctorQueue struct {
 	ccInboxItems    []*api.DoctorQueueItem
 	unassignedItems []*api.DoctorQueueItem
 	historyItems    []*api.DoctorQueueItem
+	practiceModel   *common.PracticeModel
 	patients        map[common.PatientID]*common.Patient
 }
 
@@ -54,7 +55,11 @@ func (m *mockDataAPI_DoctorQueue) Patients([]common.PatientID) (map[common.Patie
 	return m.patients, nil
 }
 
-func TestInbox_CC(t *testing.T) {
+func (m *mockDataAPI_DoctorQueue) PracticeModel(doctorID int64) (*common.PracticeModel, error) {
+	return m.practiceModel, nil
+}
+
+func TestQueuesHandlerInbox_CC(t *testing.T) {
 	m := &mockDataAPI_DoctorQueue{}
 
 	m.ccInboxItems = []*api.DoctorQueueItem{
@@ -90,7 +95,7 @@ func TestInbox_CC(t *testing.T) {
 	test.Equals(t, "test", res.Items[0].Tags[0])
 }
 
-func TestInbox_Tags(t *testing.T) {
+func TestQueuesHandlerInbox_Tags(t *testing.T) {
 	m := &mockDataAPI_DoctorQueue{
 		inboxItems: []*api.DoctorQueueItem{
 			{
@@ -126,7 +131,7 @@ func TestInbox_Tags(t *testing.T) {
 	test.Equals(t, "test", res.Items[0].Tags[0])
 }
 
-func TestUnassigned_Tags(t *testing.T) {
+func TestQueuesHandlerUnassigned_Tags(t *testing.T) {
 	m := &mockDataAPI_DoctorQueue{}
 
 	m.unassignedItems = []*api.DoctorQueueItem{
@@ -162,7 +167,7 @@ func TestUnassigned_Tags(t *testing.T) {
 	test.Equals(t, "test", res.Items[0].Tags[0])
 }
 
-func TestCompleted_Tags(t *testing.T) {
+func TestQueuesHandlerCompleted_Tags(t *testing.T) {
 	m := &mockDataAPI_DoctorQueue{}
 
 	m.historyItems = []*api.DoctorQueueItem{
@@ -196,4 +201,78 @@ func TestCompleted_Tags(t *testing.T) {
 	test.Equals(t, 1, len(res.Items))
 	test.Equals(t, 1, len(res.Items[0].Tags))
 	test.Equals(t, "test", res.Items[0].Tags[0])
+}
+
+func TestQueuesHandlerUnassigned_NotSprucePC(t *testing.T) {
+	m := &mockDataAPI_DoctorQueue{}
+
+	m.unassignedItems = []*api.DoctorQueueItem{
+		{
+			Description: "Testing",
+			Tags:        []string{"test"},
+			PatientID:   common.NewPatientID(1),
+		},
+	}
+	m.patients = map[common.PatientID]*common.Patient{
+		common.NewPatientID(1): {
+			FirstName: "kunal",
+			LastName:  "jham",
+		},
+	}
+	m.practiceModel = &common.PracticeModel{
+		IsSprucePC: false,
+	}
+
+	h := NewUnassignedHandler(m)
+	w := httptest.NewRecorder()
+	r, err := http.NewRequest("GET", "api.spruce.local/unassigned", nil)
+	test.OK(t, err)
+
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RoleDoctor})
+	h.ServeHTTP(ctx, w, r)
+	test.Equals(t, http.StatusOK, w.Code)
+
+	var res struct {
+		Items []*DoctorQueueDisplayItem `json:"items"`
+	}
+
+	test.OK(t, json.Unmarshal(w.Body.Bytes(), &res))
+	test.Equals(t, 0, len(res.Items))
+}
+
+func TestQueuesHandlerUnassigned_SprucePC(t *testing.T) {
+	m := &mockDataAPI_DoctorQueue{}
+
+	m.unassignedItems = []*api.DoctorQueueItem{
+		{
+			Description: "Testing",
+			Tags:        []string{"test"},
+			PatientID:   common.NewPatientID(1),
+		},
+	}
+	m.patients = map[common.PatientID]*common.Patient{
+		common.NewPatientID(1): {
+			FirstName: "kunal",
+			LastName:  "jham",
+		},
+	}
+	m.practiceModel = &common.PracticeModel{
+		IsSprucePC: true,
+	}
+
+	h := NewUnassignedHandler(m)
+	w := httptest.NewRecorder()
+	r, err := http.NewRequest("GET", "api.spruce.local/unassigned", nil)
+	test.OK(t, err)
+
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RoleDoctor})
+	h.ServeHTTP(ctx, w, r)
+	test.Equals(t, http.StatusOK, w.Code)
+
+	var res struct {
+		Items []*DoctorQueueDisplayItem `json:"items"`
+	}
+
+	test.OK(t, json.Unmarshal(w.Body.Bytes(), &res))
+	test.Equals(t, 1, len(res.Items))
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/erx"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/test"
 )
@@ -105,6 +106,11 @@ func signupDoctor(t *testing.T, testData *TestData) (*doctor.DoctorSignedupRespo
 	if err != nil {
 		t.Fatal("Unable to parse response from patient signed up")
 	}
+
+	aff, err := testData.DataAPI.UpdatePracticeModel(signedupDoctorResponse.DoctorID, &common.PracticeModelUpdate{IsSprucePC: ptr.Bool(true)})
+	test.OK(t, err)
+	test.Equals(t, aff, int64(aff))
+
 	return signedupDoctorResponse, email, password
 }
 

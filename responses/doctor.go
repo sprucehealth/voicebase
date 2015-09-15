@@ -74,9 +74,26 @@ type Alert struct {
 	CreationDate time.Time `json:"creation_date"`
 }
 
+// TransformAlert transforms an alert from it's DAL representation to a client friendly version
 func TransformAlert(alert *common.Alert) *Alert {
 	return &Alert{
 		Message:      alert.Message,
 		CreationDate: alert.CreationDate,
+	}
+}
+
+// PracticeModel represents the way to express a doctors practice_model to clients
+type PracticeModel struct {
+	DoctorID             int64 `json:"doctor_id,string"`
+	IsSprucePC           bool  `json:"is_spruce_pc"`
+	HasPracticeExtension bool  `json:"has_practice_extension"`
+}
+
+// TransformPracticeModel transforms the practice_model DAL representation to a client friendly version
+func TransformPracticeModel(pm *common.PracticeModel) *PracticeModel {
+	return &PracticeModel{
+		DoctorID:             pm.DoctorID,
+		IsSprucePC:           pm.IsSprucePC,
+		HasPracticeExtension: pm.HasPracticeExtension,
 	}
 }

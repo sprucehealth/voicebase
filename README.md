@@ -164,7 +164,7 @@ But first make sure to build and start running the app:
 	$ go build
 	$ ./run_server.bash
 
-> Open the [PAW file](https://github.com/SpruceHealth/api-response-examples/tree/master/v1) in [PAW (Mac App Store)](https://itunes.apple.com/us/app/paw-http-client/id584653203?mt=12) and create a new patient (ex: `jon@sprucehealth.com`):
+> Open the [PAW file](https://github.com/sprucehealth/api-response-examples/tree/master/v1) in [PAW (Mac App Store)](https://itunes.apple.com/us/app/paw-http-client/id584653203?mt=12) and create a new patient (ex: `jon@sprucehealth.com`):
 <img src="http://f.cl.ly/items/221c0k392Z3n2R3O3Z0z/Screen%20Shot%202014-11-26%20at%201.17.28%20PM.png" />
 
 Log back in to mysql as `carefront` and change the account's role type to:
@@ -249,7 +249,7 @@ Events setup (optional)
 
 ### Database setup
 
-First, follow the [Events Setup README](https://github.com/SpruceHealth/backend/blob/master/events/README.md).
+First, follow the [Events Setup README](https://github.com/sprucehealth/backend/blob/master/events/README.md).
 
 To have launchd start postgresql at login:
 
