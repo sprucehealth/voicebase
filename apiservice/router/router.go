@@ -17,6 +17,7 @@ import (
 	"github.com/sprucehealth/backend/appevent"
 	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/careprovider"
+	"github.com/sprucehealth/backend/cmd/svc/ext/restapi/handlers"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/compat"
@@ -44,7 +45,6 @@ import (
 	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/messages"
-	"github.com/sprucehealth/backend/misc/handlers"
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/passreset"
 	"github.com/sprucehealth/backend/patient"
@@ -52,7 +52,6 @@ import (
 	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/patient_visit"
 	"github.com/sprucehealth/backend/pharmacy"
-	"github.com/sprucehealth/backend/reslib"
 	"github.com/sprucehealth/backend/settings"
 	"github.com/sprucehealth/backend/tagging"
 	"github.com/sprucehealth/backend/treatment_plan"
@@ -133,19 +132,19 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 		{
 			Name: features.MsgAttachGuide,
 			AppVersions: map[string]encoding.VersionRange{
-				"ios-patient": {MinVersion: &encoding.Version{2, 1, 0}},
+				"ios-patient": {MinVersion: &encoding.Version{Major: 2, Minor: 1, Patch: 0}},
 			},
 		},
 		{
 			Name: features.OldRAFHomeCard,
 			AppVersions: map[string]encoding.VersionRange{
-				"ios-patient": {MinVersion: &encoding.Version{1, 1, 0}, MaxVersion: &encoding.Version{2, 0, 2}},
+				"ios-patient": {MinVersion: &encoding.Version{Major: 1, Minor: 1, Patch: 0}, MaxVersion: &encoding.Version{Major: 2, Minor: 0, Patch: 2}},
 			},
 		},
 		{
 			Name: features.RAFHomeCard,
 			AppVersions: map[string]encoding.VersionRange{
-				"ios-patient": {MinVersion: &encoding.Version{2, 0, 2}},
+				"ios-patient": {MinVersion: &encoding.Version{Major: 2, Minor: 0, Patch: 2}},
 			},
 		},
 	})
@@ -231,8 +230,8 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 	authenticationRequired(conf, apipaths.PatientCaseNotificationsURLPath, patient_case.NewNotificationsListHandler(conf.DataAPI, conf.APICDNDomain))
 
 	// Patient/Doctor: Resource guide APIs
-	noAuthenticationRequired(conf, apipaths.ResourceGuideURLPath, reslib.NewHandler(conf.DataAPI))
-	noAuthenticationRequired(conf, apipaths.ResourceGuidesListURLPath, reslib.NewListHandler(conf.DataAPI))
+	noAuthenticationRequired(conf, apipaths.ResourceGuideURLPath, handlers.NewResourceGuideHandler(conf.DataAPI))
+	noAuthenticationRequired(conf, apipaths.ResourceGuidesListURLPath, handlers.NewResourceGuideListHandler(conf.DataAPI))
 
 	// Patient/Doctor: Message APIs
 	authenticationRequired(conf, apipaths.CaseMessagesURLPath, messages.NewHandler(conf.DataAPI, conf.Dispatcher))
@@ -324,7 +323,7 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 	noAuthenticationRequired(conf, apipaths.PatientPathwaysURLPath, patient_visit.NewPathwayMenuHandler(conf.DataAPI))
 	noAuthenticationRequired(conf, apipaths.PatientPathwayDetailsURLPath, patient_visit.NewPathwayDetailsHandler(conf.DataAPI, conf.APICDNDomain, conf.Cfg))
 	noAuthenticationRequired(conf, apipaths.PingURLPath, handlers.NewPingHandler())
-	noAuthenticationRequired(conf, apipaths.AnalyticsURLPath, apiservice.NewAnalyticsHandler(conf.Dispatcher, conf.MetricsRegistry.Scope("analytics.event.client")))
+	noAuthenticationRequired(conf, apipaths.AnalyticsURLPath, handlers.NewAnalyticsHandler(conf.Dispatcher, conf.MetricsRegistry.Scope("analytics.event.client")))
 	noAuthenticationRequired(conf, apipaths.ResetPasswordURLPath, passreset.NewForgotPasswordHandler(conf.DataAPI, conf.AuthAPI, conf.EmailService, conf.WebDomain))
 	noAuthenticationRequired(conf, apipaths.ProfileImageURLPath, handlers.NewProfileImageHandler(conf.DataAPI, conf.StaticResourceURL, conf.Stores.MustGet("thumbnails")))
 	noAuthenticationRequired(conf, apipaths.SettingsURLPath, settings.NewHandler(conf.MinimumAppVersionConfigs))

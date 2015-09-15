@@ -11,8 +11,8 @@ import (
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
-	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/features"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/responses"
 	"golang.org/x/net/context"
 )

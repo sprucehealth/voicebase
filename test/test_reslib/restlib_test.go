@@ -1,17 +1,12 @@
 package test_reslib
 
 import (
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
+	"github.com/sprucehealth/backend/apiclient"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/reslib"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/test/test_integration"
-	"golang.org/x/net/context"
 )
 
 func TestResourceGuide(t *testing.T) {
@@ -51,36 +46,18 @@ func TestResourceGuide(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h := reslib.NewHandler(testData.DataAPI)
-	hList := reslib.NewListHandler(testData.DataAPI)
-
-	res := httptest.NewRecorder()
-	req, err := http.NewRequest("GET", fmt.Sprintf("/?resource_id=%d", guide1.ID), nil)
-	test.OK(t, err)
-	h.ServeHTTP(context.Background(), res, req)
-	if res.Code != 200 {
-		t.Fatalf("Expected 200 response got %d", res.Code)
-	}
-	var v string
-	if err := json.NewDecoder(res.Body).Decode(&v); err != nil {
-		t.Fatal(err)
-	} else if v != "noop" {
-		t.Fatalf("Layout does not match. Expected 'noop' got '%s'", v)
+	cli := &apiclient.PatientClient{
+		Config: apiclient.Config{
+			BaseURL: testData.APIServer.URL,
+		},
 	}
 
-	res = httptest.NewRecorder()
-	req, err = http.NewRequest("GET", "/", nil)
+	guide, err := cli.ResourceGuide(guide1.ID)
 	test.OK(t, err)
-	hList.ServeHTTP(context.Background(), res, req)
-	if res.Code != 200 {
-		t.Fatalf("Expected 200 response got %d", res.Code)
-	}
-	var lr reslib.ListResponse
-	if err := json.NewDecoder(res.Body).Decode(&lr); err != nil {
-		t.Fatal(err)
-	} else if len(lr.Sections) != 1 {
-		t.Fatalf("Expected 1 section. Got %d", len(lr.Sections))
-	} else if len(lr.Sections[0].Guides) != 2 {
-		t.Fatalf("Expected 2 guides. Got %d", len(lr.Sections[0].Guides))
-	}
+	test.Equals(t, "noop", guide)
+
+	sections, err := cli.ListResourceGuides()
+	test.OK(t, err)
+	test.Equals(t, 1, len(sections))
+	test.Equals(t, 2, len(sections[0].Guides))
 }

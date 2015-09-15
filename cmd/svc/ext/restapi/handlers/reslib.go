@@ -1,4 +1,4 @@
-package reslib
+package handlers
 
 import (
 	"errors"
@@ -11,11 +11,11 @@ import (
 	"golang.org/x/net/context"
 )
 
-type handler struct {
+type resourceGuideHandler struct {
 	dataAPI api.DataAPI
 }
 
-type listHandler struct {
+type resourceGuideListHandler struct {
 	dataAPI api.DataAPI
 }
 
@@ -35,21 +35,21 @@ type ListResponse struct {
 	Sections []*Section `json:"sections"`
 }
 
-func NewHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewResourceGuideHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.NoAuthorizationRequired(&handler{
+		apiservice.NoAuthorizationRequired(&resourceGuideHandler{
 			dataAPI: dataAPI,
 		}), httputil.Get)
 }
 
-func NewListHandler(dataAPI api.DataAPI) httputil.ContextHandler {
+func NewResourceGuideListHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.NoAuthorizationRequired(&listHandler{
+		apiservice.NoAuthorizationRequired(&resourceGuideListHandler{
 			dataAPI: dataAPI,
 		}), httputil.Get)
 }
 
-func (h *handler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *resourceGuideHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.FormValue("resource_id"), 10, 64)
 	if err != nil {
 		apiservice.WriteValidationError(ctx, "resource_id required and must be an integer", w, r)
@@ -66,7 +66,7 @@ func (h *handler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.
 	httputil.JSONResponse(w, http.StatusOK, guide.Layout)
 }
 
-func (h *listHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *resourceGuideListHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	sections, guides, err := h.dataAPI.ListResourceGuides(api.RGActiveOnly)
 	if err != nil {
 		apiservice.WriteError(ctx, errors.New("Failed to fetch resources: "+err.Error()), w, r)

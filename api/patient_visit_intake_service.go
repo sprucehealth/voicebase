@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/dbutil"
+	"github.com/sprucehealth/backend/libs/errors"
 )
 
 func (d *dataService) AnswersForQuestions(questionIDs []int64, info IntakeInfo) (answerIntakes map[int64][]common.Answer, err error) {

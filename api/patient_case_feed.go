@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/dbutil"
+	"github.com/sprucehealth/backend/libs/errors"
 )
 
 // PatientCaseFeed returns the feed items for the indicated case ids with visits in the specified bounds. If nil is provided then all items will be returned

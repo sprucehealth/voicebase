@@ -1,4 +1,4 @@
-package apiservice
+package handlers
 
 import (
 	"bytes"

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/errors"
+	"github.com/sprucehealth/backend/libs/errors"
 )
 
 // CreateToken creates a new token for the specific purpose and key. The key can be used

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"text/scanner"
 
-	"github.com/sprucehealth/backend/errors"
+	"github.com/sprucehealth/backend/libs/errors"
 )
 
 /*

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/errors"
+	"github.com/sprucehealth/backend/libs/errors"
 )
 
 func (d *dataService) GetPushConfigData(deviceToken string) (*common.PushConfigData, error) {

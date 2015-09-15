@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/dbutil"
+	"github.com/sprucehealth/backend/libs/errors"
 )
 
 func (d *dataService) CreateScheduledMessage(msg *common.ScheduledMessage) (int64, error) {

@@ -31,7 +31,7 @@ func NewAutocompleteHandler(dataAPI api.DataAPI, erxAPI erx.ERxAPI) httputil.Con
 		httputil.Get)
 }
 
-type AutocompleteRequestData struct {
+type autocompleteRequestData struct {
 	SearchString string `schema:"query,required"`
 	QuestionID   int64  `schema:"question_id"`
 }
@@ -47,7 +47,7 @@ type Suggestion struct {
 }
 
 func (s *autocompleteHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	requestData := &AutocompleteRequestData{}
+	requestData := &autocompleteRequestData{}
 	if err := apiservice.DecodeRequestData(requestData, r); err != nil {
 		apiservice.WriteValidationError(ctx, err.Error(), w, r)
 		return
@@ -65,7 +65,7 @@ func (s *autocompleteHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 	s.handleAutocompleteForDrugs(ctx, requestData, w, r)
 }
 
-func (s *autocompleteHandler) handleAutocompleteForAllergicMedications(ctx context.Context, requestData *AutocompleteRequestData, w http.ResponseWriter, r *http.Request) {
+func (s *autocompleteHandler) handleAutocompleteForAllergicMedications(ctx context.Context, requestData *autocompleteRequestData, w http.ResponseWriter, r *http.Request) {
 	searchResults, err := s.erxAPI.SearchForAllergyRelatedMedications(requestData.SearchString)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
@@ -83,7 +83,7 @@ func (s *autocompleteHandler) handleAutocompleteForAllergicMedications(ctx conte
 	httputil.JSONResponse(w, http.StatusOK, autocompleteResponse)
 }
 
-func (s *autocompleteHandler) handleAutocompleteForDrugs(ctx context.Context, requestData *AutocompleteRequestData, w http.ResponseWriter, r *http.Request) {
+func (s *autocompleteHandler) handleAutocompleteForDrugs(ctx context.Context, requestData *autocompleteRequestData, w http.ResponseWriter, r *http.Request) {
 	var searchResults []string
 	var err error
 	account := apiservice.MustCtxAccount(ctx)
@@ -118,7 +118,7 @@ func (s *autocompleteHandler) handleAutocompleteForDrugs(ctx context.Context, re
 		openBracket := strings.Index(searchResult, "(")
 		if openBracket != -1 {
 			subtitle := searchResult[openBracket+1 : len(searchResult)-1]
-			autocompleteResponse.Suggestions[i] = &Suggestion{Title: searchResult[:openBracket], Subtitle: SpecialTitle(subtitle), DrugInternalName: searchResult}
+			autocompleteResponse.Suggestions[i] = &Suggestion{Title: searchResult[:openBracket], Subtitle: specialTitle(subtitle), DrugInternalName: searchResult}
 		} else {
 			autocompleteResponse.Suggestions[i] = &Suggestion{Title: searchResult}
 		}
@@ -129,7 +129,7 @@ func (s *autocompleteHandler) handleAutocompleteForDrugs(ctx context.Context, re
 
 // Content in the paranthesis of a drug name is returned as Oral - powder for reconstitution
 // This function attempts to convert the subtitle to Oral - Powder for reconstitution
-func SpecialTitle(s string) string {
+func specialTitle(s string) string {
 	// Use a closure here to remember state.
 	// Hackish but effective. Depends on Map scanning in order and calling
 	// the closure once per rune.

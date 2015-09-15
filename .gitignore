@@ -33,11 +33,14 @@ _cgo_export.*
 
 _testmain.go
 
+*.swp
+*.vim
 *.exe
 *.bz2
 *.gz
 
 cmd/cli/awslogidx/awslogidx
+cmd/cli/dashboard/dashboard
 cmd/cli/doctorchangemsg/doctorchangemsg
 cmd/cli/ec2-consistent-snapshot/ec2-consistent-snapshot
 cmd/cli/ec2-volumes/ec2-volumes

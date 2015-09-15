@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/sprucehealth/backend/errors"
+	"github.com/sprucehealth/backend/libs/errors"
 )
 
 // ObjectID is used for the (un)marshalling of data models ids, such that

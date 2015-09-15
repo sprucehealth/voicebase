@@ -1,4 +1,4 @@
-package misc
+package workers
 
 import (
 	"fmt"
@@ -11,15 +11,15 @@ import (
 )
 
 const (
-	maxItems = 3
+	maxAnalyticsItems = 3
 )
 
-func StartWorker(dataAPI api.DataAPI, metricsRegistry metrics.Registry) {
-	statOldestPVs := make([]*metrics.IntegerGauge, maxItems)
-	stateOldestUnclaimedCases := make([]*metrics.IntegerGauge, maxItems)
-	statOldestTPs := make([]*metrics.IntegerGauge, maxItems)
+func StartAnalyticsWorker(dataAPI api.DataAPI, metricsRegistry metrics.Registry) {
+	statOldestPVs := make([]*metrics.IntegerGauge, maxAnalyticsItems)
+	stateOldestUnclaimedCases := make([]*metrics.IntegerGauge, maxAnalyticsItems)
+	statOldestTPs := make([]*metrics.IntegerGauge, maxAnalyticsItems)
 
-	for i := 0; i < maxItems; i++ {
+	for i := 0; i < maxAnalyticsItems; i++ {
 		statOldestPVs[i] = metrics.NewIntegerGauge()
 		statOldestTPs[i] = metrics.NewIntegerGauge()
 		stateOldestUnclaimedCases[i] = metrics.NewIntegerGauge()
@@ -31,7 +31,7 @@ func StartWorker(dataAPI api.DataAPI, metricsRegistry metrics.Registry) {
 	go func() {
 		for {
 			// get oldest visits
-			patientVisitAges, err := dataAPI.GetOldestVisitsInStatuses(maxItems,
+			patientVisitAges, err := dataAPI.GetOldestVisitsInStatuses(maxAnalyticsItems,
 				[]string{common.PVStatusSubmitted,
 					common.PVStatusReviewing,
 					common.PVStatusCharged,
@@ -46,7 +46,7 @@ func StartWorker(dataAPI api.DataAPI, metricsRegistry metrics.Registry) {
 				statOldestPVs[i].Set(0)
 			}
 
-			caseAges, err := dataAPI.OldestUnclaimedItems(maxItems)
+			caseAges, err := dataAPI.OldestUnclaimedItems(maxAnalyticsItems)
 			if err != nil {
 				golog.Errorf("Unable to get the oldest cases: %s", err)
 			}
@@ -57,7 +57,7 @@ func StartWorker(dataAPI api.DataAPI, metricsRegistry metrics.Registry) {
 				stateOldestUnclaimedCases[i].Set(0)
 			}
 
-			tpAges, err := dataAPI.GetOldestTreatmentPlanInStatuses(maxItems,
+			tpAges, err := dataAPI.GetOldestTreatmentPlanInStatuses(maxAnalyticsItems,
 				[]common.TreatmentPlanStatus{
 					common.TPStatusSubmitted,
 					common.TPStatusRXStarted})
@@ -75,5 +75,4 @@ func StartWorker(dataAPI api.DataAPI, metricsRegistry metrics.Registry) {
 			time.Sleep(time.Minute)
 		}
 	}()
-
 }

@@ -10,8 +10,8 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
+	"github.com/sprucehealth/backend/cmd/svc/ext/restapi/handlers"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/misc/handlers"
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/test"
 )

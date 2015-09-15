@@ -42,14 +42,14 @@ func TestPatientCapabilitiesHandler(t *testing.T) {
 		{
 			Name: "feature1",
 			AppVersions: map[string]encoding.VersionRange{
-				"ios-patient":     {MinVersion: &encoding.Version{1, 0, 0}},
-				"android-patient": {MinVersion: &encoding.Version{1, 0, 0}},
+				"ios-patient":     {MinVersion: &encoding.Version{Major: 1, Minor: 0, Patch: 0}},
+				"android-patient": {MinVersion: &encoding.Version{Major: 1, Minor: 0, Patch: 0}},
 			},
 		},
 		{
 			Name: "feature2",
 			AppVersions: map[string]encoding.VersionRange{
-				"ios-patient": {MinVersion: &encoding.Version{1, 5, 0}},
+				"ios-patient": {MinVersion: &encoding.Version{Major: 1, Minor: 5, Patch: 0}},
 			},
 		},
 	})
@@ -66,7 +66,7 @@ func TestPatientCapabilitiesHandler(t *testing.T) {
 	// Missing app info
 	authAPI.appInfo = &api.AppInfo{
 		Platform: common.IOS,
-		Version:  &encoding.Version{1, 0, 0},
+		Version:  &encoding.Version{Major: 1, Minor: 0, Patch: 0},
 	}
 	w = httptest.NewRecorder()
 	h.ServeHTTP(ctx, w, r)

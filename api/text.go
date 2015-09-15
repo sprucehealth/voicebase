@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/dbutil"
+	"github.com/sprucehealth/backend/libs/errors"
 )
 
 func (d *dataService) LocalizedText(langID int64, tags []string) (map[string]string, error) {

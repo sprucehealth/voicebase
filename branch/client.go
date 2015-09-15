@@ -9,7 +9,7 @@ import (
 	"net/http"
 
 	"github.com/rainycape/memcache"
-	"github.com/sprucehealth/backend/errors"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 

@@ -7,10 +7,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/appevent"
+	"github.com/sprucehealth/backend/cmd/svc/ext/restapi/handlers"
 	"github.com/sprucehealth/backend/passreset"
 )
 
@@ -33,6 +35,21 @@ func (c *Config) AppEvent(action, resource string, resourceID int64) error {
 		ResourceID: resourceID,
 		Action:     action,
 	}, nil, nil)
+}
+
+// ListResourceGuides returns a list of resource guides broken into sections.
+func (c *Config) ListResourceGuides() ([]*handlers.Section, error) {
+	var res handlers.ListResponse
+	err := c.do("GET", apipaths.ResourceGuidesListURLPath, nil, nil, &res, nil)
+	return res.Sections, err
+}
+
+// ResourceGuide returns the decoded resource guide for the provided ID.
+func (c *Config) ResourceGuide(id int64) (interface{}, error) {
+	var v interface{}
+	err := c.do("GET", apipaths.ResourceGuideURLPath,
+		url.Values{"resource_id": []string{strconv.FormatInt(id, 10)}}, nil, &v, nil)
+	return v, err
 }
 
 func (c *Config) do(method, path string, params url.Values, req, res interface{}, headers http.Header) error {

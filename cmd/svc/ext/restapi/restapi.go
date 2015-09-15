@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/app_worker"
+	"github.com/sprucehealth/backend/cmd/svc/ext/restapi/workers"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/consul"
 	"github.com/sprucehealth/backend/cost"
@@ -38,7 +39,6 @@ import (
 	"github.com/sprucehealth/backend/libs/stripe"
 	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/medrecord"
-	"github.com/sprucehealth/backend/misc"
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/patient_case"
 	"github.com/sprucehealth/backend/schedmsg"
@@ -274,7 +274,7 @@ func buildRESTAPI(
 	).Start()
 
 	schedmsg.StartWorker(dataAPI, authAPI, dispatcher, metricsRegistry.Scope("sched_msg"), 0)
-	misc.StartWorker(dataAPI, metricsRegistry)
+	workers.StartAnalyticsWorker(dataAPI, metricsRegistry)
 
 	cost.NewWorker(
 		dataAPI,

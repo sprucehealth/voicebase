@@ -7,8 +7,8 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/info_intake"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/patient_case/model"
 	"github.com/sprucehealth/backend/pharmacy"
 )

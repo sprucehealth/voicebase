@@ -3,8 +3,8 @@ package messages
 import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/appevent"
-	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/errors"
 )
 
 // InitListeners subscribes to dispatched events.

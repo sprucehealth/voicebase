@@ -4,7 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/errors"
+	"github.com/sprucehealth/backend/libs/errors"
 )
 
 func (d *dataService) AddMedia(uploaderID int64, url, mimetype string) (int64, error) {

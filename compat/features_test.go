@@ -10,30 +10,30 @@ import (
 
 func TestFeatures(t *testing.T) {
 	reg := Features{}
-	test.Equals(t, false, reg.Supported("abc", "iOS", &encoding.Version{5, 5, 0}))
+	test.Equals(t, false, reg.Supported("abc", "iOS", &encoding.Version{Major: 5, Minor: 5, Patch: 0}))
 	reg.Register([]*Feature{
 		{
 			Name: "abc",
 			AppVersions: map[string]encoding.VersionRange{
-				"iOS":     {MinVersion: &encoding.Version{1, 0, 0}},
-				"Android": {MinVersion: &encoding.Version{0, 9, 0}},
+				"iOS":     {MinVersion: &encoding.Version{Major: 1, Minor: 0, Patch: 0}},
+				"Android": {MinVersion: &encoding.Version{Major: 0, Minor: 9, Patch: 0}},
 			},
 		},
 		{
 			Name: "xyz",
 			AppVersions: map[string]encoding.VersionRange{
-				"iOS":     {MinVersion: &encoding.Version{1, 5, 0}},
-				"Android": {MinVersion: &encoding.Version{2, 0, 0}},
+				"iOS":     {MinVersion: &encoding.Version{Major: 1, Minor: 5, Patch: 0}},
+				"Android": {MinVersion: &encoding.Version{Major: 2, Minor: 0, Patch: 0}},
 			},
 		},
 	})
-	test.Equals(t, false, reg.Supported("abc", "iOS", &encoding.Version{0, 5, 0}))
-	test.Equals(t, true, reg.Supported("abc", "iOS", &encoding.Version{1, 0, 0}))
-	test.Equals(t, true, reg.Supported("xyz", "Android", &encoding.Version{2, 0, 1}))
-	test.Equals(t, []string{}, reg.Set("iOS", &encoding.Version{0, 5, 0}).Enumerate())
-	test.Equals(t, []string{"abc"}, reg.Set("iOS", &encoding.Version{1, 2, 0}).Enumerate())
-	test.Equals(t, true, reg.Set("iOS", &encoding.Version{1, 2, 0}).Has("abc"))
-	s := reg.Set("iOS", &encoding.Version{3, 0, 0})
+	test.Equals(t, false, reg.Supported("abc", "iOS", &encoding.Version{Major: 0, Minor: 5, Patch: 0}))
+	test.Equals(t, true, reg.Supported("abc", "iOS", &encoding.Version{Major: 1, Minor: 0, Patch: 0}))
+	test.Equals(t, true, reg.Supported("xyz", "Android", &encoding.Version{Major: 2, Minor: 0, Patch: 1}))
+	test.Equals(t, []string{}, reg.Set("iOS", &encoding.Version{Major: 0, Minor: 5, Patch: 0}).Enumerate())
+	test.Equals(t, []string{"abc"}, reg.Set("iOS", &encoding.Version{Major: 1, Minor: 2, Patch: 0}).Enumerate())
+	test.Equals(t, true, reg.Set("iOS", &encoding.Version{Major: 1, Minor: 2, Patch: 0}).Has("abc"))
+	s := reg.Set("iOS", &encoding.Version{Major: 3, Minor: 0, Patch: 0})
 	sl := s.Enumerate()
 	sort.Strings(sl)
 	test.Equals(t, []string{"abc", "xyz"}, sl)

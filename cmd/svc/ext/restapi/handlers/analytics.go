@@ -1,4 +1,4 @@
-package apiservice
+package handlers
 
 import (
 	"encoding/json"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -104,20 +105,20 @@ func newAnalyticsHandler(publisher dispatch.Publisher, statsRegistry metrics.Reg
 
 func NewAnalyticsHandler(publisher dispatch.Publisher, statsRegistry metrics.Registry) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		NoAuthorizationRequired(newAnalyticsHandler(publisher, statsRegistry)),
+		apiservice.NoAuthorizationRequired(newAnalyticsHandler(publisher, statsRegistry)),
 		httputil.Post)
 }
 
 func (h *analyticsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var req eventRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		WriteBadRequestError(ctx, err, w, r)
+		apiservice.WriteBadRequestError(ctx, err, w, r)
 		return
 	}
 
 	h.statEventsReceived.Inc(uint64(len(req.Events)))
 
-	ch := ExtractSpruceHeaders(r)
+	ch := apiservice.ExtractSpruceHeaders(r)
 
 	nowUnix := float64(time.Now().UTC().UnixNano()) / 1e9
 	var eventsOut []analytics.Event

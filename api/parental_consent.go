@@ -4,8 +4,8 @@ import (
 	"database/sql"
 
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/errors"
 	"github.com/sprucehealth/backend/libs/dbutil"
+	"github.com/sprucehealth/backend/libs/errors"
 )
 
 // GrantParentChildConsent creates a relationship between the patient accounts and consents to treatment.
