@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
@@ -14,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/tagging"
 	"github.com/sprucehealth/backend/tagging/query"
 	"github.com/sprucehealth/backend/tagging/response"
+	"github.com/sprucehealth/schema"
 	"golang.org/x/net/context"
 )
 

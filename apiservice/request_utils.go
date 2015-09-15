@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SpruceHealth/schema"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/schema"
 	"golang.org/x/net/context"
 )
 

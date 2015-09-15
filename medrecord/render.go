@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SpruceHealth/mapstructure"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/diagnosis"
@@ -19,6 +18,7 @@ import (
 	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/treatment_plan"
+	"github.com/sprucehealth/mapstructure"
 )
 
 type visitContext struct {

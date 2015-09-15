@@ -1,15 +1,10 @@
 {
 	"ImportPath": "github.com/sprucehealth/backend",
-	"GoVersion": "go1.5",
+	"GoVersion": "go1.5.1",
 	"Packages": [
 		"./..."
 	],
 	"Deps": [
-		{
-			"ImportPath": "bitbucket.org/kardianos/osext",
-			"Comment": "null-15",
-			"Rev": "44140c5fc69ecf1102c5ef451d73cd98ef59b178"
-		},
 		{
 			"ImportPath": "bitbucket.org/pkg/inflect",
 			"Comment": "go.r60-12",
@@ -26,15 +21,15 @@
 			"Rev": "3883ac1ce943878302255f538fce319d23226223"
 		},
 		{
-			"ImportPath": "github.com/SpruceHealth/go-proxy-protocol/proxyproto",
+			"ImportPath": "github.com/sprucehealth/go-proxy-protocol/proxyproto",
 			"Rev": "fb46cdfc323ed48a4b66c715c1b50e4710fe5360"
 		},
 		{
-			"ImportPath": "github.com/SpruceHealth/mapstructure",
+			"ImportPath": "github.com/sprucehealth/mapstructure",
 			"Rev": "7dc966b8e235e6c2166a6554053bf70ffb76142a"
 		},
 		{
-			"ImportPath": "github.com/SpruceHealth/schema",
+			"ImportPath": "github.com/sprucehealth/schema",
 			"Rev": "833816004ecf3a6652f009c4fadeae60e366929c"
 		},
 		{
@@ -127,7 +122,7 @@
 		},
 		{
 			"ImportPath": "github.com/cookieo9/resources-go",
-			"Rev": "a047edbd789e6e801b11c47205c43a78e50acdbd"
+			"Rev": "e008c9143e114c4462104da78fabbc4faf085a79"
 		},
 		{
 			"ImportPath": "github.com/go-sql-driver/mysql",
@@ -143,6 +138,10 @@
 			"ImportPath": "github.com/jessevdk/go-flags",
 			"Comment": "v1-280-g37e89eb",
 			"Rev": "37e89eb6730ccfebfa05c17940954e4308719317"
+		},
+		{
+			"ImportPath": "github.com/kardianos/osext",
+			"Rev": "6e7f843663477789fac7c02def0d0909e969b4e5"
 		},
 		{
 			"ImportPath": "github.com/lib/pq",

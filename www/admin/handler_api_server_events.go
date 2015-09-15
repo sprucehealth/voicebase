@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/events"
 	"github.com/sprucehealth/backend/events/model"
 	"github.com/sprucehealth/backend/events/query"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
+	"github.com/sprucehealth/schema"
 	"golang.org/x/net/context"
 )
 

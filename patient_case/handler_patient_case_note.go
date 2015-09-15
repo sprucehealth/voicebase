@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
@@ -14,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/patient_case/model"
 	"github.com/sprucehealth/backend/patient_case/response"
 	"github.com/sprucehealth/backend/www"
+	"github.com/sprucehealth/schema"
 	"golang.org/x/net/context"
 )
 

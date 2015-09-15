@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/SpruceHealth/go-proxy-protocol/proxyproto"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/go-proxy-protocol/proxyproto"
 	"golang.org/x/net/context"
 )
 

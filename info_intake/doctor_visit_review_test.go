@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/SpruceHealth/mapstructure"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/mapstructure"
 )
 
 func TestParsingTemplateForDoctorVisitReview(t *testing.T) {

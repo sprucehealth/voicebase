@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/www"
+	"github.com/sprucehealth/schema"
 	"golang.org/x/net/context"
 )
 

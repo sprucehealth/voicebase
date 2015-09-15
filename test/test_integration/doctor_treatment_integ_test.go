@@ -636,7 +636,7 @@ func TestTreatmentTemplatesInContextOfPatientVisit(t *testing.T) {
 }
 
 func TestTreatmentTemplateWithDrugOutOfMarket(t *testing.T) {
-	t.Skip("Skipping test for now until long term fix as defined in https://github.com/SpruceHealth/backend/pull/657 is resolved.")
+	t.Skip("Skipping test for now until long term fix as defined in https://github.com/sprucehealth/backend/pull/657 is resolved.")
 	testData := SetupTest(t)
 	defer testData.Close(t)
 	// use a real dosespot service before instantiating the server

@@ -8,13 +8,13 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/SpruceHealth/mapstructure"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
+	"github.com/sprucehealth/mapstructure"
 	"golang.org/x/net/context"
 )
 

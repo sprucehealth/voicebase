@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/SpruceHealth/mapstructure"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/errors"
+	"github.com/sprucehealth/mapstructure"
 )
 
 // This TypeRegistry contains all views pertaining to the DVisitReview namespace

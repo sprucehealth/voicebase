@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/tagging/model"
 	"github.com/sprucehealth/backend/tagging/query"
 	"github.com/sprucehealth/backend/tagging/response"
+	"github.com/sprucehealth/schema"
 	"golang.org/x/net/context"
 )
 

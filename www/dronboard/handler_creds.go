@@ -7,13 +7,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/SpruceHealth/schema"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/www"
+	"github.com/sprucehealth/schema"
 	"golang.org/x/net/context"
 )
 
