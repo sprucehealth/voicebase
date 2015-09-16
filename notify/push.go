@@ -12,6 +12,10 @@ import (
 
 var jsonStr = "json"
 
+type errorWithCode interface {
+	Code() string
+}
+
 func (n *NotificationManager) pushNotificationToUser(
 	accountID int64,
 	role string,
@@ -56,9 +60,20 @@ func (n *NotificationManager) pushNotificationToUser(
 				TargetArn:        &pushEndpoint,
 			})
 			if err != nil {
-				// don't return err so that we attempt to send push to as many devices as possible
-				n.statPushFailed.Inc(1)
-				golog.Errorf("Error sending push notification: %s", err)
+				if aError, ok := err.(errorWithCode); ok {
+					// delete the preference to push notifications for user if the endpoint
+					// is disabled such that we revert to other mechanisms for communicating with patient.
+					if aError.Code() == "EndpointDisabled" {
+						if err := n.dataAPI.DeletePushCommunicationPreferenceForAccount(accountID); err != nil {
+							golog.Errorf("Unable to delete push preference for account %d. Error: %s", accountID, err)
+							return
+						}
+					}
+				} else {
+					// don't return err so that we attempt to send push to as many devices as possible
+					n.statPushFailed.Inc(1)
+					golog.Errorf("Error sending push notification: %s", err)
+				}
 			} else {
 				n.statPushSent.Inc(1)
 			}
