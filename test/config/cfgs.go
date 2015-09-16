@@ -94,3 +94,12 @@ var AbandonedVisitThreshold = &cfg.ValueDef{
 	Type:        cfg.ValueTypeDuration,
 	Default:     time.Hour * 24 * 7,
 }
+
+// UnreadMessageWithPendingFollowupThreshold indicates duration after which to email
+// patient re: followup message prompt that has not been read.
+var UnreadMessageWithPendingFollowupThreshold = &cfg.ValueDef{
+	Name:        "Email.Campaign.UnreadMessageWithFollowup.After",
+	Description: "Age of an unread message containing a followup prompt. Set to 0 to disable.",
+	Type:        cfg.ValueTypeDuration,
+	Default:     time.Hour * 24 * 7,
+}

@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/doctor_treatment_plan"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/mandrill"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/patient"
@@ -79,7 +80,13 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 				patient, &notify.Message{
 					ShortMessage: "You have a new message on Spruce.",
 					EmailType:    notifyNewMessageEmailType,
-					PushID:       uid,
+					EmailVars: []mandrill.Var{
+						mandrill.Var{
+							Name:    "PatientFirstName",
+							Content: patient.FirstName,
+						},
+					},
+					PushID: uid,
 				}); err != nil {
 				golog.Errorf("Unable to notify patient: %s", err)
 				return err

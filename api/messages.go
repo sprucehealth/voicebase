@@ -86,6 +86,21 @@ func (d *dataService) CaseMessageForAttachment(itemType string, itemID, senderPe
 	return &message, nil
 }
 
+func (d *dataService) IsCaseMessageRead(messageID, personID int64) (bool, error) {
+	var mID int64
+	if err := d.db.QueryRow(`
+		SELECT message_id
+		FROM patient_case_message_read
+		WHERE message_id = ?
+		AND person_id = ?`, messageID, personID).Scan(&mID); err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return mID > 0, nil
+}
+
 func (d *dataService) CaseMessagesRead(messageIDs []int64, personID int64) error {
 	if len(messageIDs) == 0 {
 		return nil

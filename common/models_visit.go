@@ -163,6 +163,7 @@ type VisitSummary struct {
 	DoctorID          *int64
 	RoleTypeTag       *string
 	PathwayName       string
+	PatientID         PatientID
 	PatientAccountID  int64
 	PatientFirstName  string
 	PatientLastName   string

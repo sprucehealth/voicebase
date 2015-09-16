@@ -669,6 +669,9 @@ func (o CaseMessagesReadOption) has(opt CaseMessagesReadOption) bool {
 type CaseMessageAPI interface {
 	CaseMessageForAttachment(itemType string, itemID, senderPersonID, patientCaseID int64) (*common.CaseMessage, error)
 	CaseMessageParticipants(caseID int64, withRoleObjects bool) (map[int64]*common.CaseMessageParticipant, error)
+	// IsCaseMessageRead indicates whether or not person has read the particular
+	// case message
+	IsCaseMessageRead(messageID, personID int64) (bool, error)
 	// CaseMessagesRead records that a person read each message. If they have previously
 	// read a message then the old timestamp is maintained (earliest read timestamp is used).
 	CaseMessagesRead(messageIDs []int64, personID int64) error
