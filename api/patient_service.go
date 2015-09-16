@@ -289,6 +289,14 @@ func (d *dataService) createPatientWithStatus(patient *common.Patient, status st
 		return errors.Trace(err)
 	}
 
+	// insert email communication preference by default
+	_, err = tx.Exec(`
+		INSERT INTO communication_preference (account_id, communication_type, status) VALUES (?, 'EMAIL', 'ACTIVE')
+		`, patient.AccountID.Int64())
+	if err != nil {
+		return errors.Trace(err)
+	}
+
 	res, err = tx.Exec(`INSERT INTO person (role_type_id, role_id) VALUES (?, ?)`, d.roleTypeMapping[RolePatient], id)
 	if err != nil {
 		return errors.Trace(err)

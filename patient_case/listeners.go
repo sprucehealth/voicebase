@@ -75,6 +75,11 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 				return err
 			}
 
+			options := notify.CPFirstUserPreference
+			if ev.Person.RoleType == api.RoleDoctor {
+				options = notify.CPPush | notify.CPEmail
+			}
+
 			// notify the patient of the message
 			if err := notificationManager.NotifyPatient(
 				patient, &notify.Message{
@@ -86,7 +91,8 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 							Content: patient.FirstName,
 						},
 					},
-					PushID: uid,
+					PushID:         uid,
+					CommPreference: options,
 				}); err != nil {
 				golog.Errorf("Unable to notify patient: %s", err)
 				return err

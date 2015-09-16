@@ -94,10 +94,20 @@ func TestRegisteringToken_SameTokenDifferentUser(t *testing.T) {
 		t.Fatalf("Expected 0 item instead got %d", len(pushConfigDataList))
 	}
 
-	if communicationPreferences, err := testData.DataAPI.GetCommunicationPreferencesForAccount(accountID); err != nil {
-		t.Fatal(err.Error())
-	} else if len(communicationPreferences) != 0 {
-		t.Fatalf("Expected 0 items instead got %d", len(communicationPreferences))
+	communicationPreferences, err := testData.DataAPI.GetCommunicationPreferencesForAccount(accountID)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	var pushPreferenceFound bool
+	for _, cp := range communicationPreferences {
+		if cp.CommunicationType == common.Push {
+			pushPreferenceFound = true
+			break
+		}
+	}
+	if pushPreferenceFound {
+		t.Fatalf("Expected NO push preference to exist but it did")
 	}
 }
 
@@ -158,10 +168,21 @@ func TestRegisteringToken_DeleteOnLogout(t *testing.T) {
 	} else if len(pushConfigDataList) != 0 {
 		t.Fatalf("Expected 0 item instead got %d", len(pushConfigDataList))
 	}
-	if communicationPreferences, err := testData.DataAPI.GetCommunicationPreferencesForAccount(accountID); err != nil {
+
+	communicationPreferences, err := testData.DataAPI.GetCommunicationPreferencesForAccount(accountID)
+	if err != nil {
 		t.Fatalf(err.Error())
-	} else if len(communicationPreferences) != 0 {
-		t.Fatalf("Expected 0 communication preference instead got %d", len(communicationPreferences))
+	}
+
+	var pushPreferenceFound bool
+	for _, cp := range communicationPreferences {
+		if cp.CommunicationType == common.Push {
+			pushPreferenceFound = true
+			break
+		}
+	}
+	if pushPreferenceFound {
+		t.Fatalf("Expected NO push preference to exist but it did")
 	}
 }
 
@@ -263,12 +284,19 @@ func SetDeviceTokenForAccountID(accountID int64, deviceToken string, testData *t
 		t.Fatalf("Expected creation date to be set")
 	}
 
-	if communicationPreferences, err := testData.DataAPI.GetCommunicationPreferencesForAccount(accountID); err != nil {
+	communicationPreferences, err := testData.DataAPI.GetCommunicationPreferencesForAccount(accountID)
+	if err != nil {
 		t.Fatalf(err.Error())
-	} else if len(communicationPreferences) != 1 {
-		t.Fatalf("Expected 1 communication preference instead got %d", len(communicationPreferences))
-	} else if communicationPreferences[0].CommunicationType != common.Push {
-		t.Fatalf("Expected communication type to be PUSH")
 	}
 
+	var pushPreferenceFound bool
+	for _, cp := range communicationPreferences {
+		if cp.CommunicationType == common.Push {
+			pushPreferenceFound = true
+			break
+		}
+	}
+	if !pushPreferenceFound {
+		t.Fatalf("Expected push preference to exist but it didnt")
+	}
 }

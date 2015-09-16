@@ -80,34 +80,93 @@ func (n *NotificationManager) NotifyDoctor(role string, doctorID, accountID int6
 	return n.sendSMS(cellPhone, msg.ShortMessage)
 }
 
-type Message struct {
-	ShortMessage string
-	PushID       string
-	EmailType    string
-	EmailVars    []mandrill.Var
+// CommunicationPreferenceOption is used to indicate by the caller
+// how best to communicate a notification to the intended receiver.
+// Options can be combined by using the | operator.
+// If caller just wants to ensure that preference gets delivered
+// to the first available preference, then use CPFirstUserPreference
+type CommunicationPreferenceOption int
+
+const (
+	// CPEmail indicates to send the notification via email
+	CPEmail CommunicationPreferenceOption = 1 << iota
+	// CPPush indicates to send notification via push
+	CPPush
+	// CPSMS indicates to send notification via sms
+	CPSMS
+	// CPFirstUserPreference indicates to send notification via first preference
+	// of user. This is considered to be the default option.
+	CPFirstUserPreference CommunicationPreferenceOption = 0
+)
+
+func (o CommunicationPreferenceOption) has(opt CommunicationPreferenceOption) bool {
+	if o == CPFirstUserPreference {
+		return true
+	} else if opt == CPFirstUserPreference {
+		return o == opt
+	}
+	return o&opt == opt
 }
 
+// Message is used to indicate the message to send along with
+// the communication preference as stated by the caller.
+type Message struct {
+	ShortMessage string
+
+	// PushID is used specifically for push notifications to make it
+	// possible for the client to handle different types of push notifications.
+	PushID         string
+	EmailType      string
+	EmailVars      []mandrill.Var
+	CommPreference CommunicationPreferenceOption
+}
+
+// NotifyPatient sends the message to the patient based on patient's user preferences.
 func (n *NotificationManager) NotifyPatient(patient *common.Patient, msg *Message) error {
-	communicationPreference, err := n.determineCommunicationPreferenceBasedOnDefaultConfig(patient.AccountID.Int64())
+	communicationPreferences, err := n.determineCommunicationPreferenceBasedOnDefaultConfig(patient.AccountID.Int64())
 	if err != nil {
 		return err
 	}
-	switch communicationPreference {
-	case common.Push:
-		if err := n.pushNotificationToUser(patient.AccountID.Int64(), api.RolePatient, msg, 0); err != nil {
-			golog.Errorf("Error sending push to user: %s", err)
-			return err
+
+	// its possible for the patient to have no communication preferences
+	// in the event they denied push notification prompt and also
+	// unsubscribed from email notifications.
+	if len(communicationPreferences) == 0 {
+		return nil
+	}
+
+	for _, cp := range communicationPreferences {
+		switch cp.CommunicationType {
+		case common.Push:
+			if !msg.CommPreference.has(CPPush) {
+				continue
+			}
+			if err := n.pushNotificationToUser(patient.AccountID.Int64(), api.RolePatient, msg, 0); err != nil {
+				golog.Errorf("Error sending push to user: %s", err)
+				return err
+			}
+		case common.SMS:
+			if !msg.CommPreference.has(CPSMS) {
+				continue
+			}
+			if err := n.sendSMS(phoneNumberForPatient(patient), msg.ShortMessage); err != nil {
+				golog.Errorf("Error sending sms to user: %s", err)
+				return err
+			}
+		case common.Email:
+			if !msg.CommPreference.has(CPEmail) {
+				continue
+			}
+			if err := n.SendEmail(patient.AccountID.Int64(), msg.EmailType, msg.EmailVars); err != nil {
+				return err
+			}
 		}
-	case common.SMS:
-		if err := n.sendSMS(phoneNumberForPatient(patient), msg.ShortMessage); err != nil {
-			golog.Errorf("Error sending sms to user: %s", err)
-			return err
-		}
-	case common.Email:
-		if err := n.SendEmail(patient.AccountID.Int64(), msg.EmailType, msg.EmailVars); err != nil {
-			return err
+
+		if msg.CommPreference.has(CPFirstUserPreference) {
+			break
 		}
 	}
+
 	return nil
 }
 
@@ -115,17 +174,12 @@ func (n *NotificationManager) NotifyPatient(patient *common.Patient, msg *Messag
 // there will come a point when we need something more complex where we employ different strategies of engagement with the user
 // for different notification events; or based on how the user interacts with the notification. We can evolve this over time, given that we
 // have the ability to make a decision for every event on how best to communicate with the user
-func (n *NotificationManager) determineCommunicationPreferenceBasedOnDefaultConfig(accountID int64) (common.CommunicationType, error) {
+func (n *NotificationManager) determineCommunicationPreferenceBasedOnDefaultConfig(accountID int64) ([]*common.CommunicationPreference, error) {
 	communicationPreferences, err := n.dataAPI.GetCommunicationPreferencesForAccount(accountID)
 	if err != nil {
-		return common.CommunicationType(""), err
-	}
-
-	// if there is no communication preference assume its best to communicate via email
-	if len(communicationPreferences) == 0 {
-		return common.Email, nil
+		return nil, err
 	}
 
 	sort.Sort(sort.Reverse(ByCommunicationPreference(communicationPreferences)))
-	return communicationPreferences[0].CommunicationType, nil
+	return communicationPreferences, nil
 }
