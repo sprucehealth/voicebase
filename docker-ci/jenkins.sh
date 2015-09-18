@@ -5,7 +5,7 @@ NAME=${BUILD_TAG,,}
 
 echo 'ssh -i ~/.ssh/id_api $*' > ssh ; chmod +x ssh
 export GIT_SSH="./ssh"
-git submodule update --init
+
 # Remove ignored files
 git clean -X -f
 # Remove cover.out files (not always deleted by git clean if a directory is removed)
