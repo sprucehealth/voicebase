@@ -1,3 +1,0 @@
-[submodule "api-response-examples"]
-	path = api-response-examples
-	url = git@github.com:SpruceHealth/api-response-examples.git
