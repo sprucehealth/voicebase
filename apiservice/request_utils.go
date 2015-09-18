@@ -19,8 +19,9 @@ import (
 )
 
 var (
-	ErrBadAuthHeader = errors.New("bad authorization header")
-	ErrNoAuthHeader  = errors.New("no authorization header")
+	ErrBadAuthHeader    = errors.New("bad authorization header")
+	ErrNoAuthHeader     = errors.New("no authorization header")
+	ErrNoDeviceIDHeader = errors.New("no device id header")
 )
 
 var Testing = false
@@ -56,6 +57,16 @@ func GetAuthTokenFromHeader(r *http.Request) (string, error) {
 		return "", ErrBadAuthHeader
 	}
 	return parts[1], nil
+}
+
+// GetDeviceIDFromHeader gets the deviceID from the known location in the header
+func GetDeviceIDFromHeader(r *http.Request) (string, error) {
+	deviceID := r.Header.Get("S-Device-ID")
+	if deviceID == "" {
+		return "", ErrNoDeviceIDHeader
+	}
+
+	return deviceID, nil
 }
 
 func HandleAuthError(ctx context.Context, err error, w http.ResponseWriter, r *http.Request) {

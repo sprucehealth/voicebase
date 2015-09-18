@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/appevent"
+	"github.com/sprucehealth/backend/attribution"
 	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/careprovider"
 	"github.com/sprucehealth/backend/cmd/svc/ext/restapi/handlers"
@@ -304,6 +305,9 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 	authenticationRequired(conf, apipaths.TagCaseMembershipURLPath, tagging.NewTagCaseMembershipHandler(taggingClient))
 	authenticationRequired(conf, apipaths.TagCaseAssociationURLPath, tagging.NewTagCaseAssociationHandler(taggingClient))
 	authenticationRequired(conf, apipaths.TagSavedSearchURLPath, tagging.NewTagSavedSearchHandler(taggingClient))
+
+	//Attribution APIs
+	noAuthenticationRequired(conf, apipaths.AttributionURLPath, attribution.NewAttributionHandler(conf.DataAPI))
 
 	// Miscellaneous APIs
 	authenticationRequired(conf, apipaths.AppEventURLPath, appevent.NewHandler(conf.DataAPI, conf.Dispatcher))

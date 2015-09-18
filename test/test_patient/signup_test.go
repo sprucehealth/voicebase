@@ -229,5 +229,4 @@ func TestPatientSignup_WithDoctorPicked(t *testing.T) {
 	test.Equals(t, 1, len(members))
 	test.Equals(t, api.RoleDoctor, members[0].ProviderRole)
 	test.Equals(t, dr.DoctorID, members[0].ProviderID)
-
 }

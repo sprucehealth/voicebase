@@ -181,13 +181,13 @@ func main() {
 
 	dataAPI, err := api.NewDataService(db, cfgStore, metricsRegistry.Scope("dataapi"))
 	if err != nil {
-		log.Fatalf("Unable to initialize data service layer: %s", err)
+		golog.Fatalf("Unable to initialize data service layer: %s", err)
 	}
 
 	if conf.InfoAddr != "" {
 		http.Handle("/metrics", metrics.RegistryHandler(metricsRegistry))
 		go func() {
-			log.Fatal(http.ListenAndServe(conf.InfoAddr, nil))
+			golog.Fatalf(http.ListenAndServe(conf.InfoAddr, nil).Error())
 		}()
 	}
 
@@ -202,17 +202,17 @@ func main() {
 		api.NewBcryptHasher(0),
 	)
 	if err != nil {
-		log.Fatal(err)
+		golog.Fatalf(err.Error())
 	}
 
 	var smsAPI api.SMSAPI
 	if twilioCli, err := conf.Twilio.Client(); err == nil {
 		smsAPI = &twilioSMSAPI{twilioCli}
 	} else if conf.Debug {
-		log.Println(err.Error())
+		golog.Infof(err.Error())
 		smsAPI = loggingSMSAPI{}
 	} else {
-		log.Fatal(err.Error())
+		golog.Fatalf(err.Error())
 	}
 
 	conf.StartReporters(metricsRegistry)

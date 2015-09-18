@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/attribution/model"
 
 	"golang.org/x/net/context"
 
@@ -124,6 +125,14 @@ func (m *mockDataAPI_PatientVisitHandler) UpdateCredit(accountID int64, credit i
 }
 func (m *mockDataAPI_PatientVisitHandler) GetMessageForPatientVisit(id int64) (string, error) {
 	return "", nil
+}
+
+func (m *mockDataAPI_PatientVisitHandler) InsertAttributionData(attributionData *model.AttributionData) (int64, error) {
+	return 1, nil
+}
+
+func (m *mockDataAPI_PatientVisitHandler) DeleteAttributionData(deviceID string) (int64, error) {
+	return 1, nil
 }
 
 type mockAuthAPI_PatientVisitHandler struct {

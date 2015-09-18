@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"time"
 
+	attributionModel "github.com/sprucehealth/backend/attribution/model"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
@@ -941,6 +942,7 @@ type Tokens interface {
 
 type DataAPI interface {
 	AnalyticsAPI
+	AttributionAPI
 	BankingAPI
 	CaseMessageAPI
 	CaseRouteAPI
@@ -1071,4 +1073,12 @@ type LockAPI interface {
 type PracticeModelAPI interface {
 	PracticeModel(doctorID int64) (*common.PracticeModel, error)
 	UpdatePracticeModel(doctorID int64, pmu *common.PracticeModelUpdate) (int64, error)
+}
+
+// AttributionAPI represents the methods needed to interact with the attribution_data records and provide a DAL
+type AttributionAPI interface {
+	DeleteAttributionData(deviceID string) (int64, error)
+	InsertAttributionData(attributionData *attributionModel.AttributionData) (int64, error)
+	LatestAccountAttributionData(accountID int64) (*attributionModel.AttributionData, error)
+	LatestDeviceAttributionData(deviceID string) (*attributionModel.AttributionData, error)
 }
