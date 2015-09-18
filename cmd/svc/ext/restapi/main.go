@@ -246,16 +246,8 @@ func main() {
 		}
 	}
 
-	var eventsClient events.Client
-	if conf.EventsDB.Host != "" {
-		eventsClient, err = events.NewClient(conf.EventsDB)
-		if err != nil {
-			log.Fatalf("Failed to initialize events client: %s", err.Error())
-		}
-	} else {
-		eventsClient = events.NullClient{}
-		golog.Warningf("No events config provided. Using Null Client.")
-	}
+	// Deactivate the events system for now (but leave the code in place) while we reevaluate the data store and usefullness.
+	eventsClient := events.NullClient{}
 
 	analisteners.InitListeners(alog, dispatcher, eventsClient)
 
