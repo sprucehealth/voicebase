@@ -1,0 +1,514 @@
+{
+  "patient": {
+    "id": "314",
+    "first_name": "Kunal",
+    "last_name": "Jham",
+    "dob": "1987-11-08",
+    "email": "14020969515967025791@example.com",
+    "gender": "male",
+    "zip_code": "94115",
+    "phone_numbers": [
+      {
+        "phone": "2068773590",
+        "phone_type": "Home"
+      }
+    ],
+    "account_id": "339",
+    "pharmacy": {
+      "id": "47731",
+      "source": "surescripts",
+      "name": "CA pharmacy store 10.6",
+      "address_line_1": "116 New Montgomery St",
+      "city": "San Francisco",
+      "state": "CA",
+      "zip_code": "92804"
+    },
+    "address": {
+      "address_line_1": "12345 Main Street",
+      "address_line_2": "Apt 1112",
+      "city": "San Francisco",
+      "state": "California",
+      "zip_code": "94115",
+      "country": "USA"
+    },
+    "person_id": 147,
+    "prompt_status": "UNPROMPTED"
+  },
+  "patient_visit": {
+    "patient_visit_id": "119",
+    "patient_id": "314",
+    "creation_date": "2014-06-06T16:22:31.69859Z",
+    "submitted_date": "2014-06-06T16:22:31Z",
+    "closed_date": "0001-01-01T00:00:00Z",
+    "health_condition_id": "1",
+    "status": "SUBMITTED",
+    "layout_version_id": "218"
+  },
+  "visit_review": {
+    "sections": [
+      {
+        "subsections": [
+          {
+            "type": "d_visit_review:standard_photo_subsection",
+            "view": {
+              "items": [
+                {
+                  "title": "Face",
+                  "photos": [
+                    {
+                      "title": "Front",
+                      "photo_url": "https://localhost:8080/v1/photo?claimer_id=23&claimer_type=patient_intake_photo_section&photo_id=47",
+                      "placeholder_url": ""
+                    },
+                    {
+                      "title": "Profile Left",
+                      "photo_url": "https://localhost:8080/v1/photo?claimer_id=23&claimer_type=patient_intake_photo_section&photo_id=49",
+                      "placeholder_url": ""
+                    },
+                    {
+                      "title": "Profile Right",
+                      "photo_url": "https://localhost:8080/v1/photo?claimer_id=23&claimer_type=patient_intake_photo_section&photo_id=51",
+                      "placeholder_url": ""
+                    }
+                  ]
+                },
+                {
+                  "title": "Chest",
+                  "photos": [
+                    {
+                      "title": "Chest",
+                      "photo_url": "https://localhost:8080/v1/photo?claimer_id=21&claimer_type=patient_intake_photo_section&photo_id=48",
+                      "placeholder_url": ""
+                    }
+                  ]
+                },
+                {
+                  "title": "Arm",
+                  "photos": [
+                    {
+                      "title": "Right Arm",
+                      "photo_url": "https://localhost:8080/v1/photo?claimer_id=22&claimer_type=patient_intake_photo_section&photo_id=50",
+                      "placeholder_url": ""
+                    },
+                    {
+                      "title": "Left Arm",
+                      "photo_url": "https://localhost:8080/v1/photo?claimer_id=22&claimer_type=patient_intake_photo_section&photo_id=52",
+                      "placeholder_url": ""
+                    }
+                  ]
+                }
+              ],
+              "type": "d_visit_review:title_photos_items_list"
+            }
+          }
+        ],
+        "title": "Photos",
+        "type": "d_visit_review:standard_photo_section"
+      },
+      {
+        "subsections": [
+          {
+            "rows": [
+              {
+                "type": "d_visit_review:standard_one_column_row",
+                "view": {
+                  "type": "d_visit_review:alert_labels_list",
+                  "values": [
+                    "Generic Rxs only",
+                    "Allergic to Penicillin"
+                  ]
+                }
+              }
+            ],
+            "title": "Alerts",
+            "type": "d_visit_review:standard_subsection"
+          },
+          {
+            "rows": [
+              {
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "values": [
+                    "Medication allergies"
+                  ]
+                },
+                "right_view": {
+                  "type": "d_visit_review:content_labels_list",
+                  "values": [
+                    "Penicillin"
+                  ]
+                },
+                "type": "d_visit_review:standard_two_column_row"
+              },
+              {
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "values": [
+                    "Current medications"
+                  ]
+                },
+                "right_view": {
+                  "items": [
+                    {
+                      "title": "Clyndamycin",
+                      "subitems": [
+                        {
+                          "description": "Which product",
+                          "content": "Taken for 2-5 months"
+                        }
+                      ]
+                    },
+                    {
+                      "title": "Tretinoin Topical",
+                      "subitems": [
+                        {
+                          "description": "Which product",
+                          "content": "Taken for 2-5 months"
+                        }
+                      ]
+                    }
+                  ],
+                  "type": "d_visit_review:title_subitems_description_content_labels_divided_items_list"
+                },
+                "type": "d_visit_review:standard_two_column_row"
+              },
+              {
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "values": [
+                    "Prescription Preference"
+                  ]
+                },
+                "right_view": {
+                  "type": "d_visit_review:content_labels_list",
+                  "values": [
+                    "Generic only"
+                  ]
+                },
+                "type": "d_visit_review:standard_two_column_row"
+              }
+            ],
+            "title": "Medication",
+            "type": "d_visit_review:standard_subsection"
+          },
+          {
+            "rows": [
+              {
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "values": [
+                    "Skin conditions"
+                  ]
+                },
+                "right_view": {
+                  "type": "d_visit_review:content_labels_list",
+                  "values": [
+                    "Acne",
+                    "Psoriasis"
+                  ]
+                },
+                "type": "d_visit_review:standard_two_column_row"
+              },
+              {
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "values": [
+                    "Other conditions"
+                  ]
+                },
+                "right_view": {
+                  "items": [
+                    {
+                      "value": "Gastritis",
+                      "is_checked": false
+                    },
+                    {
+                      "value": "High blood pressure",
+                      "is_checked": false
+                    },
+                    {
+                      "value": "Intestinal inflammation",
+                      "is_checked": false
+                    },
+                    {
+                      "value": "Kidney disease",
+                      "is_checked": false
+                    },
+                    {
+                      "value": "Liver disease",
+                      "is_checked": false
+                    },
+                    {
+                      "value": "Lupus",
+                      "is_checked": false
+                    },
+                    {
+                      "value": "Organ transplant",
+                      "is_checked": false
+                    },
+                    {
+                      "value": "Polycystic ovary syndrome",
+                      "is_checked": false
+                    },
+                    {
+                      "value": "None of the above",
+                      "is_checked": true
+                    }
+                  ],
+                  "type": "d_visit_review:check_x_items_list"
+                },
+                "type": "d_visit_review:standard_two_column_row"
+              }
+            ],
+            "title": "Past Medical Conditions",
+            "type": "d_visit_review:standard_subsection"
+          }
+        ],
+        "title": "Medical History",
+        "type": "d_visit_review:standard_section"
+      },
+      {
+        "subsections": [
+          {
+            "rows": [
+              {
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "values": [
+                    "Onset of symptoms"
+                  ]
+                },
+                "right_view": {
+                  "type": "d_visit_review:content_labels_list",
+                  "values": [
+                    "6-12 months ago"
+                  ]
+                },
+                "type": "d_visit_review:standard_two_column_row"
+              },
+              {
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "values": [
+                    "Types of symptoms"
+                  ]
+                },
+                "right_view": {
+                  "items": [
+                    {
+                      "value": "Been picked or squeezed",
+                      "is_checked": true
+                    },
+                    {
+                      "value": "Been painful to the touch",
+                      "is_checked": true
+                    },
+                    {
+                      "value": "Turned into cysts",
+                      "is_checked": true
+                    },
+                    {
+                      "value": "Caused discoloration",
+                      "is_checked": true
+                    },
+                    {
+                      "value": "Created scars",
+                      "is_checked": true
+                    },
+                    {
+                      "value": "None of the above",
+                      "is_checked": false
+                    }
+                  ],
+                  "type": "d_visit_review:check_x_items_list"
+                },
+                "type": "d_visit_review:standard_two_column_row"
+              },
+              {
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "values": [
+                    "Worsening symptoms"
+                  ]
+                },
+                "right_view": {
+                  "type": "d_visit_review:divided_views_list",
+                  "views": [
+                    {
+                      "type": "d_visit_review:content_labels_list",
+                      "values": [
+                        "Yes"
+                      ]
+                    },
+                    {
+                      "subtitle": "I've starting working out again so wonder if sweat could be a contributing factor?",
+                      "title": "Recent changes",
+                      "type": "d_visit_review:title_subtitle_labels"
+                    }
+                  ]
+                },
+                "type": "d_visit_review:standard_two_column_row"
+              },
+              {
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "values": [
+                    "Worse with period"
+                  ]
+                },
+                "right_view": {
+                  "type": "d_visit_review:divided_views_list",
+                  "views": [
+                    {
+                      "type": "d_visit_review:content_labels_list",
+                      "values": [
+                        "No"
+                      ]
+                    }
+                  ]
+                },
+                "type": "d_visit_review:standard_two_column_row"
+              },
+              {
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "values": [
+                    "Skin type"
+                  ]
+                },
+                "right_view": {
+                  "type": "d_visit_review:content_labels_list",
+                  "values": [
+                    "Oily"
+                  ]
+                },
+                "type": "d_visit_review:standard_two_column_row"
+              }
+            ],
+            "title": "Symptoms Overview",
+            "type": "d_visit_review:standard_subsection"
+          },
+          {
+            "rows": [
+              {
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "values": [
+                    "Prescription tried"
+                  ]
+                },
+                "right_view": {
+                  "items": [
+                    {
+                      "title": "Benzoyl peroxide",
+                      "subitems": [
+                        {
+                          "description": "Currently Using",
+                          "content": "Currently using it"
+                        },
+                        {
+                          "description": "Effective",
+                          "content": "Somewhat effective"
+                        },
+                        {
+                          "description": "Used for 3+ months",
+                          "content": "Not used for more than 3 months"
+                        },
+                        {
+                          "description": "Irritating",
+                          "content": "Did not irritate skin"
+                        }
+                      ]
+                    },
+                    {
+                      "title": "BenzaClin",
+                      "subitems": [
+                        {
+                          "description": "Currently Using",
+                          "content": "Currently using it"
+                        },
+                        {
+                          "description": "Effective",
+                          "content": "Somewhat effective"
+                        },
+                        {
+                          "description": "Used for 3+ months",
+                          "content": "Not used for more than 3 months"
+                        },
+                        {
+                          "description": "Irritating",
+                          "content": "Did not irritate skin"
+                        },
+                        {
+                          "description": "Comments",
+                          "content": "My skin has started to clear up a bit after using benzaclin together with benzoyl peroxide."
+                        }
+                      ]
+                    }
+                  ],
+                  "type": "d_visit_review:title_subitems_description_content_labels_divided_items_list"
+                },
+                "type": "d_visit_review:standard_two_column_row"
+              },
+              {
+                "left_view": {
+                  "type": "d_visit_review:title_labels_list",
+                  "values": [
+                    "OTC products tried"
+                  ]
+                },
+                "right_view": {
+                  "items": [
+                    {
+                      "title": "Proactiv",
+                      "subitems": [
+                        {
+                          "description": "Which product",
+                          "content": "30 Day Kit"
+                        },
+                        {
+                          "description": "Currently Using",
+                          "content": "Not currently using it"
+                        },
+                        {
+                          "description": "Effective",
+                          "content": "Not Effective"
+                        },
+                        {
+                          "description": "Irritating",
+                          "content": "Did not irritate skin"
+                        }
+                      ]
+                    }
+                  ],
+                  "type": "d_visit_review:title_subitems_description_content_labels_divided_items_list"
+                },
+                "type": "d_visit_review:standard_two_column_row"
+              }
+            ],
+            "title": "Prior Treatments",
+            "type": "d_visit_review:standard_subsection"
+          },
+          {
+            "rows": [
+              {
+                "type": "d_visit_review:standard_one_column_row",
+                "view": {
+                  "type": "d_visit_review:content_labels_list",
+                  "values": [
+                    "I've noticed that my acne flares up when I wait longer between changing razor blades. Also, my acne typically concentrates around my lips."
+                  ]
+                }
+              }
+            ],
+            "title": "Additional Information from Patient",
+            "type": "d_visit_review:standard_subsection"
+          }
+        ],
+        "title": "History of Present Illness",
+        "type": "d_visit_review:standard_section"
+      }
+    ],
+    "type": "d_visit_review:sections_list"
+  }
+}

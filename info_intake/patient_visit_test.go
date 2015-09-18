@@ -14,7 +14,7 @@ type PatientVisit struct {
 }
 
 func parseFileToGetHealthCondition(t *testing.T) (healthCondition *InfoIntakeLayout) {
-	fileContents, err := ioutil.ReadFile("../api-response-examples/v1/patient/visit.json")
+	fileContents, err := ioutil.ReadFile("../test/data/visit.json")
 	if err != nil {
 		t.Fatal("Unable to open the json representation of the patient visit for testing:" + err.Error())
 	}

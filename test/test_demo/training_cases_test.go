@@ -23,8 +23,8 @@ func TestTrainingCase(t *testing.T) {
 	testData.StartAPIServer(t)
 
 	// Upload the latest versions of the review and intake
-	latestIntakeVersion := determineLatestVersionedFile("intake", t)
-	latestReviewVersion := determineLatestVersionedFile("review", t)
+	latestIntakeVersion := determineLatestVersionedFile("intake-", t)
+	latestReviewVersion := determineLatestVersionedFile("review-", t)
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	test_integration.AddFileToMultipartWriter(writer, "intake", latestIntakeVersion, "../data/"+latestIntakeVersion, t)

@@ -1,0 +1,63 @@
+{
+  "code_id": "304",
+  "display_diagnosis_code": "L70.0",
+  "title": "Acne Vulgaris",
+  "synonyms": "Acne, Pimples, Synonyms, Synonyms, Synonyms, Cinnamons",
+  "has_details": true,
+  "questions": [
+    {
+      "question": "q_acne_type",
+      "question_id": "37",
+      "question_title": "Type",
+      "question_type": "q_type_multiple_choice",
+      "question_subtext": "Select all that apply",
+      "additional_fields": {
+        "style": "brief_title"
+      },
+      "potential_answers": [
+        {
+          "potential_answer_id": "108",
+          "potential_answer": "Whiteheads",
+          "answer_type": "a_type_multiple_choice"
+        },
+        {
+          "potential_answer_id": "109",
+          "potential_answer": "Pustules",
+          "answer_type": "a_type_multiple_choice"
+        },
+        {
+          "potential_answer_id": "110",
+          "potential_answer": "Nodules",
+          "answer_type": "a_type_multiple_choice"
+        },
+        {
+          "potential_answer_id": "111",
+          "potential_answer": "Inflammatory",
+          "answer_type": "a_type_multiple_choice"
+        },
+        {
+          "potential_answer_id": "112",
+          "potential_answer": "Blackheads",
+          "answer_type": "a_type_multiple_choice"
+        },
+        {
+          "potential_answer_id": "113",
+          "potential_answer": "Papules",
+          "answer_type": "a_type_multiple_choice"
+        },
+        {
+          "potential_answer_id": "114",
+          "potential_answer": "Cysts",
+          "answer_type": "a_type_multiple_choice"
+        },
+        {
+          "potential_answer_id": "115",
+          "potential_answer": "Hormonal",
+          "answer_type": "a_type_multiple_choice"
+        }
+      ]
+    }
+  ],
+  "layout_version": "1.2",
+  "latest_layout_version": "1.2"
+}

@@ -1,0 +1,1825 @@
+{
+  "patient_visit_id": "123",
+  "status": "OPEN",
+  "health_condition": {
+    "health_condition": "health_condition_acne",
+    "health_condition_id": "1",
+    "visit_overview_header": {
+      "title": "Acne Visit",
+      "subtitle": "With Dr. Kohen",
+      "icon_url": "http://cl.ly/image/0K420A1p1e0m/Image%202014-11-04%20at%205.59.18%20PM.png"
+    },
+    "additional_message": {
+      "title": "Is there anything else you’d like to ask or share with Dr. Kohen?",
+      "placeholder": "It’s optional but this is your chance to let the doctor know what’s on your mind."
+    },
+    "checkout": {
+      "header_image_url": "http://cl.ly/image/0K420A1p1e0m/Image%202014-11-04%20at%205.59.18%20PM.png",
+      "header_text": "Submit your follow-up visit for Dr. Kohen to review",
+      "footer_text": "There are no surprise medical bills with Spruce. If you're unsatisfied with your visit, we'll refund the full cost."
+    },
+    "submission_confirmation": {
+      "title": "Visit Submitted",
+      "top_text": "Your follow-up visit has been submitted.",
+      "bottom_text": "Dr. Kohen will review your visit and respond within 24 hours.",
+      "button_title": "Continue"
+    },
+    "cost_item_type": "acne_visit",
+    "sections": [
+      {
+        "section": "section_photo_diagnosis",
+        "section_id": "3",
+        "section_title": "Photos for Diagnosis",
+        "screens": [
+          {
+            "description": "photo taking experience",
+            "questions": [
+              {
+                "question": "q_face_photo_section",
+                "question_id": "59",
+                "question_title": "Face",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_photo_section",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "required": false,
+                "to_alert": false,
+                "alert_text": "",
+                "photo_slots": [
+                  {
+                    "id": "1",
+                    "name": "Face Front",
+                    "required": true,
+                    "client_data": {
+                      "tip": "Center your face in the dotted lines",
+                      "photo_missing_error_message": "A photo of the front of your face is required to continue.",
+                      "overlay_image_url": "spruce:///image/photo_face_outline",
+                      "initial_camera_direction": "front_or_previous"
+                    }
+                  },
+                  {
+                    "id": "2",
+                    "name": "Face Side",
+                    "required": true,
+                    "client_data": {
+                      "tip": "Turn your face to the side",
+                      "tip_subtext": "(Just move your face, not your phone)",
+                      "tip_style": "point_left",
+                      "photo_missing_error_message": "A photo of each side of your face is required to continue.",
+                      "overlay_image_url": "spruce:///image/photo_face_outline",
+                      "initial_camera_direction": "front_or_previous"
+                    }
+                  },
+                  {
+                    "id": "3",
+                    "name": "Face Side",
+                    "required": true,
+                    "client_data": {
+                      "tip": "Now turn to the other side",
+                      "tip_subtext": "(Just move your face, not your phone)",
+                      "tip_style": "point_right",
+                      "photo_missing_error_message": "A photo of each side of your face is required to continue.",
+                      "overlay_image_url": "spruce:///image/photo_face_outline",
+                      "initial_camera_direction": "front_or_previous"
+                    }
+                  },
+                  {
+                    "id": "4",
+                    "name": "Face",
+                    "required": false
+                  }
+                ]
+              },
+              {
+                "question": "q_chest_photo_section",
+                "question_id": "60",
+                "question_title": "Chest",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_photo_section",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "required": false,
+                "to_alert": false,
+                "alert_text": "",
+                "photo_slots": [
+                  {
+                    "id": "7",
+                    "name": "Chest",
+                    "type": "photo_slot_chest",
+                    "required": true
+                  },
+                  {
+                    "id": "8",
+                    "name": "Chest",
+                    "type": "photo_slot_other",
+                    "required": false
+                  }
+                ]
+              },
+              {
+                "question": "q_back_photo_section",
+                "question_id": "61",
+                "question_title": "Back",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_photo_section",
+                "additional_fields": {
+                  "disable_last_slot_duplication": true
+                },
+                "formatted_field_tags": [
+                  ""
+                ],
+                "required": false,
+                "to_alert": false,
+                "alert_text": "",
+                "photo_slots": [
+                  {
+                    "id": "5",
+                    "name": "Back",
+                    "type": "photo_slot_back",
+                    "required": true,
+                    "client_data": {
+                      "initial_camera_direction": "back"
+                    }
+                  }
+                ]
+              },
+              {
+                "question": "q_other_location_photo_section",
+                "question_id": "62",
+                "question_title": "Other Location",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_photo_section",
+                "additional_fields": {
+                  "allows_multiple_sections": true,
+                  "user_defined_section_title": true,
+                  "answer_groups": [
+                    {
+                      "title": "Head & Neck",
+                      "count": 3
+                    },
+                    {
+                      "title": "Torso",
+                      "count": 5
+                    },
+                    {
+                      "title": "Arms & Hands",
+                      "count": 2
+                    },
+                    {
+                      "title": "Legs & Feet",
+                      "count": 2
+                    }
+                  ]
+                },
+                "formatted_field_tags": [
+                  ""
+                ],
+                "required": false,
+                "to_alert": false,
+                "alert_text": "",
+                "photo_slots": [
+                  {
+                    "id": "9",
+                    "name": "Other",
+                    "required": true
+                  }
+                ]
+              }
+            ],
+            "header_title": "Take photos of the areas where you have acne.",
+            "header_subtitle": "Your doctor will use these photos to make a diagnosis.",
+            "header_summary": "Photos of acne areas",
+            "screen_type": "screen_type_photo"
+          }
+        ]
+      },
+      {
+        "section": "section_skin_history",
+        "section_id": "1",
+        "section_title": "About Your Skin",
+        "screens": [
+          {
+            "description": "describe your skin",
+            "questions": [
+              {
+                "question": "q_skin_description",
+                "question_id": "32",
+                "question_title": "How would you describe your skin?",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_single_select",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "question_summary": "Skin type",
+                "potential_answers": [
+                  {
+                    "potential_answer_id": "91",
+                    "potential_answer": "Normal",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "0",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "92",
+                    "potential_answer": "Oily",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "1",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "93",
+                    "potential_answer": "Dry",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "2",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "94",
+                    "potential_answer": "Combination",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "3",
+                    "to_alert": false
+                  }
+                ],
+                "required": true,
+                "to_alert": false,
+                "alert_text": ""
+              }
+            ]
+          },
+          {
+            "description": "previous diagnosis of skin condition",
+            "screen_type": "screen_type_generic_popup",
+            "client_data": {
+              "views": [
+                {
+                  "type": "treatment:list_element",
+                  "element_style": "numbered",
+                  "number": 1,
+                  "text": "Wash your hands with soap and water and make sure your skin is clean and dry."
+                },
+                {
+                  "type": "treatment:list_element",
+                  "element_style": "numbered",
+                  "number": 2,
+                  "text": "Squeeze a pea-sized amount onto your finger tip."
+                },
+                {
+                  "type": "treatment:list_element",
+                  "element_style": "numbered",
+                  "number": 3,
+                  "text": "Gently dab your finger on your chin, forehead and each side of your cheek."
+                },
+                {
+                  "type": "treatment:list_element",
+                  "element_style": "numbered",
+                  "number": 4,
+                  "text": "Slowly rub the Duac into your skin."
+                }
+              ]
+            }
+          },
+          {
+            "description": "length of acne symptoms",
+            "questions": [
+              {
+                "question": "q_onset_acne",
+                "question_id": "28",
+                "question_title": "When did you start getting breakouts?",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_single_select",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "question_summary": "Onset of symptoms",
+                "potential_answers": [
+                  {
+                    "potential_answer_id": "81",
+                    "potential_answer": "0-6 months ago",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "4",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "142",
+                    "potential_answer": "6-12 months ago",
+                    "potential_answer_summary": "6-12 months ago",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "5",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "82",
+                    "potential_answer": "1-2 years ago",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "6",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "83",
+                    "potential_answer": "2 or more years ago",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "7",
+                    "to_alert": false
+                  }
+                ],
+                "required": true,
+                "to_alert": false,
+                "alert_text": ""
+              }
+            ]
+          },
+          {
+            "description": "description of acne",
+            "questions": [
+              {
+                "question": "q_acne_symptoms",
+                "question_id": "29",
+                "question_title": "Have your breakouts...",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_multiple_choice",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "question_summary": "Types of symptoms",
+                "additional_fields": {
+                  "popup": {
+                    "images": [
+                      {
+                        "url": "http://cl.ly/image/2h3j1V0M1p2b/Untitled.png",
+                        "aspect_ratio": 1.5,
+                        "caption": "Crow's Feet"
+                      }
+                    ],
+                    "text": "A wrinkle, also known as a rhytide, is a fold, ridge or crease in the skin.\n\nSkin wrinkles typically appear as a result of aging processes such as glycation, habitual sleeping positions, loss of body mass, or temporarily, as the result of prolonged immersion in water.\n\nAge wrinkling in the skin is promoted by habitual facial expressions, aging, sun damage, smoking, poor hydration, and various other factors."
+                  }
+                },
+                "potential_answers": [
+                  {
+                    "potential_answer_id": "150",
+                    "potential_answer": "Been picked or squeezed",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "10",
+                    "to_alert": false,
+                    "client_data": {
+                      "popup": {
+                        "images": [
+                          {
+                            "url": "http://cl.ly/image/2h3j1V0M1p2b/Untitled.png",
+                            "aspect_ratio": 1.5,
+                            "caption": "Cysts"
+                          }
+                        ],
+                        "text": "Cysts are hard bumps that form deep under the skin. They are often painful to the touch and take a long time to heal."
+                      }
+                    }
+                  },
+                  {
+                    "potential_answer_id": "84",
+                    "potential_answer": "Been painful to the touch",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "11",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "116",
+                    "potential_answer": "Turned into cysts",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "12",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "86",
+                    "potential_answer": "Caused discoloration",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "13",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "151",
+                    "potential_answer": "Created scars",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "14",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "117",
+                    "potential_answer": "None of the above",
+                    "answer_type": "a_type_multiple_choice_none",
+                    "ordering": "15",
+                    "to_alert": false
+                  }
+                ],
+                "required": true,
+                "to_alert": false,
+                "alert_text": ""
+              }
+            ]
+          },
+          {
+            "description": "is acne getting worse",
+            "questions": [
+              {
+                "question": "q_acne_worse",
+                "question_id": "4",
+                "question_title": "Have your breakouts been getting worse?",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_single_select",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "question_summary": "Worsening symptoms",
+                "potential_answers": [
+                  {
+                    "potential_answer_id": "8",
+                    "potential_answer": "Yes",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "0",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "9",
+                    "potential_answer": "No",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "1",
+                    "to_alert": false
+                  }
+                ],
+                "required": true,
+                "to_alert": false,
+                "alert_text": ""
+              }
+            ]
+          },
+          {
+            "description": "changes making acne worse",
+            "questions": [
+              {
+                "question": "q_changes_acne_worse",
+                "question_id": "6",
+                "question_title": "Are there any recent changes that could be affecting your skin?",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_free_text",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "question_summary": "Recent changes",
+                "additional_fields": {
+                  "empty_state_text": "Patient chose not to answer",
+                  "placeholder_text": "Ex: new cosmetics, sports, warmer weather, increased stress."
+                },
+                "condition": {
+                  "op": "and",
+                  "operands": [
+                    {
+                      "op": "answer_equals",
+                      "question": "q_acne_worse",
+                      "question_id": "4",
+                      "potential_answers_id": [
+                        "8"
+                      ]
+                    },
+                    {
+                      "op": "answer_equals",
+                      "question": "q_acne_symptoms",
+                      "question_id": "29",
+                      "potential_answers_id": [
+                        "117"
+                      ]
+                    }
+                  ]
+                },
+                "required": false,
+                "to_alert": false,
+                "alert_text": ""
+              }
+            ]
+          },
+          {
+            "description": "does acne get worse with period",
+            "questions": [
+              {
+                "question": "q_acne_worse_period",
+                "question_id": "30",
+                "question_title": "Does getting your period make your breakouts worse?",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_single_select",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "question_summary": "Worse with period",
+                "potential_answers": [
+                  {
+                    "potential_answer_id": "87",
+                    "potential_answer": "Yes",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "0",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "88",
+                    "potential_answer": "No",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "1",
+                    "to_alert": false
+                  }
+                ],
+                "condition": {
+                  "op": "gender_equals",
+                  "gender": "female"
+                },
+                "required": true,
+                "to_alert": false,
+                "alert_text": ""
+              }
+            ]
+          },
+          {
+            "description": "are periods regular",
+            "questions": [
+              {
+                "question": "q_periods_regular",
+                "question_id": "31",
+                "question_title": "Are your periods regular?",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_single_select",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "question_summary": "Regular periods",
+                "parent_question_id": "30",
+                "potential_answers": [
+                  {
+                    "potential_answer_id": "89",
+                    "potential_answer": "Yes",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "0",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "90",
+                    "potential_answer": "No",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "1",
+                    "to_alert": false
+                  }
+                ],
+                "condition": {
+                  "op": "answer_equals",
+                  "question": "q_acne_worse_period",
+                  "question_id": "30",
+                  "potential_answers_id": [
+                    "87"
+                  ],
+                  "potential_answers": [
+                    "a_acne_worse_yes"
+                  ]
+                },
+                "required": true,
+                "to_alert": false,
+                "alert_text": ""
+              }
+            ]
+          },
+          {
+            "description": "have you been prescribed medications to treate acne",
+            "questions": [
+              {
+                "question": "q_acne_prev_prescriptions",
+                "question_id": "50",
+                "question_title": "Have you been prescribed medications to treat your acne?",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_single_select",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "potential_answers": [
+                  {
+                    "potential_answer_id": "152",
+                    "potential_answer": "Yes",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "0",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "153",
+                    "potential_answer": "No",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "1",
+                    "to_alert": false
+                  }
+                ],
+                "required": true,
+                "to_alert": false,
+                "alert_text": ""
+              }
+            ]
+          },
+          {
+            "description": "get treatments from user",
+            "questions": [
+              {
+                "question": "q_acne_prev_prescriptions_select",
+                "question_id": "63",
+                "question_title": "Select which acne medications you were prescribed.",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_multiple_choice",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "question_summary": "Prescription tried",
+                "additional_fields": {
+                  "empty_state_text": "No prescriptions tried",
+                  "other_answer_placeholder_text": "Type another treatment name"
+                },
+                "potential_answers": [
+                  {
+                    "potential_answer_id": "168",
+                    "potential_answer": "BenzaClin",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "0",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "169",
+                    "potential_answer": "Benzoyl peroxide",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "1",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "170",
+                    "potential_answer": "Clindamycin",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "2",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "171",
+                    "potential_answer": "Differin",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "3",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "172",
+                    "potential_answer": "Duac",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "4",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "173",
+                    "potential_answer": "Epiduo",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "5",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "174",
+                    "potential_answer": "Metrogel",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "6",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "175",
+                    "potential_answer": "Minocycline",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "7",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "176",
+                    "potential_answer": "Retin-A or Tretinoin",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "8",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "177",
+                    "potential_answer": "Tetracycline",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "9",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "178",
+                    "potential_answer": "Other",
+                    "answer_type": "a_type_multiple_choice_other_free_text",
+                    "ordering": "10",
+                    "to_alert": false
+                  }
+                ],
+                "condition": {
+                  "op": "answer_equals",
+                  "question": "q_acne_prev_prescriptions",
+                  "question_id": "50",
+                  "potential_answers_id": [
+                    "152"
+                  ],
+                  "potential_answers": [
+                    "a_acne_prev_prescriptions_yes"
+                  ]
+                },
+                "required": true,
+                "to_alert": false,
+                "alert_text": "",
+                "subquestions_config": {
+                  "screens": [
+                    {
+                      "header_title": "Tell us about <parent_answer_text>",
+                      "header_title_has_tokens": true,
+                      "questions": [
+                        {
+                          "question": "q_using_prev_acne_prescription",
+                          "question_id": "64",
+                          "question_title": "Are you currently using it?",
+                          "question_title_has_tokens": false,
+                          "question_type": "q_type_segmented_control",
+                          "formatted_field_tags": [
+                            ""
+                          ],
+                          "question_summary": "Currently Using",
+                          "parent_question_id": "63",
+                          "potential_answers": [
+                            {
+                              "potential_answer_id": "179",
+                              "potential_answer": "Yes",
+                              "potential_answer_summary": "Currently using it",
+                              "answer_type": "a_type_segmented_control",
+                              "ordering": "0",
+                              "to_alert": false
+                            },
+                            {
+                              "potential_answer_id": "180",
+                              "potential_answer": "No",
+                              "potential_answer_summary": "Not currently using it",
+                              "answer_type": "a_type_segmented_control",
+                              "ordering": "1",
+                              "to_alert": false
+                            }
+                          ],
+                          "required": true,
+                          "to_alert": false,
+                          "alert_text": ""
+                        },
+                        {
+                          "question": "q_how_effective_prev_acne_prescription",
+                          "question_id": "65",
+                          "question_title": "How effective was it?",
+                          "question_title_has_tokens": false,
+                          "question_type": "q_type_segmented_control",
+                          "formatted_field_tags": [
+                            ""
+                          ],
+                          "question_summary": "Effective",
+                          "parent_question_id": "63",
+                          "potential_answers": [
+                            {
+                              "potential_answer_id": "181",
+                              "potential_answer": "Not",
+                              "potential_answer_summary": "Not Effective",
+                              "answer_type": "a_type_segmented_control",
+                              "ordering": "0",
+                              "to_alert": false
+                            },
+                            {
+                              "potential_answer_id": "182",
+                              "potential_answer": "Somewhat",
+                              "potential_answer_summary": "Somewhat effective",
+                              "answer_type": "a_type_segmented_control",
+                              "ordering": "1",
+                              "to_alert": false
+                            },
+                            {
+                              "potential_answer_id": "183",
+                              "potential_answer": "Very",
+                              "potential_answer_summary": "Very effective",
+                              "answer_type": "a_type_segmented_control",
+                              "ordering": "2",
+                              "to_alert": false
+                            }
+                          ],
+                          "required": true,
+                          "to_alert": false,
+                          "alert_text": ""
+                        },
+                        {
+                          "question": "q_use_more_three_months_prev_acne_prescription",
+                          "question_id": "66",
+                          "question_title": "Did you use it for more than three months?",
+                          "question_title_has_tokens": false,
+                          "question_type": "q_type_segmented_control",
+                          "formatted_field_tags": [
+                            ""
+                          ],
+                          "question_summary": "Used for 3+ months",
+                          "parent_question_id": "63",
+                          "potential_answers": [
+                            {
+                              "potential_answer_id": "184",
+                              "potential_answer": "Yes",
+                              "potential_answer_summary": "Used for more than 3 months",
+                              "answer_type": "a_type_segmented_control",
+                              "ordering": "0",
+                              "to_alert": false
+                            },
+                            {
+                              "potential_answer_id": "185",
+                              "potential_answer": "No",
+                              "potential_answer_summary": "Not used for more than 3 months",
+                              "answer_type": "a_type_segmented_control",
+                              "ordering": "1",
+                              "to_alert": false
+                            }
+                          ],
+                          "required": true,
+                          "to_alert": false,
+                          "alert_text": ""
+                        },
+                        {
+                          "question": "q_irritate_skin_prev_acne_prescription",
+                          "question_id": "67",
+                          "question_title": "Did it irritate your skin?",
+                          "question_title_has_tokens": false,
+                          "question_type": "q_type_segmented_control",
+                          "formatted_field_tags": [
+                            ""
+                          ],
+                          "question_summary": "Irritating",
+                          "parent_question_id": "63",
+                          "potential_answers": [
+                            {
+                              "potential_answer_id": "186",
+                              "potential_answer": "Yes",
+                              "potential_answer_summary": "Irritated skin",
+                              "answer_type": "a_type_segmented_control",
+                              "ordering": "0",
+                              "to_alert": false
+                            },
+                            {
+                              "potential_answer_id": "187",
+                              "potential_answer": "No",
+                              "potential_answer_summary": "Did not irritate skin",
+                              "answer_type": "a_type_segmented_control",
+                              "ordering": "1",
+                              "to_alert": false
+                            }
+                          ],
+                          "required": true,
+                          "to_alert": false,
+                          "alert_text": ""
+                        },
+                        {
+                          "question": "q_anything_else_prev_acne_prescription",
+                          "question_id": "68",
+                          "question_title": "Anything else you'd like to tell the doctor about it?",
+                          "question_title_has_tokens": false,
+                          "question_type": "q_type_single_entry",
+                          "formatted_field_tags": [
+                            ""
+                          ],
+                          "question_summary": "Comments",
+                          "additional_fields": {
+                            "placeholder_text": "Optional..."
+                          },
+                          "parent_question_id": "63",
+                          "required": false,
+                          "to_alert": false,
+                          "alert_text": ""
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "description": "have you been prescribed medications to treate acne",
+            "questions": [
+              {
+                "question": "q_acne_prev_otc_treatments",
+                "question_id": "51",
+                "question_title": "Have you tried over-the-counter acne treatments?",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_single_select",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "potential_answers": [
+                  {
+                    "potential_answer_id": "154",
+                    "potential_answer": "Yes",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "0",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "155",
+                    "potential_answer": "No",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "1",
+                    "to_alert": false
+                  }
+                ],
+                "required": true,
+                "to_alert": false,
+                "alert_text": ""
+              }
+            ]
+          },
+          {
+            "description": "get otcs from user",
+            "questions": [
+              {
+                "question": "q_acne_prev_otc_select",
+                "question_id": "69",
+                "question_title": "Select which over-the-counter acne treatments you have tried.",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_multiple_choice",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "question_summary": "OTC products tried",
+                "additional_fields": {
+                  "empty_state_text": "No products tried",
+                  "other_answer_placeholder_text": "Type another treatment name"
+                },
+                "potential_answers": [
+                  {
+                    "potential_answer_id": "188",
+                    "potential_answer": "Acne Free",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "0",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "189",
+                    "potential_answer": "Cetaphil",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "1",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "190",
+                    "potential_answer": "Clean and Clear",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "2",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "191",
+                    "potential_answer": "Clearasil",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "3",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "192",
+                    "potential_answer": "Noxzema",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "4",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "193",
+                    "potential_answer": "Oxy",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "5",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "194",
+                    "potential_answer": "Proactiv",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "6",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "195",
+                    "potential_answer": "Zeno",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "7",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "196",
+                    "potential_answer": "Other",
+                    "answer_type": "a_type_multiple_choice_other_free_text",
+                    "ordering": "8",
+                    "to_alert": false
+                  }
+                ],
+                "condition": {
+                  "op": "answer_equals",
+                  "question": "q_acne_prev_otc_treatments",
+                  "question_id": "51",
+                  "potential_answers_id": [
+                    "154"
+                  ],
+                  "potential_answers": [
+                    "a_acne_prev_otc_treatments_yes"
+                  ]
+                },
+                "required": true,
+                "to_alert": false,
+                "alert_text": "",
+                "subquestions_config": {
+                  "screens": [
+                    {
+                      "header_title": "Tell us about <parent_answer_text>",
+                      "header_title_has_tokens": true,
+                      "questions": [
+                        {
+                          "question": "q_acne_otc_product_tried",
+                          "question_id": "70",
+                          "question_title": "What <parent_answer_text> have you tried?",
+                          "question_title_has_tokens": true,
+                          "question_type": "q_type_single_entry",
+                          "additional_fields": {
+                            "placeholder_text": "Optional..."
+                          },
+                          "formatted_field_tags": [
+                            ""
+                          ],
+                          "question_summary": "Which product",
+                          "parent_question_id": "69",
+                          "required": false,
+                          "to_alert": false,
+                          "alert_text": ""
+                        },
+                        {
+                          "question": "q_using_prev_acne_otc",
+                          "question_id": "71",
+                          "question_title": "Are you currently using it?",
+                          "question_title_has_tokens": false,
+                          "question_type": "q_type_segmented_control",
+                          "formatted_field_tags": [
+                            ""
+                          ],
+                          "question_summary": "Currently Using",
+                          "parent_question_id": "69",
+                          "potential_answers": [
+                            {
+                              "potential_answer_id": "197",
+                              "potential_answer": "Yes",
+                              "potential_answer_summary": "Currently using it",
+                              "answer_type": "a_type_segmented_control",
+                              "ordering": "0",
+                              "to_alert": false
+                            },
+                            {
+                              "potential_answer_id": "198",
+                              "potential_answer": "No",
+                              "potential_answer_summary": "Not currently using it",
+                              "answer_type": "a_type_segmented_control",
+                              "ordering": "1",
+                              "to_alert": false
+                            }
+                          ],
+                          "required": true,
+                          "to_alert": false,
+                          "alert_text": ""
+                        },
+                        {
+                          "question": "q_how_effective_prev_acne_otc",
+                          "question_id": "72",
+                          "question_title": "How effective was it?",
+                          "question_title_has_tokens": false,
+                          "question_type": "q_type_segmented_control",
+                          "formatted_field_tags": [
+                            ""
+                          ],
+                          "question_summary": "Effective",
+                          "parent_question_id": "69",
+                          "potential_answers": [
+                            {
+                              "potential_answer_id": "199",
+                              "potential_answer": "Not",
+                              "potential_answer_summary": "Not Effective",
+                              "answer_type": "a_type_segmented_control",
+                              "ordering": "0",
+                              "to_alert": false
+                            },
+                            {
+                              "potential_answer_id": "200",
+                              "potential_answer": "Somewhat",
+                              "potential_answer_summary": "Somewhat effective",
+                              "answer_type": "a_type_segmented_control",
+                              "ordering": "1",
+                              "to_alert": false
+                            },
+                            {
+                              "potential_answer_id": "201",
+                              "potential_answer": "Very",
+                              "potential_answer_summary": "Very effective",
+                              "answer_type": "a_type_segmented_control",
+                              "ordering": "2",
+                              "to_alert": false
+                            }
+                          ],
+                          "required": true,
+                          "to_alert": false,
+                          "alert_text": ""
+                        },
+                        {
+                          "question": "q_irritate_skin_prev_acne_otc",
+                          "question_id": "73",
+                          "question_title": "Did it irritate your skin?",
+                          "question_title_has_tokens": false,
+                          "question_type": "q_type_segmented_control",
+                          "formatted_field_tags": [
+                            ""
+                          ],
+                          "question_summary": "Irritating",
+                          "parent_question_id": "69",
+                          "potential_answers": [
+                            {
+                              "potential_answer_id": "202",
+                              "potential_answer": "Yes",
+                              "potential_answer_summary": "Irritated skin",
+                              "answer_type": "a_type_segmented_control",
+                              "ordering": "0",
+                              "to_alert": false
+                            },
+                            {
+                              "potential_answer_id": "203",
+                              "potential_answer": "No",
+                              "potential_answer_summary": "Did not irritate skin",
+                              "answer_type": "a_type_segmented_control",
+                              "ordering": "1",
+                              "to_alert": false
+                            }
+                          ],
+                          "required": true,
+                          "to_alert": false,
+                          "alert_text": ""
+                        },
+                        {
+                          "question": "q_anything_else_prev_acne_otc",
+                          "question_id": "74",
+                          "question_title": "Anything else you'd like to tell the doctor about it?",
+                          "question_title_has_tokens": false,
+                          "question_type": "q_type_single_entry",
+                          "formatted_field_tags": [
+                            ""
+                          ],
+                          "question_summary": "Comments",
+                          "additional_fields": {
+                            "placeholder_text": "Optional..."
+                          },
+                          "parent_question_id": "69",
+                          "required": false,
+                          "to_alert": false,
+                          "alert_text": ""
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "description": "anything else you'd like to share",
+            "questions": [
+              {
+                "question": "q_anything_else_acne",
+                "question_id": "9",
+                "question_title": "Is there anything else you'd like to share about your skin with Dr. Jham?",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_free_text",
+                "formatted_field_tags": [
+                  "title:doctor_last_name"
+                ],
+                "question_summary": "Additional info patient shared",
+                "additional_fields": {
+                  "empty_state_text": "Patient chose not to answer",
+                  "placeholder_text": "This question is optional but is your chance to let the doctor know what's on your mind."
+                },
+                "required": false,
+                "to_alert": false,
+                "alert_text": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "section": "section_medical_history",
+        "section_id": "2",
+        "section_title": "Medical History",
+        "screens": [
+          {
+            "description": "allergies",
+            "questions": [
+              {
+                "question": "q_allergic_medications",
+                "question_id": "11",
+                "question_title": "Are you allergic to any medications?",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_single_select",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "question_summary": "Medication allergies",
+                "potential_answers": [
+                  {
+                    "potential_answer_id": "20",
+                    "potential_answer": "Yes",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "0",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "21",
+                    "potential_answer": "No",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "1",
+                    "to_alert": false
+                  }
+                ],
+                "required": true,
+                "to_alert": false,
+                "alert_text": ""
+              }
+            ]
+          },
+          {
+            "description": "allergy entry",
+            "questions": [
+              {
+                "question": "q_allergic_medication_entry",
+                "question_id": "12",
+                "question_title": "Which medications are you allergic to?",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_autocomplete",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "question_summary": "Medication allergies",
+                "additional_fields": {
+                  "add_button_text": "Add Medication",
+                  "add_photo_text": "Or take a photo of the medication",
+                  "add_text": "Add Medication",
+                  "empty_state_text": "No medications specified",
+                  "placeholder_text": "Type to add a medication",
+                  "remove_button_text": "Remove Medication",
+                  "save_button_text": "Save Changes"
+                },
+                "condition": {
+                  "op": "answer_equals",
+                  "question": "q_allergic_medications",
+                  "question_id": "11",
+                  "potential_answers_id": [
+                    "20"
+                  ],
+                  "potential_answers": [
+                    "a_yes_allergic_medications"
+                  ]
+                },
+                "required": true,
+                "to_alert": true,
+                "alert_text": "Allergic to XXX"
+              }
+            ]
+          },
+          {
+            "description": "medications currently taking",
+            "questions": [
+              {
+                "question": "q_current_medications",
+                "question_id": "46",
+                "question_title": "Are you currently taking any additional medications?",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_single_select",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "potential_answers": [
+                  {
+                    "potential_answer_id": "143",
+                    "potential_answer": "Yes",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "0",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "144",
+                    "potential_answer": "No",
+                    "potential_answer_summary": "None",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "1",
+                    "to_alert": false
+                  }
+                ],
+                "required": true,
+                "to_alert": false,
+                "alert_text": ""
+              }
+            ]
+          },
+          {
+            "description": "current medications entry",
+            "questions": [
+              {
+                "question": "q_current_medications_entry",
+                "question_id": "13",
+                "question_title": "Which medications are you currently taking?",
+                "question_subtext": "List any other than those you may be using for acne.",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_autocomplete",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "question_summary": "Current medications",
+                "additional_fields": {
+                  "add_button_text": "Add Medication",
+                  "add_photo_text": "Or take a photo of the medication",
+                  "add_text": "Add Medication",
+                  "empty_state_text": "No medications specified",
+                  "placeholder_text": "Type to add a medication",
+                  "remove_button_text": "Remove Medication",
+                  "save_button_text": "Save Changes"
+                },
+                "parent_question_id": "13",
+                "condition": {
+                  "op": "answer_equals",
+                  "question": "q_current_medications",
+                  "question_id": "46",
+                  "potential_answers_id": [
+                    "143"
+                  ],
+                  "potential_answers": [
+                    "a_current_medications_yes"
+                  ]
+                },
+                "required": true,
+                "to_alert": false,
+                "alert_text": "",
+                "subquestions_config": {
+                  "questions": [
+                    {
+                      "question": "q_length_current_medication",
+                      "question_id": "41",
+                      "question_title": "How long have you been taking this medication?",
+                      "question_title_has_tokens": false,
+                      "question_type": "q_type_segmented_control",
+                      "formatted_field_tags": [
+                        ""
+                      ],
+                      "question_summary": "Which product",
+                      "potential_answers": [
+                        {
+                          "potential_answer_id": "124",
+                          "potential_answer": "0-1",
+                          "potential_answer_summary": "Taken for less than 1 month",
+                          "answer_type": "a_type_segmented_control",
+                          "ordering": "0",
+                          "to_alert": false
+                        },
+                        {
+                          "potential_answer_id": "125",
+                          "potential_answer": "2-5",
+                          "potential_answer_summary": "Taken for 2-5 months",
+                          "answer_type": "a_type_segmented_control",
+                          "ordering": "1",
+                          "to_alert": false
+                        },
+                        {
+                          "potential_answer_id": "126",
+                          "potential_answer": "6-11",
+                          "potential_answer_summary": "Taken for 6-11 months",
+                          "answer_type": "a_type_segmented_control",
+                          "ordering": "2",
+                          "to_alert": false
+                        },
+                        {
+                          "potential_answer_id": "127",
+                          "potential_answer": "12+",
+                          "potential_answer_summary": "Taken for 12+ months",
+                          "answer_type": "a_type_segmented_control",
+                          "ordering": "3",
+                          "to_alert": false
+                        }
+                      ],
+                      "required": true,
+                      "to_alert": false,
+                      "alert_text": ""
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "description": "prescription preference",
+            "questions": [
+              {
+                "question": "q_prescription_preference",
+                "question_id": "49",
+                "question_title": "What's your preference for prescription medications?",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_single_select",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "question_summary": "Prescription Preference",
+                "potential_answers": [
+                  {
+                    "potential_answer_id": "145",
+                    "potential_answer": "Generic only",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "0",
+                    "to_alert": true
+                  },
+                  {
+                    "potential_answer_id": "146",
+                    "potential_answer": "No preference",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "1",
+                    "to_alert": false
+                  }
+                ],
+                "required": true,
+                "to_alert": true,
+                "alert_text": "Generic Rxs only"
+              }
+            ]
+          },
+          {
+            "screen_type": "screen_type_pharmacy",
+            "title": "Is your preferred pharmacy up to date?",
+            "subtitle": "Your prescriptions will automatically be sent to this pharmacy."
+          },
+          {
+            "description": "previous diagnosis of skin condition",
+            "questions": [
+              {
+                "question": "q_prev_skin_condition_diagnosis",
+                "question_id": "15",
+                "question_title": "Have you been diagnosed for a skin condition in the past?",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_single_select",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "question_summary": "Skin conditions",
+                "potential_answers": [
+                  {
+                    "potential_answer_id": "27",
+                    "potential_answer": "Yes",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "0",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "28",
+                    "potential_answer": "No",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "1",
+                    "to_alert": false
+                  }
+                ],
+                "required": true,
+                "to_alert": false,
+                "alert_text": ""
+              }
+            ]
+          },
+          {
+            "description": "previous condition diagnosis",
+            "questions": [
+              {
+                "question": "q_list_prev_skin_condition_diagnosis",
+                "question_id": "17",
+                "question_title": "What skin condition(s) were you diagnosed with?",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_multiple_choice",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "question_summary": "Skin conditions",
+                "additional_fields": {
+                  "empty_state_text": "None"
+                },
+                "potential_answers": [
+                  {
+                    "potential_answer_id": "29",
+                    "potential_answer": "Alopecia (hair loss)",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "0",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "30",
+                    "potential_answer": "Acne",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "1",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "31",
+                    "potential_answer": "Eczema",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "2",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "32",
+                    "potential_answer": "Psoriasis",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "3",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "33",
+                    "potential_answer": "Rosacea",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "4",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "34",
+                    "potential_answer": "Skin cancer",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "5",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "35",
+                    "potential_answer": "Other",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "6",
+                    "to_alert": false
+                  }
+                ],
+                "condition": {
+                  "op": "answer_equals",
+                  "question": "q_prev_skin_condition_diagnosis",
+                  "question_id": "15",
+                  "potential_answers_id": [
+                    "27"
+                  ],
+                  "potential_answers": [
+                    "a_yes_prev_skin_diagnosis"
+                  ]
+                },
+                "required": true,
+                "to_alert": false,
+                "alert_text": ""
+              },
+              {
+                "question": "q_other_skin_condition_entry",
+                "question_id": "44",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_single_entry",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "question_summary": "Other skin condition specified",
+                "additional_fields": {
+                  "placeholder_text": "Type to add another condition"
+                },
+                "potential_answers": [
+                  {
+                    "potential_answer_id": "135",
+                    "answer_type": "a_type_single_entry",
+                    "ordering": "0",
+                    "to_alert": false
+                  }
+                ],
+                "condition": {
+                  "op": "answer_contains_any",
+                  "question": "q_list_prev_skin_condition_diagnosis",
+                  "question_id": "17",
+                  "potential_answers_id": [
+                    "35"
+                  ],
+                  "potential_answers": [
+                    "a_other_skin_iagnosis"
+                  ]
+                },
+                "required": false,
+                "to_alert": false,
+                "alert_text": ""
+              }
+            ]
+          },
+          {
+            "screen_type": "screen_type_warning_popup",
+            "content_header_title": "We're going to have to end your visit here.",
+            "body": {
+              "text": "Having an intense headache with your rash can be a sign of a dangerous medical condition, such as a serious drug reaction or bacterial infection, and we don’t want to delay your care."
+            },
+            "bottom_button_title": "Next Steps",
+            "condition": {
+              "op": "answer_equals",
+              "question_id": "17",
+              "potential_answers_id": [
+                "34"
+              ]
+            }
+          },
+          {
+            "screen_type": "screen_type_triage",
+            "screen_title": "Next Steps",
+            "content_header_title": "You should seek in-person medical evaluation today.",
+            "body": {
+              "text": "A local urgent care or emergency department are appropriate options, as is your primary care provider.",
+              "button": {
+                "button_text": "How to Find a Care Provider",
+                "tap_url": "spruce:///action/view_find_care_provider?type=emergency",
+                "style": "outline"
+              }
+            },
+            "bottom_button_title": "I Understand",
+            "condition": {
+              "op": "answer_equals",
+              "question_id": "17",
+              "potential_answers_id": [
+                "34"
+              ]
+            }
+          },
+          {
+            "description": "treated for any of the following conditions",
+            "questions": [
+              {
+                "question": "q_other_conditions_acne",
+                "question_id": "34",
+                "question_title": "Select which, if any, of the following conditions you have been treated for.",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_multiple_choice",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "question_summary": "Other conditions",
+                "potential_answers": [
+                  {
+                    "potential_answer_id": "97",
+                    "potential_answer": "Gastritis",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "25",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "147",
+                    "potential_answer": "High blood pressure",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "26",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "148",
+                    "potential_answer": "Intestinal inflammation",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "27",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "99",
+                    "potential_answer": "Kidney disease",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "28",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "131",
+                    "potential_answer": "Liver disease",
+                    "answer_type": "a_type_multiple_choice_none",
+                    "ordering": "29",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "100",
+                    "potential_answer": "Lupus",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "30",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "149",
+                    "potential_answer": "Organ transplant",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "31",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "129",
+                    "potential_answer": "Polycystic ovary syndrome",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "32",
+                    "to_alert": false
+                  },
+                  {
+                    "potential_answer_id": "130",
+                    "potential_answer": "None of the above",
+                    "answer_type": "a_type_multiple_choice_none",
+                    "ordering": "33",
+                    "to_alert": false
+                  }
+                ],
+                "required": true,
+                "to_alert": false,
+                "alert_text": ""
+              }
+            ]
+          },
+          {
+            "description": "planning pregnancy",
+            "questions": [
+              {
+                "question": "q_pregnancy_planning",
+                "question_id": "10",
+                "question_title": "Are you pregnant, planning a pregnancy or nursing?",
+                "question_title_has_tokens": false,
+                "question_type": "q_type_single_select",
+                "formatted_field_tags": [
+                  ""
+                ],
+                "question_subtext": "Many acne medications shouldn't be taken while pregnant or nursing.",
+                "question_summary": "Pregnancy",
+                "potential_answers": [
+                  {
+                    "potential_answer_id": "18",
+                    "potential_answer": "Yes",
+                    "potential_answer_summary": "Pregnant, planning a pregnancy, or nursing",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "0",
+                    "to_alert": true
+                  },
+                  {
+                    "potential_answer_id": "19",
+                    "potential_answer": "No, I'm not and will notify my doctor if I become pregnant during treatment",
+                    "potential_answer_summary": "Not pregnant",
+                    "answer_type": "a_type_multiple_choice",
+                    "ordering": "1",
+                    "to_alert": false
+                  }
+                ],
+                "condition": {
+                  "op": "gender_equals",
+                  "gender": "female"
+                },
+                "required": true,
+                "to_alert": true,
+                "alert_text": "Currently XXX"
+              }
+            ],
+            "condition": {
+              "op": "gender_equals",
+              "gender": "female"
+            }
+          }
+        ]
+      }
+    ],
+    "transitions": [
+      {
+        "message": "Now let's take photos for your doctor to make a diagnosis.",
+        "buttons": [
+          {
+            "button_text": "Begin",
+            "tap_url": "spruce:///action/view_next_visit_section",
+            "style": "filled"
+          }
+        ]
+      },
+      {
+        "message": "Next we'll ask a few questions about your skin.",
+        "buttons": [
+          {
+            "button_text": "Continue",
+            "tap_url": "spruce:///action/view_next_visit_section",
+            "style": "filled"
+          }
+        ]
+      },
+      {
+        "message": "Now we’ll ask a few questions about your medical history.",
+        "buttons": [
+          {
+            "button_text": "Continue",
+            "tap_url": "spruce:///action/view_next_visit_section",
+            "style": "filled"
+          }
+        ]
+      },
+      {
+        "message": "That's all the information your doctor will need.",
+        "buttons": [
+          {
+            "button_text": "Continue",
+            "tap_url": "spruce:///action/view_next_visit_section",
+            "style": "filled"
+          }
+        ]
+      }
+    ]
+  }
+}

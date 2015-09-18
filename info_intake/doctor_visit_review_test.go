@@ -15,7 +15,7 @@ func TestParsingTemplateForDoctorVisitReview(t *testing.T) {
 }
 
 func TestParsingLayoutForDoctorVisitReview(t *testing.T) {
-	parseTemplateFromFile("../api-response-examples/v1/doctor/visit/review.json", t)
+	parseTemplateFromFile("../test/data/review.json", t)
 }
 
 func parseTemplateFromFile(fileLocation string, t *testing.T) DVisitReviewSectionListView {
