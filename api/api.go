@@ -668,7 +668,7 @@ func (o CaseMessagesReadOption) has(opt CaseMessagesReadOption) bool {
 }
 
 type CaseMessageAPI interface {
-	CaseMessageForAttachment(itemType string, itemID, senderPersonID, patientCaseID int64) (*common.CaseMessage, error)
+	CaseMessageForAttachment(itemType string, itemID, patientCaseID int64) (*common.CaseMessage, error)
 	CaseMessageParticipants(caseID int64, withRoleObjects bool) (map[int64]*common.CaseMessageParticipant, error)
 	// IsCaseMessageRead indicates whether or not person has read the particular
 	// case message

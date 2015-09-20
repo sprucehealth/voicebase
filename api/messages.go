@@ -47,13 +47,14 @@ func (d *dataService) GetPersonIDByRole(roleType string, roleID int64) (int64, e
 	return id, errors.Trace(err)
 }
 
-func (d *dataService) CaseMessageForAttachment(itemType string, itemID, senderPersonID, patientCaseID int64) (*common.CaseMessage, error) {
+func (d *dataService) CaseMessageForAttachment(itemType string, itemID, patientCaseID int64) (*common.CaseMessage, error) {
+
 	var message common.CaseMessage
 	err := d.db.QueryRow(`
 		SELECT patient_case_message.id, patient_case_message.patient_case_id, tstamp, person_id, body, private, event_text
 		FROM patient_case_message
 		INNER JOIN patient_case_message_attachment on patient_case_message_attachment.message_id = patient_case_message.id
-		WHERE patient_case_id = ? AND item_type = ? AND item_id = ? AND person_id = ?`, patientCaseID, itemType, itemID, senderPersonID).Scan(
+		WHERE patient_case_id = ? AND item_type = ? AND item_id = ?`, patientCaseID, itemType, itemID).Scan(
 		&message.ID,
 		&message.CaseID,
 		&message.Time,

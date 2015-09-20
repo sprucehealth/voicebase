@@ -203,7 +203,7 @@ func sendCaseMessageAndPublishTPActivatedEvent(dataAPI api.DataAPI, dispatcher *
 	// only send a case message if one has not already been sent for this particular
 	// treatment plan for this particular case
 	caseMessage, err := dataAPI.CaseMessageForAttachment(common.AttachmentTypeTreatmentPlan,
-		treatmentPlan.ID.Int64(), doctor.PersonID, treatmentPlan.PatientCaseID.Int64())
+		treatmentPlan.ID.Int64(), treatmentPlan.PatientCaseID.Int64())
 	if api.IsErrNotFound(err) {
 		caseMessage = &common.CaseMessage{
 			CaseID:   treatmentPlan.PatientCaseID.Int64(),

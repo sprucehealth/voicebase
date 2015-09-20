@@ -112,7 +112,7 @@ type unreadMessageWithFollowupState struct {
 }
 
 func (unreadMessageWithFollowupCampaign) Key() string {
-	return "unread-message-with-followup"
+	return "notify-of-a-new-message-2nd-prompt"
 }
 
 var unreadMessageWithFollowupAfterDef = &cfg.ValueDef{
@@ -137,13 +137,19 @@ func (uv unreadMessageWithFollowupCampaign) Run(dataAPI api.DataAPI, cfgSnap cfg
 		}
 	}
 
+	// start the check from the day that the change to
+	// send a push + email to patients for doctor messages was deployed.
+	if state.LastTime.IsZero() {
+		state.LastTime = time.Date(2015, 9, 17, 00, 00, 00, 00, time.UTC)
+	}
+
 	startTime := state.LastTime
 	endTime := time.Now().Add(-after)
 	visits, err := dataAPI.VisitSummaries([]string{common.PVStatusPending}, startTime, endTime)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	state.LastTime = startTime
+	state.LastTime = endTime
 
 	ci := &CampaignInfo{
 		Accounts: make(map[int64][]mandrill.Var),
@@ -157,7 +163,7 @@ func (uv unreadMessageWithFollowupCampaign) Run(dataAPI api.DataAPI, cfgSnap cfg
 		}
 
 		// get messageID for message containing followup visit
-		cm, err := dataAPI.CaseMessageForAttachment(common.AttachmentTypeFollowupVisit, v.VisitID, personID, v.CaseID)
+		cm, err := dataAPI.CaseMessageForAttachment(common.AttachmentTypeFollowupVisit, v.VisitID, v.CaseID)
 		if err != nil {
 			return nil, err
 		}

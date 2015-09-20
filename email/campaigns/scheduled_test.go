@@ -32,7 +32,7 @@ func (m *mockDataAPI_scheduled) VisitSummaries(states []string, startTime, endTi
 func (m *mockDataAPI_scheduled) UpdateEmailCampaignState(campaignKey string, data []byte) error {
 	return nil
 }
-func (m *mockDataAPI_scheduled) CaseMessageForAttachment(itemType string, itemID, senderPersonID, patientCaseID int64) (*common.CaseMessage, error) {
+func (m *mockDataAPI_scheduled) CaseMessageForAttachment(itemType string, itemID, patientCaseID int64) (*common.CaseMessage, error) {
 	return &common.CaseMessage{}, nil
 }
 func (m *mockDataAPI_scheduled) Doctor(int64, bool) (*common.Doctor, error) {
