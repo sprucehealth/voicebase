@@ -181,6 +181,16 @@ module.exports = {
 			dataType: "json"
 		}, cb);
 	},
+	uploadSFTPs: function(formData: any, cb: ajaxCB) {
+		this.ajax({
+			type: "PUT",
+			cache: false,
+			processData: false,
+			contentType: false,
+			url: "/treatment_plan/csv",
+			data: formData
+		}, cb);
+	},
 
 	// Guides
 

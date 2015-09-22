@@ -12,24 +12,36 @@ var Utils = require("../../libs/utils.js");
 module.exports = {
 	CareProvidersPage: React.createClass({displayName: "CareProvidersPage",
 		mixins: [Routing.RouterNavigateMixin],
-		menuItems: [[
-			{
-				id: "search",
-				url: "search",
-				name: "Search"
-			},
-			{
-				id: "mappings",
-				url: "mappings",
-				name: "State Availability Mappings"
+		menuItems: function(): any {
+			var items = [
+				{
+					id: "search",
+					url: "search",
+					name: "Search"
+				},
+				{
+					id: "mappings",
+					url: "mappings",
+					name: "State Availability Mappings"
+				}];
+			if (Perms.has(Perms.DoctorsEdit)) {
+				items.push({
+					id: "upload_sftps",
+					url: "upload_sftps",
+					name: "Update SFTPs"
+				})
 			}
-		]],
+			return [items];
+		}, 
 		pages: {
 			search: function(): any {
 				return <DoctorSearch router={this.props.router} />;
 			},
 			mappings: function(): any {
 				return <CareProviderStatePathwayMappings router={this.props.router} />;
+			},
+			upload_sftps: function(): any {
+				return <UploadSFTPs router={this.props.router} />;
 			}
 		},
 		componentWillMount: function() {
@@ -43,7 +55,7 @@ module.exports = {
 			}
 			return (
 				<div>
-					<Nav.LeftNav router={this.props.router} items={this.menuItems} currentPage={this.props.page}>
+					<Nav.LeftNav router={this.props.router} items={this.menuItems()} currentPage={this.props.page}>
 						{this.pages[this.props.page].bind(this)()}
 					</Nav.LeftNav>
 				</div>
@@ -1729,6 +1741,75 @@ var StatePathwayMappings = React.createClass({displayName: "StatePathwayMappings
 				</tbody>
 				</table>
 			</div>
+		);
+	}
+});
+
+
+
+var UploadSFTPs = React.createClass({displayName: "UploadSFTPs",
+	mixins: [Routing.RouterNavigateMixin],
+	getInitialState: function() {
+		return {
+			fileSelected: "",
+			isFileUploading: false,
+			error: null,
+			success: false,
+			busy: false,
+		}
+	},
+	uploadSFTPs: function(e: any) {
+		// populate the formdata to submit to the server
+		var sftpForm = React.findDOMNode(this.refs.sftpForm)
+		var formData = new FormData(sftpForm)
+		this.setState({busy: true, error: null})
+		AdminAPI.uploadSFTPs(formData, function(success, res, error) {
+			if (this.isMounted()) {
+				if (success) {
+					this.setState({busy: false, success: true})
+				} else {
+					this.setState({busy: false, error: error.message})
+				}
+			}
+		}.bind(this));
+	},
+	render: function(): any {
+		var acceptInput = (this.state.busy == false) && (this.state.error == null) && (this.state.success == false);
+		return (
+				<div>
+					<h2>Update SFTPs for all doctors</h2>
+					
+					{this.state.busy ? 
+						<div>
+							<Utils.Alert type="info"> <Utils.LoadingAnimation /> Setting new SFTPs for doctors...please wait. This means that SFTPs that each doctor owns are being replaced with the new set as provided in the csv.</Utils.Alert> 
+						</div> : null
+					}
+					
+					{this.state.error ? 
+						<Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null
+					}
+
+					{this.state.success ? 
+						<Utils.Alert type="success">Successfully updated SFTPs for all doctors </Utils.Alert>: null
+					} 
+					
+					{acceptInput ?
+						<div>
+							<p>Select the csv file containing the SFTPs</p>
+							<form encType="multipart/form-data" ref="sftpForm">
+								<span className="file-input">
+				    				<input 
+					    				type="file"
+					    				accept=".csv"
+					    				name="csv"
+				    				/>
+								</span>
+							</form>
+							<br/>
+							<button className="btn btn-primary" onClick={this.uploadSFTPs}>Submit</button>
+						</div> : null
+					}
+				</div>
 		);
 	}
 });
