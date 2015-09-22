@@ -514,3 +514,56 @@ https://dlzz6qy5jmbag.cloudfront.net/curbside/devices.png
 ```
 
 The latter is preferred, since it utilizes CloudFront.
+
+
+Source Control and Code Review Workflow
+--------------------------------------
+
+## Source Control with Git
+
+The `backend` monorepo generally follows a strategy such that features are merged to the `master` branch in a single commit.
+
+### Tips
+
+To prevent accidentally force pushing or deleting of the master branch, a [pre-push hook](https://gist.github.com/sibljon/ee8a710f99bbad88eeea) can be installed in your local clone of the backend repo. To install it, `cd` to the backend repo's root directory and:
+
+```
+curl -fL https://gist.githubusercontent.com/lyoshenka/158cfff41d09e1dcf029/raw/z-pre-push-installer.sh | bash
+```
+
+## Code Review with Differential
+
+Differential is a tool in the Phabricator suite that we use for code reviews.
+
+### Set up
+
+```
+cd /usr/local
+git clone https://github.com/phacility/arcanist.git
+git clone https://github.com/phacility/libphutil.git
+ln -s /usr/local/arcanist/bin/arc /usr/local/bin/arc
+
+cd /my_repo_path
+arc install-certificate
+arc diff
+```
+
+### Submitting a feature for code review
+
+```
+git commit # commit your changes
+arc diff # this will create and push a "diff" to Differential for code review
+```
+
+### Updating a Differential diff
+
+
+If you leave the commit message unchanged:
+```
+arc diff
+```
+
+Or if you alter the commit message:
+```
+arc diff --update DXX # where DXX is the diff id
+```
