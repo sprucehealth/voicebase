@@ -1,13 +1,10 @@
 #!/bin/bash -e
 
+set -o pipefail
+
+export HOME=/workspace
+
 PHABRICATOR_COMMENT=".phabricator-comment"
-
-# Start MySQL
-mv /var/lib/mysql /mem/mysql
-ln -s /mem/mysql /var/lib/mysql
-/etc/init.d/mysql start
-
-su ci
 
 # Start Consul
 mkdir -p /tmp/consul
@@ -31,6 +28,7 @@ export GOPATH=/workspace/go
 export PATH=$GOPATH/bin:$PATH
 cd $GOPATH/src/github.com/sprucehealth/backend
 
+go version
 go get github.com/golang/lint/golint
 
 # Find all directories that contain Go files (all packages). This lets us

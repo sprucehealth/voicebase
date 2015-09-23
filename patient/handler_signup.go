@@ -337,7 +337,7 @@ func (s *SignupHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 					if ok {
 						dID, err := strconv.ParseInt(sDoctorID, 10, 64)
 						if err != nil {
-							golog.Errorf("Found %s in attribution record but was unable to convert value %s to int64", attribution.AKCareProviderID)
+							golog.Errorf("Found %s in attribution record but was unable to convert value %s to int64", attribution.AKCareProviderID, sDoctorID)
 						} else {
 							doctorID = dID
 						}
