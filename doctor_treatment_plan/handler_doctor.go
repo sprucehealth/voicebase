@@ -282,13 +282,7 @@ func (d *doctorTreatmentPlanHandler) submitTreatmentPlan(ctx context.Context, w 
 	var patientVisitID int64
 	switch treatmentPlan.Parent.ParentType {
 	case common.TPParentTypePatientVisit:
-		// if the parent of this treatment plan is a patient visit, this means that this is the first
-		// treatment plan. In this case we expect the patient visit to be in the REVIEWING state.
 		patientVisitID = treatmentPlan.Parent.ParentID.Int64()
-		if err := apiservice.EnsurePatientVisitInExpectedStatus(d.dataAPI, patientVisitID, common.PVStatusReviewing); err != nil {
-			apiservice.WriteError(ctx, err, w, r)
-			return
-		}
 	case common.TPParentTypeTreatmentPlan:
 		var err error
 		patientVisitID, err = d.dataAPI.GetPatientVisitIDFromTreatmentPlanID(requestData.TreatmentPlanID)
@@ -403,11 +397,20 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(ctx context.Context, w h
 		}
 	}
 
+	// NOTE: for now lets always determine the parent of the treatment plan to
+	// be the patient visit context. The parent concept is not effectively used
+	// in the doctor app and should be considered for removal in a future update.
+	// One thing to note is that the doctor app uses it to show a button on the treatment plan
+	// to indicate the patient visit or treatment plan to open. So we should ensure that removing
+	// this functionality in the future would not break the client.
 	tp := &common.TreatmentPlan{
 		PatientID:     patientCase.PatientID,
 		PatientCaseID: patientCase.ID,
 		DoctorID:      encoding.DeprecatedNewObjectID(doctorID),
-		Parent:        requestData.TPParent,
+		Parent: &common.TreatmentPlanParent{
+			ParentID:   encoding.DeprecatedNewObjectID(patientVisitID),
+			ParentType: common.TPParentTypePatientVisit,
+		},
 		ContentSource: requestData.TPContentSource,
 	}
 

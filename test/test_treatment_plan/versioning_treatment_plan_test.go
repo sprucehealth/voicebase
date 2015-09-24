@@ -17,7 +17,7 @@ import (
 )
 
 // This test is to ensure that treatment plans can be versioned
-// and that the content source and the parent are created as expected
+// and that the content source is created as expected
 func TestVersionTreatmentPlan_NewTP(t *testing.T) {
 	testData := test_integration.SetupTest(t)
 	defer testData.Close(t)
@@ -49,12 +49,6 @@ func TestVersionTreatmentPlan_NewTP(t *testing.T) {
 
 	currentTreatmentPlan, err := testData.DataAPI.GetTreatmentPlan(tpResponse.TreatmentPlan.ID.Int64(), doctorID)
 	test.OK(t, err)
-
-	// the first treatment plan should be the parent of this treatment plan
-	if currentTreatmentPlan.Parent.ParentType != common.TPParentTypeTreatmentPlan ||
-		currentTreatmentPlan.Parent.ParentID.Int64() != treatmentPlan.ID.Int64() {
-		t.Fatalf("expected treatment plan id %d to be the parent of treatment plan id %d but it wasnt", treatmentPlan.ID.Int64(), currentTreatmentPlan.ID.Int64())
-	}
 
 	// there should be no content source for this treatment plan
 	if currentTreatmentPlan.ContentSource != nil {
