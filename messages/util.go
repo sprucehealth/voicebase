@@ -86,7 +86,7 @@ func CreateMessageAndAttachments(msg *common.CaseMessage, attachments []*Attachm
 			if tp.DoctorID.Int64() != doctorID {
 				return apiservice.NewError("Treatment plan not created by the requesting doctor", http.StatusBadRequest)
 			}
-		case common.AttachmentTypeVisit:
+		case common.AttachmentTypeVisit, common.AttachmentTypeFollowupVisit:
 			// Make sure the visit is part of the same case
 			if role != api.RoleDoctor && role != api.RoleCC {
 				return apiservice.NewError("Only a doctor is allowed to attach a visit", http.StatusBadRequest)
