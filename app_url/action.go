@@ -433,3 +433,13 @@ func ComposeSMSAction(message string) *SpruceAction {
 		},
 	}
 }
+
+// ViewRXReminderAction prompts the app to display the rx_reminder for the provided treatment id
+func ViewRXReminderAction(treatmentID int64) *SpruceAction {
+	return &SpruceAction{
+		name: "view_treatment_reminder",
+		params: url.Values{
+			"treatment_id": []string{strconv.FormatInt(treatmentID, 10)},
+		},
+	}
+}

@@ -7,9 +7,11 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/features"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/views"
+	"golang.org/x/net/context"
 )
 
 func populateTreatmentPlan(dataAPI api.DataAPI, treatmentPlan *common.TreatmentPlan) error {
@@ -33,7 +35,7 @@ func populateTreatmentPlan(dataAPI api.DataAPI, treatmentPlan *common.TreatmentP
 	return nil
 }
 
-func GenerateViewsForTreatments(tl *common.TreatmentList, treatmentPlanID int64, dataAPI api.DataAPI, forMedicationsTab bool) []views.View {
+func GenerateViewsForTreatments(ctx context.Context, tl *common.TreatmentList, treatmentPlanID int64, dataAPI api.DataAPI, forMedicationsTab bool) []views.View {
 	tViews := make([]views.View, 0)
 	if tl != nil {
 		drugQueries := make([]*api.DrugDetailsQuery, len(tl.Treatments))
@@ -99,18 +101,22 @@ func GenerateViewsForTreatments(tl *common.TreatmentList, treatmentPlanID int64,
 				})
 			}
 
-			var tapURL *app_url.SpruceAction
-			if treatment.ID.Int64() != 0 {
-				tapURL = app_url.ViewTreatmentGuideAction(treatment.ID.Int64())
-			} else {
-				tapURL = app_url.ViewRXGuideGuideAction(treatment.GenericDrugName, treatment.DrugRoute, treatment.DrugForm, treatment.DosageStrength)
-			}
 			if drugDetails[i] != 0 {
+				var tapURL *app_url.SpruceAction
+				if treatment.ID.Int64() != 0 {
+					tapURL = app_url.ViewTreatmentGuideAction(treatment.ID.Int64())
+				} else {
+					tapURL = app_url.ViewRXGuideGuideAction(treatment.GenericDrugName, treatment.DrugRoute, treatment.DrugForm, treatment.DosageStrength)
+				}
 				pView.Buttons = append(pView.Buttons, &tpPrescriptionButtonView{
 					Text:    "Prescription Guide",
 					IconURL: app_url.IconRXGuide,
 					TapURL:  tapURL,
 				})
+			}
+			feat := features.CtxSet(ctx)
+			if treatment.ID.Int64() != 0 && feat.Has(features.RXReminders) {
+				pView.Buttons = append(pView.Buttons, NewPrescriptionReminderButtonView("Reminder", treatment.ID.Int64()))
 			}
 		}
 	}

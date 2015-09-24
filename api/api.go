@@ -971,6 +971,7 @@ type DataAPI interface {
 	PrescriptionsAPI
 	PromotionsAPI
 	ResourceLibraryAPI
+	RXReminders
 	ScheduledMessageAPI
 	SearchAPI
 	SKUs
@@ -1081,4 +1082,16 @@ type AttributionAPI interface {
 	InsertAttributionData(attributionData *attributionModel.AttributionData) (int64, error)
 	LatestAccountAttributionData(accountID int64) (*attributionModel.AttributionData, error)
 	LatestDeviceAttributionData(deviceID string) (*attributionModel.AttributionData, error)
+}
+
+// RXReminders defines the methods required to provide DAL mechanisms to the system
+type RXReminders interface {
+	// CreateRXReminder inserts a new rx_reminder record
+	CreateRXReminder(r *common.RXReminder) error
+	// DeleteRXReminder deletes the rx_reminder record associated with the treatment id provided and returns the number of affected rows
+	DeleteRXReminder(treatmentID int64) (int64, error)
+	// RXReminders returns a map of treatment id to the corresponding rx_reminder record for the provided slice of ids
+	RXReminders(treatmentIDs []int64) (map[int64]*common.RXReminder, error)
+	// UpdateRXReminder updates the reminder record that maps to the provided treatment ID and returns the number of affected rows
+	UpdateRXReminder(treatmentID int64, reminder *common.RXReminder) (int64, error)
 }

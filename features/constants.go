@@ -11,4 +11,6 @@ const (
 	OldRAFHomeCard = "old-raf-home-card"
 	// RAFHomeCard is the new version fot he refer-a-friend home card
 	RAFHomeCard = "raf-home-card"
+	// RXReminders is the ability to support the RX Reminders feature
+	RXReminders = "rx-reminders"
 )

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/views"
 )
@@ -171,11 +172,60 @@ type tpPrescriptionView struct {
 	Buttons           []views.View         `json:"buttons,omitempty"`
 }
 
+// NewPrescriptionView returns an initialized instance of tpPrescriptionView
+func NewPrescriptionView(treatment *common.Treatment, subtitle string, iconURL *app_url.SpruceAsset, buttons []views.View) views.View {
+	return &tpPrescriptionView{
+		Title:       fullTreatmentName(treatment),
+		Subtitle:    subtitle,
+		Description: treatment.PatientInstructions,
+		IconURL:     iconURL,
+		IconWidth:   50,
+		IconHeight:  50,
+		Buttons:     buttons,
+	}
+}
+
 type tpPrescriptionButtonView struct {
 	Type    string                `json:"type"`
 	Text    string                `json:"text"`
 	IconURL *app_url.SpruceAsset  `json:"icon_url"`
 	TapURL  *app_url.SpruceAction `json:"tap_url"`
+}
+
+// NewPrescriptionButtonView returns an initialized instance of tpPrescriptionButtonView
+func NewPrescriptionButtonView(text string, iconURL *app_url.SpruceAsset, tapURL *app_url.SpruceAction) views.View {
+	return &tpPrescriptionButtonView{
+		Text:    text,
+		IconURL: iconURL,
+		TapURL:  tapURL,
+	}
+}
+
+type tpPrescriptionReminderButtonView struct {
+	Type        string                `json:"type"`
+	Text        string                `json:"text"`
+	TreatmentID int64                 `json:"treatment_id,string"`
+	IconURL     *app_url.SpruceAsset  `json:"icon_url"`
+	TapURL      *app_url.SpruceAction `json:"tap_url"`
+}
+
+// NewPrescriptionReminderButtonView returns an initialized instance of tpPrescriptionReminderButtonView
+func NewPrescriptionReminderButtonView(text string, treatmentID int64) views.View {
+	return &tpPrescriptionReminderButtonView{
+		Text:        text,
+		TreatmentID: treatmentID,
+		IconURL:     app_url.IconRXReminder,
+		TapURL:      app_url.ViewRXReminderAction(treatmentID),
+	}
+}
+
+func (v *tpPrescriptionReminderButtonView) Validate(namespace string) error {
+	v.Type = namespace + ":" + v.TypeName()
+	return nil
+}
+
+func (v *tpPrescriptionReminderButtonView) TypeName() string {
+	return "prescription_reminder_button"
 }
 
 type tpButtonFooterView struct {

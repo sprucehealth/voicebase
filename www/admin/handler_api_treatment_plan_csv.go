@@ -168,7 +168,7 @@ func (h *treatmentPlanCSVHandler) ServeHTTP(ctx context.Context, w http.Response
 			www.APIBadRequestError(w, r, err.Error())
 			return
 		}
-		h.servePUT(w, r, requestData)
+		h.servePUT(ctx, w, r, requestData)
 	}
 }
 
@@ -192,7 +192,7 @@ func (h *treatmentPlanCSVHandler) parsePUTRequest(ctx context.Context, r *http.R
 	return rd, nil
 }
 
-func (h *treatmentPlanCSVHandler) servePUT(w http.ResponseWriter, r *http.Request, req *treatmentPlanCSVPUTRequest) {
+func (h *treatmentPlanCSVHandler) servePUT(ctx context.Context, w http.ResponseWriter, r *http.Request, req *treatmentPlanCSVPUTRequest) {
 	threads := len(req.ColData)
 	ftps, err := parseFTPs(req.ColData, threads)
 	if err != nil {
@@ -213,7 +213,7 @@ func (h *treatmentPlanCSVHandler) servePUT(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	_, err = h.transformFTPsToSTPs(ftps, threads)
+	_, err = h.transformFTPsToSTPs(ctx, ftps, threads)
 	if err != nil {
 		www.APIInternalError(w, r, err)
 		return
@@ -225,14 +225,14 @@ type completedSTP struct {
 	STPJSON    []byte
 }
 
-func (h *treatmentPlanCSVHandler) transformFTPsToSTPs(ftps []*ftp, threads int) (map[string][]byte, error) {
+func (h *treatmentPlanCSVHandler) transformFTPsToSTPs(ctx context.Context, ftps []*ftp, threads int) (map[string][]byte, error) {
 	errs := make(chan error, len(ftps))
 	complete := make(chan *completedSTP, len(ftps))
 	stps := make(map[string][]byte)
 	done := 0
 	started := 0
 	for i := 0; i < threads && i < len(ftps); i++ {
-		go h.transformFTPToSTP(*ftps[started], complete, errs)
+		go h.transformFTPToSTP(ctx, *ftps[started], complete, errs)
 		started++
 	}
 	for done != len(ftps) {
@@ -244,7 +244,7 @@ func (h *treatmentPlanCSVHandler) transformFTPsToSTPs(ftps []*ftp, threads int) 
 			return nil, err
 		}
 		if started-done < threads && started < len(ftps) {
-			go h.transformFTPToSTP(*ftps[started], complete, errs)
+			go h.transformFTPToSTP(ctx, *ftps[started], complete, errs)
 			started++
 		}
 	}
@@ -383,7 +383,7 @@ func (h *treatmentPlanCSVHandler) createGlobalFTPs(ftps []*ftp) error {
 	return nil
 }
 
-func (h *treatmentPlanCSVHandler) transformFTPToSTP(ftp ftp, complete chan *completedSTP, errs chan error) {
+func (h *treatmentPlanCSVHandler) transformFTPToSTP(ctx context.Context, ftp ftp, complete chan *completedSTP, errs chan error) {
 	sftp := &treatment_plan.TreatmentPlanViewsResponse{}
 	sftp.HeaderViews = []views.View{
 		treatment_plan.NewTPHeroHeaderView("Sample Treatment Plan", "Your doctor will personalize a treatment plan for you."),
@@ -443,7 +443,7 @@ func (h *treatmentPlanCSVHandler) transformFTPToSTP(ftp ftp, complete chan *comp
 		}
 	}
 	if len(treatmentList.Treatments) != 0 {
-		treatmentViews = append(treatmentViews, treatment_plan.GenerateViewsForTreatments(treatmentList, 0, h.dataAPI, false)...)
+		treatmentViews = append(treatmentViews, treatment_plan.GenerateViewsForTreatments(ctx, treatmentList, 0, h.dataAPI, false)...)
 	}
 	treatmentViews = append(treatmentViews, treatment_plan.NewTPCardView([]views.View{
 		treatment_plan.NewTPCardTitleView("Prescription Pickup", "", false),

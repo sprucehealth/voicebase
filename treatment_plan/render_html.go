@@ -179,7 +179,7 @@ func RenderTreatmentPlan(w io.Writer, dataAPI api.DataAPI, treatmentPlan *common
 		return err
 	}
 
-	res, err := treatmentPlanResponse(dataAPI, treatmentPlan, doctor, patient)
+	res, err := treatmentPlanResponse(nil, dataAPI, treatmentPlan, doctor, patient)
 	if err != nil {
 		return err
 	}

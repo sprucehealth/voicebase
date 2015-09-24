@@ -1177,7 +1177,7 @@ func (d *dataService) GetTreatmentFromID(treatmentID int64) (*common.Treatment, 
 	}
 
 	if len(treatments) == 0 {
-		return nil, nil
+		return nil, ErrNotFound(`treatment`)
 	}
 
 	if len(treatments) > 1 {

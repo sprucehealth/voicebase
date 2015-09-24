@@ -16,6 +16,7 @@ type authenticatedHandler struct {
 	optional bool
 }
 
+// NoAuthenticationRequiredHandler wraps the provided handler is a layer that performs no authentication
 func NoAuthenticationRequiredHandler(h httputil.ContextHandler, authAPI api.AuthAPI) httputil.ContextHandler {
 	return &authenticatedHandler{
 		h:        h,
@@ -24,6 +25,7 @@ func NoAuthenticationRequiredHandler(h httputil.ContextHandler, authAPI api.Auth
 	}
 }
 
+// AuthenticationRequiredHandler wraps the provided handler is a layer that performs authentication
 func AuthenticationRequiredHandler(h httputil.ContextHandler, authAPI api.AuthAPI) httputil.ContextHandler {
 	return &authenticatedHandler{
 		h:        h,

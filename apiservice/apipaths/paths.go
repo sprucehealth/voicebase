@@ -93,6 +93,7 @@ const (
 	PatienPromoCodeURLPath               = "/v1/patient/promo"
 	PatientPricingFAQURLPath             = "/v1/patient/faq/pricing"
 	PatientRequestMedicalRecordURLPath   = "/v1/patient/request_medical_record"
+	PatientRXReminderURLPath             = "/v1/patient/rx_reminder"
 	PatientSignupURLPath                 = "/v1/patient"
 	PatientTreatmentsURLPath             = "/v1/patient/treatments"
 	PatientUpdateURLPath                 = "/v1/patient/update"

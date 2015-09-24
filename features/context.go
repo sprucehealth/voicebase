@@ -12,6 +12,9 @@ const (
 
 // CtxSet returns the feature set from the context
 func CtxSet(ctx context.Context) Set {
+	if ctx == nil {
+		return nullSet{}
+	}
 	s := ctx.Value(ctxKey)
 	if s == nil {
 		return nullSet{}

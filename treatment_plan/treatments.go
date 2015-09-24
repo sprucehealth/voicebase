@@ -58,7 +58,7 @@ func (t *treatmentsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter
 		return
 	}
 
-	tViews := GenerateViewsForTreatments(treatmentPlan.TreatmentList, treatmentPlan.ID.Int64(), t.dataAPI, true)
+	tViews := GenerateViewsForTreatments(ctx, treatmentPlan.TreatmentList, treatmentPlan.ID.Int64(), t.dataAPI, true)
 	if err := views.Validate(tViews, treatmentViewNamespace); err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return

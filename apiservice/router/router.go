@@ -49,6 +49,7 @@ import (
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/passreset"
 	"github.com/sprucehealth/backend/patient"
+	"github.com/sprucehealth/backend/patient/rxremind"
 	"github.com/sprucehealth/backend/patient_case"
 	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/patient_visit"
@@ -148,7 +149,16 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 				"ios-patient": {MinVersion: &encoding.Version{Major: 2, Minor: 0, Patch: 2}},
 			},
 		},
+		{
+			Name: features.RXReminders,
+			AppVersions: map[string]encoding.VersionRange{
+				"ios-patient": {MinVersion: &encoding.Version{Major: 2, Minor: 2, Patch: 0}},
+			},
+		},
 	})
+
+	rxReminderService := rxremind.NewService(conf.DataAPI, conf.DataAPI)
+	treatmentPlanService := treatment_plan.NewService(conf.DataAPI, conf.DataAPI)
 
 	conf.mux = mux.NewRouter()
 
@@ -213,6 +223,9 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 	noAuthenticationRequired(conf, apipaths.RXGuideURLPath, treatment_plan.NewRXGuideHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.AutocompleteURLPath, handlers.NewAutocompleteHandler(conf.DataAPI, conf.ERxAPI))
 	authenticationRequired(conf, apipaths.PharmacySearchURLPath, patient.NewPharmacySearchHandler(conf.DataAPI, conf.PharmacySearchAPI))
+
+	//Patient: RX Reminders
+	callerRoleRequired(conf, apipaths.PatientRXReminderURLPath, patient.NewRXReminderHandlerHandler(rxReminderService, treatmentPlanService, conf.DataAPI))
 
 	// Patient: Home APIs
 	noAuthenticationRequired(conf, apipaths.PatientHomeURLPath, patient_case.NewHomeHandler(conf.DataAPI, conf.APICDNDomain, conf.WebDomain, addressValidationAPI))
@@ -349,12 +362,18 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 	return conf.mux, handler
 }
 
-// Add an authenticated metriced handler to the mux
+// TODO: Possibly move this down into `authenticationRequired` but for now keep it isolated
+// Add an authenticated, account role handler to the mux
+func callerRoleRequired(conf *Config, path string, h httputil.ContextHandler, methods ...string) {
+	conf.mux.Handle(path, apiservice.AuthenticationRequiredHandler(apiservice.NewAccountRoleContextHandler(h, conf.DataAPI, methods...), conf.AuthAPI))
+}
+
+// Add an authenticated to the mux
 func authenticationRequired(conf *Config, path string, h httputil.ContextHandler) {
 	conf.mux.Handle(path, apiservice.AuthenticationRequiredHandler(h, conf.AuthAPI))
 }
 
-// Add an unauthenticated metriced handler to the mux
+// Add an unauthenticated handler to the mux
 func noAuthenticationRequired(conf *Config, path string, h httputil.ContextHandler) {
 	conf.mux.Handle(path, apiservice.NoAuthenticationRequiredHandler(h, conf.AuthAPI))
 }

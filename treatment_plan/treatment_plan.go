@@ -136,7 +136,7 @@ func (p *treatmentPlanHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 		return
 	}
 
-	res, err := treatmentPlanResponse(p.dataAPI, treatmentPlan, doctor, patient)
+	res, err := treatmentPlanResponse(ctx, p.dataAPI, treatmentPlan, doctor, patient)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
@@ -144,7 +144,7 @@ func (p *treatmentPlanHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 	httputil.JSONResponse(w, http.StatusOK, res)
 }
 
-func treatmentPlanResponse(dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor *common.Doctor, patient *common.Patient) (*TreatmentPlanViewsResponse, error) {
+func treatmentPlanResponse(ctx context.Context, dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor *common.Doctor, patient *common.Patient) (*TreatmentPlanViewsResponse, error) {
 	var headerViews, treatmentViews, instructionViews []views.View
 
 	patientCase, err := dataAPI.GetPatientCaseFromID(tp.PatientCaseID.Int64())
@@ -161,7 +161,7 @@ func treatmentPlanResponse(dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor
 
 	// TREATMENT VIEWS
 	if len(tp.TreatmentList.Treatments) > 0 {
-		treatmentViews = append(treatmentViews, GenerateViewsForTreatments(tp.TreatmentList, tp.ID.Int64(), dataAPI, false)...)
+		treatmentViews = append(treatmentViews, GenerateViewsForTreatments(ctx, tp.TreatmentList, tp.ID.Int64(), dataAPI, false)...)
 		cardViews := []views.View{
 			&tpCardTitleView{
 				Title: "How to get your treatments",

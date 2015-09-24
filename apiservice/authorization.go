@@ -113,24 +113,23 @@ func NoAuthorizationRequired(h httputil.ContextHandler) httputil.ContextHandler 
 }
 
 func AuthorizationRequired(h Authorized) httputil.ContextHandler {
-	return &isAuthorizedHandler{
+	ah := &isAuthorizedHandler{
 		h: h,
 	}
-}
+	return httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		if verifyAuthSetupInTest(ctx, w, r, h, authorization, VerifyAuthCode) {
+			return
+		}
 
-func (i *isAuthorizedHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	if verifyAuthSetupInTest(ctx, w, r, i.h, authorization, VerifyAuthCode) {
-		return
-	}
+		// handler has to be authorized
+		if authorized, err := ah.h.IsAuthorized(ctx, r); err != nil {
+			WriteError(ctx, err, w, r)
+			return
+		} else if !authorized {
+			WriteAccessNotAllowedError(ctx, w, r)
+			return
+		}
 
-	// handler has to be authorized
-	if authorized, err := i.h.IsAuthorized(ctx, r); err != nil {
-		WriteError(ctx, err, w, r)
-		return
-	} else if !authorized {
-		WriteAccessNotAllowedError(ctx, w, r)
-		return
-	}
-
-	i.h.ServeHTTP(ctx, w, r)
+		ah.h.ServeHTTP(ctx, w, r)
+	})
 }

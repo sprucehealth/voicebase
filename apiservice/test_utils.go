@@ -33,3 +33,13 @@ func verifyAuthSetupInTest(ctx context.Context, w http.ResponseWriter, r *http.R
 	}
 	return false
 }
+
+func isTestRequest(r *http.Request) bool {
+	if environment.IsTest() {
+		test := r.FormValue("test")
+		if test != "" {
+			return true
+		}
+	}
+	return false
+}
