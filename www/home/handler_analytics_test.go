@@ -10,13 +10,14 @@ import (
 
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/www"
 	"golang.org/x/net/context"
 )
 
 func TestAnalyticsHandler(t *testing.T) {
-	al := analytics.DebugLogger{T: t}
+	al := analytics.DebugLogger{Logf: golog.Infof}
 	reg := metrics.NewRegistry()
 	www.MustInitializeResources("resources")
 
