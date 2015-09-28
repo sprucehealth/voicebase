@@ -158,7 +158,7 @@ func (c *selectionHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 		if !eligible {
 			// populate message to indicate to patient that the doctor
 			// is not eligible to treat patient.
-			state, _, err := c.dataAPI.State(rd.StateCode)
+			state, err := c.dataAPI.State(rd.StateCode)
 			if err != nil {
 				golog.Errorf(err.Error())
 			}
@@ -168,9 +168,9 @@ func (c *selectionHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 				golog.Errorf(err.Error())
 			}
 
-			if state != "" && doctor != nil && pathway != nil {
+			if state.Name != "" && doctor != nil && pathway != nil {
 				msg = fmt.Sprintf("Sorry, %s is not current treating patients for %s in %s. Please select from another board-certified dermatologist below, or choose \"First Available\".",
-					doctor.ShortDisplayName, strings.ToLower(pathway.Name), state)
+					doctor.ShortDisplayName, strings.ToLower(pathway.Name), state.Name)
 			}
 		} else if doctor != nil {
 			response := &selectionResponse{

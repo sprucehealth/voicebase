@@ -280,8 +280,12 @@ func CreateRandomPatientVisitAndPickTPForPathway(t *testing.T, testData *TestDat
 	AddTestAddressForPatient(patient.ID, testData, t)
 
 	UploadLayoutPairForPathway(pathway.Tag, testData, t)
+
+	state, err := testData.DataAPI.State("CA")
+	test.OK(t, err)
+
 	// register the doctor for the pathway in CA
-	careProvidingStateID, err := testData.DataAPI.AddCareProvidingState("CA", "California", pathway.Tag)
+	careProvidingStateID, err := testData.DataAPI.AddCareProvidingState(state, pathway.Tag)
 	test.OK(t, err)
 
 	err = testData.DataAPI.MakeDoctorElligibleinCareProvidingState(careProvidingStateID, doctor.ID.Int64())

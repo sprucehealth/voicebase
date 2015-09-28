@@ -19,6 +19,7 @@ type notifyMeRequest struct {
 	State string `json:"state_code"`
 }
 
+// NewNotifyMeHandler returns an instance of notifyMeRequest
 func NewNotifyMeHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&notifyMeHandler{
@@ -33,7 +34,7 @@ func (n *notifyMeHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 		return
 	}
 
-	_, stateCode, err := n.dataAPI.State(rd.State)
+	state, err := n.dataAPI.State(rd.State)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
@@ -42,7 +43,7 @@ func (n *notifyMeHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 	spruceHeaders := apiservice.ExtractSpruceHeaders(r)
 	if err := n.dataAPI.RecordForm(&common.NotifyMeForm{
 		Email:     rd.Email,
-		State:     stateCode,
+		State:     state.Abbreviation,
 		Platform:  spruceHeaders.Platform.String(),
 		UniqueKey: spruceHeaders.DeviceID,
 	}, "mobile", httputil.RequestID(ctx)); err != nil {

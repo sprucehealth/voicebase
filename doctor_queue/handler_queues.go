@@ -69,6 +69,7 @@ type unassignedHandler struct {
 	dataAPI api.DataAPI
 }
 
+// NewUnassignedHandler returns an initialized instance of unassignedHandler
 func NewUnassignedHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
@@ -96,19 +97,11 @@ func (u *unassignedHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter
 			return
 		}
 	} else {
-		// Only allow doctors who's practice model includes Spruce PC to see the unassigned queue
-		practiceModel, err := u.dataAPI.PracticeModel(doctorID)
-		if err != nil {
+		addAuthURL = true
+		queueItems, err = u.dataAPI.GetElligibleItemsInUnclaimedQueue(doctorID)
+		if err != nil && !api.IsErrNotFound(err) {
 			apiservice.WriteError(ctx, err, w, r)
 			return
-		}
-		if practiceModel.IsSprucePC {
-			addAuthURL = true
-			queueItems, err = u.dataAPI.GetElligibleItemsInUnclaimedQueue(doctorID)
-			if err != nil && !api.IsErrNotFound(err) {
-				apiservice.WriteError(ctx, err, w, r)
-				return
-			}
 		}
 	}
 
@@ -119,6 +112,7 @@ type historyHandler struct {
 	dataAPI api.DataAPI
 }
 
+// NewHistoryHandler returns an initialized instance of historyHandler
 func NewHistoryHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(

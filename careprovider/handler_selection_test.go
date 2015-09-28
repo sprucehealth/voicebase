@@ -59,8 +59,8 @@ func (m *mockDataAPI_SelectionHandler) GetCareProvidingStateID(stateCode, pathwa
 func (m *mockDataAPI_SelectionHandler) AvailableDoctorIDs(n int) ([]int64, error) {
 	return m.availableDoctorIDs, nil
 }
-func (m *mockDataAPI_SelectionHandler) State(state string) (string, string, error) {
-	return m.state, m.state, nil
+func (m *mockDataAPI_SelectionHandler) State(state string) (*common.State, error) {
+	return &common.State{Name: m.state, Abbreviation: m.state}, nil
 }
 func (m *mockDataAPI_SelectionHandler) CareProviderEligible(doctorID int64, role, state, pathwayTag string) (bool, error) {
 	return m.careProviderEligible, nil

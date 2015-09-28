@@ -104,6 +104,7 @@ func (p *doctorPatientVisitReviewHandler) IsAuthorized(ctx context.Context, r *h
 
 func (p *doctorPatientVisitReviewHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	requestCache := apiservice.MustCtxCache(ctx)
+	account := apiservice.MustCtxAccount(ctx)
 	patientVisit := requestCache[apiservice.CKPatientVisit].(*common.PatientVisit)
 
 	patient, err := p.dataAPI.GetPatientFromID(patientVisit.PatientID)
@@ -112,7 +113,13 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(ctx context.Context, w http.
 		return
 	}
 
-	renderedLayout, err := VisitReviewLayout(p.dataAPI, patient, p.mediaStore, p.expirationDuration, patientVisit, r.Host, p.webDomain)
+	doctor, err := p.dataAPI.GetDoctorFromAccountID(account.ID)
+	if err != nil {
+		apiservice.WriteError(ctx, err, w, r)
+		return
+	}
+
+	renderedLayout, err := VisitReviewLayout(p.dataAPI, patient, doctor, p.mediaStore, p.expirationDuration, patientVisit, r.Host, p.webDomain)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
@@ -129,6 +136,7 @@ func (p *doctorPatientVisitReviewHandler) ServeHTTP(ctx context.Context, w http.
 func VisitReviewLayout(
 	dataAPI api.DataAPI,
 	pat *common.Patient,
+	doctor *common.Doctor,
 	mediaStore *media.Store,
 	expirationDuration time.Duration,
 	visit *common.PatientVisit,
@@ -140,7 +148,7 @@ func VisitReviewLayout(
 		return nil, err
 	}
 
-	context, err := buildContext(dataAPI, mediaStore, expirationDuration, intakeInfo.ClientLayout.InfoIntakeLayout, pat, visit)
+	context, err := buildContext(dataAPI, mediaStore, expirationDuration, intakeInfo.ClientLayout.InfoIntakeLayout, pat, visit, doctor)
 	if err != nil {
 		return nil, err
 	}

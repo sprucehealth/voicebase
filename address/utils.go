@@ -9,20 +9,21 @@ import (
 )
 
 type addressLookup interface {
-	State(state string) (fullName string, abbreviation string, err error)
+	State(state string) (*common.State, error)
 }
 
+// ValidateAddress returns an error if the provided address information does not meet the validation criteria
 func ValidateAddress(lookup addressLookup, address *common.Address, validator Validator) error {
-	fullStateName, _, err := lookup.State(address.State)
+	state, err := lookup.State(address.State)
 	if err != nil {
 		return err
 	}
 
-	if fullStateName == "" {
+	if state.Name == "" {
 		return errors.New("Enter a valid state")
 	}
 
-	address.State = fullStateName
+	address.State = state.Name
 
 	return validateZipcode(address.ZipCode, validator)
 }

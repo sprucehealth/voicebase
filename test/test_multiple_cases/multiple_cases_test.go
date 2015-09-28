@@ -157,7 +157,11 @@ func TestMultipleCases_DoctorsAssigned(t *testing.T) {
 	dr2, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 	pathway := test_integration.CreatePathway(t, testData, "test")
 	test_integration.UploadLayoutPairForPathway(pathway.Tag, testData, t)
-	careProvoidingStateID, err := testData.DataAPI.AddCareProvidingState("CA", "California", pathway.Tag)
+
+	state, err := testData.DataAPI.State("CA")
+	test.OK(t, err)
+
+	careProvoidingStateID, err := testData.DataAPI.AddCareProvidingState(state, pathway.Tag)
 	test.OK(t, err)
 	test.OK(t, testData.DataAPI.MakeDoctorElligibleinCareProvidingState(careProvoidingStateID, dr2.DoctorID))
 	pv2, err := pc.CreatePatientVisit(pathway.Tag, dr2.DoctorID, test_integration.SetupTestHeaders())
@@ -226,7 +230,10 @@ func TestMultipleCases_JBCQ_Assigned(t *testing.T) {
 	dr2, _, _ := test_integration.SignupRandomTestDoctor(t, testData)
 	pathway := test_integration.CreatePathway(t, testData, "test")
 	test_integration.UploadLayoutPairForPathway(pathway.Tag, testData, t)
-	careProvoidingStateID, err := testData.DataAPI.AddCareProvidingState("CA", "California", pathway.Tag)
+
+	state, err := testData.DataAPI.State("CA")
+	test.OK(t, err)
+	careProvoidingStateID, err := testData.DataAPI.AddCareProvidingState(state, pathway.Tag)
 	test.OK(t, err)
 	test.OK(t, testData.DataAPI.MakeDoctorElligibleinCareProvidingState(careProvoidingStateID, dr2.DoctorID))
 	pc := test_integration.PatientClient(testData, t, tp.PatientID)

@@ -27,11 +27,12 @@ import (
 
 // Case tag identifiers
 const (
-	TagExistingPatient = "ExistingPatient"
-	TagNewPatient      = "NewPatient"
-	TagSupervised      = "Supervised"
-	TagInitialVisit    = "InitialVisit"
-	TagFollowupVisit   = "FollowUpVisit"
+	TagExistingPatient   = "ExistingPatient"
+	TagNewPatient        = "NewPatient"
+	TagSupervised        = "Supervised"
+	TagInitialVisit      = "InitialVisit"
+	TagFollowupVisit     = "FollowUpVisit"
+	TagPracticeExtension = "PracticeExtension"
 )
 
 type patientVisitHandler struct {
@@ -317,6 +318,12 @@ func (s *patientVisitHandler) applyVisitTags(visit *common.PatientVisit, patient
 		}
 	}
 
+	if currentCase.PracticeExtension {
+		if err := s.applyCaseTag(TagPracticeExtension, caseID, false); err != nil {
+			return err
+		}
+	}
+
 	if err := s.applyCaseTag("state:"+patient.StateFromZipCode, caseID, true); err != nil {
 		return err
 	}
@@ -478,6 +485,7 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(ctx context.Context, 
 		rq.PathwayTag = api.AcnePathwayTag
 	}
 
+	practiceExtension := false
 	pvResponse, err := createPatientVisit(
 		patient,
 		rq.DoctorID,
@@ -487,7 +495,10 @@ func (s *patientVisitHandler) createNewPatientVisitHandler(ctx context.Context, 
 		s.webDomain,
 		s.dispatcher,
 		s.mediaStore,
-		s.expirationDuration, r, nil)
+		s.expirationDuration,
+		r,
+		nil,
+		practiceExtension)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return

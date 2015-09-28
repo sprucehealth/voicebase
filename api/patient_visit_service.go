@@ -210,7 +210,7 @@ func (d *dataService) GetPatientCaseIDFromPatientVisitID(patientVisitID int64) (
 	return patientCaseID, nil
 }
 
-func (d *dataService) CreatePatientVisit(visit *common.PatientVisit, requestedDoctorID *int64) (int64, error) {
+func (d *dataService) CreatePatientVisit(visit *common.PatientVisit, requestedDoctorID *int64, practiceExtension bool) (int64, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return 0, errors.Trace(err)
@@ -226,6 +226,7 @@ func (d *dataService) CreatePatientVisit(visit *common.PatientVisit, requestedDo
 			PathwayTag:        visit.PathwayTag,
 			Status:            common.PCStatusOpen,
 			RequestedDoctorID: requestedDoctorID,
+			PracticeExtension: practiceExtension,
 		}
 
 		if err := d.createPatientCase(tx, patientCase); err != nil {

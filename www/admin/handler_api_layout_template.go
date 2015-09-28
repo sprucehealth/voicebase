@@ -34,7 +34,7 @@ func newLayoutTemplateHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 
 func (h *layoutTemplateHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "GET":
+	case httputil.Get:
 		requestData, err := h.parseGETRequest(ctx, r)
 		if err != nil {
 			www.APIBadRequestError(w, r, err.Error())

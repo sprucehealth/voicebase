@@ -32,7 +32,7 @@ module.exports = {
 				})
 			}
 			return [items];
-		}, 
+		},
 		pages: {
 			search: function(): any {
 				return <DoctorSearch router={this.props.router} />;
@@ -89,6 +89,11 @@ module.exports = {
 				id: "favorite_treatment_plans",
 				url: "favorite_treatment_plans",
 				name: "Favorite Treatment Plans"
+			},
+			{
+				id: "practice_model",
+				url: "practice_model",
+				name: "Practice Model"
 			}
 		]],
 		getInitialState: function(): any {
@@ -149,6 +154,9 @@ module.exports = {
 			},
 			favorite_treatment_plans: function(): any {
 				return <DoctorFTPPage router={this.props.router} doctor={this.state.doctor} />;
+			},
+			practice_model: function(): any {
+				return <DoctorPracticeModel router={this.props.router} doctor={this.state.doctor} />;
 			}
 		},
 		render: function(): any {
@@ -332,7 +340,7 @@ var DoctorFTPPage = React.createClass({displayName: "DoctorFTPPage",
 		var content = [];
 		for(var pathway in this.state.ftps) {
 			for(var i = 0; i < this.state.ftps[pathway].length; ++i){
-				this.state.ftps[pathway].sort(function(a, b){ 
+				this.state.ftps[pathway].sort(function(a, b){
 					if(a.name < b.name) return -1
 					if(a.name > b.name) return 1
 					return 0
@@ -355,15 +363,15 @@ var DoctorFTPPage = React.createClass({displayName: "DoctorFTPPage",
 		return (
 			<div className="container" style={{marginTop: 10}}>
 
-			     <div className="row">
-                    <div className="col-sm-8 col-md-8 col-lg-8">
-                        <h2>{this.props.doctor.short_display_name + " :: "}Favorite Treatment Plans</h2>
-                    </div>
-                    {Perms.has(Perms.DoctorsEdit) ?
-                        <div className="col-sm-4 col-md-4 col-lg-4 "><button className="btn btn-default pull-right" onClick={this.syncGlobalFTPs}>Update SFTPs</button></div>
-                    : null}
+				<div className="row">
+					<div className="col-sm-8 col-md-8 col-lg-8">
+						<h2>{this.props.doctor.short_display_name + " :: "}Favorite Treatment Plans</h2>
+					</div>
+					{Perms.has(Perms.DoctorsEdit) ?
+						<div className="col-sm-4 col-md-4 col-lg-4 "><button className="btn btn-default pull-right" onClick={this.syncGlobalFTPs}>Update SFTPs</button></div>
+					: null}
 
-                </div>
+				</div>
 					
 
 				<div className="row">
@@ -536,7 +544,6 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 				  {this.props.doctor.account.two_factor_enabled ? <span className="success-text">Enabled</span> : <span className="alert-text">Disabled</span>}
 					&nbsp;[<a href="#" onClick={this.onTwoFactorToggle}>{this.props.doctor.account.two_factor_enabled ? "Disable" : "Enable"}</a>]
 				</div>
-				<DoctorPracticeModel doctorID={this.props.doctor.id}/>
 				<h3>Phone Numbers</h3>
 				{this.state.phoneNumbersError ? <Utils.Alert type="danger">{this.state.phoneNumbersError}</Utils.Alert> : null}
 				<table className="table">
@@ -584,7 +591,7 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 						</tr>
 						<tr>
 							<td><strong>Prescriber ID</strong></td>
-							<td> 
+							<td>
 								{
 									!!this.props.doctor.prescriber_id ?  
 										<p>{this.props.doctor.prescriber_id}&nbsp;[<a href="#" onClick={this.onUpdatePrescriberID}>Update</a>]</p>:
@@ -605,28 +612,52 @@ var DoctorInfoPage = React.createClass({displayName: "DoctorInfoPage",
 var DoctorPracticeModel = React.createClass({displayName: "DoctorPracticeModel",
 	getInitialState: function(): any {
 		return {
-			practiceModel: null,
+			practiceModels: null,
+			peDisabledListExpaned: false,
 		};
 	},
 	componentWillMount: function() {
-		AdminAPI.practiceModel(this.props.doctorID, (success, data, error) => {
+		this.fetchPracticeModels();
+	},
+	fetchPracticeModels: function() {
+		AdminAPI.practiceModels(this.props.doctor.id, (success, data, error) => {
 			if (this.isMounted()) {
 				if (success) {
-					this.setState({practiceModel: data.practice_model});
+					this.setState({
+						practiceModels: data.practice_models,
+						practiceModelError: null,
+					});
 				} else {
-					this.setState({practiceModelError: "Failed to query practiceModel: " + error.message});
+					this.setState({
+						practiceModels: null,
+						practiceModelError: "Failed to query practiceModel: " + error.message
+					});
 				}
 			}
 		});
 	},
 	onPracticeModelUpdateToggle: function(practiceModel: any) {
 		this.setState({practiceModelError: null});
-		AdminAPI.updatePracticeModel(this.props.doctorID, 
-			{is_spruce_pc: practiceModel.is_spruce_pc,
+		AdminAPI.updatePracticeModel(this.props.doctor.id,
+			{state_id: practiceModel.state_id,
+				is_spruce_pc: practiceModel.is_spruce_pc,
 				has_practice_extension: practiceModel.has_practice_extension}, (success, data, error) => {
 				if (this.isMounted()) {
 					if (success) {
-						this.setState({practiceModel: data.practice_model});
+						this.fetchPracticeModels();
+					} else {
+						this.setState({practiceModelError: error.message});
+					}
+				}
+			});
+	},
+	onPracticeModelAllStatesToggle: function(hasPracticeExtension: boolean) {
+		this.setState({practiceModelError: null});
+		AdminAPI.updatePracticeModel(this.props.doctor.id,
+			{all_states: true, has_practice_extension: hasPracticeExtension}, (success, data, error) => {
+				if (this.isMounted()) {
+					if (success) {
+						this.fetchPracticeModels();
 					} else {
 						this.setState({practiceModelError: error.message});
 					}
@@ -634,36 +665,73 @@ var DoctorPracticeModel = React.createClass({displayName: "DoctorPracticeModel",
 			});
 	},
 	render: function(): any {
+		var peDisabledIn = [];
+		if(this.state.practiceModels){
+			for(var sa in this.state.practiceModels) {
+				if(this.state.practiceModels[sa].has_practice_extension == false) {
+					peDisabledIn.push(sa)
+				}
+			}
+		}
+		var tableBody = []
+		for(var sa in this.state.practiceModels) {
+			var sprucePCToggle = (pm: any) => {
+				return (e: Event) => {
+					e.preventDefault();
+					pm.is_spruce_pc = !pm.is_spruce_pc;
+					this.onPracticeModelUpdateToggle(pm);
+				}
+			}
+			var practiceExtensionToggle = (pm: any) => {
+				return (e: Event) => {
+					e.preventDefault();
+					pm.has_practice_extension = !pm.has_practice_extension;
+					this.onPracticeModelUpdateToggle(pm);
+				}
+			}
+			tableBody.push(
+				<tr key={"practice-model-row"+sa}>
+					<td>{sa}</td>
+					<td>{this.state.practiceModels[sa].is_spruce_pc ?
+						<a className="success-text" href="#" onClick={sprucePCToggle(this.state.practiceModels[sa])}>Enabled</a>
+						: <a className="alert-text" href="#" onClick={sprucePCToggle(this.state.practiceModels[sa])}>Disabled</a>}
+					</td>
+					<td>{this.state.practiceModels[sa].has_practice_extension ?
+						<a className="success-text" href="#" onClick={practiceExtensionToggle(this.state.practiceModels[sa])}>Enabled</a>
+						: <a className="alert-text" href="#" onClick={practiceExtensionToggle(this.state.practiceModels[sa])}>Disabled</a>}
+					</td>
+				</tr>);
+		}
 		return (
 			<div>
-				<h3>Practice Model</h3>
-				{this.state.practiceModelError ? <Utils.Alert type="danger">{this.state.practiceModelError}</Utils.Alert> : null}
-				{this.state.practiceModel != null ?
-					<div>
-						<div>
-							Spruce Physician: {this.state.practiceModel.is_spruce_pc ? <span className="success-text">Enabled</span> : <span className="alert-text">Disabled</span>}
-							{Perms.has(Perms.DoctorsEdit) ? <span>&nbsp;[<a href="#" onClick={(e: Event) => {
-								e.preventDefault();
-								var pm = this.state.practiceModel
-								pm.is_spruce_pc = !pm.is_spruce_pc
-								this.onPracticeModelUpdateToggle(pm)}}>{this.state.practiceModel.is_spruce_pc ? "Disable" : "Enable"}</a>]</span> : null}
-							<ul>
-								<li>Unassigned Queue: {this.state.practiceModel.is_spruce_pc ? <span className="success-text">Enabled</span> : <span className="alert-text">Disabled</span>}</li>
-								<li>Doctor Selection: {this.state.practiceModel.is_spruce_pc ? <span className="success-text">Enabled</span> : <span className="alert-text">Disabled</span>}</li>
-							</ul>
-						</div>
-						<div>
-							Practice Extension: {this.state.practiceModel.has_practice_extension ? <span className="success-text">Enabled</span> : <span className="alert-text">Disabled</span>}
-							{Perms.has(Perms.DoctorsEdit) ? <span>&nbsp;[<a href="#" onClick={(e: Event) => {
-								e.preventDefault();
-								var pm = this.state.practiceModel
-								pm.has_practice_extension = !pm.has_practice_extension
-								this.onPracticeModelUpdateToggle(pm)}}>{this.state.practiceModel.has_practice_extension ? "Disable" : "Enable"}</a>]</span> : null}
-							<ul>
-								<li>Dr. Referral Link: {this.state.practiceModel.has_practice_extension ? <span className="success-text">Enabled</span> : <span className="alert-text">Disabled</span>}</li>
-							</ul>
-						</div>
-					</div> : null}
+			  <div className="col-sm-8 col-md-8 col-lg-8">
+			<h2>{this.props.doctor.short_display_name + " :: "}Practice Model</h2>
+		</div>
+				{this.state.practiceModelError ? <div><Utils.Alert type="danger">{this.state.practiceModelError}</Utils.Alert></div> : null}
+				<table className="table">
+					<thead>
+						<tr>
+							<th></th>
+							<th></th>
+							<th>{Perms.has(Perms.DoctorsEdit) ?
+								(peDisabledIn.length != 0 ?
+									<a href="#" onClick={(e: Event) => {
+										e.preventDefault();
+										this.onPracticeModelAllStatesToggle(true)}}>[Enable in all states]</a>
+									: <a href="#" onClick={(e: Event) => {
+										e.preventDefault();
+										this.onPracticeModelAllStatesToggle(false)}}>[Disable in all states]</a>)
+									: null }
+							</th>
+						</tr>
+						<tr>
+							<th>State</th>
+							<th>Spruce PC</th>
+							<th>Practice Extension</th>
+						</tr>
+					</thead>
+					<tbody>{tableBody}</tbody>
+				</table>
 			</div>
 		);
 	}
@@ -1779,30 +1847,30 @@ var UploadSFTPs = React.createClass({displayName: "UploadSFTPs",
 				<div>
 					<h2>Update SFTPs for all doctors</h2>
 					
-					{this.state.busy ? 
+					{this.state.busy ?
 						<div>
-							<Utils.Alert type="info"> <Utils.LoadingAnimation /> Setting new SFTPs for doctors...please wait. This means that SFTPs that each doctor owns are being replaced with the new set as provided in the csv.</Utils.Alert> 
+							<Utils.Alert type="info"> <Utils.LoadingAnimation /> Setting new SFTPs for doctors...please wait. This means that SFTPs that each doctor owns are being replaced with the new set as provided in the csv.</Utils.Alert>
 						</div> : null
 					}
 					
-					{this.state.error ? 
+					{this.state.error ?
 						<Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null
 					}
 
-					{this.state.success ? 
+					{this.state.success ?
 						<Utils.Alert type="success">Successfully updated SFTPs for all doctors </Utils.Alert>: null
-					} 
+					}
 					
 					{acceptInput ?
 						<div>
 							<p>Select the csv file containing the SFTPs</p>
 							<form encType="multipart/form-data" ref="sftpForm">
 								<span className="file-input">
-				    				<input 
-					    				type="file"
-					    				accept=".csv"
-					    				name="csv"
-				    				/>
+									<input
+										type="file"
+										accept=".csv"
+										name="csv"
+									/>
 								</span>
 							</form>
 							<br/>

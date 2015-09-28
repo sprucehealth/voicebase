@@ -29,7 +29,9 @@ func TestAvailableStates(t *testing.T) {
 	}
 	did, err := testData.DataAPI.RegisterProvider(doctor, api.RoleDoctor)
 	test.OK(t, err)
-	_, err = testData.DataAPI.UpdatePracticeModel(did, &common.PracticeModelUpdate{IsSprucePC: ptr.Bool(true)})
+	stateCA, err := testData.DataAPI.State("CA")
+	test.OK(t, err)
+	_, err = testData.DataAPI.UpdatePracticeModel(did, stateCA.ID, &common.PracticeModelUpdate{IsSprucePC: ptr.Bool(true)})
 	test.OK(t, err)
 
 	// Doctor registered but not elligible in any state
@@ -37,7 +39,7 @@ func TestAvailableStates(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, 0, len(states))
 
-	cpStateID, err := testData.DataAPI.AddCareProvidingState("CA", "California", api.AcnePathwayTag)
+	cpStateID, err := testData.DataAPI.AddCareProvidingState(stateCA, api.AcnePathwayTag)
 	test.OK(t, err)
 	test.OK(t, testData.DataAPI.MakeDoctorElligibleinCareProvidingState(cpStateID, doctor.ID.Int64()))
 
@@ -47,7 +49,7 @@ func TestAvailableStates(t *testing.T) {
 	test.Equals(t, "CA", states[0].Abbreviation)
 	test.Equals(t, "California", states[0].Name)
 
-	_, err = testData.DataAPI.UpdatePracticeModel(did, &common.PracticeModelUpdate{IsSprucePC: ptr.Bool(false)})
+	_, err = testData.DataAPI.UpdatePracticeModel(did, stateCA.ID, &common.PracticeModelUpdate{IsSprucePC: ptr.Bool(false)})
 	test.OK(t, err)
 	states, err = testData.DataAPI.AvailableStates()
 	test.OK(t, err)
@@ -67,7 +69,9 @@ func TestCareProviderEligible(t *testing.T) {
 	}
 	did, err := testData.DataAPI.RegisterProvider(doctor, api.RoleDoctor)
 	test.OK(t, err)
-	_, err = testData.DataAPI.UpdatePracticeModel(did, &common.PracticeModelUpdate{IsSprucePC: ptr.Bool(true)})
+	stateCA, err := testData.DataAPI.State("CA")
+	test.OK(t, err)
+	_, err = testData.DataAPI.UpdatePracticeModel(did, stateCA.ID, &common.PracticeModelUpdate{IsSprucePC: ptr.Bool(true)})
 	test.OK(t, err)
 
 	eligible, err := testData.DataAPI.CareProviderEligible(doctor.ID.Int64(), api.RoleDoctor, "CA", api.AcnePathwayTag)
@@ -75,7 +79,7 @@ func TestCareProviderEligible(t *testing.T) {
 	test.Equals(t, false, eligible)
 
 	// register doctor for acne in CA
-	cpStateID, err := testData.DataAPI.AddCareProvidingState("CA", "California", api.AcnePathwayTag)
+	cpStateID, err := testData.DataAPI.AddCareProvidingState(stateCA, api.AcnePathwayTag)
 	test.OK(t, err)
 	test.OK(t, testData.DataAPI.MakeDoctorElligibleinCareProvidingState(cpStateID, doctor.ID.Int64()))
 
@@ -83,7 +87,7 @@ func TestCareProviderEligible(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, true, eligible)
 
-	_, err = testData.DataAPI.UpdatePracticeModel(did, &common.PracticeModelUpdate{IsSprucePC: ptr.Bool(false)})
+	_, err = testData.DataAPI.UpdatePracticeModel(did, stateCA.ID, &common.PracticeModelUpdate{IsSprucePC: ptr.Bool(false)})
 	test.OK(t, err)
 
 	eligible, err = testData.DataAPI.CareProviderEligible(doctor.ID.Int64(), api.RoleDoctor, "CA", api.AcnePathwayTag)

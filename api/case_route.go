@@ -526,8 +526,12 @@ func (d *dataService) GetElligibleItemsInUnclaimedQueue(doctorID int64) ([]*Doct
 	// first get the list of care providing state ids where the doctor is registered to serve
 	rows, err := d.db.Query(`
 		SELECT care_providing_state_id
-		FROM care_provider_state_elligibility
-		WHERE provider_id = ? AND role_type_id = ?`, doctorID, d.roleTypeMapping[RoleDoctor])
+			FROM care_provider_state_elligibility
+			INNER JOIN care_providing_state ON care_providing_state_id = care_providing_state.id
+			INNER JOIN practice_model ON provider_id = doctor_id AND care_providing_state.state_id = practice_model.state_id
+			WHERE care_provider_state_elligibility.provider_id = ? 
+			AND care_provider_state_elligibility.role_type_id = ?
+			AND practice_model.spruce_pc = true`, doctorID, d.roleTypeMapping[RoleDoctor])
 	if err != nil {
 		return nil, err
 	}
@@ -541,6 +545,7 @@ func (d *dataService) GetElligibleItemsInUnclaimedQueue(doctorID int64) ([]*Doct
 		}
 		careProvidingStateIDs = append(careProvidingStateIDs, careProvidingStateID)
 	}
+
 	if rows.Err() != nil {
 		return nil, rows.Err()
 	}
@@ -569,21 +574,26 @@ func (d *dataService) GetElligibleItemsInUnclaimedQueue(doctorID int64) ([]*Doct
 func (d *dataService) RevokeDoctorAccessToCase(patientCaseID, patientID, doctorID int64) error {
 	tx, err := d.db.Begin()
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	// unclaim the item in the case queue
-	_, err = tx.Exec(`update unclaimed_case_queue set doctor_id = NULL, expires = NULL, locked = 0 where doctor_id = ? and patient_case_id = ? and locked = 1`, doctorID, patientCaseID)
+	_, err = tx.Exec(`
+		UPDATE unclaimed_case_queue 
+		SET doctor_id = NULL, expires = NULL, locked = 0 
+		WHERE doctor_id = ? AND patient_case_id = ? AND locked = 1`, doctorID, patientCaseID)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
 	// revoke doctor access to patient case
-	_, err = tx.Exec(`delete from patient_care_provider_assignment where provider_id = ? and role_type_id = ? and status = ? and patient_id = ?`, doctorID, d.roleTypeMapping[RoleDoctor], StatusTemp, patientID)
+	_, err = tx.Exec(`
+		DELETE FROM patient_care_provider_assignment 
+		WHERE provider_id = ? AND role_type_id = ? AND status = ? AND patient_id = ?`, doctorID, d.roleTypeMapping[RoleDoctor], StatusTemp, patientID)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
 	// revoke doctor access to patient file
@@ -593,7 +603,7 @@ func (d *dataService) RevokeDoctorAccessToCase(patientCaseID, patientID, doctorI
 		doctorID, d.roleTypeMapping[RoleDoctor], StatusTemp, patientCaseID)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
 	return tx.Commit()

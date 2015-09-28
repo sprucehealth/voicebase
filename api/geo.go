@@ -2,39 +2,43 @@ package api
 
 import (
 	"database/sql"
+	"fmt"
 	"strings"
 
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/errors"
 )
 
-func (d *dataService) State(state string) (full string, short string, err error) {
-	err = d.db.QueryRow(
-		`SELECT full_name, abbreviation FROM state WHERE full_name = ? OR abbreviation = ?`,
-		strings.Title(state), strings.ToUpper(state)).Scan(&full, &short)
+func (d *dataService) State(stateName string) (*common.State, error) {
+	state := &common.State{}
+	err := d.db.QueryRow(
+		`SELECT id, full_name, abbreviation, country FROM state 
+			WHERE full_name = ? OR abbreviation = ?`,
+		strings.Title(stateName), strings.ToUpper(stateName)).Scan(&state.ID, &state.Name, &state.Abbreviation, &state.Country)
 	if err == sql.ErrNoRows {
-		return "", "", nil
+		return nil, errors.Trace(ErrNotFound(fmt.Sprintf("state not found for full_name or abbreviation %s", stateName)))
 	} else if err != nil {
-		return "", "", err
+		return nil, errors.Trace(err)
 	}
-	return full, short, nil
+	return state, nil
 }
 
 func (d *dataService) ListStates() ([]*common.State, error) {
-	rows, err := d.db.Query(`SELECT full_name, abbreviation, country FROM state ORDER BY full_name`)
+	rows, err := d.db.Query(`SELECT id, full_name, abbreviation, country FROM state ORDER BY full_name`)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	defer rows.Close()
 	var states []*common.State
 	for rows.Next() {
 		state := &common.State{}
-		if err := rows.Scan(&state.Name, &state.Abbreviation, &state.Country); err != nil {
-			return nil, err
+		if err := rows.Scan(&state.ID, &state.Name, &state.Abbreviation, &state.Country); err != nil {
+			return nil, errors.Trace(err)
 		}
 		states = append(states, state)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	return states, nil
 }

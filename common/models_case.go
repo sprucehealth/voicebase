@@ -83,7 +83,8 @@ type PatientCase struct {
 	RequestedDoctorID *int64            `json:"requested_doctor_id"`
 
 	// Claimed is set to true when the case has a doctor permanently assigned to it.
-	Claimed bool `json:"claimed"`
+	Claimed           bool `json:"claimed"`
+	PracticeExtension bool `json:"practice_extension"`
 }
 
 // DeletedPatientCaseStates returns all the states considered deleted for a case

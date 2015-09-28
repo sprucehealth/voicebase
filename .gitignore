@@ -39,6 +39,10 @@ _testmain.go
 *.bz2
 *.gz
 
+*.coverage
+*.coverage.html
+*.revision
+
 cmd/cli/awslogidx/awslogidx
 cmd/cli/dashboard/dashboard
 cmd/cli/doctorchangemsg/doctorchangemsg

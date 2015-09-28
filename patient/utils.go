@@ -327,6 +327,7 @@ func createPatientVisit(
 	expirationDuration time.Duration,
 	r *http.Request,
 	context *apiservice.VisitLayoutContext,
+	practiceExtension bool,
 ) (*PatientVisitResponse, error) {
 	// We have to resolve the pathway first because it's possible that for the patient's
 	// age they might need to be taken to an alternate pathway.
@@ -392,7 +393,7 @@ func createPatientVisit(
 			SKUType:         sku.Type,
 		}
 
-		_, err = dataAPI.CreatePatientVisit(patientVisit, ptr.Int64NilZero(doctorID))
+		vid, err := dataAPI.CreatePatientVisit(patientVisit, ptr.Int64NilZero(doctorID), practiceExtension)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -403,7 +404,11 @@ func createPatientVisit(
 			// never published this there's no notification for the visit. As such, if this fails then it's better
 			// to log the error but continue since the patient will be able to continue the visit anyway.
 			if err := dataAPI.AddDoctorToPatientCase(doctorID, patientVisit.PatientCaseID.Int64()); err != nil {
+				// If we fail to add the requested doctor then we shouldn't mark it as practice extension
 				golog.Errorf("Failed to add doctor %d to patient case %d: %s", doctorID, patientVisit.PatientCaseID.Int64(), err)
+				if practiceExtension {
+					dataAPI.UpdatePatientCase(vid, &api.PatientCaseUpdate{PracticeExtension: ptr.Bool(false)})
+				}
 			}
 		}
 		visitCreated = true

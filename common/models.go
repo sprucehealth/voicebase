@@ -214,11 +214,17 @@ type PracticeModel struct {
 	DoctorID             int64
 	IsSprucePC           bool
 	HasPracticeExtension bool
+	StateID              int64
 }
 
 // PracticeModelUpdate represents the mutable aspect of the practice_model record
 type PracticeModelUpdate struct {
 	IsSprucePC           *bool
+	HasPracticeExtension *bool
+}
+
+// AllStatesPracticeModelUpdate represents the mutable aspect of the practice_model record that can be applied to all states at once
+type AllStatesPracticeModelUpdate struct {
 	HasPracticeExtension *bool
 }
 
@@ -256,6 +262,7 @@ type Doctor struct {
 }
 
 type State struct {
+	ID           int64
 	Name         string
 	Abbreviation string
 	Country      string

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 )
@@ -33,8 +34,8 @@ type notifyMeHandlerDataAPI struct {
 	recordedForm api.Form
 }
 
-func (n *notifyMeHandlerDataAPI) State(stateCode string) (string, string, error) {
-	return "California", "CA", nil
+func (n *notifyMeHandlerDataAPI) State(stateCode string) (*common.State, error) {
+	return &common.State{Name: "California", Abbreviation: "CA"}, nil
 }
 
 func TestNotifyMeHandler(t *testing.T) {

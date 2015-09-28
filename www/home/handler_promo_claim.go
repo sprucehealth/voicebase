@@ -112,12 +112,12 @@ func (h *promoClaimHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter
 					return
 				}
 
-				practiceModel, err := h.dataAPI.PracticeModel(dr.ID.Int64())
+				hasPE, err := h.dataAPI.HasPracticeExtensionInAnyState(dr.ID.Int64())
 				if err != nil {
 					www.InternalServerError(w, r, err)
 					return
 				}
-				if !practiceModel.HasPracticeExtension {
+				if !hasPE {
 					tmplCtx.Message = "Sorry, the doctor you’ve requested is not available. Please email support@sprucehealth.com for assistance"
 					www.TemplateResponse(w, http.StatusOK, h.refTemplate, &www.BaseTemplateContext{
 						Environment: environment.GetCurrent(),

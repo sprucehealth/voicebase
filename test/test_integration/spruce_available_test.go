@@ -82,9 +82,11 @@ func TestSpruceAvailableInState(t *testing.T) {
 		Status:         common.PathwayActive,
 	}
 	test.OK(t, testData.DataAPI.CreatePathway(pathway))
+	state, err := testData.DataAPI.State("FL")
+	test.OK(t, err)
 
 	// register this doctor to see patients in FL
-	stateID, err := testData.DataAPI.AddCareProvidingState("FL", "Florida", pathway.Tag)
+	stateID, err := testData.DataAPI.AddCareProvidingState(state, pathway.Tag)
 	test.OK(t, err)
 	test.OK(t, testData.DataAPI.MakeDoctorElligibleinCareProvidingState(stateID, dr.DoctorID))
 

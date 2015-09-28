@@ -942,7 +942,7 @@ module.exports = {
 	},
 
 	// Practice Model
-	practiceModel: function(providerID: string, cb: ajaxCB) {
+	practiceModels: function(providerID: string, cb: ajaxCB) {
 		this.ajax({
 			type: "GET",
 			url: "/providers/" + encodeURIComponent(providerID) + "/practice_model",

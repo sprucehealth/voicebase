@@ -670,7 +670,9 @@ func (r *Renderer) Render(patient *common.Patient, opt RenderOption) ([]byte, er
 		}
 
 		for _, visit := range visits {
-			layout, err := patient_file.VisitReviewLayout(r.DataAPI, patient, r.MediaStore, r.ExpirationDuration, visit, r.APIDomain, r.WebDomain)
+			// Pass in a nil doctor since we don't need the alert information
+			var doctor *common.Doctor
+			layout, err := patient_file.VisitReviewLayout(r.DataAPI, patient, doctor, r.MediaStore, r.ExpirationDuration, visit, r.APIDomain, r.WebDomain)
 			if err != nil {
 				return nil, errors.Trace(err)
 			}

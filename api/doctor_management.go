@@ -17,18 +17,18 @@ func (d *dataService) AvailableStates() ([]*common.State, error) {
 		INNER JOIN practice_model ON cpse.provider_id = practice_model.doctor_id
 		WHERE practice_model.spruce_pc = true`)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	defer rows.Close()
 	var states []*common.State
 	for rows.Next() {
 		s := &common.State{}
 		if err := rows.Scan(&s.Abbreviation, &s.Name); err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 		states = append(states, s)
 	}
-	return states, rows.Err()
+	return states, errors.Trace(rows.Err())
 }
 
 // SpruceAvailableInState checks to see if atleast one doctor is registered in the state as a spruce physician
@@ -48,48 +48,50 @@ func (d *dataService) SpruceAvailableInState(state string) (bool, error) {
 		return false, nil
 	}
 
-	return err == nil, err
+	return err == nil, errors.Trace(err)
 }
 
 func (d *dataService) GetCareProvidingStateID(stateAbbreviation, pathwayTag string) (int64, error) {
 	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
 	if err != nil {
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 	var careProvidingStateID int64
 	if err := d.db.QueryRow(
-		`SELECT id FROM care_providing_state WHERE state = ? AND clinical_pathway_id = ?`,
+		`SELECT id FROM care_providing_state 
+			WHERE state = ? AND clinical_pathway_id = ?`,
 		stateAbbreviation, pathwayID,
 	).Scan(&careProvidingStateID); err == sql.ErrNoRows {
-		return 0, ErrNotFound("care_providing_state")
+		return 0, errors.Trace(ErrNotFound("care_providing_state"))
 	} else if err != nil {
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 
 	return careProvidingStateID, nil
 }
 
-func (d *dataService) AddCareProvidingState(stateAbbreviation, fullStateName, pathwayTag string) (int64, error) {
+func (d *dataService) AddCareProvidingState(state *common.State, pathwayTag string) (int64, error) {
 	pathwayID, err := d.pathwayIDFromTag(pathwayTag)
 	if err != nil {
-		return 0, err
+		return 0, errors.Trace(err)
 	}
 
 	res, err := d.db.Exec(
-		`INSERT INTO care_providing_state (state, long_state, clinical_pathway_id)
-		VALUES (?, ?, ?)`,
-		stateAbbreviation, fullStateName, pathwayID)
+		`INSERT INTO care_providing_state (state, long_state, clinical_pathway_id, state_id)
+		VALUES (?, ?, ?, ?)`,
+		state.Abbreviation, state.Name, pathwayID, state.ID)
 	if err != nil {
-		return 0, err
+		return 0, errors.Trace(err)
 	}
-	return res.LastInsertId()
+	id, err := res.LastInsertId()
+	return id, errors.Trace(err)
 }
 
 func (d *dataService) MakeDoctorElligibleinCareProvidingState(careProvidingStateID, doctorID int64) error {
 	_, err := d.db.Exec(
 		`REPLACE INTO care_provider_state_elligibility (role_type_id, provider_id, care_providing_state_id) VALUES (?,?,?)`,
 		d.roleTypeMapping[RoleDoctor], doctorID, careProvidingStateID)
-	return err
+	return errors.Trace(err)
 }
 
 func (d *dataService) CareProviderEligible(careProviderID int64, role, state, pathwayTag string) (bool, error) {
@@ -119,43 +121,45 @@ func (d *dataService) GetDoctorWithEmail(email string) (*common.Doctor, error) {
 	if err := d.db.QueryRow(
 		`SELECT id FROM doctor WHERE account_id = (SELECT id FROM account WHERE email = ?)`, email,
 	).Scan(&doctorID); err == sql.ErrNoRows {
-		return nil, ErrNotFound("doctor")
+		return nil, errors.Trace(ErrNotFound("doctor"))
 	} else if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	doctor, err := d.GetDoctorFromID(doctorID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
-	return doctor, err
+	return doctor, errors.Trace(err)
 }
 
 // DoctorIDsInCareProvidingState returns a slice of doctorIDs that are considered available
 // and eligible to see patients in the state/pathway combination indicated by careProvidingStateID.
 func (d *dataService) DoctorIDsInCareProvidingState(careProvidingStateID int64) ([]int64, error) {
 	rows, err := d.db.Query(`
-		SELECT provider_id
+		SELECT DISTINCT(provider_id)
 		FROM care_provider_state_elligibility
+		INNER JOIN practice_model ON practice_model.doctor_id = care_provider_state_elligibility.provider_id
 		WHERE unavailable = 0
-		AND role_type_id = ?
-		AND care_providing_state_id = ?`, d.roleTypeMapping[RoleDoctor], careProvidingStateID)
+			AND practice_model.spruce_pc = true
+			AND role_type_id = ?
+			AND care_providing_state_id = ?`, d.roleTypeMapping[RoleDoctor], careProvidingStateID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	var doctorIDs []int64
 	for rows.Next() {
 		var id int64
 		if err := rows.Scan(&id); err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 
 		doctorIDs = append(doctorIDs, id)
 	}
 
-	return doctorIDs, rows.Err()
+	return doctorIDs, errors.Trace(rows.Err())
 }
 
 // EligibleDoctorIDs returns a slice of doctor IDs (from the provided list) for the doctors that are eligible to see
@@ -169,7 +173,7 @@ func (d *dataService) EligibleDoctorIDs(doctorIDs []int64, careProvidingStateID 
 	vals = dbutil.AppendInt64sToInterfaceSlice(vals, doctorIDs)
 
 	rows, err := d.db.Query(`
-		SELECT provider_id
+		SELECT DISTINCT(provider_id)
 		FROM care_provider_state_elligibility
 		INNER JOIN practice_model ON practice_model.doctor_id = care_provider_state_elligibility.provider_id
 		WHERE unavailable = 0
@@ -179,7 +183,7 @@ func (d *dataService) EligibleDoctorIDs(doctorIDs []int64, careProvidingStateID 
 			AND provider_id in (`+dbutil.MySQLArgs(len(doctorIDs))+`)`,
 		vals...)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	defer rows.Close()
 
@@ -187,12 +191,12 @@ func (d *dataService) EligibleDoctorIDs(doctorIDs []int64, careProvidingStateID 
 	for rows.Next() {
 		var id int64
 		if err := rows.Scan(&id); err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 		eligibleDoctorIDs = append(eligibleDoctorIDs, id)
 	}
 
-	return eligibleDoctorIDs, rows.Err()
+	return eligibleDoctorIDs, errors.Trace(rows.Err())
 }
 
 // AvailableDoctorIDs returns a maximum of N available doctor IDs where N is capped at a 100.
@@ -204,25 +208,27 @@ func (d *dataService) AvailableDoctorIDs(n int) ([]int64, error) {
 	}
 
 	rows, err := d.db.Query(`
-		SELECT DISTINCT provider_id
+		SELECT DISTINCT(provider_id)
 		FROM care_provider_state_elligibility
+		INNER JOIN practice_model ON practice_model.doctor_id = care_provider_state_elligibility.provider_id
 		WHERE unavailable = 0
-		AND role_type_id = ?
-		LIMIT ?`, d.roleTypeMapping[RoleDoctor], n)
+			AND practice_model.spruce_pc = true
+			AND role_type_id = ?
+			LIMIT ?`, d.roleTypeMapping[RoleDoctor], n)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	var doctorIDs []int64
 	for rows.Next() {
 		var id int64
 		if err := rows.Scan(&id); err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 		doctorIDs = append(doctorIDs, id)
 	}
 
-	return doctorIDs, rows.Err()
+	return doctorIDs, errors.Trace(rows.Err())
 }
 
 func (d *dataService) CareProviderStatePathwayMappings(query *CareProviderStatePathwayMappingQuery) ([]*CareProviderStatePathway, error) {
@@ -236,7 +242,7 @@ func (d *dataService) CareProviderStatePathwayMappings(query *CareProviderStateP
 		if query.PathwayTag != "" {
 			pathwayID, err := d.pathwayIDFromTag(query.PathwayTag)
 			if err != nil {
-				return nil, err
+				return nil, errors.Trace(err)
 			}
 			where = append(where, "cps.clinical_pathway_id = ?")
 			vals = append(vals, pathwayID)
@@ -259,7 +265,7 @@ func (d *dataService) CareProviderStatePathwayMappings(query *CareProviderStateP
 		`+whereClause+`
 		LIMIT 1000`, vals...)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	defer rows.Close()
 
@@ -272,16 +278,16 @@ func (d *dataService) CareProviderStatePathwayMappings(query *CareProviderStateP
 			&p.ID, &roleID, &p.Provider.ID, &p.Notify, &p.Unavailable,
 			&p.StateCode, &pathwayID, &p.ShortDisplayName, &p.ThumbnailID,
 		); err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 		p.PathwayTag, err = d.pathwayTagFromID(pathwayID)
 		if err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 		p.Provider.Role = d.roleIDMapping[roleID]
 		providers = append(providers, p)
 	}
-	return providers, rows.Err()
+	return providers, errors.Trace(rows.Err())
 }
 
 func (d *dataService) CareProviderStatePathwayMappingSummary() ([]*CareProviderStatePathwayMappingSummary, error) {
@@ -315,12 +321,12 @@ func (d *dataService) CareProviderStatePathwayMappingSummary() ([]*CareProviderS
 func (d *dataService) UpdateCareProviderStatePathwayMapping(patch *CareProviderStatePathwayMappingPatch) error {
 	tx, err := d.db.Begin()
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	if err := d.careProviderStatePathwayMappingUpdate(tx, patch.Update); err != nil {
 		tx.Rollback()
-		return err
+		return errors.Trace(err)
 	}
 
 	if len(patch.Delete) > 0 {
@@ -330,7 +336,7 @@ func (d *dataService) UpdateCareProviderStatePathwayMapping(patch *CareProviderS
 			dbutil.AppendInt64sToInterfaceSlice(nil, patch.Delete)...)
 		if err != nil {
 			tx.Rollback()
-			return err
+			return errors.Trace(err)
 		}
 	}
 
@@ -340,19 +346,19 @@ func (d *dataService) UpdateCareProviderStatePathwayMapping(patch *CareProviderS
 		for _, c := range patch.Create {
 			spID, err := d.GetCareProvidingStateID(c.StateCode, c.PathwayTag)
 			if IsErrNotFound(err) {
-				name, code, err := d.State(c.StateCode)
+				state, err := d.State(c.StateCode)
 				if err != nil {
 					tx.Rollback()
-					return err
+					return errors.Trace(err)
 				}
-				spID, err = d.AddCareProvidingState(code, name, c.PathwayTag)
+				spID, err = d.AddCareProvidingState(state, c.PathwayTag)
 				if err != nil {
 					tx.Rollback()
-					return err
+					return errors.Trace(err)
 				}
 			} else if err != nil {
 				tx.Rollback()
-				return err
+				return errors.Trace(err)
 			}
 			_, err = tx.Exec(`
 				INSERT IGNORE INTO care_provider_state_elligibility
@@ -362,7 +368,7 @@ func (d *dataService) UpdateCareProviderStatePathwayMapping(patch *CareProviderS
 				c.Notify, c.Unavailable)
 			if err != nil {
 				tx.Rollback()
-				return err
+				return errors.Trace(err)
 			}
 		}
 	}
@@ -393,7 +399,7 @@ func (d *dataService) careProviderStatePathwayMappingUpdate(tx *sql.Tx, updates 
 			SET `+strings.Join(cols, ", ")+`
 			WHERE id = ?`, vals...)
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 	}
 	return nil

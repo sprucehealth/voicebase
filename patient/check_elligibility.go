@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/attribution"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"golang.org/x/net/context"
@@ -36,8 +37,6 @@ func NewCheckCareProvidingEligibilityHandler(dataAPI api.DataAPI,
 type CheckCareProvidingElligibilityRequestData struct {
 	ZipCode   string `schema:"zip_code"`
 	StateCode string `schema:"state_code"`
-	// Note: This will transition to the attribution tracking in a upcoming change
-	CareProviderID int64 `schema:"care_provider_id"`
 }
 
 func (c *checkCareProvidingElligibilityHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
@@ -49,29 +48,6 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(ctx context.Context, w
 
 	var cityStateInfo *address.CityState
 	var err error
-
-	// If a provider ID is given then assumte this is a practice extension case
-	if requestData.CareProviderID != 0 {
-		doctor, err := c.dataAPI.GetDoctorFromID(requestData.CareProviderID)
-		if api.IsErrNotFound(err) {
-			apiservice.WriteValidationError(ctx, "The provided doctor ID is not valid", w, r)
-			return
-		} else if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
-			return
-		}
-
-		practiceModel, err := c.dataAPI.PracticeModel(doctor.ID.Int64())
-		if err != nil {
-			apiservice.WriteError(ctx, err, w, r)
-			return
-		}
-
-		if !practiceModel.HasPracticeExtension {
-			apiservice.WriteValidationError(ctx, "The requested doctor is not available for practice extension", w, r)
-			return
-		}
-	}
 
 	// resolve the provided zipcode to the state in the event that stateCode is not
 	// already provided by the client
@@ -85,7 +61,7 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(ctx context.Context, w
 			return
 		}
 	} else {
-		state, _, err := c.dataAPI.State(requestData.StateCode)
+		state, err := c.dataAPI.State(requestData.StateCode)
 		if api.IsErrNotFound(err) {
 			apiservice.WriteValidationError(ctx, "Enter valid state code", w, r)
 			return
@@ -95,7 +71,7 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(ctx context.Context, w
 		}
 
 		cityStateInfo = &address.CityState{
-			State:             state,
+			State:             state.Name,
 			StateAbbreviation: requestData.StateCode,
 		}
 	}
@@ -105,8 +81,50 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(ctx context.Context, w
 		return
 	}
 
+	// Check device attribution for information we may find relevant
+	var careProviderID int64
+	deviceID, err := apiservice.GetDeviceIDFromHeader(r)
+	if err != nil {
+		golog.Errorf("Couldn't get device ID from header for elligibility check: %s", err)
+	} else {
+		aData, err := c.dataAPI.LatestDeviceAttributionData(deviceID)
+		if err != nil && !api.IsErrNotFound(err) {
+			golog.Errorf("Couldn't get latest device attribution data for device ID: %s", deviceID)
+		} else if !api.IsErrNotFound(err) {
+			providerID, ok, err := aData.Int64Data(attribution.AKCareProviderID)
+			if err != nil {
+				golog.Errorf("Encountered error while checking for provider id in attribution data: %s", err)
+			} else if ok {
+				careProviderID = providerID
+			}
+		}
+	}
+
+	// If a provider ID is given then assume this is a practice extension case
+	if careProviderID != 0 {
+		state, err := c.dataAPI.State(cityStateInfo.State)
+		if err != nil {
+			apiservice.WriteValidationError(ctx, "The state information is not valid", w, r)
+			return
+		} else if err != nil {
+			apiservice.WriteError(ctx, err, w, r)
+			return
+		}
+
+		practiceModel, err := c.dataAPI.PracticeModel(careProviderID, state.ID)
+		if err != nil && !api.IsErrNotFound(err) {
+			apiservice.WriteError(ctx, err, w, r)
+			return
+		}
+
+		if api.IsErrNotFound(err) || !practiceModel.HasPracticeExtension {
+			apiservice.WriteValidationError(ctx, "The requested doctor is not available for practice extension in this location. Please email support@sprucehealth.com for assistance", w, r)
+			return
+		}
+	}
+
 	isAvailable := true
-	if requestData.CareProviderID == 0 {
+	if careProviderID == 0 {
 		isAvailable, err = c.dataAPI.SpruceAvailableInState(cityStateInfo.StateAbbreviation)
 		if err != nil {
 			apiservice.WriteError(ctx, err, w, r)

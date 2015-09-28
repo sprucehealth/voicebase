@@ -51,8 +51,11 @@ func TestCareTeam_AddDoctor(t *testing.T) {
 		AND cps.clinical_pathway_id = ?`, dr.DoctorID, acnePathway.ID)
 	test.OK(t, err)
 
+	state, err := testData.DataAPI.State("NY")
+	test.OK(t, err)
+
 	// now register the 3rd doctor for this pathway but in another state (NY)
-	careProvidingStateID, err := testData.DataAPI.AddCareProvidingState("NY", "New York", pathway.Tag)
+	careProvidingStateID, err := testData.DataAPI.AddCareProvidingState(state, pathway.Tag)
 	test.OK(t, err)
 	test.OK(t, testData.DataAPI.MakeDoctorElligibleinCareProvidingState(careProvidingStateID, dr3.DoctorID))
 

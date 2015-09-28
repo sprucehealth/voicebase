@@ -136,9 +136,10 @@ type MedicalRecordAPI interface {
 }
 
 type PatientCaseUpdate struct {
-	Status      *common.CaseStatus
-	ClosedDate  *time.Time
-	TimeoutDate NullableTime
+	Status            *common.CaseStatus
+	ClosedDate        *time.Time
+	TimeoutDate       NullableTime
+	PracticeExtension *bool
 }
 
 type PatientCaseAPI interface {
@@ -238,7 +239,7 @@ type PatientVisitAPI interface {
 	VisitsSubmittedForPatientSince(patientID common.PatientID, since time.Time) ([]*common.PatientVisit, error)
 	GetPatientCaseIDFromPatientVisitID(patientVisitID int64) (int64, error)
 	PendingFollowupVisitForCase(caseID int64) (*common.PatientVisit, error)
-	CreatePatientVisit(visit *common.PatientVisit, requestedDoctorID *int64) (int64, error)
+	CreatePatientVisit(visit *common.PatientVisit, requestedDoctorID *int64, practiceExtension bool) (int64, error)
 	SetMessageForPatientVisit(patientVisitID int64, message string) error
 	GetMessageForPatientVisit(patientVisitID int64) (string, error)
 	GetPatientIDFromTreatmentPlanID(treatmentPlanID int64) (common.PatientID, error)
@@ -420,7 +421,7 @@ type DoctorManagementAPI interface {
 	AvailableStates() ([]*common.State, error)
 	SpruceAvailableInState(state string) (bool, error)
 	GetCareProvidingStateID(stateAbbreviation, pathwayTag string) (int64, error)
-	AddCareProvidingState(stateAbbreviation, fullStateName, pathwayTag string) (int64, error)
+	AddCareProvidingState(state *common.State, pathwayTag string) (int64, error)
 	MakeDoctorElligibleinCareProvidingState(careProvidingStateID, doctorID int64) error
 	// CareProviderEligible returns true if the provided care provider is eligible
 	// to see patients in the provided pathway,state combination.
@@ -732,8 +733,9 @@ type ResourceLibraryAPI interface {
 	UpdateResourceGuide(id int64, update *ResourceGuideUpdate) error
 }
 
+// GeoAPI provides methods related to geographic information
 type GeoAPI interface {
-	State(state string) (full string, short string, err error)
+	State(state string) (*common.State, error)
 	ListStates() ([]*common.State, error)
 }
 
@@ -1072,8 +1074,12 @@ type LockAPI interface {
 
 // PracticeModelAPI represents the methods needed to interact with the practice_model records and provide a DAL
 type PracticeModelAPI interface {
-	PracticeModel(doctorID int64) (*common.PracticeModel, error)
-	UpdatePracticeModel(doctorID int64, pmu *common.PracticeModelUpdate) (int64, error)
+	InitializePracticeModelInAllStates(doctorID int64) error
+	PracticeModel(doctorID, stateID int64) (*common.PracticeModel, error)
+	PracticeModels(doctorID int64) (map[string]*common.PracticeModel, error)
+	HasPracticeExtensionInAnyState(doctorID int64) (bool, error)
+	UpdatePracticeModel(doctorID, stateID int64, pmu *common.PracticeModelUpdate) (int64, error)
+	UpsertPracticeModelInAllStates(doctorID int64, aspmu *common.AllStatesPracticeModelUpdate) (int64, error)
 }
 
 // AttributionAPI represents the methods needed to interact with the attribution_data records and provide a DAL

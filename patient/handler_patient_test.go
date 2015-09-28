@@ -78,7 +78,7 @@ func (m *mockDataAPI_PatientVisitHandler) SKUForPathway(tag string, category com
 func (m *mockDataAPI_PatientVisitHandler) IntakeLayoutVersionIDForAppVersion(appVersion *encoding.Version, platform common.Platform, pathwayID, languageID int64, skuType string) (int64, error) {
 	return 0, nil
 }
-func (m *mockDataAPI_PatientVisitHandler) CreatePatientVisit(visit *common.PatientVisit, requestedDoctorID *int64) (int64, error) {
+func (m *mockDataAPI_PatientVisitHandler) CreatePatientVisit(visit *common.PatientVisit, requestedDoctorID *int64, practiceExtension bool) (int64, error) {
 	if m.createVisitFunc != nil {
 		return m.createVisitFunc(visit)
 	}
@@ -113,8 +113,8 @@ func (m *mockDataAPI_PatientVisitHandler) TrackPatientAgreements(patientID commo
 func (m *mockDataAPI_PatientVisitHandler) ParkedAccount(email string) (*common.ParkedAccount, error) {
 	return nil, api.ErrNotFound("parked_account")
 }
-func (m *mockDataAPI_PatientVisitHandler) State(stateCode string) (string, string, error) {
-	return "", "", nil
+func (m *mockDataAPI_PatientVisitHandler) State(stateCode string) (*common.State, error) {
+	return &common.State{Name: "", Abbreviation: ""}, nil
 }
 func (m *mockDataAPI_PatientVisitHandler) UpdateCredit(accountID int64, credit int, currency string) error {
 	if m.updateAccountCreditFunc != nil {

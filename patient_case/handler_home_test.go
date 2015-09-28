@@ -56,8 +56,8 @@ func (m *mockHomeHandlerDataAPI) LocalizedText(langID int64, tags []string) (map
 func (m *mockHomeHandlerDataAPI) CreateToken(purpose, key, token string, expire time.Duration) (string, error) {
 	return purpose + key + token, nil
 }
-func (m *mockHomeHandlerDataAPI) State(stateCode string) (string, string, error) {
-	return m.stateName, m.stateName, nil
+func (m *mockHomeHandlerDataAPI) State(stateCode string) (*common.State, error) {
+	return &common.State{Name: m.stateName, Abbreviation: m.stateName}, nil
 }
 func (m *mockHomeHandlerDataAPI) GetPatientFromAccountID(accountID int64) (*common.Patient, error) {
 	return m.patient, nil

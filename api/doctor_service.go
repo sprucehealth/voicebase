@@ -72,9 +72,8 @@ func (d *dataService) RegisterProvider(provider *common.Doctor, role string) (in
 
 	provider.ID = encoding.DeprecatedNewObjectID(lastID)
 
-	// Initialize the providers practice model record with nothing enabled
-	_, err = tx.Exec(`INSERT INTO practice_model (doctor_id) VALUES (?)`, provider.ID)
-	if err != nil {
+	// Initialize the providers practice model records with nothing enabled
+	if err := d.initializePracticeModelInAllStates(provider.ID.Int64(), tx); err != nil {
 		tx.Rollback()
 		return 0, errors.Trace(err)
 	}
@@ -1440,19 +1439,44 @@ func (d *dataService) RemoveResourceGuidesFromTreatmentPlan(tpID int64, guideIDs
 	return errors.Trace(err)
 }
 
-func (d *dataService) PracticeModel(doctorID int64) (*common.PracticeModel, error) {
+func (d *dataService) PracticeModel(doctorID, stateID int64) (*common.PracticeModel, error) {
 	pm := &common.PracticeModel{}
 	err := d.db.QueryRow(`
-		SELECT doctor_id, spruce_pc, practice_extension 
-		FROM practice_model WHERE doctor_id = ?`, doctorID).Scan(&pm.DoctorID, &pm.IsSprucePC, &pm.HasPracticeExtension)
+		SELECT doctor_id, spruce_pc, practice_extension, state_id
+		FROM practice_model WHERE doctor_id = ? AND state_id = ?`, doctorID, stateID).Scan(&pm.DoctorID, &pm.IsSprucePC, &pm.HasPracticeExtension, &pm.StateID)
 	if err == sql.ErrNoRows {
 		// TODO: Think up a better way tp attach context to ErrNotFound
-		return nil, errors.Trace(ErrNotFound(fmt.Sprintf(`practice_model(doctor_id:%d)`, doctorID)))
+		return nil, errors.Trace(ErrNotFound(fmt.Sprintf(`practice_model(doctor_id:%d, state_id:%d)`, doctorID, stateID)))
 	}
 	return pm, errors.Trace(err)
 }
 
-func (d *dataService) UpdatePracticeModel(doctorID int64, pmu *common.PracticeModelUpdate) (int64, error) {
+// TODO: This should map state ID's to practice models not abbreviations in the near future
+func (d *dataService) PracticeModels(doctorID int64) (map[string]*common.PracticeModel, error) {
+	rows, err := d.db.Query(`
+		SELECT doctor_id, spruce_pc, practice_extension, state_id, state.abbreviation
+		FROM practice_model 
+		JOIN state ON practice_model.state_id = state.id 
+		WHERE doctor_id = ?`, doctorID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	pms := make(map[string]*common.PracticeModel)
+	for rows.Next() {
+		var pm common.PracticeModel
+		var stateAbbreviation string
+		if err := rows.Scan(&pm.DoctorID, &pm.IsSprucePC, &pm.HasPracticeExtension, &pm.StateID, &stateAbbreviation); err != nil {
+			return nil, errors.Trace(err)
+		}
+		pms[stateAbbreviation] = &pm
+	}
+
+	return pms, errors.Trace(rows.Err())
+}
+
+func (d *dataService) UpdatePracticeModel(doctorID, stateID int64, pmu *common.PracticeModelUpdate) (int64, error) {
 	varArgs := dbutil.MySQLVarArgs()
 	if pmu.IsSprucePC != nil {
 		varArgs.Append(`spruce_pc`, *pmu.IsSprucePC)
@@ -1461,7 +1485,56 @@ func (d *dataService) UpdatePracticeModel(doctorID int64, pmu *common.PracticeMo
 		varArgs.Append(`practice_extension`, *pmu.HasPracticeExtension)
 	}
 	res, err := d.db.Exec(`
-		UPDATE practice_model SET `+varArgs.Columns()+` WHERE doctor_id = ?`, append(varArgs.Values(), doctorID)...)
+		UPDATE practice_model SET `+varArgs.Columns()+` WHERE doctor_id = ? AND state_id = ?`, append(varArgs.Values(), doctorID, stateID)...)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+	aff, err := res.RowsAffected()
+	return aff, errors.Trace(err)
+}
+
+func (d *dataService) HasPracticeExtensionInAnyState(doctorID int64) (bool, error) {
+	var id int64
+	if err := d.db.QueryRow(`SELECT doctor_id FROM practice_model WHERE practice_extension = true AND doctor_id = ? LIMIT 1`, doctorID).Scan(&id); err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, errors.Trace(err)
+	}
+	return true, nil
+}
+
+func (d *dataService) initializePracticeModelInAllStates(doctorID int64, db db) error {
+	_, err := db.Exec(
+		`INSERT INTO practice_model (doctor_id, state_id)
+			SELECT ?, id FROM state 
+			WHERE id NOT IN (SELECT state_id FROM practice_model WHERE doctor_id = ?)`, doctorID, doctorID)
+	return errors.Trace(err)
+}
+
+func (d *dataService) InitializePracticeModelInAllStates(doctorID int64) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	if err := d.initializePracticeModelInAllStates(doctorID, tx); err != nil {
+		tx.Rollback()
+		return errors.Trace(err)
+	}
+
+	return errors.Trace(tx.Commit())
+}
+
+func (d *dataService) UpsertPracticeModelInAllStates(doctorID int64, aspmu *common.AllStatesPracticeModelUpdate) (int64, error) {
+	if err := d.InitializePracticeModelInAllStates(doctorID); err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	varArgs := dbutil.MySQLVarArgs()
+	if aspmu.HasPracticeExtension != nil {
+		varArgs.Append(`practice_extension`, *aspmu.HasPracticeExtension)
+	}
+	res, err := d.db.Exec(`UPDATE practice_model SET `+varArgs.Columns()+` WHERE doctor_id = ?`, append(varArgs.Values(), doctorID)...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}

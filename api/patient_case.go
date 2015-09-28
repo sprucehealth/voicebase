@@ -51,7 +51,7 @@ func (d *dataService) GetDoctorsAssignedToPatientCase(patientCaseID int64) ([]*c
 
 func (d *dataService) TimedOutCases() ([]*common.PatientCase, error) {
 	rows, err := d.db.Query(`
-		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed
+		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed, pc.practice_extension
 		FROM patient_case pc
 		WHERE timeout_date IS NOT null AND timeout_date < ?`, time.Now())
 	if err != nil {
@@ -214,7 +214,7 @@ func (d *dataService) CasesForPathway(patientID common.PatientID, pathwayTag str
 	vals := dbutil.AppendStringsToInterfaceSlice(nil, states)
 	vals = append(vals, patientID, pathwayID)
 	rows, err := d.db.Query(`
-		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed
+		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed, pc.practice_extension
 		FROM patient_case pc
 		WHERE `+whereClause+` patient_id = ? AND clinical_pathway_id = ?`, vals...)
 	if err != nil {
@@ -237,7 +237,7 @@ func (d *dataService) CasesForPathway(patientID common.PatientID, pathwayTag str
 
 func (d *dataService) GetPatientCaseFromPatientVisitID(patientVisitID int64) (*common.PatientCase, error) {
 	row := d.db.QueryRow(`
-		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed
+		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed, pc.practice_extension
 		FROM patient_case pc
 		INNER JOIN patient_visit pv ON pv.patient_case_id = pc.id
 		WHERE pv.id = ?`, patientVisitID)
@@ -247,7 +247,7 @@ func (d *dataService) GetPatientCaseFromPatientVisitID(patientVisitID int64) (*c
 
 func (d *dataService) GetPatientCaseFromID(patientCaseID int64) (*common.PatientCase, error) {
 	row := d.db.QueryRow(`
-		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed
+		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed, pc.practice_extension
 		FROM patient_case pc
 		WHERE pc.id = ?`, patientCaseID)
 
@@ -266,7 +266,7 @@ func (d *dataService) GetCasesForPatient(patientID common.PatientID, states []st
 		vals = dbutil.AppendStringsToInterfaceSlice(vals, common.DeletedPatientCaseStates())
 	}
 	rows, err := d.db.Query(`
-		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed
+		SELECT pc.id, pc.patient_id, pc.clinical_pathway_id, pc.name, pc.creation_date, pc.closed_date, pc.timeout_date, pc.status, pc.claimed, pc.practice_extension
 		FROM patient_case pc
 		WHERE patient_id = ? `+whereClause+`
 		ORDER BY creation_date DESC`, vals...)
@@ -451,9 +451,10 @@ func (d *dataService) getPatientCaseFromRow(s scannable) (*common.PatientCase, e
 		&patientCase.ClosedDate,
 		&patientCase.TimeoutDate,
 		&patientCase.Status,
-		&patientCase.Claimed)
+		&patientCase.Claimed,
+		&patientCase.PracticeExtension)
 	if err == sql.ErrNoRows {
-		return nil, ErrNotFound("patient_case")
+		return nil, errors.Trace(ErrNotFound("patient_case"))
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -574,47 +575,47 @@ func (d *dataService) InsertCaseNotification(notificationItem *common.CaseNotifi
 
 	_, err = d.db.Exec(`replace into case_notification (patient_case_id, notification_type, uid, data) values (?,?,?,?)`,
 		notificationItem.PatientCaseID, notificationItem.NotificationType, notificationItem.UID, notificationData)
-	return err
+	return errors.Trace(err)
 }
 
 func (d *dataService) DeleteCaseNotification(uid string, patientCaseID int64) error {
 	_, err := d.db.Exec(`delete from case_notification where uid = ? and patient_case_id = ?`, uid, patientCaseID)
-	return err
+	return errors.Trace(err)
 }
 
 func (d *dataService) createPatientCase(tx *sql.Tx, patientCase *common.PatientCase) error {
 	if patientCase.Name == "" {
 		pathway, err := d.PathwayForTag(patientCase.PathwayTag, PONone)
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 		patientCase.Name = pathway.Name
 	}
 
 	pathwayID, err := d.pathwayIDFromTag(patientCase.PathwayTag)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	res, err := tx.Exec(`
 		INSERT INTO patient_case
-			(patient_id, name, status, clinical_pathway_id, requested_doctor_id)
-		VALUES (?, ?, ?, ?, ?)`,
-		patientCase.PatientID.Int64(), patientCase.Name, patientCase.Status.String(), pathwayID, patientCase.RequestedDoctorID)
+			(patient_id, name, status, clinical_pathway_id, requested_doctor_id, practice_extension)
+		VALUES (?, ?, ?, ?, ?, ?)`,
+		patientCase.PatientID.Int64(), patientCase.Name, patientCase.Status.String(), pathwayID, patientCase.RequestedDoctorID, patientCase.PracticeExtension)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	patientCaseID, err := res.LastInsertId()
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 	patientCase.ID = encoding.DeprecatedNewObjectID(patientCaseID)
 
 	// Assign a random primary CC to the case care team
 	cc, err := d.ListCareProviders(LCPOptPrimaryCCOnly)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 	if len(cc) == 0 {
 		return nil
@@ -632,6 +633,9 @@ func (d *dataService) UpdatePatientCase(id int64, update *PatientCaseUpdate) err
 	}
 	if update.TimeoutDate.Valid {
 		args.Append("timeout_date", update.TimeoutDate.Time)
+	}
+	if update.PracticeExtension != nil {
+		args.Append("practice_extension", *update.PracticeExtension)
 	}
 	if args.IsEmpty() {
 		return nil

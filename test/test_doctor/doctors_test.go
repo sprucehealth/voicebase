@@ -51,9 +51,11 @@ func TestDoctors_AvailableForCareProvidingState(t *testing.T) {
 	}
 
 	test.OK(t, testData.DataAPI.CreatePathway(p1))
+	state, err := testData.DataAPI.State("FL")
+	test.OK(t, err)
 
 	// register this new pathway as pathway to support on Spruce in FL
-	careProvidingStateID, err := testData.DataAPI.AddCareProvidingState("FL", "Floriday", p1.Tag)
+	careProvidingStateID, err := testData.DataAPI.AddCareProvidingState(state, p1.Tag)
 	test.OK(t, err)
 
 	// add all 3 doctors as eligible for the pathway/state combination
@@ -111,9 +113,11 @@ func TestDoctors_EligibleQuery(t *testing.T) {
 	}
 
 	test.OK(t, testData.DataAPI.CreatePathway(p1))
+	state, err := testData.DataAPI.State("FL")
+	test.OK(t, err)
 
 	// register this new pathway as pathway to support on Spruce in FL
-	careProvidingStateID, err := testData.DataAPI.AddCareProvidingState("FL", "Floriday", p1.Tag)
+	careProvidingStateID, err := testData.DataAPI.AddCareProvidingState(state, p1.Tag)
 	test.OK(t, err)
 
 	// add 2 doctors as eligible for the pathway/state combination
@@ -157,11 +161,16 @@ func TestDoctors_ListAvailableDoctors(t *testing.T) {
 	_, err := testData.DB.Exec(`DELETE FROM care_provider_state_elligibility`)
 	test.OK(t, err)
 
-	// get same doctor registered in multiple states
-	careProvidingStateID, err := testData.DataAPI.AddCareProvidingState("FL", "Florida", api.AcnePathwayTag)
+	flState, err := testData.DataAPI.State("FL")
+	test.OK(t, err)
+	nyState, err := testData.DataAPI.State("NY")
 	test.OK(t, err)
 
-	careProvidingStateID2, err := testData.DataAPI.AddCareProvidingState("NY", "New York", api.AcnePathwayTag)
+	// get same doctor registered in multiple states
+	careProvidingStateID, err := testData.DataAPI.AddCareProvidingState(flState, api.AcnePathwayTag)
+	test.OK(t, err)
+
+	careProvidingStateID2, err := testData.DataAPI.AddCareProvidingState(nyState, api.AcnePathwayTag)
 	test.OK(t, err)
 
 	test.OK(t, testData.DataAPI.MakeDoctorElligibleinCareProvidingState(careProvidingStateID, dr.DoctorID))

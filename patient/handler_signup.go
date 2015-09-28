@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -166,7 +165,7 @@ func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.
 			return nil, err
 		}
 	} else {
-		state, _, err := s.dataAPI.State(requestData.StateCode)
+		state, err := s.dataAPI.State(requestData.StateCode)
 		if api.IsErrNotFound(err) {
 			return nil, apiservice.NewValidationError("Invalid state code")
 		} else if err != nil {
@@ -174,7 +173,7 @@ func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.
 		}
 
 		data.cityState = &address.CityState{
-			State:             state,
+			State:             state.Name,
 			StateAbbreviation: requestData.StateCode,
 		}
 	}
@@ -315,47 +314,33 @@ func (s *SignupHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 	// Check their device attribution for possible doctorID's and pathwayTags
 	// For bakcwards compatibility we need to merge this data into what came up with the API call
 	// Swallow/Log any errors and just move on....
+	// If the doctor ID comes up as part of the request then it is doctor selection
+	// if it is pulled from attribution data then it is practice extension
+	var practiceExtension bool
 	doctorID := requestData.DoctorID
 	pathwayTag := requestData.PathwayTag
 	var attributionData *model.AttributionData
 	deviceID, err := apiservice.GetDeviceIDFromHeader(r)
 	if err != nil {
-		golog.Errorf("Failed to get device ID from header during account creation: %s", err)
+		golog.Errorf("Couldn't get device ID from header for patient signup : %s", err)
 	} else {
-		ad, err := s.dataAPI.LatestDeviceAttributionData(deviceID)
-		switch {
-		case api.IsErrNotFound(err):
-			break
-		case err != nil:
-			golog.Errorf("Failed to fetch attribution data for device %s: %s", deviceID, err)
-		default:
-			attributionData = ad
-			if requestData.DoctorID == 0 {
-				doctorIDValue, ok := ad.Data[attribution.AKCareProviderID]
-				if ok {
-					sDoctorID, ok := doctorIDValue.(string)
-					if ok {
-						dID, err := strconv.ParseInt(sDoctorID, 10, 64)
-						if err != nil {
-							golog.Errorf("Found %s in attribution record but was unable to convert value %s to int64", attribution.AKCareProviderID, sDoctorID)
-						} else {
-							doctorID = dID
-						}
-					} else {
-						golog.Errorf("Found %s in attribution record but was unable to convert to string", attribution.AKCareProviderID)
-					}
-				}
+		aData, err := s.dataAPI.LatestDeviceAttributionData(deviceID)
+		if err != nil && !api.IsErrNotFound(err) {
+			golog.Errorf("Couldn't get latest device attribution data for device ID: %s", deviceID)
+		} else if !api.IsErrNotFound(err) {
+			attributionData = aData
+			providerID, ok, err := aData.Int64Data(attribution.AKCareProviderID)
+			if err != nil {
+				golog.Errorf("Encountered error while checking for provider id in attribution data: %s", err)
+			} else if ok {
+				doctorID = providerID
+				practiceExtension = true
 			}
-			if requestData.PathwayTag == "" {
-				pathwayTagValue, ok := ad.Data[attribution.AKPathwayTag]
-				if ok {
-					pTag, ok := pathwayTagValue.(string)
-					if ok {
-						pathwayTag = pTag
-					} else {
-						golog.Errorf("Found %s in attribution record but was unable to convert to string", attribution.AKPathwayTag)
-					}
-				}
+			pTag, ok, err := aData.StringData(attribution.AKPathwayTag)
+			if err != nil {
+				golog.Errorf("Encountered error while checking for pathway tag in attribution data: %s", err)
+			} else if ok {
+				pathwayTag = pTag
 			}
 		}
 	}
@@ -373,7 +358,9 @@ func (s *SignupHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 			s.dispatcher,
 			s.mediaStore,
 			s.expirationDuration,
-			r, nil)
+			r,
+			nil,
+			practiceExtension)
 		if err != nil {
 			apiservice.WriteError(ctx, err, w, r)
 			return
@@ -455,6 +442,7 @@ func (s *SignupHandler) applyAttribution(r *http.Request, accountID int64, newPa
 	// asynchronously apply any promotion information we found in attribution
 	conc.Go(func() {
 		if attributionPromoCode != "" {
+			var isDoctorReferral bool
 			promoCode, err := s.dataAPI.LookupPromoCode(attributionPromoCode)
 			if api.IsErrNotFound(err) {
 				golog.Warningf("Promotion code in attribution data could not be found %s", attributionPromoCode)
@@ -470,6 +458,14 @@ func (s *SignupHandler) applyAttribution(r *http.Request, accountID int64, newPa
 				if err != nil {
 					golog.Errorf(err.Error())
 					return
+				}
+				// If it's a doctor referral code don't apply it as that should have been taken care of by the visit creation
+				_, err = s.dataAPI.GetDoctorFromAccountID(rp.AccountID)
+				if err != nil && !api.IsErrNotFound(err) {
+					golog.Errorf(err.Error())
+					return
+				} else if err == nil {
+					isDoctorReferral = true
 				}
 				if err := rp.Data.(promotions.ReferralProgram).ReferredAccountAssociatedCode(accountID, promoCode.ID, s.dataAPI); err != nil {
 					golog.Errorf(err.Error())
@@ -528,10 +524,13 @@ func (s *SignupHandler) applyAttribution(r *http.Request, accountID int64, newPa
 				},
 			})
 
-			async := false
-			_, err = promotions.AssociatePromoCode(newPatient.Email, newPatient.StateFromZipCode, attributionPromoCode, s.dataAPI, s.authAPI, s.analyticsLogger, async)
-			if err != nil {
-				golog.Errorf("Unable associate promo code %s at account creation time: %v", attributionPromoCode, err)
+			// If we found a doctor associated with the account then don't apply the code
+			if !isDoctorReferral {
+				async := false
+				_, err = promotions.AssociatePromoCode(newPatient.Email, newPatient.StateFromZipCode, attributionPromoCode, s.dataAPI, s.authAPI, s.analyticsLogger, async)
+				if err != nil {
+					golog.Errorf("Unable associate promo code %s at account creation time: %v", attributionPromoCode, err)
+				}
 			}
 		}
 	})

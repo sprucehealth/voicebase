@@ -45,7 +45,9 @@ func TestPatientVisit_MultiplePathways(t *testing.T) {
 	test_integration.UploadLayoutPairForPathway(p1.Tag, testData, t)
 
 	// register doctor in CA for this new pathway
-	careProvidingStateID, err := testData.DataAPI.AddCareProvidingState("CA", "California", p1.Tag)
+	state, err := testData.DataAPI.State("CA")
+	test.OK(t, err)
+	careProvidingStateID, err := testData.DataAPI.AddCareProvidingState(state, p1.Tag)
 	test.OK(t, err)
 	test.OK(t, testData.DataAPI.MakeDoctorElligibleinCareProvidingState(careProvidingStateID, dr.DoctorID))
 
@@ -73,7 +75,7 @@ func TestPatientVisit_MultiplePathways(t *testing.T) {
 	// upload layouts for pathway
 	test_integration.UploadLayoutPairForPathway(p2.Tag, testData, t)
 	// register doctor in CA for this new pathway
-	careProvidingStateID, err = testData.DataAPI.AddCareProvidingState("CA", "California", p2.Tag)
+	careProvidingStateID, err = testData.DataAPI.AddCareProvidingState(state, p2.Tag)
 	test.OK(t, err)
 	test.OK(t, testData.DataAPI.MakeDoctorElligibleinCareProvidingState(careProvidingStateID, dr.DoctorID))
 

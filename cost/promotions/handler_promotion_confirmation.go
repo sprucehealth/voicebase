@@ -4,13 +4,19 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/attribution"
+	"github.com/sprucehealth/backend/attribution/model"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/schema"
 	"golang.org/x/net/context"
 )
@@ -93,12 +99,30 @@ func (h *promotionConfirmationHandler) serveGET(ctx context.Context, w http.Resp
 		// This information will help us construct the appropriate message
 		patient, err := h.dataAPI.GetPatientFromAccountID(rp.AccountID)
 		if err != nil && api.IsErrNotFound(err) {
-			_, err := h.dataAPI.GetDoctorFromAccountID(rp.AccountID)
+			dr, err := h.dataAPI.GetDoctorFromAccountID(rp.AccountID)
 			if err != nil {
 				apiservice.WriteError(ctx, fmt.Errorf("Unable to locate referral program owner for Account ID %d. Checked both patient and doctor records.", rp.AccountID), w, r)
 				return
 			}
 			title = "Welcome to Spruce"
+
+			// HACK: This is a temporary stop gap for tracking the practice extention doctor through the life of this device till account_creation
+			conc.Go(func() {
+				deviceID, err := apiservice.GetDeviceIDFromHeader(r)
+				if err != nil {
+					golog.Errorf("Couldn't get device ID from header to perform practice extension provider ID tracking: %s", err)
+				} else {
+					_, err := h.dataAPI.InsertAttributionData(&model.AttributionData{
+						DeviceID: ptr.String(deviceID),
+						Data: map[string]interface{}{
+							attribution.AKCareProviderID: strconv.FormatInt(dr.ID.Int64(), 10),
+						},
+					})
+					if err != nil {
+						golog.Errorf("Error while inserting attribution data for practice extention provider ID tracking: %s", err)
+					}
+				}
+			})
 		} else if err != nil {
 			apiservice.WriteError(ctx, err, w, r)
 			return

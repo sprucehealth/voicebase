@@ -107,6 +107,7 @@ func (a *alertsHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool
 
 func (a *alertsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	requestCache := apiservice.MustCtxCache(ctx)
+	account := apiservice.MustCtxAccount(ctx)
 	rd := requestCache[apiservice.CKRequestData].(*alertsRequestData)
 
 	visitID := rd.VisitID
@@ -152,6 +153,37 @@ func (a *alertsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
+
+	visit, err := a.dataAPI.GetPatientVisitFromID(visitID)
+	if err != nil {
+		apiservice.WriteError(ctx, err, w, r)
+		return
+	}
+
+	patientCase, err := a.dataAPI.GetPatientCaseFromID(visit.PatientCaseID.Int64())
+	if err != nil {
+		apiservice.WriteError(ctx, err, w, r)
+		return
+	}
+
+	doctor, err := a.dataAPI.GetDoctorFromAccountID(account.ID)
+	if err != nil {
+		apiservice.WriteError(ctx, err, w, r)
+		return
+	}
+
+	patient, err := a.dataAPI.GetPatientFromPatientVisitID(visitID)
+	if err != nil {
+		apiservice.WriteError(ctx, err, w, r)
+		return
+	}
+
+	dAlerts, err := DynamicAlerts(patientCase, doctor, patient, a.dataAPI)
+	if err != nil {
+		apiservice.WriteError(ctx, err, w, r)
+		return
+	}
+	alerts = append(alerts, dAlerts...)
 
 	response := &alertsResponse{
 		Alerts: make([]*responses.Alert, len(alerts)),

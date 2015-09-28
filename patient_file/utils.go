@@ -227,7 +227,8 @@ func buildContext(
 	expirationDuration time.Duration,
 	visitLayout *info_intake.InfoIntakeLayout,
 	pat *common.Patient,
-	visit *common.PatientVisit) (*common.ViewContext, error) {
+	visit *common.PatientVisit,
+	doctor *common.Doctor) (*common.ViewContext, error) {
 
 	context, err := populateContextForRenderingLayout(
 		visitLayout.Answers(),
@@ -236,7 +237,8 @@ func buildContext(
 		mediaStore,
 		expirationDuration,
 		pat,
-		visit.ID.Int64())
+		visit,
+		doctor)
 	return context, errors.Trace(err)
 }
 
@@ -247,15 +249,31 @@ func populateContextForRenderingLayout(
 	mediaStore *media.Store,
 	expirationDuration time.Duration,
 	patient *common.Patient,
-	patientVisitID int64,
+	visit *common.PatientVisit,
+	doctor *common.Doctor,
 ) (*common.ViewContext, error) {
 	context := common.NewViewContext(nil)
 
 	// populate alerts
-	alerts, err := dataAPI.AlertsForVisit(patientVisitID)
+	alerts, err := dataAPI.AlertsForVisit(visit.ID.Int64())
 	if err != nil {
 		return nil, errors.Trace(err)
-	} else if len(alerts) > 0 {
+	}
+
+	patientCase, err := dataAPI.GetPatientCaseFromID(visit.PatientCaseID.Int64())
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	// If the requesting doctor is not from the state the visit comes from, make sure to alert them if it's PE
+	// This dependent on who is viewing the case so the alert mus tbe dynamic
+	dAlerts, err := DynamicAlerts(patientCase, doctor, patient, dataAPI)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	alerts = append(alerts, dAlerts...)
+
+	if len(alerts) > 0 {
 		alertsArray := make([]string, len(alerts))
 		for i, alert := range alerts {
 			alertsArray[i] = alert.Message
@@ -266,7 +284,7 @@ func populateContextForRenderingLayout(
 	}
 
 	// populate message for patient visit if one exists
-	message, err := dataAPI.GetMessageForPatientVisit(patientVisitID)
+	message, err := dataAPI.GetMessageForPatientVisit(visit.ID.Int64())
 	if err != nil && !api.IsErrNotFound(err) {
 		return nil, errors.Trace(err)
 	}
@@ -398,4 +416,29 @@ func populateParentInfo(
 	context.Set("parent_photo_verification", []info_intake.TitlePhotoListData{photoSection})
 
 	return nil
+}
+
+// DynamicAlerts generates a list of alerts needed for the case that aren't recorded as alert records and are dependent on other inputs
+func DynamicAlerts(patientCase *common.PatientCase, viewingDoctor *common.Doctor, patient *common.Patient, dataAPI api.DataAPI) ([]*common.Alert, error) {
+	var alerts []*common.Alert
+	// If the requesting doctor is not from the state the case comes from, make sure to alert them if it's PE
+	// This dependent on who is viewing the case so the alert mus tbe dynamic
+	if patientCase.PracticeExtension {
+		doctorState, err := dataAPI.State(viewingDoctor.Address.State)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		_, pState, err := dataAPI.PatientLocation(patient.ID)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		patientState, err := dataAPI.State(pState)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		if doctorState.ID != patientState.ID {
+			alerts = append(alerts, &common.Alert{Message: fmt.Sprintf("Patient location: Visit originates from %s", patient.PatientAddress.State)})
+		}
+	}
+	return alerts, nil
 }

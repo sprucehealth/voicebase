@@ -28,8 +28,8 @@ func (m *mockDataAPI_UpdateHandler) UpdatePatient(id common.PatientID, update *a
 	m.updateAttempted = update
 	return nil
 }
-func (m *mockDataAPI_UpdateHandler) State(state string) (string, string, error) {
-	return state, state, nil
+func (m *mockDataAPI_UpdateHandler) State(state string) (*common.State, error) {
+	return &common.State{Name: state, Abbreviation: state}, nil
 }
 
 type mockAddressValidator_UpdateHandler struct {

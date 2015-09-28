@@ -87,6 +87,7 @@ type PracticeModel struct {
 	DoctorID             int64 `json:"doctor_id,string"`
 	IsSprucePC           bool  `json:"is_spruce_pc"`
 	HasPracticeExtension bool  `json:"has_practice_extension"`
+	StateID              int64 `json:"state_id,string"`
 }
 
 // TransformPracticeModel transforms the practice_model DAL representation to a client friendly version
@@ -95,5 +96,6 @@ func TransformPracticeModel(pm *common.PracticeModel) *PracticeModel {
 		DoctorID:             pm.DoctorID,
 		IsSprucePC:           pm.IsSprucePC,
 		HasPracticeExtension: pm.HasPracticeExtension,
+		StateID:              pm.StateID,
 	}
 }

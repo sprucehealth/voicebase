@@ -54,13 +54,13 @@ func (h *homeHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *h
 			return
 		}
 	} else {
-		state, _, err := h.dataAPI.State(stateCode)
+		state, err := h.dataAPI.State(stateCode)
 		if err != nil {
 			apiservice.WriteValidationError(ctx, "Enter valid state code", w, r)
 			return
 		}
 		cityStateInfo = &address.CityState{
-			State:             state,
+			State:             state.Name,
 			StateAbbreviation: stateCode,
 		}
 	}

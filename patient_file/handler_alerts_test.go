@@ -17,13 +17,15 @@ import (
 
 type mockDataAPI_handlerAlerts struct {
 	api.DataAPI
-	doctorID        int64
-	pc              *common.PatientCase
-	visit           *common.PatientVisit
-	cases           []*common.PatientCase
-	visits          []*common.PatientVisit
-	alerts          []*common.Alert
-	careTeamsByCase map[int64]*common.PatientCareTeam
+	doctorID                     int64
+	pc                           *common.PatientCase
+	visit                        *common.PatientVisit
+	cases                        []*common.PatientCase
+	visits                       []*common.PatientVisit
+	alerts                       []*common.Alert
+	careTeamsByCase              map[int64]*common.PatientCareTeam
+	getDoctorFromAccountID       *common.Doctor
+	getPatientFromPatientVisitID *common.Patient
 
 	visitIDQueried int64
 	caseIDQueried  int64
@@ -51,6 +53,12 @@ func (m *mockDataAPI_handlerAlerts) GetVisitsForCase(caseID int64, states []stri
 func (m *mockDataAPI_handlerAlerts) AlertsForVisit(visitID int64) ([]*common.Alert, error) {
 	m.visitIDQueried = visitID
 	return m.alerts, nil
+}
+func (m *mockDataAPI_handlerAlerts) GetDoctorFromAccountID(accountID int64) (*common.Doctor, error) {
+	return m.getDoctorFromAccountID, nil
+}
+func (m *mockDataAPI_handlerAlerts) GetPatientFromPatientVisitID(visitID int64) (*common.Patient, error) {
+	return m.getPatientFromPatientVisitID, nil
 }
 
 func TestAlerts_NoParams(t *testing.T) {
