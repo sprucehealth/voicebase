@@ -1,0 +1,46 @@
+{{ define "content" }}
+
+<div class="big-text-banner-section">
+	<p id="banner-text-container">We’re committed to building quality healthcare experiences accessible anytime, anywhere.</p>
+</div>
+<div id="investors-section">
+	<h3>Our Investors</h3>
+	<div id="investors-images-container">
+		<div><img src="{{staticURL "/img/practice-extension/about_investor_kpcb@2x.png"}}" id="kpcb-image" alt="kpcb logo"></div>
+		<div><img src="{{staticURL "/img/practice-extension/about_investor_google@2x.png"}}" id="google-ventures-image" alt="google ventures logo"></div>
+		<div><img src="{{staticURL "/img/practice-extension/about_investor_cowboy@2x.png"}}" id="cowboy-image" alt="cowboy ventures logo"></div>
+		<div><img src="{{staticURL "/img/practice-extension/about_investor_baseline@2x.png"}}" id="baseline-image" alt="baseline ventures logo"></div>
+	</div>
+</div>
+
+<div id="our-mission-section">
+	<h3>Our Mission</h3>
+	<div id="our-mission-columns-container">
+		<div class="column">
+			<p>For patients in America, accessing quality healthcare is inconvenient, confusing, and expensive. For their physicians, delivering it can equally frustrating. Both groups struggle to control when, where, and how this care occurs.</p>
+			<p>At Spruce, we are passionate about putting that decision back into the hands of patients and physicians (literally). Our patient and physician mobile applications enable the modern house call: patients can submit a “visit” from their smartphone; physicians are able to diagnose and treat with nothing more than an iPad and their expertise.</p>
+		</div>
+		<div class="column">
+			<p>There is no one fix for American healthcare, but we can’t imagine a world where technology that connects patients to high-quality care (anytime, anywhere) isn’t a crucial part of the solution. We built this company to make good on that belief, and we’re only just getting started.</p>
+			<p>Our flagship product is a teledermatology clinic, designed in collaboration with a council of top US dermatologists to uniquely reflect speciality-specific protocols and workflows.</p>
+		</div>
+	</div>
+</div>
+
+<div id="spruce-location-section">
+	<h3>Spruce is located in downtown San Francisco.</h3>
+	<div>
+		<img src="{{staticURL "/img/practice-extension/contact_map_pin@2x.png"}}" id="spruce-location-placemarker-image" alt="Spruce location marker">
+	</div>
+	<p id="spruce-location-address-text">
+		116 New Montgomery Street<br>
+		San Francisco, CA 94105
+	</p>
+</div>
+
+<div id="contact-us-section">
+	<h2>Contact Us</h2>
+	<p>Have a question?  You can reach us at <a href="mailto:md@sprucehealth.com">md@sprucehealth.com</a></p>
+</div>
+
+{{ end }}

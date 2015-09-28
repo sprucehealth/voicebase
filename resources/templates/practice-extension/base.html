@@ -1,0 +1,105 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+	<meta http-equiv="X-UA-Compatible" content="IE=Edge">
+	
+	<link rel="shortcut icon" href="/img/_favicon/favicon.ico">
+	<link rel="icon" type="image/png" href="/img/_favicon/favicon_64.png">
+	<link rel="apple-touch-icon-precomposed" href="/img/_favicon/favicon_64.png">
+
+	<title>Determatologist Community</title>
+
+	<script type="text/javascript">
+	var Spruce = {
+		BaseStaticURL: "{{staticURL ""}}",
+		Environment: "{{.Environment}}"
+	};
+	</script>
+
+	<!-- TODO: update GA token? -->
+
+	{{if eq .Environment "prod"}}
+		<script type="text/javascript">
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+		{{/* Stub the call if someone is blocking google analytics */}}
+		if (typeof ga === "undefined") {
+			ga = function(){}
+		}
+		ga('create', 'UA-55131756-1', 'auto');
+		ga('send', 'pageview');
+		</script>
+	{{else if eq .Environment "staging"}}
+		<script type="text/javascript">
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+		{{/* Stub the call if someone is blocking google analytics */}}
+		if (typeof ga === "undefined") {
+			ga = function(){}
+		}
+		ga('create', 'UA-55131756-2', 'auto');
+		ga('send', 'pageview');
+		</script>
+	{{else}}
+		{{/* Stub the google analytics function */}}
+		<script type="text/javascript">ga = function(){};</script>
+	{{end}}
+
+	{{if isEnv "dev"}}
+	<link rel="stylesheet" type="text/css" href="{{ staticURL "/css/practice-extension.css" }}">
+	{{else}}
+	<link rel="stylesheet" type="text/css" href="{{ staticURL "/css/practice-extension.min.css" }}">
+	{{end}}
+</head>
+<body>
+
+	<header>
+		<div id="header-logo-container">
+			<a href="/"><img src="{{staticURL "/img/practice-extension/logo_header@2x.png"}}" id="header-logo-image" alt="Spruce logo"></a>
+		</div>
+		<div id="header-links">
+			<div class="link"><a href="/practices/product-tour">PRODUCT TOUR</a></div>
+			<div class="link right"><a href="/practices/get-started">GET STARTED</a></div>
+		</div>
+	</header>
+    {{ template "content" . }}
+	<div class="footer-section">
+		<div class="footer-content-container">
+			<div class="footer-section-logo-container">
+				<a href="/"><img src="{{ staticURL "img/practice-extension/logo_footer@2x.png" }}" alt="Spruce logo"></a>
+			</div>
+			<div class="footer-section-links-container">
+				<div class="footer-link"><a href="/practices">HOME</a></div>
+				<div class="footer-link"><a href="/practices/product-tour">PRODUCT TOUR</a></div>
+				<div class="footer-link"><a href="/practices/get-started">GET STARTED</a></div>
+				<div class="footer-link"><a href="/practices/about">ABOUT</a></div>
+				<div class="footer-copyright-text">© SPRUCE HEALTH 2015</div>
+			</div>
+		</div>
+	</div>
+    {{ template "scripts" . }}
+</body>
+</html>
+
+{{ define "scripts" }}{{ end }}
+
+{{ define "whitepaper-section" }}
+<div id="whitepaper-section">
+	<div id="whitepaper-container">
+		<div class="whitepaper-column">
+			<img src="{{staticURL "/img/practice-extension/icon_paper@2x.png"}}" id="whitepaper-image" alt="Whitepaper">
+		</div>
+		<div class="whitepaper-column right">
+			<p id="whitepaper-text">Learn more about incorporating teledermatology into your practice.</p>
+			<a href="./whitepaper">Download our whitepaper.</a>
+		</div>
+	</div>
+</div>
+{{ end }}

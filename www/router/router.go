@@ -108,6 +108,7 @@ func New(c *Config) httputil.ContextHandler {
 		},
 	})
 	c.TemplateLoader.MustLoadTemplate("base.html", "", nil)
+	c.TemplateLoader.MustLoadTemplate("practice-extension/base.html", "", nil)
 
 	router := mux.NewRouter().StrictSlash(true)
 	c.TemplateLoader.MustLoadTemplate("auth/base.html", "base.html", nil)
@@ -142,6 +143,7 @@ func New(c *Config) httputil.ContextHandler {
 		Stores:          c.Stores,
 		Dispatcher:      c.Dispatcher,
 		MetricsRegistry: c.MetricsRegistry.Scope("home"),
+		Cfg:             c.Cfg,
 	})
 	passreset.SetupRoutes(router, c.DataAPI, c.AuthAPI, c.SMSAPI, c.FromNumber, c.EmailService, c.SupportEmail, c.WebDomain, c.TemplateLoader, c.MetricsRegistry.Scope("reset-password"))
 	dronboard.SetupRoutes(router, &dronboard.Config{

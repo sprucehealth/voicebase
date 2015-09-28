@@ -5,7 +5,7 @@ var jQuery = require("jquery");
 var React = require("react");
 var Routing = require("../../libs/routing.js");
 var Reflux = require("reflux");
-var Utils = require("../../libs/utils.js");
+import * as Emptiness from "../../libs/emptiness.js"
 var Analytics = require("../../libs/analytics.js");
 
 var ParentalConsentStore = require('./ParentalConsentStore.js');
@@ -88,7 +88,7 @@ var nextRouteAfterRouteForStore = function(currentRoute: string, store: Parental
 	if (index !== -1) {
 		nextRoute = routeForSectionIndexAndStore(index + 1, store)
 	}
-	if (Utils.isEmpty(nextRoute)) {
+	if (Emptiness.isEmpty(nextRoute)) {
 		console.log("something's gone wrong and we can't determine the next route")
 	}
 	return nextRoute

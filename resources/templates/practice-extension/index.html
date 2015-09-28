@@ -1,0 +1,137 @@
+{{ define "content" }}
+
+<div id="intro-section">
+	<h2>Your practice, on your time.</h2>
+	<p>Move the right visits from office to iPad. Provide high-quality,<br>high-satisfaction care anytime, anywhere.</p>
+	<div><img src="{{staticURL "/img/practice-extension/screen_visit@2x.png"}}" id="ipad-image" alt="Your Practice"></div>
+</div>
+<div id="summary-section">
+	<div id="summary-grid-container">
+		<div class="column">
+			<img src="{{staticURL "/img/practice-extension/icon_ipad@2x.png"}}" id="ipad-image" alt="Virtual Clinic">
+			<p>Full virtual clinic in the<br>palm of your hand.</p>
+		</div>
+		<div class="column">
+			<img src="{{staticURL "/img/practice-extension/icon_wallet@2x.png"}}" id="wallet-image" alt="Pay as you go pricing">
+			<p>No installation fees.<br>Pay-as-you-go pricing.</p>
+		</div>
+		<div class="column">
+			<img src="{{staticURL "/img/practice-extension/icon_clipboard@2x.png"}}" id="clipboard-image" alt="Onboarding">
+			<p>Get onboarded today.<br>Treat tomorrow.</p>
+		</div>
+	</div>
+	<a href="" class="button"></a>
+</div>
+<div id="spruce-means-better-care-section">
+	<h2>Spruce Means Better Care</h2>
+	<div id="spruce-means-better-care-container">
+		<div class="spruce-means-better-care-row">
+			<div class="column left">
+				<img src="{{staticURL "/img/practice-extension/icon_devices@2x.png"}}" id="for-your-practice-image" alt="For your practice">
+			</div>
+			<div class="column right">
+				<h3>For Your Practice</h3>
+				<h4>Appeal to new patients</h4>
+				<p>Smartphone visits lower barriers to care, connecting you with patients who might not otherwise have sought treatment</p>
+				<h4>Optimize mix & efficiency</h4>
+				<p>Ability to redirect visits to Spruce opens up time and resources to handle more complex, urgent and profitable issues in person</p>
+			</div>
+		</div>
+		<hr />
+		<div class="spruce-means-better-care-row">
+			<div class="column left">
+				<img src="{{staticURL "/img/practice-extension/icon_iphone@2x.png"}}" id="for-your-patients-image" alt="For your patients">
+			</div>
+			<div class="column right">
+				<h3>For Your Patients</h3>
+				<h4>Improve satisfaction</h4>
+				<p>Remote visits make patients’ lives easier, decreasing loss to follow-up ratios and boosting loyalty</p>
+				<h4>Increase success rates</h4>
+				<p>Easily-referenced mobile treatment plans enhance patient adherence (and over time, outcomes)</p>
+			</div>
+		</div>
+		<hr />
+		<div class="spruce-means-better-care-row">
+			<div class="column left">
+				<img src="{{staticURL "/img/practice-extension/icon_ipad_clock@2x.png"}}" id="for-you-image" alt="For you">
+			</div>
+			<div class="column right">
+				<h3>For You</h3>
+				<h4>More control of your time</h4>
+				<p>Asynchronous, iPad-based nature of care lets you decide when and where to engage. Plus, no paperwork!</p>
+				<h4>Fewer canned speeches</h4>
+				<p>Workflow tools automate the routine aspects of treatment so you can focus on MD-level decision making</p>
+			</div>
+		</div>
+	</div>
+</div>
+<div id="what-can-spruce-do-for-you">
+	<p>
+		Learn what Spruce can do for you. → <a href="/practices/product-tour">Take a tour.</a>
+	</p>
+</div>
+<div id="press-section">
+	<div id="press-inner-container">
+		<p>Featured In</p>
+		<a href="http://www.vogue.com/13226808/spruce-beauty-app-dermatology/">
+			<img src="{{staticURL "/img/practice-extension/press_vogue_promo@2x.png"}}" alt="Vogue" id="vogue">
+		</a>
+		<a href="http://www.harpersbazaar.com/culture/features/a2701/best-beauty-apps/">
+			<img src="{{staticURL "/img/practice-extension/press_bazaar_promo@2x.png"}}" alt="Harpers Bazaar" id="harpers">
+		</a>
+		<a href="http://www.cosmopolitan.com/health-fitness/news/a31548/theres-an-app-for-acne-and-it-works/">
+			<img src="{{staticURL "/img/practice-extension/press_cosmo_promo@2x.png"}}" alt="Cosmopolitan" id="cosmopolitan">
+		</a>
+		<a href="http://www.self.com/flash/technology/2014/10/technology-answer-acne-problem/">
+			<img src="{{staticURL "/img/practice-extension/press_self_promo@2x.png"}}" alt="SELF" id="self">
+		</a>
+		<a href="http://www.wired.com/2014/09/app-fights-acne-nearly-silly-sounds/">
+			<img src="{{staticURL "/img/practice-extension/press_wired_promo@2x.png"}}" alt="Wired" id="wired">
+		</a>
+		<a href="http://gizmodo.com/our-favorite-android-ios-and-windows-phone-apps-of-th-1640099169">
+			<img src="{{staticURL "/img/practice-extension/press_gizmodo_promo@2x.png"}}" alt="Gizmodo" id="gizmodo">
+		</a>
+		<a href="http://nymag.com/thecut/2014/10/this-app-claims-it-can-stop-your-acne.html">
+			<img src="{{staticURL "/img/practice-extension/press_nymag_promo@2x.png"}}" alt="New York Magazine" id="newyork">
+		</a>
+	</div>
+</div>
+<div id="testimonials-section">
+	<div id="testimonials-outer-container">
+		<div id="testimonials-container">
+			<h2>Testimonials</h2>
+			<div id="testimonials-array">
+				<div class="testimonial">
+					<p class="doctor-quotation">
+						&quot;<span class="emphasized">Spruce gives me a degree of flexibility I've never experienced before.</span> I can diagnose and treat patients while I'm waiting to pick up one of my kids from school  or at night when everyone is asleep. It's just awesome.&quot;
+					</p>
+					<div><img src="{{ staticURL "img/practice-extension/photo_elrashidy@2x.png" }}" id="elrashidy" alt="Dr. Dina Elrashidy"></div>
+					<p class="doctor-name">Dr. Dina Elrashidy</p>
+					<p class="doctor-description">Dermatologist in Chicago, IL</p>
+				</div>
+				<div class="testimonial">
+					<p class="doctor-quotation">
+						&quot;<span class="emphasized">I've freed up appointment slots and reduced wait times</span> by asking appropriate patients to do their follow-ups on Spruce. This platform has definitely changed how I think about practice mix, capacity and workflow.&quot;
+					</p>
+					<div><img src="{{ staticURL "img/practice-extension/photo_fung@2x.png" }}" id="fung" alt="Dr. Jason Fung"></div>
+					<p class="doctor-name">Dr. Jason Fung</p>
+					<p class="doctor-description">Dermatologist in Oakland, CA</p>
+				</div>
+				<div class="testimonial">
+					<p class="doctor-quotation">
+						&quot;<span class="emphasized">I actually prefer to treat patients on Spruce for simple conditions like acne.</span> The fact that patients have the treatment plan on their phone makes me feel more confident they're following their regimen correctly.&quot;
+					</p>
+					<div><img src="{{ staticURL "img/practice-extension/photo_mclellan@2x.png" }}" id="mclellan" alt="Dr. Beth McLellan"></div>
+					<p class="doctor-name">Dr. Beth McLellan</p>
+					<p class="doctor-description">Dermatologist in Bronx, NY</p>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div id="testimonial-footer">Find out why Spruce is dermatologists’ favorite way to treat patients. 60-day free trial.</div>
+	<a href="/practices/get-started" class="button">Request a Demo</a>
+</div>
+
+{{ template "whitepaper-section" }}
+
+{{ end }}

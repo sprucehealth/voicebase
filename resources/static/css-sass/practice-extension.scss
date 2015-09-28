@@ -1,0 +1,1301 @@
+$img-directory: "./img/practice-extension/";
+$max-desktop-content-width: 930px;
+
+$color-blue-text: #0083A9;
+
+
+@mixin respond-to($media) {
+  @if $media == handhelds {
+    @media only screen and (max-width: 1023px) { @content; } // Upper limit: iPhone 6 + Portrait
+  }
+  @else if $media == medium-screens {
+    @media only screen and (width: 1024px) { @content; } // Upper limit: iPad Portrait
+  }
+  @else if $media == wide-screens {
+    @media only screen and (min-width: 1024px) { @content; }
+  }
+}
+
+@font-face {
+	font-family: 'MuseoSans-100';
+	src: url('../fonts/MuseoSans_100-webfont.eot');
+	src: url('../fonts/MuseoSans_100-webfont.eot?#iefix') format('embedded-opentype'),
+		 url('../fonts/MuseoSans_100-webfont.woff2') format('woff2'),
+		 url('../fonts/MuseoSans_100-webfont.woff') format('woff'),
+		 url('../fonts/MuseoSans_100-webfont.ttf') format('truetype'),
+		 url('../fonts/MuseoSans_100-webfont.svg#museo_sans100') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'MuseoSans-100-Italic';
+	src: url('../fonts/MuseoSans_100_Italic-webfont.eot');
+	src: url('../fonts/MuseoSans_100_Italic-webfont.eot?#iefix') format('embedded-opentype'),
+		 url('../fonts/MuseoSans_100_Italic-webfont.woff2') format('woff2'),
+		 url('../fonts/MuseoSans_100_Italic-webfont.woff') format('woff'),
+		 url('../fonts/MuseoSans_100_Italic-webfont.ttf') format('truetype'),
+		 url('../fonts/MuseoSans_100_Italic-webfont.svg#museo_sans100_italic') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'MuseoSans-300';
+	src: url('../fonts/MuseoSans_300-webfont.eot');
+	src: url('../fonts/MuseoSans_300-webfont.eot?#iefix') format('embedded-opentype'),
+		 url('../fonts/MuseoSans_300-webfont.woff2') format('woff2'),
+		 url('../fonts/MuseoSans_300-webfont.woff') format('woff'),
+		 url('../fonts/MuseoSans_300-webfont.ttf') format('truetype'),
+		 url('../fonts/MuseoSans_300-webfont.svg#museo_sans300') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'MuseoSans-300-Italic';
+	src: url('../fonts/MuseoSans_300_Italic-webfont.eot');
+	src: url('../fonts/MuseoSans_300_Italic-webfont.eot?#iefix') format('embedded-opentype'),
+		 url('../fonts/MuseoSans_300_Italic-webfont.woff2') format('woff2'),
+		 url('../fonts/MuseoSans_300_Italic-webfont.woff') format('woff'),
+		 url('../fonts/MuseoSans_300_Italic-webfont.ttf') format('truetype'),
+		 url('../fonts/MuseoSans_300_Italic-webfont.svg#museo_sans300_italic') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'MuseoSans-500';
+	src: url('../fonts/MuseoSans_500-webfont.eot');
+	src: url('../fonts/MuseoSans_500-webfont.eot?#iefix') format('embedded-opentype'),
+		 url('../fonts/MuseoSans_500-webfont.woff2') format('woff2'),
+		 url('../fonts/MuseoSans_500-webfont.woff') format('woff'),
+		 url('../fonts/MuseoSans_500-webfont.ttf') format('truetype'),
+		 url('../fonts/MuseoSans_500-webfont.svg#museo_sans500') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'MuseoSans-500-Italic';
+	src: url('../fonts/MuseoSans_500_Italic-webfont.eot');
+	src: url('../fonts/MuseoSans_500_Italic-webfont.eot?#iefix') format('embedded-opentype'),
+		 url('../fonts/MuseoSans_500_Italic-webfont.woff2') format('woff2'),
+		 url('../fonts/MuseoSans_500_Italic-webfont.woff') format('woff'),
+		 url('../fonts/MuseoSans_500_Italic-webfont.ttf') format('truetype'),
+		 url('../fonts/MuseoSans_500_Italic-webfont.svg#museo_sans500_italic') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'MuseoSans-700';
+	src: url('../fonts/MuseoSans_700-webfont.eot');
+	src: url('../fonts/MuseoSans_700-webfont.eot?#iefix') format('embedded-opentype'),
+		 url('../fonts/MuseoSans_700-webfont.woff2') format('woff2'),
+		 url('../fonts/MuseoSans_700-webfont.woff') format('woff'),
+		 url('../fonts/MuseoSans_700-webfont.ttf') format('truetype'),
+		 url('../fonts/MuseoSans_700-webfont.svg#museo_sans700') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'MuseoSans-700-Italic';
+	src: url('../fonts/MuseoSans_700_Italic-webfont.eot');
+	src: url('../fonts/MuseoSans_700_Italic-webfont.eot?#iefix') format('embedded-opentype'),
+		 url('../fonts/MuseoSans_700_Italic-webfont.woff2') format('woff2'),
+		 url('../fonts/MuseoSans_700_Italic-webfont.woff') format('woff'),
+		 url('../fonts/MuseoSans_700_Italic-webfont.ttf') format('truetype'),
+	url('../fonts/MuseoSans_700_Italic-webfont.svg#museo_sans700_italic') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+@font-face {
+    font-family: 'MuseoSans-900';
+    src: url('../fonts/MuseoSans_900-webfont.eot');
+    src: url('../fonts/MuseoSans_900-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/MuseoSans_900-webfont.woff2') format('woff2'),
+         url('../fonts/MuseoSans_900-webfont.woff') format('woff'),
+         url('../fonts/MuseoSans_900-webfont.ttf') format('truetype'),
+         url('../fonts/MuseoSans_900-webfont.svg#museo_sans900') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'MuseoSans-900-Italic';
+    src: url('../fonts/MuseoSans_900_Italic-webfont.eot');
+    src: url('../fonts/MuseoSans_900_Italic-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/MuseoSans_900_Italic-webfont.woff2') format('woff2'),
+         url('../fonts/MuseoSans_900_Italic-webfont.woff') format('woff'),
+         url('../fonts/MuseoSans_900_Italic-webfont.ttf') format('truetype'),
+         url('../fonts/MuseoSans_900_Italic-webfont.svg#museo_sans900_italic') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+@mixin font-300 {
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+}
+@mixin font-500 {
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+}
+@mixin font-500-Italic {
+    font-family: 'MuseoSans-500-Italic', Helvetica, Arial, sans-serif;
+}
+@mixin font-700 {
+	font-family: 'MuseoSans-700', Helvetica, Arial, sans-serif;
+}
+
+@mixin fontSize-14 {
+	font-size: 14px;
+	line-height: 20px;
+	@include respond-to(handhelds) {
+		font-size: 12px;
+		line-height: 18px;
+	}
+}
+@mixin fontSize-16 {
+	font-size: 16px;
+	line-height: 22px;
+	@include respond-to(handhelds) {
+		font-size: 14px;
+		line-height: 20px;
+	}
+}
+@mixin fontSize-18 {
+	font-size: 18px;
+	line-height: 24px;
+	@include respond-to(handhelds) {
+		font-size: 14px;
+		line-height: 20px;
+	}
+}
+
+@mixin fontSize-20 {
+	font-size: 20px;
+	line-height: 26px;
+	@include respond-to(handhelds) {
+		font-size: 16px;
+		line-height: 22px;
+	}
+}
+
+@mixin fontSize-22 {
+	font-size: 22px;
+	line-height: 27px;
+	@include respond-to(handhelds) {
+		font-size: 18px;
+		line-height: 22px;
+	}
+}
+
+@mixin fontSize-24 {
+	font-size: 24px;
+	line-height: 29px;
+	@include respond-to(handhelds) {
+		font-size: 20px;
+		line-height: 25px;
+	}
+}
+
+@mixin fontSize-26 {
+	font-size: 26px;
+	line-height: 36px;
+	@include respond-to(handhelds) {
+		font-size: 22px;
+		line-height: 32px;
+	}
+}
+
+@mixin fontSize-34 {
+	font-size: 34px;
+	line-height: 43px;
+	@include respond-to(handhelds) {
+		font-size: 30px;
+		line-height: 37px;
+	}
+}
+
+@mixin fontSize-36 {
+	font-size: 36px;
+	line-height: 45px;
+	@include respond-to(handhelds) {
+		font-size: 32px;
+		line-height: 41px;
+	}
+}
+
+@mixin flexy {
+	display: -webkit-box;
+	display: -moz-box;
+	display: -ms-flexbox;
+	display: -webkit-flex;
+	display: flex;
+}
+
+@mixin flexy-order($val) {
+  -webkit-box-ordinal-group: $val;  
+  -moz-box-ordinal-group: $val;     
+  -ms-flex-order: $val;     
+  -webkit-order: $val;  
+  order: $val;
+}
+
+@mixin flexy-justify-content-space-between() {
+	-webkit-justify-content: space-between;
+	justify-content: space-between;
+}
+
+@mixin flexy-justify-content-center() {
+	-webkit-justify-content: center;
+	justify-content: center;
+}
+
+@mixin align-items-center() {
+	-webkit-align-items: center;
+	align-items: center;
+}
+
+@mixin anchor-button($normal-bg-color, $normal-text-color) {
+	a.button {
+		border: none;
+		background-color: $normal-bg-color;
+		border-radius: 4px;
+		color: $normal-text-color;
+		padding: 18px 50px;
+		font-size: 20px; // Constant across devices
+		@include font-500();
+		margin: auto;
+		display: block;
+		@include respond-to(handhelds) {
+			padding: 18px 20px 18px 20px;
+			display:block;
+		}
+		display:inline-block;
+		text-decoration: none;
+		box-sizing:border-box;
+		-moz-box-sizing:border-box;
+		-webkit-box-sizing:border-box;
+		border: 2px solid $normal-bg-color;
+	}
+
+	a.button:hover {
+		background-color: transparent;
+		color: $normal-bg-color;
+		border: 2px solid $normal-bg-color;
+	}
+}
+
+body {
+	margin: 0px;
+	padding: 0px;
+	color: #1E333A;
+	@include font-300();
+}
+
+h1 {
+	@include font-300();
+	@include fontSize-36();
+	line-height: 43px;
+	color: white;
+}
+
+h2 {
+	@include font-500();
+	@include fontSize-26();
+	text-align: center;
+	color: #0083A9;
+}
+
+h3 {
+	@include font-500();
+	@include fontSize-22();
+	color: #0083A9;
+}
+
+h4 {
+	@include font-500();
+	@include fontSize-18();
+	color: #65777D;
+}
+
+a {
+	@include fontSize-22();
+	color: #00CECF;
+	text-decoration: none;
+}
+a:hover {
+	color: white;
+}
+
+header {
+
+	@include flexy();
+	@include flexy-justify-content-space-between();
+	@include align-items-center();
+	width: 960px;
+	margin: auto;
+	padding-top: 18px;
+	padding-bottom: 16px;
+
+	#header-logo-container {
+		#header-logo-image {
+			width: 178px;
+			height: 48px;
+		}
+	}
+	#header-links {
+		@include flexy();
+		@include flexy-justify-content-space-between();
+		@include align-items-center();
+	}
+
+	.link {
+		margin: 20px;
+	}
+	.right {
+		margin-right: 0px;
+	}
+	
+	a {
+		color: #1E333A;
+		@include fontSize-14();
+		font-family: "MuseoSans-500";
+	}
+	a:hover {
+		color: #00CECF;
+	}
+}
+
+#intro-section {
+	text-align: center;
+	padding-top: 50px;
+	p {
+		color: #65777D;
+		@include fontSize-22();
+	}
+	#ipad-image {
+		width: 1136px;
+		height: 509px;
+		padding-top: 20px;
+		vertical-align: bottom; // otherwise, there is a space at the bottom the size of the font's descender
+	}
+}
+
+#summary-section {
+	background-color: #1E333A;
+
+	#summary-grid-container {
+
+		@include flexy();
+		@include flexy-justify-content-space-between();
+		@include align-items-center();
+		width: 960px;
+		margin: auto;
+		padding: 100px;
+		margin-top: 0px;
+
+		.column {
+			text-align: center;
+			#ipad-image {
+				width: 150px;
+				height: 102px;
+			}
+			#wallet-image {
+				width: 108px;
+				height: 79px;
+			}
+			#clipboard-image {
+				width: 86px;
+				height: 113px;
+			}
+			p {
+				color: white;
+				font-family: "MuseoSans-500";
+				@include fontSize-22();
+			}
+
+		}
+	}
+}
+
+#spruce-means-better-care-section {
+	background-color: white;
+	padding-top: 50px;
+
+	#spruce-means-better-care-container {
+		width: 960px;
+		margin: auto;
+
+		hr {
+			display: block;
+			height: 1px;
+			border: 0;
+			border-top: 1px solid #DAE6EB;
+			margin: 1em 0;
+			padding: 0;
+		}
+		
+		.spruce-means-better-care-row {
+			@include flexy();
+			@include flexy-justify-content-space-between();
+			@include align-items-center();
+			padding: 45px;
+
+			p {
+				color: #9CAFB6;
+			}
+
+			.column {
+			}
+
+			.left {
+				width: 381px;
+				text-align: center;
+			}
+
+			.right {
+				width: 583px;
+			}
+
+			#for-your-practice-image {
+				width: 234px;
+				height: 170px;
+			}
+
+			#for-your-patients-image {
+				width: 124px;
+				height: 244px;
+			}
+
+			#for-you-image {
+				width: 228px;
+				height: 164px;
+			}
+		}
+	}
+}
+
+#what-can-spruce-do-for-you {
+	margin: 0px;
+	padding: 70px 30px;
+	background-color: #0083A9;
+	font-family: "MuseoSans-500";
+	text-align: center;
+	@include fontSize-20();
+	color: white;
+	a {
+		@include fontSize-20();
+	}
+}
+
+#press-section {
+	background-color: #1E333A;
+	padding-bottom: 85px;
+	z-index: 1;
+	position: relative;
+	margin-bottom: 0px;
+}
+
+#press-inner-container {
+	padding-top: 1px;
+	padding-bottom: 35px;
+	text-align: center;
+	max-width: 730px;
+	margin-left: auto;
+	margin-right: auto;
+
+	img {
+		padding: 20px 20px;
+	}
+
+	#vogue {
+		width: 157px;
+		height: 41px;
+	}
+
+	#harpers {
+		width: 142px;
+		height: 37px;
+	}
+
+	#cosmopolitan {
+		width: 171px;
+		height: 35px;
+	}
+
+	#self {
+		width: 83px;
+		height: 35px;
+	}
+
+	#wired {
+		width: 164px;
+		height: 36px;
+	}
+
+	#gizmodo {
+		width: 215px;
+		height: 34px;
+	}
+
+	#newyork {
+		width: 170px;
+		height: 40px;
+	}
+
+	p {
+		color: white;
+		@include fontSize-16();
+		margin-top: 39px;
+		margin-bottom: 29px;
+	}
+}
+
+#testimonials-section {
+
+	background-color: white;
+	background-image: url(../img/practice-extension/bg_blue.png);
+	background-repeat: repeat;
+	z-index: 100;
+	background-color: white;
+	position: relative;
+	text-align: center;
+	padding-bottom: 110px;
+
+	#testimonials-outer-container {
+
+		background-color: white;
+		max-width: 1300px;
+		margin-left: auto;
+		margin-right: auto;
+		margin-top: 0px;
+		
+		#testimonials-container {
+			position: relative;
+			margin-bottom: 125px;
+			text-align: center;
+			top: -97px;
+			background-color: white;
+
+			h2 {
+				margin-top: 0px;
+				padding-top: 82px;
+				margin-bottom: 58px;
+				color: $color-blue-text;
+			}
+
+			#testimonials-array {
+
+				@include respond-to(medium-screens) {
+					@include flexy();
+					@include flexy-justify-content-center();
+				}
+				@include respond-to(wide-screens) {
+					@include flexy();
+					@include flexy-justify-content-center();
+				}
+
+				.testimonial {
+					border: solid #DAE6EB 1px;
+					padding: 24px 10px;
+					max-width: 290px;
+					@include fontSize-18();
+					color: #65777D;
+
+					@include respond-to(handhelds) {
+						margin: auto;
+						margin-bottom: 22px;
+					}
+					@include respond-to(medium-screens) {
+						margin-left: 22px;
+						margin-right: 22px;
+					}
+					@include respond-to(wide-screens) {
+						margin-left: 22px;
+						margin-right: 22px;
+					}
+
+					.emphasized {
+						font-family: "MuseoSans-500";
+						color: #1E333A;
+					}
+
+					.doctor-quotation {
+					}
+
+					#elrashidy {
+						width: 81px;
+						height: 81px;
+					}
+
+					#fung {
+						width: 80px;
+						height: 81px;
+					}
+
+					#mclellan {
+						width: 80px;
+						height: 80px;
+					}
+
+					.doctor-name {
+						margin-bottom: 3px;
+					}
+					.doctor-description {
+						@include fontSize-16();
+						color: #8B9FA7;
+						margin-top: 3px;
+					}
+				}
+			}
+		}
+	}
+	#testimonial-footer {
+		margin-top: 86px;
+		margin-bottom: 63px;
+		color: #F1F5F6;
+		@include fontSize-22();
+	}
+
+	@include anchor-button(white, #0BA5C5);
+}
+
+#whitepaper-section {
+
+	background-color: #3C545B;
+
+	#whitepaper-container {
+		max-width: 635px;
+		margin: auto;
+		@include flexy();
+		@include flexy-justify-content-space-between();
+		@include align-items-center();
+		padding: 105px;
+
+		.whitepaper-column {
+			img {
+				width: 156px;
+				height: 194px;
+			}
+			#whitepaper-text {
+				color: #8B9FA7;
+				margin-top: 0px;
+				@include fontSize-22();
+			}
+		}
+		.right {
+			max-width: 384px;
+		}
+	}
+}
+
+// Footer Section
+
+.footer-section {
+	width: 100%;
+	background-color: #1E333A;
+	padding-top: 128px;
+	padding-bottom: 66px;
+	@include respond-to(handhelds) {
+		padding-top: 67px;
+	}
+}
+
+.footer-section a {
+	color: #C5D3D8;
+	@include fontSize-16();
+}
+
+.footer-content-container {
+	margin: auto;
+	max-width: 100%;
+	@include respond-to(handhelds) {
+		width: 100%;
+		text-align: center;
+	}
+	@include respond-to(medium-screens) {
+		@include flexy();
+		-webkit-flex-wrap: wrap;
+		flex-wrap: wrap;
+		@include flexy-justify-content-space-between();
+		width: $max-desktop-content-width;
+	}
+	@include respond-to(wide-screens) {
+		@include flexy();
+		-webkit-flex-wrap: wrap;
+		flex-wrap: wrap;
+		@include flexy-justify-content-space-between();
+		width: $max-desktop-content-width;
+	}
+	color: white;
+}
+
+.footer-section-logo-container {
+	@include flexy-order(2);
+}
+
+.footer-section-logo-container img {
+	width: 178px;
+	height: 48px;
+	@include respond-to(handhelds) {
+		margin-bottom: 40px;
+		max-width: 100%;
+	}
+}
+
+.footer-section-links-container {
+	@include flexy-order(1);
+	width: 50%;
+	@include respond-to(handhelds) {
+		width: 100%;
+	}
+}
+
+.footer-link {
+	margin-bottom: 4px;
+}
+
+.footer-copyright-text {
+	margin-top: 20px;
+	color: #8B9FA7;
+}
+
+.big-text-banner-section {
+	background-color: #1E333A;
+	color: #8B9FA7;
+	padding: 120px 30px;
+	text-align: center;
+	font-family: "MuseoSans-700";
+	@include fontSize-34();
+}
+
+.h2-with-image-section {
+	text-align: center;
+	padding-top: 50px;
+	p {
+		color: #65777D;
+		@include fontSize-22();
+		max-width: 850px;
+		margin: auto;
+		margin-top: 30px;
+		margin-bottom: 60px;
+	}
+
+	img {
+		vertical-align: bottom;
+	}
+
+	&.white {
+		background-color: white;
+	}
+
+	&.black {
+		background-color: #1E333A;
+	}
+
+	#practice-builder-image {
+		width: 1032px;
+		height: 434px;
+	}
+
+	#patient-app-image {
+		width: 880px;
+		height: 433px;
+	}
+
+	#physician-app-image {
+		width: 1136px;
+		height: 415px;
+	}
+
+	#virtual-front-office-image {
+		width: 1136px;
+		height: 408px;
+	}
+}
+
+#practice-builder-image-section {
+	width: 1032px;
+	height: 434px;
+	padding-top: 20px;
+	vertical-align: bottom; // otherwise, there is a space at the bottom the size of the font's descender
+}
+
+#find-out-why-section {
+	background-image: url(../img/practice-extension/bg_blue.png);
+	background-repeat: repeat;
+	background-color: white;
+	text-align: center;
+	padding: 140px 30px;
+
+	#find-out-why-text {
+		color: #F1F5F6;
+		@include fontSize-22();
+		margin-bottom: 60px;
+	}
+
+	@include anchor-button(white, #0BA5C5);
+}
+
+
+//
+// About
+//
+
+#banner-text-container {
+	max-width: 800px;
+	margin: auto;
+}
+
+#investors-section {
+
+	background-color: #0083A9;
+
+	h3 {
+		color: white;
+		text-align: center;
+		padding-top: 47px;
+		margin-top: 0px;
+		padding-bottom: 20px;
+	}
+
+	#investors-images-container {
+		@include flexy();
+		@include flexy-justify-content-center();
+		@include align-items-center();
+		padding-bottom: 77px;
+
+		img {
+			margin: 20px;
+		}
+
+		#kpcb-image {
+			width: 152px;
+			height: 34px;
+		}
+
+		#google-ventures-image {
+			width: 131px;
+			height: 44px;
+		}
+
+		#cowboy-image {
+			width: 258px;
+			height: 19px;
+		}
+
+		#baseline-image {
+			width: 107px;
+			height: 34px;
+		}
+	}
+}
+
+#our-mission-section {
+	h3 {
+		text-align: center;
+		margin-top: 96px;
+		margin-bottom: 53px;
+	}
+	#our-mission-columns-container {
+		@include flexy();
+		@include flexy-justify-content-space-between();
+		max-width: 960px;
+		margin: auto;
+		margin-bottom: 84px;
+		
+		.column {
+			max-width: 430px;
+		}
+	}
+}
+
+#spruce-location-section {
+	text-align: center;
+	background-color: rgb(0.12 * 255, 0.20 * 255, 0.23 * 255);
+	background: url(../img/practice-extension/bg_map@2x.png) no-repeat;
+	background-size: cover;
+
+	h3 {
+		color: white;
+		padding-top: 198px;
+		padding-bottom: 39px;
+		margin-left: 20px;
+		margin-right: 20px;
+	}
+	#spruce-location-placemarker-image {
+		width: 58px;
+		height: 75px;
+		padding-bottom: 32px;
+	}
+	#spruce-location-address-text {
+		color: #8B9FA7;
+		@include fontSize-24();
+		padding-bottom: 176px;
+	}
+}
+
+#contact-us-section {
+	color: #8B9FA7;
+	text-align: center;
+	padding-bottom: 113px;
+	h2 {
+		margin-top: 82px;
+		margin-bottom: 63px;
+	}
+	a {
+		color: #0BA5C5;
+		@include fontSize-18();
+	}
+	a:hover {
+		color: #1E333A;
+	}
+}
+
+//
+// Thank You
+//
+
+#thank-you-section {
+	background-color: white;
+	@include fontSize-18();
+	text-align: center;
+
+	padding-top: 97px;
+	padding-bottom: 147px;
+
+	p {
+		margin-top: 78px;
+		margin-bottom: 74px;
+	}
+
+	@include anchor-button(#0BA5C5, white);
+}
+
+
+//
+// Forms
+//
+
+#apply-form-container {
+	width: 400px;
+	padding-left: 150px;
+	padding-right: 20px;
+}
+.standard-form input {
+	color: #1E333A;
+	background-color: white;
+	border: 1px #C5D3D8 solid;
+	height: 52px;
+	width: 100%;
+	margin-top: 5px;
+	@include font-300();
+	font-size: 18px; // Constant across devices
+
+	// Removes Mobile Safari default styling
+	-webkit-box-shadow: none;
+    box-shadow: none;
+	-webkit-appearance: none;
+	-webkit-border-radius: 0;
+}
+
+input.error {
+	border: 1px #FFAE32 solid;
+}
+
+.standard-form textarea {
+	color: #1E333A;
+	background-color: white;
+	border: 1px #C5D3D8 solid;
+	height: 120px;
+	width: 100%;
+	margin-top: 5px;
+	@include font-300();
+	font-size: 18px; // Constant across devices
+	padding: 10px;
+
+	// Removes Mobile Safari default styling
+	-webkit-box-shadow: none;
+    box-shadow: none;
+	-webkit-appearance: none;
+	-webkit-border-radius: 0;
+}
+
+textarea.error {
+	border: 1px #FFAE32 solid;
+}
+
+
+.form-row {
+	@include respond-to(handhelds) {
+		padding: 0px 14px;
+	}
+	@include respond-to(medium-screens) {
+		@include flexy();
+		@include flexy-justify-content-space-between();
+	}
+	@include respond-to(wide-screens) {
+		@include flexy();
+		@include flexy-justify-content-space-between();
+	}
+}
+
+.form-column {
+	flex-grow: 0.82;
+	-webkit-flex-grow: 0.82;
+	margin-bottom: 40px;
+}
+
+.form-error-message {
+	font-family: "MuseoSans-300-Italic";
+	color: #FFAE32;
+	text-align: center;
+	margin-bottom: 40px;
+}
+
+.form-column.right {
+	@include respond-to(handhelds) {
+	}
+	@include respond-to(medium-screens) {
+		margin-left: 30px;
+	}
+	@include respond-to(wide-screens) {
+		margin-left: 30px;
+	}
+}
+
+.standard-form button {
+	border: none;
+	background-color: #0BA5C5;
+	-webkit-border-radius: 4px;
+	border-radius: 4px;
+	color: white;
+	padding: 18px 50px;
+	font-size: 20px; // Constant across all devices
+	@include font-500();
+	margin: auto;
+	display: block;
+	box-sizing:border-box;
+	-moz-box-sizing:border-box;
+	-webkit-box-sizing:border-box;
+	height:60px;
+	border:2px solid #0BA5C5;
+	@include respond-to(handhelds) {
+		margin: 0px 25px;
+		width: 100%;
+	}
+}
+
+.standard-form button:hover:enabled {
+	color: #0BA5C5;
+	background-color: transparent;
+	box-sizing:border-box;
+	-moz-box-sizing:border-box;
+	-webkit-box-sizing:border-box;
+	height:60px;
+	border:2px solid #0BA5C5;
+	cursor: pointer;
+}
+
+.standard-form button:disabled {
+	background-color: rgba(#0BA5C5, 0.3);
+}
+
+
+//
+// Get Started
+//
+
+#get-started-container {
+	@include flexy();
+	@include flexy-justify-content-center();
+
+	background-color: #0083A9;
+
+	h3 {
+		color: white;
+		text-align: center;
+		margin-top: 61px;
+	}
+
+	#info-column {
+		@include fontSize-18();
+		color: #C5D3D8;
+		flex-grow: 1;
+		-webkit-flex-grow: 1;
+
+		h4 {
+			@include fontSize-22();
+			font-family: "MuseoSans-500";
+			color: #DAE6EB;
+			margin-top: 0px;
+			width: 344px;
+		}
+
+		.row {
+			@include flexy();
+			@include flexy-justify-content-center();
+			margin-top: 53px;
+
+			.left-column {
+				padding-top: 32px;
+				width: 92px;
+			}
+			.right-column {
+				padding-left: 32px;
+				width: 230px;
+			}
+
+			#practice-builder-image {
+				width: 86px;
+				height: 58px;
+			}
+
+			#patient-app-image {
+				width: 82px;
+				height: 66px;
+			}
+
+			#physician-app-image {
+				width: 83px;
+				height: 80px;
+			}
+
+			#virtual-front-office-image {
+				width: 72px;
+				height: 56px;
+			}
+		}
+
+		#footer-text {
+			margin: auto;
+			margin-top: 70px;
+			margin-bottom: 136px;
+		}
+	}
+
+	#form-column {
+		background-color: white;
+		color: #65777D;
+		flex-grow: 1;
+		-webkit-flex-grow: 1;
+
+		#get-started {
+			color: #0083A9;
+			text-align: center;
+			margin-bottom: 60px;
+		}
+
+		.row {
+			margin-top: 37px;
+		}
+
+		.first {
+			margin-top: 62px;
+		}
+	}
+}
+
+//
+// Whitepaper Request
+//
+
+#whitepaper-request-section {
+	#container {
+		width: 960px;
+		margin: auto;
+		@include flexy();
+		@include flexy-justify-content-space-between();
+		color: #65777D;
+
+		h4 {
+			color: #0083A9;
+		}
+
+		#info-column {
+			margin-top: 115px;
+			max-width: 380px;
+			#image {
+				width: 80px;
+				height: 99px;
+			}
+		}
+		#form-column {
+			width: 400px;
+			#form-container {
+				margin-top: 83px;
+				margin-bottom: 67px;
+			}
+		}
+	}
+}
+
+
+
+
+
+
+
+// Error Section
+
+#page-error-section {
+	padding-top: 117px;
+	padding-bottom: 134px;
+	color: #65777D;
+	@include fontSize-16();
+	background-image: url($img-directory + "bg_white.png");
+	background-repeat: repeat;
+	@include respond-to(handhelds) {
+		padding-top: 83px;
+		padding-left: 14px;
+		padding-right: 14px;
+	}
+	text-align: center;
+
+	#error-content-container {
+
+		#text {
+			@include fontSize-18();
+			color: #65777D;
+		}
+
+		a.learn-more-button {
+			border: none;
+			background-color: #0BA5C5;
+			border-radius: 4px;
+			color: white;
+			padding: 18px 50px;
+			font-size: 20px; // Constant across devices
+			@include font-500();
+			margin: auto;
+			display: block;
+			margin-top: 78px;
+			@include respond-to(handhelds) {
+				padding: 18px 20px 18px 20px;
+				display:block;
+			}
+			display:inline-block;
+			text-decoration: none;
+			box-sizing:border-box;
+			-moz-box-sizing:border-box;
+			-webkit-box-sizing:border-box;
+			height:60px;
+			border: 2px solid #0BA5C5;
+		}
+
+		a.learn-more-button:hover {
+			background-color: transparent;
+			color: #0BA5C5;
+			border: 2px solid #0BA5C5;
+		}
+
+	}
+
+	
+}
+
+
+
+
+
+
+
+
+
+
+
+

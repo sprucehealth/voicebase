@@ -2,6 +2,7 @@
 
 var Reflux = require('reflux')
 var Utils = require("../../libs/utils.js");
+import * as Emptiness from "../../libs/emptiness.js"
 var ParentalConsentAPI = require("./api.js")
 var ParentalConsentActions = require('./ParentalConsentActions.js')
 
@@ -25,7 +26,7 @@ if (typeof ParentalConsentHydration != "undefined") {
 var PhotoIdentificationAlreadySubmittedAtPageLoad = false
 if (hydration.IdentityVerificationImages) {
 	var IdentityVerificationImages: ParentalConsentGetImagesResponse = hydration.IdentityVerificationImages
-	PhotoIdentificationAlreadySubmittedAtPageLoad = !Utils.isEmpty(IdentityVerificationImages.types.governmentid) && !Utils.isEmpty(IdentityVerificationImages.types.selfie)
+	PhotoIdentificationAlreadySubmittedAtPageLoad = !Emptiness.isEmpty(IdentityVerificationImages.types.governmentid) && !Emptiness.isEmpty(IdentityVerificationImages.types.selfie)
 }
 
 var possessivePronoun: string = "their"
@@ -130,7 +131,7 @@ var ParentalConsentStore = Reflux.createStore({
 
 		var phone = (demographics.mobile_phone ? demographics.mobile_phone.replace(/\D/g,'') : "");
 		var phoneIsValid = phone
-			&& !Utils.isEmpty(phone)
+			&& !Emptiness.isEmpty(phone)
 			&& (phone.length === 10 || (phone.length === 11 && phone.substring(0, 1) === "1"))
 		if (!phoneIsValid) {
 			ParentalConsentActions.saveDemographics.failed({message: "Please enter a 10-digit phone number (ex: 415-555-1212)."})
@@ -164,7 +165,7 @@ var ParentalConsentStore = Reflux.createStore({
 		}
 	},
 	validateUserInputDOB: function(userInputDOB: string): bool {
-		return (!Utils.isEmpty(userInputDOB) && (userInputDOB.length == 8 || userInputDOB.length == 10))
+		return (!Emptiness.isEmpty(userInputDOB) && (userInputDOB.length == 8 || userInputDOB.length == 10))
 	},
 
 	//
@@ -270,7 +271,7 @@ var ParentalConsentStore = Reflux.createStore({
 		if (externalState.parentAccount.isSignedIn) {
 		    submitConsent()
 		} else {
-			if (Utils.isEmpty(YYYYMMDD)) {
+			if (Emptiness.isEmpty(YYYYMMDD)) {
 				ParentalConsentActions.submitEmailRelationshipConsent.failed({message: "Please provide a valid date of birth."})
 			} else {
 				externalState.numBlockingOperations = externalState.numBlockingOperations + 1

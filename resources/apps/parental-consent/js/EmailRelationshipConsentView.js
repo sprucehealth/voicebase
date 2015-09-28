@@ -3,6 +3,7 @@
 var React = require("react");
 var Reflux = require('reflux')
 var Utils = require("../../libs/utils.js");
+import * as Emptiness from "../../libs/emptiness.js"
 
 var Analytics = require("../../libs/analytics.js");
 var AnalyticsScreenName = "consent"
@@ -133,13 +134,13 @@ var EmailRelationshipConsentView = React.createClass({displayName: "EmailRelatio
 			&& this.isContentToUseOfTelehealthFieldValid()
 	},
 	isEmailFieldValid: function(): bool {
-		return !Utils.isEmpty(this.state.email)
+		return !Emptiness.isEmpty(this.state.email)
 	},
 	isPasswordFieldValid: function(): bool {
-		return !Utils.isEmpty(this.state.password)
+		return !Emptiness.isEmpty(this.state.password)
 	},
 	isRelationshipFieldValid: function(): bool {
-		return !Utils.isEmpty(this.state.relationship)
+		return !Emptiness.isEmpty(this.state.relationship)
 	},
 	isTermsAndPrivacyFieldValid: function(): bool {
 		return this.state.consentedToTermsAndPrivacy

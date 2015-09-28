@@ -3,6 +3,7 @@
 var React = require("react");
 var Reflux = require('reflux');
 var Utils = require("../../libs/utils.js");
+import * as Emptiness from "../../libs/emptiness.js"
 
 var Analytics = require("../../libs/analytics.js");
 var AnalyticsScreenName = "photo_upload"
@@ -208,11 +209,11 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 	},
 	isGovernmentIDFieldValid: function(): bool {
 		var store: ParentalConsentStoreType = this.state.store
-		return this.state.isGovernmentIDUploading || !Utils.isEmpty(store.identityVerification.serverGovernmentIDThumbnailURL)
+		return this.state.isGovernmentIDUploading || !Emptiness.isEmpty(store.identityVerification.serverGovernmentIDThumbnailURL)
 	},
 	isSelfieFieldValid: function(): bool {
 		var store: ParentalConsentStoreType = this.state.store
-		return this.state.isSelfieUploading || !Utils.isEmpty(store.identityVerification.serverSelfieThumbnailURL)
+		return this.state.isSelfieUploading || !Emptiness.isEmpty(store.identityVerification.serverSelfieThumbnailURL)
 	},
 
 
@@ -266,14 +267,14 @@ var PhotoIdentificationView = React.createClass({displayName: "PhotoIdentificati
 		var placeholderSrc = Utils.staticURL("/img/pc/parental_consent_photo_capture@2x.png")
 
 		var governmentIDThumbnailSrc
-		if (!Utils.isEmpty(store.identityVerification.serverGovernmentIDThumbnailURL)) {
+		if (!Emptiness.isEmpty(store.identityVerification.serverGovernmentIDThumbnailURL)) {
 			governmentIDThumbnailSrc = store.identityVerification.serverGovernmentIDThumbnailURL + "&width=" + thumbnailDimension + "&height=" + thumbnailDimension
 		} else {
 			governmentIDThumbnailSrc = placeholderSrc;
 		}
 
 		var selfieThumbnailSrc
-		if (!Utils.isEmpty(store.identityVerification.serverSelfieThumbnailURL)) {
+		if (!Emptiness.isEmpty(store.identityVerification.serverSelfieThumbnailURL)) {
 			selfieThumbnailSrc = store.identityVerification.serverSelfieThumbnailURL + "&width=" + thumbnailDimension + "&height=" + thumbnailDimension
 		} else {
 			selfieThumbnailSrc = placeholderSrc

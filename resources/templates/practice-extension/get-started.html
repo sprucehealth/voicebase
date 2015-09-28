@@ -1,0 +1,77 @@
+{{ define "content" }}
+
+<div class="big-text-banner-section">
+	Painless onboarding.<br>
+	Get up-and-running overnight.
+</div>
+<div id="get-started-container">
+	<div id="info-column">
+		<h3>What You Get</h3>
+		<div class="row">
+			<div class="left-column">
+				<img src="{{staticURL "/img/practice-extension/icon_card@2x.png"}}" id="practice-builder-image" alt="Practice Builder">
+			</div>
+			<div class="right-column">
+				<h4>Practice Builder</h4>
+				<p>
+					- Patient invitation tools<br>
+					- Virtual referral URL<br>
+					- Appointment cards
+				</p>
+			</div>
+		</div>
+		<div class="row">
+			<div class="left-column">
+				<img src="{{staticURL "/img/practice-extension/icon_phone@2x.png"}}" id="patient-app-image" alt="Patient App">
+			</div>
+			<div class="right-column">
+				<h4>Patient App</h4>
+				<p>
+					- Condition-specific intake<br>
+					- Guided photo-taking<br>
+					- PMH documentation 
+				</p>
+			</div>
+		</div>
+		<div class="row">
+			<div class="left-column">
+				<img src="{{staticURL "/img/practice-extension/icon_messaging@2x.png"}}" id="physician-app-image" alt="Messaging">
+			</div>
+			<div class="right-column">
+				<h4>Physician App</h4>
+				<p>
+					- Treatment plan builder<br>
+					- Secure messaging<br>
+					- Scheduled follow-up
+				</p>
+			</div>
+		</div>
+		<div class="row">
+			<div class="left-column">
+				<img src="{{staticURL "/img/practice-extension/icon_care@2x.png"}}" id="virtual-front-office-image" alt="Virtual Front Office">
+			</div>
+			<div class="right-column">
+				<h4>Virtual Front Office</h4>
+				<p>
+					- Care coordination<br>
+					- Direct deposit<br>
+					- Care record retrieval
+				</p>
+			</div>
+		</div>
+		<h4 id="footer-text">+ Access to our exclusive Spruce dermatologist community</h4>
+	</div>
+	<div id="form-column">
+		<div class="standard-form" id="apply-form-container"></div>
+	</div>
+</div>
+
+{{ end }}
+
+{{ define "scripts" }}
+	{{if isEnv "dev"}}
+	<script type="text/javascript" src={{staticURL "/js/DemoRequestForm.dev.js"}}></script>
+	{{else}}
+	<script type="text/javascript" src={{staticURL "/js/DemoRequestForm.min.js"}}></script>
+	{{end}}
+{{ end }}

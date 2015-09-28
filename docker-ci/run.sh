@@ -98,6 +98,7 @@ npm version | tee -a $PHABRICATOR_COMMENT
 resources/build.sh
 (cd resources/apps ; time flow check)
 
+
 # Build for deploy
 echo "BUILDING"
 cd cmd/svc/ext/restapi

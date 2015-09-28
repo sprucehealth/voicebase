@@ -3,6 +3,7 @@
 import * as React from "react/addons"
 import * as Reflux from "reflux"
 import * as Utils from "../../libs/utils.js"
+import * as Emptiness from "../../libs/emptiness.js"
 var MaskedInput = require('react-maskedinput')
 
 var Analytics = require("../../libs/analytics.js");
@@ -135,25 +136,25 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 			&& this.isPhoneFieldValid()
 	},
 	isFirstNameFieldValid: function(): bool {
-		return !Utils.isEmpty(this.state.firstName)
+		return !Emptiness.isEmpty(this.state.firstName)
 	},
 	isLastNameFieldValid: function(): bool {
-		return !Utils.isEmpty(this.state.lastName)
+		return !Emptiness.isEmpty(this.state.lastName)
 	},
 	isDOBFieldValid: function(): bool {
-		return !Utils.isEmpty(this.state.dob)
+		return !Emptiness.isEmpty(this.state.dob)
 	},
 	isGenderFieldValid: function(): bool {
-		return !Utils.isEmpty(this.state.gender)
+		return !Emptiness.isEmpty(this.state.gender)
 	},
 	isRelationshipFieldValid: function(): bool {
-		return !Utils.isEmpty(this.state.relationship)
+		return !Emptiness.isEmpty(this.state.relationship)
 	},
 	isStateOfResidenceFieldValid: function(): bool {
-		return !Utils.isEmpty(this.state.stateOfResidence)
+		return !Emptiness.isEmpty(this.state.stateOfResidence)
 	},
 	isPhoneFieldValid: function(): bool {
-		return !Utils.isEmpty(this.state.phone)
+		return !Emptiness.isEmpty(this.state.phone)
 	},
 
 	render: function(): any {
@@ -179,7 +180,7 @@ var DemographicsView = React.createClass({displayName: "DemographicsView",
 						color: "RGBA(30, 51, 58, 0.4)",
 						marginLeft: (IsMobileSafari ? "7px" : null),
 					}}>
-						{(Utils.isEmpty(this.state.dob) ? "Date of Birth" : null)}
+						{(Emptiness.isEmpty(this.state.dob) ? "Date of Birth" : null)}
 					</div>
 					<input 
 						type="date" 

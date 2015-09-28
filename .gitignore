@@ -53,10 +53,6 @@ cmd/svc/ext/restapi/restapi
 diagnosis/ingester/ingester
 npm-debug.log
 resources/node_modules/*
-resources/static/css/*.min.css
-resources/static/css/admin.css
-resources/static/css/base.css
-resources/static/css/home.css
-resources/static/css/parental-consent.css
-resources/static/js/*.dev.js
-resources/static/js/*.min.js
+resources/static/css/*.css
+resources/static/js/*.js
+resources/static/js/*.map

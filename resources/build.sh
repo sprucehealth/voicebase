@@ -1,6 +1,6 @@
 #!/bin/bash
 
-APPS="admin dronboard home parental-consent"
+APPS="admin dronboard home parental-consent practice-extension"
 RESOURCEPATH="$(cd "$(dirname "$0")/.."; pwd)/resources"
 
 if [ "$1" != "" ]; then
@@ -10,7 +10,7 @@ fi
 if [ "$NPM" == "" ]; then
 	NPM="npm"
 fi
-
+ 
 if [ ! "$APPS" == "css" ]; then
 	(
 		cd $RESOURCEPATH/apps/libs
@@ -19,6 +19,7 @@ if [ ! "$APPS" == "css" ]; then
 	for APP in $APPS; do
 		(
 			cd $RESOURCEPATH/apps/$APP
+			pwd
 			$NPM install
 			PATH="$($NPM bin):$PATH" $NPM run build 2>&1 | grep -v "WARN: " | grep -v "util.error: Use console.error instead"
 			PATH="$($NPM bin):$PATH" $NPM run build-dev 2>&1 | grep -v "WARN: " | grep -v "util.error: Use console.error instead"

@@ -1,0 +1,31 @@
+{{ define "content" }}
+
+<div class="big-text-banner-section">
+	Painless onboarding.<br>
+	Get up-and-running overnight.
+</div>
+<div class="standard-form" id="whitepaper-request-section">
+	<div id="container">
+		<div id="info-column">
+			<div>
+				<img src={{staticURL "/img/practice-extension/icon_paper_small@2x.png"}} id="image">
+			</div>
+			<h4>Teledermatology</h4>
+			<p>This white paper covers high-yield teledermatology considerations for the practicing dermatologist, ensuring that you'll pick the best technology and business model and that you'll know the medical and legal landscapes before you start.</p>
+		</div>
+		<div id="form-column">
+			<div id="form-container">
+			</div>
+		</div>
+	</div>
+</div>
+
+{{ end }}
+
+{{ define "scripts" }}
+	{{if isEnv "dev"}}
+	<script type="text/javascript" src={{staticURL "/js/WhitepaperForm.dev.js"}}></script>
+	{{else}}
+	<script type="text/javascript" src={{staticURL "/js/WhitepaperForm.min.js"}}></script>
+	{{end}}
+{{ end }}

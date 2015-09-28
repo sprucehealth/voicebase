@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/branch"
 	"github.com/sprucehealth/backend/diagnosis"
+	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -46,6 +47,7 @@ type Config struct {
 	Stores          storage.StoreMap
 	Dispatcher      dispatch.Publisher
 	MetricsRegistry metrics.Registry
+	Cfg             cfg.Store
 }
 
 // SetupRoutes configures all routes for the home website using the provided mux.
@@ -129,6 +131,14 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	r.Handle(`/pc/{childid:\d+}`, parentalConsentHandler)
 	r.Handle(`/pc/{childid:\d+}/{page:.*}`, parentalConsentHandler)
 
+	// Practice Extension
+	r.Handle("/practices", newPracticeExtensionStaticHandler(config.TemplateLoader, "practice-extension/index.html", "Spruce Practice Extension", nil))
+	r.Handle("/practices/product-tour", newPracticeExtensionStaticHandler(config.TemplateLoader, "practice-extension/product-tour.html", "Product Tour | Spruce Practice Extension", nil))
+	r.Handle("/practices/get-started", newPracticeExtensionStaticHandler(config.TemplateLoader, "practice-extension/get-started.html", "Get Started | Spruce Practice Extension", nil))
+	r.Handle("/practices/thanks", newPracticeExtensionStaticHandler(config.TemplateLoader, "practice-extension/thanks.html", "Thank You | Spruce Practice Extension", nil))
+	r.Handle("/practices/about", newPracticeExtensionStaticHandler(config.TemplateLoader, "practice-extension/about.html", "About | Spruce Practice Extension", nil))
+	r.Handle("/practices/whitepaper", newPracticeExtensionStaticHandler(config.TemplateLoader, "practice-extension/whitepaper-request.html", "Whitepaper | Spruce Practice Extension", nil))
+
 	// Email
 	r.Handle("/e/optout", newEmailOptoutHandler(config.DataAPI, config.AuthAPI, config.Signer, config.TemplateLoader))
 
@@ -145,6 +155,8 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	r.Handle("/api/textdownloadlink", newTextDownloadLinkAPIHandler(config.DataAPI, config.SMSAPI, config.FromSMSNumber, config.BranchClient, config.RateLimiters.Get("textdownloadlink")))
 	r.Handle("/api/parental-consent", apiAuthFilter(newParentalConsentAPIHAndler(config.DataAPI, config.Dispatcher)))
 	r.Handle("/api/parental-consent/image", apiAuthFilter(newParentalConsentImageAPIHAndler(config.DataAPI, config.Dispatcher, config.MediaStore)))
+	r.Handle("/api/practices/whitepaper-request", newPracticeExtensionWhitepaperAPIHandler(config.Cfg))
+	r.Handle("/api/practices/demo-request", newPracticeExtensionDemoAPIHandler(config.Cfg))
 
 	// Analytics
 	ah := newAnalyticsHandler(config.AnalyticsLogger, config.MetricsRegistry.Scope("analytics"))

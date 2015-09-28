@@ -2,6 +2,7 @@
 
 var React = require("react");
 var objectAssign = require("object-assign");
+var Emptiness = require("./emptiness.js");
 
 function staticURL(path: string): string {
 	return Spruce.BaseStaticURL + path
@@ -218,24 +219,7 @@ module.exports = {
 		return res;
 	},
 
-	isEmpty: function(data: any): bool {
-		if(typeof(data) == 'number' || typeof(data) == 'boolean') { 
-			return false; 
-		}
-		if(typeof(data) == 'undefined' || data === null) {
-			return true; 
-		}
-		if(typeof(data.length) != 'undefined') {
-			return data.length == 0;
-		}
-		var count = 0;
-		for (var i in data) {
-			if(data.hasOwnProperty(i)) {
-				count ++;
-			}
-		}
-		return count == 0;
-	},
+	isEmpty: Emptiness.isEmpty,
 
 	capitalizeFirstLetter: function (str: string): string {
 	    return str.charAt(0).toUpperCase() + str.slice(1);
