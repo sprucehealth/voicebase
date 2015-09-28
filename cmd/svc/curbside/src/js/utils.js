@@ -1,9 +1,9 @@
 export function isEmpty(data: any): bool {
-	if(typeof(data) == 'number' || typeof(data) == 'boolean') { 
-		return false; 
+	if(typeof(data) == 'number' || typeof(data) == 'boolean') {
+		return false;
 	}
 	if(typeof(data) == 'undefined' || data === null) {
-		return true; 
+		return true;
 	}
 	if(typeof(data.length) != 'undefined') {
 		return data.length == 0;

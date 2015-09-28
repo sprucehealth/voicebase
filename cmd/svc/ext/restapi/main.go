@@ -17,6 +17,7 @@ import (
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/analytics/analisteners"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/consul"
 	"github.com/sprucehealth/backend/diagnosis"
@@ -51,7 +52,7 @@ func connectDB(conf *mainConfig) *sql.DB {
 		log.Fatal(err)
 	}
 
-	if num, err := strconv.Atoi(config.MigrationNumber); err == nil {
+	if num, err := strconv.Atoi(boot.MigrationNumber); err == nil {
 		var latestMigration int
 		if err := db.QueryRow("SELECT MAX(migration_id) FROM migrations").Scan(&latestMigration); err != nil {
 			if !conf.Debug {

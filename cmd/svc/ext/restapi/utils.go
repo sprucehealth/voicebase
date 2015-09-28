@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -232,7 +233,7 @@ func (c *mainConfig) Validate() {
 	} else if n := len(c.StaticResourceURL); c.StaticResourceURL[n-1] == '/' {
 		c.StaticResourceURL = c.StaticResourceURL[:n-1]
 	}
-	c.StaticResourceURL = strings.Replace(c.StaticResourceURL, "{BuildNumber}", config.BuildNumber, -1)
+	c.StaticResourceURL = strings.Replace(c.StaticResourceURL, "{BuildNumber}", boot.BuildNumber, -1)
 	if len(errors) != 0 {
 		fmt.Fprintf(os.Stderr, "Config failed validation:\n")
 		for _, e := range errors {

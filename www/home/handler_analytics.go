@@ -12,7 +12,7 @@ import (
 	"github.com/cookieo9/resources-go"
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
-	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/www"
@@ -191,8 +191,8 @@ func (h *analyticsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 			ScreenID:    ev.Properties.popString("screen_id"),
 			TimeSpent:   ev.Properties.popFloat64Ptr("time_spent"),
 			AppType:     ev.Properties.popString("app_type"),
-			AppVersion:  config.GitBranch,
-			AppBuild:    config.BuildNumber,
+			AppVersion:  boot.GitBranch,
+			AppBuild:    boot.BuildNumber,
 			DeviceModel: r.UserAgent(),
 		}
 		if account != nil {

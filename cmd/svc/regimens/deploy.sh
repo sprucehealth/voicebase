@@ -8,7 +8,7 @@ DEMO_HOSTS="54.210.97.69"
 DEPLOY_ENV="$1"
 DEPLOY_BUILD="$2"
 DEPLOY_BRANCH="$3"
-APP="curbside"
+APP="regimens"
 if [ "$DEPLOY_BRANCH" = "" ]; then
 	DEPLOY_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 fi

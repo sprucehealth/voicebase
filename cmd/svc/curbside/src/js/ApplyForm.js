@@ -8,7 +8,7 @@ var ApplyForm = React.createClass({displayName: "ApplyForm",
 
 	//
 	// React
-	//	
+	//
 	mixins: [
 		React.addons.LinkedStateMixin,
 	],
@@ -179,9 +179,9 @@ var ApplyForm = React.createClass({displayName: "ApplyForm",
 							First Name
 						</div>
 						<div className="flexy-container">
-							<input 
-								type="text" 
-								name="first_name" 
+							<input
+								type="text"
+								name="first_name"
 								className={firstNameHighlighted ? "error" : null}
 								valueLink={this.linkState('firstName')} />
 						</div>
@@ -191,9 +191,9 @@ var ApplyForm = React.createClass({displayName: "ApplyForm",
 							Last Name
 						</div>
 						<div className="flexy-container">
-							<input 
-								type="text" 
-								name="last_name" 
+							<input
+								type="text"
+								name="last_name"
 								className={lastNameHighlighted ? "error" : null}
 								valueLink={this.linkState('lastName')} />
 						</div>
@@ -205,9 +205,9 @@ var ApplyForm = React.createClass({displayName: "ApplyForm",
 							Email
 						</div>
 						<div className="flexy-container">
-							<input 
-								type="email" 
-								name="email" 
+							<input
+								type="email"
+								name="email"
 								className={emailHighlighted ? "error" : null}
 								valueLink={this.linkState('email')} />
 						</div>
@@ -219,9 +219,9 @@ var ApplyForm = React.createClass({displayName: "ApplyForm",
 							Where are you licensed?
 						</div>
 						<div className="flexy-container">
-							<input 
-								type="text" 
-								name="licensed_locations" 
+							<input
+								type="text"
+								name="licensed_locations"
 								className={licensedLocationsHighlighted ? "error" : null}
 								valueLink={this.linkState('licensedLocations')} />
 						</div>
@@ -233,8 +233,8 @@ var ApplyForm = React.createClass({displayName: "ApplyForm",
 							Why are you interested in joining?
 						</div>
 						<div className="flexy-container">
-							<textarea 
-								name="reasons_interested" 
+							<textarea
+								name="reasons_interested"
 								className={reasonsInterestedHighlighted ? "error" : null}
 								valueLink={this.linkState('reasonsInterested')}>
 							</textarea>
@@ -247,8 +247,8 @@ var ApplyForm = React.createClass({displayName: "ApplyForm",
 							What are your interest areas within dermatology?
 						</div>
 						<div className="flexy-container">
-							<textarea 
-								name="dermatology_interests"  
+							<textarea
+								name="dermatology_interests"
 								className={dermatologyInterestsHighlighted ? "error" : null}
 								valueLink={this.linkState('dermatologyInterests')}>
 							</textarea>
@@ -261,9 +261,9 @@ var ApplyForm = React.createClass({displayName: "ApplyForm",
 							How did you hear about us?
 						</div>
 						<div className="flexy-container">
-							<input 
-								type="text" 
-								name="referral_source" 
+							<input
+								type="text"
+								name="referral_source"
 								className={referralSourceHighlighted ? "error" : null}
 								valueLink={this.linkState('referralSource')} />
 						</div>

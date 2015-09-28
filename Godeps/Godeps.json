@@ -142,6 +142,10 @@
 			"Rev": "8910d1c3a4bda5c97c50bc38543953f1f1e1f8bb"
 		},
 		{
+			"ImportPath": "github.com/mrjones/oauth",
+			"Rev": "800effa2f3d1f9ba82f280a4144e8c6fa1971c6b"
+		},
+		{
 			"ImportPath": "github.com/rainycape/memcache",
 			"Rev": "1031fa0ce2f20c1c0e1e1b51951d8ea02c84fa05"
 		},

@@ -3,15 +3,15 @@ $font-directory: "../fonts/";
 $max-desktop-content-width: 930px;
 
 @mixin respond-to($media) {
-  @if $media == handhelds {
-    @media only screen and (max-width: 1023px) { @content; } // Upper limit: iPhone 6 + Portrait
-  }
-  @else if $media == medium-screens {
-    @media only screen and (width: 1024px) { @content; } // Upper limit: iPad Portrait
-  }
-  @else if $media == wide-screens {
-    @media only screen and (min-width: 1024px) { @content; }
-  }
+	@if $media == handhelds {
+		@media only screen and (max-width: 1023px) { @content; } // Upper limit: iPhone 6 + Portrait
+	}
+	@else if $media == medium-screens {
+		@media only screen and (width: 1024px) { @content; } // Upper limit: iPad Portrait
+	}
+	@else if $media == wide-screens {
+		@media only screen and (min-width: 1024px) { @content; }
+	}
 }
 
 @font-face {
@@ -194,11 +194,11 @@ $max-desktop-content-width: 930px;
 }
 
 @mixin flexy-order($val) {
-  -webkit-box-ordinal-group: $val;  
-  -moz-box-ordinal-group: $val;     
-  -ms-flex-order: $val;     
-  -webkit-order: $val;  
-  order: $val;
+	-webkit-box-ordinal-group: $val;
+	-moz-box-ordinal-group: $val;
+	-ms-flex-order: $val;
+	-webkit-order: $val;
+	order: $val;
 }
 
 @mixin flexy-justify-content-space-between() {
@@ -638,7 +638,7 @@ div.features-container {
 	padding-bottom: 86px;
 }
 
-.faq-content-container { 
+.faq-content-container {
 	@include flexy();
 	flex-wrap: wrap;
 	-webkit-flex-wrap: wrap;

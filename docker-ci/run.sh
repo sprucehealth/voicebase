@@ -167,3 +167,22 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
     s3cmd --recursive -P --no-preserve -m "image/svg+xml" --add-header "Access-Control-Allow-Origin:*" put fonts/*.svg $STATIC_PREFIX/fonts/
     s3cmd --recursive -P --no-preserve -M put img/* $STATIC_PREFIX/img/
 fi
+
+# Build for deploy (regimens)
+echo "BUILDING (regimens)"
+cd $MONOREPO_PATH/cmd/svc/regimens
+./build.sh
+
+if [[ "$DEPLOY_TO_S3" != "" ]]; then
+    echo "DEPLOYING (regimens)"
+
+    CMD_NAME="regimens-$GIT_BRANCH-$BUILD_NUMBER"
+    rm -rf build # Jenkins preserves the workspace so remove any old build files
+    mkdir build
+    cp regimens build/$CMD_NAME
+    bzip2 -9 build/$CMD_NAME
+    echo $GIT_COMMIT > build/$CMD_NAME.revision
+    cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.out build/$CMD_NAME.coverage
+    cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.html build/$CMD_NAME.coverage.html
+    s3cmd --add-header "x-amz-acl:bucket-owner-full-control" -M --server-side-encryption put build/* s3://spruce-deploy/regimens/
+fi

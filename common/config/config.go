@@ -2,7 +2,6 @@
 package config
 
 import (
-	"expvar"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -10,11 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path"
-	"path/filepath"
 	"reflect"
-	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -26,6 +21,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/service/s3"
 	flags "github.com/jessevdk/go-flags"
+	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/awsutil"
@@ -91,52 +87,6 @@ type BaseConfig struct {
 
 	awsConfig   *aws.Config
 	awsAuthOnce sync.Once
-}
-
-// These variables are set during linking
-var (
-	GitBranch       string
-	GitRevision     string
-	BuildTime       string
-	BuildNumber     string // CI build number
-	MigrationNumber string // The database needs to match this migration number for this build
-)
-
-// VersionInfo is a set of build version variables set during linking
-var VersionInfo map[string]string
-
-func init() {
-	if MigrationNumber == "" {
-		// Should only be unset for local builds so try to find latest migration in source tree
-		if files, err := filepath.Glob(path.Join(path.Dir(os.Args[0]), "../../mysql/migration-*.sql")); err == nil {
-			maxMigration := 0
-			for _, name := range files {
-				name = path.Base(name)[10:]
-				if idx := strings.IndexByte(name, '.'); idx >= 0 {
-					name = name[:idx]
-					if num, err := strconv.Atoi(name); err == nil && num > maxMigration {
-						maxMigration = num
-					}
-				}
-			}
-			if maxMigration != 0 {
-				MigrationNumber = strconv.Itoa(maxMigration)
-			}
-		}
-	}
-
-	VersionInfo = map[string]string{
-		"GitBranch":       GitBranch,
-		"GitRevision":     GitRevision,
-		"BuildTime":       BuildTime,
-		"BuildNumber":     BuildNumber,
-		"MigrationNumber": MigrationNumber,
-		"GoVersion":       runtime.Version(),
-	}
-
-	expvar.Publish("version", expvar.Func(func() interface{} {
-		return VersionInfo
-	}))
 }
 
 var validEnvironments = map[string]bool{
@@ -311,7 +261,7 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 	}
 
 	if baseConfig.Version {
-		for k, v := range VersionInfo {
+		for k, v := range boot.VersionInfo {
 			fmt.Printf("%s: %s\n", k, v)
 		}
 		os.Exit(0)

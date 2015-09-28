@@ -11,7 +11,7 @@ import (
 
 	"github.com/cookieo9/resources-go"
 	"github.com/julienschmidt/httprouter"
-	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/www"
 )
@@ -46,7 +46,7 @@ type joinCommunityPOSTRequest struct {
 
 var robotsTXT = []byte(`Sitemap: https://www.chatcurbside.com/sitemap.xml
 User-agent: *
-Disallow: 
+Disallow:
 `)
 
 var sitemapXML = []byte(`<?xml version="1.0" encoding="UTF-8"?>
@@ -171,7 +171,7 @@ func sitemapXMLHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 func main() {
 	flag.Parse()
 
-	c.StaticResourceURL = strings.Replace(c.StaticResourceURL, "{BuildNumber}", config.BuildNumber, -1)
+	c.StaticResourceURL = strings.Replace(c.StaticResourceURL, "{BuildNumber}", boot.BuildNumber, -1)
 
 	router := httprouter.New()
 	router.GET("/", indexHandler)
