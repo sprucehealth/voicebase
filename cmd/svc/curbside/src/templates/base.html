@@ -1,0 +1,88 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	{{/* TODO: mobile optimize */}}
+	{{/* <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">*/}}
+	<meta http-equiv="X-UA-Compatible" content="IE=Edge">
+	
+	<link rel="shortcut icon" href={{ staticURL "/img/_favicon/favicon.ico" }}>
+	<link rel="icon" type="image/png" href={{ staticURL "/img/_favicon/favicon_64.png" }}>
+	<link rel="apple-touch-icon-precomposed" href={{ staticURL "/img/_favicon/favicon_64.png" }}>
+
+	<title>{{ .Title }}</title>
+
+	{{ if eq .Environment "prod" }}
+		<script type="text/javascript">
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+		ga('create', 'UA-55131756-3', 'auto');
+		ga('send', 'pageview');
+		</script>
+	{{ else }}
+		{{/* Stub the google analytics function */}}
+		<script type="text/javascript">ga = function(){};</script>
+	{{ end }}
+
+	<link rel="stylesheet" type="text/css" href={{ staticURL "css/curbside-base.min.css" }}>
+</head>
+<body>
+    {{ template "content" . }}
+	<div class="footer-section">
+		<div class="footer-content-container">
+			<div class="footer-section-logo-container">
+				<a href="https://www.sprucehealth.com/"><img src={{ staticURL "/img/curbside/logo@2x.png" }} alt="Spruce logo"></a>
+			</div>
+			<div class="footer-section-links-container">
+				<div class="footer-link"><a href="index">HOME</a></div>
+				<div class="footer-link"><a href="apply">JOIN THE COMMUNITY</a></div>
+				<div class="footer-link"><a href="/">TERMS & CONDITIONS</a></div>
+				<div class="footer-link"><a href="/">PRIVACY & POLICY</a></div>
+				<div class="footer-copyright-text">© SPRUCE HEALTH 2015</div>
+			</div>
+		</div>
+	</div>
+    {{ template "scripts" . }}
+</body>
+</html>
+
+{{ define "who-section" }}
+	<div class="who-section">
+		<h2>Who’s Here?</h2>
+		<div class="who-subtitle">Here are some of the dermatologists already a part of this Slack community.</div>
+		<div class="who-content-container">
+			<div class="who-item">
+				<div><img src={{ staticURL "/img/curbside/photo_mclellan@2x.png" }} alt="Dr. Beth McLellan"></div>
+				<div class="who-name">Dr. Beth McLellan</div>
+				<div class="who-description">Dr. McLellan studied medicine at Wayne State University. She specializes in complex medical dermatology and oncodermatology at Montefiore Medical Center.</div>
+			</div>
+			<div class="who-item">
+				<div><img src={{ staticURL "/img/curbside/photo_cheung@2x.png" }} alt="Dr. Lawrence Cheung"></div>
+				<div class="who-name">Dr. Lawrence Cheung</div>
+				<div class="who-description">Dr. Cheung studied medicine at Columbia University. He runs a private practice in the San Francisco Bay Area, and specializes in eczema and psoriasis.</div>
+			</div>
+			<div class="who-item">
+				<div><img src={{ staticURL "/img/curbside/photo_robinson@2x.png" }} alt="Dr. Maria Robinson"></div>
+				<div class="who-name">Dr. Maria Robinson</div>
+				<div class="who-description">Dr. Robinson studied medicine at Pennsylvania State University. She specializes in dermatopathology and is a Clinical Assistant Professor of Dermatology at NYU.</div>
+			</div>
+			<div class="who-item">
+				<div><img src={{ staticURL "/img/curbside/photo_newman@2x.png" }} alt="Dr. Elan Newman"></div>
+				<div class="who-name">Dr. Elan Newman</div>
+				<div class="who-description">Dr. Newman studied medicine at the University of California, San Diego. He practices at the Sharp-Rees Stealy Medical Group, and is interested in general dermatology.</div>
+			</div>
+			<div class="who-item">
+				<div><img src={{ staticURL "/img/curbside/photo_fung@2x.png" }} alt="Dr. Jason Fung"></div>
+				<div class="who-name">Dr. Jason Fung</div>
+				<div class="who-description">Dr. Fung studied medicine at the University of Rochester. He runs a private practice in the San Francisco Bay Area, and is interested in general dermatology. </div>
+			</div>
+		</div>
+	</div>
+{{ end }}
+
+{{ define "scripts" }}{{ end }}
+{{ define "sidebar" }}{{ end }}

@@ -1,0 +1,970 @@
+$img-directory: "../img/curbside/";
+$font-directory: "../fonts/";
+$max-desktop-content-width: 930px;
+
+@mixin respond-to($media) {
+  @if $media == handhelds {
+    @media only screen and (max-width: 1023px) { @content; } // Upper limit: iPhone 6 + Portrait
+  }
+  @else if $media == medium-screens {
+    @media only screen and (width: 1024px) { @content; } // Upper limit: iPad Portrait
+  }
+  @else if $media == wide-screens {
+    @media only screen and (min-width: 1024px) { @content; }
+  }
+}
+
+@font-face {
+	font-family: 'MuseoSans-100';
+	src: url($font-directory + 'MuseoSans_100-webfont.eot');
+	src: url($font-directory + 'MuseoSans_100-webfont.eot?#iefix') format('embedded-opentype'),
+		 url($font-directory + 'MuseoSans_100-webfont.woff2') format('woff2'),
+		 url($font-directory + 'MuseoSans_100-webfont.woff') format('woff'),
+		 url($font-directory + 'MuseoSans_100-webfont.ttf') format('truetype'),
+		 url($font-directory + 'MuseoSans_100-webfont.svg#museo_sans100') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'MuseoSans-100-Italic';
+	src: url($font-directory + 'MuseoSans_100_Italic-webfont.eot');
+	src: url($font-directory + 'MuseoSans_100_Italic-webfont.eot?#iefix') format('embedded-opentype'),
+		 url($font-directory + 'MuseoSans_100_Italic-webfont.woff2') format('woff2'),
+		 url($font-directory + 'MuseoSans_100_Italic-webfont.woff') format('woff'),
+		 url($font-directory + 'MuseoSans_100_Italic-webfont.ttf') format('truetype'),
+		 url($font-directory + 'MuseoSans_100_Italic-webfont.svg#museo_sans100_italic') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'MuseoSans-300';
+	src: url($font-directory + 'MuseoSans_300-webfont.eot');
+	src: url($font-directory + 'MuseoSans_300-webfont.eot?#iefix') format('embedded-opentype'),
+		 url($font-directory + 'MuseoSans_300-webfont.woff2') format('woff2'),
+		 url($font-directory + 'MuseoSans_300-webfont.woff') format('woff'),
+		 url($font-directory + 'MuseoSans_300-webfont.ttf') format('truetype'),
+		 url($font-directory + 'MuseoSans_300-webfont.svg#museo_sans300') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'MuseoSans-300-Italic';
+	src: url($font-directory + 'MuseoSans_300_Italic-webfont.eot');
+	src: url($font-directory + 'MuseoSans_300_Italic-webfont.eot?#iefix') format('embedded-opentype'),
+		 url($font-directory + 'MuseoSans_300_Italic-webfont.woff2') format('woff2'),
+		 url($font-directory + 'MuseoSans_300_Italic-webfont.woff') format('woff'),
+		 url($font-directory + 'MuseoSans_300_Italic-webfont.ttf') format('truetype'),
+		 url($font-directory + 'MuseoSans_300_Italic-webfont.svg#museo_sans300_italic') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'MuseoSans-500';
+	src: url($font-directory + 'MuseoSans_500-webfont.eot');
+	src: url($font-directory + 'MuseoSans_500-webfont.eot?#iefix') format('embedded-opentype'),
+		 url($font-directory + 'MuseoSans_500-webfont.woff2') format('woff2'),
+		 url($font-directory + 'MuseoSans_500-webfont.woff') format('woff'),
+		 url($font-directory + 'MuseoSans_500-webfont.ttf') format('truetype'),
+		 url($font-directory + 'MuseoSans_500-webfont.svg#museo_sans500') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'MuseoSans-500-Italic';
+	src: url($font-directory + 'MuseoSans_500_Italic-webfont.eot');
+	src: url($font-directory + 'MuseoSans_500_Italic-webfont.eot?#iefix') format('embedded-opentype'),
+		 url($font-directory + 'MuseoSans_500_Italic-webfont.woff2') format('woff2'),
+		 url($font-directory + 'MuseoSans_500_Italic-webfont.woff') format('woff'),
+		 url($font-directory + 'MuseoSans_500_Italic-webfont.ttf') format('truetype'),
+		 url($font-directory + 'MuseoSans_500_Italic-webfont.svg#museo_sans500_italic') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'MuseoSans-700';
+	src: url($font-directory + 'MuseoSans_700-webfont.eot');
+	src: url($font-directory + 'MuseoSans_700-webfont.eot?#iefix') format('embedded-opentype'),
+		 url($font-directory + 'MuseoSans_700-webfont.woff2') format('woff2'),
+		 url($font-directory + 'MuseoSans_700-webfont.woff') format('woff'),
+		 url($font-directory + 'MuseoSans_700-webfont.ttf') format('truetype'),
+		 url($font-directory + 'MuseoSans_700-webfont.svg#museo_sans700') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'MuseoSans-700-Italic';
+	src: url($font-directory + 'MuseoSans_700_Italic-webfont.eot');
+	src: url($font-directory + 'MuseoSans_700_Italic-webfont.eot?#iefix') format('embedded-opentype'),
+		 url($font-directory + 'MuseoSans_700_Italic-webfont.woff2') format('woff2'),
+		 url($font-directory + 'MuseoSans_700_Italic-webfont.woff') format('woff'),
+		 url($font-directory + 'MuseoSans_700_Italic-webfont.ttf') format('truetype'),
+	url($font-directory + 'MuseoSans_700_Italic-webfont.svg#museo_sans700_italic') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+@font-face {
+    font-family: 'MuseoSans-900';
+    src: url($font-directory + 'MuseoSans_900-webfont.eot');
+    src: url($font-directory + 'MuseoSans_900-webfont.eot?#iefix') format('embedded-opentype'),
+         url($font-directory + 'MuseoSans_900-webfont.woff2') format('woff2'),
+         url($font-directory + 'MuseoSans_900-webfont.woff') format('woff'),
+         url($font-directory + 'MuseoSans_900-webfont.ttf') format('truetype'),
+         url($font-directory + 'MuseoSans_900-webfont.svg#museo_sans900') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'MuseoSans-900-Italic';
+    src: url($font-directory + 'MuseoSans_900_Italic-webfont.eot');
+    src: url($font-directory + 'MuseoSans_900_Italic-webfont.eot?#iefix') format('embedded-opentype'),
+         url($font-directory + 'MuseoSans_900_Italic-webfont.woff2') format('woff2'),
+         url($font-directory + 'MuseoSans_900_Italic-webfont.woff') format('woff'),
+         url($font-directory + 'MuseoSans_900_Italic-webfont.ttf') format('truetype'),
+         url($font-directory + 'MuseoSans_900_Italic-webfont.svg#museo_sans900_italic') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+@mixin font-300 {
+	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+}
+@mixin font-500 {
+	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+}
+@mixin font-500-Italic {
+    font-family: 'MuseoSans-500-Italic', Helvetica, Arial, sans-serif;
+}
+@mixin font-700 {
+	font-family: 'MuseoSans-700', Helvetica, Arial, sans-serif;
+}
+
+@mixin fontSize-16 {
+	font-size: 16px;
+	line-height: 22px;
+	@include respond-to(handhelds) {
+		font-size: 14px;
+		line-height: 20px;
+	}
+}
+@mixin fontSize-18 {
+	font-size: 18px;
+	line-height: 24px;
+	@include respond-to(handhelds) {
+		font-size: 14px;
+		line-height: 20px;
+	}
+}
+@mixin fontSize-20 {
+	font-size: 20px;
+	line-height: 26px;
+	@include respond-to(handhelds) {
+		font-size: 16px;
+		line-height: 22px;
+	}
+}
+
+@mixin fontSize-26 {
+	font-size: 26px;
+	line-height: 36px;
+	@include respond-to(handhelds) {
+		font-size: 22px;
+		line-height: 32px;
+	}
+}
+
+@mixin fontSize-36 {
+	font-size: 36px;
+	line-height: 45px;
+	@include respond-to(handhelds) {
+		font-size: 32px;
+		line-height: 41px;
+	}
+}
+
+@mixin fontSize-72 {
+	font-size: 72px;
+	line-height: 60px;
+}
+
+@mixin flexy {
+	display: -webkit-box;
+	display: -moz-box;
+	display: -ms-flexbox;
+	display: -webkit-flex;
+	display: flex;
+}
+
+@mixin flexy-order($val) {
+  -webkit-box-ordinal-group: $val;  
+  -moz-box-ordinal-group: $val;     
+  -ms-flex-order: $val;     
+  -webkit-order: $val;  
+  order: $val;
+}
+
+@mixin flexy-justify-content-space-between() {
+	-webkit-justify-content: space-between;
+	justify-content: space-between;
+}
+
+body {
+	margin: 0px;
+	padding: 0px;
+	color: #1E333A;
+	@include font-300();
+}
+
+h1 {
+	@include font-300();
+	font-size: 36px;
+	line-height: 43px;
+	color: white;
+}
+
+h2 {
+	@include font-500();
+	@include fontSize-26();
+	text-align: center;
+	color: #0083A9;
+}
+
+a {
+	color: #0BA5C5;
+	text-decoration: none;
+}
+
+a:hover {
+	color: #1E333A;
+}
+
+// Header pane
+
+div.header {
+	background-color: #10a5c4;
+	background-image: url($img-directory + "bg_blue.png");
+	background-repeat: repeat;
+	text-align: center;
+	display:inline-block;
+	width: 100%;
+	@include respond-to(handhelds) {
+		padding-top: 64px;
+	}
+
+	#title {
+		@include fontSize-72();
+		color: white;
+		padding-top: 148px;
+		margin-bottom: 40px;
+	}
+}
+
+a.rounded-button {
+	@include font-500();
+	font-size: 20px; // Constant across device sizes
+	display:inline-block;
+	padding: 18px 40px 18px 40px;
+	color: #0BA5C5;
+	background-color: white;
+	text-decoration: none;
+	-webkit-border-radius: 10px;
+    border-radius: 10px;
+	@include respond-to(handhelds) {
+		padding: 18px 20px 18px 20px;
+		display:block;
+	}
+	box-sizing:border-box;
+	-moz-box-sizing:border-box;
+	-webkit-box-sizing:border-box;
+	height:60px;
+	border: 2px solid white;
+}
+
+a.rounded-button:hover {
+	background-color: transparent;
+	color: white;
+	border: 2px solid white;
+}
+
+.header-button {
+	margin-top: 30px;
+	margin-bottom: 74px;
+	@include respond-to(handhelds) {
+		margin-left: 24px;
+		margin-right: 24px;
+		margin-top: 48px;
+		margin-bottom: 56px;
+	}
+}
+
+div.header img {
+	width: 100%;
+	max-width: 100%;
+	max-width: 1174px;
+	display: block;
+	margin: auto;
+}
+
+// Features Section
+
+div.features-container {
+	background-color: #DAE6EB;
+}
+
+.feature-row {
+	margin: auto;
+	@include respond-to(handhelds) {
+		padding-left: 14px;
+		padding-right: 14px;
+	}
+	@include respond-to(medium-screens) {
+		@include flexy();
+		width: $max-desktop-content-width;
+	}
+	@include respond-to(wide-screens) {
+		@include flexy();
+		width: $max-desktop-content-width;
+	}
+}
+
+.feature-row img {
+	max-width: 440px;
+	@include respond-to(handhelds) {
+		max-width: 100%;
+	}
+}
+
+// todo -- changed this to div
+.feature-row p {
+	@include respond-to(handhelds) {
+		// Extra padding to account for the shadow in the card images
+		padding-left: 4px;
+		padding-right: 4px;
+	}
+	@include respond-to(medium-screens) {
+		width: 438px; // This is a hack because I couldn't solve an overlapping issue in Safari without it
+	}
+	@include respond-to(wide-screens) {
+		width: 438px; // This is a hack because I couldn't solve an overlapping issue in Safari without it
+	}
+}
+
+.feature-row-top {
+	padding-top: 108px;
+	@include respond-to(handhelds) {
+		padding-top: 55px;
+	}
+}
+
+.feature-row-middle {
+	padding-top: 70px;
+	padding-bottom: 70px;
+	@include respond-to(handhelds) {
+		padding-top: 34px;
+		padding-bottom: 34px;
+	}
+}
+
+.feature-row-bottom {
+	padding-bottom: 108px;
+	@include respond-to(handhelds) {
+		padding-bottom: 55px;
+	}
+}
+
+.feature-description-container {
+	@include respond-to(medium-screens) {
+		padding-left: 52px;
+	}
+	@include respond-to(wide-screens) {
+		padding-left: 52px;
+	}
+}
+
+.feature-title {
+	@include fontSize-20();
+	@include font-500();
+}
+
+.feature-text {
+	@include fontSize-20();
+	color: #65777D;
+}
+
+// "Hosted By" Section
+
+.hosted-by-container {
+	margin: auto;
+	max-width: 100%;
+	@include respond-to(handhelds) {
+		padding-left: 14px;
+		padding-right: 14px;
+	}
+	@include respond-to(medium-screens) {
+		max-width: $max-desktop-content-width;
+	}
+	@include respond-to(wide-screens) {
+		max-width: $max-desktop-content-width;
+	}
+}
+
+.hosted-by-content {
+	color: #65777D;
+	@include fontSize-18();
+	@include respond-to(handhelds) {
+		margin-bottom: 74px;
+	}
+	@include respond-to(medium-screens) {
+		@include flexy();
+		@include flexy-justify-content-space-between();
+		align-items: center;
+		margin-bottom: 100px;
+	}
+	@include respond-to(wide-screens) {
+		@include flexy();
+		@include flexy-justify-content-space-between();
+		align-items: center;
+		margin-bottom: 100px;
+	}
+}
+
+.hosted-by-text {
+	@include respond-to(medium-screens) {
+		width: 380px; // This is a hack for Safari because I can't figure out how to get flexbox to stay within its bounds
+	}
+	@include respond-to(wide-screens) {
+		width: 380px; // This is a hack for Safari because I can't figure out how to get flexbox to stay within its bounds
+	}
+}
+
+.hosted-by-container h2 {
+	margin-top: 124px;
+	margin-bottom: 60px;
+	@include respond-to(handhelds) {
+		margin-top: 48px;
+	}
+}
+
+.devices-img-container {
+	@include respond-to(handhelds) {
+	}
+	@include respond-to(medium-screens) {
+		-webkit-flex-basis: 550px;
+		flex-basis: 550px;
+	}
+	@include respond-to(wide-screens) {
+		-webkit-flex-basis: 550px;
+		flex-basis: 550px;
+	}
+}
+
+.devices-img {
+	@include respond-to(handhelds) {
+		max-width: 100%;
+		width: 550px;
+		display: block;
+		margin: auto;
+		margin-top: 48px;
+	}
+	@include respond-to(medium-screens) {
+		width: 550px;
+	}
+	@include respond-to(wide-screens) {
+		width: 550px;
+	}
+}
+
+// "Apply to Join" Section
+
+.apply-section {
+	padding-top: 60px;
+	padding-left: 24px;
+	padding-right: 24px;
+	padding-bottom: 60px;
+	@include respond-to(handhelds) {
+		padding-top: 72px;
+	}
+	background-color: #00CECF;
+	background-image: url($img-directory + "bg_aqua.png");
+	background-repeat: repeat;
+}
+.apply-section h2 {
+	color: white;
+	margin-bottom: 60px;
+}
+
+.apply-content-container {
+	margin: auto;
+	color: white;
+	text-align: center;
+	font-size: 18px; // Constant across devices
+}
+
+.apply-content-container div {
+	max-width: 800px;
+	margin: auto;
+}
+
+.apply-button {
+	margin: 60px 0px 20px 0px;
+	@include respond-to(handhelds) {
+		margin-bottom: 0px;
+	}
+}
+
+// "Who's Here?" Section
+
+.who-section {
+	padding-top: 80px;
+	padding-left: 14px;
+	padding-right: 14px;
+	padding-bottom: 50px;
+	@include respond-to(handhelds) {
+		padding-top: 62px;
+	}
+	text-align: center;
+	color: #65777D;
+	margin: auto;
+	@include respond-to(medium-screens) {
+		max-width: 1500px;
+	}
+	@include respond-to(wide-screens) {
+		max-width: 1500px;
+	}
+}
+
+.who-subtitle {
+	margin-top: 58px;
+	margin-bottom: 30px;
+	@include fontSize-18();
+}
+
+.who-content-container {
+	@include flexy();
+	-webkit-flex-wrap: wrap;
+	flex-wrap: wrap;
+	-webkit-justify-content: center;
+	justify-content: center;
+}
+
+.who-item {
+	width: 290px;
+	padding: 48px;
+}
+
+.who-name {
+	@include font-500();
+	color: #1E333A;
+	padding-top: 24px;
+	padding-bottom: 18px;
+}
+
+.who-description {
+}
+
+// "Testimonials" Section
+
+.testimonials-section {
+	width: 100%;
+	background-color: #DAE6EB;
+	padding-top: 95px;
+	padding-bottom: 117px;
+}
+
+.testimonials-content-container {
+	width: 100%;
+	margin: auto;
+	margin-top: 48px;
+	margin-bottom: 25px;
+	@include respond-to(medium-screens) {
+		width: $max-desktop-content-width;
+	}
+	@include respond-to(wide-screens) {
+		width: $max-desktop-content-width;
+	}
+}
+
+.testimonials-flexbox-container {
+	@include respond-to(medium-screens) {
+		width: $max-desktop-content-width;
+		@include flexy();
+		@include flexy-justify-content-space-between();
+	}
+	@include respond-to(wide-screens) {
+		width: $max-desktop-content-width;
+		@include flexy();
+		@include flexy-justify-content-space-between();
+	}
+}
+
+.testimonial-container {
+	background-color: #F1F5F6;
+	-webkit-border-radius: 10px;
+	border-radius: 10px;
+	padding: 20px 35px 20px 35px;
+	margin-bottom: 25px;
+	color: #65777D;
+	@include fontSize-18();
+	@include respond-to(handhelds) {
+		margin-left: 14px;
+		margin-right: 14px;
+	}
+}
+
+.testimonial-container b {
+	color: #1E333A;
+	@include font-500();
+}
+
+.testimonial-container-1 {
+}
+
+.testimonial-container-2 {
+}
+
+.testimonial-container-3 {
+	@include respond-to(medium-screens) {
+		margin-left: 25px;
+	}
+	@include respond-to(wide-screens) {
+		margin-left: 25px;
+	}
+}
+
+
+// "FAQ" Section
+
+.faq-section {
+	text-align: center;
+	padding-top: 100px;
+	padding-bottom: 86px;
+}
+
+.faq-content-container { 
+	@include flexy();
+	flex-wrap: wrap;
+	-webkit-flex-wrap: wrap;
+	@include flexy-justify-content-space-between();
+	max-width: 100%;
+	margin: auto;
+	@include respond-to(medium-screens) {
+		width: $max-desktop-content-width;
+	}
+	@include respond-to(wide-screens) {
+		width: $max-desktop-content-width;
+	}
+	@include fontSize-18();
+	color: #65777D;
+}
+
+.faq-question {
+	width: 430px;
+	text-align: left;
+	@include respond-to(handhelds) {
+		width: 100%;
+		margin-left: 14px;
+		margin-right: 14px;
+	}
+}
+
+.faq-question-title {
+	color: #1E333A;
+	@include font-500;
+}
+
+.faq-footer-text {
+	margin-top: 80px;
+	margin-left: 14px;
+	margin-right: 14px;
+	@include fontSize-16();
+	color: #8B9FA7;
+}
+
+
+// Footer Section
+
+.footer-section {
+	width: 100%;
+	background-color: #1E333A;
+	padding-top: 128px;
+	padding-bottom: 66px;
+	@include respond-to(handhelds) {
+		padding-top: 67px;
+	}
+}
+
+.footer-section a {
+	color: #C5D3D8;
+	@include fontSize-16();
+}
+
+.footer-content-container {
+	margin: auto;
+	max-width: 100%;
+	@include respond-to(handhelds) {
+		width: 100%;
+		text-align: center;
+	}
+	@include respond-to(medium-screens) {
+		@include flexy();
+		-webkit-flex-wrap: wrap;
+		flex-wrap: wrap;
+		@include flexy-justify-content-space-between();
+		width: $max-desktop-content-width;
+	}
+	@include respond-to(wide-screens) {
+		@include flexy();
+		-webkit-flex-wrap: wrap;
+		flex-wrap: wrap;
+		@include flexy-justify-content-space-between();
+		width: $max-desktop-content-width;
+	}
+	color: white;
+}
+
+.footer-section-logo-container {
+	@include flexy-order(2);
+}
+
+.footer-section-logo-container img {
+	width: 179px;
+	height: 48px;
+	@include respond-to(handhelds) {
+		margin-bottom: 40px;
+		max-width: 100%;
+	}
+}
+
+.footer-section-links-container {
+	@include flexy-order(1);
+	width: 50%;
+	@include respond-to(handhelds) {
+		width: 100%;
+	}
+}
+
+.footer-link {
+	margin-bottom: 4px;
+}
+
+.footer-copyright-text {
+	margin-top: 20px;
+	color: #8B9FA7;
+}
+
+
+// Form Section
+
+.form-section {
+	padding-top: 117px;
+	padding-bottom: 134px;
+	color: #65777D;
+	@include fontSize-16();
+	background-image: url($img-directory + "bg_white.png");
+	background-repeat: repeat;
+	@include respond-to(handhelds) {
+		padding-top: 83px;
+	}
+}
+
+.form-content-container {
+	margin: auto;
+	@include respond-to(handhelds) {
+		margin: 0px 14px;
+		max-width: 100%;
+	}
+	@include respond-to(medium-screens) {
+		width: 530px;
+	}
+	@include respond-to(wide-screens) {
+		width: 530px;
+	}
+}
+
+.form-content-container h2 {
+	color: #1E333A;
+	@include fontSize-36();
+	margin-bottom: 72px;
+}
+
+.form-fields-container {
+}
+
+.flexy-container {
+	@include flexy();
+}
+
+.form-section input {
+	color: #1E333A;
+	background-color: white;
+	border: 1px #C5D3D8 solid;
+	height: 52px;
+	width: 100%;
+	margin-top: 5px;
+	@include font-300();
+	font-size: 18px; // Constant across devices
+	padding-left: 10px;
+	padding-right: 10px;
+
+	// Removes Mobile Safari default styling
+	-webkit-box-shadow: none;
+    box-shadow: none;
+	-webkit-appearance: none;
+	-webkit-border-radius: 0;
+}
+
+input.error {
+	border: 1px #FFAE32 solid;
+}
+
+.form-section textarea {
+	color: #1E333A;
+	background-color: white;
+	border: 1px #C5D3D8 solid;
+	height: 120px;
+	width: 100%;
+	margin-top: 5px;
+	@include font-300();
+	font-size: 18px; // Constant across devices
+	padding: 10px;
+
+	// Removes Mobile Safari default styling
+	-webkit-box-shadow: none;
+    box-shadow: none;
+	-webkit-appearance: none;
+	-webkit-border-radius: 0;
+}
+
+textarea.error {
+	border: 1px #FFAE32 solid;
+}
+
+
+.form-row {
+	@include respond-to(handhelds) {
+		padding: 0px 14px;
+	}
+	@include respond-to(medium-screens) {
+		@include flexy();
+		@include flexy-justify-content-space-between();
+	}
+	@include respond-to(wide-screens) {
+		@include flexy();
+		@include flexy-justify-content-space-between();
+	}
+}
+
+.form-column {
+	-webkit-flex-grow: 1;
+	margin-bottom: 40px;
+	flex-grow: 1;
+}
+
+.form-error-message {
+	font-family: "MuseoSans-300-Italic";
+	color: #FFAE32;
+	text-align: center;
+}
+
+.form-column.right {
+	@include respond-to(handhelds) {
+	}
+	@include respond-to(medium-screens) {
+		margin-left: 30px;
+	}
+	@include respond-to(wide-screens) {
+		margin-left: 30px;
+	}
+}
+
+.form-section button {
+	border: none;
+	background-color: #0BA5C5;
+	-webkit-border-radius: 4px;
+	border-radius: 4px;
+	color: white;
+	padding: 18px 50px;
+	font-size: 20px; // Constant across all devices
+	@include font-500();
+	margin: auto;
+	display: block;
+	margin-top: 54px;
+	box-sizing:border-box;
+	-moz-box-sizing:border-box;
+	-webkit-box-sizing:border-box;
+	height:60px;
+	border:2px solid #0BA5C5;
+	@include respond-to(handhelds) {
+		margin: 0px 25px;
+		width: 100%;
+	}
+}
+
+.form-section button:hover:enabled {
+	color: #0BA5C5;
+	background-color: transparent;
+	box-sizing:border-box;
+	-moz-box-sizing:border-box;
+	-webkit-box-sizing:border-box;
+	height:60px;
+	border:2px solid #0BA5C5;
+	cursor: pointer;
+}
+
+.form-section button:disabled {
+	background-color: rgba(#0BA5C5, 0.3);
+}
+
+// Thanks Section
+
+.thanks-section {
+	padding-top: 117px;
+	padding-bottom: 134px;
+	color: #65777D;
+	@include fontSize-16();
+	background-image: url($img-directory + "bg_white.png");
+	background-repeat: repeat;
+	@include respond-to(handhelds) {
+		padding-top: 83px;
+		padding-left: 14px;
+		padding-right: 14px;
+	}
+	text-align: center;
+}
+
+.thanks-content-container {
+
+}
+
+.thanks-text {
+	@include fontSize-18();
+	color: #65777D;
+}
+
+a.learn-more-button {
+	border: none;
+	background-color: #0BA5C5;
+	border-radius: 4px;
+	color: white;
+	padding: 18px 50px;
+	font-size: 20px; // Constant across devices
+	@include font-500();
+	margin: auto;
+	display: block;
+	margin-top: 78px;
+	@include respond-to(handhelds) {
+		padding: 18px 20px 18px 20px;
+		display:block;
+	}
+	display:inline-block;
+	text-decoration: none;
+	box-sizing:border-box;
+	-moz-box-sizing:border-box;
+	-webkit-box-sizing:border-box;
+	height:60px;
+	border: 2px solid #0BA5C5;
+}
+
+a.learn-more-button:hover {
+	background-color: transparent;
+	color: #0BA5C5;
+	border: 2px solid #0BA5C5;
+}

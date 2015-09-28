@@ -26,7 +26,8 @@ export TEST_MEMCACHED=127.0.0.1:11211
 export GO15VENDOREXPERIMENT=1
 export GOPATH=/workspace/go
 export PATH=$GOPATH/bin:$PATH
-cd $GOPATH/src/github.com/sprucehealth/backend
+export MONOREPO_PATH=$GOPATH/src/github.com/sprucehealth/backend
+cd $MONOREPO_PATH
 
 go version
 go get github.com/golang/lint/golint
@@ -65,6 +66,7 @@ for P in $PKGS; do
 done
 PKGSLIST=$(echo $PKGSLIST | cut -c2-)
 
+
 echo "TESTING"
 if [[ ! -z "$FULLCOVERAGE" ]]; then
     for PKG in $PKGS; do
@@ -91,34 +93,70 @@ go tool cover -html=coverage-$BUILD_NUMBER.out -o coverage.html
 cp coverage.html coverage-$BUILD_NUMBER.html
 go tool cover -func=coverage-$BUILD_NUMBER.out | grep "total:" | tee -a $PHABRICATOR_COMMENT
 
-# Test static resources
-echo "TESTING STATIC RESOURCES"
 flow --version | tee -a $PHABRICATOR_COMMENT
 npm version | tee -a $PHABRICATOR_COMMENT
-resources/build.sh
+
+# Test static resources (restapi)
+echo "TESTING STATIC RESOURCES (restapi)"
+$MONOREPO_PATH/resources/build.sh
 (cd resources/apps ; time flow check)
 
+# Test static resources (curbside)
+echo "TESTING STATIC RESOURCES (curbside)"
+(cd $MONOREPO_PATH/cmd/svc/curbside ; ./build_resources.sh)
+(cd $MONOREPO_PATH/cmd/svc/curbside ; time flow check)
 
-# Build for deploy
-echo "BUILDING"
-cd cmd/svc/ext/restapi
+# Build for deploy (restapi)
+echo "BUILDING (restapi)"
+cd $MONOREPO_PATH/cmd/svc/ext/restapi
 ./build.sh
 
 if [[ "$DEPLOY_TO_S3" != "" ]]; then
-    echo "DEPLOYING"
+    echo "DEPLOYING (restapi)"
 
     CMD_NAME="restapi-$GIT_BRANCH-$BUILD_NUMBER"
-    rm -rf build # Jenkins preserves the worksapce so remove any old build files
+    rm -rf build # Jenkins preserves the workspace so remove any old build files
     mkdir build
     cp restapi build/$CMD_NAME
     bzip2 -9 build/$CMD_NAME
     echo $GIT_COMMIT > build/$CMD_NAME.revision
-    cp ../../../../coverage-$BUILD_NUMBER.out build/$CMD_NAME.coverage
-    cp ../../../../coverage-$BUILD_NUMBER.html build/$CMD_NAME.coverage.html
+    cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.out build/$CMD_NAME.coverage
+    cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.html build/$CMD_NAME.coverage.html
     s3cmd --add-header "x-amz-acl:bucket-owner-full-control" -M --server-side-encryption put build/* s3://spruce-deploy/restapi/
 
-    cd ../../../../resources/static
+    cd $MONOREPO_PATH/resources/static
     STATIC_PREFIX="s3://spruce-static/web/$BUILD_NUMBER"
+    s3cmd --recursive -P --no-preserve -m "text/css" put css/* $STATIC_PREFIX/css/
+    s3cmd --recursive -P --no-preserve -m "application/javascript" put js/* $STATIC_PREFIX/js/
+    # s3cmd --recursive -P --no-preserve -m "application/x-font-opentype" --add-header "Access-Control-Allow-Origin:*" put fonts/* $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -m "application/octet-stream" --add-header "Access-Control-Allow-Origin:*" put fonts/*.ttf $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -m "application/vnd.ms-fontobject" --add-header "Access-Control-Allow-Origin:*" put fonts/*.eot $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -m "application/font-woff" --add-header "Access-Control-Allow-Origin:*" put fonts/*.woff $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -m "application/font-woff2" --add-header "Access-Control-Allow-Origin:*" put fonts/*.woff2 $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -m "image/svg+xml" --add-header "Access-Control-Allow-Origin:*" put fonts/*.svg $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -M put img/* $STATIC_PREFIX/img/
+fi
+
+# Build for deploy (curbside)
+echo "BUILDING (curbside)"
+cd $MONOREPO_PATH/cmd/svc/curbside
+./build.sh
+
+if [[ "$DEPLOY_TO_S3" != "" ]]; then
+    echo "DEPLOYING (curbside)"
+
+    CMD_NAME="curbside-$GIT_BRANCH-$BUILD_NUMBER"
+    rm -rf bin # Jenkins preserves the workspace so remove any old build files
+    mkdir bin
+    cp curbside bin/$CMD_NAME
+    bzip2 -9 bin/$CMD_NAME
+    echo $GIT_COMMIT > bin/$CMD_NAME.revision
+    cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.out bin/$CMD_NAME.coverage
+    cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.html bin/$CMD_NAME.coverage.html
+    s3cmd --add-header "x-amz-acl:bucket-owner-full-control" -M --server-side-encryption put bin/* s3://spruce-deploy/curbside/
+
+    cd $MONOREPO_PATH/cmd/svc/curbside/build
+    STATIC_PREFIX="s3://spruce-static/curbside/$BUILD_NUMBER"
     s3cmd --recursive -P --no-preserve -m "text/css" put css/* $STATIC_PREFIX/css/
     s3cmd --recursive -P --no-preserve -m "application/javascript" put js/* $STATIC_PREFIX/js/
     # s3cmd --recursive -P --no-preserve -m "application/x-font-opentype" --add-header "Access-Control-Allow-Origin:*" put fonts/* $STATIC_PREFIX/fonts/

@@ -56,3 +56,7 @@ resources/node_modules/*
 resources/static/css/*.css
 resources/static/js/*.js
 resources/static/js/*.map
+cmd/svc/curbside/build/*
+cmd/svc/curbside/curbside
+cmd/svc/curbside/node_modules/*
+cmd/svc/curbside/curbside/resources.zip

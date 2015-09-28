@@ -1,0 +1,92 @@
+{{ define "content" }}
+	<div class="header">
+		<p id="title">Curbside</p>
+		<h1>Join the exclusive Dermatologist community online.</h1>
+		<div><a href="apply" class="rounded-button header-button">Join the Community</a></div>
+		<div style="width:100%;"><img src={{ staticURL "img/curbside/slack_screen@2x.png"}} alt="Join the community"></div>
+	</div>
+	<div class="features-container">
+		<div class="feature-row feature-row-top">
+			<div><img src={{ staticURL "img/curbside/convo1@2x.png"}} alt="Share knowledge"></div>
+			<div class="feature-description-container">
+				<p class="feature-title">Share knowledge and best practices</p>
+				<p class="feature-text">Discuss research, treatments, and practice experiences</p>
+			</div>
+		</div>
+		<div class="feature-row feature-row-middle">
+			<div><img src={{ staticURL "img/curbside/convo2@2x.png"}} alt="Second opinions"></div>
+			<div class="feature-description-container">
+				<p class="feature-title">Seek fast second opinions on cases</p>
+				<p class="feature-text">Get feedback from your peers here faster than your practice colleagues</p>
+			</div>
+		</div>
+		<div class="feature-row feature-row-bottom">
+			<div><img src={{ staticURL "img/curbside/convo3@2x.png"}} alt="Connect with peers"></div>
+			<div class="feature-description-container">
+				<p class="feature-title">Connect with your peers</p>
+				<p class="feature-text">Join in interesting conversations in the modern doctors’ lounge</p>
+			</div>
+		</div>
+	</div>
+	<div class="hosted-by-container">
+		<h2>Hosted by Spruce Physicians. Powered by Slack.</h2>
+		<div class="hosted-by-content">
+			<div class="hosted-by-text">
+				<p>As dermatologists actively practicing telemedicine on Spruce, we have found it immensely valuable (and fun) to chat and compare notes via Spruce’s Slack community. </p>
+				<p>The experience made us realize the broader need for a vibrant, real-time dermatologist community, and we decided to create a forum and invite our dermatologist peers. Slack is an easy-to-use application on the web, iPhone, and Android so that other dermatologists are always within reach.</p>
+			</div>
+			<div class="devices-img-container"><img src={{ staticURL "img/curbside/devices@2x.png"}} class="devices-img" alt="Hosted by Physicians"></div>
+		</div>
+	</div>
+	<div class="apply-section">
+		<div class="apply-content-container">
+			<h2>Apply to Join</h2>
+			<div>
+				<p>If you haven’t received a nomination from a dermatologist already in the community (each dermatologist can nominate up to 5 new members), you can apply to join here.</p>
+			</div>
+			<a href="apply" class="rounded-button apply-button">Join the Community</a>
+		</div>
+	</div>
+	{{ template "who-section" }}
+	<div class="testimonials-section">
+		<h2>Testimonials</h2>
+		<div class="testimonials-content-container">
+		<div class="testimonial-container testimonial-container-1">
+			<p>“When you’re in residency, you automatically have <b>a group of peers you can lean on for feedback</b>, and you get very accustomed to that. It can be very scary when suddenly you’re making decisions on your own, without that sounding board. When you’ve been practicing for a while you also start to worry if you’ve lost touch with what you should be doing, so <b>it’s always reassuring when you find out people are making the same choices</b> – I love that about the Spruce derm community.”</p>
+			<p>- Dermatologist, solo practitioner</p>
+		</div>
+			<div class="testimonials-flexbox-container">
+				<div class="testimonial-container testimonial-container-2">
+					<p>“As a specialty, it seems like there’s less good data around <b>best practices in dermatology</b>, so we’re much more dependent on our colleagues for recommendations. Spruce is great for that. If I were a patient, knowing that my physician was conferring with a group would be a selling point.”</p>
+					<p>- Dermatologist, multispecialty group practice</p>
+				</div>
+				<div class="testimonial-container testimonial-container-3">
+					<p>“When I have a question during the course of a normal work day, you’d think I’d just be able to catch one of my colleagues but <b>we’re always running in and out of exam rooms</b>, so that’s harder than it sounds. <b>On Spruce, I can get an answer within 2 minutes</b> — it really amazes me.”</p>
+					<p>- Dermatologist, single specialty group practice</p>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="faq-section">
+		<h2>Frequently Asked Questions</h2>
+		<div class="faq-content-container">
+			<div class="faq-question">
+				<p class="faq-question-title">What’s Slack and how do I use it?</p>
+				<p>Slack is an easy-to-use, fun communication platform. It has a fully-featured web app, native Mac and Windows apps, and iOS and Android apps. Preferences, conversations, and what you’ve read are synced across devices. Push notifications on the go are helpful too. </p>
+			</div>
+			<div class="faq-question">
+				<p class="faq-question-title">Can anyone join?</p>
+				<p>Membership is limited to dermatologists. Also, because we’re committed to maintaining a high-trust, high-quality conversation, we ask that you either be nominated by an existing member or apply to join. Once you are approved, we’ll send you a link to create your profile.</p>
+			</div>
+			<div class="faq-question">
+				<p class="faq-question-title">How do second opinions work?</p>
+				<p>Please follow these guidelines when soliciting photo-based second opinions via Slack: no identifying features in the photos (tattoos, birthmarks, etc) and no full-face photographs (limit to just the area of the face absolutely necessary to show scale, location, and lesions).</p>
+			</div>
+			<div class="faq-question">
+				<p class="faq-question-title">Do I need to practice on Spruce?</p>
+				<p>No. Many of the physicians in this community also treat patients using Spruce Health’s teledermatology platform, but it's not a requirement. If you're interested in learning more about using Spruce Health for yourself or your practice, send us an email: <a href="mailto:md@sprucehealth.com">md@sprucehealth.com</a>.</p>
+			</div>
+		</div>
+		<div class="faq-footer-text">Have a question that’s not on here? You can email us at <a href="mailto:md@sprucehealth.com">md@sprucehealth.com</a></div>
+	</div>
+{{ end }}
