@@ -4,5 +4,5 @@ if [ "$NPM" == "" ]; then
 	NPM="npm"
 fi
 
-$NPM install
-$NPM run build
+time $NPM install
+time $NPM run build

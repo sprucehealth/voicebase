@@ -12,7 +12,7 @@ fi
 TIME=$(date)
 LATEST_MIGRATION=$(ls -r $GOPATH/src/github.com/sprucehealth/backend/mysql/snapshot-*.sql | cut -d- -f 2  | cut -d. -f1 | sort -nr | head -1)
 GO15VENDOREXPERIMENT=1 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
-	go install -a -tags netgo -ldflags " \
+	go install -tags netgo -ldflags " \
 		-X 'github.com/sprucehealth/backend/boot.GitRevision=$REV' \
 		-X 'github.com/sprucehealth/backend/boot.GitBranch=$BRANCH' \
 		-X 'github.com/sprucehealth/backend/boot.BuildTime=$TIME' \

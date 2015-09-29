@@ -96,20 +96,40 @@ go tool cover -func=coverage-$BUILD_NUMBER.out | grep "total:" | tee -a $PHABRIC
 flow --version | tee -a $PHABRICATOR_COMMENT
 npm version | tee -a $PHABRICATOR_COMMENT
 
+# Disable some steps for dev builds (that aren't related to testing)
+export BUILDENV=dev
+if [[ "$DEPLOY_TO_S3" != "" ]]; then
+    export BUILDENV=prod
+fi
+
 # Test static resources (restapi)
 echo "TESTING STATIC RESOURCES (restapi)"
-$MONOREPO_PATH/resources/build.sh
-(cd resources/apps ; time flow check)
+time (
+    cd $MONOREPO_PATH/resources
+    ./build.sh
+    cd apps
+    flow check
+) &
 
 # Test static resources (curbside)
 echo "TESTING STATIC RESOURCES (curbside)"
-(cd $MONOREPO_PATH/cmd/svc/curbside ; ./build_resources.sh)
-(cd $MONOREPO_PATH/cmd/svc/curbside ; time flow check)
+time (
+    cd $MONOREPO_PATH/cmd/svc/curbside
+    ./build_resources.sh
+    flow check
+) &
+
+# Clean binaries before building to make sure we get a clean build for deployment
+rm -rf $GOPATH/pkg $GOPATH/bin
 
 # Build for deploy (restapi)
 echo "BUILDING (restapi)"
-cd $MONOREPO_PATH/cmd/svc/restapi
-./build.sh
+time (
+    cd $MONOREPO_PATH/cmd/svc/restapi
+    ./build.sh
+) &
+
+wait
 
 if [[ "$DEPLOY_TO_S3" != "" ]]; then
     echo "DEPLOYING (restapi)"
