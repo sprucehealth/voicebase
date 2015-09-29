@@ -3,17 +3,16 @@ $max-desktop-content-width: 930px;
 
 $color-blue-text: #0083A9;
 
-
 @mixin respond-to($media) {
-  @if $media == handhelds {
-    @media only screen and (max-width: 1023px) { @content; } // Upper limit: iPhone 6 + Portrait
-  }
-  @else if $media == medium-screens {
-    @media only screen and (width: 1024px) { @content; } // Upper limit: iPad Portrait
-  }
-  @else if $media == wide-screens {
-    @media only screen and (min-width: 1024px) { @content; }
-  }
+	@if $media == handhelds {
+		@media only screen and (max-width: 767px) { @content; } 
+	}
+	@else if $media == tablets {
+		@media only screen and (min-width: 768px) and (max-width: 991px) { @content; } 
+	}
+	@else if $media == desktops {
+	   @media only screen and (min-width: 992px) { @content; }
+	}
 }
 
 @font-face {
@@ -234,6 +233,12 @@ $color-blue-text: #0083A9;
   order: $val;
 }
 
+@mixin flexy-direction($val) {
+  -moz-flex-direction: $val;     
+  -webkit-flex-direction: $val;  
+  flex-direction: $val
+}
+
 @mixin flexy-justify-content-space-between() {
 	-webkit-justify-content: space-between;
 	justify-content: space-between;
@@ -242,6 +247,11 @@ $color-blue-text: #0083A9;
 @mixin flexy-justify-content-center() {
 	-webkit-justify-content: center;
 	justify-content: center;
+}
+
+@mixin flexy-wrap() {
+	-webkit-flex-wrap: wrap;
+	flex-wrap: wrap;
 }
 
 @mixin align-items-center() {
@@ -258,7 +268,7 @@ $color-blue-text: #0083A9;
 		padding: 18px 50px;
 		font-size: 20px; // Constant across devices
 		@include font-500();
-		margin: auto;
+		margin: auto 30px;
 		display: block;
 		@include respond-to(handhelds) {
 			padding: 18px 20px 18px 20px;
@@ -326,7 +336,7 @@ header {
 	@include flexy();
 	@include flexy-justify-content-space-between();
 	@include align-items-center();
-	width: 960px;
+	max-width: 960px;
 	margin: auto;
 	padding-top: 18px;
 	padding-bottom: 16px;
@@ -347,7 +357,10 @@ header {
 		margin: 20px;
 	}
 	.right {
-		margin-right: 0px;
+		margin-right: 20px;
+	}
+	img {
+		margin-left: 20px;
 	}
 	
 	a {
@@ -366,10 +379,11 @@ header {
 	p {
 		color: #65777D;
 		@include fontSize-22();
+		margin: 0px 30px;
 	}
 	#ipad-image {
 		width: 1136px;
-		height: 509px;
+		max-width: 90%;
 		padding-top: 20px;
 		vertical-align: bottom; // otherwise, there is a space at the bottom the size of the font's descender
 	}
@@ -381,15 +395,35 @@ header {
 	#summary-grid-container {
 
 		@include flexy();
-		@include flexy-justify-content-space-between();
+		@include flexy-wrap();
+		@include flexy-justify-content-center();
 		@include align-items-center();
-		width: 960px;
 		margin: auto;
 		padding: 100px;
+		@include respond-to(handhelds) {
+			padding: 100px 0px;
+		}
 		margin-top: 0px;
+
+		max-width: 100%;
+		@include respond-to(tablets) {
+			max-width: 960px;
+		}
+		@include respond-to(desktops) {
+			max-width: 960px;
+		}
 
 		.column {
 			text-align: center;
+			@include respond-to(handhelds) {
+				margin: 30px;
+			}
+			@include respond-to(tablets) {
+				margin: 0px 40px;
+			}
+			@include respond-to(desktops) {
+				margin: 0px 40px;
+			}
 			#ipad-image {
 				width: 150px;
 				height: 102px;
@@ -407,7 +441,6 @@ header {
 				font-family: "MuseoSans-500";
 				@include fontSize-22();
 			}
-
 		}
 	}
 }
@@ -418,6 +451,7 @@ header {
 
 	#spruce-means-better-care-container {
 		width: 960px;
+		max-width: 100%;
 		margin: auto;
 
 		hr {
@@ -433,6 +467,17 @@ header {
 			@include flexy();
 			@include flexy-justify-content-space-between();
 			@include align-items-center();
+			@include respond-to(handhelds) {
+				@include flexy-wrap();
+				@include flexy-justify-content-center();
+			}
+			@include respond-to(tablets) {
+				@include flexy-wrap();
+				@include flexy-justify-content-center();
+			}
+			@include respond-to(desktops) {
+				@include flexy-justify-content-space-between();
+			}
 			padding: 45px;
 
 			p {
@@ -440,15 +485,20 @@ header {
 			}
 
 			.column {
+				@include respond-to(handhelds) {
+					text-align: center;
+				}
 			}
 
 			.left {
 				width: 381px;
+				max-width: 100%;
 				text-align: center;
 			}
 
 			.right {
 				width: 583px;
+				max-width: 100%;
 			}
 
 			#for-your-practice-image {
@@ -574,17 +624,18 @@ header {
 			h2 {
 				margin-top: 0px;
 				padding-top: 82px;
-				margin-bottom: 58px;
+				margin-bottom: 38px;
 				color: $color-blue-text;
 			}
 
 			#testimonials-array {
 
-				@include respond-to(medium-screens) {
+				@include respond-to(tablets) {
 					@include flexy();
 					@include flexy-justify-content-center();
+					@include flexy-wrap();
 				}
-				@include respond-to(wide-screens) {
+				@include respond-to(desktops) {
 					@include flexy();
 					@include flexy-justify-content-center();
 				}
@@ -592,6 +643,7 @@ header {
 				.testimonial {
 					border: solid #DAE6EB 1px;
 					padding: 24px 10px;
+					margin: 20px 0px;
 					max-width: 290px;
 					@include fontSize-18();
 					color: #65777D;
@@ -600,11 +652,11 @@ header {
 						margin: auto;
 						margin-bottom: 22px;
 					}
-					@include respond-to(medium-screens) {
+					@include respond-to(tablets) {
 						margin-left: 22px;
 						margin-right: 22px;
 					}
-					@include respond-to(wide-screens) {
+					@include respond-to(desktops) {
 						margin-left: 22px;
 						margin-right: 22px;
 					}
@@ -645,8 +697,7 @@ header {
 		}
 	}
 	#testimonial-footer {
-		margin-top: 86px;
-		margin-bottom: 63px;
+		margin: 66px 30px;
 		color: #F1F5F6;
 		@include fontSize-22();
 	}
@@ -661,24 +712,46 @@ header {
 	#whitepaper-container {
 		max-width: 635px;
 		margin: auto;
-		@include flexy();
-		@include flexy-justify-content-space-between();
-		@include align-items-center();
-		padding: 105px;
+		@include respond-to(handhelds) {
+			padding: 100px 30px;
+		}
+		@include respond-to(tablets) {
+			@include flexy();
+			@include flexy-justify-content-space-between();
+			@include align-items-center();
+			padding: 105px;
+		}
+		@include respond-to(desktops) {
+			@include flexy();
+			@include flexy-justify-content-space-between();
+			@include align-items-center();
+			padding: 105px;
+		}
 
 		.whitepaper-column {
+			@include respond-to(handhelds) {
+				text-align: center;
+			}
 			img {
 				width: 156px;
 				height: 194px;
 			}
 			#whitepaper-text {
+				@include respond-to(handhelds) {
+					margin-top: 30px;
+				}
 				color: #8B9FA7;
 				margin-top: 0px;
 				@include fontSize-22();
 			}
 		}
 		.right {
-			max-width: 384px;
+			@include respond-to(tablets) {
+				max-width: 384px;
+			}
+			@include respond-to(desktops) {
+				max-width: 384px;
+			}
 		}
 	}
 }
@@ -707,17 +780,15 @@ header {
 		width: 100%;
 		text-align: center;
 	}
-	@include respond-to(medium-screens) {
+	@include respond-to(tablets) {
 		@include flexy();
-		-webkit-flex-wrap: wrap;
-		flex-wrap: wrap;
+		@include flexy-wrap();
 		@include flexy-justify-content-space-between();
 		width: $max-desktop-content-width;
 	}
-	@include respond-to(wide-screens) {
+	@include respond-to(desktops) {
 		@include flexy();
-		-webkit-flex-wrap: wrap;
-		flex-wrap: wrap;
+		@include flexy-wrap();
 		@include flexy-justify-content-space-between();
 		width: $max-desktop-content-width;
 	}
@@ -766,6 +837,8 @@ header {
 .h2-with-image-section {
 	text-align: center;
 	padding-top: 50px;
+	padding-left: 30px;
+	padding-right: 30px;
 	p {
 		color: #65777D;
 		@include fontSize-22();
@@ -777,6 +850,7 @@ header {
 
 	img {
 		vertical-align: bottom;
+		max-width: 90%;
 	}
 
 	&.white {
@@ -787,24 +861,25 @@ header {
 		background-color: #1E333A;
 	}
 
+	@include respond-to(handhelds) {
+		padding-left: 14px;
+		padding-right: 14px;
+	}
+
 	#practice-builder-image {
 		width: 1032px;
-		height: 434px;
 	}
 
 	#patient-app-image {
 		width: 880px;
-		height: 433px;
 	}
 
 	#physician-app-image {
 		width: 1136px;
-		height: 408px;
 	}
 
 	#virtual-front-office-image {
 		width: 1136px;
-		height: 408px;
 	}
 }
 
@@ -972,9 +1047,19 @@ header {
 //
 
 #apply-form-container {
-	width: 400px;
-	padding-left: 150px;
-	padding-right: 20px;
+	@include respond-to(handhelds) {
+		padding-bottom: 100px;
+	}
+	@include respond-to(tablets) {
+		width: 400px;
+		padding-left: 150px;
+		padding-right: 20px;
+	}
+	@include respond-to(desktops) {
+		width: 400px;
+		padding-left: 150px;
+		padding-right: 20px;
+	}
 }
 .standard-form input {
 	color: #1E333A;
@@ -1024,11 +1109,11 @@ textarea.error {
 	@include respond-to(handhelds) {
 		padding: 0px 14px;
 	}
-	@include respond-to(medium-screens) {
+	@include respond-to(tablets) {
 		@include flexy();
 		@include flexy-justify-content-space-between();
 	}
-	@include respond-to(wide-screens) {
+	@include respond-to(desktops) {
 		@include flexy();
 		@include flexy-justify-content-space-between();
 	}
@@ -1050,10 +1135,10 @@ textarea.error {
 .form-column.right {
 	@include respond-to(handhelds) {
 	}
-	@include respond-to(medium-screens) {
+	@include respond-to(tablets) {
 		margin-left: 30px;
 	}
-	@include respond-to(wide-screens) {
+	@include respond-to(desktops) {
 		margin-left: 30px;
 	}
 }
@@ -1074,10 +1159,6 @@ textarea.error {
 	-webkit-box-sizing:border-box;
 	height:60px;
 	border:2px solid #0BA5C5;
-	@include respond-to(handhelds) {
-		margin: 0px 25px;
-		width: 100%;
-	}
 }
 
 .standard-form button:hover:enabled {
@@ -1101,15 +1182,22 @@ textarea.error {
 //
 
 #get-started-container {
-	@include flexy();
-	@include flexy-justify-content-center();
+	@include respond-to(tablets) {
+		@include flexy();
+		@include flexy-justify-content-center();
+	}
+	@include respond-to(desktops) {
+		@include flexy();
+		@include flexy-justify-content-center();
+	}
 
 	background-color: #0083A9;
 
 	h3 {
 		color: white;
 		text-align: center;
-		margin-top: 61px;
+		padding-top: 61px;
+		margin-top: 0px;
 	}
 
 	#info-column {
@@ -1117,13 +1205,21 @@ textarea.error {
 		color: #C5D3D8;
 		flex-grow: 1;
 		-webkit-flex-grow: 1;
+		@include respond-to(handhelds) {
+			display: none;
+		}
 
 		h4 {
 			@include fontSize-22();
 			font-family: "MuseoSans-500";
 			color: #DAE6EB;
 			margin-top: 0px;
-			width: 344px;
+			@include respond-to(tablets) {
+				width: 344px;
+			}
+			@include respond-to(desktops) {
+				width: 344px;
+			}
 		}
 
 		.row {
@@ -1165,6 +1261,10 @@ textarea.error {
 			margin: auto;
 			margin-top: 70px;
 			margin-bottom: 136px;
+			@include respond-to(handhelds) {
+				margin: inherit 30px;
+				text-align: center;
+			}
 		}
 	}
 
@@ -1173,7 +1273,6 @@ textarea.error {
 		color: #65777D;
 		flex-grow: 1;
 		-webkit-flex-grow: 1;
-
 		#get-started {
 			color: #0083A9;
 			text-align: center;
@@ -1196,29 +1295,46 @@ textarea.error {
 
 #whitepaper-request-section {
 	#container {
-		width: 960px;
+		max-width: 960px;
 		margin: auto;
-		@include flexy();
-		@include flexy-justify-content-space-between();
 		color: #65777D;
+		@include respond-to(handhelds) {
+			padding-left: 30px;
+			padding-right: 30px;
+		}
+		@include respond-to(tablets) {
+			@include flexy();
+			@include flexy-justify-content-space-between();
+		}
+		@include respond-to(desktops) {
+			@include flexy();
+			@include flexy-justify-content-space-between();
+		}
 
 		h4 {
 			color: #0083A9;
 		}
 
 		#info-column {
-			margin-top: 115px;
 			max-width: 380px;
 			#image {
 				width: 80px;
 				height: 99px;
 			}
+			@include respond-to(handhelds) {
+				margin: auto;
+				text-align: center;
+			}
+			padding-top: 115px;
 		}
 		#form-column {
 			width: 400px;
 			#form-container {
 				margin-top: 83px;
 				margin-bottom: 67px;
+			}
+			@include respond-to(handhelds) {
+				margin: auto;
 			}
 		}
 	}

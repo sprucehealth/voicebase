@@ -188,7 +188,7 @@ var WhitepaperForm = React.createClass({displayName: "WhitepaperForm",
 					{userFacingError}
 				</div>
 				<div className="flexy-container">
-					<button type="submit" disabled={this.isSubmitting}>Request a Demo</button>
+					<button type="submit" disabled={this.isSubmitting}>Download Whitepaper</button>
 				</div>
 			</form>
 		);

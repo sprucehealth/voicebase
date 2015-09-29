@@ -4,13 +4,13 @@ $max-desktop-content-width: 930px;
 
 @mixin respond-to($media) {
 	@if $media == handhelds {
-		@media only screen and (max-width: 1023px) { @content; } // Upper limit: iPhone 6 + Portrait
+		@media only screen and (max-width: 767px) { @content; } 
 	}
-	@else if $media == medium-screens {
-		@media only screen and (width: 1024px) { @content; } // Upper limit: iPad Portrait
+	@else if $media == tablets {
+		@media only screen and (min-width: 768px) and (max-width: 991px) { @content; } 
 	}
-	@else if $media == wide-screens {
-		@media only screen and (min-width: 1024px) { @content; }
+	@else if $media == desktops {
+	   @media only screen and (min-width: 992px) { @content; }
 	}
 }
 
@@ -103,26 +103,26 @@ $max-desktop-content-width: 930px;
 	font-style: normal;
 }
 @font-face {
-    font-family: 'MuseoSans-900';
-    src: url($font-directory + 'MuseoSans_900-webfont.eot');
-    src: url($font-directory + 'MuseoSans_900-webfont.eot?#iefix') format('embedded-opentype'),
-         url($font-directory + 'MuseoSans_900-webfont.woff2') format('woff2'),
-         url($font-directory + 'MuseoSans_900-webfont.woff') format('woff'),
-         url($font-directory + 'MuseoSans_900-webfont.ttf') format('truetype'),
-         url($font-directory + 'MuseoSans_900-webfont.svg#museo_sans900') format('svg');
-    font-weight: normal;
-    font-style: normal;
+	font-family: 'MuseoSans-900';
+	src: url($font-directory + 'MuseoSans_900-webfont.eot');
+	src: url($font-directory + 'MuseoSans_900-webfont.eot?#iefix') format('embedded-opentype'),
+		 url($font-directory + 'MuseoSans_900-webfont.woff2') format('woff2'),
+		 url($font-directory + 'MuseoSans_900-webfont.woff') format('woff'),
+		 url($font-directory + 'MuseoSans_900-webfont.ttf') format('truetype'),
+		 url($font-directory + 'MuseoSans_900-webfont.svg#museo_sans900') format('svg');
+	font-weight: normal;
+	font-style: normal;
 }
 @font-face {
-    font-family: 'MuseoSans-900-Italic';
-    src: url($font-directory + 'MuseoSans_900_Italic-webfont.eot');
-    src: url($font-directory + 'MuseoSans_900_Italic-webfont.eot?#iefix') format('embedded-opentype'),
-         url($font-directory + 'MuseoSans_900_Italic-webfont.woff2') format('woff2'),
-         url($font-directory + 'MuseoSans_900_Italic-webfont.woff') format('woff'),
-         url($font-directory + 'MuseoSans_900_Italic-webfont.ttf') format('truetype'),
-         url($font-directory + 'MuseoSans_900_Italic-webfont.svg#museo_sans900_italic') format('svg');
-    font-weight: normal;
-    font-style: normal;
+	font-family: 'MuseoSans-900-Italic';
+	src: url($font-directory + 'MuseoSans_900_Italic-webfont.eot');
+	src: url($font-directory + 'MuseoSans_900_Italic-webfont.eot?#iefix') format('embedded-opentype'),
+		 url($font-directory + 'MuseoSans_900_Italic-webfont.woff2') format('woff2'),
+		 url($font-directory + 'MuseoSans_900_Italic-webfont.woff') format('woff'),
+		 url($font-directory + 'MuseoSans_900_Italic-webfont.ttf') format('truetype'),
+		 url($font-directory + 'MuseoSans_900_Italic-webfont.svg#museo_sans900_italic') format('svg');
+	font-weight: normal;
+	font-style: normal;
 }
 @mixin font-300 {
 	font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
@@ -131,7 +131,7 @@ $max-desktop-content-width: 930px;
 	font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
 }
 @mixin font-500-Italic {
-    font-family: 'MuseoSans-500-Italic', Helvetica, Arial, sans-serif;
+	font-family: 'MuseoSans-500-Italic', Helvetica, Arial, sans-serif;
 }
 @mixin font-700 {
 	font-family: 'MuseoSans-700', Helvetica, Arial, sans-serif;
@@ -254,6 +254,9 @@ div.header {
 		color: white;
 		padding-top: 148px;
 		margin-bottom: 40px;
+		@include respond-to(handhelds) {
+			padding-top: 0px;
+		}
 	}
 }
 
@@ -266,7 +269,7 @@ a.rounded-button {
 	background-color: white;
 	text-decoration: none;
 	-webkit-border-radius: 10px;
-    border-radius: 10px;
+	border-radius: 10px;
 	@include respond-to(handhelds) {
 		padding: 18px 20px 18px 20px;
 		display:block;
@@ -314,11 +317,12 @@ div.features-container {
 		padding-left: 14px;
 		padding-right: 14px;
 	}
-	@include respond-to(medium-screens) {
+	@include respond-to(tablets) {
 		@include flexy();
 		width: $max-desktop-content-width;
+		max-width: 100%
 	}
-	@include respond-to(wide-screens) {
+	@include respond-to(desktops) {
 		@include flexy();
 		width: $max-desktop-content-width;
 	}
@@ -338,10 +342,10 @@ div.features-container {
 		padding-left: 4px;
 		padding-right: 4px;
 	}
-	@include respond-to(medium-screens) {
+	@include respond-to(tablets) {
 		width: 438px; // This is a hack because I couldn't solve an overlapping issue in Safari without it
 	}
-	@include respond-to(wide-screens) {
+	@include respond-to(desktops) {
 		width: 438px; // This is a hack because I couldn't solve an overlapping issue in Safari without it
 	}
 }
@@ -370,10 +374,10 @@ div.features-container {
 }
 
 .feature-description-container {
-	@include respond-to(medium-screens) {
+	@include respond-to(tablets) {
 		padding-left: 52px;
 	}
-	@include respond-to(wide-screens) {
+	@include respond-to(desktops) {
 		padding-left: 52px;
 	}
 }
@@ -397,10 +401,10 @@ div.features-container {
 		padding-left: 14px;
 		padding-right: 14px;
 	}
-	@include respond-to(medium-screens) {
+	@include respond-to(tablets) {
 		max-width: $max-desktop-content-width;
 	}
-	@include respond-to(wide-screens) {
+	@include respond-to(desktops) {
 		max-width: $max-desktop-content-width;
 	}
 }
@@ -411,13 +415,13 @@ div.features-container {
 	@include respond-to(handhelds) {
 		margin-bottom: 74px;
 	}
-	@include respond-to(medium-screens) {
+	@include respond-to(tablets) {
 		@include flexy();
 		@include flexy-justify-content-space-between();
 		align-items: center;
 		margin-bottom: 100px;
 	}
-	@include respond-to(wide-screens) {
+	@include respond-to(desktops) {
 		@include flexy();
 		@include flexy-justify-content-space-between();
 		align-items: center;
@@ -426,10 +430,10 @@ div.features-container {
 }
 
 .hosted-by-text {
-	@include respond-to(medium-screens) {
+	@include respond-to(tablets) {
 		width: 380px; // This is a hack for Safari because I can't figure out how to get flexbox to stay within its bounds
 	}
-	@include respond-to(wide-screens) {
+	@include respond-to(desktops) {
 		width: 380px; // This is a hack for Safari because I can't figure out how to get flexbox to stay within its bounds
 	}
 }
@@ -445,11 +449,11 @@ div.features-container {
 .devices-img-container {
 	@include respond-to(handhelds) {
 	}
-	@include respond-to(medium-screens) {
+	@include respond-to(tablets) {
 		-webkit-flex-basis: 550px;
 		flex-basis: 550px;
 	}
-	@include respond-to(wide-screens) {
+	@include respond-to(desktops) {
 		-webkit-flex-basis: 550px;
 		flex-basis: 550px;
 	}
@@ -463,10 +467,10 @@ div.features-container {
 		margin: auto;
 		margin-top: 48px;
 	}
-	@include respond-to(medium-screens) {
+	@include respond-to(tablets) {
 		width: 550px;
 	}
-	@include respond-to(wide-screens) {
+	@include respond-to(desktops) {
 		width: 550px;
 	}
 }
@@ -522,10 +526,10 @@ div.features-container {
 	text-align: center;
 	color: #65777D;
 	margin: auto;
-	@include respond-to(medium-screens) {
+	@include respond-to(tablets) {
 		max-width: 1500px;
 	}
-	@include respond-to(wide-screens) {
+	@include respond-to(desktops) {
 		max-width: 1500px;
 	}
 }
@@ -573,21 +577,21 @@ div.features-container {
 	margin: auto;
 	margin-top: 48px;
 	margin-bottom: 25px;
-	@include respond-to(medium-screens) {
+	@include respond-to(tablets) {
 		width: $max-desktop-content-width;
 	}
-	@include respond-to(wide-screens) {
+	@include respond-to(desktops) {
 		width: $max-desktop-content-width;
 	}
 }
 
 .testimonials-flexbox-container {
-	@include respond-to(medium-screens) {
+	@include respond-to(tablets) {
 		width: $max-desktop-content-width;
 		@include flexy();
 		@include flexy-justify-content-space-between();
 	}
-	@include respond-to(wide-screens) {
+	@include respond-to(desktops) {
 		width: $max-desktop-content-width;
 		@include flexy();
 		@include flexy-justify-content-space-between();
@@ -620,10 +624,10 @@ div.features-container {
 }
 
 .testimonial-container-3 {
-	@include respond-to(medium-screens) {
+	@include respond-to(tablets) {
 		margin-left: 25px;
 	}
-	@include respond-to(wide-screens) {
+	@include respond-to(desktops) {
 		margin-left: 25px;
 	}
 }
@@ -644,10 +648,10 @@ div.features-container {
 	@include flexy-justify-content-space-between();
 	max-width: 100%;
 	margin: auto;
-	@include respond-to(medium-screens) {
+	@include respond-to(tablets) {
 		width: $max-desktop-content-width;
 	}
-	@include respond-to(wide-screens) {
+	@include respond-to(desktops) {
 		width: $max-desktop-content-width;
 	}
 	@include fontSize-18();
@@ -702,14 +706,14 @@ div.features-container {
 		width: 100%;
 		text-align: center;
 	}
-	@include respond-to(medium-screens) {
+	@include respond-to(tablets) {
 		@include flexy();
 		-webkit-flex-wrap: wrap;
 		flex-wrap: wrap;
 		@include flexy-justify-content-space-between();
 		width: $max-desktop-content-width;
 	}
-	@include respond-to(wide-screens) {
+	@include respond-to(desktops) {
 		@include flexy();
 		-webkit-flex-wrap: wrap;
 		flex-wrap: wrap;
@@ -770,10 +774,10 @@ div.features-container {
 		margin: 0px 14px;
 		max-width: 100%;
 	}
-	@include respond-to(medium-screens) {
+	@include respond-to(tablets) {
 		width: 530px;
 	}
-	@include respond-to(wide-screens) {
+	@include respond-to(desktops) {
 		width: 530px;
 	}
 }
@@ -805,7 +809,7 @@ div.features-container {
 
 	// Removes Mobile Safari default styling
 	-webkit-box-shadow: none;
-    box-shadow: none;
+	box-shadow: none;
 	-webkit-appearance: none;
 	-webkit-border-radius: 0;
 }
@@ -827,7 +831,7 @@ input.error {
 
 	// Removes Mobile Safari default styling
 	-webkit-box-shadow: none;
-    box-shadow: none;
+	box-shadow: none;
 	-webkit-appearance: none;
 	-webkit-border-radius: 0;
 }
@@ -841,11 +845,11 @@ textarea.error {
 	@include respond-to(handhelds) {
 		padding: 0px 14px;
 	}
-	@include respond-to(medium-screens) {
+	@include respond-to(tablets) {
 		@include flexy();
 		@include flexy-justify-content-space-between();
 	}
-	@include respond-to(wide-screens) {
+	@include respond-to(desktops) {
 		@include flexy();
 		@include flexy-justify-content-space-between();
 	}
@@ -866,10 +870,10 @@ textarea.error {
 .form-column.right {
 	@include respond-to(handhelds) {
 	}
-	@include respond-to(medium-screens) {
+	@include respond-to(tablets) {
 		margin-left: 30px;
 	}
-	@include respond-to(wide-screens) {
+	@include respond-to(desktops) {
 		margin-left: 30px;
 	}
 }
