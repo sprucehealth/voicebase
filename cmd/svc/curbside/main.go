@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"path/filepath"
 	"strings"
 
 	"github.com/cookieo9/resources-go"
@@ -80,7 +79,7 @@ func init() {
 	})
 	templateLoader.RegisterFunctions(map[string]interface{}{
 		"staticURL": func(path string) string {
-			return filepath.Join(c.StaticResourceURL, path)
+			return c.StaticResourceURL + path
 		},
 	})
 	templateLoader.MustLoadTemplate("base.html", "", nil)
