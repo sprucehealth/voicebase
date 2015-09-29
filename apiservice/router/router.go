@@ -18,7 +18,7 @@ import (
 	"github.com/sprucehealth/backend/attribution"
 	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/careprovider"
-	"github.com/sprucehealth/backend/cmd/svc/ext/restapi/handlers"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/handlers"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/compat"

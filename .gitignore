@@ -52,8 +52,6 @@ cmd/cli/pharmacydb/pharmacydb
 cmd/cli/redshiftload/redshiftload
 cmd/cli/saml/saml
 cmd/cli/syslogidx/syslogidx
-cmd/svc/ext/restapi/resources.zip
-cmd/svc/ext/restapi/restapi
 diagnosis/ingester/ingester
 npm-debug.log
 resources/node_modules/*
@@ -64,3 +62,6 @@ cmd/svc/curbside/build/*
 cmd/svc/curbside/curbside
 cmd/svc/curbside/node_modules/*
 cmd/svc/curbside/curbside/resources.zip
+cmd/svc/regimens/regimens
+cmd/svc/restapi/resources.zip
+cmd/svc/restapi/restapi

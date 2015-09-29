@@ -15,7 +15,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/app_worker"
-	"github.com/sprucehealth/backend/cmd/svc/ext/restapi/workers"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/workers"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/consul"
 	"github.com/sprucehealth/backend/cost"

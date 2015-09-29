@@ -12,7 +12,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/appevent"
-	"github.com/sprucehealth/backend/cmd/svc/ext/restapi/handlers"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/handlers"
 	"github.com/sprucehealth/backend/passreset"
 )
 

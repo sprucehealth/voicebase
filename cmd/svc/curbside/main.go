@@ -168,7 +168,7 @@ func sitemapXMLHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 }
 
 func main() {
-	flag.Parse()
+	boot.ParseFlags("CURBSIDE_")
 
 	c.StaticResourceURL = strings.Replace(c.StaticResourceURL, "{BuildNumber}", boot.BuildNumber, -1)
 

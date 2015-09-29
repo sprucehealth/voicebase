@@ -11,8 +11,8 @@ if [ "$BRANCH" = "" ]; then
 fi
 TIME=$(date)
 GO15VENDOREXPERIMENT=1 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
-	go build -i -a -tags netgo -ldflags " \
+	go install -a -tags netgo -ldflags " \
 		-X 'github.com/sprucehealth/backend/boot.GitRevision=$REV' \
 		-X 'github.com/sprucehealth/backend/boot.GitBranch=$BRANCH' \
 		-X 'github.com/sprucehealth/backend/boot.BuildTime=$TIME' \
-		-X 'github.com/sprucehealth/backend/boot.BuildNumber=$BUILD_NUMBER'" -o $APP
+		-X 'github.com/sprucehealth/backend/boot.BuildNumber=$BUILD_NUMBER'"

@@ -108,7 +108,7 @@ echo "TESTING STATIC RESOURCES (curbside)"
 
 # Build for deploy (restapi)
 echo "BUILDING (restapi)"
-cd $MONOREPO_PATH/cmd/svc/ext/restapi
+cd $MONOREPO_PATH/cmd/svc/restapi
 ./build.sh
 
 if [[ "$DEPLOY_TO_S3" != "" ]]; then
@@ -117,7 +117,7 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
     CMD_NAME="restapi-$GIT_BRANCH-$BUILD_NUMBER"
     rm -rf build # Jenkins preserves the workspace so remove any old build files
     mkdir build
-    cp restapi build/$CMD_NAME
+    cp $GOPATH/bin/restapi build/$CMD_NAME
     bzip2 -9 build/$CMD_NAME
     echo $GIT_COMMIT > build/$CMD_NAME.revision
     cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.out build/$CMD_NAME.coverage
@@ -148,7 +148,7 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
     CMD_NAME="curbside-$GIT_BRANCH-$BUILD_NUMBER"
     rm -rf bin # Jenkins preserves the workspace so remove any old build files
     mkdir bin
-    cp curbside bin/$CMD_NAME
+    cp $GOPATH/bin/curbside bin/$CMD_NAME
     bzip2 -9 bin/$CMD_NAME
     echo $GIT_COMMIT > bin/$CMD_NAME.revision
     cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.out bin/$CMD_NAME.coverage
@@ -179,7 +179,7 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
     CMD_NAME="regimens-$GIT_BRANCH-$BUILD_NUMBER"
     rm -rf build # Jenkins preserves the workspace so remove any old build files
     mkdir build
-    cp regimens build/$CMD_NAME
+    cp $GOPATH/bin/regimens build/$CMD_NAME
     bzip2 -9 build/$CMD_NAME
     echo $GIT_COMMIT > build/$CMD_NAME.revision
     cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.out build/$CMD_NAME.coverage
