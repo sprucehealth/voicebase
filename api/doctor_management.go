@@ -14,7 +14,8 @@ func (d *dataService) AvailableStates() ([]*common.State, error) {
 		SELECT DISTINCT state, long_state
 		FROM care_provider_state_elligibility cpse
 		INNER JOIN care_providing_state cps ON cps.id = cpse.care_providing_state_id
-		INNER JOIN practice_model ON cpse.provider_id = practice_model.doctor_id
+		INNER JOIN practice_model ON (cpse.provider_id = practice_model.doctor_id 
+			AND cps.state_id = practice_model.state_id)
 		WHERE practice_model.spruce_pc = true`)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -39,7 +40,8 @@ func (d *dataService) SpruceAvailableInState(state string) (bool, error) {
 		SELECT care_provider_state_elligibility.id
 		FROM care_provider_state_elligibility
 		INNER JOIN care_providing_state ON care_providing_state_id = care_providing_state.id
-		INNER JOIN practice_model ON care_provider_state_elligibility.provider_id = practice_model.doctor_id
+		INNER JOIN practice_model ON (care_provider_state_elligibility.provider_id = practice_model.doctor_id 
+			AND care_providing_state.state_id = practice_model.state_id)
 		WHERE (state = ? OR long_state = ?) 
 		AND role_type_id = ? 
 		AND practice_model.spruce_pc = true
