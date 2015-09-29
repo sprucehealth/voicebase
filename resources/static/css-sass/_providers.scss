@@ -1,7 +1,7 @@
 #providers-top {
 	background-color: #edf8fd;
 	background-image: url("../img/providers/provider_header.jpg");
-	padding: 40px 0 50px 0;
+	padding: 120px 0 120px 0;
 	text-align: center;
 
 	h2 {
@@ -19,27 +19,71 @@
 	}
 }
 .providers-reach {
+	text-align: center;
+	h2 {
+		margin-top: 46px;
+	}
+	img {
+		margin-top: 58px;
+	}
 	.bullet-list {
 		padding-bottom: 20px;
 	}
 	.iPad {
 		height: 427px;
 	}
-}
-.providers-reach--alternate {
-	background-color: $color-spruceLightBlue;
+	.body-text {
+		@include font-300();
+		@include fontSize-smallest();
+		color: #65777D;
+	}
 }
 #providers-footer {
 	background-color: $color-spruceGreen;
 	color: $color-white;
 	@include fontSize-smallest();
 	text-align: center;
-	padding: 1px 0 40px 0;
-}
-#providers-footer a,
-#providers-footer a:visited {
-	color: $color-white;
-	text-decoration: underline;
+	padding: 67px 0 67px 0;
+
+	&.blue {
+		background-color: $color-spruceBlue;
+	}
+	&.dark-blue {
+		background-color: $color-spruceDarkBlue;
+	}
+	p {
+		color: #C5D3D8;
+		font-family: 'MuseoSans-300-Italic';
+	}
+	h2 {
+		padding-bottom: 0px;
+		margin-top: 0px;
+		padding-top: 0px;
+	}
+
+	#email-us {
+		color: $color-white;
+		@include font-300();
+		@include fontSize-smallest();
+		margin-top: 26px;
+		a {
+			text-decoration: underline;
+			@include font-500();
+			@include fontSize-smallest();	
+			color: $color-white;
+		}
+		a:hover {
+			text-decoration: none;
+			color: $color-white;
+		}
+		a:visited {
+			color: $color-white;
+		}
+	}
+
+	#tell-me-more-btn {
+		margin-top: 22px;
+	}
 }
 
 @media screen and (max-width: $phone-max-width) {

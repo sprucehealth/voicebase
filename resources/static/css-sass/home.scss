@@ -139,12 +139,6 @@ label {
 		left: 30px;
 	}
 }
-.iPad--white {
-	background-image: url("../img/providers/providers_ipad_white_full.png");
-}
-.iPad--black {
-	background-image: url("../img/providers/providers_ipad_black_full.png");
-}
 #footer {
 	@include font-500();
 	@include fontSize-micro();
