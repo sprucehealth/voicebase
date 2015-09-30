@@ -97,7 +97,7 @@ label {
 		}
 	}
 }
-.iPhone {
+.iPhone {  
 	background-image: url("../img/home/home_iphone_full.png");
 	background-size: 320px 655px;
 	width: 320px;
@@ -112,31 +112,17 @@ label {
 	top: 80px;
 	left: 21px;
 }
-.iPad {
-	background-size: 774px 549px;
-	overflow: hidden;
-	width: 774px;
-	height: 549px;
-	text-align: left;
+.devices {
+	text-align: center;
 }
-.iPad img {
-	width: 634px;
-	height: 476px;
-	position: relative;
-	top: 36px;
-	left: 70px;
+.devices img {
+	width: 979px;
+	height: 371px;
 }
 @media screen and (max-width: $phone-max-width) {
-	.iPad {
-		width: 331px;
-		height: 235px;
-		background-size: 331px 235px;
-	}
-	.iPad img {
-		width: 271px;
-		height: 204px;
-		top: 15px;
-		left: 30px;
+	.devices img {
+		width: 244px;
+		height: 92px;
 	}
 }
 #footer {
