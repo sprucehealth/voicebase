@@ -2,15 +2,18 @@ $img-directory: "../img/curbside/";
 $font-directory: "../fonts/";
 $max-desktop-content-width: 930px;
 
+
+// Commented out because we decided not to support a mobile-optimized version
 @mixin respond-to($media) {
 	@if $media == handhelds {
-		@media only screen and (max-width: 767px) { @content; } 
+		// @media only screen and (max-width: 767px) { @content; } 
 	}
 	@else if $media == tablets {
-		@media only screen and (min-width: 768px) and (max-width: 991px) { @content; } 
+		// @media only screen and (min-width: 768px) and (max-width: 991px) { @content; } 
 	}
 	@else if $media == desktops {
-	   @media only screen and (min-width: 992px) { @content; }
+	   @content;
+	   // @media only screen and (min-width: 992px) { @content; }
 	}
 }
 

@@ -3,15 +3,17 @@ $max-desktop-content-width: 930px;
 
 $color-blue-text: #0083A9;
 
+// Commented out because we decided not to support a mobile-optimized version
 @mixin respond-to($media) {
 	@if $media == handhelds {
-		@media only screen and (max-width: 767px) { @content; } 
+		// @media only screen and (max-width: 767px) { @content; } 
 	}
 	@else if $media == tablets {
-		@media only screen and (min-width: 768px) and (max-width: 991px) { @content; } 
+		// @media only screen and (min-width: 768px) and (max-width: 991px) { @content; } 
 	}
 	@else if $media == desktops {
-	   @media only screen and (min-width: 992px) { @content; }
+	   @content;
+	   // @media only screen and (min-width: 992px) { @content; }
 	}
 }
 
@@ -294,6 +296,7 @@ body {
 	padding: 0px;
 	color: #1E333A;
 	@include font-300();
+	min-width: 1100px;
 }
 
 h1 {
@@ -1182,7 +1185,8 @@ textarea.error {
 		margin: 3px 0px;
 	}
 	input {
-		padding: 30px 8px;
+		padding: 0px 8px;
+		height: 60px;
 		-webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
 		-moz-box-sizing: border-box;    /* Firefox, other Gecko */
 		box-sizing: border-box;         /* Opera/IE 8+ */		
