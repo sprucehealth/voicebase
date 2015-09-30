@@ -1,5 +1,28 @@
 #!/bin/bash
 
+set -e
+
+BGPID=""
+
+# checkedwait waits for background jobs to complete with non-zero code if any fail
+checkedwait() {
+	FAIL=0
+	echo "Waiting on $BGPID"
+	for job in $BGPID; do
+		wait $job || let "FAIL+=1"
+	done
+	if [ "$FAIL" != "0" ]; then
+		echo "FAIL"
+	    exit 1
+	fi
+	BGPID=""
+}
+
+# savepid saves the last started bg job's PID for later use by checkedwait
+savepid() {
+	BGPID="$BGPID $!"
+}
+
 APPS="admin dronboard home parental-consent practice-extension"
 RESOURCEPATH="$(cd "$(dirname "$0")/.."; pwd)/resources"
 
@@ -22,8 +45,9 @@ if [ ! "$APPS" == "css" ]; then
 			cd $RESOURCEPATH/apps/$APP
 			$NPM install
 		) &
+		savepid
 	done
-	wait
+	checkedwait
 	echo "Building js..."
 	for APP in $APPS; do
 		(
@@ -33,8 +57,9 @@ if [ ! "$APPS" == "css" ]; then
 			fi
 			PATH="$($NPM bin):$PATH" $NPM run build-dev 2>&1 | grep -v "WARN: " | grep -v "util.error: Use console.error instead"
 		) &
+		savepid
 	done
-	wait
+	checkedwait
 fi
 
 SASS="sass -I=$RESOURCEPATH/static/css-sass --sourcemap=none"
@@ -51,7 +76,9 @@ for scss in $(ls $RESOURCEPATH/static/css-sass); do
 		devName="$name.css"
 		minName="$name.min.css"
 		$SASS -tnested "$RESOURCEPATH/static/css-sass/$scss" "$RESOURCEPATH/static/css/$devName" &
+		savepid
 		$SASS -tcompressed "$RESOURCEPATH/static/css-sass/$scss" "$RESOURCEPATH/static/css/$minName" &
+		savepid
 	fi
 done
-wait
+checkedwait

@@ -1,6 +1,27 @@
 #!/bin/bash -e
 
-set -o pipefail
+set -e -o pipefail
+
+BGPID=""
+
+# checkedwait waits for background jobs to complete with non-zero code if any fail
+checkedwait() {
+    FAIL=0
+    echo "Waiting on $BGPID"
+    for job in $BGPID; do
+        wait $job || let "FAIL+=1"
+    done
+    if [ "$FAIL" != "0" ]; then
+        echo "FAIL"
+        exit 1
+    fi
+    BGPID=""
+}
+
+# savepid saves the last started bg job's PID for later use by checkedwait
+savepid() {
+    BGPID="$BGPID $!"
+}
 
 export HOME=/workspace
 
@@ -110,6 +131,7 @@ time (
     cd apps
     flow check
 ) &
+savepid
 
 # Test static resources (curbside)
 echo "TESTING STATIC RESOURCES (curbside)"
@@ -118,6 +140,7 @@ time (
     ./build_resources.sh
     flow check
 ) &
+savepid
 
 # Clean binaries before building to make sure we get a clean build for deployment
 rm -rf $GOPATH/pkg $GOPATH/bin
@@ -128,8 +151,9 @@ time (
     cd $MONOREPO_PATH/cmd/svc/restapi
     ./build.sh
 ) &
+savepid
 
-wait
+checkedwait
 
 if [[ "$DEPLOY_TO_S3" != "" ]]; then
     echo "DEPLOYING (restapi)"
