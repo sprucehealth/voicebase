@@ -1115,6 +1115,9 @@ header {
 	border: 1px #C5D3D8 solid;
 	height: 52px;
 	width: 100%;
+	-webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
+	-moz-box-sizing: border-box;    /* Firefox, other Gecko */
+	box-sizing: border-box;         /* Opera/IE 8+ */
 	margin-top: 5px;
 	@include font-300();
 	font-size: 18px; // Constant across devices
@@ -1177,9 +1180,12 @@ textarea.error {
 	}
 	div {
 		margin: 3px 0px;
-}
+	}
 	input {
-		padding: 8px;
+		padding: 30px 8px;
+		-webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
+		-moz-box-sizing: border-box;    /* Firefox, other Gecko */
+		box-sizing: border-box;         /* Opera/IE 8+ */		
 	}
 }
 
