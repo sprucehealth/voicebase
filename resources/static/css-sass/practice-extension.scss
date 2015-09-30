@@ -492,6 +492,7 @@ header {
 
 			p {
 				color: #9CAFB6;
+				font-size: 18px;
 			}
 
 			.column {
@@ -1017,6 +1018,7 @@ header {
 		max-width: 960px;
 		margin: auto;
 		margin-bottom: 84px;
+		font-size: 18px;
 		
 		.column {
 			max-width: 430px;
@@ -1053,6 +1055,7 @@ header {
 	color: #8B9FA7;
 	text-align: center;
 	padding-bottom: 113px;
+	font-size: 18px;
 	h2 {
 		margin-top: 82px;
 		margin-bottom: 63px;
@@ -1168,6 +1171,16 @@ textarea.error {
 	flex-grow: 0.82;
 	-webkit-flex-grow: 0.82;
 	margin-bottom: 40px;
+
+	label {
+		font-size: 18px;
+	}
+	div {
+		margin: 3px 0px;
+}
+	input {
+		padding: 8px;
+	}
 }
 
 .form-error-message {

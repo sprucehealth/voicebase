@@ -143,9 +143,9 @@ var WhitepaperForm = React.createClass({displayName: "WhitepaperForm",
 			<form method="post" onSubmit={this.handleSubmit}>
 				<div className="form-row">
 					<div className="form-column" ref="first_name">
-						<div>
+						<label htmlFor="first_name">
 							First Name
-						</div>
+						</label>
 						<div className="flexy-container">
 							<input 
 								type="text" 
@@ -157,9 +157,9 @@ var WhitepaperForm = React.createClass({displayName: "WhitepaperForm",
 				</div>
 				<div className="form-row">
 					<div className="form-column" ref="last_name">
-						<div>
+						<label htmlFor="last_name">
 							Last Name
-						</div>
+						</label>
 						<div className="flexy-container">
 							<input 
 								type="text" 
@@ -171,9 +171,9 @@ var WhitepaperForm = React.createClass({displayName: "WhitepaperForm",
 				</div>
 				<div className="form-row">
 					<div className="form-column" ref="email">
-						<div>
+						<label htmlFor="email">
 							Email
-						</div>
+						</label>
 						<div className="flexy-container">
 							<input 
 								type="email" 
