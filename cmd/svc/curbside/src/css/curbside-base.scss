@@ -277,7 +277,6 @@ a.rounded-button {
 	box-sizing:border-box;
 	-moz-box-sizing:border-box;
 	-webkit-box-sizing:border-box;
-	height:60px;
 	border: 2px solid white;
 }
 
@@ -893,7 +892,6 @@ textarea.error {
 	box-sizing:border-box;
 	-moz-box-sizing:border-box;
 	-webkit-box-sizing:border-box;
-	height:60px;
 	border:2px solid #0BA5C5;
 	@include respond-to(handhelds) {
 		margin: 0px 25px;
@@ -907,7 +905,6 @@ textarea.error {
 	box-sizing:border-box;
 	-moz-box-sizing:border-box;
 	-webkit-box-sizing:border-box;
-	height:60px;
 	border:2px solid #0BA5C5;
 	cursor: pointer;
 }
@@ -962,7 +959,6 @@ a.learn-more-button {
 	box-sizing:border-box;
 	-moz-box-sizing:border-box;
 	-webkit-box-sizing:border-box;
-	height:60px;
 	border: 2px solid #0BA5C5;
 }
 
