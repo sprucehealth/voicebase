@@ -156,7 +156,11 @@ func (h *patientsFeedHandler) serveGET(ctx context.Context, w http.ResponseWrite
 		}
 	}
 
-	caseTagsByCaseID, err := h.taggingClient.TagsForCases(caseIDs, tagging.TONonHiddenOnly)
+	caseTagsByCaseIDOps := tagging.TONonHiddenOnly
+	if rd.PastTrigger {
+		caseTagsByCaseIDOps |= tagging.TOPastTrigger
+	}
+	caseTagsByCaseID, err := h.taggingClient.TagsForCases(caseIDs, caseTagsByCaseIDOps)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return

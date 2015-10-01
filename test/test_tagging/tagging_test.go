@@ -330,16 +330,38 @@ func TestTagsForCases(t *testing.T) {
 		CaseID: &caseID,
 	})
 	test.OK(t, err)
+	timeInPast := time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
+	_, err = client.InsertTagAssociation(&model.Tag{Text: "TestTag3_PastDue"}, &model.TagMembership{
+		CaseID:      &caseID,
+		TriggerTime: &timeInPast,
+	})
+	test.OK(t, err)
+	timeInFuture := time.Date(time.Now().Year()+1, time.November, 10, 23, 0, 0, 0, time.UTC)
+	_, err = client.InsertTagAssociation(&model.Tag{Text: "TestTag4_NotPastDue"}, &model.TagMembership{
+		CaseID:      &caseID,
+		TriggerTime: &timeInFuture,
+	})
+	test.OK(t, err)
 
 	tags, err := client.TagsForCases([]int64{caseID}, tagging.TONone)
 	test.OK(t, err)
 	test.Equals(t, 1, len(tags))
-	test.Equals(t, 12, len(tags[caseID]))
+	test.Equals(t, 14, len(tags[caseID]))
 
 	tags, err = client.TagsForCases([]int64{caseID}, tagging.TONonHiddenOnly)
 	test.OK(t, err)
 	test.Equals(t, 1, len(tags))
-	test.Equals(t, 6, len(tags[caseID]))
+	test.Equals(t, 8, len(tags[caseID]))
+
+	tags, err = client.TagsForCases([]int64{caseID}, tagging.TOPastTrigger)
+	test.OK(t, err)
+	test.Equals(t, 1, len(tags))
+	test.Equals(t, 1, len(tags[caseID]))
+
+	tags, err = client.TagsForCases([]int64{caseID}, tagging.TONonHiddenOnly|tagging.TOPastTrigger)
+	test.OK(t, err)
+	test.Equals(t, 1, len(tags))
+	test.Equals(t, 1, len(tags[caseID]))
 }
 
 func TestCCTagRoundTrip(t *testing.T) {

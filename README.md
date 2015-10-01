@@ -307,6 +307,8 @@ Add the following to `~/.bashrc` or `~/.zshrc`:
 	export CF_LOCAL_DB_INSTANCE='localhost'
 	export DOSESPOT_USER_ID=407
 
+_Side note: The tests use `test.conf` as their config; however, you can override certain settings by setting the above environment variables._
+
 Then:
 
 	$ source ~/.bashrc # or source ~/.zshrc
@@ -321,6 +323,7 @@ To run the tests in parallel:
 	$ cd ./test/test_integration
 	$ go test -v -parallel 4 ./...
 
+_Note: `go test -v -parallel 4` is important (rather than just `go test`) because by default, `go test` will run all of the tests in parallel and we'll quickly reach the limit on MySQL connections._
 
 Troubleshooting
 ---------------

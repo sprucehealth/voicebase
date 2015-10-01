@@ -188,6 +188,9 @@ func (tc *client) TagsForCases(ids []int64, ops TaggingOption) (map[int64][]*res
 	if ops.Has(TONonHiddenOnly) {
 		q += ` AND tag_membership.hidden = false`
 	}
+	if ops.Has(TOPastTrigger) {
+		q += ` AND trigger_time <= current_timestamp AND trigger_time IS NOT NULL `
+	}
 	rows, err := tc.db.Query(q, dbutil.AppendInt64sToInterfaceSlice(nil, ids)...)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(api.ErrNotFound(`tag_membership`))
