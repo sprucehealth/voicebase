@@ -98,7 +98,7 @@ func IsDrugOutOfMarket(treatment *common.Treatment, doctor *common.Doctor, erxAP
 // This method tries to break up this complete internal drug name into its individual components. It's a best effort
 // in that it treats the entire name presented as the drugName if the drugInternalName is of any invalid format
 func BreakDrugInternalNameIntoComponents(drugInternalName string) (drugName, drugForm, drugRoute string) {
-	indexOfParanthesis := strings.IndexRune(drugInternalName, '(')
+	indexOfParanthesis := strings.LastIndex(drugInternalName, "(")
 	// nothing to do if the name is not in the required format.
 	// fail gracefully by returning the drug internal name for the drug name and
 	if indexOfParanthesis == -1 {
@@ -107,8 +107,8 @@ func BreakDrugInternalNameIntoComponents(drugInternalName string) (drugName, dru
 	}
 
 	// treat the entire name as the drugName if there is no closing paranthesis
-	indexOfClosingParanthesis := strings.IndexRune(drugInternalName, ')')
-	if indexOfClosingParanthesis == -1 {
+	indexOfClosingParanthesis := strings.LastIndex(drugInternalName, ")")
+	if indexOfClosingParanthesis == -1 || indexOfClosingParanthesis < indexOfParanthesis {
 		drugName = drugInternalName
 		return
 	}

@@ -23,6 +23,12 @@ func TestBreakingUpOfDrugNameIntoComponents(t *testing.T) {
 	expectedDrugFormComponent = "DrugForm -"
 	nameToTest = fmt.Sprintf("  %s   (    %s -      %s   )", expectedDrugNameComponent, expectedDrugRouteComponent, expectedDrugFormComponent)
 	testDrugNameIntoComponents(expectedDrugNameComponent, expectedDrugRouteComponent, expectedDrugFormComponent, nameToTest, t)
+
+	expectedDrugNameComponent = "Derma - Smoothe/FS (Scalp)"
+	expectedDrugRouteComponent = "topical"
+	expectedDrugFormComponent = "oil"
+	nameToTest = fmt.Sprintf("  %s   (    %s -      %s   )", expectedDrugNameComponent, expectedDrugRouteComponent, expectedDrugFormComponent)
+	testDrugNameIntoComponents(expectedDrugNameComponent, expectedDrugRouteComponent, expectedDrugFormComponent, nameToTest, t)
 }
 
 func TestUnsuccessfulBreakingUpOfDrugNameIntoComponents(t *testing.T) {

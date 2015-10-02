@@ -19,8 +19,8 @@ var treatmentQuery = `
 		t.dosage_strength, t.type, t.dispense_value, t.dispense_unit_id,
 		ltext, t.refills, t.substitutions_allowed, t.days_supply,
 		t.pharmacy_id, COALESCE(t.pharmacy_notes, ''), t.patient_instructions,
-		t.creation_date, t.erx_sent_date, t.status, dn.name,
-		dr.name, df.name, tp.patient_id, tp.doctor_id,
+		t.creation_date, t.erx_sent_date, t.status, COALESCE(dn.name,''),
+		COALESCE(dr.name, ''), COALESCE(df.name,''), tp.patient_id, tp.doctor_id,
 		COALESCE(is_controlled_substance, false), COALESCE(dn2.name, '')
 	FROM treatment t
 	INNER JOIN treatment_plan tp ON tp.id = t.treatment_plan_id
@@ -28,8 +28,8 @@ var treatmentQuery = `
 	INNER JOIN localized_text lt ON lt.app_text_id = du.dispense_unit_text_id
 	INNER JOIN drug_name dn ON dn.id = drug_name_id
 	LEFT JOIN drug_name dn2 ON dn2.id = generic_drug_name_id
-	INNER JOIN drug_route dr ON dr.id = drug_route_id
-	INNER JOIN drug_form df ON df.id = drug_form_id
+	LEFT JOIN drug_route dr ON dr.id = drug_route_id
+	LEFT JOIN drug_form df ON df.id = drug_form_id
 `
 
 var visitSummaryQuery = `
