@@ -76,6 +76,11 @@
 			"Rev": "1ba5d8811803984c656ec0b1f621735235aff430"
 		},
 		{
+			"ImportPath": "github.com/aws/aws-sdk-go/service/dynamodb",
+			"Comment": "v0.9.0rc1-6-g1ba5d88",
+			"Rev": "1ba5d8811803984c656ec0b1f621735235aff430"
+		},
+		{
 			"ImportPath": "github.com/aws/aws-sdk-go/service/ec2",
 			"Comment": "v0.9.0rc1-6-g1ba5d88",
 			"Rev": "1ba5d8811803984c656ec0b1f621735235aff430"

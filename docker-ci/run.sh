@@ -212,15 +212,15 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
     s3cmd --recursive -P --no-preserve -M put img/* $STATIC_PREFIX/img/
 fi
 
-# Build for deploy (regimens)
-echo "BUILDING (regimens)"
-cd $MONOREPO_PATH/cmd/svc/regimens
+# Build for deploy (regimensapi)
+echo "BUILDING (regimensapi)"
+cd $MONOREPO_PATH/cmd/svc/regimensapi
 ./build.sh
 
 if [[ "$DEPLOY_TO_S3" != "" ]]; then
-    echo "DEPLOYING (regimens)"
+    echo "DEPLOYING (regimensapi)"
 
-    CMD_NAME="regimens-$GIT_BRANCH-$BUILD_NUMBER"
+    CMD_NAME="regimensapi-$GIT_BRANCH-$BUILD_NUMBER"
     rm -rf build # Jenkins preserves the workspace so remove any old build files
     mkdir build
     cp $GOPATH/bin/regimens build/$CMD_NAME

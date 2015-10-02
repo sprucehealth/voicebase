@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-APP=regimens
+APP=regimensapi
 REV="$GIT_COMMIT"
 if [ "$REV" = "" ]; then
 	REV=$(git rev-parse HEAD)
