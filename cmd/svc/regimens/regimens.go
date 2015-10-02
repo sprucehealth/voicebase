@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/sig"
 	svc "github.com/sprucehealth/backend/svc/regimens"
@@ -155,6 +156,10 @@ func (s *service) verifyDynamo() error {
 	_, err := s.dynamoClient.DescribeTable(&dynamodb.DescribeTableInput{
 		TableName: ptr.String(regimenTableName),
 	})
+
+	if err != nil {
+		golog.Infof(err.Error())
+	}
 
 	if awserr, ok := err.(awserr.Error); ok {
 		if awserr.Code() == "ResourceNotFoundException" {

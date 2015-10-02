@@ -78,7 +78,6 @@ func main() {
 }
 
 func setupRouter() (*mux.Router, httputil.ContextHandler) {
-	golog.Infof("AWS Dynamo DB Endpoint configured as %s...", config.awsDynamoDBEndpoint)
 	dispatcher := dispatch.New()
 	productsSvc := &factualProductsService{cli: factual.New(config.factualKey, config.factualSecret)}
 	regimenSvc, err := regimens.New(dynamodb.New(func() *aws.Config {
@@ -88,6 +87,7 @@ func setupRouter() (*mux.Router, httputil.ContextHandler) {
 			Credentials: getAWSCredentials(),
 		}
 		if config.awsDynamoDBEndpoint != "" {
+			golog.Infof("AWS Dynamo DB Endpoint configured as %s...", config.awsDynamoDBEndpoint)
 			dynamoConfig.Endpoint = &config.awsDynamoDBEndpoint
 		}
 		if config.awsDynamoDBDisableSSL {

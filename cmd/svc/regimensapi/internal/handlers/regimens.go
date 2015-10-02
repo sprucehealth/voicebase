@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"path"
 	"strconv"
 
 	"github.com/sprucehealth/backend/api"
@@ -109,7 +108,7 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 
 	httputil.JSONResponse(w, http.StatusOK, &regimenPOSTResponse{
 		ID:        resourceID,
-		URL:       path.Join(h.webDomain, resourceID),
+		URL:       h.webDomain + "/" + resourceID,
 		AuthToken: authToken,
 	})
 }
@@ -197,7 +196,7 @@ func (h *regimenHandler) servePUT(ctx context.Context, w http.ResponseWriter, r 
 
 	httputil.JSONResponse(w, http.StatusOK, &regimenPOSTResponse{
 		ID:        resourceID,
-		URL:       path.Join(h.webDomain, resourceID),
+		URL:       h.webDomain + "/" + resourceID,
 		AuthToken: authToken,
 	})
 }
