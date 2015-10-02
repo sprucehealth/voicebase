@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
@@ -37,6 +40,9 @@ var config struct {
 	awsDynamoDBEndpoint   string
 	awsDynamoDBRegion     string
 	awsDynamoDBDisableSSL bool
+	awsAccessKey          string
+	awsSecretKey          string
+	awsToken              string
 
 	// Regimens auth secret
 	authSecret string
@@ -57,6 +63,9 @@ func init() {
 	flag.StringVar(&config.awsDynamoDBEndpoint, "aws.dynamodb.endpoint", "", "AWS Dynamo DB API endpoint")
 	flag.StringVar(&config.awsDynamoDBRegion, "aws.dynamodb.region", "", "AWS Dynamo DB API region")
 	flag.BoolVar(&config.awsDynamoDBDisableSSL, "aws.dynamodb.disable.ssl", false, "Disable SSL in the AWS DynamoDB client")
+	flag.StringVar(&config.awsAccessKey, "aws.access.key", "", "AWS Credentials Access Key")
+	flag.StringVar(&config.awsSecretKey, "aws.secret.key", "", "AWS Credentials Secret Key")
+	flag.StringVar(&config.awsToken, "aws.token", "", "AWS Credentials Token")
 }
 
 func main() {
@@ -74,8 +83,9 @@ func setupRouter() (*mux.Router, httputil.ContextHandler) {
 	productsSvc := &factualProductsService{cli: factual.New(config.factualKey, config.factualSecret)}
 	regimenSvc, err := regimens.New(dynamodb.New(func() *aws.Config {
 		dynamoConfig := &aws.Config{
-			Region:     &config.awsDynamoDBRegion,
-			DisableSSL: &config.awsDynamoDBDisableSSL,
+			Region:      &config.awsDynamoDBRegion,
+			DisableSSL:  &config.awsDynamoDBDisableSSL,
+			Credentials: getAWSCredentials(),
 		}
 		if config.awsDynamoDBEndpoint != "" {
 			dynamoConfig.Endpoint = &config.awsDynamoDBEndpoint
@@ -149,6 +159,22 @@ func serve(handler httputil.ContextHandler) {
 	}
 	golog.Infof("Starting listener on %s...", config.httpAddr)
 	golog.Fatalf(s.Serve(listener).Error())
+}
+
+// TODO: Localize this code and the client generation somewhere outside of main.go
+func getAWSCredentials() *credentials.Credentials {
+	var creds *credentials.Credentials
+	if config.awsAccessKey != "" && config.awsSecretKey != "" {
+		creds = credentials.NewStaticCredentials(config.awsAccessKey, config.awsSecretKey, config.awsToken)
+	} else {
+		creds = credentials.NewEnvCredentials()
+		if v, err := creds.Get(); err != nil || v.AccessKeyID == "" || v.SecretAccessKey == "" {
+			creds = ec2rolecreds.NewCredentials(ec2metadata.New(&ec2metadata.Config{
+				HTTPClient: &http.Client{Timeout: 2 * time.Second},
+			}), time.Minute*10)
+		}
+	}
+	return creds
 }
 
 // TODO: this factual products service implementation is temporary to provide a useful stub

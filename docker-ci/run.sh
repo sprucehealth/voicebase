@@ -223,10 +223,10 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
     CMD_NAME="regimensapi-$GIT_BRANCH-$BUILD_NUMBER"
     rm -rf build # Jenkins preserves the workspace so remove any old build files
     mkdir build
-    cp $GOPATH/bin/regimens build/$CMD_NAME
+    cp $GOPATH/bin/regimensapi build/$CMD_NAME
     bzip2 -9 build/$CMD_NAME
     echo $GIT_COMMIT > build/$CMD_NAME.revision
     cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.out build/$CMD_NAME.coverage
     cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.html build/$CMD_NAME.coverage.html
-    s3cmd --add-header "x-amz-acl:bucket-owner-full-control" -M --server-side-encryption put build/* s3://spruce-deploy/regimens/
+    s3cmd --add-header "x-amz-acl:bucket-owner-full-control" -M --server-side-encryption put build/* s3://spruce-deploy/regimensapi/
 fi
