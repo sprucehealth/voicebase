@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
@@ -19,6 +20,7 @@ import (
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/treatment_plan"
 	"github.com/sprucehealth/backend/views"
@@ -384,9 +386,14 @@ func (h *treatmentPlanCSVHandler) createGlobalFTPs(ftps []*ftp) error {
 }
 
 func (h *treatmentPlanCSVHandler) transformFTPToSTP(ctx context.Context, ftp ftp, complete chan *completedSTP, errs chan error) {
-	sftp := &treatment_plan.TreatmentPlanViewsResponse{}
-	sftp.HeaderViews = []views.View{
-		treatment_plan.NewTPHeroHeaderView("Sample Treatment Plan", "Your doctor will personalize a treatment plan for you."),
+	sftp := &treatment_plan.TreatmentPlanViewsResponse{
+		HeaderViews: []views.View{
+			treatment_plan.NewTPHeroHeaderView("Sample Treatment Plan", "Your doctor will personalize a treatment plan for you."),
+		},
+	}
+
+	dummyRegimenPlan := &common.RegimenPlan{
+		Sections: make([]*common.RegimenSection, len(ftp.Sections)),
 	}
 
 	instructionCiews := make([]views.View, len(ftp.Sections)+1)
@@ -403,11 +410,18 @@ func (h *treatmentPlanCSVHandler) transformFTPToSTP(ctx context.Context, ftp ftp
 	}
 	sort.Strings(sectionKeys)
 	sectionIndex := 1
-	for _, k := range sectionKeys {
+	for i, k := range sectionKeys {
 		sectionInstructionViews := make([]views.View, len(ftp.Sections[k].Steps)+1)
 		sectionInstructionViews[0] = treatment_plan.NewTPCardTitleView(ftp.Sections[k].Title, "", false)
+		dummyRegimenPlan.Sections[i] = &common.RegimenSection{
+			Name:  ftp.Sections[k].Title,
+			Steps: make([]*common.DoctorInstructionItem, len(ftp.Sections[k].Steps)),
+		}
 		for si, st := range ftp.Sections[k].Steps {
 			sectionInstructionViews[si+1] = treatment_plan.NewTPListElement("bulleted", st.Text, si)
+			dummyRegimenPlan.Sections[i].Steps[si] = &common.DoctorInstructionItem{
+				Text: st.Text,
+			}
 		}
 		instructionCiews[sectionIndex] = treatment_plan.NewTPCardView(sectionInstructionViews)
 		sectionIndex++
@@ -445,26 +459,53 @@ func (h *treatmentPlanCSVHandler) transformFTPToSTP(ctx context.Context, ftp ftp
 	if len(treatmentList.Treatments) != 0 {
 		treatmentViews = append(treatmentViews, treatment_plan.GenerateViewsForTreatments(ctx, treatmentList, 0, h.dataAPI, false)...)
 	}
+
+	pd := &pharmacy.PharmacyData{
+		AddressLine1: "1101 Market St",
+		City:         "San Francisco",
+		SourceID:     8561,
+		Latitude:     37.77959,
+		Longitude:    -122.41363,
+		Name:         "Cvs/Pharmacy",
+		Phone:        "4155581538",
+		Source:       "surescripts",
+		State:        "CA",
+		URL:          "",
+		Postal:       "94103",
+	}
+
 	treatmentViews = append(treatmentViews, treatment_plan.NewTPCardView([]views.View{
 		treatment_plan.NewTPCardTitleView("Prescription Pickup", "", false),
-		treatment_plan.NewPharmacyView("Your prescriptions should be ready soon. Call your pharmacy to confirm a pickup time.", nil,
-			&pharmacy.PharmacyData{
-				AddressLine1: "1101 Market St",
-				City:         "San Francisco",
-				SourceID:     8561,
-				Latitude:     37.77959,
-				Longitude:    -122.41363,
-				Name:         "Cvs/Pharmacy",
-				Phone:        "4155581538",
-				Source:       "surescripts",
-				State:        "CA",
-				URL:          "",
-				Postal:       "94103",
-			}),
+		treatment_plan.NewPharmacyView("Your prescriptions should be ready soon. Call your pharmacy to confirm a pickup time.", nil, pd),
 	}))
 	sftp.TreatmentViews = treatmentViews
 	for _, v := range sftp.TreatmentViews {
 		v.Validate("treatment")
+	}
+
+	// create dummy treatment plan from which to generate views for single view treatment plan
+	tp := &common.TreatmentPlan{
+		TreatmentList: treatmentList,
+		RegimenPlan:   dummyRegimenPlan,
+		SentDate:      ptr.Time(time.Date(2015, 04, 15, 0, 0, 0, 0, time.UTC)),
+	}
+
+	contentViews := []views.View{
+		treatment_plan.NewTPCardView(
+			[]views.View{
+				treatment_plan.NewTPTextView("title1_medium", "Your doctor will determine the right treatments for you and will explain how to use your treatments together in a personalized care routine."),
+				treatment_plan.NewTPTextView("", "Prescriptions will be available to pick up at your preferred pharmacy."),
+			}),
+	}
+
+	sftp.ContentViews = append(contentViews, treatment_plan.GenerateViewsForSingleViewTreatmentPlan(ctx, tp, pd, h.dataAPI)...)
+
+	// validate content views
+	for _, v := range sftp.ContentViews {
+		if err := v.Validate("treatment"); err != nil {
+			errs <- err
+			return
+		}
 	}
 
 	jsonData, err := json.Marshal(sftp)

@@ -6,8 +6,8 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/views"
 	"golang.org/x/net/context"
@@ -38,6 +38,7 @@ type TreatmentPlanViewsResponse struct {
 	HeaderViews      []views.View `json:"header_views,omitempty"`
 	TreatmentViews   []views.View `json:"treatment_views,omitempty"`
 	InstructionViews []views.View `json:"instruction_views,omitempty"`
+	ContentViews     []views.View `json:"content_views,omitempty"`
 }
 
 func (p *treatmentPlanHandler) IsAuthorized(ctx context.Context, r *http.Request) (bool, error) {
@@ -145,7 +146,7 @@ func (p *treatmentPlanHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 }
 
 func treatmentPlanResponse(ctx context.Context, dataAPI api.DataAPI, tp *common.TreatmentPlan, doctor *common.Doctor, patient *common.Patient) (*TreatmentPlanViewsResponse, error) {
-	var headerViews, treatmentViews, instructionViews []views.View
+	var headerViews, treatmentViews, instructionViews, contentViews []views.View
 
 	patientCase, err := dataAPI.GetPatientCaseFromID(tp.PatientCaseID.Int64())
 	if err != nil {
@@ -159,122 +160,24 @@ func treatmentPlanResponse(ctx context.Context, dataAPI api.DataAPI, tp *common.
 			Subtitle: fmt.Sprintf("Created by %s\nfor %s", doctor.ShortDisplayName, patientCase.Name),
 		})
 
-	// TREATMENT VIEWS
-	if len(tp.TreatmentList.Treatments) > 0 {
-		treatmentViews = append(treatmentViews, GenerateViewsForTreatments(ctx, tp.TreatmentList, tp.ID.Int64(), dataAPI, false)...)
-		cardViews := []views.View{
-			&tpCardTitleView{
-				Title: "How to get your treatments",
-			},
-		}
-		hasRX := false
-		hasOTC := false
-		for _, t := range tp.TreatmentList.Treatments {
-			if t.OTC {
-				hasOTC = true
-			} else {
-				hasRX = true
-			}
-		}
-		if hasRX {
-			cardViews = append(cardViews,
-				&tpTextView{
-					Text:  "Prescription",
-					Style: views.SubheaderStyle,
-				},
-				&tpTextView{
-					Text: "Your prescriptions have been sent to your pharmacy. We suggest calling ahead to ask about price. If it seems expensive, message your care coordinator for help.",
-				},
-			)
-		}
-		if hasOTC {
-			cardViews = append(cardViews,
-				&tpTextView{
-					Text:  "Over-the-counter",
-					Style: views.SubheaderStyle,
-				},
-				&tpTextView{
-					Text: "Check with your pharmacist before looking for your over-the-counter treatment in the aisles. OTC treatments may be less expensive when purchased through the pharmacy.",
-				},
-			)
-		}
-		cardViews = append(cardViews,
-			&tpTextView{
-				Text:  "Your pharmacy",
-				Style: views.SubheaderStyle,
-			},
-			&tpPharmacyView{
-				Text:     "Your prescriptions should be ready soon. Call your pharmacy to confirm a pickup time.",
-				Pharmacy: patient.Pharmacy,
-			},
-		)
-		treatmentViews = append(treatmentViews,
-			&tpCardView{
-				Views: cardViews,
-			},
-			&tpButtonFooterView{
-				FooterText:       fmt.Sprintf("If you have any questions about your treatment plan, message your care team."),
-				ButtonText:       "Send a Message",
-				IconURL:          app_url.IconMessage,
-				TapURL:           app_url.SendCaseMessageAction(tp.PatientCaseID.Int64()),
-				CenterFooterText: true,
-			},
-		)
-	}
+	p := conc.NewParallel()
 
-	// INSTRUCTION VIEWS
-	if tp.RegimenPlan != nil && len(tp.RegimenPlan.Sections) > 0 {
-		for _, regimenSection := range tp.RegimenPlan.Sections {
-			cView := &tpCardView{
-				Views: []views.View{},
-			}
-			instructionViews = append(instructionViews, cView)
-
-			cView.Views = append(cView.Views, &tpCardTitleView{
-				Title: regimenSection.Name,
-			})
-
-			for _, regimenStep := range regimenSection.Steps {
-				cView.Views = append(cView.Views, &tpListElementView{
-					ElementStyle: bulletedStyle,
-					Text:         regimenStep.Text,
-				})
-			}
-		}
-	}
-
-	if len(tp.ResourceGuides) != 0 {
-		rgViews := []views.View{
-			&tpCardTitleView{
-				Title: "Resources",
-			},
-		}
-		for i, g := range tp.ResourceGuides {
-			if i != 0 {
-				rgViews = append(rgViews, &views.SmallDivider{})
-			}
-			rgViews = append(rgViews, &tpLargeIconTextButtonView{
-				Text:       g.Title,
-				IconURL:    g.PhotoURL,
-				IconWidth:  66,
-				IconHeight: 66,
-				TapURL:     app_url.ViewResourceGuideAction(g.ID),
-			})
-		}
-		instructionViews = append(instructionViews, &tpCardView{
-			Views: rgViews,
-		})
-	}
-
-	instructionViews = append(instructionViews, &tpButtonFooterView{
-		FooterText:       "If you have any questions about your treatment plan, message your care team.",
-		ButtonText:       "Send a Message",
-		IconURL:          app_url.IconMessage,
-		TapURL:           app_url.SendCaseMessageAction(tp.PatientCaseID.Int64()),
-		CenterFooterText: true,
+	p.Go(func() error {
+		treatmentViews, instructionViews = generateViewsForTreatmentsAndInstructions(ctx, tp, patient, dataAPI)
+		return nil
 	})
 
-	for _, vContainer := range [][]views.View{headerViews, treatmentViews, instructionViews} {
+	p.Go(func() error {
+		contentViews = GenerateViewsForSingleViewTreatmentPlan(ctx, tp, patient.Pharmacy, dataAPI)
+		return nil
+	})
+
+	if err := p.Wait(); err != nil {
+		return nil, err
+	}
+
+	// Validate
+	for _, vContainer := range [][]views.View{headerViews, treatmentViews, instructionViews, contentViews} {
 		if err := views.Validate(vContainer, treatmentViewNamespace); err != nil {
 			return nil, err
 		}
@@ -284,5 +187,6 @@ func treatmentPlanResponse(ctx context.Context, dataAPI api.DataAPI, tp *common.
 		HeaderViews:      headerViews,
 		TreatmentViews:   treatmentViews,
 		InstructionViews: instructionViews,
+		ContentViews:     contentViews,
 	}, nil
 }

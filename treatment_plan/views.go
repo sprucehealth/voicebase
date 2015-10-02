@@ -11,11 +11,14 @@ import (
 )
 
 const (
-	smallGrayStyle            = "small_gray"
 	treatmentViewNamespace    = "treatment"
-	captionRegularItalicStyle = "caption_regular_italic"
-	bulletedStyle             = "bulleted"
-	numberedStyle             = "numbered"
+	styleCaptionRegularItalic = "caption_regular_italic"
+	styleBulleted             = "bulleted"
+	styleNumbered             = "numbered"
+	styleSmallGray            = "small_gray"
+	styleTitle1Medium         = "title1_medium"
+	styleBold                 = "bold"
+	styleBodyHintMedium       = "body_hint_medium"
 )
 
 type tpLargeIconTextButtonView struct {
@@ -76,6 +79,12 @@ func NewTPTextView(style views.TextStyle, text string) views.View {
 		Style: style,
 		Text:  text,
 	}
+}
+
+type tpSubheaderView struct {
+	Type  string          `json:"type"`
+	Style views.TextStyle `json:"style"`
+	Text  string          `json:"text"`
 }
 
 type tpTextDisclosureButtonView struct {
@@ -169,6 +178,7 @@ type tpPrescriptionView struct {
 	Subtitle          string               `json:"subtitle"`
 	SubtitleHasTokens bool                 `json:"subtitle_has_tokens"`
 	Timestamp         *time.Time           `json:"timestamp,omitempty"`
+	PrescribedOn      int64                `json:"prescribed_on,omitempty"`
 	Buttons           []views.View         `json:"buttons,omitempty"`
 }
 
@@ -319,7 +329,7 @@ func (v *tpSnippetDetailsView) TypeName() string {
 }
 
 func (v *tpListElementView) Validate(namespace string) error {
-	if v.ElementStyle != bulletedStyle && v.ElementStyle != numberedStyle {
+	if v.ElementStyle != styleBulleted && v.ElementStyle != styleNumbered {
 		return errors.New("ListElementView expects ElementStyle of numbered or bulleted, not " + v.ElementStyle)
 	}
 	v.Type = namespace + ":" + v.TypeName()
@@ -391,4 +401,13 @@ func (v *tpTextView) Validate(namespace string) error {
 
 func (v *tpTextView) TypeName() string {
 	return "text"
+}
+
+func (v *tpSubheaderView) TypeName() string {
+	return "subheader"
+}
+
+func (v *tpSubheaderView) Validate(namespace string) error {
+	v.Type = namespace + ":" + v.TypeName()
+	return nil
 }
