@@ -3,6 +3,7 @@ package treatment_plan
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/app_url"
@@ -10,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/features"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/pharmacy"
 	"github.com/sprucehealth/backend/views"
 	"golang.org/x/net/context"
@@ -245,12 +247,20 @@ func GenerateViewsForSingleViewTreatmentPlan(ctx context.Context, tp *common.Tre
 				buttons = append(buttons, NewPrescriptionReminderButtonView("Reminder", treatment.ID.Int64()))
 			}
 
+			// use current time if no sent date is set.
+			// this is possible if the doctor is trying to preview the
+			// treatment plan before actually sending it.
+			prescribedOn := tp.SentDate
+			if prescribedOn == nil {
+				prescribedOn = ptr.Time(time.Now())
+			}
+
 			prescriptionCardView.Views = append(prescriptionCardView.Views, &tpPrescriptionView{
 				Title:             fullTreatmentName(treatment),
 				Subtitle:          subtitle,
 				SubtitleHasTokens: subtitleHasTokens,
-				Timestamp:         tp.SentDate,
-				PrescribedOn:      tp.SentDate.Unix(),
+				Timestamp:         prescribedOn,
+				PrescribedOn:      prescribedOn.Unix(),
 				Description:       treatment.PatientInstructions,
 				IconURL:           iconURL,
 				IconWidth:         50,
