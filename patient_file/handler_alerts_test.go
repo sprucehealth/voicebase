@@ -26,6 +26,7 @@ type mockDataAPI_handlerAlerts struct {
 	careTeamsByCase              map[int64]*common.PatientCareTeam
 	getDoctorFromAccountID       *common.Doctor
 	getPatientFromPatientVisitID *common.Patient
+	patient                      *common.Patient
 
 	visitIDQueried int64
 	caseIDQueried  int64
@@ -59,6 +60,9 @@ func (m *mockDataAPI_handlerAlerts) GetDoctorFromAccountID(accountID int64) (*co
 }
 func (m *mockDataAPI_handlerAlerts) GetPatientFromPatientVisitID(visitID int64) (*common.Patient, error) {
 	return m.getPatientFromPatientVisitID, nil
+}
+func (m *mockDataAPI_handlerAlerts) Patient(patientID common.PatientID, basicInfoOnly bool) (*common.Patient, error) {
+	return m.patient, nil
 }
 
 func TestAlerts_NoParams(t *testing.T) {
@@ -101,6 +105,9 @@ func TestAlerts_ByVisitID(t *testing.T) {
 			{
 				Message: "alert2",
 			},
+		},
+		patient: &common.Patient{
+			Status: "REGISTERED",
 		},
 	}
 
@@ -156,6 +163,9 @@ func TestAlerts_ByCaseID(t *testing.T) {
 			{
 				Message: "alert2",
 			},
+		},
+		patient: &common.Patient{
+			Status: "REGISTERED",
 		},
 	}
 
@@ -222,6 +232,9 @@ func TestAlerts_ByPatientID(t *testing.T) {
 				Message: "alert2",
 			},
 		},
+		patient: &common.Patient{
+			Status: "REGISTERED",
+		},
 	}
 
 	h := NewAlertsHandler(m)
@@ -241,4 +254,33 @@ func TestAlerts_ByPatientID(t *testing.T) {
 	test.Equals(t, "alert2", res.Alerts[1].Message)
 	test.Equals(t, int64(9), m.visitIDQueried)
 	test.Equals(t, int64(7), m.caseIDQueried)
+}
+
+func TestAlerts_ByPatientID_NotRegistered(t *testing.T) {
+	m := &mockDataAPI_handlerAlerts{
+		doctorID: 10,
+		careTeamsByCase: map[int64]*common.PatientCareTeam{
+			1: &common.PatientCareTeam{
+				Assignments: []*common.CareProviderAssignment{
+					{
+						ProviderID:   10,
+						ProviderRole: api.RoleDoctor,
+					},
+				},
+			},
+		},
+		patient: &common.Patient{
+			Status: "UNLINKED",
+		},
+	}
+
+	h := NewAlertsHandler(m)
+	w := httptest.NewRecorder()
+
+	r, err := http.NewRequest("GET", "api.spruce.loc/alerts?patient_id=10", nil)
+	test.OK(t, err)
+
+	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 1, Role: api.RoleDoctor})
+	h.ServeHTTP(ctx, w, r)
+	test.Equals(t, http.StatusNotFound, w.Code)
 }

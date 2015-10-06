@@ -30,7 +30,7 @@ func NewAlertsHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 }
 
 type alertsRequestData struct {
-	PatientID common.PatientID `schema:"patient_id"`
+	PatientID common.PatientID `schema:"patient_id,required"`
 	CaseID    int64            `schema:"case_id"`
 	VisitID   int64            `schema:"patient_visit_id"`
 }
@@ -111,12 +111,24 @@ func (a *alertsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 	rd := requestCache[apiservice.CKRequestData].(*alertsRequestData)
 
 	visitID := rd.VisitID
+	var patient *common.Patient
 	var err error
+
+	patient, err = a.dataAPI.Patient(rd.PatientID, true)
+	if err != nil {
+		apiservice.WriteError(ctx, err, w, r)
+		return
+	}
+
+	// If the patient isn't a registered patient then we have no visits or alerts for them currently
+	if patient.Status != api.PatientRegistered {
+		apiservice.WriteResourceNotFoundError(ctx, "no alerts available for non registered patients", w, r)
+		return
+	}
 
 	// fall back to caseID or patientID if the visitID is not specified
 	switch {
 	case visitID > 0:
-
 	case rd.CaseID > 0:
 		// get the alerts for the latest visitID pertaining to the case
 
@@ -136,7 +148,6 @@ func (a *alertsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 		}
 
 		if len(cases) > 0 {
-
 			sort.Sort(sort.Reverse(common.ByPatientCaseCreationDate(cases)))
 			caseID := cases[0].ID.Int64()
 
@@ -172,10 +183,12 @@ func (a *alertsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 		return
 	}
 
-	patient, err := a.dataAPI.GetPatientFromPatientVisitID(visitID)
-	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
-		return
+	if patient == nil {
+		patient, err = a.dataAPI.GetPatientFromPatientVisitID(visitID)
+		if err != nil {
+			apiservice.WriteError(ctx, err, w, r)
+			return
+		}
 	}
 
 	dAlerts, err := DynamicAlerts(patientCase, doctor, patient, a.dataAPI)
