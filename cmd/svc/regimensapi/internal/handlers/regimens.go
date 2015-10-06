@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
@@ -68,7 +69,8 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 		}
 
 		// Write an empty regimen to the store to bootstrap it
-		if err := h.svc.PutRegimen(resourceID, &regimens.Regimen{}, false); err != nil {
+		regimen := &regimens.Regimen{ID: resourceID, URL: regimenURL(h.webDomain, resourceID)}
+		if err := h.svc.PutRegimen(resourceID, regimen, false); err != nil {
 			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
@@ -108,7 +110,7 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 
 	httputil.JSONResponse(w, http.StatusOK, &regimenPOSTResponse{
 		ID:        resourceID,
-		URL:       h.webDomain + "/" + resourceID,
+		URL:       regimenURL(h.webDomain, resourceID),
 		AuthToken: authToken,
 	})
 }
@@ -141,10 +143,24 @@ func (h *regimenHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		return
 	}
 
+	// If this is a mutatig request or a GET on an unpublished record check auth
+	if r.Method == httputil.Put || (r.Method == httputil.Get && !published) {
+		authToken := r.Header.Get("token")
+		access, err := h.svc.CanAccessResource(id, authToken)
+		if err != nil {
+			apiservice.WriteError(ctx, err, w, r)
+			return
+		} else if !access {
+			apiservice.WriteAccessNotAllowedError(ctx, w, r)
+			return
+		}
+	}
+
 	switch r.Method {
 	case httputil.Get:
 		h.serveGET(ctx, w, r, regimen)
 	case httputil.Put:
+		// Do not allow published regimens to be mutated
 		if published {
 			apiservice.WriteAccessNotAllowedError(ctx, w, r)
 			return
@@ -176,19 +192,8 @@ func (h *regimenHandler) parsePUTRequest(ctx context.Context, r *http.Request) (
 
 func (h *regimenHandler) servePUT(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *regimenPUTRequest, resourceID string) {
 	authToken := r.Header.Get("token")
-	if authToken == "" {
-		apiservice.WriteAccessNotAllowedError(ctx, w, r)
-		return
-	}
-	access, err := h.svc.CanAccessResource(resourceID, authToken)
-	if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
-		return
-	} else if !access {
-		apiservice.WriteAccessNotAllowedError(ctx, w, r)
-		return
-	}
-
+	rd.Regimen.ID = resourceID
+	rd.Regimen.URL = regimenURL(h.webDomain, resourceID)
 	if err := h.svc.PutRegimen(resourceID, rd.Regimen, rd.Publish); err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
@@ -196,7 +201,11 @@ func (h *regimenHandler) servePUT(ctx context.Context, w http.ResponseWriter, r 
 
 	httputil.JSONResponse(w, http.StatusOK, &regimenPOSTResponse{
 		ID:        resourceID,
-		URL:       h.webDomain + "/" + resourceID,
+		URL:       regimenURL(h.webDomain, resourceID),
 		AuthToken: authToken,
 	})
+}
+
+func regimenURL(webDomain, resourceID string) string {
+	return strings.TrimRight(webDomain, "/") + "/" + resourceID
 }

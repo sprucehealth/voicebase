@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
@@ -51,36 +50,53 @@ func New(d dynamodbiface.DynamoDBAPI, authSecret string) (svc.Service, error) {
 }
 
 func (s *service) Regimen(id string) (*svc.Regimen, bool, error) {
-	getResp, err := s.dynamoClient.GetItem(&dynamodb.GetItemInput{
-		TableName: aws.String(regimenTableName),
+	updateResp, err := s.dynamoClient.UpdateItem(&dynamodb.UpdateItemInput{
+		TableName: ptr.String(regimenTableName),
 		Key: map[string]*dynamodb.AttributeValue{
 			"regimen_id": &dynamodb.AttributeValue{
 				S: ptr.String(id),
 			},
 		},
+		UpdateExpression:          ptr.String("set view_count = view_count + :inc"),
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{":inc": {N: ptr.String("1")}},
+		ReturnValues:              ptr.String("ALL_NEW"),
 	})
 
 	if err != nil {
 		return nil, false, errors.Trace(err)
 	}
 
-	if getResp.Item == nil {
+	if updateResp.Attributes == nil {
 		return nil, false, errors.Trace(api.ErrNotFound(fmt.Sprintf("Unable to locate regimen with ID with id %s", id)))
 	}
 
 	r := &svc.Regimen{}
-	if err := json.Unmarshal(getResp.Item["regimen"].B, r); err != nil {
+	if err := json.Unmarshal(updateResp.Attributes["regimen"].B, r); err != nil {
 		return nil, false, errors.Trace(err)
 	}
-	published := getResp.Item["published"].BOOL
+	published := updateResp.Attributes["published"].BOOL
 	if published == nil {
 		published = ptr.Bool(false)
 	}
+
+	vc, err := strconv.ParseInt(*updateResp.Attributes["view_count"].N, 10, 64)
+	if err != nil {
+		return nil, false, errors.Trace(err)
+	}
+	r.ViewCount = int(vc)
 
 	return r, *published, nil
 }
 
 func (s *service) PutRegimen(id string, r *svc.Regimen, published bool) error {
+	if r.ID != id {
+		return errors.Trace(fmt.Errorf("Cannot insert a regimen with an empty or mismatch ID: expected %q, found %q", id, r.ID))
+	}
+
+	if r.URL == "" {
+		return errors.Trace(fmt.Errorf("Cannot insert a regimen with an empty URL"))
+	}
+
 	regimenData, err := json.Marshal(r)
 	if err != nil {
 		return errors.Trace(err)
@@ -93,9 +109,9 @@ func (s *service) PutRegimen(id string, r *svc.Regimen, published bool) error {
 					"regimen_id": &dynamodb.AttributeValue{
 						S: ptr.String(id),
 					},
-					// TODO: We likely shouldn't pull this out of the request as it could be faked and bloat the table since it's a range key
+					// An unpublished regimen always has a view count of 0 and a published regimen should not be mutated so always PUT with a 0 value
 					"view_count": &dynamodb.AttributeValue{
-						N: ptr.String(strconv.FormatInt(int64(r.ViewCount), 10)),
+						N: ptr.String("0"),
 					},
 					"published": &dynamodb.AttributeValue{
 						BOOL: ptr.Bool(published),
@@ -177,6 +193,7 @@ func (s *service) verifyDynamo() error {
 }
 
 func (s *service) bootstrapDynamo() error {
+	golog.Infof("Bootstrapping dynamo tables...")
 	// Create the svc table that maps ids to svc indexed by the ID and view count
 	if _, err := s.dynamoClient.CreateTable(&dynamodb.CreateTableInput{
 		TableName: ptr.String(regimenTableName),
