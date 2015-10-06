@@ -7,7 +7,10 @@ import (
 	"github.com/mrjones/oauth"
 )
 
-const apiBaseURL = "http://api.v3.factual.com"
+const (
+	apiBaseURL = "http://api.v3.factual.com"
+	userAgent  = "go-factual/0.1"
+)
 
 const (
 	statusOK    = "ok"
@@ -55,6 +58,19 @@ func New(key, secret string) *Client {
 func (c *Client) get(path string, params map[string]string, res interface{}) (int, error) {
 	hres, err := c.consumer.Get(apiBaseURL+path, params, c.token)
 	if err != nil {
+		if e, ok := err.(oauth.HTTPExecuteError); ok {
+			var apiErr APIError
+			if jsonErr := json.Unmarshal(e.ResponseBodyBytes, &apiErr); jsonErr != nil {
+				return 0, err
+			}
+			switch apiErr.ErrorType {
+			case "":
+				return 0, err
+			case "NotFound":
+				return 0, ErrNotFound
+			}
+			return 0, &apiErr
+		}
 		return 0, fmt.Errorf("factual: failed to GET %s: %s", path, err)
 	}
 	defer hres.Body.Close()
@@ -64,6 +80,9 @@ func (c *Client) get(path string, params map[string]string, res interface{}) (in
 		return 0, fmt.Errorf("factual: failed to decode JSON response: %s", err)
 	}
 	if r.Status != statusOK {
+		if r.ErrorType == "NotFound" {
+			return 0, ErrNotFound
+		}
 		return 0, &APIError{ErrorType: r.ErrorType, Message: r.Message, Data: r.Data}
 	}
 	return r.Response.IncludedRows, nil

@@ -31,6 +31,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mandrill"
+	"github.com/sprucehealth/backend/libs/mcutil"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
@@ -269,9 +270,9 @@ func main() {
 				if err != nil {
 					log.Fatalf("Failed to discover memcached hosts: %s", err.Error())
 				}
-				servers = newElastiCacheServers(d)
+				servers = mcutil.NewElastiCacheServers(d)
 			} else {
-				servers = newHRWServer(m.Hosts)
+				servers = mcutil.NewHRWServer(m.Hosts)
 			}
 			memcacheCli = memcache.NewFromServers(servers)
 		}

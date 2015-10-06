@@ -2,9 +2,12 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -12,17 +15,21 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/rainycape/memcache"
 	"github.com/samuel/go-metrics/metrics"
+	"github.com/samuel/go-metrics/reporter"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/boot"
+	"github.com/sprucehealth/backend/cmd/svc/products"
 	"github.com/sprucehealth/backend/cmd/svc/regimens"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/handlers"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/factual"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mcutil"
 	"github.com/sprucehealth/backend/libs/mux"
-	"github.com/sprucehealth/backend/svc/products"
 	"github.com/sprucehealth/go-proxy-protocol/proxyproto"
 	"golang.org/x/net/context"
 )
@@ -31,10 +38,16 @@ var config struct {
 	httpAddr      string
 	proxyProtocol bool
 	webDomain     string
+	env           string
 
 	// Factual config
 	factualKey    string
 	factualSecret string
+
+	// Memcached config
+	mcDiscoveryHost     string
+	mcDiscoveryInterval time.Duration
+	mcHosts             string
 
 	// AWS config
 	awsDynamoDBEndpoint   string
@@ -46,6 +59,11 @@ var config struct {
 
 	// Regimens auth secret
 	authSecret string
+
+	// Metrics
+	metricsSource   string
+	libratoUsername string
+	libratoToken    string
 }
 
 func init() {
@@ -54,32 +72,77 @@ func init() {
 	flag.BoolVar(&config.proxyProtocol, "proxyproto", false, "enabled proxy protocol")
 	flag.StringVar(&config.authSecret, "auth.secret", "", "Secret to use in auth token generation")
 	flag.StringVar(&config.webDomain, "web.domain", "", "The web domain used for link generation")
+	flag.StringVar(&config.env, "env", "undefined", "`Environment`")
 
 	// Factual
 	flag.StringVar(&config.factualKey, "factual.key", "", "Factual API `key`")
 	flag.StringVar(&config.factualSecret, "factual.secret", "", "Factual API `secret`")
 
+	// Memcached
+	flag.StringVar(&config.mcDiscoveryHost, "mc.discovery.host", "", "ElastiCache discovery `host`")
+	flag.DurationVar(&config.mcDiscoveryInterval, "mc.discovery.internal", time.Minute*5, "ElastiCache discovery `interval`")
+	flag.StringVar(&config.mcHosts, "mc.hosts", "", "Comma separated list of memcached `hosts` when not using ElastiCache discovery")
+
 	// AWS
-	flag.StringVar(&config.awsDynamoDBEndpoint, "aws.dynamodb.endpoint", "", "AWS Dynamo DB API endpoint")
-	flag.StringVar(&config.awsDynamoDBRegion, "aws.dynamodb.region", "", "AWS Dynamo DB API region")
+	flag.StringVar(&config.awsDynamoDBEndpoint, "aws.dynamodb.endpoint", "", "AWS Dynamo DB API `endpoint`")
+	flag.StringVar(&config.awsDynamoDBRegion, "aws.dynamodb.region", "", "AWS Dynamo DB API `region`")
 	flag.BoolVar(&config.awsDynamoDBDisableSSL, "aws.dynamodb.disable.ssl", false, "Disable SSL in the AWS DynamoDB client")
 	flag.StringVar(&config.awsAccessKey, "aws.access.key", "", "AWS Credentials Access Key")
 	flag.StringVar(&config.awsSecretKey, "aws.secret.key", "", "AWS Credentials Secret Key")
 	flag.StringVar(&config.awsToken, "aws.token", "", "AWS Credentials Token")
+
+	// Metrics
+	flag.StringVar(&config.metricsSource, "metrics.source", "", "`Source` for metrics (e.g. hostname)")
+	flag.StringVar(&config.libratoUsername, "librato.username", "", "Librato metrics `username`")
+	flag.StringVar(&config.libratoToken, "librato.token", "", "Librato metrics auth `token`")
 }
 
 func main() {
 	log.SetFlags(log.Lshortfile)
 	boot.ParseFlags("REGIMENS_")
 
-	_, handler := setupRouter()
+	metricsRegistry := metrics.NewRegistry()
+	_, handler := setupRouter(metricsRegistry)
+
+	if config.metricsSource == "" {
+		hostname, err := os.Hostname()
+		if err == nil {
+			config.metricsSource = fmt.Sprintf("%s-%s-%s", config.env, "regimensapi", hostname)
+		} else {
+			config.metricsSource = "regimensapi"
+			golog.Warningf("Unable to get local hostname: %s", err)
+		}
+	}
+	metricsRegistry.Add("runtime", metrics.RuntimeMetrics)
+	if config.libratoUsername != "" && config.libratoToken != "" {
+		statsReporter := reporter.NewLibratoReporter(
+			metricsRegistry, time.Minute, true, config.libratoUsername,
+			config.libratoToken, config.metricsSource)
+		statsReporter.Start()
+		defer statsReporter.Stop()
+	}
 
 	serve(handler)
 }
 
-func setupRouter() (*mux.Router, httputil.ContextHandler) {
+func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.ContextHandler) {
+	var memcacheCli *memcache.Client
+	if config.mcDiscoveryHost != "" {
+		d, err := awsutil.NewElastiCacheDiscoverer(config.mcDiscoveryHost, config.mcDiscoveryInterval)
+		if err != nil {
+			golog.Fatalf("Failed to discover memcached hosts: %s", err.Error())
+		}
+		memcacheCli = memcache.NewFromServers(mcutil.NewElastiCacheServers(d))
+	} else if config.mcHosts != "" {
+		var hosts []string
+		for _, h := range strings.Split(config.mcHosts, ",") {
+			hosts = append(hosts, strings.TrimSpace(h))
+		}
+		memcacheCli = memcache.NewFromServers(mcutil.NewHRWServer(hosts))
+	}
+
 	dispatcher := dispatch.New()
-	productsSvc := &factualProductsService{cli: factual.New(config.factualKey, config.factualSecret)}
+	productsSvc := products.New(factual.New(config.factualKey, config.factualSecret), memcacheCli, metricsRegistry.Scope("productssvc"))
 	regimenSvc, err := regimens.New(dynamodb.New(func() *aws.Config {
 		dynamoConfig := &aws.Config{
 			Region:      &config.awsDynamoDBRegion,
@@ -131,13 +194,13 @@ func setupRouter() (*mux.Router, httputil.ContextHandler) {
 		dispatcher.PublishAsync(av)
 	}
 
-	metricsRegistry := metrics.NewRegistry()
 	router := mux.NewRouter().StrictSlash(true)
-	router.Handle("/products", handlers.NewProducts(productsSvc))
+	router.Handle("/products", handlers.NewProductsList(productsSvc))
+	router.Handle("/products/{id}", handlers.NewProducts(productsSvc))
 	router.Handle("/regimen/{id:r[0-9]+}", handlers.NewRegimen(regimenSvc, config.webDomain))
 	router.Handle("/regimen", handlers.NewRegimens(regimenSvc, config.webDomain))
 	h := httputil.LoggingHandler(router, requestLogger)
-	h = httputil.MetricsHandler(h, metricsRegistry.Scope("regimens"))
+	h = httputil.MetricsHandler(h, metricsRegistry.Scope("regimensapi"))
 	h = httputil.RequestIDHandler(h)
 	h = httputil.CompressResponse(httputil.DecompressRequest(h))
 	return router, h
@@ -175,26 +238,4 @@ func getAWSCredentials() *credentials.Credentials {
 		}
 	}
 	return creds
-}
-
-// TODO: this factual products service implementation is temporary to provide a useful stub
-
-type factualProductsService struct {
-	cli *factual.Client
-}
-
-func (s *factualProductsService) Search(query string) ([]*products.Product, error) {
-	ps, err := s.cli.QueryProducts(query)
-	if err != nil {
-		return nil, err
-	}
-	prods := make([]*products.Product, len(ps))
-	for i, p := range ps {
-		prods[i] = &products.Product{
-			ID:        p.FactualID,
-			Name:      p.ProductName,
-			ImageURLs: p.ImageURLs,
-		}
-	}
-	return prods, nil
 }

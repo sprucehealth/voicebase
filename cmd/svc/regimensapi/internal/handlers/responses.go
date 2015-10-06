@@ -7,6 +7,7 @@ type product struct {
 	Name       string   `json:"name"`
 	ImageURLs  []string `json:"image_urls"`
 	ProductURL string   `json:"product_url,omitempty"`
+	Prefetched *bool    `json:"prefetched,omitempty"`
 }
 
 type productList struct {

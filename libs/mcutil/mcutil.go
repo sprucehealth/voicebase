@@ -1,13 +1,20 @@
-package main
+package mcutil
 
 import (
 	"errors"
+	"hash"
 	"hash/fnv"
 	"sync"
 
 	"github.com/rainycape/memcache"
 	"github.com/sprucehealth/backend/libs/awsutil"
 )
+
+var fnvPool = sync.Pool{
+	New: func() interface{} {
+		return fnv.New32a()
+	},
+}
 
 type tcpAddr string
 
@@ -19,14 +26,16 @@ func (a tcpAddr) String() string {
 	return string(a)
 }
 
-type hrwServers struct {
+// HRWServers implements the highest random weight (aka rendezvous) hashing algorithm for picking cache servers.
+type HRWServers struct {
 	hosts   []*memcache.Addr
 	hostMap map[int32]*memcache.Addr
 	mu      sync.RWMutex
 }
 
-func newHRWServer(hosts []string) *hrwServers {
-	hs := &hrwServers{}
+// NewHRWServer returns a new HRWServers with the provided host list.
+func NewHRWServer(hosts []string) *HRWServers {
+	hs := &HRWServers{}
 	hs.SetHosts(hosts)
 	return hs
 }
@@ -35,17 +44,19 @@ func newHRWServer(hosts []string) *hrwServers {
 // instance, based on the given key using Highest Random Weight
 // (aka Rendezvous hashing).
 // http://www.eecs.umich.edu/techreports/cse/96/CSE-TR-316-96.pdf
-func (hs *hrwServers) PickServer(key string) (*memcache.Addr, error) {
+func (hs *HRWServers) PickServer(key string) (*memcache.Addr, error) {
 	hs.mu.RLock()
 	hm := hs.hostMap
 	hs.mu.RUnlock()
 	if len(hm) == 0 {
-		return nil, errors.New("no memcached hosts")
+		return nil, errors.New("mcutil: no memcached hosts")
 	}
 
-	h := fnv.New32a()
+	h := fnvPool.Get().(hash.Hash32)
 	h.Write([]byte(key))
 	d := int32(h.Sum32())
+	h.Reset()
+	fnvPool.Put(h)
 
 	var max int
 	var addr *memcache.Addr
@@ -61,37 +72,42 @@ func (hs *hrwServers) PickServer(key string) (*memcache.Addr, error) {
 }
 
 // Servers returns all the servers available.
-func (hs *hrwServers) Servers() ([]*memcache.Addr, error) {
+func (hs *HRWServers) Servers() ([]*memcache.Addr, error) {
 	hs.mu.RLock()
 	hosts := hs.hosts
 	hs.mu.RUnlock()
 	return hosts, nil
 }
 
-func (hs *hrwServers) SetHosts(hosts []string) {
+// SetHosts updates the list of cache hosts.
+func (hs *HRWServers) SetHosts(hosts []string) {
 	addrs := hostsToMCAddr(hosts)
 	hostMap := make(map[int32]*memcache.Addr, len(addrs))
+	h := fnvPool.Get().(hash.Hash32)
 	for _, a := range addrs {
-		h := fnv.New32a()
 		h.Write([]byte(a.String()))
 		hostMap[int32(h.Sum32())] = a
+		h.Reset()
 	}
+	fnvPool.Put(h)
 	hs.mu.Lock()
 	hs.hosts = addrs
 	hs.hostMap = hostMap
 	hs.mu.Unlock()
 }
 
-type elastiCacheServers struct {
-	*hrwServers
+// ElastiCacheServers implements host discovery for ElastiCache. It uses HRW to pick servers.
+type ElastiCacheServers struct {
+	*HRWServers
 	d      *awsutil.ElastiCacheDiscoverer
 	ch     chan []string
 	stopCh chan bool
 }
 
-func newElastiCacheServers(d *awsutil.ElastiCacheDiscoverer) *elastiCacheServers {
-	ecs := &elastiCacheServers{
-		hrwServers: newHRWServer(d.Hosts()),
+// NewElastiCacheServers returns a new ElasticCacheServers picker using the provided discoverer.
+func NewElastiCacheServers(d *awsutil.ElastiCacheDiscoverer) *ElastiCacheServers {
+	ecs := &ElastiCacheServers{
+		HRWServers: NewHRWServer(d.Hosts()),
 		d:          d,
 		ch:         make(chan []string, 1),
 		stopCh:     make(chan bool),
@@ -101,16 +117,18 @@ func newElastiCacheServers(d *awsutil.ElastiCacheDiscoverer) *elastiCacheServers
 	return ecs
 }
 
-func (ecs *elastiCacheServers) Stop() {
+// Stop terminates the server discovery
+func (ecs *ElastiCacheServers) Stop() {
 	close(ecs.stopCh)
 	ecs.d.Stop()
 }
 
-func (ecs *elastiCacheServers) Update() {
+// Update forces an update of cache servers
+func (ecs *ElastiCacheServers) Update() {
 	ecs.d.Update()
 }
 
-func (ecs *elastiCacheServers) loop() {
+func (ecs *ElastiCacheServers) loop() {
 	for {
 		select {
 		case hosts := <-ecs.ch:
