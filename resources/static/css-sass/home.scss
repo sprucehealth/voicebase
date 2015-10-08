@@ -112,25 +112,6 @@ label {
 	top: 80px;
 	left: 21px;
 }
-.devices {
-	text-align: center;
-}
-.devices img {
-	width: 979px;
-	height: 371px;
-}
-@media screen and (max-width: $phone-max-width)  {
-	.devices img {
-		width: 244px;
-		height: 92px;
-	}
-}
-@media screen and (max-width: $tablet-max-width) {
-	.devices img {
-		width: 489px;
-		height: 185px;
-	}
-}
 #footer {
 	@include font-500();
 	@include fontSize-micro();
