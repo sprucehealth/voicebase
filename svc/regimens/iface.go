@@ -15,7 +15,7 @@ type ProductSection struct {
 // Product represent the data associated with a given product in a regimen
 type Product struct {
 	ID         string `json:"id"`
-	Title      string `json:"title"`
+	Name       string `json:"name"`
 	ImageURL   string `json:"image_url"`
 	ProductURL string `json:"product_url"`
 }
