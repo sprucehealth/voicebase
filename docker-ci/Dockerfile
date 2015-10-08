@@ -15,7 +15,7 @@ RUN cd /usr/local && \
 ADD https://dl.bintray.com/mitchellh/consul/0.5.2_linux_amd64.zip /usr/local/bin/
 RUN cd /usr/local/bin ; unzip 0.5.2_linux_amd64.zip
 RUN cd /usr/local && \
-	curl -s https://nodejs.org/dist/latest/node-v4.1.1-linux-x64.tar.gz | tar -zxf - && \
+	curl -s http://carefront-packages.s3.amazonaws.com/node-v4.1.2-linux-x64.tar.gz | tar -zxf - && \
 	ln -s /usr/local/node-v4.1.1-linux-x64/bin/node /usr/local/bin/node && \
 	ln -s /usr/local/node-v4.1.1-linux-x64/bin/npm /usr/local/bin/npm
 COPY ./my.cnf /etc/mysql/my.cnf
