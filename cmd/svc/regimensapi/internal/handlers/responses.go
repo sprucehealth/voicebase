@@ -30,3 +30,11 @@ type regimenPUTResponse struct {
 type regimenPOSTRequest regimenPUTRequest
 
 type regimenPOSTResponse regimenPUTResponse
+
+type regimensGETRequest struct {
+	Query string `schema:"q,required"`
+}
+
+type regimensGETResponse struct {
+	Regimens []*regimens.Regimen `json:"regimens"`
+}

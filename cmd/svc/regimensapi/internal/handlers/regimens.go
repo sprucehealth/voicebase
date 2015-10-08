@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/svc/regimens"
+	"github.com/sprucehealth/schema"
 	"golang.org/x/net/context"
 )
 
@@ -27,11 +28,18 @@ func NewRegimens(svc regimens.Service, webDomain string) httputil.ContextHandler
 	return httputil.SupportedMethods(&regimensHandler{
 		svc:       svc,
 		webDomain: webDomain,
-	}, httputil.Post)
+	}, httputil.Get, httputil.Post)
 }
 
 func (h *regimensHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
+	case httputil.Get:
+		rd, err := h.parseGETRequest(ctx, r)
+		if err != nil {
+			apiservice.WriteBadRequestError(ctx, err, w, r)
+			return
+		}
+		h.serveGET(ctx, w, r, rd)
 	case httputil.Post:
 		rd, err := h.parsePOSTRequest(ctx, r)
 		if err != nil {
@@ -40,6 +48,46 @@ func (h *regimensHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 		}
 		h.servePOST(ctx, w, r, rd)
 	}
+}
+
+func (h *regimensHandler) parseGETRequest(ctx context.Context, r *http.Request) (*regimensGETRequest, error) {
+	rd := &regimensGETRequest{}
+	if err := r.ParseForm(); err != nil {
+		return nil, err
+	}
+
+	if err := schema.NewDecoder().Decode(rd, r.Form); err != nil {
+		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
+	}
+
+	return rd, nil
+}
+
+func (h *regimensHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *regimensGETRequest) {
+	tags := strings.Fields(rd.Query)
+	for i, t := range tags {
+		tags[i] = strings.ToLower(t)
+	}
+
+	// If there are no tags return an empty result
+	if len(tags) == 0 {
+		httputil.JSONResponse(w, http.StatusOK, &regimensGETResponse{})
+		return
+	}
+
+	// Arbitrarily limit this till we understand the implications of tag filtering
+	if len(tags) > 5 {
+		apiservice.WriteBadRequestError(ctx, fmt.Errorf("A maximum number of 5 tags can be used in a single query. %d provided", len(tags)), w, r)
+		return
+	}
+
+	regimens, err := h.svc.TagQuery(tags)
+	if err != nil {
+		apiservice.WriteError(ctx, err, w, r)
+		return
+	}
+
+	httputil.JSONResponse(w, http.StatusOK, &regimensGETResponse{Regimens: regimens})
 }
 
 func (h *regimensHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*regimenPOSTRequest, error) {
@@ -192,6 +240,9 @@ func (h *regimenHandler) parsePUTRequest(ctx context.Context, r *http.Request) (
 
 func (h *regimenHandler) servePUT(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *regimenPUTRequest, resourceID string) {
 	authToken := r.Header.Get("token")
+	for i, t := range rd.Regimen.Tags {
+		rd.Regimen.Tags[i] = strings.ToLower(t)
+	}
 	rd.Regimen.ID = resourceID
 	rd.Regimen.URL = regimenURL(h.webDomain, resourceID)
 	if err := h.svc.PutRegimen(resourceID, rd.Regimen, rd.Publish); err != nil {

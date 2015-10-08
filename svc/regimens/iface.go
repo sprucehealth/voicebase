@@ -33,10 +33,26 @@ type Regimen struct {
 	ProductSections []ProductSection `json:"product_sections"`
 }
 
+// ByViewCount is a utility struct used to sort lists of regimens by view counts
+type ByViewCount []*Regimen
+
+func (s ByViewCount) Len() int {
+	return len(s)
+}
+
+func (s ByViewCount) Less(i, j int) bool {
+	return s[i].ViewCount < s[j].ViewCount
+}
+
+func (s ByViewCount) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
 // Service defines the methods required to interact with the data later of the regimens system
 type Service interface {
-	Regimen(id string) (*Regimen, bool, error)
-	PutRegimen(id string, r *Regimen, published bool) error
-	CanAccessResource(resourceID, authToken string) (bool, error)
 	AuthorizeResource(resourceID string) (string, error)
+	CanAccessResource(resourceID, authToken string) (bool, error)
+	PutRegimen(id string, r *Regimen, published bool) error
+	Regimen(id string) (*Regimen, bool, error)
+	TagQuery(tags []string) ([]*Regimen, error)
 }
