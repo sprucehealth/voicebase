@@ -38,3 +38,13 @@ type regimensGETRequest struct {
 type regimensGETResponse struct {
 	Regimens []*regimens.Regimen `json:"regimens"`
 }
+
+type mediaPOSTResponse struct {
+	MediaID  uint64 `json:"id,string"`
+	MediaURL string `json:"url"`
+}
+
+type mediaGETRequest struct {
+	Width  int `schema:"width"`
+	Height int `schema:"height"`
+}

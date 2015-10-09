@@ -12,7 +12,8 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
-const jpegQuality = 95
+// JPEGQuality represents the quality at which to store/resize JPEG images
+const JPEGQuality = 95
 
 var resizeFilter = rez.NewLanczosFilter(3)
 
@@ -112,7 +113,8 @@ func resizeImage(img image.Image, width, height int) (image.Image, error) {
 	return resizedImg, nil
 }
 
-func resizeImageFromReader(r io.Reader, width, height int) (image.Image, error) {
+// ResizeImageFromReader takes the provided reader and resizes the image it is reading
+func ResizeImageFromReader(r io.Reader, width, height int) (image.Image, error) {
 	img, ex, err := decodeImageAndExif(r)
 	if err != nil {
 		return nil, err

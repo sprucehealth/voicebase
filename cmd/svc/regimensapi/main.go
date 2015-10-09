@@ -30,6 +30,7 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mcutil"
 	"github.com/sprucehealth/backend/libs/mux"
+	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/go-proxy-protocol/proxyproto"
 	"golang.org/x/net/context"
 )
@@ -43,6 +44,13 @@ var config struct {
 	// Factual config
 	factualKey    string
 	factualSecret string
+
+	// Media
+	mediaStorageType      string
+	mediaS3Bucket         string
+	mediaS3Prefix         string
+	mediaS3LatchedExpire  bool
+	mediaLocalStoragePath string
 
 	// Memcached config
 	mcDiscoveryHost     string
@@ -77,6 +85,13 @@ func init() {
 	// Factual
 	flag.StringVar(&config.factualKey, "factual.key", "", "Factual API `key`")
 	flag.StringVar(&config.factualSecret, "factual.secret", "", "Factual API `secret`")
+
+	// Media
+	flag.StringVar(&config.mediaStorageType, "media.storage.type", "local", "Storage type for regimen media")
+	flag.StringVar(&config.mediaS3Bucket, "media.s3.bucket", "", "S3 Bucket for media storage")
+	flag.StringVar(&config.mediaS3Prefix, "media.s3.prefix", "", "S3 path prefix for media storage")
+	flag.BoolVar(&config.mediaS3LatchedExpire, "media.s3.latched.expire", true, "S3 configuration for latch expiration")
+	flag.StringVar(&config.mediaLocalStoragePath, "media.local.path", "/tmp", "Local path to use when doing local media storage")
 
 	// Memcached
 	flag.StringVar(&config.mcDiscoveryHost, "mc.discovery.host", "", "ElastiCache discovery `host`")
@@ -195,6 +210,9 @@ func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.Contex
 	}
 
 	router := mux.NewRouter().StrictSlash(true)
+	mediaHandler := handlers.NewMedia(config.webDomain, getMediaStore(), metricsRegistry.Scope("media"))
+	router.Handle("/media", mediaHandler)
+	router.Handle("/media/{id:[0-9]+}", mediaHandler)
 	router.Handle("/products", handlers.NewProductsList(productsSvc))
 	router.Handle("/products/{id}", handlers.NewProducts(productsSvc))
 	router.Handle("/regimen/{id:r[0-9]+}", handlers.NewRegimen(regimenSvc, config.webDomain))
@@ -238,4 +256,25 @@ func getAWSCredentials() *credentials.Credentials {
 		}
 	}
 	return creds
+}
+
+func getMediaStore() storage.DeterministicStore {
+	switch strings.ToLower(config.mediaStorageType) {
+	default:
+		log.Fatalf("Unknown media storage type %s", config.mediaStorageType)
+	case "s3":
+		store := storage.NewS3(&aws.Config{Credentials: getAWSCredentials()}, config.mediaS3Bucket, config.mediaS3Prefix)
+		store.LatchedExpire(config.mediaS3LatchedExpire)
+		return store
+	case "local":
+		store, err := storage.NewLocalStore(config.mediaLocalStoragePath)
+		if err != nil {
+			log.Fatalf("Failed to create local media store: %s", err)
+		}
+		return store.(storage.DeterministicStore)
+	case "memory":
+		return storage.NewTestStore(nil)
+	}
+	log.Fatal("Failed to determine a media store")
+	return nil
 }

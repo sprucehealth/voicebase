@@ -198,7 +198,7 @@ func (h *handler) get(ctx context.Context, w http.ResponseWriter, r *http.Reques
 	defer rc.Close()
 
 	resizeStartTime := time.Now()
-	resizedImg, err := resizeImageFromReader(rc, req.Width, req.Height)
+	resizedImg, err := ResizeImageFromReader(rc, req.Width, req.Height)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
@@ -217,7 +217,7 @@ func (h *handler) get(ctx context.Context, w http.ResponseWriter, r *http.Reques
 	writeStartTime := time.Now()
 	buf := &bytes.Buffer{}
 	if err := jpeg.Encode(buf, resizedImg, &jpeg.Options{
-		Quality: jpegQuality,
+		Quality: JPEGQuality,
 	}); err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
