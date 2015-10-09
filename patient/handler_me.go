@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/auth"
+	"github.com/sprucehealth/backend/feedback"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -14,8 +15,9 @@ import (
 )
 
 type meHandler struct {
-	dataAPI    api.DataAPI
-	dispatcher *dispatch.Dispatcher
+	dataAPI        api.DataAPI
+	feedbackClient feedback.DAL
+	dispatcher     *dispatch.Dispatcher
 }
 
 type meResponse struct {
@@ -24,13 +26,15 @@ type meResponse struct {
 	ActionsNeeded []*ActionNeeded    `json:"actions_needed,omitempty"`
 }
 
-func NewMeHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
+// NewMeHandler exposes a handler to get patient information for provided token.
+func NewMeHandler(dataAPI api.DataAPI, feedbackClient feedback.DAL, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(
 				&meHandler{
-					dataAPI:    dataAPI,
-					dispatcher: dispatcher,
+					dataAPI:        dataAPI,
+					feedbackClient: feedbackClient,
+					dispatcher:     dispatcher,
 				}),
 			api.RolePatient),
 		httputil.Get)
@@ -55,7 +59,7 @@ func (m *meHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *htt
 		Token:   token,
 	}
 
-	if showFeedback(m.dataAPI, patient.ID) {
+	if showFeedback(m.dataAPI, m.feedbackClient, patient.ID) {
 		res.ActionsNeeded = append(res.ActionsNeeded, &ActionNeeded{Type: actionNeededSimpleFeedbackPrompt})
 	}
 

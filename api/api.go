@@ -882,12 +882,6 @@ type TextAPI interface {
 	UpdateLocalizedText(langID int64, tagText map[string]string) error
 }
 
-type PatientFeedbackAPI interface {
-	PatientFeedbackRecorded(patientID common.PatientID, feedbackFor string) (bool, error)
-	RecordPatientFeedback(patientID common.PatientID, feedbackFor string, rating int, comment *string) error
-	PatientFeedback(feedbackFor string) ([]*common.PatientFeedback, error)
-}
-
 // ParentalConsentProof represents the photoIDs for
 // ID verification. If anything is added to this struct/table then
 // the IsComplete method must be updated.
@@ -955,7 +949,6 @@ type DataAPI interface {
 	DrugAPI
 	EmailAPI
 	FavoriteTreatmentPlanAPI
-	PatientFeedbackAPI
 	FormAPI
 	GeoAPI
 	IntakeAPI

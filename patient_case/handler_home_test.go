@@ -19,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/features"
+	"github.com/sprucehealth/backend/feedback"
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 )
@@ -182,6 +183,20 @@ func (s *stubReferralProgram) ReferredAccountSubmittedVisit(accountID, codeID in
 func (s *stubReferralProgram) UsersAssociatedCount() int { return 0 }
 func (s *stubReferralProgram) VisitsSubmittedCount() int { return 0 }
 
+type mockFeedbackClient_home struct {
+	feedback.DAL
+
+	deleteFeedackFor string
+}
+
+func (m *mockFeedbackClient_home) PatientFeedback(feedbackFor string) (*feedback.PatientFeedback, error) {
+	return nil, nil
+}
+func (m *mockFeedbackClient_home) UpdatePatientFeedback(feedbackFor string, update *feedback.PatientFeedbackUpdate) error {
+	m.deleteFeedackFor = feedbackFor
+	return nil
+}
+
 // Test the state of the home cards for an unauthenticated user
 // in whose state Spruce is available.
 // Expected home cards:
@@ -189,11 +204,12 @@ func (s *stubReferralProgram) VisitsSubmittedCount() int { return 0 }
 // 2. Learn about spruce section
 func TestHome_UnAuthenticated_Eligible(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors(t)
-
 	dataAPI.isElligible = true
 
+	m := &mockFeedbackClient_home{}
+
 	// lookup unauthenticated by zipcode
-	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, m, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	w := httptest.NewRecorder()
@@ -223,9 +239,10 @@ func TestHome_UnAuthenticated_Ineligible(t *testing.T) {
 	// yet signed up to be notified when spruce is available in their state
 	dataAPI.isElligible = false
 	dataAPI.formEntryExists = false
+	m := &mockFeedbackClient_home{}
 
 	// lookup unauthenticated by zipcode
-	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, m, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	setRequestHeaders(r)
 
@@ -262,8 +279,10 @@ func TestHome_UnAuthenticated_Ineligible_NotifyConfirmation(t *testing.T) {
 	dataAPI.isElligible = false
 	dataAPI.formEntryExists = true
 
+	m := &mockFeedbackClient_home{}
+
 	// lookup unauthenticated by zipcode
-	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, m, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -292,8 +311,9 @@ func TestHome_UnAuthenticated_Ineligible_NotifyConfirmation(t *testing.T) {
 // 3. Learn about spruce section
 func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors(t)
+	m := &mockFeedbackClient_home{}
 
-	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, m, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -382,7 +402,9 @@ func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 // 3. Learn about spruce section
 func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors(t)
-	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
+	m := &mockFeedbackClient_home{}
+
+	h := NewHomeHandler(dataAPI, m, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -480,7 +502,9 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 func TestHome_Authenticated_CaseTriaged(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors(t)
 	dataAPI.patientZipcode = "94115"
-	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
+	m := &mockFeedbackClient_home{}
+
+	h := NewHomeHandler(dataAPI, m, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -568,8 +592,9 @@ func TestHome_Authenticated_CaseTriaged(t *testing.T) {
 // 2. Referral card
 func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors(t)
+	m := &mockFeedbackClient_home{}
 
-	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, m, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -655,8 +680,9 @@ func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 // 2. Referral Card
 func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors(t)
+	m := &mockFeedbackClient_home{}
 
-	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, m, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -752,8 +778,9 @@ func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 // 2. Referral Card
 func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors(t)
+	m := &mockFeedbackClient_home{}
 
-	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, m, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -845,8 +872,9 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 // 2. Referral Card
 func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors(t)
+	m := &mockFeedbackClient_home{}
 
-	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, m, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -949,8 +977,9 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 // 2. Referral Card
 func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors(t)
+	m := &mockFeedbackClient_home{}
 
-	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, m, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -1053,8 +1082,9 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 // 3. Referral card
 func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors(t)
+	m := &mockFeedbackClient_home{}
 
-	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, m, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -1167,8 +1197,9 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 // 3. Referral Card
 func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors(t)
+	m := &mockFeedbackClient_home{}
 
-	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, m, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -1284,8 +1315,9 @@ func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 // 2. Referral card
 func TestHome_Authenticated_NoUpdates(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors(t)
+	m := &mockFeedbackClient_home{}
 
-	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, m, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -1367,8 +1399,9 @@ func TestHome_Authenticated_NoUpdates(t *testing.T) {
 // 2. Referral Card
 func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors(t)
+	m := &mockFeedbackClient_home{}
 
-	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, m, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -1468,8 +1501,9 @@ func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 // 2. Referral Card
 func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors(t)
+	m := &mockFeedbackClient_home{}
 
-	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, m, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -1588,8 +1622,9 @@ func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 // 2. 2.0.2 Referral Card
 func TestHome_Authenticated_CompletedCase_ReferAFriend_2_0_2(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors(t)
+	m := &mockFeedbackClient_home{}
 
-	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, m, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -1711,8 +1746,9 @@ func TestHome_Authenticated_CompletedCase_ReferAFriend_2_0_2(t *testing.T) {
 // 3. Learn about spruce section
 func TestHome_MultipleCases_Incomplete(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors(t)
+	m := &mockFeedbackClient_home{}
 
-	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, m, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -1840,8 +1876,9 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 // 3. Refer Spruce card
 func TestHome_MultipleCases_TPPending(t *testing.T) {
 	dataAPI, addressAPI := setupMockAccessors(t)
+	m := &mockFeedbackClient_home{}
 
-	h := NewHomeHandler(dataAPI, "api.spruce.local", "www.spruce.local", addressAPI)
+	h := NewHomeHandler(dataAPI, m, "api.spruce.local", "www.spruce.local", addressAPI)
 	r, err := http.NewRequest("GET", "/?zip_code=94115", nil)
 	test.OK(t, err)
 	setRequestHeaders(r)
@@ -1965,6 +2002,19 @@ func TestHome_MultipleCases_TPPending(t *testing.T) {
 	testCaseCard(t, items[0].(map[string]interface{}), dataAPI.patientCases[0], fmt.Sprintf("With %s", doctorDisplayName1))
 	testCaseCard(t, items[1].(map[string]interface{}), dataAPI.patientCases[1], fmt.Sprintf("With %s", doctorDisplayName2))
 	testShareSpruceSection(t, items[2].(map[string]interface{}))
+}
+
+func TestHome_CardDismiss(t *testing.T) {
+	m := &mockFeedbackClient_home{}
+	h := NewHomeHandler(nil, m, "api.spruce.local", "www.spruce.local", nil)
+	r, err := http.NewRequest("DELETE", "/?id=case:12345", nil)
+	test.OK(t, err)
+	w := httptest.NewRecorder()
+	ctx := testContext(api.RolePatient, 1, []string{features.OldRAFHomeCard})
+
+	h.ServeHTTP(ctx, w, r)
+	test.Equals(t, http.StatusOK, w.Code)
+	test.Equals(t, "case:12345", m.deleteFeedackFor)
 }
 
 func setRequestHeaders(r *http.Request) {

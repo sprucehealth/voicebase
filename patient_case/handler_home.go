@@ -7,12 +7,15 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/feedback"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"golang.org/x/net/context"
 )
 
 type homeHandler struct {
 	dataAPI              api.DataAPI
+	feedbackClient       feedback.DAL
 	apiCDNDomain         string
 	webDomain            string
 	addressValidationAPI address.Validator
@@ -23,17 +26,40 @@ type homeResponse struct {
 	Items            []common.ClientView `json:"items"`
 }
 
-func NewHomeHandler(dataAPI api.DataAPI, apiCDNDomain, webDomain string, addressValidationAPI address.Validator) httputil.ContextHandler {
+func NewHomeHandler(dataAPI api.DataAPI, feedbackClient feedback.DAL, apiCDNDomain, webDomain string, addressValidationAPI address.Validator) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(&homeHandler{
 			dataAPI:              dataAPI,
+			feedbackClient:       feedbackClient,
 			apiCDNDomain:         apiCDNDomain,
 			webDomain:            webDomain,
 			addressValidationAPI: addressValidationAPI,
-		}), httputil.Get)
+		}), httputil.Get, httputil.Delete)
 }
 
 func (h *homeHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case httputil.Get:
+		h.get(ctx, w, r)
+	case httputil.Delete:
+		h.delete(ctx, w, r)
+	}
+}
+
+func (h *homeHandler) delete(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	id := r.FormValue("id")
+
+	if err := h.feedbackClient.UpdatePatientFeedback(id, &feedback.PatientFeedbackUpdate{
+		Dismissed: ptr.Bool(true),
+	}); err != nil {
+		apiservice.WriteError(ctx, err, w, r)
+		return
+	}
+
+	apiservice.WriteJSONSuccess(w)
+}
+
+func (h *homeHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	// use stateCode or resolve zipcode to city/state information
 	zipcode := r.FormValue("zip_code")
 	stateCode := r.FormValue("state_code")
@@ -75,7 +101,7 @@ func (h *homeHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *h
 	if !ok {
 		// Not authenticated
 
-		items, err := getHomeCards(ctx, nil, nil, cityStateInfo, isSpruceAvailable, h.dataAPI, h.apiCDNDomain, h.webDomain, r)
+		items, err := getHomeCards(ctx, nil, nil, cityStateInfo, isSpruceAvailable, h.dataAPI, h.feedbackClient, h.apiCDNDomain, h.webDomain, r)
 		if err != nil {
 			apiservice.WriteError(ctx, err, w, r)
 			return
@@ -110,7 +136,7 @@ func (h *homeHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *h
 		return
 	}
 
-	items, err := getHomeCards(ctx, patient, patientCases, cityStateInfo, isSpruceAvailable, h.dataAPI, h.apiCDNDomain, h.webDomain, r)
+	items, err := getHomeCards(ctx, patient, patientCases, cityStateInfo, isSpruceAvailable, h.dataAPI, h.feedbackClient, h.apiCDNDomain, h.webDomain, r)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return

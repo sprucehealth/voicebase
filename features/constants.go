@@ -13,4 +13,6 @@ const (
 	RAFHomeCard = "raf-home-card"
 	// RXReminders is the ability to support the RX Reminders feature
 	RXReminders = "rx-reminders"
+	// FlexibleFeedback is the ability for the patient to enter structured feedback.
+	FlexibleFeedback = "flexible-feedback"
 )

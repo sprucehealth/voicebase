@@ -35,6 +35,7 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/features"
+	"github.com/sprucehealth/backend/feedback"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
@@ -106,6 +107,7 @@ type Config struct {
 	Cfg                      cfg.Store
 	ApplicationDB            *sql.DB
 	Signer                   *sig.Signer
+	FeedbackClient           feedback.DAL
 
 	mux *mux.Router
 }
@@ -155,6 +157,13 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 				"ios-patient": {MinVersion: &encoding.Version{Major: 2, Minor: 2, Patch: 0}},
 			},
 		},
+		{
+			Name: features.FlexibleFeedback,
+			AppVersions: map[string]encoding.VersionRange{
+				"ios-patient":     {MinVersion: &encoding.Version{Major: 2, Minor: 2, Patch: 0}},
+				"android-patient": {MinVersion: &encoding.Version{Major: 1, Minor: 3, Patch: 0}},
+			},
+		},
 	})
 
 	rxReminderService := rxremind.NewService(conf.DataAPI, conf.DataAPI)
@@ -181,11 +190,11 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 	authenticationRequired(conf, apipaths.PatientReplaceCardURLPath, patient.NewReplaceCardHandler(conf.DataAPI, conf.PaymentAPI))
 	authenticationRequired(conf, apipaths.PatientDefaultCardURLPath, patient.NewCardsHandler(conf.DataAPI, conf.PaymentAPI, conf.AddressValidator))
 	authenticationRequired(conf, apipaths.PatientRequestMedicalRecordURLPath, medrecord.NewRequestAPIHandler(conf.DataAPI, conf.MedicalRecordQueue))
-	authenticationRequired(conf, apipaths.LogoutURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher, conf.StaticContentURL,
+	authenticationRequired(conf, apipaths.LogoutURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.FeedbackClient, conf.Dispatcher, conf.StaticContentURL,
 		conf.RateLimiters.Get("login"), conf.MetricsRegistry.Scope("patient.auth")))
 	authenticationRequired(conf, apipaths.PatientPCPURLPath, patient.NewPCPHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.PatientEmergencyContactsURLPath, patient.NewEmergencyContactsHandler(conf.DataAPI))
-	authenticationRequired(conf, apipaths.PatientMeURLPath, patient.NewMeHandler(conf.DataAPI, conf.Dispatcher))
+	authenticationRequired(conf, apipaths.PatientMeURLPath, patient.NewMeHandler(conf.DataAPI, conf.FeedbackClient, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.PatientCareTeamURLPath, patient.NewCareTeamHandler(conf.DataAPI, conf.APICDNDomain))
 	authenticationRequired(conf, apipaths.PatientCareTeamsURLPath, patient_file.NewPatientCareTeamsHandler(conf.DataAPI, conf.APICDNDomain))
 	authenticationRequired(conf, apipaths.PatientCostURLPath, cost.NewCostHandler(conf.DataAPI, conf.AnalyticsLogger, conf.Cfg))
@@ -194,7 +203,7 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 		conf.DataAPI, conf.AuthAPI, conf.APICDNDomain, conf.WebDomain, conf.AnalyticsLogger, conf.Dispatcher, conf.AuthTokenExpiration,
 		conf.MediaStore, conf.RateLimiters.Get("patient-signup"), addressValidationAPI,
 		conf.MetricsRegistry.Scope("patient.signup")))
-	noAuthenticationRequired(conf, apipaths.PatientAuthenticateURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.Dispatcher,
+	noAuthenticationRequired(conf, apipaths.PatientAuthenticateURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.FeedbackClient, conf.Dispatcher,
 		conf.StaticContentURL, conf.RateLimiters.Get("login"), conf.MetricsRegistry.Scope("patient.auth")))
 
 	// Patient: Patient Case Related APIs
@@ -228,7 +237,7 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 	callerRoleRequired(conf, apipaths.PatientRXReminderURLPath, patient.NewRXReminderHandlerHandler(rxReminderService, treatmentPlanService, conf.DataAPI))
 
 	// Patient: Home APIs
-	noAuthenticationRequired(conf, apipaths.PatientHomeURLPath, patient_case.NewHomeHandler(conf.DataAPI, conf.APICDNDomain, conf.WebDomain, addressValidationAPI))
+	noAuthenticationRequired(conf, apipaths.PatientHomeURLPath, patient_case.NewHomeHandler(conf.DataAPI, conf.FeedbackClient, conf.APICDNDomain, conf.WebDomain, addressValidationAPI))
 	noAuthenticationRequired(conf, apipaths.PatientHowFAQURLPath, handlers.NewPatientFAQHandler(conf.StaticContentURL))
 	noAuthenticationRequired(conf, apipaths.PatientPricingFAQURLPath, handlers.NewPricingFAQHandler(conf.StaticContentURL))
 	noAuthenticationRequired(conf, apipaths.PatientFeaturedDoctorsURLPath, handlers.NewFeaturedDoctorsHandler(conf.StaticContentURL))
@@ -238,7 +247,7 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 
 	// Doctor: Case APIs
 	authenticationRequired(conf, apipaths.CaseNotesURLPath, patient_case.NewPatientCaseNoteHandler(conf.DataAPI, conf.APIDomain))
-	authenticationRequired(conf, apipaths.CasePatientFeedbackURLPath, patient_case.NewPatientFeedbackHandler(conf.DataAPI))
+	authenticationRequired(conf, apipaths.CasePatientFeedbackURLPath, patient_case.NewPatientFeedbackHandler(conf.FeedbackClient))
 
 	// Patient: Case APIs
 	authenticationRequired(conf, apipaths.PatientCaseNotificationsURLPath, patient_case.NewNotificationsListHandler(conf.DataAPI, conf.APICDNDomain))
@@ -305,7 +314,7 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 	authenticationRequired(conf, apipaths.DoctorTokensURLPath, doctor_treatment_plan.NewDoctorTokensHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.DoctorPatientCapabilities, patient_file.NewPatientCapabilitiesHandler(conf.DataAPI, conf.AuthAPI, appFeatures))
 	// Patient Feedback
-	authenticationRequired(conf, apipaths.PatientFeedbackURLPath, patient.NewFeedbackHandler(conf.DataAPI, taggingClient, conf.Cfg))
+	authenticationRequired(conf, apipaths.PatientFeedbackURLPath, patient.NewFeedbackHandler(conf.DataAPI, conf.FeedbackClient, taggingClient, conf.Cfg))
 	authenticationRequired(conf, apipaths.PatientFeedbackPromptURLPath, patient.NewFeedbackPromptHandler(conf.DataAPI))
 
 	// Care Provider URLs

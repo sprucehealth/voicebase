@@ -106,14 +106,22 @@ var AdminRouter = Backbone.Router.extend({
 			this.current = "carecoordinator";
 			this.params = {page: "tags_"+page};
 		},
-		"marketing/:page": function(page) {
+		"marketing/promotions/feedback/:page": function(page) {
 			this.current = "marketing";
 			this.params = {page: page};
+		},
+		"marketing/promotions/feedback/:page/:id": function(page, id) {
+			this.current = "marketing";
+			this.params = {page: page, templateID: id};
 		},
 		"marketing/promotions/:page": function(page) {
 			this.current = "marketing";
 			this.params = {page: page};
 		},
+		"marketing/:page": function(page) {
+			this.current = "marketing";
+			this.params = {page: page};
+		}
 	}
 });
 
@@ -245,7 +253,7 @@ var Admin = React.createClass({displayName: "Admin",
 			return <CareCoordinator.Page router={this.props.router} page={this.props.router.params.page} accountID={this.props.router.params.accountID} />;
 		},
 		marketing: function() {
-			return <Marketing.Page router={this.props.router} page={this.props.router.params.page} />;
+			return <Marketing.Page router={this.props.router} page={this.props.router.params.page} templateID={this.props.router.params.templateID} />;
 		},
 		settings: function() {
 			return <Settings.Page router={this.props.router} page={this.props.router.params.page} />;

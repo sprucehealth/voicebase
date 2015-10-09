@@ -11,6 +11,7 @@ module.exports = {
 				React.PropTypes.string,
 				React.PropTypes.number
 			]),
+			disabled: React.PropTypes.bool,
 			opts: React.PropTypes.arrayOf(React.PropTypes.shape({
 				name: React.PropTypes.string.isRequired,
 				value: React.PropTypes.oneOfType([
@@ -27,7 +28,7 @@ module.exports = {
 			return (
 				<div className="form-group">
 					{this.props.label ? <span><label className="control-label" htmlFor={this.props.name}>{this.props.label}</label><br /></span> : null}
-					<select name={this.props.name} className="form-control" value={this.props.value} onChange={this.props.onChange}>
+					<select name={this.props.name} className="form-control" value={this.props.value} onChange={this.props.onChange} disabled={this.props.disabled ? "true" : null} >
 						{this.props.opts.map(function(opt) {
 							return <option key={"select-value-" + opt.value} value={opt.value}>{opt.name}</option>
 						}.bind(this))}
@@ -72,7 +73,8 @@ module.exports = {
 			placeholder: React.PropTypes.string,
 			required: React.PropTypes.bool,
 			onChange: React.PropTypes.func,
-			onKeyDown: React.PropTypes.func
+			onKeyDown: React.PropTypes.func,
+			disabled: React.PropTypes.bool,
 		},
 		getDefaultProps: function(): any {
 			return {
@@ -84,7 +86,7 @@ module.exports = {
 			return (
 				<div className="form-group">
 					{this.props.label ? <label className="control-label" htmlFor={this.props.name}>{this.props.label}</label> : null}
-					<input required={this.props.required ? "true" : null} type={this.props.type} className="form-control section-name"
+					<input required={this.props.required ? "true" : null} disabled={this.props.disabled ? "true" : null} type={this.props.type} className="form-control section-name"
 						placeholder={this.props.placeholder} name={this.props.name} value={this.props.value}
 						onKeyDown={this.props.onKeyDown} onChange={this.props.onChange} />
 				</div>

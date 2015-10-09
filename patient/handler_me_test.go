@@ -8,6 +8,8 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/feedback"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"golang.org/x/net/context"
 )
@@ -18,16 +20,27 @@ func init() {
 
 type mockAPIMeHandler struct {
 	api.DataAPI
-	feedbackRecorded bool
-	tp               []*common.TreatmentPlan
+
+	tp []*common.TreatmentPlan
+}
+
+type mockFeedbackClient_Me struct {
+	feedback.DAL
+	feedbackRecorded     bool
+	pendingRecordCreated bool
+}
+
+func (m *mockFeedbackClient_Me) PatientFeedbackRecorded(patientID common.PatientID, feedbackFor string) (bool, error) {
+	return m.feedbackRecorded, nil
+}
+
+func (m *mockFeedbackClient_Me) CreatePendingPatientFeedback(patientID common.PatientID, feedbackFor string) error {
+	m.pendingRecordCreated = true
+	return nil
 }
 
 func (m *mockAPIMeHandler) GetPatientFromAccountID(accountID int64) (*common.Patient, error) {
 	return &common.Patient{AccountID: encoding.DeprecatedNewObjectID(1), ID: common.NewPatientID(1)}, nil
-}
-
-func (m *mockAPIMeHandler) PatientFeedbackRecorded(patientID common.PatientID, feedbackFor string) (bool, error) {
-	return m.feedbackRecorded, nil
 }
 
 func (m *mockAPIMeHandler) GetActiveTreatmentPlansForPatient(patientID common.PatientID) ([]*common.TreatmentPlan, error) {
@@ -35,9 +48,10 @@ func (m *mockAPIMeHandler) GetActiveTreatmentPlansForPatient(patientID common.Pa
 }
 
 func TestMeHandlerFeedback(t *testing.T) {
+	conc.Testing = true
 	mockAPI := &mockAPIMeHandler{}
-	handler := NewMeHandler(mockAPI, dispatch.New())
-
+	fClient := &mockFeedbackClient_Me{}
+	handler := NewMeHandler(mockAPI, fClient, dispatch.New())
 	ctx := apiservice.CtxWithAccount(context.Background(), &common.Account{Role: api.RolePatient, ID: 1})
 
 	// No treatment plans so shouldn't show feedback
@@ -86,10 +100,14 @@ func TestMeHandlerFeedback(t *testing.T) {
 	if res.ActionsNeeded[0].Type != actionNeededSimpleFeedbackPrompt {
 		t.Fatalf("Expected action needed of '%s', got '%s'", actionNeededSimpleFeedbackPrompt, res.ActionsNeeded[0].Type)
 	}
+	if !fClient.pendingRecordCreated {
+		t.Fatal("Expected a pending record for feedback to be created but none was")
+	}
 
 	// Shouldn't show feedback prompt is already recorded
 
-	mockAPI.feedbackRecorded = true
+	fClient.feedbackRecorded = true
+	fClient.pendingRecordCreated = false
 
 	res = meResponse{}
 	req = newJSONTestRequest("GET", "/", nil)
@@ -100,5 +118,8 @@ func TestMeHandlerFeedback(t *testing.T) {
 	}
 	if len(res.ActionsNeeded) != 0 {
 		t.Fatalf("Expected no actions needed, got %d", len(res.ActionsNeeded))
+	}
+	if fClient.pendingRecordCreated {
+		t.Fatal("Expected no pending record to be created but one weas q")
 	}
 }

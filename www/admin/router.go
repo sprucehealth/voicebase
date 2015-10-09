@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/events"
+	"github.com/sprucehealth/backend/feedback"
 	"github.com/sprucehealth/backend/financial"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/erx"
@@ -499,6 +500,31 @@ func SetupRoutes(r *mux.Router, config *Config) {
 			httputil.Post: []string{PermMarketingEdit},
 			httputil.Put:  []string{PermMarketingEdit},
 		}, newReferralProgramTemplateHandler(config.DataAPI), nil)))
+
+	// Feedback templates
+	r.Handle("/admin/api/feedback/template_types", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Get: []string{PermMarketingView},
+		}, newFeedbackTemplateTypesHandler(), nil)))
+
+	feedbackClient := feedback.NewDAL(config.ApplicationDB)
+	r.Handle("/admin/api/feedback/template/{id:[0-9]+}", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Get: []string{PermMarketingView},
+		}, newFeedbackTemplateHandler(feedbackClient), nil)))
+	r.Handle("/admin/api/feedback/template", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Put: []string{PermMarketingEdit},
+		}, newFeedbackTemplateHandler(feedbackClient), nil)))
+	r.Handle("/admin/api/feedback/template/list", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Get: []string{PermMarketingView},
+		}, newFeedbackTemplateListHandler(feedbackClient), nil)))
+	r.Handle("/admin/api/feedback/rating_config", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,
+		map[string][]string{
+			httputil.Get: []string{PermMarketingView},
+			httputil.Put: []string{PermMarketingEdit},
+		}, newRatingLevelFeedbackConfigHandler(feedbackClient), nil)))
 
 	// Patient Interaction
 	r.Handle("/admin/api/patient/{id:[0-9]+}/account/needs_id_verification", apiAuthFilter(www.PermissionsRequiredHandler(config.AuthAPI,

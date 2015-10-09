@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/feedback"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -21,6 +22,7 @@ const actionNeededSimpleFeedbackPrompt = "simple_feedback_prompt"
 type AuthenticationHandler struct {
 	authAPI              api.AuthAPI
 	dataAPI              api.DataAPI
+	feedbackClient       feedback.DAL
 	dispatcher           *dispatch.Dispatcher
 	staticContentBaseURL string
 	rateLimiter          ratelimit.KeyedRateLimiter
@@ -46,13 +48,17 @@ type AuthRequestData struct {
 }
 
 func NewAuthenticationHandler(
-	dataAPI api.DataAPI, authAPI api.AuthAPI, dispatcher *dispatch.Dispatcher,
+	dataAPI api.DataAPI,
+	authAPI api.AuthAPI,
+	feedbackClient feedback.DAL,
+	dispatcher *dispatch.Dispatcher,
 	staticContentBaseURL string, rateLimiter ratelimit.KeyedRateLimiter,
 	metricsRegistry metrics.Registry,
 ) httputil.ContextHandler {
 	h := &AuthenticationHandler{
 		authAPI:              authAPI,
 		dataAPI:              dataAPI,
+		feedbackClient:       feedbackClient,
 		dispatcher:           dispatcher,
 		staticContentBaseURL: staticContentBaseURL,
 		rateLimiter:          rateLimiter,
@@ -183,7 +189,8 @@ func (h *AuthenticationHandler) authenticate(ctx context.Context, w http.Respons
 		Token:   token,
 		Patient: patient,
 	}
-	if showFeedback(h.dataAPI, patient.ID) {
+
+	if showFeedback(h.dataAPI, h.feedbackClient, patient.ID) {
 		res.ActionsNeeded = append(res.ActionsNeeded, &ActionNeeded{Type: actionNeededSimpleFeedbackPrompt})
 	}
 	httputil.JSONResponse(w, http.StatusOK, res)

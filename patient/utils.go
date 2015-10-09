@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
@@ -12,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/feedback"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
@@ -432,21 +432,34 @@ func createPatientVisit(
 	}, nil
 }
 
-func showFeedback(dataAPI api.DataAPI, patientID common.PatientID) bool {
-	tp, err := latestActiveTreatmentPlan(dataAPI, patientID)
+func showFeedback(dataAPI api.DataAPI, feedbackClient feedback.DAL, patientID common.PatientID) bool {
+	latestActiveTP, err := latestActiveTreatmentPlan(dataAPI, patientID)
 	if err != nil {
 		golog.Errorf(err.Error())
 		return false
 	}
-	if tp == nil || !tp.PatientViewed {
+
+	if latestActiveTP == nil || !latestActiveTP.PatientViewed {
 		return false
 	}
 
-	feedbackFor := "case:" + strconv.FormatInt(tp.PatientCaseID.Int64(), 10)
-	recorded, err := dataAPI.PatientFeedbackRecorded(patientID, feedbackFor)
+	feedbackFor := feedback.ForCase(latestActiveTP.PatientCaseID.Int64())
+	recorded, err := feedbackClient.PatientFeedbackRecorded(latestActiveTP.PatientID, feedbackFor)
 	if err != nil {
-		golog.Errorf("Failed to get feedback for patient %s %s: %s", patientID, feedbackFor, err)
+		golog.Errorf("Failed to get feedback for patient %s %s: %s", latestActiveTP.PatientID, feedbackFor, err)
 		return false
+	}
+
+	if !recorded {
+		// Create a pending record for when its time to request feedback from the patient.
+		// the pending record helps with sticky feedback requests (like in the case of a home card
+		// with a feedback request) and also helps to indicate when we have asked a patient for feedback
+		// that is yet to be given.
+		conc.Go(func() {
+			if err := feedbackClient.CreatePendingPatientFeedback(latestActiveTP.PatientID, feedbackFor); err != nil {
+				golog.Errorf("Unable to create pending patient feedback record for: '%s'", feedbackFor)
+			}
+		})
 	}
 
 	return !recorded

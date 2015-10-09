@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/features"
+	"github.com/sprucehealth/backend/feedback"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/responses"
 	"golang.org/x/net/context"
@@ -34,6 +35,7 @@ func getHomeCards(
 	cityStateInfo *address.CityState,
 	isSpruceAvailable bool,
 	dataAPI api.DataAPI,
+	feedbackClient feedback.DAL,
 	apiCDNDomain string,
 	webDomain string,
 	r *http.Request,
@@ -44,7 +46,7 @@ func getHomeCards(
 	if len(cases) == 0 {
 		views, err = homeCardsForUnAuthenticatedUser(ctx, dataAPI, cityStateInfo, isSpruceAvailable, r)
 	} else {
-		views, err = homeCardsForAuthenticatedUser(ctx, dataAPI, patient, cases, cityStateInfo, apiCDNDomain, webDomain, r)
+		views, err = homeCardsForAuthenticatedUser(ctx, dataAPI, feedbackClient, patient, cases, cityStateInfo, apiCDNDomain, webDomain, r)
 	}
 
 	if err != nil {
@@ -95,6 +97,7 @@ func homeCardsForUnAuthenticatedUser(
 func homeCardsForAuthenticatedUser(
 	ctx context.Context,
 	dataAPI api.DataAPI,
+	feedbackClient feedback.DAL,
 	patient *common.Patient,
 	cases []*common.PatientCase,
 	cityStateInfo *address.CityState,
@@ -142,7 +145,7 @@ func homeCardsForAuthenticatedUser(
 			}
 		}
 	}
-
+	requestHeaders := apiservice.ExtractSpruceHeaders(r)
 	// iterate through the cases to populate the view for each case card
 	for _, patientCase := range cases {
 		caseNotifications := notificationMap[patientCase.ID.Int64()]
@@ -253,6 +256,16 @@ func homeCardsForAuthenticatedUser(
 				}),
 			)
 		}
+
+		if features.CtxSet(ctx).Has(features.FlexibleFeedback) {
+			feedbackHomeCard, err := feedback.HomeCardForCase(feedbackClient, patientCase.ID.Int64(), requestHeaders.Platform)
+			if err != nil {
+				return nil, err
+			} else if feedbackHomeCard != nil {
+				views = append(views, feedbackHomeCard)
+			}
+		}
+
 	}
 
 	// only show the learn more about spruce section if there is no case with a completed visit

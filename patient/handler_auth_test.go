@@ -14,6 +14,8 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/feedback"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ratelimit"
@@ -22,16 +24,29 @@ import (
 
 type mockDataAPIAuthenticationHandler struct {
 	api.DataAPI
-	feedbackRecorded bool
-	tp               []*common.TreatmentPlan
+	tp []*common.TreatmentPlan
+}
+
+type mockFeedbackClient struct {
+	feedback.DAL
+	feedbackRecorded     bool
+	pendingRecordCreated bool
+	askForFeedback       bool
+}
+
+func (m *mockFeedbackClient) PatientFeedbackRecorded(patientID common.PatientID, feedbackFor string) (bool, error) {
+	return m.feedbackRecorded, nil
+}
+func (m *mockFeedbackClient) CreatePendingPatientFeedback(patientID common.PatientID, feedbackFor string) error {
+	m.pendingRecordCreated = true
+	return nil
+}
+func (m *mockFeedbackClient) Show(tp *common.TreatmentPlan) bool {
+	return m.askForFeedback
 }
 
 func (m *mockDataAPIAuthenticationHandler) GetPatientFromAccountID(accountID int64) (*common.Patient, error) {
 	return &common.Patient{AccountID: encoding.DeprecatedNewObjectID(1), ID: common.NewPatientID(1)}, nil
-}
-
-func (m *mockDataAPIAuthenticationHandler) PatientFeedbackRecorded(patientID common.PatientID, feedbackFor string) (bool, error) {
-	return m.feedbackRecorded, nil
 }
 
 func (m *mockDataAPIAuthenticationHandler) GetActiveTreatmentPlansForPatient(patientID common.PatientID) ([]*common.TreatmentPlan, error) {
@@ -51,9 +66,11 @@ func (m *mockAuthAPIAuthenticationHandler) CreateToken(accountID int64, platform
 }
 
 func TestAuthenticationHandlerFeedback(t *testing.T) {
+	conc.Testing = true
 	dataAPI := &mockDataAPIAuthenticationHandler{}
 	authAPI := &mockAuthAPIAuthenticationHandler{}
-	handler := NewAuthenticationHandler(dataAPI, authAPI, dispatch.New(), "", ratelimit.NullKeyed{}, metrics.NewRegistry())
+	fClient := &mockFeedbackClient{}
+	handler := NewAuthenticationHandler(dataAPI, authAPI, fClient, dispatch.New(), "", ratelimit.NullKeyed{}, metrics.NewRegistry())
 
 	// No treatment plans so shouldn't show feedback
 
@@ -67,6 +84,9 @@ func TestAuthenticationHandlerFeedback(t *testing.T) {
 	}
 	if len(res.ActionsNeeded) != 0 {
 		t.Fatalf("Expected no actions needed, got %d", len(res.ActionsNeeded))
+	}
+	if fClient.pendingRecordCreated {
+		t.Fatal("Expected no record to be created")
 	}
 
 	// Unviewed treatment plan shouldn't trigger feedback
@@ -84,6 +104,9 @@ func TestAuthenticationHandlerFeedback(t *testing.T) {
 	}
 	if len(res.ActionsNeeded) != 0 {
 		t.Fatalf("Expected no actions needed, got %d", len(res.ActionsNeeded))
+	}
+	if fClient.pendingRecordCreated {
+		t.Fatal("Expected no pending feedback record to be created")
 	}
 
 	// Viewed treatment plan should show feedback since hasn't been recorded yet
@@ -104,10 +127,14 @@ func TestAuthenticationHandlerFeedback(t *testing.T) {
 	if res.ActionsNeeded[0].Type != actionNeededSimpleFeedbackPrompt {
 		t.Fatalf("Expected action needed of '%s', got '%s'", actionNeededSimpleFeedbackPrompt, res.ActionsNeeded[0].Type)
 	}
+	if !fClient.pendingRecordCreated {
+		t.Fatal("Expected pending record to be created but got none")
+	}
 
 	// Shouldn't show feedback prompt is already recorded
 
-	dataAPI.feedbackRecorded = true
+	fClient.feedbackRecorded = true
+	fClient.pendingRecordCreated = false
 
 	res = AuthenticationResponse{}
 	err = testJSONHandler(handler,
@@ -119,6 +146,9 @@ func TestAuthenticationHandlerFeedback(t *testing.T) {
 	}
 	if len(res.ActionsNeeded) != 0 {
 		t.Fatalf("Expected no actions needed, got %d", len(res.ActionsNeeded))
+	}
+	if fClient.pendingRecordCreated {
+		t.Fatal("Expected no pending record to be created")
 	}
 }
 

@@ -1,6 +1,7 @@
 package patient_case
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -9,29 +10,50 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/feedback"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 )
 
-type feedbackDataAPI struct {
-	api.DataAPI
-	feedback []*common.PatientFeedback
+type feedbackMockClient struct {
+	feedback.DAL
+	f *feedback.PatientFeedback
 }
 
-func (d *feedbackDataAPI) PatientFeedback(feedbackFor string) ([]*common.PatientFeedback, error) {
+func (d *feedbackMockClient) PatientFeedback(feedbackFor string) (*feedback.PatientFeedback, error) {
 	if feedbackFor != "case:1" {
 		return nil, nil
 	}
-	return d.feedback, nil
+	return d.f, nil
+}
+
+func (d *feedbackMockClient) AdditionalFeedback(feedbackID int64) (*feedback.FeedbackTemplateData, []byte, error) {
+	jsonData, err := json.Marshal(&feedback.FreeTextResponse{
+		Response: "hello",
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	ft := &feedback.FeedbackTemplateData{
+		Template: &feedback.FreeTextTemplate{
+			Title: "title",
+		},
+	}
+
+	return ft, jsonData, nil
 }
 
 func TestPatientFeedbackHandler(t *testing.T) {
-	dataAPI := &feedbackDataAPI{
-		feedback: []*common.PatientFeedback{
-			{Rating: 4, Comment: "RULEZ!", Created: time.Unix(12341234, 0)},
+	fClient := &feedbackMockClient{
+		f: &feedback.PatientFeedback{
+			Rating:  ptr.Int(4),
+			Comment: ptr.String("RULEZ!"),
+			Created: time.Unix(12341234, 0),
 		},
 	}
-	h := NewPatientFeedbackHandler(dataAPI)
+	h := NewPatientFeedbackHandler(fClient)
 
 	r, err := http.NewRequest("GET", "/?case_id=1", nil)
 	test.OK(t, err)

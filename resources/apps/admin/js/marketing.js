@@ -25,10 +25,16 @@ module.exports = {
 				name: "Promotion Referral Template"
 			},
 			{
+
 				id: "referral_routes",
 				url: "/marketing/promotions/referral_routes",
 				name: "Promotion Referral Routes"
 			},
+			{
+				id: "in_app_feedback",
+				url: "/marketing/promotions/feedback",
+				name: "In-app Feedback"
+			}
 		]],
 		pages: {
 			promotions: function(): any {
@@ -40,6 +46,13 @@ module.exports = {
 			referral_templates: function(): any {
 				return <PromotionReferralTemplateOverview router={this.props.router} />;
 			},
+			feedback: function(): any {
+				return <InAppFeedbackPage router={this.props.router} />;
+			},
+			template: function(): any {
+				var updating = (typeof(this.props.templateID) !== "undefined");
+				return <CreateFeedbackTemplatePage router={this.props.router} updating={updating} templateID={this.props.templateID} />;
+			}
 		},
 		getDefaultProps: function(): any {
 			return {}
@@ -1156,3 +1169,375 @@ var PromotionReferralTemplate = React.createClass({displayName: "PromotionReferr
 	}
 })
 // END: Promotion Referral Template Management
+
+
+var ActiveFeedbackTemplatesComponent = React.createClass({displayName: "ActiveFeedbackTemplatesComponent",
+	mixins: [Routing.RouterNavigateMixin],
+	getInitialState: function(): any {
+		return {
+			error: null,
+			busy: false,
+			templates: []
+		}
+	},
+	componentWillMount: function() {
+		document.title = "Marketing | In-app Feedback",
+		this.fetchActiveFeedbackTemplates();
+	},
+	fetchActiveFeedbackTemplates: function() {
+		this.setState({
+			busy: true, 
+			error: null,
+		});		
+		AdminAPI.getActiveFeedbackTemplates(function(success, data, error) {
+			if (this.isMounted()) {
+				if (!success) {
+					this.setState({
+						error: error.message,
+						busy: false,
+					})
+				} else {
+					this.setState({
+						error: null,
+						templates: data.templates,
+						busy: false
+					})
+				}
+			}
+		}.bind(this))
+	},
+	onTemplateAdd: function(e: any) {
+		e.preventDefault();
+		this.navigate("/marketing/promotions/feedback/template");
+	},
+	render: function(): any {
+		return (
+			<div>
+				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
+				{this.state.busy ? <Utils.LoadingAnimation /> : null}
+				<div className="text-right">
+					<button className="btn btn-default" onClick={this.onTemplateAdd}>New Feedback Template</button>
+				</div>
+				<table className="table">
+					<thead>
+						<tr>
+							<th>Tag</th>
+							<th>Type</th>
+							<th>Created</th>
+						</tr>
+					</thead>
+					<tbody>
+						{
+							this.state.templates.map(function(t) {
+							return (
+							<tr key={t.Tag}>
+								<td>
+									<a href={"feedback/template/"+t.ID} onClick={this.onNavigate}>{t.Tag}</a>
+								</td>
+								<td>{t.Type}</td>
+								<td>{t.Created}</td>
+							</tr>
+						);
+						}.bind(this))}
+					</tbody>
+				</table>
+			</div>
+		);
+	}
+});	
+
+var InAppFeedbackPage = React.createClass({displayName: "InAppFeedbackPage",
+	render: function(): any {
+		return (
+			<div>
+				<h2>Rating Level Template Configuration</h2>
+				<ConfigureRatingLevelPromptsComponent router={this.props.router} />
+				<h2>Active Feedback Templates</h2>
+				<ActiveFeedbackTemplatesComponent router={this.props.router} />
+			</div>
+		);
+	}
+});
+
+var ConfigureRatingLevelPromptsComponent = React.createClass({displayName: "ConfigureRatingLevelPromptsComponent",
+	mixins: [Routing.RouterNavigateMixin],
+	getInitialState: function(): any {
+		return {
+			configs: {}
+		};
+	},
+	componentWillMount: function() {
+		document.title = "Marketing | In-app Feedback";
+		this.fetchRatingConfigs();
+	},
+	fetchRatingConfigs: function() {
+		this.setState({
+			busy: true, 
+			error: null,
+		});
+		AdminAPI.getRatingFeedbackConfig(function(success, data, error) {
+			if (this.isMounted()) {
+				if (!success) {
+					this.setState({
+						error:error.Message,
+						busy: false
+					})
+					return;
+				} 
+				this.setState({
+					configs: data.configs,
+					busy: false,
+					error: null,
+				})
+			}
+		}.bind(this));
+	},
+	onRatingConfigChange: function(rating: number, config: string) {
+		var newConfig = this.state.configs;
+		newConfig[rating] = config
+		this.setState({
+			configs: newConfig,
+			modified: true
+		})
+	},
+	handleSave: function(e: any) {
+		this.setState({
+			busy: true, 
+			error: null,
+		});
+		AdminAPI.updateRatingFeedbackConfig(this.state.configs, function(success, data, error) {
+			if (this.isMounted()) {
+				if (!success) {
+					this.setState({
+						error: error.message,
+						busy: false,
+					})
+					return;
+				}
+				this.setState({
+					error: null,
+					busy: false,
+					modified: false,
+				})
+				this.fetchRatingConfigs();
+			}
+		}.bind(this));
+	},
+	render: function(): any {
+		return (
+			<div className="container">
+				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
+				{this.state.busy ? <Utils.LoadingAnimation /> : null}
+				<table className="table col-lg-8">
+					<thead>
+						<tr>
+							<th>Rating</th>
+							<th>Templates</th>
+						</tr>
+					</thead>
+					<tbody>
+						<RatingRow
+							rating={1}
+							templatesConfig={this.state.configs[1]}
+							onRatingConfigChange={this.onRatingConfigChange} />
+						<RatingRow
+							rating={2}
+							templatesConfig = {this.state.configs[2]}
+							onRatingConfigChange={this.onRatingConfigChange} />
+						<RatingRow
+							rating={3}
+							templatesConfig = {this.state.configs[3]}
+							onRatingConfigChange={this.onRatingConfigChange} />
+						<RatingRow
+							rating={4}
+							templatesConfig = {this.state.configs[4]}
+							onRatingConfigChange={this.onRatingConfigChange} />
+						<RatingRow
+							rating={5}
+							templatesConfig = {this.state.configs[5]}
+							onRatingConfigChange={this.onRatingConfigChange} />													
+					</tbody>
+				</table>
+				{this.state.modified ?
+					<div className="text-right">
+						<button
+							className = "btn btn-primary"
+							onClick={this.handleSave}>Save</button>
+					</div>
+					: null}
+			</div>
+		);
+	}
+});
+
+var RatingRow = React.createClass({displayName:"RatingRow",
+	handleChange: function(e: any) {
+		e.preventDefault();
+		this.props.onRatingConfigChange(this.props.rating, e.target.value);
+	},
+	render: function(): any {
+		return (
+			<tr>
+				<td>{this.props.rating}</td>
+				<td><Forms.FormInput
+					value={this.props.templatesConfig}
+					onChange = {this.handleChange} />
+				</td>	
+			</tr>
+		);
+	}
+});
+
+
+var CreateFeedbackTemplatePage = React.createClass({displayName: "CreateFeedbackTemplatePage",
+	mixins: [
+		Routing.RouterNavigateMixin,
+		React.addons.LinkedStateMixin
+	],
+	getInitialState: function(): any {
+		return {
+			selectedTag: "",
+			templateTypes: [],
+			template: "{}",
+			error: null,
+			busy: false,
+		}
+	},
+	componentWillMount: function() {
+		document.title = "Marketing | In-app Feedback";
+		this.fetchFeedbackTemplateTypes();
+		if (typeof(this.props.templateID) !== "undefined") {
+			this.fetchFeedbackTemplate();
+		}
+	},
+	fetchFeedbackTemplateTypes: function() {
+		this.setState({
+			busy: true, 
+			error: null,
+		});
+		AdminAPI.getFeedbackTemplateTypes(function(success, data, error) {
+			if (this.isMounted()) {
+				if (!success) {
+					this.setState({
+						error: error.message,
+						busy: false,
+					});
+					return;
+				}
+				this.setState({
+					templateTypes: data.types,
+					error: null,
+					busy: false,
+				});
+				this.updateTemplateType(data.types[0].template_type);
+			}
+		}.bind(this));
+	},
+	fetchFeedbackTemplate: function() {
+		this.setState({
+			busy: true, 
+			error: null,
+		});
+		AdminAPI.getFeedbackTemplate(this.props.templateID, function(success, data, error){
+			if (this.isMounted()) {
+				if (!success) {
+					this.setState({
+						error: error.message,
+						busy: false,
+					})
+					return;
+				} 
+				this.setState({
+					selectedTag: data.template_data.Tag,
+					selectedTemplateType: data.template_data.Type,
+					template: JSON.stringify(data.template_data.Template, null, 4)
+				})
+			} 
+		}.bind(this))
+	},
+	onTemplateSubmit: function(e: any) {
+		e.preventDefault();
+		this.setState({
+			busy: true, 
+			error: null,
+		});
+		AdminAPI.updateFeedbackTemplate(
+			this.state.selectedTemplateType, 
+			this.state.selectedTag, 
+			this.state.template, 
+			function(success, data, error) {
+				if (this.isMounted()) {
+					if (!success) {
+						this.setState({
+							error: error.message,
+							busy: false,
+						})
+						return;
+					}
+					this.navigate("/marketing/promotions/feedback");
+				}
+			}.bind(this));
+	},
+	onTemplateChange: function(e: any) {
+		e.preventDefault();
+		var error = null;
+		try {
+			JSON.parse(e.target.value)
+		} catch(ex) {
+			error = "Invalid JSON: " + ex.message;
+		}
+
+		this.setState({
+			error: error,
+			template: e.target.value,
+		})
+	},
+	onTemplateTypeChange: function(e: any) {
+		e.preventDefault();
+		this.updateTemplateType(e.target.value);
+	},
+	onTemplateTagChange: function(e: any) {
+		e.preventDefault();
+		this.setState({
+			selectedTag: e.target.value,
+		})
+	},
+	updateTemplateType: function(templateType: string) {
+		var template = ""
+		for (var i =0; i < this.state.templateTypes.length; i++) {
+			if (this.state.templateTypes[i].template_type == templateType) {
+				template = JSON.stringify(this.state.templateTypes[i].data, null, 4)
+			}
+		}
+
+		this.setState({
+			selectedTemplateType: templateType,
+			template: template
+		});
+	},
+	render: function(): any {
+		var types = this.state.templateTypes.map(function(t) {
+			return {name: t.template_type, value: t.template_type};
+		});
+		var readOnlyMetadata = false;
+		if (this.props.updating) {
+			readOnlyMetadata = true;
+		}
+		return (
+			<div>
+				{this.state.busy ? <Utils.LoadingAnimation /> : null}
+				{this.state.error ? <Utils.Alert type="danger">{this.state.error}</Utils.Alert> : null}
+				<form role="form" onSubmit={this.onTemplateSubmit} method="PUT">
+					<Forms.FormSelect label="Template Type" value={this.state.selectedTemplateType} opts={types} onChange={this.onTemplateTypeChange} disabled={readOnlyMetadata} />
+					<Forms.FormInput label="Tag" name="tag" value={this.state.selectedTag} onClick={this.onNavigate} onChange={this.onTemplateTagChange} disabled={readOnlyMetadata} />
+					<Forms.TextArea name="template_json" required label="Feedback Template JSON" value={this.state.template} onChange={this.onTemplateChange} rows={20} tabs={true} />
+					<div className="text-right">
+						<button className="btn btn-primary" type="submit">Save</button>
+					</div>
+				</form>
+			</div>
+		);
+	}
+});
+
+

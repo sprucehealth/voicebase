@@ -27,6 +27,7 @@ import (
 	"github.com/sprucehealth/backend/email/campaigns"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/events"
+	"github.com/sprucehealth/backend/feedback"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
@@ -168,6 +169,8 @@ func buildRESTAPI(
 		launchPromoStartDate = &conf.LaunchPromo.StartDate
 	}
 
+	feedbackClient := feedback.NewDAL(applicationDB)
+
 	_, muxHandler := router.New(&router.Config{
 		DataAPI:                  dataAPI,
 		AuthAPI:                  authAPI,
@@ -213,6 +216,7 @@ func buildRESTAPI(
 		Cfg:                      cfgStore,
 		ApplicationDB:            applicationDB,
 		Signer:                   signer,
+		FeedbackClient:           feedbackClient,
 	})
 
 	if !environment.IsProd() {

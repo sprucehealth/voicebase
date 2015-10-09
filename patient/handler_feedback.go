@@ -2,15 +2,16 @@ package patient
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/feedback"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ptr"
@@ -37,14 +38,21 @@ type feedbackPromptHandler struct {
 }
 
 type feedbackHandler struct {
-	dataAPI       api.DataAPI
-	taggingClient tagging.Client
-	cfgStore      cfg.Store
+	dataAPI        api.DataAPI
+	feedbackClient feedback.DAL
+	taggingClient  tagging.Client
+	cfgStore       cfg.Store
+}
+
+type additionalFeedback struct {
+	TemplateID int64           `json:"id,string"`
+	Answer     json.RawMessage `json:"answer"`
 }
 
 type feedbackSubmitRequest struct {
-	Rating  int     `json:"rating"`
-	Comment *string `json:"comment,omitempty"`
+	Rating             int                 `json:"rating"`
+	Comment            *string             `json:"comment,omitempty"`
+	AdditionalFeedback *additionalFeedback `json:"additional_feedback"`
 }
 
 // lowRatingTagThreshold is a Server configurable value for the threshold at which to tag the patient's case to be marked for follow up
@@ -79,14 +87,15 @@ func NewFeedbackPromptHandler(dataAPI api.DataAPI) httputil.ContextHandler {
 }
 
 // NewFeedbackHandler returns an initialized instance of feedbackHandler
-func NewFeedbackHandler(dataAPI api.DataAPI, taggingClient tagging.Client, cfgStore cfg.Store) httputil.ContextHandler {
+func NewFeedbackHandler(dataAPI api.DataAPI, feedbackClient feedback.DAL, taggingClient tagging.Client, cfgStore cfg.Store) httputil.ContextHandler {
 	cfgStore.Register(lowRatingTagThreshold)
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.NoAuthorizationRequired(&feedbackHandler{
-				dataAPI:       dataAPI,
-				taggingClient: taggingClient,
-				cfgStore:      cfgStore,
+				dataAPI:        dataAPI,
+				feedbackClient: feedbackClient,
+				taggingClient:  taggingClient,
+				cfgStore:       cfgStore,
 			}),
 			api.RolePatient),
 		httputil.Post)
@@ -128,7 +137,29 @@ func (h *feedbackHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 		apiservice.WriteJSONSuccess(w)
 		return
 	}
-	if err := h.dataAPI.RecordPatientFeedback(patientID, fmt.Sprintf("case:%d", tp.PatientCaseID.Int64()), req.Rating, req.Comment); err != nil {
+
+	var structuredResponse feedback.StructuredResponse
+	if req.AdditionalFeedback != nil {
+		feedbackTemplate, err := h.feedbackClient.FeedbackTemplate(req.AdditionalFeedback.TemplateID)
+		if err != nil {
+			apiservice.WriteError(ctx, err, w, r)
+			return
+		}
+
+		structuredResponse, err = feedbackTemplate.Template.ParseAndValidateResponse(feedbackTemplate.ID, []byte(req.AdditionalFeedback.Answer))
+		if err != nil {
+			apiservice.WriteValidationError(ctx, errors.Cause(err).Error(), w, r)
+			return
+		}
+	}
+
+	if err := h.feedbackClient.RecordPatientFeedback(
+		patientID,
+		feedback.ForCase(tp.PatientCaseID.Int64()),
+		req.Rating,
+		req.Comment,
+		structuredResponse,
+	); err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
 	}

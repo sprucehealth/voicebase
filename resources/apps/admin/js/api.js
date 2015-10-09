@@ -877,6 +877,59 @@ module.exports = {
 		}, cb);
 	},
 
+	// In-app feedback
+	getFeedbackTemplateTypes: function(cb: ajaxCB) {
+		this.ajax({
+			type: "GET",
+			url: "/feedback/template_types",
+			dataType: "json"
+		}, cb)
+	},
+	getActiveFeedbackTemplates: function(cb: ajaxCB) {
+		this.ajax({
+			type: "GET",
+			url: "/feedback/template/list",
+			dataType: "json",
+		}, cb)
+	},
+	updateFeedbackTemplate: function(templateType: string, templateTag: string, templateJSON: string, cb: ajaxCB) {
+		this.ajax({
+			type: "PUT",
+			contentType: "application/json",
+			url: "/feedback/template/",
+			data: JSON.stringify({
+				tag: templateTag, 
+				type: templateType, 
+				template_json: templateJSON,
+			}),
+			dataType: "json"
+		},cb)
+	},
+	getFeedbackTemplate: function(id: string, cb: ajaxCB) {
+		this.ajax({
+			type: "GET",
+			url: "/feedback/template/" + encodeURIComponent(id),
+			dataType: "json"
+		}, cb)
+	},
+	getRatingFeedbackConfig: function(cb: ajaxCB) {
+		this.ajax({
+			type: "GET",
+			url: "/feedback/rating_config",
+			dataType: "json"
+		}, cb)
+	},
+	updateRatingFeedbackConfig: function(configs: any, cb: ajaxCB) {
+		this.ajax({
+			type: "PUT",
+			contentType: "application/json",
+			url: "/feedback/rating_config",
+			dataType: "json",
+			data: JSON.stringify({
+				configs: configs,
+			})
+		}, cb)
+	},
 	// Tagging
 	tags: function(text: string, common: bool, cb: ajaxCB) {
 		this.ajax({
