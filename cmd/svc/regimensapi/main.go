@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/rainycape/memcache"
+	"github.com/rs/cors"
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/samuel/go-metrics/reporter"
 	"github.com/sprucehealth/backend/analytics"
@@ -72,6 +73,9 @@ var config struct {
 	metricsSource   string
 	libratoUsername string
 	libratoToken    string
+
+	// CORS
+	corsAllowAll bool
 }
 
 func init() {
@@ -110,6 +114,9 @@ func init() {
 	flag.StringVar(&config.metricsSource, "metrics.source", "", "`Source` for metrics (e.g. hostname)")
 	flag.StringVar(&config.libratoUsername, "librato.username", "", "Librato metrics `username`")
 	flag.StringVar(&config.libratoToken, "librato.token", "", "Librato metrics auth `token`")
+
+	// CORS
+	flag.BoolVar(&config.corsAllowAll, "cors.allow.all", true, "Enable the * patterns on CORS")
 }
 
 func main() {
@@ -221,6 +228,14 @@ func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.Contex
 	h = httputil.MetricsHandler(h, metricsRegistry.Scope("regimensapi"))
 	h = httputil.RequestIDHandler(h)
 	h = httputil.CompressResponse(httputil.DecompressRequest(h))
+
+	if config.corsAllowAll {
+		h = httputil.ToContextHandler(cors.New(cors.Options{
+			AllowedOrigins:   []string{},
+			AllowedMethods:   []string{httputil.Delete, httputil.Get, httputil.Options, httputil.Patch, httputil.Post, httputil.Put},
+			AllowCredentials: true,
+		}).Handler(httputil.FromContextHandler(h)))
+	}
 	return router, h
 }
 

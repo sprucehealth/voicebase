@@ -71,6 +71,11 @@
 			"Rev": "1ba5d8811803984c656ec0b1f621735235aff430"
 		},
 		{
+			"ImportPath": "github.com/aws/aws-sdk-go/internal/test/unit",
+			"Comment": "v0.9.0rc1-6-g1ba5d88",
+			"Rev": "1ba5d8811803984c656ec0b1f621735235aff430"
+		},
+		{
 			"ImportPath": "github.com/aws/aws-sdk-go/service/cloudwatchlogs",
 			"Comment": "v0.9.0rc1-6-g1ba5d88",
 			"Rev": "1ba5d8811803984c656ec0b1f621735235aff430"
@@ -155,6 +160,10 @@
 			"Rev": "1031fa0ce2f20c1c0e1e1b51951d8ea02c84fa05"
 		},
 		{
+			"ImportPath": "github.com/rs/cors",
+			"Rev": "eb527c8097e0f19a3ff7b253a3fe70545070f420"
+		},
+		{
 			"ImportPath": "github.com/rwcarlsen/goexif/exif",
 			"Rev": "07696a806c8bc37bcff4af76fbc3f9e44a6941fc"
 		},
@@ -193,6 +202,11 @@
 		{
 			"ImportPath": "github.com/stathat/stathatgo",
 			"Rev": "169bb01d9f504dabfe2180cecf9c2e4547662edf"
+		},
+		{
+			"ImportPath": "github.com/stretchr/testify/assert",
+			"Comment": "v1.0-51-gf3960ab",
+			"Rev": "f3960ab1f9664ecc4e27c78af27cc9063d745a43"
 		},
 		{
 			"ImportPath": "github.com/subosito/figo",
