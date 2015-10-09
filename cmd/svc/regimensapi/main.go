@@ -31,6 +31,7 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mcutil"
 	"github.com/sprucehealth/backend/libs/mux"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/go-proxy-protocol/proxyproto"
 	"golang.org/x/net/context"
@@ -278,7 +279,7 @@ func getMediaStore() storage.DeterministicStore {
 	default:
 		log.Fatalf("Unknown media storage type %s", config.mediaStorageType)
 	case "s3":
-		store := storage.NewS3(&aws.Config{Credentials: getAWSCredentials()}, config.mediaS3Bucket, config.mediaS3Prefix)
+		store := storage.NewS3(&aws.Config{Region: ptr.String("us-east-1"), Credentials: getAWSCredentials()}, config.mediaS3Bucket, config.mediaS3Prefix)
 		store.LatchedExpire(config.mediaS3LatchedExpire)
 		return store
 	case "local":
