@@ -43,8 +43,12 @@ func (h *patientFeedbackHandler) ServeHTTP(ctx context.Context, w http.ResponseW
 		return
 	}
 	pf, err := h.feedbackClient.PatientFeedback(feedback.ForCase(caseID))
-	if err != nil {
+	if errors.Cause(err) != feedback.ErrNoPatientFeedback && err != nil {
 		apiservice.WriteError(ctx, err, w, r)
+		return
+	} else if pf == nil {
+		// no feedback exists.
+		httputil.JSONResponse(w, http.StatusOK, &patientFeedbackResponse{})
 		return
 	}
 

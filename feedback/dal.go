@@ -11,12 +11,14 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 )
 
-var errNoPatientFeedback = errors.New("patient_feedback doesn't exist")
 var errNoFeedbackTemplate = errors.New("feedback_template doesn't exist")
 
 // ErrNoAdditionalFeedback is an error to indicate that the patient did not provide
 // any additional feebdback while leaving a rating.
 var ErrNoAdditionalFeedback = errors.New("no additional feedback exists")
+
+// ErrNoPatientFeedback is an error to indicate that patient feedback doesn't exist.
+var ErrNoPatientFeedback = errors.New("patient_feedback doesn't exist")
 
 // PatientFeedbackUpdate is struct used to update the patient feedback with the specified fields
 type PatientFeedbackUpdate struct {
@@ -156,7 +158,7 @@ func (c *client) PatientFeedback(feedbackFor string) (*PatientFeedback, error) {
 		&pf.Dismissed,
 		&pf.Created)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(errNoPatientFeedback)
+		return nil, errors.Trace(ErrNoPatientFeedback)
 	}
 	return &pf, errors.Trace(err)
 }

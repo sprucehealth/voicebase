@@ -35,7 +35,7 @@ func HomeCardForCase(feedbackClient DAL, caseID int64, platform common.Platform)
 	// don't return feedback home card if patient has already dismissed card
 	// or if there is no pending feedback or if no entry exists altogether
 	pf, err := feedbackClient.PatientFeedback(feedbackFor)
-	if errors.Cause(err) == errNoPatientFeedback {
+	if errors.Cause(err) == ErrNoPatientFeedback {
 		return nil, nil
 	} else if err != nil {
 		return nil, errors.Trace(err)
