@@ -106,7 +106,7 @@ func (c *client) RecordPatientFeedback(patientID common.PatientID, feedbackFor s
 	}
 
 	res, err := tx.Exec(
-		`REPLACE INTO patient_feedback  (patient_id, feedback_for, rating, comment, pending) VALUES (?, ?, ?, ?, false)`,
+		`REPLACE INTO patient_feedback (patient_id, feedback_for, rating, comment, pending) VALUES (?, ?, ?, ?, false)`,
 		patientID, feedbackFor, rating, comment)
 	if err != nil {
 		tx.Rollback()

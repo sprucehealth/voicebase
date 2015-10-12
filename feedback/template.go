@@ -271,7 +271,7 @@ type MultipleChoiceTemplate struct {
 
 	// PotentialAnswers represents the list of possible answers from whcih
 	// the patient can select an option.
-	PotentialAnswers []PotentialAnswer `json:"potential_answers"`
+	PotentialAnswers []*PotentialAnswer `json:"potential_answers"`
 }
 
 func (m *MultipleChoiceTemplate) TemplateType() string {
@@ -386,7 +386,7 @@ func (m *MultipleChoiceTemplate) ParseAndValidateResponse(templateID int64, json
 	// ensure that every response patient entered is valid
 	idToPotentialAnswerMap := make(map[string]*PotentialAnswer)
 	for _, pa := range m.PotentialAnswers {
-		idToPotentialAnswerMap[pa.ID] = &pa
+		idToPotentialAnswerMap[pa.ID] = pa
 	}
 
 	// lets go through patient response
@@ -422,7 +422,7 @@ func (m *MultipleChoiceTemplate) ResponseString(templateID int64, resJSON []byte
 	idToPotentialAnswerMap := make(map[string]*PotentialAnswer)
 
 	for _, pa := range m.PotentialAnswers {
-		idToPotentialAnswerMap[pa.ID] = &pa
+		idToPotentialAnswerMap[pa.ID] = pa
 	}
 
 	for _, aItem := range mr.AnswerSelections {

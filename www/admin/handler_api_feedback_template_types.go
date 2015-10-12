@@ -40,7 +40,7 @@ func (h *feedbackTemplateTypesHandler) ServeHTTP(ctx context.Context, w http.Res
 			{
 				Type: feedback.FTMultipleChoice,
 				Data: feedback.MultipleChoiceTemplate{
-					PotentialAnswers: []feedback.PotentialAnswer{
+					PotentialAnswers: []*feedback.PotentialAnswer{
 						{},
 					},
 				},

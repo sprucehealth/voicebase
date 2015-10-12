@@ -36,7 +36,7 @@ func TestMultipleChoiceResponseValidation(t *testing.T) {
 		Title:       "hello",
 		Subtitle:    "subtitle",
 		ButtonTitle: "button_title",
-		PotentialAnswers: []PotentialAnswer{
+		PotentialAnswers: []*PotentialAnswer{
 			{
 				ID:   "1",
 				Text: "Yes",
@@ -79,7 +79,7 @@ func TestMultipleChoiceResponseValidation_Invalid(t *testing.T) {
 		Title:       "hello",
 		Subtitle:    "subtitle",
 		ButtonTitle: "button_title",
-		PotentialAnswers: []PotentialAnswer{
+		PotentialAnswers: []*PotentialAnswer{
 			{
 				ID:   "1",
 				Text: "Yes",

@@ -1,0 +1,2 @@
+ALTER TABLE patient_structured_feedback DROP FOREIGN KEY patient_structured_feedback_ibfk_2;
+ALTER TABLE patient_structured_feedback ADD FOREIGN KEY (patient_feedback_id) REFERENCES patient_feedback(id) ON DELETE CASCADE;
