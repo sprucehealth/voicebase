@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/idgen"
 	"golang.org/x/net/context"
@@ -49,7 +50,23 @@ type contextKey int
 
 const (
 	requestIDContextKey contextKey = iota
+
+	// LogMapContextKey is used for referencing a map
+	// in the context object to be used as key/value storage
+	// to log contextual information.
+	LogMapContextKey
 )
+
+// CtxLogMap returns access to the log map that can be used to add
+// contextual information for logging purposes. If the logMap
+// doesn't exist, then returns false.
+func CtxLogMap(ctx context.Context) (conc.Map, bool) {
+	v := ctx.Value(LogMapContextKey)
+	if v == nil {
+		return nil, false
+	}
+	return v.(conc.Map), true
+}
 
 // RequestEvent is a request/response log event
 type RequestEvent struct {
@@ -142,6 +159,8 @@ func (h *loggingHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	}
 
 	startTime := time.Now()
+
+	ctx = context.WithValue(ctx, LogMapContextKey, conc.NewMap())
 
 	// Save the URL here incase it gets mangled by the time
 	// the defer gets called. This can happen when using http.StripPrefix

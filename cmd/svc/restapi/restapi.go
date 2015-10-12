@@ -11,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/app_worker"
@@ -30,6 +29,7 @@ import (
 	"github.com/sprucehealth/backend/feedback"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/cfg"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -332,19 +332,25 @@ func buildRESTAPI(
 			ResponseTime: int(ev.ResponseTime.Nanoseconds() / 1e3),
 			Server:       ev.ServerHostname,
 		}
-		log := golog.Context(
+
+		contextVals := []interface{}{
 			"Method", av.Method,
 			"URL", av.URL,
 			"UserAgent", av.UserAgent,
 			"RequestID", av.RequestID,
 			"RemoteAddr", av.RemoteAddr,
 			"StatusCode", av.StatusCode,
-		)
-		account, ok := apiservice.CtxAccount(ctx)
-		if ok {
-			log = log.Context("AccountID", account.ID, "Role", account.Role)
-			av.AccountID = account.ID
 		}
+
+		logMap, ok := ctx.Value(httputil.LogMapContextKey).(conc.Map)
+		if ok {
+			for k, v := range logMap.Snapshot() {
+				contextVals = append(contextVals, k, v)
+			}
+		}
+
+		log := golog.Context(contextVals...)
+
 		if ev.Panic != nil {
 			log.Criticalf("http: panic: %v\n%s", ev.Panic, ev.StackTrace)
 		} else {
