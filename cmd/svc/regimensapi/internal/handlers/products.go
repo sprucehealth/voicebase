@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/svc/products"
@@ -31,9 +32,9 @@ func (h *productsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 	}
 
 	httputil.JSONResponse(w, http.StatusOK, &struct {
-		Product *product
+		Product *responses.Product
 	}{
-		Product: &product{
+		Product: &responses.Product{
 			ID:         p.ID,
 			Name:       p.Name,
 			ImageURLs:  p.ImageURLs,

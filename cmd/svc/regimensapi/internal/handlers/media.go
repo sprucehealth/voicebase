@@ -14,6 +14,7 @@ import (
 
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -92,8 +93,8 @@ func copyWithHeaders(w http.ResponseWriter, r io.Reader, headers http.Header) {
 	io.Copy(w, r)
 }
 
-func (h *mediaHandler) parseGETRequest(r *http.Request) (*mediaGETRequest, error) {
-	rd := &mediaGETRequest{}
+func (h *mediaHandler) parseGETRequest(r *http.Request) (*responses.MediaGETRequest, error) {
+	rd := &responses.MediaGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, err
 	}
@@ -104,7 +105,7 @@ func (h *mediaHandler) parseGETRequest(r *http.Request) (*mediaGETRequest, error
 	return rd, nil
 }
 
-func (h *mediaHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *mediaGETRequest, mediaID string) {
+func (h *mediaHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *responses.MediaGETRequest, mediaID string) {
 	startTime := time.Now()
 	mediaURL := fmt.Sprintf(mediaPathFormatString, mediaID)
 
@@ -219,7 +220,7 @@ func (h *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *
 		return
 	}
 
-	res := &mediaPOSTResponse{
+	res := &responses.MediaPOSTResponse{
 		MediaID:  mediaID,
 		MediaURL: fmt.Sprintf("%s/media/%d", strings.TrimRight(h.webDomain, "/"), mediaID),
 	}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/sprucehealth/backend/apiservice"
@@ -46,29 +47,33 @@ func (h *attributionHandler) ServeHTTP(ctx context.Context, w http.ResponseWrite
 
 func (h *attributionHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*attributionPOSTRequest, error) {
 	rd := &attributionPOSTRequest{}
-	if err := json.NewDecoder(r.Body).Decode(rd); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(rd); err != nil && err != io.EOF {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
-	}
-
-	if rd.Data == nil {
+	} else if rd.Data == nil || err == io.EOF {
 		return nil, errors.New("data required")
 	}
+
 	return rd, nil
 }
 
 func (h *attributionHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *attributionPOSTRequest) {
-	deviceID, err := apiservice.GetDeviceIDFromHeader(r)
-	if err == apiservice.ErrNoDeviceIDHeader {
-		apiservice.WriteBadRequestError(ctx, err, w, r)
-		return
-	} else if err != nil {
-		apiservice.WriteError(ctx, err, w, r)
-		return
+	ad := &model.AttributionData{Data: rd.Data}
+	if account, ok := apiservice.CtxAccount(ctx); ok {
+		ad.AccountID = ptr.Int64(account.ID)
 	}
-	_, err = h.attributionDAL.InsertAttributionData(&model.AttributionData{
-		DeviceID: ptr.String(deviceID),
-		Data:     rd.Data,
-	})
+
+	if ad.AccountID == nil {
+		deviceID, err := apiservice.GetDeviceIDFromHeader(r)
+		if err == apiservice.ErrNoDeviceIDHeader {
+			apiservice.WriteBadRequestError(ctx, err, w, r)
+			return
+		} else if err != nil {
+			apiservice.WriteError(ctx, err, w, r)
+			return
+		}
+		ad.DeviceID = ptr.String(deviceID)
+	}
+	_, err := h.attributionDAL.InsertAttributionData(ad)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return

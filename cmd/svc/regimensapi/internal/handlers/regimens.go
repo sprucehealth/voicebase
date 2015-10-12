@@ -10,6 +10,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/libs/mux"
@@ -50,8 +51,8 @@ func (h *regimensHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 	}
 }
 
-func (h *regimensHandler) parseGETRequest(ctx context.Context, r *http.Request) (*regimensGETRequest, error) {
-	rd := &regimensGETRequest{}
+func (h *regimensHandler) parseGETRequest(ctx context.Context, r *http.Request) (*responses.RegimensGETRequest, error) {
+	rd := &responses.RegimensGETRequest{}
 	if err := r.ParseForm(); err != nil {
 		return nil, err
 	}
@@ -63,7 +64,7 @@ func (h *regimensHandler) parseGETRequest(ctx context.Context, r *http.Request) 
 	return rd, nil
 }
 
-func (h *regimensHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *regimensGETRequest) {
+func (h *regimensHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *responses.RegimensGETRequest) {
 	tags := strings.Fields(rd.Query)
 	for i, t := range tags {
 		tags[i] = strings.ToLower(t)
@@ -71,7 +72,7 @@ func (h *regimensHandler) serveGET(ctx context.Context, w http.ResponseWriter, r
 
 	// If there are no tags return an empty result
 	if len(tags) == 0 {
-		httputil.JSONResponse(w, http.StatusOK, &regimensGETResponse{})
+		httputil.JSONResponse(w, http.StatusOK, &responses.RegimensGETResponse{})
 		return
 	}
 
@@ -87,11 +88,11 @@ func (h *regimensHandler) serveGET(ctx context.Context, w http.ResponseWriter, r
 		return
 	}
 
-	httputil.JSONResponse(w, http.StatusOK, &regimensGETResponse{Regimens: regimens})
+	httputil.JSONResponse(w, http.StatusOK, &responses.RegimensGETResponse{Regimens: regimens})
 }
 
-func (h *regimensHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*regimenPOSTRequest, error) {
-	rd := &regimenPOSTRequest{}
+func (h *regimensHandler) parsePOSTRequest(ctx context.Context, r *http.Request) (*responses.RegimenPOSTRequest, error) {
+	rd := &responses.RegimenPOSTRequest{}
 	// An empty body for a POST here is acceptable
 	if err := json.NewDecoder(r.Body).Decode(rd); err != nil && err != io.EOF {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
@@ -100,7 +101,7 @@ func (h *regimensHandler) parsePOSTRequest(ctx context.Context, r *http.Request)
 	return rd, nil
 }
 
-func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *regimenPOSTRequest) {
+func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *responses.RegimenPOSTRequest) {
 	var resourceID, authToken string
 	if rd.Regimen == nil {
 		iResourceID, err := idgen.NewID()
@@ -156,7 +157,7 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 		}
 	}
 
-	httputil.JSONResponse(w, http.StatusOK, &regimenPOSTResponse{
+	httputil.JSONResponse(w, http.StatusOK, &responses.RegimenPOSTResponse{
 		ID:        resourceID,
 		URL:       regimenURL(h.webDomain, resourceID),
 		AuthToken: authToken,
@@ -226,8 +227,8 @@ func (h *regimenHandler) serveGET(ctx context.Context, w http.ResponseWriter, r 
 	httputil.JSONResponse(w, http.StatusOK, regimen)
 }
 
-func (h *regimenHandler) parsePUTRequest(ctx context.Context, r *http.Request) (*regimenPUTRequest, error) {
-	rd := &regimenPUTRequest{}
+func (h *regimenHandler) parsePUTRequest(ctx context.Context, r *http.Request) (*responses.RegimenPUTRequest, error) {
+	rd := &responses.RegimenPUTRequest{}
 	if err := json.NewDecoder(r.Body).Decode(rd); err != nil {
 		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
 	}
@@ -238,7 +239,7 @@ func (h *regimenHandler) parsePUTRequest(ctx context.Context, r *http.Request) (
 	return rd, nil
 }
 
-func (h *regimenHandler) servePUT(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *regimenPUTRequest, resourceID string) {
+func (h *regimenHandler) servePUT(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *responses.RegimenPUTRequest, resourceID string) {
 	authToken := r.Header.Get("token")
 	for i, t := range rd.Regimen.Tags {
 		rd.Regimen.Tags[i] = strings.ToLower(t)
@@ -250,7 +251,7 @@ func (h *regimenHandler) servePUT(ctx context.Context, w http.ResponseWriter, r 
 		return
 	}
 
-	httputil.JSONResponse(w, http.StatusOK, &regimenPOSTResponse{
+	httputil.JSONResponse(w, http.StatusOK, &responses.RegimenPOSTResponse{
 		ID:        resourceID,
 		URL:       regimenURL(h.webDomain, resourceID),
 		AuthToken: authToken,

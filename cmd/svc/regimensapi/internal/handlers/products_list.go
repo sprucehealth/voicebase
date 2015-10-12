@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/svc/products"
@@ -28,11 +29,11 @@ func (h *productsListHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
-	res := &productList{
-		Products: make([]*product, len(prods)),
+	res := &responses.ProductList{
+		Products: make([]*responses.Product, len(prods)),
 	}
 	for i, p := range prods {
-		res.Products[i] = &product{
+		res.Products[i] = &responses.Product{
 			ID:         p.ID,
 			Name:       p.Name,
 			ImageURLs:  p.ImageURLs,

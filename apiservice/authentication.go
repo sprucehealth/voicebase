@@ -10,6 +10,10 @@ import (
 	"golang.org/x/net/context"
 )
 
+type tokenValidator interface {
+	ValidateToken(token string, platform api.Platform) (*common.Account, error)
+}
+
 type authenticatedHandler struct {
 	h        httputil.ContextHandler
 	authAPI  api.AuthAPI
@@ -68,9 +72,14 @@ func (a *authenticatedHandler) checkAuth(r *http.Request) (*common.Account, erro
 		}
 	}
 
+	return AccountFromAuthHeader(r, a.authAPI)
+}
+
+// AccountFromAuthHeader inspects the header of the provided requests and returns the associated account if one exists
+func AccountFromAuthHeader(r *http.Request, tokenValidator tokenValidator) (*common.Account, error) {
 	token, err := GetAuthTokenFromHeader(r)
 	if err != nil {
 		return nil, err
 	}
-	return a.authAPI.ValidateToken(token, api.Mobile)
+	return tokenValidator.ValidateToken(token, api.Mobile)
 }

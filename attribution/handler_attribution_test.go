@@ -7,18 +7,22 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/attribution/model"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 )
 
 type mockAttributionDAL struct {
-	insertAttributionDataErr error
-	insertAttributionData    int64
+	insertAttributionDataErr   error
+	insertAttributionDataParam *model.AttributionData
+	insertAttributionData      int64
 }
 
 func (h *mockAttributionDAL) InsertAttributionData(attributionData *model.AttributionData) (int64, error) {
+	h.insertAttributionDataParam = attributionData
 	return h.insertAttributionData, h.insertAttributionDataErr
 }
 
@@ -53,7 +57,7 @@ func TestAttributionHandlerPOSTInsertAttributionRecordError(t *testing.T) {
 	test.Equals(t, http.StatusInternalServerError, responseWriter.Code)
 }
 
-func TestAttributionHandlerPOSTHappyCase(t *testing.T) {
+func TestAttributionHandlerPOSTDeviceIDHappyCase(t *testing.T) {
 	r, err := http.NewRequest(httputil.Post, "mock.api.request", bytes.NewReader([]byte(`{"data":{}}`)))
 	r.Header.Add("S-Device-ID", "DeviceID")
 	test.OK(t, err)
@@ -62,4 +66,21 @@ func TestAttributionHandlerPOSTHappyCase(t *testing.T) {
 	responseWriter := httptest.NewRecorder()
 	handler.ServeHTTP(context.Background(), responseWriter, r)
 	test.Equals(t, http.StatusOK, responseWriter.Code)
+	test.Assert(t, dal.insertAttributionDataParam.DeviceID != nil, "Expected non nil")
+	test.Assert(t, dal.insertAttributionDataParam.AccountID == nil, "Expected nil")
+	test.Equals(t, *dal.insertAttributionDataParam.DeviceID, "DeviceID")
+}
+
+func TestAttributionHandlerPOSTAccountIDHappyCase(t *testing.T) {
+	r, err := http.NewRequest(httputil.Post, "mock.api.request", bytes.NewReader([]byte(`{"data":{}}`)))
+	r.Header.Add("Authorization", "token 12345")
+	test.OK(t, err)
+	dal := &mockAttributionDAL{}
+	handler := NewAttributionHandler(dal)
+	responseWriter := httptest.NewRecorder()
+	handler.ServeHTTP(apiservice.CtxWithAccount(context.Background(), &common.Account{ID: 100}), responseWriter, r)
+	test.Equals(t, http.StatusOK, responseWriter.Code)
+	test.Assert(t, dal.insertAttributionDataParam.AccountID != nil, "Expected non nil")
+	test.Assert(t, dal.insertAttributionDataParam.DeviceID == nil, "Expected nil")
+	test.Equals(t, *dal.insertAttributionDataParam.AccountID, int64(100))
 }
