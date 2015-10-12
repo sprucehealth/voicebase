@@ -179,8 +179,14 @@ func AssociatePromoCode(email, state, code string, dataAPI api.DataAPI, authAPI 
 			}
 
 			// associate the promotion with the patient account
-			if err = promotion.Data.(Promotion).Associate(account.ID, promoCode.ID, promotion.Expires, dataAPI); err != nil {
-				golog.Errorf(err.Error())
+			err = promotion.Data.(Promotion).Associate(account.ID, promoCode.ID, promotion.Expires, dataAPI)
+			if err != nil {
+				switch err {
+				case ErrPromotionAlreadyApplied, ErrPromotionTypeMaxClaimed, ErrPromotionOnlyForNewUsers, ErrPromotionExpired, ErrInvalidCode:
+					golog.Infof("handled promotion error for account %d: %s", account.ID, err.Error())
+				default:
+					golog.Errorf(err.Error())
+				}
 				return
 			}
 
