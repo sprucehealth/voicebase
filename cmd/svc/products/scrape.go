@@ -267,12 +267,14 @@ func (az azc) LookupByASIN(asin string) (*products.Product, error) {
 		ProductURL: it.DetailPageURL,
 		Name:       it.ItemAttributes.Title,
 	}
-	p.ImageURLs = make([]string, 1+len(it.ImageSets))
-	p.ImageURLs[0] = it.LargeImage.URL
-	for i, is := range it.ImageSets {
+	p.ImageURLs = make([]string, 0, 1+len(it.ImageSets))
+	if it.LargeImage.URL != "" {
+		p.ImageURLs = append(p.ImageURLs, it.LargeImage.URL)
+	}
+	for _, is := range it.ImageSets {
 		// One of the images in the set normally matches the main image
-		if is.LargeImage.URL != it.LargeImage.URL {
-			p.ImageURLs[i+1] = is.LargeImage.URL
+		if is.LargeImage.URL != "" && is.LargeImage.URL != it.LargeImage.URL {
+			p.ImageURLs = append(p.ImageURLs, is.LargeImage.URL)
 		}
 	}
 	return p, nil

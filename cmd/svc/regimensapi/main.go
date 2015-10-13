@@ -159,7 +159,7 @@ func main() {
 }
 
 func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.ContextHandler) {
-	var memcacheCli *memcache.Client
+	var memcacheCli products.MemcacheClient
 	if config.mcDiscoveryHost != "" {
 		d, err := awsutil.NewElastiCacheDiscoverer(config.mcDiscoveryHost, config.mcDiscoveryInterval)
 		if err != nil {
