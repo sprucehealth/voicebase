@@ -109,10 +109,10 @@ func (f *factualDAL) QueryProducts(query string, limit int) ([]*products.Product
 
 	// Cache result if using memcached
 	if f.mc != nil {
-		conc.Go(func() {
-			if b, err := json.Marshal(prods); err != nil {
-				golog.Errorf("Failed to marshal products: %s", err)
-			} else {
+		if b, err := json.Marshal(prods); err != nil {
+			golog.Errorf("Failed to marshal products: %s", err)
+		} else {
+			conc.Go(func() {
 				if err := f.mc.Set(&memcache.Item{
 					Key:        cacheKey,
 					Value:      b,
@@ -123,8 +123,8 @@ func (f *factualDAL) QueryProducts(query string, limit int) ([]*products.Product
 				} else {
 					f.statMcSetSuccess.Inc(1)
 				}
-			}
-		})
+			})
+		}
 	}
 	return prods, nil
 }
@@ -172,10 +172,10 @@ func (f *factualDAL) Product(id string) (*products.Product, error) {
 
 	// Cache result if using memcached
 	if f.mc != nil {
-		conc.Go(func() {
-			if b, err := json.Marshal(prod); err != nil {
-				golog.Errorf("Failed to marshal product: %s", err)
-			} else {
+		if b, err := json.Marshal(prod); err != nil {
+			golog.Errorf("Failed to marshal product: %s", err)
+		} else {
+			conc.Go(func() {
 				if err := f.mc.Set(&memcache.Item{
 					Key:        cacheKey,
 					Value:      b,
@@ -186,8 +186,8 @@ func (f *factualDAL) Product(id string) (*products.Product, error) {
 				} else {
 					f.statMcSetSuccess.Inc(1)
 				}
-			}
-		})
+			})
+		}
 	}
 	return prod, nil
 }
