@@ -165,6 +165,12 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 		return
 	}
 
+	// We can't associate a regimen with more than 24 tags
+	if len(regimen.Tags) > 24 {
+		apiservice.WriteBadRequestError(ctx, errors.New("A regimen can only be associated with a meximum of 24 tags"), w, r)
+		return
+	}
+
 	if err := h.svc.PutRegimen(regimen.ID, regimen, rd.Publish); err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
@@ -281,6 +287,13 @@ func (h *regimenHandler) servePUT(ctx context.Context, w http.ResponseWriter, r 
 	}
 	rd.Regimen.ID = resourceID
 	rd.Regimen.URL = regimenURL(h.webDomain, resourceID)
+
+	// We can't associate a regimen with more than 24 tags
+	if len(rd.Regimen.Tags) > 24 {
+		apiservice.WriteBadRequestError(ctx, errors.New("A regimen can only be associated with a meximum of 24 tags"), w, r)
+		return
+	}
+
 	if err := h.svc.PutRegimen(resourceID, rd.Regimen, rd.Publish); err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return

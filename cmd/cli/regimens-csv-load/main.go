@@ -102,7 +102,11 @@ func parseRow(row []string) (*regimens.Regimen, error) {
 		case 4:
 			regimen.Description = v
 		case 5:
-			regimen.Tags = strings.Fields(v)
+			tags := strings.Fields(v)
+			if len(tags) > 24 {
+				tags = tags[:24]
+			}
+			regimen.Tags = tags
 		case 6:
 			regimen.Creator.Name = v
 		default:
