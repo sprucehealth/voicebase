@@ -201,7 +201,7 @@ func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.Contex
 			dynamoConfig.DisableSSL = &config.awsDynamoDBDisableSSL
 		}
 		return dynamoConfig
-	}()), config.authSecret)
+	}()), config.env, config.authSecret)
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}

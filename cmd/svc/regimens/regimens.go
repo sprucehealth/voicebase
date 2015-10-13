@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -23,47 +24,78 @@ import (
 )
 
 const (
-	regimenTableName                = "Regimen"
-	regimenTagTableName             = "RegimenTag"
-	regimenTagTableTagViewIndexName = "tag_view_count"
+	regimenTableNameFormatString    = "%s_regimen"
+	regimenTagTableNameFormatString = "%s_regimen_tag"
+
+	// AN represents "Attribute Name"
+	regimenIDAN = "regimen_id"
+	publishedAN = "published"
+	viewCountAN = "view_count"
+	regimenAN   = "regimen"
+	tagAN       = "tag"
 )
 
 var (
 	up = big.NewInt(math.MaxInt64)
+
+	// Preallocate strings and pointers to common objects used in the dynamo tables
+	// tag_view_count is the GSI used to sort tag results by view count
+	regimenTagTableTagViewIndexName = ptr.String("tag_view_count")
+	// A false parameter for Scan Index Direction returns descending order
+	tagQueryScanIndexDirection = ptr.Bool(false)
+	// Limit queries to a 100 results
+	limitValue = ptr.Int64(100)
+	// AV represents an AttributeValue
+	oneAV  = ptr.String("1")
+	zeroAV = ptr.String("0")
+	// RV represents a ReturnValues option
+	allNewRV = ptr.String("ALL_NEW")
+	// UE represents an UpdateExpression
+	incrementViewCountUE = ptr.String("set view_count = view_count + :inc")
+	// UEAV represents an UpdateExpressionAttributeValues
+	incrementSingleValueUEAV = map[string]*dynamodb.AttributeValue{":inc": {N: oneAV}}
+	// KCE represents a KeyConditionExpression
+	tagEqualsTagKCE = ptr.String("tag = :tag")
 )
 
 // service contains a collections of methods that interact with amazon AWS Dynamo Db to perform the various regimen DAL actions
 type service struct {
-	dynamoClient dynamodbiface.DynamoDBAPI
-	signer       *sig.Signer
+	dynamoClient        dynamodbiface.DynamoDBAPI
+	signer              *sig.Signer
+	regimenTableName    *string
+	regimenTagTableName *string
 }
 
 // New returns an initialized instance of service
-func New(d dynamodbiface.DynamoDBAPI, authSecret string) (svc.Service, error) {
+func New(d dynamodbiface.DynamoDBAPI, env, authSecret string) (svc.Service, error) {
 	if authSecret == "" {
 		return nil, errors.Trace(errors.New("An empty auth secret cannot be used"))
 	}
-	s := &service{dynamoClient: d}
-	var err error
-	s.signer, err = sig.NewSigner([][]byte{[]byte(authSecret)}, nil)
+	signer, err := sig.NewSigner([][]byte{[]byte(authSecret)}, nil)
 	if err != nil {
 		return nil, errors.Trace(fmt.Errorf("auth: Failed to initialize auth signer: %s", err))
+	}
+
+	s := &service{
+		dynamoClient:        d,
+		signer:              signer,
+		regimenTableName:    ptr.String(fmt.Sprintf(regimenTableNameFormatString, env)),
+		regimenTagTableName: ptr.String(fmt.Sprintf(regimenTagTableNameFormatString, env)),
 	}
 	return s, errors.Trace(s.verifyDynamo())
 }
 
 func (s *service) Regimen(id string) (*svc.Regimen, bool, error) {
-	singleIncValue := ptr.String("1")
 	updateResp, err := s.dynamoClient.UpdateItem(&dynamodb.UpdateItemInput{
-		TableName: ptr.String(regimenTableName),
+		TableName: s.regimenTableName,
 		Key: map[string]*dynamodb.AttributeValue{
-			"regimen_id": &dynamodb.AttributeValue{
+			regimenIDAN: &dynamodb.AttributeValue{
 				S: ptr.String(id),
 			},
 		},
-		UpdateExpression:          ptr.String("set view_count = view_count + :inc"),
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{":inc": {N: singleIncValue}},
-		ReturnValues:              ptr.String("ALL_NEW"),
+		UpdateExpression:          incrementViewCountUE,
+		ExpressionAttributeValues: incrementSingleValueUEAV,
+		ReturnValues:              allNewRV,
 	})
 
 	if err != nil {
@@ -75,36 +107,36 @@ func (s *service) Regimen(id string) (*svc.Regimen, bool, error) {
 	}
 
 	r := &svc.Regimen{}
-	if err := json.Unmarshal(updateResp.Attributes["regimen"].B, r); err != nil {
+	if err := json.Unmarshal(updateResp.Attributes[regimenAN].B, r); err != nil {
 		return nil, false, errors.Trace(err)
 	}
-	published := updateResp.Attributes["published"].BOOL
+	published := updateResp.Attributes[publishedAN].BOOL
 	if published == nil {
 		published = ptr.Bool(false)
 	}
 
-	vc, err := strconv.ParseInt(*updateResp.Attributes["view_count"].N, 10, 64)
+	vc, err := strconv.ParseInt(*updateResp.Attributes[viewCountAN].N, 10, 64)
 	if err != nil {
 		return nil, false, errors.Trace(err)
 	}
 	r.ViewCount = int(vc)
 
 	// Asynchronoushly update the tag index table, if any updates fail who cares, log it
-	regimenID := *updateResp.Attributes["regimen_id"].S
+	regimenID := *updateResp.Attributes[regimenIDAN].S
 	conc.Go(func() {
 		for _, tag := range r.Tags {
 			_, err := s.dynamoClient.UpdateItem(&dynamodb.UpdateItemInput{
-				TableName: ptr.String(regimenTagTableName),
+				TableName: s.regimenTagTableName,
 				Key: map[string]*dynamodb.AttributeValue{
-					"tag": &dynamodb.AttributeValue{
+					tagAN: &dynamodb.AttributeValue{
 						S: ptr.String(tag),
 					},
-					"regimen_id": &dynamodb.AttributeValue{
+					regimenIDAN: &dynamodb.AttributeValue{
 						S: ptr.String(regimenID),
 					},
 				},
-				UpdateExpression:          ptr.String("set view_count = view_count + :inc"),
-				ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{":inc": {N: singleIncValue}},
+				UpdateExpression:          incrementViewCountUE,
+				ExpressionAttributeValues: incrementSingleValueUEAV,
 			})
 			if err != nil {
 				golog.Errorf("Error while asynchronously incrementing tag index table view_count - tag: %s, regimen_id: %s", tag, regimenID)
@@ -133,17 +165,17 @@ func (s *service) PutRegimen(id string, r *svc.Regimen, published bool) error {
 		&dynamodb.WriteRequest{
 			PutRequest: &dynamodb.PutRequest{
 				Item: map[string]*dynamodb.AttributeValue{
-					"regimen_id": &dynamodb.AttributeValue{
+					regimenIDAN: &dynamodb.AttributeValue{
 						S: ptr.String(id),
 					},
 					// An unpublished regimen always has a view count of 0 and a published regimen should not be mutated so always PUT with a 0 value
-					"view_count": &dynamodb.AttributeValue{
-						N: ptr.String("0"),
+					viewCountAN: &dynamodb.AttributeValue{
+						N: zeroAV,
 					},
-					"published": &dynamodb.AttributeValue{
+					publishedAN: &dynamodb.AttributeValue{
 						BOOL: ptr.Bool(published),
 					},
-					"regimen": &dynamodb.AttributeValue{
+					regimenAN: &dynamodb.AttributeValue{
 						B: regimenData,
 					},
 				},
@@ -155,6 +187,7 @@ func (s *service) PutRegimen(id string, r *svc.Regimen, published bool) error {
 	usedTags := make(map[string]bool)
 	tagWriteRequests := make([]*dynamodb.WriteRequest, len(r.Tags))
 	for i, tag := range r.Tags {
+		tag = strings.ToLower(tag)
 		if _, ok := usedTags[tag]; !ok {
 			usedTags[tag] = true
 		} else {
@@ -163,14 +196,14 @@ func (s *service) PutRegimen(id string, r *svc.Regimen, published bool) error {
 		tagWriteRequests[i] = &dynamodb.WriteRequest{
 			PutRequest: &dynamodb.PutRequest{
 				Item: map[string]*dynamodb.AttributeValue{
-					"tag": &dynamodb.AttributeValue{
+					tagAN: &dynamodb.AttributeValue{
 						S: ptr.String(tag),
 					},
 					// An unpublished regimen always has a view count of 0 and a published regimen should not be mutated so always PUT with a 0 value
-					"view_count": &dynamodb.AttributeValue{
-						N: ptr.String("0"),
+					viewCountAN: &dynamodb.AttributeValue{
+						N: zeroAV,
 					},
-					"regimen_id": &dynamodb.AttributeValue{
+					regimenIDAN: &dynamodb.AttributeValue{
 						S: ptr.String(id),
 					},
 				},
@@ -180,12 +213,12 @@ func (s *service) PutRegimen(id string, r *svc.Regimen, published bool) error {
 
 	batchWriteInput := &dynamodb.BatchWriteItemInput{
 		RequestItems: map[string][]*dynamodb.WriteRequest{
-			regimenTableName: regimenWriteRequests,
+			*s.regimenTableName: regimenWriteRequests,
 		},
 	}
 	// Only attach tag write requests if there are any
 	if len(tagWriteRequests) > 0 {
-		batchWriteInput.RequestItems[regimenTagTableName] = tagWriteRequests
+		batchWriteInput.RequestItems[*s.regimenTagTableName] = tagWriteRequests
 	}
 	_, err = s.dynamoClient.BatchWriteItem(batchWriteInput)
 	return errors.Trace(err)
@@ -228,27 +261,28 @@ func (s regimenIDViewCountByViewCount) Swap(i, j int) {
 func (s *service) TagQuery(tags []string) ([]*svc.Regimen, error) {
 	regimenIDs := make(map[string]*regimenIDViewCount)
 	for _, t := range tags {
+		t = strings.ToLower(t)
 		tagRegimenIDs, err := s.dynamoClient.Query(&dynamodb.QueryInput{
-			TableName:                 ptr.String(regimenTagTableName),
-			IndexName:                 ptr.String(regimenTagTableTagViewIndexName),
-			KeyConditionExpression:    ptr.String("tag = :tag"),
+			TableName:                 s.regimenTagTableName,
+			IndexName:                 regimenTagTableTagViewIndexName,
+			KeyConditionExpression:    tagEqualsTagKCE,
 			ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{":tag": {S: ptr.String(t)}},
 			// Only return a maximum of 100 records
-			Limit: ptr.Int64(100),
+			Limit: limitValue,
 			// Order by view count desc
-			ScanIndexForward: ptr.Bool(false),
+			ScanIndexForward: tagQueryScanIndexDirection,
 		})
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
 		// Merge in the result of each query
 		for _, v := range tagRegimenIDs.Items {
-			vc, err := strconv.ParseInt(*v["view_count"].N, 10, 64)
+			vc, err := strconv.ParseInt(*v[viewCountAN].N, 10, 64)
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
-			regimenIDs[*v["regimen_id"].S] = &regimenIDViewCount{
-				regimenID: *v["regimen_id"].S,
+			regimenIDs[*v[regimenIDAN].S] = &regimenIDViewCount{
+				regimenID: *v[regimenIDAN].S,
 				viewCount: int(vc),
 			}
 		}
@@ -279,7 +313,7 @@ func (s *service) TagQuery(tags []string) ([]*svc.Regimen, error) {
 
 	regimensResp, err := s.dynamoClient.BatchGetItem(&dynamodb.BatchGetItemInput{
 		RequestItems: map[string]*dynamodb.KeysAndAttributes{
-			regimenTableName: {Keys: regimenIDRequests},
+			*s.regimenTableName: {Keys: regimenIDRequests},
 		},
 	})
 	if err != nil {
@@ -287,19 +321,19 @@ func (s *service) TagQuery(tags []string) ([]*svc.Regimen, error) {
 	}
 
 	// Only do capacity here since we might have unpublished regimens we need to skip
-	rs := make([]*svc.Regimen, 0, len(regimensResp.Responses[regimenTableName]))
-	for _, regimen := range regimensResp.Responses[regimenTableName] {
+	rs := make([]*svc.Regimen, 0, len(regimensResp.Responses[*s.regimenTableName]))
+	for _, regimen := range regimensResp.Responses[*s.regimenTableName] {
 		// skip any unpublished  regimens
-		if !(*regimen["published"].BOOL) {
+		if !(*regimen[publishedAN].BOOL) {
 			continue
 		}
 
 		r := &svc.Regimen{}
-		if err := json.Unmarshal(regimen["regimen"].B, r); err != nil {
+		if err := json.Unmarshal(regimen[regimenAN].B, r); err != nil {
 			return nil, errors.Trace(err)
 		}
 
-		vc, err := strconv.ParseInt(*regimen["view_count"].N, 10, 64)
+		vc, err := strconv.ParseInt(*regimen[viewCountAN].N, 10, 64)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -312,7 +346,7 @@ func (s *service) TagQuery(tags []string) ([]*svc.Regimen, error) {
 
 func (s *service) verifyDynamo() error {
 	_, err := s.dynamoClient.DescribeTable(&dynamodb.DescribeTableInput{
-		TableName: ptr.String(regimenTableName),
+		TableName: s.regimenTableName,
 	})
 
 	if err != nil {
@@ -338,16 +372,16 @@ func (s *service) bootstrapDynamo() error {
 	golog.Infof("Bootstrapping dynamo tables...")
 	// Create the svc table that maps ids to svc indexed by the ID and view count
 	if _, err := s.dynamoClient.CreateTable(&dynamodb.CreateTableInput{
-		TableName: ptr.String(regimenTableName),
+		TableName: s.regimenTableName,
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			&dynamodb.AttributeDefinition{
-				AttributeName: ptr.String("regimen_id"),
+				AttributeName: ptr.String(regimenIDAN),
 				AttributeType: ptr.String("S"),
 			},
 		},
 		KeySchema: []*dynamodb.KeySchemaElement{
 			&dynamodb.KeySchemaElement{
-				AttributeName: ptr.String("regimen_id"),
+				AttributeName: ptr.String(regimenIDAN),
 				KeyType:       ptr.String("HASH"),
 			},
 		},
@@ -360,47 +394,47 @@ func (s *service) bootstrapDynamo() error {
 	}); err != nil {
 		return errors.Trace(err)
 	}
-	if err := waitForStatus(&dynamoTable{tableName: regimenTableName, client: s.dynamoClient}, awsStatus(`ACTIVE`), time.Second, time.Minute); err != nil {
+	if err := waitForStatus(&dynamoTable{tableName: *s.regimenTableName, client: s.dynamoClient}, awsStatus(`ACTIVE`), time.Second, time.Minute); err != nil {
 		return errors.Trace(err)
 	}
 
 	// Create the tags table that maps and is indexed by tags to regimen id's
 	if _, err := s.dynamoClient.CreateTable(&dynamodb.CreateTableInput{
-		TableName: ptr.String(regimenTagTableName),
+		TableName: s.regimenTagTableName,
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			&dynamodb.AttributeDefinition{
-				AttributeName: ptr.String("tag"),
+				AttributeName: ptr.String(tagAN),
 				AttributeType: ptr.String("S"),
 			},
 			&dynamodb.AttributeDefinition{
-				AttributeName: ptr.String("regimen_id"),
+				AttributeName: ptr.String(regimenIDAN),
 				AttributeType: ptr.String("S"),
 			},
 			&dynamodb.AttributeDefinition{
-				AttributeName: ptr.String("view_count"),
+				AttributeName: ptr.String(viewCountAN),
 				AttributeType: ptr.String("N"),
 			},
 		},
 		KeySchema: []*dynamodb.KeySchemaElement{
 			&dynamodb.KeySchemaElement{
-				AttributeName: ptr.String("tag"),
+				AttributeName: ptr.String(tagAN),
 				KeyType:       ptr.String("HASH"),
 			},
 			&dynamodb.KeySchemaElement{
-				AttributeName: ptr.String("regimen_id"),
+				AttributeName: ptr.String(regimenIDAN),
 				KeyType:       ptr.String("RANGE"),
 			},
 		},
 		GlobalSecondaryIndexes: []*dynamodb.GlobalSecondaryIndex{
 			&dynamodb.GlobalSecondaryIndex{
-				IndexName: ptr.String(regimenTagTableTagViewIndexName),
+				IndexName: regimenTagTableTagViewIndexName,
 				KeySchema: []*dynamodb.KeySchemaElement{
 					&dynamodb.KeySchemaElement{
-						AttributeName: ptr.String("tag"),
+						AttributeName: ptr.String(tagAN),
 						KeyType:       ptr.String("HASH"),
 					},
 					&dynamodb.KeySchemaElement{
-						AttributeName: ptr.String("view_count"),
+						AttributeName: ptr.String(viewCountAN),
 						KeyType:       ptr.String("RANGE"),
 					},
 				},
@@ -422,7 +456,7 @@ func (s *service) bootstrapDynamo() error {
 	}); err != nil {
 		return errors.Trace(err)
 	}
-	if err := waitForStatus(&dynamoTable{tableName: regimenTagTableName, client: s.dynamoClient}, awsStatus(`ACTIVE`), time.Second, time.Minute); err != nil {
+	if err := waitForStatus(&dynamoTable{tableName: *s.regimenTagTableName, client: s.dynamoClient}, awsStatus(`ACTIVE`), time.Second, time.Minute); err != nil {
 		return errors.Trace(err)
 	}
 	return nil
