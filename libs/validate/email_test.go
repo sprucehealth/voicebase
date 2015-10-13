@@ -1,4 +1,4 @@
-package email
+package validate
 
 import "testing"
 
@@ -27,12 +27,12 @@ var invalidEmails = []string{
 
 func TestIsValidEmail(t *testing.T) {
 	for i, v := range validEmails {
-		if !IsValidEmail(v) {
+		if !Email(v) {
 			t.Errorf("%d: didn't accept valid email: %s", i, v)
 		}
 	}
 	for i, v := range invalidEmails {
-		if IsValidEmail(v) {
+		if Email(v) {
 			t.Errorf("%d: accepted invalid email: %s", i, v)
 		}
 	}

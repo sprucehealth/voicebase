@@ -123,6 +123,10 @@
 			"Rev": "e008c9143e114c4462104da78fabbc4faf085a79"
 		},
 		{
+			"ImportPath": "github.com/dominicphillips/amazing",
+			"Rev": "cea80a4a0b01ed85818a682ba1560f68704b92e4"
+		},
+		{
 			"ImportPath": "github.com/go-sql-driver/mysql",
 			"Comment": "v1.2-88-ga197e5d",
 			"Rev": "a197e5d40516f2e9f74dcee085a5f2d4604e94df"
@@ -235,6 +239,10 @@
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
+			"Rev": "b026840ad5cb594d38a2b783be1b6644fe5325fb"
+		},
+		{
+			"ImportPath": "golang.org/x/net/html",
 			"Rev": "b026840ad5cb594d38a2b783be1b6644fe5325fb"
 		},
 		{

@@ -18,7 +18,6 @@ import (
 	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
-	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
@@ -26,6 +25,7 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/ratelimit"
+	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/media"
 	"golang.org/x/net/context"
 )
@@ -142,7 +142,7 @@ func (s *SignupHandler) validate(requestData *SignupPatientRequestData, r *http.
 		return nil, apiservice.NewAccessForbiddenError()
 	}
 
-	if !email.IsValidEmail(requestData.Email) {
+	if !validate.Email(requestData.Email) {
 		return nil, apiservice.NewValidationError("Please enter a valid email address")
 	}
 

@@ -34,5 +34,5 @@ func TestProducts(t *testing.T) {
 	ctx = mux.SetVars(context.Background(), map[string]string{"id": "111"})
 	h.ServeHTTP(ctx, w, r)
 	test.HTTPResponseCode(t, http.StatusOK, w)
-	test.Equals(t, "{\"Product\":{\"id\":\"111\",\"name\":\"blue\",\"image_urls\":[\"abc\"],\"product_url\":\"xxx\"}}\n", w.Body.String())
+	test.Equals(t, "{\"product\":{\"id\":\"111\",\"name\":\"blue\",\"image_urls\":[\"abc\"],\"product_url\":\"xxx\"}}\n", w.Body.String())
 }

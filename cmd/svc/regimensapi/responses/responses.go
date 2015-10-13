@@ -16,6 +16,11 @@ type ProductList struct {
 	Products []*Product `json:"products"`
 }
 
+// ProductGETResponse is the response for an API that returns a single product.
+type ProductGETResponse struct {
+	Product *Product `json:"product"`
+}
+
 // RegimenGETRequest represents the data expected to be associated with a successful GET request for the regimen endpoint
 type RegimenGETRequest struct {
 	AuthToken string `schema:"token"`

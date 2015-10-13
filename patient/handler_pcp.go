@@ -6,8 +6,8 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/validate"
 	"golang.org/x/net/context"
 )
 
@@ -72,7 +72,7 @@ func (p *pcpHandler) addPCP(ctx context.Context, w http.ResponseWriter, r *http.
 	} else if requestData.PCP.PhoneNumber == "" {
 		apiservice.WriteValidationError(ctx, "Please enter primary care physician's phone number", w, r)
 		return
-	} else if requestData.PCP.Email != "" && !email.IsValidEmail(requestData.PCP.Email) {
+	} else if requestData.PCP.Email != "" && !validate.Email(requestData.PCP.Email) {
 		apiservice.WriteValidationError(ctx, "Please enter a valid email address", w, r)
 		return
 	}

@@ -7,9 +7,9 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/www"
 	"golang.org/x/net/context"
 )
@@ -36,7 +36,7 @@ func (r *signUpAPIRequest) Validate(states []*common.State) (bool, string) {
 	if r.Email == "" {
 		return false, "Email is required"
 	}
-	if !email.IsValidEmail(r.Email) {
+	if !validate.Email(r.Email) {
 		return false, "The email provided is invalid"
 	}
 	if r.Password == "" {

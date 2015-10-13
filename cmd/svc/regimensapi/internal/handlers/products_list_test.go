@@ -13,6 +13,7 @@ import (
 type productsService struct {
 	search map[string][]*products.Product
 	lookup map[string]*products.Product
+	scrape map[string]*products.Product
 }
 
 func (ps *productsService) Search(query string) ([]*products.Product, error) {
@@ -21,6 +22,14 @@ func (ps *productsService) Search(query string) ([]*products.Product, error) {
 
 func (ps *productsService) Lookup(id string) (*products.Product, error) {
 	p, ok := ps.lookup[id]
+	if !ok {
+		return nil, products.ErrNotFound
+	}
+	return p, nil
+}
+
+func (ps *productsService) Scrape(url string) (*products.Product, error) {
+	p, ok := ps.scrape[url]
 	if !ok {
 		return nil, products.ErrNotFound
 	}

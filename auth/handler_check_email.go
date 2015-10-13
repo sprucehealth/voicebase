@@ -7,9 +7,9 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ratelimit"
+	"github.com/sprucehealth/backend/libs/validate"
 	"golang.org/x/net/context"
 )
 
@@ -55,7 +55,7 @@ func (h *checkEmailHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter
 
 	h.statRequests.Inc(1)
 
-	if !email.IsValidEmail(em) {
+	if !validate.Email(em) {
 		apiservice.WriteUserError(w, http.StatusBadRequest, "The provided email address is invalid.")
 		return
 	}

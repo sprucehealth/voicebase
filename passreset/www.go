@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/mux"
+	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/www"
 	"golang.org/x/net/context"
 )
@@ -113,7 +114,7 @@ func (h *promptHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 
 		if ema == "" {
 			errMsg = "Please enter your email"
-		} else if !email.IsValidEmail(ema) {
+		} else if !validate.Email(ema) {
 			errMsg = "The email address entered is invalid. Please check for any typos."
 		} else {
 			account, err := h.authAPI.AccountForEmail(ema)

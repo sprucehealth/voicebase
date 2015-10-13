@@ -31,9 +31,7 @@ func (h *productsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 		return
 	}
 
-	httputil.JSONResponse(w, http.StatusOK, &struct {
-		Product *responses.Product
-	}{
+	httputil.JSONResponse(w, http.StatusOK, responses.ProductGETResponse{
 		Product: &responses.Product{
 			ID:         p.ID,
 			Name:       p.Name,

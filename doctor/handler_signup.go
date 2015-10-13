@@ -8,10 +8,10 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/validate"
 	"golang.org/x/net/context"
 )
 
@@ -67,7 +67,7 @@ func (d *signupDoctorHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 
 	requestData.Email = strings.TrimSpace(strings.ToLower(requestData.Email))
 
-	if !email.IsValidEmail(requestData.Email) {
+	if !validate.Email(requestData.Email) {
 		apiservice.WriteValidationError(ctx, "Please enter a valid email address", w, r)
 		return
 	}

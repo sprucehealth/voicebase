@@ -67,6 +67,11 @@ var config struct {
 	awsSecretKey          string
 	awsToken              string
 
+	// Amazon.com
+	amzAccessKey    string
+	amzSecretKey    string
+	amzAssociateTag string
+
 	// Regimens auth secret
 	authSecret string
 
@@ -110,6 +115,11 @@ func init() {
 	flag.StringVar(&config.awsAccessKey, "aws.access.key", "", "AWS Credentials Access Key")
 	flag.StringVar(&config.awsSecretKey, "aws.secret.key", "", "AWS Credentials Secret Key")
 	flag.StringVar(&config.awsToken, "aws.token", "", "AWS Credentials Token")
+
+	// Amazon.com
+	flag.StringVar(&config.amzAccessKey, "amz.access_key", "", "Access `key` for Amazon affiliate products API")
+	flag.StringVar(&config.amzSecretKey, "amz.secret_key", "", "Secret `key` for Amazon affiliate products API")
+	flag.StringVar(&config.amzAssociateTag, "amz.associate_tag", "", "Amazon affiliate associate tag")
 
 	// Metrics
 	flag.StringVar(&config.metricsSource, "metrics.source", "", "`Source` for metrics (e.g. hostname)")
@@ -164,8 +174,19 @@ func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.Contex
 		memcacheCli = memcache.NewFromServers(mcutil.NewHRWServer(hosts))
 	}
 
+	var amz products.AmazonProductClient
+	if config.amzAccessKey != "" && config.amzSecretKey != "" && config.amzAssociateTag != "" {
+		var err error
+		amz, err = products.NewAmazonProductsClient(config.amzAccessKey, config.amzSecretKey, config.amzAssociateTag)
+		if err != nil {
+			golog.Fatalf(err.Error())
+		}
+	} else {
+		golog.Warningf("Amazon associate keys and/tag not set")
+	}
+
 	dispatcher := dispatch.New()
-	productsSvc := products.New(factual.New(config.factualKey, config.factualSecret), memcacheCli, metricsRegistry.Scope("productssvc"))
+	productsSvc := products.New(factual.New(config.factualKey, config.factualSecret), amz, memcacheCli, metricsRegistry.Scope("productssvc"))
 	regimenSvc, err := regimens.New(dynamodb.New(func() *aws.Config {
 		dynamoConfig := &aws.Config{
 			Region:      &config.awsDynamoDBRegion,
@@ -222,6 +243,7 @@ func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.Contex
 	router.Handle("/media", mediaHandler)
 	router.Handle("/media/{id:[0-9]+}", mediaHandler)
 	router.Handle("/products", handlers.NewProductsList(productsSvc))
+	router.Handle("/products/scrape", handlers.NewProductsScrape(productsSvc))
 	router.Handle("/products/{id}", handlers.NewProducts(productsSvc))
 	router.Handle("/regimen/{id:r[0-9]+}", handlers.NewRegimen(regimenSvc, config.webDomain))
 	router.Handle("/regimen", handlers.NewRegimens(regimenSvc, config.webDomain))

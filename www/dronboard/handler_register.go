@@ -11,7 +11,6 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/dispatch"
@@ -19,6 +18,7 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/sig"
+	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/www"
 	"github.com/sprucehealth/schema"
 	"golang.org/x/net/context"
@@ -93,7 +93,7 @@ func (r *registerForm) Validate() map[string]string {
 	}
 	if r.Email == "" {
 		errors["Email"] = "Email is required"
-	} else if !email.IsValidEmail(r.Email) {
+	} else if !validate.Email(r.Email) {
 		errors["Email"] = "Email does not appear to be valid"
 	}
 	if len(r.Password1) < api.MinimumPasswordLength {

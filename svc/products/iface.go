@@ -1,9 +1,21 @@
 package products
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
-// ErrNotFound is returned when trying to lookup an object that does not exist
+// ErrNotFound is returned when trying to lookup an object that does not exist.
 var ErrNotFound = errors.New("products: object not found")
+
+// ErrScrapeFailed is returned by Scrape when it fails to get a product from a URL.
+type ErrScrapeFailed struct {
+	Reason string
+}
+
+func (e ErrScrapeFailed) Error() string {
+	return fmt.Sprintf("products: scrape failed: %s", e.Reason)
+}
 
 // Product is the model for a product as defined by the products service.
 type Product struct {
@@ -17,4 +29,5 @@ type Product struct {
 type Service interface {
 	Search(query string) ([]*Product, error)
 	Lookup(id string) (*Product, error)
+	Scrape(url string) (*Product, error)
 }
