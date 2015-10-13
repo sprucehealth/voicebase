@@ -151,8 +151,15 @@ func (s *service) PutRegimen(id string, r *svc.Regimen, published bool) error {
 		},
 	}
 
+	// track all the tags we're adding since we can't write duplicates to dynamo
+	usedTags := make(map[string]bool)
 	tagWriteRequests := make([]*dynamodb.WriteRequest, len(r.Tags))
 	for i, tag := range r.Tags {
+		if _, ok := usedTags[tag]; !ok {
+			usedTags[tag] = true
+		} else {
+			continue
+		}
 		tagWriteRequests[i] = &dynamodb.WriteRequest{
 			PutRequest: &dynamodb.PutRequest{
 				Item: map[string]*dynamodb.AttributeValue{

@@ -16,7 +16,12 @@ type ProductList struct {
 	Products []*Product `json:"products"`
 }
 
-// RegimenGETResponse represents the data expected to be associated with a successful GET request for the regimen endpoint
+// RegimenGETRequest represents the data expected to be associated with a successful GET request for the regimen endpoint
+type RegimenGETRequest struct {
+	AuthToken string `schema:"token"`
+}
+
+// RegimenGETResponse represents the data expected to be returned from a successful GET request for the regimen endpoint
 type RegimenGETResponse regimens.Regimen
 
 // RegimenPUTRequest represents the data expected to be associated with a successful PUT request for the regimen endpoint

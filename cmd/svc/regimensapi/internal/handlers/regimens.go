@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/libs/mux"
@@ -103,7 +105,8 @@ func (h *regimensHandler) parsePOSTRequest(ctx context.Context, r *http.Request)
 
 func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *responses.RegimenPOSTRequest) {
 	var resourceID, authToken string
-	if rd.Regimen == nil {
+	var regimen *regimens.Regimen
+	if rd.Regimen == nil || rd.Regimen.ID == "" {
 		iResourceID, err := idgen.NewID()
 		if err != nil {
 			apiservice.WriteError(ctx, err, w, r)
@@ -117,13 +120,17 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 			return
 		}
 
-		// Write an empty regimen to the store to bootstrap it
-		regimen := &regimens.Regimen{ID: resourceID, URL: regimenURL(h.webDomain, resourceID)}
-		if err := h.svc.PutRegimen(resourceID, regimen, false); err != nil {
-			apiservice.WriteError(ctx, err, w, r)
-			return
+		// Write an empty regimen to the store to bootstrap it if one wasn't provided
+		url := regimenURL(h.webDomain, resourceID)
+		if rd.Regimen == nil {
+			regimen = &regimens.Regimen{ID: resourceID, URL: url}
+		} else {
+			regimen = rd.Regimen
+			regimen.ID = resourceID
+			regimen.URL = url
 		}
-	} else {
+	} else if rd.Regimen.ID != "" {
+		// If they provided a regimen ID, make sure they can access it and it isn't published
 		resourceID = rd.Regimen.ID
 		authToken = r.Header.Get("token")
 		if authToken == "" {
@@ -150,11 +157,17 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 			apiservice.WriteAccessNotAllowedError(ctx, w, r)
 			return
 		}
+	}
 
-		if err := h.svc.PutRegimen(rd.Regimen.ID, rd.Regimen, rd.Publish); err != nil {
-			apiservice.WriteError(ctx, err, w, r)
-			return
-		}
+	if regimen == nil || regimen.ID == "" {
+		golog.Errorf("The regimen preparing to be written is null or lacks an identifier - %v", regimen)
+		apiservice.WriteError(ctx, errors.New("The regimen preparing to be written is null or lacks an identifier"), w, r)
+		return
+	}
+
+	if err := h.svc.PutRegimen(regimen.ID, regimen, rd.Publish); err != nil {
+		apiservice.WriteError(ctx, err, w, r)
+		return
 	}
 
 	httputil.JSONResponse(w, http.StatusOK, &responses.RegimenPOSTResponse{
@@ -192,9 +205,18 @@ func (h *regimenHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		return
 	}
 
-	// If this is a mutatig request or a GET on an unpublished record check auth
+	// If this is a mutating request or a GET on an unpublished record check auth
+	// If there is no token in the header check the params
+	authToken := r.Header.Get("token")
+	if authToken == "" && r.Method == httputil.Get {
+		rd, err := h.parseGETRequest(ctx, r)
+		if err != nil {
+			apiservice.WriteBadRequestError(ctx, err, w, r)
+			return
+		}
+		authToken = rd.AuthToken
+	}
 	if r.Method == httputil.Put || (r.Method == httputil.Get && !published) {
-		authToken := r.Header.Get("token")
 		access, err := h.svc.CanAccessResource(id, authToken)
 		if err != nil {
 			apiservice.WriteError(ctx, err, w, r)
@@ -221,6 +243,19 @@ func (h *regimenHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		}
 		h.servePUT(ctx, w, r, rd, id)
 	}
+}
+
+func (h *regimenHandler) parseGETRequest(ctx context.Context, r *http.Request) (*responses.RegimenGETRequest, error) {
+	rd := &responses.RegimenGETRequest{}
+	if err := r.ParseForm(); err != nil {
+		return nil, err
+	}
+
+	if err := schema.NewDecoder().Decode(rd, r.Form); err != nil {
+		return nil, fmt.Errorf("Unable to parse input parameters: %s", err)
+	}
+
+	return rd, nil
 }
 
 func (h *regimenHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, regimen *regimens.Regimen) {

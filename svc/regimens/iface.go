@@ -8,29 +8,30 @@ type Person struct {
 
 // ProductSection represents a title collection of products
 type ProductSection struct {
-	Title    string    `json:"title"`
-	Products []Product `json:"products"`
+	Title    string     `json:"title"`
+	Products []*Product `json:"products"`
 }
 
 // Product represent the data associated with a given product in a regimen
 type Product struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	ImageURL   string `json:"image_url"`
-	ProductURL string `json:"product_url"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	ImageURL    string `json:"image_url"`
+	ProductURL  string `json:"product_url"`
+	Description string `json:"description"`
 }
 
 // Regimen represents the data structure returned by the regimen's service's data fetching calls
 type Regimen struct {
-	ID              string           `json:"id"`
-	URL             string           `json:"url"`
-	Title           string           `json:"title"`
-	Creator         Person           `json:"creator"`
-	ViewCount       int              `json:"page_view_count"`
-	CoverPhotoURL   string           `json:"cover_photo_url"`
-	Description     string           `json:"description"`
-	Tags            []string         `json:"tags"`
-	ProductSections []ProductSection `json:"product_sections"`
+	ID              string            `json:"id"`
+	URL             string            `json:"url"`
+	Title           string            `json:"title"`
+	Creator         *Person           `json:"creator"`
+	ViewCount       int               `json:"page_view_count"`
+	CoverPhotoURL   string            `json:"cover_photo_url"`
+	Description     string            `json:"description"`
+	Tags            []string          `json:"tags"`
+	ProductSections []*ProductSection `json:"product_sections"`
 }
 
 // ByViewCount is a utility struct used to sort lists of regimens by view counts
