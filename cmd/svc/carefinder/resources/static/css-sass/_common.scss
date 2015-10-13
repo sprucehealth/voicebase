@@ -1,0 +1,53 @@
+// 
+// Treats patients online
+//
+.treats-online-container {
+	margin-top: 3px;
+	@include flexbox();
+	@include flexbox-align-items(baseline);
+}
+
+.treats-online-circle {
+	background-color: #00CECF;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+}
+
+.treats-online-text {
+	color: #00CECF;
+	line-height: 18px;
+	font-size: 15px;
+	margin-left: 8px;
+	@include font-500();
+}
+
+.section-title {
+	@include font-700();
+	font-size: 14px;
+	line-height: 17px;
+	color: #B9C2C5;
+}
+
+.specialties-section {
+	margin-top: 10px;
+	padding-top: 20px;
+	border-top: #E5ECEE solid 1px;
+}
+
+.specialties-items-container {
+	@include flexbox();
+	@include flexbox-wrap(wrap);
+}
+
+.specialties-item {
+	padding: 6px;
+	margin-right: 8px;
+	margin-top: 8px;
+	font-size: 15px;
+	line-height: 18px;
+	color: #0BA5C5;
+	@include font-500();
+	background-color: #E6F6F9;
+	border-radius: 2px;
+}

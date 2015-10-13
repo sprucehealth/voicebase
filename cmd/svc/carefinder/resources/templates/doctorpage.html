@@ -1,0 +1,173 @@
+{{define "headTail"}}
+	<link rel="stylesheet" type="text/css" href="{{staticURL "css/doctorpage.css"}}">
+{{end}}
+
+{{define "content"}}
+	<img class="doctor-img" src="{{.ProfileImageURL}}" />
+	
+	<div class="banner-img" style="background-image: url({{.BannerImageURL}})"></div>
+
+	<div class="doctor-name-container">
+		<p class="doctor-name">{{.LongDisplayName}}</p>
+		{{if .IsSpruceDoctor}}
+			<div class="treats-online-container">
+				<div class="treats-online-circle"></div>
+				<p class="treats-online-text">Treats Patients Online</p>
+			</div>
+			<a class="start-online-visit-button">START AN ONLINE VISIT</a>
+		{{else}}
+			<a class="call-for-appointment-button" href="{{.PhoneLink}}">CALL FOR APPOINTMENT</a>
+		{{end}}
+	</div>
+
+	{{with .ReviewsSection}}
+		<div class="reviews-container">
+			<p class="doctor-profile-section-title">What Patients Are Saying</p>
+			<div class="reviews-summary-container">
+				<p class="section-title">{{.Title}}</p>
+				<div class="rating-logo-container">
+					<img src="{{.AverageRatingURL}}" class="rating-img"></img>
+					<img class="rating-source-img" src="{{.SourceImageURL}}"></img>
+				</div>
+			</div>
+			<div class="reviews-list-container">
+				<p class="section-title">REVIEWS</p>
+				{{range .Reviews}}
+					<div class="review-item-container">
+						<div class="rating-logo-container">
+							<img src="{{.RatingURL}}" class="rating-img"></img>
+							<img class="rating-source-img" src="{{.SourceImageURL}}"></img>
+						</div>
+						<div class="review-text-container">
+							<p class="review-text">{{.Text}} 
+								{{if eq "yelp" .Source}}
+									<a class="read-more-link" target="_blank" href="{{.YelpPageURL}}">Read more</a></p>
+								{{end}}
+						</div>
+						<div class="review-author-date-container">
+							<p class="review-author-text">{{.Author}}</p>
+							<p class="review-date-text">{{.Date}}</p>
+						</div>
+					</div>
+				{{end}}
+				{{if .ShowMoreReviewsLink}}
+					<a target="_blank" class="more-reviews-link" href="{{.MoreReviewsURL}}">More Reviews</a>						
+				{{end}}
+			</div>
+		</div>
+	{{end}}
+
+	<div class="qualifications-section">
+
+		<p class="doctor-profile-section-title">Qualifications & Credentials</p>
+
+		<div class="qualifications-container">
+			
+			{{with .Specialties}}
+				<div class="specialties-section">
+					<p class="section-title">SPECIALTIES</p>
+					<div class="specialties-items-container">
+						{{range .}}
+							<div class="specialties-item">{{.}}</div>
+						{{end}}
+					</div>
+				</div>
+			{{end}}
+
+			{{range .Qualifications}}
+				<div class="subsection-container">
+					<div class="title-description-section">
+						<h1>{{.Title}}</p>
+						<p>{{.Description}}</p>
+					</div>
+				</div>
+			{{end}}
+
+		</div>
+
+	</div>
+
+	<div class="practice-information-section">
+		<p class="doctor-profile-section-title">{{.OfficeSectionTitle}}</p>
+		<div class="office-information-container">
+
+			{{with .PhysicalOfficeInformation}}
+				<div class="subsection-container">
+					<div class ="office-location-container">
+							<div>
+									<p class="section-title">OFFICE LOCATION</p>
+									<img class="office-location-img"></img>
+									<p class="office-address-line-1">{{.AddressLine1}}</p>
+									<p class="office-address-line-2">{{.AddressLine2}}</p>
+									<a class="get-directions-link" href={{.GoogleMapsLink}}>Get Directions</a>
+							</div>
+							<div class="office-hours-container">
+								<p class="section-title">OFFICE HOURS</p>
+								<table class="office-hours-table">
+									{{range .OfficeHours}}
+										<tr>
+											<td class="office-hours-day">{{.Day}}</td>
+											<td class="office-hours-hours">{{.Hours}}</td>
+										</tr>
+									{{end}}
+								</table>
+							</div>
+					</div>
+				</div>
+			{{end}}
+
+
+			{{with .StateCoverageText}}
+				<div class="subsection-container">
+					<div class="title-description-section">
+						<h1>STATE COVERAGE</h1>
+						<p>{{.}}</p>
+					</div>
+				</div>
+			{{end}}
+
+			{{with .AcceptedInsurance}}
+				<div class="subsection-container">
+					<p class="section-title">ACCEPTED INSURANCE PLANS</p>
+					<div class="accepted-insurance-contents-container">
+						<div class="accepted-insurance-items">
+							{{range .}}
+								<p class="accepted-insurance-item">{{.}}</p>
+							{{end}}
+						</div>
+					</div>
+				</div>
+			{{end}}
+
+			{{if .IsSpruceDoctor}}
+				<div class="subsection-container">
+					<p class="section-title">CONDITIONS TREATED ONLINE</p>
+					<div class="conditions-treated-online-contents-container">
+						<div class="conditions-treated-online-items">
+							{{range .ConditionsTreated}}
+								<p class="conditions-treated-online-item">{{.}}</p>
+							{{end}}
+						</div>
+					</div>
+				</div>
+			{{end}}
+
+			<div class="subsection-container">
+				<p class="section-title">AVAILABILITY</p>
+				{{range .AvailabilityItems}}
+					<div class="availability-item">
+						<img src={{.ImageURL}}></img>
+						<p>{{.Text}}</p>
+					</div>
+				{{end}}
+			</div>
+			
+			<div class="cta-button-container">
+				{{if .IsSpruceDoctor}}
+					<a class="start-online-visit-button">START AN ONLINE VISIT</a>
+				{{else}}
+					<a class="call-for-appointment-button" href={{.PhoneLink}}>CALL FOR APPOINTMENT</a>
+				{{end}}
+			</div>
+	</div>
+{{end}}

@@ -1,0 +1,415 @@
+@import "base.scss";
+@import "reset.scss";
+@import "fonts.scss";
+@import "flexbox.scss";
+@import "utils.scss";
+@import "common.scss";
+
+.banner-img {
+	height: 127px;
+	width: 100%;
+	background-position: center center;
+	background-size: cover;
+}
+
+.doctor-img {
+	position: absolute;
+	border-radius: 50%;
+	width: 100px;
+	border-radius: 100px;
+	border: white 4px solid;
+	margin-left: auto;
+	margin-right: auto;
+	margin-top: 77px;
+	left:0;
+	right:0;
+}
+
+.doctor-name-container {
+	background-color: white;
+	@include flexbox();
+	@include flexbox-direction(column);
+	@include flexbox-align-items(center);
+}
+
+.doctor-name {
+	@include font-500();
+	font-size: 28px;
+	line-height: 33px;
+	color: #1E333A;
+	padding-top: 70px;
+	padding-bottom: 10px;
+}
+
+.cta-button {
+	border-radius: 4px;
+	width: 220px;
+	padding-top: 14px;
+	padding-bottom: 14px;
+	margin-top: 20px;
+	margin-bottom: 28px;
+
+	text-align: center;
+	@include font-700();
+	font-size: 14px;
+	line-height: 14px;
+	color: white;
+	text-decoration: none;
+
+	@include respond-to(handhelds) {
+		width: 80%;
+	}
+
+	@include flexbox-align-self(center);
+}
+
+.start-online-visit-button {
+	@extend .cta-button;
+	background-color: #00CECF;
+}
+
+.call-for-appointment-button {
+	@extend .cta-button;
+	background-color: #0BA5C5;
+	margin-top: 10px;
+}
+
+.reviews-container {
+	@include flexbox();
+	@include flexbox-direction(column);
+	@include flexbox-align-items(center);
+
+	border-top: #E5ECEE 1px solid;
+}
+
+.reviews-summary-container {
+	border-top: #E5ECEE 1px solid;
+	padding-top: 15px;
+	padding-bottom: 15px;
+	margin-top: 25px;
+	width: 620px;
+
+	@include respond-to(handhelds) {
+		width: 80%;		
+
+	}
+}
+
+.rating-logo-container {
+	@include flexbox();
+	@include flexbox-align-items(baseline);
+	margin-top: 10px;
+}
+
+.rating-img {
+	width: 98px;
+	height: 19px;
+}
+
+.rating-source-img {
+	width: 51px;
+	height: 27px;
+	margin-left: 8px;
+}
+
+.reviews-list-container {
+	margin-top: 10px;
+	width: 620px;
+	padding-top: 25px;
+	border-top: #E5ECEE 1px solid;
+	@include flexbox();
+	@include flexbox-direction(column);
+
+	@include respond-to(handhelds) {
+		width: 80%;
+	}
+}
+
+.review-item-container {
+	margin-bottom: 25px;
+}
+
+.review-text-container {
+	@include flexbox();
+	@include flexbox-wrap(wrap);
+	margin-top: 10px;
+}
+
+.review-text {
+	color: #051D25;
+	@include font-300();
+	font-size: 16px;
+	line-height: 20px;
+}
+
+.read-more-link {
+	color: #0BA5C5;
+	@include font-300();
+	font-size: 16px;
+	line-height: 20px;
+	text-decoration: none;
+}
+
+.review-author-date-container {
+	@include flexbox();
+	margin-top: 8px;
+}
+
+.review-author-text {
+	color: #1E333A;
+	@include font-500();
+	font-size: 16px;
+	line-height: 20px;
+}
+
+.review-date-text {
+	@include font-300();
+	color: #8B9FA7;
+	font-size: 16px;
+	line-height: 20px;
+	margin-left: 12px;
+}
+
+.more-reviews-link {
+	@include font-500();
+	line-height: 19px;
+	font-size: 16px;
+	color: #0BA5C5;
+	text-decoration: none;
+	margin-bottom: 25px;
+}
+
+.qualifications-section {
+	background-color: white;
+	border-top: #E5ECEE 1px solid;
+
+	@include flexbox();
+	@include flexbox-direction(column);
+	@include flexbox-align-items(center);
+}
+
+.qualifications-container {
+
+	width: 620px;
+	margin-top: 20px;
+	margin-bottom: 20px;
+
+	@include respond-to(handhelds) {
+		width: 80%;
+	}
+}
+
+.subsection-container {
+	border-top: #E5ECEE 1px solid;
+	margin-top: 20px;
+	padding-top: 20px;
+	@include flexbox();
+	@include flexbox-direction(column);
+}
+
+.title-description-section {
+
+	h1 {
+		@extend .section-title;
+	}
+
+	p {
+		margin-top: 8px;
+		color: #1E333A;
+		@include font-300();
+		font-size: 16px;
+		line-height: 20px;
+	}
+}
+
+.doctor-profile-section-title {
+	color: #1E333A;
+	@include font-500();
+	font-size: 20px;
+	line-height: 24px;
+	margin-top: 25px;
+}
+
+.practice-information-section {
+	border-top: #E5ECEE 1px solid;
+	@include flexbox();
+	@include flexbox-direction(column);
+	@include flexbox-align-items(center);
+}
+
+.office-information-container {
+	width: 620px;
+	margin-bottom: 20px;
+
+	@include respond-to(handhelds) {
+		width: 80%;
+	}
+}
+
+.office-location-container {
+	@include flexbox();
+	@include flexbox-justify-content(space-between);
+
+	@include respond-to(handhelds) {
+		@include flexbox-direction(column);
+	}
+}
+
+.office-location-img {
+	background-color: #EDEEEF;
+	width: 280px;
+	height: 88px;
+	margin-top: 20px;
+	border: none;
+
+	@include respond-to(handhelds) {
+		width: 100%;
+		max-width: 280px;
+	}
+}
+
+.office-address-line-1 {
+	margin-top: 20px;
+	@include font-500();
+	font-size: 16px;
+	line-height: 20px;
+	color: #1E333A;
+}
+
+.office-address-line-2 {
+	@include font-300();
+	font-size: 16px;
+	line-height: 20px;
+	color: #1E333A;
+}
+
+.get-directions-link {
+	margin-top: 20px;
+	@include font-500();
+	font-size: 16px;
+	line-height: 20px;
+	color: #0BA5C5;
+	text-decoration: none;
+}
+
+.office-hours-container {
+	@include respond-to(handhelds) {
+		border-top: #E5ECEE 1px solid;
+		margin-top: 20px;	
+		padding-top: 20px;
+	}
+}
+
+.office-hours-table {
+	margin-top: 20px;
+}
+
+.office-hours-day {
+	@include font-500();
+	font-size: 16px;
+	line-height: 24px;
+	color: black;
+	margin-right: 16px;
+}
+
+.office-hours-hours {
+	@include font-300();
+	font-size: 16px;
+	line-height: 24px;
+	color: black;
+	padding-left: 10px;
+}
+
+// Note: the setup between .accepted-insurance-contents-container
+// and .accepted-insurance-items is by design to work around an issue
+// where the flexbox layout doesn't obey max-height.
+// See: http://stackoverflow.com/questions/29907626/flexbox-max-height-interpretation-change-on-chrome
+.accepted-insurance-contents-container {
+	margin-top: 20px;
+	max-height: 200px;
+	@include flexbox();
+	@include respond-to(handhelds) {
+		@include flexbox-direction(column);
+		max-height: none;
+	}
+}
+
+.accepted-insurance-items {
+	min-height: 0;
+	min-width: 0;
+	@include flexbox();
+	@include flexbox-direction(column);
+	@include flexbox-wrap(wrap);
+}
+
+.accepted-insurance-item {
+	width: 300px;
+	padding-top: 5px;
+	color: #1E333A;
+	line-height: 20px;
+	font-size: 16px;;
+	@include font-300();
+}
+
+.conditions-treated-online-contents-container {
+	margin-top: 20px;
+	max-height: 160px;
+	@include flexbox();
+	@include respond-to(handhelds) {
+		@include flexbox-direction(column);
+		max-height: 400px;
+	}
+}
+
+.conditions-treated-online-items {
+	min-height: 0;
+	min-width: 0;
+	@include flexbox();
+	@include flexbox-direction(column);
+	@include flexbox-wrap(wrap);
+}
+
+.conditions-treated-online-item {
+	width: 150px;
+	padding-top: 8px;
+	color: #1E333A;
+	line-height: 20px;
+	font-size: 16px;;
+	@include font-300();
+	@include respond-to(handhelds) {
+		width: 50%;
+	}
+}
+
+.availability-container {
+	border-top: #E5ECEE 1px solid;
+	margin-top: 20px;
+	padding-top: 20px;
+}
+
+.availability-item {
+	@include flexbox();
+	@include flexbox-align-items(center);
+	margin-top: 20px;
+	img {
+		width: 28px;
+		height: 28px;	
+	}
+	p {
+		margin-left: 15px;
+		@include font-300();
+		line-height: 20px;
+		font-size: 16px;
+		color: #1E333A;
+	}
+}
+
+
+.cta-button-container {
+	border-top: #E5ECEE 1px solid;
+	margin-top: 20px;
+	padding-top: 10px;
+	@include flexbox();
+	@include flexbox-direction(column);
+}
+

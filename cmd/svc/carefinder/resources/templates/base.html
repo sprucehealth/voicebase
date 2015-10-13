@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+	<meta http-equiv="X-UA-Compatible" content="IE=Edge">
+	<title>{{.Title}}</title>
+	
+	<link rel="shortcut icon" href="{{staticURL "/img/_favicon/favicon.ico"}}">
+	<link rel="icon" type="image/png" href="{{staticURL "/img/_favicon/favicon_64.png"}}">
+	<link rel="apple-touch-icon-precomposed" href="{{staticURL "/img/_favicon/favicon_64.png"}}">
+	{{ template "headTail" .}} 
+<body>
+	<div class="header">
+		<img src={{ staticURL "img/spruce_logo@2x.png"}} />
+	</div>
+
+
+	{{ template "content" .SubContext }}
+</body>
+</html>
+{{define "headTail"}}{{end}}

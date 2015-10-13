@@ -1,0 +1,46 @@
+@mixin flexbox {
+	display: -webkit-box;
+	display: -moz-box;
+	display: -ms-flexbox;
+	display: -webkit-flex;
+	display: flex;
+}
+
+@mixin flexbox-justify-content($value) {
+	-webkit-justify-content: $value;
+	justify-content: $value;
+}
+
+@mixin flexbox-align-items($value) {
+	-webkit-align-items: $value;
+	align-items: $value;
+}
+
+@mixin flexbox-direction($value) {
+	flex-direction: $value;
+	-webkit-flex-flow: $value;
+}
+
+@mixin flexbox-wrap($value) {
+	flex-wrap: $value;
+	-webkit-flex-wrap: $value;
+}
+
+@mixin flexbox-order($val) {
+  -webkit-box-ordinal-group: $val;  
+  -moz-box-ordinal-group: $val;     
+  -ms-flex-order: $val;     
+  -webkit-order: $val;  
+  order: $val;
+}
+
+@mixin box-sizing($value) {
+	-moz-box-sizing: $value;
+	box-sizing: $value;
+}
+
+@mixin flexbox-align-self($value) {
+	-webkit-align-self: $value;
+	-ms-flex-item-align: $value;
+	align-self: $value;
+}

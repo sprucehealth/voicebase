@@ -372,4 +372,5 @@ func buildRESTAPI(
 
 func registerCfgs(cfgStore cfg.Store) {
 	cfgStore.Register(cost.GlobalFirstVisitFreeEnabled)
+
 }

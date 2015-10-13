@@ -1,0 +1,59 @@
+@mixin respond-to($media) {
+  @if $media == handhelds {
+    @media only screen and (max-width: 767px) { @content; } 
+  }
+  @else if $media == tablets {
+    @media only screen and (min-width: 768px) and (max-width: 991px) { @content; } 
+  }
+  @else if $media == desktops {
+  	 @media only screen and (min-width: 992px) { @content; }
+  }
+  // @else if $media == large-desktops {
+  //   @media only screen and (min-width: 993px) { @content; }
+  // }
+}
+
+@mixin setVisibility($value) {
+	visibility: $value;
+	-webkit-visibility: $value;
+}
+
+// handhelds-tablets-only is a utility class to 
+// show the element on handhelds and tablet sized screens
+// but hide it on desktop sized screens. Note that 
+// the assumption is that the element being wrapped 
+// uses block display.
+.handhelds-tablets-only {
+	@include setVisibility(hidden);
+  display: none;
+
+	@include respond-to(handhelds) {
+		@include setVisibility(visible);
+    display: block;
+	}
+
+	@include respond-to(tablets) {
+		@include setVisibility(visible);
+    display: block;
+	}
+}
+
+// desktop-only is a utility class to 
+// show the element on a desktop sized screen
+// but hide it on handhelds or tablet sized screens. Note
+// that the assumption is that the element being wrapped
+// using block display.
+.desktop-only {
+  @include setVisibility(visible);
+  display: block;
+    
+  @include respond-to(handhelds) {
+    display: none;
+    @include setVisibility(hidden);
+  }
+
+  @include respond-to(tablets) {
+    display: none;
+    @include setVisibility(hidden);    
+  }
+}

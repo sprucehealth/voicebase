@@ -1,0 +1,133 @@
+{{define "headTail"}}
+	<link rel="stylesheet" type="text/css" href={{staticURL "css/citypage.css"}}>
+{{end}}
+
+{{define "content"}}
+	<div class="banner-container" style="background-image: url({{.BannerImageURL}}); background-position: center center; background-size: cover;">
+		<h1 class="banner-title">{{.Title}}</h1>
+		<p class="banner-description">{{.Description}}</p>
+	</div>
+
+	<div class="content-container">
+		<div class="primary-card-container">
+			{{range .Doctors}}
+				<div class="primary-card">
+					
+					<img class="primary-card-image" src={{.ProfileImageURL}}></img>
+
+					<div class="name-rating-experience-container">
+
+						<p class="primary-card-title">{{.LongDisplayName}}</p>
+
+						{{if .IsSpruceDoctor}}
+							<div class="handhelds-tablets-only">
+								<div class="treats-online-container">
+									<div class="treats-online-circle"></div>
+									<p class="treats-online-text">Treats Patients Online</p>
+								</div>
+							</div>
+						{{end}}
+
+						<div class="rating-experience-container"> 
+							<div>
+								<p class="section-title">AVG RATING</p>
+								<img class="rating-stars-img" src={{staticURL "img/stars.svg"}}></img>
+							</div>
+							<div class="rating-experience-divider handhelds-tablets-only"></div>
+							<div class="experience-section"> 
+								<p class="section-title">EXPERIENCE</p>
+								<p class="experience-description">{{.Experience}}</p>
+							</div>
+						</div>
+
+					</div>
+
+					<p class="doctor-description">{{.Description}}</p>
+
+					{{with .Specialties}}
+						<div class="specialties-section">
+							<p class="section-title">SPECIALTIES</p>
+							<div class="specialties-items-container">
+								{{range .}}
+									<div class="specialties-item">{{.}}</div>
+								{{end}}
+							</div>
+						</div>
+					{{end}}
+
+					<div class = "view-profile-section">
+							<a class="view-profile-button" href={{.ProfileURL}}>VIEW PROFILE</a>
+							
+							{{if .IsSpruceDoctor}}
+								<div class="desktop-only">
+									<div class="treats-online-container">
+										<div class="treats-online-circle"></div>
+										<p class="treats-online-text">Treats Patients Online</p>
+									</div>
+								</div>
+							{{end}}
+					</div>
+
+				</div>
+			{{end}}
+		</div>
+
+		<div class="secondary-card-container">
+
+			{{with .CareRatingSection}}
+				<div class="secondary-card">
+					<p class="section-title">CARE RATING</p>
+					<div class="spruce-score-container">
+						<p class="spruce-score">{{.Score}}</p>
+						<p class="spruce-score-description">{{.Description}}</p>
+					</div>
+
+					<dl class="spruce-score-bullets">
+						{{range .Bullets}}
+							<dt>{{.}}</dt>
+						{{end}}
+					</dl>
+				</div>
+			{{end}}
+
+			{{with .UVRatingSection}}
+				<div class="secondary-card">
+					<p class="section-title">UV RATING</p>
+					<div class="spruce-score-container">
+						<p class="spruce-score">{{.Score}}</p>
+						<p class="spruce-score-description">{{.Description}}</p>
+					</div>
+					<dl class="spruce-score-bullets">
+						{{range .Bullets}}
+							<dt>{{.}}</dt>
+						{{end}}
+					</dl>
+				</div>
+			{{end}}
+
+			{{with .TopSkinConditionsSection}}
+				<div class="secondary-card">
+					<p class="section-title">TOP SKIN CONDITIONS</p>
+					<p class="skin-conditions-description">{{.Description}}</p>
+					<dl class="skin-conditions">
+						{{range .Items}}
+							<dt>{{.}}</dt>
+						{{end}}
+					</dl>
+				</div>
+			{{end}}
+
+			{{with .NearbyCitiesSection}}
+				<div class="secondary-card">
+					<p class="section-title">NEARBY CITIES & COUNTIES</p>
+					<div class="nearby-cities-container">
+						{{range .Items}}
+							<p class="nearby-city-item">{{.}}</p>
+						{{end}}
+					</div>
+				</div>
+			{{end}}	
+		</div>
+	</div>
+
+{{end}}

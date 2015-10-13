@@ -65,3 +65,9 @@ cmd/svc/curbside/curbside/resources.zip
 cmd/svc/regimens/regimens
 cmd/svc/restapi/resources.zip
 cmd/svc/restapi/restapi
+
+cmd/svc/carefinder/carefinder
+cmd/svc/carefinder/resources.zip
+cmd/svc/carefinder/resources/static/fonts/*
+cmd/svc/carefinder/resources/static/css/*
+

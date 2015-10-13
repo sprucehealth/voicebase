@@ -1,0 +1,617 @@
+body {
+  background-color: #F8FAFB; }
+
+.header {
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-justify-content: center;
+  justify-content: center;
+  background-color: white;
+  padding: 5px; }
+  .header img {
+    width: 124px;
+    height: 34px; }
+
+/* http://meyerweb.com/eric/tools/css/reset/ 
+   v2.0 | 20110126
+   License: none (public domain)
+*/
+html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, img, ins, kbd, q, s, samp, small, strike, strong, sub, sup, tt, var, b, u, i, center, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td, article, aside, canvas, details, embed, figure, figcaption, footer, header, hgroup, menu, nav, output, ruby, section, summary, time, mark, audio, video {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 100%;
+  font: inherit;
+  vertical-align: baseline; }
+
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure, footer, header, hgroup, menu, nav, section {
+  display: block; }
+
+body {
+  line-height: 1; }
+
+ol, ul {
+  list-style: none; }
+
+blockquote, q {
+  quotes: none; }
+
+blockquote:before, blockquote:after {
+  content: '';
+  content: none; }
+
+q:before, q:after {
+  content: '';
+  content: none; }
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0; }
+
+@font-face {
+  font-family: 'MuseoSans-100';
+  src: url("../fonts/MuseoSans_100-webfont.eot");
+  src: url("../fonts/MuseoSans_100-webfont.eot?#iefix") format("embedded-opentype"), url("../fonts/MuseoSans_100-webfont.woff2") format("woff2"), url("../fonts/MuseoSans_100-webfont.woff") format("woff"), url("../fonts/MuseoSans_100-webfont.ttf") format("truetype"), url("../fonts/MuseoSans_100-webfont.svg#museo_sans100") format("svg");
+  font-weight: normal;
+  font-style: normal; }
+@font-face {
+  font-family: 'MuseoSans-100-Italic';
+  src: url("../fonts/MuseoSans_100_Italic-webfont.eot");
+  src: url("../fonts/MuseoSans_100_Italic-webfont.eot?#iefix") format("embedded-opentype"), url("../fonts/MuseoSans_100_Italic-webfont.woff2") format("woff2"), url("../fonts/MuseoSans_100_Italic-webfont.woff") format("woff"), url("../fonts/MuseoSans_100_Italic-webfont.ttf") format("truetype"), url("../fonts/MuseoSans_100_Italic-webfont.svg#museo_sans100_italic") format("svg");
+  font-weight: normal;
+  font-style: normal; }
+@font-face {
+  font-family: 'MuseoSans-300';
+  src: url("../fonts/MuseoSans_300-webfont.eot");
+  src: url("../fonts/MuseoSans_300-webfont.eot?#iefix") format("embedded-opentype"), url("../fonts/MuseoSans_300-webfont.woff2") format("woff2"), url("../fonts/MuseoSans_300-webfont.woff") format("woff"), url("../fonts/MuseoSans_300-webfont.ttf") format("truetype"), url("../fonts/MuseoSans_300-webfont.svg#museo_sans300") format("svg");
+  font-weight: normal;
+  font-style: normal; }
+@font-face {
+  font-family: 'MuseoSans-300-Italic';
+  src: url("../fonts/MuseoSans_300_Italic-webfont.eot");
+  src: url("../fonts/MuseoSans_300_Italic-webfont.eot?#iefix") format("embedded-opentype"), url("../fonts/MuseoSans_300_Italic-webfont.woff2") format("woff2"), url("../fonts/MuseoSans_300_Italic-webfont.woff") format("woff"), url("../fonts/MuseoSans_300_Italic-webfont.ttf") format("truetype"), url("../fonts/MuseoSans_300_Italic-webfont.svg#museo_sans300_italic") format("svg");
+  font-weight: normal;
+  font-style: normal; }
+@font-face {
+  font-family: 'MuseoSans-500';
+  src: url("../fonts/MuseoSans_500-webfont.eot");
+  src: url("../fonts/MuseoSans_500-webfont.eot?#iefix") format("embedded-opentype"), url("../fonts/MuseoSans_500-webfont.woff2") format("woff2"), url("../fonts/MuseoSans_500-webfont.woff") format("woff"), url("../fonts/MuseoSans_500-webfont.ttf") format("truetype"), url("../fonts/MuseoSans_500-webfont.svg#museo_sans500") format("svg");
+  font-weight: normal;
+  font-style: normal; }
+@font-face {
+  font-family: 'MuseoSans-500-Italic';
+  src: url("../fonts/MuseoSans_500_Italic-webfont.eot");
+  src: url("../fonts/MuseoSans_500_Italic-webfont.eot?#iefix") format("embedded-opentype"), url("../fonts/MuseoSans_500_Italic-webfont.woff2") format("woff2"), url("../fonts/MuseoSans_500_Italic-webfont.woff") format("woff"), url("../fonts/MuseoSans_500_Italic-webfont.ttf") format("truetype"), url("../fonts/MuseoSans_500_Italic-webfont.svg#museo_sans500_italic") format("svg");
+  font-weight: normal;
+  font-style: normal; }
+@font-face {
+  font-family: 'MuseoSans-700';
+  src: url("../fonts/MuseoSans_700-webfont.eot");
+  src: url("../fonts/MuseoSans_700-webfont.eot?#iefix") format("embedded-opentype"), url("../fonts/MuseoSans_700-webfont.woff2") format("woff2"), url("../fonts/MuseoSans_700-webfont.woff") format("woff"), url("../fonts/MuseoSans_700-webfont.ttf") format("truetype"), url("../fonts/MuseoSans_700-webfont.svg#museo_sans700") format("svg");
+  font-weight: normal;
+  font-style: normal; }
+@font-face {
+  font-family: 'MuseoSans-700-Italic';
+  src: url("../fonts/MuseoSans_700_Italic-webfont.eot");
+  src: url("../fonts/MuseoSans_700_Italic-webfont.eot?#iefix") format("embedded-opentype"), url("../fonts/MuseoSans_700_Italic-webfont.woff2") format("woff2"), url("../fonts/MuseoSans_700_Italic-webfont.woff") format("woff"), url("../fonts/MuseoSans_700_Italic-webfont.ttf") format("truetype"), url("../fonts/MuseoSans_700_Italic-webfont.svg#museo_sans700_italic") format("svg");
+  font-weight: normal;
+  font-style: normal; }
+@font-face {
+  font-family: 'MuseoSans-900';
+  src: url("../fonts/MuseoSans_900-webfont.eot");
+  src: url("../fonts/MuseoSans_900-webfont.eot?#iefix") format("embedded-opentype"), url("../fonts/MuseoSans_900-webfont.woff2") format("woff2"), url("../fonts/MuseoSans_900-webfont.woff") format("woff"), url("../fonts/MuseoSans_900-webfont.ttf") format("truetype"), url("../fonts/MuseoSans_900-webfont.svg#museo_sans900") format("svg");
+  font-weight: normal;
+  font-style: normal; }
+@font-face {
+  font-family: 'MuseoSans-900-Italic';
+  src: url("../fonts/MuseoSans_900_Italic-webfont.eot");
+  src: url("../fonts/MuseoSans_900_Italic-webfont.eot?#iefix") format("embedded-opentype"), url("../fonts/MuseoSans_900_Italic-webfont.woff2") format("woff2"), url("../fonts/MuseoSans_900_Italic-webfont.woff") format("woff"), url("../fonts/MuseoSans_900_Italic-webfont.ttf") format("truetype"), url("../fonts/MuseoSans_900_Italic-webfont.svg#museo_sans900_italic") format("svg");
+  font-weight: normal;
+  font-style: normal; }
+.handhelds-tablets-only {
+  visibility: hidden;
+  -webkit-visibility: hidden;
+  display: none; }
+  @media only screen and (max-width: 767px) {
+    .handhelds-tablets-only {
+      visibility: visible;
+      -webkit-visibility: visible;
+      display: block; } }
+  @media only screen and (min-width: 768px) and (max-width: 991px) {
+    .handhelds-tablets-only {
+      visibility: visible;
+      -webkit-visibility: visible;
+      display: block; } }
+
+.desktop-only {
+  visibility: visible;
+  -webkit-visibility: visible;
+  display: block; }
+  @media only screen and (max-width: 767px) {
+    .desktop-only {
+      display: none;
+      visibility: hidden;
+      -webkit-visibility: hidden; } }
+  @media only screen and (min-width: 768px) and (max-width: 991px) {
+    .desktop-only {
+      display: none;
+      visibility: hidden;
+      -webkit-visibility: hidden; } }
+
+.treats-online-container {
+  margin-top: 3px;
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: baseline;
+  align-items: baseline; }
+
+.treats-online-circle {
+  background-color: #00CECF;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%; }
+
+.treats-online-text {
+  color: #00CECF;
+  line-height: 18px;
+  font-size: 15px;
+  margin-left: 8px;
+  font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif; }
+
+.section-title, .title-description-section h1 {
+  font-family: 'MuseoSans-700', Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 17px;
+  color: #B9C2C5; }
+
+.specialties-section {
+  margin-top: 10px;
+  padding-top: 20px;
+  border-top: #E5ECEE solid 1px; }
+
+.specialties-items-container {
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  flex-wrap: wrap;
+  -webkit-flex-wrap: wrap; }
+
+.specialties-item {
+  padding: 6px;
+  margin-right: 8px;
+  margin-top: 8px;
+  font-size: 15px;
+  line-height: 18px;
+  color: #0BA5C5;
+  font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+  background-color: #E6F6F9;
+  border-radius: 2px; }
+
+.banner-img {
+  height: 127px;
+  width: 100%;
+  background-position: center center;
+  background-size: cover; }
+
+.doctor-img {
+  position: absolute;
+  border-radius: 50%;
+  width: 100px;
+  border-radius: 100px;
+  border: white 4px solid;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 77px;
+  left: 0;
+  right: 0; }
+
+.doctor-name-container {
+  background-color: white;
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  flex-direction: column;
+  -webkit-flex-flow: column;
+  -webkit-align-items: center;
+  align-items: center; }
+
+.doctor-name {
+  font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+  font-size: 28px;
+  line-height: 33px;
+  color: #1E333A;
+  padding-top: 70px;
+  padding-bottom: 10px; }
+
+.cta-button, .start-online-visit-button, .call-for-appointment-button {
+  border-radius: 4px;
+  width: 220px;
+  padding-top: 14px;
+  padding-bottom: 14px;
+  margin-top: 20px;
+  margin-bottom: 28px;
+  text-align: center;
+  font-family: 'MuseoSans-700', Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 14px;
+  color: white;
+  text-decoration: none;
+  -webkit-align-self: center;
+  -ms-flex-item-align: center;
+  align-self: center; }
+  @media only screen and (max-width: 767px) {
+    .cta-button, .start-online-visit-button, .call-for-appointment-button {
+      width: 80%; } }
+
+.start-online-visit-button {
+  background-color: #00CECF; }
+
+.call-for-appointment-button {
+  background-color: #0BA5C5;
+  margin-top: 10px; }
+
+.reviews-container {
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  flex-direction: column;
+  -webkit-flex-flow: column;
+  -webkit-align-items: center;
+  align-items: center;
+  border-top: #E5ECEE 1px solid; }
+
+.reviews-summary-container {
+  border-top: #E5ECEE 1px solid;
+  padding-top: 15px;
+  padding-bottom: 15px;
+  margin-top: 25px;
+  width: 620px; }
+  @media only screen and (max-width: 767px) {
+    .reviews-summary-container {
+      width: 80%; } }
+
+.rating-logo-container {
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: baseline;
+  align-items: baseline;
+  margin-top: 10px; }
+
+.rating-img {
+  width: 98px;
+  height: 19px; }
+
+.rating-source-img {
+  width: 51px;
+  height: 27px;
+  margin-left: 8px; }
+
+.reviews-list-container {
+  margin-top: 10px;
+  width: 620px;
+  padding-top: 25px;
+  border-top: #E5ECEE 1px solid;
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  flex-direction: column;
+  -webkit-flex-flow: column; }
+  @media only screen and (max-width: 767px) {
+    .reviews-list-container {
+      width: 80%; } }
+
+.review-item-container {
+  margin-bottom: 25px; }
+
+.review-text-container {
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  flex-wrap: wrap;
+  -webkit-flex-wrap: wrap;
+  margin-top: 10px; }
+
+.review-text {
+  color: #051D25;
+  font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 20px; }
+
+.read-more-link {
+  color: #0BA5C5;
+  font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 20px;
+  text-decoration: none; }
+
+.review-author-date-container {
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  margin-top: 8px; }
+
+.review-author-text {
+  color: #1E333A;
+  font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 20px; }
+
+.review-date-text {
+  font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+  color: #8B9FA7;
+  font-size: 16px;
+  line-height: 20px;
+  margin-left: 12px; }
+
+.more-reviews-link {
+  font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+  line-height: 19px;
+  font-size: 16px;
+  color: #0BA5C5;
+  text-decoration: none;
+  margin-bottom: 25px; }
+
+.qualifications-section {
+  background-color: white;
+  border-top: #E5ECEE 1px solid;
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  flex-direction: column;
+  -webkit-flex-flow: column;
+  -webkit-align-items: center;
+  align-items: center; }
+
+.qualifications-container {
+  width: 620px;
+  margin-top: 20px;
+  margin-bottom: 20px; }
+  @media only screen and (max-width: 767px) {
+    .qualifications-container {
+      width: 80%; } }
+
+.subsection-container {
+  border-top: #E5ECEE 1px solid;
+  margin-top: 20px;
+  padding-top: 20px;
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  flex-direction: column;
+  -webkit-flex-flow: column; }
+
+.title-description-section p {
+  margin-top: 8px;
+  color: #1E333A;
+  font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 20px; }
+
+.doctor-profile-section-title {
+  color: #1E333A;
+  font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+  font-size: 20px;
+  line-height: 24px;
+  margin-top: 25px; }
+
+.practice-information-section {
+  border-top: #E5ECEE 1px solid;
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  flex-direction: column;
+  -webkit-flex-flow: column;
+  -webkit-align-items: center;
+  align-items: center; }
+
+.office-information-container {
+  width: 620px;
+  margin-bottom: 20px; }
+  @media only screen and (max-width: 767px) {
+    .office-information-container {
+      width: 80%; } }
+
+.office-location-container {
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-justify-content: space-between;
+  justify-content: space-between; }
+  @media only screen and (max-width: 767px) {
+    .office-location-container {
+      flex-direction: column;
+      -webkit-flex-flow: column; } }
+
+.office-location-img {
+  background-color: #EDEEEF;
+  width: 280px;
+  height: 88px;
+  margin-top: 20px;
+  border: none; }
+  @media only screen and (max-width: 767px) {
+    .office-location-img {
+      width: 100%;
+      max-width: 280px; } }
+
+.office-address-line-1 {
+  margin-top: 20px;
+  font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 20px;
+  color: #1E333A; }
+
+.office-address-line-2 {
+  font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 20px;
+  color: #1E333A; }
+
+.get-directions-link {
+  margin-top: 20px;
+  font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 20px;
+  color: #0BA5C5;
+  text-decoration: none; }
+
+@media only screen and (max-width: 767px) {
+  .office-hours-container {
+    border-top: #E5ECEE 1px solid;
+    margin-top: 20px;
+    padding-top: 20px; } }
+
+.office-hours-table {
+  margin-top: 20px; }
+
+.office-hours-day {
+  font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  color: black;
+  margin-right: 16px; }
+
+.office-hours-hours {
+  font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  color: black;
+  padding-left: 10px; }
+
+.accepted-insurance-contents-container {
+  margin-top: 20px;
+  max-height: 200px;
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex; }
+  @media only screen and (max-width: 767px) {
+    .accepted-insurance-contents-container {
+      flex-direction: column;
+      -webkit-flex-flow: column;
+      max-height: none; } }
+
+.accepted-insurance-items {
+  min-height: 0;
+  min-width: 0;
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  flex-direction: column;
+  -webkit-flex-flow: column;
+  flex-wrap: wrap;
+  -webkit-flex-wrap: wrap; }
+
+.accepted-insurance-item {
+  width: 300px;
+  padding-top: 5px;
+  color: #1E333A;
+  line-height: 20px;
+  font-size: 16px;
+  font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif; }
+
+.conditions-treated-online-contents-container {
+  margin-top: 20px;
+  max-height: 160px;
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex; }
+  @media only screen and (max-width: 767px) {
+    .conditions-treated-online-contents-container {
+      flex-direction: column;
+      -webkit-flex-flow: column;
+      max-height: 400px; } }
+
+.conditions-treated-online-items {
+  min-height: 0;
+  min-width: 0;
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  flex-direction: column;
+  -webkit-flex-flow: column;
+  flex-wrap: wrap;
+  -webkit-flex-wrap: wrap; }
+
+.conditions-treated-online-item {
+  width: 150px;
+  padding-top: 8px;
+  color: #1E333A;
+  line-height: 20px;
+  font-size: 16px;
+  font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif; }
+  @media only screen and (max-width: 767px) {
+    .conditions-treated-online-item {
+      width: 50%; } }
+
+.availability-container {
+  border-top: #E5ECEE 1px solid;
+  margin-top: 20px;
+  padding-top: 20px; }
+
+.availability-item {
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  margin-top: 20px; }
+  .availability-item img {
+    width: 28px;
+    height: 28px; }
+  .availability-item p {
+    margin-left: 15px;
+    font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+    line-height: 20px;
+    font-size: 16px;
+    color: #1E333A; }
+
+.cta-button-container {
+  border-top: #E5ECEE 1px solid;
+  margin-top: 20px;
+  padding-top: 10px;
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  flex-direction: column;
+  -webkit-flex-flow: column; }

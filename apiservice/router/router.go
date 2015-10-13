@@ -368,6 +368,7 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 		}))
 		conf.mux.ServeHTTP(ctx, w, r)
 	})
+
 	return conf.mux, handler
 }
 

@@ -1,0 +1,417 @@
+@import "base.scss";
+@import "reset.scss";
+@import "fonts.scss";
+@import "flexbox.scss";
+@import "utils.scss";
+@import "common.scss";
+
+// 
+// Banner containing image and page description
+//
+.banner-container {	
+	min-height: 260px;
+	text-align: center;
+
+	@include flexbox();
+	@include flexbox-direction(column);
+	@include flexbox-justify-content(center);
+	@include flexbox-align-items(center);
+}
+
+.banner-title {
+	@include font-700();
+	font-size: 40px;
+	line-height: 48px;
+	color: white;
+	max-width: 480px;
+	margin-bottom: 0px;
+	@include respond-to(handhelds) {
+		font-size: 28px;
+		line-height: 33px;
+		padding-left: 16px;
+		padding-right: 16px;
+	}
+}
+
+.banner-description {
+		@include font-500();
+		font-size: 20px;
+		line-height: 24px;
+		color: white;
+		max-width: 540px;
+		margin-top: 14px;
+		@include respond-to(handhelds) {
+			font-size: 16px;
+			line-height: 19px;
+			padding-left: 16px;
+			padding-right: 16px;
+		}
+	}
+
+.content-container {
+	max-width: 960px;
+
+	@include box-sizing(border-box);
+
+	// centers the container
+	margin: auto;
+	@include flexbox();
+	@include flexbox-direction(row);
+
+	@include respond-to(handhelds) {
+		@include flexbox-direction(column);
+		margin-left: 10px;
+		margin-right: 10px;
+	}
+	@include respond-to(tablets) {
+		@include flexbox-direction(column);
+		margin-left: 10px;
+		margin-right: 10px;
+	}
+}
+
+//
+// Doctor cards and secondary cards 
+//
+
+.card {
+	background-color: white;
+	border-width: 1px;
+	border-color: #DAE6EB;
+	border-style: solid;
+	border-radius: 4px;
+}
+
+.card-container {
+	@include flexbox();
+	@include flexbox-direction(column);
+	@include respond-to(handhelds) {
+		@include flexbox-align-items(center);
+	}
+	@include respond-to(tablets) {
+		@include flexbox-align-items(center);
+	}
+}
+
+.primary-card-container {
+	@extend .card-container;
+
+	margin-top: 40px;
+	width: 64.58%;
+
+	@include respond-to(handhelds) {
+		width: 100%;
+		margin-top: 12px;
+	}
+
+	@include respond-to(tablets) {
+		width: 100%;
+		margin-top: 12px;
+	}
+}
+
+.primary-card {
+	@extend .card;
+	
+	width: 100%;
+	margin-bottom: 24px;
+	padding: 25px;
+
+
+	// border-box makes it possible to specify padding 
+	// without having it factor into the width
+	@include box-sizing(border-box);	
+	
+	@include respond-to(handhelds) {
+		width: 100%;
+		margin-bottom: 12px;
+		padding: 20px;
+	}
+
+	@include respond-to(tablets) {
+		width: 60%;
+		margin-bottom: 12px;
+		padding: 20px;
+	}
+}
+
+.name-rating-experience-container {
+	@include flexbox();
+	@include flexbox-direction(column);
+
+	@include respond-to(handhelds) {
+		@include flexbox-align-items(center);
+	}
+
+	@include respond-to(tablets) {
+		@include flexbox-align-items(center);
+	}
+}
+
+.primary-card-image {
+	border-radius: 50%;
+	width: 100px;
+	height: 100px;
+	position: relative;
+	float: right;
+	@include respond-to(handhelds) {
+		display: block;
+		margin-left: auto;
+		margin-right: auto;
+		margin-bottom: 14px;
+		float: none;
+	}
+	@include respond-to(tablets) {
+		display: block;;
+		margin-left: auto;
+		margin-right: auto;		
+		margin-bottom: 14px;
+		float: none;
+	}
+}
+
+.primary-card-title {
+	@include font-500();
+	font-size: 28px;	
+	line-height: 33px;
+}
+
+.rating-experience-container {
+		@include flexbox();
+		margin-top: 20px;
+
+		@include respond-to(handhelds) {
+			@include flexbox-justify-content(space-around);
+			@include flexbox-align-self(stretch);
+			border-top: #E5ECEE solid 1px;
+			border-bottom: #E5ECEE solid 1px;
+			padding-top: 22px;
+			padding-bottom: 22px;
+		}
+
+		@include respond-to(tablets) {
+			@include flexbox-justify-content(space-around);
+			@include flexbox-align-self(stretch);
+			border-top: #E5ECEE solid 1px;
+			border-bottom: #E5ECEE solid 1px;
+			padding-top: 22px;
+			padding-bottom: 22px;
+		}
+}
+	
+.rating-stars-img {
+	width: 97px;
+	height: 18px;
+	margin-top: 5px;
+}
+
+.rating-experience-divider {
+	width: 1px;
+	background-color: #E5ECEE;
+}
+
+.experience-section {
+	margin-left: 100px;
+	@include respond-to(handhelds) {
+		margin-left: 0px;
+	}
+	@include respond-to(tablets) {
+		margin-left: 0px;
+	}
+}
+
+.experience-description {
+	margin-top: 5px;
+	@include font-500();
+	font-size: 17px;
+	line-height: 20px;
+	color: #728289;
+}
+
+.doctor-description {
+	font-size: 16px;
+	line-height: 19px;
+	@include font-300();
+	color: black;
+	margin-top: 22px;
+	margin-bottom: 20px;
+	@include flexbox-align-self(stretch);
+}
+
+.view-profile-section {
+	@include flexbox();
+	@include flexbox-direction(row-reverse);
+	@include flexbox-justify-content(space-between);
+	@include flexbox-align-items(baseline);
+	border-top: #E5ECEE solid 1px;
+	margin-top: 20px;
+	padding-top: 20px;
+
+	@include respond-to(handhelds) {
+		@include flexbox-justify-content(center);
+	}
+
+	@include respond-to(tablets) {
+		@include flexbox-justify-content(center);
+	}
+}
+
+.view-profile-button {
+	color: white;
+	@include font-700();
+	font-size: 14px;
+	line-height: 17px;
+	border-radius: 2px;
+	background-color: #0BA5C5;
+	width: 200px;
+	padding-top: 14px;
+	padding-bottom: 14px;
+	text-align: center;
+	text-decoration: none;
+
+	@include respond-to(handhelds) {
+		width: 260px;
+	}
+
+	@include respond-to(tablets) {
+		width: 260px;
+	}
+}
+
+.secondary-card-container {
+	@extend .card-container;
+
+	margin-top: 40px;
+	margin-left: 20px;
+	width: 31.25%;
+
+	@include respond-to(handhelds) {
+		width: 100%;
+		margin-top: 0px;
+		margin-left: 0px;
+	}
+
+	@include respond-to(tablets) {
+		width: 100%;
+		margin-top: 0px;
+		margin-left: 0px;
+	}
+}
+
+.secondary-card {
+	@extend .card;
+
+	// border-box makes it possible to specify padding 
+	// without having it factor into the width
+	@include box-sizing(border-box);
+
+	margin-bottom: 16px;
+	padding: 20px;
+
+	@include respond-to(handhelds) {
+		margin-bottom: 12px;
+		width: 100%;
+	}
+
+	@include respond-to(tablets) {	
+		margin-bottom: 12px;
+		width: 60%;
+	}
+}
+
+.nearby-cities-container {
+	@include flexbox();
+	@include flexbox-wrap(wrap);
+	margin-top: 10px;
+}
+
+.nearby-city-item {
+	color: #0BA5C5;
+	@include font-500();
+	padding: 8px;
+	border-radius: 4px;
+	margin-right: 10px;
+	margin-top: 10px;
+	border: #0BA5C5 1px solid; 
+}
+
+.skin-conditions-description {
+	margin-top: 15px;
+	color: #728289;
+	@include font-300();
+	font-size: 14px;
+	line-height: 20px;
+}
+
+.skin-conditions {
+	counter-reset: skin-conditions-counter;
+	margin-top: 18px;
+	dt {
+		position: relative;
+		padding-left: 24px;
+		padding-bottom: 10px;
+		@include font-500();
+		font-size: 14px;
+		line-height: 20px;
+		color: #0BA5C5;
+	}
+
+	dt:before {
+		content: counter(skin-conditions-counter);
+		counter-increment: skin-conditions-counter;
+		position: absolute;
+		left: 0;
+		top: 0;
+		@include font-500();
+		font-size: 14px;
+		line-height: 20px;
+		color: #728289;
+	}
+}
+
+.spruce-score-bullets {
+	counter-reset: spruce-score-bullets-counter;
+	margin-top: 18px;
+	dt {
+		position: relative;
+		padding-left: 24px;
+		padding-bottom: 10px;
+		@include font-300();
+		font-size: 14px;
+		line-height: 18px;
+		color: #728289;
+	}
+
+	dt:before {
+		content: counter(spruce-score-bullets-counter, disc);
+		counter-increment: spruce-score-bullets-counter;
+		position: absolute;
+		left: 0;
+		top: 0;
+		color: #728289;
+	}
+}
+
+.spruce-score-container {
+	margin-top: 20px;
+	@include flexbox();
+	@include flexbox-align-items(center);
+}
+
+.spruce-score {
+	@include font-500();
+	font-size: 18px;
+	line-height: 22px;
+	padding: 6px;
+	color: #F5A623;
+	border-radius: 4px;
+	border: #F5A623 1px solid;
+}
+
+.spruce-score-description {
+	@include font-500();
+	color: #728289;
+	font-size: 14px;
+	line-height: 18px;
+	margin-left: 16px;
+}	

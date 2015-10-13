@@ -162,6 +162,9 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	ah := newAnalyticsHandler(config.AnalyticsLogger, config.MetricsRegistry.Scope("analytics"))
 	r.Handle("/api/events", ah) // For javascript originating events
 	r.Handle("/a/logo.png", ah) // For remote event tracking "pixels" (e.g. email)
+
+	r.PathPrefix("/dermatologist-near-me/").Handler(NewCareFinderHandler(config.Cfg))
+
 }
 
 func passwordProtectFilter(pass string, templateLoader *www.TemplateLoader) func(http.Handler) http.Handler {
