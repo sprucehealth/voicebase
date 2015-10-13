@@ -94,14 +94,17 @@ func (f *factualDAL) QueryProducts(query string, limit int) ([]*products.Product
 			ImageURLs: p.ImageURLs,
 		}
 	}
-	urls, err := f.productURLs(ids)
-	if err != nil {
-		golog.Errorf("Failed to lookup factual products crosswalk: %s", err)
-		return prods, nil
-	}
 
-	for _, p := range prods {
-		p.ProductURL = urls[p.ID]
+	// Lookup product URLs in the crosswalk database
+	if len(ids) != 0 {
+		urls, err := f.productURLs(ids)
+		if err != nil {
+			golog.Errorf("Failed to lookup factual products crosswalk: %s", err)
+			return prods, nil
+		}
+		for _, p := range prods {
+			p.ProductURL = urls[p.ID]
+		}
 	}
 
 	// Cache result if using memcached
