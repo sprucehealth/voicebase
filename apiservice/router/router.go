@@ -181,7 +181,7 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 
 	noAuthenticationRequired(conf, apipaths.AuthCheckEmailURLPath,
 		auth.NewCheckEmailHandler(conf.AuthAPI, conf.RateLimiters.Get("check_email"),
-			conf.MetricsRegistry.Scope("auth.check_email")))
+			conf.MetricsRegistry.Scope("auth/check_email")))
 	authenticationRequired(conf, apipaths.PatientUpdateURLPath, patient.NewUpdateHandler(conf.DataAPI, conf.AddressValidator))
 	authenticationRequired(conf, apipaths.PatientPharmacyURLPath, patient.NewPharmacyHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.PatientAlertsURLPath, patient_file.NewAlertsHandler(conf.DataAPI))
@@ -191,7 +191,7 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 	authenticationRequired(conf, apipaths.PatientDefaultCardURLPath, patient.NewCardsHandler(conf.DataAPI, conf.PaymentAPI, conf.AddressValidator))
 	authenticationRequired(conf, apipaths.PatientRequestMedicalRecordURLPath, medrecord.NewRequestAPIHandler(conf.DataAPI, conf.MedicalRecordQueue))
 	authenticationRequired(conf, apipaths.LogoutURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.FeedbackClient, conf.Dispatcher, conf.StaticContentURL,
-		conf.RateLimiters.Get("login"), conf.MetricsRegistry.Scope("patient.auth")))
+		conf.RateLimiters.Get("login"), conf.MetricsRegistry.Scope("patient/auth")))
 	authenticationRequired(conf, apipaths.PatientPCPURLPath, patient.NewPCPHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.PatientEmergencyContactsURLPath, patient.NewEmergencyContactsHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.PatientMeURLPath, patient.NewMeHandler(conf.DataAPI, conf.FeedbackClient, conf.Dispatcher))
@@ -202,9 +202,9 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 	noAuthenticationRequired(conf, apipaths.PatientSignupURLPath, patient.NewSignupHandler(
 		conf.DataAPI, conf.AuthAPI, conf.APICDNDomain, conf.WebDomain, conf.AnalyticsLogger, conf.Dispatcher, conf.AuthTokenExpiration,
 		conf.MediaStore, conf.RateLimiters.Get("patient-signup"), addressValidationAPI,
-		conf.MetricsRegistry.Scope("patient.signup")))
+		conf.MetricsRegistry.Scope("patient/signup")))
 	noAuthenticationRequired(conf, apipaths.PatientAuthenticateURLPath, patient.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.FeedbackClient, conf.Dispatcher,
-		conf.StaticContentURL, conf.RateLimiters.Get("login"), conf.MetricsRegistry.Scope("patient.auth")))
+		conf.StaticContentURL, conf.RateLimiters.Get("login"), conf.MetricsRegistry.Scope("patient/auth")))
 
 	// Patient: Patient Case Related APIs
 	authenticationRequired(conf, apipaths.PatientVisitURLPath, patient.NewPatientVisitHandler(
@@ -272,7 +272,7 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 	authenticationRequired(conf, apipaths.DoctorCaseHistoryURLPath, doctor_queue.NewPatientsFeedHandler(conf.DataAPI, taggingClient))
 	noAuthenticationRequired(conf, apipaths.DoctorSignupURLPath, doctor.NewSignupDoctorHandler(conf.DataAPI, conf.AuthAPI))
 	noAuthenticationRequired(conf, apipaths.DoctorAuthenticateURLPath, doctor.NewAuthenticationHandler(conf.DataAPI, conf.AuthAPI, conf.SMSAPI, conf.APICDNDomain, conf.Dispatcher,
-		conf.SMSFromNumber, conf.TwoFactorExpiration, conf.RateLimiters.Get("login"), conf.MetricsRegistry.Scope("doctor.auth")))
+		conf.SMSFromNumber, conf.TwoFactorExpiration, conf.RateLimiters.Get("login"), conf.MetricsRegistry.Scope("doctor/auth")))
 	noAuthenticationRequired(conf, apipaths.DoctorAuthenticateTwoFactorURLPath, doctor.NewTwoFactorHandler(conf.DataAPI, conf.AuthAPI, conf.SMSAPI, conf.APICDNDomain, conf.SMSFromNumber, conf.TwoFactorExpiration))
 
 	// Doctor: Prescription related APIs
@@ -349,7 +349,7 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 	noAuthenticationRequired(conf, apipaths.PatientPathwaysURLPath, patient_visit.NewPathwayMenuHandler(conf.DataAPI))
 	noAuthenticationRequired(conf, apipaths.PatientPathwayDetailsURLPath, patient_visit.NewPathwayDetailsHandler(conf.DataAPI, conf.APICDNDomain, conf.Cfg))
 	noAuthenticationRequired(conf, apipaths.PingURLPath, handlers.NewPingHandler())
-	noAuthenticationRequired(conf, apipaths.AnalyticsURLPath, handlers.NewAnalyticsHandler(conf.Dispatcher, conf.MetricsRegistry.Scope("analytics.event.client")))
+	noAuthenticationRequired(conf, apipaths.AnalyticsURLPath, handlers.NewAnalyticsHandler(conf.Dispatcher, conf.MetricsRegistry.Scope("analytics/event/client")))
 	noAuthenticationRequired(conf, apipaths.ResetPasswordURLPath, passreset.NewForgotPasswordHandler(conf.DataAPI, conf.AuthAPI, conf.EmailService, conf.WebDomain))
 	noAuthenticationRequired(conf, apipaths.ProfileImageURLPath, handlers.NewProfileImageHandler(conf.DataAPI, conf.StaticResourceURL, conf.Stores.MustGet("thumbnails")))
 	noAuthenticationRequired(conf, apipaths.SettingsURLPath, settings.NewHandler(conf.MinimumAppVersionConfigs))
