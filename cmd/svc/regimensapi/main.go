@@ -254,9 +254,10 @@ func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.Contex
 
 	if config.corsAllowAll {
 		h = httputil.ToContextHandler(cors.New(cors.Options{
-			AllowedOrigins:   []string{},
+			AllowedOrigins:   []string{"*"},
 			AllowedMethods:   []string{httputil.Delete, httputil.Get, httputil.Options, httputil.Patch, httputil.Post, httputil.Put},
 			AllowCredentials: true,
+			AllowedHeaders:   []string{"*"},
 		}).Handler(httputil.FromContextHandler(h)))
 	}
 	return router, h
