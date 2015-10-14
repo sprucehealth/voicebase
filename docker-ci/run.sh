@@ -236,31 +236,32 @@ echo "BUILDING (carefinder)"
 cd $MONOREPO_PATH/cmd/svc/carefinder
 ./build.sh
 
-# if [[ "$DEPLOY_TO_S3" != "" ]]; then
-#     echo "DEPLOYING (carefinder)"
+if [[ "$DEPLOY_TO_S3" != "" ]]; then
+    echo "DEPLOYING (carefinder)"
 
-#     CMD_NAME="carefinder-$GIT_BRANCH-$BUILD_NUMBER"
-#     rm -rf build # Jenkins preserves the workspace so remove any old build files
-#     mkdir build
-#     cp $GOPATH/bin/carefinder build/$CMD_NAME
-#     bzip2 -9 build/$CMD_NAME
-#     echo $GIT_COMMIT > build/$CMD_NAME.revision
-#     cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.out build/$CMD_NAME.coverage
-#     cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.html build/$CMD_NAME.coverage.html
-#     s3cmd --add-header "x-amz-acl:bucket-owner-full-control" -M --server-side-encryption put build/* s3://spruce-deploy/carefinder/
+    CMD_NAME="carefinder-$GIT_BRANCH-$BUILD_NUMBER"
+    rm -rf build # Jenkins preserves the workspace so remove any old build files
+    mkdir build
+    cp $GOPATH/bin/carefinder build/$CMD_NAME
+    bzip2 -9 build/$CMD_NAME
+    echo $GIT_COMMIT > build/$CMD_NAME.revision
+    cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.out build/$CMD_NAME.coverage
+    cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.html build/$CMD_NAME.coverage.html
+    s3cmd --add-header "x-amz-acl:bucket-owner-full-control" -M --server-side-encryption put build/* s3://spruce-deploy/carefinder/
 
-#     # Copy over the fonts from the shared location
-#     LOCAL_CAREFINDER_STATIC_PATH="$MONOREPO_PATH/cmd/svc/carefinder/resources/static"
-#     mkdir $LOCAL_CAREFINDER_STATIC_PATH/fonts
-#     cp $MONOREPO_PATH/resources/fonts/* $LOCAL_CAREFINDER_STATIC_PATH/fonts
+    # Copy over the fonts from the shared location
+    LOCAL_CAREFINDER_STATIC_PATH="$MONOREPO_PATH/cmd/svc/carefinder/resources/static"
+    rm -rf $LOCAL_CAREFINDER_STATIC_PATH/fonts 
+    mkdir $LOCAL_CAREFINDER_STATIC_PATH/fonts
+    cp $MONOREPO_PATH/resources/static/fonts/* $LOCAL_CAREFINDER_STATIC_PATH/fonts
     
-#     cd $LOCAL_CAREFINDER_STATIC_PATH
-#     STATIC_PREFIX="s3://spruce-static/carefinder/$BUILD_NUMBER"
-#     s3cmd --recursive -P --no-preserve -m "text/css" put css/* $STATIC_PREFIX/css/
-#     s3cmd --recursive -P --no-preserve -m "application/octet-stream" --add-header "Access-Control-Allow-Origin:*" put fonts/*.ttf $STATIC_PREFIX/fonts/
-#     s3cmd --recursive -P --no-preserve -m "application/vnd.ms-fontobject" --add-header "Access-Control-Allow-Origin:*" put fonts/*.eot $STATIC_PREFIX/fonts/
-#     s3cmd --recursive -P --no-preserve -m "application/font-woff" --add-header "Access-Control-Allow-Origin:*" put fonts/*.woff $STATIC_PREFIX/fonts/
-#     s3cmd --recursive -P --no-preserve -m "application/font-woff2" --add-header "Access-Control-Allow-Origin:*" put fonts/*.woff2 $STATIC_PREFIX/fonts/
-#     s3cmd --recursive -P --no-preserve -m "image/svg+xml" --add-header "Access-Control-Allow-Origin:*" put fonts/*.svg $STATIC_PREFIX/fonts/
-#     s3cmd --recursive -P --no-preserve -M put img/* $STATIC_PREFIX/img/
-# fi
+    cd $LOCAL_CAREFINDER_STATIC_PATH
+    STATIC_PREFIX="s3://spruce-static/carefinder/$BUILD_NUMBER"
+    s3cmd --recursive -P --no-preserve -m "text/css" put css/* $STATIC_PREFIX/css/
+    s3cmd --recursive -P --no-preserve -m "application/octet-stream" --add-header "Access-Control-Allow-Origin:*" put fonts/*.ttf $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -m "application/vnd.ms-fontobject" --add-header "Access-Control-Allow-Origin:*" put fonts/*.eot $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -m "application/font-woff" --add-header "Access-Control-Allow-Origin:*" put fonts/*.woff $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -m "application/font-woff2" --add-header "Access-Control-Allow-Origin:*" put fonts/*.woff2 $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -m "image/svg+xml" --add-header "Access-Control-Allow-Origin:*" put fonts/*.svg $STATIC_PREFIX/fonts/
+    s3cmd --recursive -P --no-preserve -M put img/* $STATIC_PREFIX/img/
+fi
