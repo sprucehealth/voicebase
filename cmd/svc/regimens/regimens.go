@@ -139,7 +139,7 @@ func (s *service) Regimen(id string) (*svc.Regimen, bool, error) {
 				ExpressionAttributeValues: incrementSingleValueUEAV,
 			})
 			if err != nil {
-				golog.Errorf("Error while asynchronously incrementing tag index table view_count - tag: %s, regimen_id: %s", tag, regimenID)
+				golog.Errorf("Error while asynchronously incrementing tag index table view_count - tag: %s, regimen_id: %s: %s", tag, regimenID, err)
 			}
 		}
 	})
