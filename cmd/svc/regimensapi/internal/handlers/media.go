@@ -9,6 +9,7 @@ import (
 	_ "image/png" // imported to register PNG decoder
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -222,7 +223,11 @@ func (h *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *
 
 	res := &responses.MediaPOSTResponse{
 		MediaID:  mediaID,
-		MediaURL: fmt.Sprintf("%s/media/%d", strings.TrimRight(h.webDomain, "/"), mediaID),
+		MediaURL: mediaURL(h.webDomain, strconv.FormatInt(int64(mediaID), 10)),
 	}
 	httputil.JSONResponse(w, http.StatusOK, res)
+}
+
+func mediaURL(webDomain, mediaID string) string {
+	return fmt.Sprintf("%s/media/%s", strings.TrimRight(webDomain, "/"), mediaID)
 }

@@ -30,7 +30,7 @@ func New(endpoint string) Client {
 }
 
 func (c *regimensAPIClient) InsertRegimen(r *regimens.Regimen, publish bool) (*responses.RegimenPOSTResponse, error) {
-	req := &responses.RegimenPUTRequest{Publish: publish, Regimen: r}
+	req := &responses.RegimenPUTRequest{Publish: publish, Regimen: r, AllowRestricted: true}
 	data, err := json.Marshal(req)
 	if err != nil {
 		return nil, errors.Trace(err)

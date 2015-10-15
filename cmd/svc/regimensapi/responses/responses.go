@@ -31,8 +31,9 @@ type RegimenGETResponse regimens.Regimen
 
 // RegimenPUTRequest represents the data expected to be associated with a successful PUT request for the regimen endpoint
 type RegimenPUTRequest struct {
-	Regimen *regimens.Regimen `json:"regimen"`
-	Publish bool              `json:"publish"`
+	Regimen         *regimens.Regimen `json:"regimen"`
+	Publish         bool              `json:"publish"`
+	AllowRestricted bool              `json:"allow_restricted"` // TODO: Remove this if we figure out a better way or move to accounts
 }
 
 // RegimenPUTResponse represents the data expected to be returned from a successful PUT call to the regimen endpoint

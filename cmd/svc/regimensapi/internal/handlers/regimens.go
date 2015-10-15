@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/idgen"
@@ -20,6 +21,8 @@ import (
 	"github.com/sprucehealth/schema"
 	"golang.org/x/net/context"
 )
+
+const productPlaceholderMediaID = "product_placeholder.png"
 
 type regimensHandler struct {
 	svc       regimens.Service
@@ -90,6 +93,7 @@ func (h *regimensHandler) serveGET(ctx context.Context, w http.ResponseWriter, r
 		return
 	}
 
+	fillMissingMedia(h.webDomain, regimens)
 	httputil.JSONResponse(w, http.StatusOK, &responses.RegimensGETResponse{Regimens: regimens})
 }
 
@@ -104,6 +108,11 @@ func (h *regimensHandler) parsePOSTRequest(ctx context.Context, r *http.Request)
 }
 
 func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *responses.RegimenPOSTRequest) {
+	if err := validateRegimenContents(rd.Regimen); err != nil && !rd.AllowRestricted {
+		apiservice.WriteBadRequestError(ctx, err, w, r)
+		return
+	}
+
 	var resourceID, authToken string
 	var regimen *regimens.Regimen
 	if rd.Regimen == nil || rd.Regimen.ID == "" {
@@ -160,15 +169,19 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 	}
 
 	if regimen == nil || regimen.ID == "" {
-		golog.Errorf("The regimen preparing to be written is null or lacks an identifier - %v", regimen)
 		apiservice.WriteError(ctx, errors.New("The regimen preparing to be written is null or lacks an identifier"), w, r)
 		return
 	}
 
 	// We can't associate a regimen with more than 24 tags
 	if len(regimen.Tags) > 24 {
-		apiservice.WriteBadRequestError(ctx, errors.New("A regimen can only be associated with a meximum of 24 tags"), w, r)
+		apiservice.WriteBadRequestError(ctx, errors.New("A regimen can only be associated with a maximum of 24 tags"), w, r)
 		return
+	}
+
+	// Normalize the tags
+	for i, t := range regimen.Tags {
+		rd.Regimen.Tags[i] = strings.ToLower(t)
 	}
 
 	if err := h.svc.PutRegimen(regimen.ID, regimen, rd.Publish); err != nil {
@@ -265,6 +278,14 @@ func (h *regimenHandler) parseGETRequest(ctx context.Context, r *http.Request) (
 }
 
 func (h *regimenHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, regimen *regimens.Regimen) {
+	// Fake out the view count increase and asynchronously perform the update in a throttled manner
+	conc.Go(func() {
+		if err := h.svc.IncrementViewCount(regimen.ID); err != nil {
+			golog.Errorf("Encountered error while incrementing view count: %s", err)
+		}
+	})
+	regimen.ViewCount++
+	fillMissingMedia(h.webDomain, []*regimens.Regimen{regimen})
 	httputil.JSONResponse(w, http.StatusOK, regimen)
 }
 
@@ -281,6 +302,11 @@ func (h *regimenHandler) parsePUTRequest(ctx context.Context, r *http.Request) (
 }
 
 func (h *regimenHandler) servePUT(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *responses.RegimenPUTRequest, resourceID string) {
+	if err := validateRegimenContents(rd.Regimen); err != nil && !rd.AllowRestricted {
+		apiservice.WriteBadRequestError(ctx, err, w, r)
+		return
+	}
+
 	authToken := r.Header.Get("token")
 	for i, t := range rd.Regimen.Tags {
 		rd.Regimen.Tags[i] = strings.ToLower(t)
@@ -290,7 +316,7 @@ func (h *regimenHandler) servePUT(ctx context.Context, w http.ResponseWriter, r 
 
 	// We can't associate a regimen with more than 24 tags
 	if len(rd.Regimen.Tags) > 24 {
-		apiservice.WriteBadRequestError(ctx, errors.New("A regimen can only be associated with a meximum of 24 tags"), w, r)
+		apiservice.WriteBadRequestError(ctx, errors.New("A regimen can only be associated with a maximum of 24 tags"), w, r)
 		return
 	}
 
@@ -306,6 +332,66 @@ func (h *regimenHandler) servePUT(ctx context.Context, w http.ResponseWriter, r 
 	})
 }
 
+// Apply changes to a list of regimens that populate plateholder data
+// Note: This is intended to be used on GET requests after getting the info from
+//   the data store. This is to not lock us into these urls in the actual data
+func fillMissingMedia(webDomain string, rs []*regimens.Regimen) {
+	for ri, r := range rs {
+		for psi, ps := range r.ProductSections {
+			for pi, p := range ps.Products {
+				if p.ImageURL == "" {
+					rs[ri].ProductSections[psi].Products[pi].ImageURL = mediaURL(webDomain, productPlaceholderMediaID)
+				}
+				// If the regimen is missing a cover photo add the first product image we find
+				if r.CoverPhotoURL == "" {
+					rs[ri].CoverPhotoURL = r.ProductSections[psi].Products[pi].ImageURL
+				}
+			}
+		}
+	}
+}
+
 func regimenURL(webDomain, resourceID string) string {
-	return strings.TrimRight(webDomain, "/") + "/" + resourceID
+	return strings.TrimRight(webDomain, "/") + "/regimen/" + resourceID
+}
+
+var (
+	restrictedTags = map[string]bool{
+		"#dermatologistown":         true,
+		"dermatologistown":          true,
+		"#dermatologistrecommended": true,
+		"dermatologistrecommended":  true,
+		"#createdbyspruce":          true,
+		"createdbyspruce":           true,
+	}
+)
+
+func validateRegimenContents(r *regimens.Regimen) error {
+	if r == nil {
+		return nil
+	}
+
+	for _, t := range r.Tags {
+		if err := validateTag(t); err != nil {
+			return err
+		}
+	}
+	if err := validateUsername(r.Creator.Name); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateTag(tag string) error {
+	if _, ok := restrictedTags[strings.ToLower(tag)]; ok {
+		return fmt.Errorf("tag: %s is not allowed for public use", tag)
+	}
+	return nil
+}
+
+func validateUsername(username string) error {
+	if strings.Contains(strings.ToLower(username), "spruce") {
+		return errors.New("Usernames cannot contain the term 'spruce'")
+	}
+	return nil
 }

@@ -55,5 +55,6 @@ type Service interface {
 	CanAccessResource(resourceID, authToken string) (bool, error)
 	PutRegimen(id string, r *Regimen, published bool) error
 	Regimen(id string) (*Regimen, bool, error)
+	IncrementViewCount(id string) error
 	TagQuery(tags []string) ([]*Regimen, error)
 }

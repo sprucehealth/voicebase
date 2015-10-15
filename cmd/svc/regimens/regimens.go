@@ -15,7 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
@@ -86,6 +85,39 @@ func New(d dynamodbiface.DynamoDBAPI, env, authSecret string) (svc.Service, erro
 }
 
 func (s *service) Regimen(id string) (*svc.Regimen, bool, error) {
+	getResp, err := s.dynamoClient.GetItem(&dynamodb.GetItemInput{
+		TableName: s.regimenTableName,
+		Key: map[string]*dynamodb.AttributeValue{
+			regimenIDAN: &dynamodb.AttributeValue{
+				S: ptr.String(id),
+			},
+		},
+	})
+	if err != nil {
+		return nil, false, errors.Trace(err)
+	}
+	if getResp.Item == nil {
+		return nil, false, errors.Trace(api.ErrNotFound(fmt.Sprintf("Unable to locate regimen with ID with id %s", id)))
+	}
+
+	r := &svc.Regimen{}
+	if err := json.Unmarshal(getResp.Item[regimenAN].B, r); err != nil {
+		return nil, false, errors.Trace(err)
+	}
+	published := getResp.Item[publishedAN].BOOL
+	if published == nil {
+		published = ptr.Bool(false)
+	}
+	vc, err := strconv.ParseInt(*getResp.Item[viewCountAN].N, 10, 64)
+	if err != nil {
+		return nil, false, errors.Trace(err)
+	}
+	r.ViewCount = int(vc)
+
+	return r, *published, nil
+}
+
+func (s *service) IncrementViewCount(id string) error {
 	updateResp, err := s.dynamoClient.UpdateItem(&dynamodb.UpdateItemInput{
 		TableName: s.regimenTableName,
 		Key: map[string]*dynamodb.AttributeValue{
@@ -97,54 +129,47 @@ func (s *service) Regimen(id string) (*svc.Regimen, bool, error) {
 		ExpressionAttributeValues: incrementSingleValueUEAV,
 		ReturnValues:              allNewRV,
 	})
-
 	if err != nil {
-		return nil, false, errors.Trace(err)
+		return errors.Trace(err)
 	}
 
 	if updateResp.Attributes == nil {
-		return nil, false, errors.Trace(api.ErrNotFound(fmt.Sprintf("Unable to locate regimen with ID with id %s", id)))
+		return errors.Trace(api.ErrNotFound(fmt.Sprintf("Unable to locate regimen with ID with id %s", id)))
 	}
 
 	r := &svc.Regimen{}
 	if err := json.Unmarshal(updateResp.Attributes[regimenAN].B, r); err != nil {
-		return nil, false, errors.Trace(err)
-	}
-	published := updateResp.Attributes[publishedAN].BOOL
-	if published == nil {
-		published = ptr.Bool(false)
+		return errors.Trace(err)
 	}
 
-	vc, err := strconv.ParseInt(*updateResp.Attributes[viewCountAN].N, 10, 64)
-	if err != nil {
-		return nil, false, errors.Trace(err)
-	}
-	r.ViewCount = int(vc)
+	// Update the tag index table, if any updates fail who cares, log it
+	regimenID := ptr.String(id)
+	for i, tag := range r.Tags {
+		tag = strings.ToLower(tag)
 
-	// Asynchronoushly update the tag index table, if any updates fail who cares, log it
-	regimenID := *updateResp.Attributes[regimenIDAN].S
-	conc.Go(func() {
-		for _, tag := range r.Tags {
-			_, err := s.dynamoClient.UpdateItem(&dynamodb.UpdateItemInput{
-				TableName: s.regimenTagTableName,
-				Key: map[string]*dynamodb.AttributeValue{
-					tagAN: &dynamodb.AttributeValue{
-						S: ptr.String(tag),
-					},
-					regimenIDAN: &dynamodb.AttributeValue{
-						S: ptr.String(regimenID),
-					},
-				},
-				UpdateExpression:          incrementViewCountUE,
-				ExpressionAttributeValues: incrementSingleValueUEAV,
-			})
-			if err != nil {
-				golog.Errorf("Error while asynchronously incrementing tag index table view_count - tag: %s, regimen_id: %s: %s", tag, regimenID, err)
-			}
+		if i != 0 {
+			// Throttle the index updates to 4 a second for a maximum search delay of 6 seconds
+			time.Sleep(250 * time.Millisecond)
 		}
-	})
+		_, err := s.dynamoClient.UpdateItem(&dynamodb.UpdateItemInput{
+			TableName: s.regimenTagTableName,
+			Key: map[string]*dynamodb.AttributeValue{
+				tagAN: &dynamodb.AttributeValue{
+					S: ptr.String(tag),
+				},
+				regimenIDAN: &dynamodb.AttributeValue{
+					S: regimenID,
+				},
+			},
+			UpdateExpression:          incrementViewCountUE,
+			ExpressionAttributeValues: incrementSingleValueUEAV,
+		})
+		if err != nil {
+			golog.Errorf("Error while incrementing tag index table view_count - tag: %s, regimen_id: %s - %s", tag, id, err)
+		}
+	}
 
-	return r, *published, nil
+	return nil
 }
 
 func (s *service) PutRegimen(id string, r *svc.Regimen, published bool) error {
