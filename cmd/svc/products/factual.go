@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/rainycape/memcache"
 	"github.com/samuel/go-metrics/metrics"
@@ -59,6 +60,9 @@ func newFactualDAL(fc FactualClient, mc MemcacheClient, statsRegistry metrics.Re
 }
 
 func (f *factualDAL) QueryProducts(query string, limit int) ([]*products.Product, error) {
+	// Normalize the query for better cache utilization. Shouldn't affect the results.
+	query = strings.ToLower(query)
+
 	// TODO: could handle limit better by latching to certain values for better cache hit rate
 	cacheKey := "facdal:q:" + query + ":" + strconv.Itoa(limit)
 
