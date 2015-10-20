@@ -36,26 +36,42 @@ import (
 
 var robotsTXT = []byte(`Sitemap: https://www.sprucehealth.com/sitemap.xml
 User-agent: *
+Disallow: /api
+Disallow: /e/optout
 Disallow: /login
+Disallow: /pc/
+Disallow: /r/
 `)
 
 var sitemapXML = []byte(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 	<url>
 		<loc>https://www.sprucehealth.com</loc>
-		<changefreq>daily</changefreq>
+		<changefreq>weekly</changefreq>
 	</url>
 	<url>
 		<loc>https://www.sprucehealth.com/meet-the-doctors</loc>
-		<changefreq>daily</changefreq>
+		<changefreq>weekly</changefreq>
 	</url>
 	<url>
 		<loc>https://www.sprucehealth.com/about</loc>
-		<changefreq>daily</changefreq>
+		<changefreq>weekly</changefreq>
 	</url>
 	<url>
 		<loc>https://www.sprucehealth.com/contact</loc>
-		<changefreq>daily</changefreq>
+		<changefreq>weekly</changefreq>
+	</url>
+	<url>
+		<loc>https://www.sprucehealth.com/conditions-treated</loc>
+		<changefreq>weekly</changefreq>
+	</url>
+	<url>
+		<loc>https://www.sprucehealth.com/faq</loc>
+		<changefreq>weekly</changefreq>
+	</url>
+	<url>
+		<loc>https://www.sprucehealth.com/providers</loc>
+		<changefreq>weekly</changefreq>
 	</url>
 </urlset>
 `)
