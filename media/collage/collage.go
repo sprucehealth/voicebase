@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"image/draw"
 	"math"
+	"strings"
 
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/media"
@@ -65,11 +66,13 @@ var SpruceProductGridLayout LayoutAlgorithm = func(images []image.Image, ops *Op
 		layoutLocation := i
 		if layout[i] {
 			for li, occupied := range layout {
+				layoutLocation = li
 				if !occupied {
-					layoutLocation = li
+					break
 				}
 			}
 		}
+
 		// Occupy the layout location we are about to populate
 		layout[layoutLocation] = true
 
@@ -116,8 +119,27 @@ var SpruceProductGridLayout LayoutAlgorithm = func(images []image.Image, ops *Op
 		x1 := x0 + width
 		y0 := (currentRow * (rowHeight * heightScalar)) + innerDy
 		y1 := y0 + height
-		draw.Draw(result, image.Rect(int(x0), int(y0), int(x1), int(y1)), im, image.Point{X: 0, Y: 0}, draw.Src)
+		draw.Draw(result, image.Rect(int(x0), int(y0), int(x1), int(y1)), im, image.Point{X: 0, Y: 0}, draw.Over)
 	}
 
 	return result, nil
+}
+
+func drawLayout(layout []bool, cols int) {
+	for i := 0; i < (cols * cols); i++ {
+		if (i % cols) == 0 {
+			fmt.Println(strings.Repeat("+-", cols) + "+")
+		}
+		c := " "
+		if layout[i] {
+			c = "x"
+		}
+		fmt.Printf("|%s", c)
+		if (i % cols) == (cols - 1) {
+			fmt.Printf("|\n")
+		}
+	}
+	if cols > 0 {
+		fmt.Println(strings.Repeat("+-", cols) + "+")
+	}
 }

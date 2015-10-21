@@ -99,9 +99,9 @@ func parseRow(row []string) (*regimens.Regimen, error) {
 		case 1:
 			regimen.Title = v
 		case 2:
-			regimen.CoverPhotoURL = v
+			regimen.CoverPhotoURL = subAPIEndpoint(v)
 		case 3:
-			regimen.Creator.URL = v
+			regimen.Creator.URL = subAPIEndpoint(v)
 		case 4:
 			regimen.Description = v
 		case 5:
@@ -122,13 +122,19 @@ func parseRow(row []string) (*regimens.Regimen, error) {
 				}
 			case productURL:
 				product = &regimens.Product{}
-				product.ProductURL = v
+				product.ProductURL = subAPIEndpoint(v)
 			case productName:
 				product.Name = v
 			case productImageLink:
-				product.ImageURL = v
+				product.ImageURL = subAPIEndpoint(v)
 			}
 		}
 	}
 	return regimen, nil
+}
+
+const apiSubPattern = "$(API_ENDPOINT)"
+
+func subAPIEndpoint(u string) string {
+	return strings.Replace(u, apiSubPattern, config.apiEndpoint, -1)
 }

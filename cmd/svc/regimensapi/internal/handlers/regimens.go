@@ -8,6 +8,7 @@ import (
 	"image/jpeg"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -28,7 +29,10 @@ import (
 	"golang.org/x/net/context"
 )
 
-const productPlaceholderMediaID = "product_placeholder.png"
+const (
+	rxPlaceholderMediaID      = "rx_placeholder.png"
+	productPlaceholderMediaID = "product_placeholder.png"
+)
 
 type regimensHandler struct {
 	svc                regimens.Service
@@ -382,7 +386,7 @@ ProductImageLoop:
 			if len(images) == 9 {
 				break ProductImageLoop
 			}
-			if p.ImageURL != "" {
+			if p.ImageURL != "" && !strings.HasSuffix(p.ImageURL, rxPlaceholderMediaID) {
 				res, err := http.Get(p.ImageURL)
 				if err != nil || res.StatusCode != 200 {
 					if res != nil {
@@ -390,16 +394,17 @@ ProductImageLoop:
 					} else {
 						golog.Warningf("Error while attempting to fetch image %s, err: %s", p.ImageURL, err)
 					}
-					res, err = http.Get(mediaURL(apiDomain, productPlaceholderMediaID))
-					if err != nil {
-						golog.Warningf("Unable to utilize either provided image or placeholder image in collage")
-						continue
-					}
+					continue
 				}
 				defer res.Body.Close()
 				m, _, err := image.Decode(res.Body)
 				if err != nil {
 					golog.Warningf("Error while decoding image %s: %s", p.ImageURL, err)
+					continue
+				}
+				// Do not support palleted images since we currently cannot resize them, see media.ResizeImage
+				if _, ok := m.(image.PalettedImage); ok {
+					golog.Warningf("Ignoring paletted image at url: %s", p.ImageURL)
 					continue
 				}
 				images = append(images, m)
@@ -412,7 +417,8 @@ ProductImageLoop:
 	}
 	result, err := collage.Collageify(images, collage.SpruceProductGridLayout, &collage.Options{Width: collageWidth, Height: collageHeight})
 	if err != nil {
-		return "", errors.Trace(err)
+		golog.Errorf("Unable to generate collage from product images for regimen %s - Falling back to placeholder: %s", resourceID, err)
+		return resizeMediaURL(apiDomain, productPlaceholderMediaID, collageWidth, collageHeight), nil
 	}
 	buf := bytes.NewBuffer(nil)
 	if err := jpeg.Encode(buf, result, &jpeg.Options{Quality: media.JPEGQuality}); err != nil {
@@ -464,6 +470,32 @@ func validateRegimenContents(r *regimens.Regimen) error {
 	}
 	if err := validateUsername(r.Creator.Name); err != nil {
 		return err
+	}
+
+	if r.CoverPhotoURL != "" {
+		if err := validateURL(r.CoverPhotoURL); err != nil {
+			return errors.Trace(err)
+		}
+	}
+
+	for _, ps := range r.ProductSections {
+		for _, p := range ps.Products {
+			if p.ImageURL != "" {
+				if err := validateURL(p.ImageURL); err != nil {
+					return errors.Trace(err)
+				}
+				if err := validateURL(p.ProductURL); err != nil {
+					return errors.Trace(err)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func validateURL(u string) error {
+	if _, err := url.Parse(u); err != nil {
+		return errors.Trace(fmt.Errorf("%s is not a valid URL", u))
 	}
 	return nil
 }
