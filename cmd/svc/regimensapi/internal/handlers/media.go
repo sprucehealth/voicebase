@@ -33,7 +33,7 @@ const (
 )
 
 type mediaHandler struct {
-	webDomain          string
+	apiDomain          string
 	deterministicStore storage.DeterministicStore
 	statCacheHit       *metrics.Counter
 	statCacheMiss      *metrics.Counter
@@ -44,12 +44,12 @@ type mediaHandler struct {
 
 // NewMedia returns a handler to perform media uploads and fetching
 func NewMedia(
-	webDomain string,
+	apiDomain string,
 	deterministicStore storage.DeterministicStore,
 	metricsRegistry metrics.Registry,
 ) httputil.ContextHandler {
 	h := &mediaHandler{
-		webDomain:          webDomain,
+		apiDomain:          apiDomain,
 		deterministicStore: deterministicStore,
 		statCacheHit:       metrics.NewCounter(),
 		statCacheMiss:      metrics.NewCounter(),
@@ -226,15 +226,15 @@ func (h *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *
 
 	res := &responses.MediaPOSTResponse{
 		MediaID:  mediaID,
-		MediaURL: mediaURL(h.webDomain, strconv.FormatInt(int64(mediaID), 10)),
+		MediaURL: mediaURL(h.apiDomain, strconv.FormatInt(int64(mediaID), 10)),
 	}
 	httputil.JSONResponse(w, http.StatusOK, res)
 }
 
-func mediaURL(webDomain, mediaID string) string {
-	return fmt.Sprintf("%s/media/%s", strings.TrimRight(webDomain, "/"), mediaID)
+func mediaURL(apiDomain, mediaID string) string {
+	return fmt.Sprintf("%s/media/%s", strings.TrimRight(apiDomain, "/"), mediaID)
 }
 
-func resizeMediaURL(webDomain, mediaID string, width, height int) string {
-	return fmt.Sprintf("%s/media/%s?width=%d&height=%d", strings.TrimRight(webDomain, "/"), mediaID, width, height)
+func resizeMediaURL(apiDomain, mediaID string, width, height int) string {
+	return fmt.Sprintf("%s/media/%s?width=%d&height=%d", strings.TrimRight(apiDomain, "/"), mediaID, width, height)
 }

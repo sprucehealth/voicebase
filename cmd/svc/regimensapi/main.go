@@ -41,6 +41,7 @@ var config struct {
 	httpAddr      string
 	proxyProtocol bool
 	webDomain     string
+	apiDomain     string
 	env           string
 
 	// Factual config
@@ -90,6 +91,7 @@ func init() {
 	flag.BoolVar(&config.proxyProtocol, "proxyproto", false, "enabled proxy protocol")
 	flag.StringVar(&config.authSecret, "auth.secret", "", "Secret to use in auth token generation")
 	flag.StringVar(&config.webDomain, "web.domain", "", "The web domain used for link generation")
+	flag.StringVar(&config.apiDomain, "api.domain", "", "The api domain used for link generation")
 	flag.StringVar(&config.env, "env", "undefined", "`Environment`")
 
 	// Factual
@@ -240,14 +242,14 @@ func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.Contex
 
 	router := mux.NewRouter().StrictSlash(true)
 	mediaStore := getMediaStore()
-	mediaHandler := handlers.NewMedia(config.webDomain, mediaStore, metricsRegistry.Scope("media"))
+	mediaHandler := handlers.NewMedia(config.apiDomain, mediaStore, metricsRegistry.Scope("media"))
 	router.Handle("/media", mediaHandler)
 	router.Handle("/media/{id:\\w+(\\.\\w+)?}", mediaHandler)
 	router.Handle("/products", handlers.NewProductsList(productsSvc))
 	router.Handle("/products/scrape", handlers.NewProductsScrape(productsSvc))
 	router.Handle("/products/{id}", handlers.NewProducts(productsSvc))
-	router.Handle("/regimen/{id:r[0-9]+}", handlers.NewRegimen(regimenSvc, mediaStore, config.webDomain))
-	router.Handle("/regimen", handlers.NewRegimens(regimenSvc, mediaStore, config.webDomain))
+	router.Handle("/regimen/{id:r[0-9]+}", handlers.NewRegimen(regimenSvc, mediaStore, config.webDomain, config.apiDomain))
+	router.Handle("/regimen", handlers.NewRegimens(regimenSvc, mediaStore, config.webDomain, config.apiDomain))
 	h := httputil.LoggingHandler(router, requestLogger)
 	h = httputil.MetricsHandler(h, metricsRegistry.Scope("regimensapi"))
 	h = httputil.RequestIDHandler(h)

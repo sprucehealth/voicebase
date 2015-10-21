@@ -38,7 +38,8 @@ func main() {
 	for i, r := range regimens {
 		resp, err := regimensClient.InsertRegimen(r, config.publish)
 		if err != nil {
-			golog.Fatalf("Error while uploading regimen %d: %s", i, err)
+			golog.Warningf("Error while uploading regimen %d: %s", i, err)
+			continue
 		}
 		parsedURL, err := url.Parse(strings.TrimRight(config.webEndpoint, "/") + "/regimen/" + resp.ID + "?token=" + url.QueryEscape(resp.AuthToken))
 		if err != nil {
