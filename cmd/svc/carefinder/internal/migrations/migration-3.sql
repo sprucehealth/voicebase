@@ -89,3 +89,4 @@ CREATE TABLE care_rating_bullets (
 
 ALTER TABLE care_rating ALTER COLUMN bullets SET NOT NULL;
 ALTER TABLE care_rating ALTER COLUMN title SET NOT NULL;
+

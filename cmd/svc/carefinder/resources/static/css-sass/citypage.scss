@@ -419,7 +419,7 @@
 .spruce-score-container {
 	margin-top: 20px;
 	@include flexbox();
-	@include flexbox-align-items(center);
+	@include flexbox-align-items(space-between);
 	@include flexbox-justify-content(center);
 }
 

@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"math/rand"
+	"sort"
 	"strconv"
 
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/dal"
@@ -11,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/uv"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 type PageContentBuilder interface {
@@ -65,10 +67,22 @@ func (c *cityService) PageContentForID(cityID string) (interface{}, error) {
 			return errors.Trace(err)
 		}
 
-		localDoctors, err = c.pickNRandomDoctors(5, localDoctorIDs)
+		// get all doctors
+		doctors, err := c.doctorDAL.Doctors(localDoctorIDs)
 		if err != nil {
 			return errors.Trace(err)
 		}
+
+		// sort the doctors by yelp review count so as to pick those
+		// with most reviews
+		sort.Sort(sort.Reverse(byYelpReviewCount(doctors)))
+
+		n := 5
+		if len(doctors) < n {
+			n = len(doctors)
+		}
+		// pick the top n doctors
+		localDoctors = doctors[:n]
 
 		return nil
 	})
@@ -153,22 +167,29 @@ func (c *cityService) PageContentForID(cityID string) (interface{}, error) {
 	}
 
 	doctors := make([]*response.Doctor, 0, len(spruceDoctors)+len(localDoctors))
-	for _, sd := range spruceDoctors {
-		doctor, err := response.TransformModel(sd, c.contentURL, c.webURL)
-		if err != nil {
-			return nil, errors.Trace(err)
-		}
-		doctors = append(doctors, doctor)
-	}
-	for _, ld := range localDoctors {
-		doctor, err := response.TransformModel(ld, c.contentURL, c.webURL)
-		if err != nil {
-			return nil, errors.Trace(err)
-		}
-		doctors = append(doctors, doctor)
-	}
 
-	shuffleDoctors(doctors)
+	// alternate between spruce and local doctors
+	var i, j int
+
+	for i < len(spruceDoctors) || j < len(localDoctors) {
+		if j < len(localDoctors) {
+			doctor, err := response.TransformModel(localDoctors[j], c.contentURL, c.webURL)
+			if err != nil {
+				return nil, errors.Trace(err)
+			}
+			doctors = append(doctors, doctor)
+			j++
+		}
+
+		if i < len(spruceDoctors) {
+			doctor, err := response.TransformModel(spruceDoctors[i], c.contentURL, c.webURL)
+			if err != nil {
+				return nil, errors.Trace(err)
+			}
+			doctors = append(doctors, doctor)
+			i++
+		}
+	}
 
 	return &response.CityPage{
 		HTMLTitle:                 fmt.Sprintf("Find Dermatologists in %s, %s | Spruce Health", city.Name, city.State),
@@ -224,7 +245,10 @@ func (c *cityService) populateTopLevelInfoForCity(city *models.City) (*topLevelI
 
 func (c *cityService) populateCareRatingForCity(city *models.City) (*response.SpruceScoreSection, error) {
 	careRating, err := c.cityDAL.CareRatingForCity(city.ID)
-	if err != nil {
+	if errors.Cause(err) == dal.ErrNoCareRatingFound {
+		golog.Warningf("Care rating not found for city %s", city.ID)
+		return nil, nil
+	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
 
@@ -240,7 +264,8 @@ func (c *cityService) populateCareRatingForCity(city *models.City) (*response.Sp
 func (c *cityService) populateUVIndexForCity(city *models.City) (*response.SpruceScoreSection, error) {
 	uvIndex, err := c.uvService.DailyUVIndexByCityState(city.Name, city.StateAbbreviation)
 	if err != nil {
-		return nil, errors.Trace(err)
+		golog.Warningf("Unable to get uvIndex for city %d: %s", city.ID, err.Error())
+		return nil, nil
 	}
 
 	if uvIndex == 0 {
@@ -315,9 +340,10 @@ func shuffle(ids []string) {
 	}
 }
 
-func shuffleDoctors(doctors []*response.Doctor) {
-	for i := len(doctors) - 1; i > 0; i-- {
-		j := rand.Intn(i)
-		doctors[i], doctors[j] = doctors[j], doctors[i]
-	}
+type byYelpReviewCount []*models.Doctor
+
+func (c byYelpReviewCount) Len() int      { return len(c) }
+func (c byYelpReviewCount) Swap(i, j int) { c[i], c[j] = c[j], c[i] }
+func (c byYelpReviewCount) Less(i, j int) bool {
+	return c[i].ReviewCount < c[j].ReviewCount
 }

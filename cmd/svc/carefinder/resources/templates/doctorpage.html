@@ -41,7 +41,7 @@
 						<div class="review-text-container">
 							<p class="review-text">{{.Text}} 
 								{{with .YelpPageURL}}
-									<a class="read-more-link" target="_blank" href="{{html .}}">Read more</a></p>
+									<a class="read-more-link" href="{{html .}}">Read more</a></p>
 								{{end}}
 						</div>
 						<div class="review-author-date-container">
@@ -51,7 +51,7 @@
 					</div>
 				{{end}}
 				{{with .MoreReviewsURL}}
-					<a target="_blank" class="more-reviews-link" href="{{html .}}">More Reviews</a>						
+					<a class="more-reviews-link" href="{{html .}}">More Reviews</a>						
 				{{end}}
 			</div>
 		</div>
@@ -99,7 +99,7 @@
 									<a href="{{.GoogleMapsLink}}"><img class="office-location-img" src="{{.GoogleMapsImageURL}}"></img></a>
 									<p class="office-address-line-1">{{.AddressLine1}}</p>
 									<p class="office-address-line-2">{{.AddressLine2}}</p>
-									<a class="get-directions-link" target="_blank" href="{{.GoogleMapsLink}}">Get Directions</a>
+									<a class="get-directions-link" href="{{.GoogleMapsLink}}">Get Directions</a>
 							</div>
 							<div class="office-hours-container">
 								<p class="section-title">OFFICE HOURS</p>

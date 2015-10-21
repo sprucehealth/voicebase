@@ -101,13 +101,14 @@ func (c *cityDAL) BannerImageIDsForCity(id string) ([]string, error) {
 	}
 
 	// if no image was found for the city, then fall back
-	// to banner images for the state
+	// to banner images for the state (where city_id is not specified)
 	rows2, err := c.db.Query(`
 		SELECT image_id
 		FROM banner_image
 		INNER JOIN cities ON cities.id = $1
 		WHERE admin1_code = banner_image.state
-		AND cities.id = $1`, id)
+		AND cities.id = $1
+		AND banner_image.city_id is null`, id)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

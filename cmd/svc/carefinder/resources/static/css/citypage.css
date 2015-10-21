@@ -602,8 +602,8 @@ table {
   display: -ms-flexbox;
   display: -webkit-flex;
   display: flex;
-  -webkit-align-items: center;
-  align-items: center;
+  -webkit-align-items: space-between;
+  align-items: space-between;
   -webkit-justify-content: center;
   justify-content: center; }
 

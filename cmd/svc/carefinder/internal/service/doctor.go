@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/yelp"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 var (
@@ -325,6 +326,7 @@ func (d *doctorService) buildReviewsSection(doctor *models.Doctor, doctorRespons
 
 		b, err := d.yelpClient.Business(strings.TrimSpace(doctor.YelpBusinessID))
 		if err != nil {
+			golog.Warningf("Unable to get yelp reviews for business %s: %s", doctor.YelpBusinessID, err.Error())
 			return nil, errors.Trace(err)
 		}
 		averageRatingImageURL = b.LargeRatingImgURL
