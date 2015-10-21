@@ -15,6 +15,67 @@ import (
 	"github.com/sprucehealth/backend/svc/products"
 )
 
+var factualCategories = []string{
+	"Alternative Medicine",
+	"Antifungals",
+	"Aromatherapy",
+	"Baby Bath & Hair Care",
+	"Baby Care",
+	"Baby Diapers & Diaper Care",
+	"Baby Skin Care",
+	"Baby Teeth Care",
+	"Bandages & Gauzes",
+	"Bath Products",
+	"Blush",
+	"Body Art",
+	"Body Lotions, Oils, Creams, Sprays",
+	"Body Scrubs & Muds",
+	"Body Soaps & Gels",
+	"Burns, Wounds, Scars",
+	"Children’s Health",
+	"Cloths & Wipes",
+	"Cosmetics",
+	"Cuticle Care",
+	"Deodorants & Antiperspirants",
+	"Ear Care",
+	"Eye & Eyebrow Makeup",
+	"Face Cleansers & Scrubs",
+	"Face Makeup",
+	"Face Moisturizers",
+	"Face Toners & Astringents",
+	"Face Treatments",
+	"Feminine Care",
+	"First Aid Care",
+	"Fragrances",
+	"Hair Care",
+	"Hair Color",
+	"Hair Conditioners",
+	"Hair Relaxers, Perms, Chemicals",
+	"Hair Removal",
+	"Hair Shampoo",
+	"Hair Styling Aids",
+	"Hand Creams & Lotions",
+	"Hand Soaps",
+	"Health & Medicine",
+	"Lice Care",
+	"Lip Care",
+	"Lip Makeup",
+	"Makeup Removers",
+	"Massage Lotions, Oils, Creams",
+	"Medical Creams & Lotions",
+	"Nail Care",
+	"Nail Makeup",
+	"Oral Care",
+	"Personal Care",
+	"Sexual Wellness",
+	"Shaving Products",
+	"Skin Care",
+	"Therapeutic Skin Care",
+	"Tissues & Paper Towels",
+	"Urinary Tract Infection Treatments",
+	"Vitamins & Supplements",
+}
+
 const (
 	productQueryCacheDurationSec = 14 * 24 * 60 * 60
 	productCacheDurationSec      = 14 * 24 * 60 * 60
@@ -84,7 +145,11 @@ func (f *factualDAL) QueryProducts(query string, limit int) ([]*products.Product
 		}
 	}
 
-	ps, err := f.fc.QueryProducts(query, nil, limit)
+	ps, err := f.fc.QueryProducts(query, map[string]*factual.Filter{
+		"category": &factual.Filter{
+			In: factualCategories,
+		},
+	}, limit)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
