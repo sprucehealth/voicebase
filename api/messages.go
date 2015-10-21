@@ -211,9 +211,9 @@ func (d *dataService) ListCaseMessages(caseID int64, opts ListCaseMessagesOption
 
 func (d *dataService) caseMessageReadReceipts(msgIDs []interface{}) (map[int64][]*common.ReadReceipt, error) {
 	rows, err := d.db.Query(`
-		SELECT "message_id", "person_id", "timestamp"
-		FROM "patient_case_message_read"
-		WHERE "message_id" IN (`+dbutil.MySQLArgs(len(msgIDs))+`)`,
+		SELECT message_id, person_id, timestamp
+		FROM patient_case_message_read
+		WHERE message_id IN (`+dbutil.MySQLArgs(len(msgIDs))+`)`,
 		msgIDs...)
 	if err != nil {
 		return nil, errors.Trace(err)

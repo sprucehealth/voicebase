@@ -19,7 +19,7 @@ func (d *dataService) CreateToken(purpose, key, token string, expire time.Durati
 		}
 	}
 	expires := time.Now().Add(expire)
-	_, err := d.db.Exec(`INSERT INTO "token" ("token", "purpose", "key", "expires") VALUES (?, ?, ?, ?)`,
+	_, err := d.db.Exec("INSERT INTO `token` (`token`, `purpose`, `key`, `expires`) VALUES (?, ?, ?, ?)",
 		token, purpose, key, expires)
 	if err != nil {
 		return "", errors.Trace(err)
@@ -29,10 +29,7 @@ func (d *dataService) CreateToken(purpose, key, token string, expire time.Durati
 
 // ValidateToken returns the key for the token if it's valid. Otherwise it returns ErrTokenDoesNotExist
 func (d *dataService) ValidateToken(purpose, token string) (string, error) {
-	row := d.db.QueryRow(`
-		SELECT "expires", "key"
-		FROM "token"
-		WHERE "purpose" = ? AND "token" = ?`, purpose, token)
+	row := d.db.QueryRow("SELECT `expires`, `key` FROM `token` WHERE `purpose` = ? AND `token` = ?", purpose, token)
 	var key string
 	var expires time.Time
 	if err := row.Scan(
@@ -51,7 +48,7 @@ func (d *dataService) ValidateToken(purpose, token string) (string, error) {
 // DeleteToken deletes a specific token and returns number of rows deleted.
 // It's useful for invalidation / revoking access.
 func (d *dataService) DeleteToken(purpose, token string) (int, error) {
-	res, err := d.db.Exec(`DELETE FROM "token" WHERE "token" = ? AND "purpose" = ?`, token, purpose)
+	res, err := d.db.Exec("DELETE FROM `token` WHERE `token` = ? AND `purpose` = ?", token, purpose)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}

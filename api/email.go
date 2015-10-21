@@ -1,11 +1,10 @@
 package api
 
 import (
+	"database/sql"
 	"strings"
 
 	"github.com/sprucehealth/backend/libs/dbutil"
-
-	"database/sql"
 )
 
 func (d *dataService) EmailUpdateOptOut(accountID int64, emailType string, optout bool) error {
@@ -19,7 +18,7 @@ func (d *dataService) EmailUpdateOptOut(accountID int64, emailType string, optou
 
 func (d *dataService) EmailRecipients(accountIDs []int64) ([]*Recipient, error) {
 	rows, err := d.db.Query(`
-		SELECT a.id, a.email, p.first_name || ' ' || p.last_name, d.first_name || ' ' || d.last_name
+		SELECT a.id, a.email, CONCAT(p.first_name, ' ', p.last_name), CONCAT(d.first_name, ' ', d.last_name)
 		FROM account a
 		LEFT OUTER JOIN patient p ON p.account_id = a.id
 		LEFT OUTER JOIN doctor d ON d.account_id = d.id
@@ -53,7 +52,7 @@ func (d *dataService) EmailRecipientsWithOptOut(accountIDs []int64, emailType st
 	var err error
 	if !onlyOnce {
 		rows, err = d.db.Query(`
-			SELECT a.id, a.email, p.first_name || ' ' || p.last_name, d.first_name || ' ' || d.last_name
+			SELECT a.id, a.email, CONCAT(p.first_name, ' ', p.last_name), CONCAT(d.first_name, ' ', d.last_name)
 			FROM account a
 			LEFT OUTER JOIN account_email_optout o ON o.account_id = a.id AND (o.type = ? OR o.type = 'all')
 			LEFT OUTER JOIN patient p ON p.account_id = a.id
@@ -62,7 +61,7 @@ func (d *dataService) EmailRecipientsWithOptOut(accountIDs []int64, emailType st
 		`, dbutil.AppendInt64sToInterfaceSlice([]interface{}{emailType}, accountIDs)...)
 	} else {
 		rows, err = d.db.Query(`
-			SELECT a.id, a.email, p.first_name || ' ' || p.last_name, d.first_name || ' ' || d.last_name
+			SELECT a.id, a.email, CONCAT(p.first_name, ' ', p.last_name), CONCAT(d.first_name, ' ', d.last_name)
 			FROM account a
 			LEFT OUTER JOIN account_email_optout o ON o.account_id = a.id AND o.type = (o.type = ? OR o.type = 'all')
 			LEFT OUTER JOIN account_email_sent s ON s.account_id = a.id AND s.type = ?
@@ -109,7 +108,7 @@ func (d *dataService) EmailRecordSend(accountIDs []int64, emailType string) erro
 
 func (d *dataService) EmailCampaignState(key string) ([]byte, error) {
 	var data []byte
-	row := d.db.QueryRow(`SELECT "data" FROM email_campaign_state WHERE "key" = ?`, key)
+	row := d.db.QueryRow("SELECT `data` FROM email_campaign_state WHERE `key` = ?", key)
 	err := row.Scan(&data)
 	if err == sql.ErrNoRows {
 		err = nil
@@ -118,6 +117,6 @@ func (d *dataService) EmailCampaignState(key string) ([]byte, error) {
 }
 
 func (d *dataService) UpdateEmailCampaignState(key string, state []byte) error {
-	_, err := d.db.Exec(`REPLACE INTO email_campaign_state ("key", "data")  VALUES (?, ?)`, key, state)
+	_, err := d.db.Exec("REPLACE INTO email_campaign_state (`key`, `data`)  VALUES (?, ?)", key, state)
 	return err
 }

@@ -54,8 +54,8 @@ func (d *dataService) getItemCostFromRow(row *sql.Row) (*common.ItemCost, error)
 	}
 
 	rows, err := d.db.Query(`
-		SELECT id, currency, description, amount 
-		FROM line_item 
+		SELECT id, currency, description, amount
+		FROM line_item
 		WHERE item_cost_id = ?`, itemCost.ID)
 	if err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func (d *dataService) CreatePatientReceipt(receipt *common.PatientReceipt) error
 	}
 
 	res, err := tx.Exec(`
-		INSERT INTO patient_receipt (patient_id, sku_id, item_id, item_cost_id, receipt_reference_id, status) 
+		INSERT INTO patient_receipt (patient_id, sku_id, item_id, item_cost_id, receipt_reference_id, status)
 		VALUES (?,?,?,?,?,?)`, receipt.PatientID, skuID, receipt.ItemID, receipt.ItemCostID,
 		receipt.ReferenceNumber, receipt.Status.String())
 	if err != nil {
@@ -215,7 +215,7 @@ func (d *dataService) CreateDoctorTransaction(transaction *common.DoctorTransact
 
 	res, err := d.db.Exec(`
 		REPLACE INTO doctor_transaction
-		(doctor_id, item_cost_id, item_id, sku_id, patient_id) 
+		(doctor_id, item_cost_id, item_id, sku_id, patient_id)
 		VALUES (?,?,?,?,?)`, transaction.DoctorID, transaction.ItemCostID, transaction.ItemID,
 		skuID, transaction.PatientID)
 	if err != nil {
@@ -232,7 +232,7 @@ func (d *dataService) CreateDoctorTransaction(transaction *common.DoctorTransact
 
 func (d *dataService) TransactionsForDoctor(doctorID int64) ([]*common.DoctorTransaction, error) {
 	rows, err := d.db.Query(`
-		SELECT doctor_transaction.id, doctor_id, item_cost_id, item_id, sku_id, patient_id 
+		SELECT doctor_transaction.id, doctor_id, item_cost_id, item_id, sku_id, patient_id
 		FROM doctor_transaction
 		WHERE doctor_id = ?
 		ORDER BY created DESC`, doctorID)
@@ -276,7 +276,7 @@ func (d *dataService) TransactionForItem(itemID, doctorID int64, skuType string)
 		SKUType: skuType,
 	}
 	err = d.db.QueryRow(`
-		SELECT doctor_transaction.id, doctor_id, item_cost_id, item_id, patient_id 
+		SELECT doctor_transaction.id, doctor_id, item_cost_id, item_id, patient_id
 		FROM doctor_transaction
 		WHERE doctor_id = ? AND item_id = ? AND sku_id = ?
 		ORDER BY created DESC`, doctorID, itemID, skuID).Scan(
