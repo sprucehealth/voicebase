@@ -8,10 +8,25 @@
 // 
 // Banner containing image and page description
 //
-.banner-container {	
+.banner-container {
+	position: relative;
 	min-height: 260px;
-	text-align: center;
+};
 
+
+.banner-background-image {
+	@include setBrightness(60%);
+	position: absolute;
+	width: 100%;
+	height: 100%;
+}
+
+.banner-title-description {	
+	width: 100%;
+	height: 100%;
+	margin: auto;
+	text-align: center;
+	position: absolute;
 	@include flexbox();
 	@include flexbox-direction(column);
 	@include flexbox-justify-content(center);
@@ -46,15 +61,19 @@
 			padding-left: 16px;
 			padding-right: 16px;
 		}
-	}
+}
 
 .content-container {
-	max-width: 960px;
+	@include flexbox();
+	@include flexbox-direction(column);
+}
 
+.main-content-container {
+	max-width: 960px;
 	@include box-sizing(border-box);
+	margin: auto;
 
 	// centers the container
-	margin: auto;
 	@include flexbox();
 	@include flexbox-direction(row);
 
@@ -174,6 +193,8 @@
 	@include font-500();
 	font-size: 28px;	
 	line-height: 33px;
+	text-decoration: none;
+	color: #1E333A;
 }
 
 .rating-experience-container {
@@ -326,13 +347,16 @@
 }
 
 .nearby-city-item {
-	color: #0BA5C5;
-	@include font-500();
 	padding: 8px;
 	border-radius: 4px;
 	margin-right: 10px;
 	margin-top: 10px;
-	border: #0BA5C5 1px solid; 
+	border: #0BA5C5 1px solid;
+	a {
+		text-decoration: none;	
+		color: #0BA5C5;
+		@include font-500();
+	}
 }
 
 .skin-conditions-description {
@@ -396,16 +420,24 @@
 	margin-top: 20px;
 	@include flexbox();
 	@include flexbox-align-items(center);
+	@include flexbox-justify-content(center);
 }
 
 .spruce-score {
-	@include font-500();
-	font-size: 18px;
-	line-height: 22px;
-	padding: 6px;
-	color: #F5A623;
+	width: 36px;
+	height: 36px;
 	border-radius: 4px;
 	border: #F5A623 1px solid;
+	@include flexbox();
+	@include flexbox-align-items(center);
+	@include flexbox-justify-content(center);
+
+	p {
+		@include font-500();
+		font-size: 18px;
+		line-height: 22px;
+		color: #F5A623;
+	}
 }
 
 .spruce-score-description {
@@ -414,4 +446,22 @@
 	font-size: 14px;
 	line-height: 18px;
 	margin-left: 16px;
-}	
+}
+
+.long-description-container {
+	background-color: #EAEFF1;
+	padding: 40px 40px 0 40px;
+	@include respond-to(handhelds) {
+		padding: 20px 20px 10px 20px;
+	}
+
+	p {
+		margin: auto;
+		max-width: 960px;
+		font-size: 14px;
+		line-height: 18px;
+		@include font-300();
+		color: #8B9FA7;
+		padding-bottom: 10px;
+	}
+}

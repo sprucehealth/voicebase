@@ -200,7 +200,13 @@ table {
   height: 127px;
   width: 100%;
   background-position: center center;
-  background-size: cover; }
+  background-size: cover;
+  position: absolute;
+  -webkit-filter: brightness(60%);
+  -moz-filter: brightness(60%);
+  -o-filter: brightness(60%);
+  -ms-filter: brightness(60%);
+  filter: brightness(60%); }
 
 .doctor-img {
   position: absolute;
@@ -216,6 +222,7 @@ table {
 
 .doctor-name-container {
   background-color: white;
+  margin-top: 127px;
   display: -webkit-box;
   display: -moz-box;
   display: -ms-flexbox;
@@ -289,8 +296,8 @@ table {
   display: -ms-flexbox;
   display: -webkit-flex;
   display: flex;
-  -webkit-align-items: baseline;
-  align-items: baseline;
+  -webkit-align-items: center;
+  align-items: center;
   margin-top: 10px; }
 
 .rating-img {
@@ -298,8 +305,8 @@ table {
   height: 19px; }
 
 .rating-source-img {
-  width: 51px;
-  height: 27px;
+  width: auto;
+  height: 25px;
   margin-left: 8px; }
 
 .reviews-list-container {
@@ -452,6 +459,12 @@ table {
       flex-direction: column;
       -webkit-flex-flow: column; } }
 
+.office-location {
+  max-width: 50%; }
+  @media only screen and (max-width: 767px) {
+    .office-location {
+      max-width: 100%; } }
+
 .office-location-img {
   background-color: #EDEEEF;
   width: 280px;
@@ -509,12 +522,16 @@ table {
 
 .accepted-insurance-contents-container {
   margin-top: 20px;
-  max-height: 200px;
+  width: 100%;
   display: -webkit-box;
   display: -moz-box;
   display: -ms-flexbox;
   display: -webkit-flex;
-  display: flex; }
+  display: flex;
+  flex-direction: row;
+  -webkit-flex-flow: row;
+  -webkit-justify-content: space-between;
+  justify-content: space-between; }
   @media only screen and (max-width: 767px) {
     .accepted-insurance-contents-container {
       flex-direction: column;
@@ -543,18 +560,20 @@ table {
   font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif; }
 
 .conditions-treated-online-contents-container {
-  margin-top: 20px;
-  max-height: 160px;
+  width: 100%;
   display: -webkit-box;
   display: -moz-box;
   display: -ms-flexbox;
   display: -webkit-flex;
-  display: flex; }
+  display: flex;
+  flex-direction: row;
+  -webkit-flex-flow: row;
+  -webkit-justify-content: space-between;
+  justify-content: space-between; }
   @media only screen and (max-width: 767px) {
     .conditions-treated-online-contents-container {
       flex-direction: column;
-      -webkit-flex-flow: column;
-      max-height: 400px; } }
+      -webkit-flex-flow: column; } }
 
 .conditions-treated-online-items {
   min-height: 0;

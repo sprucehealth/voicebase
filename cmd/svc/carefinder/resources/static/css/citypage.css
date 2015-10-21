@@ -197,8 +197,25 @@ table {
   border-radius: 2px; }
 
 .banner-container {
-  min-height: 260px;
+  position: relative;
+  min-height: 260px; }
+
+.banner-background-image {
+  -webkit-filter: brightness(60%);
+  -moz-filter: brightness(60%);
+  -o-filter: brightness(60%);
+  -ms-filter: brightness(60%);
+  filter: brightness(60%);
+  position: absolute;
+  width: 100%;
+  height: 100%; }
+
+.banner-title-description {
+  width: 100%;
+  height: 100%;
+  margin: auto;
   text-align: center;
+  position: absolute;
   display: -webkit-box;
   display: -moz-box;
   display: -ms-flexbox;
@@ -240,6 +257,15 @@ table {
       padding-right: 16px; } }
 
 .content-container {
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  flex-direction: column;
+  -webkit-flex-flow: column; }
+
+.main-content-container {
   max-width: 960px;
   -moz-box-sizing: border-box;
   box-sizing: border-box;
@@ -252,13 +278,13 @@ table {
   flex-direction: row;
   -webkit-flex-flow: row; }
   @media only screen and (max-width: 767px) {
-    .content-container {
+    .main-content-container {
       flex-direction: column;
       -webkit-flex-flow: column;
       margin-left: 10px;
       margin-right: 10px; } }
   @media only screen and (min-width: 768px) and (max-width: 991px) {
-    .content-container {
+    .main-content-container {
       flex-direction: column;
       -webkit-flex-flow: column;
       margin-left: 10px;
@@ -358,7 +384,9 @@ table {
 .primary-card-title {
   font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
   font-size: 28px;
-  line-height: 33px; }
+  line-height: 33px;
+  text-decoration: none;
+  color: #1E333A; }
 
 .rating-experience-container {
   display: -webkit-box;
@@ -509,13 +537,15 @@ table {
   margin-top: 10px; }
 
 .nearby-city-item {
-  color: #0BA5C5;
-  font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
   padding: 8px;
   border-radius: 4px;
   margin-right: 10px;
   margin-top: 10px;
   border: #0BA5C5 1px solid; }
+  .nearby-city-item a {
+    text-decoration: none;
+    color: #0BA5C5;
+    font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif; }
 
 .skin-conditions-description {
   margin-top: 15px;
@@ -573,16 +603,29 @@ table {
   display: -webkit-flex;
   display: flex;
   -webkit-align-items: center;
-  align-items: center; }
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center; }
 
 .spruce-score {
-  font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
-  font-size: 18px;
-  line-height: 22px;
-  padding: 6px;
-  color: #F5A623;
+  width: 36px;
+  height: 36px;
   border-radius: 4px;
-  border: #F5A623 1px solid; }
+  border: #F5A623 1px solid;
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center; }
+  .spruce-score p {
+    font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+    font-size: 18px;
+    line-height: 22px;
+    color: #F5A623; }
 
 .spruce-score-description {
   font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
@@ -590,3 +633,18 @@ table {
   font-size: 14px;
   line-height: 18px;
   margin-left: 16px; }
+
+.long-description-container {
+  background-color: #EAEFF1;
+  padding: 40px 40px 0 40px; }
+  @media only screen and (max-width: 767px) {
+    .long-description-container {
+      padding: 20px 20px 10px 20px; } }
+  .long-description-container p {
+    margin: auto;
+    max-width: 960px;
+    font-size: 14px;
+    line-height: 18px;
+    font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;
+    color: #8B9FA7;
+    padding-bottom: 10px; }

@@ -3,9 +3,9 @@
 {{end}}
 
 {{define "content"}}
-	<img class="doctor-img" src="{{.ProfileImageURL}}" />
 	
 	<div class="banner-img" style="background-image: url({{.BannerImageURL}})"></div>
+	<img class="doctor-img" src="{{.ProfileImageURL}}" />
 
 	<div class="doctor-name-container">
 		<p class="doctor-name">{{.LongDisplayName}}</p>
@@ -16,7 +16,7 @@
 			</div>
 			<a class="start-online-visit-button">START AN ONLINE VISIT</a>
 		{{else}}
-			<a class="call-for-appointment-button" href="{{.PhoneLink}}">CALL FOR APPOINTMENT</a>
+			<a class="call-for-appointment-button" href="{{html .PhoneLink}}">CALL FOR APPOINTMENT</a>
 		{{end}}
 	</div>
 
@@ -26,8 +26,8 @@
 			<div class="reviews-summary-container">
 				<p class="section-title">{{.Title}}</p>
 				<div class="rating-logo-container">
-					<img src="{{.AverageRatingURL}}" class="rating-img"></img>
-					<img class="rating-source-img" src="{{.SourceImageURL}}"></img>
+					<img src="{{.AverageRatingImageURL}}" class="rating-img"></img>
+					<img class="rating-source-img" src="{{staticURL .SourceImageName}}"></img>
 				</div>
 			</div>
 			<div class="reviews-list-container">
@@ -35,13 +35,13 @@
 				{{range .Reviews}}
 					<div class="review-item-container">
 						<div class="rating-logo-container">
-							<img src="{{.RatingURL}}" class="rating-img"></img>
-							<img class="rating-source-img" src="{{.SourceImageURL}}"></img>
+							<img class="rating-img" src="{{.RatingImageURL}}"></img>
+							<img class="rating-source-img" src="{{staticURL .SourceImageName}}"></img>
 						</div>
 						<div class="review-text-container">
 							<p class="review-text">{{.Text}} 
-								{{if eq "yelp" .Source}}
-									<a class="read-more-link" target="_blank" href="{{.YelpPageURL}}">Read more</a></p>
+								{{with .YelpPageURL}}
+									<a class="read-more-link" target="_blank" href="{{html .}}">Read more</a></p>
 								{{end}}
 						</div>
 						<div class="review-author-date-container">
@@ -50,8 +50,8 @@
 						</div>
 					</div>
 				{{end}}
-				{{if .ShowMoreReviewsLink}}
-					<a target="_blank" class="more-reviews-link" href="{{.MoreReviewsURL}}">More Reviews</a>						
+				{{with .MoreReviewsURL}}
+					<a target="_blank" class="more-reviews-link" href="{{html .}}">More Reviews</a>						
 				{{end}}
 			</div>
 		</div>
@@ -94,12 +94,12 @@
 			{{with .PhysicalOfficeInformation}}
 				<div class="subsection-container">
 					<div class ="office-location-container">
-							<div>
+							<div class="office-location">
 									<p class="section-title">OFFICE LOCATION</p>
-									<img class="office-location-img"></img>
+									<a href="{{.GoogleMapsLink}}"><img class="office-location-img" src="{{.GoogleMapsImageURL}}"></img></a>
 									<p class="office-address-line-1">{{.AddressLine1}}</p>
 									<p class="office-address-line-2">{{.AddressLine2}}</p>
-									<a class="get-directions-link" href={{.GoogleMapsLink}}>Get Directions</a>
+									<a class="get-directions-link" target="_blank" href="{{.GoogleMapsLink}}">Get Directions</a>
 							</div>
 							<div class="office-hours-container">
 								<p class="section-title">OFFICE HOURS</p>
@@ -130,11 +130,13 @@
 				<div class="subsection-container">
 					<p class="section-title">ACCEPTED INSURANCE PLANS</p>
 					<div class="accepted-insurance-contents-container">
-						<div class="accepted-insurance-items">
-							{{range .}}
-								<p class="accepted-insurance-item">{{.}}</p>
-							{{end}}
-						</div>
+						{{range .}}
+							<div class="accepted-insurance-items">
+								{{range .Items}}
+									<p class="accepted-insurance-item">{{.}}</p>
+								{{end}}
+							</div>
+						{{end}}
 					</div>
 				</div>
 			{{end}}
@@ -143,11 +145,13 @@
 				<div class="subsection-container">
 					<p class="section-title">CONDITIONS TREATED ONLINE</p>
 					<div class="conditions-treated-online-contents-container">
-						<div class="conditions-treated-online-items">
-							{{range .ConditionsTreated}}
-								<p class="conditions-treated-online-item">{{.}}</p>
-							{{end}}
-						</div>
+						{{range .ConditionsTreated}}
+							<div class="conditions-treated-online-items">
+								{{range .Items}}
+									<p class="conditions-treated-online-item">{{.}}</p>
+								{{end}}
+							</div>
+						{{end}}
 					</div>
 				</div>
 			{{end}}
@@ -156,7 +160,7 @@
 				<p class="section-title">AVAILABILITY</p>
 				{{range .AvailabilityItems}}
 					<div class="availability-item">
-						<img src={{.ImageURL}}></img>
+						<img src="{{staticURL .ImageName}}"></img>
 						<p>{{.Text}}</p>
 					</div>
 				{{end}}
@@ -166,7 +170,7 @@
 				{{if .IsSpruceDoctor}}
 					<a class="start-online-visit-button">START AN ONLINE VISIT</a>
 				{{else}}
-					<a class="call-for-appointment-button" href={{.PhoneLink}}>CALL FOR APPOINTMENT</a>
+					<a class="call-for-appointment-button" href="{{.PhoneLink}}">CALL FOR APPOINTMENT</a>
 				{{end}}
 			</div>
 	</div>

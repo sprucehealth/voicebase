@@ -116,6 +116,16 @@ CREATE TABLE doctor_short_list (
 	npi TEXT NOT NULL
 );
 
+-- make for easy lookup using the doctor_id in the doctor_short_list.
+ALTER TABLE doctor_short_list ADD COLUMN doctor_id TEXT REFERENCES carefinder_doctor_info(id);
+
+UPDATE doctor_short_list
+SET doctor_id = carefinder_doctor_info.id
+FROM carefinder_doctor_info
+WHERE carefinder_doctor_info.npi = doctor_short_list.npi;
+
+ALTER TABLE doctor_short_list ALTER COLUMN doctor_id SET NOT NULL;
+
 -- create a table to store a short list of the spruce doctor that are actually live on carefinder 
 CREATE TABLE spruce_doctor_short_list (
 	doctor_id text not null REFERENCES carefinder_doctor_info(id)
@@ -127,6 +137,7 @@ CREATE TABLE spruce_doctor_state_coverage (
 	npi TEXT NOT NULL,
 	state_abbreviation TEXT NOT NULL REFERENCES state(abbreviation)
 );
+
 
 --
 -- STORE ANCILLARY INFORMATION FOR QUICK ACCESS

@@ -10,6 +10,8 @@
 	width: 100%;
 	background-position: center center;
 	background-size: cover;
+	position: absolute;
+	@include setBrightness(60%);
 }
 
 .doctor-img {
@@ -27,6 +29,7 @@
 
 .doctor-name-container {
 	background-color: white;
+	margin-top: 127px;
 	@include flexbox();
 	@include flexbox-direction(column);
 	@include flexbox-align-items(center);
@@ -97,7 +100,7 @@
 
 .rating-logo-container {
 	@include flexbox();
-	@include flexbox-align-items(baseline);
+	@include flexbox-align-items(center);
 	margin-top: 10px;
 }
 
@@ -107,8 +110,8 @@
 }
 
 .rating-source-img {
-	width: 51px;
-	height: 27px;
+	width: auto;
+	height: 25px;
 	margin-left: 8px;
 }
 
@@ -255,6 +258,13 @@
 	}
 }
 
+.office-location {
+	max-width: 50%;
+	@include respond-to(handhelds) {
+		max-width: 100%;
+	}
+}
+
 .office-location-img {
 	background-color: #EDEEEF;
 	width: 280px;
@@ -326,8 +336,10 @@
 // See: http://stackoverflow.com/questions/29907626/flexbox-max-height-interpretation-change-on-chrome
 .accepted-insurance-contents-container {
 	margin-top: 20px;
-	max-height: 200px;
+	width: 100%;
 	@include flexbox();
+	@include flexbox-direction(row);
+	@include flexbox-justify-content(space-between);
 	@include respond-to(handhelds) {
 		@include flexbox-direction(column);
 		max-height: none;
@@ -352,12 +364,12 @@
 }
 
 .conditions-treated-online-contents-container {
-	margin-top: 20px;
-	max-height: 160px;
+	width: 100%;
 	@include flexbox();
+	@include flexbox-direction(row);
+	@include flexbox-justify-content(space-between);
 	@include respond-to(handhelds) {
 		@include flexbox-direction(column);
-		max-height: 400px;
 	}
 }
 

@@ -127,6 +127,10 @@
 			"Rev": "cea80a4a0b01ed85818a682ba1560f68704b92e4"
 		},
 		{
+			"ImportPath": "github.com/garyburd/go-oauth/oauth",
+			"Rev": "3131beb69b81ff119923bdefbf029318f1f53794"
+		},
+		{
 			"ImportPath": "github.com/go-sql-driver/mysql",
 			"Comment": "v1.2-88-ga197e5d",
 			"Rev": "a197e5d40516f2e9f74dcee085a5f2d4604e94df"
