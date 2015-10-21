@@ -23,15 +23,17 @@ type Product struct {
 
 // Regimen represents the data structure returned by the regimen's service's data fetching calls
 type Regimen struct {
-	ID              string            `json:"id"`
-	URL             string            `json:"url"`
-	Title           string            `json:"title"`
-	Creator         *Person           `json:"creator"`
-	ViewCount       int               `json:"page_view_count"`
-	CoverPhotoURL   string            `json:"cover_photo_url"`
-	Description     string            `json:"description"`
-	Tags            []string          `json:"tags"`
-	ProductSections []*ProductSection `json:"product_sections"`
+	ID                string            `json:"id"`
+	URL               string            `json:"url"`
+	Title             string            `json:"title"`
+	Creator           *Person           `json:"creator"`
+	ViewCount         int               `json:"page_view_count"`
+	CoverPhotoURL     string            `json:"cover_photo_url"`
+	Description       string            `json:"description"`
+	Tags              []string          `json:"tags"`
+	ProductSections   []*ProductSection `json:"product_sections"`
+	SourceRegimenID   string            `json:"source_regimen_id"`
+	SourceRegimenName string            `json:"source_regimen_name"`
 }
 
 // ByViewCount is a utility struct used to sort lists of regimens by view counts

@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"image"
+	"image/jpeg"
 	"io"
 	"net/http"
 	"strconv"
@@ -13,10 +15,14 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/libs/mux"
+	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/media"
+	"github.com/sprucehealth/backend/media/collage"
 	"github.com/sprucehealth/backend/svc/regimens"
 	"github.com/sprucehealth/schema"
 	"golang.org/x/net/context"
@@ -25,15 +31,17 @@ import (
 const productPlaceholderMediaID = "product_placeholder.png"
 
 type regimensHandler struct {
-	svc       regimens.Service
-	webDomain string
+	svc                regimens.Service
+	deterministicStore storage.DeterministicStore
+	webDomain          string
 }
 
 // NewRegimens returns a new regimens search and manipulation handler.
-func NewRegimens(svc regimens.Service, webDomain string) httputil.ContextHandler {
+func NewRegimens(svc regimens.Service, deterministicStore storage.DeterministicStore, webDomain string) httputil.ContextHandler {
 	return httputil.SupportedMethods(&regimensHandler{
-		svc:       svc,
-		webDomain: webDomain,
+		svc:                svc,
+		deterministicStore: deterministicStore,
+		webDomain:          webDomain,
 	}, httputil.Get, httputil.Post)
 }
 
@@ -93,7 +101,7 @@ func (h *regimensHandler) serveGET(ctx context.Context, w http.ResponseWriter, r
 		return
 	}
 
-	fillMissingMedia(h.webDomain, regimens)
+	fillMissingProductMedia(h.webDomain, regimens)
 	httputil.JSONResponse(w, http.StatusOK, &responses.RegimensGETResponse{Regimens: regimens})
 }
 
@@ -132,7 +140,7 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 		// Write an empty regimen to the store to bootstrap it if one wasn't provided
 		url := regimenURL(h.webDomain, resourceID)
 		if rd.Regimen == nil {
-			regimen = &regimens.Regimen{ID: resourceID, URL: url}
+			regimen = &regimens.Regimen{ID: resourceID, URL: url, CoverPhotoURL: resizeMediaURL(h.webDomain, productPlaceholderMediaID, collageWidth, collageHeight)}
 		} else {
 			regimen = rd.Regimen
 			regimen.ID = resourceID
@@ -184,6 +192,16 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 		rd.Regimen.Tags[i] = strings.ToLower(t)
 	}
 
+	// Generate a collage if we don't have a cover image, it is a previous collage, or it is the placeholder image
+	if regimen.CoverPhotoURL == "" || strings.HasSuffix(regimen.CoverPhotoURL, collageSuffix) {
+		collageURL, err := generateCollage(resourceID, rd.Regimen, h.deterministicStore, h.webDomain)
+		if err != nil {
+			apiservice.WriteError(ctx, err, w, r)
+			return
+		}
+		rd.Regimen.CoverPhotoURL = collageURL
+	}
+
 	if err := h.svc.PutRegimen(regimen.ID, regimen, rd.Publish); err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
@@ -197,15 +215,17 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 }
 
 type regimenHandler struct {
-	svc       regimens.Service
-	webDomain string
+	svc                regimens.Service
+	deterministicStore storage.DeterministicStore
+	webDomain          string
 }
 
 // NewRegimen returns a new regimen search and manipulation handler.
-func NewRegimen(svc regimens.Service, webDomain string) httputil.ContextHandler {
+func NewRegimen(svc regimens.Service, deterministicStore storage.DeterministicStore, webDomain string) httputil.ContextHandler {
 	return httputil.SupportedMethods(&regimenHandler{
-		svc:       svc,
-		webDomain: webDomain,
+		svc:                svc,
+		deterministicStore: deterministicStore,
+		webDomain:          webDomain,
 	}, httputil.Get, httputil.Put)
 }
 
@@ -285,7 +305,7 @@ func (h *regimenHandler) serveGET(ctx context.Context, w http.ResponseWriter, r 
 		}
 	})
 	regimen.ViewCount++
-	fillMissingMedia(h.webDomain, []*regimens.Regimen{regimen})
+	fillMissingProductMedia(h.webDomain, []*regimens.Regimen{regimen})
 	httputil.JSONResponse(w, http.StatusOK, regimen)
 }
 
@@ -320,6 +340,16 @@ func (h *regimenHandler) servePUT(ctx context.Context, w http.ResponseWriter, r 
 		return
 	}
 
+	// Generate a collage if we don't have a cover image, it is a previous collage, or it is the placeholder image
+	if rd.Regimen.CoverPhotoURL == "" || strings.HasSuffix(rd.Regimen.CoverPhotoURL, collageSuffix) || strings.HasSuffix(rd.Regimen.CoverPhotoURL, productPlaceholderMediaID) {
+		collageURL, err := generateCollage(resourceID, rd.Regimen, h.deterministicStore, h.webDomain)
+		if err != nil {
+			apiservice.WriteError(ctx, err, w, r)
+			return
+		}
+		rd.Regimen.CoverPhotoURL = collageURL
+	}
+
 	if err := h.svc.PutRegimen(resourceID, rd.Regimen, rd.Publish); err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
@@ -332,19 +362,67 @@ func (h *regimenHandler) servePUT(ctx context.Context, w http.ResponseWriter, r 
 	})
 }
 
+const (
+	collageWidth  = 500
+	collageHeight = 500
+	collageSuffix = "_spruce_product_collage"
+)
+
+// TODO: We could optimize this flow by only reading in one image at a time as we add it to the collage, mark for future performance improvement
+func generateCollage(resourceID string, r *regimens.Regimen, deterministicStore storage.DeterministicStore, webDomain string) (string, error) {
+	var images []image.Image
+ProductImageLoop:
+	for _, ps := range r.ProductSections {
+		for _, p := range ps.Products {
+			// Arbitrarily limit the number of images in a collage to 9
+			if len(images) == 9 {
+				break ProductImageLoop
+			}
+			if p.ImageURL != "" {
+				res, err := http.Get(p.ImageURL)
+				if err != nil || res.StatusCode != 200 {
+					golog.Warningf("Error while attempting to fetch image %s, status code: %d, err: %s", p.ImageURL, res.StatusCode, err)
+					res, err = http.Get(mediaURL(webDomain, productPlaceholderMediaID))
+					if err != nil {
+						golog.Warningf("Unable to utilize either provided image or placeholder image in collage")
+						continue
+					}
+				}
+				defer res.Body.Close()
+				m, _, err := image.Decode(res.Body)
+				if err != nil {
+					golog.Warningf("Error while decoding image %s: %s", p.ImageURL, err)
+					continue
+				}
+				images = append(images, m)
+			}
+		}
+	}
+	if len(images) == 0 {
+		golog.Warningf("No usable images were found in regimen")
+		return resizeMediaURL(webDomain, productPlaceholderMediaID, collageWidth, collageHeight), nil
+	}
+	result, err := collage.Collageify(images, collage.SpruceProductGridLayout, &collage.Options{Width: collageWidth, Height: collageHeight})
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+	buf := bytes.NewBuffer(nil)
+	if err := jpeg.Encode(buf, result, &jpeg.Options{Quality: media.JPEGQuality}); err != nil {
+		return "", errors.Trace(err)
+	}
+	_, err = deterministicStore.Put("m"+resourceID+collageSuffix, buf.Bytes(), "image/jpeg", nil)
+	return mediaURL(webDomain, resourceID), errors.Trace(err)
+}
+
 // Apply changes to a list of regimens that populate plateholder data
 // Note: This is intended to be used on GET requests after getting the info from
 //   the data store. This is to not lock us into these urls in the actual data
-func fillMissingMedia(webDomain string, rs []*regimens.Regimen) {
-	for ri, r := range rs {
-		for psi, ps := range r.ProductSections {
-			for pi, p := range ps.Products {
+func fillMissingProductMedia(webDomain string, rs []*regimens.Regimen) {
+	for _, r := range rs {
+		for _, ps := range r.ProductSections {
+			for _, p := range ps.Products {
 				if p.ImageURL == "" {
-					rs[ri].ProductSections[psi].Products[pi].ImageURL = mediaURL(webDomain, productPlaceholderMediaID)
-				}
-				// If the regimen is missing a cover photo add the first product image we find
-				if r.CoverPhotoURL == "" {
-					rs[ri].CoverPhotoURL = r.ProductSections[psi].Products[pi].ImageURL
+					p.ImageURL = resizeMediaURL(webDomain, productPlaceholderMediaID, 100, 100)
 				}
 			}
 		}

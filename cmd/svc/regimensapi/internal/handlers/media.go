@@ -137,7 +137,10 @@ func (h *mediaHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *h
 
 	// Resize the image since we didn't find it)
 	rc, _, err = h.deterministicStore.GetReader(h.deterministicStore.IDFromName(mediaURL))
-	if err != nil {
+	if err == storage.ErrNoObject {
+		apiservice.WriteResourceNotFoundError(ctx, fmt.Sprintf("Media %s does not exist", h.deterministicStore.IDFromName(mediaURL)), w, r)
+		return
+	} else if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
@@ -230,4 +233,8 @@ func (h *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *
 
 func mediaURL(webDomain, mediaID string) string {
 	return fmt.Sprintf("%s/media/%s", strings.TrimRight(webDomain, "/"), mediaID)
+}
+
+func resizeMediaURL(webDomain, mediaID string, width, height int) string {
+	return fmt.Sprintf("%s/media/%s?width=%d&height=%d", strings.TrimRight(webDomain, "/"), mediaID, width, height)
 }

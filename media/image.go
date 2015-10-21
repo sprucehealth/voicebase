@@ -28,8 +28,13 @@ type subImage interface {
 	SubImage(r image.Rectangle) image.Image
 }
 
+// Options for image related function
+type Options struct {
+	AllowScaleUp bool
+}
+
 /*
-resizeImage resizes and optionally crops an image returning the new image.
+ResizeImage resizes and optionally crops an image returning the new image.
 
 The resize calculation/algorithm works like this:
 
@@ -44,13 +49,15 @@ in order to fit the request image size, and it's then cropped. For instance a 64
 original image being request to resize to 320x320 is first resized to 426x320 and then
 cropped from the center to the final size of 320x320.
 */
-func resizeImage(img image.Image, width, height int) (image.Image, error) {
+func ResizeImage(img image.Image, width, height int, ops *Options) (image.Image, error) {
 	// Never return a larger image than the original.
-	if width > img.Bounds().Dx() {
-		width = img.Bounds().Dx()
-	}
-	if height > img.Bounds().Dy() {
-		height = img.Bounds().Dy()
+	if !ops.AllowScaleUp {
+		if width > img.Bounds().Dx() {
+			width = img.Bounds().Dx()
+		}
+		if height > img.Bounds().Dy() {
+			height = img.Bounds().Dy()
+		}
 	}
 
 	// If only given one dimension then calculate the other dimension based on the aspect ratio.
@@ -113,9 +120,11 @@ func resizeImage(img image.Image, width, height int) (image.Image, error) {
 	return resizedImg, nil
 }
 
+var defaultResizeOps = &Options{AllowScaleUp: false}
+
 // ResizeImageFromReader takes the provided reader and resizes the image it is reading
 func ResizeImageFromReader(r io.Reader, width, height int) (image.Image, error) {
-	img, ex, err := decodeImageAndExif(r)
+	img, ex, err := DecodeImageAndExif(r)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +144,7 @@ func ResizeImageFromReader(r io.Reader, width, height int) (image.Image, error) 
 		width, height = height, width
 	}
 
-	imgOut, err := resizeImage(img, width, height)
+	imgOut, err := ResizeImage(img, width, height, defaultResizeOps)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +257,8 @@ func flip(im image.Image, dir flipDirection) image.Image {
 	return im
 }
 
-func decodeImageAndExif(r io.Reader) (image.Image, *exif.Exif, error) {
+// DecodeImageAndExif uses the provided reader to decode the contained images and report the Exif data
+func DecodeImageAndExif(r io.Reader) (image.Image, *exif.Exif, error) {
 	// Use a pipe to avoid having to buffer the image data in memory because
 	// both the image decoder and exif decoder need a Reader.
 	pr, pw := io.Pipe()
