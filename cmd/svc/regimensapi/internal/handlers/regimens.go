@@ -381,7 +381,11 @@ ProductImageLoop:
 			if p.ImageURL != "" {
 				res, err := http.Get(p.ImageURL)
 				if err != nil || res.StatusCode != 200 {
-					golog.Warningf("Error while attempting to fetch image %s, status code: %d, err: %s", p.ImageURL, res.StatusCode, err)
+					if res != nil {
+						golog.Warningf("Error while attempting to fetch image %s, status code: %d, err: %s", p.ImageURL, res.StatusCode, err)
+					} else {
+						golog.Warningf("Error while attempting to fetch image %s, err: %s", p.ImageURL, err)
+					}
 					res, err = http.Get(mediaURL(webDomain, productPlaceholderMediaID))
 					if err != nil {
 						golog.Warningf("Unable to utilize either provided image or placeholder image in collage")
@@ -411,7 +415,7 @@ ProductImageLoop:
 		return "", errors.Trace(err)
 	}
 	_, err = deterministicStore.Put("m"+resourceID+collageSuffix, buf.Bytes(), "image/jpeg", nil)
-	return mediaURL(webDomain, resourceID), errors.Trace(err)
+	return mediaURL(webDomain, resourceID+collageSuffix), errors.Trace(err)
 }
 
 // Apply changes to a list of regimens that populate plateholder data

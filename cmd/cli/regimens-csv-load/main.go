@@ -17,13 +17,15 @@ import (
 )
 
 var config struct {
-	endpoint string
-	filePath string
-	publish  bool
+	apiEndpoint string
+	webEndpoint string
+	filePath    string
+	publish     bool
 }
 
 func init() {
-	flag.StringVar(&config.endpoint, "api.endpoint", "http://localhost:8445", "regimens api endpoint `host:port`")
+	flag.StringVar(&config.apiEndpoint, "api.endpoint", "http://localhost:8445", "regimens api endpoint `host:port`")
+	flag.StringVar(&config.webEndpoint, "web.endpoint", "http://weblocalhost:8445", "regimens web endpoint `host:port`")
 	flag.StringVar(&config.filePath, "file.path", "", "the csv file to load")
 	flag.BoolVar(&config.publish, "publish", false, "flag representing if the regimens should be published or not")
 }
@@ -31,14 +33,14 @@ func init() {
 func main() {
 	boot.ParseFlags("REGIMENS_CSV_LOAD_")
 	regimens := parseRegimens()
-	regimensClient := client.New(config.endpoint)
+	regimensClient := client.New(config.apiEndpoint)
 	fmt.Println("Title,User,URL")
 	for i, r := range regimens {
 		resp, err := regimensClient.InsertRegimen(r, config.publish)
 		if err != nil {
 			golog.Fatalf("Error while uploading regimen %d: %s", i, err)
 		}
-		parsedURL, err := url.Parse(strings.TrimRight(config.endpoint, "/") + "/regimen/" + resp.ID + "?token=" + url.QueryEscape(resp.AuthToken))
+		parsedURL, err := url.Parse(strings.TrimRight(config.webEndpoint, "/") + "/regimen/" + resp.ID + "?token=" + url.QueryEscape(resp.AuthToken))
 		if err != nil {
 			golog.Fatalf("Error while parsing URL for regimen %d: %s", i, err)
 		}
