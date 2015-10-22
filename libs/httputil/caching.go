@@ -32,3 +32,8 @@ func CacheHeaders(h http.Header, lastModified time.Time, expires time.Duration) 
 	h.Set("Expires", time.Now().UTC().Add(expires).Format(time.RFC1123))
 	h.Set("Cache-Control", "max-age="+strconv.FormatInt(int64(expires.Seconds()), 10))
 }
+
+// NoCache sets max age to 0 and appends to no-cache attribute
+func NoCache(h http.Header) {
+	h.Set("Cache-Control", "max-age=0, no-cache")
+}

@@ -276,7 +276,7 @@ func (h *regimenHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 
 	switch r.Method {
 	case httputil.Get:
-		h.serveGET(ctx, w, r, regimen)
+		h.serveGET(ctx, w, r, regimen, published)
 	case httputil.Put:
 		// Do not allow published regimens to be mutated
 		if published {
@@ -305,14 +305,18 @@ func (h *regimenHandler) parseGETRequest(ctx context.Context, r *http.Request) (
 	return rd, nil
 }
 
-func (h *regimenHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, regimen *regimens.Regimen) {
-	// Fake out the view count increase and asynchronously perform the update in a throttled manner
-	conc.Go(func() {
-		if err := h.svc.IncrementViewCount(regimen.ID); err != nil {
-			golog.Errorf("Encountered error while incrementing view count: %s", err)
-		}
-	})
-	regimen.ViewCount++
+func (h *regimenHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, regimen *regimens.Regimen, published bool) {
+	if published {
+		// Fake out the view count increase and asynchronously perform the update in a throttled manner
+		conc.Go(func() {
+			if err := h.svc.IncrementViewCount(regimen.ID); err != nil {
+				golog.Errorf("Encountered error while incrementing view count: %s", err)
+			}
+		})
+	} else {
+		// Never cache an unpublished regimen as it is subject to change
+		httputil.NoCache(w.Header())
+	}
 	fillMissingProductMedia(h.apiDomain, []*regimens.Regimen{regimen})
 	httputil.JSONResponse(w, http.StatusOK, regimen)
 }

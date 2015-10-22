@@ -249,6 +249,7 @@ func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.Contex
 	router.Handle("/products/scrape", handlers.NewProductsScrape(productsSvc))
 	router.Handle("/products/{id}", handlers.NewProducts(productsSvc))
 	router.Handle("/regimen/{id:r[0-9]+}", handlers.NewRegimen(regimenSvc, mediaStore, config.webDomain, config.apiDomain))
+	router.Handle("/regimen/{id:r[0-9]+}/view", handlers.NewViewCount(regimenSvc))
 	router.Handle("/regimen", handlers.NewRegimens(regimenSvc, mediaStore, config.webDomain, config.apiDomain))
 	h := httputil.LoggingHandler(router, requestLogger)
 	h = httputil.MetricsHandler(h, metricsRegistry.Scope("regimensapi"))

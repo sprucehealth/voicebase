@@ -74,6 +74,19 @@ func (c *regimensAPIClient) Regimen(regimenID string) (*responses.RegimenGETResp
 	return getResp, errors.Trace(json.Unmarshal(body, getResp))
 }
 
+func (c *regimensAPIClient) IncrementViewCount(regimenID string) error {
+	resp, err := c.httpClient.Get(formURL(c.endpoint, "regimen/"+regimenID+"/view"))
+	if err != nil {
+		return errors.Trace(err)
+	}
+	defer resp.Body.Close()
+
+	if err := checkOK(resp); err != nil {
+		return errors.Trace(err)
+	}
+	return nil
+}
+
 func formURL(baseEndpoint, path string) string {
 	return strings.TrimRight(baseEndpoint, "/") + "/" + path
 }
