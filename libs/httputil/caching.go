@@ -1,6 +1,8 @@
 package httputil
 
 import (
+	"crypto/md5"
+	"encoding/base64"
 	"net/http"
 	"strconv"
 	"time"
@@ -36,4 +38,24 @@ func CacheHeaders(h http.Header, lastModified time.Time, expires time.Duration) 
 // NoCache sets max age to 0 and appends to no-cache attribute
 func NoCache(h http.Header) {
 	h.Set("Cache-Control", "max-age=0, no-cache")
+}
+
+// CheckAndSetETag compares the etag in the request with one generated from the provided
+// tag. If the tags match then true is returned otherwise CheckAndSetETag returns false.
+// It also writes the provided tag to the response ETag header.
+func CheckAndSetETag(w http.ResponseWriter, r *http.Request, tag string) bool {
+	w.Header().Set("ETag", strconv.Quote(tag))
+	reqTagStr, err := strconv.Unquote(r.Header.Get("If-None-Match"))
+	if err != nil {
+		return false
+	}
+	return reqTagStr == tag
+}
+
+// GenETag generates an etag from the provided string. It does so by user a
+// collision-resistant hash and converting to Base64
+func GenETag(s string) string {
+	h := md5.New()
+	h.Write([]byte(s))
+	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }

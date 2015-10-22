@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
@@ -10,6 +11,8 @@ import (
 	"github.com/sprucehealth/backend/svc/products"
 	"golang.org/x/net/context"
 )
+
+const productListHTTPCacheDuration = 24 * time.Hour
 
 type productsListHandler struct {
 	svc products.Service
@@ -24,6 +27,12 @@ func NewProductsList(svc products.Service) httputil.ContextHandler {
 
 func (h *productsListHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	query := r.FormValue("q")
+
+	if httputil.CheckAndSetETag(w, r, httputil.GenETag(time.Now().Format("2006-01-02")+":"+query)) {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+
 	prods, err := h.svc.Search(query)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
@@ -41,5 +50,7 @@ func (h *productsListHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 			Prefetched: ptr.Bool(true),
 		}
 	}
+
+	httputil.CacheHeaders(w.Header(), time.Time{}, productListHTTPCacheDuration)
 	httputil.JSONResponse(w, http.StatusOK, res)
 }
