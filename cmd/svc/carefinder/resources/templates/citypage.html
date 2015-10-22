@@ -1,5 +1,9 @@
 {{define "headTail"}}
-	<link rel="stylesheet" type="text/css" href={{staticURL "css/citypage.css"}}>
+	{{if isEnv "dev"}}
+		<link rel="stylesheet" type="text/css" href={{staticURL "css/citypage.css"}}>
+	{{else}}
+		<link rel="stylesheet" type="text/css" href={{staticURL "css/citypage.min.css"}}>
+	{{end}}
 {{end}}
 
 {{define "content"}}

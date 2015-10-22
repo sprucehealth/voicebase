@@ -1,5 +1,9 @@
 {{define "headTail"}}
-	<link rel="stylesheet" type="text/css" href={{staticURL "css/startonlinevisit.css"}}>
+	{{if isEnv "dev"}}
+		<link rel="stylesheet" type="text/css" href={{staticURL "css/startonlinevisit.css"}}>
+	{{else}}
+		<link rel="stylesheet" type="text/css" href={{staticURL "css/startonlinevisit.min.css"}}>
+	{{end}}
 {{end}}
 
 {{define "content"}}
@@ -17,13 +21,13 @@
 	<div class="featured-section">
 		<p class="section-title">FEATURED IN</p>
 		<div class="featured-contents-container">
-				<a href="http://www.vogue.com/13226808/spruce-beauty-app-dermatology/"><img class="featured-img-item" src="{{staticURL "/img/press_vogue.png"}}"></img></a>
-				<a href="http://www.harpersbazaar.com/culture/features/a2701/best-beauty-apps/"><img class="featured-img-item" src="{{staticURL "/img/press_bazaar.png"}}"></img></a>
-				<a href="http://www.cosmopolitan.com/health-fitness/news/a31548/theres-an-app-for-acne-and-it-works/"><img class="featured-img-item" src="{{staticURL "/img/press_cosmo.png"}}"></img></a>
-				<a href="http://www.self.com/flash/technology/2014/10/technology-answer-acne-problem/"><img class="featured-img-item" src="{{staticURL "/img/press_self.png"}}"></img></a>
-				<a href="http://www.wired.com/2014/09/app-fights-acne-nearly-silly-sounds/"><img class="featured-img-item" src="{{staticURL "/img/press_wired.png"}}"></img></a>
-				<a href="http://gizmodo.com/our-favorite-android-ios-and-windows-phone-apps-of-th-1640099169"><img class="featured-img-item" src="{{staticURL "/img/press_gizmodo.png"}}"></img></a>
-				<a href="http://nymag.com/thecut/2014/10/this-app-claims-it-can-stop-your-acne.html"><img class="featured-img-item" src="{{staticURL "/img/press_nymag.png"}}"></img></a>
+				<a href="http://www.vogue.com/13226808/spruce-beauty-app-dermatology/"><img class="featured-img-item" src="{{staticURL "img/press_vogue.png"}}"></img></a>
+				<a href="http://www.harpersbazaar.com/culture/features/a2701/best-beauty-apps/"><img class="featured-img-item" src="{{staticURL "img/press_bazaar.png"}}"></img></a>
+				<a href="http://www.cosmopolitan.com/health-fitness/news/a31548/theres-an-app-for-acne-and-it-works/"><img class="featured-img-item" src="{{staticURL "img/press_cosmo.png"}}"></img></a>
+				<a href="http://www.self.com/flash/technology/2014/10/technology-answer-acne-problem/"><img class="featured-img-item" src="{{staticURL "img/press_self.png"}}"></img></a>
+				<a href="http://www.wired.com/2014/09/app-fights-acne-nearly-silly-sounds/"><img class="featured-img-item" src="{{staticURL "img/press_wired.png"}}"></img></a>
+				<a href="http://gizmodo.com/our-favorite-android-ios-and-windows-phone-apps-of-th-1640099169"><img class="featured-img-item" src="{{staticURL "img/press_gizmodo.png"}}"></img></a>
+				<a href="http://nymag.com/thecut/2014/10/this-app-claims-it-can-stop-your-acne.html"><img class="featured-img-item" src="{{staticURL "img/press_nymag.png"}}"></img></a>
 		</div>
 	</div>
 
