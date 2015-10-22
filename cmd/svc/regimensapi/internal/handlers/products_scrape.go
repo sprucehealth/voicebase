@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
@@ -11,6 +12,8 @@ import (
 	"github.com/sprucehealth/backend/svc/products"
 	"golang.org/x/net/context"
 )
+
+const productScrapeHTTPCacheDuration = 7 * 24 * time.Hour
 
 type productsScrapeHandler struct {
 	svc products.Service
@@ -25,6 +28,12 @@ func NewProductsScrape(svc products.Service) httputil.ContextHandler {
 
 func (h *productsScrapeHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	earl := r.FormValue("url")
+
+	if httputil.CheckAndSetETag(w, r, httputil.GenETag(time.Now().Format("2006-01-02")+":"+earl)) {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+
 	p, err := h.svc.Scrape(earl)
 	if err != nil {
 		if _, ok := errors.Cause(err).(products.ErrScrapeFailed); ok {
@@ -34,6 +43,8 @@ func (h *productsScrapeHandler) ServeHTTP(ctx context.Context, w http.ResponseWr
 		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
+
+	httputil.CacheHeaders(w.Header(), time.Time{}, productScrapeHTTPCacheDuration)
 	httputil.JSONResponse(w, http.StatusOK, responses.ProductGETResponse{
 		Product: &responses.Product{
 			ID:         p.ID,
