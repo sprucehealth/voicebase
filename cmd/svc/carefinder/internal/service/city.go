@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"math/rand"
+	"net/http"
 	"sort"
 	"strconv"
 
@@ -16,7 +17,7 @@ import (
 )
 
 type PageContentBuilder interface {
-	PageContentForID(id string) (interface{}, error)
+	PageContentForID(id string, r *http.Request) (interface{}, error)
 }
 
 type cityService struct {
@@ -42,7 +43,7 @@ const (
 	longDescriptionParagraph2 = `We’ve selected dermatologists who treat a range of general, surgical and cosmetic conditions for adult and pediatric patients including acne, anti-aging, bed bugs, cold sores, athlete's foot and ringworm, dry or itchy skin, eczema, excessive sweating, eyelash thinning, hives, insect bites or stings, lice and scabies, male hair loss, poison oak and ivy, psoriasis, shaving bumps and ingrown hair, rashes, rosacea, skin discoloration, tick bites.`
 )
 
-func (c *cityService) PageContentForID(cityID string) (interface{}, error) {
+func (c *cityService) PageContentForID(cityID string, r *http.Request) (interface{}, error) {
 	// check if the city exists first
 	exists, err := c.cityDAL.IsCityShortListed(cityID)
 	if err != nil {

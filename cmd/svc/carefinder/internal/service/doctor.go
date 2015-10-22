@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"math/rand"
+	"net/http"
 	"strings"
 	"time"
 
@@ -65,7 +66,7 @@ func NewForDoctor(cityDAL dal.CityDAL, doctorDAL dal.DoctorDAL, yelpClient yelp.
 	}
 }
 
-func (d *doctorService) PageContentForID(doctorID string) (interface{}, error) {
+func (d *doctorService) PageContentForID(doctorID string, r *http.Request) (interface{}, error) {
 
 	// check if the doctor is shortlisted
 	exists, err := d.doctorDAL.IsDoctorShortListed(doctorID)
@@ -270,6 +271,7 @@ func (d *doctorService) PageContentForID(doctorID string) (interface{}, error) {
 		LongDisplayName:           doctorResponse.LongDisplayName,
 		ProfileImageURL:           doctorResponse.ProfileImageURL,
 		BannerImageURL:            bannerImageURL,
+		StartOnlineVisitURL:       doctorResponse.StartOnlineVisitURL,
 		IsSpruceDoctor:            doctorResponse.IsSpruceDoctor,
 		Specialties:               doctorResponse.Specialties,
 		ReviewsSection:            reviewSection,
@@ -327,7 +329,7 @@ func (d *doctorService) buildReviewsSection(doctor *models.Doctor, doctorRespons
 		b, err := d.yelpClient.Business(strings.TrimSpace(doctor.YelpBusinessID))
 		if err != nil {
 			golog.Warningf("Unable to get yelp reviews for business %s: %s", doctor.YelpBusinessID, err.Error())
-			return nil, errors.Trace(err)
+			return nil, nil
 		}
 		averageRatingImageURL = b.LargeRatingImgURL
 

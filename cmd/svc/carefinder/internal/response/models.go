@@ -24,16 +24,17 @@ type CityPage struct {
 }
 
 type Doctor struct {
-	IsSpruceDoctor    bool
-	Description       string
-	LongDisplayName   string
-	ShortDisplayName  string
-	ProfileImageURL   string
-	Experience        string
-	Specialties       []string `json:",omitempty"`
-	InsuranceAccepted []string
-	ProfileURL        string
-	StarRatingImg     string
+	IsSpruceDoctor      bool
+	Description         string
+	LongDisplayName     string
+	ShortDisplayName    string
+	ProfileImageURL     string
+	Experience          string
+	Specialties         []string `json:",omitempty"`
+	InsuranceAccepted   []string
+	ProfileURL          string
+	StartOnlineVisitURL string
+	StarRatingImg       string
 }
 
 type SpruceScoreSection struct {
@@ -102,6 +103,7 @@ type DoctorPage struct {
 	LongDisplayName           string
 	ProfileImageURL           string
 	BannerImageURL            string
+	StartOnlineVisitURL       string
 	Phone                     string
 	PhoneLink                 string
 	IsSpruceDoctor            bool
@@ -114,6 +116,15 @@ type DoctorPage struct {
 	ConditionsTreated         []*Container
 	AvailabilityItems         []*ImageTextItem
 	OfficeSectionTitle        string
+}
+
+type StartOnlineVisitPage struct {
+	DoctorID               string
+	HTMLTitle              string
+	DoctorShortDisplayName string
+	ReferralLink           string
+	ProfileImageURL        string
+	IsMobile               bool
 }
 
 func TransformModel(doctor *models.Doctor, contentURL, webURL string) (*Doctor, error) {
@@ -147,15 +158,16 @@ func TransformModel(doctor *models.Doctor, contentURL, webURL string) (*Doctor, 
 	}
 
 	return &Doctor{
-		IsSpruceDoctor:    doctor.IsSpruceDoctor,
-		Description:       doctor.Description,
-		LongDisplayName:   fmt.Sprintf("Dr. %s %s", strings.Title(strings.ToLower(doctor.FirstName)), strings.Title(strings.ToLower(doctor.LastName))),
-		ShortDisplayName:  fmt.Sprintf("Dr. %s", strings.Title(strings.ToLower(doctor.LastName))),
-		ProfileImageURL:   profileImageURL,
-		Experience:        experience,
-		Specialties:       doctor.Specialties,
-		InsuranceAccepted: doctor.InsurancesAccepted,
-		ProfileURL:        fmt.Sprintf("%s/%s", webURL, doctor.ID),
-		StarRatingImg:     determineImageNameForRating(roundToClosestHalve(doctor.AverageRating)),
+		IsSpruceDoctor:      doctor.IsSpruceDoctor,
+		Description:         doctor.Description,
+		LongDisplayName:     fmt.Sprintf("Dr. %s %s", strings.Title(strings.ToLower(doctor.FirstName)), strings.Title(strings.ToLower(doctor.LastName))),
+		ShortDisplayName:    fmt.Sprintf("Dr. %s", strings.Title(strings.ToLower(doctor.LastName))),
+		ProfileImageURL:     profileImageURL,
+		Experience:          experience,
+		Specialties:         doctor.Specialties,
+		InsuranceAccepted:   doctor.InsurancesAccepted,
+		ProfileURL:          fmt.Sprintf("%s/%s", webURL, doctor.ID),
+		StartOnlineVisitURL: fmt.Sprintf("%s/%s/start-online-visit", webURL, doctor.ID),
+		StarRatingImg:       determineImageNameForRating(roundToClosestHalve(doctor.AverageRating)),
 	}, nil
 }

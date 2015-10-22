@@ -66,7 +66,9 @@ func (d *doctorDAL) Doctor(id string) (*models.Doctor, error) {
 			COALESCE(practice_location_zipcode,''), 
 			COALESCE(practice_phone,''), 
 			COALESCE(practice_location_lat,0.0), 
-			COALESCE(practice_location_lng,0.0)
+			COALESCE(practice_location_lng,0.0),
+			COALESCE(referral_code,''),
+			COALESCE(referral_link,'')
 		FROM carefinder_doctor_info
 		WHERE id = $1`, id)
 
@@ -104,7 +106,9 @@ func (d *doctorDAL) Doctors(ids []string) ([]*models.Doctor, error) {
 			COALESCE(practice_location_zipcode,''), 
 			COALESCE(practice_phone,''), 
 			COALESCE(practice_location_lat,0.0), 
-			COALESCE(practice_location_lng,0.0)
+			COALESCE(practice_location_lng,0.0),
+			COALESCE(referral_code,''),
+			COALESCE(referral_link,'')			
 		FROM carefinder_doctor_info
 		WHERE id in (`+dbutil.PostgresArgs(1, len(ids))+`)`, dbutil.AppendStringsToInterfaceSlice(nil, ids)...)
 	if err != nil {
@@ -158,7 +162,9 @@ func (d *doctorDAL) scanDoctor(scanner dbutil.Scanner) (*models.Doctor, error) {
 		&zipcode,
 		&phone,
 		&lat,
-		&lng); err != nil {
+		&lng,
+		&doctor.ReferralCode,
+		&doctor.ReferralLink); err != nil {
 		return nil, errors.Trace(err)
 	}
 

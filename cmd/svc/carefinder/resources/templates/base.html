@@ -12,11 +12,13 @@
 	{{ template "headTail" .}} 
 <body>
 	<div class="header">
-		<img src={{ staticURL "img/spruce_logo@2x.png"}} />
+		<img src={{ staticURL "img/spruce_logo.svg"}} />
 	</div>
 
-
 	{{ template "content" .SubContext }}
+	{{ template "scripts" . }}
+
 </body>
 </html>
 {{define "headTail"}}{{end}}
+{{define "scripts" }}{{end}}

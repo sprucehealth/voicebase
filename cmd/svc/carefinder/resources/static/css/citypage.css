@@ -163,7 +163,8 @@ table {
   line-height: 18px;
   font-size: 15px;
   margin-left: 8px;
-  font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif; }
+  font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+  text-decoration: none; }
 
 .section-title {
   font-family: 'MuseoSans-700', Helvetica, Arial, sans-serif;

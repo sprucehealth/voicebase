@@ -26,10 +26,10 @@
 
 							{{if .IsSpruceDoctor}}
 								<div class="handhelds-tablets-only">
-									<div class="treats-online-container">
-										<div class="treats-online-circle"></div>
-										<p class="treats-online-text">Treats Patients Online</p>
-									</div>
+										<div class="treats-online-container">
+											<div class="treats-online-circle"></div>
+												<a href="{{.StartOnlineVisitURL}}" class="treats-online-text">Treats Patients Online</a>
+										</div>
 								</div>
 							{{end}}
 
@@ -69,7 +69,7 @@
 									<div class="desktop-only">
 										<div class="treats-online-container">
 											<div class="treats-online-circle"></div>
-											<p class="treats-online-text">Treats Patients Online</p>
+												<a href="{{.StartOnlineVisitURL}}" class="treats-online-text">Treats Patients Online</a>
 										</div>
 									</div>
 								{{end}}

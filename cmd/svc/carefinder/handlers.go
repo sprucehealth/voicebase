@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/service"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/yelp"
 	configlib "github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
@@ -32,12 +33,15 @@ func buildCareFinder(c *config) httputil.ContextHandler {
 		panic(err)
 	}
 
+	environment.SetCurrent(c.Environment)
+
 	cityDAL := dal.NewCityDAL(db)
 	doctorDAL := dal.NewDoctorDAL(db)
 	cityService := service.NewForCity(cityDAL, doctorDAL, c.WebURL, c.ContentURL)
 
 	yelpClient := yelp.NewClient(c.YelpConsumerKey, c.YelpConsumerSecret, c.YelpToken, c.YelpTokenSecret)
 	doctorService := service.NewForDoctor(cityDAL, doctorDAL, yelpClient, c.WebURL, c.ContentURL, c.StaticResourceURL, c.GoogleStaticMapsKey, c.GoogleStatciMapsURLSigningKey)
+	startOnlineVisitService := service.NewForOnlineVisit(doctorDAL, c.ContentURL, c.WebURL)
 
 	// initialize resources for the app
 	www.MustInitializeResources("cmd/svc/carefinder/resources")
@@ -50,14 +54,20 @@ func buildCareFinder(c *config) httputil.ContextHandler {
 		"staticURL": func(path string) string {
 			return c.StaticResourceURL + "/" + path
 		},
+		"isEnv": func(env string) bool {
+			return environment.GetCurrent() == env
+		},
 	})
 
 	templateLoader.MustLoadTemplate("base.html", "", nil)
 
 	router := mux.NewRouter()
 	router.PathPrefix("/static").Handler(httputil.StripPrefix("/static", httputil.FileServer(www.ResourceFileSystem)))
+	router.PathPrefix("/dermatologist-near-me/md-{doctor}/start-online-visit").Handler(handlers.NewStartOnlineVisitHandler(templateLoader, startOnlineVisitService))
+
 	router.PathPrefix("/dermatologist-near-me/md-{doctor}").Handler(handlers.NewDoctorPageHandler(templateLoader, doctorService))
 	router.Handle("/dermatologist-near-me/{city}", handlers.NewCityPageHandler(templateLoader, cityService))
+	router.Handle("/dermatologist-near-me/api/textdownloadlink", handlers.NewTextLinkHandler(doctorDAL, c.WebURL))
 
 	webRequestLogger := func(ctx context.Context, ev *httputil.RequestEvent) {
 		log := golog.Context(

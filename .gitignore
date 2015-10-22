@@ -70,4 +70,4 @@ cmd/svc/carefinder/carefinder
 cmd/svc/carefinder/resources.zip
 cmd/svc/carefinder/resources/static/fonts/*
 cmd/svc/carefinder/resources/static/css/*
-
+cmd/svc/carefinder/resources/static/js/*

@@ -31,7 +31,7 @@ func (d *doctorPageHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter
 	vars := mux.Vars(ctx)
 	doctorID := fmt.Sprintf("md-%s", vars["doctor"])
 
-	dp, err := d.doctorService.PageContentForID(doctorID)
+	dp, err := d.doctorService.PageContentForID(doctorID, r)
 	if err != nil {
 		www.InternalServerError(w, r, err)
 		return

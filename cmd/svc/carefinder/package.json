@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "object-assign": "^4.0.1",
+    "react": "^0.14.0",
+    "react-dom": "^0.14.0"
+  },
+  "devDependencies": {
+    "babelify": "^6.4.0",
+    "browserify": "^11.2.0",
+    "uglify-js": "^2.5.0",
+    "watchify": "^3.4.0"
+  },
+  "scripts": {
+    "build-dev": "./node_modules/browserify/bin/cmd.js resources/js/TextLink.js -t babelify --outfile resources/static/js/carefinder.js",
+    "build": "NODE_ENV=production ./node_modules/browserify/bin/cmd.js resources/js/TextLink.js -t babelify  | uglifyjs -c -m -o resources/static/js/carefinder.min.js"
+  }
+}

@@ -142,6 +142,17 @@ time (
 ) &
 savepid
 
+# Test static resources (carefinder)
+echo "TESTING STATIC RESOURCES (carefinder)"
+time (
+    cd $MONOREPO_PATH/cmd/svc/carefinder
+    rm -rf resources/static/js
+    mkdir resources/static/js
+    ./build_resources.sh
+    flow check
+) &
+savepid
+
 # Clean binaries before building to make sure we get a clean build for deployment
 rm -rf $GOPATH/pkg $GOPATH/bin
 
@@ -257,6 +268,7 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
     
     cd $LOCAL_CAREFINDER_STATIC_PATH
     STATIC_PREFIX="s3://spruce-static/carefinder/$BUILD_NUMBER"
+    s3cmd --recursive -P --no-preserve -m "application/javascript" put js/* $STATIC_PREFIX/js/
     s3cmd --recursive -P --no-preserve -m "text/css" put css/* $STATIC_PREFIX/css/
     s3cmd --recursive -P --no-preserve -m "application/octet-stream" --add-header "Access-Control-Allow-Origin:*" put fonts/*.ttf $STATIC_PREFIX/fonts/
     s3cmd --recursive -P --no-preserve -m "application/vnd.ms-fontobject" --add-header "Access-Control-Allow-Origin:*" put fonts/*.eot $STATIC_PREFIX/fonts/

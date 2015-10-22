@@ -19,6 +19,8 @@ type Doctor struct {
 	YelpBusinessID     string
 	ReviewCount        int
 	AverageRating      float64
+	ReferralCode       string
+	ReferralLink       string
 	InsurancesAccepted []string
 	Specialties        []string
 	Address            *Address
