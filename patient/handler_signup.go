@@ -342,6 +342,13 @@ func (s *SignupHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 			} else if ok {
 				pathwayTag = pTag
 			}
+
+			isSprucePatient, ok, err := aData.BoolData(attribution.AKSprucePatient)
+			if err != nil {
+				golog.Errorf("Encountered error while checking for spruce patient in attribution data: %s", err)
+			} else if ok {
+				practiceExtension = !isSprucePatient
+			}
 		}
 	}
 

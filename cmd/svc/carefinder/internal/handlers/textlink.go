@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"bytes"
 
@@ -66,11 +67,13 @@ func (t *textLinkHandler) ServeHTTP(context context.Context, w http.ResponseWrit
 
 	// add a flag to indicate that the patient is indeed a spruce patient
 	// so that it doesn't get picked up as a practice extension patient.
+	// also add the provider id to attribute this patient with the provider they picked.
 	jsonData, err := json.Marshal(map[string]interface{}{
 		"number": req.Number,
 		"code":   doctor.ReferralCode,
 		"params": map[string][]string{
 			"is_spruce_patient": []string{"true"},
+			"care_provider_id":  []string{strconv.FormatInt(doctor.SpruceProviderID, 10)},
 		},
 	})
 	if err != nil {

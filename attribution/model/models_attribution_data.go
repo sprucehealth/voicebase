@@ -67,3 +67,22 @@ func (a *AttributionData) Int64Data(key string) (int64, bool, error) {
 	}
 	return 0, ok, fmt.Errorf("Unsupported type %T for attribution taba conversion to int64", iValue)
 }
+
+func (a *AttributionData) BoolData(key string) (bool, bool, error) {
+	iValue, ok := a.Data[key]
+	if !ok {
+		return false, false, nil
+	}
+
+	switch t := iValue.(type) {
+	case bool:
+		return t, ok, nil
+	case string:
+		if t == "true" {
+			return true, ok, nil
+		} else {
+			return false, ok, nil
+		}
+	}
+	return false, ok, fmt.Errorf("Unsupported type %T for attribution data conversion to bool", iValue)
+}

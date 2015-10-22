@@ -21,6 +21,7 @@ type Doctor struct {
 	AverageRating      float64
 	ReferralCode       string
 	ReferralLink       string
+	SpruceProviderID   int64
 	InsurancesAccepted []string
 	Specialties        []string
 	Address            *Address

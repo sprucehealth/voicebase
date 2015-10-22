@@ -83,6 +83,7 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(ctx context.Context, w
 
 	// Check device attribution for information we may find relevant
 	var careProviderID int64
+	var isSprucePatient bool
 	deviceID, err := apiservice.GetDeviceIDFromHeader(r)
 	if err != nil {
 		golog.Errorf("Couldn't get device ID from header for elligibility check: %s", err)
@@ -97,11 +98,19 @@ func (c *checkCareProvidingElligibilityHandler) ServeHTTP(ctx context.Context, w
 			} else if ok {
 				careProviderID = providerID
 			}
+
+			sp, ok, err := aData.BoolData(attribution.AKSprucePatient)
+			if err != nil {
+				golog.Errorf("Encountered error while checking for spruce patient flag: %s", err)
+			} else if ok {
+				isSprucePatient = sp
+			}
 		}
 	}
 
 	// If a provider ID is given then assume this is a practice extension case
-	if careProviderID != 0 {
+	// so long as there is no flag to indicate we are dealing with spruce patient
+	if careProviderID != 0 && !isSprucePatient {
 		state, err := c.dataAPI.State(cityStateInfo.State)
 		if err != nil {
 			apiservice.WriteValidationError(ctx, "The state information is not valid", w, r)
