@@ -11,9 +11,9 @@
 		<img class="doctor-img" src="{{.ProfileImageURL}}"></img>
 		<p class="cta-title">Start a visit with {{.DoctorShortDisplayName}} on Spruce.</p>
 		{{if .IsMobile}}
-			<p class="cta-subtitle">Text the download link to your phone to get started.</p>
 			<a class="cta-button" href="{{.ReferralLink}}">DOWNLOAD THE APP</a>
 		{{else}}
+			<p class="cta-subtitle">Text the download link to your phone to get started.</p>
 			<div class="text-me"></div>
 		{{end}}
 	</div>
