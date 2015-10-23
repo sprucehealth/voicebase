@@ -70,3 +70,13 @@ type MediaGETRequest struct {
 	Width  int `schema:"width"`
 	Height int `schema:"height"`
 }
+
+// FoundationGETRequest represents the data excpected to be associated with a successful GET request to the foundation endpoint
+type FoundationGETRequest struct {
+	MaxResults int `schema:"max_results"`
+}
+
+// FoundationGETResponse represents the data excpected to be returned from a successful GET request to the foundation endpoint
+type FoundationGETResponse struct {
+	FoundationOf []*regimens.Regimen `json:"foundation_of"`
+}

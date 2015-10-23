@@ -20,7 +20,7 @@ type viewCountHandler struct {
 
 // NewViewCount returns an initialized instance of viewCountHandler
 func NewViewCount(svc viewIncrementer) httputil.ContextHandler {
-	return &viewCountHandler{svc: svc}
+	return httputil.SupportedMethods(&viewCountHandler{svc: svc}, httputil.Post)
 }
 
 func (h *viewCountHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {

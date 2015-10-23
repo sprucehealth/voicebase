@@ -11,11 +11,11 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
-	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -106,8 +106,10 @@ func (h *regimensHandler) serveGET(ctx context.Context, w http.ResponseWriter, r
 		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
-
 	fillMissingProductMedia(h.apiDomain, regimens)
+
+	// Cache regimens tag queries for 5 minutes
+	httputil.CacheHeaders(w.Header(), time.Time{}, 5*time.Minute)
 	httputil.JSONResponse(w, http.StatusOK, &responses.RegimensGETResponse{Regimens: regimens})
 }
 
@@ -206,6 +208,10 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 			return
 		}
 		rd.Regimen.CoverPhotoURL = collageURL
+		rd.Regimen.CoverPhoto = &regimens.Image{URL: collageURL, Width: collageWidth, Height: collageHeight}
+	} else {
+		width, height := remoteImageDimensions(rd.Regimen.CoverPhotoURL)
+		rd.Regimen.CoverPhoto = &regimens.Image{URL: rd.Regimen.CoverPhotoURL, Width: width, Height: height}
 	}
 
 	if err := h.svc.PutRegimen(regimen.ID, regimen, rd.Publish); err != nil {
@@ -307,12 +313,8 @@ func (h *regimenHandler) parseGETRequest(ctx context.Context, r *http.Request) (
 
 func (h *regimenHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, regimen *regimens.Regimen, published bool) {
 	if published {
-		// Fake out the view count increase and asynchronously perform the update in a throttled manner
-		conc.Go(func() {
-			if err := h.svc.IncrementViewCount(regimen.ID); err != nil {
-				golog.Errorf("Encountered error while incrementing view count: %s", err)
-			}
-		})
+		// Cache published regimen queries for 5 minutes
+		httputil.CacheHeaders(w.Header(), time.Time{}, 5*time.Minute)
 	} else {
 		// Never cache an unpublished regimen as it is subject to change
 		httputil.NoCache(w.Header())
@@ -360,6 +362,10 @@ func (h *regimenHandler) servePUT(ctx context.Context, w http.ResponseWriter, r 
 			return
 		}
 		rd.Regimen.CoverPhotoURL = collageURL
+		rd.Regimen.CoverPhoto = &regimens.Image{URL: collageURL, Width: collageWidth, Height: collageHeight}
+	} else {
+		width, height := remoteImageDimensions(rd.Regimen.CoverPhotoURL)
+		rd.Regimen.CoverPhoto = &regimens.Image{URL: rd.Regimen.CoverPhotoURL, Width: width, Height: height}
 	}
 
 	if err := h.svc.PutRegimen(resourceID, rd.Regimen, rd.Publish); err != nil {
@@ -380,6 +386,27 @@ const (
 	collageSuffix = "_spruce_product_collage"
 )
 
+// remoteImageDimensions will make a best effort attempt at determining the dimensions of the provided image.
+// if any errors are encountered then a width and height of 0x0 will be returned
+func remoteImageDimensions(u string) (int, int) {
+	res, err := http.Get(u)
+	if err != nil || res.StatusCode != 200 {
+		if res != nil {
+			golog.Warningf("Error while attempting to fetch url %s, status code: %d, err: %s", u, res.StatusCode, err)
+			return 0, 0
+		}
+		golog.Warningf("Error while attempting to fetch url %s, err: %s", u, err)
+		return 0, 0
+	}
+	defer res.Body.Close()
+	c, _, err := image.DecodeConfig(res.Body)
+	if err != nil {
+		golog.Warningf("Error while decoding image config %s: %s", u, err)
+		return 0, 0
+	}
+	return c.Width, c.Height
+}
+
 // TODO: We could optimize this flow by only reading in one image at a time as we add it to the collage, mark for future performance improvement
 func generateCollage(resourceID string, r *regimens.Regimen, deterministicStore storage.DeterministicStore, apiDomain string) (string, error) {
 	var images []image.Image
@@ -394,10 +421,10 @@ ProductImageLoop:
 				res, err := http.Get(p.ImageURL)
 				if err != nil || res.StatusCode != 200 {
 					if res != nil {
-						golog.Warningf("Error while attempting to fetch image %s, status code: %d, err: %s", p.ImageURL, res.StatusCode, err)
-					} else {
-						golog.Warningf("Error while attempting to fetch image %s, err: %s", p.ImageURL, err)
+						golog.Warningf("Error while attempting to fetch url %s, status code: %d, err: %s", p.ImageURL, res.StatusCode, err)
+						continue
 					}
+					golog.Warningf("Error while attempting to fetch url %s, err: %s", p.ImageURL, err)
 					continue
 				}
 				defer res.Body.Close()
@@ -406,6 +433,7 @@ ProductImageLoop:
 					golog.Warningf("Error while decoding image %s: %s", p.ImageURL, err)
 					continue
 				}
+
 				// Do not support palleted images since we currently cannot resize them, see media.ResizeImage
 				if _, ok := m.(image.PalettedImage); ok {
 					golog.Warningf("Ignoring paletted image at url: %s", p.ImageURL)

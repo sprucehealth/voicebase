@@ -27,11 +27,12 @@ const (
 	regimenTagTableNameFormatString = "%s_regimen_tag"
 
 	// AN represents "Attribute Name"
-	regimenIDAN = "regimen_id"
-	publishedAN = "published"
-	viewCountAN = "view_count"
-	regimenAN   = "regimen"
-	tagAN       = "tag"
+	regimenIDAN       = "regimen_id"
+	sourceRegimenIDAN = "source_regimen_id"
+	publishedAN       = "published"
+	viewCountAN       = "view_count"
+	regimenAN         = "regimen"
+	tagAN             = "tag"
 )
 
 var (
@@ -40,8 +41,11 @@ var (
 	// Preallocate strings and pointers to common objects used in the dynamo tables
 	// tag_view_count is the GSI used to sort tag results by view count
 	regimenTagTableTagViewIndexName = ptr.String("tag_view_count")
+	// source_regimen_regimen is the GSI used to sort tag results by view count
+	regimenTableSourceRegimenRegimenIndexName = ptr.String("source_regimen_regimen")
 	// A false parameter for Scan Index Direction returns descending order
 	tagQueryScanIndexDirection = ptr.Bool(false)
+	publishedFilter            = ptr.Bool(true)
 	// Limit queries to a 100 results
 	limitValue = ptr.Int64(100)
 	// AV represents an AttributeValue
@@ -54,7 +58,8 @@ var (
 	// UEAV represents an UpdateExpressionAttributeValues
 	incrementSingleValueUEAV = map[string]*dynamodb.AttributeValue{":inc": {N: oneAV}}
 	// KCE represents a KeyConditionExpression
-	tagEqualsTagKCE = ptr.String("tag = :tag")
+	tagEqualsTagKCE                         = ptr.String("tag = :tag")
+	sourceRegimenIDEqualsSourceRegimenIDKCE = ptr.String("source_regimen_id = :source_regimen_id")
 )
 
 // service contains a collections of methods that interact with amazon AWS Dynamo Db to perform the various regimen DAL actions
@@ -186,54 +191,33 @@ func (s *service) PutRegimen(id string, r *svc.Regimen, published bool) error {
 		return errors.Trace(err)
 	}
 
-	regimenWriteRequests := []*dynamodb.WriteRequest{
-		&dynamodb.WriteRequest{
-			PutRequest: &dynamodb.PutRequest{
-				Item: map[string]*dynamodb.AttributeValue{
-					regimenIDAN: &dynamodb.AttributeValue{
-						S: ptr.String(id),
-					},
-					// An unpublished regimen always has a view count of 0 and a published regimen should not be mutated so always PUT with a 0 value
-					viewCountAN: &dynamodb.AttributeValue{
-						N: zeroAV,
-					},
-					publishedAN: &dynamodb.AttributeValue{
-						BOOL: ptr.Bool(published),
-					},
-					regimenAN: &dynamodb.AttributeValue{
-						B: regimenData,
-					},
-				},
+	putRequest := &dynamodb.PutRequest{
+		Item: map[string]*dynamodb.AttributeValue{
+			regimenIDAN: &dynamodb.AttributeValue{
+				S: ptr.String(id),
+			},
+
+			// An unpublished regimen always has a view count of 0 and a published regimen should not be mutated so always PUT with a 0 value
+			viewCountAN: &dynamodb.AttributeValue{
+				N: zeroAV,
+			},
+			publishedAN: &dynamodb.AttributeValue{
+				BOOL: ptr.Bool(published),
+			},
+			regimenAN: &dynamodb.AttributeValue{
+				B: regimenData,
 			},
 		},
 	}
-
-	// track all the tags we're adding since we can't write duplicates to dynamo
-	usedTags := make(map[string]bool)
-	tagWriteRequests := make([]*dynamodb.WriteRequest, len(r.Tags))
-	for i, tag := range r.Tags {
-		tag = strings.ToLower(tag)
-		if _, ok := usedTags[tag]; !ok {
-			usedTags[tag] = true
-		} else {
-			continue
+	if r.SourceRegimenID != "" {
+		putRequest.Item[sourceRegimenIDAN] = &dynamodb.AttributeValue{
+			S: ptr.String(r.SourceRegimenID),
 		}
-		tagWriteRequests[i] = &dynamodb.WriteRequest{
-			PutRequest: &dynamodb.PutRequest{
-				Item: map[string]*dynamodb.AttributeValue{
-					tagAN: &dynamodb.AttributeValue{
-						S: ptr.String(tag),
-					},
-					// An unpublished regimen always has a view count of 0 and a published regimen should not be mutated so always PUT with a 0 value
-					viewCountAN: &dynamodb.AttributeValue{
-						N: zeroAV,
-					},
-					regimenIDAN: &dynamodb.AttributeValue{
-						S: ptr.String(id),
-					},
-				},
-			},
-		}
+	}
+	regimenWriteRequests := []*dynamodb.WriteRequest{
+		&dynamodb.WriteRequest{
+			PutRequest: putRequest,
+		},
 	}
 
 	batchWriteInput := &dynamodb.BatchWriteItemInput{
@@ -241,9 +225,41 @@ func (s *service) PutRegimen(id string, r *svc.Regimen, published bool) error {
 			*s.regimenTableName: regimenWriteRequests,
 		},
 	}
-	// Only attach tag write requests if there are any
-	if len(tagWriteRequests) > 0 {
-		batchWriteInput.RequestItems[*s.regimenTagTableName] = tagWriteRequests
+
+	// Only map a regimen into the tag set if it is being published
+	if published {
+		// track all the tags we're adding since we can't write duplicates to dynamo
+		usedTags := make(map[string]bool)
+		tagWriteRequests := make([]*dynamodb.WriteRequest, len(r.Tags))
+		for i, tag := range r.Tags {
+			tag = strings.ToLower(tag)
+			if _, ok := usedTags[tag]; !ok {
+				usedTags[tag] = true
+			} else {
+				continue
+			}
+			tagWriteRequests[i] = &dynamodb.WriteRequest{
+				PutRequest: &dynamodb.PutRequest{
+					Item: map[string]*dynamodb.AttributeValue{
+						tagAN: &dynamodb.AttributeValue{
+							S: ptr.String(tag),
+						},
+						// An unpublished regimen always has a view count of 0 and a published regimen should not be mutated so always PUT with a 0 value
+						viewCountAN: &dynamodb.AttributeValue{
+							N: zeroAV,
+						},
+						regimenIDAN: &dynamodb.AttributeValue{
+							S: ptr.String(id),
+						},
+					},
+				},
+			}
+		}
+
+		// Only attach tag write requests if there are any
+		if len(tagWriteRequests) > 0 {
+			batchWriteInput.RequestItems[*s.regimenTagTableName] = tagWriteRequests
+		}
 	}
 	_, err = s.dynamoClient.BatchWriteItem(batchWriteInput)
 	return errors.Trace(err)
@@ -348,11 +364,6 @@ func (s *service) TagQuery(tags []string) ([]*svc.Regimen, error) {
 	// Only do capacity here since we might have unpublished regimens we need to skip
 	rs := make([]*svc.Regimen, 0, len(regimensResp.Responses[*s.regimenTableName]))
 	for _, regimen := range regimensResp.Responses[*s.regimenTableName] {
-		// skip any unpublished  regimens
-		if !(*regimen[publishedAN].BOOL) {
-			continue
-		}
-
 		r := &svc.Regimen{}
 		if err := json.Unmarshal(regimen[regimenAN].B, r); err != nil {
 			return nil, errors.Trace(err)
@@ -366,6 +377,52 @@ func (s *service) TagQuery(tags []string) ([]*svc.Regimen, error) {
 		rs = append(rs, r)
 	}
 	sort.Sort(sort.Reverse(svc.ByViewCount(rs)))
+	return rs, nil
+}
+
+func (s *service) FoundationOf(id string, maxResults int) ([]*svc.Regimen, error) {
+	if maxResults > int(*limitValue) || maxResults == 0 {
+		maxResults = int(*limitValue)
+	}
+	rs := make([]*svc.Regimen, 0, *limitValue)
+	regimenResult, err := s.dynamoClient.Query(&dynamodb.QueryInput{
+		TableName:                 s.regimenTableName,
+		IndexName:                 regimenTableSourceRegimenRegimenIndexName,
+		KeyConditionExpression:    sourceRegimenIDEqualsSourceRegimenIDKCE,
+		FilterExpression:          ptr.String("published = :published"),
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{":source_regimen_id": {S: ptr.String(id)}, ":published": {BOOL: publishedFilter}},
+		// Only return a maximum of 100 records to sort between, if a regimen is the foundation of a TON then we may miss some :(
+		Limit: limitValue,
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	// Merge in the result of each query
+	for _, v := range regimenResult.Items {
+		if v[viewCountAN].N == nil {
+			golog.Errorf("Encountered a nil view count for regimen %s when doing foundation query, moving on: %s", v[regimenIDAN].S, err)
+			continue
+		}
+
+		vc, err := strconv.ParseInt(*v[viewCountAN].N, 10, 64)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		regimen := &svc.Regimen{}
+		if err := json.Unmarshal(v[regimenAN].B, regimen); err != nil {
+			golog.Errorf("Unable to deserialize regimen %s when doing foundation query, moving on: %s", v[regimenIDAN].S, err)
+			continue
+		}
+		regimen.ViewCount = int(vc)
+		rs = append(rs, regimen)
+	}
+
+	sort.Sort(sort.Reverse(svc.ByViewCount(rs)))
+	if len(rs) > maxResults {
+		rs = rs[:maxResults]
+	}
+
 	return rs, nil
 }
 
@@ -403,6 +460,10 @@ func (s *service) bootstrapDynamo() error {
 				AttributeName: ptr.String(regimenIDAN),
 				AttributeType: ptr.String("S"),
 			},
+			&dynamodb.AttributeDefinition{
+				AttributeName: ptr.String(sourceRegimenIDAN),
+				AttributeType: ptr.String("S"),
+			},
 		},
 		KeySchema: []*dynamodb.KeySchemaElement{
 			&dynamodb.KeySchemaElement{
@@ -410,8 +471,33 @@ func (s *service) bootstrapDynamo() error {
 				KeyType:       ptr.String("HASH"),
 			},
 		},
-
-		// TODO: Learn about and tune this
+		GlobalSecondaryIndexes: []*dynamodb.GlobalSecondaryIndex{
+			&dynamodb.GlobalSecondaryIndex{
+				IndexName: regimenTableSourceRegimenRegimenIndexName,
+				KeySchema: []*dynamodb.KeySchemaElement{
+					&dynamodb.KeySchemaElement{
+						AttributeName: ptr.String(sourceRegimenIDAN),
+						KeyType:       ptr.String("HASH"),
+					},
+					&dynamodb.KeySchemaElement{
+						AttributeName: ptr.String(regimenIDAN),
+						KeyType:       ptr.String("RANGE"),
+					},
+				},
+				Projection: &dynamodb.Projection{
+					ProjectionType: ptr.String("INCLUDE"),
+					NonKeyAttributes: []*string{
+						ptr.String(publishedAN),
+						ptr.String(viewCountAN),
+						ptr.String(regimenAN),
+					},
+				},
+				ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
+					ReadCapacityUnits:  ptr.Int64(10),
+					WriteCapacityUnits: ptr.Int64(10),
+				},
+			},
+		},
 		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
 			ReadCapacityUnits:  ptr.Int64(10),
 			WriteCapacityUnits: ptr.Int64(10),
@@ -466,14 +552,12 @@ func (s *service) bootstrapDynamo() error {
 				Projection: &dynamodb.Projection{
 					ProjectionType: ptr.String("ALL"),
 				},
-				// TODO: Learn about and tune this
 				ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
 					ReadCapacityUnits:  ptr.Int64(10),
 					WriteCapacityUnits: ptr.Int64(10),
 				},
 			},
 		},
-		// TODO: Learn about and tune this also
 		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
 			ReadCapacityUnits:  ptr.Int64(10),
 			WriteCapacityUnits: ptr.Int64(10),
