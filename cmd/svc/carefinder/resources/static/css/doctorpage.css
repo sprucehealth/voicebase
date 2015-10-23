@@ -627,7 +627,7 @@ table {
   margin-top: 20px; }
   .availability-item img {
     width: 28px;
-    height: 28px; }
+    flex: 0 0 28px; }
   .availability-item p {
     margin-left: 15px;
     font-family: 'MuseoSans-300', Helvetica, Arial, sans-serif;

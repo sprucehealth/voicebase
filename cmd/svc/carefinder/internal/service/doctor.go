@@ -264,7 +264,12 @@ func (d *doctorService) PageContentForID(doctorID string, r *http.Request) (inte
 		})
 	}
 
-	// add office information for non spruce doctor
+	var officeSectionTitle string
+	if doctor.IsSpruceDoctor {
+		officeSectionTitle = fmt.Sprintf("See %s Online", doctorResponse.ShortDisplayName)
+	} else {
+		officeSectionTitle = fmt.Sprintf("See %s In Office", doctorResponse.ShortDisplayName)
+	}
 
 	dp := &response.DoctorPage{
 		HTMLTitle:                 fmt.Sprintf("%s | Spruce Health", doctorResponse.LongDisplayName),
@@ -278,7 +283,7 @@ func (d *doctorService) PageContentForID(doctorID string, r *http.Request) (inte
 		StateCoverageText:         stateCoverageText,
 		AcceptedInsurance:         insuranceAccepted,
 		ConditionsTreated:         conditionsTreated,
-		OfficeSectionTitle:        fmt.Sprintf("See %s Online", doctorResponse.ShortDisplayName),
+		OfficeSectionTitle:        officeSectionTitle,
 		Qualifications:            qualifications,
 		AvailabilityItems:         availability,
 		PhysicalOfficeInformation: officeInfo,
