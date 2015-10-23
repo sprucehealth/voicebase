@@ -43,6 +43,7 @@
 	color: #1E333A;
 	padding-top: 70px;
 	padding-bottom: 10px;
+	text-decoration: none;
 }
 
 .cta-button {
@@ -70,6 +71,9 @@
 .start-online-visit-button {
 	@extend .cta-button;
 	background-color: #00CECF;
+	&:hover {
+		opacity: 0.6;
+	}
 }
 
 .call-for-appointment-button {

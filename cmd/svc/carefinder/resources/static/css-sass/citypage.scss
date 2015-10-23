@@ -195,6 +195,9 @@
 	line-height: 33px;
 	text-decoration: none;
 	color: #1E333A;
+	&:hover {
+		color: #0BA5C5;
+	}
 }
 
 .rating-experience-container {
@@ -297,6 +300,10 @@
 	@include respond-to(tablets) {
 		width: 260px;
 	}
+
+	&:hover {
+		background-color: #00CECF;
+	}
 }
 
 .secondary-card-container {
@@ -352,6 +359,8 @@
 	margin-right: 10px;
 	margin-top: 10px;
 	border: #0BA5C5 1px solid;
+	font-size: 14px;
+	line-height: 17px;
 	a {
 		text-decoration: none;	
 		color: #0BA5C5;
@@ -374,10 +383,10 @@
 		position: relative;
 		padding-left: 24px;
 		padding-bottom: 10px;
-		@include font-500();
+		@include font-300();
 		font-size: 14px;
 		line-height: 20px;
-		color: #0BA5C5;
+		color: #728289;
 	}
 
 	dt:before {

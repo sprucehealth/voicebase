@@ -61,6 +61,10 @@ $content-width: 600px;
 	padding-bottom: 15px;
 	text-decoration: none;
 	text-align: center;
+
+	&:hover {
+		opacity: 60%;
+	}
 }
 
 .featured-section {
@@ -192,7 +196,8 @@ $content-width: 600px;
 	@include respond-to(handhelds) {
 		@include flexbox-align-items(center);
 		@include flexbox-direction(column);
-
+		@include flexbox-wrap(nowrap);
+		height: auto;
 		width: auto;
 	}
 }
@@ -207,6 +212,7 @@ $content-width: 600px;
 	flex: 0 1 85%;
 
 	@include respond-to(handhelds) {
+		flex: 0 1 auto;		
 		margin-top: 25px;
 		text-align: center;
 	}
@@ -224,8 +230,9 @@ $content-width: 600px;
 	color: #8B9FA7;
 	margin-top: 20px;
 	padding: 10px;
-	flex: 0 1 100%;
+		flex: 0 1 100%;
 	@include respond-to(handhelds) {
+		flex: 0 1 auto;	
 		margin-top: 25px;
 		text-align: center;
 	}

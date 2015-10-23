@@ -24,7 +24,7 @@
 }
 
 .section-title {
-	@include font-700();
+	@include font-500();
 	font-size: 14px;
 	line-height: 17px;
 	color: #B9C2C5;
@@ -47,8 +47,8 @@
 	margin-top: 8px;
 	font-size: 15px;
 	line-height: 18px;
-	color: #0BA5C5;
+	color: #728289;
 	@include font-500();
-	background-color: #E6F6F9;
+	background-color: #F1F5F6;
 	border-radius: 2px;
 }
