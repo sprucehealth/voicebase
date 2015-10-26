@@ -17,6 +17,7 @@ import (
 type Client interface {
 	InsertRegimen(r *regimens.Regimen, publish bool) (*responses.RegimenPOSTResponse, error)
 	Regimen(regimenID string) (*responses.RegimenGETResponse, error)
+	IncrementViewCount(regimenID string) error
 }
 
 type regimensAPIClient struct {
@@ -75,7 +76,7 @@ func (c *regimensAPIClient) Regimen(regimenID string) (*responses.RegimenGETResp
 }
 
 func (c *regimensAPIClient) IncrementViewCount(regimenID string) error {
-	resp, err := c.httpClient.Get(formURL(c.endpoint, "regimen/"+regimenID+"/view"))
+	resp, err := c.httpClient.Post(formURL(c.endpoint, "regimen/"+regimenID+"/view"), "application/json", bytes.NewReader([]byte{}))
 	if err != nil {
 		return errors.Trace(err)
 	}

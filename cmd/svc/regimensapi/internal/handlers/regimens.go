@@ -210,8 +210,8 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 		rd.Regimen.CoverPhotoURL = collageURL
 		rd.Regimen.CoverPhoto = &regimens.Image{URL: collageURL, Width: collageWidth, Height: collageHeight}
 	} else {
-		width, height := remoteImageDimensions(rd.Regimen.CoverPhotoURL)
-		rd.Regimen.CoverPhoto = &regimens.Image{URL: rd.Regimen.CoverPhotoURL, Width: width, Height: height}
+		width, height := remoteImageDimensions(regimen.CoverPhotoURL)
+		regimen.CoverPhoto = &regimens.Image{URL: regimen.CoverPhotoURL, Width: width, Height: height}
 	}
 
 	if err := h.svc.PutRegimen(regimen.ID, regimen, rd.Publish); err != nil {
