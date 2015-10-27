@@ -67,7 +67,6 @@ var factualCategories = []string{
 	"Nail Makeup",
 	"Oral Care",
 	"Personal Care",
-	"Sexual Wellness",
 	"Shaving Products",
 	"Skin Care",
 	"Therapeutic Skin Care",
