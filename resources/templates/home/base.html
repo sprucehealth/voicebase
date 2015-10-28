@@ -107,7 +107,7 @@
 
 	 	<div id="footer">
 		 	<div class="container">
-		 		<div class="row">
+		 		<div class="row" itemscope itemType="http://schema.org/Organization">
 		 			<div class="col-md-3">
 						<a href="/" class="item">HOME</a><br>
 						<br class="desktop">
@@ -132,12 +132,15 @@
 					</div>
 					<div class="col-md-5">
 						<div class="footer-buttons">
-							<a href="http://itunes.apple.com/app/id908860329" target="_blank" class="appstore"><span class="footer-appstore" title="App Store"></span></a>
-							<a href="https://www.facebook.com/pages/Spruce/816634235033942" target="_blank"><span class="footer-facebook" title="Facebook"></span></a>
-							<a href="https://twitter.com/SpruceHealth" target="_blank"><span class="footer-twitter" title="Twitter"></span></a>
+							<a itemprop="sameAs" href="http://itunes.apple.com/app/id908860329" target="_blank" class="appstore"><span class="footer-appstore" title="App Store"></span></a>
+							<a itemprop="sameAs" href="https://www.facebook.com/pages/Spruce/816634235033942" target="_blank"><span class="footer-facebook" title="Facebook"></span></a>
+							<a itemprop="sameAs" href="https://twitter.com/SpruceHealth" target="_blank"><span class="footer-twitter" title="Twitter"></span></a>
  						</div>
+						<link itemprop="url" href="https://www.sprucehealth.com" />
+						<meta itemprop="name" content="Spruce Health Inc." />
+						<link itemprop="logo" href="{{staticURL "/img/logo@2x.png"}}" />
 						<div class="notify-me">
-							Support for more states and Android coming soon.<br>
+							Support for more states coming soon.<br>
 							<a href="#" class="notify-me" data-toggle="modal" data-target="#notify-me-modal">Sign up to be notified</a> when Spruce is available for you.<br>
 						</div>
 					</div>

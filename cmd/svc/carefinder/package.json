@@ -11,7 +11,7 @@
     "watchify": "^3.4.0"
   },
   "scripts": {
-    "build-dev": "./node_modules/browserify/bin/cmd.js resources/js/TextLink.js -t babelify --outfile resources/static/js/carefinder.js",
-    "build": "NODE_ENV=production ./node_modules/browserify/bin/cmd.js resources/js/TextLink.js -t babelify  | uglifyjs -c -m -o resources/static/js/carefinder.min.js"
+    "build-dev": "./node_modules/browserify/bin/cmd.js resources/js/app.js -t babelify --outfile resources/static/js/carefinder.js",
+    "build": "NODE_ENV=production ./node_modules/browserify/bin/cmd.js resources/js/app.js -t babelify  | uglifyjs -c -m -o resources/static/js/carefinder.min.js"
   }
 }

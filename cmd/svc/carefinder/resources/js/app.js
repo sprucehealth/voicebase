@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import * as ReactDOM from "react-dom";
-import * as Utils from "./utils";
 import * as API from "./api";
+import * as Utils from "./utils";
 
 window.React = React; 
 window.ReactDOM = ReactDOM;	

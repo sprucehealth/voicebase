@@ -1,20 +1,3 @@
-body {
-  background-color: #F8FAFB; }
-
-.header {
-  display: -webkit-box;
-  display: -moz-box;
-  display: -ms-flexbox;
-  display: -webkit-flex;
-  display: flex;
-  -webkit-justify-content: center;
-  justify-content: center;
-  background-color: white;
-  padding: 5px; }
-  .header img {
-    width: 124px;
-    height: 34px; }
-
 /* http://meyerweb.com/eric/tools/css/reset/ 
    v2.0 | 20110126
    License: none (public domain)

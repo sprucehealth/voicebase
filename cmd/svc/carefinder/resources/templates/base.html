@@ -6,9 +6,15 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=Edge">
 	<title>{{.Title}}</title>
 	
-	<link rel="shortcut icon" href="{{staticURL "/img/_favicon/favicon.ico"}}">
-	<link rel="icon" type="image/png" href="{{staticURL "/img/_favicon/favicon_64.png"}}">
-	<link rel="apple-touch-icon-precomposed" href="{{staticURL "/img/_favicon/favicon_64.png"}}">
+	<link rel="shortcut icon" href="{{staticURL "img/_favicon/favicon.ico"}}">
+	<link rel="icon" type="image/png" href="{{staticURL "img/_favicon/favicon_64.png"}}">
+	<link rel="apple-touch-icon-precomposed" href="{{staticURL "img/_favicon/favicon_64.png"}}">
+
+	{{if isEnv "dev"}}
+		<link rel="stylesheet" type="text/css" href={{staticURL "css/base.css"}}>
+	{{else}}
+		<link rel="stylesheet" type="text/css" href={{staticURL "css/base.min.css"}}>
+	{{end}}
 	{{ template "headTail" .}} 
 <body>
 	<div class="header">
@@ -18,7 +24,35 @@
 	{{ template "content" .SubContext }}
 	{{ template "scripts" . }}
 
+	<!-- Footer -->
+		<div class="footer" itemscope itemtype="http://schema.org/Organization">
+			<div class="footer-contents-container">
+				<div class="footer-links-container">
+						<a class="footer-link-item" href="/">HOME</a>
+						<a class="footer-link-item" href="/conditions-treated">CONDITIONS TREATED</a>
+						<a class="footer-link-item" href="/meet-the-doctors">MEET THE DOCTORS</a>
+						<a class="footer-link-item" href="/faq">FAQ's</a>
+						<a class="footer-link-item" href="/providers">FOR PROVIDERS</a>
+						<a class="footer-link-item" href="/contact">CONTACT</a>
+						<a class="footer-link-item" href="/about">THE COMPANY</a>
+						<a class="footer-link-item" href="/terms">TERMS &amp; PRIVACY</a>
+						<a class="footer-link-item" href="https://docs.google.com/forms/d/1qG2zFO0NVilb4SfrtNvuT7uE5hlXbRA1rGFuSZQG-gk/viewform" target="_blank">REPORT AN ERROR</a>
+						<a class="footer-copyright">© SPRUCE HEALTH 2015</a>
+				</div>
+					<div class="footer-button-text-container">
+						<div class="footer-button-container">
+							<a itemprop="sameAs" href="https://bnc.lt/spruce-get-app"><img class="footer-button-getapp" src="{{staticURL "img/get_app.png"}}"></img></a>
+							<a itemprop="sameAs" href="https://www.facebook.com/pages/Spruce/816634235033942" target="_blank"><img class="footer-button-facebook" src="{{staticURL "img/facebook.png"}}" ></img></a>
+							<a itemprop="sameAs" href="https://twitter.com/SpruceHealth" target="_blank"><img class="footer-button-twitter" src="{{staticURL "img/twitter.png"}}" ><img></a>
+						</div>
+						<link itemprop="url" href="https://www.sprucehealth.com" />
+						<meta itemprop="name" content="Spruce Health Inc." />
+						<link itemprop="logo" href="{{staticURL "img/spruce_logo.svg"}}" />
+						<p class="footer-notified-text">We have made our best attempt to ensure accuracy of all information presented in our list of dermatologists. If you notice any errors <a href="https://docs.google.com/forms/d/1qG2zFO0NVilb4SfrtNvuT7uE5hlXbRA1rGFuSZQG-gk/viewform" target="_blank">please let us</a> know so we can investigate and make any corrections.</p>
+					</div>
+			</div>
+		</div>
 </body>
 </html>
 {{define "headTail"}}{{end}}
-{{define "scripts" }}{{end}}
+{{define "scripts"}}{{end}}

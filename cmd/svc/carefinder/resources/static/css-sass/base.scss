@@ -1,0 +1,157 @@
+@import "flexbox.scss";
+@import "fonts.scss";
+@import "reset.scss";
+@import "utils.scss";
+@import "common.scss";
+
+$img_directory: "../img/";
+
+body {
+	background-color: #F8FAFB;
+}
+
+.header {
+	@include flexbox();
+	@include flexbox-justify-content(center);
+	background-color: white;
+	padding: 5px;
+
+	img {
+		width: 124px;
+		height: 34px;
+	}
+}
+
+$footer-height: 260px;
+
+.footer {
+	background-color: #1E333A;
+	width: 100%;
+	height: $footer-height;
+
+	@include respond-to(handhelds) {
+		height: auto;
+	}
+}
+
+.footer-contents-container {
+	max-width: 960px;
+	margin-right: auto;
+	margin-left: auto;
+	padding-top: 45px;
+	padding-left: 20px;
+	padding-right: 20px;
+	padding-bottom: 25px;
+	@include flexbox();
+	@include flexbox-direction(row);
+	@include flexbox-wrap(wrap);
+	@include respond-to(handhelds) {
+		@include flexbox-direction(column);
+		max-width: auto;
+	}
+}
+
+.footer-links-container {
+	@include flexbox();
+	@include flexbox-direction(column);
+	@include flexbox-wrap(wrap);
+	height: 190px;
+	flex: 0 1 50%;
+	@include respond-to(handhelds) {
+		height: auto;
+		@include flexbox-wrap(nowrap);
+		@include flexbox-justify-content(center);
+		@include flexbox-align-items(center);
+		flex: 0 1 auto;
+	}
+}
+
+.footer-link-item {
+	@include font-500();
+	color: #FFFFFF;
+	font-size: 15px;
+	line-height: 18px;
+	margin-bottom: 20px;
+	text-decoration: none;
+	@include respond-to(handhelds) {
+		font-size: 12px;
+		line-height: 14px;
+		margin-bottom: 14px;
+	}
+}
+
+.footer-copyright {
+	color: #8B9FA7;
+	font-size: 15px;
+	line-height: 18px;
+	text-decoration: none;
+	@include font-500();
+	margin-bottom: 20px;
+	@include respond-to(handhelds) {
+		font-size: 12px;
+		line-height: 14px;
+		margin-bottom: 14px;
+	}
+}
+
+.footer-button-text-container {
+	flex: 0 1 50%;
+	@include respond-to(handhelds) {
+		padding-top: 20px;
+		flex: 0 1 auto;
+	}
+}
+
+.footer-button-container {
+	@include flexbox();
+	@include flexbox-direction(row);
+	@include respond-to(handhelds) {
+		@include flexbox-justify-content(center);
+		@include flexbox-align-items(center);
+	}
+}
+
+.footer-button-getapp {
+	margin-right: 25px;
+	width: 191px;
+	height: auto;
+	@include respond-to(handhelds) {
+		width: 152px;
+	}
+}
+
+.footer-button-facebook {
+	margin-right: 25px;
+	width: 55px;
+	height: 55px;
+	@include respond-to(handhelds) {
+		width: 44px;
+		height: 44px;
+	}
+}
+
+.footer-button-twitter {
+	width: 55px;
+	height: 55px;
+	@include respond-to(handhelds) {
+		width: 44px;
+		height: 44px;
+	}
+}
+
+.footer-notified-text {
+	@include font-300();
+	line-height: 17px;
+	font-size: 14px;
+	color: #FFFFFF;
+	margin-top: 20px;
+
+	a {
+		color: #00B3D0;
+		text-decoration: none;
+	}
+
+	@include respond-to(handhelds) {
+		text-align: center;
+	}
+}
