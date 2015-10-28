@@ -212,5 +212,38 @@
 				{{end}}
 			</div>
 	</div>
-	</span>
+
+	<!--Only include for local doctors-->
+	{{if .IsSpruceDoctor}}
+	{{else}}
+		<div class="online-doctors-section">
+			<p class="doctor-profile-section-title">Top Rated Online Dermatologists</p>
+			<div class="online-doctors-container">
+				{{range .SpruceDoctors}}
+					<div class="doctor-card">
+						<a href="{{.ProfileURL}}"><img class="doctor-card-img" src="{{.ProfileImageURL}}"></img></a>
+						<a href="{{.ProfileURL}}" class="doctor-card-title">{{.LongDisplayName}}</a>
+						<div class="treats-online-container">
+							<div class="treats-online-circle"></div>
+							<a href="{{.StartOnlineVisitURL}}" class="treats-online-text">Treats Patients Online</a>
+						</div>
+						<div class="doctor-card-divider"></div>
+
+						<div class="doctor-card-rating-experience-container"> 
+							<div>
+								<p class="section-title">AVG RATING</p>
+								<img class="doctor-card-rating-img" src="{{staticURL .StarRatingImg}}"></img>
+							</div>
+							<div class="doctor-card-rating-experience-divider"></div>
+							<div> 
+								<p class="section-title">EXPERIENCE</p>
+								<p class="doctor-card-experience-description">{{.Experience}}</p>
+							</div>
+						</div>
+					</div>
+				{{end}}
+			</div>
+		</div>
+	{{end}}
+</span>
 {{end}}

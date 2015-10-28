@@ -114,6 +114,55 @@ func (d *doctorService) PageContentForID(doctorID string, r *http.Request) (inte
 		return nil
 	})
 
+	// get spruce doctors if local doctor
+	var spruceDoctors []*response.Doctor
+	if !doctor.IsSpruceDoctor {
+		p.Go(func() error {
+			// get cities for which this doctor is listed
+			cityIDs, err := d.cityDAL.CityIDsForDoctor(doctor.ID)
+			if err != nil {
+				return errors.Trace(err)
+			}
+
+			if len(cityIDs) == 0 {
+				return nil
+			}
+
+			// get spruce doctor ids for any one of those citys
+			cityID := cityIDs[rand.Intn(len(cityIDs))]
+			spruceDoctorIDs, err := d.cityDAL.SpruceDoctorIDsForCity(cityID)
+			if err != nil {
+				return errors.Trace(err)
+			}
+
+			if len(spruceDoctorIDs) == 0 {
+				return nil
+			}
+
+			shuffle(spruceDoctorIDs)
+
+			n := 3
+			if len(spruceDoctorIDs) < n {
+				n = len(spruceDoctorIDs)
+			}
+
+			doctors, err := d.doctorDAL.Doctors(spruceDoctorIDs[:n])
+			if err != nil {
+				return errors.Trace(err)
+			}
+
+			spruceDoctors = make([]*response.Doctor, len(doctors))
+			for i, sd := range doctors {
+				spruceDoctors[i], err = response.TransformModel(sd, d.contentURL, d.webURL)
+				if err != nil {
+					return errors.Trace(err)
+				}
+			}
+
+			return nil
+		})
+	}
+
 	// build reviews section for doctor depending on whether we are dealing with local or
 	// spruce doctor
 	var reviewSection *response.ReviewsSection
@@ -306,6 +355,7 @@ func (d *doctorService) PageContentForID(doctorID string, r *http.Request) (inte
 		AvailabilityItems:         availability,
 		PhysicalOfficeInformation: officeInfo,
 		PhoneLink:                 phoneLink,
+		SpruceDoctors:             spruceDoctors,
 	}
 
 	return dp, nil

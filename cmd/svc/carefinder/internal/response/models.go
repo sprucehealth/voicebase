@@ -130,6 +130,7 @@ type DoctorPage struct {
 	ConditionsTreated         []*Container
 	AvailabilityItems         []*ImageTextItem
 	OfficeSectionTitle        string
+	SpruceDoctors             []*Doctor
 }
 
 type StartOnlineVisitPage struct {

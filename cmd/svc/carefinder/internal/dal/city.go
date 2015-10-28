@@ -15,6 +15,7 @@ type CityDAL interface {
 	BannerImageIDsForState(state string) ([]string, error)
 	LocalDoctorIDsForCity(cityID string) ([]string, error)
 	SpruceDoctorIDsForCity(cityID string) ([]string, error)
+	CityIDsForDoctor(doctorID string) ([]string, error)
 	CareRatingForCity(cityID string) (*models.CareRating, error)
 	TopSkinConditionsForCity(cityID string, n int) ([]string, error)
 	NearbyCitiesForCity(cityID string, n int) ([]*models.City, error)
@@ -195,6 +196,28 @@ func (c *cityDAL) SpruceDoctorIDsForCity(cityID string) ([]string, error) {
 	}
 
 	return doctorIDs, errors.Trace(rows.Err())
+}
+
+func (c *cityDAL) CityIDsForDoctor(doctorID string) ([]string, error) {
+	rows, err := c.db.Query(`
+		SELECT city_id
+		FROM doctor_city_short_list
+		WHERE doctor_id = $1`, doctorID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var cityIDs []string
+	for rows.Next() {
+		var cityID string
+		if err := rows.Scan(&cityID); err != nil {
+			return nil, errors.Trace(err)
+		}
+		cityIDs = append(cityIDs, cityID)
+	}
+
+	return cityIDs, errors.Trace(rows.Err())
 }
 
 func (c *cityDAL) CareRatingForCity(cityID string) (*models.CareRating, error) {

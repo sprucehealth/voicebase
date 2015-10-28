@@ -429,3 +429,100 @@
 	@include flexbox-direction(column);
 }
 
+.online-doctors-section {
+	background-color: #EAEFF1;
+	width: 100%;
+	@include flexbox();
+	@include flexbox-direction(column);
+	@include flexbox-align-items(center);
+}
+
+.online-doctors-container {
+	@include flexbox();
+	@include flexbox-direction(row);
+	margin-top: 25px;
+	margin-bottom: 25px;
+	margin-left: 10px;
+	margin-right: 10px;
+	@include respond-to(handhelds) {
+		@include flexbox-direction(column);
+	}
+}
+
+.doctor-card {
+	background-color: #FFFFFF;
+	border: #DAE6EB 1px solid;
+	border-radius: 4px;
+	width: 300px;
+	height: 300px;
+	flex: 0 0 300px;
+	margin-left: 10px;
+	margin-right: 10px;
+
+	@include flexbox();
+	@include flexbox-direction(column);
+	@include flexbox-align-items(center);
+	
+	@include respond-to(handhelds) {
+		margin-bottom: 20px;
+		margin-left: 0px;
+		margin-right: 0px;
+	}
+}
+
+.doctor-card-img {
+	width: 100px;
+	height: 100px;
+	border-radius: 50px;
+	background-color: #EAEFF1;
+	margin-top: 20px;
+}
+
+.doctor-card-title {
+	@include font-500();
+	line-height: 24px;
+	font-size: 20px;
+	color: #1E333A;
+	margin-top: 16px;
+	text-decoration: none;
+}
+
+.doctor-card-divider {
+	height: 1px;
+	width: 90%;
+	background-color: #E5ECEE;
+	margin-top: 20px;
+}
+
+.doctor-card-rating-experience-container {
+	@include flexbox();
+	@include flexbox-align-items(center);
+	@include flexbox-align-self(flex-start);
+	@include flexbox-justify-content(space-between);
+	margin-top : 25px;
+	margin-bottom: 25px;
+	margin-right: 20px;
+	margin-left: 20px;
+}
+
+.doctor-card-rating-img {
+	width: 97px;
+	height: 18px;
+	margin-top: 5px;
+}
+
+.doctor-card-rating-experience-divider {
+	width: 1px;
+	@include flexbox-align-self(stretch);
+	background-color: #E5ECEE;
+	margin-right: 25px;
+	margin-left: 25px;
+}
+
+.doctor-card-experience-description {
+	margin-top: 5px;
+	@include font-500();
+	font-size: 17px;
+	line-height: 20px;
+	color: #728289;
+}

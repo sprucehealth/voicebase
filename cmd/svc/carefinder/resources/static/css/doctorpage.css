@@ -622,3 +622,117 @@ table {
   display: flex;
   flex-direction: column;
   -webkit-flex-flow: column; }
+
+.online-doctors-section {
+  background-color: #EAEFF1;
+  width: 100%;
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  flex-direction: column;
+  -webkit-flex-flow: column;
+  -webkit-align-items: center;
+  align-items: center; }
+
+.online-doctors-container {
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  flex-direction: row;
+  -webkit-flex-flow: row;
+  margin-top: 25px;
+  margin-bottom: 25px;
+  margin-left: 10px;
+  margin-right: 10px; }
+  @media only screen and (max-width: 767px) {
+    .online-doctors-container {
+      flex-direction: column;
+      -webkit-flex-flow: column; } }
+
+.doctor-card {
+  background-color: #FFFFFF;
+  border: #DAE6EB 1px solid;
+  border-radius: 4px;
+  width: 300px;
+  height: 300px;
+  flex: 0 0 300px;
+  margin-left: 10px;
+  margin-right: 10px;
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  flex-direction: column;
+  -webkit-flex-flow: column;
+  -webkit-align-items: center;
+  align-items: center; }
+  @media only screen and (max-width: 767px) {
+    .doctor-card {
+      margin-bottom: 20px;
+      margin-left: 0px;
+      margin-right: 0px; } }
+
+.doctor-card-img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50px;
+  background-color: #EAEFF1;
+  margin-top: 20px; }
+
+.doctor-card-title {
+  font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+  line-height: 24px;
+  font-size: 20px;
+  color: #1E333A;
+  margin-top: 16px;
+  text-decoration: none; }
+
+.doctor-card-divider {
+  height: 1px;
+  width: 90%;
+  background-color: #E5ECEE;
+  margin-top: 20px; }
+
+.doctor-card-rating-experience-container {
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-align-self: flex-start;
+  -ms-flex-item-align: flex-start;
+  align-self: flex-start;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  margin-top: 25px;
+  margin-bottom: 25px;
+  margin-right: 20px;
+  margin-left: 20px; }
+
+.doctor-card-rating-img {
+  width: 97px;
+  height: 18px;
+  margin-top: 5px; }
+
+.doctor-card-rating-experience-divider {
+  width: 1px;
+  -webkit-align-self: stretch;
+  -ms-flex-item-align: stretch;
+  align-self: stretch;
+  background-color: #E5ECEE;
+  margin-right: 25px;
+  margin-left: 25px; }
+
+.doctor-card-experience-description {
+  margin-top: 5px;
+  font-family: 'MuseoSans-500', Helvetica, Arial, sans-serif;
+  font-size: 17px;
+  line-height: 20px;
+  color: #728289; }

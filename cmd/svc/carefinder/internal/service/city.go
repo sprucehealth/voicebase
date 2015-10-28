@@ -334,13 +334,6 @@ func (c *cityService) pickNRandomDoctors(n int, ids []string) ([]*models.Doctor,
 	return doctors, nil
 }
 
-func shuffle(ids []string) {
-	for i := len(ids) - 1; i > 0; i-- {
-		j := rand.Intn(i)
-		ids[i], ids[j] = ids[j], ids[i]
-	}
-}
-
 type byYelpReviewCount []*models.Doctor
 
 func (c byYelpReviewCount) Len() int      { return len(c) }
