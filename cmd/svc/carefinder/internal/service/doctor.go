@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/response"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/yelp"
+	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -203,13 +204,25 @@ func (d *doctorService) PageContentForID(doctorID string, r *http.Request) (inte
 				return nil, errors.Trace(err)
 			}
 
+			parsedPhone, err := common.ParsePhone(doctor.Address.Phone)
+			if err != nil {
+				return nil, errors.Trace(err)
+			}
+
 			// hard code the office hours for now as we don't have them for each doctor
 			// and are going with office hours that should generally work
 			officeInfo = &response.Address{
-				AddressLine1:       addressLine1,
-				AddressLine2:       addressLine2,
-				GoogleMapsLink:     fmt.Sprintf("https://maps.google.com/?q=%s %s", doctor.Address.AddressLine1, addressLine2),
-				GoogleMapsImageURL: mapsURL,
+				AddressLine1:         addressLine1,
+				AddressLine2:         addressLine2,
+				Latitude:             doctor.Address.Latitude,
+				Longitude:            doctor.Address.Longitude,
+				State:                doctor.Address.State,
+				City:                 doctor.Address.City,
+				Phone:                parsedPhone.String(),
+				Zipcode:              doctor.Address.Zipcode,
+				GoogleMapsLink:       fmt.Sprintf("https://maps.google.com/?q=%s %s", doctor.Address.AddressLine1, addressLine2),
+				GoogleMapsImageURL:   mapsURL,
+				CondensedOfficeHours: "Mo,Tu,We,Th,Fr 09:00-17:00",
 				OfficeHours: []*response.OfficeHoursItem{
 					{
 						Day:   "Mon",
@@ -265,16 +278,21 @@ func (d *doctorService) PageContentForID(doctorID string, r *http.Request) (inte
 	}
 
 	var officeSectionTitle string
+	var title string
 	if doctor.IsSpruceDoctor {
 		officeSectionTitle = fmt.Sprintf("See %s Online", doctorResponse.ShortDisplayName)
+		title = fmt.Sprintf("%s, Dermatologist Treating Patients Online | Spruce Health", doctorResponse.LongDisplayName)
 	} else {
 		officeSectionTitle = fmt.Sprintf("See %s In Office", doctorResponse.ShortDisplayName)
+		title = fmt.Sprintf("%s, Dermatologist in %s, %s | Spruce Health", doctorResponse.LongDisplayName, doctor.Address.City, doctor.Address.State)
 	}
 
 	dp := &response.DoctorPage{
-		HTMLTitle:                 fmt.Sprintf("%s | Spruce Health", doctorResponse.LongDisplayName),
+		HTMLTitle:                 title,
 		LongDisplayName:           doctorResponse.LongDisplayName,
 		ProfileImageURL:           doctorResponse.ProfileImageURL,
+		Description:               doctorResponse.Description,
+		ProfileURL:                doctorResponse.ProfileURL,
 		BannerImageURL:            bannerImageURL,
 		StartOnlineVisitURL:       doctorResponse.StartOnlineVisitURL,
 		IsSpruceDoctor:            doctorResponse.IsSpruceDoctor,
@@ -287,8 +305,7 @@ func (d *doctorService) PageContentForID(doctorID string, r *http.Request) (inte
 		Qualifications:            qualifications,
 		AvailabilityItems:         availability,
 		PhysicalOfficeInformation: officeInfo,
-		Phone:     phone,
-		PhoneLink: phoneLink,
+		PhoneLink:                 phoneLink,
 	}
 
 	return dp, nil
@@ -321,6 +338,8 @@ func (d *doctorService) buildReviewsSection(doctor *models.Doctor, doctorRespons
 				Author:          "Verified Patient",
 				RatingImageURL:  response.StaticURL(d.staticResourceURL, response.DetermineImageNameForRating(r.Rating)),
 				Date:            r.CreatedDate.Format("02/01/2006"),
+				Rating:          r.Rating,
+				Citation:        "https://www.sprucehealth.com",
 			}
 		}
 
@@ -348,6 +367,8 @@ func (d *doctorService) buildReviewsSection(doctor *models.Doctor, doctorRespons
 				RatingImageURL:  r.RatingImageLargeURL,
 				Author:          r.User.Name,
 				Date:            time.Unix(r.TimeCreated, 0).Format("02/01/2006"),
+				Rating:          r.Rating,
+				Citation:        doctor.YelpURL,
 			}
 		}
 	}
@@ -359,6 +380,8 @@ func (d *doctorService) buildReviewsSection(doctor *models.Doctor, doctorRespons
 		SourceImageName:       sourceImageName,
 		AverageRatingImageURL: averageRatingImageURL,
 		Reviews:               reviews,
+		AverageRating:         doctor.AverageRating,
+		ReviewCount:           doctor.ReviewCount,
 	}, nil
 }
 

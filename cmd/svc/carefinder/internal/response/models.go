@@ -35,6 +35,8 @@ type Doctor struct {
 	ProfileURL          string
 	StartOnlineVisitURL string
 	StarRatingImg       string
+	ReviewCount         int
+	AverageRating       float64
 }
 
 type SpruceScoreSection struct {
@@ -69,11 +71,18 @@ type OfficeHoursItem struct {
 }
 
 type Address struct {
-	AddressLine1       string
-	AddressLine2       string
-	GoogleMapsLink     string
-	GoogleMapsImageURL string
-	OfficeHours        []*OfficeHoursItem
+	AddressLine1         string
+	AddressLine2         string
+	City                 string
+	State                string
+	Zipcode              string
+	Latitude             float64
+	Phone                string
+	Longitude            float64
+	GoogleMapsLink       string
+	GoogleMapsImageURL   string
+	OfficeHours          []*OfficeHoursItem
+	CondensedOfficeHours string
 }
 
 type Review struct {
@@ -84,6 +93,8 @@ type Review struct {
 	Author          string
 	Date            string
 	RatingImageURL  string
+	Rating          float64
+	Citation        string
 }
 
 type ReviewsSection struct {
@@ -92,6 +103,8 @@ type ReviewsSection struct {
 	Title                 string
 	AverageRatingImageURL string
 	SourceImageName       string
+	AverageRating         float64
+	ReviewCount           int
 }
 
 type Container struct {
@@ -102,9 +115,10 @@ type DoctorPage struct {
 	HTMLTitle                 string
 	LongDisplayName           string
 	ProfileImageURL           string
+	ProfileURL                string
+	Description               string
 	BannerImageURL            string
 	StartOnlineVisitURL       string
-	Phone                     string
 	PhoneLink                 string
 	IsSpruceDoctor            bool
 	ReviewsSection            *ReviewsSection
@@ -169,5 +183,7 @@ func TransformModel(doctor *models.Doctor, contentURL, webURL string) (*Doctor, 
 		ProfileURL:          fmt.Sprintf("%s/%s", webURL, doctor.ID),
 		StartOnlineVisitURL: fmt.Sprintf("%s/%s/start-online-visit", webURL, doctor.ID),
 		StarRatingImg:       determineImageNameForRating(roundToClosestHalve(doctor.AverageRating)),
+		AverageRating:       doctor.AverageRating,
+		ReviewCount:         doctor.ReviewCount,
 	}, nil
 }

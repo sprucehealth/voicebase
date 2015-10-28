@@ -20,13 +20,13 @@
 		<div class="main-content-container">
 			<div class="primary-card-container">
 				{{range .Doctors}}
-					<div class="primary-card">
-						
-						<a href="{{.ProfileURL}}"><img class="primary-card-image" src={{.ProfileImageURL}}></img></a>
+					<div class="primary-card" itemscope itemtype="http://schema.org.Physician">
+						<link itemprop="medicalSpecialty" href="http://schema.org/Dermatologic"></link>
+						<a href="{{.ProfileURL}}"><img class="primary-card-image" itemprop="image" src={{.ProfileImageURL}}></img></a>
 
 						<div class="name-rating-experience-container">
 
-							<a class="primary-card-title" href="{{.ProfileURL}}">{{.LongDisplayName}}</a>
+							<a class="primary-card-title" href="{{.ProfileURL}}"><span itemprop="name">{{.LongDisplayName}}</span></a>
 
 							{{if .IsSpruceDoctor}}
 								<div class="handhelds-tablets-only">
@@ -41,6 +41,12 @@
 								<div>
 									<p class="section-title">AVG RATING</p>
 									<img class="rating-stars-img" src={{staticURL .StarRatingImg}}></img>
+										<span itemscope itemtype="http://schema.org/AggregateRating">
+											<meta itemprop="reviewCount" content="{{.ReviewCount}}" />
+											<meta itemprop="bestRating" content="5"/>
+											<meta itemprop="worstRating" content="1" />
+											<meta itemprop="ratingValue" content="{{.AverageRating}}" />
+										</span>
 								</div>
 								{{with .Experience}}
 									<div class="rating-experience-divider handhelds-tablets-only"></div>
@@ -53,7 +59,7 @@
 
 						</div>
 
-						<p class="doctor-description">{{.Description}}</p>
+						<p class="doctor-description" itemprop="description">{{.Description}}</p>
 
 						{{with .Specialties}}
 							<div class="specialties-section">
@@ -67,7 +73,7 @@
 						{{end}}
 
 						<div class = "view-profile-section">
-								<a class="view-profile-button" href="{{.ProfileURL}}">VIEW PROFILE</a>
+								<a class="view-profile-button" itemprop="url" href="{{.ProfileURL}}">VIEW PROFILE</a>
 								
 								{{if .IsSpruceDoctor}}
 									<div class="desktop-only">

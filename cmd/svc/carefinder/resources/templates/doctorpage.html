@@ -7,18 +7,24 @@
 {{end}}
 
 {{define "content"}}
-	
+	<span itemscope itemtype="http://schema.org/Physician">
 	<div class="banner-img" style="background-image: url({{.BannerImageURL}})"></div>
-	<img class="doctor-img" src="{{.ProfileImageURL}}" />
+	<img class="doctor-img" itemprop="image" src="{{.ProfileImageURL}}" />
 
 	<div class="doctor-name-container">
-		<p class="doctor-name">{{.LongDisplayName}}</p>
+		<p class="doctor-name" itemprop ="name">{{.LongDisplayName}}</p>
 		{{if .IsSpruceDoctor}}
 			<div class="treats-online-container">
 				<div class="treats-online-circle"></div>
 				<p class="treats-online-text">Treats Patients Online</p>
 			</div>
 			<a href="{{.StartOnlineVisitURL}}" class="start-online-visit-button">START AN ONLINE VISIT</a>
+			<span itemprop="potentialAction" itemscope itemtype="http://schema.org/ReserveAction">
+				<meta itemprop="target" content="{{.StartOnlineVisitURL}}" />
+				<span itemprop="result" itemscope itemtype="http://schema.org/Reservation">
+                    <meta itemprop="name" content="Appointment" />
+                </span>
+			</span>
 		{{else}}
 			<a class="call-for-appointment-button" href="{{html .PhoneLink}}">CALL FOR APPOINTMENT</a>
 		{{end}}
@@ -32,25 +38,37 @@
 				<div class="rating-logo-container">
 					<img src="{{.AverageRatingImageURL}}" class="rating-img"></img>
 					<img class="rating-source-img" src="{{staticURL .SourceImageName}}"></img>
+					<span itemscope itemtype="http://schema.org/AggregateRating">
+						<meta itemprop="reviewCount" content="{{.ReviewCount}}" />
+						<meta itemprop="bestRating" content="5"/>
+						<meta itemprop="worstRating" content="1" />
+						<meta itemprop="ratingValue" content="{{.AverageRating}}" />
+					</span>
 				</div>
 			</div>
 			<div class="reviews-list-container">
 				<p class="section-title">REVIEWS</p>
 				{{range .Reviews}}
-					<div class="review-item-container">
+					<div class="review-item-container" itemprop="review" itemscope itemtype="http://schema.org/Review">
 						<div class="rating-logo-container">
 							<img class="rating-img" src="{{.RatingImageURL}}"></img>
 							<img class="rating-source-img" src="{{staticURL .SourceImageName}}"></img>
 						</div>
+						<span itemprop="reviewRating" itemscope itemtype="http://schema.org/Rating">
+							<meta itemprop="bestRating" content="5"/>
+							<meta itemprop="worstRating" content="1" />
+							<meta itemprop="ratingValue" content="{{.Rating}}" />
+						</span>
+						<meta itemprop="citation" content="{{.Citation}}" />
 						<div class="review-text-container">
-							<p class="review-text">{{.Text}} 
+							<p class="review-text" itemprop="reviewBody">{{.Text}} 
 								{{with .YelpPageURL}}
 									<a class="read-more-link" target="_blank" href="{{html .}}">Read more</a></p>
 								{{end}}
 						</div>
 						<div class="review-author-date-container">
-							<p class="review-author-text">{{.Author}}</p>
-							<p class="review-date-text">{{.Date}}</p>
+							<p class="review-author-text" itemprop="author">{{.Author}}</p>
+							<p class="review-date-text" itemprop="datePublished">{{.Date}}</p>
 						</div>
 					</div>
 				{{end}}
@@ -65,30 +83,31 @@
 
 		<p class="doctor-profile-section-title">Qualifications & Credentials</p>
 
-		<div class="qualifications-container">
-			
-			{{with .Specialties}}
-				<div class="specialties-section">
-					<p class="section-title">SPECIALTIES</p>
-					<div class="specialties-items-container">
-						{{range .}}
-							<div class="specialties-item">{{.}}</div>
-						{{end}}
+		<link itemprop="medicalSpecialtiy" href="https://schema.org/Dermatologic">
+			<div class="qualifications-container">
+				
+				{{with .Specialties}}
+					<div class="specialties-section">
+						<p class="section-title">SPECIALTIES</p>
+						<div class="specialties-items-container">
+							{{range .}}
+								<div class="specialties-item">{{.}}</div>
+							{{end}}
+						</div>
 					</div>
-				</div>
-			{{end}}
+				{{end}}
 
-			{{range .Qualifications}}
-				<div class="subsection-container">
-					<div class="title-description-section">
-						<h1>{{.Title}}</p>
-						<p>{{.Description}}</p>
+				{{range .Qualifications}}
+					<div class="subsection-container">
+							<div class="title-description-section">
+								<h1>{{.Title}}</h1>
+								<p>{{.Description}}</p>
+							</div>
 					</div>
-				</div>
-			{{end}}
+				{{end}}
 
-		</div>
-
+			</div>
+		</link>
 	</div>
 
 	<div class="practice-information-section">
@@ -99,14 +118,23 @@
 				<div class="subsection-container">
 					<div class ="office-location-container">
 							<div class="office-location">
-									<p class="section-title">OFFICE LOCATION</p>
-									<a href="{{.GoogleMapsLink}}"><img class="office-location-img" src="{{.GoogleMapsImageURL}}"></img></a>
-									<p class="office-address-line-1">{{.AddressLine1}}</p>
-									<p class="office-address-line-2">{{.AddressLine2}}</p>
+									<span itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">
+										<p class="section-title">OFFICE LOCATION</p>
+										<a href="{{.GoogleMapsLink}}"><img class="office-location-img" src="{{.GoogleMapsImageURL}}"></img></a>
+										<p itemprop="streetAddress" class="office-address-line-1">{{.AddressLine1}}</p>
+										<div class="office-address-line-2"> <span itemprop="addressLocality">{{.City}}</span>, <span itemprop="addressRegion">{{.State}}</span> <span itemprop="postalCode">{{.Zipcode}}</span></div>
+										<meta itemprop="addressCountry" content="US" />
+									</span>
+									  <span itemprop="geo" itemscope itemtype="http://schema.org/GeoCoordinates">
+								          <meta itemprop="latitude" content="{{.Latitude}}" />
+								          <meta itemprop="longitude" content="{{.Longitude}}" />
+							        </span>
+									<p class="office-address-line-2" itemprop="telephone">{{.Phone}}</p>
 									<a class="get-directions-link" target="_blank" href="{{.GoogleMapsLink}}">Get Directions</a>
 							</div>
 							<div class="office-hours-container">
 								<p class="section-title">OFFICE HOURS</p>
+								<meta itemprop="openingHours" content="{{.CondensedOfficeHours}}" />
 								<table class="office-hours-table">
 									{{range .OfficeHours}}
 										<tr>
@@ -173,9 +201,16 @@
 			<div class="cta-button-container">
 				{{if .IsSpruceDoctor}}
 					<a href="{{.StartOnlineVisitURL}}" class="start-online-visit-button">START AN ONLINE VISIT</a>
+					<span itemprop="potentialAction" itemscope itemtype="http://schema.org/ReserveAction">
+						<meta itemprop="target" content="{{.StartOnlineVisitURL}}" />
+						<span itemprop="result" itemscope itemtype="http://schema.org/Reservation">
+		                    <meta itemprop="name" content="Appointment" />
+		                </span>
+					</span>				
 				{{else}}
 					<a class="call-for-appointment-button" href="{{html .PhoneLink}}">CALL FOR APPOINTMENT</a>
 				{{end}}
 			</div>
 	</div>
+	</span>
 {{end}}
