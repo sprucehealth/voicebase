@@ -40,7 +40,7 @@
 				<div class="rating-logo-container">
 					<img src="{{.AverageRatingImageURL}}" class="rating-img"></img>
 					<img class="rating-source-img" src="{{staticURL .SourceImageName}}"></img>
-					<span itemscope itemtype="http://schema.org/AggregateRating">
+					<span itemprop="aggregateRating" itemscope itemtype="http://schema.org/AggregateRating">
 						<meta itemprop="reviewCount" content="{{.ReviewCount}}" />
 						<meta itemprop="bestRating" content="5"/>
 						<meta itemprop="worstRating" content="1" />
