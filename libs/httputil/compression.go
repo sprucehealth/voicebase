@@ -143,7 +143,9 @@ func (gz *gzipResponseWriter) Close() error {
 func (gz *gzipResponseWriter) WriteHeader(status int) {
 	gz.wroteHeader = true
 
-	if compressContentType(gz.ResponseWriter.Header().Get("Content-Type")) {
+	// only encode response if it has not already been encoded
+	// and if content type is of type text
+	if gz.ResponseWriter.Header().Get("Content-Encoding") == "" && compressContentType(gz.ResponseWriter.Header().Get("Content-Type")) {
 		h := gz.ResponseWriter.Header()
 		h.Del("Content-Length") // Remove any set content-length since it'll be inaccurate
 		h.Set("Content-Encoding", "gzip")

@@ -133,6 +133,25 @@ func TestUncompressableResponse(t *testing.T) {
 	}
 }
 
+func TestResponseAlreadyCompressed(t *testing.T) {
+	h := CompressResponse(ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/jpeg")
+		w.Header().Set("Content-Encoding", "gzip")
+		w.Write([]byte("hello"))
+	}))
+
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Accept-Encoding", "gzip,deflate")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(context.Background(), rec, req)
+	if body := rec.Body.String(); body != "hello" {
+		t.Errorf("Expected uncompressed body of '%s'. Got '%s'", "hello", body)
+	}
+}
+
 type benchResponseWriter struct {
 	headers http.Header
 }
