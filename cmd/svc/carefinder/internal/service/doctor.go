@@ -341,6 +341,7 @@ func (d *doctorService) PageContentForID(doctorID string, r *http.Request) (inte
 		LongDisplayName:           doctorResponse.LongDisplayName,
 		ProfileImageURL:           doctorResponse.ProfileImageURL,
 		Description:               doctorResponse.Description,
+		SEODescription:            doctor.SEODescription,
 		ProfileURL:                doctorResponse.ProfileURL,
 		BannerImageURL:            bannerImageURL,
 		StartOnlineVisitURL:       doctorResponse.StartOnlineVisitURL,

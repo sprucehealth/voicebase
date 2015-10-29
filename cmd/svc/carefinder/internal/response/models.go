@@ -14,6 +14,7 @@ type CityPage struct {
 	HTMLTitle                 string
 	Title                     string
 	Description               string
+	SEODescription            string
 	LongDescriptionParagraphs []string
 	BannerImageURL            string
 	Doctors                   []*Doctor
@@ -117,6 +118,7 @@ type DoctorPage struct {
 	ProfileImageURL           string
 	ProfileURL                string
 	Description               string
+	SEODescription            string
 	BannerImageURL            string
 	StartOnlineVisitURL       string
 	PhoneLink                 string

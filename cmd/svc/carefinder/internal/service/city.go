@@ -41,6 +41,7 @@ func NewForCity(cityDAL dal.CityDAL, doctorDAL dal.DoctorDAL, webURL, contentURL
 const (
 	longDescriptionParagraph1 = `We’ve curated a shortlist of the top dermatologists available in %s by analyzing thousands of medical interactions, patient reviews and ratings. Unlike other dermatologist directories serving %s, the results you see on this page include both dermatologists near you and dermatologists treating patients online through dermatology apps like Spruce. Getting treated by a dermatologist online means you can be treated faster (often within 24 hours) and more conveniently than the traditional in-person visit. It’s as simple as selecting your dermatologist, taking pictures and answering questions. Your doctor will review your case, diagnose and treat you within 24 hours. Any prescriptions written will be sent direct to your pharmacy. You skip the average dermatology appointment wait time of 28 days and the hassle of travelling to a dermatology office.`
 	longDescriptionParagraph2 = `We’ve selected dermatologists who treat a range of general, surgical and cosmetic conditions for adult and pediatric patients including acne, anti-aging, bed bugs, cold sores, athlete's foot and ringworm, dry or itchy skin, eczema, excessive sweating, eyelash thinning, hives, insect bites or stings, lice and scabies, male hair loss, poison oak and ivy, psoriasis, shaving bumps and ingrown hair, rashes, rosacea, skin discoloration, tick bites.`
+	seoDescription            = `We’ve selected top dermatologists in %s, %s including those with same day availability. Read patient reviews, insurance accepted, practice location and contact information.`
 )
 
 func (c *cityService) PageContentForID(cityID string, r *http.Request) (interface{}, error) {
@@ -195,6 +196,7 @@ func (c *cityService) PageContentForID(cityID string, r *http.Request) (interfac
 	return &response.CityPage{
 		HTMLTitle:                 fmt.Sprintf("Find Dermatologists in %s, %s | Spruce Health", city.Name, city.State),
 		Title:                     t.Title,
+		SEODescription:            fmt.Sprintf(seoDescription, city.Name, city.StateAbbreviation),
 		Description:               t.Description,
 		LongDescriptionParagraphs: t.LongDescriptionParagraphs,
 		Doctors:                   doctors,

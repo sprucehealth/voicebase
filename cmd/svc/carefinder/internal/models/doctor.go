@@ -15,6 +15,7 @@ type Doctor struct {
 	Residency          string
 	ProfileImageID     string
 	Description        string
+	SEODescription     string
 	YelpURL            string
 	YelpBusinessID     string
 	ReviewCount        int
