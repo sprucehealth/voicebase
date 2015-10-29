@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/samuel/go-metrics/metrics"
+	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/conc"
@@ -53,6 +54,10 @@ type stripeConfig struct {
 type smartyStreetsConfig struct {
 	AuthID    string `description:"Auth id for smarty streets"`
 	AuthToken string `description:"Auth token for smarty streets"`
+}
+
+func (s *smartyStreetsConfig) IsSpecified() bool {
+	return (s.AuthID != "" && s.AuthToken != "")
 }
 
 type analyticsConfig struct {
@@ -273,6 +278,15 @@ func sanitizeSNSSubject(s string) string {
 		}
 	}
 	return string(buf)
+}
+
+type localAddressValidationService struct{}
+
+func (localAddressValidationService) ZipcodeLookup(zipcode string) (*address.CityState, error) {
+	return &address.CityState{
+		City:  "San Francicso",
+		State: "CA",
+	}, nil
 }
 
 func snsLogHandler(snsCli snsiface.SNSAPI, topic, name string, subHandler golog.Handler, rateLimiter ratelimit.KeyedRateLimiter, metricsRegistry metrics.Registry) golog.Handler {

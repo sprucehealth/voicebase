@@ -144,9 +144,19 @@ func buildRESTAPI(
 	}
 
 	snsClient := sns.New(awsConfig)
-	smartyStreetsService := &address.SmartyStreetsService{
-		AuthID:    conf.SmartyStreets.AuthID,
-		AuthToken: conf.SmartyStreets.AuthToken,
+	var addressValidationService address.Validator
+	if conf.SmartyStreets == nil || !conf.SmartyStreets.IsSpecified() {
+		if conf.Debug {
+			addressValidationService = &localAddressValidationService{}
+			golog.Warningf("Using stubbed address validation (which always returns San Francisco, CA for zipcode)")
+		} else {
+			golog.Fatalf("Smarty streets keys not specified")
+		}
+	} else {
+		addressValidationService = &address.SmartyStreetsService{
+			AuthID:    conf.SmartyStreets.AuthID,
+			AuthToken: conf.SmartyStreets.AuthToken,
+		}
 	}
 
 	notificationManager := notify.NewManager(dataAPI, authAPI, snsClient, smsAPI, emailService,
@@ -177,7 +187,7 @@ func buildRESTAPI(
 		Dispatcher:               dispatcher,
 		AuthTokenExpiration:      time.Duration(conf.RegularAuth.ExpireDuration) * time.Second,
 		MediaAccessExpiration:    10 * time.Minute,
-		AddressValidator:         smartyStreetsService,
+		AddressValidator:         addressValidationService,
 		PharmacySearchAPI:        surescriptsPharmacySearch,
 		DiagnosisAPI:             diagnosisAPI,
 		SNSClient:                snsClient,
