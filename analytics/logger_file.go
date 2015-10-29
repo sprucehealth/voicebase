@@ -36,14 +36,16 @@ type logFile struct {
 }
 
 type fileLogger struct {
-	path      string
-	eventCh   chan []Event
-	logFiles  map[string]*logFile
-	maxEvents int
-	maxAge    time.Duration
+	application string
+	path        string
+	eventCh     chan []Event
+	logFiles    map[string]*logFile
+	maxEvents   int
+	maxAge      time.Duration
 }
 
-func NewFileLogger(path string, maxEvents int, maxAge time.Duration) (Logger, error) {
+// NewFileLogger returns an initialized instance of fileLogger that provides mechanisms that allow analytics logging to disk
+func NewFileLogger(application, path string, maxEvents int, maxAge time.Duration) (Logger, error) {
 	if !validateLogPath(path) {
 		return nil, fmt.Errorf("analytics: path '%s' not valid (must be an existing directory)", path)
 	}
@@ -54,9 +56,10 @@ func NewFileLogger(path string, maxEvents int, maxAge time.Duration) (Logger, er
 		maxAge = DefaultMaxFileAge
 	}
 	return &fileLogger{
-		path:      path,
-		maxEvents: maxEvents,
-		maxAge:    maxAge,
+		application: application,
+		path:        path,
+		maxEvents:   maxEvents,
+		maxAge:      maxAge,
 	}, nil
 }
 
@@ -154,14 +157,12 @@ func (l *fileLogger) closeFile(lf *logFile) {
 
 func (l *fileLogger) fileForEvent(ev Event) (*logFile, error) {
 	// Check for an existing file
-
 	pth := filepath.Join(l.path, ev.Category(), ev.Time().UTC().Format("2006/01/02"))
 	if lf := l.logFiles[pth]; lf != nil {
 		return lf, nil
 	}
 
 	// Create a new file
-
 	id, err := idgen.NewID()
 	if err != nil {
 		return nil, err
@@ -170,7 +171,7 @@ func (l *fileLogger) fileForEvent(ev Event) (*logFile, error) {
 		golog.Errorf("Failed to create a log path '%s': %s", pth, err.Error())
 		return nil, err
 	}
-	fullPath := filepath.Join(pth, fmt.Sprintf("%d.js%s", id, liveSuffix))
+	fullPath := filepath.Join(pth, fmt.Sprintf("%s_%d.js%s", l.application, id, liveSuffix))
 	f, err := os.OpenFile(fullPath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
 		golog.Errorf("Failed to create a new log file '%s': %s", fullPath, err.Error())

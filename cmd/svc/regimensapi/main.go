@@ -21,12 +21,14 @@ import (
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/samuel/go-metrics/reporter"
 	"github.com/sprucehealth/backend/analytics"
+	"github.com/sprucehealth/backend/analytics/analisteners"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/products"
 	"github.com/sprucehealth/backend/cmd/svc/regimens"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/handlers"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/media"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/mediaproxy"
+	"github.com/sprucehealth/backend/events"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/factual"
@@ -38,6 +40,10 @@ import (
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/go-proxy-protocol/proxyproto"
 	"golang.org/x/net/context"
+)
+
+const (
+	applicationName = "regimens"
 )
 
 type mediaConfig struct {
@@ -92,6 +98,11 @@ var config struct {
 	metricsSource   string
 	libratoUsername string
 	libratoToken    string
+
+	// Analytics
+	analyticsLogPath   string
+	analyticsDebug     bool
+	analyticsMaxEvents int
 
 	// CORS
 	corsAllowAll bool
@@ -149,6 +160,11 @@ func init() {
 	flag.StringVar(&config.metricsSource, "metrics.source", "", "`Source` for metrics (e.g. hostname)")
 	flag.StringVar(&config.libratoUsername, "librato.username", "", "Librato metrics `username`")
 	flag.StringVar(&config.libratoToken, "librato.token", "", "Librato metrics auth `token`")
+
+	// Analytics
+	flag.StringVar(&config.analyticsLogPath, "analytics.log.path", "", "the place to write the analytics log file")
+	flag.BoolVar(&config.analyticsDebug, "analytics.debug", false, "enable debug functionality in analytics emission")
+	flag.IntVar(&config.analyticsMaxEvents, "analytics.max.events", analytics.DefaultMaxFileEvents, "the max events per analytics log file")
 
 	// CORS
 	flag.BoolVar(&config.corsAllowAll, "cors.allow.all", true, "Enable the * patterns on CORS")
@@ -212,7 +228,10 @@ func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.Contex
 		golog.Warningf("Amazon associate keys and/tag not set")
 	}
 
+	// Bootstrap analytics mechanisms
 	dispatcher := dispatch.New()
+	analisteners.InitListeners(applicationName, getAnalyticsLogger(), dispatcher, events.NullClient{})
+
 	var productCache products.MemcacheClient
 	if memcacheCli != nil {
 		productCache = memcacheCli
@@ -233,14 +252,14 @@ func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.Contex
 		}
 		return dynamoConfig
 	}())
-	regimenSvc, err := regimens.New(dynamoDBClient, config.env, config.authSecret)
+	regimenSvc, err := regimens.New(dynamoDBClient, dispatcher, config.env, config.authSecret)
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
 
 	requestLogger := func(ctx context.Context, ev *httputil.RequestEvent) {
 		av := &analytics.WebRequestEvent{
-			Service:      "regimens",
+			Service:      applicationName,
 			RequestID:    httputil.RequestID(ctx),
 			Path:         ev.URL.Path,
 			Timestamp:    analytics.Time(ev.Timestamp),
@@ -337,6 +356,22 @@ func serve(handler httputil.ContextHandler) {
 	}
 	golog.Infof("Starting listener on %s...", config.httpAddr)
 	golog.Fatalf(s.Serve(listener).Error())
+}
+
+func getAnalyticsLogger() analytics.Logger {
+	if config.analyticsDebug {
+		return analytics.DebugLogger{Logf: func(s string, i ...interface{}) { golog.Infof(s, i...) }}
+	} else if config.analyticsLogPath == "" {
+		return &analytics.NullLogger{}
+	}
+	alog, err := analytics.NewFileLogger(applicationName, config.analyticsLogPath, config.analyticsMaxEvents, analytics.DefaultMaxFileAge)
+	if err != nil {
+		golog.Fatalf("Error while initializing analytics logger: %s", err)
+	}
+	if err := alog.Start(); err != nil {
+		golog.Fatalf("Error while starting analytics logger: %s", err)
+	}
+	return alog
 }
 
 // TODO: Localize this code and the client generation somewhere outside of main.go

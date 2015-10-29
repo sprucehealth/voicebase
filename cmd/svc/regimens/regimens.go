@@ -14,7 +14,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
+	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
@@ -60,10 +63,13 @@ var (
 	// KCE represents a KeyConditionExpression
 	tagEqualsTagKCE                         = ptr.String("tag = :tag")
 	sourceRegimenIDEqualsSourceRegimenIDKCE = ptr.String("source_regimen_id = :source_regimen_id")
+	// RCC represents a ReturnConsumedCapacity value
+	indexesRCC = ptr.String("INDEXES")
 )
 
 // service contains a collections of methods that interact with amazon AWS Dynamo Db to perform the various regimen DAL actions
 type service struct {
+	publisher           dispatch.Publisher
 	dynamoClient        dynamodbiface.DynamoDBAPI
 	signer              *sig.Signer
 	regimenTableName    *string
@@ -71,7 +77,7 @@ type service struct {
 }
 
 // New returns an initialized instance of service
-func New(d dynamodbiface.DynamoDBAPI, env, authSecret string) (svc.Service, error) {
+func New(d dynamodbiface.DynamoDBAPI, publisher dispatch.Publisher, env, authSecret string) (svc.Service, error) {
 	if authSecret == "" {
 		return nil, errors.Trace(errors.New("An empty auth secret cannot be used"))
 	}
@@ -81,6 +87,7 @@ func New(d dynamodbiface.DynamoDBAPI, env, authSecret string) (svc.Service, erro
 	}
 
 	s := &service{
+		publisher:           publisher,
 		dynamoClient:        d,
 		signer:              signer,
 		regimenTableName:    ptr.String(fmt.Sprintf(regimenTableNameFormatString, env)),
@@ -89,20 +96,27 @@ func New(d dynamodbiface.DynamoDBAPI, env, authSecret string) (svc.Service, erro
 	return s, errors.Trace(s.verifyDynamo())
 }
 
+type singleRegimenAnalytics struct {
+	Err              error                      `json:"error"`
+	ConsumedCapacity *dynamodb.ConsumedCapacity `json:"consumed_capacity"`
+	RegimenID        string                     `json:"regimen_id"`
+}
+
 func (s *service) Regimen(id string) (*svc.Regimen, bool, error) {
-	getResp, err := s.dynamoClient.GetItem(&dynamodb.GetItemInput{
+	getResp, operr := s.dynamoClient.GetItem(&dynamodb.GetItemInput{
 		TableName: s.regimenTableName,
 		Key: map[string]*dynamodb.AttributeValue{
 			regimenIDAN: &dynamodb.AttributeValue{
 				S: ptr.String(id),
 			},
 		},
+		ReturnConsumedCapacity: indexesRCC,
 	})
-	if err != nil {
-		return nil, false, errors.Trace(err)
+	if operr != nil {
+		return nil, false, errors.Trace(operr)
 	}
 	if getResp.Item == nil {
-		return nil, false, errors.Trace(api.ErrNotFound(fmt.Sprintf("Unable to locate regimen with ID with id %s", id)))
+		return nil, false, errors.Trace(api.ErrNotFound(fmt.Sprintf("Unable to locate regimen with ID %s", id)))
 	}
 
 	r := &svc.Regimen{}
@@ -123,7 +137,7 @@ func (s *service) Regimen(id string) (*svc.Regimen, bool, error) {
 }
 
 func (s *service) IncrementViewCount(id string) error {
-	updateResp, err := s.dynamoClient.UpdateItem(&dynamodb.UpdateItemInput{
+	updateResp, operr := s.dynamoClient.UpdateItem(&dynamodb.UpdateItemInput{
 		TableName: s.regimenTableName,
 		Key: map[string]*dynamodb.AttributeValue{
 			regimenIDAN: &dynamodb.AttributeValue{
@@ -132,10 +146,11 @@ func (s *service) IncrementViewCount(id string) error {
 		},
 		UpdateExpression:          incrementViewCountUE,
 		ExpressionAttributeValues: incrementSingleValueUEAV,
+		ReturnConsumedCapacity:    indexesRCC,
 		ReturnValues:              allNewRV,
 	})
-	if err != nil {
-		return errors.Trace(err)
+	if operr != nil {
+		return errors.Trace(operr)
 	}
 
 	if updateResp.Attributes == nil {
@@ -175,6 +190,14 @@ func (s *service) IncrementViewCount(id string) error {
 	}
 
 	return nil
+}
+
+type putRegimenAnalytics struct {
+	Err              error                        `json:"error"`
+	ConsumedCapacity []*dynamodb.ConsumedCapacity `json:"consumed_capacity"`
+	RegimenID        string                       `json:"regimen_id"`
+	Published        bool                         `json:"published"`
+	Tags             []string                     `json:"tags"`
 }
 
 func (s *service) PutRegimen(id string, r *svc.Regimen, published bool) error {
@@ -224,6 +247,7 @@ func (s *service) PutRegimen(id string, r *svc.Regimen, published bool) error {
 		RequestItems: map[string][]*dynamodb.WriteRequest{
 			*s.regimenTableName: regimenWriteRequests,
 		},
+		ReturnConsumedCapacity: indexesRCC,
 	}
 
 	// Only map a regimen into the tag set if it is being published
@@ -261,8 +285,27 @@ func (s *service) PutRegimen(id string, r *svc.Regimen, published bool) error {
 			batchWriteInput.RequestItems[*s.regimenTagTableName] = tagWriteRequests
 		}
 	}
-	_, err = s.dynamoClient.BatchWriteItem(batchWriteInput)
-	return errors.Trace(err)
+	batchResponse, operr := s.dynamoClient.BatchWriteItem(batchWriteInput)
+
+	// Emit our operation metrics
+	conc.Go(func() {
+		opAnalytics := &putRegimenAnalytics{
+			RegimenID: id,
+			Err:       operr,
+			Tags:      r.Tags,
+			Published: published,
+		}
+		if batchResponse != nil {
+			opAnalytics.ConsumedCapacity = batchResponse.ConsumedCapacity
+		}
+		s.publisher.PublishAsync(&analytics.ServerEvent{
+			Event:     "put_regimen:batch_write_item",
+			Timestamp: analytics.Time(time.Now()),
+			ExtraJSON: analytics.JSONString(opAnalytics),
+		})
+	})
+
+	return errors.Trace(operr)
 }
 
 func (s *service) CanAccessResource(resourceID, authToken string) (bool, error) {
@@ -299,11 +342,17 @@ func (s regimenIDViewCountByViewCount) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
+type tagQueryAnalytics struct {
+	Err              error                      `json:"error"`
+	ConsumedCapacity *dynamodb.ConsumedCapacity `json:"consumed_capacity"`
+	Tag              string                     `json:"tag"`
+}
+
 func (s *service) TagQuery(tags []string) ([]*svc.Regimen, error) {
 	regimenIDs := make(map[string]*regimenIDViewCount)
 	for _, t := range tags {
 		t = strings.ToLower(t)
-		tagRegimenIDs, err := s.dynamoClient.Query(&dynamodb.QueryInput{
+		tagRegimenIDs, operr := s.dynamoClient.Query(&dynamodb.QueryInput{
 			TableName:                 s.regimenTagTableName,
 			IndexName:                 regimenTagTableTagViewIndexName,
 			KeyConditionExpression:    tagEqualsTagKCE,
@@ -311,11 +360,34 @@ func (s *service) TagQuery(tags []string) ([]*svc.Regimen, error) {
 			// Only return a maximum of 100 records
 			Limit: limitValue,
 			// Order by view count desc
-			ScanIndexForward: tagQueryScanIndexDirection,
+			ScanIndexForward:       tagQueryScanIndexDirection,
+			ReturnConsumedCapacity: indexesRCC,
 		})
-		if err != nil {
-			return nil, errors.Trace(err)
+
+		// Emit our operation metrics
+		conc.Go(func() {
+			opAnalytics := &tagQueryAnalytics{
+				Err: operr,
+				Tag: t,
+			}
+			if tagRegimenIDs != nil {
+				opAnalytics.ConsumedCapacity = tagRegimenIDs.ConsumedCapacity
+			}
+			data, err := json.Marshal(opAnalytics)
+			if err != nil {
+				golog.Errorf("Error while marshaling analytics section for TagQuery:Query tag %s: %s", t, err)
+			}
+			s.publisher.PublishAsync(&analytics.ServerEvent{
+				Event:     "tag_query:query",
+				Timestamp: analytics.Time(time.Now()),
+				ExtraJSON: string(data),
+			})
+		})
+
+		if operr != nil {
+			return nil, errors.Trace(operr)
 		}
+
 		// Merge in the result of each query
 		for _, v := range tagRegimenIDs.Items {
 			vc, err := strconv.ParseInt(*v[viewCountAN].N, 10, 64)
@@ -385,7 +457,7 @@ func (s *service) FoundationOf(id string, maxResults int) ([]*svc.Regimen, error
 		maxResults = int(*limitValue)
 	}
 	rs := make([]*svc.Regimen, 0, *limitValue)
-	regimenResult, err := s.dynamoClient.Query(&dynamodb.QueryInput{
+	regimenResult, operr := s.dynamoClient.Query(&dynamodb.QueryInput{
 		TableName:                 s.regimenTableName,
 		IndexName:                 regimenTableSourceRegimenRegimenIndexName,
 		KeyConditionExpression:    sourceRegimenIDEqualsSourceRegimenIDKCE,
@@ -393,15 +465,16 @@ func (s *service) FoundationOf(id string, maxResults int) ([]*svc.Regimen, error
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{":source_regimen_id": {S: ptr.String(id)}, ":published": {BOOL: publishedFilter}},
 		// Only return a maximum of 100 records to sort between, if a regimen is the foundation of a TON then we may miss some :(
 		Limit: limitValue,
+		ReturnConsumedCapacity: indexesRCC,
 	})
-	if err != nil {
-		return nil, errors.Trace(err)
+	if operr != nil {
+		return nil, errors.Trace(operr)
 	}
 
 	// Merge in the result of each query
 	for _, v := range regimenResult.Items {
 		if v[viewCountAN].N == nil {
-			golog.Errorf("Encountered a nil view count for regimen %s when doing foundation query, moving on: %s", v[regimenIDAN].S, err)
+			golog.Errorf("Encountered a nil view count for regimen %s when doing foundation query, moving on", v[regimenIDAN].S)
 			continue
 		}
 

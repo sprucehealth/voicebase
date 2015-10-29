@@ -87,7 +87,7 @@ var SpruceProductGridLayout LayoutAlgorithm = func(images []image.Image, ops *Op
 			if layout[layoutLocation+1] || layout[layoutLocation+cols] || layout[layoutLocation+cols+1] {
 				return nil, errors.Trace(fmt.Errorf("Found an image occupying the layout space needed for scaled index at index %d for %d cols", layoutLocation, cols))
 			}
-			// Occupy the scaled locations to the next images know where to go
+			// Occupy the scaled locations so the next images know where to go
 			layout[layoutLocation+1], layout[layoutLocation+cols], layout[layoutLocation+cols+1] = true, true, true
 		}
 

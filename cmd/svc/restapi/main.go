@@ -44,6 +44,7 @@ func init() {
 }
 
 const (
+	applicationName           = "restapi"
 	defaultMaxInMemoryPhotoMB = 2
 )
 
@@ -232,7 +233,7 @@ func main() {
 	var alog analytics.Logger
 	if conf.Analytics.LogPath != "" {
 		var err error
-		alog, err = analytics.NewFileLogger(conf.Analytics.LogPath, conf.Analytics.MaxEvents, time.Duration(conf.Analytics.MaxAge)*time.Second)
+		alog, err = analytics.NewFileLogger(applicationName, conf.Analytics.LogPath, conf.Analytics.MaxEvents, time.Duration(conf.Analytics.MaxAge)*time.Second)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -249,8 +250,7 @@ func main() {
 
 	// Deactivate the events system for now (but leave the code in place) while we reevaluate the data store and usefullness.
 	eventsClient := events.NullClient{}
-
-	analisteners.InitListeners(alog, dispatcher, eventsClient)
+	analisteners.InitListeners("", alog, dispatcher, eventsClient)
 
 	snsCli := sns.New(conf.AWS())
 	if conf.OfficeNotifySNSTopic != "" {

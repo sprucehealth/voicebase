@@ -62,6 +62,7 @@ func (e *ClientEvent) Events() []Event {
 }
 
 type ServerEvent struct {
+	Application     string `json:"application"`
 	Event           string `json:"event"`
 	Timestamp       Time   `json:"time"`
 	SessionID       string `json:"session_id,omitempty"`

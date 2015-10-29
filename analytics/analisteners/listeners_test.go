@@ -71,7 +71,7 @@ func TestListenersNonWritableEventLogging(t *testing.T) {
 	dispatcher := dispatch.New()
 	logger := &TestLogger{}
 	client := &TestEventClient{}
-	InitListeners(logger, dispatcher, client)
+	InitListeners("", logger, dispatcher, client)
 	dispatcher.Publish(&struct{}{})
 	test.Assert(t, !logger.WriteEventsCalled, "Expected event not matching Eventer interface to not be written but it was.")
 	test.Assert(t, !client.InsertClientEventCalled && !client.InsertServerEventCalled && !client.InsertWebRequestEventCalled, "Expected nothing to be inserted into the DB")
@@ -81,7 +81,7 @@ func TestListenersWritableEventLogging(t *testing.T) {
 	dispatcher := dispatch.New()
 	logger := &TestLogger{}
 	client := &TestEventClient{}
-	InitListeners(logger, dispatcher, client)
+	InitListeners("", logger, dispatcher, client)
 	dispatcher.Publish(newEvent([]analytics.Event{}))
 	test.Assert(t, logger.WriteEventsCalled, "Expected event matching Eventer interface to be written but it was not.")
 	test.Assert(t, !client.InsertClientEventCalled && !client.InsertServerEventCalled && !client.InsertWebRequestEventCalled, "Expected nothing to be inserted into the DB")
@@ -91,7 +91,7 @@ func TestListenersServerEventsInserted(t *testing.T) {
 	dispatcher := dispatch.New()
 	logger := &TestLogger{}
 	client := &TestEventClient{}
-	InitListeners(logger, dispatcher, client)
+	InitListeners("", logger, dispatcher, client)
 	dispatcher.Publish(newEvent([]analytics.Event{&analytics.ServerEvent{}}))
 	test.Assert(t, logger.WriteEventsCalled, "Expected event matching Eventer interface to be written but it was not.")
 	test.Assert(t, client.InsertServerEventCalled, "Expected server event to be inserted into the DB but was not.")
@@ -102,7 +102,7 @@ func TestListenersWebRequestEventsInserted(t *testing.T) {
 	dispatcher := dispatch.New()
 	logger := &TestLogger{}
 	client := &TestEventClient{}
-	InitListeners(logger, dispatcher, client)
+	InitListeners("", logger, dispatcher, client)
 	dispatcher.Publish(newEvent([]analytics.Event{&analytics.WebRequestEvent{}}))
 	test.Assert(t, logger.WriteEventsCalled, "Expected event matching Eventer interface to be written but it was not.")
 	test.Assert(t, client.InsertWebRequestEventCalled, "Expected web request event to be inserted into the DB but was not.")
@@ -113,7 +113,7 @@ func TestListenersClientEventsInserted(t *testing.T) {
 	dispatcher := dispatch.New()
 	logger := &TestLogger{}
 	client := &TestEventClient{}
-	InitListeners(logger, dispatcher, client)
+	InitListeners("", logger, dispatcher, client)
 	dispatcher.Publish(newEvent([]analytics.Event{&analytics.ClientEvent{}}))
 	test.Assert(t, logger.WriteEventsCalled, "Expected event matching Eventer interface to be written but it was not.")
 	test.Assert(t, client.InsertClientEventCalled, "Expected client event to be inserted into the DB but was not.")

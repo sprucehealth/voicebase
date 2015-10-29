@@ -16,7 +16,7 @@ func TestFileLogger(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	l, err := NewFileLogger(tmpDir, 4, 0)
+	l, err := NewFileLogger("application", tmpDir, 4, 0)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -24,5 +24,6 @@ REGIMENS_AUTH_SECRET="something-seekrit" \
 REGIMENS_WEB_DOMAIN="http://web.localhost:8445/" \
 REGIMENS_API_DOMAIN="http://localhost:8445/" \
 REGIMENS_HTTP=:8445 \
+REGIMENS_ANALYTICS_DEBUG=true
 ./regimensapi
 ```
