@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"image"
@@ -9,7 +10,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -132,12 +132,11 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 	var resourceID, authToken string
 	var regimen *regimens.Regimen
 	if rd.Regimen == nil || rd.Regimen.ID == "" {
-		iResourceID, err := idgen.NewID()
+		resourceID, err := newShortID()
 		if err != nil {
 			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
-		resourceID = "r" + strconv.FormatInt(int64(iResourceID), 10)
 
 		authToken, err = h.svc.AuthorizeResource(resourceID)
 		if err != nil {
@@ -538,4 +537,15 @@ func validateUsername(username string) error {
 		return errors.New("Usernames cannot contain the term 'spruce'")
 	}
 	return nil
+}
+
+func newShortID() (string, error) {
+	id, err := idgen.NewID()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimRight(base64.URLEncoding.EncodeToString([]byte{
+		byte(id >> 56), byte(id >> 48), byte(id >> 40), byte(id >> 32),
+		byte(id >> 24), byte(id >> 16), byte(id >> 8), byte(id),
+	}), "="), nil
 }
