@@ -114,7 +114,7 @@ func (d *CacheDAL) Get(ids []string) ([]*Media, error) {
 
 	// Cache newly fetched media (do this in the foreground to mitigate
 	// race conditions on read-modify-write in the same process)
-	d.put(ms, false)
+	d.put(fetched, false)
 
 	// Merge fetched and previously cached media
 	for _, m := range fetched {
@@ -149,7 +149,7 @@ func (d *CacheDAL) put(ms []*Media, overwrite bool) {
 			b, err := json.Marshal(m)
 			if err == nil {
 				fn := d.mc.Set
-				if overwrite {
+				if !overwrite {
 					fn = d.mc.Add
 				}
 				if err := fn(&memcache.Item{

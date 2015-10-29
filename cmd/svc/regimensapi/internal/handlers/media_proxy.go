@@ -57,6 +57,9 @@ func (h *mediaProxyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter
 	if errors.Cause(err) == media.ErrNotFound {
 		apiservice.WriteResourceNotFoundError(ctx, "Media not found", w, r)
 		return
+	} else if _, ok := errors.Cause(err).(mediaproxy.ErrFetchFailed); ok {
+		apiservice.WriteResourceNotFoundError(ctx, "Fetch failed", w, r)
+		return
 	} else if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
