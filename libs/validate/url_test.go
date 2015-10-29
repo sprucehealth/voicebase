@@ -17,7 +17,7 @@ func TestRemoteHost(t *testing.T) {
 		{h: "corp-looker.carefront.net", v: false},
 	}
 	for _, tc := range tests {
-		reason, v := RemoteHost(tc.h)
+		reason, v := RemoteHost(tc.h, true)
 		test.Assert(t, tc.v == v, "Expected %t for '%s' got %t because %s", tc.v, tc.h, v, reason)
 	}
 }

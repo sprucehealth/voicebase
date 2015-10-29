@@ -68,7 +68,9 @@ func mapMediaProxyURLs(proxyRoot string, proxySvc *mediaproxy.Service, imageURLs
 	}
 	iu := make([]string, 0, len(media))
 	for _, m := range media {
-		iu = append(iu, proxyRoot+m.ID)
+		if m.Status != mediaproxy.StatusFailedPerm {
+			iu = append(iu, proxyRoot+m.ID)
+		}
 	}
 	return iu
 }

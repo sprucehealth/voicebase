@@ -42,6 +42,10 @@ func TestS3(t *testing.T) {
 	if err != ErrNoObject {
 		t.Fatalf("Expected ErrNoObject got %T %+v", err, err)
 	}
+	_, _, err = storage.GetReader("s3://us-east-1/" + bucket + "/storage-test/ofiu3j2n90f32u09fnmeuw9")
+	if err != ErrNoObject {
+		t.Fatalf("Expected ErrNoObject got %T %+v", err, err)
+	}
 
 	// Test put
 	id, err := storage.Put("test-1", data, "", nil)

@@ -123,7 +123,7 @@ func (s *Service) Scrape(earl string) (*products.Product, error) {
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return nil, products.ErrScrapeFailed{Reason: "invalid URL scheme"}
 	}
-	if r, ok := validate.RemoteHost(u.Host); !ok {
+	if r, ok := validate.RemoteHost(u.Host, true); !ok {
 		// Log this so that we can track what URLs are failing
 		golog.Warningf("Invalid remote host when scraping '%s': %s", earl, r)
 		return nil, products.ErrScrapeFailed{Reason: "invalid host"}

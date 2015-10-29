@@ -83,12 +83,7 @@ func (s *S3) PutReader(name string, r io.ReadSeeker, size int64, contentType str
 
 func (s *S3) Get(id string) ([]byte, http.Header, error) {
 	r, headers, err := s.GetReader(id)
-	if e, ok := err.(awsError); ok {
-		if e.StatusCode() == http.StatusNotFound {
-			return nil, nil, ErrNoObject
-		}
-		return nil, nil, err
-	} else if err != nil {
+	if err != nil {
 		return nil, nil, err
 	}
 	defer r.Close()
@@ -110,7 +105,12 @@ func (s *S3) GetReader(id string) (io.ReadCloser, http.Header, error) {
 		Bucket: &bkt,
 		Key:    &path,
 	})
-	if err != nil {
+	if e, ok := err.(awsError); ok {
+		if e.StatusCode() == http.StatusNotFound {
+			return nil, nil, ErrNoObject
+		}
+		return nil, nil, err
+	} else if err != nil {
 		return nil, nil, err
 	}
 	header := http.Header{}

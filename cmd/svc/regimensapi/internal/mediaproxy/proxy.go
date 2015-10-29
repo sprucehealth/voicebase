@@ -101,7 +101,9 @@ func (s *Service) LookupByURL(urls []string) (map[string]*Media, error) {
 			ok = false
 		}
 		if ok {
-			_, ok = validate.RemoteHost(u.Host)
+			// Don'to resolve the DNS here as it's expensive. We'll recheck when fetching.
+			// But still want to make sure the host is well formed and looks valid (existing TLD).
+			_, ok = validate.RemoteHost(u.Host, false)
 		}
 		if !ok {
 			// Remove the bad URL
@@ -199,6 +201,16 @@ func (s *Service) ImageReader(id string, size *media.Size) (io.ReadCloser, *Medi
 	}
 
 	m.LastFetch = time.Now()
+
+	// Validate the host to make sure it doesn't resolve to a local IP
+	ur, err := url.Parse(m.URL)
+	if err != nil {
+		return nil, m, s.fetchFailed(m, fmt.Sprintf("cannot parse URL: %s", err), true)
+	}
+	if reason, ok := validate.RemoteHost(ur.Host, true); !ok {
+		return nil, m, s.fetchFailed(m, fmt.Sprintf("invalid host: %s", reason), true)
+	}
+
 	res, err := s.httpClient.Get(m.URL)
 	if err != nil {
 		// Unknown but likely temporary failure

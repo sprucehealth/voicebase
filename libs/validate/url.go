@@ -7,11 +7,14 @@ import (
 
 // RemoteHost returns true iff the provided host is a valid remove domain (not a local IP address).
 // Otherwise it returns false the reason.
-func RemoteHost(host string) (string, bool) {
+func RemoteHost(host string, resolveDNS bool) (string, bool) {
 	if i := strings.LastIndexByte(host, '.'); i <= 0 {
 		return "invalid host", false
 	} else if !TLD(host[i+1:]) {
 		return "bad TLD", false
+	}
+	if !resolveDNS {
+		return "", true
 	}
 	// TODO: support IPv6 - requires changes the local IP checks
 	ipa, err := net.ResolveIPAddr("ip4", host)
