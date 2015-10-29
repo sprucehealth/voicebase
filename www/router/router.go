@@ -43,6 +43,17 @@ Disallow: /pc/
 Disallow: /r/
 `)
 
+var topLevelSiteMapXML = []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+ <sitemap>
+    <loc>https://www.sprucehealth.com/sitemap-main.xml</loc>
+ </sitemap>
+ <sitemap>
+    <loc>https://www.sprucehealth.com/dermatologist-near-me/sitemap.xml</loc>
+ </sitemap>
+</sitemapindex>
+`)
+
 var sitemapXML = []byte(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 	<url>
@@ -133,7 +144,8 @@ func New(c *Config) httputil.ContextHandler {
 	router.Handle("/login/verify", www.NewLoginVerifyHandler(c.AuthAPI, c.TemplateLoader, c.MetricsRegistry.Scope("login-verify")))
 	router.Handle("/logout", www.NewLogoutHandler(c.AuthAPI))
 	router.Handle("/robots.txt", RobotsTXTHandler())
-	router.Handle("/sitemap.xml", SitemapXMLHandler())
+	router.Handle("/sitemap.xml", TopLevelSitemapXMLHandler())
+	router.Handle("/sitemap-main.xml", MainSitemapXMLHandler())
 	router.Handle("/favicon.ico", httputil.RedirectHandler(c.StaticResourceURL+"/img/_favicon/favicon.ico", http.StatusMovedPermanently))
 
 	router.PathPrefix("/static").Handler(httputil.StripPrefix("/static", httputil.FileServer(www.ResourceFileSystem)))
@@ -281,8 +293,20 @@ func RobotsTXTHandler() httputil.ContextHandler {
 	})
 }
 
-// SitemapXMLHandler returns a static sitemap.xml
-func SitemapXMLHandler() httputil.ContextHandler {
+// TopLevelSitemapXMLHandler returns a static sitemap.xml which contains a sitemap index pointing to the
+// different sitemaps
+func TopLevelSitemapXMLHandler() httputil.ContextHandler {
+	return httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/xml")
+		// TODO: set cache headers
+		if _, err := w.Write(topLevelSiteMapXML); err != nil {
+			golog.Errorf(err.Error())
+		}
+	})
+}
+
+// MainSitemapXMLHandler returns a static sitemap.xml for the main website.
+func MainSitemapXMLHandler() httputil.ContextHandler {
 	return httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/xml")
 		// TODO: set cache headers

@@ -15,6 +15,7 @@ type DoctorDAL interface {
 	Doctors(ids []string) ([]*models.Doctor, error)
 	SpruceReviews(doctorID string) ([]*models.Review, error)
 	StateCoverageForSpruceDoctor(doctorID string) ([]*models.State, error)
+	ShortListedDoctorIDs() ([]string, error)
 }
 
 var (
@@ -247,4 +248,25 @@ func (d *doctorDAL) StateCoverageForSpruceDoctor(doctorID string) ([]*models.Sta
 	}
 
 	return states, errors.Trace(rows.Err())
+}
+
+func (d *doctorDAL) ShortListedDoctorIDs() ([]string, error) {
+	rows, err := d.db.Query(`
+		SELECT doctor_id 
+		FROM doctor_short_list`)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var doctorIDs []string
+	for rows.Next() {
+		var doctorID string
+		if err := rows.Scan(&doctorID); err != nil {
+			return nil, errors.Trace(err)
+		}
+		doctorIDs = append(doctorIDs, doctorID)
+	}
+
+	return doctorIDs, errors.Trace(err)
 }

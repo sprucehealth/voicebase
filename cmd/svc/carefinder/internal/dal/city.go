@@ -20,6 +20,7 @@ type CityDAL interface {
 	TopSkinConditionsForCity(cityID string, n int) ([]string, error)
 	NearbyCitiesForCity(cityID string, n int) ([]*models.City, error)
 	StateShortList() ([]*models.State, error)
+	ShortListedCityIDs() ([]string, error)
 }
 
 var (
@@ -324,4 +325,25 @@ func (c *cityDAL) StateShortList() ([]*models.State, error) {
 	}
 
 	return states, errors.Trace(rows.Err())
+}
+
+func (c *cityDAL) ShortListedCityIDs() ([]string, error) {
+	rows, err := c.db.Query(`
+		SELECT city_id 
+		FROM city_shortlist`)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var cityIDs []string
+	for rows.Next() {
+		var cityID string
+		if err := rows.Scan(&cityID); err != nil {
+			return nil, errors.Trace(err)
+		}
+		cityIDs = append(cityIDs, cityID)
+	}
+
+	return cityIDs, errors.Trace(rows.Err())
 }

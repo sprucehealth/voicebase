@@ -65,6 +65,7 @@ func buildCareFinder(c *config) httputil.ContextHandler {
 	router.PathPrefix("/static").Handler(httputil.StripPrefix("/static", httputil.FileServer(www.ResourceFileSystem)))
 	router.PathPrefix("/dermatologist-near-me/md-{doctor}/start-online-visit").Handler(handlers.NewStartOnlineVisitHandler(templateLoader, startOnlineVisitService))
 
+	router.Handle("/dermatologist-near-me/sitemap.xml", handlers.NewSiteMapHandler(c.WebURL, doctorDAL, cityDAL))
 	router.PathPrefix("/dermatologist-near-me/md-{doctor}").Handler(handlers.NewDoctorPageHandler(templateLoader, doctorService))
 	router.Handle("/dermatologist-near-me/{city}", handlers.NewCityPageHandler(templateLoader, cityService))
 	router.Handle("/dermatologist-near-me/api/textdownloadlink", handlers.NewTextLinkHandler(doctorDAL, c.WebURL))
@@ -83,5 +84,7 @@ func buildCareFinder(c *config) httputil.ContextHandler {
 			log.Infof("carefinder")
 		}
 	}
-	return httputil.LoggingHandler(router, webRequestLogger)
+	h := httputil.LoggingHandler(router, webRequestLogger)
+	h = httputil.DecompressRequest(h)
+	return httputil.CompressResponse(h)
 }
