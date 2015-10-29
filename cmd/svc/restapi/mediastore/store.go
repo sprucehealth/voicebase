@@ -1,4 +1,4 @@
-package media
+package mediastore
 
 import (
 	"encoding/base64"
@@ -17,7 +17,7 @@ type Store struct {
 	signer *sig.Signer
 }
 
-func NewStore(serveURL string, signer *sig.Signer, store storage.Store) *Store {
+func New(serveURL string, signer *sig.Signer, store storage.Store) *Store {
 	return &Store{
 		Store:  store,
 		url:    serveURL,

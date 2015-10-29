@@ -9,12 +9,12 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/www"
 	"golang.org/x/net/context"
@@ -84,7 +84,7 @@ func TestParentalConsentImageAPIHandler_POST(t *testing.T) {
 	dataAPI := &mockDataAPI_parentalConsentImage{}
 	signer, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
 	test.OK(t, err)
-	mediaStore := media.NewStore("XXX", signer, storage.NewTestStore(nil))
+	mediaStore := mediastore.New("XXX", signer, storage.NewTestStore(nil))
 
 	h := newParentalConsentImageAPIHAndler(dataAPI, dispatch.New(), mediaStore)
 
@@ -161,7 +161,7 @@ func TestParentalConsentImageAPIHandler_GET(t *testing.T) {
 	dataAPI := &mockDataAPI_parentalConsentImage{}
 	signer, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
 	test.OK(t, err)
-	mediaStore := media.NewStore("XXX", signer, storage.NewTestStore(nil))
+	mediaStore := mediastore.New("XXX", signer, storage.NewTestStore(nil))
 
 	h := newParentalConsentImageAPIHAndler(dataAPI, dispatch.New(), mediaStore)
 

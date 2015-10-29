@@ -9,11 +9,11 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/media"
 	"golang.org/x/net/context"
 )
 
@@ -50,14 +50,14 @@ type ListResponse struct {
 type listHandler struct {
 	dataAPI            api.DataAPI
 	apiDomain          string
-	mediaStore         *media.Store
+	mediaStore         *mediastore.Store
 	expirationDuration time.Duration
 }
 
 func NewListHandler(
 	dataAPI api.DataAPI,
 	apiDomain string,
-	mediaStore *media.Store,
+	mediaStore *mediastore.Store,
 	expirationDuration time.Duration) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.RequestCacheHandler(

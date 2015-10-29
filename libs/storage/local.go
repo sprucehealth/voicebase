@@ -2,14 +2,15 @@ package storage
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
-	"time"
 )
 
 // local is a store that uses the local filesystem.
@@ -57,6 +58,22 @@ func (s *local) PutReader(name string, r io.ReadSeeker, size int64, contentType 
 	}
 	defer f.Close()
 	if _, err := io.Copy(f, r); err != nil {
+		os.Remove(fullPath) // cleanup on failure
+		return "", err
+	}
+	if err := f.Sync(); err != nil {
+		return "", err
+	}
+	f, err = os.Create(fullPath + ".meta")
+	defer f.Close()
+	if meta == nil {
+		meta = map[string]string{}
+	}
+	meta["Content-Length"] = strconv.FormatInt(size, 10)
+	meta["Content-Type"] = contentType
+	if err := json.NewEncoder(f).Encode(meta); err != nil {
+		os.Remove(fullPath)
+		os.Remove(fullPath + ".meta")
 		return "", err
 	}
 	return fullPath, f.Sync()
@@ -73,17 +90,29 @@ func (s *local) Get(id string) ([]byte, http.Header, error) {
 }
 
 func (s *local) GetReader(id string) (io.ReadCloser, http.Header, error) {
-	f, err := os.Open(id)
+	f, err := os.Open(id + ".meta")
 	if os.IsNotExist(err) {
 		return nil, nil, ErrNoObject
+	} else if err != nil {
+		return nil, nil, err
 	}
-	return f, nil, err
-}
-
-func (s *local) SignedURL(id string, expires time.Duration) (string, error) {
-	return "file://" + id, nil
+	defer f.Close()
+	var meta map[string]string
+	if err := json.NewDecoder(f).Decode(&meta); err != nil {
+		return nil, nil, err
+	}
+	f, err = os.Open(id)
+	if err != nil {
+		return nil, nil, err
+	}
+	h := http.Header{}
+	for k, v := range meta {
+		h.Set(k, v)
+	}
+	return f, h, nil
 }
 
 func (s *local) Delete(id string) error {
+	os.Remove(id + ".meta")
 	return os.Remove(id)
 }

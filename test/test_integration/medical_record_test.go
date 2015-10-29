@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/diagnosis/handlers"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/sig"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/test"
 )
@@ -59,7 +59,7 @@ func TestMedicalRecordWorker(t *testing.T) {
 
 	signer := &sig.Signer{}
 	store := testData.Config.Stores.MustGet("medicalrecords")
-	mediaStore := media.NewStore("http://example.com", signer, store)
+	mediaStore := mediastore.New("http://example.com", signer, store)
 	worker := medrecord.NewWorker(
 		testData.DataAPI, diagSvc, testData.Config.MedicalRecordQueue,
 		testData.Config.EmailService, "from@somewhere.com",
@@ -99,7 +99,7 @@ func TestMedicalRecordWorker_VisitOpen(t *testing.T) {
 
 	signer := &sig.Signer{}
 	store := testData.Config.Stores.MustGet("medicalrecords")
-	mediaStore := media.NewStore("http://example.com", signer, store)
+	mediaStore := mediastore.New("http://example.com", signer, store)
 	worker := medrecord.NewWorker(
 		testData.DataAPI, diagSvc, testData.Config.MedicalRecordQueue,
 		testData.Config.EmailService, "from@somewhere.com",

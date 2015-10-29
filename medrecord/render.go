@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/sig"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/patient_file"
 	"github.com/sprucehealth/backend/treatment_plan"
 	"github.com/sprucehealth/mapstructure"
@@ -545,7 +545,7 @@ func (o RenderOption) Has(ro RenderOption) bool {
 type Renderer struct {
 	DataAPI            api.DataAPI
 	DiagnosisSvc       diagnosis.API
-	MediaStore         *media.Store
+	MediaStore         *mediastore.Store
 	APIDomain          string
 	WebDomain          string
 	Signer             *sig.Signer
@@ -761,7 +761,7 @@ type intakeLayoutRenderer struct {
 	wr         *bytes.Buffer
 	webDomain  string
 	patientID  int64
-	mediaStore *media.Store
+	mediaStore *mediastore.Store
 	expiration time.Duration
 }
 

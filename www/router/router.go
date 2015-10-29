@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/branch"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/environment"
@@ -25,7 +26,6 @@ import (
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/stripe"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/passreset"
 	"github.com/sprucehealth/backend/www"
 	"github.com/sprucehealth/backend/www/admin"
@@ -106,7 +106,7 @@ type Config struct {
 	StripeClient        *stripe.Client
 	Signer              *sig.Signer
 	Stores              map[string]storage.Store
-	MediaStore          *media.Store
+	MediaStore          *mediastore.Store
 	RateLimiters        ratelimit.KeyedRateLimiters
 	WebPassword         string
 	LibratoClient       *librato.Client

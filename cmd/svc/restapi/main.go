@@ -121,7 +121,6 @@ func main() {
 			log.Fatalf("Unknown storage type %s for name %s", c.Type, name)
 		case "s3":
 			s := storage.NewS3(conf.AWS(), c.Bucket, c.Prefix)
-			s.LatchedExpire(c.LatchedExpire)
 			stores[name] = s
 		case "local":
 			s, err := storage.NewLocalStore(c.Path)

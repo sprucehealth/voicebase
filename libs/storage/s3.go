@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -23,13 +22,14 @@ type awsError interface {
 
 var sseAlgorithm = "AES256"
 
+// S3 is a Store that uses AWS S3
 type S3 struct {
-	s3            *s3.S3
-	bucket        string
-	prefix        string
-	latchedExpire bool
+	s3     *s3.S3
+	bucket string
+	prefix string
 }
 
+// NewS3 returns a new Store that uses S3
 func NewS3(awsConfig *aws.Config, bucket, prefix string) *S3 {
 	// Make sure the path prefix starts and ends with /
 	if !strings.HasSuffix(prefix, "/") {
@@ -43,10 +43,6 @@ func NewS3(awsConfig *aws.Config, bucket, prefix string) *S3 {
 		bucket: bucket,
 		prefix: prefix,
 	}
-}
-
-func (s *S3) LatchedExpire(enabled bool) {
-	s.latchedExpire = enabled
 }
 
 func (s *S3) IDFromName(name string) string {
@@ -127,27 +123,6 @@ func (s *S3) GetReader(id string) (io.ReadCloser, http.Header, error) {
 		}
 	}
 	return obj.Body, header, nil
-}
-
-func (s *S3) SignedURL(id string, expires time.Duration) (string, error) {
-	region, bkt, path, err := s.parseURI(id)
-	if err != nil {
-		return "", err
-	}
-	// TODO(samuel): Support different regions
-	_ = region
-	req, _ := s.s3.GetObjectRequest(&s3.GetObjectInput{
-		Bucket: &bkt,
-		Key:    &path,
-	})
-	now := time.Now().UTC()
-	if s.latchedExpire {
-		// Set expire time to end of the following period so the actual
-		// expire duration is somewhere between `expires` and `2*expires`
-		ex := int64(expires / time.Second)
-		expires = time.Second * time.Duration(2*ex-(now.Unix()%ex))
-	}
-	return req.Presign(expires)
 }
 
 func (s *S3) Delete(id string) error {

@@ -17,7 +17,7 @@ func TestProducts(t *testing.T) {
 			"111": {ID: "111", Name: "blue", ImageURLs: []string{"abc"}, ProductURL: "xxx"},
 		},
 	}
-	h := NewProducts(svc)
+	h := NewProducts(svc, "", nil)
 
 	// No search results
 	w := httptest.NewRecorder()

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/messages"
 )
 
@@ -221,7 +221,7 @@ func (m *ScheduledMessage) Equal(to *ScheduledMessage) bool {
 
 func TransformTPToResponse(
 	mLookup mediaLookup,
-	mediaStore *media.Store,
+	mediaStore *mediastore.Store,
 	mediaExpirationDuration time.Duration,
 	tp *common.TreatmentPlan,
 ) (*TreatmentPlan, error) {
@@ -335,7 +335,7 @@ func TransformTPFromResponse(mLookup mediaLookup, tp *TreatmentPlan, doctorID in
 
 func TransformFTPToResponse(
 	mLookup mediaLookup,
-	mediaStore *media.Store,
+	mediaStore *mediastore.Store,
 	mediaExpirationDuration time.Duration,
 	ftp *common.FavoriteTreatmentPlan,
 	pathwayTag string,
@@ -473,7 +473,7 @@ func TransformScheduledMessageFromResponse(mLookup mediaLookup, msg *ScheduledMe
 
 func TransformScheduledMessageToResponse(
 	mLookup mediaLookup,
-	mediaStore *media.Store,
+	mediaStore *mediastore.Store,
 	m *common.TreatmentPlanScheduledMessage,
 	sentTime time.Time,
 	mediaExpirationDuration time.Duration,

@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/mediaproxy"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ptr"
@@ -15,13 +17,17 @@ import (
 const productListHTTPCacheDuration = 24 * time.Hour
 
 type productsListHandler struct {
-	svc products.Service
+	svc       products.Service
+	proxyRoot string
+	proxySvc  *mediaproxy.Service
 }
 
 // NewProductsList returns a new product search handler.
-func NewProductsList(svc products.Service) httputil.ContextHandler {
+func NewProductsList(svc products.Service, proxyRoot string, proxySvc *mediaproxy.Service) httputil.ContextHandler {
 	return httputil.SupportedMethods(&productsListHandler{
-		svc: svc,
+		svc:       svc,
+		proxyRoot: proxyRoot,
+		proxySvc:  proxySvc,
 	}, httputil.Get)
 }
 
@@ -41,15 +47,21 @@ func (h *productsListHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 	res := &responses.ProductList{
 		Products: make([]*responses.Product, len(prods)),
 	}
+	var wg sync.WaitGroup
+	wg.Add(len(prods))
 	for i, p := range prods {
-		res.Products[i] = &responses.Product{
-			ID:         p.ID,
-			Name:       p.Name,
-			ImageURLs:  p.ImageURLs,
-			ProductURL: p.ProductURL,
-			Prefetched: ptr.Bool(true),
-		}
+		go func(i int, p *products.Product) {
+			defer wg.Done()
+			res.Products[i] = &responses.Product{
+				ID:         p.ID,
+				Name:       p.Name,
+				ImageURLs:  mapMediaProxyURLs(h.proxyRoot, h.proxySvc, p.ImageURLs),
+				ProductURL: p.ProductURL,
+				Prefetched: ptr.Bool(true),
+			}
+		}(i, p)
 	}
+	wg.Wait()
 
 	httputil.CacheHeaders(w.Header(), time.Time{}, productListHTTPCacheDuration)
 	httputil.JSONResponse(w, http.StatusOK, res)

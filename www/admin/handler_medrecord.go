@@ -5,11 +5,11 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/sig"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/medrecord"
 	"golang.org/x/net/context"
 )
@@ -22,7 +22,7 @@ type medicalRecordHandler struct {
 func newMedicalRecordHandler(
 	dataAPI api.DataAPI,
 	diagnosisSvc diagnosis.API,
-	mediaStore *media.Store,
+	mediaStore *mediastore.Store,
 	apiDomain string,
 	webDomain string,
 	signer *sig.Signer,

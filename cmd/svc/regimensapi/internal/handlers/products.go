@@ -5,7 +5,9 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/mediaproxy"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/svc/products"
@@ -15,13 +17,17 @@ import (
 const productHTTPCacheDuration = 24 * time.Hour
 
 type productsHandler struct {
-	svc products.Service
+	svc       products.Service
+	proxyRoot string
+	proxySvc  *mediaproxy.Service
 }
 
 // NewProducts returns a new single product handler
-func NewProducts(svc products.Service) httputil.ContextHandler {
+func NewProducts(svc products.Service, proxyRoot string, proxySvc *mediaproxy.Service) httputil.ContextHandler {
 	return httputil.SupportedMethods(&productsHandler{
-		svc: svc,
+		svc:       svc,
+		proxyRoot: proxyRoot,
+		proxySvc:  proxySvc,
 	}, httputil.Get)
 }
 
@@ -44,8 +50,25 @@ func (h *productsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 		Product: &responses.Product{
 			ID:         p.ID,
 			Name:       p.Name,
-			ImageURLs:  p.ImageURLs,
+			ImageURLs:  mapMediaProxyURLs(h.proxyRoot, h.proxySvc, p.ImageURLs),
 			ProductURL: p.ProductURL,
 		},
 	})
+}
+
+func mapMediaProxyURLs(proxyRoot string, proxySvc *mediaproxy.Service, imageURLs []string) []string {
+	if proxySvc == nil {
+		return imageURLs
+	}
+	media, err := proxySvc.LookupByURL(imageURLs)
+	if err != nil {
+		golog.Errorf("Failed to map media proxy URLs: %s", err)
+		// Just return the external URLs as it's an OK fallback
+		return imageURLs
+	}
+	iu := make([]string, 0, len(media))
+	for _, m := range media {
+		iu = append(iu, proxyRoot+m.ID)
+	}
+	return iu
 }

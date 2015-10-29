@@ -11,8 +11,8 @@ import (
 
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/media"
-	"github.com/sprucehealth/backend/media/collage"
+	"github.com/sprucehealth/backend/libs/imageutil"
+	"github.com/sprucehealth/backend/libs/imageutil/collage"
 )
 
 var config struct {
@@ -35,7 +35,7 @@ func main() {
 			golog.Fatalf("Error while reading image file %s: %s", imagePath, err)
 		}
 
-		image, _, err := media.DecodeImageAndExif(bytes.NewReader(dat))
+		image, _, _, err := imageutil.DecodeImageAndExif(bytes.NewReader(dat))
 		if err != nil {
 			golog.Fatalf("Error while decoding image file %s: %s", imagePath, err)
 		}

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/audit"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -19,12 +19,14 @@ import (
 type providerProfileImageAPIHandler struct {
 	dataAPI    api.DataAPI
 	imageStore storage.Store
+	apiDomain  string
 }
 
-func newProviderProfileImageAPIHandler(dataAPI api.DataAPI, imageStore storage.Store) httputil.ContextHandler {
+func newProviderProfileImageAPIHandler(dataAPI api.DataAPI, imageStore storage.Store, apiDomain string) httputil.ContextHandler {
 	return httputil.SupportedMethods(&providerProfileImageAPIHandler{
 		dataAPI:    dataAPI,
 		imageStore: imageStore,
+		apiDomain:  apiDomain,
 	}, httputil.Get, httputil.Put)
 }
 
@@ -107,20 +109,19 @@ func (h *providerProfileImageAPIHandler) ServeHTTP(ctx context.Context, w http.R
 
 	audit.LogAction(account.ID, "AdminAPI", "GetProviderThumbnail", map[string]interface{}{"doctor_id": doctorID, "type": profileImageType})
 
-	var storeID string
+	var url string
+	role := api.RoleDoctor
+	if doctor.IsCC {
+		role = api.RoleCC
+	}
 	switch profileImageType {
 	case "thumbnail":
-		storeID = doctor.LargeThumbnailID
+		url = app_url.ThumbnailURL(h.apiDomain, role, doctor.ID.Int64())
 	case "hero":
-		storeID = doctor.HeroImageID
+		url = app_url.HeroImageURL(h.apiDomain, role, doctor.ID.Int64())
 	}
-	if storeID == "" {
+	if url == "" {
 		www.APINotFound(w, r)
-		return
-	}
-	url, err := h.imageStore.SignedURL(storeID, time.Hour)
-	if err != nil {
-		www.APIInternalError(w, r, err)
 		return
 	}
 	http.Redirect(w, r, url, http.StatusSeeOther)

@@ -28,6 +28,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/apiservice/router"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/email"
@@ -43,7 +44,6 @@ import (
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/backend/www"
@@ -397,7 +397,7 @@ func setupTest() (*TestData, error) {
 			"thumbnails":     storage.NewTestStore(nil),
 			"medicalrecords": storage.NewTestStore(nil),
 		},
-		MediaStore:          media.NewStore("http://example.com"+apipaths.MediaURLPath, signer, storage.NewTestStore(nil)),
+		MediaStore:          mediastore.New("http://example.com"+apipaths.MediaURLPath, signer, storage.NewTestStore(nil)),
 		SNSClient:           &awsutil.SNS{EndpointARN: "push_endpoint"},
 		MetricsRegistry:     metrics.NewRegistry(),
 		DosespotConfig:      &config.DosespotConfig{},
@@ -431,7 +431,7 @@ func setupTest() (*TestData, error) {
 			"onboarding":     storage.NewTestStore(nil),
 			"medicalrecords": storage.NewTestStore(nil),
 		},
-		MediaStore: media.NewStore("http://example.com"+apipaths.MediaURLPath, signer, storage.NewTestStore(nil)),
+		MediaStore: mediastore.New("http://example.com"+apipaths.MediaURLPath, signer, storage.NewTestStore(nil)),
 		Cfg:        cfgStore,
 	}
 

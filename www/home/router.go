@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/branch"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
@@ -20,7 +21,6 @@ import (
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/www"
 )
@@ -43,7 +43,7 @@ type Config struct {
 	AnalyticsLogger analytics.Logger
 	TemplateLoader  *www.TemplateLoader
 	ExperimentIDs   map[string]string
-	MediaStore      *media.Store
+	MediaStore      *mediastore.Store
 	Stores          storage.StoreMap
 	Dispatcher      dispatch.Publisher
 	MetricsRegistry metrics.Registry

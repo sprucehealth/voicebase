@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/conc"
@@ -13,14 +14,13 @@ import (
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/responses"
 	"golang.org/x/net/context"
 )
 
 type doctorTreatmentPlanHandler struct {
 	dataAPI         api.DataAPI
-	mediaStore      *media.Store
+	mediaStore      *mediastore.Store
 	erxAPI          erx.ERxAPI
 	dispatcher      *dispatch.Dispatcher
 	erxRoutingQueue *common.SQSQueue
@@ -31,7 +31,7 @@ type doctorTreatmentPlanHandler struct {
 func NewDoctorTreatmentPlanHandler(
 	dataAPI api.DataAPI,
 	erxAPI erx.ERxAPI,
-	mediaStore *media.Store,
+	mediaStore *mediastore.Store,
 	dispatcher *dispatch.Dispatcher,
 	erxRoutingQueue *common.SQSQueue,
 	erxStatusQueue *common.SQSQueue,

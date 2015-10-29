@@ -9,11 +9,11 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/sig"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 )
@@ -98,7 +98,7 @@ func TestPatientParentHandler(t *testing.T) {
 	signer, err := sig.NewSigner([][]byte{[]byte("key")}, nil)
 	test.OK(t, err)
 
-	ms := media.NewStore("https://test.com", signer, nil)
+	ms := mediastore.New("https://test.com", signer, nil)
 	dur := 5 * time.Minute
 	h := NewPatientParentHandler(m, ms, dur)
 

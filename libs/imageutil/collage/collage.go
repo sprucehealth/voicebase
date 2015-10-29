@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/libs/errors"
-	"github.com/sprucehealth/backend/media"
+	"github.com/sprucehealth/backend/libs/imageutil"
 )
 
 // LayoutAlgorithm represents an interface that provides the layout structuring algorithm
@@ -31,7 +31,7 @@ func Collageify(images []image.Image, layout LayoutAlgorithm, ops *Options) (ima
 	return img, errors.Trace(err)
 }
 
-var defaultResizeOps = &media.Options{AllowScaleUp: true}
+var defaultResizeOps = &imageutil.Options{AllowScaleUp: true}
 
 // SpruceProductGridLayout is a layout that uses the following conventions
 // * All images fit into equally sized grid sections
@@ -107,7 +107,7 @@ var SpruceProductGridLayout LayoutAlgorithm = func(images []image.Image, ops *Op
 			}
 		}
 		var err error
-		im, err = media.ResizeImage(im, int(width), int(height), defaultResizeOps)
+		im, err = imageutil.ResizeImage(im, int(width), int(height), defaultResizeOps)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}

@@ -76,10 +76,9 @@ type storageConfig struct {
 	// Local
 	Path string
 	// S3
-	Region        string
-	Bucket        string
-	Prefix        string
-	LatchedExpire bool `description:"If enabled then the signed URL is kept consistent within the expire time"`
+	Region string
+	Bucket string
+	Prefix string
 }
 
 type authTokenConfig struct {

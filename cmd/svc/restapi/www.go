@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/branch"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/events"
@@ -25,7 +26,6 @@ import (
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/stripe"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/www"
 	"github.com/sprucehealth/backend/www/router"
 )
@@ -100,7 +100,7 @@ func buildWWW(
 		StripeClient:        stripeCli,
 		Signer:              signer,
 		Stores:              stores,
-		MediaStore:          media.NewStore("https://"+conf.APIDomain+apipaths.MediaURLPath, signer, stores.MustGet("media")),
+		MediaStore:          mediastore.New("https://"+conf.APIDomain+apipaths.MediaURLPath, signer, stores.MustGet("media")),
 		RateLimiters:        rateLimiters,
 		WebPassword:         conf.WebPassword,
 		TemplateLoader:      templateLoader,

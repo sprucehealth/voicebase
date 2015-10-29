@@ -6,10 +6,10 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/media"
 	"golang.org/x/net/context"
 )
 
@@ -18,7 +18,7 @@ type visitsListHandler struct {
 	apiDomain          string
 	webDomain          string
 	dispatcher         *dispatch.Dispatcher
-	mediaStore         *media.Store
+	mediaStore         *mediastore.Store
 	expirationDuration time.Duration
 }
 
@@ -33,7 +33,7 @@ type visitsListResponse struct {
 
 func NewVisitsListHandler(
 	dataAPI api.DataAPI, apiDomain, webDomain string, dispatcher *dispatch.Dispatcher,
-	mediaStore *media.Store, expirationDuration time.Duration,
+	mediaStore *mediastore.Store, expirationDuration time.Duration,
 ) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(

@@ -7,11 +7,11 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/mapstructure"
 	"golang.org/x/net/context"
@@ -20,12 +20,12 @@ import (
 type doctorPatientVisitReviewHandler struct {
 	dataAPI            api.DataAPI
 	dispatcher         *dispatch.Dispatcher
-	mediaStore         *media.Store
+	mediaStore         *mediastore.Store
 	expirationDuration time.Duration
 	webDomain          string
 }
 
-func NewDoctorPatientVisitReviewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, mediaStore *media.Store, expirationDuration time.Duration, webDomain string) httputil.ContextHandler {
+func NewDoctorPatientVisitReviewHandler(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, mediaStore *mediastore.Store, expirationDuration time.Duration, webDomain string) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.RequestCacheHandler(
 			apiservice.AuthorizationRequired(
@@ -137,7 +137,7 @@ func VisitReviewLayout(
 	dataAPI api.DataAPI,
 	pat *common.Patient,
 	doctor *common.Doctor,
-	mediaStore *media.Store,
+	mediaStore *mediastore.Store,
 	expirationDuration time.Duration,
 	visit *common.PatientVisit,
 	apiDomain string,

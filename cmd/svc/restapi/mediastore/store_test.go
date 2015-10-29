@@ -1,4 +1,4 @@
-package media
+package mediastore
 
 import (
 	"net/url"
@@ -16,7 +16,7 @@ func TestStore(t *testing.T) {
 		t.Fatal(err)
 	}
 	baseStore := storage.NewTestStore(nil)
-	store := NewStore("http://example.com", signer, baseStore)
+	store := New("http://example.com", signer, baseStore)
 	signedURL, err := store.SignedURL(123, time.Hour)
 	if err != nil {
 		t.Fatal(err)

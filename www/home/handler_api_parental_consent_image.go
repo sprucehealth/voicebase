@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/www"
 	"golang.org/x/net/context"
@@ -28,7 +28,7 @@ const maxConsentImageRequestMemory = 5 * 1024 * 1024
 type parentalConsentImageAPIHandler struct {
 	dataAPI    api.DataAPI
 	dispatcher dispatch.Publisher
-	mediaStore *media.Store
+	mediaStore *mediastore.Store
 }
 
 type parentalConsentImageAPIGETResponse struct {
@@ -39,7 +39,7 @@ type imageTypeResponse struct {
 	URL string `json:"url"`
 }
 
-func newParentalConsentImageAPIHAndler(dataAPI api.DataAPI, dispatcher dispatch.Publisher, mediaStore *media.Store) httputil.ContextHandler {
+func newParentalConsentImageAPIHAndler(dataAPI api.DataAPI, dispatcher dispatch.Publisher, mediaStore *mediastore.Store) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		www.APIRoleRequiredHandler(&parentalConsentImageAPIHandler{
 			dataAPI:    dataAPI,

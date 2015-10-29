@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"time"
 
 	"testing"
 )
@@ -42,13 +41,6 @@ func TestLocalStore(t *testing.T) {
 	if string(b) != "bar" {
 		t.Fatalf("Expected 'bar' got '%s'", string(b))
 	}
-
-	// Just make sure this doesn't blow up. Nothing much to test since it's not a real URL as such.
-	url, err := store.SignedURL(id, time.Hour)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("SignedURL: %s", url)
 
 	if err := store.Delete(id); err != nil {
 		t.Fatal(err)

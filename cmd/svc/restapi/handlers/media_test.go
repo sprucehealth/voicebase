@@ -1,8 +1,9 @@
-package media
+package handlers
 
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/binary"
 	"image"
 	"image/jpeg"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
@@ -31,12 +33,12 @@ func init() {
 	testJPEG = buf.Bytes()
 }
 
-type dataAPI struct {
+type mediaDataAPI struct {
 	api.DataAPI
 	media map[int64]*common.Media
 }
 
-func (d *dataAPI) GetMedia(mediaID int64) (*common.Media, error) {
+func (d *mediaDataAPI) GetMedia(mediaID int64) (*common.Media, error) {
 	m := d.media[mediaID]
 	if m == nil {
 		return nil, api.ErrNotFound("media")
@@ -44,7 +46,7 @@ func (d *dataAPI) GetMedia(mediaID int64) (*common.Media, error) {
 	return m, nil
 }
 
-func TestHandlerGet(t *testing.T) {
+func TestMediaHandlerGet(t *testing.T) {
 	store := storage.NewTestStore(
 		map[string]*storage.TestObject{
 			"image-123": {
@@ -56,9 +58,9 @@ func TestHandlerGet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	mediaStore := NewStore("http://example.com", signer, store)
+	mediaStore := mediastore.New("http://example.com", signer, store)
 
-	dapi := &dataAPI{
+	dapi := &mediaDataAPI{
 		media: map[int64]*common.Media{
 			123: &common.Media{
 				ID:  123,
@@ -67,7 +69,7 @@ func TestHandlerGet(t *testing.T) {
 		},
 	}
 
-	h := NewHandler(dapi, mediaStore, store, time.Hour, metrics.NewRegistry())
+	h := NewMedia(dapi, mediaStore, store, time.Hour, metrics.NewRegistry())
 
 	// Missing arguments
 
@@ -186,4 +188,11 @@ func TestHandlerGet(t *testing.T) {
 	} else if img.Bounds().Dx() != 426 || img.Bounds().Dy() != 320 {
 		t.Fatalf("Expected width,height of %d,%d got %d,%d", 426, 320, img.Bounds().Dx(), img.Bounds().Dy())
 	}
+}
+
+func makeSignedMsg(mediaID, expireTime int64) []byte {
+	signedMsg := make([]byte, 8*2)
+	binary.BigEndian.PutUint64(signedMsg[:8], uint64(mediaID))
+	binary.BigEndian.PutUint64(signedMsg[8:16], uint64(expireTime))
+	return signedMsg
 }

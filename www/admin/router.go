@@ -7,6 +7,7 @@ import (
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/environment"
@@ -20,7 +21,6 @@ import (
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/stripe"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/patient/identification"
 	"github.com/sprucehealth/backend/tagging"
 	"github.com/sprucehealth/backend/www"
@@ -84,7 +84,7 @@ type Config struct {
 	EmailService    email.Service
 	LibratoClient   *librato.Client
 	StripeClient    *stripe.Client
-	MediaStore      *media.Store
+	MediaStore      *mediastore.Store
 	APIDomain       string
 	WebDomain       string
 	MetricsRegistry metrics.Registry
@@ -190,7 +190,7 @@ func SetupRoutes(r *mux.Router, config *Config) {
 				httputil.Get: []string{PermDoctorsView},
 				httputil.Put: []string{PermDoctorsEdit},
 			},
-			newProviderProfileImageAPIHandler(config.DataAPI, config.Stores.MustGet("thumbnails")), nil)))
+			newProviderProfileImageAPIHandler(config.DataAPI, config.Stores.MustGet("thumbnails"), config.APIDomain), nil)))
 	r.Handle(`/admin/api/providers/{id:[0-9]+}/eligibility`, apiAuthFilter(
 		www.PermissionsRequiredHandler(config.AuthAPI,
 			map[string][]string{

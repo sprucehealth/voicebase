@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/patient"
 	"github.com/sprucehealth/backend/www"
 	"golang.org/x/net/context"
@@ -21,7 +21,7 @@ import (
 
 type parentalConsentHandler struct {
 	dataAPI         api.DataAPI
-	mediaStore      *media.Store
+	mediaStore      *mediastore.Store
 	template        *template.Template
 	landingTemplate *template.Template
 }
@@ -73,7 +73,7 @@ func checkParentalConsentAccessToken(w http.ResponseWriter, r *http.Request, dat
 	return hasAccess
 }
 
-func newParentalConsentHandler(dataAPI api.DataAPI, mediaStore *media.Store, templateLoader *www.TemplateLoader) httputil.ContextHandler {
+func newParentalConsentHandler(dataAPI api.DataAPI, mediaStore *mediastore.Store, templateLoader *www.TemplateLoader) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		&parentalConsentHandler{
 			dataAPI:         dataAPI,

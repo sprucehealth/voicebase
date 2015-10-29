@@ -44,7 +44,7 @@ func TestProductsList(t *testing.T) {
 			},
 		},
 	}
-	h := NewProductsList(svc)
+	h := NewProductsList(svc, "", nil)
 
 	// No search results
 	w := httptest.NewRecorder()

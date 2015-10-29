@@ -2,7 +2,6 @@ package storage
 
 import (
 	"bytes"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
@@ -62,25 +61,6 @@ func TestS3(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("Headers: %+v", headers)
-	if !bytes.Equal(out, data) {
-		t.Fatalf("get %+v but expected %+v", out, data)
-	}
-
-	// Test signed URLs
-	url, err := storage.SignedURL(id, time.Minute*10)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("URL: %s", url)
-	res, err := http.Get(url)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer res.Body.Close()
-	out, err = ioutil.ReadAll(res.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
 	if !bytes.Equal(out, data) {
 		t.Fatalf("get %+v but expected %+v", out, data)
 	}

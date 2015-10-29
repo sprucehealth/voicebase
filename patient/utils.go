@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/feedback"
@@ -18,7 +19,6 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
-	"github.com/sprucehealth/backend/media"
 )
 
 // IntakeLayoutForVisit returns the intake layout info for the provided visit.
@@ -26,7 +26,7 @@ func IntakeLayoutForVisit(
 	dataAPI api.DataAPI,
 	apiDomain string,
 	webDomain string,
-	mediaStore *media.Store,
+	mediaStore *mediastore.Store,
 	expirationDuration time.Duration,
 	visit *common.PatientVisit,
 	patient *common.Patient,
@@ -129,7 +129,7 @@ func IntakeLayoutForVisit(
 func populateLayoutWithAnswers(
 	visitLayout *info_intake.InfoIntakeLayout,
 	dataAPI api.DataAPI,
-	mediaStore *media.Store,
+	mediaStore *mediastore.Store,
 	expirationDuration time.Duration,
 	patientVisit *common.PatientVisit,
 ) error {
@@ -323,7 +323,7 @@ func createPatientVisit(
 	apiDomain string,
 	webDomain string,
 	dispatcher *dispatch.Dispatcher,
-	mediaStore *media.Store,
+	mediaStore *mediastore.Store,
 	expirationDuration time.Duration,
 	r *http.Request,
 	context *apiservice.VisitLayoutContext,

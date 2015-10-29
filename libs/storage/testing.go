@@ -5,8 +5,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"sync"
-	"time"
 )
 
 type readCloser struct {
@@ -43,6 +43,7 @@ func (s *testStore) IDFromName(name string) string {
 func (s *testStore) Put(name string, data []byte, contentType string, meta map[string]string) (string, error) {
 	s.mu.Lock()
 	headers := http.Header{}
+	headers.Set("Content-Length", strconv.Itoa(len(data)))
 	headers.Set("Content-Type", contentType)
 	for k, v := range meta {
 		headers.Set(k, v)
@@ -76,10 +77,6 @@ func (s *testStore) GetReader(id string) (io.ReadCloser, http.Header, error) {
 		return nil, nil, err
 	}
 	return readCloser{bytes.NewReader(data)}, headers, nil
-}
-
-func (s *testStore) SignedURL(id string, expires time.Duration) (string, error) {
-	return id, nil
 }
 
 func (s *testStore) Delete(id string) error {

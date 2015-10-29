@@ -9,11 +9,11 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/responses"
 	"golang.org/x/net/context"
 )
@@ -27,7 +27,7 @@ type scheduledMessageRequest interface {
 
 type scheduledMessageHandler struct {
 	dataAPI    api.DataAPI
-	mediaStore *media.Store
+	mediaStore *mediastore.Store
 	dispatcher *dispatch.Dispatcher
 }
 
@@ -107,7 +107,7 @@ type ScheduledMessageIDResponse struct {
 	MessageID int64 `json:"message_id,string"`
 }
 
-func NewScheduledMessageHandler(dataAPI api.DataAPI, mediaStore *media.Store, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
+func NewScheduledMessageHandler(dataAPI api.DataAPI, mediaStore *mediastore.Store, dispatcher *dispatch.Dispatcher) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.SupportedRoles(
 			apiservice.RequestCacheHandler(

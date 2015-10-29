@@ -4,7 +4,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"time"
 )
 
 // ErrNoObject is returned when an trying to Get an object that doesn't exist
@@ -16,7 +15,6 @@ type Store interface {
 	PutReader(name string, r io.ReadSeeker, size int64, contentType string, meta map[string]string) (string, error)
 	Get(id string) ([]byte, http.Header, error)
 	GetReader(id string) (io.ReadCloser, http.Header, error)
-	SignedURL(id string, expires time.Duration) (string, error)
 	Delete(id string) error
 }
 

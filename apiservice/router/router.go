@@ -19,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/careprovider"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/handlers"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/compat"
@@ -44,7 +45,6 @@ import (
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/notify"
@@ -87,7 +87,7 @@ type Config struct {
 	MetricsRegistry          metrics.Registry
 	SMSAPI                   api.SMSAPI
 	Stores                   storage.StoreMap
-	MediaStore               *media.Store
+	MediaStore               *mediastore.Store
 	RateLimiters             ratelimit.KeyedRateLimiters
 	AnalyticsLogger          analytics.Logger
 	ERxRouting               bool
@@ -337,7 +337,7 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 	authenticationRequired(conf, apipaths.PatienPromoCodeURLPath, promotions.NewPatientPromotionsHandler(conf.DataAPI, conf.AuthAPI, conf.AnalyticsLogger))
 	authenticationRequired(conf, apipaths.ReferralsURLPath, promotions.NewReferralProgramHandler(conf.DataAPI, conf.WebDomain))
 
-	mediaHandler := media.NewHandler(conf.DataAPI, conf.MediaStore, conf.Stores.MustGet("media-cache").(storage.DeterministicStore), conf.AuthTokenExpiration, conf.MetricsRegistry.Scope("media/handler"))
+	mediaHandler := handlers.NewMedia(conf.DataAPI, conf.MediaStore, conf.Stores.MustGet("media-cache").(storage.DeterministicStore), conf.AuthTokenExpiration, conf.MetricsRegistry.Scope("media/handler"))
 	noAuthenticationRequired(conf, apipaths.PhotoURLPath, mediaHandler)
 	noAuthenticationRequired(conf, apipaths.MediaURLPath, mediaHandler)
 	noAuthenticationRequired(conf, apipaths.NotifyMeURLPath,

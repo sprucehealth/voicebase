@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/mediaproxy"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -16,13 +17,17 @@ import (
 const productScrapeHTTPCacheDuration = 7 * 24 * time.Hour
 
 type productsScrapeHandler struct {
-	svc products.Service
+	svc       products.Service
+	proxyRoot string
+	proxySvc  *mediaproxy.Service
 }
 
 // NewProductsScrape returns a new product scrape handler.
-func NewProductsScrape(svc products.Service) httputil.ContextHandler {
+func NewProductsScrape(svc products.Service, proxyRoot string, proxySvc *mediaproxy.Service) httputil.ContextHandler {
 	return httputil.SupportedMethods(&productsScrapeHandler{
-		svc: svc,
+		svc:       svc,
+		proxyRoot: proxyRoot,
+		proxySvc:  proxySvc,
 	}, httputil.Get)
 }
 
@@ -49,7 +54,7 @@ func (h *productsScrapeHandler) ServeHTTP(ctx context.Context, w http.ResponseWr
 		Product: &responses.Product{
 			ID:         p.ID,
 			Name:       p.Name,
-			ImageURLs:  p.ImageURLs,
+			ImageURLs:  mapMediaProxyURLs(h.proxyRoot, h.proxySvc, p.ImageURLs),
 			ProductURL: p.ProductURL,
 		},
 	})

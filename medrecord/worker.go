@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/email"
@@ -15,7 +16,6 @@ import (
 	"github.com/sprucehealth/backend/libs/mandrill"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
-	"github.com/sprucehealth/backend/media"
 )
 
 const emailType = "medical-record-ready"
@@ -47,7 +47,7 @@ func NewWorker(
 	supportEmail, apiDomain, webDomain string,
 	signer *sig.Signer,
 	store storage.Store,
-	mediaStore *media.Store,
+	mediaStore *mediastore.Store,
 	expirationDuration time.Duration,
 	metricsRegistry metrics.Registry,
 ) *Worker {

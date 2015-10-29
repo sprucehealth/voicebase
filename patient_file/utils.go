@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
-	"github.com/sprucehealth/backend/media"
 )
 
 // This interface is used to populate the ViewContext with data pertaining to a single question
@@ -223,7 +223,7 @@ func populatePatientPhotos(answeredPhotoSections []common.Answer, question *info
 
 func buildContext(
 	dataAPI api.DataAPI,
-	mediaStore *media.Store,
+	mediaStore *mediastore.Store,
 	expirationDuration time.Duration,
 	visitLayout *info_intake.InfoIntakeLayout,
 	pat *common.Patient,
@@ -246,7 +246,7 @@ func populateContextForRenderingLayout(
 	answers map[int64][]common.Answer,
 	questions []*info_intake.Question,
 	dataAPI api.DataAPI,
-	mediaStore *media.Store,
+	mediaStore *mediastore.Store,
 	expirationDuration time.Duration,
 	patient *common.Patient,
 	visit *common.PatientVisit,
@@ -319,7 +319,7 @@ func populateContextForRenderingLayout(
 
 func populateParentInfo(
 	dataAPI api.DataAPI,
-	mediaStore *media.Store,
+	mediaStore *mediastore.Store,
 	expirationDuration time.Duration,
 	patient *common.Patient,
 	context *common.ViewContext,

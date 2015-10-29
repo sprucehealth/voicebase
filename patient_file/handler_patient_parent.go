@@ -7,17 +7,17 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/media"
 	"golang.org/x/net/context"
 )
 
 type patientParentHandler struct {
 	dataAPI            api.DataAPI
-	mediaStore         *media.Store
+	mediaStore         *mediastore.Store
 	expirationDuration time.Duration
 }
 
@@ -52,7 +52,7 @@ type patientParentResponse struct {
 // that is part of the patient's care team can get the information.
 func NewPatientParentHandler(
 	dataAPI api.DataAPI,
-	mediaStore *media.Store,
+	mediaStore *mediastore.Store,
 	expirationDuration time.Duration,
 ) httputil.ContextHandler {
 	return httputil.SupportedMethods(

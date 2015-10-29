@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/info_intake"
 	"github.com/sprucehealth/backend/libs/conc"
@@ -19,7 +20,6 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/ptr"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/tagging"
 	"github.com/sprucehealth/backend/tagging/model"
 	"golang.org/x/net/context"
@@ -43,7 +43,7 @@ type patientVisitHandler struct {
 	apiDomain            string
 	webDomain            string
 	dispatcher           *dispatch.Dispatcher
-	mediaStore           *media.Store
+	mediaStore           *mediastore.Store
 	expirationDuration   time.Duration
 	taggingClient        tagging.Client
 }
@@ -119,7 +119,7 @@ func NewPatientVisitHandler(
 	apiDomain string,
 	webDomain string,
 	dispatcher *dispatch.Dispatcher,
-	mediaStore *media.Store,
+	mediaStore *mediastore.Store,
 	expirationDuration time.Duration,
 	taggingClient tagging.Client,
 ) httputil.ContextHandler {

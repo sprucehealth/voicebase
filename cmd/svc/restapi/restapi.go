@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice/apipaths"
 	"github.com/sprucehealth/backend/apiservice/router"
 	"github.com/sprucehealth/backend/app_worker"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/workers"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/consul"
@@ -38,7 +39,6 @@ import (
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/stripe"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/notify"
 	"github.com/sprucehealth/backend/patient_case"
@@ -172,7 +172,7 @@ func buildRESTAPI(
 		stripeClient.SecretKey = conf.Stripe.SecretKey
 	}
 
-	mediaStore := media.NewStore("https://"+conf.APIDomain+apipaths.MediaURLPath, signer, stores.MustGet("media"))
+	mediaStore := mediastore.New("https://"+conf.APIDomain+apipaths.MediaURLPath, signer, stores.MustGet("media"))
 
 	var launchPromoStartDate *time.Time
 	if conf.LaunchPromo != nil {

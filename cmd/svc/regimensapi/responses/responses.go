@@ -63,12 +63,16 @@ type RegimensGETResponse struct {
 type MediaPOSTResponse struct {
 	MediaID  uint64 `json:"id,string"`
 	MediaURL string `json:"url"`
+	Width    int    `json:"width"`
+	Height   int    `json:"height"`
 }
 
 // MediaGETRequest represents the data expected to be associated with a successful GET request for the media endpoint
 type MediaGETRequest struct {
-	Width  int `schema:"width"`
-	Height int `schema:"height"`
+	Width        int  `schema:"width"`
+	Height       int  `schema:"height"`
+	Crop         bool `schema:"crop"`
+	AllowScaleUp bool `schema:"allow_scale_up"`
 }
 
 // FoundationGETRequest represents the data excpected to be associated with a successful GET request to the foundation endpoint

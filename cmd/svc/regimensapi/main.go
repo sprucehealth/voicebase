@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -24,6 +25,8 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/products"
 	"github.com/sprucehealth/backend/cmd/svc/regimens"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/handlers"
+	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/media"
+	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/mediaproxy"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/factual"
@@ -37,6 +40,15 @@ import (
 	"golang.org/x/net/context"
 )
 
+type mediaConfig struct {
+	storageType      string
+	s3Bucket         string
+	s3Prefix         string
+	localStoragePath string
+	maxWidth         int
+	maxHeight        int
+}
+
 var config struct {
 	httpAddr      string
 	proxyProtocol bool
@@ -49,11 +61,11 @@ var config struct {
 	factualSecret string
 
 	// Media
-	mediaStorageType      string
-	mediaS3Bucket         string
-	mediaS3Prefix         string
-	mediaS3LatchedExpire  bool
-	mediaLocalStoragePath string
+	media mediaConfig
+
+	// Media proxy
+	mediaProxy              mediaConfig
+	mediaProxyCacheDuration time.Duration
 
 	// Memcached config
 	mcDiscoveryHost     string
@@ -99,11 +111,21 @@ func init() {
 	flag.StringVar(&config.factualSecret, "factual.secret", "", "Factual API `secret`")
 
 	// Media
-	flag.StringVar(&config.mediaStorageType, "media.storage.type", "local", "Storage type for regimen media")
-	flag.StringVar(&config.mediaS3Bucket, "media.s3.bucket", "", "S3 Bucket for media storage")
-	flag.StringVar(&config.mediaS3Prefix, "media.s3.prefix", "", "S3 path prefix for media storage")
-	flag.BoolVar(&config.mediaS3LatchedExpire, "media.s3.latched.expire", true, "S3 configuration for latch expiration")
-	flag.StringVar(&config.mediaLocalStoragePath, "media.local.path", "/tmp", "Local path to use when doing local media storage")
+	flag.StringVar(&config.media.storageType, "media.storage.type", "local", "Storage type for regimen media")
+	flag.StringVar(&config.media.s3Bucket, "media.s3.bucket", "", "S3 Bucket for media storage")
+	flag.StringVar(&config.media.s3Prefix, "media.s3.prefix", "", "S3 path prefix for media storage")
+	flag.StringVar(&config.media.localStoragePath, "media.local.path", "/tmp", "Local path to use when using local media storage")
+	flag.IntVar(&config.media.maxWidth, "media.max.width", 0, "Maximum `width` of stored media (0 for unbounded)")
+	flag.IntVar(&config.media.maxWidth, "media.max.height", 0, "Maximum `height` of stored media (0 for unbounded)")
+
+	// Media proxy
+	flag.StringVar(&config.mediaProxy.storageType, "mediaproxy.storage.type", "local", "Storage type for media proxy")
+	flag.StringVar(&config.mediaProxy.s3Bucket, "mediaproxy.s3.bucket", "", "S3 Bucket for media proxy storage")
+	flag.StringVar(&config.mediaProxy.s3Prefix, "mediaproxy.s3.prefix", "", "S3 path prefix for media proxy storage")
+	flag.StringVar(&config.mediaProxy.localStoragePath, "mediaproxy.local.path", "/tmp", "Local path to use when using local media proxy storage")
+	flag.IntVar(&config.mediaProxy.maxWidth, "mediaproxy.max.width", 0, "Maximum `width` of stored proxied media (0 for unbounded)")
+	flag.IntVar(&config.mediaProxy.maxWidth, "mediaproxy.max.height", 0, "Maximum `height` of stored proxied media (0 for unbounded)")
+	flag.DurationVar(&config.mediaProxyCacheDuration, "mediaproxy.cache.duration", time.Second*60*60*24*7, "Cache `expiration` for media proxy metadata")
 
 	// Memcached
 	flag.StringVar(&config.mcDiscoveryHost, "mc.discovery.host", "", "ElastiCache discovery `host`")
@@ -136,6 +158,9 @@ func main() {
 	log.SetFlags(log.Lshortfile)
 	boot.ParseFlags("REGIMENS_")
 
+	config.apiDomain = strings.TrimRight(config.apiDomain, "/")
+	config.webDomain = strings.TrimRight(config.webDomain, "/")
+
 	metricsRegistry := metrics.NewRegistry()
 	_, handler := setupRouter(metricsRegistry)
 
@@ -161,7 +186,7 @@ func main() {
 }
 
 func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.ContextHandler) {
-	var memcacheCli products.MemcacheClient
+	var memcacheCli *memcache.Client
 	if config.mcDiscoveryHost != "" {
 		d, err := awsutil.NewElastiCacheDiscoverer(config.mcDiscoveryHost, config.mcDiscoveryInterval)
 		if err != nil {
@@ -188,8 +213,12 @@ func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.Contex
 	}
 
 	dispatcher := dispatch.New()
-	productsSvc := products.New(factual.New(config.factualKey, config.factualSecret), amz, memcacheCli, metricsRegistry.Scope("productssvc"))
-	regimenSvc, err := regimens.New(dynamodb.New(func() *aws.Config {
+	var productCache products.MemcacheClient
+	if memcacheCli != nil {
+		productCache = memcacheCli
+	}
+	productsSvc := products.New(factual.New(config.factualKey, config.factualSecret), amz, productCache, metricsRegistry.Scope("productssvc"))
+	dynamoDBClient := dynamodb.New(func() *aws.Config {
 		dynamoConfig := &aws.Config{
 			Region:      &config.awsDynamoDBRegion,
 			DisableSSL:  &config.awsDynamoDBDisableSSL,
@@ -203,7 +232,8 @@ func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.Contex
 			dynamoConfig.DisableSSL = &config.awsDynamoDBDisableSSL
 		}
 		return dynamoConfig
-	}()), config.env, config.authSecret)
+	}())
+	regimenSvc, err := regimens.New(dynamoDBClient, config.env, config.authSecret)
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
@@ -241,13 +271,36 @@ func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.Contex
 	}
 
 	router := mux.NewRouter().StrictSlash(true)
-	mediaStore := getMediaStore()
-	mediaHandler := handlers.NewMedia(config.apiDomain, mediaStore, metricsRegistry.Scope("media"))
+
+	mediaStore := getMediaStore(config.media, "")
+	mediaStoreCache := getMediaStore(config.media, "cache")
+	mediaSvc := media.New(mediaStore, mediaStoreCache, config.media.maxWidth, config.media.maxHeight)
+	mediaHandler := handlers.NewMedia(config.apiDomain, mediaSvc, metricsRegistry.Scope("media"))
+
+	proxyMediaStore := getMediaStore(config.mediaProxy, "")
+	proxyMediaStoreCache := getMediaStore(config.mediaProxy, "cache")
+	proxyMediaSvc := media.New(proxyMediaStore, proxyMediaStoreCache, config.mediaProxy.maxWidth, config.mediaProxy.maxHeight)
+	var proxyDAL mediaproxy.DAL
+	proxyDAL = mediaproxy.NewMemoryDAL()
+	if dynamoDBClient != nil {
+		proxyDAL, err = mediaproxy.NewDynamoDBDAL(dynamoDBClient, config.env, metricsRegistry.Scope("mediaproxy/dynamodb"))
+		if err != nil {
+			golog.Fatalf("Failed to init mediaproxy DynamoDB DAL: %s", err)
+		}
+	}
+	if memcacheCli != nil {
+		proxyDAL = mediaproxy.NewCacheDAL(memcacheCli, proxyDAL, config.mediaProxyCacheDuration, metricsRegistry.Scope("mediaproxy/cache"))
+	}
+	proxySvc := mediaproxy.New(proxyMediaSvc, proxyDAL, nil)
+	proxyRoot := config.apiDomain + "/media/proxy/"
+	mediaProxyHandler := handlers.NewMediaProxy(proxySvc, metricsRegistry.Scope("mediaproxy"))
+
 	router.Handle("/media", mediaHandler)
+	router.Handle("/media/proxy/{id}", mediaProxyHandler)
 	router.Handle("/media/{id:\\w+(\\.\\w+)?}", mediaHandler)
-	router.Handle("/products", handlers.NewProductsList(productsSvc))
-	router.Handle("/products/scrape", handlers.NewProductsScrape(productsSvc))
-	router.Handle("/products/{id}", handlers.NewProducts(productsSvc))
+	router.Handle("/products", handlers.NewProductsList(productsSvc, proxyRoot, proxySvc))
+	router.Handle("/products/scrape", handlers.NewProductsScrape(productsSvc, proxyRoot, proxySvc))
+	router.Handle("/products/{id}", handlers.NewProducts(productsSvc, proxyRoot, proxySvc))
 	router.Handle("/regimen/{id:r[0-9]+}", handlers.NewRegimen(regimenSvc, mediaStore, config.webDomain, config.apiDomain))
 	router.Handle("/regimen/{id:r[0-9]+}/foundation", handlers.NewFoundation(regimenSvc))
 	router.Handle("/regimen/{id:r[0-9]+}/view", handlers.NewViewCount(regimenSvc))
@@ -302,16 +355,23 @@ func getAWSCredentials() *credentials.Credentials {
 	return creds
 }
 
-func getMediaStore() storage.DeterministicStore {
-	switch strings.ToLower(config.mediaStorageType) {
+func getMediaStore(cnf mediaConfig, subStore string) storage.DeterministicStore {
+	switch strings.ToLower(cnf.storageType) {
 	default:
-		log.Fatalf("Unknown media storage type %s", config.mediaStorageType)
+		log.Fatalf("Unknown media storage type %s", cnf.storageType)
 	case "s3":
-		store := storage.NewS3(&aws.Config{Region: ptr.String("us-east-1"), Credentials: getAWSCredentials()}, config.mediaS3Bucket, config.mediaS3Prefix)
-		store.LatchedExpire(config.mediaS3LatchedExpire)
+		prefix := cnf.s3Prefix
+		if subStore != "" {
+			prefix = strings.Replace(prefix+"/cache", "//", "/", -1)
+		}
+		store := storage.NewS3(&aws.Config{Region: ptr.String("us-east-1"), Credentials: getAWSCredentials()}, cnf.s3Bucket, prefix)
 		return store
 	case "local":
-		store, err := storage.NewLocalStore(config.mediaLocalStoragePath)
+		pth := cnf.localStoragePath
+		if subStore != "" {
+			pth = path.Join(pth, "cache")
+		}
+		store, err := storage.NewLocalStore(pth)
 		if err != nil {
 			log.Fatalf("Failed to create local media store: %s", err)
 		}

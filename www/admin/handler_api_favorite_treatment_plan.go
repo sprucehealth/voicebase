@@ -5,9 +5,9 @@ import (
 	"strconv"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/www"
 	"golang.org/x/net/context"
@@ -15,14 +15,14 @@ import (
 
 type ftpHandler struct {
 	dataAPI    api.DataAPI
-	mediaStore *media.Store
+	mediaStore *mediastore.Store
 }
 
 type ftpGETResponse struct {
 	FavoriteTreatmentPlan *responses.FavoriteTreatmentPlan `json:"favorite_treatment_plan"`
 }
 
-func newFTPHandler(dataAPI api.DataAPI, mediaStore *media.Store) httputil.ContextHandler {
+func newFTPHandler(dataAPI api.DataAPI, mediaStore *mediastore.Store) httputil.ContextHandler {
 	return httputil.SupportedMethods(&ftpHandler{dataAPI: dataAPI, mediaStore: mediaStore}, httputil.Get)
 }
 

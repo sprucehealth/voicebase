@@ -348,7 +348,7 @@ func (s *service) TagQuery(tags []string) ([]*svc.Regimen, error) {
 	regimenIDRequests := make([]map[string]*dynamodb.AttributeValue, len(regimenIDVCs))
 	for i, rIDVC := range regimenIDVCs {
 		regimenIDRequests[i] = map[string]*dynamodb.AttributeValue{
-			"regimen_id": {S: ptr.String(rIDVC.regimenID)},
+			regimenIDAN: {S: ptr.String(rIDVC.regimenID)},
 		}
 	}
 

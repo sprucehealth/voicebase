@@ -5,9 +5,9 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/www"
 	"github.com/sprucehealth/schema"
@@ -16,7 +16,7 @@ import (
 
 type globalFTPHandler struct {
 	dataAPI    api.DataAPI
-	mediaStore *media.Store
+	mediaStore *mediastore.Store
 }
 
 type globalFTPGETResponse struct {
@@ -29,7 +29,7 @@ type globalFTPGETRequest struct {
 
 func newGlobalFTPHandler(
 	dataAPI api.DataAPI,
-	mediaStore *media.Store) httputil.ContextHandler {
+	mediaStore *mediastore.Store) httputil.ContextHandler {
 	return httputil.SupportedMethods(&globalFTPHandler{dataAPI: dataAPI, mediaStore: mediaStore}, httputil.Get)
 }
 

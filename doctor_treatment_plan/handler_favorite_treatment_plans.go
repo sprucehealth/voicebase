@@ -6,10 +6,10 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/httputil"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/responses"
 	"golang.org/x/net/context"
 )
@@ -17,13 +17,13 @@ import (
 type doctorFavoriteTreatmentPlansHandler struct {
 	dataAPI    api.DataAPI
 	erxAPI     erx.ERxAPI
-	mediaStore *media.Store
+	mediaStore *mediastore.Store
 }
 
 func NewDoctorFavoriteTreatmentPlansHandler(
 	dataAPI api.DataAPI,
 	erxAPI erx.ERxAPI,
-	mediaStore *media.Store,
+	mediaStore *mediastore.Store,
 ) httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.RequestCacheHandler(

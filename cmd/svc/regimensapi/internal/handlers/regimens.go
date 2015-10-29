@@ -20,10 +20,10 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/idgen"
+	"github.com/sprucehealth/backend/libs/imageutil"
+	"github.com/sprucehealth/backend/libs/imageutil/collage"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/storage"
-	"github.com/sprucehealth/backend/media"
-	"github.com/sprucehealth/backend/media/collage"
 	"github.com/sprucehealth/backend/svc/regimens"
 	"github.com/sprucehealth/schema"
 	"golang.org/x/net/context"
@@ -433,12 +433,6 @@ ProductImageLoop:
 					golog.Warningf("Error while decoding image %s: %s", p.ImageURL, err)
 					continue
 				}
-
-				// Do not support palleted images since we currently cannot resize them, see media.ResizeImage
-				if _, ok := m.(image.PalettedImage); ok {
-					golog.Warningf("Ignoring paletted image at url: %s", p.ImageURL)
-					continue
-				}
 				images = append(images, m)
 			}
 		}
@@ -453,7 +447,7 @@ ProductImageLoop:
 		return resizeMediaURL(apiDomain, productPlaceholderMediaID, collageWidth, collageHeight), nil
 	}
 	buf := bytes.NewBuffer(nil)
-	if err := jpeg.Encode(buf, result, &jpeg.Options{Quality: media.JPEGQuality}); err != nil {
+	if err := jpeg.Encode(buf, result, &jpeg.Options{Quality: imageutil.JPEGQuality}); err != nil {
 		return "", errors.Trace(err)
 	}
 	_, err = deterministicStore.Put("m"+resourceID+collageSuffix, buf.Bytes(), "image/jpeg", nil)
@@ -476,7 +470,7 @@ func fillMissingProductMedia(apiDomain string, rs []*regimens.Regimen) {
 }
 
 func regimenURL(webDomain, resourceID string) string {
-	return strings.TrimRight(webDomain, "/") + "/regimen/" + resourceID
+	return webDomain + "/regimen/" + resourceID
 }
 
 var (

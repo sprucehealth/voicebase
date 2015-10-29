@@ -16,6 +16,7 @@ import (
 	"github.com/sprucehealth/backend/attribution"
 	"github.com/sprucehealth/backend/attribution/model"
 	"github.com/sprucehealth/backend/auth"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/encoding"
@@ -26,7 +27,6 @@ import (
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/ratelimit"
 	"github.com/sprucehealth/backend/libs/validate"
-	"github.com/sprucehealth/backend/media"
 	"golang.org/x/net/context"
 )
 
@@ -43,7 +43,7 @@ type SignupHandler struct {
 	analyticsLogger    analytics.Logger
 	dispatcher         *dispatch.Dispatcher
 	addressAPI         address.Validator
-	mediaStore         *media.Store
+	mediaStore         *mediastore.Store
 	rateLimiter        ratelimit.KeyedRateLimiter
 	expirationDuration time.Duration
 	statAttempted      *metrics.Counter
@@ -104,7 +104,7 @@ func NewSignupHandler(
 	analyticsLogger analytics.Logger,
 	dispatcher *dispatch.Dispatcher,
 	expirationDuration time.Duration,
-	mediaStore *media.Store,
+	mediaStore *mediastore.Store,
 	rateLimiter ratelimit.KeyedRateLimiter,
 	addressAPI address.Validator,
 	metricsRegistry metrics.Registry,

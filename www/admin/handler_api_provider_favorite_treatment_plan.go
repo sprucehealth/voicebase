@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
-	"github.com/sprucehealth/backend/media"
 	"github.com/sprucehealth/backend/responses"
 	"github.com/sprucehealth/backend/www"
 	"golang.org/x/net/context"
@@ -18,14 +18,14 @@ const scheduledMessageMediaExpirationDuration = time.Hour * 24 * 7
 
 type providerFTPHandler struct {
 	dataAPI    api.DataAPI
-	mediaStore *media.Store
+	mediaStore *mediastore.Store
 }
 
 type providerFTPGETResponse struct {
 	FavoriteTreatmentPlans map[string][]*responses.FavoriteTreatmentPlan `json:"favorite_treatment_plans"`
 }
 
-func newProviderFTPHandler(dataAPI api.DataAPI, mediaStore *media.Store) httputil.ContextHandler {
+func newProviderFTPHandler(dataAPI api.DataAPI, mediaStore *mediastore.Store) httputil.ContextHandler {
 	return httputil.SupportedMethods(&providerFTPHandler{dataAPI: dataAPI, mediaStore: mediaStore}, httputil.Get)
 }
 
