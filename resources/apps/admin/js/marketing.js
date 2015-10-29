@@ -77,7 +77,7 @@ var AddPromotionModal = React.createClass({displayName: "AddPromotionModal",
 	getInitialState: function(): any {
 		var groups = [{name: "", value: ""}]
 		return {
-			error: null,
+			error: "",
 			busy: false,
 			promoTypes: this.promoTypes,
 			promoTypesSelectedValue: this.promoTypes[0].value,
@@ -128,10 +128,10 @@ var AddPromotionModal = React.createClass({displayName: "AddPromotionModal",
 		e.preventDefault();
 		var state = {
 			imageWidth: e.target.value,
-			error: null,
+			error: "",
 		};
 		if(!Utils.isInteger(e.target.value) && e.target.value != "") {
-			state.error = "Image Width must be an Integer"; 
+			state.error = "Image Width must be an Integer";
 		}
 		this.setState(state);
 	},
@@ -139,10 +139,10 @@ var AddPromotionModal = React.createClass({displayName: "AddPromotionModal",
 		e.preventDefault();
 		var state = {
 			imageHeight: e.target.value,
-			error: null,
+			error: "",
 		};
 		if(!Utils.isInteger(e.target.value) && e.target.value != "") {
-			state.error = "Image Height must be an Integer"; 
+			state.error = "Image Height must be an Integer";
 		}
 		this.setState(state);
 	},
@@ -174,10 +174,10 @@ var AddPromotionModal = React.createClass({displayName: "AddPromotionModal",
 		e.preventDefault();
 		var state = {
 			val: e.target.value,
-			error: null,
+			error: "",
 		};
 		if(!Utils.isInteger(e.target.value) && e.target.value != "") {
-			state.error = "Value must be an Integer"; 
+			state.error = "Value must be an Integer";
 		}
 		this.setState(state);
 	},
@@ -194,11 +194,11 @@ var AddPromotionModal = React.createClass({displayName: "AddPromotionModal",
 				expires = new Date(this.state.expires)
 			}
 			AdminAPI.addPromotion(
-				this.state.promoCode, 
-				this.state.promoTypesSelectedValue, 
-				this.state.groupSelectedValue, 
+				this.state.promoCode,
+				this.state.promoTypesSelectedValue,
+				this.state.groupSelectedValue,
 				{
-					display_msg: this.state.displayMessage, 
+					display_msg: this.state.displayMessage,
 					short_msg: this.state.lineItemDescription,
 					success_msg: this.state.successMessage,
 					image_url: this.state.imageURL,
@@ -207,8 +207,8 @@ var AddPromotionModal = React.createClass({displayName: "AddPromotionModal",
 					value: parseInt(this.state.val),
 					group: this.state.groupSelectedValue,
 					type: this.state.promoTypesSelectedValue,
-				}, 
-				expires, 
+				},
+				expires,
 				function(success, data, error){
 					if (this.isMounted()) {
 						if (!success) {
@@ -453,7 +453,7 @@ var AddPromotionReferralRouteModal = React.createClass({displayName: "AddPromoti
 	genders: [{name: "", value: "none"}, {name: "Male", value:"M"}, {name: "Female", value: "F"}],
 	getInitialState: function(): any {
 		return {
-			error: null,
+			error: "",
 			busy: false,
 			gendersSelectedValue: null,
 		};
@@ -462,10 +462,10 @@ var AddPromotionReferralRouteModal = React.createClass({displayName: "AddPromoti
 		e.preventDefault();
 		var state = {
 			priority: e.target.value,
-			error: null,
+			error: "",
 		};
 		if(!Utils.isInteger(e.target.value) && e.target.value != "") {
-			state.error = "Priority must be an Integer"; 
+			state.error = "Priority must be an Integer";
 		}
 		this.setState(state);
 	},
@@ -473,7 +473,7 @@ var AddPromotionReferralRouteModal = React.createClass({displayName: "AddPromoti
 		e.preventDefault();
 		var state = {
 			promotionCodeID: e.target.value,
-			error: null,
+			error: "",
 		};
 		if(!Utils.isInteger(e.target.value) && e.target.value != "") {
 			state.error = "Promotion Code ID must be an Integer";
@@ -490,10 +490,10 @@ var AddPromotionReferralRouteModal = React.createClass({displayName: "AddPromoti
 		e.preventDefault();
 		var state = {
 			ageLower: e.target.value,
-			error: null,
+			error: "",
 		};
 		if(!Utils.isInteger(e.target.value) && e.target.value != "") {
-			state.error = "Age Lower must be an Integer"; 
+			state.error = "Age Lower must be an Integer";
 		}
 		this.setState(state);
 	},
@@ -501,10 +501,10 @@ var AddPromotionReferralRouteModal = React.createClass({displayName: "AddPromoti
 		e.preventDefault();
 		var state = {
 			ageUpper: e.target.value,
-			error: null,
+			error: "",
 		};
 		if(!Utils.isInteger(e.target.value) && e.target.value != "") {
-			state.error = "Age Upper must be an Integer"; 
+			state.error = "Age Upper must be an Integer";
 		}
 		this.setState(state);
 	},
@@ -523,12 +523,12 @@ var AddPromotionReferralRouteModal = React.createClass({displayName: "AddPromoti
 	onAdd: function(): any {
 		if(this.validateSubmitState()) {
 			AdminAPI.addPromotionReferralRoute(
-				parseInt(this.state.promotionCodeID), 
-				parseInt(this.state.priority), 
-				this.state.gendersSelectedValue == "none" ? "" : this.state.gendersSelectedValue, 
+				parseInt(this.state.promotionCodeID),
+				parseInt(this.state.priority),
+				this.state.gendersSelectedValue == "none" ? "" : this.state.gendersSelectedValue,
 				parseInt(this.state.ageLower),
-				parseInt(this.state.ageUpper), 
-				this.state.state, 
+				parseInt(this.state.ageUpper),
+				this.state.state,
 				this.state.pharmacy,
 				function(success, data, error){
 					if (this.isMounted()) {
@@ -538,7 +538,7 @@ var AddPromotionReferralRouteModal = React.createClass({displayName: "AddPromoti
 							});
 						} else {
 							this.setState({
-								error: null,
+								error: "",
 							});
 							this.props.onSuccess();
 							$("#add-promotion-referral-route-modal").modal('hide');
@@ -590,7 +590,7 @@ var EditPromotionReferralRouteModal = React.createClass({displayName: "EditPromo
 	lifecycles: [{name: "Active", value: "ACTIVE"}, {name: "No New Users", value:"NO_NEW_USERS"}, {name: "Deprecated", value: "DEPRECATED"}],
 	getInitialState: function(): any {
 		return {
-			error: null,
+			error: "",
 			busy: false,
 		};
 	},
@@ -609,7 +609,7 @@ var EditPromotionReferralRouteModal = React.createClass({displayName: "EditPromo
 					});
 				} else {
 					this.setState({
-						error: null,
+						error: "",
 					});
 					this.props.onSuccess();
 					$("#update-promotion-referral-route-modal").modal('hide');
@@ -638,6 +638,7 @@ var PromotionReferralRouteOverview = React.createClass({displayName: "PromotionR
 	mixins: [Routing.RouterNavigateMixin],
 	getInitialState: function(): any {
 		return {
+			error: "",
 			lifecycles: ["ACTIVE", "NO_NEW_USERS"],
 		};
 	},
@@ -657,7 +658,7 @@ var PromotionReferralRouteOverview = React.createClass({displayName: "PromotionR
 				}
 				this.setState({
 					referralRoutes: data.promotion_referral_routes,
-					error: null,
+					error: "",
 					busy: false,
 				});
 			}
@@ -706,7 +707,7 @@ var PromotionReferralRouteList = React.createClass({displayName: "PromotionRefer
 		return (
 			<div>
 				{this.state.busy ? <Utils.LoadingAnimation /> : null}
-				{this.props.referralRoutes ? 
+				{this.props.referralRoutes ?
 					<table className="table">
 						<thead>
 							<tr>
@@ -767,7 +768,7 @@ var SetDefaultPromotionReferralTemplateModal = React.createClass({displayName: "
 	DefaultStatus: "Default",
 	getInitialState: function(): any {
 		return {
-			error: null,
+			error: "",
 			busy: false,
 		};
 	},
@@ -780,7 +781,7 @@ var SetDefaultPromotionReferralTemplateModal = React.createClass({displayName: "
 					});
 				} else {
 					this.setState({
-						error: null,
+						error: "",
 					});
 					this.props.onSuccess();
 					$("#set-promotion-referral-template-default-modal").modal('hide');
@@ -807,7 +808,7 @@ var SetInactivePromotionReferralTemplateModal = React.createClass({displayName: 
 	InactiveStatus: "Inactive",
 	getInitialState: function(): any {
 		return {
-			error: null,
+			error: "",
 			busy: false,
 		};
 	},
@@ -820,7 +821,7 @@ var SetInactivePromotionReferralTemplateModal = React.createClass({displayName: 
 					});
 				} else {
 					this.setState({
-						error: null,
+						error: "",
 					});
 					this.props.onSuccess();
 					$("#set-promotion-referral-template-inactive-modal").modal('hide');
@@ -847,7 +848,7 @@ var SetInactivePromotionReferralTemplateModal = React.createClass({displayName: 
 var AddPromotionReferralTemplateModal = React.createClass({displayName: "AddPromotionReferralTemplateModal",
 	getInitialState: function(): any {
 		return {
-			error: null,
+			error: "",
 			busy: false,
 		};
 	},
@@ -855,10 +856,10 @@ var AddPromotionReferralTemplateModal = React.createClass({displayName: "AddProm
 		e.preventDefault();
 		var state = {
 			promotionCodeID: e.target.value,
-			error: null,
+			error: "",
 		};
 		if(!Utils.isInteger(e.target.value) && e.target.value != "") {
-			state.error = "Promotion Code ID must be an Integer"; 
+			state.error = "Promotion Code ID must be an Integer";
 		}
 		this.setState(state);
 	},
@@ -884,10 +885,10 @@ var AddPromotionReferralTemplateModal = React.createClass({displayName: "AddProm
 		e.preventDefault();
 		var state = {
 			imageWidth: e.target.value,
-			error: null,
+			error: "",
 		};
 		if(!Utils.isInteger(e.target.value) && e.target.value != "") {
-			state.error = "Image Width must be an Integer"; 
+			state.error = "Image Width must be an Integer";
 		}
 		this.setState(state);
 	},
@@ -895,10 +896,10 @@ var AddPromotionReferralTemplateModal = React.createClass({displayName: "AddProm
 		e.preventDefault();
 		var state = {
 			imageHeight: e.target.value,
-			error: null,
+			error: "",
 		};
 		if(!Utils.isInteger(e.target.value) && e.target.value != "") {
-			state.error = "Image Height must be an Integer"; 
+			state.error = "Image Height must be an Integer";
 		}
 		this.setState(state);
 	},
@@ -981,19 +982,19 @@ var AddPromotionReferralTemplateModal = React.createClass({displayName: "AddProm
 	onAdd: function(): any {
 		if(this.validateSubmitState()){
 			AdminAPI.addPromotionReferralTemplate(
-				parseInt(this.state.promotionCodeID), 
-				this.state.title, 
+				parseInt(this.state.promotionCodeID),
+				this.state.title,
 				this.state.description,
 				this.state.imageURL,
 				parseInt(this.state.imageWidth),
 				parseInt(this.state.imageHeight),
-				this.state.default, 
-				this.state.facebook, 
-				this.state.twitter, 
-				this.state.sms, 
-				this.state.email_subject, 
-				this.state.email_body, 
-				this.state.text, 
+				this.state.default,
+				this.state.facebook,
+				this.state.twitter,
+				this.state.sms,
+				this.state.email_subject,
+				this.state.email_body,
+				this.state.text,
 				function(success, data, error){
 				if (this.isMounted()) {
 					if (!success) {
@@ -1002,7 +1003,7 @@ var AddPromotionReferralTemplateModal = React.createClass({displayName: "AddProm
 						});
 					} else {
 						this.setState({
-							error: null,
+							error: "",
 						});
 						this.props.onSuccess();
 						$("#add-promotion-referral-template-modal").modal('hide');
@@ -1048,6 +1049,7 @@ var PromotionReferralTemplateOverview = React.createClass({displayName: "Promoti
 	mixins: [Routing.RouterNavigateMixin],
 	getInitialState: function(): any {
 		return {
+			error: "",
 			statuses: ["Active","Default"],
 		};
 	},
@@ -1067,7 +1069,7 @@ var PromotionReferralTemplateOverview = React.createClass({displayName: "Promoti
 				}
 				this.setState({
 					referralTemplates: data.referral_program_templates,
-					error: null,
+					error: "",
 					busy: false,
 				});
 			}
@@ -1108,7 +1110,7 @@ var PromotionReferralTemplateList = React.createClass({displayName: "PromotionRe
 		return (
 			<div>
 				{this.state.busy ? <Utils.LoadingAnimation /> : null}
-				{this.props.referralTemplates ? 
+				{this.props.referralTemplates ?
 							this.props.referralTemplates.map(function(t){return <PromotionReferralTemplate key={t.id} referralTemplate={t} onSetDefault={this.props.setTemplateForSetDefault} onSetInactive={this.props.setTemplateForSetInactive}/>}.bind(this))
 							: null}
 			</div>
@@ -1175,7 +1177,7 @@ var ActiveFeedbackTemplatesComponent = React.createClass({displayName: "ActiveFe
 	mixins: [Routing.RouterNavigateMixin],
 	getInitialState: function(): any {
 		return {
-			error: null,
+			error: "",
 			busy: false,
 			templates: []
 		}
@@ -1186,9 +1188,9 @@ var ActiveFeedbackTemplatesComponent = React.createClass({displayName: "ActiveFe
 	},
 	fetchActiveFeedbackTemplates: function() {
 		this.setState({
-			busy: true, 
-			error: null,
-		});		
+			busy: true,
+			error: "",
+		});
 		AdminAPI.getActiveFeedbackTemplates(function(success, data, error) {
 			if (this.isMounted()) {
 				if (!success) {
@@ -1198,7 +1200,7 @@ var ActiveFeedbackTemplatesComponent = React.createClass({displayName: "ActiveFe
 					})
 				} else {
 					this.setState({
-						error: null,
+						error: "",
 						templates: data.templates,
 						busy: false
 					})
@@ -1244,7 +1246,7 @@ var ActiveFeedbackTemplatesComponent = React.createClass({displayName: "ActiveFe
 			</div>
 		);
 	}
-});	
+});
 
 var InAppFeedbackPage = React.createClass({displayName: "InAppFeedbackPage",
 	render: function(): any {
@@ -1263,7 +1265,8 @@ var ConfigureRatingLevelPromptsComponent = React.createClass({displayName: "Conf
 	mixins: [Routing.RouterNavigateMixin],
 	getInitialState: function(): any {
 		return {
-			configs: {}
+			configs: {},
+			error: "",
 		};
 	},
 	componentWillMount: function() {
@@ -1272,8 +1275,8 @@ var ConfigureRatingLevelPromptsComponent = React.createClass({displayName: "Conf
 	},
 	fetchRatingConfigs: function() {
 		this.setState({
-			busy: true, 
-			error: null,
+			busy: true,
+			error: "",
 		});
 		AdminAPI.getRatingFeedbackConfig(function(success, data, error) {
 			if (this.isMounted()) {
@@ -1283,11 +1286,11 @@ var ConfigureRatingLevelPromptsComponent = React.createClass({displayName: "Conf
 						busy: false
 					})
 					return;
-				} 
+				}
 				this.setState({
 					configs: data.configs,
 					busy: false,
-					error: null,
+					error: "",
 				})
 			}
 		}.bind(this));
@@ -1302,8 +1305,8 @@ var ConfigureRatingLevelPromptsComponent = React.createClass({displayName: "Conf
 	},
 	handleSave: function(e: any) {
 		this.setState({
-			busy: true, 
-			error: null,
+			busy: true,
+			error: "",
 		});
 		AdminAPI.updateRatingFeedbackConfig(this.state.configs, function(success, data, error) {
 			if (this.isMounted()) {
@@ -1315,7 +1318,7 @@ var ConfigureRatingLevelPromptsComponent = React.createClass({displayName: "Conf
 					return;
 				}
 				this.setState({
-					error: null,
+					error: "",
 					busy: false,
 					modified: false,
 				})
@@ -1355,7 +1358,7 @@ var ConfigureRatingLevelPromptsComponent = React.createClass({displayName: "Conf
 						<RatingRow
 							rating={5}
 							templatesConfig = {this.state.configs[5]}
-							onRatingConfigChange={this.onRatingConfigChange} />													
+							onRatingConfigChange={this.onRatingConfigChange} />
 					</tbody>
 				</table>
 				{this.state.modified ?
@@ -1382,7 +1385,7 @@ var RatingRow = React.createClass({displayName:"RatingRow",
 				<td><Forms.FormInput
 					value={this.props.templatesConfig}
 					onChange = {this.handleChange} />
-				</td>	
+				</td>
 			</tr>
 		);
 	}
@@ -1399,7 +1402,7 @@ var CreateFeedbackTemplatePage = React.createClass({displayName: "CreateFeedback
 			selectedTag: "",
 			templateTypes: [],
 			template: "{}",
-			error: null,
+			error: "",
 			busy: false,
 		}
 	},
@@ -1412,8 +1415,8 @@ var CreateFeedbackTemplatePage = React.createClass({displayName: "CreateFeedback
 	},
 	fetchFeedbackTemplateTypes: function() {
 		this.setState({
-			busy: true, 
-			error: null,
+			busy: true,
+			error: "",
 		});
 		AdminAPI.getFeedbackTemplateTypes(function(success, data, error) {
 			if (this.isMounted()) {
@@ -1426,7 +1429,7 @@ var CreateFeedbackTemplatePage = React.createClass({displayName: "CreateFeedback
 				}
 				this.setState({
 					templateTypes: data.types,
-					error: null,
+					error: "",
 					busy: false,
 				});
 				this.updateTemplateType(data.types[0].template_type);
@@ -1435,8 +1438,8 @@ var CreateFeedbackTemplatePage = React.createClass({displayName: "CreateFeedback
 	},
 	fetchFeedbackTemplate: function() {
 		this.setState({
-			busy: true, 
-			error: null,
+			busy: true,
+			error: "",
 		});
 		AdminAPI.getFeedbackTemplate(this.props.templateID, function(success, data, error){
 			if (this.isMounted()) {
@@ -1446,25 +1449,25 @@ var CreateFeedbackTemplatePage = React.createClass({displayName: "CreateFeedback
 						busy: false,
 					})
 					return;
-				} 
+				}
 				this.setState({
 					selectedTag: data.template_data.Tag,
 					selectedTemplateType: data.template_data.Type,
 					template: JSON.stringify(data.template_data.Template, null, 4)
 				})
-			} 
+			}
 		}.bind(this))
 	},
 	onTemplateSubmit: function(e: any) {
 		e.preventDefault();
 		this.setState({
-			busy: true, 
-			error: null,
+			busy: true,
+			error: "",
 		});
 		AdminAPI.updateFeedbackTemplate(
-			this.state.selectedTemplateType, 
-			this.state.selectedTag, 
-			this.state.template, 
+			this.state.selectedTemplateType,
+			this.state.selectedTag,
+			this.state.template,
 			function(success, data, error) {
 				if (this.isMounted()) {
 					if (!success) {
@@ -1480,7 +1483,7 @@ var CreateFeedbackTemplatePage = React.createClass({displayName: "CreateFeedback
 	},
 	onTemplateChange: function(e: any) {
 		e.preventDefault();
-		var error = null;
+		var error = "";
 		try {
 			JSON.parse(e.target.value)
 		} catch(ex) {

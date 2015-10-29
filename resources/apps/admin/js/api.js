@@ -768,7 +768,7 @@ module.exports = {
 	},
 	addPromotion: function(code: string, promoType: string, group: string, promotionData: any, expires: ?Date, cb: ajaxCB) {
 		var url = "/promotion"
-		var data = {code: code, promo_type: promoType, group: group, data_json: JSON.stringify(promotionData), expires: null}
+		var data = {code: code, promo_type: promoType, group: group, data_json: JSON.stringify(promotionData), expires: 0||null}
 		if(expires != null){
 			data.expires = expires.getTime() / 1000
 		}
