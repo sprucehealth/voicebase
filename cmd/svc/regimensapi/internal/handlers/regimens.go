@@ -132,7 +132,8 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 	var resourceID, authToken string
 	var regimen *regimens.Regimen
 	if rd.Regimen == nil || rd.Regimen.ID == "" {
-		resourceID, err := newShortID()
+		var err error
+		resourceID, err = newShortID()
 		if err != nil {
 			apiservice.WriteError(ctx, err, w, r)
 			return
