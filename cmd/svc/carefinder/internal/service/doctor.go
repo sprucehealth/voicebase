@@ -461,6 +461,7 @@ func (d *doctorService) PageContentForID(ctx interface{}, r *http.Request) (inte
 		SpruceDoctors:             spruceDoctors,
 		Breadcrumb:                &bc,
 		OtherBreadcrumbs:          otherBCs,
+		IsMobile:                  isMobile(r),
 	}
 
 	return dp, nil

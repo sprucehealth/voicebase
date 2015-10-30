@@ -3,7 +3,6 @@ package response
 import (
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/models"
@@ -144,6 +143,7 @@ type DoctorPage struct {
 	SpruceDoctors             []*Doctor
 	Breadcrumb                *BreadcrumbList
 	OtherBreadcrumbs          []*BreadcrumbList
+	IsMobile                  bool
 }
 
 type StartOnlineVisitPage struct {
@@ -195,8 +195,8 @@ func TransformModel(doctor *models.Doctor, cityID, contentURL, webURL string) (*
 	return &Doctor{
 		IsSpruceDoctor:      doctor.IsSpruceDoctor,
 		Description:         doctor.Description,
-		LongDisplayName:     fmt.Sprintf("Dr. %s %s", strings.Title(strings.ToLower(doctor.FirstName)), strings.Title(strings.ToLower(doctor.LastName))),
-		ShortDisplayName:    fmt.Sprintf("Dr. %s", strings.Title(strings.ToLower(doctor.LastName))),
+		LongDisplayName:     fmt.Sprintf("Dr. %s %s", doctor.FirstName, doctor.LastName),
+		ShortDisplayName:    fmt.Sprintf("Dr. %s", doctor.LastName),
 		ProfileImageURL:     profileImageURL,
 		Experience:          experience,
 		Specialties:         doctor.Specialties,

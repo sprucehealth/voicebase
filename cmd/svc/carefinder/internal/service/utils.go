@@ -1,6 +1,10 @@
 package service
 
-import "math/rand"
+import (
+	"math/rand"
+	"net/http"
+	"strings"
+)
 
 // cleanupZipcode returns the first 5 digits of the zipcode
 func cleanupZipcode(zipcode string) string {
@@ -16,4 +20,8 @@ func shuffle(ids []string) {
 		j := rand.Intn(i)
 		ids[i], ids[j] = ids[j], ids[i]
 	}
+}
+
+func isMobile(r *http.Request) bool {
+	return strings.Contains(r.UserAgent(), "iPhone") || strings.Contains(r.UserAgent(), "iPod") || strings.Contains(strings.ToLower(r.UserAgent()), "android")
 }

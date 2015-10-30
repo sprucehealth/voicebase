@@ -3,7 +3,6 @@ package service
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/response"
@@ -52,6 +51,6 @@ func (s *startOnlineVisitService) PageContentForID(ctx interface{}, r *http.Requ
 		ProfileImageURL:        doctorResponse.ProfileImageURL,
 		DoctorID:               doctor.ID,
 		ReferralLink:           doctor.ReferralLink,
-		IsMobile:               strings.Contains(r.UserAgent(), "iPhone") || strings.Contains(r.UserAgent(), "iPod") || strings.Contains(strings.ToLower(r.UserAgent()), "android"),
+		IsMobile:               isMobile(r),
 	}, nil
 }
