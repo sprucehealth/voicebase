@@ -2,7 +2,6 @@ package home
 
 import (
 	"html/template"
-	"net/http"
 	"sort"
 	"strings"
 	"time"
@@ -24,8 +23,6 @@ import (
 	"github.com/sprucehealth/backend/medrecord"
 	"github.com/sprucehealth/backend/www"
 )
-
-const passCookieName = "hp"
 
 // Config is all the dependencies and settings for the home routes
 type Config struct {
@@ -101,6 +98,11 @@ func SetupRoutes(r *mux.Router, config *Config) {
 			Title: "See a dermatologist, right from your phone.",
 		}
 	}))
+	// Referrals
+	r.Handle("/r/{code}", newPromoClaimHandler(config.DataAPI, config.AuthAPI, config.BranchClient, config.AnalyticsLogger, config.TemplateLoader))
+
+	// CareFinder
+	r.PathPrefix("/dermatologist-near-me/").Handler(NewCareFinderHandler(config.Cfg))
 
 	authFilter := func(h httputil.ContextHandler) httputil.ContextHandler {
 		return www.AuthRequiredHandler(h, nil, config.AuthAPI)
@@ -109,6 +111,14 @@ func SetupRoutes(r *mux.Router, config *Config) {
 		return www.AuthRequiredHandler(h, h, config.AuthAPI)
 	}
 	r.Handle("/patient/medical-record", authFilter(newMedRecordWebDownloadHandler(config.DataAPI, config.Stores["medicalrecords"])))
+
+	// Practice Extension
+	r.Handle("/practices", newPracticeExtensionStaticHandler(config.TemplateLoader, "practice-extension/index.html", "Spruce Practice Extension", nil))
+	r.Handle("/practices/product-tour", newPracticeExtensionStaticHandler(config.TemplateLoader, "practice-extension/product-tour.html", "Product Tour | Spruce Practice Extension", nil))
+	r.Handle("/practices/get-started", newPracticeExtensionStaticHandler(config.TemplateLoader, "practice-extension/get-started.html", "Get Started | Spruce Practice Extension", nil))
+	r.Handle("/practices/thanks", newPracticeExtensionStaticHandler(config.TemplateLoader, "practice-extension/thanks.html", "Thank You | Spruce Practice Extension", nil))
+	r.Handle("/practices/about", newPracticeExtensionStaticHandler(config.TemplateLoader, "practice-extension/about.html", "About | Spruce Practice Extension", nil))
+	r.Handle("/practices/whitepaper", newPracticeExtensionStaticHandler(config.TemplateLoader, "practice-extension/whitepaper-request.html", "Whitepaper | Spruce Practice Extension", nil))
 
 	// Parental Consent
 	parentalFaqCtx := func() interface{} {
@@ -131,19 +141,8 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	r.Handle(`/pc/{childid:\d+}`, parentalConsentHandler)
 	r.Handle(`/pc/{childid:\d+}/{page:.*}`, parentalConsentHandler)
 
-	// Practice Extension
-	r.Handle("/practices", newPracticeExtensionStaticHandler(config.TemplateLoader, "practice-extension/index.html", "Spruce Practice Extension", nil))
-	r.Handle("/practices/product-tour", newPracticeExtensionStaticHandler(config.TemplateLoader, "practice-extension/product-tour.html", "Product Tour | Spruce Practice Extension", nil))
-	r.Handle("/practices/get-started", newPracticeExtensionStaticHandler(config.TemplateLoader, "practice-extension/get-started.html", "Get Started | Spruce Practice Extension", nil))
-	r.Handle("/practices/thanks", newPracticeExtensionStaticHandler(config.TemplateLoader, "practice-extension/thanks.html", "Thank You | Spruce Practice Extension", nil))
-	r.Handle("/practices/about", newPracticeExtensionStaticHandler(config.TemplateLoader, "practice-extension/about.html", "About | Spruce Practice Extension", nil))
-	r.Handle("/practices/whitepaper", newPracticeExtensionStaticHandler(config.TemplateLoader, "practice-extension/whitepaper-request.html", "Whitepaper | Spruce Practice Extension", nil))
-
 	// Email
 	r.Handle("/e/optout", newEmailOptoutHandler(config.DataAPI, config.AuthAPI, config.Signer, config.TemplateLoader))
-
-	// Referrals
-	r.Handle("/r/{code}", newPromoClaimHandler(config.DataAPI, config.AuthAPI, config.BranchClient, config.AnalyticsLogger, config.TemplateLoader))
 
 	// API
 	apiAuthFilter := func(h httputil.ContextHandler) httputil.ContextHandler {
@@ -163,66 +162,6 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	r.Handle("/api/events", ah) // For javascript originating events
 	r.Handle("/a/logo.png", ah) // For remote event tracking "pixels" (e.g. email)
 
-	r.PathPrefix("/dermatologist-near-me/").Handler(NewCareFinderHandler(config.Cfg))
-
-}
-
-func passwordProtectFilter(pass string, templateLoader *www.TemplateLoader) func(http.Handler) http.Handler {
-	tmpl := templateLoader.MustLoadTemplate("home/pass.html", "base.html", nil)
-	return func(h http.Handler) http.Handler {
-		return &passwordProtectHandler{
-			h:    h,
-			pass: pass,
-			tmpl: tmpl,
-		}
-	}
-}
-
-type passwordProtectHandler struct {
-	h    http.Handler
-	pass string
-	tmpl *template.Template
-}
-
-func (h *passwordProtectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	c, err := r.Cookie(passCookieName)
-	if err == nil {
-		if c.Value == h.pass {
-			h.h.ServeHTTP(w, r)
-			return
-		}
-	}
-
-	var errorMsg string
-	if r.Method == "POST" {
-		if pass := r.FormValue("Password"); pass == h.pass {
-			domain := r.Host
-			if i := strings.IndexByte(domain, ':'); i > 0 {
-				domain = domain[:i]
-			}
-			http.SetCookie(w, &http.Cookie{
-				Name:   passCookieName,
-				Value:  pass,
-				Path:   "/",
-				Domain: domain,
-				Secure: true,
-			})
-			// Redirect back to the same URL to get rid of the POST. On the next request
-			// this handler should just pass through to the real handler since the cookie
-			// will be set.
-			http.Redirect(w, r, "", http.StatusSeeOther)
-			return
-		}
-		errorMsg = "Invalid password."
-	}
-	www.TemplateResponse(w, http.StatusOK, h.tmpl, &www.BaseTemplateContext{
-		Title: "Spruce",
-		SubContext: &struct {
-			Error string
-		}{
-			Error: errorMsg,
-		},
-	})
 }
 
 type faqContext struct {

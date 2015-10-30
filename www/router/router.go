@@ -265,7 +265,11 @@ func New(c *Config) httputil.ContextHandler {
 	if c.CompressResponse {
 		h = httputil.CompressResponse(h)
 	}
-	return httputil.MetricsHandler(h, c.MetricsRegistry)
+
+	h = httputil.MetricsHandler(h, c.MetricsRegistry)
+
+	passwordFilter := www.PasswordProtectFilter(c.WebPassword, c.TemplateLoader)
+	return passwordFilter(h)
 }
 
 // StaticHTMLHandler serves the named file from templates/static/<name> on GET

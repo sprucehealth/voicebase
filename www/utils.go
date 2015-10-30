@@ -1,6 +1,7 @@
 package www
 
 import (
+	"html/template"
 	"net/http"
 	"net/url"
 	"strings"
@@ -16,6 +17,7 @@ import (
 const (
 	authCookieName     = "at"
 	deviceIDCookieName = "did"
+	passCookieName     = "hp"
 )
 
 // validateRedirectURL makes sure that a user provided URL that will be
@@ -171,3 +173,66 @@ func (h *authRequiredHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 var loginRedirectHandler = httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	RedirectToSignIn(w, r)
 })
+
+// PasswordProtectFilter returns a function wrapper for an http handler to check if a specified
+// password is set before proceeding to the page requested.
+func PasswordProtectFilter(pass string, templateLoader *TemplateLoader) func(h httputil.ContextHandler) httputil.ContextHandler {
+	tmpl := templateLoader.MustLoadTemplate("home/pass.html", "base.html", nil)
+	return func(h httputil.ContextHandler) httputil.ContextHandler {
+		if pass == "" {
+			return h
+		}
+		return &passwordProtectHandler{
+			h:    h,
+			pass: pass,
+			tmpl: tmpl,
+		}
+	}
+}
+
+type passwordProtectHandler struct {
+	h    httputil.ContextHandler
+	pass string
+	tmpl *template.Template
+}
+
+func (h *passwordProtectHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	c, err := r.Cookie(passCookieName)
+	if err == nil {
+		if c.Value == h.pass {
+			h.h.ServeHTTP(ctx, w, r)
+			return
+		}
+	}
+
+	var errorMsg string
+	if r.Method == "POST" {
+		if pass := r.FormValue("Password"); pass == h.pass {
+			domain := r.Host
+			if i := strings.IndexByte(domain, ':'); i > 0 {
+				domain = domain[:i]
+			}
+			http.SetCookie(w, &http.Cookie{
+				Name:   passCookieName,
+				Value:  pass,
+				Path:   "/",
+				Domain: domain,
+				Secure: true,
+			})
+			// Redirect back to the same URL to get rid of the POST. On the next request
+			// this handler should just pass through to the real handler since the cookie
+			// will be set.
+			http.Redirect(w, r, r.RequestURI, http.StatusSeeOther)
+			return
+		}
+		errorMsg = "Invalid password."
+	}
+	TemplateResponse(w, http.StatusOK, h.tmpl, &BaseTemplateContext{
+		Title: "Spruce",
+		SubContext: &struct {
+			Error string
+		}{
+			Error: errorMsg,
+		},
+	})
+}
