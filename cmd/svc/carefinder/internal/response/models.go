@@ -112,6 +112,15 @@ type Container struct {
 	Items []string
 }
 
+type BreadcrumbItem struct {
+	Label string
+	Link  string
+}
+
+type BreadcrumbList struct {
+	Items []*BreadcrumbItem
+}
+
 type DoctorPage struct {
 	HTMLTitle                 string
 	LongDisplayName           string
@@ -133,6 +142,8 @@ type DoctorPage struct {
 	AvailabilityItems         []*ImageTextItem
 	OfficeSectionTitle        string
 	SpruceDoctors             []*Doctor
+	Breadcrumb                *BreadcrumbList
+	OtherBreadcrumbs          []*BreadcrumbList
 }
 
 type StartOnlineVisitPage struct {
@@ -144,7 +155,7 @@ type StartOnlineVisitPage struct {
 	IsMobile               bool
 }
 
-func TransformModel(doctor *models.Doctor, contentURL, webURL string) (*Doctor, error) {
+func TransformModel(doctor *models.Doctor, cityID, contentURL, webURL string) (*Doctor, error) {
 
 	var experience string
 	if doctor.GraduationYear != "" {
@@ -174,6 +185,13 @@ func TransformModel(doctor *models.Doctor, contentURL, webURL string) (*Doctor, 
 		}
 	}
 
+	var profileURL string
+	if cityID != "" {
+		profileURL = fmt.Sprintf("%s/%s?city_id=%s", webURL, doctor.ID, cityID)
+	} else {
+		profileURL = fmt.Sprintf("%s/%s", webURL, doctor.ID)
+	}
+
 	return &Doctor{
 		IsSpruceDoctor:      doctor.IsSpruceDoctor,
 		Description:         doctor.Description,
@@ -183,7 +201,7 @@ func TransformModel(doctor *models.Doctor, contentURL, webURL string) (*Doctor, 
 		Experience:          experience,
 		Specialties:         doctor.Specialties,
 		InsuranceAccepted:   doctor.InsurancesAccepted,
-		ProfileURL:          fmt.Sprintf("%s/%s", webURL, doctor.ID),
+		ProfileURL:          profileURL,
 		StartOnlineVisitURL: fmt.Sprintf("%s/%s/start-online-visit", webURL, doctor.ID),
 		StarRatingImg:       determineImageNameForRating(roundToClosestHalve(doctor.AverageRating)),
 		AverageRating:       doctor.AverageRating,

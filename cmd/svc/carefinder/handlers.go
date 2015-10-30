@@ -57,6 +57,9 @@ func buildCareFinder(c *config) httputil.ContextHandler {
 		"isEnv": func(env string) bool {
 			return environment.GetCurrent() == env
 		},
+		"increment": func(i int) int {
+			return i + 1
+		},
 	})
 
 	templateLoader.MustLoadTemplate("base.html", "", nil)

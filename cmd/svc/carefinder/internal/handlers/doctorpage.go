@@ -30,8 +30,12 @@ func (d *doctorPageHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter
 
 	vars := mux.Vars(ctx)
 	doctorID := fmt.Sprintf("md-%s", vars["doctor"])
+	cityID := r.FormValue("city_id")
 
-	dp, err := d.doctorService.PageContentForID(doctorID, r)
+	dp, err := d.doctorService.PageContentForID(&service.DoctorPageContext{
+		DoctorID: doctorID,
+		CityID:   cityID,
+	}, r)
 	if err != nil {
 		www.InternalServerError(w, r, err)
 		return

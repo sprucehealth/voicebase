@@ -15,7 +15,9 @@ type DoctorDAL interface {
 	Doctors(ids []string) ([]*models.Doctor, error)
 	SpruceReviews(doctorID string) ([]*models.Review, error)
 	StateCoverageForSpruceDoctor(doctorID string) ([]*models.State, error)
+	ShortListedStatesForSpruceDoctor(doctorID string) ([]*models.State, error)
 	ShortListedDoctorIDs() ([]string, error)
+	ShortListedCityClosestToPracticeLocation(doctorID string) (*models.City, error)
 }
 
 var (
@@ -250,6 +252,31 @@ func (d *doctorDAL) StateCoverageForSpruceDoctor(doctorID string) ([]*models.Sta
 	return states, errors.Trace(rows.Err())
 }
 
+func (d *doctorDAL) ShortListedStatesForSpruceDoctor(doctorID string) ([]*models.State, error) {
+	rows, err := d.db.Query(`
+		SELECT state.abbreviation,state.full_name
+		FROM spruce_doctor_state_coverage
+		INNER JOIN carefinder_doctor_info ON carefinder_doctor_info.npi = spruce_doctor_state_coverage.npi
+		INNER JOIN state ON state.abbreviation = state_abbreviation
+		WHERE carefinder_doctor_info.id = $1
+		AND state.abbreviation IN (SELECT DISTINCT state FROM city_shortlist)`, doctorID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var states []*models.State
+	for rows.Next() {
+		var state models.State
+		if err := rows.Scan(&state.Abbreviation, &state.FullName); err != nil {
+			return nil, errors.Trace(err)
+		}
+		states = append(states, &state)
+	}
+
+	return states, errors.Trace(rows.Err())
+}
+
 func (d *doctorDAL) ShortListedDoctorIDs() ([]string, error) {
 	rows, err := d.db.Query(`
 		SELECT doctor_id 
@@ -269,4 +296,30 @@ func (d *doctorDAL) ShortListedDoctorIDs() ([]string, error) {
 	}
 
 	return doctorIDs, errors.Trace(err)
+}
+
+func (d *doctorDAL) ShortListedCityClosestToPracticeLocation(doctorID string) (*models.City, error) {
+	var city models.City
+	err := d.db.QueryRow(`
+		SELECT c1.id, c1.name, c1.admin1_code, state.full_name, c1.latitude, c1.longitude
+		FROM cities c1 
+		INNER JOIN city_shortlist ON city_shortlist.city_id = c1.id
+		INNER JOIN state ON state.abbreviation = c1.admin1_code
+		INNER JOIN carefinder_doctor_info ON carefinder_doctor_info.id = $1
+		INNER JOIN business_geocode ON business_geocode.npi = carefinder_doctor_info.npi
+		ORDER BY ST_DISTANCE(c1.geom, business_geocode.geom)
+		LIMIT 1`, doctorID).Scan(
+		&city.ID,
+		&city.Name,
+		&city.StateAbbreviation,
+		&city.State,
+		&city.Latitude,
+		&city.Longitude)
+	if err == sql.ErrNoRows {
+		return nil, errors.Trace(ErrNoCityFound)
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	return &city, nil
 }

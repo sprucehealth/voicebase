@@ -30,7 +30,9 @@ func NewStartOnlineVisitHandler(templateLoader *www.TemplateLoader, startOnlineV
 func (d *startOnlineVisitHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 
 	doctorID := "md-" + mux.Vars(ctx)["doctor"]
-	sp, err := d.startOnlineVisitService.PageContentForID(doctorID, r)
+	sp, err := d.startOnlineVisitService.PageContentForID(&service.StartOnlineVisitPageContext{
+		DoctorID: doctorID,
+	}, r)
 	if err != nil {
 		www.InternalServerError(w, r, err)
 		return

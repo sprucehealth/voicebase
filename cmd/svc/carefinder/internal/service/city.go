@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"math/rand"
 	"net/http"
 	"sort"
 	"strconv"
@@ -17,7 +16,7 @@ import (
 )
 
 type PageContentBuilder interface {
-	PageContentForID(id string, r *http.Request) (interface{}, error)
+	PageContentForID(ctx interface{}, r *http.Request) (interface{}, error)
 }
 
 type cityService struct {
@@ -38,13 +37,20 @@ func NewForCity(cityDAL dal.CityDAL, doctorDAL dal.DoctorDAL, webURL, contentURL
 	}
 }
 
+type CityPageContext struct {
+	CityID string
+}
+
 const (
 	longDescriptionParagraph1 = `We’ve curated a shortlist of the top dermatologists available in %s by analyzing thousands of medical interactions, patient reviews and ratings. Unlike other dermatologist directories serving %s, the results you see on this page include both dermatologists near you and dermatologists treating patients online through dermatology apps like Spruce. Getting treated by a dermatologist online means you can be treated faster (often within 24 hours) and more conveniently than the traditional in-person visit. It’s as simple as selecting your dermatologist, taking pictures and answering questions. Your doctor will review your case, diagnose and treat you within 24 hours. Any prescriptions written will be sent direct to your pharmacy. You skip the average dermatology appointment wait time of 28 days and the hassle of travelling to a dermatology office.`
 	longDescriptionParagraph2 = `We’ve selected dermatologists who treat a range of general, surgical and cosmetic conditions for adult and pediatric patients including acne, anti-aging, bed bugs, cold sores, athlete's foot and ringworm, dry or itchy skin, eczema, excessive sweating, eyelash thinning, hives, insect bites or stings, lice and scabies, male hair loss, poison oak and ivy, psoriasis, shaving bumps and ingrown hair, rashes, rosacea, skin discoloration, tick bites.`
 	seoDescription            = `We’ve selected top dermatologists in %s, %s including those with same day availability. Read patient reviews, insurance accepted, practice location and contact information.`
 )
 
-func (c *cityService) PageContentForID(cityID string, r *http.Request) (interface{}, error) {
+func (c *cityService) PageContentForID(ctx interface{}, r *http.Request) (interface{}, error) {
+	cp := ctx.(*CityPageContext)
+	cityID := cp.CityID
+
 	// check if the city exists first
 	exists, err := c.cityDAL.IsCityShortListed(cityID)
 	if err != nil {
@@ -175,7 +181,7 @@ func (c *cityService) PageContentForID(cityID string, r *http.Request) (interfac
 
 	for i < len(spruceDoctors) || j < len(localDoctors) {
 		if j < len(localDoctors) {
-			doctor, err := response.TransformModel(localDoctors[j], c.contentURL, c.webURL)
+			doctor, err := response.TransformModel(localDoctors[j], city.ID, c.contentURL, c.webURL)
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
@@ -184,7 +190,7 @@ func (c *cityService) PageContentForID(cityID string, r *http.Request) (interfac
 		}
 
 		if i < len(spruceDoctors) {
-			doctor, err := response.TransformModel(spruceDoctors[i], c.contentURL, c.webURL)
+			doctor, err := response.TransformModel(spruceDoctors[i], city.ID, c.contentURL, c.webURL)
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
@@ -227,8 +233,8 @@ func (c *cityService) populateTopLevelInfoForCity(city *models.City) (*topLevelI
 		return nil, errors.Trace(err)
 	}
 
-	// pick a random one
-	bannerImageID := bannerImageIDs[rand.Intn(len(bannerImageIDs))]
+	// pick first one to make banner image picking deterministic
+	bannerImageID := bannerImageIDs[0]
 
 	bannerImageURL, err := response.URLForImageID(bannerImageID, c.contentURL)
 	if err != nil {

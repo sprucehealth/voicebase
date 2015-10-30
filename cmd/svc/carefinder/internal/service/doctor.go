@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -67,7 +66,16 @@ func NewForDoctor(cityDAL dal.CityDAL, doctorDAL dal.DoctorDAL, yelpClient yelp.
 	}
 }
 
-func (d *doctorService) PageContentForID(doctorID string, r *http.Request) (interface{}, error) {
+type DoctorPageContext struct {
+	DoctorID string
+	CityID   string
+}
+
+func (d *doctorService) PageContentForID(ctx interface{}, r *http.Request) (interface{}, error) {
+	dpc := ctx.(*DoctorPageContext)
+	doctorID := dpc.DoctorID
+	cityID := dpc.CityID
+	citySpecified := cityID != ""
 
 	// check if the doctor is shortlisted
 	exists, err := d.doctorDAL.IsDoctorShortListed(doctorID)
@@ -77,36 +85,20 @@ func (d *doctorService) PageContentForID(doctorID string, r *http.Request) (inte
 		return nil, nil
 	}
 
-	doctor, err := d.doctorDAL.Doctor(doctorID)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	// transform the doctor model as its easier to work with
-	doctorResponse, err := response.TransformModel(doctor, d.contentURL, d.webURL)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-
 	p := conc.NewParallel()
 
-	// get a banner image for one of the shortlisted states
-	var bannerImageURL string
+	// get doctor information
+	var doctor *models.Doctor
+	var doctorResponse *response.Doctor
 	p.Go(func() error {
-		stateShortList, err := d.cityDAL.StateShortList()
+		var err error
+		doctor, err = d.doctorDAL.Doctor(doctorID)
 		if err != nil {
 			return errors.Trace(err)
 		}
 
-		// select a random state
-		state := stateShortList[rand.Intn(len(stateShortList))]
-
-		imageIDs, err := d.cityDAL.BannerImageIDsForState(state.Abbreviation)
-		if err != nil {
-			return errors.Trace(err)
-		}
-
-		bannerImageURL, err = response.URLForImageID(imageIDs[rand.Intn(len(imageIDs))], d.contentURL)
+		// transform the doctor model as its easier to work with
+		doctorResponse, err = response.TransformModel(doctor, "", d.contentURL, d.webURL)
 		if err != nil {
 			return errors.Trace(err)
 		}
@@ -114,23 +106,46 @@ func (d *doctorService) PageContentForID(doctorID string, r *http.Request) (inte
 		return nil
 	})
 
+	p.Go(func() error {
+		// ensure that the doctor is indeed short listed
+		// in the city if local doctor
+		// and in the state the city belongs to if spruce doctor
+		if citySpecified {
+			if shortListedForCity, err := d.cityDAL.IsDoctorShortListedForCity(doctorID, cityID); err != nil {
+				return errors.Trace(err)
+			} else if !shortListedForCity {
+				citySpecified = false
+			}
+		}
+
+		return nil
+	})
+
+	if err := p.Wait(); err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	var city *models.City
+	if citySpecified {
+		city, err = d.cityDAL.City(cityID)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+	} else if !doctor.IsSpruceDoctor {
+		city, err = d.doctorDAL.ShortListedCityClosestToPracticeLocation(doctorID)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+	}
+
+	p = conc.NewParallel()
+
 	// get spruce doctors if local doctor
 	var spruceDoctors []*response.Doctor
 	if !doctor.IsSpruceDoctor {
 		p.Go(func() error {
-			// get cities for which this doctor is listed
-			cityIDs, err := d.cityDAL.CityIDsForDoctor(doctor.ID)
-			if err != nil {
-				return errors.Trace(err)
-			}
 
-			if len(cityIDs) == 0 {
-				return nil
-			}
-
-			// get spruce doctor ids for any one of those citys
-			cityID := cityIDs[rand.Intn(len(cityIDs))]
-			spruceDoctorIDs, err := d.cityDAL.SpruceDoctorIDsForCity(cityID)
+			spruceDoctorIDs, err := d.cityDAL.SpruceDoctorIDsForCity(city.ID)
 			if err != nil {
 				return errors.Trace(err)
 			}
@@ -153,7 +168,7 @@ func (d *doctorService) PageContentForID(doctorID string, r *http.Request) (inte
 
 			spruceDoctors = make([]*response.Doctor, len(doctors))
 			for i, sd := range doctors {
-				spruceDoctors[i], err = response.TransformModel(sd, d.contentURL, d.webURL)
+				spruceDoctors[i], err = response.TransformModel(sd, city.ID, d.contentURL, d.webURL)
 				if err != nil {
 					return errors.Trace(err)
 				}
@@ -181,15 +196,102 @@ func (d *doctorService) PageContentForID(doctorID string, r *http.Request) (inte
 	if doctor.IsSpruceDoctor {
 		p.Go(func() error {
 			// get the states the doctor is registered in
-			states, err := d.doctorDAL.StateCoverageForSpruceDoctor(doctorID)
+			statesCovered, err := d.doctorDAL.StateCoverageForSpruceDoctor(doctorID)
+			if err != nil {
+				return errors.Trace(err)
+			}
+			stateCoverageText = buildStateCoverageText(doctorResponse, statesCovered)
+			return nil
+		})
+	}
+
+	// build out banner image and breadcrumbs
+	var bc response.BreadcrumbList
+	var otherBCs []*response.BreadcrumbList
+	var bannerImageURL string
+	p.Go(func() error {
+
+		switch {
+		case citySpecified:
+			bc.Items = append(bc.Items, &response.BreadcrumbItem{
+				Label: city.State,
+			}, &response.BreadcrumbItem{
+				Label: city.Name,
+				Link:  fmt.Sprintf("%s/%s", d.webURL, city.ID),
+			})
+
+			imageIDs, err := d.cityDAL.BannerImageIDsForCity(city.ID)
 			if err != nil {
 				return errors.Trace(err)
 			}
 
-			stateCoverageText = buildStateCoverageText(doctorResponse, states)
-			return nil
-		})
-	}
+			bannerImageURL, err = response.URLForImageID(imageIDs[0], d.contentURL)
+			if err != nil {
+				return errors.Trace(err)
+			}
+
+		case doctor.IsSpruceDoctor:
+			// if city not specified, and we are working with spruce doctor,
+			// show the banner image of a state
+			// where the doctor is registered, and include breadcrumbs
+			// at the state level
+
+			states, err := d.doctorDAL.ShortListedStatesForSpruceDoctor(doctorID)
+			if err != nil {
+				return errors.Trace(err)
+			}
+			imageIDs, err := d.cityDAL.BannerImageIDsForState(states[0].Abbreviation)
+			if err != nil {
+				return errors.Trace(err)
+			}
+
+			bannerImageURL, err = response.URLForImageID(imageIDs[0], d.contentURL)
+			if err != nil {
+				return errors.Trace(err)
+			}
+
+			bc.Items = append(bc.Items, &response.BreadcrumbItem{
+				Label: states[0].FullName,
+			})
+
+			// include all the other breadcrumbs for a spruce
+			// doctor to help with indexing
+			if len(states) > 1 {
+				for _, s := range states[1:] {
+					otherBCs = append(otherBCs, &response.BreadcrumbList{
+						Items: []*response.BreadcrumbItem{
+							{
+								Label: s.FullName,
+							},
+						},
+					})
+				}
+			}
+		default:
+			// if working with local doctor where city not specified,
+			// show the banner image and breacrumbs for the city shortlisted
+			// and closest practice location of doctor
+
+			imageIDs, err := d.cityDAL.BannerImageIDsForCity(city.ID)
+			if err != nil {
+				return errors.Trace(err)
+			}
+
+			bannerImageURL, err = response.URLForImageID(imageIDs[0], d.contentURL)
+			if err != nil {
+				return errors.Trace(err)
+			}
+
+			bc.Items = append(bc.Items, &response.BreadcrumbItem{
+				Label: city.State,
+			}, &response.BreadcrumbItem{
+				Label: city.Name,
+				Link:  fmt.Sprintf("%s/%s", d.webURL, city.ID),
+			})
+		}
+
+		return nil
+	})
 
 	if err := p.Wait(); err != nil {
 		return nil, errors.Trace(err)
@@ -357,6 +459,8 @@ func (d *doctorService) PageContentForID(doctorID string, r *http.Request) (inte
 		PhysicalOfficeInformation: officeInfo,
 		PhoneLink:                 phoneLink,
 		SpruceDoctors:             spruceDoctors,
+		Breadcrumb:                &bc,
+		OtherBreadcrumbs:          otherBCs,
 	}
 
 	return dp, nil

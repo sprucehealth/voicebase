@@ -16,6 +16,10 @@ type startOnlineVisitService struct {
 	webURL     string
 }
 
+type StartOnlineVisitPageContext struct {
+	DoctorID string
+}
+
 func NewForOnlineVisit(doctorDAL dal.DoctorDAL, contentURL, webURL string) PageContentBuilder {
 	return &startOnlineVisitService{
 		doctorDAL:  doctorDAL,
@@ -24,7 +28,9 @@ func NewForOnlineVisit(doctorDAL dal.DoctorDAL, contentURL, webURL string) PageC
 	}
 }
 
-func (s *startOnlineVisitService) PageContentForID(doctorID string, r *http.Request) (interface{}, error) {
+func (s *startOnlineVisitService) PageContentForID(ctx interface{}, r *http.Request) (interface{}, error) {
+	soc := ctx.(*StartOnlineVisitPageContext)
+	doctorID := soc.DoctorID
 	// check to ensure that the doctor is a spruce doctor
 	doctor, err := s.doctorDAL.Doctor(doctorID)
 	if errors.Cause(err) == dal.ErrNoDoctorFound {
@@ -35,7 +41,7 @@ func (s *startOnlineVisitService) PageContentForID(doctorID string, r *http.Requ
 		return nil, nil
 	}
 
-	doctorResponse, err := response.TransformModel(doctor, s.contentURL, s.webURL)
+	doctorResponse, err := response.TransformModel(doctor, "", s.contentURL, s.webURL)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

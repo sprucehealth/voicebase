@@ -11,6 +11,43 @@
 {{define "content"}}
 	<span itemscope itemtype="http://schema.org/Physician">
 	<div class="banner-img" style="background-image: url({{.BannerImageURL}})"></div>
+
+	{{with .Breadcrumb}}
+		<p class="breadcrumb-text">Dermatologists in  
+			<span itemscope itemtype="http://schema.org/BreadcrumbList">
+				{{range $index, $item := .Items}}
+					<span itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+						{{if ge $index 1}}
+							&rsaquo;
+						{{end}}
+						{{with $item.Link}}
+							<a itemprop="item" href="{{$item.Link}}"><span itemprop="name">{{$item.Label}}</span></a>
+							<meta itemprop="position" content="{{increment $index}}">
+						{{else}}
+							<span itemprop="name">{{$item.Label}}</span>
+							<meta itemprop="position" content="{{increment $index}}">
+						{{end}}
+					</span>
+				{{end}}
+			</span>
+		</p>
+	{{end}}
+
+	<!--include other breadcrumbs for search engine indexing-->
+	{{range .OtherBreadcrumbs}}
+		<span itemscope itemtype="http://schema.org/BreadcrumbList">
+			{{range $index, $item := .Items}}
+					<span itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+						{{with $item.Link}}
+							<link itemprop="item" href="{{$item.Link}}"/>
+						{{end}}
+						<meta itemprop="name" content="{{$item.Label}}">
+						<meta itemprop="position" content="{{increment $index}}">
+					</span>
+			{{end}}
+		</span>
+	{{end}}
+
 	<img class="doctor-img" itemprop="image" src="{{.ProfileImageURL}}" />
 
 	<div class="doctor-name-container">
@@ -81,36 +118,38 @@
 		</div>
 	{{end}}
 
-	<div class="qualifications-section">
+	{{ if or .Specialties .Qualifications}}
+		<div class="qualifications-section">
 
-		<p class="doctor-profile-section-title">Qualifications & Credentials</p>
+			<p class="doctor-profile-section-title">Qualifications & Credentials</p>
 
-		<link itemprop="medicalSpecialty" href="https://schema.org/Dermatologic">
-			<div class="qualifications-container">
-				
-				{{with .Specialties}}
-					<div class="specialties-section">
-						<p class="section-title">SPECIALTIES</p>
-						<div class="specialties-items-container">
-							{{range .}}
-								<div class="specialties-item">{{.}}</div>
-							{{end}}
-						</div>
-					</div>
-				{{end}}
-
-				{{range .Qualifications}}
-					<div class="subsection-container">
-							<div class="title-description-section">
-								<h1>{{.Title}}</h1>
-								<p>{{.Description}}</p>
+			<link itemprop="medicalSpecialty" href="https://schema.org/Dermatologic">
+				<div class="qualifications-container">
+					
+					{{with .Specialties}}
+						<div class="specialties-section">
+							<p class="section-title">SPECIALTIES</p>
+							<div class="specialties-items-container">
+								{{range .}}
+									<div class="specialties-item">{{.}}</div>
+								{{end}}
 							</div>
-					</div>
-				{{end}}
+						</div>
+					{{end}}
 
-			</div>
-		</link>
-	</div>
+					{{range .Qualifications}}
+						<div class="subsection-container">
+								<div class="title-description-section">
+									<h1>{{.Title}}</h1>
+									<p>{{.Description}}</p>
+								</div>
+						</div>
+					{{end}}
+
+				</div>
+			</link>
+		</div>
+	{{end}}
 
 	<div class="practice-information-section">
 		<p class="doctor-profile-section-title">{{.OfficeSectionTitle}}</p>

@@ -10,6 +10,7 @@ import (
 
 type CityDAL interface {
 	IsCityShortListed(id string) (bool, error)
+	IsDoctorShortListedForCity(doctorID, cityID string) (bool, error)
 	City(id string) (*models.City, error)
 	BannerImageIDsForCity(id string) ([]string, error)
 	BannerImageIDsForState(state string) ([]string, error)
@@ -37,6 +38,21 @@ func NewCityDAL(db *sql.DB) CityDAL {
 	return &cityDAL{
 		db: db,
 	}
+}
+
+func (c *cityDAL) IsDoctorShortListedForCity(doctorID, cityID string) (bool, error) {
+	var cID string
+	if err := c.db.QueryRow(`
+		SELECT city_id
+		FROM doctor_city_short_list
+		WHERE doctor_id = $1
+		AND city_id = $2`, doctorID, cityID).Scan(&cID); err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, errors.Trace(err)
+	}
+
+	return cID != "", nil
 }
 
 func (c *cityDAL) IsCityShortListed(id string) (bool, error) {
@@ -79,7 +95,8 @@ func (c *cityDAL) BannerImageIDsForCity(id string) ([]string, error) {
 	rows, err := c.db.Query(`
 		SELECT image_id 
 		FROM banner_image
-		WHERE city_id = $1`, id)
+		WHERE city_id = $1
+		ORDER BY image_id`, id)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -110,7 +127,8 @@ func (c *cityDAL) BannerImageIDsForCity(id string) ([]string, error) {
 		INNER JOIN cities ON cities.id = $1
 		WHERE admin1_code = banner_image.state
 		AND cities.id = $1
-		AND banner_image.city_id is null`, id)
+		AND banner_image.city_id is null
+		ORDER BY image_id`, id)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -132,7 +150,8 @@ func (c *cityDAL) BannerImageIDsForState(state string) ([]string, error) {
 		SELECT image_id
 		FROM banner_image
 		INNER JOIN state ON state.abbreviation = banner_image.state
-		WHERE state.abbreviation = $1`, state)
+		WHERE state.abbreviation = $1
+		ORDER BY image_id`, state)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

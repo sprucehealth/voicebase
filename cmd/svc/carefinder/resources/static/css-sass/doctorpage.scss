@@ -27,6 +27,30 @@
 	right:0;
 }
 
+.breadcrumb-text {
+	position: absolute;
+	margin-left: auto;
+	margin-right: auto;
+	margin-top: 10px;
+	text-align: center;
+	color: #FFFFFF;
+	font-size: 13px;
+	opacity: 0.9;
+	line-height: 15px;
+	@include font-500();
+	left: 0;
+	right: 0;
+
+	a {
+		color: #FFFFFF;
+		@include font-500();
+		font-size: 13px;
+		line-height: 15px;
+		text-decoration: none;
+		border-bottom: 1px #E5EAEE dotted;
+	}
+}
+
 .doctor-name-container {
 	background-color: white;
 	margin-top: 127px;

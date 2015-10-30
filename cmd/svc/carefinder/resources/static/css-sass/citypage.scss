@@ -454,11 +454,8 @@
 
 .long-description-container {
 	background-color: #EAEFF1;
-	padding: 40px 40px 0 40px;
-	@include respond-to(handhelds) {
-		padding: 20px 20px 10px 20px;
-	}
-
+	padding: 20px 20px 10px 20px;
+	
 	p {
 		margin: auto;
 		max-width: 960px;
