@@ -71,7 +71,7 @@ window.TextMe = React.createClass({displayName: "TextMe",
 							value = {this.state.number}
 							onChange = {this.handleChangeNumber}
 							placeholder = "Enter Your Mobile Phone #"
-							size = {25}
+							size = {28}
 							style = {{
 								border: "2px solid #0E94B0",
 								borderRight: 0,
@@ -79,6 +79,7 @@ window.TextMe = React.createClass({displayName: "TextMe",
 								borderBottomLeftRadius: 4,
 								paddingLeft: "15px",
 								paddingRight: "15px",
+								marginRight: "0px",
 								height: "44px",
 								fontFamily: "'MuseoSans-300', Helvetica, Arial, sans-serif",
 								fontSize: "14px",
@@ -87,12 +88,14 @@ window.TextMe = React.createClass({displayName: "TextMe",
 						<button
 							type = "submit"
 							style = {{
+								verticalAlign: "top",
 								border: "2px solid #0E94B0",
 								borderLeft: 0,
 								borderTopRightRadius: 4,
 								borderBottomRightRadius: 4,
 								paddingRight: "15px",
 								paddingLeft: "15px",
+								marginLeft: "0px",
 								height: "50px",
 								color: "#fff",
 								backgroundColor: "#00CECF",
