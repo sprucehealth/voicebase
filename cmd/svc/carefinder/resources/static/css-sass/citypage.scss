@@ -65,12 +65,12 @@
 .content-container {
 	@include flexbox();
 	@include flexbox-direction(column);
+	@include flexbox-align-items(center);
 }
 
 .main-content-container {
 	max-width: 960px;
 	@include box-sizing(border-box);
-	margin: auto;
 
 	// centers the container
 	@include flexbox();
