@@ -247,13 +247,14 @@ table {
   display: -webkit-flex;
   display: flex;
   flex-direction: column;
-  -webkit-flex-flow: column; }
+  -webkit-flex-flow: column;
+  -webkit-align-items: center;
+  align-items: center; }
 
 .main-content-container {
   max-width: 960px;
   -moz-box-sizing: border-box;
   box-sizing: border-box;
-  margin: auto;
   display: -webkit-box;
   display: -moz-box;
   display: -ms-flexbox;
