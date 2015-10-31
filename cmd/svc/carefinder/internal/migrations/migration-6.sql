@@ -8,3 +8,4 @@ CREATE TABLE doctor_master_description (
 
 ALTER TABLE carefinder_doctor_info ADD COLUMN seo_description TEXT;
 
+

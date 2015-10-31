@@ -11,7 +11,7 @@
 {{define "content"}}
 	<span itemscope itemtype="http://schema.org/Physician">
 	<div class="banner-img" style="background-image: url({{.BannerImageURL}})"></div>
-
+	<div class="banner-img-overlay"></div>
 	{{with .Breadcrumb}}
 		<p class="breadcrumb-text">Dermatologists in  
 			<span itemscope itemtype="http://schema.org/BreadcrumbList">
@@ -32,6 +32,7 @@
 			</span>
 		</p>
 	{{end}}
+
 
 	<!--include other breadcrumbs for search engine indexing-->
 	{{range .OtherBreadcrumbs}}
@@ -68,7 +69,7 @@
 			{{if .IsMobile}}
 				<a class="call-for-appointment-button" href="{{html .PhoneLink}}">CALL FOR APPOINTMENT</a>
 			{{else}}
-				<a class="call-for-appointment-button" data-text-swap="{{.PhysicalOfficeInformation.Phone}}">CALL FOR APPOINTMENT</a>
+				<a class="call-for-appointment-button" data-text-swap="{{.PhysicalOfficeInformation.Phone}}" href="#">CALL FOR APPOINTMENT</a>
 			{{end}}
 		{{end}}
 	</div>
@@ -256,7 +257,7 @@
 					{{if .IsMobile}}
 						<a class="call-for-appointment-button" href="{{html .PhoneLink}}">CALL FOR APPOINTMENT</a>
 					{{else}}
-						<a class="call-for-appointment-button" data-text-swap="{{.PhysicalOfficeInformation.Phone}}">CALL FOR APPOINTMENT</a>
+						<a class="call-for-appointment-button" data-text-swap="{{.PhysicalOfficeInformation.Phone}}" href="#">CALL FOR APPOINTMENT</a>
 					{{end}}
 				{{end}}
 			</div>
@@ -310,7 +311,8 @@
 
 		<script type="text/javascript">
 			var button = $(".call-for-appointment-button");
-			button.on("click", function(){
+			button.on("click", function(event){
+				event.preventDefault();
 				button.text(button.data("text-swap"));
 				button.css("background-color", "#00CECF");
 			});

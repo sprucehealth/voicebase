@@ -27,14 +27,6 @@
   filter: blur($value);
 }
 
-@mixin setBrightness($value) {
-  -webkit-filter: brightness($value);
-  -moz-filter: brightness($value);
-  -o-filter: brightness($value);
-  -ms-filter: brightness($value);
-  filter: brightness($value);
-}
-
 // handhelds-tablets-only is a utility class to 
 // show the element on handhelds and tablet sized screens
 // but hide it on desktop sized screens. Note that 

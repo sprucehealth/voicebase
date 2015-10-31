@@ -10,7 +10,14 @@
 	background-position: center center;
 	background-size: cover;
 	position: absolute;
-	@include setBrightness(60%);
+}
+
+.banner-img-overlay {
+	width: 100%;
+	height: 127px;
+	position: absolute;
+	background-color: black;
+	opacity: 0.4;
 }
 
 .doctor-img {
