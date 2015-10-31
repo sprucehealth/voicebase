@@ -64,7 +64,7 @@ window.TextMe = React.createClass({displayName: "TextMe",
 						marginTop: "20px",
 					}}
 				>
-					<form onSubmit={this.handleSubmit}>
+					<form id="cftextlink" onSubmit={this.handleSubmit}>
 						<input
 							type = "text"
 							required = {true}

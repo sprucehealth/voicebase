@@ -75,6 +75,12 @@
 			doctorID: {{.SubContext.DoctorID}}
 		}), $('.text-me')[0]);
 	});
+	$("form").submit(function(e) {
+		var id = e.target.id;
+		if (id) {
+			ga("send", "event", id, "submit");
+		}
+	});
 	</script>
 {{end}}
 {{end}}
