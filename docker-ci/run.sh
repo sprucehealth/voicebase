@@ -262,10 +262,10 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
 
     # Copy over the fonts from the shared location
     LOCAL_CAREFINDER_STATIC_PATH="$MONOREPO_PATH/cmd/svc/carefinder/resources/static"
-    rm -rf $LOCAL_CAREFINDER_STATIC_PATH/fonts 
+    rm -rf $LOCAL_CAREFINDER_STATIC_PATH/fonts
     mkdir $LOCAL_CAREFINDER_STATIC_PATH/fonts
     cp $MONOREPO_PATH/resources/static/fonts/* $LOCAL_CAREFINDER_STATIC_PATH/fonts
-    
+
     cd $LOCAL_CAREFINDER_STATIC_PATH
     STATIC_PREFIX="s3://spruce-static/carefinder/$BUILD_NUMBER"
     s3cmd --recursive -P --no-preserve -m "application/javascript" put js/* $STATIC_PREFIX/js/

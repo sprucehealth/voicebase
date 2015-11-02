@@ -176,8 +176,12 @@ func (s *Service) ImageReader(id string, size *media.Size) (io.ReadCloser, *Medi
 	m := med[0]
 
 	// Check the store for the image
-	rc, _, err := s.mediaSvc.GetReader(id, size)
+	rc, meta, err := s.mediaSvc.GetReader(id, size)
 	if err == nil {
+		m.Width = meta.Width
+		m.Height = meta.Height
+		m.Size = meta.Size
+		m.MimeType = meta.MimeType
 		return rc, m, nil
 	} else if errors.Cause(err) != media.ErrNotFound {
 		return nil, nil, errors.Trace(err)
@@ -231,7 +235,7 @@ func (s *Service) ImageReader(id string, size *media.Size) (io.ReadCloser, *Medi
 		// Temporary failure
 		return nil, m, s.fetchFailed(m, fmt.Sprintf("read failed: %s", err), false)
 	}
-	meta, err := s.mediaSvc.PutReader(m.ID, bytes.NewReader(b))
+	meta, err = s.mediaSvc.PutReader(m.ID, bytes.NewReader(b))
 	if _, ok := errors.Cause(err).(media.ErrInvalidImage); ok {
 		// Permanent failure
 		return nil, m, s.fetchFailed(m, fmt.Sprintf("bad image: %s", err), true)
@@ -251,8 +255,15 @@ func (s *Service) ImageReader(id string, size *media.Size) (io.ReadCloser, *Medi
 	}
 
 	// Need to repull the image even though we had it since it could have been processed / resized.
-	rc, _, err = s.mediaSvc.GetReader(id, size)
-	return rc, m, errors.Trace(err)
+	rc, meta, err = s.mediaSvc.GetReader(id, size)
+	if err != nil {
+		return nil, m, errors.Trace(err)
+	}
+	m.Size = meta.Size
+	m.Width = meta.Width
+	m.Height = meta.Height
+	m.MimeType = meta.MimeType
+	return rc, m, nil
 }
 
 func (s *Service) fetchFailed(m *Media, reason string, perm bool) error {

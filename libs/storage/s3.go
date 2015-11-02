@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -116,6 +117,9 @@ func (s *S3) GetReader(id string) (io.ReadCloser, http.Header, error) {
 	header := http.Header{}
 	if obj.ContentType != nil {
 		header.Set("Content-Type", *obj.ContentType)
+	}
+	if obj.ContentLength != nil {
+		header.Set("Content-Length", strconv.FormatInt(*obj.ContentLength, 10))
 	}
 	for k, v := range obj.Metadata {
 		if v != nil {
