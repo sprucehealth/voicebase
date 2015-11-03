@@ -102,7 +102,7 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	r.Handle("/r/{code}", newPromoClaimHandler(config.DataAPI, config.AuthAPI, config.BranchClient, config.AnalyticsLogger, config.TemplateLoader))
 
 	// CareFinder
-	r.PathPrefix("/dermatologist-near-me/").Handler(NewCareFinderHandler(config.Cfg))
+	r.PathPrefix("/dermatologist-near-me").Handler(NewCareFinderHandler(config.Cfg))
 
 	authFilter := func(h httputil.ContextHandler) httputil.ContextHandler {
 		return www.AuthRequiredHandler(h, nil, config.AuthAPI)
