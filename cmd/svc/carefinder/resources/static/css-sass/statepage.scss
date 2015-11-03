@@ -1,0 +1,182 @@
+@import "reset.scss";
+@import "fonts.scss";
+@import "flexbox.scss";
+@import "utils.scss";
+@import "common.scss";
+
+.banner-container {
+	position: relative;
+	min-height: 260px;
+};
+
+
+.banner-background-image {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+}
+
+.banner-image-overlay {
+	position: absolute;
+	background-color: black;
+	opacity: 0.4;
+	width: 100%;
+	height: 100%;
+}
+
+.banner-title-description {	
+	width: 100%;
+	height: 100%;
+	margin: auto;
+	text-align: center;
+	position: absolute;
+	@include flexbox();
+	@include flexbox-direction(column);
+	@include flexbox-justify-content(center);
+	@include flexbox-align-items(center);
+}
+
+.banner-title {
+	@include font-700();
+	font-size: 40px;
+	line-height: 48px;
+	color: white;
+	max-width: 480px;
+	margin-bottom: 0px;
+	@include respond-to(handhelds) {
+		font-size: 28px;
+		line-height: 33px;
+		padding-left: 16px;
+		padding-right: 16px;
+	}
+}
+
+.banner-description {
+		@include font-500();
+		font-size: 20px;
+		line-height: 24px;
+		color: white;
+		max-width: 540px;
+		margin-top: 14px;
+		@include respond-to(handhelds) {
+			font-size: 16px;
+			line-height: 19px;
+			padding-left: 16px;
+			padding-right: 16px;
+		}
+}
+
+.featured-cities-section {
+	background-color: #FFFFFF;
+	@include flexbox();
+	@include flexbox-direction(column);
+	@include flexbox-justify-content(center);
+	@include flexbox-align-items(center);
+}
+
+.featured-cities-title {
+	@include font-500();
+	color: #1E333A;
+	font-size: 20px;
+	line-height: 24px;
+	margin: 40px 0 40px 0;
+
+	@include respond-to(handhelds) {
+		margin: 20px 0 20px 0;
+	}
+}
+
+.featured-cities-container {
+
+	width: 620px;
+	@include flexbox();
+	@include flexbox-direction(row);
+	@include flexbox-justify-content(center);
+	@include flexbox-align-items(center);
+	@include flexbox-wrap(wrap);
+
+	@include respond-to(handhelds) {
+		width: 100%;
+	}
+}
+
+.below-fold {
+	display: none;
+}
+
+.featured-cities-item {
+	@include box-sizing(border-box);
+	@include flexbox();
+	@include flexbox-justify-content(center);
+	@include flexbox-align-items(center);
+
+	width: 145px;
+	min-height: 40px;
+	margin-left: 5px;
+	margin-right: 5px;
+	margin-bottom: 12px;
+	border: #0BA5C5 1px solid;
+	border-radius: 4px;
+
+	a {
+		@include font-500();
+		line-height: 17px;
+		font-size: 14px;
+		color: #0BA5C5;
+		text-decoration: none;
+		text-align: center;
+		padding: 5px;
+	}
+}
+
+.view-more-cities-button {
+	@include font-500();
+	font-size: 14px;
+	line-height: 17px;
+	text-decoration: none;
+	text-align: center;
+	color: #0BA5C5;
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
+
+.featured-doctors-section {
+	background-color: #FAF8FB;
+	@include flexbox();
+	@include flexbox-direction(column);
+	@include flexbox-justify-content(center);
+	@include flexbox-align-items(center);
+	padding: 0 40px 40px 40px;
+
+	@include respond-to(handhelds) {
+		padding: 20px 10px 20px 10px;
+	}
+}
+
+.featured-doctors-container {
+	@include flexbox();
+	@include flexbox-direction(column);
+	@include flexbox-justify-content(center);
+	@include flexbox-align-items(center);
+	width: 620px;
+
+	@include respond-to(handhelds) {
+		width: 100%;
+	}
+}
+
+.featured-doctors-title {
+	@include font-500();
+	color: #1E333A;
+	font-size: 20px;
+	line-height: 24px;
+	margin: 40px 0 40px 0;
+
+	@include respond-to(handhelds) {
+		margin: 20px 0 20px 0;
+	}
+}
+
+
+
+

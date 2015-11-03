@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/dal"
+	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/response"
 
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -41,13 +43,15 @@ type siteMapHandler struct {
 	webURL        string
 	doctorDAL     dal.DoctorDAL
 	cityDAL       dal.CityDAL
+	stateDAL      dal.StateDAL
 	cachedSitemap atomic.Value
 }
 
-func NewSiteMapHandler(webURL string, doctorDAL dal.DoctorDAL, cityDAL dal.CityDAL) httputil.ContextHandler {
+func NewSiteMapHandler(webURL string, doctorDAL dal.DoctorDAL, cityDAL dal.CityDAL, stateDAL dal.StateDAL) httputil.ContextHandler {
 	return &siteMapHandler{
 		doctorDAL: doctorDAL,
 		cityDAL:   cityDAL,
+		stateDAL:  stateDAL,
 		webURL:    webURL,
 	}
 }
@@ -81,9 +85,9 @@ func (s *siteMapHandler) retrieveSiteMap() ([]byte, error) {
 		return c.(*cachedContent).data, nil
 	}
 
-	var cityIDs, doctorIDs []string
 	p := conc.NewParallel()
 
+	var doctorIDs []string
 	p.Go(func() error {
 		var err error
 		doctorIDs, err = s.doctorDAL.ShortListedDoctorIDs()
@@ -95,11 +99,24 @@ func (s *siteMapHandler) retrieveSiteMap() ([]byte, error) {
 		return nil
 	})
 
+	var cities []*models.City
 	p.Go(func() error {
 		var err error
-		cityIDs, err = s.cityDAL.ShortListedCityIDs()
+		cities, err = s.cityDAL.ShortListedCities()
 		if err != nil {
 			golog.Errorf("Unable to get short list of city ids: %s", err.Error())
+			return errors.Trace(err)
+		}
+
+		return nil
+	})
+
+	var states []*models.State
+	p.Go(func() error {
+		var err error
+		states, err = s.stateDAL.StateShortList()
+		if err != nil {
+			golog.Errorf("Unable to get short list of states: %s", err.Error())
 			return errors.Trace(err)
 		}
 
@@ -112,7 +129,7 @@ func (s *siteMapHandler) retrieveSiteMap() ([]byte, error) {
 
 	sm := &sitemap{
 		URLSet: urlSet{
-			URLs: make([]*urlItem, 0, len(cityIDs)+len(doctorIDs)),
+			URLs: make([]*urlItem, 0, len(cities)+len(doctorIDs)+len(states)),
 		},
 	}
 
@@ -120,13 +137,20 @@ func (s *siteMapHandler) retrieveSiteMap() ([]byte, error) {
 	// as the yelp reviews and uv index have the potential to change daily
 	for _, item := range doctorIDs {
 		sm.URLSet.URLs = append(sm.URLSet.URLs, &urlItem{
-			Loc:        fmt.Sprintf("%s/%s", s.webURL, item),
+			Loc:        response.DoctorPageURL(item, "", s.webURL),
 			ChangeFreq: "daily",
 		})
 	}
-	for _, item := range cityIDs {
+	for _, item := range cities {
 		sm.URLSet.URLs = append(sm.URLSet.URLs, &urlItem{
-			Loc:        fmt.Sprintf("%s/%s", s.webURL, item),
+			Loc:        response.CityPageURL(item, s.webURL),
+			ChangeFreq: "daily",
+		})
+	}
+
+	for _, state := range states {
+		sm.URLSet.URLs = append(sm.URLSet.URLs, &urlItem{
+			Loc:        response.StatePageURL(state.Key, s.webURL),
 			ChangeFreq: "daily",
 		})
 	}

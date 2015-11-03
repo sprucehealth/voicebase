@@ -23,6 +23,25 @@ type CityPage struct {
 	NearbyCitiesSection       *DescriptionItemsSection
 }
 
+type City struct {
+	Name  string
+	State string
+	Link  string
+}
+
+type StatePage struct {
+	IsMobile                  bool
+	HTMLTitle                 string
+	Title                     string
+	Description               string
+	FeaturedCitiesAboveFold   []*City
+	FeaturedCitiesBelowFold   []*City
+	SEODescription            string
+	LongDescriptionParagraphs []string
+	BannerImageURL            string
+	FeaturedDoctors           []*Doctor
+}
+
 type Doctor struct {
 	IsSpruceDoctor      bool
 	Description         string

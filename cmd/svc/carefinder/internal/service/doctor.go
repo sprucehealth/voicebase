@@ -45,6 +45,7 @@ var (
 type doctorService struct {
 	cityDAL                 dal.CityDAL
 	doctorDAL               dal.DoctorDAL
+	stateDAL                dal.StateDAL
 	yelpClient              yelp.Client
 	webURL                  string
 	contentURL              string
@@ -53,10 +54,11 @@ type doctorService struct {
 	staticMapsURLSigningKey string
 }
 
-func NewForDoctor(cityDAL dal.CityDAL, doctorDAL dal.DoctorDAL, yelpClient yelp.Client, webURL, contentURL, staticResourceURL, staticMapsKey, staticMapsURLSigningKey string) PageContentBuilder {
+func NewForDoctor(cityDAL dal.CityDAL, doctorDAL dal.DoctorDAL, stateDAL dal.StateDAL, yelpClient yelp.Client, webURL, contentURL, staticResourceURL, staticMapsKey, staticMapsURLSigningKey string) PageContentBuilder {
 	return &doctorService{
 		cityDAL:                 cityDAL,
 		doctorDAL:               doctorDAL,
+		stateDAL:                stateDAL,
 		webURL:                  webURL,
 		contentURL:              contentURL,
 		staticResourceURL:       staticResourceURL,
@@ -215,9 +217,10 @@ func (d *doctorService) PageContentForID(ctx interface{}, r *http.Request) (inte
 		case citySpecified:
 			bc.Items = append(bc.Items, &response.BreadcrumbItem{
 				Label: city.State,
+				Link:  response.StatePageURL(city.StateKey, d.webURL),
 			}, &response.BreadcrumbItem{
 				Label: city.Name,
-				Link:  fmt.Sprintf("%s/%s", d.webURL, city.ID),
+				Link:  response.CityPageURL(city, d.webURL),
 			})
 
 			imageIDs, err := d.cityDAL.BannerImageIDsForCity(city.ID)
@@ -240,7 +243,7 @@ func (d *doctorService) PageContentForID(ctx interface{}, r *http.Request) (inte
 			if err != nil {
 				return errors.Trace(err)
 			}
-			imageIDs, err := d.cityDAL.BannerImageIDsForState(states[0].Abbreviation)
+			imageIDs, err := d.stateDAL.BannerImageIDsForState(states[0].Abbreviation)
 			if err != nil {
 				return errors.Trace(err)
 			}
@@ -252,6 +255,7 @@ func (d *doctorService) PageContentForID(ctx interface{}, r *http.Request) (inte
 
 			bc.Items = append(bc.Items, &response.BreadcrumbItem{
 				Label: states[0].FullName,
+				Link:  response.StatePageURL(states[0].Key, d.webURL),
 			})
 
 			// include all the other breadcrumbs for a spruce
@@ -262,6 +266,7 @@ func (d *doctorService) PageContentForID(ctx interface{}, r *http.Request) (inte
 						Items: []*response.BreadcrumbItem{
 							{
 								Label: s.FullName,
+								Link:  response.StatePageURL(s.Key, d.webURL),
 							},
 						},
 					})

@@ -38,7 +38,8 @@ func NewForCity(cityDAL dal.CityDAL, doctorDAL dal.DoctorDAL, webURL, contentURL
 }
 
 type CityPageContext struct {
-	CityID string
+	CityID   string
+	StateKey string
 }
 
 const (
@@ -50,6 +51,7 @@ const (
 func (c *cityService) PageContentForID(ctx interface{}, r *http.Request) (interface{}, error) {
 	cp := ctx.(*CityPageContext)
 	cityID := cp.CityID
+	stateKey := cp.StateKey
 
 	// check if the city exists first
 	exists, err := c.cityDAL.IsCityShortListed(cityID)
@@ -62,6 +64,8 @@ func (c *cityService) PageContentForID(ctx interface{}, r *http.Request) (interf
 	city, err := c.cityDAL.City(cityID)
 	if err != nil {
 		return nil, errors.Trace(err)
+	} else if city.StateKey != stateKey {
+		return nil, nil
 	}
 
 	p := conc.NewParallel()
@@ -83,7 +87,7 @@ func (c *cityService) PageContentForID(ctx interface{}, r *http.Request) (interf
 
 		// sort the doctors by yelp review count so as to pick those
 		// with most reviews
-		sort.Sort(sort.Reverse(byYelpReviewCount(doctors)))
+		sort.Sort(sort.Reverse(byReviewCount(doctors)))
 
 		n := 5
 		if len(doctors) < n {
@@ -123,7 +127,7 @@ func (c *cityService) PageContentForID(ctx interface{}, r *http.Request) (interf
 		for i, nc := range nearbyCities {
 			nearbyCitiesList[i] = &response.LinkableItem{
 				Text: fmt.Sprintf("%s, %s", nc.Name, nc.StateAbbreviation),
-				Link: fmt.Sprintf("%s/%s", c.webURL, nc.ID),
+				Link: response.CityPageURL(nc, c.webURL),
 			}
 		}
 		return nil
@@ -340,12 +344,4 @@ func (c *cityService) pickNRandomDoctors(n int, ids []string) ([]*models.Doctor,
 	}
 
 	return doctors, nil
-}
-
-type byYelpReviewCount []*models.Doctor
-
-func (c byYelpReviewCount) Len() int      { return len(c) }
-func (c byYelpReviewCount) Swap(i, j int) { c[i], c[j] = c[j], c[i] }
-func (c byYelpReviewCount) Less(i, j int) bool {
-	return c[i].ReviewCount < c[j].ReviewCount
 }

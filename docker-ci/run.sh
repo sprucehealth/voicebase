@@ -148,6 +148,8 @@ time (
     cd $MONOREPO_PATH/cmd/svc/carefinder
     rm -rf resources/static/js
     mkdir resources/static/js
+    rm -rf resources/static/css
+    mkdir resources/static/css
     ./build_resources.sh
     flow check
 ) &

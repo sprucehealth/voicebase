@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/models"
+	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 )
 
@@ -13,15 +14,14 @@ type CityDAL interface {
 	IsDoctorShortListedForCity(doctorID, cityID string) (bool, error)
 	City(id string) (*models.City, error)
 	BannerImageIDsForCity(id string) ([]string, error)
-	BannerImageIDsForState(state string) ([]string, error)
 	LocalDoctorIDsForCity(cityID string) ([]string, error)
 	SpruceDoctorIDsForCity(cityID string) ([]string, error)
 	CityIDsForDoctor(doctorID string) ([]string, error)
 	CareRatingForCity(cityID string) (*models.CareRating, error)
 	TopSkinConditionsForCity(cityID string, n int) ([]string, error)
 	NearbyCitiesForCity(cityID string, n int) ([]*models.City, error)
-	StateShortList() ([]*models.State, error)
-	ShortListedCityIDs() ([]string, error)
+	ShortListedCities() ([]*models.City, error)
+	CitiesForState(stateKey string) ([]*models.City, error)
 }
 
 var (
@@ -71,7 +71,7 @@ func (c *cityDAL) IsCityShortListed(id string) (bool, error) {
 func (c *cityDAL) City(id string) (*models.City, error) {
 	var city models.City
 	if err := c.db.QueryRow(`
-		SELECT cities.id, name, admin1_code, state.full_name, latitude, longitude
+		SELECT cities.id, name, admin1_code, state.full_name, state.key, latitude, longitude
 		FROM cities
 		INNER JOIN state ON state.abbreviation = admin1_code
 		WHERE cities.id = $1`, id).Scan(
@@ -79,6 +79,7 @@ func (c *cityDAL) City(id string) (*models.City, error) {
 		&city.Name,
 		&city.StateAbbreviation,
 		&city.State,
+		&city.StateKey,
 		&city.Latitude,
 		&city.Longitude,
 	); err == sql.ErrNoRows {
@@ -143,30 +144,6 @@ func (c *cityDAL) BannerImageIDsForCity(id string) ([]string, error) {
 	}
 
 	return imageIDs, errors.Trace(rows2.Err())
-}
-
-func (c *cityDAL) BannerImageIDsForState(state string) ([]string, error) {
-	rows, err := c.db.Query(`
-		SELECT image_id
-		FROM banner_image
-		INNER JOIN state ON state.abbreviation = banner_image.state
-		WHERE state.abbreviation = $1
-		ORDER BY image_id`, state)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-	defer rows.Close()
-
-	var imageIDs []string
-	for rows.Next() {
-		var imageID string
-		if rows.Scan(&imageID); err != nil {
-			return nil, errors.Trace(err)
-		}
-		imageIDs = append(imageIDs, imageID)
-	}
-
-	return imageIDs, errors.Trace(rows.Err())
 }
 
 func (c *cityDAL) LocalDoctorIDsForCity(cityID string) ([]string, error) {
@@ -288,7 +265,7 @@ func (c *cityDAL) TopSkinConditionsForCity(cityID string, n int) ([]string, erro
 
 func (c *cityDAL) NearbyCitiesForCity(cityID string, n int) ([]*models.City, error) {
 	rows, err := c.db.Query(`
-		SELECT c1.id, c1.name, c1.admin1_code, state.full_name, c1.latitude, c1.longitude
+		SELECT c1.id, c1.name, c1.admin1_code, state.full_name, state.key, c1.latitude, c1.longitude, city_shortlist.featured
 		FROM cities c1
 		INNER JOIN cities c2 ON c2.id = $1 
 		INNER JOIN city_shortlist ON city_shortlist.city_id = c1.id
@@ -306,63 +283,77 @@ func (c *cityDAL) NearbyCitiesForCity(cityID string, n int) ([]*models.City, err
 
 	var cities []*models.City
 	for rows.Next() {
-		var city models.City
-		if err := rows.Scan(
-			&city.ID,
-			&city.Name,
-			&city.StateAbbreviation,
-			&city.State,
-			&city.Latitude,
-			&city.Longitude); err != nil {
+		city, err := scanCity(rows)
+		if err != nil {
 			return nil, errors.Trace(err)
 		}
 
-		cities = append(cities, &city)
+		cities = append(cities, city)
 	}
 
 	return cities, errors.Trace(rows.Err())
 }
 
-func (c *cityDAL) StateShortList() ([]*models.State, error) {
+func (c *cityDAL) ShortListedCities() ([]*models.City, error) {
 	rows, err := c.db.Query(`
-		SELECT state.abbreviation, state.full_name
+		SELECT cities.id, name, admin1_code, full_name, state.key, latitude, longitude, featured
 		FROM city_shortlist
-		INNER JOIN state ON state.abbreviation = city_shortlist.state`)
+		INNER JOIN state ON state.abbreviation = city_shortlist.state
+		INNER JOIN cities ON cities.id = city_id`)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	defer rows.Close()
 
-	var states []*models.State
+	var cities []*models.City
 	for rows.Next() {
-		var state models.State
-		if err := rows.Scan(&state.Abbreviation, &state.FullName); err != nil {
+		city, err := scanCity(rows)
+		if err != nil {
 			return nil, errors.Trace(err)
 		}
 
-		states = append(states, &state)
+		cities = append(cities, city)
 	}
 
-	return states, errors.Trace(rows.Err())
+	return cities, errors.Trace(rows.Err())
 }
 
-func (c *cityDAL) ShortListedCityIDs() ([]string, error) {
+func (c *cityDAL) CitiesForState(stateKey string) ([]*models.City, error) {
 	rows, err := c.db.Query(`
-		SELECT city_id 
-		FROM city_shortlist`)
+		SELECT cities.id, name, admin1_code, full_name, state.key, latitude, longitude, featured
+		FROM city_shortlist
+		INNER JOIN state ON state.abbreviation = city_shortlist.state
+		INNER JOIN cities ON cities.id = city_id
+		WHERE state.key = $1`, stateKey)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	defer rows.Close()
 
-	var cityIDs []string
+	var cities []*models.City
 	for rows.Next() {
-		var cityID string
-		if err := rows.Scan(&cityID); err != nil {
+		city, err := scanCity(rows)
+		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		cityIDs = append(cityIDs, cityID)
+
+		cities = append(cities, city)
 	}
 
-	return cityIDs, errors.Trace(rows.Err())
+	return cities, errors.Trace(rows.Err())
+}
+
+func scanCity(s dbutil.Scanner) (*models.City, error) {
+	var city models.City
+	if err := s.Scan(
+		&city.ID,
+		&city.Name,
+		&city.StateAbbreviation,
+		&city.State,
+		&city.StateKey,
+		&city.Latitude,
+		&city.Longitude,
+		&city.Featured); err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &city, nil
 }

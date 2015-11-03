@@ -261,6 +261,7 @@
 
 .doctor-profile-section-title {
 	color: #1E333A;
+	text-align: center;
 	@include font-500();
 	font-size: 20px;
 	line-height: 24px;
@@ -450,7 +451,6 @@
 	}
 }
 
-
 .cta-button-container {
 	border-top: #E5ECEE 1px solid;
 	margin-top: 20px;
@@ -478,22 +478,21 @@
 		@include flexbox-direction(column);
 	}
 }
-
 .doctor-card {
 	background-color: #FFFFFF;
 	border: #DAE6EB 1px solid;
 	border-radius: 4px;
-	width: 300px;
-	height: 300px;
 	flex: 0 0 300px;
 	margin-left: 10px;
 	margin-right: 10px;
+	padding-bottom: 20px;
 
 	@include flexbox();
 	@include flexbox-direction(column);
 	@include flexbox-align-items(center);
 	
 	@include respond-to(handhelds) {
+		flex: 0 0 auto;
 		margin-bottom: 20px;
 		margin-left: 0px;
 		margin-right: 0px;
@@ -522,6 +521,7 @@
 	width: 90%;
 	background-color: #E5ECEE;
 	margin-top: 20px;
+	margin-bottom: 20px;
 }
 
 .doctor-card-rating-experience-container {
@@ -529,8 +529,6 @@
 	@include flexbox-align-items(center);
 	@include flexbox-align-self(flex-start);
 	@include flexbox-justify-content(space-between);
-	margin-top : 25px;
-	margin-bottom: 25px;
 	margin-right: 20px;
 	margin-left: 20px;
 }
@@ -556,3 +554,5 @@
 	line-height: 20px;
 	color: #728289;
 }
+
+

@@ -29,8 +29,10 @@ func NewCityPageHandler(templateLoader *www.TemplateLoader, cityService service.
 func (c *cityPageHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 
 	cityID := mux.Vars(ctx)["city"]
+	stateKey := mux.Vars(ctx)["state"]
 	cp, err := c.cityService.PageContentForID(&service.CityPageContext{
-		CityID: cityID,
+		CityID:   cityID,
+		StateKey: stateKey,
 	}, r)
 	if err != nil {
 		www.InternalServerError(w, r, err)

@@ -53,3 +53,238 @@
 	border-radius: 2px;
 }
 
+.long-description-container {
+	background-color: #EAEFF1;
+	padding: 20px 20px 10px 20px;
+	
+	p {
+		margin: auto;
+		max-width: 960px;
+		font-size: 14px;
+		line-height: 18px;
+		@include font-300();
+		color: #8B9FA7;
+		padding-bottom: 10px;
+	}
+}
+
+.card {
+	background-color: white;
+	border-width: 1px;
+	border-color: #DAE6EB;
+	border-style: solid;
+	border-radius: 4px;
+}
+
+.card-container {
+	@include flexbox();
+	@include flexbox-direction(column);
+	@include respond-to(handhelds) {
+		@include flexbox-align-items(center);
+	}
+	@include respond-to(tablets) {
+		@include flexbox-align-items(center);
+	}
+}
+
+.primary-card-container {
+	@extend .card-container;
+
+	margin-top: 40px;
+	width: 64.58%;
+
+	@include respond-to(handhelds) {
+		width: 100%;
+		margin-top: 12px;
+	}
+
+	@include respond-to(tablets) {
+		width: 100%;
+		margin-top: 12px;
+	}
+}
+
+.primary-card {
+	@extend .card;
+	
+	width: 100%;
+	margin-bottom: 24px;
+	padding: 25px;
+
+
+	// border-box makes it possible to specify padding 
+	// without having it factor into the width
+	@include box-sizing(border-box);	
+	
+	@include respond-to(handhelds) {
+		width: 100%;
+		margin-bottom: 12px;
+		padding: 20px;
+	}
+
+	@include respond-to(tablets) {
+		width: 60%;
+		margin-bottom: 12px;
+		padding: 20px;
+	}
+}
+
+.name-rating-experience-container {
+	@include flexbox();
+	@include flexbox-direction(column);
+
+	@include respond-to(handhelds) {
+		@include flexbox-align-items(center);
+	}
+
+	@include respond-to(tablets) {
+		@include flexbox-align-items(center);
+	}
+}
+
+.primary-card-image {
+	border-radius: 50%;
+	width: 100px;
+	height: 100px;
+	position: relative;
+	float: right;
+	@include respond-to(handhelds) {
+		display: block;
+		margin-left: auto;
+		margin-right: auto;
+		margin-bottom: 14px;
+		float: none;
+	}
+	@include respond-to(tablets) {
+		display: block;;
+		margin-left: auto;
+		margin-right: auto;		
+		margin-bottom: 14px;
+		float: none;
+	}
+}
+
+.primary-card-title {
+	@include font-500();
+	font-size: 28px;	
+	line-height: 33px;
+	text-decoration: none;
+	color: #1E333A;
+	&:hover {
+		color: #0BA5C5;
+	}
+
+	@include respond-to(handhelds) {
+		text-align: center;
+	}
+
+	@include respond-to(tablets) {
+		text-align: center;
+	}
+}
+
+.rating-experience-container {
+		@include flexbox();
+		margin-top: 20px;
+
+		@include respond-to(handhelds) {
+			@include flexbox-justify-content(space-around);
+			@include flexbox-align-self(stretch);
+			border-top: #E5ECEE solid 1px;
+			border-bottom: #E5ECEE solid 1px;
+			padding-top: 22px;
+			padding-bottom: 22px;
+		}
+
+		@include respond-to(tablets) {
+			@include flexbox-justify-content(space-around);
+			@include flexbox-align-self(stretch);
+			border-top: #E5ECEE solid 1px;
+			border-bottom: #E5ECEE solid 1px;
+			padding-top: 22px;
+			padding-bottom: 22px;
+		}
+}
+	
+.rating-stars-img {
+	width: 97px;
+	height: 18px;
+	margin-top: 5px;
+}
+
+.rating-experience-divider {
+	width: 1px;
+	background-color: #E5ECEE;
+}
+
+.experience-section {
+	margin-left: 100px;
+	@include respond-to(handhelds) {
+		margin-left: 0px;
+	}
+	@include respond-to(tablets) {
+		margin-left: 0px;
+	}
+}
+
+.experience-description {
+	margin-top: 5px;
+	@include font-500();
+	font-size: 17px;
+	line-height: 20px;
+	color: #728289;
+}
+
+.doctor-description {
+	font-size: 16px;
+	line-height: 19px;
+	@include font-300();
+	color: black;
+	margin-top: 22px;
+	margin-bottom: 20px;
+	@include flexbox-align-self(stretch);
+}
+
+.view-profile-section {
+	@include flexbox();
+	@include flexbox-direction(row-reverse);
+	@include flexbox-justify-content(space-between);
+	@include flexbox-align-items(baseline);
+	border-top: #E5ECEE solid 1px;
+	margin-top: 20px;
+	padding-top: 20px;
+
+	@include respond-to(handhelds) {
+		@include flexbox-justify-content(center);
+	}
+
+	@include respond-to(tablets) {
+		@include flexbox-justify-content(center);
+	}
+}
+
+.view-profile-button {
+	color: white;
+	@include font-700();
+	font-size: 14px;
+	line-height: 17px;
+	border-radius: 2px;
+	background-color: #0BA5C5;
+	width: 200px;
+	padding-top: 14px;
+	padding-bottom: 14px;
+	text-align: center;
+	text-decoration: none;
+
+	@include respond-to(handhelds) {
+		width: 260px;
+	}
+
+	@include respond-to(tablets) {
+		width: 260px;
+	}
+
+	&:hover {
+		background-color: #00CECF;
+	}
+}

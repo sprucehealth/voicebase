@@ -5,11 +5,14 @@ type City struct {
 	Name              string
 	State             string
 	StateAbbreviation string
+	StateKey          string
 	Latitude          float64
 	Longitude         float64
+	Featured          bool
 }
 
 type State struct {
+	Key          string
 	FullName     string
 	Abbreviation string
 }

@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"
 )
 
@@ -16,6 +17,22 @@ func URLForImageID(imageID, contentURL string) (string, error) {
 	}
 	p := strings.SplitN(u.Path, "/", 3)
 	return fmt.Sprintf("%s/%s", contentURL, p[2]), nil
+}
+
+func CityPageURL(city *models.City, webURL string) string {
+	return fmt.Sprintf("%s/%s/%s", webURL, city.StateKey, city.ID)
+}
+
+func StatePageURL(stateKey string, webURL string) string {
+	return fmt.Sprintf("%s/%s", webURL, strings.ToLower(stateKey))
+}
+
+func DoctorPageURL(doctorID, cityID, webURL string) string {
+	if cityID == "" {
+		return fmt.Sprintf("%s/%s", webURL, doctorID)
+	}
+
+	return fmt.Sprintf("%s/%s?city_id=%s", webURL, doctorID, cityID)
 }
 
 func StaticURL(staticURL, imageName string) string {

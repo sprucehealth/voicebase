@@ -55,6 +55,12 @@
 			<p class="cost-disclaimer">Your insurance cannot be used to pay for the visit but — just like an in-person doctor’s visit — it will be applied to any medications you’represcribed when you pick them up at the pharmacy.</p>
 		</div>
 	</div>
+
+	<div class="long-description-container">
+			{{range .LongDescriptionParagraphs}}
+				<p>{{.}}</p>
+			{{end}}
+	</div>
 {{end}}
 
 {{define "scripts"}}

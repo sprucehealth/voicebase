@@ -4,6 +4,8 @@ import (
 	"math/rand"
 	"net/http"
 	"strings"
+
+	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/models"
 )
 
 // cleanupZipcode returns the first 5 digits of the zipcode
@@ -24,4 +26,12 @@ func shuffle(ids []string) {
 
 func isMobile(r *http.Request) bool {
 	return strings.Contains(r.UserAgent(), "iPhone") || strings.Contains(r.UserAgent(), "iPod") || strings.Contains(strings.ToLower(r.UserAgent()), "android")
+}
+
+type byReviewCount []*models.Doctor
+
+func (c byReviewCount) Len() int      { return len(c) }
+func (c byReviewCount) Swap(i, j int) { c[i], c[j] = c[j], c[i] }
+func (c byReviewCount) Less(i, j int) bool {
+	return c[i].ReviewCount < c[j].ReviewCount
 }
