@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/models"
+	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 )
 
@@ -17,6 +18,7 @@ type StateDAL interface {
 	StateShortList() ([]*models.State, error)
 	SpruceDoctorIDsForState(stateKey string) ([]string, error)
 	BannerImageIDsForState(state string) ([]string, error)
+	BannerImageIDsForStates(states []string) (map[string][]string, error)
 }
 
 type stateDAL struct {
@@ -89,6 +91,7 @@ func (s *stateDAL) BannerImageIDsForState(state string) ([]string, error) {
 		FROM banner_image
 		INNER JOIN state ON state.abbreviation = banner_image.state
 		WHERE state.abbreviation = $1
+		AND city_id is null
 		ORDER BY image_id`, state)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -105,6 +108,29 @@ func (s *stateDAL) BannerImageIDsForState(state string) ([]string, error) {
 	}
 
 	return imageIDs, errors.Trace(rows.Err())
+}
+
+func (s *stateDAL) BannerImageIDsForStates(states []string) (map[string][]string, error) {
+	rows, err := s.db.Query(`
+		SELECT state, image_id
+		FROM banner_image
+		WHERE state in (`+dbutil.PostgresArgs(1, len(states))+`)
+		AND city_id is null`, dbutil.AppendStringsToInterfaceSlice(nil, states)...)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	bannerImageIDsByState := make(map[string][]string, 0)
+	for rows.Next() {
+		var state, imageID string
+		if err := rows.Scan(&state, &imageID); err != nil {
+			return nil, errors.Trace(err)
+		}
+		bannerImageIDsByState[state] = append(bannerImageIDsByState[state], imageID)
+	}
+
+	return bannerImageIDsByState, errors.Trace(rows.Err())
 }
 
 func (s *stateDAL) SpruceDoctorIDsForState(stateAbbreviation string) ([]string, error) {

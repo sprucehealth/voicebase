@@ -1,0 +1,45 @@
+{{define "headTail"}}
+	{{if isEnv "dev"}}
+		<link rel="stylesheet" type="text/css" href={{staticURL "css/allstatespage.css"}}>
+	{{else}}
+		<link rel="stylesheet" type="text/css" href={{staticURL "css/allstatespage.min.css"}}>
+	{{end}}
+	<meta name="description" content="{{.SubContext.SEODescription}}" />
+{{end}}
+
+{{define "content"}}
+	<div class="banner-container">
+		<div class="banner-background-image" style="background-image: url({{.BannerImageURL}}); background-position: center center; background-size: cover;"> </div>
+		<div class="banner-image-overlay"></div>
+		<div class="banner-title-description">
+			<h1 class="banner-title">{{.Title}}</h1>
+			<p class="banner-description">{{.Description}}</p>
+		</div>
+	</div>
+
+	<div class="featured-states-section">
+		<h1 class="featured-states-title">Featured States</h1>
+		<div class="featured-states-container">
+			{{range .States}}
+				<a href="{{.Link}}">
+					<div class="featured-states-item" style="background-image: url({{.ImageURL}}); background-position: center center; background-size: cover;" >
+						<div class="featured-states-image"></div>
+						<div class="featured-image-overlay"> </div>
+						<div class="featured-states-text-container">
+							<p>{{.Name}}</p>
+						</div>
+
+					</div>
+				</a>
+			{{end}}
+		</div>
+
+	</div>
+
+	<div class="long-description-container">
+			{{range .LongDescriptionParagraphs}}
+				<p>{{.}}</p>
+			{{end}}
+	</div>
+
+{{end}}

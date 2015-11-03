@@ -7,67 +7,6 @@
 // 
 // Banner containing image and page description
 //
-.banner-container {
-	position: relative;
-	min-height: 260px;
-};
-
-
-.banner-background-image {
-	position: absolute;
-	width: 100%;
-	height: 100%;
-}
-
-.banner-image-overlay {
-	position: absolute;
-	background-color: black;
-	opacity: 0.4;
-	width: 100%;
-	height: 100%;
-}
-
-.banner-title-description {	
-	width: 100%;
-	height: 100%;
-	margin: auto;
-	text-align: center;
-	position: absolute;
-	@include flexbox();
-	@include flexbox-direction(column);
-	@include flexbox-justify-content(center);
-	@include flexbox-align-items(center);
-}
-
-.banner-title {
-	@include font-700();
-	font-size: 40px;
-	line-height: 48px;
-	color: white;
-	max-width: 480px;
-	margin-bottom: 0px;
-	@include respond-to(handhelds) {
-		font-size: 28px;
-		line-height: 33px;
-		padding-left: 16px;
-		padding-right: 16px;
-	}
-}
-
-.banner-description {
-		@include font-500();
-		font-size: 20px;
-		line-height: 24px;
-		color: white;
-		max-width: 540px;
-		margin-top: 14px;
-		@include respond-to(handhelds) {
-			font-size: 16px;
-			line-height: 19px;
-			padding-left: 16px;
-			padding-right: 16px;
-		}
-}
 
 .content-container {
 	@include flexbox();

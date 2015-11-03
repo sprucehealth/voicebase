@@ -29,6 +29,12 @@ type City struct {
 	Link  string
 }
 
+type State struct {
+	Name     string
+	Link     string
+	ImageURL string
+}
+
 type StatePage struct {
 	IsMobile                  bool
 	HTMLTitle                 string
@@ -40,6 +46,17 @@ type StatePage struct {
 	LongDescriptionParagraphs []string
 	BannerImageURL            string
 	FeaturedDoctors           []*Doctor
+}
+
+type AllStatesPage struct {
+	IsMobile                  bool
+	HTMLTitle                 string
+	Title                     string
+	Description               string
+	BannerImageURL            string
+	SEODescription            string
+	States                    []*State
+	LongDescriptionParagraphs []string
 }
 
 type Doctor struct {

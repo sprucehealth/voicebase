@@ -43,7 +43,7 @@ func buildCareFinder(c *config) httputil.ContextHandler {
 	yelpClient := yelp.NewClient(c.YelpConsumerKey, c.YelpConsumerSecret, c.YelpToken, c.YelpTokenSecret)
 	doctorService := service.NewForDoctor(cityDAL, doctorDAL, stateDAL, yelpClient, c.WebURL, c.ContentURL, c.StaticResourceURL, c.GoogleStaticMapsKey, c.GoogleStatciMapsURLSigningKey)
 	startOnlineVisitService := service.NewForOnlineVisit(doctorDAL, c.ContentURL, c.WebURL)
-
+	allStatesService := service.NewForAllStates(cityDAL, doctorDAL, stateDAL, c.WebURL, c.ContentURL)
 	// initialize resources for the app
 	www.MustInitializeResources("cmd/svc/carefinder/resources")
 
@@ -68,7 +68,7 @@ func buildCareFinder(c *config) httputil.ContextHandler {
 	router := mux.NewRouter()
 	router.PathPrefix("/static").Handler(httputil.StripPrefix("/static", httputil.FileServer(www.ResourceFileSystem)))
 	router.PathPrefix("/dermatologist-near-me/md-{doctor}/start-online-visit").Handler(handlers.NewStartOnlineVisitHandler(templateLoader, startOnlineVisitService))
-
+	router.Handle("/dermatologist-near-me", handlers.NewAllStatesPageHandler(templateLoader, allStatesService))
 	router.Handle("/dermatologist-near-me/sitemap.xml", handlers.NewSiteMapHandler(c.WebURL, doctorDAL, cityDAL, stateDAL))
 	router.PathPrefix("/dermatologist-near-me/md-{doctor}").Handler(handlers.NewDoctorPageHandler(templateLoader, doctorService))
 	router.Handle("/dermatologist-near-me/{state}", handlers.NewStatePageHandler(templateLoader, stateService))
