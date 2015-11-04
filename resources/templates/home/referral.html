@@ -16,11 +16,13 @@ $(function() {
 		<div class="container">
 			<div class="row">
 				<div class="col-md-7">
-					{{if .Message}}
-						<h1>{{.Message}}</h1>
-					{{else}}
+					{{if .Title}}
 						<h1>{{.Title}}</h1>
-						<h2>Text the download link to your phone to get started.</h2>
+						{{if .Message}}
+						<h2>{{.Message}}<h2>
+						{{else}}
+						<h2>Enter your phone number to get started.</h2>
+						{{end}}
 
 						<div class="text-me"></div>
 
@@ -28,6 +30,8 @@ $(function() {
 							Spruce visits are currently available in {{availableStates}}.<br>
 							<a href="#" data-toggle="modal" data-target="#notify-me-modal">Get notified</a> when Spruce is available for you.
 						</p>
+					{{else}}
+						<h1>{{.Message}}</h1>
 					{{end}}
 				</div>
 				<div class="col-md-5">

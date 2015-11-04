@@ -136,6 +136,7 @@ func (h *promoClaimHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter
 				return
 			} else {
 				tmplCtx.Title = "Your friend " + patient.FirstName + " has given you a free visit with a board-certified dermatologist."
+				tmplCtx.Message = "Enter your phone number to claim your free visit."
 			}
 		} else {
 			promo, err := promotions.LookupPromoCode(tmplCtx.Code, h.dataAPI, h.analyticsLogger)

@@ -94,7 +94,7 @@ module.exports = {
 								fontSize: 14,
 								lineHeight: "17px",
 							}}>
-							TEXT DOWNLOAD LINK
+							GET STARTED
 						</button>
 					</form>
 					{this.state.error ?

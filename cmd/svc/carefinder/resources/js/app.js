@@ -5,8 +5,8 @@ import * as ReactDOM from "react-dom";
 import * as API from "./api";
 import * as Utils from "./utils";
 
-window.React = React; 
-window.ReactDOM = ReactDOM;	
+window.React = React;
+window.ReactDOM = ReactDOM;
 
 window.TextMe = React.createClass({displayName: "TextMe",
 		propTypes: {
@@ -103,7 +103,7 @@ window.TextMe = React.createClass({displayName: "TextMe",
 								fontSize: "14px",
 								lineHeight: "17px",
 							}}>
-							TEXT DOWNLOAD LINK
+							GET STARTED
 						</button>
 					</form>
 					{this.state.error ?
