@@ -254,7 +254,7 @@ func (d *doctorDAL) StateCoverageForSpruceDoctor(doctorID string) ([]*models.Sta
 
 func (d *doctorDAL) ShortListedStatesForSpruceDoctor(doctorID string) ([]*models.State, error) {
 	rows, err := d.db.Query(`
-		SELECT state.abbreviation,state.full_name
+		SELECT state.abbreviation,state.full_name, state.key
 		FROM spruce_doctor_state_coverage
 		INNER JOIN carefinder_doctor_info ON carefinder_doctor_info.npi = spruce_doctor_state_coverage.npi
 		INNER JOIN state ON state.abbreviation = state_abbreviation
@@ -268,7 +268,7 @@ func (d *doctorDAL) ShortListedStatesForSpruceDoctor(doctorID string) ([]*models
 	var states []*models.State
 	for rows.Next() {
 		var state models.State
-		if err := rows.Scan(&state.Abbreviation, &state.FullName); err != nil {
+		if err := rows.Scan(&state.Abbreviation, &state.FullName, &state.Key); err != nil {
 			return nil, errors.Trace(err)
 		}
 		states = append(states, &state)

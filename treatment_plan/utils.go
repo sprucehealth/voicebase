@@ -159,12 +159,27 @@ func generateViewsForTreatmentsAndInstructions(ctx context.Context, tp *common.T
 	return treatmentViews, instructionViews
 }
 
+type SingleViewTPConfig struct {
+	TreatmentPlan *common.TreatmentPlan
+	Pharmacy      *pharmacy.PharmacyData
+
+	// ExcludeMessageButton indicates whether or not
+	// to exclude a button to message care team
+	ExcludeMessageButton bool
+
+	// MessageText is the text to display in the next steps section
+	MessageText string
+}
+
 // GenerateViewsForSingleViewTreatmentPlan generates the views necessary to display the treatment plan in a single view
 // format (rather than the tabbed approach we have gone with thus far).
 // NOTE: While some of the work here is duplicative compared to the work in generating the multiple tab treatment plan,
 // it is meant to be consolidated so that we can easily get rid of the old way of view generation for treatment plans
 // in the future, and use just these views.
-func GenerateViewsForSingleViewTreatmentPlan(ctx context.Context, tp *common.TreatmentPlan, pharmacy *pharmacy.PharmacyData, dataAPI api.DataAPI) []views.View {
+func GenerateViewsForSingleViewTreatmentPlan(ctx context.Context, dataAPI api.DataAPI, cfg *SingleViewTPConfig) []views.View {
+	tp := cfg.TreatmentPlan
+	pharmacy := cfg.Pharmacy
+
 	var singleTPViews []views.View
 
 	// PRESCRIPTIONS
@@ -352,6 +367,12 @@ func GenerateViewsForSingleViewTreatmentPlan(ctx context.Context, tp *common.Tre
 			},
 		)
 	}
+
+	messageText := "If you have any questions about your treatment plan, message your care team."
+	if cfg.MessageText == "" {
+		messageText = cfg.MessageText
+	}
+
 	nextStepsCardView.Views = append(nextStepsCardView.Views,
 		&tpSubheaderView{
 			Text:  "Over-the-Counter Treatments",
@@ -366,15 +387,18 @@ func GenerateViewsForSingleViewTreatmentPlan(ctx context.Context, tp *common.Tre
 		},
 		&views.SmallDivider{},
 		&tpTextView{
-			Text:  "If you have any questions about your treatment plan, message your care team.",
+			Text:  messageText,
 			Style: styleBold,
 		},
-		&tpPrescriptionButtonView{
+	)
+
+	if !cfg.ExcludeMessageButton {
+		nextStepsCardView.Views = append(nextStepsCardView.Views, &tpPrescriptionButtonView{
 			Text:    "Message Care Team",
 			IconURL: app_url.IconMessage,
 			TapURL:  app_url.SendCaseMessageAction(tp.PatientCaseID.Int64()),
-		},
-	)
+		})
+	}
 
 	singleTPViews = append(singleTPViews, nextStepsCardView)
 

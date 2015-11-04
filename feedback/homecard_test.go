@@ -87,9 +87,8 @@ func TestHomeCard_WithRatingConfig(t *testing.T) {
 				Tag:  "yelp",
 				Type: FTOpenURL,
 				Template: &OpenURLTemplate{
-					Title:    "testing",
-					BodyText: "body_text",
-					AndroidURL: URL{
+					Title: "testing",
+					AndroidConfig: OpenURLTemplatePlatformConfig{
 						IconURL: "android",
 						OpenURL: "open_url",
 					},
@@ -100,11 +99,11 @@ func TestHomeCard_WithRatingConfig(t *testing.T) {
 				Tag:  "appstore",
 				Type: FTOpenURL,
 				Template: &OpenURLTemplate{
-					Title:    "testing",
-					BodyText: "body_text",
-					AndroidURL: URL{
-						IconURL: "android",
-						OpenURL: "open_url",
+					Title: "testing",
+					AndroidConfig: OpenURLTemplatePlatformConfig{
+						IconURL:  "android",
+						OpenURL:  "open_url",
+						BodyText: "body_text",
 					},
 				},
 			},

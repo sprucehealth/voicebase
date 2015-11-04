@@ -157,14 +157,12 @@ func (f *FreeTextTemplate) ResponseString(templateID int64, resJSON []byte) (str
 type OpenURLTemplate struct {
 	// Title represents the text to display as title in the feedback request.
 	Title string `json:"title"`
-	// BodyText represents the text to display in the body of the feedback request.
-	BodyText string `json:"body_text"`
 	// ButtonTitle represents the text in the button of the feedback request.
 	ButtonTitle string `json:"button_title"`
 	// AndroidURL represents the open and icon url configuration for an android client.
-	AndroidURL URL `json:"android"`
+	AndroidConfig OpenURLTemplatePlatformConfig `json:"android"`
 	// IOSURL represents the open and icon url configuration for an ios client.
-	IOSURL URL `json:"ios"`
+	IOSConfig OpenURLTemplatePlatformConfig `json:"ios"`
 }
 
 func (o *OpenURLTemplate) TemplateType() string {
@@ -174,13 +172,11 @@ func (o *OpenURLTemplate) TemplateType() string {
 func (o *OpenURLTemplate) Validate() error {
 	if o.Title == "" {
 		return fmt.Errorf("title required for template type %s", FTOpenURL)
-	} else if o.BodyText == "" {
-		return fmt.Errorf("body_text required for template type %s", FTOpenURL)
 	} else if o.ButtonTitle == "" {
 		return fmt.Errorf("button_title required for template type %s", FTOpenURL)
-	} else if err := o.AndroidURL.Validate(); err != nil {
+	} else if err := o.AndroidConfig.Validate(); err != nil {
 		return fmt.Errorf("android url validation error: '%s' for type %s ", err.Error(), FTOpenURL)
-	} else if err := o.IOSURL.Validate(); err != nil {
+	} else if err := o.IOSConfig.Validate(); err != nil {
 		return fmt.Errorf("ios url definition error: '%s' for type %s", err.Error(), FTOpenURL)
 	}
 
@@ -188,16 +184,19 @@ func (o *OpenURLTemplate) Validate() error {
 }
 
 // URL is a structured used for configuring icon and open url.
-type URL struct {
-	IconURL string `json:"icon_url"`
-	OpenURL string `json:"open_url"`
+type OpenURLTemplatePlatformConfig struct {
+	IconURL  string `json:"icon_url"`
+	OpenURL  string `json:"open_url"`
+	BodyText string `json:"body_text"`
 }
 
-func (u *URL) Validate() error {
+func (u *OpenURLTemplatePlatformConfig) Validate() error {
 	if u.IconURL == "" {
 		return fmt.Errorf("icon_url definition required")
 	} else if u.OpenURL == "" {
 		return fmt.Errorf("open_url definition required")
+	} else if u.BodyText == "" {
+		return fmt.Errorf("body_text definition required")
 	}
 
 	return nil
@@ -219,14 +218,16 @@ type openURLClientView struct {
 
 func (o *OpenURLTemplate) ClientView(id int64, platform common.Platform) interface{} {
 
-	var iconURL, openURL string
+	var iconURL, openURL, bodyText string
 	switch platform {
 	case common.Android:
-		iconURL = o.IOSURL.IconURL
-		openURL = o.IOSURL.OpenURL
+		iconURL = o.AndroidConfig.IconURL
+		openURL = o.AndroidConfig.OpenURL
+		bodyText = o.AndroidConfig.BodyText
 	case common.IOS:
-		iconURL = o.AndroidURL.IconURL
-		openURL = o.AndroidURL.OpenURL
+		iconURL = o.IOSConfig.IconURL
+		openURL = o.IOSConfig.OpenURL
+		bodyText = o.IOSConfig.BodyText
 	}
 
 	return &openURLClientView{
@@ -237,7 +238,7 @@ func (o *OpenURLTemplate) ClientView(id int64, platform common.Platform) interfa
 		URL:         openURL,
 		Body: &bodyClientView{
 			IconURL: iconURL,
-			Text:    o.BodyText,
+			Text:    bodyText,
 		},
 	}
 }

@@ -498,7 +498,12 @@ func (h *treatmentPlanCSVHandler) transformFTPToSTP(ctx context.Context, ftp ftp
 			}),
 	}
 
-	sftp.ContentViews = append(contentViews, treatment_plan.GenerateViewsForSingleViewTreatmentPlan(ctx, tp, pd, h.dataAPI)...)
+	sftp.ContentViews = append(contentViews, treatment_plan.GenerateViewsForSingleViewTreatmentPlan(ctx, h.dataAPI, &treatment_plan.SingleViewTPConfig{
+		TreatmentPlan:        tp,
+		Pharmacy:             pd,
+		ExcludeMessageButton: true,
+		MessageText:          "You can always message your care team with any questions you have about your treatment plan.",
+	})...)
 
 	// validate content views
 	for _, v := range sftp.ContentViews {

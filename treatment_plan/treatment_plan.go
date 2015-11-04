@@ -168,7 +168,10 @@ func treatmentPlanResponse(ctx context.Context, dataAPI api.DataAPI, tp *common.
 	})
 
 	p.Go(func() error {
-		contentViews = GenerateViewsForSingleViewTreatmentPlan(ctx, tp, patient.Pharmacy, dataAPI)
+		contentViews = GenerateViewsForSingleViewTreatmentPlan(ctx, dataAPI, &SingleViewTPConfig{
+			TreatmentPlan: tp,
+			Pharmacy:      patient.Pharmacy,
+		})
 		return nil
 	})
 
