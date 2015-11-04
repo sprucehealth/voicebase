@@ -1,5 +1,5 @@
 {
-	"phabricator.uri" : "https://phabricator.carefront.net/",
+	"phabricator.uri" : "https://phabricator.corp.sprucehealth.com/",
 	"repository.callsign": "B",
 	"base": "git:merge-base(origin/master), arc:prompt"
 }
