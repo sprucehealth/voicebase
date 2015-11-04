@@ -2,7 +2,7 @@ Backend Monorepo
 ================
 
 Setting up your environment & running the `gotour`
----------------------------------
+--------------------------------------------------
 
 	$ brew update
 	$ brew doctor # ensure there are no issues with Homebrew or your system
@@ -15,7 +15,7 @@ Setting up your environment & running the `gotour`
 	$ $HOME/go/bin/gotour # runs the gotour executable and opens it in a browser window
 
 Building the app
----------------------------------
+----------------
 
 	# checks out to $GOPATH/src/github.com/sprucehealth/backend/
 	$ go get github.com/sprucehealth/backend
@@ -39,7 +39,7 @@ Next, `cd` to the backend app's directory and `go build` it:
 _Having issues? See the [troubleshooting](#troubleshooting) section._
 
 Getting environment setup
----------------------------------
+-------------------------
 
 Set up the AWS keys as environment variables by adding the following to `~/.bashrc` or `~/.zshrc`:
 
@@ -59,7 +59,7 @@ requests are routed based on the incoming URI
 	127.0.0.1       api.spruce.loc
 
 Local database setup (automatic method)
----------------------------------
+---------------------------------------
 
 1. `cd mysql`
 2. Find number of the latest migration file (ex: if `migration-395.sql` is the
@@ -68,7 +68,7 @@ Local database setup (automatic method)
 
 
 Local database setup (manual method)
----------------------------------
+------------------------------------
 
 Before running the backend server locally, we want to get a local instance of
 mysql running, and setup with the database schema and boostrapped data.
@@ -117,7 +117,7 @@ was completed:
 
 
 Running the server locally
----------------------------------
+--------------------------
 
 Let's try running the server locally.
 
@@ -244,7 +244,7 @@ During development, you can run a built-in routine to automatically run flow eac
 5. `flow stop` to stop the flow routine
 
 Events setup (optional)
----------------------------------
+-----------------------
 
 ### Database setup
 
@@ -369,7 +369,7 @@ The existing diagrams in their original file format can be found on
 Google Drive under Engineering/Backend/Diagrams.
 
 Creating a new migration
---------------------------------------
+------------------------
 
 1. Make sure you've got the correct environment variables set up:
 
@@ -386,7 +386,7 @@ Creating a new migration
 
 
 Deploying
---------------------------------------
+---------
 
 Generally, continuous integration server handles deployment. The following instructions refer to manual deployment:
 
@@ -405,7 +405,7 @@ Then, add the following to `~/.ssh/config`:
 ```
 # Production
 
-Host 10.0.* 
+Host 10.0.*
     ProxyCommand ssh 54.209.10.66 nc %h %p
 Host ip-10-0-*.ec2.internal
     ProxyCommand ssh 54.209.10.66 nc %h %p
@@ -416,7 +416,7 @@ Host *.prod-us-east-1.spruce
 
 Host 10.1.*
     ProxyCommand ssh 54.84.90.84 nc %h %p
-Host ip-10-1-*.ec2.internal 
+Host ip-10-1-*.ec2.internal
     ProxyCommand ssh 54.84.90.84 nc %h %p
 Host *.staging-us-east-1.spruce
     ProxyCommand ssh 54.84.90.84 nc %h %p
