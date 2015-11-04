@@ -24,7 +24,7 @@ type urlItem struct {
 	ChangeFreq string `xml:"changefreq"`
 }
 
-type UrlSet struct {
+type URLSet struct {
 	XMLName xml.Name   `xml:"http://www.sitemaps.org/schemas/sitemap/0.9 urlset"`
 	URLs    []*urlItem `xml:"url"`
 }
@@ -124,7 +124,7 @@ func (s *siteMapHandler) retrieveSiteMap() ([]byte, error) {
 		return nil, errors.Trace(err)
 	}
 
-	sm := &UrlSet{
+	sm := &URLSet{
 		URLs: make([]*urlItem, 0, 1+len(cities)+len(doctorIDs)+len(states)),
 	}
 

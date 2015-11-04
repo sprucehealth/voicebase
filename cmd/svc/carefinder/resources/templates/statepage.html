@@ -115,20 +115,18 @@
 {{end}}
 
 {{define "scripts"}}
-{{if .SubContext.IsMobile}}
-{{else}}
-
 	{{if isEnv "dev"}}
-		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.js"></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.js"></script>
 		<script src="{{staticURL "js/carefinder.js"}}" type="text/javascript"></script>
 	{{else}}
-		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
 		<script src="{{staticURL "js/carefinder.min.js"}}" type="text/javascript"></script>	
 	{{end}}
 	
 	<script type="text/javascript">
 	var button = $(".view-more-cities-button");
 	var expandFunction = function(event){
+
 		event.preventDefault();
 		button.hide();
 		var containerBelowFold = $(".below-fold");
@@ -138,5 +136,4 @@
 	button.on("click", expandFunction);
 	button.on("tap", expandFunction);
 	</script>
-{{end}}
 {{end}}
