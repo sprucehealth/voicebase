@@ -1,6 +1,5 @@
 Backend Monorepo
 ================
-[![Build Status](http://dev-ci-1503083087.us-east-1.elb.amazonaws.com/job/backend/badge/icon)](http://dev-ci-1.node.dev-us-east-1.spruce:8080/job/backend/)
 
 Setting up your environment & running the `gotour`
 ---------------------------------
