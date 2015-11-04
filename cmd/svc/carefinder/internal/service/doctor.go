@@ -481,7 +481,11 @@ func (d *doctorService) buildReviewsSection(doctor *models.Doctor, doctorRespons
 	var averageRatingImageURL string
 
 	if doctor.IsSpruceDoctor {
-		title = fmt.Sprintf("%d REVIEWS ON SPRUCE", doctor.ReviewCount)
+		if doctor.ReviewCount == 1 {
+			title = fmt.Sprintf("1 REVIEW ON SPRUCE")
+		} else {
+			title = fmt.Sprintf("%d REVIEWS ON SPRUCE", doctor.ReviewCount)
+		}
 		sourceImageName = "img/source_spruce.svg"
 		averageRatingImageURL = response.StaticURL(d.staticResourceURL, response.DetermineImageNameForRating(doctor.AverageRating))
 

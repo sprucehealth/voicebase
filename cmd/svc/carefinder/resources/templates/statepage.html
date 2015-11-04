@@ -43,7 +43,7 @@
 			{{range .FeaturedDoctors}}
 				<div class="primary-card" itemscope itemtype="http://schema.org/Physician">
 					<link itemprop="medicalSpecialty" href="http://schema.org/Dermatologic"></link>
-					<a href="{{.ProfileURL}}"><img class="primary-card-image" itemprop="image" src={{.ProfileImageURL}}></img></a>
+					<a href="{{.ProfileURL}}"><img class="primary-card-image" itemprop="image" src={{.ProfileImageURL}} alt="{{.LongDisplayName}} | Dermatologist"></img></a>
 
 					<div class="name-rating-experience-container">
 
@@ -128,12 +128,15 @@
 	
 	<script type="text/javascript">
 	var button = $(".view-more-cities-button");
-	button.on("click", function(event){
+	var expandFunction = function(event){
 		event.preventDefault();
 		button.hide();
 		var containerBelowFold = $(".below-fold");
 		containerBelowFold.show();
-	});
+	}
+
+	button.on("click", expandFunction);
+	button.on("tap", expandFunction);
 	</script>
 {{end}}
 {{end}}

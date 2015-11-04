@@ -8,7 +8,7 @@
 
 {{define "content"}}
 	<div class="cta-container">
-		<img class="doctor-img" src="{{.ProfileImageURL}}"></img>
+		<img class="doctor-img" src="{{.ProfileImageURL}}" img="{{.DoctorLongDisplayName}} | Dermatologist"></img>
 		<p class="cta-title">Start a visit with {{.DoctorShortDisplayName}} on Spruce.</p>
 		{{if .IsMobile}}
 			<a class="cta-button" href="{{.ReferralLink}}">DOWNLOAD THE APP</a>

@@ -49,7 +49,7 @@
 		</span>
 	{{end}}
 
-	<img class="doctor-img" itemprop="image" src="{{.ProfileImageURL}}" />
+	<img class="doctor-img" itemprop="image" src="{{.ProfileImageURL}}" alt="{{.LongDisplayName}}" />
 
 	<div class="doctor-name-container">
 		<p class="doctor-name" itemprop ="name">{{.LongDisplayName}}</p>
@@ -271,7 +271,7 @@
 			<div class="online-doctors-container">
 				{{range .SpruceDoctors}}
 					<div class="doctor-card">
-						<a href="{{.ProfileURL}}"><img class="doctor-card-img" src="{{.ProfileImageURL}}"></img></a>
+						<a href="{{.ProfileURL}}"><img class="doctor-card-img" src="{{.ProfileImageURL}}" alt="{{.LongDisplayName}} | Dermatologist"></img></a>
 						<a href="{{.ProfileURL}}" class="doctor-card-title">{{.LongDisplayName}}</a>
 						<div class="treats-online-container">
 							<div class="treats-online-circle"></div>

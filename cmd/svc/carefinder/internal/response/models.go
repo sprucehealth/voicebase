@@ -186,6 +186,7 @@ type StartOnlineVisitPage struct {
 	DoctorID               string
 	HTMLTitle              string
 	DoctorShortDisplayName string
+	DoctorLongDisplayName  string
 	ReferralLink           string
 	ProfileImageURL        string
 	IsMobile               bool

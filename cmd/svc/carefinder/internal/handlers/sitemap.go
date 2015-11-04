@@ -24,12 +24,9 @@ type urlItem struct {
 	ChangeFreq string `xml:"changefreq"`
 }
 
-type urlSet struct {
-	URLs []*urlItem `xml:"url"`
-}
-
-type sitemap struct {
-	URLSet urlSet `xml:"http://www.sitemaps.org/schemas/sitemap/0.9 urlset"`
+type UrlSet struct {
+	XMLName xml.Name   `xml:"http://www.sitemaps.org/schemas/sitemap/0.9 urlset"`
+	URLs    []*urlItem `xml:"url"`
 }
 
 // cachedData represents a cached version of the sitemap
@@ -127,29 +124,33 @@ func (s *siteMapHandler) retrieveSiteMap() ([]byte, error) {
 		return nil, errors.Trace(err)
 	}
 
-	sm := &sitemap{
-		URLSet: urlSet{
-			URLs: make([]*urlItem, 0, len(cities)+len(doctorIDs)+len(states)),
-		},
+	sm := &UrlSet{
+		URLs: make([]*urlItem, 0, 1+len(cities)+len(doctorIDs)+len(states)),
 	}
+
+	// add the top level site to the map
+	sm.URLs = append(sm.URLs, &urlItem{
+		Loc:        s.webURL,
+		ChangeFreq: "daily",
+	})
 
 	// indicating daily change for doctor and city pages
 	// as the yelp reviews and uv index have the potential to change daily
 	for _, item := range doctorIDs {
-		sm.URLSet.URLs = append(sm.URLSet.URLs, &urlItem{
+		sm.URLs = append(sm.URLs, &urlItem{
 			Loc:        response.DoctorPageURL(item, "", s.webURL),
 			ChangeFreq: "daily",
 		})
 	}
 	for _, item := range cities {
-		sm.URLSet.URLs = append(sm.URLSet.URLs, &urlItem{
+		sm.URLs = append(sm.URLs, &urlItem{
 			Loc:        response.CityPageURL(item, s.webURL),
 			ChangeFreq: "daily",
 		})
 	}
 
 	for _, state := range states {
-		sm.URLSet.URLs = append(sm.URLSet.URLs, &urlItem{
+		sm.URLs = append(sm.URLs, &urlItem{
 			Loc:        response.StatePageURL(state.Key, s.webURL),
 			ChangeFreq: "daily",
 		})

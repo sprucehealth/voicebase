@@ -48,6 +48,7 @@ func (s *startOnlineVisitService) PageContentForID(ctx interface{}, r *http.Requ
 	return &response.StartOnlineVisitPage{
 		HTMLTitle:              fmt.Sprintf("%s | Start an Online Visit | Spruce Health", doctorResponse.LongDisplayName),
 		DoctorShortDisplayName: doctorResponse.ShortDisplayName,
+		DoctorLongDisplayName:  doctorResponse.LongDisplayName,
 		ProfileImageURL:        doctorResponse.ProfileImageURL,
 		DoctorID:               doctor.ID,
 		ReferralLink:           doctor.ReferralLink,
