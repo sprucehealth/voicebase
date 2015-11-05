@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/models"
@@ -166,10 +167,21 @@ func (s *stateService) PageContentForID(ctx interface{}, r *http.Request) (inter
 	}, nil
 }
 
+//byFeatured first sorts by surfacing cities that are featured, and then lexicographically
+//sorts the cities that are not featured.
 type byFeatured []*models.City
 
 func (c byFeatured) Len() int      { return len(c) }
 func (c byFeatured) Swap(i, j int) { c[i], c[j] = c[j], c[i] }
 func (c byFeatured) Less(i, j int) bool {
-	return c[i].Featured
+	if c[i].Featured {
+		return true
+	}
+	if c[j].Featured {
+		return false
+	}
+	if strings.Compare(c[i].Name, c[j].Name) == -1 {
+		return true
+	}
+	return false
 }

@@ -67,13 +67,13 @@ func buildCareFinder(c *config) httputil.ContextHandler {
 
 	router := mux.NewRouter()
 	router.PathPrefix("/static").Handler(httputil.StripPrefix("/static", httputil.FileServer(www.ResourceFileSystem)))
-	router.PathPrefix("/dermatologist-near-me/md-{doctor}/start-online-visit").Handler(handlers.NewStartOnlineVisitHandler(templateLoader, startOnlineVisitService))
+	router.Handle("/dermatologist-near-me/api/textdownloadlink", handlers.NewTextLinkHandler(doctorDAL, c.WebURL))
 	router.Handle("/dermatologist-near-me", handlers.NewAllStatesPageHandler(templateLoader, allStatesService))
 	router.Handle("/dermatologist-near-me/sitemap.xml", handlers.NewSiteMapHandler(c.WebURL, doctorDAL, cityDAL, stateDAL))
+	router.PathPrefix("/dermatologist-near-me/md-{doctor}/start-online-visit").Handler(handlers.NewStartOnlineVisitHandler(templateLoader, startOnlineVisitService))
 	router.PathPrefix("/dermatologist-near-me/md-{doctor}").Handler(handlers.NewDoctorPageHandler(templateLoader, doctorService))
 	router.Handle("/dermatologist-near-me/{state}", handlers.NewStatePageHandler(templateLoader, stateService))
 	router.Handle("/dermatologist-near-me/{state}/{city}", handlers.NewCityPageHandler(templateLoader, cityService))
-	router.Handle("/dermatologist-near-me/api/textdownloadlink", handlers.NewTextLinkHandler(doctorDAL, c.WebURL))
 
 	webRequestLogger := func(ctx context.Context, ev *httputil.RequestEvent) {
 		log := golog.Context(
