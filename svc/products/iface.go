@@ -25,6 +25,12 @@ type Product struct {
 	ProductURL string   `json:"product_url,omitempty"`
 }
 
+// DAL is the interface for a products data access layer
+type DAL interface {
+	QueryProducts(query string, limit int) ([]*Product, error)
+	Product(id string) (*Product, error)
+}
+
 // Service defines the interface for the products service.
 type Service interface {
 	Search(query string) ([]*Product, error)

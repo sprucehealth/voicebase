@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -93,7 +93,7 @@ func New(d dynamodbiface.DynamoDBAPI, publisher dispatch.Publisher, env, authSec
 		regimenTableName:    ptr.String(fmt.Sprintf(regimenTableNameFormatString, env)),
 		regimenTagTableName: ptr.String(fmt.Sprintf(regimenTagTableNameFormatString, env)),
 	}
-	return s, errors.Trace(s.verifyDynamo())
+	return s, errors.Trace(s.bootstrapDynamo())
 }
 
 type singleRegimenAnalytics struct {
@@ -499,34 +499,9 @@ func (s *service) FoundationOf(id string, maxResults int) ([]*svc.Regimen, error
 	return rs, nil
 }
 
-func (s *service) verifyDynamo() error {
-	_, err := s.dynamoClient.DescribeTable(&dynamodb.DescribeTableInput{
-		TableName: s.regimenTableName,
-	})
-
-	if err != nil {
-		golog.Infof(err.Error())
-	}
-
-	if awserr, ok := err.(awserr.Error); ok {
-		if awserr.Code() == "ResourceNotFoundException" {
-			if err := s.bootstrapDynamo(); err != nil {
-				return errors.Trace(err)
-			}
-		} else {
-			return errors.Trace(awserr.OrigErr())
-		}
-	} else if err != nil {
-		return errors.Trace(err)
-	}
-
-	return nil
-}
-
 func (s *service) bootstrapDynamo() error {
-	golog.Infof("Bootstrapping dynamo tables...")
 	// Create the svc table that maps ids to svc indexed by the ID and view count
-	if _, err := s.dynamoClient.CreateTable(&dynamodb.CreateTableInput{
+	if err := awsutil.CreateDynamoDBTable(s.dynamoClient, &dynamodb.CreateTableInput{
 		TableName: s.regimenTableName,
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			&dynamodb.AttributeDefinition{
@@ -578,12 +553,9 @@ func (s *service) bootstrapDynamo() error {
 	}); err != nil {
 		return errors.Trace(err)
 	}
-	if err := waitForStatus(&dynamoTable{tableName: *s.regimenTableName, client: s.dynamoClient}, awsStatus(`ACTIVE`), time.Second, time.Minute); err != nil {
-		return errors.Trace(err)
-	}
 
 	// Create the tags table that maps and is indexed by tags to regimen id's
-	if _, err := s.dynamoClient.CreateTable(&dynamodb.CreateTableInput{
+	return errors.Trace(awsutil.CreateDynamoDBTable(s.dynamoClient, &dynamodb.CreateTableInput{
 		TableName: s.regimenTagTableName,
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			&dynamodb.AttributeDefinition{
@@ -635,44 +607,5 @@ func (s *service) bootstrapDynamo() error {
 			ReadCapacityUnits:  ptr.Int64(10),
 			WriteCapacityUnits: ptr.Int64(10),
 		},
-	}); err != nil {
-		return errors.Trace(err)
-	}
-	if err := waitForStatus(&dynamoTable{tableName: *s.regimenTagTableName, client: s.dynamoClient}, awsStatus(`ACTIVE`), time.Second, time.Minute); err != nil {
-		return errors.Trace(err)
-	}
-	return nil
-}
-
-type awsStatus string
-
-type awsStatusProvider interface {
-	Status() (awsStatus, error)
-}
-
-type dynamoTable struct {
-	client    dynamodbiface.DynamoDBAPI
-	tableName string
-}
-
-func (dt *dynamoTable) Status() (awsStatus, error) {
-	describeResp, err := dt.client.DescribeTable(&dynamodb.DescribeTableInput{
-		TableName: ptr.String(dt.tableName),
-	})
-	return awsStatus(*describeResp.Table.TableStatus), err
-}
-
-func waitForStatus(provider awsStatusProvider, status awsStatus, delay, timeout time.Duration) error {
-	start := time.Now()
-	for time.Since(start) < timeout {
-		tStatus, err := provider.Status()
-		if err != nil {
-			return errors.Trace(err)
-		}
-		if tStatus == status {
-			return nil
-		}
-		time.Sleep(delay)
-	}
-	return errors.Trace(fmt.Errorf("Status %s was never reached after waiting %v", status, timeout))
+	}))
 }

@@ -41,7 +41,7 @@ func main() {
 			golog.Warningf("Error while uploading regimen %d: %s", i, err)
 			continue
 		}
-		parsedURL, err := url.Parse(strings.TrimRight(config.webEndpoint, "/") + "/regimen/" + resp.ID + "?token=" + url.QueryEscape(resp.AuthToken))
+		parsedURL, err := url.Parse(strings.TrimRight(config.webEndpoint, "/") + "/regimen/new?id=" + resp.ID + "&token=" + url.QueryEscape(resp.AuthToken))
 		if err != nil {
 			golog.Fatalf("Error while parsing URL for regimen %d: %s", i, err)
 		}

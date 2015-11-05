@@ -84,3 +84,19 @@ type FoundationGETRequest struct {
 type FoundationGETResponse struct {
 	FoundationOf []*regimens.Regimen `json:"foundation_of"`
 }
+
+// RXGuidePOSTRequest represents the information expected for a successful POST request
+type RXGuidePOSTRequest struct {
+	RXGuide *RXGuide `json:"rx_guide"`
+}
+
+// RXGuide represents the data that encapsulates the a Spruce RXGuide
+type RXGuide struct {
+	GenericName string   `json:"generic_name"`
+	BrandNames  []string `json:"brand_names"`
+	Form        string   `json:"form"`
+	Forms       []string `json:"forms"`
+	Description string   `json:"description"`
+	Tips        string   `json:"tips"`
+	RightForMe  string   `json:"right_for_me"`
+}

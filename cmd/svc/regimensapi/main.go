@@ -28,6 +28,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/handlers"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/media"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/mediaproxy"
+	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/rxguide"
 	"github.com/sprucehealth/backend/events"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/dispatch"
@@ -38,6 +39,7 @@ import (
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/storage"
+	iproducts "github.com/sprucehealth/backend/svc/products"
 	"github.com/sprucehealth/go-proxy-protocol/proxyproto"
 	"golang.org/x/net/context"
 )
@@ -236,7 +238,6 @@ func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.Contex
 	if memcacheCli != nil {
 		productCache = memcacheCli
 	}
-	productsSvc := products.New(factual.New(config.factualKey, config.factualSecret), amz, productCache, metricsRegistry.Scope("productssvc"))
 	dynamoDBClient := dynamodb.New(func() *aws.Config {
 		dynamoConfig := &aws.Config{
 			Region:      &config.awsDynamoDBRegion,
@@ -252,10 +253,20 @@ func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.Contex
 		}
 		return dynamoConfig
 	}())
+	rxGuideSvc, err := rxguide.New(dynamoDBClient, config.env)
+	if err != nil {
+		golog.Fatalf(err.Error())
+	}
 	regimenSvc, err := regimens.New(dynamoDBClient, dispatcher, config.env, config.authSecret)
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
+	productsSvc := products.New(
+		factual.New(config.factualKey, config.factualSecret),
+		amz,
+		productCache,
+		metricsRegistry.Scope("productssvc"),
+		map[string]iproducts.DAL{"rxguide": rxguide.AsProductDAL(rxGuideSvc, config.apiDomain, config.webDomain)})
 
 	requestLogger := func(ctx context.Context, ev *httputil.RequestEvent) {
 		av := &analytics.WebRequestEvent{
@@ -313,7 +324,6 @@ func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.Contex
 	proxySvc := mediaproxy.New(proxyMediaSvc, proxyDAL, nil)
 	proxyRoot := config.apiDomain + "/media/proxy/"
 	mediaProxyHandler := handlers.NewMediaProxy(proxySvc, metricsRegistry.Scope("mediaproxy"))
-
 	router.Handle("/media", mediaHandler)
 	router.Handle("/media/proxy/{id}", mediaProxyHandler)
 	router.Handle("/media/{id:\\w+(\\.\\w+)?}", mediaHandler)
@@ -324,6 +334,9 @@ func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.Contex
 	router.Handle("/regimen/{id}/foundation", handlers.NewFoundation(regimenSvc))
 	router.Handle("/regimen/{id}/view", handlers.NewViewCount(regimenSvc))
 	router.Handle("/regimen", handlers.NewRegimens(regimenSvc, mediaStore, config.webDomain, config.apiDomain))
+	rxGuideHandler := handlers.NewRXGuide(rxGuideSvc)
+	router.Handle(`/rxguide`, rxGuideHandler)
+	router.Handle(`/rxguide/{drug_name:[A-Za-z0-9 _.,!"'/$-]+}`, rxGuideHandler)
 	h := httputil.LoggingHandler(router, requestLogger)
 	h = httputil.MetricsHandler(h, metricsRegistry.Scope("regimensapi"))
 	h = httputil.RequestIDHandler(h)

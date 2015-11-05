@@ -36,8 +36,8 @@ func TestService(t *testing.T) {
 		},
 	}
 	svc := &Service{
-		dals:      map[string]dal{"test": td},
-		searchDAL: "test",
+		dals:       map[string]products.DAL{"test": td},
+		searchDALs: []string{"test"},
 	}
 
 	ps, err := svc.Search("")

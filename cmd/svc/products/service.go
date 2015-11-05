@@ -25,17 +25,11 @@ const (
 // Service is the products service
 type Service struct {
 	// dals is the set of data access layers for products
-	dals map[string]dal
-	// searchDAL is the DAL that will be used as the search source
-	searchDAL string
-	mc        MemcacheClient
-	az        AmazonProductClient
-}
-
-// dal is the interface for a products data access layer
-type dal interface {
-	QueryProducts(query string, limit int) ([]*products.Product, error)
-	Product(id string) (*products.Product, error)
+	dals map[string]products.DAL
+	// searchDALs are the DALs that will be used as the search sources
+	searchDALs []string
+	mc         MemcacheClient
+	az         AmazonProductClient
 }
 
 // FactualClient is the interface implemented by a Factual client
@@ -57,25 +51,40 @@ type AmazonProductClient interface {
 }
 
 // New returns a newly initialized products service
-func New(fc FactualClient, az AmazonProductClient, mc MemcacheClient, statsRegistry metrics.Registry) *Service {
+func New(fc FactualClient, az AmazonProductClient, mc MemcacheClient, statsRegistry metrics.Registry, additionalDals map[string]products.DAL) *Service {
+	dals := map[string]products.DAL{"factual": newFactualDAL(fc, mc, statsRegistry.Scope("factual"))}
+	searchDALs := make([]string, 0, len(additionalDals)+1)
+	if additionalDals != nil {
+		for k, v := range additionalDals {
+			dals[k] = v
+			searchDALs = append(searchDALs, k)
+		}
+	}
+	// Search factual last
+	// TODO: Make this order configurable
+	searchDALs = append(searchDALs, "factual")
 	return &Service{
-		az:        az,
-		mc:        mc,
-		dals:      map[string]dal{"factual": newFactualDAL(fc, mc, statsRegistry.Scope("factual"))},
-		searchDAL: "factual",
+		az:         az,
+		mc:         mc,
+		dals:       dals,
+		searchDALs: searchDALs,
 	}
 }
 
 // Search returns a list of products that match a search query
 func (s *Service) Search(query string) ([]*products.Product, error) {
-	dal := s.dals[s.searchDAL]
-	prods, err := dal.QueryProducts(query, queryLimit)
-	if err != nil {
-		return nil, err
-	}
-	// Tag the product IDs with the source
-	for _, p := range prods {
-		p.ID = s.searchDAL + ":" + p.ID
+	var prods []*products.Product
+	for _, searchDAL := range s.searchDALs {
+		dal := s.dals[searchDAL]
+		ps, err := dal.QueryProducts(query, queryLimit)
+		if err != nil {
+			return nil, err
+		}
+		// Tag the product IDs with the source
+		for _, p := range ps {
+			p.ID = searchDAL + ":" + p.ID
+		}
+		prods = append(prods, ps...)
 	}
 	return prods, nil
 }
@@ -93,7 +102,7 @@ func (s *Service) Lookup(id string) (*products.Product, error) {
 	}
 	id = id[ix+1:]
 	prod, err := dal.Product(id)
-	if err == errNotFound {
+	if err == errNotFound || err == products.ErrNotFound {
 		return nil, products.ErrNotFound
 	}
 	if err != nil {

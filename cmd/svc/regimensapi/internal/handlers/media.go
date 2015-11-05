@@ -134,17 +134,9 @@ func (h *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *
 
 	res := &responses.MediaPOSTResponse{
 		MediaID:  mediaID,
-		MediaURL: mediaURL(h.apiDomain, strconv.FormatInt(int64(mediaID), 10)),
+		MediaURL: media.URL(h.apiDomain, strconv.FormatInt(int64(mediaID), 10)),
 		Width:    meta.Width,
 		Height:   meta.Height,
 	}
 	httputil.JSONResponse(w, http.StatusOK, res)
-}
-
-func mediaURL(apiDomain, mediaID string) string {
-	return fmt.Sprintf("%s/media/%s", apiDomain, mediaID)
-}
-
-func resizeMediaURL(apiDomain, mediaID string, width, height int) string {
-	return fmt.Sprintf("%s/media/%s?width=%d&height=%d", apiDomain, mediaID, width, height)
 }

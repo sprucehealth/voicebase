@@ -5,7 +5,7 @@
 ```
 brew install awscli
 docker run -p 7777:7777 tray/dynamodb-local -inMemory -port 7777 -delayTransientStatuses
-aws --endpoint-url="http://$(boot2docker ip):7777" --color=on dynamodb list-tables
+aws --endpoint-url="http://$(docker-machine ip spruce):7777" --color=on dynamodb list-tables
 {
     "TableNames": []
 }
@@ -24,6 +24,6 @@ REGIMENS_AUTH_SECRET="something-seekrit" \
 REGIMENS_WEB_DOMAIN="http://web.localhost:8445/" \
 REGIMENS_API_DOMAIN="http://localhost:8445/" \
 REGIMENS_HTTP=:8445 \
-REGIMENS_ANALYTICS_DEBUG=true
+REGIMENS_ANALYTICS_DEBUG=true \
 ./regimensapi
 ```

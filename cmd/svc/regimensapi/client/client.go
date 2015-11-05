@@ -15,9 +15,10 @@ import (
 
 // Client defines the methods required to interact with the regimensapi
 type Client interface {
-	InsertRegimen(r *regimens.Regimen, publish bool) (*responses.RegimenPOSTResponse, error)
-	Regimen(regimenID string) (*responses.RegimenGETResponse, error)
 	IncrementViewCount(regimenID string) error
+	InsertRegimen(r *regimens.Regimen, publish bool) (*responses.RegimenPOSTResponse, error)
+	InsertRXGuide(r *responses.RXGuide) error
+	Regimen(regimenID string) (*responses.RegimenGETResponse, error)
 }
 
 type regimensAPIClient struct {
@@ -81,11 +82,21 @@ func (c *regimensAPIClient) IncrementViewCount(regimenID string) error {
 		return errors.Trace(err)
 	}
 	defer resp.Body.Close()
+	return errors.Trace(checkOK(resp))
+}
 
-	if err := checkOK(resp); err != nil {
+func (c *regimensAPIClient) InsertRXGuide(r *responses.RXGuide) error {
+	req := &responses.RXGuidePOSTRequest{RXGuide: r}
+	data, err := json.Marshal(req)
+	if err != nil {
 		return errors.Trace(err)
 	}
-	return nil
+	resp, err := c.httpClient.Post(formURL(c.endpoint, "rxguide"), "application/json", bytes.NewReader(data))
+	if err != nil {
+		return errors.Trace(err)
+	}
+	defer resp.Body.Close()
+	return errors.Trace(checkOK(resp))
 }
 
 func formURL(baseEndpoint, path string) string {
