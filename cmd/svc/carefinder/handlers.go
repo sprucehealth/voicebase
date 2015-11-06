@@ -65,7 +65,7 @@ func buildCareFinder(c *config) httputil.ContextHandler {
 
 	templateLoader.MustLoadTemplate("base.html", "", nil)
 
-	router := mux.NewRouter()
+	router := mux.NewRouter().StrictSlash(true)
 	router.PathPrefix("/static").Handler(httputil.StripPrefix("/static", httputil.FileServer(www.ResourceFileSystem)))
 	router.Handle("/dermatologist-near-me/api/textdownloadlink", handlers.NewTextLinkHandler(doctorDAL, c.WebURL))
 	router.Handle("/dermatologist-near-me", handlers.NewAllStatesPageHandler(templateLoader, allStatesService))
