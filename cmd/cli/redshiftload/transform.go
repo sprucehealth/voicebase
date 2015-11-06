@@ -8,6 +8,8 @@ import (
 	"io"
 	"strings"
 
+	"github.com/sprucehealth/backend/libs/dbutil"
+
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/samuel/go-librato/librato"
 	"github.com/sprucehealth/backend/libs/awsutil"
@@ -53,11 +55,11 @@ func transform(srcDB, destDB *sql.DB, tables []*table, s3c *s3.S3, bucket, prefi
 		var columns []string
 		for _, c := range tab.Columns {
 			if c.Transform != "" {
-				columns = append(columns, `"`+c.Transform+`"`)
+				columns = append(columns, dbutil.EscapeMySQLName(c.Transform))
 			} else if strings.Contains(strings.ToUpper(c.Type), "TIMESTAMP") {
-				columns = append(columns, `DATE_FORMAT("`+c.Name+`", '%Y-%m-%d %H:%i:%S')`)
+				columns = append(columns, `DATE_FORMAT(`+dbutil.EscapeMySQLName(c.Name)+`, '%Y-%m-%d %H:%i:%S')`)
 			} else {
-				columns = append(columns, `"`+c.Name+`"`)
+				columns = append(columns, dbutil.EscapeMySQLName(c.Name))
 			}
 		}
 
@@ -76,7 +78,7 @@ func transform(srcDB, destDB *sql.DB, tables []*table, s3c *s3.S3, bucket, prefi
 				return err
 			}
 
-			rows, err := srcDB.Query(`SELECT ` + strings.Join(columns, ", ") + ` FROM "` + tab.Name + `"`)
+			rows, err := srcDB.Query(`SELECT ` + strings.Join(columns, ", ") + ` FROM ` + dbutil.EscapeMySQLName(tab.Name))
 			if err != nil {
 				return err
 			}
@@ -159,7 +161,7 @@ func transform(srcDB, destDB *sql.DB, tables []*table, s3c *s3.S3, bucket, prefi
 			tab := tables[i]
 			if existingTables[tab.Name] {
 				golog.Infof("Dropping table %s", tab.Name)
-				_, err := tx.Exec(`DROP TABLE "` + tab.Name + `"`)
+				_, err := tx.Exec(`DROP TABLE ` + dbutil.EscapePostgresName(tab.Name))
 				if err != nil {
 					return err
 				}
@@ -182,19 +184,19 @@ func transform(srcDB, destDB *sql.DB, tables []*table, s3c *s3.S3, bucket, prefi
 			golog.Infof("Creating and loading table %s", tab.Name)
 			columns = columns[:0]
 			for _, c := range tab.Columns {
-				columns = append(columns, fmt.Sprintf(`"%s" %s`, c.Name, c.Type))
+				columns = append(columns, fmt.Sprintf(`%s %s`, dbutil.EscapePostgresName(c.Name), c.Type))
 			}
-			if _, err := tx.Exec(fmt.Sprintf(`CREATE TABLE "%s" (%s)`, tab.Name, strings.Join(columns, ", "))); err != nil {
+			if _, err := tx.Exec(fmt.Sprintf(`CREATE TABLE %s (%s)`, dbutil.EscapePostgresName(tab.Name), strings.Join(columns, ", "))); err != nil {
 				return err
 			}
-			if _, err := tx.Exec(fmt.Sprintf(`GRANT SELECT ON "%s" TO GROUP readonly`, tab.Name)); err != nil {
+			if _, err := tx.Exec(fmt.Sprintf(`GRANT SELECT ON %s TO GROUP readonly`, dbutil.EscapePostgresName(tab.Name))); err != nil {
 				return err
 			}
 			if _, err := tx.Exec(fmt.Sprintf(
-				`COPY "%s" FROM 's3://%s/%s%s.json.gz'
+				`COPY %s FROM 's3://%s/%s%s.json.gz'
 				 CREDENTIALS '%s'
 				 JSON AS 'auto' GZIP TRUNCATECOLUMNS`,
-				tab.Name, bucket, prefix, tab.Name, s3Creds),
+				dbutil.EscapePostgresName(tab.Name), bucket, prefix, tab.Name, s3Creds),
 			); err != nil {
 				return err
 			}

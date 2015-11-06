@@ -448,7 +448,7 @@ cd $GOPATH/src/github.com/sprucehealth/backend/cmd/svc/curbside
 ```
 
 Working with the Server
---------------------------------------
+-----------------------
 
 ### Starting the ssh session
 
@@ -502,7 +502,7 @@ supervisorctl reload
 ```
 
 Static Resources on S3 and CloudFront
---------------------------------------
+-------------------------------------
 
 Static assets for all of our server environments (`dev`, `staging`, and `prod`) are hosted in a single S3 bucket called `spruce-static`.
 
@@ -519,7 +519,7 @@ The latter is preferred, since it utilizes CloudFront.
 
 
 Source Control and Code Review Workflow
---------------------------------------
+---------------------------------------
 
 ## Source Control with Git
 
@@ -569,3 +569,19 @@ Or if you alter the commit message:
 ```
 arc diff --update DXX # where DXX is the diff id
 ```
+
+Production Database Access
+--------------------------
+
+It's best to never directly access the production database, but because that's
+not realistic here's how you can get access if necessary.
+
+SSH into the production bastion
+
+	$ ssh 54.209.10.66
+
+Use the MySQL cli
+
+	$ mysql -h prod-spruceapi.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com -u spruce -p spruce
+
+Ask someone for the password

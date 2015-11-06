@@ -59,3 +59,9 @@ func PostgresArgs(si, n int) string {
 func EscapeMySQLName(name string) string {
 	return "`" + strings.Replace(name, "`", "``", -1) + "`"
 }
+
+// EscapePostgresName escapes column, table, and index names (among others).
+// TODO: Make this secure. DO NOT currently use for external (user) provided values.
+func EscapePostgresName(name string) string {
+	return strconv.Quote(name)
+}

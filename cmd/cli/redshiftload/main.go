@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/libs/dbutil"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
@@ -315,7 +317,7 @@ func loadEvents(db *sql.DB, schemaFile, category, s3Path string, date time.Time)
 		CREDENTIALS '%s' JSON AS 'auto'
 		TRUNCATECOLUMNS
 		TRIMBLANKS`,
-		tableName, s3Path, credentials),
+		dbutil.EscapePostgresName(tableName), s3Path, credentials),
 	); err != nil {
 		return fmt.Errorf("Can't load data: %s", err.Error())
 	}
@@ -341,7 +343,7 @@ func eventTables(db *sql.DB, baseName string) ([]string, error) {
 }
 
 func dropView(db *sql.DB, baseName string) error {
-	_, err := db.Exec(`DROP VIEW "` + baseName + `"`)
+	_, err := db.Exec(`DROP VIEW ` + dbutil.EscapePostgresName(baseName))
 	// Unfortunately RedShift doesn't support "IF EXISTS"
 	if err != nil && !strings.Contains(err.Error(), "does not exist") {
 		return fmt.Errorf("Can't drop old view: %s", err.Error())
@@ -355,9 +357,9 @@ func buildView(db *sql.DB, baseName string) error {
 		return err
 	}
 	for i, t := range tables {
-		tables[i] = `SELECT * FROM "` + t + `"`
+		tables[i] = `SELECT * FROM ` + dbutil.EscapePostgresName(t)
 	}
-	if _, err := db.Exec(`CREATE OR REPLACE VIEW "` + baseName + `" AS ` + strings.Join(tables, " UNION ")); err != nil {
+	if _, err := db.Exec(`CREATE OR REPLACE VIEW ` + dbutil.EscapePostgresName(baseName) + ` AS ` + strings.Join(tables, " UNION ")); err != nil {
 		return fmt.Errorf("Can't create view: %s", err.Error())
 	}
 	return nil
