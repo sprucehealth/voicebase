@@ -87,7 +87,7 @@ func (h *regimensHandler) parseGETRequest(ctx context.Context, r *http.Request) 
 func (h *regimensHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request, rd *responses.RegimensGETRequest) {
 	tags := strings.Fields(rd.Query)
 	for i, t := range tags {
-		tags[i] = strings.ToLower(t)
+		tags[i] = strings.ToLower(strings.TrimLeft(t, "#"))
 	}
 
 	// If there are no tags return an empty result
