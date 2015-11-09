@@ -13,6 +13,18 @@ import (
 	"golang.org/x/net/html"
 )
 
+// hostImageClass is a mapping of hostname to class on img tag for the main product image
+var hostImageClass = map[string]string{
+	// Dermalogica.com has a meta for the image but it's tiny so grab the large iamge by class. Fall back to meta if this fails.
+	"www.dermalogica.com": "main-product-image",
+}
+
+// hostImageClass is a mapping of hostname to class on a tag where href is the main product image
+var hostLinkClass = map[string]string{
+	// NARS doesn't provide any meta tags for the image so need to get it from the a tag (img tag is not easy to query as it has no classes).
+	"www.narscosmetics.com": "main-image",
+}
+
 func scrape(u *url.URL, r io.Reader) (*products.Product, error) {
 	page, err := parseHTML(r)
 	if err != nil {
@@ -35,15 +47,25 @@ func scrape(u *url.URL, r io.Reader) (*products.Product, error) {
 	} else {
 		p.Name = strings.TrimSpace(string(page.title))
 	}
-	if u.Host == "www.dermalogica.com" {
-		// They have a meta for the image but it's tiny so grab the large iamge by class. Fall back to meta if this fails.
-		if earl, ok := normalizeURL(u, page.imgByClass["main-product-image"]); ok {
-			p.ImageURLs = append(p.ImageURLs, earl)
+	if ic := hostImageClass[u.Host]; ic != "" {
+		for _, earl := range page.imgByClass[ic] {
+			if earl, ok := normalizeURL(u, earl); ok {
+				p.ImageURLs = append(p.ImageURLs, earl)
+			}
 		}
-	} else if u.Host == "www.narscosmetics.com" {
-		// They don't provide any meta tags for the image so need to get it from the a tag (img tag is not easy to query as it has no classes).
-		if earl, ok := normalizeURL(u, page.linkByClass["main-image"]); ok {
-			p.ImageURLs = append(p.ImageURLs, earl)
+	} else if lc := hostLinkClass[u.Host]; lc != "" {
+		for _, earl := range page.linkByClass[lc] {
+			if earl, ok := normalizeURL(u, earl); ok {
+				p.ImageURLs = append(p.ImageURLs, earl)
+			}
+		}
+	} else if u.Host == "www.velourlashes.com" {
+		for _, earl := range page.images {
+			if strings.HasSuffix(earl, "/main.jpg") {
+				if earl, ok := normalizeURL(u, earl); ok {
+					p.ImageURLs = append(p.ImageURLs, earl)
+				}
+			}
 		}
 	}
 	if len(p.ImageURLs) == 0 {
@@ -57,11 +79,16 @@ func scrape(u *url.URL, r io.Reader) (*products.Product, error) {
 			p.ImageURLs = append(p.ImageURLs, earl)
 		} else if earl, ok := normalizeURL(u, page.schemaImg); ok {
 			p.ImageURLs = append(p.ImageURLs, earl)
-		} else if earl, ok := normalizeURL(u, page.imgByClass["product-img"]); ok {
-			p.ImageURLs = append(p.ImageURLs, earl)
+		} else {
+			for _, earl := range page.imgByClass["product-img"] {
+				if earl, ok := normalizeURL(u, earl); ok {
+					p.ImageURLs = append(p.ImageURLs, earl)
+				}
+			}
 		}
 	}
 	p.ID = "url:" + p.ProductURL
+
 	return p, nil
 }
 
@@ -73,8 +100,10 @@ func normalizeURL(base *url.URL, earl string) (string, bool) {
 	// Make relative URLs absolute
 	if strings.HasPrefix(earl, "//") { // scheme relative
 		earl = base.Scheme + ":" + earl
-	} else if earl[0] == '/' { // path relative
+	} else if earl[0] == '/' { // absolute path, domain realtive
 		earl = base.Scheme + "://" + base.Host + earl
+	} else if !strings.Contains(earl, "://") { // path relative
+		earl = strings.TrimRight(base.Scheme+"://"+base.Host+"/"+base.Path, "/") + "/" + earl
 	}
 	u, err := url.Parse(earl)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
@@ -105,15 +134,16 @@ type page struct {
 	schemaImg    string
 	title        []byte
 	meta         map[string]string
-	imgByClass   map[string]string
-	linkByClass  map[string]string
+	imgByClass   map[string][]string
+	linkByClass  map[string][]string
+	images       []string
 }
 
 func parseHTML(r io.Reader) (*page, error) {
 	p := &page{
 		meta:        make(map[string]string),
-		imgByClass:  make(map[string]string),
-		linkByClass: make(map[string]string),
+		imgByClass:  make(map[string][]string),
+		linkByClass: make(map[string][]string),
 	}
 	z := html.NewTokenizer(r)
 
@@ -194,8 +224,9 @@ func parseHTML(r io.Reader) (*page, error) {
 					if itemProp == "image" {
 						p.schemaImg = src
 					} else {
+						p.images = append(p.images, src)
 						for _, c := range classes {
-							p.imgByClass[c] = src
+							p.imgByClass[c] = append(p.imgByClass[c], src)
 						}
 					}
 				}
@@ -219,7 +250,7 @@ func parseHTML(r io.Reader) (*page, error) {
 				}
 				if href != "" {
 					for _, c := range classes {
-						p.linkByClass[c] = href
+						p.linkByClass[c] = append(p.linkByClass[c], href)
 					}
 				}
 			}

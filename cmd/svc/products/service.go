@@ -127,15 +127,15 @@ func (s *Service) Scrape(earl string) (*products.Product, error) {
 
 	u, err := url.Parse(earl)
 	if err != nil {
-		return nil, products.ErrScrapeFailed{Reason: "failed to parse URL"}
+		return nil, errors.Trace(products.ErrScrapeFailed{Reason: "failed to parse URL"})
 	}
 	if u.Scheme != "http" && u.Scheme != "https" {
-		return nil, products.ErrScrapeFailed{Reason: "invalid URL scheme"}
+		return nil, errors.Trace(products.ErrScrapeFailed{Reason: "invalid URL scheme"})
 	}
 	if r, ok := validate.RemoteHost(u.Host, true); !ok {
 		// Log this so that we can track what URLs are failing
 		golog.Warningf("Invalid remote host when scraping '%s': %s", earl, r)
-		return nil, products.ErrScrapeFailed{Reason: "invalid host"}
+		return nil, errors.Trace(products.ErrScrapeFailed{Reason: "invalid host"})
 	}
 
 	var prod *products.Product
@@ -155,25 +155,12 @@ func (s *Service) Scrape(earl string) (*products.Product, error) {
 		}
 		prod, err = s.az.LookupByASIN(asin)
 		if err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 	} else {
-		res, err := http.Get(earl)
+		prod, err = fetchAndScrape(u, 0)
 		if err != nil {
-			return nil, products.ErrScrapeFailed{Reason: "request failed"}
-		}
-		defer res.Body.Close()
-		if res.StatusCode != http.StatusOK {
-			return nil, products.ErrScrapeFailed{Reason: "bad response"}
-		}
-		if strings.HasPrefix(res.Header.Get("Content-Type"), "image/") {
-			return &products.Product{ImageURLs: []string{u.String()}}, nil
-		} else if !strings.HasPrefix(res.Header.Get("Content-Type"), "text/") {
-			return nil, products.ErrScrapeFailed{Reason: "invalid content type " + res.Header.Get("Content-Type")}
-		}
-		prod, err = scrape(u, res.Body)
-		if err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 	}
 
@@ -192,4 +179,41 @@ func (s *Service) Scrape(earl string) (*products.Product, error) {
 		})
 	}
 	return prod, nil
+}
+
+func fetchAndScrape(u *url.URL, depth int) (*products.Product, error) {
+	earl := u.String()
+	res, err := http.Get(earl)
+	if err != nil {
+		return nil, errors.Trace(products.ErrScrapeFailed{Reason: "request failed"})
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return nil, errors.Trace(products.ErrScrapeFailed{Reason: fmt.Sprintf("bad response (%d response code)", res.StatusCode)})
+	}
+	if strings.HasPrefix(res.Header.Get("Content-Type"), "image/") {
+		return &products.Product{ImageURLs: []string{earl}}, nil
+	} else if !strings.HasPrefix(res.Header.Get("Content-Type"), "text/") {
+		return nil, errors.Trace(products.ErrScrapeFailed{Reason: "invalid content type " + res.Header.Get("Content-Type")})
+	}
+	p, err := scrape(u, res.Body)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	// If no images found then try scraping canonical URL. For instance mobile
+	// Sephora would require custom rules to scrape, but the canonical URL
+	// points to the desktop version which works by default. Only do this for
+	// one level of depth though (avoid recursing forever).
+	if len(p.ImageURLs) == 0 && depth < 1 && u.String() != p.ProductURL {
+		u2, err := url.Parse(p.ProductURL)
+		if err == nil {
+			p2, err := fetchAndScrape(u2, depth+1)
+			if err == nil && len(p2.ImageURLs) != 0 {
+				p = p2
+			}
+		}
+	}
+
+	return p, nil
 }

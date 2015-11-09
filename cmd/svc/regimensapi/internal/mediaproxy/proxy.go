@@ -29,10 +29,11 @@ type ErrFetchFailed struct {
 	ID        string
 	Permanent bool
 	Reason    string
+	URL       string
 }
 
 func (e ErrFetchFailed) Error() string {
-	return fmt.Sprintf("mediaproxy: fetch failed id=%s permanent=%t: %s", e.ID, e.Permanent, e.Reason)
+	return fmt.Sprintf("mediaproxy: fetch failed id=%s permanent=%t url='%s': %s", e.ID, e.Permanent, e.URL, e.Reason)
 }
 
 // Service is a media proxy
@@ -193,14 +194,14 @@ func (s *Service) ImageReader(id string, size *media.Size) (io.ReadCloser, *Medi
 
 	// Attempt to feth the image if it hasn't been flagged as permanently failed
 	if m.Status == StatusFailedPerm {
-		return nil, nil, errors.Trace(ErrFetchFailed{Reason: m.FailReason, Permanent: true})
+		return nil, nil, errors.Trace(ErrFetchFailed{Reason: m.FailReason, URL: m.URL, Permanent: true})
 	}
 	if m.Status == StatusFailedTemp {
 		// For temporary failures check the last fetch time to rate limit requests
 		// Back off the retry by the number of attempts
 		iv := fetchRetryInterval * time.Duration(1<<m.FetchAttempts)
 		if time.Since(m.LastFetch) < iv {
-			return nil, nil, errors.Trace(ErrFetchFailed{Reason: m.FailReason, Permanent: false})
+			return nil, nil, errors.Trace(ErrFetchFailed{Reason: m.FailReason, URL: m.URL, Permanent: false})
 		}
 	}
 
@@ -277,5 +278,5 @@ func (s *Service) fetchFailed(m *Media, reason string, perm bool) error {
 	if err := s.dal.Put([]*Media{m}); err != nil {
 		golog.Errorf("mediaproxy: failed to update media on failure: %s", err)
 	}
-	return ErrFetchFailed{ID: m.ID, Reason: reason, Permanent: m.Status == StatusFailedPerm}
+	return ErrFetchFailed{ID: m.ID, Reason: reason, URL: m.URL, Permanent: m.Status == StatusFailedPerm}
 }

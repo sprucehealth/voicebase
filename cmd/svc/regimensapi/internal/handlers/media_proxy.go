@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/mediaproxy"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/schema"
@@ -58,6 +59,7 @@ func (h *mediaProxyHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter
 		apiservice.WriteResourceNotFoundError(ctx, "Media not found", w, r)
 		return
 	} else if _, ok := errors.Cause(err).(mediaproxy.ErrFetchFailed); ok {
+		golog.Infof("Media proxy fetch failed: %s", err)
 		apiservice.WriteResourceNotFoundError(ctx, "Fetch failed", w, r)
 		return
 	} else if err != nil {
