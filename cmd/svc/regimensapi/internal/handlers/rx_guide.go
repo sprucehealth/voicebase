@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/rxguide"
@@ -60,6 +61,8 @@ func (h *rxGuideHandler) serveGET(ctx context.Context, w http.ResponseWriter, r 
 		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
+	// Cache RX guides forever since they should be static
+	httputil.FarFutureCacheHeaders(w.Header(), time.Time{})
 	httputil.JSONResponse(w, http.StatusOK, &rxGuideHandlerGETResponse{RXGuide: guide})
 }
 

@@ -6,6 +6,8 @@ import "github.com/aws/aws-sdk-go/service/dynamodb"
 type DynamoDB struct {
 	*Expector
 	// Outputs should be set to stage return calls from the corresponding method
+	BatchGetItemOutputs   []*dynamodb.BatchGetItemOutput
+	BatchGetItemErrs      []error
 	BatchWriteItemOutputs []*dynamodb.BatchWriteItemOutput
 	BatchWriteItemErrs    []error
 	CreateTableOutputs    []*dynamodb.CreateTableOutput
@@ -16,6 +18,19 @@ type DynamoDB struct {
 	GetItemErrs           []error
 	QueryOutputs          []*dynamodb.QueryOutput
 	QueryErrs             []error
+	UpdateItemOutputs     []*dynamodb.UpdateItemOutput
+	UpdateItemErrs        []error
+}
+
+// BatchGetItem is a mocked implementation that returns the queued data
+func (d *DynamoDB) BatchGetItem(input *dynamodb.BatchGetItemInput) (*dynamodb.BatchGetItemOutput, error) {
+	defer d.Record(input)
+	out := d.BatchGetItemOutputs[0]
+	d.BatchGetItemOutputs = d.BatchGetItemOutputs[1:]
+
+	var err error
+	d.BatchGetItemErrs, err = NextError(d.BatchGetItemErrs)
+	return out, err
 }
 
 // BatchWriteItem is a mocked implementation that returns the queued data
@@ -70,5 +85,16 @@ func (d *DynamoDB) Query(input *dynamodb.QueryInput) (*dynamodb.QueryOutput, err
 
 	var err error
 	d.QueryErrs, err = NextError(d.QueryErrs)
+	return out, err
+}
+
+// UpdateItem is a mocked implementation that returns the queued data
+func (d *DynamoDB) UpdateItem(input *dynamodb.UpdateItemInput) (*dynamodb.UpdateItemOutput, error) {
+	defer d.Record(input)
+	out := d.UpdateItemOutputs[0]
+	d.UpdateItemOutputs = d.UpdateItemOutputs[1:]
+
+	var err error
+	d.UpdateItemErrs, err = NextError(d.UpdateItemErrs)
 	return out, err
 }

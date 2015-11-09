@@ -81,9 +81,21 @@ func (e *Expector) Record(params ...interface{}) {
 	}
 }
 
+// Finisher is an interface for anything with a Finish method
+type Finisher interface {
+	Finish()
+}
+
 // Finish asserts that all expectations were met
 func (e *Expector) Finish() {
 	for _, ex := range e.expects {
 		e.T.Fatalf("All expectations were not met. Next expectation - Name: %s, Params: %+v", ex.Func.Name(), ex.Params)
+	}
+}
+
+// FinishAll is just a convenience method for finishing groups of mocks
+func FinishAll(mocks ...Finisher) {
+	for _, m := range mocks {
+		m.Finish()
 	}
 }
