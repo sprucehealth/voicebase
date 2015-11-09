@@ -12,25 +12,40 @@
 	<span itemscope itemtype="http://schema.org/Physician">
 	<div class="banner-img" style="background-image: url({{.BannerImageURL}})"></div>
 	<div class="banner-img-overlay"></div>
-	{{with .Breadcrumb}}
-		<p class="breadcrumb-text">Dermatologists in  
-			<span itemscope itemtype="http://schema.org/BreadcrumbList">
+
+	{{if .ShowLicensesAsBreadcrumbs}}
+		{{with .Breadcrumb}}
+			<p class="breadcrumb-text">Dermatologist licensed in
+				{{$length := len .Items}}
 				{{range $index, $item := .Items}}
-					<span itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+						{{if eq (increment $index) $length}}
+							and
+						{{else if ge $index 1}}
+							,
+						{{end}}
+						{{with $item.Link}}
+							<a href="{{$item.Link}}">{{$item.Label}}</a>
+						{{else}}
+							{{$item.Label}}
+						{{end}}
+				{{end}}
+			</p>
+		{{end}}
+	{{else}}
+		{{with .Breadcrumb}}
+			<p class="breadcrumb-text">Dermatologists in  
+				{{range $index, $item := .Items}}
 						{{if ge $index 1}}
 							&rsaquo;
 						{{end}}
 						{{with $item.Link}}
-							<a itemprop="item" href="{{$item.Link}}"><span itemprop="name">{{$item.Label}}</span></a>
-							<meta itemprop="position" content="{{increment $index}}">
+							<a href="{{$item.Link}}">{{$item.Label}}</a>
 						{{else}}
-							<span itemprop="name">{{$item.Label}}</span>
-							<meta itemprop="position" content="{{increment $index}}">
+							{{$item.Label}}
 						{{end}}
-					</span>
 				{{end}}
-			</span>
-		</p>
+			</p>
+		{{end}}
 	{{end}}
 
 

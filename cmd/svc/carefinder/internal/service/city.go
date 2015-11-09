@@ -203,6 +203,23 @@ func (c *cityService) PageContentForID(ctx interface{}, r *http.Request) (interf
 		}
 	}
 
+	// breadcrumb
+	bc := &response.BreadcrumbList{
+		Items: []*response.BreadcrumbItem{
+			{
+				Label: "Find a Dermatologist",
+			},
+			{
+				Label: city.State,
+				Link:  response.StatePageURL(stateKey, c.webURL),
+			},
+			{
+				Label: city.Name,
+				Link:  response.CityPageURL(city, c.webURL),
+			},
+		},
+	}
+
 	return &response.CityPage{
 		HTMLTitle:                 fmt.Sprintf("Find Dermatologists in %s, %s | Spruce Health", city.Name, city.State),
 		Title:                     t.Title,
@@ -220,6 +237,7 @@ func (c *cityService) PageContentForID(ctx interface{}, r *http.Request) (interf
 		NearbyCitiesSection: &response.DescriptionItemsSection{
 			Items: nearbyCitiesList,
 		},
+		Breadcrumb: bc,
 	}, nil
 }
 

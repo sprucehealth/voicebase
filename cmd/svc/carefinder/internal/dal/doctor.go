@@ -301,7 +301,7 @@ func (d *doctorDAL) ShortListedDoctorIDs() ([]string, error) {
 func (d *doctorDAL) ShortListedCityClosestToPracticeLocation(doctorID string) (*models.City, error) {
 	var city models.City
 	err := d.db.QueryRow(`
-		SELECT c1.id, c1.name, c1.admin1_code, state.full_name, c1.latitude, c1.longitude
+		SELECT c1.id, c1.name, c1.admin1_code, state.full_name, state.Key, c1.latitude, c1.longitude
 		FROM cities c1 
 		INNER JOIN city_shortlist ON city_shortlist.city_id = c1.id
 		INNER JOIN state ON state.abbreviation = c1.admin1_code
@@ -313,6 +313,7 @@ func (d *doctorDAL) ShortListedCityClosestToPracticeLocation(doctorID string) (*
 		&city.Name,
 		&city.StateAbbreviation,
 		&city.State,
+		&city.StateKey,
 		&city.Latitude,
 		&city.Longitude)
 	if err == sql.ErrNoRows {

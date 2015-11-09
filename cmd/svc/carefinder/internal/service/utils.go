@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/carefinder/internal/response"
 )
 
 // cleanupZipcode returns the first 5 digits of the zipcode
@@ -34,4 +35,40 @@ func (c byReviewCount) Len() int      { return len(c) }
 func (c byReviewCount) Swap(i, j int) { c[i], c[j] = c[j], c[i] }
 func (c byReviewCount) Less(i, j int) bool {
 	return c[i].ReviewCount < c[j].ReviewCount
+}
+
+func spruceDoctorBreadcrumbs(webURL string, doctor *response.Doctor, state *models.State) []*response.BreadcrumbItem {
+	return []*response.BreadcrumbItem{
+		{
+			Label: "Find a Dermatologist",
+		},
+		{
+			Label: state.FullName,
+			Link:  response.StatePageURL(state.Key, webURL),
+		},
+		{
+			Label: doctor.LongDisplayName,
+			Link:  response.DoctorPageURL(doctor.ID, "", webURL),
+		},
+	}
+}
+
+func localDoctorBreadcrumbs(webURL string, doctor *response.Doctor, city *models.City) []*response.BreadcrumbItem {
+	return []*response.BreadcrumbItem{
+		{
+			Label: "Find a Dermatologist",
+		},
+		{
+			Label: city.State,
+			Link:  response.StatePageURL(city.StateKey, webURL),
+		},
+		{
+			Label: city.Name,
+			Link:  response.CityPageURL(city, webURL),
+		},
+		{
+			Label: doctor.LongDisplayName,
+			Link:  response.DoctorPageURL(doctor.ID, city.ID, webURL),
+		},
+	}
 }

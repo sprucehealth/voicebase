@@ -209,8 +209,9 @@ func (d *doctorService) PageContentForID(ctx interface{}, r *http.Request) (inte
 
 	// build out banner image and breadcrumbs
 	var bc response.BreadcrumbList
-	var otherBCs []*response.BreadcrumbList
+	var structuralBCs []*response.BreadcrumbList
 	var bannerImageURL string
+	var showLicensesAsBreadcrumbs bool
 	p.Go(func() error {
 
 		switch {
@@ -222,6 +223,22 @@ func (d *doctorService) PageContentForID(ctx interface{}, r *http.Request) (inte
 				Label: city.Name,
 				Link:  response.CityPageURL(city, d.webURL),
 			})
+
+			if doctor.IsSpruceDoctor {
+				states, err := d.doctorDAL.ShortListedStatesForSpruceDoctor(doctorID)
+				if err != nil {
+					return errors.Trace(err)
+				}
+				for _, s := range states {
+					structuralBCs = append(structuralBCs, &response.BreadcrumbList{
+						Items: spruceDoctorBreadcrumbs(d.webURL, doctorResponse, s),
+					})
+				}
+			} else {
+				structuralBCs = append(structuralBCs, &response.BreadcrumbList{
+					Items: localDoctorBreadcrumbs(d.webURL, doctorResponse, city),
+				})
+			}
 
 			imageIDs, err := d.cityDAL.BannerImageIDsForCity(city.ID)
 			if err != nil {
@@ -238,6 +255,7 @@ func (d *doctorService) PageContentForID(ctx interface{}, r *http.Request) (inte
 			// show the banner image of a state
 			// where the doctor is registered, and include breadcrumbs
 			// at the state level
+			showLicensesAsBreadcrumbs = true
 
 			states, err := d.doctorDAL.ShortListedStatesForSpruceDoctor(doctorID)
 			if err != nil {
@@ -253,24 +271,16 @@ func (d *doctorService) PageContentForID(ctx interface{}, r *http.Request) (inte
 				return errors.Trace(err)
 			}
 
-			bc.Items = append(bc.Items, &response.BreadcrumbItem{
-				Label: states[0].FullName,
-				Link:  response.StatePageURL(states[0].Key, d.webURL),
-			})
-
-			// include all the other breadcrumbs for a spruce
+			// include all the breadcrumbs for a spruce
 			// doctor to help with indexing
-			if len(states) > 1 {
-				for _, s := range states[1:] {
-					otherBCs = append(otherBCs, &response.BreadcrumbList{
-						Items: []*response.BreadcrumbItem{
-							{
-								Label: s.FullName,
-								Link:  response.StatePageURL(s.Key, d.webURL),
-							},
-						},
-					})
-				}
+			for _, s := range states {
+				bc.Items = append(bc.Items, &response.BreadcrumbItem{
+					Label: s.FullName,
+					Link:  response.StatePageURL(s.Key, d.webURL),
+				})
+				structuralBCs = append(structuralBCs, &response.BreadcrumbList{
+					Items: spruceDoctorBreadcrumbs(d.webURL, doctorResponse, s),
+				})
 			}
 		default:
 			// if working with local doctor where city not specified,
@@ -289,9 +299,13 @@ func (d *doctorService) PageContentForID(ctx interface{}, r *http.Request) (inte
 
 			bc.Items = append(bc.Items, &response.BreadcrumbItem{
 				Label: city.State,
+				Link:  response.StatePageURL(city.StateKey, d.webURL),
 			}, &response.BreadcrumbItem{
 				Label: city.Name,
-				Link:  fmt.Sprintf("%s/%s", d.webURL, city.ID),
+				Link:  response.CityPageURL(city, d.webURL),
+			})
+			structuralBCs = append(structuralBCs, &response.BreadcrumbList{
+				Items: localDoctorBreadcrumbs(d.webURL, doctorResponse, city),
 			})
 		}
 
@@ -437,10 +451,10 @@ func (d *doctorService) PageContentForID(ctx interface{}, r *http.Request) (inte
 	var title string
 	if doctor.IsSpruceDoctor {
 		officeSectionTitle = fmt.Sprintf("See %s Online", doctorResponse.ShortDisplayName)
-		title = fmt.Sprintf("%s, Dermatologist Treating Patients Online | Spruce Health", doctorResponse.LongDisplayName)
+		title = fmt.Sprintf("%s, Board-Certified Dermatologist | Spruce Health", doctorResponse.LongDisplayName)
 	} else {
 		officeSectionTitle = fmt.Sprintf("See %s In Office", doctorResponse.ShortDisplayName)
-		title = fmt.Sprintf("%s, Dermatologist in %s, %s | Spruce Health", doctorResponse.LongDisplayName, doctor.Address.City, doctor.Address.State)
+		title = fmt.Sprintf("%s, Dermatologist in %s, %s | Spruce Health", doctorResponse.LongDisplayName, city.Name, city.StateAbbreviation)
 	}
 
 	dp := &response.DoctorPage{
@@ -464,8 +478,9 @@ func (d *doctorService) PageContentForID(ctx interface{}, r *http.Request) (inte
 		PhysicalOfficeInformation: officeInfo,
 		PhoneLink:                 phoneLink,
 		SpruceDoctors:             spruceDoctors,
+		ShowLicensesAsBreadcrumbs: showLicensesAsBreadcrumbs,
 		Breadcrumb:                &bc,
-		OtherBreadcrumbs:          otherBCs,
+		OtherBreadcrumbs:          structuralBCs,
 		IsMobile:                  isMobile(r),
 	}
 

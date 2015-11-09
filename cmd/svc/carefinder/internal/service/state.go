@@ -109,17 +109,16 @@ func (s *stateService) PageContentForID(ctx interface{}, r *http.Request) (inter
 			return errors.Trace(err)
 		}
 
-		// get all of them and then sort by review count
-		doctors, err := s.doctorDAL.Doctors(spruceDoctorIDs)
-		if err != nil {
-			return errors.Trace(err)
-		}
-
-		sort.Sort(sort.Reverse(byReviewCount(doctors)))
+		shuffle(spruceDoctorIDs)
 
 		n := 3
-		if len(doctors) < n {
-			n = len(doctors)
+		if len(spruceDoctorIDs) < n {
+			n = len(spruceDoctorIDs)
+		}
+
+		doctors, err := s.doctorDAL.Doctors(spruceDoctorIDs[:n])
+		if err != nil {
+			return errors.Trace(err)
 		}
 
 		spruceDoctors = make([]*response.Doctor, n)
@@ -150,6 +149,18 @@ func (s *stateService) PageContentForID(ctx interface{}, r *http.Request) (inter
 		return nil, errors.Trace(err)
 	}
 
+	bc := &response.BreadcrumbList{
+		Items: []*response.BreadcrumbItem{
+			{
+				Label: "Find a Dermatologist",
+			},
+			{
+				Label: state.FullName,
+				Link:  response.StatePageURL(state.Key, s.webURL),
+			},
+		},
+	}
+
 	return &response.StatePage{
 		IsMobile:                isMobile(r),
 		HTMLTitle:               fmt.Sprintf("Find Dermatologists in %s", state.FullName),
@@ -160,6 +171,7 @@ func (s *stateService) PageContentForID(ctx interface{}, r *http.Request) (inter
 		FeaturedCitiesAboveFold: featuredCitiesAboveFold,
 		FeaturedCitiesBelowFold: featuredCitiesBelowFold,
 		FeaturedDoctors:         spruceDoctors,
+		Breadcrumb:              bc,
 		LongDescriptionParagraphs: []string{
 			fmt.Sprintf(stateLongDescriptionParagraph1, state.FullName),
 			fmt.Sprintf(stateLongDescriptionParagraph2),

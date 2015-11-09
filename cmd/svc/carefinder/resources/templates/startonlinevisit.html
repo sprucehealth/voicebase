@@ -4,6 +4,7 @@
 	{{else}}
 		<link rel="stylesheet" type="text/css" href={{staticURL "css/startonlinevisit.min.css"}}>
 	{{end}}
+		<meta name="description" content="{{.SubContext.SEODescription}}" />
 {{end}}
 
 {{define "content"}}
@@ -17,6 +18,20 @@
 			<div class="text-me"></div>
 		{{end}}
 	</div>
+
+	{{range .Breadcrumbs}}
+		<span itemscope itemtype="http://schema.org/BreadcrumbList">
+			{{range $index, $item := .Items}}
+					<span itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+						{{with $item.Link}}
+							<link itemprop="item" href="{{$item.Link}}"/>
+						{{end}}
+						<meta itemprop="name" content="{{$item.Label}}">
+						<meta itemprop="position" content="{{increment $index}}">
+					</span>
+			{{end}}
+		</span>
+	{{end}}
 
 	<div class="featured-section">
 		<p class="section-title">FEATURED IN</p>

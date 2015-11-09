@@ -17,6 +17,21 @@
 		</div>
 	</div>
 
+	<!--include other breadcrumbs for search engine indexing-->
+	{{with .Breadcrumb}}
+		<span itemscope itemtype="http://schema.org/BreadcrumbList">
+			{{range $index, $item := .Items}}
+				<span itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+					{{with $item.Link}}
+						<link itemprop="item" href="{{$item.Link}}"/>
+					{{end}}
+					<meta itemprop="name" content="{{$item.Label}}">
+					<meta itemprop="position" content="{{increment $index}}">
+				</span>
+			{{end}}
+		</span>
+	{{end}}
+	
 	<div class="featured-cities-section">
 		<h1 class="featured-cities-title">Featured Cities</h1>
 		<div class="featured-cities-container">

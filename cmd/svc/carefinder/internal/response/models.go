@@ -21,6 +21,7 @@ type CityPage struct {
 	CareRatingSection         *SpruceScoreSection
 	TopSkinConditionsSection  *DescriptionItemsSection
 	NearbyCitiesSection       *DescriptionItemsSection
+	Breadcrumb                *BreadcrumbList
 }
 
 type City struct {
@@ -46,6 +47,7 @@ type StatePage struct {
 	LongDescriptionParagraphs []string
 	BannerImageURL            string
 	FeaturedDoctors           []*Doctor
+	Breadcrumb                *BreadcrumbList
 }
 
 type AllStatesPage struct {
@@ -60,6 +62,7 @@ type AllStatesPage struct {
 }
 
 type Doctor struct {
+	ID                  string
 	IsSpruceDoctor      bool
 	Description         string
 	LongDisplayName     string
@@ -167,6 +170,7 @@ type DoctorPage struct {
 	StartOnlineVisitURL       string
 	PhoneLink                 string
 	IsSpruceDoctor            bool
+	ShowLicensesAsBreadcrumbs bool
 	ReviewsSection            *ReviewsSection
 	Specialties               []string
 	Qualifications            []*TitleDescriptionItem
@@ -183,6 +187,7 @@ type DoctorPage struct {
 }
 
 type StartOnlineVisitPage struct {
+	SEODescription         string
 	DoctorID               string
 	HTMLTitle              string
 	DoctorShortDisplayName string
@@ -190,6 +195,7 @@ type StartOnlineVisitPage struct {
 	ReferralLink           string
 	ProfileImageURL        string
 	IsMobile               bool
+	Breadcrumbs            []*BreadcrumbList
 }
 
 func TransformModel(doctor *models.Doctor, cityID, contentURL, webURL string) (*Doctor, error) {
@@ -230,6 +236,7 @@ func TransformModel(doctor *models.Doctor, cityID, contentURL, webURL string) (*
 	}
 
 	return &Doctor{
+		ID:                  doctor.ID,
 		IsSpruceDoctor:      doctor.IsSpruceDoctor,
 		Description:         doctor.Description,
 		LongDisplayName:     fmt.Sprintf("Dr. %s %s", doctor.FirstName, doctor.LastName),

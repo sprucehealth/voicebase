@@ -45,13 +45,27 @@ func (s *startOnlineVisitService) PageContentForID(ctx interface{}, r *http.Requ
 		return nil, errors.Trace(err)
 	}
 
+	states, err := s.doctorDAL.ShortListedStatesForSpruceDoctor(doctorID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	bcs := make([]*response.BreadcrumbList, len(states))
+	for i, item := range states {
+		bcs[i] = &response.BreadcrumbList{
+			Items: spruceDoctorBreadcrumbs(s.webURL, doctorResponse, item),
+		}
+	}
+
 	return &response.StartOnlineVisitPage{
 		HTMLTitle:              fmt.Sprintf("%s | Start an Online Visit | Spruce Health", doctorResponse.LongDisplayName),
+		SEODescription:         doctor.SEODescription,
 		DoctorShortDisplayName: doctorResponse.ShortDisplayName,
 		DoctorLongDisplayName:  doctorResponse.LongDisplayName,
 		ProfileImageURL:        doctorResponse.ProfileImageURL,
 		DoctorID:               doctor.ID,
 		ReferralLink:           doctor.ReferralLink,
 		IsMobile:               isMobile(r),
+		Breadcrumbs:            bcs,
 	}, nil
 }

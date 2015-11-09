@@ -17,6 +17,21 @@
 		</div>
 	</div>
 
+	<!-- Breadcrumbs at the city page level -->
+	{{with .Breadcrumb}}
+	<span itemscope itemtype="http://schema.org/BreadcrumbList">
+			{{range $index, $item := .Items}}
+					<span itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+						{{with $item.Link}}
+							<link itemprop="item" href="{{$item.Link}}"/>
+						{{end}}
+						<meta itemprop="name" content="{{$item.Label}}">
+						<meta itemprop="position" content="{{increment $index}}">
+					</span>
+			{{end}}
+		</span>
+	{{end}}
+
 	<div class="content-container">
 		<div class="main-content-container">
 			<div class="primary-card-container">
