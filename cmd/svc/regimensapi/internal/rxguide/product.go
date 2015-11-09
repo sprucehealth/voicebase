@@ -44,9 +44,11 @@ func (d *productDAL) QueryProducts(query string, limit int) ([]*products.Product
 		return nil, errors.Trace(err)
 	}
 
+	i := 0
 	prods := make([]*products.Product, len(rxGuides))
-	for i, rxg := range rxGuides {
-		prods[i] = transformGuide(d.imageURLs, d.webEndpoint, rxg)
+	for name, rxg := range rxGuides {
+		prods[i] = transformGuide(d.imageURLs, d.webEndpoint, name, rxg)
+		i++
 	}
 	return prods, nil
 }
@@ -58,10 +60,10 @@ func (d *productDAL) Product(id string) (*products.Product, error) {
 		return nil, products.ErrNotFound
 	}
 
-	return transformGuide(d.imageURLs, d.webEndpoint, rxGuide), errors.Trace(err)
+	return transformGuide(d.imageURLs, d.webEndpoint, rxGuide.GenericName, rxGuide), errors.Trace(err)
 }
 
-func transformGuide(imageURLs []string, webEndpoint string, r *responses.RXGuide) *products.Product {
+func transformGuide(imageURLs []string, webEndpoint, name string, r *responses.RXGuide) *products.Product {
 	if r == nil {
 		return nil
 	}
@@ -69,7 +71,7 @@ func transformGuide(imageURLs []string, webEndpoint string, r *responses.RXGuide
 	url.Path += fmt.Sprintf(rxGuideProductURLFormatString, strings.ToLower(r.GenericName))
 	return &products.Product{
 		ID:         r.GenericName,
-		Name:       r.GenericName,
+		Name:       name,
 		ImageURLs:  imageURLs,
 		ProductURL: url.String(),
 	}

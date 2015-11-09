@@ -13,20 +13,21 @@ import (
 
 func TestProductQueryProducts(t *testing.T) {
 	q := "myQuery"
+	q2 := "myQuery2"
 	limit := 90
 	mediaEndpoint := "http://test.media"
 	webEndpoint := "http://test.web"
-	rxGuides := []*responses.RXGuide{&responses.RXGuide{GenericName: q}, &responses.RXGuide{GenericName: q + "2"}}
+	rxGuides := map[string]*responses.RXGuide{q: &responses.RXGuide{GenericName: q}, q2: &responses.RXGuide{GenericName: q2}}
 	imageURLs := []string{media.ResizeURL(mediaEndpoint, RXPlaceholderMediaID, 100, 100)}
 	svc := &rxtest.RXGuideService{Expector: &mock.Expector{T: t}}
 	svc.Expect(mock.NewExpectation(svc.QueryRXGuides, q, limit))
-	svc.QueryRXGuidesOutput = [][]*responses.RXGuide{rxGuides}
+	svc.QueryRXGuidesOutput = []map[string]*responses.RXGuide{rxGuides}
 	dal := AsProductDAL(svc, mediaEndpoint, webEndpoint)
 	prods, err := dal.QueryProducts(q, limit)
 	test.OK(t, err)
 	test.Equals(t, []*products.Product{
-		transformGuide(imageURLs, webEndpoint, rxGuides[0]),
-		transformGuide(imageURLs, webEndpoint, rxGuides[1]),
+		transformGuide(imageURLs, webEndpoint, q, rxGuides[q]),
+		transformGuide(imageURLs, webEndpoint, q2, rxGuides[q2]),
 	}, prods)
 	svc.Finish()
 }
@@ -38,7 +39,7 @@ func TestProductQueryProductsNoGuidesErr(t *testing.T) {
 	webEndpoint := "http://test.web"
 	svc := &rxtest.RXGuideService{Expector: &mock.Expector{T: t}}
 	svc.Expect(mock.NewExpectation(svc.QueryRXGuides, q, limit))
-	svc.QueryRXGuidesOutput = [][]*responses.RXGuide{nil}
+	svc.QueryRXGuidesOutput = []map[string]*responses.RXGuide{nil}
 	svc.QueryRXGuidesErrs = append(svc.QueryRXGuidesErrs, ErrNoGuidesFound)
 	dal := AsProductDAL(svc, mediaEndpoint, webEndpoint)
 	prods, err := dal.QueryProducts(q, limit)
@@ -59,7 +60,7 @@ func TestProductProduct(t *testing.T) {
 	dal := AsProductDAL(svc, mediaEndpoint, webEndpoint)
 	prod, err := dal.Product(id)
 	test.OK(t, err)
-	test.Equals(t, prod, transformGuide(imageURLs, webEndpoint, rxGuide))
+	test.Equals(t, prod, transformGuide(imageURLs, webEndpoint, rxGuide.GenericName, rxGuide))
 	svc.Finish()
 }
 

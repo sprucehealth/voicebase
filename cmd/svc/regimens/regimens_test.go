@@ -191,7 +191,7 @@ func expectRegimensTagCreateTable(m *mock.DynamoDB) {
 }
 
 func TestRegimensServiceTableCreation(t *testing.T) {
-	publisher := &mock.Publisher{Expector: &mock.Expector{T: t}}
+	publisher := &mock.Publisher{}
 	kvs := &mock.DynamoDB{Expector: &mock.Expector{T: t}}
 	expectRegimensCreateTable(kvs)
 	expectRegimensTagCreateTable(kvs)
@@ -202,7 +202,7 @@ func TestRegimensServiceTableCreation(t *testing.T) {
 
 func TestRegimensServiceRegimen(t *testing.T) {
 	id := "myRegimenID"
-	publisher := &mock.Publisher{Expector: &mock.Expector{T: t}}
+	publisher := &mock.Publisher{}
 	kvs := &mock.DynamoDB{Expector: &mock.Expector{T: t}}
 	expectRegimensTableExists(kvs)
 	expectRegimensTagTableExists(kvs)
@@ -240,7 +240,7 @@ func TestRegimensServiceRegimen(t *testing.T) {
 
 func TestRegimensServiceRegimenUnknownError(t *testing.T) {
 	id := "myRegimenID"
-	publisher := &mock.Publisher{Expector: &mock.Expector{T: t}}
+	publisher := &mock.Publisher{}
 	kvs := &mock.DynamoDB{Expector: &mock.Expector{T: t}}
 	expectRegimensTableExists(kvs)
 	expectRegimensTagTableExists(kvs)
@@ -267,7 +267,7 @@ func TestRegimensServiceRegimenUnknownError(t *testing.T) {
 
 func TestRegimensServiceRegimenNilPublishedDefault(t *testing.T) {
 	id := "myRegimenID"
-	publisher := &mock.Publisher{Expector: &mock.Expector{T: t}}
+	publisher := &mock.Publisher{}
 	kvs := &mock.DynamoDB{Expector: &mock.Expector{T: t}}
 	expectRegimensTableExists(kvs)
 	expectRegimensTagTableExists(kvs)
@@ -303,7 +303,7 @@ func TestRegimensServiceRegimenNilPublishedDefault(t *testing.T) {
 func TestRegimensIncrementViewCount(t *testing.T) {
 	id := "myRegimenID"
 	tags := []string{"Tag1", "Tag2"}
-	publisher := &mock.Publisher{Expector: &mock.Expector{T: t}}
+	publisher := &mock.Publisher{}
 	kvs := &mock.DynamoDB{Expector: &mock.Expector{T: t}}
 	expectRegimensTableExists(kvs)
 	expectRegimensTagTableExists(kvs)
@@ -368,7 +368,7 @@ func TestRegimensIncrementViewCount(t *testing.T) {
 func TestRegimensIncrementViewCountIgnoreIndexUpdateErrors(t *testing.T) {
 	id := "myRegimenID"
 	tags := []string{"Tag1", "Tag2"}
-	publisher := &mock.Publisher{Expector: &mock.Expector{T: t}}
+	publisher := &mock.Publisher{}
 	kvs := &mock.DynamoDB{Expector: &mock.Expector{T: t}}
 	expectRegimensTableExists(kvs)
 	expectRegimensTagTableExists(kvs)
@@ -435,7 +435,7 @@ func TestRegimensIncrementViewCountIgnoreIndexUpdateErrors(t *testing.T) {
 
 func TestRegimensIncrementViewCountNoRegimen(t *testing.T) {
 	id := "myRegimenID"
-	publisher := &mock.Publisher{Expector: &mock.Expector{T: t}}
+	publisher := &mock.Publisher{}
 	kvs := &mock.DynamoDB{Expector: &mock.Expector{T: t}}
 	expectRegimensTableExists(kvs)
 	expectRegimensTagTableExists(kvs)
@@ -462,7 +462,7 @@ func TestRegimensIncrementViewCountNoRegimen(t *testing.T) {
 
 func TestRegimensPutRegimenUnpublished(t *testing.T) {
 	id := "myRegimenID"
-	publisher := &mock.Publisher{Expector: &mock.Expector{T: t}}
+	publisher := &mock.Publisher{}
 	published := false
 	kvs := &mock.DynamoDB{Expector: &mock.Expector{T: t}}
 	expectRegimensTableExists(kvs)
@@ -510,7 +510,7 @@ func TestRegimensPutRegimenPublished(t *testing.T) {
 	id := "myRegimenID"
 	// We should ignore the duplicate tag
 	tags := []string{"Tag1", "Tag2", "Tag2"}
-	publisher := &mock.Publisher{Expector: &mock.Expector{T: t}}
+	publisher := &mock.Publisher{}
 	published := true
 	kvs := &mock.DynamoDB{Expector: &mock.Expector{T: t}}
 	expectRegimensTableExists(kvs)
@@ -586,7 +586,7 @@ func TestRegimensPutRegimenPublished(t *testing.T) {
 
 func TestRegimensResourceAuthorization(t *testing.T) {
 	id := "myRegimenID"
-	publisher := &mock.Publisher{Expector: &mock.Expector{T: t}}
+	publisher := &mock.Publisher{}
 	kvs := &mock.DynamoDB{Expector: &mock.Expector{T: t}}
 	expectRegimensTableExists(kvs)
 	expectRegimensTagTableExists(kvs)
@@ -604,7 +604,7 @@ func TestRegimensTagQuery(t *testing.T) {
 	id2 := "myRegimenID2"
 	// We should ignore the duplicate tag
 	tags := []string{"Tag1", "Tag2"}
-	publisher := &mock.Publisher{Expector: &mock.Expector{T: t}}
+	publisher := &mock.Publisher{}
 	kvs := &mock.DynamoDB{Expector: &mock.Expector{T: t}}
 	expectRegimensTableExists(kvs)
 	expectRegimensTagTableExists(kvs)
@@ -683,7 +683,7 @@ func TestRegimensFoundationOf(t *testing.T) {
 	id := "myRegimenID"
 	id2 := "myRegimenID2"
 	limit := 5
-	publisher := &mock.Publisher{Expector: &mock.Expector{T: t}}
+	publisher := &mock.Publisher{}
 	kvs := &mock.DynamoDB{Expector: &mock.Expector{T: t}}
 	expectRegimensTableExists(kvs)
 	expectRegimensTagTableExists(kvs)

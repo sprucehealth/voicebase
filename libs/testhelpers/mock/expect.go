@@ -50,7 +50,11 @@ func (e *Expector) Record(params ...interface{}) {
 	pc, file, line, _ := runtime.Caller(1)
 	caller := runtime.FuncForPC(pc)
 	if len(e.expects) == 0 {
-		e.T.Fatalf("Recieved call to %s without any remaining expectiations: params %+v", caller.Name(), params)
+		e.T.Fatalf(
+			"Recieved call to %s without any remaining expectiations: params %+v\n"+
+				"Source:\n"+
+				"File: %s\n"+
+				"Line: %d\n", caller.Name(), params, file, line)
 	}
 	// Grab out next expectation and then pop it off the list
 	expect := e.expects[0]
@@ -88,6 +92,9 @@ type Finisher interface {
 
 // Finish asserts that all expectations were met
 func (e *Expector) Finish() {
+	if e == nil {
+		return
+	}
 	for _, ex := range e.expects {
 		e.T.Fatalf("All expectations were not met. Next expectation - Name: %s, Params: %+v", ex.Func.Name(), ex.Params)
 	}

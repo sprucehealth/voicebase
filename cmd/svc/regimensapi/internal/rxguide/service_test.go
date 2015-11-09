@@ -137,9 +137,10 @@ func TestRXGuideServiceRXGuideNoGuidesErr(t *testing.T) {
 
 func TestRXGuideServiceQueryRXGuides(t *testing.T) {
 	drugPrefix := "testDrugName"
+	drugPrefix2 := "testDrugName2"
 	limit := 100
 	rxGuide := &responses.RXGuide{GenericName: drugPrefix}
-	rxGuide2 := &responses.RXGuide{GenericName: drugPrefix + "2"}
+	rxGuide2 := &responses.RXGuide{GenericName: drugPrefix2}
 	data, err := json.Marshal(rxGuide)
 	test.OK(t, err)
 	data2, err := json.Marshal(rxGuide2)
@@ -160,10 +161,12 @@ func TestRXGuideServiceQueryRXGuides(t *testing.T) {
 		&dynamodb.QueryOutput{
 			Items: []map[string]*dynamodb.AttributeValue{
 				map[string]*dynamodb.AttributeValue{
-					*rxGuideAN: {B: data},
+					*drugNameAN: {S: ptr.String(drugPrefix)},
+					*rxGuideAN:  {B: data},
 				},
 				map[string]*dynamodb.AttributeValue{
-					*rxGuideAN: {B: data2},
+					*drugNameAN: {S: ptr.String(drugPrefix2)},
+					*rxGuideAN:  {B: data2},
 				},
 			},
 		},
@@ -173,18 +176,16 @@ func TestRXGuideServiceQueryRXGuides(t *testing.T) {
 	test.OK(t, err)
 	guides, err := svc.QueryRXGuides(drugPrefix, limit)
 	test.OK(t, err)
-	test.Equals(t, []*responses.RXGuide{rxGuide, rxGuide2}, guides)
+	test.Equals(t, map[string]*responses.RXGuide{drugPrefix: rxGuide, drugPrefix2: rxGuide2}, guides)
 	kvs.Finish()
 }
 
-func TestRXGuideServiceQueryRXGuidesDedupe(t *testing.T) {
-	drugPrefix := "testDrugName"
+func TestRXGuideServiceQueryRXGuidesBrandNameMap(t *testing.T) {
+	brandName := "CoolBrand - Name"
+	normalizedBrandName := strings.ToLower(brandName)
 	limit := 100
-	rxGuide := &responses.RXGuide{GenericName: drugPrefix}
-	rxGuide2 := &responses.RXGuide{GenericName: drugPrefix}
+	rxGuide := &responses.RXGuide{GenericName: "Uncool generic name", BrandNames: []string{brandName}}
 	data, err := json.Marshal(rxGuide)
-	test.OK(t, err)
-	data2, err := json.Marshal(rxGuide2)
 	test.OK(t, err)
 
 	kvs := &mock.DynamoDB{Expector: &mock.Expector{T: t}}
@@ -194,7 +195,7 @@ func TestRXGuideServiceQueryRXGuidesDedupe(t *testing.T) {
 		KeyConditionExpression: drugNameBeginsWithKCE,
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":rx_guides":        {S: rxGuidesAN},
-			":drug_name_prefix": {S: ptr.String(strings.ToLower(strings.TrimSpace(drugPrefix)))},
+			":drug_name_prefix": {S: ptr.String(strings.ToLower(strings.TrimSpace(normalizedBrandName)))},
 		},
 		Limit: ptr.Int64(int64(limit)),
 	}))
@@ -202,10 +203,8 @@ func TestRXGuideServiceQueryRXGuidesDedupe(t *testing.T) {
 		&dynamodb.QueryOutput{
 			Items: []map[string]*dynamodb.AttributeValue{
 				map[string]*dynamodb.AttributeValue{
-					*rxGuideAN: {B: data},
-				},
-				map[string]*dynamodb.AttributeValue{
-					*rxGuideAN: {B: data2},
+					*drugNameAN: {S: ptr.String(normalizedBrandName)},
+					*rxGuideAN:  {B: data},
 				},
 			},
 		},
@@ -213,9 +212,9 @@ func TestRXGuideServiceQueryRXGuidesDedupe(t *testing.T) {
 
 	svc, err := New(kvs, testEnv)
 	test.OK(t, err)
-	guides, err := svc.QueryRXGuides(drugPrefix, limit)
+	guides, err := svc.QueryRXGuides(brandName, limit)
 	test.OK(t, err)
-	test.Equals(t, []*responses.RXGuide{rxGuide}, guides)
+	test.Equals(t, map[string]*responses.RXGuide{brandName: rxGuide}, guides)
 	kvs.Finish()
 }
 

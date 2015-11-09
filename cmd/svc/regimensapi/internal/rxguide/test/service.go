@@ -11,7 +11,7 @@ import (
 type RXGuideService struct {
 	*mock.Expector
 	PutRXGuideErrs      []error
-	QueryRXGuidesOutput [][]*responses.RXGuide
+	QueryRXGuidesOutput []map[string]*responses.RXGuide
 	QueryRXGuidesErrs   []error
 	RXGuideOutput       []*responses.RXGuide
 	RXGuideErrs         []error
@@ -26,7 +26,7 @@ func (d *RXGuideService) PutRXGuide(r *responses.RXGuide) error {
 }
 
 // QueryRXGuides is a mocked implementation that returns the queued data
-func (d *RXGuideService) QueryRXGuides(prefix string, limit int) ([]*responses.RXGuide, error) {
+func (d *RXGuideService) QueryRXGuides(prefix string, limit int) (map[string]*responses.RXGuide, error) {
 	defer d.Record(prefix, limit)
 	out := d.QueryRXGuidesOutput[0]
 	d.QueryRXGuidesOutput = d.QueryRXGuidesOutput[1:]

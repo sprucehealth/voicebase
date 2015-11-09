@@ -35,7 +35,7 @@ var (
 // Service describes the methods required to interact with the RXGuide back end
 type Service interface {
 	PutRXGuide(r *responses.RXGuide) error
-	QueryRXGuides(prefix string, limit int) ([]*responses.RXGuide, error)
+	QueryRXGuides(prefix string, limit int) (map[string]*responses.RXGuide, error)
 	RXGuide(id string) (*responses.RXGuide, error)
 }
 
@@ -120,7 +120,7 @@ func (s *service) RXGuide(drugName string) (*responses.RXGuide, error) {
 }
 
 // QueryRXGuide returns the RX guides that match the provided prefix
-func (s *service) QueryRXGuides(prefix string, lim int) ([]*responses.RXGuide, error) {
+func (s *service) QueryRXGuides(prefix string, lim int) (map[string]*responses.RXGuide, error) {
 	limit := limitValue
 	if int64(lim) < *limitValue && lim != 0 {
 		limit = ptr.Int64(int64(lim))
@@ -141,18 +141,26 @@ func (s *service) QueryRXGuides(prefix string, lim int) ([]*responses.RXGuide, e
 		return nil, ErrNoGuidesFound
 	}
 
-	// Since we map both the brand and generic names ther may be overlap. Dedupe the results
-	guides := make([]*responses.RXGuide, 0, len(queryResp.Items))
-	genericNamesFound := make(map[string]struct{})
+	guides := make(map[string]*responses.RXGuide, len(queryResp.Items))
 	for _, guideRecord := range queryResp.Items {
 		guide := &responses.RXGuide{}
 		if err := json.Unmarshal(guideRecord[*rxGuideAN].B, guide); err != nil {
 			return nil, errors.Trace(err)
 		}
-		if _, ok := genericNamesFound[guide.GenericName]; !ok {
-			guides = append(guides, guide)
-			genericNamesFound[guide.GenericName] = struct{}{}
+
+		// Attempt to find the name of the product in it's correct casing in the guide
+		name := *guideRecord[*drugNameAN].S
+		if strings.EqualFold(name, guide.GenericName) {
+			name = guide.GenericName
+		} else {
+			for _, brandName := range guide.BrandNames {
+				if strings.EqualFold(name, brandName) {
+					name = brandName
+					break
+				}
+			}
 		}
+		guides[name] = guide
 	}
 
 	return guides, nil

@@ -86,9 +86,9 @@ func parseRow(row []string) (*responses.RXGuide, error) {
 	for i, v := range row {
 		switch i {
 		case rxGuideGenericName:
-			rxGuide.GenericName = v
+			rxGuide.GenericName = strings.TrimSpace(v)
 		case rxGuideForm:
-			rxGuide.Form = v
+			rxGuide.Form = strings.TrimSpace(v)
 		case rxGuidePopularity:
 			continue
 		case rxGuideBrandNames:
@@ -108,11 +108,11 @@ func parseRow(row []string) (*responses.RXGuide, error) {
 				rxGuide.Forms = forms
 			}
 		case rxGuideDescription:
-			rxGuide.Description = v
+			rxGuide.Description = strings.TrimSpace(v)
 		case rxGuideTips:
-			rxGuide.Tips = v
+			rxGuide.Tips = strings.TrimSpace(v)
 		case rxGuideRightForMe:
-			rxGuide.RightForMe = v
+			rxGuide.RightForMe = strings.TrimSpace(v)
 		}
 	}
 	return rxGuide, nil
