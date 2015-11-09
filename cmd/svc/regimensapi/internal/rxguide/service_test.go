@@ -177,6 +177,48 @@ func TestRXGuideServiceQueryRXGuides(t *testing.T) {
 	kvs.Finish()
 }
 
+func TestRXGuideServiceQueryRXGuidesDedupe(t *testing.T) {
+	drugPrefix := "testDrugName"
+	limit := 100
+	rxGuide := &responses.RXGuide{GenericName: drugPrefix}
+	rxGuide2 := &responses.RXGuide{GenericName: drugPrefix}
+	data, err := json.Marshal(rxGuide)
+	test.OK(t, err)
+	data2, err := json.Marshal(rxGuide2)
+	test.OK(t, err)
+
+	kvs := &mock.DynamoDB{Expector: &mock.Expector{T: t}}
+	expectTableExists(kvs)
+	kvs.Expect(mock.NewExpectation(kvs.GetItem, &dynamodb.QueryInput{
+		TableName:              ptr.String(fmt.Sprintf(rxGuideTableNameFormatString, testEnv)),
+		KeyConditionExpression: drugNameBeginsWithKCE,
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":rx_guides":        {S: rxGuidesAN},
+			":drug_name_prefix": {S: ptr.String(strings.ToLower(strings.TrimSpace(drugPrefix)))},
+		},
+		Limit: ptr.Int64(int64(limit)),
+	}))
+	kvs.QueryOutputs = []*dynamodb.QueryOutput{
+		&dynamodb.QueryOutput{
+			Items: []map[string]*dynamodb.AttributeValue{
+				map[string]*dynamodb.AttributeValue{
+					*rxGuideAN: {B: data},
+				},
+				map[string]*dynamodb.AttributeValue{
+					*rxGuideAN: {B: data2},
+				},
+			},
+		},
+	}
+
+	svc, err := New(kvs, testEnv)
+	test.OK(t, err)
+	guides, err := svc.QueryRXGuides(drugPrefix, limit)
+	test.OK(t, err)
+	test.Equals(t, []*responses.RXGuide{rxGuide}, guides)
+	kvs.Finish()
+}
+
 func TestRXGuideServiceQueryRXGuidesNoGuidesErr(t *testing.T) {
 	drugPrefix := "testDrugName"
 	limit := 100

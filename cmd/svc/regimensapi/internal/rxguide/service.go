@@ -141,13 +141,18 @@ func (s *service) QueryRXGuides(prefix string, lim int) ([]*responses.RXGuide, e
 		return nil, ErrNoGuidesFound
 	}
 
-	guides := make([]*responses.RXGuide, len(queryResp.Items))
-	for i, guideRecord := range queryResp.Items {
+	// Since we map both the brand and generic names ther may be overlap. Dedupe the results
+	guides := make([]*responses.RXGuide, 0, len(queryResp.Items))
+	genericNamesFound := make(map[string]struct{})
+	for _, guideRecord := range queryResp.Items {
 		guide := &responses.RXGuide{}
 		if err := json.Unmarshal(guideRecord[*rxGuideAN].B, guide); err != nil {
 			return nil, errors.Trace(err)
 		}
-		guides[i] = guide
+		if _, ok := genericNamesFound[guide.GenericName]; !ok {
+			guides = append(guides, guide)
+			genericNamesFound[guide.GenericName] = struct{}{}
+		}
 	}
 
 	return guides, nil
