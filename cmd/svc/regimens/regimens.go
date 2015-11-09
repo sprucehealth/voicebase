@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/libs/awsutil"
@@ -67,17 +66,28 @@ var (
 	indexesRCC = ptr.String("INDEXES")
 )
 
+// TODO: Make this more generic if we move away from dynamo
+type kvs interface {
+	BatchGetItem(*dynamodb.BatchGetItemInput) (*dynamodb.BatchGetItemOutput, error)
+	BatchWriteItem(*dynamodb.BatchWriteItemInput) (*dynamodb.BatchWriteItemOutput, error)
+	CreateTable(*dynamodb.CreateTableInput) (*dynamodb.CreateTableOutput, error)
+	DescribeTable(*dynamodb.DescribeTableInput) (*dynamodb.DescribeTableOutput, error)
+	GetItem(*dynamodb.GetItemInput) (*dynamodb.GetItemOutput, error)
+	Query(*dynamodb.QueryInput) (*dynamodb.QueryOutput, error)
+	UpdateItem(*dynamodb.UpdateItemInput) (*dynamodb.UpdateItemOutput, error)
+}
+
 // service contains a collections of methods that interact with amazon AWS Dynamo Db to perform the various regimen DAL actions
 type service struct {
 	publisher           dispatch.Publisher
-	dynamoClient        dynamodbiface.DynamoDBAPI
+	kvs                 kvs
 	signer              *sig.Signer
 	regimenTableName    *string
 	regimenTagTableName *string
 }
 
 // New returns an initialized instance of service
-func New(d dynamodbiface.DynamoDBAPI, publisher dispatch.Publisher, env, authSecret string) (svc.Service, error) {
+func New(kvs kvs, publisher dispatch.Publisher, env, authSecret string) (svc.Service, error) {
 	if authSecret == "" {
 		return nil, errors.Trace(errors.New("An empty auth secret cannot be used"))
 	}
@@ -88,7 +98,7 @@ func New(d dynamodbiface.DynamoDBAPI, publisher dispatch.Publisher, env, authSec
 
 	s := &service{
 		publisher:           publisher,
-		dynamoClient:        d,
+		kvs:                 kvs,
 		signer:              signer,
 		regimenTableName:    ptr.String(fmt.Sprintf(regimenTableNameFormatString, env)),
 		regimenTagTableName: ptr.String(fmt.Sprintf(regimenTagTableNameFormatString, env)),
@@ -103,7 +113,7 @@ type singleRegimenAnalytics struct {
 }
 
 func (s *service) Regimen(id string) (*svc.Regimen, bool, error) {
-	getResp, operr := s.dynamoClient.GetItem(&dynamodb.GetItemInput{
+	getResp, operr := s.kvs.GetItem(&dynamodb.GetItemInput{
 		TableName: s.regimenTableName,
 		Key: map[string]*dynamodb.AttributeValue{
 			regimenIDAN: &dynamodb.AttributeValue{
@@ -137,7 +147,7 @@ func (s *service) Regimen(id string) (*svc.Regimen, bool, error) {
 }
 
 func (s *service) IncrementViewCount(id string) error {
-	updateResp, operr := s.dynamoClient.UpdateItem(&dynamodb.UpdateItemInput{
+	updateResp, operr := s.kvs.UpdateItem(&dynamodb.UpdateItemInput{
 		TableName: s.regimenTableName,
 		Key: map[string]*dynamodb.AttributeValue{
 			regimenIDAN: &dynamodb.AttributeValue{
@@ -171,7 +181,7 @@ func (s *service) IncrementViewCount(id string) error {
 			// Throttle the index updates to 4 a second for a maximum search delay of 6 seconds
 			time.Sleep(250 * time.Millisecond)
 		}
-		_, err := s.dynamoClient.UpdateItem(&dynamodb.UpdateItemInput{
+		_, err := s.kvs.UpdateItem(&dynamodb.UpdateItemInput{
 			TableName: s.regimenTagTableName,
 			Key: map[string]*dynamodb.AttributeValue{
 				tagAN: &dynamodb.AttributeValue{
@@ -254,15 +264,15 @@ func (s *service) PutRegimen(id string, r *svc.Regimen, published bool) error {
 	if published {
 		// track all the tags we're adding since we can't write duplicates to dynamo
 		usedTags := make(map[string]bool)
-		tagWriteRequests := make([]*dynamodb.WriteRequest, len(r.Tags))
-		for i, tag := range r.Tags {
+		tagWriteRequests := make([]*dynamodb.WriteRequest, 0, len(r.Tags))
+		for _, tag := range r.Tags {
 			tag = strings.ToLower(tag)
 			if _, ok := usedTags[tag]; !ok {
 				usedTags[tag] = true
 			} else {
 				continue
 			}
-			tagWriteRequests[i] = &dynamodb.WriteRequest{
+			tagWriteRequests = append(tagWriteRequests, &dynamodb.WriteRequest{
 				PutRequest: &dynamodb.PutRequest{
 					Item: map[string]*dynamodb.AttributeValue{
 						tagAN: &dynamodb.AttributeValue{
@@ -277,7 +287,7 @@ func (s *service) PutRegimen(id string, r *svc.Regimen, published bool) error {
 						},
 					},
 				},
-			}
+			})
 		}
 
 		// Only attach tag write requests if there are any
@@ -285,7 +295,7 @@ func (s *service) PutRegimen(id string, r *svc.Regimen, published bool) error {
 			batchWriteInput.RequestItems[*s.regimenTagTableName] = tagWriteRequests
 		}
 	}
-	batchResponse, operr := s.dynamoClient.BatchWriteItem(batchWriteInput)
+	batchResponse, operr := s.kvs.BatchWriteItem(batchWriteInput)
 
 	// Emit our operation metrics
 	conc.Go(func() {
@@ -352,7 +362,7 @@ func (s *service) TagQuery(tags []string) ([]*svc.Regimen, error) {
 	regimenIDs := make(map[string]*regimenIDViewCount)
 	for _, t := range tags {
 		t = strings.ToLower(t)
-		tagRegimenIDs, operr := s.dynamoClient.Query(&dynamodb.QueryInput{
+		tagRegimenIDs, operr := s.kvs.Query(&dynamodb.QueryInput{
 			TableName:                 s.regimenTagTableName,
 			IndexName:                 regimenTagTableTagViewIndexName,
 			KeyConditionExpression:    tagEqualsTagKCE,
@@ -424,7 +434,7 @@ func (s *service) TagQuery(tags []string) ([]*svc.Regimen, error) {
 		}
 	}
 
-	regimensResp, err := s.dynamoClient.BatchGetItem(&dynamodb.BatchGetItemInput{
+	regimensResp, err := s.kvs.BatchGetItem(&dynamodb.BatchGetItemInput{
 		RequestItems: map[string]*dynamodb.KeysAndAttributes{
 			*s.regimenTableName: {Keys: regimenIDRequests},
 		},
@@ -434,6 +444,7 @@ func (s *service) TagQuery(tags []string) ([]*svc.Regimen, error) {
 	}
 
 	// Only do capacity here since we might have unpublished regimens we need to skip
+	// TODO: Remove legacy unpublished regimens from the tag space table as they are no longer allowed and move this to actual size preallocation
 	rs := make([]*svc.Regimen, 0, len(regimensResp.Responses[*s.regimenTableName]))
 	for _, regimen := range regimensResp.Responses[*s.regimenTableName] {
 		r := &svc.Regimen{}
@@ -457,7 +468,7 @@ func (s *service) FoundationOf(id string, maxResults int) ([]*svc.Regimen, error
 		maxResults = int(*limitValue)
 	}
 	rs := make([]*svc.Regimen, 0, *limitValue)
-	regimenResult, operr := s.dynamoClient.Query(&dynamodb.QueryInput{
+	regimenResult, operr := s.kvs.Query(&dynamodb.QueryInput{
 		TableName:                 s.regimenTableName,
 		IndexName:                 regimenTableSourceRegimenRegimenIndexName,
 		KeyConditionExpression:    sourceRegimenIDEqualsSourceRegimenIDKCE,
@@ -501,7 +512,7 @@ func (s *service) FoundationOf(id string, maxResults int) ([]*svc.Regimen, error
 
 func (s *service) bootstrapDynamo() error {
 	// Create the svc table that maps ids to svc indexed by the ID and view count
-	if err := awsutil.CreateDynamoDBTable(s.dynamoClient, &dynamodb.CreateTableInput{
+	if err := awsutil.CreateDynamoDBTable(s.kvs, &dynamodb.CreateTableInput{
 		TableName: s.regimenTableName,
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			&dynamodb.AttributeDefinition{
@@ -555,7 +566,7 @@ func (s *service) bootstrapDynamo() error {
 	}
 
 	// Create the tags table that maps and is indexed by tags to regimen id's
-	return errors.Trace(awsutil.CreateDynamoDBTable(s.dynamoClient, &dynamodb.CreateTableInput{
+	return errors.Trace(awsutil.CreateDynamoDBTable(s.kvs, &dynamodb.CreateTableInput{
 		TableName: s.regimenTagTableName,
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			&dynamodb.AttributeDefinition{
