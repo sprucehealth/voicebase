@@ -148,7 +148,8 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 		{
 			Name: features.RAFHomeCard,
 			AppVersions: map[string]encoding.VersionRange{
-				"ios-patient": {MinVersion: &encoding.Version{Major: 2, Minor: 0, Patch: 2}},
+				"ios-patient":     {MinVersion: &encoding.Version{Major: 2, Minor: 0, Patch: 2}},
+				"android-patient": {MinVersion: &encoding.Version{Major: 1, Minor: 4, Patch: 0}},
 			},
 		},
 		{
