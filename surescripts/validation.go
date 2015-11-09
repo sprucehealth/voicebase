@@ -4,12 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/common"
-	"github.com/sprucehealth/backend/encoding"
 )
 
 // following constants are defined by surescripts requirements
@@ -35,10 +33,6 @@ func ValidatePatientInformation(patient *common.Patient, addressValidator addres
 
 	if patient.DOB.Month == 0 || patient.DOB.Year == 0 || patient.DOB.Day == 0 {
 		return errors.New("DOB is invalid. Please enter in right format")
-	}
-
-	if !is18YearsOfAge(patient.DOB) {
-		return errors.New("Patient is not 18 years of age")
 	}
 
 	if patient.PatientAddress == nil {
@@ -108,13 +102,6 @@ func ValidateAddress(a *common.Address, addressValidator address.Validator, data
 	}
 
 	return address.ValidateAddress(dataAPI, a, addressValidator)
-}
-
-func is18YearsOfAge(dob encoding.Date) bool {
-	dobTime := time.Date(dob.Year, time.Month(dob.Month), dob.Day, 0, 0, 0, 0, time.UTC)
-	ageDuration := time.Now().Sub(dobTime)
-	numYears := ageDuration.Hours() / (24.0 * 365.0)
-	return numYears >= 18
 }
 
 func TrimSpacesFromPatientFields(patient *common.Patient) {
