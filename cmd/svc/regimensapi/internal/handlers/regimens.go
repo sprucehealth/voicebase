@@ -149,7 +149,7 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 		// Write an empty regimen to the store to bootstrap it if one wasn't provided
 		url := regimenURL(h.webDomain, resourceID)
 		if rd.Regimen == nil {
-			regimen = &regimens.Regimen{ID: resourceID, URL: url, CoverPhotoURL: media.ResizeURL(h.apiDomain, productPlaceholderMediaID, collageWidth, collageHeight)}
+			regimen = &regimens.Regimen{ID: resourceID, URL: url, CoverPhotoURL: media.ResizeURL(h.apiDomain, productPlaceholderMediaID, collageWidth, collageFallbackHeight)}
 		} else {
 			regimen = rd.Regimen
 			regimen.ID = resourceID
@@ -203,13 +203,13 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 
 	// Generate a collage if we don't have a cover image, it is a previous collage, or it is the placeholder image
 	if regimen.CoverPhotoURL == "" || strings.HasSuffix(regimen.CoverPhotoURL, collageSuffix) {
-		collageURL, err := generateCollage(resourceID, rd.Regimen, h.deterministicStore, h.apiDomain)
+		collageURL, width, height, err := generateCollage(resourceID, rd.Regimen, h.deterministicStore, h.apiDomain)
 		if err != nil {
 			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		rd.Regimen.CoverPhotoURL = collageURL
-		rd.Regimen.CoverPhoto = &regimens.Image{URL: collageURL, Width: collageWidth, Height: collageHeight}
+		rd.Regimen.CoverPhoto = &regimens.Image{URL: collageURL, Width: width, Height: height}
 	} else {
 		width, height := remoteImageDimensions(regimen.CoverPhotoURL)
 		regimen.CoverPhoto = &regimens.Image{URL: regimen.CoverPhotoURL, Width: width, Height: height}
@@ -357,13 +357,13 @@ func (h *regimenHandler) servePUT(ctx context.Context, w http.ResponseWriter, r 
 
 	// Generate a collage if we don't have a cover image, it is a previous collage, or it is the placeholder image
 	if rd.Regimen.CoverPhotoURL == "" || strings.HasSuffix(rd.Regimen.CoverPhotoURL, collageSuffix) || strings.HasSuffix(rd.Regimen.CoverPhotoURL, productPlaceholderMediaID) {
-		collageURL, err := generateCollage(resourceID, rd.Regimen, h.deterministicStore, h.apiDomain)
+		collageURL, width, height, err := generateCollage(resourceID, rd.Regimen, h.deterministicStore, h.apiDomain)
 		if err != nil {
 			apiservice.WriteError(ctx, err, w, r)
 			return
 		}
 		rd.Regimen.CoverPhotoURL = collageURL
-		rd.Regimen.CoverPhoto = &regimens.Image{URL: collageURL, Width: collageWidth, Height: collageHeight}
+		rd.Regimen.CoverPhoto = &regimens.Image{URL: collageURL, Width: width, Height: height}
 	} else {
 		width, height := remoteImageDimensions(rd.Regimen.CoverPhotoURL)
 		rd.Regimen.CoverPhoto = &regimens.Image{URL: rd.Regimen.CoverPhotoURL, Width: width, Height: height}
@@ -382,9 +382,12 @@ func (h *regimenHandler) servePUT(ctx context.Context, w http.ResponseWriter, r 
 }
 
 const (
-	collageWidth  = 500
-	collageHeight = 500
-	collageSuffix = "_spruce_product_collage"
+	collageWidth             = 500
+	collageSuffix            = "_spruce_product_collage"
+	collageImageHeightScalar = 0.8
+	collageImageWidthScalar  = 0.8
+	collageCenterRowIsolated = true
+	collageFallbackHeight    = 500
 )
 
 // remoteImageDimensions will make a best effort attempt at determining the dimensions of the provided image.
@@ -409,7 +412,7 @@ func remoteImageDimensions(u string) (int, int) {
 }
 
 // TODO: We could optimize this flow by only reading in one image at a time as we add it to the collage, mark for future performance improvement
-func generateCollage(resourceID string, r *regimens.Regimen, deterministicStore storage.DeterministicStore, apiDomain string) (string, error) {
+func generateCollage(resourceID string, r *regimens.Regimen, deterministicStore storage.DeterministicStore, apiDomain string) (string, int, int, error) {
 	var images []image.Image
 ProductImageLoop:
 	for _, ps := range r.ProductSections {
@@ -440,19 +443,24 @@ ProductImageLoop:
 	}
 	if len(images) == 0 {
 		golog.Warningf("No usable images were found in regimen")
-		return media.ResizeURL(apiDomain, productPlaceholderMediaID, collageWidth, collageHeight), nil
+		return media.ResizeURL(apiDomain, productPlaceholderMediaID, collageWidth, collageFallbackHeight), collageWidth, collageFallbackHeight, nil
 	}
-	result, err := collage.Collageify(images, collage.SpruceProductGridLayout, &collage.Options{Width: collageWidth, Height: collageHeight})
+	result, err := collage.Collageify(images, collage.SpruceProductGridLayout, &collage.Options{
+		Width:             collageWidth,
+		ImageHeightScalar: collageImageHeightScalar,
+		ImageWidthScalar:  collageImageWidthScalar,
+		CenterRowIsolated: collageCenterRowIsolated,
+	})
 	if err != nil {
 		golog.Errorf("Unable to generate collage from product images for regimen %s - Falling back to placeholder: %s", resourceID, err)
-		return media.ResizeURL(apiDomain, productPlaceholderMediaID, collageWidth, collageHeight), nil
+		return media.ResizeURL(apiDomain, productPlaceholderMediaID, collageWidth, collageFallbackHeight), collageWidth, collageFallbackHeight, nil
 	}
 	buf := bytes.NewBuffer(nil)
 	if err := jpeg.Encode(buf, result, &jpeg.Options{Quality: imageutil.JPEGQuality}); err != nil {
-		return "", errors.Trace(err)
+		return "", 0, 0, errors.Trace(err)
 	}
 	_, err = deterministicStore.Put("m"+resourceID+collageSuffix, buf.Bytes(), "image/jpeg", nil)
-	return media.URL(apiDomain, resourceID+collageSuffix), errors.Trace(err)
+	return media.URL(apiDomain, resourceID+collageSuffix), result.Bounds().Dx(), result.Bounds().Dy(), errors.Trace(err)
 }
 
 // Apply changes to a list of regimens that populate plateholder data

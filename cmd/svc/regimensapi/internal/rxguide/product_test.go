@@ -7,6 +7,7 @@ import (
 	rxtest "github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/rxguide/test"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/libs/testhelpers/slice"
 	"github.com/sprucehealth/backend/svc/products"
 	"github.com/sprucehealth/backend/test"
 )
@@ -25,10 +26,9 @@ func TestProductQueryProducts(t *testing.T) {
 	dal := AsProductDAL(svc, mediaEndpoint, webEndpoint)
 	prods, err := dal.QueryProducts(q, limit)
 	test.OK(t, err)
-	test.Equals(t, []*products.Product{
-		transformGuide(imageURLs, webEndpoint, q, rxGuides[q]),
-		transformGuide(imageURLs, webEndpoint, q2, rxGuides[q2]),
-	}, prods)
+	test.Equals(t, 2, len(prods))
+	slice.Contains(t, slice.AsISlice(prods), transformGuide(imageURLs, webEndpoint, q, rxGuides[q]))
+	slice.Contains(t, slice.AsISlice(prods), transformGuide(imageURLs, webEndpoint, q2, rxGuides[q2]))
 	svc.Finish()
 }
 
