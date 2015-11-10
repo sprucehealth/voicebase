@@ -72,7 +72,7 @@ func buildCareFinder(c *config) httputil.ContextHandler {
 	router.Handle("/dermatologist-near-me/sitemap.xml", handlers.NewSiteMapHandler(c.WebURL, doctorDAL, cityDAL, stateDAL))
 	router.PathPrefix("/dermatologist-near-me/md-{doctor}/start-online-visit").Handler(handlers.NewStartOnlineVisitHandler(templateLoader, startOnlineVisitService))
 	router.PathPrefix("/dermatologist-near-me/md-{doctor}").Handler(handlers.NewDoctorPageHandler(templateLoader, doctorService))
-	router.Handle("/dermatologist-near-me/{state}", handlers.NewStatePageHandler(templateLoader, stateService))
+	router.Handle("/dermatologist-near-me/{state}", handlers.NewStatePageHandler(templateLoader, stateService, cityDAL, c.WebURL))
 	router.Handle("/dermatologist-near-me/{state}/{city}", handlers.NewCityPageHandler(templateLoader, cityService))
 
 	webRequestLogger := func(ctx context.Context, ev *httputil.RequestEvent) {

@@ -53,19 +53,11 @@ func (c *cityService) PageContentForID(ctx interface{}, r *http.Request) (interf
 	cityID := cp.CityID
 	stateKey := cp.StateKey
 
-	// check if the city exists first
-	exists, err := c.cityDAL.IsCityShortListed(cityID)
-	if err != nil {
-		return nil, errors.Trace(err)
-	} else if !exists {
+	city, err := c.cityDAL.ShortListedCity(cityID)
+	if errors.Cause(err) == dal.ErrNoCityFound {
 		return nil, nil
-	}
-
-	city, err := c.cityDAL.City(cityID)
-	if err != nil {
+	} else if err != nil {
 		return nil, errors.Trace(err)
-	} else if city.StateKey != stateKey {
-		return nil, nil
 	}
 
 	p := conc.NewParallel()

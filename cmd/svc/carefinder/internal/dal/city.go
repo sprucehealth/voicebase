@@ -10,7 +10,7 @@ import (
 )
 
 type CityDAL interface {
-	IsCityShortListed(id string) (bool, error)
+	ShortListedCity(id string) (*models.City, error)
 	IsDoctorShortListedForCity(doctorID, cityID string) (bool, error)
 	City(id string) (*models.City, error)
 	BannerImageIDsForCity(id string) ([]string, error)
@@ -55,17 +55,27 @@ func (c *cityDAL) IsDoctorShortListedForCity(doctorID, cityID string) (bool, err
 	return cID != "", nil
 }
 
-func (c *cityDAL) IsCityShortListed(id string) (bool, error) {
-	var cityID string
+func (c *cityDAL) ShortListedCity(id string) (*models.City, error) {
+	var city models.City
 	if err := c.db.QueryRow(`
-		SELECT city_id 
-		FROM city_shortlist
-		WHERE city_id = $1`, id).Scan(&cityID); err == sql.ErrNoRows {
-		return false, nil
+		SELECT cities.id, name, admin1_code, state.full_name, state.key, latitude, longitude 
+		FROM cities
+		INNER JOIN city_shortlist ON city_shortlist.city_id = cities.id
+		INNER JOIN state ON state.abbreviation = admin1_code
+		WHERE city_id = $1`, id).Scan(
+		&city.ID,
+		&city.Name,
+		&city.StateAbbreviation,
+		&city.State,
+		&city.StateKey,
+		&city.Latitude,
+		&city.Longitude); err == sql.ErrNoRows {
+		return nil, ErrNoCityFound
 	} else if err != nil {
-		return false, errors.Trace(err)
+		return nil, errors.Trace(err)
 	}
-	return cityID != "", nil
+
+	return &city, nil
 }
 
 func (c *cityDAL) City(id string) (*models.City, error) {
