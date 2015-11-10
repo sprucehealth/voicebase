@@ -17,7 +17,7 @@ var (
 )
 
 func startCloudTrailIndexer(es *ElasticSearch) error {
-	sq := sqs.New(awsConfig)
+	sq := sqs.New(awsSession)
 
 	res, err := sq.GetQueueUrl(&sqs.GetQueueUrlInput{QueueName: cloudTrailSQSQueue})
 	if err != nil {

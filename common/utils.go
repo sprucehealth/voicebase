@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 )
@@ -62,8 +62,8 @@ type SQSQueue struct {
 	QueueURL     string
 }
 
-func NewQueue(config *aws.Config, queueName string) (*SQSQueue, error) {
-	sq := sqs.New(config)
+func NewQueue(awsSession *session.Session, queueName string) (*SQSQueue, error) {
+	sq := sqs.New(awsSession)
 	res, err := sq.GetQueueUrl(&sqs.GetQueueUrlInput{QueueName: &queueName})
 	if err != nil {
 		return nil, err

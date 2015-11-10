@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/service/firehose"
+
 	"github.com/aws/aws-sdk-go/service/sns"
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/rainycape/memcache"
@@ -121,7 +123,7 @@ func main() {
 		default:
 			log.Fatalf("Unknown storage type %s for name %s", c.Type, name)
 		case "s3":
-			s := storage.NewS3(conf.AWS(), c.Bucket, c.Prefix)
+			s := storage.NewS3(conf.AWSSession(), c.Bucket, c.Prefix)
 			stores[name] = s
 		case "local":
 			s, err := storage.NewLocalStore(c.Path)
@@ -231,7 +233,21 @@ func main() {
 	}
 
 	var alog analytics.Logger
-	if conf.Analytics.LogPath != "" {
+	if conf.Analytics.Firehose != nil && len(conf.Analytics.Firehose.Streams) != 0 {
+		streams := make(map[string]string, len(conf.Analytics.Firehose.Streams))
+		for _, s := range conf.Analytics.Firehose.Streams {
+			streams[s.Category] = s.Stream
+		}
+		fh := firehose.New(conf.AWSSession())
+		alog, err = analytics.NewFirehoseLogger(fh, streams, conf.Analytics.Firehose.MaxBatchSize, time.Second*time.Duration(conf.Analytics.Firehose.MaxBatchDuration), metricsRegistry.Scope("firehose"))
+		if err != nil {
+			golog.Fatalf("Failed to initialize firehose logger: %s", err)
+		}
+		if err := alog.Start(); err != nil {
+			golog.Fatalf("Failed to start firehose logger: %s", err)
+		}
+		println("FIREHOSE!")
+	} else if conf.Analytics.LogPath != "" {
 		var err error
 		alog, err = analytics.NewFileLogger(applicationName, conf.Analytics.LogPath, conf.Analytics.MaxEvents, time.Duration(conf.Analytics.MaxAge)*time.Second)
 		if err != nil {
@@ -252,7 +268,7 @@ func main() {
 	eventsClient := events.NullClient{}
 	analisteners.InitListeners("", alog, dispatcher, eventsClient)
 
-	snsCli := sns.New(conf.AWS())
+	snsCli := sns.New(conf.AWSSession())
 	if conf.OfficeNotifySNSTopic != "" {
 		initNotifyListener(dispatcher, snsCli, conf.OfficeNotifySNSTopic)
 	}

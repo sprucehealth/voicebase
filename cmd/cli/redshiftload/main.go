@@ -7,23 +7,21 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"net/url"
 	"os"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/libs/dbutil"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 	"github.com/samuel/go-librato/librato"
+	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -54,7 +52,8 @@ type appConfig struct {
 	LibratoToken    string
 	LibratoSource   string
 
-	awsConfig *aws.Config
+	awsConfig  *aws.Config
+	awsSession *session.Session
 }
 
 var config = &appConfig{}
@@ -100,15 +99,16 @@ func (c *appConfig) verify() {
 	} else {
 		creds = credentials.NewEnvCredentials()
 		if v, err := creds.Get(); err != nil || v.AccessKeyID == "" || v.SecretAccessKey == "" {
-			creds = ec2rolecreds.NewCredentials(ec2metadata.New(&ec2metadata.Config{
-				HTTPClient: &http.Client{Timeout: 2 * time.Second},
-			}), time.Minute*10)
+			creds = ec2rolecreds.NewCredentials(session.New(), func(p *ec2rolecreds.EC2RoleProvider) {
+				p.ExpiryWindow = time.Minute * 5
+			})
 		}
 	}
 	c.awsConfig = &aws.Config{
 		Region:      aws.String("us-east-1"),
 		Credentials: creds,
 	}
+	c.awsSession = session.New(c.awsConfig)
 }
 
 var categoryRE = regexp.MustCompile(`^[a-zA-Z0-9_]+$`)
@@ -198,7 +198,7 @@ func main() {
 			log.Fatalf("Failed to ping MySQL: %s", err.Error())
 		}
 
-		s3c := s3.New(config.awsConfig)
+		s3c := s3.New(config.awsSession)
 
 		u, err := url.Parse(config.TransformS3URL)
 		if err != nil {

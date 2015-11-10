@@ -2,7 +2,6 @@ package storage
 
 import (
 	"bytes"
-	"net/http"
 	"os"
 	"testing"
 	"time"
@@ -10,16 +9,17 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/session"
 )
 
 func TestS3(t *testing.T) {
+	sess := session.New()
 	var creds *credentials.Credentials
 	creds = credentials.NewEnvCredentials()
 	if v, err := creds.Get(); err != nil || v.AccessKeyID == "" || v.SecretAccessKey == "" {
-		creds = ec2rolecreds.NewCredentials(ec2metadata.New(&ec2metadata.Config{
-			HTTPClient: &http.Client{Timeout: 2 * time.Second},
-		}), time.Minute*5)
+		creds = ec2rolecreds.NewCredentials(sess, func(p *ec2rolecreds.EC2RoleProvider) {
+			p.ExpiryWindow = time.Minute * 5
+		})
 	}
 	awsConf := &aws.Config{
 		Credentials: creds,
@@ -35,7 +35,8 @@ func TestS3(t *testing.T) {
 
 	data := []byte("foo")
 
-	storage := NewS3(awsConf, bucket, "/storage-test")
+	sess = sess.Copy(awsConf)
+	storage := NewS3(sess, bucket, "/storage-test")
 
 	// Test not existant object
 	_, _, err := storage.Get("s3://us-east-1/" + bucket + "/storage-test/ofiu3j2n90f32u09fnmeuw9")

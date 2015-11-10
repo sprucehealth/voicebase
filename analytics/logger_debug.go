@@ -14,7 +14,7 @@ func (l DebugLogger) WriteEvents(events []Event) {
 	}
 }
 
-// Start is a noop;
+// Start is a noop
 func (DebugLogger) Start() error {
 	return nil
 }

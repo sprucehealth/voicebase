@@ -64,6 +64,18 @@ type analyticsConfig struct {
 	LogPath   string `description:"Path to store analytics logs"`
 	MaxEvents int    `description:"Max number of events per log file before rotating"`
 	MaxAge    int    `description:"Max age of a log file in seconds before rotating"`
+	Firehose  *firehost
+}
+
+type firehost struct {
+	MaxBatchSize     int
+	MaxBatchDuration int
+	Streams          []*firehoseStream
+}
+
+type firehoseStream struct {
+	Category string
+	Stream   string
 }
 
 type supportConfig struct {

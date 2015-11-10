@@ -2,14 +2,12 @@ package main
 
 import (
 	"flag"
-	"net/http"
-	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/sprucehealth/backend/libs/awsutil"
@@ -18,29 +16,27 @@ import (
 var (
 	awsAccessKey = flag.String("aws_access_key", "", "AWS Access Key ID")
 	awsSecretKey = flag.String("aws_secret_key", "", "AWS Secret Key")
+	awsToken     = flag.String("aws_token", "", "AWS Access Token")
 	awsRole      = flag.String("aws_role", "", "AWS Role")
 	awsRegion    = flag.String("aws_region", "", "AWS Region")
 
-	awsConfig *aws.Config
-	s3Client  *s3.S3
-	cwlClient *cloudwatchlogs.CloudWatchLogs
+	awsConfig  *aws.Config
+	awsSession *session.Session
+	s3Client   *s3.S3
+	cwlClient  *cloudwatchlogs.CloudWatchLogs
 )
 
 func setupAWS() error {
-	var awsConfig *aws.Config
-
 	var creds *credentials.Credentials
-	if *awsRole == "" {
-		*awsRole = os.Getenv("AWS_ROLE")
-	}
-	if *awsRole != "" || *awsRole == "*" {
-		creds = ec2rolecreds.NewCredentials(ec2metadata.New(&ec2metadata.Config{
-			HTTPClient: &http.Client{Timeout: 2 * time.Second},
-		}), time.Minute*10)
-	} else if *awsAccessKey != "" && *awsSecretKey != "" {
-		creds = credentials.NewStaticCredentials(*awsAccessKey, *awsSecretKey, "")
+	if *awsAccessKey != "" && *awsSecretKey != "" {
+		creds = credentials.NewStaticCredentials(*awsAccessKey, *awsSecretKey, *awsToken)
 	} else {
 		creds = credentials.NewEnvCredentials()
+		if v, err := creds.Get(); err != nil || v.AccessKeyID == "" || v.SecretAccessKey == "" {
+			creds = ec2rolecreds.NewCredentials(session.New(), func(p *ec2rolecreds.EC2RoleProvider) {
+				p.ExpiryWindow = time.Minute * 5
+			})
+		}
 	}
 	if *awsRegion == "" {
 		az, err := awsutil.GetMetadata(awsutil.MetadataAvailabilityZone)
@@ -55,7 +51,8 @@ func setupAWS() error {
 		Credentials: creds,
 		Region:      awsRegion,
 	}
-	s3Client = s3.New(awsConfig)
-	cwlClient = cloudwatchlogs.New(awsConfig)
+	awsSession = session.New(awsConfig)
+	s3Client = s3.New(awsSession)
+	cwlClient = cloudwatchlogs.New(awsSession)
 	return nil
 }

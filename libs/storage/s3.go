@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
@@ -31,7 +31,7 @@ type S3 struct {
 }
 
 // NewS3 returns a new Store that uses S3
-func NewS3(awsConfig *aws.Config, bucket, prefix string) *S3 {
+func NewS3(awsSession *session.Session, bucket, prefix string) *S3 {
 	// Make sure the path prefix starts and ends with /
 	if !strings.HasSuffix(prefix, "/") {
 		prefix += "/"
@@ -40,12 +40,13 @@ func NewS3(awsConfig *aws.Config, bucket, prefix string) *S3 {
 		prefix = "/" + prefix
 	}
 	return &S3{
-		s3:     s3.New(awsConfig),
+		s3:     s3.New(awsSession),
 		bucket: bucket,
 		prefix: prefix,
 	}
 }
 
+// IDFromName returns a deterministic ID for a name.
 func (s *S3) IDFromName(name string) string {
 	return fmt.Sprintf("s3://%s/%s%s%s", *s.s3.Config.Region, s.bucket, s.prefix, name)
 }

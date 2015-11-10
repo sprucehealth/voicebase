@@ -70,7 +70,7 @@ func buildRESTAPI(
 ) httputil.ContextHandler {
 	// Register the configs that will be used in different parts of the system
 	registerCfgs(cfgStore)
-	awsConfig := conf.AWS()
+	awsSession := conf.AWSSession()
 
 	surescriptsPharmacySearch, err := pharmacy.NewSurescriptsPharmacySearch(conf.PharmacyDB)
 	if err != nil {
@@ -84,7 +84,7 @@ func buildRESTAPI(
 	var erxStatusQueue *common.SQSQueue
 	if conf.ERxStatusQueue != "" {
 		var err error
-		erxStatusQueue, err = common.NewQueue(awsConfig, conf.ERxStatusQueue)
+		erxStatusQueue, err = common.NewQueue(awsSession, conf.ERxStatusQueue)
 		if err != nil {
 			log.Fatalf("Unable to get erx queue for sending prescriptions to: %s", err.Error())
 		}
@@ -100,7 +100,7 @@ func buildRESTAPI(
 	var erxRoutingQueue *common.SQSQueue
 	if conf.ERxRoutingQueue != "" {
 		var err error
-		erxRoutingQueue, err = common.NewQueue(awsConfig, conf.ERxRoutingQueue)
+		erxRoutingQueue, err = common.NewQueue(awsSession, conf.ERxRoutingQueue)
 		if err != nil {
 			log.Fatalf("Unable to get erx queue for sending prescriptions to: %s", err.Error())
 		}
@@ -115,7 +115,7 @@ func buildRESTAPI(
 
 	var medicalRecordQueue *common.SQSQueue
 	if conf.MedicalRecordQueue != "" {
-		medicalRecordQueue, err = common.NewQueue(awsConfig, conf.MedicalRecordQueue)
+		medicalRecordQueue, err = common.NewQueue(awsSession, conf.MedicalRecordQueue)
 		if err != nil {
 			log.Fatalf("Failed to get queue for medical record requests: %s", err.Error())
 		}
@@ -130,7 +130,7 @@ func buildRESTAPI(
 
 	var visitQueue *common.SQSQueue
 	if conf.VisitQueue != "" {
-		visitQueue, err = common.NewQueue(awsConfig, conf.VisitQueue)
+		visitQueue, err = common.NewQueue(awsSession, conf.VisitQueue)
 		if err != nil {
 			log.Fatalf("Failed to get queue for charging visits: %s", err.Error())
 		}
@@ -143,7 +143,7 @@ func buildRESTAPI(
 		}
 	}
 
-	snsClient := sns.New(awsConfig)
+	snsClient := sns.New(awsSession)
 	var addressValidationService address.Validator
 	if conf.SmartyStreets == nil || !conf.SmartyStreets.IsSpecified() {
 		if conf.Debug {

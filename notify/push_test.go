@@ -6,6 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/samuel/go-metrics/metrics"
@@ -52,7 +53,7 @@ func TestPushNotificationsLive(t *testing.T) {
 		Region:      aws.String("us-east-1"),
 		Credentials: credentials.NewEnvCredentials(),
 	}
-	snsCli := sns.New(awsConfig)
+	snsCli := sns.New(session.New(awsConfig))
 
 	dataAPI := &pushMockDataAPI{
 		pushConfigData: []*common.PushConfigData{{

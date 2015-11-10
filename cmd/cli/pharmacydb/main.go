@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/samuel/go-metrics/metrics"
@@ -27,6 +27,7 @@ import (
 var (
 	awsAccessKey        = flag.String("aws_access_key", "", "AWS Access Key ID")
 	awsSecretKey        = flag.String("aws_secret_key", "", "AWS Secret Key")
+	awsToken            = flag.String("aws_access_token", "", "AWS Access Token")
 	awsRegion           = flag.String("aws_region", "us-east-1", "AWS Region")
 	pharmacyDBHost      = flag.String("db_host", "127.0.0.1", "Pharmacy DB Host")
 	pharmacyDBUsername  = flag.String("db_username", "", "Pharmacy DB Username")
@@ -80,13 +81,13 @@ func main() {
 
 	var creds *credentials.Credentials
 	if *awsAccessKey != "" && *awsSecretKey != "" {
-		creds = credentials.NewStaticCredentials(*awsAccessKey, *awsSecretKey, "")
+		creds = credentials.NewStaticCredentials(*awsAccessKey, *awsSecretKey, *awsToken)
 	} else {
 		creds = credentials.NewEnvCredentials()
 		if v, err := creds.Get(); err != nil || v.AccessKeyID == "" || v.SecretAccessKey == "" {
-			creds = ec2rolecreds.NewCredentials(ec2metadata.New(&ec2metadata.Config{
-				HTTPClient: &http.Client{Timeout: 2 * time.Second},
-			}), time.Minute*10)
+			creds = ec2rolecreds.NewCredentials(session.New(), func(p *ec2rolecreds.EC2RoleProvider) {
+				p.ExpiryWindow = time.Minute * 5
+			})
 		}
 	}
 	if *awsRegion == "" {
@@ -101,7 +102,8 @@ func main() {
 		Credentials: creds,
 		Region:      awsRegion,
 	}
-	s3Client := s3.New(awsConfig)
+	awsSession := session.New(awsConfig)
+	s3Client := s3.New(awsSession)
 
 	consulClient, err := consulapi.NewClient(&consulapi.Config{
 		Address:    *consulAddress,

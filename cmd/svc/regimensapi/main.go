@@ -9,13 +9,15 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/firehose"
 	"github.com/rainycape/memcache"
 	"github.com/rs/cors"
 	"github.com/samuel/go-metrics/metrics"
@@ -102,9 +104,12 @@ var config struct {
 	libratoToken    string
 
 	// Analytics
-	analyticsLogPath   string
-	analyticsDebug     bool
-	analyticsMaxEvents int
+	analyticsLogPath                  string
+	analyticsMaxEvents                int
+	analyticsFirehoseStreams          string
+	analyticsFirehoseMaxBatchSize     int
+	analyticsFirehoseMaxBatchDuration time.Duration
+	analyticsDebug                    bool
 
 	// CORS
 	corsAllowAll bool
@@ -167,6 +172,9 @@ func init() {
 	flag.StringVar(&config.analyticsLogPath, "analytics.log.path", "", "the place to write the analytics log file")
 	flag.BoolVar(&config.analyticsDebug, "analytics.debug", false, "enable debug functionality in analytics emission")
 	flag.IntVar(&config.analyticsMaxEvents, "analytics.max.events", analytics.DefaultMaxFileEvents, "the max events per analytics log file")
+	flag.StringVar(&config.analyticsFirehoseStreams, "analytics.firehose.streams", "", "Kinesis Firehose streams in the format 'category:stream,category:stream,...'")
+	flag.IntVar(&config.analyticsFirehoseMaxBatchSize, "analytics.firehose.batch.maxsize", 8, "Kinesis Firehose max batch size before flushing")
+	flag.DurationVar(&config.analyticsFirehoseMaxBatchDuration, "analytics.firehose.batch.maxduration", time.Second*5, "Kinesis Firehose max duration to batch events before flushing")
 
 	// CORS
 	flag.BoolVar(&config.corsAllowAll, "cors.allow.all", true, "Enable the * patterns on CORS")
@@ -232,26 +240,26 @@ func setupRouter(metricsRegistry metrics.Registry) (*mux.Router, httputil.Contex
 
 	// Bootstrap analytics mechanisms
 	dispatcher := dispatch.New()
-	analisteners.InitListeners(applicationName, getAnalyticsLogger(), dispatcher, events.NullClient{})
+	analisteners.InitListeners(applicationName, getAnalyticsLogger(metricsRegistry.Scope("analytics")), dispatcher, events.NullClient{})
 
 	var productCache products.MemcacheClient
 	if memcacheCli != nil {
 		productCache = memcacheCli
 	}
-	dynamoDBClient := dynamodb.New(func() *aws.Config {
-		dynamoConfig := &aws.Config{
-			Region:      &config.awsDynamoDBRegion,
-			DisableSSL:  &config.awsDynamoDBDisableSSL,
-			Credentials: getAWSCredentials(),
-		}
+	dynamoDBClient := dynamodb.New(func() *session.Session {
 		if config.awsDynamoDBEndpoint != "" {
 			golog.Infof("AWS Dynamo DB Endpoint configured as %s...", config.awsDynamoDBEndpoint)
-			dynamoConfig.Endpoint = &config.awsDynamoDBEndpoint
+			dynamoConfig := &aws.Config{
+				Region:     &config.awsDynamoDBRegion,
+				DisableSSL: &config.awsDynamoDBDisableSSL,
+				Endpoint:   &config.awsDynamoDBEndpoint,
+			}
+			if config.awsDynamoDBDisableSSL {
+				dynamoConfig.DisableSSL = &config.awsDynamoDBDisableSSL
+			}
+			return session.New(dynamoConfig)
 		}
-		if config.awsDynamoDBDisableSSL {
-			dynamoConfig.DisableSSL = &config.awsDynamoDBDisableSSL
-		}
-		return dynamoConfig
+		return awsSession()
 	}())
 	rxGuideSvc, err := rxguide.New(dynamoDBClient, config.env)
 	if err != nil {
@@ -371,9 +379,27 @@ func serve(handler httputil.ContextHandler) {
 	golog.Fatalf(s.Serve(listener).Error())
 }
 
-func getAnalyticsLogger() analytics.Logger {
+func getAnalyticsLogger(metricsRegistry metrics.Registry) analytics.Logger {
 	if config.analyticsDebug {
 		return analytics.DebugLogger{Logf: func(s string, i ...interface{}) { golog.Infof(s, i...) }}
+	} else if config.analyticsFirehoseStreams != "" {
+		streams := make(map[string]string)
+		for _, c := range strings.Split(config.analyticsFirehoseStreams, ",") {
+			ix := strings.IndexByte(c, ':')
+			if ix < 0 {
+				golog.Fatalf("Analytics firehose stream flag must be in the format 'category:stream,category:stream,...'")
+			}
+			streams[c[:ix]] = c[ix+1:]
+		}
+		fh := firehose.New(awsSession())
+		l, err := analytics.NewFirehoseLogger(fh, streams, config.analyticsFirehoseMaxBatchSize, config.analyticsFirehoseMaxBatchDuration, metricsRegistry.Scope("firehose"))
+		if err != nil {
+			golog.Fatalf("Failed to initialized firehose analytics logger: %s", err)
+		}
+		if err := l.Start(); err != nil {
+			golog.Fatalf("Failed to start firehose analytics logger: %s", err)
+		}
+		return l
 	} else if config.analyticsLogPath == "" {
 		return &analytics.NullLogger{}
 	}
@@ -387,20 +413,28 @@ func getAnalyticsLogger() analytics.Logger {
 	return alog
 }
 
+var (
+	awsSess     *session.Session
+	awsSessOnce sync.Once
+)
+
 // TODO: Localize this code and the client generation somewhere outside of main.go
-func getAWSCredentials() *credentials.Credentials {
-	var creds *credentials.Credentials
-	if config.awsAccessKey != "" && config.awsSecretKey != "" {
-		creds = credentials.NewStaticCredentials(config.awsAccessKey, config.awsSecretKey, config.awsToken)
-	} else {
-		creds = credentials.NewEnvCredentials()
-		if v, err := creds.Get(); err != nil || v.AccessKeyID == "" || v.SecretAccessKey == "" {
-			creds = ec2rolecreds.NewCredentials(ec2metadata.New(&ec2metadata.Config{
-				HTTPClient: &http.Client{Timeout: 2 * time.Second},
-			}), time.Minute*10)
+func awsSession() *session.Session {
+	awsSessOnce.Do(func() {
+		var creds *credentials.Credentials
+		if config.awsAccessKey != "" && config.awsSecretKey != "" {
+			creds = credentials.NewStaticCredentials(config.awsAccessKey, config.awsSecretKey, config.awsToken)
+		} else {
+			creds = credentials.NewEnvCredentials()
+			if v, err := creds.Get(); err != nil || v.AccessKeyID == "" || v.SecretAccessKey == "" {
+				creds = ec2rolecreds.NewCredentials(session.New(), func(p *ec2rolecreds.EC2RoleProvider) {
+					p.ExpiryWindow = time.Minute * 5
+				})
+			}
 		}
-	}
-	return creds
+		awsSess = session.New(&aws.Config{Region: ptr.String("us-east-1"), Credentials: creds})
+	})
+	return awsSess
 }
 
 func getMediaStore(cnf mediaConfig, subStore string) storage.DeterministicStore {
@@ -412,7 +446,7 @@ func getMediaStore(cnf mediaConfig, subStore string) storage.DeterministicStore 
 		if subStore != "" {
 			prefix = strings.Replace(prefix+"/cache", "//", "/", -1)
 		}
-		store := storage.NewS3(&aws.Config{Region: ptr.String("us-east-1"), Credentials: getAWSCredentials()}, cnf.s3Bucket, prefix)
+		store := storage.NewS3(awsSession(), cnf.s3Bucket, prefix)
 		return store
 	case "local":
 		pth := cnf.localStoragePath

@@ -10,6 +10,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
@@ -19,16 +21,23 @@ func (nullReader) Read(b []byte) (int, error) {
 	return len(b), nil
 }
 
-func TestPutMultiSmall(t *testing.T) {
+func s3Client() *s3.S3 {
 	creds := credentials.NewEnvCredentials()
 	if v, err := creds.Get(); err != nil || v.AccessKeyID == "" || v.SecretAccessKey == "" {
-		t.Skip("Skipping aws.s3 tests. AWS keys not found in environment.")
+		creds = ec2rolecreds.NewCredentials(session.New(), func(p *ec2rolecreds.EC2RoleProvider) {
+			p.ExpiryWindow = time.Minute * 5
+		})
 	}
+	sess := session.New(&aws.Config{Region: aws.String("us-east-1"), Credentials: creds})
+	return s3.New(sess)
+}
+
+func TestPutMultiSmall(t *testing.T) {
 	bucket := os.Getenv("TEST_S3_BUCKET")
 	if bucket == "" {
 		t.Skip("Skipping aws.s3 tests. TEST_S3_BUCKET environment variable not set.")
 	}
-	s3c := s3.New(&aws.Config{Region: aws.String("us-east-1"), Credentials: creds})
+	s3c := s3Client()
 
 	key := "test-object-1"
 
@@ -54,15 +63,11 @@ func TestPutMultiSmall(t *testing.T) {
 }
 
 func TestPutMulti(t *testing.T) {
-	creds := credentials.NewEnvCredentials()
-	if v, err := creds.Get(); err != nil || v.AccessKeyID == "" || v.SecretAccessKey == "" {
-		t.Skip("Skipping aws.s3 tests. AWS keys not found in environment.")
-	}
 	bucket := os.Getenv("TEST_S3_BUCKET")
 	if bucket == "" {
 		t.Skip("Skipping aws.s3 tests. TEST_S3_BUCKET environment variable not set.")
 	}
-	s3c := s3.New(&aws.Config{Region: aws.String("us-east-1"), Credentials: creds})
+	s3c := s3Client()
 
 	key := "test-object-1"
 

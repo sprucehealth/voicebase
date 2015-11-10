@@ -18,7 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	flags "github.com/jessevdk/go-flags"
 	"github.com/sprucehealth/backend/boot"
@@ -85,8 +85,10 @@ type BaseConfig struct {
 
 	Version bool `long:"version" description:"Show version and exit" toml:"-"`
 
-	awsConfig   *aws.Config
-	awsAuthOnce sync.Once
+	awsConfig      *aws.Config
+	awsConfigOnce  sync.Once
+	awsSession     *session.Session
+	awsSessionOnce sync.Once
 }
 
 var validEnvironments = map[string]bool{
@@ -97,17 +99,18 @@ var validEnvironments = map[string]bool{
 	"demo":    true,
 }
 
-func (c *BaseConfig) AWS() *aws.Config {
-	c.awsAuthOnce.Do(func() {
+// AWSConfig returns an AWS config pull from the config, environment, or role
+func (c *BaseConfig) AWSConfig() *aws.Config {
+	c.awsConfigOnce.Do(func() {
 		var cred *credentials.Credentials
 		if c.AWSAccessKey != "" && c.AWSSecretKey != "" {
 			cred = credentials.NewStaticCredentials(c.AWSAccessKey, c.AWSSecretKey, "")
 		} else {
 			cred = credentials.NewEnvCredentials()
 			if v, err := cred.Get(); err != nil || v.AccessKeyID == "" || v.SecretAccessKey == "" {
-				cred = ec2rolecreds.NewCredentials(ec2metadata.New(&ec2metadata.Config{
-					HTTPClient: &http.Client{Timeout: 2 * time.Second},
-				}), time.Minute*5)
+				cred = ec2rolecreds.NewCredentials(session.New(), func(p *ec2rolecreds.EC2RoleProvider) {
+					p.ExpiryWindow = time.Minute * 5
+				})
 			}
 		}
 
@@ -130,6 +133,15 @@ func (c *BaseConfig) AWS() *aws.Config {
 	return &cnf
 }
 
+// AWSSession returns an initialized AWS session from the config
+func (c *BaseConfig) AWSSession() *session.Session {
+	c.awsSessionOnce.Do(func() {
+		c.awsSession = session.New(c.AWSConfig())
+	})
+	return c.awsSession
+}
+
+// OpenURI opens a file at a uri which can point to the local filesystem, S3, or http(s).
 func (c *BaseConfig) OpenURI(uri string) (io.ReadCloser, error) {
 	var rd io.ReadCloser
 	if strings.Contains(uri, "://") {
@@ -138,7 +150,7 @@ func (c *BaseConfig) OpenURI(uri string) (io.ReadCloser, error) {
 			return nil, err
 		}
 		if ur.Scheme == "s3" {
-			out, err := s3.New(c.AWS()).GetObject(&s3.GetObjectInput{
+			out, err := s3.New(c.AWSSession()).GetObject(&s3.GetObjectInput{
 				Bucket: &ur.Host,
 				Key:    &ur.Path,
 			})
@@ -174,7 +186,7 @@ func (c *BaseConfig) ReadURI(uri string) ([]byte, error) {
 	return ioutil.ReadAll(rd)
 }
 
-func LoadConfigFile(configURL string, config interface{}, awsConfig func() *aws.Config) error {
+func LoadConfigFile(configURL string, config interface{}, awsSession func() *session.Session) error {
 	if configURL == "" {
 		return nil
 	}
@@ -186,7 +198,7 @@ func LoadConfigFile(configURL string, config interface{}, awsConfig func() *aws.
 			return fmt.Errorf("config: failed to parse config url %s: %+v", configURL, err)
 		}
 		if ur.Scheme == "s3" {
-			obj, err := s3.New(awsConfig()).GetObject(&s3.GetObjectInput{
+			obj, err := s3.New(awsSession()).GetObject(&s3.GetObjectInput{
 				Bucket: &ur.Host,
 				Key:    &ur.Path,
 			})
@@ -267,7 +279,7 @@ func ParseArgs(config interface{}, args []string) ([]string, error) {
 		os.Exit(0)
 	}
 
-	if err := LoadConfigFile(baseConfig.ConfigPath, config, baseConfig.AWS); err != nil {
+	if err := LoadConfigFile(baseConfig.ConfigPath, config, baseConfig.AWSSession); err != nil {
 		return nil, err
 	}
 

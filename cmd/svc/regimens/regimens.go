@@ -106,12 +106,6 @@ func New(kvs kvs, publisher dispatch.Publisher, env, authSecret string) (svc.Ser
 	return s, errors.Trace(s.bootstrapDynamo())
 }
 
-type singleRegimenAnalytics struct {
-	Err              error                      `json:"error"`
-	ConsumedCapacity *dynamodb.ConsumedCapacity `json:"consumed_capacity"`
-	RegimenID        string                     `json:"regimen_id"`
-}
-
 func (s *service) Regimen(id string) (*svc.Regimen, bool, error) {
 	getResp, operr := s.kvs.GetItem(&dynamodb.GetItemInput{
 		TableName: s.regimenTableName,
@@ -203,7 +197,7 @@ func (s *service) IncrementViewCount(id string) error {
 }
 
 type putRegimenAnalytics struct {
-	Err              error                        `json:"error"`
+	Err              error                        `json:"error,omitempty"`
 	ConsumedCapacity []*dynamodb.ConsumedCapacity `json:"consumed_capacity"`
 	RegimenID        string                       `json:"regimen_id"`
 	Published        bool                         `json:"published"`

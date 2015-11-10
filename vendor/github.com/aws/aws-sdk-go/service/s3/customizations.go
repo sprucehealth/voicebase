@@ -1,22 +1,25 @@
 package s3
 
-import "github.com/aws/aws-sdk-go/aws/service"
+import (
+	"github.com/aws/aws-sdk-go/aws/client"
+	"github.com/aws/aws-sdk-go/aws/request"
+)
 
 func init() {
-	initService = func(s *service.Service) {
+	initClient = func(c *client.Client) {
 		// Support building custom host-style bucket endpoints
-		s.Handlers.Build.PushFront(updateHostWithBucket)
+		c.Handlers.Build.PushFront(updateHostWithBucket)
 
 		// Require SSL when using SSE keys
-		s.Handlers.Validate.PushBack(validateSSERequiresSSL)
-		s.Handlers.Build.PushBack(computeSSEKeys)
+		c.Handlers.Validate.PushBack(validateSSERequiresSSL)
+		c.Handlers.Build.PushBack(computeSSEKeys)
 
 		// S3 uses custom error unmarshaling logic
-		s.Handlers.UnmarshalError.Clear()
-		s.Handlers.UnmarshalError.PushBack(unmarshalError)
+		c.Handlers.UnmarshalError.Clear()
+		c.Handlers.UnmarshalError.PushBack(unmarshalError)
 	}
 
-	initRequest = func(r *service.Request) {
+	initRequest = func(r *request.Request) {
 		switch r.Operation.Name {
 		case opPutBucketCors, opPutBucketLifecycle, opPutBucketPolicy, opPutBucketTagging, opDeleteObjects:
 			// These S3 operations require Content-MD5 to be set
@@ -27,6 +30,8 @@ func init() {
 		case opCreateBucket:
 			// Auto-populate LocationConstraint with current region
 			r.Handlers.Validate.PushFront(populateLocationConstraint)
+		case opCopyObject, opUploadPartCopy, opCompleteMultipartUpload:
+			r.Handlers.Unmarshal.PushFront(copyMultipartStatusOKUnmarhsalError)
 		}
 	}
 }
