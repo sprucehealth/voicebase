@@ -2,11 +2,11 @@ package api
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dbutil"
+	"github.com/sprucehealth/backend/libs/errors"
 )
 
 func (d *dataService) TreatmentPlanScheduledMessage(id int64) (*common.TreatmentPlanScheduledMessage, error) {
@@ -138,13 +138,13 @@ func (d *dataService) listTreatmentPlanScheduledMessages(tbl string, treatmentPl
 	var err error
 	if tbl == "treatment_plan" {
 		rows, err = d.db.Query(`
-			SELECT id, scheduled_days, message, scheduled_message_id
+			SELECT id, scheduled_days, message, scheduled_message_id, cancelled, cancelled_time, sent_time
 			FROM treatment_plan_scheduled_message
 			WHERE treatment_plan_id = ?
 			ORDER BY scheduled_days`, treatmentPlanID)
 	} else {
 		rows, err = d.db.Query(`
-			SELECT id, scheduled_days, message, NULL
+			SELECT id, scheduled_days, message, NULL, false, NULL, NULL
 			FROM dr_favorite_treatment_plan_scheduled_message
 			WHERE dr_favorite_treatment_plan_id = ?
 			ORDER BY scheduled_days`, treatmentPlanID)
@@ -161,7 +161,7 @@ func (d *dataService) listTreatmentPlanScheduledMessages(tbl string, treatmentPl
 		m := &common.TreatmentPlanScheduledMessage{
 			TreatmentPlanID: treatmentPlanID,
 		}
-		if err := rows.Scan(&m.ID, &m.ScheduledDays, &m.Message, &m.ScheduledMessageID); err != nil {
+		if err := rows.Scan(&m.ID, &m.ScheduledDays, &m.Message, &m.ScheduledMessageID, &m.Cancelled, &m.CancelledTime, &m.SentTime); err != nil {
 			return nil, err
 		}
 		msgMap[m.ID] = m
@@ -292,11 +292,74 @@ func (d *dataService) UpdateTreatmentPlanScheduledMessage(id int64, update *Trea
 		args.Append("message", *update.Message)
 	}
 
+	if update.SentTime != nil {
+		args.Append("sent_time", *update.SentTime)
+	}
+
 	_, err := d.db.Exec(`
 		UPDATE treatment_plan_scheduled_message
 		SET `+args.Columns()+` WHERE id = ?`,
 		append(args.Values(), id)...)
 	return err
+}
+
+func (d *dataService) CancelTreatmentPlanScheduledMessage(id int64) (bool, error) {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return false, errors.Trace(err)
+	}
+
+	// get the scheduled message id and status of
+	// scheduled message
+	var schedmsgID int64
+	var status common.ScheduledMessageStatus
+	if err := tx.QueryRow(`
+		SELECT scheduled_message_id, scheduled_message.status 
+		FROM treatment_plan_scheduled_message
+		INNER JOIN scheduled_message ON scheduled_message.id = scheduled_message_id
+		WHERE treatment_plan_scheduled_message.id = ?
+		FOR UPDATE`, id).Scan(&schedmsgID, &status); err == sql.ErrNoRows {
+		tx.Rollback()
+		return false, errors.Trace(ErrNotFound(fmt.Sprintf("scheduled message %d not found", id)))
+	} else if err != nil {
+		tx.Rollback()
+		return false, errors.Trace(err)
+	}
+
+	switch status {
+	case common.SMCancelled:
+		// nothing to do
+		tx.Rollback()
+		return false, nil
+	case common.SMScheduled:
+	default:
+		// cannot proceed
+		tx.Rollback()
+		return false, errors.Trace(fmt.Errorf("cannot cancel scheduled message %d. expected: %s. got: %s", id, common.SMScheduled.String(), status.String()))
+	}
+
+	// update the treatment plan scheduled message
+	// to indicate that it was cancelled
+	_, err = tx.Exec(`
+		UPDATE treatment_plan_scheduled_message
+		SET cancelled = true, cancelled_time = now()
+		WHERE id = ?`, id)
+	if err != nil {
+		tx.Rollback()
+		return false, errors.Trace(err)
+	}
+
+	// update the scheduled message to indicate that it was cancelled
+	_, err = tx.Exec(`
+		UPDATE scheduled_message
+		SET status = ?
+		WHERE id = ?`, common.SMCancelled.String(), schedmsgID)
+	if err != nil {
+		tx.Rollback()
+		return false, errors.Trace(err)
+	}
+
+	return true, errors.Trace(tx.Commit())
 }
 
 func (d *dataService) listFavoriteTreatmentPlanScheduledMessages(ftpID int64) ([]*common.TreatmentPlanScheduledMessage, error) {

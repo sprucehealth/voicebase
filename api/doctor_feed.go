@@ -32,6 +32,8 @@ const (
 	DQItemStatusReplied = "REPLIED"
 	DQItemStatusTreated = "TREATED"
 	DQItemStatusTriaged = "TRIAGED"
+	// DQItemStatusCancelled status represents a case message that was cancelled.
+	DQItemStatusCancelled = "CANCELLED"
 )
 
 const DisplayTypeTitleSubtitleActionable = "title_subtitle_actionable"

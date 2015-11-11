@@ -1,7 +1,6 @@
 package doctor_queue
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/samuel/go-metrics/metrics"
@@ -16,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/notify"
@@ -713,6 +713,48 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 		}
 
 		routeSuccess.Inc(1)
+		return nil
+	})
+
+	dispatcher.Subscribe(func(ev *doctor_treatment_plan.TreatmentPlanScheduledMessageCancelledEvent) error {
+
+		patient, err := dataAPI.Patient(ev.PatientID, true)
+		if err != nil {
+			return errors.Trace(err)
+		}
+
+		doctor, err := dataAPI.Doctor(ev.DoctorID, true)
+		if err != nil {
+			return errors.Trace(err)
+		}
+
+		pc, err := dataAPI.GetPatientCaseFromID(ev.CaseID)
+		if err != nil {
+			return errors.Trace(err)
+		}
+
+		if err := dataAPI.UpdateDoctorQueue([]*api.DoctorQueueUpdate{
+			{
+				Action: api.DQActionInsert,
+				Dedupe: false,
+				QueueItem: &api.DoctorQueueItem{
+					DoctorID:         ev.DoctorID,
+					PatientID:        ev.PatientID,
+					ItemID:           ev.CaseID,
+					EventType:        api.DQEventTypeCaseMessage,
+					Status:           api.DQItemStatusCancelled,
+					Description:      fmt.Sprintf("%s cancelled scheduled message for %s %s's.", doctor.ShortDisplayName, patient.FirstName, patient.LastName),
+					ShortDescription: fmt.Sprintf("Scheduled message cancelled"),
+					ActionURL:        app_url.ViewCaseAction(ev.CaseID),
+					Tags:             []string{pc.Name},
+				},
+			},
+		}); err != nil {
+			golog.Errorf("Unable to item into doctor queue: %s", err)
+			routeFailure.Inc(1)
+			return errors.Trace(err)
+		}
+
 		return nil
 	})
 }

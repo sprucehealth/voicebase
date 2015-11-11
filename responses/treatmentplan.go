@@ -98,6 +98,8 @@ type ScheduledMessage struct {
 	ScheduledForEpoch      int64                  `json:"scheduled_for_epoch"`
 	Message                string                 `json:"message"`
 	Attachments            []*messages.Attachment `json:"attachments"`
+	Cancellable            bool                   `json:"cancellable"`
+	Cancelled              bool                   `json:"cancelled"`
 }
 
 type FavoriteTreatmentPlan struct {
@@ -270,7 +272,7 @@ func TransformTPToResponse(
 	}
 	var err error
 	for i, sm := range tp.ScheduledMessages {
-		tpRes.ScheduledMessages[i], err = TransformScheduledMessageToResponse(mLookup, mediaStore, sm, sentTime, mediaExpirationDuration)
+		tpRes.ScheduledMessages[i], err = TransformScheduledMessageToResponse(mLookup, mediaStore, sm, common.TreatmentPlanScheduledMessageCancellable(tp, sm), sentTime, mediaExpirationDuration)
 		if err != nil {
 			return nil, err
 		}
@@ -360,7 +362,7 @@ func TransformFTPToResponse(
 	now := time.Now().UTC()
 	var err error
 	for i, sm := range ftp.ScheduledMessages {
-		ftpRes.ScheduledMessages[i], err = TransformScheduledMessageToResponse(mLookup, mediaStore, sm, now, mediaExpirationDuration)
+		ftpRes.ScheduledMessages[i], err = TransformScheduledMessageToResponse(mLookup, mediaStore, sm, false, now, mediaExpirationDuration)
 		if err != nil {
 			return nil, err
 		}
@@ -475,6 +477,7 @@ func TransformScheduledMessageToResponse(
 	mLookup mediaLookup,
 	mediaStore *mediastore.Store,
 	m *common.TreatmentPlanScheduledMessage,
+	cancellable bool,
 	sentTime time.Time,
 	mediaExpirationDuration time.Duration,
 ) (*ScheduledMessage, error) {
@@ -487,6 +490,8 @@ func TransformScheduledMessageToResponse(
 		ScheduledForEpoch:      scheduledFor.Unix(),
 		Message:                m.Message,
 		Attachments:            make([]*messages.Attachment, len(m.Attachments)),
+		Cancelled:              m.Cancelled,
+		Cancellable:            cancellable,
 	}
 	for j, a := range m.Attachments {
 		att := &messages.Attachment{

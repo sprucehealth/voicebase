@@ -133,6 +133,29 @@ func TestScheduledMessage(t *testing.T) {
 	test.Equals(t, "Follow-Up Visit", msgs[0].Attachments[0].Title)
 	test.Equals(t, messages.AttachmentTypePrefix+common.AttachmentTypePhoto, msgs[0].Attachments[1].Type)
 	test.Equals(t, photoID, msgs[0].Attachments[1].ID)
+	test.Equals(t, false, msgs[0].Cancelled)
+	test.Equals(t, false, msgs[0].Cancellable)
+
+	// add a note so that treatment plan can be submitted
+	test.OK(t, doctorCli.UpdateTreatmentPlanNote(tp.ID.Int64(), "agihag"))
+
+	// submit treatment plan
+	test.OK(t, doctorCli.SubmitTreatmentPlan(tp.ID.Int64()))
+
+	// at this point the scheduled message should be cancellable
+	msgs, err = doctorCli.ListTreatmentPlanScheduledMessages(tp.ID.Int64())
+	test.OK(t, err)
+	test.Equals(t, true, msgs[0].Cancellable)
+
+	// now try to delete a scheduled message (should be cancelled rather than deleted)
+	test.OK(t, maCli.CancelTreatmentPlanScheduledMessage(msgID2))
+
+	// at this point the message should be cancelled
+	msgs, err = doctorCli.ListTreatmentPlanScheduledMessages(tp.ID.Int64())
+	test.OK(t, err)
+	test.Equals(t, false, msgs[0].Cancellable)
+	test.Equals(t, true, msgs[0].Cancelled)
+
 }
 
 func TestScheduledMessageSend(t *testing.T) {

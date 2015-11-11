@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/messages"
 	"github.com/sprucehealth/backend/patient"
 )
@@ -107,14 +108,18 @@ func (w *Worker) ConsumeMessage() (bool, error) {
 			// Record this as a success since it's a handled error
 			w.statSucceeded.Inc(1)
 			golog.Errorf("Can't send scheduled message %d: %s", scheduledMessage.ID, err.Error())
-			if err := w.dataAPI.UpdateScheduledMessage(scheduledMessage.ID, common.SMError); err != nil {
+			if err := w.dataAPI.UpdateScheduledMessage(scheduledMessage.ID, &api.ScheduledMessageUpdate{
+				Status: ptr.String(common.SMError.String()),
+			}); err != nil {
 				return false, errors.Trace(err)
 			}
 			return false, errors.Trace(err)
 		}
 		w.statFailed.Inc(1)
 		// revert the status back to being in the scheduled state
-		if err := w.dataAPI.UpdateScheduledMessage(scheduledMessage.ID, common.SMScheduled); err != nil {
+		if err := w.dataAPI.UpdateScheduledMessage(scheduledMessage.ID, &api.ScheduledMessageUpdate{
+			Status: ptr.String(common.SMScheduled.String()),
+		}); err != nil {
 			return false, errors.Trace(err)
 		}
 		return false, errors.Trace(err)
@@ -123,7 +128,10 @@ func (w *Worker) ConsumeMessage() (bool, error) {
 	w.statSucceeded.Inc(1)
 
 	// update the status to indicate that the message was succesfully sent
-	if err := w.dataAPI.UpdateScheduledMessage(scheduledMessage.ID, common.SMSent); err != nil {
+	if err := w.dataAPI.UpdateScheduledMessage(scheduledMessage.ID, &api.ScheduledMessageUpdate{
+		Status:        ptr.String(common.SMSent.String()),
+		CompletedTime: ptr.Time(time.Now()),
+	}); err != nil {
 		return false, errors.Trace(err)
 	}
 
@@ -274,6 +282,13 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 				Doctor:  people[personID].Doctor,
 				MA:      careCoordinator,
 			})
+		}
+
+		// update to indicate the the treatment plan scheduled message was sent
+		if err := w.dataAPI.UpdateTreatmentPlanScheduledMessage(sm.MessageID, &api.TreatmentPlanScheduledMessageUpdate{
+			SentTime: ptr.Time(time.Now()),
+		}); err != nil {
+			golog.Errorf("Unable to update treatment plan scheduled message (id %d) to indicate that it was sent: %s", sm.MessageID, err.Error())
 		}
 	default:
 		return errors.Trace(fmt.Errorf("Unknown message type: %s", schedMsg.Message.TypeName()))

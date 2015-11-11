@@ -5,6 +5,3 @@ UPDATE doctor_queue
 SET doctor_id = @primary_cc_id
 WHERE status='PENDING'
 AND event_type like '%TRANSMISSION_ERROR%';
-
-
-

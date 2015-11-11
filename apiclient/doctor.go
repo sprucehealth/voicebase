@@ -342,6 +342,14 @@ func (dc *DoctorClient) DeleteTreatmentPlanScheduledMessages(treatmentPlanID, me
 		}, nil, nil, nil)
 }
 
+func (dc *DoctorClient) CancelTreatmentPlanScheduledMessage(messageID int64) error {
+	req := &doctor_treatment_plan.CancelScheduledMessageRequest{
+		MessageID: messageID,
+	}
+	return dc.do("PUT", apipaths.DoctorCancelTPScheduledMessageURLPath,
+		nil, req, nil, nil)
+}
+
 func (dc *DoctorClient) AddResourceGuidesToTreatmentPlan(tpID int64, guideIDs []int64) error {
 	req := &doctor_treatment_plan.ResourceGuideRequest{
 		TreatmentPlanID: tpID,

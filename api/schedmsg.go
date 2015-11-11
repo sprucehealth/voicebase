@@ -259,8 +259,20 @@ func (d *dataService) RandomlyPickAndStartProcessingScheduledMessage(messageType
 	return d.ScheduledMessage(msgID, messageTypes)
 }
 
-func (d *dataService) UpdateScheduledMessage(id int64, status common.ScheduledMessageStatus) error {
-	_, err := d.db.Exec(`UPDATE scheduled_message SET status = ? WHERE id = ?`, status.String(), id)
+func (d *dataService) UpdateScheduledMessage(id int64, update *ScheduledMessageUpdate) error {
+	args := dbutil.MySQLVarArgs()
+
+	if update.Status != nil {
+		args.Append("status", *update.Status)
+	}
+	if update.CompletedTime != nil {
+		args.Append("completed", *update.CompletedTime)
+	}
+
+	_, err := d.db.Exec(`
+		UPDATE scheduled_message
+		SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), id)...)
+
 	return errors.Trace(err)
 }
 

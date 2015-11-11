@@ -209,6 +209,7 @@ func (h *scheduledMessageHandler) getMessages(ctx context.Context, w http.Respon
 			h.dataAPI,
 			h.mediaStore,
 			m,
+			common.TreatmentPlanScheduledMessageCancellable(tp, m),
 			sent,
 			scheduledMessageMediaExpirationDuration)
 		if err != nil {
@@ -341,6 +342,7 @@ func validateTokensInMessage(dataAPI api.DataAPI, msg *common.TreatmentPlanSched
 func (h *scheduledMessageHandler) deleteMessage(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	requestCache := apiservice.MustCtxCache(ctx)
 	req := requestCache[apiservice.CKRequestData].(*scheduledMessageIDRequest)
+
 	if req.MessageID == 0 {
 		apiservice.WriteBadRequestError(ctx, errors.New("message_id is required"), w, r)
 		return

@@ -77,3 +77,23 @@ func (e *TreatmentPlanSubmittedEvent) Events() []analytics.Event {
 		},
 	}
 }
+
+type TreatmentPlanScheduledMessageCancelledEvent struct {
+	TreatmentPlanID int64
+	CaseID          int64
+	PatientID       common.PatientID
+	DoctorID        int64
+}
+
+func (e *TreatmentPlanScheduledMessageCancelledEvent) Events() []analytics.Event {
+	return []analytics.Event{
+		&analytics.ServerEvent{
+			Event:           "treatment_plan_scheduled_message_cancelled",
+			Timestamp:       analytics.Time(time.Now()),
+			PatientID:       e.PatientID.Int64(),
+			DoctorID:        e.DoctorID,
+			TreatmentPlanID: e.TreatmentPlanID,
+			CaseID:          e.CaseID,
+		},
+	}
+}

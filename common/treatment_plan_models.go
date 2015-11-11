@@ -1,5 +1,7 @@
 package common
 
+import "time"
+
 type TreatmentPlanScheduledMessage struct {
 	ID                 int64                    `json:"id,string"`
 	TreatmentPlanID    int64                    `json:"treatment_plan_id,string"`
@@ -7,6 +9,9 @@ type TreatmentPlanScheduledMessage struct {
 	Message            string                   `json:"message"`
 	Attachments        []*CaseMessageAttachment `json:"attachments"`
 	ScheduledMessageID *int64                   `json:"scheduled_message_id,string,omitempty"`
+	Cancelled          bool                     `json:"cancelled"`
+	CancelledTime      *time.Time               `json:"cancelled_time"`
+	SentTime           *time.Time               `json:"sent_time"`
 }
 
 func (m *TreatmentPlanScheduledMessage) Equal(to *TreatmentPlanScheduledMessage) bool {
@@ -34,4 +39,10 @@ func (m *TreatmentPlanScheduledMessage) Equal(to *TreatmentPlanScheduledMessage)
 	}
 
 	return true
+}
+
+// TreatmentPlanScheduledMessageCancellable returns true if the treatment plan is active, the message has not yet been sent
+// and the message has not been cancelled
+func TreatmentPlanScheduledMessageCancellable(tp *TreatmentPlan, m *TreatmentPlanScheduledMessage) bool {
+	return tp.Status == TPStatusActive && !m.Cancelled && m.SentTime == nil
 }

@@ -294,6 +294,7 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 	authenticationRequired(conf, apipaths.DoctorTreatmentPlansURLPath, doctor_treatment_plan.NewDoctorTreatmentPlanHandler(conf.DataAPI, conf.ERxAPI, conf.MediaStore, conf.Dispatcher, conf.ERxRoutingQueue, conf.ERxStatusQueue, conf.ERxRouting))
 	authenticationRequired(conf, apipaths.DoctorTreatmentPlansListURLPath, doctor_treatment_plan.NewDeprecatedListHandler(conf.DataAPI))
 	authenticationRequired(conf, apipaths.DoctorTPScheduledMessageURLPath, doctor_treatment_plan.NewScheduledMessageHandler(conf.DataAPI, conf.MediaStore, conf.Dispatcher))
+	authenticationRequired(conf, apipaths.DoctorCancelTPScheduledMessageURLPath, doctor_treatment_plan.NewCancelScheduledMessageHandler(conf.DataAPI, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.DoctorPharmacySearchURLPath, doctor.NewPharmacySearchHandler(conf.DataAPI, conf.ERxAPI))
 	authenticationRequired(conf, apipaths.DoctorVisitReviewURLPath, patient_file.NewDoctorPatientVisitReviewHandler(conf.DataAPI, conf.Dispatcher, conf.MediaStore, conf.AuthTokenExpiration, conf.WebDomain))
 	authenticationRequired(conf, apipaths.DoctorVisitDiagnosisListURLPath, diaghandlers.NewDiagnosisListHandler(conf.DataAPI, conf.DiagnosisAPI, conf.Dispatcher))

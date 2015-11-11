@@ -16,6 +16,10 @@ var (
 	// SMProcessing indicates that a message has been picked up for sending
 	SMProcessing ScheduledMessageStatus = "PROCESSING"
 
+	// SMCancelled indicates that the message was explicitly cancelled
+	// before being sent.
+	SMCancelled ScheduledMessageStatus = "CANCELLED"
+
 	// SMSent indicates that a message has been sucessfully sent
 	SMSent ScheduledMessageStatus = "SENT"
 
@@ -39,7 +43,7 @@ var (
 func ParseScheduledMessageStatus(s string) (ScheduledMessageStatus, error) {
 	sm := ScheduledMessageStatus(strings.ToUpper(s))
 	switch sm {
-	case SMScheduled, SMProcessing, SMSent, SMError, SMDeactivated:
+	case SMScheduled, SMProcessing, SMSent, SMError, SMDeactivated, SMCancelled:
 		return sm, nil
 	}
 

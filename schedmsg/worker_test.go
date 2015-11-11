@@ -39,7 +39,8 @@ type mockedDataAPI_WorkerTest struct {
 	CaseMessageID int64
 	Error         error
 
-	msgCreated *common.CaseMessage
+	msgCreated     *common.CaseMessage
+	schedmsgUpdate *api.TreatmentPlanScheduledMessageUpdate
 }
 
 func (d mockedDataAPI_WorkerTest) GetAbridgedTreatmentPlan(treatmentPlanID, doctorID int64) (*common.TreatmentPlan, error) {
@@ -73,6 +74,10 @@ func (d mockedDataAPI_WorkerTest) GetPeople(ids []int64) (map[int64]*common.Pers
 func (d *mockedDataAPI_WorkerTest) CreateCaseMessage(msg *common.CaseMessage) (int64, error) {
 	d.msgCreated = msg
 	return d.CaseMessageID, d.Error
+}
+func (d *mockedDataAPI_WorkerTest) UpdateTreatmentPlanScheduledMessage(id int64, update *api.TreatmentPlanScheduledMessageUpdate) error {
+	d.schedmsgUpdate = update
+	return nil
 }
 
 // TestScheduledMessage_FromActiveDoctor ensures that a treatment plan
@@ -128,6 +133,9 @@ func TestScheduledMessage_FromActiveDoctor(t *testing.T) {
 	// ensure that the case message has the personID that maps to the active doctor on the care team
 	// and not the personID of the doctor on the TP
 	test.Equals(t, activeDoctorOnCareTeamID, data.msgCreated.PersonID)
+
+	// ensure that the treatment plan scheduled message update encapsulated an update to indicate that the message was sent
+	test.Equals(t, true, data.schedmsgUpdate != nil && data.schedmsgUpdate.SentTime != nil)
 }
 
 func TestCaseNotReassignedOnTPScheduledMessageNoCC(t *testing.T) {

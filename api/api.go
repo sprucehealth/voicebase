@@ -459,6 +459,7 @@ func (o ListCareProvidersOption) Has(opt ListCareProvidersOption) bool {
 type TreatmentPlanScheduledMessageUpdate struct {
 	ScheduledMessageID *int64
 	Message            *string
+	SentTime           *time.Time
 }
 
 type DoctorAPI interface {
@@ -516,6 +517,10 @@ type DoctorAPI interface {
 	DeleteTreatmentPlanScheduledMessage(treatmentPlanID, messageID int64) error
 	ReplaceTreatmentPlanScheduledMessage(id int64, msg *common.TreatmentPlanScheduledMessage) error
 	UpdateTreatmentPlanScheduledMessage(id int64, update *TreatmentPlanScheduledMessageUpdate) error
+
+	// CancelTreatmentPlanScheduledMessage cancels an already scheduled treatment plan message
+	// to prevent it from going out.
+	CancelTreatmentPlanScheduledMessage(id int64) (bool, error)
 
 	// Favorite treatment plan scheduled messages
 	SetFavoriteTreatmentPlanScheduledMessages(ftpID int64, msgs []*common.TreatmentPlanScheduledMessage) error
@@ -811,6 +816,11 @@ type EmailAPI interface {
 	UpdateEmailCampaignState(campaignKey string, state []byte) error
 }
 
+type ScheduledMessageUpdate struct {
+	Status        *string
+	CompletedTime *time.Time
+}
+
 type ScheduledMessageAPI interface {
 	CreateScheduledMessage(*common.ScheduledMessage) (int64, error)
 	CreateScheduledMessageTemplate(*common.ScheduledMessageTemplate) error
@@ -820,7 +830,7 @@ type ScheduledMessageAPI interface {
 	ScheduledMessage(id int64, messageTypes map[string]reflect.Type) (*common.ScheduledMessage, error)
 	ScheduledMessageTemplate(id int64) (*common.ScheduledMessageTemplate, error)
 	ScheduledMessageTemplates(eventType string) ([]*common.ScheduledMessageTemplate, error)
-	UpdateScheduledMessage(id int64, status common.ScheduledMessageStatus) error
+	UpdateScheduledMessage(id int64, update *ScheduledMessageUpdate) error
 	UpdateScheduledMessageTemplate(*common.ScheduledMessageTemplate) error
 	DeactivateScheduledMessagesForPatient(patientID common.PatientID) (int64, error)
 }
