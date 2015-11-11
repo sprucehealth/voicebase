@@ -320,7 +320,7 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			{
 				Action: api.DQActionInsert,
 				QueueItem: &api.DoctorQueueItem{
-					DoctorID:         ev.DoctorID,
+					DoctorID:         ev.ProviderID,
 					PatientID:        ev.Patient.ID,
 					ItemID:           ev.ItemID,
 					Status:           api.StatusPending,
@@ -337,14 +337,14 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 		}
 		routeSuccess.Inc(1)
 
-		doctor, err := dataAPI.GetDoctorFromID(ev.DoctorID)
+		doctor, err := dataAPI.GetDoctorFromID(ev.ProviderID)
 		if err != nil {
 			golog.Errorf("Unable to get doctor from id: %s", err)
 			return err
 		}
 
 		if err := notificationManager.NotifyDoctor(
-			api.RoleDoctor,
+			ev.ProviderRole,
 			doctor.ID.Int64(),
 			doctor.AccountID.Int64(),
 			&notify.Message{

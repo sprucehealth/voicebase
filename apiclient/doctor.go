@@ -369,14 +369,6 @@ func (dc *DoctorClient) ResolveRXErrorByRefillRequestID(refillRequestID int64) e
 		nil, req, nil, nil)
 }
 
-func (dc *DoctorClient) AddTag(refillRequestID int64) error {
-	req := &doctor.DoctorPrescriptionErrorIgnoreRequestData{
-		RefillRequestID: refillRequestID,
-	}
-	return dc.do("POST", apipaths.DoctorRXErrorResolveURLPath,
-		nil, req, nil, nil)
-}
-
 func (dc *DoctorClient) Tags(req *tagging.TagGETRequest) (*tagging.TagGETResponse, error) {
 	res := &tagging.TagGETResponse{}
 	if err := dc.do("GET", apipaths.TagURLPath, url.Values{

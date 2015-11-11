@@ -1,13 +1,13 @@
 package app_worker
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/erx"
 	"github.com/sprucehealth/backend/libs/golog"
 )
@@ -20,6 +20,7 @@ type ERxWorker struct {
 	dataAPI     api.DataAPI
 	erxAPI      erx.ERxAPI
 	lockAPI     api.LockAPI
+	dispatcher  dispatch.Publisher
 	stopChan    chan bool
 	statFailure *metrics.Counter
 	statCycles  *metrics.Counter
@@ -34,6 +35,7 @@ type ERxWorker struct {
 func NewERxErrorWorker(
 	dataAPI api.DataAPI,
 	erxAPI erx.ERxAPI,
+	dispatcher dispatch.Publisher,
 	lockAPI api.LockAPI,
 	statsRegistry metrics.Registry) *ERxWorker {
 	statFailure := metrics.NewCounter()
@@ -46,6 +48,7 @@ func NewERxErrorWorker(
 		dataAPI:     dataAPI,
 		erxAPI:      erxAPI,
 		lockAPI:     lockAPI,
+		dispatcher:  dispatcher,
 		stopChan:    make(chan bool),
 		statFailure: statFailure,
 		statCycles:  statCycles,
@@ -111,7 +114,7 @@ func (w *ERxWorker) Do() error {
 		for _, treatmentWithError := range treatmentsWithErrors {
 			treatment, err := w.dataAPI.GetTreatmentBasedOnPrescriptionID(treatmentWithError.ERx.PrescriptionID.Int64())
 			if err == nil {
-				if err := handleErxErrorForTreatmentInTreatmentPlan(w.dataAPI, treatment, treatmentWithError); err != nil {
+				if err := handleErxErrorForTreatmentInTreatmentPlan(w.dataAPI, w.dispatcher, treatment, treatmentWithError); err != nil {
 					w.statFailure.Inc(1)
 				}
 				continue
@@ -124,7 +127,7 @@ func (w *ERxWorker) Do() error {
 
 			refillRequest, err := w.dataAPI.GetRefillRequestFromPrescriptionID(treatmentWithError.ERx.PrescriptionID.Int64())
 			if err == nil {
-				if err := handlErxErrorForRefillRequest(w.dataAPI, refillRequest, treatmentWithError); err != nil {
+				if err := handlErxErrorForRefillRequest(w.dataAPI, w.dispatcher, refillRequest, treatmentWithError); err != nil {
 					w.statFailure.Inc(1)
 				}
 				continue
@@ -137,7 +140,7 @@ func (w *ERxWorker) Do() error {
 
 			unlinkedDNTFTreatment, err := w.dataAPI.GetUnlinkedDNTFTreatmentFromPrescriptionID(treatmentWithError.ERx.PrescriptionID.Int64())
 			if err == nil {
-				if err := handlErxErrorForUnlinkedDNTFTreatment(w.dataAPI, unlinkedDNTFTreatment, treatmentWithError); err != nil {
+				if err := handlErxErrorForUnlinkedDNTFTreatment(w.dataAPI, w.dispatcher, unlinkedDNTFTreatment, treatmentWithError); err != nil {
 					w.statFailure.Inc(1)
 				}
 				continue
@@ -159,11 +162,11 @@ func (w *ERxWorker) Do() error {
 	return nil
 }
 
-func handlErxErrorForUnlinkedDNTFTreatment(dataAPI api.DataAPI, unlinkedDNTFTreatment, treatmentWithError *common.Treatment) error {
+func handlErxErrorForUnlinkedDNTFTreatment(dataAPI api.DataAPI, dispatcher dispatch.Publisher, unlinkedDNTFTreatment, treatmentWithError *common.Treatment) error {
 	statusEvents, err := dataAPI.GetErxStatusEventsForDNTFTreatment(unlinkedDNTFTreatment.ID.Int64())
 	if err != nil {
 		golog.Errorf("Unable to get status events for unlinked dntf treatment id %d. error : %s", unlinkedDNTFTreatment.ID.Int64(), err)
-		return err
+		return errors.Trace(err)
 	}
 
 	// if the latest item does not represent an error, insert
@@ -177,33 +180,27 @@ func handlErxErrorForUnlinkedDNTFTreatment(dataAPI api.DataAPI, unlinkedDNTFTrea
 			ItemID:            unlinkedDNTFTreatment.ID.Int64(),
 		}); err != nil {
 			golog.Errorf("Unable to add error event to rx history for unlinked dntf treatment: %s", err.Error())
-			return err
+			return errors.Trace(err)
 		}
 
-		if err := dataAPI.UpdateDoctorQueue([]*api.DoctorQueueUpdate{
-			{
-				Action: api.DQActionInsert,
-				QueueItem: &api.DoctorQueueItem{
-					DoctorID:         unlinkedDNTFTreatment.Doctor.ID.Int64(),
-					PatientID:        unlinkedDNTFTreatment.Patient.ID,
-					ItemID:           unlinkedDNTFTreatment.ID.Int64(),
-					Status:           api.DQItemStatusPending,
-					EventType:        api.DQEventTypeUnlinkedDNTFTransmissionError,
-					Description:      fmt.Sprintf("Error sending prescription for %s %s", unlinkedDNTFTreatment.Patient.FirstName, unlinkedDNTFTreatment.Patient.LastName),
-					ShortDescription: "Prescription error",
-					ActionURL:        app_url.ViewDNTFTransmissionErrorAction(unlinkedDNTFTreatment.Patient.ID, unlinkedDNTFTreatment.ID.Int64()),
-				},
-			},
-		}); err != nil {
-			golog.Errorf("Unable to insert unlinked dntf treatment transmission error into doctor queue: %s", err)
-			return err
+		provider, providerRole, err := identifyProvider(dataAPI, unlinkedDNTFTreatment.Doctor)
+		if err != nil {
+			return errors.Trace(err)
 		}
+
+		dispatcher.Publish(&RxTransmissionErrorEvent{
+			ProviderID:   provider.ID.Int64(),
+			ProviderRole: providerRole,
+			ItemID:       treatmentWithError.ID.Int64(),
+			EventType:    common.UnlinkedDNTFTreatmentType,
+			Patient:      treatmentWithError.Patient,
+		})
 	}
 
 	return nil
 }
 
-func handlErxErrorForRefillRequest(dataAPI api.DataAPI, refillRequest *common.RefillRequestItem, treatmentWithError *common.Treatment) error {
+func handlErxErrorForRefillRequest(dataAPI api.DataAPI, dispatcher dispatch.Publisher, refillRequest *common.RefillRequestItem, treatmentWithError *common.Treatment) error {
 	statusEvents, err := dataAPI.GetRefillStatusEventsForRefillRequest(refillRequest.ID)
 	if err != nil {
 		golog.Errorf("Unable to get status events for refill request id %d. error : %s", refillRequest.ID, err)
@@ -229,29 +226,23 @@ func handlErxErrorForRefillRequest(dataAPI api.DataAPI, refillRequest *common.Re
 		return err
 	}
 
-	if err := dataAPI.UpdateDoctorQueue([]*api.DoctorQueueUpdate{
-		{
-			Action: api.DQActionInsert,
-			QueueItem: &api.DoctorQueueItem{
-				DoctorID:         refillRequest.Doctor.ID.Int64(),
-				PatientID:        refillRequest.Patient.ID,
-				ItemID:           refillRequest.ID,
-				Status:           api.DQItemStatusPending,
-				EventType:        api.DQEventTypeRefillTransmissionError,
-				Description:      fmt.Sprintf("Error completing refill request for %s %s", refillRequest.Patient.FirstName, refillRequest.Patient.LastName),
-				ShortDescription: "Refill request error",
-				ActionURL:        app_url.ViewRefillRequestAction(refillRequest.Patient.ID, refillRequest.ID),
-			},
-		},
-	}); err != nil {
-		golog.Errorf("Unable to insert refill transmission error into doctor queue: %+v", err)
-		return err
+	provider, providerRole, err := identifyProvider(dataAPI, refillRequest.Doctor)
+	if err != nil {
+		return errors.Trace(err)
 	}
+
+	dispatcher.Publish(&RxTransmissionErrorEvent{
+		ProviderID:   provider.ID.Int64(),
+		ProviderRole: providerRole,
+		ItemID:       refillRequest.ID,
+		EventType:    common.RefillRxType,
+		Patient:      refillRequest.Patient,
+	})
 
 	return nil
 }
 
-func handleErxErrorForTreatmentInTreatmentPlan(dataAPI api.DataAPI, treatment, treatmentWithError *common.Treatment) error {
+func handleErxErrorForTreatmentInTreatmentPlan(dataAPI api.DataAPI, dispatcher dispatch.Publisher, treatment, treatmentWithError *common.Treatment) error {
 	statusEvents, err := dataAPI.GetPrescriptionStatusEventsForTreatment(treatment.ID.Int64())
 	if err != nil {
 		golog.Errorf("Unable to get status events for treatment id %d that was found to have transmission errors: %s", treatment.ID.Int64(), err)
@@ -278,23 +269,18 @@ func handleErxErrorForTreatmentInTreatmentPlan(dataAPI api.DataAPI, treatment, t
 		return err
 	}
 
-	if err := dataAPI.UpdateDoctorQueue([]*api.DoctorQueueUpdate{
-		{
-			Action: api.DQActionInsert,
-			QueueItem: &api.DoctorQueueItem{
-				DoctorID:         treatment.Doctor.ID.Int64(),
-				PatientID:        treatment.Patient.ID,
-				ItemID:           treatment.ID.Int64(),
-				Status:           api.DQItemStatusPending,
-				EventType:        api.DQEventTypeTransmissionError,
-				Description:      fmt.Sprintf("Error sending prescription for %s %s", treatment.Patient.FirstName, treatment.Patient.LastName),
-				ShortDescription: "Prescription error",
-				ActionURL:        app_url.ViewTransmissionErrorAction(treatment.Patient.ID, treatment.ID.Int64()),
-			},
-		},
-	}); err != nil {
-		golog.Errorf("Unable to insert refill transmission error into doctor queue: %+v", err)
-		return err
+	provider, providerRole, err := identifyProvider(dataAPI, treatment.Doctor)
+	if err != nil {
+		return errors.Trace(err)
 	}
+
+	dispatcher.Publish(&RxTransmissionErrorEvent{
+		ProviderID:   provider.ID.Int64(),
+		ProviderRole: providerRole,
+		ItemID:       treatment.ID.Int64(),
+		EventType:    common.ERxType,
+		Patient:      treatment.Patient,
+	})
+
 	return nil
 }

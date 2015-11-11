@@ -23,7 +23,7 @@ var (
 type ERxStatusWorker struct {
 	dataAPI         api.DataAPI
 	erxAPI          erx.ERxAPI
-	dispatcher      *dispatch.Dispatcher
+	dispatcher      dispatch.Publisher
 	erxQueue        *common.SQSQueue
 	statProcessTime metrics.Histogram
 	statCycles      *metrics.Counter
@@ -34,7 +34,7 @@ type ERxStatusWorker struct {
 func NewERxStatusWorker(
 	dataAPI api.DataAPI,
 	erxAPI erx.ERxAPI,
-	dispatcher *dispatch.Dispatcher,
+	dispatcher dispatch.Publisher,
 	erxQueue *common.SQSQueue,
 	statsRegistry metrics.Registry) *ERxStatusWorker {
 
@@ -281,12 +281,21 @@ func (w *ERxStatusWorker) Do() (bool, error) {
 						break
 					}
 				}
+
+				provider, providerRole, err := identifyProvider(w.dataAPI, doctor)
+				if err != nil {
+					golog.Errorf("Unable to identify provider for prescription id %d", prescriptionID)
+					continue
+				}
+
 				w.dispatcher.Publish(&RxTransmissionErrorEvent{
-					DoctorID:  doctor.ID.Int64(),
-					ItemID:    prescriptionStatus.ItemID,
-					EventType: statusCheckMessage.EventCheckType,
-					Patient:   patient,
+					ProviderID:   provider.ID.Int64(),
+					ProviderRole: providerRole,
+					ItemID:       prescriptionStatus.ItemID,
+					EventType:    statusCheckMessage.EventCheckType,
+					Patient:      patient,
 				})
+
 			case api.ERXStatusSent:
 				switch statusCheckMessage.EventCheckType {
 				case common.RefillRxType:

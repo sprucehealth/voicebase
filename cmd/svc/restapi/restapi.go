@@ -263,6 +263,7 @@ func buildRESTAPI(
 		app_worker.NewERxErrorWorker(
 			dataAPI,
 			eRxAPI,
+			dispatcher,
 			checkRxErrorsLock,
 			metricsRegistry.Scope("check_rx_errors"),
 		).Start()
