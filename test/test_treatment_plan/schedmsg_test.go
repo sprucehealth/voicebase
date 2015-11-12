@@ -142,20 +142,39 @@ func TestScheduledMessage(t *testing.T) {
 	// submit treatment plan
 	test.OK(t, doctorCli.SubmitTreatmentPlan(tp.ID.Int64()))
 
-	// at this point the scheduled message should be cancellable
+	// at this point the scheduled message should be not cancellable for doctor, but cancellable for ma
 	msgs, err = doctorCli.ListTreatmentPlanScheduledMessages(tp.ID.Int64())
+	test.OK(t, err)
+	test.Equals(t, false, msgs[0].Cancellable)
+
+	msgs, err = maCli.ListTreatmentPlanScheduledMessages(tp.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, true, msgs[0].Cancellable)
 
 	// now try to delete a scheduled message (should be cancelled rather than deleted)
-	test.OK(t, maCli.CancelTreatmentPlanScheduledMessage(msgID2))
+	test.OK(t, maCli.CancelTreatmentPlanScheduledMessage(msgID2, false))
 
 	// at this point the message should be cancelled
-	msgs, err = doctorCli.ListTreatmentPlanScheduledMessages(tp.ID.Int64())
+	msgs, err = maCli.ListTreatmentPlanScheduledMessages(tp.ID.Int64())
 	test.OK(t, err)
 	test.Equals(t, false, msgs[0].Cancellable)
 	test.Equals(t, true, msgs[0].Cancelled)
 
+	// lets undo the cancellation
+	test.OK(t, maCli.CancelTreatmentPlanScheduledMessage(msgID2, true))
+
+	// at this point message should no longer be cancelled
+	msgs, err = maCli.ListTreatmentPlanScheduledMessages(tp.ID.Int64())
+	test.OK(t, err)
+	test.Equals(t, true, msgs[0].Cancellable)
+	test.Equals(t, false, msgs[0].Cancelled)
+
+	// but should be able to cancel message again
+	test.OK(t, maCli.CancelTreatmentPlanScheduledMessage(msgID2, false))
+	msgs, err = maCli.ListTreatmentPlanScheduledMessages(tp.ID.Int64())
+	test.OK(t, err)
+	test.Equals(t, false, msgs[0].Cancellable)
+	test.Equals(t, true, msgs[0].Cancelled)
 }
 
 func TestScheduledMessageSend(t *testing.T) {

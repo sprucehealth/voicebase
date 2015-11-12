@@ -226,6 +226,7 @@ func TransformTPToResponse(
 	mediaStore *mediastore.Store,
 	mediaExpirationDuration time.Duration,
 	tp *common.TreatmentPlan,
+	accountRole string,
 ) (*TreatmentPlan, error) {
 
 	if tp == nil {
@@ -272,7 +273,7 @@ func TransformTPToResponse(
 	}
 	var err error
 	for i, sm := range tp.ScheduledMessages {
-		tpRes.ScheduledMessages[i], err = TransformScheduledMessageToResponse(mLookup, mediaStore, sm, common.TreatmentPlanScheduledMessageCancellable(tp, sm), sentTime, mediaExpirationDuration)
+		tpRes.ScheduledMessages[i], err = TransformScheduledMessageToResponse(mLookup, mediaStore, sm, common.TreatmentPlanScheduledMessageCancellable(tp, sm, accountRole), sentTime, mediaExpirationDuration)
 		if err != nil {
 			return nil, err
 		}

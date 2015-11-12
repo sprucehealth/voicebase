@@ -18,6 +18,7 @@ type cancelScheduledMessageHandler struct {
 
 type CancelScheduledMessageRequest struct {
 	MessageID int64 `json:"message_id,string"`
+	Undo      bool  `json:"undo"`
 }
 
 func NewCancelScheduledMessageHandler(dataAPI api.DataAPI, dispatcher dispatch.Publisher) httputil.ContextHandler {
@@ -50,11 +51,8 @@ func (c *cancelScheduledMessageHandler) ServeHTTP(ctx context.Context, w http.Re
 		return
 	}
 
-	if tpSchedMsg.Cancelled {
-		apiservice.WriteJSONSuccess(w)
-		return
-	} else if tpSchedMsg.SentTime != nil {
-		apiservice.WriteValidationError(ctx, "Message has already been sent so cannot be cancelled.", w, r)
+	if tpSchedMsg.SentTime != nil {
+		apiservice.WriteValidationError(ctx, "Message has already been sent so cannot be cancelled or undone.", w, r)
 		return
 	}
 
@@ -73,7 +71,7 @@ func (c *cancelScheduledMessageHandler) ServeHTTP(ctx context.Context, w http.Re
 		return
 	}
 
-	cancelled, err := c.dataAPI.CancelTreatmentPlanScheduledMessage(req.MessageID)
+	cancelled, err := c.dataAPI.CancelTreatmentPlanScheduledMessage(req.MessageID, req.Undo)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
@@ -85,6 +83,7 @@ func (c *cancelScheduledMessageHandler) ServeHTTP(ctx context.Context, w http.Re
 			TreatmentPlanID: tp.ID.Int64(),
 			PatientID:       tp.PatientID,
 			CaseID:          tp.PatientCaseID.Int64(),
+			Undone:          req.Undo,
 		})
 	}
 

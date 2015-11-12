@@ -83,6 +83,7 @@ type TreatmentPlanScheduledMessageCancelledEvent struct {
 	CaseID          int64
 	PatientID       common.PatientID
 	DoctorID        int64
+	Undone          bool
 }
 
 func (e *TreatmentPlanScheduledMessageCancelledEvent) Events() []analytics.Event {

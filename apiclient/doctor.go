@@ -342,9 +342,10 @@ func (dc *DoctorClient) DeleteTreatmentPlanScheduledMessages(treatmentPlanID, me
 		}, nil, nil, nil)
 }
 
-func (dc *DoctorClient) CancelTreatmentPlanScheduledMessage(messageID int64) error {
+func (dc *DoctorClient) CancelTreatmentPlanScheduledMessage(messageID int64, undo bool) error {
 	req := &doctor_treatment_plan.CancelScheduledMessageRequest{
 		MessageID: messageID,
+		Undo:      undo,
 	}
 	return dc.do("PUT", apipaths.DoctorCancelTPScheduledMessageURLPath,
 		nil, req, nil, nil)

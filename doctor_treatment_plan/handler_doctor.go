@@ -355,10 +355,11 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(ctx context.Context, w htt
 	requestData := requestCache[apiservice.CKRequestData].(*TreatmentPlanRequestData)
 	doctorID := requestCache[apiservice.CKDoctorID].(int64)
 	treatmentPlan := requestCache[apiservice.CKTreatmentPlan].(*common.TreatmentPlan)
+	account := apiservice.MustCtxAccount(ctx)
 
 	// only return the small amount of information retreived about the treatment plan
 	if requestData.Abridged {
-		tpRes, err := responses.TransformTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, treatmentPlan)
+		tpRes, err := responses.TransformTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, treatmentPlan, account.Role)
 		if err != nil {
 			apiservice.WriteError(ctx, err, w, r)
 			return
@@ -372,7 +373,7 @@ func (d *doctorTreatmentPlanHandler) getTreatmentPlan(ctx context.Context, w htt
 		return
 	}
 
-	tpRes, err := responses.TransformTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, treatmentPlan)
+	tpRes, err := responses.TransformTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, treatmentPlan, account.Role)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
@@ -387,7 +388,7 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(ctx context.Context, w h
 	doctorID := requestCache[apiservice.CKDoctorID].(int64)
 	patientVisitID := requestCache[apiservice.CKPatientVisitID].(int64)
 	patientCase := requestCache[apiservice.CKPatientCase].(*common.PatientCase)
-
+	account := apiservice.MustCtxAccount(ctx)
 	if requestData.TPContentSource != nil {
 		switch requestData.TPContentSource.Type {
 		case common.TPContentSourceTypeFTP, common.TPContentSourceTypeTreatmentPlan:
@@ -446,7 +447,7 @@ func (d *doctorTreatmentPlanHandler) pickATreatmentPlan(ctx context.Context, w h
 		TreatmentPlanID: treatmentPlanID,
 	})
 
-	tpRes, err := responses.TransformTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, tp)
+	tpRes, err := responses.TransformTPToResponse(d.dataAPI, d.mediaStore, scheduledMessageMediaExpirationDuration, tp, account.Role)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return

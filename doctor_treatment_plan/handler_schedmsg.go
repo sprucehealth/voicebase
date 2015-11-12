@@ -186,6 +186,7 @@ func (h *scheduledMessageHandler) getMessages(ctx context.Context, w http.Respon
 	requestCache := apiservice.MustCtxCache(ctx)
 	req := requestCache[apiservice.CKRequestData].(*scheduledMessageIDRequest)
 	tp := requestCache[apiservice.CKTreatmentPlan].(*common.TreatmentPlan)
+	account := apiservice.MustCtxAccount(ctx)
 
 	msgs, err := h.dataAPI.ListTreatmentPlanScheduledMessages(req.TreatmentPlanID)
 	if err != nil {
@@ -209,9 +210,10 @@ func (h *scheduledMessageHandler) getMessages(ctx context.Context, w http.Respon
 			h.dataAPI,
 			h.mediaStore,
 			m,
-			common.TreatmentPlanScheduledMessageCancellable(tp, m),
+			common.TreatmentPlanScheduledMessageCancellable(tp, m, account.Role),
 			sent,
-			scheduledMessageMediaExpirationDuration)
+			scheduledMessageMediaExpirationDuration,
+		)
 		if err != nil {
 			apiservice.WriteError(ctx, err, w, r)
 			return

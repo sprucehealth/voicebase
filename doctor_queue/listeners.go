@@ -733,6 +733,15 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 			return errors.Trace(err)
 		}
 
+		var description, shortDescription string
+		if ev.Undone {
+			description = fmt.Sprintf("%s undid scheduled message cancellation for %s %s's.", doctor.ShortDisplayName, patient.FirstName, patient.LastName)
+			shortDescription = fmt.Sprintf("Scheduled message cancellation undone")
+		} else {
+			description = fmt.Sprintf("%s cancelled scheduled message for %s %s's.", doctor.ShortDisplayName, patient.FirstName, patient.LastName)
+			shortDescription = fmt.Sprintf("Scheduled message cancelled")
+		}
+
 		if err := dataAPI.UpdateDoctorQueue([]*api.DoctorQueueUpdate{
 			{
 				Action: api.DQActionInsert,
@@ -743,9 +752,9 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 					ItemID:           ev.CaseID,
 					EventType:        api.DQEventTypeCaseMessage,
 					Status:           api.DQItemStatusCancelled,
-					Description:      fmt.Sprintf("%s cancelled scheduled message for %s %s's.", doctor.ShortDisplayName, patient.FirstName, patient.LastName),
-					ShortDescription: fmt.Sprintf("Scheduled message cancelled"),
-					ActionURL:        app_url.ViewCaseAction(ev.CaseID),
+					Description:      description,
+					ShortDescription: shortDescription,
+					ActionURL:        app_url.ViewPatientMessagesAction(ev.PatientID, ev.CaseID),
 					Tags:             []string{pc.Name},
 				},
 			},

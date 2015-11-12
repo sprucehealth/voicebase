@@ -10,11 +10,10 @@ DEV_DB_NAME="spruce"
 DEV_DB_HOST="dev-mysql-1.node.dev-us-east-1.spruce"
 PROD_DB_NAME="carefront"
 PROD_DB_INSTANCE="master.mysql.service.prod-us-east-1.spruce"
-STAGING_DB_NAME="carefront"
-STAGING_DB_USER_NAME="restapi"
-STAGING_DB_INSTANCE="staging-mysql-1.node.staging-us-east-1.spruce"
-DEMO_DB_USER_NAME="carefront"
-DEMO_DB_NAME="carefront_db"
+STAGING_DB_NAME="spruce"
+STAGING_DB_USER_NAME="spruce"
+DEMO_DB_USER_NAME="spruce"
+DEMO_DB_NAME="spruce"
 
 argsArray=($@)
 len=${#argsArray[@]}
@@ -54,19 +53,18 @@ do
 			echo "use $STAGING_DB_NAME; insert into migrations (migration_id, migration_user) values ($migrationNumber, '$USER');" > temp-migration.sql
 			LOGMSG="{\"env\":\"$env\",\"user\":\"$USER\",\"migration_id\":\"$migrationNumber\"}"
 			echo "use $STAGING_DB_NAME;" | cat - migration-$migrationNumber.sql > temp.sql
-			scp temp.sql $STAGING_DB_INSTANCE:~
-			scp temp-migration.sql $STAGING_DB_INSTANCE:~
-			ssh -t $USER@$STAGING_DB_INSTANCE "sudo ec2-consistent-snapshot -mysql.config /mysql-data/mysql/backup.cnf -tag migrationId=migration-$migrationNumber"
-			ssh -t $USER@$STAGING_DB_INSTANCE "mysql -h 127.0.0.1 -u $STAGING_DB_USER_NAME -p$STAGING_DB_PASSWORD < temp.sql ; mysql -h 127.0.0.1 -u $STAGING_DB_USER_NAME -p$STAGING_DB_PASSWORD < temp-migration.sql; logger -p user.info -t schema '$LOGMSG'"
+			scp temp.sql 54.84.90.84:~
+			scp temp-migration.sql 54.84.90.84:~
+			ssh -t 54.84.90.84 "mysql -h $STAGING_DB_INSTANCE -u $STAGING_DB_USER_NAME -p$STAGING_DB_PASSWORD < temp.sql ; mysql -h $STAGING_DB_INSTANCE -u $STAGING_DB_USER_NAME -p$STAGING_DB_PASSWORD < temp-migration.sql; logger -p user.info -t schema '$LOGMSG'"
 		;;
 
 		"dev" )
 			echo "use $DEV_DB_NAME; insert into migrations (migration_id, migration_user) values ($migrationNumber, '$USER');" > temp-migration.sql
 			LOGMSG="{\"env\":\"$env\",\"user\":\"$USER\",\"migration_id\":\"$migrationNumber\"}"
 			echo "use $DEV_DB_NAME;" | cat - migration-$migrationNumber.sql > temp.sql
-			scp temp.sql $DEV_DB_HOST:~
-			scp temp-migration.sql $DEV_DB_HOST:~
-			ssh -t $USER@$DEV_DB_HOST "mysql -h 127.0.0.1 -u $DEV_DB_USERNAME -p$DEV_DB_PASSWORD < temp.sql ; mysql -h 127.0.0.1 -u $DEV_DB_USERNAME -p$DEV_DB_PASSWORD < temp-migration.sql; logger -p user.info -t schema '$LOGMSG'"
+			scp temp.sql  52.4.213.186:~
+			scp temp-migration.sql 52.4.213.186:~
+			ssh 52.4.213.186 "mysql -h $DEV_DB_INSTANCE -u $DEV_DB_USERNAME -p$DEV_DB_PASSWORD < temp.sql ; mysql -h $DEV_DB_INSTANCE -u $DEV_DB_USERNAME -p$DEV_DB_PASSWORD < temp-migration.sql; logger -p user.info -t schema '$LOGMSG'"
 		;;
 
 		"demo" )

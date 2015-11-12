@@ -43,6 +43,6 @@ func (m *TreatmentPlanScheduledMessage) Equal(to *TreatmentPlanScheduledMessage)
 
 // TreatmentPlanScheduledMessageCancellable returns true if the treatment plan is active, the message has not yet been sent
 // and the message has not been cancelled
-func TreatmentPlanScheduledMessageCancellable(tp *TreatmentPlan, m *TreatmentPlanScheduledMessage) bool {
-	return tp.Status == TPStatusActive && !m.Cancelled && m.SentTime == nil
+func TreatmentPlanScheduledMessageCancellable(tp *TreatmentPlan, m *TreatmentPlanScheduledMessage, accountRole string) bool {
+	return tp.Status == TPStatusActive && !m.Cancelled && m.SentTime == nil && accountRole == "MA"
 }

@@ -3,10 +3,12 @@ package api
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/ptr"
 )
 
 func (d *dataService) TreatmentPlanScheduledMessage(id int64) (*common.TreatmentPlanScheduledMessage, error) {
@@ -303,7 +305,7 @@ func (d *dataService) UpdateTreatmentPlanScheduledMessage(id int64, update *Trea
 	return err
 }
 
-func (d *dataService) CancelTreatmentPlanScheduledMessage(id int64) (bool, error) {
+func (d *dataService) CancelTreatmentPlanScheduledMessage(id int64, undo bool) (bool, error) {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return false, errors.Trace(err)
@@ -326,34 +328,53 @@ func (d *dataService) CancelTreatmentPlanScheduledMessage(id int64) (bool, error
 		return false, errors.Trace(err)
 	}
 
-	switch status {
-	case common.SMCancelled:
-		// nothing to do
-		tx.Rollback()
-		return false, nil
-	case common.SMScheduled:
-	default:
-		// cannot proceed
-		tx.Rollback()
-		return false, errors.Trace(fmt.Errorf("cannot cancel scheduled message %d. expected: %s. got: %s", id, common.SMScheduled.String(), status.String()))
+	cancelled := true
+	nextStatus := common.SMCancelled
+	cancelTime := ptr.Time(time.Now())
+
+	if undo {
+		if status == common.SMScheduled {
+			// nothing to do
+			tx.Rollback()
+			return false, nil
+		}
+
+		if status != common.SMCancelled && status != common.SMDeactivated {
+			// cannot proceed
+			tx.Rollback()
+			return false, errors.Trace(fmt.Errorf("cannot undo cancelled scheduled message %d. expected: %s. got: %s", id, common.SMCancelled.String(), status.String()))
+		}
+
+		cancelled = false
+		nextStatus = common.SMScheduled
+		cancelTime = nil
+	} else {
+		if status == common.SMCancelled || status == common.SMDeactivated {
+			// nothing to do
+			tx.Rollback()
+			return false, nil
+		}
+
+		if status != common.SMScheduled {
+			// cannot proceed
+			tx.Rollback()
+			return false, errors.Trace(fmt.Errorf("cannot cancel scheduled message %d. expected: %s. got: %s", id, common.SMScheduled.String(), status.String()))
+		}
 	}
 
-	// update the treatment plan scheduled message
-	// to indicate that it was cancelled
 	_, err = tx.Exec(`
-		UPDATE treatment_plan_scheduled_message
-		SET cancelled = true, cancelled_time = now()
-		WHERE id = ?`, id)
+	UPDATE treatment_plan_scheduled_message
+	SET cancelled = ?, cancelled_time = ?
+	WHERE id = ?`, cancelled, cancelTime, id)
 	if err != nil {
 		tx.Rollback()
 		return false, errors.Trace(err)
 	}
 
-	// update the scheduled message to indicate that it was cancelled
 	_, err = tx.Exec(`
-		UPDATE scheduled_message
-		SET status = ?
-		WHERE id = ?`, common.SMCancelled.String(), schedmsgID)
+	UPDATE scheduled_message
+	SET status = ?
+	WHERE id = ?`, nextStatus.String(), schedmsgID)
 	if err != nil {
 		tx.Rollback()
 		return false, errors.Trace(err)

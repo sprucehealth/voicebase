@@ -520,7 +520,7 @@ type DoctorAPI interface {
 
 	// CancelTreatmentPlanScheduledMessage cancels an already scheduled treatment plan message
 	// to prevent it from going out.
-	CancelTreatmentPlanScheduledMessage(id int64) (bool, error)
+	CancelTreatmentPlanScheduledMessage(id int64, undo bool) (bool, error)
 
 	// Favorite treatment plan scheduled messages
 	SetFavoriteTreatmentPlanScheduledMessages(ftpID int64, msgs []*common.TreatmentPlanScheduledMessage) error
