@@ -54,7 +54,7 @@ const (
 	DoctorSelectMedicationURLPath         = "/v1/doctor/visit/treatment/new"
 	DoctorSignupURLPath                   = "/v1/doctor/signup"
 	DoctorTPScheduledMessageURLPath       = "/v1/doctor/treatment_plans/schedmsg"
-	DoctorCancelTPScheduledMessageURLPath = "/v1/doctor/treatment/schedmsg/cancel"
+	DoctorCancelTPScheduledMessageURLPath = "/v1/doctor/treatment_plans/schedmsg/cancel"
 	DoctorTreatmentPlansListURLPath       = "/v1/doctor/treatment_plans/list"
 	DoctorTreatmentPlansURLPath           = "/v1/doctor/treatment_plans"
 	DoctorTreatmentTemplatesURLPath       = "/v1/doctor/treatment/templates"
