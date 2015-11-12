@@ -246,7 +246,6 @@ func main() {
 		if err := alog.Start(); err != nil {
 			golog.Fatalf("Failed to start firehose logger: %s", err)
 		}
-		println("FIREHOSE!")
 	} else if conf.Analytics.LogPath != "" {
 		var err error
 		alog, err = analytics.NewFileLogger(applicationName, conf.Analytics.LogPath, conf.Analytics.MaxEvents, time.Duration(conf.Analytics.MaxAge)*time.Second)

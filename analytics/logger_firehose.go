@@ -77,7 +77,7 @@ func NewFirehoseLogger(fh firehoseiface.FirehoseAPI, categoryToStream map[string
 	metricsRegistry.Add("events", l.statEvents)
 	metricsRegistry.Add("put/batchsize", l.statPutBatchSize)
 	metricsRegistry.Add("put/success", l.statPutSuccess)
-	metricsRegistry.Add("put/failure", l.statPutSuccess)
+	metricsRegistry.Add("put/failure", l.statPutFailure)
 	for _, stream := range categoryToStream {
 		l.lastPut[stream] = time.Now()
 	}
