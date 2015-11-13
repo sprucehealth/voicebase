@@ -98,8 +98,9 @@ type ScheduledMessage struct {
 	ScheduledForEpoch      int64                  `json:"scheduled_for_epoch"`
 	Message                string                 `json:"message"`
 	Attachments            []*messages.Attachment `json:"attachments"`
-	Cancellable            bool                   `json:"cancellable"`
-	Cancelled              bool                   `json:"cancelled"`
+	// CanCancelOrUndo indicates whether or not the scheduled message can be cancelled or its cancellation undone.
+	CanCancelOrUndo bool `json:"can_cancel_or_undo"`
+	Cancelled       bool `json:"cancelled"`
 }
 
 type FavoriteTreatmentPlan struct {
@@ -273,7 +274,7 @@ func TransformTPToResponse(
 	}
 	var err error
 	for i, sm := range tp.ScheduledMessages {
-		tpRes.ScheduledMessages[i], err = TransformScheduledMessageToResponse(mLookup, mediaStore, sm, common.TreatmentPlanScheduledMessageCancellable(tp, sm, accountRole), sentTime, mediaExpirationDuration)
+		tpRes.ScheduledMessages[i], err = TransformScheduledMessageToResponse(mLookup, mediaStore, sm, TreatmentPlanScheduledMessageCanCancelOrUndo(tp, sm, accountRole), sentTime, mediaExpirationDuration)
 		if err != nil {
 			return nil, err
 		}
@@ -478,7 +479,7 @@ func TransformScheduledMessageToResponse(
 	mLookup mediaLookup,
 	mediaStore *mediastore.Store,
 	m *common.TreatmentPlanScheduledMessage,
-	cancellable bool,
+	cancelOrUndo bool,
 	sentTime time.Time,
 	mediaExpirationDuration time.Duration,
 ) (*ScheduledMessage, error) {
@@ -492,7 +493,7 @@ func TransformScheduledMessageToResponse(
 		Message:                m.Message,
 		Attachments:            make([]*messages.Attachment, len(m.Attachments)),
 		Cancelled:              m.Cancelled,
-		Cancellable:            cancellable,
+		CanCancelOrUndo:        cancelOrUndo,
 	}
 	for j, a := range m.Attachments {
 		att := &messages.Attachment{
@@ -542,4 +543,10 @@ func titleForScheduledMessage(m *ScheduledMessage) string {
 		return "Message & Follow-Up Visit in " + humanTime
 	}
 	return "Message in " + humanTime
+}
+
+// TreatmentPlanScheduledMessageCanCancelOrUndoOrUndoable returns true if you can cancel or undo the scheduled message. This is only possible
+// by a care coordinator for an active treatment plan, and if the message has not already been sent.
+func TreatmentPlanScheduledMessageCanCancelOrUndo(tp *common.TreatmentPlan, m *common.TreatmentPlanScheduledMessage, accountRole string) bool {
+	return tp.Status == common.TPStatusActive && m.SentTime == nil && accountRole == "MA"
 }

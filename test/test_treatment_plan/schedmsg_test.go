@@ -134,7 +134,7 @@ func TestScheduledMessage(t *testing.T) {
 	test.Equals(t, messages.AttachmentTypePrefix+common.AttachmentTypePhoto, msgs[0].Attachments[1].Type)
 	test.Equals(t, photoID, msgs[0].Attachments[1].ID)
 	test.Equals(t, false, msgs[0].Cancelled)
-	test.Equals(t, false, msgs[0].Cancellable)
+	test.Equals(t, false, msgs[0].CanCancelOrUndo)
 
 	// add a note so that treatment plan can be submitted
 	test.OK(t, doctorCli.UpdateTreatmentPlanNote(tp.ID.Int64(), "agihag"))
@@ -145,35 +145,37 @@ func TestScheduledMessage(t *testing.T) {
 	// at this point the scheduled message should be not cancellable for doctor, but cancellable for ma
 	msgs, err = doctorCli.ListTreatmentPlanScheduledMessages(tp.ID.Int64())
 	test.OK(t, err)
-	test.Equals(t, false, msgs[0].Cancellable)
+	test.Equals(t, false, msgs[0].CanCancelOrUndo)
+	test.Equals(t, false, msgs[0].Cancelled)
 
 	msgs, err = maCli.ListTreatmentPlanScheduledMessages(tp.ID.Int64())
 	test.OK(t, err)
-	test.Equals(t, true, msgs[0].Cancellable)
+	test.Equals(t, true, msgs[0].CanCancelOrUndo)
+	test.Equals(t, false, msgs[0].Cancelled)
 
 	// now try to delete a scheduled message (should be cancelled rather than deleted)
 	test.OK(t, maCli.CancelTreatmentPlanScheduledMessage(msgID2, false))
 
-	// at this point the message should be cancelled
+	// at this point the message should be cancelled and undoable
 	msgs, err = maCli.ListTreatmentPlanScheduledMessages(tp.ID.Int64())
 	test.OK(t, err)
-	test.Equals(t, false, msgs[0].Cancellable)
+	test.Equals(t, true, msgs[0].CanCancelOrUndo)
 	test.Equals(t, true, msgs[0].Cancelled)
 
 	// lets undo the cancellation
 	test.OK(t, maCli.CancelTreatmentPlanScheduledMessage(msgID2, true))
 
-	// at this point message should no longer be cancelled
+	// at this point message should no longer be cancelled (but should be able to cancel or undo)
 	msgs, err = maCli.ListTreatmentPlanScheduledMessages(tp.ID.Int64())
 	test.OK(t, err)
-	test.Equals(t, true, msgs[0].Cancellable)
+	test.Equals(t, true, msgs[0].CanCancelOrUndo)
 	test.Equals(t, false, msgs[0].Cancelled)
 
 	// but should be able to cancel message again
 	test.OK(t, maCli.CancelTreatmentPlanScheduledMessage(msgID2, false))
 	msgs, err = maCli.ListTreatmentPlanScheduledMessages(tp.ID.Int64())
 	test.OK(t, err)
-	test.Equals(t, false, msgs[0].Cancellable)
+	test.Equals(t, true, msgs[0].CanCancelOrUndo)
 	test.Equals(t, true, msgs[0].Cancelled)
 }
 

@@ -210,7 +210,7 @@ func (h *scheduledMessageHandler) getMessages(ctx context.Context, w http.Respon
 			h.dataAPI,
 			h.mediaStore,
 			m,
-			common.TreatmentPlanScheduledMessageCancellable(tp, m, account.Role),
+			responses.TreatmentPlanScheduledMessageCanCancelOrUndo(tp, m, account.Role),
 			sent,
 			scheduledMessageMediaExpirationDuration,
 		)
