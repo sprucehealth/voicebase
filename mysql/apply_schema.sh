@@ -7,13 +7,15 @@ LOCAL_DB_USERNAME="carefront"
 LOCAL_DB_NAME="carefront_db"
 DEV_DB_USERNAME="spruce"
 DEV_DB_NAME="spruce"
-DEV_DB_HOST="dev-mysql-1.node.dev-us-east-1.spruce"
-PROD_DB_NAME="carefront"
-PROD_DB_INSTANCE="master.mysql.service.prod-us-east-1.spruce"
+DEV_DB_HOST="dev-spruceapi.ckwporuc939i.us-east-1.rds.amazonaws.com"
+PROD_DB_USERNAME="spruce"
+PROD_DB_NAME="spruce"
+PROD_DB_HOST="prod-spruceapi.ccvrwjdx3gvp.us-east-1.rds.amazonaws.com"
 STAGING_DB_NAME="spruce"
-STAGING_DB_USER_NAME="spruce"
-DEMO_DB_USER_NAME="spruce"
-DEMO_DB_NAME="spruce"
+STAGING_DB_USERNAME="spruce"
+STAGING_DB_HOST="staging-spruceapi.ckwporuc939i.us-east-1.rds.amazonaws.com"
+DEMO_DB_USERNAME="carefront"
+DEMO_DB_NAME="carefront_db"
 
 argsArray=($@)
 len=${#argsArray[@]}
@@ -55,7 +57,7 @@ do
 			echo "use $STAGING_DB_NAME;" | cat - migration-$migrationNumber.sql > temp.sql
 			scp temp.sql 54.84.90.84:~
 			scp temp-migration.sql 54.84.90.84:~
-			ssh -t 54.84.90.84 "mysql -h $STAGING_DB_INSTANCE -u $STAGING_DB_USER_NAME -p$STAGING_DB_PASSWORD < temp.sql ; mysql -h $STAGING_DB_INSTANCE -u $STAGING_DB_USER_NAME -p$STAGING_DB_PASSWORD < temp-migration.sql; logger -p user.info -t schema '$LOGMSG'"
+			ssh -t 54.84.90.84 "mysql -h $STAGING_DB_HOST -u $STAGING_DB_USERNAME -p$STAGING_DB_PASSWORD < temp.sql ; mysql -h $STAGING_DB_HOST -u $STAGING_DB_USERNAME -p$STAGING_DB_PASSWORD < temp-migration.sql; logger -p user.info -t schema '$LOGMSG'"
 		;;
 
 		"dev" )
@@ -64,7 +66,7 @@ do
 			echo "use $DEV_DB_NAME;" | cat - migration-$migrationNumber.sql > temp.sql
 			scp temp.sql  52.4.213.186:~
 			scp temp-migration.sql 52.4.213.186:~
-			ssh 52.4.213.186 "mysql -h $DEV_DB_INSTANCE -u $DEV_DB_USERNAME -p$DEV_DB_PASSWORD < temp.sql ; mysql -h $DEV_DB_INSTANCE -u $DEV_DB_USERNAME -p$DEV_DB_PASSWORD < temp-migration.sql; logger -p user.info -t schema '$LOGMSG'"
+			ssh 52.4.213.186 "mysql -h $DEV_DB_HOST -u $DEV_DB_USERNAME -p$DEV_DB_PASSWORD < temp.sql ; mysql -h $DEV_DB_HOST -u $DEV_DB_USERNAME -p$DEV_DB_PASSWORD < temp-migration.sql; logger -p user.info -t schema '$LOGMSG'"
 		;;
 
 		"demo" )
@@ -73,12 +75,12 @@ do
 			echo "use $DEMO_DB_NAME;" | cat - migration-$migrationNumber.sql > temp.sql
 			scp temp.sql 54.210.97.69:~
 			scp temp-migration.sql 54.210.97.69:~
-			ssh 54.210.97.69 "mysql -u $DEMO_DB_USER_NAME -p$DEMO_DB_PASSWORD < temp.sql ; mysql -u $DEMO_DB_USER_NAME -p$DEMO_DB_PASSWORD < temp-migration.sql; logger -p user.info -t schema '$LOGMSG'"
+			ssh 54.210.97.69 "mysql -u $DEMO_DB_USERNAME -p$DEMO_DB_PASSWORD < temp.sql ; mysql -u $DEMO_DB_USERNAME -p$DEMO_DB_PASSWORD < temp-migration.sql; logger -p user.info -t schema '$LOGMSG'"
 		;;
 
 		"prod" )
-			if [ "$PROD_DB_USER_NAME" == "" ]; then
-				echo "PROD_DB_USER_NAME not set"
+			if [ "$PROD_DB_USERNAME" == "" ]; then
+				echo "PROD_DB_USERNAME not set"
 				exit 1
 			fi
 			if [ "$PROD_DB_PASSWORD" == "" ]; then
@@ -90,8 +92,7 @@ do
 			echo "use $PROD_DB_NAME;" | cat - migration-$migrationNumber.sql > temp.sql
 			scp temp.sql 54.209.10.66:~
 			scp temp-migration.sql 54.209.10.66:~
-			ssh -t $PROD_DB_INSTANCE "sudo ec2-consistent-snapshot -mysql.config /mysql-data/mysql/backup.cnf -tag migrationId=migration-$migrationNumber"
-			ssh 54.209.10.66 "mysql -h $PROD_DB_INSTANCE -u $PROD_DB_USER_NAME -p$PROD_DB_PASSWORD < temp.sql ; mysql -h $PROD_DB_INSTANCE -u $PROD_DB_USER_NAME -p$PROD_DB_PASSWORD < temp-migration.sql; logger -p user.info -t schema '$LOGMSG'"
+			ssh 54.209.10.66 "mysql -h $PROD_DB_HOST -u $PROD_DB_USERNAME -p$PROD_DB_PASSWORD < temp.sql ; mysql -h $PROD_DB_HOST -u $PROD_DB_USERNAME -p$PROD_DB_PASSWORD < temp-migration.sql; logger -p user.info -t schema '$LOGMSG'"
 		;;
 	esac
 
