@@ -85,14 +85,28 @@ func (nullSMSAPI) Send(fromNumber, toNumber, text string) error {
 // 2. Insert an item into the history for the sender of the case assignment
 // 3. Insert an item into the inbox of the recipient of the case assignment.
 func TestCaseAssignment_CCToDoctor(t *testing.T) {
-	testCaseAssignment(t, api.RoleCC)
+	testCaseAssignment(t, api.RoleCC, false)
 }
 
 func TestCaseAssignment_DoctorToCC(t *testing.T) {
-	testCaseAssignment(t, api.RoleDoctor)
+	testCaseAssignment(t, api.RoleDoctor, false)
 }
 
-func testCaseAssignment(t *testing.T, role string) {
+// TestCaseAssignment_CCToDoctor_Automated and TestCaseAssignment_DoctorToCC_Automated ensure that
+// when a case assignment happens from one provider to the other automatically, there is no updates
+// made the the sender's history to indicate that the message was sent, nor to their inbox to remove
+// any other pending items.
+// Instead the receiver should be notified, and receive an item in their inbox, and thats all the updates
+// that should occur.
+func TestCaseAssignment_CCTODoctor_Automated(t *testing.T) {
+	testCaseAssignment(t, api.RoleCC, true)
+}
+
+func TestCaseAssignment_DoctorToCC_Automated(t *testing.T) {
+	testCaseAssignment(t, api.RoleDoctor, true)
+}
+
+func testCaseAssignment(t *testing.T, role string, automated bool) {
 	m := &mockDataAPI_listener{
 		patient: &common.Patient{},
 	}
@@ -146,57 +160,77 @@ func testCaseAssignment(t *testing.T, role string) {
 			ID:        encoding.DeprecatedNewObjectID(10),
 			Claimed:   true,
 		},
-		MA:     ma,
-		Doctor: doctor,
+		MA:          ma,
+		Doctor:      doctor,
+		IsAutomated: automated,
 	})
 
-	// at this point there should be 3 items in the doctor queue
-	if len(m.updatesRequested) != 4 {
-		t.Fatalf("Expected 4 items for update but got %d", len(m.updatesRequested))
-	}
+	if automated {
+		// there should be just a single update requested
+		// where there is an insert into the doctors pending queue with
+		// no additions to history or removals from the inbox
+		if len(m.updatesRequested) != 1 {
+			t.Fatalf("Expected 1 item for update but got %d", len(m.updatesRequested))
+		}
+		inboxItem := m.updatesRequested[0]
+		if inboxItem.Action != api.DQActionInsert {
+			t.Fatalf("Expected %s but got %s", inboxItem.Action, api.DQActionInsert)
+		} else if inboxItem.QueueItem.EventType != api.DQEventTypeCaseAssignment {
+			t.Fatalf("Expected %s but got %s", api.DQEventTypeCaseAssignment, inboxItem.QueueItem.EventType)
+		} else if inboxItem.QueueItem.DoctorID != providerID {
+			t.Fatalf("Expected DoctorID 2  but got %d", inboxItem.QueueItem.DoctorID)
+		} else if inboxItem.QueueItem.Status != api.DQItemStatusPending {
+			t.Fatalf("Expected %s but got %s", api.DQItemStatusPending, inboxItem.QueueItem.Status)
+		}
+	} else {
+		// at this point there should be 4 items in the doctor queue
+		if len(m.updatesRequested) != 4 {
+			t.Fatalf("Expected 4 items for update but got %d", len(m.updatesRequested))
+		}
 
-	itemToDelete := m.updatesRequested[0]
-	if itemToDelete.Action != api.DQActionRemove {
-		t.Fatalf("Expected %s but got %s", itemToDelete.Action, api.DQActionRemove)
-	} else if itemToDelete.QueueItem.EventType != api.DQEventTypeCaseAssignment {
-		t.Fatalf("Expected %s but got %s", api.DQEventTypeCaseAssignment, itemToDelete.QueueItem.EventType)
-	} else if itemToDelete.QueueItem.DoctorID != 1 {
-		t.Fatalf("Expected DoctorID 1 but got %d", itemToDelete.QueueItem.DoctorID)
-	} else if itemToDelete.QueueItem.Status != api.DQItemStatusPending {
-		t.Fatalf("Expected %s but got %s", api.DQItemStatusPending, itemToDelete.QueueItem.Status)
-	}
+		itemToDelete := m.updatesRequested[0]
+		if itemToDelete.Action != api.DQActionRemove {
+			t.Fatalf("Expected %s but got %s", itemToDelete.Action, api.DQActionRemove)
+		} else if itemToDelete.QueueItem.EventType != api.DQEventTypeCaseAssignment {
+			t.Fatalf("Expected %s but got %s", api.DQEventTypeCaseAssignment, itemToDelete.QueueItem.EventType)
+		} else if itemToDelete.QueueItem.DoctorID != 1 {
+			t.Fatalf("Expected DoctorID 1 but got %d", itemToDelete.QueueItem.DoctorID)
+		} else if itemToDelete.QueueItem.Status != api.DQItemStatusPending {
+			t.Fatalf("Expected %s but got %s", api.DQItemStatusPending, itemToDelete.QueueItem.Status)
+		}
 
-	itemToDelete = m.updatesRequested[1]
-	if itemToDelete.Action != api.DQActionRemove {
-		t.Fatalf("Expected %s but got %s", itemToDelete.Action, api.DQActionRemove)
-	} else if itemToDelete.QueueItem.EventType != api.DQEventTypeCaseMessage {
-		t.Fatalf("Expected %s but got %s", api.DQEventTypeCaseMessage, itemToDelete.QueueItem.EventType)
-	} else if itemToDelete.QueueItem.DoctorID != 1 {
-		t.Fatalf("Expected DoctorID 1 but got %d", itemToDelete.QueueItem.DoctorID)
-	} else if itemToDelete.QueueItem.Status != api.DQItemStatusPending {
-		t.Fatalf("Expected %s but got %s", api.DQItemStatusPending, itemToDelete.QueueItem.Status)
-	}
+		itemToDelete = m.updatesRequested[1]
+		if itemToDelete.Action != api.DQActionRemove {
+			t.Fatalf("Expected %s but got %s", itemToDelete.Action, api.DQActionRemove)
+		} else if itemToDelete.QueueItem.EventType != api.DQEventTypeCaseMessage {
+			t.Fatalf("Expected %s but got %s", api.DQEventTypeCaseMessage, itemToDelete.QueueItem.EventType)
+		} else if itemToDelete.QueueItem.DoctorID != 1 {
+			t.Fatalf("Expected DoctorID 1 but got %d", itemToDelete.QueueItem.DoctorID)
+		} else if itemToDelete.QueueItem.Status != api.DQItemStatusPending {
+			t.Fatalf("Expected %s but got %s", api.DQItemStatusPending, itemToDelete.QueueItem.Status)
+		}
 
-	historyItem := m.updatesRequested[2]
-	if historyItem.Action != api.DQActionInsert {
-		t.Fatalf("Expected %s but got %s", itemToDelete.Action, api.DQActionInsert)
-	} else if historyItem.QueueItem.EventType != api.DQEventTypeCaseAssignment {
-		t.Fatalf("Expected %s but got %s", api.DQEventTypeCaseAssignment, historyItem.QueueItem.EventType)
-	} else if historyItem.QueueItem.DoctorID != 1 {
-		t.Fatalf("Expected DoctorID 1 but got %d", historyItem.QueueItem.DoctorID)
-	} else if historyItem.QueueItem.Status != api.DQItemStatusReplied {
-		t.Fatalf("Expected %s but got %s", api.DQItemStatusReplied, historyItem.QueueItem.Status)
-	}
+		historyItem := m.updatesRequested[2]
+		if historyItem.Action != api.DQActionInsert {
+			t.Fatalf("Expected %s but got %s", itemToDelete.Action, api.DQActionInsert)
+		} else if historyItem.QueueItem.EventType != api.DQEventTypeCaseAssignment {
+			t.Fatalf("Expected %s but got %s", api.DQEventTypeCaseAssignment, historyItem.QueueItem.EventType)
+		} else if historyItem.QueueItem.DoctorID != 1 {
+			t.Fatalf("Expected DoctorID 1 but got %d", historyItem.QueueItem.DoctorID)
+		} else if historyItem.QueueItem.Status != api.DQItemStatusReplied {
+			t.Fatalf("Expected %s but got %s", api.DQItemStatusReplied, historyItem.QueueItem.Status)
+		}
 
-	inboxItem := m.updatesRequested[3]
-	if inboxItem.Action != api.DQActionInsert {
-		t.Fatalf("Expected %s but got %s", inboxItem.Action, api.DQActionInsert)
-	} else if inboxItem.QueueItem.EventType != api.DQEventTypeCaseAssignment {
-		t.Fatalf("Expected %s but got %s", api.DQEventTypeCaseAssignment, inboxItem.QueueItem.EventType)
-	} else if inboxItem.QueueItem.DoctorID != providerID {
-		t.Fatalf("Expected DoctorID 2  but got %d", inboxItem.QueueItem.DoctorID)
-	} else if inboxItem.QueueItem.Status != api.DQItemStatusPending {
-		t.Fatalf("Expected %s but got %s", api.DQItemStatusPending, inboxItem.QueueItem.Status)
+		inboxItem := m.updatesRequested[3]
+		if inboxItem.Action != api.DQActionInsert {
+			t.Fatalf("Expected %s but got %s", inboxItem.Action, api.DQActionInsert)
+		} else if inboxItem.QueueItem.EventType != api.DQEventTypeCaseAssignment {
+			t.Fatalf("Expected %s but got %s", api.DQEventTypeCaseAssignment, inboxItem.QueueItem.EventType)
+		} else if inboxItem.QueueItem.DoctorID != providerID {
+			t.Fatalf("Expected DoctorID 2  but got %d", inboxItem.QueueItem.DoctorID)
+		} else if inboxItem.QueueItem.Status != api.DQItemStatusPending {
+			t.Fatalf("Expected %s but got %s", api.DQItemStatusPending, inboxItem.QueueItem.Status)
+		}
 	}
 }
 
@@ -469,11 +503,19 @@ func testMessage_PatientToCareTeam(t *testing.T, assignments []*common.CareProvi
 }
 
 func TestMessage_DoctorToPatient(t *testing.T) {
-	testMessage_ProviderToPatient(t, api.RoleDoctor)
+	testMessage_ProviderToPatient(t, api.RoleDoctor, false)
 }
 
 func TestMessage_MAToPatient(t *testing.T) {
-	testMessage_ProviderToPatient(t, api.RoleCC)
+	testMessage_ProviderToPatient(t, api.RoleCC, false)
+}
+
+func TestMessage_DoctorToPatient_Automated(t *testing.T) {
+	testMessage_ProviderToPatient(t, api.RoleDoctor, true)
+}
+
+func TestMessage_MAToPatient_Automated(t *testing.T) {
+	testMessage_ProviderToPatient(t, api.RoleCC, true)
 }
 
 func TestMessage_PatientToCareTeam_Multiple(t *testing.T) {
@@ -538,7 +580,7 @@ func TestMessage_PatientToCareTeam_Multiple(t *testing.T) {
 	}
 }
 
-func testMessage_ProviderToPatient(t *testing.T, role string) {
+func testMessage_ProviderToPatient(t *testing.T, role string, automated bool) {
 	m := &mockDataAPI_listener{
 		patient: &common.Patient{},
 		doctor:  &common.Doctor{},
@@ -587,39 +629,49 @@ func testMessage_ProviderToPatient(t *testing.T, role string) {
 			ID:        encoding.DeprecatedNewObjectID(10),
 			Claimed:   true,
 		},
+		IsAutomated: automated,
 	})
 
-	// there should be a delete and insert requests
-	itemToDelete := m.updatesRequested[0]
-	if itemToDelete.Action != api.DQActionRemove {
-		t.Fatalf("Expected %s but got %s", itemToDelete.Action, api.DQActionRemove)
-	} else if itemToDelete.QueueItem.EventType != api.DQEventTypeCaseAssignment {
-		t.Fatalf("Expected %s but got %s", api.DQEventTypeCaseAssignment, itemToDelete.QueueItem.EventType)
-	} else if itemToDelete.QueueItem.DoctorID != 11 {
-		t.Fatalf("Expected DoctorID 1 but got %d", itemToDelete.QueueItem.DoctorID)
-	} else if itemToDelete.QueueItem.Status != api.DQItemStatusPending {
-		t.Fatalf("Expected %s but got %s", api.DQItemStatusPending, itemToDelete.QueueItem.Status)
+	if automated {
+		// there should no modifications to the provider's queue
+		// when an automated message is sent.
+		if len(m.updatesRequested) > 0 {
+			t.Fatalf("Expected no doctor queue updates instead got %d", len(m.updatesRequested))
+		}
+	} else {
+		// there should be a delete and insert requests
+		itemToDelete := m.updatesRequested[0]
+		if itemToDelete.Action != api.DQActionRemove {
+			t.Fatalf("Expected %s but got %s", itemToDelete.Action, api.DQActionRemove)
+		} else if itemToDelete.QueueItem.EventType != api.DQEventTypeCaseAssignment {
+			t.Fatalf("Expected %s but got %s", api.DQEventTypeCaseAssignment, itemToDelete.QueueItem.EventType)
+		} else if itemToDelete.QueueItem.DoctorID != 11 {
+			t.Fatalf("Expected DoctorID 1 but got %d", itemToDelete.QueueItem.DoctorID)
+		} else if itemToDelete.QueueItem.Status != api.DQItemStatusPending {
+			t.Fatalf("Expected %s but got %s", api.DQItemStatusPending, itemToDelete.QueueItem.Status)
+		}
+
+		itemToDelete = m.updatesRequested[1]
+		if itemToDelete.Action != api.DQActionRemove {
+			t.Fatalf("Expected %s but got %s", itemToDelete.Action, api.DQActionRemove)
+		} else if itemToDelete.QueueItem.EventType != api.DQEventTypeCaseMessage {
+			t.Fatalf("Expected %s but got %s", api.DQEventTypeCaseMessage, itemToDelete.QueueItem.EventType)
+		} else if itemToDelete.QueueItem.DoctorID != 11 {
+			t.Fatalf("Expected DoctorID 1 but got %d", itemToDelete.QueueItem.DoctorID)
+		} else if itemToDelete.QueueItem.Status != api.DQItemStatusPending {
+			t.Fatalf("Expected %s but got %s", api.DQItemStatusPending, itemToDelete.QueueItem.Status)
+		}
+
+		historyItem := m.updatesRequested[2]
+		if historyItem.Action != api.DQActionInsert {
+			t.Fatalf("Expected %s but got %s", itemToDelete.Action, api.DQActionInsert)
+		} else if historyItem.QueueItem.EventType != api.DQEventTypeCaseMessage {
+			t.Fatalf("Expected %s but got %s", api.DQEventTypeCaseAssignment, historyItem.QueueItem.EventType)
+		} else if historyItem.QueueItem.DoctorID != 11 {
+			t.Fatalf("Expected DoctorID 1 but got %d", historyItem.QueueItem.DoctorID)
+		} else if historyItem.QueueItem.Status != api.DQItemStatusReplied {
+			t.Fatalf("Expected %s but got %s", api.DQItemStatusReplied, historyItem.QueueItem.Status)
+		}
 	}
 
-	itemToDelete = m.updatesRequested[1]
-	if itemToDelete.Action != api.DQActionRemove {
-		t.Fatalf("Expected %s but got %s", itemToDelete.Action, api.DQActionRemove)
-	} else if itemToDelete.QueueItem.EventType != api.DQEventTypeCaseMessage {
-		t.Fatalf("Expected %s but got %s", api.DQEventTypeCaseMessage, itemToDelete.QueueItem.EventType)
-	} else if itemToDelete.QueueItem.DoctorID != 11 {
-		t.Fatalf("Expected DoctorID 1 but got %d", itemToDelete.QueueItem.DoctorID)
-	} else if itemToDelete.QueueItem.Status != api.DQItemStatusPending {
-		t.Fatalf("Expected %s but got %s", api.DQItemStatusPending, itemToDelete.QueueItem.Status)
-	}
-
-	historyItem := m.updatesRequested[2]
-	if historyItem.Action != api.DQActionInsert {
-		t.Fatalf("Expected %s but got %s", itemToDelete.Action, api.DQActionInsert)
-	} else if historyItem.QueueItem.EventType != api.DQEventTypeCaseMessage {
-		t.Fatalf("Expected %s but got %s", api.DQEventTypeCaseAssignment, historyItem.QueueItem.EventType)
-	} else if historyItem.QueueItem.DoctorID != 11 {
-		t.Fatalf("Expected DoctorID 1 but got %d", historyItem.QueueItem.DoctorID)
-	} else if historyItem.QueueItem.Status != api.DQItemStatusReplied {
-		t.Fatalf("Expected %s but got %s", api.DQItemStatusReplied, historyItem.QueueItem.Status)
-	}
 }

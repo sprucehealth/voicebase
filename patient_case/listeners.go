@@ -115,11 +115,12 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 				}
 
 				dispatcher.Publish(&messages.CaseAssignEvent{
-					Message: ev.Message,
-					Person:  ev.Person,
-					Case:    ev.Case,
-					Doctor:  ev.Person.Doctor,
-					MA:      ccDoctor,
+					Message:     ev.Message,
+					Person:      ev.Person,
+					Case:        ev.Case,
+					Doctor:      ev.Person.Doctor,
+					MA:          ccDoctor,
+					IsAutomated: true,
 				})
 			}
 		}

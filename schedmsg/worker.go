@@ -165,9 +165,10 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 		}
 
 		w.publisher.Publish(&messages.PostEvent{
-			Message: msg,
-			Case:    patientCase,
-			Person:  people[appMessage.SenderPersonID],
+			Message:     msg,
+			Case:        patientCase,
+			Person:      people[appMessage.SenderPersonID],
+			IsAutomated: appMessage.IsAutomated,
 		})
 
 	case common.SMTreatmanPlanMessageType:
@@ -276,11 +277,12 @@ func (w *Worker) processMessage(schedMsg *common.ScheduledMessage) error {
 		if careCoordinator != nil {
 			// Whenever a TP sched message goes out we should reassign to the CC if one exists
 			w.publisher.Publish(&messages.CaseAssignEvent{
-				Message: cmsg,
-				Person:  people[personID],
-				Case:    pcase,
-				Doctor:  people[personID].Doctor,
-				MA:      careCoordinator,
+				Message:     cmsg,
+				Person:      people[personID],
+				Case:        pcase,
+				Doctor:      people[personID].Doctor,
+				MA:          careCoordinator,
+				IsAutomated: true,
 			})
 		}
 

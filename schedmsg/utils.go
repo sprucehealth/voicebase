@@ -21,14 +21,25 @@ func MustRegisterEvent(event string) {
 	Events[event] = true
 }
 
+// CaseInfo is a struct representing the case information
+// for which a message is intended to be scheduled.
 type CaseInfo struct {
-	PatientID     common.PatientID
+	// PatientID is the unique id of the patient for which the message is to go out.
+	PatientID common.PatientID
+	// PatientCaseID is the unique if of the case to identify the thread in which to insert the message.
 	PatientCaseID int64
-	SenderRole    string
-	ProviderID    int64
-	PersonID      int64
+	// SenderRole identifies the type of provider (CC or DOCTOR).
+	SenderRole string
+	// ProviderID is the unique ID of the provider sending the message.
+	ProviderID int64
+	// PersonID is the unique ID of the sender in the message thread.
+	PersonID int64
+	// IsAutomated indicates whether or not the message being sent out was automatically (true) or manuall/explcitly (false)
+	// scheduled by the sender.
+	IsAutomated bool
 }
 
+// ScheduleInAppMessage queues up a case message to be sent as defined by the context and the case info.
 func ScheduleInAppMessage(dataAPI api.DataAPI, event string, ctxt interface{}, caseCtxt *CaseInfo) error {
 	if !Events[event] {
 		return fmt.Errorf("Unregistered event %s", event)
@@ -64,6 +75,7 @@ func ScheduleInAppMessage(dataAPI api.DataAPI, event string, ctxt interface{}, c
 				SenderPersonID: caseCtxt.PersonID,
 				SenderRole:     caseCtxt.SenderRole,
 				ProviderID:     caseCtxt.ProviderID,
+				IsAutomated:    caseCtxt.IsAutomated,
 			},
 			Scheduled: time.Now().Add(time.Duration(template.SchedulePeriod) * time.Second),
 			Status:    common.SMScheduled,

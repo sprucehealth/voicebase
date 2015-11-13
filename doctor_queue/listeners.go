@@ -508,6 +508,12 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 
 		switch ev.Person.RoleType {
 		case api.RoleDoctor, api.RoleCC:
+			// don't touch doctor or cc queue
+			// if the message sent was autmomated
+			if ev.IsAutomated {
+				return nil
+			}
+
 			doctor, err := dataAPI.Doctor(ev.Person.RoleID, true)
 			if err != nil {
 				golog.Errorf("Doctor lookup failed for doctorID %d : %s", ev.Person.RoleID, err.Error())
@@ -635,44 +641,46 @@ func InitListeners(dataAPI api.DataAPI, analyticsLogger analytics.Logger, dispat
 
 		// create an item in the history tab for the provider assigning the case
 		// also delete an pending case assignments given that the doctor just handled the assignment.
-		if err := dataAPI.UpdateDoctorQueue([]*api.DoctorQueueUpdate{
-			{
-				Action: api.DQActionRemove,
-				QueueItem: &api.DoctorQueueItem{
-					DoctorID:  ev.Person.RoleID,
-					ItemID:    ev.Case.ID.Int64(),
-					EventType: api.DQEventTypeCaseAssignment,
-					Status:    api.DQItemStatusPending,
+		if !ev.IsAutomated {
+			if err := dataAPI.UpdateDoctorQueue([]*api.DoctorQueueUpdate{
+				{
+					Action: api.DQActionRemove,
+					QueueItem: &api.DoctorQueueItem{
+						DoctorID:  ev.Person.RoleID,
+						ItemID:    ev.Case.ID.Int64(),
+						EventType: api.DQEventTypeCaseAssignment,
+						Status:    api.DQItemStatusPending,
+					},
 				},
-			},
-			{
-				Action: api.DQActionRemove,
-				QueueItem: &api.DoctorQueueItem{
-					DoctorID:  ev.Person.RoleID,
-					ItemID:    ev.Case.ID.Int64(),
-					EventType: api.DQEventTypeCaseMessage,
-					Status:    api.DQItemStatusPending,
+				{
+					Action: api.DQActionRemove,
+					QueueItem: &api.DoctorQueueItem{
+						DoctorID:  ev.Person.RoleID,
+						ItemID:    ev.Case.ID.Int64(),
+						EventType: api.DQEventTypeCaseMessage,
+						Status:    api.DQItemStatusPending,
+					},
 				},
-			},
-			{
-				Action: api.DQActionInsert,
-				QueueItem: &api.DoctorQueueItem{
-					DoctorID:  ev.Person.RoleID,
-					PatientID: ev.Case.PatientID,
-					ItemID:    ev.Case.ID.Int64(),
-					EventType: api.DQEventTypeCaseAssignment,
-					Status:    api.DQItemStatusReplied,
-					Description: fmt.Sprintf("%s assigned %s %s's case to %s", assigneeProvider.ShortDisplayName,
-						patient.FirstName, patient.LastName, assignedProvider.ShortDisplayName),
-					ShortDescription: fmt.Sprintf("Assigned to %s", assignedProvider.ShortDisplayName),
-					ActionURL:        app_url.ViewPatientMessagesAction(patient.ID, ev.Case.ID.Int64()),
-					Tags:             []string{ev.Case.Name},
+				{
+					Action: api.DQActionInsert,
+					QueueItem: &api.DoctorQueueItem{
+						DoctorID:  ev.Person.RoleID,
+						PatientID: ev.Case.PatientID,
+						ItemID:    ev.Case.ID.Int64(),
+						EventType: api.DQEventTypeCaseAssignment,
+						Status:    api.DQItemStatusReplied,
+						Description: fmt.Sprintf("%s assigned %s %s's case to %s", assigneeProvider.ShortDisplayName,
+							patient.FirstName, patient.LastName, assignedProvider.ShortDisplayName),
+						ShortDescription: fmt.Sprintf("Assigned to %s", assignedProvider.ShortDisplayName),
+						ActionURL:        app_url.ViewPatientMessagesAction(patient.ID, ev.Case.ID.Int64()),
+						Tags:             []string{ev.Case.Name},
+					},
 				},
-			},
-		}); err != nil {
-			golog.Errorf("Unable to insert case assignment item into doctor queue: %s", err)
-			routeFailure.Inc(1)
-			return err
+			}); err != nil {
+				golog.Errorf("Unable to insert case assignment item into doctor queue: %s", err)
+				routeFailure.Inc(1)
+				return err
+			}
 		}
 
 		// insert a pending item into the queue of the assigned provider

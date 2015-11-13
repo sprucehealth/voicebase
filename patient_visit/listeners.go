@@ -277,6 +277,7 @@ func scheduleMessageBasedOnInsuranceAnswer(
 				SenderRole:    api.RoleCC,
 				ProviderID:    ma.ID.Int64(),
 				PersonID:      ma.PersonID,
+				IsAutomated:   true,
 			},
 		); err != nil {
 			golog.Errorf("Unable to schedule in app message: %s", err)
