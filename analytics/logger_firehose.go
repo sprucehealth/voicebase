@@ -16,6 +16,8 @@ import (
 const (
 	defaultFirehoseMaxBatchSize     = 128
 	defaultfirehoseMaxBatchDuration = time.Second * 5
+	// The bulk put API only allows up to 500 events per batch
+	maxFirehoseBatchSize = 500
 )
 
 var (
@@ -26,19 +28,21 @@ var (
 // FirehoseLogger is an analytics logger that sends events to
 // AWS Kinesis Firehose as JSON encoded strings.
 type FirehoseLogger struct {
-	fh               firehoseiface.FirehoseAPI
-	categoryToStream map[string]string
-	maxBatchSize     int
-	maxBatchDuration time.Duration
-	backoff          time.Duration              // duration to wait before retry on failure
-	batches          map[string][]*bytes.Buffer // stream -> serialized event buffers
-	lastPut          map[string]time.Time       // stream -> last put time
-	eventCh          chan []Event
-	statEvents       *metrics.Counter
-	statPutBatchSize metrics.Histogram
-	statPutSuccess   *metrics.Counter
-	statPutFailure   *metrics.Counter
-	statBatchSize    *metrics.IntegerGauge
+	fh                firehoseiface.FirehoseAPI
+	categoryToStream  map[string]string
+	maxBatchSize      int
+	maxBatchDuration  time.Duration
+	backoff           time.Duration              // duration to wait before retry on failure
+	batches           map[string][]*bytes.Buffer // stream -> serialized event buffers
+	lastPut           map[string]time.Time       // stream -> last put time
+	eventCh           chan []Event
+	statEventsIn      *metrics.Counter
+	statEventsSuccess *metrics.Counter
+	statEventsFailure *metrics.Counter
+	statPutBatchSize  metrics.Histogram
+	statPutSuccess    *metrics.Counter
+	statPutFailure    *metrics.Counter
+	statBatchSize     *metrics.IntegerGauge
 }
 
 // NewFirehoseLogger returns a new instance of FirehoseLogger. maxBatchSize sets
@@ -56,25 +60,31 @@ func NewFirehoseLogger(fh firehoseiface.FirehoseAPI, categoryToStream map[string
 	}
 	if maxBatchSize <= 0 {
 		maxBatchSize = defaultFirehoseMaxBatchSize
+	} else if maxBatchSize > maxFirehoseBatchSize {
+		maxBatchSize = maxFirehoseBatchSize
 	}
 	if maxBatchDuration <= 0 {
 		maxBatchDuration = defaultfirehoseMaxBatchDuration
 	}
 	l := &FirehoseLogger{
-		fh:               fh,
-		categoryToStream: categoryToStream,
-		maxBatchSize:     maxBatchSize,
-		maxBatchDuration: maxBatchDuration,
-		batches:          make(map[string][]*bytes.Buffer),
-		lastPut:          make(map[string]time.Time),
-		statEvents:       metrics.NewCounter(),
-		statPutBatchSize: metrics.NewUnbiasedHistogram(),
-		statPutSuccess:   metrics.NewCounter(),
-		statPutFailure:   metrics.NewCounter(),
-		statBatchSize:    metrics.NewIntegerGauge(),
+		fh:                fh,
+		categoryToStream:  categoryToStream,
+		maxBatchSize:      maxBatchSize,
+		maxBatchDuration:  maxBatchDuration,
+		batches:           make(map[string][]*bytes.Buffer),
+		lastPut:           make(map[string]time.Time),
+		statEventsIn:      metrics.NewCounter(),
+		statEventsSuccess: metrics.NewCounter(),
+		statEventsFailure: metrics.NewCounter(),
+		statPutBatchSize:  metrics.NewUnbiasedHistogram(),
+		statPutSuccess:    metrics.NewCounter(),
+		statPutFailure:    metrics.NewCounter(),
+		statBatchSize:     metrics.NewIntegerGauge(),
 	}
 	metricsRegistry.Add("batchsize", l.statBatchSize)
-	metricsRegistry.Add("events", l.statEvents)
+	metricsRegistry.Add("events/in", l.statEventsIn)
+	metricsRegistry.Add("events/success", l.statEventsSuccess)
+	metricsRegistry.Add("events/failure", l.statEventsFailure)
 	metricsRegistry.Add("put/batchsize", l.statPutBatchSize)
 	metricsRegistry.Add("put/success", l.statPutSuccess)
 	metricsRegistry.Add("put/failure", l.statPutFailure)
@@ -134,7 +144,7 @@ func (l *FirehoseLogger) loop() {
 }
 
 func (l *FirehoseLogger) writeEvents(events []Event) {
-	l.statEvents.Inc(uint64(len(events)))
+	l.statEventsIn.Inc(uint64(len(events)))
 	for _, e := range events {
 		cat := e.Category()
 		stream := l.categoryToStream[cat]
@@ -174,6 +184,12 @@ func (l *FirehoseLogger) flush(stream string, batch []*bytes.Buffer) []*bytes.Bu
 	if len(batch) == 0 {
 		return batch
 	}
+	// If too many events for the batch put API then chunk off only as much as can be done
+	var overflow []*bytes.Buffer
+	if len(batch) > maxFirehoseBatchSize {
+		overflow = batch[maxFirehoseBatchSize:]
+		batch = batch[:maxFirehoseBatchSize]
+	}
 	inp := &firehose.PutRecordBatchInput{
 		DeliveryStreamName: &stream,
 		Records:            make([]*firehose.Record, len(batch)),
@@ -194,27 +210,35 @@ func (l *FirehoseLogger) flush(stream string, batch []*bytes.Buffer) []*bytes.Bu
 	outp, err := l.fh.PutRecordBatch(inp)
 	if err != nil {
 		l.statPutFailure.Inc(1)
-		golog.Errorf("analytics.firehose: PutRecordBatch failed: %s", err)
+		golog.Infof("analytics.firehose: PutRecordBatch failed: %s", err)
 		l.backoff = time.Second * 10
 	} else {
 		l.statPutSuccess.Inc(1)
 		l.backoff = 0
+		failed := 0
 		for i, r := range outp.RequestResponses {
 			if r.ErrorMessage != nil && *r.ErrorMessage != "" {
-				golog.Errorf("analytics.firehose: failed to put event '%s': %s", string(inp.Records[i].Data), *r.ErrorMessage)
+				golog.Infof("analytics.firehose: failed to put event '%s': %s", string(inp.Records[i].Data), *r.ErrorMessage)
+				// Save buffer to retry later
+				batch[failed] = batch[i]
+				failed++
+			} else {
+				// Recycle buffers
+				bufferPool.Put(batch[i])
 			}
 		}
-		// Recycle buffers
-		for i, b := range batch {
-			bufferPool.Put(b)
-			batch[i] = nil // Clear the pointer to allow the buffer to be GCd if the pool is cleared
+		l.statEventsSuccess.Inc(uint64(len(batch) - failed))
+		l.statEventsFailure.Inc(uint64(failed))
+		// Clear pointers so the referenced objects can be GCd
+		for i := failed; i < len(batch); i++ {
+			batch[i] = nil
 		}
-		batch = batch[:0]
+		batch = batch[:failed]
 	}
 	// Recycle records
 	for _, r := range inp.Records {
 		r.Data = nil
 		recordPool.Put(r)
 	}
-	return batch
+	return append(batch, overflow...)
 }
