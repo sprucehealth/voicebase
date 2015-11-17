@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -44,6 +45,13 @@ type record struct {
 	} `json:"Sns"`
 }
 
+type errorEvent struct {
+	Time    string `json:"t"`
+	Level   string `json:"level"`
+	Message string `json:"msg"`
+	Src     string `json:"src"`
+}
+
 func main() {
 	log.SetFlags(log.Lshortfile)
 	boot.ParseFlags("")
@@ -57,8 +65,13 @@ func main() {
 		log.Fatalf("Failed to decode event: %s", err)
 	}
 	for _, rec := range ev.Records {
+		msg := rec.SNS.Message
+		var ee errorEvent
+		if err := json.Unmarshal([]byte(msg), &ee); err == nil && ee.Message != "" {
+			msg = fmt.Sprintf("*[%s] %s* : %s\n```%s```", ee.Level, ee.Src, ee.Time, ee.Message)
+		}
 		if err := slack.Post(slackWebhookURL, &slack.Message{
-			Text:      rec.SNS.Message,
+			Text:      msg,
 			Username:  "Robot B-9",
 			IconEmoji: ":robot:",
 		}); err != nil {
