@@ -18,7 +18,7 @@
 			<p class="breadcrumb-text">Dermatologist licensed in
 				{{$length := len .Items}}
 				{{range $index, $item := .Items}}
-						{{if eq (increment $index) $length}}
+						{{if and (eq (increment $index) $length) (ge $index 1)}}
 							and
 						{{else if ge $index 1}}
 							,
