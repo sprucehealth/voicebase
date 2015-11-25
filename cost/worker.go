@@ -2,7 +2,6 @@ package cost
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/stripe"
 )
@@ -168,7 +168,14 @@ func (w *Worker) consumeMessage() (bool, error) {
 func (w *Worker) processMessage(m *VisitMessage) error {
 	patient, err := w.dataAPI.GetPatientFromPatientVisitID(m.PatientVisitID)
 	if err != nil {
-		return err
+		return errors.Trace(err)
+	} else if patient.Training {
+		return nil
+	}
+
+	patientCase, err := w.dataAPI.GetPatientCaseFromID(m.PatientCaseID)
+	if err != nil {
+		return errors.Trace(err)
 	} else if patient.Training {
 		return nil
 	}
@@ -176,7 +183,7 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 	// get the cost of the visit
 	costBreakdown, err := totalCostForItems([]string{m.SKUType}, m.AccountID, true, w.dataAPI, w.analyticsLogger, w.cfgStore)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	pReceipt, err := w.retrieveOrCreatePatientReceipt(m.PatientID,
@@ -185,7 +192,7 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 		m.SKUType,
 		costBreakdown)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	currentStatus := pReceipt.Status
@@ -197,7 +204,7 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 		var charge *stripe.Charge
 		charges, err := w.stripeCli.ListAllCustomerCharges(patient.PaymentCustomerID)
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 		for _, cItem := range charges {
 			if refNum, ok := cItem.Metadata["receipt_ref_num"]; ok && refNum == pReceipt.ReferenceNumber {
@@ -211,20 +218,20 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 		if charge != nil {
 			card, err = w.dataAPI.GetCardFromThirdPartyID(charge.Card.ID)
 			if err != nil && !api.IsErrNotFound(err) {
-				return err
+				return errors.Trace(err)
 			}
 		} else if m.CardID != 0 {
 			card, err = w.dataAPI.GetCardFromID(m.CardID)
 			if err != nil {
-				return err
+				return errors.Trace(err)
 			}
 		} else {
 			// get the default card of the patient from the visit that we are going to charge
 			card, err = w.dataAPI.GetDefaultCardForPatient(m.PatientID)
 			if api.IsErrNotFound(err) {
-				return errors.New("No default card for patient")
+				return errors.Trace(errors.New("No default card for patient"))
 			} else if err != nil {
-				return err
+				return errors.Trace(err)
 			}
 		}
 
@@ -234,9 +241,19 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 			// lets get the state that the patient is located in
 			_, state, err := w.dataAPI.PatientLocation(m.PatientID)
 			if err != nil {
-				return err
+				return errors.Trace(err)
 			}
 
+			var requestedDoctorID string
+			var doctorLongDisplayName string
+			if patientCase.RequestedDoctorID != nil {
+				doctor, err := w.dataAPI.GetDoctorFromID(*patientCase.RequestedDoctorID)
+				if err != nil {
+					return errors.Trace(err)
+				}
+				doctorLongDisplayName = doctor.LongDisplayName
+				requestedDoctorID = strconv.FormatInt(*patientCase.RequestedDoctorID, 10)
+			}
 			charge, err = w.stripeCli.CreateChargeForCustomer(&stripe.CreateChargeRequest{
 				Amount:       costBreakdown.TotalCost.Amount,
 				CurrencyCode: costBreakdown.TotalCost.Currency,
@@ -245,15 +262,18 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 				CardToken:    card.ThirdPartyID,
 				ReceiptEmail: patient.Email,
 				Metadata: map[string]string{
-					"receipt_ref_num": pReceipt.ReferenceNumber,
-					"visit_id":        strconv.FormatInt(m.PatientVisitID, 10),
-					"state":           state,
-					"sku":             m.SKUType,
+					"receipt_ref_num":     pReceipt.ReferenceNumber,
+					"visit_id":            strconv.FormatInt(m.PatientVisitID, 10),
+					"state":               state,
+					"sku":                 m.SKUType,
+					"practice_extension":  strconv.FormatBool(patientCase.PracticeExtension),
+					"requested_doctor_id": requestedDoctorID,
+					"doctor_name":         doctorLongDisplayName,
 				},
 			})
 			if err != nil {
 				w.chargeFailure.Inc(1)
-				return err
+				return errors.Trace(err)
 			}
 			w.chargeSuccess.Inc(1)
 		}
@@ -264,14 +284,14 @@ func (w *Worker) processMessage(m *VisitMessage) error {
 	if currentStatus == common.PRChargePending {
 		// update receipt to indicate that any payment was successfully charged to the customer
 		if err := w.dataAPI.UpdatePatientReceipt(pReceipt.ID, patientReceiptUpdate); err != nil {
-			return err
+			return errors.Trace(err)
 		}
 	}
 
 	// update the patient visit to indicate that it was successfully charged
 	pvStatus := common.PVStatusCharged
 	if _, err := w.dataAPI.UpdatePatientVisit(m.PatientVisitID, &api.PatientVisitUpdate{Status: &pvStatus}); err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	// first publish the charged event before sending the email so that we are not waiting too long

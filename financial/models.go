@@ -22,6 +22,12 @@ type IncomingItem struct {
 	// for this value to be nil in the event no charge was made for this item.
 	ChargeID *string
 
+	// PracticeExtension represents if the charged item was practice extension related
+	PracticeExtension bool
+
+	// Requested doctor ID represents the doctor that was requested in relation to this charge
+	RequestedDoctorID *int64
+
 	// Created reperesents the time at which the transaction was completed.
 	Created time.Time
 }
@@ -44,6 +50,12 @@ type OutgoingItem struct {
 
 	// Represents the name of the individual that is responsible for this outgoing item.
 	Name string
+
+	// PracticeExtension represents if outgoing payment is related to practice extension
+	PracticeExtension bool
+
+	// Requested doctor ID represents the doctor that was requested in relation to this payment
+	RequestedDoctorID *int64
 
 	// Created represents the time at which the outgoing item was completed.
 	Created time.Time

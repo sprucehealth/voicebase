@@ -34,7 +34,7 @@ module.exports = {
 					description = "Outgoing items represent items that result in a pay out. For example, a doctor completing the first treatment plan for a case generates an outgoing item."
 					documentTitle = "Financial | Outgoing Items | Spruce Admin"
 					path = "financial/outgoing"
-					headerFields = {["Created (UTC)", "Type", "Receipt ID", "Item ID", "State", "Doctor Name"]}
+					headerFields = {["Created (UTC)", "Type", "Receipt ID", "Item ID", "State", "Doctor Name", "Practice Extension", "Requested Doctor ID"]}
 					id = "outgoing"
 					fetchItems = {AdminAPI.outgoingFinancialItems.bind(AdminAPI)}
 					resultKeys = {[
@@ -61,6 +61,14 @@ module.exports = {
 						{
 							name: "Name",
 							clickable: false
+						},
+						{
+							name: "PracticeExtension",
+							clickable: false
+						},
+						{
+							name: "RequestedDoctorID",
+							clickable: false
 						}]}
 						sortKey = {"Created"}
 						router={this.props.router} />;
@@ -77,7 +85,7 @@ module.exports = {
 						documentTitle = "Financial | Incoming Items | Spruce Admin"
 						path = "financial/incoming"
 						id = "incoming"
-						headerFields = {["Created (UTC)", "Charge ID", "Type", "Receipt ID", "Item ID", "State"]}
+						headerFields = {["Created (UTC)", "Charge ID", "Type", "Receipt ID", "Item ID", "State", "Practice Extension", "Requested Doctor ID"]}
 						fetchItems = {AdminAPI.incomingFinancialItems.bind(AdminAPI)}
 						resultKeys = {[
 							{
@@ -103,6 +111,14 @@ module.exports = {
 							},
 							{
 								name: "State",
+								clickable: false
+							},
+							{
+								name: "PracticeExtension",
+								clickable: false
+							},
+							{
+								name: "RequestedDoctorID",
 								clickable: false
 							}]}
 						sortKey = {"Created"}
@@ -307,7 +323,7 @@ var ResultsContainer = React.createClass({
 							</td>
 						);
 					} else {
-						cols.push(<td key={"element-"+colIndex}>{resultRow[key.name]}</td>)
+						cols.push(<td key={"element-"+colIndex}>{resultRow[key.name] != null ? resultRow[key.name].toString() : null}</td>)
 					}
 				}.bind(this));
 
