@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/firehose"
-
 	"github.com/aws/aws-sdk-go/service/sns"
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/rainycape/memcache"

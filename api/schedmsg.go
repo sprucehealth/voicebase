@@ -271,7 +271,7 @@ func (d *dataService) UpdateScheduledMessage(id int64, update *ScheduledMessageU
 
 	_, err := d.db.Exec(`
 		UPDATE scheduled_message
-		SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), id)...)
+		SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id)...)
 
 	return errors.Trace(err)
 }
@@ -281,7 +281,7 @@ func (d *dataService) DeactivateScheduledMessagesForPatient(patientID common.Pat
 	args := dbutil.MySQLVarArgs()
 	args.Append(`status`, common.SMDeactivated.String())
 	res, err := d.db.Exec(`
-		UPDATE scheduled_message SET `+args.Columns()+`
+		UPDATE scheduled_message SET `+args.ColumnsForUpdate()+`
 		WHERE patient_id = ?
 		AND status = (?)`, append(args.Values(), patientID, common.SMScheduled.String())...)
 	if err != nil {

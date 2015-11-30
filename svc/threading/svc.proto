@@ -1,0 +1,333 @@
+syntax = "proto3";
+
+package threading;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = true;
+
+/*
+TODO:
+- What do queries look like? (free form or structured?)
+*/
+
+// Models
+
+message Iterator {
+	string start_cursor = 1;
+	string end_cursor = 2;
+	enum Direction {
+		FROM_START = 0;
+		FROM_END = 1;
+	}
+	Direction direction = 3;
+	uint32 count = 4;
+}
+
+message Thread {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string organization_id = 2 [(gogoproto.customname) = "OrganizationID"];
+	string primary_entity_id = 3 [(gogoproto.customname) = "PrimaryEntityID"];
+	repeated Member members = 4;
+}
+
+message Member {
+	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+	bool following = 2;
+	uint64 joined_timestamp = 3; // time the member first joined the thread
+}
+
+message ThreadItem {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	uint64 timestamp = 2;
+	string actor_entity_id = 3 [(gogoproto.customname) = "ActorEntityID"];
+	bool internal = 4; // item is internal to the organization (not seen by external entities)
+	enum Type {
+		MESSAGE = 0;
+		MESSAGE_UPDATED = 1;
+		FOLLOWER_UPDATED = 2;
+	}
+	Type type = 5;
+	oneof item {
+		Message message = 10;
+		MessageUpdated message_updated = 11;
+		FollowerUpdated follower_updated = 12;
+	}
+}
+
+message Message {
+	string text = 1;
+	repeated Attachment attachments = 2;
+	enum Status {
+		NORMAL = 0;
+		DELETED = 1;
+	}
+	Status status = 3;
+	Endpoint source = 4;
+	repeated Endpoint destinations = 5;
+	uint64 edited_timestamp = 6;
+	string editor_entity_id = 7 [(gogoproto.customname) = "EditorEntityID"];
+}
+
+message Endpoint {
+	enum Channel {
+		APP = 0;
+		SMS = 1;
+		VOICE = 2;
+		EMAIL = 3;
+	}
+	Channel channel = 1;
+	string id = 2 [(gogoproto.customname) = "ID"];
+}
+
+message MessageUpdated {
+	string thread_item_id = 1 [(gogoproto.customname) = "ThreadItemID"];
+	string actor_entity_id = 2 [(gogoproto.customname) = "ActorEntityID"];
+	Message message = 3;
+}
+
+message FollowerUpdated {
+	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+}
+
+message SavedQuery {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string organization_id = 2 [(gogoproto.customname) = "OrganizationID"];
+	Query query = 3;
+}
+
+message Query {
+	// TODO: either free form string or structured in some way
+}
+
+message Attachment {
+	enum Type {
+		IMAGE = 0;
+		AUDIO = 1;
+	}
+	Type type = 1;
+	string title = 2;
+	string url = 3 [(gogoproto.customname) = "URL"];
+	oneof data {
+		ImageAttachment image = 10;
+		AudioAttachment audio = 11;
+	}
+}
+
+message ImageAttachment {
+	string mimetype = 1;
+	string url = 2 [(gogoproto.customname) = "URL"];
+	uint32 width = 3;
+	uint32 height = 4;
+}
+
+message AudioAttachment {
+	string mimetype = 1;
+	string url = 2 [(gogoproto.customname) = "URL"];
+	uint32 duration_in_seconds = 3;
+}
+
+// pub-sub
+
+message PublishedThreadItem {
+	string uuid = 1;
+	string organization_id = 2 [(gogoproto.customname) = "OrganizationID"];
+	string thread_id = 3 [(gogoproto.customname) = "ThreadID"];
+	string primary_entity_id = 4 [(gogoproto.customname) = "PrimaryEntityID"];
+	ThreadItem item = 5;
+}
+
+// RPC
+
+message PostMessageRequest {
+	string uuid = 1 [(gogoproto.customname) = "UUID"];
+	string thread_id = 2 [(gogoproto.customname) = "ThreadID"];
+	string from_entity_id = 3 [(gogoproto.customname) = "FromEntityID"];
+	Endpoint source = 4;
+	repeated Endpoint destinations = 5;
+	bool internal = 6;
+	string text = 7;
+	repeated Attachment attachments = 8;
+}
+
+message PostMessageResponse {
+	ThreadItem item = 1;
+}
+
+message MarkThreadAsReadRequest {
+	string thread_id = 1 [(gogoproto.customname) = "ThreadID"];
+	string entity_id = 2 [(gogoproto.customname) = "EntityID"];
+	uint64 timestamp = 3; // optional, if not provided then defaults to current timestamp
+}
+
+message MarkThreadAsReadResponse {
+}
+
+message ThreadItemsRequest {
+	string thread_id = 1 [(gogoproto.customname) = "ThreadID"];
+	string viewer_entity_id = 2 [(gogoproto.customname) = "ViewerEntityID"];
+	Iterator iterator = 3;
+}
+
+message ThreadItemEdge {
+	ThreadItem item = 1;
+	string cursor = 2;
+}
+
+message ThreadItemsResponse {
+	repeated ThreadItemEdge edges = 1;
+	bool has_more = 2;
+}
+
+message QueryThreadsRequest {
+	string organization_id = 1 [(gogoproto.customname) = "OrganizationID"];
+	Iterator iterator = 2;
+	enum Type {
+		ADHOC = 0;
+		SAVED = 1;
+	}
+	Type type = 3;
+	oneof query_type {
+		Query query = 10;
+		string saved_query_id = 11 [(gogoproto.customname) = "SavedQueryID"];
+	}
+}
+
+message ThreadEdge {
+	Thread thread = 1;
+	string cursor = 2;
+}
+
+message QueryThreadsResponse {
+	repeated ThreadEdge edges = 1;
+	bool has_more = 2;
+}
+
+message SavedQueriesRequest {
+	// entity ID of the person who's saved queries to return
+	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+}
+
+message SavedQueriesResponse {
+	repeated SavedQuery saved_queries = 1;
+}
+
+message ThreadRequest {
+	string thread_id = 1 [(gogoproto.customname) = "ThreadID"];
+}
+
+message ThreadResponse {
+	Thread thread = 1;
+}
+
+message CreateSavedQueryRequest {
+	string organization_id = 1 [(gogoproto.customname) = "OrganizationID"];
+	string entity_id = 2 [(gogoproto.customname) = "EntityID"];
+	Query query = 3;
+}
+
+message CreateSavedQueryResponse {
+	SavedQuery saved_query = 1;
+}
+
+message UpdateSavedQueryRequest {
+	string organization_id = 1 [(gogoproto.customname) = "OrganizationID"];
+	string query_id = 2 [(gogoproto.customname) = "QueryID"];
+	Query query = 3;
+}
+
+message UpdateSavedQueryResponse {
+}
+
+message DeleteMessageRequest {
+	string organization_id = 1 [(gogoproto.customname) = "OrganizationID"];
+	string actor_entity_id = 2 [(gogoproto.customname) = "ActorEntityID"];
+	string thread_item_id = 3 [(gogoproto.customname) = "ThreadItemID"];
+}
+
+message DeleteMessageResponse {
+}
+
+message UpdateThreadMembershipRequest {
+	string organization_id = 1 [(gogoproto.customname) = "OrganizationID"];
+	string thread_id = 2 [(gogoproto.customname) = "ThreadID"];
+	string entity_id = 3 [(gogoproto.customname) = "EntityID"];
+	bool following = 4;
+}
+
+message UpdateThreadMembershipResponse {
+}
+
+message CreateThreadRequest {
+	string uuid = 1;
+	string organization_id = 2 [(gogoproto.customname) = "OrganizationID"];
+	string from_entity_id = 3 [(gogoproto.customname) = "FromEntityID"];
+	Endpoint source = 4;
+	repeated Endpoint destinations = 5;
+	bool internal = 6;
+	string text = 7;
+	repeated Attachment attachments = 8;
+}
+
+message CreateThreadResponse {
+	string thread_id = 1 [(gogoproto.customname) = "ThreadID"];
+	ThreadItem thread_item = 2;
+}
+
+message ThreadMembersRequest {
+	string thread_id = 1 [(gogoproto.customname) = "ThreadID"];
+}
+
+message ThreadMembersResponse {
+	repeated Member members = 1;
+}
+
+message ThreadsForMemberRequest {
+	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+	bool primary_only = 2;
+}
+
+message ThreadsForMemberResponse {
+	repeated Thread threads = 1;
+}
+
+message SavedQueryRequest {
+	string saved_query_id = 1 [(gogoproto.customname) = "SavedQueryID"];
+}
+
+message SavedQueryResponse {
+	SavedQuery saved_query = 1;
+}
+
+service Threads {
+	// CreateSavedQuery saves a query for later use
+	rpc CreateSavedQuery(CreateSavedQueryRequest) returns (CreateSavedQueryResponse);
+	// CreateThread create a new thread with an initial message
+	rpc CreateThread(CreateThreadRequest) returns (CreateThreadResponse);
+	// DeleteMessage deletes a message from a thread
+	rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageResponse);
+	// MarThreadAsRead marks all posts in a thread as read by an entity
+	rpc MarkThreadAsRead(MarkThreadAsReadRequest) returns (MarkThreadAsReadResponse);
+	// PostMessage posts a message into a specified thread
+	rpc PostMessage(PostMessageRequest) returns (PostMessageResponse);
+	// QueryThreads queries the list of threads in an organization
+	rpc QueryThreads(QueryThreadsRequest) returns (QueryThreadsResponse);
+	// SavedQuery returns a single saved query by ID
+	rpc SavedQuery(SavedQueryRequest) returns (SavedQueryResponse);
+	// SavedQueries returns the list of saved queries for an org / entity pair
+	rpc SavedQueries(SavedQueriesRequest) returns (SavedQueriesResponse);
+	// Thread lookups and returns a single thread by ID
+	rpc Thread(ThreadRequest) returns (ThreadResponse);
+	// ThreadsForMember looks up a list of threads by entity membership
+	rpc ThreadsForMember(ThreadsForMemberRequest) returns (ThreadsForMemberResponse);
+	// ThreadItems returns the items (messages or events) in a thread
+	rpc ThreadItems(ThreadItemsRequest) returns (ThreadItemsResponse);
+	// ThreadMembers returns the members of a thread
+	rpc ThreadMembers(ThreadMembersRequest) returns (ThreadMembersResponse);
+	// UpdateSavedQuery updated a saved query
+	rpc UpdateSavedQuery(UpdateSavedQueryRequest) returns (UpdateSavedQueryResponse);
+	// UpdateThreadMembership updates the membership status of an entity on a thread
+	rpc UpdateThreadMembership(UpdateThreadMembershipRequest) returns (UpdateThreadMembershipResponse);
+}

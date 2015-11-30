@@ -11,9 +11,11 @@ import (
 type VarArgs interface {
 	// Append adds a column and corresponding values to the list
 	Append(column string, value interface{})
-	// Columns returns a query snippet that includes the columns and placeholders
-	// separated by commas.
-	Columns() string
+	// Columns returns all the column names that were given to Append.
+	Columns() []string
+	// ColumnsForUpdate returns a query snippet that includes the
+	// columns and placeholders separated by commas for use in update queries.
+	ColumnsForUpdate() string
 	// Values returns an interface list with the values that were given to Append.
 	Values() []interface{}
 	// IsEmpty returns true iff no values have been appended.
@@ -61,7 +63,11 @@ func (v *varArgs) IsEmpty() bool {
 	return len(v.vals) == 0
 }
 
-func (v *mySQLVarArgs) Columns() string {
+func (v *varArgs) Columns() []string {
+	return v.cols
+}
+
+func (v *mySQLVarArgs) ColumnsForUpdate() string {
 	if len(v.cols) == 0 {
 		return ""
 	}
@@ -80,7 +86,7 @@ func (v *mySQLVarArgs) Columns() string {
 	return string(buf)
 }
 
-func (v *postgresVarArgs) Columns() string {
+func (v *postgresVarArgs) ColumnsForUpdate() string {
 	if len(v.cols) == 0 {
 		return ""
 	}

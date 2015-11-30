@@ -301,7 +301,7 @@ func (d *dataService) UpdateTreatmentPlanScheduledMessage(id int64, update *Trea
 
 	_, err := d.db.Exec(`
 		UPDATE treatment_plan_scheduled_message
-		SET `+args.Columns()+` WHERE id = ?`,
+		SET `+args.ColumnsForUpdate()+` WHERE id = ?`,
 		append(args.Values(), id)...)
 	return err
 }

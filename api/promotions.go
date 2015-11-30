@@ -241,7 +241,7 @@ func (d *dataService) Promotion(codeID int64, types map[string]reflect.Type) (*c
 func (d *dataService) UpdatePromotion(pu *common.PromotionUpdate) (int64, error) {
 	varArgs := dbutil.MySQLVarArgs()
 	varArgs.Append(`expires`, pu.Expires)
-	res, err := d.db.Exec(`UPDATE promotion SET `+varArgs.Columns()+` WHERE promotion_code_id = ?`, append(varArgs.Values(), pu.CodeID)...)
+	res, err := d.db.Exec(`UPDATE promotion SET `+varArgs.ColumnsForUpdate()+` WHERE promotion_code_id = ?`, append(varArgs.Values(), pu.CodeID)...)
 	aff, err := res.RowsAffected()
 	return aff, errors.Trace(err)
 }
@@ -517,7 +517,7 @@ func (d *dataService) InactivateReferralProgramTemplate(id int64) error {
 
 	varArgs := dbutil.MySQLVarArgs()
 	varArgs.Append(`status`, common.RSInactive.String())
-	if _, err := tx.Exec(`UPDATE referral_program SET `+varArgs.Columns()+` WHERE referral_program_template_id = ?`, append(varArgs.Values(), id)...); err != nil {
+	if _, err := tx.Exec(`UPDATE referral_program SET `+varArgs.ColumnsForUpdate()+` WHERE referral_program_template_id = ?`, append(varArgs.Values(), id)...); err != nil {
 		tx.Rollback()
 		return errors.Trace(err)
 	}
@@ -533,7 +533,7 @@ func (d *dataService) UpdateReferralProgramTemplate(rpt *common.ReferralProgramT
 func (d *dataService) updateReferralProgramTemplate(db db, rpt *common.ReferralProgramTemplateUpdate) (int64, error) {
 	varArgs := dbutil.MySQLVarArgs()
 	varArgs.Append(`status`, rpt.Status.String())
-	res, err := db.Exec(`UPDATE referral_program_template SET `+varArgs.Columns()+` WHERE id = ?`, append(varArgs.Values(), rpt.ID)...)
+	res, err := db.Exec(`UPDATE referral_program_template SET `+varArgs.ColumnsForUpdate()+` WHERE id = ?`, append(varArgs.Values(), rpt.ID)...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
@@ -851,7 +851,7 @@ func (d *dataService) UpdateAccountPromotion(accountID, promoCodeID int64, updat
 		return nil
 	}
 	vals := []interface{}{accountID, promoCodeID}
-	q := `UPDATE account_promotion SET ` + args.Columns() + ` WHERE account_id = ? AND promotion_code_id = ?`
+	q := `UPDATE account_promotion SET ` + args.ColumnsForUpdate() + ` WHERE account_id = ? AND promotion_code_id = ?`
 	if apo.Has(APOPendingOnly) {
 		q += ` AND status = ?`
 		vals = append(vals, common.PSPending.String())

@@ -96,6 +96,6 @@ func (d *dataService) UpdateMedicalRecord(id int64, update *MedicalRecordUpdate)
 	if args.IsEmpty() {
 		return nil
 	}
-	_, err := d.db.Exec(`UPDATE patient_exported_medical_record SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), id)...)
+	_, err := d.db.Exec(`UPDATE patient_exported_medical_record SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id)...)
 	return err
 }

@@ -82,7 +82,7 @@ func (d *dataService) updatePatient(tx tsql.Tx, id common.PatientID, update *Pat
 	}
 
 	if !args.IsEmpty() {
-		_, err := tx.Exec(`UPDATE patient SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), id)...)
+		_, err := tx.Exec(`UPDATE patient SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id)...)
 		if err != nil {
 			return errors.Trace(err)
 		}

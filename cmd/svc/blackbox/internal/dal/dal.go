@@ -284,7 +284,7 @@ func (d *dal) UpdateSuiteRun(id SuiteRunID, update *SuiteRunUpdate) (int64, erro
 
 	res, err := d.db.Exec(
 		`UPDATE suite_run
-          SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), id.Uint64())...)
+          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id.Uint64())...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
@@ -358,7 +358,7 @@ func (d *dal) UpdateSuiteTestRun(id SuiteTestRunID, update *SuiteTestRunUpdate) 
 
 	res, err := d.db.Exec(
 		`UPDATE suite_test_run
-          SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), id.Uint64())...)
+          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id.Uint64())...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}

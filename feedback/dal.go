@@ -196,8 +196,8 @@ func (c *client) UpdatePatientFeedback(feedbackFor string, update *PatientFeedba
 	}
 
 	_, err := c.db.Exec(`
-		UPDATE patient_feedback 
-		SET `+vars.Columns()+` WHERE feedback_for = ?`, append(vars.Values(), feedbackFor)...)
+		UPDATE patient_feedback
+		SET `+vars.ColumnsForUpdate()+` WHERE feedback_for = ?`, append(vars.Values(), feedbackFor)...)
 
 	return errors.Trace(err)
 }
@@ -211,7 +211,7 @@ func (c *client) CreateFeedbackTemplate(feedback FeedbackTemplateData) (int64, e
 	// inactivate any pre-existing template
 	// with the same tag
 	_, err = tx.Exec(`
-		UPDATE feedback_template 
+		UPDATE feedback_template
 		SET active = false
 		WHERE tag = ?`, feedback.Tag)
 	if err != nil {

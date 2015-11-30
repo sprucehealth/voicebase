@@ -217,7 +217,7 @@ func (d *dataService) UpdateResourceGuideSection(sec *common.ResourceGuideSectio
 	if args.IsEmpty() {
 		return fmt.Errorf("api.UpdateResourceGuideSection: nothing to update")
 	}
-	_, err := d.db.Exec("UPDATE resource_guide_section SET "+args.Columns()+" WHERE id = ?", append(args.Values(), sec.ID)...)
+	_, err := d.db.Exec("UPDATE resource_guide_section SET "+args.ColumnsForUpdate()+" WHERE id = ?", append(args.Values(), sec.ID)...)
 	return err
 }
 
@@ -268,6 +268,6 @@ func (d *dataService) UpdateResourceGuide(id int64, update *ResourceGuideUpdate)
 	if args.IsEmpty() {
 		return fmt.Errorf("api.UpdateResourceGuide: nothing to update")
 	}
-	_, err := d.db.Exec("UPDATE resource_guide SET "+args.Columns()+" WHERE id = ?", append(args.Values(), id)...)
+	_, err := d.db.Exec("UPDATE resource_guide SET "+args.ColumnsForUpdate()+" WHERE id = ?", append(args.Values(), id)...)
 	return err
 }

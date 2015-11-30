@@ -158,7 +158,7 @@ func (d *dataService) UpdatePathway(id int64, update *PathwayUpdate) error {
 		return nil
 	}
 
-	_, err := d.db.Exec(`UPDATE clinical_pathway SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), id)...)
+	_, err := d.db.Exec(`UPDATE clinical_pathway SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id)...)
 	return err
 }
 

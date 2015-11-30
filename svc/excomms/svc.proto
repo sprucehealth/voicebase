@@ -2,11 +2,142 @@ syntax = "proto3";
 
 package excomms;
 
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = true;
+
 // ChannelType specifies the channel over which the communication 
 // is intended to take place.
 enum ChannelType {
 	Voice = 0;
 	SMS = 1;
+}
+
+message TwilioParams {
+	enum CallStatus {
+		CALL_STATUS_UNDEFINED = 0;
+		QUEUED = 1;
+		RINGING = 2;
+		IN_PROGRESS = 3;
+		COMPLETED = 4;
+		BUSY = 5;
+		FAILED = 6;
+		NO_ANSWER = 7;
+		CANCELED = 8;
+		ANSWERED = 9;
+		INITIATED = 10;
+	}
+
+	enum Direction {
+		DIRECTION_UNDEFINED = 0;
+		INBOUND = 1;
+		OUTBOUND_DIAL = 2;
+		OUTBOUND_API = 3;
+	}
+
+	message TwilioMediaItem {
+		string content_type = 1;
+		string media_url = 2 [(gogoproto.customname) = "MediaURL"];
+	}
+
+	string call_sid = 1 [(gogoproto.customname) = "CallSID"];
+	string account_sid = 2 [(gogoproto.customname) = "AccountSID"];
+	string from = 3;
+	string to_number = 4 [(gogoproto.customname) = "To"];	
+	CallStatus call_status = 5;
+	string api_version = 6 [(gogoproto.customname) = "APIVersion"];
+	Direction direction = 7;
+	uint32 call_duration = 8;
+	string recording_url = 9 [(gogoproto.customname) = "RecordingURL"];
+	string recording_sid = 10 [(gogoproto.customname) = "RecordingSID"];
+	uint32 recording_duration = 11;
+	string digits = 12;
+	string message_sid = 13 [(gogoproto.customname) = "MessageSID"];
+	string sms_sid  = 14 [(gogoproto.customname) = "SMSSID"];
+	string body = 15; 
+	uint32 num_media = 16;
+	repeated TwilioMediaItem media_items = 17;  
+	string messaging_service_id = 18 [(gogoproto.customname) = "MessagingServiceID"];
+
+	// these three parameters are only present in a twilio request
+	// attempting to get a twiml document to execute on the queued caller's 
+	// end before the two parties are connected.
+	string queue_sid = 19 [(gogoproto.customname) = "QueueSID"];
+	uint32 queue_time = 20;
+	string dequeuing_call_sid = 21 [(gogoproto.customname) = "DequeingCallSID"];
+
+	// this parameter is only present for status callbacks from a dial twiml verb
+	string parent_call_sid = 22 [(gogoproto.customname) = "ParentCallSID"];
+
+
+
+	// infrequently used parameters
+	string forwarded_from = 100;
+	string caller_name = 101;
+	string from_city = 102;
+	string from_state = 103;
+	string from_zip = 104;
+	string from_country = 105;
+	string to_city = 106;
+	string to_state = 107;
+	string to_zip = 108;
+	string to_country = 109;
+}
+
+enum TwilioEvent {
+	PROCESS_INCOMING_CALL = 0;
+	PROVIDER_CALL_CONNECTED = 1;
+	PROVIDER_ENTERED_DIGITS = 2;
+	TWIML_REQUESTED_WAIT_MUSIC = 3;
+	TWIML_REQUESTED_ABOUT_TO_CONNECT_PROVIDER = 4;
+	TWIML_REQUESTED_VOICEMAIL = 5;
+	PROCESS_INCOMING_CALL_STATUS = 6;
+	INCOMING_SMS = 7;
+	DIRECT_CALLER_TO_VOICEMAIL=8;
+	PROCESS_OUTGOING_CALL = 9;
+	PROCESS_VOICEMAIL = 10;
+	PROCESS_OUTGOING_CALL_STATUS = 11;
+}
+
+message PublishedExternalMessage {
+	string from_channel_id = 1 [(gogoproto.customname) = "FromChannelID"];
+	string to_channel_id = 2 [(gogoproto.customname) = "ToChannelID"];
+	uint64 timestamp = 3;
+	enum Type {
+		SMS = 0;
+		CALL_EVENT = 1;
+	}
+	Type type = 4;
+	oneof item {
+		SMSItem sms_item = 5 [(gogoproto.customname) = "SMSItem"];
+		CallEventItem call_event_item = 6;
+	}
+}
+
+message SMSItem {
+	string text = 1;
+	repeated MediaAttachment attachments = 2;
+}
+
+message CallEventItem {
+	enum Type {
+		INCOMING_ANSWERED = 0;
+		INCOMING_UNANSWERED = 1;
+		INCOMING_LEFT_VOICEMAIL = 2;
+		OUTGOING_PLACED = 3;
+		OUTGOING_ANSWERED = 4;
+		OUTGOING_UNANSWERED = 5;
+	}
+	Type type = 1;
+	uint32 duration_in_seconds = 2;	
+	string url = 3 [(gogoproto.customname) = "URL"];
+}
+
+message MediaAttachment {
+	string url = 1 [(gogoproto.customname) = "URL"];
+	string content_type = 2;
 }
 
 // RPC
@@ -15,41 +146,138 @@ enum ChannelType {
 // over an external channel.
 message SendMessageRequest {
 	string text = 1;	 
-	string from_channel_id = 2;
-	string to_channel_id = 3;
+	string from_channel_id = 2 [(gogoproto.customname) = "FromChannelID"];
+	string to_channel_id = 3 [(gogoproto.customname) = "ToChannelID"];
 	ChannelType channel = 4;
 }
 
 message SendMessageResponse {
+	enum Result {
+		SUCCESS = 0;
+		CHANNEL_NOT_SUPPORTED = 2;
+		INTERNAL_ERROR = 3;
+	}
+	Result result = 1;
+	string error_message = 2;
  }
 
 message InitiatePhoneCallRequest {
 	enum CallInitiationType {
-		// ConnectParties instructs service to call 
+		// CONNECT_PARTIES instructs service to call 
 		// the source and once the source answers, connect the
 		// source to the destination by calling the destination
 		// and merging the calls.
-		ConnectParties = 0;
+		CONNECT_PARTIES = 0;
 
-		// ReturnPhoneNumber instructs service to return a number
+		// RETURN_PHONE_NUMBER instructs service to return a number
 		// to the caller that the user can call to be connected
 		// to the patient.
-		ReturnPhoneNumber = 1;
+		RETURN_PHONE_NUMBER = 1;
 	}
 
 	CallInitiationType call_initiation_type = 1;
 	string from_phone_number = 2;
 	string to_phone_number = 3;
+	string organization_entity_id = 4 [(gogoproto.customname) = "OrganizationEntityID"];
 }
 
 message InitiatePhoneCallResponse {
-	string phone_number = 2;
+	enum Result {
+		SUCCESS = 0;
+		INTERNAL_ERROR = 1;
+	}
+	Result result = 1;
+	string error_message = 2;
+
+	// phone_number returns the phone number which the caller can call
+	// to connect the caller to the destination phone number in the request.
+	string phone_number = 3;
 }
 
-service ExCommsService {
+enum PhoneNumberCapability {
+	VOICE_ENABLED = 0;
+	SMS_ENABLED = 1;
+	MMS_ENABLED = 2;
+}
+
+message AvailablePhoneNumber {
+	string friendly_name = 1;
+	string phone_number = 2;
+	repeated PhoneNumberCapability capabilities = 3;	
+}
+
+message SearchAvailablePhoneNumbersRequest {
+	string area_code = 1;
+	repeated PhoneNumberCapability capabilities = 2;
+}
+
+message SearchAvailablePhoneNumbersResponse {
+	repeated AvailablePhoneNumber phone_numbers = 1;
+	enum Result {
+		SUCCESS = 0;
+		INTERNAL_ERROR = 1;
+	}
+	Result result = 2;
+	string error_message = 3;
+}
+
+
+message ProvisionPhoneNumberRequest {
+	string provision_for = 1;
+	oneof number {
+		string phone_number = 2;
+		string area_code = 3;	
+	}
+}
+
+message ProvisionPhoneNumberResponse {
+	enum Result {
+		SUCCESS = 0;
+		NOT_AVAILABLE = 1;
+		NUMBER_ALREADY_PROVISIONED = 2;
+		DIFFERENT_NUMBER_ALREADY_PROVISIONED = 3;
+		INTERNAL_ERROR = 4;
+	}
+	Result result = 1;
+	string error_message = 2;
+	string phone_number = 3;
+}
+
+
+message ProcessTwilioEventRequest {
+	TwilioParams params = 1;
+	TwilioEvent event = 2;
+}
+
+message ProcessTwilioEventResponse {
+	string twiml = 1;
+	bool success = 3;
+	message Failure {
+		enum Reason {
+			INTERNAL_ERROR = 0;
+			UNKNOWN_EVENT = 1;
+		}
+
+		string message = 1;
+		Reason reason = 2;
+	}
+	Failure failure = 4;
+}
+
+service ExComms {
+
+	// SearchAvailablephoneNumbers returns a list of available phone numbers based on the search criteria.
+	rpc SearchAvailablePhoneNumbers (SearchAvailablePhoneNumbersRequest) returns (SearchAvailablePhoneNumbersResponse);
+
+	// ProvisionPhoneNumber provisions the phone number provided for the requester.
+	rpc ProvisionPhoneNumber (ProvisionPhoneNumberRequest) returns (ProvisionPhoneNumberResponse);
+
 	// SendMessage sends the message over an external channel as specified in the SendMessageRequest.
 	rpc SendMessage (SendMessageRequest) returns (SendMessageResponse);
 
 	// InitiatePhoneCall initiates a phone call as defined in the InitiatePhoneCallRequest.
 	rpc InitiatePhoneCall (InitiatePhoneCallRequest) returns (InitiatePhoneCallResponse);
+
+	// ProcessTwilio processes the incoming twilio event and its corresponding parameters
+	rpc ProcessTwilioEvent (ProcessTwilioEventRequest) returns (ProcessTwilioEventResponse) {};
 }

@@ -21,11 +21,11 @@ import (
 )
 
 var config struct {
-	listenPort          int64
+	listenPort          int
 	debug               bool
 	noDB                bool
 	dbHost              string
-	dbPort              int64
+	dbPort              int
 	dbName              string
 	dbUser              string
 	dbPassword          string
@@ -45,11 +45,11 @@ var config struct {
 }
 
 func init() {
-	flag.Int64Var(&config.listenPort, "rpc.listen.port", 50051, "the port on which to listen for rpc call")
+	flag.IntVar(&config.listenPort, "rpc.listen.port", 50051, "the port on which to listen for rpc call")
 	flag.BoolVar(&config.debug, "debug", false, "enables golog debug logging for the application")
 	flag.BoolVar(&config.noDB, "no.db", false, "no db diables the DAL functionality related to run result record storing")
 	flag.StringVar(&config.dbHost, "db.host", "localhost", "the host at which we should attempt to connect to the database")
-	flag.Int64Var(&config.dbPort, "db.port", 3306, "the port on which we should attempt to connect to the database")
+	flag.IntVar(&config.dbPort, "db.port", 3306, "the port on which we should attempt to connect to the database")
 	flag.StringVar(&config.dbName, "db.name", "blackbox", "the name of the database which we should connect to")
 	flag.StringVar(&config.dbUser, "db.user", "blackbox", "the name of the user we should connext to the database as")
 	flag.StringVar(&config.dbPassword, "db.password", "blackbox", "the password we should use when connecting to the database")

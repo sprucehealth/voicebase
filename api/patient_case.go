@@ -102,7 +102,7 @@ func (d *dataService) UpdatePatientCaseCareProviderAssignment(id common.PatientC
 
 	res, err := d.db.Exec(
 		`UPDATE patient_case_care_provider_assignment
-			SET `+args.Columns()+` 
+			SET `+args.ColumnsForUpdate()+`
 			WHERE id = ?`, append(args.Values(), id.Uint64())...)
 	if err != nil {
 		return 0, errors.Trace(err)
@@ -679,7 +679,7 @@ func (d *dataService) UpdatePatientCase(id int64, update *PatientCaseUpdate) err
 	if args.IsEmpty() {
 		return nil
 	}
-	_, err := d.db.Exec(`UPDATE patient_case set `+args.Columns()+` WHERE id = ?`, append(args.Values(), id)...)
+	_, err := d.db.Exec(`UPDATE patient_case set `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id)...)
 	return err
 }
 

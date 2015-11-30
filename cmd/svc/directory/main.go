@@ -15,10 +15,10 @@ import (
 )
 
 var config struct {
-	listenPort           int64
+	listenPort           int
 	debug                bool
 	dbHost               string
-	dbPort               int64
+	dbPort               int
 	dbName               string
 	dbUser               string
 	dbPassword           string
@@ -30,10 +30,10 @@ var config struct {
 }
 
 func init() {
-	flag.Int64Var(&config.listenPort, "rpc.listen.port", 50051, "the port on which to listen for rpc call")
+	flag.IntVar(&config.listenPort, "rpc.listen.port", 50051, "the port on which to listen for rpc call")
 	flag.BoolVar(&config.debug, "debug", false, "enables golog debug logging for the application")
 	flag.StringVar(&config.dbHost, "db.host", "localhost", "the host at which we should attempt to connect to the database")
-	flag.Int64Var(&config.dbPort, "db.port", 3306, "the port on which we should attempt to connect to the database")
+	flag.IntVar(&config.dbPort, "db.port", 3306, "the port on which we should attempt to connect to the database")
 	flag.StringVar(&config.dbName, "db.name", "directory", "the name of the database which we should connect to")
 	flag.StringVar(&config.dbUser, "db.user", "baymax-directory", "the name of the user we should connext to the database as")
 	flag.StringVar(&config.dbPassword, "db.password", "baymax-directory", "the password we should use when connecting to the database")
@@ -48,7 +48,7 @@ func main() {
 	boot.ParseFlags("AUTH_SERVICE_")
 	configureLogging()
 
-	listenAddress := ":" + strconv.FormatInt(config.listenPort, 10)
+	listenAddress := ":" + strconv.Itoa(config.listenPort)
 	lis, err := net.Listen("tcp", listenAddress)
 	if err != nil {
 		golog.Fatalf("failed to listen: %v", err)

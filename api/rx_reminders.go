@@ -62,8 +62,8 @@ func (d *dataService) UpdateRXReminder(treatmentID int64, r *common.RXReminder) 
 	varArgs.Append(`days`, common.JoinRXRDaySlice(r.Days))
 	varArgs.Append(`times`, r.Times)
 	res, err := d.db.Exec(`
-    UPDATE rx_reminder 
-      SET `+varArgs.Columns()+
+    UPDATE rx_reminder
+      SET `+varArgs.ColumnsForUpdate()+
 		`WHERE treatment_id = ?`, append(varArgs.Values(), treatmentID)...)
 	if err != nil {
 		return 0, errors.Trace(err)

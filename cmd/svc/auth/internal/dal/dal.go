@@ -556,7 +556,7 @@ func (d *dal) UpdateAccount(id AccountID, update *AccountUpdate) (int64, error) 
 
 	res, err := d.db.Exec(
 		`UPDATE account
-          SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), id.Uint64())...)
+          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id.Uint64())...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
@@ -683,7 +683,7 @@ func (d *dal) UpdateAuthToken(token string, update *AuthTokenUpdate) (int64, err
 
 	res, err := d.db.Exec(
 		`UPDATE auth_token
-          SET `+args.Columns()+` WHERE token = ?`, append(args.Values(), []byte(token))...)
+          SET `+args.ColumnsForUpdate()+` WHERE token = ?`, append(args.Values(), []byte(token))...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
@@ -845,7 +845,7 @@ func (d *dal) UpdateAccountPhone(id AccountPhoneID, update *AccountPhoneUpdate) 
 
 	res, err := d.db.Exec(
 		`UPDATE account_phone
-          SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), id.Uint64())...)
+          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id.Uint64())...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
@@ -936,7 +936,7 @@ func (d *dal) UpdateAccountEmail(id AccountEmailID, update *AccountEmailUpdate) 
 
 	res, err := d.db.Exec(
 		`UPDATE account_email
-          SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), id.Uint64())...)
+          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id.Uint64())...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}

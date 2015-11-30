@@ -448,7 +448,7 @@ func (d *dataService) UpdateTreatmentPlan(id int64, update *TreatmentPlanUpdate)
 	if args.IsEmpty() {
 		return nil
 	}
-	_, err := d.db.Exec(`UPDATE treatment_plan SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), id)...)
+	_, err := d.db.Exec(`UPDATE treatment_plan SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id)...)
 	return err
 }
 
@@ -809,7 +809,7 @@ func updatePatientVisit(d db, id int64, update *PatientVisitUpdate) (int, error)
 		where = " AND status = ?"
 		values = append(values, *update.RequiredStatus)
 	}
-	res, err := d.Exec(`UPDATE patient_visit SET `+args.Columns()+` WHERE id = ?`+where, values...)
+	res, err := d.Exec(`UPDATE patient_visit SET `+args.ColumnsForUpdate()+` WHERE id = ?`+where, values...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}

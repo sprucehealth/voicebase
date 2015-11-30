@@ -680,7 +680,7 @@ func (d *dal) UpdateEntityContact(id EntityContactID, update *EntityContactUpdat
 
 	res, err := d.db.Exec(
 		`UPDATE entity_contact
-          SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), id.Uint64())...)
+          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id.Uint64())...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
@@ -769,7 +769,7 @@ func (d *dal) UpdateEvent(id EventID, update *EventUpdate) (int64, error) {
 
 	res, err := d.db.Exec(
 		`UPDATE event
-          SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), id.Uint64())...)
+          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id.Uint64())...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
@@ -893,7 +893,7 @@ func (d *dal) UpdateEntity(id EntityID, update *EntityUpdate) (int64, error) {
 
 	res, err := d.db.Exec(
 		`UPDATE entity
-          SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), id.Uint64())...)
+          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id.Uint64())...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}

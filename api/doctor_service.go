@@ -1153,7 +1153,7 @@ func (d *dataService) UpdateDoctor(doctorID int64, update *DoctorUpdate) error {
 		return nil
 	}
 
-	_, err := d.db.Exec(`UPDATE doctor SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), doctorID)...)
+	_, err := d.db.Exec(`UPDATE doctor SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), doctorID)...)
 	return err
 }
 
@@ -1486,7 +1486,7 @@ func (d *dataService) UpdatePracticeModel(doctorID, stateID int64, pmu *common.P
 		varArgs.Append(`practice_extension`, *pmu.HasPracticeExtension)
 	}
 	res, err := d.db.Exec(`
-		UPDATE practice_model SET `+varArgs.Columns()+` WHERE doctor_id = ? AND state_id = ?`, append(varArgs.Values(), doctorID, stateID)...)
+		UPDATE practice_model SET `+varArgs.ColumnsForUpdate()+` WHERE doctor_id = ? AND state_id = ?`, append(varArgs.Values(), doctorID, stateID)...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
@@ -1535,7 +1535,7 @@ func (d *dataService) UpsertPracticeModelInAllStates(doctorID int64, aspmu *comm
 	if aspmu.HasPracticeExtension != nil {
 		varArgs.Append(`practice_extension`, *aspmu.HasPracticeExtension)
 	}
-	res, err := d.db.Exec(`UPDATE practice_model SET `+varArgs.Columns()+` WHERE doctor_id = ?`, append(varArgs.Values(), doctorID)...)
+	res, err := d.db.Exec(`UPDATE practice_model SET `+varArgs.ColumnsForUpdate()+` WHERE doctor_id = ?`, append(varArgs.Values(), doctorID)...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}

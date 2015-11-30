@@ -125,7 +125,7 @@ func (m *auth) UpdateAccount(accountID int64, email *string, twoFactorEnabled *b
 	if args.IsEmpty() {
 		return nil
 	}
-	_, err := m.db.Exec(`UPDATE account SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), accountID)...)
+	_, err := m.db.Exec(`UPDATE account SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), accountID)...)
 	return err
 }
 

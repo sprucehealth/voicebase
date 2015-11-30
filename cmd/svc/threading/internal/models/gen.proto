@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package models;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = true;
+
+message Message {
+	string text = 1;
+	repeated Attachment attachments = 2;
+	enum Status {
+		NORMAL = 0;
+		DELETED = 1;
+	}
+	Status status = 3;
+	Endpoint source = 4;
+	repeated Endpoint destinations = 5;
+	uint64 edited_timestamp = 6;
+	string editor_entity_id = 7 [(gogoproto.customname) = "EditorEntityID"];
+}
+
+message Endpoint {
+	enum Channel {
+		APP = 0;
+		SMS = 1;
+		VOICE = 2;
+		EMAIL = 3;
+	}
+	Channel channel = 1;
+	string id = 2 [(gogoproto.customname) = "ID"];
+}
+
+message MessageUpdated {
+	string thread_item_id = 1 [(gogoproto.customname) = "ThreadItemID"];
+	string actor_entity_id = 2 [(gogoproto.customname) = "ActorEntityID"];
+	Message message = 3;
+}
+
+message FollowerUpdated {
+	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+}
+
+message Attachment {
+	enum Type {
+		IMAGE = 0;
+		AUDIO = 1;
+	}
+	Type type = 1;
+	string title = 2;
+	string url = 3 [(gogoproto.customname) = "URL"];
+	oneof data {
+		ImageAttachment image = 10;
+		AudioAttachment audio = 11;
+	}
+}
+
+message ImageAttachment {
+	string mimetype = 1;
+	string url = 2 [(gogoproto.customname) = "URL"];
+	uint32 width = 3;
+	uint32 height = 4;
+}
+
+message AudioAttachment {
+	string mimetype = 1;
+	string url = 2 [(gogoproto.customname) = "URL"];
+	uint32 duration_in_seconds = 3;
+}

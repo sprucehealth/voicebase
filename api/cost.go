@@ -141,7 +141,7 @@ func (d *dataService) UpdatePatientReceipt(id int64, update *PatientReceiptUpdat
 	if args.IsEmpty() {
 		return nil
 	}
-	_, err := d.db.Exec(`UPDATE patient_receipt SET `+args.Columns()+` WHERE id = ?`, append(args.Values(), id)...)
+	_, err := d.db.Exec(`UPDATE patient_receipt SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id)...)
 	return err
 }
 

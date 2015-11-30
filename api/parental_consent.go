@@ -138,7 +138,7 @@ func (d *dataService) UpsertParentConsentProof(parentPatientID common.PatientID,
 	res, err := tx.Exec(`
 			INSERT INTO parent_consent_proof (governmentid_media_id, selfie_media_id, patient_id)
 			VALUES (?,?,?)
-			ON DUPLICATE KEY UPDATE `+args.Columns(),
+			ON DUPLICATE KEY UPDATE `+args.ColumnsForUpdate(),
 		append([]interface{}{proof.GovernmentIDPhotoID, proof.SelfiePhotoID, parentPatientID}, args.Values()...)...)
 	if err != nil {
 		tx.Rollback()
