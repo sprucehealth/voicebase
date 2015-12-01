@@ -120,7 +120,7 @@ func (d *dataService) GetPatientCaseCareProviderAssignment(providerID, caseID in
 			FROM patient_case_care_provider_assignment
 			WHERE provider_id = ? AND patient_case_id = ?`, providerID, caseID,
 	).Scan(&id, &pa.PatientCaseID, &pa.ProviderID, &pa.RoleTypeID, &pa.CreationDate, &pa.Status, &pa.Expires); err == sql.ErrNoRows {
-		return nil, errors.Trace(ErrNotFound(fmt.Sprint("no patient_case_care_provider_assignment found for provider_id %d and patient_case_id %d", providerID, caseID)))
+		return nil, errors.Trace(ErrNotFound(fmt.Sprintf("no patient_case_care_provider_assignment found for provider_id %d and patient_case_id %d", providerID, caseID)))
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
