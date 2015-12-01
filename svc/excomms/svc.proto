@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package excomms;
+
+// ChannelType specifies the channel over which the communication 
+// is intended to take place.
+enum ChannelType {
+	Voice = 0;
+	SMS = 1;
+}
+
+// RPC
+
+// SendMessageRequest represents a request to send a message
+// over an external channel.
+message SendMessageRequest {
+	string text = 1;	 
+	string from_channel_id = 2;
+	string to_channel_id = 3;
+	ChannelType channel = 4;
+}
+
+message SendMessageResponse {
+ }
+
+message InitiatePhoneCallRequest {
+	enum CallInitiationType {
+		// ConnectParties instructs service to call 
+		// the source and once the source answers, connect the
+		// source to the destination by calling the destination
+		// and merging the calls.
+		ConnectParties = 0;
+
+		// ReturnPhoneNumber instructs service to return a number
+		// to the caller that the user can call to be connected
+		// to the patient.
+		ReturnPhoneNumber = 1;
+	}
+
+	CallInitiationType call_initiation_type = 1;
+	string from_phone_number = 2;
+	string to_phone_number = 3;
+}
+
+message InitiatePhoneCallResponse {
+	string phone_number = 2;
+}
+
+service ExCommsService {
+	// SendMessage sends the message over an external channel as specified in the SendMessageRequest.
+	rpc SendMessage (SendMessageRequest) returns (SendMessageResponse);
+
+	// InitiatePhoneCall initiates a phone call as defined in the InitiatePhoneCallRequest.
+	rpc InitiatePhoneCall (InitiatePhoneCallRequest) returns (InitiatePhoneCallResponse);
+}

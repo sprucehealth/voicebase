@@ -126,6 +126,15 @@
 			"Rev": "a197e5d40516f2e9f74dcee085a5f2d4604e94df"
 		},
 		{
+			"ImportPath": "github.com/gogo/protobuf/proto",
+			"Comment": "v0.1-78-gd3235f0",
+			"Rev": "d3235f01ecae4901dd9f7ea6af57a352c0189deb"
+		},
+		{
+			"ImportPath": "github.com/golang/protobuf/proto",
+			"Rev": "02ac84f19cf2febf53ac06e7fbc446c1ea0258e3"
+		},
+		{
 			"ImportPath": "github.com/hashicorp/consul/api",
 			"Comment": "v0.5.0-163-g26f03ea",
 			"Rev": "26f03ea30d28fbbaa8033b20d8fed4edc603d150"
@@ -228,11 +237,23 @@
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
-			"Rev": "b026840ad5cb594d38a2b783be1b6644fe5325fb"
+			"Rev": "55cccaa02af1a99c69ba3213e33468628b61be4b"
 		},
 		{
 			"ImportPath": "golang.org/x/net/html",
-			"Rev": "b026840ad5cb594d38a2b783be1b6644fe5325fb"
+			"Rev": "55cccaa02af1a99c69ba3213e33468628b61be4b"
+		},
+		{
+			"ImportPath": "golang.org/x/net/http2",
+			"Rev": "55cccaa02af1a99c69ba3213e33468628b61be4b"
+		},
+		{
+			"ImportPath": "golang.org/x/net/internal/timeseries",
+			"Rev": "55cccaa02af1a99c69ba3213e33468628b61be4b"
+		},
+		{
+			"ImportPath": "golang.org/x/net/trace",
+			"Rev": "55cccaa02af1a99c69ba3213e33468628b61be4b"
 		},
 		{
 			"ImportPath": "golang.org/x/text/transform",
@@ -241,6 +262,10 @@
 		{
 			"ImportPath": "golang.org/x/text/unicode/norm",
 			"Rev": "0fe7e6856182a6ebfcf1e6a7aa90bead9a8e1bc0"
+		},
+		{
+			"ImportPath": "google.golang.org/grpc",
+			"Rev": "2011d72ca3b5637b963367c586bacce50ff08bf7"
 		},
 		{
 			"ImportPath": "gopkg.in/yaml.v2",
