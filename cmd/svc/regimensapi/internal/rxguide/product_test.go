@@ -27,8 +27,8 @@ func TestProductQueryProducts(t *testing.T) {
 	prods, err := dal.QueryProducts(q, limit)
 	test.OK(t, err)
 	test.Equals(t, 2, len(prods))
-	slice.Contains(t, slice.AsISlice(prods), transformGuide(imageURLs, webEndpoint, q, rxGuides[q]))
-	slice.Contains(t, slice.AsISlice(prods), transformGuide(imageURLs, webEndpoint, q2, rxGuides[q2]))
+	slice.Contains(t, prods, transformGuide(imageURLs, webEndpoint, q, rxGuides[q]))
+	slice.Contains(t, prods, transformGuide(imageURLs, webEndpoint, q2, rxGuides[q2]))
 	svc.Finish()
 }
 

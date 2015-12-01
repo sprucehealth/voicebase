@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/idgen"
+	"github.com/sprucehealth/backend/libs/transactional/tsql"
 	"github.com/sprucehealth/backend/pharmacy"
 )
 
@@ -44,7 +45,7 @@ func (d *dataService) UpdatePatient(id common.PatientID, update *PatientUpdate, 
 	return errors.Trace(tx.Commit())
 }
 
-func (d *dataService) updatePatient(tx *sql.Tx, id common.PatientID, update *PatientUpdate, updateFromDoctor bool) error {
+func (d *dataService) updatePatient(tx tsql.Tx, id common.PatientID, update *PatientUpdate, updateFromDoctor bool) error {
 	args := dbutil.MySQLVarArgs()
 
 	if update.FirstName != nil {
@@ -106,7 +107,7 @@ func (d *dataService) updatePatient(tx *sql.Tx, id common.PatientID, update *Pat
 	return nil
 }
 
-func replaceAccountPhoneNumbers(tx *sql.Tx, accountID int64, numbers []*common.PhoneNumber) error {
+func replaceAccountPhoneNumbers(tx tsql.Tx, accountID int64, numbers []*common.PhoneNumber) error {
 	_, err := tx.Exec(`DELETE FROM account_phone WHERE account_id = ?`, accountID)
 	if err != nil {
 		return errors.Trace(err)
@@ -139,7 +140,7 @@ func replaceAccountPhoneNumbers(tx *sql.Tx, accountID int64, numbers []*common.P
 	return errors.Trace(err)
 }
 
-func updatePatientAddress(tx *sql.Tx, patientID common.PatientID, address *common.Address, updateFromDoctor bool) error {
+func updatePatientAddress(tx tsql.Tx, patientID common.PatientID, address *common.Address, updateFromDoctor bool) error {
 	addressID, err := addAddress(tx, address)
 	if err != nil {
 		return errors.Trace(err)
@@ -249,7 +250,7 @@ func (d *dataService) CreateUnlinkedPatientFromRefillRequest(patient *common.Pat
 	return errors.Trace(tx.Commit())
 }
 
-func (d *dataService) createPatientWithStatus(patient *common.Patient, status string, tx *sql.Tx) error {
+func (d *dataService) createPatientWithStatus(patient *common.Patient, status string, tx tsql.Tx) error {
 	patient.Gender = strings.ToLower(patient.Gender)
 
 	id, err := idgen.NewID()
@@ -665,7 +666,7 @@ func (d *dataService) AddPharmacy(pharmacyDetails *pharmacy.PharmacyData) error 
 	return tx.Commit()
 }
 
-func addPharmacy(pharmacyDetails *pharmacy.PharmacyData, tx *sql.Tx) error {
+func addPharmacy(pharmacyDetails *pharmacy.PharmacyData, tx tsql.Tx) error {
 	columnsAndData := map[string]interface{}{
 		"pharmacy_id":    pharmacyDetails.SourceID,
 		"source":         pharmacyDetails.Source,
@@ -904,7 +905,7 @@ func (d *dataService) MakeLatestCardDefaultForPatient(patientID common.PatientID
 	return card, err
 }
 
-func addAddress(tx *sql.Tx, address *common.Address) (int64, error) {
+func addAddress(tx tsql.Tx, address *common.Address) (int64, error) {
 	lastID, err := tx.Exec(`INSERT INTO address (address_line_1, address_line_2, city, state, zip_code, country) VALUES (?,?,?,?,?,?)`,
 		strings.TrimSpace(address.AddressLine1), strings.TrimSpace(address.AddressLine2),
 		strings.TrimSpace(address.City), strings.TrimSpace(address.State),

@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/transactional/tsql"
 )
 
 func (d *dataService) AvailableStates() ([]*common.State, error) {
@@ -378,7 +379,7 @@ func (d *dataService) UpdateCareProviderStatePathwayMapping(patch *CareProviderS
 	return tx.Commit()
 }
 
-func (d *dataService) careProviderStatePathwayMappingUpdate(tx *sql.Tx, updates []*CareProviderStatePathwayMappingUpdate) error {
+func (d *dataService) careProviderStatePathwayMappingUpdate(tx tsql.Tx, updates []*CareProviderStatePathwayMappingUpdate) error {
 	var cols []string
 	var vals []interface{}
 	for _, u := range updates {

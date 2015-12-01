@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/transactional/tsql"
 	"github.com/sprucehealth/backend/patient_case/model"
 )
 
@@ -88,6 +89,45 @@ func (d *dataService) GetActiveMembersOfCareTeamForCase(patientCaseID int64, fil
 	return d.getMembersOfCareTeam(rows, fillInDetails)
 }
 
+// UpdatePatientCaseCareProviderAssignment updates the indicated record to the provided value
+func (d *dataService) UpdatePatientCaseCareProviderAssignment(id common.PatientCaseCareProviderAssignmentID, u *common.PatientCaseCareProviderAssignmentUpdate) (int64, error) {
+	args := dbutil.MySQLVarArgs()
+
+	if u.Status != nil {
+		args.Append(`status`, *u.Status)
+	}
+	if len(args.Values()) == 0 {
+		return 0, nil
+	}
+
+	res, err := d.db.Exec(
+		`UPDATE patient_case_care_provider_assignment
+			SET `+args.Columns()+` 
+			WHERE id = ?`, append(args.Values(), id.Uint64())...)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+	aff, err := res.RowsAffected()
+	return aff, errors.Trace(err)
+}
+
+// GetPatientCaseCareProviderAssignment returns the record associated with the provided provider and case
+func (d *dataService) GetPatientCaseCareProviderAssignment(providerID, caseID int64) (*common.PatientCaseCareProviderAssignment, error) {
+	var id uint64
+	pa := &common.PatientCaseCareProviderAssignment{}
+	if err := d.db.QueryRow(`
+		SELECT id, patient_case_id, provider_id, role_type_id, creation_date, status, expires 
+			FROM patient_case_care_provider_assignment
+			WHERE provider_id = ? AND patient_case_id = ?`, providerID, caseID,
+	).Scan(&id, &pa.PatientCaseID, &pa.ProviderID, &pa.RoleTypeID, &pa.CreationDate, &pa.Status, &pa.Expires); err == sql.ErrNoRows {
+		return nil, errors.Trace(ErrNotFound(fmt.Sprint("no patient_case_care_provider_assignment found for provider_id %d and patient_case_id %d", providerID, caseID)))
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+	pa.ID = common.NewPatientCaseCareProviderAssignmentID(id)
+	return pa, nil
+}
+
 func (d *dataService) GetActiveCareTeamMemberForCase(role string, patientCaseID int64) (*common.CareProviderAssignment, error) {
 	rows, err := d.db.Query(`
 		SELECT provider_id, role_type_tag, status, creation_date
@@ -113,7 +153,6 @@ func (d *dataService) GetActiveCareTeamMemberForCase(role string, patientCaseID 
 	}
 
 	return nil, errors.New("Expected 1 care provider assignment but got more than 1")
-
 }
 
 // AddDoctorToPatientCase adds the provided doctor to the care team of the case
@@ -165,7 +204,7 @@ func (d *dataService) AddDoctorToPatientCase(doctorID, caseID int64) error {
 	return tx.Commit()
 }
 
-func (d *dataService) assignCareProviderToPatientFileAndCase(tx *sql.Tx, providerID, roleTypeID int64, patientCase *common.PatientCase) error {
+func (d *dataService) assignCareProviderToPatientFileAndCase(tx tsql.Tx, providerID, roleTypeID int64, patientCase *common.PatientCase) error {
 	pathwayID, err := d.pathwayIDFromTag(patientCase.PathwayTag)
 	if err != nil {
 		return err
@@ -583,7 +622,7 @@ func (d *dataService) DeleteCaseNotification(uid string, patientCaseID int64) er
 	return errors.Trace(err)
 }
 
-func (d *dataService) createPatientCase(tx *sql.Tx, patientCase *common.PatientCase) error {
+func (d *dataService) createPatientCase(tx tsql.Tx, patientCase *common.PatientCase) error {
 	if patientCase.Name == "" {
 		pathway, err := d.PathwayForTag(patientCase.PathwayTag, PONone)
 		if err != nil {

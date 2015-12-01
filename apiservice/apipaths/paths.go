@@ -9,6 +9,7 @@ const (
 	AutocompleteURLPath                   = "/v1/autocomplete"
 	CareProviderURLPath                   = "/v1/care_provider"
 	CareProviderProfileURLPath            = "/v1/care_provider_profile"
+	CaseChangeProvider                    = "/v1/case/change_provider"
 	CaseMessagesListURLPath               = "/v1/case/messages/list"
 	CaseMessagesUnreadCountURLPath        = "/v1/case/messages/unread_count"
 	CaseMessagesURLPath                   = "/v1/case/messages"

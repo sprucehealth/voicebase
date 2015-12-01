@@ -20,6 +20,7 @@ import (
 	"github.com/sprucehealth/backend/careprovider"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/handlers"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
+	"github.com/sprucehealth/backend/cmd/svc/restapi/patientcase"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/compat"
@@ -169,6 +170,7 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 
 	rxReminderService := rxremind.NewService(conf.DataAPI, conf.DataAPI)
 	treatmentPlanService := treatment_plan.NewService(conf.DataAPI, conf.DataAPI)
+	patientCaseService := patientcase.NewService(conf.DataAPI)
 
 	conf.mux = mux.NewRouter()
 
@@ -261,6 +263,7 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 	authenticationRequired(conf, apipaths.CaseMessagesURLPath, messages.NewHandler(conf.DataAPI, conf.Dispatcher))
 	authenticationRequired(conf, apipaths.CaseMessagesListURLPath, messages.NewListHandler(conf.DataAPI, conf.APICDNDomain, conf.MediaStore, conf.AuthTokenExpiration))
 	authenticationRequired(conf, apipaths.CaseMessagesUnreadCountURLPath, messages.NewUnreadCountHandler(conf.DataAPI))
+	callerRoleRequired(conf, apipaths.CaseChangeProvider, handlers.NewChangeProviderHandler(patientCaseService))
 
 	// Doctor: Account APIs
 	authenticationRequired(conf, apipaths.DoctorIsAuthenticatedURLPath, handlers.NewIsAuthenticatedHandler(conf.AuthAPI))

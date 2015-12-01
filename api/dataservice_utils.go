@@ -2,7 +2,6 @@ package api
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -13,6 +12,8 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dbutil"
+	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/transactional/tsql"
 )
 
 const (
@@ -65,13 +66,13 @@ const (
 )
 
 type dataService struct {
-	db                           *sql.DB
+	db                           tsql.DB
 	roleTypeMapping              map[string]int64
 	roleIDMapping                map[int64]string
-	pathwayMapMu                 sync.RWMutex
+	pathwayMapMu                 *sync.RWMutex
 	pathwayTagToIDMap            map[string]int64
 	pathwayIDToTagMap            map[int64]string
-	skuMapMu                     sync.RWMutex
+	skuMapMu                     *sync.RWMutex
 	skuTypeToIDMap               map[string]int64
 	skuIDToTypeMap               map[int64]string
 	cfgStore                     cfg.Store
@@ -79,13 +80,15 @@ type dataService struct {
 	accoundCodeCollisionsCounter *metrics.Counter
 }
 
-func NewDataService(DB *sql.DB, cfgStore cfg.Store, metricsRegistry metrics.Registry) (DataAPI, error) {
+func NewDataService(db *sql.DB, cfgStore cfg.Store, metricsRegistry metrics.Registry) (DataAPI, error) {
 	dataService := &dataService{
-		db:                DB,
+		db:                tsql.AsDB(db),
 		roleTypeMapping:   make(map[string]int64),
 		roleIDMapping:     make(map[int64]string),
+		pathwayMapMu:      &sync.RWMutex{},
 		pathwayTagToIDMap: make(map[string]int64),
 		pathwayIDToTagMap: make(map[int64]string),
+		skuMapMu:          &sync.RWMutex{},
 		skuTypeToIDMap:    make(map[string]int64),
 		skuIDToTypeMap:    make(map[int64]string),
 		cfgStore:          cfgStore,
@@ -120,6 +123,40 @@ func NewDataService(DB *sql.DB, cfgStore cfg.Store, metricsRegistry metrics.Regi
 
 	registerCfgValues(cfgStore)
 	return dataService, rows.Err()
+}
+
+// Transact encapsulated the provided function in a transaction and handles rollback and commit actions
+func (d *dataService) Transact(trans func(dal DataAPI) error) (err error) {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return errors.Trace(err)
+	}
+	// Recover from any inner panics that happened and close the transaction
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			err = errors.Trace(fmt.Errorf("Encountered panic during transaction execution: %v", r))
+		}
+	}()
+	tdal := &dataService{
+		db:                tsql.AsSafeTx(tx),
+		roleTypeMapping:   d.roleTypeMapping,
+		roleIDMapping:     d.roleIDMapping,
+		pathwayMapMu:      d.pathwayMapMu,
+		pathwayTagToIDMap: d.pathwayTagToIDMap,
+		pathwayIDToTagMap: d.pathwayIDToTagMap,
+		skuMapMu:          d.skuMapMu,
+		skuTypeToIDMap:    d.skuTypeToIDMap,
+		skuIDToTypeMap:    d.skuIDToTypeMap,
+		cfgStore:          d.cfgStore,
+		metricsRegistry:   d.metricsRegistry,
+	}
+	if err := trans(tdal); err != nil {
+		tx.Rollback()
+		return errors.Trace(err)
+	}
+	err = errors.Trace(tx.Commit())
+	return err
 }
 
 // registerCfgValues is a bootstrap helper function to group and initialize the Cfg values used by the data service

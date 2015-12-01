@@ -150,6 +150,7 @@ type PatientCaseAPI interface {
 	GetActiveMembersOfCareTeamForCase(patientCaseID int64, fillInDetails bool) ([]*common.CareProviderAssignment, error)
 	GetPatientCaseFromPatientVisitID(patientVisitID int64) (*common.PatientCase, error)
 	GetPatientCaseFromID(patientCaseID int64) (*common.PatientCase, error)
+	GetPatientCaseCareProviderAssignment(providerID, caseID int64) (*common.PatientCaseCareProviderAssignment, error)
 	AddDoctorToPatientCase(doctorID, caseID int64) error
 	DoesActiveTreatmentPlanForCaseExist(patientCaseID int64) (bool, error)
 	GetActiveTreatmentPlanForCase(patientCaseID int64) (*common.TreatmentPlan, error)
@@ -169,6 +170,7 @@ type PatientCaseAPI interface {
 	PatientCaseNote(id int64) (*model.PatientCaseNote, error)
 	PatientCaseNotes(caseIDs []int64) (map[int64][]*model.PatientCaseNote, error)
 	DeletePatientCaseNote(id int64) (int64, error)
+	UpdatePatientCaseCareProviderAssignment(id common.PatientCaseCareProviderAssignmentID, u *common.PatientCaseCareProviderAssignmentUpdate) (int64, error)
 }
 
 type DoctorNotify struct {
@@ -469,6 +471,7 @@ type DoctorAPI interface {
 	UpdateDoctor(doctorID int64, req *DoctorUpdate) error
 	GetDoctorFromID(doctorID int64) (doctor *common.Doctor, err error)
 	Doctor(id int64, basicInfoOnly bool) (doctor *common.Doctor, err error)
+	DoctorIDsEligibleInState(careProvidingStateID int64) ([]int64, error)
 	Doctors(id []int64) ([]*common.Doctor, error)
 	GetDoctorFromAccountID(accountID int64) (doctor *common.Doctor, err error)
 	GetDoctorFromDoseSpotClinicianID(clincianID int64) (doctor *common.Doctor, err error)
@@ -946,6 +949,13 @@ type Tokens interface {
 	DeleteToken(purpose, token string) (int, error)
 }
 
+// Transactor describes the methods intended for block transaction execution
+// The inner function is made an interface and type asserted in the concrete implementation.
+// This allows tests to not have to implement all methods on a DAL is if the interface does not require it
+type Transactor interface {
+	Transact(trans func(dal DataAPI) error) error
+}
+
 type DataAPI interface {
 	AnalyticsAPI
 	AttributionAPI
@@ -983,6 +993,7 @@ type DataAPI interface {
 	TextAPI
 	Tokens
 	TrainingCasesAPI
+	Transactor
 }
 
 type AuthTokenPurpose string

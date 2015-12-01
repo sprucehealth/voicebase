@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/transactional/tsql"
 	pharmacyService "github.com/sprucehealth/backend/pharmacy"
 )
 
@@ -859,7 +860,7 @@ func (d *dataService) CreateRegimenPlanForTreatmentPlan(regimenPlan *common.Regi
 	return tx.Commit()
 }
 
-func createRegimenPlan(tx *sql.Tx, regimenPlan *common.RegimenPlan) error {
+func createRegimenPlan(tx tsql.Tx, regimenPlan *common.RegimenPlan) error {
 	tpID := regimenPlan.TreatmentPlanID.Int64()
 	// delete any previous steps and sections given that we have new ones coming in
 	_, err := tx.Exec(`
@@ -953,7 +954,7 @@ func (d *dataService) AddTreatmentsForTreatmentPlan(treatments []*common.Treatme
 	return tx.Commit()
 }
 
-func (d *dataService) addTreatmentsForTreatmentPlan(tx *sql.Tx, treatments []*common.Treatment, doctorID, tpID int64, patientID common.PatientID) error {
+func (d *dataService) addTreatmentsForTreatmentPlan(tx tsql.Tx, treatments []*common.Treatment, doctorID, tpID int64, patientID common.PatientID) error {
 	_, err := tx.Exec(`
 		UPDATE treatment
 		SET status = ?

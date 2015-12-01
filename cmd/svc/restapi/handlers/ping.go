@@ -23,6 +23,7 @@ const (
 
 type pingHandler struct{}
 
+// NewPingHandler returns an initialized instance of pingHandler
 func NewPingHandler() httputil.ContextHandler {
 	return httputil.SupportedMethods(
 		apiservice.NoAuthorizationRequired(

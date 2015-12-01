@@ -6,8 +6,9 @@ import (
 )
 
 // Contains asserts that the desired element is present in the provided slice
-func Contains(t *testing.T, s []interface{}, ele interface{}) {
-	for _, v := range s {
+func Contains(t *testing.T, sli interface{}, ele interface{}) {
+	islice := AsISlice(sli)
+	for _, v := range islice {
 		if reflect.DeepEqual(v, ele) {
 			return
 		}

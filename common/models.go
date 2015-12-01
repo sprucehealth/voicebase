@@ -52,7 +52,7 @@ type PhoneNumberType string
 
 const (
 	// PNTCell represents a cell phone number
-	PNTCell PhoneNumberType = "CELL"
+    PNTCell PhoneNumberType = "CELL"
 
 	// PNTWork represents a work phone number
 	PNTWork PhoneNumberType = "WORK"
@@ -292,6 +292,69 @@ func (a *Address) Validate() error {
 		return errors.New("ZipCode required")
 	}
 	return nil
+}
+
+// NewPatientCaseCareProviderAssignmentID returns a new PatientCaseCareProviderAssignmentID using the provided value. If id is 0
+// then the returned PatientCaseCareProviderAssignmentID is tagged as invalid.
+func NewPatientCaseCareProviderAssignmentID(id uint64) PatientCaseCareProviderAssignmentID {
+	return PatientCaseCareProviderAssignmentID{
+		ObjectID: encoding.ObjectID{
+			Uint64Value: id,
+			IsValid:     id != 0,
+		},
+	}
+}
+
+// PatientCaseCareProviderAssignmentID is the ID for a patient_case_provider object
+type PatientCaseCareProviderAssignmentID struct {
+	encoding.ObjectID
+}
+
+// String implements fmt.Stringer
+func (id PatientCaseCareProviderAssignmentID) String() string {
+	return strconv.FormatUint(id.Uint64(), 10)
+}
+
+// PatientCaseCareProviderAssignment represents a patient_case_care_provider_assignment record
+type PatientCaseCareProviderAssignment struct {
+	ID            PatientCaseCareProviderAssignmentID
+	PatientCaseID int64
+	ProviderID    int64
+	RoleTypeID    int64
+	CreationDate  time.Time
+	Status        string
+	Expires       *time.Time
+}
+
+// NewCareProviderStateElligibilityID returns a new CareProviderStateElligibilityID using the provided value. If id is 0
+// then the returned PatientCaseCareProviderAssignmentID is tagged as invalid.
+func NewCareProviderStateElligibilityID(id uint64) CareProviderStateElligibilityID {
+	return CareProviderStateElligibilityID{
+		ObjectID: encoding.ObjectID{
+			Uint64Value: id,
+			IsValid:     id != 0,
+		},
+	}
+}
+
+// CareProviderStateElligibilityID is the ID for a care_provider_state_elligibility object
+type CareProviderStateElligibilityID struct {
+	encoding.ObjectID
+}
+
+// CareProviderStateElligibility is the data contained in a care_provider_state_elligibility record
+type CareProviderStateElligibility struct {
+	ID                   CareProviderStateElligibilityID
+	RoleTypeID           int64
+	ProviderID           int64
+	CaseProvidingStateID int64
+	Notify               bool
+	Unavailable  bool
+}
+
+// PatientCaseCareProviderAssignmentUpdate represents the mutable aspects of a patient_case_care_provider_assignment
+type PatientCaseCareProviderAssignmentUpdate struct {
+	Status *string
 }
 
 type CareProviderAssignment struct {

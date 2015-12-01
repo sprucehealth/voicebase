@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/transactional/tsql"
 )
 
 func (d *dataService) TreatmentPlanScheduledMessage(id int64) (*common.TreatmentPlanScheduledMessage, error) {
@@ -76,7 +77,7 @@ func (d *dataService) CreateTreatmentPlanScheduledMessage(msg *common.TreatmentP
 	return id, tx.Commit()
 }
 
-func (d *dataService) createTreatmentPlanScheduledMessage(tx *sql.Tx, tbl, claimerType string, id int64, msg *common.TreatmentPlanScheduledMessage) (int64, error) {
+func (d *dataService) createTreatmentPlanScheduledMessage(tx tsql.Tx, tbl, claimerType string, id int64, msg *common.TreatmentPlanScheduledMessage) (int64, error) {
 	if msg.TreatmentPlanID <= 0 {
 		return 0, errors.New("missing TreatmentPlanID")
 	}
@@ -221,7 +222,7 @@ func (d *dataService) DeleteTreatmentPlanScheduledMessage(treatmentPlanID, messa
 	return tx.Commit()
 }
 
-func (d *dataService) deleteTreatmentPlanScheduledMessage(tx *sql.Tx, tbl, claimerType string, treatmentPlanID, messageID int64) error {
+func (d *dataService) deleteTreatmentPlanScheduledMessage(tx tsql.Tx, tbl, claimerType string, treatmentPlanID, messageID int64) error {
 	var smID *int64
 	if tbl != "dr_favorite_treatment_plan" {
 		if err := tx.QueryRow(
@@ -425,7 +426,7 @@ func (d *dataService) DeleteFavoriteTreatmentPlanScheduledMessages(ftpID int64) 
 	return tx.Commit()
 }
 
-func deleteFavoriteTreatmentPlanScheduledMessages(tx *sql.Tx, ftpID int64) error {
+func deleteFavoriteTreatmentPlanScheduledMessages(tx tsql.Tx, ftpID int64) error {
 	rows, err := tx.Query(`
 		SELECT id
 		FROM dr_favorite_treatment_plan_scheduled_message

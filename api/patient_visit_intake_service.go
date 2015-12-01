@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/transactional/tsql"
 )
 
 func (d *dataService) AnswersForQuestions(questionIDs []int64, info IntakeInfo) (answerIntakes map[int64][]common.Answer, err error) {
@@ -315,7 +316,7 @@ func (d *dataService) PatientPhotoSectionsForQuestionIDs(
 	return photoSectionsByQuestion, nil
 }
 
-func (d *dataService) storeAnswers(tx *sql.Tx, infos []IntakeInfo) error {
+func (d *dataService) storeAnswers(tx tsql.Tx, infos []IntakeInfo) error {
 
 	// optimization: keep track of the different variations
 	// of the prepared statements so as to ensure to create
@@ -491,7 +492,7 @@ func insertAnswer(stmt *sql.Stmt, info IntakeInfo, answerToStore *common.AnswerI
 }
 
 func insertAnswersForSubQuestions(
-	tx *sql.Tx,
+	tx tsql.Tx,
 	info IntakeInfo,
 	answersToStore []*common.AnswerIntake,
 	parentInfoIntakeID, parentQuestionID int64) error {

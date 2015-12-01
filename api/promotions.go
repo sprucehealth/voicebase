@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/transactional/tsql"
 )
 
 const (
@@ -752,7 +753,7 @@ func (d *dataService) UpdateReferralProgram(accountID int64, codeID int64, data 
 	return nil
 }
 
-func createPromotion(tx *sql.Tx, promotion *common.Promotion) (int64, error) {
+func createPromotion(tx tsql.Tx, promotion *common.Promotion) (int64, error) {
 	// create promotion code entry
 	res, err := tx.Exec(`INSERT INTO promotion_code (code, is_referral) values (?,?)`, promotion.Code, false)
 	if err != nil {

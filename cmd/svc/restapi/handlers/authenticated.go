@@ -14,6 +14,7 @@ type isAuthenticatedHandler struct {
 	authAPI api.AuthAPI
 }
 
+// NewIsAuthenticatedHandler returns an initialized instance of isAuthenticatedHandler
 func NewIsAuthenticatedHandler(authAPI api.AuthAPI) httputil.ContextHandler {
 	return httputil.SupportedMethods(apiservice.NoAuthorizationRequired(
 		&isAuthenticatedHandler{

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/sprucehealth/backend/libs/dbutil"
+	"github.com/sprucehealth/backend/libs/transactional/tsql"
 
 	"github.com/sprucehealth/backend/common"
 )
@@ -146,7 +147,7 @@ func (d *dataService) ReplaceResourceGuides(sections []*common.ResourceGuideSect
 		return err
 	}
 
-	err = func(tx *sql.Tx) error {
+	err = func(tx tsql.Tx) error {
 		if _, err := tx.Exec(`DELETE FROM resource_guide`); err != nil {
 			return err
 		}

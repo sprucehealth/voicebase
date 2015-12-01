@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/transactional/tsql"
 )
 
 func (d *dataService) RegisterProvider(provider *common.Doctor, role string) (int64, error) {
@@ -533,7 +534,7 @@ func (d *dataService) UpdateDoctorQueue(updates []*DoctorQueueUpdate) error {
 	return tx.Commit()
 }
 
-func updateDoctorQueue(tx *sql.Tx, updates []*DoctorQueueUpdate) error {
+func updateDoctorQueue(tx tsql.Tx, updates []*DoctorQueueUpdate) error {
 	for _, update := range updates {
 		switch update.Action {
 		case DQActionInsert:
@@ -556,7 +557,7 @@ func updateDoctorQueue(tx *sql.Tx, updates []*DoctorQueueUpdate) error {
 	return nil
 }
 
-func deleteItemFromDoctorQueue(tx *sql.Tx, doctorQueueItem *DoctorQueueItem) error {
+func deleteItemFromDoctorQueue(tx tsql.Tx, doctorQueueItem *DoctorQueueItem) error {
 	var err error
 	if doctorQueueItem.QueueType == DQTUnclaimedQueue {
 		_, err = tx.Exec(`
@@ -580,7 +581,7 @@ func deleteItemFromDoctorQueue(tx *sql.Tx, doctorQueueItem *DoctorQueueItem) err
 	return err
 }
 
-func insertItemIntoDoctorQueue(tx *sql.Tx, dqi *DoctorQueueItem, dedupe bool) error {
+func insertItemIntoDoctorQueue(tx tsql.Tx, dqi *DoctorQueueItem, dedupe bool) error {
 	if err := dqi.Validate(); err != nil {
 		return err
 	}
@@ -610,7 +611,7 @@ func insertItemIntoDoctorQueue(tx *sql.Tx, dqi *DoctorQueueItem, dedupe bool) er
 	return err
 }
 
-func replaceItemInDoctorQueue(tx *sql.Tx, dqi *DoctorQueueItem, currentState string) error {
+func replaceItemInDoctorQueue(tx tsql.Tx, dqi *DoctorQueueItem, currentState string) error {
 	// check if there is an item to replace. If not, then do nothing.
 	var id int64
 	if err := tx.QueryRow(`
@@ -1396,7 +1397,7 @@ func (d *dataService) AddResourceGuidesToTreatmentPlan(tpID int64, guideIDs []in
 	return errors.Trace(tx.Commit())
 }
 
-func addResourceGuidesToTreatmentPlan(tx *sql.Tx, tpID int64, guideIDs []int64) error {
+func addResourceGuidesToTreatmentPlan(tx tsql.Tx, tpID int64, guideIDs []int64) error {
 	// TODO: optimize this into a single query. not critical though since
 	// the number of queries should be very low (1 or 2 maybe)
 	stmt, err := tx.Prepare(`
@@ -1540,4 +1541,24 @@ func (d *dataService) UpsertPracticeModelInAllStates(doctorID int64, aspmu *comm
 	}
 	aff, err := res.RowsAffected()
 	return aff, errors.Trace(err)
+}
+
+func (d *dataService) DoctorIDsEligibleInState(careProvidingStateID int64) ([]int64, error) {
+	rows, err := d.db.Query(
+		`SELECT provider_id FROM care_provider_state_elligibility
+		WHERE care_providing_state_id = ?`, careProvidingStateID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var ids []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, errors.Trace(err)
+		}
+		ids = append(ids, id)
+	}
+	return ids, errors.Trace(rows.Err())
 }
