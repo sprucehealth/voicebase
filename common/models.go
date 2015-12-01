@@ -52,7 +52,7 @@ type PhoneNumberType string
 
 const (
 	// PNTCell represents a cell phone number
-    PNTCell PhoneNumberType = "CELL"
+	PNTCell PhoneNumberType = "CELL"
 
 	// PNTWork represents a work phone number
 	PNTWork PhoneNumberType = "WORK"
@@ -349,7 +349,7 @@ type CareProviderStateElligibility struct {
 	ProviderID           int64
 	CaseProvidingStateID int64
 	Notify               bool
-	Unavailable  bool
+	Unavailable          bool
 }
 
 // PatientCaseCareProviderAssignmentUpdate represents the mutable aspects of a patient_case_care_provider_assignment

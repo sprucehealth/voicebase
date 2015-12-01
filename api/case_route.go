@@ -719,4 +719,3 @@ func (d *dataService) LastNotifiedTimeForCareProvidingState(careProvidingStateID
 	}
 	return lastNotifiedTime, err
 }
-
