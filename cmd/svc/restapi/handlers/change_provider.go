@@ -38,8 +38,9 @@ type changeProviderPOSTRequest struct {
 // NewChangeProviderHandler returns an initialized instance of changeProviderHandler
 func NewChangeProviderHandler(svc changeProviderService) httputil.ContextHandler {
 	return httputil.SupportedMethods(
-		apiservice.SupportedRoles(
-			&changeProviderHandler{svc: svc}, api.RoleCC), httputil.Post, httputil.Get)
+		apiservice.NoAuthorizationRequired(
+			apiservice.SupportedRoles(
+				&changeProviderHandler{svc: svc}, api.RoleCC)), httputil.Post, httputil.Get)
 }
 
 func (h *changeProviderHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
