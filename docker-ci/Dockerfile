@@ -1,6 +1,6 @@
 FROM ubuntu:latest
 MAINTAINER Spruce Backend <backend@sprucehealth.com>
-RUN apt-get update # September 14, 2015
+RUN apt-get update # December 4, 2015
 RUN apt-get -y upgrade
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y install mysql-client-5.6 mysql-server-5.6 postgresql-9.3 \
 	ruby unzip zip curl libelf1 git python-pip python-magic python-dateutil tmux memcached
@@ -10,7 +10,7 @@ ADD https://carefront-packages.s3.amazonaws.com/flow-linux64-v0.18.1.zip /usr/lo
 RUN cd /usr/local ; unzip flow.zip ; ln -s /usr/local/flow/flow /usr/local/bin/flow
 RUN cd /usr/local && \
 	rm -rf go && \
-	curl -s https://storage.googleapis.com/golang/go1.5.1.linux-amd64.tar.gz | tar -zxf - && \
+	curl -s https://storage.googleapis.com/golang/go1.5.2.linux-amd64.tar.gz | tar -zxf - && \
 	ln -s /usr/local/go/bin/go /usr/local/bin/go
 ADD https://dl.bintray.com/mitchellh/consul/0.5.2_linux_amd64.zip /usr/local/bin/
 RUN cd /usr/local/bin ; unzip 0.5.2_linux_amd64.zip
