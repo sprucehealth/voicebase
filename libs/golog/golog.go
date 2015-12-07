@@ -32,7 +32,7 @@ type Logger interface {
 	// L returns true if the current level is greater than or equal to 'l'
 	L(l Level) bool
 
-	SetHandler(h Handler)
+	SetHandler(h Handler) Handler
 	Handler() Handler
 
 	LogDepthf(calldepth int, l Level, format string, args ...interface{})
@@ -128,8 +128,8 @@ func init() {
 		fmtHigh = TerminalFormatter()
 	}
 
-	DefaultHandler = SplitHandler(WARN, WriterHandler(os.Stdout, fmtLow), WriterHandler(os.Stderr, fmtHigh))
-	defaultL = newLogger(nil, DefaultHandler, INFO, nil)
+	h := SplitHandler(WARN, WriterHandler(os.Stdout, fmtLow), WriterHandler(os.Stderr, fmtHigh))
+	defaultL = newLogger(nil, h, INFO, nil)
 }
 
 func newLogger(ctx []interface{}, hnd Handler, lvl Level, stats *Stats) *logger {
@@ -145,15 +145,12 @@ func newLogger(ctx []interface{}, hnd Handler, lvl Level, stats *Stats) *logger 
 	return l
 }
 
-// DefaultHandler is the default log handler.
-var DefaultHandler Handler
-
 // Default returns the default logger.
 func Default() Logger {
 	return defaultL
 }
 
-// SetLevel sets the level for the logger
+// SetLevel sets the level for the logger and returns the old level.
 func (l *logger) SetLevel(lvl Level) Level {
 	return Level(atomic.SwapInt32((*int32)(&l.lvl), int32(lvl)))
 }
@@ -163,11 +160,13 @@ func (l *logger) Level() Level {
 	return Level(atomic.LoadInt32((*int32)(&l.lvl)))
 }
 
-// SetHandler sets the handler for the logger
-func (l *logger) SetHandler(h Handler) {
+// SetHandler sets the handler for the logger and returns the old handler.
+func (l *logger) SetHandler(h Handler) Handler {
 	l.mu.Lock()
+	oldH := l.hnd
 	l.hnd = h
 	l.mu.Unlock()
+	return oldH
 }
 
 // Handler returns the logger's current handler
