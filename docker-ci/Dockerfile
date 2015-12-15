@@ -12,12 +12,14 @@ RUN cd /usr/local && \
 	rm -rf go && \
 	curl -s https://storage.googleapis.com/golang/go1.5.2.linux-amd64.tar.gz | tar -zxf - && \
 	ln -s /usr/local/go/bin/go /usr/local/bin/go
-ADD https://dl.bintray.com/mitchellh/consul/0.5.2_linux_amd64.zip /usr/local/bin/
-RUN cd /usr/local/bin ; unzip 0.5.2_linux_amd64.zip
+RUN curl -o /usr/local/bin/consul.zip https://releases.hashicorp.com/consul/0.6.0/consul_0.6.0_linux_amd64.zip && \
+	cd /usr/local/bin && \
+	unzip consul.zip && \
+	rm consul.zip
 RUN cd /usr/local && \
-	curl -s http://carefront-packages.s3.amazonaws.com/node-v4.1.2-linux-x64.tar.gz | tar -zxf - && \
-	ln -s /usr/local/node-v4.1.2-linux-x64/bin/node /usr/local/bin/node && \
-	ln -s /usr/local/node-v4.1.2-linux-x64/bin/npm /usr/local/bin/npm
+	curl -s http://carefront-packages.s3.amazonaws.com/node-v5.2.0-linux-x64.tar.gz | tar -zxf - && \
+	ln -s /usr/local/node-v5.2.0-linux-x64/bin/node /usr/local/bin/node && \
+	ln -s /usr/local/node-v5.2.0-linux-x64/bin/npm /usr/local/bin/npm
 COPY ./my.cnf /etc/mysql/my.cnf
 COPY ./start.sh /start.sh
 COPY ./run.sh /run.sh
