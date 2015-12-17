@@ -151,6 +151,8 @@ func serve(conf *mainConfig, chand httputil.ContextHandler) {
 			log.Fatal(err)
 		}
 
+		conn = tcpKeepAliveListener{conn.(*net.TCPListener)}
+
 		if conf.ProxyProtocol {
 			conn = &proxyproto.Listener{Listener: conn}
 		}
@@ -163,4 +165,22 @@ func serve(conf *mainConfig, chand httputil.ContextHandler) {
 
 	golog.Infof("Starting server on %s...", conf.ListenAddr)
 	log.Fatal(server.ListenAndServe())
+}
+
+// tcpKeepAliveListener sets TCP keep-alive timeouts on accepted
+// connections. It's used by ListenAndServe and ListenAndServeTLS so
+// dead TCP connections (e.g. closing laptop mid-download) eventually
+// go away. (borrowed from net/http)
+type tcpKeepAliveListener struct {
+	*net.TCPListener
+}
+
+func (ln tcpKeepAliveListener) Accept() (net.Conn, error) {
+	tc, err := ln.AcceptTCP()
+	if err != nil {
+		return nil, err
+	}
+	tc.SetKeepAlive(true)
+	tc.SetKeepAlivePeriod(3 * time.Minute)
+	return tc, nil
 }
