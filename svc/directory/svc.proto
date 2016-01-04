@@ -1,0 +1,178 @@
+syntax = "proto3";
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = true;
+
+package directory;
+
+enum EntityType {
+  ORGANIZATION = 0;
+  INTERNAL = 1;
+  EXTERNAL = 2;
+}
+
+enum EntityInformation {
+  MEMBERSHIPS = 0;
+  MEMBERS = 1;
+  CONTACTS = 2;
+  EXTERNAL_IDS = 3;
+}
+
+message Entity {
+  string id = 1 [(gogoproto.customname) = "ID"];
+  string name = 2;
+
+  EntityType type = 3;
+  repeated Entity memberships = 4;
+  repeated Entity members = 5;
+  repeated string external_ids = 6 [(gogoproto.customname) = "ExternalIDs"];
+  repeated Contact contacts = 7;
+  repeated EntityInformation included_information = 8;
+}
+
+message RequestedInformation {
+  int64 depth = 1;
+  repeated EntityInformation entity_information = 2;
+}
+
+message LookupEntitiesRequest {
+  enum LookupKeyType {
+    ENTITY_ID = 0;
+    EXTERNAL_ID = 1;
+  }
+
+  LookupKeyType lookup_key_type = 1;
+  oneof lookup_key_oneof {
+    string entity_id = 2 [(gogoproto.customname) = "EntityID"];
+    string external_id = 3 [(gogoproto.customname) = "ExternalID"];
+  }
+  
+  RequestedInformation requested_information = 4;
+}
+
+message LookupEntitiesResponse {
+  bool success = 1;
+
+  message Failure {
+      enum Reason {
+        NOT_FOUND = 0;
+      }
+      Reason reason = 1;
+      string message = 2;
+  }
+  Failure failure = 2;
+
+  repeated Entity entities = 3;
+}
+
+message CreateEntityRequest {
+  string     name = 1;
+  EntityType type = 2;
+  string     external_id = 3 [(gogoproto.customname) = "ExternalID"];
+  string     initial_membership_entity_id = 4 [(gogoproto.customname) = "InitialMembershipEntityID"];
+  repeated   Contact contacts = 5;
+  RequestedInformation requested_information = 6;
+}
+
+message CreateEntityResponse {
+  bool success = 1;
+
+  message Failure {
+      enum Reason {
+        INVALID_DUPLICATION = 0;
+        NOT_FOUND = 1;
+        INVALID_INPUT = 2;
+      }
+      Reason reason = 1;
+      string message = 2;
+  }
+  Failure failure = 2;
+
+  Entity entity = 3;
+}
+
+message CreateMembershipRequest {
+  string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+  string target_entity_id = 2 [(gogoproto.customname) = "TargetEntityID"];
+  RequestedInformation requested_information = 3;
+}
+
+message CreateMembershipResponse {
+  bool success = 1;
+
+  message Failure {
+      enum Reason {
+        NOT_FOUND = 0;
+      }
+      Reason reason = 1;
+      string message = 2;
+  }
+  Failure failure = 2;
+
+  Entity entity = 3;
+}
+
+enum ContactType {
+  PHONE = 0;
+  EMAIL = 1;
+}
+
+message Contact {
+  ContactType contact_type = 1;
+  string value = 2;
+  bool provisioned = 3;
+}
+
+message LookupEntitiesByContactRequest {
+  string contact_value = 1;
+  RequestedInformation requested_information = 4;
+}
+
+message LookupEntitiesByContactResponse {
+  bool success = 1;
+
+  message Failure {
+      enum Reason {
+        NOT_FOUND = 0;
+      }
+      Reason reason = 1;
+      string message = 2;
+  }
+  Failure failure = 2;
+
+  repeated Entity entities = 3;
+}
+
+message CreateContactRequest {
+  Contact contact = 1;
+  string entity_id = 2 [(gogoproto.customname) = "EntityID"];
+  RequestedInformation requested_information = 3;
+}
+
+message CreateContactResponse {
+  bool success = 1;
+
+  message Failure {
+      enum Reason {
+        INVALID_DUPLICATION = 0;
+        NOT_FOUND = 1;
+        INVALID_INPUT = 2;
+      }
+      Reason reason = 1;
+      string message = 2;
+  }
+  Failure failure = 2;
+
+  Entity entity = 3;
+}
+
+service Directory {
+  rpc LookupEntities (LookupEntitiesRequest) returns (LookupEntitiesResponse);
+  rpc CreateEntity (CreateEntityRequest) returns (CreateEntityResponse);
+  rpc CreateMembership (CreateMembershipRequest) returns (CreateMembershipResponse);
+  rpc LookupEntitiesByContact (LookupEntitiesByContactRequest) returns (LookupEntitiesByContactResponse);
+  rpc CreateContact (CreateContactRequest) returns (CreateContactResponse);
+}

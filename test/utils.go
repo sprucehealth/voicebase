@@ -30,6 +30,20 @@ func Equals(t testing.TB, exp, act interface{}) {
 	}
 }
 
+// AssertNil fails the test if the provided value is not nil
+func AssertNil(t testing.TB, e interface{}) {
+	if !reflect.ValueOf(e).IsNil() {
+		t.Fatalf("["+CallerString(1)+"]\nExpected a nil value but got %+v", e)
+	}
+}
+
+// AssertNotNil fails the test if the provided value is nil
+func AssertNotNil(t testing.TB, e interface{}) {
+	if reflect.ValueOf(e).IsNil() {
+		t.Fatalf("["+CallerString(1)+"]\nExpected a non nil value but got %+v", e)
+	}
+}
+
 // HTTPResponseCode fails the test if the response code does not match. Upon failure it
 // will output the response body for easier debugging.
 func HTTPResponseCode(t testing.TB, exp int, res *httptest.ResponseRecorder) {

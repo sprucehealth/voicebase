@@ -1,0 +1,161 @@
+syntax = "proto3";
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = true;
+
+package auth;
+
+// Account represents the data associated with an account
+message Account {
+  string id = 1 [(gogoproto.customname) = "ID"];
+  string first_name = 2;
+  string last_name = 3;
+}
+
+// An AuthToken represents the token value and metadata about the token
+message AuthToken {
+  string value = 1;
+  uint64 expiration_epoch = 2;
+}
+
+// AuthenticateLoginRequest represents the information that is used to authenticate a users login.
+// The token_attributes map is used when generating the auth token for this login. Future use of this token
+//  must provide the same information.
+message AuthenticateLoginRequest {
+  string email = 1;
+  string password = 2;
+  map<string, string> token_attributes = 3;
+}
+
+// AuthenticateLoginResponse represents the information that is returned from AuthenticateLoginRequest
+// In the event that requires_two_factor_auth is set to true, the provided token will only work for a short time and to make the 2FA call
+// While the expiration is encoded within the token, it is provided in the response for the caller to consume if they choose.
+message AuthenticateLoginResponse {
+  bool success = 1;
+  
+  message Failure {
+      enum Reason {
+        UNKNOWN_EMAIL = 0;
+        PASSWORD_MISMATCH = 1;
+      }
+      Reason reason = 1;
+      string message = 2;
+  }
+  Failure failure = 2;
+  
+  
+  AuthToken token = 3;
+  Account account = 4;
+}
+
+// CheckAuthenticationRequest checks if the provided token maps to an account and is still valid
+// The refresh parameter indicates if a new token should be created with an extended expiration
+message CheckAuthenticationRequest {
+  string token = 1;
+  map<string, string> token_attributes = 2;
+  bool refresh = 3;
+}
+
+// CheckAuthenticationResponse represents the information that is returned from IsAuthenticatedRequest
+// If a refresh was requested then a new token will be returned
+message CheckAuthenticationResponse {
+  bool success = 1;
+  
+  message Failure {
+      enum Reason {
+        NOT_FOUND = 0;
+      }
+      Reason reason = 1;
+      string message = 2;
+  }
+  Failure failure = 2;
+ 
+  bool is_authenticated = 3;
+  Account account = 4;
+  AuthToken token = 5;
+}
+
+// CreateAccountRequest represents the information that is expected in account creation requests
+// The email and optional? phone number are set as the primary for the account
+message CreateAccountRequest {
+  string first_name = 1;
+  string last_name = 2;
+  string email = 3;
+  string phone_number = 4;
+  string password = 5;
+  map<string, string> token_attributes = 6;
+}
+
+// CreateAccountResponse represents the information that is returned from CreateAccountRequest
+// The account id and innter auth information is returned from account creation
+message CreateAccountResponse {
+ bool success = 1;
+  
+  message Failure {
+      enum Reason {
+        EMAIL_ALREADY_EXISTS = 0;
+        EMAIL_NOT_VALID = 1;
+        PHONE_NUMBER_NOT_VALID = 2;
+        INVALID_INPUT = 3;
+      }
+      Reason reason = 1;
+      string message = 2;
+  }
+  Failure failure = 2;
+  
+  AuthToken token = 3;
+  Account account = 4;
+}
+
+// GetAccountRequest represents the information required to request a users account information
+message GetAccountRequest {
+  string account_id = 1 [(gogoproto.customname) = "AccountID"];
+}
+
+// GetAccountResponse represents the information returned from a GetAccount request
+message GetAccountResponse {
+  bool success = 1;
+  
+  message Failure {
+      enum Reason {
+        NOT_FOUND = 0;
+      }
+      Reason reason = 1;
+      string message = 2;
+  }
+  Failure failure = 2;
+  
+  Account account = 3;
+}
+
+// UnauthenticateRequest represents the information required to tombstone a token
+message UnauthenticateRequest {
+  string token = 1;
+  map<string, string> token_attributes = 2;
+}
+
+// UnauthenticateResponse represents the information returned from an Unauthenticate request
+message UnauthenticateResponse {
+  bool success = 1;
+  
+  message Failure {
+      enum Reason {
+        NOT_FOUND = 0;
+      }
+      Reason reason = 1;
+      string message = 2;
+  }
+  Failure failure = 2;
+}
+
+// Auth provides mechanisms for other services to perform authentication of external entities interacting with them
+service Auth {
+  rpc AuthenticateLogin (AuthenticateLoginRequest) returns (AuthenticateLoginResponse);
+  rpc CheckAuthentication (CheckAuthenticationRequest) returns (CheckAuthenticationResponse);
+  rpc CreateAccount (CreateAccountRequest) returns (CreateAccountResponse);
+  rpc GetAccount (GetAccountRequest) returns (GetAccountResponse);
+  rpc Unauthenticate (UnauthenticateRequest) returns (UnauthenticateResponse);
+}
