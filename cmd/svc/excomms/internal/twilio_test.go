@@ -157,6 +157,12 @@ func TestIncoming_Organization(t *testing.T) {
 			{
 				ID:   orgID,
 				Type: directory.EntityType_ORGANIZATION,
+				Contacts: []*directory.Contact{
+					{
+						ContactType: directory.ContactType_PHONE,
+						Value:       providerPersonalPhone,
+					},
+				},
 				Members: []*directory.Entity{
 					{
 						ID:   providerID,
@@ -186,6 +192,61 @@ func TestIncoming_Organization(t *testing.T) {
 	}
 	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
 <Response><Dial action="/twilio/process_incoming_call_status" timeout="30" callerId="%s"><Number url="/twilio/provider_call_connected">%s</Number></Dial></Response>`, practicePhoneNumber, providerPersonalPhone)
+
+	if twiml != expected {
+		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
+	}
+}
+
+func TestIncoming_Organization_MultipleContacts(t *testing.T) {
+	orgID := "12345"
+	listedNumber1 := "+14152222222"
+	listedNumber2 := "+14153333333"
+	listedNumber3 := "+14154444444"
+	patientPhone := "+14151111111"
+	practicePhoneNumber := "+14150000000"
+
+	md := &mockDirectoryService_Twilio{
+		entities: []*directory.Entity{
+			{
+				ID:   orgID,
+				Type: directory.EntityType_ORGANIZATION,
+				Contacts: []*directory.Contact{
+					{
+						ContactType: directory.ContactType_PHONE,
+						Value:       practicePhoneNumber,
+						Provisioned: true,
+					},
+					{
+						ContactType: directory.ContactType_PHONE,
+						Value:       listedNumber1,
+					},
+					{
+						ContactType: directory.ContactType_PHONE,
+						Value:       listedNumber2,
+					},
+					{
+						ContactType: directory.ContactType_PHONE,
+						Value:       listedNumber3,
+					},
+				},
+			},
+		},
+	}
+
+	es := NewService("", "", "", nil, "https://test.com", md, nil, "")
+	params := &excomms.TwilioParams{
+		From:    patientPhone,
+		To:      practicePhoneNumber,
+		CallSID: "",
+	}
+
+	twiml, err := processIncomingCall(params, es.(*excommsService))
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<Response><Dial action="/twilio/process_incoming_call_status" timeout="30" callerId="+14150000000"><Number url="/twilio/provider_call_connected">+14152222222</Number><Number url="/twilio/provider_call_connected">+14153333333</Number><Number url="/twilio/provider_call_connected">+14154444444</Number></Dial></Response>`)
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)

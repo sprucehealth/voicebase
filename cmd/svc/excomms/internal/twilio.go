@@ -26,6 +26,7 @@ var (
 		excomms.TwilioEvent_PROCESS_VOICEMAIL:            processVoicemail,
 		excomms.TwilioEvent_PROCESS_OUTGOING_CALL_STATUS: processOutgoingCallStatus,
 	}
+	maxPhoneNumbers = 10
 )
 
 type twilioEventHandleFunc func(*excomms.TwilioParams, *excommsService) (string, error)
@@ -134,17 +135,35 @@ func processIncomingCall(params *excomms.TwilioParams, es *excommsService) (stri
 		return "", errors.Trace(fmt.Errorf("Expected 1 entity for provisioned number, got back %d", len(res.Entities)))
 	}
 
-	// if the entity we got back is an org, look up its members and assume that we are contacting the first entity in the org
-	// TODO: Figure out who best to contact if practice number is reached.
-	var provider *directory.Entity
+	var phoneNumbers []string
 	var organizationID string
 	switch res.Entities[0].Type {
 	case directory.EntityType_ORGANIZATION:
 		organizationID = res.Entities[0].ID
-		provider = res.Entities[0].Members[0]
+		phoneNumbers = make([]string, 0, len(res.Entities[0].Contacts))
+		for _, c := range res.Entities[0].Contacts {
+			if c.Provisioned {
+				continue
+			} else if c.ContactType != directory.ContactType_PHONE {
+				continue
+			}
+
+			phoneNumbers = append(phoneNumbers, c.Value)
+		}
 	case directory.EntityType_INTERNAL:
-		provider = res.Entities[0]
-		for _, m := range provider.Memberships {
+		for _, c := range res.Entities[0].Contacts {
+			if c.Provisioned {
+				continue
+			} else if c.ContactType != directory.ContactType_PHONE {
+				continue
+			}
+			// assuming for now that we are to call the first non-provisioned
+			// phone number mapped to the provider.
+			phoneNumbers = append(phoneNumbers, c.Value)
+			break
+		}
+
+		for _, m := range res.Entities[0].Memberships {
 			if m.Type == directory.EntityType_ORGANIZATION {
 				organizationID = m.ID
 				break
@@ -154,24 +173,22 @@ func processIncomingCall(params *excomms.TwilioParams, es *excommsService) (stri
 		return "", errors.Trace(fmt.Errorf("Unexpected entity type %s", res.Entities[0].Type.String()))
 	}
 
-	// ensure that we have identified a provider and organizationID here
-	if provider == nil {
+	if len(phoneNumbers) == 0 {
 		return "", errors.Trace(fmt.Errorf("Unable to find provider for provisioned number %s", params.To))
 	} else if organizationID == "" {
 		return "", errors.Trace(fmt.Errorf("Unable to find organization for provisioned number %s", params.To))
 	}
 
-	// look for a non provisioned phone number associated with the provider
-	var providerContact *directory.Contact
-	for _, contact := range provider.Contacts {
-		if contact.ContactType == directory.ContactType_PHONE && !contact.Provisioned {
-			providerContact = contact
+	numbers := make([]interface{}, 0, maxPhoneNumbers)
+	for _, p := range phoneNumbers {
+		if len(numbers) == maxPhoneNumbers {
+			golog.Errorf("Org %s is currently configured to simultaneously call more than 10 numbers when that is the maximum that twilio supports.", organizationID)
 			break
 		}
-	}
-
-	if providerContact == nil {
-		return "", errors.Trace(fmt.Errorf("Unable to find contact for provider %s for provisioned number %s", provider.ID, params.To))
+		numbers = append(numbers, &twiml.Number{
+			URL:  "/twilio/provider_call_connected",
+			Text: p,
+		})
 	}
 
 	tw := twiml.NewResponse(
@@ -179,12 +196,7 @@ func processIncomingCall(params *excomms.TwilioParams, es *excommsService) (stri
 			CallerID:         params.To,
 			TimeoutInSeconds: 30,
 			Action:           "/twilio/process_incoming_call_status",
-			Nouns: []interface{}{
-				&twiml.Number{
-					URL:  "/twilio/provider_call_connected",
-					Text: providerContact.Value,
-				},
-			},
+			Nouns:            numbers,
 		},
 	)
 
