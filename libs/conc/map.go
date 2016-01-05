@@ -11,6 +11,9 @@ type Map interface {
 	// Set sets the value for the key.
 	Set(key string, value interface{})
 
+	// Delete delets the value for the key if present.
+	Delete(key string)
+
 	// Snapshot returns a current snapshot of the map
 	// to make it easy to iterate over.
 	Snapshot() map[string]interface{}
@@ -38,6 +41,12 @@ func (c *concurrentMap) Set(key string, value interface{}) {
 	c.mux.Lock()
 	defer c.mux.Unlock()
 	c.cmap[key] = value
+}
+
+func (c *concurrentMap) Delete(key string) {
+	c.mux.Lock()
+	defer c.mux.Unlock()
+	delete(c.cmap, key)
 }
 
 func (c *concurrentMap) Snapshot() map[string]interface{} {

@@ -146,16 +146,16 @@
 			"Rev": "d3235f01ecae4901dd9f7ea6af57a352c0189deb"
 		},
 		{
-			"ImportPath": "github.com/golang/protobuf/proto",
-			"Rev": "02ac84f19cf2febf53ac06e7fbc446c1ea0258e3"
-		},
-		{
 			"ImportPath": "github.com/gorilla/websocket",
 			"Rev": "361d4c0ffd78338ebe0a9e6320cdbe115d7dc026"
 		},
 		{
 			"ImportPath": "github.com/graphql-go/graphql",
 			"Rev": "344abcc936d3a1f4b288c5c4609377861d1649c5"
+		},
+		{
+			"ImportPath": "github.com/google/go-querystring/query",
+			"Rev": "2a60fc2ba6c19de80291203597d752e9ba58e4c0"
 		},
 		{
 			"ImportPath": "github.com/hashicorp/consul/api",
@@ -232,6 +232,11 @@
 		{
 			"ImportPath": "github.com/stathat/stathatgo",
 			"Rev": "169bb01d9f504dabfe2180cecf9c2e4547662edf"
+		},
+		{
+			"ImportPath": "github.com/stretchr/testify/assert",
+			"Comment": "v1.0-51-gf3960ab",
+			"Rev": "f3960ab1f9664ecc4e27c78af27cc9063d745a43"
 		},
 		{
 			"ImportPath": "github.com/subosito/figo",

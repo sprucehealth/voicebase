@@ -614,12 +614,6 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				if err != nil {
 					return nil, internalError(err)
 				}
-				switch pres.Result {
-				case excomms.ProvisionPhoneNumberResponse_SUCCESS:
-				default:
-					return nil, internalError(fmt.Errorf("failed to provision number: %s %s", pres.Result.String(), pres.ErrorMessage))
-				}
-
 				ccres, err := svc.directory.CreateContact(ctx, &directory.CreateContactRequest{
 					Contact: &directory.Contact{
 						ContactType: directory.ContactType_PHONE,
@@ -862,9 +856,9 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				}
 
 				ireq := &excomms.InitiatePhoneCallRequest{
-					FromPhoneNumber:      fromContact.Value,
-					ToPhoneNumber:        toContact.Value,
-					OrganizationEntityID: org.ID,
+					FromPhoneNumber: fromContact.Value,
+					ToPhoneNumber:   toContact.Value,
+					OrganizationID:  org.ID,
 				}
 				switch input["type"].(string) {
 				case callEntityTypeConnectParties:
@@ -875,9 +869,6 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				ires, err := svc.exComms.InitiatePhoneCall(ctx, ireq)
 				if err != nil {
 					return nil, internalError(err)
-				}
-				if ires.Result != excomms.InitiatePhoneCallResponse_SUCCESS {
-					return nil, internalError(fmt.Errorf("failed to initiate call: %s %s", ires.Result.String(), ires.ErrorMessage))
 				}
 
 				return &callEntityOutput{
