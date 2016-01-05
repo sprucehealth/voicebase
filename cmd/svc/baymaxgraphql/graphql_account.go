@@ -43,10 +43,6 @@ var accountType = graphql.NewObject(
 					if err != nil {
 						return nil, internalError(err)
 					}
-					if !res.Success {
-						// Should never fail
-						return nil, internalError(fmt.Errorf("Failed to get account memberships: %s %s", res.Failure.Reason, res.Failure.Message))
-					}
 					var orgs []*organization
 					for _, e := range res.Entities {
 						for _, em := range e.Memberships {

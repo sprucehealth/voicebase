@@ -175,8 +175,6 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			})
 		if err != nil {
 			return errors.Trace(err)
-		} else if !res.Success {
-			return errors.Trace(fmt.Errorf("Unable to create entity. Reason %s. Message %s", res.Failure.Reason.String(), res.Failure.Message))
 		}
 
 		externalEntity = res.Entity
@@ -334,8 +332,6 @@ func lookupEntitiesByContact(ctx context.Context, contactValue string, dir direc
 	)
 	if err != nil {
 		return nil, errors.Trace(err)
-	} else if !res.Success && res.Failure.Reason != directory.LookupEntitiesByContactResponse_Failure_NOT_FOUND {
-		return nil, errors.Trace(fmt.Errorf("Unable to lookup entity by contact. Reason %s. Message %s", res.Failure.Reason.String(), res.Failure.Message))
 	}
 	return res, nil
 }
@@ -343,11 +339,11 @@ func lookupEntitiesByContact(ctx context.Context, contactValue string, dir direc
 func determineOrganizationID(entity *directory.Entity) string {
 	if entity.Type == directory.EntityType_ORGANIZATION {
 		return entity.ID
-	} else {
-		for _, m := range entity.Memberships {
-			if m.Type == directory.EntityType_ORGANIZATION {
-				return m.ID
-			}
+	}
+
+	for _, m := range entity.Memberships {
+		if m.Type == directory.EntityType_ORGANIZATION {
+			return m.ID
 		}
 	}
 

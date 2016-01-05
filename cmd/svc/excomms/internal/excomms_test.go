@@ -74,7 +74,9 @@ type mockDirectory_Excomms struct {
 	directory.DirectoryClient
 	*mock.Expector
 	res        *directory.LookupEntitiesResponse
+	resErr     error
 	contactRes map[string]*directory.LookupEntitiesByContactResponse
+	contactErr map[string]error
 }
 
 func (m *mockDirectory_Excomms) LookupEntities(ctx context.Context, in *directory.LookupEntitiesRequest, opts ...grpc.CallOption) (*directory.LookupEntitiesResponse, error) {
@@ -85,7 +87,7 @@ func (m *mockDirectory_Excomms) LookupEntities(ctx context.Context, in *director
 			m.Record(ctx, in)
 		}
 	}()
-	return m.res, nil
+	return m.res, m.resErr
 }
 func (m *mockDirectory_Excomms) LookupEntitiesByContact(ctx context.Context, in *directory.LookupEntitiesByContactRequest, opts ...grpc.CallOption) (*directory.LookupEntitiesByContactResponse, error) {
 	defer func() {
@@ -95,7 +97,7 @@ func (m *mockDirectory_Excomms) LookupEntitiesByContact(ctx context.Context, in 
 			m.Record(ctx, in)
 		}
 	}()
-	return m.contactRes[in.ContactValue], nil
+	return m.contactRes[in.ContactValue], m.contactErr[in.ContactValue]
 }
 
 func TestSearchAvailablePhoneNumbers(t *testing.T) {
@@ -376,7 +378,6 @@ func TestInitiatePhoneCall(t *testing.T) {
 	md := &mockDirectory_Excomms{
 		Expector: &mock.Expector{T: t},
 		res: &directory.LookupEntitiesResponse{
-			Success: true,
 			Entities: []*directory.Entity{
 				{
 					Type: directory.EntityType_ORGANIZATION,
@@ -385,7 +386,6 @@ func TestInitiatePhoneCall(t *testing.T) {
 		},
 		contactRes: map[string]*directory.LookupEntitiesByContactResponse{
 			"+17348465522": &directory.LookupEntitiesByContactResponse{
-				Success: true,
 				Entities: []*directory.Entity{
 					{
 						Type: directory.EntityType_INTERNAL,
@@ -399,7 +399,6 @@ func TestInitiatePhoneCall(t *testing.T) {
 				},
 			},
 			"+14152222222": &directory.LookupEntitiesByContactResponse{
-				Success: true,
 				Entities: []*directory.Entity{
 					{
 						Type: directory.EntityType_EXTERNAL,
@@ -491,12 +490,7 @@ func TestInitiatePhoneCall_ConnectCallers(t *testing.T) {
 func TestInitiatePhoneCall_OrgNotFound(t *testing.T) {
 	md := &mockDirectory_Excomms{
 		Expector: &mock.Expector{T: t},
-		res: &directory.LookupEntitiesResponse{
-			Success: false,
-			Failure: &directory.LookupEntitiesResponse_Failure{
-				Reason: directory.LookupEntitiesResponse_Failure_NOT_FOUND,
-			},
-		},
+		resErr:   grpc.Errorf(codes.NotFound, "Not Found"),
 	}
 
 	md.Expect(mock.NewExpectation(md.LookupEntities, context.Background(), &directory.LookupEntitiesRequest{
@@ -533,20 +527,14 @@ func TestInitiatePhoneCall_InvalidCaller(t *testing.T) {
 	md := &mockDirectory_Excomms{
 		Expector: &mock.Expector{T: t},
 		res: &directory.LookupEntitiesResponse{
-			Success: true,
 			Entities: []*directory.Entity{
 				{
 					Type: directory.EntityType_ORGANIZATION,
 				},
 			},
 		},
-		contactRes: map[string]*directory.LookupEntitiesByContactResponse{
-			"+17348465522": &directory.LookupEntitiesByContactResponse{
-				Success: false,
-				Failure: &directory.LookupEntitiesByContactResponse_Failure{
-					Reason: directory.LookupEntitiesByContactResponse_Failure_NOT_FOUND,
-				},
-			},
+		contactErr: map[string]error{
+			"+17348465522": grpc.Errorf(codes.NotFound, "Not Found"),
 		},
 	}
 
@@ -591,7 +579,6 @@ func TestInitiatePhoneCall_InvalidCallee(t *testing.T) {
 	md := &mockDirectory_Excomms{
 		Expector: &mock.Expector{T: t},
 		res: &directory.LookupEntitiesResponse{
-			Success: true,
 			Entities: []*directory.Entity{
 				{
 					Type: directory.EntityType_ORGANIZATION,
@@ -600,7 +587,6 @@ func TestInitiatePhoneCall_InvalidCallee(t *testing.T) {
 		},
 		contactRes: map[string]*directory.LookupEntitiesByContactResponse{
 			"+17348465522": &directory.LookupEntitiesByContactResponse{
-				Success: true,
 				Entities: []*directory.Entity{
 					{
 						Type: directory.EntityType_INTERNAL,
@@ -613,12 +599,9 @@ func TestInitiatePhoneCall_InvalidCallee(t *testing.T) {
 					},
 				},
 			},
-			"+14152222222": &directory.LookupEntitiesByContactResponse{
-				Success: false,
-				Failure: &directory.LookupEntitiesByContactResponse_Failure{
-					Reason: directory.LookupEntitiesByContactResponse_Failure_NOT_FOUND,
-				},
-			},
+		},
+		contactErr: map[string]error{
+			"+14152222222": grpc.Errorf(codes.NotFound, "Not Found"),
 		},
 	}
 

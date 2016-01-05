@@ -7,6 +7,8 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 type service struct {
@@ -33,15 +35,12 @@ func (s *service) entityForAccountID(ctx context.Context, orgID, accountID strin
 				},
 			},
 		})
-	if err != nil {
+	if grpc.Code(err) == codes.NotFound {
+		return nil, nil
+	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
-	if !res.Success {
-		if res.Failure.Reason == directory.LookupEntitiesResponse_Failure_NOT_FOUND {
-			return nil, nil
-		}
-		return nil, errors.Trace(err)
-	}
+
 	for _, e := range res.Entities {
 		for _, e2 := range e.GetMemberships() {
 			if e2.Type == directory.EntityType_ORGANIZATION && e2.ID == orgID {
@@ -69,13 +68,9 @@ func (s *service) entity(ctx context.Context, entityID string) (*directory.Entit
 				},
 			},
 		})
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-	if !res.Success {
-		if res.Failure.Reason == directory.LookupEntitiesResponse_Failure_NOT_FOUND {
-			return nil, nil
-		}
+	if grpc.Code(err) == codes.NotFound {
+		return nil, nil
+	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
 	for _, e := range res.Entities {

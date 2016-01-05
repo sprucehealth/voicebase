@@ -200,10 +200,10 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 				EntityID: in.OrganizationID,
 			},
 		})
-	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, err.Error())
-	} else if !lookupEntitiesRes.Success && lookupEntitiesRes.Failure.Reason == directory.LookupEntitiesResponse_Failure_NOT_FOUND {
+	if grpc.Code(err) == codes.NotFound {
 		return nil, grpc.Errorf(codes.NotFound, "organization with id %s not found", in.OrganizationID)
+	} else if err != nil {
+		return nil, grpc.Errorf(codes.Internal, err.Error())
 	} else if len(lookupEntitiesRes.Entities) != 1 {
 		return nil, grpc.Errorf(codes.Internal, "organization with id %s not found", "Expected 1 org entity buy got back %d", len(lookupEntitiesRes.Entities))
 	}
@@ -219,10 +219,10 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
 			},
 		})
-	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, err.Error())
-	} else if !lookupByContacRes.Success && lookupByContacRes.Failure.Reason == directory.LookupEntitiesByContactResponse_Failure_NOT_FOUND {
+	if grpc.Code(err) == codes.NotFound {
 		return nil, grpc.Errorf(codes.NotFound, "caller %s not found", in.FromPhoneNumber)
+	} else if err != nil {
+		return nil, grpc.Errorf(codes.Internal, err.Error())
 	}
 
 	for _, entity := range lookupByContacRes.Entities {
@@ -250,10 +250,10 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 				Depth:             1,
 				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
 			}})
-	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, err.Error())
-	} else if !lookupByContacRes.Success && lookupByContacRes.Failure.Reason == directory.LookupEntitiesByContactResponse_Failure_NOT_FOUND {
+	if grpc.Code(err) == codes.NotFound {
 		return nil, grpc.Errorf(codes.NotFound, "callee %s not found", in.ToPhoneNumber)
+	} else if err != nil {
+		return nil, grpc.Errorf(codes.Internal, err.Error())
 	}
 
 	golog.Debugf("Destination lookup response: %#v", lookupByContacRes)

@@ -29,7 +29,6 @@ type DAL interface {
 	InsertAuthToken(model *AuthToken) error
 	AuthToken(token string, expiresAfter time.Time) (*AuthToken, error)
 	DeleteAuthTokens(accountID AccountID) (int64, error)
-	DeleteAuthTokensWithSuffix(accountID AccountID, suffix string) (int64, error)
 	DeleteAuthToken(token string) (int64, error)
 	UpdateAuthToken(token string, update *AuthTokenUpdate) (int64, error)
 	InsertAccountEvent(model *AccountEvent) (AccountEventID, error)
@@ -625,25 +624,6 @@ func (d *dal) DeleteAuthTokens(id AccountID) (int64, error) {
 	res, err := d.db.Exec(
 		`DELETE FROM auth_token
           WHERE account_id = ?`, id.Uint64())
-	if err != nil {
-		return 0, errors.Trace(err)
-	}
-
-	aff, err := res.RowsAffected()
-	return aff, errors.Trace(err)
-}
-
-func (d *dal) DeleteAuthTokensWithSuffix(accountID AccountID, suffix string) (int64, error) {
-	golog.Debugf("Entering dal.dal.DeleteAuthTokensWithSuffix: %s", suffix)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.DeleteAuthTokensWithSuffix...") }()
-	}
-	if suffix == "" {
-		return 0, nil
-	}
-	res, err := d.db.Exec(
-		`DELETE FROM auth_token
-          WHERE account_id = ? AND token like '%?'`, suffix)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}

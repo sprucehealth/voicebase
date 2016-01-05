@@ -33,22 +33,9 @@ message AuthenticateLoginRequest {
 // AuthenticateLoginResponse represents the information that is returned from AuthenticateLoginRequest
 // In the event that requires_two_factor_auth is set to true, the provided token will only work for a short time and to make the 2FA call
 // While the expiration is encoded within the token, it is provided in the response for the caller to consume if they choose.
-message AuthenticateLoginResponse {
-  bool success = 1;
-  
-  message Failure {
-      enum Reason {
-        UNKNOWN_EMAIL = 0;
-        PASSWORD_MISMATCH = 1;
-      }
-      Reason reason = 1;
-      string message = 2;
-  }
-  Failure failure = 2;
-  
-  
-  AuthToken token = 3;
-  Account account = 4;
+message AuthenticateLoginResponse {  
+  AuthToken token = 1;
+  Account account = 2;
 }
 
 // CheckAuthenticationRequest checks if the provided token maps to an account and is still valid
@@ -62,20 +49,9 @@ message CheckAuthenticationRequest {
 // CheckAuthenticationResponse represents the information that is returned from IsAuthenticatedRequest
 // If a refresh was requested then a new token will be returned
 message CheckAuthenticationResponse {
-  bool success = 1;
-  
-  message Failure {
-      enum Reason {
-        NOT_FOUND = 0;
-      }
-      Reason reason = 1;
-      string message = 2;
-  }
-  Failure failure = 2;
- 
-  bool is_authenticated = 3;
-  Account account = 4;
-  AuthToken token = 5;
+  bool is_authenticated = 1;
+  Account account = 2;
+  AuthToken token = 3;
 }
 
 // CreateAccountRequest represents the information that is expected in account creation requests
@@ -91,23 +67,9 @@ message CreateAccountRequest {
 
 // CreateAccountResponse represents the information that is returned from CreateAccountRequest
 // The account id and innter auth information is returned from account creation
-message CreateAccountResponse {
- bool success = 1;
-  
-  message Failure {
-      enum Reason {
-        EMAIL_ALREADY_EXISTS = 0;
-        EMAIL_NOT_VALID = 1;
-        PHONE_NUMBER_NOT_VALID = 2;
-        INVALID_INPUT = 3;
-      }
-      Reason reason = 1;
-      string message = 2;
-  }
-  Failure failure = 2;
-  
-  AuthToken token = 3;
-  Account account = 4;
+message CreateAccountResponse {  
+  AuthToken token = 1;
+  Account account = 2;
 }
 
 // GetAccountRequest represents the information required to request a users account information
@@ -117,39 +79,17 @@ message GetAccountRequest {
 
 // GetAccountResponse represents the information returned from a GetAccount request
 message GetAccountResponse {
-  bool success = 1;
-  
-  message Failure {
-      enum Reason {
-        NOT_FOUND = 0;
-      }
-      Reason reason = 1;
-      string message = 2;
-  }
-  Failure failure = 2;
-  
-  Account account = 3;
+  Account account = 1;
 }
 
-// UnauthenticateRequest represents the information required to tombstone a token
+// UnauthenticateRequest represents the information required to tombstone a token 
 message UnauthenticateRequest {
   string token = 1;
   map<string, string> token_attributes = 2;
 }
 
 // UnauthenticateResponse represents the information returned from an Unauthenticate request
-message UnauthenticateResponse {
-  bool success = 1;
-  
-  message Failure {
-      enum Reason {
-        NOT_FOUND = 0;
-      }
-      Reason reason = 1;
-      string message = 2;
-  }
-  Failure failure = 2;
-}
+message UnauthenticateResponse {}
 
 // Auth provides mechanisms for other services to perform authentication of external entities interacting with them
 service Auth {

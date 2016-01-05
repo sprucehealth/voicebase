@@ -146,7 +146,7 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		)
 		if err != nil {
 			golog.Errorf("Failed to check auth token: %s", err)
-		} else if res.Success && res.IsAuthenticated {
+		} else if res.IsAuthenticated {
 			// If token changed then update the cookie
 			if res.Token.Value != c.Value {
 				var expires time.Time

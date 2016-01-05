@@ -15,7 +15,11 @@ import (
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/auth"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
+
+var grpcErrorf = grpc.Errorf
 
 // Server represents the methods required to interact with the auth service
 type Server interface {
@@ -36,7 +40,6 @@ type authDAL interface {
 	InsertAuthToken(model *dal.AuthToken) error
 	AuthToken(token string, expiresAfter time.Time) (*dal.AuthToken, error)
 	DeleteAuthTokens(accountID dal.AccountID) (int64, error)
-	DeleteAuthTokensWithSuffix(accountID dal.AccountID, suffix string) (int64, error)
 	DeleteAuthToken(token string) (int64, error)
 	UpdateAuthToken(token string, update *dal.AuthTokenUpdate) (int64, error)
 	InsertAccountEvent(model *dal.AccountEvent) (dal.AccountEventID, error)
@@ -83,37 +86,24 @@ func (s *server) AuthenticateLogin(ctx context.Context, rd *auth.AuthenticateLog
 	golog.Debugf("Getting account for email %s...", rd.Email)
 	account, err := s.dal.AccountForEmail(rd.Email)
 	if api.IsErrNotFound(err) {
-		return &auth.AuthenticateLoginResponse{
-			Success: false,
-			Failure: &auth.AuthenticateLoginResponse_Failure{
-				Reason:  auth.AuthenticateLoginResponse_Failure_UNKNOWN_EMAIL,
-				Message: fmt.Sprintf("Unknown email: %s", rd.Email),
-			},
-		}, nil
+		return nil, grpcErrorf(auth.EmailNotFound, "Unknown email: %s", rd.Email)
 	} else if err != nil {
-		return nil, errors.Trace(err)
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 	golog.Debugf("Got account %+v", account)
 
 	golog.Debugf("Comparing password with hash...")
 	if err := s.hasher.CompareHashAndPassword(account.Password, []byte(rd.Password)); err != nil {
 		golog.Debugf("Error while comparing password: %s", err)
-		return &auth.AuthenticateLoginResponse{
-			Success: false,
-			Failure: &auth.AuthenticateLoginResponse_Failure{
-				Reason:  auth.AuthenticateLoginResponse_Failure_PASSWORD_MISMATCH,
-				Message: fmt.Sprintf("The password does not match the provided account email %s", rd.Email),
-			},
-		}, nil
+		return nil, grpcErrorf(auth.BadPassword, "The password does not match the provided account email: %s", rd.Email)
 	}
 
 	authToken, err := generateAndInsertToken(s.dal, account.ID, rd.TokenAttributes, s.clk)
 	if err != nil {
-		return nil, errors.Trace(err)
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
 	return &auth.AuthenticateLoginResponse{
-		Success: true,
 		Token: &auth.AuthToken{
 			Value:           authToken.token,
 			ExpirationEpoch: uint64(authToken.expiration.Unix()),
@@ -133,18 +123,17 @@ func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenti
 	}
 	attributedToken, err := appendAttributes(rd.Token, rd.TokenAttributes)
 	if err != nil {
-		return nil, errors.Trace(err)
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
 	golog.Debugf("Checking authentication of token %s", attributedToken)
 	aToken, err := s.dal.AuthToken(attributedToken, s.clk.Now())
 	if api.IsErrNotFound(err) {
 		return &auth.CheckAuthenticationResponse{
-			Success:         true,
 			IsAuthenticated: false,
 		}, nil
 	} else if err != nil {
-		return nil, errors.Trace(err)
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
 	authToken := &auth.AuthToken{
@@ -162,17 +151,16 @@ func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenti
 			_, err = dl.DeleteAuthToken(attributedToken)
 			return errors.Trace(err)
 		}); err != nil {
-			return nil, errors.Trace(err)
+			return nil, grpcErrorf(codes.Internal, err.Error())
 		}
 	}
 
 	golog.Debugf("Getting account %s", aToken.AccountID)
 	account, err := s.dal.Account(aToken.AccountID)
 	if err != nil {
-		return nil, errors.Trace(err)
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 	return &auth.CheckAuthenticationResponse{
-		Success:         true,
 		IsAuthenticated: true,
 		Token:           authToken,
 		Account: &auth.Account{
@@ -189,7 +177,7 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 		defer func() { golog.Debugf("Leaving server.server.CreateAccount...") }()
 	}
 	if errResp := s.validateCreateAccountRequest(rd); errResp != nil {
-		return errResp, nil
+		return nil, errResp
 	}
 
 	var account *dal.Account
@@ -258,11 +246,10 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 		golog.Debugf("Account %+v", account)
 		return errors.Trace(err)
 	}); err != nil {
-		return nil, errors.Trace(err)
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
 	return &auth.CreateAccountResponse{
-		Success: true,
 		Token: &auth.AuthToken{
 			Value:           authToken.token,
 			ExpirationEpoch: uint64(authToken.expiration.Unix()),
@@ -275,7 +262,7 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 	}, nil
 }
 
-func (s *server) validateCreateAccountRequest(rd *auth.CreateAccountRequest) *auth.CreateAccountResponse {
+func (s *server) validateCreateAccountRequest(rd *auth.CreateAccountRequest) error {
 	var invalidInputMessage string
 	if rd.FirstName == "" {
 		invalidInputMessage = "FirstName cannot be empty"
@@ -289,35 +276,17 @@ func (s *server) validateCreateAccountRequest(rd *auth.CreateAccountRequest) *au
 		invalidInputMessage = "Password cannot be empty"
 	}
 	if invalidInputMessage != "" {
-		return &auth.CreateAccountResponse{
-			Success: false,
-			Failure: &auth.CreateAccountResponse_Failure{
-				Reason:  auth.CreateAccountResponse_Failure_INVALID_INPUT,
-				Message: invalidInputMessage,
-			},
-		}
+		return grpcErrorf(codes.InvalidArgument, invalidInputMessage)
 	}
 
 	if !validate.Email(rd.Email) {
-		return &auth.CreateAccountResponse{
-			Success: false,
-			Failure: &auth.CreateAccountResponse_Failure{
-				Reason:  auth.CreateAccountResponse_Failure_EMAIL_NOT_VALID,
-				Message: fmt.Sprintf("The provided email is not valid: %s", rd.Email),
-			},
-		}
+		return grpcErrorf(auth.InvalidEmail, "The provided email is not valid: %s", rd.Email)
 	}
 
 	/*
-		if _, err := common.ParsePhone(rd.PhoneNumber); err != nil {
-			return &auth.CreateAccountResponse{
-				Success: false,
-				Failure: &auth.CreateAccountResponse_Failure{
-					Reason:  auth.CreateAccountResponse_Failure_PHONE_NUMBER_NOT_VALID,
-					Message: fmt.Sprintf("The provided phone number is not valid: %s", rd.PhoneNumber),
-				},
-			}
-		}
+	   if _, err := common.ParsePhone(rd.PhoneNumber); err != nil {
+	       return grpcErrorf(codes.InvalidArgument, "The provided phone number is not valid: %s", rd.PhoneNumber)
+	   }
 	*/
 	return nil
 }
@@ -329,16 +298,9 @@ func (s *server) GetAccount(ctx context.Context, rd *auth.GetAccountRequest) (*a
 	}
 	account, err := s.dal.Account(dal.ParseAccountID(rd.AccountID))
 	if api.IsErrNotFound(err) {
-		return &auth.GetAccountResponse{
-			Success: false,
-			Failure: &auth.GetAccountResponse_Failure{
-				Reason:  auth.GetAccountResponse_Failure_NOT_FOUND,
-				Message: fmt.Sprintf("Account with ID %s not found", rd.AccountID),
-			},
-		}, nil
+		return nil, grpcErrorf(codes.NotFound, "Account with ID %s not found", rd.AccountID)
 	}
 	return &auth.GetAccountResponse{
-		Success: true,
 		Account: &auth.Account{
 			ID:        account.ID.String(),
 			FirstName: account.FirstName,
@@ -354,17 +316,15 @@ func (s *server) Unauthenticate(ctx context.Context, rd *auth.UnauthenticateRequ
 	}
 	tokenWithAttributes, err := appendAttributes(rd.Token, rd.TokenAttributes)
 	if err != nil {
-		return nil, errors.Trace(err)
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 	golog.Debugf("Deleting auth token %s", tokenWithAttributes)
 	if aff, err := s.dal.DeleteAuthToken(tokenWithAttributes); err != nil {
-		return nil, errors.Trace(err)
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	} else if aff != 1 {
-		return nil, errors.Trace(fmt.Errorf("Expected 1 row to be affected but got %d", aff))
+		return nil, grpcErrorf(codes.Internal, "Expected 1 row to be affected but got %d", aff)
 	}
-	return &auth.UnauthenticateResponse{
-		Success: true,
-	}, nil
+	return &auth.UnauthenticateResponse{}, nil
 }
 
 const (
@@ -427,14 +387,5 @@ func generateAndInsertToken(dl dal.DAL, accountID dal.AccountID, tokenAttributes
 		return nil, errors.Trace(err)
 	}
 	golog.Debugf("Auth token inserted")
-
-	golog.Debugf("Deleting old attributed tokens for this account")
-	attributes, err := appendAttributes("", tokenAttributes)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-	if _, err := dl.DeleteAuthTokensWithSuffix(accountID, attributes); err != nil {
-		return nil, errors.Trace(err)
-	}
 	return &authToken{token: token, expiration: tokenExpiration}, nil
 }

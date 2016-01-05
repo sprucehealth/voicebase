@@ -62,8 +62,6 @@ func processOutgoingCall(params *excomms.TwilioParams, es *excommsService) (stri
 		})
 	if err != nil {
 		return "", errors.Trace(err)
-	} else if !res.Success {
-		return "", errors.Trace(fmt.Errorf("Unable to lookup entities by contact. Reason: %s, Message = '%s'", res.Failure.Reason, res.Failure.Message))
 	}
 
 	if len(res.Entities) != 1 {
@@ -125,8 +123,6 @@ func processIncomingCall(params *excomms.TwilioParams, es *excommsService) (stri
 		})
 	if err != nil {
 		return "", errors.Trace(err)
-	} else if !res.Success {
-		return "", errors.Trace(fmt.Errorf("Unable to lookup entities by contact. Reason: %s, Message = '%s'", res.Failure.Reason.String(), res.Failure.Message))
 	}
 
 	// we should get back a single entity at this point given that there should be a 1:1 mapping between a provisioned number

@@ -55,10 +55,6 @@ var threadType = graphql.NewObject(
 					if err != nil {
 						return nil, internalError(err)
 					}
-					if !res.Success {
-						// Should never fail
-						return nil, internalError(fmt.Errorf("Failed to get primary entity: %s %s", res.Failure.Reason, res.Failure.Message))
-					}
 					for _, e := range res.Entities {
 						cs, err := transformContactsToResponse(e.Contacts)
 						if err != nil {

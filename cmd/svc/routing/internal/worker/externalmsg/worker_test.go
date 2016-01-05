@@ -26,14 +26,12 @@ func (s *mockDirectoryService) LookupEntities(ctx context.Context, in *directory
 	}
 
 	return &directory.LookupEntitiesResponse{
-		Success:  true,
 		Entities: entities,
 	}, nil
 }
 func (s *mockDirectoryService) CreateEntity(ctx context.Context, in *directory.CreateEntityRequest, opts ...grpc.CallOption) (*directory.CreateEntityResponse, error) {
 	return &directory.CreateEntityResponse{
-		Success: true,
-		Entity:  s.entityToCreate,
+		Entity: s.entityToCreate,
 	}, nil
 }
 func (s *mockDirectoryService) LookupEntitiesByContact(ctx context.Context, in *directory.LookupEntitiesByContactRequest, opts ...grpc.CallOption) (*directory.LookupEntitiesByContactResponse, error) {
@@ -43,7 +41,6 @@ func (s *mockDirectoryService) LookupEntitiesByContact(ctx context.Context, in *
 		entities = append(entities, entity)
 	}
 	return &directory.LookupEntitiesByContactResponse{
-		Success:  true,
 		Entities: entities,
 	}, nil
 }

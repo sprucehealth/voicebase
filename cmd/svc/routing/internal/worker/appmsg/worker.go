@@ -145,10 +145,6 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 	)
 	if err != nil {
 		return errors.Trace(err)
-	} else if !orgLookupRes.Success {
-		return errors.Trace(fmt.Errorf("Unable to lookup organization entity. Reason %s Message %s",
-			orgLookupRes.Failure.Reason.String(),
-			orgLookupRes.Failure.Message))
 	} else if len(orgLookupRes.Entities) == 0 {
 		return errors.Trace(fmt.Errorf("Expected organization to exist for id %s", organizationID))
 	}
@@ -171,10 +167,6 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 		})
 	if err != nil {
 		return errors.Trace(err)
-	} else if !externalEntityLookupRes.Success {
-		return errors.Trace(fmt.Errorf("Unable to lookup external entity. Reason %s Message %s",
-			externalEntityLookupRes.Failure.Reason.String(),
-			externalEntityLookupRes.Failure.Message))
 	} else if len(externalEntityLookupRes.Entities) == 0 {
 		return errors.Trace(fmt.Errorf("Expected external entity to exist for id %s", pti.PrimaryEntityID))
 	}

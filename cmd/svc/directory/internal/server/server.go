@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/cmd/svc/directory/internal/dal"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -12,6 +15,8 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"golang.org/x/net/context"
 )
+
+var grpcErrorf = grpc.Errorf
 
 // DAL represents the methods required to provide data access layer functionality
 type DAL interface {
@@ -88,7 +93,7 @@ func (s *server) LookupEntities(ctx context.Context, rd *directory.LookupEntitie
 	case directory.LookupEntitiesRequest_EXTERNAL_ID:
 		externalEntityIDs, err := s.dl.ExternalEntityIDs(rd.GetExternalID())
 		if err != nil {
-			return nil, errors.Trace(err)
+			return nil, grpcErrorf(codes.Internal, err.Error())
 		}
 		entityIDs = make([]dal.EntityID, len(externalEntityIDs))
 		for i, v := range externalEntityIDs {
@@ -97,27 +102,20 @@ func (s *server) LookupEntities(ctx context.Context, rd *directory.LookupEntitie
 	case directory.LookupEntitiesRequest_ENTITY_ID:
 		entityIDs = append(entityIDs, dal.ParseEntityID(rd.GetEntityID()))
 	default:
-		return nil, errors.Trace(fmt.Errorf("Unknown lookup key type %d", rd.LookupKeyType))
+		return nil, grpcErrorf(codes.Internal, "Unknown lookup key type %d", rd.LookupKeyType)
 	}
 	entities, err := s.dl.Entities(entityIDs)
 	if err != nil {
-		return nil, errors.Trace(err)
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 	if len(entities) == 0 {
-		return &directory.LookupEntitiesResponse{
-			Success: false,
-			Failure: &directory.LookupEntitiesResponse_Failure{
-				Reason:  directory.LookupEntitiesResponse_Failure_NOT_FOUND,
-				Message: "No entities located matching query",
-			},
-		}, nil
+		return nil, grpcErrorf(codes.NotFound, "No entities located matching query")
 	}
 	pbEntities, err := getPBEntities(s.dl, entities, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation))
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	return &directory.LookupEntitiesResponse{
-		Success:  true,
 		Entities: pbEntities,
 	}, nil
 }
@@ -127,10 +125,8 @@ func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityReq
 	if golog.Default().L(golog.DEBUG) {
 		defer func() { golog.Debugf("Leaving server.server.CreateEntity...") }()
 	}
-	if errorResponse, err := s.validateCreateEntityRequest(rd); err != nil {
+	if err := s.validateCreateEntityRequest(rd); err != nil {
 		return nil, err
-	} else if errorResponse != nil {
-		return errorResponse, nil
 	}
 
 	entityType, err := dal.ParseEntityType(directory.EntityType_name[int32(rd.Type)])
@@ -184,67 +180,42 @@ func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityReq
 			return errors.Trace(err)
 		}
 
-		pbEntity, err = getPBEntity(s.dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation))
+		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation))
 		return errors.Trace(err)
 	}); err != nil {
-		return nil, errors.Trace(err)
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 	return &directory.CreateEntityResponse{
-		Success: true,
-		Entity:  pbEntity,
+		Entity: pbEntity,
 	}, nil
 }
 
-func (s *server) validateCreateEntityRequest(rd *directory.CreateEntityRequest) (*directory.CreateEntityResponse, error) {
+func (s *server) validateCreateEntityRequest(rd *directory.CreateEntityRequest) error {
 	golog.Debugf("Entering server.server.validateCreateEntityRequest: %+v", rd)
 	if golog.Default().L(golog.DEBUG) {
 		defer func() { golog.Debugf("Leaving server.server.validateCreateEntityRequest...") }()
 	}
 	if rd.Type != directory.EntityType_EXTERNAL && rd.Name == "" {
-		return &directory.CreateEntityResponse{
-			Success: false,
-			Failure: &directory.CreateEntityResponse_Failure{
-				Reason:  directory.CreateEntityResponse_Failure_INVALID_INPUT,
-				Message: "Name cannot be empty for non external entities",
-			},
-		}, nil
+		return grpcErrorf(codes.InvalidArgument, "Name cannot be empty for non external entities")
 	}
 	if rd.InitialMembershipEntityID != "" {
 		exists, err := doesEntityExist(s.dl, dal.ParseEntityID(rd.InitialMembershipEntityID))
 		if err != nil {
-			return nil, errors.Trace(err)
+			return grpcErrorf(codes.Internal, err.Error())
 		}
 		if !exists {
-			return &directory.CreateEntityResponse{
-				Success: false,
-				Failure: &directory.CreateEntityResponse_Failure{
-					Reason:  directory.CreateEntityResponse_Failure_NOT_FOUND,
-					Message: fmt.Sprintf("Entity not found %s", rd.InitialMembershipEntityID),
-				},
-			}, nil
+			return grpcErrorf(codes.NotFound, "Entity not found %s", rd.InitialMembershipEntityID)
 		}
 	}
 	for _, contact := range rd.Contacts {
 		if contact.Value == "" {
-			return &directory.CreateEntityResponse{
-				Success: false,
-				Failure: &directory.CreateEntityResponse_Failure{
-					Reason:  directory.CreateEntityResponse_Failure_INVALID_INPUT,
-					Message: "Contact value cannot be empty",
-				},
-			}, nil
+			return grpcErrorf(codes.InvalidArgument, "Contact value cannot be empty")
 		}
 		if err := validateContact(contact); err != nil {
-			return &directory.CreateEntityResponse{
-				Success: false,
-				Failure: &directory.CreateEntityResponse_Failure{
-					Reason:  directory.CreateEntityResponse_Failure_INVALID_INPUT,
-					Message: err.Error(),
-				},
-			}, nil
+			return grpcErrorf(codes.InvalidArgument, err.Error())
 		}
 	}
-	return nil, nil
+	return nil
 }
 
 func doesEntityExist(dl dal.DAL, entityID dal.EntityID) (bool, error) {
@@ -268,29 +239,17 @@ func (s *server) CreateMembership(ctx context.Context, rd *directory.CreateMembe
 	targetEntityID := dal.ParseEntityID(rd.TargetEntityID)
 	exists, err := doesEntityExist(s.dl, entityID)
 	if err != nil {
-		return nil, errors.Trace(err)
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 	if !exists {
-		return &directory.CreateMembershipResponse{
-			Success: false,
-			Failure: &directory.CreateMembershipResponse_Failure{
-				Reason:  directory.CreateMembershipResponse_Failure_NOT_FOUND,
-				Message: fmt.Sprintf("Entity not found %s", rd.EntityID),
-			},
-		}, nil
+		return nil, grpcErrorf(codes.NotFound, "Entity not found %s", rd.EntityID)
 	}
 	exists, err = doesEntityExist(s.dl, targetEntityID)
 	if err != nil {
-		return nil, errors.Trace(err)
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 	if !exists {
-		return &directory.CreateMembershipResponse{
-			Success: false,
-			Failure: &directory.CreateMembershipResponse_Failure{
-				Reason:  directory.CreateMembershipResponse_Failure_NOT_FOUND,
-				Message: fmt.Sprintf("Entity not found %s", rd.TargetEntityID),
-			},
-		}, nil
+		return nil, grpcErrorf(codes.NotFound, "Entity not found %s", rd.TargetEntityID)
 	}
 
 	if err := s.dl.InsertEntityMembership(&dal.EntityMembership{
@@ -298,19 +257,18 @@ func (s *server) CreateMembership(ctx context.Context, rd *directory.CreateMembe
 		TargetEntityID: targetEntityID,
 		Status:         dal.EntityMembershipStatusActive,
 	}); err != nil {
-		return nil, errors.Trace(err)
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 	entity, err := s.dl.Entity(entityID)
 	if err != nil {
-		return nil, errors.Trace(err)
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 	pbEntity, err := getPBEntity(s.dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation))
 	if err != nil {
-		return nil, errors.Trace(err)
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 	return &directory.CreateMembershipResponse{
-		Success: true,
-		Entity:  pbEntity,
+		Entity: pbEntity,
 	}, nil
 }
 
@@ -321,16 +279,10 @@ func (s *server) LookupEntitiesByContact(ctx context.Context, rd *directory.Look
 	}
 	entityContacts, err := s.dl.EntityContactsForValue(strings.TrimSpace(rd.ContactValue))
 	if err != nil {
-		return nil, errors.Trace(err)
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 	if len(entityContacts) == 0 {
-		return &directory.LookupEntitiesByContactResponse{
-			Success: false,
-			Failure: &directory.LookupEntitiesByContactResponse_Failure{
-				Reason:  directory.LookupEntitiesByContactResponse_Failure_NOT_FOUND,
-				Message: fmt.Sprintf("Contact with value %s not found", rd.ContactValue),
-			},
-		}, nil
+		return nil, grpcErrorf(codes.NotFound, "Contact with value %s not found", rd.ContactValue)
 	}
 	uniqueEntityIDs := make(map[uint64]struct{})
 	var entityIDs []dal.EntityID
@@ -341,15 +293,14 @@ func (s *server) LookupEntitiesByContact(ctx context.Context, rd *directory.Look
 	}
 	entities, err := s.dl.Entities(entityIDs)
 	if err != nil {
-		return nil, errors.Trace(err)
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
 	pbEntities, err := getPBEntities(s.dl, entities, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation))
 	if err != nil {
-		return nil, errors.Trace(err)
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 	return &directory.LookupEntitiesByContactResponse{
-		Success:  true,
 		Entities: pbEntities,
 	}, nil
 }
@@ -363,22 +314,10 @@ func (s *server) CreateContact(ctx context.Context, rd *directory.CreateContactR
 	if exists, err := doesEntityExist(s.dl, entityID); err != nil {
 		return nil, errors.Trace(err)
 	} else if !exists {
-		return &directory.CreateContactResponse{
-			Success: false,
-			Failure: &directory.CreateContactResponse_Failure{
-				Reason:  directory.CreateContactResponse_Failure_NOT_FOUND,
-				Message: fmt.Sprintf("Entity %s not found", rd.EntityID),
-			},
-		}, nil
+		return nil, grpcErrorf(codes.NotFound, "Entity %s not found", rd.EntityID)
 	}
 	if err := validateContact(rd.GetContact()); err != nil {
-		return &directory.CreateContactResponse{
-			Success: false,
-			Failure: &directory.CreateContactResponse_Failure{
-				Reason:  directory.CreateContactResponse_Failure_INVALID_INPUT,
-				Message: err.Error(),
-			},
-		}, nil
+		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
 	}
 
 	contactType, err := dal.ParseEntityContactType(directory.ContactType_name[int32(rd.GetContact().ContactType)])
@@ -402,11 +341,10 @@ func (s *server) CreateContact(ctx context.Context, rd *directory.CreateContactR
 		pbEntity, err = getPBEntity(dl, entity, riEntityInformation(rd.RequestedInformation), riDepth(rd.RequestedInformation))
 		return errors.Trace(err)
 	}); err != nil {
-		return nil, errors.Trace(err)
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 	return &directory.CreateContactResponse{
-		Success: true,
-		Entity:  pbEntity,
+		Entity: pbEntity,
 	}, nil
 }
 

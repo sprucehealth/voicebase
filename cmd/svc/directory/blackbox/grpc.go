@@ -139,8 +139,7 @@ func createEntity(client directory.DirectoryClient, req *directory.CreateEntityR
 	harness.Profile("DirectoryService:CreateEntity", func() { resp, err = client.CreateEntity(context.Background(), req) })
 	golog.Debugf("CreateEntity response: %+v", resp)
 	harness.FailErr(err)
-	harness.Assert(resp.Success, resp)
-	harness.AssertNil(resp.Failure, resp)
+
 	assertEntity(resp.GetEntity())
 	return req, resp
 }
@@ -157,8 +156,7 @@ func createMembership(client directory.DirectoryClient, entityID, targetEntityID
 	harness.Profile("DirectoryService:CreateMembership", func() { resp, err = client.CreateMembership(context.Background(), req) })
 	golog.Debugf("CreateMembership response: %+v", resp)
 	harness.FailErr(err)
-	harness.Assert(resp.Success, resp)
-	harness.AssertNil(resp.Failure, resp)
+
 	assertEntity(resp.GetEntity())
 	return req, resp
 }
@@ -186,8 +184,7 @@ func lookupEntities(client directory.DirectoryClient, req *directory.LookupEntit
 	harness.Profile("DirectoryService:LookupEntities", func() { resp, err = client.LookupEntities(context.Background(), req) })
 	golog.Debugf("LookupEntities response: %+v", resp)
 	harness.FailErr(err)
-	harness.Assert(resp.Success, resp)
-	harness.AssertNil(resp.Failure, resp)
+
 	harness.Assert(len(resp.GetEntities()) > 0)
 	return req, resp
 }
@@ -199,8 +196,7 @@ func createContact(client directory.DirectoryClient, req *directory.CreateContac
 	harness.Profile("DirectoryService:CreateContact", func() { resp, err = client.CreateContact(context.Background(), req) })
 	golog.Debugf("CreateContact response: %+v", resp)
 	harness.FailErr(err)
-	harness.Assert(resp.Success, resp)
-	harness.AssertNil(resp.Failure, resp)
+
 	assertEntity(resp.Entity)
 	return req, resp
 }
@@ -212,8 +208,7 @@ func lookupEntitiesByContact(client directory.DirectoryClient, req *directory.Lo
 	harness.Profile("DirectoryService:LookupEntitiesByContact", func() { resp, err = client.LookupEntitiesByContact(context.Background(), req) })
 	golog.Debugf("LookupEntitiesByContact response: %+v", resp)
 	harness.FailErr(err)
-	harness.Assert(resp.Success, resp)
-	harness.AssertNil(resp.Failure, resp)
+
 	harness.Assert(len(resp.GetEntities()) > 0)
 	return req, resp
 }
@@ -234,7 +229,7 @@ func (t *tests) BBTestGRPCBasicEntityMembershipCreation(client interface{}) {
 		EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
 	}
 	_, createEntityResp = createEntity(directoryClient, createEntityReq)
-	harness.Assert(len(createEntityResp.Entity.Memberships) == 1)
+	harness.Assert(len(createEntityResp.Entity.Memberships) == 1, fmt.Sprintf("Expected only 1 membership but got %+v", createEntityResp.Entity.Memberships))
 	harness.Assert(createEntityResp.Entity.GetMemberships()[0].ID == targetMembershipID)
 
 	// Create another random entity

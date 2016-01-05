@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -188,10 +187,6 @@ var threadItemType = graphql.NewObject(
 						})
 					if err != nil {
 						return nil, internalError(err)
-					}
-					if !res.Success {
-						// Should never fail
-						return nil, internalError(fmt.Errorf("Failed to get account memberships: %s %s", res.Failure.Reason, res.Failure.Message))
 					}
 					for _, e := range res.Entities {
 						return &entity{

@@ -54,18 +54,7 @@ message LookupEntitiesRequest {
 }
 
 message LookupEntitiesResponse {
-  bool success = 1;
-
-  message Failure {
-      enum Reason {
-        NOT_FOUND = 0;
-      }
-      Reason reason = 1;
-      string message = 2;
-  }
-  Failure failure = 2;
-
-  repeated Entity entities = 3;
+  repeated Entity entities = 1;
 }
 
 message CreateEntityRequest {
@@ -78,20 +67,7 @@ message CreateEntityRequest {
 }
 
 message CreateEntityResponse {
-  bool success = 1;
-
-  message Failure {
-      enum Reason {
-        INVALID_DUPLICATION = 0;
-        NOT_FOUND = 1;
-        INVALID_INPUT = 2;
-      }
-      Reason reason = 1;
-      string message = 2;
-  }
-  Failure failure = 2;
-
-  Entity entity = 3;
+  Entity entity = 1;
 }
 
 message CreateMembershipRequest {
@@ -101,18 +77,7 @@ message CreateMembershipRequest {
 }
 
 message CreateMembershipResponse {
-  bool success = 1;
-
-  message Failure {
-      enum Reason {
-        NOT_FOUND = 0;
-      }
-      Reason reason = 1;
-      string message = 2;
-  }
-  Failure failure = 2;
-
-  Entity entity = 3;
+  Entity entity = 1;
 }
 
 enum ContactType {
@@ -132,18 +97,7 @@ message LookupEntitiesByContactRequest {
 }
 
 message LookupEntitiesByContactResponse {
-  bool success = 1;
-
-  message Failure {
-      enum Reason {
-        NOT_FOUND = 0;
-      }
-      Reason reason = 1;
-      string message = 2;
-  }
-  Failure failure = 2;
-
-  repeated Entity entities = 3;
+  repeated Entity entities = 1;
 }
 
 message CreateContactRequest {
@@ -153,20 +107,7 @@ message CreateContactRequest {
 }
 
 message CreateContactResponse {
-  bool success = 1;
-
-  message Failure {
-      enum Reason {
-        INVALID_DUPLICATION = 0;
-        NOT_FOUND = 1;
-        INVALID_INPUT = 2;
-      }
-      Reason reason = 1;
-      string message = 2;
-  }
-  Failure failure = 2;
-
-  Entity entity = 3;
+  Entity entity = 1;
 }
 
 service Directory {

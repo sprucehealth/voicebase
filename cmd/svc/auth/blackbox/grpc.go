@@ -75,8 +75,7 @@ func createRandomValidAccount(client auth.AuthClient) (*auth.CreateAccountReques
 	golog.Debugf("CreateAccount response: %+v", resp)
 	harness.FailErr(err)
 	harness.AssertNotNil(resp)
-	harness.Assert(resp.Success, resp)
-	harness.AssertNil(resp.Failure, resp)
+
 	assertValidAuthToken(resp.Token)
 	assertValidAccount(resp.Account)
 	return req, resp
@@ -106,8 +105,7 @@ func checkAuthentication(client auth.AuthClient, token string, attributes map[st
 	harness.Profile("AuthService:CheckAuthentication", func() { resp, err = client.CheckAuthentication(context.Background(), req) })
 	golog.Debugf("CheckAuthentication response: %+v", resp)
 	harness.FailErr(err)
-	harness.Assert(resp.Success, resp)
-	harness.AssertNil(resp.Failure, resp)
+
 	if resp.IsAuthenticated {
 		assertValidAuthToken(resp.Token)
 		assertValidAccount(resp.Account)
@@ -130,8 +128,7 @@ func authenticateLogin(client auth.AuthClient, email string, password string) (*
 	harness.Profile("AuthService:AuthenticateLogin", func() { resp, err = client.AuthenticateLogin(context.Background(), req) })
 	golog.Debugf("AuthenticateLogin response: %+v", resp)
 	harness.FailErr(err)
-	harness.Assert(resp.Success, resp)
-	harness.AssertNil(resp.Failure, resp)
+
 	assertValidAuthToken(resp.Token)
 	assertValidAccount(resp.Account)
 	return req, resp
@@ -148,8 +145,7 @@ func unauthenticate(client auth.AuthClient, token string, tokenAttributes map[st
 	harness.Profile("AuthService:AuthenticateLogin", func() { resp, err = client.Unauthenticate(context.Background(), req) })
 	golog.Debugf("Unauthenticate response: %+v", resp)
 	harness.FailErr(err)
-	harness.Assert(resp.Success, resp)
-	harness.AssertNil(resp.Failure, resp)
+
 	return req, resp
 }
 
@@ -163,8 +159,7 @@ func getAccount(client auth.AuthClient, accountID string) (*auth.GetAccountReque
 	harness.Profile("AuthService:GetAccount", func() { resp, err = client.GetAccount(context.Background(), req) })
 	golog.Debugf("GetAccount response: %+v", resp)
 	harness.FailErr(err)
-	harness.Assert(resp.Success, resp)
-	harness.AssertNil(resp.Failure, resp)
+
 	assertValidAccount(resp.Account)
 	return req, resp
 }

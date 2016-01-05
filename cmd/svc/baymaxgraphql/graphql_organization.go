@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+
 	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -77,15 +80,12 @@ var organizationType = graphql.NewObject(
 								},
 							},
 						})
-					if err != nil {
+					if grpc.Code(err) == codes.NotFound {
+						return nil, errors.New("not found")
+					} else if err != nil {
 						return nil, errors.Trace(err)
 					}
-					if !res.Success {
-						if res.Failure.Reason == directory.LookupEntitiesResponse_Failure_NOT_FOUND {
-							return nil, errors.New("not found")
-						}
-						return nil, errors.Trace(err)
-					}
+
 					entities := make([]*entity, 0, len(res.Entities))
 					for _, e := range res.Entities {
 						if e.ID == org.ID {

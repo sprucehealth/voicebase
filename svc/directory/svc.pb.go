@@ -122,83 +122,6 @@ var LookupEntitiesRequest_LookupKeyType_value = map[string]int32{
 	"EXTERNAL_ID": 1,
 }
 
-type LookupEntitiesResponse_Failure_Reason int32
-
-const (
-	LookupEntitiesResponse_Failure_NOT_FOUND LookupEntitiesResponse_Failure_Reason = 0
-)
-
-var LookupEntitiesResponse_Failure_Reason_name = map[int32]string{
-	0: "NOT_FOUND",
-}
-var LookupEntitiesResponse_Failure_Reason_value = map[string]int32{
-	"NOT_FOUND": 0,
-}
-
-type CreateEntityResponse_Failure_Reason int32
-
-const (
-	CreateEntityResponse_Failure_INVALID_DUPLICATION CreateEntityResponse_Failure_Reason = 0
-	CreateEntityResponse_Failure_NOT_FOUND           CreateEntityResponse_Failure_Reason = 1
-	CreateEntityResponse_Failure_INVALID_INPUT       CreateEntityResponse_Failure_Reason = 2
-)
-
-var CreateEntityResponse_Failure_Reason_name = map[int32]string{
-	0: "INVALID_DUPLICATION",
-	1: "NOT_FOUND",
-	2: "INVALID_INPUT",
-}
-var CreateEntityResponse_Failure_Reason_value = map[string]int32{
-	"INVALID_DUPLICATION": 0,
-	"NOT_FOUND":           1,
-	"INVALID_INPUT":       2,
-}
-
-type CreateMembershipResponse_Failure_Reason int32
-
-const (
-	CreateMembershipResponse_Failure_NOT_FOUND CreateMembershipResponse_Failure_Reason = 0
-)
-
-var CreateMembershipResponse_Failure_Reason_name = map[int32]string{
-	0: "NOT_FOUND",
-}
-var CreateMembershipResponse_Failure_Reason_value = map[string]int32{
-	"NOT_FOUND": 0,
-}
-
-type LookupEntitiesByContactResponse_Failure_Reason int32
-
-const (
-	LookupEntitiesByContactResponse_Failure_NOT_FOUND LookupEntitiesByContactResponse_Failure_Reason = 0
-)
-
-var LookupEntitiesByContactResponse_Failure_Reason_name = map[int32]string{
-	0: "NOT_FOUND",
-}
-var LookupEntitiesByContactResponse_Failure_Reason_value = map[string]int32{
-	"NOT_FOUND": 0,
-}
-
-type CreateContactResponse_Failure_Reason int32
-
-const (
-	CreateContactResponse_Failure_INVALID_DUPLICATION CreateContactResponse_Failure_Reason = 0
-	CreateContactResponse_Failure_NOT_FOUND           CreateContactResponse_Failure_Reason = 1
-	CreateContactResponse_Failure_INVALID_INPUT       CreateContactResponse_Failure_Reason = 2
-)
-
-var CreateContactResponse_Failure_Reason_name = map[int32]string{
-	0: "INVALID_DUPLICATION",
-	1: "NOT_FOUND",
-	2: "INVALID_INPUT",
-}
-var CreateContactResponse_Failure_Reason_value = map[string]int32{
-	"INVALID_DUPLICATION": 0,
-	"NOT_FOUND":           1,
-	"INVALID_INPUT":       2,
-}
-
 type Entity struct {
 	ID                  string              `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name                string              `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
@@ -347,20 +270,11 @@ func _LookupEntitiesRequest_OneofUnmarshaler(msg proto.Message, tag, wire int, b
 }
 
 type LookupEntitiesResponse struct {
-	Success  bool                            `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Failure  *LookupEntitiesResponse_Failure `protobuf:"bytes,2,opt,name=failure" json:"failure,omitempty"`
-	Entities []*Entity                       `protobuf:"bytes,3,rep,name=entities" json:"entities,omitempty"`
+	Entities []*Entity `protobuf:"bytes,1,rep,name=entities" json:"entities,omitempty"`
 }
 
 func (m *LookupEntitiesResponse) Reset()      { *m = LookupEntitiesResponse{} }
 func (*LookupEntitiesResponse) ProtoMessage() {}
-
-func (m *LookupEntitiesResponse) GetFailure() *LookupEntitiesResponse_Failure {
-	if m != nil {
-		return m.Failure
-	}
-	return nil
-}
 
 func (m *LookupEntitiesResponse) GetEntities() []*Entity {
 	if m != nil {
@@ -368,14 +282,6 @@ func (m *LookupEntitiesResponse) GetEntities() []*Entity {
 	}
 	return nil
 }
-
-type LookupEntitiesResponse_Failure struct {
-	Reason  LookupEntitiesResponse_Failure_Reason `protobuf:"varint,1,opt,name=reason,proto3,enum=directory.LookupEntitiesResponse_Failure_Reason" json:"reason,omitempty"`
-	Message string                                `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-}
-
-func (m *LookupEntitiesResponse_Failure) Reset()      { *m = LookupEntitiesResponse_Failure{} }
-func (*LookupEntitiesResponse_Failure) ProtoMessage() {}
 
 type CreateEntityRequest struct {
 	Name                      string                `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -404,20 +310,11 @@ func (m *CreateEntityRequest) GetRequestedInformation() *RequestedInformation {
 }
 
 type CreateEntityResponse struct {
-	Success bool                          `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Failure *CreateEntityResponse_Failure `protobuf:"bytes,2,opt,name=failure" json:"failure,omitempty"`
-	Entity  *Entity                       `protobuf:"bytes,3,opt,name=entity" json:"entity,omitempty"`
+	Entity *Entity `protobuf:"bytes,1,opt,name=entity" json:"entity,omitempty"`
 }
 
 func (m *CreateEntityResponse) Reset()      { *m = CreateEntityResponse{} }
 func (*CreateEntityResponse) ProtoMessage() {}
-
-func (m *CreateEntityResponse) GetFailure() *CreateEntityResponse_Failure {
-	if m != nil {
-		return m.Failure
-	}
-	return nil
-}
 
 func (m *CreateEntityResponse) GetEntity() *Entity {
 	if m != nil {
@@ -425,14 +322,6 @@ func (m *CreateEntityResponse) GetEntity() *Entity {
 	}
 	return nil
 }
-
-type CreateEntityResponse_Failure struct {
-	Reason  CreateEntityResponse_Failure_Reason `protobuf:"varint,1,opt,name=reason,proto3,enum=directory.CreateEntityResponse_Failure_Reason" json:"reason,omitempty"`
-	Message string                              `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-}
-
-func (m *CreateEntityResponse_Failure) Reset()      { *m = CreateEntityResponse_Failure{} }
-func (*CreateEntityResponse_Failure) ProtoMessage() {}
 
 type CreateMembershipRequest struct {
 	EntityID             string                `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
@@ -451,20 +340,11 @@ func (m *CreateMembershipRequest) GetRequestedInformation() *RequestedInformatio
 }
 
 type CreateMembershipResponse struct {
-	Success bool                              `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Failure *CreateMembershipResponse_Failure `protobuf:"bytes,2,opt,name=failure" json:"failure,omitempty"`
-	Entity  *Entity                           `protobuf:"bytes,3,opt,name=entity" json:"entity,omitempty"`
+	Entity *Entity `protobuf:"bytes,1,opt,name=entity" json:"entity,omitempty"`
 }
 
 func (m *CreateMembershipResponse) Reset()      { *m = CreateMembershipResponse{} }
 func (*CreateMembershipResponse) ProtoMessage() {}
-
-func (m *CreateMembershipResponse) GetFailure() *CreateMembershipResponse_Failure {
-	if m != nil {
-		return m.Failure
-	}
-	return nil
-}
 
 func (m *CreateMembershipResponse) GetEntity() *Entity {
 	if m != nil {
@@ -472,14 +352,6 @@ func (m *CreateMembershipResponse) GetEntity() *Entity {
 	}
 	return nil
 }
-
-type CreateMembershipResponse_Failure struct {
-	Reason  CreateMembershipResponse_Failure_Reason `protobuf:"varint,1,opt,name=reason,proto3,enum=directory.CreateMembershipResponse_Failure_Reason" json:"reason,omitempty"`
-	Message string                                  `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-}
-
-func (m *CreateMembershipResponse_Failure) Reset()      { *m = CreateMembershipResponse_Failure{} }
-func (*CreateMembershipResponse_Failure) ProtoMessage() {}
 
 type Contact struct {
 	ContactType ContactType `protobuf:"varint,1,opt,name=contact_type,proto3,enum=directory.ContactType" json:"contact_type,omitempty"`
@@ -506,20 +378,11 @@ func (m *LookupEntitiesByContactRequest) GetRequestedInformation() *RequestedInf
 }
 
 type LookupEntitiesByContactResponse struct {
-	Success  bool                                     `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Failure  *LookupEntitiesByContactResponse_Failure `protobuf:"bytes,2,opt,name=failure" json:"failure,omitempty"`
-	Entities []*Entity                                `protobuf:"bytes,3,rep,name=entities" json:"entities,omitempty"`
+	Entities []*Entity `protobuf:"bytes,1,rep,name=entities" json:"entities,omitempty"`
 }
 
 func (m *LookupEntitiesByContactResponse) Reset()      { *m = LookupEntitiesByContactResponse{} }
 func (*LookupEntitiesByContactResponse) ProtoMessage() {}
-
-func (m *LookupEntitiesByContactResponse) GetFailure() *LookupEntitiesByContactResponse_Failure {
-	if m != nil {
-		return m.Failure
-	}
-	return nil
-}
 
 func (m *LookupEntitiesByContactResponse) GetEntities() []*Entity {
 	if m != nil {
@@ -527,16 +390,6 @@ func (m *LookupEntitiesByContactResponse) GetEntities() []*Entity {
 	}
 	return nil
 }
-
-type LookupEntitiesByContactResponse_Failure struct {
-	Reason  LookupEntitiesByContactResponse_Failure_Reason `protobuf:"varint,1,opt,name=reason,proto3,enum=directory.LookupEntitiesByContactResponse_Failure_Reason" json:"reason,omitempty"`
-	Message string                                         `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-}
-
-func (m *LookupEntitiesByContactResponse_Failure) Reset() {
-	*m = LookupEntitiesByContactResponse_Failure{}
-}
-func (*LookupEntitiesByContactResponse_Failure) ProtoMessage() {}
 
 type CreateContactRequest struct {
 	Contact              *Contact              `protobuf:"bytes,1,opt,name=contact" json:"contact,omitempty"`
@@ -562,20 +415,11 @@ func (m *CreateContactRequest) GetRequestedInformation() *RequestedInformation {
 }
 
 type CreateContactResponse struct {
-	Success bool                           `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Failure *CreateContactResponse_Failure `protobuf:"bytes,2,opt,name=failure" json:"failure,omitempty"`
-	Entity  *Entity                        `protobuf:"bytes,3,opt,name=entity" json:"entity,omitempty"`
+	Entity *Entity `protobuf:"bytes,1,opt,name=entity" json:"entity,omitempty"`
 }
 
 func (m *CreateContactResponse) Reset()      { *m = CreateContactResponse{} }
 func (*CreateContactResponse) ProtoMessage() {}
-
-func (m *CreateContactResponse) GetFailure() *CreateContactResponse_Failure {
-	if m != nil {
-		return m.Failure
-	}
-	return nil
-}
 
 func (m *CreateContactResponse) GetEntity() *Entity {
 	if m != nil {
@@ -584,42 +428,24 @@ func (m *CreateContactResponse) GetEntity() *Entity {
 	return nil
 }
 
-type CreateContactResponse_Failure struct {
-	Reason  CreateContactResponse_Failure_Reason `protobuf:"varint,1,opt,name=reason,proto3,enum=directory.CreateContactResponse_Failure_Reason" json:"reason,omitempty"`
-	Message string                               `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-}
-
-func (m *CreateContactResponse_Failure) Reset()      { *m = CreateContactResponse_Failure{} }
-func (*CreateContactResponse_Failure) ProtoMessage() {}
-
 func init() {
 	proto.RegisterType((*Entity)(nil), "directory.Entity")
 	proto.RegisterType((*RequestedInformation)(nil), "directory.RequestedInformation")
 	proto.RegisterType((*LookupEntitiesRequest)(nil), "directory.LookupEntitiesRequest")
 	proto.RegisterType((*LookupEntitiesResponse)(nil), "directory.LookupEntitiesResponse")
-	proto.RegisterType((*LookupEntitiesResponse_Failure)(nil), "directory.LookupEntitiesResponse.Failure")
 	proto.RegisterType((*CreateEntityRequest)(nil), "directory.CreateEntityRequest")
 	proto.RegisterType((*CreateEntityResponse)(nil), "directory.CreateEntityResponse")
-	proto.RegisterType((*CreateEntityResponse_Failure)(nil), "directory.CreateEntityResponse.Failure")
 	proto.RegisterType((*CreateMembershipRequest)(nil), "directory.CreateMembershipRequest")
 	proto.RegisterType((*CreateMembershipResponse)(nil), "directory.CreateMembershipResponse")
-	proto.RegisterType((*CreateMembershipResponse_Failure)(nil), "directory.CreateMembershipResponse.Failure")
 	proto.RegisterType((*Contact)(nil), "directory.Contact")
 	proto.RegisterType((*LookupEntitiesByContactRequest)(nil), "directory.LookupEntitiesByContactRequest")
 	proto.RegisterType((*LookupEntitiesByContactResponse)(nil), "directory.LookupEntitiesByContactResponse")
-	proto.RegisterType((*LookupEntitiesByContactResponse_Failure)(nil), "directory.LookupEntitiesByContactResponse.Failure")
 	proto.RegisterType((*CreateContactRequest)(nil), "directory.CreateContactRequest")
 	proto.RegisterType((*CreateContactResponse)(nil), "directory.CreateContactResponse")
-	proto.RegisterType((*CreateContactResponse_Failure)(nil), "directory.CreateContactResponse.Failure")
 	proto.RegisterEnum("directory.EntityType", EntityType_name, EntityType_value)
 	proto.RegisterEnum("directory.EntityInformation", EntityInformation_name, EntityInformation_value)
 	proto.RegisterEnum("directory.ContactType", ContactType_name, ContactType_value)
 	proto.RegisterEnum("directory.LookupEntitiesRequest_LookupKeyType", LookupEntitiesRequest_LookupKeyType_name, LookupEntitiesRequest_LookupKeyType_value)
-	proto.RegisterEnum("directory.LookupEntitiesResponse_Failure_Reason", LookupEntitiesResponse_Failure_Reason_name, LookupEntitiesResponse_Failure_Reason_value)
-	proto.RegisterEnum("directory.CreateEntityResponse_Failure_Reason", CreateEntityResponse_Failure_Reason_name, CreateEntityResponse_Failure_Reason_value)
-	proto.RegisterEnum("directory.CreateMembershipResponse_Failure_Reason", CreateMembershipResponse_Failure_Reason_name, CreateMembershipResponse_Failure_Reason_value)
-	proto.RegisterEnum("directory.LookupEntitiesByContactResponse_Failure_Reason", LookupEntitiesByContactResponse_Failure_Reason_name, LookupEntitiesByContactResponse_Failure_Reason_value)
-	proto.RegisterEnum("directory.CreateContactResponse_Failure_Reason", CreateContactResponse_Failure_Reason_name, CreateContactResponse_Failure_Reason_value)
 }
 func (x EntityType) String() string {
 	s, ok := EntityType_name[int32(x)]
@@ -644,41 +470,6 @@ func (x ContactType) String() string {
 }
 func (x LookupEntitiesRequest_LookupKeyType) String() string {
 	s, ok := LookupEntitiesRequest_LookupKeyType_name[int32(x)]
-	if ok {
-		return s
-	}
-	return strconv.Itoa(int(x))
-}
-func (x LookupEntitiesResponse_Failure_Reason) String() string {
-	s, ok := LookupEntitiesResponse_Failure_Reason_name[int32(x)]
-	if ok {
-		return s
-	}
-	return strconv.Itoa(int(x))
-}
-func (x CreateEntityResponse_Failure_Reason) String() string {
-	s, ok := CreateEntityResponse_Failure_Reason_name[int32(x)]
-	if ok {
-		return s
-	}
-	return strconv.Itoa(int(x))
-}
-func (x CreateMembershipResponse_Failure_Reason) String() string {
-	s, ok := CreateMembershipResponse_Failure_Reason_name[int32(x)]
-	if ok {
-		return s
-	}
-	return strconv.Itoa(int(x))
-}
-func (x LookupEntitiesByContactResponse_Failure_Reason) String() string {
-	s, ok := LookupEntitiesByContactResponse_Failure_Reason_name[int32(x)]
-	if ok {
-		return s
-	}
-	return strconv.Itoa(int(x))
-}
-func (x CreateContactResponse_Failure_Reason) String() string {
-	s, ok := CreateContactResponse_Failure_Reason_name[int32(x)]
 	if ok {
 		return s
 	}
@@ -895,12 +686,6 @@ func (this *LookupEntitiesResponse) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.Success != that1.Success {
-		return false
-	}
-	if !this.Failure.Equal(that1.Failure) {
-		return false
-	}
 	if len(this.Entities) != len(that1.Entities) {
 		return false
 	}
@@ -908,34 +693,6 @@ func (this *LookupEntitiesResponse) Equal(that interface{}) bool {
 		if !this.Entities[i].Equal(that1.Entities[i]) {
 			return false
 		}
-	}
-	return true
-}
-func (this *LookupEntitiesResponse_Failure) Equal(that interface{}) bool {
-	if that == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	}
-
-	that1, ok := that.(*LookupEntitiesResponse_Failure)
-	if !ok {
-		return false
-	}
-	if that1 == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	} else if this == nil {
-		return false
-	}
-	if this.Reason != that1.Reason {
-		return false
-	}
-	if this.Message != that1.Message {
-		return false
 	}
 	return true
 }
@@ -1004,41 +761,7 @@ func (this *CreateEntityResponse) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.Success != that1.Success {
-		return false
-	}
-	if !this.Failure.Equal(that1.Failure) {
-		return false
-	}
 	if !this.Entity.Equal(that1.Entity) {
-		return false
-	}
-	return true
-}
-func (this *CreateEntityResponse_Failure) Equal(that interface{}) bool {
-	if that == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	}
-
-	that1, ok := that.(*CreateEntityResponse_Failure)
-	if !ok {
-		return false
-	}
-	if that1 == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	} else if this == nil {
-		return false
-	}
-	if this.Reason != that1.Reason {
-		return false
-	}
-	if this.Message != that1.Message {
 		return false
 	}
 	return true
@@ -1094,41 +817,7 @@ func (this *CreateMembershipResponse) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.Success != that1.Success {
-		return false
-	}
-	if !this.Failure.Equal(that1.Failure) {
-		return false
-	}
 	if !this.Entity.Equal(that1.Entity) {
-		return false
-	}
-	return true
-}
-func (this *CreateMembershipResponse_Failure) Equal(that interface{}) bool {
-	if that == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	}
-
-	that1, ok := that.(*CreateMembershipResponse_Failure)
-	if !ok {
-		return false
-	}
-	if that1 == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	} else if this == nil {
-		return false
-	}
-	if this.Reason != that1.Reason {
-		return false
-	}
-	if this.Message != that1.Message {
 		return false
 	}
 	return true
@@ -1212,12 +901,6 @@ func (this *LookupEntitiesByContactResponse) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.Success != that1.Success {
-		return false
-	}
-	if !this.Failure.Equal(that1.Failure) {
-		return false
-	}
 	if len(this.Entities) != len(that1.Entities) {
 		return false
 	}
@@ -1225,34 +908,6 @@ func (this *LookupEntitiesByContactResponse) Equal(that interface{}) bool {
 		if !this.Entities[i].Equal(that1.Entities[i]) {
 			return false
 		}
-	}
-	return true
-}
-func (this *LookupEntitiesByContactResponse_Failure) Equal(that interface{}) bool {
-	if that == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	}
-
-	that1, ok := that.(*LookupEntitiesByContactResponse_Failure)
-	if !ok {
-		return false
-	}
-	if that1 == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	} else if this == nil {
-		return false
-	}
-	if this.Reason != that1.Reason {
-		return false
-	}
-	if this.Message != that1.Message {
-		return false
 	}
 	return true
 }
@@ -1307,41 +962,7 @@ func (this *CreateContactResponse) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.Success != that1.Success {
-		return false
-	}
-	if !this.Failure.Equal(that1.Failure) {
-		return false
-	}
 	if !this.Entity.Equal(that1.Entity) {
-		return false
-	}
-	return true
-}
-func (this *CreateContactResponse_Failure) Equal(that interface{}) bool {
-	if that == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	}
-
-	that1, ok := that.(*CreateContactResponse_Failure)
-	if !ok {
-		return false
-	}
-	if that1 == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	} else if this == nil {
-		return false
-	}
-	if this.Reason != that1.Reason {
-		return false
-	}
-	if this.Message != that1.Message {
 		return false
 	}
 	return true
@@ -1416,26 +1037,11 @@ func (this *LookupEntitiesResponse) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 5)
 	s = append(s, "&directory.LookupEntitiesResponse{")
-	s = append(s, "Success: "+fmt.Sprintf("%#v", this.Success)+",\n")
-	if this.Failure != nil {
-		s = append(s, "Failure: "+fmt.Sprintf("%#v", this.Failure)+",\n")
-	}
 	if this.Entities != nil {
 		s = append(s, "Entities: "+fmt.Sprintf("%#v", this.Entities)+",\n")
 	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *LookupEntitiesResponse_Failure) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&directory.LookupEntitiesResponse_Failure{")
-	s = append(s, "Reason: "+fmt.Sprintf("%#v", this.Reason)+",\n")
-	s = append(s, "Message: "+fmt.Sprintf("%#v", this.Message)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1462,26 +1068,11 @@ func (this *CreateEntityResponse) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 5)
 	s = append(s, "&directory.CreateEntityResponse{")
-	s = append(s, "Success: "+fmt.Sprintf("%#v", this.Success)+",\n")
-	if this.Failure != nil {
-		s = append(s, "Failure: "+fmt.Sprintf("%#v", this.Failure)+",\n")
-	}
 	if this.Entity != nil {
 		s = append(s, "Entity: "+fmt.Sprintf("%#v", this.Entity)+",\n")
 	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *CreateEntityResponse_Failure) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&directory.CreateEntityResponse_Failure{")
-	s = append(s, "Reason: "+fmt.Sprintf("%#v", this.Reason)+",\n")
-	s = append(s, "Message: "+fmt.Sprintf("%#v", this.Message)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1503,26 +1094,11 @@ func (this *CreateMembershipResponse) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 5)
 	s = append(s, "&directory.CreateMembershipResponse{")
-	s = append(s, "Success: "+fmt.Sprintf("%#v", this.Success)+",\n")
-	if this.Failure != nil {
-		s = append(s, "Failure: "+fmt.Sprintf("%#v", this.Failure)+",\n")
-	}
 	if this.Entity != nil {
 		s = append(s, "Entity: "+fmt.Sprintf("%#v", this.Entity)+",\n")
 	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *CreateMembershipResponse_Failure) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&directory.CreateMembershipResponse_Failure{")
-	s = append(s, "Reason: "+fmt.Sprintf("%#v", this.Reason)+",\n")
-	s = append(s, "Message: "+fmt.Sprintf("%#v", this.Message)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1555,26 +1131,11 @@ func (this *LookupEntitiesByContactResponse) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 5)
 	s = append(s, "&directory.LookupEntitiesByContactResponse{")
-	s = append(s, "Success: "+fmt.Sprintf("%#v", this.Success)+",\n")
-	if this.Failure != nil {
-		s = append(s, "Failure: "+fmt.Sprintf("%#v", this.Failure)+",\n")
-	}
 	if this.Entities != nil {
 		s = append(s, "Entities: "+fmt.Sprintf("%#v", this.Entities)+",\n")
 	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *LookupEntitiesByContactResponse_Failure) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&directory.LookupEntitiesByContactResponse_Failure{")
-	s = append(s, "Reason: "+fmt.Sprintf("%#v", this.Reason)+",\n")
-	s = append(s, "Message: "+fmt.Sprintf("%#v", this.Message)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1598,26 +1159,11 @@ func (this *CreateContactResponse) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 5)
 	s = append(s, "&directory.CreateContactResponse{")
-	s = append(s, "Success: "+fmt.Sprintf("%#v", this.Success)+",\n")
-	if this.Failure != nil {
-		s = append(s, "Failure: "+fmt.Sprintf("%#v", this.Failure)+",\n")
-	}
 	if this.Entity != nil {
 		s = append(s, "Entity: "+fmt.Sprintf("%#v", this.Entity)+",\n")
 	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *CreateContactResponse_Failure) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&directory.CreateContactResponse_Failure{")
-	s = append(s, "Reason: "+fmt.Sprintf("%#v", this.Reason)+",\n")
-	s = append(s, "Message: "+fmt.Sprintf("%#v", this.Message)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2010,29 +1556,9 @@ func (m *LookupEntitiesResponse) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Success {
-		data[i] = 0x8
-		i++
-		if m.Success {
-			data[i] = 1
-		} else {
-			data[i] = 0
-		}
-		i++
-	}
-	if m.Failure != nil {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Failure.Size()))
-		n3, err := m.Failure.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n3
-	}
 	if len(m.Entities) > 0 {
 		for _, msg := range m.Entities {
-			data[i] = 0x1a
+			data[i] = 0xa
 			i++
 			i = encodeVarintSvc(data, i, uint64(msg.Size()))
 			n, err := msg.MarshalTo(data[i:])
@@ -2041,35 +1567,6 @@ func (m *LookupEntitiesResponse) MarshalTo(data []byte) (int, error) {
 			}
 			i += n
 		}
-	}
-	return i, nil
-}
-
-func (m *LookupEntitiesResponse_Failure) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *LookupEntitiesResponse_Failure) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Reason != 0 {
-		data[i] = 0x8
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Reason))
-	}
-	if len(m.Message) > 0 {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Message)))
-		i += copy(data[i:], m.Message)
 	}
 	return i, nil
 }
@@ -2128,11 +1625,11 @@ func (m *CreateEntityRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x32
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n4, err := m.RequestedInformation.MarshalTo(data[i:])
+		n3, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n4
+		i += n3
 	}
 	return i, nil
 }
@@ -2152,64 +1649,15 @@ func (m *CreateEntityResponse) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Success {
-		data[i] = 0x8
-		i++
-		if m.Success {
-			data[i] = 1
-		} else {
-			data[i] = 0
-		}
-		i++
-	}
-	if m.Failure != nil {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Failure.Size()))
-		n5, err := m.Failure.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n5
-	}
 	if m.Entity != nil {
-		data[i] = 0x1a
+		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
-		n6, err := m.Entity.MarshalTo(data[i:])
+		n4, err := m.Entity.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n6
-	}
-	return i, nil
-}
-
-func (m *CreateEntityResponse_Failure) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *CreateEntityResponse_Failure) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Reason != 0 {
-		data[i] = 0x8
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Reason))
-	}
-	if len(m.Message) > 0 {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Message)))
-		i += copy(data[i:], m.Message)
+		i += n4
 	}
 	return i, nil
 }
@@ -2245,11 +1693,11 @@ func (m *CreateMembershipRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n7, err := m.RequestedInformation.MarshalTo(data[i:])
+		n5, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n7
+		i += n5
 	}
 	return i, nil
 }
@@ -2269,64 +1717,15 @@ func (m *CreateMembershipResponse) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Success {
-		data[i] = 0x8
-		i++
-		if m.Success {
-			data[i] = 1
-		} else {
-			data[i] = 0
-		}
-		i++
-	}
-	if m.Failure != nil {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Failure.Size()))
-		n8, err := m.Failure.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n8
-	}
 	if m.Entity != nil {
-		data[i] = 0x1a
+		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
-		n9, err := m.Entity.MarshalTo(data[i:])
+		n6, err := m.Entity.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n9
-	}
-	return i, nil
-}
-
-func (m *CreateMembershipResponse_Failure) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *CreateMembershipResponse_Failure) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Reason != 0 {
-		data[i] = 0x8
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Reason))
-	}
-	if len(m.Message) > 0 {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Message)))
-		i += copy(data[i:], m.Message)
+		i += n6
 	}
 	return i, nil
 }
@@ -2395,11 +1794,11 @@ func (m *LookupEntitiesByContactRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x22
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n10, err := m.RequestedInformation.MarshalTo(data[i:])
+		n7, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n10
+		i += n7
 	}
 	return i, nil
 }
@@ -2419,29 +1818,9 @@ func (m *LookupEntitiesByContactResponse) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Success {
-		data[i] = 0x8
-		i++
-		if m.Success {
-			data[i] = 1
-		} else {
-			data[i] = 0
-		}
-		i++
-	}
-	if m.Failure != nil {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Failure.Size()))
-		n11, err := m.Failure.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n11
-	}
 	if len(m.Entities) > 0 {
 		for _, msg := range m.Entities {
-			data[i] = 0x1a
+			data[i] = 0xa
 			i++
 			i = encodeVarintSvc(data, i, uint64(msg.Size()))
 			n, err := msg.MarshalTo(data[i:])
@@ -2450,35 +1829,6 @@ func (m *LookupEntitiesByContactResponse) MarshalTo(data []byte) (int, error) {
 			}
 			i += n
 		}
-	}
-	return i, nil
-}
-
-func (m *LookupEntitiesByContactResponse_Failure) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *LookupEntitiesByContactResponse_Failure) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Reason != 0 {
-		data[i] = 0x8
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Reason))
-	}
-	if len(m.Message) > 0 {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Message)))
-		i += copy(data[i:], m.Message)
 	}
 	return i, nil
 }
@@ -2502,11 +1852,11 @@ func (m *CreateContactRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Contact.Size()))
-		n12, err := m.Contact.MarshalTo(data[i:])
+		n8, err := m.Contact.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n12
+		i += n8
 	}
 	if len(m.EntityID) > 0 {
 		data[i] = 0x12
@@ -2518,11 +1868,11 @@ func (m *CreateContactRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n13, err := m.RequestedInformation.MarshalTo(data[i:])
+		n9, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n13
+		i += n9
 	}
 	return i, nil
 }
@@ -2542,64 +1892,15 @@ func (m *CreateContactResponse) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Success {
-		data[i] = 0x8
-		i++
-		if m.Success {
-			data[i] = 1
-		} else {
-			data[i] = 0
-		}
-		i++
-	}
-	if m.Failure != nil {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Failure.Size()))
-		n14, err := m.Failure.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n14
-	}
 	if m.Entity != nil {
-		data[i] = 0x1a
+		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
-		n15, err := m.Entity.MarshalTo(data[i:])
+		n10, err := m.Entity.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n15
-	}
-	return i, nil
-}
-
-func (m *CreateContactResponse_Failure) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *CreateContactResponse_Failure) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Reason != 0 {
-		data[i] = 0x8
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Reason))
-	}
-	if len(m.Message) > 0 {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Message)))
-		i += copy(data[i:], m.Message)
+		i += n10
 	}
 	return i, nil
 }
@@ -2724,31 +2025,11 @@ func (m *LookupEntitiesRequest_ExternalID) Size() (n int) {
 func (m *LookupEntitiesResponse) Size() (n int) {
 	var l int
 	_ = l
-	if m.Success {
-		n += 2
-	}
-	if m.Failure != nil {
-		l = m.Failure.Size()
-		n += 1 + l + sovSvc(uint64(l))
-	}
 	if len(m.Entities) > 0 {
 		for _, e := range m.Entities {
 			l = e.Size()
 			n += 1 + l + sovSvc(uint64(l))
 		}
-	}
-	return n
-}
-
-func (m *LookupEntitiesResponse_Failure) Size() (n int) {
-	var l int
-	_ = l
-	if m.Reason != 0 {
-		n += 1 + sovSvc(uint64(m.Reason))
-	}
-	l = len(m.Message)
-	if l > 0 {
-		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
 }
@@ -2787,28 +2068,8 @@ func (m *CreateEntityRequest) Size() (n int) {
 func (m *CreateEntityResponse) Size() (n int) {
 	var l int
 	_ = l
-	if m.Success {
-		n += 2
-	}
-	if m.Failure != nil {
-		l = m.Failure.Size()
-		n += 1 + l + sovSvc(uint64(l))
-	}
 	if m.Entity != nil {
 		l = m.Entity.Size()
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	return n
-}
-
-func (m *CreateEntityResponse_Failure) Size() (n int) {
-	var l int
-	_ = l
-	if m.Reason != 0 {
-		n += 1 + sovSvc(uint64(m.Reason))
-	}
-	l = len(m.Message)
-	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
@@ -2835,28 +2096,8 @@ func (m *CreateMembershipRequest) Size() (n int) {
 func (m *CreateMembershipResponse) Size() (n int) {
 	var l int
 	_ = l
-	if m.Success {
-		n += 2
-	}
-	if m.Failure != nil {
-		l = m.Failure.Size()
-		n += 1 + l + sovSvc(uint64(l))
-	}
 	if m.Entity != nil {
 		l = m.Entity.Size()
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	return n
-}
-
-func (m *CreateMembershipResponse_Failure) Size() (n int) {
-	var l int
-	_ = l
-	if m.Reason != 0 {
-		n += 1 + sovSvc(uint64(m.Reason))
-	}
-	l = len(m.Message)
-	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
@@ -2895,31 +2136,11 @@ func (m *LookupEntitiesByContactRequest) Size() (n int) {
 func (m *LookupEntitiesByContactResponse) Size() (n int) {
 	var l int
 	_ = l
-	if m.Success {
-		n += 2
-	}
-	if m.Failure != nil {
-		l = m.Failure.Size()
-		n += 1 + l + sovSvc(uint64(l))
-	}
 	if len(m.Entities) > 0 {
 		for _, e := range m.Entities {
 			l = e.Size()
 			n += 1 + l + sovSvc(uint64(l))
 		}
-	}
-	return n
-}
-
-func (m *LookupEntitiesByContactResponse_Failure) Size() (n int) {
-	var l int
-	_ = l
-	if m.Reason != 0 {
-		n += 1 + sovSvc(uint64(m.Reason))
-	}
-	l = len(m.Message)
-	if l > 0 {
-		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
 }
@@ -2945,28 +2166,8 @@ func (m *CreateContactRequest) Size() (n int) {
 func (m *CreateContactResponse) Size() (n int) {
 	var l int
 	_ = l
-	if m.Success {
-		n += 2
-	}
-	if m.Failure != nil {
-		l = m.Failure.Size()
-		n += 1 + l + sovSvc(uint64(l))
-	}
 	if m.Entity != nil {
 		l = m.Entity.Size()
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	return n
-}
-
-func (m *CreateContactResponse_Failure) Size() (n int) {
-	var l int
-	_ = l
-	if m.Reason != 0 {
-		n += 1 + sovSvc(uint64(m.Reason))
-	}
-	l = len(m.Message)
-	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
@@ -3050,20 +2251,7 @@ func (this *LookupEntitiesResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&LookupEntitiesResponse{`,
-		`Success:` + fmt.Sprintf("%v", this.Success) + `,`,
-		`Failure:` + strings.Replace(fmt.Sprintf("%v", this.Failure), "LookupEntitiesResponse_Failure", "LookupEntitiesResponse_Failure", 1) + `,`,
 		`Entities:` + strings.Replace(fmt.Sprintf("%v", this.Entities), "Entity", "Entity", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *LookupEntitiesResponse_Failure) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&LookupEntitiesResponse_Failure{`,
-		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
-		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3088,20 +2276,7 @@ func (this *CreateEntityResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&CreateEntityResponse{`,
-		`Success:` + fmt.Sprintf("%v", this.Success) + `,`,
-		`Failure:` + strings.Replace(fmt.Sprintf("%v", this.Failure), "CreateEntityResponse_Failure", "CreateEntityResponse_Failure", 1) + `,`,
 		`Entity:` + strings.Replace(fmt.Sprintf("%v", this.Entity), "Entity", "Entity", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *CreateEntityResponse_Failure) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&CreateEntityResponse_Failure{`,
-		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
-		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3123,20 +2298,7 @@ func (this *CreateMembershipResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&CreateMembershipResponse{`,
-		`Success:` + fmt.Sprintf("%v", this.Success) + `,`,
-		`Failure:` + strings.Replace(fmt.Sprintf("%v", this.Failure), "CreateMembershipResponse_Failure", "CreateMembershipResponse_Failure", 1) + `,`,
 		`Entity:` + strings.Replace(fmt.Sprintf("%v", this.Entity), "Entity", "Entity", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *CreateMembershipResponse_Failure) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&CreateMembershipResponse_Failure{`,
-		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
-		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3169,20 +2331,7 @@ func (this *LookupEntitiesByContactResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&LookupEntitiesByContactResponse{`,
-		`Success:` + fmt.Sprintf("%v", this.Success) + `,`,
-		`Failure:` + strings.Replace(fmt.Sprintf("%v", this.Failure), "LookupEntitiesByContactResponse_Failure", "LookupEntitiesByContactResponse_Failure", 1) + `,`,
 		`Entities:` + strings.Replace(fmt.Sprintf("%v", this.Entities), "Entity", "Entity", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *LookupEntitiesByContactResponse_Failure) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&LookupEntitiesByContactResponse_Failure{`,
-		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
-		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3204,20 +2353,7 @@ func (this *CreateContactResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&CreateContactResponse{`,
-		`Success:` + fmt.Sprintf("%v", this.Success) + `,`,
-		`Failure:` + strings.Replace(fmt.Sprintf("%v", this.Failure), "CreateContactResponse_Failure", "CreateContactResponse_Failure", 1) + `,`,
 		`Entity:` + strings.Replace(fmt.Sprintf("%v", this.Entity), "Entity", "Entity", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *CreateContactResponse_Failure) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&CreateContactResponse_Failure{`,
-		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
-		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3778,59 +2914,6 @@ func (m *LookupEntitiesResponse) Unmarshal(data []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Success = bool(v != 0)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Failure", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Failure == nil {
-				m.Failure = &LookupEntitiesResponse_Failure{}
-			}
-			if err := m.Failure.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Entities", wireType)
 			}
@@ -3860,104 +2943,6 @@ func (m *LookupEntitiesResponse) Unmarshal(data []byte) error {
 			if err := m.Entities[len(m.Entities)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthSvc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *LookupEntitiesResponse_Failure) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSvc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Failure: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Failure: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
-			}
-			m.Reason = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.Reason |= (LookupEntitiesResponse_Failure_Reason(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Message = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -4230,59 +3215,6 @@ func (m *CreateEntityResponse) Unmarshal(data []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Success = bool(v != 0)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Failure", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Failure == nil {
-				m.Failure = &CreateEntityResponse_Failure{}
-			}
-			if err := m.Failure.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Entity", wireType)
 			}
@@ -4314,104 +3246,6 @@ func (m *CreateEntityResponse) Unmarshal(data []byte) error {
 			if err := m.Entity.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthSvc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CreateEntityResponse_Failure) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSvc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Failure: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Failure: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
-			}
-			m.Reason = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.Reason |= (CreateEntityResponse_Failure_Reason(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Message = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -4605,59 +3439,6 @@ func (m *CreateMembershipResponse) Unmarshal(data []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Success = bool(v != 0)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Failure", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Failure == nil {
-				m.Failure = &CreateMembershipResponse_Failure{}
-			}
-			if err := m.Failure.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Entity", wireType)
 			}
@@ -4689,104 +3470,6 @@ func (m *CreateMembershipResponse) Unmarshal(data []byte) error {
 			if err := m.Entity.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthSvc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CreateMembershipResponse_Failure) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSvc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Failure: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Failure: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
-			}
-			m.Reason = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.Reason |= (CreateMembershipResponse_Failure_Reason(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Message = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -5069,59 +3752,6 @@ func (m *LookupEntitiesByContactResponse) Unmarshal(data []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Success = bool(v != 0)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Failure", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Failure == nil {
-				m.Failure = &LookupEntitiesByContactResponse_Failure{}
-			}
-			if err := m.Failure.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Entities", wireType)
 			}
@@ -5151,104 +3781,6 @@ func (m *LookupEntitiesByContactResponse) Unmarshal(data []byte) error {
 			if err := m.Entities[len(m.Entities)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthSvc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *LookupEntitiesByContactResponse_Failure) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSvc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Failure: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Failure: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
-			}
-			m.Reason = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.Reason |= (LookupEntitiesByContactResponse_Failure_Reason(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Message = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -5446,59 +3978,6 @@ func (m *CreateContactResponse) Unmarshal(data []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Success = bool(v != 0)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Failure", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Failure == nil {
-				m.Failure = &CreateContactResponse_Failure{}
-			}
-			if err := m.Failure.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Entity", wireType)
 			}
@@ -5530,104 +4009,6 @@ func (m *CreateContactResponse) Unmarshal(data []byte) error {
 			if err := m.Entity.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthSvc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CreateContactResponse_Failure) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSvc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Failure: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Failure: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
-			}
-			m.Reason = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.Reason |= (CreateContactResponse_Failure_Reason(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Message = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

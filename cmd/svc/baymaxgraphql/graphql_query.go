@@ -65,15 +65,10 @@ var queryType = graphql.NewObject(
 								},
 							},
 						})
-					if err != nil {
+					if grpc.Code(err) == codes.NotFound {
+						return nil, errors.New("organization not found")
+					} else if err != nil {
 						return nil, internalError(err)
-					}
-					if !res.Success {
-						switch res.Failure.Reason {
-						case directory.LookupEntitiesResponse_Failure_NOT_FOUND:
-							return nil, errors.New("organization not found")
-						}
-						return nil, internalError(fmt.Errorf("Failed to get organization: %s %s", res.Failure.Reason, res.Failure.Message))
 					}
 					for _, em := range res.Entities {
 						oc, err := transformContactsToResponse(em.Contacts)

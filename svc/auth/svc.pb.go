@@ -29,11 +29,10 @@ import fmt "fmt"
 import math "math"
 import _ "github.com/gogo/protobuf/gogoproto"
 
-import strconv "strconv"
-
 import strings "strings"
 import github_com_gogo_protobuf_proto "github.com/gogo/protobuf/proto"
 import sort "sort"
+import strconv "strconv"
 import reflect "reflect"
 import github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
 
@@ -48,83 +47,6 @@ import io "io"
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
-
-type AuthenticateLoginResponse_Failure_Reason int32
-
-const (
-	AuthenticateLoginResponse_Failure_UNKNOWN_EMAIL     AuthenticateLoginResponse_Failure_Reason = 0
-	AuthenticateLoginResponse_Failure_PASSWORD_MISMATCH AuthenticateLoginResponse_Failure_Reason = 1
-)
-
-var AuthenticateLoginResponse_Failure_Reason_name = map[int32]string{
-	0: "UNKNOWN_EMAIL",
-	1: "PASSWORD_MISMATCH",
-}
-var AuthenticateLoginResponse_Failure_Reason_value = map[string]int32{
-	"UNKNOWN_EMAIL":     0,
-	"PASSWORD_MISMATCH": 1,
-}
-
-type CheckAuthenticationResponse_Failure_Reason int32
-
-const (
-	CheckAuthenticationResponse_Failure_NOT_FOUND CheckAuthenticationResponse_Failure_Reason = 0
-)
-
-var CheckAuthenticationResponse_Failure_Reason_name = map[int32]string{
-	0: "NOT_FOUND",
-}
-var CheckAuthenticationResponse_Failure_Reason_value = map[string]int32{
-	"NOT_FOUND": 0,
-}
-
-type CreateAccountResponse_Failure_Reason int32
-
-const (
-	CreateAccountResponse_Failure_EMAIL_ALREADY_EXISTS   CreateAccountResponse_Failure_Reason = 0
-	CreateAccountResponse_Failure_EMAIL_NOT_VALID        CreateAccountResponse_Failure_Reason = 1
-	CreateAccountResponse_Failure_PHONE_NUMBER_NOT_VALID CreateAccountResponse_Failure_Reason = 2
-	CreateAccountResponse_Failure_INVALID_INPUT          CreateAccountResponse_Failure_Reason = 3
-)
-
-var CreateAccountResponse_Failure_Reason_name = map[int32]string{
-	0: "EMAIL_ALREADY_EXISTS",
-	1: "EMAIL_NOT_VALID",
-	2: "PHONE_NUMBER_NOT_VALID",
-	3: "INVALID_INPUT",
-}
-var CreateAccountResponse_Failure_Reason_value = map[string]int32{
-	"EMAIL_ALREADY_EXISTS":   0,
-	"EMAIL_NOT_VALID":        1,
-	"PHONE_NUMBER_NOT_VALID": 2,
-	"INVALID_INPUT":          3,
-}
-
-type GetAccountResponse_Failure_Reason int32
-
-const (
-	GetAccountResponse_Failure_NOT_FOUND GetAccountResponse_Failure_Reason = 0
-)
-
-var GetAccountResponse_Failure_Reason_name = map[int32]string{
-	0: "NOT_FOUND",
-}
-var GetAccountResponse_Failure_Reason_value = map[string]int32{
-	"NOT_FOUND": 0,
-}
-
-type UnauthenticateResponse_Failure_Reason int32
-
-const (
-	UnauthenticateResponse_Failure_NOT_FOUND UnauthenticateResponse_Failure_Reason = 0
-)
-
-var UnauthenticateResponse_Failure_Reason_name = map[int32]string{
-	0: "NOT_FOUND",
-}
-var UnauthenticateResponse_Failure_Reason_value = map[string]int32{
-	"NOT_FOUND": 0,
-}
 
 // Account represents the data associated with an account
 type Account struct {
@@ -168,21 +90,12 @@ func (m *AuthenticateLoginRequest) GetTokenAttributes() map[string]string {
 // In the event that requires_two_factor_auth is set to true, the provided token will only work for a short time and to make the 2FA call
 // While the expiration is encoded within the token, it is provided in the response for the caller to consume if they choose.
 type AuthenticateLoginResponse struct {
-	Success bool                               `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Failure *AuthenticateLoginResponse_Failure `protobuf:"bytes,2,opt,name=failure" json:"failure,omitempty"`
-	Token   *AuthToken                         `protobuf:"bytes,3,opt,name=token" json:"token,omitempty"`
-	Account *Account                           `protobuf:"bytes,4,opt,name=account" json:"account,omitempty"`
+	Token   *AuthToken `protobuf:"bytes,1,opt,name=token" json:"token,omitempty"`
+	Account *Account   `protobuf:"bytes,2,opt,name=account" json:"account,omitempty"`
 }
 
 func (m *AuthenticateLoginResponse) Reset()      { *m = AuthenticateLoginResponse{} }
 func (*AuthenticateLoginResponse) ProtoMessage() {}
-
-func (m *AuthenticateLoginResponse) GetFailure() *AuthenticateLoginResponse_Failure {
-	if m != nil {
-		return m.Failure
-	}
-	return nil
-}
 
 func (m *AuthenticateLoginResponse) GetToken() *AuthToken {
 	if m != nil {
@@ -197,14 +110,6 @@ func (m *AuthenticateLoginResponse) GetAccount() *Account {
 	}
 	return nil
 }
-
-type AuthenticateLoginResponse_Failure struct {
-	Reason  AuthenticateLoginResponse_Failure_Reason `protobuf:"varint,1,opt,name=reason,proto3,enum=auth.AuthenticateLoginResponse_Failure_Reason" json:"reason,omitempty"`
-	Message string                                   `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-}
-
-func (m *AuthenticateLoginResponse_Failure) Reset()      { *m = AuthenticateLoginResponse_Failure{} }
-func (*AuthenticateLoginResponse_Failure) ProtoMessage() {}
 
 // CheckAuthenticationRequest checks if the provided token maps to an account and is still valid
 // The refresh parameter indicates if a new token should be created with an extended expiration
@@ -227,22 +132,13 @@ func (m *CheckAuthenticationRequest) GetTokenAttributes() map[string]string {
 // CheckAuthenticationResponse represents the information that is returned from IsAuthenticatedRequest
 // If a refresh was requested then a new token will be returned
 type CheckAuthenticationResponse struct {
-	Success         bool                                 `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Failure         *CheckAuthenticationResponse_Failure `protobuf:"bytes,2,opt,name=failure" json:"failure,omitempty"`
-	IsAuthenticated bool                                 `protobuf:"varint,3,opt,name=is_authenticated,proto3" json:"is_authenticated,omitempty"`
-	Account         *Account                             `protobuf:"bytes,4,opt,name=account" json:"account,omitempty"`
-	Token           *AuthToken                           `protobuf:"bytes,5,opt,name=token" json:"token,omitempty"`
+	IsAuthenticated bool       `protobuf:"varint,1,opt,name=is_authenticated,proto3" json:"is_authenticated,omitempty"`
+	Account         *Account   `protobuf:"bytes,2,opt,name=account" json:"account,omitempty"`
+	Token           *AuthToken `protobuf:"bytes,3,opt,name=token" json:"token,omitempty"`
 }
 
 func (m *CheckAuthenticationResponse) Reset()      { *m = CheckAuthenticationResponse{} }
 func (*CheckAuthenticationResponse) ProtoMessage() {}
-
-func (m *CheckAuthenticationResponse) GetFailure() *CheckAuthenticationResponse_Failure {
-	if m != nil {
-		return m.Failure
-	}
-	return nil
-}
 
 func (m *CheckAuthenticationResponse) GetAccount() *Account {
 	if m != nil {
@@ -257,14 +153,6 @@ func (m *CheckAuthenticationResponse) GetToken() *AuthToken {
 	}
 	return nil
 }
-
-type CheckAuthenticationResponse_Failure struct {
-	Reason  CheckAuthenticationResponse_Failure_Reason `protobuf:"varint,1,opt,name=reason,proto3,enum=auth.CheckAuthenticationResponse_Failure_Reason" json:"reason,omitempty"`
-	Message string                                     `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-}
-
-func (m *CheckAuthenticationResponse_Failure) Reset()      { *m = CheckAuthenticationResponse_Failure{} }
-func (*CheckAuthenticationResponse_Failure) ProtoMessage() {}
 
 // CreateAccountRequest represents the information that is expected in account creation requests
 // The email and optional? phone number are set as the primary for the account
@@ -290,21 +178,12 @@ func (m *CreateAccountRequest) GetTokenAttributes() map[string]string {
 // CreateAccountResponse represents the information that is returned from CreateAccountRequest
 // The account id and innter auth information is returned from account creation
 type CreateAccountResponse struct {
-	Success bool                           `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Failure *CreateAccountResponse_Failure `protobuf:"bytes,2,opt,name=failure" json:"failure,omitempty"`
-	Token   *AuthToken                     `protobuf:"bytes,3,opt,name=token" json:"token,omitempty"`
-	Account *Account                       `protobuf:"bytes,4,opt,name=account" json:"account,omitempty"`
+	Token   *AuthToken `protobuf:"bytes,1,opt,name=token" json:"token,omitempty"`
+	Account *Account   `protobuf:"bytes,2,opt,name=account" json:"account,omitempty"`
 }
 
 func (m *CreateAccountResponse) Reset()      { *m = CreateAccountResponse{} }
 func (*CreateAccountResponse) ProtoMessage() {}
-
-func (m *CreateAccountResponse) GetFailure() *CreateAccountResponse_Failure {
-	if m != nil {
-		return m.Failure
-	}
-	return nil
-}
 
 func (m *CreateAccountResponse) GetToken() *AuthToken {
 	if m != nil {
@@ -320,14 +199,6 @@ func (m *CreateAccountResponse) GetAccount() *Account {
 	return nil
 }
 
-type CreateAccountResponse_Failure struct {
-	Reason  CreateAccountResponse_Failure_Reason `protobuf:"varint,1,opt,name=reason,proto3,enum=auth.CreateAccountResponse_Failure_Reason" json:"reason,omitempty"`
-	Message string                               `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-}
-
-func (m *CreateAccountResponse_Failure) Reset()      { *m = CreateAccountResponse_Failure{} }
-func (*CreateAccountResponse_Failure) ProtoMessage() {}
-
 // GetAccountRequest represents the information required to request a users account information
 type GetAccountRequest struct {
 	AccountID string `protobuf:"bytes,1,opt,name=account_id,proto3" json:"account_id,omitempty"`
@@ -338,20 +209,11 @@ func (*GetAccountRequest) ProtoMessage() {}
 
 // GetAccountResponse represents the information returned from a GetAccount request
 type GetAccountResponse struct {
-	Success bool                        `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Failure *GetAccountResponse_Failure `protobuf:"bytes,2,opt,name=failure" json:"failure,omitempty"`
-	Account *Account                    `protobuf:"bytes,3,opt,name=account" json:"account,omitempty"`
+	Account *Account `protobuf:"bytes,1,opt,name=account" json:"account,omitempty"`
 }
 
 func (m *GetAccountResponse) Reset()      { *m = GetAccountResponse{} }
 func (*GetAccountResponse) ProtoMessage() {}
-
-func (m *GetAccountResponse) GetFailure() *GetAccountResponse_Failure {
-	if m != nil {
-		return m.Failure
-	}
-	return nil
-}
 
 func (m *GetAccountResponse) GetAccount() *Account {
 	if m != nil {
@@ -359,14 +221,6 @@ func (m *GetAccountResponse) GetAccount() *Account {
 	}
 	return nil
 }
-
-type GetAccountResponse_Failure struct {
-	Reason  GetAccountResponse_Failure_Reason `protobuf:"varint,1,opt,name=reason,proto3,enum=auth.GetAccountResponse_Failure_Reason" json:"reason,omitempty"`
-	Message string                            `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-}
-
-func (m *GetAccountResponse_Failure) Reset()      { *m = GetAccountResponse_Failure{} }
-func (*GetAccountResponse_Failure) ProtoMessage() {}
 
 // UnauthenticateRequest represents the information required to tombstone a token
 type UnauthenticateRequest struct {
@@ -386,86 +240,24 @@ func (m *UnauthenticateRequest) GetTokenAttributes() map[string]string {
 
 // UnauthenticateResponse represents the information returned from an Unauthenticate request
 type UnauthenticateResponse struct {
-	Success bool                            `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Failure *UnauthenticateResponse_Failure `protobuf:"bytes,2,opt,name=failure" json:"failure,omitempty"`
 }
 
 func (m *UnauthenticateResponse) Reset()      { *m = UnauthenticateResponse{} }
 func (*UnauthenticateResponse) ProtoMessage() {}
-
-func (m *UnauthenticateResponse) GetFailure() *UnauthenticateResponse_Failure {
-	if m != nil {
-		return m.Failure
-	}
-	return nil
-}
-
-type UnauthenticateResponse_Failure struct {
-	Reason  UnauthenticateResponse_Failure_Reason `protobuf:"varint,1,opt,name=reason,proto3,enum=auth.UnauthenticateResponse_Failure_Reason" json:"reason,omitempty"`
-	Message string                                `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-}
-
-func (m *UnauthenticateResponse_Failure) Reset()      { *m = UnauthenticateResponse_Failure{} }
-func (*UnauthenticateResponse_Failure) ProtoMessage() {}
 
 func init() {
 	proto.RegisterType((*Account)(nil), "auth.Account")
 	proto.RegisterType((*AuthToken)(nil), "auth.AuthToken")
 	proto.RegisterType((*AuthenticateLoginRequest)(nil), "auth.AuthenticateLoginRequest")
 	proto.RegisterType((*AuthenticateLoginResponse)(nil), "auth.AuthenticateLoginResponse")
-	proto.RegisterType((*AuthenticateLoginResponse_Failure)(nil), "auth.AuthenticateLoginResponse.Failure")
 	proto.RegisterType((*CheckAuthenticationRequest)(nil), "auth.CheckAuthenticationRequest")
 	proto.RegisterType((*CheckAuthenticationResponse)(nil), "auth.CheckAuthenticationResponse")
-	proto.RegisterType((*CheckAuthenticationResponse_Failure)(nil), "auth.CheckAuthenticationResponse.Failure")
 	proto.RegisterType((*CreateAccountRequest)(nil), "auth.CreateAccountRequest")
 	proto.RegisterType((*CreateAccountResponse)(nil), "auth.CreateAccountResponse")
-	proto.RegisterType((*CreateAccountResponse_Failure)(nil), "auth.CreateAccountResponse.Failure")
 	proto.RegisterType((*GetAccountRequest)(nil), "auth.GetAccountRequest")
 	proto.RegisterType((*GetAccountResponse)(nil), "auth.GetAccountResponse")
-	proto.RegisterType((*GetAccountResponse_Failure)(nil), "auth.GetAccountResponse.Failure")
 	proto.RegisterType((*UnauthenticateRequest)(nil), "auth.UnauthenticateRequest")
 	proto.RegisterType((*UnauthenticateResponse)(nil), "auth.UnauthenticateResponse")
-	proto.RegisterType((*UnauthenticateResponse_Failure)(nil), "auth.UnauthenticateResponse.Failure")
-	proto.RegisterEnum("auth.AuthenticateLoginResponse_Failure_Reason", AuthenticateLoginResponse_Failure_Reason_name, AuthenticateLoginResponse_Failure_Reason_value)
-	proto.RegisterEnum("auth.CheckAuthenticationResponse_Failure_Reason", CheckAuthenticationResponse_Failure_Reason_name, CheckAuthenticationResponse_Failure_Reason_value)
-	proto.RegisterEnum("auth.CreateAccountResponse_Failure_Reason", CreateAccountResponse_Failure_Reason_name, CreateAccountResponse_Failure_Reason_value)
-	proto.RegisterEnum("auth.GetAccountResponse_Failure_Reason", GetAccountResponse_Failure_Reason_name, GetAccountResponse_Failure_Reason_value)
-	proto.RegisterEnum("auth.UnauthenticateResponse_Failure_Reason", UnauthenticateResponse_Failure_Reason_name, UnauthenticateResponse_Failure_Reason_value)
-}
-func (x AuthenticateLoginResponse_Failure_Reason) String() string {
-	s, ok := AuthenticateLoginResponse_Failure_Reason_name[int32(x)]
-	if ok {
-		return s
-	}
-	return strconv.Itoa(int(x))
-}
-func (x CheckAuthenticationResponse_Failure_Reason) String() string {
-	s, ok := CheckAuthenticationResponse_Failure_Reason_name[int32(x)]
-	if ok {
-		return s
-	}
-	return strconv.Itoa(int(x))
-}
-func (x CreateAccountResponse_Failure_Reason) String() string {
-	s, ok := CreateAccountResponse_Failure_Reason_name[int32(x)]
-	if ok {
-		return s
-	}
-	return strconv.Itoa(int(x))
-}
-func (x GetAccountResponse_Failure_Reason) String() string {
-	s, ok := GetAccountResponse_Failure_Reason_name[int32(x)]
-	if ok {
-		return s
-	}
-	return strconv.Itoa(int(x))
-}
-func (x UnauthenticateResponse_Failure_Reason) String() string {
-	s, ok := UnauthenticateResponse_Failure_Reason_name[int32(x)]
-	if ok {
-		return s
-	}
-	return strconv.Itoa(int(x))
 }
 func (this *Account) Equal(that interface{}) bool {
 	if that == nil {
@@ -582,44 +374,10 @@ func (this *AuthenticateLoginResponse) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.Success != that1.Success {
-		return false
-	}
-	if !this.Failure.Equal(that1.Failure) {
-		return false
-	}
 	if !this.Token.Equal(that1.Token) {
 		return false
 	}
 	if !this.Account.Equal(that1.Account) {
-		return false
-	}
-	return true
-}
-func (this *AuthenticateLoginResponse_Failure) Equal(that interface{}) bool {
-	if that == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	}
-
-	that1, ok := that.(*AuthenticateLoginResponse_Failure)
-	if !ok {
-		return false
-	}
-	if that1 == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	} else if this == nil {
-		return false
-	}
-	if this.Reason != that1.Reason {
-		return false
-	}
-	if this.Message != that1.Message {
 		return false
 	}
 	return true
@@ -680,12 +438,6 @@ func (this *CheckAuthenticationResponse) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.Success != that1.Success {
-		return false
-	}
-	if !this.Failure.Equal(that1.Failure) {
-		return false
-	}
 	if this.IsAuthenticated != that1.IsAuthenticated {
 		return false
 	}
@@ -693,34 +445,6 @@ func (this *CheckAuthenticationResponse) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.Token.Equal(that1.Token) {
-		return false
-	}
-	return true
-}
-func (this *CheckAuthenticationResponse_Failure) Equal(that interface{}) bool {
-	if that == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	}
-
-	that1, ok := that.(*CheckAuthenticationResponse_Failure)
-	if !ok {
-		return false
-	}
-	if that1 == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	} else if this == nil {
-		return false
-	}
-	if this.Reason != that1.Reason {
-		return false
-	}
-	if this.Message != that1.Message {
 		return false
 	}
 	return true
@@ -790,44 +514,10 @@ func (this *CreateAccountResponse) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.Success != that1.Success {
-		return false
-	}
-	if !this.Failure.Equal(that1.Failure) {
-		return false
-	}
 	if !this.Token.Equal(that1.Token) {
 		return false
 	}
 	if !this.Account.Equal(that1.Account) {
-		return false
-	}
-	return true
-}
-func (this *CreateAccountResponse_Failure) Equal(that interface{}) bool {
-	if that == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	}
-
-	that1, ok := that.(*CreateAccountResponse_Failure)
-	if !ok {
-		return false
-	}
-	if that1 == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	} else if this == nil {
-		return false
-	}
-	if this.Reason != that1.Reason {
-		return false
-	}
-	if this.Message != that1.Message {
 		return false
 	}
 	return true
@@ -877,41 +567,7 @@ func (this *GetAccountResponse) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.Success != that1.Success {
-		return false
-	}
-	if !this.Failure.Equal(that1.Failure) {
-		return false
-	}
 	if !this.Account.Equal(that1.Account) {
-		return false
-	}
-	return true
-}
-func (this *GetAccountResponse_Failure) Equal(that interface{}) bool {
-	if that == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	}
-
-	that1, ok := that.(*GetAccountResponse_Failure)
-	if !ok {
-		return false
-	}
-	if that1 == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	} else if this == nil {
-		return false
-	}
-	if this.Reason != that1.Reason {
-		return false
-	}
-	if this.Message != that1.Message {
 		return false
 	}
 	return true
@@ -969,40 +625,6 @@ func (this *UnauthenticateResponse) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.Success != that1.Success {
-		return false
-	}
-	if !this.Failure.Equal(that1.Failure) {
-		return false
-	}
-	return true
-}
-func (this *UnauthenticateResponse_Failure) Equal(that interface{}) bool {
-	if that == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	}
-
-	that1, ok := that.(*UnauthenticateResponse_Failure)
-	if !ok {
-		return false
-	}
-	if that1 == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	} else if this == nil {
-		return false
-	}
-	if this.Reason != that1.Reason {
-		return false
-	}
-	if this.Message != that1.Message {
-		return false
-	}
 	return true
 }
 func (this *Account) GoString() string {
@@ -1056,29 +678,14 @@ func (this *AuthenticateLoginResponse) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 8)
+	s := make([]string, 0, 6)
 	s = append(s, "&auth.AuthenticateLoginResponse{")
-	s = append(s, "Success: "+fmt.Sprintf("%#v", this.Success)+",\n")
-	if this.Failure != nil {
-		s = append(s, "Failure: "+fmt.Sprintf("%#v", this.Failure)+",\n")
-	}
 	if this.Token != nil {
 		s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
 	}
 	if this.Account != nil {
 		s = append(s, "Account: "+fmt.Sprintf("%#v", this.Account)+",\n")
 	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *AuthenticateLoginResponse_Failure) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&auth.AuthenticateLoginResponse_Failure{")
-	s = append(s, "Reason: "+fmt.Sprintf("%#v", this.Reason)+",\n")
-	s = append(s, "Message: "+fmt.Sprintf("%#v", this.Message)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1110,12 +717,8 @@ func (this *CheckAuthenticationResponse) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 9)
+	s := make([]string, 0, 7)
 	s = append(s, "&auth.CheckAuthenticationResponse{")
-	s = append(s, "Success: "+fmt.Sprintf("%#v", this.Success)+",\n")
-	if this.Failure != nil {
-		s = append(s, "Failure: "+fmt.Sprintf("%#v", this.Failure)+",\n")
-	}
 	s = append(s, "IsAuthenticated: "+fmt.Sprintf("%#v", this.IsAuthenticated)+",\n")
 	if this.Account != nil {
 		s = append(s, "Account: "+fmt.Sprintf("%#v", this.Account)+",\n")
@@ -1123,17 +726,6 @@ func (this *CheckAuthenticationResponse) GoString() string {
 	if this.Token != nil {
 		s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
 	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *CheckAuthenticationResponse_Failure) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&auth.CheckAuthenticationResponse_Failure{")
-	s = append(s, "Reason: "+fmt.Sprintf("%#v", this.Reason)+",\n")
-	s = append(s, "Message: "+fmt.Sprintf("%#v", this.Message)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1168,29 +760,14 @@ func (this *CreateAccountResponse) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 8)
+	s := make([]string, 0, 6)
 	s = append(s, "&auth.CreateAccountResponse{")
-	s = append(s, "Success: "+fmt.Sprintf("%#v", this.Success)+",\n")
-	if this.Failure != nil {
-		s = append(s, "Failure: "+fmt.Sprintf("%#v", this.Failure)+",\n")
-	}
 	if this.Token != nil {
 		s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
 	}
 	if this.Account != nil {
 		s = append(s, "Account: "+fmt.Sprintf("%#v", this.Account)+",\n")
 	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *CreateAccountResponse_Failure) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&auth.CreateAccountResponse_Failure{")
-	s = append(s, "Reason: "+fmt.Sprintf("%#v", this.Reason)+",\n")
-	s = append(s, "Message: "+fmt.Sprintf("%#v", this.Message)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1208,26 +785,11 @@ func (this *GetAccountResponse) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 5)
 	s = append(s, "&auth.GetAccountResponse{")
-	s = append(s, "Success: "+fmt.Sprintf("%#v", this.Success)+",\n")
-	if this.Failure != nil {
-		s = append(s, "Failure: "+fmt.Sprintf("%#v", this.Failure)+",\n")
-	}
 	if this.Account != nil {
 		s = append(s, "Account: "+fmt.Sprintf("%#v", this.Account)+",\n")
 	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *GetAccountResponse_Failure) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&auth.GetAccountResponse_Failure{")
-	s = append(s, "Reason: "+fmt.Sprintf("%#v", this.Reason)+",\n")
-	s = append(s, "Message: "+fmt.Sprintf("%#v", this.Message)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1258,23 +820,8 @@ func (this *UnauthenticateResponse) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 6)
+	s := make([]string, 0, 4)
 	s = append(s, "&auth.UnauthenticateResponse{")
-	s = append(s, "Success: "+fmt.Sprintf("%#v", this.Success)+",\n")
-	if this.Failure != nil {
-		s = append(s, "Failure: "+fmt.Sprintf("%#v", this.Failure)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *UnauthenticateResponse_Failure) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&auth.UnauthenticateResponse_Failure{")
-	s = append(s, "Reason: "+fmt.Sprintf("%#v", this.Reason)+",\n")
-	s = append(s, "Message: "+fmt.Sprintf("%#v", this.Message)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1600,74 +1147,25 @@ func (m *AuthenticateLoginResponse) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Success {
-		data[i] = 0x8
+	if m.Token != nil {
+		data[i] = 0xa
 		i++
-		if m.Success {
-			data[i] = 1
-		} else {
-			data[i] = 0
-		}
-		i++
-	}
-	if m.Failure != nil {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Failure.Size()))
-		n1, err := m.Failure.MarshalTo(data[i:])
+		i = encodeVarintSvc(data, i, uint64(m.Token.Size()))
+		n1, err := m.Token.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n1
 	}
-	if m.Token != nil {
-		data[i] = 0x1a
+	if m.Account != nil {
+		data[i] = 0x12
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Token.Size()))
-		n2, err := m.Token.MarshalTo(data[i:])
+		i = encodeVarintSvc(data, i, uint64(m.Account.Size()))
+		n2, err := m.Account.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n2
-	}
-	if m.Account != nil {
-		data[i] = 0x22
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Account.Size()))
-		n3, err := m.Account.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n3
-	}
-	return i, nil
-}
-
-func (m *AuthenticateLoginResponse_Failure) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *AuthenticateLoginResponse_Failure) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Reason != 0 {
-		data[i] = 0x8
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Reason))
-	}
-	if len(m.Message) > 0 {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Message)))
-		i += copy(data[i:], m.Message)
 	}
 	return i, nil
 }
@@ -1738,28 +1236,8 @@ func (m *CheckAuthenticationResponse) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Success {
-		data[i] = 0x8
-		i++
-		if m.Success {
-			data[i] = 1
-		} else {
-			data[i] = 0
-		}
-		i++
-	}
-	if m.Failure != nil {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Failure.Size()))
-		n4, err := m.Failure.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n4
-	}
 	if m.IsAuthenticated {
-		data[i] = 0x18
+		data[i] = 0x8
 		i++
 		if m.IsAuthenticated {
 			data[i] = 1
@@ -1769,53 +1247,24 @@ func (m *CheckAuthenticationResponse) MarshalTo(data []byte) (int, error) {
 		i++
 	}
 	if m.Account != nil {
-		data[i] = 0x22
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Account.Size()))
-		n5, err := m.Account.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n5
-	}
-	if m.Token != nil {
-		data[i] = 0x2a
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Token.Size()))
-		n6, err := m.Token.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n6
-	}
-	return i, nil
-}
-
-func (m *CheckAuthenticationResponse_Failure) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *CheckAuthenticationResponse_Failure) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Reason != 0 {
-		data[i] = 0x8
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Reason))
-	}
-	if len(m.Message) > 0 {
 		data[i] = 0x12
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Message)))
-		i += copy(data[i:], m.Message)
+		i = encodeVarintSvc(data, i, uint64(m.Account.Size()))
+		n3, err := m.Account.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n3
+	}
+	if m.Token != nil {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Token.Size()))
+		n4, err := m.Token.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n4
 	}
 	return i, nil
 }
@@ -1900,74 +1349,25 @@ func (m *CreateAccountResponse) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Success {
-		data[i] = 0x8
-		i++
-		if m.Success {
-			data[i] = 1
-		} else {
-			data[i] = 0
-		}
-		i++
-	}
-	if m.Failure != nil {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Failure.Size()))
-		n7, err := m.Failure.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n7
-	}
 	if m.Token != nil {
-		data[i] = 0x1a
+		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Token.Size()))
-		n8, err := m.Token.MarshalTo(data[i:])
+		n5, err := m.Token.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n8
+		i += n5
 	}
 	if m.Account != nil {
-		data[i] = 0x22
+		data[i] = 0x12
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Account.Size()))
-		n9, err := m.Account.MarshalTo(data[i:])
+		n6, err := m.Account.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n9
-	}
-	return i, nil
-}
-
-func (m *CreateAccountResponse_Failure) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *CreateAccountResponse_Failure) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Reason != 0 {
-		data[i] = 0x8
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Reason))
-	}
-	if len(m.Message) > 0 {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Message)))
-		i += copy(data[i:], m.Message)
+		i += n6
 	}
 	return i, nil
 }
@@ -2011,64 +1411,15 @@ func (m *GetAccountResponse) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Success {
-		data[i] = 0x8
-		i++
-		if m.Success {
-			data[i] = 1
-		} else {
-			data[i] = 0
-		}
-		i++
-	}
-	if m.Failure != nil {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Failure.Size()))
-		n10, err := m.Failure.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n10
-	}
 	if m.Account != nil {
-		data[i] = 0x1a
+		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Account.Size()))
-		n11, err := m.Account.MarshalTo(data[i:])
+		n7, err := m.Account.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n11
-	}
-	return i, nil
-}
-
-func (m *GetAccountResponse_Failure) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *GetAccountResponse_Failure) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Reason != 0 {
-		data[i] = 0x8
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Reason))
-	}
-	if len(m.Message) > 0 {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Message)))
-		i += copy(data[i:], m.Message)
+		i += n7
 	}
 	return i, nil
 }
@@ -2129,55 +1480,6 @@ func (m *UnauthenticateResponse) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Success {
-		data[i] = 0x8
-		i++
-		if m.Success {
-			data[i] = 1
-		} else {
-			data[i] = 0
-		}
-		i++
-	}
-	if m.Failure != nil {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Failure.Size()))
-		n12, err := m.Failure.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n12
-	}
-	return i, nil
-}
-
-func (m *UnauthenticateResponse_Failure) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *UnauthenticateResponse_Failure) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Reason != 0 {
-		data[i] = 0x8
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Reason))
-	}
-	if len(m.Message) > 0 {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Message)))
-		i += copy(data[i:], m.Message)
-	}
 	return i, nil
 }
 
@@ -2264,32 +1566,12 @@ func (m *AuthenticateLoginRequest) Size() (n int) {
 func (m *AuthenticateLoginResponse) Size() (n int) {
 	var l int
 	_ = l
-	if m.Success {
-		n += 2
-	}
-	if m.Failure != nil {
-		l = m.Failure.Size()
-		n += 1 + l + sovSvc(uint64(l))
-	}
 	if m.Token != nil {
 		l = m.Token.Size()
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	if m.Account != nil {
 		l = m.Account.Size()
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	return n
-}
-
-func (m *AuthenticateLoginResponse_Failure) Size() (n int) {
-	var l int
-	_ = l
-	if m.Reason != 0 {
-		n += 1 + sovSvc(uint64(m.Reason))
-	}
-	l = len(m.Message)
-	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
@@ -2319,13 +1601,6 @@ func (m *CheckAuthenticationRequest) Size() (n int) {
 func (m *CheckAuthenticationResponse) Size() (n int) {
 	var l int
 	_ = l
-	if m.Success {
-		n += 2
-	}
-	if m.Failure != nil {
-		l = m.Failure.Size()
-		n += 1 + l + sovSvc(uint64(l))
-	}
 	if m.IsAuthenticated {
 		n += 2
 	}
@@ -2335,19 +1610,6 @@ func (m *CheckAuthenticationResponse) Size() (n int) {
 	}
 	if m.Token != nil {
 		l = m.Token.Size()
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	return n
-}
-
-func (m *CheckAuthenticationResponse_Failure) Size() (n int) {
-	var l int
-	_ = l
-	if m.Reason != 0 {
-		n += 1 + sovSvc(uint64(m.Reason))
-	}
-	l = len(m.Message)
-	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
@@ -2390,32 +1652,12 @@ func (m *CreateAccountRequest) Size() (n int) {
 func (m *CreateAccountResponse) Size() (n int) {
 	var l int
 	_ = l
-	if m.Success {
-		n += 2
-	}
-	if m.Failure != nil {
-		l = m.Failure.Size()
-		n += 1 + l + sovSvc(uint64(l))
-	}
 	if m.Token != nil {
 		l = m.Token.Size()
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	if m.Account != nil {
 		l = m.Account.Size()
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	return n
-}
-
-func (m *CreateAccountResponse_Failure) Size() (n int) {
-	var l int
-	_ = l
-	if m.Reason != 0 {
-		n += 1 + sovSvc(uint64(m.Reason))
-	}
-	l = len(m.Message)
-	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
@@ -2434,28 +1676,8 @@ func (m *GetAccountRequest) Size() (n int) {
 func (m *GetAccountResponse) Size() (n int) {
 	var l int
 	_ = l
-	if m.Success {
-		n += 2
-	}
-	if m.Failure != nil {
-		l = m.Failure.Size()
-		n += 1 + l + sovSvc(uint64(l))
-	}
 	if m.Account != nil {
 		l = m.Account.Size()
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	return n
-}
-
-func (m *GetAccountResponse_Failure) Size() (n int) {
-	var l int
-	_ = l
-	if m.Reason != 0 {
-		n += 1 + sovSvc(uint64(m.Reason))
-	}
-	l = len(m.Message)
-	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
@@ -2482,26 +1704,6 @@ func (m *UnauthenticateRequest) Size() (n int) {
 func (m *UnauthenticateResponse) Size() (n int) {
 	var l int
 	_ = l
-	if m.Success {
-		n += 2
-	}
-	if m.Failure != nil {
-		l = m.Failure.Size()
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	return n
-}
-
-func (m *UnauthenticateResponse_Failure) Size() (n int) {
-	var l int
-	_ = l
-	if m.Reason != 0 {
-		n += 1 + sovSvc(uint64(m.Reason))
-	}
-	l = len(m.Message)
-	if l > 0 {
-		n += 1 + l + sovSvc(uint64(l))
-	}
 	return n
 }
 
@@ -2568,21 +1770,8 @@ func (this *AuthenticateLoginResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&AuthenticateLoginResponse{`,
-		`Success:` + fmt.Sprintf("%v", this.Success) + `,`,
-		`Failure:` + strings.Replace(fmt.Sprintf("%v", this.Failure), "AuthenticateLoginResponse_Failure", "AuthenticateLoginResponse_Failure", 1) + `,`,
 		`Token:` + strings.Replace(fmt.Sprintf("%v", this.Token), "AuthToken", "AuthToken", 1) + `,`,
 		`Account:` + strings.Replace(fmt.Sprintf("%v", this.Account), "Account", "Account", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *AuthenticateLoginResponse_Failure) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&AuthenticateLoginResponse_Failure{`,
-		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
-		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2614,22 +1803,9 @@ func (this *CheckAuthenticationResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&CheckAuthenticationResponse{`,
-		`Success:` + fmt.Sprintf("%v", this.Success) + `,`,
-		`Failure:` + strings.Replace(fmt.Sprintf("%v", this.Failure), "CheckAuthenticationResponse_Failure", "CheckAuthenticationResponse_Failure", 1) + `,`,
 		`IsAuthenticated:` + fmt.Sprintf("%v", this.IsAuthenticated) + `,`,
 		`Account:` + strings.Replace(fmt.Sprintf("%v", this.Account), "Account", "Account", 1) + `,`,
 		`Token:` + strings.Replace(fmt.Sprintf("%v", this.Token), "AuthToken", "AuthToken", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *CheckAuthenticationResponse_Failure) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&CheckAuthenticationResponse_Failure{`,
-		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
-		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2664,21 +1840,8 @@ func (this *CreateAccountResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&CreateAccountResponse{`,
-		`Success:` + fmt.Sprintf("%v", this.Success) + `,`,
-		`Failure:` + strings.Replace(fmt.Sprintf("%v", this.Failure), "CreateAccountResponse_Failure", "CreateAccountResponse_Failure", 1) + `,`,
 		`Token:` + strings.Replace(fmt.Sprintf("%v", this.Token), "AuthToken", "AuthToken", 1) + `,`,
 		`Account:` + strings.Replace(fmt.Sprintf("%v", this.Account), "Account", "Account", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *CreateAccountResponse_Failure) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&CreateAccountResponse_Failure{`,
-		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
-		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2698,20 +1861,7 @@ func (this *GetAccountResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&GetAccountResponse{`,
-		`Success:` + fmt.Sprintf("%v", this.Success) + `,`,
-		`Failure:` + strings.Replace(fmt.Sprintf("%v", this.Failure), "GetAccountResponse_Failure", "GetAccountResponse_Failure", 1) + `,`,
 		`Account:` + strings.Replace(fmt.Sprintf("%v", this.Account), "Account", "Account", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *GetAccountResponse_Failure) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&GetAccountResponse_Failure{`,
-		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
-		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2742,19 +1892,6 @@ func (this *UnauthenticateResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&UnauthenticateResponse{`,
-		`Success:` + fmt.Sprintf("%v", this.Success) + `,`,
-		`Failure:` + strings.Replace(fmt.Sprintf("%v", this.Failure), "UnauthenticateResponse_Failure", "UnauthenticateResponse_Failure", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *UnauthenticateResponse_Failure) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&UnauthenticateResponse_Failure{`,
-		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
-		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3251,59 +2388,6 @@ func (m *AuthenticateLoginResponse) Unmarshal(data []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Success = bool(v != 0)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Failure", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Failure == nil {
-				m.Failure = &AuthenticateLoginResponse_Failure{}
-			}
-			if err := m.Failure.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
 			}
@@ -3336,7 +2420,7 @@ func (m *AuthenticateLoginResponse) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 4:
+		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Account", wireType)
 			}
@@ -3368,104 +2452,6 @@ func (m *AuthenticateLoginResponse) Unmarshal(data []byte) error {
 			if err := m.Account.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthSvc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *AuthenticateLoginResponse_Failure) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSvc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Failure: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Failure: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
-			}
-			m.Reason = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.Reason |= (AuthenticateLoginResponse_Failure_Reason(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Message = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -3729,59 +2715,6 @@ func (m *CheckAuthenticationResponse) Unmarshal(data []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Success = bool(v != 0)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Failure", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Failure == nil {
-				m.Failure = &CheckAuthenticationResponse_Failure{}
-			}
-			if err := m.Failure.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field IsAuthenticated", wireType)
 			}
 			var v int
@@ -3800,7 +2733,7 @@ func (m *CheckAuthenticationResponse) Unmarshal(data []byte) error {
 				}
 			}
 			m.IsAuthenticated = bool(v != 0)
-		case 4:
+		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Account", wireType)
 			}
@@ -3833,7 +2766,7 @@ func (m *CheckAuthenticationResponse) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 5:
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
 			}
@@ -3865,104 +2798,6 @@ func (m *CheckAuthenticationResponse) Unmarshal(data []byte) error {
 			if err := m.Token.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthSvc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CheckAuthenticationResponse_Failure) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSvc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Failure: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Failure: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
-			}
-			m.Reason = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.Reason |= (CheckAuthenticationResponse_Failure_Reason(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Message = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -4321,59 +3156,6 @@ func (m *CreateAccountResponse) Unmarshal(data []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Success = bool(v != 0)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Failure", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Failure == nil {
-				m.Failure = &CreateAccountResponse_Failure{}
-			}
-			if err := m.Failure.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
 			}
@@ -4406,7 +3188,7 @@ func (m *CreateAccountResponse) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 4:
+		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Account", wireType)
 			}
@@ -4438,104 +3220,6 @@ func (m *CreateAccountResponse) Unmarshal(data []byte) error {
 			if err := m.Account.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthSvc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CreateAccountResponse_Failure) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSvc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Failure: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Failure: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
-			}
-			m.Reason = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.Reason |= (CreateAccountResponse_Failure_Reason(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Message = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -4667,59 +3351,6 @@ func (m *GetAccountResponse) Unmarshal(data []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Success = bool(v != 0)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Failure", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Failure == nil {
-				m.Failure = &GetAccountResponse_Failure{}
-			}
-			if err := m.Failure.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Account", wireType)
 			}
@@ -4751,104 +3382,6 @@ func (m *GetAccountResponse) Unmarshal(data []byte) error {
 			if err := m.Account.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthSvc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *GetAccountResponse_Failure) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSvc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Failure: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Failure: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
-			}
-			m.Reason = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.Reason |= (GetAccountResponse_Failure_Reason(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Message = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -5090,157 +3623,6 @@ func (m *UnauthenticateResponse) Unmarshal(data []byte) error {
 			return fmt.Errorf("proto: UnauthenticateResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Success = bool(v != 0)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Failure", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Failure == nil {
-				m.Failure = &UnauthenticateResponse_Failure{}
-			}
-			if err := m.Failure.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthSvc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *UnauthenticateResponse_Failure) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSvc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Failure: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Failure: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
-			}
-			m.Reason = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.Reason |= (UnauthenticateResponse_Failure_Reason(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Message = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

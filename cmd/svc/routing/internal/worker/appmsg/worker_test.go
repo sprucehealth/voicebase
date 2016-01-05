@@ -24,7 +24,6 @@ func (s *mockDirectoryService) LookupEntities(ctx context.Context, in *directory
 	}
 
 	return &directory.LookupEntitiesResponse{
-		Success:  true,
 		Entities: entities,
 	}, nil
 }

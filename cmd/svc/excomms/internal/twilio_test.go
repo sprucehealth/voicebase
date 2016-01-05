@@ -28,13 +28,11 @@ type mockDirectoryService_Twilio struct {
 
 func (m *mockDirectoryService_Twilio) LookupEntities(ctx context.Context, in *directory.LookupEntitiesRequest, opts ...grpc.CallOption) (*directory.LookupEntitiesResponse, error) {
 	return &directory.LookupEntitiesResponse{
-		Success:  true,
 		Entities: m.entities,
 	}, nil
 }
 func (m *mockDirectoryService_Twilio) LookupEntitiesByContact(ctx context.Context, in *directory.LookupEntitiesByContactRequest, opts ...grpc.CallOption) (*directory.LookupEntitiesByContactResponse, error) {
 	return &directory.LookupEntitiesByContactResponse{
-		Success:  true,
 		Entities: m.entities,
 	}, nil
 }

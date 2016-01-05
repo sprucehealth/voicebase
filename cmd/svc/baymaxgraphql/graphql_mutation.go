@@ -438,22 +438,19 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					Password: password,
 				})
 				if err != nil {
-					return nil, internalError(err)
-				}
-				if !res.Success {
-					switch res.Failure.Reason {
-					case auth.AuthenticateLoginResponse_Failure_UNKNOWN_EMAIL:
+					switch grpc.Code(err) {
+					case auth.EmailNotFound:
 						return &authenticateOutput{
 							ClientMutationID: mutationID,
 							Result:           authenticateResultInvalidEmail,
 						}, nil
-					case auth.AuthenticateLoginResponse_Failure_PASSWORD_MISMATCH:
+					case auth.BadPassword:
 						return &authenticateOutput{
 							ClientMutationID: mutationID,
 							Result:           authenticateResultInvalidPassword,
 						}, nil
 					default:
-						return nil, errors.New("unknown authentication failure")
+						return nil, internalError(err)
 					}
 				}
 				result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
@@ -523,27 +520,24 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				}
 				res, err := svc.auth.CreateAccount(ctx, req)
 				if err != nil {
-					return nil, internalError(err)
-				}
-				if !res.Success {
-					switch res.Failure.Reason {
-					case auth.CreateAccountResponse_Failure_EMAIL_ALREADY_EXISTS:
-						return &createAccountOutput{
+					switch grpc.Code(err) {
+					case auth.DuplicateEmail:
+						return &authenticateOutput{
 							ClientMutationID: mutationID,
 							Result:           createAccountResultEmailExists,
 						}, nil
-					case auth.CreateAccountResponse_Failure_EMAIL_NOT_VALID:
-						return &createAccountOutput{
+					case auth.InvalidEmail:
+						return &authenticateOutput{
 							ClientMutationID: mutationID,
 							Result:           createAccountResultEmailNotValid,
 						}, nil
-					case auth.CreateAccountResponse_Failure_PHONE_NUMBER_NOT_VALID:
-						return &createAccountOutput{
+					case auth.InvalidPhoneNumber:
+						return &authenticateOutput{
 							ClientMutationID: mutationID,
 							Result:           createAccountResultPhoneNumberNotValid,
 						}, nil
 					default:
-						return nil, fmt.Errorf("unknown authentication failure: %s %s", res.Failure.Reason.String(), res.Failure.Message)
+						return nil, internalError(err)
 					}
 				}
 				accountID := res.Account.ID
@@ -558,13 +552,6 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					})
 					if err != nil {
 						return nil, internalError(err)
-					}
-					if !res.Success {
-						switch res.Failure.Reason {
-						// TODO
-						default:
-							return nil, errors.New("unknown create entity failure")
-						}
 					}
 					orgEntityID = res.Entity.ID
 
@@ -584,13 +571,6 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					})
 					if err != nil {
 						return nil, internalError(err)
-					}
-					if !res.Success {
-						switch res.Failure.Reason {
-						// TODO
-						default:
-							return nil, errors.New("unknown create entity failure")
-						}
 					}
 					accEntityID = res.Entity.ID
 				}
@@ -614,7 +594,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				if err != nil {
 					return nil, internalError(err)
 				}
-				ccres, err := svc.directory.CreateContact(ctx, &directory.CreateContactRequest{
+				_, err = svc.directory.CreateContact(ctx, &directory.CreateContactRequest{
 					Contact: &directory.Contact{
 						ContactType: directory.ContactType_PHONE,
 						Value:       pres.PhoneNumber,
@@ -624,9 +604,6 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				})
 				if err != nil {
 					return nil, internalError(err)
-				}
-				if !ccres.Success {
-					return nil, internalError(fmt.Errorf("failed to create contact: %s %s", ccres.Failure.Reason.String(), ccres.Failure.Message))
 				}
 
 				result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)

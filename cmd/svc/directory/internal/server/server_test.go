@@ -4,6 +4,9 @@ import (
 	"strings"
 	"testing"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+
 	"golang.org/x/net/context"
 
 	"github.com/sprucehealth/backend/api"
@@ -31,8 +34,7 @@ func TestLookupEntitiesByEntityID(t *testing.T) {
 		RequestedInformation: &directory.RequestedInformation{},
 	})
 	test.OK(t, err)
-	test.Assert(t, resp.Success, "Expected success")
-	test.AssertNil(t, resp.Failure)
+
 	test.Equals(t, 1, len(resp.Entities))
 	test.Equals(t, eID1.String(), resp.Entities[0].ID)
 	test.Equals(t, "entity1", resp.Entities[0].Name)
@@ -71,8 +73,7 @@ func TestLookupEntitiesByExternalID(t *testing.T) {
 		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{ExternalID: externalID},
 	})
 	test.OK(t, err)
-	test.Assert(t, resp.Success, "Expected success")
-	test.AssertNil(t, resp.Failure)
+
 	test.Equals(t, 2, len(resp.Entities))
 	test.Equals(t, eID1.String(), resp.Entities[0].ID)
 	test.Equals(t, "entity1", resp.Entities[0].Name)
@@ -88,14 +89,13 @@ func TestLookupEntitiesNoResults(t *testing.T) {
 	s := New(dl)
 	eID1 := dal.NewEntityID(1)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1}), []*dal.Entity{}, nil))
-	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
+	_, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
 		LookupKeyType:  directory.LookupEntitiesRequest_ENTITY_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{EntityID: eID1.String()},
 	})
-	test.OK(t, err)
-	test.Equals(t, false, resp.Success)
-	test.AssertNotNil(t, resp.Failure)
-	test.Equals(t, directory.LookupEntitiesResponse_Failure_NOT_FOUND, resp.Failure.Reason)
+	test.Assert(t, err != nil, "Expected an error")
+
+	test.Equals(t, codes.NotFound, grpc.Code(err))
 	mock.FinishAll(dl)
 }
 
@@ -130,8 +130,7 @@ func TestLookupEntitiesByContact(t *testing.T) {
 		RequestedInformation: &directory.RequestedInformation{},
 	})
 	test.OK(t, err)
-	test.Assert(t, resp.Success, "Expected success")
-	test.AssertNil(t, resp.Failure)
+
 	test.Equals(t, 2, len(resp.Entities))
 	test.Equals(t, eID1.String(), resp.Entities[0].ID)
 	test.Equals(t, "entity1", resp.Entities[0].Name)
@@ -147,14 +146,13 @@ func TestLookupEntitiesByContactNoResults(t *testing.T) {
 	s := New(dl)
 	contactValue := " 1234567@gmail.com "
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityContactsForValue, strings.TrimSpace(contactValue)), []*dal.EntityContact{}, nil))
-	resp, err := s.LookupEntitiesByContact(context.Background(), &directory.LookupEntitiesByContactRequest{
+	_, err := s.LookupEntitiesByContact(context.Background(), &directory.LookupEntitiesByContactRequest{
 		ContactValue:         contactValue,
 		RequestedInformation: &directory.RequestedInformation{},
 	})
-	test.OK(t, err)
-	test.Equals(t, false, resp.Success)
-	test.AssertNotNil(t, resp.Failure)
-	test.Equals(t, directory.LookupEntitiesByContactResponse_Failure_NOT_FOUND, resp.Failure.Reason)
+	test.Assert(t, err != nil, "Expected an error")
+
+	test.Equals(t, codes.NotFound, grpc.Code(err))
 }
 
 func TestCreateEntityFull(t *testing.T) {
@@ -217,8 +215,7 @@ func TestCreateEntityFull(t *testing.T) {
 		RequestedInformation:      &directory.RequestedInformation{},
 	})
 	test.OK(t, err)
-	test.AssertNil(t, resp.Failure)
-	test.Assert(t, resp.Success, "Expected success")
+
 	test.AssertNotNil(t, resp.Entity)
 	test.Equals(t, eID1.String(), resp.Entity.ID)
 	test.Equals(t, name, resp.Entity.Name)
@@ -245,7 +242,7 @@ func TestCreateEntityInitialEntityNotFound(t *testing.T) {
 		},
 	}
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID2), (*dal.Entity)(nil), api.ErrNotFound("not found")))
-	resp, err := s.CreateEntity(context.Background(), &directory.CreateEntityRequest{
+	_, err := s.CreateEntity(context.Background(), &directory.CreateEntityRequest{
 		Name:                      name,
 		Type:                      eType,
 		ExternalID:                externalID,
@@ -253,10 +250,9 @@ func TestCreateEntityInitialEntityNotFound(t *testing.T) {
 		Contacts:                  contacts,
 		RequestedInformation:      &directory.RequestedInformation{},
 	})
-	test.OK(t, err)
-	test.AssertNotNil(t, resp.Failure)
-	test.Equals(t, false, resp.Success)
-	test.Equals(t, directory.CreateEntityResponse_Failure_NOT_FOUND, resp.Failure.Reason)
+	test.Assert(t, err != nil, "Expected an error")
+
+	test.Equals(t, codes.NotFound, grpc.Code(err))
 	mock.FinishAll(dl)
 }
 
@@ -274,7 +270,7 @@ func TestCreateEntityEmptyContact(t *testing.T) {
 		},
 	}
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID2), &dal.Entity{}, nil))
-	resp, err := s.CreateEntity(context.Background(), &directory.CreateEntityRequest{
+	_, err := s.CreateEntity(context.Background(), &directory.CreateEntityRequest{
 		Name:                      name,
 		Type:                      eType,
 		ExternalID:                externalID,
@@ -282,10 +278,9 @@ func TestCreateEntityEmptyContact(t *testing.T) {
 		Contacts:                  contacts,
 		RequestedInformation:      &directory.RequestedInformation{},
 	})
-	test.OK(t, err)
-	test.AssertNotNil(t, resp.Failure)
-	test.Equals(t, false, resp.Success)
-	test.Equals(t, directory.CreateEntityResponse_Failure_INVALID_INPUT, resp.Failure.Reason)
+	test.Assert(t, err != nil, "Expected an error")
+
+	test.Equals(t, codes.InvalidArgument, grpc.Code(err))
 	mock.FinishAll(dl)
 }
 
@@ -303,7 +298,7 @@ func TestCreateEntityInvalidEmail(t *testing.T) {
 		},
 	}
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID2), &dal.Entity{}, nil))
-	resp, err := s.CreateEntity(context.Background(), &directory.CreateEntityRequest{
+	_, err := s.CreateEntity(context.Background(), &directory.CreateEntityRequest{
 		Name:                      name,
 		Type:                      eType,
 		ExternalID:                externalID,
@@ -311,10 +306,9 @@ func TestCreateEntityInvalidEmail(t *testing.T) {
 		Contacts:                  contacts,
 		RequestedInformation:      &directory.RequestedInformation{},
 	})
-	test.OK(t, err)
-	test.AssertNotNil(t, resp.Failure)
-	test.Equals(t, false, resp.Success)
-	test.Equals(t, directory.CreateEntityResponse_Failure_INVALID_INPUT, resp.Failure.Reason)
+	test.Assert(t, err != nil, "Expected an error")
+
+	test.Equals(t, codes.InvalidArgument, grpc.Code(err))
 	mock.FinishAll(dl)
 }
 
@@ -339,8 +333,7 @@ func TestCreateEntitySparse(t *testing.T) {
 		Type: eType,
 	})
 	test.OK(t, err)
-	test.AssertNil(t, resp.Failure)
-	test.Assert(t, resp.Success, "Expected success")
+
 	test.AssertNotNil(t, resp.Entity)
 	test.Equals(t, eID1.String(), resp.Entity.ID)
 	test.Equals(t, name, resp.Entity.Name)
@@ -370,8 +363,7 @@ func TestCreateMembership(t *testing.T) {
 		TargetEntityID: eID2.String(),
 	})
 	test.OK(t, err)
-	test.AssertNil(t, resp.Failure)
-	test.Assert(t, resp.Success, "Expected success")
+
 	test.AssertNotNil(t, resp.Entity)
 	test.Equals(t, "newmember", resp.Entity.Name)
 	test.Equals(t, eID1.String(), resp.Entity.ID)
@@ -383,14 +375,13 @@ func TestCreateMembershipEntityNotFound(t *testing.T) {
 	eID1 := dal.NewEntityID(1)
 	eID2 := dal.NewEntityID(2)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), (*dal.Entity)(nil), api.ErrNotFound("not found")))
-	resp, err := s.CreateMembership(context.Background(), &directory.CreateMembershipRequest{
+	_, err := s.CreateMembership(context.Background(), &directory.CreateMembershipRequest{
 		EntityID:       eID1.String(),
 		TargetEntityID: eID2.String(),
 	})
-	test.OK(t, err)
-	test.AssertNotNil(t, resp.Failure)
-	test.Equals(t, false, resp.Success)
-	test.Equals(t, directory.CreateMembershipResponse_Failure_NOT_FOUND, resp.Failure.Reason)
+	test.Assert(t, err != nil, "Expected an error")
+
+	test.Equals(t, codes.NotFound, grpc.Code(err))
 	mock.FinishAll(dl)
 }
 
@@ -401,14 +392,13 @@ func TestCreateMembershipTargetEntityNotFound(t *testing.T) {
 	eID2 := dal.NewEntityID(2)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID2), (*dal.Entity)(nil), api.ErrNotFound("not found")))
-	resp, err := s.CreateMembership(context.Background(), &directory.CreateMembershipRequest{
+	_, err := s.CreateMembership(context.Background(), &directory.CreateMembershipRequest{
 		EntityID:       eID1.String(),
 		TargetEntityID: eID2.String(),
 	})
-	test.OK(t, err)
-	test.AssertNotNil(t, resp.Failure)
-	test.Equals(t, false, resp.Success)
-	test.Equals(t, directory.CreateMembershipResponse_Failure_NOT_FOUND, resp.Failure.Reason)
+	test.Assert(t, err != nil, "Expected an error")
+
+	test.Equals(t, codes.NotFound, grpc.Code(err))
 	mock.FinishAll(dl)
 }
 
@@ -435,8 +425,7 @@ func TestCreateContact(t *testing.T) {
 		},
 	})
 	test.OK(t, err)
-	test.AssertNil(t, resp.Failure)
-	test.Assert(t, resp.Success, "Expected success")
+
 	test.AssertNotNil(t, resp.Entity)
 	test.Equals(t, "batman", resp.Entity.Name)
 	test.Equals(t, eID1.String(), resp.Entity.ID)
@@ -447,17 +436,16 @@ func TestCreateContactEntityNotFound(t *testing.T) {
 	s := New(dl)
 	eID1 := dal.NewEntityID(1)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), (*dal.Entity)(nil), api.ErrNotFound("not found")))
-	resp, err := s.CreateContact(context.Background(), &directory.CreateContactRequest{
+	_, err := s.CreateContact(context.Background(), &directory.CreateContactRequest{
 		EntityID: eID1.String(),
 		Contact: &directory.Contact{
 			ContactType: directory.ContactType_PHONE,
 			Value:       "+12345678910",
 		},
 	})
-	test.OK(t, err)
-	test.AssertNotNil(t, resp.Failure)
-	test.Equals(t, false, resp.Success)
-	test.Equals(t, directory.CreateContactResponse_Failure_NOT_FOUND, resp.Failure.Reason)
+	test.Assert(t, err != nil, "Expected an error")
+
+	test.Equals(t, codes.NotFound, grpc.Code(err))
 	mock.FinishAll(dl)
 }
 
@@ -466,17 +454,16 @@ func TestCreateContactInvalidEmail(t *testing.T) {
 	s := New(dl)
 	eID1 := dal.NewEntityID(1)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{}, nil))
-	resp, err := s.CreateContact(context.Background(), &directory.CreateContactRequest{
+	_, err := s.CreateContact(context.Background(), &directory.CreateContactRequest{
 		EntityID: eID1.String(),
 		Contact: &directory.Contact{
 			ContactType: directory.ContactType_EMAIL,
 			Value:       "notavalidemail",
 		},
 	})
-	test.OK(t, err)
-	test.AssertNotNil(t, resp.Failure)
-	test.Equals(t, false, resp.Success)
-	test.Equals(t, directory.CreateContactResponse_Failure_INVALID_INPUT, resp.Failure.Reason)
+	test.Assert(t, err != nil, "Expected an error")
+
+	test.Equals(t, codes.InvalidArgument, grpc.Code(err))
 	mock.FinishAll(dl)
 }
 
@@ -558,8 +545,7 @@ func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 		},
 	})
 	test.OK(t, err)
-	test.Assert(t, resp.Success, "Expected success")
-	test.AssertNil(t, resp.Failure)
+
 	test.Equals(t, 1, len(resp.Entities))
 	test.Equals(t, eID1.String(), resp.Entities[0].ID)
 	test.Equals(t, "entity1", resp.Entities[0].Name)

@@ -5,6 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+
 	"golang.org/x/net/context"
 
 	"github.com/sprucehealth/backend/api"
@@ -29,8 +32,7 @@ func TestGetAccount(t *testing.T) {
 	}, nil))
 	resp, err := s.GetAccount(context.Background(), &auth.GetAccountRequest{AccountID: aID1.String()})
 	test.OK(t, err)
-	test.AssertNil(t, resp.Failure)
-	test.Assert(t, resp.Success, "Expected success")
+
 	test.AssertNotNil(t, resp.Account)
 	test.Equals(t, aID1.String(), resp.Account.ID)
 	test.Equals(t, fn, resp.Account.FirstName)
@@ -43,11 +45,9 @@ func TestGetAccountNotFound(t *testing.T) {
 	s := New(dl)
 	aID1 := dal.NewAccountID(1)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Account, aID1), (*dal.Account)(nil), api.ErrNotFound("not found")))
-	resp, err := s.GetAccount(context.Background(), &auth.GetAccountRequest{AccountID: aID1.String()})
-	test.OK(t, err)
-	test.AssertNotNil(t, resp.Failure)
-	test.Equals(t, false, resp.Success)
-	test.Equals(t, auth.GetAccountResponse_Failure_NOT_FOUND, resp.Failure.Reason)
+	_, err := s.GetAccount(context.Background(), &auth.GetAccountRequest{AccountID: aID1.String()})
+	test.Assert(t, err != nil, "Expected an error")
+	test.Equals(t, codes.NotFound, grpc.Code(err))
 	mock.FinishAll(dl)
 }
 
@@ -73,15 +73,13 @@ func TestAuthenticateLogin(t *testing.T) {
 		token = strings.Split(string(at.Token), ":")[0]
 		expiration = uint64(at.Expires.Unix())
 	}), nil))
-	dl.Expect(mock.NewExpectation(dl.DeleteAuthTokensWithSuffix, aID1, ":testattribute").WithReturns(int64(1), nil))
 	resp, err := s.AuthenticateLogin(context.Background(), &auth.AuthenticateLoginRequest{
 		Email:           email,
 		Password:        password,
 		TokenAttributes: map[string]string{"test": "attribute"},
 	})
 	test.OK(t, err)
-	test.AssertNil(t, resp.Failure)
-	test.Assert(t, resp.Success, "Expected success")
+
 	test.AssertNotNil(t, resp.Token)
 	test.AssertNotNil(t, resp.Account)
 	test.Equals(t, token, resp.Token.Value)
@@ -95,15 +93,14 @@ func TestAuthenticateLoginNoEmail(t *testing.T) {
 	email := "test@email.com"
 	password := "password"
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.AccountForEmail, email), (*dal.Account)(nil), api.ErrNotFound("not found")))
-	resp, err := s.AuthenticateLogin(context.Background(), &auth.AuthenticateLoginRequest{
+	_, err := s.AuthenticateLogin(context.Background(), &auth.AuthenticateLoginRequest{
 		Email:           email,
 		Password:        password,
 		TokenAttributes: map[string]string{"test": "attribute"},
 	})
-	test.OK(t, err)
-	test.AssertNotNil(t, resp.Failure)
-	test.Equals(t, false, resp.Success)
-	test.Equals(t, auth.AuthenticateLoginResponse_Failure_UNKNOWN_EMAIL, resp.Failure.Reason)
+	test.Assert(t, err != nil, "Expected an error")
+
+	test.Equals(t, auth.EmailNotFound, grpc.Code(err))
 	mock.FinishAll(dl)
 }
 
@@ -114,15 +111,14 @@ func TestAuthenticateBadPassword(t *testing.T) {
 	password := "password"
 	aID1 := dal.NewAccountID(1)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.AccountForEmail, email), &dal.Account{ID: aID1, Password: []byte("notpassword")}, nil))
-	resp, err := s.AuthenticateLogin(context.Background(), &auth.AuthenticateLoginRequest{
+	_, err := s.AuthenticateLogin(context.Background(), &auth.AuthenticateLoginRequest{
 		Email:           email,
 		Password:        password,
 		TokenAttributes: map[string]string{"test": "attribute"},
 	})
-	test.OK(t, err)
-	test.AssertNotNil(t, resp.Failure)
-	test.Equals(t, false, resp.Success)
-	test.Equals(t, auth.AuthenticateLoginResponse_Failure_PASSWORD_MISMATCH, resp.Failure.Reason)
+	test.Assert(t, err != nil, "Expected an error")
+
+	test.Equals(t, auth.BadPassword, grpc.Code(err))
 	mock.FinishAll(dl)
 }
 
@@ -153,8 +149,7 @@ func TestCheckAuthentication(t *testing.T) {
 		TokenAttributes: tokenAttributes,
 	})
 	test.OK(t, err)
-	test.AssertNil(t, resp.Failure)
-	test.Assert(t, resp.Success, "Expected success")
+
 	test.Assert(t, resp.IsAuthenticated, "Expected authentication")
 	test.AssertNotNil(t, resp.Account)
 	test.AssertNotNil(t, resp.Token)
@@ -198,7 +193,6 @@ func TestCheckAuthenticationRefresh(t *testing.T) {
 		token = strings.Split(string(at.Token), ":")[0]
 		refreshedExpiration = at.Expires
 	}), nil))
-	dl.Expect(mock.NewExpectation(dl.DeleteAuthTokensWithSuffix, aID1, ":tokenattribute").WithReturns(int64(1), nil))
 	dl.Expect(mock.NewExpectation(dl.DeleteAuthToken, "123abc:tokenattribute").WithReturns(int64(1), nil))
 	dl.Expect(mock.NewExpectation(dl.Account, aID1).WithReturns(&dal.Account{
 		ID:        aID1,
@@ -211,8 +205,7 @@ func TestCheckAuthenticationRefresh(t *testing.T) {
 		Refresh:         true,
 	})
 	test.OK(t, err)
-	test.AssertNil(t, resp.Failure)
-	test.Assert(t, resp.Success, "Expected success")
+
 	test.Assert(t, resp.IsAuthenticated, "Expected authentication")
 	test.AssertNotNil(t, resp.Account)
 	test.AssertNotNil(t, resp.Token)
@@ -244,8 +237,7 @@ func TestCheckAuthenticationNoToken(t *testing.T) {
 		TokenAttributes: tokenAttributes,
 	})
 	test.OK(t, err)
-	test.AssertNil(t, resp.Failure)
-	test.Assert(t, resp.Success, "Expected success")
+
 	test.Equals(t, false, resp.IsAuthenticated)
 	test.AssertNil(t, resp.Account)
 	test.AssertNil(t, resp.Token)
@@ -301,7 +293,6 @@ func TestCreateAccount(t *testing.T) {
 		token = string(at.Token)
 		expiration = uint64(at.Expires.Unix())
 	}))
-	dl.Expect(mock.NewExpectation(dl.DeleteAuthTokensWithSuffix, aID1, "").WithReturns(int64(1), nil))
 	dl.Expect(mock.NewExpectation(dl.Account, aID1).WithReturns(&dal.Account{
 		ID:        aID1,
 		FirstName: fn,
@@ -315,8 +306,7 @@ func TestCreateAccount(t *testing.T) {
 		Password:    password,
 	})
 	test.OK(t, err)
-	test.AssertNil(t, resp.Failure)
-	test.Assert(t, resp.Success, "Expected success")
+
 	test.AssertNotNil(t, resp.Token)
 	test.AssertNotNil(t, resp.Account)
 	test.Equals(t, &auth.Account{
@@ -377,11 +367,10 @@ func TestCreateAccountMissingData(t *testing.T) {
 		},
 	}
 	for _, r := range inputs {
-		resp, err := s.CreateAccount(context.Background(), r)
-		test.OK(t, err)
-		test.AssertNotNil(t, resp.Failure)
-		test.Equals(t, false, resp.Success)
-		test.Equals(t, auth.CreateAccountResponse_Failure_INVALID_INPUT, resp.Failure.Reason)
+		_, err := s.CreateAccount(context.Background(), r)
+		test.Assert(t, err != nil, "Expected an error")
+
+		test.Equals(t, codes.InvalidArgument, grpc.Code(err))
 	}
 	mock.FinishAll(dl)
 }
@@ -394,16 +383,15 @@ func TestCreateAccountBadEmail(t *testing.T) {
 	email := "notarealemail"
 	phoneNumber := "+12345678910"
 	password := "password"
-	resp, err := s.CreateAccount(context.Background(), &auth.CreateAccountRequest{
+	_, err := s.CreateAccount(context.Background(), &auth.CreateAccountRequest{
 		FirstName:   fn,
 		LastName:    ln,
 		PhoneNumber: phoneNumber,
 		Email:       email,
 		Password:    password,
 	})
-	test.OK(t, err)
-	test.AssertNotNil(t, resp.Failure)
-	test.Equals(t, false, resp.Success)
-	test.Equals(t, auth.CreateAccountResponse_Failure_EMAIL_NOT_VALID, resp.Failure.Reason)
+	test.Assert(t, err != nil, "Expected an error")
+
+	test.Equals(t, auth.InvalidEmail, grpc.Code(err))
 	mock.FinishAll(dl)
 }
