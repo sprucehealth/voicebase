@@ -3,3 +3,4 @@ data-snapshot-*.sql binary
 intake-*.json binary
 review-*.json binary
 diagnose-*.json binary
+*.pb.go binary

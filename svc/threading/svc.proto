@@ -301,6 +301,15 @@ message SavedQueryResponse {
 	SavedQuery saved_query = 1;
 }
 
+message ThreadItemRequest {
+	string item_id = 1 [(gogoproto.customname) = "ItemID"];
+	string viewer_entity_id = 2 [(gogoproto.customname) = "ViewerEntityID"];
+}
+
+message ThreadItemResponse {
+	ThreadItem item = 1;
+}
+
 service Threads {
 	// CreateSavedQuery saves a query for later use
 	rpc CreateSavedQuery(CreateSavedQueryRequest) returns (CreateSavedQueryResponse);
@@ -322,6 +331,8 @@ service Threads {
 	rpc Thread(ThreadRequest) returns (ThreadResponse);
 	// ThreadsForMember looks up a list of threads by entity membership
 	rpc ThreadsForMember(ThreadsForMemberRequest) returns (ThreadsForMemberResponse);
+	// ThreadItem returns a single thread item
+	rpc ThreadItem(ThreadItemRequest) returns (ThreadItemResponse);
 	// ThreadItems returns the items (messages or events) in a thread
 	rpc ThreadItems(ThreadItemsRequest) returns (ThreadItemsResponse);
 	// ThreadMembers returns the members of a thread

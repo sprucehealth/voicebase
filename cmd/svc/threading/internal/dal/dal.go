@@ -85,7 +85,8 @@ type DAL interface {
 	PostMessage(context.Context, *PostMessageRequest) (*models.ThreadItem, error)
 	SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.SavedQuery, error)
 	SavedQueries(ctx context.Context, entityID string) ([]*models.SavedQuery, error)
-	Thread(ctx context.Context, threadID models.ThreadID) (*models.Thread, error)
+	Thread(ctx context.Context, id models.ThreadID) (*models.Thread, error)
+	ThreadItem(ctx context.Context, id models.ThreadItemID) (*models.ThreadItem, error)
 	ThreadsForMember(ctx context.Context, entityID string, primaryOnly bool) ([]*models.Thread, error)
 	// UpdateMember updates attributes about a thread member. If the membership doesn't exist then it is created.
 	UpdateMember(ctx context.Context, threadID models.ThreadID, entityID string, update *MemberUpdate) error
@@ -140,7 +141,6 @@ func (d *dal) CreateSavedQuery(ctx context.Context, sq *models.SavedQuery) (mode
 	`, id, sq.OrganizationID, sq.EntityID, queryBlob); err != nil {
 		return models.SavedQueryID{}, errors.Trace(err)
 	}
-	sq.ID = id
 	return id, nil
 }
 
@@ -270,7 +270,7 @@ func (d *dal) IterateThreadItems(ctx context.Context, threadID models.ThreadID, 
 	}
 	limit := fmt.Sprintf(" LIMIT %d", it.Count+1) // +1 to check if there's more than requested available.. will filter it out later
 	query := `
-		SELECT id, created, actor_entity_id, internal, type, data
+		SELECT id, thread_id, created, actor_entity_id, internal, type, data
 		FROM thread_items
 		WHERE ` + where + order + limit
 	golog.Debugf("threading.dal.IterateThreadItems: query='%s' vals=%s", query, vals)
@@ -282,26 +282,9 @@ func (d *dal) IterateThreadItems(ctx context.Context, threadID models.ThreadID, 
 
 	var tc ThreadItemConnection
 	for rows.Next() {
-		it := &models.ThreadItem{
-			ID:       models.EmptyThreadItemID(),
-			ThreadID: threadID,
-		}
-		var itemType string
-		var data []byte
-		if err := rows.Scan(&it.ID, &it.Created, &it.ActorEntityID, &it.Internal, &itemType, &data); err != nil {
+		it, err := scanThreadItem(rows)
+		if err != nil {
 			return nil, errors.Trace(err)
-		}
-		it.Type = models.ItemType(itemType)
-
-		switch it.Type {
-		default:
-			return nil, errors.Trace(fmt.Errorf("unknown thread item type %s", itemType))
-		case models.ItemTypeMessage:
-			m := &models.Message{}
-			if err := m.Unmarshal(data); err != nil {
-				return nil, errors.Trace(err)
-			}
-			it.Data = m
 		}
 		tc.Edges = append(tc.Edges, ThreadItemEdge{
 			Item:   it,
@@ -397,6 +380,14 @@ func (d *dal) Thread(ctx context.Context, id models.ThreadID) (*models.Thread, e
 	return scanThread(row)
 }
 
+func (d *dal) ThreadItem(ctx context.Context, id models.ThreadItemID) (*models.ThreadItem, error) {
+	row := d.db.QueryRow(`
+		SELECT id, thread_id, created, actor_entity_id, internal, type, data
+		FROM thread_items
+		WHERE id = ?`, id)
+	return scanThreadItem(row)
+}
+
 func (d *dal) ThreadsForMember(ctx context.Context, entityID string, primaryOnly bool) ([]*models.Thread, error) {
 	var rows *sql.Rows
 	var err error
@@ -475,4 +466,28 @@ func scanThread(row dbutil.Scanner) (*models.Thread, error) {
 		return nil, errors.Trace(err)
 	}
 	return &t, nil
+}
+
+func scanThreadItem(row dbutil.Scanner) (*models.ThreadItem, error) {
+	it := &models.ThreadItem{
+		ID:       models.EmptyThreadItemID(),
+		ThreadID: models.EmptyThreadID(),
+	}
+	var itemType string
+	var data []byte
+	if err := row.Scan(&it.ID, &it.ThreadID, &it.Created, &it.ActorEntityID, &it.Internal, &itemType, &data); err != nil {
+		return nil, errors.Trace(err)
+	}
+	it.Type = models.ItemType(itemType)
+	switch it.Type {
+	default:
+		return nil, errors.Trace(fmt.Errorf("unknown thread item type %s", itemType))
+	case models.ItemTypeMessage:
+		m := &models.Message{}
+		if err := m.Unmarshal(data); err != nil {
+			return nil, errors.Trace(err)
+		}
+		it.Data = m
+	}
+	return it, nil
 }

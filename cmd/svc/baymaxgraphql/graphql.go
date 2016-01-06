@@ -7,10 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sprucehealth/backend/libs/conc"
-
 	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -65,6 +64,24 @@ func init() {
 	)
 	if err != nil {
 		panic(err)
+	}
+	// This is done here rather than at declaration time to avoid an unresolvable compile time decleration loop
+	nodeInterfaceType.ResolveType = func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
+		switch value.(type) {
+		case *account:
+			return accountType
+		case *entity:
+			return entityType
+		case *organization:
+			return organizationType
+		case *savedThreadQuery:
+			return savedThreadQueryType
+		case *thread:
+			return threadType
+		case *threadItem:
+			return threadItemType
+		}
+		return nil
 	}
 }
 

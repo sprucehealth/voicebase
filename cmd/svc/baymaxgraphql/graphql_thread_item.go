@@ -5,6 +5,10 @@ import (
 
 	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/threading"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 var channelEnumType = graphql.NewEnum(
@@ -200,3 +204,21 @@ var threadItemType = graphql.NewObject(
 		},
 	},
 )
+
+func lookupThreadItem(ctx context.Context, svc *service, id string) (interface{}, error) {
+	res, err := svc.threading.ThreadItem(ctx, &threading.ThreadItemRequest{
+		ItemID: id,
+	})
+	if err != nil {
+		switch grpc.Code(err) {
+		case codes.NotFound:
+			return nil, errors.New("thread item not found")
+		}
+		return nil, internalError(err)
+	}
+	it, err := transformThreadItemToResponse(res.Item)
+	if err != nil {
+		return nil, internalError(err)
+	}
+	return it, nil
+}

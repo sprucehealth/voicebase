@@ -1,6 +1,15 @@
 package main
 
-import "github.com/graphql-go/graphql"
+import (
+	"errors"
+	"fmt"
+
+	"github.com/graphql-go/graphql"
+	"github.com/sprucehealth/backend/svc/directory"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+)
 
 var contactEnumType = graphql.NewEnum(
 	graphql.EnumConfig{
@@ -48,3 +57,48 @@ var entityType = graphql.NewObject(
 		},
 	},
 )
+
+func lookupEntity(ctx context.Context, svc *service, id string) (interface{}, error) {
+	res, err := svc.directory.LookupEntities(ctx,
+		&directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: id,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth: 0,
+				EntityInformation: []directory.EntityInformation{
+					directory.EntityInformation_CONTACTS,
+				},
+			},
+		})
+	if err != nil {
+		if grpc.Code(err) == codes.NotFound {
+			return nil, errors.New("not found")
+		}
+		return nil, internalError(err)
+	}
+	for _, em := range res.Entities {
+		oc, err := transformContactsToResponse(em.Contacts)
+		if err != nil {
+			return nil, internalError(fmt.Errorf("failed to transform entity contacts: %+v", err))
+		}
+		switch em.Type {
+		case directory.EntityType_ORGANIZATION:
+			return &organization{
+				ID:       em.ID,
+				Name:     em.Name,
+				Contacts: oc,
+			}, nil
+		case directory.EntityType_INTERNAL, directory.EntityType_EXTERNAL:
+			return &entity{
+				ID:       em.ID,
+				Name:     em.Name,
+				Contacts: oc,
+			}, nil
+		default:
+			return nil, internalError(fmt.Errorf("unknown entity type: %s", em.Type.String()))
+		}
+	}
+	return nil, errors.New("not found")
+}

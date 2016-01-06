@@ -40,10 +40,11 @@ func (s *threadsServer) CreateSavedQuery(ctx context.Context, in *threading.Crea
 		OrganizationID: in.OrganizationID,
 		EntityID:       in.EntityID,
 	}
-	_, err := s.dal.CreateSavedQuery(ctx, sq)
+	id, err := s.dal.CreateSavedQuery(ctx, sq)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+	sq.ID = id
 	sqr, err := transformSavedQueryToResponse(sq)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -294,7 +295,7 @@ func (s *threadsServer) SavedQueries(ctx context.Context, in *threading.SavedQue
 	return res, nil
 }
 
-// Thread lookups and returns a single thread by ID
+// Thread looks up and returns a single thread by ID
 func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest) (*threading.ThreadResponse, error) {
 	tid, err := models.ParseThreadID(in.ThreadID)
 	if err != nil {
@@ -313,6 +314,28 @@ func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest)
 	}
 	return &threading.ThreadResponse{
 		Thread: th,
+	}, nil
+}
+
+// ThreadItem looks up and returns a single thread item by ID
+func (s *threadsServer) ThreadItem(ctx context.Context, in *threading.ThreadItemRequest) (*threading.ThreadItemResponse, error) {
+	tid, err := models.ParseThreadItemID(in.ItemID)
+	if err != nil {
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ItemID")
+	}
+
+	item, err := s.dal.ThreadItem(ctx, tid)
+	if errors.Cause(err) == dal.ErrNotFound {
+		return nil, grpc.Errorf(codes.NotFound, "Thread item not found")
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+	ti, err := transformThreadItemToResponse(item)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &threading.ThreadItemResponse{
+		Item: ti,
 	}, nil
 }
 

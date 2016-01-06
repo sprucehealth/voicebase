@@ -4,11 +4,11 @@ import (
 	"errors"
 	"fmt"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-
 	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/svc/threading"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 var savedThreadQueryType = graphql.NewObject(
@@ -87,3 +87,22 @@ var savedThreadQueryType = graphql.NewObject(
 		},
 	},
 )
+
+func lookupSavedQuery(ctx context.Context, svc *service, id string) (interface{}, error) {
+	tres, err := svc.threading.SavedQuery(ctx, &threading.SavedQueryRequest{
+		SavedQueryID: id,
+	})
+	if err != nil {
+		switch grpc.Code(err) {
+		case codes.NotFound:
+			return nil, errors.New("saved query not found")
+		}
+		return nil, internalError(err)
+	}
+
+	sq, err := transformSavedQueryToResponse(tres.SavedQuery)
+	if err != nil {
+		return nil, internalError(err)
+	}
+	return sq, nil
+}

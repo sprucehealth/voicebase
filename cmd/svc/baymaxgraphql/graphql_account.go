@@ -5,7 +5,11 @@ import (
 	"fmt"
 
 	"github.com/graphql-go/graphql"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 var accountType = graphql.NewObject(
@@ -72,3 +76,21 @@ var accountType = graphql.NewObject(
 		},
 	},
 )
+
+func lookupAccount(ctx context.Context, svc *service, id string) (interface{}, error) {
+	res, err := svc.auth.GetAccount(ctx, &auth.GetAccountRequest{
+		AccountID: id,
+	})
+	if err != nil {
+		switch grpc.Code(err) {
+		case codes.NotFound:
+			return nil, errors.New("account not found")
+		}
+		return nil, internalError(err)
+	}
+	// Since we only use the ID we don't really need to do the lookup, but
+	// it allows us to check if the account exists.
+	return &account{
+		ID: res.Account.ID,
+	}, nil
+}

@@ -2,14 +2,9 @@ package main
 
 import (
 	"errors"
-	"fmt"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
+	"strings"
 
 	"github.com/graphql-go/graphql"
-	"github.com/sprucehealth/backend/svc/directory"
-	"github.com/sprucehealth/backend/svc/threading"
 )
 
 var errNotAuthenticated = errors.New("not authenticated")
@@ -19,13 +14,48 @@ var queryType = graphql.NewObject(
 		Name: "Query",
 		Fields: graphql.Fields{
 			"me": &graphql.Field{
-				Type: accountType,
+				Type: graphql.NewNonNull(accountType),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					acc := accountFromContext(contextFromParams(p))
 					if acc == nil {
 						return nil, errNotAuthenticated
 					}
 					return acc, nil
+				},
+			},
+			"node": &graphql.Field{
+				Type: graphql.NewNonNull(nodeInterfaceType),
+				Args: graphql.FieldConfigArgument{
+					"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				},
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					svc := serviceFromParams(p)
+					ctx := contextFromParams(p)
+					acc := accountFromContext(ctx)
+					if acc == nil {
+						return nil, errNotAuthenticated
+					}
+					id := p.Args["id"].(string)
+					if strings.HasPrefix(id, "entity:") {
+						return lookupEntity(ctx, svc, id)
+					} else if strings.HasPrefix(id, "account:") {
+						if id == acc.ID {
+							return acc, nil
+						}
+						return lookupAccount(ctx, svc, id)
+					} else {
+						i := strings.IndexByte(id, '_')
+						prefix := id[:i]
+						switch prefix {
+						case "sq":
+							return lookupSavedQuery(ctx, svc, id)
+						case "t":
+							return lookupThread(ctx, svc, id)
+						case "ti":
+							return lookupThreadItem(ctx, svc, id)
+						}
+					}
+					return nil, errors.New("unknown node type")
 				},
 			},
 			// "listSavedThreadQueries": &graphql.Field{
@@ -38,7 +68,7 @@ var queryType = graphql.NewObject(
 			// 	},
 			// },
 			"organization": &graphql.Field{
-				Type: organizationType,
+				Type: graphql.NewNonNull(organizationType),
 				Args: graphql.FieldConfigArgument{
 					"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 				},
@@ -49,45 +79,13 @@ var queryType = graphql.NewObject(
 					if acc == nil {
 						return nil, errNotAuthenticated
 					}
-
-					orgID := p.Args["id"].(string)
-
-					res, err := svc.directory.LookupEntities(ctx,
-						&directory.LookupEntitiesRequest{
-							LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-							LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-								EntityID: orgID,
-							},
-							RequestedInformation: &directory.RequestedInformation{
-								Depth: 0,
-								EntityInformation: []directory.EntityInformation{
-									directory.EntityInformation_CONTACTS,
-								},
-							},
-						})
-					if grpc.Code(err) == codes.NotFound {
-						return nil, errors.New("organization not found")
-					} else if err != nil {
-						return nil, internalError(err)
-					}
-					for _, em := range res.Entities {
-						oc, err := transformContactsToResponse(em.Contacts)
-						if err != nil {
-							return nil, internalError(fmt.Errorf("failed to transform org contacts: %+v", err))
-						}
-						return &organization{
-							ID:       em.ID,
-							Name:     em.Name,
-							Contacts: oc,
-						}, nil
-					}
-					return nil, errors.New("organization not found")
+					id := p.Args["id"].(string)
+					return lookupEntity(ctx, svc, id)
 				},
 			},
 			"savedThreadQuery": &graphql.Field{
-				Type: savedThreadQueryType,
+				Type: graphql.NewNonNull(savedThreadQueryType),
 				Args: graphql.FieldConfigArgument{
-					// "orgID":        &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 					"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
@@ -97,34 +95,12 @@ var queryType = graphql.NewObject(
 					if acc == nil {
 						return nil, errNotAuthenticated
 					}
-
-					// idArg := p.Args["id"].(string)
-					// id := FromGlobalID(idArg)
-					// if id == nil || id.Type != savedThreadQueryIDType {
-					// 	return nil, errors.New("invalid saved thread query ID " + idArg)
-					// }
 					id := p.Args["id"].(string)
-
-					tres, err := svc.threading.SavedQuery(ctx, &threading.SavedQueryRequest{
-						SavedQueryID: id,
-					})
-					if err != nil {
-						switch grpc.Code(err) {
-						case codes.NotFound:
-							return nil, err
-						}
-						return nil, internalError(err)
-					}
-
-					sq, err := transformSavedQueryToResponse(tres.SavedQuery)
-					if err != nil {
-						return nil, internalError(err)
-					}
-					return sq, nil
+					return lookupSavedQuery(ctx, svc, id)
 				},
 			},
 			"thread": &graphql.Field{
-				Type: threadType,
+				Type: graphql.NewNonNull(threadType),
 				Args: graphql.FieldConfigArgument{
 					"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 				},
@@ -135,30 +111,8 @@ var queryType = graphql.NewObject(
 					if acc == nil {
 						return nil, errNotAuthenticated
 					}
-
-					// idArg := p.Args["id"].(string)
-					// threadID := FromGlobalID(idArg)
-					// if threadID == nil || threadID.Type != threadIDType {
-					// 	return nil, errors.New("invalid thread ID " + idArg)
-					// }
 					id := p.Args["id"].(string)
-
-					tres, err := svc.threading.Thread(ctx, &threading.ThreadRequest{
-						ThreadID: id,
-					})
-					if err != nil {
-						switch grpc.Code(err) {
-						case codes.NotFound:
-							return nil, err
-						}
-						return nil, internalError(err)
-					}
-
-					thread, err := transformThreadToResponse(tres.Thread)
-					if err != nil {
-						return nil, internalError(err)
-					}
-					return thread, nil
+					return lookupThread(ctx, svc, id)
 				},
 			},
 		},

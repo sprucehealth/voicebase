@@ -53,6 +53,8 @@
 		ThreadsForMemberResponse
 		SavedQueryRequest
 		SavedQueryResponse
+		ThreadItemRequest
+		ThreadItemResponse
 */
 package threading
 
@@ -1069,6 +1071,28 @@ func (m *SavedQueryResponse) GetSavedQuery() *SavedQuery {
 	return nil
 }
 
+type ThreadItemRequest struct {
+	ItemID         string `protobuf:"bytes,1,opt,name=item_id,proto3" json:"item_id,omitempty"`
+	ViewerEntityID string `protobuf:"bytes,2,opt,name=viewer_entity_id,proto3" json:"viewer_entity_id,omitempty"`
+}
+
+func (m *ThreadItemRequest) Reset()      { *m = ThreadItemRequest{} }
+func (*ThreadItemRequest) ProtoMessage() {}
+
+type ThreadItemResponse struct {
+	Item *ThreadItem `protobuf:"bytes,1,opt,name=item" json:"item,omitempty"`
+}
+
+func (m *ThreadItemResponse) Reset()      { *m = ThreadItemResponse{} }
+func (*ThreadItemResponse) ProtoMessage() {}
+
+func (m *ThreadItemResponse) GetItem() *ThreadItem {
+	if m != nil {
+		return m.Item
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*Iterator)(nil), "threading.Iterator")
 	proto.RegisterType((*Thread)(nil), "threading.Thread")
@@ -1114,6 +1138,8 @@ func init() {
 	proto.RegisterType((*ThreadsForMemberResponse)(nil), "threading.ThreadsForMemberResponse")
 	proto.RegisterType((*SavedQueryRequest)(nil), "threading.SavedQueryRequest")
 	proto.RegisterType((*SavedQueryResponse)(nil), "threading.SavedQueryResponse")
+	proto.RegisterType((*ThreadItemRequest)(nil), "threading.ThreadItemRequest")
+	proto.RegisterType((*ThreadItemResponse)(nil), "threading.ThreadItemResponse")
 	proto.RegisterEnum("threading.Iterator_Direction", Iterator_Direction_name, Iterator_Direction_value)
 	proto.RegisterEnum("threading.ThreadItem_Type", ThreadItem_Type_name, ThreadItem_Type_value)
 	proto.RegisterEnum("threading.Message_Status", Message_Status_name, Message_Status_value)
@@ -2717,6 +2743,59 @@ func (this *SavedQueryResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *ThreadItemRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*ThreadItemRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.ItemID != that1.ItemID {
+		return false
+	}
+	if this.ViewerEntityID != that1.ViewerEntityID {
+		return false
+	}
+	return true
+}
+func (this *ThreadItemResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*ThreadItemResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Item.Equal(that1.Item) {
+		return false
+	}
+	return true
+}
 func (this *Iterator) GoString() string {
 	if this == nil {
 		return "nil"
@@ -3344,6 +3423,29 @@ func (this *SavedQueryResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *ThreadItemRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&threading.ThreadItemRequest{")
+	s = append(s, "ItemID: "+fmt.Sprintf("%#v", this.ItemID)+",\n")
+	s = append(s, "ViewerEntityID: "+fmt.Sprintf("%#v", this.ViewerEntityID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ThreadItemResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&threading.ThreadItemResponse{")
+	if this.Item != nil {
+		s = append(s, "Item: "+fmt.Sprintf("%#v", this.Item)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func valueToGoStringSvc(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -3397,6 +3499,8 @@ type ThreadsClient interface {
 	Thread(ctx context.Context, in *ThreadRequest, opts ...grpc.CallOption) (*ThreadResponse, error)
 	// ThreadsForMember looks up a list of threads by entity membership
 	ThreadsForMember(ctx context.Context, in *ThreadsForMemberRequest, opts ...grpc.CallOption) (*ThreadsForMemberResponse, error)
+	// ThreadItem returns a single thread item
+	ThreadItem(ctx context.Context, in *ThreadItemRequest, opts ...grpc.CallOption) (*ThreadItemResponse, error)
 	// ThreadItems returns the items (messages or events) in a thread
 	ThreadItems(ctx context.Context, in *ThreadItemsRequest, opts ...grpc.CallOption) (*ThreadItemsResponse, error)
 	// ThreadMembers returns the members of a thread
@@ -3505,6 +3609,15 @@ func (c *threadsClient) ThreadsForMember(ctx context.Context, in *ThreadsForMemb
 	return out, nil
 }
 
+func (c *threadsClient) ThreadItem(ctx context.Context, in *ThreadItemRequest, opts ...grpc.CallOption) (*ThreadItemResponse, error) {
+	out := new(ThreadItemResponse)
+	err := grpc.Invoke(ctx, "/threading.Threads/ThreadItem", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *threadsClient) ThreadItems(ctx context.Context, in *ThreadItemsRequest, opts ...grpc.CallOption) (*ThreadItemsResponse, error) {
 	out := new(ThreadItemsResponse)
 	err := grpc.Invoke(ctx, "/threading.Threads/ThreadItems", in, out, c.cc, opts...)
@@ -3564,6 +3677,8 @@ type ThreadsServer interface {
 	Thread(context.Context, *ThreadRequest) (*ThreadResponse, error)
 	// ThreadsForMember looks up a list of threads by entity membership
 	ThreadsForMember(context.Context, *ThreadsForMemberRequest) (*ThreadsForMemberResponse, error)
+	// ThreadItem returns a single thread item
+	ThreadItem(context.Context, *ThreadItemRequest) (*ThreadItemResponse, error)
 	// ThreadItems returns the items (messages or events) in a thread
 	ThreadItems(context.Context, *ThreadItemsRequest) (*ThreadItemsResponse, error)
 	// ThreadMembers returns the members of a thread
@@ -3698,6 +3813,18 @@ func _Threads_ThreadsForMember_Handler(srv interface{}, ctx context.Context, dec
 	return out, nil
 }
 
+func _Threads_ThreadItem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(ThreadItemRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(ThreadsServer).ThreadItem(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func _Threads_ThreadItems_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(ThreadItemsRequest)
 	if err := dec(in); err != nil {
@@ -3789,6 +3916,10 @@ var _Threads_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ThreadsForMember",
 			Handler:    _Threads_ThreadsForMember_Handler,
+		},
+		{
+			MethodName: "ThreadItem",
+			Handler:    _Threads_ThreadItem_Handler,
 		},
 		{
 			MethodName: "ThreadItems",
@@ -5521,6 +5652,64 @@ func (m *SavedQueryResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *ThreadItemRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *ThreadItemRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.ItemID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ItemID)))
+		i += copy(data[i:], m.ItemID)
+	}
+	if len(m.ViewerEntityID) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ViewerEntityID)))
+		i += copy(data[i:], m.ViewerEntityID)
+	}
+	return i, nil
+}
+
+func (m *ThreadItemResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *ThreadItemResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Item != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Item.Size()))
+		n27, err := m.Item.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n27
+	}
+	return i, nil
+}
+
 func encodeFixed64Svc(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -6316,6 +6505,30 @@ func (m *SavedQueryResponse) Size() (n int) {
 	return n
 }
 
+func (m *ThreadItemRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.ItemID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.ViewerEntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *ThreadItemResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.Item != nil {
+		l = m.Item.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
 func sovSvc(x uint64) (n int) {
 	for {
 		n++
@@ -6902,6 +7115,27 @@ func (this *SavedQueryResponse) String() string {
 	}
 	s := strings.Join([]string{`&SavedQueryResponse{`,
 		`SavedQuery:` + strings.Replace(fmt.Sprintf("%v", this.SavedQuery), "SavedQuery", "SavedQuery", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ThreadItemRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ThreadItemRequest{`,
+		`ItemID:` + fmt.Sprintf("%v", this.ItemID) + `,`,
+		`ViewerEntityID:` + fmt.Sprintf("%v", this.ViewerEntityID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ThreadItemResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ThreadItemResponse{`,
+		`Item:` + strings.Replace(fmt.Sprintf("%v", this.Item), "ThreadItem", "ThreadItem", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -12323,6 +12557,197 @@ func (m *SavedQueryResponse) Unmarshal(data []byte) error {
 				m.SavedQuery = &SavedQuery{}
 			}
 			if err := m.SavedQuery.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ThreadItemRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ThreadItemRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ThreadItemRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ItemID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ItemID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ViewerEntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ViewerEntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ThreadItemResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ThreadItemResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ThreadItemResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Item", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Item == nil {
+				m.Item = &ThreadItem{}
+			}
+			if err := m.Item.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

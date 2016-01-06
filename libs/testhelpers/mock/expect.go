@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -140,15 +141,15 @@ func (e *Expector) Record(params ...interface{}) []interface{} {
 					"Line: %d\n"+
 					"Expected:\n"+
 					"  Name: %s\n"+
-					"  Params: %+v\n"+
+					"  Params: %s\n"+
 					"Got:\n"+
 					"  Name: %s\n"+
-					"  Params: %+v\n\n"+
+					"  Params: %s\n\n"+
 					"Expectation Source:\n"+
 					"File: %s\n"+
 					"Line: %d\n", file, line,
-				expectWithoutReturns.Func.Name(), expectWithoutReturns.Params,
-				actual.Func.Name(), actual.Params,
+				expectWithoutReturns.Func.Name(), spew.Sdump(expectWithoutReturns.Params),
+				actual.Func.Name(), spew.Sdump(actual.Params),
 				source.File, source.Line)
 		}
 	} else if !reflect.DeepEqual(expectWithReturns.Func, actual.Func) {

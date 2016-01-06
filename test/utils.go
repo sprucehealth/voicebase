@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"runtime"
 	"testing"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 // Assert fails the test if the condition is false.
@@ -26,7 +28,7 @@ func OK(t testing.TB, err error) {
 // Equals fails the test if exp is not equal to act.
 func Equals(t testing.TB, exp, act interface{}) {
 	if !reflect.DeepEqual(exp, act) {
-		t.Fatalf("["+CallerString(1)+"]\nexp: %T\n\t%#v\ngot: %T\n\t%#v", exp, exp, act, act)
+		t.Fatalf("["+CallerString(1)+"]\nexpected:\n%s\ngot:\n%s", spew.Sdump(exp), spew.Sdump(act))
 	}
 }
 
