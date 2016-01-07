@@ -91,15 +91,11 @@ var organizationType = graphql.NewObject(
 						if e.ID == org.ID {
 							for _, em := range e.Members {
 								if em.Type == directory.EntityType_INTERNAL {
-									oc, err := transformContactsToResponse(em.Contacts)
+									ent, err := transformEntityToResponse(em)
 									if err != nil {
-										return nil, internalError(fmt.Errorf("failed to transform contacts for entity %s: %s", em.ID, err))
+										return nil, internalError(err)
 									}
-									entities = append(entities, &entity{
-										ID:       em.ID,
-										Name:     em.Name,
-										Contacts: oc,
-									})
+									entities = append(entities, ent)
 								}
 							}
 						}

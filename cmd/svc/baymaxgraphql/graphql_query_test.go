@@ -18,7 +18,7 @@ func TestNodeQuery(t *testing.T) {
 	dirC := dirmock.New(t)
 	thC := thmock.New(t)
 
-	acc := &account{}
+	acc := &account{ID: "a1"}
 	ctx := context.Background()
 	ctx = ctxWithAccount(ctx, acc)
 	p := graphql.ResolveParams{
@@ -65,9 +65,46 @@ func TestNodeQuery(t *testing.T) {
 			},
 		},
 		nil))
+	dirC.Expect(mock.NewExpectation(dirC.LookupEntities,
+		&directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+				ExternalID: "account:" + acc.ID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth: 1,
+				EntityInformation: []directory.EntityInformation{
+					directory.EntityInformation_MEMBERSHIPS,
+					directory.EntityInformation_CONTACTS,
+				},
+			},
+		},
+	).WithReturns(
+		&directory.LookupEntitiesResponse{
+			Entities: []*directory.Entity{
+				{
+					Type: directory.EntityType_INTERNAL,
+					ID:   "entity:222",
+					Name: "Mem",
+					Memberships: []*directory.Entity{
+						{ID: id},
+					},
+				},
+			},
+		},
+		nil))
 	res, err := nodeField.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, &organization{ID: id, Name: "Org", Contacts: []*contactInfo{}}, res)
+	test.Equals(t, &organization{
+		ID:       id,
+		Name:     "Org",
+		Contacts: []*contactInfo{},
+		Entity: &entity{
+			ID:       "entity:222",
+			Name:     "Mem",
+			Contacts: []*contactInfo{},
+		},
+	}, res)
 
 	// Entity
 

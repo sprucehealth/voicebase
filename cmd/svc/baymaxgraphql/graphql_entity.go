@@ -85,11 +85,26 @@ func lookupEntity(ctx context.Context, svc *service, id string) (interface{}, er
 		}
 		switch em.Type {
 		case directory.EntityType_ORGANIZATION:
-			return &organization{
+			org := &organization{
 				ID:       em.ID,
 				Name:     em.Name,
 				Contacts: oc,
-			}, nil
+			}
+
+			acc := accountFromContext(ctx)
+			if acc != nil {
+				e, err := svc.entityForAccountID(ctx, org.ID, acc.ID)
+				if err != nil {
+					return nil, internalError(err)
+				}
+				if e != nil {
+					org.Entity, err = transformEntityToResponse(e)
+					if err != nil {
+						return nil, internalError(err)
+					}
+				}
+			}
+			return org, nil
 		case directory.EntityType_INTERNAL, directory.EntityType_EXTERNAL:
 			return &entity{
 				ID:       em.ID,

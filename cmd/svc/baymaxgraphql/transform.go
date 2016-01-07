@@ -122,3 +122,15 @@ func transformSavedQueryToResponse(sq *threading.SavedQuery) (*savedThreadQuery,
 		OrganizationID: sq.OrganizationID,
 	}, nil
 }
+
+func transformEntityToResponse(e *directory.Entity) (*entity, error) {
+	oc, err := transformContactsToResponse(e.Contacts)
+	if err != nil {
+		return nil, errors.Trace(fmt.Errorf("failed to transform contacts for entity %s: %s", e.ID, err))
+	}
+	return &entity{
+		ID:       e.ID,
+		Name:     e.Name,
+		Contacts: oc,
+	}, nil
+}
