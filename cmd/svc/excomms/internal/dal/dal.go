@@ -32,7 +32,8 @@ const (
 )
 
 type ProxyPhoneNumberUpdate struct {
-	Expires *time.Time
+	Expires      *time.Time
+	LastReserved *time.Time
 }
 
 type ProxyPhoneNumberReservationLookup struct {
@@ -201,7 +202,7 @@ func (d *dal) ProxyPhoneNumbers(opt ProxyPhoneNumberOpt) ([]*models.ProxyPhoneNu
 	var err error
 	if opt&PPOUnexpiredOnly == PPOUnexpiredOnly {
 		rows, err = d.db.Query(`
-			SELECT phone_number, expires
+			SELECT phone_number, expires, last_reserved_time
 			FROM proxy_phone_number
 			WHERE (expires IS NULL) OR (expires < ?)
 			FOR UPDATE
@@ -211,7 +212,7 @@ func (d *dal) ProxyPhoneNumbers(opt ProxyPhoneNumberOpt) ([]*models.ProxyPhoneNu
 		}
 	} else {
 		rows, err = d.db.Query(`
-			SELECT phone_number, expires
+			SELECT phone_number, expires, last_reserved_time
 			FROM proxy_phone_number
 			FOR UPDATE
 		`)
@@ -224,7 +225,7 @@ func (d *dal) ProxyPhoneNumbers(opt ProxyPhoneNumberOpt) ([]*models.ProxyPhoneNu
 	var phoneNumbers []*models.ProxyPhoneNumber
 	for rows.Next() {
 		var ppn models.ProxyPhoneNumber
-		if err := rows.Scan(&ppn.PhoneNumber, &ppn.Expires); err != nil {
+		if err := rows.Scan(&ppn.PhoneNumber, &ppn.Expires, &ppn.LastReserved); err != nil {
 			return nil, errors.Trace(err)
 		}
 		phoneNumbers = append(phoneNumbers, &ppn)
@@ -243,6 +244,9 @@ func (d *dal) UpdateProxyPhoneNumber(phoneNumber phone.Number, update *ProxyPhon
 
 	if update.Expires != nil {
 		vars.Append("expires", *update.Expires)
+	}
+	if update.LastReserved != nil {
+		vars.Append("last_reserved_time", *update.LastReserved)
 	}
 
 	if vars.IsEmpty() {

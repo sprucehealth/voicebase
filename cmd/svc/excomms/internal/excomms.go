@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -317,7 +318,8 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 			}
 
 			if rowsAffected, err := dl.UpdateProxyPhoneNumber(ppnr.PhoneNumber, &dal.ProxyPhoneNumberUpdate{
-				Expires: ptr.Time(expiration),
+				Expires:      ptr.Time(expiration),
+				LastReserved: ptr.Time(e.clock.Now()),
 			}); err != nil {
 				return errors.Trace(err)
 			} else if rowsAffected != 1 {
@@ -333,6 +335,10 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 		if err != nil {
 			return errors.Trace(err)
 		}
+
+		// sort by last reserved so that phone numbers that were reserved
+		// furthest back are reserved first
+		sort.Sort(models.ByLastReservedProxyPhoneNumbers(ppns))
 
 		for _, ppn := range ppns {
 			if ppn.Expires != nil && ppn.Expires.Add(phoneReservationDurationGrace).Before(e.clock.Now()) {
@@ -361,7 +367,8 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 		}
 
 		if rowsAffected, err := dl.UpdateProxyPhoneNumber(proxyPhoneNumber, &dal.ProxyPhoneNumberUpdate{
-			Expires: ptr.Time(expiration),
+			Expires:      ptr.Time(expiration),
+			LastReserved: ptr.Time(e.clock.Now()),
 		}); err != nil {
 			return errors.Trace(err)
 		} else if rowsAffected != 1 {

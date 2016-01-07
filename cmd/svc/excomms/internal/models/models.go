@@ -34,11 +34,28 @@ type Event struct {
 	Type        string
 }
 
+type ByLastReservedProxyPhoneNumbers []*ProxyPhoneNumber
+
+func (a ByLastReservedProxyPhoneNumbers) Len() int      { return len(a) }
+func (a ByLastReservedProxyPhoneNumbers) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByLastReservedProxyPhoneNumbers) Less(i, j int) bool {
+	if a[i].LastReserved == nil && a[j].LastReserved == nil {
+		return false
+	} else if a[i].LastReserved == nil {
+		return true
+	} else if a[j].LastReserved == nil {
+		return false
+	}
+
+	return a[i].LastReserved.Before(*a[j].LastReserved)
+}
+
 // ProxyPhoneNumber represents a phone number that dials out to a specific
 // phone number when the proxy phone number is dialed.
 type ProxyPhoneNumber struct {
-	PhoneNumber phone.Number
-	Expires     *time.Time
+	PhoneNumber  phone.Number
+	Expires      *time.Time
+	LastReserved *time.Time
 }
 
 // ProxyPhoneNumberReservation represents a particular reservation to dial a specific
