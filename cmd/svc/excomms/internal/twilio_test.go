@@ -7,53 +7,61 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sprucehealth/backend/libs/conc"
-
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
-
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
+	"github.com/sprucehealth/backend/libs/clock"
+	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"golang.org/x/net/context"
-
 	"google.golang.org/grpc"
 )
 
 type mockDirectoryService_Twilio struct {
 	directory.DirectoryClient
-	entities []*directory.Entity
+	entities     map[string][]*directory.Entity
+	entitiesList []*directory.Entity
 }
 
 func (m *mockDirectoryService_Twilio) LookupEntities(ctx context.Context, in *directory.LookupEntitiesRequest, opts ...grpc.CallOption) (*directory.LookupEntitiesResponse, error) {
 	return &directory.LookupEntitiesResponse{
-		Entities: m.entities,
+		Entities: m.entities[in.GetEntityID()],
 	}, nil
 }
+
 func (m *mockDirectoryService_Twilio) LookupEntitiesByContact(ctx context.Context, in *directory.LookupEntitiesByContactRequest, opts ...grpc.CallOption) (*directory.LookupEntitiesByContactResponse, error) {
 	return &directory.LookupEntitiesByContactResponse{
-		Entities: m.entities,
+		Entities: m.entitiesList,
 	}, nil
 }
 
 type mockDAL_Twilio struct {
+	*mock.Expector
 	dal.DAL
-	cr      *models.CallRequest
-	callSID string
+	cr   *models.CallRequest
+	ppnr *models.ProxyPhoneNumberReservation
 }
 
-func (m *mockDAL_Twilio) ValidCallRequest(sourcePhontNumber string) (*models.CallRequest, error) {
-	return m.cr, nil
-}
-
-func (m *mockDAL_Twilio) UpdateCallRequest(fromPhoneNumber, callSID string) (int64, error) {
-	m.callSID = callSID
-	return 1, nil
+func (m *mockDAL_Twilio) ActiveProxyPhoneNumberReservation(lookup *dal.ProxyPhoneNumberReservationLookup) (*models.ProxyPhoneNumberReservation, error) {
+	m.Record(lookup)
+	if m.ppnr == nil {
+		return nil, dal.ErrProxyPhoneNumberReservationNotFound
+	}
+	return m.ppnr, nil
 }
 
 func (m *mockDAL_Twilio) LookupCallRequest(fromPhoneNumber string) (*models.CallRequest, error) {
+	m.Record(fromPhoneNumber)
 	return m.cr, nil
+}
+func (m *mockDAL_Twilio) CreateCallRequest(cr *models.CallRequest) error {
+	m.Record(cr)
+	return nil
 }
 
 type mockSNS_Twilio struct {
@@ -67,38 +75,63 @@ func (m *mockSNS_Twilio) Publish(input *sns.PublishInput) (*sns.PublishOutput, e
 }
 
 func TestOutgoing_Process(t *testing.T) {
-	testOutgoing(t, false)
+	testOutgoing(t, false, "")
 }
 
 func TestOutgoing_Expired(t *testing.T) {
-	testOutgoing(t, true)
+	testOutgoing(t, true, "")
 }
 
-func testOutgoing(t *testing.T, testExpired bool) {
+func TestOutgoing_PatientName(t *testing.T) {
+	testOutgoing(t, false, "Joe")
+}
+
+func testOutgoing(t *testing.T, testExpired bool, patientName string) {
 	practicePhoneNumber := "+12068773590"
 	patientPhoneNumber := "+11234567890"
 	providerPersonalPhoneNumber := "+17348465522"
-	proxyPhoneNumber := "+14152222222"
+	proxyPhoneNumber := phone.Number("+14152222222")
 	organizationID := "1234"
+	destinationEntityID := "6789"
+	providerID := "0000"
 	callSID := "8888"
-	requested := time.Now().Add(-time.Hour)
-	var expires time.Time
-	if testExpired {
-		expires = time.Now().Add(-1 * time.Hour / 2)
-	} else {
-		expires = time.Now().Add(2 * time.Hour)
+
+	var ppnr *models.ProxyPhoneNumberReservation
+	if !testExpired {
+		ppnr = &models.ProxyPhoneNumberReservation{
+			PhoneNumber:         proxyPhoneNumber,
+			DestinationEntityID: destinationEntityID,
+			OwnerEntityID:       providerID,
+			OrganizationID:      organizationID,
+		}
 	}
 
 	md := &mockDirectoryService_Twilio{
-		entities: []*directory.Entity{
-			{
-				ID:   organizationID,
-				Type: directory.EntityType_ORGANIZATION,
-				Contacts: []*directory.Contact{
-					{
-						Provisioned: true,
-						ContactType: directory.ContactType_PHONE,
-						Value:       practicePhoneNumber,
+		entities: map[string][]*directory.Entity{
+			"1234": []*directory.Entity{
+				{
+					ID:   organizationID,
+					Type: directory.EntityType_ORGANIZATION,
+					Contacts: []*directory.Contact{
+						{
+							Provisioned: true,
+							ContactType: directory.ContactType_PHONE,
+							Value:       practicePhoneNumber,
+						},
+					},
+				},
+			},
+			"6789": []*directory.Entity{
+				{
+					ID:   destinationEntityID,
+					Type: directory.EntityType_EXTERNAL,
+					Name: patientName,
+					Contacts: []*directory.Contact{
+						{
+							Provisioned: false,
+							ContactType: directory.ContactType_PHONE,
+							Value:       patientPhoneNumber,
+						},
 					},
 				},
 			},
@@ -106,20 +139,33 @@ func testOutgoing(t *testing.T, testExpired bool) {
 	}
 
 	mdal := &mockDAL_Twilio{
-		cr: &models.CallRequest{
-			Source:         providerPersonalPhoneNumber,
-			Destination:    patientPhoneNumber,
+		Expector: &mock.Expector{
+			T: t,
+		},
+		ppnr: ppnr,
+	}
+	mdal.Expect(mock.NewExpectation(mdal.ActiveProxyPhoneNumberReservation, &dal.ProxyPhoneNumberReservationLookup{
+		ProxyPhoneNumber: ptr.String(proxyPhoneNumber.String()),
+	}))
+
+	mclock := clock.NewManaged(time.Now())
+
+	if !testExpired {
+		mdal.Expect(mock.NewExpectation(mdal.CreateCallRequest, &models.CallRequest{
+			Source:         phone.Number(providerPersonalPhoneNumber),
+			Destination:    phone.Number(patientPhoneNumber),
 			Proxy:          proxyPhoneNumber,
 			OrganizationID: organizationID,
-			Requested:      requested,
-			Expires:        expires,
-		},
+			CallSID:        callSID,
+			Requested:      mclock.Now(),
+		}))
 	}
-	es := NewService("", "", "", mdal, "https://test.com", md, nil, "")
+
+	es := NewService("", "", "", mdal, "https://test.com", md, nil, "", mclock)
 
 	params := &excomms.TwilioParams{
 		From:    providerPersonalPhoneNumber,
-		To:      proxyPhoneNumber,
+		To:      proxyPhoneNumber.String(),
 		CallSID: callSID,
 	}
 
@@ -132,15 +178,20 @@ func testOutgoing(t *testing.T, testExpired bool) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<Response><Dial callerId="%s"><Number statusCallbackEvent="ringing answered completed" statusCallback="https://test.com/twilio/process_outgoing_call_status">%s</Number></Dial></Response>`, practicePhoneNumber, patientPhoneNumber)
+		var expected string
+		if patientName != "" {
+			expected = fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<Response><Say voice="alice">You will be connected to %s</Say><Dial callerId="+12068773590"><Number statusCallbackEvent="ringing answered completed" statusCallback="https://test.com/twilio/process_outgoing_call_status">+11234567890</Number></Dial></Response>`, patientName)
+		} else {
+			expected = fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<Response><Say voice="alice">You will be connected to 123 456 7890</Say><Dial callerId="+12068773590"><Number statusCallbackEvent="ringing answered completed" statusCallback="https://test.com/twilio/process_outgoing_call_status">+11234567890</Number></Dial></Response>`)
+		}
+
 		if twiml != expected {
 			t.Fatalf("\nExpected %s\nGot %s", expected, twiml)
 		}
-		if callSID != mdal.callSID {
-			t.Fatalf("Expected call request to be updated with %s, but got %s", callSID, mdal.callSID)
-		}
 	}
+	mock.FinishAll(mdal)
 }
 
 func TestIncoming_Organization(t *testing.T) {
@@ -151,7 +202,7 @@ func TestIncoming_Organization(t *testing.T) {
 	practicePhoneNumber := "+14150000000"
 
 	md := &mockDirectoryService_Twilio{
-		entities: []*directory.Entity{
+		entitiesList: []*directory.Entity{
 			{
 				ID:   orgID,
 				Type: directory.EntityType_ORGANIZATION,
@@ -177,7 +228,7 @@ func TestIncoming_Organization(t *testing.T) {
 		},
 	}
 
-	es := NewService("", "", "", nil, "https://test.com", md, nil, "")
+	es := NewService("", "", "", nil, "https://test.com", md, nil, "", clock.New())
 	params := &excomms.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -205,7 +256,7 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 	practicePhoneNumber := "+14150000000"
 
 	md := &mockDirectoryService_Twilio{
-		entities: []*directory.Entity{
+		entitiesList: []*directory.Entity{
 			{
 				ID:   orgID,
 				Type: directory.EntityType_ORGANIZATION,
@@ -232,7 +283,7 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 		},
 	}
 
-	es := NewService("", "", "", nil, "https://test.com", md, nil, "")
+	es := NewService("", "", "", nil, "https://test.com", md, nil, "", clock.New())
 	params := &excomms.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -259,7 +310,7 @@ func TestIncoming_Provider(t *testing.T) {
 	practicePhoneNumber := "+14150000000"
 
 	md := &mockDirectoryService_Twilio{
-		entities: []*directory.Entity{
+		entitiesList: []*directory.Entity{
 			{
 				ID:   providerID,
 				Type: directory.EntityType_INTERNAL,
@@ -279,7 +330,7 @@ func TestIncoming_Provider(t *testing.T) {
 		},
 	}
 
-	es := NewService("", "", "", nil, "https://test.com", md, nil, "")
+	es := NewService("", "", "", nil, "https://test.com", md, nil, "", clock.New())
 	params := &excomms.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -394,7 +445,7 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus excomms.TwilioPar
 		To:             "+17348465522",
 		DialCallStatus: incomingStatus,
 	}
-	es := NewService("", "", "", nil, "https://test.com", nil, ms, "")
+	es := NewService("", "", "", nil, "https://test.com", nil, ms, "", clock.New())
 
 	twiml, err := processIncomingCallStatus(params, es.(*excommsService))
 	if err != nil {
@@ -421,7 +472,7 @@ func testIncomingCallStatus(t *testing.T, incomingStatus excomms.TwilioParams_Ca
 		To:             "+17348465522",
 		DialCallStatus: incomingStatus,
 	}
-	es := NewService("", "", "", nil, "https://test.com", nil, ms, "")
+	es := NewService("", "", "", nil, "https://test.com", nil, ms, "", clock.New())
 
 	twiml, err := processIncomingCallStatus(params, es.(*excommsService))
 	if err != nil {
@@ -466,7 +517,7 @@ func TestOutgoingCallStatus(t *testing.T) {
 		},
 	}
 
-	es := NewService("", "", "", md, "", nil, ms, "")
+	es := NewService("", "", "", md, "", nil, ms, "", clock.New())
 
 	twiml, err := processOutgoingCallStatus(params, es.(*excommsService))
 	if err != nil {
@@ -482,10 +533,10 @@ func TestOutgoingCallStatus(t *testing.T) {
 	pem, err := parsePublishedExternalMessage(*ms.published[0].Message)
 	if err != nil {
 		t.Fatal(err)
-	} else if pem.FromChannelID != md.cr.Source {
+	} else if pem.FromChannelID != md.cr.Source.String() {
 		t.Fatalf("Expected %s but got %s", md.cr.Source, pem.FromChannelID)
-	} else if pem.ToChannelID != md.cr.Destination {
-		t.Fatalf("Expected %s but got %s", md.cr.Destination, pem.ToChannelID)
+	} else if pem.ToChannelID != md.cr.Destination.String() {
+		t.Fatalf("Expected %s but got %s", md.cr.Destination.String(), pem.ToChannelID)
 	} else if pem.Direction != excomms.PublishedExternalMessage_OUTBOUND {
 		t.Fatalf("Expectd %s but got %s", excomms.PublishedExternalMessage_OUTBOUND, pem.Direction)
 	} else if pem.Type != excomms.PublishedExternalMessage_CALL_EVENT {
@@ -508,7 +559,7 @@ func TestProcessVoicemail(t *testing.T) {
 
 	ms := &mockSNS_Twilio{}
 
-	es := NewService("", "", "", nil, "", nil, ms, "")
+	es := NewService("", "", "", nil, "", nil, ms, "", clock.New())
 
 	twiml, err := processVoicemail(params, es.(*excommsService))
 	if err != nil {
@@ -561,7 +612,7 @@ func TestProcessIncomingSMS(t *testing.T) {
 	}
 
 	ms := &mockSNS_Twilio{}
-	es := NewService("", "", "", nil, "", nil, ms, "")
+	es := NewService("", "", "", nil, "", nil, ms, "", clock.New())
 
 	twiml, err := processIncomingSMS(params, es.(*excommsService))
 	if err != nil {

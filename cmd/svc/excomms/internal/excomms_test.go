@@ -2,11 +2,14 @@ package internal
 
 import (
 	"testing"
+	"time"
 
 	"google.golang.org/grpc/codes"
 
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
+	"github.com/sprucehealth/backend/libs/clock"
+	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/libs/twilio"
@@ -42,7 +45,9 @@ func (m *mockIncomingPhoneNumberService_Excomms) PurchaseLocal(params twilio.Pur
 
 type mockDAL_Excomms struct {
 	dal.DAL
-	ppn *models.ProvisionedPhoneNumber
+	ppn     *models.ProvisionedPhoneNumber
+	proxies []*models.ProxyPhoneNumber
+	ppnr    *models.ProxyPhoneNumberReservation
 	*mock.Expector
 }
 
@@ -54,9 +59,28 @@ func (m *mockDAL_Excomms) ProvisionPhoneNumber(model *models.ProvisionedPhoneNum
 	defer m.Record(model)
 	return nil
 }
-func (m *mockDAL_Excomms) CreateCallRequest(cr *models.CallRequest) error {
-	// defer m.Record(cr)
+func (m *mockDAL_Excomms) ActiveProxyPhoneNumberReservation(lookup *dal.ProxyPhoneNumberReservationLookup) (*models.ProxyPhoneNumberReservation, error) {
+	defer m.Record(lookup)
+	return m.ppnr, nil
+}
+func (m *mockDAL_Excomms) UpdateActiveProxyPhoneNumberReservation(proxyPhoneNumber phone.Number, update *dal.ProxyPhoneNumberReservationUpdate) (int64, error) {
+	defer m.Record(proxyPhoneNumber, update)
+	return 1, nil
+}
+func (m *mockDAL_Excomms) UpdateProxyPhoneNumber(phoneNumber phone.Number, update *dal.ProxyPhoneNumberUpdate) (int64, error) {
+	defer m.Record(phoneNumber, update)
+	return 1, nil
+}
+func (m *mockDAL_Excomms) ProxyPhoneNumbers(opt dal.ProxyPhoneNumberOpt) ([]*models.ProxyPhoneNumber, error) {
+	defer m.Record(opt)
+	return m.proxies, nil
+}
+func (m *mockDAL_Excomms) CreateProxyPhoneNumberReservation(model *models.ProxyPhoneNumberReservation) error {
+	defer m.Record(model)
 	return nil
+}
+func (m *mockDAL_Excomms) Transact(trans func(dal.DAL) error) error {
+	return trans(m)
 }
 
 type mockMessages_Excomms struct {
@@ -248,7 +272,7 @@ func TestProvisionPhoneNumber_NotProvisioned_PhoneNumber(t *testing.T) {
 func TestProvisionPhoneNumber_Idempotent(t *testing.T) {
 	md := &mockDAL_Excomms{
 		ppn: &models.ProvisionedPhoneNumber{
-			PhoneNumber: "+14156666666",
+			PhoneNumber: phone.Number("+14156666666"),
 		},
 		Expector: &mock.Expector{
 			T: t,
@@ -277,7 +301,7 @@ func TestProvisionPhoneNumber_Idempotent(t *testing.T) {
 		},
 	})
 	test.OK(t, err)
-	test.Equals(t, md.ppn.PhoneNumber, res.PhoneNumber)
+	test.Equals(t, md.ppn.PhoneNumber.String(), res.PhoneNumber)
 
 	mi.Finish()
 	md.Finish()
@@ -374,7 +398,11 @@ func TestSendMessage_VoiceNotSupported(t *testing.T) {
 	mm.Finish()
 }
 
+// TestInitiatePhoneCall explores happy path of reserving a proxy phone
+// number for a particular provider to call a particular patient.
 func TestInitiatePhoneCall(t *testing.T) {
+	mclock := clock.NewManaged(time.Now())
+
 	md := &mockDirectory_Excomms{
 		Expector: &mock.Expector{T: t},
 		res: &directory.LookupEntitiesResponse{
@@ -388,6 +416,7 @@ func TestInitiatePhoneCall(t *testing.T) {
 			"+17348465522": &directory.LookupEntitiesByContactResponse{
 				Entities: []*directory.Entity{
 					{
+						ID:   "0000",
 						Type: directory.EntityType_INTERNAL,
 						Memberships: []*directory.Entity{
 							{
@@ -402,6 +431,7 @@ func TestInitiatePhoneCall(t *testing.T) {
 				Entities: []*directory.Entity{
 					{
 						Type: directory.EntityType_EXTERNAL,
+						ID:   "1111",
 						Memberships: []*directory.Entity{
 							{
 								ID:   "1234",
@@ -439,11 +469,35 @@ func TestInitiatePhoneCall(t *testing.T) {
 		Expector: &mock.Expector{
 			T: t,
 		},
+		proxies: []*models.ProxyPhoneNumber{
+			{
+				PhoneNumber: "+12061111111",
+			},
+			{
+				PhoneNumber: "+12062222222",
+			},
+		},
 	}
+
+	mdal.Expect(mock.NewExpectation(mdal.ActiveProxyPhoneNumberReservation, &dal.ProxyPhoneNumberReservationLookup{
+		DestinationEntityID: ptr.String("1111"),
+	}))
+	mdal.Expect(mock.NewExpectation(mdal.ProxyPhoneNumbers, dal.PPOUnexpiredOnly))
+	mdal.Expect(mock.NewExpectation(mdal.CreateProxyPhoneNumberReservation, &models.ProxyPhoneNumberReservation{
+		PhoneNumber:         phone.Number("+12061111111"),
+		DestinationEntityID: "1111",
+		OwnerEntityID:       "0000",
+		OrganizationID:      "1234",
+		Expires:             mclock.Now().Add(phoneReservationDuration),
+	}))
+	mdal.Expect(mock.NewExpectation(mdal.UpdateProxyPhoneNumber, phone.Number("+12061111111"), &dal.ProxyPhoneNumberUpdate{
+		Expires: ptr.Time(mclock.Now().Add(phoneReservationDuration)),
+	}))
 
 	es := &excommsService{
 		dal:       mdal,
 		directory: md,
+		clock:     mclock,
 	}
 
 	res, err := es.InitiatePhoneCall(context.Background(), &excomms.InitiatePhoneCallRequest{
@@ -453,7 +507,356 @@ func TestInitiatePhoneCall(t *testing.T) {
 		OrganizationID:     "1234",
 	})
 	test.OK(t, err)
-	test.Equals(t, "+12064881903", res.PhoneNumber)
+	test.Equals(t, "+12061111111", res.PhoneNumber)
+	md.Finish()
+	mdal.Finish()
+}
+
+// TestInitiatePhoneCall_WithinGracePeriod tests reserving of proxy phone number
+// when one of the phone numbers returned to reserve is within the grace period and should
+// not be reserved.
+func TestInitiatePhoneCall_WithinGracePeriod(t *testing.T) {
+	mclock := clock.NewManaged(time.Now())
+
+	md := &mockDirectory_Excomms{
+		Expector: &mock.Expector{T: t},
+		res: &directory.LookupEntitiesResponse{
+			Entities: []*directory.Entity{
+				{
+					Type: directory.EntityType_ORGANIZATION,
+				},
+			},
+		},
+		contactRes: map[string]*directory.LookupEntitiesByContactResponse{
+			"+17348465522": &directory.LookupEntitiesByContactResponse{
+				Entities: []*directory.Entity{
+					{
+						ID:   "0000",
+						Type: directory.EntityType_INTERNAL,
+						Memberships: []*directory.Entity{
+							{
+								ID:   "1234",
+								Type: directory.EntityType_ORGANIZATION,
+							},
+						},
+					},
+				},
+			},
+			"+14152222222": &directory.LookupEntitiesByContactResponse{
+				Entities: []*directory.Entity{
+					{
+						Type: directory.EntityType_EXTERNAL,
+						ID:   "1111",
+						Memberships: []*directory.Entity{
+							{
+								ID:   "1234",
+								Type: directory.EntityType_ORGANIZATION,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	md.Expect(mock.NewExpectation(md.LookupEntities, context.Background(), &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "1234",
+		},
+	}))
+	md.Expect(mock.NewExpectation(md.LookupEntitiesByContact, context.Background(), &directory.LookupEntitiesByContactRequest{
+		ContactValue: "+17348465522",
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             1,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+		},
+	}))
+	md.Expect(mock.NewExpectation(md.LookupEntitiesByContact, context.Background(), &directory.LookupEntitiesByContactRequest{
+		ContactValue: "+14152222222",
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             1,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+		},
+	}))
+
+	mdal := &mockDAL_Excomms{
+		Expector: &mock.Expector{
+			T: t,
+		},
+		proxies: []*models.ProxyPhoneNumber{
+			{
+				PhoneNumber: phone.Number("+12061111111"),
+				Expires:     ptr.Time(mclock.Now().Add(-time.Minute)),
+			},
+			{
+				PhoneNumber: phone.Number("+12062222222"),
+			},
+		},
+	}
+
+	mdal.Expect(mock.NewExpectation(mdal.ActiveProxyPhoneNumberReservation, &dal.ProxyPhoneNumberReservationLookup{
+		DestinationEntityID: ptr.String("1111"),
+	}))
+	mdal.Expect(mock.NewExpectation(mdal.ProxyPhoneNumbers, dal.PPOUnexpiredOnly))
+	mdal.Expect(mock.NewExpectation(mdal.CreateProxyPhoneNumberReservation, &models.ProxyPhoneNumberReservation{
+		PhoneNumber:         phone.Number("+12062222222"),
+		DestinationEntityID: "1111",
+		OwnerEntityID:       "0000",
+		OrganizationID:      "1234",
+		Expires:             mclock.Now().Add(phoneReservationDuration),
+	}))
+	mdal.Expect(mock.NewExpectation(mdal.UpdateProxyPhoneNumber, phone.Number("+12062222222"), &dal.ProxyPhoneNumberUpdate{
+		Expires: ptr.Time(mclock.Now().Add(phoneReservationDuration)),
+	}))
+
+	es := &excommsService{
+		dal:       mdal,
+		directory: md,
+		clock:     mclock,
+	}
+
+	res, err := es.InitiatePhoneCall(context.Background(), &excomms.InitiatePhoneCallRequest{
+		CallInitiationType: excomms.InitiatePhoneCallRequest_RETURN_PHONE_NUMBER,
+		FromPhoneNumber:    "+17348465522",
+		ToPhoneNumber:      "+14152222222",
+		OrganizationID:     "1234",
+	})
+	test.OK(t, err)
+	test.Equals(t, "+12062222222", res.PhoneNumber)
+	md.Finish()
+	mdal.Finish()
+}
+
+// TestInitiatePhoneCall_Idempotent tests to ensure that if the exact
+// same provider requests for a phone number to call the patient within the
+// expiration window, we extent the expiration window and provide the same
+// number to the provider.
+func TestInitiatePhoneCall_Idempotent(t *testing.T) {
+	mclock := clock.NewManaged(time.Now())
+
+	md := &mockDirectory_Excomms{
+		Expector: &mock.Expector{T: t},
+		res: &directory.LookupEntitiesResponse{
+			Entities: []*directory.Entity{
+				{
+					Type: directory.EntityType_ORGANIZATION,
+				},
+			},
+		},
+		contactRes: map[string]*directory.LookupEntitiesByContactResponse{
+			"+17348465522": &directory.LookupEntitiesByContactResponse{
+				Entities: []*directory.Entity{
+					{
+						ID:   "0000",
+						Type: directory.EntityType_INTERNAL,
+						Memberships: []*directory.Entity{
+							{
+								ID:   "1234",
+								Type: directory.EntityType_ORGANIZATION,
+							},
+						},
+					},
+				},
+			},
+			"+14152222222": &directory.LookupEntitiesByContactResponse{
+				Entities: []*directory.Entity{
+					{
+						Type: directory.EntityType_EXTERNAL,
+						ID:   "1111",
+						Memberships: []*directory.Entity{
+							{
+								ID:   "1234",
+								Type: directory.EntityType_ORGANIZATION,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	md.Expect(mock.NewExpectation(md.LookupEntities, context.Background(), &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "1234",
+		},
+	}))
+	md.Expect(mock.NewExpectation(md.LookupEntitiesByContact, context.Background(), &directory.LookupEntitiesByContactRequest{
+		ContactValue: "+17348465522",
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             1,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+		},
+	}))
+	md.Expect(mock.NewExpectation(md.LookupEntitiesByContact, context.Background(), &directory.LookupEntitiesByContactRequest{
+		ContactValue: "+14152222222",
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             1,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+		},
+	}))
+
+	mdal := &mockDAL_Excomms{
+		Expector: &mock.Expector{
+			T: t,
+		},
+		proxies: []*models.ProxyPhoneNumber{
+			{
+				PhoneNumber: phone.Number("+12062222222"),
+			},
+		},
+		ppnr: &models.ProxyPhoneNumberReservation{
+			PhoneNumber:         phone.Number("+12061111111"),
+			DestinationEntityID: "1111",
+			OwnerEntityID:       "0000",
+			OrganizationID:      "1234",
+			Expires:             mclock.Now().Add(phoneReservationDuration),
+		},
+	}
+
+	mdal.Expect(mock.NewExpectation(mdal.ActiveProxyPhoneNumberReservation, &dal.ProxyPhoneNumberReservationLookup{
+		DestinationEntityID: ptr.String("1111"),
+	}))
+	mdal.Expect(mock.NewExpectation(mdal.UpdateActiveProxyPhoneNumberReservation, phone.Number("+12061111111"), &dal.ProxyPhoneNumberReservationUpdate{
+		Expires: ptr.Time(mclock.Now().Add(phoneReservationDuration)),
+	}))
+	mdal.Expect(mock.NewExpectation(mdal.UpdateProxyPhoneNumber, phone.Number("+12061111111"), &dal.ProxyPhoneNumberUpdate{
+		Expires: ptr.Time(mclock.Now().Add(phoneReservationDuration)),
+	}))
+
+	es := &excommsService{
+		dal:       mdal,
+		directory: md,
+		clock:     mclock,
+	}
+
+	res, err := es.InitiatePhoneCall(context.Background(), &excomms.InitiatePhoneCallRequest{
+		CallInitiationType: excomms.InitiatePhoneCallRequest_RETURN_PHONE_NUMBER,
+		FromPhoneNumber:    "+17348465522",
+		ToPhoneNumber:      "+14152222222",
+		OrganizationID:     "1234",
+	})
+	test.OK(t, err)
+	test.Equals(t, "+12061111111", res.PhoneNumber)
+	md.Finish()
+	mdal.Finish()
+}
+
+// TestInitiatePhoneCall_SameDestinationEntity_DifferentProvider tests to ensure that if two providers
+// try to call the same patient in the organization, they are reserved and handed different phone numbers.
+func TestInitiatePhoneCall_SameDestinationEntity_DifferentProvider(t *testing.T) {
+	mclock := clock.NewManaged(time.Now())
+
+	md := &mockDirectory_Excomms{
+		Expector: &mock.Expector{T: t},
+		res: &directory.LookupEntitiesResponse{
+			Entities: []*directory.Entity{
+				{
+					Type: directory.EntityType_ORGANIZATION,
+				},
+			},
+		},
+		contactRes: map[string]*directory.LookupEntitiesByContactResponse{
+			"+17348465522": &directory.LookupEntitiesByContactResponse{
+				Entities: []*directory.Entity{
+					{
+						ID:   "0000",
+						Type: directory.EntityType_INTERNAL,
+						Memberships: []*directory.Entity{
+							{
+								ID:   "1234",
+								Type: directory.EntityType_ORGANIZATION,
+							},
+						},
+					},
+				},
+			},
+			"+14152222222": &directory.LookupEntitiesByContactResponse{
+				Entities: []*directory.Entity{
+					{
+						Type: directory.EntityType_EXTERNAL,
+						ID:   "1111",
+						Memberships: []*directory.Entity{
+							{
+								ID:   "1234",
+								Type: directory.EntityType_ORGANIZATION,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	md.Expect(mock.NewExpectation(md.LookupEntities, context.Background(), &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "1234",
+		},
+	}))
+	md.Expect(mock.NewExpectation(md.LookupEntitiesByContact, context.Background(), &directory.LookupEntitiesByContactRequest{
+		ContactValue: "+17348465522",
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             1,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+		},
+	}))
+	md.Expect(mock.NewExpectation(md.LookupEntitiesByContact, context.Background(), &directory.LookupEntitiesByContactRequest{
+		ContactValue: "+14152222222",
+		RequestedInformation: &directory.RequestedInformation{
+			Depth:             1,
+			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+		},
+	}))
+
+	mdal := &mockDAL_Excomms{
+		Expector: &mock.Expector{
+			T: t,
+		},
+		proxies: []*models.ProxyPhoneNumber{
+			{
+				PhoneNumber: phone.Number("+12062222222"),
+			},
+		},
+		ppnr: &models.ProxyPhoneNumberReservation{
+			PhoneNumber:         phone.Number("+12061111111"),
+			DestinationEntityID: "1111",
+			OwnerEntityID:       "0001",
+			OrganizationID:      "1234",
+			Expires:             mclock.Now().Add(phoneReservationDuration),
+		},
+	}
+
+	mdal.Expect(mock.NewExpectation(mdal.ActiveProxyPhoneNumberReservation, &dal.ProxyPhoneNumberReservationLookup{
+		DestinationEntityID: ptr.String("1111"),
+	}))
+	mdal.Expect(mock.NewExpectation(mdal.ProxyPhoneNumbers, dal.PPOUnexpiredOnly))
+	mdal.Expect(mock.NewExpectation(mdal.CreateProxyPhoneNumberReservation, &models.ProxyPhoneNumberReservation{
+		PhoneNumber:         phone.Number("+12062222222"),
+		DestinationEntityID: "1111",
+		OwnerEntityID:       "0000",
+		OrganizationID:      "1234",
+		Expires:             mclock.Now().Add(phoneReservationDuration),
+	}))
+	mdal.Expect(mock.NewExpectation(mdal.UpdateProxyPhoneNumber, phone.Number("+12062222222"), &dal.ProxyPhoneNumberUpdate{
+		Expires: ptr.Time(mclock.Now().Add(phoneReservationDuration)),
+	}))
+
+	es := &excommsService{
+		dal:       mdal,
+		directory: md,
+		clock:     mclock,
+	}
+
+	res, err := es.InitiatePhoneCall(context.Background(), &excomms.InitiatePhoneCallRequest{
+		CallInitiationType: excomms.InitiatePhoneCallRequest_RETURN_PHONE_NUMBER,
+		FromPhoneNumber:    "+17348465522",
+		ToPhoneNumber:      "+14152222222",
+		OrganizationID:     "1234",
+	})
+	test.OK(t, err)
+	test.Equals(t, "+12062222222", res.PhoneNumber)
 	md.Finish()
 	mdal.Finish()
 }

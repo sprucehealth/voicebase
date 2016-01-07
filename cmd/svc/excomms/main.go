@@ -13,6 +13,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	cfg "github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -105,7 +106,8 @@ func main() {
 		config.excommsAPIURL,
 		directory.NewDirectoryClient(directoryConn),
 		snsCLI,
-		config.externalMessageTopic)
+		config.externalMessageTopic,
+		clock.New())
 	excommsServer := grpc.NewServer()
 	excomms.RegisterExCommsServer(excommsServer, excommsService)
 

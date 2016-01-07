@@ -5,12 +5,14 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/twilio/twiml"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
-
 	"golang.org/x/net/context"
 )
 
@@ -32,15 +34,15 @@ var (
 type twilioEventHandleFunc func(*excomms.TwilioParams, *excommsService) (string, error)
 
 func processOutgoingCall(params *excomms.TwilioParams, es *excommsService) (string, error) {
-	cr, err := es.dal.ValidCallRequest(params.From)
-	if errors.Cause(err) == dal.ErrCallRequestNotFound {
-		return "", errors.Trace(fmt.Errorf("No call request found for %s", params.CallSID))
+
+	// look for an active reservation on the proxy phone number
+	ppnr, err := es.dal.ActiveProxyPhoneNumberReservation(&dal.ProxyPhoneNumberReservationLookup{
+		ProxyPhoneNumber: ptr.String(params.To),
+	})
+	if errors.Cause(err) == dal.ErrProxyPhoneNumberReservationNotFound {
+		return "", errors.Trace(fmt.Errorf("No active reservation found for %s", params.To))
 	} else if err != nil {
 		return "", errors.Trace(err)
-	}
-
-	if time.Now().After(cr.Expires) {
-		return "", errors.Trace(fmt.Errorf("Call request has expired for call from %s to %s", params.From, cr.Destination))
 	}
 
 	// look up the practice phone number using the organizationID
@@ -49,7 +51,7 @@ func processOutgoingCall(params *excomms.TwilioParams, es *excommsService) (stri
 		&directory.LookupEntitiesRequest{
 			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: cr.OrganizationID,
+				EntityID: ppnr.OrganizationID,
 			},
 			RequestedInformation: &directory.RequestedInformation{
 				Depth: 1,
@@ -83,20 +85,87 @@ func processOutgoingCall(params *excomms.TwilioParams, es *excommsService) (stri
 		return "", errors.Trace(fmt.Errorf("Unable to find practice phone number for org %s", orgEntity.ID))
 	}
 
-	if rowsAffected, err := es.dal.UpdateCallRequest(params.From, params.CallSID); err != nil {
+	// lookup phone number of external entity to call
+	res, err = es.directory.LookupEntities(
+		context.Background(),
+		&directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: ppnr.DestinationEntityID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth: 1,
+				EntityInformation: []directory.EntityInformation{
+					directory.EntityInformation_CONTACTS,
+				},
+			},
+		})
+	if err != nil {
 		return "", errors.Trace(err)
-	} else if rowsAffected != 1 {
-		return "", errors.Trace(fmt.Errorf("Expected to update a single call request, instead updated %d call requests with call sid %s", rowsAffected, params.CallSID))
+	} else if len(res.Entities) != 1 {
+		return "", errors.Trace(fmt.Errorf("Expected 1 external entity but got %d", len(res.Entities)))
+	}
+
+	var destinationPhoneNumber string
+	for _, c := range res.Entities[0].Contacts {
+		if c.Provisioned {
+			continue
+		} else if c.ContactType != directory.ContactType_PHONE {
+			continue
+		}
+		destinationPhoneNumber = c.Value
+		break
+	}
+
+	if destinationPhoneNumber == "" {
+		return "", errors.Trace(fmt.Errorf("Unable to find phone number to call for entity %s", ppnr.DestinationEntityID))
+	}
+
+	source, err := phone.ParseNumber(params.From)
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+	destination, err := phone.ParseNumber(destinationPhoneNumber)
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+
+	if err := es.dal.CreateCallRequest(&models.CallRequest{
+		Source:         source,
+		Destination:    destination,
+		Proxy:          ppnr.PhoneNumber,
+		OrganizationID: ppnr.OrganizationID,
+		CallSID:        params.CallSID,
+		Requested:      es.clock.Now(),
+	}); err != nil {
+		return "", errors.Trace(err)
+	}
+
+	var text string
+	if res.Entities[0].Name != "" {
+		text = "You will be connected to " + res.Entities[0].Name
+	} else {
+		formattedNumber, err := destination.Format(phone.National)
+		if err != nil {
+			golog.Errorf(err.Error())
+			text = "You will be connected to the patient"
+		} else {
+			text = "You will be connected to " + formattedNumber
+		}
 	}
 
 	tw := twiml.NewResponse(
+		&twiml.Say{
+			Text:  text,
+			Voice: "alice",
+		},
 		&twiml.Dial{
 			CallerID: practicePhoneNumber,
 			Nouns: []interface{}{
 				&twiml.Number{
 					StatusCallbackEvent: twiml.SCRinging | twiml.SCAnswered | twiml.SCCompleted,
 					StatusCallback:      fmt.Sprintf("%s/twilio/process_outgoing_call_status", es.apiURL),
-					Text:                cr.Destination,
+					Text:                destinationPhoneNumber,
 				},
 			},
 		})
@@ -323,8 +392,8 @@ func processOutgoingCallStatus(params *excomms.TwilioParams, es *excommsService)
 	}
 
 	publishToSNSTopic(es.sns, es.externalMessageTopic, &excomms.PublishedExternalMessage{
-		FromChannelID: cr.Source,
-		ToChannelID:   cr.Destination,
+		FromChannelID: cr.Source.String(),
+		ToChannelID:   cr.Destination.String(),
 		Direction:     excomms.PublishedExternalMessage_OUTBOUND,
 		Timestamp:     uint64(time.Now().Unix()),
 		Type:          excomms.PublishedExternalMessage_CALL_EVENT,
