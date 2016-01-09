@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -33,6 +34,8 @@ func transformThreadToResponse(t *threading.Thread) (*thread, error) {
 		ID:              t.ID,
 		OrganizationID:  t.OrganizationID,
 		PrimaryEntityID: t.PrimaryEntityID,
+		Title:           t.PrimaryEntityID, // TODO
+		Subtitle:        "",                // TODO
 	}, nil
 }
 
@@ -47,6 +50,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem) (*threadItem, err
 	case threading.ThreadItem_MESSAGE:
 		m := item.GetMessage()
 		m2 := &message{
+			Title:  m.Title,
 			Text:   m.Text,
 			Status: m.Status.String(),
 			Source: &endpoint{
@@ -55,6 +59,12 @@ func transformThreadItemToResponse(item *threading.ThreadItem) (*threadItem, err
 			},
 			// TODO: EditorEntityID
 			// TODO: EditedTimestamp
+		}
+		for _, r := range m.TextRefs {
+			m2.Refs = append(m2.Refs, &reference{
+				ID:   r.ID,
+				Type: strings.ToLower(r.Type.String()),
+			})
 		}
 		for _, a := range m.Attachments {
 			var data interface{}

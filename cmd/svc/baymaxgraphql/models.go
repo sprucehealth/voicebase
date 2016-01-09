@@ -54,7 +54,17 @@ type endpoint struct {
 	ID      string `json:"id"`
 }
 
+const (
+	entityRef = "entity"
+)
+
+type reference struct {
+	Type string `json:"type"`
+	ID   string `json:"id"`
+}
+
 type message struct {
+	Title           string        `json:"title"`
 	Text            string        `json:"text"`
 	Status          string        `json:"status"`
 	Source          *endpoint     `json:"source"`
@@ -62,6 +72,7 @@ type message struct {
 	Attachments     []*attachment `json:"attachments,omitempty"`
 	EditorEntityID  string        `json:"editorEntityID,omitempty"`
 	EditedTimestamp uint64        `json:"editedTimestamp,omitempty"`
+	Refs            []*reference  `json:"refs,omitempty"`
 }
 
 type attachment struct {
@@ -87,6 +98,8 @@ type thread struct {
 	ID              string `json:"id"`
 	OrganizationID  string `json:"organizationID"`
 	PrimaryEntityID string `json:"primaryEntityID"`
+	Title           string `json:"title"`
+	Subtitle        string `json:"subtitle"`
 }
 
 type threadItem struct {

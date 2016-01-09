@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/cmd/svc/routing/internal/worker"
 	"github.com/sprucehealth/backend/libs/awsutil"
+	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
@@ -178,6 +179,9 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 		}
 
 		externalEntity = res.Entity
+		if pem.Direction == excomms.PublishedExternalMessage_INBOUND {
+			fromEntity = externalEntity
+		}
 	}
 
 	// now that to and from entities have been resolved, post the message to the appropriate
@@ -205,6 +209,16 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 	var endpointChannel threading.Endpoint_Channel
 	var attachments []*threading.Attachment
 	var text string
+	var title bml.BML
+
+	fromName := pem.FromChannelID
+	if fromEntity.Name != "" {
+		fromName = fromEntity.Name
+	}
+	toName := pem.ToChannelID
+	if toEntity.Name != "" {
+		toName = toEntity.Name
+	}
 
 	// TODO: The creation of this mesage should not be the responsibility
 	// of the routing layer. It should probably be the responsibility of the
@@ -214,6 +228,9 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 	case excomms.PublishedExternalMessage_SMS:
 		endpointChannel = threading.Endpoint_SMS
 		text = pem.GetSMSItem().Text
+		title = bml.Parsef("%s texted %s",
+			&bml.Ref{Type: bml.EntityRef, ID: fromEntity.ID, Text: fromName},
+			&bml.Ref{Type: bml.EntityRef, ID: toEntity.ID, Text: toName})
 
 		// populate attachments
 		attachments = make([]*threading.Attachment, len(pem.GetSMSItem().Attachments))
@@ -231,13 +248,16 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 
 	case excomms.PublishedExternalMessage_CALL_EVENT:
 		endpointChannel = threading.Endpoint_VOICE
+		title = bml.Parsef("%s called %s",
+			&bml.Ref{Type: bml.EntityRef, ID: fromEntity.ID, Text: fromName},
+			&bml.Ref{Type: bml.EntityRef, ID: toEntity.ID, Text: toName})
 		switch pem.GetCallEventItem().Type {
 		case excomms.CallEventItem_INCOMING_ANSWERED:
-			text = fmt.Sprintf("%s called %s, answered.", pem.FromChannelID, toEntity.Name)
+			title = append(title, ", answered")
 		case excomms.CallEventItem_INCOMING_UNANSWERED:
-			text = fmt.Sprintf("%s called %s, did not answer.", pem.FromChannelID, toEntity.Name)
+			title = append(title, ", no answer")
 		case excomms.CallEventItem_INCOMING_LEFT_VOICEMAIL:
-			text = fmt.Sprintf("%s called %s, left voicemail.", pem.FromChannelID, toEntity.Name)
+			title = append(title, ", left voicemail")
 			attachments = []*threading.Attachment{
 				{
 					Type: threading.Attachment_AUDIO,
@@ -250,14 +270,17 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 				},
 			}
 		case excomms.CallEventItem_OUTGOING_PLACED:
-			text = fmt.Sprintf("%s called %s.", fromEntity.Name, pem.ToChannelID)
 		case excomms.CallEventItem_OUTGOING_ANSWERED:
-			text = fmt.Sprintf("%s called %s, answered.", fromEntity.Name, pem.ToChannelID)
+			title = append(title, ", answered")
 		case excomms.CallEventItem_OUTGOING_UNANSWERED:
-			text = fmt.Sprintf("%s called %s, did not answer.", fromEntity.Name, pem.ToChannelID)
+			title = append(title, ", no answer")
 		}
 	}
 
+	titleStr, err := title.Format()
+	if err != nil {
+		return errors.Trace(err)
+	}
 	if externalThread == nil {
 		golog.Debugf("External thread for %s not found. Creating...", externalEntity.Contacts[0].Value)
 
@@ -277,6 +300,8 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 						ID:      pem.ToChannelID,
 					},
 				},
+				Internal:    false,
+				Title:       titleStr,
 				Text:        text,
 				Attachments: attachments,
 			},
@@ -303,6 +328,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 					},
 				},
 				Internal:    false,
+				Title:       titleStr,
 				Text:        text,
 				Attachments: attachments,
 			},

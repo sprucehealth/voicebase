@@ -67,7 +67,9 @@ type PostMessageRequest struct {
 	ThreadID     models.ThreadID
 	FromEntityID string
 	Internal     bool
+	Title        string
 	Text         string
+	TextRefs     []*models.Reference
 	Attachments  []*models.Attachment
 	Source       *models.Endpoint
 	Destinations []*models.Endpoint
@@ -319,11 +321,13 @@ func (d *dal) PostMessage(ctx context.Context, req *PostMessageRequest) (*models
 	}
 
 	msg := &models.Message{
+		Title:        req.Title,
 		Text:         req.Text,
 		Attachments:  req.Attachments,
 		Status:       models.Message_NORMAL,
 		Source:       req.Source,
 		Destinations: req.Destinations,
+		TextRefs:     req.TextRefs,
 	}
 	item := &models.ThreadItem{
 		ID:            id,

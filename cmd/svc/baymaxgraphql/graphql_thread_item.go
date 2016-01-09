@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/graphql-go/graphql"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
@@ -73,8 +74,37 @@ var messageType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Message",
 		Fields: graphql.Fields{
-			"status":       &graphql.Field{Type: graphql.NewNonNull(messageStatusType)},
-			"text":         &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"title":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"status": &graphql.Field{Type: graphql.NewNonNull(messageStatusType)},
+			"text":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"refs": &graphql.Field{
+				Type: graphql.NewList(graphql.NewNonNull(nodeInterfaceType)),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					svc := serviceFromParams(p)
+					ctx := contextFromParams(p)
+
+					msg := p.Source.(*message)
+					if msg == nil {
+						return nil, internalError(errors.New("message is nil"))
+					}
+
+					refs := make([]interface{}, 0, len(msg.Refs))
+					for _, r := range msg.Refs {
+						switch r.Type {
+						case entityRef:
+							e, err := lookupEntity(ctx, svc, r.ID)
+							if err != nil {
+								return nil, err
+							}
+							refs = append(refs, e)
+						default:
+							// Log this but continue as it's a better soft-fail state
+							golog.Errorf("unknown reference type %s", r.Type)
+						}
+					}
+					return refs, nil
+				},
+			},
 			"source":       &graphql.Field{Type: graphql.NewNonNull(endpointType)},
 			"destinations": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(endpointType))},
 			"attachments":  &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(attachmentType))},

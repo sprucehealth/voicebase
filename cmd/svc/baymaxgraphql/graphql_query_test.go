@@ -1,6 +1,8 @@
 package main
 
 import (
+	"testing"
+
 	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -9,7 +11,6 @@ import (
 	thmock "github.com/sprucehealth/backend/svc/threading/mock"
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
-	"testing"
 )
 
 func TestNodeQuery(t *testing.T) {
@@ -159,7 +160,7 @@ func TestNodeQuery(t *testing.T) {
 		nil))
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, &thread{ID: id, OrganizationID: "entity:1", PrimaryEntityID: "entity:2"}, res)
+	test.Equals(t, &thread{ID: id, OrganizationID: "entity:1", PrimaryEntityID: "entity:2", Title: "entity:2"}, res)
 
 	// Thread item
 
@@ -179,11 +180,15 @@ func TestNodeQuery(t *testing.T) {
 				Type:          threading.ThreadItem_MESSAGE,
 				Item: &threading.ThreadItem_Message{
 					Message: &threading.Message{
+						Title:  "abc",
 						Text:   "hello",
 						Status: threading.Message_NORMAL,
 						Source: &threading.Endpoint{
 							ID:      "555-555-5555",
 							Channel: threading.Endpoint_VOICE,
+						},
+						TextRefs: []*threading.Reference{
+							{ID: "e2", Type: threading.Reference_ENTITY},
 						},
 					},
 				},
@@ -198,11 +203,15 @@ func TestNodeQuery(t *testing.T) {
 		ActorEntityID: "entity:1",
 		Internal:      true,
 		Data: &message{
+			Title:  "abc",
 			Text:   "hello",
 			Status: messageStatusNormal,
 			Source: &endpoint{
 				Channel: endpointChannelVoice,
 				ID:      "555-555-5555",
+			},
+			Refs: []*reference{
+				{ID: "e2", Type: "entity"},
 			},
 		},
 	}, res)

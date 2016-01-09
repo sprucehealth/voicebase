@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
+	"github.com/sprucehealth/backend/libs/bml"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
@@ -72,9 +74,18 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	if in.Source == nil {
 		return nil, grpc.Errorf(codes.InvalidArgument, "Source is required")
 	}
-	if in.Text == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "Text is required")
+	if in.Title == "" {
+		return nil, grpc.Errorf(codes.InvalidArgument, "Title is required")
 	}
+	if err := bml.Parsef(in.Title).Validate(); err != nil {
+		return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Title is invalid format: %s", err.Error()))
+	}
+	var textRefs []*models.Reference
+	in.Text, textRefs, err = parseRefsAndNormalize(in.Text)
+	if err != nil {
+		return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Text is invalid format: %s", errors.Cause(err).Error()))
+	}
+
 	// TODO: validate any attachments
 	var threadID models.ThreadID
 	var item *models.ThreadItem
@@ -98,11 +109,13 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 			FromEntityID: in.FromEntityID,
 			Internal:     in.Internal,
 			Text:         in.Text,
+			Title:        in.Title,
 			// TODO: safer transform for Endpoint.Type
 			Source: &models.Endpoint{
 				Channel: models.Endpoint_Channel(models.Endpoint_Channel_value[in.Source.Channel.String()]),
 				ID:      in.Source.ID,
 			},
+			TextRefs: textRefs,
 		}
 		req.Attachments, err = transformAttachmentsFromRequest(in.Attachments)
 		if err != nil {
@@ -123,7 +136,7 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	s.publishMessage(ctx, in.OrganizationID, in.FromEntityID, threadID, it)
+	s.publishMessage(ctx, in.OrganizationID, in.FromEntityID, threadID, it, in.UUID)
 	return &threading.CreateThreadResponse{
 		ThreadID:   threadID.String(),
 		ThreadItem: it,
@@ -163,8 +176,16 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	if in.Source == nil {
 		return nil, grpc.Errorf(codes.InvalidArgument, "Source is required")
 	}
-	if in.Text == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "Text is required")
+	if in.Title == "" {
+		return nil, grpc.Errorf(codes.InvalidArgument, "Title is required")
+	}
+	if err := bml.Parsef(in.Title).Validate(); err != nil {
+		return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Title is invalid format: %s", err.Error()))
+	}
+	var textRefs []*models.Reference
+	in.Text, textRefs, err = parseRefsAndNormalize(in.Text)
+	if err != nil {
+		return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Text is invalid format: %s", errors.Cause(err).Error()))
 	}
 
 	thread, err := s.dal.Thread(ctx, threadID)
@@ -180,11 +201,13 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 			FromEntityID: in.FromEntityID,
 			Internal:     in.Internal,
 			Text:         in.Text,
+			Title:        in.Title,
 			// TODO: safer transform for Endpoint.Channel
 			Source: &models.Endpoint{
 				Channel: models.Endpoint_Channel(models.Endpoint_Channel_value[in.Source.Channel.String()]),
 				ID:      in.Source.ID,
 			},
+			TextRefs: textRefs,
 		}
 		req.Attachments, err = transformAttachmentsFromRequest(in.Attachments)
 		if err != nil {
@@ -214,7 +237,8 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	s.publishMessage(ctx, thread.OrganizationID, thread.PrimaryEntityID, threadID, it)
+
+	s.publishMessage(ctx, thread.OrganizationID, thread.PrimaryEntityID, threadID, it, in.UUID)
 	return &threading.PostMessageResponse{
 		Item: it,
 	}, nil
@@ -412,13 +436,17 @@ func (s *threadsServer) UpdateThreadMembership(ctx context.Context, in *threadin
 	return nil, grpc.Errorf(codes.Unimplemented, "UpdateThreadMembership not implemented")
 }
 
-func (s *threadsServer) publishMessage(ctx context.Context, orgID, primaryEntityID string, threadID models.ThreadID, item *threading.ThreadItem) {
-	go func() {
+func (s *threadsServer) publishMessage(ctx context.Context, orgID, primaryEntityID string, threadID models.ThreadID, item *threading.ThreadItem, uuid string) {
+	if s.sns == nil {
+		return
+	}
+	conc.Go(func() {
 		pit := &threading.PublishedThreadItem{
 			OrganizationID:  orgID,
 			ThreadID:        threadID.String(),
 			PrimaryEntityID: primaryEntityID,
 			Item:            item,
+			UUID:            uuid,
 		}
 		data, err := pit.Marshal()
 		if err != nil {
@@ -432,5 +460,34 @@ func (s *threadsServer) publishMessage(ctx context.Context, orgID, primaryEntity
 		}); err != nil {
 			golog.Errorf("Failed to publish SNS: %s", err)
 		}
-	}()
+	})
+}
+
+func parseRefsAndNormalize(s string) (string, []*models.Reference, error) {
+	if s == "" {
+		return "", nil, nil
+	}
+	b, err := bml.Parse(s)
+	if err != nil {
+		return "", nil, errors.Trace(err)
+	}
+	var refs []*models.Reference
+	for _, e := range b {
+		if r, ok := e.(*bml.Ref); ok {
+			switch r.Type {
+			case bml.EntityRef:
+				refs = append(refs, &models.Reference{
+					ID:   r.ID,
+					Type: models.Reference_ENTITY,
+				})
+			default:
+				return "", nil, errors.Trace(fmt.Errorf("unknown reference type %s", r.Type))
+			}
+		}
+	}
+	s, err = b.Format()
+	if err != nil {
+		return "", nil, errors.Trace(err)
+	}
+	return s, refs, nil
 }

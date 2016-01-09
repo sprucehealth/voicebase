@@ -9,6 +9,7 @@
 		gen.proto
 
 	It has these top-level messages:
+		Reference
 		Message
 		Endpoint
 		MessageUpdated
@@ -37,6 +38,19 @@ import io "io"
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
+
+type Reference_Type int32
+
+const (
+	Reference_ENTITY Reference_Type = 0
+)
+
+var Reference_Type_name = map[int32]string{
+	0: "ENTITY",
+}
+var Reference_Type_value = map[string]int32{
+	"ENTITY": 0,
+}
 
 type Message_Status int32
 
@@ -92,6 +106,14 @@ var Attachment_Type_value = map[string]int32{
 	"AUDIO": 1,
 }
 
+type Reference struct {
+	Type Reference_Type `protobuf:"varint,1,opt,name=type,proto3,enum=models.Reference_Type" json:"type,omitempty"`
+	ID   string         `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (m *Reference) Reset()      { *m = Reference{} }
+func (*Reference) ProtoMessage() {}
+
 type Message struct {
 	Text            string         `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
 	Attachments     []*Attachment  `protobuf:"bytes,2,rep,name=attachments" json:"attachments,omitempty"`
@@ -100,6 +122,8 @@ type Message struct {
 	Destinations    []*Endpoint    `protobuf:"bytes,5,rep,name=destinations" json:"destinations,omitempty"`
 	EditedTimestamp uint64         `protobuf:"varint,6,opt,name=edited_timestamp,proto3" json:"edited_timestamp,omitempty"`
 	EditorEntityID  string         `protobuf:"bytes,7,opt,name=editor_entity_id,proto3" json:"editor_entity_id,omitempty"`
+	Title           string         `protobuf:"bytes,8,opt,name=title,proto3" json:"title,omitempty"`
+	TextRefs        []*Reference   `protobuf:"bytes,9,rep,name=text_refs" json:"text_refs,omitempty"`
 }
 
 func (m *Message) Reset()      { *m = Message{} }
@@ -122,6 +146,13 @@ func (m *Message) GetSource() *Endpoint {
 func (m *Message) GetDestinations() []*Endpoint {
 	if m != nil {
 		return m.Destinations
+	}
+	return nil
+}
+
+func (m *Message) GetTextRefs() []*Reference {
+	if m != nil {
+		return m.TextRefs
 	}
 	return nil
 }
@@ -281,6 +312,7 @@ func (m *AudioAttachment) Reset()      { *m = AudioAttachment{} }
 func (*AudioAttachment) ProtoMessage() {}
 
 func init() {
+	proto.RegisterType((*Reference)(nil), "models.Reference")
 	proto.RegisterType((*Message)(nil), "models.Message")
 	proto.RegisterType((*Endpoint)(nil), "models.Endpoint")
 	proto.RegisterType((*MessageUpdated)(nil), "models.MessageUpdated")
@@ -288,9 +320,17 @@ func init() {
 	proto.RegisterType((*Attachment)(nil), "models.Attachment")
 	proto.RegisterType((*ImageAttachment)(nil), "models.ImageAttachment")
 	proto.RegisterType((*AudioAttachment)(nil), "models.AudioAttachment")
+	proto.RegisterEnum("models.Reference_Type", Reference_Type_name, Reference_Type_value)
 	proto.RegisterEnum("models.Message_Status", Message_Status_name, Message_Status_value)
 	proto.RegisterEnum("models.Endpoint_Channel", Endpoint_Channel_name, Endpoint_Channel_value)
 	proto.RegisterEnum("models.Attachment_Type", Attachment_Type_name, Attachment_Type_value)
+}
+func (x Reference_Type) String() string {
+	s, ok := Reference_Type_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
 }
 func (x Message_Status) String() string {
 	s, ok := Message_Status_name[int32(x)]
@@ -312,6 +352,34 @@ func (x Attachment_Type) String() string {
 		return s
 	}
 	return strconv.Itoa(int(x))
+}
+func (this *Reference) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Reference)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Type != that1.Type {
+		return false
+	}
+	if this.ID != that1.ID {
+		return false
+	}
+	return true
 }
 func (this *Message) Equal(that interface{}) bool {
 	if that == nil {
@@ -363,6 +431,17 @@ func (this *Message) Equal(that interface{}) bool {
 	}
 	if this.EditorEntityID != that1.EditorEntityID {
 		return false
+	}
+	if this.Title != that1.Title {
+		return false
+	}
+	if len(this.TextRefs) != len(that1.TextRefs) {
+		return false
+	}
+	for i := range this.TextRefs {
+		if !this.TextRefs[i].Equal(that1.TextRefs[i]) {
+			return false
+		}
 	}
 	return true
 }
@@ -605,11 +684,22 @@ func (this *AudioAttachment) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *Reference) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&models.Reference{")
+	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
+	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *Message) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 11)
+	s := make([]string, 0, 13)
 	s = append(s, "&models.Message{")
 	s = append(s, "Text: "+fmt.Sprintf("%#v", this.Text)+",\n")
 	if this.Attachments != nil {
@@ -624,6 +714,10 @@ func (this *Message) GoString() string {
 	}
 	s = append(s, "EditedTimestamp: "+fmt.Sprintf("%#v", this.EditedTimestamp)+",\n")
 	s = append(s, "EditorEntityID: "+fmt.Sprintf("%#v", this.EditorEntityID)+",\n")
+	s = append(s, "Title: "+fmt.Sprintf("%#v", this.Title)+",\n")
+	if this.TextRefs != nil {
+		s = append(s, "TextRefs: "+fmt.Sprintf("%#v", this.TextRefs)+",\n")
+	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -743,6 +837,35 @@ func extensionToGoStringGen(e map[int32]github_com_gogo_protobuf_proto.Extension
 	s += strings.Join(ss, ",") + "}"
 	return s
 }
+func (m *Reference) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Reference) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Type != 0 {
+		data[i] = 0x8
+		i++
+		i = encodeVarintGen(data, i, uint64(m.Type))
+	}
+	if len(m.ID) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintGen(data, i, uint64(len(m.ID)))
+		i += copy(data[i:], m.ID)
+	}
+	return i, nil
+}
+
 func (m *Message) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -813,6 +936,24 @@ func (m *Message) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintGen(data, i, uint64(len(m.EditorEntityID)))
 		i += copy(data[i:], m.EditorEntityID)
+	}
+	if len(m.Title) > 0 {
+		data[i] = 0x42
+		i++
+		i = encodeVarintGen(data, i, uint64(len(m.Title)))
+		i += copy(data[i:], m.Title)
+	}
+	if len(m.TextRefs) > 0 {
+		for _, msg := range m.TextRefs {
+			data[i] = 0x4a
+			i++
+			i = encodeVarintGen(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
 	}
 	return i, nil
 }
@@ -1082,6 +1223,19 @@ func encodeVarintGen(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	return offset + 1
 }
+func (m *Reference) Size() (n int) {
+	var l int
+	_ = l
+	if m.Type != 0 {
+		n += 1 + sovGen(uint64(m.Type))
+	}
+	l = len(m.ID)
+	if l > 0 {
+		n += 1 + l + sovGen(uint64(l))
+	}
+	return n
+}
+
 func (m *Message) Size() (n int) {
 	var l int
 	_ = l
@@ -1114,6 +1268,16 @@ func (m *Message) Size() (n int) {
 	l = len(m.EditorEntityID)
 	if l > 0 {
 		n += 1 + l + sovGen(uint64(l))
+	}
+	l = len(m.Title)
+	if l > 0 {
+		n += 1 + l + sovGen(uint64(l))
+	}
+	if len(m.TextRefs) > 0 {
+		for _, e := range m.TextRefs {
+			l = e.Size()
+			n += 1 + l + sovGen(uint64(l))
+		}
 	}
 	return n
 }
@@ -1247,6 +1411,17 @@ func sovGen(x uint64) (n int) {
 func sozGen(x uint64) (n int) {
 	return sovGen(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
+func (this *Reference) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Reference{`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *Message) String() string {
 	if this == nil {
 		return "nil"
@@ -1259,6 +1434,8 @@ func (this *Message) String() string {
 		`Destinations:` + strings.Replace(fmt.Sprintf("%v", this.Destinations), "Endpoint", "Endpoint", 1) + `,`,
 		`EditedTimestamp:` + fmt.Sprintf("%v", this.EditedTimestamp) + `,`,
 		`EditorEntityID:` + fmt.Sprintf("%v", this.EditorEntityID) + `,`,
+		`Title:` + fmt.Sprintf("%v", this.Title) + `,`,
+		`TextRefs:` + strings.Replace(fmt.Sprintf("%v", this.TextRefs), "Reference", "Reference", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1361,6 +1538,104 @@ func valueToStringGen(v interface{}) string {
 	}
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
+}
+func (m *Reference) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGen
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Reference: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Reference: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			m.Type = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGen
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Type |= (Reference_Type(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGen
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGen
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGen(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthGen
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *Message) Unmarshal(data []byte) error {
 	l := len(data)
@@ -1581,6 +1856,66 @@ func (m *Message) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.EditorEntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Title", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGen
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGen
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Title = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TextRefs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGen
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGen
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TextRefs = append(m.TextRefs, &Reference{})
+			if err := m.TextRefs[len(m.TextRefs)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

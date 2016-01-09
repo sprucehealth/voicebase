@@ -28,6 +28,7 @@ func transformThreadItemToResponse(item *models.ThreadItem) (*threading.ThreadIt
 	case models.ItemTypeMessage:
 		m := item.Data.(*models.Message)
 		m2 := &threading.Message{
+			Title:  m.Title,
 			Text:   m.Text,
 			Status: threading.Message_Status(threading.Message_Status_value[m.Status.String()]), // TODO
 			Source: &threading.Endpoint{
@@ -36,6 +37,14 @@ func transformThreadItemToResponse(item *models.ThreadItem) (*threading.ThreadIt
 			},
 			EditedTimestamp: m.EditedTimestamp,
 			EditorEntityID:  m.EditorEntityID,
+			TextRefs:        make([]*threading.Reference, len(m.TextRefs)),
+		}
+		for i, r := range m.TextRefs {
+			var err error
+			m2.TextRefs[i], err = transformReferenceToResponse(r)
+			if err != nil {
+				return nil, errors.Trace(err)
+			}
 		}
 		for _, a := range m.Attachments {
 			at := &threading.Attachment{
@@ -83,6 +92,19 @@ func transformThreadItemToResponse(item *models.ThreadItem) (*threading.ThreadIt
 		return nil, errors.Trace(fmt.Errorf("unknown thread item type %s", item.Type))
 	}
 	return it, nil
+}
+
+func transformReferenceToResponse(r *models.Reference) (*threading.Reference, error) {
+	tr := &threading.Reference{
+		ID: r.ID,
+	}
+	switch r.Type {
+	case models.Reference_ENTITY:
+		tr.Type = threading.Reference_ENTITY
+	default:
+		return nil, errors.Trace(fmt.Errorf("unknown reference type %s", r.Type.String()))
+	}
+	return tr, nil
 }
 
 func transformSavedQueryToResponse(sq *models.SavedQuery) (*threading.SavedQuery, error) {

@@ -8,6 +8,14 @@ option (gogoproto.marshaler_all) = true;
 option (gogoproto.unmarshaler_all) = true;
 option (gogoproto.goproto_enum_prefix_all) = true;
 
+message Reference {
+	enum Type {
+		ENTITY = 0;
+	}
+	Type type = 1;
+	string id = 2 [(gogoproto.customname) = "ID"];
+}
+
 message Message {
 	string text = 1;
 	repeated Attachment attachments = 2;
@@ -20,6 +28,8 @@ message Message {
 	repeated Endpoint destinations = 5;
 	uint64 edited_timestamp = 6;
 	string editor_entity_id = 7 [(gogoproto.customname) = "EditorEntityID"];
+	string title = 8;
+	repeated Reference text_refs = 9; // References from the message body text
 }
 
 message Endpoint {

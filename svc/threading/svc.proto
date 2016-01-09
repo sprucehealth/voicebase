@@ -57,6 +57,14 @@ message ThreadItem {
 	}
 }
 
+message Reference {
+	enum Type {
+		ENTITY = 0;
+	}
+	Type type = 1;
+	string id = 2 [(gogoproto.customname) = "ID"];
+}
+
 message Message {
 	string text = 1;
 	repeated Attachment attachments = 2;
@@ -69,6 +77,8 @@ message Message {
 	repeated Endpoint destinations = 5;
 	uint64 edited_timestamp = 6;
 	string editor_entity_id = 7 [(gogoproto.customname) = "EditorEntityID"];
+	string title = 8;
+	repeated Reference text_refs = 9; // References from the message body text
 }
 
 message Endpoint {
@@ -132,7 +142,7 @@ message AudioAttachment {
 // pub-sub
 
 message PublishedThreadItem {
-	string uuid = 1;
+	string uuid = 1 [(gogoproto.customname) = "UUID"];
 	string organization_id = 2 [(gogoproto.customname) = "OrganizationID"];
 	string thread_id = 3 [(gogoproto.customname) = "ThreadID"];
 	string primary_entity_id = 4 [(gogoproto.customname) = "PrimaryEntityID"];
@@ -150,6 +160,7 @@ message PostMessageRequest {
 	bool internal = 6;
 	string text = 7;
 	repeated Attachment attachments = 8;
+	string title = 9;
 }
 
 message PostMessageResponse {
@@ -261,7 +272,7 @@ message UpdateThreadMembershipResponse {
 }
 
 message CreateThreadRequest {
-	string uuid = 1;
+	string uuid = 1 [(gogoproto.customname) = "UUID"];
 	string organization_id = 2 [(gogoproto.customname) = "OrganizationID"];
 	string from_entity_id = 3 [(gogoproto.customname) = "FromEntityID"];
 	Endpoint source = 4;
@@ -269,6 +280,7 @@ message CreateThreadRequest {
 	bool internal = 6;
 	string text = 7;
 	repeated Attachment attachments = 8;
+	string title = 9;
 }
 
 message CreateThreadResponse {

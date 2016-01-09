@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/graphql-go/graphql"
+	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -713,9 +714,18 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					return nil, internalError(fmt.Errorf("entity for org %s and account %s not found", thread.OrganizationID, acc.ID))
 				}
 
+				var title bml.BML
+				title = append(title, bml.Ref{ID: ent.ID, Type: bml.EntityRef, Text: ent.Name})
+				titleStr, err := title.Format()
+				if err != nil {
+					return nil, internalError(fmt.Errorf("invalid title BML %+v: %s", title, err))
+				}
+				// TODO: check destinations for additional title content
+
 				msg := input["msg"].(map[string]interface{})
 				req := &threading.PostMessageRequest{
 					ThreadID:     threadID,
+					Title:        titleStr,
 					Text:         msg["text"].(string),
 					Internal:     msg["internal"].(bool),
 					FromEntityID: ent.ID,
