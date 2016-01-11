@@ -212,10 +212,12 @@ func (m *Iterator) Reset()      { *m = Iterator{} }
 func (*Iterator) ProtoMessage() {}
 
 type Thread struct {
-	ID              string    `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	OrganizationID  string    `protobuf:"bytes,2,opt,name=organization_id,proto3" json:"organization_id,omitempty"`
-	PrimaryEntityID string    `protobuf:"bytes,3,opt,name=primary_entity_id,proto3" json:"primary_entity_id,omitempty"`
-	Members         []*Member `protobuf:"bytes,4,rep,name=members" json:"members,omitempty"`
+	ID                           string    `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	OrganizationID               string    `protobuf:"bytes,2,opt,name=organization_id,proto3" json:"organization_id,omitempty"`
+	PrimaryEntityID              string    `protobuf:"bytes,3,opt,name=primary_entity_id,proto3" json:"primary_entity_id,omitempty"`
+	Members                      []*Member `protobuf:"bytes,4,rep,name=members" json:"members,omitempty"`
+	LastMessageTimestamp         uint64    `protobuf:"varint,5,opt,name=last_message_timestamp,proto3" json:"last_message_timestamp,omitempty"`
+	LastExternalMessageTimestamp uint64    `protobuf:"varint,6,opt,name=last_external_message_timestamp,proto3" json:"last_external_message_timestamp,omitempty"`
 }
 
 func (m *Thread) Reset()      { *m = Thread{} }
@@ -1301,6 +1303,12 @@ func (this *Thread) Equal(that interface{}) bool {
 		if !this.Members[i].Equal(that1.Members[i]) {
 			return false
 		}
+	}
+	if this.LastMessageTimestamp != that1.LastMessageTimestamp {
+		return false
+	}
+	if this.LastExternalMessageTimestamp != that1.LastExternalMessageTimestamp {
+		return false
 	}
 	return true
 }
@@ -2900,7 +2908,7 @@ func (this *Thread) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 8)
+	s := make([]string, 0, 10)
 	s = append(s, "&threading.Thread{")
 	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	s = append(s, "OrganizationID: "+fmt.Sprintf("%#v", this.OrganizationID)+",\n")
@@ -2908,6 +2916,8 @@ func (this *Thread) GoString() string {
 	if this.Members != nil {
 		s = append(s, "Members: "+fmt.Sprintf("%#v", this.Members)+",\n")
 	}
+	s = append(s, "LastMessageTimestamp: "+fmt.Sprintf("%#v", this.LastMessageTimestamp)+",\n")
+	s = append(s, "LastExternalMessageTimestamp: "+fmt.Sprintf("%#v", this.LastExternalMessageTimestamp)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -4129,6 +4139,16 @@ func (m *Thread) MarshalTo(data []byte) (int, error) {
 			}
 			i += n
 		}
+	}
+	if m.LastMessageTimestamp != 0 {
+		data[i] = 0x28
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.LastMessageTimestamp))
+	}
+	if m.LastExternalMessageTimestamp != 0 {
+		data[i] = 0x30
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.LastExternalMessageTimestamp))
 	}
 	return i, nil
 }
@@ -5941,6 +5961,12 @@ func (m *Thread) Size() (n int) {
 			n += 1 + l + sovSvc(uint64(l))
 		}
 	}
+	if m.LastMessageTimestamp != 0 {
+		n += 1 + sovSvc(uint64(m.LastMessageTimestamp))
+	}
+	if m.LastExternalMessageTimestamp != 0 {
+		n += 1 + sovSvc(uint64(m.LastExternalMessageTimestamp))
+	}
 	return n
 }
 
@@ -6758,6 +6784,8 @@ func (this *Thread) String() string {
 		`OrganizationID:` + fmt.Sprintf("%v", this.OrganizationID) + `,`,
 		`PrimaryEntityID:` + fmt.Sprintf("%v", this.PrimaryEntityID) + `,`,
 		`Members:` + strings.Replace(fmt.Sprintf("%v", this.Members), "Member", "Member", 1) + `,`,
+		`LastMessageTimestamp:` + fmt.Sprintf("%v", this.LastMessageTimestamp) + `,`,
+		`LastExternalMessageTimestamp:` + fmt.Sprintf("%v", this.LastExternalMessageTimestamp) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -7650,6 +7678,44 @@ func (m *Thread) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LastMessageTimestamp", wireType)
+			}
+			m.LastMessageTimestamp = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.LastMessageTimestamp |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LastExternalMessageTimestamp", wireType)
+			}
+			m.LastExternalMessageTimestamp = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.LastExternalMessageTimestamp |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

@@ -25,9 +25,10 @@ var threadType = graphql.NewObject(
 			nodeInterfaceType,
 		},
 		Fields: graphql.Fields{
-			"id":       &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-			"title":    &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-			"subtitle": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"id":                   &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+			"title":                &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"subtitle":             &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"lastMessageTimestamp": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
 			"primaryEntity": &graphql.Field{
 				Type: graphql.NewNonNull(entityType),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {

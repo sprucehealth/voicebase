@@ -8,6 +8,7 @@ import (
 	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
@@ -125,44 +126,11 @@ var unauthenticateOutputType = graphql.NewObject(
 
 /// createAccount
 
-const (
-	createAccountResultSuccess             = "SUCCESS"
-	createAccountResultEmailExists         = "EMAIL_EXISTS"
-	createAccountResultEmailNotValid       = "EMAIL_NOT_VALID"
-	createAccountResultPhoneNumberNotValid = "PHONE_NUMBER_NOT_VALID"
-)
-
 type createAccountOutput struct {
 	ClientMutationID string   `json:"clientMutationId"`
-	Result           string   `json:"result"`
 	Token            string   `json:"token,omitempty"`
 	Account          *account `json:"account,omitempty"`
 }
-
-var createAccountResultType = graphql.NewEnum(
-	graphql.EnumConfig{
-		Name:        "CreateAccountResult",
-		Description: "Result of createAccount mutation",
-		Values: graphql.EnumValueConfigMap{
-			createAccountResultSuccess: &graphql.EnumValueConfig{
-				Value:       createAccountResultSuccess,
-				Description: "Success",
-			},
-			createAccountResultEmailExists: &graphql.EnumValueConfig{
-				Value:       createAccountResultEmailExists,
-				Description: "An account with the provided email already exists",
-			},
-			createAccountResultEmailNotValid: &graphql.EnumValueConfig{
-				Value:       createAccountResultEmailNotValid,
-				Description: "Provided email is not valid",
-			},
-			createAccountResultPhoneNumberNotValid: &graphql.EnumValueConfig{
-				Value:       createAccountResultPhoneNumberNotValid,
-				Description: "Provided phone number is not valid",
-			},
-		},
-	},
-)
 
 var createAccountInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
@@ -183,7 +151,6 @@ var createAccountOutputType = graphql.NewObject(
 		Name: "CreateAccountPayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
-			"result":           &graphql.Field{Type: graphql.NewNonNull(createAccountResultType)},
 			"token":            &graphql.Field{Type: graphql.String},
 			"account":          &graphql.Field{Type: accountType},
 		},
@@ -210,34 +177,11 @@ var messageInputType = graphql.NewInputObject(
 
 // postMessage
 
-const (
-	postMessageResultSuccess            = "SUCCESS"
-	postMessageResultThreadDoesNotExist = "THREAD_DOES_NOT_EXIST"
-)
-
 type postMessageOutput struct {
 	ClientMutationID string `json:"clientMutationId"`
-	Result           string `json:"result"`
-	ItemID           string `json:"itemID,omitempty"`
-	ItemEdge         *Edge  `json:"itemEdge,omitempty"`
+	ItemID           string `json:"itemID"`
+	ItemEdge         *Edge  `json:"itemEdge"`
 }
-
-var postMessageResultType = graphql.NewEnum(
-	graphql.EnumConfig{
-		Name:        "PostMessageResult",
-		Description: "Result of postMessage mutation",
-		Values: graphql.EnumValueConfigMap{
-			postMessageResultSuccess: &graphql.EnumValueConfig{
-				Value:       postMessageResultSuccess,
-				Description: "Success",
-			},
-			postMessageResultThreadDoesNotExist: &graphql.EnumValueConfig{
-				Value:       postMessageResultThreadDoesNotExist,
-				Description: "Thread does not exist",
-			},
-		},
-	},
-)
 
 var postMessageInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
@@ -255,7 +199,6 @@ var postMessageOutputType = graphql.NewObject(
 		Name: "PostMessagePayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
-			"result":           &graphql.Field{Type: graphql.NewNonNull(postMessageResultType)},
 			"itemID":           &graphql.Field{Type: graphql.ID},
 			"itemEdge":         &graphql.Field{Type: threadItemConnectionType.EdgeType},
 		},
@@ -323,7 +266,6 @@ var createSavedThreadQueryOutputType = graphql.NewObject(
 		Name: "CreateSavedThreadQueryPayload",
 		Fields: graphql.Fields{
 			"clientMutationId":   newClientmutationIDOutputField(),
-			"result":             &graphql.Field{Type: graphql.NewNonNull(postMessageResultType)},
 			"savedThreadQueryID": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 			"savedThreadQuery":   &graphql.Field{Type: graphql.NewNonNull(savedThreadQueryType)},
 		},
@@ -553,23 +495,13 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				if err != nil {
 					switch grpc.Code(err) {
 					case auth.DuplicateEmail:
-						return &authenticateOutput{
-							ClientMutationID: mutationID,
-							Result:           createAccountResultEmailExists,
-						}, nil
+						return nil, errors.New("account with email exists")
 					case auth.InvalidEmail:
-						return &authenticateOutput{
-							ClientMutationID: mutationID,
-							Result:           createAccountResultEmailNotValid,
-						}, nil
+						return nil, errors.New("invalid email")
 					case auth.InvalidPhoneNumber:
-						return &authenticateOutput{
-							ClientMutationID: mutationID,
-							Result:           createAccountResultPhoneNumberNotValid,
-						}, nil
-					default:
-						return nil, internalError(err)
+						return nil, errors.New("invalid phone number")
 					}
+					return nil, internalError(err)
 				}
 				accountID := res.Account.ID
 
@@ -648,7 +580,6 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				p.Source.(map[string]interface{})["context"] = ctxWithAccount(ctx, acc)
 				return &createAccountOutput{
 					ClientMutationID: mutationID,
-					Result:           createAccountResultSuccess,
 					Token:            res.Token.Value,
 					Account:          acc,
 				}, nil
@@ -727,10 +658,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				if err != nil {
 					switch grpc.Code(err) {
 					case codes.NotFound:
-						return &postMessageOutput{
-							ClientMutationID: mutationID,
-							Result:           postMessageResultThreadDoesNotExist,
-						}, nil
+						return nil, errors.New("thread does not exist")
 					}
 					return nil, internalError(err)
 				}
@@ -745,17 +673,15 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				}
 
 				var title bml.BML
-				title = append(title, &bml.Ref{ID: ent.ID, Type: bml.EntityRef, Text: ent.Name})
-				titleStr, err := title.Format()
-				if err != nil {
-					return nil, internalError(fmt.Errorf("invalid title BML %+v: %s", title, err))
+				fromName := ent.Name
+				if fromName == "" && len(ent.Contacts) != 0 {
+					fromName = ent.Contacts[0].Value
 				}
-				// TODO: check destinations for additional title content
+				title = append(title, &bml.Ref{ID: ent.ID, Type: bml.EntityRef, Text: fromName})
 
 				msg := input["msg"].(map[string]interface{})
 				req := &threading.PostMessageRequest{
 					ThreadID:     threadID,
-					Title:        titleStr,
 					Text:         msg["text"].(string),
 					Internal:     msg["internal"].(bool),
 					FromEntityID: ent.ID,
@@ -764,18 +690,98 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 						ID:      ent.ID,
 					},
 				}
-				// TODO
-				// if dests, ok := msg["destinations"].([]interface{}); ok && len(dests) != 0 {
-				// 	for _, d := range dests {
-				// 		channel := d.(string)
-				// 		req.Destinations = append(req.Destinations, &threading.Endpoint{
-				// 			Channel: threading.En
-				// 		})
-				// 	}
-				// }
+
+				// For a message to be considered by sending externally it needs to not be marked as internal,
+				// sent by someone who is internal, and there needs to be a primary entity on the thread.
+				isExternal := !req.Internal && thread.PrimaryEntityID != "" && ent.Type == directory.EntityType_INTERNAL
+				if isExternal {
+					dests, _ := msg["destinations"].([]interface{})
+					// TODO: if no destinations specified then query routing service for default route
+					if len(dests) != 0 {
+						res, err := svc.directory.LookupEntities(ctx,
+							&directory.LookupEntitiesRequest{
+								LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+								LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+									EntityID: thread.PrimaryEntityID,
+								},
+								RequestedInformation: &directory.RequestedInformation{
+									Depth: 0,
+									EntityInformation: []directory.EntityInformation{
+										directory.EntityInformation_CONTACTS,
+									},
+								},
+							})
+						if err != nil {
+							return nil, internalError(err)
+						}
+						if len(res.Entities) > 1 {
+							golog.Errorf("lookup entities returned more than 1 result for entity ID %s", thread.PrimaryEntityID)
+						}
+						if len(res.Entities) > 0 && res.Entities[0].Type == directory.EntityType_EXTERNAL {
+							ent := res.Entities[0]
+							updatedTitle := false // TODO: for now only putting one destination in the message title
+							for _, d := range dests {
+								channel := d.(string)
+								var ct directory.ContactType
+								var ec threading.Endpoint_Channel
+								var action string
+								switch channel {
+								case endpointChannelEmail:
+									ct = directory.ContactType_EMAIL
+									ec = threading.Endpoint_EMAIL
+									action = "emailed"
+								case endpointChannelSMS:
+									ct = directory.ContactType_PHONE
+									ec = threading.Endpoint_SMS
+									action = "texted"
+								case endpointChannelApp:
+									// App delivery selection is different since it doesn't need
+									// contacts and no reason to update title. Not sure we even
+									// need the APP destination type, but since it's there will
+									// record that it was sent.
+									req.Destinations = append(req.Destinations, &threading.Endpoint{
+										Channel: threading.Endpoint_APP,
+										ID:      thread.PrimaryEntityID,
+									})
+									continue
+								default:
+									return nil, errors.New("unsupported destination type " + channel)
+								}
+								var e *threading.Endpoint
+								for _, c := range ent.Contacts {
+									if c.ContactType == ct {
+										e = &threading.Endpoint{
+											Channel: ec,
+											ID:      c.Value,
+										}
+										break
+									}
+								}
+								if e == nil {
+									return nil, errors.New("no contact info for destination channel " + channel)
+								}
+								req.Destinations = append(req.Destinations, e)
+								if !updatedTitle {
+									name := ent.Name
+									if name == "" {
+										name = e.ID
+									}
+									title = append(title, " "+action+" ", &bml.Ref{ID: ent.ID, Type: bml.EntityRef, Text: name})
+									updatedTitle = true
+								}
+							}
+						}
+					}
+				}
 				if uuid, ok := msg["uuid"].(string); ok {
 					req.UUID = uuid
 				}
+
+				titleStr, err := title.Format()
+				if err != nil {
+					return nil, internalError(fmt.Errorf("invalid title BML %+v: %s", title, err))
+				}
+				req.Title = titleStr
 
 				pmres, err := svc.threading.PostMessage(ctx, req)
 				if err != nil {
@@ -788,7 +794,6 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				}
 				return &postMessageOutput{
 					ClientMutationID: mutationID,
-					Result:           postMessageResultSuccess,
 					ItemID:           it.ID,
 					ItemEdge:         &Edge{Node: it, Cursor: ConnectionCursor(pmres.Item.ID)},
 				}, nil
@@ -897,7 +902,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 		"registerDeviceForPush": &graphql.Field{
 			Type: graphql.NewNonNull(registerDeviceForPushOutputType),
 			Args: graphql.FieldConfigArgument{
-				"input": &graphql.ArgumentConfig{Type: registerDeviceForPushInputType},
+				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(registerDeviceForPushInputType)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				svc := serviceFromParams(p)

@@ -8,12 +8,17 @@ import (
 	"github.com/sprucehealth/backend/svc/threading"
 )
 
-func transformThreadToResponse(thread *models.Thread) (*threading.Thread, error) {
-	return &threading.Thread{
-		ID:              thread.ID.String(),
-		OrganizationID:  thread.OrganizationID,
-		PrimaryEntityID: thread.PrimaryEntityID,
-	}, nil
+func transformThreadToResponse(thread *models.Thread, forExternal bool) (*threading.Thread, error) {
+	t := &threading.Thread{
+		ID:                   thread.ID.String(),
+		OrganizationID:       thread.OrganizationID,
+		PrimaryEntityID:      thread.PrimaryEntityID,
+		LastMessageTimestamp: uint64(thread.LastMessageTimestamp.Unix()),
+	}
+	if forExternal {
+		t.LastMessageTimestamp = uint64(thread.LastExternalMessageTimestamp.Unix())
+	}
+	return t, nil
 }
 
 func transformThreadItemToResponse(item *models.ThreadItem) (*threading.ThreadItem, error) {
@@ -38,6 +43,10 @@ func transformThreadItemToResponse(item *models.ThreadItem) (*threading.ThreadIt
 			EditedTimestamp: m.EditedTimestamp,
 			EditorEntityID:  m.EditorEntityID,
 			TextRefs:        make([]*threading.Reference, len(m.TextRefs)),
+		}
+		// TODO: this is temporary since old messages don't have a title
+		if m2.Title == "" {
+			m2.Title = m2.Source.ID
 		}
 		for i, r := range m.TextRefs {
 			var err error

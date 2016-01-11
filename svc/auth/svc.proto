@@ -10,82 +10,82 @@ package auth;
 
 // Account represents the data associated with an account
 message Account {
-  string id = 1 [(gogoproto.customname) = "ID"];
-  string first_name = 2;
-  string last_name = 3;
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string first_name = 2;
+	string last_name = 3;
 }
 
 // An AuthToken represents the token value and metadata about the token
 message AuthToken {
-  string value = 1;
-  uint64 expiration_epoch = 2;
+	string value = 1;
+	uint64 expiration_epoch = 2;
 }
 
 // AuthenticateLoginRequest represents the information that is used to authenticate a users login.
 // The token_attributes map is used when generating the auth token for this login. Future use of this token
 //  must provide the same information.
 message AuthenticateLoginRequest {
-  string email = 1;
-  string password = 2;
-  map<string, string> token_attributes = 3;
+	string email = 1;
+	string password = 2;
+	map<string, string> token_attributes = 3;
 }
 
 // AuthenticateLoginResponse represents the information that is returned from AuthenticateLoginRequest
 // In the event that requires_two_factor_auth is set to true, the provided token will only work for a short time and to make the 2FA call
 // While the expiration is encoded within the token, it is provided in the response for the caller to consume if they choose.
-message AuthenticateLoginResponse {  
-  AuthToken token = 1;
-  Account account = 2;
+message AuthenticateLoginResponse {
+	AuthToken token = 1;
+	Account account = 2;
 }
 
 // CheckAuthenticationRequest checks if the provided token maps to an account and is still valid
 // The refresh parameter indicates if a new token should be created with an extended expiration
 message CheckAuthenticationRequest {
-  string token = 1;
-  map<string, string> token_attributes = 2;
-  bool refresh = 3;
+	string token = 1;
+	map<string, string> token_attributes = 2;
+	bool refresh = 3;
 }
 
 // CheckAuthenticationResponse represents the information that is returned from IsAuthenticatedRequest
 // If a refresh was requested then a new token will be returned
 message CheckAuthenticationResponse {
-  bool is_authenticated = 1;
-  Account account = 2;
-  AuthToken token = 3;
+	bool is_authenticated = 1;
+	Account account = 2;
+	AuthToken token = 3;
 }
 
 // CreateAccountRequest represents the information that is expected in account creation requests
 // The email and optional? phone number are set as the primary for the account
 message CreateAccountRequest {
-  string first_name = 1;
-  string last_name = 2;
-  string email = 3;
-  string phone_number = 4;
-  string password = 5;
-  map<string, string> token_attributes = 6;
+	string first_name = 1;
+	string last_name = 2;
+	string email = 3;
+	string phone_number = 4;
+	string password = 5;
+	map<string, string> token_attributes = 6;
 }
 
 // CreateAccountResponse represents the information that is returned from CreateAccountRequest
 // The account id and innter auth information is returned from account creation
-message CreateAccountResponse {  
-  AuthToken token = 1;
-  Account account = 2;
+message CreateAccountResponse {
+	AuthToken token = 1;
+	Account account = 2;
 }
 
 // GetAccountRequest represents the information required to request a users account information
 message GetAccountRequest {
-  string account_id = 1 [(gogoproto.customname) = "AccountID"];
+	string account_id = 1 [(gogoproto.customname) = "AccountID"];
 }
 
 // GetAccountResponse represents the information returned from a GetAccount request
 message GetAccountResponse {
-  Account account = 1;
+	Account account = 1;
 }
 
-// UnauthenticateRequest represents the information required to tombstone a token 
+// UnauthenticateRequest represents the information required to tombstone a token
 message UnauthenticateRequest {
-  string token = 1;
-  map<string, string> token_attributes = 2;
+	string token = 1;
+	map<string, string> token_attributes = 2;
 }
 
 // UnauthenticateResponse represents the information returned from an Unauthenticate request
@@ -93,9 +93,9 @@ message UnauthenticateResponse {}
 
 // Auth provides mechanisms for other services to perform authentication of external entities interacting with them
 service Auth {
-  rpc AuthenticateLogin (AuthenticateLoginRequest) returns (AuthenticateLoginResponse);
-  rpc CheckAuthentication (CheckAuthenticationRequest) returns (CheckAuthenticationResponse);
-  rpc CreateAccount (CreateAccountRequest) returns (CreateAccountResponse);
-  rpc GetAccount (GetAccountRequest) returns (GetAccountResponse);
-  rpc Unauthenticate (UnauthenticateRequest) returns (UnauthenticateResponse);
+	rpc AuthenticateLogin (AuthenticateLoginRequest) returns (AuthenticateLoginResponse);
+	rpc CheckAuthentication (CheckAuthenticationRequest) returns (CheckAuthenticationResponse);
+	rpc CreateAccount (CreateAccountRequest) returns (CreateAccountResponse);
+	rpc GetAccount (GetAccountRequest) returns (GetAccountResponse);
+	rpc Unauthenticate (UnauthenticateRequest) returns (UnauthenticateResponse);
 }

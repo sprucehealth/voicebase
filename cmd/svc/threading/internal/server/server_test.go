@@ -123,6 +123,8 @@ func TestCreateThread(t *testing.T) {
 
 func TestThreadItem(t *testing.T) {
 	dl := newMockDAL(t)
+	srv := NewThreadsServer(dl, nil, "arn")
+
 	eid, err := models.NewThreadItemID()
 	test.OK(t, err)
 	now := time.Now()
@@ -145,7 +147,6 @@ func TestThreadItem(t *testing.T) {
 		},
 	}
 	dl.Expect(mock.NewExpectation(dl.ThreadItem, eid).WithReturns(eti, nil))
-	srv := NewThreadsServer(dl, nil, "arn")
 	res, err := srv.ThreadItem(nil, &threading.ThreadItemRequest{
 		ItemID: eid.String(),
 	})
@@ -171,6 +172,126 @@ func TestThreadItem(t *testing.T) {
 					TextRefs:        []*threading.Reference{},
 				},
 			},
+		},
+	}, res)
+}
+
+func TestQueryThreads(t *testing.T) {
+	dl := newMockDAL(t)
+	srv := NewThreadsServer(dl, nil, "arn")
+
+	orgID := "entity:1"
+	peID := "entity:2"
+	tID, err := models.NewThreadID()
+	test.OK(t, err)
+	now := time.Now()
+
+	// Adhoc query
+
+	dl.Expect(mock.NewExpectation(dl.IterateThreads, orgID, false, &dal.Iterator{
+		EndCursor: "c1",
+		Direction: dal.FromEnd,
+		Count:     11,
+	}).WithReturns(&dal.ThreadConnection{
+		HasMore: true,
+		Edges: []dal.ThreadEdge{
+			{
+				Cursor: "c2",
+				Thread: &models.Thread{
+					ID:                   tID,
+					OrganizationID:       orgID,
+					PrimaryEntityID:      peID,
+					LastMessageTimestamp: now,
+				},
+			},
+		},
+	}, nil))
+	res, err := srv.QueryThreads(nil, &threading.QueryThreadsRequest{
+		OrganizationID: orgID,
+		Iterator: &threading.Iterator{
+			EndCursor: "c1",
+			Direction: threading.Iterator_FROM_END,
+			Count:     11,
+		},
+		Type: threading.QueryThreadsRequest_ADHOC,
+		QueryType: &threading.QueryThreadsRequest_Query{
+			Query: &threading.Query{},
+		},
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.QueryThreadsResponse{
+		HasMore: true,
+		Edges: []*threading.ThreadEdge{
+			{
+				Thread: &threading.Thread{
+					ID:                   tID.String(),
+					OrganizationID:       orgID,
+					PrimaryEntityID:      peID,
+					LastMessageTimestamp: uint64(now.Unix()),
+				},
+				Cursor: "c2",
+			},
+		},
+	}, res)
+}
+
+func TestThread(t *testing.T) {
+	dl := newMockDAL(t)
+	srv := NewThreadsServer(dl, nil, "arn")
+
+	thID, err := models.NewThreadID()
+	test.OK(t, err)
+	orgID := "o1"
+	entID := "e1"
+	now := time.Now()
+
+	dl.Expect(mock.NewExpectation(dl.Thread, thID).WithReturns(
+		&models.Thread{
+			ID:                   thID,
+			OrganizationID:       orgID,
+			PrimaryEntityID:      entID,
+			LastMessageTimestamp: now,
+		}, nil))
+	res, err := srv.Thread(nil, &threading.ThreadRequest{
+		ThreadID: thID.String(),
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.ThreadResponse{
+		Thread: &threading.Thread{
+			ID:                   thID.String(),
+			OrganizationID:       orgID,
+			PrimaryEntityID:      entID,
+			LastMessageTimestamp: uint64(now.Unix()),
+		},
+	}, res)
+}
+
+func TestSavedQuery(t *testing.T) {
+	dl := newMockDAL(t)
+	srv := NewThreadsServer(dl, nil, "arn")
+
+	sqID, err := models.NewSavedQueryID()
+	test.OK(t, err)
+	orgID := "o1"
+	entID := "e1"
+	now := time.Now()
+
+	dl.Expect(mock.NewExpectation(dl.SavedQuery, sqID).WithReturns(
+		&models.SavedQuery{
+			ID:             sqID,
+			OrganizationID: orgID,
+			EntityID:       entID,
+			Created:        now,
+			Modified:       now,
+		}, nil))
+	res, err := srv.SavedQuery(nil, &threading.SavedQueryRequest{
+		SavedQueryID: sqID.String(),
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.SavedQueryResponse{
+		SavedQuery: &threading.SavedQuery{
+			ID:             sqID.String(),
+			OrganizationID: orgID,
 		},
 	}, res)
 }

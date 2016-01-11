@@ -95,11 +95,12 @@ type audioAttachment struct {
 }
 
 type thread struct {
-	ID              string `json:"id"`
-	OrganizationID  string `json:"organizationID"`
-	PrimaryEntityID string `json:"primaryEntityID"`
-	Title           string `json:"title"`
-	Subtitle        string `json:"subtitle"`
+	ID                   string `json:"id"`
+	OrganizationID       string `json:"organizationID"`
+	PrimaryEntityID      string `json:"primaryEntityID"`
+	Title                string `json:"title"`
+	Subtitle             string `json:"subtitle"`
+	LastMessageTimestamp uint64 `json:"lastMessageTimestamp"`
 }
 
 type threadItem struct {

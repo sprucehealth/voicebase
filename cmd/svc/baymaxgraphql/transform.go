@@ -31,11 +31,12 @@ func transformContactsToResponse(contacts []*directory.Contact) ([]*contactInfo,
 
 func transformThreadToResponse(t *threading.Thread) (*thread, error) {
 	return &thread{
-		ID:              t.ID,
-		OrganizationID:  t.OrganizationID,
-		PrimaryEntityID: t.PrimaryEntityID,
-		Title:           t.PrimaryEntityID, // TODO
-		Subtitle:        "",                // TODO
+		ID:                   t.ID,
+		OrganizationID:       t.OrganizationID,
+		PrimaryEntityID:      t.PrimaryEntityID,
+		Title:                t.PrimaryEntityID, // TODO
+		Subtitle:             "",                // TODO
+		LastMessageTimestamp: t.LastMessageTimestamp,
 	}, nil
 }
 

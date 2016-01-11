@@ -117,9 +117,11 @@ const (
 )
 
 type Thread struct {
-	ID              ThreadID
-	OrganizationID  string
-	PrimaryEntityID string
+	ID                           ThreadID
+	OrganizationID               string
+	PrimaryEntityID              string
+	LastMessageTimestamp         time.Time
+	LastExternalMessageTimestamp time.Time
 }
 
 type ThreadMember struct {

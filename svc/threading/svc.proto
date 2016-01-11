@@ -31,6 +31,7 @@ message Thread {
 	string organization_id = 2 [(gogoproto.customname) = "OrganizationID"];
 	string primary_entity_id = 3 [(gogoproto.customname) = "PrimaryEntityID"];
 	repeated Member members = 4;
+	uint64 last_message_timestamp = 5;
 }
 
 message Member {

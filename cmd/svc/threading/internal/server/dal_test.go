@@ -40,16 +40,16 @@ func (dl *mockDAL) CreateThread(ctx context.Context, thread *models.Thread) (mod
 	return rets[0].(models.ThreadID), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) IterateThreads(ctx context.Context, orgID string, it *dal.Iterator) (*dal.ThreadConnection, error) {
-	rets := dl.Expector.Record(orgID, it)
+func (dl *mockDAL) IterateThreads(ctx context.Context, orgID string, forExternal bool, it *dal.Iterator) (*dal.ThreadConnection, error) {
+	rets := dl.Expector.Record(orgID, forExternal, it)
 	if len(rets) == 0 {
 		return nil, nil
 	}
 	return rets[0].(*dal.ThreadConnection), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) IterateThreadItems(ctx context.Context, threadID models.ThreadID, it *dal.Iterator) (*dal.ThreadItemConnection, error) {
-	rets := dl.Expector.Record(threadID, it)
+func (dl *mockDAL) IterateThreadItems(ctx context.Context, threadID models.ThreadID, forExternal bool, it *dal.Iterator) (*dal.ThreadItemConnection, error) {
+	rets := dl.Expector.Record(threadID, forExternal, it)
 	if len(rets) == 0 {
 		return nil, nil
 	}

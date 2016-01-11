@@ -251,7 +251,8 @@ func (s *threadsServer) QueryThreads(ctx context.Context, in *threading.QueryThr
 	if in.Iterator.Direction == threading.Iterator_FROM_END {
 		d = dal.FromEnd
 	}
-	ir, err := s.dal.IterateThreads(ctx, in.OrganizationID, &dal.Iterator{
+	forExternal := false // TODO: set to true for EXTERNAL entities
+	ir, err := s.dal.IterateThreads(ctx, in.OrganizationID, forExternal, &dal.Iterator{
 		StartCursor: in.Iterator.StartCursor,
 		EndCursor:   in.Iterator.EndCursor,
 		Direction:   d,
@@ -267,12 +268,12 @@ func (s *threadsServer) QueryThreads(ctx context.Context, in *threading.QueryThr
 		HasMore: ir.HasMore,
 	}
 	for i, e := range ir.Edges {
+		th, err := transformThreadToResponse(e.Thread, forExternal)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
 		res.Edges[i] = &threading.ThreadEdge{
-			Thread: &threading.Thread{
-				ID:              e.Thread.ID.String(),
-				OrganizationID:  e.Thread.OrganizationID,
-				PrimaryEntityID: e.Thread.PrimaryEntityID,
-			},
+			Thread: th,
 			Cursor: e.Cursor,
 		}
 	}
@@ -326,13 +327,15 @@ func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest)
 		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ThreadID")
 	}
 
+	forExternal := false // TODO: set to true for EXTERNAL entities
+
 	thread, err := s.dal.Thread(ctx, tid)
 	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpc.Errorf(codes.NotFound, "Thread not found")
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
-	th, err := transformThreadToResponse(thread)
+	th, err := transformThreadToResponse(thread, forExternal)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -369,11 +372,14 @@ func (s *threadsServer) ThreadsForMember(ctx context.Context, in *threading.Thre
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+
+	forExternal := false // TODO: set to true for EXTERNAL entities
+
 	res := &threading.ThreadsForMemberResponse{
 		Threads: make([]*threading.Thread, len(threads)),
 	}
 	for i, t := range threads {
-		th, err := transformThreadToResponse(t)
+		th, err := transformThreadToResponse(t, forExternal)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -389,11 +395,13 @@ func (s *threadsServer) ThreadItems(ctx context.Context, in *threading.ThreadIte
 		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ThreadID")
 	}
 
+	forExternal := false // TODO: set to true for EXTERNAL entities
+
 	d := dal.FromStart
 	if in.Iterator.Direction == threading.Iterator_FROM_END {
 		d = dal.FromEnd
 	}
-	ir, err := s.dal.IterateThreadItems(ctx, tid, &dal.Iterator{
+	ir, err := s.dal.IterateThreadItems(ctx, tid, forExternal, &dal.Iterator{
 		StartCursor: in.Iterator.StartCursor,
 		EndCursor:   in.Iterator.EndCursor,
 		Direction:   d,

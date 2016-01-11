@@ -8,7 +8,7 @@ option (gogoproto.marshaler_all) = true;
 option (gogoproto.unmarshaler_all) = true;
 option (gogoproto.goproto_enum_prefix_all) = true;
 
-// ChannelType specifies the channel over which the communication 
+// ChannelType specifies the channel over which the communication
 // is intended to take place.
 enum ChannelType {
 	Voice = 0;
@@ -45,7 +45,7 @@ message TwilioParams {
 	string call_sid = 1 [(gogoproto.customname) = "CallSID"];
 	string account_sid = 2 [(gogoproto.customname) = "AccountSID"];
 	string from = 3;
-	string to_number = 4 [(gogoproto.customname) = "To"];	
+	string to_number = 4 [(gogoproto.customname) = "To"];
 	CallStatus call_status = 5;
 	string api_version = 6 [(gogoproto.customname) = "APIVersion"];
 	Direction direction = 7;
@@ -56,13 +56,13 @@ message TwilioParams {
 	string digits = 12;
 	string message_sid = 13 [(gogoproto.customname) = "MessageSID"];
 	string sms_sid  = 14 [(gogoproto.customname) = "SMSSID"];
-	string body = 15; 
+	string body = 15;
 	uint32 num_media = 16;
-	repeated TwilioMediaItem media_items = 17;  
+	repeated TwilioMediaItem media_items = 17;
 	string messaging_service_id = 18 [(gogoproto.customname) = "MessagingServiceID"];
 
 	// these three parameters are only present in a twilio request
-	// attempting to get a twiml document to execute on the queued caller's 
+	// attempting to get a twiml document to execute on the queued caller's
 	// end before the two parties are connected.
 	string queue_sid = 19 [(gogoproto.customname) = "QueueSID"];
 	uint32 queue_time = 20;
@@ -114,7 +114,7 @@ message PublishedExternalMessage {
 		SMSItem sms_item = 5 [(gogoproto.customname) = "SMSItem"];
 		CallEventItem call_event_item = 6;
 	}
-	
+
 	enum Direction {
 		INBOUND = 0;
 		OUTBOUND = 1;
@@ -137,7 +137,7 @@ message CallEventItem {
 		OUTGOING_UNANSWERED = 5;
 	}
 	Type type = 1;
-	uint32 duration_in_seconds = 2;	
+	uint32 duration_in_seconds = 2;
 	string url = 3 [(gogoproto.customname) = "URL"];
 }
 
@@ -151,7 +151,7 @@ message MediaAttachment {
 // SendMessageRequest represents a request to send a message
 // over an external channel.
 message SendMessageRequest {
-	string text = 1;	 
+	string text = 1;
 	string from_channel_id = 2 [(gogoproto.customname) = "FromChannelID"];
 	string to_channel_id = 3 [(gogoproto.customname) = "ToChannelID"];
 	ChannelType channel = 4;
@@ -162,7 +162,7 @@ message SendMessageResponse {
 
 message InitiatePhoneCallRequest {
 	enum CallInitiationType {
-		// CONNECT_PARTIES instructs service to call 
+		// CONNECT_PARTIES instructs service to call
 		// the source and once the source answers, connect the
 		// source to the destination by calling the destination
 		// and merging the calls.
@@ -195,7 +195,7 @@ enum PhoneNumberCapability {
 message AvailablePhoneNumber {
 	string friendly_name = 1;
 	string phone_number = 2;
-	repeated PhoneNumberCapability capabilities = 3;	
+	repeated PhoneNumberCapability capabilities = 3;
 }
 
 message SearchAvailablePhoneNumbersRequest {
@@ -212,7 +212,7 @@ message ProvisionPhoneNumberRequest {
 	string provision_for = 1;
 	oneof number {
 		string phone_number = 2;
-		string area_code = 3;	
+		string area_code = 3;
 	}
 }
 
