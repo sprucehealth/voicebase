@@ -5,6 +5,7 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -12,10 +13,11 @@ import (
 )
 
 type service struct {
-	auth      auth.AuthClient
-	directory directory.DirectoryClient
-	threading threading.ThreadsClient
-	exComms   excomms.ExCommsClient
+	auth         auth.AuthClient
+	directory    directory.DirectoryClient
+	threading    threading.ThreadsClient
+	exComms      excomms.ExCommsClient
+	notification notification.Client
 }
 
 func (s *service) entityForAccountID(ctx context.Context, orgID, accountID string) (*directory.Entity, error) {

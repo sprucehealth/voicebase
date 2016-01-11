@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/mux"
 
 	"github.com/rs/cors"
@@ -18,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc"
 )
@@ -29,10 +31,16 @@ var (
 	flagEnv          = flag.String("env", "", "Execution environment")
 
 	// Services
-	flagAuthAddr      = flag.String("auth.addr", "", "host:port of auth service")
-	flagDirectoryAddr = flag.String("directory.addr", "", "host:port of direcotry service")
-	flagExCommsAddr   = flag.String("excomms.addr", "", "host:port of excomms service")
-	flagThreadingAddr = flag.String("threading.addr", "", "host:port of threading service")
+	flagAuthAddr                 = flag.String("auth.addr", "", "host:port of auth service")
+	flagDirectoryAddr            = flag.String("directory.addr", "", "host:port of direcotry service")
+	flagExCommsAddr              = flag.String("excomms.addr", "", "host:port of excomms service")
+	flagThreadingAddr            = flag.String("threading.addr", "", "host:port of threading service")
+	flagSQSDeviceRegistrationURL = flag.String("sqs.device.registration.url", "", "the sqs url for device registration messages")
+
+	// AWS
+	flagAWSAccessKey = flag.String("aws.access.key", "", "access key for aws")
+	flagAWSSecretKey = flag.String("aws.secret.key", "", "secret key for aws")
+	flagAWSRegion    = flag.String("aws.region", "us-east-1", "aws region")
 )
 
 func main() {
@@ -85,9 +93,30 @@ func main() {
 	}
 	exCommsClient := excomms.NewExCommsClient(conn)
 
+	if *flagAWSAccessKey == "" {
+		golog.Fatalf("AWS Access key required")
+	}
+	if *flagAWSSecretKey == "" {
+		golog.Fatalf("AWS Secret key required")
+	}
+	baseConfig := &config.BaseConfig{
+		AppName:      "baymaxgraphql",
+		AWSRegion:    *flagAWSRegion,
+		AWSSecretKey: *flagAWSAccessKey,
+		AWSAccessKey: *flagAWSSecretKey,
+	}
+
+	if *flagSQSDeviceRegistrationURL == "" {
+		golog.Fatalf("Notification service not configured")
+	}
+	notificationClient := notification.NewClient(&notification.ClientConfig{
+		SQSDeviceRegistrationURL: *flagSQSDeviceRegistrationURL,
+		Session:                  baseConfig.AWSSession(),
+	})
+
 	r := mux.NewRouter()
 
-	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient)
+	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient)
 	r.Handle("/graphql", httputil.ToContextHandler(cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},

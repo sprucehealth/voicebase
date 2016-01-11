@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/idgen"
+	"github.com/sprucehealth/backend/libs/model"
 )
 
 const (
@@ -14,7 +15,7 @@ const (
 )
 
 // ThreadID is the ID for a Thread
-type ThreadID struct{ objectID }
+type ThreadID struct{ model.ObjectID }
 
 func NewThreadID() (ThreadID, error) {
 	id, err := idgen.NewID()
@@ -22,10 +23,10 @@ func NewThreadID() (ThreadID, error) {
 		return ThreadID{}, errors.Trace(err)
 	}
 	return ThreadID{
-		objectID{
-			prefix:  threadIDPrefix,
-			value:   id,
-			isValid: true,
+		model.ObjectID{
+			Prefix:  threadIDPrefix,
+			Val:     id,
+			IsValid: true,
 		},
 	}, nil
 }
@@ -38,15 +39,15 @@ func ParseThreadID(s string) (ThreadID, error) {
 
 func EmptyThreadID() ThreadID {
 	return ThreadID{
-		objectID{
-			prefix:  threadIDPrefix,
-			isValid: false,
+		model.ObjectID{
+			Prefix:  threadIDPrefix,
+			IsValid: false,
 		},
 	}
 }
 
 // ThreadItemID is the ID for a ThreadItem
-type ThreadItemID struct{ objectID }
+type ThreadItemID struct{ model.ObjectID }
 
 func NewThreadItemID() (ThreadItemID, error) {
 	id, err := idgen.NewID()
@@ -54,10 +55,10 @@ func NewThreadItemID() (ThreadItemID, error) {
 		return ThreadItemID{}, errors.Trace(err)
 	}
 	return ThreadItemID{
-		objectID{
-			prefix:  threadItemIDPrefix,
-			value:   id,
-			isValid: true,
+		model.ObjectID{
+			Prefix:  threadItemIDPrefix,
+			Val:     id,
+			IsValid: true,
 		},
 	}, nil
 }
@@ -70,15 +71,15 @@ func ParseThreadItemID(s string) (ThreadItemID, error) {
 
 func EmptyThreadItemID() ThreadItemID {
 	return ThreadItemID{
-		objectID{
-			prefix:  threadItemIDPrefix,
-			isValid: false,
+		model.ObjectID{
+			Prefix:  threadItemIDPrefix,
+			IsValid: false,
 		},
 	}
 }
 
 // SavedQueryID is the ID for a SavedQuery
-type SavedQueryID struct{ objectID }
+type SavedQueryID struct{ model.ObjectID }
 
 func NewSavedQueryID() (SavedQueryID, error) {
 	id, err := idgen.NewID()
@@ -86,10 +87,10 @@ func NewSavedQueryID() (SavedQueryID, error) {
 		return SavedQueryID{}, errors.Trace(err)
 	}
 	return SavedQueryID{
-		objectID{
-			prefix:  savedQueryIDPrefix,
-			value:   id,
-			isValid: true,
+		model.ObjectID{
+			Prefix:  savedQueryIDPrefix,
+			Val:     id,
+			IsValid: true,
 		},
 	}, nil
 }
@@ -102,9 +103,9 @@ func ParseSavedQueryID(s string) (SavedQueryID, error) {
 
 func EmptySavedQueryID() SavedQueryID {
 	return SavedQueryID{
-		objectID{
-			prefix:  savedQueryIDPrefix,
-			isValid: false,
+		model.ObjectID{
+			Prefix:  savedQueryIDPrefix,
+			IsValid: false,
 		},
 	}
 }

@@ -1,4 +1,4 @@
-package models
+package model
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 )
 
 func TestObjectID(t *testing.T) {
-	id := objectID{prefix: "t_"}
+	id := ObjectID{Prefix: "t_"}
 
 	// Empty/invalid state marshaling
 	b, err := id.MarshalText()
@@ -17,8 +17,8 @@ func TestObjectID(t *testing.T) {
 
 	// Valid unmarshaling
 	test.OK(t, id.UnmarshalText([]byte("t_00000000002D4")))
-	test.Equals(t, uint64(1234), id.value)
-	test.Equals(t, true, id.isValid)
+	test.Equals(t, uint64(1234), id.Val)
+	test.Equals(t, true, id.IsValid)
 
 	// Valid marshaling
 	b, err = id.MarshalText()

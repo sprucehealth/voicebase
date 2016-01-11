@@ -8,7 +8,7 @@ import (
 
 func TestThreadID(t *testing.T) {
 	var id ThreadID
-	id.prefix = threadIDPrefix
+	id.Prefix = threadIDPrefix
 
 	// Empty/invalid state marshaling
 	b, err := id.MarshalText()
@@ -19,8 +19,8 @@ func TestThreadID(t *testing.T) {
 	// Valid unmarshaling
 	id, err = ParseThreadID("t_00000000002D4")
 	test.OK(t, err)
-	test.Equals(t, uint64(1234), id.value)
-	test.Equals(t, true, id.isValid)
+	test.Equals(t, uint64(1234), id.Val)
+	test.Equals(t, true, id.IsValid)
 
 	// Valid marshaling
 	b, err = id.MarshalText()

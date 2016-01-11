@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -419,6 +420,35 @@ var callEntityOutputType = graphql.NewObject(
 	},
 )
 
+/// registerDeviceForPush
+
+type registerDeviceForPushOutput struct {
+	ClientMutationID string `json:"clientMutationId"`
+}
+
+var registerDeviceForPushInputType = graphql.NewInputObject(
+	graphql.InputObjectConfig{
+		Name: "RegisterDeviceForPushInput",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"clientMutationId": newClientMutationIDInputField(),
+			"deviceToken":      &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		},
+	},
+)
+
+var registerDeviceForPushOutputType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "RegisterDeviceForPushPayload",
+		Fields: graphql.Fields{
+			"clientMutationId": newClientmutationIDOutputField(),
+		},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+			_, ok := value.(*registerDeviceForPushOutput)
+			return ok
+		},
+	},
+)
+
 var mutationType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Mutation",
 	Fields: graphql.Fields{
@@ -776,7 +806,6 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				if acc == nil {
 					return nil, errNotAuthenticated
 				}
-
 				input := p.Args["input"].(map[string]interface{})
 				mutationID, _ := input["clientMutationId"].(string)
 				entityID := input["id"].(string)
@@ -862,6 +891,43 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					ClientMutationID: mutationID,
 					Result:           callEntityResultSuccess,
 					PhoneNumber:      ires.PhoneNumber,
+				}, nil
+			},
+		},
+		"registerDeviceForPush": &graphql.Field{
+			Type: graphql.NewNonNull(registerDeviceForPushOutputType),
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{Type: registerDeviceForPushInputType},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				svc := serviceFromParams(p)
+				ctx := contextFromParams(p)
+				acc := accountFromContext(ctx)
+				sh := spruceHeadersFromContext(ctx)
+				if acc == nil {
+					return nil, errNotAuthenticated
+				}
+
+				input := p.Args["input"].(map[string]interface{})
+				mutationID, _ := input["clientMutationId"].(string)
+				deviceToken, _ := input["deviceToken"].(string)
+				if err := svc.notification.RegisterDeviceForPush(&notification.DeviceRegistrationInfo{
+					ExternalGroupID: acc.ID,
+					DeviceToken:     deviceToken,
+					Platform:        sh.Platform.String(),
+					PlatformVersion: sh.PlatformVersion,
+					AppVersion:      sh.AppVersion.String(),
+					Device:          sh.Device,
+					DeviceModel:     sh.DeviceModel,
+					DeviceID:        sh.DeviceID,
+				}); err != nil {
+					return nil, errors.New("device registration failed")
+				}
+
+				result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
+				result.Set("registerDeviceForPush", true)
+				return &registerDeviceForPushOutput{
+					ClientMutationID: mutationID,
 				}, nil
 			},
 		},

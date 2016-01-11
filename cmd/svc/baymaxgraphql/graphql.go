@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/graphql-go/graphql"
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -15,6 +16,7 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
 )
@@ -22,8 +24,19 @@ import (
 type ctxKey int
 
 const (
-	ctxAccount ctxKey = 0
+	ctxAccount       ctxKey = 0
+	ctxSpruceHeaders ctxKey = 1
 )
+
+func ctxWithSpruceHeaders(ctx context.Context, sh *apiservice.SpruceHeaders) context.Context {
+	return context.WithValue(ctx, ctxSpruceHeaders, sh)
+}
+
+// spruceHeadersFromContext returns the spruce headers which may be nil
+func spruceHeadersFromContext(ctx context.Context) *apiservice.SpruceHeaders {
+	sh, _ := ctx.Value(ctxSpruceHeaders).(*apiservice.SpruceHeaders)
+	return sh
+}
 
 func ctxWithAccount(ctx context.Context, acc *account) context.Context {
 	return context.WithValue(ctx, ctxAccount, acc)
@@ -95,13 +108,15 @@ type graphQLHandler struct {
 	service *service
 }
 
-func NewGraphQL(authClient auth.AuthClient, directoryClient directory.DirectoryClient, threadingClient threading.ThreadsClient, exComms excomms.ExCommsClient) httputil.ContextHandler {
+// NewGraphQL returns an initialized instance of graphQLHandler
+func NewGraphQL(authClient auth.AuthClient, directoryClient directory.DirectoryClient, threadingClient threading.ThreadsClient, exComms excomms.ExCommsClient, notificationClient notification.Client) httputil.ContextHandler {
 	return &graphQLHandler{
 		service: &service{
-			auth:      authClient,
-			directory: directoryClient,
-			threading: threadingClient,
-			exComms:   exComms,
+			auth:         authClient,
+			directory:    directoryClient,
+			threading:    threadingClient,
+			exComms:      exComms,
+			notification: notificationClient,
 		},
 	}
 }
@@ -181,6 +196,9 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	}
 
 	ctx = ctxWithAccount(ctx, acc)
+
+	sHeaders := apiservice.ExtractSpruceHeaders(r)
+	ctx = ctxWithSpruceHeaders(ctx, sHeaders)
 
 	result := conc.NewMap()
 	response := graphql.Do(graphql.Params{

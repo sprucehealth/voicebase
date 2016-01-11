@@ -3,10 +3,10 @@ package internal
 import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
-	"github.com/sprucehealth/backend/cmd/svc/routing/internal/worker"
 	"github.com/sprucehealth/backend/cmd/svc/routing/internal/worker/appmsg"
 	"github.com/sprucehealth/backend/cmd/svc/routing/internal/worker/externalmsg"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/worker"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/threading"
