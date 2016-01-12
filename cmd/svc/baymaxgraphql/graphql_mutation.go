@@ -745,7 +745,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				}
 
 				var title bml.BML
-				title = append(title, bml.Ref{ID: ent.ID, Type: bml.EntityRef, Text: ent.Name})
+				title = append(title, &bml.Ref{ID: ent.ID, Type: bml.EntityRef, Text: ent.Name})
 				titleStr, err := title.Format()
 				if err != nil {
 					return nil, internalError(fmt.Errorf("invalid title BML %+v: %s", title, err))
