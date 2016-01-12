@@ -93,12 +93,6 @@ func main() {
 	}
 	exCommsClient := excomms.NewExCommsClient(conn)
 
-	if *flagAWSAccessKey == "" {
-		golog.Fatalf("AWS Access key required")
-	}
-	if *flagAWSSecretKey == "" {
-		golog.Fatalf("AWS Secret key required")
-	}
 	baseConfig := &config.BaseConfig{
 		AppName:      "baymaxgraphql",
 		AWSRegion:    *flagAWSRegion,
