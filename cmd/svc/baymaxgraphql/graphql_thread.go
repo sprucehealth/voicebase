@@ -41,7 +41,7 @@ var threadType = graphql.NewObject(
 					}
 
 					svc := serviceFromParams(p)
-					ctx := contextFromParams(p)
+					ctx := p.Context
 					res, err := svc.directory.LookupEntities(ctx,
 						&directory.LookupEntitiesRequest{
 							LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -81,7 +81,7 @@ var threadType = graphql.NewObject(
 						return nil, internalError(errors.New("thread is nil"))
 					}
 					svc := serviceFromParams(p)
-					ctx := contextFromParams(p)
+					ctx := p.Context
 					req := &threading.ThreadItemsRequest{
 						ThreadID: t.ID,
 						// TODO: ViewerEntityID

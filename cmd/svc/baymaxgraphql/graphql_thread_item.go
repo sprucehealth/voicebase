@@ -81,7 +81,7 @@ var messageType = graphql.NewObject(
 				Type: graphql.NewList(graphql.NewNonNull(nodeInterfaceType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					svc := serviceFromParams(p)
-					ctx := contextFromParams(p)
+					ctx := p.Context
 
 					msg := p.Source.(*message)
 					if msg == nil {
@@ -211,7 +211,7 @@ var threadItemType = graphql.NewObject(
 					}
 
 					svc := serviceFromParams(p)
-					ctx := contextFromParams(p)
+					ctx := p.Context
 					res, err := svc.directory.LookupEntities(ctx,
 						&directory.LookupEntitiesRequest{
 							LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,

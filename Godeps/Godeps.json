@@ -151,7 +151,7 @@
 		},
 		{
 			"ImportPath": "github.com/graphql-go/graphql",
-			"Rev": "344abcc936d3a1f4b288c5c4609377861d1649c5"
+			"Rev": "5c2682d7d86780ed1dc0a5faca0d3cefa367ba32"
 		},
 		{
 			"ImportPath": "github.com/google/go-querystring/query",

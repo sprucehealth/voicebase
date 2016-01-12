@@ -401,7 +401,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				svc := serviceFromParams(p)
-				ctx := contextFromParams(p)
+				ctx := p.Context
 				input := p.Args["input"].(map[string]interface{})
 				mutationID, _ := input["clientMutationId"].(string)
 				email := input["email"].(string)
@@ -449,7 +449,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				svc := serviceFromParams(p)
-				ctx := contextFromParams(p)
+				ctx := p.Context
 				input := p.Args["input"].(map[string]interface{})
 				mutationID, _ := input["clientMutationId"].(string)
 				// TODO: get token from cookie if not provided in args
@@ -475,7 +475,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				svc := serviceFromParams(p)
-				ctx := contextFromParams(p)
+				ctx := p.Context
 				input := p.Args["input"].(map[string]interface{})
 				mutationID, _ := input["clientMutationId"].(string)
 				req := &auth.CreateAccountRequest{
@@ -592,7 +592,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				svc := serviceFromParams(p)
-				ctx := contextFromParams(p)
+				ctx := p.Context
 				acc := accountFromContext(ctx)
 				if acc == nil {
 					return nil, errNotAuthenticated
@@ -642,7 +642,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				svc := serviceFromParams(p)
-				ctx := contextFromParams(p)
+				ctx := p.Context
 				acc := accountFromContext(ctx)
 				if acc == nil {
 					return nil, errNotAuthenticated
@@ -806,7 +806,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				svc := serviceFromParams(p)
-				ctx := contextFromParams(p)
+				ctx := p.Context
 				acc := accountFromContext(ctx)
 				if acc == nil {
 					return nil, errNotAuthenticated
@@ -906,7 +906,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				svc := serviceFromParams(p)
-				ctx := contextFromParams(p)
+				ctx := p.Context
 				acc := accountFromContext(ctx)
 				sh := spruceHeadersFromContext(ctx)
 				if acc == nil {

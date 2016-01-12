@@ -23,6 +23,7 @@ func TestNodeQuery(t *testing.T) {
 	ctx := context.Background()
 	ctx = ctxWithAccount(ctx, acc)
 	p := graphql.ResolveParams{
+		Context: ctx,
 		Info: graphql.ResolveInfo{
 			RootValue: map[string]interface{}{
 				"service": &service{
@@ -31,7 +32,6 @@ func TestNodeQuery(t *testing.T) {
 					threading: thC,
 					// exComms   excomms.ExCommsClient
 				},
-				"context": ctx,
 			},
 		},
 	}

@@ -30,7 +30,7 @@ var organizationType = graphql.NewObject(
 					}
 
 					svc := serviceFromParams(p)
-					ctx := contextFromParams(p)
+					ctx := p.Context
 					acc := accountFromContext(ctx)
 					if acc == nil {
 						return nil, errNotAuthenticated
@@ -63,7 +63,7 @@ var organizationType = graphql.NewObject(
 						return nil, errors.New("no entity for organization")
 					}
 					svc := serviceFromParams(p)
-					ctx := contextFromParams(p)
+					ctx := p.Context
 
 					res, err := svc.directory.LookupEntities(ctx,
 						&directory.LookupEntitiesRequest{
@@ -111,7 +111,7 @@ var organizationType = graphql.NewObject(
 						return nil, errors.New("no entity for organization")
 					}
 					svc := serviceFromParams(p)
-					ctx := contextFromParams(p)
+					ctx := p.Context
 					res, err := svc.threading.SavedQueries(ctx, &threading.SavedQueriesRequest{
 						EntityID: org.Entity.ID,
 					})

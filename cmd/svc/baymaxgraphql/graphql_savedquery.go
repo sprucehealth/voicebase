@@ -31,7 +31,7 @@ var savedThreadQueryType = graphql.NewObject(
 					}
 
 					svc := serviceFromParams(p)
-					ctx := contextFromParams(p)
+					ctx := p.Context
 					req := &threading.QueryThreadsRequest{
 						OrganizationID: stq.OrganizationID,
 						Type:           threading.QueryThreadsRequest_SAVED,

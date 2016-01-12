@@ -16,7 +16,7 @@ var queryType = graphql.NewObject(
 			"me": &graphql.Field{
 				Type: graphql.NewNonNull(accountType),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					acc := accountFromContext(contextFromParams(p))
+					acc := accountFromContext(p.Context)
 					if acc == nil {
 						return nil, errNotAuthenticated
 					}
@@ -30,7 +30,7 @@ var queryType = graphql.NewObject(
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					svc := serviceFromParams(p)
-					ctx := contextFromParams(p)
+					ctx := p.Context
 					acc := accountFromContext(ctx)
 					if acc == nil {
 						return nil, errNotAuthenticated
@@ -74,7 +74,7 @@ var queryType = graphql.NewObject(
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					svc := serviceFromParams(p)
-					ctx := contextFromParams(p)
+					ctx := p.Context
 					acc := accountFromContext(ctx)
 					if acc == nil {
 						return nil, errNotAuthenticated
@@ -90,7 +90,7 @@ var queryType = graphql.NewObject(
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					svc := serviceFromParams(p)
-					ctx := contextFromParams(p)
+					ctx := p.Context
 					acc := accountFromContext(ctx)
 					if acc == nil {
 						return nil, errNotAuthenticated
@@ -106,7 +106,7 @@ var queryType = graphql.NewObject(
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					svc := serviceFromParams(p)
-					ctx := contextFromParams(p)
+					ctx := p.Context
 					acc := accountFromContext(ctx)
 					if acc == nil {
 						return nil, errNotAuthenticated

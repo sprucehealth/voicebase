@@ -52,10 +52,6 @@ func serviceFromParams(p graphql.ResolveParams) *service {
 	return p.Info.RootValue.(map[string]interface{})["service"].(*service)
 }
 
-func contextFromParams(p graphql.ResolveParams) context.Context {
-	return p.Info.RootValue.(map[string]interface{})["context"].(context.Context)
-}
-
 var nodeInterfaceType = graphql.NewInterface(
 	graphql.InterfaceConfig{
 		Name: "Node",
@@ -205,8 +201,8 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		Schema:         gqlSchema,
 		RequestString:  req.Query,
 		VariableValues: req.Variables,
+		Context:        ctx,
 		RootObject: map[string]interface{}{
-			"context": ctx,
 			"service": h.service,
 			// result is used to pass values from the executor to the top level (e.g. auth token)
 			"result": result,

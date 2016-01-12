@@ -24,7 +24,7 @@ var accountType = graphql.NewObject(
 				Type: graphql.NewList(graphql.NewNonNull(organizationType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					svc := serviceFromParams(p)
-					ctx := contextFromParams(p)
+					ctx := p.Context
 					acc := p.Source.(*account)
 					if acc == nil {
 						// Shouldn't be possible I don't think
