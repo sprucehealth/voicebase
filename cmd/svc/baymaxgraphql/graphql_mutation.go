@@ -436,8 +436,9 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				acc := &account{
 					ID: res.Account.ID,
 				}
-				// TODO: this is not thread safe.. fix once graphql lib supports passing down context through query
-				p.Source.(map[string]interface{})["context"] = ctxWithAccount(ctx, acc)
+				// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
+				// that likely won't change, but this still isn't a great way to update the context.
+				p.Context = ctxWithAccount(ctx, acc)
 				return &authenticateOutput{
 					ClientMutationID: mutationID,
 					Result:           authenticateResultSuccess,
@@ -583,8 +584,9 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				acc := &account{
 					ID: res.Account.ID,
 				}
-				// TODO: this is not thread safe.. fix once graphql lib supports passing down context through query
-				p.Source.(map[string]interface{})["context"] = ctxWithAccount(ctx, acc)
+				// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
+				// that likely won't change, but this still isn't a great way to update the context.
+				p.Context = ctxWithAccount(ctx, acc)
 				return &createAccountOutput{
 					ClientMutationID: mutationID,
 					Token:            res.Token.Value,
