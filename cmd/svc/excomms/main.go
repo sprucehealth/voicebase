@@ -1,10 +1,14 @@
 package main
 
 import (
+	"flag"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/libs/conc"
-
-	"flag"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 var config struct {
@@ -69,5 +73,14 @@ func main() {
 	conc.Go(func() {
 		runService()
 	})
+
+	// Wait for an external process interrupt to quit the program
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, os.Kill, syscall.SIGTERM)
+	select {
+	case sig := <-sigCh:
+		golog.Infof("Quitting due to signal %s", sig.String())
+		break
+	}
 
 }

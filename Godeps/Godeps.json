@@ -150,20 +150,16 @@
 			"Rev": "d3235f01ecae4901dd9f7ea6af57a352c0189deb"
 		},
 		{
-			"ImportPath": "github.com/gorilla/websocket",
-			"Rev": "361d4c0ffd78338ebe0a9e6320cdbe115d7dc026"
-		},
-		{
-			"ImportPath": "github.com/graphql-go/graphql",
-			"Rev": "5c2682d7d86780ed1dc0a5faca0d3cefa367ba32"
-		},
-		{
 			"ImportPath": "github.com/golang/protobuf/proto",
 			"Rev": "02ac84f19cf2febf53ac06e7fbc446c1ea0258e3"
 		},
 		{
 			"ImportPath": "github.com/google/go-querystring/query",
 			"Rev": "2a60fc2ba6c19de80291203597d752e9ba58e4c0"
+		},
+		{
+			"ImportPath": "github.com/graphql-go/graphql",
+			"Rev": "5c2682d7d86780ed1dc0a5faca0d3cefa367ba32"
 		},
 		{
 			"ImportPath": "github.com/hashicorp/consul/api",
@@ -196,6 +192,10 @@
 		{
 			"ImportPath": "github.com/rainycape/memcache",
 			"Rev": "1031fa0ce2f20c1c0e1e1b51951d8ea02c84fa05"
+		},
+		{
+			"ImportPath": "github.com/recapco/emailreplyparser",
+			"Rev": "c8d8e0a5749b6e37ea2c6a8d0817cbeb3c43dd7d"
 		},
 		{
 			"ImportPath": "github.com/rs/cors",

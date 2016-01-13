@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
+	"github.com/recapco/emailreplyparser"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/sns"
@@ -164,11 +165,14 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			return errors.Trace(fmt.Errorf("Unable to parse email address %s :%s", sgEmail.Recipient, err.Error()))
 		}
 
-		// TODO: Parse email replies
+		text, err := emailreplyparser.ParseReply(sgEmail.Text)
+		if err != nil {
+			return errors.Trace(err)
+		}
 
 		emailItem := &excomms.PublishedExternalMessage_EmailItem{
 			EmailItem: &excomms.EmailItem{
-				Body:    sgEmail.Text,
+				Body:    text,
 				Subject: sgEmail.Subject,
 				// TODO: Attachments
 			},
