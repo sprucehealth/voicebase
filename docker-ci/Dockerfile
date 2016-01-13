@@ -10,7 +10,7 @@ ADD https://carefront-packages.s3.amazonaws.com/flow-linux64-v0.18.1.zip /usr/lo
 RUN cd /usr/local ; unzip flow.zip ; ln -s /usr/local/flow/flow /usr/local/bin/flow
 RUN cd /usr/local && \
 	rm -rf go && \
-	curl -s https://storage.googleapis.com/golang/go1.5.2.linux-amd64.tar.gz | tar -zxf - && \
+	curl -s https://storage.googleapis.com/golang/go1.5.3.linux-amd64.tar.gz | tar -zxf - && \
 	ln -s /usr/local/go/bin/go /usr/local/bin/go
 RUN curl -o /usr/local/bin/consul.zip https://releases.hashicorp.com/consul/0.6.1/consul_0.6.1_linux_amd64.zip && \
 	cd /usr/local/bin && \
