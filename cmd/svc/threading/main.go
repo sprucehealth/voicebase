@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sprucehealth/backend/libs/dbutil"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
@@ -17,24 +15,25 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/server"
 	"github.com/sprucehealth/backend/libs/awsutil"
+	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc"
 )
 
 var (
-	flagAWSAccessKey = flag.String("aws.access_key", "", "AWS access key")
-	flagAWSSecretKey = flag.String("aws.secret_key", "", "AWS secret key")
-	flagAWSToken     = flag.String("aws.token", "", "AWS token")
-	flagAWSRegion    = flag.String("aws.region", "", "AWS region")
-	flagDBName       = flag.String("db.name", "threading", "Database name")
-	flagDBHost       = flag.String("db.host", "127.0.0.1", "Database host")
-	flagDBPort       = flag.Int("db.port", 3306, "Database port")
-	flagDBUser       = flag.String("db.user", "", "Database username")
-	flagDBPass       = flag.String("db.pass", "", "Database password")
-	flagDBCACert     = flag.String("db.ca_cert", "", "Path to database CA certificate")
-	flagDBTLS        = flag.String("db.tls", "false", "Enable TLS for database connection (one of 'true', 'false', 'skip-verify'). Ignored if CA cert provided.")
-	flagListen       = flag.String("l", ":5001", "Address on which to listen")
+	flagAWSAccessKey = flag.String("aws_access_key", "", "AWS access key")
+	flagAWSSecretKey = flag.String("aws_secret_key", "", "AWS secret key")
+	flagAWSToken     = flag.String("aws_token", "", "AWS token")
+	flagAWSRegion    = flag.String("aws_region", "", "AWS region")
+	flagDBName       = flag.String("db_name", "threading", "Database name")
+	flagDBHost       = flag.String("db_host", "127.0.0.1", "Database host")
+	flagDBPort       = flag.Int("db_port", 3306, "Database port")
+	flagDBUser       = flag.String("db_user", "", "Database username")
+	flagDBPass       = flag.String("db_pass", "", "Database password")
+	flagDBCACert     = flag.String("db_ca_cert", "", "Path to database CA certificate")
+	flagDBTLS        = flag.String("db_tls", "false", "Enable TLS for database connection (one of 'true', 'false', 'skip-verify'). Ignored if CA cert provided.")
+	flagListen       = flag.String("listen_addr", ":5001", "Address on which to listen")
 	flagSNSTopicARN  = flag.String("sns_topic_arn", "", "SNS topic ARN to publish new messages to")
 	flagDebug        = flag.Bool("debug", false, "Enable debug logging")
 )
