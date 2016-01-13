@@ -171,36 +171,122 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 		return errors.Trace(fmt.Errorf("Expected external entity to exist for id %s", pti.PrimaryEntityID))
 	}
 
-	// send an SMS from org to external entity
-	// TODO: Respect list of destinationContacts if present for where to route message.
+	// TODO: Improve logic for auto-routing (we have a ticket for this)
+	destinations := pti.GetItem().GetMessage().Destinations
+	if len(destinations) == 0 || destinations[0].Channel == threading.Endpoint_APP {
+		contacts := externalEntityLookupRes.Entities[0].Contacts
+		for _, c := range contacts {
+			var endpointType threading.Endpoint_Channel
+			if c.ContactType == directory.ContactType_PHONE {
+				endpointType = threading.Endpoint_SMS
+			} else if c.ContactType == directory.ContactType_EMAIL {
+				endpointType = threading.Endpoint_EMAIL
+			}
+			destinations = append(destinations, &threading.Endpoint{
+				Channel: endpointType,
+				ID:      c.Value,
+			})
+		}
+	}
+
 	orgEntity := orgLookupRes.Entities[0]
-	externalEntity := externalEntityLookupRes.Entities[0]
+	for _, d := range destinations {
+		switch d.Channel {
+		case threading.Endpoint_SMS:
+			// determine org phone number
+			orgContact := determineProvisionedContact(orgEntity, directory.ContactType_PHONE)
+			if orgContact == nil {
+				golog.Errorf("Unable to determine organization provisioned phone number for org %s. Dropping message...", organizationID)
+				return nil
+			}
 
-	if len(orgEntity.Contacts) == 0 {
-		golog.Warningf("Organization id %d does not have contacts. Dropping message...", orgEntity.ID)
+			_, err := a.excomms.SendMessage(
+				ctx,
+				&excomms.SendMessageRequest{
+					UUID:    pti.GetItem().ID,
+					Channel: excomms.ChannelType_SMS,
+					Message: &excomms.SendMessageRequest_SMS{
+						SMS: &excomms.SMSMessage{
+							FromPhoneNumber: orgContact.Value,
+							ToPhoneNumber:   d.ID,
+							Text:            pti.GetItem().GetMessage().Text,
+						},
+					},
+				},
+			)
+			if err != nil {
+				return errors.Trace(err)
+			}
+			golog.Debugf("Sent SMS %s → %s. Text %s", orgContact.Value, d.ID, pti.GetItem().GetMessage().Text)
+		case threading.Endpoint_EMAIL:
+			// determine org email address
+			orgContact := determineProvisionedContact(orgEntity, directory.ContactType_EMAIL)
+			if orgContact == nil {
+				golog.Errorf("Unable to determine organization provisioned email for org %s. Dropping message...", organizationID)
+				return nil
+			}
+
+			// determine provider (sender of message) to include in the email
+			providerLookupRes, err := a.directory.LookupEntities(
+				ctx,
+				&directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						EntityID: pti.GetItem().ActorEntityID,
+					},
+					RequestedInformation: &directory.RequestedInformation{
+						Depth: 0,
+					},
+				},
+			)
+			if err != nil {
+				return errors.Trace(err)
+			} else if len(providerLookupRes.Entities) != 1 {
+				return errors.Trace(fmt.Errorf("Expected 1 provider to exist for id %s, but got %d", pti.GetItem().ActorEntityID, len(providerLookupRes.Entities)))
+			}
+			providerEntity := providerLookupRes.Entities[0]
+
+			_, err = a.excomms.SendMessage(
+				ctx,
+				&excomms.SendMessageRequest{
+					UUID:    pti.GetItem().ID,
+					Channel: excomms.ChannelType_EMAIL,
+					Message: &excomms.SendMessageRequest_Email{
+						Email: &excomms.EmailMessage{
+							Subject:          fmt.Sprintf("Message from %s, %s", providerEntity.Name, orgEntity.Name),
+							Body:             pti.GetItem().GetMessage().Text,
+							FromName:         providerEntity.Name,
+							FromEmailAddress: orgContact.Value,
+							ToEmailAddress:   d.ID,
+						},
+					},
+				},
+			)
+			if err != nil {
+				return errors.Trace(err)
+			}
+			golog.Debugf("Sent Email %s → %s. Text %s", orgContact.Value, d.ID, pti.GetItem().GetMessage().Text)
+		default:
+			golog.Warningf("Dropping destination %d. Unknown how to send message.", d.Channel.String())
+		}
+	}
+
+	return nil
+}
+
+func determineProvisionedContact(entity *directory.Entity, contactType directory.ContactType) *directory.Contact {
+	if len(entity.Contacts) == 0 {
 		return nil
 	}
-	orgContact := orgEntity.Contacts[0]
 
-	if len(externalEntity.Contacts) == 0 {
-		golog.Warningf("Externaal entity %d does not have contacts. Dropping message...", orgEntity.ID)
-		return nil
+	for _, c := range entity.Contacts {
+		if !c.Provisioned {
+			continue
+		}
+		if c.ContactType == contactType {
+			return c
+		}
+
 	}
-	externalContact := externalEntity.Contacts[0]
-
-	_, err = a.excomms.SendMessage(
-		ctx,
-		&excomms.SendMessageRequest{
-			FromChannelID: orgContact.Value,
-			ToChannelID:   externalContact.Value,
-			Text:          pti.GetItem().GetMessage().Text,
-			Channel:       excomms.ChannelType_SMS,
-		},
-	)
-	if err != nil {
-		return errors.Trace(err)
-	}
-
-	golog.Debugf("Sent SMS %s → %s. Text %s", orgContact.Value, externalContact.Value, pti.GetItem().GetMessage().Text)
 	return nil
 }

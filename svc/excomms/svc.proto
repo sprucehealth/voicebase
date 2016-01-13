@@ -11,94 +11,9 @@ option (gogoproto.goproto_enum_prefix_all) = true;
 // ChannelType specifies the channel over which the communication
 // is intended to take place.
 enum ChannelType {
-	Voice = 0;
+	VOICE = 0;
 	SMS = 1;
-}
-
-message TwilioParams {
-	enum CallStatus {
-		CALL_STATUS_UNDEFINED = 0;
-		QUEUED = 1;
-		RINGING = 2;
-		IN_PROGRESS = 3;
-		COMPLETED = 4;
-		BUSY = 5;
-		FAILED = 6;
-		NO_ANSWER = 7;
-		CANCELED = 8;
-		ANSWERED = 9;
-		INITIATED = 10;
-	}
-
-	enum Direction {
-		DIRECTION_UNDEFINED = 0;
-		INBOUND = 1;
-		OUTBOUND_DIAL = 2;
-		OUTBOUND_API = 3;
-	}
-
-	message TwilioMediaItem {
-		string content_type = 1;
-		string media_url = 2 [(gogoproto.customname) = "MediaURL"];
-	}
-
-	string call_sid = 1 [(gogoproto.customname) = "CallSID"];
-	string account_sid = 2 [(gogoproto.customname) = "AccountSID"];
-	string from = 3;
-	string to_number = 4 [(gogoproto.customname) = "To"];
-	CallStatus call_status = 5;
-	string api_version = 6 [(gogoproto.customname) = "APIVersion"];
-	Direction direction = 7;
-	uint32 call_duration = 8;
-	string recording_url = 9 [(gogoproto.customname) = "RecordingURL"];
-	string recording_sid = 10 [(gogoproto.customname) = "RecordingSID"];
-	uint32 recording_duration = 11;
-	string digits = 12;
-	string message_sid = 13 [(gogoproto.customname) = "MessageSID"];
-	string sms_sid  = 14 [(gogoproto.customname) = "SMSSID"];
-	string body = 15;
-	uint32 num_media = 16;
-	repeated TwilioMediaItem media_items = 17;
-	string messaging_service_id = 18 [(gogoproto.customname) = "MessagingServiceID"];
-
-	// these three parameters are only present in a twilio request
-	// attempting to get a twiml document to execute on the queued caller's
-	// end before the two parties are connected.
-	string queue_sid = 19 [(gogoproto.customname) = "QueueSID"];
-	uint32 queue_time = 20;
-	string dequeuing_call_sid = 21 [(gogoproto.customname) = "DequeingCallSID"];
-
-	// this parameter is only present for status callbacks from a dial twiml verb
-	string parent_call_sid = 22 [(gogoproto.customname) = "ParentCallSID"];
-
-	CallStatus dial_call_status = 23 [(gogoproto.customname) = "DialCallStatus"];
-	uint32 dial_call_duration = 24 [(gogoproto.customname) = "DialCallDuration"];
-
-
-
-	// infrequently used parameters
-	string forwarded_from = 100;
-	string caller_name = 101;
-	string from_city = 102;
-	string from_state = 103;
-	string from_zip = 104;
-	string from_country = 105;
-	string to_city = 106;
-	string to_state = 107;
-	string to_zip = 108;
-	string to_country = 109;
-}
-
-enum TwilioEvent {
-	PROCESS_INCOMING_CALL = 0;
-	PROVIDER_CALL_CONNECTED = 1;
-	PROVIDER_ENTERED_DIGITS = 2;
-	TWIML_REQUESTED_VOICEMAIL = 3;
-	PROCESS_INCOMING_CALL_STATUS = 4;
-	INCOMING_SMS = 5;
-	PROCESS_OUTGOING_CALL = 6;
-	PROCESS_VOICEMAIL = 7;
-	PROCESS_OUTGOING_CALL_STATUS = 8;
+	EMAIL = 2;
 }
 
 message PublishedExternalMessage {
@@ -108,18 +23,20 @@ message PublishedExternalMessage {
 	enum Type {
 		SMS = 0;
 		CALL_EVENT = 1;
+		EMAIL = 2;
 	}
 	Type type = 4;
 	oneof item {
 		SMSItem sms_item = 5 [(gogoproto.customname) = "SMSItem"];
 		CallEventItem call_event_item = 6;
+		EmailItem email_item = 7;
 	}
 
 	enum Direction {
 		INBOUND = 0;
 		OUTBOUND = 1;
 	}
-	Direction direction = 7;
+	Direction direction = 8;
 }
 
 message SMSItem {
@@ -141,6 +58,12 @@ message CallEventItem {
 	string url = 3 [(gogoproto.customname) = "URL"];
 }
 
+message EmailItem {
+	string body = 1;
+	string subject = 2;
+	repeated MediaAttachment attachments = 3;
+}
+
 message MediaAttachment {
 	string url = 1 [(gogoproto.customname) = "URL"];
 	string content_type = 2;
@@ -151,10 +74,36 @@ message MediaAttachment {
 // SendMessageRequest represents a request to send a message
 // over an external channel.
 message SendMessageRequest {
+<<<<<<< HEAD
 	string text = 1;
 	string from_channel_id = 2 [(gogoproto.customname) = "FromChannelID"];
 	string to_channel_id = 3 [(gogoproto.customname) = "ToChannelID"];
 	ChannelType channel = 4;
+=======
+	ChannelType channel = 1;
+	oneof message {
+		EmailMessage email = 2;
+		SMSMessage sms = 3 [(gogoproto.customname) = "SMS"];
+	}
+
+	// uuid for client to group and retrieve list of external messages
+	string uuid = 4 [(gogoproto.customname) = "UUID"];
+}
+
+message EmailMessage {
+	string subject = 1;
+	string body = 2;
+	string from_name = 3;
+	string from_email_address = 4;
+	string to_name = 5;
+	string to_email_address = 6;
+}
+
+message SMSMessage {
+	string text = 1;
+	string from_phone_number = 2;
+	string to_phone_number = 3;
+>>>>>>> Email integration
 }
 
 message SendMessageResponse {
@@ -220,14 +169,13 @@ message ProvisionPhoneNumberResponse {
 	string phone_number = 3;
 }
 
-
-message ProcessTwilioEventRequest {
-	TwilioParams params = 1;
-	TwilioEvent event = 2;
+message ProvisionEmailAddressRequest {
+	string provision_for = 1;
+	string email_address = 2;
 }
 
-message ProcessTwilioEventResponse {
-	string twiml = 1;
+message ProvisionEmailAddressResponse {
+	string email_address = 1;
 }
 
 service ExComms {
@@ -238,12 +186,12 @@ service ExComms {
 	// ProvisionPhoneNumber provisions the phone number provided for the requester.
 	rpc ProvisionPhoneNumber (ProvisionPhoneNumberRequest) returns (ProvisionPhoneNumberResponse);
 
+	// ProvisionEmailAddress provisions an email address for the requester.
+	rpc ProvisionEmailAddress (ProvisionEmailAddressRequest) returns (ProvisionEmailAddressResponse);
+
 	// SendMessage sends the message over an external channel as specified in the SendMessageRequest.
 	rpc SendMessage (SendMessageRequest) returns (SendMessageResponse);
 
 	// InitiatePhoneCall initiates a phone call as defined in the InitiatePhoneCallRequest.
 	rpc InitiatePhoneCall (InitiatePhoneCallRequest) returns (InitiatePhoneCallResponse);
-
-	// ProcessTwilio processes the incoming twilio event and its corresponding parameters
-	rpc ProcessTwilioEvent (ProcessTwilioEventRequest) returns (ProcessTwilioEventResponse) {};
 }

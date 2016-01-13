@@ -3,6 +3,7 @@ package twiml
 import (
 	"encoding/xml"
 	"fmt"
+	"net/http"
 	"net/url"
 )
 
@@ -51,6 +52,17 @@ func (t *Response) GenerateTwiML() (string, error) {
 	}
 
 	return xml.Header + string(data), nil
+}
+
+func (t *Response) WriteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "text/xml")
+	str, err := t.GenerateTwiML()
+	if err != nil {
+		return err
+	}
+
+	_, err = w.Write([]byte(str))
+	return err
 }
 
 type Dial struct {

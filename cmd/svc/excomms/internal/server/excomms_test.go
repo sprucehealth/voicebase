@@ -1,4 +1,4 @@
-package internal
+package server
 
 import (
 	"testing"
@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/libs/clock"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
@@ -45,17 +46,21 @@ func (m *mockIncomingPhoneNumberService_Excomms) PurchaseLocal(params twilio.Pur
 
 type mockDAL_Excomms struct {
 	dal.DAL
-	ppn     *models.ProvisionedPhoneNumber
+	ppn     *models.ProvisionedEndpoint
 	proxies []*models.ProxyPhoneNumber
 	ppnr    *models.ProxyPhoneNumberReservation
+	sm      *models.SentMessage
 	*mock.Expector
 }
 
-func (m *mockDAL_Excomms) LookupProvisionedPhoneNumber(lookup *dal.ProvisionedNumberLookup) (*models.ProvisionedPhoneNumber, error) {
-	defer m.Record(lookup)
+func (m *mockDAL_Excomms) LookupProvisionedEndpoint(provisionedFor string, endpointType models.EndpointType) (*models.ProvisionedEndpoint, error) {
+	defer m.Record(provisionedFor, endpointType)
+	if m.ppn == nil {
+		return nil, dal.ErrProvisionedEndpointNotFound
+	}
 	return m.ppn, nil
 }
-func (m *mockDAL_Excomms) ProvisionPhoneNumber(model *models.ProvisionedPhoneNumber) error {
+func (m *mockDAL_Excomms) ProvisionEndpoint(model *models.ProvisionedEndpoint) error {
 	defer m.Record(model)
 	return nil
 }
@@ -82,6 +87,17 @@ func (m *mockDAL_Excomms) CreateProxyPhoneNumberReservation(model *models.ProxyP
 func (m *mockDAL_Excomms) Transact(trans func(dal.DAL) error) error {
 	return trans(m)
 }
+func (m *mockDAL_Excomms) CreateSentMessage(sm *models.SentMessage) error {
+	defer m.Record(sm)
+	return nil
+}
+func (m *mockDAL_Excomms) LookupSentMessageByUUID(uuid, destination string) (*models.SentMessage, error) {
+	defer m.Record(uuid, destination)
+	if m.sm == nil {
+		return nil, dal.ErrSentMessageNotFound
+	}
+	return m.sm, nil
+}
 
 type mockMessages_Excomms struct {
 	twilio.MessageIFace
@@ -92,6 +108,15 @@ type mockMessages_Excomms struct {
 func (m *mockMessages_Excomms) SendSMS(from, to, body string) (*twilio.Message, *twilio.Response, error) {
 	defer m.Record(from, to, body)
 	return m.msg, nil, nil
+}
+
+type mockEmail_Excomms struct {
+	*mock.Expector
+}
+
+func (m *mockEmail_Excomms) SendMessage(em *models.EmailMessage) error {
+	defer m.Record(em)
+	return nil
 }
 
 type mockDirectory_Excomms struct {
@@ -203,12 +228,11 @@ func TestProvisionPhoneNumber_NotProvisioned_AreaCode(t *testing.T) {
 	mi.Expect(mock.NewExpectation(mi.PurchaseLocal, twilio.PurchasePhoneNumberParams{
 		AreaCode: "415",
 	}))
-	md.Expect(mock.NewExpectation(md.LookupProvisionedPhoneNumber, &dal.ProvisionedNumberLookup{
-		ProvisionedFor: ptr.String("test"),
-	}))
-	md.Expect(mock.NewExpectation(md.ProvisionPhoneNumber, &models.ProvisionedPhoneNumber{
+	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, "test", models.EndpointTypePhone))
+	md.Expect(mock.NewExpectation(md.ProvisionEndpoint, &models.ProvisionedEndpoint{
 		ProvisionedFor: "test",
-		PhoneNumber:    "+14152222222",
+		Endpoint:       "+14152222222",
+		EndpointType:   models.EndpointTypePhone,
 	}))
 
 	res, err := es.ProvisionPhoneNumber(context.Background(), &excomms.ProvisionPhoneNumberRequest{
@@ -248,12 +272,11 @@ func TestProvisionPhoneNumber_NotProvisioned_PhoneNumber(t *testing.T) {
 	mi.Expect(mock.NewExpectation(mi.PurchaseLocal, twilio.PurchasePhoneNumberParams{
 		PhoneNumber: "+14152222222",
 	}))
-	md.Expect(mock.NewExpectation(md.LookupProvisionedPhoneNumber, &dal.ProvisionedNumberLookup{
-		ProvisionedFor: ptr.String("test"),
-	}))
-	md.Expect(mock.NewExpectation(md.ProvisionPhoneNumber, &models.ProvisionedPhoneNumber{
+	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, "test", models.EndpointTypePhone))
+	md.Expect(mock.NewExpectation(md.ProvisionEndpoint, &models.ProvisionedEndpoint{
 		ProvisionedFor: "test",
-		PhoneNumber:    "+14152222222",
+		Endpoint:       "+14152222222",
+		EndpointType:   models.EndpointTypePhone,
 	}))
 
 	res, err := es.ProvisionPhoneNumber(context.Background(), &excomms.ProvisionPhoneNumberRequest{
@@ -271,8 +294,9 @@ func TestProvisionPhoneNumber_NotProvisioned_PhoneNumber(t *testing.T) {
 
 func TestProvisionPhoneNumber_Idempotent(t *testing.T) {
 	md := &mockDAL_Excomms{
-		ppn: &models.ProvisionedPhoneNumber{
-			PhoneNumber: phone.Number("+14156666666"),
+		ppn: &models.ProvisionedEndpoint{
+			Endpoint:     "+14156666666",
+			EndpointType: models.EndpointTypePhone,
 		},
 		Expector: &mock.Expector{
 			T: t,
@@ -290,9 +314,7 @@ func TestProvisionPhoneNumber_Idempotent(t *testing.T) {
 	}
 	es.twilio.IncomingPhoneNumber = mi
 
-	md.Expect(mock.NewExpectation(md.LookupProvisionedPhoneNumber, &dal.ProvisionedNumberLookup{
-		ProvisionedFor: ptr.String("test"),
-	}))
+	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, "test", models.EndpointTypePhone))
 
 	res, err := es.ProvisionPhoneNumber(context.Background(), &excomms.ProvisionPhoneNumberRequest{
 		ProvisionFor: "test",
@@ -301,7 +323,7 @@ func TestProvisionPhoneNumber_Idempotent(t *testing.T) {
 		},
 	})
 	test.OK(t, err)
-	test.Equals(t, md.ppn.PhoneNumber.String(), res.PhoneNumber)
+	test.Equals(t, md.ppn.Endpoint, res.PhoneNumber)
 
 	mi.Finish()
 	md.Finish()
@@ -309,8 +331,9 @@ func TestProvisionPhoneNumber_Idempotent(t *testing.T) {
 
 func TestProvisionPhoneNumber_AlreadyProvisioned(t *testing.T) {
 	md := &mockDAL_Excomms{
-		ppn: &models.ProvisionedPhoneNumber{
-			PhoneNumber: "+14152222222",
+		ppn: &models.ProvisionedEndpoint{
+			Endpoint:     "+14152222222",
+			EndpointType: models.EndpointTypePhone,
 		},
 		Expector: &mock.Expector{
 			T: t,
@@ -331,9 +354,7 @@ func TestProvisionPhoneNumber_AlreadyProvisioned(t *testing.T) {
 	}
 	es.twilio.IncomingPhoneNumber = mi
 
-	md.Expect(mock.NewExpectation(md.LookupProvisionedPhoneNumber, &dal.ProvisionedNumberLookup{
-		ProvisionedFor: ptr.String("test"),
-	}))
+	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, "test", models.EndpointTypePhone))
 
 	_, err := es.ProvisionPhoneNumber(context.Background(), &excomms.ProvisionPhoneNumberRequest{
 		ProvisionFor: "test",
@@ -348,7 +369,8 @@ func TestProvisionPhoneNumber_AlreadyProvisioned(t *testing.T) {
 	md.Finish()
 }
 
-func TestSendMessage(t *testing.T) {
+func TestSendMessage_SMS(t *testing.T) {
+	conc.Testing = true
 	mm := &mockMessages_Excomms{
 		Expector: &mock.Expector{
 			T: t,
@@ -357,23 +379,194 @@ func TestSendMessage(t *testing.T) {
 	}
 	mm.Expect(mock.NewExpectation(mm.SendSMS, "+17348465522", "+14152222222", "hello"))
 
+	md := &mockDAL_Excomms{
+		Expector: &mock.Expector{
+			T: t,
+		},
+	}
+	md.Expect(mock.NewExpectation(md.LookupSentMessageByUUID, "tag", "+14152222222"))
+	md.Expect(mock.NewExpectation(md.CreateSentMessage, &models.SentMessage{
+		Type: models.SentMessage_SMS,
+		UUID: "tag",
+		Message: &models.SentMessage_SMSMsg{
+			SMSMsg: &models.SMSMessage{
+				ID:              "",
+				FromPhoneNumber: "+17348465522",
+				ToPhoneNumber:   "+14152222222",
+				Text:            "hello",
+				DateCreated:     uint64(time.Time{}.Unix()),
+				DateSent:        uint64(time.Time{}.Unix()),
+			},
+		},
+		Destination: "+14152222222",
+	}))
+
 	es := &excommsService{
 		twilio: twilio.NewClient("", "", nil),
+		dal:    md,
 	}
 	es.twilio.Messages = mm
 
 	_, err := es.SendMessage(context.Background(), &excomms.SendMessageRequest{
-		FromChannelID: "+17348465522",
-		ToChannelID:   "+14152222222",
-		Text:          "hello",
-		Channel:       excomms.ChannelType_SMS,
+		UUID:    "tag",
+		Channel: excomms.ChannelType_SMS,
+		Message: &excomms.SendMessageRequest_SMS{
+			SMS: &excomms.SMSMessage{
+				FromPhoneNumber: "+17348465522",
+				ToPhoneNumber:   "+14152222222",
+				Text:            "hello",
+			},
+		},
 	})
 	test.OK(t, err)
 
 	mm.Finish()
+	md.Finish()
+}
+
+func TestSendMessage_SMSIdempotent(t *testing.T) {
+	conc.Testing = true
+	mm := &mockMessages_Excomms{
+		Expector: &mock.Expector{
+			T: t,
+		},
+		msg: &twilio.Message{},
+	}
+
+	md := &mockDAL_Excomms{
+		Expector: &mock.Expector{
+			T: t,
+		},
+		sm: &models.SentMessage{},
+	}
+	md.Expect(mock.NewExpectation(md.LookupSentMessageByUUID, "tag", "+14152222222"))
+
+	es := &excommsService{
+		twilio: twilio.NewClient("", "", nil),
+		dal:    md,
+	}
+	es.twilio.Messages = mm
+
+	_, err := es.SendMessage(context.Background(), &excomms.SendMessageRequest{
+		UUID:    "tag",
+		Channel: excomms.ChannelType_SMS,
+		Message: &excomms.SendMessageRequest_SMS{
+			SMS: &excomms.SMSMessage{
+				FromPhoneNumber: "+17348465522",
+				ToPhoneNumber:   "+14152222222",
+				Text:            "hello",
+			},
+		},
+	})
+	test.OK(t, err)
+
+	mm.Finish()
+	md.Finish()
+}
+
+func TestSendMessage_Email(t *testing.T) {
+	conc.Testing = true
+	me := &mockEmail_Excomms{
+		Expector: &mock.Expector{
+			T: t,
+		},
+	}
+	em := &models.EmailMessage{
+		ID:        "1",
+		Subject:   "Hi",
+		Body:      "Hello",
+		FromName:  "Joe Schmoe",
+		FromEmail: "joe@schmoe.com",
+		ToEmail:   "patient@example.com",
+	}
+	me.Expect(mock.NewExpectation(me.SendMessage, em))
+
+	md := &mockDAL_Excomms{
+		Expector: &mock.Expector{
+			T: t,
+		},
+	}
+	md.Expect(mock.NewExpectation(md.LookupSentMessageByUUID, "tag", "patient@example.com"))
+	md.Expect(mock.NewExpectation(md.CreateSentMessage, &models.SentMessage{
+		ID:   1,
+		Type: models.SentMessage_EMAIL,
+		UUID: "tag",
+		Message: &models.SentMessage_EmailMsg{
+			EmailMsg: em,
+		},
+		Destination: "patient@example.com",
+	}))
+
+	es := &excommsService{
+		twilio:      twilio.NewClient("", "", nil),
+		dal:         md,
+		emailClient: me,
+		idgen:       newMockIDGen(),
+	}
+
+	_, err := es.SendMessage(context.Background(), &excomms.SendMessageRequest{
+		UUID:    "tag",
+		Channel: excomms.ChannelType_EMAIL,
+		Message: &excomms.SendMessageRequest_Email{
+			Email: &excomms.EmailMessage{
+				Subject:          "Hi",
+				Body:             "Hello",
+				FromName:         "Joe Schmoe",
+				FromEmailAddress: "joe@schmoe.com",
+				ToEmailAddress:   "patient@example.com",
+			},
+		},
+	})
+	test.OK(t, err)
+
+	me.Finish()
+	md.Finish()
+}
+
+func TestSendMessage_EmailIdempotent(t *testing.T) {
+	conc.Testing = true
+	me := &mockEmail_Excomms{
+		Expector: &mock.Expector{
+			T: t,
+		},
+	}
+
+	md := &mockDAL_Excomms{
+		Expector: &mock.Expector{
+			T: t,
+		},
+		sm: &models.SentMessage{},
+	}
+	md.Expect(mock.NewExpectation(md.LookupSentMessageByUUID, "tag", "patient@example.com"))
+
+	es := &excommsService{
+		twilio:      twilio.NewClient("", "", nil),
+		dal:         md,
+		emailClient: me,
+		idgen:       newMockIDGen(),
+	}
+
+	_, err := es.SendMessage(context.Background(), &excomms.SendMessageRequest{
+		UUID:    "tag",
+		Channel: excomms.ChannelType_EMAIL,
+		Message: &excomms.SendMessageRequest_Email{
+			Email: &excomms.EmailMessage{
+				Subject:          "Hi",
+				Body:             "Hello",
+				FromName:         "Joe Schmoe",
+				FromEmailAddress: "joe@schmoe.com",
+				ToEmailAddress:   "patient@example.com",
+			},
+		},
+	})
+	test.OK(t, err)
+
+	me.Finish()
+	md.Finish()
 }
 
 func TestSendMessage_VoiceNotSupported(t *testing.T) {
+	conc.Testing = true
 	mm := &mockMessages_Excomms{
 		Expector: &mock.Expector{
 			T: t,
@@ -387,10 +580,14 @@ func TestSendMessage_VoiceNotSupported(t *testing.T) {
 	es.twilio.Messages = mm
 
 	_, err := es.SendMessage(context.Background(), &excomms.SendMessageRequest{
-		FromChannelID: "+17348465522",
-		ToChannelID:   "+14152222222",
-		Text:          "hello",
-		Channel:       excomms.ChannelType_Voice,
+		Channel: excomms.ChannelType_VOICE,
+		Message: &excomms.SendMessageRequest_SMS{
+			SMS: &excomms.SMSMessage{
+				FromPhoneNumber: "+17348465522",
+				ToPhoneNumber:   "+14152222222",
+				Text:            "hello",
+			},
+		},
 	})
 	test.Equals(t, true, err != nil)
 	test.Equals(t, codes.Unimplemented, grpc.Code(err))
@@ -1200,4 +1397,86 @@ func TestInitiatePhoneCall_InvalidCallee(t *testing.T) {
 
 	md.Finish()
 	mdal.Finish()
+}
+
+func TestProvisionEmailAddress(t *testing.T) {
+	md := &mockDAL_Excomms{
+		Expector: &mock.Expector{
+			T: t,
+		},
+	}
+
+	es := &excommsService{
+		twilio: twilio.NewClient("", "", nil),
+		dal:    md,
+	}
+
+	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, "test", models.EndpointTypeEmail))
+	md.Expect(mock.NewExpectation(md.ProvisionEndpoint, &models.ProvisionedEndpoint{
+		ProvisionedFor: "test",
+		Endpoint:       "test@subdomain.domain.com",
+		EndpointType:   models.EndpointTypeEmail,
+	}))
+
+	res, err := es.ProvisionEmailAddress(context.Background(), &excomms.ProvisionEmailAddressRequest{
+		ProvisionFor: "test",
+		EmailAddress: "test@subdomain.domain.com",
+	})
+	test.OK(t, err)
+	test.Equals(t, "test@subdomain.domain.com", res.EmailAddress)
+}
+
+func TestProvisionEmailAddress_Idempotent(t *testing.T) {
+	md := &mockDAL_Excomms{
+		Expector: &mock.Expector{
+			T: t,
+		},
+		ppn: &models.ProvisionedEndpoint{
+			ProvisionedFor: "test",
+			Endpoint:       "test@subdomain.domain.com",
+			EndpointType:   models.EndpointTypeEmail,
+		},
+	}
+
+	es := &excommsService{
+		twilio: twilio.NewClient("", "", nil),
+		dal:    md,
+	}
+
+	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, "test", models.EndpointTypeEmail))
+
+	res, err := es.ProvisionEmailAddress(context.Background(), &excomms.ProvisionEmailAddressRequest{
+		ProvisionFor: "test",
+		EmailAddress: "test@subdomain.domain.com",
+	})
+	test.OK(t, err)
+	test.Equals(t, "test@subdomain.domain.com", res.EmailAddress)
+}
+
+func TestProvisionEmailAddress_AlreadyProvisionedWithDifferentAddress(t *testing.T) {
+	md := &mockDAL_Excomms{
+		Expector: &mock.Expector{
+			T: t,
+		},
+		ppn: &models.ProvisionedEndpoint{
+			ProvisionedFor: "test",
+			Endpoint:       "test12345@subdomain.domain.com",
+			EndpointType:   models.EndpointTypeEmail,
+		},
+	}
+
+	es := &excommsService{
+		twilio: twilio.NewClient("", "", nil),
+		dal:    md,
+	}
+
+	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, "test", models.EndpointTypeEmail))
+
+	res, err := es.ProvisionEmailAddress(context.Background(), &excomms.ProvisionEmailAddressRequest{
+		ProvisionFor: "test",
+		EmailAddress: "test@subdomain.domain.com",
+	})
+	test.Equals(t, true, err != nil)
+	test.Equals(t, codes.AlreadyExists, grpc.Code(err))
+	test.Equals(t, true, res == nil)
 }

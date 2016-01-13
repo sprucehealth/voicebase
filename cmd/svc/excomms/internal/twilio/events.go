@@ -1,11 +1,16 @@
-package internal
+package twilio
 
 import (
 	"fmt"
 	"time"
 
+	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/sns"
+	"github.com/sprucehealth/backend/libs/clock"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
@@ -17,26 +22,72 @@ import (
 )
 
 var (
-	twilioEventsHandlers = map[excomms.TwilioEvent]twilioEventHandleFunc{
-		excomms.TwilioEvent_PROCESS_INCOMING_CALL:        processIncomingCall,
-		excomms.TwilioEvent_PROCESS_OUTGOING_CALL:        processOutgoingCall,
-		excomms.TwilioEvent_PROVIDER_ENTERED_DIGITS:      providerEnteredDigits,
-		excomms.TwilioEvent_PROVIDER_CALL_CONNECTED:      providerCallConnected,
-		excomms.TwilioEvent_TWIML_REQUESTED_VOICEMAIL:    voicemailTWIML,
-		excomms.TwilioEvent_INCOMING_SMS:                 processIncomingSMS,
-		excomms.TwilioEvent_PROCESS_INCOMING_CALL_STATUS: processIncomingCallStatus,
-		excomms.TwilioEvent_PROCESS_VOICEMAIL:            processVoicemail,
-		excomms.TwilioEvent_PROCESS_OUTGOING_CALL_STATUS: processOutgoingCallStatus,
+	twilioEventsHandlers = map[rawmsg.TwilioEvent]twilioEventHandleFunc{
+		rawmsg.TwilioEvent_PROCESS_INCOMING_CALL:        processIncomingCall,
+		rawmsg.TwilioEvent_PROCESS_OUTGOING_CALL:        processOutgoingCall,
+		rawmsg.TwilioEvent_PROVIDER_ENTERED_DIGITS:      providerEnteredDigits,
+		rawmsg.TwilioEvent_PROVIDER_CALL_CONNECTED:      providerCallConnected,
+		rawmsg.TwilioEvent_TWIML_REQUESTED_VOICEMAIL:    voicemailTWIML,
+		rawmsg.TwilioEvent_PROCESS_INCOMING_CALL_STATUS: processIncomingCallStatus,
+		rawmsg.TwilioEvent_PROCESS_VOICEMAIL:            processVoicemail,
+		rawmsg.TwilioEvent_PROCESS_OUTGOING_CALL_STATUS: processOutgoingCallStatus,
 	}
 	maxPhoneNumbers = 10
 )
 
-type twilioEventHandleFunc func(*excomms.TwilioParams, *excommsService) (string, error)
+type eventsHandler struct {
+	directory            directory.DirectoryClient
+	dal                  dal.DAL
+	sns                  snsiface.SNSAPI
+	clock                clock.Clock
+	apiURL               string
+	externalMessageTopic string
+}
 
-func processOutgoingCall(params *excomms.TwilioParams, es *excommsService) (string, error) {
+func NewEventHandler(directory directory.DirectoryClient, dal dal.DAL, sns snsiface.SNSAPI, clock clock.Clock, apiURL, externalMessageTopic string) EventHandler {
+	return &eventsHandler{
+		directory:            directory,
+		dal:                  dal,
+		clock:                clock,
+		sns:                  sns,
+		apiURL:               apiURL,
+		externalMessageTopic: externalMessageTopic,
+	}
+}
+
+func (e *eventsHandler) Process(event rawmsg.TwilioEvent, params *rawmsg.TwilioParams) (string, error) {
+	handler := twilioEventsHandlers[event]
+	if handler == nil {
+		return "", fmt.Errorf("unknown event: %s", event.String())
+	}
+	twiml, err := handler(params, e)
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+
+	conc.Go(func() {
+		if err := e.dal.LogCallEvent(&models.CallEvent{
+			Data:        params,
+			Type:        event.String(),
+			Source:      params.From,
+			Destination: params.To,
+		}); err != nil {
+			golog.Errorf("Unable to log event %s: %s", event.String(), err.Error())
+		}
+	})
+	return twiml, nil
+}
+
+type EventHandler interface {
+	Process(event rawmsg.TwilioEvent, params *rawmsg.TwilioParams) (string, error)
+}
+
+type twilioEventHandleFunc func(*rawmsg.TwilioParams, *eventsHandler) (string, error)
+
+func processOutgoingCall(params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 
 	// look for an active reservation on the proxy phone number
-	ppnr, err := es.dal.ActiveProxyPhoneNumberReservation(&dal.ProxyPhoneNumberReservationLookup{
+	ppnr, err := eh.dal.ActiveProxyPhoneNumberReservation(&dal.ProxyPhoneNumberReservationLookup{
 		ProxyPhoneNumber: ptr.String(params.To),
 	})
 	if errors.Cause(err) == dal.ErrProxyPhoneNumberReservationNotFound {
@@ -46,7 +97,7 @@ func processOutgoingCall(params *excomms.TwilioParams, es *excommsService) (stri
 	}
 
 	// look up the practice phone number using the organizationID
-	res, err := es.directory.LookupEntities(
+	res, err := eh.directory.LookupEntities(
 		context.Background(),
 		&directory.LookupEntitiesRequest{
 			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -86,7 +137,7 @@ func processOutgoingCall(params *excomms.TwilioParams, es *excommsService) (stri
 	}
 
 	// lookup phone number of external entity to call
-	res, err = es.directory.LookupEntities(
+	res, err = eh.directory.LookupEntities(
 		context.Background(),
 		&directory.LookupEntitiesRequest{
 			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -130,13 +181,13 @@ func processOutgoingCall(params *excomms.TwilioParams, es *excommsService) (stri
 		return "", errors.Trace(err)
 	}
 
-	if err := es.dal.CreateCallRequest(&models.CallRequest{
+	if err := eh.dal.CreateCallRequest(&models.CallRequest{
 		Source:         source,
 		Destination:    destination,
 		Proxy:          ppnr.PhoneNumber,
 		OrganizationID: ppnr.OrganizationID,
 		CallSID:        params.CallSID,
-		Requested:      es.clock.Now(),
+		Requested:      eh.clock.Now(),
 	}); err != nil {
 		return "", errors.Trace(err)
 	}
@@ -164,7 +215,7 @@ func processOutgoingCall(params *excomms.TwilioParams, es *excommsService) (stri
 			Nouns: []interface{}{
 				&twiml.Number{
 					StatusCallbackEvent: twiml.SCRinging | twiml.SCAnswered | twiml.SCCompleted,
-					StatusCallback:      fmt.Sprintf("%s/twilio/process_outgoing_call_status", es.apiURL),
+					StatusCallback:      fmt.Sprintf("%s/twilio/call/process_outgoing_call_status", eh.apiURL),
 					Text:                destinationPhoneNumber,
 				},
 			},
@@ -173,11 +224,11 @@ func processOutgoingCall(params *excomms.TwilioParams, es *excommsService) (stri
 	return tw.GenerateTwiML()
 }
 
-func processIncomingCall(params *excomms.TwilioParams, es *excommsService) (string, error) {
+func processIncomingCall(params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 	golog.Infof("Incoming call %s to %s.", params.From, params.To)
 
 	// lookup the entity for the destination of the incoming call
-	res, err := es.directory.LookupEntitiesByContact(
+	res, err := eh.directory.LookupEntitiesByContact(
 		context.Background(),
 		&directory.LookupEntitiesByContactRequest{
 			ContactValue: params.To,
@@ -251,7 +302,7 @@ func processIncomingCall(params *excomms.TwilioParams, es *excommsService) (stri
 			break
 		}
 		numbers = append(numbers, &twiml.Number{
-			URL:  "/twilio/provider_call_connected",
+			URL:  "/twilio/call/provider_call_connected",
 			Text: p,
 		})
 	}
@@ -260,7 +311,7 @@ func processIncomingCall(params *excomms.TwilioParams, es *excommsService) (stri
 		&twiml.Dial{
 			CallerID:         params.To,
 			TimeoutInSeconds: 30,
-			Action:           "/twilio/process_incoming_call_status",
+			Action:           "/twilio/call/process_incoming_call_status",
 			Nouns:            numbers,
 		},
 	)
@@ -268,12 +319,12 @@ func processIncomingCall(params *excomms.TwilioParams, es *excommsService) (stri
 	return tw.GenerateTwiML()
 }
 
-func providerCallConnected(params *excomms.TwilioParams, es *excommsService) (string, error) {
+func providerCallConnected(params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 	golog.Infof("Call connected for provider at %s.", params.To)
 
 	tw := twiml.NewResponse(
 		&twiml.Gather{
-			Action:           "/twilio/provider_entered_digits",
+			Action:           "/twilio/call/provider_entered_digits",
 			Method:           "POST",
 			TimeoutInSeconds: 5,
 			NumDigits:        1,
@@ -292,7 +343,7 @@ func providerCallConnected(params *excomms.TwilioParams, es *excommsService) (st
 	return tw.GenerateTwiML()
 }
 
-func providerEnteredDigits(params *excomms.TwilioParams, es *excommsService) (string, error) {
+func providerEnteredDigits(params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 	golog.Infof("Provider entered digits %s at %s.", params.Digits, params.To)
 
 	if params.Digits == "1" {
@@ -307,16 +358,16 @@ func providerEnteredDigits(params *excomms.TwilioParams, es *excommsService) (st
 	return tw.GenerateTwiML()
 }
 
-func voicemailTWIML(params *excomms.TwilioParams, es *excommsService) (string, error) {
+func voicemailTWIML(params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 
-	// TODO: Configurable voice mail or default message based on user configuration.
+	// TODO: Configurable voice mail or default mehsage based on user configuration.
 	tw := &twiml.Response{
 		Verbs: []interface{}{
 			&twiml.Play{
 				Text: "http://dev-twilio.s3.amazonaws.com/kunal_clinic_voicemail.mp3",
 			},
 			&twiml.Record{
-				Action:           "/twilio/process_voicemail",
+				Action:           "/twilio/call/process_voicemail",
 				PlayBeep:         true,
 				TimeoutInSeconds: 60,
 			},
@@ -326,10 +377,10 @@ func voicemailTWIML(params *excomms.TwilioParams, es *excommsService) (string, e
 	return tw.GenerateTwiML()
 }
 
-func processIncomingCallStatus(params *excomms.TwilioParams, es *excommsService) (string, error) {
+func processIncomingCallStatus(params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 	switch params.DialCallStatus {
-	case excomms.TwilioParams_ANSWERED, excomms.TwilioParams_COMPLETED:
-		publishToSNSTopic(es.sns, es.externalMessageTopic, &excomms.PublishedExternalMessage{
+	case rawmsg.TwilioParams_ANSWERED, rawmsg.TwilioParams_COMPLETED:
+		sns.Publish(eh.sns, eh.externalMessageTopic, &excomms.PublishedExternalMessage{
 			FromChannelID: params.From,
 			ToChannelID:   params.To,
 			Timestamp:     uint64(time.Now().Unix()),
@@ -342,15 +393,15 @@ func processIncomingCallStatus(params *excomms.TwilioParams, es *excommsService)
 				},
 			},
 		})
-	case excomms.TwilioParams_CALL_STATUS_UNDEFINED:
+	case rawmsg.TwilioParams_CALL_STATUS_UNDEFINED:
 	default:
-		return voicemailTWIML(params, es)
+		return voicemailTWIML(params, eh)
 	}
 
 	return "", nil
 }
 
-func processOutgoingCallStatus(params *excomms.TwilioParams, es *excommsService) (string, error) {
+func processOutgoingCallStatus(params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 
 	// NOTE: We use the callSID of the parent call to process the status of the outgoing
 	// call placed as the outgoing call is dialed out via a separate call leg.
@@ -362,23 +413,23 @@ func processOutgoingCallStatus(params *excomms.TwilioParams, es *excommsService)
 		return "", nil
 	}
 
-	cr, err := es.dal.LookupCallRequest(params.ParentCallSID)
+	cr, err := eh.dal.LookupCallRequest(params.ParentCallSID)
 	if errors.Cause(err) == dal.ErrCallRequestNotFound {
-		return "", errors.Trace(fmt.Errorf("No call request found for call sid %s", params.ParentCallSID))
+		return "", errors.Trace(fmt.Errorf("No call requeht found for call sid %s", params.ParentCallSID))
 	} else if err != nil {
 		return "", errors.Trace(err)
 	}
 
 	var cet *excomms.PublishedExternalMessage_CallEventItem
 	switch params.CallStatus {
-	case excomms.TwilioParams_RINGING:
+	case rawmsg.TwilioParams_RINGING:
 		cet = &excomms.PublishedExternalMessage_CallEventItem{
 			CallEventItem: &excomms.CallEventItem{
 				Type:              excomms.CallEventItem_OUTGOING_PLACED,
 				DurationInSeconds: params.CallDuration,
 			},
 		}
-	case excomms.TwilioParams_ANSWERED, excomms.TwilioParams_COMPLETED:
+	case rawmsg.TwilioParams_ANSWERED, rawmsg.TwilioParams_COMPLETED:
 		cet = &excomms.PublishedExternalMessage_CallEventItem{
 			CallEventItem: &excomms.CallEventItem{
 				Type:              excomms.CallEventItem_OUTGOING_ANSWERED,
@@ -391,7 +442,7 @@ func processOutgoingCallStatus(params *excomms.TwilioParams, es *excommsService)
 		return "", nil
 	}
 
-	publishToSNSTopic(es.sns, es.externalMessageTopic, &excomms.PublishedExternalMessage{
+	sns.Publish(eh.sns, eh.externalMessageTopic, &excomms.PublishedExternalMessage{
 		FromChannelID: cr.Source.String(),
 		ToChannelID:   cr.Destination.String(),
 		Direction:     excomms.PublishedExternalMessage_OUTBOUND,
@@ -403,9 +454,9 @@ func processOutgoingCallStatus(params *excomms.TwilioParams, es *excommsService)
 	return "", nil
 }
 
-func processVoicemail(params *excomms.TwilioParams, es *excommsService) (string, error) {
+func processVoicemail(params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 
-	publishToSNSTopic(es.sns, es.externalMessageTopic, &excomms.PublishedExternalMessage{
+	sns.Publish(eh.sns, eh.externalMessageTopic, &excomms.PublishedExternalMessage{
 		FromChannelID: params.From,
 		ToChannelID:   params.To,
 		Timestamp:     uint64(time.Now().Unix()),
@@ -423,35 +474,4 @@ func processVoicemail(params *excomms.TwilioParams, es *excommsService) (string,
 	})
 
 	return "", nil
-}
-
-func processIncomingSMS(params *excomms.TwilioParams, es *excommsService) (string, error) {
-
-	smsItem := &excomms.PublishedExternalMessage_SMSItem{
-		SMSItem: &excomms.SMSItem{
-			Text:        params.Body,
-			Attachments: make([]*excomms.MediaAttachment, params.NumMedia),
-		},
-	}
-
-	for i, m := range params.MediaItems {
-		smsItem.SMSItem.Attachments[i] = &excomms.MediaAttachment{
-			URL:         m.MediaURL,
-			ContentType: m.ContentType,
-		}
-	}
-
-	publishToSNSTopic(es.sns, es.externalMessageTopic, &excomms.PublishedExternalMessage{
-		FromChannelID: params.From,
-		ToChannelID:   params.To,
-		Timestamp:     uint64(time.Now().Unix()),
-		Direction:     excomms.PublishedExternalMessage_INBOUND,
-		Type:          excomms.PublishedExternalMessage_SMS,
-		Item:          smsItem,
-	})
-
-	// empty response indicates twilio not to send a response to the incoming SMS.
-	tw := twiml.Response{}
-
-	return tw.GenerateTwiML()
 }

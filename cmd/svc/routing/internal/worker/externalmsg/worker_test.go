@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 type mockDirectoryService struct {
@@ -23,6 +24,8 @@ func (s *mockDirectoryService) LookupEntities(ctx context.Context, in *directory
 	var entities []*directory.Entity
 	if entity != nil {
 		entities = append(entities, entity)
+	} else {
+		return nil, grpc.Errorf(codes.NotFound, "")
 	}
 
 	return &directory.LookupEntitiesResponse{
@@ -39,6 +42,8 @@ func (s *mockDirectoryService) LookupEntitiesByContact(ctx context.Context, in *
 	var entities []*directory.Entity
 	if entity != nil {
 		entities = append(entities, entity)
+	} else {
+		return nil, grpc.Errorf(codes.NotFound, "")
 	}
 	return &directory.LookupEntitiesByContactResponse{
 		Entities: entities,
@@ -68,7 +73,7 @@ func (t *mockThreadsService) ThreadsForMember(ctx context.Context, in *threading
 	}, nil
 }
 
-func TestIncomingSMS_NewUser(t *testing.T) {
+func TestIncomingSMS_NewUser_SMS(t *testing.T) {
 
 	// Setup
 	organizationEntity := &directory.Entity{
@@ -159,7 +164,93 @@ func TestIncomingSMS_NewUser(t *testing.T) {
 	}
 }
 
-func TestIncomingSMS_ExistingUser(t *testing.T) {
+func TestIncomingSMS_NewUser_Email(t *testing.T) {
+
+	// Setup
+	organizationEntity := &directory.Entity{
+		ID:   "10",
+		Type: directory.EntityType_ORGANIZATION,
+		Contacts: []*directory.Contact{
+			{
+				Provisioned: true,
+				Value:       "doctor@mypractice.baymax.com",
+			},
+		},
+	}
+	providerEntity := &directory.Entity{
+		ID:   "1",
+		Type: directory.EntityType_INTERNAL,
+		Memberships: []*directory.Entity{
+			organizationEntity,
+		},
+	}
+	externalEntityToBeCreated := &directory.Entity{
+		ID:   "2",
+		Type: directory.EntityType_EXTERNAL,
+		Memberships: []*directory.Entity{
+			organizationEntity,
+		},
+		Contacts: []*directory.Contact{
+			{
+				Value:       "patient@example.com",
+				ContactType: directory.ContactType_EMAIL,
+			},
+		},
+	}
+
+	fromChannelID := "patient@example.com"
+	toChannelID := "doctor@mypractice.baymax.com"
+
+	md := &mockDirectoryService{
+		entityIDToEntityMapping: map[string]*directory.Entity{
+			organizationEntity.ID: organizationEntity,
+			providerEntity.ID:     providerEntity,
+		},
+		contactToEntityMapping: map[string]*directory.Entity{
+			toChannelID: organizationEntity,
+		},
+		entityToCreate: externalEntityToBeCreated,
+	}
+	mt := &mockThreadsService{}
+
+	e := &externalMessageWorker{
+		directory: md,
+		threading: mt,
+	}
+
+	pem := &excomms.PublishedExternalMessage{
+		FromChannelID: fromChannelID,
+		ToChannelID:   toChannelID,
+		Type:          excomms.PublishedExternalMessage_EMAIL,
+		Item: &excomms.PublishedExternalMessage_EmailItem{
+			EmailItem: &excomms.EmailItem{
+				Subject: "Hello",
+				Body:    "body",
+			},
+		},
+	}
+
+	if err := e.process(pem); err != nil {
+		t.Fatal(err)
+	}
+
+	// at this point there should be a new thread created
+	threadRequested := mt.threadCreationRequested
+	if threadRequested == nil {
+		t.Fatalf("Expected new thread to be created")
+	}
+	test.Equals(t, threadRequested.FromEntityID, externalEntityToBeCreated.ID)
+	test.Equals(t, threadRequested.OrganizationID, organizationEntity.ID)
+	test.Equals(t, threadRequested.Title, "<ref id=\"2\" type=\"entity\">patient@example.com</ref> emailed <ref id=\"10\" type=\"entity\">doctor@mypractice.baymax.com</ref>, Subject: Hello")
+	test.Equals(t, threadRequested.Text, pem.GetEmailItem().Body)
+
+	// ensure no call to post message to thread
+	if mt.postMessageRequested != nil {
+		t.Fatal("Expected no posting of message to thread given thread was just created")
+	}
+}
+
+func TestIncomingSMS_ExistingUser_SMS(t *testing.T) {
 
 	// Setup
 	organizationEntity := &directory.Entity{
@@ -255,6 +346,100 @@ func TestIncomingSMS_ExistingUser(t *testing.T) {
 	test.Equals(t, mt.postMessageRequested.Title, "<ref id=\"2\" type=\"entity\">+12068773590</ref> texted <ref id=\"10\" type=\"entity\">+17348465522</ref>")
 	test.Equals(t, mt.postMessageRequested.Text, pem.GetSMSItem().Text)
 	test.Equals(t, len(mt.postMessageRequested.Attachments), len(pem.GetSMSItem().GetAttachments()))
+}
+
+func TestIncomingSMS_ExistingUser_Email(t *testing.T) {
+
+	// Setup
+	organizationEntity := &directory.Entity{
+		ID:   "10",
+		Type: directory.EntityType_ORGANIZATION,
+		Contacts: []*directory.Contact{
+			{
+				Provisioned: true,
+				Value:       "doctor@mypractice.baymax.com",
+				ContactType: directory.ContactType_EMAIL,
+			},
+		},
+	}
+	providerEntity := &directory.Entity{
+		ID:   "1",
+		Type: directory.EntityType_INTERNAL,
+		Memberships: []*directory.Entity{
+			organizationEntity,
+		},
+	}
+	externalEntity := &directory.Entity{
+		ID:   "2",
+		Type: directory.EntityType_EXTERNAL,
+		Memberships: []*directory.Entity{
+			organizationEntity,
+		},
+		Contacts: []*directory.Contact{
+			{
+				Value:       "patient@example.com",
+				ContactType: directory.ContactType_EMAIL,
+			},
+		},
+	}
+
+	fromChannelID := "patient@example.com"
+	toChannelID := "doctor@mypractice.baymax.com"
+
+	md := &mockDirectoryService{
+		entityIDToEntityMapping: map[string]*directory.Entity{
+			organizationEntity.ID: organizationEntity,
+			providerEntity.ID:     providerEntity,
+			externalEntity.ID:     externalEntity,
+		},
+		contactToEntityMapping: map[string]*directory.Entity{
+			toChannelID:   organizationEntity,
+			fromChannelID: externalEntity,
+		},
+	}
+	mt := &mockThreadsService{
+		threadsForMembers: []*threading.Thread{
+			{
+				ID:              "1000",
+				OrganizationID:  "10",
+				PrimaryEntityID: externalEntity.ID,
+			},
+		},
+	}
+
+	e := &externalMessageWorker{
+		directory: md,
+		threading: mt,
+	}
+
+	pem := &excomms.PublishedExternalMessage{
+		FromChannelID: fromChannelID,
+		ToChannelID:   toChannelID,
+		Type:          excomms.PublishedExternalMessage_EMAIL,
+		Item: &excomms.PublishedExternalMessage_EmailItem{
+			EmailItem: &excomms.EmailItem{
+				Subject: "Hello",
+				Body:    "Body",
+			},
+		},
+	}
+
+	if err := e.process(pem); err != nil {
+		t.Fatal(err)
+	}
+
+	// at this point there should be a new thread created
+	threadRequested := mt.threadCreationRequested
+	if threadRequested != nil {
+		t.Fatalf("Expected no new thread to be created")
+	}
+	// ensure no call to post message to thread
+	if mt.postMessageRequested == nil {
+		t.Fatal("Expected message to be posted to existing thread")
+	}
+	test.Equals(t, mt.postMessageRequested.FromEntityID, externalEntity.ID)
+	test.Equals(t, mt.postMessageRequested.Title, "<ref id=\"2\" type=\"entity\">patient@example.com</ref> emailed <ref id=\"10\" type=\"entity\">doctor@mypractice.baymax.com</ref>, Subject: Hello")
+	test.Equals(t, mt.postMessageRequested.Text, pem.GetEmailItem().Body)
 }
 
 func TestIncomingVoicemail_NewUser(t *testing.T) {

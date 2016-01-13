@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package models;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = true;
+
+
+message SentMessage {
+	enum Type {
+		SMS = 0;
+		EMAIL = 1;
+	}
+	uint64 id = 1 [(gogoproto.customname) = "ID"];
+	string uuid = 2 [(gogoproto.customname) = "UUID"];
+	string destination = 3;
+	Type type = 4;
+	oneof message {
+		EmailMessage email_msg = 5;
+		SMSMessage sms_msg = 6 [(gogoproto.customname) = "SMSMsg"];
+	}
+}
+
+message EmailMessage {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string subject = 2;
+	string body = 3;
+	string from_name = 4;
+	string from_email = 5;
+	string to_name = 6;
+	string to_email = 7;
+}
+
+message SMSMessage {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string from_phone_number = 2;
+	string to_phone_number = 3;
+	string text = 4;
+	uint64 date_created = 5;
+	uint64 date_sent = 6;
+}

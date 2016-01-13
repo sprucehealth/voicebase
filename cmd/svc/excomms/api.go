@@ -1,45 +1,75 @@
 package main
 
 import (
-	"flag"
 	"net"
 	"net/http"
 	"time"
 
-	"github.com/sprucehealth/backend/boot"
-	"github.com/sprucehealth/backend/cmd/svc/excommsapi/internal/handlers"
+	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/handlers"
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/twilio"
+	cfg "github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
-	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/go-proxy-protocol/proxyproto"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
-var config struct {
-	httpAddr          string
-	proxyProtocol     bool
-	excommsServiceURL string
-}
+func runAPI() {
 
-func init() {
-	flag.StringVar(&config.httpAddr, "http", "0.0.0.0:8900", "listen for http on `host:port`")
-	flag.BoolVar(&config.proxyProtocol, "proxyproto", false, "enabled proxy protocol")
-	flag.StringVar(&config.excommsServiceURL, "excomms.url", "localhost:5200", "url for events processor service. format `host:port`")
-}
+	if config.debug {
+		golog.Default().SetLevel(golog.DEBUG)
+	}
 
-func main() {
-	boot.ParseFlags("EXCOMMSAPI_")
-
-	conn, err := grpc.Dial(config.excommsServiceURL, grpc.WithInsecure())
+	conn, err := grpc.Dial(config.directoryServiceURL, grpc.WithInsecure())
 	if err != nil {
 		golog.Fatalf("Unable to communicate with events processor service: %s", err.Error())
 	}
 	defer conn.Close()
 
+	baseConfig := &cfg.BaseConfig{
+		AppName:      "excomms",
+		AWSRegion:    config.awsRegion,
+		AWSSecretKey: config.awsSecretKey,
+		AWSAccessKey: config.awsAccessKey,
+		Environment:  config.env,
+	}
+
+	awsSession := baseConfig.AWSSession()
+	snsCLI := sns.New(awsSession)
+
+	dbConfig := &cfg.DB{
+		User:     config.dbUserName,
+		Password: config.dbPassword,
+		Host:     config.dbHost,
+		Port:     config.dbPort,
+		Name:     config.dbName,
+	}
+
+	db, err := dbConfig.ConnectMySQL(nil)
+	if err != nil {
+		golog.Fatalf(err.Error())
+	}
+
+	dl := dal.NewDAL(db)
+
+	eh := twilio.NewEventHandler(
+		directory.NewDirectoryClient(conn),
+		dl,
+		snsCLI,
+		clock.New(),
+		config.excommsAPIURL,
+		config.externalMessageTopic)
+
 	router := mux.NewRouter().StrictSlash(true)
-	router.Handle("/twilio/{event}", handlers.NewTwilioRequestHandler(excomms.NewExCommsClient(conn)))
+	router.Handle("/twilio/sms", handlers.NewTwilioSMSHandler(dl, config.incomingRawMessageTopic, snsCLI))
+	router.Handle("/twilio/call/{event}", handlers.NewTwilioRequestHandler(eh))
+	router.Handle("/sendgrid/email", handlers.NewSendGridHandler(config.incomingRawMessageTopic, snsCLI, dl))
 
 	webRequestLogger := func(ctx context.Context, ev *httputil.RequestEvent) {
 

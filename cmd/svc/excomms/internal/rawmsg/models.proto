@@ -1,0 +1,128 @@
+syntax = "proto3";
+
+package rawmsg;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = true;
+
+
+message TwilioParams {
+	enum CallStatus {
+		CALL_STATUS_UNDEFINED = 0;
+		QUEUED = 1;
+		RINGING = 2;
+		IN_PROGRESS = 3;
+		COMPLETED = 4;
+		BUSY = 5;
+		FAILED = 6;
+		NO_ANSWER = 7;
+		CANCELED = 8;
+		ANSWERED = 9;
+		INITIATED = 10;
+	}
+
+	enum Direction {
+		DIRECTION_UNDEFINED = 0;
+		INBOUND = 1;
+		OUTBOUND_DIAL = 2;
+		OUTBOUND_API = 3;
+	}
+
+	message TwilioMediaItem {
+		string content_type = 1;
+		string media_url = 2 [(gogoproto.customname) = "MediaURL"];
+	}
+
+	string call_sid = 1 [(gogoproto.customname) = "CallSID"];
+	string account_sid = 2 [(gogoproto.customname) = "AccountSID"];
+	string from = 3;
+	string to_number = 4 [(gogoproto.customname) = "To"];	
+	CallStatus call_status = 5;
+	string api_version = 6 [(gogoproto.customname) = "APIVersion"];
+	Direction direction = 7;
+	uint32 call_duration = 8;
+	string recording_url = 9 [(gogoproto.customname) = "RecordingURL"];
+	string recording_sid = 10 [(gogoproto.customname) = "RecordingSID"];
+	uint32 recording_duration = 11;
+	string digits = 12;
+	string message_sid = 13 [(gogoproto.customname) = "MessageSID"];
+	string sms_sid  = 14 [(gogoproto.customname) = "SMSSID"];
+	string body = 15; 
+	uint32 num_media = 16;
+	repeated TwilioMediaItem media_items = 17;  
+	string messaging_service_id = 18 [(gogoproto.customname) = "MessagingServiceID"];
+
+	// these three parameters are only present in a twilio request
+	// attempting to get a twiml document to execute on the queued caller's 
+	// end before the two parties are connected.
+	string queue_sid = 19 [(gogoproto.customname) = "QueueSID"];
+	uint32 queue_time = 20;
+	string dequeuing_call_sid = 21 [(gogoproto.customname) = "DequeingCallSID"];
+
+	// this parameter is only present for status callbacks from a dial twiml verb
+	string parent_call_sid = 22 [(gogoproto.customname) = "ParentCallSID"];
+
+	CallStatus dial_call_status = 23 [(gogoproto.customname) = "DialCallStatus"];
+	uint32 dial_call_duration = 24 [(gogoproto.customname) = "DialCallDuration"];
+
+
+
+	// infrequently used parameters
+	string forwarded_from = 100;
+	string caller_name = 101;
+	string from_city = 102;
+	string from_state = 103;
+	string from_zip = 104;
+	string from_country = 105;
+	string to_city = 106;
+	string to_state = 107;
+	string to_zip = 108;
+	string to_country = 109;
+}
+
+enum TwilioEvent {
+	PROCESS_INCOMING_CALL = 0;
+	PROVIDER_CALL_CONNECTED = 1;
+	PROVIDER_ENTERED_DIGITS = 2;
+	TWIML_REQUESTED_VOICEMAIL = 3;
+	PROCESS_INCOMING_CALL_STATUS = 4;
+	PROCESS_OUTGOING_CALL = 6;
+	PROCESS_VOICEMAIL = 7;
+	PROCESS_OUTGOING_CALL_STATUS = 8;
+}
+
+message SendGridIncomingEmail {
+	string headers = 1;
+	string text = 2;
+	string html = 3 [(gogoproto.customname) = "HTML"];
+	string sender = 4;
+	string recipient = 5;
+	string cc = 6 [(gogoproto.customname) = "CC"];
+	string subject = 7;
+	string dkim = 8 [(gogoproto.customname) = "DKIM"];
+	string spf = 9 [(gogoproto.customname) = "SPF"];
+	string smtp_envelope = 10 [(gogoproto.customname) = "SMTPEnvelope"];
+	string charsets = 11;
+	string spam_score = 12;
+	string spam_report = 13;
+	uint32 num_attachments = 14;
+	repeated string attachments = 16; 
+}
+
+// IncomingRawMessage represents a message parsed by the excommsapi layer
+// and ready to be consumed by the excomms layer.
+message Incoming {
+	enum Type {
+		TWILIO_SMS = 0;
+		SENDGRID_EMAIL = 1;
+	}
+	Type type = 1;
+	oneof message {
+		TwilioParams twilio = 2;
+		SendGridIncomingEmail sendgrid = 3 [(gogoproto.customname) = "SendGrid"];
+	}
+	uint64 timestamp = 4;
+}

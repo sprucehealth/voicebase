@@ -1,15 +1,54 @@
 package models
 
 import (
+	"database/sql/driver"
+	"fmt"
 	"time"
 
 	"github.com/sprucehealth/backend/libs/phone"
 )
 
-// ProvisionedPhoneNumber represents a provisioned phone number
+// EndpointType represents a unique identifier to communicate
+// with a user over a channel.
+type EndpointType string
+
+const (
+	EndpointTypePhone = EndpointType("phone")
+	EndpointTypeEmail = EndpointType("email")
+)
+
+func GetEndpointType(str string) (EndpointType, error) {
+	switch str {
+	case "phone":
+		return EndpointTypePhone, nil
+	case "email":
+		return EndpointTypeEmail, nil
+	}
+	return EndpointType(""), fmt.Errorf("Unknown endpoint type: %s", str)
+}
+
+func (e *EndpointType) Scan(src interface{}) error {
+	var err error
+	var et EndpointType
+	switch v := src.(type) {
+	case string:
+		et, err = GetEndpointType(v)
+	case []byte:
+		et, err = GetEndpointType(string(v))
+	}
+	*e = et
+	return err
+}
+
+func (e EndpointType) Value() (driver.Value, error) {
+	return string(e), nil
+}
+
+// ProvisionedEndpoint represents a provisioned endpoint for a specific purpose
 // for a specific purpose.
-type ProvisionedPhoneNumber struct {
-	PhoneNumber    phone.Number
+type ProvisionedEndpoint struct {
+	Endpoint       string
+	EndpointType   EndpointType
 	ProvisionedFor string
 	Provisioned    time.Time
 }
@@ -25,9 +64,9 @@ type CallRequest struct {
 	CallSID        string
 }
 
-// Event represents an entry pertaining to an external
-// communication along with its corresponding data.
-type Event struct {
+// CallEvent represents an entry pertaining to a call event
+// along with its corresponding data.
+type CallEvent struct {
 	Source      string
 	Destination string
 	Data        interface{}

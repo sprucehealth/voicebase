@@ -5,14 +5,14 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/libs/errors"
-	"github.com/sprucehealth/backend/svc/excomms"
 )
 
 // ParamsFromRequest parses the params from the request if present. An empty params struct is returned
 // if no parameters are present. It is up to the caller to handle missing parameters.
-func ParamsFromRequest(r *http.Request) (*excomms.TwilioParams, error) {
-	t := &excomms.TwilioParams{
+func ParamsFromRequest(r *http.Request) (*rawmsg.TwilioParams, error) {
+	t := &rawmsg.TwilioParams{
 		CallSID:            r.FormValue("CallSid"),
 		AccountSID:         r.FormValue("AccountSid"),
 		From:               r.FormValue("From"),
@@ -45,11 +45,11 @@ func ParamsFromRequest(r *http.Request) (*excomms.TwilioParams, error) {
 
 	switch r.FormValue("Direction") {
 	case "inbound":
-		t.Direction = excomms.TwilioParams_INBOUND
+		t.Direction = rawmsg.TwilioParams_INBOUND
 	case "outbound-dial":
-		t.Direction = excomms.TwilioParams_OUTBOUND_DIAL
+		t.Direction = rawmsg.TwilioParams_OUTBOUND_DIAL
 	case "outbound-api":
-		t.Direction = excomms.TwilioParams_OUTBOUND_API
+		t.Direction = rawmsg.TwilioParams_OUTBOUND_API
 	}
 
 	if rd := r.FormValue("RecordingDuration"); rd != "" {
@@ -93,9 +93,9 @@ func ParamsFromRequest(r *http.Request) (*excomms.TwilioParams, error) {
 	}
 
 	if t.NumMedia > 0 {
-		t.MediaItems = make([]*excomms.TwilioParams_TwilioMediaItem, t.NumMedia)
+		t.MediaItems = make([]*rawmsg.TwilioParams_TwilioMediaItem, t.NumMedia)
 		for i := 0; i < int(t.NumMedia); i++ {
-			t.MediaItems[i] = &excomms.TwilioParams_TwilioMediaItem{
+			t.MediaItems[i] = &rawmsg.TwilioParams_TwilioMediaItem{
 				ContentType: r.FormValue(fmt.Sprintf("MediaContentType%d", i)),
 				MediaURL:    r.FormValue(fmt.Sprintf("MediaUrl%d", i)),
 			}
@@ -105,28 +105,28 @@ func ParamsFromRequest(r *http.Request) (*excomms.TwilioParams, error) {
 	return t, nil
 }
 
-func parseCallStatus(status string) excomms.TwilioParams_CallStatus {
+func parseCallStatus(status string) rawmsg.TwilioParams_CallStatus {
 	switch status {
 	case "queued":
-		return excomms.TwilioParams_QUEUED
+		return rawmsg.TwilioParams_QUEUED
 	case "ringing":
-		return excomms.TwilioParams_RINGING
+		return rawmsg.TwilioParams_RINGING
 	case "in-progress":
-		return excomms.TwilioParams_IN_PROGRESS
+		return rawmsg.TwilioParams_IN_PROGRESS
 	case "completed":
-		return excomms.TwilioParams_COMPLETED
+		return rawmsg.TwilioParams_COMPLETED
 	case "busy":
-		return excomms.TwilioParams_BUSY
+		return rawmsg.TwilioParams_BUSY
 	case "failed":
-		return excomms.TwilioParams_FAILED
+		return rawmsg.TwilioParams_FAILED
 	case "no-answer":
-		return excomms.TwilioParams_NO_ANSWER
+		return rawmsg.TwilioParams_NO_ANSWER
 	case "canceled":
-		return excomms.TwilioParams_CANCELED
+		return rawmsg.TwilioParams_CANCELED
 	case "answered":
-		return excomms.TwilioParams_ANSWERED
+		return rawmsg.TwilioParams_ANSWERED
 	case "initiated":
-		return excomms.TwilioParams_INITIATED
+		return rawmsg.TwilioParams_INITIATED
 	}
-	return excomms.TwilioParams_CALL_STATUS_UNDEFINED
+	return rawmsg.TwilioParams_CALL_STATUS_UNDEFINED
 }

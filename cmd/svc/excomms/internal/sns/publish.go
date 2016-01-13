@@ -1,4 +1,4 @@
-package internal
+package sns
 
 import (
 	"encoding/base64"
@@ -16,7 +16,7 @@ type marshaller interface {
 	Marshal() ([]byte, error)
 }
 
-func publishToSNSTopic(snsCLI snsiface.SNSAPI, topic string, m marshaller) {
+func Publish(snsCLI snsiface.SNSAPI, topic string, m marshaller) {
 	conc.Go(func() {
 
 		data, err := m.Marshal()

@@ -8,14 +8,16 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/transactional/tsql"
 )
 
-type ProvisionedNumberLookup struct {
+type ProvisionedEndpointLookup struct {
 	PhoneNumber    *string
 	ProvisionedFor *string
 }
@@ -46,17 +48,25 @@ type ProxyPhoneNumberReservationUpdate struct {
 }
 
 type DAL interface {
+	// Transact encapsulates the provided function in a transaction and handles rollback and commit actions
+	Transact(func(DAL) error) error
 
-	// LookupProvisionedPhoneNumber returns a provisioned phone number based on the lookup query.
-	LookupProvisionedPhoneNumber(lookup *ProvisionedNumberLookup) (*models.ProvisionedPhoneNumber, error)
+	// LookupProvisionedEndpoint returns a provisioned endpoint.
+	LookupProvisionedEndpoint(endpoint string, endpointType models.EndpointType) (*models.ProvisionedEndpoint, error)
 
-	// ProvisionPhoneNumber provisions the provided phone number.
-	ProvisionPhoneNumber(ppn *models.ProvisionedPhoneNumber) error
+	// ProvisionEndpoint provisions the specified endpoint.
+	ProvisionEndpoint(ppn *models.ProvisionedEndpoint) error
 
-	// LogEvent persists the provided event for operational purposes.
+	// LogCallEvent persists the provided event for operational purposes.
 	// TODO: If this data gets noisy, might make sense to log this data into a different
 	// database of its own.
-	LogEvent(e *models.Event) error
+	LogCallEvent(e *models.CallEvent) error
+
+	// CreateSentMessage persists a message sent by the excomms service.
+	CreateSentMessage(sm *models.SentMessage) error
+
+	// LookupSentMessageByUUID returns any message sent for the specified (UUID, message type) combination.
+	LookupSentMessageByUUID(uuid, destination string) (*models.SentMessage, error)
 
 	// CreateCallRequest creates the provided call request.
 	CreateCallRequest(*models.CallRequest) error
@@ -84,8 +94,12 @@ type DAL interface {
 	// that there exists only a single active reservation per proxy phone number.
 	ActiveProxyPhoneNumberReservation(lookup *ProxyPhoneNumberReservationLookup) (*models.ProxyPhoneNumberReservation, error)
 
-	// Transact encapsulates the provided function in a transaction and handles rollback and commit actions
-	Transact(func(DAL) error) error
+	// StoreIncomingRawMessage persists the message in the database and returns an ID
+	// to identify the message by.
+	StoreIncomingRawMessage(rm *rawmsg.Incoming) (uint64, error)
+
+	// IncomingRawMessage returns the raw message based on the id.
+	IncomingRawMessage(id uint64) (*rawmsg.Incoming, error)
 }
 
 type dal struct {
@@ -99,34 +113,26 @@ func NewDAL(db *sql.DB) DAL {
 }
 
 var (
-	ErrProvisionedNumberNotFound           = errors.New("provisioned number not found")
+	ErrProvisionedEndpointNotFound         = errors.New("provisioned endpoint not found")
 	ErrProxyPhoneNumberReservationNotFound = errors.New("phone number reservation not found")
+	ErrSentMessageNotFound                 = errors.New("sent message not found")
+	ErrIncomingRawMessageNotFound          = errors.New("incoming raw message not found")
 )
 
-func (d *dal) LookupProvisionedPhoneNumber(lookup *ProvisionedNumberLookup) (*models.ProvisionedPhoneNumber, error) {
-	var ppn models.ProvisionedPhoneNumber
-	var where string
-	var val interface{}
-
-	if lookup.PhoneNumber != nil {
-		where = "phone_number = ?"
-		val = *lookup.PhoneNumber
-	} else if lookup.ProvisionedFor != nil {
-		where = "provisioned_for = ?"
-		val = *lookup.ProvisionedFor
-	} else {
-		return nil, errors.Trace(fmt.Errorf("phone_number or provisioned_for required to lookup provisioned phone number"))
-	}
+func (d *dal) LookupProvisionedEndpoint(provisionedFor string, endpointType models.EndpointType) (*models.ProvisionedEndpoint, error) {
+	var ppn models.ProvisionedEndpoint
 
 	err := d.db.QueryRow(`
-		SELECT phone_number, provisioned_for, created 
-		FROM provisioned_phone_number 
-		WHERE `+where, val).Scan(
-		&ppn.PhoneNumber,
+		SELECT endpoint, endpoint_type, provisioned_for, created 
+		FROM provisioned_endpoint
+		WHERE provisioned_for = ?
+		AND endpoint_type = ?`, provisionedFor, endpointType).Scan(
+		&ppn.Endpoint,
+		&ppn.EndpointType,
 		&ppn.ProvisionedFor,
 		&ppn.Provisioned)
 	if err == sql.ErrNoRows {
-		return nil, errors.Trace(ErrProvisionedNumberNotFound)
+		return nil, errors.Trace(ErrProvisionedEndpointNotFound)
 	}
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -135,17 +141,17 @@ func (d *dal) LookupProvisionedPhoneNumber(lookup *ProvisionedNumberLookup) (*mo
 	return &ppn, nil
 }
 
-func (d *dal) ProvisionPhoneNumber(ppn *models.ProvisionedPhoneNumber) error {
+func (d *dal) ProvisionEndpoint(ppn *models.ProvisionedEndpoint) error {
 	if ppn == nil {
 		return nil
 	}
 
 	_, err := d.db.Exec(`
-		INSERT INTO provisioned_phone_number (phone_number, provisioned_for) VALUES (?,?)`, ppn.PhoneNumber, ppn.ProvisionedFor)
+		INSERT INTO provisioned_endpoint (endpoint, endpoint_type, provisioned_for) VALUES (?,?,?)`, ppn.Endpoint, ppn.EndpointType, ppn.ProvisionedFor)
 	return errors.Trace(err)
 }
 
-func (d *dal) LogEvent(e *models.Event) error {
+func (d *dal) LogCallEvent(e *models.CallEvent) error {
 	if e == nil {
 		return nil
 	}
@@ -156,10 +162,50 @@ func (d *dal) LogEvent(e *models.Event) error {
 	}
 
 	_, err = d.db.Exec(`
-		INSERT INTO excomms_event (source, destination, data, event)
+		INSERT INTO twilio_call_event (source, destination, data, event)
 		VALUES (?,?,?,?)`, e.Source, e.Destination, data, e.Type)
 
 	return errors.Trace(err)
+}
+
+func (d *dal) CreateSentMessage(sm *models.SentMessage) error {
+	if sm.ID == 0 {
+		id, err := idgen.NewID()
+		if err != nil {
+			return errors.Trace(err)
+		}
+		sm.ID = id
+	}
+
+	data, err := sm.Marshal()
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	_, err = d.db.Exec(`
+		INSERT INTO sent_message (id, uuid, type, destination, data) VALUES (?, ?, ?, ?, ?)
+		`, sm.ID, sm.UUID, sm.Type, sm.Destination, data)
+	return errors.Trace(err)
+}
+
+func (d *dal) LookupSentMessageByUUID(uuid, destination string) (*models.SentMessage, error) {
+	var data []byte
+	if err := d.db.QueryRow(`
+		SELECT data
+		FROM sent_message
+		WHERE uuid = ?
+		AND destination = ?`, uuid, destination).Scan(
+		&data); err == sql.ErrNoRows {
+		return nil, errors.Trace(ErrSentMessageNotFound)
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+	var sm models.SentMessage
+	if err := sm.Unmarshal(data); err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	return &sm, nil
 }
 
 func (d *dal) CreateCallRequest(cr *models.CallRequest) error {
@@ -372,4 +418,42 @@ func (d *dal) Transact(trans func(DAL) error) (err error) {
 	}
 
 	return errors.Trace(tx.Commit())
+}
+
+func (d *dal) StoreIncomingRawMessage(rm *rawmsg.Incoming) (uint64, error) {
+	id, err := idgen.NewID()
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	data, err := rm.Marshal()
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	_, err = d.db.Exec(`
+		INSERT INTO incoming_raw_message (id, type, data) VALUES (?,?,?)`, id, rm.Type.String(), data)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	return id, nil
+}
+
+func (d *dal) IncomingRawMessage(id uint64) (*rawmsg.Incoming, error) {
+	var data []byte
+	if err := d.db.QueryRow(`
+		SELECT data 
+		FROM incoming_raw_message
+		WHERE id = ?`, id).Scan(&data); err == sql.ErrNoRows {
+		return nil, errors.Trace(ErrIncomingRawMessageNotFound)
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	var rm rawmsg.Incoming
+	if err := rm.Unmarshal(data); err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &rm, nil
 }

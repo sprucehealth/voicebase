@@ -1,4 +1,4 @@
-package internal
+package twilio
 
 import (
 	"encoding/base64"
@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/phone"
@@ -161,15 +162,15 @@ func testOutgoing(t *testing.T, testExpired bool, patientName string) {
 		}))
 	}
 
-	es := NewService("", "", "", mdal, "https://test.com", md, nil, "", mclock)
+	es := NewEventHandler(md, mdal, nil, mclock, "https://test.com", "")
 
-	params := &excomms.TwilioParams{
+	params := &rawmsg.TwilioParams{
 		From:    providerPersonalPhoneNumber,
 		To:      proxyPhoneNumber.String(),
 		CallSID: callSID,
 	}
 
-	twiml, err := processOutgoingCall(params, es.(*excommsService))
+	twiml, err := processOutgoingCall(params, es.(*eventsHandler))
 	if testExpired {
 		if err == nil {
 			t.Fatalf("Expected the call to not go through and be expired.")
@@ -181,10 +182,10 @@ func testOutgoing(t *testing.T, testExpired bool, patientName string) {
 		var expected string
 		if patientName != "" {
 			expected = fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<Response><Say voice="alice">You will be connected to %s</Say><Dial callerId="+12068773590"><Number statusCallbackEvent="ringing answered completed" statusCallback="https://test.com/twilio/process_outgoing_call_status">+11234567890</Number></Dial></Response>`, patientName)
+<Response><Say voice="alice">You will be connected to %s</Say><Dial callerId="+12068773590"><Number statusCallbackEvent="ringing answered completed" statusCallback="https://test.com/twilio/call/process_outgoing_call_status">+11234567890</Number></Dial></Response>`, patientName)
 		} else {
 			expected = fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<Response><Say voice="alice">You will be connected to 123 456 7890</Say><Dial callerId="+12068773590"><Number statusCallbackEvent="ringing answered completed" statusCallback="https://test.com/twilio/process_outgoing_call_status">+11234567890</Number></Dial></Response>`)
+<Response><Say voice="alice">You will be connected to 123 456 7890</Say><Dial callerId="+12068773590"><Number statusCallbackEvent="ringing answered completed" statusCallback="https://test.com/twilio/call/process_outgoing_call_status">+11234567890</Number></Dial></Response>`)
 		}
 
 		if twiml != expected {
@@ -228,19 +229,19 @@ func TestIncoming_Organization(t *testing.T) {
 		},
 	}
 
-	es := NewService("", "", "", nil, "https://test.com", md, nil, "", clock.New())
-	params := &excomms.TwilioParams{
+	es := NewEventHandler(md, nil, nil, clock.New(), "https://test.com", "")
+	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
 		CallSID: "",
 	}
 
-	twiml, err := processIncomingCall(params, es.(*excommsService))
+	twiml, err := processIncomingCall(params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<Response><Dial action="/twilio/process_incoming_call_status" timeout="30" callerId="%s"><Number url="/twilio/provider_call_connected">%s</Number></Dial></Response>`, practicePhoneNumber, providerPersonalPhone)
+<Response><Dial action="/twilio/call/process_incoming_call_status" timeout="30" callerId="%s"><Number url="/twilio/call/provider_call_connected">%s</Number></Dial></Response>`, practicePhoneNumber, providerPersonalPhone)
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -283,19 +284,19 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 		},
 	}
 
-	es := NewService("", "", "", nil, "https://test.com", md, nil, "", clock.New())
-	params := &excomms.TwilioParams{
+	es := NewEventHandler(md, nil, nil, clock.New(), "https://test.com", "")
+	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
 		CallSID: "",
 	}
 
-	twiml, err := processIncomingCall(params, es.(*excommsService))
+	twiml, err := processIncomingCall(params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<Response><Dial action="/twilio/process_incoming_call_status" timeout="30" callerId="+14150000000"><Number url="/twilio/provider_call_connected">+14152222222</Number><Number url="/twilio/provider_call_connected">+14153333333</Number><Number url="/twilio/provider_call_connected">+14154444444</Number></Dial></Response>`)
+<Response><Dial action="/twilio/call/process_incoming_call_status" timeout="30" callerId="+14150000000"><Number url="/twilio/call/provider_call_connected">+14152222222</Number><Number url="/twilio/call/provider_call_connected">+14153333333</Number><Number url="/twilio/call/provider_call_connected">+14154444444</Number></Dial></Response>`)
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -330,19 +331,19 @@ func TestIncoming_Provider(t *testing.T) {
 		},
 	}
 
-	es := NewService("", "", "", nil, "https://test.com", md, nil, "", clock.New())
-	params := &excomms.TwilioParams{
+	es := NewEventHandler(md, nil, nil, clock.New(), "https://test.com", "")
+	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
 		CallSID: "",
 	}
 
-	twiml, err := processIncomingCall(params, es.(*excommsService))
+	twiml, err := processIncomingCall(params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<Response><Dial action="/twilio/process_incoming_call_status" timeout="30" callerId="%s"><Number url="/twilio/provider_call_connected">%s</Number></Dial></Response>`, practicePhoneNumber, providerPersonalPhone)
+<Response><Dial action="/twilio/call/process_incoming_call_status" timeout="30" callerId="%s"><Number url="/twilio/call/provider_call_connected">%s</Number></Dial></Response>`, practicePhoneNumber, providerPersonalPhone)
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -350,7 +351,7 @@ func TestIncoming_Provider(t *testing.T) {
 }
 
 func TestProviderCallConnected(t *testing.T) {
-	params := &excomms.TwilioParams{
+	params := &rawmsg.TwilioParams{
 		From: "+14151111111",
 		To:   "+14152222222",
 	}
@@ -360,7 +361,7 @@ func TestProviderCallConnected(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 	expected := `<?xml version="1.0" encoding="UTF-8"?>
-<Response><Gather action="/twilio/provider_entered_digits" method="POST" timeout="5" numDigits="1"><Say voice="woman">You have an incoming call. Press 1 to answer.</Say></Gather><Hangup></Hangup></Response>`
+<Response><Gather action="/twilio/call/provider_entered_digits" method="POST" timeout="5" numDigits="1"><Say voice="woman">You have an incoming call. Press 1 to answer.</Say></Gather><Hangup></Hangup></Response>`
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -368,7 +369,7 @@ func TestProviderCallConnected(t *testing.T) {
 }
 
 func TestProviderEnteredDigits_Entered1(t *testing.T) {
-	params := &excomms.TwilioParams{
+	params := &rawmsg.TwilioParams{
 		From:   "+14151111111",
 		To:     "+14152222222",
 		Digits: "1",
@@ -387,7 +388,7 @@ func TestProviderEnteredDigits_Entered1(t *testing.T) {
 }
 
 func TestProviderEnteredDigits_EnteredOtherDigit(t *testing.T) {
-	params := &excomms.TwilioParams{
+	params := &rawmsg.TwilioParams{
 		From:   "+14151111111",
 		To:     "+14152222222",
 		Digits: "2",
@@ -411,7 +412,7 @@ func TestVoicemailTwiML(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := `<?xml version="1.0" encoding="UTF-8"?>
-<Response><Play><loop>0</loop><digits></digits>http://dev-twilio.s3.amazonaws.com/kunal_clinic_voicemail.mp3</Play><Record action="/twilio/process_voicemail" timeout="60" playBeep="true"></Record></Response>`
+<Response><Play><loop>0</loop><digits></digits>http://dev-twilio.s3.amazonaws.com/kunal_clinic_voicemail.mp3</Play><Record action="/twilio/call/process_voicemail" timeout="60" playBeep="true"></Record></Response>`
 
 	if expected != twiml {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -419,41 +420,42 @@ func TestVoicemailTwiML(t *testing.T) {
 }
 
 func TestIncomingCallStatus_CallAnswered(t *testing.T) {
-	testIncomingCallStatus(t, excomms.TwilioParams_ANSWERED)
+	testIncomingCallStatus(t, rawmsg.TwilioParams_ANSWERED)
 }
 
 func TestIncomingCallStatus_CallCompleted(t *testing.T) {
-	testIncomingCallStatus(t, excomms.TwilioParams_COMPLETED)
+	testIncomingCallStatus(t, rawmsg.TwilioParams_COMPLETED)
 }
 
 func TestIncomingCallStatus_OtherCallStatus(t *testing.T) {
-	testIncomingCallStatus_Other(t, excomms.TwilioParams_FAILED)
-	testIncomingCallStatus_Other(t, excomms.TwilioParams_NO_ANSWER)
-	testIncomingCallStatus_Other(t, excomms.TwilioParams_IN_PROGRESS)
-	testIncomingCallStatus_Other(t, excomms.TwilioParams_QUEUED)
-	testIncomingCallStatus_Other(t, excomms.TwilioParams_INITIATED)
-	testIncomingCallStatus_Other(t, excomms.TwilioParams_BUSY)
-	testIncomingCallStatus_Other(t, excomms.TwilioParams_CANCELED)
-	testIncomingCallStatus_Other(t, excomms.TwilioParams_RINGING)
+	testIncomingCallStatus_Other(t, rawmsg.TwilioParams_FAILED)
+	testIncomingCallStatus_Other(t, rawmsg.TwilioParams_NO_ANSWER)
+	testIncomingCallStatus_Other(t, rawmsg.TwilioParams_IN_PROGRESS)
+	testIncomingCallStatus_Other(t, rawmsg.TwilioParams_QUEUED)
+	testIncomingCallStatus_Other(t, rawmsg.TwilioParams_INITIATED)
+	testIncomingCallStatus_Other(t, rawmsg.TwilioParams_BUSY)
+	testIncomingCallStatus_Other(t, rawmsg.TwilioParams_CANCELED)
+	testIncomingCallStatus_Other(t, rawmsg.TwilioParams_RINGING)
 }
 
-func testIncomingCallStatus_Other(t *testing.T, incomingStatus excomms.TwilioParams_CallStatus) {
+func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioParams_CallStatus) {
 	conc.Testing = true
 	ms := &mockSNS_Twilio{}
-	params := &excomms.TwilioParams{
+	params := &rawmsg.TwilioParams{
 		From:           "+12068773590",
 		To:             "+17348465522",
 		DialCallStatus: incomingStatus,
 	}
-	es := NewService("", "", "", nil, "https://test.com", nil, ms, "", clock.New())
 
-	twiml, err := processIncomingCallStatus(params, es.(*excommsService))
+	es := NewEventHandler(nil, nil, ms, clock.New(), "https://test.com", "")
+
+	twiml, err := processIncomingCallStatus(params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	expected := `<?xml version="1.0" encoding="UTF-8"?>
-<Response><Play><loop>0</loop><digits></digits>http://dev-twilio.s3.amazonaws.com/kunal_clinic_voicemail.mp3</Play><Record action="/twilio/process_voicemail" timeout="60" playBeep="true"></Record></Response>`
+<Response><Play><loop>0</loop><digits></digits>http://dev-twilio.s3.amazonaws.com/kunal_clinic_voicemail.mp3</Play><Record action="/twilio/call/process_voicemail" timeout="60" playBeep="true"></Record></Response>`
 	if expected != twiml {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
 	}
@@ -464,17 +466,18 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus excomms.TwilioPar
 	}
 }
 
-func testIncomingCallStatus(t *testing.T, incomingStatus excomms.TwilioParams_CallStatus) {
+func testIncomingCallStatus(t *testing.T, incomingStatus rawmsg.TwilioParams_CallStatus) {
 	conc.Testing = true
 	ms := &mockSNS_Twilio{}
-	params := &excomms.TwilioParams{
+	params := &rawmsg.TwilioParams{
 		From:           "+12068773590",
 		To:             "+17348465522",
 		DialCallStatus: incomingStatus,
 	}
-	es := NewService("", "", "", nil, "https://test.com", nil, ms, "", clock.New())
 
-	twiml, err := processIncomingCallStatus(params, es.(*excommsService))
+	es := NewEventHandler(nil, nil, ms, clock.New(), "", "")
+
+	twiml, err := processIncomingCallStatus(params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatal(err)
 	} else if twiml != "" {
@@ -502,11 +505,11 @@ func testIncomingCallStatus(t *testing.T, incomingStatus excomms.TwilioParams_Ca
 
 func TestOutgoingCallStatus(t *testing.T) {
 	conc.Testing = true
-	params := &excomms.TwilioParams{
+	params := &rawmsg.TwilioParams{
 		From:          "+12068773590",
 		To:            "+17348465522",
 		ParentCallSID: "12345",
-		CallStatus:    excomms.TwilioParams_ANSWERED,
+		CallStatus:    rawmsg.TwilioParams_ANSWERED,
 	}
 
 	ms := &mockSNS_Twilio{}
@@ -517,9 +520,9 @@ func TestOutgoingCallStatus(t *testing.T) {
 		},
 	}
 
-	es := NewService("", "", "", md, "", nil, ms, "", clock.New())
+	es := NewEventHandler(nil, md, ms, clock.New(), "", "")
 
-	twiml, err := processOutgoingCallStatus(params, es.(*excommsService))
+	twiml, err := processOutgoingCallStatus(params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatal(err)
 	} else if twiml != "" {
@@ -550,7 +553,7 @@ func TestOutgoingCallStatus(t *testing.T) {
 
 func TestProcessVoicemail(t *testing.T) {
 	conc.Testing = true
-	params := &excomms.TwilioParams{
+	params := &rawmsg.TwilioParams{
 		From:              "+12068773590",
 		To:                "+17348465522",
 		RecordingDuration: 10,
@@ -559,9 +562,9 @@ func TestProcessVoicemail(t *testing.T) {
 
 	ms := &mockSNS_Twilio{}
 
-	es := NewService("", "", "", nil, "", nil, ms, "", clock.New())
+	es := NewEventHandler(nil, nil, ms, clock.New(), "", "")
 
-	twiml, err := processVoicemail(params, es.(*excommsService))
+	twiml, err := processVoicemail(params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatal(err)
 	} else if twiml != "" {
@@ -589,60 +592,6 @@ func TestProcessVoicemail(t *testing.T) {
 		t.Fatalf("Expectd %d but got %d", params.RecordingDuration, pem.GetCallEventItem().DurationInSeconds)
 	} else if pem.GetCallEventItem().URL != (params.RecordingURL + ".mp3") {
 		t.Fatalf("Expectd %s but got %s", params.RecordingURL, pem.GetCallEventItem().URL)
-	}
-}
-
-func TestProcessIncomingSMS(t *testing.T) {
-	conc.Testing = true
-	params := &excomms.TwilioParams{
-		From:     "+12068773590",
-		To:       "+17348465522",
-		Body:     "sms",
-		NumMedia: 2,
-		MediaItems: []*excomms.TwilioParams_TwilioMediaItem{
-			{
-				MediaURL:    "http://1.com",
-				ContentType: "test",
-			},
-			{
-				MediaURL:    "http://2.com",
-				ContentType: "test",
-			},
-		},
-	}
-
-	ms := &mockSNS_Twilio{}
-	es := NewService("", "", "", nil, "", nil, ms, "", clock.New())
-
-	twiml, err := processIncomingSMS(params, es.(*excommsService))
-	if err != nil {
-		t.Fatal(err)
-	}
-	expected := `<?xml version="1.0" encoding="UTF-8"?>
-<Response></Response>`
-	if twiml != expected {
-		t.Fatalf("\nExpected %s\nGot %s", expected, twiml)
-	}
-
-	if len(ms.published) != 1 {
-		t.Fatalf("Expected %d got %d", 1, len(ms.published))
-	}
-
-	pem, err := parsePublishedExternalMessage(*ms.published[0].Message)
-	if err != nil {
-		t.Fatal(err)
-	} else if pem.FromChannelID != params.From {
-		t.Fatalf("Expected %s but got %s", params.From, pem.FromChannelID)
-	} else if pem.ToChannelID != params.To {
-		t.Fatalf("Expected %s but got %s", params.To, pem.ToChannelID)
-	} else if pem.Direction != excomms.PublishedExternalMessage_INBOUND {
-		t.Fatalf("Expectd %s but got %s", excomms.PublishedExternalMessage_INBOUND, pem.Direction)
-	} else if pem.Type != excomms.PublishedExternalMessage_SMS {
-		t.Fatalf("Expectd %s but got %s", excomms.PublishedExternalMessage_SMS, pem.Type)
-	} else if pem.GetSMSItem().Text != params.Body {
-		t.Fatalf("Expected %s but got %s", pem.GetSMSItem().Text, params.Body)
-	} else if len(pem.GetSMSItem().Attachments) != len(params.MediaItems) {
-		t.Fatalf("Expected %d but got %d", len(pem.GetSMSItem().Attachments), len(params.MediaItems))
 	}
 }
 

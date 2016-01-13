@@ -113,6 +113,10 @@
 			"Rev": "e008c9143e114c4462104da78fabbc4faf085a79"
 		},
 		{
+			"ImportPath": "github.com/davecgh/go-spew/spew",
+			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
+		},
+		{
 			"ImportPath": "github.com/dominicphillips/amazing",
 			"Rev": "cea80a4a0b01ed85818a682ba1560f68704b92e4"
 		},
@@ -152,6 +156,10 @@
 		{
 			"ImportPath": "github.com/graphql-go/graphql",
 			"Rev": "5c2682d7d86780ed1dc0a5faca0d3cefa367ba32"
+		},
+		{
+			"ImportPath": "github.com/golang/protobuf/proto",
+			"Rev": "02ac84f19cf2febf53ac06e7fbc446c1ea0258e3"
 		},
 		{
 			"ImportPath": "github.com/google/go-querystring/query",
@@ -216,6 +224,16 @@
 		{
 			"ImportPath": "github.com/samuel/go-metrics/reporter",
 			"Rev": "85bac94ebb94178e7f5aff8bcc9822fe8b468f51"
+		},
+		{
+			"ImportPath": "github.com/sendgrid/sendgrid-go",
+			"Comment": "v2.0.0-5-g3508de8",
+			"Rev": "3508de80ef5e1e09c44259e4bf907d41559e7234"
+		},
+		{
+			"ImportPath": "github.com/sendgrid/smtpapi-go",
+			"Comment": "v0.4.0",
+			"Rev": "08102729bcf72bfe74dde6c0da8e0423e94090ca"
 		},
 		{
 			"ImportPath": "github.com/sprucehealth/go-proxy-protocol/proxyproto",

@@ -17,6 +17,8 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 type externalMessageWorker struct {
@@ -117,16 +119,29 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 
 	toEntityLookupRes, err := lookupEntitiesByContact(ctx, pem.ToChannelID, r.directory)
 	if err != nil {
-		return errors.Trace(err)
+		if grpc.Code(errors.Cause(err)) != codes.NotFound {
+			return errors.Trace(err)
+		}
 	}
 
 	fromEntityLookupRes, err := lookupEntitiesByContact(ctx, pem.FromChannelID, r.directory)
 	if err != nil {
-		return errors.Trace(err)
+		if grpc.Code(errors.Cause(err)) != codes.NotFound {
+			return errors.Trace(err)
+		}
 	}
 
 	var toEntity, fromEntity, externalEntity *directory.Entity
 	var organizationID, externalChannelID string
+	var contactType directory.ContactType
+	switch pem.Type {
+	case excomms.PublishedExternalMessage_SMS, excomms.PublishedExternalMessage_CALL_EVENT:
+		contactType = directory.ContactType_PHONE
+	case excomms.PublishedExternalMessage_EMAIL:
+		contactType = directory.ContactType_EMAIL
+	default:
+		return errors.Trace(fmt.Errorf("Unknown message type %s", pem.Type.String()))
+	}
 
 	switch pem.Direction {
 
@@ -139,7 +154,6 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 		fromEntity = determineExternalEntity(fromEntityLookupRes, organizationID)
 		externalEntity = fromEntity
 		externalChannelID = pem.FromChannelID
-
 	case excomms.PublishedExternalMessage_OUTBOUND:
 		fromEntity = determineProviderOrOrgEntity(fromEntityLookupRes, pem.FromChannelID)
 		if fromEntity == nil {
@@ -169,7 +183,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 				},
 				Contacts: []*directory.Contact{
 					{
-						ContactType: directory.ContactType_PHONE,
+						ContactType: contactType,
 						Value:       externalChannelID,
 					},
 				},
@@ -275,9 +289,23 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 		case excomms.CallEventItem_OUTGOING_UNANSWERED:
 			title = append(title, ", no answer")
 		}
+	case excomms.PublishedExternalMessage_EMAIL:
+		endpointChannel = threading.Endpoint_EMAIL
+		text = pem.GetEmailItem().Body
+		title = bml.Parsef("%s emailed %s, Subject: %s",
+			&bml.Ref{Type: bml.EntityRef, ID: fromEntity.ID, Text: fromName},
+			&bml.Ref{Type: bml.EntityRef, ID: toEntity.ID, Text: toName},
+			pem.GetEmailItem().Subject,
+		)
+
+		// TODO: Populate attachments
 	}
 
 	titleStr, err := title.Format()
+	if err != nil {
+		return errors.Trace(err)
+	}
+	plainText, err := bml.BML{text}.Format()
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -302,7 +330,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 				},
 				Internal:    false,
 				Title:       titleStr,
-				Text:        text,
+				Text:        plainText,
 				Attachments: attachments,
 			},
 		)
@@ -329,7 +357,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 				},
 				Internal:    false,
 				Title:       titleStr,
-				Text:        text,
+				Text:        plainText,
 				Attachments: attachments,
 			},
 		)
@@ -376,7 +404,10 @@ func determineOrganizationID(entity *directory.Entity) string {
 	return ""
 }
 
-func determineProviderOrOrgEntity(res *directory.LookupEntitiesByContactResponse, phoneNumber string) *directory.Entity {
+func determineProviderOrOrgEntity(res *directory.LookupEntitiesByContactResponse, value string) *directory.Entity {
+	if res == nil {
+		return nil
+	}
 	for _, entity := range res.Entities {
 		switch entity.Type {
 		case directory.EntityType_ORGANIZATION, directory.EntityType_INTERNAL:
@@ -384,7 +415,7 @@ func determineProviderOrOrgEntity(res *directory.LookupEntitiesByContactResponse
 			continue
 		}
 		for _, c := range entity.Contacts {
-			if c.Value == phoneNumber {
+			if c.Value == value {
 				return entity
 			}
 		}
@@ -393,6 +424,9 @@ func determineProviderOrOrgEntity(res *directory.LookupEntitiesByContactResponse
 }
 
 func determineExternalEntity(res *directory.LookupEntitiesByContactResponse, organizationID string) *directory.Entity {
+	if res == nil {
+		return nil
+	}
 	for _, entity := range res.Entities {
 		if entity.Type != directory.EntityType_EXTERNAL {
 			continue

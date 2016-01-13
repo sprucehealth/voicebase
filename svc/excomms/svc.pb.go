@@ -9,12 +9,14 @@
 		svc.proto
 
 	It has these top-level messages:
-		TwilioParams
 		PublishedExternalMessage
 		SMSItem
 		CallEventItem
+		EmailItem
 		MediaAttachment
 		SendMessageRequest
+		EmailMessage
+		SMSMessage
 		SendMessageResponse
 		InitiatePhoneCallRequest
 		InitiatePhoneCallResponse
@@ -23,8 +25,8 @@
 		SearchAvailablePhoneNumbersResponse
 		ProvisionPhoneNumberRequest
 		ProvisionPhoneNumberResponse
-		ProcessTwilioEventRequest
-		ProcessTwilioEventResponse
+		ProvisionEmailAddressRequest
+		ProvisionEmailAddressResponse
 */
 package excomms
 
@@ -57,54 +59,20 @@ var _ = math.Inf
 type ChannelType int32
 
 const (
-	ChannelType_Voice ChannelType = 0
+	ChannelType_VOICE ChannelType = 0
 	ChannelType_SMS   ChannelType = 1
+	ChannelType_EMAIL ChannelType = 2
 )
 
 var ChannelType_name = map[int32]string{
-	0: "Voice",
+	0: "VOICE",
 	1: "SMS",
+	2: "EMAIL",
 }
 var ChannelType_value = map[string]int32{
-	"Voice": 0,
+	"VOICE": 0,
 	"SMS":   1,
-}
-
-type TwilioEvent int32
-
-const (
-	TwilioEvent_PROCESS_INCOMING_CALL        TwilioEvent = 0
-	TwilioEvent_PROVIDER_CALL_CONNECTED      TwilioEvent = 1
-	TwilioEvent_PROVIDER_ENTERED_DIGITS      TwilioEvent = 2
-	TwilioEvent_TWIML_REQUESTED_VOICEMAIL    TwilioEvent = 3
-	TwilioEvent_PROCESS_INCOMING_CALL_STATUS TwilioEvent = 4
-	TwilioEvent_INCOMING_SMS                 TwilioEvent = 5
-	TwilioEvent_PROCESS_OUTGOING_CALL        TwilioEvent = 6
-	TwilioEvent_PROCESS_VOICEMAIL            TwilioEvent = 7
-	TwilioEvent_PROCESS_OUTGOING_CALL_STATUS TwilioEvent = 8
-)
-
-var TwilioEvent_name = map[int32]string{
-	0: "PROCESS_INCOMING_CALL",
-	1: "PROVIDER_CALL_CONNECTED",
-	2: "PROVIDER_ENTERED_DIGITS",
-	3: "TWIML_REQUESTED_VOICEMAIL",
-	4: "PROCESS_INCOMING_CALL_STATUS",
-	5: "INCOMING_SMS",
-	6: "PROCESS_OUTGOING_CALL",
-	7: "PROCESS_VOICEMAIL",
-	8: "PROCESS_OUTGOING_CALL_STATUS",
-}
-var TwilioEvent_value = map[string]int32{
-	"PROCESS_INCOMING_CALL":        0,
-	"PROVIDER_CALL_CONNECTED":      1,
-	"PROVIDER_ENTERED_DIGITS":      2,
-	"TWIML_REQUESTED_VOICEMAIL":    3,
-	"PROCESS_INCOMING_CALL_STATUS": 4,
-	"INCOMING_SMS":                 5,
-	"PROCESS_OUTGOING_CALL":        6,
-	"PROCESS_VOICEMAIL":            7,
-	"PROCESS_OUTGOING_CALL_STATUS": 8,
+	"EMAIL": 2,
 }
 
 type PhoneNumberCapability int32
@@ -126,85 +94,23 @@ var PhoneNumberCapability_value = map[string]int32{
 	"MMS_ENABLED":   2,
 }
 
-type TwilioParams_CallStatus int32
-
-const (
-	TwilioParams_CALL_STATUS_UNDEFINED TwilioParams_CallStatus = 0
-	TwilioParams_QUEUED                TwilioParams_CallStatus = 1
-	TwilioParams_RINGING               TwilioParams_CallStatus = 2
-	TwilioParams_IN_PROGRESS           TwilioParams_CallStatus = 3
-	TwilioParams_COMPLETED             TwilioParams_CallStatus = 4
-	TwilioParams_BUSY                  TwilioParams_CallStatus = 5
-	TwilioParams_FAILED                TwilioParams_CallStatus = 6
-	TwilioParams_NO_ANSWER             TwilioParams_CallStatus = 7
-	TwilioParams_CANCELED              TwilioParams_CallStatus = 8
-	TwilioParams_ANSWERED              TwilioParams_CallStatus = 9
-	TwilioParams_INITIATED             TwilioParams_CallStatus = 10
-)
-
-var TwilioParams_CallStatus_name = map[int32]string{
-	0:  "CALL_STATUS_UNDEFINED",
-	1:  "QUEUED",
-	2:  "RINGING",
-	3:  "IN_PROGRESS",
-	4:  "COMPLETED",
-	5:  "BUSY",
-	6:  "FAILED",
-	7:  "NO_ANSWER",
-	8:  "CANCELED",
-	9:  "ANSWERED",
-	10: "INITIATED",
-}
-var TwilioParams_CallStatus_value = map[string]int32{
-	"CALL_STATUS_UNDEFINED": 0,
-	"QUEUED":                1,
-	"RINGING":               2,
-	"IN_PROGRESS":           3,
-	"COMPLETED":             4,
-	"BUSY":                  5,
-	"FAILED":                6,
-	"NO_ANSWER":             7,
-	"CANCELED":              8,
-	"ANSWERED":              9,
-	"INITIATED":             10,
-}
-
-type TwilioParams_Direction int32
-
-const (
-	TwilioParams_DIRECTION_UNDEFINED TwilioParams_Direction = 0
-	TwilioParams_INBOUND             TwilioParams_Direction = 1
-	TwilioParams_OUTBOUND_DIAL       TwilioParams_Direction = 2
-	TwilioParams_OUTBOUND_API        TwilioParams_Direction = 3
-)
-
-var TwilioParams_Direction_name = map[int32]string{
-	0: "DIRECTION_UNDEFINED",
-	1: "INBOUND",
-	2: "OUTBOUND_DIAL",
-	3: "OUTBOUND_API",
-}
-var TwilioParams_Direction_value = map[string]int32{
-	"DIRECTION_UNDEFINED": 0,
-	"INBOUND":             1,
-	"OUTBOUND_DIAL":       2,
-	"OUTBOUND_API":        3,
-}
-
 type PublishedExternalMessage_Type int32
 
 const (
 	PublishedExternalMessage_SMS        PublishedExternalMessage_Type = 0
 	PublishedExternalMessage_CALL_EVENT PublishedExternalMessage_Type = 1
+	PublishedExternalMessage_EMAIL      PublishedExternalMessage_Type = 2
 )
 
 var PublishedExternalMessage_Type_name = map[int32]string{
 	0: "SMS",
 	1: "CALL_EVENT",
+	2: "EMAIL",
 }
 var PublishedExternalMessage_Type_value = map[string]int32{
 	"SMS":        0,
 	"CALL_EVENT": 1,
+	"EMAIL":      2,
 }
 
 type PublishedExternalMessage_Direction int32
@@ -274,66 +180,6 @@ var InitiatePhoneCallRequest_CallInitiationType_value = map[string]int32{
 	"RETURN_PHONE_NUMBER": 1,
 }
 
-type TwilioParams struct {
-	CallSID            string                          `protobuf:"bytes,1,opt,name=call_sid,proto3" json:"call_sid,omitempty"`
-	AccountSID         string                          `protobuf:"bytes,2,opt,name=account_sid,proto3" json:"account_sid,omitempty"`
-	From               string                          `protobuf:"bytes,3,opt,name=from,proto3" json:"from,omitempty"`
-	To                 string                          `protobuf:"bytes,4,opt,name=to_number,proto3" json:"to_number,omitempty"`
-	CallStatus         TwilioParams_CallStatus         `protobuf:"varint,5,opt,name=call_status,proto3,enum=excomms.TwilioParams_CallStatus" json:"call_status,omitempty"`
-	APIVersion         string                          `protobuf:"bytes,6,opt,name=api_version,proto3" json:"api_version,omitempty"`
-	Direction          TwilioParams_Direction          `protobuf:"varint,7,opt,name=direction,proto3,enum=excomms.TwilioParams_Direction" json:"direction,omitempty"`
-	CallDuration       uint32                          `protobuf:"varint,8,opt,name=call_duration,proto3" json:"call_duration,omitempty"`
-	RecordingURL       string                          `protobuf:"bytes,9,opt,name=recording_url,proto3" json:"recording_url,omitempty"`
-	RecordingSID       string                          `protobuf:"bytes,10,opt,name=recording_sid,proto3" json:"recording_sid,omitempty"`
-	RecordingDuration  uint32                          `protobuf:"varint,11,opt,name=recording_duration,proto3" json:"recording_duration,omitempty"`
-	Digits             string                          `protobuf:"bytes,12,opt,name=digits,proto3" json:"digits,omitempty"`
-	MessageSID         string                          `protobuf:"bytes,13,opt,name=message_sid,proto3" json:"message_sid,omitempty"`
-	SMSSID             string                          `protobuf:"bytes,14,opt,name=sms_sid,proto3" json:"sms_sid,omitempty"`
-	Body               string                          `protobuf:"bytes,15,opt,name=body,proto3" json:"body,omitempty"`
-	NumMedia           uint32                          `protobuf:"varint,16,opt,name=num_media,proto3" json:"num_media,omitempty"`
-	MediaItems         []*TwilioParams_TwilioMediaItem `protobuf:"bytes,17,rep,name=media_items" json:"media_items,omitempty"`
-	MessagingServiceID string                          `protobuf:"bytes,18,opt,name=messaging_service_id,proto3" json:"messaging_service_id,omitempty"`
-	// these three parameters are only present in a twilio request
-	// attempting to get a twiml document to execute on the queued caller's
-	// end before the two parties are connected.
-	QueueSID        string `protobuf:"bytes,19,opt,name=queue_sid,proto3" json:"queue_sid,omitempty"`
-	QueueTime       uint32 `protobuf:"varint,20,opt,name=queue_time,proto3" json:"queue_time,omitempty"`
-	DequeingCallSID string `protobuf:"bytes,21,opt,name=dequeuing_call_sid,proto3" json:"dequeuing_call_sid,omitempty"`
-	// this parameter is only present for status callbacks from a dial twiml verb
-	ParentCallSID    string                  `protobuf:"bytes,22,opt,name=parent_call_sid,proto3" json:"parent_call_sid,omitempty"`
-	DialCallStatus   TwilioParams_CallStatus `protobuf:"varint,23,opt,name=dial_call_status,proto3,enum=excomms.TwilioParams_CallStatus" json:"dial_call_status,omitempty"`
-	DialCallDuration uint32                  `protobuf:"varint,24,opt,name=dial_call_duration,proto3" json:"dial_call_duration,omitempty"`
-	// infrequently used parameters
-	ForwardedFrom string `protobuf:"bytes,100,opt,name=forwarded_from,proto3" json:"forwarded_from,omitempty"`
-	CallerName    string `protobuf:"bytes,101,opt,name=caller_name,proto3" json:"caller_name,omitempty"`
-	FromCity      string `protobuf:"bytes,102,opt,name=from_city,proto3" json:"from_city,omitempty"`
-	FromState     string `protobuf:"bytes,103,opt,name=from_state,proto3" json:"from_state,omitempty"`
-	FromZip       string `protobuf:"bytes,104,opt,name=from_zip,proto3" json:"from_zip,omitempty"`
-	FromCountry   string `protobuf:"bytes,105,opt,name=from_country,proto3" json:"from_country,omitempty"`
-	ToCity        string `protobuf:"bytes,106,opt,name=to_city,proto3" json:"to_city,omitempty"`
-	ToState       string `protobuf:"bytes,107,opt,name=to_state,proto3" json:"to_state,omitempty"`
-	ToZip         string `protobuf:"bytes,108,opt,name=to_zip,proto3" json:"to_zip,omitempty"`
-	ToCountry     string `protobuf:"bytes,109,opt,name=to_country,proto3" json:"to_country,omitempty"`
-}
-
-func (m *TwilioParams) Reset()      { *m = TwilioParams{} }
-func (*TwilioParams) ProtoMessage() {}
-
-func (m *TwilioParams) GetMediaItems() []*TwilioParams_TwilioMediaItem {
-	if m != nil {
-		return m.MediaItems
-	}
-	return nil
-}
-
-type TwilioParams_TwilioMediaItem struct {
-	ContentType string `protobuf:"bytes,1,opt,name=content_type,proto3" json:"content_type,omitempty"`
-	MediaURL    string `protobuf:"bytes,2,opt,name=media_url,proto3" json:"media_url,omitempty"`
-}
-
-func (m *TwilioParams_TwilioMediaItem) Reset()      { *m = TwilioParams_TwilioMediaItem{} }
-func (*TwilioParams_TwilioMediaItem) ProtoMessage() {}
-
 type PublishedExternalMessage struct {
 	FromChannelID string                        `protobuf:"bytes,1,opt,name=from_channel_id,proto3" json:"from_channel_id,omitempty"`
 	ToChannelID   string                        `protobuf:"bytes,2,opt,name=to_channel_id,proto3" json:"to_channel_id,omitempty"`
@@ -342,8 +188,9 @@ type PublishedExternalMessage struct {
 	// Types that are valid to be assigned to Item:
 	//	*PublishedExternalMessage_SMSItem
 	//	*PublishedExternalMessage_CallEventItem
+	//	*PublishedExternalMessage_EmailItem
 	Item      isPublishedExternalMessage_Item    `protobuf_oneof:"item"`
-	Direction PublishedExternalMessage_Direction `protobuf:"varint,7,opt,name=direction,proto3,enum=excomms.PublishedExternalMessage_Direction" json:"direction,omitempty"`
+	Direction PublishedExternalMessage_Direction `protobuf:"varint,8,opt,name=direction,proto3,enum=excomms.PublishedExternalMessage_Direction" json:"direction,omitempty"`
 }
 
 func (m *PublishedExternalMessage) Reset()      { *m = PublishedExternalMessage{} }
@@ -362,9 +209,13 @@ type PublishedExternalMessage_SMSItem struct {
 type PublishedExternalMessage_CallEventItem struct {
 	CallEventItem *CallEventItem `protobuf:"bytes,6,opt,name=call_event_item,oneof"`
 }
+type PublishedExternalMessage_EmailItem struct {
+	EmailItem *EmailItem `protobuf:"bytes,7,opt,name=email_item,oneof"`
+}
 
 func (*PublishedExternalMessage_SMSItem) isPublishedExternalMessage_Item()       {}
 func (*PublishedExternalMessage_CallEventItem) isPublishedExternalMessage_Item() {}
+func (*PublishedExternalMessage_EmailItem) isPublishedExternalMessage_Item()     {}
 
 func (m *PublishedExternalMessage) GetItem() isPublishedExternalMessage_Item {
 	if m != nil {
@@ -387,11 +238,19 @@ func (m *PublishedExternalMessage) GetCallEventItem() *CallEventItem {
 	return nil
 }
 
+func (m *PublishedExternalMessage) GetEmailItem() *EmailItem {
+	if x, ok := m.GetItem().(*PublishedExternalMessage_EmailItem); ok {
+		return x.EmailItem
+	}
+	return nil
+}
+
 // XXX_OneofFuncs is for the internal use of the proto package.
 func (*PublishedExternalMessage) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
 	return _PublishedExternalMessage_OneofMarshaler, _PublishedExternalMessage_OneofUnmarshaler, []interface{}{
 		(*PublishedExternalMessage_SMSItem)(nil),
 		(*PublishedExternalMessage_CallEventItem)(nil),
+		(*PublishedExternalMessage_EmailItem)(nil),
 	}
 }
 
@@ -407,6 +266,11 @@ func _PublishedExternalMessage_OneofMarshaler(msg proto.Message, b *proto.Buffer
 	case *PublishedExternalMessage_CallEventItem:
 		_ = b.EncodeVarint(6<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.CallEventItem); err != nil {
+			return err
+		}
+	case *PublishedExternalMessage_EmailItem:
+		_ = b.EncodeVarint(7<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.EmailItem); err != nil {
 			return err
 		}
 	case nil:
@@ -434,6 +298,14 @@ func _PublishedExternalMessage_OneofUnmarshaler(msg proto.Message, tag, wire int
 		msg := new(CallEventItem)
 		err := b.DecodeMessage(msg)
 		m.Item = &PublishedExternalMessage_CallEventItem{msg}
+		return true, err
+	case 7: // item.email_item
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(EmailItem)
+		err := b.DecodeMessage(msg)
+		m.Item = &PublishedExternalMessage_EmailItem{msg}
 		return true, err
 	default:
 		return false, nil
@@ -464,6 +336,22 @@ type CallEventItem struct {
 func (m *CallEventItem) Reset()      { *m = CallEventItem{} }
 func (*CallEventItem) ProtoMessage() {}
 
+type EmailItem struct {
+	Body        string             `protobuf:"bytes,1,opt,name=body,proto3" json:"body,omitempty"`
+	Subject     string             `protobuf:"bytes,2,opt,name=subject,proto3" json:"subject,omitempty"`
+	Attachments []*MediaAttachment `protobuf:"bytes,3,rep,name=attachments" json:"attachments,omitempty"`
+}
+
+func (m *EmailItem) Reset()      { *m = EmailItem{} }
+func (*EmailItem) ProtoMessage() {}
+
+func (m *EmailItem) GetAttachments() []*MediaAttachment {
+	if m != nil {
+		return m.Attachments
+	}
+	return nil
+}
+
 type MediaAttachment struct {
 	URL         string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 	ContentType string `protobuf:"bytes,2,opt,name=content_type,proto3" json:"content_type,omitempty"`
@@ -475,14 +363,129 @@ func (*MediaAttachment) ProtoMessage() {}
 // SendMessageRequest represents a request to send a message
 // over an external channel.
 type SendMessageRequest struct {
-	Text          string      `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
-	FromChannelID string      `protobuf:"bytes,2,opt,name=from_channel_id,proto3" json:"from_channel_id,omitempty"`
-	ToChannelID   string      `protobuf:"bytes,3,opt,name=to_channel_id,proto3" json:"to_channel_id,omitempty"`
-	Channel       ChannelType `protobuf:"varint,4,opt,name=channel,proto3,enum=excomms.ChannelType" json:"channel,omitempty"`
+	Channel ChannelType `protobuf:"varint,1,opt,name=channel,proto3,enum=excomms.ChannelType" json:"channel,omitempty"`
+	// Types that are valid to be assigned to Message:
+	//	*SendMessageRequest_Email
+	//	*SendMessageRequest_SMS
+	Message isSendMessageRequest_Message `protobuf_oneof:"message"`
+	// uuid for client to group and retrieve list of external messages
+	UUID string `protobuf:"bytes,4,opt,name=uuid,proto3" json:"uuid,omitempty"`
 }
 
 func (m *SendMessageRequest) Reset()      { *m = SendMessageRequest{} }
 func (*SendMessageRequest) ProtoMessage() {}
+
+type isSendMessageRequest_Message interface {
+	isSendMessageRequest_Message()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type SendMessageRequest_Email struct {
+	Email *EmailMessage `protobuf:"bytes,2,opt,name=email,oneof"`
+}
+type SendMessageRequest_SMS struct {
+	SMS *SMSMessage `protobuf:"bytes,3,opt,name=sms,oneof"`
+}
+
+func (*SendMessageRequest_Email) isSendMessageRequest_Message() {}
+func (*SendMessageRequest_SMS) isSendMessageRequest_Message()   {}
+
+func (m *SendMessageRequest) GetMessage() isSendMessageRequest_Message {
+	if m != nil {
+		return m.Message
+	}
+	return nil
+}
+
+func (m *SendMessageRequest) GetEmail() *EmailMessage {
+	if x, ok := m.GetMessage().(*SendMessageRequest_Email); ok {
+		return x.Email
+	}
+	return nil
+}
+
+func (m *SendMessageRequest) GetSMS() *SMSMessage {
+	if x, ok := m.GetMessage().(*SendMessageRequest_SMS); ok {
+		return x.SMS
+	}
+	return nil
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*SendMessageRequest) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
+	return _SendMessageRequest_OneofMarshaler, _SendMessageRequest_OneofUnmarshaler, []interface{}{
+		(*SendMessageRequest_Email)(nil),
+		(*SendMessageRequest_SMS)(nil),
+	}
+}
+
+func _SendMessageRequest_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*SendMessageRequest)
+	// message
+	switch x := m.Message.(type) {
+	case *SendMessageRequest_Email:
+		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Email); err != nil {
+			return err
+		}
+	case *SendMessageRequest_SMS:
+		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.SMS); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("SendMessageRequest.Message has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _SendMessageRequest_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*SendMessageRequest)
+	switch tag {
+	case 2: // message.email
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(EmailMessage)
+		err := b.DecodeMessage(msg)
+		m.Message = &SendMessageRequest_Email{msg}
+		return true, err
+	case 3: // message.sms
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(SMSMessage)
+		err := b.DecodeMessage(msg)
+		m.Message = &SendMessageRequest_SMS{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+type EmailMessage struct {
+	Subject          string `protobuf:"bytes,1,opt,name=subject,proto3" json:"subject,omitempty"`
+	Body             string `protobuf:"bytes,2,opt,name=body,proto3" json:"body,omitempty"`
+	FromName         string `protobuf:"bytes,3,opt,name=from_name,proto3" json:"from_name,omitempty"`
+	FromEmailAddress string `protobuf:"bytes,4,opt,name=from_email_address,proto3" json:"from_email_address,omitempty"`
+	ToName           string `protobuf:"bytes,5,opt,name=to_name,proto3" json:"to_name,omitempty"`
+	ToEmailAddress   string `protobuf:"bytes,6,opt,name=to_email_address,proto3" json:"to_email_address,omitempty"`
+}
+
+func (m *EmailMessage) Reset()      { *m = EmailMessage{} }
+func (*EmailMessage) ProtoMessage() {}
+
+type SMSMessage struct {
+	Text            string `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
+	FromPhoneNumber string `protobuf:"bytes,2,opt,name=from_phone_number,proto3" json:"from_phone_number,omitempty"`
+	ToPhoneNumber   string `protobuf:"bytes,3,opt,name=to_phone_number,proto3" json:"to_phone_number,omitempty"`
+}
+
+func (m *SMSMessage) Reset()      { *m = SMSMessage{} }
+func (*SMSMessage) ProtoMessage() {}
 
 type SendMessageResponse struct {
 }
@@ -643,36 +646,30 @@ type ProvisionPhoneNumberResponse struct {
 func (m *ProvisionPhoneNumberResponse) Reset()      { *m = ProvisionPhoneNumberResponse{} }
 func (*ProvisionPhoneNumberResponse) ProtoMessage() {}
 
-type ProcessTwilioEventRequest struct {
-	Params *TwilioParams `protobuf:"bytes,1,opt,name=params" json:"params,omitempty"`
-	Event  TwilioEvent   `protobuf:"varint,2,opt,name=event,proto3,enum=excomms.TwilioEvent" json:"event,omitempty"`
+type ProvisionEmailAddressRequest struct {
+	ProvisionFor string `protobuf:"bytes,1,opt,name=provision_for,proto3" json:"provision_for,omitempty"`
+	EmailAddress string `protobuf:"bytes,2,opt,name=email_address,proto3" json:"email_address,omitempty"`
 }
 
-func (m *ProcessTwilioEventRequest) Reset()      { *m = ProcessTwilioEventRequest{} }
-func (*ProcessTwilioEventRequest) ProtoMessage() {}
+func (m *ProvisionEmailAddressRequest) Reset()      { *m = ProvisionEmailAddressRequest{} }
+func (*ProvisionEmailAddressRequest) ProtoMessage() {}
 
-func (m *ProcessTwilioEventRequest) GetParams() *TwilioParams {
-	if m != nil {
-		return m.Params
-	}
-	return nil
+type ProvisionEmailAddressResponse struct {
+	EmailAddress string `protobuf:"bytes,1,opt,name=email_address,proto3" json:"email_address,omitempty"`
 }
 
-type ProcessTwilioEventResponse struct {
-	Twiml string `protobuf:"bytes,1,opt,name=twiml,proto3" json:"twiml,omitempty"`
-}
-
-func (m *ProcessTwilioEventResponse) Reset()      { *m = ProcessTwilioEventResponse{} }
-func (*ProcessTwilioEventResponse) ProtoMessage() {}
+func (m *ProvisionEmailAddressResponse) Reset()      { *m = ProvisionEmailAddressResponse{} }
+func (*ProvisionEmailAddressResponse) ProtoMessage() {}
 
 func init() {
-	proto.RegisterType((*TwilioParams)(nil), "excomms.TwilioParams")
-	proto.RegisterType((*TwilioParams_TwilioMediaItem)(nil), "excomms.TwilioParams.TwilioMediaItem")
 	proto.RegisterType((*PublishedExternalMessage)(nil), "excomms.PublishedExternalMessage")
 	proto.RegisterType((*SMSItem)(nil), "excomms.SMSItem")
 	proto.RegisterType((*CallEventItem)(nil), "excomms.CallEventItem")
+	proto.RegisterType((*EmailItem)(nil), "excomms.EmailItem")
 	proto.RegisterType((*MediaAttachment)(nil), "excomms.MediaAttachment")
 	proto.RegisterType((*SendMessageRequest)(nil), "excomms.SendMessageRequest")
+	proto.RegisterType((*EmailMessage)(nil), "excomms.EmailMessage")
+	proto.RegisterType((*SMSMessage)(nil), "excomms.SMSMessage")
 	proto.RegisterType((*SendMessageResponse)(nil), "excomms.SendMessageResponse")
 	proto.RegisterType((*InitiatePhoneCallRequest)(nil), "excomms.InitiatePhoneCallRequest")
 	proto.RegisterType((*InitiatePhoneCallResponse)(nil), "excomms.InitiatePhoneCallResponse")
@@ -681,13 +678,10 @@ func init() {
 	proto.RegisterType((*SearchAvailablePhoneNumbersResponse)(nil), "excomms.SearchAvailablePhoneNumbersResponse")
 	proto.RegisterType((*ProvisionPhoneNumberRequest)(nil), "excomms.ProvisionPhoneNumberRequest")
 	proto.RegisterType((*ProvisionPhoneNumberResponse)(nil), "excomms.ProvisionPhoneNumberResponse")
-	proto.RegisterType((*ProcessTwilioEventRequest)(nil), "excomms.ProcessTwilioEventRequest")
-	proto.RegisterType((*ProcessTwilioEventResponse)(nil), "excomms.ProcessTwilioEventResponse")
+	proto.RegisterType((*ProvisionEmailAddressRequest)(nil), "excomms.ProvisionEmailAddressRequest")
+	proto.RegisterType((*ProvisionEmailAddressResponse)(nil), "excomms.ProvisionEmailAddressResponse")
 	proto.RegisterEnum("excomms.ChannelType", ChannelType_name, ChannelType_value)
-	proto.RegisterEnum("excomms.TwilioEvent", TwilioEvent_name, TwilioEvent_value)
 	proto.RegisterEnum("excomms.PhoneNumberCapability", PhoneNumberCapability_name, PhoneNumberCapability_value)
-	proto.RegisterEnum("excomms.TwilioParams_CallStatus", TwilioParams_CallStatus_name, TwilioParams_CallStatus_value)
-	proto.RegisterEnum("excomms.TwilioParams_Direction", TwilioParams_Direction_name, TwilioParams_Direction_value)
 	proto.RegisterEnum("excomms.PublishedExternalMessage_Type", PublishedExternalMessage_Type_name, PublishedExternalMessage_Type_value)
 	proto.RegisterEnum("excomms.PublishedExternalMessage_Direction", PublishedExternalMessage_Direction_name, PublishedExternalMessage_Direction_value)
 	proto.RegisterEnum("excomms.CallEventItem_Type", CallEventItem_Type_name, CallEventItem_Type_value)
@@ -700,29 +694,8 @@ func (x ChannelType) String() string {
 	}
 	return strconv.Itoa(int(x))
 }
-func (x TwilioEvent) String() string {
-	s, ok := TwilioEvent_name[int32(x)]
-	if ok {
-		return s
-	}
-	return strconv.Itoa(int(x))
-}
 func (x PhoneNumberCapability) String() string {
 	s, ok := PhoneNumberCapability_name[int32(x)]
-	if ok {
-		return s
-	}
-	return strconv.Itoa(int(x))
-}
-func (x TwilioParams_CallStatus) String() string {
-	s, ok := TwilioParams_CallStatus_name[int32(x)]
-	if ok {
-		return s
-	}
-	return strconv.Itoa(int(x))
-}
-func (x TwilioParams_Direction) String() string {
-	s, ok := TwilioParams_Direction_name[int32(x)]
 	if ok {
 		return s
 	}
@@ -755,163 +728,6 @@ func (x InitiatePhoneCallRequest_CallInitiationType) String() string {
 		return s
 	}
 	return strconv.Itoa(int(x))
-}
-func (this *TwilioParams) Equal(that interface{}) bool {
-	if that == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	}
-
-	that1, ok := that.(*TwilioParams)
-	if !ok {
-		return false
-	}
-	if that1 == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	} else if this == nil {
-		return false
-	}
-	if this.CallSID != that1.CallSID {
-		return false
-	}
-	if this.AccountSID != that1.AccountSID {
-		return false
-	}
-	if this.From != that1.From {
-		return false
-	}
-	if this.To != that1.To {
-		return false
-	}
-	if this.CallStatus != that1.CallStatus {
-		return false
-	}
-	if this.APIVersion != that1.APIVersion {
-		return false
-	}
-	if this.Direction != that1.Direction {
-		return false
-	}
-	if this.CallDuration != that1.CallDuration {
-		return false
-	}
-	if this.RecordingURL != that1.RecordingURL {
-		return false
-	}
-	if this.RecordingSID != that1.RecordingSID {
-		return false
-	}
-	if this.RecordingDuration != that1.RecordingDuration {
-		return false
-	}
-	if this.Digits != that1.Digits {
-		return false
-	}
-	if this.MessageSID != that1.MessageSID {
-		return false
-	}
-	if this.SMSSID != that1.SMSSID {
-		return false
-	}
-	if this.Body != that1.Body {
-		return false
-	}
-	if this.NumMedia != that1.NumMedia {
-		return false
-	}
-	if len(this.MediaItems) != len(that1.MediaItems) {
-		return false
-	}
-	for i := range this.MediaItems {
-		if !this.MediaItems[i].Equal(that1.MediaItems[i]) {
-			return false
-		}
-	}
-	if this.MessagingServiceID != that1.MessagingServiceID {
-		return false
-	}
-	if this.QueueSID != that1.QueueSID {
-		return false
-	}
-	if this.QueueTime != that1.QueueTime {
-		return false
-	}
-	if this.DequeingCallSID != that1.DequeingCallSID {
-		return false
-	}
-	if this.ParentCallSID != that1.ParentCallSID {
-		return false
-	}
-	if this.DialCallStatus != that1.DialCallStatus {
-		return false
-	}
-	if this.DialCallDuration != that1.DialCallDuration {
-		return false
-	}
-	if this.ForwardedFrom != that1.ForwardedFrom {
-		return false
-	}
-	if this.CallerName != that1.CallerName {
-		return false
-	}
-	if this.FromCity != that1.FromCity {
-		return false
-	}
-	if this.FromState != that1.FromState {
-		return false
-	}
-	if this.FromZip != that1.FromZip {
-		return false
-	}
-	if this.FromCountry != that1.FromCountry {
-		return false
-	}
-	if this.ToCity != that1.ToCity {
-		return false
-	}
-	if this.ToState != that1.ToState {
-		return false
-	}
-	if this.ToZip != that1.ToZip {
-		return false
-	}
-	if this.ToCountry != that1.ToCountry {
-		return false
-	}
-	return true
-}
-func (this *TwilioParams_TwilioMediaItem) Equal(that interface{}) bool {
-	if that == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	}
-
-	that1, ok := that.(*TwilioParams_TwilioMediaItem)
-	if !ok {
-		return false
-	}
-	if that1 == nil {
-		if this == nil {
-			return true
-		}
-		return false
-	} else if this == nil {
-		return false
-	}
-	if this.ContentType != that1.ContentType {
-		return false
-	}
-	if this.MediaURL != that1.MediaURL {
-		return false
-	}
-	return true
 }
 func (this *PublishedExternalMessage) Equal(that interface{}) bool {
 	if that == nil {
@@ -1009,6 +825,31 @@ func (this *PublishedExternalMessage_CallEventItem) Equal(that interface{}) bool
 	}
 	return true
 }
+func (this *PublishedExternalMessage_EmailItem) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*PublishedExternalMessage_EmailItem)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.EmailItem.Equal(that1.EmailItem) {
+		return false
+	}
+	return true
+}
 func (this *SMSItem) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
@@ -1073,6 +914,42 @@ func (this *CallEventItem) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *EmailItem) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*EmailItem)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Body != that1.Body {
+		return false
+	}
+	if this.Subject != that1.Subject {
+		return false
+	}
+	if len(this.Attachments) != len(that1.Attachments) {
+		return false
+	}
+	for i := range this.Attachments {
+		if !this.Attachments[i].Equal(that1.Attachments[i]) {
+			return false
+		}
+	}
+	return true
+}
 func (this *MediaAttachment) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
@@ -1121,16 +998,140 @@ func (this *SendMessageRequest) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
+	if this.Channel != that1.Channel {
+		return false
+	}
+	if that1.Message == nil {
+		if this.Message != nil {
+			return false
+		}
+	} else if this.Message == nil {
+		return false
+	} else if !this.Message.Equal(that1.Message) {
+		return false
+	}
+	if this.UUID != that1.UUID {
+		return false
+	}
+	return true
+}
+func (this *SendMessageRequest_Email) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*SendMessageRequest_Email)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Email.Equal(that1.Email) {
+		return false
+	}
+	return true
+}
+func (this *SendMessageRequest_SMS) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*SendMessageRequest_SMS)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.SMS.Equal(that1.SMS) {
+		return false
+	}
+	return true
+}
+func (this *EmailMessage) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*EmailMessage)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Subject != that1.Subject {
+		return false
+	}
+	if this.Body != that1.Body {
+		return false
+	}
+	if this.FromName != that1.FromName {
+		return false
+	}
+	if this.FromEmailAddress != that1.FromEmailAddress {
+		return false
+	}
+	if this.ToName != that1.ToName {
+		return false
+	}
+	if this.ToEmailAddress != that1.ToEmailAddress {
+		return false
+	}
+	return true
+}
+func (this *SMSMessage) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*SMSMessage)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
 	if this.Text != that1.Text {
 		return false
 	}
-	if this.FromChannelID != that1.FromChannelID {
+	if this.FromPhoneNumber != that1.FromPhoneNumber {
 		return false
 	}
-	if this.ToChannelID != that1.ToChannelID {
-		return false
-	}
-	if this.Channel != that1.Channel {
+	if this.ToPhoneNumber != that1.ToPhoneNumber {
 		return false
 	}
 	return true
@@ -1424,7 +1425,7 @@ func (this *ProvisionPhoneNumberResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *ProcessTwilioEventRequest) Equal(that interface{}) bool {
+func (this *ProvisionEmailAddressRequest) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
 			return true
@@ -1432,7 +1433,7 @@ func (this *ProcessTwilioEventRequest) Equal(that interface{}) bool {
 		return false
 	}
 
-	that1, ok := that.(*ProcessTwilioEventRequest)
+	that1, ok := that.(*ProvisionEmailAddressRequest)
 	if !ok {
 		return false
 	}
@@ -1444,15 +1445,15 @@ func (this *ProcessTwilioEventRequest) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if !this.Params.Equal(that1.Params) {
+	if this.ProvisionFor != that1.ProvisionFor {
 		return false
 	}
-	if this.Event != that1.Event {
+	if this.EmailAddress != that1.EmailAddress {
 		return false
 	}
 	return true
 }
-func (this *ProcessTwilioEventResponse) Equal(that interface{}) bool {
+func (this *ProvisionEmailAddressResponse) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
 			return true
@@ -1460,7 +1461,7 @@ func (this *ProcessTwilioEventResponse) Equal(that interface{}) bool {
 		return false
 	}
 
-	that1, ok := that.(*ProcessTwilioEventResponse)
+	that1, ok := that.(*ProvisionEmailAddressResponse)
 	if !ok {
 		return false
 	}
@@ -1472,72 +1473,16 @@ func (this *ProcessTwilioEventResponse) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.Twiml != that1.Twiml {
+	if this.EmailAddress != that1.EmailAddress {
 		return false
 	}
 	return true
-}
-func (this *TwilioParams) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 38)
-	s = append(s, "&excomms.TwilioParams{")
-	s = append(s, "CallSID: "+fmt.Sprintf("%#v", this.CallSID)+",\n")
-	s = append(s, "AccountSID: "+fmt.Sprintf("%#v", this.AccountSID)+",\n")
-	s = append(s, "From: "+fmt.Sprintf("%#v", this.From)+",\n")
-	s = append(s, "To: "+fmt.Sprintf("%#v", this.To)+",\n")
-	s = append(s, "CallStatus: "+fmt.Sprintf("%#v", this.CallStatus)+",\n")
-	s = append(s, "APIVersion: "+fmt.Sprintf("%#v", this.APIVersion)+",\n")
-	s = append(s, "Direction: "+fmt.Sprintf("%#v", this.Direction)+",\n")
-	s = append(s, "CallDuration: "+fmt.Sprintf("%#v", this.CallDuration)+",\n")
-	s = append(s, "RecordingURL: "+fmt.Sprintf("%#v", this.RecordingURL)+",\n")
-	s = append(s, "RecordingSID: "+fmt.Sprintf("%#v", this.RecordingSID)+",\n")
-	s = append(s, "RecordingDuration: "+fmt.Sprintf("%#v", this.RecordingDuration)+",\n")
-	s = append(s, "Digits: "+fmt.Sprintf("%#v", this.Digits)+",\n")
-	s = append(s, "MessageSID: "+fmt.Sprintf("%#v", this.MessageSID)+",\n")
-	s = append(s, "SMSSID: "+fmt.Sprintf("%#v", this.SMSSID)+",\n")
-	s = append(s, "Body: "+fmt.Sprintf("%#v", this.Body)+",\n")
-	s = append(s, "NumMedia: "+fmt.Sprintf("%#v", this.NumMedia)+",\n")
-	if this.MediaItems != nil {
-		s = append(s, "MediaItems: "+fmt.Sprintf("%#v", this.MediaItems)+",\n")
-	}
-	s = append(s, "MessagingServiceID: "+fmt.Sprintf("%#v", this.MessagingServiceID)+",\n")
-	s = append(s, "QueueSID: "+fmt.Sprintf("%#v", this.QueueSID)+",\n")
-	s = append(s, "QueueTime: "+fmt.Sprintf("%#v", this.QueueTime)+",\n")
-	s = append(s, "DequeingCallSID: "+fmt.Sprintf("%#v", this.DequeingCallSID)+",\n")
-	s = append(s, "ParentCallSID: "+fmt.Sprintf("%#v", this.ParentCallSID)+",\n")
-	s = append(s, "DialCallStatus: "+fmt.Sprintf("%#v", this.DialCallStatus)+",\n")
-	s = append(s, "DialCallDuration: "+fmt.Sprintf("%#v", this.DialCallDuration)+",\n")
-	s = append(s, "ForwardedFrom: "+fmt.Sprintf("%#v", this.ForwardedFrom)+",\n")
-	s = append(s, "CallerName: "+fmt.Sprintf("%#v", this.CallerName)+",\n")
-	s = append(s, "FromCity: "+fmt.Sprintf("%#v", this.FromCity)+",\n")
-	s = append(s, "FromState: "+fmt.Sprintf("%#v", this.FromState)+",\n")
-	s = append(s, "FromZip: "+fmt.Sprintf("%#v", this.FromZip)+",\n")
-	s = append(s, "FromCountry: "+fmt.Sprintf("%#v", this.FromCountry)+",\n")
-	s = append(s, "ToCity: "+fmt.Sprintf("%#v", this.ToCity)+",\n")
-	s = append(s, "ToState: "+fmt.Sprintf("%#v", this.ToState)+",\n")
-	s = append(s, "ToZip: "+fmt.Sprintf("%#v", this.ToZip)+",\n")
-	s = append(s, "ToCountry: "+fmt.Sprintf("%#v", this.ToCountry)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *TwilioParams_TwilioMediaItem) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&excomms.TwilioParams_TwilioMediaItem{")
-	s = append(s, "ContentType: "+fmt.Sprintf("%#v", this.ContentType)+",\n")
-	s = append(s, "MediaURL: "+fmt.Sprintf("%#v", this.MediaURL)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
 }
 func (this *PublishedExternalMessage) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 11)
+	s := make([]string, 0, 12)
 	s = append(s, "&excomms.PublishedExternalMessage{")
 	s = append(s, "FromChannelID: "+fmt.Sprintf("%#v", this.FromChannelID)+",\n")
 	s = append(s, "ToChannelID: "+fmt.Sprintf("%#v", this.ToChannelID)+",\n")
@@ -1566,6 +1511,14 @@ func (this *PublishedExternalMessage_CallEventItem) GoString() string {
 		`CallEventItem:` + fmt.Sprintf("%#v", this.CallEventItem) + `}`}, ", ")
 	return s
 }
+func (this *PublishedExternalMessage_EmailItem) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&excomms.PublishedExternalMessage_EmailItem{` +
+		`EmailItem:` + fmt.Sprintf("%#v", this.EmailItem) + `}`}, ", ")
+	return s
+}
 func (this *SMSItem) GoString() string {
 	if this == nil {
 		return "nil"
@@ -1591,6 +1544,20 @@ func (this *CallEventItem) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *EmailItem) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&excomms.EmailItem{")
+	s = append(s, "Body: "+fmt.Sprintf("%#v", this.Body)+",\n")
+	s = append(s, "Subject: "+fmt.Sprintf("%#v", this.Subject)+",\n")
+	if this.Attachments != nil {
+		s = append(s, "Attachments: "+fmt.Sprintf("%#v", this.Attachments)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *MediaAttachment) GoString() string {
 	if this == nil {
 		return "nil"
@@ -1608,10 +1575,54 @@ func (this *SendMessageRequest) GoString() string {
 	}
 	s := make([]string, 0, 8)
 	s = append(s, "&excomms.SendMessageRequest{")
-	s = append(s, "Text: "+fmt.Sprintf("%#v", this.Text)+",\n")
-	s = append(s, "FromChannelID: "+fmt.Sprintf("%#v", this.FromChannelID)+",\n")
-	s = append(s, "ToChannelID: "+fmt.Sprintf("%#v", this.ToChannelID)+",\n")
 	s = append(s, "Channel: "+fmt.Sprintf("%#v", this.Channel)+",\n")
+	if this.Message != nil {
+		s = append(s, "Message: "+fmt.Sprintf("%#v", this.Message)+",\n")
+	}
+	s = append(s, "UUID: "+fmt.Sprintf("%#v", this.UUID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *SendMessageRequest_Email) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&excomms.SendMessageRequest_Email{` +
+		`Email:` + fmt.Sprintf("%#v", this.Email) + `}`}, ", ")
+	return s
+}
+func (this *SendMessageRequest_SMS) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&excomms.SendMessageRequest_SMS{` +
+		`SMS:` + fmt.Sprintf("%#v", this.SMS) + `}`}, ", ")
+	return s
+}
+func (this *EmailMessage) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 10)
+	s = append(s, "&excomms.EmailMessage{")
+	s = append(s, "Subject: "+fmt.Sprintf("%#v", this.Subject)+",\n")
+	s = append(s, "Body: "+fmt.Sprintf("%#v", this.Body)+",\n")
+	s = append(s, "FromName: "+fmt.Sprintf("%#v", this.FromName)+",\n")
+	s = append(s, "FromEmailAddress: "+fmt.Sprintf("%#v", this.FromEmailAddress)+",\n")
+	s = append(s, "ToName: "+fmt.Sprintf("%#v", this.ToName)+",\n")
+	s = append(s, "ToEmailAddress: "+fmt.Sprintf("%#v", this.ToEmailAddress)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *SMSMessage) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&excomms.SMSMessage{")
+	s = append(s, "Text: "+fmt.Sprintf("%#v", this.Text)+",\n")
+	s = append(s, "FromPhoneNumber: "+fmt.Sprintf("%#v", this.FromPhoneNumber)+",\n")
+	s = append(s, "ToPhoneNumber: "+fmt.Sprintf("%#v", this.ToPhoneNumber)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1721,26 +1732,24 @@ func (this *ProvisionPhoneNumberResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *ProcessTwilioEventRequest) GoString() string {
+func (this *ProvisionEmailAddressRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 6)
-	s = append(s, "&excomms.ProcessTwilioEventRequest{")
-	if this.Params != nil {
-		s = append(s, "Params: "+fmt.Sprintf("%#v", this.Params)+",\n")
-	}
-	s = append(s, "Event: "+fmt.Sprintf("%#v", this.Event)+",\n")
+	s = append(s, "&excomms.ProvisionEmailAddressRequest{")
+	s = append(s, "ProvisionFor: "+fmt.Sprintf("%#v", this.ProvisionFor)+",\n")
+	s = append(s, "EmailAddress: "+fmt.Sprintf("%#v", this.EmailAddress)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *ProcessTwilioEventResponse) GoString() string {
+func (this *ProvisionEmailAddressResponse) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 5)
-	s = append(s, "&excomms.ProcessTwilioEventResponse{")
-	s = append(s, "Twiml: "+fmt.Sprintf("%#v", this.Twiml)+",\n")
+	s = append(s, "&excomms.ProvisionEmailAddressResponse{")
+	s = append(s, "EmailAddress: "+fmt.Sprintf("%#v", this.EmailAddress)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1781,12 +1790,12 @@ type ExCommsClient interface {
 	SearchAvailablePhoneNumbers(ctx context.Context, in *SearchAvailablePhoneNumbersRequest, opts ...grpc.CallOption) (*SearchAvailablePhoneNumbersResponse, error)
 	// ProvisionPhoneNumber provisions the phone number provided for the requester.
 	ProvisionPhoneNumber(ctx context.Context, in *ProvisionPhoneNumberRequest, opts ...grpc.CallOption) (*ProvisionPhoneNumberResponse, error)
+	// ProvisionEmailAddress provisions an email address for the requester.
+	ProvisionEmailAddress(ctx context.Context, in *ProvisionEmailAddressRequest, opts ...grpc.CallOption) (*ProvisionEmailAddressResponse, error)
 	// SendMessage sends the message over an external channel as specified in the SendMessageRequest.
 	SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*SendMessageResponse, error)
 	// InitiatePhoneCall initiates a phone call as defined in the InitiatePhoneCallRequest.
 	InitiatePhoneCall(ctx context.Context, in *InitiatePhoneCallRequest, opts ...grpc.CallOption) (*InitiatePhoneCallResponse, error)
-	// ProcessTwilio processes the incoming twilio event and its corresponding parameters
-	ProcessTwilioEvent(ctx context.Context, in *ProcessTwilioEventRequest, opts ...grpc.CallOption) (*ProcessTwilioEventResponse, error)
 }
 
 type exCommsClient struct {
@@ -1815,6 +1824,15 @@ func (c *exCommsClient) ProvisionPhoneNumber(ctx context.Context, in *ProvisionP
 	return out, nil
 }
 
+func (c *exCommsClient) ProvisionEmailAddress(ctx context.Context, in *ProvisionEmailAddressRequest, opts ...grpc.CallOption) (*ProvisionEmailAddressResponse, error) {
+	out := new(ProvisionEmailAddressResponse)
+	err := grpc.Invoke(ctx, "/excomms.ExComms/ProvisionEmailAddress", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *exCommsClient) SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*SendMessageResponse, error) {
 	out := new(SendMessageResponse)
 	err := grpc.Invoke(ctx, "/excomms.ExComms/SendMessage", in, out, c.cc, opts...)
@@ -1833,15 +1851,6 @@ func (c *exCommsClient) InitiatePhoneCall(ctx context.Context, in *InitiatePhone
 	return out, nil
 }
 
-func (c *exCommsClient) ProcessTwilioEvent(ctx context.Context, in *ProcessTwilioEventRequest, opts ...grpc.CallOption) (*ProcessTwilioEventResponse, error) {
-	out := new(ProcessTwilioEventResponse)
-	err := grpc.Invoke(ctx, "/excomms.ExComms/ProcessTwilioEvent", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // Server API for ExComms service
 
 type ExCommsServer interface {
@@ -1849,12 +1858,12 @@ type ExCommsServer interface {
 	SearchAvailablePhoneNumbers(context.Context, *SearchAvailablePhoneNumbersRequest) (*SearchAvailablePhoneNumbersResponse, error)
 	// ProvisionPhoneNumber provisions the phone number provided for the requester.
 	ProvisionPhoneNumber(context.Context, *ProvisionPhoneNumberRequest) (*ProvisionPhoneNumberResponse, error)
+	// ProvisionEmailAddress provisions an email address for the requester.
+	ProvisionEmailAddress(context.Context, *ProvisionEmailAddressRequest) (*ProvisionEmailAddressResponse, error)
 	// SendMessage sends the message over an external channel as specified in the SendMessageRequest.
 	SendMessage(context.Context, *SendMessageRequest) (*SendMessageResponse, error)
 	// InitiatePhoneCall initiates a phone call as defined in the InitiatePhoneCallRequest.
 	InitiatePhoneCall(context.Context, *InitiatePhoneCallRequest) (*InitiatePhoneCallResponse, error)
-	// ProcessTwilio processes the incoming twilio event and its corresponding parameters
-	ProcessTwilioEvent(context.Context, *ProcessTwilioEventRequest) (*ProcessTwilioEventResponse, error)
 }
 
 func RegisterExCommsServer(s *grpc.Server, srv ExCommsServer) {
@@ -1885,6 +1894,18 @@ func _ExComms_ProvisionPhoneNumber_Handler(srv interface{}, ctx context.Context,
 	return out, nil
 }
 
+func _ExComms_ProvisionEmailAddress_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(ProvisionEmailAddressRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(ExCommsServer).ProvisionEmailAddress(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func _ExComms_SendMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(SendMessageRequest)
 	if err := dec(in); err != nil {
@@ -1909,18 +1930,6 @@ func _ExComms_InitiatePhoneCall_Handler(srv interface{}, ctx context.Context, de
 	return out, nil
 }
 
-func _ExComms_ProcessTwilioEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(ProcessTwilioEventRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	out, err := srv.(ExCommsServer).ProcessTwilioEvent(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 var _ExComms_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "excomms.ExComms",
 	HandlerType: (*ExCommsServer)(nil),
@@ -1934,6 +1943,10 @@ var _ExComms_serviceDesc = grpc.ServiceDesc{
 			Handler:    _ExComms_ProvisionPhoneNumber_Handler,
 		},
 		{
+			MethodName: "ProvisionEmailAddress",
+			Handler:    _ExComms_ProvisionEmailAddress_Handler,
+		},
+		{
 			MethodName: "SendMessage",
 			Handler:    _ExComms_SendMessage_Handler,
 		},
@@ -1941,300 +1954,8 @@ var _ExComms_serviceDesc = grpc.ServiceDesc{
 			MethodName: "InitiatePhoneCall",
 			Handler:    _ExComms_InitiatePhoneCall_Handler,
 		},
-		{
-			MethodName: "ProcessTwilioEvent",
-			Handler:    _ExComms_ProcessTwilioEvent_Handler,
-		},
 	},
 	Streams: []grpc.StreamDesc{},
-}
-
-func (m *TwilioParams) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *TwilioParams) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.CallSID) > 0 {
-		data[i] = 0xa
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.CallSID)))
-		i += copy(data[i:], m.CallSID)
-	}
-	if len(m.AccountSID) > 0 {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.AccountSID)))
-		i += copy(data[i:], m.AccountSID)
-	}
-	if len(m.From) > 0 {
-		data[i] = 0x1a
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.From)))
-		i += copy(data[i:], m.From)
-	}
-	if len(m.To) > 0 {
-		data[i] = 0x22
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.To)))
-		i += copy(data[i:], m.To)
-	}
-	if m.CallStatus != 0 {
-		data[i] = 0x28
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.CallStatus))
-	}
-	if len(m.APIVersion) > 0 {
-		data[i] = 0x32
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.APIVersion)))
-		i += copy(data[i:], m.APIVersion)
-	}
-	if m.Direction != 0 {
-		data[i] = 0x38
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Direction))
-	}
-	if m.CallDuration != 0 {
-		data[i] = 0x40
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.CallDuration))
-	}
-	if len(m.RecordingURL) > 0 {
-		data[i] = 0x4a
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.RecordingURL)))
-		i += copy(data[i:], m.RecordingURL)
-	}
-	if len(m.RecordingSID) > 0 {
-		data[i] = 0x52
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.RecordingSID)))
-		i += copy(data[i:], m.RecordingSID)
-	}
-	if m.RecordingDuration != 0 {
-		data[i] = 0x58
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.RecordingDuration))
-	}
-	if len(m.Digits) > 0 {
-		data[i] = 0x62
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Digits)))
-		i += copy(data[i:], m.Digits)
-	}
-	if len(m.MessageSID) > 0 {
-		data[i] = 0x6a
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.MessageSID)))
-		i += copy(data[i:], m.MessageSID)
-	}
-	if len(m.SMSSID) > 0 {
-		data[i] = 0x72
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.SMSSID)))
-		i += copy(data[i:], m.SMSSID)
-	}
-	if len(m.Body) > 0 {
-		data[i] = 0x7a
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Body)))
-		i += copy(data[i:], m.Body)
-	}
-	if m.NumMedia != 0 {
-		data[i] = 0x80
-		i++
-		data[i] = 0x1
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.NumMedia))
-	}
-	if len(m.MediaItems) > 0 {
-		for _, msg := range m.MediaItems {
-			data[i] = 0x8a
-			i++
-			data[i] = 0x1
-			i++
-			i = encodeVarintSvc(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if len(m.MessagingServiceID) > 0 {
-		data[i] = 0x92
-		i++
-		data[i] = 0x1
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.MessagingServiceID)))
-		i += copy(data[i:], m.MessagingServiceID)
-	}
-	if len(m.QueueSID) > 0 {
-		data[i] = 0x9a
-		i++
-		data[i] = 0x1
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.QueueSID)))
-		i += copy(data[i:], m.QueueSID)
-	}
-	if m.QueueTime != 0 {
-		data[i] = 0xa0
-		i++
-		data[i] = 0x1
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.QueueTime))
-	}
-	if len(m.DequeingCallSID) > 0 {
-		data[i] = 0xaa
-		i++
-		data[i] = 0x1
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.DequeingCallSID)))
-		i += copy(data[i:], m.DequeingCallSID)
-	}
-	if len(m.ParentCallSID) > 0 {
-		data[i] = 0xb2
-		i++
-		data[i] = 0x1
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ParentCallSID)))
-		i += copy(data[i:], m.ParentCallSID)
-	}
-	if m.DialCallStatus != 0 {
-		data[i] = 0xb8
-		i++
-		data[i] = 0x1
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.DialCallStatus))
-	}
-	if m.DialCallDuration != 0 {
-		data[i] = 0xc0
-		i++
-		data[i] = 0x1
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.DialCallDuration))
-	}
-	if len(m.ForwardedFrom) > 0 {
-		data[i] = 0xa2
-		i++
-		data[i] = 0x6
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ForwardedFrom)))
-		i += copy(data[i:], m.ForwardedFrom)
-	}
-	if len(m.CallerName) > 0 {
-		data[i] = 0xaa
-		i++
-		data[i] = 0x6
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.CallerName)))
-		i += copy(data[i:], m.CallerName)
-	}
-	if len(m.FromCity) > 0 {
-		data[i] = 0xb2
-		i++
-		data[i] = 0x6
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.FromCity)))
-		i += copy(data[i:], m.FromCity)
-	}
-	if len(m.FromState) > 0 {
-		data[i] = 0xba
-		i++
-		data[i] = 0x6
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.FromState)))
-		i += copy(data[i:], m.FromState)
-	}
-	if len(m.FromZip) > 0 {
-		data[i] = 0xc2
-		i++
-		data[i] = 0x6
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.FromZip)))
-		i += copy(data[i:], m.FromZip)
-	}
-	if len(m.FromCountry) > 0 {
-		data[i] = 0xca
-		i++
-		data[i] = 0x6
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.FromCountry)))
-		i += copy(data[i:], m.FromCountry)
-	}
-	if len(m.ToCity) > 0 {
-		data[i] = 0xd2
-		i++
-		data[i] = 0x6
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ToCity)))
-		i += copy(data[i:], m.ToCity)
-	}
-	if len(m.ToState) > 0 {
-		data[i] = 0xda
-		i++
-		data[i] = 0x6
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ToState)))
-		i += copy(data[i:], m.ToState)
-	}
-	if len(m.ToZip) > 0 {
-		data[i] = 0xe2
-		i++
-		data[i] = 0x6
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ToZip)))
-		i += copy(data[i:], m.ToZip)
-	}
-	if len(m.ToCountry) > 0 {
-		data[i] = 0xea
-		i++
-		data[i] = 0x6
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ToCountry)))
-		i += copy(data[i:], m.ToCountry)
-	}
-	return i, nil
-}
-
-func (m *TwilioParams_TwilioMediaItem) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *TwilioParams_TwilioMediaItem) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.ContentType) > 0 {
-		data[i] = 0xa
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ContentType)))
-		i += copy(data[i:], m.ContentType)
-	}
-	if len(m.MediaURL) > 0 {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.MediaURL)))
-		i += copy(data[i:], m.MediaURL)
-	}
-	return i, nil
 }
 
 func (m *PublishedExternalMessage) Marshal() (data []byte, err error) {
@@ -2282,7 +2003,7 @@ func (m *PublishedExternalMessage) MarshalTo(data []byte) (int, error) {
 		i += nn1
 	}
 	if m.Direction != 0 {
-		data[i] = 0x38
+		data[i] = 0x40
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Direction))
 	}
@@ -2314,6 +2035,20 @@ func (m *PublishedExternalMessage_CallEventItem) MarshalTo(data []byte) (int, er
 			return 0, err
 		}
 		i += n3
+	}
+	return i, nil
+}
+func (m *PublishedExternalMessage_EmailItem) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.EmailItem != nil {
+		data[i] = 0x3a
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.EmailItem.Size()))
+		n4, err := m.EmailItem.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n4
 	}
 	return i, nil
 }
@@ -2387,6 +2122,48 @@ func (m *CallEventItem) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *EmailItem) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *EmailItem) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Body) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Body)))
+		i += copy(data[i:], m.Body)
+	}
+	if len(m.Subject) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Subject)))
+		i += copy(data[i:], m.Subject)
+	}
+	if len(m.Attachments) > 0 {
+		for _, msg := range m.Attachments {
+			data[i] = 0x1a
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
 func (m *MediaAttachment) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -2432,28 +2209,141 @@ func (m *SendMessageRequest) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.Channel != 0 {
+		data[i] = 0x8
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Channel))
+	}
+	if m.Message != nil {
+		nn5, err := m.Message.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += nn5
+	}
+	if len(m.UUID) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.UUID)))
+		i += copy(data[i:], m.UUID)
+	}
+	return i, nil
+}
+
+func (m *SendMessageRequest_Email) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.Email != nil {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Email.Size()))
+		n6, err := m.Email.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n6
+	}
+	return i, nil
+}
+func (m *SendMessageRequest_SMS) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.SMS != nil {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.SMS.Size()))
+		n7, err := m.SMS.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n7
+	}
+	return i, nil
+}
+func (m *EmailMessage) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *EmailMessage) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Subject) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Subject)))
+		i += copy(data[i:], m.Subject)
+	}
+	if len(m.Body) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Body)))
+		i += copy(data[i:], m.Body)
+	}
+	if len(m.FromName) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.FromName)))
+		i += copy(data[i:], m.FromName)
+	}
+	if len(m.FromEmailAddress) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.FromEmailAddress)))
+		i += copy(data[i:], m.FromEmailAddress)
+	}
+	if len(m.ToName) > 0 {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ToName)))
+		i += copy(data[i:], m.ToName)
+	}
+	if len(m.ToEmailAddress) > 0 {
+		data[i] = 0x32
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ToEmailAddress)))
+		i += copy(data[i:], m.ToEmailAddress)
+	}
+	return i, nil
+}
+
+func (m *SMSMessage) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *SMSMessage) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
 	if len(m.Text) > 0 {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(len(m.Text)))
 		i += copy(data[i:], m.Text)
 	}
-	if len(m.FromChannelID) > 0 {
+	if len(m.FromPhoneNumber) > 0 {
 		data[i] = 0x12
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.FromChannelID)))
-		i += copy(data[i:], m.FromChannelID)
+		i = encodeVarintSvc(data, i, uint64(len(m.FromPhoneNumber)))
+		i += copy(data[i:], m.FromPhoneNumber)
 	}
-	if len(m.ToChannelID) > 0 {
+	if len(m.ToPhoneNumber) > 0 {
 		data[i] = 0x1a
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.ToChannelID)))
-		i += copy(data[i:], m.ToChannelID)
-	}
-	if m.Channel != 0 {
-		data[i] = 0x20
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Channel))
+		i = encodeVarintSvc(data, i, uint64(len(m.ToPhoneNumber)))
+		i += copy(data[i:], m.ToPhoneNumber)
 	}
 	return i, nil
 }
@@ -2661,11 +2551,11 @@ func (m *ProvisionPhoneNumberRequest) MarshalTo(data []byte) (int, error) {
 		i += copy(data[i:], m.ProvisionFor)
 	}
 	if m.Number != nil {
-		nn4, err := m.Number.MarshalTo(data[i:])
+		nn8, err := m.Number.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn4
+		i += nn8
 	}
 	return i, nil
 }
@@ -2710,7 +2600,7 @@ func (m *ProvisionPhoneNumberResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *ProcessTwilioEventRequest) Marshal() (data []byte, err error) {
+func (m *ProvisionEmailAddressRequest) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -2720,30 +2610,27 @@ func (m *ProcessTwilioEventRequest) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *ProcessTwilioEventRequest) MarshalTo(data []byte) (int, error) {
+func (m *ProvisionEmailAddressRequest) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.Params != nil {
+	if len(m.ProvisionFor) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Params.Size()))
-		n5, err := m.Params.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n5
+		i = encodeVarintSvc(data, i, uint64(len(m.ProvisionFor)))
+		i += copy(data[i:], m.ProvisionFor)
 	}
-	if m.Event != 0 {
-		data[i] = 0x10
+	if len(m.EmailAddress) > 0 {
+		data[i] = 0x12
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Event))
+		i = encodeVarintSvc(data, i, uint64(len(m.EmailAddress)))
+		i += copy(data[i:], m.EmailAddress)
 	}
 	return i, nil
 }
 
-func (m *ProcessTwilioEventResponse) Marshal() (data []byte, err error) {
+func (m *ProvisionEmailAddressResponse) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -2753,16 +2640,16 @@ func (m *ProcessTwilioEventResponse) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *ProcessTwilioEventResponse) MarshalTo(data []byte) (int, error) {
+func (m *ProvisionEmailAddressResponse) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.Twiml) > 0 {
+	if len(m.EmailAddress) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Twiml)))
-		i += copy(data[i:], m.Twiml)
+		i = encodeVarintSvc(data, i, uint64(len(m.EmailAddress)))
+		i += copy(data[i:], m.EmailAddress)
 	}
 	return i, nil
 }
@@ -2794,156 +2681,6 @@ func encodeVarintSvc(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	return offset + 1
 }
-func (m *TwilioParams) Size() (n int) {
-	var l int
-	_ = l
-	l = len(m.CallSID)
-	if l > 0 {
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	l = len(m.AccountSID)
-	if l > 0 {
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	l = len(m.From)
-	if l > 0 {
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	l = len(m.To)
-	if l > 0 {
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	if m.CallStatus != 0 {
-		n += 1 + sovSvc(uint64(m.CallStatus))
-	}
-	l = len(m.APIVersion)
-	if l > 0 {
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	if m.Direction != 0 {
-		n += 1 + sovSvc(uint64(m.Direction))
-	}
-	if m.CallDuration != 0 {
-		n += 1 + sovSvc(uint64(m.CallDuration))
-	}
-	l = len(m.RecordingURL)
-	if l > 0 {
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	l = len(m.RecordingSID)
-	if l > 0 {
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	if m.RecordingDuration != 0 {
-		n += 1 + sovSvc(uint64(m.RecordingDuration))
-	}
-	l = len(m.Digits)
-	if l > 0 {
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	l = len(m.MessageSID)
-	if l > 0 {
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	l = len(m.SMSSID)
-	if l > 0 {
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	l = len(m.Body)
-	if l > 0 {
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	if m.NumMedia != 0 {
-		n += 2 + sovSvc(uint64(m.NumMedia))
-	}
-	if len(m.MediaItems) > 0 {
-		for _, e := range m.MediaItems {
-			l = e.Size()
-			n += 2 + l + sovSvc(uint64(l))
-		}
-	}
-	l = len(m.MessagingServiceID)
-	if l > 0 {
-		n += 2 + l + sovSvc(uint64(l))
-	}
-	l = len(m.QueueSID)
-	if l > 0 {
-		n += 2 + l + sovSvc(uint64(l))
-	}
-	if m.QueueTime != 0 {
-		n += 2 + sovSvc(uint64(m.QueueTime))
-	}
-	l = len(m.DequeingCallSID)
-	if l > 0 {
-		n += 2 + l + sovSvc(uint64(l))
-	}
-	l = len(m.ParentCallSID)
-	if l > 0 {
-		n += 2 + l + sovSvc(uint64(l))
-	}
-	if m.DialCallStatus != 0 {
-		n += 2 + sovSvc(uint64(m.DialCallStatus))
-	}
-	if m.DialCallDuration != 0 {
-		n += 2 + sovSvc(uint64(m.DialCallDuration))
-	}
-	l = len(m.ForwardedFrom)
-	if l > 0 {
-		n += 2 + l + sovSvc(uint64(l))
-	}
-	l = len(m.CallerName)
-	if l > 0 {
-		n += 2 + l + sovSvc(uint64(l))
-	}
-	l = len(m.FromCity)
-	if l > 0 {
-		n += 2 + l + sovSvc(uint64(l))
-	}
-	l = len(m.FromState)
-	if l > 0 {
-		n += 2 + l + sovSvc(uint64(l))
-	}
-	l = len(m.FromZip)
-	if l > 0 {
-		n += 2 + l + sovSvc(uint64(l))
-	}
-	l = len(m.FromCountry)
-	if l > 0 {
-		n += 2 + l + sovSvc(uint64(l))
-	}
-	l = len(m.ToCity)
-	if l > 0 {
-		n += 2 + l + sovSvc(uint64(l))
-	}
-	l = len(m.ToState)
-	if l > 0 {
-		n += 2 + l + sovSvc(uint64(l))
-	}
-	l = len(m.ToZip)
-	if l > 0 {
-		n += 2 + l + sovSvc(uint64(l))
-	}
-	l = len(m.ToCountry)
-	if l > 0 {
-		n += 2 + l + sovSvc(uint64(l))
-	}
-	return n
-}
-
-func (m *TwilioParams_TwilioMediaItem) Size() (n int) {
-	var l int
-	_ = l
-	l = len(m.ContentType)
-	if l > 0 {
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	l = len(m.MediaURL)
-	if l > 0 {
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	return n
-}
-
 func (m *PublishedExternalMessage) Size() (n int) {
 	var l int
 	_ = l
@@ -2988,6 +2725,15 @@ func (m *PublishedExternalMessage_CallEventItem) Size() (n int) {
 	}
 	return n
 }
+func (m *PublishedExternalMessage_EmailItem) Size() (n int) {
+	var l int
+	_ = l
+	if m.EmailItem != nil {
+		l = m.EmailItem.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
 func (m *SMSItem) Size() (n int) {
 	var l int
 	_ = l
@@ -3020,6 +2766,26 @@ func (m *CallEventItem) Size() (n int) {
 	return n
 }
 
+func (m *EmailItem) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Body)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Subject)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if len(m.Attachments) > 0 {
+		for _, e := range m.Attachments {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	return n
+}
+
 func (m *MediaAttachment) Size() (n int) {
 	var l int
 	_ = l
@@ -3037,20 +2803,81 @@ func (m *MediaAttachment) Size() (n int) {
 func (m *SendMessageRequest) Size() (n int) {
 	var l int
 	_ = l
+	if m.Channel != 0 {
+		n += 1 + sovSvc(uint64(m.Channel))
+	}
+	if m.Message != nil {
+		n += m.Message.Size()
+	}
+	l = len(m.UUID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *SendMessageRequest_Email) Size() (n int) {
+	var l int
+	_ = l
+	if m.Email != nil {
+		l = m.Email.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+func (m *SendMessageRequest_SMS) Size() (n int) {
+	var l int
+	_ = l
+	if m.SMS != nil {
+		l = m.SMS.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+func (m *EmailMessage) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Subject)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Body)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.FromName)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.FromEmailAddress)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.ToName)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.ToEmailAddress)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *SMSMessage) Size() (n int) {
+	var l int
+	_ = l
 	l = len(m.Text)
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
-	l = len(m.FromChannelID)
+	l = len(m.FromPhoneNumber)
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
-	l = len(m.ToChannelID)
+	l = len(m.ToPhoneNumber)
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
-	}
-	if m.Channel != 0 {
-		n += 1 + sovSvc(uint64(m.Channel))
 	}
 	return n
 }
@@ -3175,23 +3002,24 @@ func (m *ProvisionPhoneNumberResponse) Size() (n int) {
 	return n
 }
 
-func (m *ProcessTwilioEventRequest) Size() (n int) {
+func (m *ProvisionEmailAddressRequest) Size() (n int) {
 	var l int
 	_ = l
-	if m.Params != nil {
-		l = m.Params.Size()
+	l = len(m.ProvisionFor)
+	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
-	if m.Event != 0 {
-		n += 1 + sovSvc(uint64(m.Event))
+	l = len(m.EmailAddress)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
 }
 
-func (m *ProcessTwilioEventResponse) Size() (n int) {
+func (m *ProvisionEmailAddressResponse) Size() (n int) {
 	var l int
 	_ = l
-	l = len(m.Twiml)
+	l = len(m.EmailAddress)
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
@@ -3210,60 +3038,6 @@ func sovSvc(x uint64) (n int) {
 }
 func sozSvc(x uint64) (n int) {
 	return sovSvc(uint64((x << 1) ^ uint64((int64(x) >> 63))))
-}
-func (this *TwilioParams) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&TwilioParams{`,
-		`CallSID:` + fmt.Sprintf("%v", this.CallSID) + `,`,
-		`AccountSID:` + fmt.Sprintf("%v", this.AccountSID) + `,`,
-		`From:` + fmt.Sprintf("%v", this.From) + `,`,
-		`To:` + fmt.Sprintf("%v", this.To) + `,`,
-		`CallStatus:` + fmt.Sprintf("%v", this.CallStatus) + `,`,
-		`APIVersion:` + fmt.Sprintf("%v", this.APIVersion) + `,`,
-		`Direction:` + fmt.Sprintf("%v", this.Direction) + `,`,
-		`CallDuration:` + fmt.Sprintf("%v", this.CallDuration) + `,`,
-		`RecordingURL:` + fmt.Sprintf("%v", this.RecordingURL) + `,`,
-		`RecordingSID:` + fmt.Sprintf("%v", this.RecordingSID) + `,`,
-		`RecordingDuration:` + fmt.Sprintf("%v", this.RecordingDuration) + `,`,
-		`Digits:` + fmt.Sprintf("%v", this.Digits) + `,`,
-		`MessageSID:` + fmt.Sprintf("%v", this.MessageSID) + `,`,
-		`SMSSID:` + fmt.Sprintf("%v", this.SMSSID) + `,`,
-		`Body:` + fmt.Sprintf("%v", this.Body) + `,`,
-		`NumMedia:` + fmt.Sprintf("%v", this.NumMedia) + `,`,
-		`MediaItems:` + strings.Replace(fmt.Sprintf("%v", this.MediaItems), "TwilioParams_TwilioMediaItem", "TwilioParams_TwilioMediaItem", 1) + `,`,
-		`MessagingServiceID:` + fmt.Sprintf("%v", this.MessagingServiceID) + `,`,
-		`QueueSID:` + fmt.Sprintf("%v", this.QueueSID) + `,`,
-		`QueueTime:` + fmt.Sprintf("%v", this.QueueTime) + `,`,
-		`DequeingCallSID:` + fmt.Sprintf("%v", this.DequeingCallSID) + `,`,
-		`ParentCallSID:` + fmt.Sprintf("%v", this.ParentCallSID) + `,`,
-		`DialCallStatus:` + fmt.Sprintf("%v", this.DialCallStatus) + `,`,
-		`DialCallDuration:` + fmt.Sprintf("%v", this.DialCallDuration) + `,`,
-		`ForwardedFrom:` + fmt.Sprintf("%v", this.ForwardedFrom) + `,`,
-		`CallerName:` + fmt.Sprintf("%v", this.CallerName) + `,`,
-		`FromCity:` + fmt.Sprintf("%v", this.FromCity) + `,`,
-		`FromState:` + fmt.Sprintf("%v", this.FromState) + `,`,
-		`FromZip:` + fmt.Sprintf("%v", this.FromZip) + `,`,
-		`FromCountry:` + fmt.Sprintf("%v", this.FromCountry) + `,`,
-		`ToCity:` + fmt.Sprintf("%v", this.ToCity) + `,`,
-		`ToState:` + fmt.Sprintf("%v", this.ToState) + `,`,
-		`ToZip:` + fmt.Sprintf("%v", this.ToZip) + `,`,
-		`ToCountry:` + fmt.Sprintf("%v", this.ToCountry) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *TwilioParams_TwilioMediaItem) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&TwilioParams_TwilioMediaItem{`,
-		`ContentType:` + fmt.Sprintf("%v", this.ContentType) + `,`,
-		`MediaURL:` + fmt.Sprintf("%v", this.MediaURL) + `,`,
-		`}`,
-	}, "")
-	return s
 }
 func (this *PublishedExternalMessage) String() string {
 	if this == nil {
@@ -3300,6 +3074,16 @@ func (this *PublishedExternalMessage_CallEventItem) String() string {
 	}, "")
 	return s
 }
+func (this *PublishedExternalMessage_EmailItem) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PublishedExternalMessage_EmailItem{`,
+		`EmailItem:` + strings.Replace(fmt.Sprintf("%v", this.EmailItem), "EmailItem", "EmailItem", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *SMSItem) String() string {
 	if this == nil {
 		return "nil"
@@ -3323,6 +3107,18 @@ func (this *CallEventItem) String() string {
 	}, "")
 	return s
 }
+func (this *EmailItem) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&EmailItem{`,
+		`Body:` + fmt.Sprintf("%v", this.Body) + `,`,
+		`Subject:` + fmt.Sprintf("%v", this.Subject) + `,`,
+		`Attachments:` + strings.Replace(fmt.Sprintf("%v", this.Attachments), "MediaAttachment", "MediaAttachment", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *MediaAttachment) String() string {
 	if this == nil {
 		return "nil"
@@ -3339,10 +3135,56 @@ func (this *SendMessageRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&SendMessageRequest{`,
-		`Text:` + fmt.Sprintf("%v", this.Text) + `,`,
-		`FromChannelID:` + fmt.Sprintf("%v", this.FromChannelID) + `,`,
-		`ToChannelID:` + fmt.Sprintf("%v", this.ToChannelID) + `,`,
 		`Channel:` + fmt.Sprintf("%v", this.Channel) + `,`,
+		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
+		`UUID:` + fmt.Sprintf("%v", this.UUID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SendMessageRequest_Email) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SendMessageRequest_Email{`,
+		`Email:` + strings.Replace(fmt.Sprintf("%v", this.Email), "EmailMessage", "EmailMessage", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SendMessageRequest_SMS) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SendMessageRequest_SMS{`,
+		`SMS:` + strings.Replace(fmt.Sprintf("%v", this.SMS), "SMSMessage", "SMSMessage", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *EmailMessage) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&EmailMessage{`,
+		`Subject:` + fmt.Sprintf("%v", this.Subject) + `,`,
+		`Body:` + fmt.Sprintf("%v", this.Body) + `,`,
+		`FromName:` + fmt.Sprintf("%v", this.FromName) + `,`,
+		`FromEmailAddress:` + fmt.Sprintf("%v", this.FromEmailAddress) + `,`,
+		`ToName:` + fmt.Sprintf("%v", this.ToName) + `,`,
+		`ToEmailAddress:` + fmt.Sprintf("%v", this.ToEmailAddress) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SMSMessage) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SMSMessage{`,
+		`Text:` + fmt.Sprintf("%v", this.Text) + `,`,
+		`FromPhoneNumber:` + fmt.Sprintf("%v", this.FromPhoneNumber) + `,`,
+		`ToPhoneNumber:` + fmt.Sprintf("%v", this.ToPhoneNumber) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3453,23 +3295,23 @@ func (this *ProvisionPhoneNumberResponse) String() string {
 	}, "")
 	return s
 }
-func (this *ProcessTwilioEventRequest) String() string {
+func (this *ProvisionEmailAddressRequest) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&ProcessTwilioEventRequest{`,
-		`Params:` + strings.Replace(fmt.Sprintf("%v", this.Params), "TwilioParams", "TwilioParams", 1) + `,`,
-		`Event:` + fmt.Sprintf("%v", this.Event) + `,`,
+	s := strings.Join([]string{`&ProvisionEmailAddressRequest{`,
+		`ProvisionFor:` + fmt.Sprintf("%v", this.ProvisionFor) + `,`,
+		`EmailAddress:` + fmt.Sprintf("%v", this.EmailAddress) + `,`,
 		`}`,
 	}, "")
 	return s
 }
-func (this *ProcessTwilioEventResponse) String() string {
+func (this *ProvisionEmailAddressResponse) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&ProcessTwilioEventResponse{`,
-		`Twiml:` + fmt.Sprintf("%v", this.Twiml) + `,`,
+	s := strings.Join([]string{`&ProvisionEmailAddressResponse{`,
+		`EmailAddress:` + fmt.Sprintf("%v", this.EmailAddress) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3481,1072 +3323,6 @@ func valueToStringSvc(v interface{}) string {
 	}
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
-}
-func (m *TwilioParams) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSvc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: TwilioParams: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: TwilioParams: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CallSID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.CallSID = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field AccountSID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.AccountSID = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field From", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.From = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field To", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.To = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 5:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CallStatus", wireType)
-			}
-			m.CallStatus = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.CallStatus |= (TwilioParams_CallStatus(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field APIVersion", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.APIVersion = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 7:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Direction", wireType)
-			}
-			m.Direction = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.Direction |= (TwilioParams_Direction(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 8:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CallDuration", wireType)
-			}
-			m.CallDuration = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.CallDuration |= (uint32(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 9:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RecordingURL", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.RecordingURL = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 10:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RecordingSID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.RecordingSID = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 11:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RecordingDuration", wireType)
-			}
-			m.RecordingDuration = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.RecordingDuration |= (uint32(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 12:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Digits", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Digits = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 13:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MessageSID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.MessageSID = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 14:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SMSSID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.SMSSID = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 15:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Body", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Body = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 16:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field NumMedia", wireType)
-			}
-			m.NumMedia = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.NumMedia |= (uint32(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 17:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MediaItems", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.MediaItems = append(m.MediaItems, &TwilioParams_TwilioMediaItem{})
-			if err := m.MediaItems[len(m.MediaItems)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 18:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MessagingServiceID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.MessagingServiceID = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 19:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field QueueSID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.QueueSID = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 20:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field QueueTime", wireType)
-			}
-			m.QueueTime = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.QueueTime |= (uint32(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 21:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DequeingCallSID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.DequeingCallSID = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 22:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ParentCallSID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ParentCallSID = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 23:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DialCallStatus", wireType)
-			}
-			m.DialCallStatus = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.DialCallStatus |= (TwilioParams_CallStatus(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 24:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DialCallDuration", wireType)
-			}
-			m.DialCallDuration = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.DialCallDuration |= (uint32(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 100:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ForwardedFrom", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ForwardedFrom = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 101:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CallerName", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.CallerName = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 102:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FromCity", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.FromCity = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 103:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FromState", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.FromState = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 104:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FromZip", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.FromZip = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 105:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FromCountry", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.FromCountry = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 106:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ToCity", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ToCity = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 107:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ToState", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ToState = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 108:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ToZip", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ToZip = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 109:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ToCountry", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ToCountry = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthSvc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *TwilioParams_TwilioMediaItem) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSvc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: TwilioMediaItem: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: TwilioMediaItem: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ContentType", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ContentType = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MediaURL", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.MediaURL = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthSvc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
 }
 func (m *PublishedExternalMessage) Unmarshal(data []byte) error {
 	l := len(data)
@@ -4738,6 +3514,38 @@ func (m *PublishedExternalMessage) Unmarshal(data []byte) error {
 			m.Item = &PublishedExternalMessage_CallEventItem{v}
 			iNdEx = postIndex
 		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EmailItem", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &EmailItem{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Item = &PublishedExternalMessage_EmailItem{v}
+			iNdEx = postIndex
+		case 8:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Direction", wireType)
 			}
@@ -5004,6 +3812,145 @@ func (m *CallEventItem) Unmarshal(data []byte) error {
 	}
 	return nil
 }
+func (m *EmailItem) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: EmailItem: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: EmailItem: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Body", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Body = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Subject", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Subject = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Attachments", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Attachments = append(m.Attachments, &MediaAttachment{})
+			if err := m.Attachments[len(m.Attachments)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *MediaAttachment) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
@@ -5142,6 +4089,392 @@ func (m *SendMessageRequest) Unmarshal(data []byte) error {
 		}
 		switch fieldNum {
 		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Channel", wireType)
+			}
+			m.Channel = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Channel |= (ChannelType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Email", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &EmailMessage{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Message = &SendMessageRequest_Email{v}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SMS", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &SMSMessage{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Message = &SendMessageRequest_SMS{v}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UUID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.UUID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *EmailMessage) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: EmailMessage: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: EmailMessage: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Subject", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Subject = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Body", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Body = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FromName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FromName = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FromEmailAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FromEmailAddress = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ToName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ToName = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ToEmailAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ToEmailAddress = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SMSMessage) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SMSMessage: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SMSMessage: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Text", wireType)
 			}
@@ -5172,7 +4505,7 @@ func (m *SendMessageRequest) Unmarshal(data []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FromChannelID", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field FromPhoneNumber", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -5197,11 +4530,11 @@ func (m *SendMessageRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.FromChannelID = string(data[iNdEx:postIndex])
+			m.FromPhoneNumber = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ToChannelID", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ToPhoneNumber", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -5226,27 +4559,8 @@ func (m *SendMessageRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ToChannelID = string(data[iNdEx:postIndex])
+			m.ToPhoneNumber = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Channel", wireType)
-			}
-			m.Channel = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.Channel |= (ChannelType(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -6077,7 +5391,7 @@ func (m *ProvisionPhoneNumberResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *ProcessTwilioEventRequest) Unmarshal(data []byte) error {
+func (m *ProvisionEmailAddressRequest) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -6100,117 +5414,15 @@ func (m *ProcessTwilioEventRequest) Unmarshal(data []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ProcessTwilioEventRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: ProvisionEmailAddressRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ProcessTwilioEventRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: ProvisionEmailAddressRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Params", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Params == nil {
-				m.Params = &TwilioParams{}
-			}
-			if err := m.Params.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Event", wireType)
-			}
-			m.Event = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.Event |= (TwilioEvent(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSvc(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthSvc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ProcessTwilioEventResponse) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSvc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ProcessTwilioEventResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ProcessTwilioEventResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Twiml", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ProvisionFor", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -6235,7 +5447,115 @@ func (m *ProcessTwilioEventResponse) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Twiml = string(data[iNdEx:postIndex])
+			m.ProvisionFor = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EmailAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EmailAddress = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ProvisionEmailAddressResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ProvisionEmailAddressResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ProvisionEmailAddressResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EmailAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EmailAddress = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
