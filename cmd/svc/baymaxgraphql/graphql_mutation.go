@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
@@ -405,6 +406,9 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				input := p.Args["input"].(map[string]interface{})
 				mutationID, _ := input["clientMutationId"].(string)
 				email := input["email"].(string)
+				if !validate.Email(email) {
+					return nil, errors.New("invalid email")
+				}
 				password := input["password"].(string)
 				res, err := svc.auth.AuthenticateLogin(ctx, &auth.AuthenticateLoginRequest{
 					Email:    email,
@@ -481,6 +485,9 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				req := &auth.CreateAccountRequest{
 					Email:    input["email"].(string),
 					Password: input["password"].(string),
+				}
+				if !validate.Email(req.Email) {
+					return nil, errors.New("invalid email")
 				}
 				if s, ok := input["firstName"].(string); ok {
 					req.FirstName = s
