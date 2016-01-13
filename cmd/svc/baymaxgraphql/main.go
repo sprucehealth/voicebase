@@ -8,14 +8,13 @@ import (
 	"os"
 	"path"
 
-	"github.com/sprucehealth/backend/common/config"
-	"github.com/sprucehealth/backend/libs/mux"
-
 	"github.com/rs/cors"
 	"github.com/sprucehealth/backend/boot"
+	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
@@ -25,22 +24,22 @@ import (
 )
 
 var (
-	flagListenAddr   = flag.String("l", "127.0.0.1:8080", "host:port to listen on")
-	flagDebugAddr    = flag.String("debug.addr", "127.0.0.1:9090", "host:port to listen for debug interface")
-	flagResourcePath = flag.String("respath", "", "Path to resources (defaults to use GOPATH)")
+	flagListenAddr   = flag.String("listen_addr", "127.0.0.1:8080", "host:port to listen on")
+	flagDebugAddr    = flag.String("debug_addr", "127.0.0.1:9090", "host:port to listen for debug interface")
+	flagResourcePath = flag.String("resource_path", "", "Path to resources (defaults to use GOPATH)")
 	flagEnv          = flag.String("env", "", "Execution environment")
 
 	// Services
-	flagAuthAddr                 = flag.String("auth.addr", "", "host:port of auth service")
-	flagDirectoryAddr            = flag.String("directory.addr", "", "host:port of direcotry service")
-	flagExCommsAddr              = flag.String("excomms.addr", "", "host:port of excomms service")
-	flagThreadingAddr            = flag.String("threading.addr", "", "host:port of threading service")
-	flagSQSDeviceRegistrationURL = flag.String("sqs.device.registration.url", "", "the sqs url for device registration messages")
+	flagAuthAddr                 = flag.String("auth_addr", "", "host:port of auth service")
+	flagDirectoryAddr            = flag.String("directory_addr", "", "host:port of direcotry service")
+	flagExCommsAddr              = flag.String("excomms_addr", "", "host:port of excomms service")
+	flagThreadingAddr            = flag.String("threading_addr", "", "host:port of threading service")
+	flagSQSDeviceRegistrationURL = flag.String("sqs_device_registration_url", "", "the sqs url for device registration messages")
 
 	// AWS
-	flagAWSAccessKey = flag.String("aws.access.key", "", "access key for aws")
-	flagAWSSecretKey = flag.String("aws.secret.key", "", "secret key for aws")
-	flagAWSRegion    = flag.String("aws.region", "us-east-1", "aws region")
+	flagAWSAccessKey = flag.String("aws_access_key", "", "access key for aws")
+	flagAWSSecretKey = flag.String("aws_secret_key", "", "secret key for aws")
+	flagAWSRegion    = flag.String("aws_region", "us-east-1", "aws region")
 )
 
 func main() {
