@@ -74,12 +74,6 @@ message MediaAttachment {
 // SendMessageRequest represents a request to send a message
 // over an external channel.
 message SendMessageRequest {
-<<<<<<< HEAD
-	string text = 1;
-	string from_channel_id = 2 [(gogoproto.customname) = "FromChannelID"];
-	string to_channel_id = 3 [(gogoproto.customname) = "ToChannelID"];
-	ChannelType channel = 4;
-=======
 	ChannelType channel = 1;
 	oneof message {
 		EmailMessage email = 2;
@@ -103,7 +97,6 @@ message SMSMessage {
 	string text = 1;
 	string from_phone_number = 2;
 	string to_phone_number = 3;
->>>>>>> Email integration
 }
 
 message SendMessageResponse {
