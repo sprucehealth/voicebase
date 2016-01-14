@@ -223,6 +223,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 	var endpointChannel threading.Endpoint_Channel
 	var attachments []*threading.Attachment
 	var text string
+	var summary string
 	var title bml.BML
 
 	fromName := pem.FromChannelID
@@ -245,6 +246,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 		title = bml.Parsef("%s texted %s",
 			&bml.Ref{Type: bml.EntityRef, ID: fromEntity.ID, Text: fromName},
 			&bml.Ref{Type: bml.EntityRef, ID: toEntity.ID, Text: toName})
+		summary = fmt.Sprintf("%s: %s", fromName, text)
 
 		// populate attachments
 		attachments = make([]*threading.Attachment, len(pem.GetSMSItem().Attachments))
@@ -268,10 +270,13 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 		switch pem.GetCallEventItem().Type {
 		case excomms.CallEventItem_INCOMING_ANSWERED:
 			title = append(title, ", answered")
+			summary = "Called, answered"
 		case excomms.CallEventItem_INCOMING_UNANSWERED:
 			title = append(title, ", no answer")
+			summary = "Called, no answer"
 		case excomms.CallEventItem_INCOMING_LEFT_VOICEMAIL:
 			title = append(title, ", left voicemail")
+			summary = "Called, left voicemail"
 			attachments = []*threading.Attachment{
 				{
 					Type: threading.Attachment_AUDIO,
@@ -286,17 +291,21 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 		case excomms.CallEventItem_OUTGOING_PLACED:
 		case excomms.CallEventItem_OUTGOING_ANSWERED:
 			title = append(title, ", answered")
+			summary = fmt.Sprintf("%s called %s, answered", fromName, toName)
 		case excomms.CallEventItem_OUTGOING_UNANSWERED:
 			title = append(title, ", no answer")
+			summary = fmt.Sprintf("%s called %s, no answer", fromName, toName)
 		}
 	case excomms.PublishedExternalMessage_EMAIL:
 		endpointChannel = threading.Endpoint_EMAIL
 		text = pem.GetEmailItem().Body
+		subject := pem.GetEmailItem().Subject
 		title = bml.Parsef("%s emailed %s, Subject: %s",
 			&bml.Ref{Type: bml.EntityRef, ID: fromEntity.ID, Text: fromName},
 			&bml.Ref{Type: bml.EntityRef, ID: toEntity.ID, Text: toName},
-			pem.GetEmailItem().Subject,
+			subject,
 		)
+		summary = fmt.Sprintf("Subject: %s", subject)
 
 		// TODO: Populate attachments
 	}
@@ -308,6 +317,9 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 	plainText, err := bml.BML{text}.Format()
 	if err != nil {
 		return errors.Trace(err)
+	}
+	if summary == "" {
+		summary = fmt.Sprintf("%s: %s", fromName, titleStr)
 	}
 	if externalThread == nil {
 		golog.Debugf("External thread for %s not found. Creating...", externalEntity.Contacts[0].Value)
@@ -332,6 +344,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 				Title:       titleStr,
 				Text:        plainText,
 				Attachments: attachments,
+				Summary:     summary,
 			},
 		)
 		if err != nil {
@@ -359,6 +372,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 				Title:       titleStr,
 				Text:        plainText,
 				Attachments: attachments,
+				Summary:     summary,
 			},
 		)
 		if err != nil {

@@ -116,14 +116,18 @@ const (
 	ItemTypeMessage ItemType = "MESSAGE"
 )
 
+// Thread is a thread of conversation and the parent of thread items.
 type Thread struct {
 	ID                           ThreadID
 	OrganizationID               string
 	PrimaryEntityID              string
 	LastMessageTimestamp         time.Time
 	LastExternalMessageTimestamp time.Time
+	LastMessageSummary           string
+	LastExternalMessageSummary   string
 }
 
+// ThreadMember links an entity to a thread.
 type ThreadMember struct {
 	ThreadID  ThreadID
 	EntityID  string
@@ -131,6 +135,7 @@ type ThreadMember struct {
 	Joined    time.Time
 }
 
+// ThreadItem is an item within a thread. It can be a message or an event modifying a message.
 type ThreadItem struct {
 	ID            ThreadItemID
 	ThreadID      ThreadID
@@ -141,6 +146,7 @@ type ThreadItem struct {
 	Data          interface{}
 }
 
+// SavedQuery is a saved thread query.
 type SavedQuery struct {
 	ID             SavedQueryID
 	OrganizationID string

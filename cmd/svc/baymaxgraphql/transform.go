@@ -9,6 +9,17 @@ import (
 	"github.com/sprucehealth/backend/svc/threading"
 )
 
+func threadTitleForEntity(e *directory.Entity) string {
+	if e.Name != "" {
+		return e.Name
+	}
+	for _, c := range e.Contacts {
+		return c.Value
+	}
+	// TODO: not sure what to use when there's no name or contacts
+	return e.ID
+}
+
 func transformContactsToResponse(contacts []*directory.Contact) ([]*contactInfo, error) {
 	cs := make([]*contactInfo, len(contacts))
 	for i, c := range contacts {
@@ -34,15 +45,15 @@ func transformThreadToResponse(t *threading.Thread) (*thread, error) {
 		ID:                   t.ID,
 		OrganizationID:       t.OrganizationID,
 		PrimaryEntityID:      t.PrimaryEntityID,
-		Title:                t.PrimaryEntityID, // TODO
-		Subtitle:             "",                // TODO
+		Subtitle:             t.LastMessageSummary,
 		LastMessageTimestamp: t.LastMessageTimestamp,
 	}, nil
 }
 
-func transformThreadItemToResponse(item *threading.ThreadItem) (*threadItem, error) {
+func transformThreadItemToResponse(item *threading.ThreadItem, uuid string) (*threadItem, error) {
 	it := &threadItem{
 		ID:            item.ID,
+		UUID:          uuid,
 		Timestamp:     item.Timestamp,
 		ActorEntityID: item.ActorEntityID,
 		Internal:      item.Internal,

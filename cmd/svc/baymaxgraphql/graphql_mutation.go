@@ -168,7 +168,7 @@ var messageInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
 		Name: "MessageInput",
 		Fields: graphql.InputObjectConfigFieldMap{
-			"uuid":         &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"uuid":         &graphql.InputObjectFieldConfig{Type: graphql.ID},
 			"text":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"destinations": &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(channelEnumType))},
 			"internal":     &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Boolean)},
@@ -179,9 +179,9 @@ var messageInputType = graphql.NewInputObject(
 // postMessage
 
 type postMessageOutput struct {
-	ClientMutationID string `json:"clientMutationId"`
-	ItemID           string `json:"itemID"`
-	ItemEdge         *Edge  `json:"itemEdge"`
+	ClientMutationID string  `json:"clientMutationId"`
+	ItemEdge         *Edge   `json:"itemEdge"`
+	Thread           *thread `json:"thread"`
 }
 
 var postMessageInputType = graphql.NewInputObject(
@@ -200,8 +200,8 @@ var postMessageOutputType = graphql.NewObject(
 		Name: "PostMessagePayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
-			"itemID":           &graphql.Field{Type: graphql.ID},
-			"itemEdge":         &graphql.Field{Type: threadItemConnectionType.EdgeType},
+			"itemEdge":         &graphql.Field{Type: graphql.NewNonNull(threadItemConnectionType.EdgeType)},
+			"thread":           &graphql.Field{Type: graphql.NewNonNull(threadType)},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*postMessageOutput)
@@ -660,6 +660,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				input := p.Args["input"].(map[string]interface{})
 				mutationID, _ := input["clientMutationId"].(string)
 				threadID := input["threadID"].(string)
+				msg := input["msg"].(map[string]interface{})
 
 				tres, err := svc.threading.Thread(ctx, &threading.ThreadRequest{
 					ThreadID: threadID,
@@ -671,14 +672,14 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					}
 					return nil, internalError(err)
 				}
-				thread := tres.Thread
+				thr := tres.Thread
 
-				ent, err := svc.entityForAccountID(ctx, thread.OrganizationID, acc.ID)
+				ent, err := svc.entityForAccountID(ctx, thr.OrganizationID, acc.ID)
 				if err != nil {
 					return nil, internalError(err)
 				}
 				if ent == nil {
-					return nil, internalError(fmt.Errorf("entity for org %s and account %s not found", thread.OrganizationID, acc.ID))
+					return nil, internalError(fmt.Errorf("entity for org %s and account %s not found", thr.OrganizationID, acc.ID))
 				}
 
 				var title bml.BML
@@ -688,21 +689,38 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				}
 				title = append(title, &bml.Ref{ID: ent.ID, Type: bml.EntityRef, Text: fromName})
 
-				msg := input["msg"].(map[string]interface{})
+				text := msg["text"].(string)
+
+				// Parse text and render as plain text so we can build a summary.
+				textBML, err := bml.Parse(text)
+				if e, ok := err.(bml.ErrParseFailure); ok {
+					return nil, fmt.Errorf("failed to parse text at pos %d: %s", e.Offset, e.Reason)
+				} else if err != nil {
+					return nil, errors.New("text is not valid markup")
+				}
+				plainText, err := textBML.PlainText()
+				if err != nil {
+					// Shouldn't fail here since the parsing should have done validation
+					return nil, internalError(err)
+				}
+				summary := fmt.Sprintf("%s: %s", fromName, plainText)
+
 				req := &threading.PostMessageRequest{
 					ThreadID:     threadID,
-					Text:         msg["text"].(string),
+					Text:         text,
 					Internal:     msg["internal"].(bool),
 					FromEntityID: ent.ID,
 					Source: &threading.Endpoint{
 						Channel: threading.Endpoint_APP,
 						ID:      ent.ID,
 					},
+					Summary: summary,
 				}
 
 				// For a message to be considered by sending externally it needs to not be marked as internal,
 				// sent by someone who is internal, and there needs to be a primary entity on the thread.
-				isExternal := !req.Internal && thread.PrimaryEntityID != "" && ent.Type == directory.EntityType_INTERNAL
+				isExternal := !req.Internal && thr.PrimaryEntityID != "" && ent.Type == directory.EntityType_INTERNAL
+				var extEntity *directory.Entity
 				if isExternal {
 					dests, _ := msg["destinations"].([]interface{})
 					// TODO: if no destinations specified then query routing service for default route
@@ -711,7 +729,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 							&directory.LookupEntitiesRequest{
 								LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 								LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-									EntityID: thread.PrimaryEntityID,
+									EntityID: thr.PrimaryEntityID,
 								},
 								RequestedInformation: &directory.RequestedInformation{
 									Depth: 0,
@@ -724,10 +742,10 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 							return nil, internalError(err)
 						}
 						if len(res.Entities) > 1 {
-							golog.Errorf("lookup entities returned more than 1 result for entity ID %s", thread.PrimaryEntityID)
+							golog.Errorf("lookup entities returned more than 1 result for entity ID %s", thr.PrimaryEntityID)
 						}
 						if len(res.Entities) > 0 && res.Entities[0].Type == directory.EntityType_EXTERNAL {
-							ent := res.Entities[0]
+							extEntity = res.Entities[0]
 							updatedTitle := false // TODO: for now only putting one destination in the message title
 							for _, d := range dests {
 								channel := d.(string)
@@ -750,14 +768,14 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 									// record that it was sent.
 									req.Destinations = append(req.Destinations, &threading.Endpoint{
 										Channel: threading.Endpoint_APP,
-										ID:      thread.PrimaryEntityID,
+										ID:      thr.PrimaryEntityID,
 									})
 									continue
 								default:
 									return nil, errors.New("unsupported destination type " + channel)
 								}
 								var e *threading.Endpoint
-								for _, c := range ent.Contacts {
+								for _, c := range extEntity.Contacts {
 									if c.ContactType == ct {
 										e = &threading.Endpoint{
 											Channel: ec,
@@ -771,11 +789,11 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 								}
 								req.Destinations = append(req.Destinations, e)
 								if !updatedTitle {
-									name := ent.Name
+									name := extEntity.Name
 									if name == "" {
 										name = e.ID
 									}
-									title = append(title, " "+action+" ", &bml.Ref{ID: ent.ID, Type: bml.EntityRef, Text: name})
+									title = append(title, " "+action+" ", &bml.Ref{ID: extEntity.ID, Type: bml.EntityRef, Text: name})
 									updatedTitle = true
 								}
 							}
@@ -797,14 +815,23 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					return nil, internalError(err)
 				}
 
-				it, err := transformThreadItemToResponse(pmres.Item)
+				it, err := transformThreadItemToResponse(pmres.Item, req.UUID)
 				if err != nil {
 					return nil, internalError(fmt.Errorf("failed to transform thread item: %s", err))
 				}
+				th, err := transformThreadToResponse(pmres.Thread)
+				if err != nil {
+					return nil, internalError(fmt.Errorf("failed to transform thread: %s", err))
+				}
+				if extEntity != nil {
+					th.Title = threadTitleForEntity(extEntity)
+				} else if err := svc.hydrateThreadTitles(ctx, []*thread{th}); err != nil {
+					return nil, internalError(err)
+				}
 				return &postMessageOutput{
 					ClientMutationID: mutationID,
-					ItemID:           it.ID,
 					ItemEdge:         &Edge{Node: it, Cursor: ConnectionCursor(pmres.Item.ID)},
+					Thread:           th,
 				}, nil
 			},
 		},

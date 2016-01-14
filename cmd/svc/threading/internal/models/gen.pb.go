@@ -124,6 +124,7 @@ type Message struct {
 	EditorEntityID  string         `protobuf:"bytes,7,opt,name=editor_entity_id,proto3" json:"editor_entity_id,omitempty"`
 	Title           string         `protobuf:"bytes,8,opt,name=title,proto3" json:"title,omitempty"`
 	TextRefs        []*Reference   `protobuf:"bytes,9,rep,name=text_refs" json:"text_refs,omitempty"`
+	Summary         string         `protobuf:"bytes,10,opt,name=summary,proto3" json:"summary,omitempty"`
 }
 
 func (m *Message) Reset()      { *m = Message{} }
@@ -443,6 +444,9 @@ func (this *Message) Equal(that interface{}) bool {
 			return false
 		}
 	}
+	if this.Summary != that1.Summary {
+		return false
+	}
 	return true
 }
 func (this *Endpoint) Equal(that interface{}) bool {
@@ -699,7 +703,7 @@ func (this *Message) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 13)
+	s := make([]string, 0, 14)
 	s = append(s, "&models.Message{")
 	s = append(s, "Text: "+fmt.Sprintf("%#v", this.Text)+",\n")
 	if this.Attachments != nil {
@@ -718,6 +722,7 @@ func (this *Message) GoString() string {
 	if this.TextRefs != nil {
 		s = append(s, "TextRefs: "+fmt.Sprintf("%#v", this.TextRefs)+",\n")
 	}
+	s = append(s, "Summary: "+fmt.Sprintf("%#v", this.Summary)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -954,6 +959,12 @@ func (m *Message) MarshalTo(data []byte) (int, error) {
 			}
 			i += n
 		}
+	}
+	if len(m.Summary) > 0 {
+		data[i] = 0x52
+		i++
+		i = encodeVarintGen(data, i, uint64(len(m.Summary)))
+		i += copy(data[i:], m.Summary)
 	}
 	return i, nil
 }
@@ -1279,6 +1290,10 @@ func (m *Message) Size() (n int) {
 			n += 1 + l + sovGen(uint64(l))
 		}
 	}
+	l = len(m.Summary)
+	if l > 0 {
+		n += 1 + l + sovGen(uint64(l))
+	}
 	return n
 }
 
@@ -1436,6 +1451,7 @@ func (this *Message) String() string {
 		`EditorEntityID:` + fmt.Sprintf("%v", this.EditorEntityID) + `,`,
 		`Title:` + fmt.Sprintf("%v", this.Title) + `,`,
 		`TextRefs:` + strings.Replace(fmt.Sprintf("%v", this.TextRefs), "Reference", "Reference", 1) + `,`,
+		`Summary:` + fmt.Sprintf("%v", this.Summary) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1916,6 +1932,35 @@ func (m *Message) Unmarshal(data []byte) error {
 			if err := m.TextRefs[len(m.TextRefs)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Summary", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGen
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGen
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Summary = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

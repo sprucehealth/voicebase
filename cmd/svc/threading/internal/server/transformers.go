@@ -14,9 +14,11 @@ func transformThreadToResponse(thread *models.Thread, forExternal bool) (*thread
 		OrganizationID:       thread.OrganizationID,
 		PrimaryEntityID:      thread.PrimaryEntityID,
 		LastMessageTimestamp: uint64(thread.LastMessageTimestamp.Unix()),
+		LastMessageSummary:   thread.LastMessageSummary,
 	}
 	if forExternal {
 		t.LastMessageTimestamp = uint64(thread.LastExternalMessageTimestamp.Unix())
+		t.LastMessageSummary = thread.LastExternalMessageSummary
 	}
 	return t, nil
 }

@@ -20,5 +20,5 @@ func TestParse(t *testing.T) {
 
 func TestParseFail(t *testing.T) {
 	_, err := Parse("who <ref>Dr. Dribbles</ref> called <ref id=\"e_2\" type=\"Entity\">Mr. Jones</ref>,\n&lt;answered&gt;")
-	test.Equals(t, "bml: Ref requires ID", err.Error())
+	test.Equals(t, "bml: parsing failed at pos 4: invalid ref: id required", err.Error())
 }

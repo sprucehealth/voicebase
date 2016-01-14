@@ -10,22 +10,26 @@ import (
 
 var reReplacement = regexp.MustCompile(`%.`)
 
+// PlainTexter is implemented by elements that can convert themselves to plain text
+type PlainTexter interface {
+	PlainText() (string, error)
+}
+
 // BML is a slice of BML formattable elements
 type BML []interface{}
 
 // Validate returns an error iff any element of the BML is invalid.
 func (bml BML) Validate() error {
 	for _, v := range bml {
-		switch v.(type) {
+		switch vt := v.(type) {
 		case int, int64, uint64, string:
-		default:
-			if vd, ok := v.(Validator); ok {
-				if err := vd.Validate(); err != nil {
-					return err
-				}
-			} else if _, ok := v.(fmt.Stringer); !ok {
-				return fmt.Errorf("bml: unsupported type %T", v)
+		case Validator:
+			if err := vt.Validate(); err != nil {
+				return err
 			}
+		case fmt.Stringer:
+		default:
+			return fmt.Errorf("bml: unsupported type %T", v)
 		}
 	}
 	return nil
@@ -44,6 +48,35 @@ func (bml BML) Format() (string, error) {
 		return "", err
 	}
 	return b.String(), nil
+}
+
+// PlainText returns a plain text version of the BML with all formatting removed.
+func (bml BML) PlainText() (string, error) {
+	if err := bml.Validate(); err != nil {
+		return "", err
+	}
+	var buf []byte
+	for _, b := range bml {
+		switch v := b.(type) {
+		case int:
+			buf = strconv.AppendInt(buf, int64(v), 10)
+		case int64:
+			buf = strconv.AppendInt(buf, v, 10)
+		case uint64:
+			buf = strconv.AppendUint(buf, v, 10)
+		case string:
+			buf = append(buf, v...)
+		case PlainTexter:
+			s, err := v.PlainText()
+			if err != nil {
+				return "", err
+			}
+			buf = append(buf, s...)
+		default:
+			return "", fmt.Errorf("bml: unsupported type for plain text %T", b)
+		}
+	}
+	return string(buf), nil
 }
 
 // Sprintf formats according to a format specifier and returns the resulting BML string.
@@ -91,15 +124,13 @@ func encodeValue(e *xml.Encoder, v interface{}) error {
 			return nil
 		}
 		return e.EncodeToken(xml.CharData(vt))
-	}
-	if vd, ok := v.(Validator); ok {
-		if err := vd.Validate(); err != nil {
+	case Validator:
+		if err := vt.Validate(); err != nil {
 			return err
 		}
 		return e.Encode(v)
-	}
-	if s, ok := v.(fmt.Stringer); ok {
-		return e.EncodeToken(xml.CharData(s.String()))
+	case fmt.Stringer:
+		return e.EncodeToken(xml.CharData(vt.String()))
 	}
 	return fmt.Errorf("bml: unsupported type %T", v)
 }

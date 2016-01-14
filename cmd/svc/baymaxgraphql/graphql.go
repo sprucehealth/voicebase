@@ -154,7 +154,7 @@ func removeAuthCookie(w http.ResponseWriter) {
 
 func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	// TODO: should set the deadline earlier in the HTTP handler stack
-	ctx, cancel := context.WithTimeout(ctx, time.Second*5)
+	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
 	defer cancel()
 
 	var req gqlReq

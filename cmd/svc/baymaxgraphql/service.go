@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -18,6 +21,44 @@ type service struct {
 	threading    threading.ThreadsClient
 	exComms      excomms.ExCommsClient
 	notification notification.Client
+}
+
+func (s *service) hydrateThreadTitles(ctx context.Context, threads []*thread) error {
+	// TODO: this done one request per thread. ideally the directory service would have a bulk lookup
+	p := conc.NewParallel()
+	for _, t := range threads {
+		if t.PrimaryEntityID == "" {
+			// TODO: not sure what this should be for internal threads (ones without a primary entity ID)
+			t.Title = "Internal"
+			continue
+		}
+		// Create a reference to thread since the loop variable will change underneath
+		thread := t
+		p.Go(func() error {
+			res, err := s.directory.LookupEntities(ctx,
+				&directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						EntityID: thread.PrimaryEntityID,
+					},
+					RequestedInformation: &directory.RequestedInformation{
+						Depth: 0,
+						EntityInformation: []directory.EntityInformation{
+							directory.EntityInformation_CONTACTS,
+						},
+					},
+				})
+			if err != nil {
+				return errors.Trace(err)
+			}
+			if len(res.Entities) != 1 {
+				return errors.Trace(fmt.Errorf("lookup entities returned %d results for %s, expected 1", len(res.Entities), thread.PrimaryEntityID))
+			}
+			thread.Title = threadTitleForEntity(res.Entities[0])
+			return nil
+		})
+	}
+	return p.Wait()
 }
 
 func (s *service) entityForAccountID(ctx context.Context, orgID, accountID string) (*directory.Entity, error) {

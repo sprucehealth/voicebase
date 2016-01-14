@@ -70,15 +70,20 @@ var savedThreadQueryType = graphql.NewObject(
 					} else {
 						cn.PageInfo.HasPreviousPage = res.HasMore
 					}
+					threads := make([]*thread, len(res.Edges))
 					for i, e := range res.Edges {
 						t, err := transformThreadToResponse(e.Thread)
 						if err != nil {
 							return nil, internalError(fmt.Errorf("Failed to transform thread: %s", err))
 						}
+						threads[i] = t
 						cn.Edges[i] = &Edge{
 							Node:   t,
 							Cursor: ConnectionCursor(e.Cursor),
 						}
+					}
+					if err := svc.hydrateThreadTitles(ctx, threads); err != nil {
+						return nil, internalError(err)
 					}
 
 					return cn, nil

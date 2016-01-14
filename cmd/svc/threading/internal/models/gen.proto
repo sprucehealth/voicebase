@@ -30,6 +30,7 @@ message Message {
 	string editor_entity_id = 7 [(gogoproto.customname) = "EditorEntityID"];
 	string title = 8;
 	repeated Reference text_refs = 9; // References from the message body text
+	string summary = 10;
 }
 
 message Endpoint {

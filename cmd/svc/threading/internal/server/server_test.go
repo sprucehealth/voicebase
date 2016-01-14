@@ -19,6 +19,7 @@ func init() {
 
 func TestCreateSavedQuery(t *testing.T) {
 	dl := newMockDAL(t)
+	defer dl.Finish()
 	eid, err := models.NewSavedQueryID()
 	test.OK(t, err)
 	esq := &models.SavedQuery{OrganizationID: "o1", EntityID: "e1"}
@@ -39,6 +40,7 @@ func TestCreateSavedQuery(t *testing.T) {
 
 func TestCreateThread(t *testing.T) {
 	dl := newMockDAL(t)
+	defer dl.Finish()
 	now := time.Now()
 
 	thid, err := models.NewThreadID()
@@ -64,6 +66,7 @@ func TestCreateThread(t *testing.T) {
 		TextRefs: []*models.Reference{
 			{ID: "e2", Type: models.Reference_ENTITY},
 		},
+		Summary: "Foo bar",
 	}
 	ti := &models.ThreadItem{
 		ID:            mid,
@@ -78,9 +81,18 @@ func TestCreateThread(t *testing.T) {
 			Status:   models.Message_NORMAL,
 			Source:   ps.Source,
 			TextRefs: ps.TextRefs,
+			Summary:  ps.Summary,
 		},
 	}
 	dl.Expect(mock.NewExpectation(dl.PostMessage, ps).WithReturns(ti, nil))
+	th2 := &models.Thread{
+		ID:                   thid,
+		OrganizationID:       "o1",
+		PrimaryEntityID:      "e1",
+		LastMessageTimestamp: now,
+		LastMessageSummary:   ps.Summary,
+	}
+	dl.Expect(mock.NewExpectation(dl.Thread, thid).WithReturns(th2, nil))
 
 	srv := NewThreadsServer(dl, nil, "arn")
 	res, err := srv.CreateThread(nil, &threading.CreateThreadRequest{
@@ -93,6 +105,7 @@ func TestCreateThread(t *testing.T) {
 			ID:      "555-555-5555",
 			Channel: threading.Endpoint_SMS,
 		},
+		Summary: "Foo bar",
 	})
 	test.OK(t, err)
 	test.Equals(t, &threading.CreateThreadResponse{
@@ -118,11 +131,19 @@ func TestCreateThread(t *testing.T) {
 				},
 			},
 		},
+		Thread: &threading.Thread{
+			ID:                   th2.ID.String(),
+			OrganizationID:       "o1",
+			PrimaryEntityID:      "e1",
+			LastMessageTimestamp: uint64(now.Unix()),
+			LastMessageSummary:   ps.Summary,
+		},
 	}, res)
 }
 
 func TestThreadItem(t *testing.T) {
 	dl := newMockDAL(t)
+	defer dl.Finish()
 	srv := NewThreadsServer(dl, nil, "arn")
 
 	eid, err := models.NewThreadItemID()
@@ -178,6 +199,7 @@ func TestThreadItem(t *testing.T) {
 
 func TestQueryThreads(t *testing.T) {
 	dl := newMockDAL(t)
+	defer dl.Finish()
 	srv := NewThreadsServer(dl, nil, "arn")
 
 	orgID := "entity:1"
@@ -237,6 +259,7 @@ func TestQueryThreads(t *testing.T) {
 
 func TestThread(t *testing.T) {
 	dl := newMockDAL(t)
+	defer dl.Finish()
 	srv := NewThreadsServer(dl, nil, "arn")
 
 	thID, err := models.NewThreadID()
@@ -268,6 +291,7 @@ func TestThread(t *testing.T) {
 
 func TestSavedQuery(t *testing.T) {
 	dl := newMockDAL(t)
+	defer dl.Finish()
 	srv := NewThreadsServer(dl, nil, "arn")
 
 	sqID, err := models.NewSavedQueryID()

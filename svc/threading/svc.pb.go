@@ -212,12 +212,12 @@ func (m *Iterator) Reset()      { *m = Iterator{} }
 func (*Iterator) ProtoMessage() {}
 
 type Thread struct {
-	ID                           string    `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	OrganizationID               string    `protobuf:"bytes,2,opt,name=organization_id,proto3" json:"organization_id,omitempty"`
-	PrimaryEntityID              string    `protobuf:"bytes,3,opt,name=primary_entity_id,proto3" json:"primary_entity_id,omitempty"`
-	Members                      []*Member `protobuf:"bytes,4,rep,name=members" json:"members,omitempty"`
-	LastMessageTimestamp         uint64    `protobuf:"varint,5,opt,name=last_message_timestamp,proto3" json:"last_message_timestamp,omitempty"`
-	LastExternalMessageTimestamp uint64    `protobuf:"varint,6,opt,name=last_external_message_timestamp,proto3" json:"last_external_message_timestamp,omitempty"`
+	ID                   string    `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	OrganizationID       string    `protobuf:"bytes,2,opt,name=organization_id,proto3" json:"organization_id,omitempty"`
+	PrimaryEntityID      string    `protobuf:"bytes,3,opt,name=primary_entity_id,proto3" json:"primary_entity_id,omitempty"`
+	Members              []*Member `protobuf:"bytes,4,rep,name=members" json:"members,omitempty"`
+	LastMessageTimestamp uint64    `protobuf:"varint,5,opt,name=last_message_timestamp,proto3" json:"last_message_timestamp,omitempty"`
+	LastMessageSummary   string    `protobuf:"bytes,6,opt,name=last_message_summary,proto3" json:"last_message_summary,omitempty"`
 }
 
 func (m *Thread) Reset()      { *m = Thread{} }
@@ -389,6 +389,7 @@ type Message struct {
 	EditorEntityID  string         `protobuf:"bytes,7,opt,name=editor_entity_id,proto3" json:"editor_entity_id,omitempty"`
 	Title           string         `protobuf:"bytes,8,opt,name=title,proto3" json:"title,omitempty"`
 	TextRefs        []*Reference   `protobuf:"bytes,9,rep,name=text_refs" json:"text_refs,omitempty"`
+	Summary         string         `protobuf:"bytes,10,opt,name=summary,proto3" json:"summary,omitempty"`
 }
 
 func (m *Message) Reset()      { *m = Message{} }
@@ -626,6 +627,7 @@ type PostMessageRequest struct {
 	Text         string        `protobuf:"bytes,7,opt,name=text,proto3" json:"text,omitempty"`
 	Attachments  []*Attachment `protobuf:"bytes,8,rep,name=attachments" json:"attachments,omitempty"`
 	Title        string        `protobuf:"bytes,9,opt,name=title,proto3" json:"title,omitempty"`
+	Summary      string        `protobuf:"bytes,10,opt,name=summary,proto3" json:"summary,omitempty"`
 }
 
 func (m *PostMessageRequest) Reset()      { *m = PostMessageRequest{} }
@@ -653,7 +655,8 @@ func (m *PostMessageRequest) GetAttachments() []*Attachment {
 }
 
 type PostMessageResponse struct {
-	Item *ThreadItem `protobuf:"bytes,1,opt,name=item" json:"item,omitempty"`
+	Item   *ThreadItem `protobuf:"bytes,1,opt,name=item" json:"item,omitempty"`
+	Thread *Thread     `protobuf:"bytes,2,opt,name=thread" json:"thread,omitempty"`
 }
 
 func (m *PostMessageResponse) Reset()      { *m = PostMessageResponse{} }
@@ -662,6 +665,13 @@ func (*PostMessageResponse) ProtoMessage() {}
 func (m *PostMessageResponse) GetItem() *ThreadItem {
 	if m != nil {
 		return m.Item
+	}
+	return nil
+}
+
+func (m *PostMessageResponse) GetThread() *Thread {
+	if m != nil {
+		return m.Thread
 	}
 	return nil
 }
@@ -1001,6 +1011,7 @@ type CreateThreadRequest struct {
 	Text           string        `protobuf:"bytes,7,opt,name=text,proto3" json:"text,omitempty"`
 	Attachments    []*Attachment `protobuf:"bytes,8,rep,name=attachments" json:"attachments,omitempty"`
 	Title          string        `protobuf:"bytes,9,opt,name=title,proto3" json:"title,omitempty"`
+	Summary        string        `protobuf:"bytes,10,opt,name=summary,proto3" json:"summary,omitempty"`
 }
 
 func (m *CreateThreadRequest) Reset()      { *m = CreateThreadRequest{} }
@@ -1030,6 +1041,7 @@ func (m *CreateThreadRequest) GetAttachments() []*Attachment {
 type CreateThreadResponse struct {
 	ThreadID   string      `protobuf:"bytes,1,opt,name=thread_id,proto3" json:"thread_id,omitempty"`
 	ThreadItem *ThreadItem `protobuf:"bytes,2,opt,name=thread_item" json:"thread_item,omitempty"`
+	Thread     *Thread     `protobuf:"bytes,3,opt,name=thread" json:"thread,omitempty"`
 }
 
 func (m *CreateThreadResponse) Reset()      { *m = CreateThreadResponse{} }
@@ -1038,6 +1050,13 @@ func (*CreateThreadResponse) ProtoMessage() {}
 func (m *CreateThreadResponse) GetThreadItem() *ThreadItem {
 	if m != nil {
 		return m.ThreadItem
+	}
+	return nil
+}
+
+func (m *CreateThreadResponse) GetThread() *Thread {
+	if m != nil {
+		return m.Thread
 	}
 	return nil
 }
@@ -1307,7 +1326,7 @@ func (this *Thread) Equal(that interface{}) bool {
 	if this.LastMessageTimestamp != that1.LastMessageTimestamp {
 		return false
 	}
-	if this.LastExternalMessageTimestamp != that1.LastExternalMessageTimestamp {
+	if this.LastMessageSummary != that1.LastMessageSummary {
 		return false
 	}
 	return true
@@ -1553,6 +1572,9 @@ func (this *Message) Equal(that interface{}) bool {
 		if !this.TextRefs[i].Equal(that1.TextRefs[i]) {
 			return false
 		}
+	}
+	if this.Summary != that1.Summary {
+		return false
 	}
 	return true
 }
@@ -1942,6 +1964,9 @@ func (this *PostMessageRequest) Equal(that interface{}) bool {
 	if this.Title != that1.Title {
 		return false
 	}
+	if this.Summary != that1.Summary {
+		return false
+	}
 	return true
 }
 func (this *PostMessageResponse) Equal(that interface{}) bool {
@@ -1965,6 +1990,9 @@ func (this *PostMessageResponse) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.Item.Equal(that1.Item) {
+		return false
+	}
+	if !this.Thread.Equal(that1.Thread) {
 		return false
 	}
 	return true
@@ -2645,6 +2673,9 @@ func (this *CreateThreadRequest) Equal(that interface{}) bool {
 	if this.Title != that1.Title {
 		return false
 	}
+	if this.Summary != that1.Summary {
+		return false
+	}
 	return true
 }
 func (this *CreateThreadResponse) Equal(that interface{}) bool {
@@ -2671,6 +2702,9 @@ func (this *CreateThreadResponse) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.ThreadItem.Equal(that1.ThreadItem) {
+		return false
+	}
+	if !this.Thread.Equal(that1.Thread) {
 		return false
 	}
 	return true
@@ -2917,7 +2951,7 @@ func (this *Thread) GoString() string {
 		s = append(s, "Members: "+fmt.Sprintf("%#v", this.Members)+",\n")
 	}
 	s = append(s, "LastMessageTimestamp: "+fmt.Sprintf("%#v", this.LastMessageTimestamp)+",\n")
-	s = append(s, "LastExternalMessageTimestamp: "+fmt.Sprintf("%#v", this.LastExternalMessageTimestamp)+",\n")
+	s = append(s, "LastMessageSummary: "+fmt.Sprintf("%#v", this.LastMessageSummary)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2989,7 +3023,7 @@ func (this *Message) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 13)
+	s := make([]string, 0, 14)
 	s = append(s, "&threading.Message{")
 	s = append(s, "Text: "+fmt.Sprintf("%#v", this.Text)+",\n")
 	if this.Attachments != nil {
@@ -3008,6 +3042,7 @@ func (this *Message) GoString() string {
 	if this.TextRefs != nil {
 		s = append(s, "TextRefs: "+fmt.Sprintf("%#v", this.TextRefs)+",\n")
 	}
+	s = append(s, "Summary: "+fmt.Sprintf("%#v", this.Summary)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -3145,7 +3180,7 @@ func (this *PostMessageRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 13)
+	s := make([]string, 0, 14)
 	s = append(s, "&threading.PostMessageRequest{")
 	s = append(s, "UUID: "+fmt.Sprintf("%#v", this.UUID)+",\n")
 	s = append(s, "ThreadID: "+fmt.Sprintf("%#v", this.ThreadID)+",\n")
@@ -3162,6 +3197,7 @@ func (this *PostMessageRequest) GoString() string {
 		s = append(s, "Attachments: "+fmt.Sprintf("%#v", this.Attachments)+",\n")
 	}
 	s = append(s, "Title: "+fmt.Sprintf("%#v", this.Title)+",\n")
+	s = append(s, "Summary: "+fmt.Sprintf("%#v", this.Summary)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -3169,10 +3205,13 @@ func (this *PostMessageResponse) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 5)
+	s := make([]string, 0, 6)
 	s = append(s, "&threading.PostMessageResponse{")
 	if this.Item != nil {
 		s = append(s, "Item: "+fmt.Sprintf("%#v", this.Item)+",\n")
+	}
+	if this.Thread != nil {
+		s = append(s, "Thread: "+fmt.Sprintf("%#v", this.Thread)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -3437,7 +3476,7 @@ func (this *CreateThreadRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 13)
+	s := make([]string, 0, 14)
 	s = append(s, "&threading.CreateThreadRequest{")
 	s = append(s, "UUID: "+fmt.Sprintf("%#v", this.UUID)+",\n")
 	s = append(s, "OrganizationID: "+fmt.Sprintf("%#v", this.OrganizationID)+",\n")
@@ -3454,6 +3493,7 @@ func (this *CreateThreadRequest) GoString() string {
 		s = append(s, "Attachments: "+fmt.Sprintf("%#v", this.Attachments)+",\n")
 	}
 	s = append(s, "Title: "+fmt.Sprintf("%#v", this.Title)+",\n")
+	s = append(s, "Summary: "+fmt.Sprintf("%#v", this.Summary)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -3461,11 +3501,14 @@ func (this *CreateThreadResponse) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 6)
+	s := make([]string, 0, 7)
 	s = append(s, "&threading.CreateThreadResponse{")
 	s = append(s, "ThreadID: "+fmt.Sprintf("%#v", this.ThreadID)+",\n")
 	if this.ThreadItem != nil {
 		s = append(s, "ThreadItem: "+fmt.Sprintf("%#v", this.ThreadItem)+",\n")
+	}
+	if this.Thread != nil {
+		s = append(s, "Thread: "+fmt.Sprintf("%#v", this.Thread)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -4145,10 +4188,11 @@ func (m *Thread) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.LastMessageTimestamp))
 	}
-	if m.LastExternalMessageTimestamp != 0 {
-		data[i] = 0x30
+	if len(m.LastMessageSummary) > 0 {
+		data[i] = 0x32
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.LastExternalMessageTimestamp))
+		i = encodeVarintSvc(data, i, uint64(len(m.LastMessageSummary)))
+		i += copy(data[i:], m.LastMessageSummary)
 	}
 	return i, nil
 }
@@ -4408,6 +4452,12 @@ func (m *Message) MarshalTo(data []byte) (int, error) {
 			}
 			i += n
 		}
+	}
+	if len(m.Summary) > 0 {
+		data[i] = 0x52
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Summary)))
+		i += copy(data[i:], m.Summary)
 	}
 	return i, nil
 }
@@ -4849,6 +4899,12 @@ func (m *PostMessageRequest) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(len(m.Title)))
 		i += copy(data[i:], m.Title)
 	}
+	if len(m.Summary) > 0 {
+		data[i] = 0x52
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Summary)))
+		i += copy(data[i:], m.Summary)
+	}
 	return i, nil
 }
 
@@ -4876,6 +4932,16 @@ func (m *PostMessageResponse) MarshalTo(data []byte) (int, error) {
 			return 0, err
 		}
 		i += n13
+	}
+	if m.Thread != nil {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
+		n14, err := m.Thread.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n14
 	}
 	return i, nil
 }
@@ -4964,11 +5030,11 @@ func (m *ThreadItemsRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Iterator.Size()))
-		n14, err := m.Iterator.MarshalTo(data[i:])
+		n15, err := m.Iterator.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n14
+		i += n15
 	}
 	return i, nil
 }
@@ -4992,11 +5058,11 @@ func (m *ThreadItemEdge) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Item.Size()))
-		n15, err := m.Item.MarshalTo(data[i:])
+		n16, err := m.Item.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n15
+		i += n16
 	}
 	if len(m.Cursor) > 0 {
 		data[i] = 0x12
@@ -5072,11 +5138,11 @@ func (m *QueryThreadsRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x12
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Iterator.Size()))
-		n16, err := m.Iterator.MarshalTo(data[i:])
+		n17, err := m.Iterator.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n16
+		i += n17
 	}
 	if m.Type != 0 {
 		data[i] = 0x18
@@ -5084,11 +5150,11 @@ func (m *QueryThreadsRequest) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(m.Type))
 	}
 	if m.QueryType != nil {
-		nn17, err := m.QueryType.MarshalTo(data[i:])
+		nn18, err := m.QueryType.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn17
+		i += nn18
 	}
 	return i, nil
 }
@@ -5099,11 +5165,11 @@ func (m *QueryThreadsRequest_Query) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x52
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Query.Size()))
-		n18, err := m.Query.MarshalTo(data[i:])
+		n19, err := m.Query.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n18
+		i += n19
 	}
 	return i, nil
 }
@@ -5134,11 +5200,11 @@ func (m *ThreadEdge) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
-		n19, err := m.Thread.MarshalTo(data[i:])
+		n20, err := m.Thread.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n19
+		i += n20
 	}
 	if len(m.Cursor) > 0 {
 		data[i] = 0x12
@@ -5286,11 +5352,11 @@ func (m *ThreadResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
-		n20, err := m.Thread.MarshalTo(data[i:])
+		n21, err := m.Thread.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n20
+		i += n21
 	}
 	return i, nil
 }
@@ -5326,11 +5392,11 @@ func (m *CreateSavedQueryRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Query.Size()))
-		n21, err := m.Query.MarshalTo(data[i:])
+		n22, err := m.Query.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n21
+		i += n22
 	}
 	return i, nil
 }
@@ -5354,11 +5420,11 @@ func (m *CreateSavedQueryResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.SavedQuery.Size()))
-		n22, err := m.SavedQuery.MarshalTo(data[i:])
+		n23, err := m.SavedQuery.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n22
+		i += n23
 	}
 	return i, nil
 }
@@ -5394,11 +5460,11 @@ func (m *UpdateSavedQueryRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Query.Size()))
-		n23, err := m.Query.MarshalTo(data[i:])
+		n24, err := m.Query.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n23
+		i += n24
 	}
 	return i, nil
 }
@@ -5576,11 +5642,11 @@ func (m *CreateThreadRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x22
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Source.Size()))
-		n24, err := m.Source.MarshalTo(data[i:])
+		n25, err := m.Source.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n24
+		i += n25
 	}
 	if len(m.Destinations) > 0 {
 		for _, msg := range m.Destinations {
@@ -5628,6 +5694,12 @@ func (m *CreateThreadRequest) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(len(m.Title)))
 		i += copy(data[i:], m.Title)
 	}
+	if len(m.Summary) > 0 {
+		data[i] = 0x52
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Summary)))
+		i += copy(data[i:], m.Summary)
+	}
 	return i, nil
 }
 
@@ -5656,11 +5728,21 @@ func (m *CreateThreadResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x12
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.ThreadItem.Size()))
-		n25, err := m.ThreadItem.MarshalTo(data[i:])
+		n26, err := m.ThreadItem.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n25
+		i += n26
+	}
+	if m.Thread != nil {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
+		n27, err := m.Thread.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n27
 	}
 	return i, nil
 }
@@ -5826,11 +5908,11 @@ func (m *SavedQueryResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.SavedQuery.Size()))
-		n26, err := m.SavedQuery.MarshalTo(data[i:])
+		n28, err := m.SavedQuery.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n26
+		i += n28
 	}
 	return i, nil
 }
@@ -5884,11 +5966,11 @@ func (m *ThreadItemResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Item.Size()))
-		n27, err := m.Item.MarshalTo(data[i:])
+		n29, err := m.Item.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n27
+		i += n29
 	}
 	return i, nil
 }
@@ -5964,8 +6046,9 @@ func (m *Thread) Size() (n int) {
 	if m.LastMessageTimestamp != 0 {
 		n += 1 + sovSvc(uint64(m.LastMessageTimestamp))
 	}
-	if m.LastExternalMessageTimestamp != 0 {
-		n += 1 + sovSvc(uint64(m.LastExternalMessageTimestamp))
+	l = len(m.LastMessageSummary)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
 }
@@ -6094,6 +6177,10 @@ func (m *Message) Size() (n int) {
 			l = e.Size()
 			n += 1 + l + sovSvc(uint64(l))
 		}
+	}
+	l = len(m.Summary)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
 }
@@ -6306,6 +6393,10 @@ func (m *PostMessageRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
+	l = len(m.Summary)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
 	return n
 }
 
@@ -6314,6 +6405,10 @@ func (m *PostMessageResponse) Size() (n int) {
 	_ = l
 	if m.Item != nil {
 		l = m.Item.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.Thread != nil {
+		l = m.Thread.Size()
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
@@ -6641,6 +6736,10 @@ func (m *CreateThreadRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
+	l = len(m.Summary)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
 	return n
 }
 
@@ -6653,6 +6752,10 @@ func (m *CreateThreadResponse) Size() (n int) {
 	}
 	if m.ThreadItem != nil {
 		l = m.ThreadItem.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.Thread != nil {
+		l = m.Thread.Size()
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
@@ -6785,7 +6888,7 @@ func (this *Thread) String() string {
 		`PrimaryEntityID:` + fmt.Sprintf("%v", this.PrimaryEntityID) + `,`,
 		`Members:` + strings.Replace(fmt.Sprintf("%v", this.Members), "Member", "Member", 1) + `,`,
 		`LastMessageTimestamp:` + fmt.Sprintf("%v", this.LastMessageTimestamp) + `,`,
-		`LastExternalMessageTimestamp:` + fmt.Sprintf("%v", this.LastExternalMessageTimestamp) + `,`,
+		`LastMessageSummary:` + fmt.Sprintf("%v", this.LastMessageSummary) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -6872,6 +6975,7 @@ func (this *Message) String() string {
 		`EditorEntityID:` + fmt.Sprintf("%v", this.EditorEntityID) + `,`,
 		`Title:` + fmt.Sprintf("%v", this.Title) + `,`,
 		`TextRefs:` + strings.Replace(fmt.Sprintf("%v", this.TextRefs), "Reference", "Reference", 1) + `,`,
+		`Summary:` + fmt.Sprintf("%v", this.Summary) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -7016,6 +7120,7 @@ func (this *PostMessageRequest) String() string {
 		`Text:` + fmt.Sprintf("%v", this.Text) + `,`,
 		`Attachments:` + strings.Replace(fmt.Sprintf("%v", this.Attachments), "Attachment", "Attachment", 1) + `,`,
 		`Title:` + fmt.Sprintf("%v", this.Title) + `,`,
+		`Summary:` + fmt.Sprintf("%v", this.Summary) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -7026,6 +7131,7 @@ func (this *PostMessageResponse) String() string {
 	}
 	s := strings.Join([]string{`&PostMessageResponse{`,
 		`Item:` + strings.Replace(fmt.Sprintf("%v", this.Item), "ThreadItem", "ThreadItem", 1) + `,`,
+		`Thread:` + strings.Replace(fmt.Sprintf("%v", this.Thread), "Thread", "Thread", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -7280,6 +7386,7 @@ func (this *CreateThreadRequest) String() string {
 		`Text:` + fmt.Sprintf("%v", this.Text) + `,`,
 		`Attachments:` + strings.Replace(fmt.Sprintf("%v", this.Attachments), "Attachment", "Attachment", 1) + `,`,
 		`Title:` + fmt.Sprintf("%v", this.Title) + `,`,
+		`Summary:` + fmt.Sprintf("%v", this.Summary) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -7291,6 +7398,7 @@ func (this *CreateThreadResponse) String() string {
 	s := strings.Join([]string{`&CreateThreadResponse{`,
 		`ThreadID:` + fmt.Sprintf("%v", this.ThreadID) + `,`,
 		`ThreadItem:` + strings.Replace(fmt.Sprintf("%v", this.ThreadItem), "ThreadItem", "ThreadItem", 1) + `,`,
+		`Thread:` + strings.Replace(fmt.Sprintf("%v", this.Thread), "Thread", "Thread", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -7698,10 +7806,10 @@ func (m *Thread) Unmarshal(data []byte) error {
 				}
 			}
 		case 6:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LastExternalMessageTimestamp", wireType)
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LastMessageSummary", wireType)
 			}
-			m.LastExternalMessageTimestamp = 0
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowSvc
@@ -7711,11 +7819,21 @@ func (m *Thread) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				m.LastExternalMessageTimestamp |= (uint64(b) & 0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.LastMessageSummary = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -8494,6 +8612,35 @@ func (m *Message) Unmarshal(data []byte) error {
 			if err := m.TextRefs[len(m.TextRefs)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Summary", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Summary = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -9977,6 +10124,35 @@ func (m *PostMessageRequest) Unmarshal(data []byte) error {
 			}
 			m.Title = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Summary", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Summary = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -10057,6 +10233,39 @@ func (m *PostMessageResponse) Unmarshal(data []byte) error {
 				m.Item = &ThreadItem{}
 			}
 			if err := m.Item.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Thread", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Thread == nil {
+				m.Thread = &Thread{}
+			}
+			if err := m.Thread.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -12437,6 +12646,35 @@ func (m *CreateThreadRequest) Unmarshal(data []byte) error {
 			}
 			m.Title = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Summary", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Summary = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -12546,6 +12784,39 @@ func (m *CreateThreadResponse) Unmarshal(data []byte) error {
 				m.ThreadItem = &ThreadItem{}
 			}
 			if err := m.ThreadItem.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Thread", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Thread == nil {
+				m.Thread = &Thread{}
+			}
+			if err := m.Thread.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

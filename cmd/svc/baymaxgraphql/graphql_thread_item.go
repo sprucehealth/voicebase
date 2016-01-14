@@ -195,6 +195,7 @@ var threadItemType = graphql.NewObject(
 		},
 		Fields: graphql.Fields{
 			"id":            &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+			"uuid":          &graphql.Field{Type: graphql.ID},
 			"timestamp":     &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
 			"actorEntityID": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"internal":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
@@ -246,7 +247,7 @@ func lookupThreadItem(ctx context.Context, svc *service, id string) (interface{}
 		}
 		return nil, internalError(err)
 	}
-	it, err := transformThreadItemToResponse(res.Item)
+	it, err := transformThreadItemToResponse(res.Item, "")
 	if err != nil {
 		return nil, internalError(err)
 	}

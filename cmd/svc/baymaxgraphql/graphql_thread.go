@@ -123,7 +123,7 @@ var threadType = graphql.NewObject(
 						cn.PageInfo.HasPreviousPage = res.HasMore
 					}
 					for i, e := range res.Edges {
-						it, err := transformThreadItemToResponse(e.Item)
+						it, err := transformThreadItemToResponse(e.Item, "")
 						if err != nil {
 							golog.Errorf("Unknown thread item type %s", e.Item.Type.String())
 							continue
@@ -154,9 +154,12 @@ func lookupThread(ctx context.Context, svc *service, id string) (interface{}, er
 		return nil, internalError(err)
 	}
 
-	thread, err := transformThreadToResponse(tres.Thread)
+	th, err := transformThreadToResponse(tres.Thread)
 	if err != nil {
 		return nil, internalError(err)
 	}
-	return thread, nil
+	if err := svc.hydrateThreadTitles(ctx, []*thread{th}); err != nil {
+		return nil, internalError(err)
+	}
+	return th, nil
 }

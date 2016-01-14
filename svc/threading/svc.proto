@@ -32,6 +32,7 @@ message Thread {
 	string primary_entity_id = 3 [(gogoproto.customname) = "PrimaryEntityID"];
 	repeated Member members = 4;
 	uint64 last_message_timestamp = 5;
+	string last_message_summary = 6;
 }
 
 message Member {
@@ -80,6 +81,7 @@ message Message {
 	string editor_entity_id = 7 [(gogoproto.customname) = "EditorEntityID"];
 	string title = 8;
 	repeated Reference text_refs = 9; // References from the message body text
+	string summary = 10;
 }
 
 message Endpoint {
@@ -162,10 +164,12 @@ message PostMessageRequest {
 	string text = 7;
 	repeated Attachment attachments = 8;
 	string title = 9;
+	string summary = 10;
 }
 
 message PostMessageResponse {
 	ThreadItem item = 1;
+	Thread thread = 2;
 }
 
 message MarkThreadAsReadRequest {
@@ -282,11 +286,13 @@ message CreateThreadRequest {
 	string text = 7;
 	repeated Attachment attachments = 8;
 	string title = 9;
+	string summary = 10;
 }
 
 message CreateThreadResponse {
 	string thread_id = 1 [(gogoproto.customname) = "ThreadID"];
 	ThreadItem thread_item = 2;
+	Thread thread = 3;
 }
 
 message ThreadMembersRequest {

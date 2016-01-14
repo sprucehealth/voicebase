@@ -105,6 +105,7 @@ type thread struct {
 
 type threadItem struct {
 	ID            string      `json:"id"`
+	UUID          string      `json:"uuid"`
 	Timestamp     uint64      `json:"timestamp"`
 	ActorEntityID string      `json:"actorEntityID"`
 	Internal      bool        `json:"internal"`

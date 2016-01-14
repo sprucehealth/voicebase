@@ -1,10 +1,20 @@
 package bml
 
 import (
-	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 )
+
+// ErrValidation is returned for errors during validation
+type ErrValidation struct {
+	Element string
+	Reason  string
+}
+
+func (e ErrValidation) Error() string {
+	return fmt.Sprintf("bml: invalid %s: %s", e.Element, e.Reason)
+}
 
 var elementTypes = map[string]reflect.Type{
 	"ref": reflect.TypeOf(Ref{}),
@@ -37,13 +47,18 @@ func (r *Ref) Validate() error {
 	// it adds less complexity and validate is always called before marshal.
 	r.Type = RefType(strings.ToLower(string(r.Type)))
 	if r.ID == "" {
-		return errors.New("bml: Ref requires ID")
+		return ErrValidation{Element: "ref", Reason: "id required"}
 	}
 	if r.Type == "" {
-		return errors.New("bml: Ref requires Type")
+		return ErrValidation{Element: "ref", Reason: "type required"}
 	}
 	if r.Text == "" {
-		return errors.New("bml: Ref requires Text")
+		return ErrValidation{Element: "ref", Reason: "text required"}
 	}
 	return nil
+}
+
+// PlainText implements the PlainTexter interface
+func (r *Ref) PlainText() (string, error) {
+	return r.Text, nil
 }

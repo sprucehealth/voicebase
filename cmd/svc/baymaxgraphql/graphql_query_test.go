@@ -18,6 +18,8 @@ func TestNodeQuery(t *testing.T) {
 
 	dirC := dirmock.New(t)
 	thC := thmock.New(t)
+	defer dirC.Finish()
+	defer thC.Finish()
 
 	acc := &account{ID: "a1"}
 	ctx := context.Background()
@@ -158,9 +160,33 @@ func TestNodeQuery(t *testing.T) {
 			},
 		},
 		nil))
+	dirC.Expect(mock.NewExpectation(dirC.LookupEntities,
+		&directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: "entity:2",
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth: 0,
+				EntityInformation: []directory.EntityInformation{
+					directory.EntityInformation_CONTACTS,
+				},
+			},
+		},
+	).WithReturns(
+		&directory.LookupEntitiesResponse{
+			Entities: []*directory.Entity{
+				{
+					Type: directory.EntityType_EXTERNAL,
+					ID:   id,
+					Name: "Someone",
+				},
+			},
+		},
+		nil))
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, &thread{ID: id, OrganizationID: "entity:1", PrimaryEntityID: "entity:2", Title: "entity:2"}, res)
+	test.Equals(t, &thread{ID: id, OrganizationID: "entity:1", PrimaryEntityID: "entity:2", Title: "Someone"}, res)
 
 	// Thread item
 

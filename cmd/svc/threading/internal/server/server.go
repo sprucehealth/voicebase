@@ -19,6 +19,11 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+// maxSummaryLength sets the maximum length for the message summary. This must
+// match what the underlying DAL supports so if updating here make sure the DAL
+// is updated as well (e.g. db schema).
+const maxSummaryLength = 1024
+
 type threadsServer struct {
 	dal         dal.DAL
 	sns         snsiface.SNSAPI
@@ -77,6 +82,12 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	if in.Title == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "Title is required")
 	}
+	if in.Summary == "" {
+		return nil, grpc.Errorf(codes.InvalidArgument, "Summary is required")
+	}
+	if len(in.Summary) > maxSummaryLength {
+		in.Summary = in.Summary[:maxSummaryLength]
+	}
 	if err := bml.Parsef(in.Title).Validate(); err != nil {
 		return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Title is invalid format: %s", err.Error()))
 	}
@@ -116,6 +127,7 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 				ID:      in.Source.ID,
 			},
 			TextRefs: textRefs,
+			Summary:  in.Summary,
 		}
 		req.Attachments, err = transformAttachmentsFromRequest(in.Attachments)
 		if err != nil {
@@ -132,6 +144,14 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	}); err != nil {
 		return nil, errors.Trace(err)
 	}
+	thread, err := s.dal.Thread(ctx, threadID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	th, err := transformThreadToResponse(thread, !in.Internal)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 	it, err := transformThreadItemToResponse(item)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -140,6 +160,7 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	return &threading.CreateThreadResponse{
 		ThreadID:   threadID.String(),
 		ThreadItem: it,
+		Thread:     th,
 	}, nil
 }
 
@@ -178,6 +199,12 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	}
 	if in.Title == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "Title is required")
+	}
+	if in.Summary == "" {
+		return nil, grpc.Errorf(codes.InvalidArgument, "Summary is required")
+	}
+	if len(in.Summary) > maxSummaryLength {
+		in.Summary = in.Summary[:maxSummaryLength]
 	}
 	if err := bml.Parsef(in.Title).Validate(); err != nil {
 		return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Title is invalid format: %s", err.Error()))
@@ -232,15 +259,22 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	}); err != nil {
 		return nil, errors.Trace(err)
 	}
-
+	thread, err = s.dal.Thread(ctx, threadID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	th, err := transformThreadToResponse(thread, !in.Internal)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 	it, err := transformThreadItemToResponse(item)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-
 	s.publishMessage(ctx, thread.OrganizationID, thread.PrimaryEntityID, threadID, it, in.UUID)
 	return &threading.PostMessageResponse{
-		Item: it,
+		Item:   it,
+		Thread: th,
 	}, nil
 }
 
