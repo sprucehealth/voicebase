@@ -210,25 +210,41 @@ func (m *TwilioParams_TwilioMediaItem) Reset()      { *m = TwilioParams_TwilioMe
 func (*TwilioParams_TwilioMediaItem) ProtoMessage() {}
 
 type SendGridIncomingEmail struct {
-	Headers        string   `protobuf:"bytes,1,opt,name=headers,proto3" json:"headers,omitempty"`
-	Text           string   `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
-	HTML           string   `protobuf:"bytes,3,opt,name=html,proto3" json:"html,omitempty"`
-	Sender         string   `protobuf:"bytes,4,opt,name=sender,proto3" json:"sender,omitempty"`
-	Recipient      string   `protobuf:"bytes,5,opt,name=recipient,proto3" json:"recipient,omitempty"`
-	CC             string   `protobuf:"bytes,6,opt,name=cc,proto3" json:"cc,omitempty"`
-	Subject        string   `protobuf:"bytes,7,opt,name=subject,proto3" json:"subject,omitempty"`
-	DKIM           string   `protobuf:"bytes,8,opt,name=dkim,proto3" json:"dkim,omitempty"`
-	SPF            string   `protobuf:"bytes,9,opt,name=spf,proto3" json:"spf,omitempty"`
-	SMTPEnvelope   string   `protobuf:"bytes,10,opt,name=smtp_envelope,proto3" json:"smtp_envelope,omitempty"`
-	Charsets       string   `protobuf:"bytes,11,opt,name=charsets,proto3" json:"charsets,omitempty"`
-	SpamScore      string   `protobuf:"bytes,12,opt,name=spam_score,proto3" json:"spam_score,omitempty"`
-	SpamReport     string   `protobuf:"bytes,13,opt,name=spam_report,proto3" json:"spam_report,omitempty"`
-	NumAttachments uint32   `protobuf:"varint,14,opt,name=num_attachments,proto3" json:"num_attachments,omitempty"`
-	Attachments    []string `protobuf:"bytes,16,rep,name=attachments" json:"attachments,omitempty"`
+	Headers        string                              `protobuf:"bytes,1,opt,name=headers,proto3" json:"headers,omitempty"`
+	Text           string                              `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
+	HTML           string                              `protobuf:"bytes,3,opt,name=html,proto3" json:"html,omitempty"`
+	Sender         string                              `protobuf:"bytes,4,opt,name=sender,proto3" json:"sender,omitempty"`
+	Recipient      string                              `protobuf:"bytes,5,opt,name=recipient,proto3" json:"recipient,omitempty"`
+	CC             string                              `protobuf:"bytes,6,opt,name=cc,proto3" json:"cc,omitempty"`
+	Subject        string                              `protobuf:"bytes,7,opt,name=subject,proto3" json:"subject,omitempty"`
+	DKIM           string                              `protobuf:"bytes,8,opt,name=dkim,proto3" json:"dkim,omitempty"`
+	SPF            string                              `protobuf:"bytes,9,opt,name=spf,proto3" json:"spf,omitempty"`
+	SMTPEnvelope   string                              `protobuf:"bytes,10,opt,name=smtp_envelope,proto3" json:"smtp_envelope,omitempty"`
+	Charsets       string                              `protobuf:"bytes,11,opt,name=charsets,proto3" json:"charsets,omitempty"`
+	SpamScore      string                              `protobuf:"bytes,12,opt,name=spam_score,proto3" json:"spam_score,omitempty"`
+	SpamReport     string                              `protobuf:"bytes,13,opt,name=spam_report,proto3" json:"spam_report,omitempty"`
+	NumAttachments uint32                              `protobuf:"varint,14,opt,name=num_attachments,proto3" json:"num_attachments,omitempty"`
+	Attachments    []*SendGridIncomingEmail_Attachment `protobuf:"bytes,15,rep,name=attachments" json:"attachments,omitempty"`
 }
 
 func (m *SendGridIncomingEmail) Reset()      { *m = SendGridIncomingEmail{} }
 func (*SendGridIncomingEmail) ProtoMessage() {}
+
+func (m *SendGridIncomingEmail) GetAttachments() []*SendGridIncomingEmail_Attachment {
+	if m != nil {
+		return m.Attachments
+	}
+	return nil
+}
+
+type SendGridIncomingEmail_Attachment struct {
+	Type     string `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	Filename string `protobuf:"bytes,2,opt,name=file_name,proto3" json:"file_name,omitempty"`
+	ID       uint64 `protobuf:"varint,3,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (m *SendGridIncomingEmail_Attachment) Reset()      { *m = SendGridIncomingEmail_Attachment{} }
+func (*SendGridIncomingEmail_Attachment) ProtoMessage() {}
 
 // IncomingRawMessage represents a message parsed by the excommsapi layer
 // and ready to be consumed by the excomms layer.
@@ -339,6 +355,7 @@ func init() {
 	proto.RegisterType((*TwilioParams)(nil), "rawmsg.TwilioParams")
 	proto.RegisterType((*TwilioParams_TwilioMediaItem)(nil), "rawmsg.TwilioParams.TwilioMediaItem")
 	proto.RegisterType((*SendGridIncomingEmail)(nil), "rawmsg.SendGridIncomingEmail")
+	proto.RegisterType((*SendGridIncomingEmail_Attachment)(nil), "rawmsg.SendGridIncomingEmail.Attachment")
 	proto.RegisterType((*Incoming)(nil), "rawmsg.Incoming")
 	proto.RegisterEnum("rawmsg.TwilioEvent", TwilioEvent_name, TwilioEvent_value)
 	proto.RegisterEnum("rawmsg.TwilioParams_CallStatus", TwilioParams_CallStatus_name, TwilioParams_CallStatus_value)
@@ -596,9 +613,40 @@ func (this *SendGridIncomingEmail) Equal(that interface{}) bool {
 		return false
 	}
 	for i := range this.Attachments {
-		if this.Attachments[i] != that1.Attachments[i] {
+		if !this.Attachments[i].Equal(that1.Attachments[i]) {
 			return false
 		}
+	}
+	return true
+}
+func (this *SendGridIncomingEmail_Attachment) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*SendGridIncomingEmail_Attachment)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Type != that1.Type {
+		return false
+	}
+	if this.Filename != that1.Filename {
+		return false
+	}
+	if this.ID != that1.ID {
+		return false
 	}
 	return true
 }
@@ -765,7 +813,21 @@ func (this *SendGridIncomingEmail) GoString() string {
 	s = append(s, "SpamScore: "+fmt.Sprintf("%#v", this.SpamScore)+",\n")
 	s = append(s, "SpamReport: "+fmt.Sprintf("%#v", this.SpamReport)+",\n")
 	s = append(s, "NumAttachments: "+fmt.Sprintf("%#v", this.NumAttachments)+",\n")
-	s = append(s, "Attachments: "+fmt.Sprintf("%#v", this.Attachments)+",\n")
+	if this.Attachments != nil {
+		s = append(s, "Attachments: "+fmt.Sprintf("%#v", this.Attachments)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *SendGridIncomingEmail_Attachment) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&rawmsg.SendGridIncomingEmail_Attachment{")
+	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
+	s = append(s, "Filename: "+fmt.Sprintf("%#v", this.Filename)+",\n")
+	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1211,21 +1273,51 @@ func (m *SendGridIncomingEmail) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintModels(data, i, uint64(m.NumAttachments))
 	}
 	if len(m.Attachments) > 0 {
-		for _, s := range m.Attachments {
-			data[i] = 0x82
+		for _, msg := range m.Attachments {
+			data[i] = 0x7a
 			i++
-			data[i] = 0x1
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				data[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
+			i = encodeVarintModels(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
 			}
-			data[i] = uint8(l)
-			i++
-			i += copy(data[i:], s)
+			i += n
 		}
+	}
+	return i, nil
+}
+
+func (m *SendGridIncomingEmail_Attachment) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *SendGridIncomingEmail_Attachment) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Type) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintModels(data, i, uint64(len(m.Type)))
+		i += copy(data[i:], m.Type)
+	}
+	if len(m.Filename) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintModels(data, i, uint64(len(m.Filename)))
+		i += copy(data[i:], m.Filename)
+	}
+	if m.ID != 0 {
+		data[i] = 0x18
+		i++
+		i = encodeVarintModels(data, i, uint64(m.ID))
 	}
 	return i, nil
 }
@@ -1529,10 +1621,27 @@ func (m *SendGridIncomingEmail) Size() (n int) {
 		n += 1 + sovModels(uint64(m.NumAttachments))
 	}
 	if len(m.Attachments) > 0 {
-		for _, s := range m.Attachments {
-			l = len(s)
-			n += 2 + l + sovModels(uint64(l))
+		for _, e := range m.Attachments {
+			l = e.Size()
+			n += 1 + l + sovModels(uint64(l))
 		}
+	}
+	return n
+}
+
+func (m *SendGridIncomingEmail_Attachment) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Type)
+	if l > 0 {
+		n += 1 + l + sovModels(uint64(l))
+	}
+	l = len(m.Filename)
+	if l > 0 {
+		n += 1 + l + sovModels(uint64(l))
+	}
+	if m.ID != 0 {
+		n += 1 + sovModels(uint64(m.ID))
 	}
 	return n
 }
@@ -1657,7 +1766,19 @@ func (this *SendGridIncomingEmail) String() string {
 		`SpamScore:` + fmt.Sprintf("%v", this.SpamScore) + `,`,
 		`SpamReport:` + fmt.Sprintf("%v", this.SpamReport) + `,`,
 		`NumAttachments:` + fmt.Sprintf("%v", this.NumAttachments) + `,`,
-		`Attachments:` + fmt.Sprintf("%v", this.Attachments) + `,`,
+		`Attachments:` + strings.Replace(fmt.Sprintf("%v", this.Attachments), "SendGridIncomingEmail_Attachment", "SendGridIncomingEmail_Attachment", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SendGridIncomingEmail_Attachment) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SendGridIncomingEmail_Attachment{`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`Filename:` + fmt.Sprintf("%v", this.Filename) + `,`,
+		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3193,9 +3314,90 @@ func (m *SendGridIncomingEmail) Unmarshal(data []byte) error {
 					break
 				}
 			}
-		case 16:
+		case 15:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Attachments", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthModels
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Attachments = append(m.Attachments, &SendGridIncomingEmail_Attachment{})
+			if err := m.Attachments[len(m.Attachments)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipModels(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthModels
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SendGridIncomingEmail_Attachment) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowModels
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Attachment: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Attachment: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -3220,8 +3422,56 @@ func (m *SendGridIncomingEmail) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Attachments = append(m.Attachments, string(data[iNdEx:postIndex]))
+			m.Type = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Filename", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthModels
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Filename = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			m.ID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.ID |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipModels(data[iNdEx:])

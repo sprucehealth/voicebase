@@ -25,6 +25,26 @@ func TestAppendInt64(t *testing.T) {
 	}
 }
 
+func TestAppendUInt64(t *testing.T) {
+	ints := []uint64{0, 1, 2, 3, 4}
+	ifs := AppendUint64sToInterfaceSlice(nil, ints)
+
+	expected := []interface{}{uint64(0), uint64(1), uint64(2), uint64(3), uint64(4)}
+	if !reflect.DeepEqual(ifs, expected) {
+		t.Fatalf("Expected %#v, got %#v", expected, ifs)
+	}
+
+	intsA := []uint64{10, 20}
+	intsB := []uint64{30, 40}
+	ifs = AppendUint64sToInterfaceSlice(nil, intsA)
+	ifs = AppendUint64sToInterfaceSlice(ifs, intsB)
+
+	expected = []interface{}{uint64(10), uint64(20), uint64(30), uint64(40)}
+	if !reflect.DeepEqual(ifs, expected) {
+		t.Fatalf("Expected %#v, got %#v", expected, ifs)
+	}
+}
+
 func TestAppendString(t *testing.T) {
 	strings := []string{"A", "B", "C", "D"}
 	ifs := AppendStringsToInterfaceSlice(nil, strings)

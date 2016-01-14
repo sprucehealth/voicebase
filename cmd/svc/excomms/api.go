@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
+	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/go-proxy-protocol/proxyproto"
 	"golang.org/x/net/context"
@@ -58,6 +59,8 @@ func runAPI() {
 
 	dl := dal.NewDAL(db)
 
+	store := storage.NewS3(awsSession, config.attachmentBucket, config.attachmentPrefix)
+
 	eh := twilio.NewEventHandler(
 		directory.NewDirectoryClient(conn),
 		dl,
@@ -69,7 +72,7 @@ func runAPI() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.Handle("/twilio/sms", handlers.NewTwilioSMSHandler(dl, config.incomingRawMessageTopic, snsCLI))
 	router.Handle("/twilio/call/{event}", handlers.NewTwilioRequestHandler(eh))
-	router.Handle("/sendgrid/email", handlers.NewSendGridHandler(config.incomingRawMessageTopic, snsCLI, dl))
+	router.Handle("/sendgrid/email", handlers.NewSendGridHandler(config.incomingRawMessageTopic, snsCLI, dl, store))
 
 	webRequestLogger := func(ctx context.Context, ev *httputil.RequestEvent) {
 

@@ -1,0 +1,8 @@
+CREATE TABLE media (
+	id BIGINT UNSIGNED NOT NULL,
+	type VARCHAR(64) NOT NULL,
+	url VARCHAR(255) NOT NULL,
+	name VARCHAR(255),
+	created TIMESTAMP NOT NULL DEFAULT current_timestamp,
+	PRIMARY KEY (id)
+);

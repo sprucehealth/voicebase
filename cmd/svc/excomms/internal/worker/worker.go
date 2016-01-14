@@ -174,9 +174,33 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			EmailItem: &excomms.EmailItem{
 				Body:    text,
 				Subject: sgEmail.Subject,
-				// TODO: Attachments
 			},
 		}
+
+		// lookup media objects if there are any
+		mediaIDs := make([]uint64, len(sgEmail.Attachments))
+		for i, item := range sgEmail.Attachments {
+			mediaIDs[i] = item.ID
+		}
+
+		mediaMap, err := w.dal.LookupMedia(mediaIDs)
+		if err != nil {
+			return errors.Trace(err)
+		}
+
+		// populate attachments
+		mediaAttachments := make([]*excomms.MediaAttachment, sgEmail.NumAttachments)
+		for i, item := range sgEmail.Attachments {
+			media := mediaMap[item.ID]
+			mediaAttachments[i] = &excomms.MediaAttachment{
+				URL:         media.URL,
+				ContentType: media.Type,
+			}
+			if media.Name != nil {
+				mediaAttachments[i].Name = *media.Name
+			}
+		}
+		emailItem.EmailItem.Attachments = mediaAttachments
 
 		sns.Publish(w.snsAPI, w.externalMessageTopic, &excomms.PublishedExternalMessage{
 			FromChannelID: senderAddress.Address,

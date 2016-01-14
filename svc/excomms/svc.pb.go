@@ -355,6 +355,7 @@ func (m *EmailItem) GetAttachments() []*MediaAttachment {
 type MediaAttachment struct {
 	URL         string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 	ContentType string `protobuf:"bytes,2,opt,name=content_type,proto3" json:"content_type,omitempty"`
+	Name        string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 }
 
 func (m *MediaAttachment) Reset()      { *m = MediaAttachment{} }
@@ -976,6 +977,9 @@ func (this *MediaAttachment) Equal(that interface{}) bool {
 	if this.ContentType != that1.ContentType {
 		return false
 	}
+	if this.Name != that1.Name {
+		return false
+	}
 	return true
 }
 func (this *SendMessageRequest) Equal(that interface{}) bool {
@@ -1562,10 +1566,11 @@ func (this *MediaAttachment) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 6)
+	s := make([]string, 0, 7)
 	s = append(s, "&excomms.MediaAttachment{")
 	s = append(s, "URL: "+fmt.Sprintf("%#v", this.URL)+",\n")
 	s = append(s, "ContentType: "+fmt.Sprintf("%#v", this.ContentType)+",\n")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2191,6 +2196,12 @@ func (m *MediaAttachment) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(len(m.ContentType)))
 		i += copy(data[i:], m.ContentType)
 	}
+	if len(m.Name) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Name)))
+		i += copy(data[i:], m.Name)
+	}
 	return i, nil
 }
 
@@ -2797,6 +2808,10 @@ func (m *MediaAttachment) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
 	return n
 }
 
@@ -3126,6 +3141,7 @@ func (this *MediaAttachment) String() string {
 	s := strings.Join([]string{`&MediaAttachment{`,
 		`URL:` + fmt.Sprintf("%v", this.URL) + `,`,
 		`ContentType:` + fmt.Sprintf("%v", this.ContentType) + `,`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -4037,6 +4053,35 @@ func (m *MediaAttachment) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.ContentType = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

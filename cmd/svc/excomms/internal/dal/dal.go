@@ -100,6 +100,12 @@ type DAL interface {
 
 	// IncomingRawMessage returns the raw message based on the id.
 	IncomingRawMessage(id uint64) (*rawmsg.Incoming, error)
+
+	// StoreMedia persists a media object
+	StoreMedia(media []*models.Media) error
+
+	// LookupMedia looks up media objects based on their IDs
+	LookupMedia(ids []uint64) (map[uint64]*models.Media, error)
 }
 
 type dal struct {
@@ -456,4 +462,57 @@ func (d *dal) IncomingRawMessage(id uint64) (*rawmsg.Incoming, error) {
 		return nil, errors.Trace(err)
 	}
 	return &rm, nil
+}
+
+func (d *dal) StoreMedia(media []*models.Media) error {
+	if len(media) == 0 {
+		return nil
+	}
+
+	multiInsert := dbutil.MySQLMultiInsert(len(media))
+	for _, m := range media {
+		if m.ID == 0 {
+			return errors.Trace(fmt.Errorf("id required for media object"))
+		}
+
+		multiInsert.Append(m.ID, m.Type, m.URL, m.Name)
+	}
+
+	_, err := d.db.Exec(`INSERT INTO media (id, type, url, name) VALUES `+multiInsert.Query(), multiInsert.Values()...)
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	return nil
+}
+
+// LookupMedia looks up media objects based on their IDs
+func (d *dal) LookupMedia(ids []uint64) (map[uint64]*models.Media, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	rows, err := d.db.Query(`
+		SELECT id, type, url, name
+		FROM media 
+		WHERE id in (`+dbutil.MySQLArgs(len(ids))+`)`, dbutil.AppendUint64sToInterfaceSlice(nil, ids)...)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	media := make(map[uint64]*models.Media)
+	for rows.Next() {
+		var m models.Media
+		if err := rows.Scan(
+			&m.ID,
+			&m.Type,
+			&m.URL,
+			&m.Name); err != nil {
+			return nil, errors.Trace(err)
+		}
+		media[m.ID] = &m
+	}
+
+	return media, errors.Trace(rows.Err())
 }

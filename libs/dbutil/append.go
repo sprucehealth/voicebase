@@ -31,3 +31,19 @@ func AppendInt64sToInterfaceSlice(ifs []interface{}, is []int64) []interface{} {
 	}
 	return ifs
 }
+
+// AppendUInt64sToInterfaceSlice appends the int64 slice to the interface slice.
+func AppendUint64sToInterfaceSlice(ifs []interface{}, is []uint64) []interface{} {
+	if cap(ifs) < len(ifs)+len(is) {
+		out := make([]interface{}, len(ifs)+len(is))
+		n := copy(out, ifs)
+		for i, j := range is {
+			out[n+i] = j
+		}
+		return out
+	}
+	for _, j := range is {
+		ifs = append(ifs, j)
+	}
+	return ifs
+}

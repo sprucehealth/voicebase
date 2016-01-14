@@ -67,6 +67,7 @@ message EmailItem {
 message MediaAttachment {
 	string url = 1 [(gogoproto.customname) = "URL"];
 	string content_type = 2;
+	string name = 3;
 }
 
 // RPC

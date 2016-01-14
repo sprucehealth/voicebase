@@ -106,3 +106,11 @@ type ProxyPhoneNumberReservation struct {
 	OrganizationID      string
 	Expires             time.Time
 }
+
+// Media represents an object uploaded to cloud storage.
+type Media struct {
+	ID   uint64
+	Type string
+	URL  string
+	Name *string
+}

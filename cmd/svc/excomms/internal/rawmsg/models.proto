@@ -109,7 +109,14 @@ message SendGridIncomingEmail {
 	string spam_score = 12;
 	string spam_report = 13;
 	uint32 num_attachments = 14;
-	repeated string attachments = 16; 
+
+	message Attachment {
+		string type = 1;
+		string file_name = 2 [(gogoproto.customname) = "Filename"];
+		uint64 id = 3 [(gogoproto.customname) = "ID"];
+	}
+
+	repeated Attachment attachments = 15; 
 }
 
 // IncomingRawMessage represents a message parsed by the excommsapi layer
