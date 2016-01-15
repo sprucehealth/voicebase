@@ -226,6 +226,13 @@ func TestIncomingSMS_NewUser_Email(t *testing.T) {
 			EmailItem: &excomms.EmailItem{
 				Subject: "Hello",
 				Body:    "body",
+				Attachments: []*excomms.MediaAttachment{
+					{
+						URL:         "s3://test/1234",
+						ContentType: "image/jpeg",
+						Name:        "Testing",
+					},
+				},
 			},
 		},
 	}
@@ -243,6 +250,9 @@ func TestIncomingSMS_NewUser_Email(t *testing.T) {
 	test.Equals(t, threadRequested.OrganizationID, organizationEntity.ID)
 	test.Equals(t, threadRequested.Title, "<ref id=\"2\" type=\"entity\">patient@example.com</ref> emailed <ref id=\"10\" type=\"entity\">doctor@mypractice.baymax.com</ref>, Subject: Hello")
 	test.Equals(t, threadRequested.Text, pem.GetEmailItem().Body)
+	test.Equals(t, pem.GetEmailItem().Attachments[0].URL, threadRequested.Attachments[0].GetImage().URL)
+	test.Equals(t, pem.GetEmailItem().Attachments[0].Name, threadRequested.Attachments[0].Title)
+	test.Equals(t, pem.GetEmailItem().Attachments[0].ContentType, threadRequested.Attachments[0].GetImage().Mimetype)
 
 	// ensure no call to post message to thread
 	if mt.postMessageRequested != nil {

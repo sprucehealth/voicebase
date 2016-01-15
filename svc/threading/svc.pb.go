@@ -23,6 +23,7 @@
 		Attachment
 		ImageAttachment
 		AudioAttachment
+		GenericURLAttachment
 		PublishedThreadItem
 		PostMessageRequest
 		PostMessageResponse
@@ -172,17 +173,20 @@ var Endpoint_Channel_value = map[string]int32{
 type Attachment_Type int32
 
 const (
-	Attachment_IMAGE Attachment_Type = 0
-	Attachment_AUDIO Attachment_Type = 1
+	Attachment_IMAGE       Attachment_Type = 0
+	Attachment_AUDIO       Attachment_Type = 1
+	Attachment_GENERIC_URL Attachment_Type = 2
 )
 
 var Attachment_Type_name = map[int32]string{
 	0: "IMAGE",
 	1: "AUDIO",
+	2: "GENERIC_URL",
 }
 var Attachment_Type_value = map[string]int32{
-	"IMAGE": 0,
-	"AUDIO": 1,
+	"IMAGE":       0,
+	"AUDIO":       1,
+	"GENERIC_URL": 2,
 }
 
 type QueryThreadsRequest_Type int32
@@ -483,6 +487,7 @@ type Attachment struct {
 	// Types that are valid to be assigned to Data:
 	//	*Attachment_Image
 	//	*Attachment_Audio
+	//	*Attachment_GenericURL
 	Data isAttachment_Data `protobuf_oneof:"data"`
 }
 
@@ -502,9 +507,13 @@ type Attachment_Image struct {
 type Attachment_Audio struct {
 	Audio *AudioAttachment `protobuf:"bytes,11,opt,name=audio,oneof"`
 }
+type Attachment_GenericURL struct {
+	GenericURL *GenericURLAttachment `protobuf:"bytes,12,opt,name=generic_url,oneof"`
+}
 
-func (*Attachment_Image) isAttachment_Data() {}
-func (*Attachment_Audio) isAttachment_Data() {}
+func (*Attachment_Image) isAttachment_Data()      {}
+func (*Attachment_Audio) isAttachment_Data()      {}
+func (*Attachment_GenericURL) isAttachment_Data() {}
 
 func (m *Attachment) GetData() isAttachment_Data {
 	if m != nil {
@@ -527,11 +536,19 @@ func (m *Attachment) GetAudio() *AudioAttachment {
 	return nil
 }
 
+func (m *Attachment) GetGenericURL() *GenericURLAttachment {
+	if x, ok := m.GetData().(*Attachment_GenericURL); ok {
+		return x.GenericURL
+	}
+	return nil
+}
+
 // XXX_OneofFuncs is for the internal use of the proto package.
 func (*Attachment) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
 	return _Attachment_OneofMarshaler, _Attachment_OneofUnmarshaler, []interface{}{
 		(*Attachment_Image)(nil),
 		(*Attachment_Audio)(nil),
+		(*Attachment_GenericURL)(nil),
 	}
 }
 
@@ -547,6 +564,11 @@ func _Attachment_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 	case *Attachment_Audio:
 		_ = b.EncodeVarint(11<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.Audio); err != nil {
+			return err
+		}
+	case *Attachment_GenericURL:
+		_ = b.EncodeVarint(12<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.GenericURL); err != nil {
 			return err
 		}
 	case nil:
@@ -575,6 +597,14 @@ func _Attachment_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buf
 		err := b.DecodeMessage(msg)
 		m.Data = &Attachment_Audio{msg}
 		return true, err
+	case 12: // data.generic_url
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(GenericURLAttachment)
+		err := b.DecodeMessage(msg)
+		m.Data = &Attachment_GenericURL{msg}
+		return true, err
 	default:
 		return false, nil
 	}
@@ -598,6 +628,14 @@ type AudioAttachment struct {
 
 func (m *AudioAttachment) Reset()      { *m = AudioAttachment{} }
 func (*AudioAttachment) ProtoMessage() {}
+
+type GenericURLAttachment struct {
+	Mimetype string `protobuf:"bytes,1,opt,name=mimetype,proto3" json:"mimetype,omitempty"`
+	URL      string `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+}
+
+func (m *GenericURLAttachment) Reset()      { *m = GenericURLAttachment{} }
+func (*GenericURLAttachment) ProtoMessage() {}
 
 type PublishedThreadItem struct {
 	UUID            string      `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
@@ -1162,6 +1200,7 @@ func init() {
 	proto.RegisterType((*Attachment)(nil), "threading.Attachment")
 	proto.RegisterType((*ImageAttachment)(nil), "threading.ImageAttachment")
 	proto.RegisterType((*AudioAttachment)(nil), "threading.AudioAttachment")
+	proto.RegisterType((*GenericURLAttachment)(nil), "threading.GenericURLAttachment")
 	proto.RegisterType((*PublishedThreadItem)(nil), "threading.PublishedThreadItem")
 	proto.RegisterType((*PostMessageRequest)(nil), "threading.PostMessageRequest")
 	proto.RegisterType((*PostMessageResponse)(nil), "threading.PostMessageResponse")
@@ -1805,6 +1844,31 @@ func (this *Attachment_Audio) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *Attachment_GenericURL) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Attachment_GenericURL)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.GenericURL.Equal(that1.GenericURL) {
+		return false
+	}
+	return true
+}
 func (this *ImageAttachment) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
@@ -1866,6 +1930,34 @@ func (this *AudioAttachment) Equal(that interface{}) bool {
 		return false
 	}
 	if this.DurationInSeconds != that1.DurationInSeconds {
+		return false
+	}
+	return true
+}
+func (this *GenericURLAttachment) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*GenericURLAttachment)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Mimetype != that1.Mimetype {
+		return false
+	}
+	if this.URL != that1.URL {
 		return false
 	}
 	return true
@@ -3108,7 +3200,7 @@ func (this *Attachment) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 9)
+	s := make([]string, 0, 10)
 	s = append(s, "&threading.Attachment{")
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	s = append(s, "Title: "+fmt.Sprintf("%#v", this.Title)+",\n")
@@ -3135,6 +3227,14 @@ func (this *Attachment_Audio) GoString() string {
 		`Audio:` + fmt.Sprintf("%#v", this.Audio) + `}`}, ", ")
 	return s
 }
+func (this *Attachment_GenericURL) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&threading.Attachment_GenericURL{` +
+		`GenericURL:` + fmt.Sprintf("%#v", this.GenericURL) + `}`}, ", ")
+	return s
+}
 func (this *ImageAttachment) GoString() string {
 	if this == nil {
 		return "nil"
@@ -3157,6 +3257,17 @@ func (this *AudioAttachment) GoString() string {
 	s = append(s, "Mimetype: "+fmt.Sprintf("%#v", this.Mimetype)+",\n")
 	s = append(s, "URL: "+fmt.Sprintf("%#v", this.URL)+",\n")
 	s = append(s, "DurationInSeconds: "+fmt.Sprintf("%#v", this.DurationInSeconds)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GenericURLAttachment) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&threading.GenericURLAttachment{")
+	s = append(s, "Mimetype: "+fmt.Sprintf("%#v", this.Mimetype)+",\n")
+	s = append(s, "URL: "+fmt.Sprintf("%#v", this.URL)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -4683,6 +4794,20 @@ func (m *Attachment_Audio) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
+func (m *Attachment_GenericURL) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.GenericURL != nil {
+		data[i] = 0x62
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.GenericURL.Size()))
+		n11, err := m.GenericURL.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n11
+	}
+	return i, nil
+}
 func (m *ImageAttachment) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -4758,6 +4883,36 @@ func (m *AudioAttachment) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *GenericURLAttachment) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *GenericURLAttachment) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Mimetype) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Mimetype)))
+		i += copy(data[i:], m.Mimetype)
+	}
+	if len(m.URL) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.URL)))
+		i += copy(data[i:], m.URL)
+	}
+	return i, nil
+}
+
 func (m *PublishedThreadItem) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -4801,11 +4956,11 @@ func (m *PublishedThreadItem) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x2a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Item.Size()))
-		n11, err := m.Item.MarshalTo(data[i:])
+		n12, err := m.Item.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n11
+		i += n12
 	}
 	return i, nil
 }
@@ -4847,11 +5002,11 @@ func (m *PostMessageRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x22
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Source.Size()))
-		n12, err := m.Source.MarshalTo(data[i:])
+		n13, err := m.Source.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n12
+		i += n13
 	}
 	if len(m.Destinations) > 0 {
 		for _, msg := range m.Destinations {
@@ -4927,21 +5082,21 @@ func (m *PostMessageResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Item.Size()))
-		n13, err := m.Item.MarshalTo(data[i:])
+		n14, err := m.Item.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n13
+		i += n14
 	}
 	if m.Thread != nil {
 		data[i] = 0x12
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
-		n14, err := m.Thread.MarshalTo(data[i:])
+		n15, err := m.Thread.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n14
+		i += n15
 	}
 	return i, nil
 }
@@ -5030,11 +5185,11 @@ func (m *ThreadItemsRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Iterator.Size()))
-		n15, err := m.Iterator.MarshalTo(data[i:])
+		n16, err := m.Iterator.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n15
+		i += n16
 	}
 	return i, nil
 }
@@ -5058,11 +5213,11 @@ func (m *ThreadItemEdge) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Item.Size()))
-		n16, err := m.Item.MarshalTo(data[i:])
+		n17, err := m.Item.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n16
+		i += n17
 	}
 	if len(m.Cursor) > 0 {
 		data[i] = 0x12
@@ -5138,11 +5293,11 @@ func (m *QueryThreadsRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x12
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Iterator.Size()))
-		n17, err := m.Iterator.MarshalTo(data[i:])
+		n18, err := m.Iterator.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n17
+		i += n18
 	}
 	if m.Type != 0 {
 		data[i] = 0x18
@@ -5150,11 +5305,11 @@ func (m *QueryThreadsRequest) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(m.Type))
 	}
 	if m.QueryType != nil {
-		nn18, err := m.QueryType.MarshalTo(data[i:])
+		nn19, err := m.QueryType.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn18
+		i += nn19
 	}
 	return i, nil
 }
@@ -5165,11 +5320,11 @@ func (m *QueryThreadsRequest_Query) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x52
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Query.Size()))
-		n19, err := m.Query.MarshalTo(data[i:])
+		n20, err := m.Query.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n19
+		i += n20
 	}
 	return i, nil
 }
@@ -5200,11 +5355,11 @@ func (m *ThreadEdge) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
-		n20, err := m.Thread.MarshalTo(data[i:])
+		n21, err := m.Thread.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n20
+		i += n21
 	}
 	if len(m.Cursor) > 0 {
 		data[i] = 0x12
@@ -5352,11 +5507,11 @@ func (m *ThreadResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
-		n21, err := m.Thread.MarshalTo(data[i:])
+		n22, err := m.Thread.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n21
+		i += n22
 	}
 	return i, nil
 }
@@ -5392,11 +5547,11 @@ func (m *CreateSavedQueryRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Query.Size()))
-		n22, err := m.Query.MarshalTo(data[i:])
+		n23, err := m.Query.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n22
+		i += n23
 	}
 	return i, nil
 }
@@ -5420,11 +5575,11 @@ func (m *CreateSavedQueryResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.SavedQuery.Size()))
-		n23, err := m.SavedQuery.MarshalTo(data[i:])
+		n24, err := m.SavedQuery.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n23
+		i += n24
 	}
 	return i, nil
 }
@@ -5460,11 +5615,11 @@ func (m *UpdateSavedQueryRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Query.Size()))
-		n24, err := m.Query.MarshalTo(data[i:])
+		n25, err := m.Query.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n24
+		i += n25
 	}
 	return i, nil
 }
@@ -5642,11 +5797,11 @@ func (m *CreateThreadRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x22
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Source.Size()))
-		n25, err := m.Source.MarshalTo(data[i:])
+		n26, err := m.Source.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n25
+		i += n26
 	}
 	if len(m.Destinations) > 0 {
 		for _, msg := range m.Destinations {
@@ -5728,21 +5883,21 @@ func (m *CreateThreadResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x12
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.ThreadItem.Size()))
-		n26, err := m.ThreadItem.MarshalTo(data[i:])
+		n27, err := m.ThreadItem.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n26
+		i += n27
 	}
 	if m.Thread != nil {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
-		n27, err := m.Thread.MarshalTo(data[i:])
+		n28, err := m.Thread.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n27
+		i += n28
 	}
 	return i, nil
 }
@@ -5908,11 +6063,11 @@ func (m *SavedQueryResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.SavedQuery.Size()))
-		n28, err := m.SavedQuery.MarshalTo(data[i:])
+		n29, err := m.SavedQuery.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n28
+		i += n29
 	}
 	return i, nil
 }
@@ -5966,11 +6121,11 @@ func (m *ThreadItemResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Item.Size()))
-		n29, err := m.Item.MarshalTo(data[i:])
+		n30, err := m.Item.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n29
+		i += n30
 	}
 	return i, nil
 }
@@ -6288,6 +6443,15 @@ func (m *Attachment_Audio) Size() (n int) {
 	}
 	return n
 }
+func (m *Attachment_GenericURL) Size() (n int) {
+	var l int
+	_ = l
+	if m.GenericURL != nil {
+		l = m.GenericURL.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
 func (m *ImageAttachment) Size() (n int) {
 	var l int
 	_ = l
@@ -6321,6 +6485,20 @@ func (m *AudioAttachment) Size() (n int) {
 	}
 	if m.DurationInSeconds != 0 {
 		n += 1 + sovSvc(uint64(m.DurationInSeconds))
+	}
+	return n
+}
+
+func (m *GenericURLAttachment) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Mimetype)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.URL)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
 }
@@ -7067,6 +7245,16 @@ func (this *Attachment_Audio) String() string {
 	}, "")
 	return s
 }
+func (this *Attachment_GenericURL) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Attachment_GenericURL{`,
+		`GenericURL:` + strings.Replace(fmt.Sprintf("%v", this.GenericURL), "GenericURLAttachment", "GenericURLAttachment", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *ImageAttachment) String() string {
 	if this == nil {
 		return "nil"
@@ -7088,6 +7276,17 @@ func (this *AudioAttachment) String() string {
 		`Mimetype:` + fmt.Sprintf("%v", this.Mimetype) + `,`,
 		`URL:` + fmt.Sprintf("%v", this.URL) + `,`,
 		`DurationInSeconds:` + fmt.Sprintf("%v", this.DurationInSeconds) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GenericURLAttachment) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GenericURLAttachment{`,
+		`Mimetype:` + fmt.Sprintf("%v", this.Mimetype) + `,`,
+		`URL:` + fmt.Sprintf("%v", this.URL) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -9342,6 +9541,38 @@ func (m *Attachment) Unmarshal(data []byte) error {
 			}
 			m.Data = &Attachment_Audio{v}
 			iNdEx = postIndex
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GenericURL", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &GenericURLAttachment{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Data = &Attachment_GenericURL{v}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -9615,6 +9846,114 @@ func (m *AudioAttachment) Unmarshal(data []byte) error {
 					break
 				}
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GenericURLAttachment) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GenericURLAttachment: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GenericURLAttachment: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Mimetype", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Mimetype = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field URL", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.URL = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

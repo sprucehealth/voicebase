@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
@@ -307,7 +308,31 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 		)
 		summary = fmt.Sprintf("Subject: %s", subject)
 
-		// TODO: Populate attachments
+		for _, attachmentItem := range pem.GetEmailItem().Attachments {
+			if strings.HasPrefix(attachmentItem.ContentType, "image") {
+				attachments = append(attachments, &threading.Attachment{
+					Type:  threading.Attachment_IMAGE,
+					Title: attachmentItem.Name,
+					Data: &threading.Attachment_Image{
+						Image: &threading.ImageAttachment{
+							Mimetype: attachmentItem.ContentType,
+							URL:      attachmentItem.URL,
+						},
+					},
+				})
+			} else {
+				attachments = append(attachments, &threading.Attachment{
+					Type:  threading.Attachment_GENERIC_URL,
+					Title: attachmentItem.Name,
+					Data: &threading.Attachment_GenericURL{
+						GenericURL: &threading.GenericURLAttachment{
+							Mimetype: attachmentItem.ContentType,
+							URL:      attachmentItem.URL,
+						},
+					},
+				})
+			}
+		}
 	}
 
 	titleStr, err := title.Format()

@@ -119,6 +119,7 @@ message Attachment {
 	enum Type {
 		IMAGE = 0;
 		AUDIO = 1;
+		GENERIC_URL = 2;
 	}
 	Type type = 1;
 	string title = 2;
@@ -126,6 +127,7 @@ message Attachment {
 	oneof data {
 		ImageAttachment image = 10;
 		AudioAttachment audio = 11;
+		GenericURLAttachment generic_url = 12 [(gogoproto.customname) = "GenericURL"];
 	}
 }
 
@@ -140,6 +142,11 @@ message AudioAttachment {
 	string mimetype = 1;
 	string url = 2 [(gogoproto.customname) = "URL"];
 	uint32 duration_in_seconds = 3;
+}
+
+message GenericURLAttachment {
+	string mimetype = 1;
+	string url = 2 [(gogoproto.customname) = "URL"];
 }
 
 // pub-sub
