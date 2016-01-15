@@ -6,14 +6,14 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
-	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/sendgrid"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/sns"
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/utils"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/storage"
-
 	"golang.org/x/net/context"
 )
 
@@ -49,32 +49,19 @@ func (e *sendgridHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 		Timestamp: uint64(time.Now().Unix()),
 	}
 
-	var rawMessageID uint64
-	if err := e.dal.Transact(func(dl dal.DAL) error {
-		mediaItems := make([]*models.Media, 0, len(media))
-		for _, m := range media {
-			mediaItems = append(mediaItems, m)
-		}
-
-		if err := dl.StoreMedia(mediaItems); err != nil {
-			return err
-		}
-
-		rawMessageID, err = dl.StoreIncomingRawMessage(msg)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}); err != nil {
+	rawMessageID, err := utils.PersistRawMessage(e.dal, media, msg)
+	if err != nil {
 		golog.Errorf(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	// publish the stored message to SNS
-	sns.Publish(e.snsCLI, e.snsTopic, &sns.IncomingRawMessageNotification{
-		ID: rawMessageID,
+	conc.Go(func() {
+		if err := sns.Publish(e.snsCLI, e.snsTopic, &sns.IncomingRawMessageNotification{
+			ID: rawMessageID,
+		}); err != nil {
+			golog.Errorf(err.Error())
+		}
 	})
-
 }

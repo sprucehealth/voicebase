@@ -34,6 +34,7 @@ message TwilioParams {
 	message TwilioMediaItem {
 		string content_type = 1;
 		string media_url = 2 [(gogoproto.customname) = "MediaURL"];
+		uint64 id = 3 [(gogoproto.customname) = "ID"];
 	}
 
 	string call_sid = 1 [(gogoproto.customname) = "CallSID"];
@@ -67,7 +68,7 @@ message TwilioParams {
 
 	CallStatus dial_call_status = 23 [(gogoproto.customname) = "DialCallStatus"];
 	uint32 dial_call_duration = 24 [(gogoproto.customname) = "DialCallDuration"];
-
+	uint64 recording_media_id = 25 [(gogoproto.customname) = "RecordingMediaID"];
 
 
 	// infrequently used parameters
@@ -125,6 +126,7 @@ message Incoming {
 	enum Type {
 		TWILIO_SMS = 0;
 		SENDGRID_EMAIL = 1;
+		TWILIO_VOICEMAIL = 2;
 	}
 	Type type = 1;
 	oneof message {
@@ -132,4 +134,5 @@ message Incoming {
 		SendGridIncomingEmail sendgrid = 3 [(gogoproto.customname) = "SendGrid"];
 	}
 	uint64 timestamp = 4;
+	uint64 id = 5 [(gogoproto.customname) = "ID"];
 }

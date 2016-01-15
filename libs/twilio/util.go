@@ -19,3 +19,13 @@ func CheckResponse(r *http.Response) error {
 
 	return exception
 }
+
+type Metadata struct {
+	SID         string    `json:"sid"`
+	AccountSID  string    `json:"account_sid"`
+	ParentSID   string    `json:"parent_sid"`
+	ContentType string    `json:"content-type"`
+	DateCreated Timestamp `json:"date_created"`
+	DateUpdated Timestamp `json:"date_updated"`
+	URI         string    `json:"uri"`
+}

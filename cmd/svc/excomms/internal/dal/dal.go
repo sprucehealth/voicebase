@@ -427,9 +427,12 @@ func (d *dal) Transact(trans func(DAL) error) (err error) {
 }
 
 func (d *dal) StoreIncomingRawMessage(rm *rawmsg.Incoming) (uint64, error) {
-	id, err := idgen.NewID()
-	if err != nil {
-		return 0, errors.Trace(err)
+	if rm.ID == 0 {
+		id, err := idgen.NewID()
+		if err != nil {
+			return 0, errors.Trace(err)
+		}
+		rm.ID = id
 	}
 
 	data, err := rm.Marshal()
@@ -438,12 +441,13 @@ func (d *dal) StoreIncomingRawMessage(rm *rawmsg.Incoming) (uint64, error) {
 	}
 
 	_, err = d.db.Exec(`
-		INSERT INTO incoming_raw_message (id, type, data) VALUES (?,?,?)`, id, rm.Type.String(), data)
+		INSERT INTO incoming_raw_message (id, type, data) VALUES (?,?,?)
+		ON DUPLICATE KEY UPDATE data = ?`, rm.ID, rm.Type.String(), data, data)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
 
-	return id, nil
+	return rm.ID, nil
 }
 
 func (d *dal) IncomingRawMessage(id uint64) (*rawmsg.Incoming, error) {

@@ -136,17 +136,20 @@ var TwilioParams_Direction_value = map[string]int32{
 type Incoming_Type int32
 
 const (
-	Incoming_TWILIO_SMS     Incoming_Type = 0
-	Incoming_SENDGRID_EMAIL Incoming_Type = 1
+	Incoming_TWILIO_SMS       Incoming_Type = 0
+	Incoming_SENDGRID_EMAIL   Incoming_Type = 1
+	Incoming_TWILIO_VOICEMAIL Incoming_Type = 2
 )
 
 var Incoming_Type_name = map[int32]string{
 	0: "TWILIO_SMS",
 	1: "SENDGRID_EMAIL",
+	2: "TWILIO_VOICEMAIL",
 }
 var Incoming_Type_value = map[string]int32{
-	"TWILIO_SMS":     0,
-	"SENDGRID_EMAIL": 1,
+	"TWILIO_SMS":       0,
+	"SENDGRID_EMAIL":   1,
+	"TWILIO_VOICEMAIL": 2,
 }
 
 type TwilioParams struct {
@@ -178,6 +181,7 @@ type TwilioParams struct {
 	ParentCallSID    string                  `protobuf:"bytes,22,opt,name=parent_call_sid,proto3" json:"parent_call_sid,omitempty"`
 	DialCallStatus   TwilioParams_CallStatus `protobuf:"varint,23,opt,name=dial_call_status,proto3,enum=rawmsg.TwilioParams_CallStatus" json:"dial_call_status,omitempty"`
 	DialCallDuration uint32                  `protobuf:"varint,24,opt,name=dial_call_duration,proto3" json:"dial_call_duration,omitempty"`
+	RecordingMediaID uint64                  `protobuf:"varint,25,opt,name=recording_media_id,proto3" json:"recording_media_id,omitempty"`
 	// infrequently used parameters
 	ForwardedFrom string `protobuf:"bytes,100,opt,name=forwarded_from,proto3" json:"forwarded_from,omitempty"`
 	CallerName    string `protobuf:"bytes,101,opt,name=caller_name,proto3" json:"caller_name,omitempty"`
@@ -204,6 +208,7 @@ func (m *TwilioParams) GetMediaItems() []*TwilioParams_TwilioMediaItem {
 type TwilioParams_TwilioMediaItem struct {
 	ContentType string `protobuf:"bytes,1,opt,name=content_type,proto3" json:"content_type,omitempty"`
 	MediaURL    string `protobuf:"bytes,2,opt,name=media_url,proto3" json:"media_url,omitempty"`
+	ID          uint64 `protobuf:"varint,3,opt,name=id,proto3" json:"id,omitempty"`
 }
 
 func (m *TwilioParams_TwilioMediaItem) Reset()      { *m = TwilioParams_TwilioMediaItem{} }
@@ -255,6 +260,7 @@ type Incoming struct {
 	//	*Incoming_SendGrid
 	Message   isIncoming_Message `protobuf_oneof:"message"`
 	Timestamp uint64             `protobuf:"varint,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	ID        uint64             `protobuf:"varint,5,opt,name=id,proto3" json:"id,omitempty"`
 }
 
 func (m *Incoming) Reset()      { *m = Incoming{} }
@@ -487,6 +493,9 @@ func (this *TwilioParams) Equal(that interface{}) bool {
 	if this.DialCallDuration != that1.DialCallDuration {
 		return false
 	}
+	if this.RecordingMediaID != that1.RecordingMediaID {
+		return false
+	}
 	if this.ForwardedFrom != that1.ForwardedFrom {
 		return false
 	}
@@ -543,6 +552,9 @@ func (this *TwilioParams_TwilioMediaItem) Equal(that interface{}) bool {
 		return false
 	}
 	if this.MediaURL != that1.MediaURL {
+		return false
+	}
+	if this.ID != that1.ID {
 		return false
 	}
 	return true
@@ -685,6 +697,9 @@ func (this *Incoming) Equal(that interface{}) bool {
 	if this.Timestamp != that1.Timestamp {
 		return false
 	}
+	if this.ID != that1.ID {
+		return false
+	}
 	return true
 }
 func (this *Incoming_Twilio) Equal(that interface{}) bool {
@@ -741,7 +756,7 @@ func (this *TwilioParams) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 38)
+	s := make([]string, 0, 39)
 	s = append(s, "&rawmsg.TwilioParams{")
 	s = append(s, "CallSID: "+fmt.Sprintf("%#v", this.CallSID)+",\n")
 	s = append(s, "AccountSID: "+fmt.Sprintf("%#v", this.AccountSID)+",\n")
@@ -769,6 +784,7 @@ func (this *TwilioParams) GoString() string {
 	s = append(s, "ParentCallSID: "+fmt.Sprintf("%#v", this.ParentCallSID)+",\n")
 	s = append(s, "DialCallStatus: "+fmt.Sprintf("%#v", this.DialCallStatus)+",\n")
 	s = append(s, "DialCallDuration: "+fmt.Sprintf("%#v", this.DialCallDuration)+",\n")
+	s = append(s, "RecordingMediaID: "+fmt.Sprintf("%#v", this.RecordingMediaID)+",\n")
 	s = append(s, "ForwardedFrom: "+fmt.Sprintf("%#v", this.ForwardedFrom)+",\n")
 	s = append(s, "CallerName: "+fmt.Sprintf("%#v", this.CallerName)+",\n")
 	s = append(s, "FromCity: "+fmt.Sprintf("%#v", this.FromCity)+",\n")
@@ -786,10 +802,11 @@ func (this *TwilioParams_TwilioMediaItem) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 6)
+	s := make([]string, 0, 7)
 	s = append(s, "&rawmsg.TwilioParams_TwilioMediaItem{")
 	s = append(s, "ContentType: "+fmt.Sprintf("%#v", this.ContentType)+",\n")
 	s = append(s, "MediaURL: "+fmt.Sprintf("%#v", this.MediaURL)+",\n")
+	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -835,13 +852,14 @@ func (this *Incoming) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 8)
+	s := make([]string, 0, 9)
 	s = append(s, "&rawmsg.Incoming{")
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	if this.Message != nil {
 		s = append(s, "Message: "+fmt.Sprintf("%#v", this.Message)+",\n")
 	}
 	s = append(s, "Timestamp: "+fmt.Sprintf("%#v", this.Timestamp)+",\n")
+	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1061,6 +1079,13 @@ func (m *TwilioParams) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintModels(data, i, uint64(m.DialCallDuration))
 	}
+	if m.RecordingMediaID != 0 {
+		data[i] = 0xc8
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintModels(data, i, uint64(m.RecordingMediaID))
+	}
 	if len(m.ForwardedFrom) > 0 {
 		data[i] = 0xa2
 		i++
@@ -1170,6 +1195,11 @@ func (m *TwilioParams_TwilioMediaItem) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintModels(data, i, uint64(len(m.MediaURL)))
 		i += copy(data[i:], m.MediaURL)
+	}
+	if m.ID != 0 {
+		data[i] = 0x18
+		i++
+		i = encodeVarintModels(data, i, uint64(m.ID))
 	}
 	return i, nil
 }
@@ -1354,6 +1384,11 @@ func (m *Incoming) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintModels(data, i, uint64(m.Timestamp))
 	}
+	if m.ID != 0 {
+		data[i] = 0x28
+		i++
+		i = encodeVarintModels(data, i, uint64(m.ID))
+	}
 	return i, nil
 }
 
@@ -1505,6 +1540,9 @@ func (m *TwilioParams) Size() (n int) {
 	if m.DialCallDuration != 0 {
 		n += 2 + sovModels(uint64(m.DialCallDuration))
 	}
+	if m.RecordingMediaID != 0 {
+		n += 2 + sovModels(uint64(m.RecordingMediaID))
+	}
 	l = len(m.ForwardedFrom)
 	if l > 0 {
 		n += 2 + l + sovModels(uint64(l))
@@ -1558,6 +1596,9 @@ func (m *TwilioParams_TwilioMediaItem) Size() (n int) {
 	l = len(m.MediaURL)
 	if l > 0 {
 		n += 1 + l + sovModels(uint64(l))
+	}
+	if m.ID != 0 {
+		n += 1 + sovModels(uint64(m.ID))
 	}
 	return n
 }
@@ -1658,6 +1699,9 @@ func (m *Incoming) Size() (n int) {
 	if m.Timestamp != 0 {
 		n += 1 + sovModels(uint64(m.Timestamp))
 	}
+	if m.ID != 0 {
+		n += 1 + sovModels(uint64(m.ID))
+	}
 	return n
 }
 
@@ -1722,6 +1766,7 @@ func (this *TwilioParams) String() string {
 		`ParentCallSID:` + fmt.Sprintf("%v", this.ParentCallSID) + `,`,
 		`DialCallStatus:` + fmt.Sprintf("%v", this.DialCallStatus) + `,`,
 		`DialCallDuration:` + fmt.Sprintf("%v", this.DialCallDuration) + `,`,
+		`RecordingMediaID:` + fmt.Sprintf("%v", this.RecordingMediaID) + `,`,
 		`ForwardedFrom:` + fmt.Sprintf("%v", this.ForwardedFrom) + `,`,
 		`CallerName:` + fmt.Sprintf("%v", this.CallerName) + `,`,
 		`FromCity:` + fmt.Sprintf("%v", this.FromCity) + `,`,
@@ -1743,6 +1788,7 @@ func (this *TwilioParams_TwilioMediaItem) String() string {
 	s := strings.Join([]string{`&TwilioParams_TwilioMediaItem{`,
 		`ContentType:` + fmt.Sprintf("%v", this.ContentType) + `,`,
 		`MediaURL:` + fmt.Sprintf("%v", this.MediaURL) + `,`,
+		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1791,6 +1837,7 @@ func (this *Incoming) String() string {
 		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
 		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
 		`Timestamp:` + fmt.Sprintf("%v", this.Timestamp) + `,`,
+		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2470,6 +2517,25 @@ func (m *TwilioParams) Unmarshal(data []byte) error {
 					break
 				}
 			}
+		case 25:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RecordingMediaID", wireType)
+			}
+			m.RecordingMediaID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.RecordingMediaID |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		case 100:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ForwardedFrom", wireType)
@@ -2868,6 +2934,25 @@ func (m *TwilioParams_TwilioMediaItem) Unmarshal(data []byte) error {
 			}
 			m.MediaURL = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			m.ID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.ID |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipModels(data[iNdEx:])
@@ -3620,6 +3705,25 @@ func (m *Incoming) Unmarshal(data []byte) error {
 				b := data[iNdEx]
 				iNdEx++
 				m.Timestamp |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			m.ID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.ID |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}

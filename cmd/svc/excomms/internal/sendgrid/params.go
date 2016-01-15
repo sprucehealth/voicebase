@@ -42,8 +42,10 @@ func ParamsFromRequest(r *http.Request, store storage.Store) (*rawmsg.SendGridIn
 
 		attachmentInfoString := r.FormValue("attachment-info")
 		var attachmentInfoJSON map[string]*attachmentInfo
-		if err := json.Unmarshal([]byte(attachmentInfoString), &attachmentInfoJSON); err != nil {
-			return nil, nil, errors.Trace(err)
+		if attachmentInfoString != "" {
+			if err := json.Unmarshal([]byte(attachmentInfoString), &attachmentInfoJSON); err != nil {
+				return nil, nil, errors.Trace(err)
+			}
 		}
 
 		numAttachments, err := strconv.Atoi(r.FormValue("attachments"))

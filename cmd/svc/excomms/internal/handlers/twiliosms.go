@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/sns"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/twilio"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/twilio/twiml"
@@ -53,8 +54,12 @@ func (t *twilioSMSHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 	}
 
 	// publish to sns
-	sns.Publish(t.snsCLI, t.snsTopic, &sns.IncomingRawMessageNotification{
-		ID: rawMessageID,
+	conc.Go(func() {
+		if err := sns.Publish(t.snsCLI, t.snsTopic, &sns.IncomingRawMessageNotification{
+			ID: rawMessageID,
+		}); err != nil {
+			golog.Errorf(err.Error())
+		}
 	})
 
 	res := twiml.Response{}

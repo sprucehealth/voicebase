@@ -67,7 +67,8 @@ func runAPI() {
 		snsCLI,
 		clock.New(),
 		config.excommsAPIURL,
-		config.externalMessageTopic)
+		config.externalMessageTopic,
+		config.incomingRawMessageTopic)
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.Handle("/twilio/sms", handlers.NewTwilioSMSHandler(dl, config.incomingRawMessageTopic, snsCLI))

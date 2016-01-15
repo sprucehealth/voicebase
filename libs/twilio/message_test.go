@@ -2,6 +2,7 @@ package twilio
 
 import (
 	"fmt"
+	"github.com/sprucehealth/backend/test"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -332,4 +333,10 @@ func TestMessageService_List_httpError(t *testing.T) {
 	if err == nil {
 		t.Error("Expected HTTP 400 errror.")
 	}
+}
+
+func TestMessageMediaSID(t *testing.T) {
+	mediaSID, err := ParseMediaSID(`https://api.twilio.com/2010-04-01/Accounts/AC92547608ed6ed2827fe0339b001e6166/Messages/MM9310f39a18951f4f107cb6f0e3e28a1c/Media/ME8a5c46741000ac294faa14fd6bc246c4`)
+	test.OK(t, err)
+	test.Equals(t, "ME8a5c46741000ac294faa14fd6bc246c4", mediaSID)
 }

@@ -42,9 +42,10 @@ type eventsHandler struct {
 	clock                clock.Clock
 	apiURL               string
 	externalMessageTopic string
+	incomingRawMsgTopic  string
 }
 
-func NewEventHandler(directory directory.DirectoryClient, dal dal.DAL, sns snsiface.SNSAPI, clock clock.Clock, apiURL, externalMessageTopic string) EventHandler {
+func NewEventHandler(directory directory.DirectoryClient, dal dal.DAL, sns snsiface.SNSAPI, clock clock.Clock, apiURL, externalMessageTopic, incomingRawMsgTopic string) EventHandler {
 	return &eventsHandler{
 		directory:            directory,
 		dal:                  dal,
@@ -52,6 +53,7 @@ func NewEventHandler(directory directory.DirectoryClient, dal dal.DAL, sns snsif
 		sns:                  sns,
 		apiURL:               apiURL,
 		externalMessageTopic: externalMessageTopic,
+		incomingRawMsgTopic:  incomingRawMsgTopic,
 	}
 }
 
@@ -251,6 +253,8 @@ func processIncomingCall(params *rawmsg.TwilioParams, eh *eventsHandler) (string
 		return "", errors.Trace(fmt.Errorf("Expected 1 entity for provisioned number, got back %d", len(res.Entities)))
 	}
 
+	golog.Debugf("response %+v", res.Entities)
+
 	var phoneNumbers []string
 	var organizationID string
 	switch res.Entities[0].Type {
@@ -380,19 +384,24 @@ func voicemailTWIML(params *rawmsg.TwilioParams, eh *eventsHandler) (string, err
 func processIncomingCallStatus(params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 	switch params.DialCallStatus {
 	case rawmsg.TwilioParams_ANSWERED, rawmsg.TwilioParams_COMPLETED:
-		sns.Publish(eh.sns, eh.externalMessageTopic, &excomms.PublishedExternalMessage{
-			FromChannelID: params.From,
-			ToChannelID:   params.To,
-			Timestamp:     uint64(time.Now().Unix()),
-			Direction:     excomms.PublishedExternalMessage_INBOUND,
-			Type:          excomms.PublishedExternalMessage_CALL_EVENT,
-			Item: &excomms.PublishedExternalMessage_CallEventItem{
-				CallEventItem: &excomms.CallEventItem{
-					Type:              excomms.CallEventItem_INCOMING_ANSWERED,
-					DurationInSeconds: params.CallDuration,
+		conc.Go(func() {
+			if err := sns.Publish(eh.sns, eh.externalMessageTopic, &excomms.PublishedExternalMessage{
+				FromChannelID: params.From,
+				ToChannelID:   params.To,
+				Timestamp:     uint64(time.Now().Unix()),
+				Direction:     excomms.PublishedExternalMessage_INBOUND,
+				Type:          excomms.PublishedExternalMessage_CALL_EVENT,
+				Item: &excomms.PublishedExternalMessage_CallEventItem{
+					CallEventItem: &excomms.CallEventItem{
+						Type:              excomms.CallEventItem_INCOMING_ANSWERED,
+						DurationInSeconds: params.CallDuration,
+					},
 				},
-			},
+			}); err != nil {
+				golog.Errorf(err.Error())
+			}
 		})
+
 	case rawmsg.TwilioParams_CALL_STATUS_UNDEFINED:
 	default:
 		return voicemailTWIML(params, eh)
@@ -442,13 +451,17 @@ func processOutgoingCallStatus(params *rawmsg.TwilioParams, eh *eventsHandler) (
 		return "", nil
 	}
 
-	sns.Publish(eh.sns, eh.externalMessageTopic, &excomms.PublishedExternalMessage{
-		FromChannelID: cr.Source.String(),
-		ToChannelID:   cr.Destination.String(),
-		Direction:     excomms.PublishedExternalMessage_OUTBOUND,
-		Timestamp:     uint64(time.Now().Unix()),
-		Type:          excomms.PublishedExternalMessage_CALL_EVENT,
-		Item:          cet,
+	conc.Go(func() {
+		if err := sns.Publish(eh.sns, eh.externalMessageTopic, &excomms.PublishedExternalMessage{
+			FromChannelID: cr.Source.String(),
+			ToChannelID:   cr.Destination.String(),
+			Direction:     excomms.PublishedExternalMessage_OUTBOUND,
+			Timestamp:     uint64(time.Now().Unix()),
+			Type:          excomms.PublishedExternalMessage_CALL_EVENT,
+			Item:          cet,
+		}); err != nil {
+			golog.Errorf(err.Error())
+		}
 	})
 
 	return "", nil
@@ -456,21 +469,22 @@ func processOutgoingCallStatus(params *rawmsg.TwilioParams, eh *eventsHandler) (
 
 func processVoicemail(params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 
-	sns.Publish(eh.sns, eh.externalMessageTopic, &excomms.PublishedExternalMessage{
-		FromChannelID: params.From,
-		ToChannelID:   params.To,
-		Timestamp:     uint64(time.Now().Unix()),
-		Type:          excomms.PublishedExternalMessage_CALL_EVENT,
-		Direction:     excomms.PublishedExternalMessage_INBOUND,
-		Item: &excomms.PublishedExternalMessage_CallEventItem{
-			CallEventItem: &excomms.CallEventItem{
-				Type:              excomms.CallEventItem_INCOMING_LEFT_VOICEMAIL,
-				DurationInSeconds: params.RecordingDuration,
-				// TODO: Until we start downloading and serving recordings from S3,
-				// appending .mp3 here so that the client gets the recordingURL in mp3 format.
-				URL: params.RecordingURL + ".mp3",
-			},
+	rawMessageID, err := eh.dal.StoreIncomingRawMessage(&rawmsg.Incoming{
+		Type: rawmsg.Incoming_TWILIO_VOICEMAIL,
+		Message: &rawmsg.Incoming_Twilio{
+			Twilio: params,
 		},
+	})
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+
+	conc.Go(func() {
+		if err := sns.Publish(eh.sns, eh.incomingRawMsgTopic, &sns.IncomingRawMessageNotification{
+			ID: rawMessageID,
+		}); err != nil {
+			golog.Errorf(err.Error())
+		}
 	})
 
 	return "", nil

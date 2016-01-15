@@ -56,6 +56,11 @@ func (m *mockDAL_Twilio) ActiveProxyPhoneNumberReservation(lookup *dal.ProxyPhon
 	return m.ppnr, nil
 }
 
+func (m *mockDAL_Twilio) StoreIncomingRawMessage(msg *rawmsg.Incoming) (uint64, error) {
+	m.Record(msg)
+	return 0, nil
+}
+
 func (m *mockDAL_Twilio) LookupCallRequest(fromPhoneNumber string) (*models.CallRequest, error) {
 	m.Record(fromPhoneNumber)
 	return m.cr, nil
@@ -162,7 +167,7 @@ func testOutgoing(t *testing.T, testExpired bool, patientName string) {
 		}))
 	}
 
-	es := NewEventHandler(md, mdal, nil, mclock, "https://test.com", "")
+	es := NewEventHandler(md, mdal, nil, mclock, "https://test.com", "", "")
 
 	params := &rawmsg.TwilioParams{
 		From:    providerPersonalPhoneNumber,
@@ -229,7 +234,7 @@ func TestIncoming_Organization(t *testing.T) {
 		},
 	}
 
-	es := NewEventHandler(md, nil, nil, clock.New(), "https://test.com", "")
+	es := NewEventHandler(md, nil, nil, clock.New(), "https://test.com", "", "")
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -284,7 +289,7 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 		},
 	}
 
-	es := NewEventHandler(md, nil, nil, clock.New(), "https://test.com", "")
+	es := NewEventHandler(md, nil, nil, clock.New(), "https://test.com", "", "")
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -331,7 +336,7 @@ func TestIncoming_Provider(t *testing.T) {
 		},
 	}
 
-	es := NewEventHandler(md, nil, nil, clock.New(), "https://test.com", "")
+	es := NewEventHandler(md, nil, nil, clock.New(), "https://test.com", "", "")
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -447,7 +452,7 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 		DialCallStatus: incomingStatus,
 	}
 
-	es := NewEventHandler(nil, nil, ms, clock.New(), "https://test.com", "")
+	es := NewEventHandler(nil, nil, ms, clock.New(), "https://test.com", "", "")
 
 	twiml, err := processIncomingCallStatus(params, es.(*eventsHandler))
 	if err != nil {
@@ -475,7 +480,7 @@ func testIncomingCallStatus(t *testing.T, incomingStatus rawmsg.TwilioParams_Cal
 		DialCallStatus: incomingStatus,
 	}
 
-	es := NewEventHandler(nil, nil, ms, clock.New(), "", "")
+	es := NewEventHandler(nil, nil, ms, clock.New(), "", "", "")
 
 	twiml, err := processIncomingCallStatus(params, es.(*eventsHandler))
 	if err != nil {
@@ -520,7 +525,7 @@ func TestOutgoingCallStatus(t *testing.T) {
 		},
 	}
 
-	es := NewEventHandler(nil, md, ms, clock.New(), "", "")
+	es := NewEventHandler(nil, md, ms, clock.New(), "", "", "")
 
 	twiml, err := processOutgoingCallStatus(params, es.(*eventsHandler))
 	if err != nil {
@@ -562,7 +567,19 @@ func TestProcessVoicemail(t *testing.T) {
 
 	ms := &mockSNS_Twilio{}
 
-	es := NewEventHandler(nil, nil, ms, clock.New(), "", "")
+	md := &mockDAL_Twilio{
+		Expector: &mock.Expector{
+			T: t,
+		},
+	}
+	md.Expect(mock.NewExpectation(md.StoreIncomingRawMessage, &rawmsg.Incoming{
+		Type: rawmsg.Incoming_TWILIO_VOICEMAIL,
+		Message: &rawmsg.Incoming_Twilio{
+			Twilio: params,
+		},
+	}))
+
+	es := NewEventHandler(nil, md, ms, clock.New(), "", "", "")
 
 	twiml, err := processVoicemail(params, es.(*eventsHandler))
 	if err != nil {
@@ -575,24 +592,7 @@ func TestProcessVoicemail(t *testing.T) {
 		t.Fatalf("Expected 1 but got %d", len(ms.published))
 	}
 
-	pem, err := parsePublishedExternalMessage(*ms.published[0].Message)
-	if err != nil {
-		t.Fatal(err)
-	} else if pem.FromChannelID != params.From {
-		t.Fatalf("Expected %s but got %s", params.From, pem.FromChannelID)
-	} else if pem.ToChannelID != params.To {
-		t.Fatalf("Expected %s but got %s", params.To, pem.ToChannelID)
-	} else if pem.Direction != excomms.PublishedExternalMessage_INBOUND {
-		t.Fatalf("Expectd %s but got %s", excomms.PublishedExternalMessage_INBOUND, pem.Direction)
-	} else if pem.Type != excomms.PublishedExternalMessage_CALL_EVENT {
-		t.Fatalf("Expectd %s but got %s", excomms.PublishedExternalMessage_CALL_EVENT, pem.Type)
-	} else if pem.GetCallEventItem().Type != excomms.CallEventItem_INCOMING_LEFT_VOICEMAIL {
-		t.Fatalf("Expectd %s but got %s", excomms.CallEventItem_INCOMING_LEFT_VOICEMAIL, pem.GetCallEventItem().Type)
-	} else if pem.GetCallEventItem().DurationInSeconds != params.RecordingDuration {
-		t.Fatalf("Expectd %d but got %d", params.RecordingDuration, pem.GetCallEventItem().DurationInSeconds)
-	} else if pem.GetCallEventItem().URL != (params.RecordingURL + ".mp3") {
-		t.Fatalf("Expectd %s but got %s", params.RecordingURL, pem.GetCallEventItem().URL)
-	}
+	md.Finish()
 }
 
 func parsePublishedExternalMessage(message string) (*excomms.PublishedExternalMessage, error) {

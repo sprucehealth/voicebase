@@ -11,6 +11,7 @@ import (
 	cfg "github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"google.golang.org/grpc"
@@ -60,13 +61,19 @@ func runService() {
 	}
 	defer directoryConn.Close()
 
+	store := storage.NewS3(awsSession, config.attachmentBucket, config.attachmentPrefix)
+
 	dl := dal.NewDAL(db)
 	w, err := worker.NewWorker(
 		awsSession,
 		config.incomingRawMessageQueue,
 		snsCLI,
 		config.externalMessageTopic,
-		dl)
+		dl,
+		store,
+		config.twilioAccountSID,
+		config.twilioAuthToken)
+
 	if err != nil {
 		golog.Fatalf("Unable to start worker: %s", err.Error())
 	}

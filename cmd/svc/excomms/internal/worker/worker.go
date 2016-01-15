@@ -4,7 +4,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"net/mail"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
@@ -12,12 +15,16 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/recapco/emailreplyparser"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/sns"
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/utils"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/excomms"
 )
 
@@ -28,6 +35,9 @@ type IncomingRawMessageWorker struct {
 	externalMessageTopic string
 	snsAPI               snsiface.SNSAPI
 	dal                  dal.DAL
+	store                storage.Store
+	twilioAccountSID     string
+	twilioAuthToken      string
 }
 
 func NewWorker(
@@ -35,7 +45,9 @@ func NewWorker(
 	incomingRawMessageQueueName string,
 	snsAPI snsiface.SNSAPI,
 	externalMessageTopic string,
-	dal dal.DAL) (*IncomingRawMessageWorker, error) {
+	dal dal.DAL,
+	store storage.Store,
+	twilioAccountSID, twilioAuthToken string) (*IncomingRawMessageWorker, error) {
 
 	incomingRawMessageQueue := sqs.New(awsSession)
 	res, err := incomingRawMessageQueue.GetQueueUrl(&sqs.GetQueueUrlInput{
@@ -50,6 +62,9 @@ func NewWorker(
 		externalMessageTopic: externalMessageTopic,
 		snsAPI:               snsAPI,
 		dal:                  dal,
+		store:                store,
+		twilioAccountSID:     twilioAccountSID,
+		twilioAuthToken:      twilioAuthToken,
 	}, nil
 }
 
@@ -133,11 +148,25 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			},
 		}
 
+		mediaMap := make(map[uint64]*models.Media)
 		for i, m := range params.MediaItems {
+
+			media, err := w.uploadTwilioMediaToS3(m.ContentType, m.MediaURL)
+			if err != nil {
+				return errors.Trace(err)
+			}
+			mediaMap[media.ID] = media
+			m.ID = media.ID
+
 			smsItem.SMSItem.Attachments[i] = &excomms.MediaAttachment{
-				URL:         m.MediaURL,
+				URL:         media.URL,
 				ContentType: m.ContentType,
 			}
+		}
+
+		_, err = utils.PersistRawMessage(w.dal, mediaMap, rm)
+		if err != nil {
+			return errors.Trace(err)
 		}
 
 		sns.Publish(w.snsAPI, w.externalMessageTopic, &excomms.PublishedExternalMessage{
@@ -151,6 +180,38 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 
 		// TODO: Delete SMS from twilio
 		// TODO: Upload any media objects attached to SMS to our system and delete from twilio
+
+	case rawmsg.Incoming_TWILIO_VOICEMAIL:
+		params := rm.GetTwilio()
+
+		mediaMap := make(map[uint64]*models.Media, 1)
+
+		media, err := w.uploadTwilioMediaToS3("audio/mpeg", params.RecordingURL+".mp3")
+		if err != nil {
+			return errors.Trace(err)
+		}
+		mediaMap[media.ID] = media
+		params.RecordingMediaID = media.ID
+
+		_, err = utils.PersistRawMessage(w.dal, mediaMap, rm)
+		if err != nil {
+			return errors.Trace(err)
+		}
+
+		sns.Publish(w.snsAPI, w.externalMessageTopic, &excomms.PublishedExternalMessage{
+			FromChannelID: params.From,
+			ToChannelID:   params.To,
+			Timestamp:     rm.Timestamp,
+			Direction:     excomms.PublishedExternalMessage_INBOUND,
+			Type:          excomms.PublishedExternalMessage_CALL_EVENT,
+			Item: &excomms.PublishedExternalMessage_CallEventItem{
+				CallEventItem: &excomms.CallEventItem{
+					Type:              excomms.CallEventItem_INCOMING_LEFT_VOICEMAIL,
+					DurationInSeconds: params.RecordingDuration,
+					URL:               media.URL,
+				},
+			},
+		})
 
 	case rawmsg.Incoming_SENDGRID_EMAIL:
 		sgEmail := rm.GetSendGrid()
@@ -215,4 +276,42 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 	}
 
 	return nil
+}
+
+func (w *IncomingRawMessageWorker) uploadTwilioMediaToS3(contentType string, url string) (*models.Media, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	req.SetBasicAuth(w.twilioAccountSID, w.twilioAuthToken)
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer res.Body.Close()
+
+	// Note: have to read all the data into memory here because
+	// there is no way to know the size of the data when working with a reader
+	// via the response body
+	data, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := idgen.NewID()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	s3URL, err := w.store.Put(strconv.FormatInt(int64(id), 10), data, contentType, nil)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	return &models.Media{
+		ID:   id,
+		Type: contentType,
+		URL:  s3URL,
+	}, nil
 }

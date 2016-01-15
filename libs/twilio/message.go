@@ -2,6 +2,8 @@ package twilio
 
 import (
 	"errors"
+	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -18,6 +20,7 @@ type MessageIFace interface {
 	Send(from, to string, params MessageParams) (*Message, *Response, error)
 	Get(sid string) (*Message, *Response, error)
 	List(params MessageListParams) ([]Message, *Response, error)
+	GetMediaMetadata(messageSID, mediaSID string) (*Metadata, *Response, error)
 }
 
 type Message struct {
@@ -153,4 +156,36 @@ func (s *MessageService) List(params MessageListParams) ([]Message, *Response, e
 	resp.Pagination = l.Pagination
 
 	return l.Messages, resp, err
+}
+
+// ParseMediaSID expects the url to be of the form /2010-04-01/Accounts/{AccountSid}/Messages/{MessageSid}/Media/{MediaSid}
+// to be able to parse out the mediaID.
+func ParseMediaSID(rawURL string) (string, error) {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return "", err
+	}
+
+	parts := strings.Split(parsedURL.Path, "/")
+	if len(parts) != 8 {
+		return "", fmt.Errorf("Expected URI of the form /2010-04-01/Accounts/{AccountSid}/Messages/{MessageSid}/Media/{MediaSid}, but got %s", parsedURL.Path)
+	}
+
+	return strings.Split(parts[7], ".")[0], nil
+}
+
+func (s *MessageService) GetMediaMetadata(messageSID, mediaSID string) (*Metadata, *Response, error) {
+	u := s.client.EndPoint("Messages", messageSID, "Media", mediaSID)
+
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	met := new(Metadata)
+	res, err := s.client.Do(req, met)
+	if err != nil {
+		return nil, nil, err
+	}
+	return met, res, nil
 }
