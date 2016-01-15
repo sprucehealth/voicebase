@@ -978,7 +978,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				if acc == nil {
 					return nil, errNotAuthenticated
 				}
-
+				golog.Infof("Registering Device For Push: Account:%s Device:%+v", acc.ID, sh)
 				input := p.Args["input"].(map[string]interface{})
 				mutationID, _ := input["clientMutationId"].(string)
 				deviceToken, _ := input["deviceToken"].(string)

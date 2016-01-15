@@ -9,8 +9,11 @@
 		svc.proto
 
 	It has these top-level messages:
+		ExternalID
 		Entity
 		RequestedInformation
+		ExternalIDsRequest
+		ExternalIDsResponse
 		LookupEntitiesRequest
 		LookupEntitiesResponse
 		CreateEntityRequest
@@ -122,6 +125,14 @@ var LookupEntitiesRequest_LookupKeyType_value = map[string]int32{
 	"EXTERNAL_ID": 1,
 }
 
+type ExternalID struct {
+	ID       string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	EntityID string `protobuf:"bytes,2,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+}
+
+func (m *ExternalID) Reset()      { *m = ExternalID{} }
+func (*ExternalID) ProtoMessage() {}
+
 type Entity struct {
 	ID                  string              `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name                string              `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
@@ -164,6 +175,27 @@ type RequestedInformation struct {
 
 func (m *RequestedInformation) Reset()      { *m = RequestedInformation{} }
 func (*RequestedInformation) ProtoMessage() {}
+
+type ExternalIDsRequest struct {
+	EntityIDs []string `protobuf:"bytes,1,rep,name=entity_ids" json:"entity_ids,omitempty"`
+}
+
+func (m *ExternalIDsRequest) Reset()      { *m = ExternalIDsRequest{} }
+func (*ExternalIDsRequest) ProtoMessage() {}
+
+type ExternalIDsResponse struct {
+	ExternalIDs []*ExternalID `protobuf:"bytes,1,rep,name=external_ids" json:"external_ids,omitempty"`
+}
+
+func (m *ExternalIDsResponse) Reset()      { *m = ExternalIDsResponse{} }
+func (*ExternalIDsResponse) ProtoMessage() {}
+
+func (m *ExternalIDsResponse) GetExternalIDs() []*ExternalID {
+	if m != nil {
+		return m.ExternalIDs
+	}
+	return nil
+}
 
 type LookupEntitiesRequest struct {
 	LookupKeyType LookupEntitiesRequest_LookupKeyType `protobuf:"varint,1,opt,name=lookup_key_type,proto3,enum=directory.LookupEntitiesRequest_LookupKeyType" json:"lookup_key_type,omitempty"`
@@ -429,8 +461,11 @@ func (m *CreateContactResponse) GetEntity() *Entity {
 }
 
 func init() {
+	proto.RegisterType((*ExternalID)(nil), "directory.ExternalID")
 	proto.RegisterType((*Entity)(nil), "directory.Entity")
 	proto.RegisterType((*RequestedInformation)(nil), "directory.RequestedInformation")
+	proto.RegisterType((*ExternalIDsRequest)(nil), "directory.ExternalIDsRequest")
+	proto.RegisterType((*ExternalIDsResponse)(nil), "directory.ExternalIDsResponse")
 	proto.RegisterType((*LookupEntitiesRequest)(nil), "directory.LookupEntitiesRequest")
 	proto.RegisterType((*LookupEntitiesResponse)(nil), "directory.LookupEntitiesResponse")
 	proto.RegisterType((*CreateEntityRequest)(nil), "directory.CreateEntityRequest")
@@ -474,6 +509,34 @@ func (x LookupEntitiesRequest_LookupKeyType) String() string {
 		return s
 	}
 	return strconv.Itoa(int(x))
+}
+func (this *ExternalID) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*ExternalID)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.ID != that1.ID {
+		return false
+	}
+	if this.EntityID != that1.EntityID {
+		return false
+	}
+	return true
 }
 func (this *Entity) Equal(that interface{}) bool {
 	if that == nil {
@@ -574,6 +637,66 @@ func (this *RequestedInformation) Equal(that interface{}) bool {
 	}
 	for i := range this.EntityInformation {
 		if this.EntityInformation[i] != that1.EntityInformation[i] {
+			return false
+		}
+	}
+	return true
+}
+func (this *ExternalIDsRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*ExternalIDsRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if len(this.EntityIDs) != len(that1.EntityIDs) {
+		return false
+	}
+	for i := range this.EntityIDs {
+		if this.EntityIDs[i] != that1.EntityIDs[i] {
+			return false
+		}
+	}
+	return true
+}
+func (this *ExternalIDsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*ExternalIDsResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if len(this.ExternalIDs) != len(that1.ExternalIDs) {
+		return false
+	}
+	for i := range this.ExternalIDs {
+		if !this.ExternalIDs[i].Equal(that1.ExternalIDs[i]) {
 			return false
 		}
 	}
@@ -967,6 +1090,17 @@ func (this *CreateContactResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *ExternalID) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&directory.ExternalID{")
+	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *Entity) GoString() string {
 	if this == nil {
 		return "nil"
@@ -998,6 +1132,28 @@ func (this *RequestedInformation) GoString() string {
 	s = append(s, "&directory.RequestedInformation{")
 	s = append(s, "Depth: "+fmt.Sprintf("%#v", this.Depth)+",\n")
 	s = append(s, "EntityInformation: "+fmt.Sprintf("%#v", this.EntityInformation)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ExternalIDsRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&directory.ExternalIDsRequest{")
+	s = append(s, "EntityIDs: "+fmt.Sprintf("%#v", this.EntityIDs)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ExternalIDsResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&directory.ExternalIDsResponse{")
+	if this.ExternalIDs != nil {
+		s = append(s, "ExternalIDs: "+fmt.Sprintf("%#v", this.ExternalIDs)+",\n")
+	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1200,11 +1356,12 @@ var _ grpc.ClientConn
 // Client API for Directory service
 
 type DirectoryClient interface {
-	LookupEntities(ctx context.Context, in *LookupEntitiesRequest, opts ...grpc.CallOption) (*LookupEntitiesResponse, error)
+	CreateContact(ctx context.Context, in *CreateContactRequest, opts ...grpc.CallOption) (*CreateContactResponse, error)
 	CreateEntity(ctx context.Context, in *CreateEntityRequest, opts ...grpc.CallOption) (*CreateEntityResponse, error)
 	CreateMembership(ctx context.Context, in *CreateMembershipRequest, opts ...grpc.CallOption) (*CreateMembershipResponse, error)
+	ExternalIDs(ctx context.Context, in *ExternalIDsRequest, opts ...grpc.CallOption) (*ExternalIDsResponse, error)
+	LookupEntities(ctx context.Context, in *LookupEntitiesRequest, opts ...grpc.CallOption) (*LookupEntitiesResponse, error)
 	LookupEntitiesByContact(ctx context.Context, in *LookupEntitiesByContactRequest, opts ...grpc.CallOption) (*LookupEntitiesByContactResponse, error)
-	CreateContact(ctx context.Context, in *CreateContactRequest, opts ...grpc.CallOption) (*CreateContactResponse, error)
 }
 
 type directoryClient struct {
@@ -1215,9 +1372,9 @@ func NewDirectoryClient(cc *grpc.ClientConn) DirectoryClient {
 	return &directoryClient{cc}
 }
 
-func (c *directoryClient) LookupEntities(ctx context.Context, in *LookupEntitiesRequest, opts ...grpc.CallOption) (*LookupEntitiesResponse, error) {
-	out := new(LookupEntitiesResponse)
-	err := grpc.Invoke(ctx, "/directory.Directory/LookupEntities", in, out, c.cc, opts...)
+func (c *directoryClient) CreateContact(ctx context.Context, in *CreateContactRequest, opts ...grpc.CallOption) (*CreateContactResponse, error) {
+	out := new(CreateContactResponse)
+	err := grpc.Invoke(ctx, "/directory.Directory/CreateContact", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1242,6 +1399,24 @@ func (c *directoryClient) CreateMembership(ctx context.Context, in *CreateMember
 	return out, nil
 }
 
+func (c *directoryClient) ExternalIDs(ctx context.Context, in *ExternalIDsRequest, opts ...grpc.CallOption) (*ExternalIDsResponse, error) {
+	out := new(ExternalIDsResponse)
+	err := grpc.Invoke(ctx, "/directory.Directory/ExternalIDs", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *directoryClient) LookupEntities(ctx context.Context, in *LookupEntitiesRequest, opts ...grpc.CallOption) (*LookupEntitiesResponse, error) {
+	out := new(LookupEntitiesResponse)
+	err := grpc.Invoke(ctx, "/directory.Directory/LookupEntities", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *directoryClient) LookupEntitiesByContact(ctx context.Context, in *LookupEntitiesByContactRequest, opts ...grpc.CallOption) (*LookupEntitiesByContactResponse, error) {
 	out := new(LookupEntitiesByContactResponse)
 	err := grpc.Invoke(ctx, "/directory.Directory/LookupEntitiesByContact", in, out, c.cc, opts...)
@@ -1251,35 +1426,27 @@ func (c *directoryClient) LookupEntitiesByContact(ctx context.Context, in *Looku
 	return out, nil
 }
 
-func (c *directoryClient) CreateContact(ctx context.Context, in *CreateContactRequest, opts ...grpc.CallOption) (*CreateContactResponse, error) {
-	out := new(CreateContactResponse)
-	err := grpc.Invoke(ctx, "/directory.Directory/CreateContact", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // Server API for Directory service
 
 type DirectoryServer interface {
-	LookupEntities(context.Context, *LookupEntitiesRequest) (*LookupEntitiesResponse, error)
+	CreateContact(context.Context, *CreateContactRequest) (*CreateContactResponse, error)
 	CreateEntity(context.Context, *CreateEntityRequest) (*CreateEntityResponse, error)
 	CreateMembership(context.Context, *CreateMembershipRequest) (*CreateMembershipResponse, error)
+	ExternalIDs(context.Context, *ExternalIDsRequest) (*ExternalIDsResponse, error)
+	LookupEntities(context.Context, *LookupEntitiesRequest) (*LookupEntitiesResponse, error)
 	LookupEntitiesByContact(context.Context, *LookupEntitiesByContactRequest) (*LookupEntitiesByContactResponse, error)
-	CreateContact(context.Context, *CreateContactRequest) (*CreateContactResponse, error)
 }
 
 func RegisterDirectoryServer(s *grpc.Server, srv DirectoryServer) {
 	s.RegisterService(&_Directory_serviceDesc, srv)
 }
 
-func _Directory_LookupEntities_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(LookupEntitiesRequest)
+func _Directory_CreateContact_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(CreateContactRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(DirectoryServer).LookupEntities(ctx, in)
+	out, err := srv.(DirectoryServer).CreateContact(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -1310,6 +1477,30 @@ func _Directory_CreateMembership_Handler(srv interface{}, ctx context.Context, d
 	return out, nil
 }
 
+func _Directory_ExternalIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(ExternalIDsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(DirectoryServer).ExternalIDs(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Directory_LookupEntities_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(LookupEntitiesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(DirectoryServer).LookupEntities(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func _Directory_LookupEntitiesByContact_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(LookupEntitiesByContactRequest)
 	if err := dec(in); err != nil {
@@ -1322,25 +1513,13 @@ func _Directory_LookupEntitiesByContact_Handler(srv interface{}, ctx context.Con
 	return out, nil
 }
 
-func _Directory_CreateContact_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(CreateContactRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	out, err := srv.(DirectoryServer).CreateContact(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 var _Directory_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "directory.Directory",
 	HandlerType: (*DirectoryServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "LookupEntities",
-			Handler:    _Directory_LookupEntities_Handler,
+			MethodName: "CreateContact",
+			Handler:    _Directory_CreateContact_Handler,
 		},
 		{
 			MethodName: "CreateEntity",
@@ -1351,15 +1530,49 @@ var _Directory_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Directory_CreateMembership_Handler,
 		},
 		{
+			MethodName: "ExternalIDs",
+			Handler:    _Directory_ExternalIDs_Handler,
+		},
+		{
+			MethodName: "LookupEntities",
+			Handler:    _Directory_LookupEntities_Handler,
+		},
+		{
 			MethodName: "LookupEntitiesByContact",
 			Handler:    _Directory_LookupEntitiesByContact_Handler,
 		},
-		{
-			MethodName: "CreateContact",
-			Handler:    _Directory_CreateContact_Handler,
-		},
 	},
 	Streams: []grpc.StreamDesc{},
+}
+
+func (m *ExternalID) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *ExternalID) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.ID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
+		i += copy(data[i:], m.ID)
+	}
+	if len(m.EntityID) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
+		i += copy(data[i:], m.EntityID)
+	}
+	return i, nil
 }
 
 func (m *Entity) Marshal() (data []byte, err error) {
@@ -1480,6 +1693,69 @@ func (m *RequestedInformation) MarshalTo(data []byte) (int, error) {
 			data[i] = 0x10
 			i++
 			i = encodeVarintSvc(data, i, uint64(num))
+		}
+	}
+	return i, nil
+}
+
+func (m *ExternalIDsRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *ExternalIDsRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.EntityIDs) > 0 {
+		for _, s := range m.EntityIDs {
+			data[i] = 0xa
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			data[i] = uint8(l)
+			i++
+			i += copy(data[i:], s)
+		}
+	}
+	return i, nil
+}
+
+func (m *ExternalIDsResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *ExternalIDsResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.ExternalIDs) > 0 {
+		for _, msg := range m.ExternalIDs {
+			data[i] = 0xa
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
 		}
 	}
 	return i, nil
@@ -1932,6 +2208,20 @@ func encodeVarintSvc(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	return offset + 1
 }
+func (m *ExternalID) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.ID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.EntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
 func (m *Entity) Size() (n int) {
 	var l int
 	_ = l
@@ -1987,6 +2277,30 @@ func (m *RequestedInformation) Size() (n int) {
 	if len(m.EntityInformation) > 0 {
 		for _, e := range m.EntityInformation {
 			n += 1 + sovSvc(uint64(e))
+		}
+	}
+	return n
+}
+
+func (m *ExternalIDsRequest) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.EntityIDs) > 0 {
+		for _, s := range m.EntityIDs {
+			l = len(s)
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *ExternalIDsResponse) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.ExternalIDs) > 0 {
+		for _, e := range m.ExternalIDs {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
 		}
 	}
 	return n
@@ -2186,6 +2500,17 @@ func sovSvc(x uint64) (n int) {
 func sozSvc(x uint64) (n int) {
 	return sovSvc(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
+func (this *ExternalID) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ExternalID{`,
+		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
+		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *Entity) String() string {
 	if this == nil {
 		return "nil"
@@ -2210,6 +2535,26 @@ func (this *RequestedInformation) String() string {
 	s := strings.Join([]string{`&RequestedInformation{`,
 		`Depth:` + fmt.Sprintf("%v", this.Depth) + `,`,
 		`EntityInformation:` + fmt.Sprintf("%v", this.EntityInformation) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ExternalIDsRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ExternalIDsRequest{`,
+		`EntityIDs:` + fmt.Sprintf("%v", this.EntityIDs) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ExternalIDsResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ExternalIDsResponse{`,
+		`ExternalIDs:` + strings.Replace(fmt.Sprintf("%v", this.ExternalIDs), "ExternalID", "ExternalID", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2365,6 +2710,114 @@ func valueToStringSvc(v interface{}) string {
 	}
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
+}
+func (m *ExternalID) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ExternalID: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ExternalID: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *Entity) Unmarshal(data []byte) error {
 	l := len(data)
@@ -2703,6 +3156,166 @@ func (m *RequestedInformation) Unmarshal(data []byte) error {
 				}
 			}
 			m.EntityInformation = append(m.EntityInformation, v)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ExternalIDsRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ExternalIDsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ExternalIDsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityIDs", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EntityIDs = append(m.EntityIDs, string(data[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ExternalIDsResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ExternalIDsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ExternalIDsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExternalIDs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ExternalIDs = append(m.ExternalIDs, &ExternalID{})
+			if err := m.ExternalIDs[len(m.ExternalIDs)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

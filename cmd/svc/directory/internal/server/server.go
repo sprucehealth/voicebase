@@ -27,7 +27,7 @@ type DAL interface {
 	DeleteEntity(id dal.EntityID) (int64, error)
 	InsertExternalEntityID(model *dal.ExternalEntityID) error
 	ExternalEntityIDs(externalID string) ([]*dal.ExternalEntityID, error)
-	ExternalEntityIDsForEntity(entityID dal.EntityID) ([]*dal.ExternalEntityID, error)
+	ExternalEntityIDsForEntities(entityID []dal.EntityID) ([]*dal.ExternalEntityID, error)
 	InsertEntityMembership(model *dal.EntityMembership) error
 	EntityMemberships(id dal.EntityID) ([]*dal.EntityMembership, error)
 	EntityMembers(id dal.EntityID) ([]*dal.Entity, error)
@@ -44,13 +44,13 @@ type DAL interface {
 	Transact(trans func(dal dal.DAL) error) (err error)
 }
 
-// Server represents the methods required to interact with the directory service
 type Server interface {
-	LookupEntities(context.Context, *directory.LookupEntitiesRequest) (*directory.LookupEntitiesResponse, error)
+	CreateContact(context.Context, *directory.CreateContactRequest) (*directory.CreateContactResponse, error)
 	CreateEntity(context.Context, *directory.CreateEntityRequest) (*directory.CreateEntityResponse, error)
 	CreateMembership(context.Context, *directory.CreateMembershipRequest) (*directory.CreateMembershipResponse, error)
+	ExternalIDs(context.Context, *directory.ExternalIDsRequest) (*directory.ExternalIDsResponse, error)
+	LookupEntities(context.Context, *directory.LookupEntitiesRequest) (*directory.LookupEntitiesResponse, error)
 	LookupEntitiesByContact(context.Context, *directory.LookupEntitiesByContactRequest) (*directory.LookupEntitiesByContactResponse, error)
-	CreateContact(context.Context, *directory.CreateContactRequest) (*directory.CreateContactResponse, error)
 }
 
 var (
@@ -187,6 +187,24 @@ func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityReq
 	}
 	return &directory.CreateEntityResponse{
 		Entity: pbEntity,
+	}, nil
+}
+
+func (s *server) ExternalIDs(ctx context.Context, rd *directory.ExternalIDsRequest) (*directory.ExternalIDsResponse, error) {
+	golog.Debugf("Entering server.server.ExternalIDs: %+v", rd)
+	if golog.Default().L(golog.DEBUG) {
+		defer func() { golog.Debugf("Leaving server.server.ExternalIDs...") }()
+	}
+	ids := make([]dal.EntityID, len(rd.EntityIDs))
+	for i, id := range rd.EntityIDs {
+		ids[i] = dal.ParseEntityID(id)
+	}
+	externalIDs, err := s.dl.ExternalEntityIDsForEntities(ids)
+	if err != nil {
+		return nil, grpc.Errorf(codes.Internal, err.Error())
+	}
+	return &directory.ExternalIDsResponse{
+		ExternalIDs: transformExternalIDs(externalIDs),
 	}, nil
 }
 
@@ -364,6 +382,17 @@ func validateContact(contact *directory.Contact) error {
 	return nil
 }
 
+func transformExternalIDs(dExternalEntityIDs []*dal.ExternalEntityID) []*directory.ExternalID {
+	pExternalID := make([]*directory.ExternalID, len(dExternalEntityIDs))
+	for i, eID := range dExternalEntityIDs {
+		pExternalID[i] = &directory.ExternalID{
+			ID:       eID.ExternalID,
+			EntityID: eID.EntityID.String(),
+		}
+	}
+	return pExternalID
+}
+
 func getPBEntities(dl dal.DAL, dEntities []*dal.Entity, entityInformation []directory.EntityInformation, depth int64) ([]*directory.Entity, error) {
 	golog.Debugf("Entering server.getPBEntities: dEntities: %+v, entityInformation, %+v, depth: %d", dEntities, entityInformation, depth)
 	if golog.Default().L(golog.DEBUG) {
@@ -460,7 +489,7 @@ func getPBExternalIDs(dl dal.DAL, entityID dal.EntityID) ([]string, error) {
 	if golog.Default().L(golog.DEBUG) {
 		defer func() { golog.Debugf("Leaving server.getPBExternalIDs...") }()
 	}
-	externalIDs, err := dl.ExternalEntityIDsForEntity(entityID)
+	externalIDs, err := dl.ExternalEntityIDsForEntities([]dal.EntityID{entityID})
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

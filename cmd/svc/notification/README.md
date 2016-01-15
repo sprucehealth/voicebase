@@ -28,10 +28,12 @@ To update the schema you would run the previous command again as new files are a
 To start the service run
 
 ```
-$ go run main.go -debug=true \
--sqs.device.registration.url=https://sqs.us-east-1.amazonaws.com/758505115169/dev-baymax_notification_device_registration \
--sqs.notification.url=https://sqs.us-east-1.amazonaws.com/758505115169/dev-baymax_notification \
--sns.apple.device.registration.arn=arn:aws:sns:us-east-1:758505115169:app/APNS_SANDBOX/dev-baymax_apple_push_notification \
--aws.access.key=$AWS_ACCESS_KEY \
--aws.secret.key=$AWS_SECRET_KEY
+$ go run main.go  -debug=true \
+-sqs_device_registration_url=https://sqs.us-east-1.amazonaws.com/758505115169/dev-baymax_notification_device_registration \
+-sqs_notification_url=https://sqs.us-east-1.amazonaws.com/758505115169/dev-baymax_notification \
+-sns_apple_device_registration_arn=arn:aws:sns:us-east-1:758505115169:app/APNS_SANDBOX/dev-baymax_apple_push_notification \
+-sns_android_device_registration_arn=arn:aws:sns:us-east-1:758505115169:app/GCM/dev-baymax_apple_push_notification \
+-directory_addr=:50052
+-aws_access_key=$AWS_ACCESS_KEY \
+-aws_secret_key=$AWS_SECRET_KEY
 ```

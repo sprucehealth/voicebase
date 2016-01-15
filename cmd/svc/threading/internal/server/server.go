@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -26,13 +27,14 @@ import (
 const maxSummaryLength = 1024
 
 type threadsServer struct {
-	dal         dal.DAL
-	sns         snsiface.SNSAPI
-	snsTopicARN string
+	dal                dal.DAL
+	sns                snsiface.SNSAPI
+	snsTopicARN        string
+	notificationClient notification.Client
 }
 
-func NewThreadsServer(dal dal.DAL, sns snsiface.SNSAPI, snsTopicARN string) threading.ThreadsServer {
-	return &threadsServer{dal: dal, sns: sns, snsTopicARN: snsTopicARN}
+func NewThreadsServer(dal dal.DAL, sns snsiface.SNSAPI, snsTopicARN string, notificationClient notification.Client) threading.ThreadsServer {
+	return &threadsServer{dal: dal, sns: sns, snsTopicARN: snsTopicARN, notificationClient: notificationClient}
 }
 
 // CreateSavedQuery saves a query for later use
@@ -196,7 +198,7 @@ func (s *threadsServer) MarkThreadAsRead(ctx context.Context, in *threading.Mark
 
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
 		forUpdate := true
-		threadMembers, err := dl.ThreadMembers(ctx, []models.ThreadID{threadID}, in.EntityID, forUpdate)
+		threadMembers, err := dl.ThreadMemberships(ctx, []models.ThreadID{threadID}, in.EntityID, forUpdate)
 		if err != nil {
 			return errors.Trace(err)
 		} else if len(threadMembers) != 1 {
@@ -330,6 +332,7 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		return nil, grpc.Errorf(codes.Internal, errors.Trace(err).Error())
 	}
 	s.publishMessage(ctx, thread.OrganizationID, thread.PrimaryEntityID, threadID, it, in.UUID)
+	s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, threadID, in.FromEntityID)
 	return &threading.PostMessageResponse{
 		Item:   it,
 		Thread: th,
@@ -595,7 +598,7 @@ func (s *threadsServer) populateReadStatus(ctx context.Context, ts []*threading.
 	}
 
 	forUpdate := false
-	tms, err := s.dal.ThreadMembers(ctx, tIDs, viewerEntityID, forUpdate)
+	tms, err := s.dal.ThreadMemberships(ctx, tIDs, viewerEntityID, forUpdate)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -637,6 +640,34 @@ func (s *threadsServer) publishMessage(ctx context.Context, orgID, primaryEntity
 			TopicArn: &s.snsTopicARN,
 		}); err != nil {
 			golog.Errorf("Failed to publish SNS: %s", err)
+		}
+	})
+}
+
+func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID string, threadID models.ThreadID, publishingEntityID string) {
+	if s.notificationClient == nil {
+		return
+	}
+	conc.Go(func() {
+		members, err := s.dal.ThreadMembers(ctx, threadID)
+		if err != nil {
+			golog.Errorf("Failed to notify members: %s", err)
+			return
+		}
+		var memberEntityIDs []string
+		for _, m := range members {
+			if m.EntityID == publishingEntityID {
+				continue
+			}
+			memberEntityIDs = append(memberEntityIDs, m.EntityID)
+		}
+		if err := s.notificationClient.SendNotification(&notification.Notification{
+			ShortMessage:     "A new message is available",
+			ThreadID:         threadID.String(),
+			OrganizationID:   orgID,
+			EntitiesToNotify: memberEntityIDs,
+		}); err != nil {
+			golog.Errorf("Failed to notify members: %s", err)
 		}
 	})
 }

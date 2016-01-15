@@ -21,6 +21,11 @@ enum EntityInformation {
 	EXTERNAL_IDS = 3;
 }
 
+message ExternalID {
+    string id = 1 [(gogoproto.customname) = "ID"];
+    string entity_id = 2  [(gogoproto.customname) = "EntityID"];
+}
+
 message Entity {
 	string id = 1 [(gogoproto.customname) = "ID"];
 	string name = 2;
@@ -36,6 +41,14 @@ message Entity {
 message RequestedInformation {
 	int64 depth = 1;
 	repeated EntityInformation entity_information = 2;
+}
+
+message ExternalIDsRequest {
+    repeated string entity_ids = 1 [(gogoproto.customname) = "EntityIDs"];;
+}
+
+message ExternalIDsResponse {
+    repeated ExternalID external_ids = 1 [(gogoproto.customname) = "ExternalIDs"];;
 }
 
 message LookupEntitiesRequest {
@@ -111,9 +124,10 @@ message CreateContactResponse {
 }
 
 service Directory {
-	rpc LookupEntities (LookupEntitiesRequest) returns (LookupEntitiesResponse);
+    rpc CreateContact (CreateContactRequest) returns (CreateContactResponse);
 	rpc CreateEntity (CreateEntityRequest) returns (CreateEntityResponse);
 	rpc CreateMembership (CreateMembershipRequest) returns (CreateMembershipResponse);
+    rpc ExternalIDs (ExternalIDsRequest) returns (ExternalIDsResponse);
+    rpc LookupEntities (LookupEntitiesRequest) returns (LookupEntitiesResponse);
 	rpc LookupEntitiesByContact (LookupEntitiesByContactRequest) returns (LookupEntitiesByContactResponse);
-	rpc CreateContact (CreateContactRequest) returns (CreateContactResponse);
 }

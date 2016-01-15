@@ -66,3 +66,12 @@ func (c *Client) CreateContact(ctx context.Context, in *directory.CreateContactR
 	}
 	return rets[0].(*directory.CreateContactResponse), mock.SafeError(rets[1])
 }
+
+// ExternalIDs returns the external ids that map to a set of entity ids
+func (c *Client) ExternalIDs(ctx context.Context, in *directory.ExternalIDsRequest, opts ...grpc.CallOption) (*directory.ExternalIDsResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*directory.ExternalIDsResponse), mock.SafeError(rets[1])
+}

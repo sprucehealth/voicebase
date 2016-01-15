@@ -28,5 +28,5 @@ To update the schema you would run the previous command again as new files are a
 To start the service run
 
 ```
-$ go run $GOPATH/src/github.com/sprucehealth/backend/cmd/svc/auth/main.go -debug=true -rpc.listen.port=50051
+$ go run $GOPATH/src/github.com/sprucehealth/backend/cmd/svc/auth/main.go -debug=true -rpc_listen_port=50051
 ```

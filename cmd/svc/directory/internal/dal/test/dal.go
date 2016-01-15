@@ -142,6 +142,14 @@ func (dl *mockDAL) EntityContactsForValue(value string) ([]*dal.EntityContact, e
 	return rets[0].([]*dal.EntityContact), mock.SafeError(rets[1])
 }
 
+func (dl *mockDAL) ExternalEntityIDsForEntities(entityID []dal.EntityID) ([]*dal.ExternalEntityID, error) {
+	rets := dl.Expector.Record(entityID)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].([]*dal.ExternalEntityID), mock.SafeError(rets[1])
+}
+
 func (dl *mockDAL) UpdateEntityContact(id dal.EntityContactID, update *dal.EntityContactUpdate) (int64, error) {
 	rets := dl.Expector.Record(id, update)
 	if len(rets) == 0 {

@@ -493,7 +493,7 @@ func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMemberships, eID2), []*dal.EntityMembership{}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{}), []*dal.Entity{}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMembers, eID2), []*dal.Entity{}, nil))
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.ExternalEntityIDsForEntity, eID2), []*dal.ExternalEntityID{
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.ExternalEntityIDsForEntities, []dal.EntityID{eID2}), []*dal.ExternalEntityID{
 		&dal.ExternalEntityID{ExternalID: "external2"},
 	}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityContacts, eID2), []*dal.EntityContact{
@@ -511,7 +511,7 @@ func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMemberships, eID3), []*dal.EntityMembership{}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{}), []*dal.Entity{}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMembers, eID3), []*dal.Entity{}, nil))
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.ExternalEntityIDsForEntity, eID3), []*dal.ExternalEntityID{
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.ExternalEntityIDsForEntities, []dal.EntityID{eID3}), []*dal.ExternalEntityID{
 		&dal.ExternalEntityID{ExternalID: "external3"},
 	}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityContacts, eID3), []*dal.EntityContact{
@@ -520,7 +520,7 @@ func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 			Value: "+12345678913",
 		},
 	}, nil))
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.ExternalEntityIDsForEntity, eID1), []*dal.ExternalEntityID{
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.ExternalEntityIDsForEntities, []dal.EntityID{eID1}), []*dal.ExternalEntityID{
 		&dal.ExternalEntityID{ExternalID: "external1"},
 	}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityContacts, eID1), []*dal.EntityContact{

@@ -27,7 +27,7 @@ type DAL interface {
 	DeleteEntity(id EntityID) (int64, error)
 	InsertExternalEntityID(model *ExternalEntityID) error
 	ExternalEntityIDs(externalID string) ([]*ExternalEntityID, error)
-	ExternalEntityIDsForEntity(entityID EntityID) ([]*ExternalEntityID, error)
+	ExternalEntityIDsForEntities(entityID []EntityID) ([]*ExternalEntityID, error)
 	InsertEntityMembership(model *EntityMembership) error
 	EntityMemberships(id EntityID) ([]*EntityMembership, error)
 	EntityMembers(id EntityID) ([]*Entity, error)
@@ -960,15 +960,24 @@ func (d *dal) ExternalEntityIDs(externalID string) ([]*ExternalEntityID, error) 
 	return externalEntityIDs, errors.Trace(rows.Err())
 }
 
-func (d *dal) ExternalEntityIDsForEntity(entityID EntityID) ([]*ExternalEntityID, error) {
-	golog.Debugf("Entering dal.dal.ExternalEntityIDsForEntity: %s", entityID)
+// ExternalEntityIDsForEntities returns all the external ids that map to the provided list of entity ids
+func (d *dal) ExternalEntityIDsForEntities(entityIDs []EntityID) ([]*ExternalEntityID, error) {
+	golog.Debugf("Entering dal.dal.ExternalEntityIDsForEntities: %s", entityIDs)
 	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.ExternalEntityIDsForEntity...") }()
+		defer func() { golog.Debugf("Leaving dal.dal.ExternalEntityIDsForEntities...") }()
+	}
+	if len(entityIDs) == 0 {
+		return nil, nil
+	}
+
+	values := make([]interface{}, len(entityIDs))
+	for i, v := range entityIDs {
+		values[i] = v.Uint64()
 	}
 	rows, err := d.db.Query(
 		`SELECT entity_id, external_id, created, modified
 		  FROM external_entity_id
-		  WHERE entity_id = ?`, entityID.Uint64())
+		  WHERE entity_id IN (`+dbutil.MySQLArgs(len(entityIDs))+`)`, values...)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

@@ -95,7 +95,8 @@ type DAL interface {
 	ThreadItem(ctx context.Context, id models.ThreadItemID) (*models.ThreadItem, error)
 	ThreadItemIDsCreatedAfter(ctx context.Context, threadID models.ThreadID, after time.Time) ([]models.ThreadItemID, error)
 	ThreadItemViewDetails(ctx context.Context, id models.ThreadItemID) ([]*models.ThreadItemViewDetails, error)
-	ThreadMembers(ctx context.Context, threadID []models.ThreadID, entityID string, forUpdate bool) ([]*models.ThreadMember, error)
+	ThreadMemberships(ctx context.Context, threadID []models.ThreadID, entityID string, forUpdate bool) ([]*models.ThreadMember, error)
+	ThreadMembers(ctx context.Context, threadID models.ThreadID) ([]*models.ThreadMember, error)
 	ThreadsForMember(ctx context.Context, entityID string, primaryOnly bool) ([]*models.Thread, error)
 	// UpdateMember updates attributes about a thread member. If the membership doesn't exist then it is created.
 	UpdateMember(ctx context.Context, threadID models.ThreadID, entityID string, update *MemberUpdate) error
@@ -519,7 +520,7 @@ func (d *dal) ThreadItemViewDetails(ctx context.Context, id models.ThreadItemID)
 	return tds, errors.Trace(rows.Err())
 }
 
-func (d *dal) ThreadMembers(ctx context.Context, threadIDs []models.ThreadID, entityID string, forUpdate bool) ([]*models.ThreadMember, error) {
+func (d *dal) ThreadMemberships(ctx context.Context, threadIDs []models.ThreadID, entityID string, forUpdate bool) ([]*models.ThreadMember, error) {
 	if len(threadIDs) == 0 {
 		return nil, nil
 	}
@@ -538,6 +539,27 @@ func (d *dal) ThreadMembers(ctx context.Context, threadIDs []models.ThreadID, en
 		FROM thread_members
 		WHERE entity_id = ?
         AND thread_id IN (`+dbutil.MySQLArgs(len(threadIDs))+`) %s`, sfu), values...)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var tms []*models.ThreadMember
+	for rows.Next() {
+		tm, err := scanThreadMember(rows)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		tms = append(tms, tm)
+	}
+	return tms, errors.Trace(err)
+}
+
+func (d *dal) ThreadMembers(ctx context.Context, threadID models.ThreadID) ([]*models.ThreadMember, error) {
+	rows, err := d.db.Query(`
+		SELECT thread_id, entity_id, following, joined, last_viewed
+		FROM thread_members
+        WHERE thread_id = ?`, threadID)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

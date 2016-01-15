@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"golang.org/x/net/context"
+
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
@@ -16,6 +18,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/worker"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification"
 )
 
@@ -49,17 +52,19 @@ type service struct {
 	config             *Config
 	dl                 notificationDAL
 	snsAPI             snsiface.SNSAPI
+	directoryClient    directory.DirectoryClient
 	registrationWorker worker.Worker
 	notificationWorker worker.Worker
 }
 
 // New returns an initialized instance of service
-func New(dl notificationDAL, config *Config) Service {
+func New(dl notificationDAL, directoryClient directory.DirectoryClient, config *Config) Service {
 	golog.Debugf("Initializing Notification Service with Config: %+v", config)
 	s := &service{
-		config: config,
-		dl:     dl,
-		snsAPI: sns.New(config.Session),
+		config:          config,
+		dl:              dl,
+		directoryClient: directoryClient,
+		snsAPI:          sns.New(config.Session),
 	}
 	s.registrationWorker = awsutil.NewSQSWorker(sqs.New(config.Session), config.DeviceRegistrationSQSURL, s.processDeviceRegistration)
 	s.notificationWorker = awsutil.NewSQSWorker(sqs.New(config.Session), config.NotificationSQSURL, s.processNotification)
@@ -159,14 +164,33 @@ var jsonStructure = ptr.String("json")
 // TODO: Set and examine communication preferences for caller
 // NOTE: This is an initial version of what PUSH notifications can look like. Will discuss with the client team about what we want the formal mature version to be. This is mainly a POC and validation regarding PUSH with Baymax
 func (s *service) processNotification(data []byte) error {
-	notification := &notification.Notification{}
-	if err := json.Unmarshal(data, notification); err != nil {
+	n := &notification.Notification{}
+	if err := json.Unmarshal(data, n); err != nil {
 		return errors.Trace(err)
 	}
-	golog.Debugf("Processing notification event: %+v", notification)
+	golog.Debugf("Processing notification event: %+v", n)
+	return errors.Trace(s.processPushNotification(n))
+}
 
-	// TODO: Drop all the push specific logic down a level and switch on delivery type
-	pushConfigs, err := s.dl.PushConfigsForExternalGroupID(notification.ExternalGroupID)
+func (s *service) processPushNotification(n *notification.Notification) error {
+	// Fetch the external ids for these entities and attempt to resolve them to accounts for groups
+	externalIDsResp, err := s.directoryClient.ExternalIDs(context.Background(), &directory.ExternalIDsRequest{
+		EntityIDs: n.EntitiesToNotify,
+	})
+	if err != nil {
+		return errors.Trace(err)
+	}
+	accountIDs := accountIDsFromExternalIDs(externalIDsResp.ExternalIDs)
+	for _, accountID := range accountIDs {
+		if err := s.sendPushNotificationToExternalGroupID(accountID, n); err != nil {
+			golog.Errorf(err.Error())
+		}
+	}
+	return nil
+}
+
+func (s *service) sendPushNotificationToExternalGroupID(externalGroupID string, n *notification.Notification) error {
+	pushConfigs, err := s.dl.PushConfigsForExternalGroupID(externalGroupID)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -175,10 +199,8 @@ func (s *service) processNotification(data []byte) error {
 	for _, pushConfig := range pushConfigs {
 		var snsNote *snsNotification
 		switch pushConfig.Platform {
-		case "iOS":
-			snsNote = generateIOSNotification(notification, pushConfig)
-		case "android":
-			snsNote = generateAndroidNotification(notification, pushConfig)
+		case "iOS", "android":
+			snsNote = generateNotification(n, pushConfig)
 		default:
 			return errors.Trace(fmt.Errorf("Cannot send push notification to unknown platform %s for push notifications", pushConfig.Platform))
 		}
@@ -199,6 +221,21 @@ func (s *service) processNotification(data []byte) error {
 	return nil
 }
 
+func accountIDsFromExternalIDs(eIDs []*directory.ExternalID) []string {
+	var accountIDs []string
+	// TODO: Fix this ID parsing once we move to the new format and stop prefixing from graphql
+	for _, eID := range eIDs {
+		i := strings.IndexByte(eID.ID, ':')
+		prefix := eID.ID[:i]
+		switch prefix {
+		case "account":
+			accountIDs = append(accountIDs, eID.ID[(i+1):])
+		}
+	}
+	return accountIDs
+}
+
+// http://docs.aws.amazon.com/sns/latest/dg/mobile-push-send-custommessage.html
 type snsNotification struct {
 	DefaultMessage string                   `json:"default"`
 	IOSSandBox     *iOSPushNotification     `json:"APNS_SANDBOX,omitempty"`
@@ -207,41 +244,49 @@ type snsNotification struct {
 }
 
 type iOSPushNotification struct {
-	Alert string `json:"alert,omitempty"`
-	Badge int64  `json:"badge,omitempty"`
+	PushData *iOSPushData `json:"aps"`
+	ThreadID string       `json:"thread_id"`
+	URL      string       `json:"url"`
+}
+
+type iOSPushData struct {
+	Alert string `json:"alert"`
+}
+
+type androidPushNotification struct {
+	PushData *androidPushData `json:"data"`
+	ThreadID string           `json:"thread_id"`
+	URL      string           `json:"url"`
 }
 
 type androidPushData struct {
 	Message string `json:"message"`
-	PushID  string `json:"push_id"`
 }
 
-type androidPushNotification struct {
-	Data *androidPushData `json:"data"`
-}
-
-const sandboxURLComponent = "APNS_SANDBOX"
-
-func generateIOSNotification(n *notification.Notification, pushConfig *dal.PushConfig) *snsNotification {
-	notification := &snsNotification{DefaultMessage: n.ShortMessage}
-	iOSNote := &iOSPushNotification{
-		Alert: n.Message,
-		Badge: n.BadgeCount,
+func generateNotification(n *notification.Notification, pushConfig *dal.PushConfig) *snsNotification {
+	url := threadActivityURL(n.OrganizationID, n.ThreadID)
+	iOSNotif := &iOSPushNotification{
+		PushData: &iOSPushData{
+			Alert: n.ShortMessage,
+		},
+		URL:      url,
+		ThreadID: n.ThreadID,
 	}
-	if strings.Contains(pushConfig.PushEndpoint, sandboxURLComponent) {
-		notification.IOSSandBox = iOSNote
-	} else {
-		notification.IOS = iOSNote
-	}
-	return notification
-}
-
-func generateAndroidNotification(n *notification.Notification, pushConfig *dal.PushConfig) *snsNotification {
-	notification := &snsNotification{DefaultMessage: n.ShortMessage}
-	notification.Android = &androidPushNotification{
-		Data: &androidPushData{
-			Message: n.Message,
+	return &snsNotification{
+		DefaultMessage: n.ShortMessage,
+		IOSSandBox:     iOSNotif,
+		IOS:            iOSNotif,
+		Android: &androidPushNotification{
+			PushData: &androidPushData{
+				Message: n.ShortMessage,
+			},
+			URL:      url,
+			ThreadID: n.ThreadID,
 		},
 	}
-	return notification
+}
+
+// TODO: Perhaps the notification provider should create this
+func threadActivityURL(organizationID, threadID string) string {
+	return fmt.Sprintf("https://baymax.com/org/%s/thread/%s/", organizationID, threadID)
 }

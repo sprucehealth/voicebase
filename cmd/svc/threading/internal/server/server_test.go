@@ -24,7 +24,7 @@ func TestCreateSavedQuery(t *testing.T) {
 	test.OK(t, err)
 	esq := &models.SavedQuery{OrganizationID: "o1", EntityID: "e1"}
 	dl.Expect(mock.NewExpectation(dl.CreateSavedQuery, esq).WithReturns(eid, nil))
-	srv := NewThreadsServer(dl, nil, "arn")
+	srv := NewThreadsServer(dl, nil, "arn", nil)
 	res, err := srv.CreateSavedQuery(nil, &threading.CreateSavedQueryRequest{
 		OrganizationID: "o1",
 		EntityID:       "e1",
@@ -94,7 +94,7 @@ func TestCreateThread(t *testing.T) {
 	}
 	dl.Expect(mock.NewExpectation(dl.Thread, thid).WithReturns(th2, nil))
 
-	srv := NewThreadsServer(dl, nil, "arn")
+	srv := NewThreadsServer(dl, nil, "arn", nil)
 	res, err := srv.CreateThread(nil, &threading.CreateThreadRequest{
 		OrganizationID: "o1",
 		FromEntityID:   "e1",
@@ -145,7 +145,7 @@ func TestCreateThread(t *testing.T) {
 func TestThreadItem(t *testing.T) {
 	dl := newMockDAL(t)
 	defer dl.Finish()
-	srv := NewThreadsServer(dl, nil, "arn")
+	srv := NewThreadsServer(dl, nil, "arn", nil)
 
 	eid, err := models.NewThreadItemID()
 	test.OK(t, err)
@@ -202,7 +202,7 @@ func TestThreadItem(t *testing.T) {
 func TestQueryThreads(t *testing.T) {
 	dl := newMockDAL(t)
 	defer dl.Finish()
-	srv := NewThreadsServer(dl, nil, "arn")
+	srv := NewThreadsServer(dl, nil, "arn", nil)
 
 	orgID := "entity:1"
 	peID := "entity:2"
@@ -263,7 +263,7 @@ func TestQueryThreads(t *testing.T) {
 func TestThread(t *testing.T) {
 	dl := newMockDAL(t)
 	defer dl.Finish()
-	srv := NewThreadsServer(dl, nil, "arn")
+	srv := NewThreadsServer(dl, nil, "arn", nil)
 
 	thID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -296,7 +296,7 @@ func TestThread(t *testing.T) {
 func TestSavedQuery(t *testing.T) {
 	dl := newMockDAL(t)
 	defer dl.Finish()
-	srv := NewThreadsServer(dl, nil, "arn")
+	srv := NewThreadsServer(dl, nil, "arn", nil)
 
 	sqID, err := models.NewSavedQueryID()
 	test.OK(t, err)

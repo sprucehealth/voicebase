@@ -121,8 +121,16 @@ func (dl *mockDAL) ThreadItemViewDetails(ctx context.Context, id models.ThreadIt
 	return rets[0].([]*models.ThreadItemViewDetails), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) ThreadMembers(ctx context.Context, threadIDs []models.ThreadID, entityID string, forUpdate bool) ([]*models.ThreadMember, error) {
-	rets := dl.Expector.Record(threadIDs, entityID, forUpdate)
+func (dl *mockDAL) ThreadMemberships(ctx context.Context, threadIDs []models.ThreadID, entityID string, forUpdate bool) ([]*models.ThreadMember, error) {
+	rets := dl.Expector.Record(threadIDs, threadIDs, entityID, forUpdate)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].([]*models.ThreadMember), mock.SafeError(rets[1])
+}
+
+func (dl *mockDAL) ThreadMembers(ctx context.Context, threadIDs models.ThreadID) ([]*models.ThreadMember, error) {
+	rets := dl.Expector.Record(threadIDs)
 	if len(rets) == 0 {
 		return nil, nil
 	}

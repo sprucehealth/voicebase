@@ -14,8 +14,8 @@ type DeviceRegistrationInfo struct {
 
 // Notification represents the information to be transformed into a notification
 type Notification struct {
-	ExternalGroupID string `json:"external_group_id"`
-	ShortMessage    string `json:"short_message"`
-	Message         string `json:"message"`
-	BadgeCount      int64  `json:"badge_count"`
+	ShortMessage     string   `json:"short_message"`
+	ThreadID         string   `json:"thread_id"`
+	OrganizationID   string   `json:"organization_id"`
+	EntitiesToNotify []string `json:"entities_to_notify"`
 }

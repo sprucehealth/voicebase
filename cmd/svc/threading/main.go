@@ -17,25 +17,27 @@ import (
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc"
 )
 
 var (
-	flagAWSAccessKey = flag.String("aws_access_key", "", "AWS access key")
-	flagAWSSecretKey = flag.String("aws_secret_key", "", "AWS secret key")
-	flagAWSToken     = flag.String("aws_token", "", "AWS token")
-	flagAWSRegion    = flag.String("aws_region", "", "AWS region")
-	flagDBName       = flag.String("db_name", "threading", "Database name")
-	flagDBHost       = flag.String("db_host", "127.0.0.1", "Database host")
-	flagDBPort       = flag.Int("db_port", 3306, "Database port")
-	flagDBUser       = flag.String("db_user", "", "Database username")
-	flagDBPass       = flag.String("db_pass", "", "Database password")
-	flagDBCACert     = flag.String("db_ca_cert", "", "Path to database CA certificate")
-	flagDBTLS        = flag.String("db_tls", "false", "Enable TLS for database connection (one of 'true', 'false', 'skip-verify'). Ignored if CA cert provided.")
-	flagListen       = flag.String("listen_addr", ":5001", "Address on which to listen")
-	flagSNSTopicARN  = flag.String("sns_topic_arn", "", "SNS topic ARN to publish new messages to")
-	flagDebug        = flag.Bool("debug", false, "Enable debug logging")
+	flagAWSAccessKey       = flag.String("aws_access_key", "", "AWS access key")
+	flagAWSSecretKey       = flag.String("aws_secret_key", "", "AWS secret key")
+	flagAWSToken           = flag.String("aws_token", "", "AWS token")
+	flagAWSRegion          = flag.String("aws_region", "", "AWS region")
+	flagDBName             = flag.String("db_name", "threading", "Database name")
+	flagDBHost             = flag.String("db_host", "127.0.0.1", "Database host")
+	flagDBPort             = flag.Int("db_port", 3306, "Database port")
+	flagDBUser             = flag.String("db_user", "", "Database username")
+	flagDBPass             = flag.String("db_pass", "", "Database password")
+	flagDBCACert           = flag.String("db_ca_cert", "", "Path to database CA certificate")
+	flagDBTLS              = flag.String("db_tls", "false", "Enable TLS for database connection (one of 'true', 'false', 'skip-verify'). Ignored if CA cert provided.")
+	flagListen             = flag.String("listen_addr", ":5001", "Address on which to listen")
+	flagSNSTopicARN        = flag.String("sns_topic_arn", "", "SNS topic ARN to publish new messages to")
+	flagDebug              = flag.Bool("debug", false, "Enable debug logging")
+	flagSQSNotificationURL = flag.String("sqs_notification_url", "", "the sqs url for notification messages")
 )
 
 func init() {
@@ -103,8 +105,16 @@ func main() {
 		golog.Fatalf("%s", http.ListenAndServe(":8005", nil))
 	}()
 
+	var notificationClient notification.Client
+	if *flagSQSNotificationURL != "" {
+		notificationClient = notification.NewClient(&notification.ClientConfig{
+			Session:            awsSession,
+			SQSNotificationURL: *flagSQSNotificationURL,
+		})
+	}
+
 	s := grpc.NewServer()
-	threading.RegisterThreadsServer(s, server.NewThreadsServer(dal.New(db), sns, *flagSNSTopicARN))
+	threading.RegisterThreadsServer(s, server.NewThreadsServer(dal.New(db), sns, *flagSNSTopicARN, notificationClient))
 	golog.Infof("Starting Threads service on %s...", *flagListen)
 
 	ln, err := net.Listen("tcp", *flagListen)

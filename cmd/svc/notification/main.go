@@ -6,12 +6,15 @@ import (
 	"os/signal"
 	"syscall"
 
+	"google.golang.org/grpc"
+
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/notification/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/notification/internal/service"
 	cfg "github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/svc/directory"
 )
 
 var config struct {
@@ -31,6 +34,7 @@ var config struct {
 	awsAccessKey                      string
 	awsSecretKey                      string
 	awsRegion                         string
+	directoryServiceAddress           string
 }
 
 func init() {
@@ -50,6 +54,7 @@ func init() {
 	flag.StringVar(&config.awsAccessKey, "aws_access_key", "", "access key for aws")
 	flag.StringVar(&config.awsSecretKey, "aws_secret_key", "", "secret key for aws")
 	flag.StringVar(&config.awsRegion, "aws_region", "us-east-1", "aws region")
+	flag.StringVar(&config.directoryServiceAddress, "directory_addr", "", "host:port of directory service")
 }
 
 func main() {
@@ -68,7 +73,7 @@ func main() {
 		TLSKey:   config.dbTLSKey,
 	})
 	if err != nil {
-		golog.Fatalf("failed to iniitlize db connection: %s", err)
+		golog.Fatalf("failed to initialize db connection: %s", err)
 	}
 
 	// generate the SQS and SNS clients we'll need
@@ -78,8 +83,19 @@ func main() {
 		AWSSecretKey: config.awsSecretKey,
 		AWSAccessKey: config.awsAccessKey,
 	}
+
+	if config.directoryServiceAddress == "" {
+		golog.Fatalf("Directory service not configured")
+	}
+	conn, err := grpc.Dial(config.directoryServiceAddress, grpc.WithInsecure())
+	if err != nil {
+		golog.Fatalf("Unable to connect to directory service: %s", err)
+	}
+	directoryClient := directory.NewDirectoryClient(conn)
+
 	svc := service.New(
 		dal.New(db),
+		directoryClient,
 		&service.Config{
 			Session:                         baseConfig.AWSSession(),
 			DeviceRegistrationSQSURL:        config.sqsDeviceRegistrationURL,
