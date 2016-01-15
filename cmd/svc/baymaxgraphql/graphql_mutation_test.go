@@ -42,7 +42,7 @@ func TestPostMessage(t *testing.T) {
 			ExternalID: "account:" + acc.ID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
-			Depth: 1,
+			Depth: 0,
 			EntityInformation: []directory.EntityInformation{
 				directory.EntityInformation_MEMBERSHIPS,
 				directory.EntityInformation_CONTACTS,

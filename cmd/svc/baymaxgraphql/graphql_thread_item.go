@@ -108,6 +108,18 @@ var messageType = graphql.NewObject(
 			"source":       &graphql.Field{Type: graphql.NewNonNull(endpointType)},
 			"destinations": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(endpointType))},
 			"attachments":  &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(attachmentType))},
+			"viewDetails": &graphql.Field{
+				Type: graphql.NewList(graphql.NewNonNull(threadItemViewDetailsType)),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					m := p.Source.(*message)
+					if m == nil {
+						return nil, internalError(errors.New("message is nil"))
+					}
+					svc := serviceFromParams(p)
+					ctx := p.Context
+					return lookupThreadItemViewDetails(ctx, svc, m.ThreadItemID)
+				},
+			},
 			// TODO: "editor: Entity"
 			// TODO: "editedTimestamp: Int"
 		},

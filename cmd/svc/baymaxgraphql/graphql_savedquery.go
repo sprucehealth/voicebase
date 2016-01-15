@@ -32,13 +32,22 @@ var savedThreadQueryType = graphql.NewObject(
 
 					svc := serviceFromParams(p)
 					ctx := p.Context
+					acc := accountFromContext(ctx)
+					if acc == nil {
+						return nil, errNotAuthenticated
+					}
+					ent, err := svc.entityForAccountID(ctx, stq.OrganizationID, acc.ID)
+					if err != nil || ent == nil {
+						return nil, internalError(errors.New("no entity id found"))
+					}
 					req := &threading.QueryThreadsRequest{
 						OrganizationID: stq.OrganizationID,
 						Type:           threading.QueryThreadsRequest_SAVED,
 						QueryType: &threading.QueryThreadsRequest_SavedQueryID{
 							SavedQueryID: stq.ID,
 						},
-						Iterator: &threading.Iterator{},
+						Iterator:       &threading.Iterator{},
+						ViewerEntityID: ent.ID,
 					}
 					if s, ok := p.Args["after"].(string); ok {
 						req.Iterator.StartCursor = s

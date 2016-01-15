@@ -30,18 +30,18 @@ var config struct {
 }
 
 func init() {
-	flag.IntVar(&config.listenPort, "rpc.listen.port", 50051, "the port on which to listen for rpc call")
+	flag.IntVar(&config.listenPort, "rpc_listen_port", 50051, "the port on which to listen for rpc call")
 	flag.BoolVar(&config.debug, "debug", false, "enables golog debug logging for the application")
-	flag.StringVar(&config.dbHost, "db.host", "localhost", "the host at which we should attempt to connect to the database")
-	flag.IntVar(&config.dbPort, "db.port", 3306, "the port on which we should attempt to connect to the database")
-	flag.StringVar(&config.dbName, "db.name", "directory", "the name of the database which we should connect to")
-	flag.StringVar(&config.dbUser, "db.user", "baymax-directory", "the name of the user we should connext to the database as")
-	flag.StringVar(&config.dbPassword, "db.password", "baymax-directory", "the password we should use when connecting to the database")
-	flag.StringVar(&config.dbCACert, "db.ca.cert", "", "the ca cert to use when connecting to the database")
-	flag.StringVar(&config.dbTLSCert, "db.tls.cert", "", "the tls cert to use when connecting to the database")
-	flag.StringVar(&config.dbTLSKey, "db.tls.key", "", "the tls key to use when connecting to the database")
-	flag.IntVar(&config.dbMaxOpenConnections, "db.max.open.connections", 0, "the maximum amount of open connections to have with the database")
-	flag.IntVar(&config.dbMaxIdleConnections, "db.max.idle.connections", 0, "the maximum amount of idle connections to have with the database")
+	flag.StringVar(&config.dbHost, "db_host", "localhost", "the host at which we should attempt to connect to the database")
+	flag.IntVar(&config.dbPort, "db_port", 3306, "the port on which we should attempt to connect to the database")
+	flag.StringVar(&config.dbName, "db_name", "directory", "the name of the database which we should connect to")
+	flag.StringVar(&config.dbUser, "db_user", "baymax-directory", "the name of the user we should connext to the database as")
+	flag.StringVar(&config.dbPassword, "db_password", "baymax-directory", "the password we should use when connecting to the database")
+	flag.StringVar(&config.dbCACert, "db_ca_cert", "", "the ca cert to use when connecting to the database")
+	flag.StringVar(&config.dbTLSCert, "db_tls_cert", "", "the tls cert to use when connecting to the database")
+	flag.StringVar(&config.dbTLSKey, "db_tls_key", "", "the tls key to use when connecting to the database")
+	flag.IntVar(&config.dbMaxOpenConnections, "db_max_open_connections", 0, "the maximum amount of open connections to have with the database")
+	flag.IntVar(&config.dbMaxIdleConnections, "db_max_idle_connections", 0, "the maximum amount of idle connections to have with the database")
 }
 
 func main() {

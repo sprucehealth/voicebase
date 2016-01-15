@@ -139,6 +139,7 @@ func TestCreateThread(t *testing.T) {
 			LastMessageSummary:   ps.Summary,
 		},
 	}, res)
+	mock.FinishAll(dl)
 }
 
 func TestThreadItem(t *testing.T) {
@@ -195,6 +196,7 @@ func TestThreadItem(t *testing.T) {
 			},
 		},
 	}, res)
+	mock.FinishAll(dl)
 }
 
 func TestQueryThreads(t *testing.T) {
@@ -255,6 +257,7 @@ func TestQueryThreads(t *testing.T) {
 			},
 		},
 	}, res)
+	mock.FinishAll(dl)
 }
 
 func TestThread(t *testing.T) {
@@ -287,6 +290,7 @@ func TestThread(t *testing.T) {
 			LastMessageTimestamp: uint64(now.Unix()),
 		},
 	}, res)
+	mock.FinishAll(dl)
 }
 
 func TestSavedQuery(t *testing.T) {
@@ -318,4 +322,5 @@ func TestSavedQuery(t *testing.T) {
 			OrganizationID: orgID,
 		},
 	}, res)
+	mock.FinishAll(dl)
 }

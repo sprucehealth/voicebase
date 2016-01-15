@@ -29,6 +29,7 @@ var threadType = graphql.NewObject(
 			"title":                &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"subtitle":             &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"lastMessageTimestamp": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+			"unread":               &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"primaryEntity": &graphql.Field{
 				Type: graphql.NewNonNull(entityType),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
@@ -142,9 +143,10 @@ var threadType = graphql.NewObject(
 	},
 )
 
-func lookupThread(ctx context.Context, svc *service, id string) (interface{}, error) {
+func lookupThread(ctx context.Context, svc *service, id, viewerEntityID string) (interface{}, error) {
 	tres, err := svc.threading.Thread(ctx, &threading.ThreadRequest{
-		ThreadID: id,
+		ThreadID:       id,
+		ViewerEntityID: viewerEntityID,
 	})
 	if err != nil {
 		switch grpc.Code(err) {

@@ -33,6 +33,7 @@ message Thread {
 	repeated Member members = 4;
 	uint64 last_message_timestamp = 5;
 	string last_message_summary = 6;
+    bool unread = 7;
 }
 
 message Member {
@@ -57,6 +58,12 @@ message ThreadItem {
 		MessageUpdated message_updated = 11;
 		FollowerUpdated follower_updated = 12;
 	}
+}
+
+message ThreadItemViewDetails {
+    string thread_item_id = 1 [(gogoproto.customname) = "ThreadItemID"];
+    string entity_id = 2 [(gogoproto.customname) = "EntityID"];
+    uint64 view_time = 3; 
 }
 
 message Reference {
@@ -216,6 +223,7 @@ message QueryThreadsRequest {
 		Query query = 10;
 		string saved_query_id = 11 [(gogoproto.customname) = "SavedQueryID"];
 	}
+    string viewer_entity_id = 4 [(gogoproto.customname) = "ViewerEntityID"];
 }
 
 message ThreadEdge {
@@ -239,6 +247,7 @@ message SavedQueriesResponse {
 
 message ThreadRequest {
 	string thread_id = 1 [(gogoproto.customname) = "ThreadID"];
+    string viewer_entity_id = 2 [(gogoproto.customname) = "ViewerEntityID"];
 }
 
 message ThreadResponse {
@@ -336,6 +345,14 @@ message ThreadItemResponse {
 	ThreadItem item = 1;
 }
 
+message ThreadItemViewDetailsRequest {
+    string item_id = 1 [(gogoproto.customname) = "ItemID"];
+}
+
+message ThreadItemViewDetailsResponse {
+    repeated ThreadItemViewDetails item_view_details = 1;
+}
+
 service Threads {
 	// CreateSavedQuery saves a query for later use
 	rpc CreateSavedQuery(CreateSavedQueryRequest) returns (CreateSavedQueryResponse);
@@ -363,6 +380,8 @@ service Threads {
 	rpc ThreadItems(ThreadItemsRequest) returns (ThreadItemsResponse);
 	// ThreadMembers returns the members of a thread
 	rpc ThreadMembers(ThreadMembersRequest) returns (ThreadMembersResponse);
+    // ThreadItemViewDetails returns the view details of a thread
+	rpc ThreadItemViewDetails(ThreadItemViewDetailsRequest) returns (ThreadItemViewDetailsResponse);
 	// UpdateSavedQuery updated a saved query
 	rpc UpdateSavedQuery(UpdateSavedQueryRequest) returns (UpdateSavedQueryResponse);
 	// UpdateThreadMembership updates the membership status of an entity on a thread

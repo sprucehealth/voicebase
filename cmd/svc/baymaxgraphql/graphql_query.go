@@ -4,7 +4,10 @@ import (
 	"errors"
 	"strings"
 
+	"golang.org/x/net/context"
+
 	"github.com/graphql-go/graphql"
+	"github.com/sprucehealth/backend/libs/golog"
 )
 
 var errNotAuthenticated = errors.New("not authenticated")
@@ -50,7 +53,7 @@ var queryType = graphql.NewObject(
 						case "sq":
 							return lookupSavedQuery(ctx, svc, id)
 						case "t":
-							return lookupThread(ctx, svc, id)
+							return lookupThreadWithReadStatus(ctx, svc, acc, id)
 						case "ti":
 							return lookupThreadItem(ctx, svc, id)
 						}
@@ -111,10 +114,31 @@ var queryType = graphql.NewObject(
 					if acc == nil {
 						return nil, errNotAuthenticated
 					}
-					id := p.Args["id"].(string)
-					return lookupThread(ctx, svc, id)
+					it, err := lookupThreadWithReadStatus(ctx, svc, acc, p.Args["id"].(string))
+					return it, err
 				},
 			},
 		},
 	},
 )
+
+// TODO: This double read is inefficent/incorrect in the sense that we need the org ID to get the correct entity. We will use this for now until we can encode the organization ID into the thread ID
+func lookupThreadWithReadStatus(ctx context.Context, svc *service, acc *account, id string) (interface{}, error) {
+	ith, err := lookupThread(ctx, svc, id, "")
+	if err != nil {
+		golog.Errorf(err.Error())
+		return nil, errors.New("Unable to retrieve thread")
+	}
+	th, ok := ith.(*thread)
+	if !ok {
+		golog.Errorf("Expected *thread to be returned but got %T:%+v", ith, ith)
+		return nil, errors.New("Unable to retrieve thread")
+	}
+
+	ent, err := svc.entityForAccountID(ctx, th.OrganizationID, acc.ID)
+	if err != nil || ent == nil {
+		golog.Errorf("Unable to find entity for account/org: %s/%s - %s", acc.ID, th.OrganizationID, err)
+		return nil, errors.New("Unable to retrieve thread")
+	}
+	return lookupThread(ctx, svc, id, ent.ID)
+}

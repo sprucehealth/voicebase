@@ -64,6 +64,7 @@ type reference struct {
 }
 
 type message struct {
+	ThreadItemID    string
 	Title           string        `json:"title"`
 	Text            string        `json:"text"`
 	Status          string        `json:"status"`
@@ -101,6 +102,7 @@ type thread struct {
 	Title                string `json:"title"`
 	Subtitle             string `json:"subtitle"`
 	LastMessageTimestamp uint64 `json:"lastMessageTimestamp"`
+	Unread               bool   `json:"unread"`
 }
 
 type threadItem struct {
@@ -111,6 +113,12 @@ type threadItem struct {
 	Internal      bool        `json:"internal"`
 	Type          string      `json:"type"`
 	Data          interface{} `json:"data"`
+}
+
+type threadItemViewDetails struct {
+	ThreadItemID  string `json:"threadItemID"`
+	ActorEntityID string `json:"actorEntityID"`
+	ViewTime      uint64 `json:"viewTime"`
 }
 
 type savedThreadQuery struct {

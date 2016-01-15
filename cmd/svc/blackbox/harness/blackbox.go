@@ -532,7 +532,7 @@ func RandLengthString(n int64) string {
 
 // RandPhoneNumber generates a random 10 digit number
 func RandPhoneNumber() string {
-	return strconv.FormatInt(rand.Int63n(9000000000)+1000000000, 10)
+	return "+" + strconv.FormatInt(rand.Int63n(9000000000)+1000000000, 10)
 }
 
 // RandEmail generates a random valid email address

@@ -70,7 +70,7 @@ func (s *service) entityForAccountID(ctx context.Context, orgID, accountID strin
 				ExternalID: accountIDType + ":" + accountID,
 			},
 			RequestedInformation: &directory.RequestedInformation{
-				Depth: 1,
+				Depth: 0,
 				EntityInformation: []directory.EntityInformation{
 					directory.EntityInformation_MEMBERSHIPS,
 					// TODO: don't always need contacts

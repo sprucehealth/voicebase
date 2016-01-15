@@ -130,6 +130,15 @@ func (c *Client) ThreadItems(ctx context.Context, in *threading.ThreadItemsReque
 	return rets[0].(*threading.ThreadItemsResponse), mock.SafeError(rets[1])
 }
 
+// ThreadItemViewDetails returns the view details for a thread item
+func (c *Client) ThreadItemViewDetails(ctx context.Context, in *threading.ThreadItemViewDetailsRequest, opts ...grpc.CallOption) (*threading.ThreadItemViewDetailsResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.ThreadItemViewDetailsResponse), mock.SafeError(rets[1])
+}
+
 // ThreadMembers returns the members of a thread
 func (c *Client) ThreadMembers(ctx context.Context, in *threading.ThreadMembersRequest, opts ...grpc.CallOption) (*threading.ThreadMembersResponse, error) {
 	rets := c.Expector.Record(in)

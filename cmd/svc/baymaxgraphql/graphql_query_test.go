@@ -75,7 +75,7 @@ func TestNodeQuery(t *testing.T) {
 				ExternalID: "account:" + acc.ID,
 			},
 			RequestedInformation: &directory.RequestedInformation{
-				Depth: 1,
+				Depth: 0,
 				EntityInformation: []directory.EntityInformation{
 					directory.EntityInformation_MEMBERSHIPS,
 					directory.EntityInformation_CONTACTS,
@@ -108,6 +108,7 @@ func TestNodeQuery(t *testing.T) {
 			Contacts: []*contactInfo{},
 		},
 	}, res)
+	mock.FinishAll(dirC)
 
 	// Entity
 
@@ -142,6 +143,7 @@ func TestNodeQuery(t *testing.T) {
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
 	test.Equals(t, &entity{ID: id, Name: "Someone", Contacts: []*contactInfo{}}, res)
+	mock.FinishAll(dirC)
 
 	// Thread
 
@@ -184,9 +186,85 @@ func TestNodeQuery(t *testing.T) {
 			},
 		},
 		nil))
+	dirC.Expect(mock.NewExpectation(dirC.LookupEntities,
+		&directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
+				ExternalID: "account:" + acc.ID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth: 0,
+				EntityInformation: []directory.EntityInformation{
+					directory.EntityInformation_MEMBERSHIPS,
+					directory.EntityInformation_CONTACTS,
+				},
+			},
+		},
+	).WithReturns(
+		&directory.LookupEntitiesResponse{
+			Entities: []*directory.Entity{
+				{
+					Type: directory.EntityType_INTERNAL,
+					ID:   "entity:222",
+					Name: "Someone",
+					Memberships: []*directory.Entity{
+						{
+							Type: directory.EntityType_ORGANIZATION,
+							ID:   "entity:1",
+						},
+					},
+				},
+			},
+		},
+		nil))
+	thC.Expect(mock.NewExpectation(thC.Thread,
+		&threading.ThreadRequest{
+			ThreadID:       id,
+			ViewerEntityID: "entity:222",
+		},
+	).WithReturns(
+		&threading.ThreadResponse{
+			Thread: &threading.Thread{
+				ID:              id,
+				OrganizationID:  "entity:1",
+				PrimaryEntityID: "entity:2",
+			},
+		},
+		nil))
+	dirC.Expect(mock.NewExpectation(dirC.LookupEntities,
+		&directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: "entity:2",
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth: 0,
+				EntityInformation: []directory.EntityInformation{
+					directory.EntityInformation_CONTACTS,
+				},
+			},
+		},
+	).WithReturns(
+		&directory.LookupEntitiesResponse{
+			Entities: []*directory.Entity{
+				{
+					Type: directory.EntityType_INTERNAL,
+					ID:   "entity:2",
+					Name: "Someone",
+					Memberships: []*directory.Entity{
+						{
+							Type: directory.EntityType_ORGANIZATION,
+							ID:   "entity:1",
+						},
+					},
+				},
+			},
+		},
+		nil))
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
 	test.Equals(t, &thread{ID: id, OrganizationID: "entity:1", PrimaryEntityID: "entity:2", Title: "Someone"}, res)
+	mock.FinishAll(thC, dirC)
 
 	// Thread item
 
@@ -229,9 +307,10 @@ func TestNodeQuery(t *testing.T) {
 		ActorEntityID: "entity:1",
 		Internal:      true,
 		Data: &message{
-			Title:  "abc",
-			Text:   "hello",
-			Status: messageStatusNormal,
+			ThreadItemID: id,
+			Title:        "abc",
+			Text:         "hello",
+			Status:       messageStatusNormal,
 			Source: &endpoint{
 				Channel: endpointChannelVoice,
 				ID:      "555-555-5555",
@@ -241,6 +320,7 @@ func TestNodeQuery(t *testing.T) {
 			},
 		},
 	}, res)
+	mock.FinishAll(thC)
 
 	// Saved query
 
@@ -261,4 +341,5 @@ func TestNodeQuery(t *testing.T) {
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
 	test.Equals(t, &savedThreadQuery{ID: id, OrganizationID: "entity:1"}, res)
+	mock.FinishAll(thC)
 }

@@ -129,10 +129,11 @@ type Thread struct {
 
 // ThreadMember links an entity to a thread.
 type ThreadMember struct {
-	ThreadID  ThreadID
-	EntityID  string
-	Following bool
-	Joined    time.Time
+	ThreadID   ThreadID
+	EntityID   string
+	Following  bool
+	Joined     time.Time
+	LastViewed *time.Time
 }
 
 // ThreadItem is an item within a thread. It can be a message or an event modifying a message.
@@ -144,6 +145,13 @@ type ThreadItem struct {
 	Internal      bool
 	Type          ItemType
 	Data          interface{}
+}
+
+// ThreadItemViewDetails is the view details associated with a thread item
+type ThreadItemViewDetails struct {
+	ThreadItemID  ThreadItemID
+	ActorEntityID string
+	ViewTime      *time.Time
 }
 
 // SavedQuery is a saved thread query.

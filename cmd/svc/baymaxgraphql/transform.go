@@ -47,6 +47,7 @@ func transformThreadToResponse(t *threading.Thread) (*thread, error) {
 		PrimaryEntityID:      t.PrimaryEntityID,
 		Subtitle:             t.LastMessageSummary,
 		LastMessageTimestamp: t.LastMessageTimestamp,
+		Unread:               t.Unread,
 	}, nil
 }
 
@@ -62,9 +63,10 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid string) (*th
 	case threading.ThreadItem_MESSAGE:
 		m := item.GetMessage()
 		m2 := &message{
-			Title:  m.Title,
-			Text:   m.Text,
-			Status: m.Status.String(),
+			ThreadItemID: item.ID,
+			Title:        m.Title,
+			Text:         m.Text,
+			Status:       m.Status.String(),
 			Source: &endpoint{
 				Channel: m.Source.Channel.String(),
 				ID:      m.Source.ID,
@@ -155,4 +157,16 @@ func transformEntityToResponse(e *directory.Entity) (*entity, error) {
 		Name:     e.Name,
 		Contacts: oc,
 	}, nil
+}
+
+func transformThreadItemViewDetailsToResponse(tivds []*threading.ThreadItemViewDetails) ([]*threadItemViewDetails, error) {
+	rivds := make([]*threadItemViewDetails, len(tivds))
+	for i, tivd := range tivds {
+		rivds[i] = &threadItemViewDetails{
+			ThreadItemID:  tivd.ThreadItemID,
+			ActorEntityID: tivd.EntityID,
+			ViewTime:      tivd.ViewTime,
+		}
+	}
+	return rivds, nil
 }

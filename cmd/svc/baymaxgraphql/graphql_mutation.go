@@ -392,6 +392,36 @@ var registerDeviceForPushOutputType = graphql.NewObject(
 	},
 )
 
+/// markThreadAsRead
+
+type markThreadAsReadOutput struct {
+	ClientMutationID string `json:"clientMutationId"`
+}
+
+var markThreadAsReadInputType = graphql.NewInputObject(
+	graphql.InputObjectConfig{
+		Name: "MarkThreadAsReadInput",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"clientMutationId": newClientMutationIDInputField(),
+			"threadID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"organizationID":   &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		},
+	},
+)
+
+var markThreadAsReadOutputType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "MarkThreadAsReadPayload",
+		Fields: graphql.Fields{
+			"clientMutationId": newClientmutationIDOutputField(),
+		},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+			_, ok := value.(*markThreadAsReadOutput)
+			return ok
+		},
+	},
+)
+
 var mutationType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Mutation",
 	Fields: graphql.Fields{
@@ -968,6 +998,44 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
 				result.Set("registerDeviceForPush", true)
 				return &registerDeviceForPushOutput{
+					ClientMutationID: mutationID,
+				}, nil
+			},
+		},
+		"markThreadAsRead": &graphql.Field{
+			Type: graphql.NewNonNull(markThreadAsReadOutputType),
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{Type: markThreadAsReadInputType},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				svc := serviceFromParams(p)
+				ctx := p.Context
+				acc := accountFromContext(ctx)
+				if acc == nil {
+					return nil, errNotAuthenticated
+				}
+
+				input := p.Args["input"].(map[string]interface{})
+				mutationID, _ := input["clientMutationId"].(string)
+				threadID, _ := input["threadID"].(string)
+				orgID, _ := input["organizationID"].(string)
+				ent, err := svc.entityForAccountID(ctx, orgID, acc.ID)
+				if err != nil {
+					return nil, errors.New("mark thread as read failed")
+				}
+				// TODO: Authorize
+
+				_, err = svc.threading.MarkThreadAsRead(ctx, &threading.MarkThreadAsReadRequest{
+					ThreadID: threadID,
+					EntityID: ent.ID,
+				})
+				if err != nil {
+					return nil, internalError(err)
+				}
+
+				result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
+				result.Set("markThreadAsRead", true)
+				return &markThreadAsReadOutput{
 					ClientMutationID: mutationID,
 				}, nil
 			},

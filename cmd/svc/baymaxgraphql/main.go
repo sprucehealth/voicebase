@@ -10,6 +10,7 @@ import (
 
 	"github.com/rs/cors"
 	"github.com/sprucehealth/backend/boot"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/stub"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -31,7 +32,7 @@ var (
 
 	// Services
 	flagAuthAddr                 = flag.String("auth_addr", "", "host:port of auth service")
-	flagDirectoryAddr            = flag.String("directory_addr", "", "host:port of direcotry service")
+	flagDirectoryAddr            = flag.String("directory_addr", "", "host:port of directory service")
 	flagExCommsAddr              = flag.String("excomms_addr", "", "host:port of excomms service")
 	flagThreadingAddr            = flag.String("threading_addr", "", "host:port of threading service")
 	flagSQSDeviceRegistrationURL = flag.String("sqs_device_registration_url", "", "the sqs url for device registration messages")
@@ -86,11 +87,17 @@ func main() {
 	if *flagExCommsAddr == "" {
 		golog.Fatalf("ExComm service not configured")
 	}
-	conn, err = grpc.Dial(*flagExCommsAddr, grpc.WithInsecure())
-	if err != nil {
-		golog.Fatalf("Unable to connect to excomms service: %s", err)
+
+	var exCommsClient excomms.ExCommsClient
+	if *flagExCommsAddr == "stub" {
+		exCommsClient = stub.NewStubExcommsClient()
+	} else {
+		conn, err = grpc.Dial(*flagExCommsAddr, grpc.WithInsecure())
+		if err != nil {
+			golog.Fatalf("Unable to connect to excomms service: %s", err)
+		}
+		exCommsClient = excomms.NewExCommsClient(conn)
 	}
-	exCommsClient := excomms.NewExCommsClient(conn)
 
 	baseConfig := &config.BaseConfig{
 		AppName:      "baymaxgraphql",

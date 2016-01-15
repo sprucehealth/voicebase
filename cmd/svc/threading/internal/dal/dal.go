@@ -78,12 +78,14 @@ type PostMessageRequest struct {
 }
 
 type MemberUpdate struct {
-	Following *bool
+	Following  *bool
+	LastViewed *time.Time
 }
 
 type DAL interface {
 	CreateSavedQuery(context.Context, *models.SavedQuery) (models.SavedQueryID, error)
 	CreateThread(context.Context, *models.Thread) (models.ThreadID, error)
+	CreateThreadItemViewDetails(ctx context.Context, tds []*models.ThreadItemViewDetails) error
 	IterateThreads(ctx context.Context, orgID string, forExternal bool, it *Iterator) (*ThreadConnection, error)
 	IterateThreadItems(ctx context.Context, threadID models.ThreadID, forExternal bool, it *Iterator) (*ThreadItemConnection, error)
 	PostMessage(context.Context, *PostMessageRequest) (*models.ThreadItem, error)
@@ -91,6 +93,9 @@ type DAL interface {
 	SavedQueries(ctx context.Context, entityID string) ([]*models.SavedQuery, error)
 	Thread(ctx context.Context, id models.ThreadID) (*models.Thread, error)
 	ThreadItem(ctx context.Context, id models.ThreadItemID) (*models.ThreadItem, error)
+	ThreadItemIDsCreatedAfter(ctx context.Context, threadID models.ThreadID, after time.Time) ([]models.ThreadItemID, error)
+	ThreadItemViewDetails(ctx context.Context, id models.ThreadItemID) ([]*models.ThreadItemViewDetails, error)
+	ThreadMembers(ctx context.Context, threadID []models.ThreadID, entityID string, forUpdate bool) ([]*models.ThreadMember, error)
 	ThreadsForMember(ctx context.Context, entityID string, primaryOnly bool) ([]*models.Thread, error)
 	// UpdateMember updates attributes about a thread member. If the membership doesn't exist then it is created.
 	UpdateMember(ctx context.Context, threadID models.ThreadID, entityID string, update *MemberUpdate) error
@@ -98,6 +103,7 @@ type DAL interface {
 	Transact(context.Context, func(context.Context, DAL) error) error
 }
 
+// New returns an initialized instance of dal
 func New(db *sql.DB) DAL {
 	return &dal{
 		db: tsql.AsDB(db),
@@ -162,6 +168,26 @@ func (d *dal) CreateThread(ctx context.Context, thread *models.Thread) (models.T
 	}
 	thread.ID = id
 	return id, nil
+}
+
+func (d *dal) CreateThreadItemViewDetails(ctx context.Context, tds []*models.ThreadItemViewDetails) error {
+	if len(tds) == 0 {
+		return nil
+	}
+	values := make([]string, len(tds))
+	iValues := make([]interface{}, len(tds)*3)
+	for i, td := range tds {
+		oi := i * 3
+		iValues[oi] = td.ThreadItemID
+		iValues[oi+1] = td.ActorEntityID
+		iValues[oi+2] = td.ViewTime
+		values[i] = "(?,?,?)"
+	}
+	_, err := d.db.Exec(`
+        INSERT IGNORE INTO thread_item_view_details
+        (thread_item_id, actor_entity_id, view_time) 
+        VALUES `+strings.Join(values, ","), iValues...)
+	return errors.Trace(err)
 }
 
 func (d *dal) IterateThreads(ctx context.Context, orgID string, forExternal bool, it *Iterator) (*ThreadConnection, error) {
@@ -406,7 +432,8 @@ func (d *dal) SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.S
 		SELECT id, organization_id, entity_id
 		FROM saved_queries
 		WHERE id = ?`, id)
-	return scanSavedQuery(row)
+	sq, err := scanSavedQuery(row)
+	return sq, errors.Trace(err)
 }
 
 func (d *dal) SavedQueries(ctx context.Context, entityID string) ([]*models.SavedQuery, error) {
@@ -417,6 +444,8 @@ func (d *dal) SavedQueries(ctx context.Context, entityID string) ([]*models.Save
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+	defer rows.Close()
+
 	var sqs []*models.SavedQuery
 	for rows.Next() {
 		sq, err := scanSavedQuery(rows)
@@ -433,7 +462,8 @@ func (d *dal) Thread(ctx context.Context, id models.ThreadID) (*models.Thread, e
 		SELECT id, organization_id, COALESCE(primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary
 		FROM threads
 		WHERE id = ?`, id)
-	return scanThread(row)
+	t, err := scanThread(row)
+	return t, errors.Trace(err)
 }
 
 func (d *dal) ThreadItem(ctx context.Context, id models.ThreadItemID) (*models.ThreadItem, error) {
@@ -441,7 +471,87 @@ func (d *dal) ThreadItem(ctx context.Context, id models.ThreadItemID) (*models.T
 		SELECT id, thread_id, created, actor_entity_id, internal, type, data
 		FROM thread_items
 		WHERE id = ?`, id)
-	return scanThreadItem(row)
+	ti, err := scanThreadItem(row)
+	return ti, errors.Trace(err)
+}
+
+func (d *dal) ThreadItemIDsCreatedAfter(ctx context.Context, threadID models.ThreadID, after time.Time) ([]models.ThreadItemID, error) {
+	rows, err := d.db.Query(`
+		SELECT id FROM thread_items 
+        WHERE thread_id = ? 
+        AND created > ? 
+        ORDER BY created ASC`, threadID, after)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var ids []models.ThreadItemID
+	for rows.Next() {
+		id := models.EmptyThreadItemID()
+		if err := rows.Scan(&id); err != nil {
+			return nil, errors.Trace(err)
+		}
+		ids = append(ids, id)
+	}
+	return ids, errors.Trace(rows.Err())
+}
+
+func (d *dal) ThreadItemViewDetails(ctx context.Context, id models.ThreadItemID) ([]*models.ThreadItemViewDetails, error) {
+	rows, err := d.db.Query(`
+		SELECT thread_item_id, actor_entity_id, view_time
+		FROM thread_item_view_details
+		WHERE thread_item_id = ?
+        ORDER BY view_time ASC`, id)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var tds []*models.ThreadItemViewDetails
+	for rows.Next() {
+		td, err := scanThreadItemViewDetails(rows)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		tds = append(tds, td)
+	}
+	return tds, errors.Trace(rows.Err())
+}
+
+func (d *dal) ThreadMembers(ctx context.Context, threadIDs []models.ThreadID, entityID string, forUpdate bool) ([]*models.ThreadMember, error) {
+	if len(threadIDs) == 0 {
+		return nil, nil
+	}
+
+	var sfu string
+	if forUpdate {
+		sfu = "FOR UPDATE"
+	}
+	values := make([]interface{}, len(threadIDs)+1)
+	values[0] = entityID
+	for i, v := range threadIDs {
+		values[i+1] = v
+	}
+	rows, err := d.db.Query(fmt.Sprintf(`
+		SELECT thread_id, entity_id, following, joined, last_viewed
+		FROM thread_members
+		WHERE entity_id = ?
+        AND thread_id IN (`+dbutil.MySQLArgs(len(threadIDs))+`) %s`, sfu), values...)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var tms []*models.ThreadMember
+	for rows.Next() {
+		tm, err := scanThreadMember(rows)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		tms = append(tms, tm)
+	}
+	return tms, errors.Trace(err)
 }
 
 func (d *dal) ThreadsForMember(ctx context.Context, entityID string, primaryOnly bool) ([]*models.Thread, error) {
@@ -480,6 +590,9 @@ func (d *dal) UpdateMember(ctx context.Context, threadID models.ThreadID, entity
 		args = dbutil.MySQLVarArgs()
 		if update.Following != nil {
 			args.Append("following", *update.Following)
+		}
+		if update.LastViewed != nil {
+			args.Append("last_viewed", *update.LastViewed)
 		}
 	}
 
@@ -525,6 +638,17 @@ func scanThread(row dbutil.Scanner) (*models.Thread, error) {
 	return &t, nil
 }
 
+func scanThreadMember(row dbutil.Scanner) (*models.ThreadMember, error) {
+	var tm models.ThreadMember
+	tm.ThreadID = models.EmptyThreadID()
+	if err := row.Scan(&tm.ThreadID, &tm.EntityID, &tm.Following, &tm.Joined, &tm.LastViewed); err == sql.ErrNoRows {
+		return nil, errors.Trace(ErrNotFound)
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &tm, nil
+}
+
 func scanThreadItem(row dbutil.Scanner) (*models.ThreadItem, error) {
 	it := &models.ThreadItem{
 		ID:       models.EmptyThreadItemID(),
@@ -547,6 +671,17 @@ func scanThreadItem(row dbutil.Scanner) (*models.ThreadItem, error) {
 		it.Data = m
 	}
 	return it, nil
+}
+
+func scanThreadItemViewDetails(row dbutil.Scanner) (*models.ThreadItemViewDetails, error) {
+	var t models.ThreadItemViewDetails
+	t.ThreadItemID = models.EmptyThreadItemID()
+	if err := row.Scan(&t.ThreadItemID, &t.ActorEntityID, &t.ViewTime); err == sql.ErrNoRows {
+		return nil, errors.Trace(ErrNotFound)
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &t, nil
 }
 
 func parseTimeCursor(cur string) (time.Time, error) {
