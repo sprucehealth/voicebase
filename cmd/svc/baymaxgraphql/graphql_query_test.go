@@ -21,7 +21,7 @@ func TestNodeQuery(t *testing.T) {
 	defer dirC.Finish()
 	defer thC.Finish()
 
-	acc := &account{ID: "a1"}
+	acc := &account{ID: "account:12345"}
 	ctx := context.Background()
 	ctx = ctxWithAccount(ctx, acc)
 	p := graphql.ResolveParams{

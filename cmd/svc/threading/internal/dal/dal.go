@@ -404,7 +404,7 @@ func (d *dal) PostMessage(ctx context.Context, req *PostMessageRequest) (*models
 			SET
 				last_message_timestamp = GREATEST(last_message_timestamp, ?),
 				last_message_summary = ?
-			WHERE id = ?`, item.Created, item.ThreadID, msg.Summary)
+			WHERE id = ?`, item.Created, msg.Summary, item.ThreadID)
 	} else {
 		_, err = tx.Exec(`
 			UPDATE threads
@@ -413,7 +413,7 @@ func (d *dal) PostMessage(ctx context.Context, req *PostMessageRequest) (*models
 				last_external_message_timestamp = GREATEST(last_external_message_timestamp, ?),
 				last_message_summary = ?,
 				last_external_message_summary = ?
-			WHERE id = ?`, item.Created, item.Created, item.ThreadID, msg.Summary, msg.Summary)
+			WHERE id = ?`, item.Created, item.Created, msg.Summary, msg.Summary, item.ThreadID)
 	}
 	if err != nil {
 		tx.Rollback()

@@ -2,8 +2,12 @@ package main
 
 import (
 	"errors"
+	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/graphql-go/graphql"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/media"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -76,7 +80,7 @@ var messageType = graphql.NewObject(
 		Fields: graphql.Fields{
 			"title":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"status": &graphql.Field{Type: graphql.NewNonNull(messageStatusType)},
-			"text":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"text":   &graphql.Field{Type: graphql.String},
 			"refs": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(nodeInterfaceType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
@@ -135,9 +139,60 @@ var imageAttachmentType = graphql.NewObject(
 		Name: "ImageAttachment",
 		Fields: graphql.Fields{
 			"mimetype": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-			"url":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-			"width":    &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
-			"height":   &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+			"image": &graphql.Field{
+				Type: graphql.NewNonNull(imageType),
+				Args: graphql.FieldConfigArgument{
+					"width": &graphql.ArgumentConfig{
+						Type:         graphql.Int,
+						DefaultValue: 0,
+					},
+					"height": &graphql.ArgumentConfig{
+						Type:         graphql.Int,
+						DefaultValue: 0,
+					},
+					"crop": &graphql.ArgumentConfig{
+						Type:         graphql.Boolean,
+						DefaultValue: false,
+					},
+				},
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					svc := serviceFromParams(p)
+					ctx := p.Context
+					account := accountFromContext(ctx)
+					if account == nil {
+						return nil, errNotAuthenticated
+					}
+
+					attachment := p.Source.(*imageAttachment)
+					if attachment == nil {
+						return nil, internalError(errors.New("attachment is nil"))
+					}
+
+					width := p.Args["width"].(int)
+					height := p.Args["height"].(int)
+					crop := p.Args["crop"].(bool)
+
+					accountID, err := strconv.ParseUint(account.ID[len("account:"):], 10, 63)
+					if err != nil {
+						golog.Errorf(err.Error())
+						return nil, internalError(err)
+					}
+
+					mediaID, err := media.ParseMediaID(attachment.URL)
+					if err != nil {
+						golog.Errorf("Unable to parse mediaID out of url %s.", attachment.URL)
+					}
+					url, err := svc.mediaStore.SignedURL(mediaID, attachment.Mimetype, accountID, 10*time.Minute, width, height, crop)
+					if err != nil {
+						return nil, internalError(err)
+					}
+					return &image{
+						URL:    url,
+						Width:  width,
+						Height: height,
+					}, nil
+				},
+			},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*imageAttachment)
@@ -231,14 +286,25 @@ var threadItemType = graphql.NewObject(
 							LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
 								EntityID: it.ActorEntityID,
 							},
+							RequestedInformation: &directory.RequestedInformation{
+								Depth: 0,
+								EntityInformation: []directory.EntityInformation{
+									directory.EntityInformation_CONTACTS,
+								},
+							},
 						})
 					if err != nil {
 						return nil, internalError(err)
 					}
 					for _, e := range res.Entities {
+						oc, err := transformContactsToResponse(e.Contacts)
+						if err != nil {
+							return nil, internalError(fmt.Errorf("failed to transform entity contacts: %+v", err))
+						}
 						return &entity{
-							ID:   e.ID,
-							Name: e.Name,
+							ID:       e.ID,
+							Name:     e.Name,
+							Contacts: oc,
 						}, nil
 					}
 					return nil, errors.New("actor not found")
@@ -259,7 +325,16 @@ func lookupThreadItem(ctx context.Context, svc *service, id string) (interface{}
 		}
 		return nil, internalError(err)
 	}
-	it, err := transformThreadItemToResponse(res.Item, "")
+	account := accountFromContext(ctx)
+	if account == nil {
+		return nil, errNotAuthenticated
+	}
+
+	accountID, err := strconv.ParseUint(account.ID[len("account:"):], 10, 64)
+	if err != nil {
+		return nil, internalError(err)
+	}
+	it, err := transformThreadItemToResponse(res.Item, "", accountID, svc.mediaStore)
 	if err != nil {
 		return nil, internalError(err)
 	}

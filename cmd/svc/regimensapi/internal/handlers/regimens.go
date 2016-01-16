@@ -15,7 +15,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/media"
+	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/mediautils"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/rxguide"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -149,7 +149,7 @@ func (h *regimensHandler) servePOST(ctx context.Context, w http.ResponseWriter, 
 		// Write an empty regimen to the store to bootstrap it if one wasn't provided
 		url := regimenURL(h.webDomain, resourceID)
 		if rd.Regimen == nil {
-			regimen = &regimens.Regimen{ID: resourceID, URL: url, CoverPhotoURL: media.ResizeURL(h.apiDomain, productPlaceholderMediaID, collageWidth, collageFallbackHeight)}
+			regimen = &regimens.Regimen{ID: resourceID, URL: url, CoverPhotoURL: mediautils.ResizeURL(h.apiDomain, productPlaceholderMediaID, collageWidth, collageFallbackHeight)}
 		} else {
 			regimen = rd.Regimen
 			regimen.ID = resourceID
@@ -443,7 +443,7 @@ ProductImageLoop:
 	}
 	if len(images) == 0 {
 		golog.Warningf("No usable images were found in regimen")
-		return media.ResizeURL(apiDomain, productPlaceholderMediaID, collageWidth, collageFallbackHeight), collageWidth, collageFallbackHeight, nil
+		return mediautils.ResizeURL(apiDomain, productPlaceholderMediaID, collageWidth, collageFallbackHeight), collageWidth, collageFallbackHeight, nil
 	}
 	result, err := collage.Collageify(images, collage.SpruceProductGridLayout, &collage.Options{
 		Width:             collageWidth,
@@ -453,14 +453,14 @@ ProductImageLoop:
 	})
 	if err != nil {
 		golog.Errorf("Unable to generate collage from product images for regimen %s - Falling back to placeholder: %s", resourceID, err)
-		return media.ResizeURL(apiDomain, productPlaceholderMediaID, collageWidth, collageFallbackHeight), collageWidth, collageFallbackHeight, nil
+		return mediautils.ResizeURL(apiDomain, productPlaceholderMediaID, collageWidth, collageFallbackHeight), collageWidth, collageFallbackHeight, nil
 	}
 	buf := bytes.NewBuffer(nil)
 	if err := jpeg.Encode(buf, result, &jpeg.Options{Quality: imageutil.JPEGQuality}); err != nil {
 		return "", 0, 0, errors.Trace(err)
 	}
 	_, err = deterministicStore.Put("m"+resourceID+collageSuffix, buf.Bytes(), "image/jpeg", nil)
-	return media.URL(apiDomain, resourceID+collageSuffix), result.Bounds().Dx(), result.Bounds().Dy(), errors.Trace(err)
+	return mediautils.URL(apiDomain, resourceID+collageSuffix), result.Bounds().Dx(), result.Bounds().Dy(), errors.Trace(err)
 }
 
 // Apply changes to a list of regimens that populate plateholder data
@@ -471,7 +471,7 @@ func fillMissingProductMedia(apiDomain string, rs []*regimens.Regimen) {
 		for _, ps := range r.ProductSections {
 			for _, p := range ps.Products {
 				if p.ImageURL == "" {
-					p.ImageURL = media.ResizeURL(apiDomain, productPlaceholderMediaID, 100, 100)
+					p.ImageURL = mediautils.ResizeURL(apiDomain, productPlaceholderMediaID, 100, 100)
 				}
 			}
 		}

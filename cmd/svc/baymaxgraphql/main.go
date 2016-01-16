@@ -10,12 +10,16 @@ import (
 
 	"github.com/rs/cors"
 	"github.com/sprucehealth/backend/boot"
+	mediastore "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/media"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/stub"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/mux"
+	"github.com/sprucehealth/backend/libs/sig"
+	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
@@ -25,10 +29,13 @@ import (
 )
 
 var (
-	flagListenAddr   = flag.String("listen_addr", "127.0.0.1:8080", "host:port to listen on")
-	flagDebugAddr    = flag.String("debug_addr", "127.0.0.1:9090", "host:port to listen for debug interface")
-	flagResourcePath = flag.String("resource_path", "", "Path to resources (defaults to use GOPATH)")
-	flagEnv          = flag.String("env", "", "Execution environment")
+	flagListenAddr    = flag.String("listen_addr", "127.0.0.1:8080", "host:port to listen on")
+	flagDebugAddr     = flag.String("debug_addr", "127.0.0.1:9090", "host:port to listen for debug interface")
+	flagResourcePath  = flag.String("resource_path", "", "Path to resources (defaults to use GOPATH)")
+	flagEnv           = flag.String("env", "", "Execution environment")
+	flagAPIDomain     = flag.String("api_domain", "", "API Domain")
+	flagStorageBucket = flag.String("storage_bucket", "", "storage bucket for media")
+	flagSigKey        = flag.String("signature_key", "", "signature key")
 
 	// Services
 	flagAuthAddr                 = flag.String("auth_addr", "", "host:port of auth service")
@@ -109,20 +116,46 @@ func main() {
 	if *flagSQSDeviceRegistrationURL == "" {
 		golog.Fatalf("Notification service not configured")
 	}
+	awsSession := baseConfig.AWSSession()
 	notificationClient := notification.NewClient(&notification.ClientConfig{
 		SQSDeviceRegistrationURL: *flagSQSDeviceRegistrationURL,
-		Session:                  baseConfig.AWSSession(),
+		Session:                  awsSession,
 	})
 
 	r := mux.NewRouter()
+	if *flagSigKey == "" {
+		golog.Fatalf("Signature key not specified")
+	}
+	if *flagAPIDomain == "" {
+		golog.Fatalf("API Domain not specified")
+	}
+	if *flagStorageBucket == "" {
+		golog.Fatalf("Storage bucket not specified")
+	}
+	sigKeys := [][]byte{[]byte(*flagSigKey)}
+	signer, err := sig.NewSigner(sigKeys, nil)
+	if err != nil {
+		golog.Fatalf("Failed to create signer: %s", err.Error())
+	}
 
-	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient)
+	ms := mediastore.NewStore("https://"+*flagAPIDomain+"/media", signer, storage.NewS3(awsSession, *flagStorageBucket, "excomms-media"))
+
+	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, ms)
 	r.Handle("/graphql", httputil.ToContextHandler(cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
 	}).Handler(httputil.FromContextHandler(gqlHandler))))
+
+	mediaHandler := NewMediaHandler(authClient, media.New(ms.DeterministicStore, storage.NewTestStore(nil), 0, 0), ms)
+
+	r.Handle("/media", httputil.ToContextHandler(cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{httputil.Get, httputil.Options},
+		AllowCredentials: true,
+		AllowedHeaders:   []string{"*"},
+	}).Handler(httputil.FromContextHandler(mediaHandler))))
 	if *flagResourcePath == "" {
 		if p := os.Getenv("GOPATH"); p != "" {
 			*flagResourcePath = path.Join(p, "src/github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/resources")

@@ -85,8 +85,13 @@ type attachment struct {
 type imageAttachment struct {
 	Mimetype string `json:"mimetype"`
 	URL      string `json:"url"`
-	Width    int    `json:"width"`
-	Height   int    `json:"height"`
+	Image    *image `json:"image"`
+}
+
+type image struct {
+	URL    string `json:"url"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
 }
 
 type audioAttachment struct {

@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/graphql-go/graphql"
@@ -845,7 +846,12 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					return nil, internalError(err)
 				}
 
-				it, err := transformThreadItemToResponse(pmres.Item, req.UUID)
+				accountID, err := strconv.ParseUint(acc.ID[len("account:"):], 10, 64)
+				if err != nil {
+					return nil, internalError(err)
+				}
+
+				it, err := transformThreadItemToResponse(pmres.Item, req.UUID, accountID, svc.mediaStore)
 				if err != nil {
 					return nil, internalError(fmt.Errorf("failed to transform thread item: %s", err))
 				}

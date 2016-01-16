@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/media"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/validate"
 )
 

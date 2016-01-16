@@ -3,7 +3,7 @@ package rxguide
 import (
 	"testing"
 
-	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/media"
+	media "github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/mediautils"
 	rxtest "github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/rxguide/test"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"

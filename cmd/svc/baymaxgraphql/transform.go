@@ -3,8 +3,11 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/media"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 )
@@ -51,7 +54,7 @@ func transformThreadToResponse(t *threading.Thread) (*thread, error) {
 	}, nil
 }
 
-func transformThreadItemToResponse(item *threading.ThreadItem, uuid string) (*threadItem, error) {
+func transformThreadItemToResponse(item *threading.ThreadItem, uuid string, accountID uint64, mediaStore *media.Store) (*threadItem, error) {
 	it := &threadItem{
 		ID:            item.ID,
 		UUID:          uuid,
@@ -88,9 +91,19 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid string) (*th
 				if d.Mimetype == "" { // TODO
 					d.Mimetype = "audio/mp3"
 				}
+
+				mediaID, err := media.ParseMediaID(d.URL)
+				if err != nil {
+					golog.Errorf("Unable to parse mediaID out of url %s", d.URL)
+				}
+
+				signedURL, err := mediaStore.SignedURL(mediaID, d.Mimetype, accountID, time.Minute*10, 0, 0, false)
+				if err != nil {
+					return nil, err
+				}
 				data = &audioAttachment{
 					Mimetype:          d.Mimetype,
-					URL:               d.URL,
+					URL:               signedURL,
 					DurationInSeconds: int(d.DurationInSeconds),
 				}
 				// TODO
@@ -98,7 +111,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid string) (*th
 					a.Title = "Audio"
 				}
 				if a.URL == "" {
-					a.URL = d.URL
+					a.URL = signedURL
 				}
 			case threading.Attachment_IMAGE:
 				d := a.GetImage()
@@ -108,8 +121,6 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid string) (*th
 				data = &imageAttachment{
 					Mimetype: d.Mimetype,
 					URL:      d.URL,
-					Width:    int(d.Width),
-					Height:   int(d.Height),
 				}
 				// TODO
 				if a.Title == "" {

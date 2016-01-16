@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/media"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/test"
 )

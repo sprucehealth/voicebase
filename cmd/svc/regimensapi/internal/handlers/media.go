@@ -9,11 +9,12 @@ import (
 
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/media"
+	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/mediautils"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/idgen"
+	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/schema"
 	"golang.org/x/net/context"
@@ -134,7 +135,7 @@ func (h *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *
 
 	res := &responses.MediaPOSTResponse{
 		MediaID:  mediaID,
-		MediaURL: media.URL(h.apiDomain, strconv.FormatInt(int64(mediaID), 10)),
+		MediaURL: mediautils.URL(h.apiDomain, strconv.FormatInt(int64(mediaID), 10)),
 		Width:    meta.Width,
 		Height:   meta.Height,
 	}

@@ -295,6 +295,7 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 				ID:      in.Source.ID,
 			},
 			TextRefs: textRefs,
+			Summary:  in.Summary,
 		}
 		req.Attachments, err = transformAttachmentsFromRequest(in.Attachments)
 		if err != nil {

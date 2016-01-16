@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/media"
+	"github.com/sprucehealth/backend/cmd/svc/regimensapi/internal/mediautils"
 	"github.com/sprucehealth/backend/cmd/svc/regimensapi/responses"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/products"
@@ -31,7 +31,7 @@ func AsProductDAL(svc Service, mediaEndpoint, webEndpoint string) products.DAL {
 		svc:           svc,
 		mediaEndpoint: mediaEndpoint,
 		webEndpoint:   webEndpoint,
-		imageURLs:     []string{media.ResizeURL(mediaEndpoint, RXPlaceholderMediaID, 100, 100)},
+		imageURLs:     []string{mediautils.ResizeURL(mediaEndpoint, RXPlaceholderMediaID, 100, 100)},
 	}
 }
 

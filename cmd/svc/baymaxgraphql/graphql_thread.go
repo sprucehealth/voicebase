@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -83,6 +84,11 @@ var threadType = graphql.NewObject(
 					}
 					svc := serviceFromParams(p)
 					ctx := p.Context
+					acc := accountFromContext(p.Context)
+					if acc == nil {
+						return nil, errNotAuthenticated
+					}
+
 					req := &threading.ThreadItemsRequest{
 						ThreadID: t.ID,
 						// TODO: ViewerEntityID
@@ -123,8 +129,15 @@ var threadType = graphql.NewObject(
 					} else {
 						cn.PageInfo.HasPreviousPage = res.HasMore
 					}
+
+					accountID, err := strconv.ParseUint(acc.ID[len("account:"):], 10, 64)
+					if err != nil {
+						return nil, internalError(err)
+					}
+
 					for i, e := range res.Edges {
-						it, err := transformThreadItemToResponse(e.Item, "")
+
+						it, err := transformThreadItemToResponse(e.Item, "", accountID, svc.mediaStore)
 						if err != nil {
 							golog.Errorf("Unknown thread item type %s", e.Item.Type.String())
 							continue
