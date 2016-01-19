@@ -67,6 +67,7 @@ func buildRESTAPI(
 	cfgStore cfg.Store,
 	metricsRegistry metrics.Registry,
 	applicationDB *sql.DB,
+	errorNotifyHandler golog.Handler,
 ) httputil.ContextHandler {
 	// Register the configs that will be used in different parts of the system
 	registerCfgs(cfgStore)
@@ -232,16 +233,16 @@ func buildRESTAPI(
 	if !environment.IsProd() {
 		demo.NewWorker(
 			dataAPI,
-			newConsulLock("service/restapi/training_cases", consulService, conf.Debug),
+			newConsulLock("service/restapi/training_cases", consulService, conf.Debug, errorNotifyHandler),
 			conf.APIDomain,
 			conf.AWSRegion,
 		).Start()
 	}
 
-	notifyDoctorLock := newConsulLock("service/restapi/notify_doctor", consulService, conf.Debug)
-	refillRequestCheckLock := newConsulLock("service/restapi/check_refill_request", consulService, conf.Debug)
-	checkRxErrorsLock := newConsulLock("service/restapi/check_rx_error", consulService, conf.Debug)
-	caseTimeoutLock := newConsulLock("service/restapi/case_timeout", consulService, conf.Debug)
+	notifyDoctorLock := newConsulLock("service/restapi/notify_doctor", consulService, conf.Debug, errorNotifyHandler)
+	refillRequestCheckLock := newConsulLock("service/restapi/check_refill_request", consulService, conf.Debug, errorNotifyHandler)
+	checkRxErrorsLock := newConsulLock("service/restapi/check_rx_error", consulService, conf.Debug, errorNotifyHandler)
+	caseTimeoutLock := newConsulLock("service/restapi/case_timeout", consulService, conf.Debug, errorNotifyHandler)
 
 	// Start worker to check for expired items in the global case queue
 	doctor_queue.StartClaimedItemsExpirationChecker(dataAPI, alog, metricsRegistry.Scope("doctor_queue"))
@@ -323,7 +324,7 @@ func buildRESTAPI(
 		conf.WebDomain,
 		signer,
 		cfgStore,
-		newConsulLock("service/restapi/email-campaigns", consulService, conf.Debug),
+		newConsulLock("service/restapi/email-campaigns", consulService, conf.Debug, errorNotifyHandler),
 		metricsRegistry.Scope("email-campaigns-worker"),
 	).Start()
 

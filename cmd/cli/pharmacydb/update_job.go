@@ -39,7 +39,7 @@ type pharmacyUpdateWorker struct {
 }
 
 func (w *pharmacyUpdateWorker) start() {
-	lock := w.consulService.NewLock("service/pharmacydb/update", nil, 30*time.Second)
+	lock := w.consulService.NewLock("service/pharmacydb/update", nil, 30*time.Second, nil)
 	go func() {
 		defer lock.Release()
 		for {

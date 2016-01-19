@@ -321,10 +321,17 @@ func main() {
 		golog.Fatalf("Mandrill not configured")
 	}
 
+	gologHandler := snsLogHandler(
+		snsCli, conf.ErrorLogSNSTopic, strings.ToUpper(conf.Environment+"/"+conf.BaseConfig.AppName),
+		golog.Default().Handler(), rateLimiters.Get("errorsns"), metricsRegistry.Scope("errorsns"))
+	if conf.ErrorLogSNSTopic != "" {
+		golog.Default().SetHandler(gologHandler)
+	}
+
 	restAPIMux := buildRESTAPI(
 		&conf, dataAPI, authAPI, diagnosisAPI, eventsClient, smsAPI, doseSpotService, memcacheCli,
 		emailService, dispatcher, consulService, signer, stores, rateLimiters, alog, conf.CompressResponse,
-		cfgStore, metricsRegistry, db)
+		cfgStore, metricsRegistry, db, gologHandler)
 	webMux := buildWWW(&conf, dataAPI, db, authAPI, diagnosisAPI, eventsClient, emailService, smsAPI,
 		doseSpotService, dispatcher, signer, stores, rateLimiters, alog, conf.CompressResponse,
 		metricsRegistry, cfgStore, memcacheCli)
@@ -363,12 +370,6 @@ func main() {
 	})
 
 	conf.SetupLogging()
-
-	if conf.ErrorLogSNSTopic != "" {
-		golog.Default().SetHandler(snsLogHandler(
-			snsCli, conf.ErrorLogSNSTopic, strings.ToUpper(conf.Environment+"/"+conf.BaseConfig.AppName),
-			golog.Default().Handler(), rateLimiters.Get("errorsns"), metricsRegistry.Scope("errorsns")))
-	}
 
 	serve(&conf, router)
 }

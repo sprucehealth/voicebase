@@ -41,10 +41,12 @@ func (l *localLock) Locked() bool {
 	return l.isLocked
 }
 
-func newConsulLock(name string, consulService *consul.Service, isDebug bool) api.LockAPI {
+func newConsulLock(name string, consulService *consul.Service, isDebug bool, gologHandler golog.Handler) api.LockAPI {
 	var lock api.LockAPI
+	log := golog.Context("key", name)
+	log.SetHandler(gologHandler)
 	if consulService != nil {
-		lock = consulService.NewLock(name, nil, time.Second*30)
+		lock = consulService.NewLock(name, nil, time.Second*30, log)
 	} else if isDebug || environment.IsDemo() || environment.IsDev() {
 		lock = newLocalLock()
 	} else {

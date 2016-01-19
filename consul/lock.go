@@ -117,7 +117,7 @@ func (l *Lock) start() {
 				Value:   l.value,
 				Session: sessionID,
 			}, nil); err != nil {
-				if strings.Contains(err.Error(), "Invalid session") {
+				if strings.Contains(strings.ToLower(err.Error()), "invalid session") {
 					sessionID = ""
 					log.Errorf("Invalid session: %s", err.Error())
 					if l.sleep(5) {

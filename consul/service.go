@@ -206,7 +206,7 @@ func (s *Service) removeLock(key string) {
 	s.mu.Unlock()
 }
 
-func (s *Service) NewLock(key string, value []byte, delay time.Duration) *Lock {
+func (s *Service) NewLock(key string, value []byte, delay time.Duration, log golog.Logger) *Lock {
 	s.mu.Lock()
 	lock := &Lock{
 		delay:  delay,
@@ -214,7 +214,10 @@ func (s *Service) NewLock(key string, value []byte, delay time.Duration) *Lock {
 		key:    key,
 		value:  value,
 		stopCh: make(chan chan bool, 1),
-		log:    golog.Context("key", key),
+		log:    log,
+	}
+	if log == nil {
+		lock.log = golog.Context("key", key)
 	}
 	s.locks[key] = lock
 	s.mu.Unlock()
