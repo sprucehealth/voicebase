@@ -194,6 +194,13 @@ func (e *Expector) Finish() {
 	if e == nil {
 		return
 	}
+
+	// Make sure we're not in a deferred finish and there was a panic. If there is, bubble it up.
+	if r := recover(); r != nil {
+		panic(r)
+	}
+
+	// Check for outstanding expectations
 	for _, ex := range e.expects {
 		e.T.Fatalf("All expectations were not met. Next expectation - Name: %s, Params: %+v", ex.Func.Name(), ex.Params)
 	}

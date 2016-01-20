@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
+	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
@@ -24,7 +25,7 @@ func TestCreateSavedQuery(t *testing.T) {
 	test.OK(t, err)
 	esq := &models.SavedQuery{OrganizationID: "o1", EntityID: "e1"}
 	dl.Expect(mock.NewExpectation(dl.CreateSavedQuery, esq).WithReturns(eid, nil))
-	srv := NewThreadsServer(dl, nil, "arn", nil)
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil)
 	res, err := srv.CreateSavedQuery(nil, &threading.CreateSavedQueryRequest{
 		OrganizationID: "o1",
 		EntityID:       "e1",
@@ -94,7 +95,7 @@ func TestCreateThread(t *testing.T) {
 	}
 	dl.Expect(mock.NewExpectation(dl.Thread, thid).WithReturns(th2, nil))
 
-	srv := NewThreadsServer(dl, nil, "arn", nil)
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil)
 	res, err := srv.CreateThread(nil, &threading.CreateThreadRequest{
 		OrganizationID: "o1",
 		FromEntityID:   "e1",
@@ -145,7 +146,7 @@ func TestCreateThread(t *testing.T) {
 func TestThreadItem(t *testing.T) {
 	dl := newMockDAL(t)
 	defer dl.Finish()
-	srv := NewThreadsServer(dl, nil, "arn", nil)
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil)
 
 	eid, err := models.NewThreadItemID()
 	test.OK(t, err)
@@ -202,7 +203,7 @@ func TestThreadItem(t *testing.T) {
 func TestQueryThreads(t *testing.T) {
 	dl := newMockDAL(t)
 	defer dl.Finish()
-	srv := NewThreadsServer(dl, nil, "arn", nil)
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil)
 
 	orgID := "entity:1"
 	peID := "entity:2"
@@ -230,6 +231,7 @@ func TestQueryThreads(t *testing.T) {
 			},
 		},
 	}, nil))
+
 	res, err := srv.QueryThreads(nil, &threading.QueryThreadsRequest{
 		OrganizationID: orgID,
 		Iterator: &threading.Iterator{
@@ -260,10 +262,110 @@ func TestQueryThreads(t *testing.T) {
 	mock.FinishAll(dl)
 }
 
+func TestQueryThreadsWithViewer(t *testing.T) {
+	dl := newMockDAL(t)
+	defer dl.Finish()
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil)
+
+	orgID := "entity:1"
+	peID := "entity:2"
+	tID, err := models.NewThreadID()
+	test.OK(t, err)
+	tID2, err := models.NewThreadID()
+	test.OK(t, err)
+	now := time.Now()
+
+	// Adhoc query
+	dl.Expect(mock.NewExpectation(dl.IterateThreads, orgID, false, &dal.Iterator{
+		EndCursor: "c1",
+		Direction: dal.FromEnd,
+		Count:     11,
+	}).WithReturns(&dal.ThreadConnection{
+		HasMore: true,
+		Edges: []dal.ThreadEdge{
+			{
+				Cursor: "c2",
+				Thread: &models.Thread{
+					ID:                   tID,
+					OrganizationID:       orgID,
+					PrimaryEntityID:      peID,
+					LastMessageTimestamp: now,
+				},
+			},
+			{
+				Cursor: "c3",
+				Thread: &models.Thread{
+					ID:                   tID2,
+					OrganizationID:       orgID,
+					PrimaryEntityID:      peID,
+					LastMessageTimestamp: time.Unix(now.Unix()-1000, 0),
+				},
+			},
+		},
+	}, nil))
+
+	// Since we have a viewer associated with this query, expect the memberships to be queried to populate read status
+	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{tID, tID2}, peID, false).WithReturns(
+		[]*models.ThreadMember{
+			&models.ThreadMember{
+				ThreadID:   tID,
+				EntityID:   peID,
+				LastViewed: ptr.Time(time.Unix(1, 1)),
+			},
+			&models.ThreadMember{
+				ThreadID:   tID2,
+				EntityID:   peID,
+				LastViewed: ptr.Time(now),
+			},
+		}, nil,
+	))
+
+	res, err := srv.QueryThreads(nil, &threading.QueryThreadsRequest{
+		ViewerEntityID: peID,
+		OrganizationID: orgID,
+		Iterator: &threading.Iterator{
+			EndCursor: "c1",
+			Direction: threading.Iterator_FROM_END,
+			Count:     11,
+		},
+		Type: threading.QueryThreadsRequest_ADHOC,
+		QueryType: &threading.QueryThreadsRequest_Query{
+			Query: &threading.Query{},
+		},
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.QueryThreadsResponse{
+		HasMore: true,
+		Edges: []*threading.ThreadEdge{
+			{
+				Thread: &threading.Thread{
+					ID:                   tID.String(),
+					OrganizationID:       orgID,
+					PrimaryEntityID:      peID,
+					LastMessageTimestamp: uint64(now.Unix()),
+					Unread:               true,
+				},
+				Cursor: "c2",
+			},
+			{
+				Thread: &threading.Thread{
+					ID:                   tID2.String(),
+					OrganizationID:       orgID,
+					PrimaryEntityID:      peID,
+					LastMessageTimestamp: uint64(time.Unix(now.Unix()-1000, 0).Unix()),
+					Unread:               false,
+				},
+				Cursor: "c3",
+			},
+		},
+	}, res)
+	mock.FinishAll(dl)
+}
+
 func TestThread(t *testing.T) {
 	dl := newMockDAL(t)
 	defer dl.Finish()
-	srv := NewThreadsServer(dl, nil, "arn", nil)
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil)
 
 	thID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -293,10 +395,55 @@ func TestThread(t *testing.T) {
 	mock.FinishAll(dl)
 }
 
+func TestThreadWithViewer(t *testing.T) {
+	dl := newMockDAL(t)
+	defer dl.Finish()
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil)
+
+	thID, err := models.NewThreadID()
+	test.OK(t, err)
+	orgID := "o1"
+	entID := "e1"
+	now := time.Now()
+
+	dl.Expect(mock.NewExpectation(dl.Thread, thID).WithReturns(
+		&models.Thread{
+			ID:                   thID,
+			OrganizationID:       orgID,
+			PrimaryEntityID:      entID,
+			LastMessageTimestamp: now,
+		}, nil))
+	// Since we have a viewer associated with this query, expect the memberships to be queried to populate read status
+	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{thID}, entID, false).WithReturns(
+		[]*models.ThreadMember{
+			&models.ThreadMember{
+				ThreadID:   thID,
+				EntityID:   entID,
+				LastViewed: ptr.Time(time.Unix(1, 1)),
+			},
+		}, nil,
+	))
+	res, err := srv.Thread(nil, &threading.ThreadRequest{
+		ThreadID:       thID.String(),
+		ViewerEntityID: entID,
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.ThreadResponse{
+		Thread: &threading.Thread{
+			ID:                   thID.String(),
+			OrganizationID:       orgID,
+			PrimaryEntityID:      entID,
+			LastMessageTimestamp: uint64(now.Unix()),
+			Unread:               true,
+		},
+	}, res)
+	mock.FinishAll(dl)
+}
+
 func TestSavedQuery(t *testing.T) {
 	dl := newMockDAL(t)
 	defer dl.Finish()
-	srv := NewThreadsServer(dl, nil, "arn", nil)
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil)
 
 	sqID, err := models.NewSavedQueryID()
 	test.OK(t, err)
@@ -323,4 +470,116 @@ func TestSavedQuery(t *testing.T) {
 		},
 	}, res)
 	mock.FinishAll(dl)
+}
+
+func TestMarkThreadAsRead(t *testing.T) {
+	dl := newMockDAL(t)
+	defer dl.Finish()
+	tID, err := models.NewThreadID()
+	test.OK(t, err)
+	tiID1, err := models.NewThreadItemID()
+	test.OK(t, err)
+	tiID2, err := models.NewThreadItemID()
+	test.OK(t, err)
+	eID := "entity:1"
+	lView := ptr.Time(time.Unix(time.Now().Unix()-1000, 0))
+	readTime := time.Now()
+	clk := clock.NewManaged(readTime)
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil)
+
+	// Lookup the membership of the viewer in the threads records
+	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{tID}, eID, true).WithReturns(
+		[]*models.ThreadMember{
+			&models.ThreadMember{
+				ThreadID:   tID,
+				EntityID:   eID,
+				LastViewed: lView,
+			},
+		}, nil,
+	))
+
+	// Find any thread items created after the last time they last viewed it
+	dl.Expect(mock.NewExpectation(dl.ThreadItemIDsCreatedAfter, tID, *lView).WithReturns([]models.ThreadItemID{tiID1, tiID2}, nil))
+
+	// Create a view record for each of those items
+	dl.Expect(mock.NewExpectation(dl.CreateThreadItemViewDetails, []*models.ThreadItemViewDetails{
+		&models.ThreadItemViewDetails{
+			ThreadItemID:  tiID1,
+			ActorEntityID: eID,
+			ViewTime:      ptr.Time(readTime),
+		},
+		&models.ThreadItemViewDetails{
+			ThreadItemID:  tiID2,
+			ActorEntityID: eID,
+			ViewTime:      ptr.Time(readTime),
+		},
+	}))
+
+	// Update the whole thread as being read
+	dl.Expect(mock.NewExpectation(dl.UpdateMember, tID, eID, &dal.MemberUpdate{LastViewed: ptr.Time(readTime)}))
+
+	resp, err := srv.MarkThreadAsRead(nil, &threading.MarkThreadAsReadRequest{
+		ThreadID: tID.String(),
+		EntityID: eID,
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.MarkThreadAsReadResponse{}, resp)
+}
+
+func TestMarkThreadAsReadNilLastView(t *testing.T) {
+	dl := newMockDAL(t)
+	defer dl.Finish()
+	tID, err := models.NewThreadID()
+	test.OK(t, err)
+	tiID1, err := models.NewThreadItemID()
+	test.OK(t, err)
+	tiID2, err := models.NewThreadItemID()
+	test.OK(t, err)
+	eID := "entity:1"
+	lView := time.Unix(0, 0)
+	readTime := time.Now()
+	clk := clock.NewManaged(readTime)
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil)
+
+	// Lookup the membership of the viewer in the threads records
+	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{tID}, eID, true).WithReturns(
+		[]*models.ThreadMember{
+			&models.ThreadMember{
+				ThreadID:   tID,
+				EntityID:   eID,
+				LastViewed: nil,
+			},
+		}, nil,
+	))
+
+	// Find any thread items created after the last time they last viewed it
+	dl.Expect(mock.NewExpectation(dl.ThreadItemIDsCreatedAfter, tID, lView).WithReturns(
+		[]models.ThreadItemID{
+			tiID1,
+			tiID2,
+		}, nil))
+
+	// Create a view record for each of those items
+	dl.Expect(mock.NewExpectation(dl.CreateThreadItemViewDetails, []*models.ThreadItemViewDetails{
+		&models.ThreadItemViewDetails{
+			ThreadItemID:  tiID1,
+			ActorEntityID: eID,
+			ViewTime:      ptr.Time(readTime),
+		},
+		&models.ThreadItemViewDetails{
+			ThreadItemID:  tiID2,
+			ActorEntityID: eID,
+			ViewTime:      ptr.Time(readTime),
+		},
+	}))
+
+	// Update the whole thread as being read
+	dl.Expect(mock.NewExpectation(dl.UpdateMember, tID, eID, &dal.MemberUpdate{LastViewed: ptr.Time(readTime)}))
+
+	resp, err := srv.MarkThreadAsRead(nil, &threading.MarkThreadAsReadRequest{
+		ThreadID: tID.String(),
+		EntityID: eID,
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.MarkThreadAsReadResponse{}, resp)
 }

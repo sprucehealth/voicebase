@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/server"
 	"github.com/sprucehealth/backend/libs/awsutil"
+	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/notification"
@@ -114,7 +115,7 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	threading.RegisterThreadsServer(s, server.NewThreadsServer(dal.New(db), sns, *flagSNSTopicARN, notificationClient))
+	threading.RegisterThreadsServer(s, server.NewThreadsServer(clock.New(), dal.New(db), sns, *flagSNSTopicARN, notificationClient))
 	golog.Infof("Starting Threads service on %s...", *flagListen)
 
 	ln, err := net.Listen("tcp", *flagListen)

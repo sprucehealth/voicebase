@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/bml"
+	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -27,14 +28,21 @@ import (
 const maxSummaryLength = 1024
 
 type threadsServer struct {
+	clk                clock.Clock
 	dal                dal.DAL
 	sns                snsiface.SNSAPI
 	snsTopicARN        string
 	notificationClient notification.Client
 }
 
-func NewThreadsServer(dal dal.DAL, sns snsiface.SNSAPI, snsTopicARN string, notificationClient notification.Client) threading.ThreadsServer {
-	return &threadsServer{dal: dal, sns: sns, snsTopicARN: snsTopicARN, notificationClient: notificationClient}
+// NewThreadsServer returns an initialized instance of threadsServer
+func NewThreadsServer(
+	clk clock.Clock,
+	dal dal.DAL,
+	sns snsiface.SNSAPI,
+	snsTopicARN string,
+	notificationClient notification.Client) threading.ThreadsServer {
+	return &threadsServer{clk: clk, dal: dal, sns: sns, snsTopicARN: snsTopicARN, notificationClient: notificationClient}
 }
 
 // CreateSavedQuery saves a query for later use
@@ -191,7 +199,7 @@ func (s *threadsServer) MarkThreadAsRead(ctx context.Context, in *threading.Mark
 	if in.EntityID == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "EntityID is required")
 	}
-	readTime := time.Now()
+	readTime := s.clk.Now()
 	if in.Timestamp != 0 {
 		readTime = time.Unix(int64(in.Timestamp), 0)
 	}
@@ -202,7 +210,7 @@ func (s *threadsServer) MarkThreadAsRead(ctx context.Context, in *threading.Mark
 		if err != nil {
 			return errors.Trace(err)
 		} else if len(threadMembers) != 1 {
-			return errors.Trace(errors.New("Expected to find only 1 record"))
+			return errors.Trace(errors.New("Expected to find only 1 record when getting membership for thread viewer"))
 		}
 		threadMember := threadMembers[0]
 

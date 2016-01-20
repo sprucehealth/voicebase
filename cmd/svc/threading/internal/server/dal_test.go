@@ -122,7 +122,7 @@ func (dl *mockDAL) ThreadItemViewDetails(ctx context.Context, id models.ThreadIt
 }
 
 func (dl *mockDAL) ThreadMemberships(ctx context.Context, threadIDs []models.ThreadID, entityID string, forUpdate bool) ([]*models.ThreadMember, error) {
-	rets := dl.Expector.Record(threadIDs, threadIDs, entityID, forUpdate)
+	rets := dl.Expector.Record(threadIDs, entityID, forUpdate)
 	if len(rets) == 0 {
 		return nil, nil
 	}
