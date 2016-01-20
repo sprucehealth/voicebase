@@ -129,12 +129,13 @@ const (
 	defaultAuthCookieDuration = time.Hour * 24 * 30
 )
 
-func setAuthCookie(w http.ResponseWriter, token string, expires time.Time) {
+func setAuthCookie(w http.ResponseWriter, domain, token string, expires time.Time) {
 	if expires.IsZero() {
 		expires = time.Now().Add(defaultAuthCookieDuration)
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name:   authTokenCookieName,
+		Domain: domain,
 		Value:  token,
 		Path:   "/",
 		MaxAge: int(expires.Sub(time.Now()).Nanoseconds() / 1e9),
@@ -143,9 +144,10 @@ func setAuthCookie(w http.ResponseWriter, token string, expires time.Time) {
 	})
 }
 
-func removeAuthCookie(w http.ResponseWriter) {
+func removeAuthCookie(w http.ResponseWriter, domain string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:   authTokenCookieName,
+		Domain: domain,
 		Value:  "",
 		Path:   "/",
 		MaxAge: -1,
@@ -183,13 +185,13 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 				if res.Token.ExpirationEpoch > 0 {
 					expires = time.Unix(int64(res.Token.ExpirationEpoch), 0)
 				}
-				setAuthCookie(w, res.Token.Value, expires)
+				setAuthCookie(w, r.Host, res.Token.Value, expires)
 			}
 			acc = &account{
 				ID: res.Account.ID,
 			}
 		} else {
-			removeAuthCookie(w)
+			removeAuthCookie(w, r.Host)
 		}
 	}
 
@@ -216,10 +218,10 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		if expires.Before(time.Now()) {
 			expires = time.Time{}
 		}
-		setAuthCookie(w, token, expires)
+		setAuthCookie(w, r.Host, token, expires)
 	}
 	if unauth, ok := result.Get("unauthenticated").(bool); ok && unauth {
-		removeAuthCookie(w)
+		removeAuthCookie(w, r.Host)
 	}
 
 	httputil.JSONResponse(w, http.StatusOK, response)

@@ -33,7 +33,8 @@ var (
 	flagDebugAddr     = flag.String("debug_addr", "127.0.0.1:9090", "host:port to listen for debug interface")
 	flagResourcePath  = flag.String("resource_path", "", "Path to resources (defaults to use GOPATH)")
 	flagEnv           = flag.String("env", "", "Execution environment")
-	flagAPIDomain     = flag.String("api_domain", "", "API Domain")
+	flagAPIDomain     = flag.String("api_domain", "", "API `domain`")
+	flagWebDomain     = flag.String("web_domain", "", "Web `domain`")
 	flagStorageBucket = flag.String("storage_bucket", "", "storage bucket for media")
 	flagSigKey        = flag.String("signature_key", "", "signature key")
 
@@ -129,6 +130,9 @@ func main() {
 	if *flagAPIDomain == "" {
 		golog.Fatalf("API Domain not specified")
 	}
+	if *flagWebDomain == "" {
+		golog.Fatalf("Web domain not specified")
+	}
 	if *flagStorageBucket == "" {
 		golog.Fatalf("Storage bucket not specified")
 	}
@@ -140,9 +144,11 @@ func main() {
 
 	ms := mediastore.NewStore("https://"+*flagAPIDomain+"/media", signer, storage.NewS3(awsSession, *flagStorageBucket, "excomms-media"))
 
+	corsOrigins := []string{"https://" + *flagWebDomain}
+
 	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, ms)
 	r.Handle("/graphql", httputil.ToContextHandler(cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
+		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
@@ -151,7 +157,7 @@ func main() {
 	mediaHandler := NewMediaHandler(authClient, media.New(ms.DeterministicStore, storage.NewTestStore(nil), 0, 0), ms)
 
 	r.Handle("/media", httputil.ToContextHandler(cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
+		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
