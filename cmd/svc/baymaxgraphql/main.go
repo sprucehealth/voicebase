@@ -109,8 +109,8 @@ func main() {
 	baseConfig := &config.BaseConfig{
 		AppName:      "baymaxgraphql",
 		AWSRegion:    *flagAWSRegion,
-		AWSSecretKey: *flagAWSAccessKey,
-		AWSAccessKey: *flagAWSSecretKey,
+		AWSSecretKey: *flagAWSSecretKey,
+		AWSAccessKey: *flagAWSAccessKey,
 	}
 
 	if *flagSQSDeviceRegistrationURL == "" {

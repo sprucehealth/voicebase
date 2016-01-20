@@ -8,6 +8,8 @@ import (
 
 	"google.golang.org/grpc"
 
+	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/notification/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/notification/internal/service"
@@ -97,11 +99,12 @@ func main() {
 		dal.New(db),
 		directoryClient,
 		&service.Config{
-			Session:                         baseConfig.AWSSession(),
 			DeviceRegistrationSQSURL:        config.sqsDeviceRegistrationURL,
 			NotificationSQSURL:              config.sqsNotificationURL,
 			AppleDeviceRegistrationSNSARN:   config.snsAppleDeviceRegistrationTopic,
 			AndriodDeviceRegistrationSNSARN: config.snsAndroidDeviceRegistrationTopic,
+			SQSAPI: sqs.New(baseConfig.AWSSession()),
+			SNSAPI: sns.New(baseConfig.AWSSession()),
 		})
 	svc.Start()
 

@@ -998,6 +998,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					DeviceModel:     sh.DeviceModel,
 					DeviceID:        sh.DeviceID,
 				}); err != nil {
+					golog.Errorf(err.Error())
 					return nil, errors.New("device registration failed")
 				}
 

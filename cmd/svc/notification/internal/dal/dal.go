@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/idgen"
 	modellib "github.com/sprucehealth/backend/libs/model"
 	"github.com/sprucehealth/backend/libs/transactional/tsql"
+	"github.com/sprucehealth/backend/svc/notification"
 )
 
 // DAL represents the methods required to provide data access layer functionality
@@ -56,9 +57,6 @@ func (d *dal) Transact(trans func(dal DAL) error) (err error) {
 	return errors.Trace(tx.Commit())
 }
 
-// PushConfigIDPrefix represents the string that is attached to the beginning of these identifiers
-const PushConfigIDPrefix = "PushConfigID:"
-
 // NewPushConfigID returns a new PushConfigID.
 func NewPushConfigID() (PushConfigID, error) {
 	id, err := idgen.NewID()
@@ -67,11 +65,21 @@ func NewPushConfigID() (PushConfigID, error) {
 	}
 	return PushConfigID{
 		modellib.ObjectID{
-			Prefix:  PushConfigIDPrefix,
+			Prefix:  notification.PushConfigIDPrefix,
 			Val:     id,
 			IsValid: true,
 		},
 	}, nil
+}
+
+// EmptyPushConfigID returns an empty initialized instance of PushConfigID
+func EmptyPushConfigID() PushConfigID {
+	return PushConfigID{
+		modellib.ObjectID{
+			Prefix:  notification.PushConfigIDPrefix,
+			IsValid: false,
+		},
+	}
 }
 
 // PushConfigID is the ID for a PushConfigID object
@@ -128,7 +136,9 @@ func (d *dal) InsertPushConfig(model *PushConfig) (PushConfigID, error) {
 
 // PushConfig retrieves a push_config record
 func (d *dal) PushConfig(id PushConfigID) (*PushConfig, error) {
-	model := &PushConfig{}
+	model := &PushConfig{
+		ID: EmptyPushConfigID(),
+	}
 	if err := d.db.QueryRow(
 		`SELECT device_model, created, device_token, push_endpoint, device, platform_version, app_version, device_id, modified, id, external_group_id, platform
           FROM push_config
@@ -143,7 +153,9 @@ func (d *dal) PushConfig(id PushConfigID) (*PushConfig, error) {
 
 // PushConfigForDeviceID retrieves a push_config record
 func (d *dal) PushConfigForDeviceID(deviceID string) (*PushConfig, error) {
-	model := &PushConfig{}
+	model := &PushConfig{
+		ID: EmptyPushConfigID(),
+	}
 	if err := d.db.QueryRow(
 		`SELECT device_model, created, device_token, push_endpoint, device, platform_version, app_version, device_id, modified, id, external_group_id, platform
           FROM push_config
@@ -169,7 +181,9 @@ func (d *dal) PushConfigsForExternalGroupID(externalGroupID string) ([]*PushConf
 
 	var models []*PushConfig
 	for rows.Next() {
-		model := &PushConfig{}
+		model := &PushConfig{
+			ID: EmptyPushConfigID(),
+		}
 		if err := rows.Scan(&model.DeviceModel, &model.Created, &model.DeviceToken, &model.PushEndpoint, &model.Device, &model.PlatformVersion, &model.AppVersion, &model.DeviceID, &model.Modified, &model.ID, &model.ExternalGroupID, &model.Platform); err == sql.ErrNoRows {
 			return nil, errors.Trace(err)
 		}

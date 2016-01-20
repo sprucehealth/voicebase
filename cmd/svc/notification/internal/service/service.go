@@ -7,10 +7,9 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
-	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/cmd/svc/notification/internal/dal"
 	"github.com/sprucehealth/backend/libs/awsutil"
@@ -28,7 +27,8 @@ type Config struct {
 	NotificationSQSURL              string
 	AppleDeviceRegistrationSNSARN   string
 	AndriodDeviceRegistrationSNSARN string
-	Session                         *session.Session
+	SNSAPI                          snsiface.SNSAPI
+	SQSAPI                          sqsiface.SQSAPI
 }
 
 type notificationDAL interface {
@@ -64,10 +64,10 @@ func New(dl notificationDAL, directoryClient directory.DirectoryClient, config *
 		config:          config,
 		dl:              dl,
 		directoryClient: directoryClient,
-		snsAPI:          sns.New(config.Session),
+		snsAPI:          config.SNSAPI,
 	}
-	s.registrationWorker = awsutil.NewSQSWorker(sqs.New(config.Session), config.DeviceRegistrationSQSURL, s.processDeviceRegistration)
-	s.notificationWorker = awsutil.NewSQSWorker(sqs.New(config.Session), config.NotificationSQSURL, s.processNotification)
+	s.registrationWorker = awsutil.NewSQSWorker(config.SQSAPI, config.DeviceRegistrationSQSURL, s.processDeviceRegistration)
+	s.notificationWorker = awsutil.NewSQSWorker(config.SQSAPI, config.NotificationSQSURL, s.processNotification)
 	return s
 }
 
@@ -100,7 +100,7 @@ func (s *service) processDeviceRegistration(data []byte) error {
 		return nil
 	}
 
-	// If we already have a config for this device then just update the
+	// If we already have a config for this device then just update the endpoint, do we need to regenerate the endpoint?
 	pushConfig, err := s.dl.PushConfigForDeviceID(registrationInfo.DeviceID)
 	if api.IsErrNotFound(err) {
 		golog.Debugf("Inserting new push config with endpoint %s for device registration event: %+v", endpointARN, registrationInfo)
@@ -129,6 +129,7 @@ func (s *service) processDeviceRegistration(data []byte) error {
 		Platform:        ptr.String(registrationInfo.Platform),
 		PlatformVersion: ptr.String(registrationInfo.PlatformVersion),
 		AppVersion:      ptr.String(registrationInfo.AppVersion),
+		PushEndpoint:    ptr.String(endpointARN),
 	})
 
 	return errors.Trace(err)
@@ -202,7 +203,7 @@ func (s *service) sendPushNotificationToExternalGroupID(externalGroupID string, 
 		case "iOS", "android":
 			snsNote = generateNotification(n, pushConfig)
 		default:
-			return errors.Trace(fmt.Errorf("Cannot send push notification to unknown platform %s for push notifications", pushConfig.Platform))
+			return errors.Trace(fmt.Errorf("Cannot send push notification to unknown platform %q for push notifications", pushConfig.Platform))
 		}
 
 		msg, err := json.Marshal(snsNote)
@@ -241,12 +242,12 @@ type snsNotification struct {
 	IOSSandBox     *iOSPushNotification     `json:"APNS_SANDBOX,omitempty"`
 	IOS            *iOSPushNotification     `json:"APNS,omitempty"`
 	Android        *androidPushNotification `json:"GCM,omitempty"`
+	ThreadID       string                   `json:"thread_id"`
+	URL            string                   `json:"url"`
 }
 
 type iOSPushNotification struct {
 	PushData *iOSPushData `json:"aps"`
-	ThreadID string       `json:"thread_id"`
-	URL      string       `json:"url"`
 }
 
 type iOSPushData struct {
@@ -255,8 +256,6 @@ type iOSPushData struct {
 
 type androidPushNotification struct {
 	PushData *androidPushData `json:"data"`
-	ThreadID string           `json:"thread_id"`
-	URL      string           `json:"url"`
 }
 
 type androidPushData struct {
@@ -269,8 +268,6 @@ func generateNotification(n *notification.Notification, pushConfig *dal.PushConf
 		PushData: &iOSPushData{
 			Alert: n.ShortMessage,
 		},
-		URL:      url,
-		ThreadID: n.ThreadID,
 	}
 	return &snsNotification{
 		DefaultMessage: n.ShortMessage,
@@ -280,9 +277,9 @@ func generateNotification(n *notification.Notification, pushConfig *dal.PushConf
 			PushData: &androidPushData{
 				Message: n.ShortMessage,
 			},
-			URL:      url,
-			ThreadID: n.ThreadID,
 		},
+		ThreadID: n.ThreadID,
+		URL:      url,
 	}
 }
 

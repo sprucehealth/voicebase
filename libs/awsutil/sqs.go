@@ -32,7 +32,7 @@ type sqsWorker struct {
 	started   bool
 	sqsAPI    sqsiface.SQSAPI
 	sqsURL    string
-	processF  func([]byte) error
+	ProcessF  func([]byte) error
 }
 
 // NewSQSWorker returns a worker that consumes SQS messages
@@ -46,7 +46,7 @@ func NewSQSWorker(
 		startLock: sync.Mutex{},
 		sqsAPI:    sqsAPI,
 		sqsURL:    sqsURL,
-		processF:  processF,
+		ProcessF:  processF,
 	}
 }
 
@@ -82,7 +82,7 @@ func (w *sqsWorker) Start() {
 				}
 
 				golog.Debugf("Processing message %s", *item.ReceiptHandle)
-				if err := w.processF([]byte(*item.Body)); err != nil {
+				if err := w.ProcessF([]byte(*item.Body)); err != nil {
 					golog.Errorf(err.Error())
 					continue
 				}
