@@ -4,19 +4,17 @@ import (
 	"database/sql"
 	"fmt"
 	"runtime/debug"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/encoding"
-	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/idgen"
-	"github.com/sprucehealth/backend/libs/ptr"
+	modellib "github.com/sprucehealth/backend/libs/model"
 	"github.com/sprucehealth/backend/libs/transactional/tsql"
+	"github.com/sprucehealth/backend/svc/auth"
 )
 
 // DAL represents the methods required to provide data access layer functionality
@@ -51,19 +49,11 @@ type dal struct {
 
 // New returns an initialized instance of dal
 func New(db *sql.DB) DAL {
-	golog.Debugf("Entering dal.New...")
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.New...") }()
-	}
 	return &dal{db: tsql.AsDB(db)}
 }
 
 // Transact encapsulated the provided function in a transaction and handles rollback and commit actions
 func (d *dal) Transact(trans func(dal DAL) error) (err error) {
-	golog.Debugf("Entering dal.dal.Transact...")
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.Transact...") }()
-	}
 	tx, err := d.db.Begin()
 	if err != nil {
 		return errors.Trace(err)
@@ -86,169 +76,164 @@ func (d *dal) Transact(trans func(dal DAL) error) (err error) {
 	return errors.Trace(tx.Commit())
 }
 
-// NewAccountPhoneID returns a new AccountPhoneID using the provided value. If id is 0
-// then the returned AccountPhoneID is tagged as invalid.
-func NewAccountPhoneID(id uint64) AccountPhoneID {
-	golog.Debugf("Entering dal.NewAccountPhoneID...")
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.NewAccountPhoneID...") }()
-	}
-	return AccountPhoneID{
-		ObjectID: encoding.ObjectID{
-			Uint64Value: id,
-			IsValid:     id != 0,
-		},
-	}
-}
+// AccountIDPrefix represents the string that is attached to the beginning of these identifiers
+const AccountIDPrefix = auth.AccountIDPrefix
 
-// AccountPhoneID is the ID for a account_phone object
-type AccountPhoneID struct {
-	encoding.ObjectID
-}
-
-// NewAccountEmailID returns a new AccountEmailID using the provided value. If id is 0
-// then the returned AccountEmailID is tagged as invalid.
-func NewAccountEmailID(id uint64) AccountEmailID {
-	golog.Debugf("Entering dal.NewAccountEmailID...")
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.NewAccountEmailID...") }()
-	}
-	return AccountEmailID{
-		ObjectID: encoding.ObjectID{
-			Uint64Value: id,
-			IsValid:     id != 0,
-		},
-	}
-}
-
-// AccountEmailID is the ID for a account_email object
-type AccountEmailID struct {
-	encoding.ObjectID
-}
-
-// NewAccountID returns a new AccountID using the provided value. If id is 0
-// then the returned AccountID is tagged as invalid.
-func NewAccountID(id uint64) AccountID {
-	golog.Debugf("Entering dal.NewAccountID...")
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.NewAccountID...") }()
+// NewAccountID returns a new AccountID.
+func NewAccountID() (AccountID, error) {
+	id, err := idgen.NewID()
+	if err != nil {
+		return AccountID{}, errors.Trace(err)
 	}
 	return AccountID{
-		ObjectID: encoding.ObjectID{
-			Uint64Value: id,
-			IsValid:     id != 0,
+		modellib.ObjectID{
+			Prefix:  AccountIDPrefix,
+			Val:     id,
+			IsValid: true,
+		},
+	}, nil
+}
+
+// EmptyAccountID returns an empty initialized ID
+func EmptyAccountID() AccountID {
+	return AccountID{
+		modellib.ObjectID{
+			Prefix:  AccountIDPrefix,
+			IsValid: false,
 		},
 	}
 }
 
-// AccountID is the ID for a account object
+// ParseAccountID transforms an AccountID from it's string representation into the actual ID value
+func ParseAccountID(s string) (AccountID, error) {
+	id := EmptyAccountID()
+	err := id.UnmarshalText([]byte(s))
+	return id, errors.Trace(err)
+}
+
+// AccountID is the ID for a AccountID object
 type AccountID struct {
-	encoding.ObjectID
+	modellib.ObjectID
 }
 
-const (
-	accountIDPrefix = "account"
-)
+// AccountEventIDPrefix represents the string that is attached to the beginning of these identifiers
+const AccountEventIDPrefix = "accountEvent_"
 
-func (a AccountID) String() string {
-	golog.Debugf("Entering dal.AccountID.String...")
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.AccountID.String...") }()
-	}
-	return fmt.Sprintf("%s:%d", accountIDPrefix, a.Uint64())
-}
-
-// ParseAccountID transforms the provided id string to a numberic value
-func ParseAccountID(id string) AccountID {
-	golog.Debugf("Entering dal.ParseAccountID...")
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.ParseAccountID...") }()
-	}
-	var accountID AccountID
-	seg := strings.Split(id, ":")
-	if len(seg) > 1 {
-		conc.Go(func() {
-			if !strings.EqualFold(seg[len(seg)-2], accountIDPrefix) {
-				golog.Errorf("%s was provided as an EntityContactID but does not match prefix %s. Continuing anyway.", id, accountIDPrefix)
-			}
-		})
-		id, err := strconv.ParseInt(seg[1], 10, 64)
-		if err == nil {
-			accountID = NewAccountID(uint64(id))
-		} else {
-			golog.Warningf("Error while parsing account ID: %s", err)
-		}
-	}
-	return accountID
-}
-
-// NewAccountEventID returns a new AccountEventID using the provided value. If id is 0
-// then the returned AccountEventID is tagged as invalid.
-func NewAccountEventID(id uint64) AccountEventID {
-	golog.Debugf("Entering dal.NewAccountEventID...")
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.NewAccountEventID...") }()
+// NewAccountEventID returns a new AccountEventID.
+func NewAccountEventID() (AccountEventID, error) {
+	id, err := idgen.NewID()
+	if err != nil {
+		return AccountEventID{}, errors.Trace(err)
 	}
 	return AccountEventID{
-		ObjectID: encoding.ObjectID{
-			Uint64Value: id,
-			IsValid:     id != 0,
+		modellib.ObjectID{
+			Prefix:  AccountEventIDPrefix,
+			Val:     id,
+			IsValid: true,
+		},
+	}, nil
+}
+
+// EmptyAccountEventID returns an empty initialized ID
+func EmptyAccountEventID() AccountEventID {
+	return AccountEventID{
+		modellib.ObjectID{
+			Prefix:  AccountEventIDPrefix,
+			IsValid: false,
 		},
 	}
 }
 
-// AccountEventID is the ID for a account_event object
+// ParseAccountEventID transforms an AccountEventID from it's string representation into the actual ID value
+func ParseAccountEventID(s string) (AccountEventID, error) {
+	id := EmptyAccountEventID()
+	err := id.UnmarshalText([]byte(s))
+	return id, errors.Trace(err)
+}
+
+// AccountEventID is the ID for a AccountEventID object
 type AccountEventID struct {
-	encoding.ObjectID
+	modellib.ObjectID
 }
 
-// AccountStatus represents the type associated with the status column of the account table
-type AccountStatus string
+// AccountPhoneIDPrefix represents the string that is attached to the beginning of these identifiers
+const AccountPhoneIDPrefix = "accountPhone_"
 
-const (
-	// AccountStatusActive represents the ACTIVE state of the status field on a account record
-	AccountStatusActive AccountStatus = "ACTIVE"
-	// AccountStatusDeleted represents the DELETED state of the status field on a account record
-	AccountStatusDeleted AccountStatus = "DELETED"
-	// AccountStatusSuspended represents the SUSPENDED state of the status field on a account record
-	AccountStatusSuspended AccountStatus = "SUSPENDED"
-)
-
-// ParseAccountStatus converts a string into the correcponding enum value
-func ParseAccountStatus(s string) (AccountStatus, error) {
-	golog.Debugf("Entering dal.ParseAccountStatus...")
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.ParseAccountStatus...") }()
+// NewAccountPhoneID returns a new AccountPhoneID.
+func NewAccountPhoneID() (AccountPhoneID, error) {
+	id, err := idgen.NewID()
+	if err != nil {
+		return AccountPhoneID{}, errors.Trace(err)
 	}
-	switch t := AccountStatus(strings.ToUpper(s)); t {
-	case AccountStatusActive, AccountStatusDeleted, AccountStatusSuspended:
-		return t, nil
-	}
-	return AccountStatus(""), errors.Trace(fmt.Errorf("Unknown status:%s", s))
+	return AccountPhoneID{
+		modellib.ObjectID{
+			Prefix:  AccountPhoneIDPrefix,
+			Val:     id,
+			IsValid: true,
+		},
+	}, nil
 }
 
-func (t AccountStatus) String() string {
-	golog.Debugf("Entering dal.AccountStatus.String...")
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.AccountStatus.String...") }()
+// EmptyAccountPhoneID returns an empty initialized ID
+func EmptyAccountPhoneID() AccountPhoneID {
+	return AccountPhoneID{
+		modellib.ObjectID{
+			Prefix:  AccountPhoneIDPrefix,
+			IsValid: false,
+		},
 	}
-	return string(t)
 }
 
-// Scan allows for scanning of AccountStatus from a database conforming to the sql.Scanner interface
-func (t *AccountStatus) Scan(src interface{}) error {
-	golog.Debugf("Entering dal.AccountStatus.Scan...")
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.AccountStatus.Scan...") }()
+// ParseAccountPhoneID transforms an AccountPhoneID from it's string representation into the actual ID value
+func ParseAccountPhoneID(s string) (AccountPhoneID, error) {
+	id := EmptyAccountPhoneID()
+	err := id.UnmarshalText([]byte(s))
+	return id, errors.Trace(err)
+}
+
+// AccountPhoneID is the ID for a AccountPhoneID object
+type AccountPhoneID struct {
+	modellib.ObjectID
+}
+
+// AccountEmailIDPrefix represents the string that is attached to the beginning of these identifiers
+const AccountEmailIDPrefix = "accountEmail_"
+
+// NewAccountEmailID returns a new AccountEmailID.
+func NewAccountEmailID() (AccountEmailID, error) {
+	id, err := idgen.NewID()
+	if err != nil {
+		return AccountEmailID{}, errors.Trace(err)
 	}
-	var err error
-	switch ts := src.(type) {
-	case string:
-		*t, err = ParseAccountStatus(ts)
-	case []byte:
-		*t, err = ParseAccountStatus(string(ts))
+	return AccountEmailID{
+		modellib.ObjectID{
+			Prefix:  AccountEmailIDPrefix,
+			Val:     id,
+			IsValid: true,
+		},
+	}, nil
+}
+
+// EmptyAccountEmailID returns an empty initialized ID
+func EmptyAccountEmailID() AccountEmailID {
+	return AccountEmailID{
+		modellib.ObjectID{
+			Prefix:  AccountEmailIDPrefix,
+			IsValid: false,
+		},
 	}
-	return errors.Trace(err)
+}
+
+// ParseAccountEmailID transforms an AccountEmailID from it's string representation into the actual ID value
+func ParseAccountEmailID(s string) (AccountEmailID, error) {
+	id := EmptyAccountEmailID()
+	err := id.UnmarshalText([]byte(s))
+	return id, errors.Trace(err)
+}
+
+// AccountEmailID is the ID for a AccountEmailID object
+type AccountEmailID struct {
+	modellib.ObjectID
 }
 
 // AccountPhoneStatus represents the type associated with the status column of the account_phone table
@@ -265,10 +250,6 @@ const (
 
 // ParseAccountPhoneStatus converts a string into the correcponding enum value
 func ParseAccountPhoneStatus(s string) (AccountPhoneStatus, error) {
-	golog.Debugf("Entering dal.ParseAccountPhoneStatus...")
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.ParseAccountPhoneStatus...") }()
-	}
 	switch t := AccountPhoneStatus(strings.ToUpper(s)); t {
 	case AccountPhoneStatusActive, AccountPhoneStatusDeleted, AccountPhoneStatusSuspended:
 		return t, nil
@@ -277,19 +258,11 @@ func ParseAccountPhoneStatus(s string) (AccountPhoneStatus, error) {
 }
 
 func (t AccountPhoneStatus) String() string {
-	golog.Debugf("Entering dal.AccountPhoneStatus.String...")
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.AccountPhoneStatus.String...") }()
-	}
 	return string(t)
 }
 
 // Scan allows for scanning of AccountPhoneStatus from a database conforming to the sql.Scanner interface
 func (t *AccountPhoneStatus) Scan(src interface{}) error {
-	golog.Debugf("Entering dal.AccountPhoneStatus.Scan...")
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.AccountPhoneStatus.Scan...") }()
-	}
 	var err error
 	switch ts := src.(type) {
 	case string:
@@ -314,10 +287,6 @@ const (
 
 // ParseAccountEmailStatus converts a string into the correcponding enum value
 func ParseAccountEmailStatus(s string) (AccountEmailStatus, error) {
-	golog.Debugf("Entering dal.ParseAccountEmailStatus...")
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.ParseAccountEmailStatus...") }()
-	}
 	switch t := AccountEmailStatus(strings.ToUpper(s)); t {
 	case AccountEmailStatusActive, AccountEmailStatusDeleted, AccountEmailStatusSuspended:
 		return t, nil
@@ -326,19 +295,11 @@ func ParseAccountEmailStatus(s string) (AccountEmailStatus, error) {
 }
 
 func (t AccountEmailStatus) String() string {
-	golog.Debugf("Entering dal.AccountEmailStatus.String...")
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.AccountEmailStatus.String...") }()
-	}
 	return string(t)
 }
 
 // Scan allows for scanning of AccountEmailStatus from a database conforming to the sql.Scanner interface
 func (t *AccountEmailStatus) Scan(src interface{}) error {
-	golog.Debugf("Entering dal.AccountEmailStatus.Scan...")
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.AccountEmailStatus.Scan...") }()
-	}
 	var err error
 	switch ts := src.(type) {
 	case string:
@@ -349,40 +310,64 @@ func (t *AccountEmailStatus) Scan(src interface{}) error {
 	return errors.Trace(err)
 }
 
-// AuthToken represents a auth_token record
-type AuthToken struct {
-	AccountID AccountID
-	Created   time.Time
-	Expires   time.Time
-	Token     []byte
+// AccountStatus represents the type associated with the status column of the account table
+type AccountStatus string
+
+const (
+	// AccountStatusActive represents the ACTIVE state of the status field on a account record
+	AccountStatusActive AccountStatus = "ACTIVE"
+	// AccountStatusDeleted represents the DELETED state of the status field on a account record
+	AccountStatusDeleted AccountStatus = "DELETED"
+	// AccountStatusSuspended represents the SUSPENDED state of the status field on a account record
+	AccountStatusSuspended AccountStatus = "SUSPENDED"
+)
+
+// ParseAccountStatus converts a string into the correcponding enum value
+func ParseAccountStatus(s string) (AccountStatus, error) {
+	switch t := AccountStatus(strings.ToUpper(s)); t {
+	case AccountStatusActive, AccountStatusDeleted, AccountStatusSuspended:
+		return t, nil
+	}
+	return AccountStatus(""), errors.Trace(fmt.Errorf("Unknown status:%s", s))
 }
 
-// AuthTokenUpdate represents the mutable aspects of a auth_token record
-type AuthTokenUpdate struct {
-	Expires *time.Time
+func (t AccountStatus) String() string {
+	return string(t)
+}
+
+// Scan allows for scanning of AccountStatus from a database conforming to the sql.Scanner interface
+func (t *AccountStatus) Scan(src interface{}) error {
+	var err error
+	switch ts := src.(type) {
+	case string:
+		*t, err = ParseAccountStatus(ts)
+	case []byte:
+		*t, err = ParseAccountStatus(string(ts))
+	}
+	return errors.Trace(err)
 }
 
 // Account represents a account record
 type Account struct {
 	FirstName             string
 	LastName              string
-	PrimaryAccountEmailID *AccountEmailID
-	Modified              time.Time
+	Created               time.Time
 	ID                    AccountID
-	PrimaryAccountPhoneID *AccountPhoneID
+	PrimaryAccountEmailID AccountEmailID
+	PrimaryAccountPhoneID AccountPhoneID
 	Password              []byte
 	Status                AccountStatus
-	Created               time.Time
+	Modified              time.Time
 }
 
 // AccountUpdate represents the mutable aspects of a account record
 type AccountUpdate struct {
-	PrimaryAccountPhoneID *AccountPhoneID
+	PrimaryAccountEmailID AccountEmailID
+	PrimaryAccountPhoneID AccountPhoneID
 	Password              *[]byte
 	Status                *AccountStatus
-	FirstName             *string
 	LastName              *string
-	PrimaryAccountEmailID *AccountEmailID
+	FirstName             *string
 }
 
 // AccountEmail represents a account_email record
@@ -423,131 +408,85 @@ type AccountPhoneUpdate struct {
 
 // AccountEvent represents a account_event record
 type AccountEvent struct {
-	AccountPhoneID *AccountPhoneID
 	Event          string
 	ID             AccountEventID
-	AccountID      *AccountID
-	AccountEmailID *AccountEmailID
+	AccountID      AccountID
+	AccountEmailID AccountEmailID
+	AccountPhoneID AccountPhoneID
 }
 
+// AuthToken represents a auth_token record
+type AuthToken struct {
+	Token     []byte
+	AccountID AccountID
+	Created   time.Time
+	Expires   time.Time
+}
+
+// AuthTokenUpdate represents the mutable aspects of a auth_token record
+type AuthTokenUpdate struct {
+	Token     *[]byte
+	AccountID AccountID
+	Expires   *time.Time
+}
+
+// InsertAccount inserts a account record
 func (d *dal) InsertAccount(model *Account) (AccountID, error) {
-	golog.Debugf("Entering dal.dal.InsertAccount: %+v", model)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.InsertAccount...") }()
-	}
 	if !model.ID.IsValid {
-		id, err := idgen.NewID()
+		id, err := NewAccountID()
 		if err != nil {
-			return NewAccountID(0), errors.Trace(err)
+			return EmptyAccountID(), errors.Trace(err)
 		}
-		model.ID = NewAccountID(id)
+		model.ID = id
 	}
-
-	var primaryAccountPhoneID *uint64
-	var primaryAccountEmailID *uint64
-	if model.PrimaryAccountPhoneID != nil {
-		primaryAccountPhoneID = ptr.Uint64(model.PrimaryAccountPhoneID.Uint64())
-	}
-	if model.PrimaryAccountEmailID != nil {
-		primaryAccountEmailID = ptr.Uint64(model.PrimaryAccountEmailID.Uint64())
-	}
-
-	if _, err := d.db.Exec(
+	_, err := d.db.Exec(
 		`INSERT INTO account
-          (password, status, id, primary_account_phone_id, primary_account_email_id, first_name, last_name)
-          VALUES (?, ?, ?, ?, ?, ?, ?)`, model.Password, model.Status.String(), model.ID.Uint64(), primaryAccountPhoneID, primaryAccountEmailID, model.FirstName, model.LastName); err != nil {
-		return NewAccountID(0), errors.Trace(err)
+          (first_name, last_name, id, primary_account_email_id, primary_account_phone_id, password, status)
+          VALUES (?, ?, ?, ?, ?, ?, ?)`, model.FirstName, model.LastName, model.ID, model.PrimaryAccountEmailID, model.PrimaryAccountPhoneID, model.Password, model.Status.String())
+	if err != nil {
+		return EmptyAccountID(), errors.Trace(err)
 	}
 
-	return NewAccountID(model.ID.Uint64()), nil
+	return model.ID, nil
 }
 
+// Account retrieves a account record
 func (d *dal) Account(id AccountID) (*Account, error) {
-	golog.Debugf("Entering dal.dal.Account: %s", id)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.Account...") }()
-	}
-	var idv uint64
-	var primaryAccountPhoneIDv *uint64
-	var primaryAccountEmailIDv *uint64
-	model := &Account{}
-	if err := d.db.QueryRow(
-		`SELECT password, status, created, id, primary_account_phone_id, primary_account_email_id, modified, first_name, last_name
-          FROM account
-          WHERE id = ?`, id.Uint64()).Scan(&model.Password, &model.Status, &model.Created, &idv, &primaryAccountPhoneIDv, &primaryAccountEmailIDv, &model.Modified, &model.FirstName, &model.LastName); err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("account not found"))
-	} else if err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	model.ID = NewAccountID(idv)
-	if primaryAccountPhoneIDv != nil {
-		nID := NewAccountPhoneID(*primaryAccountPhoneIDv)
-		model.PrimaryAccountPhoneID = &nID
-	}
-	if primaryAccountEmailIDv != nil {
-		nID := NewAccountEmailID(*primaryAccountEmailIDv)
-		model.PrimaryAccountEmailID = &nID
-	}
-
-	return model, nil
+	row := d.db.QueryRow(
+		selectAccount+` WHERE id = ?`, id.Val)
+	model, err := scanAccount(row)
+	return model, errors.Trace(err)
 }
 
+// AccountForEmail returns the account record associated with the provided email
 func (d *dal) AccountForEmail(email string) (*Account, error) {
-	golog.Debugf("Entering dal.dal.AccountForEmail: %s", email)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.AccountForEmail...") }()
-	}
-	var idv uint64
-	var primaryAccountPhoneIDv *uint64
-	var primaryAccountEmailIDv *uint64
-	model := &Account{}
-	if err := d.db.QueryRow(
-		`SELECT account.password, account.status, account.created, account.id, account.primary_account_phone_id, account.primary_account_email_id, account.modified, account.first_name, account.last_name
-          FROM account
-		  JOIN account_email ON account.id = account_email.account_id
-          WHERE account_email.email = ?`, email).Scan(&model.Password, &model.Status, &model.Created, &idv, &primaryAccountPhoneIDv, &primaryAccountEmailIDv, &model.Modified, &model.FirstName, &model.LastName); err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("account not found"))
-	} else if err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	model.ID = NewAccountID(idv)
-	if primaryAccountPhoneIDv != nil {
-		nID := NewAccountPhoneID(*primaryAccountPhoneIDv)
-		model.PrimaryAccountPhoneID = &nID
-	}
-	if primaryAccountEmailIDv != nil {
-		nID := NewAccountEmailID(*primaryAccountEmailIDv)
-		model.PrimaryAccountEmailID = &nID
-	}
-
-	return model, nil
+	row := d.db.QueryRow(
+		selectAccount+` JOIN account_email ON account.id = account_email.account_id
+          WHERE account_email.email = ?`, email)
+	model, err := scanAccount(row)
+	return model, errors.Trace(err)
 }
 
+// UpdateAccount updates the mutable aspects of a account record
 func (d *dal) UpdateAccount(id AccountID, update *AccountUpdate) (int64, error) {
-	golog.Debugf("Entering dal.dal.UpdateAccount: ID: %s, Update: %+v", id, update)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.UpdateAccount...") }()
-	}
 	args := dbutil.MySQLVarArgs()
+	if update.PrimaryAccountEmailID.IsValid {
+		args.Append("primary_account_email_id", update.PrimaryAccountEmailID)
+	}
+	if update.PrimaryAccountPhoneID.IsValid {
+		args.Append("primary_account_phone_id", update.PrimaryAccountPhoneID)
+	}
 	if update.Password != nil {
 		args.Append("password", *update.Password)
 	}
 	if update.Status != nil {
-		args.Append("status", *update.Status)
-	}
-	if update.PrimaryAccountPhoneID != nil {
-		args.Append("primary_account_phone_id", *update.PrimaryAccountPhoneID)
-	}
-	if update.PrimaryAccountEmailID != nil {
-		args.Append("primary_account_email_id", *update.PrimaryAccountEmailID)
-	}
-	if update.FirstName != nil {
-		args.Append("first_name", *update.FirstName)
+		args.Append("status", update.Status.String())
 	}
 	if update.LastName != nil {
 		args.Append("last_name", *update.LastName)
+	}
+	if update.FirstName != nil {
+		args.Append("first_name", *update.FirstName)
 	}
 	if args.IsEmpty() {
 		return 0, nil
@@ -555,7 +494,7 @@ func (d *dal) UpdateAccount(id AccountID, update *AccountUpdate) (int64, error) 
 
 	res, err := d.db.Exec(
 		`UPDATE account
-          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id.Uint64())...)
+          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id.Val)...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
@@ -564,11 +503,8 @@ func (d *dal) UpdateAccount(id AccountID, update *AccountUpdate) (int64, error) 
 	return aff, errors.Trace(err)
 }
 
+// DeleteAccount deletes a account record
 func (d *dal) DeleteAccount(id AccountID) (int64, error) {
-	golog.Debugf("Entering dal.dal.DeleteAccount: %s", id)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.DeleteAccount...") }()
-	}
 	res, err := d.db.Exec(
 		`DELETE FROM account
           WHERE id = ?`, id)
@@ -580,35 +516,20 @@ func (d *dal) DeleteAccount(id AccountID) (int64, error) {
 	return aff, errors.Trace(err)
 }
 
+// AuthToken returns the auth token record the conforms to the provided input
 func (d *dal) AuthToken(token string, expiresAfter time.Time) (*AuthToken, error) {
-	golog.Debugf("Entering dal.dal.AuthToken: Token: %s, ExpiresAfter: %+v", token, expiresAfter)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.AuthToken...") }()
-	}
-	authToken := &AuthToken{}
-	var aID uint64
-	if err := d.db.QueryRow(
-		`SELECT token, account_id, created, expires 
-		  FROM auth_token
-          WHERE token = BINARY ? AND expires > ?`, token, expiresAfter).Scan(&authToken.Token, &aID, &authToken.Created, &authToken.Expires); err == sql.ErrNoRows {
-		return nil, api.ErrNotFound("auth_token not found")
-	} else if err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	authToken.AccountID = NewAccountID(aID)
-	return authToken, nil
+	row := d.db.QueryRow(
+		selectAuthToken+` WHERE token = BINARY ? AND expires > ?`, token, expiresAfter)
+	model, err := scanAuthToken(row)
+	return model, errors.Trace(err)
 }
 
+// InsertAuthToken inserts a auth_token record
 func (d *dal) InsertAuthToken(model *AuthToken) error {
-	golog.Debugf("Entering dal.dal.InsertAuthToken: %+v", model)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.InsertAuthToken...") }()
-	}
 	_, err := d.db.Exec(
 		`INSERT INTO auth_token
-          (account_id, expires, token)
-          VALUES (?, ?, ?)`, model.AccountID.Uint64(), model.Expires, model.Token)
+          (token, account_id, expires)
+          VALUES (?, ?, ?)`, model.Token, model.AccountID, model.Expires)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -616,14 +537,11 @@ func (d *dal) InsertAuthToken(model *AuthToken) error {
 	return nil
 }
 
+// DeleteAuthTokens deleted the auth tokens associated with the provided account id
 func (d *dal) DeleteAuthTokens(id AccountID) (int64, error) {
-	golog.Debugf("Entering dal.dal.DeleteAuthTokens: %s", id)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.DeleteAuthTokens...") }()
-	}
 	res, err := d.db.Exec(
 		`DELETE FROM auth_token
-          WHERE account_id = ?`, id.Uint64())
+          WHERE account_id = ?`, id)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
@@ -632,11 +550,8 @@ func (d *dal) DeleteAuthTokens(id AccountID) (int64, error) {
 	return aff, errors.Trace(err)
 }
 
+// DeleteAuthToken deleted the provided auth token
 func (d *dal) DeleteAuthToken(token string) (int64, error) {
-	golog.Debugf("Entering dal.dal.DeleteAuthToken: %s", token)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.DeleteAuthToken...") }()
-	}
 	res, err := d.db.Exec(
 		`DELETE FROM auth_token
           WHERE token = BINARY ?`, token)
@@ -648,11 +563,8 @@ func (d *dal) DeleteAuthToken(token string) (int64, error) {
 	return aff, errors.Trace(err)
 }
 
+// UpdateAuthToken updated the mutable aspects of the provided token
 func (d *dal) UpdateAuthToken(token string, update *AuthTokenUpdate) (int64, error) {
-	golog.Debugf("Entering dal.dal.UpdateAuthToken: Token: %s, Update: %+v", token, update)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.UpdateAuthToken...") }()
-	}
 	args := dbutil.MySQLVarArgs()
 	if update.Expires != nil {
 		args.Append("expires", *update.Expires)
@@ -672,82 +584,36 @@ func (d *dal) UpdateAuthToken(token string, update *AuthTokenUpdate) (int64, err
 	return aff, errors.Trace(err)
 }
 
+// InsertAccountEvent inserts a account_event record
 func (d *dal) InsertAccountEvent(model *AccountEvent) (AccountEventID, error) {
-	golog.Debugf("Entering dal.dal.InsertAccountEvent: %+v", model)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.InsertAccountEvent...") }()
-	}
 	if !model.ID.IsValid {
-		id, err := idgen.NewID()
+		id, err := NewAccountEventID()
 		if err != nil {
-			return NewAccountEventID(0), errors.Trace(err)
+			return EmptyAccountEventID(), errors.Trace(err)
 		}
-		model.ID = NewAccountEventID(id)
+		model.ID = id
 	}
-
-	var accountPhoneID *uint64
-	var accountEmailID *uint64
-	var accountID *uint64
-	if model.AccountPhoneID != nil {
-		accountPhoneID = ptr.Uint64(model.AccountPhoneID.Uint64())
-	}
-	if model.AccountEmailID != nil {
-		accountEmailID = ptr.Uint64(model.AccountEmailID.Uint64())
-	}
-	if model.AccountID != nil {
-		accountID = ptr.Uint64(model.AccountID.Uint64())
-	}
-	if _, err := d.db.Exec(
+	_, err := d.db.Exec(
 		`INSERT INTO account_event
-          (account_phone_id, event, id, account_id, account_email_id)
-          VALUES (?, ?, ?, ?, ?)`, accountPhoneID, model.Event, model.ID.Uint64(), accountID, accountEmailID); err != nil {
-		return NewAccountEventID(0), errors.Trace(err)
+          (id, account_id, account_email_id, account_phone_id, event)
+          VALUES (?, ?, ?, ?, ?)`, model.ID, model.AccountID, model.AccountEmailID, model.AccountPhoneID, model.Event)
+	if err != nil {
+		return EmptyAccountEventID(), errors.Trace(err)
 	}
 
-	return NewAccountEventID(model.ID.Uint64()), nil
+	return model.ID, nil
 }
 
+// AccountEvent retrieves a account_event record
 func (d *dal) AccountEvent(id AccountEventID) (*AccountEvent, error) {
-	golog.Debugf("Entering dal.dal.AccountEvent: %s", id)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.AccountEvent...") }()
-	}
-	var accountIDv *uint64
-	var accountEmailIDv *uint64
-	var accountPhoneIDv *uint64
-	var idv uint64
-	model := &AccountEvent{}
-	if err := d.db.QueryRow(
-		`SELECT account_id, account_email_id, account_phone_id, event, id
-          FROM account_event
-          WHERE id = ?`, id.Uint64()).Scan(&accountIDv, &accountEmailIDv, &accountPhoneIDv, &model.Event, &idv); err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("account_event not found"))
-	} else if err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	if accountIDv != nil {
-		nID := NewAccountID(*accountIDv)
-		model.AccountID = &nID
-	}
-	if accountEmailIDv != nil {
-		nID := NewAccountEmailID(*accountEmailIDv)
-		model.AccountEmailID = &nID
-	}
-	if accountPhoneIDv != nil {
-		nID := NewAccountPhoneID(*accountPhoneIDv)
-		model.AccountPhoneID = &nID
-	}
-	model.ID = NewAccountEventID(idv)
-
-	return model, nil
+	row := d.db.QueryRow(
+		selectAccountEvent+` WHERE id = ?`, id.Val)
+	model, err := scanAccountEvent(row)
+	return model, errors.Trace(err)
 }
 
+// DeleteAccountEvent deletes a account_event record
 func (d *dal) DeleteAccountEvent(id AccountEventID) (int64, error) {
-	golog.Debugf("Entering dal.dal.DeleteAccountEvent: %s", id)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.DeleteAccountEvent...") }()
-	}
 	res, err := d.db.Exec(
 		`DELETE FROM account_event
           WHERE id = ?`, id)
@@ -759,62 +625,42 @@ func (d *dal) DeleteAccountEvent(id AccountEventID) (int64, error) {
 	return aff, errors.Trace(err)
 }
 
+// InsertAccountPhone inserts a account_phone record
 func (d *dal) InsertAccountPhone(model *AccountPhone) (AccountPhoneID, error) {
-	golog.Debugf("Entering dal.dal.InsertAccountPhone: %+v", model)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.InsertAccountPhone...") }()
-	}
 	if !model.ID.IsValid {
-		id, err := idgen.NewID()
+		id, err := NewAccountPhoneID()
 		if err != nil {
-			return NewAccountPhoneID(0), errors.Trace(err)
+			return EmptyAccountPhoneID(), errors.Trace(err)
 		}
-		model.ID = NewAccountPhoneID(id)
+		model.ID = id
 	}
-
-	if _, err := d.db.Exec(
+	_, err := d.db.Exec(
 		`INSERT INTO account_phone
-          (phone_number, status, verified, id, account_id)
-          VALUES (?, ?, ?, ?, ?)`, model.PhoneNumber, model.Status.String(), model.Verified, model.ID.Uint64(), model.AccountID.Uint64()); err != nil {
-		return NewAccountPhoneID(0), errors.Trace(err)
+          (id, account_id, phone_number, status, verified)
+          VALUES (?, ?, ?, ?, ?)`, model.ID, model.AccountID, model.PhoneNumber, model.Status.String(), model.Verified)
+	if err != nil {
+		return EmptyAccountPhoneID(), errors.Trace(err)
 	}
 
-	return NewAccountPhoneID(model.ID.Uint64()), nil
+	return model.ID, nil
 }
 
+// AccountPhone retrieves a account_phone record
 func (d *dal) AccountPhone(id AccountPhoneID) (*AccountPhone, error) {
-	golog.Debugf("Entering dal.dal.AccountPhone: %s", id)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.AccountPhone...") }()
-	}
-	var idv uint64
-	var accountIDv uint64
-	model := &AccountPhone{}
-	if err := d.db.QueryRow(
-		`SELECT verified, created, modified, id, account_id, phone_number, status
-          FROM account_phone
-          WHERE id = ?`, id.Uint64()).Scan(&model.Verified, &model.Created, &model.Modified, &idv, &accountIDv, &model.PhoneNumber, &model.Status); err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("account_phone not found"))
-	} else if err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	model.ID = NewAccountPhoneID(idv)
-	model.AccountID = NewAccountID(accountIDv)
-	return model, nil
+	row := d.db.QueryRow(
+		selectAccountPhone+` WHERE id = ?`, id.Val)
+	model, err := scanAccountPhone(row)
+	return model, errors.Trace(err)
 }
 
+// UpdateAccountPhone updates the mutable aspects of a account_phone record
 func (d *dal) UpdateAccountPhone(id AccountPhoneID, update *AccountPhoneUpdate) (int64, error) {
-	golog.Debugf("Entering dal.dal.UpdateAccountPhone: ID: %s, Update: %+v", id, update)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.UpdateAccountPhone...") }()
-	}
 	args := dbutil.MySQLVarArgs()
 	if update.PhoneNumber != nil {
 		args.Append("phone_number", *update.PhoneNumber)
 	}
 	if update.Status != nil {
-		args.Append("status", *update.Status)
+		args.Append("status", update.Status.String())
 	}
 	if update.Verified != nil {
 		args.Append("verified", *update.Verified)
@@ -825,7 +671,7 @@ func (d *dal) UpdateAccountPhone(id AccountPhoneID, update *AccountPhoneUpdate) 
 
 	res, err := d.db.Exec(
 		`UPDATE account_phone
-          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id.Uint64())...)
+          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id.Val)...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
@@ -834,11 +680,8 @@ func (d *dal) UpdateAccountPhone(id AccountPhoneID, update *AccountPhoneUpdate) 
 	return aff, errors.Trace(err)
 }
 
+// DeleteAccountPhone deletes a account_phone record
 func (d *dal) DeleteAccountPhone(id AccountPhoneID) (int64, error) {
-	golog.Debugf("Entering dal.dal.DeleteAccountPhone: %s", id)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.DeleteAccountPhone...") }()
-	}
 	res, err := d.db.Exec(
 		`DELETE FROM account_phone
           WHERE id = ?`, id)
@@ -850,62 +693,42 @@ func (d *dal) DeleteAccountPhone(id AccountPhoneID) (int64, error) {
 	return aff, errors.Trace(err)
 }
 
+// InsertAccountEmail inserts a account_email record
 func (d *dal) InsertAccountEmail(model *AccountEmail) (AccountEmailID, error) {
-	golog.Debugf("Entering dal.dal.InsertAccountEmail: %+v", model)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.InsertAccountEmail...") }()
-	}
 	if !model.ID.IsValid {
-		id, err := idgen.NewID()
+		id, err := NewAccountEmailID()
 		if err != nil {
-			return NewAccountEmailID(0), errors.Trace(err)
+			return EmptyAccountEmailID(), errors.Trace(err)
 		}
-		model.ID = NewAccountEmailID(id)
+		model.ID = id
 	}
-
-	if _, err := d.db.Exec(
+	_, err := d.db.Exec(
 		`INSERT INTO account_email
-          (verified, id, account_id, email, status)
-          VALUES (?, ?, ?, ?, ?)`, model.Verified, model.ID.Uint64(), model.AccountID.Uint64(), model.Email, model.Status.String()); err != nil {
-		return NewAccountEmailID(0), errors.Trace(err)
+          (id, account_id, email, status, verified)
+          VALUES (?, ?, ?, ?, ?)`, model.ID, model.AccountID, model.Email, model.Status.String(), model.Verified)
+	if err != nil {
+		return EmptyAccountEmailID(), errors.Trace(err)
 	}
 
-	return NewAccountEmailID(model.ID.Uint64()), nil
+	return model.ID, nil
 }
 
+// AccountEmail retrieves a account_email record
 func (d *dal) AccountEmail(id AccountEmailID) (*AccountEmail, error) {
-	golog.Debugf("Entering dal.dal.AccountEmail: %s", id)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.AccountEmail...") }()
-	}
-	var idv uint64
-	var accountIDv uint64
-	model := &AccountEmail{}
-	if err := d.db.QueryRow(
-		`SELECT id, account_id, email, status, verified, created, modified
-          FROM account_email
-          WHERE id = ?`, id.Uint64()).Scan(&idv, &accountIDv, &model.Email, &model.Status, &model.Verified, &model.Created, &model.Modified); err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("account_email not found"))
-	} else if err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	model.ID = NewAccountEmailID(idv)
-	model.AccountID = NewAccountID(accountIDv)
-	return model, nil
+	row := d.db.QueryRow(
+		selectAccountEmail+` WHERE id = ?`, id.Val)
+	model, err := scanAccountEmail(row)
+	return model, errors.Trace(err)
 }
 
+// UpdateAccountEmail updates the mutable aspects of a account_email record
 func (d *dal) UpdateAccountEmail(id AccountEmailID, update *AccountEmailUpdate) (int64, error) {
-	golog.Debugf("Entering dal.dal.UpdateAccountEmail: ID: %s, Update: %+v", id, update)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.UpdateAccountEmail...") }()
-	}
 	args := dbutil.MySQLVarArgs()
 	if update.Email != nil {
 		args.Append("email", *update.Email)
 	}
 	if update.Status != nil {
-		args.Append("status", *update.Status)
+		args.Append("status", update.Status.String())
 	}
 	if update.Verified != nil {
 		args.Append("verified", *update.Verified)
@@ -916,7 +739,7 @@ func (d *dal) UpdateAccountEmail(id AccountEmailID, update *AccountEmailUpdate) 
 
 	res, err := d.db.Exec(
 		`UPDATE account_email
-          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id.Uint64())...)
+          SET `+args.ColumnsForUpdate()+` WHERE id = ?`, append(args.Values(), id.Val)...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
@@ -925,11 +748,8 @@ func (d *dal) UpdateAccountEmail(id AccountEmailID, update *AccountEmailUpdate) 
 	return aff, errors.Trace(err)
 }
 
+// DeleteAccountEmail deletes a account_email record
 func (d *dal) DeleteAccountEmail(id AccountEmailID) (int64, error) {
-	golog.Debugf("Entering dal.dal.DeleteAccountEmail: %s", id)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving dal.dal.DeleteAccountEmail...") }()
-	}
 	res, err := d.db.Exec(
 		`DELETE FROM account_email
           WHERE id = ?`, id)
@@ -939,4 +759,86 @@ func (d *dal) DeleteAccountEmail(id AccountEmailID) (int64, error) {
 
 	aff, err := res.RowsAffected()
 	return aff, errors.Trace(err)
+}
+
+const selectAccount = `
+    SELECT account.primary_account_phone_id, account.password, account.status, account.created, account.primary_account_email_id, account.first_name, account.last_name, account.modified, account.id
+      FROM account`
+
+func scanAccount(row dbutil.Scanner) (*Account, error) {
+	var m Account
+	m.PrimaryAccountPhoneID = EmptyAccountPhoneID()
+	m.PrimaryAccountEmailID = EmptyAccountEmailID()
+	m.ID = EmptyAccountID()
+
+	err := row.Scan(&m.PrimaryAccountPhoneID, &m.Password, &m.Status, &m.Created, &m.PrimaryAccountEmailID, &m.FirstName, &m.LastName, &m.Modified, &m.ID)
+	if err == sql.ErrNoRows {
+		return nil, errors.Trace(api.ErrNotFound("auth - Account not found"))
+	}
+	return &m, errors.Trace(err)
+}
+
+const selectAuthToken = `
+    SELECT auth_token.token, auth_token.account_id, auth_token.created, auth_token.expires
+      FROM auth_token`
+
+func scanAuthToken(row dbutil.Scanner) (*AuthToken, error) {
+	var m AuthToken
+	m.AccountID = EmptyAccountID()
+
+	err := row.Scan(&m.Token, &m.AccountID, &m.Created, &m.Expires)
+	if err == sql.ErrNoRows {
+		return nil, errors.Trace(api.ErrNotFound("auth - AuthToken not found"))
+	}
+	return &m, errors.Trace(err)
+}
+
+const selectAccountEvent = `
+    SELECT account_event.id, account_event.account_id, account_event.account_email_id, account_event.account_phone_id, account_event.event
+      FROM account_event`
+
+func scanAccountEvent(row dbutil.Scanner) (*AccountEvent, error) {
+	var m AccountEvent
+	m.ID = EmptyAccountEventID()
+	m.AccountID = EmptyAccountID()
+	m.AccountEmailID = EmptyAccountEmailID()
+	m.AccountPhoneID = EmptyAccountPhoneID()
+
+	err := row.Scan(&m.ID, &m.AccountID, &m.AccountEmailID, &m.AccountPhoneID, &m.Event)
+	if err == sql.ErrNoRows {
+		return nil, errors.Trace(api.ErrNotFound("auth - AccountEvent not found"))
+	}
+	return &m, errors.Trace(err)
+}
+
+const selectAccountPhone = `
+    SELECT account_phone.account_id, account_phone.phone_number, account_phone.status, account_phone.verified, account_phone.created, account_phone.modified, account_phone.id
+      FROM account_phone`
+
+func scanAccountPhone(row dbutil.Scanner) (*AccountPhone, error) {
+	var m AccountPhone
+	m.AccountID = EmptyAccountID()
+	m.ID = EmptyAccountPhoneID()
+
+	err := row.Scan(&m.AccountID, &m.PhoneNumber, &m.Status, &m.Verified, &m.Created, &m.Modified, &m.ID)
+	if err == sql.ErrNoRows {
+		return nil, errors.Trace(api.ErrNotFound("auth - AccountPhone not found"))
+	}
+	return &m, errors.Trace(err)
+}
+
+const selectAccountEmail = `
+    SELECT account_email.email, account_email.status, account_email.verified, account_email.created, account_email.modified, account_email.id, account_email.account_id
+      FROM account_email`
+
+func scanAccountEmail(row dbutil.Scanner) (*AccountEmail, error) {
+	var m AccountEmail
+	m.ID = EmptyAccountEmailID()
+	m.AccountID = EmptyAccountID()
+
+	err := row.Scan(&m.Email, &m.Status, &m.Verified, &m.Created, &m.Modified, &m.ID, &m.AccountID)
+	if err == sql.ErrNoRows {
+		return nil, errors.Trace(api.ErrNotFound("auth - AccountEmail not found"))
+	}
+	return &m, errors.Trace(err)
 }

@@ -72,7 +72,7 @@ func TestNodeQuery(t *testing.T) {
 		&directory.LookupEntitiesRequest{
 			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
 			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-				ExternalID: "account:" + acc.ID,
+				ExternalID: acc.ID,
 			},
 			RequestedInformation: &directory.RequestedInformation{
 				Depth: 0,
@@ -190,7 +190,7 @@ func TestNodeQuery(t *testing.T) {
 		&directory.LookupEntitiesRequest{
 			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
 			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-				ExternalID: "account:" + acc.ID,
+				ExternalID: acc.ID,
 			},
 			RequestedInformation: &directory.RequestedInformation{
 				Depth: 0,

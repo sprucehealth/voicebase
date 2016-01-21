@@ -34,7 +34,7 @@ var accountType = graphql.NewObject(
 						&directory.LookupEntitiesRequest{
 							LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
 							LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-								ExternalID: accountIDType + ":" + acc.ID,
+								ExternalID: acc.ID,
 							},
 							RequestedInformation: &directory.RequestedInformation{
 								Depth: 1,

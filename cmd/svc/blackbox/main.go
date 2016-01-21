@@ -47,7 +47,7 @@ var config struct {
 func init() {
 	flag.IntVar(&config.listenPort, "rpc_listen_port", 50051, "the port on which to listen for rpc call")
 	flag.BoolVar(&config.debug, "debug", false, "enables golog debug logging for the application")
-	flag.BoolVar(&config.noDB, "no_db", false, "no db diables the DAL functionality related to run result record storing")
+	flag.BoolVar(&config.noDB, "no_db", false, "no db disables the DAL functionality related to run result record storing")
 	flag.StringVar(&config.dbHost, "db_host", "localhost", "the host at which we should attempt to connect to the database")
 	flag.IntVar(&config.dbPort, "db_port", 3306, "the port on which we should attempt to connect to the database")
 	flag.StringVar(&config.dbName, "db_name", "blackbox", "the name of the database which we should connect to")

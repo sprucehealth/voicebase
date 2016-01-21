@@ -17,6 +17,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/worker"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification"
 )
@@ -226,11 +227,13 @@ func accountIDsFromExternalIDs(eIDs []*directory.ExternalID) []string {
 	var accountIDs []string
 	// TODO: Fix this ID parsing once we move to the new format and stop prefixing from graphql
 	for _, eID := range eIDs {
-		i := strings.IndexByte(eID.ID, ':')
-		prefix := eID.ID[:i]
-		switch prefix {
-		case "account":
-			accountIDs = append(accountIDs, eID.ID[(i+1):])
+		i := strings.IndexByte(eID.ID, '_')
+		if i != -1 {
+			prefix := eID.ID[:(i + 1)]
+			switch prefix {
+			case auth.AccountIDPrefix:
+				accountIDs = append(accountIDs, eID.ID)
+			}
 		}
 	}
 	return accountIDs

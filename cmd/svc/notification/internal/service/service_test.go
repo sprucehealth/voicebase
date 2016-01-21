@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/model"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	dmock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/notification"
@@ -20,17 +21,17 @@ import (
 func TestExternalIDToAccountIDTransformation(t *testing.T) {
 	externalIDs := []*directory.ExternalID{
 		&directory.ExternalID{
-			ID: "account:account:215610700746457088",
+			ID: auth.AccountIDPrefix + "215610700746457088",
 		},
 		&directory.ExternalID{
-			ID: "account:account:215610700746457090",
+			ID: auth.AccountIDPrefix + "215610700746457090",
 		},
 		&directory.ExternalID{
-			ID: "other:1235123423522",
+			ID: "other_1235123423522",
 		},
 	}
 	accountIDs := accountIDsFromExternalIDs(externalIDs)
-	test.Equals(t, []string{"account:215610700746457088", "account:215610700746457090"}, accountIDs)
+	test.Equals(t, []string{auth.AccountIDPrefix + "215610700746457088", auth.AccountIDPrefix + "215610700746457090"}, accountIDs)
 }
 
 const (
@@ -322,13 +323,13 @@ func TestProcessNotification(t *testing.T) {
 		EntityIDs: []string{"entity:1", "entity:2"},
 	}).WithReturns(&directory.ExternalIDsResponse{
 		ExternalIDs: []*directory.ExternalID{
-			&directory.ExternalID{ID: "account:account:1"},
-			&directory.ExternalID{ID: "account:account:2"},
+			&directory.ExternalID{ID: "account_1"},
+			&directory.ExternalID{ID: "account_2"},
 		},
 	}, nil))
 
 	// Lookup the push configs for each external group id (account)
-	dl.Expect(mock.NewExpectation(dl.PushConfigsForExternalGroupID, "account:1").WithReturns([]*dal.PushConfig{
+	dl.Expect(mock.NewExpectation(dl.PushConfigsForExternalGroupID, "account_1").WithReturns([]*dal.PushConfig{
 		&dal.PushConfig{PushEndpoint: "account1:pushEndpoint1", Platform: "iOS"},
 		&dal.PushConfig{PushEndpoint: "account1:pushEndpoint2", Platform: "android"},
 	}, nil))
@@ -367,7 +368,7 @@ func TestProcessNotification(t *testing.T) {
 	}))
 
 	// Repeat for the next thread member
-	dl.Expect(mock.NewExpectation(dl.PushConfigsForExternalGroupID, "account:2").WithReturns([]*dal.PushConfig{
+	dl.Expect(mock.NewExpectation(dl.PushConfigsForExternalGroupID, "account_2").WithReturns([]*dal.PushConfig{
 		&dal.PushConfig{PushEndpoint: "account2:pushEndpoint1", Platform: "iOS"},
 		&dal.PushConfig{PushEndpoint: "account2:pushEndpoint2", Platform: "android"},
 		&dal.PushConfig{PushEndpoint: "account2:pushEndpoint2", Platform: "unknown"},

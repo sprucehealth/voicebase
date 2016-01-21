@@ -23,7 +23,8 @@ import (
 func TestGetAccount(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	s := New(dl)
-	aID1 := dal.NewAccountID(1)
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
 	fn, ln := "bat", "man"
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Account, aID1), &dal.Account{
 		ID:        aID1,
@@ -43,9 +44,10 @@ func TestGetAccount(t *testing.T) {
 func TestGetAccountNotFound(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	s := New(dl)
-	aID1 := dal.NewAccountID(1)
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Account, aID1), (*dal.Account)(nil), api.ErrNotFound("not found")))
-	_, err := s.GetAccount(context.Background(), &auth.GetAccountRequest{AccountID: aID1.String()})
+	_, err = s.GetAccount(context.Background(), &auth.GetAccountRequest{AccountID: aID1.String()})
 	test.Assert(t, err != nil, "Expected an error")
 	test.Equals(t, codes.NotFound, grpc.Code(err))
 	mock.FinishAll(dl)
@@ -59,7 +61,8 @@ func TestAuthenticateLogin(t *testing.T) {
 	password := "password"
 	hashedPassword, err := hasher.GenerateFromPassword([]byte(password))
 	test.OK(t, err)
-	aID1 := dal.NewAccountID(1)
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
 	var token string
 	var expiration uint64
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.AccountForEmail, email), &dal.Account{ID: aID1, Password: hashedPassword}, nil))
@@ -109,9 +112,10 @@ func TestAuthenticateBadPassword(t *testing.T) {
 	s := New(dl)
 	email := "test@email.com"
 	password := "password"
-	aID1 := dal.NewAccountID(1)
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.AccountForEmail, email), &dal.Account{ID: aID1, Password: []byte("notpassword")}, nil))
-	_, err := s.AuthenticateLogin(context.Background(), &auth.AuthenticateLoginRequest{
+	_, err = s.AuthenticateLogin(context.Background(), &auth.AuthenticateLoginRequest{
 		Email:           email,
 		Password:        password,
 		TokenAttributes: map[string]string{"test": "attribute"},
@@ -132,7 +136,8 @@ func TestCheckAuthentication(t *testing.T) {
 	s = svr
 	token := "123abc"
 	tokenAttributes := map[string]string{"token": "attribute"}
-	aID1 := dal.NewAccountID(1)
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
 	expires := mClock.Now().Add(defaultTokenExpiration)
 	dl.Expect(mock.NewExpectation(dl.AuthToken, token+":tokenattribute", mClock.Now()).WithReturns(&dal.AuthToken{
 		Token:     []byte(token + ":tokenattribute"),
@@ -175,7 +180,8 @@ func TestCheckAuthenticationRefresh(t *testing.T) {
 	s = svr
 	token := "123abc"
 	tokenAttributes := map[string]string{"token": "attribute"}
-	aID1 := dal.NewAccountID(1)
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
 	expires := mClock.Now().Add(defaultTokenExpiration)
 	var refreshedExpiration time.Time
 	dl.Expect(mock.NewExpectation(dl.AuthToken, token+":tokenattribute", mClock.Now()).WithReturns(&dal.AuthToken{
@@ -253,9 +259,12 @@ func TestCreateAccount(t *testing.T) {
 	phoneNumber := "+12345678910"
 	password := "password"
 	hasher := hash.NewBcryptHasher(bCryptHashCost)
-	aID1 := dal.NewAccountID(1)
-	aEID1 := dal.NewAccountEmailID(2)
-	aPID1 := dal.NewAccountPhoneID(3)
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+	aEID1, err := dal.NewAccountEmailID()
+	test.OK(t, err)
+	aPID1, err := dal.NewAccountPhoneID()
+	test.OK(t, err)
 	dl.Expect(mock.NewExpectationFn(dl.InsertAccount, func(p ...interface{}) {
 		test.Equals(t, 1, len(p))
 		account, ok := p[0].(*dal.Account)
@@ -278,8 +287,8 @@ func TestCreateAccount(t *testing.T) {
 		Verified:    false,
 	}).WithReturns(aPID1, nil))
 	dl.Expect(mock.NewExpectation(dl.UpdateAccount, aID1, &dal.AccountUpdate{
-		PrimaryAccountPhoneID: &aPID1,
-		PrimaryAccountEmailID: &aEID1,
+		PrimaryAccountPhoneID: aPID1,
+		PrimaryAccountEmailID: aEID1,
 	}).WithReturns(int64(1), nil))
 	var expiration uint64
 	var token string

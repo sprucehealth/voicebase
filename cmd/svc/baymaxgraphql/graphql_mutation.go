@@ -560,7 +560,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					res, err = svc.directory.CreateEntity(ctx, &directory.CreateEntityRequest{
 						Name:                      req.FirstName + " " + req.LastName, // TODO
 						Type:                      directory.EntityType_INTERNAL,
-						ExternalID:                accountIDType + ":" + accountID,
+						ExternalID:                accountID,
 						InitialMembershipEntityID: orgEntityID,
 						Contacts: []*directory.Contact{
 							{

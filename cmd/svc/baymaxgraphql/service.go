@@ -69,7 +69,7 @@ func (s *service) entityForAccountID(ctx context.Context, orgID, accountID strin
 		&directory.LookupEntitiesRequest{
 			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
 			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-				ExternalID: accountIDType + ":" + accountID,
+				ExternalID: accountID,
 			},
 			RequestedInformation: &directory.RequestedInformation{
 				Depth: 0,

@@ -226,8 +226,8 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 
 		golog.Debugf("Updating account for email and phone")
 		aff, err := dl.UpdateAccount(accountID, &dal.AccountUpdate{
-			PrimaryAccountPhoneID: &accountPhoneID,
-			PrimaryAccountEmailID: &accountEmailID,
+			PrimaryAccountPhoneID: accountPhoneID,
+			PrimaryAccountEmailID: accountEmailID,
 		})
 		golog.Debugf("Account updated: %d affected", aff)
 		if err != nil {
@@ -296,7 +296,11 @@ func (s *server) GetAccount(ctx context.Context, rd *auth.GetAccountRequest) (*a
 	if golog.Default().L(golog.DEBUG) {
 		defer func() { golog.Debugf("Leaving server.server.GetAccount...") }()
 	}
-	account, err := s.dal.Account(dal.ParseAccountID(rd.AccountID))
+	id, err := dal.ParseAccountID(rd.AccountID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse provided account ID")
+	}
+	account, err := s.dal.Account(id)
 	if api.IsErrNotFound(err) {
 		return nil, grpcErrorf(codes.NotFound, "Account with ID %s not found", rd.AccountID)
 	}

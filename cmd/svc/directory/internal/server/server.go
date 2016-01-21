@@ -44,6 +44,7 @@ type DAL interface {
 	Transact(trans func(dal dal.DAL) error) (err error)
 }
 
+// Server describes the methods exposed by the server
 type Server interface {
 	CreateContact(context.Context, *directory.CreateContactRequest) (*directory.CreateContactResponse, error)
 	CreateEntity(context.Context, *directory.CreateEntityRequest) (*directory.CreateEntityResponse, error)
@@ -100,7 +101,11 @@ func (s *server) LookupEntities(ctx context.Context, rd *directory.LookupEntitie
 			entityIDs[i] = v.EntityID
 		}
 	case directory.LookupEntitiesRequest_ENTITY_ID:
-		entityIDs = append(entityIDs, dal.ParseEntityID(rd.GetEntityID()))
+		entityID, err := dal.ParseEntityID(rd.GetEntityID())
+		if err != nil {
+			return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id")
+		}
+		entityIDs = append(entityIDs, entityID)
 	default:
 		return nil, grpcErrorf(codes.Internal, "Unknown lookup key type %d", rd.LookupKeyType)
 	}
@@ -152,7 +157,10 @@ func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityReq
 			}
 		}
 		if rd.InitialMembershipEntityID != "" {
-			targetEntityID := dal.ParseEntityID(rd.InitialMembershipEntityID)
+			targetEntityID, err := dal.ParseEntityID(rd.InitialMembershipEntityID)
+			if err != nil {
+				return errors.Trace(err)
+			}
 			if err := dl.InsertEntityMembership(&dal.EntityMembership{
 				EntityID:       entityID,
 				TargetEntityID: targetEntityID,
@@ -197,7 +205,11 @@ func (s *server) ExternalIDs(ctx context.Context, rd *directory.ExternalIDsReque
 	}
 	ids := make([]dal.EntityID, len(rd.EntityIDs))
 	for i, id := range rd.EntityIDs {
-		ids[i] = dal.ParseEntityID(id)
+		eID, err := dal.ParseEntityID(id)
+		if err != nil {
+			return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id")
+		}
+		ids[i] = eID
 	}
 	externalIDs, err := s.dl.ExternalEntityIDsForEntities(ids)
 	if err != nil {
@@ -217,7 +229,11 @@ func (s *server) validateCreateEntityRequest(rd *directory.CreateEntityRequest) 
 		return grpcErrorf(codes.InvalidArgument, "Name cannot be empty for non external entities")
 	}
 	if rd.InitialMembershipEntityID != "" {
-		exists, err := doesEntityExist(s.dl, dal.ParseEntityID(rd.InitialMembershipEntityID))
+		eID, err := dal.ParseEntityID(rd.InitialMembershipEntityID)
+		if err != nil {
+			return grpcErrorf(codes.InvalidArgument, "Unable to parse entity id")
+		}
+		exists, err := doesEntityExist(s.dl, eID)
 		if err != nil {
 			return grpcErrorf(codes.Internal, err.Error())
 		}
@@ -253,8 +269,14 @@ func (s *server) CreateMembership(ctx context.Context, rd *directory.CreateMembe
 	if golog.Default().L(golog.DEBUG) {
 		defer func() { golog.Debugf("Leaving server.server.CreateMembership...") }()
 	}
-	entityID := dal.ParseEntityID(rd.EntityID)
-	targetEntityID := dal.ParseEntityID(rd.TargetEntityID)
+	entityID, err := dal.ParseEntityID(rd.EntityID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id")
+	}
+	targetEntityID, err := dal.ParseEntityID(rd.TargetEntityID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id")
+	}
 	exists, err := doesEntityExist(s.dl, entityID)
 	if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
@@ -305,7 +327,7 @@ func (s *server) LookupEntitiesByContact(ctx context.Context, rd *directory.Look
 	uniqueEntityIDs := make(map[uint64]struct{})
 	var entityIDs []dal.EntityID
 	for _, ec := range entityContacts {
-		if _, ok := uniqueEntityIDs[ec.EntityID.Uint64()]; !ok {
+		if _, ok := uniqueEntityIDs[ec.EntityID.ObjectID.Val]; !ok {
 			entityIDs = append(entityIDs, ec.EntityID)
 		}
 	}
@@ -328,7 +350,10 @@ func (s *server) CreateContact(ctx context.Context, rd *directory.CreateContactR
 	if golog.Default().L(golog.DEBUG) {
 		defer func() { golog.Debugf("Leaving server.server.CreateContact...") }()
 	}
-	entityID := dal.ParseEntityID(rd.EntityID)
+	entityID, err := dal.ParseEntityID(rd.EntityID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id")
+	}
 	if exists, err := doesEntityExist(s.dl, entityID); err != nil {
 		return nil, errors.Trace(err)
 	} else if !exists {

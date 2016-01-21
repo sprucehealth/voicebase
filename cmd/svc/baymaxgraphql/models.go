@@ -6,7 +6,6 @@ Notes about GraphQL package compatibility:
 */
 
 const (
-	accountIDType          = "account"
 	organizationIDType     = "organization"
 	savedThreadQueryIDType = "saved_thread_query"
 	threadIDType           = "thread"

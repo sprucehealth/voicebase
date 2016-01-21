@@ -39,7 +39,7 @@ func TestPostMessage(t *testing.T) {
 	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntities, &directory.LookupEntitiesRequest{
 		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
 		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-			ExternalID: "account:" + acc.ID,
+			ExternalID: acc.ID,
 		},
 		RequestedInformation: &directory.RequestedInformation{
 			Depth: 0,
