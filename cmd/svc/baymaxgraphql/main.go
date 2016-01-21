@@ -7,10 +7,11 @@ import (
 	_ "net/http/pprof" // imported for implicitly registered handlers
 	"os"
 	"path"
+	"strings"
 
 	"github.com/rs/cors"
 	"github.com/sprucehealth/backend/boot"
-	mediastore "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/media"
+	mediastore "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/stub"
 	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/environment"
@@ -36,7 +37,7 @@ var (
 	flagAPIDomain     = flag.String("api_domain", "", "API `domain`")
 	flagWebDomain     = flag.String("web_domain", "", "Web `domain`")
 	flagStorageBucket = flag.String("storage_bucket", "", "storage bucket for media")
-	flagSigKey        = flag.String("signature_key", "", "signature key")
+	flagSigKeys       = flag.String("signature_keys_csv", "", "csv signature keys")
 
 	// Services
 	flagAuthAddr                 = flag.String("auth_addr", "", "host:port of auth service")
@@ -124,8 +125,8 @@ func main() {
 	})
 
 	r := mux.NewRouter()
-	if *flagSigKey == "" {
-		golog.Fatalf("Signature key not specified")
+	if *flagSigKeys == "" {
+		golog.Fatalf("Signature keys not specified")
 	}
 	if *flagAPIDomain == "" {
 		golog.Fatalf("API Domain not specified")
@@ -136,13 +137,18 @@ func main() {
 	if *flagStorageBucket == "" {
 		golog.Fatalf("Storage bucket not specified")
 	}
-	sigKeys := [][]byte{[]byte(*flagSigKey)}
-	signer, err := sig.NewSigner(sigKeys, nil)
+
+	sigKeys := strings.Split(*flagSigKeys, ",")
+	sigKeysByteSlice := make([][]byte, len(sigKeys))
+	for i, sk := range sigKeys {
+		sigKeysByteSlice[i] = []byte(sk)
+	}
+	signer, err := sig.NewSigner(sigKeysByteSlice, nil)
 	if err != nil {
 		golog.Fatalf("Failed to create signer: %s", err.Error())
 	}
 
-	ms := mediastore.NewStore("https://"+*flagAPIDomain+"/media", signer, storage.NewS3(awsSession, *flagStorageBucket, "excomms-media"))
+	ms := mediastore.NewSigner("https://"+*flagAPIDomain+"/media", signer)
 
 	corsOrigins := []string{"https://" + *flagWebDomain}
 
@@ -154,7 +160,7 @@ func main() {
 		AllowedHeaders:   []string{"*"},
 	}).Handler(httputil.FromContextHandler(gqlHandler))))
 
-	mediaHandler := NewMediaHandler(authClient, media.New(ms.DeterministicStore, storage.NewTestStore(nil), 0, 0), ms)
+	mediaHandler := NewMediaHandler(authClient, media.New(storage.NewS3(awsSession, *flagStorageBucket, "media"), storage.NewS3(awsSession, *flagStorageBucket, "media-cache"), 0, 0), ms)
 
 	r.Handle("/media", httputil.ToContextHandler(cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
@@ -162,6 +168,7 @@ func main() {
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
 	}).Handler(httputil.FromContextHandler(mediaHandler))))
+
 	if *flagResourcePath == "" {
 		if p := os.Getenv("GOPATH"); p != "" {
 			*flagResourcePath = path.Join(p, "src/github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/resources")

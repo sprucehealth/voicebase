@@ -3,11 +3,9 @@ package main
 import (
 	"errors"
 	"fmt"
-	"strconv"
-	"time"
 
 	"github.com/graphql-go/graphql"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/media"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -172,17 +170,11 @@ var imageAttachmentType = graphql.NewObject(
 					height := p.Args["height"].(int)
 					crop := p.Args["crop"].(bool)
 
-					accountID, err := strconv.ParseUint(account.ID[len("account:"):], 10, 63)
-					if err != nil {
-						golog.Errorf(err.Error())
-						return nil, internalError(err)
-					}
-
 					mediaID, err := media.ParseMediaID(attachment.URL)
 					if err != nil {
 						golog.Errorf("Unable to parse mediaID out of url %s.", attachment.URL)
 					}
-					url, err := svc.mediaStore.SignedURL(mediaID, attachment.Mimetype, accountID, 10*time.Minute, width, height, crop)
+					url, err := svc.mediaSigner.SignedURL(mediaID, attachment.Mimetype, account.ID, width, height, crop)
 					if err != nil {
 						return nil, internalError(err)
 					}
@@ -330,11 +322,7 @@ func lookupThreadItem(ctx context.Context, svc *service, id string) (interface{}
 		return nil, errNotAuthenticated
 	}
 
-	accountID, err := strconv.ParseUint(account.ID[len("account:"):], 10, 64)
-	if err != nil {
-		return nil, internalError(err)
-	}
-	it, err := transformThreadItemToResponse(res.Item, "", accountID, svc.mediaStore)
+	it, err := transformThreadItemToResponse(res.Item, "", account.ID, svc.mediaSigner)
 	if err != nil {
 		return nil, internalError(err)
 	}

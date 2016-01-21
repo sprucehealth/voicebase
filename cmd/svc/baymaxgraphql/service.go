@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/media"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -22,7 +22,7 @@ type service struct {
 	threading    threading.ThreadsClient
 	exComms      excomms.ExCommsClient
 	notification notification.Client
-	mediaStore   *media.Store
+	mediaSigner  *media.Signer
 }
 
 func (s *service) hydrateThreadTitles(ctx context.Context, threads []*thread) error {

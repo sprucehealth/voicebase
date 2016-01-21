@@ -9,7 +9,7 @@ import (
 
 	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/apiservice"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/media"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -106,7 +106,7 @@ type graphQLHandler struct {
 }
 
 // NewGraphQL returns an initialized instance of graphQLHandler
-func NewGraphQL(authClient auth.AuthClient, directoryClient directory.DirectoryClient, threadingClient threading.ThreadsClient, exComms excomms.ExCommsClient, notificationClient notification.Client, mediaStore *media.Store) httputil.ContextHandler {
+func NewGraphQL(authClient auth.AuthClient, directoryClient directory.DirectoryClient, threadingClient threading.ThreadsClient, exComms excomms.ExCommsClient, notificationClient notification.Client, mediaSigner *media.Signer) httputil.ContextHandler {
 	return &graphQLHandler{
 		service: &service{
 			auth:         authClient,
@@ -114,7 +114,7 @@ func NewGraphQL(authClient auth.AuthClient, directoryClient directory.DirectoryC
 			threading:    threadingClient,
 			exComms:      exComms,
 			notification: notificationClient,
-			mediaStore:   mediaStore,
+			mediaSigner:  mediaSigner,
 		},
 	}
 }

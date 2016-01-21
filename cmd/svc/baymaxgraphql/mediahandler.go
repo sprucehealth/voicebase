@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	mediastore "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/media"
+	mediasigner "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/media"
@@ -16,16 +16,16 @@ import (
 )
 
 type mediaHandler struct {
-	auth       auth.AuthClient
-	media      *media.Service
-	mediaStore *mediastore.Store
+	auth        auth.AuthClient
+	media       *media.Service
+	mediaSigner *mediasigner.Signer
 }
 
-func NewMediaHandler(auth auth.AuthClient, media *media.Service, mediaStore *mediastore.Store) httputil.ContextHandler {
+func NewMediaHandler(auth auth.AuthClient, media *media.Service, mediaSigner *mediasigner.Signer) httputil.ContextHandler {
 	return &mediaHandler{
-		auth:       auth,
-		media:      media,
-		mediaStore: mediaStore,
+		auth:        auth,
+		media:       media,
+		mediaSigner: mediaSigner,
 	}
 }
 
@@ -81,18 +81,8 @@ func (m *mediaHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *
 		return
 	}
 
-	var err error
-	var expireTime uint64
-	if expireTimeStr := r.FormValue("expires"); expireTimeStr != "" {
-		expireTime, err = strconv.ParseUint(expireTimeStr, 10, 64)
-		if err != nil {
-			httputil.JSONResponse(w, http.StatusBadRequest, errorMsg{
-				Message: fmt.Sprintf("Unable to parse expires %s: %s", expireTimeStr, err),
-			})
-			return
-		}
-	}
 	var crop bool
+	var err error
 	if cropStr := r.FormValue("crop"); cropStr != "" {
 		crop, err = strconv.ParseBool(cropStr)
 		if err != nil {
@@ -123,22 +113,9 @@ func (m *mediaHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *
 		}
 	}
 	// verify signature
-	accountID, err := strconv.ParseUint(acc.ID[len("account:"):], 10, 64)
-	if err != nil {
-		golog.Errorf("Unable to parse accountID %s: %s", acc.ID, err.Error())
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	if !m.mediaStore.ValidateSignature(mediaID, mimetype, accountID, expireTime, width, height, crop, signature) {
+	if !m.mediaSigner.ValidateSignature(mediaID, mimetype, acc.ID, width, height, crop, signature) {
 		httputil.JSONResponse(w, http.StatusForbidden, errorMsg{
 			Message: "Signature does not match",
-		})
-		return
-	}
-	// esnure that request is not expired
-	if int64(expireTime) < time.Now().UTC().Unix() {
-		httputil.JSONResponse(w, http.StatusForbidden, errorMsg{
-			Message: "Expired request",
 		})
 		return
 	}
