@@ -1,6 +1,7 @@
 #!/bin/bash
 
-useradd -d `pwd` -u $PARENT_UID ci
+groupadd -g $PARENT_GID ci
+useradd -d `pwd` -u $PARENT_UID -g ci ci
 chown -R ci /workspace /usr/local
 export HOME=/workspace
 

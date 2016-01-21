@@ -818,7 +818,7 @@ func scanEntityMembership(row dbutil.Scanner) (*EntityMembership, error) {
 }
 
 const selectEntityContact = `
-    SELECT entity_contact.modified, entity_contact.id, entity_contact.entity_id, entity_contact.type, entity_contact.value, entity_contact.created
+    SELECT entity_contact.modified, entity_contact.id, entity_contact.entity_id, entity_contact.type, entity_contact.value, entity_contact.created, entity_contact.provisioned
       FROM entity_contact`
 
 func scanEntityContact(row dbutil.Scanner) (*EntityContact, error) {
@@ -826,7 +826,7 @@ func scanEntityContact(row dbutil.Scanner) (*EntityContact, error) {
 	m.ID = EmptyEntityContactID()
 	m.EntityID = EmptyEntityID()
 
-	err := row.Scan(&m.Modified, &m.ID, &m.EntityID, &m.Type, &m.Value, &m.Created)
+	err := row.Scan(&m.Modified, &m.ID, &m.EntityID, &m.Type, &m.Value, &m.Created, &m.Provisioned)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(api.ErrNotFound("directory - EntityContact not found"))
 	}

@@ -620,7 +620,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				pres, err := svc.exComms.ProvisionPhoneNumber(ctx, &excomms.ProvisionPhoneNumberRequest{
 					ProvisionFor: orgEntityID,
 					Number: &excomms.ProvisionPhoneNumberRequest_AreaCode{
-						AreaCode: "415",
+						AreaCode: "801",
 					},
 				})
 				if err != nil {

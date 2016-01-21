@@ -114,7 +114,7 @@ go tool cover -html=coverage-$BUILD_NUMBER.out -o coverage.html
 cp coverage.html coverage-$BUILD_NUMBER.html
 go tool cover -func=coverage-$BUILD_NUMBER.out | grep "total:" | tee -a $PHABRICATOR_COMMENT
 
-flow --version | tee -a $PHABRICATOR_COMMENT
+flow version | tee -a $PHABRICATOR_COMMENT
 npm version | tee -a $PHABRICATOR_COMMENT
 
 # Disable some steps for dev builds (that aren't related to testing)
@@ -155,8 +155,60 @@ time (
 ) &
 savepid
 
+checkedwait
+
 # Clean binaries before building to make sure we get a clean build for deployment
 rm -rf $GOPATH/pkg $GOPATH/bin
+
+# Build services for deploy
+cd $MONOREPO_PATH
+REV="$GIT_COMMIT"
+if [ "$REV" = "" ]; then
+    REV=$(git rev-parse HEAD)
+fi
+BRANCH="$GIT_BRANCH"
+if [ "$BRANCH" = "" ]; then
+    BRANCH=$(git rev-parse --abbrev-ref HEAD)
+fi
+TIME=$(date)
+export TAG="$BRANCH-$BUILD_NUMBER"
+
+SVCS="auth baymaxgraphql directory excomms notification routing threading"
+for SVC in $SVCS; do
+    echo "BUILDING ($SVC)"
+    cd $MONOREPO_PATH/cmd/svc/$SVC
+    GO15VENDOREXPERIMENT=1 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
+        go install -tags netgo -ldflags " \
+            -X 'github.com/sprucehealth/backend/boot.GitRevision=$REV' \
+            -X 'github.com/sprucehealth/backend/boot.GitBranch=$BRANCH' \
+            -X 'github.com/sprucehealth/backend/boot.BuildTime=$TIME' \
+            -X 'github.com/sprucehealth/backend/boot.BuildNumber=$BUILD_NUMBER'"
+
+    BINPATH=$GOPATH/bin/$SVC
+    if [[ "$(go env GOHOSTOS)" != "linux" ]]; then
+        BINPATH=$GOPATH/bin/linux_amd64/$SVC
+    fi
+    rm -rf build
+    mkdir build
+    cp $BINPATH build/
+    if [[ -e resources ]]; then
+        cp -r resources build/
+    fi
+    cp /etc/ssl/certs/ca-certificates.crt build/
+    cat > build/Dockerfile <<EOF
+FROM scratch
+
+LABEL version=$TAG
+LABEL svc=$SVC
+
+WORKDIR /workspace
+ADD . /workspace
+COPY ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+USER 65534
+CMD ["/workspace/$SVC"]
+EOF
+    docker build --rm=true -t $SVC:$TAG -f build/Dockerfile build
+done
 
 # Build for deploy (restapi)
 echo "BUILDING (restapi)"

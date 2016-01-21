@@ -45,7 +45,7 @@ func init() {
 }
 
 func main() {
-	boot.ParseFlags("AUTH_SERVICE_")
+	boot.ParseFlags("DIRECTORY_")
 	configureLogging()
 
 	listenAddress := ":" + strconv.Itoa(config.listenPort)

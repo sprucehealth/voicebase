@@ -30,15 +30,15 @@ var config struct {
 }
 
 func init() {
-	flag.StringVar(&config.directoryServiceURL, "directory.endpoint", "", "url to talk to the directory service")
-	flag.StringVar(&config.threadServiceURL, "threading.endpoint", "", "url to talk to the thread service")
-	flag.StringVar(&config.excommsServiceURL, "excomms.endpoint", "", "url to talk to the thread service")
-	flag.StringVar(&config.awsAccessKey, "aws.access_key", "", "access key for aws")
-	flag.StringVar(&config.awsSecretKey, "aws.secret_key", "", "secret key for aws")
-	flag.StringVar(&config.awsRegion, "aws.region", "us-east-1", "aws region")
+	flag.StringVar(&config.directoryServiceURL, "directory_endpoint", "", "url to talk to the directory service")
+	flag.StringVar(&config.threadServiceURL, "threading_endpoint", "", "url to talk to the thread service")
+	flag.StringVar(&config.excommsServiceURL, "excomms_endpoint", "", "url to talk to the thread service")
+	flag.StringVar(&config.awsAccessKey, "aws_access_key", "", "access key for aws")
+	flag.StringVar(&config.awsSecretKey, "aws_secret_key", "", "secret key for aws")
+	flag.StringVar(&config.awsRegion, "aws_region", "us-east-1", "aws region")
 	flag.StringVar(&config.env, "env", "dev", "environment")
-	flag.StringVar(&config.externalMessageQueue, "queue.external_message", "", "queue name for receiving external messages")
-	flag.StringVar(&config.inAppMessageQueue, "queue.inapp_message", "", "queue name for receiving in app messages")
+	flag.StringVar(&config.externalMessageQueue, "queue_external_message", "", "queue name for receiving external messages")
+	flag.StringVar(&config.inAppMessageQueue, "queue_inapp_message", "", "queue name for receiving in app messages")
 	flag.BoolVar(&config.debug, "debug", false, "flag to turn debug on")
 }
 

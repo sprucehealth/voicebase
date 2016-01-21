@@ -16,6 +16,9 @@ docker build --rm --force-rm -t $NAME docker-ci
 # get the uid of the user running the job to be able to properly manage permissions
 PARENT_UID=$(id -u)
 
+# use docker gid to give job access to docker socket
+PARENT_GID=$(getent group docker | cut -d: -f3)
+
 # origin/master -> master
 BRANCH=$(echo $GIT_BRANCH | cut -d'/' -f2)
 MEMPATH="/mnt/mem/jenkins/$BUILD_TAG"
@@ -33,6 +36,22 @@ docker run --rm=true --name=$NAME \
 	-e "FULLCOVERAGE=$FULLCOVERAGE" \
 	-e "TEST_S3_BUCKET=$TEST_S3_BUCKET" \
 	-e "PARENT_UID=$PARENT_UID" \
+	-e "PARENT_GID=$PARENT_GID" \
 	-v $MEMPATH:/mem \
 	-v `pwd`:/workspace/go/src/github.com/sprucehealth/backend \
+	-v /var/run/docker.sock:/var/run/docker.sock \
     $NAME
+
+if [[ "$DEPLOY_TO_S3" != "" ]]; then
+	# Tag any generated images with the remote repo and push
+	IMAGES=$(docker images -q -f label=version=$BRANCH-$BUILD_ID)
+	echo $IMAGES
+	for IMAGEID in $IMAGES; do
+		TAG=$(docker inspect -f '{{index .RepoTags 0}}' $IMAGEID)
+		echo "Pushing $TAG"
+		REMOTETAG="137987605457.dkr.ecr.us-east-1.amazonaws.com/$TAG"
+		docker tag $TAG $REMOTETAG
+		docker push $REMOTETAG
+		docker rmi $REMOTETAG
+	done
+fi
