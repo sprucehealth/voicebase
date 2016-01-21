@@ -175,19 +175,14 @@ func (d *dal) CreateThreadItemViewDetails(ctx context.Context, tds []*models.Thr
 	if len(tds) == 0 {
 		return nil
 	}
-	values := make([]string, len(tds))
-	iValues := make([]interface{}, len(tds)*3)
-	for i, td := range tds {
-		oi := i * 3
-		iValues[oi] = td.ThreadItemID
-		iValues[oi+1] = td.ActorEntityID
-		iValues[oi+2] = td.ViewTime
-		values[i] = "(?,?,?)"
+	ins := dbutil.MySQLMultiInsert(len(tds))
+	for _, td := range tds {
+		ins.Append(td.ThreadItemID, td.ActorEntityID, td.ViewTime)
 	}
 	_, err := d.db.Exec(`
         INSERT IGNORE INTO thread_item_view_details
-        (thread_item_id, actor_entity_id, view_time) 
-        VALUES `+strings.Join(values, ","), iValues...)
+	        (thread_item_id, actor_entity_id, view_time)
+        VALUES `+ins.Query(), ins.Values()...)
 	return errors.Trace(err)
 }
 
@@ -204,8 +199,9 @@ func (d *dal) IterateThreads(ctx context.Context, orgID string, forExternal bool
 	}
 	cond := []string{"organization_id = ?"}
 	vals := []interface{}{orgID}
+	// Build query based on iterator in descending order so start = later and end = earlier.
 	if it.StartCursor != "" {
-		cond = append(cond, "("+dbutil.EscapeMySQLName(orderField)+" > ?)")
+		cond = append(cond, "("+dbutil.EscapeMySQLName(orderField)+" < ?)")
 		v, err := parseTimeCursor(it.StartCursor)
 		if err != nil {
 			return nil, errors.Trace(ErrInvalidIterator("bad start cursor: " + it.StartCursor))
@@ -213,7 +209,7 @@ func (d *dal) IterateThreads(ctx context.Context, orgID string, forExternal bool
 		vals = append(vals, v)
 	}
 	if it.EndCursor != "" {
-		cond = append(cond, "("+dbutil.EscapeMySQLName(orderField)+" < ?)")
+		cond = append(cond, "("+dbutil.EscapeMySQLName(orderField)+" > ?)")
 		v, err := parseTimeCursor(it.EndCursor)
 		if err != nil {
 			return nil, errors.Trace(ErrInvalidIterator("bad end cursor: " + it.EndCursor))
@@ -225,7 +221,7 @@ func (d *dal) IterateThreads(ctx context.Context, orgID string, forExternal bool
 		where = strings.Join(cond, " AND ")
 	}
 	order := " ORDER BY " + dbutil.EscapeMySQLName(orderField)
-	if it.Direction == FromEnd {
+	if it.Direction == FromStart {
 		order += " DESC"
 	}
 	limit := fmt.Sprintf(" LIMIT %d", it.Count+1) // +1 to check if there's more than requested available.. will filter it out later
@@ -266,7 +262,7 @@ func (d *dal) IterateThreads(ctx context.Context, orgID string, forExternal bool
 		tc.HasMore = true
 	}
 
-	// Always return in ascending order so reverse if we were asked to query FromEnd
+	// Always return in descending order so reverse if we were asked to query FromEnd
 	if it.Direction == FromEnd {
 		for i := 0; i < len(tc.Edges)/2; i++ {
 			j := len(tc.Edges) - i - 1
