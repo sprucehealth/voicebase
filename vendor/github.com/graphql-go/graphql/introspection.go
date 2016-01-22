@@ -268,7 +268,7 @@ mutation operations.`,
 			},
 			"subscriptionType": &Field{
 				Description: `If this server support subscription, the type that ' +
-                  'subscription operations will be rooted at.`,
+                   'subscription operations will be rooted at.`,
 				Type: __Type,
 				Resolve: func(p ResolveParams) (interface{}, error) {
 					return nil, nil

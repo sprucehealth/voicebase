@@ -19,7 +19,7 @@ var accountType = graphql.NewObject(
 			nodeInterfaceType,
 		},
 		Fields: graphql.Fields{
-			"id": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)}, //GlobalIDField(accountIDType),
+			"id": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 			"organizations": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(organizationType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
