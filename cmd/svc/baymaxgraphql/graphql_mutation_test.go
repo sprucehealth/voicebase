@@ -17,7 +17,7 @@ func TestPostMessage(t *testing.T) {
 
 	ctx := context.Background()
 	acc := &account{
-		ID: "account:12345",
+		ID: "account_12345",
 	}
 	ctx = ctxWithAccount(ctx, acc)
 

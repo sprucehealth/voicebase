@@ -1,4 +1,6 @@
-#!/bin/bash -x
+#!/bin/bash
+
+set -x -e -o pipefail
 
 # Lowercase version of the job name
 NAME=${BUILD_TAG,,}

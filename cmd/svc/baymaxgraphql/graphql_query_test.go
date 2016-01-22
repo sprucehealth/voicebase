@@ -21,7 +21,7 @@ func TestNodeQuery(t *testing.T) {
 	defer dirC.Finish()
 	defer thC.Finish()
 
-	acc := &account{ID: "account:12345"}
+	acc := &account{ID: "account_12345"}
 	ctx := context.Background()
 	ctx = ctxWithAccount(ctx, acc)
 	p := graphql.ResolveParams{
@@ -40,7 +40,7 @@ func TestNodeQuery(t *testing.T) {
 
 	// Organization
 
-	id := "entity:123"
+	id := "entity_123"
 	p.Args = map[string]interface{}{
 		"id": id,
 	}
@@ -87,7 +87,7 @@ func TestNodeQuery(t *testing.T) {
 			Entities: []*directory.Entity{
 				{
 					Type: directory.EntityType_INTERNAL,
-					ID:   "entity:222",
+					ID:   "entity_222",
 					Name: "Mem",
 					Memberships: []*directory.Entity{
 						{ID: id},
@@ -103,7 +103,7 @@ func TestNodeQuery(t *testing.T) {
 		Name:     "Org",
 		Contacts: []*contactInfo{},
 		Entity: &entity{
-			ID:       "entity:222",
+			ID:       "entity_222",
 			Name:     "Mem",
 			Contacts: []*contactInfo{},
 		},
@@ -112,7 +112,7 @@ func TestNodeQuery(t *testing.T) {
 
 	// Entity
 
-	id = "entity:123"
+	id = "entity_123"
 	p.Args = map[string]interface{}{
 		"id": id,
 	}
@@ -157,8 +157,8 @@ func TestNodeQuery(t *testing.T) {
 		&threading.ThreadResponse{
 			Thread: &threading.Thread{
 				ID:              id,
-				OrganizationID:  "entity:1",
-				PrimaryEntityID: "entity:2",
+				OrganizationID:  "entity_1",
+				PrimaryEntityID: "entity_2",
 			},
 		},
 		nil))
@@ -166,7 +166,7 @@ func TestNodeQuery(t *testing.T) {
 		&directory.LookupEntitiesRequest{
 			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: "entity:2",
+				EntityID: "entity_2",
 			},
 			RequestedInformation: &directory.RequestedInformation{
 				Depth: 0,
@@ -205,12 +205,12 @@ func TestNodeQuery(t *testing.T) {
 			Entities: []*directory.Entity{
 				{
 					Type: directory.EntityType_INTERNAL,
-					ID:   "entity:222",
+					ID:   "entity_222",
 					Name: "Someone",
 					Memberships: []*directory.Entity{
 						{
 							Type: directory.EntityType_ORGANIZATION,
-							ID:   "entity:1",
+							ID:   "entity_1",
 						},
 					},
 				},
@@ -220,14 +220,14 @@ func TestNodeQuery(t *testing.T) {
 	thC.Expect(mock.NewExpectation(thC.Thread,
 		&threading.ThreadRequest{
 			ThreadID:       id,
-			ViewerEntityID: "entity:222",
+			ViewerEntityID: "entity_222",
 		},
 	).WithReturns(
 		&threading.ThreadResponse{
 			Thread: &threading.Thread{
 				ID:              id,
-				OrganizationID:  "entity:1",
-				PrimaryEntityID: "entity:2",
+				OrganizationID:  "entity_1",
+				PrimaryEntityID: "entity_2",
 			},
 		},
 		nil))
@@ -235,7 +235,7 @@ func TestNodeQuery(t *testing.T) {
 		&directory.LookupEntitiesRequest{
 			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: "entity:2",
+				EntityID: "entity_2",
 			},
 			RequestedInformation: &directory.RequestedInformation{
 				Depth: 0,
@@ -249,12 +249,12 @@ func TestNodeQuery(t *testing.T) {
 			Entities: []*directory.Entity{
 				{
 					Type: directory.EntityType_INTERNAL,
-					ID:   "entity:2",
+					ID:   "entity_2",
 					Name: "Someone",
 					Memberships: []*directory.Entity{
 						{
 							Type: directory.EntityType_ORGANIZATION,
-							ID:   "entity:1",
+							ID:   "entity_1",
 						},
 					},
 				},
@@ -263,7 +263,7 @@ func TestNodeQuery(t *testing.T) {
 		nil))
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, &thread{ID: id, OrganizationID: "entity:1", PrimaryEntityID: "entity:2", Title: "Someone"}, res)
+	test.Equals(t, &thread{ID: id, OrganizationID: "entity_1", PrimaryEntityID: "entity_2", Title: "Someone"}, res)
 	mock.FinishAll(thC, dirC)
 
 	// Thread item
@@ -279,7 +279,7 @@ func TestNodeQuery(t *testing.T) {
 			Item: &threading.ThreadItem{
 				ID:            id,
 				Timestamp:     1234,
-				ActorEntityID: "entity:1",
+				ActorEntityID: "entity_1",
 				Internal:      true,
 				Type:          threading.ThreadItem_MESSAGE,
 				Item: &threading.ThreadItem_Message{
@@ -304,7 +304,7 @@ func TestNodeQuery(t *testing.T) {
 	test.Equals(t, &threadItem{
 		ID:            id,
 		Timestamp:     1234,
-		ActorEntityID: "entity:1",
+		ActorEntityID: "entity_1",
 		Internal:      true,
 		Data: &message{
 			ThreadItemID: id,
@@ -334,12 +334,12 @@ func TestNodeQuery(t *testing.T) {
 		&threading.SavedQueryResponse{
 			SavedQuery: &threading.SavedQuery{
 				ID:             id,
-				OrganizationID: "entity:1",
+				OrganizationID: "entity_1",
 			},
 		},
 		nil))
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, &savedThreadQuery{ID: id, OrganizationID: "entity:1"}, res)
+	test.Equals(t, &savedThreadQuery{ID: id, OrganizationID: "entity_1"}, res)
 	mock.FinishAll(thC)
 }
