@@ -39,24 +39,22 @@ var queryType = graphql.NewObject(
 						return nil, errNotAuthenticated
 					}
 					id := p.Args["id"].(string)
-					if strings.HasPrefix(id, "entity:") {
+					i := strings.IndexByte(id, '_')
+					prefix := id[:i]
+					switch prefix {
+					case "entity":
 						return lookupEntity(ctx, svc, id)
-					} else if strings.HasPrefix(id, "account:") {
+					case "account":
 						if id == acc.ID {
 							return acc, nil
 						}
 						return lookupAccount(ctx, svc, id)
-					} else {
-						i := strings.IndexByte(id, '_')
-						prefix := id[:i]
-						switch prefix {
-						case "sq":
-							return lookupSavedQuery(ctx, svc, id)
-						case "t":
-							return lookupThreadWithReadStatus(ctx, svc, acc, id)
-						case "ti":
-							return lookupThreadItem(ctx, svc, id)
-						}
+					case "sq":
+						return lookupSavedQuery(ctx, svc, id)
+					case "t":
+						return lookupThreadWithReadStatus(ctx, svc, acc, id)
+					case "ti":
+						return lookupThreadItem(ctx, svc, id)
 					}
 					return nil, errors.New("unknown node type")
 				},
