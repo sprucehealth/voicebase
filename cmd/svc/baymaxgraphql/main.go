@@ -45,6 +45,7 @@ var (
 	flagExCommsAddr              = flag.String("excomms_addr", "", "host:port of excomms service")
 	flagThreadingAddr            = flag.String("threading_addr", "", "host:port of threading service")
 	flagSQSDeviceRegistrationURL = flag.String("sqs_device_registration_url", "", "the sqs url for device registration messages")
+	flagSQSNotificationURL       = flag.String("sqs_notification_url", "", "the sqs url for notification queueing")
 
 	// AWS
 	flagAWSAccessKey = flag.String("aws_access_key", "", "access key for aws")
@@ -116,11 +117,15 @@ func main() {
 	}
 
 	if *flagSQSDeviceRegistrationURL == "" {
-		golog.Fatalf("Notification service not configured")
+		golog.Fatalf("Notification service device registration not configured")
+	}
+	if *flagSQSNotificationURL == "" {
+		golog.Fatalf("Notification service notification queue not configured")
 	}
 	awsSession := baseConfig.AWSSession()
 	notificationClient := notification.NewClient(&notification.ClientConfig{
 		SQSDeviceRegistrationURL: *flagSQSDeviceRegistrationURL,
+		SQSNotificationURL:       *flagSQSNotificationURL,
 		Session:                  awsSession,
 	})
 

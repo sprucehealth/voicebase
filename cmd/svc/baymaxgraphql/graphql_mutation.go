@@ -422,6 +422,37 @@ var markThreadAsReadOutputType = graphql.NewObject(
 	},
 )
 
+/// sendTestNotification
+
+type sendTestNotificationOutput struct {
+	ClientMutationID string `json:"clientMutationId"`
+}
+
+var sendTestNotificationInputType = graphql.NewInputObject(
+	graphql.InputObjectConfig{
+		Name: "SendTestNotificationInput",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"clientMutationId": newClientMutationIDInputField(),
+			"message":          &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"threadID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"organizationID":   &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		},
+	},
+)
+
+var sendTestNotificationOutputType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "SendTestNotificationPayload",
+		Fields: graphql.Fields{
+			"clientMutationId": newClientmutationIDOutputField(),
+		},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+			_, ok := value.(*sendTestNotificationOutput)
+			return ok
+		},
+	},
+)
+
 var mutationType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Mutation",
 	Fields: graphql.Fields{
@@ -1036,6 +1067,45 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 
 				result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
 				result.Set("markThreadAsRead", true)
+				return &markThreadAsReadOutput{
+					ClientMutationID: mutationID,
+				}, nil
+			},
+		},
+		"sendTestNotification": &graphql.Field{
+			Type: graphql.NewNonNull(sendTestNotificationOutputType),
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{Type: sendTestNotificationInputType},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				svc := serviceFromParams(p)
+				ctx := p.Context
+				acc := accountFromContext(ctx)
+				if acc == nil {
+					return nil, errNotAuthenticated
+				}
+
+				input := p.Args["input"].(map[string]interface{})
+				mutationID, _ := input["clientMutationId"].(string)
+				threadID, _ := input["threadID"].(string)
+				orgID, _ := input["organizationID"].(string)
+				message, _ := input["message"].(string)
+				ent, err := svc.entityForAccountID(ctx, orgID, acc.ID)
+				if err != nil {
+					return nil, errors.New("send test notification failed")
+				}
+
+				if err := svc.notification.SendNotification(&notification.Notification{
+					ShortMessage:     message,
+					ThreadID:         threadID,
+					OrganizationID:   orgID,
+					EntitiesToNotify: []string{ent.ID},
+				}); err != nil {
+					return nil, internalError(err)
+				}
+
+				result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
+				result.Set("sendTestNotification", true)
 				return &markThreadAsReadOutput{
 					ClientMutationID: mutationID,
 				}, nil
