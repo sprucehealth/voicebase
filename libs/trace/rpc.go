@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	TraceID = "traceID"
-	SpanID  = "spanID"
+	TraceIDKey = "traceid"
+	SpanIDKey  = "spanid"
 )
 
 // RPCClientContext builds a context that contains metadata for
@@ -26,8 +26,8 @@ func RPCClientContext(ctx context.Context) context.Context {
 	}
 
 	return metadata.NewContext(ctx, metadata.Pairs(
-		"traceID", strconv.FormatUint(t.TraceID(), 10),
-		"spanID", strconv.FormatUint(spanID, 10),
+		TraceIDKey, strconv.FormatUint(t.TraceID(), 10),
+		SpanIDKey, strconv.FormatUint(spanID, 10),
 	))
 }
 
@@ -35,8 +35,8 @@ func RPCClientContext(ctx context.Context) context.Context {
 // from a client.
 func RPCServerContext(ctx context.Context, family, name string) (context.Context, *Trace) {
 	md, _ := metadata.FromContext(ctx)
-	traceID, _ := strconv.ParseUint(md["traceID"][0], 10, 64)
-	spanID, _ := strconv.ParseUint(md["spanID"][0], 10, 64)
+	traceID, _ := strconv.ParseUint(md[TraceIDKey][0], 10, 64)
+	spanID, _ := strconv.ParseUint(md[SpanIDKey][0], 10, 64)
 	t := New(family, name, traceID, spanID)
 	return TraceContext(ctx, t), t
 }
