@@ -123,6 +123,24 @@ message CreateContactResponse {
 	Entity entity = 1;
 }
 
+message LookupEntityDomainRequest {
+	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+	string domain = 2;
+}
+
+message LookupEntityDomainResponse {
+	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+	string domain = 2;
+}
+
+message CreateEntityDomainRequest {
+	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+	string domain = 2;
+}
+
+message CreateEntityDomainResponse {
+}
+
 service Directory {
     rpc CreateContact (CreateContactRequest) returns (CreateContactResponse);
 	rpc CreateEntity (CreateEntityRequest) returns (CreateEntityResponse);
@@ -130,4 +148,6 @@ service Directory {
     rpc ExternalIDs (ExternalIDsRequest) returns (ExternalIDsResponse);
     rpc LookupEntities (LookupEntitiesRequest) returns (LookupEntitiesResponse);
 	rpc LookupEntitiesByContact (LookupEntitiesByContactRequest) returns (LookupEntitiesByContactResponse);
+	rpc LookupEntityDomain (LookupEntityDomainRequest) returns (LookupEntityDomainResponse);
+	rpc CreateEntityDomain (CreateEntityDomainRequest) returns (CreateEntityDomainResponse);
 }

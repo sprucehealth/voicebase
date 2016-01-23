@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/directory/internal/dal"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/directory"
 	"golang.org/x/net/context"
@@ -41,6 +42,8 @@ type DAL interface {
 	Event(id dal.EventID) (*dal.Event, error)
 	UpdateEvent(id dal.EventID, update *dal.EventUpdate) (int64, error)
 	DeleteEvent(id dal.EventID) (int64, error)
+	EntityDomain(id *dal.EntityID, domain *string) (dal.EntityID, string, error)
+	InsertEntityDomain(id dal.EntityID, domain string) error
 	Transact(trans func(dal dal.DAL) error) (err error)
 }
 
@@ -52,6 +55,8 @@ type Server interface {
 	ExternalIDs(context.Context, *directory.ExternalIDsRequest) (*directory.ExternalIDsResponse, error)
 	LookupEntities(context.Context, *directory.LookupEntitiesRequest) (*directory.LookupEntitiesResponse, error)
 	LookupEntitiesByContact(context.Context, *directory.LookupEntitiesByContactRequest) (*directory.LookupEntitiesByContactResponse, error)
+	LookupEntityDomain(context.Context, *directory.LookupEntityDomainRequest) (*directory.LookupEntityDomainResponse, error)
+	CreateEntityDomain(context.Context, *directory.CreateEntityDomainRequest) (*directory.CreateEntityDomainResponse, error)
 }
 
 var (
@@ -389,6 +394,56 @@ func (s *server) CreateContact(ctx context.Context, rd *directory.CreateContactR
 	return &directory.CreateContactResponse{
 		Entity: pbEntity,
 	}, nil
+}
+
+func (s *server) LookupEntityDomain(ctx context.Context, in *directory.LookupEntityDomainRequest) (*directory.LookupEntityDomainResponse, error) {
+	golog.Debugf("Entering server.LookupEntityDomain: %+v", in)
+	if golog.Default().L(golog.DEBUG) {
+		defer func() { golog.Debugf("Leaving server.LookupEntityDomain...") }()
+	}
+
+	var err error
+	var entityID *dal.EntityID
+	if in.EntityID != "" {
+		eID, err := dal.ParseEntityID(in.EntityID)
+		if err != nil {
+			return nil, grpcErrorf(codes.Internal, err.Error())
+		}
+		entityID = &eID
+	}
+
+	queriedEntityID, queriedDomain, err := s.dl.EntityDomain(entityID, ptr.String(in.Domain))
+	if api.IsErrNotFound(errors.Cause(err)) {
+		return nil, grpcErrorf(codes.NotFound, "entity_domain not found")
+	} else if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	return &directory.LookupEntityDomainResponse{
+		Domain:   queriedDomain,
+		EntityID: queriedEntityID.String(),
+	}, nil
+}
+
+func (s *server) CreateEntityDomain(ctx context.Context, in *directory.CreateEntityDomainRequest) (*directory.CreateEntityDomainResponse, error) {
+	if in.EntityID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "entity_id required")
+	} else if in.Domain == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "domain required")
+	} else if len(in.Domain) > 255 {
+		return nil, grpcErrorf(codes.InvalidArgument, "domain can only be 255 characters in length")
+	}
+
+	eID, err := dal.ParseEntityID(in.EntityID)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	if err := s.dl.InsertEntityDomain(eID, in.Domain); err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	return &directory.CreateEntityDomainResponse{}, nil
 }
 
 func validateContact(contact *directory.Contact) error {

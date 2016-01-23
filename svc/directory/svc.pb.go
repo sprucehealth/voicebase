@@ -25,6 +25,10 @@
 		LookupEntitiesByContactResponse
 		CreateContactRequest
 		CreateContactResponse
+		LookupEntityDomainRequest
+		LookupEntityDomainResponse
+		CreateEntityDomainRequest
+		CreateEntityDomainResponse
 */
 package directory
 
@@ -460,6 +464,36 @@ func (m *CreateContactResponse) GetEntity() *Entity {
 	return nil
 }
 
+type LookupEntityDomainRequest struct {
+	EntityID string `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	Domain   string `protobuf:"bytes,2,opt,name=domain,proto3" json:"domain,omitempty"`
+}
+
+func (m *LookupEntityDomainRequest) Reset()      { *m = LookupEntityDomainRequest{} }
+func (*LookupEntityDomainRequest) ProtoMessage() {}
+
+type LookupEntityDomainResponse struct {
+	EntityID string `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	Domain   string `protobuf:"bytes,2,opt,name=domain,proto3" json:"domain,omitempty"`
+}
+
+func (m *LookupEntityDomainResponse) Reset()      { *m = LookupEntityDomainResponse{} }
+func (*LookupEntityDomainResponse) ProtoMessage() {}
+
+type CreateEntityDomainRequest struct {
+	EntityID string `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	Domain   string `protobuf:"bytes,2,opt,name=domain,proto3" json:"domain,omitempty"`
+}
+
+func (m *CreateEntityDomainRequest) Reset()      { *m = CreateEntityDomainRequest{} }
+func (*CreateEntityDomainRequest) ProtoMessage() {}
+
+type CreateEntityDomainResponse struct {
+}
+
+func (m *CreateEntityDomainResponse) Reset()      { *m = CreateEntityDomainResponse{} }
+func (*CreateEntityDomainResponse) ProtoMessage() {}
+
 func init() {
 	proto.RegisterType((*ExternalID)(nil), "directory.ExternalID")
 	proto.RegisterType((*Entity)(nil), "directory.Entity")
@@ -477,6 +511,10 @@ func init() {
 	proto.RegisterType((*LookupEntitiesByContactResponse)(nil), "directory.LookupEntitiesByContactResponse")
 	proto.RegisterType((*CreateContactRequest)(nil), "directory.CreateContactRequest")
 	proto.RegisterType((*CreateContactResponse)(nil), "directory.CreateContactResponse")
+	proto.RegisterType((*LookupEntityDomainRequest)(nil), "directory.LookupEntityDomainRequest")
+	proto.RegisterType((*LookupEntityDomainResponse)(nil), "directory.LookupEntityDomainResponse")
+	proto.RegisterType((*CreateEntityDomainRequest)(nil), "directory.CreateEntityDomainRequest")
+	proto.RegisterType((*CreateEntityDomainResponse)(nil), "directory.CreateEntityDomainResponse")
 	proto.RegisterEnum("directory.EntityType", EntityType_name, EntityType_value)
 	proto.RegisterEnum("directory.EntityInformation", EntityInformation_name, EntityInformation_value)
 	proto.RegisterEnum("directory.ContactType", ContactType_name, ContactType_value)
@@ -1090,6 +1128,112 @@ func (this *CreateContactResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *LookupEntityDomainRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*LookupEntityDomainRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.EntityID != that1.EntityID {
+		return false
+	}
+	if this.Domain != that1.Domain {
+		return false
+	}
+	return true
+}
+func (this *LookupEntityDomainResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*LookupEntityDomainResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.EntityID != that1.EntityID {
+		return false
+	}
+	if this.Domain != that1.Domain {
+		return false
+	}
+	return true
+}
+func (this *CreateEntityDomainRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreateEntityDomainRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.EntityID != that1.EntityID {
+		return false
+	}
+	if this.Domain != that1.Domain {
+		return false
+	}
+	return true
+}
+func (this *CreateEntityDomainResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreateEntityDomainResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	return true
+}
 func (this *ExternalID) GoString() string {
 	if this == nil {
 		return "nil"
@@ -1323,6 +1467,48 @@ func (this *CreateContactResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *LookupEntityDomainRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&directory.LookupEntityDomainRequest{")
+	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
+	s = append(s, "Domain: "+fmt.Sprintf("%#v", this.Domain)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *LookupEntityDomainResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&directory.LookupEntityDomainResponse{")
+	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
+	s = append(s, "Domain: "+fmt.Sprintf("%#v", this.Domain)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreateEntityDomainRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&directory.CreateEntityDomainRequest{")
+	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
+	s = append(s, "Domain: "+fmt.Sprintf("%#v", this.Domain)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreateEntityDomainResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&directory.CreateEntityDomainResponse{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func valueToGoStringSvc(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -1362,6 +1548,8 @@ type DirectoryClient interface {
 	ExternalIDs(ctx context.Context, in *ExternalIDsRequest, opts ...grpc.CallOption) (*ExternalIDsResponse, error)
 	LookupEntities(ctx context.Context, in *LookupEntitiesRequest, opts ...grpc.CallOption) (*LookupEntitiesResponse, error)
 	LookupEntitiesByContact(ctx context.Context, in *LookupEntitiesByContactRequest, opts ...grpc.CallOption) (*LookupEntitiesByContactResponse, error)
+	LookupEntityDomain(ctx context.Context, in *LookupEntityDomainRequest, opts ...grpc.CallOption) (*LookupEntityDomainResponse, error)
+	CreateEntityDomain(ctx context.Context, in *CreateEntityDomainRequest, opts ...grpc.CallOption) (*CreateEntityDomainResponse, error)
 }
 
 type directoryClient struct {
@@ -1426,6 +1614,24 @@ func (c *directoryClient) LookupEntitiesByContact(ctx context.Context, in *Looku
 	return out, nil
 }
 
+func (c *directoryClient) LookupEntityDomain(ctx context.Context, in *LookupEntityDomainRequest, opts ...grpc.CallOption) (*LookupEntityDomainResponse, error) {
+	out := new(LookupEntityDomainResponse)
+	err := grpc.Invoke(ctx, "/directory.Directory/LookupEntityDomain", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *directoryClient) CreateEntityDomain(ctx context.Context, in *CreateEntityDomainRequest, opts ...grpc.CallOption) (*CreateEntityDomainResponse, error) {
+	out := new(CreateEntityDomainResponse)
+	err := grpc.Invoke(ctx, "/directory.Directory/CreateEntityDomain", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for Directory service
 
 type DirectoryServer interface {
@@ -1435,6 +1641,8 @@ type DirectoryServer interface {
 	ExternalIDs(context.Context, *ExternalIDsRequest) (*ExternalIDsResponse, error)
 	LookupEntities(context.Context, *LookupEntitiesRequest) (*LookupEntitiesResponse, error)
 	LookupEntitiesByContact(context.Context, *LookupEntitiesByContactRequest) (*LookupEntitiesByContactResponse, error)
+	LookupEntityDomain(context.Context, *LookupEntityDomainRequest) (*LookupEntityDomainResponse, error)
+	CreateEntityDomain(context.Context, *CreateEntityDomainRequest) (*CreateEntityDomainResponse, error)
 }
 
 func RegisterDirectoryServer(s *grpc.Server, srv DirectoryServer) {
@@ -1513,6 +1721,30 @@ func _Directory_LookupEntitiesByContact_Handler(srv interface{}, ctx context.Con
 	return out, nil
 }
 
+func _Directory_LookupEntityDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(LookupEntityDomainRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(DirectoryServer).LookupEntityDomain(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Directory_CreateEntityDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(CreateEntityDomainRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(DirectoryServer).CreateEntityDomain(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 var _Directory_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "directory.Directory",
 	HandlerType: (*DirectoryServer)(nil),
@@ -1540,6 +1772,14 @@ var _Directory_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "LookupEntitiesByContact",
 			Handler:    _Directory_LookupEntitiesByContact_Handler,
+		},
+		{
+			MethodName: "LookupEntityDomain",
+			Handler:    _Directory_LookupEntityDomain_Handler,
+		},
+		{
+			MethodName: "CreateEntityDomain",
+			Handler:    _Directory_CreateEntityDomain_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{},
@@ -2181,6 +2421,114 @@ func (m *CreateContactResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *LookupEntityDomainRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *LookupEntityDomainRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.EntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
+		i += copy(data[i:], m.EntityID)
+	}
+	if len(m.Domain) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Domain)))
+		i += copy(data[i:], m.Domain)
+	}
+	return i, nil
+}
+
+func (m *LookupEntityDomainResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *LookupEntityDomainResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.EntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
+		i += copy(data[i:], m.EntityID)
+	}
+	if len(m.Domain) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Domain)))
+		i += copy(data[i:], m.Domain)
+	}
+	return i, nil
+}
+
+func (m *CreateEntityDomainRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreateEntityDomainRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.EntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
+		i += copy(data[i:], m.EntityID)
+	}
+	if len(m.Domain) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Domain)))
+		i += copy(data[i:], m.Domain)
+	}
+	return i, nil
+}
+
+func (m *CreateEntityDomainResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreateEntityDomainResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	return i, nil
+}
+
 func encodeFixed64Svc(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -2487,6 +2835,54 @@ func (m *CreateContactResponse) Size() (n int) {
 	return n
 }
 
+func (m *LookupEntityDomainRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.EntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Domain)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *LookupEntityDomainResponse) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.EntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Domain)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *CreateEntityDomainRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.EntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Domain)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *CreateEntityDomainResponse) Size() (n int) {
+	var l int
+	_ = l
+	return n
+}
+
 func sovSvc(x uint64) (n int) {
 	for {
 		n++
@@ -2699,6 +3095,48 @@ func (this *CreateContactResponse) String() string {
 	}
 	s := strings.Join([]string{`&CreateContactResponse{`,
 		`Entity:` + strings.Replace(fmt.Sprintf("%v", this.Entity), "Entity", "Entity", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *LookupEntityDomainRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&LookupEntityDomainRequest{`,
+		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
+		`Domain:` + fmt.Sprintf("%v", this.Domain) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *LookupEntityDomainResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&LookupEntityDomainResponse{`,
+		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
+		`Domain:` + fmt.Sprintf("%v", this.Domain) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateEntityDomainRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateEntityDomainRequest{`,
+		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
+		`Domain:` + fmt.Sprintf("%v", this.Domain) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateEntityDomainResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateEntityDomainResponse{`,
 		`}`,
 	}, "")
 	return s
@@ -4623,6 +5061,380 @@ func (m *CreateContactResponse) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *LookupEntityDomainRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LookupEntityDomainRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LookupEntityDomainRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Domain", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Domain = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *LookupEntityDomainResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LookupEntityDomainResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LookupEntityDomainResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Domain", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Domain = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateEntityDomainRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateEntityDomainRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateEntityDomainRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Domain", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Domain = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateEntityDomainResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateEntityDomainResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateEntityDomainResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

@@ -39,6 +39,8 @@ type DAL interface {
 	Event(id EventID) (*Event, error)
 	UpdateEvent(id EventID, update *EventUpdate) (int64, error)
 	DeleteEvent(id EventID) (int64, error)
+	EntityDomain(id *EntityID, domain *string) (EntityID, string, error)
+	InsertEntityDomain(id EntityID, domain string) error
 }
 
 type dal struct {
@@ -862,4 +864,39 @@ func scanEntity(row dbutil.Scanner) (*Entity, error) {
 		return nil, errors.Trace(api.ErrNotFound("directory - Entity not found"))
 	}
 	return &m, errors.Trace(err)
+}
+
+func (d *dal) EntityDomain(id *EntityID, domain *string) (EntityID, string, error) {
+	if id == nil && domain == nil {
+		return EmptyEntityID(), "", errors.Trace(errors.New("either entity_id or domain must be specified to lookup entity_domain"))
+	}
+
+	where := make([]string, 0, 2)
+	vals := make([]interface{}, 0, 2)
+
+	if id != nil {
+		where = append(where, "entity_id = ?")
+		vals = append(vals, id)
+	}
+	if domain != nil {
+		where = append(where, "domain = ?")
+		vals = append(vals, domain)
+	}
+
+	var queriedDomain string
+	var queriedEntityID EntityID
+	if err := d.db.QueryRow(`
+		SELECT entity_id, domain
+		FROM entity_domain
+		WHERE `+strings.Join(where, " AND"), vals...).Scan(&queriedEntityID, &queriedDomain); err == sql.ErrNoRows {
+		return EmptyEntityID(), "", errors.Trace(api.ErrNotFound("entity_domain not found"))
+	} else if err != nil {
+		return EmptyEntityID(), "", errors.Trace(err)
+	}
+
+	return queriedEntityID, queriedDomain, nil
+}
+func (d *dal) InsertEntityDomain(id EntityID, domain string) error {
+	_, err := d.db.Exec(`REPLACE INTO entity_domain (entity_id, domain) VALUES (?,?)`, id, domain)
+	return errors.Trace(err)
 }

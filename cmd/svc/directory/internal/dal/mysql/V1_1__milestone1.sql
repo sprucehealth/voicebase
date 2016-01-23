@@ -52,3 +52,13 @@ CREATE TABLE directory.event (
     CONSTRAINT fk_entity_event_entity_id FOREIGN KEY (entity_id) REFERENCES directory.entity(id) ON DELETE NO ACTION ON UPDATE NO ACTION,
     CONSTRAINT pk_entity_event PRIMARY KEY (id)
 ) engine=InnoDB;
+
+CREATE TABLE directory.entity_domain (
+    entity_id            bigint UNSIGNED NOT NULL,
+    domain               varchar(255) NOT NULL,
+    created              timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pk_entity_domain PRIMARY KEY (entity_id, domain),
+    CONSTRAINT fk_entity_id FOREIGN KEY (entity_id) REFERENCES directory.entity(id) ON DELETE NO ACTION ON UPDATE NO ACTION,
+    UNIQUE KEY unique_idx_domain (domain),
+    UNIQUE KEY unique_idx_entity_id (entity_id)
+) engine=InnoDB;

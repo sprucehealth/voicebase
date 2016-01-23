@@ -38,6 +38,7 @@ var (
 	flagWebDomain     = flag.String("web_domain", "", "Web `domain`")
 	flagStorageBucket = flag.String("storage_bucket", "", "storage bucket for media")
 	flagSigKeys       = flag.String("signature_keys_csv", "", "csv signature keys")
+	flagEmailDomain   = flag.String("email_domain", "", "domain to use for email address provisioning")
 
 	// Services
 	flagAuthAddr                 = flag.String("auth_addr", "", "host:port of auth service")
@@ -142,6 +143,9 @@ func main() {
 	if *flagStorageBucket == "" {
 		golog.Fatalf("Storage bucket not specified")
 	}
+	if *flagEmailDomain == "" {
+		golog.Fatalf("Email domain not specified")
+	}
 
 	sigKeys := strings.Split(*flagSigKeys, ",")
 	sigKeysByteSlice := make([][]byte, len(sigKeys))
@@ -157,7 +161,7 @@ func main() {
 
 	corsOrigins := []string{"https://" + *flagWebDomain}
 
-	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, ms)
+	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, ms, *flagEmailDomain)
 	r.Handle("/graphql", httputil.ToContextHandler(cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},

@@ -11,6 +11,8 @@ import (
 	thmock "github.com/sprucehealth/backend/svc/threading/mock"
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 func TestNodeQuery(t *testing.T) {
@@ -342,4 +344,97 @@ func TestNodeQuery(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, &savedThreadQuery{ID: id, OrganizationID: "entity_1"}, res)
 	mock.FinishAll(thC)
+}
+
+func TestSubdomainQuery_Unavailable(t *testing.T) {
+	subdomainField := queryType.Fields()["subdomain"]
+
+	dirC := dirmock.New(t)
+	thC := thmock.New(t)
+	defer dirC.Finish()
+	defer thC.Finish()
+
+	acc := &account{ID: "account:12345"}
+	ctx := context.Background()
+	ctx = ctxWithAccount(ctx, acc)
+	p := graphql.ResolveParams{
+		Context: ctx,
+		Info: graphql.ResolveInfo{
+			RootValue: map[string]interface{}{
+				"service": &service{
+					// auth      auth.AuthClient
+					directory: dirC,
+					threading: thC,
+					// exComms   excomms.ExCommsClient
+				},
+			},
+		},
+	}
+
+	p.Args = map[string]interface{}{
+		"value": "mypractice",
+	}
+	dirC.Expect(mock.NewExpectation(dirC.LookupEntityDomain,
+		&directory.LookupEntityDomainRequest{
+			Domain: "mypractice",
+		},
+	).WithReturns(
+		&directory.LookupEntityDomainResponse{
+			EntityID: "dkgj",
+			Domain:   "mypractice",
+		},
+		nil),
+	)
+
+	res, err := subdomainField.Resolve(p)
+	test.OK(t, err)
+	test.Equals(t, &subdomain{
+		Available: false,
+	}, res)
+	mock.FinishAll(dirC)
+}
+
+func TestSubdomainQuery_Available(t *testing.T) {
+	subdomainField := queryType.Fields()["subdomain"]
+
+	dirC := dirmock.New(t)
+	thC := thmock.New(t)
+	defer dirC.Finish()
+	defer thC.Finish()
+
+	acc := &account{ID: "account:12345"}
+	ctx := context.Background()
+	ctx = ctxWithAccount(ctx, acc)
+	p := graphql.ResolveParams{
+		Context: ctx,
+		Info: graphql.ResolveInfo{
+			RootValue: map[string]interface{}{
+				"service": &service{
+					// auth      auth.AuthClient
+					directory: dirC,
+					threading: thC,
+					// exComms   excomms.ExCommsClient
+				},
+			},
+		},
+	}
+
+	// Available
+	p.Args = map[string]interface{}{
+		"value": "anotherpractice",
+	}
+	dirC.Expect(mock.NewExpectation(dirC.LookupEntityDomain,
+		&directory.LookupEntityDomainRequest{
+			Domain: "anotherpractice",
+		},
+	).WithReturns(
+		&directory.LookupEntityDomainResponse{},
+		grpc.Errorf(codes.NotFound, "entity_domain not found")),
+	)
+	res, err := subdomainField.Resolve(p)
+	test.OK(t, err)
+	test.Equals(t, &subdomain{
+		Available: true,
+	}, res)
+	mock.FinishAll(dirC)
 }

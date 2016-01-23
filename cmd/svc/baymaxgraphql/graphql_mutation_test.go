@@ -6,9 +6,12 @@ import (
 
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 func TestPostMessage(t *testing.T) {
@@ -215,6 +218,595 @@ func TestPostMessage(t *testing.T) {
 				"subtitle": "Schmee: foo",
 				"title": "Barro"
 			}
+		}
+	}
+}`, string(b))
+}
+
+func TestProvisionEmail_Organization(t *testing.T) {
+	g := newGQL(t)
+	defer g.finish()
+
+	ctx := context.Background()
+	acc := &account{
+		ID: "account:12345",
+	}
+	ctx = ctxWithAccount(ctx, acc)
+
+	g.svc.emailDomain = "amdava.com"
+	entityID := "e1"
+	localPart := "sup"
+	subdomain := "pup"
+	emailToProvision := "sup@pup.amdava.com"
+
+	// Looking up the orgnaization entity
+	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: entityID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_MEMBERSHIPS,
+				directory.EntityInformation_CONTACTS,
+			},
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:          entityID,
+				Type:        directory.EntityType_ORGANIZATION,
+				Name:        "Schmee",
+				Memberships: []*directory.Entity{},
+			},
+		},
+	}, nil))
+
+	// Lookup whether the domain exists or not
+	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntityDomain, &directory.LookupEntityDomainRequest{
+		EntityID: entityID,
+		Domain:   "",
+	}).WithReturns(&directory.LookupEntityDomainResponse{}, grpc.Errorf(codes.NotFound, "")))
+
+	// Create domain
+	g.dirC.Expect(mock.NewExpectation(g.dirC.CreateEntityDomain, &directory.CreateEntityDomainRequest{
+		EntityID: entityID,
+		Domain:   "pup",
+	}).WithReturns(&directory.CreateEntityDomainResponse{}, nil))
+
+	// provision the email address
+	g.dirC.Expect(mock.NewExpectation(g.dirC.CreateContact, &directory.CreateContactRequest{
+		EntityID: entityID,
+		Contact: &directory.Contact{
+			ContactType: directory.ContactType_EMAIL,
+			Value:       "sup@pup.amdava.com",
+			Provisioned: true,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_MEMBERSHIPS,
+				directory.EntityInformation_CONTACTS,
+			},
+		},
+	}).WithReturns(&directory.CreateContactResponse{
+		Entity: &directory.Entity{
+			ID:          entityID,
+			Type:        directory.EntityType_ORGANIZATION,
+			Name:        "Schmee",
+			Memberships: []*directory.Entity{},
+			Contacts: []*directory.Contact{
+				{
+					ContactType: directory.ContactType_EMAIL,
+					Value:       "sup@pup.amdava.com",
+					Provisioned: true,
+				},
+			},
+		},
+	}, nil))
+
+	// Provision email address
+	g.exC.Expect(mock.NewExpectation(g.exC.ProvisionEmailAddress, &excomms.ProvisionEmailAddressRequest{
+		ProvisionFor: entityID,
+		EmailAddress: emailToProvision,
+	}).WithReturns(&excomms.ProvisionEmailAddressResponse{
+		EmailAddress: emailToProvision,
+	}, nil))
+
+	// Provisioning email address
+
+	res := g.query(ctx, `
+		mutation _ ($entityID: String!, $localPart: String!, $subdomain: String!) {
+			provisionEmail(input: {
+				clientMutationId: "a1b2c3",
+				localPart: $localPart,
+				subdomain: $subdomain,
+				entityID: $entityID,
+			}) {
+				clientMutationId
+				result
+				entity {
+					 contacts {
+						type
+						value
+						provisioned
+					}
+				}
+			}
+		}`, map[string]interface{}{
+		"entityID":  entityID,
+		"localPart": localPart,
+		"subdomain": subdomain,
+	})
+	b, err := json.MarshalIndent(res, "", "\t")
+	test.OK(t, err)
+	test.Equals(t, `{
+	"data": {
+		"provisionEmail": {
+			"clientMutationId": "a1b2c3",
+			"entity": {
+				"contacts": [
+					{
+						"provisioned": true,
+						"type": "EMAIL",
+						"value": "sup@pup.amdava.com"
+					}
+				]
+			},
+			"result": "SUCCESS"
+		}
+	}
+}`, string(b))
+}
+
+func TestProvisionEmail_Internal(t *testing.T) {
+	g := newGQL(t)
+	defer g.finish()
+
+	ctx := context.Background()
+	acc := &account{
+		ID: "account:12345",
+	}
+	ctx = ctxWithAccount(ctx, acc)
+
+	organizationID := "o1"
+	g.svc.emailDomain = "amdava.com"
+	entityID := "e1"
+	localPart := "sup"
+	subdomain := "pup"
+	emailToProvision := "sup@pup.amdava.com"
+
+	// Looking up the organization entity
+	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: entityID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_MEMBERSHIPS,
+				directory.EntityInformation_CONTACTS,
+			},
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:   entityID,
+				Type: directory.EntityType_INTERNAL,
+				Name: "Schmee",
+				Memberships: []*directory.Entity{
+					&directory.Entity{
+						Type: directory.EntityType_ORGANIZATION,
+						ID:   organizationID,
+					},
+				},
+			},
+		},
+	}, nil))
+
+	// Lookup whether the domain exists or not
+	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntityDomain, &directory.LookupEntityDomainRequest{
+		EntityID: organizationID,
+		Domain:   "",
+	}).WithReturns(&directory.LookupEntityDomainResponse{
+		EntityID: organizationID,
+		Domain:   "pup",
+	}, nil))
+
+	// provision the email address
+	g.dirC.Expect(mock.NewExpectation(g.dirC.CreateContact, &directory.CreateContactRequest{
+		EntityID: entityID,
+		Contact: &directory.Contact{
+			ContactType: directory.ContactType_EMAIL,
+			Value:       "sup@pup.amdava.com",
+			Provisioned: true,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_MEMBERSHIPS,
+				directory.EntityInformation_CONTACTS,
+			},
+		},
+	}).WithReturns(&directory.CreateContactResponse{
+		Entity: &directory.Entity{
+			ID:          entityID,
+			Type:        directory.EntityType_ORGANIZATION,
+			Name:        "Schmee",
+			Memberships: []*directory.Entity{},
+			Contacts: []*directory.Contact{
+				{
+					ContactType: directory.ContactType_EMAIL,
+					Value:       "sup@pup.amdava.com",
+					Provisioned: true,
+				},
+			},
+		},
+	}, nil))
+
+	// Provision email address
+	g.exC.Expect(mock.NewExpectation(g.exC.ProvisionEmailAddress, &excomms.ProvisionEmailAddressRequest{
+		ProvisionFor: entityID,
+		EmailAddress: emailToProvision,
+	}).WithReturns(&excomms.ProvisionEmailAddressResponse{
+		EmailAddress: emailToProvision,
+	}, nil))
+
+	// Provisioning email address
+
+	res := g.query(ctx, `
+		mutation _ ($entityID: String!, $localPart: String!, $subdomain: String!) {
+			provisionEmail(input: {
+				clientMutationId: "a1b2c3",
+				localPart: $localPart,
+				subdomain: $subdomain,
+				entityID: $entityID,
+			}) {
+				clientMutationId
+				result
+				entity {
+					 contacts {
+						type
+						value
+						provisioned
+					}
+				}
+			}
+		}`, map[string]interface{}{
+		"entityID":  entityID,
+		"localPart": localPart,
+		"subdomain": subdomain,
+	})
+	b, err := json.MarshalIndent(res, "", "\t")
+	test.OK(t, err)
+	test.Equals(t, `{
+	"data": {
+		"provisionEmail": {
+			"clientMutationId": "a1b2c3",
+			"entity": {
+				"contacts": [
+					{
+						"provisioned": true,
+						"type": "EMAIL",
+						"value": "sup@pup.amdava.com"
+					}
+				]
+			},
+			"result": "SUCCESS"
+		}
+	}
+}`, string(b))
+}
+
+func TestProvisionEmail_Organization_DomainExists(t *testing.T) {
+	g := newGQL(t)
+	defer g.finish()
+
+	ctx := context.Background()
+	acc := &account{
+		ID: "account:12345",
+	}
+	ctx = ctxWithAccount(ctx, acc)
+
+	g.svc.emailDomain = "amdava.com"
+	entityID := "e1"
+	localPart := "sup"
+	subdomain := "pup"
+	emailToProvision := "sup@pup.amdava.com"
+
+	// Looking up the orgnaization entity
+	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: entityID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_MEMBERSHIPS,
+				directory.EntityInformation_CONTACTS,
+			},
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:          entityID,
+				Type:        directory.EntityType_ORGANIZATION,
+				Name:        "Schmee",
+				Memberships: []*directory.Entity{},
+			},
+		},
+	}, nil))
+
+	// Lookup whether the domain exists or not
+	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntityDomain, &directory.LookupEntityDomainRequest{
+		EntityID: entityID,
+		Domain:   "",
+	}).WithReturns(&directory.LookupEntityDomainResponse{
+		EntityID: entityID,
+		Domain:   "pup",
+	}, nil))
+
+	// provision the email address
+	g.dirC.Expect(mock.NewExpectation(g.dirC.CreateContact, &directory.CreateContactRequest{
+		EntityID: entityID,
+		Contact: &directory.Contact{
+			ContactType: directory.ContactType_EMAIL,
+			Value:       "sup@pup.amdava.com",
+			Provisioned: true,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_MEMBERSHIPS,
+				directory.EntityInformation_CONTACTS,
+			},
+		},
+	}).WithReturns(&directory.CreateContactResponse{
+		Entity: &directory.Entity{
+			ID:          entityID,
+			Type:        directory.EntityType_ORGANIZATION,
+			Name:        "Schmee",
+			Memberships: []*directory.Entity{},
+			Contacts: []*directory.Contact{
+				{
+					ContactType: directory.ContactType_EMAIL,
+					Value:       "sup@pup.amdava.com",
+					Provisioned: true,
+				},
+			},
+		},
+	}, nil))
+
+	// Provision email address
+	g.exC.Expect(mock.NewExpectation(g.exC.ProvisionEmailAddress, &excomms.ProvisionEmailAddressRequest{
+		ProvisionFor: entityID,
+		EmailAddress: emailToProvision,
+	}).WithReturns(&excomms.ProvisionEmailAddressResponse{
+		EmailAddress: emailToProvision,
+	}, nil))
+
+	// Provisioning email address
+
+	res := g.query(ctx, `
+		mutation _ ($entityID: String!, $localPart: String!, $subdomain: String!) {
+			provisionEmail(input: {
+				clientMutationId: "a1b2c3",
+				localPart: $localPart,
+				subdomain: $subdomain,
+				entityID: $entityID,
+			}) {
+				clientMutationId
+				result
+				entity {
+					 contacts {
+						type
+						value
+						provisioned
+					}
+				}
+			}
+		}`, map[string]interface{}{
+		"entityID":  entityID,
+		"localPart": localPart,
+		"subdomain": subdomain,
+	})
+	b, err := json.MarshalIndent(res, "", "\t")
+	test.OK(t, err)
+	test.Equals(t, `{
+	"data": {
+		"provisionEmail": {
+			"clientMutationId": "a1b2c3",
+			"entity": {
+				"contacts": [
+					{
+						"provisioned": true,
+						"type": "EMAIL",
+						"value": "sup@pup.amdava.com"
+					}
+				]
+			},
+			"result": "SUCCESS"
+		}
+	}
+}`, string(b))
+}
+
+func TestProvisionEmail_Organization_DomainInUse(t *testing.T) {
+	g := newGQL(t)
+	defer g.finish()
+
+	ctx := context.Background()
+	acc := &account{
+		ID: "account:12345",
+	}
+	ctx = ctxWithAccount(ctx, acc)
+
+	g.svc.emailDomain = "amdava.com"
+	entityID := "e1"
+	localPart := "sup"
+	subdomain := "pup"
+
+	// Looking up the orgnaization entity
+	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: entityID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_MEMBERSHIPS,
+				directory.EntityInformation_CONTACTS,
+			},
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:          entityID,
+				Type:        directory.EntityType_ORGANIZATION,
+				Name:        "Schmee",
+				Memberships: []*directory.Entity{},
+			},
+		},
+	}, nil))
+
+	// Lookup whether the domain exists or not
+	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntityDomain, &directory.LookupEntityDomainRequest{
+		EntityID: entityID,
+		Domain:   "",
+	}).WithReturns(&directory.LookupEntityDomainResponse{
+		EntityID: entityID,
+		Domain:   "dup",
+	}, nil))
+
+	// Provisioning email address
+
+	res := g.query(ctx, `
+		mutation _ ($entityID: String!, $localPart: String!, $subdomain: String!) {
+			provisionEmail(input: {
+				clientMutationId: "a1b2c3",
+				localPart: $localPart,
+				subdomain: $subdomain,
+				entityID: $entityID,
+			}) {
+				clientMutationId
+				result
+				entity {
+					 contacts {
+						type
+						value
+						provisioned
+					}
+				}
+			}
+		}`, map[string]interface{}{
+		"entityID":  entityID,
+		"localPart": localPart,
+		"subdomain": subdomain,
+	})
+	b, err := json.MarshalIndent(res, "", "\t")
+	test.OK(t, err)
+	test.Equals(t, `{
+	"data": {
+		"provisionEmail": {
+			"clientMutationId": "a1b2c3",
+			"entity": null,
+			"result": "SUBDOMAIN_IN_USE"
+		}
+	}
+}`, string(b))
+}
+
+func TestProvisionEmail_Organization_EmailInUse(t *testing.T) {
+	g := newGQL(t)
+	defer g.finish()
+
+	ctx := context.Background()
+	acc := &account{
+		ID: "account:12345",
+	}
+	ctx = ctxWithAccount(ctx, acc)
+
+	g.svc.emailDomain = "amdava.com"
+	entityID := "e1"
+	localPart := "sup"
+	subdomain := "pup"
+	emailToProvision := "sup@pup.amdava.com"
+
+	// Looking up the orgnaization entity
+	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: entityID,
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_MEMBERSHIPS,
+				directory.EntityInformation_CONTACTS,
+			},
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:          entityID,
+				Type:        directory.EntityType_ORGANIZATION,
+				Name:        "Schmee",
+				Memberships: []*directory.Entity{},
+			},
+		},
+	}, nil))
+
+	// Lookup whether the domain exists or not
+	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntityDomain, &directory.LookupEntityDomainRequest{
+		EntityID: entityID,
+		Domain:   "",
+	}).WithReturns(&directory.LookupEntityDomainResponse{
+		EntityID: entityID,
+		Domain:   "pup",
+	}, nil))
+
+	// provision the email address
+	g.exC.Expect(mock.NewExpectation(g.exC.ProvisionEmailAddress, &excomms.ProvisionEmailAddressRequest{
+		ProvisionFor: entityID,
+		EmailAddress: emailToProvision,
+	}).WithReturns(&excomms.ProvisionEmailAddressResponse{}, grpc.Errorf(codes.AlreadyExists, "")))
+	// Provisioning email address
+
+	res := g.query(ctx, `
+		mutation _ ($entityID: String!, $localPart: String!, $subdomain: String!) {
+			provisionEmail(input: {
+				clientMutationId: "a1b2c3",
+				localPart: $localPart,
+				subdomain: $subdomain,
+				entityID: $entityID,
+			}) {
+				clientMutationId
+				result
+				entity {
+					 contacts {
+						type
+						value
+						provisioned
+					}
+				}
+			}
+		}`, map[string]interface{}{
+		"localPart": localPart,
+		"subdomain": subdomain,
+		"entityID":  entityID,
+	})
+	b, err := json.MarshalIndent(res, "", "\t")
+	test.OK(t, err)
+	test.Equals(t, `{
+	"data": {
+		"provisionEmail": {
+			"clientMutationId": "a1b2c3",
+			"entity": null,
+			"result": "LOCAL_PART_IN_USE"
 		}
 	}
 }`, string(b))

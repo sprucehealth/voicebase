@@ -485,6 +485,37 @@ func TestCreateContactInvalidEmail(t *testing.T) {
 	mock.FinishAll(dl)
 }
 
+func TestCreateEntityDomain(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	s := New(dl)
+	eID1, err := dal.NewEntityID()
+	test.OK(t, err)
+
+	dl.Expect(mock.NewExpectation(dl.InsertEntityDomain, eID1, "domain"))
+	_, err = s.CreateEntityDomain(context.Background(), &directory.CreateEntityDomainRequest{
+		EntityID: eID1.String(),
+		Domain:   "domain",
+	})
+	test.OK(t, err)
+	mock.FinishAll(dl)
+}
+
+func TestLookupEntityDomain(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	s := New(dl)
+	eID1, err := dal.NewEntityID()
+	test.OK(t, err)
+
+	dl.Expect(mock.NewExpectation(dl.EntityDomain, &eID1).WithReturns(eID1, "hello", nil))
+	res, err := s.LookupEntityDomain(context.Background(), &directory.LookupEntityDomainRequest{
+		EntityID: eID1.String(),
+	})
+	test.OK(t, err)
+	test.Equals(t, eID1.String(), res.EntityID)
+	test.Equals(t, "hello", res.Domain)
+	mock.FinishAll(dl)
+}
+
 func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	s := New(dl)

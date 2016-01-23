@@ -116,6 +116,30 @@ var queryType = graphql.NewObject(
 					return it, err
 				},
 			},
+			"subdomain": &graphql.Field{
+				Type: graphql.NewNonNull(subdomainType),
+				Args: graphql.FieldConfigArgument{
+					"value": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				},
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					svc := serviceFromParams(p)
+					ctx := p.Context
+					acc := accountFromContext(ctx)
+					domain := p.Args["value"].(string)
+					if acc == nil {
+						return nil, errNotAuthenticated
+					}
+
+					queriedEntityID, queriedDomain, err := svc.entityDomain(ctx, "", domain)
+					if err != nil {
+						return nil, err
+					}
+
+					return &subdomain{
+						Available: queriedEntityID == "" && queriedDomain == "",
+					}, nil
+				},
+			},
 		},
 	},
 )

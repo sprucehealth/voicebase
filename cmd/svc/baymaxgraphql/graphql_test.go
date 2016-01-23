@@ -6,6 +6,7 @@ import (
 	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/conc"
 	dirmock "github.com/sprucehealth/backend/svc/directory/mock"
+	excmock "github.com/sprucehealth/backend/svc/excomms/mock"
 	thmock "github.com/sprucehealth/backend/svc/threading/mock"
 	"golang.org/x/net/context"
 )
@@ -13,6 +14,7 @@ import (
 type gql struct {
 	dirC *dirmock.Client
 	thC  *thmock.Client
+	exC  *excmock.Client
 	svc  *service
 }
 
@@ -20,10 +22,12 @@ func newGQL(t *testing.T) *gql {
 	var g gql
 	g.dirC = dirmock.New(t)
 	g.thC = thmock.New(t)
+	g.exC = excmock.New(t)
 	g.svc = &service{
 		// auth      auth.AuthClient
 		directory: g.dirC,
 		threading: g.thC,
+		exComms:   g.exC,
 		// exComms   excomms.ExCommsClient
 	}
 	return &g

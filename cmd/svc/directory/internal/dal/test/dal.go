@@ -198,6 +198,24 @@ func (dl *mockDAL) DeleteEvent(id dal.EventID) (int64, error) {
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
+func (dl *mockDAL) EntityDomain(id *dal.EntityID, domain *string) (dal.EntityID, string, error) {
+	rets := dl.Expector.Record(id)
+	if len(rets) == 0 {
+		return dal.EmptyEntityID(), "", nil
+	}
+
+	return rets[0].(dal.EntityID), rets[1].(string), mock.SafeError(rets[2])
+}
+
+func (dl *mockDAL) InsertEntityDomain(id dal.EntityID, domain string) error {
+	rets := dl.Expector.Record(id, domain)
+	if len(rets) == 0 {
+		return nil
+	}
+
+	return mock.SafeError(rets[0])
+}
+
 func (dl *mockDAL) Transact(trans func(dal dal.DAL) error) (err error) {
 	if err := trans(dl); err != nil {
 		return errors.Trace(err)

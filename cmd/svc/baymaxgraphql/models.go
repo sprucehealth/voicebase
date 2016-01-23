@@ -136,3 +136,7 @@ type organization struct {
 	Name     string         `json:"name"`
 	Contacts []*contactInfo `json:"contacts"`
 }
+
+type subdomain struct {
+	Available bool `json:"available"`
+}

@@ -75,3 +75,19 @@ func (c *Client) ExternalIDs(ctx context.Context, in *directory.ExternalIDsReque
 	}
 	return rets[0].(*directory.ExternalIDsResponse), mock.SafeError(rets[1])
 }
+
+func (c *Client) LookupEntityDomain(ctx context.Context, in *directory.LookupEntityDomainRequest, opts ...grpc.CallOption) (*directory.LookupEntityDomainResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*directory.LookupEntityDomainResponse), mock.SafeError(rets[1])
+}
+
+func (c *Client) CreateEntityDomain(ctx context.Context, in *directory.CreateEntityDomainRequest, opts ...grpc.CallOption) (*directory.CreateEntityDomainResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*directory.CreateEntityDomainResponse), mock.SafeError(rets[1])
+}

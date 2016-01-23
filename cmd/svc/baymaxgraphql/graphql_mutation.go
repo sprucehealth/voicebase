@@ -1111,5 +1111,6 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				}, nil
 			},
 		},
+		"provisionEmail": provisionEmailField,
 	},
 })

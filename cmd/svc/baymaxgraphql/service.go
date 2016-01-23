@@ -23,6 +23,7 @@ type service struct {
 	exComms      excomms.ExCommsClient
 	notification notification.Client
 	mediaSigner  *media.Signer
+	emailDomain  string
 }
 
 func (s *service) hydrateThreadTitles(ctx context.Context, threads []*thread) error {
@@ -122,4 +123,18 @@ func (s *service) entity(ctx context.Context, entityID string) (*directory.Entit
 		return e, nil
 	}
 	return nil, nil
+}
+
+func (s *service) entityDomain(ctx context.Context, entityID, domain string) (string, string, error) {
+	res, err := s.directory.LookupEntityDomain(ctx, &directory.LookupEntityDomainRequest{
+		Domain:   domain,
+		EntityID: entityID,
+	})
+	if grpc.Code(err) == codes.NotFound {
+		return "", "", nil
+	} else if err != nil {
+		return "", "", errors.Trace(err)
+	}
+
+	return res.EntityID, res.Domain, errors.Trace(err)
 }

@@ -106,7 +106,14 @@ type graphQLHandler struct {
 }
 
 // NewGraphQL returns an initialized instance of graphQLHandler
-func NewGraphQL(authClient auth.AuthClient, directoryClient directory.DirectoryClient, threadingClient threading.ThreadsClient, exComms excomms.ExCommsClient, notificationClient notification.Client, mediaSigner *media.Signer) httputil.ContextHandler {
+func NewGraphQL(
+	authClient auth.AuthClient,
+	directoryClient directory.DirectoryClient,
+	threadingClient threading.ThreadsClient,
+	exComms excomms.ExCommsClient,
+	notificationClient notification.Client,
+	mediaSigner *media.Signer,
+	emailDomain string) httputil.ContextHandler {
 	return &graphQLHandler{
 		service: &service{
 			auth:         authClient,
@@ -115,6 +122,7 @@ func NewGraphQL(authClient auth.AuthClient, directoryClient directory.DirectoryC
 			exComms:      exComms,
 			notification: notificationClient,
 			mediaSigner:  mediaSigner,
+			emailDomain:  emailDomain,
 		},
 	}
 }
