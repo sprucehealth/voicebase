@@ -46,6 +46,8 @@
 		UpdateSavedQueryResponse
 		DeleteMessageRequest
 		DeleteMessageResponse
+		DeleteThreadRequest
+		DeleteThreadResponse
 		UpdateThreadMembershipRequest
 		UpdateThreadMembershipResponse
 		CreateThreadRequest
@@ -1024,9 +1026,8 @@ func (m *UpdateSavedQueryResponse) Reset()      { *m = UpdateSavedQueryResponse{
 func (*UpdateSavedQueryResponse) ProtoMessage() {}
 
 type DeleteMessageRequest struct {
-	OrganizationID string `protobuf:"bytes,1,opt,name=organization_id,proto3" json:"organization_id,omitempty"`
-	ActorEntityID  string `protobuf:"bytes,2,opt,name=actor_entity_id,proto3" json:"actor_entity_id,omitempty"`
-	ThreadItemID   string `protobuf:"bytes,3,opt,name=thread_item_id,proto3" json:"thread_item_id,omitempty"`
+	ActorEntityID string `protobuf:"bytes,1,opt,name=actor_entity_id,proto3" json:"actor_entity_id,omitempty"`
+	ThreadItemID  string `protobuf:"bytes,2,opt,name=thread_item_id,proto3" json:"thread_item_id,omitempty"`
 }
 
 func (m *DeleteMessageRequest) Reset()      { *m = DeleteMessageRequest{} }
@@ -1037,6 +1038,20 @@ type DeleteMessageResponse struct {
 
 func (m *DeleteMessageResponse) Reset()      { *m = DeleteMessageResponse{} }
 func (*DeleteMessageResponse) ProtoMessage() {}
+
+type DeleteThreadRequest struct {
+	ActorEntityID string `protobuf:"bytes,1,opt,name=actor_entity_id,proto3" json:"actor_entity_id,omitempty"`
+	ThreadID      string `protobuf:"bytes,2,opt,name=thread_id,proto3" json:"thread_id,omitempty"`
+}
+
+func (m *DeleteThreadRequest) Reset()      { *m = DeleteThreadRequest{} }
+func (*DeleteThreadRequest) ProtoMessage() {}
+
+type DeleteThreadResponse struct {
+}
+
+func (m *DeleteThreadResponse) Reset()      { *m = DeleteThreadResponse{} }
+func (*DeleteThreadResponse) ProtoMessage() {}
 
 type UpdateThreadMembershipRequest struct {
 	OrganizationID string `protobuf:"bytes,1,opt,name=organization_id,proto3" json:"organization_id,omitempty"`
@@ -1259,6 +1274,8 @@ func init() {
 	proto.RegisterType((*UpdateSavedQueryResponse)(nil), "threading.UpdateSavedQueryResponse")
 	proto.RegisterType((*DeleteMessageRequest)(nil), "threading.DeleteMessageRequest")
 	proto.RegisterType((*DeleteMessageResponse)(nil), "threading.DeleteMessageResponse")
+	proto.RegisterType((*DeleteThreadRequest)(nil), "threading.DeleteThreadRequest")
+	proto.RegisterType((*DeleteThreadResponse)(nil), "threading.DeleteThreadResponse")
 	proto.RegisterType((*UpdateThreadMembershipRequest)(nil), "threading.UpdateThreadMembershipRequest")
 	proto.RegisterType((*UpdateThreadMembershipResponse)(nil), "threading.UpdateThreadMembershipResponse")
 	proto.RegisterType((*CreateThreadRequest)(nil), "threading.CreateThreadRequest")
@@ -2698,9 +2715,6 @@ func (this *DeleteMessageRequest) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.OrganizationID != that1.OrganizationID {
-		return false
-	}
 	if this.ActorEntityID != that1.ActorEntityID {
 		return false
 	}
@@ -2718,6 +2732,56 @@ func (this *DeleteMessageResponse) Equal(that interface{}) bool {
 	}
 
 	that1, ok := that.(*DeleteMessageResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *DeleteThreadRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*DeleteThreadRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.ActorEntityID != that1.ActorEntityID {
+		return false
+	}
+	if this.ThreadID != that1.ThreadID {
+		return false
+	}
+	return true
+}
+func (this *DeleteThreadResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*DeleteThreadResponse)
 	if !ok {
 		return false
 	}
@@ -3693,9 +3757,8 @@ func (this *DeleteMessageRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 6)
 	s = append(s, "&threading.DeleteMessageRequest{")
-	s = append(s, "OrganizationID: "+fmt.Sprintf("%#v", this.OrganizationID)+",\n")
 	s = append(s, "ActorEntityID: "+fmt.Sprintf("%#v", this.ActorEntityID)+",\n")
 	s = append(s, "ThreadItemID: "+fmt.Sprintf("%#v", this.ThreadItemID)+",\n")
 	s = append(s, "}")
@@ -3707,6 +3770,26 @@ func (this *DeleteMessageResponse) GoString() string {
 	}
 	s := make([]string, 0, 4)
 	s = append(s, "&threading.DeleteMessageResponse{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DeleteThreadRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&threading.DeleteThreadRequest{")
+	s = append(s, "ActorEntityID: "+fmt.Sprintf("%#v", this.ActorEntityID)+",\n")
+	s = append(s, "ThreadID: "+fmt.Sprintf("%#v", this.ThreadID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DeleteThreadResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&threading.DeleteThreadResponse{")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -3924,6 +4007,8 @@ type ThreadsClient interface {
 	CreateThread(ctx context.Context, in *CreateThreadRequest, opts ...grpc.CallOption) (*CreateThreadResponse, error)
 	// DeleteMessage deletes a message from a thread
 	DeleteMessage(ctx context.Context, in *DeleteMessageRequest, opts ...grpc.CallOption) (*DeleteMessageResponse, error)
+	// DeleteThread deletes a thread
+	DeleteThread(ctx context.Context, in *DeleteThreadRequest, opts ...grpc.CallOption) (*DeleteThreadResponse, error)
 	// MarThreadAsRead marks all posts in a thread as read by an entity
 	MarkThreadAsRead(ctx context.Context, in *MarkThreadAsReadRequest, opts ...grpc.CallOption) (*MarkThreadAsReadResponse, error)
 	// PostMessage posts a message into a specified thread
@@ -3981,6 +4066,15 @@ func (c *threadsClient) CreateThread(ctx context.Context, in *CreateThreadReques
 func (c *threadsClient) DeleteMessage(ctx context.Context, in *DeleteMessageRequest, opts ...grpc.CallOption) (*DeleteMessageResponse, error) {
 	out := new(DeleteMessageResponse)
 	err := grpc.Invoke(ctx, "/threading.Threads/DeleteMessage", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *threadsClient) DeleteThread(ctx context.Context, in *DeleteThreadRequest, opts ...grpc.CallOption) (*DeleteThreadResponse, error) {
+	out := new(DeleteThreadResponse)
+	err := grpc.Invoke(ctx, "/threading.Threads/DeleteThread", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -4113,6 +4207,8 @@ type ThreadsServer interface {
 	CreateThread(context.Context, *CreateThreadRequest) (*CreateThreadResponse, error)
 	// DeleteMessage deletes a message from a thread
 	DeleteMessage(context.Context, *DeleteMessageRequest) (*DeleteMessageResponse, error)
+	// DeleteThread deletes a thread
+	DeleteThread(context.Context, *DeleteThreadRequest) (*DeleteThreadResponse, error)
 	// MarThreadAsRead marks all posts in a thread as read by an entity
 	MarkThreadAsRead(context.Context, *MarkThreadAsReadRequest) (*MarkThreadAsReadResponse, error)
 	// PostMessage posts a message into a specified thread
@@ -4175,6 +4271,18 @@ func _Threads_DeleteMessage_Handler(srv interface{}, ctx context.Context, dec fu
 		return nil, err
 	}
 	out, err := srv.(ThreadsServer).DeleteMessage(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Threads_DeleteThread_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(DeleteThreadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(ThreadsServer).DeleteThread(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -4352,6 +4460,10 @@ var _Threads_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteMessage",
 			Handler:    _Threads_DeleteMessage_Handler,
+		},
+		{
+			MethodName: "DeleteThread",
+			Handler:    _Threads_DeleteThread_Handler,
 		},
 		{
 			MethodName: "MarkThreadAsRead",
@@ -5914,20 +6026,14 @@ func (m *DeleteMessageRequest) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.OrganizationID) > 0 {
-		data[i] = 0xa
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.OrganizationID)))
-		i += copy(data[i:], m.OrganizationID)
-	}
 	if len(m.ActorEntityID) > 0 {
-		data[i] = 0x12
+		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(len(m.ActorEntityID)))
 		i += copy(data[i:], m.ActorEntityID)
 	}
 	if len(m.ThreadItemID) > 0 {
-		data[i] = 0x1a
+		data[i] = 0x12
 		i++
 		i = encodeVarintSvc(data, i, uint64(len(m.ThreadItemID)))
 		i += copy(data[i:], m.ThreadItemID)
@@ -5946,6 +6052,54 @@ func (m *DeleteMessageResponse) Marshal() (data []byte, err error) {
 }
 
 func (m *DeleteMessageResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	return i, nil
+}
+
+func (m *DeleteThreadRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *DeleteThreadRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.ActorEntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ActorEntityID)))
+		i += copy(data[i:], m.ActorEntityID)
+	}
+	if len(m.ThreadID) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ThreadID)))
+		i += copy(data[i:], m.ThreadID)
+	}
+	return i, nil
+}
+
+func (m *DeleteThreadResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *DeleteThreadResponse) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -7163,10 +7317,6 @@ func (m *UpdateSavedQueryResponse) Size() (n int) {
 func (m *DeleteMessageRequest) Size() (n int) {
 	var l int
 	_ = l
-	l = len(m.OrganizationID)
-	if l > 0 {
-		n += 1 + l + sovSvc(uint64(l))
-	}
 	l = len(m.ActorEntityID)
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
@@ -7179,6 +7329,26 @@ func (m *DeleteMessageRequest) Size() (n int) {
 }
 
 func (m *DeleteMessageResponse) Size() (n int) {
+	var l int
+	_ = l
+	return n
+}
+
+func (m *DeleteThreadRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.ActorEntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.ThreadID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *DeleteThreadResponse) Size() (n int) {
 	var l int
 	_ = l
 	return n
@@ -7909,7 +8079,6 @@ func (this *DeleteMessageRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&DeleteMessageRequest{`,
-		`OrganizationID:` + fmt.Sprintf("%v", this.OrganizationID) + `,`,
 		`ActorEntityID:` + fmt.Sprintf("%v", this.ActorEntityID) + `,`,
 		`ThreadItemID:` + fmt.Sprintf("%v", this.ThreadItemID) + `,`,
 		`}`,
@@ -7921,6 +8090,26 @@ func (this *DeleteMessageResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&DeleteMessageResponse{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeleteThreadRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeleteThreadRequest{`,
+		`ActorEntityID:` + fmt.Sprintf("%v", this.ActorEntityID) + `,`,
+		`ThreadID:` + fmt.Sprintf("%v", this.ThreadID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeleteThreadResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeleteThreadResponse{`,
 		`}`,
 	}, "")
 	return s
@@ -12934,35 +13123,6 @@ func (m *DeleteMessageRequest) Unmarshal(data []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.OrganizationID = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ActorEntityID", wireType)
 			}
 			var stringLen uint64
@@ -12990,7 +13150,7 @@ func (m *DeleteMessageRequest) Unmarshal(data []byte) error {
 			}
 			m.ActorEntityID = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 3:
+		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ThreadItemID", wireType)
 			}
@@ -13067,6 +13227,164 @@ func (m *DeleteMessageResponse) Unmarshal(data []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: DeleteMessageResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeleteThreadRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeleteThreadRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeleteThreadRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ActorEntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ActorEntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ThreadID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ThreadID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeleteThreadResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeleteThreadResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeleteThreadResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:

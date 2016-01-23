@@ -41,7 +41,11 @@ func NewThreadsServer(
 	dal dal.DAL,
 	sns snsiface.SNSAPI,
 	snsTopicARN string,
-	notificationClient notification.Client) threading.ThreadsServer {
+	notificationClient notification.Client,
+) threading.ThreadsServer {
+	if clk == nil {
+		clk = clock.New()
+	}
 	return &threadsServer{clk: clk, dal: dal, sns: sns, snsTopicARN: snsTopicARN, notificationClient: notificationClient}
 }
 
@@ -73,13 +77,7 @@ func (s *threadsServer) CreateSavedQuery(ctx context.Context, in *threading.Crea
 }
 
 // CreateThread create a new thread with an initial message
-func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateThreadRequest) (out *threading.CreateThreadResponse, err error) {
-	if golog.Default().L(golog.DEBUG) {
-		defer func() {
-			golog.Debugf("CreateThread REQUEST %+v\n", in)
-			golog.Debugf("CreateThread RESPONSE %+v\n", out)
-		}()
-	}
+func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateThreadRequest) (*threading.CreateThreadResponse, error) {
 	// TODO: return proper error responses for invalid request
 	if in.OrganizationID == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "OrganizationID is required")
@@ -102,6 +100,7 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	if _, err := bml.Parse(in.Title); err != nil {
 		return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Title is invalid format: %s", err.Error()))
 	}
+	var err error
 	var textRefs []*models.Reference
 	in.Text, textRefs, err = parseRefsAndNormalize(in.Text)
 	if err != nil {
@@ -180,15 +179,29 @@ func (s *threadsServer) DeleteMessage(context.Context, *threading.DeleteMessageR
 	return nil, grpc.Errorf(codes.Unimplemented, "DeleteMessage not implemented")
 }
 
-// MarkThreadAsRead marks all posts in a thread as read by an entity
-func (s *threadsServer) MarkThreadAsRead(ctx context.Context, in *threading.MarkThreadAsReadRequest) (out *threading.MarkThreadAsReadResponse, err error) {
-	if golog.Default().L(golog.DEBUG) {
-		golog.Debugf("MarkThreadAsRead REQUEST %+v\n", in)
-		defer func() {
-			golog.Debugf("MarkThreadAsRead RESPONSE %+v, %+v\n", out, err)
-		}()
+// DeleteThread deletes a thread
+func (s *threadsServer) DeleteThread(ctx context.Context, in *threading.DeleteThreadRequest) (*threading.DeleteThreadResponse, error) {
+	if in.ActorEntityID == "" {
+		return nil, grpc.Errorf(codes.InvalidArgument, "ActorEntityID is required")
 	}
+	if in.ThreadID == "" {
+		return nil, grpc.Errorf(codes.InvalidArgument, "ThreadID is required")
+	}
+	threadID, err := models.ParseThreadID(in.ThreadID)
+	if err != nil {
+		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ThreadID")
+	}
+	s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
+		if err := s.dal.DeleteThread(ctx, threadID); err != nil {
+			return errors.Trace(err)
+		}
+		return errors.Trace(s.dal.RecordThreadEvent(ctx, threadID, in.ActorEntityID, models.ThreadEventDelete))
+	})
+	return &threading.DeleteThreadResponse{}, nil
+}
 
+// MarkThreadAsRead marks all posts in a thread as read by an entity
+func (s *threadsServer) MarkThreadAsRead(ctx context.Context, in *threading.MarkThreadAsReadRequest) (*threading.MarkThreadAsReadResponse, error) {
 	if in.ThreadID == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "ThreadID is required")
 	}
@@ -243,14 +256,7 @@ func (s *threadsServer) MarkThreadAsRead(ctx context.Context, in *threading.Mark
 }
 
 // PostMessage posts a message into a specified thread
-func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessageRequest) (out *threading.PostMessageResponse, err error) {
-	if golog.Default().L(golog.DEBUG) {
-		defer func() {
-			golog.Debugf("PostMessage REQUEST %+v\n", in)
-			golog.Debugf("PostMessage RESPONSE %+v\n", out)
-		}()
-	}
-
+func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessageRequest) (*threading.PostMessageResponse, error) {
 	// TODO: return proper error responses for invalid request
 	if in.ThreadID == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "ThreadID is required")

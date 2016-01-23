@@ -3,6 +3,7 @@ package dal
 import (
 	"database/sql"
 	"fmt"
+	"github.com/sprucehealth/backend/libs/idgen"
 	"strconv"
 	"strings"
 	"time"
@@ -86,9 +87,11 @@ type DAL interface {
 	CreateSavedQuery(context.Context, *models.SavedQuery) (models.SavedQueryID, error)
 	CreateThread(context.Context, *models.Thread) (models.ThreadID, error)
 	CreateThreadItemViewDetails(ctx context.Context, tds []*models.ThreadItemViewDetails) error
+	DeleteThread(ctx context.Context, threadID models.ThreadID) error
 	IterateThreads(ctx context.Context, orgID string, forExternal bool, it *Iterator) (*ThreadConnection, error)
 	IterateThreadItems(ctx context.Context, threadID models.ThreadID, forExternal bool, it *Iterator) (*ThreadItemConnection, error)
 	PostMessage(context.Context, *PostMessageRequest) (*models.ThreadItem, error)
+	RecordThreadEvent(ctx context.Context, threadID models.ThreadID, actorEntityID string, event models.ThreadEvent) error
 	SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.SavedQuery, error)
 	SavedQueries(ctx context.Context, entityID string) ([]*models.SavedQuery, error)
 	Thread(ctx context.Context, id models.ThreadID) (*models.Thread, error)
@@ -186,6 +189,11 @@ func (d *dal) CreateThreadItemViewDetails(ctx context.Context, tds []*models.Thr
 	return errors.Trace(err)
 }
 
+func (d *dal) DeleteThread(ctx context.Context, threadID models.ThreadID) error {
+	_, err := d.db.Exec(`UPDATE threads SET deleted = true WHERE id = ?`, threadID)
+	return errors.Trace(err)
+}
+
 func (d *dal) IterateThreads(ctx context.Context, orgID string, forExternal bool, it *Iterator) (*ThreadConnection, error) {
 	if it.Count > maxThreadCount {
 		it.Count = maxThreadCount
@@ -197,8 +205,8 @@ func (d *dal) IterateThreads(ctx context.Context, orgID string, forExternal bool
 	if forExternal {
 		orderField = "last_external_message_timestamp"
 	}
-	cond := []string{"organization_id = ?"}
-	vals := []interface{}{orgID}
+	cond := []string{"organization_id = ?", "deleted = ?"}
+	vals := []interface{}{orgID, false}
 	// Build query based on iterator in descending order so start = later and end = earlier.
 	if it.StartCursor != "" {
 		cond = append(cond, "("+dbutil.EscapeMySQLName(orderField)+" < ?)")
@@ -384,6 +392,19 @@ func (d *dal) PostMessage(ctx context.Context, req *PostMessageRequest) (*models
 		return nil, errors.Trace(err)
 	}
 
+	var deleted bool
+	if err := tx.QueryRow(`SELECT deleted FROM threads WHERE id = ? FOR UPDATE`, req.ThreadID).Scan(&deleted); err != nil {
+		tx.Rollback()
+		if err == sql.ErrNoRows {
+			return nil, errors.Trace(ErrNotFound)
+		}
+		return nil, errors.Trace(err)
+	}
+	if deleted {
+		tx.Rollback()
+		return nil, errors.Trace(ErrNotFound)
+	}
+
 	_, err = tx.Exec(`
 		INSERT INTO thread_items (id, thread_id, created, actor_entity_id, internal, type, data)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -424,6 +445,16 @@ func (d *dal) PostMessage(ctx context.Context, req *PostMessageRequest) (*models
 	return item, nil
 }
 
+func (d *dal) RecordThreadEvent(ctx context.Context, threadID models.ThreadID, actorEntityID string, event models.ThreadEvent) error {
+	id, err := idgen.NewID()
+	if err != nil {
+		return errors.Trace(err)
+	}
+	_, err = d.db.Exec(`INSERT INTO thread_events (id, thread_id, actor_entity_id, event) VALUES (?, ?, ?, ?)`,
+		id, threadID, actorEntityID, string(event))
+	return errors.Trace(err)
+}
+
 func (d *dal) SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.SavedQuery, error) {
 	row := d.db.QueryRow(`
 		SELECT id, organization_id, entity_id
@@ -458,7 +489,7 @@ func (d *dal) Thread(ctx context.Context, id models.ThreadID) (*models.Thread, e
 	row := d.db.QueryRow(`
 		SELECT id, organization_id, COALESCE(primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary
 		FROM threads
-		WHERE id = ?`, id)
+		WHERE id = ? AND deleted = false`, id)
 	t, err := scanThread(row)
 	return t, errors.Trace(err)
 }
@@ -579,13 +610,13 @@ func (d *dal) ThreadsForMember(ctx context.Context, entityID string, primaryOnly
 		rows, err = d.db.Query(`
 			SELECT id, organization_id, COALESCE(primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary
 			FROM threads
-			WHERE primary_entity_id = ?`, entityID)
+			WHERE primary_entity_id = ? AND deleted = false`, entityID)
 	} else {
 		rows, err = d.db.Query(`
 			SELECT t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary
 			FROM thread_members tm
 			INNER JOIN threads t ON t.id = tm.thread_id
-			WHERE tm.entity_id = ?`, entityID)
+			WHERE tm.entity_id = ? AND deleted = false`, entityID)
 	}
 	if err != nil {
 		return nil, errors.Trace(err)

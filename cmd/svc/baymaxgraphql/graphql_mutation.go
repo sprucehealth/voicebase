@@ -48,6 +48,13 @@ func newClientmutationIDOutputField() *graphql.Field {
 	}
 }
 
+func newUUIDInputField() *graphql.InputObjectFieldConfig {
+	return &graphql.InputObjectFieldConfig{
+		Description: "This field, if provided, makes the mutation idempotent.",
+		Type:        graphql.String,
+	}
+}
+
 var authenticateResultType = graphql.NewEnum(
 	graphql.EnumConfig{
 		Name:        "AuthenticateResult",
@@ -465,7 +472,7 @@ var updateEntityInputType = graphql.NewInputObject(
 		Name: "UpdateEntityInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
-			"uuid":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"uuid":             newUUIDInputField(),
 			"entityID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
 			"firstName":        &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"middleInitial":    &graphql.InputObjectFieldConfig{Type: graphql.String},
@@ -515,7 +522,7 @@ var addContactsInputType = graphql.NewInputObject(
 		Name: "AddContactsInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
-			"uuid":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"uuid":             newUUIDInputField(),
 			"entityID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
 			"contactInfos":     &graphql.InputObjectFieldConfig{Type: graphql.NewList(unprovisionedContactInfoType)},
 		},
@@ -580,7 +587,7 @@ var deleteContactsInputType = graphql.NewInputObject(
 		Name: "DeleteContactsInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
-			"uuid":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"uuid":             newUUIDInputField(),
 			"entityID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
 			"contactIDs":       &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.String)},
 		},
@@ -596,6 +603,36 @@ var deleteContactsOutputType = graphql.NewObject(
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*deleteContactsOutput)
+			return ok
+		},
+	},
+)
+
+// deleteThread
+
+type deleteThreadOutput struct {
+	ClientMutationID string `json:"clientMutationId"`
+}
+
+var deleteThreadInputType = graphql.NewInputObject(
+	graphql.InputObjectConfig{
+		Name: "DeleteThreadInput",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"clientMutationId": newClientMutationIDInputField(),
+			"uuid":             newUUIDInputField(),
+			"threadID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
+		},
+	},
+)
+
+var deleteThreadOutputType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "DeleteThreadPayload",
+		Fields: graphql.Fields{
+			"clientMutationId": newClientmutationIDOutputField(),
+		},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+			_, ok := value.(*deleteThreadOutput)
 			return ok
 		},
 	},
@@ -1455,6 +1492,55 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				return &deleteContactsOutput{
 					ClientMutationID: mutationID,
 					Entity:           e,
+				}, nil
+			},
+		},
+		"deleteThread": &graphql.Field{
+			Type: graphql.NewNonNull(deleteThreadOutputType),
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(deleteThreadInputType)},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				svc := serviceFromParams(p)
+				ctx := p.Context
+				acc := accountFromContext(ctx)
+				if acc == nil {
+					return nil, errNotAuthenticated
+				}
+
+				input := p.Args["input"].(map[string]interface{})
+				mutationID, _ := input["clientMutationId"].(string)
+				threadID := input["threadID"].(string)
+
+				// Make sure thread exists (wasn't deleted) and get organization ID to be able to fetch entity for the account
+				tres, err := svc.threading.Thread(ctx, &threading.ThreadRequest{
+					ThreadID: threadID,
+				})
+				if err != nil {
+					switch grpc.Code(err) {
+					case codes.NotFound:
+						return nil, errors.New("thread not found")
+					}
+					return nil, internalError(err)
+				}
+
+				ent, err := svc.entityForAccountID(ctx, tres.Thread.OrganizationID, acc.ID)
+				if err != nil {
+					return nil, internalError(err)
+				}
+				if ent == nil {
+					return nil, errors.New("not a member of the organization")
+				}
+
+				if _, err := svc.threading.DeleteThread(ctx, &threading.DeleteThreadRequest{
+					ThreadID:      threadID,
+					ActorEntityID: ent.ID,
+				}); err != nil {
+					return nil, internalError(err)
+				}
+
+				return &deleteThreadOutput{
+					ClientMutationID: mutationID,
 				}, nil
 			},
 		},

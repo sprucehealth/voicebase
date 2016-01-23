@@ -583,3 +583,22 @@ func TestMarkThreadAsReadNilLastView(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, &threading.MarkThreadAsReadResponse{}, resp)
 }
+
+func TestDeleteThread(t *testing.T) {
+	dl := newMockDAL(t)
+	defer dl.Finish()
+
+	tID, err := models.NewThreadID()
+	test.OK(t, err)
+	srv := NewThreadsServer(nil, dl, nil, "arn", nil)
+	eID := "entity_123"
+
+	dl.Expect(mock.NewExpectation(dl.DeleteThread, tID).WithReturns(nil))
+	dl.Expect(mock.NewExpectation(dl.RecordThreadEvent, tID, eID, models.ThreadEventDelete).WithReturns(nil))
+	resp, err := srv.DeleteThread(nil, &threading.DeleteThreadRequest{
+		ThreadID:      tID.String(),
+		ActorEntityID: eID,
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.DeleteThreadResponse{}, resp)
+}

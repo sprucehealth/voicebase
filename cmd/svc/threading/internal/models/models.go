@@ -110,10 +110,20 @@ func EmptySavedQueryID() SavedQueryID {
 	}
 }
 
+// ItemType is an enum of possible thread item types
 type ItemType string
 
 const (
+	// ItemTypeMessage is a message item which is the only concrete type. Every other item type is an event.
 	ItemTypeMessage ItemType = "MESSAGE"
+)
+
+// ThreadEvent is an enum of possible thread event types
+type ThreadEvent string
+
+const (
+	// ThreadEventDelete signifies that a thread was deleted
+	ThreadEventDelete ThreadEvent = "DELETE"
 )
 
 // Thread is a thread of conversation and the parent of thread items.

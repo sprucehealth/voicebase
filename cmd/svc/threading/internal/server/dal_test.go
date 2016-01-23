@@ -49,6 +49,14 @@ func (dl *mockDAL) CreateThreadItemViewDetails(ctx context.Context, tds []*model
 	return mock.SafeError(rets[0])
 }
 
+func (dl *mockDAL) DeleteThread(ctx context.Context, threadID models.ThreadID) error {
+	rets := dl.Expector.Record(threadID)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
 func (dl *mockDAL) IterateThreads(ctx context.Context, orgID string, forExternal bool, it *dal.Iterator) (*dal.ThreadConnection, error) {
 	rets := dl.Expector.Record(orgID, forExternal, it)
 	if len(rets) == 0 {
@@ -71,6 +79,14 @@ func (dl *mockDAL) PostMessage(ctx context.Context, req *dal.PostMessageRequest)
 		return nil, nil
 	}
 	return rets[0].(*models.ThreadItem), mock.SafeError(rets[1])
+}
+
+func (dl *mockDAL) RecordThreadEvent(ctx context.Context, threadID models.ThreadID, actorEntityID string, event models.ThreadEvent) error {
+	rets := dl.Expector.Record(threadID, actorEntityID, event)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
 }
 
 func (dl *mockDAL) SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.SavedQuery, error) {

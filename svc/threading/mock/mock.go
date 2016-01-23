@@ -49,6 +49,15 @@ func (c *Client) DeleteMessage(ctx context.Context, in *threading.DeleteMessageR
 	return rets[0].(*threading.DeleteMessageResponse), mock.SafeError(rets[1])
 }
 
+// DeleteThread deletes a message from a thread
+func (c *Client) DeleteThread(ctx context.Context, in *threading.DeleteThreadRequest, opts ...grpc.CallOption) (*threading.DeleteThreadResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.DeleteThreadResponse), mock.SafeError(rets[1])
+}
+
 // MarkThreadAsRead marks all posts in a thread as read by an entity
 func (c *Client) MarkThreadAsRead(ctx context.Context, in *threading.MarkThreadAsReadRequest, opts ...grpc.CallOption) (*threading.MarkThreadAsReadResponse, error) {
 	rets := c.Expector.Record(in)

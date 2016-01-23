@@ -63,7 +63,7 @@ message ThreadItem {
 message ThreadItemViewDetails {
     string thread_item_id = 1 [(gogoproto.customname) = "ThreadItemID"];
     string entity_id = 2 [(gogoproto.customname) = "EntityID"];
-    uint64 view_time = 3; 
+    uint64 view_time = 3;
 }
 
 message Reference {
@@ -274,12 +274,19 @@ message UpdateSavedQueryResponse {
 }
 
 message DeleteMessageRequest {
-	string organization_id = 1 [(gogoproto.customname) = "OrganizationID"];
-	string actor_entity_id = 2 [(gogoproto.customname) = "ActorEntityID"];
-	string thread_item_id = 3 [(gogoproto.customname) = "ThreadItemID"];
+	string actor_entity_id = 1 [(gogoproto.customname) = "ActorEntityID"];
+	string thread_item_id = 2 [(gogoproto.customname) = "ThreadItemID"];
 }
 
 message DeleteMessageResponse {
+}
+
+message DeleteThreadRequest {
+	string actor_entity_id = 1 [(gogoproto.customname) = "ActorEntityID"];
+	string thread_id = 2 [(gogoproto.customname) = "ThreadID"];
+}
+
+message DeleteThreadResponse {
 }
 
 message UpdateThreadMembershipRequest {
@@ -360,6 +367,8 @@ service Threads {
 	rpc CreateThread(CreateThreadRequest) returns (CreateThreadResponse);
 	// DeleteMessage deletes a message from a thread
 	rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageResponse);
+	// DeleteThread deletes a thread
+	rpc DeleteThread(DeleteThreadRequest) returns (DeleteThreadResponse);
 	// MarThreadAsRead marks all posts in a thread as read by an entity
 	rpc MarkThreadAsRead(MarkThreadAsReadRequest) returns (MarkThreadAsReadResponse);
 	// PostMessage posts a message into a specified thread
