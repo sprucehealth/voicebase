@@ -173,7 +173,7 @@ fi
 TIME=$(date)
 export TAG="$BRANCH-$BUILD_NUMBER"
 
-SVCS="auth baymaxgraphql directory excomms notification routing threading"
+SVCS="auth baymaxgraphql directory excomms notification regimensapi routing threading"
 for SVC in $SVCS; do
     echo "BUILDING ($SVC)"
     cd $MONOREPO_PATH/cmd/svc/$SVC

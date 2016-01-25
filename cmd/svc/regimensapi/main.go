@@ -119,65 +119,65 @@ func init() {
 	// Regimens service
 	flag.StringVar(&config.httpAddr, "http", "0.0.0.0:8000", "listen for http on `host:port`")
 	flag.BoolVar(&config.proxyProtocol, "proxyproto", false, "enabled proxy protocol")
-	flag.StringVar(&config.authSecret, "auth.secret", "", "Secret to use in auth token generation")
-	flag.StringVar(&config.webDomain, "web.domain", "", "The web domain used for link generation")
-	flag.StringVar(&config.apiDomain, "api.domain", "", "The api domain used for link generation")
+	flag.StringVar(&config.authSecret, "auth_secret", "", "Secret to use in auth token generation")
+	flag.StringVar(&config.webDomain, "web_domain", "", "The web domain used for link generation")
+	flag.StringVar(&config.apiDomain, "api_domain", "", "The api domain used for link generation")
 	flag.StringVar(&config.env, "env", "undefined", "`Environment`")
 
 	// Factual
-	flag.StringVar(&config.factualKey, "factual.key", "", "Factual API `key`")
-	flag.StringVar(&config.factualSecret, "factual.secret", "", "Factual API `secret`")
+	flag.StringVar(&config.factualKey, "factual_key", "", "Factual API `key`")
+	flag.StringVar(&config.factualSecret, "factual_secret", "", "Factual API `secret`")
 
 	// Media
-	flag.StringVar(&config.media.storageType, "media.storage.type", "local", "Storage type for regimen media")
-	flag.StringVar(&config.media.s3Bucket, "media.s3.bucket", "", "S3 Bucket for media storage")
-	flag.StringVar(&config.media.s3Prefix, "media.s3.prefix", "", "S3 path prefix for media storage")
-	flag.StringVar(&config.media.localStoragePath, "media.local.path", "/tmp", "Local path to use when using local media storage")
-	flag.IntVar(&config.media.maxWidth, "media.max.width", 0, "Maximum `width` of stored media (0 for unbounded)")
-	flag.IntVar(&config.media.maxWidth, "media.max.height", 0, "Maximum `height` of stored media (0 for unbounded)")
+	flag.StringVar(&config.media.storageType, "media_storage_type", "local", "Storage type for regimen media")
+	flag.StringVar(&config.media.s3Bucket, "media_s3_bucket", "", "S3 Bucket for media storage")
+	flag.StringVar(&config.media.s3Prefix, "media_s3_prefix", "", "S3 path prefix for media storage")
+	flag.StringVar(&config.media.localStoragePath, "media_local_path", "/tmp", "Local path to use when using local media storage")
+	flag.IntVar(&config.media.maxWidth, "media_max_width", 0, "Maximum `width` of stored media (0 for unbounded)")
+	flag.IntVar(&config.media.maxWidth, "media_max_height", 0, "Maximum `height` of stored media (0 for unbounded)")
 
 	// Media proxy
-	flag.StringVar(&config.mediaProxy.storageType, "mediaproxy.storage.type", "local", "Storage type for media proxy")
-	flag.StringVar(&config.mediaProxy.s3Bucket, "mediaproxy.s3.bucket", "", "S3 Bucket for media proxy storage")
-	flag.StringVar(&config.mediaProxy.s3Prefix, "mediaproxy.s3.prefix", "", "S3 path prefix for media proxy storage")
-	flag.StringVar(&config.mediaProxy.localStoragePath, "mediaproxy.local.path", "/tmp", "Local path to use when using local media proxy storage")
-	flag.IntVar(&config.mediaProxy.maxWidth, "mediaproxy.max.width", 0, "Maximum `width` of stored proxied media (0 for unbounded)")
-	flag.IntVar(&config.mediaProxy.maxWidth, "mediaproxy.max.height", 0, "Maximum `height` of stored proxied media (0 for unbounded)")
-	flag.DurationVar(&config.mediaProxyCacheDuration, "mediaproxy.cache.duration", time.Second*60*60*24*7, "Cache `expiration` for media proxy metadata")
+	flag.StringVar(&config.mediaProxy.storageType, "mediaproxy_storage_type", "local", "Storage type for media proxy")
+	flag.StringVar(&config.mediaProxy.s3Bucket, "mediaproxy_s3_bucket", "", "S3 Bucket for media proxy storage")
+	flag.StringVar(&config.mediaProxy.s3Prefix, "mediaproxy_s3_prefix", "", "S3 path prefix for media proxy storage")
+	flag.StringVar(&config.mediaProxy.localStoragePath, "mediaproxy_local_path", "/tmp", "Local path to use when using local media proxy storage")
+	flag.IntVar(&config.mediaProxy.maxWidth, "mediaproxy_max_width", 0, "Maximum `width` of stored proxied media (0 for unbounded)")
+	flag.IntVar(&config.mediaProxy.maxWidth, "mediaproxy_max_height", 0, "Maximum `height` of stored proxied media (0 for unbounded)")
+	flag.DurationVar(&config.mediaProxyCacheDuration, "mediaproxy_cache_duration", time.Second*60*60*24*7, "Cache `expiration` for media proxy metadata")
 
 	// Memcached
-	flag.StringVar(&config.mcDiscoveryHost, "mc.discovery.host", "", "ElastiCache discovery `host`")
-	flag.DurationVar(&config.mcDiscoveryInterval, "mc.discovery.internal", time.Minute*5, "ElastiCache discovery `interval`")
-	flag.StringVar(&config.mcHosts, "mc.hosts", "", "Comma separated list of memcached `hosts` when not using ElastiCache discovery")
+	flag.StringVar(&config.mcDiscoveryHost, "mc_discovery_host", "", "ElastiCache discovery `host`")
+	flag.DurationVar(&config.mcDiscoveryInterval, "mc_discovery_internal", time.Minute*5, "ElastiCache discovery `interval`")
+	flag.StringVar(&config.mcHosts, "mc_hosts", "", "Comma separated list of memcached `hosts` when not using ElastiCache discovery")
 
 	// AWS
-	flag.StringVar(&config.awsDynamoDBEndpoint, "aws.dynamodb.endpoint", "", "AWS Dynamo DB API `endpoint`")
-	flag.StringVar(&config.awsDynamoDBRegion, "aws.dynamodb.region", "", "AWS Dynamo DB API `region`")
-	flag.BoolVar(&config.awsDynamoDBDisableSSL, "aws.dynamodb.disable.ssl", false, "Disable SSL in the AWS DynamoDB client")
-	flag.StringVar(&config.awsAccessKey, "aws.access.key", "", "AWS Credentials Access Key")
-	flag.StringVar(&config.awsSecretKey, "aws.secret.key", "", "AWS Credentials Secret Key")
-	flag.StringVar(&config.awsToken, "aws.token", "", "AWS Credentials Token")
+	flag.StringVar(&config.awsDynamoDBEndpoint, "aws_dynamodb_endpoint", "", "AWS Dynamo DB API `endpoint`")
+	flag.StringVar(&config.awsDynamoDBRegion, "aws_dynamodb_region", "", "AWS Dynamo DB API `region`")
+	flag.BoolVar(&config.awsDynamoDBDisableSSL, "aws_dynamodb_disable_ssl", false, "Disable SSL in the AWS DynamoDB client")
+	flag.StringVar(&config.awsAccessKey, "aws_access_key", "", "AWS Credentials Access Key")
+	flag.StringVar(&config.awsSecretKey, "aws_secret_key", "", "AWS Credentials Secret Key")
+	flag.StringVar(&config.awsToken, "aws_token", "", "AWS Credentials Token")
 
 	// Amazon.com
-	flag.StringVar(&config.amzAccessKey, "amz.access_key", "", "Access `key` for Amazon affiliate products API")
-	flag.StringVar(&config.amzSecretKey, "amz.secret_key", "", "Secret `key` for Amazon affiliate products API")
-	flag.StringVar(&config.amzAssociateTag, "amz.associate_tag", "", "Amazon affiliate associate tag")
+	flag.StringVar(&config.amzAccessKey, "amz_access_key", "", "Access `key` for Amazon affiliate products API")
+	flag.StringVar(&config.amzSecretKey, "amz_secret_key", "", "Secret `key` for Amazon affiliate products API")
+	flag.StringVar(&config.amzAssociateTag, "amz_associate_tag", "", "Amazon affiliate associate tag")
 
 	// Metrics
-	flag.StringVar(&config.metricsSource, "metrics.source", "", "`Source` for metrics (e.g. hostname)")
-	flag.StringVar(&config.libratoUsername, "librato.username", "", "Librato metrics `username`")
-	flag.StringVar(&config.libratoToken, "librato.token", "", "Librato metrics auth `token`")
+	flag.StringVar(&config.metricsSource, "metrics_source", "", "`Source` for metrics (e.g. hostname)")
+	flag.StringVar(&config.libratoUsername, "librato_username", "", "Librato metrics `username`")
+	flag.StringVar(&config.libratoToken, "librato_token", "", "Librato metrics auth `token`")
 
 	// Analytics
-	flag.StringVar(&config.analyticsLogPath, "analytics.log.path", "", "the place to write the analytics log file")
-	flag.BoolVar(&config.analyticsDebug, "analytics.debug", false, "enable debug functionality in analytics emission")
-	flag.IntVar(&config.analyticsMaxEvents, "analytics.max.events", analytics.DefaultMaxFileEvents, "the max events per analytics log file")
-	flag.StringVar(&config.analyticsFirehoseStreams, "analytics.firehose.streams", "", "Kinesis Firehose streams in the format 'category:stream,category:stream,...'")
-	flag.IntVar(&config.analyticsFirehoseMaxBatchSize, "analytics.firehose.batch.maxsize", 8, "Kinesis Firehose max batch size before flushing")
-	flag.DurationVar(&config.analyticsFirehoseMaxBatchDuration, "analytics.firehose.batch.maxduration", time.Second*5, "Kinesis Firehose max duration to batch events before flushing")
+	flag.StringVar(&config.analyticsLogPath, "analytics_log.path", "", "the place to write the analytics log file")
+	flag.BoolVar(&config.analyticsDebug, "analytics_debug", false, "enable debug functionality in analytics emission")
+	flag.IntVar(&config.analyticsMaxEvents, "analytics_max_events", analytics.DefaultMaxFileEvents, "the max events per analytics log file")
+	flag.StringVar(&config.analyticsFirehoseStreams, "analytics_firehose_streams", "", "Kinesis Firehose streams in the format 'category:stream,category:stream,...'")
+	flag.IntVar(&config.analyticsFirehoseMaxBatchSize, "analytics_firehose_batch_maxsize", 8, "Kinesis Firehose max batch size before flushing")
+	flag.DurationVar(&config.analyticsFirehoseMaxBatchDuration, "analytics_firehose_batch_maxduration", time.Second*5, "Kinesis Firehose max duration to batch events before flushing")
 
 	// CORS
-	flag.BoolVar(&config.corsAllowAll, "cors.allow.all", true, "Enable the * patterns on CORS")
+	flag.BoolVar(&config.corsAllowAll, "cors_allow_all", true, "Enable the * patterns on CORS")
 }
 
 func main() {
