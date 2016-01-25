@@ -99,7 +99,7 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	if len(in.Summary) > maxSummaryLength {
 		in.Summary = in.Summary[:maxSummaryLength]
 	}
-	if err := bml.Parsef(in.Title).Validate(); err != nil {
+	if _, err := bml.Parse(in.Title); err != nil {
 		return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Title is invalid format: %s", err.Error()))
 	}
 	var textRefs []*models.Reference
@@ -274,7 +274,7 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	if len(in.Summary) > maxSummaryLength {
 		in.Summary = in.Summary[:maxSummaryLength]
 	}
-	if err := bml.Parsef(in.Title).Validate(); err != nil {
+	if _, err := bml.Parse(in.Title); err != nil {
 		return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Title is invalid format: %s", err.Error()))
 	}
 	var textRefs []*models.Reference

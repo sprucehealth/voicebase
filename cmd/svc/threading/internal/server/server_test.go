@@ -57,7 +57,7 @@ func TestCreateThread(t *testing.T) {
 		ThreadID:     thid,
 		FromEntityID: "e1",
 		Internal:     true,
-		Title:        "foo",
+		Title:        "foo % woo",
 		Text:         "<ref id=\"e2\" type=\"entity\">Foo</ref> bar",
 		Attachments:  []*models.Attachment{},
 		Source: &models.Endpoint{
@@ -99,7 +99,7 @@ func TestCreateThread(t *testing.T) {
 	res, err := srv.CreateThread(nil, &threading.CreateThreadRequest{
 		OrganizationID: "o1",
 		FromEntityID:   "e1",
-		Title:          "foo",
+		Title:          "foo % woo",
 		Text:           "<ref id=\"e2\" type=\"Entity\">Foo</ref> bar",
 		Internal:       true,
 		Source: &threading.Endpoint{
@@ -119,7 +119,7 @@ func TestCreateThread(t *testing.T) {
 			ActorEntityID: "e1",
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
-					Title:  "foo",
+					Title:  "foo % woo",
 					Text:   "<ref id=\"e2\" type=\"entity\">Foo</ref> bar",
 					Status: threading.Message_NORMAL,
 					Source: &threading.Endpoint{
