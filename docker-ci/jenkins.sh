@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x -e -o pipefail
+set -e -o pipefail
 
 # Lowercase version of the job name
 NAME=${BUILD_TAG,,}
@@ -23,6 +23,10 @@ PARENT_GID=$(getent group docker | cut -d: -f3)
 
 # origin/master -> master
 BRANCH=$(echo $GIT_BRANCH | cut -d'/' -f2)
+# if building a Phabricator diff then use the revision ID instead
+if [[ "$REVISION_ID" != "" ]]; then
+	BRANCH="D${REVISION_ID}"
+fi
 MEMPATH="/mnt/mem/jenkins/$BUILD_TAG"
 mkdir -p $MEMPATH
 docker run --rm=true --name=$NAME \
@@ -53,7 +57,10 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
 		echo "Pushing $TAG"
 		REMOTETAG="137987605457.dkr.ecr.us-east-1.amazonaws.com/$TAG"
 		docker tag $TAG $REMOTETAG
-		docker push $REMOTETAG
+		NEXT_WAIT_TIME=0
+		until docker push $REMOTETAG || [ $NEXT_WAIT_TIME -eq 4 ]; do
+			sleep $(( NEXT_WAIT_TIME++ ))
+		done
 		docker rmi $REMOTETAG
 	done
 fi
