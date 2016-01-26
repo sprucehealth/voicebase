@@ -101,9 +101,9 @@ type image struct {
 }
 
 type audioAttachment struct {
-	Mimetype          string `json:"mimetype"`
-	URL               string `json:"url"`
-	DurationInSeconds int    `json:"durationInSeconds"`
+	Mimetype          string  `json:"mimetype"`
+	URL               string  `json:"url"`
+	DurationInSeconds float64 `json:"durationInSeconds"`
 }
 
 type thread struct {

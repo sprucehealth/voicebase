@@ -199,7 +199,7 @@ var audioAttachmentType = graphql.NewObject(
 		Fields: graphql.Fields{
 			"mimetype":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"url":               &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-			"durationInSeconds": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+			"durationInSeconds": &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*audioAttachment)

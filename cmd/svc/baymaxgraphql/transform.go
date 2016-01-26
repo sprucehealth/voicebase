@@ -105,7 +105,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID s
 				data = &audioAttachment{
 					Mimetype:          d.Mimetype,
 					URL:               signedURL,
-					DurationInSeconds: int(d.DurationInSeconds),
+					DurationInSeconds: float64(d.DurationInSeconds),
 				}
 				// TODO
 				if a.Title == "" {
