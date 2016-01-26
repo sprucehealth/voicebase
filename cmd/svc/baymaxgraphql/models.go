@@ -71,8 +71,8 @@ type reference struct {
 
 type message struct {
 	ThreadItemID    string
-	Title           string        `json:"title"`
-	Text            string        `json:"text"`
+	TitleMarkup     string        `json:"titleMarkup"`
+	TextMarkup      string        `json:"textMarkup"`
 	Status          string        `json:"status"`
 	Source          *endpoint     `json:"source"`
 	Destinations    []*endpoint   `json:"destinations,omitempty"`

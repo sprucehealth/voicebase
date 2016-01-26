@@ -68,8 +68,8 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID s
 		m := item.GetMessage()
 		m2 := &message{
 			ThreadItemID: item.ID,
-			Title:        m.Title,
-			Text:         m.Text,
+			TitleMarkup:  m.Title,
+			TextMarkup:   m.Text,
 			Status:       m.Status.String(),
 			Source: &endpoint{
 				Channel: m.Source.Channel.String(),

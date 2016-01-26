@@ -76,9 +76,9 @@ var messageType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Message",
 		Fields: graphql.Fields{
-			"title":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-			"status": &graphql.Field{Type: graphql.NewNonNull(messageStatusType)},
-			"text":   &graphql.Field{Type: graphql.String},
+			"titleMarkup": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"status":      &graphql.Field{Type: graphql.NewNonNull(messageStatusType)},
+			"textMarkup":  &graphql.Field{Type: graphql.String},
 			"refs": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(nodeInterfaceType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {

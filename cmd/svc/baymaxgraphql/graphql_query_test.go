@@ -322,8 +322,8 @@ func TestNodeQuery(t *testing.T) {
 		Internal:      true,
 		Data: &message{
 			ThreadItemID: id,
-			Title:        "abc",
-			Text:         "hello",
+			TitleMarkup:  "abc",
+			TextMarkup:   "hello",
 			Status:       messageStatusNormal,
 			Source: &endpoint{
 				Channel: endpointChannelVoice,

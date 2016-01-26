@@ -177,7 +177,8 @@ func TestPostMessage(t *testing.T) {
 						data {
 							__typename
 							... on Message {
-								text
+								textMarkup
+								titleMarkup
 								status
 							}
 						}
@@ -208,7 +209,8 @@ func TestPostMessage(t *testing.T) {
 					"data": {
 						"__typename": "Message",
 						"status": "NORMAL",
-						"text": "foo"
+						"textMarkup": "foo",
+						"titleMarkup": "\u003cref id=\"e1\" type=\"entity\"\u003eSchmee\u003c/ref\u003e texted \u003cref id=\"e2\" type=\"entity\"\u003eBarro\u003c/ref\u003e"
 					},
 					"id": "ti1",
 					"internal": false,
