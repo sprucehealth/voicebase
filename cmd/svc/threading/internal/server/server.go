@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
@@ -33,6 +34,7 @@ type threadsServer struct {
 	sns                snsiface.SNSAPI
 	snsTopicARN        string
 	notificationClient notification.Client
+	directoryClient    directory.DirectoryClient
 }
 
 // NewThreadsServer returns an initialized instance of threadsServer
@@ -42,11 +44,19 @@ func NewThreadsServer(
 	sns snsiface.SNSAPI,
 	snsTopicARN string,
 	notificationClient notification.Client,
+	directoryClient directory.DirectoryClient,
 ) threading.ThreadsServer {
 	if clk == nil {
 		clk = clock.New()
 	}
-	return &threadsServer{clk: clk, dal: dal, sns: sns, snsTopicARN: snsTopicARN, notificationClient: notificationClient}
+	return &threadsServer{
+		clk:                clk,
+		dal:                dal,
+		sns:                sns,
+		snsTopicARN:        snsTopicARN,
+		notificationClient: notificationClient,
+		directoryClient:    directoryClient,
+	}
 }
 
 // CreateSavedQuery saves a query for later use
@@ -219,19 +229,22 @@ func (s *threadsServer) MarkThreadAsRead(ctx context.Context, in *threading.Mark
 
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
 		forUpdate := true
+		lastViewed := time.Unix(0, 0)
 		threadMembers, err := dl.ThreadMemberships(ctx, []models.ThreadID{threadID}, in.EntityID, forUpdate)
 		if err != nil {
 			return errors.Trace(err)
-		} else if len(threadMembers) != 1 {
-			return errors.Trace(errors.New("Expected to find only 1 record when getting membership for thread viewer"))
-		}
-		threadMember := threadMembers[0]
-
-		if threadMember.LastViewed == nil {
-			threadMember.LastViewed = ptr.Time(time.Unix(0, 0))
+		} else if len(threadMembers) == 1 && threadMembers[0].LastViewed != nil {
+			lastViewed = *threadMembers[0].LastViewed
+		} else if len(threadMembers) > 1 {
+			return errors.Trace(fmt.Errorf("Expected to find only 1 or 0 records when getting membership for thread viewer instead found %d", len(threadMembers)))
 		}
 
-		threadItemIDs, err := dl.ThreadItemIDsCreatedAfter(ctx, threadID, *threadMember.LastViewed)
+		// Update our timestamp or create one if it isn't already there
+		if err := dl.UpdateMember(ctx, threadID, in.EntityID, &dal.MemberUpdate{LastViewed: ptr.Time(readTime)}); err != nil {
+			return errors.Trace(err)
+		}
+
+		threadItemIDs, err := dl.ThreadItemIDsCreatedAfter(ctx, threadID, lastViewed)
 		if err != nil {
 			return errors.Trace(err)
 		}
@@ -244,11 +257,7 @@ func (s *threadsServer) MarkThreadAsRead(ctx context.Context, in *threading.Mark
 				ViewTime:      ptr.Time(readTime),
 			}
 		}
-		if err := dl.CreateThreadItemViewDetails(ctx, tivds); err != nil {
-			return errors.Trace(err)
-		}
-
-		return errors.Trace(dl.UpdateMember(ctx, threadID, in.EntityID, &dal.MemberUpdate{LastViewed: ptr.Time(readTime)}))
+		return errors.Trace(dl.CreateThreadItemViewDetails(ctx, tivds))
 	}); err != nil {
 		return nil, grpc.Errorf(codes.Internal, errors.Trace(err).Error())
 	}
@@ -625,9 +634,7 @@ func (s *threadsServer) populateReadStatus(ctx context.Context, ts []*threading.
 
 	for _, t := range ts {
 		lastViewed := threadLastViewedMap[t.ID]
-		if lastViewed != nil {
-			t.Unread = (t.LastMessageTimestamp > uint64(lastViewed.Unix()))
-		}
+		t.Unread = lastViewed == nil || (t.LastMessageTimestamp > uint64(lastViewed.Unix()))
 	}
 	return nil
 }
@@ -660,21 +667,36 @@ func (s *threadsServer) publishMessage(ctx context.Context, orgID, primaryEntity
 }
 
 func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID string, threadID models.ThreadID, publishingEntityID string) {
-	if s.notificationClient == nil {
+	if s.notificationClient == nil || s.directoryClient == nil {
 		return
 	}
 	conc.Go(func() {
-		members, err := s.dal.ThreadMembers(ctx, threadID)
+		// Lookup all members of the org this thread belongs to and notify them of the new message unless they published it
+		resp, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: orgID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth:             0,
+				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERS},
+			},
+		})
 		if err != nil {
-			golog.Errorf("Failed to notify members: %s", err)
+			golog.Errorf("Failed to fetch org members of %s to notify about thread: %s - %s", orgID, threadID, err)
 			return
 		}
+		if len(resp.Entities) != 1 {
+			golog.Errorf("Expected to find 1 org for ID %s but found %d", orgID, len(resp.Entities))
+			return
+		}
+		org := resp.Entities[0]
 		var memberEntityIDs []string
-		for _, m := range members {
-			if m.EntityID == publishingEntityID {
+		for _, m := range org.Members {
+			if m.Type != directory.EntityType_INTERNAL || m.ID == publishingEntityID {
 				continue
 			}
-			memberEntityIDs = append(memberEntityIDs, m.EntityID)
+			memberEntityIDs = append(memberEntityIDs, m.ID)
 		}
 		if err := s.notificationClient.SendNotification(&notification.Notification{
 			ShortMessage:     "A new message is available",

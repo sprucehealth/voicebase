@@ -18,6 +18,7 @@ import (
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc"
@@ -39,6 +40,7 @@ var (
 	flagSNSTopicARN        = flag.String("sns_topic_arn", "", "SNS topic ARN to publish new messages to")
 	flagDebug              = flag.Bool("debug", false, "Enable debug logging")
 	flagSQSNotificationURL = flag.String("sqs_notification_url", "", "the sqs url for notification messages")
+	flagDirectoryAddr      = flag.String("directory_addr", "", "host:port of directory service")
 )
 
 func init() {
@@ -114,8 +116,17 @@ func main() {
 		})
 	}
 
+	if *flagDirectoryAddr == "" {
+		golog.Fatalf("Directory service not configured")
+	}
+	conn, err := grpc.Dial(*flagDirectoryAddr, grpc.WithInsecure())
+	if err != nil {
+		golog.Fatalf("Unable to connect to directory service: %s", err)
+	}
+	directoryClient := directory.NewDirectoryClient(conn)
+
 	s := grpc.NewServer()
-	threading.RegisterThreadsServer(s, server.NewThreadsServer(clock.New(), dal.New(db), sns, *flagSNSTopicARN, notificationClient))
+	threading.RegisterThreadsServer(s, server.NewThreadsServer(clock.New(), dal.New(db), sns, *flagSNSTopicARN, notificationClient, directoryClient))
 	golog.Infof("Starting Threads service on %s...", *flagListen)
 
 	ln, err := net.Listen("tcp", *flagListen)
