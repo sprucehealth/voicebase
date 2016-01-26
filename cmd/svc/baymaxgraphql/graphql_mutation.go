@@ -512,12 +512,12 @@ var unprovisionedContactInfoType = graphql.NewInputObject(
 	},
 )
 
-type addContactsOutput struct {
+type addContactInfosOutput struct {
 	ClientMutationID string  `json:"clientMutationId"`
 	Entity           *entity `json:"entity"`
 }
 
-var addContactsInputType = graphql.NewInputObject(
+var addContactInfosInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
 		Name: "AddContactsInput",
 		Fields: graphql.InputObjectConfigFieldMap{
@@ -529,15 +529,15 @@ var addContactsInputType = graphql.NewInputObject(
 	},
 )
 
-var addContactsOutputType = graphql.NewObject(
+var addContactInfosOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
-		Name: "AddContactsPayload",
+		Name: "AddContactInfosPayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
 			"entity":           &graphql.Field{Type: graphql.NewNonNull(entityType)},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*addContactsOutput)
+			_, ok := value.(*addContactInfosOutput)
 			return ok
 		},
 	},
@@ -545,14 +545,14 @@ var addContactsOutputType = graphql.NewObject(
 
 /// updateContacts
 
-type updateContactsOutput struct {
+type updateContactInfosOutput struct {
 	ClientMutationID string  `json:"clientMutationId"`
 	Entity           *entity `json:"entity"`
 }
 
-var updateContactsInputType = graphql.NewInputObject(
+var updateContactInfosInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
-		Name: "UpdateContactsInput",
+		Name: "UpdateContactInfosInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
 			"entityID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
@@ -561,15 +561,15 @@ var updateContactsInputType = graphql.NewInputObject(
 	},
 )
 
-var updateContactsOutputType = graphql.NewObject(
+var updateContactInfosOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
-		Name: "UpdateContactsPayload",
+		Name: "UpdateContactInfosPayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
 			"entity":           &graphql.Field{Type: graphql.NewNonNull(entityType)},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*updateContactsOutput)
+			_, ok := value.(*updateContactInfosOutput)
 			return ok
 		},
 	},
@@ -577,14 +577,14 @@ var updateContactsOutputType = graphql.NewObject(
 
 /// deleteContacts
 
-type deleteContactsOutput struct {
+type deleteContactInfosOutput struct {
 	ClientMutationID string  `json:"clientMutationId"`
 	Entity           *entity `json:"entity"`
 }
 
-var deleteContactsInputType = graphql.NewInputObject(
+var deleteContactInfosInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
-		Name: "DeleteContactsInput",
+		Name: "DeleteContactInfosInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
 			"uuid":             newUUIDInputField(),
@@ -594,15 +594,15 @@ var deleteContactsInputType = graphql.NewInputObject(
 	},
 )
 
-var deleteContactsOutputType = graphql.NewObject(
+var deleteContactInfosOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
-		Name: "DeleteContactsPayload",
+		Name: "DeleteContactInfosPayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
 			"entity":           &graphql.Field{Type: graphql.NewNonNull(entityType)},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*deleteContactsOutput)
+			_, ok := value.(*deleteContactInfosOutput)
 			return ok
 		},
 	},
@@ -1351,10 +1351,10 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				}, nil
 			},
 		},
-		"addContacts": &graphql.Field{
-			Type: graphql.NewNonNull(addContactsOutputType),
+		"addContactInfos": &graphql.Field{
+			Type: graphql.NewNonNull(addContactInfosOutputType),
 			Args: graphql.FieldConfigArgument{
-				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(addContactsInputType)},
+				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(addContactInfosInputType)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				svc := serviceFromParams(p)
@@ -1392,17 +1392,17 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				}
 
 				result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
-				result.Set("addContacts", true)
-				return &addContactsOutput{
+				result.Set("addContactInfos", true)
+				return &addContactInfosOutput{
 					ClientMutationID: mutationID,
 					Entity:           e,
 				}, nil
 			},
 		},
-		"updateContacts": &graphql.Field{
-			Type: graphql.NewNonNull(updateContactsOutputType),
+		"updateContactInfos": &graphql.Field{
+			Type: graphql.NewNonNull(updateContactInfosOutputType),
 			Args: graphql.FieldConfigArgument{
-				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(updateContactsInputType)},
+				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(updateContactInfosInputType)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				svc := serviceFromParams(p)
@@ -1440,17 +1440,17 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				}
 
 				result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
-				result.Set("updateContacts", true)
-				return &updateContactsOutput{
+				result.Set("updateContactInfos", true)
+				return &updateContactInfosOutput{
 					ClientMutationID: mutationID,
 					Entity:           e,
 				}, nil
 			},
 		},
-		"deleteContacts": &graphql.Field{
-			Type: graphql.NewNonNull(deleteContactsOutputType),
+		"deleteContactInfos": &graphql.Field{
+			Type: graphql.NewNonNull(deleteContactInfosOutputType),
 			Args: graphql.FieldConfigArgument{
-				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(deleteContactsInputType)},
+				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(deleteContactInfosInputType)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				svc := serviceFromParams(p)
@@ -1488,8 +1488,8 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				}
 
 				result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
-				result.Set("deleteContacts", true)
-				return &deleteContactsOutput{
+				result.Set("deleteContactInfos", true)
+				return &deleteContactInfosOutput{
 					ClientMutationID: mutationID,
 					Entity:           e,
 				}, nil
