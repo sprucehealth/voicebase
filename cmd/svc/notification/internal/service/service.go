@@ -250,16 +250,16 @@ type snsNotification struct {
 	IOSSandBox     *iOSPushNotification     `json:"APNS_SANDBOX,omitempty"`
 	IOS            *iOSPushNotification     `json:"APNS,omitempty"`
 	Android        *androidPushNotification `json:"GCM,omitempty"`
-	ThreadID       string                   `json:"thread_id"`
-	URL            string                   `json:"url"`
 }
 
 type iOSPushNotification struct {
 	PushData *iOSPushData `json:"aps"`
+	ThreadID string       `json:"thread_id"`
 }
 
 type iOSPushData struct {
 	Alert string `json:"alert"`
+	URL   string `json:"url"`
 }
 
 type androidPushNotification struct {
@@ -267,7 +267,9 @@ type androidPushNotification struct {
 }
 
 type androidPushData struct {
-	Message string `json:"message"`
+	Message  string `json:"message"`
+	URL      string `json:"url"`
+	ThreadID string `json:"thread_id"`
 }
 
 func generateNotification(n *notification.Notification, pushConfig *dal.PushConfig) *snsNotification {
@@ -275,7 +277,9 @@ func generateNotification(n *notification.Notification, pushConfig *dal.PushConf
 	iOSNotif := &iOSPushNotification{
 		PushData: &iOSPushData{
 			Alert: n.ShortMessage,
+			URL:   url,
 		},
+		ThreadID: n.ThreadID,
 	}
 	return &snsNotification{
 		DefaultMessage: n.ShortMessage,
@@ -283,11 +287,11 @@ func generateNotification(n *notification.Notification, pushConfig *dal.PushConf
 		IOS:            iOSNotif,
 		Android: &androidPushNotification{
 			PushData: &androidPushData{
-				Message: n.ShortMessage,
+				Message:  n.ShortMessage,
+				URL:      url,
+				ThreadID: n.ThreadID,
 			},
 		},
-		ThreadID: n.ThreadID,
-		URL:      url,
 	}
 }
 

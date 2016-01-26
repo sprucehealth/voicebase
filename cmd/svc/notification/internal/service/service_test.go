@@ -338,7 +338,9 @@ func TestProcessNotification(t *testing.T) {
 	iOSNotif := &iOSPushNotification{
 		PushData: &iOSPushData{
 			Alert: "ShortMessage",
+			URL:   threadActivityURL("OrganizationID", "ThreadID"),
 		},
+		ThreadID: "ThreadID",
 	}
 	snsNote := &snsNotification{
 		DefaultMessage: "ShortMessage",
@@ -346,11 +348,11 @@ func TestProcessNotification(t *testing.T) {
 		IOS:            iOSNotif,
 		Android: &androidPushNotification{
 			PushData: &androidPushData{
-				Message: "ShortMessage",
+				Message:  "ShortMessage",
+				URL:      threadActivityURL("OrganizationID", "ThreadID"),
+				ThreadID: "ThreadID",
 			},
 		},
-		ThreadID: "ThreadID",
-		URL:      threadActivityURL("OrganizationID", "ThreadID"),
 	}
 	msg, err := json.Marshal(snsNote)
 	test.OK(t, err)
