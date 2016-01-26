@@ -173,6 +173,9 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 		res, err := r.directory.CreateEntity(
 			ctx,
 			&directory.CreateEntityRequest{
+				EntityInfo: &directory.EntityInfo{
+					DisplayName: pem.FromChannelID,
+				},
 				Type: directory.EntityType_EXTERNAL,
 				InitialMembershipEntityID: organizationID,
 				RequestedInformation: &directory.RequestedInformation{

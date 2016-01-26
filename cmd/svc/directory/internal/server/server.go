@@ -230,6 +230,9 @@ func (s *server) validateCreateEntityRequest(rd *directory.CreateEntityRequest) 
 			return grpcErrorf(codes.NotFound, "Entity not found %s", rd.InitialMembershipEntityID)
 		}
 	}
+	if rd.EntityInfo == nil {
+		return grpcErrorf(codes.InvalidArgument, "Entity info must be provided")
+	}
 	for _, contact := range rd.Contacts {
 		if contact.Value == "" {
 			return grpcErrorf(codes.InvalidArgument, "Contact value cannot be empty")

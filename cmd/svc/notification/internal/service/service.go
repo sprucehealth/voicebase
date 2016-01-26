@@ -184,6 +184,7 @@ func (s *service) processPushNotification(n *notification.Notification) error {
 	}
 	accountIDs := accountIDsFromExternalIDs(externalIDsResp.ExternalIDs)
 	for _, accountID := range accountIDs {
+		golog.Debugf("Sending push notification to external group ID: %s", accountID)
 		if err := s.sendPushNotificationToExternalGroupID(accountID, n); err != nil {
 			golog.Errorf(err.Error())
 		}
@@ -195,6 +196,9 @@ func (s *service) sendPushNotificationToExternalGroupID(externalGroupID string, 
 	pushConfigs, err := s.dl.PushConfigsForExternalGroupID(externalGroupID)
 	if err != nil {
 		return errors.Trace(err)
+	}
+	if len(pushConfigs) == 0 {
+		golog.Debugf("No push configs available for external group id %s", externalGroupID)
 	}
 
 	// TODO: Account for partial failure here. If some configs succeed and others don't
@@ -212,6 +216,7 @@ func (s *service) sendPushNotificationToExternalGroupID(externalGroupID string, 
 			return errors.Trace(err)
 		}
 
+		golog.Debugf("Publishing %s to %s", msg, pushConfig.PushEndpoint)
 		if _, err := s.snsAPI.Publish(&sns.PublishInput{
 			Message:          ptr.String(string(msg)),
 			MessageStructure: jsonStructure,

@@ -667,12 +667,14 @@ func (s *threadsServer) publishMessage(ctx context.Context, orgID, primaryEntity
 }
 
 func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID string, threadID models.ThreadID, publishingEntityID string) {
+	golog.Debugf("Notifying members of org %s of activity on thread %s by entity %s", orgID, threadID, publishingEntityID)
 	if s.notificationClient == nil || s.directoryClient == nil {
+		golog.Debugf("Member notification aborted because either notification client or directory client is not configured")
 		return
 	}
 	conc.Go(func() {
 		// Lookup all members of the org this thread belongs to and notify them of the new message unless they published it
-		resp, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
+		resp, err := s.directoryClient.LookupEntities(context.TODO(), &directory.LookupEntitiesRequest{
 			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
 			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: orgID,
@@ -698,6 +700,7 @@ func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID
 			}
 			memberEntityIDs = append(memberEntityIDs, m.ID)
 		}
+		golog.Debugf("Sending notifications to member entities %v", memberEntityIDs)
 		if err := s.notificationClient.SendNotification(&notification.Notification{
 			ShortMessage:     "A new message is available",
 			ThreadID:         threadID.String(),
