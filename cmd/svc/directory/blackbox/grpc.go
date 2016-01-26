@@ -41,6 +41,7 @@ var (
 	maxContactsPerEntity       int64 = 20
 	maxRequestedInfoDepth      int64 = 4
 	maxRequestedInfoDimensions int64 = 7
+	maxEntityInfoSize          int64 = 250
 )
 
 func randomEntityType() directory.EntityType {
@@ -118,17 +119,28 @@ func randomContact() *directory.Contact {
 
 func assertEntity(e *directory.Entity) {
 	harness.Assert(e.ID != "")
-	harness.Assert(e.Name != "")
+	harness.Assert(e.Info != nil)
 }
 
 func randomValidCreateEntityRequest(initialMembershipEntityID string) *directory.CreateEntityRequest {
 	return &directory.CreateEntityRequest{
-		Name:                      harness.RandLengthString(maxEntityNameSize),
+		EntityInfo:                randomEntityInfo(),
 		Type:                      randomEntityType(),
 		ExternalID:                optionalRandomExternalID(),
 		InitialMembershipEntityID: initialMembershipEntityID,
 		Contacts:                  optionalRandomContactsSlice(),
 		RequestedInformation:      optionalRandomRequestedInformation(),
+	}
+}
+
+func randomEntityInfo() *directory.EntityInfo {
+	return &directory.EntityInfo{
+		FirstName:     harness.RandLengthString(maxEntityInfoSize),
+		MiddleInitial: harness.RandLengthString(1),
+		LastName:      harness.RandLengthString(maxEntityInfoSize),
+		GroupName:     harness.RandLengthString(maxEntityInfoSize),
+		DisplayName:   harness.RandLengthString(maxEntityInfoSize),
+		Note:          harness.RandLengthString(maxEntityInfoSize),
 	}
 }
 

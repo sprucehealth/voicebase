@@ -56,7 +56,9 @@ func TestPostMessage(t *testing.T) {
 			{
 				ID:   entID,
 				Type: directory.EntityType_INTERNAL,
-				Name: "Schmee",
+				Info: &directory.EntityInfo{
+					DisplayName: "Schmee",
+				},
 				Memberships: []*directory.Entity{
 					{ID: orgID, Type: directory.EntityType_ORGANIZATION},
 				},
@@ -80,7 +82,9 @@ func TestPostMessage(t *testing.T) {
 			{
 				ID:   extEntID,
 				Type: directory.EntityType_EXTERNAL,
-				Name: "Barro",
+				Info: &directory.EntityInfo{
+					DisplayName: "Barro",
+				},
 				Contacts: []*directory.Contact{
 					{
 						ContactType: directory.ContactType_PHONE,
@@ -255,9 +259,11 @@ func TestProvisionEmail_Organization(t *testing.T) {
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{
-				ID:          entityID,
-				Type:        directory.EntityType_ORGANIZATION,
-				Name:        "Schmee",
+				ID:   entityID,
+				Type: directory.EntityType_ORGANIZATION,
+				Info: &directory.EntityInfo{
+					DisplayName: "Schmee",
+				},
 				Memberships: []*directory.Entity{},
 			},
 		},
@@ -292,9 +298,11 @@ func TestProvisionEmail_Organization(t *testing.T) {
 		},
 	}).WithReturns(&directory.CreateContactResponse{
 		Entity: &directory.Entity{
-			ID:          entityID,
-			Type:        directory.EntityType_ORGANIZATION,
-			Name:        "Schmee",
+			ID:   entityID,
+			Type: directory.EntityType_ORGANIZATION,
+			Info: &directory.EntityInfo{
+				DisplayName: "Schmee",
+			},
 			Memberships: []*directory.Entity{},
 			Contacts: []*directory.Contact{
 				{
@@ -395,7 +403,9 @@ func TestProvisionEmail_Internal(t *testing.T) {
 			{
 				ID:   entityID,
 				Type: directory.EntityType_INTERNAL,
-				Name: "Schmee",
+				Info: &directory.EntityInfo{
+					DisplayName: "Schmee",
+				},
 				Memberships: []*directory.Entity{
 					&directory.Entity{
 						Type: directory.EntityType_ORGANIZATION,
@@ -432,9 +442,11 @@ func TestProvisionEmail_Internal(t *testing.T) {
 		},
 	}).WithReturns(&directory.CreateContactResponse{
 		Entity: &directory.Entity{
-			ID:          entityID,
-			Type:        directory.EntityType_ORGANIZATION,
-			Name:        "Schmee",
+			ID:   entityID,
+			Type: directory.EntityType_ORGANIZATION,
+			Info: &directory.EntityInfo{
+				DisplayName: "Schmee",
+			},
 			Memberships: []*directory.Entity{},
 			Contacts: []*directory.Contact{
 				{
@@ -532,9 +544,11 @@ func TestProvisionEmail_Organization_DomainExists(t *testing.T) {
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{
-				ID:          entityID,
-				Type:        directory.EntityType_ORGANIZATION,
-				Name:        "Schmee",
+				ID:   entityID,
+				Type: directory.EntityType_ORGANIZATION,
+				Info: &directory.EntityInfo{
+					DisplayName: "Schmee",
+				},
 				Memberships: []*directory.Entity{},
 			},
 		},
@@ -566,9 +580,11 @@ func TestProvisionEmail_Organization_DomainExists(t *testing.T) {
 		},
 	}).WithReturns(&directory.CreateContactResponse{
 		Entity: &directory.Entity{
-			ID:          entityID,
-			Type:        directory.EntityType_ORGANIZATION,
-			Name:        "Schmee",
+			ID:   entityID,
+			Type: directory.EntityType_ORGANIZATION,
+			Info: &directory.EntityInfo{
+				DisplayName: "Schmee",
+			},
 			Memberships: []*directory.Entity{},
 			Contacts: []*directory.Contact{
 				{
@@ -665,9 +681,11 @@ func TestProvisionEmail_Organization_DomainInUse(t *testing.T) {
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{
-				ID:          entityID,
-				Type:        directory.EntityType_ORGANIZATION,
-				Name:        "Schmee",
+				ID:   entityID,
+				Type: directory.EntityType_ORGANIZATION,
+				Info: &directory.EntityInfo{
+					DisplayName: "Schmee",
+				},
 				Memberships: []*directory.Entity{},
 			},
 		},
@@ -752,9 +770,11 @@ func TestProvisionEmail_Organization_EmailInUse(t *testing.T) {
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{
-				ID:          entityID,
-				Type:        directory.EntityType_ORGANIZATION,
-				Name:        "Schmee",
+				ID:   entityID,
+				Type: directory.EntityType_ORGANIZATION,
+				Info: &directory.EntityInfo{
+					DisplayName: "Schmee",
+				},
 				Memberships: []*directory.Entity{},
 			},
 		},

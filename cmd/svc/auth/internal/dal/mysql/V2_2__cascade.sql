@@ -1,0 +1,10 @@
+ALTER TABLE auth.account DROP FOREIGN KEY fk_account_primary_account_email_id_account_email_id;
+ALTER TABLE auth.account ADD CONSTRAINT fk_account_primary_account_email_id_account_email_id FOREIGN KEY (primary_account_email_id) REFERENCES account_email (id) ON DELETE SET NULL;
+ALTER TABLE auth.account DROP FOREIGN KEY fk_account_primary_account_phone_id_account_phone_id;
+ALTER TABLE auth.account ADD CONSTRAINT fk_account_primary_account_phone_id_account_phone_id FOREIGN KEY (primary_account_phone_id) REFERENCES account_phone (id) ON DELETE SET NULL;
+ALTER TABLE auth.account_phone DROP FOREIGN KEY fk_account_phone_account_id;
+ALTER TABLE auth.account_phone ADD CONSTRAINT fk_account_phone_account_id FOREIGN KEY (account_id) REFERENCES account (id) ON DELETE CASCADE;
+ALTER TABLE auth.account_email DROP FOREIGN KEY fk_account_email_account_id;
+ALTER TABLE auth.account_email ADD CONSTRAINT fk_account_email_account_id FOREIGN KEY (account_id) REFERENCES account (id) ON DELETE CASCADE;
+ALTER TABLE auth.account_phone DROP FOREIGN KEY fk_account_phone_account_id;
+ALTER TABLE auth.account_phone ADD CONSTRAINT fk_account_phone_account_id FOREIGN KEY (account_id) REFERENCES account (id) ON DELETE CASCADE;

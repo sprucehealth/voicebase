@@ -131,7 +131,9 @@ func testOutgoing(t *testing.T, testExpired bool, patientName string) {
 				{
 					ID:   destinationEntityID,
 					Type: directory.EntityType_EXTERNAL,
-					Name: patientName,
+					Info: &directory.EntityInfo{
+						DisplayName: patientName,
+					},
 					Contacts: []*directory.Contact{
 						{
 							Provisioned: false,

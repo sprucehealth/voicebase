@@ -289,15 +289,11 @@ var threadItemType = graphql.NewObject(
 						return nil, internalError(err)
 					}
 					for _, e := range res.Entities {
-						oc, err := transformContactsToResponse(e.Contacts)
+						ent, err := transformEntityToResponse(e)
 						if err != nil {
-							return nil, internalError(fmt.Errorf("failed to transform entity contacts: %+v", err))
+							return nil, internalError(fmt.Errorf("failed to transform entity: %s", err))
 						}
-						return &entity{
-							ID:       e.ID,
-							Name:     e.Name,
-							Contacts: oc,
-						}, nil
+						return ent, nil
 					}
 					return nil, errors.New("actor not found")
 				},

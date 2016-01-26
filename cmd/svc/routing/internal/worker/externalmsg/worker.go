@@ -228,12 +228,12 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 	var title bml.BML
 
 	fromName := pem.FromChannelID
-	if fromEntity.Name != "" {
-		fromName = fromEntity.Name
+	if fromEntity.Info != nil && fromEntity.Info.DisplayName != "" {
+		fromName = fromEntity.Info.DisplayName
 	}
 	toName := pem.ToChannelID
-	if toEntity.Name != "" {
-		toName = toEntity.Name
+	if toEntity.Info != nil && toEntity.Info.DisplayName != "" {
+		toName = toEntity.Info.DisplayName
 	}
 
 	// TODO: The creation of this mesage should not be the responsibility

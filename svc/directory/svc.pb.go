@@ -10,6 +10,7 @@
 
 	It has these top-level messages:
 		ExternalID
+		EntityInfo
 		Entity
 		RequestedInformation
 		ExternalIDsRequest
@@ -29,6 +30,14 @@
 		LookupEntityDomainResponse
 		CreateEntityDomainRequest
 		CreateEntityDomainResponse
+		CreateContactsRequest
+		CreateContactsResponse
+		UpdateEntityRequest
+		UpdateEntityResponse
+		UpdateContactsRequest
+		UpdateContactsResponse
+		DeleteContactsRequest
+		DeleteContactsResponse
 */
 package directory
 
@@ -137,15 +146,27 @@ type ExternalID struct {
 func (m *ExternalID) Reset()      { *m = ExternalID{} }
 func (*ExternalID) ProtoMessage() {}
 
+type EntityInfo struct {
+	FirstName     string `protobuf:"bytes,1,opt,name=first_name,proto3" json:"first_name,omitempty"`
+	MiddleInitial string `protobuf:"bytes,2,opt,name=middle_initial,proto3" json:"middle_initial,omitempty"`
+	LastName      string `protobuf:"bytes,3,opt,name=last_name,proto3" json:"last_name,omitempty"`
+	GroupName     string `protobuf:"bytes,4,opt,name=group_name,proto3" json:"group_name,omitempty"`
+	DisplayName   string `protobuf:"bytes,5,opt,name=display_name,proto3" json:"display_name,omitempty"`
+	Note          string `protobuf:"bytes,6,opt,name=note,proto3" json:"note,omitempty"`
+}
+
+func (m *EntityInfo) Reset()      { *m = EntityInfo{} }
+func (*EntityInfo) ProtoMessage() {}
+
 type Entity struct {
 	ID                  string              `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name                string              `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Type                EntityType          `protobuf:"varint,3,opt,name=type,proto3,enum=directory.EntityType" json:"type,omitempty"`
 	Memberships         []*Entity           `protobuf:"bytes,4,rep,name=memberships" json:"memberships,omitempty"`
 	Members             []*Entity           `protobuf:"bytes,5,rep,name=members" json:"members,omitempty"`
 	ExternalIDs         []string            `protobuf:"bytes,6,rep,name=external_ids" json:"external_ids,omitempty"`
 	Contacts            []*Contact          `protobuf:"bytes,7,rep,name=contacts" json:"contacts,omitempty"`
 	IncludedInformation []EntityInformation `protobuf:"varint,8,rep,name=included_information,enum=directory.EntityInformation" json:"included_information,omitempty"`
+	Info                *EntityInfo         `protobuf:"bytes,9,opt,name=info" json:"info,omitempty"`
 }
 
 func (m *Entity) Reset()      { *m = Entity{} }
@@ -168,6 +189,13 @@ func (m *Entity) GetMembers() []*Entity {
 func (m *Entity) GetContacts() []*Contact {
 	if m != nil {
 		return m.Contacts
+	}
+	return nil
+}
+
+func (m *Entity) GetInfo() *EntityInfo {
+	if m != nil {
+		return m.Info
 	}
 	return nil
 }
@@ -320,12 +348,12 @@ func (m *LookupEntitiesResponse) GetEntities() []*Entity {
 }
 
 type CreateEntityRequest struct {
-	Name                      string                `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Type                      EntityType            `protobuf:"varint,2,opt,name=type,proto3,enum=directory.EntityType" json:"type,omitempty"`
 	ExternalID                string                `protobuf:"bytes,3,opt,name=external_id,proto3" json:"external_id,omitempty"`
 	InitialMembershipEntityID string                `protobuf:"bytes,4,opt,name=initial_membership_entity_id,proto3" json:"initial_membership_entity_id,omitempty"`
 	Contacts                  []*Contact            `protobuf:"bytes,5,rep,name=contacts" json:"contacts,omitempty"`
 	RequestedInformation      *RequestedInformation `protobuf:"bytes,6,opt,name=requested_information" json:"requested_information,omitempty"`
+	EntityInfo                *EntityInfo           `protobuf:"bytes,7,opt,name=entity_info" json:"entity_info,omitempty"`
 }
 
 func (m *CreateEntityRequest) Reset()      { *m = CreateEntityRequest{} }
@@ -341,6 +369,13 @@ func (m *CreateEntityRequest) GetContacts() []*Contact {
 func (m *CreateEntityRequest) GetRequestedInformation() *RequestedInformation {
 	if m != nil {
 		return m.RequestedInformation
+	}
+	return nil
+}
+
+func (m *CreateEntityRequest) GetEntityInfo() *EntityInfo {
+	if m != nil {
+		return m.EntityInfo
 	}
 	return nil
 }
@@ -393,6 +428,8 @@ type Contact struct {
 	ContactType ContactType `protobuf:"varint,1,opt,name=contact_type,proto3,enum=directory.ContactType" json:"contact_type,omitempty"`
 	Value       string      `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	Provisioned bool        `protobuf:"varint,3,opt,name=provisioned,proto3" json:"provisioned,omitempty"`
+	ID          string      `protobuf:"bytes,4,opt,name=id,proto3" json:"id,omitempty"`
+	Label       string      `protobuf:"bytes,5,opt,name=label,proto3" json:"label,omitempty"`
 }
 
 func (m *Contact) Reset()      { *m = Contact{} }
@@ -494,8 +531,150 @@ type CreateEntityDomainResponse struct {
 func (m *CreateEntityDomainResponse) Reset()      { *m = CreateEntityDomainResponse{} }
 func (*CreateEntityDomainResponse) ProtoMessage() {}
 
+type CreateContactsRequest struct {
+	EntityID             string                `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	Contacts             []*Contact            `protobuf:"bytes,2,rep,name=contacts" json:"contacts,omitempty"`
+	RequestedInformation *RequestedInformation `protobuf:"bytes,3,opt,name=requested_information" json:"requested_information,omitempty"`
+}
+
+func (m *CreateContactsRequest) Reset()      { *m = CreateContactsRequest{} }
+func (*CreateContactsRequest) ProtoMessage() {}
+
+func (m *CreateContactsRequest) GetContacts() []*Contact {
+	if m != nil {
+		return m.Contacts
+	}
+	return nil
+}
+
+func (m *CreateContactsRequest) GetRequestedInformation() *RequestedInformation {
+	if m != nil {
+		return m.RequestedInformation
+	}
+	return nil
+}
+
+type CreateContactsResponse struct {
+	Entity *Entity `protobuf:"bytes,1,opt,name=entity" json:"entity,omitempty"`
+}
+
+func (m *CreateContactsResponse) Reset()      { *m = CreateContactsResponse{} }
+func (*CreateContactsResponse) ProtoMessage() {}
+
+func (m *CreateContactsResponse) GetEntity() *Entity {
+	if m != nil {
+		return m.Entity
+	}
+	return nil
+}
+
+type UpdateEntityRequest struct {
+	EntityID             string                `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	EntityInfo           *EntityInfo           `protobuf:"bytes,2,opt,name=entity_info" json:"entity_info,omitempty"`
+	RequestedInformation *RequestedInformation `protobuf:"bytes,3,opt,name=requested_information" json:"requested_information,omitempty"`
+}
+
+func (m *UpdateEntityRequest) Reset()      { *m = UpdateEntityRequest{} }
+func (*UpdateEntityRequest) ProtoMessage() {}
+
+func (m *UpdateEntityRequest) GetEntityInfo() *EntityInfo {
+	if m != nil {
+		return m.EntityInfo
+	}
+	return nil
+}
+
+func (m *UpdateEntityRequest) GetRequestedInformation() *RequestedInformation {
+	if m != nil {
+		return m.RequestedInformation
+	}
+	return nil
+}
+
+type UpdateEntityResponse struct {
+	Entity *Entity `protobuf:"bytes,1,opt,name=entity" json:"entity,omitempty"`
+}
+
+func (m *UpdateEntityResponse) Reset()      { *m = UpdateEntityResponse{} }
+func (*UpdateEntityResponse) ProtoMessage() {}
+
+func (m *UpdateEntityResponse) GetEntity() *Entity {
+	if m != nil {
+		return m.Entity
+	}
+	return nil
+}
+
+type UpdateContactsRequest struct {
+	EntityID             string                `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	Contacts             []*Contact            `protobuf:"bytes,2,rep,name=contacts" json:"contacts,omitempty"`
+	RequestedInformation *RequestedInformation `protobuf:"bytes,3,opt,name=requested_information" json:"requested_information,omitempty"`
+}
+
+func (m *UpdateContactsRequest) Reset()      { *m = UpdateContactsRequest{} }
+func (*UpdateContactsRequest) ProtoMessage() {}
+
+func (m *UpdateContactsRequest) GetContacts() []*Contact {
+	if m != nil {
+		return m.Contacts
+	}
+	return nil
+}
+
+func (m *UpdateContactsRequest) GetRequestedInformation() *RequestedInformation {
+	if m != nil {
+		return m.RequestedInformation
+	}
+	return nil
+}
+
+type UpdateContactsResponse struct {
+	Entity *Entity `protobuf:"bytes,1,opt,name=entity" json:"entity,omitempty"`
+}
+
+func (m *UpdateContactsResponse) Reset()      { *m = UpdateContactsResponse{} }
+func (*UpdateContactsResponse) ProtoMessage() {}
+
+func (m *UpdateContactsResponse) GetEntity() *Entity {
+	if m != nil {
+		return m.Entity
+	}
+	return nil
+}
+
+type DeleteContactsRequest struct {
+	EntityID             string                `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	EntityContactIDs     []string              `protobuf:"bytes,2,rep,name=entity_contact_id" json:"entity_contact_id,omitempty"`
+	RequestedInformation *RequestedInformation `protobuf:"bytes,3,opt,name=requested_information" json:"requested_information,omitempty"`
+}
+
+func (m *DeleteContactsRequest) Reset()      { *m = DeleteContactsRequest{} }
+func (*DeleteContactsRequest) ProtoMessage() {}
+
+func (m *DeleteContactsRequest) GetRequestedInformation() *RequestedInformation {
+	if m != nil {
+		return m.RequestedInformation
+	}
+	return nil
+}
+
+type DeleteContactsResponse struct {
+	Entity *Entity `protobuf:"bytes,1,opt,name=entity" json:"entity,omitempty"`
+}
+
+func (m *DeleteContactsResponse) Reset()      { *m = DeleteContactsResponse{} }
+func (*DeleteContactsResponse) ProtoMessage() {}
+
+func (m *DeleteContactsResponse) GetEntity() *Entity {
+	if m != nil {
+		return m.Entity
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*ExternalID)(nil), "directory.ExternalID")
+	proto.RegisterType((*EntityInfo)(nil), "directory.EntityInfo")
 	proto.RegisterType((*Entity)(nil), "directory.Entity")
 	proto.RegisterType((*RequestedInformation)(nil), "directory.RequestedInformation")
 	proto.RegisterType((*ExternalIDsRequest)(nil), "directory.ExternalIDsRequest")
@@ -515,6 +694,14 @@ func init() {
 	proto.RegisterType((*LookupEntityDomainResponse)(nil), "directory.LookupEntityDomainResponse")
 	proto.RegisterType((*CreateEntityDomainRequest)(nil), "directory.CreateEntityDomainRequest")
 	proto.RegisterType((*CreateEntityDomainResponse)(nil), "directory.CreateEntityDomainResponse")
+	proto.RegisterType((*CreateContactsRequest)(nil), "directory.CreateContactsRequest")
+	proto.RegisterType((*CreateContactsResponse)(nil), "directory.CreateContactsResponse")
+	proto.RegisterType((*UpdateEntityRequest)(nil), "directory.UpdateEntityRequest")
+	proto.RegisterType((*UpdateEntityResponse)(nil), "directory.UpdateEntityResponse")
+	proto.RegisterType((*UpdateContactsRequest)(nil), "directory.UpdateContactsRequest")
+	proto.RegisterType((*UpdateContactsResponse)(nil), "directory.UpdateContactsResponse")
+	proto.RegisterType((*DeleteContactsRequest)(nil), "directory.DeleteContactsRequest")
+	proto.RegisterType((*DeleteContactsResponse)(nil), "directory.DeleteContactsResponse")
 	proto.RegisterEnum("directory.EntityType", EntityType_name, EntityType_value)
 	proto.RegisterEnum("directory.EntityInformation", EntityInformation_name, EntityInformation_value)
 	proto.RegisterEnum("directory.ContactType", ContactType_name, ContactType_value)
@@ -576,6 +763,46 @@ func (this *ExternalID) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *EntityInfo) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*EntityInfo)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.FirstName != that1.FirstName {
+		return false
+	}
+	if this.MiddleInitial != that1.MiddleInitial {
+		return false
+	}
+	if this.LastName != that1.LastName {
+		return false
+	}
+	if this.GroupName != that1.GroupName {
+		return false
+	}
+	if this.DisplayName != that1.DisplayName {
+		return false
+	}
+	if this.Note != that1.Note {
+		return false
+	}
+	return true
+}
 func (this *Entity) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
@@ -597,9 +824,6 @@ func (this *Entity) Equal(that interface{}) bool {
 		return false
 	}
 	if this.ID != that1.ID {
-		return false
-	}
-	if this.Name != that1.Name {
 		return false
 	}
 	if this.Type != that1.Type {
@@ -644,6 +868,9 @@ func (this *Entity) Equal(that interface{}) bool {
 		if this.IncludedInformation[i] != that1.IncludedInformation[i] {
 			return false
 		}
+	}
+	if !this.Info.Equal(that1.Info) {
+		return false
 	}
 	return true
 }
@@ -877,9 +1104,6 @@ func (this *CreateEntityRequest) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.Name != that1.Name {
-		return false
-	}
 	if this.Type != that1.Type {
 		return false
 	}
@@ -898,6 +1122,9 @@ func (this *CreateEntityRequest) Equal(that interface{}) bool {
 		}
 	}
 	if !this.RequestedInformation.Equal(that1.RequestedInformation) {
+		return false
+	}
+	if !this.EntityInfo.Equal(that1.EntityInfo) {
 		return false
 	}
 	return true
@@ -1010,6 +1237,12 @@ func (this *Contact) Equal(that interface{}) bool {
 		return false
 	}
 	if this.Provisioned != that1.Provisioned {
+		return false
+	}
+	if this.ID != that1.ID {
+		return false
+	}
+	if this.Label != that1.Label {
 		return false
 	}
 	return true
@@ -1234,6 +1467,245 @@ func (this *CreateEntityDomainResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *CreateContactsRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreateContactsRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.EntityID != that1.EntityID {
+		return false
+	}
+	if len(this.Contacts) != len(that1.Contacts) {
+		return false
+	}
+	for i := range this.Contacts {
+		if !this.Contacts[i].Equal(that1.Contacts[i]) {
+			return false
+		}
+	}
+	if !this.RequestedInformation.Equal(that1.RequestedInformation) {
+		return false
+	}
+	return true
+}
+func (this *CreateContactsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreateContactsResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Entity.Equal(that1.Entity) {
+		return false
+	}
+	return true
+}
+func (this *UpdateEntityRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*UpdateEntityRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.EntityID != that1.EntityID {
+		return false
+	}
+	if !this.EntityInfo.Equal(that1.EntityInfo) {
+		return false
+	}
+	if !this.RequestedInformation.Equal(that1.RequestedInformation) {
+		return false
+	}
+	return true
+}
+func (this *UpdateEntityResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*UpdateEntityResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Entity.Equal(that1.Entity) {
+		return false
+	}
+	return true
+}
+func (this *UpdateContactsRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*UpdateContactsRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.EntityID != that1.EntityID {
+		return false
+	}
+	if len(this.Contacts) != len(that1.Contacts) {
+		return false
+	}
+	for i := range this.Contacts {
+		if !this.Contacts[i].Equal(that1.Contacts[i]) {
+			return false
+		}
+	}
+	if !this.RequestedInformation.Equal(that1.RequestedInformation) {
+		return false
+	}
+	return true
+}
+func (this *UpdateContactsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*UpdateContactsResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Entity.Equal(that1.Entity) {
+		return false
+	}
+	return true
+}
+func (this *DeleteContactsRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*DeleteContactsRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.EntityID != that1.EntityID {
+		return false
+	}
+	if len(this.EntityContactIDs) != len(that1.EntityContactIDs) {
+		return false
+	}
+	for i := range this.EntityContactIDs {
+		if this.EntityContactIDs[i] != that1.EntityContactIDs[i] {
+			return false
+		}
+	}
+	if !this.RequestedInformation.Equal(that1.RequestedInformation) {
+		return false
+	}
+	return true
+}
+func (this *DeleteContactsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*DeleteContactsResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Entity.Equal(that1.Entity) {
+		return false
+	}
+	return true
+}
 func (this *ExternalID) GoString() string {
 	if this == nil {
 		return "nil"
@@ -1245,6 +1717,21 @@ func (this *ExternalID) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *EntityInfo) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 10)
+	s = append(s, "&directory.EntityInfo{")
+	s = append(s, "FirstName: "+fmt.Sprintf("%#v", this.FirstName)+",\n")
+	s = append(s, "MiddleInitial: "+fmt.Sprintf("%#v", this.MiddleInitial)+",\n")
+	s = append(s, "LastName: "+fmt.Sprintf("%#v", this.LastName)+",\n")
+	s = append(s, "GroupName: "+fmt.Sprintf("%#v", this.GroupName)+",\n")
+	s = append(s, "DisplayName: "+fmt.Sprintf("%#v", this.DisplayName)+",\n")
+	s = append(s, "Note: "+fmt.Sprintf("%#v", this.Note)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *Entity) GoString() string {
 	if this == nil {
 		return "nil"
@@ -1252,7 +1739,6 @@ func (this *Entity) GoString() string {
 	s := make([]string, 0, 12)
 	s = append(s, "&directory.Entity{")
 	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
-	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	if this.Memberships != nil {
 		s = append(s, "Memberships: "+fmt.Sprintf("%#v", this.Memberships)+",\n")
@@ -1265,6 +1751,9 @@ func (this *Entity) GoString() string {
 		s = append(s, "Contacts: "+fmt.Sprintf("%#v", this.Contacts)+",\n")
 	}
 	s = append(s, "IncludedInformation: "+fmt.Sprintf("%#v", this.IncludedInformation)+",\n")
+	if this.Info != nil {
+		s = append(s, "Info: "+fmt.Sprintf("%#v", this.Info)+",\n")
+	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1351,7 +1840,6 @@ func (this *CreateEntityRequest) GoString() string {
 	}
 	s := make([]string, 0, 10)
 	s = append(s, "&directory.CreateEntityRequest{")
-	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	s = append(s, "ExternalID: "+fmt.Sprintf("%#v", this.ExternalID)+",\n")
 	s = append(s, "InitialMembershipEntityID: "+fmt.Sprintf("%#v", this.InitialMembershipEntityID)+",\n")
@@ -1360,6 +1848,9 @@ func (this *CreateEntityRequest) GoString() string {
 	}
 	if this.RequestedInformation != nil {
 		s = append(s, "RequestedInformation: "+fmt.Sprintf("%#v", this.RequestedInformation)+",\n")
+	}
+	if this.EntityInfo != nil {
+		s = append(s, "EntityInfo: "+fmt.Sprintf("%#v", this.EntityInfo)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -1406,11 +1897,13 @@ func (this *Contact) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 9)
 	s = append(s, "&directory.Contact{")
 	s = append(s, "ContactType: "+fmt.Sprintf("%#v", this.ContactType)+",\n")
 	s = append(s, "Value: "+fmt.Sprintf("%#v", this.Value)+",\n")
 	s = append(s, "Provisioned: "+fmt.Sprintf("%#v", this.Provisioned)+",\n")
+	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	s = append(s, "Label: "+fmt.Sprintf("%#v", this.Label)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1509,6 +2002,116 @@ func (this *CreateEntityDomainResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *CreateContactsRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&directory.CreateContactsRequest{")
+	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
+	if this.Contacts != nil {
+		s = append(s, "Contacts: "+fmt.Sprintf("%#v", this.Contacts)+",\n")
+	}
+	if this.RequestedInformation != nil {
+		s = append(s, "RequestedInformation: "+fmt.Sprintf("%#v", this.RequestedInformation)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreateContactsResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&directory.CreateContactsResponse{")
+	if this.Entity != nil {
+		s = append(s, "Entity: "+fmt.Sprintf("%#v", this.Entity)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *UpdateEntityRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&directory.UpdateEntityRequest{")
+	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
+	if this.EntityInfo != nil {
+		s = append(s, "EntityInfo: "+fmt.Sprintf("%#v", this.EntityInfo)+",\n")
+	}
+	if this.RequestedInformation != nil {
+		s = append(s, "RequestedInformation: "+fmt.Sprintf("%#v", this.RequestedInformation)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *UpdateEntityResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&directory.UpdateEntityResponse{")
+	if this.Entity != nil {
+		s = append(s, "Entity: "+fmt.Sprintf("%#v", this.Entity)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *UpdateContactsRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&directory.UpdateContactsRequest{")
+	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
+	if this.Contacts != nil {
+		s = append(s, "Contacts: "+fmt.Sprintf("%#v", this.Contacts)+",\n")
+	}
+	if this.RequestedInformation != nil {
+		s = append(s, "RequestedInformation: "+fmt.Sprintf("%#v", this.RequestedInformation)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *UpdateContactsResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&directory.UpdateContactsResponse{")
+	if this.Entity != nil {
+		s = append(s, "Entity: "+fmt.Sprintf("%#v", this.Entity)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DeleteContactsRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&directory.DeleteContactsRequest{")
+	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
+	s = append(s, "EntityContactIDs: "+fmt.Sprintf("%#v", this.EntityContactIDs)+",\n")
+	if this.RequestedInformation != nil {
+		s = append(s, "RequestedInformation: "+fmt.Sprintf("%#v", this.RequestedInformation)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DeleteContactsResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&directory.DeleteContactsResponse{")
+	if this.Entity != nil {
+		s = append(s, "Entity: "+fmt.Sprintf("%#v", this.Entity)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func valueToGoStringSvc(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -1542,14 +2145,19 @@ var _ grpc.ClientConn
 // Client API for Directory service
 
 type DirectoryClient interface {
+	// TODO: 1/22/16 - Remove the single version of this call once this code has been deployed and all callers have been changed and deployed
 	CreateContact(ctx context.Context, in *CreateContactRequest, opts ...grpc.CallOption) (*CreateContactResponse, error)
+	CreateContacts(ctx context.Context, in *CreateContactsRequest, opts ...grpc.CallOption) (*CreateContactsResponse, error)
 	CreateEntity(ctx context.Context, in *CreateEntityRequest, opts ...grpc.CallOption) (*CreateEntityResponse, error)
 	CreateMembership(ctx context.Context, in *CreateMembershipRequest, opts ...grpc.CallOption) (*CreateMembershipResponse, error)
+	DeleteContacts(ctx context.Context, in *DeleteContactsRequest, opts ...grpc.CallOption) (*DeleteContactsResponse, error)
 	ExternalIDs(ctx context.Context, in *ExternalIDsRequest, opts ...grpc.CallOption) (*ExternalIDsResponse, error)
 	LookupEntities(ctx context.Context, in *LookupEntitiesRequest, opts ...grpc.CallOption) (*LookupEntitiesResponse, error)
 	LookupEntitiesByContact(ctx context.Context, in *LookupEntitiesByContactRequest, opts ...grpc.CallOption) (*LookupEntitiesByContactResponse, error)
 	LookupEntityDomain(ctx context.Context, in *LookupEntityDomainRequest, opts ...grpc.CallOption) (*LookupEntityDomainResponse, error)
 	CreateEntityDomain(ctx context.Context, in *CreateEntityDomainRequest, opts ...grpc.CallOption) (*CreateEntityDomainResponse, error)
+	UpdateContacts(ctx context.Context, in *UpdateContactsRequest, opts ...grpc.CallOption) (*UpdateContactsResponse, error)
+	UpdateEntity(ctx context.Context, in *UpdateEntityRequest, opts ...grpc.CallOption) (*UpdateEntityResponse, error)
 }
 
 type directoryClient struct {
@@ -1569,6 +2177,15 @@ func (c *directoryClient) CreateContact(ctx context.Context, in *CreateContactRe
 	return out, nil
 }
 
+func (c *directoryClient) CreateContacts(ctx context.Context, in *CreateContactsRequest, opts ...grpc.CallOption) (*CreateContactsResponse, error) {
+	out := new(CreateContactsResponse)
+	err := grpc.Invoke(ctx, "/directory.Directory/CreateContacts", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *directoryClient) CreateEntity(ctx context.Context, in *CreateEntityRequest, opts ...grpc.CallOption) (*CreateEntityResponse, error) {
 	out := new(CreateEntityResponse)
 	err := grpc.Invoke(ctx, "/directory.Directory/CreateEntity", in, out, c.cc, opts...)
@@ -1581,6 +2198,15 @@ func (c *directoryClient) CreateEntity(ctx context.Context, in *CreateEntityRequ
 func (c *directoryClient) CreateMembership(ctx context.Context, in *CreateMembershipRequest, opts ...grpc.CallOption) (*CreateMembershipResponse, error) {
 	out := new(CreateMembershipResponse)
 	err := grpc.Invoke(ctx, "/directory.Directory/CreateMembership", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *directoryClient) DeleteContacts(ctx context.Context, in *DeleteContactsRequest, opts ...grpc.CallOption) (*DeleteContactsResponse, error) {
+	out := new(DeleteContactsResponse)
+	err := grpc.Invoke(ctx, "/directory.Directory/DeleteContacts", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1632,17 +2258,40 @@ func (c *directoryClient) CreateEntityDomain(ctx context.Context, in *CreateEnti
 	return out, nil
 }
 
+func (c *directoryClient) UpdateContacts(ctx context.Context, in *UpdateContactsRequest, opts ...grpc.CallOption) (*UpdateContactsResponse, error) {
+	out := new(UpdateContactsResponse)
+	err := grpc.Invoke(ctx, "/directory.Directory/UpdateContacts", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *directoryClient) UpdateEntity(ctx context.Context, in *UpdateEntityRequest, opts ...grpc.CallOption) (*UpdateEntityResponse, error) {
+	out := new(UpdateEntityResponse)
+	err := grpc.Invoke(ctx, "/directory.Directory/UpdateEntity", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for Directory service
 
 type DirectoryServer interface {
+	// TODO: 1/22/16 - Remove the single version of this call once this code has been deployed and all callers have been changed and deployed
 	CreateContact(context.Context, *CreateContactRequest) (*CreateContactResponse, error)
+	CreateContacts(context.Context, *CreateContactsRequest) (*CreateContactsResponse, error)
 	CreateEntity(context.Context, *CreateEntityRequest) (*CreateEntityResponse, error)
 	CreateMembership(context.Context, *CreateMembershipRequest) (*CreateMembershipResponse, error)
+	DeleteContacts(context.Context, *DeleteContactsRequest) (*DeleteContactsResponse, error)
 	ExternalIDs(context.Context, *ExternalIDsRequest) (*ExternalIDsResponse, error)
 	LookupEntities(context.Context, *LookupEntitiesRequest) (*LookupEntitiesResponse, error)
 	LookupEntitiesByContact(context.Context, *LookupEntitiesByContactRequest) (*LookupEntitiesByContactResponse, error)
 	LookupEntityDomain(context.Context, *LookupEntityDomainRequest) (*LookupEntityDomainResponse, error)
 	CreateEntityDomain(context.Context, *CreateEntityDomainRequest) (*CreateEntityDomainResponse, error)
+	UpdateContacts(context.Context, *UpdateContactsRequest) (*UpdateContactsResponse, error)
+	UpdateEntity(context.Context, *UpdateEntityRequest) (*UpdateEntityResponse, error)
 }
 
 func RegisterDirectoryServer(s *grpc.Server, srv DirectoryServer) {
@@ -1655,6 +2304,18 @@ func _Directory_CreateContact_Handler(srv interface{}, ctx context.Context, dec 
 		return nil, err
 	}
 	out, err := srv.(DirectoryServer).CreateContact(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Directory_CreateContacts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(CreateContactsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(DirectoryServer).CreateContacts(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -1679,6 +2340,18 @@ func _Directory_CreateMembership_Handler(srv interface{}, ctx context.Context, d
 		return nil, err
 	}
 	out, err := srv.(DirectoryServer).CreateMembership(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Directory_DeleteContacts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(DeleteContactsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(DirectoryServer).DeleteContacts(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -1745,6 +2418,30 @@ func _Directory_CreateEntityDomain_Handler(srv interface{}, ctx context.Context,
 	return out, nil
 }
 
+func _Directory_UpdateContacts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(UpdateContactsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(DirectoryServer).UpdateContacts(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Directory_UpdateEntity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(UpdateEntityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(DirectoryServer).UpdateEntity(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 var _Directory_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "directory.Directory",
 	HandlerType: (*DirectoryServer)(nil),
@@ -1754,12 +2451,20 @@ var _Directory_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Directory_CreateContact_Handler,
 		},
 		{
+			MethodName: "CreateContacts",
+			Handler:    _Directory_CreateContacts_Handler,
+		},
+		{
 			MethodName: "CreateEntity",
 			Handler:    _Directory_CreateEntity_Handler,
 		},
 		{
 			MethodName: "CreateMembership",
 			Handler:    _Directory_CreateMembership_Handler,
+		},
+		{
+			MethodName: "DeleteContacts",
+			Handler:    _Directory_DeleteContacts_Handler,
 		},
 		{
 			MethodName: "ExternalIDs",
@@ -1780,6 +2485,14 @@ var _Directory_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateEntityDomain",
 			Handler:    _Directory_CreateEntityDomain_Handler,
+		},
+		{
+			MethodName: "UpdateContacts",
+			Handler:    _Directory_UpdateContacts_Handler,
+		},
+		{
+			MethodName: "UpdateEntity",
+			Handler:    _Directory_UpdateEntity_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{},
@@ -1815,6 +2528,60 @@ func (m *ExternalID) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *EntityInfo) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *EntityInfo) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.FirstName) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.FirstName)))
+		i += copy(data[i:], m.FirstName)
+	}
+	if len(m.MiddleInitial) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.MiddleInitial)))
+		i += copy(data[i:], m.MiddleInitial)
+	}
+	if len(m.LastName) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.LastName)))
+		i += copy(data[i:], m.LastName)
+	}
+	if len(m.GroupName) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.GroupName)))
+		i += copy(data[i:], m.GroupName)
+	}
+	if len(m.DisplayName) > 0 {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.DisplayName)))
+		i += copy(data[i:], m.DisplayName)
+	}
+	if len(m.Note) > 0 {
+		data[i] = 0x32
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Note)))
+		i += copy(data[i:], m.Note)
+	}
+	return i, nil
+}
+
 func (m *Entity) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -1835,12 +2602,6 @@ func (m *Entity) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
 		i += copy(data[i:], m.ID)
-	}
-	if len(m.Name) > 0 {
-		data[i] = 0x12
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Name)))
-		i += copy(data[i:], m.Name)
 	}
 	if m.Type != 0 {
 		data[i] = 0x18
@@ -1904,6 +2665,16 @@ func (m *Entity) MarshalTo(data []byte) (int, error) {
 			i++
 			i = encodeVarintSvc(data, i, uint64(num))
 		}
+	}
+	if m.Info != nil {
+		data[i] = 0x4a
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Info.Size()))
+		n1, err := m.Info.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n1
 	}
 	return i, nil
 }
@@ -2022,21 +2793,21 @@ func (m *LookupEntitiesRequest) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(m.LookupKeyType))
 	}
 	if m.LookupKeyOneof != nil {
-		nn1, err := m.LookupKeyOneof.MarshalTo(data[i:])
+		nn2, err := m.LookupKeyOneof.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn1
+		i += nn2
 	}
 	if m.RequestedInformation != nil {
 		data[i] = 0x22
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n2, err := m.RequestedInformation.MarshalTo(data[i:])
+		n3, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n2
+		i += n3
 	}
 	return i, nil
 }
@@ -2102,12 +2873,6 @@ func (m *CreateEntityRequest) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.Name) > 0 {
-		data[i] = 0xa
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Name)))
-		i += copy(data[i:], m.Name)
-	}
 	if m.Type != 0 {
 		data[i] = 0x10
 		i++
@@ -2141,11 +2906,21 @@ func (m *CreateEntityRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x32
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n3, err := m.RequestedInformation.MarshalTo(data[i:])
+		n4, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n3
+		i += n4
+	}
+	if m.EntityInfo != nil {
+		data[i] = 0x3a
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.EntityInfo.Size()))
+		n5, err := m.EntityInfo.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n5
 	}
 	return i, nil
 }
@@ -2169,11 +2944,11 @@ func (m *CreateEntityResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
-		n4, err := m.Entity.MarshalTo(data[i:])
+		n6, err := m.Entity.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n4
+		i += n6
 	}
 	return i, nil
 }
@@ -2209,11 +2984,11 @@ func (m *CreateMembershipRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n5, err := m.RequestedInformation.MarshalTo(data[i:])
+		n7, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n5
+		i += n7
 	}
 	return i, nil
 }
@@ -2237,11 +3012,11 @@ func (m *CreateMembershipResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
-		n6, err := m.Entity.MarshalTo(data[i:])
+		n8, err := m.Entity.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n6
+		i += n8
 	}
 	return i, nil
 }
@@ -2282,6 +3057,18 @@ func (m *Contact) MarshalTo(data []byte) (int, error) {
 		}
 		i++
 	}
+	if len(m.ID) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ID)))
+		i += copy(data[i:], m.ID)
+	}
+	if len(m.Label) > 0 {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Label)))
+		i += copy(data[i:], m.Label)
+	}
 	return i, nil
 }
 
@@ -2310,11 +3097,11 @@ func (m *LookupEntitiesByContactRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x22
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n7, err := m.RequestedInformation.MarshalTo(data[i:])
+		n9, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n7
+		i += n9
 	}
 	return i, nil
 }
@@ -2368,11 +3155,11 @@ func (m *CreateContactRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Contact.Size()))
-		n8, err := m.Contact.MarshalTo(data[i:])
+		n10, err := m.Contact.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n8
+		i += n10
 	}
 	if len(m.EntityID) > 0 {
 		data[i] = 0x12
@@ -2384,11 +3171,11 @@ func (m *CreateContactRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n9, err := m.RequestedInformation.MarshalTo(data[i:])
+		n11, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n9
+		i += n11
 	}
 	return i, nil
 }
@@ -2412,11 +3199,11 @@ func (m *CreateContactResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
-		n10, err := m.Entity.MarshalTo(data[i:])
+		n12, err := m.Entity.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n10
+		i += n12
 	}
 	return i, nil
 }
@@ -2529,6 +3316,303 @@ func (m *CreateEntityDomainResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *CreateContactsRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreateContactsRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.EntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
+		i += copy(data[i:], m.EntityID)
+	}
+	if len(m.Contacts) > 0 {
+		for _, msg := range m.Contacts {
+			data[i] = 0x12
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.RequestedInformation != nil {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
+		n13, err := m.RequestedInformation.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n13
+	}
+	return i, nil
+}
+
+func (m *CreateContactsResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreateContactsResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Entity != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
+		n14, err := m.Entity.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n14
+	}
+	return i, nil
+}
+
+func (m *UpdateEntityRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *UpdateEntityRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.EntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
+		i += copy(data[i:], m.EntityID)
+	}
+	if m.EntityInfo != nil {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.EntityInfo.Size()))
+		n15, err := m.EntityInfo.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n15
+	}
+	if m.RequestedInformation != nil {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
+		n16, err := m.RequestedInformation.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n16
+	}
+	return i, nil
+}
+
+func (m *UpdateEntityResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *UpdateEntityResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Entity != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
+		n17, err := m.Entity.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n17
+	}
+	return i, nil
+}
+
+func (m *UpdateContactsRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *UpdateContactsRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.EntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
+		i += copy(data[i:], m.EntityID)
+	}
+	if len(m.Contacts) > 0 {
+		for _, msg := range m.Contacts {
+			data[i] = 0x12
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.RequestedInformation != nil {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
+		n18, err := m.RequestedInformation.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n18
+	}
+	return i, nil
+}
+
+func (m *UpdateContactsResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *UpdateContactsResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Entity != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
+		n19, err := m.Entity.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n19
+	}
+	return i, nil
+}
+
+func (m *DeleteContactsRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *DeleteContactsRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.EntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
+		i += copy(data[i:], m.EntityID)
+	}
+	if len(m.EntityContactIDs) > 0 {
+		for _, s := range m.EntityContactIDs {
+			data[i] = 0x12
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			data[i] = uint8(l)
+			i++
+			i += copy(data[i:], s)
+		}
+	}
+	if m.RequestedInformation != nil {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
+		n20, err := m.RequestedInformation.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n20
+	}
+	return i, nil
+}
+
+func (m *DeleteContactsResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *DeleteContactsResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Entity != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
+		n21, err := m.Entity.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n21
+	}
+	return i, nil
+}
+
 func encodeFixed64Svc(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -2570,14 +3654,40 @@ func (m *ExternalID) Size() (n int) {
 	return n
 }
 
+func (m *EntityInfo) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.FirstName)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.MiddleInitial)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.LastName)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.GroupName)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.DisplayName)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Note)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
 func (m *Entity) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.ID)
-	if l > 0 {
-		n += 1 + l + sovSvc(uint64(l))
-	}
-	l = len(m.Name)
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
@@ -2612,6 +3722,10 @@ func (m *Entity) Size() (n int) {
 		for _, e := range m.IncludedInformation {
 			n += 1 + sovSvc(uint64(e))
 		}
+	}
+	if m.Info != nil {
+		l = m.Info.Size()
+		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
 }
@@ -2699,10 +3813,6 @@ func (m *LookupEntitiesResponse) Size() (n int) {
 func (m *CreateEntityRequest) Size() (n int) {
 	var l int
 	_ = l
-	l = len(m.Name)
-	if l > 0 {
-		n += 1 + l + sovSvc(uint64(l))
-	}
 	if m.Type != 0 {
 		n += 1 + sovSvc(uint64(m.Type))
 	}
@@ -2722,6 +3832,10 @@ func (m *CreateEntityRequest) Size() (n int) {
 	}
 	if m.RequestedInformation != nil {
 		l = m.RequestedInformation.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.EntityInfo != nil {
+		l = m.EntityInfo.Size()
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
@@ -2777,6 +3891,14 @@ func (m *Contact) Size() (n int) {
 	}
 	if m.Provisioned {
 		n += 2
+	}
+	l = len(m.ID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Label)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
 }
@@ -2883,6 +4005,124 @@ func (m *CreateEntityDomainResponse) Size() (n int) {
 	return n
 }
 
+func (m *CreateContactsRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.EntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if len(m.Contacts) > 0 {
+		for _, e := range m.Contacts {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	if m.RequestedInformation != nil {
+		l = m.RequestedInformation.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *CreateContactsResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.Entity != nil {
+		l = m.Entity.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *UpdateEntityRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.EntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.EntityInfo != nil {
+		l = m.EntityInfo.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.RequestedInformation != nil {
+		l = m.RequestedInformation.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *UpdateEntityResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.Entity != nil {
+		l = m.Entity.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *UpdateContactsRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.EntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if len(m.Contacts) > 0 {
+		for _, e := range m.Contacts {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	if m.RequestedInformation != nil {
+		l = m.RequestedInformation.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *UpdateContactsResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.Entity != nil {
+		l = m.Entity.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *DeleteContactsRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.EntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if len(m.EntityContactIDs) > 0 {
+		for _, s := range m.EntityContactIDs {
+			l = len(s)
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	if m.RequestedInformation != nil {
+		l = m.RequestedInformation.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *DeleteContactsResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.Entity != nil {
+		l = m.Entity.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
 func sovSvc(x uint64) (n int) {
 	for {
 		n++
@@ -2907,19 +4147,34 @@ func (this *ExternalID) String() string {
 	}, "")
 	return s
 }
+func (this *EntityInfo) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&EntityInfo{`,
+		`FirstName:` + fmt.Sprintf("%v", this.FirstName) + `,`,
+		`MiddleInitial:` + fmt.Sprintf("%v", this.MiddleInitial) + `,`,
+		`LastName:` + fmt.Sprintf("%v", this.LastName) + `,`,
+		`GroupName:` + fmt.Sprintf("%v", this.GroupName) + `,`,
+		`DisplayName:` + fmt.Sprintf("%v", this.DisplayName) + `,`,
+		`Note:` + fmt.Sprintf("%v", this.Note) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *Entity) String() string {
 	if this == nil {
 		return "nil"
 	}
 	s := strings.Join([]string{`&Entity{`,
 		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
-		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
 		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
 		`Memberships:` + strings.Replace(fmt.Sprintf("%v", this.Memberships), "Entity", "Entity", 1) + `,`,
 		`Members:` + strings.Replace(fmt.Sprintf("%v", this.Members), "Entity", "Entity", 1) + `,`,
 		`ExternalIDs:` + fmt.Sprintf("%v", this.ExternalIDs) + `,`,
 		`Contacts:` + strings.Replace(fmt.Sprintf("%v", this.Contacts), "Contact", "Contact", 1) + `,`,
 		`IncludedInformation:` + fmt.Sprintf("%v", this.IncludedInformation) + `,`,
+		`Info:` + strings.Replace(fmt.Sprintf("%v", this.Info), "EntityInfo", "EntityInfo", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3002,12 +4257,12 @@ func (this *CreateEntityRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&CreateEntityRequest{`,
-		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
 		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
 		`ExternalID:` + fmt.Sprintf("%v", this.ExternalID) + `,`,
 		`InitialMembershipEntityID:` + fmt.Sprintf("%v", this.InitialMembershipEntityID) + `,`,
 		`Contacts:` + strings.Replace(fmt.Sprintf("%v", this.Contacts), "Contact", "Contact", 1) + `,`,
 		`RequestedInformation:` + strings.Replace(fmt.Sprintf("%v", this.RequestedInformation), "RequestedInformation", "RequestedInformation", 1) + `,`,
+		`EntityInfo:` + strings.Replace(fmt.Sprintf("%v", this.EntityInfo), "EntityInfo", "EntityInfo", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3052,6 +4307,8 @@ func (this *Contact) String() string {
 		`ContactType:` + fmt.Sprintf("%v", this.ContactType) + `,`,
 		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
 		`Provisioned:` + fmt.Sprintf("%v", this.Provisioned) + `,`,
+		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
+		`Label:` + fmt.Sprintf("%v", this.Label) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3137,6 +4394,94 @@ func (this *CreateEntityDomainResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&CreateEntityDomainResponse{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateContactsRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateContactsRequest{`,
+		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
+		`Contacts:` + strings.Replace(fmt.Sprintf("%v", this.Contacts), "Contact", "Contact", 1) + `,`,
+		`RequestedInformation:` + strings.Replace(fmt.Sprintf("%v", this.RequestedInformation), "RequestedInformation", "RequestedInformation", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateContactsResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateContactsResponse{`,
+		`Entity:` + strings.Replace(fmt.Sprintf("%v", this.Entity), "Entity", "Entity", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *UpdateEntityRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&UpdateEntityRequest{`,
+		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
+		`EntityInfo:` + strings.Replace(fmt.Sprintf("%v", this.EntityInfo), "EntityInfo", "EntityInfo", 1) + `,`,
+		`RequestedInformation:` + strings.Replace(fmt.Sprintf("%v", this.RequestedInformation), "RequestedInformation", "RequestedInformation", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *UpdateEntityResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&UpdateEntityResponse{`,
+		`Entity:` + strings.Replace(fmt.Sprintf("%v", this.Entity), "Entity", "Entity", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *UpdateContactsRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&UpdateContactsRequest{`,
+		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
+		`Contacts:` + strings.Replace(fmt.Sprintf("%v", this.Contacts), "Contact", "Contact", 1) + `,`,
+		`RequestedInformation:` + strings.Replace(fmt.Sprintf("%v", this.RequestedInformation), "RequestedInformation", "RequestedInformation", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *UpdateContactsResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&UpdateContactsResponse{`,
+		`Entity:` + strings.Replace(fmt.Sprintf("%v", this.Entity), "Entity", "Entity", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeleteContactsRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeleteContactsRequest{`,
+		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
+		`EntityContactIDs:` + fmt.Sprintf("%v", this.EntityContactIDs) + `,`,
+		`RequestedInformation:` + strings.Replace(fmt.Sprintf("%v", this.RequestedInformation), "RequestedInformation", "RequestedInformation", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeleteContactsResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeleteContactsResponse{`,
+		`Entity:` + strings.Replace(fmt.Sprintf("%v", this.Entity), "Entity", "Entity", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3257,6 +4602,230 @@ func (m *ExternalID) Unmarshal(data []byte) error {
 	}
 	return nil
 }
+func (m *EntityInfo) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: EntityInfo: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: EntityInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FirstName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FirstName = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MiddleInitial", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.MiddleInitial = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LastName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.LastName = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GroupName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.GroupName = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DisplayName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DisplayName = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Note", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Note = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *Entity) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
@@ -3314,35 +4883,6 @@ func (m *Entity) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.ID = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Name = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
@@ -3505,6 +5045,39 @@ func (m *Entity) Unmarshal(data []byte) error {
 				}
 			}
 			m.IncludedInformation = append(m.IncludedInformation, v)
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Info", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Info == nil {
+				m.Info = &EntityInfo{}
+			}
+			if err := m.Info.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -4045,35 +5618,6 @@ func (m *CreateEntityRequest) Unmarshal(data []byte) error {
 			return fmt.Errorf("proto: CreateEntityRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Name = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
@@ -4212,6 +5756,39 @@ func (m *CreateEntityRequest) Unmarshal(data []byte) error {
 				m.RequestedInformation = &RequestedInformation{}
 			}
 			if err := m.RequestedInformation.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityInfo", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.EntityInfo == nil {
+				m.EntityInfo = &EntityInfo{}
+			}
+			if err := m.EntityInfo.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -4640,6 +6217,64 @@ func (m *Contact) Unmarshal(data []byte) error {
 				}
 			}
 			m.Provisioned = bool(v != 0)
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Label", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Label = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -5435,6 +7070,910 @@ func (m *CreateEntityDomainResponse) Unmarshal(data []byte) error {
 			return fmt.Errorf("proto: CreateEntityDomainResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateContactsRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateContactsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateContactsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Contacts", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Contacts = append(m.Contacts, &Contact{})
+			if err := m.Contacts[len(m.Contacts)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequestedInformation", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.RequestedInformation == nil {
+				m.RequestedInformation = &RequestedInformation{}
+			}
+			if err := m.RequestedInformation.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateContactsResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateContactsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateContactsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Entity", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Entity == nil {
+				m.Entity = &Entity{}
+			}
+			if err := m.Entity.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UpdateEntityRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UpdateEntityRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UpdateEntityRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityInfo", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.EntityInfo == nil {
+				m.EntityInfo = &EntityInfo{}
+			}
+			if err := m.EntityInfo.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequestedInformation", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.RequestedInformation == nil {
+				m.RequestedInformation = &RequestedInformation{}
+			}
+			if err := m.RequestedInformation.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UpdateEntityResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UpdateEntityResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UpdateEntityResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Entity", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Entity == nil {
+				m.Entity = &Entity{}
+			}
+			if err := m.Entity.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UpdateContactsRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UpdateContactsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UpdateContactsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Contacts", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Contacts = append(m.Contacts, &Contact{})
+			if err := m.Contacts[len(m.Contacts)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequestedInformation", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.RequestedInformation == nil {
+				m.RequestedInformation = &RequestedInformation{}
+			}
+			if err := m.RequestedInformation.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UpdateContactsResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UpdateContactsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UpdateContactsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Entity", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Entity == nil {
+				m.Entity = &Entity{}
+			}
+			if err := m.Entity.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeleteContactsRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeleteContactsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeleteContactsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityContactIDs", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EntityContactIDs = append(m.EntityContactIDs, string(data[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequestedInformation", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.RequestedInformation == nil {
+				m.RequestedInformation = &RequestedInformation{}
+			}
+			if err := m.RequestedInformation.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeleteContactsResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeleteContactsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeleteContactsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Entity", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Entity == nil {
+				m.Entity = &Entity{}
+			}
+			if err := m.Entity.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

@@ -60,15 +60,11 @@ var threadType = graphql.NewObject(
 						return nil, internalError(err)
 					}
 					for _, e := range res.Entities {
-						cs, err := transformContactsToResponse(e.Contacts)
+						ent, err := transformEntityToResponse(e)
 						if err != nil {
-							return nil, internalError(fmt.Errorf("failed to transform contacts: %s", err))
+							return nil, internalError(fmt.Errorf("failed to transform entity: %s", err))
 						}
-						return &entity{
-							ID:       e.ID,
-							Name:     e.Name,
-							Contacts: cs,
-						}, nil
+						return ent, nil
 					}
 					return nil, errors.New("primary entity not found")
 				},

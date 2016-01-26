@@ -26,16 +26,24 @@ message ExternalID {
     string entity_id = 2  [(gogoproto.customname) = "EntityID"];
 }
 
+message EntityInfo {
+    string     first_name = 1;
+    string     middle_initial = 2;
+    string     last_name = 3;
+    string     group_name = 4;
+    string     display_name = 5;
+    string     note = 6;
+}
+
 message Entity {
 	string id = 1 [(gogoproto.customname) = "ID"];
-	string name = 2;
-
 	EntityType type = 3;
 	repeated Entity memberships = 4;
 	repeated Entity members = 5;
 	repeated string external_ids = 6 [(gogoproto.customname) = "ExternalIDs"];
 	repeated Contact contacts = 7;
 	repeated EntityInformation included_information = 8;
+    EntityInfo info = 9;
 }
 
 message RequestedInformation {
@@ -44,11 +52,11 @@ message RequestedInformation {
 }
 
 message ExternalIDsRequest {
-    repeated string entity_ids = 1 [(gogoproto.customname) = "EntityIDs"];;
+    repeated string entity_ids = 1 [(gogoproto.customname) = "EntityIDs"];
 }
 
 message ExternalIDsResponse {
-    repeated ExternalID external_ids = 1 [(gogoproto.customname) = "ExternalIDs"];;
+    repeated ExternalID external_ids = 1 [(gogoproto.customname) = "ExternalIDs"];
 }
 
 message LookupEntitiesRequest {
@@ -71,12 +79,12 @@ message LookupEntitiesResponse {
 }
 
 message CreateEntityRequest {
-	string     name = 1;
 	EntityType type = 2;
 	string     external_id = 3 [(gogoproto.customname) = "ExternalID"];
 	string     initial_membership_entity_id = 4 [(gogoproto.customname) = "InitialMembershipEntityID"];
 	repeated   Contact contacts = 5;
 	RequestedInformation requested_information = 6;
+    EntityInfo entity_info = 7;
 }
 
 message CreateEntityResponse {
@@ -102,6 +110,8 @@ message Contact {
 	ContactType contact_type = 1;
 	string value = 2;
 	bool provisioned = 3;
+    string id = 4 [(gogoproto.customname) = "ID"];
+    string label = 5;
 }
 
 message LookupEntitiesByContactRequest {
@@ -138,16 +148,60 @@ message CreateEntityDomainRequest {
 	string domain = 2;
 }
 
-message CreateEntityDomainResponse {
+message CreateEntityDomainResponse {}
+
+message CreateContactsRequest {
+    string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+	repeated Contact contacts = 2;
+	RequestedInformation requested_information = 3;
+}
+
+message CreateContactsResponse {
+	Entity entity = 1;
+}
+
+message UpdateEntityRequest {
+    string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+    EntityInfo entity_info = 2;
+	RequestedInformation requested_information = 3;
+}
+
+message UpdateEntityResponse {
+	Entity entity = 1;
+}
+
+message UpdateContactsRequest {
+    string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+    repeated Contact contacts = 2;
+	RequestedInformation requested_information = 3;
+}
+
+message UpdateContactsResponse {
+	Entity entity = 1;
+}
+
+message DeleteContactsRequest {
+    string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+    repeated string entity_contact_id = 2 [(gogoproto.customname) = "EntityContactIDs"];
+	RequestedInformation requested_information = 3;
+}
+
+message DeleteContactsResponse {
+	Entity entity = 1;
 }
 
 service Directory {
+    // TODO: 1/22/16 - Remove the single version of this call once this code has been deployed and all callers have been changed and deployed
     rpc CreateContact (CreateContactRequest) returns (CreateContactResponse);
+    rpc CreateContacts (CreateContactsRequest) returns (CreateContactsResponse);
 	rpc CreateEntity (CreateEntityRequest) returns (CreateEntityResponse);
 	rpc CreateMembership (CreateMembershipRequest) returns (CreateMembershipResponse);
+    rpc DeleteContacts (DeleteContactsRequest) returns (DeleteContactsResponse);
     rpc ExternalIDs (ExternalIDsRequest) returns (ExternalIDsResponse);
     rpc LookupEntities (LookupEntitiesRequest) returns (LookupEntitiesResponse);
 	rpc LookupEntitiesByContact (LookupEntitiesByContactRequest) returns (LookupEntitiesByContactResponse);
 	rpc LookupEntityDomain (LookupEntityDomainRequest) returns (LookupEntityDomainResponse);
 	rpc CreateEntityDomain (CreateEntityDomainRequest) returns (CreateEntityDomainResponse);
+    rpc UpdateContacts (UpdateContactsRequest) returns (UpdateContactsResponse);
+    rpc UpdateEntity (UpdateEntityRequest) returns (UpdateEntityResponse);
 }

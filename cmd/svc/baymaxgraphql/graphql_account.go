@@ -54,19 +54,15 @@ var accountType = graphql.NewObject(
 							if err != nil {
 								return nil, internalError(fmt.Errorf("failed to transform org contacts: %+v", err))
 							}
-							ec, err := transformContactsToResponse(e.Contacts)
+							entity, err := transformEntityToResponse(e)
 							if err != nil {
-								return nil, internalError(fmt.Errorf("failed to transform entity contacts: %+v", err))
+								return nil, internalError(fmt.Errorf("failed to transform entity: %+v", err))
 							}
 							orgs = append(orgs, &organization{
 								ID:       em.ID,
-								Name:     em.Name,
+								Name:     em.Info.DisplayName,
 								Contacts: oc,
-								Entity: &entity{
-									ID:       e.ID,
-									Name:     e.Name,
-									Contacts: ec,
-								},
+								Entity:   entity,
 							})
 						}
 					}

@@ -36,9 +36,11 @@ var contactInfoType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "ContactInfo",
 		Fields: graphql.Fields{
+			"id":          &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 			"type":        &graphql.Field{Type: graphql.NewNonNull(contactEnumType)},
 			"value":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"provisioned": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"label":       &graphql.Field{Type: graphql.String},
 		},
 	},
 )
@@ -50,9 +52,14 @@ var entityType = graphql.NewObject(
 			nodeInterfaceType,
 		},
 		Fields: graphql.Fields{
-			"id":       &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-			"name":     &graphql.Field{Type: graphql.String},
-			"contacts": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(contactInfoType))},
+			"id":            &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+			"firstName":     &graphql.Field{Type: graphql.String},
+			"middleInitial": &graphql.Field{Type: graphql.String},
+			"lastName":      &graphql.Field{Type: graphql.String},
+			"groupName":     &graphql.Field{Type: graphql.String},
+			"displayName":   &graphql.Field{Type: graphql.String},
+			"note":          &graphql.Field{Type: graphql.String},
+			"contacts":      &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(contactInfoType))},
 			// TODO: avatar(width: Int = 120, height: Int = 120, crop: Boolean = true): Image
 		},
 	},
@@ -87,7 +94,7 @@ func lookupEntity(ctx context.Context, svc *service, id string) (interface{}, er
 		case directory.EntityType_ORGANIZATION:
 			org := &organization{
 				ID:       em.ID,
-				Name:     em.Name,
+				Name:     em.Info.DisplayName,
 				Contacts: oc,
 			}
 
@@ -106,11 +113,11 @@ func lookupEntity(ctx context.Context, svc *service, id string) (interface{}, er
 			}
 			return org, nil
 		case directory.EntityType_INTERNAL, directory.EntityType_EXTERNAL:
-			return &entity{
-				ID:       em.ID,
-				Name:     em.Name,
-				Contacts: oc,
-			}, nil
+			e, err := transformEntityToResponse(em)
+			if err != nil {
+				return nil, internalError(err)
+			}
+			return e, nil
 		default:
 			return nil, internalError(fmt.Errorf("unknown entity type: %s", em.Type.String()))
 		}

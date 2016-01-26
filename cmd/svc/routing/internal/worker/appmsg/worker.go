@@ -253,9 +253,9 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 					Channel: excomms.ChannelType_EMAIL,
 					Message: &excomms.SendMessageRequest_Email{
 						Email: &excomms.EmailMessage{
-							Subject:          fmt.Sprintf("Message from %s, %s", providerEntity.Name, orgEntity.Name),
+							Subject:          fmt.Sprintf("Message from %s, %s", providerEntity.Info.DisplayName, orgEntity.Info.DisplayName),
 							Body:             pti.GetItem().GetMessage().Text,
-							FromName:         providerEntity.Name,
+							FromName:         providerEntity.Info.DisplayName,
 							FromEmailAddress: orgContact.Value,
 							ToEmailAddress:   d.ID,
 						},

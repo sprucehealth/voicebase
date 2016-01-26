@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 
 	"golang.org/x/net/context"
 
@@ -41,10 +42,11 @@ var threadItemViewDetailsType = graphql.NewObject(
 						return nil, internalError(err)
 					}
 					for _, e := range res.Entities {
-						return &entity{
-							ID:   e.ID,
-							Name: e.Name,
-						}, nil
+						ent, err := transformEntityToResponse(e)
+						if err != nil {
+							return nil, internalError(fmt.Errorf("failed to transform entity: %s", err))
+						}
+						return ent, nil
 					}
 					return nil, errors.New("actor not found")
 				},

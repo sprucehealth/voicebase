@@ -12,8 +12,8 @@ import (
 )
 
 func threadTitleForEntity(e *directory.Entity) string {
-	if e.Name != "" {
-		return e.Name
+	if e.Info.DisplayName != "" {
+		return e.Info.DisplayName
 	}
 	for _, c := range e.Contacts {
 		return c.Value
@@ -26,8 +26,10 @@ func transformContactsToResponse(contacts []*directory.Contact) ([]*contactInfo,
 	cs := make([]*contactInfo, len(contacts))
 	for i, c := range contacts {
 		ci := &contactInfo{
+			ID:          c.ID,
 			Value:       c.Value,
 			Provisioned: c.Provisioned,
+			Label:       c.Label,
 		}
 		switch c.ContactType {
 		case directory.ContactType_EMAIL:
@@ -174,9 +176,14 @@ func transformEntityToResponse(e *directory.Entity) (*entity, error) {
 		return nil, errors.Trace(fmt.Errorf("failed to transform contacts for entity %s: %s", e.ID, err))
 	}
 	return &entity{
-		ID:       e.ID,
-		Name:     e.Name,
-		Contacts: oc,
+		ID:            e.ID,
+		Contacts:      oc,
+		FirstName:     e.Info.FirstName,
+		MiddleInitial: e.Info.MiddleInitial,
+		LastName:      e.Info.LastName,
+		GroupName:     e.Info.GroupName,
+		DisplayName:   e.Info.DisplayName,
+		Note:          e.Info.Note,
 	}, nil
 }
 

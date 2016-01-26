@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/cmd/svc/directory/internal/dal"
 	mock_dal "github.com/sprucehealth/backend/cmd/svc/directory/internal/dal/test"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/test"
@@ -17,14 +18,15 @@ import (
 
 func TestLookupEntitiesByEntityID(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1}), []*dal.Entity{
 		&dal.Entity{
-			ID:   eID1,
-			Name: "entity1",
-			Type: dal.EntityTypeExternal,
+			ID:          eID1,
+			DisplayName: "entity1",
+			Type:        dal.EntityTypeExternal,
 		},
 	}, nil))
 	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
@@ -36,13 +38,13 @@ func TestLookupEntitiesByEntityID(t *testing.T) {
 
 	test.Equals(t, 1, len(resp.Entities))
 	test.Equals(t, eID1.String(), resp.Entities[0].ID)
-	test.Equals(t, "entity1", resp.Entities[0].Name)
+	test.Equals(t, "entity1", resp.Entities[0].Info.DisplayName)
 	test.Equals(t, directory.EntityType_EXTERNAL, resp.Entities[0].Type)
-	mock.FinishAll(dl)
 }
 
 func TestLookupEntitiesByExternalID(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	externalID := "account:12345678"
 	eID1, err := dal.NewEntityID()
@@ -59,14 +61,14 @@ func TestLookupEntitiesByExternalID(t *testing.T) {
 	}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1, eID2}), []*dal.Entity{
 		&dal.Entity{
-			ID:   eID1,
-			Name: "entity1",
-			Type: dal.EntityTypeInternal,
+			ID:          eID1,
+			DisplayName: "entity1",
+			Type:        dal.EntityTypeInternal,
 		},
 		&dal.Entity{
-			ID:   eID2,
-			Name: "entity2",
-			Type: dal.EntityTypeInternal,
+			ID:          eID2,
+			DisplayName: "entity2",
+			Type:        dal.EntityTypeInternal,
 		},
 	}, nil))
 	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
@@ -77,16 +79,16 @@ func TestLookupEntitiesByExternalID(t *testing.T) {
 
 	test.Equals(t, 2, len(resp.Entities))
 	test.Equals(t, eID1.String(), resp.Entities[0].ID)
-	test.Equals(t, "entity1", resp.Entities[0].Name)
+	test.Equals(t, "entity1", resp.Entities[0].Info.DisplayName)
 	test.Equals(t, directory.EntityType_INTERNAL, resp.Entities[0].Type)
 	test.Equals(t, eID2.String(), resp.Entities[1].ID)
-	test.Equals(t, "entity2", resp.Entities[1].Name)
+	test.Equals(t, "entity2", resp.Entities[1].Info.DisplayName)
 	test.Equals(t, directory.EntityType_INTERNAL, resp.Entities[1].Type)
-	mock.FinishAll(dl)
 }
 
 func TestLookupEntitiesNoResults(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
@@ -98,11 +100,11 @@ func TestLookupEntitiesNoResults(t *testing.T) {
 	test.Assert(t, err != nil, "Expected an error")
 
 	test.Equals(t, codes.NotFound, grpc.Code(err))
-	mock.FinishAll(dl)
 }
 
 func TestLookupEntitiesByContact(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	contactValue := " 1234567@gmail.com "
 	eID1, err := dal.NewEntityID()
@@ -119,14 +121,14 @@ func TestLookupEntitiesByContact(t *testing.T) {
 	}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1, eID2}), []*dal.Entity{
 		&dal.Entity{
-			ID:   eID1,
-			Name: "entity1",
-			Type: dal.EntityTypeInternal,
+			ID:          eID1,
+			DisplayName: "entity1",
+			Type:        dal.EntityTypeInternal,
 		},
 		&dal.Entity{
-			ID:   eID2,
-			Name: "entity2",
-			Type: dal.EntityTypeInternal,
+			ID:          eID2,
+			DisplayName: "entity2",
+			Type:        dal.EntityTypeInternal,
 		},
 	}, nil))
 	resp, err := s.LookupEntitiesByContact(context.Background(), &directory.LookupEntitiesByContactRequest{
@@ -137,16 +139,17 @@ func TestLookupEntitiesByContact(t *testing.T) {
 
 	test.Equals(t, 2, len(resp.Entities))
 	test.Equals(t, eID1.String(), resp.Entities[0].ID)
-	test.Equals(t, "entity1", resp.Entities[0].Name)
+	test.Equals(t, "entity1", resp.Entities[0].Info.DisplayName)
 	test.Equals(t, directory.EntityType_INTERNAL, resp.Entities[0].Type)
 	test.Equals(t, eID2.String(), resp.Entities[1].ID)
-	test.Equals(t, "entity2", resp.Entities[1].Name)
+	test.Equals(t, "entity2", resp.Entities[1].Info.DisplayName)
 	test.Equals(t, directory.EntityType_INTERNAL, resp.Entities[1].Type)
 	mock.FinishAll(dl)
 }
 
 func TestLookupEntitiesByContactNoResults(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	contactValue := " 1234567@gmail.com "
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityContactsForValue, strings.TrimSpace(contactValue)), []*dal.EntityContact{}, nil))
@@ -161,6 +164,7 @@ func TestLookupEntitiesByContactNoResults(t *testing.T) {
 
 func TestCreateEntityFull(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
@@ -182,9 +186,9 @@ func TestCreateEntityFull(t *testing.T) {
 	}
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID2), &dal.Entity{}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.InsertEntity, &dal.Entity{
-		Name:   name,
-		Type:   dal.EntityTypeInternal,
-		Status: dal.EntityStatusActive,
+		DisplayName: name,
+		Type:        dal.EntityTypeInternal,
+		Status:      dal.EntityStatusActive,
 	}), eID1, nil))
 	dl.Expect(mock.NewExpectation(dl.InsertExternalEntityID, &dal.ExternalEntityID{
 		EntityID:   eID1,
@@ -208,12 +212,14 @@ func TestCreateEntityFull(t *testing.T) {
 		Provisioned: true,
 	}))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
-		ID:   eID1,
-		Name: name,
-		Type: dal.EntityTypeInternal,
+		ID:          eID1,
+		DisplayName: name,
+		Type:        dal.EntityTypeInternal,
 	}, nil))
 	resp, err := s.CreateEntity(context.Background(), &directory.CreateEntityRequest{
-		Name:                      name,
+		EntityInfo: &directory.EntityInfo{
+			DisplayName: name,
+		},
 		Type:                      eType,
 		ExternalID:                externalID,
 		InitialMembershipEntityID: eID2.String(),
@@ -224,13 +230,13 @@ func TestCreateEntityFull(t *testing.T) {
 
 	test.AssertNotNil(t, resp.Entity)
 	test.Equals(t, eID1.String(), resp.Entity.ID)
-	test.Equals(t, name, resp.Entity.Name)
+	test.Equals(t, name, resp.Entity.Info.DisplayName)
 	test.Equals(t, directory.EntityType_INTERNAL, resp.Entity.Type)
-	mock.FinishAll(dl)
 }
 
 func TestCreateEntityInitialEntityNotFound(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	eID2, err := dal.NewEntityID()
 	test.OK(t, err)
@@ -250,7 +256,9 @@ func TestCreateEntityInitialEntityNotFound(t *testing.T) {
 	}
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID2), (*dal.Entity)(nil), api.ErrNotFound("not found")))
 	_, err = s.CreateEntity(context.Background(), &directory.CreateEntityRequest{
-		Name:                      name,
+		EntityInfo: &directory.EntityInfo{
+			DisplayName: name,
+		},
 		Type:                      eType,
 		ExternalID:                externalID,
 		InitialMembershipEntityID: eID2.String(),
@@ -260,11 +268,11 @@ func TestCreateEntityInitialEntityNotFound(t *testing.T) {
 	test.Assert(t, err != nil, "Expected an error")
 
 	test.Equals(t, codes.NotFound, grpc.Code(err))
-	mock.FinishAll(dl)
 }
 
 func TestCreateEntityEmptyContact(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	eID2, err := dal.NewEntityID()
 	test.OK(t, err)
@@ -279,7 +287,9 @@ func TestCreateEntityEmptyContact(t *testing.T) {
 	}
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID2), &dal.Entity{}, nil))
 	_, err = s.CreateEntity(context.Background(), &directory.CreateEntityRequest{
-		Name:                      name,
+		EntityInfo: &directory.EntityInfo{
+			DisplayName: name,
+		},
 		Type:                      eType,
 		ExternalID:                externalID,
 		InitialMembershipEntityID: eID2.String(),
@@ -289,11 +299,11 @@ func TestCreateEntityEmptyContact(t *testing.T) {
 	test.Assert(t, err != nil, "Expected an error")
 
 	test.Equals(t, codes.InvalidArgument, grpc.Code(err))
-	mock.FinishAll(dl)
 }
 
 func TestCreateEntityInvalidEmail(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	eID2, err := dal.NewEntityID()
 	test.OK(t, err)
@@ -308,7 +318,9 @@ func TestCreateEntityInvalidEmail(t *testing.T) {
 	}
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID2), &dal.Entity{}, nil))
 	_, err = s.CreateEntity(context.Background(), &directory.CreateEntityRequest{
-		Name:                      name,
+		EntityInfo: &directory.EntityInfo{
+			DisplayName: name,
+		},
 		Type:                      eType,
 		ExternalID:                externalID,
 		InitialMembershipEntityID: eID2.String(),
@@ -318,41 +330,43 @@ func TestCreateEntityInvalidEmail(t *testing.T) {
 	test.Assert(t, err != nil, "Expected an error")
 
 	test.Equals(t, codes.InvalidArgument, grpc.Code(err))
-	mock.FinishAll(dl)
 }
 
 func TestCreateEntitySparse(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
 	name := "batman"
 	eType := directory.EntityType_INTERNAL
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.InsertEntity, &dal.Entity{
-		Name:   name,
-		Type:   dal.EntityTypeInternal,
-		Status: dal.EntityStatusActive,
+		DisplayName: name,
+		Type:        dal.EntityTypeInternal,
+		Status:      dal.EntityStatusActive,
 	}), eID1, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
-		ID:   eID1,
-		Name: name,
-		Type: dal.EntityTypeInternal,
+		ID:          eID1,
+		DisplayName: name,
+		Type:        dal.EntityTypeInternal,
 	}, nil))
 	resp, err := s.CreateEntity(context.Background(), &directory.CreateEntityRequest{
-		Name: name,
+		EntityInfo: &directory.EntityInfo{
+			DisplayName: name,
+		},
 		Type: eType,
 	})
 	test.OK(t, err)
 
 	test.AssertNotNil(t, resp.Entity)
 	test.Equals(t, eID1.String(), resp.Entity.ID)
-	test.Equals(t, name, resp.Entity.Name)
+	test.Equals(t, name, resp.Entity.Info.DisplayName)
 	test.Equals(t, directory.EntityType_INTERNAL, resp.Entity.Type)
-	mock.FinishAll(dl)
 }
 
 func TestCreateMembership(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
@@ -366,23 +380,23 @@ func TestCreateMembership(t *testing.T) {
 		Status:         dal.EntityMembershipStatusActive,
 	}))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
-		ID:   eID1,
-		Name: "newmember",
-		Type: dal.EntityTypeInternal,
+		ID:          eID1,
+		DisplayName: "newmember",
+		Type:        dal.EntityTypeInternal,
 	}, nil))
 	resp, err := s.CreateMembership(context.Background(), &directory.CreateMembershipRequest{
 		EntityID:       eID1.String(),
 		TargetEntityID: eID2.String(),
 	})
 	test.OK(t, err)
-
 	test.AssertNotNil(t, resp.Entity)
-	test.Equals(t, "newmember", resp.Entity.Name)
+	test.Equals(t, "newmember", resp.Entity.Info.DisplayName)
 	test.Equals(t, eID1.String(), resp.Entity.ID)
 }
 
 func TestCreateMembershipEntityNotFound(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
@@ -394,13 +408,12 @@ func TestCreateMembershipEntityNotFound(t *testing.T) {
 		TargetEntityID: eID2.String(),
 	})
 	test.Assert(t, err != nil, "Expected an error")
-
 	test.Equals(t, codes.NotFound, grpc.Code(err))
-	mock.FinishAll(dl)
 }
 
 func TestCreateMembershipTargetEntityNotFound(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
@@ -413,13 +426,12 @@ func TestCreateMembershipTargetEntityNotFound(t *testing.T) {
 		TargetEntityID: eID2.String(),
 	})
 	test.Assert(t, err != nil, "Expected an error")
-
 	test.Equals(t, codes.NotFound, grpc.Code(err))
-	mock.FinishAll(dl)
 }
 
 func TestCreateContact(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	eID1, err := dal.NewEntityID()
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{}, nil))
@@ -429,9 +441,9 @@ func TestCreateContact(t *testing.T) {
 		Value:    "+12345678910",
 	}))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
-		ID:   eID1,
-		Name: "batman",
-		Type: dal.EntityTypeInternal,
+		ID:          eID1,
+		DisplayName: "batman",
+		Type:        dal.EntityTypeInternal,
 	}, nil))
 	resp, err := s.CreateContact(context.Background(), &directory.CreateContactRequest{
 		EntityID: eID1.String(),
@@ -443,7 +455,7 @@ func TestCreateContact(t *testing.T) {
 	test.OK(t, err)
 
 	test.AssertNotNil(t, resp.Entity)
-	test.Equals(t, "batman", resp.Entity.Name)
+	test.Equals(t, "batman", resp.Entity.Info.DisplayName)
 	test.Equals(t, eID1.String(), resp.Entity.ID)
 }
 
@@ -468,6 +480,7 @@ func TestCreateContactEntityNotFound(t *testing.T) {
 
 func TestCreateContactInvalidEmail(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
@@ -518,6 +531,7 @@ func TestLookupEntityDomain(t *testing.T) {
 
 func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	eID1, err := dal.NewEntityID()
 	test.OK(t, err)
@@ -527,9 +541,9 @@ func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 	test.OK(t, err)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1}), []*dal.Entity{
 		&dal.Entity{
-			ID:   eID1,
-			Name: "entity1",
-			Type: dal.EntityTypeExternal,
+			ID:          eID1,
+			DisplayName: "entity1",
+			Type:        dal.EntityTypeExternal,
 		},
 	}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMemberships, eID1), []*dal.EntityMembership{
@@ -539,9 +553,9 @@ func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 	}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID2}), []*dal.Entity{
 		&dal.Entity{
-			ID:   eID2,
-			Name: "entity2",
-			Type: dal.EntityTypeExternal,
+			ID:          eID2,
+			DisplayName: "entity2",
+			Type:        dal.EntityTypeExternal,
 		},
 	}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.EntityMemberships, eID2), []*dal.EntityMembership{}, nil))
@@ -600,7 +614,7 @@ func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 
 	test.Equals(t, 1, len(resp.Entities))
 	test.Equals(t, eID1.String(), resp.Entities[0].ID)
-	test.Equals(t, "entity1", resp.Entities[0].Name)
+	test.Equals(t, "entity1", resp.Entities[0].Info.DisplayName)
 	test.Equals(t, directory.EntityType_EXTERNAL, resp.Entities[0].Type)
 	test.Equals(t, 1, len(resp.Entities[0].Contacts))
 	test.Equals(t, "+12345678911", resp.Entities[0].Contacts[0].Value)
@@ -618,4 +632,174 @@ func TestLookupEntitiesAdditionalInformationGraphCrawl(t *testing.T) {
 	test.Equals(t, 1, len(resp.Entities[0].Members[0].ExternalIDs))
 	test.Equals(t, "external3", resp.Entities[0].Members[0].ExternalIDs[0])
 	mock.FinishAll(dl)
+}
+
+func TestCreateContacts(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	s := New(dl)
+	eID1, err := dal.NewEntityID()
+	test.OK(t, err)
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{}, nil))
+	dl.Expect(mock.NewExpectation(dl.InsertEntityContacts, []*dal.EntityContact{
+		&dal.EntityContact{
+			EntityID: eID1,
+			Type:     dal.EntityContactTypePhone,
+			Value:    "+12345678910",
+		},
+		&dal.EntityContact{
+			EntityID: eID1,
+			Type:     dal.EntityContactTypeEmail,
+			Value:    "test@email.com",
+		},
+	}))
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
+		ID:          eID1,
+		DisplayName: "batman",
+		Type:        dal.EntityTypeInternal,
+	}, nil))
+	resp, err := s.CreateContacts(context.Background(), &directory.CreateContactsRequest{
+		EntityID: eID1.String(),
+		Contacts: []*directory.Contact{
+			&directory.Contact{
+				ContactType: directory.ContactType_PHONE,
+				Value:       "+12345678910",
+			},
+			&directory.Contact{
+				ContactType: directory.ContactType_EMAIL,
+				Value:       "test@email.com",
+			},
+		},
+	})
+	test.OK(t, err)
+
+	test.AssertNotNil(t, resp.Entity)
+	test.Equals(t, "batman", resp.Entity.Info.DisplayName)
+	test.Equals(t, eID1.String(), resp.Entity.ID)
+}
+
+func TestUpdateContacts(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	s := New(dl)
+	eID1, err := dal.NewEntityID()
+	test.OK(t, err)
+	eCID1, err := dal.NewEntityContactID()
+	test.OK(t, err)
+	eCID2, err := dal.NewEntityContactID()
+	test.OK(t, err)
+	phoneType := dal.EntityContactTypePhone
+	emailType := dal.EntityContactTypeEmail
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.UpdateEntityContact, eCID1, &dal.EntityContactUpdate{
+		Type:  &phoneType,
+		Value: ptr.String("+12345678910"),
+		Label: ptr.String(""),
+	}).WithReturns(int64(1), nil))
+	dl.Expect(mock.NewExpectation(dl.UpdateEntityContact, eCID2, &dal.EntityContactUpdate{
+		Type:  &emailType,
+		Value: ptr.String("test@email.com"),
+		Label: ptr.String("NewLabel"),
+	}).WithReturns(int64(1), nil))
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
+		ID:          eID1,
+		DisplayName: "batman",
+		Type:        dal.EntityTypeInternal,
+	}, nil))
+
+	resp, err := s.UpdateContacts(context.Background(), &directory.UpdateContactsRequest{
+		EntityID: eID1.String(),
+		Contacts: []*directory.Contact{
+			&directory.Contact{
+				ID:          eCID1.String(),
+				ContactType: directory.ContactType_PHONE,
+				Value:       "+12345678910",
+			},
+			&directory.Contact{
+				ID:          eCID2.String(),
+				ContactType: directory.ContactType_EMAIL,
+				Value:       "test@email.com",
+				Label:       "NewLabel",
+			},
+		},
+	})
+	test.OK(t, err)
+
+	test.AssertNotNil(t, resp.Entity)
+	test.Equals(t, "batman", resp.Entity.Info.DisplayName)
+	test.Equals(t, eID1.String(), resp.Entity.ID)
+}
+
+func TestDeleteContacts(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	s := New(dl)
+	eID1, err := dal.NewEntityID()
+	test.OK(t, err)
+	eCID1, err := dal.NewEntityContactID()
+	test.OK(t, err)
+	eCID2, err := dal.NewEntityContactID()
+	test.OK(t, err)
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.DeleteEntityContact, eCID1))
+	dl.Expect(mock.NewExpectation(dl.DeleteEntityContact, eCID2))
+
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
+		ID:          eID1,
+		DisplayName: "batman",
+		Type:        dal.EntityTypeInternal,
+	}, nil))
+
+	resp, err := s.DeleteContacts(context.Background(), &directory.DeleteContactsRequest{
+		EntityID:         eID1.String(),
+		EntityContactIDs: []string{eCID1.String(), eCID2.String()},
+	})
+	test.OK(t, err)
+
+	test.AssertNotNil(t, resp.Entity)
+	test.Equals(t, "batman", resp.Entity.Info.DisplayName)
+	test.Equals(t, eID1.String(), resp.Entity.ID)
+}
+
+func TestUpdateEntity(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	s := New(dl)
+	eID1, err := dal.NewEntityID()
+	test.OK(t, err)
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
+		Type: dal.EntityTypeInternal,
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.UpdateEntity, eID1, &dal.EntityUpdate{
+		DisplayName:   ptr.String("batman"),
+		FirstName:     ptr.String(""),
+		LastName:      ptr.String(""),
+		MiddleInitial: ptr.String(""),
+		GroupName:     ptr.String(""),
+		Note:          ptr.String("I am the knight"),
+	}))
+
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
+		ID:          eID1,
+		DisplayName: "batman",
+		Note:        "I am the knight",
+		Type:        dal.EntityTypeInternal,
+	}, nil))
+
+	resp, err := s.UpdateEntity(context.Background(), &directory.UpdateEntityRequest{
+		EntityID: eID1.String(),
+		EntityInfo: &directory.EntityInfo{
+			DisplayName: "batman",
+			Note:        "I am the knight",
+		},
+	})
+	test.OK(t, err)
+
+	test.AssertNotNil(t, resp.Entity)
+	test.Equals(t, "batman", resp.Entity.Info.DisplayName)
+	test.Equals(t, "I am the knight", resp.Entity.Info.Note)
+	test.Equals(t, eID1.String(), resp.Entity.ID)
 }

@@ -163,7 +163,9 @@ func TestSendMessage_SMS(t *testing.T) {
 func TestSendMessage_Email(t *testing.T) {
 
 	orgEntity := &directory.Entity{
-		Name: "Practice Name",
+		Info: &directory.EntityInfo{
+			DisplayName: "Practice Name",
+		},
 		Type: directory.EntityType_ORGANIZATION,
 		ID:   "10",
 		Contacts: []*directory.Contact{
@@ -196,7 +198,9 @@ func TestSendMessage_Email(t *testing.T) {
 	}
 
 	providerEntity := &directory.Entity{
-		Name: "Dr. Smith",
+		Info: &directory.EntityInfo{
+			DisplayName: "Dr. Smith",
+		},
 		Type: directory.EntityType_INTERNAL,
 		ID:   "30",
 	}
@@ -309,7 +313,9 @@ func TestSendMessage_Email(t *testing.T) {
 func TestSendMessage_Multiple(t *testing.T) {
 
 	orgEntity := &directory.Entity{
-		Name: "Practice Name",
+		Info: &directory.EntityInfo{
+			DisplayName: "Practice Name",
+		},
 		Type: directory.EntityType_ORGANIZATION,
 		ID:   "10",
 		Contacts: []*directory.Contact{
@@ -342,7 +348,9 @@ func TestSendMessage_Multiple(t *testing.T) {
 	}
 
 	providerEntity := &directory.Entity{
-		Name: "Dr. Smith",
+		Info: &directory.EntityInfo{
+			DisplayName: "Dr. Smith",
+		},
 		Type: directory.EntityType_INTERNAL,
 		ID:   "30",
 	}

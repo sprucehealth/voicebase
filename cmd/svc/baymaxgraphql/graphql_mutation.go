@@ -453,6 +453,154 @@ var sendTestNotificationOutputType = graphql.NewObject(
 	},
 )
 
+/// updateEntity
+
+type updateEntityOutput struct {
+	ClientMutationID string  `json:"clientMutationId"`
+	Entity           *entity `json:"entity"`
+}
+
+var updateEntityInputType = graphql.NewInputObject(
+	graphql.InputObjectConfig{
+		Name: "UpdateEntityInput",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"clientMutationId": newClientMutationIDInputField(),
+			"uuid":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"entityID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"firstName":        &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"middleInitial":    &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"lastName":         &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"groupName":        &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"displayName":      &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"note":             &graphql.InputObjectFieldConfig{Type: graphql.String},
+		},
+	},
+)
+
+var updateEntityOutputType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "UpdateEntityPayload",
+		Fields: graphql.Fields{
+			"clientMutationId": newClientmutationIDOutputField(),
+			"entity":           &graphql.Field{Type: graphql.NewNonNull(entityType)},
+		},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+			_, ok := value.(*updateEntityOutput)
+			return ok
+		},
+	},
+)
+
+/// addContacts
+
+var unprovisionedContactInfoType = graphql.NewInputObject(
+	graphql.InputObjectConfig{
+		Name: "UnprovisionedContactInfo",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"id":    &graphql.InputObjectFieldConfig{Type: graphql.ID},
+			"type":  &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(contactEnumType)},
+			"value": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"label": &graphql.InputObjectFieldConfig{Type: graphql.String},
+		},
+	},
+)
+
+type addContactsOutput struct {
+	ClientMutationID string  `json:"clientMutationId"`
+	Entity           *entity `json:"entity"`
+}
+
+var addContactsInputType = graphql.NewInputObject(
+	graphql.InputObjectConfig{
+		Name: "AddContactsInput",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"clientMutationId": newClientMutationIDInputField(),
+			"uuid":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"entityID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"contactInfos":     &graphql.InputObjectFieldConfig{Type: graphql.NewList(unprovisionedContactInfoType)},
+		},
+	},
+)
+
+var addContactsOutputType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "AddContactsPayload",
+		Fields: graphql.Fields{
+			"clientMutationId": newClientmutationIDOutputField(),
+			"entity":           &graphql.Field{Type: graphql.NewNonNull(entityType)},
+		},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+			_, ok := value.(*addContactsOutput)
+			return ok
+		},
+	},
+)
+
+/// updateContacts
+
+type updateContactsOutput struct {
+	ClientMutationID string  `json:"clientMutationId"`
+	Entity           *entity `json:"entity"`
+}
+
+var updateContactsInputType = graphql.NewInputObject(
+	graphql.InputObjectConfig{
+		Name: "UpdateContactsInput",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"clientMutationId": newClientMutationIDInputField(),
+			"entityID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"contactInfos":     &graphql.InputObjectFieldConfig{Type: graphql.NewList(unprovisionedContactInfoType)},
+		},
+	},
+)
+
+var updateContactsOutputType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "UpdateContactsPayload",
+		Fields: graphql.Fields{
+			"clientMutationId": newClientmutationIDOutputField(),
+			"entity":           &graphql.Field{Type: graphql.NewNonNull(entityType)},
+		},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+			_, ok := value.(*updateContactsOutput)
+			return ok
+		},
+	},
+)
+
+/// deleteContacts
+
+type deleteContactsOutput struct {
+	ClientMutationID string  `json:"clientMutationId"`
+	Entity           *entity `json:"entity"`
+}
+
+var deleteContactsInputType = graphql.NewInputObject(
+	graphql.InputObjectConfig{
+		Name: "DeleteContactsInput",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"clientMutationId": newClientMutationIDInputField(),
+			"uuid":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"entityID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"contactIDs":       &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.String)},
+		},
+	},
+)
+
+var deleteContactsOutputType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "DeleteContactsPayload",
+		Fields: graphql.Fields{
+			"clientMutationId": newClientmutationIDOutputField(),
+			"entity":           &graphql.Field{Type: graphql.NewNonNull(entityType)},
+		},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+			_, ok := value.(*deleteContactsOutput)
+			return ok
+		},
+	},
+)
+
 var mutationType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Mutation",
 	Fields: graphql.Fields{
@@ -579,7 +727,10 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				{
 					// Create organization
 					res, err := svc.directory.CreateEntity(ctx, &directory.CreateEntityRequest{
-						Name: "Test Organization", // TODO
+						EntityInfo: &directory.EntityInfo{
+							GroupName:   "Test Organization",
+							DisplayName: "Test Organization",
+						},
 						Type: directory.EntityType_ORGANIZATION,
 					})
 					if err != nil {
@@ -589,7 +740,11 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 
 					// Create entity
 					res, err = svc.directory.CreateEntity(ctx, &directory.CreateEntityRequest{
-						Name:                      req.FirstName + " " + req.LastName, // TODO
+						EntityInfo: &directory.EntityInfo{
+							FirstName:   req.FirstName,
+							LastName:    req.LastName,
+							DisplayName: req.FirstName + " " + req.LastName,
+						},
 						Type:                      directory.EntityType_INTERNAL,
 						ExternalID:                accountID,
 						InitialMembershipEntityID: orgEntityID,
@@ -744,7 +899,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				}
 
 				var title bml.BML
-				fromName := ent.Name
+				fromName := ent.Info.DisplayName
 				if fromName == "" && len(ent.Contacts) != 0 {
 					fromName = ent.Contacts[0].Value
 				}
@@ -850,7 +1005,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 								}
 								req.Destinations = append(req.Destinations, e)
 								if !updatedTitle {
-									name := extEntity.Name
+									name := extEntity.Info.DisplayName
 									if name == "" {
 										name = e.ID
 									}
@@ -1037,7 +1192,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 		"markThreadAsRead": &graphql.Field{
 			Type: graphql.NewNonNull(markThreadAsReadOutputType),
 			Args: graphql.FieldConfigArgument{
-				"input": &graphql.ArgumentConfig{Type: markThreadAsReadInputType},
+				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(markThreadAsReadInputType)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				svc := serviceFromParams(p)
@@ -1075,7 +1230,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 		"sendTestNotification": &graphql.Field{
 			Type: graphql.NewNonNull(sendTestNotificationOutputType),
 			Args: graphql.FieldConfigArgument{
-				"input": &graphql.ArgumentConfig{Type: sendTestNotificationInputType},
+				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(sendTestNotificationInputType)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				svc := serviceFromParams(p)
@@ -1112,5 +1267,261 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 			},
 		},
 		"provisionEmail": provisionEmailField,
+		"updateEntity": &graphql.Field{
+			Type: graphql.NewNonNull(updateEntityOutputType),
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(updateEntityInputType)},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				svc := serviceFromParams(p)
+				ctx := p.Context
+				acc := accountFromContext(ctx)
+				if acc == nil {
+					return nil, errNotAuthenticated
+				}
+
+				input := p.Args["input"].(map[string]interface{})
+				mutationID, _ := input["clientMutationId"].(string)
+				ei, _ := input["info"]
+				entID, _ := input["entityID"].(string)
+				entityInfo, err := entityInfoFromFieldList(ei)
+				if err != nil {
+					return nil, internalError(err)
+				}
+
+				resp, err := svc.directory.UpdateEntity(ctx, &directory.UpdateEntityRequest{
+					EntityID:   entID,
+					EntityInfo: entityInfo,
+					RequestedInformation: &directory.RequestedInformation{
+						Depth:             0,
+						EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+					},
+				})
+				if err != nil {
+					return nil, internalError(err)
+				}
+
+				e, err := transformEntityToResponse(resp.Entity)
+				if err != nil {
+					return nil, internalError(err)
+				}
+
+				result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
+				result.Set("updateEntity", true)
+				return &updateEntityOutput{
+					ClientMutationID: mutationID,
+					Entity:           e,
+				}, nil
+			},
+		},
+		"addContacts": &graphql.Field{
+			Type: graphql.NewNonNull(addContactsOutputType),
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(addContactsInputType)},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				svc := serviceFromParams(p)
+				ctx := p.Context
+				acc := accountFromContext(ctx)
+				if acc == nil {
+					return nil, errNotAuthenticated
+				}
+
+				input := p.Args["input"].(map[string]interface{})
+				mutationID, _ := input["clientMutationId"].(string)
+				contactInfos, _ := input["contactInfos"].([]interface{})
+				entID, _ := input["entityID"].(string)
+
+				contacts, err := contactsFromFieldList(contactInfos)
+				if err != nil {
+					return nil, internalError(err)
+				}
+
+				resp, err := svc.directory.CreateContacts(ctx, &directory.CreateContactsRequest{
+					EntityID: entID,
+					Contacts: contacts,
+					RequestedInformation: &directory.RequestedInformation{
+						Depth:             0,
+						EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+					},
+				})
+				if err != nil {
+					return nil, internalError(err)
+				}
+
+				e, err := transformEntityToResponse(resp.Entity)
+				if err != nil {
+					return nil, internalError(err)
+				}
+
+				result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
+				result.Set("addContacts", true)
+				return &addContactsOutput{
+					ClientMutationID: mutationID,
+					Entity:           e,
+				}, nil
+			},
+		},
+		"updateContacts": &graphql.Field{
+			Type: graphql.NewNonNull(updateContactsOutputType),
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(updateContactsInputType)},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				svc := serviceFromParams(p)
+				ctx := p.Context
+				acc := accountFromContext(ctx)
+				if acc == nil {
+					return nil, errNotAuthenticated
+				}
+
+				input := p.Args["input"].(map[string]interface{})
+				mutationID, _ := input["clientMutationId"].(string)
+				contactInfos, _ := input["contactInfos"].([]interface{})
+				entID, _ := input["entityID"].(string)
+
+				contacts, err := contactsFromFieldList(contactInfos)
+				if err != nil {
+					return nil, internalError(err)
+				}
+
+				resp, err := svc.directory.UpdateContacts(ctx, &directory.UpdateContactsRequest{
+					EntityID: entID,
+					Contacts: contacts,
+					RequestedInformation: &directory.RequestedInformation{
+						Depth:             0,
+						EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+					},
+				})
+				if err != nil {
+					return nil, internalError(err)
+				}
+
+				e, err := transformEntityToResponse(resp.Entity)
+				if err != nil {
+					return nil, internalError(err)
+				}
+
+				result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
+				result.Set("updateContacts", true)
+				return &updateContactsOutput{
+					ClientMutationID: mutationID,
+					Entity:           e,
+				}, nil
+			},
+		},
+		"deleteContacts": &graphql.Field{
+			Type: graphql.NewNonNull(deleteContactsOutputType),
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(deleteContactsInputType)},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				svc := serviceFromParams(p)
+				ctx := p.Context
+				acc := accountFromContext(ctx)
+				if acc == nil {
+					return nil, errNotAuthenticated
+				}
+
+				input := p.Args["input"].(map[string]interface{})
+				mutationID, _ := input["clientMutationId"].(string)
+				contactIDs, _ := input["contactIDs"].([]interface{})
+				entID, _ := input["entityID"].(string)
+
+				sContacts := make([]string, len(contactIDs))
+				for i, ci := range contactIDs {
+					sContacts[i] = ci.(string)
+				}
+
+				resp, err := svc.directory.DeleteContacts(ctx, &directory.DeleteContactsRequest{
+					EntityID:         entID,
+					EntityContactIDs: sContacts,
+					RequestedInformation: &directory.RequestedInformation{
+						Depth:             0,
+						EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
+					},
+				})
+				if err != nil {
+					return nil, internalError(err)
+				}
+
+				e, err := transformEntityToResponse(resp.Entity)
+				if err != nil {
+					return nil, internalError(err)
+				}
+
+				result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
+				result.Set("deleteContacts", true)
+				return &deleteContactsOutput{
+					ClientMutationID: mutationID,
+					Entity:           e,
+				}, nil
+			},
+		},
 	},
 })
+
+func contactsFromFieldList(cis []interface{}) ([]*directory.Contact, error) {
+	contacts := make([]*directory.Contact, len(cis))
+	for i, ci := range cis {
+		mci, ok := ci.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("Unable to parse input contact data: %+v", ci)
+		}
+
+		id, _ := mci["id"].(string)
+		t, _ := mci["type"].(string)
+		v, _ := mci["value"].(string)
+		l, _ := mci["label"].(string)
+
+		ct, ok := directory.ContactType_value[t]
+		if !ok {
+			return nil, fmt.Errorf("Unknown contact type: %q", t)
+		}
+		contacts[i] = &directory.Contact{
+			ID:          id,
+			Value:       v,
+			ContactType: directory.ContactType(ct),
+			Label:       l,
+		}
+	}
+	return contacts, nil
+}
+
+func entityInfoFromFieldList(ei interface{}) (*directory.EntityInfo, error) {
+	mei, ok := ei.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("Unable to parse input entity info data: %+v", ei)
+	}
+
+	fn, _ := mei["firstName"].(string)
+	mi, _ := mei["middleInitial"].(string)
+	ln, _ := mei["lastName"].(string)
+	gn, _ := mei["groupName"].(string)
+	dn, _ := mei["displayName"].(string)
+	n, _ := mei["note"].(string)
+
+	// If no display name was provided then build one from our input
+	if dn == "" {
+		if fn != "" || ln != "" {
+			if mi != " " {
+				dn = fn + " " + mi + ". " + ln
+			} else {
+				dn = fn + " " + ln
+			}
+		} else if gn != "" {
+			dn = gn
+		} else {
+			return nil, errors.New("Display name cannot be empty and not enough information was supplied to infer one")
+		}
+	}
+	entityInfo := &directory.EntityInfo{
+		FirstName:     fn,
+		MiddleInitial: mi,
+		LastName:      ln,
+		GroupName:     gn,
+		DisplayName:   dn,
+		Note:          n,
+	}
+	return entityInfo, nil
+}

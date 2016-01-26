@@ -30,6 +30,7 @@ type DAL interface {
 	EntityMemberships(id EntityID) ([]*EntityMembership, error)
 	EntityMembers(id EntityID) ([]*Entity, error)
 	InsertEntityContact(model *EntityContact) (EntityContactID, error)
+	InsertEntityContacts(models []*EntityContact) error
 	EntityContact(id EntityContactID) (*EntityContact, error)
 	EntityContacts(id EntityID) ([]*EntityContact, error)
 	EntityContactsForValue(value string) ([]*EntityContact, error)
@@ -356,6 +357,7 @@ type EntityContact struct {
 	Created     time.Time
 	Modified    time.Time
 	ID          EntityContactID
+	Label       string
 	Provisioned bool
 }
 
@@ -363,6 +365,7 @@ type EntityContact struct {
 type EntityContactUpdate struct {
 	Type  *EntityContactType
 	Value *string
+	Label *string
 }
 
 // EntityMembership represents a entity_membership record
@@ -395,19 +398,29 @@ type ExternalEntityIDUpdate struct {
 
 // Entity represents a entity record
 type Entity struct {
-	Created  time.Time
-	Modified time.Time
-	ID       EntityID
-	Name     string
-	Type     EntityType
-	Status   EntityStatus
+	ID            EntityID
+	Type          EntityType
+	Status        EntityStatus
+	DisplayName   string
+	FirstName     string
+	GroupName     string
+	Note          string
+	MiddleInitial string
+	LastName      string
+	Created       time.Time
+	Modified      time.Time
 }
 
 // EntityUpdate represents the mutable aspects of a entity record
 type EntityUpdate struct {
-	Name   *string
-	Type   *EntityType
-	Status *EntityStatus
+	DisplayName   *string
+	FirstName     *string
+	GroupName     *string
+	Type          *EntityType
+	Status        *EntityStatus
+	MiddleInitial *string
+	LastName      *string
+	Note          *string
 }
 
 // InsertEntity inserts a entity record
@@ -421,8 +434,8 @@ func (d *dal) InsertEntity(model *Entity) (EntityID, error) {
 	}
 	_, err := d.db.Exec(
 		`INSERT INTO entity
-          (id, name, type, status)
-          VALUES (?, ?, ?, ?)`, model.ID, model.Name, model.Type.String(), model.Status.String())
+          (display_name, first_name, group_name, type, status, id, middle_initial, last_name, note)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, model.DisplayName, model.FirstName, model.GroupName, model.Type.String(), model.Status.String(), model.ID, model.MiddleInitial, model.LastName, model.Note)
 	if err != nil {
 		return EmptyEntityID(), errors.Trace(err)
 	}
@@ -469,14 +482,29 @@ func (d *dal) Entities(ids []EntityID) ([]*Entity, error) {
 // UpdateEntity updates the mutable aspects of a entity record
 func (d *dal) UpdateEntity(id EntityID, update *EntityUpdate) (int64, error) {
 	args := dbutil.MySQLVarArgs()
-	if update.Name != nil {
-		args.Append("name", *update.Name)
+	if update.DisplayName != nil {
+		args.Append("display_name", *update.DisplayName)
+	}
+	if update.FirstName != nil {
+		args.Append("first_name", *update.FirstName)
+	}
+	if update.GroupName != nil {
+		args.Append("group_name", *update.GroupName)
 	}
 	if update.Type != nil {
-		args.Append("type", update.Type.String())
+		args.Append("type", *update.Type)
 	}
 	if update.Status != nil {
-		args.Append("status", update.Status.String())
+		args.Append("status", *update.Status)
+	}
+	if update.MiddleInitial != nil {
+		args.Append("middle_initial", *update.MiddleInitial)
+	}
+	if update.LastName != nil {
+		args.Append("last_name", *update.LastName)
+	}
+	if update.Note != nil {
+		args.Append("note", *update.Note)
 	}
 	if args.IsEmpty() {
 		return 0, nil
@@ -632,13 +660,37 @@ func (d *dal) InsertEntityContact(model *EntityContact) (EntityContactID, error)
 	}
 	_, err := d.db.Exec(
 		`INSERT INTO entity_contact
-          (id, entity_id, type, value, provisioned)
-          VALUES (?, ?, ?, ?, ?)`, model.ID, model.EntityID, model.Type.String(), model.Value, model.Provisioned)
+          (id, entity_id, type, value, provisioned, label)
+          VALUES (?, ?, ?, ?, ?, ?)`, model.ID, model.EntityID, model.Type.String(), model.Value, model.Provisioned, model.Label)
 	if err != nil {
 		return EmptyEntityContactID(), errors.Trace(err)
 	}
 
 	return model.ID, nil
+}
+
+// InsertEntityContacts inserts a set of entity_contact record
+func (d *dal) InsertEntityContacts(models []*EntityContact) error {
+	if len(models) == 0 {
+		return nil
+	}
+
+	ins := dbutil.MySQLMultiInsert(len(models))
+	for i, m := range models {
+		if !m.ID.IsValid {
+			id, err := NewEntityContactID()
+			if err != nil {
+				return errors.Trace(err)
+			}
+			models[i].ID = id
+		}
+		ins.Append(m.ID, m.EntityID, m.Type.String(), m.Value, m.Provisioned, m.Label)
+	}
+	_, err := d.db.Exec(
+		`INSERT IGNORE INTO entity_contact
+          (id, entity_id, type, value, provisioned, label)
+          VALUES `+ins.Query(), ins.Values()...)
+	return errors.Trace(err)
 }
 
 // EntityContacts returns the entity_contact rescords for the provided entity id
@@ -697,6 +749,9 @@ func (d *dal) UpdateEntityContact(id EntityContactID, update *EntityContactUpdat
 	}
 	if update.Value != nil {
 		args.Append("value", *update.Value)
+	}
+	if update.Label != nil {
+		args.Append("label", *update.Label)
 	}
 	if args.IsEmpty() {
 		return 0, nil
@@ -788,6 +843,42 @@ func (d *dal) DeleteEvent(id EventID) (int64, error) {
 	return aff, errors.Trace(err)
 }
 
+func (d *dal) EntityDomain(id *EntityID, domain *string) (EntityID, string, error) {
+	if id == nil && domain == nil {
+		return EmptyEntityID(), "", errors.Trace(errors.New("either entity_id or domain must be specified to lookup entity_domain"))
+	}
+
+	where := make([]string, 0, 2)
+	vals := make([]interface{}, 0, 2)
+
+	if id != nil {
+		where = append(where, "entity_id = ?")
+		vals = append(vals, id)
+	}
+	if domain != nil {
+		where = append(where, "domain = ?")
+		vals = append(vals, domain)
+	}
+
+	var queriedDomain string
+	var queriedEntityID EntityID
+	if err := d.db.QueryRow(`
+		SELECT entity_id, domain
+		FROM entity_domain
+		WHERE `+strings.Join(where, " AND"), vals...).Scan(&queriedEntityID, &queriedDomain); err == sql.ErrNoRows {
+		return EmptyEntityID(), "", errors.Trace(api.ErrNotFound("entity_domain not found"))
+	} else if err != nil {
+		return EmptyEntityID(), "", errors.Trace(err)
+	}
+
+	return queriedEntityID, queriedDomain, nil
+}
+
+func (d *dal) InsertEntityDomain(id EntityID, domain string) error {
+	_, err := d.db.Exec(`REPLACE INTO entity_domain (entity_id, domain) VALUES (?,?)`, id, domain)
+	return errors.Trace(err)
+}
+
 const selectExternalEntityID = `
     SELECT external_entity_id.created, external_entity_id.modified, external_entity_id.entity_id, external_entity_id.external_id
       FROM external_entity_id`
@@ -820,7 +911,7 @@ func scanEntityMembership(row dbutil.Scanner) (*EntityMembership, error) {
 }
 
 const selectEntityContact = `
-    SELECT entity_contact.modified, entity_contact.id, entity_contact.entity_id, entity_contact.type, entity_contact.value, entity_contact.created, entity_contact.provisioned
+    SELECT entity_contact.modified, entity_contact.id, entity_contact.entity_id, entity_contact.type, entity_contact.value, entity_contact.created, entity_contact.provisioned, entity_contact.label
       FROM entity_contact`
 
 func scanEntityContact(row dbutil.Scanner) (*EntityContact, error) {
@@ -828,7 +919,7 @@ func scanEntityContact(row dbutil.Scanner) (*EntityContact, error) {
 	m.ID = EmptyEntityContactID()
 	m.EntityID = EmptyEntityID()
 
-	err := row.Scan(&m.Modified, &m.ID, &m.EntityID, &m.Type, &m.Value, &m.Created, &m.Provisioned)
+	err := row.Scan(&m.Modified, &m.ID, &m.EntityID, &m.Type, &m.Value, &m.Created, &m.Provisioned, &m.Label)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(api.ErrNotFound("directory - EntityContact not found"))
 	}
@@ -852,51 +943,16 @@ func scanEvent(row dbutil.Scanner) (*Event, error) {
 }
 
 const selectEntity = `
-    SELECT entity.id, entity.name, entity.type, entity.status, entity.created, entity.modified
+    SELECT entity.id, entity.middle_initial, entity.last_name, entity.note, entity.created, entity.modified, entity.display_name, entity.first_name, entity.group_name, entity.type, entity.status
       FROM entity`
 
 func scanEntity(row dbutil.Scanner) (*Entity, error) {
 	var m Entity
 	m.ID = EmptyEntityID()
 
-	err := row.Scan(&m.ID, &m.Name, &m.Type, &m.Status, &m.Created, &m.Modified)
+	err := row.Scan(&m.ID, &m.MiddleInitial, &m.LastName, &m.Note, &m.Created, &m.Modified, &m.DisplayName, &m.FirstName, &m.GroupName, &m.Type, &m.Status)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(api.ErrNotFound("directory - Entity not found"))
 	}
 	return &m, errors.Trace(err)
-}
-
-func (d *dal) EntityDomain(id *EntityID, domain *string) (EntityID, string, error) {
-	if id == nil && domain == nil {
-		return EmptyEntityID(), "", errors.Trace(errors.New("either entity_id or domain must be specified to lookup entity_domain"))
-	}
-
-	where := make([]string, 0, 2)
-	vals := make([]interface{}, 0, 2)
-
-	if id != nil {
-		where = append(where, "entity_id = ?")
-		vals = append(vals, id)
-	}
-	if domain != nil {
-		where = append(where, "domain = ?")
-		vals = append(vals, domain)
-	}
-
-	var queriedDomain string
-	var queriedEntityID EntityID
-	if err := d.db.QueryRow(`
-		SELECT entity_id, domain
-		FROM entity_domain
-		WHERE `+strings.Join(where, " AND"), vals...).Scan(&queriedEntityID, &queriedDomain); err == sql.ErrNoRows {
-		return EmptyEntityID(), "", errors.Trace(api.ErrNotFound("entity_domain not found"))
-	} else if err != nil {
-		return EmptyEntityID(), "", errors.Trace(err)
-	}
-
-	return queriedEntityID, queriedDomain, nil
-}
-func (d *dal) InsertEntityDomain(id EntityID, domain string) error {
-	_, err := d.db.Exec(`REPLACE INTO entity_domain (entity_id, domain) VALUES (?,?)`, id, domain)
-	return errors.Trace(err)
 }

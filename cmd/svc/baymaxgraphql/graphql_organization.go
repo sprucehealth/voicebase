@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
@@ -43,15 +41,11 @@ var organizationType = graphql.NewObject(
 					if e == nil {
 						return nil, errors.New("entity not found for organization")
 					}
-					oc, err := transformContactsToResponse(e.Contacts)
+					rE, err := transformEntityToResponse(e)
 					if err != nil {
-						return nil, internalError(fmt.Errorf("failed to transform entity contacts: %+v", err))
+						return nil, internalError(err)
 					}
-					return &entity{
-						ID:       e.ID,
-						Name:     e.Name,
-						Contacts: oc,
-					}, nil
+					return rE, nil
 				},
 			},
 			"contacts": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(contactInfoType))},

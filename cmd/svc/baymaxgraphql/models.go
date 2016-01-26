@@ -36,16 +36,23 @@ type account struct {
 }
 
 type entity struct {
-	ID       string         `json:"id"`
-	Name     string         `json:"name"`
-	Contacts []*contactInfo `json:"contacts"`
+	ID            string         `json:"id"`
+	FirstName     string         `json:"firstName"`
+	MiddleInitial string         `json:"middleInitial"`
+	LastName      string         `json:"lastName"`
+	GroupName     string         `json:"groupName"`
+	DisplayName   string         `json:"displayName"`
+	Note          string         `json:"note"`
+	Contacts      []*contactInfo `json:"contacts"`
 	// TODO avatar(width: Int = 120, height: Int = 120, crop: Boolean = true): Image
 }
 
 type contactInfo struct {
+	ID          string `json:"id"`
 	Type        string `json:"type"`
 	Value       string `json:"value"`
 	Provisioned bool   `json:"provisioned"`
+	Label       string `json:"label"`
 }
 
 type endpoint struct {

@@ -8,13 +8,10 @@ import (
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 )
 
+var _ dal.DAL = &mockDAL{}
+
 type mockDAL struct {
 	*mock.Expector
-}
-
-// NewDAL returns an initialized instance of mockDAL. This returns the interface for a build time check that this mock always matches.
-func NewDAL() dal.DAL {
-	return &mockDAL{}
 }
 
 // NewMockDAL returns an initialized instance of mockDAL
@@ -28,6 +25,14 @@ func (dl *mockDAL) InsertEntity(model *dal.Entity) (dal.EntityID, error) {
 		return dal.EntityID{}, nil
 	}
 	return rets[0].(dal.EntityID), mock.SafeError(rets[1])
+}
+
+func (dl *mockDAL) InsertEntityContacts(models []*dal.EntityContact) error {
+	rets := dl.Expector.Record(models)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
 }
 
 func (dl *mockDAL) Entity(id dal.EntityID) (*dal.Entity, error) {

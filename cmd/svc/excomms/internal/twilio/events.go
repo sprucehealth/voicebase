@@ -195,8 +195,8 @@ func processOutgoingCall(params *rawmsg.TwilioParams, eh *eventsHandler) (string
 	}
 
 	var text string
-	if res.Entities[0].Name != "" {
-		text = "You will be connected to " + res.Entities[0].Name
+	if res.Entities[0].Info != nil && res.Entities[0].Info.DisplayName != "" {
+		text = "You will be connected to " + res.Entities[0].Info.DisplayName
 	} else {
 		formattedNumber, err := destination.Format(phone.National)
 		if err != nil {

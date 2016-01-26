@@ -455,8 +455,10 @@ func TestIncomingSMS_ExistingUser_Email(t *testing.T) {
 func TestIncomingVoicemail_NewUser(t *testing.T) {
 	// Setup
 	organizationEntity := &directory.Entity{
-		ID:   "10",
-		Name: "Spruce Practice",
+		ID: "10",
+		Info: &directory.EntityInfo{
+			DisplayName: "Spruce Practice",
+		},
 		Type: directory.EntityType_ORGANIZATION,
 		Contacts: []*directory.Contact{
 			{
@@ -543,13 +545,17 @@ func TestIncomingVoicemail_NewUser(t *testing.T) {
 func TestOutgoingCallEvent(t *testing.T) {
 	// Setup
 	organizationEntity := &directory.Entity{
-		ID:   "10",
-		Name: "Spruce Practice",
+		ID: "10",
+		Info: &directory.EntityInfo{
+			DisplayName: "Spruce Practice",
+		},
 		Type: directory.EntityType_ORGANIZATION,
 	}
 	providerEntity := &directory.Entity{
-		ID:   "1",
-		Name: "Dr. Craig",
+		ID: "1",
+		Info: &directory.EntityInfo{
+			DisplayName: "Dr. Craig",
+		},
 		Type: directory.EntityType_INTERNAL,
 		Memberships: []*directory.Entity{
 			organizationEntity,

@@ -65,7 +65,9 @@ func TestNodeQuery(t *testing.T) {
 				{
 					Type: directory.EntityType_ORGANIZATION,
 					ID:   id,
-					Name: "Org",
+					Info: &directory.EntityInfo{
+						DisplayName: "Org",
+					},
 				},
 			},
 		},
@@ -90,7 +92,9 @@ func TestNodeQuery(t *testing.T) {
 				{
 					Type: directory.EntityType_INTERNAL,
 					ID:   "entity_222",
-					Name: "Mem",
+					Info: &directory.EntityInfo{
+						DisplayName: "Mem",
+					},
 					Memberships: []*directory.Entity{
 						{ID: id},
 					},
@@ -105,9 +109,9 @@ func TestNodeQuery(t *testing.T) {
 		Name:     "Org",
 		Contacts: []*contactInfo{},
 		Entity: &entity{
-			ID:       "entity_222",
-			Name:     "Mem",
-			Contacts: []*contactInfo{},
+			ID:          "entity_222",
+			DisplayName: "Mem",
+			Contacts:    []*contactInfo{},
 		},
 	}, res)
 	mock.FinishAll(dirC)
@@ -137,14 +141,16 @@ func TestNodeQuery(t *testing.T) {
 				{
 					Type: directory.EntityType_INTERNAL,
 					ID:   id,
-					Name: "Someone",
+					Info: &directory.EntityInfo{
+						DisplayName: "Someone",
+					},
 				},
 			},
 		},
 		nil))
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, &entity{ID: id, Name: "Someone", Contacts: []*contactInfo{}}, res)
+	test.Equals(t, &entity{ID: id, DisplayName: "Someone", Contacts: []*contactInfo{}}, res)
 	mock.FinishAll(dirC)
 
 	// Thread
@@ -183,7 +189,9 @@ func TestNodeQuery(t *testing.T) {
 				{
 					Type: directory.EntityType_EXTERNAL,
 					ID:   id,
-					Name: "Someone",
+					Info: &directory.EntityInfo{
+						DisplayName: "Someone",
+					},
 				},
 			},
 		},
@@ -208,7 +216,9 @@ func TestNodeQuery(t *testing.T) {
 				{
 					Type: directory.EntityType_INTERNAL,
 					ID:   "entity_222",
-					Name: "Someone",
+					Info: &directory.EntityInfo{
+						DisplayName: "Someone",
+					},
 					Memberships: []*directory.Entity{
 						{
 							Type: directory.EntityType_ORGANIZATION,
@@ -252,7 +262,9 @@ func TestNodeQuery(t *testing.T) {
 				{
 					Type: directory.EntityType_INTERNAL,
 					ID:   "entity_2",
-					Name: "Someone",
+					Info: &directory.EntityInfo{
+						DisplayName: "Someone",
+					},
 					Memberships: []*directory.Entity{
 						{
 							Type: directory.EntityType_ORGANIZATION,
