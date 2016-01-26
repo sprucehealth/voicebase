@@ -738,7 +738,7 @@ func parseTimeCursor(cur string) (time.Time, error) {
 	if err != nil {
 		return time.Time{}, errors.Trace(err)
 	}
-	return time.Unix(ts/1e6, ts%1e6), nil
+	return time.Unix(ts/1e6, (ts%1e6)*1e3), nil
 }
 
 func formatTimeCursor(t time.Time) string {
