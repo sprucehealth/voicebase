@@ -12,11 +12,11 @@ import (
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice/apipaths"
-	"github.com/sprucehealth/backend/branch"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/diagnosis"
 	"github.com/sprucehealth/backend/email"
 	"github.com/sprucehealth/backend/events"
+	"github.com/sprucehealth/backend/libs/branch"
 	"github.com/sprucehealth/backend/libs/cfg"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/erx"
@@ -74,7 +74,7 @@ func buildWWW(
 		}
 	}
 
-	branchClient := branch.NewMemcachedBranchClient(conf.BranchKey, memcacheClient)
+	branchClient := branch.NewMemcachedClient(conf.BranchKey, memcacheClient)
 
 	www.MustInitializeResources("resources")
 	templateLoader := www.NewTemplateLoader(func(path string) (io.ReadCloser, error) {

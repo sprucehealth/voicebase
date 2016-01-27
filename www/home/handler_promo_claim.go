@@ -9,10 +9,10 @@ import (
 
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/branch"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/libs/branch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"

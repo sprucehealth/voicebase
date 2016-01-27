@@ -87,7 +87,7 @@ var provisionPhoneNumberMutation = &graphql.Field{
 
 		input := p.Args["input"].(map[string]interface{})
 		organizationID, _ := input["organizationID"].(string)
-		mutationId, _ := input["clientMutationId"].(string)
+		mutationID, _ := input["clientMutationId"].(string)
 		areaCode, _ := input["areaCode"].(string)
 
 		if organizationID == "" {
@@ -111,7 +111,7 @@ var provisionPhoneNumberMutation = &graphql.Field{
 		})
 		if grpc.Code(err) == codes.InvalidArgument || grpc.Code(err) == codes.NotFound {
 			return &provisionPhoneNumberOutput{
-				ClientMutationID: mutationId,
+				ClientMutationID: mutationID,
 				Result:           provisionPhoneNumberResultUnavailable,
 			}, nil
 		} else if err != nil {
@@ -147,7 +147,7 @@ var provisionPhoneNumberMutation = &graphql.Field{
 			PhoneNumber:      res.PhoneNumber,
 			Organization:     orgRes,
 			Result:           provisionPhoneNumberResultSuccess,
-			ClientMutationID: mutationId,
+			ClientMutationID: mutationID,
 		}, nil
 	},
 }

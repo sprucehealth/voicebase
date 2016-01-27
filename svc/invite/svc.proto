@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package invite;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = true;
+
+message Colleague {
+	string email = 1;
+	string phone_number = 2;
+}
+
+message InviteColleaguesRequest {
+	string organization_entity_id = 1 [(gogoproto.customname) = "OrganizationEntityID"];
+	string inviter_entity_id = 2 [(gogoproto.customname) = "InviterEntityID"];
+	repeated Colleague colleagues = 3;
+}
+
+message InviteColleaguesResponse {
+}
+
+
+message ColleagueInvite {
+	string organization_entity_id = 1 [(gogoproto.customname) = "OrganizationEntityID"];
+	string inviter_entity_id = 2 [(gogoproto.customname) = "InviterEntityID"];
+	Colleague colleague = 3;
+}
+
+message LookupInviteRequest {
+	string token = 1;
+}
+
+message LookupInviteResponse {
+	enum Type {
+		COLLEAGUE = 0;
+	}
+	Type type = 1;
+	oneof invite {
+		ColleagueInvite colleague = 10;
+	}
+}
+
+message AttributionValue {
+	string key = 1;
+	string value = 2;
+}
+
+message SetAttributionDataRequest {
+	string device_id = 1 [(gogoproto.customname) = "DeviceID"];
+	repeated AttributionValue values = 2;
+}
+
+message SetAttributionDataResponse {
+}
+
+message AttributionDataRequest {
+	string device_id = 1 [(gogoproto.customname) = "DeviceID"];
+}
+
+message AttributionDataResponse {
+	repeated AttributionValue values = 1;
+}
+
+service Invite {
+	// AttributionData returns the attribution data for a device
+	rpc AttributionData(AttributionDataRequest) returns (AttributionDataResponse);
+	// InviteColleagues sends invites to people to join an organization
+	rpc InviteColleagues(InviteColleaguesRequest) returns (InviteColleaguesResponse);
+	// LookupInvite returns information about an invite by token
+	rpc LookupInvite(LookupInviteRequest) returns (LookupInviteResponse);
+	// SetAttributionData associate attribution data with a device
+	rpc SetAttributionData(SetAttributionDataRequest) returns (SetAttributionDataResponse);
+}

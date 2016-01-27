@@ -3,10 +3,9 @@ package main
 import (
 	"errors"
 
-	"golang.org/x/net/context"
-
 	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/golog"
+	"golang.org/x/net/context"
 )
 
 var errNotAuthenticated = errors.New("not authenticated")

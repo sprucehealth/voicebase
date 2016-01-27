@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -26,6 +27,7 @@ type service struct {
 	exComms      excomms.ExCommsClient
 	notification notification.Client
 	settings     settings.SettingsClient
+	invite       invite.InviteClient
 	mediaSigner  *media.Signer
 	emailDomain  string
 	// TODO: Remove this
