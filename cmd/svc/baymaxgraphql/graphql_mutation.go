@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -18,21 +19,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
-
-// authenticate
-
-const (
-	authenticateResultSuccess         = "SUCCESS"
-	authenticateResultInvalidEmail    = "INVALID_EMAIL"
-	authenticateResultInvalidPassword = "INVALID_PASSWORD"
-)
-
-type authenticateOutput struct {
-	ClientMutationID string   `json:"clientMutationId"`
-	Result           string   `json:"result"`
-	Token            string   `json:"token,omitempty"`
-	Account          *account `json:"account,omitempty"`
-}
 
 func newClientMutationIDInputField() *graphql.InputObjectFieldConfig {
 	return &graphql.InputObjectFieldConfig{
@@ -55,83 +41,6 @@ func newUUIDInputField() *graphql.InputObjectFieldConfig {
 	}
 }
 
-var authenticateResultType = graphql.NewEnum(
-	graphql.EnumConfig{
-		Name:        "AuthenticateResult",
-		Description: "Result of authenticate mutation",
-		Values: graphql.EnumValueConfigMap{
-			authenticateResultSuccess: &graphql.EnumValueConfig{
-				Value:       authenticateResultSuccess,
-				Description: "Success",
-			},
-			authenticateResultInvalidEmail: &graphql.EnumValueConfig{
-				Value:       authenticateResultInvalidEmail,
-				Description: "Email not found",
-			},
-			authenticateResultInvalidPassword: &graphql.EnumValueConfig{
-				Value:       authenticateResultInvalidPassword,
-				Description: "Password doesn't match",
-			},
-		},
-	},
-)
-
-var authenticateInputType = graphql.NewInputObject(
-	graphql.InputObjectConfig{
-		Name: "AuthenticateInput",
-		Fields: graphql.InputObjectConfigFieldMap{
-			"clientMutationId": newClientMutationIDInputField(),
-			"email":            &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-			"password":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-		},
-	},
-)
-
-var authenticateOutputType = graphql.NewObject(
-	graphql.ObjectConfig{
-		Name: "AuthenticatePayload",
-		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
-			"result":           &graphql.Field{Type: graphql.NewNonNull(authenticateResultType)},
-			"token":            &graphql.Field{Type: graphql.String},
-			"account":          &graphql.Field{Type: accountType},
-		},
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*authenticateOutput)
-			return ok
-		},
-	},
-)
-
-/// unauthenticate
-
-type unauthenticateOutput struct {
-	ClientMutationID string `json:"clientMutationId"`
-}
-
-var unauthenticateInputType = graphql.NewInputObject(
-	graphql.InputObjectConfig{
-		Name: "UnauthenticateInput",
-		Fields: graphql.InputObjectConfigFieldMap{
-			"clientMutationId": newClientMutationIDInputField(),
-			"token":            &graphql.InputObjectFieldConfig{Type: graphql.String},
-		},
-	},
-)
-
-var unauthenticateOutputType = graphql.NewObject(
-	graphql.ObjectConfig{
-		Name: "UnauthenticatePayload",
-		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
-		},
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*unauthenticateOutput)
-			return ok
-		},
-	},
-)
-
 /// createAccount
 
 type createAccountOutput struct {
@@ -144,12 +53,13 @@ var createAccountInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
 		Name: "CreateAccountInput",
 		Fields: graphql.InputObjectConfigFieldMap{
-			"clientMutationId": newClientMutationIDInputField(),
-			"email":            &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-			"password":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-			"phoneNumber":      &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-			"firstName":        &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"lastName":         &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"clientMutationId":       newClientMutationIDInputField(),
+			"email":                  &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"password":               &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"phoneNumber":            &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"firstName":              &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"lastName":               &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"phoneVerificationToken": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 		},
 	},
 )
@@ -641,84 +551,6 @@ var deleteThreadOutputType = graphql.NewObject(
 var mutationType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Mutation",
 	Fields: graphql.Fields{
-		"authenticate": &graphql.Field{
-			Type: graphql.NewNonNull(authenticateOutputType),
-			Args: graphql.FieldConfigArgument{
-				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(authenticateInputType)},
-			},
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				svc := serviceFromParams(p)
-				ctx := p.Context
-				input := p.Args["input"].(map[string]interface{})
-				mutationID, _ := input["clientMutationId"].(string)
-				email := input["email"].(string)
-				if !validate.Email(email) {
-					return nil, errors.New("invalid email")
-				}
-				password := input["password"].(string)
-				res, err := svc.auth.AuthenticateLogin(ctx, &auth.AuthenticateLoginRequest{
-					Email:    email,
-					Password: password,
-				})
-				if err != nil {
-					switch grpc.Code(err) {
-					case auth.EmailNotFound:
-						return &authenticateOutput{
-							ClientMutationID: mutationID,
-							Result:           authenticateResultInvalidEmail,
-						}, nil
-					case auth.BadPassword:
-						return &authenticateOutput{
-							ClientMutationID: mutationID,
-							Result:           authenticateResultInvalidPassword,
-						}, nil
-					default:
-						return nil, internalError(err)
-					}
-				}
-				result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
-				result.Set("auth_token", res.Token.Value)
-				result.Set("auth_expiration", time.Unix(int64(res.Token.ExpirationEpoch), 0))
-				acc := &account{
-					ID: res.Account.ID,
-				}
-				// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
-				// that likely won't change, but this still isn't a great way to update the context.
-				p.Context = ctxWithAccount(ctx, acc)
-				return &authenticateOutput{
-					ClientMutationID: mutationID,
-					Result:           authenticateResultSuccess,
-					Token:            res.Token.Value,
-					Account:          acc,
-				}, nil
-			},
-		},
-		"unauthenticate": &graphql.Field{
-			Type: graphql.NewNonNull(unauthenticateOutputType),
-			Args: graphql.FieldConfigArgument{
-				"input": &graphql.ArgumentConfig{Type: unauthenticateInputType},
-			},
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				svc := serviceFromParams(p)
-				ctx := p.Context
-				input := p.Args["input"].(map[string]interface{})
-				mutationID, _ := input["clientMutationId"].(string)
-				// TODO: get token from cookie if not provided in args
-				token, ok := input["token"].(string)
-				if !ok {
-					return nil, internalError(errors.New("TODO: unauthenticate using cookie is not yet implemented"))
-				}
-				_, err := svc.auth.Unauthenticate(ctx, &auth.UnauthenticateRequest{Token: token})
-				if err != nil {
-					return nil, internalError(err)
-				}
-				result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
-				result.Set("unauthenticated", true)
-				return &unauthenticateOutput{
-					ClientMutationID: mutationID,
-				}, nil
-			},
-		},
 		"createAccount": &graphql.Field{
 			Type: graphql.NewNonNull(createAccountOutputType),
 			Args: graphql.FieldConfigArgument{
@@ -744,6 +576,26 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				}
 				if s, ok := input["phoneNumber"].(string); ok {
 					req.PhoneNumber = s
+				}
+				respVerifiedValue, err := svc.auth.VerifiedValue(ctx, &auth.VerifiedValueRequest{
+					Token: input["phoneVerificationToken"].(string),
+				})
+				if grpc.Code(err) == auth.ValueNotYetVerified {
+					return nil, errors.New("The phone number for the provided token has not yet been verified")
+				} else if err != nil {
+					return nil, internalError(err)
+				}
+				vpn, err := phone.ParseNumber(respVerifiedValue.Value)
+				if err != nil {
+					return nil, internalError(err)
+				}
+				pn, err := phone.ParseNumber(req.PhoneNumber)
+				if err != nil {
+					return nil, fmt.Errorf("Unable to parse the provided phone number %q", req.PhoneNumber)
+				}
+				if vpn.String() != pn.String() {
+					golog.Debugf("The provided phone number %q does not match the number validated by the provided token %s", pn.String(), vpn.String())
+					return nil, fmt.Errorf("The provided phone number %q does not match the number validated by the provided token", req.PhoneNumber)
 				}
 				res, err := svc.auth.CreateAccount(ctx, req)
 				if err != nil {
@@ -1303,7 +1155,13 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				}, nil
 			},
 		},
-		"provisionEmail": provisionEmailField,
+		"authenticate":                        authenticateField,
+		"authenticateWithCode":                authenticateWithCodeField,
+		"checkVerificationCode":               checkVerificationCodeField,
+		"provisionEmail":                      provisionEmailField,
+		"unauthenticate":                      unauthenticateField,
+		"verifyPhoneNumber":                   verifyPhoneNumberField,
+		"verifyPhoneNumberForAccountCreation": verifyPhoneNumberForAccountCreationField,
 		"updateEntity": &graphql.Field{
 			Type: graphql.NewNonNull(updateEntityOutputType),
 			Args: graphql.FieldConfigArgument{

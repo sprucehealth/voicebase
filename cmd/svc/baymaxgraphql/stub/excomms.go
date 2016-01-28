@@ -39,7 +39,7 @@ func (sc *stubExCommsClient) ProvisionEmailAddress(ctx context.Context, in *exco
 
 // SendMessage sends the message over an external channel as specified in the SendMessageRequest.
 func (sc *stubExCommsClient) SendMessage(ctx context.Context, in *excomms.SendMessageRequest, opts ...grpc.CallOption) (*excomms.SendMessageResponse, error) {
-	return nil, errNotSupportedInStub
+	return &excomms.SendMessageResponse{}, nil
 }
 
 // InitiatePhoneCall initiates a phone call as defined in the InitiatePhoneCallRequest.

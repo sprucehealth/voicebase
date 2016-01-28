@@ -16,7 +16,7 @@ CREATE TABLE auth.auth_token (
 	token               varbinary(250) NOT NULL,
 	account_id          bigint UNSIGNED NOT NULL,
 	created             timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	expires          	timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	expires          	timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	CONSTRAINT fk_auth_token_account_id FOREIGN KEY (account_id) REFERENCES auth.account(id) ON DELETE NO ACTION ON UPDATE NO ACTION,
 	CONSTRAINT pk_auth_token PRIMARY KEY (token)
 ) engine=InnoDB;

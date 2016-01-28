@@ -12,6 +12,8 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/hash"
+	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/auth"
 	"golang.org/x/net/context"
@@ -21,48 +23,13 @@ import (
 
 var grpcErrorf = grpc.Errorf
 
-// Server represents the methods required to interact with the auth service
-type Server interface {
-	AuthenticateLogin(context.Context, *auth.AuthenticateLoginRequest) (*auth.AuthenticateLoginResponse, error)
-	CheckAuthentication(context.Context, *auth.CheckAuthenticationRequest) (*auth.CheckAuthenticationResponse, error)
-	CreateAccount(context.Context, *auth.CreateAccountRequest) (*auth.CreateAccountResponse, error)
-	GetAccount(context.Context, *auth.GetAccountRequest) (*auth.GetAccountResponse, error)
-	Unauthenticate(context.Context, *auth.UnauthenticateRequest) (*auth.UnauthenticateResponse, error)
-}
-
-// authDAL represents the methods expected to be present on the data access layer mechanisms provided
-type authDAL interface {
-	InsertAccount(model *dal.Account) (dal.AccountID, error)
-	Account(id dal.AccountID) (*dal.Account, error)
-	AccountForEmail(email string) (*dal.Account, error)
-	UpdateAccount(id dal.AccountID, update *dal.AccountUpdate) (int64, error)
-	DeleteAccount(id dal.AccountID) (int64, error)
-	InsertAuthToken(model *dal.AuthToken) error
-	AuthToken(token string, expiresAfter time.Time) (*dal.AuthToken, error)
-	DeleteAuthTokens(accountID dal.AccountID) (int64, error)
-	DeleteAuthToken(token string) (int64, error)
-	UpdateAuthToken(token string, update *dal.AuthTokenUpdate) (int64, error)
-	InsertAccountEvent(model *dal.AccountEvent) (dal.AccountEventID, error)
-	AccountEvent(id dal.AccountEventID) (*dal.AccountEvent, error)
-	DeleteAccountEvent(id dal.AccountEventID) (int64, error)
-	InsertAccountPhone(model *dal.AccountPhone) (dal.AccountPhoneID, error)
-	AccountPhone(id dal.AccountPhoneID) (*dal.AccountPhone, error)
-	UpdateAccountPhone(id dal.AccountPhoneID, update *dal.AccountPhoneUpdate) (int64, error)
-	DeleteAccountPhone(id dal.AccountPhoneID) (int64, error)
-	InsertAccountEmail(model *dal.AccountEmail) (dal.AccountEmailID, error)
-	AccountEmail(id dal.AccountEmailID) (*dal.AccountEmail, error)
-	UpdateAccountEmail(id dal.AccountEmailID, update *dal.AccountEmailUpdate) (int64, error)
-	DeleteAccountEmail(id dal.AccountEmailID) (int64, error)
-	Transact(trans func(dl dal.DAL) error) (err error)
-}
-
 var (
 	// ErrNotImplemented is returned from RPC calls that have yet to be implemented
 	ErrNotImplemented = errors.New("Not Implemented")
 )
 
 type server struct {
-	dal    authDAL
+	dal    dal.DAL
 	hasher hash.PasswordHasher
 	clk    clock.Clock
 }
@@ -70,9 +37,9 @@ type server struct {
 var bCryptHashCost = 10
 
 // New returns an initialized instance of server
-func New(dal authDAL) Server {
+func New(dl dal.DAL) auth.AuthServer {
 	return &server{
-		dal:    dal,
+		dal:    dl,
 		hasher: hash.NewBcryptHasher(bCryptHashCost),
 		clk:    clock.New(),
 	}
@@ -98,20 +65,90 @@ func (s *server) AuthenticateLogin(ctx context.Context, rd *auth.AuthenticateLog
 		return nil, grpcErrorf(auth.BadPassword, "The password does not match the provided account email: %s", rd.Email)
 	}
 
-	authToken, err := generateAndInsertToken(s.dal, account.ID, rd.TokenAttributes, s.clk)
-	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+	var authToken *auth.AuthToken
+	var twoFactorPhone string
+	accountRequiresTwoFactor := true
+	if accountRequiresTwoFactor {
+		// TODO: Make this response and data less phone/sms specific
+		accountPhone, err := s.dal.AccountPhone(account.PrimaryAccountPhoneID)
+		if err != nil {
+			return nil, grpcErrorf(codes.Internal, err.Error())
+		}
+		twoFactorPhone = accountPhone.PhoneNumber
+	} else {
+		authToken, err = generateAndInsertToken(s.dal, account.ID, rd.TokenAttributes, s.clk)
+		if err != nil {
+			return nil, grpcErrorf(codes.Internal, err.Error())
+		}
 	}
 
 	return &auth.AuthenticateLoginResponse{
-		Token: &auth.AuthToken{
-			Value:           authToken.token,
-			ExpirationEpoch: uint64(authToken.expiration.Unix()),
-		},
+		Token: authToken,
 		Account: &auth.Account{
 			ID:        account.ID.String(),
 			FirstName: account.FirstName,
 			LastName:  account.LastName,
+		},
+		TwoFactorRequired:    accountRequiresTwoFactor,
+		TwoFactorPhoneNumber: twoFactorPhone,
+	}, nil
+}
+
+func (s *server) AuthenticateLoginWithCode(ctx context.Context, rd *auth.AuthenticateLoginWithCodeRequest) (*auth.AuthenticateLoginWithCodeResponse, error) {
+	golog.Debugf("Entering server.server.AuthenticateLoginForCode: %+v", rd)
+	if golog.Default().L(golog.DEBUG) {
+		defer func() { golog.Debugf("Leaving server.server.AuthenticateLoginForCode...") }()
+	}
+
+	if rd.Token == "" {
+		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
+	}
+
+	verificationCode, err := s.dal.VerificationCode(rd.Token)
+	if api.IsErrNotFound(err) {
+		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
+	} else if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	} else if verificationCode.VerificationType != dal.VerificationCodeTypeAccount2fa {
+		return nil, grpcErrorf(codes.NotFound, "No 2FA verification code maps to the provided token %q", rd.Token)
+	}
+
+	// Check that the code matches the token and it is not expired
+	if verificationCode.Code != rd.Code {
+		return nil, grpcErrorf(auth.BadVerificationCode, "The code mapped to the provided token does not match %s", rd.Code)
+	} else if verificationCode.Expires.Unix() < s.clk.Now().Unix() {
+		return nil, grpcErrorf(auth.VerificationCodeExpired, "The code mapped to the provided token has expired.")
+	}
+
+	// Since we sucessfully checked the token, mark it as consumed
+	_, err = s.dal.UpdateVerificationCode(rd.Token, &dal.VerificationCodeUpdate{
+		Consumed: ptr.Bool(true),
+	})
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	accountID, err := dal.ParseAccountID(verificationCode.VerifiedValue)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, "ACCOUNT_2FA verification code value %q failed to parse into account id, unable to generate auth token: %s", verificationCode.VerifiedValue, err)
+	}
+
+	authToken, err := generateAndInsertToken(s.dal, accountID, rd.TokenAttributes, s.clk)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, "Failed to generate and insert new auth token for ACCOUNT_2FA: %s", err)
+	}
+
+	acc, err := s.dal.Account(accountID)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, "Failed to fetch account record for ACCOUNT_2FA: %s", err)
+	}
+
+	return &auth.AuthenticateLoginWithCodeResponse{
+		Token: authToken,
+		Account: &auth.Account{
+			ID:        acc.ID.String(),
+			FirstName: acc.FirstName,
+			LastName:  acc.LastName,
 		},
 	}, nil
 }
@@ -146,8 +183,7 @@ func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenti
 			if err != nil {
 				return errors.Trace(err)
 			}
-			authToken.Value = rotatedToken.token
-			authToken.ExpirationEpoch = uint64(rotatedToken.expiration.Unix())
+			authToken = rotatedToken
 			_, err = dl.DeleteAuthToken(attributedToken)
 			return errors.Trace(err)
 		}); err != nil {
@@ -171,6 +207,62 @@ func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenti
 	}, nil
 }
 
+func (s *server) CheckVerificationCode(ctx context.Context, rd *auth.CheckVerificationCodeRequest) (*auth.CheckVerificationCodeResponse, error) {
+	golog.Debugf("Entering server.server.CheckVerificationCode: %+v", rd)
+	if golog.Default().L(golog.DEBUG) {
+		defer func() { golog.Debugf("Leaving server.server.CheckVerificationCode...") }()
+	}
+	if rd.Token == "" {
+		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
+	}
+
+	verificationCode, err := s.dal.VerificationCode(rd.Token)
+	if api.IsErrNotFound(err) {
+		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
+	} else if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	// Check that the code matches the token and it is not expired
+	if verificationCode.Code != rd.Code {
+		return nil, grpcErrorf(auth.BadVerificationCode, "The code mapped to the provided token does not match %s", rd.Code)
+	} else if verificationCode.Expires.Unix() < s.clk.Now().Unix() {
+		return nil, grpcErrorf(auth.VerificationCodeExpired, "The code mapped to the provided token has expired.")
+	}
+
+	// Since we sucessfully checked the token, mark it as consumed
+	_, err = s.dal.UpdateVerificationCode(rd.Token, &dal.VerificationCodeUpdate{
+		Consumed: ptr.Bool(true),
+	})
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	// If this is a ACCOUNT_2FA token return the account object as well
+	var account *auth.Account
+	if verificationCode.VerificationType == dal.VerificationCodeTypeAccount2fa {
+		accountID, err := dal.ParseAccountID(verificationCode.VerifiedValue)
+		if err != nil {
+			return nil, grpcErrorf(codes.Internal, "ACCOUNT_2FA verification code value %q failed to parse into account id: %s", verificationCode.VerifiedValue, err)
+		}
+
+		acc, err := s.dal.Account(accountID)
+		if err != nil {
+			return nil, grpcErrorf(codes.Internal, "Failed to fetch account record for ACCOUNT_2FA: %s", err)
+		}
+		account = &auth.Account{
+			ID:        acc.ID.String(),
+			FirstName: acc.FirstName,
+			LastName:  acc.LastName,
+		}
+	}
+
+	return &auth.CheckVerificationCodeResponse{
+		Account: account,
+		Value:   verificationCode.VerifiedValue,
+	}, nil
+}
+
 func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountRequest) (*auth.CreateAccountResponse, error) {
 	golog.Debugf("Entering server.server.CreateAccount: %+v", rd)
 	if golog.Default().L(golog.DEBUG) {
@@ -179,9 +271,13 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 	if errResp := s.validateCreateAccountRequest(rd); errResp != nil {
 		return nil, errResp
 	}
+	pn, err := phone.ParseNumber(rd.PhoneNumber)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "The provided phone number is not valid: %s", rd.PhoneNumber)
+	}
 
 	var account *dal.Account
-	var authToken *authToken
+	var authToken *auth.AuthToken
 	if err := s.dal.Transact(func(dl dal.DAL) error {
 		hashedPassword, err := s.hasher.GenerateFromPassword([]byte(rd.Password))
 		if err != nil {
@@ -217,7 +313,7 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 			AccountID:   accountID,
 			Verified:    false,
 			Status:      dal.AccountPhoneStatusActive,
-			PhoneNumber: rd.PhoneNumber,
+			PhoneNumber: pn.String(),
 		})
 		if err != nil {
 			return errors.Trace(err)
@@ -250,10 +346,7 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 	}
 
 	return &auth.CreateAccountResponse{
-		Token: &auth.AuthToken{
-			Value:           authToken.token,
-			ExpirationEpoch: uint64(authToken.expiration.Unix()),
-		},
+		Token: authToken,
 		Account: &auth.Account{
 			ID:        account.ID.String(),
 			FirstName: account.FirstName,
@@ -282,13 +375,21 @@ func (s *server) validateCreateAccountRequest(rd *auth.CreateAccountRequest) err
 	if !validate.Email(rd.Email) {
 		return grpcErrorf(auth.InvalidEmail, "The provided email is not valid: %s", rd.Email)
 	}
-
-	/*
-	   if _, err := common.ParsePhone(rd.PhoneNumber); err != nil {
-	       return grpcErrorf(codes.InvalidArgument, "The provided phone number is not valid: %s", rd.PhoneNumber)
-	   }
-	*/
 	return nil
+}
+
+func (s *server) CreateVerificationCode(ctx context.Context, rd *auth.CreateVerificationCodeRequest) (*auth.CreateVerificationCodeResponse, error) {
+	golog.Debugf("Entering server.server.CreateVerificationCode: %+v", rd)
+	if golog.Default().L(golog.DEBUG) {
+		defer func() { golog.Debugf("Leaving server.server.CreateVerificationCode...") }()
+	}
+	verificationCode, err := generateAndInsertVerificationCode(s.dal, rd.ValueToVerify, rd.Type, s.clk)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+	return &auth.CreateVerificationCodeResponse{
+		VerificationCode: verificationCode,
+	}, nil
 }
 
 func (s *server) GetAccount(ctx context.Context, rd *auth.GetAccountRequest) (*auth.GetAccountResponse, error) {
@@ -331,6 +432,30 @@ func (s *server) Unauthenticate(ctx context.Context, rd *auth.UnauthenticateRequ
 	return &auth.UnauthenticateResponse{}, nil
 }
 
+func (s *server) VerifiedValue(ctx context.Context, rd *auth.VerifiedValueRequest) (*auth.VerifiedValueResponse, error) {
+	golog.Debugf("Entering server.server.VerifiedValue: %+v", rd)
+	if golog.Default().L(golog.DEBUG) {
+		defer func() { golog.Debugf("Leaving server.server.VerifiedValue...") }()
+	}
+
+	if rd.Token == "" {
+		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
+	}
+
+	verificationCode, err := s.dal.VerificationCode(rd.Token)
+	if api.IsErrNotFound(err) {
+		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
+	} else if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	} else if !verificationCode.Consumed {
+		return nil, grpcErrorf(auth.ValueNotYetVerified, "The value mapped to this token %q has not yet been verified", rd.Token)
+	}
+
+	return &auth.VerifiedValueResponse{
+		Value: verificationCode.VerifiedValue,
+	}, nil
+}
+
 const (
 	maxTokenSize           = 250
 	defaultTokenExpiration = 60 * 60 * 24 * time.Second
@@ -367,7 +492,7 @@ type authToken struct {
 	expiration time.Time
 }
 
-func generateAndInsertToken(dl dal.DAL, accountID dal.AccountID, tokenAttributes map[string]string, clk clock.Clock) (*authToken, error) {
+func generateAndInsertToken(dl dal.DAL, accountID dal.AccountID, tokenAttributes map[string]string, clk clock.Clock) (*auth.AuthToken, error) {
 	golog.Debugf("Entering server.generateAndInsertToken: AccountID: %s, TokenAttributes: %+v", accountID, tokenAttributes)
 	if golog.Default().L(golog.DEBUG) {
 		defer func() { golog.Debugf("Leaving server.generateAndInsertToken...") }()
@@ -390,6 +515,50 @@ func generateAndInsertToken(dl dal.DAL, accountID dal.AccountID, tokenAttributes
 	}); err != nil {
 		return nil, errors.Trace(err)
 	}
-	golog.Debugf("Auth token inserted")
-	return &authToken{token: token, expiration: tokenExpiration}, nil
+	return &auth.AuthToken{Value: token, ExpirationEpoch: uint64(tokenExpiration.Unix())}, nil
+}
+
+const (
+	verificationCodeDigitCount        = 6
+	verificationCodeMaxValue          = 999999
+	defaultVerificationCodeExpiration = 15 * time.Minute
+)
+
+func generateAndInsertVerificationCode(dl dal.DAL, valueToVerify string, codeType auth.VerificationCodeType, clk clock.Clock) (*auth.VerificationCode, error) {
+	golog.Debugf("Entering server.generateAndInsertVerificationCode: valueToVerify: %s", valueToVerify)
+	if golog.Default().L(golog.DEBUG) {
+		defer func() { golog.Debugf("Leaving server.generateAndInsertVerificationCode...") }()
+	}
+	token, err := common.GenerateToken()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	code, err := common.GenerateRandomNumber(verificationCodeMaxValue, verificationCodeDigitCount)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	tokenExpiration := clk.Now().Add(defaultVerificationCodeExpiration)
+
+	vType, err := dal.ParseVerificationCodeType(auth.VerificationCodeType_name[int32(codeType)])
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	// TODO: Remove logging of the code perhaps?
+	golog.Debugf("Inserting verification code %s - with token %s - for value %s - expires %+v.", token, valueToVerify, tokenExpiration)
+	if err := dl.InsertVerificationCode(&dal.VerificationCode{
+		Token:            token,
+		Code:             code,
+		Expires:          tokenExpiration,
+		VerificationType: vType,
+		VerifiedValue:    valueToVerify,
+	}); err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &auth.VerificationCode{
+		Token:           token,
+		Type:            codeType,
+		Code:            code,
+		ExpirationEpoch: uint64(tokenExpiration.Unix()),
+	}, nil
 }

@@ -15,6 +15,7 @@ import (
 	mock_dal "github.com/sprucehealth/backend/cmd/svc/auth/internal/dal/test"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/hash"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/test"
@@ -22,6 +23,7 @@ import (
 
 func TestGetAccount(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
@@ -38,11 +40,11 @@ func TestGetAccount(t *testing.T) {
 	test.Equals(t, aID1.String(), resp.Account.ID)
 	test.Equals(t, fn, resp.Account.FirstName)
 	test.Equals(t, ln, resp.Account.LastName)
-	mock.FinishAll(dl)
 }
 
 func TestGetAccountNotFound(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
@@ -50,11 +52,11 @@ func TestGetAccountNotFound(t *testing.T) {
 	_, err = s.GetAccount(context.Background(), &auth.GetAccountRequest{AccountID: aID1.String()})
 	test.Assert(t, err != nil, "Expected an error")
 	test.Equals(t, codes.NotFound, grpc.Code(err))
-	mock.FinishAll(dl)
 }
 
-func TestAuthenticateLogin(t *testing.T) {
+func TestAuthenticateLogin2FA(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	hasher := hash.NewBcryptHasher(bCryptHashCost)
 	email := "test@email.com"
@@ -63,19 +65,11 @@ func TestAuthenticateLogin(t *testing.T) {
 	test.OK(t, err)
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
-	var token string
-	var expiration uint64
-	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.AccountForEmail, email), &dal.Account{ID: aID1, Password: hashedPassword}, nil))
-	dl.Expect(mock.WithReturns(mock.NewExpectationFn(dl.InsertAuthToken, func(p ...interface{}) {
-		test.Equals(t, 1, len(p))
-		at, ok := p[0].(*dal.AuthToken)
-		test.Assert(t, ok, "Expected *dal.AuthToken")
-		test.Assert(t, strings.HasSuffix(string(at.Token), ":testattribute"), "Expected auth token to have attribute suffix, got: %s", at.Token)
-		test.Assert(t, at.Expires.Unix() >= time.Now().Unix(), "Expected expiration token to be in the future but was %v", at.Expires)
-		test.Assert(t, at.AccountID.String() == aID1.String(), "Expected auth token to map to account id %s, but got %s", aID1.String(), at.AccountID.String())
-		token = strings.Split(string(at.Token), ":")[0]
-		expiration = uint64(at.Expires.Unix())
-	}), nil))
+	apID1, err := dal.NewAccountPhoneID()
+	test.OK(t, err)
+	phoneNumber := "+1234567890"
+	dl.Expect(mock.NewExpectation(dl.AccountForEmail, email).WithReturns(&dal.Account{ID: aID1, Password: hashedPassword, PrimaryAccountPhoneID: apID1}, nil))
+	dl.Expect(mock.NewExpectation(dl.AccountPhone, apID1).WithReturns(&dal.AccountPhone{PhoneNumber: phoneNumber}, nil))
 	resp, err := s.AuthenticateLogin(context.Background(), &auth.AuthenticateLoginRequest{
 		Email:           email,
 		Password:        password,
@@ -83,15 +77,125 @@ func TestAuthenticateLogin(t *testing.T) {
 	})
 	test.OK(t, err)
 
-	test.AssertNotNil(t, resp.Token)
+	test.AssertNil(t, resp.Token)
 	test.AssertNotNil(t, resp.Account)
+	test.Assert(t, resp.TwoFactorRequired, "Expected two factor to be required")
+	test.Equals(t, resp.TwoFactorPhoneNumber, phoneNumber)
+}
+
+func TestAuthenticateLoginWithCode(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	mClock := clock.NewManaged(time.Now())
+	s := New(dl)
+	svr, ok := s.(*server)
+	test.Assert(t, ok, "Expected a *server")
+	svr.clk = mClock
+	s = svr
+	token := "123abc"
+	code := "123456"
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+	var expires uint64
+	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns(&dal.VerificationCode{
+		Token:            token,
+		Code:             code,
+		Expires:          time.Unix(mClock.Now().Unix()+1000, 0),
+		VerifiedValue:    aID1.String(),
+		VerificationType: dal.VerificationCodeTypeAccount2fa,
+	}, nil))
+	dl.Expect(mock.NewExpectation(dl.UpdateVerificationCode,
+		token, &dal.VerificationCodeUpdate{Consumed: ptr.Bool(true)}).WithReturns(int64(1), nil))
+	dl.Expect(mock.NewExpectationFn(dl.InsertAuthToken, func(p ...interface{}) {
+		test.Assert(t, len(p) == 1, "Expected only 1 param to be provided")
+		authToken, ok := p[0].(*dal.AuthToken)
+		test.Assert(t, ok, "Expected *dal.AuthToken")
+		test.Assert(t, len(authToken.Token) != 0, "Expected non empty token")
+		test.Assert(t, authToken.Expires.Unix() > time.Now().Unix(), "Expected token to expire in the future")
+		token = string(authToken.Token)
+		expires = uint64(authToken.Expires.Unix())
+	}).WithReturns(int64(1), nil))
+	dl.Expect(mock.NewExpectation(dl.Account, aID1).WithReturns(&dal.Account{
+		ID:        aID1,
+		FirstName: "Bat",
+		LastName:  "Wayne",
+	}, nil))
+
+	resp, err := s.AuthenticateLoginWithCode(context.Background(), &auth.AuthenticateLoginWithCodeRequest{
+		Token: token,
+		Code:  code,
+	})
+	test.OK(t, err)
+	test.AssertNotNil(t, resp.Token)
 	test.Equals(t, token, resp.Token.Value)
-	test.Equals(t, expiration, resp.Token.ExpirationEpoch)
-	mock.FinishAll(dl)
+	test.Equals(t, expires, resp.Token.ExpirationEpoch)
+	test.AssertNotNil(t, resp.Account)
+	test.Equals(t, resp.Account.ID, aID1.String())
+	test.Equals(t, resp.Account.FirstName, "Bat")
+	test.Equals(t, resp.Account.LastName, "Wayne")
+}
+
+func TestAuthenticateLoginWithCodeNot2FA(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	mClock := clock.NewManaged(time.Now())
+	s := New(dl)
+	svr, ok := s.(*server)
+	test.Assert(t, ok, "Expected a *server")
+	svr.clk = mClock
+	s = svr
+	token := "123abc"
+	code := "123456"
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns(&dal.VerificationCode{
+		Token:            token,
+		Code:             code,
+		Expires:          time.Unix(mClock.Now().Unix()+1000, 0),
+		VerifiedValue:    aID1.String(),
+		VerificationType: dal.VerificationCodeTypePhone,
+	}, nil))
+
+	resp, err := s.AuthenticateLoginWithCode(context.Background(), &auth.AuthenticateLoginWithCodeRequest{
+		Token: token,
+		Code:  code,
+	})
+	test.AssertNil(t, resp)
+	test.Equals(t, codes.NotFound, grpc.Code(err))
+}
+
+func TestAuthenticateLoginWithCodeBadCode(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	mClock := clock.NewManaged(time.Now())
+	s := New(dl)
+	svr, ok := s.(*server)
+	test.Assert(t, ok, "Expected a *server")
+	svr.clk = mClock
+	s = svr
+	token := "123abc"
+	code := "123456"
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns(&dal.VerificationCode{
+		Token:            token,
+		Code:             code + "1",
+		Expires:          time.Unix(mClock.Now().Unix()+1000, 0),
+		VerifiedValue:    aID1.String(),
+		VerificationType: dal.VerificationCodeTypeAccount2fa,
+	}, nil))
+
+	resp, err := s.AuthenticateLoginWithCode(context.Background(), &auth.AuthenticateLoginWithCodeRequest{
+		Token: token,
+		Code:  code,
+	})
+	test.AssertNil(t, resp)
+	test.Equals(t, auth.BadVerificationCode, grpc.Code(err))
 }
 
 func TestAuthenticateLoginNoEmail(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	email := "test@email.com"
 	password := "password"
@@ -104,11 +208,11 @@ func TestAuthenticateLoginNoEmail(t *testing.T) {
 	test.Assert(t, err != nil, "Expected an error")
 
 	test.Equals(t, auth.EmailNotFound, grpc.Code(err))
-	mock.FinishAll(dl)
 }
 
 func TestAuthenticateBadPassword(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	email := "test@email.com"
 	password := "password"
@@ -123,11 +227,11 @@ func TestAuthenticateBadPassword(t *testing.T) {
 	test.Assert(t, err != nil, "Expected an error")
 
 	test.Equals(t, auth.BadPassword, grpc.Code(err))
-	mock.FinishAll(dl)
 }
 
 func TestCheckAuthentication(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	mClock := clock.NewManaged(time.Now())
 	s := New(dl)
 	svr, ok := s.(*server)
@@ -167,11 +271,134 @@ func TestCheckAuthentication(t *testing.T) {
 		Value:           token,
 		ExpirationEpoch: uint64(expires.Unix()),
 	}, resp.Token)
-	mock.FinishAll(dl)
+}
+
+func TestCheckVerificationTokenBadCode(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	mClock := clock.NewManaged(time.Now())
+	s := New(dl)
+	svr, ok := s.(*server)
+	test.Assert(t, ok, "Expected a *server")
+	svr.clk = mClock
+	s = svr
+	token := "123abc"
+	code := "123456"
+
+	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns(&dal.VerificationCode{
+		Token: token,
+		Code:  code + "1",
+	}, nil))
+
+	resp, err := s.CheckVerificationCode(context.Background(), &auth.CheckVerificationCodeRequest{
+		Token: token,
+		Code:  code,
+	})
+	test.AssertNil(t, resp)
+	test.Assert(t, grpc.Code(err) == auth.BadVerificationCode, "Expected BadVerificationCode error")
+}
+
+func TestCheckVerificationTokenExpired(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	mClock := clock.NewManaged(time.Now())
+	s := New(dl)
+	svr, ok := s.(*server)
+	test.Assert(t, ok, "Expected a *server")
+	svr.clk = mClock
+	s = svr
+	token := "123abc"
+	code := "123456"
+
+	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns(&dal.VerificationCode{
+		Token:   token,
+		Code:    code,
+		Expires: mClock.Now(),
+	}, nil))
+	mClock.WarpForward(10 * time.Minute)
+	resp, err := s.CheckVerificationCode(context.Background(), &auth.CheckVerificationCodeRequest{
+		Token: token,
+		Code:  code,
+	})
+	test.AssertNil(t, resp)
+	test.Assert(t, grpc.Code(err) == auth.VerificationCodeExpired, "Expected VerificationCodeExpired error")
+}
+
+func TestCheckVerificationPhone(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	mClock := clock.NewManaged(time.Now())
+	s := New(dl)
+	svr, ok := s.(*server)
+	test.Assert(t, ok, "Expected a *server")
+	svr.clk = mClock
+	s = svr
+	token := "123abc"
+	code := "123456"
+	value := "+1234567890"
+
+	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns(&dal.VerificationCode{
+		Token:            token,
+		Code:             code,
+		Expires:          time.Unix(mClock.Now().Unix()+1000, 0),
+		VerifiedValue:    value,
+		VerificationType: dal.VerificationCodeTypePhone,
+	}, nil))
+	dl.Expect(mock.NewExpectation(dl.UpdateVerificationCode,
+		token, &dal.VerificationCodeUpdate{Consumed: ptr.Bool(true)}).WithReturns(int64(1), nil))
+
+	resp, err := s.CheckVerificationCode(context.Background(), &auth.CheckVerificationCodeRequest{
+		Token: token,
+		Code:  code,
+	})
+	test.OK(t, err)
+	test.AssertNil(t, resp.Account)
+	test.Equals(t, resp.Value, value)
+}
+
+func TestCheckVerificationAccount2FA(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	mClock := clock.NewManaged(time.Now())
+	s := New(dl)
+	svr, ok := s.(*server)
+	test.Assert(t, ok, "Expected a *server")
+	svr.clk = mClock
+	s = svr
+	token := "123abc"
+	code := "123456"
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns(&dal.VerificationCode{
+		Token:            token,
+		Code:             code,
+		Expires:          time.Unix(mClock.Now().Unix()+1000, 0),
+		VerifiedValue:    aID1.String(),
+		VerificationType: dal.VerificationCodeTypeAccount2fa,
+	}, nil))
+	dl.Expect(mock.NewExpectation(dl.UpdateVerificationCode,
+		token, &dal.VerificationCodeUpdate{Consumed: ptr.Bool(true)}).WithReturns(int64(1), nil))
+	dl.Expect(mock.NewExpectation(dl.Account, aID1).WithReturns(&dal.Account{
+		ID:        aID1,
+		FirstName: "Bat",
+		LastName:  "Wayne",
+	}, nil))
+
+	resp, err := s.CheckVerificationCode(context.Background(), &auth.CheckVerificationCodeRequest{
+		Token: token,
+		Code:  code,
+	})
+	test.OK(t, err)
+	test.AssertNotNil(t, resp.Account)
+	test.Equals(t, resp.Account.ID, aID1.String())
+	test.Equals(t, resp.Account.FirstName, "Bat")
+	test.Equals(t, resp.Account.LastName, "Wayne")
+	test.Equals(t, resp.Value, aID1.String())
 }
 
 func TestCheckAuthenticationRefresh(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	mClock := clock.NewManaged(time.Now())
 	s := New(dl)
 	svr, ok := s.(*server)
@@ -224,11 +451,11 @@ func TestCheckAuthenticationRefresh(t *testing.T) {
 		Value:           token,
 		ExpirationEpoch: uint64(refreshedExpiration.Unix()),
 	}, resp.Token)
-	mock.FinishAll(dl)
 }
 
 func TestCheckAuthenticationNoToken(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	mClock := clock.NewManaged(time.Now())
 	s := New(dl)
 	svr, ok := s.(*server)
@@ -247,11 +474,11 @@ func TestCheckAuthenticationNoToken(t *testing.T) {
 	test.Equals(t, false, resp.IsAuthenticated)
 	test.AssertNil(t, resp.Account)
 	test.AssertNil(t, resp.Token)
-	mock.FinishAll(dl)
 }
 
 func TestCreateAccount(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	fn := "bat"
 	ln := "man"
@@ -327,11 +554,11 @@ func TestCreateAccount(t *testing.T) {
 		Value:           token,
 		ExpirationEpoch: expiration,
 	}, resp.Token)
-	mock.FinishAll(dl)
 }
 
 func TestCreateAccountMissingData(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	fn := "bat"
 	ln := "man"
@@ -381,11 +608,11 @@ func TestCreateAccountMissingData(t *testing.T) {
 
 		test.Equals(t, codes.InvalidArgument, grpc.Code(err))
 	}
-	mock.FinishAll(dl)
 }
 
 func TestCreateAccountBadEmail(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
 	s := New(dl)
 	fn := "bat"
 	ln := "man"
@@ -402,5 +629,90 @@ func TestCreateAccountBadEmail(t *testing.T) {
 	test.Assert(t, err != nil, "Expected an error")
 
 	test.Equals(t, auth.InvalidEmail, grpc.Code(err))
-	mock.FinishAll(dl)
+}
+
+func TestCreateVerificationCode(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	s := New(dl)
+	value := "myValue"
+	var code string
+	var token string
+	var expires uint64
+
+	dl.Expect(mock.NewExpectationFn(dl.InsertVerificationCode, func(p ...interface{}) {
+		test.Assert(t, len(p) == 1, "Expected only 1 argument")
+		vc, ok := p[0].(*dal.VerificationCode)
+		test.Assert(t, ok, "Expected *dal.VerificationCode")
+		test.Assert(t, vc.Token != "", "Expected a non empty token")
+		test.Assert(t, vc.Code != "", "Expected a non empty code")
+		test.Assert(t, vc.Expires.Unix() > time.Now().Unix(), "Expected a code that expires in the future")
+		test.Equals(t, dal.VerificationCodeTypePhone, vc.VerificationType)
+		test.Equals(t, value, vc.VerifiedValue)
+		code = vc.Code
+		token = vc.Token
+		expires = uint64(vc.Expires.Unix())
+	}))
+
+	resp, err := s.CreateVerificationCode(context.Background(), &auth.CreateVerificationCodeRequest{
+		Type:          auth.VerificationCodeType_PHONE,
+		ValueToVerify: value,
+	})
+	test.OK(t, err)
+	test.AssertNotNil(t, resp.VerificationCode)
+	test.Equals(t, token, resp.VerificationCode.Token)
+	test.Equals(t, code, resp.VerificationCode.Code)
+	test.Equals(t, expires, resp.VerificationCode.ExpirationEpoch)
+	test.Equals(t, auth.VerificationCodeType_PHONE, resp.VerificationCode.Type)
+}
+
+func TestVerifiedValue(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	s := New(dl)
+	token := "123abc"
+	value := "myValue"
+
+	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns(&dal.VerificationCode{
+		VerifiedValue: value,
+		Consumed:      true,
+	}, nil))
+
+	resp, err := s.VerifiedValue(context.Background(), &auth.VerifiedValueRequest{
+		Token: token,
+	})
+	test.OK(t, err)
+	test.Equals(t, value, resp.Value)
+}
+
+func TestVerifiedValueNotFound(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	s := New(dl)
+	token := "123abc"
+
+	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns((*dal.VerificationCode)(nil), api.ErrNotFound("foo")))
+
+	resp, err := s.VerifiedValue(context.Background(), &auth.VerifiedValueRequest{
+		Token: token,
+	})
+	test.AssertNil(t, resp)
+	test.Equals(t, grpc.Code(err), codes.NotFound)
+}
+
+func TestVerifiedValueNotYetVerified(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	s := New(dl)
+	token := "123abc"
+
+	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns(&dal.VerificationCode{
+		Consumed: false,
+	}, nil))
+
+	resp, err := s.VerifiedValue(context.Background(), &auth.VerifiedValueRequest{
+		Token: token,
+	})
+	test.AssertNil(t, resp)
+	test.Equals(t, grpc.Code(err), auth.ValueNotYetVerified)
 }

@@ -18,4 +18,13 @@ const (
 
 	// InvalidEmail indicates that a provided email is invalid
 	InvalidEmail gcode.Code = 104
+
+	// VerificationCodeExpired indicates that the provided verification code token has expired
+	VerificationCodeExpired gcode.Code = 105
+
+	// BadVerificationCode indicates that the provided code did not match the code mapped to the token
+	BadVerificationCode gcode.Code = 106
+
+	// ValueNotYetVerified indicates that a verified value was requested that has not yet been verified
+	ValueNotYetVerified gcode.Code = 107
 )

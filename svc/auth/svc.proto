@@ -8,6 +8,21 @@ option (gogoproto.goproto_enum_prefix_all) = true;
 
 package auth;
 
+// VerificationCodeType represents the various types/use cases of verification codes
+enum VerificationCodeType {
+	PHONE = 0;
+	EMAIL = 1;
+	ACCOUNT_2FA = 2;
+}
+
+// VerificationCode represents the collection of information used to represent the time bound verification code
+message VerificationCode {
+    string token = 1;
+    string code = 2;
+    VerificationCodeType type = 4;
+    uint64 expiration_epoch = 5;
+}
+
 // Account represents the data associated with an account
 message Account {
 	string id = 1 [(gogoproto.customname) = "ID"];
@@ -32,8 +47,24 @@ message AuthenticateLoginRequest {
 
 // AuthenticateLoginResponse represents the information that is returned from AuthenticateLoginRequest
 // In the event that requires_two_factor_auth is set to true, the provided token will only work for a short time and to make the 2FA call
-// While the expiration is encoded within the token, it is provided in the response for the caller to consume if they choose.
 message AuthenticateLoginResponse {
+	AuthToken token = 1;
+	Account account = 2;
+    bool two_factor_required = 4;
+    string two_factor_phone_number = 5;
+}
+
+// AuthenticateLoginWithCodeRequest represents the information that is used to authenticate a use via token/code pair.
+// The token_attributes map is used when generating the auth token for this login. Future use of this token
+//  must provide the same information.
+message AuthenticateLoginWithCodeRequest {
+	string token = 1;
+	string code = 2;
+	map<string, string> token_attributes = 3;
+}
+
+// AuthenticateLoginWithCodeResponse represents the information that is returned from AuthenticateLoginWithCode
+message AuthenticateLoginWithCodeResponse {
 	AuthToken token = 1;
 	Account account = 2;
 }
@@ -91,11 +122,49 @@ message UnauthenticateRequest {
 // UnauthenticateResponse represents the information returned from an Unauthenticate request
 message UnauthenticateResponse {}
 
+// CreateVerificationCodeRequest represents the information required to create a verification code
+message CreateVerificationCodeRequest {
+    VerificationCodeType type = 1;
+    string value_to_verify = 2;
+}
+
+// CreateVerificationCodeResponse represents the information returned from a CreateVerificationCode request
+message CreateVerificationCodeResponse {
+    VerificationCode verification_code = 1;
+}
+
+// CheckVerificationCodeRequest represents the information required to check a verification code
+message CheckVerificationCodeRequest {
+    string token = 1;
+    string code = 2;
+    map<string, string> token_attributes = 3;
+}
+
+// CreateVerificationCodeResponse represents the information returned from a CheckVerificationCode request
+message CheckVerificationCodeResponse {
+    Account   account = 1;
+    string    value = 2;
+}
+
+// VerifiedValueRequest represents the information required to get the value associated with a verified code
+message VerifiedValueRequest {
+    string token = 1;
+}
+
+// VerifiedValueResponse represents the information returned from a VerifiedValue request
+message VerifiedValueResponse {
+    string value = 1;
+}
+
 // Auth provides mechanisms for other services to perform authentication of external entities interacting with them
 service Auth {
 	rpc AuthenticateLogin (AuthenticateLoginRequest) returns (AuthenticateLoginResponse);
+    rpc AuthenticateLoginWithCode (AuthenticateLoginWithCodeRequest) returns (AuthenticateLoginWithCodeResponse);
 	rpc CheckAuthentication (CheckAuthenticationRequest) returns (CheckAuthenticationResponse);
+    rpc CheckVerificationCode (CheckVerificationCodeRequest) returns (CheckVerificationCodeResponse);
 	rpc CreateAccount (CreateAccountRequest) returns (CreateAccountResponse);
+    rpc CreateVerificationCode (CreateVerificationCodeRequest) returns (CreateVerificationCodeResponse);
 	rpc GetAccount (GetAccountRequest) returns (GetAccountResponse);
 	rpc Unauthenticate (UnauthenticateRequest) returns (UnauthenticateResponse);
+    rpc VerifiedValue (VerifiedValueRequest) returns (VerifiedValueResponse);
 }

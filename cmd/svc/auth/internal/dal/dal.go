@@ -40,6 +40,10 @@ type DAL interface {
 	AccountEmail(id AccountEmailID) (*AccountEmail, error)
 	UpdateAccountEmail(id AccountEmailID, update *AccountEmailUpdate) (int64, error)
 	DeleteAccountEmail(id AccountEmailID) (int64, error)
+	InsertVerificationCode(model *VerificationCode) error
+	UpdateVerificationCode(token string, update *VerificationCodeUpdate) (int64, error)
+	VerificationCode(token string) (*VerificationCode, error)
+	DeleteVerificationCode(token string) (int64, error)
 	Transact(trans func(dal DAL) error) (err error)
 }
 
@@ -269,6 +273,8 @@ func (t *AccountPhoneStatus) Scan(src interface{}) error {
 		*t, err = ParseAccountPhoneStatus(ts)
 	case []byte:
 		*t, err = ParseAccountPhoneStatus(string(ts))
+	default:
+		return errors.Trace(fmt.Errorf("Unsupported type %T with value %+v in enumeration scan", src, src))
 	}
 	return errors.Trace(err)
 }
@@ -306,6 +312,8 @@ func (t *AccountEmailStatus) Scan(src interface{}) error {
 		*t, err = ParseAccountEmailStatus(ts)
 	case []byte:
 		*t, err = ParseAccountEmailStatus(string(ts))
+	default:
+		return errors.Trace(fmt.Errorf("Unsupported type %T with value %+v in enumeration scan", src, src))
 	}
 	return errors.Trace(err)
 }
@@ -343,8 +351,65 @@ func (t *AccountStatus) Scan(src interface{}) error {
 		*t, err = ParseAccountStatus(ts)
 	case []byte:
 		*t, err = ParseAccountStatus(string(ts))
+	default:
+		return errors.Trace(fmt.Errorf("Unsupported type %T with value %+v in enumeration scan", src, src))
 	}
 	return errors.Trace(err)
+}
+
+// VerificationCodeType represents the type associated with the verification_type column of the verification_code table
+type VerificationCodeType string
+
+const (
+	// VerificationCodeTypePhone represents the PHONE state of the verification_type field on a verification_code record
+	VerificationCodeTypePhone VerificationCodeType = "PHONE"
+	// VerificationCodeTypeEmail represents the EMAIL state of the verification_type field on a verification_code record
+	VerificationCodeTypeEmail VerificationCodeType = "EMAIL"
+	// VerificationCodeTypeAccount2fa represents the ACCOUNT_2FA state of the verification_type field on a verification_code record
+	VerificationCodeTypeAccount2fa VerificationCodeType = "ACCOUNT_2FA"
+)
+
+// ParseVerificationCodeType converts a string into the correcponding enum value
+func ParseVerificationCodeType(s string) (VerificationCodeType, error) {
+	switch t := VerificationCodeType(strings.ToUpper(s)); t {
+	case VerificationCodeTypePhone, VerificationCodeTypeEmail, VerificationCodeTypeAccount2fa:
+		return t, nil
+	}
+	return VerificationCodeType(""), errors.Trace(fmt.Errorf("Unknown verification_type:%s", s))
+}
+
+func (t VerificationCodeType) String() string {
+	return string(t)
+}
+
+// Scan allows for scanning of VerificationCodeType from a database conforming to the sql.Scanner interface
+func (t *VerificationCodeType) Scan(src interface{}) error {
+	var err error
+	switch ts := src.(type) {
+	case string:
+		*t, err = ParseVerificationCodeType(ts)
+	case []byte:
+		*t, err = ParseVerificationCodeType(string(ts))
+	default:
+		return errors.Trace(fmt.Errorf("Unsupported type %T with value %+v in enumeration scan", src, src))
+	}
+	return errors.Trace(err)
+}
+
+// VerificationCode represents a verification_code record
+type VerificationCode struct {
+	Created          time.Time
+	Expires          time.Time
+	Token            string
+	Code             string
+	VerificationType VerificationCodeType
+	VerifiedValue    string
+	Consumed         bool
+}
+
+// VerificationCodeUpdate represents the mutable aspects of a verification_code record
+type VerificationCodeUpdate struct {
+	Consumed *bool
 }
 
 // Account represents a account record
@@ -761,6 +826,61 @@ func (d *dal) DeleteAccountEmail(id AccountEmailID) (int64, error) {
 	return aff, errors.Trace(err)
 }
 
+// InsertVerificationCode inserts a verification_code record
+func (d *dal) InsertVerificationCode(model *VerificationCode) error {
+	_, err := d.db.Exec(
+		`INSERT INTO verification_code
+          (expires, token, code, verification_type, verified_value, consumed)
+          VALUES (?, ?, ?, ?, ?, ?)`, model.Expires, model.Token, model.Code, model.VerificationType.String(), model.VerifiedValue, model.Consumed)
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	return nil
+}
+
+// UpdateVerificationCode updates the mutable aspects of a verification_code record
+func (d *dal) UpdateVerificationCode(token string, update *VerificationCodeUpdate) (int64, error) {
+	args := dbutil.MySQLVarArgs()
+	if update.Consumed != nil {
+		args.Append("consumed", *update.Consumed)
+	}
+	if args.IsEmpty() {
+		return 0, nil
+	}
+
+	res, err := d.db.Exec(
+		`UPDATE verification_code
+          SET `+args.ColumnsForUpdate()+` WHERE token = ?`, append(args.Values(), token)...)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	aff, err := res.RowsAffected()
+	return aff, errors.Trace(err)
+}
+
+// VerificationCode retrieves a verification_code record
+func (d *dal) VerificationCode(token string) (*VerificationCode, error) {
+	row := d.db.QueryRow(
+		selectVerificationCode+` WHERE token = ?`, token)
+	model, err := scanVerificationCode(row)
+	return model, errors.Trace(err)
+}
+
+// DeleteVerificationCode deletes a verification_code record
+func (d *dal) DeleteVerificationCode(token string) (int64, error) {
+	res, err := d.db.Exec(
+		`DELETE FROM verification_code
+          WHERE token = ?`, token)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	aff, err := res.RowsAffected()
+	return aff, errors.Trace(err)
+}
+
 const selectAccount = `
     SELECT account.primary_account_phone_id, account.password, account.status, account.created, account.primary_account_email_id, account.first_name, account.last_name, account.modified, account.id
       FROM account`
@@ -839,6 +959,20 @@ func scanAccountEmail(row dbutil.Scanner) (*AccountEmail, error) {
 	err := row.Scan(&m.Email, &m.Status, &m.Verified, &m.Created, &m.Modified, &m.ID, &m.AccountID)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(api.ErrNotFound("auth - AccountEmail not found"))
+	}
+	return &m, errors.Trace(err)
+}
+
+const selectVerificationCode = `
+    SELECT verification_code.verified_value, verification_code.consumed, verification_code.created, verification_code.expires, verification_code.token, verification_code.code, verification_code.verification_type
+      FROM verification_code`
+
+func scanVerificationCode(row dbutil.Scanner) (*VerificationCode, error) {
+	var m VerificationCode
+
+	err := row.Scan(&m.VerifiedValue, &m.Consumed, &m.Created, &m.Expires, &m.Token, &m.Code, &m.VerificationType)
+	if err == sql.ErrNoRows {
+		return nil, errors.Trace(api.ErrNotFound("auth - VerificationCode not found"))
 	}
 	return &m, errors.Trace(err)
 }

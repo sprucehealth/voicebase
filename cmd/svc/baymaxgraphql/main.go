@@ -19,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/mux"
+	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -39,6 +40,8 @@ var (
 	flagStorageBucket = flag.String("storage_bucket", "", "storage bucket for media")
 	flagSigKeys       = flag.String("signature_keys_csv", "", "csv signature keys")
 	flagEmailDomain   = flag.String("email_domain", "", "domain to use for email address provisioning")
+	flagServiceNumber = flag.String("service_phone_number", "", "TODO: This should be managed by the excomms service")
+	flagDebug         = flag.Bool("debug", false, "flag to enable debug logging")
 
 	// Services
 	flagAuthAddr                 = flag.String("auth_addr", "", "host:port of auth service")
@@ -56,6 +59,10 @@ var (
 
 func main() {
 	boot.ParseFlags("BAYMAXGRAPHQL_")
+	if *flagDebug {
+		golog.Default().SetLevel(golog.DEBUG)
+		golog.Debugf("Debug logging enabled...")
+	}
 	if *flagEnv == "" {
 		fmt.Fprintf(os.Stderr, "Flag -env is required\n")
 		os.Exit(1)
@@ -67,7 +74,13 @@ func main() {
 			http.ListenAndServe(*flagDebugAddr, nil)
 		}()
 	}
-
+	if *flagServiceNumber == "" {
+		golog.Fatalf("A service phone number must be provided")
+	}
+	pn, err := phone.ParseNumber(*flagServiceNumber)
+	if err != nil {
+		golog.Fatalf("Failed to parse service phone number: %s", err)
+	}
 	if *flagAuthAddr == "" {
 		golog.Fatalf("Auth service not configured")
 	}
@@ -161,7 +174,7 @@ func main() {
 
 	corsOrigins := []string{"https://" + *flagWebDomain}
 
-	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, ms, *flagEmailDomain)
+	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, ms, *flagEmailDomain, pn)
 	r.Handle("/graphql", httputil.ToContextHandler(cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},

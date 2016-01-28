@@ -199,6 +199,38 @@ func (dl *mockDAL) DeleteAccountEmail(id dal.AccountEmailID) (int64, error) {
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
+func (dl *mockDAL) InsertVerificationCode(model *dal.VerificationCode) error {
+	rets := dl.Record(model)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
+func (dl *mockDAL) UpdateVerificationCode(token string, update *dal.VerificationCodeUpdate) (int64, error) {
+	rets := dl.Record(token, update)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
+func (dl *mockDAL) VerificationCode(token string) (*dal.VerificationCode, error) {
+	rets := dl.Record(token)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*dal.VerificationCode), mock.SafeError(rets[1])
+}
+
+func (dl *mockDAL) DeleteVerificationCode(token string) (int64, error) {
+	rets := dl.Record(token)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
 func (dl *mockDAL) Transact(trans func(dal dal.DAL) error) (err error) {
 	if err := trans(dl); err != nil {
 		return errors.Trace(err)

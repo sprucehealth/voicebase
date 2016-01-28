@@ -9,10 +9,13 @@
 		svc.proto
 
 	It has these top-level messages:
+		VerificationCode
 		Account
 		AuthToken
 		AuthenticateLoginRequest
 		AuthenticateLoginResponse
+		AuthenticateLoginWithCodeRequest
+		AuthenticateLoginWithCodeResponse
 		CheckAuthenticationRequest
 		CheckAuthenticationResponse
 		CreateAccountRequest
@@ -21,6 +24,12 @@
 		GetAccountResponse
 		UnauthenticateRequest
 		UnauthenticateResponse
+		CreateVerificationCodeRequest
+		CreateVerificationCodeResponse
+		CheckVerificationCodeRequest
+		CheckVerificationCodeResponse
+		VerifiedValueRequest
+		VerifiedValueResponse
 */
 package auth
 
@@ -29,10 +38,11 @@ import fmt "fmt"
 import math "math"
 import _ "github.com/gogo/protobuf/gogoproto"
 
+import strconv "strconv"
+
 import strings "strings"
 import github_com_gogo_protobuf_proto "github.com/gogo/protobuf/proto"
 import sort "sort"
-import strconv "strconv"
 import reflect "reflect"
 import github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
 
@@ -47,6 +57,37 @@ import io "io"
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
+
+// VerificationCodeType represents the various types/use cases of verification codes
+type VerificationCodeType int32
+
+const (
+	VerificationCodeType_PHONE       VerificationCodeType = 0
+	VerificationCodeType_EMAIL       VerificationCodeType = 1
+	VerificationCodeType_ACCOUNT_2FA VerificationCodeType = 2
+)
+
+var VerificationCodeType_name = map[int32]string{
+	0: "PHONE",
+	1: "EMAIL",
+	2: "ACCOUNT_2FA",
+}
+var VerificationCodeType_value = map[string]int32{
+	"PHONE":       0,
+	"EMAIL":       1,
+	"ACCOUNT_2FA": 2,
+}
+
+// VerificationCode represents the collection of information used to represent the time bound verification code
+type VerificationCode struct {
+	Token           string               `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	Code            string               `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
+	Type            VerificationCodeType `protobuf:"varint,4,opt,name=type,proto3,enum=auth.VerificationCodeType" json:"type,omitempty"`
+	ExpirationEpoch uint64               `protobuf:"varint,5,opt,name=expiration_epoch,proto3" json:"expiration_epoch,omitempty"`
+}
+
+func (m *VerificationCode) Reset()      { *m = VerificationCode{} }
+func (*VerificationCode) ProtoMessage() {}
 
 // Account represents the data associated with an account
 type Account struct {
@@ -88,10 +129,11 @@ func (m *AuthenticateLoginRequest) GetTokenAttributes() map[string]string {
 
 // AuthenticateLoginResponse represents the information that is returned from AuthenticateLoginRequest
 // In the event that requires_two_factor_auth is set to true, the provided token will only work for a short time and to make the 2FA call
-// While the expiration is encoded within the token, it is provided in the response for the caller to consume if they choose.
 type AuthenticateLoginResponse struct {
-	Token   *AuthToken `protobuf:"bytes,1,opt,name=token" json:"token,omitempty"`
-	Account *Account   `protobuf:"bytes,2,opt,name=account" json:"account,omitempty"`
+	Token                *AuthToken `protobuf:"bytes,1,opt,name=token" json:"token,omitempty"`
+	Account              *Account   `protobuf:"bytes,2,opt,name=account" json:"account,omitempty"`
+	TwoFactorRequired    bool       `protobuf:"varint,4,opt,name=two_factor_required,proto3" json:"two_factor_required,omitempty"`
+	TwoFactorPhoneNumber string     `protobuf:"bytes,5,opt,name=two_factor_phone_number,proto3" json:"two_factor_phone_number,omitempty"`
 }
 
 func (m *AuthenticateLoginResponse) Reset()      { *m = AuthenticateLoginResponse{} }
@@ -105,6 +147,48 @@ func (m *AuthenticateLoginResponse) GetToken() *AuthToken {
 }
 
 func (m *AuthenticateLoginResponse) GetAccount() *Account {
+	if m != nil {
+		return m.Account
+	}
+	return nil
+}
+
+// AuthenticateLoginWithCodeRequest represents the information that is used to authenticate a use via token/code pair.
+// The token_attributes map is used when generating the auth token for this login. Future use of this token
+//  must provide the same information.
+type AuthenticateLoginWithCodeRequest struct {
+	Token           string            `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	Code            string            `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
+	TokenAttributes map[string]string `protobuf:"bytes,3,rep,name=token_attributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (m *AuthenticateLoginWithCodeRequest) Reset()      { *m = AuthenticateLoginWithCodeRequest{} }
+func (*AuthenticateLoginWithCodeRequest) ProtoMessage() {}
+
+func (m *AuthenticateLoginWithCodeRequest) GetTokenAttributes() map[string]string {
+	if m != nil {
+		return m.TokenAttributes
+	}
+	return nil
+}
+
+// AuthenticateLoginWithCodeResponse represents the information that is returned from AuthenticateLoginWithCode
+type AuthenticateLoginWithCodeResponse struct {
+	Token   *AuthToken `protobuf:"bytes,1,opt,name=token" json:"token,omitempty"`
+	Account *Account   `protobuf:"bytes,2,opt,name=account" json:"account,omitempty"`
+}
+
+func (m *AuthenticateLoginWithCodeResponse) Reset()      { *m = AuthenticateLoginWithCodeResponse{} }
+func (*AuthenticateLoginWithCodeResponse) ProtoMessage() {}
+
+func (m *AuthenticateLoginWithCodeResponse) GetToken() *AuthToken {
+	if m != nil {
+		return m.Token
+	}
+	return nil
+}
+
+func (m *AuthenticateLoginWithCodeResponse) GetAccount() *Account {
 	if m != nil {
 		return m.Account
 	}
@@ -245,11 +329,87 @@ type UnauthenticateResponse struct {
 func (m *UnauthenticateResponse) Reset()      { *m = UnauthenticateResponse{} }
 func (*UnauthenticateResponse) ProtoMessage() {}
 
+// CreateVerificationCodeRequest represents the information required to create a verification code
+type CreateVerificationCodeRequest struct {
+	Type          VerificationCodeType `protobuf:"varint,1,opt,name=type,proto3,enum=auth.VerificationCodeType" json:"type,omitempty"`
+	ValueToVerify string               `protobuf:"bytes,2,opt,name=value_to_verify,proto3" json:"value_to_verify,omitempty"`
+}
+
+func (m *CreateVerificationCodeRequest) Reset()      { *m = CreateVerificationCodeRequest{} }
+func (*CreateVerificationCodeRequest) ProtoMessage() {}
+
+// CreateVerificationCodeResponse represents the information returned from a CreateVerificationCode request
+type CreateVerificationCodeResponse struct {
+	VerificationCode *VerificationCode `protobuf:"bytes,1,opt,name=verification_code" json:"verification_code,omitempty"`
+}
+
+func (m *CreateVerificationCodeResponse) Reset()      { *m = CreateVerificationCodeResponse{} }
+func (*CreateVerificationCodeResponse) ProtoMessage() {}
+
+func (m *CreateVerificationCodeResponse) GetVerificationCode() *VerificationCode {
+	if m != nil {
+		return m.VerificationCode
+	}
+	return nil
+}
+
+// CheckVerificationCodeRequest represents the information required to check a verification code
+type CheckVerificationCodeRequest struct {
+	Token           string            `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	Code            string            `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
+	TokenAttributes map[string]string `protobuf:"bytes,3,rep,name=token_attributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (m *CheckVerificationCodeRequest) Reset()      { *m = CheckVerificationCodeRequest{} }
+func (*CheckVerificationCodeRequest) ProtoMessage() {}
+
+func (m *CheckVerificationCodeRequest) GetTokenAttributes() map[string]string {
+	if m != nil {
+		return m.TokenAttributes
+	}
+	return nil
+}
+
+// CreateVerificationCodeResponse represents the information returned from a CheckVerificationCode request
+type CheckVerificationCodeResponse struct {
+	Account *Account `protobuf:"bytes,1,opt,name=account" json:"account,omitempty"`
+	Value   string   `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (m *CheckVerificationCodeResponse) Reset()      { *m = CheckVerificationCodeResponse{} }
+func (*CheckVerificationCodeResponse) ProtoMessage() {}
+
+func (m *CheckVerificationCodeResponse) GetAccount() *Account {
+	if m != nil {
+		return m.Account
+	}
+	return nil
+}
+
+// VerifiedValueRequest represents the information required to get the value associated with a verified code
+type VerifiedValueRequest struct {
+	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+}
+
+func (m *VerifiedValueRequest) Reset()      { *m = VerifiedValueRequest{} }
+func (*VerifiedValueRequest) ProtoMessage() {}
+
+// VerifiedValueResponse represents the information returned from a VerifiedValue request
+type VerifiedValueResponse struct {
+	Value string `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (m *VerifiedValueResponse) Reset()      { *m = VerifiedValueResponse{} }
+func (*VerifiedValueResponse) ProtoMessage() {}
+
 func init() {
+	proto.RegisterType((*VerificationCode)(nil), "auth.VerificationCode")
 	proto.RegisterType((*Account)(nil), "auth.Account")
 	proto.RegisterType((*AuthToken)(nil), "auth.AuthToken")
 	proto.RegisterType((*AuthenticateLoginRequest)(nil), "auth.AuthenticateLoginRequest")
 	proto.RegisterType((*AuthenticateLoginResponse)(nil), "auth.AuthenticateLoginResponse")
+	proto.RegisterType((*AuthenticateLoginWithCodeRequest)(nil), "auth.AuthenticateLoginWithCodeRequest")
+	proto.RegisterType((*AuthenticateLoginWithCodeResponse)(nil), "auth.AuthenticateLoginWithCodeResponse")
 	proto.RegisterType((*CheckAuthenticationRequest)(nil), "auth.CheckAuthenticationRequest")
 	proto.RegisterType((*CheckAuthenticationResponse)(nil), "auth.CheckAuthenticationResponse")
 	proto.RegisterType((*CreateAccountRequest)(nil), "auth.CreateAccountRequest")
@@ -258,6 +418,54 @@ func init() {
 	proto.RegisterType((*GetAccountResponse)(nil), "auth.GetAccountResponse")
 	proto.RegisterType((*UnauthenticateRequest)(nil), "auth.UnauthenticateRequest")
 	proto.RegisterType((*UnauthenticateResponse)(nil), "auth.UnauthenticateResponse")
+	proto.RegisterType((*CreateVerificationCodeRequest)(nil), "auth.CreateVerificationCodeRequest")
+	proto.RegisterType((*CreateVerificationCodeResponse)(nil), "auth.CreateVerificationCodeResponse")
+	proto.RegisterType((*CheckVerificationCodeRequest)(nil), "auth.CheckVerificationCodeRequest")
+	proto.RegisterType((*CheckVerificationCodeResponse)(nil), "auth.CheckVerificationCodeResponse")
+	proto.RegisterType((*VerifiedValueRequest)(nil), "auth.VerifiedValueRequest")
+	proto.RegisterType((*VerifiedValueResponse)(nil), "auth.VerifiedValueResponse")
+	proto.RegisterEnum("auth.VerificationCodeType", VerificationCodeType_name, VerificationCodeType_value)
+}
+func (x VerificationCodeType) String() string {
+	s, ok := VerificationCodeType_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (this *VerificationCode) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*VerificationCode)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Token != that1.Token {
+		return false
+	}
+	if this.Code != that1.Code {
+		return false
+	}
+	if this.Type != that1.Type {
+		return false
+	}
+	if this.ExpirationEpoch != that1.ExpirationEpoch {
+		return false
+	}
+	return true
 }
 func (this *Account) Equal(that interface{}) bool {
 	if that == nil {
@@ -363,6 +571,76 @@ func (this *AuthenticateLoginResponse) Equal(that interface{}) bool {
 	}
 
 	that1, ok := that.(*AuthenticateLoginResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Token.Equal(that1.Token) {
+		return false
+	}
+	if !this.Account.Equal(that1.Account) {
+		return false
+	}
+	if this.TwoFactorRequired != that1.TwoFactorRequired {
+		return false
+	}
+	if this.TwoFactorPhoneNumber != that1.TwoFactorPhoneNumber {
+		return false
+	}
+	return true
+}
+func (this *AuthenticateLoginWithCodeRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*AuthenticateLoginWithCodeRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Token != that1.Token {
+		return false
+	}
+	if this.Code != that1.Code {
+		return false
+	}
+	if len(this.TokenAttributes) != len(that1.TokenAttributes) {
+		return false
+	}
+	for i := range this.TokenAttributes {
+		if this.TokenAttributes[i] != that1.TokenAttributes[i] {
+			return false
+		}
+	}
+	return true
+}
+func (this *AuthenticateLoginWithCodeResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*AuthenticateLoginWithCodeResponse)
 	if !ok {
 		return false
 	}
@@ -627,6 +905,186 @@ func (this *UnauthenticateResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *CreateVerificationCodeRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreateVerificationCodeRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Type != that1.Type {
+		return false
+	}
+	if this.ValueToVerify != that1.ValueToVerify {
+		return false
+	}
+	return true
+}
+func (this *CreateVerificationCodeResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreateVerificationCodeResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.VerificationCode.Equal(that1.VerificationCode) {
+		return false
+	}
+	return true
+}
+func (this *CheckVerificationCodeRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CheckVerificationCodeRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Token != that1.Token {
+		return false
+	}
+	if this.Code != that1.Code {
+		return false
+	}
+	if len(this.TokenAttributes) != len(that1.TokenAttributes) {
+		return false
+	}
+	for i := range this.TokenAttributes {
+		if this.TokenAttributes[i] != that1.TokenAttributes[i] {
+			return false
+		}
+	}
+	return true
+}
+func (this *CheckVerificationCodeResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CheckVerificationCodeResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Account.Equal(that1.Account) {
+		return false
+	}
+	if this.Value != that1.Value {
+		return false
+	}
+	return true
+}
+func (this *VerifiedValueRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*VerifiedValueRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Token != that1.Token {
+		return false
+	}
+	return true
+}
+func (this *VerifiedValueResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*VerifiedValueResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Value != that1.Value {
+		return false
+	}
+	return true
+}
+func (this *VerificationCode) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 8)
+	s = append(s, "&auth.VerificationCode{")
+	s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
+	s = append(s, "Code: "+fmt.Sprintf("%#v", this.Code)+",\n")
+	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
+	s = append(s, "ExpirationEpoch: "+fmt.Sprintf("%#v", this.ExpirationEpoch)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *Account) GoString() string {
 	if this == nil {
 		return "nil"
@@ -678,8 +1136,49 @@ func (this *AuthenticateLoginResponse) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 6)
+	s := make([]string, 0, 8)
 	s = append(s, "&auth.AuthenticateLoginResponse{")
+	if this.Token != nil {
+		s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
+	}
+	if this.Account != nil {
+		s = append(s, "Account: "+fmt.Sprintf("%#v", this.Account)+",\n")
+	}
+	s = append(s, "TwoFactorRequired: "+fmt.Sprintf("%#v", this.TwoFactorRequired)+",\n")
+	s = append(s, "TwoFactorPhoneNumber: "+fmt.Sprintf("%#v", this.TwoFactorPhoneNumber)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *AuthenticateLoginWithCodeRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&auth.AuthenticateLoginWithCodeRequest{")
+	s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
+	s = append(s, "Code: "+fmt.Sprintf("%#v", this.Code)+",\n")
+	keysForTokenAttributes := make([]string, 0, len(this.TokenAttributes))
+	for k, _ := range this.TokenAttributes {
+		keysForTokenAttributes = append(keysForTokenAttributes, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForTokenAttributes)
+	mapStringForTokenAttributes := "map[string]string{"
+	for _, k := range keysForTokenAttributes {
+		mapStringForTokenAttributes += fmt.Sprintf("%#v: %#v,", k, this.TokenAttributes[k])
+	}
+	mapStringForTokenAttributes += "}"
+	if this.TokenAttributes != nil {
+		s = append(s, "TokenAttributes: "+mapStringForTokenAttributes+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *AuthenticateLoginWithCodeResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&auth.AuthenticateLoginWithCodeResponse{")
 	if this.Token != nil {
 		s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
 	}
@@ -825,6 +1324,86 @@ func (this *UnauthenticateResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *CreateVerificationCodeRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&auth.CreateVerificationCodeRequest{")
+	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
+	s = append(s, "ValueToVerify: "+fmt.Sprintf("%#v", this.ValueToVerify)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreateVerificationCodeResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&auth.CreateVerificationCodeResponse{")
+	if this.VerificationCode != nil {
+		s = append(s, "VerificationCode: "+fmt.Sprintf("%#v", this.VerificationCode)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CheckVerificationCodeRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&auth.CheckVerificationCodeRequest{")
+	s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
+	s = append(s, "Code: "+fmt.Sprintf("%#v", this.Code)+",\n")
+	keysForTokenAttributes := make([]string, 0, len(this.TokenAttributes))
+	for k, _ := range this.TokenAttributes {
+		keysForTokenAttributes = append(keysForTokenAttributes, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForTokenAttributes)
+	mapStringForTokenAttributes := "map[string]string{"
+	for _, k := range keysForTokenAttributes {
+		mapStringForTokenAttributes += fmt.Sprintf("%#v: %#v,", k, this.TokenAttributes[k])
+	}
+	mapStringForTokenAttributes += "}"
+	if this.TokenAttributes != nil {
+		s = append(s, "TokenAttributes: "+mapStringForTokenAttributes+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CheckVerificationCodeResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&auth.CheckVerificationCodeResponse{")
+	if this.Account != nil {
+		s = append(s, "Account: "+fmt.Sprintf("%#v", this.Account)+",\n")
+	}
+	s = append(s, "Value: "+fmt.Sprintf("%#v", this.Value)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *VerifiedValueRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&auth.VerifiedValueRequest{")
+	s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *VerifiedValueResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&auth.VerifiedValueResponse{")
+	s = append(s, "Value: "+fmt.Sprintf("%#v", this.Value)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func valueToGoStringSvc(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -859,10 +1438,14 @@ var _ grpc.ClientConn
 
 type AuthClient interface {
 	AuthenticateLogin(ctx context.Context, in *AuthenticateLoginRequest, opts ...grpc.CallOption) (*AuthenticateLoginResponse, error)
+	AuthenticateLoginWithCode(ctx context.Context, in *AuthenticateLoginWithCodeRequest, opts ...grpc.CallOption) (*AuthenticateLoginWithCodeResponse, error)
 	CheckAuthentication(ctx context.Context, in *CheckAuthenticationRequest, opts ...grpc.CallOption) (*CheckAuthenticationResponse, error)
+	CheckVerificationCode(ctx context.Context, in *CheckVerificationCodeRequest, opts ...grpc.CallOption) (*CheckVerificationCodeResponse, error)
 	CreateAccount(ctx context.Context, in *CreateAccountRequest, opts ...grpc.CallOption) (*CreateAccountResponse, error)
+	CreateVerificationCode(ctx context.Context, in *CreateVerificationCodeRequest, opts ...grpc.CallOption) (*CreateVerificationCodeResponse, error)
 	GetAccount(ctx context.Context, in *GetAccountRequest, opts ...grpc.CallOption) (*GetAccountResponse, error)
 	Unauthenticate(ctx context.Context, in *UnauthenticateRequest, opts ...grpc.CallOption) (*UnauthenticateResponse, error)
+	VerifiedValue(ctx context.Context, in *VerifiedValueRequest, opts ...grpc.CallOption) (*VerifiedValueResponse, error)
 }
 
 type authClient struct {
@@ -882,6 +1465,15 @@ func (c *authClient) AuthenticateLogin(ctx context.Context, in *AuthenticateLogi
 	return out, nil
 }
 
+func (c *authClient) AuthenticateLoginWithCode(ctx context.Context, in *AuthenticateLoginWithCodeRequest, opts ...grpc.CallOption) (*AuthenticateLoginWithCodeResponse, error) {
+	out := new(AuthenticateLoginWithCodeResponse)
+	err := grpc.Invoke(ctx, "/auth.Auth/AuthenticateLoginWithCode", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *authClient) CheckAuthentication(ctx context.Context, in *CheckAuthenticationRequest, opts ...grpc.CallOption) (*CheckAuthenticationResponse, error) {
 	out := new(CheckAuthenticationResponse)
 	err := grpc.Invoke(ctx, "/auth.Auth/CheckAuthentication", in, out, c.cc, opts...)
@@ -891,9 +1483,27 @@ func (c *authClient) CheckAuthentication(ctx context.Context, in *CheckAuthentic
 	return out, nil
 }
 
+func (c *authClient) CheckVerificationCode(ctx context.Context, in *CheckVerificationCodeRequest, opts ...grpc.CallOption) (*CheckVerificationCodeResponse, error) {
+	out := new(CheckVerificationCodeResponse)
+	err := grpc.Invoke(ctx, "/auth.Auth/CheckVerificationCode", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *authClient) CreateAccount(ctx context.Context, in *CreateAccountRequest, opts ...grpc.CallOption) (*CreateAccountResponse, error) {
 	out := new(CreateAccountResponse)
 	err := grpc.Invoke(ctx, "/auth.Auth/CreateAccount", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) CreateVerificationCode(ctx context.Context, in *CreateVerificationCodeRequest, opts ...grpc.CallOption) (*CreateVerificationCodeResponse, error) {
+	out := new(CreateVerificationCodeResponse)
+	err := grpc.Invoke(ctx, "/auth.Auth/CreateVerificationCode", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -918,14 +1528,27 @@ func (c *authClient) Unauthenticate(ctx context.Context, in *UnauthenticateReque
 	return out, nil
 }
 
+func (c *authClient) VerifiedValue(ctx context.Context, in *VerifiedValueRequest, opts ...grpc.CallOption) (*VerifiedValueResponse, error) {
+	out := new(VerifiedValueResponse)
+	err := grpc.Invoke(ctx, "/auth.Auth/VerifiedValue", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for Auth service
 
 type AuthServer interface {
 	AuthenticateLogin(context.Context, *AuthenticateLoginRequest) (*AuthenticateLoginResponse, error)
+	AuthenticateLoginWithCode(context.Context, *AuthenticateLoginWithCodeRequest) (*AuthenticateLoginWithCodeResponse, error)
 	CheckAuthentication(context.Context, *CheckAuthenticationRequest) (*CheckAuthenticationResponse, error)
+	CheckVerificationCode(context.Context, *CheckVerificationCodeRequest) (*CheckVerificationCodeResponse, error)
 	CreateAccount(context.Context, *CreateAccountRequest) (*CreateAccountResponse, error)
+	CreateVerificationCode(context.Context, *CreateVerificationCodeRequest) (*CreateVerificationCodeResponse, error)
 	GetAccount(context.Context, *GetAccountRequest) (*GetAccountResponse, error)
 	Unauthenticate(context.Context, *UnauthenticateRequest) (*UnauthenticateResponse, error)
+	VerifiedValue(context.Context, *VerifiedValueRequest) (*VerifiedValueResponse, error)
 }
 
 func RegisterAuthServer(s *grpc.Server, srv AuthServer) {
@@ -944,6 +1567,18 @@ func _Auth_AuthenticateLogin_Handler(srv interface{}, ctx context.Context, dec f
 	return out, nil
 }
 
+func _Auth_AuthenticateLoginWithCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(AuthenticateLoginWithCodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(AuthServer).AuthenticateLoginWithCode(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func _Auth_CheckAuthentication_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(CheckAuthenticationRequest)
 	if err := dec(in); err != nil {
@@ -956,12 +1591,36 @@ func _Auth_CheckAuthentication_Handler(srv interface{}, ctx context.Context, dec
 	return out, nil
 }
 
+func _Auth_CheckVerificationCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(CheckVerificationCodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(AuthServer).CheckVerificationCode(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func _Auth_CreateAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(CreateAccountRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(AuthServer).CreateAccount(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Auth_CreateVerificationCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(CreateVerificationCodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(AuthServer).CreateVerificationCode(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -992,6 +1651,18 @@ func _Auth_Unauthenticate_Handler(srv interface{}, ctx context.Context, dec func
 	return out, nil
 }
 
+func _Auth_VerifiedValue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(VerifiedValueRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(AuthServer).VerifiedValue(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 var _Auth_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "auth.Auth",
 	HandlerType: (*AuthServer)(nil),
@@ -1001,12 +1672,24 @@ var _Auth_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Auth_AuthenticateLogin_Handler,
 		},
 		{
+			MethodName: "AuthenticateLoginWithCode",
+			Handler:    _Auth_AuthenticateLoginWithCode_Handler,
+		},
+		{
 			MethodName: "CheckAuthentication",
 			Handler:    _Auth_CheckAuthentication_Handler,
 		},
 		{
+			MethodName: "CheckVerificationCode",
+			Handler:    _Auth_CheckVerificationCode_Handler,
+		},
+		{
 			MethodName: "CreateAccount",
 			Handler:    _Auth_CreateAccount_Handler,
+		},
+		{
+			MethodName: "CreateVerificationCode",
+			Handler:    _Auth_CreateVerificationCode_Handler,
 		},
 		{
 			MethodName: "GetAccount",
@@ -1016,8 +1699,52 @@ var _Auth_serviceDesc = grpc.ServiceDesc{
 			MethodName: "Unauthenticate",
 			Handler:    _Auth_Unauthenticate_Handler,
 		},
+		{
+			MethodName: "VerifiedValue",
+			Handler:    _Auth_VerifiedValue_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{},
+}
+
+func (m *VerificationCode) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *VerificationCode) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Token) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Token)))
+		i += copy(data[i:], m.Token)
+	}
+	if len(m.Code) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Code)))
+		i += copy(data[i:], m.Code)
+	}
+	if m.Type != 0 {
+		data[i] = 0x20
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Type))
+	}
+	if m.ExpirationEpoch != 0 {
+		data[i] = 0x28
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.ExpirationEpoch))
+	}
+	return i, nil
 }
 
 func (m *Account) Marshal() (data []byte, err error) {
@@ -1167,6 +1894,107 @@ func (m *AuthenticateLoginResponse) MarshalTo(data []byte) (int, error) {
 		}
 		i += n2
 	}
+	if m.TwoFactorRequired {
+		data[i] = 0x20
+		i++
+		if m.TwoFactorRequired {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
+	if len(m.TwoFactorPhoneNumber) > 0 {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.TwoFactorPhoneNumber)))
+		i += copy(data[i:], m.TwoFactorPhoneNumber)
+	}
+	return i, nil
+}
+
+func (m *AuthenticateLoginWithCodeRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *AuthenticateLoginWithCodeRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Token) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Token)))
+		i += copy(data[i:], m.Token)
+	}
+	if len(m.Code) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Code)))
+		i += copy(data[i:], m.Code)
+	}
+	if len(m.TokenAttributes) > 0 {
+		for k, _ := range m.TokenAttributes {
+			data[i] = 0x1a
+			i++
+			v := m.TokenAttributes[k]
+			mapSize := 1 + len(k) + sovSvc(uint64(len(k))) + 1 + len(v) + sovSvc(uint64(len(v)))
+			i = encodeVarintSvc(data, i, uint64(mapSize))
+			data[i] = 0xa
+			i++
+			i = encodeVarintSvc(data, i, uint64(len(k)))
+			i += copy(data[i:], k)
+			data[i] = 0x12
+			i++
+			i = encodeVarintSvc(data, i, uint64(len(v)))
+			i += copy(data[i:], v)
+		}
+	}
+	return i, nil
+}
+
+func (m *AuthenticateLoginWithCodeResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *AuthenticateLoginWithCodeResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Token != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Token.Size()))
+		n3, err := m.Token.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n3
+	}
+	if m.Account != nil {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Account.Size()))
+		n4, err := m.Account.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n4
+	}
 	return i, nil
 }
 
@@ -1250,21 +2078,21 @@ func (m *CheckAuthenticationResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x12
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Account.Size()))
-		n3, err := m.Account.MarshalTo(data[i:])
+		n5, err := m.Account.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n3
+		i += n5
 	}
 	if m.Token != nil {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Token.Size()))
-		n4, err := m.Token.MarshalTo(data[i:])
+		n6, err := m.Token.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n4
+		i += n6
 	}
 	return i, nil
 }
@@ -1353,21 +2181,21 @@ func (m *CreateAccountResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Token.Size()))
-		n5, err := m.Token.MarshalTo(data[i:])
+		n7, err := m.Token.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n5
+		i += n7
 	}
 	if m.Account != nil {
 		data[i] = 0x12
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Account.Size()))
-		n6, err := m.Account.MarshalTo(data[i:])
+		n8, err := m.Account.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n6
+		i += n8
 	}
 	return i, nil
 }
@@ -1415,11 +2243,11 @@ func (m *GetAccountResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Account.Size()))
-		n7, err := m.Account.MarshalTo(data[i:])
+		n9, err := m.Account.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n7
+		i += n9
 	}
 	return i, nil
 }
@@ -1483,6 +2311,192 @@ func (m *UnauthenticateResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *CreateVerificationCodeRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreateVerificationCodeRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Type != 0 {
+		data[i] = 0x8
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Type))
+	}
+	if len(m.ValueToVerify) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ValueToVerify)))
+		i += copy(data[i:], m.ValueToVerify)
+	}
+	return i, nil
+}
+
+func (m *CreateVerificationCodeResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreateVerificationCodeResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.VerificationCode != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.VerificationCode.Size()))
+		n10, err := m.VerificationCode.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n10
+	}
+	return i, nil
+}
+
+func (m *CheckVerificationCodeRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CheckVerificationCodeRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Token) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Token)))
+		i += copy(data[i:], m.Token)
+	}
+	if len(m.Code) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Code)))
+		i += copy(data[i:], m.Code)
+	}
+	if len(m.TokenAttributes) > 0 {
+		for k, _ := range m.TokenAttributes {
+			data[i] = 0x1a
+			i++
+			v := m.TokenAttributes[k]
+			mapSize := 1 + len(k) + sovSvc(uint64(len(k))) + 1 + len(v) + sovSvc(uint64(len(v)))
+			i = encodeVarintSvc(data, i, uint64(mapSize))
+			data[i] = 0xa
+			i++
+			i = encodeVarintSvc(data, i, uint64(len(k)))
+			i += copy(data[i:], k)
+			data[i] = 0x12
+			i++
+			i = encodeVarintSvc(data, i, uint64(len(v)))
+			i += copy(data[i:], v)
+		}
+	}
+	return i, nil
+}
+
+func (m *CheckVerificationCodeResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CheckVerificationCodeResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Account != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Account.Size()))
+		n11, err := m.Account.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n11
+	}
+	if len(m.Value) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Value)))
+		i += copy(data[i:], m.Value)
+	}
+	return i, nil
+}
+
+func (m *VerifiedValueRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *VerifiedValueRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Token) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Token)))
+		i += copy(data[i:], m.Token)
+	}
+	return i, nil
+}
+
+func (m *VerifiedValueResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *VerifiedValueResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Value) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Value)))
+		i += copy(data[i:], m.Value)
+	}
+	return i, nil
+}
+
 func encodeFixed64Svc(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -1510,6 +2524,26 @@ func encodeVarintSvc(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	return offset + 1
 }
+func (m *VerificationCode) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Token)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Code)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.Type != 0 {
+		n += 1 + sovSvc(uint64(m.Type))
+	}
+	if m.ExpirationEpoch != 0 {
+		n += 1 + sovSvc(uint64(m.ExpirationEpoch))
+	}
+	return n
+}
+
 func (m *Account) Size() (n int) {
 	var l int
 	_ = l
@@ -1564,6 +2598,49 @@ func (m *AuthenticateLoginRequest) Size() (n int) {
 }
 
 func (m *AuthenticateLoginResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.Token != nil {
+		l = m.Token.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.Account != nil {
+		l = m.Account.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.TwoFactorRequired {
+		n += 2
+	}
+	l = len(m.TwoFactorPhoneNumber)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *AuthenticateLoginWithCodeRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Token)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Code)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if len(m.TokenAttributes) > 0 {
+		for k, v := range m.TokenAttributes {
+			_ = k
+			_ = v
+			mapEntrySize := 1 + len(k) + sovSvc(uint64(len(k))) + 1 + len(v) + sovSvc(uint64(len(v)))
+			n += mapEntrySize + 1 + sovSvc(uint64(mapEntrySize))
+		}
+	}
+	return n
+}
+
+func (m *AuthenticateLoginWithCodeResponse) Size() (n int) {
 	var l int
 	_ = l
 	if m.Token != nil {
@@ -1707,6 +2784,85 @@ func (m *UnauthenticateResponse) Size() (n int) {
 	return n
 }
 
+func (m *CreateVerificationCodeRequest) Size() (n int) {
+	var l int
+	_ = l
+	if m.Type != 0 {
+		n += 1 + sovSvc(uint64(m.Type))
+	}
+	l = len(m.ValueToVerify)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *CreateVerificationCodeResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.VerificationCode != nil {
+		l = m.VerificationCode.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *CheckVerificationCodeRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Token)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Code)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if len(m.TokenAttributes) > 0 {
+		for k, v := range m.TokenAttributes {
+			_ = k
+			_ = v
+			mapEntrySize := 1 + len(k) + sovSvc(uint64(len(k))) + 1 + len(v) + sovSvc(uint64(len(v)))
+			n += mapEntrySize + 1 + sovSvc(uint64(mapEntrySize))
+		}
+	}
+	return n
+}
+
+func (m *CheckVerificationCodeResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.Account != nil {
+		l = m.Account.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Value)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *VerifiedValueRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Token)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *VerifiedValueResponse) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Value)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
 func sovSvc(x uint64) (n int) {
 	for {
 		n++
@@ -1719,6 +2875,19 @@ func sovSvc(x uint64) (n int) {
 }
 func sozSvc(x uint64) (n int) {
 	return sovSvc(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (this *VerificationCode) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VerificationCode{`,
+		`Token:` + fmt.Sprintf("%v", this.Token) + `,`,
+		`Code:` + fmt.Sprintf("%v", this.Code) + `,`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`ExpirationEpoch:` + fmt.Sprintf("%v", this.ExpirationEpoch) + `,`,
+		`}`,
+	}, "")
+	return s
 }
 func (this *Account) String() string {
 	if this == nil {
@@ -1770,6 +2939,41 @@ func (this *AuthenticateLoginResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&AuthenticateLoginResponse{`,
+		`Token:` + strings.Replace(fmt.Sprintf("%v", this.Token), "AuthToken", "AuthToken", 1) + `,`,
+		`Account:` + strings.Replace(fmt.Sprintf("%v", this.Account), "Account", "Account", 1) + `,`,
+		`TwoFactorRequired:` + fmt.Sprintf("%v", this.TwoFactorRequired) + `,`,
+		`TwoFactorPhoneNumber:` + fmt.Sprintf("%v", this.TwoFactorPhoneNumber) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *AuthenticateLoginWithCodeRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForTokenAttributes := make([]string, 0, len(this.TokenAttributes))
+	for k, _ := range this.TokenAttributes {
+		keysForTokenAttributes = append(keysForTokenAttributes, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForTokenAttributes)
+	mapStringForTokenAttributes := "map[string]string{"
+	for _, k := range keysForTokenAttributes {
+		mapStringForTokenAttributes += fmt.Sprintf("%v: %v,", k, this.TokenAttributes[k])
+	}
+	mapStringForTokenAttributes += "}"
+	s := strings.Join([]string{`&AuthenticateLoginWithCodeRequest{`,
+		`Token:` + fmt.Sprintf("%v", this.Token) + `,`,
+		`Code:` + fmt.Sprintf("%v", this.Code) + `,`,
+		`TokenAttributes:` + mapStringForTokenAttributes + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *AuthenticateLoginWithCodeResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&AuthenticateLoginWithCodeResponse{`,
 		`Token:` + strings.Replace(fmt.Sprintf("%v", this.Token), "AuthToken", "AuthToken", 1) + `,`,
 		`Account:` + strings.Replace(fmt.Sprintf("%v", this.Account), "Account", "Account", 1) + `,`,
 		`}`,
@@ -1896,6 +3100,80 @@ func (this *UnauthenticateResponse) String() string {
 	}, "")
 	return s
 }
+func (this *CreateVerificationCodeRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateVerificationCodeRequest{`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`ValueToVerify:` + fmt.Sprintf("%v", this.ValueToVerify) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateVerificationCodeResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateVerificationCodeResponse{`,
+		`VerificationCode:` + strings.Replace(fmt.Sprintf("%v", this.VerificationCode), "VerificationCode", "VerificationCode", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CheckVerificationCodeRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForTokenAttributes := make([]string, 0, len(this.TokenAttributes))
+	for k, _ := range this.TokenAttributes {
+		keysForTokenAttributes = append(keysForTokenAttributes, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForTokenAttributes)
+	mapStringForTokenAttributes := "map[string]string{"
+	for _, k := range keysForTokenAttributes {
+		mapStringForTokenAttributes += fmt.Sprintf("%v: %v,", k, this.TokenAttributes[k])
+	}
+	mapStringForTokenAttributes += "}"
+	s := strings.Join([]string{`&CheckVerificationCodeRequest{`,
+		`Token:` + fmt.Sprintf("%v", this.Token) + `,`,
+		`Code:` + fmt.Sprintf("%v", this.Code) + `,`,
+		`TokenAttributes:` + mapStringForTokenAttributes + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CheckVerificationCodeResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CheckVerificationCodeResponse{`,
+		`Account:` + strings.Replace(fmt.Sprintf("%v", this.Account), "Account", "Account", 1) + `,`,
+		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VerifiedValueRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VerifiedValueRequest{`,
+		`Token:` + fmt.Sprintf("%v", this.Token) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VerifiedValueResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VerifiedValueResponse{`,
+		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func valueToStringSvc(v interface{}) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -1903,6 +3181,152 @@ func valueToStringSvc(v interface{}) string {
 	}
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
+}
+func (m *VerificationCode) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: VerificationCode: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: VerificationCode: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Token = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Code", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Code = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			m.Type = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Type |= (VerificationCodeType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExpirationEpoch", wireType)
+			}
+			m.ExpirationEpoch = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.ExpirationEpoch |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *Account) Unmarshal(data []byte) error {
 	l := len(data)
@@ -2385,6 +3809,390 @@ func (m *AuthenticateLoginResponse) Unmarshal(data []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: AuthenticateLoginResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Token == nil {
+				m.Token = &AuthToken{}
+			}
+			if err := m.Token.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Account", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Account == nil {
+				m.Account = &Account{}
+			}
+			if err := m.Account.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TwoFactorRequired", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.TwoFactorRequired = bool(v != 0)
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TwoFactorPhoneNumber", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TwoFactorPhoneNumber = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AuthenticateLoginWithCodeRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AuthenticateLoginWithCodeRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AuthenticateLoginWithCodeRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Token = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Code", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Code = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TokenAttributes", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			var keykey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				keykey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapkey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapkey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapkey := int(stringLenmapkey)
+			if intStringLenmapkey < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postStringIndexmapkey := iNdEx + intStringLenmapkey
+			if postStringIndexmapkey > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapkey := string(data[iNdEx:postStringIndexmapkey])
+			iNdEx = postStringIndexmapkey
+			var valuekey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				valuekey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapvalue uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapvalue |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapvalue := int(stringLenmapvalue)
+			if intStringLenmapvalue < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postStringIndexmapvalue := iNdEx + intStringLenmapvalue
+			if postStringIndexmapvalue > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapvalue := string(data[iNdEx:postStringIndexmapvalue])
+			iNdEx = postStringIndexmapvalue
+			if m.TokenAttributes == nil {
+				m.TokenAttributes = make(map[string]string)
+			}
+			m.TokenAttributes[mapkey] = mapvalue
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AuthenticateLoginWithCodeResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AuthenticateLoginWithCodeResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AuthenticateLoginWithCodeResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -3623,6 +5431,676 @@ func (m *UnauthenticateResponse) Unmarshal(data []byte) error {
 			return fmt.Errorf("proto: UnauthenticateResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateVerificationCodeRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateVerificationCodeRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateVerificationCodeRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			m.Type = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Type |= (VerificationCodeType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValueToVerify", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValueToVerify = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateVerificationCodeResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateVerificationCodeResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateVerificationCodeResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VerificationCode", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.VerificationCode == nil {
+				m.VerificationCode = &VerificationCode{}
+			}
+			if err := m.VerificationCode.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CheckVerificationCodeRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CheckVerificationCodeRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CheckVerificationCodeRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Token = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Code", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Code = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TokenAttributes", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			var keykey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				keykey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapkey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapkey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapkey := int(stringLenmapkey)
+			if intStringLenmapkey < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postStringIndexmapkey := iNdEx + intStringLenmapkey
+			if postStringIndexmapkey > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapkey := string(data[iNdEx:postStringIndexmapkey])
+			iNdEx = postStringIndexmapkey
+			var valuekey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				valuekey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapvalue uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapvalue |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapvalue := int(stringLenmapvalue)
+			if intStringLenmapvalue < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postStringIndexmapvalue := iNdEx + intStringLenmapvalue
+			if postStringIndexmapvalue > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapvalue := string(data[iNdEx:postStringIndexmapvalue])
+			iNdEx = postStringIndexmapvalue
+			if m.TokenAttributes == nil {
+				m.TokenAttributes = make(map[string]string)
+			}
+			m.TokenAttributes[mapkey] = mapvalue
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CheckVerificationCodeResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CheckVerificationCodeResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CheckVerificationCodeResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Account", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Account == nil {
+				m.Account = &Account{}
+			}
+			if err := m.Account.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Value = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *VerifiedValueRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: VerifiedValueRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: VerifiedValueRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Token = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *VerifiedValueResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: VerifiedValueResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: VerifiedValueResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Value = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

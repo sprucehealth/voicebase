@@ -6,6 +6,8 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
@@ -24,6 +26,8 @@ type service struct {
 	notification notification.Client
 	mediaSigner  *media.Signer
 	emailDomain  string
+	// TODO: Remove this
+	serviceNumber phone.Number
 }
 
 func (s *service) hydrateThreadTitles(ctx context.Context, threads []*thread) error {
@@ -137,4 +141,38 @@ func (s *service) entityDomain(ctx context.Context, entityID, domain string) (st
 	}
 
 	return res.EntityID, res.Domain, errors.Trace(err)
+}
+
+// createAndSendSMSVerificationCode creates a verification code and asynchronously sends it via SMS to the provided number. The token associated with the code is returned
+func (s *service) createAndSendSMSVerificationCode(ctx context.Context, codeType auth.VerificationCodeType, valueToVerify, pn string) (string, error) {
+	golog.Debugf("Creating and sending verification code of type %s to %s", auth.VerificationCodeType_name[int32(codeType)], pn)
+	phoneNumber, err := phone.ParseNumber(pn)
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+
+	resp, err := s.auth.CreateVerificationCode(ctx, &auth.CreateVerificationCodeRequest{
+		Type:          codeType,
+		ValueToVerify: valueToVerify,
+	})
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+
+	golog.Debugf("Sending code %s to %s for verification", resp.VerificationCode.Code, pn)
+	conc.Go(func() {
+		if _, err := s.exComms.SendMessage(context.TODO(), &excomms.SendMessageRequest{
+			Channel: excomms.ChannelType_SMS,
+			Message: &excomms.SendMessageRequest_SMS{
+				SMS: &excomms.SMSMessage{
+					Text:            fmt.Sprintf("Your Spruce verification code is %s", resp.VerificationCode.Code),
+					FromPhoneNumber: s.serviceNumber.String(),
+					ToPhoneNumber:   phoneNumber.String(),
+				},
+			},
+		}); err != nil {
+			golog.Errorf("Error while sending phone number verification message for %s: %s", phoneNumber, err)
+		}
+	})
+	return resp.VerificationCode.Token, nil
 }

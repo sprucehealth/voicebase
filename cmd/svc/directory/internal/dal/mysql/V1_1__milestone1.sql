@@ -36,7 +36,7 @@ CREATE TABLE directory.entity_contact (
     entity_id            bigint UNSIGNED NOT NULL,
     type                 varchar(100) NOT NULL,
     value                varchar(100) NOT NULL,
-    provisioned             BOOL NOT NULL DEFAULT FALSE,
+    provisioned          BOOL NOT NULL DEFAULT FALSE,
     created              timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     modified             timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX      idx_entity_id (entity_id),

@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
@@ -113,16 +114,18 @@ func NewGraphQL(
 	exComms excomms.ExCommsClient,
 	notificationClient notification.Client,
 	mediaSigner *media.Signer,
-	emailDomain string) httputil.ContextHandler {
+	emailDomain string,
+	serviceNumber phone.Number) httputil.ContextHandler {
 	return &graphQLHandler{
 		service: &service{
-			auth:         authClient,
-			directory:    directoryClient,
-			threading:    threadingClient,
-			exComms:      exComms,
-			notification: notificationClient,
-			mediaSigner:  mediaSigner,
-			emailDomain:  emailDomain,
+			auth:          authClient,
+			directory:     directoryClient,
+			threading:     threadingClient,
+			exComms:       exComms,
+			notification:  notificationClient,
+			mediaSigner:   mediaSigner,
+			emailDomain:   emailDomain,
+			serviceNumber: serviceNumber,
 		},
 	}
 }

@@ -93,7 +93,6 @@ func GenerateRandomNumber(maxNum int64, maxDigits int) (string, error) {
 		randNum = "0" + randNum
 	}
 	return randNum, nil
-
 }
 
 func Initials(first, last string) string {

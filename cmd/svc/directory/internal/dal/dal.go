@@ -223,6 +223,8 @@ func (t *EntityType) Scan(src interface{}) error {
 		*t, err = ParseEntityType(ts)
 	case []byte:
 		*t, err = ParseEntityType(string(ts))
+	default:
+		return errors.Trace(fmt.Errorf("Unsupported type %T with value %+v in enumeration scan", src, src))
 	}
 	return errors.Trace(err)
 }
@@ -260,6 +262,8 @@ func (t *EntityStatus) Scan(src interface{}) error {
 		*t, err = ParseEntityStatus(ts)
 	case []byte:
 		*t, err = ParseEntityStatus(string(ts))
+	default:
+		return errors.Trace(fmt.Errorf("Unsupported type %T with value %+v in enumeration scan", src, src))
 	}
 	return errors.Trace(err)
 }
@@ -297,6 +301,8 @@ func (t *EntityMembershipStatus) Scan(src interface{}) error {
 		*t, err = ParseEntityMembershipStatus(ts)
 	case []byte:
 		*t, err = ParseEntityMembershipStatus(string(ts))
+	default:
+		return errors.Trace(fmt.Errorf("Unsupported type %T with value %+v in enumeration scan", src, src))
 	}
 	return errors.Trace(err)
 }
@@ -332,6 +338,8 @@ func (t *EntityContactType) Scan(src interface{}) error {
 		*t, err = ParseEntityContactType(ts)
 	case []byte:
 		*t, err = ParseEntityContactType(string(ts))
+	default:
+		return errors.Trace(fmt.Errorf("Unsupported type %T with value %+v in enumeration scan", src, src))
 	}
 	return errors.Trace(err)
 }
