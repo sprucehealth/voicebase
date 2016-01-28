@@ -865,7 +865,7 @@ func (d *dal) EntityDomain(id *EntityID, domain *string) (EntityID, string, erro
 	if err := d.db.QueryRow(`
 		SELECT entity_id, domain
 		FROM entity_domain
-		WHERE `+strings.Join(where, " AND"), vals...).Scan(&queriedEntityID, &queriedDomain); err == sql.ErrNoRows {
+		WHERE `+strings.Join(where, " AND "), vals...).Scan(&queriedEntityID, &queriedDomain); err == sql.ErrNoRows {
 		return EmptyEntityID(), "", errors.Trace(api.ErrNotFound("entity_domain not found"))
 	} else if err != nil {
 		return EmptyEntityID(), "", errors.Trace(err)
