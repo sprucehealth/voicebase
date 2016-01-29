@@ -19,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/notification"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
 )
@@ -113,6 +114,7 @@ func NewGraphQL(
 	threadingClient threading.ThreadsClient,
 	exComms excomms.ExCommsClient,
 	notificationClient notification.Client,
+	settings settings.SettingsClient,
 	mediaSigner *media.Signer,
 	emailDomain string,
 	serviceNumber phone.Number) httputil.ContextHandler {
@@ -126,6 +128,7 @@ func NewGraphQL(
 			mediaSigner:   mediaSigner,
 			emailDomain:   emailDomain,
 			serviceNumber: serviceNumber,
+			settings:      settings,
 		},
 	}
 }

@@ -15,6 +15,7 @@ var config struct {
 	excommsServicePort      int
 	excommsAPIURL           string
 	directoryServiceURL     string
+	settingsServiceURL      string
 	twilioAuthToken         string
 	twilioAccountSID        string
 	twilioApplicationSID    string
@@ -46,6 +47,7 @@ func init() {
 	flag.StringVar(&config.twilioApplicationSID, "twilio_application_sid", "", "application sid for twilio")
 	flag.StringVar(&config.twilioAuthToken, "twilio_auth_token", "", "auth token for twilio account")
 	flag.StringVar(&config.directoryServiceURL, "directory_endpoint", "", "url to connect with directory service")
+	flag.StringVar(&config.settingsServiceURL, "settings_endpoint", "", "url to connect with settings service")
 	flag.StringVar(&config.awsRegion, "aws_region", "us-east-1", "aws region")
 	flag.StringVar(&config.awsAccessKey, "aws_access_key", "", "access key for aws user")
 	flag.StringVar(&config.awsSecretKey, "aws_secret_key", "", "secret key for aws user")

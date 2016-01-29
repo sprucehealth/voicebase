@@ -13,18 +13,25 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/cmd/svc/auth/internal/dal"
 	mock_dal "github.com/sprucehealth/backend/cmd/svc/auth/internal/dal/test"
+	authSetting "github.com/sprucehealth/backend/cmd/svc/auth/internal/settings"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/hash"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/backend/svc/settings"
+	mock_settings "github.com/sprucehealth/backend/svc/settings/mock"
 	"github.com/sprucehealth/backend/test"
 )
 
 func TestGetAccount(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl)
+
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
+	s := New(dl, settingsMock)
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
 	fn, ln := "bat", "man"
@@ -45,7 +52,10 @@ func TestGetAccount(t *testing.T) {
 func TestGetAccountNotFound(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl)
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
+	s := New(dl, settingsMock)
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Account, aID1), (*dal.Account)(nil), api.ErrNotFound("not found")))
@@ -57,7 +67,10 @@ func TestGetAccountNotFound(t *testing.T) {
 func TestAuthenticateLogin2FA(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl)
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
+	s := New(dl, settingsMock)
 	hasher := hash.NewBcryptHasher(bCryptHashCost)
 	email := "test@email.com"
 	password := "password"
@@ -70,6 +83,29 @@ func TestAuthenticateLogin2FA(t *testing.T) {
 	phoneNumber := "+1234567890"
 	dl.Expect(mock.NewExpectation(dl.AccountForEmail, email).WithReturns(&dal.Account{ID: aID1, Password: hashedPassword, PrimaryAccountPhoneID: apID1}, nil))
 	dl.Expect(mock.NewExpectation(dl.AccountPhone, apID1).WithReturns(&dal.AccountPhone{PhoneNumber: phoneNumber}, nil))
+
+	settingsMock.Expect(mock.NewExpectation(settingsMock.GetValues, &settings.GetValuesRequest{
+		NodeID: aID1.String(),
+		Keys: []*settings.ConfigKey{
+			{
+				Key: authSetting.ConfigKey2FAEnabled,
+			},
+		},
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key: authSetting.ConfigKey2FAEnabled,
+				},
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: true,
+					},
+				},
+			},
+		},
+	}, nil))
+
 	resp, err := s.AuthenticateLogin(context.Background(), &auth.AuthenticateLoginRequest{
 		Email:           email,
 		Password:        password,
@@ -83,11 +119,83 @@ func TestAuthenticateLogin2FA(t *testing.T) {
 	test.Equals(t, resp.TwoFactorPhoneNumber, phoneNumber)
 }
 
+func TestAuthenticateLogin2FA_Disabled(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
+	mclock := clock.NewManaged(time.Now())
+	s := New(dl, settingsMock)
+	svr, _ := s.(*server)
+	svr.clk = mclock
+
+	// token := "123abc"
+	// expires := mclock.Now().Add(defaultTokenExpiration)
+
+	hasher := hash.NewBcryptHasher(bCryptHashCost)
+	email := "test@email.com"
+	password := "password"
+	hashedPassword, err := hasher.GenerateFromPassword([]byte(password))
+	test.OK(t, err)
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+	apID1, err := dal.NewAccountPhoneID()
+	test.OK(t, err)
+
+	dl.Expect(mock.NewExpectation(dl.AccountForEmail, email).WithReturns(&dal.Account{ID: aID1, Password: hashedPassword, PrimaryAccountPhoneID: apID1}, nil))
+	dl.Expect(mock.NewExpectationFn(dl.InsertAuthToken, func(p ...interface{}) {
+		test.Assert(t, len(p) == 1, "Expected only 1 param to be provided")
+		authToken, ok := p[0].(*dal.AuthToken)
+		test.Assert(t, ok, "Expected *dal.AuthToken")
+		test.Assert(t, len(authToken.Token) != 0, "Expected non empty token")
+		test.Assert(t, authToken.Expires.Unix() > time.Now().Unix(), "Expected token to expire in the future")
+		// token = string(authToken.Token)
+		// expires = uint64(authToken.Expires.Unix())
+	}).WithReturns(int64(1), nil))
+	settingsMock.Expect(mock.NewExpectation(settingsMock.GetValues, &settings.GetValuesRequest{
+		NodeID: aID1.String(),
+		Keys: []*settings.ConfigKey{
+			{
+				Key: authSetting.ConfigKey2FAEnabled,
+			},
+		},
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key: authSetting.ConfigKey2FAEnabled,
+				},
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: false,
+					},
+				},
+			},
+		},
+	}, nil))
+
+	resp, err := s.AuthenticateLogin(context.Background(), &auth.AuthenticateLoginRequest{
+		Email:           email,
+		Password:        password,
+		TokenAttributes: map[string]string{"test": "attribute"},
+	})
+	test.OK(t, err)
+
+	test.AssertNotNil(t, resp.Token)
+	test.AssertNotNil(t, resp.Account)
+	test.Assert(t, !resp.TwoFactorRequired, "Expected two factor to be required")
+	test.Equals(t, "", resp.TwoFactorPhoneNumber)
+}
+
 func TestAuthenticateLoginWithCode(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
 	mClock := clock.NewManaged(time.Now())
-	s := New(dl)
+	s := New(dl, settingsMock)
 	svr, ok := s.(*server)
 	test.Assert(t, ok, "Expected a *server")
 	svr.clk = mClock
@@ -138,8 +246,12 @@ func TestAuthenticateLoginWithCode(t *testing.T) {
 func TestAuthenticateLoginWithCodeNot2FA(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
+
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
 	mClock := clock.NewManaged(time.Now())
-	s := New(dl)
+	s := New(dl, settingsMock)
 	svr, ok := s.(*server)
 	test.Assert(t, ok, "Expected a *server")
 	svr.clk = mClock
@@ -167,8 +279,12 @@ func TestAuthenticateLoginWithCodeNot2FA(t *testing.T) {
 func TestAuthenticateLoginWithCodeBadCode(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
+
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
 	mClock := clock.NewManaged(time.Now())
-	s := New(dl)
+	s := New(dl, settingsMock)
 	svr, ok := s.(*server)
 	test.Assert(t, ok, "Expected a *server")
 	svr.clk = mClock
@@ -196,7 +312,11 @@ func TestAuthenticateLoginWithCodeBadCode(t *testing.T) {
 func TestAuthenticateLoginNoEmail(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl)
+
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
+	s := New(dl, settingsMock)
 	email := "test@email.com"
 	password := "password"
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.AccountForEmail, email), (*dal.Account)(nil), api.ErrNotFound("not found")))
@@ -213,7 +333,10 @@ func TestAuthenticateLoginNoEmail(t *testing.T) {
 func TestAuthenticateBadPassword(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl)
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
+	s := New(dl, settingsMock)
 	email := "test@email.com"
 	password := "password"
 	aID1, err := dal.NewAccountID()
@@ -232,8 +355,12 @@ func TestAuthenticateBadPassword(t *testing.T) {
 func TestCheckAuthentication(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
+
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
 	mClock := clock.NewManaged(time.Now())
-	s := New(dl)
+	s := New(dl, settingsMock)
 	svr, ok := s.(*server)
 	test.Assert(t, ok, "Expected a *server")
 	svr.clk = mClock
@@ -276,8 +403,12 @@ func TestCheckAuthentication(t *testing.T) {
 func TestCheckVerificationTokenBadCode(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
+
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
 	mClock := clock.NewManaged(time.Now())
-	s := New(dl)
+	s := New(dl, settingsMock)
 	svr, ok := s.(*server)
 	test.Assert(t, ok, "Expected a *server")
 	svr.clk = mClock
@@ -301,8 +432,12 @@ func TestCheckVerificationTokenBadCode(t *testing.T) {
 func TestCheckVerificationTokenExpired(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
+
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
 	mClock := clock.NewManaged(time.Now())
-	s := New(dl)
+	s := New(dl, settingsMock)
 	svr, ok := s.(*server)
 	test.Assert(t, ok, "Expected a *server")
 	svr.clk = mClock
@@ -327,8 +462,12 @@ func TestCheckVerificationTokenExpired(t *testing.T) {
 func TestCheckVerificationPhone(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
+
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
 	mClock := clock.NewManaged(time.Now())
-	s := New(dl)
+	s := New(dl, settingsMock)
 	svr, ok := s.(*server)
 	test.Assert(t, ok, "Expected a *server")
 	svr.clk = mClock
@@ -359,8 +498,11 @@ func TestCheckVerificationPhone(t *testing.T) {
 func TestCheckVerificationAccount2FA(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
 	mClock := clock.NewManaged(time.Now())
-	s := New(dl)
+	s := New(dl, settingsMock)
 	svr, ok := s.(*server)
 	test.Assert(t, ok, "Expected a *server")
 	svr.clk = mClock
@@ -399,8 +541,11 @@ func TestCheckVerificationAccount2FA(t *testing.T) {
 func TestCheckAuthenticationRefresh(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
 	mClock := clock.NewManaged(time.Now())
-	s := New(dl)
+	s := New(dl, settingsMock)
 	svr, ok := s.(*server)
 	test.Assert(t, ok, "Expected a *server")
 	svr.clk = mClock
@@ -456,8 +601,12 @@ func TestCheckAuthenticationRefresh(t *testing.T) {
 func TestCheckAuthenticationNoToken(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
+
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
 	mClock := clock.NewManaged(time.Now())
-	s := New(dl)
+	s := New(dl, settingsMock)
 	svr, ok := s.(*server)
 	test.Assert(t, ok, "Expected a *server")
 	svr.clk = mClock
@@ -479,7 +628,11 @@ func TestCheckAuthenticationNoToken(t *testing.T) {
 func TestCreateAccount(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl)
+
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
+	s := New(dl, settingsMock)
 	fn := "bat"
 	ln := "man"
 	email := "bat@man.com"
@@ -559,7 +712,10 @@ func TestCreateAccount(t *testing.T) {
 func TestCreateAccountMissingData(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl)
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
+	s := New(dl, settingsMock)
 	fn := "bat"
 	ln := "man"
 	email := "bat@man.com"
@@ -613,7 +769,11 @@ func TestCreateAccountMissingData(t *testing.T) {
 func TestCreateAccountBadEmail(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl)
+
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
+	s := New(dl, settingsMock)
 	fn := "bat"
 	ln := "man"
 	email := "notarealemail"
@@ -634,7 +794,11 @@ func TestCreateAccountBadEmail(t *testing.T) {
 func TestCreateVerificationCode(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl)
+
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
+	s := New(dl, settingsMock)
 	value := "myValue"
 	var code string
 	var token string
@@ -669,7 +833,10 @@ func TestCreateVerificationCode(t *testing.T) {
 func TestVerifiedValue(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl)
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
+	s := New(dl, settingsMock)
 	token := "123abc"
 	value := "myValue"
 
@@ -688,7 +855,11 @@ func TestVerifiedValue(t *testing.T) {
 func TestVerifiedValueNotFound(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl)
+
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
+	s := New(dl, settingsMock)
 	token := "123abc"
 
 	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns((*dal.VerificationCode)(nil), api.ErrNotFound("foo")))
@@ -703,7 +874,11 @@ func TestVerifiedValueNotFound(t *testing.T) {
 func TestVerifiedValueNotYetVerified(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
-	s := New(dl)
+
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
+	s := New(dl, settingsMock)
 	token := "123abc"
 
 	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns(&dal.VerificationCode{

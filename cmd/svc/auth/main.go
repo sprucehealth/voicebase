@@ -4,28 +4,33 @@ import (
 	"flag"
 	"net"
 	"strconv"
-
-	"google.golang.org/grpc"
+	"time"
 
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/auth/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/auth/internal/server"
+	authSetting "github.com/sprucehealth/backend/cmd/svc/auth/internal/settings"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	pb "github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/backend/svc/settings"
+
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 var config struct {
-	listenPort int
-	debug      bool
-	dbHost     string
-	dbPort     int
-	dbName     string
-	dbUser     string
-	dbPassword string
-	dbCACert   string
-	dbTLSCert  string
-	dbTLSKey   string
+	listenPort             int
+	debug                  bool
+	dbHost                 string
+	dbPort                 int
+	dbName                 string
+	dbUser                 string
+	dbPassword             string
+	dbCACert               string
+	dbTLSCert              string
+	dbTLSKey               string
+	settingsServiceAddress string
 }
 
 func init() {
@@ -39,6 +44,7 @@ func init() {
 	flag.StringVar(&config.dbCACert, "db_ca_cert", "", "the ca cert to use when connecting to the database")
 	flag.StringVar(&config.dbTLSCert, "db_tls_cert", "", "the tls cert to use when connecting to the database")
 	flag.StringVar(&config.dbTLSKey, "db_tls_key", "", "the tls key to use when connecting to the database")
+	flag.StringVar(&config.settingsServiceAddress, "settings_addr", "", "host:port of settings service")
 }
 
 func main() {
@@ -64,8 +70,28 @@ func main() {
 	if err != nil {
 		golog.Fatalf("failed to iniitlize db connection: %s", err)
 	}
+
+	settingsConn, err := grpc.Dial(config.settingsServiceAddress, grpc.WithInsecure())
+	if err != nil {
+		golog.Fatalf("Unable to connect to settings service: %s", err)
+	}
+	defer settingsConn.Close()
+	settingsClient := settings.NewSettingsClient(settingsConn)
+
+	// register the settings with the service
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	_, err = settings.RegisterConfigs(
+		ctx,
+		settingsClient,
+		[]*settings.Config{
+			authSetting.Enable2FAConfig,
+		})
+	if err != nil {
+		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
+	}
+
 	s := grpc.NewServer()
-	pb.RegisterAuthServer(s, server.New(dal.New(db)))
+	pb.RegisterAuthServer(s, server.New(dal.New(db), settingsClient))
 	golog.Infof("Starting AuthService on %s...", listenAddress)
 	s.Serve(lis)
 }

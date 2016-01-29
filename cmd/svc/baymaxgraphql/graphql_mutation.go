@@ -1402,6 +1402,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				}, nil
 			},
 		},
+		"modifySetting": modifySettingMutation,
 	},
 })
 

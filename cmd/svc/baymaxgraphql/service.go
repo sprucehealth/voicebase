@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/notification"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -24,6 +25,7 @@ type service struct {
 	threading    threading.ThreadsClient
 	exComms      excomms.ExCommsClient
 	notification notification.Client
+	settings     settings.SettingsClient
 	mediaSigner  *media.Signer
 	emailDomain  string
 	// TODO: Remove this

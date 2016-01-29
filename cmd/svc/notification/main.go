@@ -5,8 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-
-	"google.golang.org/grpc"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
@@ -17,6 +16,9 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/settings"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 var config struct {
@@ -37,6 +39,7 @@ var config struct {
 	awsSecretKey                      string
 	awsRegion                         string
 	directoryServiceAddress           string
+	settingsServiceAddress            string
 }
 
 func init() {
@@ -57,6 +60,7 @@ func init() {
 	flag.StringVar(&config.awsSecretKey, "aws_secret_key", "", "secret key for aws")
 	flag.StringVar(&config.awsRegion, "aws_region", "us-east-1", "aws region")
 	flag.StringVar(&config.directoryServiceAddress, "directory_addr", "", "host:port of directory service")
+	flag.StringVar(&config.settingsServiceAddress, "settings_addr", "", "host:port of settings service")
 }
 
 func main() {
@@ -94,6 +98,26 @@ func main() {
 		golog.Fatalf("Unable to connect to directory service: %s", err)
 	}
 	directoryClient := directory.NewDirectoryClient(conn)
+
+	settingsConn, err := grpc.Dial(config.settingsServiceAddress, grpc.WithInsecure())
+	if err != nil {
+		golog.Fatalf("Unable to connect to settings service: %s", err)
+	}
+	defer settingsConn.Close()
+	settingsClient := settings.NewSettingsClient(settingsConn)
+
+	// register the settings with the service
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	_, err = settings.RegisterConfigs(
+		ctx,
+		settingsClient,
+		[]*settings.Config{
+			receiveNotificationsConfig,
+			notificationPreferenceConfig,
+		})
+	if err != nil {
+		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
+	}
 
 	svc := service.New(
 		dal.New(db),

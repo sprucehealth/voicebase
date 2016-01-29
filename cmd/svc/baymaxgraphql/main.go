@@ -26,6 +26,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/notification"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc"
 )
@@ -50,6 +51,7 @@ var (
 	flagThreadingAddr            = flag.String("threading_addr", "", "host:port of threading service")
 	flagSQSDeviceRegistrationURL = flag.String("sqs_device_registration_url", "", "the sqs url for device registration messages")
 	flagSQSNotificationURL       = flag.String("sqs_notification_url", "", "the sqs url for notification queueing")
+	flagSettingsAddr             = flag.String("settings_addr", "", "host:port of settings service")
 
 	// AWS
 	flagAWSAccessKey = flag.String("aws_access_key", "", "access key for aws")
@@ -108,10 +110,18 @@ func main() {
 	}
 	threadingClient := threading.NewThreadsClient(conn)
 
+	if *flagSettingsAddr == "" {
+		golog.Fatalf("Settings service not configured")
+	}
+	conn, err = grpc.Dial(*flagSettingsAddr, grpc.WithInsecure())
+	if err != nil {
+		golog.Fatalf("Unable to connect to settings service: %s", err)
+	}
+	settingsClient := settings.NewSettingsClient(conn)
+
 	if *flagExCommsAddr == "" {
 		golog.Fatalf("ExComm service not configured")
 	}
-
 	var exCommsClient excomms.ExCommsClient
 	if *flagExCommsAddr == "stub" {
 		exCommsClient = stub.NewStubExcommsClient()
@@ -174,7 +184,7 @@ func main() {
 
 	corsOrigins := []string{"https://" + *flagWebDomain}
 
-	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, ms, *flagEmailDomain, pn)
+	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, settingsClient, ms, *flagEmailDomain, pn)
 	r.Handle("/graphql", httputil.ToContextHandler(cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},

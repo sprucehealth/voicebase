@@ -147,3 +147,60 @@ type organization struct {
 type subdomain struct {
 	Available bool `json:"available"`
 }
+
+// settings
+
+type stringListSetting struct {
+	Key         string                  `json:"key"`
+	Subkey      string                  `json:"subkey"`
+	Title       string                  `json:"title"`
+	Description string                  `json:"description"`
+	Value       *stringListSettingValue `json:"value"`
+}
+
+type booleanSetting struct {
+	Key         string               `json:"key"`
+	Subkey      string               `json:"subkey"`
+	Title       string               `json:"title"`
+	Description string               `json:"description"`
+	Value       *booleanSettingValue `json:"value"`
+}
+
+type selectableItem struct {
+	ID            string `json:"id"`
+	Label         string `json:"label"`
+	AllowFreeText bool   `json:"allowFreeText"`
+}
+
+type selectSetting struct {
+	Key         string                  `json:"key"`
+	Subkey      string                  `json:"subkey"`
+	Title       string                  `json:"title"`
+	Description string                  `json:"description"`
+	Options     []*selectableItem       `json:"options"`
+	Value       *selectableSettingValue `json:"value"`
+}
+
+// setting values
+
+type stringListSettingValue struct {
+	Values []string `json:"list"`
+	Key    string   `json:"key"`
+	Subkey string   `json:"subkey"`
+}
+
+type booleanSettingValue struct {
+	Value  bool   `json:"set"`
+	Key    string `json:"key"`
+	Subkey string `json:"subkey"`
+}
+
+type selectableItemValue struct {
+	ID   string `json:"id"`
+	Text string `json:"text"`
+}
+type selectableSettingValue struct {
+	Items  []*selectableItemValue `json:"items"`
+	Key    string                 `json:"key"`
+	Subkey string                 `json:"subkey"`
+}

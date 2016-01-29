@@ -7,6 +7,7 @@ import (
 
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/cmd/svc/auth/internal/dal"
+	authSetting "github.com/sprucehealth/backend/cmd/svc/auth/internal/settings"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -16,6 +17,7 @@ import (
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/backend/svc/settings"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -29,19 +31,21 @@ var (
 )
 
 type server struct {
-	dal    dal.DAL
-	hasher hash.PasswordHasher
-	clk    clock.Clock
+	dal      dal.DAL
+	hasher   hash.PasswordHasher
+	clk      clock.Clock
+	settings settings.SettingsClient
 }
 
 var bCryptHashCost = 10
 
 // New returns an initialized instance of server
-func New(dl dal.DAL) auth.AuthServer {
+func New(dl dal.DAL, settings settings.SettingsClient) auth.AuthServer {
 	return &server{
-		dal:    dl,
-		hasher: hash.NewBcryptHasher(bCryptHashCost),
-		clk:    clock.New(),
+		dal:      dl,
+		hasher:   hash.NewBcryptHasher(bCryptHashCost),
+		clk:      clock.New(),
+		settings: settings,
 	}
 }
 
@@ -68,6 +72,22 @@ func (s *server) AuthenticateLogin(ctx context.Context, rd *auth.AuthenticateLog
 	var authToken *auth.AuthToken
 	var twoFactorPhone string
 	accountRequiresTwoFactor := true
+	res, err := s.settings.GetValues(ctx, &settings.GetValuesRequest{
+		NodeID: account.ID.String(),
+		Keys: []*settings.ConfigKey{
+			{
+				Key: authSetting.ConfigKey2FAEnabled,
+			},
+		},
+	})
+	if err != nil {
+		golog.Errorf("unable to lookup setting %s for account %s", authSetting.ConfigKey2FAEnabled, err.Error())
+	} else if len(res.Values) != 1 {
+		golog.Errorf("Expected 1 value for setting %s but got back %d", authSetting.ConfigKey2FAEnabled, len(res.Values))
+	}
+	val := res.Values[0]
+	accountRequiresTwoFactor = val.GetBoolean().Value
+
 	if accountRequiresTwoFactor {
 		// TODO: Make this response and data less phone/sms specific
 		accountPhone, err := s.dal.AccountPhone(account.PrimaryAccountPhoneID)

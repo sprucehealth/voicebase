@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
@@ -14,6 +15,8 @@ import (
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/settings"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
@@ -60,6 +63,30 @@ func runService() {
 		return
 	}
 	defer directoryConn.Close()
+
+	settingsConn, err := grpc.Dial(
+		config.settingsServiceURL,
+		grpc.WithInsecure())
+	if err != nil {
+		golog.Fatalf("Unable to communicate with settings service: %s", err.Error())
+		return
+	}
+	defer settingsConn.Close()
+
+	// register the settings with the service
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	settingsClient := settings.NewSettingsClient(settingsConn)
+	_, err = settings.RegisterConfigs(
+		ctx,
+		settingsClient,
+		[]*settings.Config{
+			numbersToRingConfig,
+			voicemailOptionConfig,
+			sendCallsToVoicemailConfig,
+		})
+	if err != nil {
+		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
+	}
 
 	store := storage.NewS3(awsSession, config.attachmentBucket, config.attachmentPrefix)
 

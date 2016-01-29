@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/language/ast"
 )
@@ -72,4 +74,11 @@ func selectingOnlyID(p graphql.ResolveParams) bool {
 		}
 	}
 	return false
+}
+
+func nodePrefix(nodeID string) string {
+	i := strings.IndexByte(nodeID, '_')
+	prefix := nodeID[:i]
+
+	return prefix
 }

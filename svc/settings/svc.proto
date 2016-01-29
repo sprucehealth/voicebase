@@ -1,0 +1,152 @@
+syntax = "proto3";
+
+package settings;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = true;
+
+// Data models
+
+// ConfigType enumerates the possible setting configs for a given key.
+enum ConfigType {
+	SINGLE_SELECT = 0;
+	MULTI_SELECT = 1;
+	STRING_LIST = 2;
+	BOOLEAN = 3;
+}
+
+// OwnerType enumerates the possible owners for a particular config
+enum OwnerType {
+	INTERNAL_ENTITY = 0;
+	ORGANIZATION = 1;
+	ACCOUNT = 2;
+}
+
+// Config represents a single setting configuration used for validation of 
+// a setting value, defaults and description.
+message Config {
+	string title = 1;
+	string description = 2;
+	string key = 3;
+	bool allow_subkeys = 4;
+	ConfigType type = 5;
+	repeated OwnerType possible_owners = 6;
+
+	oneof config {
+		BooleanConfig boolean = 10;
+		StringListConfig string_list = 11;
+		SingleSelectConfig single_select = 12;
+		MultiSelectConfig multi_select = 13;
+	}
+}	
+
+// ConfigKey is a structure used to uniquely identify a setting config/value for a given
+// entity. It is expected that the key,subkey combination is unique if both are specified,
+// and that the key by itself is unique if there is no subkey specified.
+message ConfigKey {
+	string key = 1;
+	string subkey = 2;
+}
+
+// Value represents a valid value for a particular setting config.
+message Value {
+	ConfigKey key = 1;
+	ConfigType type = 2;
+	oneof value {
+		BooleanValue boolean = 10;
+		StringListValue string_list = 11;
+		SingleSelectValue single_select = 12;
+		MultiSelectValue multi_select = 13;
+	}
+}
+
+// Boolean
+
+message BooleanConfig {
+	BooleanValue default = 1;
+}
+message BooleanValue {
+	bool value = 1;
+}
+
+// String list 
+
+message StringListConfig {
+	StringListValue default = 1;
+}
+message StringListValue {
+	repeated string values = 1;
+}
+
+// Single-select and multi-select
+
+message Item {
+	string id = 1  [(gogoproto.customname) = "ID"];
+	string label = 2;
+	bool allow_free_text = 3;
+}
+message MultiSelectConfig {
+	repeated Item items = 1;
+	MultiSelectValue default = 2;
+}
+message SingleSelectConfig {
+	repeated Item items = 1;
+	SingleSelectValue default = 2;
+}
+
+message ItemValue {
+	string id = 1 [(gogoproto.customname) = "ID"];;
+	string free_text_response = 2;
+}
+message SingleSelectValue {
+	ItemValue item = 1;
+}
+message MultiSelectValue {
+	repeated ItemValue items = 1;
+}
+
+// RPC
+
+message RegisterConfigsRequest {
+	repeated Config configs = 1;
+}
+
+message RegisterConfigsResponse {
+
+}
+
+message GetConfigsRequest {
+	repeated string keys = 1;
+}
+
+message GetConfigsResponse {
+	repeated Config configs = 1;
+}
+
+message SetValueRequest {
+	string node_id = 1 [(gogoproto.customname) = "NodeID"];
+	Value value = 2;
+}
+
+message SetValueResponse {
+
+}
+
+message GetValuesRequest {
+	repeated ConfigKey keys = 1;
+	string node_id = 2 [(gogoproto.customname) = "NodeID"];
+}
+
+message GetValuesResponse {
+	repeated Value values = 1;
+}
+
+service Settings {
+	rpc RegisterConfigs (RegisterConfigsRequest) returns (RegisterConfigsResponse);
+	rpc GetConfigs (GetConfigsRequest) returns (GetConfigsResponse);
+	rpc SetValue (SetValueRequest) returns (SetValueResponse);
+	rpc GetValues (GetValuesRequest) returns (GetValuesResponse);
+}

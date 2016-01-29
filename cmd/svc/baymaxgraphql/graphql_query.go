@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"strings"
 
 	"golang.org/x/net/context"
 
@@ -39,8 +38,7 @@ var queryType = graphql.NewObject(
 						return nil, errNotAuthenticated
 					}
 					id := p.Args["id"].(string)
-					i := strings.IndexByte(id, '_')
-					prefix := id[:i]
+					prefix := nodePrefix(id)
 					switch prefix {
 					case "entity":
 						return lookupEntity(ctx, svc, id)
@@ -140,6 +138,7 @@ var queryType = graphql.NewObject(
 					}, nil
 				},
 			},
+			"setting": settingsQuery,
 		},
 	},
 )

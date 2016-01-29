@@ -72,3 +72,6 @@ cmd/svc/carefinder/resources/static/fonts/*
 cmd/svc/carefinder/resources/static/css/*
 cmd/svc/carefinder/resources/static/js/*
 cmd/svc/excommsclient
+cmd/svc/settings/settings
+cmd/svc/settings/schema/state-*
+

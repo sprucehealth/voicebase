@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 )
 
@@ -197,4 +198,71 @@ func transformThreadItemViewDetailsToResponse(tivds []*threading.ThreadItemViewD
 		}
 	}
 	return rivds, nil
+}
+
+func transformStringListSettingToResponse(config *settings.Config, value *settings.Value) *stringListSetting {
+	return &stringListSetting{
+		Key:         config.Key,
+		Subkey:      value.Key.Subkey,
+		Title:       config.Title,
+		Description: config.Description,
+		Value: &stringListSettingValue{
+			Values: value.GetStringList().Values,
+		},
+	}
+}
+
+func transformBooleanSettingToResponse(config *settings.Config, value *settings.Value) *booleanSetting {
+	return &booleanSetting{
+		Key:         config.Key,
+		Subkey:      value.Key.Subkey,
+		Title:       config.Title,
+		Description: config.Description,
+		Value: &booleanSettingValue{
+			Value: value.GetBoolean().Value,
+		},
+	}
+}
+
+func transformMultiSelectToResponse(config *settings.Config, value *settings.Value) *selectSetting {
+	ss := &selectSetting{
+		Key:         config.Key,
+		Subkey:      value.Key.Subkey,
+		Title:       config.Title,
+		Description: config.Description,
+	}
+
+	var items []*settings.Item
+	var values []*settings.ItemValue
+	if config.Type == settings.ConfigType_SINGLE_SELECT {
+		items = config.GetSingleSelect().Items
+		if value.GetSingleSelect().Item != nil {
+			values = []*settings.ItemValue{value.GetSingleSelect().Item}
+		}
+	} else {
+		items = config.GetMultiSelect().Items
+		values = value.GetMultiSelect().Items
+	}
+
+	ss.Options = make([]*selectableItem, len(items))
+	ss.Value = &selectableSettingValue{
+		Items: make([]*selectableItemValue, len(values)),
+	}
+
+	for i, option := range items {
+		ss.Options[i] = &selectableItem{
+			ID:            option.ID,
+			Label:         option.Label,
+			AllowFreeText: option.AllowFreeText,
+		}
+	}
+
+	for i, v := range values {
+		ss.Value.Items[i] = &selectableItemValue{
+			ID:   v.ID,
+			Text: v.FreeTextResponse,
+		}
+	}
+
+	return ss
 }
