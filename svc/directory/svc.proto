@@ -33,6 +33,8 @@ message EntityInfo {
     string     group_name = 4;
     string     display_name = 5;
     string     note = 6;
+    string     short_title = 7;
+    string     long_title = 8;
 }
 
 message Entity {
@@ -161,9 +163,10 @@ message CreateContactsResponse {
 }
 
 message UpdateEntityRequest {
-    string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+    string     entity_id = 1 [(gogoproto.customname) = "EntityID"];
     EntityInfo entity_info = 2;
 	RequestedInformation requested_information = 3;
+    repeated   Contact contacts = 4;
 }
 
 message UpdateEntityResponse {

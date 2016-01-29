@@ -147,15 +147,21 @@ var checkVerificationCodeField = &graphql.Field{
 		token, _ := input["token"].(string)
 		code, _ := input["code"].(string)
 
+		golog.Debugf("Checking token %s against code %s", token, code)
 		resp, err := svc.auth.CheckVerificationCode(ctx, &auth.CheckVerificationCodeRequest{
 			Token: token,
 			Code:  code,
 		})
-		result := checkVerificationCodeResultSuccess
 		if grpc.Code(err) == auth.BadVerificationCode {
-			result = checkVerificationCodeResultFailure
+			return &checkVerificationCodeOutput{
+				ClientMutationID: mutationID,
+				Result:           checkVerificationCodeResultFailure,
+			}, nil
 		} else if grpc.Code(err) == auth.VerificationCodeExpired {
-			result = checkVerificationCodeResultExpired
+			return &checkVerificationCodeOutput{
+				ClientMutationID: mutationID,
+				Result:           checkVerificationCodeResultExpired,
+			}, nil
 		} else if err != nil {
 			golog.Errorf(err.Error())
 			return nil, errors.New("Failed to check verification code")
@@ -170,7 +176,7 @@ var checkVerificationCodeField = &graphql.Field{
 
 		return &checkVerificationCodeOutput{
 			ClientMutationID: mutationID,
-			Result:           result,
+			Result:           checkVerificationCodeResultSuccess,
 			Account:          acc,
 		}, nil
 	},

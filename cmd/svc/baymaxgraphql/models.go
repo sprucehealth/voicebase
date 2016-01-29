@@ -42,6 +42,8 @@ type entity struct {
 	LastName      string         `json:"lastName"`
 	GroupName     string         `json:"groupName"`
 	DisplayName   string         `json:"displayName"`
+	ShortTitle    string         `json:"shortTitle"`
+	LongTitle     string         `json:"longTitle"`
 	Note          string         `json:"note"`
 	Contacts      []*contactInfo `json:"contacts"`
 	// TODO avatar(width: Int = 120, height: Int = 120, crop: Boolean = true): Image

@@ -779,7 +779,73 @@ func TestUpdateEntity(t *testing.T) {
 		LastName:      ptr.String(""),
 		MiddleInitial: ptr.String(""),
 		GroupName:     ptr.String(""),
+		ShortTitle:    ptr.String(""),
+		LongTitle:     ptr.String(""),
 		Note:          ptr.String("I am the knight"),
+	}))
+
+	dl.Expect(mock.NewExpectation(dl.DeleteEntityContactsForEntityID, eID1))
+	dl.Expect(mock.NewExpectation(dl.InsertEntityContacts, []*dal.EntityContact{}))
+
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
+		ID:          eID1,
+		DisplayName: "batman",
+		Note:        "I am the knight",
+		Type:        dal.EntityTypeInternal,
+	}, nil))
+
+	resp, err := s.UpdateEntity(context.Background(), &directory.UpdateEntityRequest{
+		EntityID: eID1.String(),
+		EntityInfo: &directory.EntityInfo{
+			DisplayName: "batman",
+			Note:        "I am the knight",
+		},
+	})
+	test.OK(t, err)
+
+	test.AssertNotNil(t, resp.Entity)
+	test.Equals(t, "batman", resp.Entity.Info.DisplayName)
+	test.Equals(t, "I am the knight", resp.Entity.Info.Note)
+	test.Equals(t, eID1.String(), resp.Entity.ID)
+}
+
+func TestUpdateEntityWithContacts(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	s := New(dl)
+	eID1, err := dal.NewEntityID()
+	test.OK(t, err)
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
+		Type: dal.EntityTypeInternal,
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.UpdateEntity, eID1, &dal.EntityUpdate{
+		DisplayName:   ptr.String("batman"),
+		FirstName:     ptr.String(""),
+		LastName:      ptr.String(""),
+		MiddleInitial: ptr.String(""),
+		GroupName:     ptr.String(""),
+		ShortTitle:    ptr.String(""),
+		LongTitle:     ptr.String(""),
+		Note:          ptr.String("I am the knight"),
+	}))
+
+	dl.Expect(mock.NewExpectation(dl.DeleteEntityContactsForEntityID, eID1))
+	dl.Expect(mock.NewExpectation(dl.InsertEntityContacts, []*dal.EntityContact{
+		&dal.EntityContact{
+			EntityID:    eID1,
+			Value:       "1",
+			Provisioned: true,
+			Label:       "Label1",
+			Type:        dal.EntityContactTypeEmail,
+		},
+		&dal.EntityContact{
+			EntityID:    eID1,
+			Value:       "2",
+			Provisioned: false,
+			Label:       "Label2",
+			Type:        dal.EntityContactTypePhone,
+		},
 	}))
 
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID1), &dal.Entity{
@@ -794,6 +860,20 @@ func TestUpdateEntity(t *testing.T) {
 		EntityInfo: &directory.EntityInfo{
 			DisplayName: "batman",
 			Note:        "I am the knight",
+		},
+		Contacts: []*directory.Contact{
+			&directory.Contact{
+				Value:       "1",
+				Provisioned: true,
+				Label:       "Label1",
+				ContactType: directory.ContactType_EMAIL,
+			},
+			&directory.Contact{
+				Value:       "2",
+				Provisioned: false,
+				Label:       "Label2",
+				ContactType: directory.ContactType_PHONE,
+			},
 		},
 	})
 	test.OK(t, err)

@@ -19,58 +19,17 @@ import (
 
 var grpcErrorf = grpc.Errorf
 
-// DAL represents the methods required to provide data access layer functionality
-type DAL interface {
-	InsertEntity(model *dal.Entity) (dal.EntityID, error)
-	Entity(id dal.EntityID) (*dal.Entity, error)
-	Entities(ids []dal.EntityID) ([]*dal.Entity, error)
-	UpdateEntity(id dal.EntityID, update *dal.EntityUpdate) (int64, error)
-	DeleteEntity(id dal.EntityID) (int64, error)
-	InsertExternalEntityID(model *dal.ExternalEntityID) error
-	ExternalEntityIDs(externalID string) ([]*dal.ExternalEntityID, error)
-	ExternalEntityIDsForEntities(entityID []dal.EntityID) ([]*dal.ExternalEntityID, error)
-	InsertEntityMembership(model *dal.EntityMembership) error
-	EntityMemberships(id dal.EntityID) ([]*dal.EntityMembership, error)
-	EntityMembers(id dal.EntityID) ([]*dal.Entity, error)
-	InsertEntityContact(model *dal.EntityContact) (dal.EntityContactID, error)
-	InsertEntityContacts(models []*dal.EntityContact) error
-	EntityContacts(id dal.EntityID) ([]*dal.EntityContact, error)
-	EntityContact(id dal.EntityContactID) (*dal.EntityContact, error)
-	EntityContactsForValue(value string) ([]*dal.EntityContact, error)
-	UpdateEntityContact(id dal.EntityContactID, update *dal.EntityContactUpdate) (int64, error)
-	DeleteEntityContact(id dal.EntityContactID) (int64, error)
-	InsertEvent(model *dal.Event) (dal.EventID, error)
-	Event(id dal.EventID) (*dal.Event, error)
-	UpdateEvent(id dal.EventID, update *dal.EventUpdate) (int64, error)
-	DeleteEvent(id dal.EventID) (int64, error)
-	EntityDomain(id *dal.EntityID, domain *string) (dal.EntityID, string, error)
-	InsertEntityDomain(id dal.EntityID, domain string) error
-	Transact(trans func(dal dal.DAL) error) (err error)
-}
-
-// Server describes the methods exposed by the server
-type Server interface {
-	CreateContact(context.Context, *directory.CreateContactRequest) (*directory.CreateContactResponse, error)
-	CreateEntity(context.Context, *directory.CreateEntityRequest) (*directory.CreateEntityResponse, error)
-	CreateMembership(context.Context, *directory.CreateMembershipRequest) (*directory.CreateMembershipResponse, error)
-	ExternalIDs(context.Context, *directory.ExternalIDsRequest) (*directory.ExternalIDsResponse, error)
-	LookupEntities(context.Context, *directory.LookupEntitiesRequest) (*directory.LookupEntitiesResponse, error)
-	LookupEntitiesByContact(context.Context, *directory.LookupEntitiesByContactRequest) (*directory.LookupEntitiesByContactResponse, error)
-	LookupEntityDomain(context.Context, *directory.LookupEntityDomainRequest) (*directory.LookupEntityDomainResponse, error)
-	CreateEntityDomain(context.Context, *directory.CreateEntityDomainRequest) (*directory.CreateEntityDomainResponse, error)
-}
-
 var (
 	// ErrNotImplemented is returned from RPC calls that have yet to be implemented
 	ErrNotImplemented = errors.New("Not Implemented")
 )
 
 type server struct {
-	dl DAL
+	dl dal.DAL
 }
 
 // New returns an initialized instance of server
-func New(dl DAL) directory.DirectoryServer {
+func New(dl dal.DAL) directory.DirectoryServer {
 	return &server{dl: dl}
 }
 
@@ -154,6 +113,8 @@ func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityReq
 			LastName:      rd.EntityInfo.LastName,
 			GroupName:     rd.EntityInfo.GroupName,
 			DisplayName:   rd.EntityInfo.DisplayName,
+			ShortTitle:    rd.EntityInfo.ShortTitle,
+			LongTitle:     rd.EntityInfo.LongTitle,
 			Note:          rd.EntityInfo.Note,
 		})
 		if err != nil {
@@ -190,6 +151,7 @@ func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityReq
 				Type:        contactType,
 				Value:       contact.Value,
 				Provisioned: contact.Provisioned,
+				Label:       contact.Label,
 			}); err != nil {
 				return errors.Trace(err)
 			}
@@ -266,11 +228,40 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 			LastName:      &rd.EntityInfo.LastName,
 			GroupName:     &rd.EntityInfo.GroupName,
 			DisplayName:   &rd.EntityInfo.DisplayName,
+			ShortTitle:    &rd.EntityInfo.ShortTitle,
+			LongTitle:     &rd.EntityInfo.LongTitle,
 			Note:          &rd.EntityInfo.Note,
 		})
 		if err != nil {
 			return errors.Trace(err)
 		}
+
+		// Delete existing contact info
+		if _, err := dl.DeleteEntityContactsForEntityID(eID); err != nil {
+			return errors.Trace(err)
+		}
+
+		// Build out the contacts we want to insert
+		contacts := make([]*dal.EntityContact, len(rd.Contacts))
+		for i, contact := range rd.Contacts {
+			contactType, err := dal.ParseEntityContactType(directory.ContactType_name[int32(contact.ContactType)])
+			if err != nil {
+				return errors.Trace(err)
+			}
+			contacts[i] = &dal.EntityContact{
+				EntityID:    eID,
+				Type:        contactType,
+				Value:       contact.Value,
+				Provisioned: contact.Provisioned,
+				Label:       contact.Label,
+			}
+		}
+
+		// Insert the new set of contact records
+		if err := dl.InsertEntityContacts(contacts); err != nil {
+			return errors.Trace(err)
+		}
+
 		entity, err := dl.Entity(eID)
 		if err != nil {
 			return errors.Trace(err)
@@ -854,6 +845,8 @@ func dalEntityAsPBEntity(dEntity *dal.Entity) *directory.Entity {
 		LastName:      dEntity.LastName,
 		GroupName:     dEntity.GroupName,
 		DisplayName:   dEntity.DisplayName,
+		ShortTitle:    dEntity.ShortTitle,
+		LongTitle:     dEntity.LongTitle,
 		Note:          dEntity.Note,
 	}
 	return entity

@@ -58,6 +58,8 @@ var entityType = graphql.NewObject(
 			"lastName":      &graphql.Field{Type: graphql.String},
 			"groupName":     &graphql.Field{Type: graphql.String},
 			"displayName":   &graphql.Field{Type: graphql.String},
+			"longTitle":     &graphql.Field{Type: graphql.String},
+			"shortTitle":    &graphql.Field{Type: graphql.String},
 			"note":          &graphql.Field{Type: graphql.String},
 			"contacts":      &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(contactInfoType))},
 			// TODO: avatar(width: Int = 120, height: Int = 120, crop: Boolean = true): Image

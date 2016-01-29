@@ -57,8 +57,11 @@ var createAccountInputType = graphql.NewInputObject(
 			"email":                  &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"password":               &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"phoneNumber":            &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-			"firstName":              &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"lastName":               &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"firstName":              &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"lastName":               &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"shortTitle":             &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"longTitle":              &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"organizationName":       &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"phoneVerificationToken": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 		},
 	},
@@ -389,7 +392,10 @@ var updateEntityInputType = graphql.NewInputObject(
 			"lastName":         &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"groupName":        &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"displayName":      &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"shortTitle":       &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"longTitle":        &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"note":             &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"contacts":         &graphql.InputObjectFieldConfig{Type: graphql.NewList(unprovisionedContactInfoType)},
 		},
 	},
 )
@@ -568,11 +574,15 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				if !validate.Email(req.Email) {
 					return nil, errors.New("invalid email")
 				}
-				if s, ok := input["firstName"].(string); ok {
-					req.FirstName = s
+				entityInfo, err := entityInfoFromFieldList(input)
+				if err != nil {
+					return nil, internalError(err)
 				}
-				if s, ok := input["lastName"].(string); ok {
-					req.LastName = s
+				req.FirstName = entityInfo.FirstName
+				req.LastName = entityInfo.LastName
+				organizationName, _ := input["organizationName"].(string)
+				if organizationName == "" {
+					return nil, errors.New("Organization Name is required")
 				}
 				if s, ok := input["phoneNumber"].(string); ok {
 					req.PhoneNumber = s
@@ -617,8 +627,8 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					// Create organization
 					res, err := svc.directory.CreateEntity(ctx, &directory.CreateEntityRequest{
 						EntityInfo: &directory.EntityInfo{
-							GroupName:   "Test Organization",
-							DisplayName: "Test Organization",
+							GroupName:   organizationName,
+							DisplayName: organizationName,
 						},
 						Type: directory.EntityType_ORGANIZATION,
 					})
@@ -628,12 +638,9 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					orgEntityID = res.Entity.ID
 
 					// Create entity
+
 					res, err = svc.directory.CreateEntity(ctx, &directory.CreateEntityRequest{
-						EntityInfo: &directory.EntityInfo{
-							FirstName:   req.FirstName,
-							LastName:    req.LastName,
-							DisplayName: req.FirstName + " " + req.LastName,
-						},
+						EntityInfo:                entityInfo,
 						Type:                      directory.EntityType_INTERNAL,
 						ExternalID:                accountID,
 						InitialMembershipEntityID: orgEntityID,
@@ -656,27 +663,6 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					OrganizationID: orgEntityID,
 					EntityID:       accEntityID,
 					// TODO: query
-				})
-				if err != nil {
-					return nil, internalError(err)
-				}
-
-				pres, err := svc.exComms.ProvisionPhoneNumber(ctx, &excomms.ProvisionPhoneNumberRequest{
-					ProvisionFor: orgEntityID,
-					Number: &excomms.ProvisionPhoneNumberRequest_AreaCode{
-						AreaCode: "801",
-					},
-				})
-				if err != nil {
-					return nil, internalError(err)
-				}
-				_, err = svc.directory.CreateContact(ctx, &directory.CreateContactRequest{
-					Contact: &directory.Contact{
-						ContactType: directory.ContactType_PHONE,
-						Value:       pres.PhoneNumber,
-						Provisioned: true,
-					},
-					EntityID: orgEntityID,
 				})
 				if err != nil {
 					return nil, internalError(err)
@@ -1177,9 +1163,13 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 
 				input := p.Args["input"].(map[string]interface{})
 				mutationID, _ := input["clientMutationId"].(string)
-				ei, _ := input["info"]
 				entID, _ := input["entityID"].(string)
-				entityInfo, err := entityInfoFromFieldList(ei)
+				entityInfo, err := entityInfoFromFieldList(input)
+				if err != nil {
+					return nil, internalError(err)
+				}
+				contactFields, _ := input["contacts"].([]interface{})
+				contacts, err := contactsFromFieldList(contactFields)
 				if err != nil {
 					return nil, internalError(err)
 				}
@@ -1187,6 +1177,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				resp, err := svc.directory.UpdateEntity(ctx, &directory.UpdateEntityRequest{
 					EntityID:   entID,
 					EntityInfo: entityInfo,
+					Contacts:   contacts,
 					RequestedInformation: &directory.RequestedInformation{
 						Depth:             0,
 						EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
@@ -1444,15 +1435,20 @@ func entityInfoFromFieldList(ei interface{}) (*directory.EntityInfo, error) {
 	ln, _ := mei["lastName"].(string)
 	gn, _ := mei["groupName"].(string)
 	dn, _ := mei["displayName"].(string)
+	st, _ := mei["shortTitle"].(string)
+	lt, _ := mei["longTitle"].(string)
 	n, _ := mei["note"].(string)
 
 	// If no display name was provided then build one from our input
 	if dn == "" {
 		if fn != "" || ln != "" {
-			if mi != " " {
+			if mi != "" {
 				dn = fn + " " + mi + ". " + ln
 			} else {
 				dn = fn + " " + ln
+			}
+			if st != "" {
+				dn += ", " + st
 			}
 		} else if gn != "" {
 			dn = gn
@@ -1466,6 +1462,8 @@ func entityInfoFromFieldList(ei interface{}) (*directory.EntityInfo, error) {
 		LastName:      ln,
 		GroupName:     gn,
 		DisplayName:   dn,
+		ShortTitle:    st,
+		LongTitle:     lt,
 		Note:          n,
 	}
 	return entityInfo, nil

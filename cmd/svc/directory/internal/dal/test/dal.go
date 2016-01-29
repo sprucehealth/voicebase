@@ -171,6 +171,14 @@ func (dl *mockDAL) DeleteEntityContact(id dal.EntityContactID) (int64, error) {
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
+func (dl *mockDAL) DeleteEntityContactsForEntityID(id dal.EntityID) (int64, error) {
+	rets := dl.Expector.Record(id)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
 func (dl *mockDAL) InsertEvent(model *dal.Event) (dal.EventID, error) {
 	rets := dl.Expector.Record(model)
 	if len(rets) == 0 {

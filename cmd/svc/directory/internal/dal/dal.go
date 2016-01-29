@@ -36,6 +36,7 @@ type DAL interface {
 	EntityContactsForValue(value string) ([]*EntityContact, error)
 	UpdateEntityContact(id EntityContactID, update *EntityContactUpdate) (int64, error)
 	DeleteEntityContact(id EntityContactID) (int64, error)
+	DeleteEntityContactsForEntityID(id EntityID) (int64, error)
 	InsertEvent(model *Event) (EventID, error)
 	Event(id EventID) (*Event, error)
 	UpdateEvent(id EventID, update *EventUpdate) (int64, error)
@@ -415,6 +416,8 @@ type Entity struct {
 	Note          string
 	MiddleInitial string
 	LastName      string
+	ShortTitle    string
+	LongTitle     string
 	Created       time.Time
 	Modified      time.Time
 }
@@ -428,6 +431,8 @@ type EntityUpdate struct {
 	Status        *EntityStatus
 	MiddleInitial *string
 	LastName      *string
+	ShortTitle    *string
+	LongTitle     *string
 	Note          *string
 }
 
@@ -442,8 +447,8 @@ func (d *dal) InsertEntity(model *Entity) (EntityID, error) {
 	}
 	_, err := d.db.Exec(
 		`INSERT INTO entity
-          (display_name, first_name, group_name, type, status, id, middle_initial, last_name, note)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, model.DisplayName, model.FirstName, model.GroupName, model.Type.String(), model.Status.String(), model.ID, model.MiddleInitial, model.LastName, model.Note)
+          (display_name, first_name, group_name, type, status, id, middle_initial, last_name, note, short_title, long_title)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, model.DisplayName, model.FirstName, model.GroupName, model.Type.String(), model.Status.String(), model.ID, model.MiddleInitial, model.LastName, model.Note, model.ShortTitle, model.LongTitle)
 	if err != nil {
 		return EmptyEntityID(), errors.Trace(err)
 	}
@@ -498,6 +503,12 @@ func (d *dal) UpdateEntity(id EntityID, update *EntityUpdate) (int64, error) {
 	}
 	if update.GroupName != nil {
 		args.Append("group_name", *update.GroupName)
+	}
+	if update.ShortTitle != nil {
+		args.Append("short_title", *update.ShortTitle)
+	}
+	if update.LongTitle != nil {
+		args.Append("long_title", *update.LongTitle)
 	}
 	if update.Type != nil {
 		args.Append("type", *update.Type)
@@ -789,6 +800,19 @@ func (d *dal) DeleteEntityContact(id EntityContactID) (int64, error) {
 	return aff, errors.Trace(err)
 }
 
+// DeleteEntityContactForEntityID deletes all entity_contact records for the provided entity_id
+func (d *dal) DeleteEntityContactsForEntityID(id EntityID) (int64, error) {
+	res, err := d.db.Exec(
+		`DELETE FROM entity_contact
+          WHERE entity_id = ?`, id)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	aff, err := res.RowsAffected()
+	return aff, errors.Trace(err)
+}
+
 // InsertEvent inserts a event record
 func (d *dal) InsertEvent(model *Event) (EventID, error) {
 	if !model.ID.IsValid {
@@ -951,14 +975,14 @@ func scanEvent(row dbutil.Scanner) (*Event, error) {
 }
 
 const selectEntity = `
-    SELECT entity.id, entity.middle_initial, entity.last_name, entity.note, entity.created, entity.modified, entity.display_name, entity.first_name, entity.group_name, entity.type, entity.status
+    SELECT entity.id, entity.middle_initial, entity.last_name, entity.note, entity.created, entity.modified, entity.display_name, entity.first_name, entity.group_name, entity.type, entity.status, entity.short_title, entity.long_title
       FROM entity`
 
 func scanEntity(row dbutil.Scanner) (*Entity, error) {
 	var m Entity
 	m.ID = EmptyEntityID()
 
-	err := row.Scan(&m.ID, &m.MiddleInitial, &m.LastName, &m.Note, &m.Created, &m.Modified, &m.DisplayName, &m.FirstName, &m.GroupName, &m.Type, &m.Status)
+	err := row.Scan(&m.ID, &m.MiddleInitial, &m.LastName, &m.Note, &m.Created, &m.Modified, &m.DisplayName, &m.FirstName, &m.GroupName, &m.Type, &m.Status, &m.ShortTitle, &m.LongTitle)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(api.ErrNotFound("directory - Entity not found"))
 	}

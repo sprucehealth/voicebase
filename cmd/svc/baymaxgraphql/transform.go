@@ -184,6 +184,8 @@ func transformEntityToResponse(e *directory.Entity) (*entity, error) {
 		LastName:      e.Info.LastName,
 		GroupName:     e.Info.GroupName,
 		DisplayName:   e.Info.DisplayName,
+		ShortTitle:    e.Info.ShortTitle,
+		LongTitle:     e.Info.LongTitle,
 		Note:          e.Info.Note,
 	}, nil
 }
