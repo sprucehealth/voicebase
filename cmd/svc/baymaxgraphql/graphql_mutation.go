@@ -1137,6 +1137,8 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				ent, err := svc.entityForAccountID(ctx, orgID, acc.ID)
 				if err != nil {
 					return nil, errors.New("send test notification failed")
+				} else if ent == nil {
+					return nil, fmt.Errorf("entity not found for token and orgID %s", orgID)
 				}
 
 				if err := svc.notification.SendNotification(&notification.Notification{
@@ -1148,9 +1150,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					return nil, internalError(err)
 				}
 
-				result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
-				result.Set("sendTestNotification", true)
-				return &markThreadAsReadOutput{
+				return &sendTestNotificationOutput{
 					ClientMutationID: mutationID,
 				}, nil
 			},

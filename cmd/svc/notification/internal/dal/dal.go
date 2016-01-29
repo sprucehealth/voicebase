@@ -20,6 +20,7 @@ type DAL interface {
 	InsertPushConfig(model *PushConfig) (PushConfigID, error)
 	PushConfig(id PushConfigID) (*PushConfig, error)
 	PushConfigForDeviceID(deviceID string) (*PushConfig, error)
+	PushConfigForDeviceToken(deviceToken string) (*PushConfig, error)
 	PushConfigsForExternalGroupID(externalGroupID string) ([]*PushConfig, error)
 	UpdatePushConfig(id PushConfigID, update *PushConfigUpdate) (int64, error)
 	DeletePushConfig(id PushConfigID) (int64, error)
@@ -105,6 +106,7 @@ type PushConfig struct {
 
 // PushConfigUpdate represents the mutable aspects of a push_config record
 type PushConfigUpdate struct {
+	DeviceID        *string
 	DeviceToken     []byte
 	PushEndpoint    *string
 	ExternalGroupID *string
@@ -136,44 +138,29 @@ func (d *dal) InsertPushConfig(model *PushConfig) (PushConfigID, error) {
 
 // PushConfig retrieves a push_config record
 func (d *dal) PushConfig(id PushConfigID) (*PushConfig, error) {
-	model := &PushConfig{
-		ID: EmptyPushConfigID(),
-	}
-	if err := d.db.QueryRow(
-		`SELECT device_model, created, device_token, push_endpoint, device, platform_version, app_version, device_id, modified, id, external_group_id, platform
-          FROM push_config
-          WHERE id = ?`, id.Val).Scan(&model.DeviceModel, &model.Created, &model.DeviceToken, &model.PushEndpoint, &model.Device, &model.PlatformVersion, &model.AppVersion, &model.DeviceID, &model.Modified, &model.ID, &model.ExternalGroupID, &model.Platform); err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("push_config not found"))
-	} else if err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	return model, nil
+	row := d.db.QueryRow(
+		selectPushConfig+` WHERE id = ?`, id.Val)
+	model, err := scanPushConfig(row)
+	return model, errors.Trace(err)
 }
 
-// PushConfigForDeviceID retrieves a push_config record
+// PushConfigForDeviceID retrieves a push_config record for a specific device id
 func (d *dal) PushConfigForDeviceID(deviceID string) (*PushConfig, error) {
-	model := &PushConfig{
-		ID: EmptyPushConfigID(),
-	}
-	if err := d.db.QueryRow(
-		`SELECT device_model, created, device_token, push_endpoint, device, platform_version, app_version, device_id, modified, id, external_group_id, platform
-          FROM push_config
-          WHERE device_id = ?`, deviceID).Scan(&model.DeviceModel, &model.Created, &model.DeviceToken, &model.PushEndpoint, &model.Device, &model.PlatformVersion, &model.AppVersion, &model.DeviceID, &model.Modified, &model.ID, &model.ExternalGroupID, &model.Platform); err == sql.ErrNoRows {
-		return nil, errors.Trace(api.ErrNotFound("push_config not found"))
-	} else if err != nil {
-		return nil, errors.Trace(err)
-	}
+	row := d.db.QueryRow(selectPushConfig+` WHERE device_id = ?`, deviceID)
+	pushConfig, err := scanPushConfig(row)
+	return pushConfig, errors.Trace(err)
+}
 
-	return model, nil
+// PushConfigForDeviceToken retrieves a push_config record for a specific device token
+func (d *dal) PushConfigForDeviceToken(deviceToken string) (*PushConfig, error) {
+	row := d.db.QueryRow(selectPushConfig+` WHERE device_token = ?`, deviceToken)
+	pushConfig, err := scanPushConfig(row)
+	return pushConfig, errors.Trace(err)
 }
 
 // PushConfigsForExternalGroupID retrieves the set of push configs that map to the provided external group id
 func (d *dal) PushConfigsForExternalGroupID(externalGroupID string) ([]*PushConfig, error) {
-	rows, err := d.db.Query(
-		`SELECT device_model, created, device_token, push_endpoint, device, platform_version, app_version, device_id, modified, id, external_group_id, platform
-          FROM push_config
-          WHERE external_group_id = ?`, externalGroupID)
+	rows, err := d.db.Query(selectPushConfig+` WHERE external_group_id = ?`, externalGroupID)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -181,10 +168,8 @@ func (d *dal) PushConfigsForExternalGroupID(externalGroupID string) ([]*PushConf
 
 	var models []*PushConfig
 	for rows.Next() {
-		model := &PushConfig{
-			ID: EmptyPushConfigID(),
-		}
-		if err := rows.Scan(&model.DeviceModel, &model.Created, &model.DeviceToken, &model.PushEndpoint, &model.Device, &model.PlatformVersion, &model.AppVersion, &model.DeviceID, &model.Modified, &model.ID, &model.ExternalGroupID, &model.Platform); err == sql.ErrNoRows {
+		model, err := scanPushConfig(rows)
+		if err != nil {
 			return nil, errors.Trace(err)
 		}
 		models = append(models, model)
@@ -196,6 +181,9 @@ func (d *dal) PushConfigsForExternalGroupID(externalGroupID string) ([]*PushConf
 // UpdatePushConfig updates the mutable aspects of a push_config record
 func (d *dal) UpdatePushConfig(id PushConfigID, update *PushConfigUpdate) (int64, error) {
 	args := dbutil.MySQLVarArgs()
+	if update.DeviceID != nil {
+		args.Append("device_id", update.DeviceID)
+	}
 	if len(update.DeviceToken) != 0 {
 		args.Append("device_token", update.DeviceToken)
 	}
@@ -240,4 +228,19 @@ func (d *dal) DeletePushConfig(id PushConfigID) (int64, error) {
 
 	aff, err := res.RowsAffected()
 	return aff, errors.Trace(err)
+}
+
+const selectPushConfig = `
+    SELECT push_config.id, push_config.external_group_id, push_config.platform, push_config.device_id, push_config.device_model, push_config.created, push_config.modified, push_config.device_token, push_config.push_endpoint, push_config.platform_version, push_config.app_version, push_config.device
+      FROM push_config`
+
+func scanPushConfig(row dbutil.Scanner) (*PushConfig, error) {
+	var m PushConfig
+	m.ID = EmptyPushConfigID()
+
+	err := row.Scan(&m.ID, &m.ExternalGroupID, &m.Platform, &m.DeviceID, &m.DeviceModel, &m.Created, &m.Modified, &m.DeviceToken, &m.PushEndpoint, &m.PlatformVersion, &m.AppVersion, &m.Device)
+	if err == sql.ErrNoRows {
+		return nil, errors.Trace(api.ErrNotFound(" - PushConfig not found"))
+	}
+	return &m, errors.Trace(err)
 }

@@ -32,16 +32,6 @@ type Config struct {
 	SQSAPI                          sqsiface.SQSAPI
 }
 
-type notificationDAL interface {
-	Transact(trans func(dal dal.DAL) error) (err error)
-	InsertPushConfig(model *dal.PushConfig) (dal.PushConfigID, error)
-	PushConfig(id dal.PushConfigID) (*dal.PushConfig, error)
-	PushConfigForDeviceID(deviceID string) (*dal.PushConfig, error)
-	PushConfigsForExternalGroupID(externalGroupID string) ([]*dal.PushConfig, error)
-	UpdatePushConfig(id dal.PushConfigID, update *dal.PushConfigUpdate) (int64, error)
-	DeletePushConfig(id dal.PushConfigID) (int64, error)
-}
-
 // Service defines the interface that the notification service provides
 type Service interface {
 	Start()
@@ -51,7 +41,7 @@ type Service interface {
 // Note: This is currently very push centric. Concerns will be seperated out as new notification types are supported.
 type service struct {
 	config             *Config
-	dl                 notificationDAL
+	dl                 dal.DAL
 	snsAPI             snsiface.SNSAPI
 	directoryClient    directory.DirectoryClient
 	registrationWorker worker.Worker
@@ -59,7 +49,7 @@ type service struct {
 }
 
 // New returns an initialized instance of service
-func New(dl notificationDAL, directoryClient directory.DirectoryClient, config *Config) Service {
+func New(dl dal.DAL, directoryClient directory.DirectoryClient, config *Config) Service {
 	golog.Debugf("Initializing Notification Service with Config: %+v", config)
 	s := &service{
 		config:          config,
@@ -93,19 +83,21 @@ func (s *service) processDeviceRegistration(data []byte) error {
 	}
 	golog.Debugf("Processing device registration event: %+v", registrationInfo)
 
-	endpointARN, err := s.generateEndpointARN(registrationInfo)
-	if err != nil {
-		return errors.Trace(err)
-	} else if endpointARN == "" {
-		golog.Warningf("No SNS endpoint ARN generated for %s, %s, %s", registrationInfo.ExternalGroupID, registrationInfo.Platform, registrationInfo.DeviceID)
-		return nil
-	}
-
-	// If we already have a config for this device then just update the endpoint, do we need to regenerate the endpoint?
-	pushConfig, err := s.dl.PushConfigForDeviceID(registrationInfo.DeviceID)
+	// Check to see if we already have this device registered
+	pushConfig, err := s.dl.PushConfigForDeviceToken(registrationInfo.DeviceToken)
 	if api.IsErrNotFound(err) {
+		// Generate a new endpoint if we don't already have this device registered
+		endpointARN, err := s.generateEndpointARN(registrationInfo)
+		if err != nil {
+			return errors.Trace(err)
+		} else if endpointARN == "" {
+			golog.Warningf("No SNS endpoint ARN generated for %s, %s, %s", registrationInfo.ExternalGroupID, registrationInfo.Platform, registrationInfo.DeviceID)
+			return nil
+		}
+
+		// Insert the newly created endpoint
 		golog.Debugf("Inserting new push config with endpoint %s for device registration event: %+v", endpointARN, registrationInfo)
-		if _, err := s.dl.InsertPushConfig(&dal.PushConfig{
+		_, err = s.dl.InsertPushConfig(&dal.PushConfig{
 			ExternalGroupID: registrationInfo.ExternalGroupID,
 			Platform:        registrationInfo.Platform,
 			PlatformVersion: registrationInfo.PlatformVersion,
@@ -115,23 +107,24 @@ func (s *service) processDeviceRegistration(data []byte) error {
 			PushEndpoint:    endpointARN,
 			Device:          registrationInfo.Device,
 			DeviceModel:     registrationInfo.DeviceModel,
-		}); err != nil {
-			return errors.Trace(err)
-		}
+		})
 		return nil
 	} else if err != nil {
 		return errors.Trace(err)
 	}
 
-	golog.Debugf("Updating existing push config with endpoint %s for device registration event: %+v", endpointARN, registrationInfo)
+	// This device is already registered but let's update it's information
+	golog.Debugf("Updating existing push config with externalID %s for device registration event: %+v", registrationInfo.ExternalGroupID, registrationInfo)
 	_, err = s.dl.UpdatePushConfig(pushConfig.ID, &dal.PushConfigUpdate{
-		DeviceToken:     []byte(registrationInfo.DeviceToken),
 		ExternalGroupID: ptr.String(registrationInfo.ExternalGroupID),
 		Platform:        ptr.String(registrationInfo.Platform),
 		PlatformVersion: ptr.String(registrationInfo.PlatformVersion),
+		DeviceID:        ptr.String(registrationInfo.DeviceID),
 		AppVersion:      ptr.String(registrationInfo.AppVersion),
-		PushEndpoint:    ptr.String(endpointARN),
 	})
+	if err != nil {
+		return errors.Trace(err)
+	}
 
 	return errors.Trace(err)
 }
@@ -246,10 +239,10 @@ func accountIDsFromExternalIDs(eIDs []*directory.ExternalID) []string {
 
 // http://docs.aws.amazon.com/sns/latest/dg/mobile-push-send-custommessage.html
 type snsNotification struct {
-	DefaultMessage string                   `json:"default"`
-	IOSSandBox     *iOSPushNotification     `json:"APNS_SANDBOX,omitempty"`
-	IOS            *iOSPushNotification     `json:"APNS,omitempty"`
-	Android        *androidPushNotification `json:"GCM,omitempty"`
+	DefaultMessage string `json:"default"`
+	IOSSandBox     string `json:"APNS_SANDBOX,omitempty"`
+	IOS            string `json:"APNS,omitempty"`
+	Android        string `json:"GCM,omitempty"`
 }
 
 type iOSPushNotification struct {
@@ -274,24 +267,32 @@ type androidPushData struct {
 
 func generateNotification(n *notification.Notification, pushConfig *dal.PushConfig) *snsNotification {
 	url := threadActivityURL(n.OrganizationID, n.ThreadID)
-	iOSNotif := &iOSPushNotification{
+	isNotifData, err := json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
 			Alert: n.ShortMessage,
 			URL:   url,
 		},
 		ThreadID: n.ThreadID,
+	})
+	if err != nil {
+		golog.Errorf("Error while serializing ios notification data: %s", err)
 	}
+	androidNotifData, err := json.Marshal(&androidPushNotification{
+		PushData: &androidPushData{
+			Message:  n.ShortMessage,
+			URL:      url,
+			ThreadID: n.ThreadID,
+		},
+	})
+	if err != nil {
+		golog.Errorf("Error while serializing android notification data: %s", err)
+	}
+
 	return &snsNotification{
 		DefaultMessage: n.ShortMessage,
-		IOSSandBox:     iOSNotif,
-		IOS:            iOSNotif,
-		Android: &androidPushNotification{
-			PushData: &androidPushData{
-				Message:  n.ShortMessage,
-				URL:      url,
-				ThreadID: n.ThreadID,
-			},
-		},
+		IOSSandBox:     string(isNotifData),
+		IOS:            string(isNotifData),
+		Android:        string(androidNotifData),
 	}
 }
 

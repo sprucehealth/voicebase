@@ -50,6 +50,14 @@ func (d *mockDAL) PushConfigForDeviceID(deviceID string) (*dal.PushConfig, error
 	return rets[0].(*dal.PushConfig), mock.SafeError(rets[1])
 }
 
+func (d *mockDAL) PushConfigForDeviceToken(deviceToken string) (*dal.PushConfig, error) {
+	rets := d.Record(deviceToken)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*dal.PushConfig), mock.SafeError(rets[1])
+}
+
 func (d *mockDAL) PushConfigsForExternalGroupID(externalGroupID string) ([]*dal.PushConfig, error) {
 	rets := d.Record(externalGroupID)
 	if len(rets) == 0 {

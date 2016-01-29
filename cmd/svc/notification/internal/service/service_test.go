@@ -72,6 +72,9 @@ func TestProcessNewDeviceRegistrationIOS(t *testing.T) {
 	})
 	test.OK(t, err)
 
+	// Lookup the device and don't find it
+	dl.Expect(mock.NewExpectation(dl.PushConfigForDeviceToken, "DeviceToken").WithReturns((*dal.PushConfig)(nil), api.ErrNotFound("not found")))
+
 	// Generate an endpoint for the device
 	snsAPI.Expect(mock.NewExpectation(snsAPI.CreatePlatformEndpoint, &sns.CreatePlatformEndpointInput{
 		PlatformApplicationArn: ptr.String(appleDeviceRegistrationSNSARN),
@@ -79,9 +82,6 @@ func TestProcessNewDeviceRegistrationIOS(t *testing.T) {
 	}).WithReturns(&sns.CreatePlatformEndpointOutput{
 		EndpointArn: ptr.String("iOSEnpointARN"),
 	}, nil))
-
-	// Lookup the device and don't find it
-	dl.Expect(mock.NewExpectation(dl.PushConfigForDeviceID, "DeviceID").WithReturns((*dal.PushConfig)(nil), api.ErrNotFound("not found")))
 
 	// Insert a new record for the device
 	dl.Expect(mock.NewExpectation(dl.InsertPushConfig, &dal.PushConfig{
@@ -129,6 +129,9 @@ func TestProcessNewDeviceRegistrationAndroid(t *testing.T) {
 	})
 	test.OK(t, err)
 
+	// Lookup the device and don't find it
+	dl.Expect(mock.NewExpectation(dl.PushConfigForDeviceToken, "DeviceToken").WithReturns((*dal.PushConfig)(nil), api.ErrNotFound("not found")))
+
 	// Generate an endpoint for the device
 	snsAPI.Expect(mock.NewExpectation(snsAPI.CreatePlatformEndpoint, &sns.CreatePlatformEndpointInput{
 		PlatformApplicationArn: ptr.String(andriodDeviceRegistrationSNSARN),
@@ -136,9 +139,6 @@ func TestProcessNewDeviceRegistrationAndroid(t *testing.T) {
 	}).WithReturns(&sns.CreatePlatformEndpointOutput{
 		EndpointArn: ptr.String("androidEnpointARN"),
 	}, nil))
-
-	// Lookup the device and don't find it
-	dl.Expect(mock.NewExpectation(dl.PushConfigForDeviceID, "DeviceID").WithReturns((*dal.PushConfig)(nil), api.ErrNotFound("not found")))
 
 	// Insert a new record for the device
 	dl.Expect(mock.NewExpectation(dl.InsertPushConfig, &dal.PushConfig{
@@ -186,16 +186,8 @@ func TestProcessExistingDeviceRegistrationIOS(t *testing.T) {
 	})
 	test.OK(t, err)
 
-	// Generate an endpoint for the device
-	snsAPI.Expect(mock.NewExpectation(snsAPI.CreatePlatformEndpoint, &sns.CreatePlatformEndpointInput{
-		PlatformApplicationArn: ptr.String(appleDeviceRegistrationSNSARN),
-		Token: ptr.String("DeviceToken"),
-	}).WithReturns(&sns.CreatePlatformEndpointOutput{
-		EndpointArn: ptr.String("iOSEnpointARN"),
-	}, nil))
-
 	// Lookup the device and find it
-	dl.Expect(mock.NewExpectation(dl.PushConfigForDeviceID, "DeviceID").WithReturns(&dal.PushConfig{
+	dl.Expect(mock.NewExpectation(dl.PushConfigForDeviceToken, "DeviceToken").WithReturns(&dal.PushConfig{
 		ID: dal.PushConfigID{
 			ObjectID: model.ObjectID{
 				Prefix:  notification.PushConfigIDPrefix,
@@ -205,7 +197,7 @@ func TestProcessExistingDeviceRegistrationIOS(t *testing.T) {
 		},
 	}, nil))
 
-	// Insert a new record for the device
+	// Update the record for the device
 	dl.Expect(mock.NewExpectation(dl.UpdatePushConfig, dal.PushConfigID{
 		ObjectID: model.ObjectID{
 			Prefix:  notification.PushConfigIDPrefix,
@@ -213,12 +205,11 @@ func TestProcessExistingDeviceRegistrationIOS(t *testing.T) {
 			IsValid: true,
 		},
 	}, &dal.PushConfigUpdate{
-		DeviceToken:     []byte("DeviceToken"),
+		DeviceID:        ptr.String("DeviceID"),
 		ExternalGroupID: ptr.String("ExternalGroupID"),
 		Platform:        ptr.String("iOS"),
 		PlatformVersion: ptr.String("PlatformVersion"),
 		AppVersion:      ptr.String("AppVersion"),
-		PushEndpoint:    ptr.String("iOSEnpointARN"),
 	}))
 
 	cSvc.processDeviceRegistration(driData)
@@ -254,16 +245,8 @@ func TestProcessExistingDeviceRegistrationAndroid(t *testing.T) {
 	})
 	test.OK(t, err)
 
-	// Generate an endpoint for the device
-	snsAPI.Expect(mock.NewExpectation(snsAPI.CreatePlatformEndpoint, &sns.CreatePlatformEndpointInput{
-		PlatformApplicationArn: ptr.String(andriodDeviceRegistrationSNSARN),
-		Token: ptr.String("DeviceToken"),
-	}).WithReturns(&sns.CreatePlatformEndpointOutput{
-		EndpointArn: ptr.String("androidEnpointARN"),
-	}, nil))
-
 	// Lookup the device and find it
-	dl.Expect(mock.NewExpectation(dl.PushConfigForDeviceID, "DeviceID").WithReturns(&dal.PushConfig{
+	dl.Expect(mock.NewExpectation(dl.PushConfigForDeviceToken, "DeviceToken").WithReturns(&dal.PushConfig{
 		ID: dal.PushConfigID{
 			ObjectID: model.ObjectID{
 				Prefix:  notification.PushConfigIDPrefix,
@@ -281,12 +264,11 @@ func TestProcessExistingDeviceRegistrationAndroid(t *testing.T) {
 			IsValid: true,
 		},
 	}, &dal.PushConfigUpdate{
-		DeviceToken:     []byte("DeviceToken"),
+		DeviceID:        ptr.String("DeviceID"),
 		ExternalGroupID: ptr.String("ExternalGroupID"),
 		Platform:        ptr.String("android"),
 		PlatformVersion: ptr.String("PlatformVersion"),
 		AppVersion:      ptr.String("AppVersion"),
-		PushEndpoint:    ptr.String("androidEnpointARN"),
 	}))
 
 	cSvc.processDeviceRegistration(driData)
@@ -335,24 +317,27 @@ func TestProcessNotification(t *testing.T) {
 	}, nil))
 
 	// Build out expected notification structure
-	iOSNotif := &iOSPushNotification{
+	iData, err := json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
 			Alert: "ShortMessage",
 			URL:   threadActivityURL("OrganizationID", "ThreadID"),
 		},
 		ThreadID: "ThreadID",
-	}
+	})
+	test.OK(t, err)
+	aData, err := json.Marshal(&androidPushNotification{
+		PushData: &androidPushData{
+			Message:  "ShortMessage",
+			URL:      threadActivityURL("OrganizationID", "ThreadID"),
+			ThreadID: "ThreadID",
+		},
+	})
+	test.OK(t, err)
 	snsNote := &snsNotification{
 		DefaultMessage: "ShortMessage",
-		IOSSandBox:     iOSNotif,
-		IOS:            iOSNotif,
-		Android: &androidPushNotification{
-			PushData: &androidPushData{
-				Message:  "ShortMessage",
-				URL:      threadActivityURL("OrganizationID", "ThreadID"),
-				ThreadID: "ThreadID",
-			},
-		},
+		IOSSandBox:     string(iData),
+		IOS:            string(iData),
+		Android:        string(aData),
 	}
 	msg, err := json.Marshal(snsNote)
 	test.OK(t, err)
