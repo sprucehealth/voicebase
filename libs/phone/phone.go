@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"unicode"
 )
 
 var (
-	matcher = regexp.MustCompile(`^\+[1-9](\d{4,14})$`)
+	matcher          = regexp.MustCompile(`^\+[1-9](\d{4,14})$`)
+	nonDigitsMatcher = regexp.MustCompile(`[^0-9]`)
 )
 
 // NumberFormat represents the format of the phone number representation
@@ -21,6 +23,12 @@ const (
 	International
 	// National indicates to represent the phone number without the country code
 	National
+	// Pretty presents the phone number in a human readable format
+	Pretty
+)
+
+const (
+	prefix = "+1"
 )
 
 // Number represents a phone number in E164 form
@@ -38,19 +46,31 @@ func (n Number) MarshalText() ([]byte, error) {
 
 // UnmarshalText implements encoding.TextUnmarshaler
 func (n *Number) UnmarshalText(text []byte) error {
-	*n = Number(string(text))
-	return n.Validate()
+
+	number, err := sanitize(string(text))
+	if err != nil {
+		return err
+	}
+
+	*n = Number(number)
+	return nil
 }
 
 // Scan implements sql.Scanner to assign a value from a database driver.
 func (n *Number) Scan(src interface{}) error {
+	var pn string
+	var err error
 	switch v := src.(type) {
 	case string:
-		*n = Number(v)
+		pn, err = sanitize(v)
 	case []byte:
-		*n = Number(string(v))
+		pn, err = sanitize(string(v))
 	}
-	return n.Validate()
+	if err != nil {
+		return err
+	}
+	*n = Number(pn)
+	return nil
 }
 
 // Value implements sql/driver.Valuer to allow a Number to be used in a sql query.
@@ -61,23 +81,11 @@ func (n Number) Value() (driver.Value, error) {
 	return string(n), nil
 }
 
-// Validate ensures that phone number is a valid number in E164 format.
-func (n Number) Validate() error {
-	if !matcher.Match([]byte(n)) {
-		return fmt.Errorf("%s does not conform to E.164 phone number format", n)
-	}
-	return nil
-}
-
 // Format returns a string representation of the number in the specified format.
 // If the number cannot be formatted, an error is returned.
 // Note that format currently only works for US phone numbers.
 func (n Number) Format(format NumberFormat) (string, error) {
 	str := n.String()
-
-	if !(str[:2] == "+1" && len(str) == 12) {
-		return "", errors.New("Format only supported for US phone numbers")
-	}
 
 	switch format {
 	case E164:
@@ -86,6 +94,8 @@ func (n Number) Format(format NumberFormat) (string, error) {
 		return str[:2] + " " + str[2:5] + " " + str[5:8] + " " + str[8:], nil
 	case National:
 		return str[2:5] + " " + str[5:8] + " " + str[8:], nil
+	case Pretty:
+		return "(" + str[2:5] + ") " + str[5:8] + "-" + str[8:], nil
 	}
 	return "", errors.New("Unsupported format")
 }
@@ -93,9 +103,33 @@ func (n Number) Format(format NumberFormat) (string, error) {
 // ParseNumber returns a valid Number object if the number is a valid E.164 format
 // and errors if not.
 func ParseNumber(number string) (Number, error) {
-	n := Number(number)
-	if err := n.Validate(); err != nil {
+
+	strippedPhone, err := sanitize(number)
+	if err != nil {
 		return Number(""), err
 	}
+
+	n := Number(strippedPhone)
 	return n, nil
+}
+
+func sanitize(str string) (string, error) {
+
+	strippedPhone := make([]byte, 0, len(str))
+	for _, s := range str {
+		if unicode.IsDigit(s) {
+			strippedPhone = append(strippedPhone, byte(s))
+		}
+	}
+
+	// strippedPhone := nonDigitsMatcher.ReplaceAllString(str, "")
+	startingIdx := 0
+	switch {
+	case len(strippedPhone) == 10:
+	case len(strippedPhone) == 11 && strippedPhone[0] == '1':
+		startingIdx = 1
+	default:
+		return "", fmt.Errorf("%s is not a valid US phone number", str)
+	}
+	return prefix + string(strippedPhone[startingIdx:]), nil
 }
