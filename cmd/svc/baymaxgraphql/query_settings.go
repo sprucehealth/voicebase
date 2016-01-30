@@ -202,7 +202,7 @@ var settingsQuery = &graphql.Field{
 			})
 			if err != nil {
 				return err
-			} else if len(res.Configs) != 0 {
+			} else if len(res.Configs) != 1 {
 				return fmt.Errorf("Expected 1 config but got %d", len(res.Configs))
 			}
 			config = res.Configs[0]
