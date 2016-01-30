@@ -190,7 +190,7 @@ var settingsQuery = &graphql.Field{
 
 		key, _ := p.Args["key"].(string)
 		subkey, _ := p.Args["subkey"].(string)
-		entityID, _ := p.Args["entityID"].(string)
+		nodeID, _ := p.Args["nodeID"].(string)
 
 		par := conc.NewParallel()
 
@@ -219,7 +219,7 @@ var settingsQuery = &graphql.Field{
 						Subkey: subkey,
 					},
 				},
-				NodeID: entityID,
+				NodeID: nodeID,
 			})
 			if err != nil {
 				return err
