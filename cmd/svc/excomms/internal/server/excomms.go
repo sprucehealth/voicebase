@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"net/http"
 	"sort"
 	"strconv"
 	"strings"
@@ -160,13 +161,17 @@ func (e *excommsService) ProvisionPhoneNumber(ctx context.Context, in *excomms.P
 
 	// Setup all purchased numbers to route incoming calls and call statuses to the
 	// URLs setup in the specified twilio application.
-	ipn, _, err := e.twilio.IncomingPhoneNumber.PurchaseLocal(twilio.PurchasePhoneNumberParams{
+	ipn, res, err := e.twilio.IncomingPhoneNumber.PurchaseLocal(twilio.PurchasePhoneNumberParams{
 		AreaCode:            in.GetAreaCode(),
 		PhoneNumber:         in.GetPhoneNumber(),
 		VoiceApplicationSID: e.twilioApplicationSID,
 		SMSApplicationSID:   e.twilioApplicationSID,
 	})
-	if err != nil {
+	if res.StatusCode == http.StatusBadRequest {
+		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
+	} else if res.StatusCode == http.StatusNotFound {
+		return nil, grpc.Errorf(codes.NotFound, err.Error())
+	} else if err != nil {
 		return nil, grpc.Errorf(codes.Internal, err.Error())
 	}
 

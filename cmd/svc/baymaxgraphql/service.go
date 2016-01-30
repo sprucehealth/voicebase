@@ -103,7 +103,17 @@ func (s *service) entityForAccountID(ctx context.Context, orgID, accountID strin
 	return nil, nil
 }
 
-func (s *service) entity(ctx context.Context, entityID string) (*directory.Entity, error) {
+func (s *service) entity(ctx context.Context, entityID string, entityInformation ...directory.EntityInformation) (*directory.Entity, error) {
+	var info []directory.EntityInformation
+	if len(entityInformation) == 0 {
+		info = []directory.EntityInformation{
+			directory.EntityInformation_MEMBERSHIPS,
+			directory.EntityInformation_CONTACTS,
+		}
+	} else {
+		info = entityInformation
+	}
+
 	// TODO: should use a cache for this
 	res, err := s.directory.LookupEntities(ctx,
 		&directory.LookupEntitiesRequest{
@@ -112,12 +122,8 @@ func (s *service) entity(ctx context.Context, entityID string) (*directory.Entit
 				EntityID: entityID,
 			},
 			RequestedInformation: &directory.RequestedInformation{
-				Depth: 0,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_MEMBERSHIPS,
-					// TODO: don't always need contacts
-					directory.EntityInformation_CONTACTS,
-				},
+				Depth:             0,
+				EntityInformation: info,
 			},
 		})
 	if grpc.Code(err) == codes.NotFound {

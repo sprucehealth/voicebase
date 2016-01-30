@@ -190,6 +190,28 @@ func transformEntityToResponse(e *directory.Entity) (*entity, error) {
 	}, nil
 }
 
+func transformOrganizationToResponse(org *directory.Entity, provider *directory.Entity) (*organization, error) {
+	o := &organization{
+		ID:   org.ID,
+		Name: org.Info.DisplayName,
+	}
+
+	oc, err := transformContactsToResponse(org.Contacts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to transform entity contacts: %+v", err)
+	}
+
+	o.Contacts = oc
+
+	e, err := transformEntityToResponse(provider)
+	if err != nil {
+		return nil, err
+	}
+	o.Entity = e
+
+	return o, nil
+}
+
 func transformThreadItemViewDetailsToResponse(tivds []*threading.ThreadItemViewDetails) ([]*threadItemViewDetails, error) {
 	rivds := make([]*threadItemViewDetails, len(tivds))
 	for i, tivd := range tivds {

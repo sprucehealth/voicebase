@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/validate"
@@ -14,9 +15,10 @@ import (
 // provision email
 
 type provisionEmailOutput struct {
-	ClientMutationID string  `json:"clientMutationId"`
-	Result           string  `json:"result"`
-	Entity           *entity `json:"entity"`
+	ClientMutationID string        `json:"clientMutationId"`
+	Result           string        `json:"result"`
+	Organization     *organization `json:"organization"`
+	Entity           *entity       `json:"entity"`
 }
 
 var provisionEmailInputType = graphql.NewInputObject(
@@ -25,8 +27,11 @@ var provisionEmailInputType = graphql.NewInputObject(
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
 			"entityID": &graphql.InputObjectFieldConfig{
-				Type:        graphql.NewNonNull(graphql.String),
-				Description: "Specify the entityID of the provider or the organization here, depending on who the email is being provisioned for."},
+				Type:        graphql.ID,
+				Description: "ID of the organization for which the email is being provisioned."},
+			"organizationID": &graphql.InputObjectFieldConfig{
+				Type:        graphql.ID,
+				Description: "ID of the organization for which the email is being provisioned."},
 			"localPart": &graphql.InputObjectFieldConfig{
 				Type:        graphql.NewNonNull(graphql.String),
 				Description: "Email address to provision.",
@@ -75,6 +80,9 @@ var provisionEmailOutputType = graphql.NewObject(
 			"entity": &graphql.Field{
 				Type: entityType,
 			},
+			"organization": &graphql.Field{
+				Type: organizationType,
+			},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*provisionEmailOutput)
@@ -101,21 +109,63 @@ var provisionEmailField = &graphql.Field{
 		localPart, _ := input["localPart"].(string)
 		subdomain, _ := input["subdomain"].(string)
 		entityID, _ := input["entityID"].(string)
+		organizationID, _ := input["organizationID"].(string)
 		emailAddress := localPart + "@" + subdomain + "." + svc.emailDomain
 
-		entity, err := svc.entity(ctx, entityID)
-		if err != nil {
-			return nil, internalError(err)
+		var ent *directory.Entity
+		var orgEntity *directory.Entity
+		var err error
+		if entityID != "" {
+			ent, err = svc.entity(ctx, entityID,
+				directory.EntityInformation_CONTACTS,
+				directory.EntityInformation_MEMBERSHIPS,
+				directory.EntityInformation_EXTERNAL_IDS)
+			if err != nil {
+				return nil, internalError(err)
+			} else if ent.Type != directory.EntityType_INTERNAL {
+				return nil, fmt.Errorf("email can only be provisioned for a provider")
+			}
+			for _, m := range ent.Memberships {
+				if m.Type == directory.EntityType_ORGANIZATION {
+					orgEntity = m
+					break
+				}
+			}
+			if orgEntity == nil {
+				return nil, fmt.Errorf("entity does not belong to an org")
+			}
+
+			// ensure that accountID is one of the external IDs for the entity
+			entityBelongsToAccount := false
+			for _, eID := range ent.ExternalIDs {
+				if eID == acc.ID {
+					entityBelongsToAccount = true
+					break
+				}
+			}
+			if !entityBelongsToAccount {
+				return nil, fmt.Errorf("entity %s does not belong to account", entityID)
+			}
+
+		} else if organizationID != "" {
+			orgEntity, err = svc.entity(ctx, organizationID)
+			if err != nil {
+				return nil, internalError(err)
+			}
+			ent, err = svc.entityForAccountID(ctx, organizationID, acc.ID)
+			if err != nil {
+				return nil, internalError(err)
+			} else if ent == nil {
+				return nil, fmt.Errorf("current user does not belong to the organization %s", organizationID)
+			}
 		}
 
 		if !validate.Email(emailAddress) {
 			return nil, errors.New("invalid email address")
 		}
 
-		switch entity.Type {
-		case directory.EntityType_ORGANIZATION:
-
-			_, domain, err := svc.entityDomain(ctx, entityID, "")
+		if organizationID != "" {
+			_, domain, err := svc.entityDomain(ctx, organizationID, "")
 			if err != nil {
 				return nil, err
 			} else if domain != "" && domain != subdomain {
@@ -128,26 +178,19 @@ var provisionEmailField = &graphql.Field{
 			// lets go ahead and create domain for organization
 			if domain == "" {
 				_, err := svc.directory.CreateEntityDomain(ctx, &directory.CreateEntityDomainRequest{
-					EntityID: entityID,
+					EntityID: organizationID,
 					Domain:   subdomain,
 				})
 				if err != nil {
 					return nil, internalError(err)
 				}
 			}
-		case directory.EntityType_INTERNAL:
-			var orgID string
-			for _, e := range entity.Memberships {
-				if e.Type == directory.EntityType_ORGANIZATION {
-					orgID = e.ID
-					break
-				}
-			}
-			if orgID == "" {
-				return nil, errors.New("internal entity is not part of any organization")
+		} else {
+			if ent.Type != directory.EntityType_INTERNAL {
+				return nil, fmt.Errorf("Cannot provision email for external entity")
 			}
 
-			_, domain, err := svc.entityDomain(ctx, orgID, "")
+			_, domain, err := svc.entityDomain(ctx, orgEntity.ID, "")
 			if err != nil {
 				return nil, err
 			} else if domain == "" {
@@ -158,15 +201,17 @@ var provisionEmailField = &graphql.Field{
 					ClientMutationID: mutationID,
 				}, nil
 			}
+		}
 
-		case directory.EntityType_EXTERNAL:
-			return nil, errors.New("cannot provision email for external entity")
+		provisionFor := entityID
+		if organizationID != "" {
+			provisionFor = organizationID
 		}
 
 		// lets go ahead and provision the email for the entity specified
 		_, err = svc.exComms.ProvisionEmailAddress(ctx, &excomms.ProvisionEmailAddressRequest{
 			EmailAddress: emailAddress,
-			ProvisionFor: entityID,
+			ProvisionFor: provisionFor,
 		})
 		if grpc.Code(err) == codes.AlreadyExists {
 			return &provisionEmailOutput{
@@ -177,7 +222,7 @@ var provisionEmailField = &graphql.Field{
 
 		// lets go ahead and create the provisioned email address as a contact for the entity
 		createContactRes, err := svc.directory.CreateContact(ctx, &directory.CreateContactRequest{
-			EntityID: entityID,
+			EntityID: provisionFor,
 			Contact: &directory.Contact{
 				ContactType: directory.ContactType_EMAIL,
 				Provisioned: true,
@@ -195,15 +240,25 @@ var provisionEmailField = &graphql.Field{
 			return nil, internalError(err)
 		}
 
-		e, err := transformEntityToResponse(createContactRes.Entity)
-		if err != nil {
-			return nil, internalError(err)
+		var e *entity
+		var o *organization
+		if organizationID != "" {
+			o, err = transformOrganizationToResponse(createContactRes.Entity, ent)
+			if err != nil {
+				return nil, internalError(err)
+			}
+		} else {
+			e, err = transformEntityToResponse(createContactRes.Entity)
+			if err != nil {
+				return nil, internalError(err)
+			}
 		}
 
 		return &provisionEmailOutput{
 			Result:           provisionEmailResultSuccess,
 			ClientMutationID: mutationID,
 			Entity:           e,
+			Organization:     o,
 		}, nil
 	},
 }

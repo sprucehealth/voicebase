@@ -1,6 +1,7 @@
 package server
 
 import (
+	"net/http"
 	"testing"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/test"
+
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -41,7 +43,11 @@ type mockIncomingPhoneNumberService_Excomms struct {
 
 func (m *mockIncomingPhoneNumberService_Excomms) PurchaseLocal(params twilio.PurchasePhoneNumberParams) (*twilio.IncomingPhoneNumber, *twilio.Response, error) {
 	defer m.Record(params)
-	return m.pn, nil, nil
+	return m.pn, &twilio.Response{
+		Response: &http.Response{
+			StatusCode: http.StatusOK,
+		},
+	}, nil
 }
 
 type mockDAL_Excomms struct {
