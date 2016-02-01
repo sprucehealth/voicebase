@@ -154,7 +154,7 @@ func TestIncomingSMS_NewUser_SMS(t *testing.T) {
 	}
 	test.Equals(t, threadRequested.FromEntityID, externalEntityToBeCreated.ID)
 	test.Equals(t, threadRequested.OrganizationID, organizationEntity.ID)
-	test.Equals(t, threadRequested.Title, "<ref id=\"2\" type=\"entity\">+12068773590</ref> texted <ref id=\"10\" type=\"entity\">+17348465522</ref>")
+	test.Equals(t, threadRequested.Title, "<ref id=\"2\" type=\"entity\">(206) 877-3590</ref> texted <ref id=\"10\" type=\"entity\">(734) 846-5522</ref>")
 	test.Equals(t, threadRequested.Text, pem.GetSMSItem().Text)
 	test.Equals(t, len(threadRequested.Attachments), len(pem.GetSMSItem().GetAttachments()))
 
@@ -353,7 +353,7 @@ func TestIncomingSMS_ExistingUser_SMS(t *testing.T) {
 		t.Fatal("Expected message to be posted to existing thread")
 	}
 	test.Equals(t, mt.postMessageRequested.FromEntityID, externalEntity.ID)
-	test.Equals(t, mt.postMessageRequested.Title, "<ref id=\"2\" type=\"entity\">+12068773590</ref> texted <ref id=\"10\" type=\"entity\">+17348465522</ref>")
+	test.Equals(t, mt.postMessageRequested.Title, "<ref id=\"2\" type=\"entity\">(206) 877-3590</ref> texted <ref id=\"10\" type=\"entity\">(734) 846-5522</ref>")
 	test.Equals(t, mt.postMessageRequested.Text, pem.GetSMSItem().Text)
 	test.Equals(t, len(mt.postMessageRequested.Attachments), len(pem.GetSMSItem().GetAttachments()))
 }
@@ -532,7 +532,7 @@ func TestIncomingVoicemail_NewUser(t *testing.T) {
 	test.Equals(t, externalEntityToBeCreated.ID, threadRequested.FromEntityID)
 	test.Equals(t, organizationEntity.ID, threadRequested.OrganizationID)
 	test.Equals(t, "", threadRequested.Text)
-	test.Equals(t, "<ref id=\"2\" type=\"entity\">+12068773590</ref> called <ref id=\"10\" type=\"entity\">Spruce Practice</ref>, left voicemail", threadRequested.Title)
+	test.Equals(t, "<ref id=\"2\" type=\"entity\">(206) 877-3590</ref> called <ref id=\"10\" type=\"entity\">Spruce Practice</ref>, left voicemail", threadRequested.Title)
 	test.Equals(t, pem.GetCallEventItem().DurationInSeconds, threadRequested.GetAttachments()[0].GetAudio().DurationInSeconds)
 	test.Equals(t, pem.GetCallEventItem().URL, threadRequested.GetAttachments()[0].GetAudio().URL)
 
@@ -636,6 +636,6 @@ func TestOutgoingCallEvent(t *testing.T) {
 	}
 	test.Equals(t, providerEntity.ID, mt.postMessageRequested.FromEntityID)
 	test.Equals(t, "", mt.postMessageRequested.Text)
-	test.Equals(t, "<ref id=\"1\" type=\"entity\">Dr. Craig</ref> called <ref id=\"2\" type=\"entity\">+17348465522</ref>", mt.postMessageRequested.Title)
+	test.Equals(t, "<ref id=\"1\" type=\"entity\">Dr. Craig</ref> called <ref id=\"2\" type=\"entity\">(734) 846-5522</ref>", mt.postMessageRequested.Title)
 
 }

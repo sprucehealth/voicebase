@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/worker"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -233,10 +234,20 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 	fromName := pem.FromChannelID
 	if fromEntity.Info != nil && fromEntity.Info.DisplayName != "" {
 		fromName = fromEntity.Info.DisplayName
+	} else if contactType == directory.ContactType_PHONE {
+		formattedPhone, err := phone.Format(fromName, phone.Pretty)
+		if err == nil {
+			fromName = formattedPhone
+		}
 	}
 	toName := pem.ToChannelID
 	if toEntity.Info != nil && toEntity.Info.DisplayName != "" {
 		toName = toEntity.Info.DisplayName
+	} else if contactType == directory.ContactType_PHONE {
+		formattedPhone, err := phone.Format(toName, phone.Pretty)
+		if err == nil {
+			toName = formattedPhone
+		}
 	}
 
 	// TODO: The creation of this mesage should not be the responsibility

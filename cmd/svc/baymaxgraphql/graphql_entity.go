@@ -36,11 +36,12 @@ var contactInfoType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "ContactInfo",
 		Fields: graphql.Fields{
-			"id":          &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-			"type":        &graphql.Field{Type: graphql.NewNonNull(contactEnumType)},
-			"value":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-			"provisioned": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"label":       &graphql.Field{Type: graphql.String},
+			"id":           &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+			"type":         &graphql.Field{Type: graphql.NewNonNull(contactEnumType)},
+			"value":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"displayValue": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"provisioned":  &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"label":        &graphql.Field{Type: graphql.String},
 		},
 	},
 )

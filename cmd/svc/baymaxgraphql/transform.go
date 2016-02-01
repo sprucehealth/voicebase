@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -17,6 +18,13 @@ func threadTitleForEntity(e *directory.Entity) string {
 		return e.Info.DisplayName
 	}
 	for _, c := range e.Contacts {
+		if c.ContactType == directory.ContactType_PHONE {
+			pn, err := phone.Format(c.Value, phone.Pretty)
+			if err != nil {
+				return c.Value
+			}
+			return pn
+		}
 		return c.Value
 	}
 	// TODO: not sure what to use when there's no name or contacts
@@ -26,17 +34,23 @@ func threadTitleForEntity(e *directory.Entity) string {
 func transformContactsToResponse(contacts []*directory.Contact) ([]*contactInfo, error) {
 	cs := make([]*contactInfo, len(contacts))
 	for i, c := range contacts {
+
 		ci := &contactInfo{
-			ID:          c.ID,
-			Value:       c.Value,
-			Provisioned: c.Provisioned,
-			Label:       c.Label,
+			ID:           c.ID,
+			Value:        c.Value,
+			DisplayValue: c.Value,
+			Provisioned:  c.Provisioned,
+			Label:        c.Label,
 		}
 		switch c.ContactType {
 		case directory.ContactType_EMAIL:
 			ci.Type = contactTypeEmail
 		case directory.ContactType_PHONE:
 			ci.Type = contactTypePhone
+			pn, err := phone.Format(c.Value, phone.Pretty)
+			if err == nil {
+				ci.DisplayValue = pn
+			}
 		default:
 			return nil, errors.Trace(fmt.Errorf("unsupported contact type %s", c.ContactType.String()))
 		}

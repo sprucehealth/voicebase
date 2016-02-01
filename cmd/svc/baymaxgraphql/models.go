@@ -50,11 +50,12 @@ type entity struct {
 }
 
 type contactInfo struct {
-	ID          string `json:"id"`
-	Type        string `json:"type"`
-	Value       string `json:"value"`
-	Provisioned bool   `json:"provisioned"`
-	Label       string `json:"label"`
+	ID           string `json:"id"`
+	Type         string `json:"type"`
+	Value        string `json:"value"`
+	DisplayValue string `json:"displayValue"`
+	Provisioned  bool   `json:"provisioned"`
+	Label        string `json:"label"`
 }
 
 type endpoint struct {

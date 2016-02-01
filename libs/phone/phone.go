@@ -113,6 +113,17 @@ func ParseNumber(number string) (Number, error) {
 	return n, nil
 }
 
+// Format is a helper method to format a provided phone number in string form
+// into the expected format.
+func Format(number string, format NumberFormat) (string, error) {
+	p, err := ParseNumber(number)
+	if err != nil {
+		return "", err
+	}
+
+	return p.Format(format)
+}
+
 func sanitize(str string) (string, error) {
 
 	strippedPhone := make([]byte, 0, len(str))
