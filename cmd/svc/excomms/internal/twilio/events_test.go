@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
+	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/phone"
@@ -19,6 +20,8 @@ import (
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/settings"
+	settingsmock "github.com/sprucehealth/backend/svc/settings/mock"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -169,7 +172,7 @@ func testOutgoing(t *testing.T, testExpired bool, patientName string) {
 		}))
 	}
 
-	es := NewEventHandler(md, mdal, nil, mclock, "https://test.com", "", "")
+	es := NewEventHandler(md, nil, mdal, nil, mclock, "https://test.com", "", "")
 
 	params := &rawmsg.TwilioParams{
 		From:    providerPersonalPhoneNumber,
@@ -177,7 +180,7 @@ func testOutgoing(t *testing.T, testExpired bool, patientName string) {
 		CallSID: callSID,
 	}
 
-	twiml, err := processOutgoingCall(params, es.(*eventsHandler))
+	twiml, err := processOutgoingCall(context.Background(), params, es.(*eventsHandler))
 	if testExpired {
 		if err == nil {
 			t.Fatalf("Expected the call to not go through and be expired.")
@@ -204,7 +207,74 @@ func testOutgoing(t *testing.T, testExpired bool, patientName string) {
 
 func TestIncoming_Organization(t *testing.T) {
 	orgID := "12345"
-	providerID := "6789"
+	providerPersonalPhone := "+14152222222"
+	patientPhone := "+14151111111"
+	practicePhoneNumber := "+14150000000"
+
+	md := &mockDirectoryService_Twilio{
+		entitiesList: []*directory.Entity{
+			{
+				ID:   orgID,
+				Type: directory.EntityType_ORGANIZATION,
+				Contacts: []*directory.Contact{
+					{
+						ContactType: directory.ContactType_PHONE,
+						Value:       providerPersonalPhone,
+					},
+				},
+			},
+		},
+	}
+
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyForwardingList,
+				Subkey: practicePhoneNumber,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key:    excommsSettings.ConfigKeyForwardingList,
+					Subkey: practicePhoneNumber,
+				},
+				Type: settings.ConfigType_STRING_LIST,
+				Value: &settings.Value_StringList{
+					StringList: &settings.StringListValue{
+						Values: []string{providerPersonalPhone},
+					},
+				},
+			},
+		},
+	}, nil))
+
+	es := NewEventHandler(md, msettings, nil, nil, clock.New(), "https://test.com", "", "")
+	params := &rawmsg.TwilioParams{
+		From:    patientPhone,
+		To:      practicePhoneNumber,
+		CallSID: "",
+	}
+
+	twiml, err := processIncomingCall(context.Background(), params, es.(*eventsHandler))
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<Response><Dial action="/twilio/call/process_incoming_call_status" timeout="30" callerId="%s"><Number url="/twilio/call/provider_call_connected">%s</Number></Dial></Response>`, practicePhoneNumber, providerPersonalPhone)
+
+	if twiml != expected {
+		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
+	}
+}
+
+func TestIncoming_Organization_SingleProvider_DirectAllCallsToVoicemail(t *testing.T) {
+	orgID := "12345"
+	providerID := "p1"
 	providerPersonalPhone := "+14152222222"
 	patientPhone := "+14151111111"
 	practicePhoneNumber := "+14150000000"
@@ -222,8 +292,7 @@ func TestIncoming_Organization(t *testing.T) {
 				},
 				Members: []*directory.Entity{
 					{
-						ID:   providerID,
-						Type: directory.EntityType_INTERNAL,
+						ID: providerID,
 						Contacts: []*directory.Contact{
 							{
 								ContactType: directory.ContactType_PHONE,
@@ -236,19 +305,68 @@ func TestIncoming_Organization(t *testing.T) {
 		},
 	}
 
-	es := NewEventHandler(md, nil, nil, clock.New(), "https://test.com", "", "")
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyForwardingList,
+				Subkey: practicePhoneNumber,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key:    excommsSettings.ConfigKeyForwardingList,
+					Subkey: practicePhoneNumber,
+				},
+				Type: settings.ConfigType_STRING_LIST,
+				Value: &settings.Value_StringList{
+					StringList: &settings.StringListValue{
+						Values: []string{providerPersonalPhone},
+					},
+				},
+			},
+		},
+	}, nil))
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key: excommsSettings.ConfigKeySendCallsToVoicemail,
+			},
+		},
+		NodeID: providerID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key: excommsSettings.ConfigKeySendCallsToVoicemail,
+				},
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: true,
+					},
+				},
+			},
+		},
+	}, nil))
+
+	es := NewEventHandler(md, msettings, nil, nil, clock.New(), "https://test.com", "", "")
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
 		CallSID: "",
 	}
 
-	twiml, err := processIncomingCall(params, es.(*eventsHandler))
+	twiml, err := processIncomingCall(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<Response><Dial action="/twilio/call/process_incoming_call_status" timeout="30" callerId="%s"><Number url="/twilio/call/provider_call_connected">%s</Number></Dial></Response>`, practicePhoneNumber, providerPersonalPhone)
+<Response><Play><loop>0</loop><digits></digits>http://dev-twilio.s3.amazonaws.com/kunal_clinic_voicemail.mp3</Play><Record action="/twilio/call/process_voicemail" timeout="60" playBeep="true"></Record></Response>`)
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -268,42 +386,150 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 			{
 				ID:   orgID,
 				Type: directory.EntityType_ORGANIZATION,
-				Contacts: []*directory.Contact{
-					{
-						ContactType: directory.ContactType_PHONE,
-						Value:       practicePhoneNumber,
-						Provisioned: true,
-					},
-					{
-						ContactType: directory.ContactType_PHONE,
-						Value:       listedNumber1,
-					},
-					{
-						ContactType: directory.ContactType_PHONE,
-						Value:       listedNumber2,
-					},
-					{
-						ContactType: directory.ContactType_PHONE,
-						Value:       listedNumber3,
-					},
-				},
 			},
 		},
 	}
 
-	es := NewEventHandler(md, nil, nil, clock.New(), "https://test.com", "", "")
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyForwardingList,
+				Subkey: practicePhoneNumber,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key:    excommsSettings.ConfigKeyForwardingList,
+					Subkey: practicePhoneNumber,
+				},
+				Type: settings.ConfigType_STRING_LIST,
+				Value: &settings.Value_StringList{
+					StringList: &settings.StringListValue{
+						Values: []string{listedNumber1, listedNumber2, listedNumber3},
+					},
+				},
+			},
+		},
+	}, nil))
+
+	es := NewEventHandler(md, msettings, nil, nil, clock.New(), "https://test.com", "", "")
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
 		CallSID: "",
 	}
 
-	twiml, err := processIncomingCall(params, es.(*eventsHandler))
+	twiml, err := processIncomingCall(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
 <Response><Dial action="/twilio/call/process_incoming_call_status" timeout="30" callerId="+14150000000"><Number url="/twilio/call/provider_call_connected">+14152222222</Number><Number url="/twilio/call/provider_call_connected">+14153333333</Number><Number url="/twilio/call/provider_call_connected">+14154444444</Number></Dial></Response>`)
+
+	if twiml != expected {
+		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
+	}
+}
+
+func TestIncoming_Organization_MultipleContacts_SendToVoicemail(t *testing.T) {
+	orgID := "12345"
+	listedNumber1 := "+14152222222"
+	providerID1 := "p1"
+	listedNumber2 := "+14153333333"
+	listedNumber3 := "+14154444444"
+	patientPhone := "+14151111111"
+	practicePhoneNumber := "+14150000000"
+
+	md := &mockDirectoryService_Twilio{
+		entitiesList: []*directory.Entity{
+			{
+				ID:   orgID,
+				Type: directory.EntityType_ORGANIZATION,
+				Members: []*directory.Entity{
+					{
+						ID: providerID1,
+						Contacts: []*directory.Contact{
+							{
+								ContactType: directory.ContactType_PHONE,
+								Value:       listedNumber1,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyForwardingList,
+				Subkey: practicePhoneNumber,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key:    excommsSettings.ConfigKeyForwardingList,
+					Subkey: practicePhoneNumber,
+				},
+				Type: settings.ConfigType_STRING_LIST,
+				Value: &settings.Value_StringList{
+					StringList: &settings.StringListValue{
+						Values: []string{listedNumber1, listedNumber2, listedNumber3},
+					},
+				},
+			},
+		},
+	}, nil))
+
+	// configure the situation to have one of the numbers in the list belong to a provider
+	// who has their send to voicemail setting on.
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key: excommsSettings.ConfigKeySendCallsToVoicemail,
+			},
+		},
+		NodeID: providerID1,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key: excommsSettings.ConfigKeySendCallsToVoicemail,
+				},
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: true,
+					},
+				},
+			},
+		},
+	}, nil))
+
+	es := NewEventHandler(md, msettings, nil, nil, clock.New(), "https://test.com", "", "")
+	params := &rawmsg.TwilioParams{
+		From:    patientPhone,
+		To:      practicePhoneNumber,
+		CallSID: "",
+	}
+
+	twiml, err := processIncomingCall(context.Background(), params, es.(*eventsHandler))
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<Response><Dial action="/twilio/call/process_incoming_call_status" timeout="30" callerId="+14150000000"><Number url="/twilio/call/provider_call_connected">+14153333333</Number><Number url="/twilio/call/provider_call_connected">+14154444444</Number></Dial></Response>`)
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -338,14 +564,39 @@ func TestIncoming_Provider(t *testing.T) {
 		},
 	}
 
-	es := NewEventHandler(md, nil, nil, clock.New(), "https://test.com", "", "")
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key: excommsSettings.ConfigKeySendCallsToVoicemail,
+			},
+		},
+		NodeID: providerID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key: excommsSettings.ConfigKeySendCallsToVoicemail,
+				},
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: false,
+					},
+				},
+			},
+		},
+	}, nil))
+
+	es := NewEventHandler(md, msettings, nil, nil, clock.New(), "https://test.com", "", "")
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
 		CallSID: "",
 	}
 
-	twiml, err := processIncomingCall(params, es.(*eventsHandler))
+	twiml, err := processIncomingCall(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -363,7 +614,7 @@ func TestProviderCallConnected(t *testing.T) {
 		To:   "+14152222222",
 	}
 
-	twiml, err := providerCallConnected(params, nil)
+	twiml, err := providerCallConnected(context.Background(), params, nil)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -382,7 +633,7 @@ func TestProviderEnteredDigits_Entered1(t *testing.T) {
 		Digits: "1",
 	}
 
-	twiml, err := providerEnteredDigits(params, nil)
+	twiml, err := providerEnteredDigits(context.Background(), params, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -401,7 +652,7 @@ func TestProviderEnteredDigits_EnteredOtherDigit(t *testing.T) {
 		Digits: "2",
 	}
 
-	twiml, err := providerEnteredDigits(params, nil)
+	twiml, err := providerEnteredDigits(context.Background(), params, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -414,7 +665,7 @@ func TestProviderEnteredDigits_EnteredOtherDigit(t *testing.T) {
 }
 
 func TestVoicemailTwiML(t *testing.T) {
-	twiml, err := voicemailTWIML(nil, nil)
+	twiml, err := voicemailTWIML(context.Background(), nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -454,9 +705,9 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 		DialCallStatus: incomingStatus,
 	}
 
-	es := NewEventHandler(nil, nil, ms, clock.New(), "https://test.com", "", "")
+	es := NewEventHandler(nil, nil, nil, ms, clock.New(), "https://test.com", "", "")
 
-	twiml, err := processIncomingCallStatus(params, es.(*eventsHandler))
+	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -482,9 +733,9 @@ func testIncomingCallStatus(t *testing.T, incomingStatus rawmsg.TwilioParams_Cal
 		DialCallStatus: incomingStatus,
 	}
 
-	es := NewEventHandler(nil, nil, ms, clock.New(), "", "", "")
+	es := NewEventHandler(nil, nil, nil, ms, clock.New(), "", "", "")
 
-	twiml, err := processIncomingCallStatus(params, es.(*eventsHandler))
+	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatal(err)
 	} else if twiml != "" {
@@ -527,9 +778,9 @@ func TestOutgoingCallStatus(t *testing.T) {
 		},
 	}
 
-	es := NewEventHandler(nil, md, ms, clock.New(), "", "", "")
+	es := NewEventHandler(nil, nil, md, ms, clock.New(), "", "", "")
 
-	twiml, err := processOutgoingCallStatus(params, es.(*eventsHandler))
+	twiml, err := processOutgoingCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatal(err)
 	} else if twiml != "" {
@@ -581,9 +832,9 @@ func TestProcessVoicemail(t *testing.T) {
 		},
 	}))
 
-	es := NewEventHandler(nil, md, ms, clock.New(), "", "", "")
+	es := NewEventHandler(nil, nil, md, ms, clock.New(), "", "", "")
 
-	twiml, err := processVoicemail(params, es.(*eventsHandler))
+	twiml, err := processVoicemail(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatal(err)
 	} else if twiml != "" {

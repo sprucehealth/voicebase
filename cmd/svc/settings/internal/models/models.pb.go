@@ -96,6 +96,7 @@ type Config struct {
 	AllowSubkeys   bool        `protobuf:"varint,4,opt,name=allow_subkeys,proto3" json:"allow_subkeys,omitempty"`
 	Type           ConfigType  `protobuf:"varint,5,opt,name=type,proto3,enum=models.ConfigType" json:"type,omitempty"`
 	PossibleOwners []OwnerType `protobuf:"varint,6,rep,name=possible_owners,enum=models.OwnerType" json:"possible_owners,omitempty"`
+	OptionalValue  bool        `protobuf:"varint,7,opt,name=optional_value,proto3" json:"optional_value,omitempty"`
 	// Types that are valid to be assigned to Config:
 	//	*Config_Boolean
 	//	*Config_StringList
@@ -633,6 +634,9 @@ func (this *Config) Equal(that interface{}) bool {
 		if this.PossibleOwners[i] != that1.PossibleOwners[i] {
 			return false
 		}
+	}
+	if this.OptionalValue != that1.OptionalValue {
+		return false
 	}
 	if that1.Config == nil {
 		if this.Config != nil {
@@ -1199,7 +1203,7 @@ func (this *Config) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 14)
+	s := make([]string, 0, 15)
 	s = append(s, "&models.Config{")
 	s = append(s, "Title: "+fmt.Sprintf("%#v", this.Title)+",\n")
 	s = append(s, "Description: "+fmt.Sprintf("%#v", this.Description)+",\n")
@@ -1207,6 +1211,7 @@ func (this *Config) GoString() string {
 	s = append(s, "AllowSubkeys: "+fmt.Sprintf("%#v", this.AllowSubkeys)+",\n")
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	s = append(s, "PossibleOwners: "+fmt.Sprintf("%#v", this.PossibleOwners)+",\n")
+	s = append(s, "OptionalValue: "+fmt.Sprintf("%#v", this.OptionalValue)+",\n")
 	if this.Config != nil {
 		s = append(s, "Config: "+fmt.Sprintf("%#v", this.Config)+",\n")
 	}
@@ -1506,6 +1511,16 @@ func (m *Config) MarshalTo(data []byte) (int, error) {
 			i++
 			i = encodeVarintModels(data, i, uint64(num))
 		}
+	}
+	if m.OptionalValue {
+		data[i] = 0x38
+		i++
+		if m.OptionalValue {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
 	}
 	if m.Config != nil {
 		nn1, err := m.Config.MarshalTo(data[i:])
@@ -2082,6 +2097,9 @@ func (m *Config) Size() (n int) {
 			n += 1 + sovModels(uint64(e))
 		}
 	}
+	if m.OptionalValue {
+		n += 2
+	}
 	if m.Config != nil {
 		n += m.Config.Size()
 	}
@@ -2341,6 +2359,7 @@ func (this *Config) String() string {
 		`AllowSubkeys:` + fmt.Sprintf("%v", this.AllowSubkeys) + `,`,
 		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
 		`PossibleOwners:` + fmt.Sprintf("%v", this.PossibleOwners) + `,`,
+		`OptionalValue:` + fmt.Sprintf("%v", this.OptionalValue) + `,`,
 		`Config:` + fmt.Sprintf("%v", this.Config) + `,`,
 		`}`,
 	}, "")
@@ -2737,6 +2756,26 @@ func (m *Config) Unmarshal(data []byte) error {
 				}
 			}
 			m.PossibleOwners = append(m.PossibleOwners, v)
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OptionalValue", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.OptionalValue = bool(v != 0)
 		case 10:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Boolean", wireType)

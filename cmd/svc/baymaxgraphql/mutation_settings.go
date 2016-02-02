@@ -3,14 +3,19 @@ package main
 import (
 	"fmt"
 
-	"github.com/sprucehealth/backend/svc/settings"
+	"google.golang.org/grpc"
 
 	"github.com/graphql-go/graphql"
+	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
+	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/svc/settings"
 )
 
 type modifySettingOutput struct {
 	ClientMutationID string      `json:"clientMutationId"`
 	Setting          interface{} `json:"setting"`
+	UserErrorMessage string      `json:"userErrorMessage"`
+	Result           string      `json:"result"`
 }
 
 var stringListInputType = graphql.NewInputObject(
@@ -87,12 +92,36 @@ var modifySettingInputType = graphql.NewInputObject(
 	},
 )
 
+const (
+	modifySettingResultSuccess      = "SUCCESS"
+	modifySettingResultInvalidInput = "INVALID_INPUT"
+)
+
+var modifySettingResultType = graphql.NewEnum(
+	graphql.EnumConfig{
+		Name:        "ModifySettingResult",
+		Description: "Result of modifySetting mutation",
+		Values: graphql.EnumValueConfigMap{
+			modifySettingResultSuccess: &graphql.EnumValueConfig{
+				Value:       modifySettingResultSuccess,
+				Description: "Success",
+			},
+			modifySettingResultInvalidInput: &graphql.EnumValueConfig{
+				Value:       modifySettingResultInvalidInput,
+				Description: "Invalid input",
+			},
+		},
+	},
+)
+
 var modifySettingOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "ModifySettingPayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
-			"setting":          &graphql.Field{Type: graphql.NewNonNull(settingsInterfaceType)},
+			"result":           &graphql.Field{Type: graphql.NewNonNull(modifySettingResultType)},
+			"setting":          &graphql.Field{Type: settingsInterfaceType},
+			"userErrorMessage": &graphql.Field{Type: graphql.String},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*modifySettingOutput)
@@ -119,6 +148,19 @@ var modifySettingMutation = &graphql.Field{
 		subkey, _ := input["subkey"].(string)
 		nodeID, _ := input["nodeID"].(string)
 		mutationID, _ := input["clientMutationId"].(string)
+
+		// TODO: Add a validator for the subkey so as to enforce subkey to be of valid format
+		isForwardingList := key == excommsSettings.ConfigKeyForwardingList
+		if isForwardingList {
+			if subkey == "" {
+				return nil, fmt.Errorf("subkey expected but got none")
+			}
+			pn, err := phone.ParseNumber(subkey)
+			if err != nil {
+				return nil, fmt.Errorf("unable to parse subkey into valid phone number: %s", err.Error())
+			}
+			subkey = pn.String()
+		}
 
 		// pull config to know what value to expect
 		var config *settings.Config
@@ -245,8 +287,24 @@ var modifySettingMutation = &graphql.Field{
 				if !ok {
 					return nil, fmt.Errorf("Expected string in array but got %T for config %s.%s", sItem, key, subkey)
 				}
-				val.GetStringList().Values[i] = str
+
+				// TODO: Add validator to the string list to enforce each item in the list to be of a particular type
+				if isForwardingList {
+					pn, err := phone.Format(str, phone.Pretty)
+					if err != nil {
+						return &modifySettingOutput{
+							ClientMutationID: mutationID,
+							UserErrorMessage: "Please enter a valid US phone number",
+							Result:           modifySettingResultInvalidInput,
+						}, nil
+					}
+
+					val.GetStringList().Values[i] = pn
+				} else {
+					val.GetStringList().Values[i] = str
+				}
 			}
+
 		case settings.ConfigType_BOOLEAN:
 			value, ok := input["booleanValue"].(map[string]interface{})
 			if !ok {
@@ -268,6 +326,13 @@ var modifySettingMutation = &graphql.Field{
 			Value:  val,
 		})
 		if err != nil {
+			if grpc.Code(err) == settings.InvalidUserValue {
+				return &modifySettingOutput{
+					ClientMutationID: mutationID,
+					UserErrorMessage: grpc.ErrorDesc(err),
+					Result:           modifySettingResultInvalidInput,
+				}, nil
+			}
 			return nil, internalError(err)
 		}
 
@@ -287,6 +352,7 @@ var modifySettingMutation = &graphql.Field{
 		return &modifySettingOutput{
 			ClientMutationID: mutationID,
 			Setting:          setting,
+			Result:           modifySettingResultSuccess,
 		}, nil
 	},
 }

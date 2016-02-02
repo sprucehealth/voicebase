@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	"github.com/graphql-go/graphql"
+	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/settings"
 )
 
@@ -191,6 +193,15 @@ var settingsQuery = &graphql.Field{
 		key, _ := p.Args["key"].(string)
 		subkey, _ := p.Args["subkey"].(string)
 		nodeID, _ := p.Args["nodeID"].(string)
+
+		isForwardingList := key == excommsSettings.ConfigKeyForwardingList
+		if isForwardingList {
+			pn, err := phone.Format(subkey, phone.E164)
+			if err != nil {
+				return nil, internalError(err)
+			}
+			subkey = pn
+		}
 
 		par := conc.NewParallel()
 

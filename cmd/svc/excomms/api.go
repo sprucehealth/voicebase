@@ -16,6 +16,7 @@ import (
 	"github.com/sprucehealth/backend/libs/mux"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/go-proxy-protocol/proxyproto"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -61,8 +62,18 @@ func runAPI() {
 
 	store := storage.NewS3(awsSession, config.attachmentBucket, config.attachmentPrefix)
 
+	settingsConn, err := grpc.Dial(
+		config.settingsServiceURL,
+		grpc.WithInsecure())
+	if err != nil {
+		golog.Fatalf("Unable to communicate with settings service: %s", err.Error())
+		return
+	}
+	defer settingsConn.Close()
+
 	eh := twilio.NewEventHandler(
 		directory.NewDirectoryClient(conn),
+		settings.NewSettingsClient(settingsConn),
 		dl,
 		snsCLI,
 		clock.New(),

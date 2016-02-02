@@ -9,6 +9,8 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/server"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/worker"
+	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
+
 	cfg "github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -80,9 +82,9 @@ func runService() {
 		ctx,
 		settingsClient,
 		[]*settings.Config{
-			numbersToRingConfig,
-			voicemailOptionConfig,
-			sendCallsToVoicemailConfig,
+			excommsSettings.NumbersToRingConfig,
+			excommsSettings.VoicemailOptionConfig,
+			excommsSettings.SendCallsToVoicemailConfig,
 		})
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())

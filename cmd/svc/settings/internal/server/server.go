@@ -50,6 +50,9 @@ func (s *server) SetValue(ctx context.Context, in *settings.SetValueRequest) (*s
 	// validate value against config
 	transformedValue, err := validateValueAgainstConfig(in.Value, config)
 	if err != nil {
+		if grpc.Code(err) == settings.InvalidUserValue {
+			return nil, err
+		}
 		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	}
 

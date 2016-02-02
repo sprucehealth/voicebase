@@ -1,19 +1,19 @@
-package main
+package settings
 
 import (
 	"github.com/sprucehealth/backend/svc/settings"
 )
 
 const (
-	configKeyForwardingList       = "forwarding_list"
-	configKeyVoicemailOption      = "voicemail_option"
-	configKeySendCallsToVoicemail = "send_calls_to_voicemail"
+	ConfigKeyForwardingList       = "forwarding_list"
+	ConfigKeyVoicemailOption      = "voicemail_option"
+	ConfigKeySendCallsToVoicemail = "send_calls_to_voicemail"
 )
 
-var numbersToRingConfig = &settings.Config{
+var NumbersToRingConfig = &settings.Config{
 	Title:        "Numbers to ring",
 	Description:  "You can add up to five phone numbers",
-	Key:          configKeyForwardingList,
+	Key:          ConfigKeyForwardingList,
 	AllowSubkeys: true,
 	Type:         settings.ConfigType_STRING_LIST,
 	Config: &settings.Config_StringList{
@@ -22,9 +22,9 @@ var numbersToRingConfig = &settings.Config{
 	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
 }
 
-var voicemailOptionConfig = &settings.Config{
+var VoicemailOptionConfig = &settings.Config{
 	Title:          "Set outgoing message",
-	Key:            configKeyVoicemailOption,
+	Key:            ConfigKeyVoicemailOption,
 	AllowSubkeys:   true,
 	Type:           settings.ConfigType_SINGLE_SELECT,
 	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
@@ -49,9 +49,9 @@ var voicemailOptionConfig = &settings.Config{
 	},
 }
 
-var sendCallsToVoicemailConfig = &settings.Config{
+var SendCallsToVoicemailConfig = &settings.Config{
 	Title:          "Send all calls to voicemail",
-	Key:            configKeySendCallsToVoicemail,
+	Key:            ConfigKeySendCallsToVoicemail,
 	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
 	AllowSubkeys:   false,
 	Type:           settings.ConfigType_BOOLEAN,

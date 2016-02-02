@@ -13,6 +13,7 @@ func transformConfigToModel(config *settings.Config) *models.Config {
 		AllowSubkeys:   config.AllowSubkeys,
 		Type:           models.ConfigType(models.ConfigType_value[config.Type.String()]),
 		PossibleOwners: make([]models.OwnerType, len(config.PossibleOwners)),
+		OptionalValue:  config.OptionalValue,
 	}
 
 	for i, po := range config.PossibleOwners {
@@ -93,6 +94,7 @@ func transformModelToConfig(config *models.Config) *settings.Config {
 		AllowSubkeys:   config.AllowSubkeys,
 		Type:           settings.ConfigType(settings.ConfigType_value[config.Type.String()]),
 		PossibleOwners: make([]settings.OwnerType, len(config.PossibleOwners)),
+		OptionalValue:  config.OptionalValue,
 	}
 
 	for i, po := range config.PossibleOwners {

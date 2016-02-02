@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/sns"
+	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -18,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/libs/twilio/twiml"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/settings"
 	"golang.org/x/net/context"
 )
 
@@ -37,6 +39,7 @@ var (
 
 type eventsHandler struct {
 	directory            directory.DirectoryClient
+	settings             settings.SettingsClient
 	dal                  dal.DAL
 	sns                  snsiface.SNSAPI
 	clock                clock.Clock
@@ -45,9 +48,10 @@ type eventsHandler struct {
 	incomingRawMsgTopic  string
 }
 
-func NewEventHandler(directory directory.DirectoryClient, dal dal.DAL, sns snsiface.SNSAPI, clock clock.Clock, apiURL, externalMessageTopic, incomingRawMsgTopic string) EventHandler {
+func NewEventHandler(directory directory.DirectoryClient, settingsClient settings.SettingsClient, dal dal.DAL, sns snsiface.SNSAPI, clock clock.Clock, apiURL, externalMessageTopic, incomingRawMsgTopic string) EventHandler {
 	return &eventsHandler{
 		directory:            directory,
+		settings:             settingsClient,
 		dal:                  dal,
 		clock:                clock,
 		sns:                  sns,
@@ -57,12 +61,12 @@ func NewEventHandler(directory directory.DirectoryClient, dal dal.DAL, sns snsif
 	}
 }
 
-func (e *eventsHandler) Process(event rawmsg.TwilioEvent, params *rawmsg.TwilioParams) (string, error) {
+func (e *eventsHandler) Process(ctx context.Context, event rawmsg.TwilioEvent, params *rawmsg.TwilioParams) (string, error) {
 	handler := twilioEventsHandlers[event]
 	if handler == nil {
 		return "", fmt.Errorf("unknown event: %s", event.String())
 	}
-	twiml, err := handler(params, e)
+	twiml, err := handler(ctx, params, e)
 	if err != nil {
 		return "", errors.Trace(err)
 	}
@@ -81,12 +85,12 @@ func (e *eventsHandler) Process(event rawmsg.TwilioEvent, params *rawmsg.TwilioP
 }
 
 type EventHandler interface {
-	Process(event rawmsg.TwilioEvent, params *rawmsg.TwilioParams) (string, error)
+	Process(ctx context.Context, event rawmsg.TwilioEvent, params *rawmsg.TwilioParams) (string, error)
 }
 
-type twilioEventHandleFunc func(*rawmsg.TwilioParams, *eventsHandler) (string, error)
+type twilioEventHandleFunc func(context.Context, *rawmsg.TwilioParams, *eventsHandler) (string, error)
 
-func processOutgoingCall(params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
+func processOutgoingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 
 	// look for an active reservation on the proxy phone number
 	ppnr, err := eh.dal.ActiveProxyPhoneNumberReservation(&dal.ProxyPhoneNumberReservationLookup{
@@ -226,7 +230,7 @@ func processOutgoingCall(params *rawmsg.TwilioParams, eh *eventsHandler) (string
 	return tw.GenerateTwiML()
 }
 
-func processIncomingCall(params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
+func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 	golog.Infof("Incoming call %s to %s.", params.From, params.To)
 
 	// lookup the entity for the destination of the incoming call
@@ -253,22 +257,38 @@ func processIncomingCall(params *rawmsg.TwilioParams, eh *eventsHandler) (string
 		return "", errors.Trace(fmt.Errorf("Expected 1 entity for provisioned number, got back %d", len(res.Entities)))
 	}
 
-	golog.Debugf("response %+v", res.Entities)
-
-	var phoneNumbers []string
+	var forwardingList []string
+	var providersInForwardingList map[string]bool
+	var phoneNumberToProviderMap map[string]string
 	var organizationID string
 	switch res.Entities[0].Type {
 	case directory.EntityType_ORGANIZATION:
 		organizationID = res.Entities[0].ID
-		phoneNumbers = make([]string, 0, len(res.Entities[0].Contacts))
-		for _, c := range res.Entities[0].Contacts {
-			if c.Provisioned {
-				continue
-			} else if c.ContactType != directory.ContactType_PHONE {
+
+		forwardingList, err = getForwardingListForProvisionedPhoneNumber(ctx, params.To, organizationID, eh)
+		if err != nil {
+			return "", errors.Trace(err)
+		}
+
+		// track the phone numbers in the forwarding list that map to a provider
+		// we then need to check if any of the providers want their calls directed to voicemail.
+		providersInForwardingList = make(map[string]bool, len(forwardingList))
+		phoneNumberToProviderMap = make(map[string]string, len(forwardingList))
+		for _, pn := range forwardingList {
+			parsedPn, err := phone.Format(pn, phone.E164)
+			if err != nil {
+				golog.Errorf("Unable to parse phone number %s: %s", pn, err.Error())
 				continue
 			}
 
-			phoneNumbers = append(phoneNumbers, c.Value)
+			for _, m := range res.Entities[0].Members {
+				for _, c := range m.Contacts {
+					if c.Value == parsedPn {
+						providersInForwardingList[m.ID] = true
+						phoneNumberToProviderMap[parsedPn] = m.ID
+					}
+				}
+			}
 		}
 	case directory.EntityType_INTERNAL:
 		for _, c := range res.Entities[0].Contacts {
@@ -279,7 +299,9 @@ func processIncomingCall(params *rawmsg.TwilioParams, eh *eventsHandler) (string
 			}
 			// assuming for now that we are to call the first non-provisioned
 			// phone number mapped to the provider.
-			phoneNumbers = append(phoneNumbers, c.Value)
+			forwardingList = []string{c.Value}
+			providersInForwardingList = map[string]bool{res.Entities[0].ID: true}
+			phoneNumberToProviderMap = map[string]string{c.Value: res.Entities[0].ID}
 			break
 		}
 
@@ -293,22 +315,57 @@ func processIncomingCall(params *rawmsg.TwilioParams, eh *eventsHandler) (string
 		return "", errors.Trace(fmt.Errorf("Unexpected entity type %s", res.Entities[0].Type.String()))
 	}
 
-	if len(phoneNumbers) == 0 {
-		return "", errors.Trace(fmt.Errorf("Unable to find provider for provisioned number %s", params.To))
-	} else if organizationID == "" {
+	if organizationID == "" {
 		return "", errors.Trace(fmt.Errorf("Unable to find organization for provisioned number %s", params.To))
 	}
 
+	// remove the providers from the forwarding list that have a setting
+	// turned on to indicate that all calls should be directed to voicemail
+	par := conc.NewParallel()
+	sendAllCallsToVoicemailMap := conc.NewMap()
+	for entityID := range providersInForwardingList {
+		eID := entityID
+		par.Go(func() error {
+			val, err := sendAllCallsToVoicemailForProvider(ctx, eID, eh)
+			if err != nil {
+				return err
+			}
+			sendAllCallsToVoicemailMap.Set(eID, val)
+			return nil
+		})
+	}
+	if err := par.Wait(); err != nil {
+		return "", errors.Trace(err)
+	}
+
 	numbers := make([]interface{}, 0, maxPhoneNumbers)
-	for _, p := range phoneNumbers {
+	for _, p := range forwardingList {
 		if len(numbers) == maxPhoneNumbers {
 			golog.Errorf("Org %s is currently configured to simultaneously call more than 10 numbers when that is the maximum that twilio supports.", organizationID)
 			break
 		}
+
+		// check if send all calls to voicemail setting is on
+		// for any provider in the forwarding list
+		eID, ok := phoneNumberToProviderMap[p]
+		if ok {
+			val := sendAllCallsToVoicemailMap.Get(eID)
+			if val != nil && val.(bool) {
+				// skip including number from the list if provider indicated
+				// that they want all calls to be sent to voicemail
+				continue
+			}
+		}
+
 		numbers = append(numbers, &twiml.Number{
 			URL:  "/twilio/call/provider_call_connected",
 			Text: p,
 		})
+	}
+
+	// if there are no numbers in the forwarding list, then direct calls to voicemail
+	if len(numbers) == 0 {
+		return voicemailTWIML(ctx, params, eh)
 	}
 
 	tw := twiml.NewResponse(
@@ -323,7 +380,7 @@ func processIncomingCall(params *rawmsg.TwilioParams, eh *eventsHandler) (string
 	return tw.GenerateTwiML()
 }
 
-func providerCallConnected(params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
+func providerCallConnected(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 	golog.Infof("Call connected for provider at %s.", params.To)
 
 	tw := twiml.NewResponse(
@@ -347,7 +404,7 @@ func providerCallConnected(params *rawmsg.TwilioParams, eh *eventsHandler) (stri
 	return tw.GenerateTwiML()
 }
 
-func providerEnteredDigits(params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
+func providerEnteredDigits(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 	golog.Infof("Provider entered digits %s at %s.", params.Digits, params.To)
 
 	if params.Digits == "1" {
@@ -362,7 +419,7 @@ func providerEnteredDigits(params *rawmsg.TwilioParams, eh *eventsHandler) (stri
 	return tw.GenerateTwiML()
 }
 
-func voicemailTWIML(params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
+func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 
 	// TODO: Configurable voice mail or default mehsage based on user configuration.
 	tw := &twiml.Response{
@@ -381,7 +438,7 @@ func voicemailTWIML(params *rawmsg.TwilioParams, eh *eventsHandler) (string, err
 	return tw.GenerateTwiML()
 }
 
-func processIncomingCallStatus(params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
+func processIncomingCallStatus(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 	switch params.DialCallStatus {
 	case rawmsg.TwilioParams_ANSWERED, rawmsg.TwilioParams_COMPLETED:
 		conc.Go(func() {
@@ -404,13 +461,13 @@ func processIncomingCallStatus(params *rawmsg.TwilioParams, eh *eventsHandler) (
 
 	case rawmsg.TwilioParams_CALL_STATUS_UNDEFINED:
 	default:
-		return voicemailTWIML(params, eh)
+		return voicemailTWIML(ctx, params, eh)
 	}
 
 	return "", nil
 }
 
-func processOutgoingCallStatus(params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
+func processOutgoingCallStatus(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 
 	// NOTE: We use the callSID of the parent call to process the status of the outgoing
 	// call placed as the outgoing call is dialed out via a separate call leg.
@@ -467,7 +524,7 @@ func processOutgoingCallStatus(params *rawmsg.TwilioParams, eh *eventsHandler) (
 	return "", nil
 }
 
-func processVoicemail(params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
+func processVoicemail(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 
 	rawMessageID, err := eh.dal.StoreIncomingRawMessage(&rawmsg.Incoming{
 		Type: rawmsg.Incoming_TWILIO_VOICEMAIL,
@@ -488,4 +545,56 @@ func processVoicemail(params *rawmsg.TwilioParams, eh *eventsHandler) (string, e
 	})
 
 	return "", nil
+}
+
+func getForwardingListForProvisionedPhoneNumber(ctx context.Context, phoneNumber, organizationID string, eh *eventsHandler) ([]string, error) {
+
+	settingsRes, err := eh.settings.GetValues(ctx, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyForwardingList,
+				Subkey: phoneNumber,
+			},
+		},
+		NodeID: organizationID,
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	} else if len(settingsRes.Values) != 1 {
+		return nil, errors.Trace(fmt.Errorf("Expected single value for forwarding list of provisioned phone number %s but got back %d", phoneNumber, len(settingsRes.Values)))
+	} else if settingsRes.Values[0].GetStringList() == nil {
+		return nil, errors.Trace(fmt.Errorf("Expected string list value but got %T", settingsRes.Values[0]))
+	}
+
+	forwardingListMap := make(map[string]bool, len(settingsRes.Values[0].GetStringList().Values))
+	forwardingList := make([]string, 0, len(settingsRes.Values[0].GetStringList().Values))
+	for _, s := range settingsRes.Values[0].GetStringList().Values {
+		if forwardingListMap[s] {
+			continue
+		}
+		forwardingListMap[s] = true
+		forwardingList = append(forwardingList, s)
+	}
+
+	return forwardingList, nil
+}
+
+func sendAllCallsToVoicemailForProvider(ctx context.Context, entityID string, eh *eventsHandler) (bool, error) {
+	res, err := eh.settings.GetValues(ctx, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key: excommsSettings.ConfigKeySendCallsToVoicemail,
+			},
+		},
+		NodeID: entityID,
+	})
+	if err != nil {
+		return false, errors.Trace(err)
+	} else if len(res.Values) != 1 {
+		return false, errors.Trace(fmt.Errorf("Expected 1 value for config %s but got %d", excommsSettings.ConfigKeySendCallsToVoicemail, len(res.Values)))
+	} else if res.Values[0].GetBoolean() == nil {
+		return false, errors.Trace(fmt.Errorf("Expected boolean value for config %s but got %T", excommsSettings.ConfigKeySendCallsToVoicemail, res.Values[0]))
+	}
+
+	return res.Values[0].GetBoolean().Value, nil
 }

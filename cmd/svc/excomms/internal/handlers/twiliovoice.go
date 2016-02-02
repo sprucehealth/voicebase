@@ -49,7 +49,7 @@ func (t *twilioRequestHandler) ServeHTTP(ctx context.Context, w http.ResponseWri
 		return
 	}
 
-	twiml, err := t.eventsHandler.Process(twilioEvent, p)
+	twiml, err := t.eventsHandler.Process(ctx, twilioEvent, p)
 	if err != nil {
 		golog.Errorf(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
