@@ -200,7 +200,7 @@ var authenticateWithCodeField = &graphql.Field{
 		acc := &account{
 			ID: res.Account.ID,
 		}
-		p.Context = ctxWithAccount(ctx, acc)
+		*ctx.Value(ctxAccount).(*account) = *acc
 		return &authenticateOutput{
 			ClientMutationID: mutationID,
 			Result:           authenticateResultSuccess,
