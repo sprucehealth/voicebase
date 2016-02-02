@@ -167,15 +167,17 @@ func transformModelToValue(value *models.Value) *settings.Value {
 	switch value.Config.Type {
 	case models.ConfigType_BOOLEAN:
 		v.Value = &settings.Value_Boolean{
-			Boolean: &settings.BooleanValue{
-				Value: value.GetBoolean().Value,
-			},
+			Boolean: &settings.BooleanValue{},
+		}
+		if value.GetBoolean() != nil {
+			v.GetBoolean().Value = value.GetBoolean().Value
 		}
 	case models.ConfigType_STRING_LIST:
 		v.Value = &settings.Value_StringList{
-			StringList: &settings.StringListValue{
-				Values: value.GetStringList().Values,
-			},
+			StringList: &settings.StringListValue{},
+		}
+		if value.GetStringList() != nil {
+			v.GetStringList().Values = value.GetStringList().Values
 		}
 	case models.ConfigType_MULTI_SELECT:
 		v.Value = &settings.Value_MultiSelect{
