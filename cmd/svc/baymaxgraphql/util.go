@@ -5,50 +5,50 @@ import (
 
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/language/ast"
+	"github.com/sprucehealth/backend/apiservice"
+	"golang.org/x/net/context"
 )
 
-// type GlobalID struct {
-// 	Type string `json:"type"`
-// 	ID   string `json:"id"`
-// }
+type ctxKey int
 
-// // ToGlobalID maps a type and a local ID into a global identifier
-// func ToGlobalID(ttype, id string) string {
-// 	return strings.TrimRight(base64.StdEncoding.EncodeToString([]byte(ttype+":"+id)), "=")
-// }
+const (
+	ctxAccount       ctxKey = 0
+	ctxSpruceHeaders ctxKey = 1
+)
 
-// // FromGlobalID parses a global identifier to a type and local ID
-// func FromGlobalID(globalID string) *GlobalID {
-// 	b, err := base64.StdEncoding.DecodeString(globalID)
-// 	if err != nil {
-// 		return nil
-// 	}
-// 	strID := string(b)
-// 	i := strings.IndexByte(strID, ':')
-// 	if i < 0 {
-// 		return nil
-// 	}
-// 	return &GlobalID{
-// 		Type: strID[:i],
-// 		ID:   strID[i+1:],
-// 	}
-// }
+func ctxWithSpruceHeaders(ctx context.Context, sh *apiservice.SpruceHeaders) context.Context {
+	return context.WithValue(ctx, ctxSpruceHeaders, sh)
+}
 
-// func GlobalIDField(typeName string) *graphql.Field {
-// 	return &graphql.Field{
-// 		Name:        "id",
-// 		Description: "The ID of an object",
-// 		Type:        graphql.NewNonNull(graphql.ID),
-// 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-// 			v := reflect.ValueOf(p.Source)
-// 			if v.Kind() == reflect.Ptr {
-// 				v = v.Elem()
-// 			}
-// 			f := v.FieldByName("ID")
-// 			return ToGlobalID(typeName, f.String()), nil
-// 		},
-// 	}
-// }
+// spruceHeadersFromContext returns the spruce headers which may be nil
+func spruceHeadersFromContext(ctx context.Context) *apiservice.SpruceHeaders {
+	sh, _ := ctx.Value(ctxSpruceHeaders).(*apiservice.SpruceHeaders)
+	return sh
+}
+
+func ctxWithAccount(ctx context.Context, acc *account) context.Context {
+	// Never set a nil account so that we can update it in place. It's kind
+	// of gross, but can't think of a better way to deal with authenticate
+	// needing to update the account at the moment. Ideally the GraphQL pkg would
+	// have a way to update context as it went through the executor.. but alas..
+	if acc == nil {
+		acc = &account{}
+	}
+	return context.WithValue(ctx, ctxAccount, acc)
+}
+
+// accountFromContext returns the account from the context which may be nil
+func accountFromContext(ctx context.Context) *account {
+	acc, _ := ctx.Value(ctxAccount).(*account)
+	if acc != nil && acc.ID == "" {
+		return nil
+	}
+	return acc
+}
+
+func serviceFromParams(p graphql.ResolveParams) *service {
+	return p.Info.RootValue.(map[string]interface{})["service"].(*service)
+}
 
 func selectedFields(p graphql.ResolveParams) []string {
 	f := p.Info.FieldASTs[0]

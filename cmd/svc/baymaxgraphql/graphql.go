@@ -24,37 +24,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-type ctxKey int
-
-const (
-	ctxAccount       ctxKey = 0
-	ctxSpruceHeaders ctxKey = 1
-)
-
-func ctxWithSpruceHeaders(ctx context.Context, sh *apiservice.SpruceHeaders) context.Context {
-	return context.WithValue(ctx, ctxSpruceHeaders, sh)
-}
-
-// spruceHeadersFromContext returns the spruce headers which may be nil
-func spruceHeadersFromContext(ctx context.Context) *apiservice.SpruceHeaders {
-	sh, _ := ctx.Value(ctxSpruceHeaders).(*apiservice.SpruceHeaders)
-	return sh
-}
-
-func ctxWithAccount(ctx context.Context, acc *account) context.Context {
-	return context.WithValue(ctx, ctxAccount, acc)
-}
-
-// accountFromContext returns the account from the context which may be nil
-func accountFromContext(ctx context.Context) *account {
-	acc, _ := ctx.Value(ctxAccount).(*account)
-	return acc
-}
-
-func serviceFromParams(p graphql.ResolveParams) *service {
-	return p.Info.RootValue.(map[string]interface{})["service"].(*service)
-}
-
 var nodeInterfaceType = graphql.NewInterface(
 	graphql.InterfaceConfig{
 		Name: "Node",

@@ -677,7 +677,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				}
 				// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
 				// that likely won't change, but this still isn't a great way to update the context.
-				p.Context = ctxWithAccount(ctx, acc)
+				*ctx.Value(ctxAccount).(*account) = *acc
 				return &createAccountOutput{
 					ClientMutationID: mutationID,
 					Token:            res.Token.Value,
