@@ -122,6 +122,7 @@ var authenticateField = &graphql.Field{
 		}
 		var token string
 		var expires time.Time
+		var acc *account
 		authResult := authenticateResultSuccess
 		if res.TwoFactorRequired {
 			authResult = authenticateResultSuccess2FARequired
@@ -132,16 +133,17 @@ var authenticateField = &graphql.Field{
 		} else {
 			token = res.Token.Value
 			expires = time.Unix(int64(res.Token.ExpirationEpoch), 0)
+			acc = &account{
+				ID: res.Account.ID,
+			}
+			// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
+			// that likely won't change, but this still isn't a great way to update the context.
+			*ctx.Value(ctxAccount).(*account) = *acc
+			result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
+			result.Set("auth_token", token)
+			result.Set("auth_expiration", expires)
 		}
-		result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
-		result.Set("auth_token", token)
-		result.Set("auth_expiration", expires)
-		acc := &account{
-			ID: res.Account.ID,
-		}
-		// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
-		// that likely won't change, but this still isn't a great way to update the context.
-		*ctx.Value(ctxAccount).(*account) = *acc
+
 		return &authenticateOutput{
 			ClientMutationID: mutationID,
 			Result:           authResult,
