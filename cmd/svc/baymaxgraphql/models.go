@@ -207,3 +207,11 @@ type selectableSettingValue struct {
 	Key    string                 `json:"key"`
 	Subkey string                 `json:"subkey"`
 }
+
+// force upgrade status
+
+type forceUpgradeStatus struct {
+	URL         string `json:"url"`
+	Upgrade     bool   `json:"upgrade"`
+	UserMessage string `json:"userMessage"`
+}

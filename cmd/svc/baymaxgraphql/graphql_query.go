@@ -137,7 +137,8 @@ var queryType = graphql.NewObject(
 					}, nil
 				},
 			},
-			"setting": settingsQuery,
+			"setting":            settingsQuery,
+			"forceUpgradeStatus": forceUpgradeQuery,
 		},
 	},
 )
