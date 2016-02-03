@@ -52,7 +52,7 @@ var VoicemailOptionConfig = &settings.Config{
 var SendCallsToVoicemailConfig = &settings.Config{
 	Title:          "Send all calls to voicemail",
 	Key:            ConfigKeySendCallsToVoicemail,
-	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_INTERNAL_ENTITY},
 	AllowSubkeys:   false,
 	Type:           settings.ConfigType_BOOLEAN,
 	Config: &settings.Config_Boolean{
