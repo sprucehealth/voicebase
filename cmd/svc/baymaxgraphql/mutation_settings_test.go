@@ -96,11 +96,11 @@ func TestModifySetting_Boolean(t *testing.T) {
 				nodeID: $nodeID,
 				key: $key,
 				booleanValue: {
-					set: true	
+					set: true
 				}
 			}) {
 				clientMutationId
-				result				
+				result
 				setting {
 					key
 					subkey
@@ -110,7 +110,7 @@ func TestModifySetting_Boolean(t *testing.T) {
 						__typename
 						... on BooleanSettingValue {
 							set
-						}	
+						}
 					}
 				}
 			}
@@ -221,11 +221,11 @@ func TestModifySetting_StringList(t *testing.T) {
 				key: $key,
 				subkey: $subkey,
 				stringListValue: {
-					list: [" 734 846-5522", "(206) 8773590", "1234565522"]	
+					list: [" 734 846-5522", "(206) 8773590", "1234565522"]
 				}
 			}) {
 				clientMutationId
-				result				
+				result
 				setting {
 					key
 					subkey
@@ -235,7 +235,7 @@ func TestModifySetting_StringList(t *testing.T) {
 						__typename
 						... on StringListSettingValue {
 							list
-						}	
+						}
 					}
 				}
 			}
@@ -335,12 +335,12 @@ func TestModifySetting_StringList_InvalidInput(t *testing.T) {
 				key: $key,
 				subkey: $subkey,
 				stringListValue: {
-					list: [" 734"]	
+					list: [" 734"]
 				}
 			}) {
 				clientMutationId
 				result
-				userErrorMessage				
+				userErrorMessage
 				setting {
 					key
 					subkey
@@ -350,7 +350,7 @@ func TestModifySetting_StringList_InvalidInput(t *testing.T) {
 						__typename
 						... on StringListSettingValue {
 							list
-						}	
+						}
 					}
 				}
 			}
@@ -483,7 +483,7 @@ func TestModifySetting_MultiSelect(t *testing.T) {
 				}
 			}) {
 				clientMutationId
-				result				
+				result
 				setting {
 					key
 					subkey
@@ -495,7 +495,7 @@ func TestModifySetting_MultiSelect(t *testing.T) {
 							items {
 								id
 							}
-						}	
+						}
 					}
 				}
 			}
@@ -635,7 +635,7 @@ func TestModifySetting_SingleSelect(t *testing.T) {
 				}
 			}) {
 				clientMutationId
-				result				
+				result
 				setting {
 					key
 					subkey
@@ -647,7 +647,7 @@ func TestModifySetting_SingleSelect(t *testing.T) {
 							items {
 								id
 							}
-						}	
+						}
 					}
 				}
 			}
@@ -749,7 +749,7 @@ func TestModifySetting_InvalidOwner(t *testing.T) {
 				nodeID: $nodeID,
 				key: $key,
 				booleanValue: {
-					set: true	
+					set: true
 				}
 			}) {
 				clientMutationId
@@ -763,7 +763,7 @@ func TestModifySetting_InvalidOwner(t *testing.T) {
 						__typename
 						... on BooleanSettingValue {
 							set
-						}	
+						}
 					}
 				}
 			}

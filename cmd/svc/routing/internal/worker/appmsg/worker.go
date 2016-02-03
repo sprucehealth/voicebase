@@ -267,7 +267,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 			}
 			golog.Debugf("Sent Email %s → %s. Text %s", orgContact.Value, d.ID, pti.GetItem().GetMessage().Text)
 		default:
-			golog.Warningf("Dropping destination %d. Unknown how to send message.", d.Channel.String())
+			golog.Warningf("Dropping destination %s. Unknown how to send message.", d.Channel.String())
 		}
 	}
 

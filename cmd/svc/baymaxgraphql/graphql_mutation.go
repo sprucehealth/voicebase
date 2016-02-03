@@ -1395,6 +1395,8 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 		},
 		"modifySetting":        modifySettingMutation,
 		"provisionPhoneNumber": provisionPhoneNumberMutation,
+		"inviteColleagues":     inviteColleaguesMutation,
+		"associateAttribution": associateAttributionMutation,
 	},
 })
 

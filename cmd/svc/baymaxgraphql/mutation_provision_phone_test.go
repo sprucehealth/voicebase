@@ -2,17 +2,15 @@ package main
 
 import (
 	"encoding/json"
+	"testing"
 
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
-	"github.com/sprucehealth/backend/test"
-
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-
-	"testing"
 )
 
 func TestProvisionPhone(t *testing.T) {

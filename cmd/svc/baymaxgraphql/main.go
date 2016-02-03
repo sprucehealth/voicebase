@@ -25,6 +25,7 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -48,10 +49,11 @@ var (
 	flagAuthAddr                 = flag.String("auth_addr", "", "host:port of auth service")
 	flagDirectoryAddr            = flag.String("directory_addr", "", "host:port of directory service")
 	flagExCommsAddr              = flag.String("excomms_addr", "", "host:port of excomms service")
-	flagThreadingAddr            = flag.String("threading_addr", "", "host:port of threading service")
+	flagInviteAddr               = flag.String("invite_addr", "", "host:port of invites service")
+	flagSettingsAddr             = flag.String("settings_addr", "", "host:port of settings service")
 	flagSQSDeviceRegistrationURL = flag.String("sqs_device_registration_url", "", "the sqs url for device registration messages")
 	flagSQSNotificationURL       = flag.String("sqs_notification_url", "", "the sqs url for notification queueing")
-	flagSettingsAddr             = flag.String("settings_addr", "", "host:port of settings service")
+	flagThreadingAddr            = flag.String("threading_addr", "", "host:port of threading service")
 
 	// AWS
 	flagAWSAccessKey = flag.String("aws_access_key", "", "access key for aws")
@@ -133,6 +135,15 @@ func main() {
 		exCommsClient = excomms.NewExCommsClient(conn)
 	}
 
+	if *flagInviteAddr == "" {
+		golog.Fatalf("Invite service not configured")
+	}
+	conn, err = grpc.Dial(*flagInviteAddr, grpc.WithInsecure())
+	if err != nil {
+		golog.Fatalf("Unable to connect to invite service: %s", err)
+	}
+	inviteClient := invite.NewInviteClient(conn)
+
 	baseConfig := &config.BaseConfig{
 		AppName:      "baymaxgraphql",
 		AWSRegion:    *flagAWSRegion,
@@ -184,7 +195,7 @@ func main() {
 
 	corsOrigins := []string{"https://" + *flagWebDomain}
 
-	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, settingsClient, ms, *flagEmailDomain, pn)
+	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, settingsClient, inviteClient, ms, *flagEmailDomain, pn)
 	r.Handle("/graphql", httputil.ToContextHandler(cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},

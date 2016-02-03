@@ -48,11 +48,11 @@ func (mc *mcClient) Set(item *memcache.Item) error {
 
 func TestGenerateBranchURL(t *testing.T) {
 	expectedURL := "branch.url.com"
-	data, err := json.Marshal(&branchURLResponse{
+	data, err := json.Marshal(&urlResponse{
 		URL: expectedURL,
 	})
 	cli := &client{
-		branchKey: "key",
+		key: "key",
 		httpClient: &http.Client{
 			Transport: &recordingTransport{
 				resps: []*http.Response{
@@ -72,7 +72,7 @@ func TestGenerateBranchURL(t *testing.T) {
 
 func TestGenerateBranchURLNotOK(t *testing.T) {
 	cli := &client{
-		branchKey: "key",
+		key: "key",
 		httpClient: &http.Client{
 			Transport: &recordingTransport{
 				resps: []*http.Response{
@@ -92,11 +92,11 @@ func TestGenerateBranchURLNotOK(t *testing.T) {
 
 func TestGenerateBranchURLOK1Retry(t *testing.T) {
 	expectedURL := "branch.url.com"
-	data, err := json.Marshal(&branchURLResponse{
+	data, err := json.Marshal(&urlResponse{
 		URL: expectedURL,
 	})
 	cli := &client{
-		branchKey: "key",
+		key: "key",
 		httpClient: &http.Client{
 			Transport: &recordingTransport{
 				resps: []*http.Response{
@@ -120,7 +120,7 @@ func TestGenerateBranchURLOK1Retry(t *testing.T) {
 
 func TestGenerateBranchURL6RetryNotOK(t *testing.T) {
 	cli := &client{
-		branchKey: "key",
+		key: "key",
 		httpClient: &http.Client{
 			Transport: &recordingTransport{
 				resps: []*http.Response{
@@ -157,7 +157,7 @@ func TestGenerateBranchURL6RetryNotOK(t *testing.T) {
 func TestGenerateMemcacheBranchURLCacheHit(t *testing.T) {
 	expectedURL := "branch.url.com"
 	cli := &memcachedBranchClient{
-		branchKey: "key",
+		key: "key",
 		mc: &mcClient{
 			get: &memcache.Item{Value: []byte(expectedURL)},
 		},
@@ -170,16 +170,16 @@ func TestGenerateMemcacheBranchURLCacheHit(t *testing.T) {
 
 func TestGenerateMemcacheBranchURLCacheMiss(t *testing.T) {
 	expectedURL := "branch.url.com"
-	data, err := json.Marshal(&branchURLResponse{
+	data, err := json.Marshal(&urlResponse{
 		URL: expectedURL,
 	})
 	mc := &mcClient{
 		getErr: errors.New("Something bad!"),
 	}
 	cli := &memcachedBranchClient{
-		branchKey: "key",
+		key: "key",
 		client: &client{
-			branchKey: "key",
+			key: "key",
 			httpClient: &http.Client{
 				Transport: &recordingTransport{
 					resps: []*http.Response{
