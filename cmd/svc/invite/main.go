@@ -125,7 +125,7 @@ func main() {
 	s := grpc.NewServer()
 	defer s.Stop()
 	invite.RegisterInviteServer(s, srv)
-	golog.Infof("Starting Threads service on %s...", *flagListen)
+	golog.Infof("Starting invite service on %s...", *flagListen)
 
 	ln, err := net.Listen("tcp", *flagListen)
 	if err != nil {
