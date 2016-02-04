@@ -86,6 +86,59 @@ func (s *threadsServer) CreateSavedQuery(ctx context.Context, in *threading.Crea
 	}, nil
 }
 
+// CreateEmptyThread create a new thread with no messages
+func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.CreateEmptyThreadRequest) (*threading.CreateEmptyThreadResponse, error) {
+	if in.OrganizationID == "" {
+		return nil, grpc.Errorf(codes.InvalidArgument, "OrganizationID is required")
+	}
+	if in.FromEntityID == "" {
+		return nil, grpc.Errorf(codes.InvalidArgument, "FromEntityID is required")
+	}
+	if in.PrimaryEntityID == "" {
+		return nil, grpc.Errorf(codes.InvalidArgument, "PrimaryEntityID is required")
+	}
+	if in.Source == nil {
+		return nil, grpc.Errorf(codes.InvalidArgument, "Source is required")
+	}
+	if in.Summary == "" {
+		return nil, grpc.Errorf(codes.InvalidArgument, "Summary is required")
+	}
+	if len(in.Summary) > maxSummaryLength {
+		in.Summary = in.Summary[:maxSummaryLength]
+	}
+
+	var threadID models.ThreadID
+	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
+		var err error
+		threadID, err = dl.CreateThread(ctx, &models.Thread{
+			OrganizationID:     in.OrganizationID,
+			PrimaryEntityID:    in.PrimaryEntityID,
+			LastMessageSummary: in.Summary,
+		})
+		if err != nil {
+			return errors.Trace(err)
+		}
+		// The creator of the thread automatically becomes a follower
+		err = dl.UpdateMember(ctx, threadID, in.FromEntityID, &dal.MemberUpdate{
+			Following: ptr.Bool(true),
+		})
+		return errors.Trace(err)
+	}); err != nil {
+		return nil, grpc.Errorf(codes.Internal, errors.Trace(err).Error())
+	}
+	thread, err := s.dal.Thread(ctx, threadID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	th, err := transformThreadToResponse(thread, false)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &threading.CreateEmptyThreadResponse{
+		Thread: th,
+	}, nil
+}
+
 // CreateThread create a new thread with an initial message
 func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateThreadRequest) (*threading.CreateThreadResponse, error) {
 	// TODO: return proper error responses for invalid request

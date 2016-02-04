@@ -45,6 +45,51 @@ func TestCreateSavedQuery(t *testing.T) {
 	}, res)
 }
 
+func TestCreateEmptyThread(t *testing.T) {
+	dl := newMockDAL(t)
+	defer dl.Finish()
+
+	now := time.Unix(1e7, 0)
+
+	thid, err := models.NewThreadID()
+	test.OK(t, err)
+	th := &models.Thread{OrganizationID: "o1", PrimaryEntityID: "e2", LastMessageSummary: "summ"}
+	dl.Expect(mock.NewExpectation(dl.CreateThread, th).WithReturns(thid, nil))
+
+	dl.Expect(mock.NewExpectation(dl.UpdateMember, thid, "e1", &dal.MemberUpdate{Following: ptr.Bool(true)}).WithReturns(nil))
+	th2 := &models.Thread{
+		ID:                   thid,
+		OrganizationID:       "o1",
+		PrimaryEntityID:      "e2",
+		LastMessageTimestamp: now,
+		LastMessageSummary:   "summ",
+	}
+	dl.Expect(mock.NewExpectation(dl.Thread, thid).WithReturns(th2, nil))
+
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil)
+	res, err := srv.CreateEmptyThread(nil, &threading.CreateEmptyThreadRequest{
+		OrganizationID:  "o1",
+		FromEntityID:    "e1",
+		PrimaryEntityID: "e2",
+		Source: &threading.Endpoint{
+			ID:      "555-555-5555",
+			Channel: threading.Endpoint_SMS,
+		},
+		Summary: "summ",
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.CreateEmptyThreadResponse{
+		Thread: &threading.Thread{
+			ID:                   th2.ID.String(),
+			OrganizationID:       "o1",
+			PrimaryEntityID:      "e2",
+			LastMessageTimestamp: uint64(now.Unix()),
+			LastMessageSummary:   "summ",
+		},
+	}, res)
+	mock.FinishAll(dl)
+}
+
 func TestCreateThread(t *testing.T) {
 	dl := newMockDAL(t)
 	defer dl.Finish()

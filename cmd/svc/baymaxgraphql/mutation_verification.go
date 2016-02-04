@@ -85,9 +85,10 @@ var verifyPhoneNumberForAccountCreationField = verifyPhoneNumberField
 // checkVerificationCode
 
 const (
-	checkVerificationCodeResultSuccess = "SUCCESS"
-	checkVerificationCodeResultFailure = "VERIFICATION_FAILED"
-	checkVerificationCodeResultExpired = "CODE_EXPIRED"
+	checkVerificationCodeResultSuccess      = "SUCCESS"
+	checkVerificationCodeResultFailure      = "VERIFICATION_FAILED"
+	checkVerificationCodeResultExpired      = "CODE_EXPIRED"
+	checkVerificationCodeResultDoesNotMatch = "DOES_NOT_MATCH"
 )
 
 type checkVerificationCodeOutput struct {
@@ -111,7 +112,11 @@ var checkVerificationCodeResultType = graphql.NewEnum(
 			},
 			checkVerificationCodeResultFailure: &graphql.EnumValueConfig{
 				Value:       checkVerificationCodeResultFailure,
-				Description: "Code verifcation failed",
+				Description: "Code verification failed",
+			},
+			checkVerificationCodeResultDoesNotMatch: &graphql.EnumValueConfig{
+				Value:       checkVerificationCodeResultDoesNotMatch,
+				Description: "Phone number does not match",
 			},
 		},
 	},
@@ -155,8 +160,8 @@ var checkVerificationCodeField = &graphql.Field{
 
 		input := p.Args["input"].(map[string]interface{})
 		mutationID, _ := input["clientMutationId"].(string)
-		token, _ := input["token"].(string)
-		code, _ := input["code"].(string)
+		token := input["token"].(string)
+		code := input["code"].(string)
 
 		golog.Debugf("Checking token %s against code %s", token, code)
 		resp, err := svc.auth.CheckVerificationCode(ctx, &auth.CheckVerificationCodeRequest{

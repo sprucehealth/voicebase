@@ -1,11 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/svc/directory"
 	"golang.org/x/net/context"
 )
 
@@ -81,4 +84,84 @@ func nodePrefix(nodeID string) string {
 	prefix := nodeID[:i]
 
 	return prefix
+}
+
+func contactFromInput(input interface{}) (*directory.Contact, error) {
+	mci, ok := input.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("Unable to parse input contact data: %+v", input)
+	}
+
+	id, _ := mci["id"].(string)
+	t, _ := mci["type"].(string)
+	v, _ := mci["value"].(string)
+	l, _ := mci["label"].(string)
+
+	ct, ok := directory.ContactType_value[t]
+	if !ok {
+		return nil, fmt.Errorf("Unknown contact type: %q", t)
+	}
+	return &directory.Contact{
+		ID:          id,
+		Value:       v,
+		ContactType: directory.ContactType(ct),
+		Label:       l,
+	}, nil
+}
+
+func contactListFromInput(input []interface{}) ([]*directory.Contact, error) {
+	contacts := make([]*directory.Contact, len(input))
+	for i, ci := range input {
+		c, err := contactFromInput(ci)
+		if err != nil {
+			return nil, err
+		}
+		contacts[i] = c
+	}
+	return contacts, nil
+}
+
+func entityInfoFromInput(ei interface{}) (*directory.EntityInfo, error) {
+	mei, ok := ei.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("Unable to parse input entity info data: %+v", ei)
+	}
+
+	fn, _ := mei["firstName"].(string)
+	mi, _ := mei["middleInitial"].(string)
+	ln, _ := mei["lastName"].(string)
+	gn, _ := mei["groupName"].(string)
+	dn, _ := mei["displayName"].(string)
+	st, _ := mei["shortTitle"].(string)
+	lt, _ := mei["longTitle"].(string)
+	n, _ := mei["note"].(string)
+
+	// If no display name was provided then build one from our input
+	if dn == "" {
+		if fn != "" || ln != "" {
+			if mi != "" {
+				dn = fn + " " + mi + ". " + ln
+			} else {
+				dn = fn + " " + ln
+			}
+			if st != "" {
+				dn += ", " + st
+			}
+		} else if gn != "" {
+			dn = gn
+		} else {
+			return nil, errors.New("Display name cannot be empty and not enough information was supplied to infer one")
+		}
+	}
+	entityInfo := &directory.EntityInfo{
+		FirstName:     fn,
+		MiddleInitial: mi,
+		LastName:      ln,
+		GroupName:     gn,
+		DisplayName:   dn,
+		ShortTitle:    st,
+		LongTitle:     lt,
+		Note:          n,
+	}
+	return entityInfo, nil
 }

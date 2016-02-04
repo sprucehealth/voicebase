@@ -318,6 +318,19 @@ message CreateThreadResponse {
 	Thread thread = 3;
 }
 
+message CreateEmptyThreadRequest {
+	string uuid = 1 [(gogoproto.customname) = "UUID"];
+	string organization_id = 2 [(gogoproto.customname) = "OrganizationID"];
+	string from_entity_id = 3 [(gogoproto.customname) = "FromEntityID"];
+	Endpoint source = 4;
+	string primary_entity_id = 5 [(gogoproto.customname) = "PrimaryEntityID"];
+	string summary = 6;
+}
+
+message CreateEmptyThreadResponse {
+	Thread thread = 1;
+}
+
 message ThreadMembersRequest {
 	string thread_id = 1 [(gogoproto.customname) = "ThreadID"];
 }
@@ -363,6 +376,8 @@ message ThreadItemViewDetailsResponse {
 service Threads {
 	// CreateSavedQuery saves a query for later use
 	rpc CreateSavedQuery(CreateSavedQueryRequest) returns (CreateSavedQueryResponse);
+	// CreateEmptyThread creates a new thread with no messages
+	rpc CreateEmptyThread(CreateEmptyThreadRequest) returns (CreateEmptyThreadResponse);
 	// CreateThread create a new thread with an initial message
 	rpc CreateThread(CreateThreadRequest) returns (CreateThreadResponse);
 	// DeleteMessage deletes a message from a thread

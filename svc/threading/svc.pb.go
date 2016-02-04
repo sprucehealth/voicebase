@@ -52,6 +52,8 @@
 		UpdateThreadMembershipResponse
 		CreateThreadRequest
 		CreateThreadResponse
+		CreateEmptyThreadRequest
+		CreateEmptyThreadResponse
 		ThreadMembersRequest
 		ThreadMembersResponse
 		ThreadsForMemberRequest
@@ -1129,6 +1131,39 @@ func (m *CreateThreadResponse) GetThread() *Thread {
 	return nil
 }
 
+type CreateEmptyThreadRequest struct {
+	UUID            string    `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
+	OrganizationID  string    `protobuf:"bytes,2,opt,name=organization_id,proto3" json:"organization_id,omitempty"`
+	FromEntityID    string    `protobuf:"bytes,3,opt,name=from_entity_id,proto3" json:"from_entity_id,omitempty"`
+	Source          *Endpoint `protobuf:"bytes,4,opt,name=source" json:"source,omitempty"`
+	PrimaryEntityID string    `protobuf:"bytes,5,opt,name=primary_entity_id,proto3" json:"primary_entity_id,omitempty"`
+	Summary         string    `protobuf:"bytes,6,opt,name=summary,proto3" json:"summary,omitempty"`
+}
+
+func (m *CreateEmptyThreadRequest) Reset()      { *m = CreateEmptyThreadRequest{} }
+func (*CreateEmptyThreadRequest) ProtoMessage() {}
+
+func (m *CreateEmptyThreadRequest) GetSource() *Endpoint {
+	if m != nil {
+		return m.Source
+	}
+	return nil
+}
+
+type CreateEmptyThreadResponse struct {
+	Thread *Thread `protobuf:"bytes,1,opt,name=thread" json:"thread,omitempty"`
+}
+
+func (m *CreateEmptyThreadResponse) Reset()      { *m = CreateEmptyThreadResponse{} }
+func (*CreateEmptyThreadResponse) ProtoMessage() {}
+
+func (m *CreateEmptyThreadResponse) GetThread() *Thread {
+	if m != nil {
+		return m.Thread
+	}
+	return nil
+}
+
 type ThreadMembersRequest struct {
 	ThreadID string `protobuf:"bytes,1,opt,name=thread_id,proto3" json:"thread_id,omitempty"`
 }
@@ -1280,6 +1315,8 @@ func init() {
 	proto.RegisterType((*UpdateThreadMembershipResponse)(nil), "threading.UpdateThreadMembershipResponse")
 	proto.RegisterType((*CreateThreadRequest)(nil), "threading.CreateThreadRequest")
 	proto.RegisterType((*CreateThreadResponse)(nil), "threading.CreateThreadResponse")
+	proto.RegisterType((*CreateEmptyThreadRequest)(nil), "threading.CreateEmptyThreadRequest")
+	proto.RegisterType((*CreateEmptyThreadResponse)(nil), "threading.CreateEmptyThreadResponse")
 	proto.RegisterType((*ThreadMembersRequest)(nil), "threading.ThreadMembersRequest")
 	proto.RegisterType((*ThreadMembersResponse)(nil), "threading.ThreadMembersResponse")
 	proto.RegisterType((*ThreadsForMemberRequest)(nil), "threading.ThreadsForMemberRequest")
@@ -2944,6 +2981,71 @@ func (this *CreateThreadResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *CreateEmptyThreadRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreateEmptyThreadRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.UUID != that1.UUID {
+		return false
+	}
+	if this.OrganizationID != that1.OrganizationID {
+		return false
+	}
+	if this.FromEntityID != that1.FromEntityID {
+		return false
+	}
+	if !this.Source.Equal(that1.Source) {
+		return false
+	}
+	if this.PrimaryEntityID != that1.PrimaryEntityID {
+		return false
+	}
+	if this.Summary != that1.Summary {
+		return false
+	}
+	return true
+}
+func (this *CreateEmptyThreadResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreateEmptyThreadResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Thread.Equal(that1.Thread) {
+		return false
+	}
+	return true
+}
 func (this *ThreadMembersRequest) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
@@ -3856,6 +3958,35 @@ func (this *CreateThreadResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *CreateEmptyThreadRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 10)
+	s = append(s, "&threading.CreateEmptyThreadRequest{")
+	s = append(s, "UUID: "+fmt.Sprintf("%#v", this.UUID)+",\n")
+	s = append(s, "OrganizationID: "+fmt.Sprintf("%#v", this.OrganizationID)+",\n")
+	s = append(s, "FromEntityID: "+fmt.Sprintf("%#v", this.FromEntityID)+",\n")
+	if this.Source != nil {
+		s = append(s, "Source: "+fmt.Sprintf("%#v", this.Source)+",\n")
+	}
+	s = append(s, "PrimaryEntityID: "+fmt.Sprintf("%#v", this.PrimaryEntityID)+",\n")
+	s = append(s, "Summary: "+fmt.Sprintf("%#v", this.Summary)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreateEmptyThreadResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&threading.CreateEmptyThreadResponse{")
+	if this.Thread != nil {
+		s = append(s, "Thread: "+fmt.Sprintf("%#v", this.Thread)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *ThreadMembersRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -4003,6 +4134,8 @@ var _ grpc.ClientConn
 type ThreadsClient interface {
 	// CreateSavedQuery saves a query for later use
 	CreateSavedQuery(ctx context.Context, in *CreateSavedQueryRequest, opts ...grpc.CallOption) (*CreateSavedQueryResponse, error)
+	// CreateEmptyThread creates a new thread with no messages
+	CreateEmptyThread(ctx context.Context, in *CreateEmptyThreadRequest, opts ...grpc.CallOption) (*CreateEmptyThreadResponse, error)
 	// CreateThread create a new thread with an initial message
 	CreateThread(ctx context.Context, in *CreateThreadRequest, opts ...grpc.CallOption) (*CreateThreadResponse, error)
 	// DeleteMessage deletes a message from a thread
@@ -4048,6 +4181,15 @@ func NewThreadsClient(cc *grpc.ClientConn) ThreadsClient {
 func (c *threadsClient) CreateSavedQuery(ctx context.Context, in *CreateSavedQueryRequest, opts ...grpc.CallOption) (*CreateSavedQueryResponse, error) {
 	out := new(CreateSavedQueryResponse)
 	err := grpc.Invoke(ctx, "/threading.Threads/CreateSavedQuery", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *threadsClient) CreateEmptyThread(ctx context.Context, in *CreateEmptyThreadRequest, opts ...grpc.CallOption) (*CreateEmptyThreadResponse, error) {
+	out := new(CreateEmptyThreadResponse)
+	err := grpc.Invoke(ctx, "/threading.Threads/CreateEmptyThread", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -4203,6 +4345,8 @@ func (c *threadsClient) UpdateThreadMembership(ctx context.Context, in *UpdateTh
 type ThreadsServer interface {
 	// CreateSavedQuery saves a query for later use
 	CreateSavedQuery(context.Context, *CreateSavedQueryRequest) (*CreateSavedQueryResponse, error)
+	// CreateEmptyThread creates a new thread with no messages
+	CreateEmptyThread(context.Context, *CreateEmptyThreadRequest) (*CreateEmptyThreadResponse, error)
 	// CreateThread create a new thread with an initial message
 	CreateThread(context.Context, *CreateThreadRequest) (*CreateThreadResponse, error)
 	// DeleteMessage deletes a message from a thread
@@ -4247,6 +4391,18 @@ func _Threads_CreateSavedQuery_Handler(srv interface{}, ctx context.Context, dec
 		return nil, err
 	}
 	out, err := srv.(ThreadsServer).CreateSavedQuery(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Threads_CreateEmptyThread_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(CreateEmptyThreadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(ThreadsServer).CreateEmptyThread(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -4452,6 +4608,10 @@ var _Threads_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateSavedQuery",
 			Handler:    _Threads_CreateSavedQuery_Handler,
+		},
+		{
+			MethodName: "CreateEmptyThread",
+			Handler:    _Threads_CreateEmptyThread_Handler,
 		},
 		{
 			MethodName: "CreateThread",
@@ -6313,6 +6473,92 @@ func (m *CreateThreadResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *CreateEmptyThreadRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreateEmptyThreadRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.UUID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.UUID)))
+		i += copy(data[i:], m.UUID)
+	}
+	if len(m.OrganizationID) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.OrganizationID)))
+		i += copy(data[i:], m.OrganizationID)
+	}
+	if len(m.FromEntityID) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.FromEntityID)))
+		i += copy(data[i:], m.FromEntityID)
+	}
+	if m.Source != nil {
+		data[i] = 0x22
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Source.Size()))
+		n29, err := m.Source.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n29
+	}
+	if len(m.PrimaryEntityID) > 0 {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.PrimaryEntityID)))
+		i += copy(data[i:], m.PrimaryEntityID)
+	}
+	if len(m.Summary) > 0 {
+		data[i] = 0x32
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Summary)))
+		i += copy(data[i:], m.Summary)
+	}
+	return i, nil
+}
+
+func (m *CreateEmptyThreadResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreateEmptyThreadResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Thread != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
+		n30, err := m.Thread.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n30
+	}
+	return i, nil
+}
+
 func (m *ThreadMembersRequest) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -6474,11 +6720,11 @@ func (m *SavedQueryResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.SavedQuery.Size()))
-		n29, err := m.SavedQuery.MarshalTo(data[i:])
+		n31, err := m.SavedQuery.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n29
+		i += n31
 	}
 	return i, nil
 }
@@ -6532,11 +6778,11 @@ func (m *ThreadItemResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Item.Size()))
-		n30, err := m.Item.MarshalTo(data[i:])
+		n32, err := m.Item.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n30
+		i += n32
 	}
 	return i, nil
 }
@@ -7448,6 +7694,46 @@ func (m *CreateThreadResponse) Size() (n int) {
 	return n
 }
 
+func (m *CreateEmptyThreadRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.UUID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.OrganizationID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.FromEntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.Source != nil {
+		l = m.Source.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.PrimaryEntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Summary)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *CreateEmptyThreadResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.Thread != nil {
+		l = m.Thread.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
 func (m *ThreadMembersRequest) Size() (n int) {
 	var l int
 	_ = l
@@ -8162,6 +8448,31 @@ func (this *CreateThreadResponse) String() string {
 	s := strings.Join([]string{`&CreateThreadResponse{`,
 		`ThreadID:` + fmt.Sprintf("%v", this.ThreadID) + `,`,
 		`ThreadItem:` + strings.Replace(fmt.Sprintf("%v", this.ThreadItem), "ThreadItem", "ThreadItem", 1) + `,`,
+		`Thread:` + strings.Replace(fmt.Sprintf("%v", this.Thread), "Thread", "Thread", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateEmptyThreadRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateEmptyThreadRequest{`,
+		`UUID:` + fmt.Sprintf("%v", this.UUID) + `,`,
+		`OrganizationID:` + fmt.Sprintf("%v", this.OrganizationID) + `,`,
+		`FromEntityID:` + fmt.Sprintf("%v", this.FromEntityID) + `,`,
+		`Source:` + strings.Replace(fmt.Sprintf("%v", this.Source), "Endpoint", "Endpoint", 1) + `,`,
+		`PrimaryEntityID:` + fmt.Sprintf("%v", this.PrimaryEntityID) + `,`,
+		`Summary:` + fmt.Sprintf("%v", this.Summary) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateEmptyThreadResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateEmptyThreadResponse{`,
 		`Thread:` + strings.Replace(fmt.Sprintf("%v", this.Thread), "Thread", "Thread", 1) + `,`,
 		`}`,
 	}, "")
@@ -14046,6 +14357,317 @@ func (m *CreateThreadResponse) Unmarshal(data []byte) error {
 			}
 			iNdEx = postIndex
 		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Thread", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Thread == nil {
+				m.Thread = &Thread{}
+			}
+			if err := m.Thread.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateEmptyThreadRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateEmptyThreadRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateEmptyThreadRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UUID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.UUID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OrganizationID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FromEntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FromEntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Source", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Source == nil {
+				m.Source = &Endpoint{}
+			}
+			if err := m.Source.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PrimaryEntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PrimaryEntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Summary", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Summary = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateEmptyThreadResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateEmptyThreadResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateEmptyThreadResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Thread", wireType)
 			}

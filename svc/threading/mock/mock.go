@@ -31,6 +31,15 @@ func (c *Client) CreateSavedQuery(ctx context.Context, in *threading.CreateSaved
 	return rets[0].(*threading.CreateSavedQueryResponse), mock.SafeError(rets[1])
 }
 
+// CreateEmptyThread create a new thread with no messages
+func (c *Client) CreateEmptyThread(ctx context.Context, in *threading.CreateEmptyThreadRequest, opts ...grpc.CallOption) (*threading.CreateEmptyThreadResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.CreateEmptyThreadResponse), mock.SafeError(rets[1])
+}
+
 // CreateThread create a new thread with an initial message
 func (c *Client) CreateThread(ctx context.Context, in *threading.CreateThreadRequest, opts ...grpc.CallOption) (*threading.CreateThreadResponse, error) {
 	rets := c.Expector.Record(in)
