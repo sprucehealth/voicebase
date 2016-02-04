@@ -91,7 +91,7 @@ var provisionEmailOutputType = graphql.NewObject(
 	},
 )
 
-var provisionEmailField = &graphql.Field{
+var provisionEmailMutation = &graphql.Field{
 	Type: graphql.NewNonNull(provisionEmailOutputType),
 	Args: graphql.FieldConfigArgument{
 		"input": &graphql.ArgumentConfig{Type: provisionEmailInputType},

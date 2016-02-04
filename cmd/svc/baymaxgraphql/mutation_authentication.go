@@ -89,7 +89,7 @@ var authenticateOutputType = graphql.NewObject(
 	},
 )
 
-var authenticateField = &graphql.Field{
+var authenticateMutation = &graphql.Field{
 	Type: graphql.NewNonNull(authenticateOutputType),
 	Args: graphql.FieldConfigArgument{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(authenticateInputType)},
@@ -180,7 +180,7 @@ var authenticateWithCodeInputType = graphql.NewInputObject(
 	},
 )
 
-var authenticateWithCodeField = &graphql.Field{
+var authenticateWithCodeMutation = &graphql.Field{
 	Type: graphql.NewNonNull(authenticateOutputType),
 	Args: graphql.FieldConfigArgument{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(authenticateWithCodeInputType)},
@@ -256,7 +256,7 @@ var unauthenticateOutputType = graphql.NewObject(
 	},
 )
 
-var unauthenticateField = &graphql.Field{
+var unauthenticateMutation = &graphql.Field{
 	Type: graphql.NewNonNull(unauthenticateOutputType),
 	Args: graphql.FieldConfigArgument{
 		"input": &graphql.ArgumentConfig{Type: unauthenticateInputType},

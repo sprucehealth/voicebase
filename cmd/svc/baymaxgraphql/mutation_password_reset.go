@@ -50,7 +50,7 @@ var requestPasswordResetOutputType = graphql.NewObject(
 	},
 )
 
-var requestPasswordResetField = &graphql.Field{
+var requestPasswordResetMutation = &graphql.Field{
 	Type: graphql.NewNonNull(requestPasswordResetOutputType),
 	Args: graphql.FieldConfigArgument{
 		"input": &graphql.ArgumentConfig{Type: requestPasswordResetInputType},
@@ -140,7 +140,7 @@ var checkPasswordResetTokenOutputType = graphql.NewObject(
 	},
 )
 
-var checkPasswordResetTokenField = &graphql.Field{
+var checkPasswordResetTokenMutation = &graphql.Field{
 	Type: graphql.NewNonNull(checkPasswordResetTokenOutputType),
 	Args: graphql.FieldConfigArgument{
 		"input": &graphql.ArgumentConfig{Type: checkPasswordResetTokenInputType},
@@ -217,7 +217,7 @@ var verifyPhoneNumberForPasswordResetInputType = graphql.NewInputObject(
 	},
 )
 
-var verifyPhoneNumberForPasswordResetField = &graphql.Field{
+var verifyPhoneNumberForPasswordResetMutation = &graphql.Field{
 	Type: graphql.NewNonNull(verifyPhoneNumberOutputType),
 	Args: graphql.FieldConfigArgument{
 		"input": &graphql.ArgumentConfig{Type: verifyPhoneNumberForPasswordResetInputType},
@@ -299,7 +299,7 @@ var passwordResetOutputType = graphql.NewObject(
 	},
 )
 
-var passwordResetField = &graphql.Field{
+var passwordResetMutation = &graphql.Field{
 	Type: graphql.NewNonNull(passwordResetOutputType),
 	Args: graphql.FieldConfigArgument{
 		"input": &graphql.ArgumentConfig{Type: passwordResetInputType},

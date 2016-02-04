@@ -48,7 +48,7 @@ var verifyPhoneNumberOutputType = graphql.NewObject(
 	},
 )
 
-var verifyPhoneNumberField = &graphql.Field{
+var verifyPhoneNumberMutation = &graphql.Field{
 	Type: graphql.NewNonNull(verifyPhoneNumberOutputType),
 	Args: graphql.FieldConfigArgument{
 		"input": &graphql.ArgumentConfig{Type: verifyPhoneNumberInputType},
@@ -80,7 +80,7 @@ var verifyPhoneNumberField = &graphql.Field{
 
 // verifyPhoneNumberForAccountCreation
 
-var verifyPhoneNumberForAccountCreationField = verifyPhoneNumberField
+var verifyPhoneNumberForAccountCreationMutation = verifyPhoneNumberMutation
 
 // checkVerificationCode
 
@@ -149,7 +149,7 @@ var checkVerificationCodeOutputType = graphql.NewObject(
 	},
 )
 
-var checkVerificationCodeField = &graphql.Field{
+var checkVerificationCodeMutation = &graphql.Field{
 	Type: graphql.NewNonNull(checkVerificationCodeOutputType),
 	Args: graphql.FieldConfigArgument{
 		"input": &graphql.ArgumentConfig{Type: checkVerificationCodeInputType},

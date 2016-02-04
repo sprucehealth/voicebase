@@ -403,72 +403,6 @@ var sendTestNotificationOutputType = graphql.NewObject(
 	},
 )
 
-/// addContacts
-
-type addContactInfosOutput struct {
-	ClientMutationID string  `json:"clientMutationId"`
-	Entity           *entity `json:"entity"`
-}
-
-var addContactInfosInputType = graphql.NewInputObject(
-	graphql.InputObjectConfig{
-		Name: "AddContactsInput",
-		Fields: graphql.InputObjectConfigFieldMap{
-			"clientMutationId": newClientMutationIDInputField(),
-			"uuid":             newUUIDInputField(),
-			"entityID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
-			"contactInfos":     &graphql.InputObjectFieldConfig{Type: graphql.NewList(contactInfoInputType)},
-		},
-	},
-)
-
-var addContactInfosOutputType = graphql.NewObject(
-	graphql.ObjectConfig{
-		Name: "AddContactInfosPayload",
-		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
-			"entity":           &graphql.Field{Type: graphql.NewNonNull(entityType)},
-		},
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*addContactInfosOutput)
-			return ok
-		},
-	},
-)
-
-/// deleteContacts
-
-type deleteContactInfosOutput struct {
-	ClientMutationID string  `json:"clientMutationId"`
-	Entity           *entity `json:"entity"`
-}
-
-var deleteContactInfosInputType = graphql.NewInputObject(
-	graphql.InputObjectConfig{
-		Name: "DeleteContactInfosInput",
-		Fields: graphql.InputObjectConfigFieldMap{
-			"clientMutationId": newClientMutationIDInputField(),
-			"uuid":             newUUIDInputField(),
-			"entityID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
-			"contactIDs":       &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.String)},
-		},
-	},
-)
-
-var deleteContactInfosOutputType = graphql.NewObject(
-	graphql.ObjectConfig{
-		Name: "DeleteContactInfosPayload",
-		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
-			"entity":           &graphql.Field{Type: graphql.NewNonNull(entityType)},
-		},
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*deleteContactInfosOutput)
-			return ok
-		},
-	},
-)
-
 // deleteThread
 
 type deleteThreadOutput struct {
@@ -1082,116 +1016,26 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				}, nil
 			},
 		},
-		"authenticate":                        authenticateField,
-		"authenticateWithCode":                authenticateWithCodeField,
-		"checkPasswordResetToken":             checkPasswordResetTokenField,
-		"checkVerificationCode":               checkVerificationCodeField,
-		"provisionEmail":                      provisionEmailField,
-		"requestPasswordReset":                requestPasswordResetField,
-		"passwordReset":                       passwordResetField,
-		"unauthenticate":                      unauthenticateField,
-		"verifyPhoneNumber":                   verifyPhoneNumberField,
-		"verifyPhoneNumberForAccountCreation": verifyPhoneNumberForAccountCreationField,
-		"verifyPhoneNumberForPasswordReset":   verifyPhoneNumberForPasswordResetField,
+		"addContactInfos":                     addContactInfosMutation,
+		"associateAttribution":                associateAttributionMutation,
+		"authenticate":                        authenticateMutation,
+		"authenticateWithCode":                authenticateWithCodeMutation,
+		"checkPasswordResetToken":             checkPasswordResetTokenMutation,
+		"checkVerificationCode":               checkVerificationCodeMutation,
+		"createThread":                        createThreadMutation,
+		"deleteContactInfos":                  deleteContactInfosMutation,
+		"deleteThread":                        deleteThreadMutation,
+		"inviteColleagues":                    inviteColleaguesMutation,
+		"modifySetting":                       modifySettingMutation,
+		"passwordReset":                       passwordResetMutation,
+		"provisionEmail":                      provisionEmailMutation,
+		"provisionPhoneNumber":                provisionPhoneNumberMutation,
+		"requestPasswordReset":                requestPasswordResetMutation,
+		"unauthenticate":                      unauthenticateMutation,
+		"updateContactInfos":                  updateContactInfosMutation,
 		"updateEntity":                        updateEntityMutation,
-		"addContactInfos": &graphql.Field{
-			Type: graphql.NewNonNull(addContactInfosOutputType),
-			Args: graphql.FieldConfigArgument{
-				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(addContactInfosInputType)},
-			},
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				svc := serviceFromParams(p)
-				ctx := p.Context
-				acc := accountFromContext(ctx)
-				if acc == nil {
-					return nil, errNotAuthenticated
-				}
-
-				input := p.Args["input"].(map[string]interface{})
-				mutationID, _ := input["clientMutationId"].(string)
-				contactInfos, _ := input["contactInfos"].([]interface{})
-				entID, _ := input["entityID"].(string)
-
-				contacts, err := contactListFromInput(contactInfos)
-				if err != nil {
-					return nil, internalError(err)
-				}
-
-				resp, err := svc.directory.CreateContacts(ctx, &directory.CreateContactsRequest{
-					EntityID: entID,
-					Contacts: contacts,
-					RequestedInformation: &directory.RequestedInformation{
-						Depth:             0,
-						EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
-					},
-				})
-				if err != nil {
-					return nil, internalError(err)
-				}
-
-				e, err := transformEntityToResponse(resp.Entity)
-				if err != nil {
-					return nil, internalError(err)
-				}
-
-				return &addContactInfosOutput{
-					ClientMutationID: mutationID,
-					Entity:           e,
-				}, nil
-			},
-		},
-		"updateContactInfos": updateContactInfosMutation,
-		"deleteContactInfos": &graphql.Field{
-			Type: graphql.NewNonNull(deleteContactInfosOutputType),
-			Args: graphql.FieldConfigArgument{
-				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(deleteContactInfosInputType)},
-			},
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				svc := serviceFromParams(p)
-				ctx := p.Context
-				acc := accountFromContext(ctx)
-				if acc == nil {
-					return nil, errNotAuthenticated
-				}
-
-				input := p.Args["input"].(map[string]interface{})
-				mutationID, _ := input["clientMutationId"].(string)
-				contactIDs, _ := input["contactIDs"].([]interface{})
-				entID, _ := input["entityID"].(string)
-
-				sContacts := make([]string, len(contactIDs))
-				for i, ci := range contactIDs {
-					sContacts[i] = ci.(string)
-				}
-
-				resp, err := svc.directory.DeleteContacts(ctx, &directory.DeleteContactsRequest{
-					EntityID:         entID,
-					EntityContactIDs: sContacts,
-					RequestedInformation: &directory.RequestedInformation{
-						Depth:             0,
-						EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
-					},
-				})
-				if err != nil {
-					return nil, internalError(err)
-				}
-
-				e, err := transformEntityToResponse(resp.Entity)
-				if err != nil {
-					return nil, internalError(err)
-				}
-
-				return &deleteContactInfosOutput{
-					ClientMutationID: mutationID,
-					Entity:           e,
-				}, nil
-			},
-		},
-		"associateAttribution": associateAttributionMutation,
-		"createThread":         createThreadMutation,
-		"deleteThread":         deleteThreadMutation,
-		"inviteColleagues":     inviteColleaguesMutation,
-		"modifySetting":        modifySettingMutation,
-		"provisionPhoneNumber": provisionPhoneNumberMutation,
+		"verifyPhoneNumber":                   verifyPhoneNumberMutation,
+		"verifyPhoneNumberForAccountCreation": verifyPhoneNumberForAccountCreationMutation,
+		"verifyPhoneNumberForPasswordReset":   verifyPhoneNumberForPasswordResetMutation,
 	},
 })
