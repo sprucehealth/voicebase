@@ -20,17 +20,18 @@ import (
 )
 
 var config struct {
-	listenPort             int
-	debug                  bool
-	dbHost                 string
-	dbPort                 int
-	dbName                 string
-	dbUser                 string
-	dbPassword             string
-	dbCACert               string
-	dbTLSCert              string
-	dbTLSKey               string
-	settingsServiceAddress string
+	listenPort                int
+	debug                     bool
+	dbHost                    string
+	dbPort                    int
+	dbName                    string
+	dbUser                    string
+	dbPassword                string
+	dbCACert                  string
+	dbTLSCert                 string
+	dbTLSKey                  string
+	settingsServiceAddress    string
+	clientEncryptionKeySecret string
 }
 
 func init() {
@@ -45,12 +46,16 @@ func init() {
 	flag.StringVar(&config.dbTLSCert, "db_tls_cert", "", "the tls cert to use when connecting to the database")
 	flag.StringVar(&config.dbTLSKey, "db_tls_key", "", "the tls key to use when connecting to the database")
 	flag.StringVar(&config.settingsServiceAddress, "settings_addr", "", "host:port of settings service")
+	flag.StringVar(&config.clientEncryptionKeySecret, "client_encryption_key_secret", "", "the secret to use when generating the disk cache encryption keys for client")
 }
 
 func main() {
 	boot.ParseFlags("AUTH_SERVICE_")
 	configureLogging()
 
+	if config.clientEncryptionKeySecret == "" {
+		golog.Fatalf("Client encryption key secret required")
+	}
 	listenAddress := ":" + strconv.Itoa(config.listenPort)
 	lis, err := net.Listen("tcp", listenAddress)
 	if err != nil {
@@ -89,9 +94,13 @@ func main() {
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
 	}
+	aSrv, err := server.New(dal.New(db), settingsClient, config.clientEncryptionKeySecret)
+	if err != nil {
+		golog.Fatalf("Error while initializing auth server: %s", err)
+	}
 
 	s := grpc.NewServer()
-	pb.RegisterAuthServer(s, server.New(dal.New(db), settingsClient))
+	pb.RegisterAuthServer(s, aSrv)
 	golog.Infof("Starting AuthService on %s...", listenAddress)
 	s.Serve(lis)
 }

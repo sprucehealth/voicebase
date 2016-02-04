@@ -1,6 +1,8 @@
 package server
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"sort"
 	"time"
@@ -16,6 +18,7 @@ import (
 	"github.com/sprucehealth/backend/libs/hash"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/settings"
@@ -32,22 +35,28 @@ var (
 )
 
 type server struct {
-	dal      dal.DAL
-	hasher   hash.PasswordHasher
-	clk      clock.Clock
-	settings settings.SettingsClient
+	dal                       dal.DAL
+	hasher                    hash.PasswordHasher
+	clk                       clock.Clock
+	settings                  settings.SettingsClient
+	clientEncryptionKeySigner *sig.Signer
 }
 
 var bCryptHashCost = 10
 
 // New returns an initialized instance of server
-func New(dl dal.DAL, settings settings.SettingsClient) auth.AuthServer {
-	return &server{
-		dal:      dl,
-		hasher:   hash.NewBcryptHasher(bCryptHashCost),
-		clk:      clock.New(),
-		settings: settings,
+func New(dl dal.DAL, settings settings.SettingsClient, clientEncryptionKeySecret string) (auth.AuthServer, error) {
+	clientEncryptionKeySigner, err := sig.NewSigner([][]byte{[]byte(clientEncryptionKeySecret)}, sha256.New)
+	if err != nil {
+		return nil, errors.Trace(fmt.Errorf("auth: Failed to initialize client encryption key signer: %s", err))
 	}
+	return &server{
+		dal:                       dl,
+		hasher:                    hash.NewBcryptHasher(bCryptHashCost),
+		clk:                       clock.New(),
+		settings:                  settings,
+		clientEncryptionKeySigner: clientEncryptionKeySigner,
+	}, nil
 }
 
 func (s *server) AuthenticateLogin(ctx context.Context, rd *auth.AuthenticateLoginRequest) (*auth.AuthenticateLoginResponse, error) {
@@ -97,7 +106,7 @@ func (s *server) AuthenticateLogin(ctx context.Context, rd *auth.AuthenticateLog
 		}
 		twoFactorPhone = accountPhone.PhoneNumber
 	} else {
-		authToken, err = generateAndInsertToken(s.dal, account.ID, rd.TokenAttributes, s.clk)
+		authToken, err = generateAndInsertToken(s.dal, account.ID, rd.TokenAttributes, s.clk, s.clientEncryptionKeySigner)
 		if err != nil {
 			return nil, grpcErrorf(codes.Internal, err.Error())
 		}
@@ -116,9 +125,9 @@ func (s *server) AuthenticateLogin(ctx context.Context, rd *auth.AuthenticateLog
 }
 
 func (s *server) AuthenticateLoginWithCode(ctx context.Context, rd *auth.AuthenticateLoginWithCodeRequest) (*auth.AuthenticateLoginWithCodeResponse, error) {
-	golog.Debugf("Entering server.server.AuthenticateLoginForCode: %+v", rd)
+	golog.Debugf("Entering server.server.AuthenticateLoginWithCode: %+v", rd)
 	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.server.AuthenticateLoginForCode...") }()
+		defer func() { golog.Debugf("Leaving server.server.AuthenticateLoginWithCode...") }()
 	}
 
 	if rd.Token == "" {
@@ -154,7 +163,7 @@ func (s *server) AuthenticateLoginWithCode(ctx context.Context, rd *auth.Authent
 		return nil, grpcErrorf(codes.Internal, "ACCOUNT_2FA verification code value %q failed to parse into account id, unable to generate auth token: %s", verificationCode.VerifiedValue, err)
 	}
 
-	authToken, err := generateAndInsertToken(s.dal, accountID, rd.TokenAttributes, s.clk)
+	authToken, err := generateAndInsertToken(s.dal, accountID, rd.TokenAttributes, s.clk, s.clientEncryptionKeySigner)
 	if err != nil {
 		return nil, grpcErrorf(codes.Internal, "Failed to generate and insert new auth token for ACCOUNT_2FA: %s", err)
 	}
@@ -200,7 +209,7 @@ func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenti
 	}
 	if rd.Refresh {
 		if err := s.dal.Transact(func(dl dal.DAL) error {
-			rotatedToken, err := generateAndInsertToken(dl, aToken.AccountID, rd.TokenAttributes, s.clk)
+			rotatedToken, err := generateAndInsertToken(dl, aToken.AccountID, rd.TokenAttributes, s.clk, s.clientEncryptionKeySigner)
 			if err != nil {
 				return errors.Trace(err)
 			}
@@ -210,6 +219,13 @@ func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenti
 		}); err != nil {
 			return nil, grpcErrorf(codes.Internal, err.Error())
 		}
+	} else {
+		// If the token is valid then rebuild their encryption key
+		key, err := s.clientEncryptionKeySigner.Sign([]byte(authToken.Value))
+		if err != nil {
+			return nil, grpcErrorf(codes.Internal, err.Error())
+		}
+		authToken.ClientEncryptionKey = base64.StdEncoding.EncodeToString(key)
 	}
 
 	golog.Debugf("Getting account %s", aToken.AccountID)
@@ -433,7 +449,7 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 			return errors.Trace(fmt.Errorf("Expected 1 row to be affected but got %d", aff))
 		}
 
-		authToken, err = generateAndInsertToken(dl, accountID, rd.TokenAttributes, s.clk)
+		authToken, err = generateAndInsertToken(dl, accountID, rd.TokenAttributes, s.clk, s.clientEncryptionKeySigner)
 		if err != nil {
 			return errors.Trace(err)
 		}
@@ -669,12 +685,7 @@ func appendAttributes(token string, tokenAttributes map[string]string) (string, 
 	return token, nil
 }
 
-type authToken struct {
-	token      string
-	expiration time.Time
-}
-
-func generateAndInsertToken(dl dal.DAL, accountID dal.AccountID, tokenAttributes map[string]string, clk clock.Clock) (*auth.AuthToken, error) {
+func generateAndInsertToken(dl dal.DAL, accountID dal.AccountID, tokenAttributes map[string]string, clk clock.Clock, clientEncryptionKeySigner *sig.Signer) (*auth.AuthToken, error) {
 	golog.Debugf("Entering server.generateAndInsertToken: AccountID: %s, TokenAttributes: %+v", accountID, tokenAttributes)
 	if golog.Default().L(golog.DEBUG) {
 		defer func() { golog.Debugf("Leaving server.generateAndInsertToken...") }()
@@ -689,6 +700,12 @@ func generateAndInsertToken(dl dal.DAL, accountID dal.AccountID, tokenAttributes
 	}
 	tokenExpiration := clk.Now().Add(defaultTokenExpiration)
 
+	// Utilize the auth token to generate a client encryption key
+	key, err := clientEncryptionKeySigner.Sign([]byte(token))
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
 	golog.Debugf("Inserting auth token %s - expires %+v for account %s", tokenWithAttributes, tokenExpiration, accountID)
 	if err := dl.InsertAuthToken(&dal.AuthToken{
 		AccountID: accountID,
@@ -697,7 +714,11 @@ func generateAndInsertToken(dl dal.DAL, accountID dal.AccountID, tokenAttributes
 	}); err != nil {
 		return nil, errors.Trace(err)
 	}
-	return &auth.AuthToken{Value: token, ExpirationEpoch: uint64(tokenExpiration.Unix())}, nil
+	return &auth.AuthToken{
+		Value:               token,
+		ExpirationEpoch:     uint64(tokenExpiration.Unix()),
+		ClientEncryptionKey: base64.StdEncoding.EncodeToString(key),
+	}, nil
 }
 
 const (

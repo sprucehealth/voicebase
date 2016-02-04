@@ -110,8 +110,9 @@ func (*Account) ProtoMessage() {}
 
 // An AuthToken represents the token value and metadata about the token
 type AuthToken struct {
-	Value           string `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
-	ExpirationEpoch uint64 `protobuf:"varint,2,opt,name=expiration_epoch,proto3" json:"expiration_epoch,omitempty"`
+	Value               string `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+	ExpirationEpoch     uint64 `protobuf:"varint,2,opt,name=expiration_epoch,proto3" json:"expiration_epoch,omitempty"`
+	ClientEncryptionKey string `protobuf:"bytes,3,opt,name=client_encryption_key,proto3" json:"client_encryption_key,omitempty"`
 }
 
 func (m *AuthToken) Reset()      { *m = AuthToken{} }
@@ -590,6 +591,9 @@ func (this *AuthToken) Equal(that interface{}) bool {
 		return false
 	}
 	if this.ExpirationEpoch != that1.ExpirationEpoch {
+		return false
+	}
+	if this.ClientEncryptionKey != that1.ClientEncryptionKey {
 		return false
 	}
 	return true
@@ -1331,10 +1335,11 @@ func (this *AuthToken) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 6)
+	s := make([]string, 0, 7)
 	s = append(s, "&auth.AuthToken{")
 	s = append(s, "Value: "+fmt.Sprintf("%#v", this.Value)+",\n")
 	s = append(s, "ExpirationEpoch: "+fmt.Sprintf("%#v", this.ExpirationEpoch)+",\n")
+	s = append(s, "ClientEncryptionKey: "+fmt.Sprintf("%#v", this.ClientEncryptionKey)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2183,6 +2188,12 @@ func (m *AuthToken) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x10
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.ExpirationEpoch))
+	}
+	if len(m.ClientEncryptionKey) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ClientEncryptionKey)))
+		i += copy(data[i:], m.ClientEncryptionKey)
 	}
 	return i, nil
 }
@@ -3115,6 +3126,10 @@ func (m *AuthToken) Size() (n int) {
 	if m.ExpirationEpoch != 0 {
 		n += 1 + sovSvc(uint64(m.ExpirationEpoch))
 	}
+	l = len(m.ClientEncryptionKey)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
 	return n
 }
 
@@ -3527,6 +3542,7 @@ func (this *AuthToken) String() string {
 	s := strings.Join([]string{`&AuthToken{`,
 		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
 		`ExpirationEpoch:` + fmt.Sprintf("%v", this.ExpirationEpoch) + `,`,
+		`ClientEncryptionKey:` + fmt.Sprintf("%v", this.ClientEncryptionKey) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -4225,6 +4241,35 @@ func (m *AuthToken) Unmarshal(data []byte) error {
 					break
 				}
 			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ClientEncryptionKey", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ClientEncryptionKey = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

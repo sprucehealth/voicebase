@@ -28,6 +28,7 @@ type authenticateOutput struct {
 	Token                 string   `json:"token,omitempty"`
 	Account               *account `json:"account,omitempty"`
 	PhoneNumberLastDigits string   `json:"phoneNumberLastDigits,omitempty"`
+	ClientEncryptionKey   string   `json:"clientEncryptionKey,omitempty"`
 }
 
 var authenticateResultType = graphql.NewEnum(
@@ -79,6 +80,7 @@ var authenticateOutputType = graphql.NewObject(
 			"token":                 &graphql.Field{Type: graphql.String},
 			"account":               &graphql.Field{Type: accountType},
 			"phoneNumberLastDigits": &graphql.Field{Type: graphql.String},
+			"clientEncryptionKey":   &graphql.Field{Type: graphql.String},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*authenticateOutput)
@@ -123,6 +125,7 @@ var authenticateField = &graphql.Field{
 			}
 		}
 		var token string
+		var clientEncryptionKey string
 		var expires time.Time
 		var acc *account
 		var phoneNumberLastDigits string
@@ -143,6 +146,8 @@ var authenticateField = &graphql.Field{
 			acc = &account{
 				ID: res.Account.ID,
 			}
+			clientEncryptionKey = res.Token.ClientEncryptionKey
+
 			// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
 			// that likely won't change, but this still isn't a great way to update the context.
 			*ctx.Value(ctxAccount).(*account) = *acc
@@ -157,6 +162,7 @@ var authenticateField = &graphql.Field{
 			Token:                 token,
 			Account:               acc,
 			PhoneNumberLastDigits: phoneNumberLastDigits,
+			ClientEncryptionKey:   clientEncryptionKey,
 		}, nil
 	},
 }
@@ -212,10 +218,11 @@ var authenticateWithCodeField = &graphql.Field{
 		}
 		*ctx.Value(ctxAccount).(*account) = *acc
 		return &authenticateOutput{
-			ClientMutationID: mutationID,
-			Result:           authenticateResultSuccess,
-			Token:            res.Token.Value,
-			Account:          acc,
+			ClientMutationID:    mutationID,
+			Result:              authenticateResultSuccess,
+			Token:               res.Token.Value,
+			ClientEncryptionKey: res.Token.ClientEncryptionKey,
+			Account:             acc,
 		}, nil
 	},
 }

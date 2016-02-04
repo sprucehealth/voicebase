@@ -1,6 +1,8 @@
 package server
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"strings"
 	"testing"
 	"time"
@@ -18,11 +20,16 @@ import (
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/hash"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/settings"
 	mock_settings "github.com/sprucehealth/backend/svc/settings/mock"
 	"github.com/sprucehealth/backend/test"
+)
+
+const (
+	clientEncryptionSecret = "test-seekrit"
 )
 
 func init() {
@@ -36,7 +43,8 @@ func TestGetAccount(t *testing.T) {
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
 
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
 	fn, ln := "bat", "man"
@@ -60,7 +68,8 @@ func TestGetAccountNotFound(t *testing.T) {
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
 
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Account, aID1), (*dal.Account)(nil), api.ErrNotFound("not found")))
@@ -75,7 +84,8 @@ func TestAuthenticateLogin2FA(t *testing.T) {
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
 
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	hasher := hash.NewBcryptHasher(bCryptHashCost)
 	email := "test@email.com"
 	password := "password"
@@ -131,7 +141,8 @@ func TestAuthenticateLogin2FA_Disabled(t *testing.T) {
 	defer settingsMock.Finish()
 
 	mclock := clock.NewManaged(time.Now())
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	svr, _ := s.(*server)
 	svr.clk = mclock
 
@@ -200,7 +211,8 @@ func TestAuthenticateLoginWithCode(t *testing.T) {
 	defer settingsMock.Finish()
 
 	mClock := clock.NewManaged(time.Now())
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	svr, ok := s.(*server)
 	test.Assert(t, ok, "Expected a *server")
 	svr.clk = mClock
@@ -210,6 +222,8 @@ func TestAuthenticateLoginWithCode(t *testing.T) {
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
 	var expires uint64
+	signer, err := sig.NewSigner([][]byte{[]byte(clientEncryptionSecret)}, sha256.New)
+	test.OK(t, err)
 	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns(&dal.VerificationCode{
 		Token:            token,
 		Code:             code,
@@ -233,15 +247,20 @@ func TestAuthenticateLoginWithCode(t *testing.T) {
 		FirstName: "Bat",
 		LastName:  "Wayne",
 	}, nil))
-
 	resp, err := s.AuthenticateLoginWithCode(context.Background(), &auth.AuthenticateLoginWithCodeRequest{
 		Token: token,
 		Code:  code,
 	})
+	key, err := signer.Sign([]byte(token))
+	test.OK(t, err)
+
 	test.OK(t, err)
 	test.AssertNotNil(t, resp.Token)
-	test.Equals(t, token, resp.Token.Value)
-	test.Equals(t, expires, resp.Token.ExpirationEpoch)
+	test.Equals(t, &auth.AuthToken{
+		Value:               token,
+		ExpirationEpoch:     expires,
+		ClientEncryptionKey: base64.StdEncoding.EncodeToString(key),
+	}, resp.Token)
 	test.AssertNotNil(t, resp.Account)
 	test.Equals(t, resp.Account.ID, aID1.String())
 	test.Equals(t, resp.Account.FirstName, "Bat")
@@ -256,7 +275,8 @@ func TestAuthenticateLoginWithCodeNot2FA(t *testing.T) {
 	defer settingsMock.Finish()
 
 	mClock := clock.NewManaged(time.Now())
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	svr, ok := s.(*server)
 	test.Assert(t, ok, "Expected a *server")
 	svr.clk = mClock
@@ -289,7 +309,8 @@ func TestAuthenticateLoginWithCodeBadCode(t *testing.T) {
 	defer settingsMock.Finish()
 
 	mClock := clock.NewManaged(time.Now())
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	svr, ok := s.(*server)
 	test.Assert(t, ok, "Expected a *server")
 	svr.clk = mClock
@@ -321,11 +342,12 @@ func TestAuthenticateLoginNoEmail(t *testing.T) {
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
 
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	email := "test@email.com"
 	password := "password"
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.AccountForEmail, email), (*dal.Account)(nil), api.ErrNotFound("not found")))
-	_, err := s.AuthenticateLogin(context.Background(), &auth.AuthenticateLoginRequest{
+	_, err = s.AuthenticateLogin(context.Background(), &auth.AuthenticateLoginRequest{
 		Email:           email,
 		Password:        password,
 		TokenAttributes: map[string]string{"test": "attribute"},
@@ -341,7 +363,8 @@ func TestAuthenticateBadPassword(t *testing.T) {
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
 
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	email := "test@email.com"
 	password := "password"
 	aID1, err := dal.NewAccountID()
@@ -365,7 +388,8 @@ func TestCheckAuthentication(t *testing.T) {
 	defer settingsMock.Finish()
 
 	mClock := clock.NewManaged(time.Now())
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	svr, ok := s.(*server)
 	test.Assert(t, ok, "Expected a *server")
 	svr.clk = mClock
@@ -375,6 +399,8 @@ func TestCheckAuthentication(t *testing.T) {
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
 	expires := mClock.Now().Add(defaultTokenExpiration)
+	signer, err := sig.NewSigner([][]byte{[]byte(clientEncryptionSecret)}, sha256.New)
+	test.OK(t, err)
 	dl.Expect(mock.NewExpectation(dl.AuthToken, token+":tokenattribute", mClock.Now()).WithReturns(&dal.AuthToken{
 		Token:     []byte(token + ":tokenattribute"),
 		AccountID: aID1,
@@ -390,6 +416,8 @@ func TestCheckAuthentication(t *testing.T) {
 		TokenAttributes: tokenAttributes,
 	})
 	test.OK(t, err)
+	key, err := signer.Sign([]byte(token))
+	test.OK(t, err)
 
 	test.Assert(t, resp.IsAuthenticated, "Expected authentication")
 	test.AssertNotNil(t, resp.Account)
@@ -400,8 +428,9 @@ func TestCheckAuthentication(t *testing.T) {
 		LastName:  "man",
 	}, resp.Account)
 	test.Equals(t, &auth.AuthToken{
-		Value:           token,
-		ExpirationEpoch: uint64(expires.Unix()),
+		Value:               token,
+		ExpirationEpoch:     uint64(expires.Unix()),
+		ClientEncryptionKey: base64.StdEncoding.EncodeToString(key),
 	}, resp.Token)
 }
 
@@ -413,7 +442,8 @@ func TestCheckVerificationTokenBadCode(t *testing.T) {
 	defer settingsMock.Finish()
 
 	mClock := clock.NewManaged(time.Now())
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	svr, ok := s.(*server)
 	test.Assert(t, ok, "Expected a *server")
 	svr.clk = mClock
@@ -442,7 +472,8 @@ func TestCheckVerificationTokenExpired(t *testing.T) {
 	defer settingsMock.Finish()
 
 	mClock := clock.NewManaged(time.Now())
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	svr, ok := s.(*server)
 	test.Assert(t, ok, "Expected a *server")
 	svr.clk = mClock
@@ -472,7 +503,8 @@ func TestCheckVerificationPhone(t *testing.T) {
 	defer settingsMock.Finish()
 
 	mClock := clock.NewManaged(time.Now())
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	svr, ok := s.(*server)
 	test.Assert(t, ok, "Expected a *server")
 	svr.clk = mClock
@@ -507,7 +539,8 @@ func TestCheckVerificationAccount2FA(t *testing.T) {
 	defer settingsMock.Finish()
 
 	mClock := clock.NewManaged(time.Now())
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	svr, ok := s.(*server)
 	test.Assert(t, ok, "Expected a *server")
 	svr.clk = mClock
@@ -550,7 +583,8 @@ func TestCheckAuthenticationRefresh(t *testing.T) {
 	defer settingsMock.Finish()
 
 	mClock := clock.NewManaged(time.Now())
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	svr, ok := s.(*server)
 	test.Assert(t, ok, "Expected a *server")
 	svr.clk = mClock
@@ -558,6 +592,8 @@ func TestCheckAuthenticationRefresh(t *testing.T) {
 	token := "123abc"
 	tokenAttributes := map[string]string{"token": "attribute"}
 	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+	signer, err := sig.NewSigner([][]byte{[]byte(clientEncryptionSecret)}, sha256.New)
 	test.OK(t, err)
 	expires := mClock.Now().Add(defaultTokenExpiration)
 	var refreshedExpiration time.Time
@@ -588,6 +624,8 @@ func TestCheckAuthenticationRefresh(t *testing.T) {
 		Refresh:         true,
 	})
 	test.OK(t, err)
+	key, err := signer.Sign([]byte(token))
+	test.OK(t, err)
 
 	test.Assert(t, resp.IsAuthenticated, "Expected authentication")
 	test.AssertNotNil(t, resp.Account)
@@ -598,8 +636,9 @@ func TestCheckAuthenticationRefresh(t *testing.T) {
 		LastName:  "man",
 	}, resp.Account)
 	test.Equals(t, &auth.AuthToken{
-		Value:           token,
-		ExpirationEpoch: uint64(refreshedExpiration.Unix()),
+		Value:               token,
+		ExpirationEpoch:     uint64(refreshedExpiration.Unix()),
+		ClientEncryptionKey: base64.StdEncoding.EncodeToString(key),
 	}, resp.Token)
 }
 
@@ -611,7 +650,8 @@ func TestCheckAuthenticationNoToken(t *testing.T) {
 	defer settingsMock.Finish()
 
 	mClock := clock.NewManaged(time.Now())
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	svr, ok := s.(*server)
 	test.Assert(t, ok, "Expected a *server")
 	svr.clk = mClock
@@ -637,7 +677,8 @@ func TestCreateAccount(t *testing.T) {
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
 
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	fn := "bat"
 	ln := "man"
 	email := "bat@man.com"
@@ -649,6 +690,8 @@ func TestCreateAccount(t *testing.T) {
 	aEID1, err := dal.NewAccountEmailID()
 	test.OK(t, err)
 	aPID1, err := dal.NewAccountPhoneID()
+	test.OK(t, err)
+	signer, err := sig.NewSigner([][]byte{[]byte(clientEncryptionSecret)}, sha256.New)
 	test.OK(t, err)
 	dl.Expect(mock.NewExpectationFn(dl.InsertAccount, func(p ...interface{}) {
 		test.Equals(t, 1, len(p))
@@ -700,6 +743,8 @@ func TestCreateAccount(t *testing.T) {
 		Password:    password,
 	})
 	test.OK(t, err)
+	key, err := signer.Sign([]byte(token))
+	test.OK(t, err)
 
 	test.AssertNotNil(t, resp.Token)
 	test.AssertNotNil(t, resp.Account)
@@ -709,8 +754,9 @@ func TestCreateAccount(t *testing.T) {
 		LastName:  "man",
 	}, resp.Account)
 	test.Equals(t, &auth.AuthToken{
-		Value:           token,
-		ExpirationEpoch: expiration,
+		Value:               token,
+		ExpirationEpoch:     expiration,
+		ClientEncryptionKey: base64.StdEncoding.EncodeToString(key),
 	}, resp.Token)
 }
 
@@ -720,7 +766,8 @@ func TestCreateAccountMissingData(t *testing.T) {
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
 
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	fn := "bat"
 	ln := "man"
 	email := "bat@man.com"
@@ -778,13 +825,14 @@ func TestCreateAccountBadEmail(t *testing.T) {
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
 
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	fn := "bat"
 	ln := "man"
 	email := "notarealemail"
 	phoneNumber := "+12345678910"
 	password := "password"
-	_, err := s.CreateAccount(context.Background(), &auth.CreateAccountRequest{
+	_, err = s.CreateAccount(context.Background(), &auth.CreateAccountRequest{
 		FirstName:   fn,
 		LastName:    ln,
 		PhoneNumber: phoneNumber,
@@ -803,7 +851,8 @@ func TestCreateVerificationCode(t *testing.T) {
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
 
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	value := "myValue"
 	var code string
 	var token string
@@ -841,7 +890,8 @@ func TestVerifiedValue(t *testing.T) {
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
 
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	token := "123abc"
 	value := "myValue"
 
@@ -864,7 +914,8 @@ func TestVerifiedValueNotFound(t *testing.T) {
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
 
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	token := "123abc"
 
 	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns((*dal.VerificationCode)(nil), api.ErrNotFound("foo")))
@@ -883,7 +934,8 @@ func TestVerifiedValueNotYetVerified(t *testing.T) {
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
 
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	token := "123abc"
 
 	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns(&dal.VerificationCode{
@@ -902,7 +954,8 @@ func TestCheckPasswordResetToken(t *testing.T) {
 	defer dl.Finish()
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	token := "123abc"
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
@@ -946,7 +999,8 @@ func TestCheckPasswordResetTokenNotFound(t *testing.T) {
 	defer dl.Finish()
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	token := "123abc"
 
 	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns((*dal.VerificationCode)(nil), api.ErrNotFound("foo")))
@@ -963,7 +1017,8 @@ func TestCheckPasswordResetTokenWrongType(t *testing.T) {
 	defer dl.Finish()
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	token := "123abc"
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
@@ -987,7 +1042,8 @@ func TestCheckPasswordResetTokenExpired(t *testing.T) {
 	defer dl.Finish()
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	token := "123abc"
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
@@ -1011,7 +1067,8 @@ func TestCreatePasswordResetToken(t *testing.T) {
 	defer dl.Finish()
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
 	email := "test@test.com"
@@ -1045,7 +1102,8 @@ func TestCreatePasswordResetTokenEmailNotFound(t *testing.T) {
 	defer dl.Finish()
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	email := "test@test.com"
 
 	dl.Expect(mock.NewExpectation(dl.AccountForEmail, email).WithReturns((*dal.Account)(nil), api.ErrNotFound("foo")))
@@ -1063,7 +1121,8 @@ func TestUpdatePassword(t *testing.T) {
 	defer dl.Finish()
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
 	token := "123abc"
@@ -1106,7 +1165,8 @@ func TestUpdatePasswordNotFound(t *testing.T) {
 	defer dl.Finish()
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	token := "123abc"
 	code := "123456"
 	newPassword := "newPassword"
@@ -1128,7 +1188,8 @@ func TestUpdatePasswordCodeExpired(t *testing.T) {
 	defer dl.Finish()
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
 	token := "123abc"
@@ -1157,7 +1218,8 @@ func TestUpdatePasswordBadCode(t *testing.T) {
 	defer dl.Finish()
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
-	s := New(dl, settingsMock)
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
 	token := "123abc"

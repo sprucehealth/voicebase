@@ -35,6 +35,7 @@ message Account {
 message AuthToken {
 	string value = 1;
 	uint64 expiration_epoch = 2;
+    string client_encryption_key = 3;
 }
 
 // AuthenticateLoginRequest represents the information that is used to authenticate a users login.
