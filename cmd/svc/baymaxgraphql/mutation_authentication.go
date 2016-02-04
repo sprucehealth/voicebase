@@ -23,10 +23,11 @@ const (
 )
 
 type authenticateOutput struct {
-	ClientMutationID string   `json:"clientMutationId"`
-	Result           string   `json:"result"`
-	Token            string   `json:"token,omitempty"`
-	Account          *account `json:"account,omitempty"`
+	ClientMutationID      string   `json:"clientMutationId"`
+	Result                string   `json:"result"`
+	Token                 string   `json:"token,omitempty"`
+	Account               *account `json:"account,omitempty"`
+	PhoneNumberLastDigits string   `json:"phoneNumberLastDigits,omitempty"`
 }
 
 var authenticateResultType = graphql.NewEnum(
@@ -73,10 +74,11 @@ var authenticateOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "AuthenticatePayload",
 		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
-			"result":           &graphql.Field{Type: graphql.NewNonNull(authenticateResultType)},
-			"token":            &graphql.Field{Type: graphql.String},
-			"account":          &graphql.Field{Type: accountType},
+			"clientMutationId":      newClientmutationIDOutputField(),
+			"result":                &graphql.Field{Type: graphql.NewNonNull(authenticateResultType)},
+			"token":                 &graphql.Field{Type: graphql.String},
+			"account":               &graphql.Field{Type: accountType},
+			"phoneNumberLastDigits": &graphql.Field{Type: graphql.String},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*authenticateOutput)
@@ -123,6 +125,7 @@ var authenticateField = &graphql.Field{
 		var token string
 		var expires time.Time
 		var acc *account
+		var phoneNumberLastDigits string
 		authResult := authenticateResultSuccess
 		if res.TwoFactorRequired {
 			authResult = authenticateResultSuccess2FARequired
@@ -130,6 +133,10 @@ var authenticateField = &graphql.Field{
 			if err != nil {
 				return nil, internalError(err)
 			}
+			if len(res.TwoFactorPhoneNumber) > 2 {
+				phoneNumberLastDigits = res.TwoFactorPhoneNumber[len(res.TwoFactorPhoneNumber)-2:]
+			}
+
 		} else {
 			token = res.Token.Value
 			expires = time.Unix(int64(res.Token.ExpirationEpoch), 0)
@@ -145,10 +152,11 @@ var authenticateField = &graphql.Field{
 		}
 
 		return &authenticateOutput{
-			ClientMutationID: mutationID,
-			Result:           authResult,
-			Token:            token,
-			Account:          acc,
+			ClientMutationID:      mutationID,
+			Result:                authResult,
+			Token:                 token,
+			Account:               acc,
+			PhoneNumberLastDigits: phoneNumberLastDigits,
 		}, nil
 	},
 }
