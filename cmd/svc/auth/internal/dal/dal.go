@@ -367,12 +367,14 @@ const (
 	VerificationCodeTypeEmail VerificationCodeType = "EMAIL"
 	// VerificationCodeTypeAccount2fa represents the ACCOUNT_2FA state of the verification_type field on a verification_code record
 	VerificationCodeTypeAccount2fa VerificationCodeType = "ACCOUNT_2FA"
+	// VerificationCodeTypePasswordReset represents the PASSWORD_RESET state of the verification_type field on a verification_code record
+	VerificationCodeTypePasswordReset VerificationCodeType = "PASSWORD_RESET"
 )
 
 // ParseVerificationCodeType converts a string into the correcponding enum value
 func ParseVerificationCodeType(s string) (VerificationCodeType, error) {
 	switch t := VerificationCodeType(strings.ToUpper(s)); t {
-	case VerificationCodeTypePhone, VerificationCodeTypeEmail, VerificationCodeTypeAccount2fa:
+	case VerificationCodeTypePhone, VerificationCodeTypeEmail, VerificationCodeTypeAccount2fa, VerificationCodeTypePasswordReset:
 		return t, nil
 	}
 	return VerificationCodeType(""), errors.Trace(fmt.Errorf("Unknown verification_type:%s", s))

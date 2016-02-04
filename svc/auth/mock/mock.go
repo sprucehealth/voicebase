@@ -24,45 +24,96 @@ func New(t *testing.T) *Client {
 
 func (c *Client) AuthenticateLogin(ctx context.Context, in *auth.AuthenticateLoginRequest, opts ...grpc.CallOption) (*auth.AuthenticateLoginResponse, error) {
 	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
 	return rets[0].(*auth.AuthenticateLoginResponse), mock.SafeError(rets[1])
 }
 
 func (c *Client) AuthenticateLoginWithCode(ctx context.Context, in *auth.AuthenticateLoginWithCodeRequest, opts ...grpc.CallOption) (*auth.AuthenticateLoginWithCodeResponse, error) {
 	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
 	return rets[0].(*auth.AuthenticateLoginWithCodeResponse), mock.SafeError(rets[1])
 }
 
 func (c *Client) CheckAuthentication(ctx context.Context, in *auth.CheckAuthenticationRequest, opts ...grpc.CallOption) (*auth.CheckAuthenticationResponse, error) {
 	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
 	return rets[0].(*auth.CheckAuthenticationResponse), mock.SafeError(rets[1])
+}
+
+func (c *Client) CheckPasswordResetToken(ctx context.Context, in *auth.CheckPasswordResetTokenRequest, opts ...grpc.CallOption) (*auth.CheckPasswordResetTokenResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*auth.CheckPasswordResetTokenResponse), mock.SafeError(rets[1])
 }
 
 func (c *Client) CheckVerificationCode(ctx context.Context, in *auth.CheckVerificationCodeRequest, opts ...grpc.CallOption) (*auth.CheckVerificationCodeResponse, error) {
 	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
 	return rets[0].(*auth.CheckVerificationCodeResponse), mock.SafeError(rets[1])
 }
 
 func (c *Client) CreateAccount(ctx context.Context, in *auth.CreateAccountRequest, opts ...grpc.CallOption) (*auth.CreateAccountResponse, error) {
 	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
 	return rets[0].(*auth.CreateAccountResponse), mock.SafeError(rets[1])
+}
+
+func (c *Client) CreatePasswordResetToken(ctx context.Context, in *auth.CreatePasswordResetTokenRequest, opts ...grpc.CallOption) (*auth.CreatePasswordResetTokenResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*auth.CreatePasswordResetTokenResponse), mock.SafeError(rets[1])
 }
 
 func (c *Client) CreateVerificationCode(ctx context.Context, in *auth.CreateVerificationCodeRequest, opts ...grpc.CallOption) (*auth.CreateVerificationCodeResponse, error) {
 	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
 	return rets[0].(*auth.CreateVerificationCodeResponse), mock.SafeError(rets[1])
 }
 
 func (c *Client) GetAccount(ctx context.Context, in *auth.GetAccountRequest, opts ...grpc.CallOption) (*auth.GetAccountResponse, error) {
 	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
 	return rets[0].(*auth.GetAccountResponse), mock.SafeError(rets[1])
 }
 
 func (c *Client) Unauthenticate(ctx context.Context, in *auth.UnauthenticateRequest, opts ...grpc.CallOption) (*auth.UnauthenticateResponse, error) {
 	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
 	return rets[0].(*auth.UnauthenticateResponse), mock.SafeError(rets[1])
+}
+
+func (c *Client) UpdatePassword(ctx context.Context, in *auth.UpdatePasswordRequest, opts ...grpc.CallOption) (*auth.UpdatePasswordResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*auth.UpdatePasswordResponse), mock.SafeError(rets[1])
 }
 
 func (c *Client) VerifiedValue(ctx context.Context, in *auth.VerifiedValueRequest, opts ...grpc.CallOption) (*auth.VerifiedValueResponse, error) {
 	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
 	return rets[0].(*auth.VerifiedValueResponse), mock.SafeError(rets[1])
 }

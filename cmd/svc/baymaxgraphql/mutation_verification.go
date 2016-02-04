@@ -24,6 +24,7 @@ var verifyPhoneNumberInputType = graphql.NewInputObject(
 		Name: "VerifyPhoneNumberInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
+			"uuid":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
 			"phoneNumber": &graphql.InputObjectFieldConfig{
 				Type:        graphql.NewNonNull(graphql.String),
 				Description: "Specify the phone number to send a verification code to.",
@@ -38,6 +39,7 @@ var verifyPhoneNumberOutputType = graphql.NewObject(
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
 			"token":            &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"message":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*verifyPhoneNumberOutput)
@@ -64,6 +66,10 @@ var verifyPhoneNumberField = &graphql.Field{
 			return nil, internalError(err)
 		}
 
+		last4Phone := pn
+		if len(last4Phone) > 4 {
+			last4Phone = last4Phone[len(last4Phone)-4:]
+		}
 		return &verifyPhoneNumberOutput{
 			ClientMutationID: mutationID,
 			Token:            token,
@@ -99,6 +105,10 @@ var checkVerificationCodeResultType = graphql.NewEnum(
 				Value:       checkVerificationCodeResultSuccess,
 				Description: "Success",
 			},
+			checkVerificationCodeResultExpired: &graphql.EnumValueConfig{
+				Value:       checkVerificationCodeResultExpired,
+				Description: "Code expired",
+			},
 			checkVerificationCodeResultFailure: &graphql.EnumValueConfig{
 				Value:       checkVerificationCodeResultFailure,
 				Description: "Code verifcation failed",
@@ -112,6 +122,7 @@ var checkVerificationCodeInputType = graphql.NewInputObject(
 		Name: "CheckVerificationCodeInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
+			"uuid":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
 			"token":            &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"code":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 		},

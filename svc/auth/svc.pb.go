@@ -30,6 +30,12 @@
 		CheckVerificationCodeResponse
 		VerifiedValueRequest
 		VerifiedValueResponse
+		CreatePasswordResetTokenRequest
+		CreatePasswordResetTokenResponse
+		CheckPasswordResetTokenRequest
+		CheckPasswordResetTokenResponse
+		UpdatePasswordRequest
+		UpdatePasswordResponse
 */
 package auth
 
@@ -62,20 +68,23 @@ var _ = math.Inf
 type VerificationCodeType int32
 
 const (
-	VerificationCodeType_PHONE       VerificationCodeType = 0
-	VerificationCodeType_EMAIL       VerificationCodeType = 1
-	VerificationCodeType_ACCOUNT_2FA VerificationCodeType = 2
+	VerificationCodeType_PHONE          VerificationCodeType = 0
+	VerificationCodeType_EMAIL          VerificationCodeType = 1
+	VerificationCodeType_ACCOUNT_2FA    VerificationCodeType = 2
+	VerificationCodeType_PASSWORD_RESET VerificationCodeType = 3
 )
 
 var VerificationCodeType_name = map[int32]string{
 	0: "PHONE",
 	1: "EMAIL",
 	2: "ACCOUNT_2FA",
+	3: "PASSWORD_RESET",
 }
 var VerificationCodeType_value = map[string]int32{
-	"PHONE":       0,
-	"EMAIL":       1,
-	"ACCOUNT_2FA": 2,
+	"PHONE":          0,
+	"EMAIL":          1,
+	"ACCOUNT_2FA":    2,
+	"PASSWORD_RESET": 3,
 }
 
 // VerificationCode represents the collection of information used to represent the time bound verification code
@@ -284,8 +293,10 @@ func (m *CreateAccountResponse) GetAccount() *Account {
 }
 
 // GetAccountRequest represents the information required to request a users account information
+//  AccountEmail is an optional second field. If ID is not provided, then email will be used to lookup the account
 type GetAccountRequest struct {
-	AccountID string `protobuf:"bytes,1,opt,name=account_id,proto3" json:"account_id,omitempty"`
+	AccountID    string `protobuf:"bytes,1,opt,name=account_id,proto3" json:"account_id,omitempty"`
+	AccountEmail string `protobuf:"bytes,2,opt,name=account_email,proto3" json:"account_email,omitempty"`
 }
 
 func (m *GetAccountRequest) Reset()      { *m = GetAccountRequest{} }
@@ -402,6 +413,57 @@ type VerifiedValueResponse struct {
 func (m *VerifiedValueResponse) Reset()      { *m = VerifiedValueResponse{} }
 func (*VerifiedValueResponse) ProtoMessage() {}
 
+// CreatePasswordResetTokenRequest represents the information required to generate a password reset token
+type CreatePasswordResetTokenRequest struct {
+	Email string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+}
+
+func (m *CreatePasswordResetTokenRequest) Reset()      { *m = CreatePasswordResetTokenRequest{} }
+func (*CreatePasswordResetTokenRequest) ProtoMessage() {}
+
+// CreatePasswordResetTokenResponse represents the information returned from a call to CreatePasswordResetToken
+type CreatePasswordResetTokenResponse struct {
+	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+}
+
+func (m *CreatePasswordResetTokenResponse) Reset()      { *m = CreatePasswordResetTokenResponse{} }
+func (*CreatePasswordResetTokenResponse) ProtoMessage() {}
+
+// CheckPasswordResetTokenRequest represents the information required to generate a password reset token
+type CheckPasswordResetTokenRequest struct {
+	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+}
+
+func (m *CheckPasswordResetTokenRequest) Reset()      { *m = CheckPasswordResetTokenRequest{} }
+func (*CheckPasswordResetTokenRequest) ProtoMessage() {}
+
+// CheckPasswordResetTokenResponse represents the information returned from a call to CheckPasswordResetToken
+type CheckPasswordResetTokenResponse struct {
+	AccountID          string `protobuf:"bytes,1,opt,name=account_id,proto3" json:"account_id,omitempty"`
+	AccountPhoneNumber string `protobuf:"bytes,2,opt,name=account_phone_number,proto3" json:"account_phone_number,omitempty"`
+	AccountEmail       string `protobuf:"bytes,3,opt,name=account_email,proto3" json:"account_email,omitempty"`
+}
+
+func (m *CheckPasswordResetTokenResponse) Reset()      { *m = CheckPasswordResetTokenResponse{} }
+func (*CheckPasswordResetTokenResponse) ProtoMessage() {}
+
+// UpdatePasswordRequest represents the information required to reset a password
+type UpdatePasswordRequest struct {
+	Token       string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	Code        string `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
+	NewPassword string `protobuf:"bytes,3,opt,name=new_password,proto3" json:"new_password,omitempty"`
+}
+
+func (m *UpdatePasswordRequest) Reset()      { *m = UpdatePasswordRequest{} }
+func (*UpdatePasswordRequest) ProtoMessage() {}
+
+// UpdatePasswordResponse represents the information returned from UpdatePassword
+type UpdatePasswordResponse struct {
+}
+
+func (m *UpdatePasswordResponse) Reset()      { *m = UpdatePasswordResponse{} }
+func (*UpdatePasswordResponse) ProtoMessage() {}
+
 func init() {
 	proto.RegisterType((*VerificationCode)(nil), "auth.VerificationCode")
 	proto.RegisterType((*Account)(nil), "auth.Account")
@@ -424,6 +486,12 @@ func init() {
 	proto.RegisterType((*CheckVerificationCodeResponse)(nil), "auth.CheckVerificationCodeResponse")
 	proto.RegisterType((*VerifiedValueRequest)(nil), "auth.VerifiedValueRequest")
 	proto.RegisterType((*VerifiedValueResponse)(nil), "auth.VerifiedValueResponse")
+	proto.RegisterType((*CreatePasswordResetTokenRequest)(nil), "auth.CreatePasswordResetTokenRequest")
+	proto.RegisterType((*CreatePasswordResetTokenResponse)(nil), "auth.CreatePasswordResetTokenResponse")
+	proto.RegisterType((*CheckPasswordResetTokenRequest)(nil), "auth.CheckPasswordResetTokenRequest")
+	proto.RegisterType((*CheckPasswordResetTokenResponse)(nil), "auth.CheckPasswordResetTokenResponse")
+	proto.RegisterType((*UpdatePasswordRequest)(nil), "auth.UpdatePasswordRequest")
+	proto.RegisterType((*UpdatePasswordResponse)(nil), "auth.UpdatePasswordResponse")
 	proto.RegisterEnum("auth.VerificationCodeType", VerificationCodeType_name, VerificationCodeType_value)
 }
 func (x VerificationCodeType) String() string {
@@ -823,6 +891,9 @@ func (this *GetAccountRequest) Equal(that interface{}) bool {
 	if this.AccountID != that1.AccountID {
 		return false
 	}
+	if this.AccountEmail != that1.AccountEmail {
+		return false
+	}
 	return true
 }
 func (this *GetAccountResponse) Equal(that interface{}) bool {
@@ -1072,6 +1143,165 @@ func (this *VerifiedValueResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *CreatePasswordResetTokenRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreatePasswordResetTokenRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Email != that1.Email {
+		return false
+	}
+	return true
+}
+func (this *CreatePasswordResetTokenResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreatePasswordResetTokenResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Token != that1.Token {
+		return false
+	}
+	return true
+}
+func (this *CheckPasswordResetTokenRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CheckPasswordResetTokenRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Token != that1.Token {
+		return false
+	}
+	return true
+}
+func (this *CheckPasswordResetTokenResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CheckPasswordResetTokenResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.AccountID != that1.AccountID {
+		return false
+	}
+	if this.AccountPhoneNumber != that1.AccountPhoneNumber {
+		return false
+	}
+	if this.AccountEmail != that1.AccountEmail {
+		return false
+	}
+	return true
+}
+func (this *UpdatePasswordRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*UpdatePasswordRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Token != that1.Token {
+		return false
+	}
+	if this.Code != that1.Code {
+		return false
+	}
+	if this.NewPassword != that1.NewPassword {
+		return false
+	}
+	return true
+}
+func (this *UpdatePasswordResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*UpdatePasswordResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	return true
+}
 func (this *VerificationCode) GoString() string {
 	if this == nil {
 		return "nil"
@@ -1274,9 +1504,10 @@ func (this *GetAccountRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 5)
+	s := make([]string, 0, 6)
 	s = append(s, "&auth.GetAccountRequest{")
 	s = append(s, "AccountID: "+fmt.Sprintf("%#v", this.AccountID)+",\n")
+	s = append(s, "AccountEmail: "+fmt.Sprintf("%#v", this.AccountEmail)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1404,6 +1635,69 @@ func (this *VerifiedValueResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *CreatePasswordResetTokenRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&auth.CreatePasswordResetTokenRequest{")
+	s = append(s, "Email: "+fmt.Sprintf("%#v", this.Email)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreatePasswordResetTokenResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&auth.CreatePasswordResetTokenResponse{")
+	s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CheckPasswordResetTokenRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&auth.CheckPasswordResetTokenRequest{")
+	s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CheckPasswordResetTokenResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&auth.CheckPasswordResetTokenResponse{")
+	s = append(s, "AccountID: "+fmt.Sprintf("%#v", this.AccountID)+",\n")
+	s = append(s, "AccountPhoneNumber: "+fmt.Sprintf("%#v", this.AccountPhoneNumber)+",\n")
+	s = append(s, "AccountEmail: "+fmt.Sprintf("%#v", this.AccountEmail)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *UpdatePasswordRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&auth.UpdatePasswordRequest{")
+	s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
+	s = append(s, "Code: "+fmt.Sprintf("%#v", this.Code)+",\n")
+	s = append(s, "NewPassword: "+fmt.Sprintf("%#v", this.NewPassword)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *UpdatePasswordResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&auth.UpdatePasswordResponse{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func valueToGoStringSvc(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -1440,11 +1734,14 @@ type AuthClient interface {
 	AuthenticateLogin(ctx context.Context, in *AuthenticateLoginRequest, opts ...grpc.CallOption) (*AuthenticateLoginResponse, error)
 	AuthenticateLoginWithCode(ctx context.Context, in *AuthenticateLoginWithCodeRequest, opts ...grpc.CallOption) (*AuthenticateLoginWithCodeResponse, error)
 	CheckAuthentication(ctx context.Context, in *CheckAuthenticationRequest, opts ...grpc.CallOption) (*CheckAuthenticationResponse, error)
+	CheckPasswordResetToken(ctx context.Context, in *CheckPasswordResetTokenRequest, opts ...grpc.CallOption) (*CheckPasswordResetTokenResponse, error)
 	CheckVerificationCode(ctx context.Context, in *CheckVerificationCodeRequest, opts ...grpc.CallOption) (*CheckVerificationCodeResponse, error)
 	CreateAccount(ctx context.Context, in *CreateAccountRequest, opts ...grpc.CallOption) (*CreateAccountResponse, error)
+	CreatePasswordResetToken(ctx context.Context, in *CreatePasswordResetTokenRequest, opts ...grpc.CallOption) (*CreatePasswordResetTokenResponse, error)
 	CreateVerificationCode(ctx context.Context, in *CreateVerificationCodeRequest, opts ...grpc.CallOption) (*CreateVerificationCodeResponse, error)
 	GetAccount(ctx context.Context, in *GetAccountRequest, opts ...grpc.CallOption) (*GetAccountResponse, error)
 	Unauthenticate(ctx context.Context, in *UnauthenticateRequest, opts ...grpc.CallOption) (*UnauthenticateResponse, error)
+	UpdatePassword(ctx context.Context, in *UpdatePasswordRequest, opts ...grpc.CallOption) (*UpdatePasswordResponse, error)
 	VerifiedValue(ctx context.Context, in *VerifiedValueRequest, opts ...grpc.CallOption) (*VerifiedValueResponse, error)
 }
 
@@ -1483,6 +1780,15 @@ func (c *authClient) CheckAuthentication(ctx context.Context, in *CheckAuthentic
 	return out, nil
 }
 
+func (c *authClient) CheckPasswordResetToken(ctx context.Context, in *CheckPasswordResetTokenRequest, opts ...grpc.CallOption) (*CheckPasswordResetTokenResponse, error) {
+	out := new(CheckPasswordResetTokenResponse)
+	err := grpc.Invoke(ctx, "/auth.Auth/CheckPasswordResetToken", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *authClient) CheckVerificationCode(ctx context.Context, in *CheckVerificationCodeRequest, opts ...grpc.CallOption) (*CheckVerificationCodeResponse, error) {
 	out := new(CheckVerificationCodeResponse)
 	err := grpc.Invoke(ctx, "/auth.Auth/CheckVerificationCode", in, out, c.cc, opts...)
@@ -1495,6 +1801,15 @@ func (c *authClient) CheckVerificationCode(ctx context.Context, in *CheckVerific
 func (c *authClient) CreateAccount(ctx context.Context, in *CreateAccountRequest, opts ...grpc.CallOption) (*CreateAccountResponse, error) {
 	out := new(CreateAccountResponse)
 	err := grpc.Invoke(ctx, "/auth.Auth/CreateAccount", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) CreatePasswordResetToken(ctx context.Context, in *CreatePasswordResetTokenRequest, opts ...grpc.CallOption) (*CreatePasswordResetTokenResponse, error) {
+	out := new(CreatePasswordResetTokenResponse)
+	err := grpc.Invoke(ctx, "/auth.Auth/CreatePasswordResetToken", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1528,6 +1843,15 @@ func (c *authClient) Unauthenticate(ctx context.Context, in *UnauthenticateReque
 	return out, nil
 }
 
+func (c *authClient) UpdatePassword(ctx context.Context, in *UpdatePasswordRequest, opts ...grpc.CallOption) (*UpdatePasswordResponse, error) {
+	out := new(UpdatePasswordResponse)
+	err := grpc.Invoke(ctx, "/auth.Auth/UpdatePassword", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *authClient) VerifiedValue(ctx context.Context, in *VerifiedValueRequest, opts ...grpc.CallOption) (*VerifiedValueResponse, error) {
 	out := new(VerifiedValueResponse)
 	err := grpc.Invoke(ctx, "/auth.Auth/VerifiedValue", in, out, c.cc, opts...)
@@ -1543,11 +1867,14 @@ type AuthServer interface {
 	AuthenticateLogin(context.Context, *AuthenticateLoginRequest) (*AuthenticateLoginResponse, error)
 	AuthenticateLoginWithCode(context.Context, *AuthenticateLoginWithCodeRequest) (*AuthenticateLoginWithCodeResponse, error)
 	CheckAuthentication(context.Context, *CheckAuthenticationRequest) (*CheckAuthenticationResponse, error)
+	CheckPasswordResetToken(context.Context, *CheckPasswordResetTokenRequest) (*CheckPasswordResetTokenResponse, error)
 	CheckVerificationCode(context.Context, *CheckVerificationCodeRequest) (*CheckVerificationCodeResponse, error)
 	CreateAccount(context.Context, *CreateAccountRequest) (*CreateAccountResponse, error)
+	CreatePasswordResetToken(context.Context, *CreatePasswordResetTokenRequest) (*CreatePasswordResetTokenResponse, error)
 	CreateVerificationCode(context.Context, *CreateVerificationCodeRequest) (*CreateVerificationCodeResponse, error)
 	GetAccount(context.Context, *GetAccountRequest) (*GetAccountResponse, error)
 	Unauthenticate(context.Context, *UnauthenticateRequest) (*UnauthenticateResponse, error)
+	UpdatePassword(context.Context, *UpdatePasswordRequest) (*UpdatePasswordResponse, error)
 	VerifiedValue(context.Context, *VerifiedValueRequest) (*VerifiedValueResponse, error)
 }
 
@@ -1591,6 +1918,18 @@ func _Auth_CheckAuthentication_Handler(srv interface{}, ctx context.Context, dec
 	return out, nil
 }
 
+func _Auth_CheckPasswordResetToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(CheckPasswordResetTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(AuthServer).CheckPasswordResetToken(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func _Auth_CheckVerificationCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(CheckVerificationCodeRequest)
 	if err := dec(in); err != nil {
@@ -1609,6 +1948,18 @@ func _Auth_CreateAccount_Handler(srv interface{}, ctx context.Context, dec func(
 		return nil, err
 	}
 	out, err := srv.(AuthServer).CreateAccount(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Auth_CreatePasswordResetToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(CreatePasswordResetTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(AuthServer).CreatePasswordResetToken(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -1651,6 +2002,18 @@ func _Auth_Unauthenticate_Handler(srv interface{}, ctx context.Context, dec func
 	return out, nil
 }
 
+func _Auth_UpdatePassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(UpdatePasswordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(AuthServer).UpdatePassword(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func _Auth_VerifiedValue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(VerifiedValueRequest)
 	if err := dec(in); err != nil {
@@ -1680,12 +2043,20 @@ var _Auth_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Auth_CheckAuthentication_Handler,
 		},
 		{
+			MethodName: "CheckPasswordResetToken",
+			Handler:    _Auth_CheckPasswordResetToken_Handler,
+		},
+		{
 			MethodName: "CheckVerificationCode",
 			Handler:    _Auth_CheckVerificationCode_Handler,
 		},
 		{
 			MethodName: "CreateAccount",
 			Handler:    _Auth_CreateAccount_Handler,
+		},
+		{
+			MethodName: "CreatePasswordResetToken",
+			Handler:    _Auth_CreatePasswordResetToken_Handler,
 		},
 		{
 			MethodName: "CreateVerificationCode",
@@ -1698,6 +2069,10 @@ var _Auth_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Unauthenticate",
 			Handler:    _Auth_Unauthenticate_Handler,
+		},
+		{
+			MethodName: "UpdatePassword",
+			Handler:    _Auth_UpdatePassword_Handler,
 		},
 		{
 			MethodName: "VerifiedValue",
@@ -2221,6 +2596,12 @@ func (m *GetAccountRequest) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(len(m.AccountID)))
 		i += copy(data[i:], m.AccountID)
 	}
+	if len(m.AccountEmail) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.AccountEmail)))
+		i += copy(data[i:], m.AccountEmail)
+	}
 	return i, nil
 }
 
@@ -2497,6 +2878,168 @@ func (m *VerifiedValueResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *CreatePasswordResetTokenRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreatePasswordResetTokenRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Email) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Email)))
+		i += copy(data[i:], m.Email)
+	}
+	return i, nil
+}
+
+func (m *CreatePasswordResetTokenResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreatePasswordResetTokenResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Token) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Token)))
+		i += copy(data[i:], m.Token)
+	}
+	return i, nil
+}
+
+func (m *CheckPasswordResetTokenRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CheckPasswordResetTokenRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Token) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Token)))
+		i += copy(data[i:], m.Token)
+	}
+	return i, nil
+}
+
+func (m *CheckPasswordResetTokenResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CheckPasswordResetTokenResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.AccountID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.AccountID)))
+		i += copy(data[i:], m.AccountID)
+	}
+	if len(m.AccountPhoneNumber) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.AccountPhoneNumber)))
+		i += copy(data[i:], m.AccountPhoneNumber)
+	}
+	if len(m.AccountEmail) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.AccountEmail)))
+		i += copy(data[i:], m.AccountEmail)
+	}
+	return i, nil
+}
+
+func (m *UpdatePasswordRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *UpdatePasswordRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Token) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Token)))
+		i += copy(data[i:], m.Token)
+	}
+	if len(m.Code) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Code)))
+		i += copy(data[i:], m.Code)
+	}
+	if len(m.NewPassword) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.NewPassword)))
+		i += copy(data[i:], m.NewPassword)
+	}
+	return i, nil
+}
+
+func (m *UpdatePasswordResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *UpdatePasswordResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	return i, nil
+}
+
 func encodeFixed64Svc(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -2747,6 +3290,10 @@ func (m *GetAccountRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
+	l = len(m.AccountEmail)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
 	return n
 }
 
@@ -2860,6 +3407,78 @@ func (m *VerifiedValueResponse) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
+	return n
+}
+
+func (m *CreatePasswordResetTokenRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Email)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *CreatePasswordResetTokenResponse) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Token)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *CheckPasswordResetTokenRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Token)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *CheckPasswordResetTokenResponse) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.AccountID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.AccountPhoneNumber)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.AccountEmail)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *UpdatePasswordRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Token)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Code)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.NewPassword)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *UpdatePasswordResponse) Size() (n int) {
+	var l int
+	_ = l
 	return n
 }
 
@@ -3056,6 +3675,7 @@ func (this *GetAccountRequest) String() string {
 	}
 	s := strings.Join([]string{`&GetAccountRequest{`,
 		`AccountID:` + fmt.Sprintf("%v", this.AccountID) + `,`,
+		`AccountEmail:` + fmt.Sprintf("%v", this.AccountEmail) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3170,6 +3790,69 @@ func (this *VerifiedValueResponse) String() string {
 	}
 	s := strings.Join([]string{`&VerifiedValueResponse{`,
 		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreatePasswordResetTokenRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreatePasswordResetTokenRequest{`,
+		`Email:` + fmt.Sprintf("%v", this.Email) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreatePasswordResetTokenResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreatePasswordResetTokenResponse{`,
+		`Token:` + fmt.Sprintf("%v", this.Token) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CheckPasswordResetTokenRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CheckPasswordResetTokenRequest{`,
+		`Token:` + fmt.Sprintf("%v", this.Token) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CheckPasswordResetTokenResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CheckPasswordResetTokenResponse{`,
+		`AccountID:` + fmt.Sprintf("%v", this.AccountID) + `,`,
+		`AccountPhoneNumber:` + fmt.Sprintf("%v", this.AccountPhoneNumber) + `,`,
+		`AccountEmail:` + fmt.Sprintf("%v", this.AccountEmail) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *UpdatePasswordRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&UpdatePasswordRequest{`,
+		`Token:` + fmt.Sprintf("%v", this.Token) + `,`,
+		`Code:` + fmt.Sprintf("%v", this.Code) + `,`,
+		`NewPassword:` + fmt.Sprintf("%v", this.NewPassword) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *UpdatePasswordResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&UpdatePasswordResponse{`,
 		`}`,
 	}, "")
 	return s
@@ -5108,6 +5791,35 @@ func (m *GetAccountRequest) Unmarshal(data []byte) error {
 			}
 			m.AccountID = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AccountEmail", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AccountEmail = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -6101,6 +6813,567 @@ func (m *VerifiedValueResponse) Unmarshal(data []byte) error {
 			}
 			m.Value = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreatePasswordResetTokenRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreatePasswordResetTokenRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreatePasswordResetTokenRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Email", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Email = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreatePasswordResetTokenResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreatePasswordResetTokenResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreatePasswordResetTokenResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Token = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CheckPasswordResetTokenRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CheckPasswordResetTokenRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CheckPasswordResetTokenRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Token = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CheckPasswordResetTokenResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CheckPasswordResetTokenResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CheckPasswordResetTokenResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AccountID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AccountID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AccountPhoneNumber", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AccountPhoneNumber = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AccountEmail", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AccountEmail = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UpdatePasswordRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UpdatePasswordRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UpdatePasswordRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Token = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Code", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Code = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NewPassword", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.NewPassword = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UpdatePasswordResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UpdatePasswordResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UpdatePasswordResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

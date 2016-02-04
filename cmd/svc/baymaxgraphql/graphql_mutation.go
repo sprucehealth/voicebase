@@ -54,6 +54,7 @@ var createAccountInputType = graphql.NewInputObject(
 		Name: "CreateAccountInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId":       newClientMutationIDInputField(),
+			"uuid":                   &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
 			"email":                  &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"password":               &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"phoneNumber":            &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
@@ -1143,11 +1144,15 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 		},
 		"authenticate":                        authenticateField,
 		"authenticateWithCode":                authenticateWithCodeField,
+		"checkPasswordResetToken":             checkPasswordResetTokenField,
 		"checkVerificationCode":               checkVerificationCodeField,
 		"provisionEmail":                      provisionEmailField,
+		"requestPasswordReset":                requestPasswordResetField,
+		"passwordReset":                       passwordResetField,
 		"unauthenticate":                      unauthenticateField,
 		"verifyPhoneNumber":                   verifyPhoneNumberField,
 		"verifyPhoneNumberForAccountCreation": verifyPhoneNumberForAccountCreationField,
+		"verifyPhoneNumberForPasswordReset":   verifyPhoneNumberForPasswordResetField,
 		"updateEntity": &graphql.Field{
 			Type: graphql.NewNonNull(updateEntityOutputType),
 			Args: graphql.FieldConfigArgument{

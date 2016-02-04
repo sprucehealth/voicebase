@@ -28,7 +28,7 @@ func NewParallel() *Parallel {
 func (p *Parallel) Go(fn func() error) {
 	ch := make(chan error, 1)
 	p.errCh = append(p.errCh, ch)
-	go func() {
+	gfn := func() {
 		defer func() {
 			if e := recover(); e != nil {
 				if err, ok := e.(error); ok {
@@ -42,7 +42,12 @@ func (p *Parallel) Go(fn func() error) {
 		if err := fn(); err != nil {
 			ch <- err
 		}
-	}()
+	}
+	if !Testing {
+		go gfn()
+	} else {
+		gfn()
+	}
 }
 
 // Wait waits for all goroutines started by Go to complete and returns all errors if any.

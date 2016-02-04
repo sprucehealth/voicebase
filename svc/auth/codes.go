@@ -27,4 +27,7 @@ const (
 
 	// ValueNotYetVerified indicates that a verified value was requested that has not yet been verified
 	ValueNotYetVerified gcode.Code = 107
+
+	// TokenExpired indicates that the provided token has expired
+	TokenExpired gcode.Code = 108
 )

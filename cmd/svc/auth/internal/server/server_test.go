@@ -15,6 +15,7 @@ import (
 	mock_dal "github.com/sprucehealth/backend/cmd/svc/auth/internal/dal/test"
 	authSetting "github.com/sprucehealth/backend/cmd/svc/auth/internal/settings"
 	"github.com/sprucehealth/backend/libs/clock"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/hash"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
@@ -23,6 +24,10 @@ import (
 	mock_settings "github.com/sprucehealth/backend/svc/settings/mock"
 	"github.com/sprucehealth/backend/test"
 )
+
+func init() {
+	conc.Testing = true
+}
 
 func TestGetAccount(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
@@ -890,4 +895,287 @@ func TestVerifiedValueNotYetVerified(t *testing.T) {
 	})
 	test.AssertNil(t, resp)
 	test.Equals(t, grpc.Code(err), auth.ValueNotYetVerified)
+}
+
+func TestCheckPasswordResetToken(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+	s := New(dl, settingsMock)
+	token := "123abc"
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+	apID1, err := dal.NewAccountPhoneID()
+	test.OK(t, err)
+	aeID1, err := dal.NewAccountEmailID()
+	test.OK(t, err)
+	phoneNumber := "+1234567890"
+	email := "test@test.com"
+
+	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns(&dal.VerificationCode{
+		Consumed:         false,
+		VerificationType: dal.VerificationCodeTypePasswordReset,
+		Expires:          time.Unix(time.Now().Unix()+10000, 0),
+		VerifiedValue:    aID1.String(),
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.Account, aID1).WithReturns(&dal.Account{
+		ID: aID1,
+		PrimaryAccountPhoneID: apID1,
+		PrimaryAccountEmailID: aeID1,
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.UpdateVerificationCode,
+		token, &dal.VerificationCodeUpdate{Consumed: ptr.Bool(true)}).WithReturns(int64(1), nil))
+
+	dl.Expect(mock.NewExpectation(dl.AccountPhone, apID1).WithReturns(&dal.AccountPhone{PhoneNumber: phoneNumber}, nil))
+	dl.Expect(mock.NewExpectation(dl.AccountEmail, aeID1).WithReturns(&dal.AccountEmail{Email: email}, nil))
+
+	resp, err := s.CheckPasswordResetToken(context.Background(), &auth.CheckPasswordResetTokenRequest{
+		Token: token,
+	})
+	test.OK(t, err)
+	test.Equals(t, aID1.String(), resp.AccountID)
+	test.Equals(t, phoneNumber, resp.AccountPhoneNumber)
+	test.Equals(t, email, resp.AccountEmail)
+}
+
+func TestCheckPasswordResetTokenNotFound(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+	s := New(dl, settingsMock)
+	token := "123abc"
+
+	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns((*dal.VerificationCode)(nil), api.ErrNotFound("foo")))
+
+	resp, err := s.CheckPasswordResetToken(context.Background(), &auth.CheckPasswordResetTokenRequest{
+		Token: token,
+	})
+	test.AssertNil(t, resp)
+	test.Equals(t, codes.NotFound, grpc.Code(err))
+}
+
+func TestCheckPasswordResetTokenWrongType(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+	s := New(dl, settingsMock)
+	token := "123abc"
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+
+	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns(&dal.VerificationCode{
+		Consumed:         false,
+		VerificationType: dal.VerificationCodeTypePhone,
+		Expires:          time.Unix(time.Now().Unix()+10000, 0),
+		VerifiedValue:    aID1.String(),
+	}, nil))
+
+	resp, err := s.CheckPasswordResetToken(context.Background(), &auth.CheckPasswordResetTokenRequest{
+		Token: token,
+	})
+	test.AssertNil(t, resp)
+	test.Equals(t, codes.InvalidArgument, grpc.Code(err))
+}
+
+func TestCheckPasswordResetTokenExpired(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+	s := New(dl, settingsMock)
+	token := "123abc"
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+
+	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns(&dal.VerificationCode{
+		Consumed:         false,
+		VerificationType: dal.VerificationCodeTypePasswordReset,
+		Expires:          time.Unix(0, 0),
+		VerifiedValue:    aID1.String(),
+	}, nil))
+
+	resp, err := s.CheckPasswordResetToken(context.Background(), &auth.CheckPasswordResetTokenRequest{
+		Token: token,
+	})
+	test.AssertNil(t, resp)
+	test.Equals(t, auth.TokenExpired, grpc.Code(err))
+}
+
+func TestCreatePasswordResetToken(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+	s := New(dl, settingsMock)
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+	email := "test@test.com"
+	var token string
+
+	dl.Expect(mock.NewExpectation(dl.AccountForEmail, email).WithReturns(&dal.Account{
+		ID: aID1,
+	}, nil))
+
+	dl.Expect(mock.NewExpectationFn(dl.InsertVerificationCode, func(p ...interface{}) {
+		test.Assert(t, len(p) == 1, "Expected only 1 argument")
+		vc, ok := p[0].(*dal.VerificationCode)
+		test.Assert(t, ok, "Expected *dal.VerificationCode")
+		test.Assert(t, vc.Token != "", "Expected a non empty token")
+		test.Assert(t, vc.Code != "", "Expected a non empty code")
+		test.Assert(t, vc.Expires.Unix() > time.Now().Unix(), "Expected a code that expires in the future")
+		test.Equals(t, dal.VerificationCodeTypePasswordReset, vc.VerificationType)
+		test.Equals(t, aID1.String(), vc.VerifiedValue)
+		token = vc.Token
+	}))
+
+	resp, err := s.CreatePasswordResetToken(context.Background(), &auth.CreatePasswordResetTokenRequest{
+		Email: email,
+	})
+	test.OK(t, err)
+	test.Equals(t, token, resp.Token)
+}
+
+func TestCreatePasswordResetTokenEmailNotFound(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+	s := New(dl, settingsMock)
+	email := "test@test.com"
+
+	dl.Expect(mock.NewExpectation(dl.AccountForEmail, email).WithReturns((*dal.Account)(nil), api.ErrNotFound("foo")))
+
+	resp, err := s.CreatePasswordResetToken(context.Background(), &auth.CreatePasswordResetTokenRequest{
+		Email: email,
+	})
+	test.AssertNil(t, resp)
+	test.Equals(t, codes.NotFound, grpc.Code(err))
+}
+
+// Test the password updating functionality
+func TestUpdatePassword(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+	s := New(dl, settingsMock)
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+	token := "123abc"
+	code := "123456"
+	newPassword := "newPassword"
+	test.OK(t, err)
+	hasher := hash.NewBcryptHasher(bCryptHashCost)
+
+	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns(&dal.VerificationCode{
+		Code:          code,
+		Expires:       time.Unix(time.Now().Unix()+10000, 0),
+		VerifiedValue: aID1.String(),
+	}, nil))
+
+	dl.Expect(mock.NewExpectationFn(dl.UpdateAccount, func(p ...interface{}) {
+		test.Assert(t, len(p) == 2, "Expected 2 arguments")
+		accID, ok := p[0].(dal.AccountID)
+		test.Assert(t, ok, "Expected dal.AccountID")
+		test.Equals(t, aID1, accID)
+		acc, ok := p[1].(*dal.AccountUpdate)
+		test.Assert(t, ok, "Expected *dal.AccountUpdate")
+		test.AssertNotNil(t, acc.Password)
+		test.OK(t, hasher.CompareHashAndPassword(*acc.Password, []byte(newPassword)))
+	}))
+	dl.Expect(mock.NewExpectation(dl.UpdateVerificationCode,
+		token, &dal.VerificationCodeUpdate{Consumed: ptr.Bool(true)}).WithReturns(int64(1), nil))
+	dl.Expect(mock.NewExpectation(dl.DeleteAuthTokens, aID1))
+
+	resp, err := s.UpdatePassword(context.Background(), &auth.UpdatePasswordRequest{
+		Token:       token,
+		Code:        code,
+		NewPassword: newPassword,
+	})
+	test.OK(t, err)
+	test.Equals(t, &auth.UpdatePasswordResponse{}, resp)
+}
+
+func TestUpdatePasswordNotFound(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+	s := New(dl, settingsMock)
+	token := "123abc"
+	code := "123456"
+	newPassword := "newPassword"
+
+	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns((*dal.VerificationCode)(nil), api.ErrNotFound("foo")))
+
+	resp, err := s.UpdatePassword(context.Background(), &auth.UpdatePasswordRequest{
+		Token:       token,
+		Code:        code,
+		NewPassword: newPassword,
+	})
+	test.AssertNil(t, resp)
+	test.Equals(t, codes.NotFound, grpc.Code(err))
+}
+
+// Test the password updating functionality
+func TestUpdatePasswordCodeExpired(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+	s := New(dl, settingsMock)
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+	token := "123abc"
+	code := "123456"
+	newPassword := "newPassword"
+	test.OK(t, err)
+
+	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns(&dal.VerificationCode{
+		Code:          code,
+		Expires:       time.Unix(0, 0),
+		VerifiedValue: aID1.String(),
+	}, nil))
+
+	resp, err := s.UpdatePassword(context.Background(), &auth.UpdatePasswordRequest{
+		Token:       token,
+		Code:        code,
+		NewPassword: newPassword,
+	})
+	test.AssertNil(t, resp)
+	test.Equals(t, auth.VerificationCodeExpired, grpc.Code(err))
+}
+
+// Test the password updating functionality
+func TestUpdatePasswordBadCode(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+	s := New(dl, settingsMock)
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+	token := "123abc"
+	code := "123456"
+	newPassword := "newPassword"
+	test.OK(t, err)
+
+	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns(&dal.VerificationCode{
+		Code:          code + "1",
+		Expires:       time.Unix(time.Now().Unix()+10000, 0),
+		VerifiedValue: aID1.String(),
+	}, nil))
+
+	resp, err := s.UpdatePassword(context.Background(), &auth.UpdatePasswordRequest{
+		Token:       token,
+		Code:        code,
+		NewPassword: newPassword,
+	})
+	test.AssertNil(t, resp)
+	test.Equals(t, auth.BadVerificationCode, grpc.Code(err))
 }

@@ -13,6 +13,7 @@ enum VerificationCodeType {
 	PHONE = 0;
 	EMAIL = 1;
 	ACCOUNT_2FA = 2;
+    PASSWORD_RESET = 3;
 }
 
 // VerificationCode represents the collection of information used to represent the time bound verification code
@@ -104,8 +105,10 @@ message CreateAccountResponse {
 }
 
 // GetAccountRequest represents the information required to request a users account information
+//  AccountEmail is an optional second field. If ID is not provided, then email will be used to lookup the account
 message GetAccountRequest {
 	string account_id = 1 [(gogoproto.customname) = "AccountID"];
+    string account_email = 2;
 }
 
 // GetAccountResponse represents the information returned from a GetAccount request
@@ -156,15 +159,50 @@ message VerifiedValueResponse {
     string value = 1;
 }
 
+// CreatePasswordResetTokenRequest represents the information required to generate a password reset token 
+message CreatePasswordResetTokenRequest {
+    string email = 1;
+}
+
+// CreatePasswordResetTokenResponse represents the information returned from a call to CreatePasswordResetToken
+message CreatePasswordResetTokenResponse {
+    string token = 1;
+}
+
+// CheckPasswordResetTokenRequest represents the information required to generate a password reset token 
+message CheckPasswordResetTokenRequest {
+    string token = 1;
+}
+
+// CheckPasswordResetTokenResponse represents the information returned from a call to CheckPasswordResetToken
+message CheckPasswordResetTokenResponse {
+    string account_id = 1 [(gogoproto.customname) = "AccountID"];
+    string account_phone_number = 2;
+    string account_email = 3;
+}
+
+// UpdatePasswordRequest represents the information required to reset a password
+message UpdatePasswordRequest {
+    string token = 1;
+    string code = 2;
+    string new_password = 3;
+}
+
+// UpdatePasswordResponse represents the information returned from UpdatePassword
+message UpdatePasswordResponse {}
+
 // Auth provides mechanisms for other services to perform authentication of external entities interacting with them
 service Auth {
 	rpc AuthenticateLogin (AuthenticateLoginRequest) returns (AuthenticateLoginResponse);
     rpc AuthenticateLoginWithCode (AuthenticateLoginWithCodeRequest) returns (AuthenticateLoginWithCodeResponse);
 	rpc CheckAuthentication (CheckAuthenticationRequest) returns (CheckAuthenticationResponse);
+    rpc CheckPasswordResetToken (CheckPasswordResetTokenRequest) returns (CheckPasswordResetTokenResponse);
     rpc CheckVerificationCode (CheckVerificationCodeRequest) returns (CheckVerificationCodeResponse);
 	rpc CreateAccount (CreateAccountRequest) returns (CreateAccountResponse);
+    rpc CreatePasswordResetToken (CreatePasswordResetTokenRequest) returns (CreatePasswordResetTokenResponse);
     rpc CreateVerificationCode (CreateVerificationCodeRequest) returns (CreateVerificationCodeResponse);
 	rpc GetAccount (GetAccountRequest) returns (GetAccountResponse);
 	rpc Unauthenticate (UnauthenticateRequest) returns (UnauthenticateResponse);
+    rpc UpdatePassword (UpdatePasswordRequest) returns (UpdatePasswordResponse);
     rpc VerifiedValue (VerifiedValueRequest) returns (VerifiedValueResponse);
 }

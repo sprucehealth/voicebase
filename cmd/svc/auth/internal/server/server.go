@@ -10,6 +10,7 @@ import (
 	authSetting "github.com/sprucehealth/backend/cmd/svc/auth/internal/settings"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/clock"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/hash"
@@ -136,7 +137,7 @@ func (s *server) AuthenticateLoginWithCode(ctx context.Context, rd *auth.Authent
 	// Check that the code matches the token and it is not expired
 	if verificationCode.Code != rd.Code {
 		return nil, grpcErrorf(auth.BadVerificationCode, "The code mapped to the provided token does not match %s", rd.Code)
-	} else if verificationCode.Expires.Unix() < s.clk.Now().Unix() {
+	} else if verificationCode.Expires.Before(s.clk.Now()) {
 		return nil, grpcErrorf(auth.VerificationCodeExpired, "The code mapped to the provided token has expired.")
 	}
 
@@ -246,7 +247,7 @@ func (s *server) CheckVerificationCode(ctx context.Context, rd *auth.CheckVerifi
 	// Check that the code matches the token and it is not expired
 	if verificationCode.Code != rd.Code {
 		return nil, grpcErrorf(auth.BadVerificationCode, "The code mapped to the provided token does not match %s", rd.Code)
-	} else if verificationCode.Expires.Unix() < s.clk.Now().Unix() {
+	} else if verificationCode.Expires.Before(s.clk.Now()) {
 		return nil, grpcErrorf(auth.VerificationCodeExpired, "The code mapped to the provided token has expired.")
 	}
 
@@ -280,6 +281,86 @@ func (s *server) CheckVerificationCode(ctx context.Context, rd *auth.CheckVerifi
 	return &auth.CheckVerificationCodeResponse{
 		Account: account,
 		Value:   verificationCode.VerifiedValue,
+	}, nil
+}
+
+func (s *server) CheckPasswordResetToken(ctx context.Context, rd *auth.CheckPasswordResetTokenRequest) (*auth.CheckPasswordResetTokenResponse, error) {
+	golog.Debugf("Entering server.server.CheckPasswordResetToken: %+v", rd)
+	if golog.Default().L(golog.DEBUG) {
+		defer func() { golog.Debugf("Leaving server.server.CheckPasswordResetToken...") }()
+	}
+	if rd.Token == "" {
+		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
+	}
+
+	verificationCode, err := s.dal.VerificationCode(rd.Token)
+	if api.IsErrNotFound(err) {
+		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
+	} else if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	// Check that the token is of the appropriate type and is not expired
+	if verificationCode.VerificationType != dal.VerificationCodeTypePasswordReset {
+		return nil, grpcErrorf(codes.InvalidArgument, "The provided token is not a password reset token %s", rd.Token)
+	} else if verificationCode.Expires.Before(s.clk.Now()) {
+		return nil, grpcErrorf(auth.TokenExpired, "The provided token has expired.")
+	}
+
+	// Return the releveant password reset information for the account
+	accountID, err := dal.ParseAccountID(verificationCode.VerifiedValue)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	account, err := s.dal.Account(accountID)
+	if api.IsErrNotFound(err) {
+		return nil, grpcErrorf(codes.Internal, "No account maps to the ID contained in the provided token %q:%q", rd.Token, accountID.String())
+	} else if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	// Do the remaining operations in parallel
+	parallel := conc.NewParallel()
+	var accountPhone *dal.AccountPhone
+	var accountEmail *dal.AccountEmail
+	parallel.Go(func() error {
+		// Since we sucessfully checked the token, mark it as consumed
+		_, err = s.dal.UpdateVerificationCode(rd.Token, &dal.VerificationCodeUpdate{
+			Consumed: ptr.Bool(true),
+		})
+		if err != nil {
+			return grpcErrorf(codes.Internal, err.Error())
+		}
+		return nil
+	})
+
+	parallel.Go(func() error {
+		// Fetch the phone number for the account
+		accountPhone, err = s.dal.AccountPhone(account.PrimaryAccountPhoneID)
+		if err != nil {
+			return grpcErrorf(codes.Internal, err.Error())
+		}
+		return nil
+	})
+
+	parallel.Go(func() error {
+		// Fetch the email for the account
+		accountEmail, err = s.dal.AccountEmail(account.PrimaryAccountEmailID)
+		if err != nil {
+			return grpcErrorf(codes.Internal, err.Error())
+		}
+		return nil
+	})
+
+	if err := parallel.Wait(); err != nil {
+		return nil, err
+	}
+
+	return &auth.CheckPasswordResetTokenResponse{
+		AccountID:          account.ID.String(),
+		AccountPhoneNumber: accountPhone.PhoneNumber,
+		AccountEmail:       accountEmail.Email,
 	}, nil
 }
 
@@ -412,6 +493,26 @@ func (s *server) CreateVerificationCode(ctx context.Context, rd *auth.CreateVeri
 	}, nil
 }
 
+func (s *server) CreatePasswordResetToken(ctx context.Context, rd *auth.CreatePasswordResetTokenRequest) (*auth.CreatePasswordResetTokenResponse, error) {
+	golog.Debugf("Entering server.server.CreatePasswordResetToken: %+v", rd)
+	if golog.Default().L(golog.DEBUG) {
+		defer func() { golog.Debugf("Leaving server.server.CreatePasswordResetToken...") }()
+	}
+	account, err := s.dal.AccountForEmail(rd.Email)
+	if api.IsErrNotFound(err) {
+		return nil, grpcErrorf(codes.NotFound, err.Error())
+	} else if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+	verificationCode, err := generateAndInsertVerificationCode(s.dal, account.ID.String(), auth.VerificationCodeType_PASSWORD_RESET, s.clk)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+	return &auth.CreatePasswordResetTokenResponse{
+		Token: verificationCode.Token,
+	}, nil
+}
+
 func (s *server) GetAccount(ctx context.Context, rd *auth.GetAccountRequest) (*auth.GetAccountResponse, error) {
 	golog.Debugf("Entering server.server.GetAccount: %+v", rd)
 	if golog.Default().L(golog.DEBUG) {
@@ -450,6 +551,67 @@ func (s *server) Unauthenticate(ctx context.Context, rd *auth.UnauthenticateRequ
 		return nil, grpcErrorf(codes.Internal, "Expected 1 row to be affected but got %d", aff)
 	}
 	return &auth.UnauthenticateResponse{}, nil
+}
+
+func (s *server) UpdatePassword(ctx context.Context, rd *auth.UpdatePasswordRequest) (*auth.UpdatePasswordResponse, error) {
+	golog.Debugf("Entering server.server.UpdatePassword: %+v", rd)
+	if golog.Default().L(golog.DEBUG) {
+		defer func() { golog.Debugf("Leaving server.server.UpdatePassword...") }()
+	}
+
+	if rd.Token == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "Token annot be empty", rd.Token)
+	}
+	if rd.Code == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "Code cannot be empty", rd.Token)
+	}
+	if rd.NewPassword == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "Password cannot be empty")
+	}
+
+	verificationCode, err := s.dal.VerificationCode(rd.Token)
+	if api.IsErrNotFound(err) {
+		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
+	} else if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	} else if verificationCode.Expires.Before(s.clk.Now()) {
+		return nil, grpcErrorf(auth.VerificationCodeExpired, "The code mapped to the provided token has expired.")
+	} else if verificationCode.Code != rd.Code {
+		return nil, grpcErrorf(auth.BadVerificationCode, "The provided code %q does not match", rd.Code)
+	}
+
+	hashedPassword, err := s.hasher.GenerateFromPassword([]byte(rd.NewPassword))
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	accountID, err := dal.ParseAccountID(verificationCode.VerifiedValue)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	_, err = s.dal.UpdateAccount(accountID, &dal.AccountUpdate{
+		Password: &hashedPassword,
+	})
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	// Since we sucessfully checked the token, mark it as consumed
+	_, err = s.dal.UpdateVerificationCode(rd.Token, &dal.VerificationCodeUpdate{
+		Consumed: ptr.Bool(true),
+	})
+	if err != nil {
+		golog.Errorf("Error while marking password reset token as consumed: %s", err)
+	}
+
+	// Delete any active auth tokens for the account
+	_, err = s.dal.DeleteAuthTokens(accountID)
+	if err != nil {
+		golog.Errorf("Error while deleting existing auth tokens for password reset of account %s: %s", accountID, err)
+	}
+
+	return &auth.UpdatePasswordResponse{}, nil
 }
 
 func (s *server) VerifiedValue(ctx context.Context, rd *auth.VerifiedValueRequest) (*auth.VerifiedValueResponse, error) {
