@@ -28,7 +28,7 @@ var requestPasswordResetInputType = graphql.NewInputObject(
 		Name: "RequestPasswordResetInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
-			"uuid":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"uuid":             newUUIDInputField(),
 			"email": &graphql.InputObjectFieldConfig{
 				Type:        graphql.NewNonNull(graphql.String),
 				Description: "Specify the email associated with the account that you would like to reset the password for",
@@ -119,7 +119,7 @@ var checkPasswordResetTokenInputType = graphql.NewInputObject(
 		Name: "CheckPasswordResetTokenInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
-			"uuid":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"uuid":             newUUIDInputField(),
 			"token":            &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 		},
 	},
@@ -208,7 +208,7 @@ var verifyPhoneNumberForPasswordResetInputType = graphql.NewInputObject(
 		Name: "VerifyPhoneNumberForPasswordResetInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
-			"uuid":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"uuid":             newUUIDInputField(),
 			"linkToken": &graphql.InputObjectFieldConfig{
 				Type:        graphql.NewNonNull(graphql.String),
 				Description: "The token contained in the password reset link",
@@ -268,7 +268,7 @@ var passwordResetInputType = graphql.NewInputObject(
 		Name: "PasswordResetInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
-			"uuid":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"uuid":             &graphql.InputObjectFieldConfig{Type: graphql.ID},
 			"token": &graphql.InputObjectFieldConfig{
 				Type:        graphql.NewNonNull(graphql.String),
 				Description: "The token associated with the password reset phone verification request",

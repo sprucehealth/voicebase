@@ -81,7 +81,7 @@ var createAccountInputType = graphql.NewInputObject(
 		Name: "CreateAccountInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId":       newClientMutationIDInputField(),
-			"uuid":                   &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"uuid":                   newUUIDInputField(),
 			"email":                  &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"password":               &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"phoneNumber":            &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},

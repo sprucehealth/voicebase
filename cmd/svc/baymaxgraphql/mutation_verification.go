@@ -24,7 +24,7 @@ var verifyPhoneNumberInputType = graphql.NewInputObject(
 		Name: "VerifyPhoneNumberInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
-			"uuid":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"uuid":             newUUIDInputField(),
 			"phoneNumber": &graphql.InputObjectFieldConfig{
 				Type:        graphql.NewNonNull(graphql.String),
 				Description: "Specify the phone number to send a verification code to.",
@@ -127,7 +127,7 @@ var checkVerificationCodeInputType = graphql.NewInputObject(
 		Name: "CheckVerificationCodeInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
-			"uuid":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"uuid":             newUUIDInputField(),
 			"token":            &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"code":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 		},
