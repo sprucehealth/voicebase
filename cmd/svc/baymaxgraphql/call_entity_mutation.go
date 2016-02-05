@@ -72,7 +72,7 @@ var callEntityInputType = graphql.NewInputObject(
 		Name: "CallEntityInput",
 		Fields: graphql.InputObjectConfigFieldMap{
 			"clientMutationId": newClientMutationIDInputField(),
-			"calleeEntityID": &graphql.InputObjectFieldConfig{
+			"destinationEntityID": &graphql.InputObjectFieldConfig{
 				Type:        graphql.NewNonNull(graphql.ID),
 				Description: "EntityID of the person being called.",
 			},
@@ -128,7 +128,7 @@ var callEntityMutation = &graphql.Field{
 		mutationID, _ := input["clientMutationId"].(string)
 		originatingPhoneNumber, _ := input["originatingPhoneNumber"].(string)
 		destinationPhoneNumber, _ := input["destinationPhoneNumber"].(string)
-		entityID := input["calleeEntityID"].(string)
+		entityID := input["destinationEntityID"].(string)
 
 		if destinationPhoneNumber == "" {
 			return nil, fmt.Errorf("destination phone number for entity required")
