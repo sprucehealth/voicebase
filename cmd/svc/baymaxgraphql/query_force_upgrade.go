@@ -52,14 +52,14 @@ var forceUpgradeQuery = &graphql.Field{
 
 		// Putting a hook in place to test force upgrade
 		if sh.AppVersion.Equals(&encoding.Version{Major: 0, Minor: 0, Patch: 9999}) {
-			return forceUpgradeStatus{
+			return &forceUpgradeStatus{
 				Upgrade:     true,
 				URL:         "https://www.google.com",
 				UserMessage: "Force upgrade works!",
 			}, nil
 		}
 
-		return forceUpgradeStatus{
+		return &forceUpgradeStatus{
 			Upgrade: false,
 		}, nil
 	},

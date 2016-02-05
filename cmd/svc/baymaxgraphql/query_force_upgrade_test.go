@@ -32,7 +32,7 @@ func TestForceUpgradeStatus(t *testing.T) {
 
 	res, err := forceUpgradeQuery.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, forceUpgradeStatus{
+	test.Equals(t, &forceUpgradeStatus{
 		Upgrade: false,
 	}, res)
 }
@@ -59,7 +59,7 @@ func TestForceUpgradeStatus_Hook(t *testing.T) {
 
 	res, err := forceUpgradeQuery.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, forceUpgradeStatus{
+	test.Equals(t, &forceUpgradeStatus{
 		Upgrade:     true,
 		UserMessage: "Force upgrade works!",
 		URL:         "https://www.google.com",
