@@ -162,10 +162,10 @@ var createThreadMutation = &graphql.Field{
 			par := conc.NewParallel()
 			for i, e := range existingEntities {
 				ix := i
-				id := e.ID
+				ent := e
 				par.Go(func() error {
 					res, err := svc.threading.ThreadsForMember(ctx, &threading.ThreadsForMemberRequest{
-						EntityID:    id,
+						EntityID:    ent.ID,
 						PrimaryOnly: true,
 					})
 					if err != nil {
@@ -197,6 +197,12 @@ var createThreadMutation = &graphql.Field{
 					}
 				}
 
+				// Build a map of entities by ID so later we can lookup primary entity efficiently to generate thread tiel
+				entMap := make(map[string]*directory.Entity, len(existingEntities))
+				for _, e := range existingEntities {
+					entMap[e.ID] = e
+				}
+
 				var theOneThread *thread
 				var matchedName bool
 				existingThreads := make([]*thread, len(threads))
@@ -211,6 +217,7 @@ var createThreadMutation = &graphql.Field{
 					if err != nil {
 						return nil, internalError(err)
 					}
+					th.Title = threadTitleForEntity(entMap[t.PrimaryEntityID])
 
 					existingThreads[i] = th
 					// See if there's a thread with a primary entity equal to the one we foudn matching the contact info

@@ -292,6 +292,7 @@ func TestCreateThreadMutation_DifferentOrg(t *testing.T) {
 				result
 				thread {
 					id
+					title
 				}
 			}
 		}`, nil)
@@ -303,7 +304,8 @@ func TestCreateThreadMutation_DifferentOrg(t *testing.T) {
 			"clientMutationId": "a1b2c3",
 			"result": "SUCCESS",
 			"thread": {
-				"id": "t_1"
+				"id": "t_1",
+				"title": "firstName middleInitial. lastName, shortTitle"
 			}
 		}
 	}
@@ -438,9 +440,11 @@ func TestCreateThreadMutation_ExistingThreads_DifferentName(t *testing.T) {
 				result
 				thread {
 					id
+					title
 				}
 				existingThreads {
 					id
+					title
 				}
 				nameDiffers
 			}
@@ -453,16 +457,19 @@ func TestCreateThreadMutation_ExistingThreads_DifferentName(t *testing.T) {
 			"clientMutationId": "a1b2c3",
 			"existingThreads": [
 				{
-					"id": "t_1"
+					"id": "t_1",
+					"title": "(415) 555-5555"
 				},
 				{
-					"id": "t_2"
+					"id": "t_2",
+					"title": "someone@example.com"
 				}
 			],
 			"nameDiffers": true,
 			"result": "EXISTING_THREAD",
 			"thread": {
-				"id": "t_1"
+				"id": "t_1",
+				"title": "(415) 555-5555"
 			}
 		}
 	}
