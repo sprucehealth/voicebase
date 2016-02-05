@@ -26,23 +26,6 @@ type OutgoingCallRouteLookup struct {
 	CallSID *string
 }
 
-type ProxyPhoneNumberOpt int
-
-const (
-	PPOUnexpiredOnly ProxyPhoneNumberOpt = 1 << iota
-	PPOAll           ProxyPhoneNumberOpt = 0
-)
-
-type ProxyPhoneNumberUpdate struct {
-	Expires      *time.Time
-	LastReserved *time.Time
-}
-
-type ProxyPhoneNumberReservationLookup struct {
-	ProxyPhoneNumber    *string
-	DestinationEntityID *string
-}
-
 type ProxyPhoneNumberReservationUpdate struct {
 	Expires *time.Time
 }
@@ -74,11 +57,8 @@ type DAL interface {
 	// LookupCallRequest returns the call request identified by the call sid.
 	LookupCallRequest(callSID string) (*models.CallRequest, error)
 
-	// ProxyPhoneNumbers returns a list of proxy phone numbers based on the provided options.
-	ProxyPhoneNumbers(opt ProxyPhoneNumberOpt) ([]*models.ProxyPhoneNumber, error)
-
-	// UpdateProxyPhoneNumber updates the mutable fields for the specified proxy phone number.
-	UpdateProxyPhoneNumber(phoneNumber phone.Number, update *ProxyPhoneNumberUpdate) (int64, error)
+	// AvailableProxyPhoneNumbers returns a list of proxy phone numbers available for reservation for a given originatingNumber.
+	AvailableProxyPhoneNumbers(originatingPhoneNumber phone.Number) ([]*models.ProxyPhoneNumber, error)
 
 	// CreateProxyPhoneNumberReservation creates a phone number reservation entry.
 	CreateProxyPhoneNumberReservation(model *models.ProxyPhoneNumberReservation) error
@@ -86,13 +66,17 @@ type DAL interface {
 	// UpdateActiveProxyPhoneNumberReservation updates an active reservation identified by the proxyPhoneNumber.
 	// Note that an active reservation is one that is not expired, and it is enforced at the application layer
 	// that there exists only a single active reservation per proxy phone number.
-	UpdateActiveProxyPhoneNumberReservation(proxyPhoneNumber phone.Number, update *ProxyPhoneNumberReservationUpdate) (int64, error)
+	UpdateActiveProxyPhoneNumberReservation(originatingPhoneNumber phone.Number, destinationPhoneNumber, proxyPhoneNumber *phone.Number, update *ProxyPhoneNumberReservationUpdate) (int64, error)
 
-	// ActiveProxyPhoneNumberReservation returns a single reservation for the given lookup based on
-	// proxy phone number or destination entity id.
-	// Note that an active reservation is one that is not expired, and it is enforced at the application layer
-	// that there exists only a single active reservation per proxy phone number.
-	ActiveProxyPhoneNumberReservation(lookup *ProxyPhoneNumberReservationLookup) (*models.ProxyPhoneNumberReservation, error)
+	// ActiveProxyPhoneNumberReservation returns an unexpired (aka "active") reservation uniquely identified by the (originatingPhoneNumber, destinationPhoneNumber) or
+	// (originatingPhoneNumber, proxyPhoneNumber) pair.
+	ActiveProxyPhoneNumberReservation(originatingPhoneNumber phone.Number, destinationPhoneNumber, proxyPhoneNumber *phone.Number) (*models.ProxyPhoneNumberReservation, error)
+
+	// SetCurrentOriginatingNumber sets the provided originaing number for the entityID.
+	SetCurrentOriginatingNumber(phoneNumber phone.Number, entityID string) error
+
+	// OriginatingNumber returns the current originating number for the given entityID.
+	CurrentOriginatingNumber(entityID string) (phone.Number, error)
 
 	// StoreIncomingRawMessage persists the message in the database and returns an ID
 	// to identify the message by.
@@ -123,6 +107,7 @@ var (
 	ErrProxyPhoneNumberReservationNotFound = errors.New("phone number reservation not found")
 	ErrSentMessageNotFound                 = errors.New("sent message not found")
 	ErrIncomingRawMessageNotFound          = errors.New("incoming raw message not found")
+	ErrOriginatingNumberNotFound           = errors.New("originating number not found")
 )
 
 func (d *dal) LookupProvisionedEndpoint(provisionedFor string, endpointType models.EndpointType) (*models.ProvisionedEndpoint, error) {
@@ -249,113 +234,114 @@ func (d *dal) LookupCallRequest(callSID string) (*models.CallRequest, error) {
 	return &cr, nil
 }
 
-func (d *dal) ProxyPhoneNumbers(opt ProxyPhoneNumberOpt) ([]*models.ProxyPhoneNumber, error) {
-	var rows *sql.Rows
-	var err error
-	if opt&PPOUnexpiredOnly == PPOUnexpiredOnly {
-		rows, err = d.db.Query(`
-			SELECT phone_number, expires, last_reserved_time
-			FROM proxy_phone_number
-			WHERE (expires IS NULL) OR (expires < ?)
-			FOR UPDATE
-		`, time.Now())
-		if err != nil {
-			return nil, errors.Trace(err)
-		}
-	} else {
-		rows, err = d.db.Query(`
-			SELECT phone_number, expires, last_reserved_time
-			FROM proxy_phone_number
-			FOR UPDATE
-		`)
-		if err != nil {
-			return nil, errors.Trace(err)
-		}
+func (d *dal) AvailableProxyPhoneNumbers(originatingPhoneNumber phone.Number) ([]*models.ProxyPhoneNumber, error) {
+
+	// first, get the authoritative list of proxy phone numbers
+	// even though we are doing a full table scan this table should be fairly small.
+	rows, err := d.db.Query(`
+		SELECT phone_number
+		FROM proxy_phone_number`)
+	if err != nil {
+		return nil, errors.Trace(err)
 	}
 	defer rows.Close()
 
-	var phoneNumbers []*models.ProxyPhoneNumber
+	var proxyPhoneNumbers []*models.ProxyPhoneNumber
+	proxyPhoneNumbersMap := make(map[string]*models.ProxyPhoneNumber)
 	for rows.Next() {
-		var ppn models.ProxyPhoneNumber
-		if err := rows.Scan(&ppn.PhoneNumber, &ppn.Expires, &ppn.LastReserved); err != nil {
+		var pn models.ProxyPhoneNumber
+		if err := rows.Scan(&pn.PhoneNumber); err != nil {
 			return nil, errors.Trace(err)
 		}
-		phoneNumbers = append(phoneNumbers, &ppn)
+		proxyPhoneNumbers = append(proxyPhoneNumbers, &pn)
+		proxyPhoneNumbersMap[pn.PhoneNumber.String()] = &pn
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Trace(err)
 	}
 
-	return phoneNumbers, errors.Trace(rows.Err())
-}
-
-func (d *dal) UpdateProxyPhoneNumber(phoneNumber phone.Number, update *ProxyPhoneNumberUpdate) (int64, error) {
-
-	if update == nil {
-		return 0, nil
-	}
-
-	vars := dbutil.MySQLVarArgs()
-
-	if update.Expires != nil {
-		vars.Append("expires", *update.Expires)
-	}
-	if update.LastReserved != nil {
-		vars.Append("last_reserved_time", *update.LastReserved)
-	}
-
-	if vars.IsEmpty() {
-		return 0, nil
-	}
-
-	res, err := d.db.Exec(`
-		UPDATE proxy_phone_number
-		SET `+vars.ColumnsForUpdate()+`
-		WHERE phone_number = ?
-		`, append(vars.Values(), phoneNumber)...)
+	// then, get the latest reservation that exists
+	// for each proxy phone number to determine which of them are
+	// currently reserved and exclude that from the list of phone numbers
+	// to return
+	rows2, err := d.db.Query(`
+		SELECT proxy_phone_number, MAX(expires)
+		FROM proxy_phone_number_reservation
+		WHERE originating_phone_number = ?
+		GROUP BY proxy_phone_number`, originatingPhoneNumber)
 	if err != nil {
-		return 0, errors.Trace(err)
+		return nil, errors.Trace(err)
+	}
+	defer rows2.Close()
+
+	availableProxyNumbers := make([]*models.ProxyPhoneNumber, 0, len(proxyPhoneNumbers))
+	for rows2.Next() {
+		var ppn models.ProxyPhoneNumber
+		if err := rows2.Scan(&ppn.PhoneNumber, &ppn.Expires); err != nil {
+			return nil, errors.Trace(err)
+		}
+
+		if ppn.Expires.Before(time.Now()) {
+			// ensure that the phone number can still be used as a proxy phone number
+			if _, ok := proxyPhoneNumbersMap[ppn.PhoneNumber.String()]; ok {
+				availableProxyNumbers = append(availableProxyNumbers, &ppn)
+			}
+		}
+
+		// delete any proxy phone number from the map after it has been considered
+		delete(proxyPhoneNumbersMap, ppn.PhoneNumber.String())
+	}
+	defer rows2.Close()
+
+	// whatever remains in the map are numbers that have never been reserved and can now be considered
+	for _, pn := range proxyPhoneNumbersMap {
+		availableProxyNumbers = append(availableProxyNumbers, pn)
 	}
 
-	rowsAffected, err := res.RowsAffected()
-	if err != nil {
-		return 0, errors.Trace(err)
-	}
-
-	return rowsAffected, nil
+	return availableProxyNumbers, errors.Trace(rows2.Err())
 }
 
 func (d *dal) CreateProxyPhoneNumberReservation(model *models.ProxyPhoneNumberReservation) error {
 	_, err := d.db.Exec(`
-		INSERT INTO proxy_phone_number_reservation (phone_number, destination_entity_id, owner_entity_id, organization_id, expires)
-		VALUES (?, ?, ?, ?, ?)`, model.PhoneNumber, model.DestinationEntityID, model.OwnerEntityID, model.OrganizationID, model.Expires)
+		INSERT INTO proxy_phone_number_reservation (proxy_phone_number, originating_phone_number, destination_phone_number, destination_entity_id, owner_entity_id, organization_id, expires)
+		VALUES (?, ?, ?, ?, ?, ?, ?)`, model.ProxyPhoneNumber, model.OriginatingPhoneNumber, model.DestinationPhoneNumber, model.DestinationEntityID, model.OwnerEntityID, model.OrganizationID, model.Expires)
 	return errors.Trace(err)
 }
 
-func (d *dal) ActiveProxyPhoneNumberReservation(lookup *ProxyPhoneNumberReservationLookup) (*models.ProxyPhoneNumberReservation, error) {
-	var where []string
-	var vals []interface{}
+func (d *dal) ActiveProxyPhoneNumberReservation(originatingPhoneNumber phone.Number, destinationPhoneNumber, proxyPhoneNumber *phone.Number) (*models.ProxyPhoneNumberReservation, error) {
 
-	if lookup.DestinationEntityID != nil {
-		where = append(where, "destination_entity_id = ?")
-		vals = append(vals, *lookup.DestinationEntityID)
+	where := make([]string, 0, 3)
+	vals := make([]interface{}, 0, 3)
+
+	where = append(where, "originating_phone_number = ?")
+	vals = append(vals, originatingPhoneNumber)
+
+	if destinationPhoneNumber != nil {
+		where = append(where, "destination_phone_number = ?")
+		vals = append(vals, *destinationPhoneNumber)
 	}
-	if lookup.ProxyPhoneNumber != nil {
-		where = append(where, "phone_number = ?")
-		vals = append(vals, *lookup.ProxyPhoneNumber)
+	if proxyPhoneNumber != nil {
+		where = append(where, "proxy_phone_number = ?")
+		vals = append(vals, *proxyPhoneNumber)
 	}
 
-	if lookup.DestinationEntityID == nil && lookup.ProxyPhoneNumber == nil {
-		return nil, errors.Trace(fmt.Errorf("destination_entity_id or phone_number required"))
+	if len(where) == 0 {
+		return nil, errors.Trace(fmt.Errorf("either destination_phone_numer or proxy_phone_number must be specified"))
 	}
 
 	var ppnr models.ProxyPhoneNumberReservation
 	err := d.db.QueryRow(`
-		SELECT phone_number, destination_entity_id, owner_entity_id, organization_id, expires
+		SELECT proxy_phone_number, originating_phone_number, destination_phone_number, destination_entity_id, owner_entity_id, organization_id, created, expires
 		FROM proxy_phone_number_reservation
 		WHERE `+strings.Join(where, " AND ")+`
 		AND expires > ?`, append(vals, time.Now())...).Scan(
-		&ppnr.PhoneNumber,
+		&ppnr.ProxyPhoneNumber,
+		&ppnr.OriginatingPhoneNumber,
+		&ppnr.DestinationPhoneNumber,
 		&ppnr.DestinationEntityID,
 		&ppnr.OwnerEntityID,
 		&ppnr.OrganizationID,
+		&ppnr.Created,
 		&ppnr.Expires)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrProxyPhoneNumberReservationNotFound)
@@ -366,17 +352,30 @@ func (d *dal) ActiveProxyPhoneNumberReservation(lookup *ProxyPhoneNumberReservat
 	return &ppnr, nil
 }
 
-func (d *dal) UpdateActiveProxyPhoneNumberReservation(proxyPhoneNumber phone.Number, update *ProxyPhoneNumberReservationUpdate) (int64, error) {
+func (d *dal) UpdateActiveProxyPhoneNumberReservation(originatingPhoneNumber phone.Number, destinationPhoneNumber, proxyPhoneNumber *phone.Number, update *ProxyPhoneNumberReservationUpdate) (int64, error) {
 	if update == nil {
 		return 0, nil
 	}
 
-	vars := dbutil.MySQLVarArgs()
+	where := make([]string, 0, 2)
+	vals := make([]interface{}, 0, 3)
 
+	where = append(where, "originating_phone_number = ?")
+	vals = append(vals, originatingPhoneNumber)
+	if destinationPhoneNumber != nil {
+		where = append(where, "destination_phone_number = ?")
+		vals = append(vals, *destinationPhoneNumber)
+	}
+	if proxyPhoneNumber != nil {
+		where = append(where, "proxy_phone_number = ?")
+		vals = append(vals, *proxyPhoneNumber)
+	}
+	vals = append(vals, time.Now())
+
+	vars := dbutil.MySQLVarArgs()
 	if update.Expires != nil {
 		vars.Append("expires", *update.Expires)
 	}
-
 	if vars.IsEmpty() {
 		return 0, nil
 	}
@@ -384,9 +383,9 @@ func (d *dal) UpdateActiveProxyPhoneNumberReservation(proxyPhoneNumber phone.Num
 	res, err := d.db.Exec(`
 		UPDATE proxy_phone_number_reservation
 		SET `+vars.ColumnsForUpdate()+`
-		WHERE phone_number = ?
+		WHERE `+strings.Join(where, " AND ")+`
 		AND expires > ?
-		`, append(vars.Values(), proxyPhoneNumber, time.Now())...)
+		`, append(vars.Values(), vals...)...)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
@@ -397,6 +396,23 @@ func (d *dal) UpdateActiveProxyPhoneNumberReservation(proxyPhoneNumber phone.Num
 	}
 
 	return rowsAffected, nil
+}
+
+func (d *dal) SetCurrentOriginatingNumber(phoneNumber phone.Number, entityID string) error {
+	_, err := d.db.Exec(`REPLACE INTO originating_phone_number (phone_number, entity_id) VALUES (?, ?)`, phoneNumber, entityID)
+	return errors.Trace(err)
+}
+
+func (d *dal) CurrentOriginatingNumber(entityID string) (phone.Number, error) {
+	var phoneNumber phone.Number
+	err := d.db.QueryRow(`
+		SELECT phone_number 
+		FROM originating_phone_number 
+		WHERE entity_id = ?`, entityID).Scan(&phoneNumber)
+	if err == sql.ErrNoRows {
+		return phone.Number(""), errors.Trace(ErrOriginatingNumberNotFound)
+	}
+	return phoneNumber, errors.Trace(err)
 }
 
 func (d *dal) Transact(trans func(DAL) error) (err error) {

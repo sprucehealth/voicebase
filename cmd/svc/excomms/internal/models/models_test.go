@@ -21,7 +21,7 @@ func TestProxyPhoneNumber_Sort(t *testing.T) {
 		},
 	}
 
-	sort.Sort(ByLastReservedProxyPhoneNumbers(p))
+	sort.Sort(ByExpiresProxyPhoneNumbers(p))
 
 	test.Equals(t, "+12068773590", p[0].PhoneNumber.String())
 	test.Equals(t, "+12068773591", p[1].PhoneNumber.String())

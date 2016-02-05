@@ -100,6 +100,10 @@ func (n Number) Format(format NumberFormat) (string, error) {
 	return "", errors.New("Unsupported format")
 }
 
+func (n Number) IsEmpty() bool {
+	return string(n) == ""
+}
+
 // ParseNumber returns a valid Number object if the number is a valid E.164 format
 // and errors if not.
 func ParseNumber(number string) (Number, error) {
@@ -122,6 +126,13 @@ func Format(number string, format NumberFormat) (string, error) {
 	}
 
 	return p.Format(format)
+}
+
+func Ptr(pn Number) *Number {
+	if pn.IsEmpty() {
+		return nil
+	}
+	return &pn
 }
 
 func sanitize(str string) (string, error) {

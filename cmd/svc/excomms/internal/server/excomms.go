@@ -1,31 +1,26 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
-	"sort"
 	"strconv"
 	"strings"
-	"time"
-
-	"google.golang.org/grpc/codes"
 
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
-	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/twilio"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
-
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 type excommsService struct {
@@ -39,6 +34,7 @@ type excommsService struct {
 	clock                clock.Clock
 	emailClient          EmailClient
 	idgen                idGenerator
+	proxyNumberManager   proxynumber.Manager
 }
 
 func NewService(
@@ -50,7 +46,8 @@ func NewService(
 	externalMessageTopic string,
 	clock clock.Clock,
 	emailClient EmailClient,
-	idgen idGenerator) excomms.ExCommsServer {
+	idgen idGenerator,
+	proxyNumberManager proxynumber.Manager) excomms.ExCommsServer {
 
 	es := &excommsService{
 		apiURL:               apiURL,
@@ -63,6 +60,7 @@ func NewService(
 		clock:                clock,
 		emailClient:          emailClient,
 		idgen:                idgen,
+		proxyNumberManager:   proxyNumberManager,
 	}
 	return es
 }
@@ -271,17 +269,6 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 	return &excomms.SendMessageResponse{}, nil
 }
 
-// TODO: Move these values to config such that they are easily changeable.
-var (
-	// phoneReservationDuration represents the duration of time for which
-	// a proxy phone number reservation to dial a particular number lasts.
-	phoneReservationDuration = 5 * time.Minute
-
-	// phoneReservationDurationGrace represents the grace period after the expiration
-	// where the proxy phone number is not reserved for another phone call.
-	phoneReservationDurationGrace = 5 * time.Minute
-)
-
 // InitiatePhoneCall initiates a phone call as defined in the InitiatePhoneCallRequest.
 func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.InitiatePhoneCallRequest) (*excomms.InitiatePhoneCallResponse, error) {
 	if in.CallInitiationType == excomms.InitiatePhoneCallRequest_CONNECT_PARTIES {
@@ -309,22 +296,28 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 
 	// ensure caller belongs to the organization
 	var sourceEntity *directory.Entity
-	lookupByContacRes, err := e.directory.LookupEntitiesByContact(
+	lookupEntitiesRes, err = e.directory.LookupEntities(
 		ctx,
-		&directory.LookupEntitiesByContactRequest{
-			ContactValue: in.FromPhoneNumber,
+		&directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: in.CallerEntityID,
+			},
 			RequestedInformation: &directory.RequestedInformation{
-				Depth:             1,
-				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
+				Depth: 0,
+				EntityInformation: []directory.EntityInformation{
+					directory.EntityInformation_CONTACTS,
+					directory.EntityInformation_MEMBERSHIPS,
+				},
 			},
 		})
 	if grpc.Code(err) == codes.NotFound {
-		return nil, grpc.Errorf(codes.NotFound, "caller %s not found", in.FromPhoneNumber)
+		return nil, grpc.Errorf(codes.NotFound, "caller %s not found", in.CallerEntityID)
 	} else if err != nil {
 		return nil, grpc.Errorf(codes.Internal, err.Error())
 	}
 
-	for _, entity := range lookupByContacRes.Entities {
+	for _, entity := range lookupEntitiesRes.Entities {
 		if sourceEntity != nil {
 			break
 		}
@@ -341,7 +334,7 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 
 	// validate callee
 	var destinationEntity *directory.Entity
-	lookupByContacRes, err = e.directory.LookupEntitiesByContact(
+	lookupByContacRes, err := e.directory.LookupEntitiesByContact(
 		ctx,
 		&directory.LookupEntitiesByContactRequest{
 			ContactValue: in.ToPhoneNumber,
@@ -355,7 +348,6 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 		return nil, grpc.Errorf(codes.Internal, err.Error())
 	}
 
-	golog.Debugf("Destination lookup response: %#v", lookupByContacRes)
 	for _, entity := range lookupByContacRes.Entities {
 		if destinationEntity != nil {
 			break
@@ -370,94 +362,57 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 		return nil, grpc.Errorf(codes.NotFound, "%s is not the phone number of a callee belonging to the organization.", in.ToPhoneNumber)
 	}
 
-	var proxyPhoneNumber phone.Number
-	if err := e.dal.Transact(func(dl dal.DAL) error {
-
-		// check if an active reservation already exists for the caller/callee pair, and if
-		// so, extend the reservation and return the same number rather than reserving a new number
-		ppnr, err := dl.ActiveProxyPhoneNumberReservation(&dal.ProxyPhoneNumberReservationLookup{
-			DestinationEntityID: ptr.String(destinationEntity.ID),
-		})
-		if err != nil && errors.Cause(err) != dal.ErrProxyPhoneNumberReservationNotFound {
-			return errors.Trace(err)
-		} else if ppnr != nil && ppnr.OwnerEntityID == sourceEntity.ID {
-
-			expiration := e.clock.Now().Add(phoneReservationDuration)
-
-			// extend the existing reservation rather than creating a new one and return
-			if rowsAffected, err := dl.UpdateActiveProxyPhoneNumberReservation(ppnr.PhoneNumber, &dal.ProxyPhoneNumberReservationUpdate{
-				Expires: ptr.Time(expiration),
-			}); err != nil {
-				return errors.Trace(err)
-			} else if rowsAffected != 1 {
-				return errors.Trace(fmt.Errorf("Expected 1 row to be updated, instead %d rows were updated for proxyPhoneNumber %s", rowsAffected, ppnr.PhoneNumber))
-			}
-
-			if rowsAffected, err := dl.UpdateProxyPhoneNumber(ppnr.PhoneNumber, &dal.ProxyPhoneNumberUpdate{
-				Expires:      ptr.Time(expiration),
-				LastReserved: ptr.Time(e.clock.Now()),
-			}); err != nil {
-				return errors.Trace(err)
-			} else if rowsAffected != 1 {
-				return errors.Trace(fmt.Errorf("Expected 1 row to be updated, instead %d rows were updated for proxyPhoneNumber %s", rowsAffected, ppnr.PhoneNumber))
-			}
-
-			proxyPhoneNumber = ppnr.PhoneNumber
-			return nil
-		}
-
-		// if no active reservation exists, then lets go ahead and reserve a new number
-		ppns, err := dl.ProxyPhoneNumbers(dal.PPOUnexpiredOnly)
+	var originatingPhoneNumber phone.Number
+	if in.FromPhoneNumber != "" {
+		originatingPhoneNumber, err = phone.ParseNumber(in.FromPhoneNumber)
 		if err != nil {
-			return errors.Trace(err)
+			return nil, grpc.Errorf(codes.InvalidArgument, "%s is not a valid phone number", in.FromPhoneNumber)
 		}
-
-		// sort by last reserved so that phone numbers that were reserved
-		// furthest back are reserved first
-		sort.Sort(models.ByLastReservedProxyPhoneNumbers(ppns))
-
-		for _, ppn := range ppns {
-			if ppn.Expires != nil && ppn.Expires.Add(phoneReservationDurationGrace).Before(e.clock.Now()) {
-				proxyPhoneNumber = ppn.PhoneNumber
-				break
-			} else if ppn.Expires == nil {
-				proxyPhoneNumber = ppn.PhoneNumber
-				break
+	} else {
+		currentOriginatingPhoneNumber, err := e.dal.CurrentOriginatingNumber(in.CallerEntityID)
+		if err != nil {
+			if errors.Cause(err) != dal.ErrOriginatingNumberNotFound {
+				return nil, grpc.Errorf(codes.Internal, err.Error())
 			}
+
+			// use a number associated with the provider's account as the originating number
+			for _, c := range sourceEntity.Contacts {
+				if c.ContactType == directory.ContactType_PHONE && !c.Provisioned {
+					originatingPhoneNumber, err = phone.ParseNumber(c.Value)
+					if err != nil {
+						return nil, grpc.Errorf(codes.Internal, "phone number %s for entity is of invalid format: %s", c.Value, err.Error())
+					}
+					break
+				}
+			}
+		} else {
+			originatingPhoneNumber = currentOriginatingPhoneNumber
 		}
-
-		if proxyPhoneNumber == "" {
-			return errors.Trace(errors.New("Unable to find free phone number to reserve"))
-		}
-
-		expiration := e.clock.Now().Add(phoneReservationDuration)
-
-		if err := dl.CreateProxyPhoneNumberReservation(&models.ProxyPhoneNumberReservation{
-			PhoneNumber:         proxyPhoneNumber,
-			DestinationEntityID: destinationEntity.ID,
-			OwnerEntityID:       sourceEntity.ID,
-			OrganizationID:      in.OrganizationID,
-			Expires:             expiration,
-		}); err != nil {
-			return errors.Trace(err)
-		}
-
-		if rowsAffected, err := dl.UpdateProxyPhoneNumber(proxyPhoneNumber, &dal.ProxyPhoneNumberUpdate{
-			Expires:      ptr.Time(expiration),
-			LastReserved: ptr.Time(e.clock.Now()),
-		}); err != nil {
-			return errors.Trace(err)
-		} else if rowsAffected != 1 {
-			return errors.Trace(fmt.Errorf("Expected 1 row to be updated, instead %d rows were updated for proxyPhoneNumber %s", rowsAffected, proxyPhoneNumber))
-		}
-
-		return nil
-	}); err != nil {
-		return nil, grpc.Errorf(codes.Internal, err.Error())
 	}
 
+	if originatingPhoneNumber.IsEmpty() {
+		return nil, grpc.Errorf(codes.Internal, "Unable to find a default phone number for entity %s from which to place the call", sourceEntity.ID)
+	}
+
+	// track originating phone number
+	conc.Go(func() {
+		if err := e.dal.SetCurrentOriginatingNumber(originatingPhoneNumber, in.CallerEntityID); err != nil {
+			golog.Errorf(err.Error())
+		}
+	})
+
+	destinationPhoneNumber, err := phone.ParseNumber(in.ToPhoneNumber)
+	if err != nil {
+		return nil, grpc.Errorf(codes.Internal, "destination phone number %s is of invalid format: %s", in.ToPhoneNumber, err.Error())
+	}
+
+	proxyPhoneNumber, err := e.proxyNumberManager.ReserveNumber(originatingPhoneNumber, destinationPhoneNumber, destinationEntity.ID, sourceEntity.ID, in.OrganizationID)
+	if err != nil {
+		return nil, grpc.Errorf(codes.Internal, err.Error())
+	}
 	return &excomms.InitiatePhoneCallResponse{
-		PhoneNumber: proxyPhoneNumber.String(),
+		ProxyPhoneNumber:       proxyPhoneNumber.String(),
+		OriginatingPhoneNumber: originatingPhoneNumber.String(),
 	}, nil
 }
 

@@ -13,7 +13,6 @@ import (
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
-	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc"
@@ -222,92 +221,6 @@ var createSavedThreadQueryOutputType = graphql.NewObject(
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*createSavedThreadQueryOutput)
-			return ok
-		},
-	},
-)
-
-// callEntity
-
-const (
-	callEntityTypeConnectParties    = "CONNECT_PARTIES"
-	callEntityTypeReturnPhoneNumber = "RETURN_PHONE_NUMBER"
-)
-
-const (
-	callEntityResultSuccess            = "SUCCESS"
-	callEntityResultEntityNotFound     = "ENTITY_NOT_FOUND"
-	callEntityResultEntityHasNoContact = "ENTITY_HAS_NO_CONTACT"
-)
-
-type callEntityOutput struct {
-	ClientMutationID string `json:"clientMutationId"`
-	Result           string `json:"result"`
-	PhoneNumber      string `json:"phoneNumber,omitempty"`
-}
-
-var callEntityTypeEnumType = graphql.NewEnum(
-	graphql.EnumConfig{
-		Name:        "CallEntityType",
-		Description: "How to initiate the call",
-		Values: graphql.EnumValueConfigMap{
-			callEntityTypeConnectParties: &graphql.EnumValueConfig{
-				Value:       callEntityTypeConnectParties,
-				Description: "Connect parties by calling both numbers",
-			},
-			callEntityTypeReturnPhoneNumber: &graphql.EnumValueConfig{
-				Value:       callEntityTypeReturnPhoneNumber,
-				Description: "Return a phone number to call",
-			},
-		},
-	},
-)
-
-var callEntityResultType = graphql.NewEnum(
-	graphql.EnumConfig{
-		Name:        "CallEntityResult",
-		Description: "Result of callEntity",
-		Values: graphql.EnumValueConfigMap{
-			callEntityResultSuccess: &graphql.EnumValueConfig{
-				Value:       callEntityResultSuccess,
-				Description: "Success",
-			},
-			callEntityResultEntityNotFound: &graphql.EnumValueConfig{
-				Value:       callEntityResultEntityNotFound,
-				Description: "The requested entity does not exist",
-			},
-			callEntityResultEntityHasNoContact: &graphql.EnumValueConfig{
-				Value:       callEntityResultEntityHasNoContact,
-				Description: "An entity does not have a viable contact",
-			},
-		},
-	},
-)
-
-var callEntityInputType = graphql.NewInputObject(
-	graphql.InputObjectConfig{
-		Name: "CallEntityInput",
-		Fields: graphql.InputObjectConfigFieldMap{
-			"clientMutationId": newClientMutationIDInputField(),
-			"id":               &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
-			"type":             &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(callEntityTypeEnumType)},
-		},
-	},
-)
-
-var callEntityOutputType = graphql.NewObject(
-	graphql.ObjectConfig{
-		Name: "CallEntityPayload",
-		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
-			"result":           &graphql.Field{Type: graphql.NewNonNull(callEntityResultType)},
-			"phoneNumber": &graphql.Field{
-				Type:        graphql.String,
-				Description: "The phone number to use to contact the entity.",
-			},
-		},
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*callEntityOutput)
 			return ok
 		},
 	},
@@ -805,106 +718,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				}, nil
 			},
 		},
-		"callEntity": &graphql.Field{
-			Type: graphql.NewNonNull(callEntityOutputType),
-			Args: graphql.FieldConfigArgument{
-				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(callEntityInputType)},
-			},
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				svc := serviceFromParams(p)
-				ctx := p.Context
-				acc := accountFromContext(ctx)
-				if acc == nil {
-					return nil, errNotAuthenticated
-				}
-				input := p.Args["input"].(map[string]interface{})
-				mutationID, _ := input["clientMutationId"].(string)
-				entityID := input["id"].(string)
-				calleeEnt, err := svc.entity(ctx, entityID)
-				if err != nil {
-					return nil, internalError(err)
-				}
-				if calleeEnt == nil || calleeEnt.Type != directory.EntityType_EXTERNAL {
-					return &callEntityOutput{
-						ClientMutationID: mutationID,
-						Result:           callEntityResultEntityNotFound,
-					}, nil
-				}
-
-				var org *directory.Entity
-				for _, em := range calleeEnt.Memberships {
-					if em.Type == directory.EntityType_ORGANIZATION {
-						org = em
-						break
-					}
-				}
-				if org == nil {
-					return &callEntityOutput{
-						ClientMutationID: mutationID,
-						Result:           callEntityResultEntityNotFound,
-					}, nil
-				}
-
-				callerEnt, err := svc.entityForAccountID(ctx, org.ID, acc.ID)
-				if err != nil {
-					return nil, internalError(err)
-				}
-				if callerEnt == nil {
-					return &callEntityOutput{
-						ClientMutationID: mutationID,
-						Result:           callEntityResultEntityNotFound,
-					}, nil
-				}
-
-				var fromContact *directory.Contact
-				for _, c := range callerEnt.Contacts {
-					if c.ContactType == directory.ContactType_PHONE && !c.Provisioned {
-						fromContact = c
-					}
-				}
-				if fromContact == nil {
-					return &callEntityOutput{
-						ClientMutationID: mutationID,
-						Result:           callEntityResultEntityHasNoContact,
-					}, nil
-				}
-
-				var toContact *directory.Contact
-				for _, c := range calleeEnt.Contacts {
-					if c.ContactType == directory.ContactType_PHONE && !c.Provisioned {
-						toContact = c
-					}
-				}
-				if toContact == nil {
-					return &callEntityOutput{
-						ClientMutationID: mutationID,
-						Result:           callEntityResultEntityHasNoContact,
-					}, nil
-				}
-
-				ireq := &excomms.InitiatePhoneCallRequest{
-					FromPhoneNumber: fromContact.Value,
-					ToPhoneNumber:   toContact.Value,
-					OrganizationID:  org.ID,
-				}
-				switch input["type"].(string) {
-				case callEntityTypeConnectParties:
-					ireq.CallInitiationType = excomms.InitiatePhoneCallRequest_CONNECT_PARTIES
-				case callEntityTypeReturnPhoneNumber:
-					ireq.CallInitiationType = excomms.InitiatePhoneCallRequest_RETURN_PHONE_NUMBER
-				}
-				ires, err := svc.exComms.InitiatePhoneCall(ctx, ireq)
-				if err != nil {
-					return nil, internalError(err)
-				}
-
-				return &callEntityOutput{
-					ClientMutationID: mutationID,
-					Result:           callEntityResultSuccess,
-					PhoneNumber:      ires.PhoneNumber,
-				}, nil
-			},
-		},
+		"callEntity": callEntityMutation,
 		"registerDeviceForPush": &graphql.Field{
 			Type: graphql.NewNonNull(registerDeviceForPushOutputType),
 			Args: graphql.FieldConfigArgument{

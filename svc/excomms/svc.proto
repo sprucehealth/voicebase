@@ -121,12 +121,14 @@ message InitiatePhoneCallRequest {
 	string from_phone_number = 2;
 	string to_phone_number = 3;
 	string organization_id = 4 [(gogoproto.customname) = "OrganizationID"];
+	string caller_entity_id = 5 [(gogoproto.customname) = "CallerEntityID"];
 }
 
 message InitiatePhoneCallResponse {
 	// phone_number returns the phone number which the caller can call
 	// to connect the caller to the destination phone number in the request.
-	string phone_number = 3;
+	string proxy_phone_number = 3;
+	string originating_phone_number = 4;
 }
 
 enum PhoneNumberCapability {

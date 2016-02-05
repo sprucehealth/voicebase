@@ -11,12 +11,12 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
+	proxynumber "github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber/mock"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/phone"
-	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
@@ -49,14 +49,6 @@ type mockDAL_Twilio struct {
 	dal.DAL
 	cr   *models.CallRequest
 	ppnr *models.ProxyPhoneNumberReservation
-}
-
-func (m *mockDAL_Twilio) ActiveProxyPhoneNumberReservation(lookup *dal.ProxyPhoneNumberReservationLookup) (*models.ProxyPhoneNumberReservation, error) {
-	m.Record(lookup)
-	if m.ppnr == nil {
-		return nil, dal.ErrProxyPhoneNumberReservationNotFound
-	}
-	return m.ppnr, nil
 }
 
 func (m *mockDAL_Twilio) StoreIncomingRawMessage(msg *rawmsg.Incoming) (uint64, error) {
@@ -96,24 +88,14 @@ func TestOutgoing_PatientName(t *testing.T) {
 }
 
 func testOutgoing(t *testing.T, testExpired bool, patientName string) {
-	practicePhoneNumber := "+12068773590"
-	patientPhoneNumber := "+11234567890"
-	providerPersonalPhoneNumber := "+17348465522"
+	practicePhoneNumber := phone.Number("+12068773590")
+	patientPhoneNumber := phone.Number("+11234567890")
+	providerPersonalPhoneNumber := phone.Number("+17348465522")
 	proxyPhoneNumber := phone.Number("+14152222222")
 	organizationID := "1234"
 	destinationEntityID := "6789"
 	providerID := "0000"
 	callSID := "8888"
-
-	var ppnr *models.ProxyPhoneNumberReservation
-	if !testExpired {
-		ppnr = &models.ProxyPhoneNumberReservation{
-			PhoneNumber:         proxyPhoneNumber,
-			DestinationEntityID: destinationEntityID,
-			OwnerEntityID:       providerID,
-			OrganizationID:      organizationID,
-		}
-	}
 
 	md := &mockDirectoryService_Twilio{
 		entities: map[string][]*directory.Entity{
@@ -125,7 +107,7 @@ func testOutgoing(t *testing.T, testExpired bool, patientName string) {
 						{
 							Provisioned: true,
 							ContactType: directory.ContactType_PHONE,
-							Value:       practicePhoneNumber,
+							Value:       practicePhoneNumber.String(),
 						},
 					},
 				},
@@ -141,7 +123,7 @@ func testOutgoing(t *testing.T, testExpired bool, patientName string) {
 						{
 							Provisioned: false,
 							ContactType: directory.ContactType_PHONE,
-							Value:       patientPhoneNumber,
+							Value:       patientPhoneNumber.String(),
 						},
 					},
 				},
@@ -153,12 +135,7 @@ func testOutgoing(t *testing.T, testExpired bool, patientName string) {
 		Expector: &mock.Expector{
 			T: t,
 		},
-		ppnr: ppnr,
 	}
-	mdal.Expect(mock.NewExpectation(mdal.ActiveProxyPhoneNumberReservation, &dal.ProxyPhoneNumberReservationLookup{
-		ProxyPhoneNumber: ptr.String(proxyPhoneNumber.String()),
-	}))
-
 	mclock := clock.NewManaged(time.Now())
 
 	if !testExpired {
@@ -172,10 +149,30 @@ func testOutgoing(t *testing.T, testExpired bool, patientName string) {
 		}))
 	}
 
-	es := NewEventHandler(md, nil, mdal, nil, mclock, "https://test.com", "", "")
+	mproxynumberManager := proxynumber.NewMockManager(t)
+	defer mproxynumberManager.Finish()
+
+	if testExpired {
+		mproxynumberManager.Expect(mock.NewExpectation(mproxynumberManager.ActiveReservation, providerPersonalPhoneNumber, proxyPhoneNumber).WithReturns(
+			&models.ProxyPhoneNumberReservation{},
+			dal.ErrProxyPhoneNumberReservationNotFound))
+	} else {
+		mproxynumberManager.Expect(mock.NewExpectation(mproxynumberManager.ActiveReservation, providerPersonalPhoneNumber, proxyPhoneNumber).WithReturns(&models.ProxyPhoneNumberReservation{
+			ProxyPhoneNumber:       proxyPhoneNumber,
+			OriginatingPhoneNumber: providerPersonalPhoneNumber,
+			DestinationPhoneNumber: patientPhoneNumber,
+			DestinationEntityID:    destinationEntityID,
+			OwnerEntityID:          providerID,
+			OrganizationID:         organizationID,
+		}, nil))
+
+		mproxynumberManager.Expect(mock.NewExpectation(mproxynumberManager.CallStarted, providerPersonalPhoneNumber, proxyPhoneNumber))
+	}
+
+	es := NewEventHandler(md, nil, mdal, nil, mclock, mproxynumberManager, "https://test.com", "", "")
 
 	params := &rawmsg.TwilioParams{
-		From:    providerPersonalPhoneNumber,
+		From:    providerPersonalPhoneNumber.String(),
 		To:      proxyPhoneNumber.String(),
 		CallSID: callSID,
 	}
@@ -253,7 +250,7 @@ func TestIncoming_Organization(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, nil, nil, clock.New(), "https://test.com", "", "")
+	es := NewEventHandler(md, msettings, nil, nil, clock.New(), nil, "https://test.com", "", "")
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -354,7 +351,7 @@ func TestIncoming_Organization_SingleProvider_DirectAllCallsToVoicemail(t *testi
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, nil, nil, clock.New(), "https://test.com", "", "")
+	es := NewEventHandler(md, msettings, nil, nil, clock.New(), nil, "https://test.com", "", "")
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -417,7 +414,7 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, nil, nil, clock.New(), "https://test.com", "", "")
+	es := NewEventHandler(md, msettings, nil, nil, clock.New(), nil, "https://test.com", "", "")
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -517,7 +514,7 @@ func TestIncoming_Organization_MultipleContacts_SendToVoicemail(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, nil, nil, clock.New(), "https://test.com", "", "")
+	es := NewEventHandler(md, msettings, nil, nil, clock.New(), nil, "https://test.com", "", "")
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -589,7 +586,7 @@ func TestIncoming_Provider(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, nil, nil, clock.New(), "https://test.com", "", "")
+	es := NewEventHandler(md, msettings, nil, nil, clock.New(), nil, "https://test.com", "", "")
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -705,7 +702,7 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 		DialCallStatus: incomingStatus,
 	}
 
-	es := NewEventHandler(nil, nil, nil, ms, clock.New(), "https://test.com", "", "")
+	es := NewEventHandler(nil, nil, nil, ms, clock.New(), nil, "https://test.com", "", "")
 
 	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -733,7 +730,7 @@ func testIncomingCallStatus(t *testing.T, incomingStatus rawmsg.TwilioParams_Cal
 		DialCallStatus: incomingStatus,
 	}
 
-	es := NewEventHandler(nil, nil, nil, ms, clock.New(), "", "", "")
+	es := NewEventHandler(nil, nil, nil, ms, clock.New(), nil, "", "", "")
 
 	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -775,10 +772,16 @@ func TestOutgoingCallStatus(t *testing.T) {
 		cr: &models.CallRequest{
 			Source:      "+12068773590",
 			Destination: "+14152222222",
+			Proxy:       phone.Number("+17348465522"),
 		},
 	}
 
-	es := NewEventHandler(nil, nil, md, ms, clock.New(), "", "", "")
+	mproxynumberManager := proxynumber.NewMockManager(t)
+	defer mproxynumberManager.Finish()
+
+	mproxynumberManager.Expect(mock.NewExpectation(mproxynumberManager.CallEnded, phone.Number(params.From), phone.Number(params.To)))
+
+	es := NewEventHandler(nil, nil, md, ms, clock.New(), mproxynumberManager, "", "", "")
 
 	twiml, err := processOutgoingCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -832,7 +835,7 @@ func TestProcessVoicemail(t *testing.T) {
 		},
 	}))
 
-	es := NewEventHandler(nil, nil, md, ms, clock.New(), "", "", "")
+	es := NewEventHandler(nil, nil, md, ms, clock.New(), nil, "", "", "")
 
 	twiml, err := processVoicemail(context.Background(), params, es.(*eventsHandler))
 	if err != nil {

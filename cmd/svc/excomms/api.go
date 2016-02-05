@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/handlers"
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/twilio"
 	cfg "github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/clock"
@@ -61,6 +62,7 @@ func runAPI() {
 	dl := dal.NewDAL(db)
 
 	store := storage.NewS3(awsSession, config.attachmentBucket, config.attachmentPrefix)
+	proxyNumberManager := proxynumber.NewManager(dl, clock.New())
 
 	settingsConn, err := grpc.Dial(
 		config.settingsServiceURL,
@@ -77,6 +79,7 @@ func runAPI() {
 		dl,
 		snsCLI,
 		clock.New(),
+		proxyNumberManager,
 		config.excommsAPIURL,
 		config.externalMessageTopic,
 		config.incomingRawMessageTopic)

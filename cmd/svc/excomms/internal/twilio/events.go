@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/sns"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
@@ -15,7 +16,6 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
-	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/twilio/twiml"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
@@ -43,12 +43,13 @@ type eventsHandler struct {
 	dal                  dal.DAL
 	sns                  snsiface.SNSAPI
 	clock                clock.Clock
+	proxyNumberManager   proxynumber.Manager
 	apiURL               string
 	externalMessageTopic string
 	incomingRawMsgTopic  string
 }
 
-func NewEventHandler(directory directory.DirectoryClient, settingsClient settings.SettingsClient, dal dal.DAL, sns snsiface.SNSAPI, clock clock.Clock, apiURL, externalMessageTopic, incomingRawMsgTopic string) EventHandler {
+func NewEventHandler(directory directory.DirectoryClient, settingsClient settings.SettingsClient, dal dal.DAL, sns snsiface.SNSAPI, clock clock.Clock, proxyNumberManager proxynumber.Manager, apiURL, externalMessageTopic, incomingRawMsgTopic string) EventHandler {
 	return &eventsHandler{
 		directory:            directory,
 		settings:             settingsClient,
@@ -58,6 +59,7 @@ func NewEventHandler(directory directory.DirectoryClient, settingsClient setting
 		apiURL:               apiURL,
 		externalMessageTopic: externalMessageTopic,
 		incomingRawMsgTopic:  incomingRawMsgTopic,
+		proxyNumberManager:   proxyNumberManager,
 	}
 }
 
@@ -92,13 +94,19 @@ type twilioEventHandleFunc func(context.Context, *rawmsg.TwilioParams, *eventsHa
 
 func processOutgoingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 
+	originatingPhoneNumber, err := phone.ParseNumber(params.From)
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+
+	proxyPhoneNumber, err := phone.ParseNumber(params.To)
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+
 	// look for an active reservation on the proxy phone number
-	ppnr, err := eh.dal.ActiveProxyPhoneNumberReservation(&dal.ProxyPhoneNumberReservationLookup{
-		ProxyPhoneNumber: ptr.String(params.To),
-	})
-	if errors.Cause(err) == dal.ErrProxyPhoneNumberReservationNotFound {
-		return "", errors.Trace(fmt.Errorf("No active reservation found for %s", params.To))
-	} else if err != nil {
+	ppnr, err := eh.proxyNumberManager.ActiveReservation(originatingPhoneNumber, proxyPhoneNumber)
+	if err != nil {
 		return "", errors.Trace(err)
 	}
 
@@ -121,9 +129,7 @@ func processOutgoingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 		})
 	if err != nil {
 		return "", errors.Trace(err)
-	}
-
-	if len(res.Entities) != 1 {
+	} else if len(res.Entities) != 1 {
 		return "", errors.Trace(fmt.Errorf("Expected 1 entity. Got %d", len(res.Entities)))
 	}
 
@@ -142,55 +148,14 @@ func processOutgoingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 		return "", errors.Trace(fmt.Errorf("Unable to find practice phone number for org %s", orgEntity.ID))
 	}
 
-	// lookup phone number of external entity to call
-	res, err = eh.directory.LookupEntities(
-		context.Background(),
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: ppnr.DestinationEntityID,
-			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 1,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_CONTACTS,
-				},
-			},
-		})
-	if err != nil {
-		return "", errors.Trace(err)
-	} else if len(res.Entities) != 1 {
-		return "", errors.Trace(fmt.Errorf("Expected 1 external entity but got %d", len(res.Entities)))
-	}
-
-	var destinationPhoneNumber string
-	for _, c := range res.Entities[0].Contacts {
-		if c.Provisioned {
-			continue
-		} else if c.ContactType != directory.ContactType_PHONE {
-			continue
-		}
-		destinationPhoneNumber = c.Value
-		break
-	}
-
-	if destinationPhoneNumber == "" {
-		return "", errors.Trace(fmt.Errorf("Unable to find phone number to call for entity %s", ppnr.DestinationEntityID))
-	}
-
-	source, err := phone.ParseNumber(params.From)
-	if err != nil {
-		return "", errors.Trace(err)
-	}
-	destination, err := phone.ParseNumber(destinationPhoneNumber)
-	if err != nil {
+	if err := eh.proxyNumberManager.CallStarted(originatingPhoneNumber, proxyPhoneNumber); err != nil {
 		return "", errors.Trace(err)
 	}
 
 	if err := eh.dal.CreateCallRequest(&models.CallRequest{
-		Source:         source,
-		Destination:    destination,
-		Proxy:          ppnr.PhoneNumber,
+		Source:         originatingPhoneNumber,
+		Destination:    ppnr.DestinationPhoneNumber,
+		Proxy:          proxyPhoneNumber,
 		OrganizationID: ppnr.OrganizationID,
 		CallSID:        params.CallSID,
 		Requested:      eh.clock.Now(),
@@ -198,11 +163,26 @@ func processOutgoingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 		return "", errors.Trace(err)
 	}
 
+	// lookup external entity for name
+	res, err = eh.directory.LookupEntities(
+		context.Background(),
+		&directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: ppnr.DestinationEntityID,
+			},
+		})
+	if err != nil {
+		return "", errors.Trace(err)
+	} else if len(res.Entities) != 1 {
+		return "", errors.Trace(fmt.Errorf("Expected 1 entity. Got %d", len(res.Entities)))
+	}
+
 	var text string
 	if res.Entities[0].Info != nil && res.Entities[0].Info.DisplayName != "" {
 		text = "You will be connected to " + res.Entities[0].Info.DisplayName
 	} else {
-		formattedNumber, err := destination.Format(phone.National)
+		formattedNumber, err := ppnr.DestinationPhoneNumber.Format(phone.National)
 		if err != nil {
 			golog.Errorf(err.Error())
 			text = "You will be connected to the patient"
@@ -222,7 +202,7 @@ func processOutgoingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 				&twiml.Number{
 					StatusCallbackEvent: twiml.SCRinging | twiml.SCAnswered | twiml.SCCompleted,
 					StatusCallback:      fmt.Sprintf("%s/twilio/call/process_outgoing_call_status", eh.apiURL),
-					Text:                destinationPhoneNumber,
+					Text:                ppnr.DestinationPhoneNumber.String(),
 				},
 			},
 		})
@@ -501,6 +481,9 @@ func processOutgoingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 				Type:              excomms.CallEventItem_OUTGOING_ANSWERED,
 				DurationInSeconds: params.CallDuration,
 			},
+		}
+		if err := eh.proxyNumberManager.CallEnded(cr.Source, cr.Proxy); err != nil {
+			return "", errors.Trace(err)
 		}
 	default:
 		// nothing to do

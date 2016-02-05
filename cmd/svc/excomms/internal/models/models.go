@@ -73,38 +73,40 @@ type CallEvent struct {
 	Type        string
 }
 
-type ByLastReservedProxyPhoneNumbers []*ProxyPhoneNumber
+type ByExpiresProxyPhoneNumbers []*ProxyPhoneNumber
 
-func (a ByLastReservedProxyPhoneNumbers) Len() int      { return len(a) }
-func (a ByLastReservedProxyPhoneNumbers) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a ByLastReservedProxyPhoneNumbers) Less(i, j int) bool {
-	if a[i].LastReserved == nil && a[j].LastReserved == nil {
+func (a ByExpiresProxyPhoneNumbers) Len() int      { return len(a) }
+func (a ByExpiresProxyPhoneNumbers) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByExpiresProxyPhoneNumbers) Less(i, j int) bool {
+	if a[i].Expires == nil && a[j].Expires == nil {
 		return false
-	} else if a[i].LastReserved == nil {
+	} else if a[i].Expires == nil {
 		return true
-	} else if a[j].LastReserved == nil {
+	} else if a[j].Expires == nil {
 		return false
 	}
 
-	return a[i].LastReserved.Before(*a[j].LastReserved)
+	return a[i].Expires.Before(*a[j].Expires)
 }
 
 // ProxyPhoneNumber represents a phone number that dials out to a specific
 // phone number when the proxy phone number is dialed.
 type ProxyPhoneNumber struct {
-	PhoneNumber  phone.Number
-	Expires      *time.Time
-	LastReserved *time.Time
+	PhoneNumber phone.Number
+	Expires     *time.Time
 }
 
 // ProxyPhoneNumberReservation represents a particular reservation to dial a specific
 // number.
 type ProxyPhoneNumberReservation struct {
-	PhoneNumber         phone.Number
-	DestinationEntityID string
-	OwnerEntityID       string
-	OrganizationID      string
-	Expires             time.Time
+	ProxyPhoneNumber       phone.Number
+	OriginatingPhoneNumber phone.Number
+	DestinationPhoneNumber phone.Number
+	DestinationEntityID    string
+	OwnerEntityID          string
+	OrganizationID         string
+	Created                time.Time
+	Expires                time.Time
 }
 
 // Media represents an object uploaded to cloud storage.

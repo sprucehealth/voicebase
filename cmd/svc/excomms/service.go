@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/worker"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber"
 	cfg "github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -108,6 +109,8 @@ func runService() {
 	}
 	w.Start()
 
+	proxyNumberManager := proxynumber.NewManager(dl, clock.New())
+
 	excommsService := server.NewService(
 		config.twilioAccountSID,
 		config.twilioAuthToken,
@@ -119,7 +122,8 @@ func runService() {
 		config.externalMessageTopic,
 		clock.New(),
 		server.NewSendgridClient(config.sendgridAPIKey),
-		server.NewIDGenerator())
+		server.NewIDGenerator(),
+		proxyNumberManager)
 	excommsServer := grpc.NewServer()
 	excomms.RegisterExCommsServer(excommsServer, excommsService)
 
