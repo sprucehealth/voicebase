@@ -59,6 +59,11 @@ var updateEntityMutation = &graphql.Field{
 			return nil, internalError(err)
 		}
 
+		entityInfo.DisplayName, err = buildDisplayName(entityInfo, contacts)
+		if err != nil {
+			return nil, internalError(err)
+		}
+
 		resp, err := svc.directory.UpdateEntity(ctx, &directory.UpdateEntityRequest{
 			EntityID:   entID,
 			EntityInfo: entityInfo,

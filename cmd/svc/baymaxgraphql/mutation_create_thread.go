@@ -102,6 +102,12 @@ var createThreadMutation = &graphql.Field{
 		if err != nil {
 			return nil, internalError(err)
 		}
+
+		entityInfo.DisplayName, err = buildDisplayName(entityInfo, contactInfos)
+		if err != nil {
+			return nil, internalError(err)
+		}
+
 		createForContact, err := contactFromInput(input["createForContactInfo"])
 		if err != nil {
 			return nil, internalError(err)
@@ -197,6 +203,7 @@ var createThreadMutation = &graphql.Field{
 					if err != nil {
 						return nil, internalError(err)
 					}
+
 					existingThreads[i] = th
 					// See if there's a thread with a primary entity equal to the one we foudn matching the contact info
 					if matchingEntity != nil && th.PrimaryEntityID == matchingEntity.ID {

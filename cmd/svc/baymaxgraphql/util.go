@@ -165,17 +165,26 @@ func entityInfoFromInput(ei interface{}) (*directory.EntityInfo, error) {
 		Note:          n,
 	}
 
-	var err error
-	entityInfo.DisplayName, err = buildDisplayName(entityInfo)
-	if err != nil {
-		return nil, err
-	}
-
 	return entityInfo, nil
 }
 
-func buildDisplayName(info *directory.EntityInfo) (string, error) {
+func buildDisplayName(info *directory.EntityInfo, contacts []*directory.Contact) (string, error) {
 	var displayName string
+
+	if info.FirstName == "" && info.LastName == "" {
+		// pick the display name to be the first contact value
+		for _, c := range contacts {
+			if c.ContactType == directory.ContactType_PHONE {
+				pn, err := phone.Format(c.Value, phone.Pretty)
+				if err != nil {
+					return c.Value, nil
+				}
+				return pn, nil
+			}
+			return c.Value, nil
+		}
+	}
+
 	if info.FirstName != "" || info.LastName != "" {
 		if info.MiddleInitial != "" {
 			displayName = info.FirstName + " " + info.MiddleInitial + ". " + info.LastName
