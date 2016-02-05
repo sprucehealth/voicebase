@@ -110,6 +110,7 @@ var createThreadMutation = &graphql.Field{
 			entityInfo = &directory.EntityInfo{}
 		}
 
+		var err error
 		entityInfo.DisplayName, err = buildDisplayName(entityInfo, contactInfos)
 		if err != nil {
 			return nil, internalError(err)
