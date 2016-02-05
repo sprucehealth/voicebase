@@ -18,7 +18,7 @@ CREATE TABLE proxy_phone_number_reservation (
 ) CHARACTER SET ascii COLLATE ascii_bin;
 
 -- this table keeps track of the current originating phone number for each entity 
-CREATE TABLE current_originating_phone_number (
+CREATE TABLE originating_phone_number (
 	phone_number VARCHAR(16) NOT NULL,
 	entity_id VARCHAR(64) NOT NULL,
 	PRIMARY KEY(entity_id)
