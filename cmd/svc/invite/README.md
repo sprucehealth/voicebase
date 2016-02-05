@@ -31,3 +31,5 @@ Setup up Terraform
 	$ terraform remote config -backend=s3 -backend-config="bucket=spruce-terraform" -backend-config="encrypt=true" -backend-config="key=invite-dev.tfstate" -backend-config="region=us-east-1"
 	$ cd ../env-staging
 	$ terraform remote config -backend=s3 -backend-config="bucket=spruce-terraform" -backend-config="encrypt=true" -backend-config="key=invite-staging.tfstate" -backend-config="region=us-east-1"
+	$ cd ../end-prod
+	$ terraform remote config -backend=s3 -backend-config="bucket=spruce-infra" -backend-config="encrypt=true" -backend-config="key=invite-prod.tfstate" -backend-config="region=us-east-1"

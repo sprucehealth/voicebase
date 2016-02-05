@@ -19,7 +19,7 @@ var createThreadInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 		"clientMutationId":     newClientMutationIDInputField(),
 		"uuid":                 &graphql.InputObjectFieldConfig{Type: graphql.String},
 		"organizationID":       &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
-		"entityInfo":           &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(entityInfoInputType)},
+		"entityInfo":           &graphql.InputObjectFieldConfig{Type: entityInfoInputType},
 		"createForContactInfo": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(contactInfoInputType)},
 	},
 })
@@ -93,14 +93,21 @@ var createThreadMutation = &graphql.Field{
 		mutationID, _ := input["clientMutationId"].(string)
 		uuid, _ := input["uuid"].(string)
 		orgID := input["organizationID"].(string)
-		entityInfoInput := input["entityInfo"].(map[string]interface{})
-		entityInfo, err := entityInfoFromInput(entityInfoInput)
-		if err != nil {
-			return nil, internalError(err)
-		}
-		contactInfos, err := contactListFromInput(entityInfoInput["contactInfos"].([]interface{}))
-		if err != nil {
-			return nil, internalError(err)
+		var entityInfo *directory.EntityInfo
+		var contactInfos []*directory.Contact
+		if ei, ok := input["entityInfo"].(map[string]interface{}); ok && ei != nil {
+			var err error
+			entityInfoInput := ei
+			entityInfo, err = entityInfoFromInput(entityInfoInput)
+			if err != nil {
+				return nil, internalError(err)
+			}
+			contactInfos, err = contactListFromInput(entityInfoInput["contactInfos"].([]interface{}))
+			if err != nil {
+				return nil, internalError(err)
+			}
+		} else {
+			entityInfo = &directory.EntityInfo{}
 		}
 
 		entityInfo.DisplayName, err = buildDisplayName(entityInfo, contactInfos)
@@ -235,13 +242,19 @@ var createThreadMutation = &graphql.Field{
 		// Sort contactsInfos to put the 'createForContact' at the top as that's the implicit
 		// signifier for primary. This is important when the new entity is created so that the
 		// default channel for sending messages becomes the requested one.
+		hasContact := false
 		for i, c := range contactInfos {
 			if c.ContactType == createForContact.ContactType && c.Value == createForContact.Value {
 				if i != 0 {
 					contactInfos[0], contactInfos[i] = contactInfos[i], contactInfos[0]
 				}
+				hasContact = true
 				break
 			}
+		}
+		// If the contacts list didn't have the contact info for the thread then add it
+		if !hasContact {
+			contactInfos = append([]*directory.Contact{createForContact}, contactInfos...)
 		}
 
 		// Didn't find any existing threads so create a new one, but first we need to create an entity. We
