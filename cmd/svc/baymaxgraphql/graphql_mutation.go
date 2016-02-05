@@ -71,9 +71,10 @@ var entityInfoInputType = graphql.NewInputObject(
 /// createAccount
 
 type createAccountOutput struct {
-	ClientMutationID string   `json:"clientMutationId"`
-	Token            string   `json:"token,omitempty"`
-	Account          *account `json:"account,omitempty"`
+	ClientMutationID    string   `json:"clientMutationId"`
+	Token               string   `json:"token,omitempty"`
+	Account             *account `json:"account,omitempty"`
+	ClientEncryptionKey string   `json:"clientEncryptionKey,omitempty"`
 }
 
 var createAccountInputType = graphql.NewInputObject(
@@ -99,9 +100,10 @@ var createAccountOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "CreateAccountPayload",
 		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
-			"token":            &graphql.Field{Type: graphql.String},
-			"account":          &graphql.Field{Type: accountType},
+			"clientMutationId":    newClientmutationIDOutputField(),
+			"token":               &graphql.Field{Type: graphql.String},
+			"account":             &graphql.Field{Type: accountType},
+			"clientEncryptionKey": &graphql.Field{Type: graphql.String},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*createAccountOutput)
@@ -369,6 +371,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				if err != nil {
 					return nil, internalError(err)
 				}
+
 				req.FirstName = entityInfo.FirstName
 				req.LastName = entityInfo.LastName
 				organizationName, _ := input["organizationName"].(string)
@@ -428,20 +431,24 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					}
 					orgEntityID = res.Entity.ID
 
+					contacts := []*directory.Contact{
+						{
+							ContactType: directory.ContactType_PHONE,
+							Value:       req.PhoneNumber,
+							Provisioned: false,
+						},
+					}
+					entityInfo.DisplayName, err = buildDisplayName(entityInfo, contacts)
+					if err != nil {
+						return nil, internalError(err)
+					}
 					// Create entity
-
 					res, err = svc.directory.CreateEntity(ctx, &directory.CreateEntityRequest{
 						EntityInfo:                entityInfo,
 						Type:                      directory.EntityType_INTERNAL,
 						ExternalID:                accountID,
 						InitialMembershipEntityID: orgEntityID,
-						Contacts: []*directory.Contact{
-							{
-								ContactType: directory.ContactType_PHONE,
-								Value:       req.PhoneNumber,
-								Provisioned: false,
-							},
-						},
+						Contacts:                  contacts,
 					})
 					if err != nil {
 						return nil, internalError(err)
@@ -470,9 +477,10 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				// that likely won't change, but this still isn't a great way to update the context.
 				*ctx.Value(ctxAccount).(*account) = *acc
 				return &createAccountOutput{
-					ClientMutationID: mutationID,
-					Token:            res.Token.Value,
-					Account:          acc,
+					ClientMutationID:    mutationID,
+					Token:               res.Token.Value,
+					Account:             acc,
+					ClientEncryptionKey: res.Token.ClientEncryptionKey,
 				}, nil
 			},
 		},
