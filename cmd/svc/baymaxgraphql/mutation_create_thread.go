@@ -272,6 +272,7 @@ var createThreadMutation = &graphql.Field{
 		if err != nil {
 			return nil, internalError(err)
 		}
+		th.Title = threadTitleForEntity(primaryEnt)
 
 		return &createThreadOutput{
 			ClientMutationID: mutationID,
