@@ -27,7 +27,7 @@ func TestUpdateEntityMutation(t *testing.T) {
 		MiddleInitial: "middleInitial",
 		LastName:      "lastName",
 		GroupName:     "groupName",
-		DisplayName:   "displayName",
+		DisplayName:   "firstName middleInitial. lastName, shortTitle",
 		ShortTitle:    "shortTitle",
 		LongTitle:     "longTitle",
 		Note:          "note",
@@ -62,7 +62,6 @@ func TestUpdateEntityMutation(t *testing.T) {
 					middleInitial: "middleInitial",
 					lastName:      "lastName",
 					groupName:     "groupName",
-					displayName:   "displayName",
 					shortTitle:    "shortTitle",
 					longTitle:     "longTitle",
 					note:          "note",
@@ -112,7 +111,7 @@ func TestUpdateEntityMutation(t *testing.T) {
 						"value": "someone@example.com"
 					}
 				],
-				"displayName": "displayName",
+				"displayName": "firstName middleInitial. lastName, shortTitle",
 				"firstName": "firstName",
 				"groupName": "groupName",
 				"id": "e_1",

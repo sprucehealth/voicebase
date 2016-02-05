@@ -60,7 +60,6 @@ var entityInfoInputType = graphql.NewInputObject(
 			"middleInitial": &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"lastName":      &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"groupName":     &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"displayName":   &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"shortTitle":    &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"longTitle":     &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"note":          &graphql.InputObjectFieldConfig{Type: graphql.String},

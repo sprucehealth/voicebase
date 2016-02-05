@@ -8,6 +8,8 @@ import (
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/directory"
 	"golang.org/x/net/context"
 )
@@ -101,9 +103,25 @@ func contactFromInput(input interface{}) (*directory.Contact, error) {
 	if !ok {
 		return nil, fmt.Errorf("Unknown contact type: %q", t)
 	}
+
+	var formattedValue string
+	var err error
+	switch directory.ContactType(ct) {
+	case directory.ContactType_PHONE:
+		formattedValue, err = phone.Format(v, phone.E164)
+		if err != nil {
+			return nil, err
+		}
+	case directory.ContactType_EMAIL:
+		if !validate.Email(v) {
+			return nil, fmt.Errorf("Invalid email %s", v)
+		}
+		formattedValue = v
+	}
+
 	return &directory.Contact{
 		ID:          id,
-		Value:       v,
+		Value:       formattedValue,
 		ContactType: directory.ContactType(ct),
 		Label:       l,
 	}, nil
@@ -131,37 +149,47 @@ func entityInfoFromInput(ei interface{}) (*directory.EntityInfo, error) {
 	mi, _ := mei["middleInitial"].(string)
 	ln, _ := mei["lastName"].(string)
 	gn, _ := mei["groupName"].(string)
-	dn, _ := mei["displayName"].(string)
 	st, _ := mei["shortTitle"].(string)
 	lt, _ := mei["longTitle"].(string)
 	n, _ := mei["note"].(string)
 
 	// If no display name was provided then build one from our input
-	if dn == "" {
-		if fn != "" || ln != "" {
-			if mi != "" {
-				dn = fn + " " + mi + ". " + ln
-			} else {
-				dn = fn + " " + ln
-			}
-			if st != "" {
-				dn += ", " + st
-			}
-		} else if gn != "" {
-			dn = gn
-		} else {
-			return nil, errors.New("Display name cannot be empty and not enough information was supplied to infer one")
-		}
-	}
+
 	entityInfo := &directory.EntityInfo{
 		FirstName:     fn,
 		MiddleInitial: mi,
 		LastName:      ln,
 		GroupName:     gn,
-		DisplayName:   dn,
 		ShortTitle:    st,
 		LongTitle:     lt,
 		Note:          n,
 	}
+
+	var err error
+	entityInfo.DisplayName, err = buildDisplayName(entityInfo)
+	if err != nil {
+		return nil, err
+	}
+
 	return entityInfo, nil
+}
+
+func buildDisplayName(info *directory.EntityInfo) (string, error) {
+	var displayName string
+	if info.FirstName != "" || info.LastName != "" {
+		if info.MiddleInitial != "" {
+			displayName = info.FirstName + " " + info.MiddleInitial + ". " + info.LastName
+		} else {
+			displayName = info.FirstName + " " + info.LastName
+		}
+		if info.ShortTitle != "" {
+			displayName += ", " + info.ShortTitle
+		}
+	} else if info.GroupName != "" {
+		displayName = info.GroupName
+	} else {
+		return "", errors.New("Display name cannot be empty and not enough information was supplied to infer one")
+	}
+
+	return displayName, nil
 }
