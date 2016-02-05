@@ -48,6 +48,7 @@ type popover struct {
 type organizationInvite struct {
 	Popover popover `json:"popover"`
 	OrgID   string  `json:"org_id"`
+	OrgName string  `json:"org_name"`
 }
 
 type colleagueInviteClientData struct {
@@ -179,7 +180,8 @@ func (s *server) InviteColleagues(ctx context.Context, in *invite.InviteColleagu
 				Message:    inviter.Info.DisplayName + " has invited you to join them on Spruce.",
 				ButtonText: "Get Started",
 			},
-			OrgID: org.ID,
+			OrgID:   org.ID,
+			OrgName: org.Info.DisplayName,
 		},
 	})
 	if err != nil {
@@ -196,8 +198,8 @@ func (s *server) InviteColleagues(ctx context.Context, in *invite.InviteColleagu
 				return nil, errors.Trace(err)
 			}
 			inviteURL, err = s.branch.URL(map[string]interface{}{
-				"token":       token,
-				"client_data": inviteClientDataStr,
+				"invite_token": token,
+				"client_data":  inviteClientDataStr,
 			})
 			if err != nil {
 				golog.Errorf("Failed to generate branch URL: %s", err)

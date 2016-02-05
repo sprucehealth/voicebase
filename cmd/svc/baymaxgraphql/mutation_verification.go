@@ -1,20 +1,45 @@
 package main
 
 import (
-	"errors"
 	"fmt"
-
-	"google.golang.org/grpc"
+	"runtime/debug"
 
 	"github.com/graphql-go/graphql"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/backend/svc/invite"
+	"google.golang.org/grpc"
 )
 
 // verifyPhoneNumber
 
+const (
+	verifyPhoneNumberResultSuccess             = "SUCCESS"
+	verifyPhoneNumberResultInvitePhoneMismatch = "INVITE_PHONE_MISMATCH"
+)
+
+var verifyPhoneNumberResultType = graphql.NewEnum(
+	graphql.EnumConfig{
+		Name:        "VerifyPhoneNumberResult",
+		Description: "Result of verifyPhoneNumber mutation",
+		Values: graphql.EnumValueConfigMap{
+			verifyPhoneNumberResultSuccess: &graphql.EnumValueConfig{
+				Value:       verifyPhoneNumberResultSuccess,
+				Description: "Success",
+			},
+			verifyPhoneNumberResultInvitePhoneMismatch: &graphql.EnumValueConfig{
+				Value:       verifyPhoneNumberResultInvitePhoneMismatch,
+				Description: "Phone number from invite does not match",
+			},
+		},
+	},
+)
+
 type verifyPhoneNumberOutput struct {
 	ClientMutationID string `json:"clientMutationId"`
+	Result           string `json:"result"`
 	Token            string `json:"token"`
 	Message          string `json:"message"`
 }
@@ -38,7 +63,8 @@ var verifyPhoneNumberOutputType = graphql.NewObject(
 		Name: "VerifyPhoneNumberPayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
-			"token":            &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"result":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"token":            &graphql.Field{Type: graphql.String},
 			"message":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
@@ -53,42 +79,82 @@ var verifyPhoneNumberMutation = &graphql.Field{
 	Args: graphql.FieldConfigArgument{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(verifyPhoneNumberInputType)},
 	},
-	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+	Resolve: makeVerifyPhoneNumberResolve(false),
+}
+
+var verifyPhoneNumberForAccountCreationMutation = &graphql.Field{
+	Type: graphql.NewNonNull(verifyPhoneNumberOutputType),
+	Args: graphql.FieldConfigArgument{
+		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(verifyPhoneNumberInputType)},
+	},
+	Resolve: makeVerifyPhoneNumberResolve(true),
+}
+
+func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.ResolveParams) (interface{}, error) {
+	return func(p graphql.ResolveParams) (interface{}, error) {
+		defer func() {
+			if recover() != nil {
+				debug.PrintStack()
+			}
+		}()
+
 		svc := serviceFromParams(p)
 		ctx := p.Context
 
 		input := p.Args["input"].(map[string]interface{})
 		mutationID, _ := input["clientMutationId"].(string)
-		pn, _ := input["phoneNumber"].(string)
+		pn, err := phone.ParseNumber(input["phoneNumber"].(string))
+		if err != nil {
+			return nil, errors.New("Phone number is invalid")
+		}
 
-		token, err := svc.createAndSendSMSVerificationCode(ctx, auth.VerificationCodeType_PHONE, pn, pn)
+		// Provided phone number must match what was provided during invite if here through invite
+		if forAccountCreation {
+			inv, err := svc.inviteInfo(ctx)
+			if err != nil {
+				return nil, internalError(err)
+			}
+			if inv != nil {
+				switch inv.Type {
+				case invite.LookupInviteResponse_COLLEAGUE:
+					col := inv.GetColleague().Colleague
+					if col.PhoneNumber != pn.String() {
+						return &verifyPhoneNumberOutput{
+							ClientMutationID: mutationID,
+							Result:           verifyPhoneNumberResultInvitePhoneMismatch,
+							Message:          "The phone number did not match.",
+						}, nil
+					}
+				default:
+					golog.Errorf("Unknown invite type %s", inv.Type.String())
+				}
+			}
+		}
+
+		token, err := svc.createAndSendSMSVerificationCode(ctx, auth.VerificationCodeType_PHONE, pn.String(), pn)
 		if err != nil {
 			return nil, internalError(err)
 		}
 
-		last4Phone := pn
-		if len(last4Phone) > 4 {
-			last4Phone = last4Phone[len(last4Phone)-4:]
+		nicePhone, err := pn.Format(phone.Pretty)
+		if err != nil {
+			return nil, internalError(err)
 		}
 		return &verifyPhoneNumberOutput{
 			ClientMutationID: mutationID,
+			Result:           verifyPhoneNumberResultSuccess,
 			Token:            token,
-			Message:          fmt.Sprintf("A verification code has been sent to %s", pn),
+			Message:          fmt.Sprintf("A verification code has been sent to %s", nicePhone),
 		}, nil
-	},
+	}
 }
-
-// verifyPhoneNumberForAccountCreation
-
-var verifyPhoneNumberForAccountCreationMutation = verifyPhoneNumberMutation
 
 // checkVerificationCode
 
 const (
-	checkVerificationCodeResultSuccess      = "SUCCESS"
-	checkVerificationCodeResultFailure      = "VERIFICATION_FAILED"
-	checkVerificationCodeResultExpired      = "CODE_EXPIRED"
-	checkVerificationCodeResultDoesNotMatch = "DOES_NOT_MATCH"
+	checkVerificationCodeResultSuccess = "SUCCESS"
+	checkVerificationCodeResultFailure = "VERIFICATION_FAILED"
+	checkVerificationCodeResultExpired = "CODE_EXPIRED"
 )
 
 type checkVerificationCodeOutput struct {
@@ -113,10 +179,6 @@ var checkVerificationCodeResultType = graphql.NewEnum(
 			checkVerificationCodeResultFailure: &graphql.EnumValueConfig{
 				Value:       checkVerificationCodeResultFailure,
 				Description: "Code verification failed",
-			},
-			checkVerificationCodeResultDoesNotMatch: &graphql.EnumValueConfig{
-				Value:       checkVerificationCodeResultDoesNotMatch,
-				Description: "Phone number does not match",
 			},
 		},
 	},

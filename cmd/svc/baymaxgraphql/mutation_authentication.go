@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"github.com/sprucehealth/backend/libs/phone"
 	"time"
 
 	"github.com/graphql-go/graphql"
@@ -132,7 +133,12 @@ var authenticateMutation = &graphql.Field{
 		authResult := authenticateResultSuccess
 		if res.TwoFactorRequired {
 			authResult = authenticateResultSuccess2FARequired
-			token, err = svc.createAndSendSMSVerificationCode(ctx, auth.VerificationCodeType_ACCOUNT_2FA, res.Account.ID, res.TwoFactorPhoneNumber)
+			twoFactorPhoneNumber, err := phone.ParseNumber(res.TwoFactorPhoneNumber)
+			if err != nil {
+				// Shouldn't fail
+				return nil, internalError(err)
+			}
+			token, err = svc.createAndSendSMSVerificationCode(ctx, auth.VerificationCodeType_ACCOUNT_2FA, res.Account.ID, twoFactorPhoneNumber)
 			if err != nil {
 				return nil, internalError(err)
 			}

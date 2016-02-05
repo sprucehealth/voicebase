@@ -3,10 +3,10 @@ package main
 import (
 	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/invite"
 )
-
-// inviteColleagues
 
 type inviteColleaguesOutput struct {
 	ClientMutationID string `json:"clientMutationId"`
@@ -61,10 +61,19 @@ var inviteColleaguesMutation = &graphql.Field{
 		colleagues := make([]*invite.Colleague, len(colleaguesInput))
 		for i, c := range colleaguesInput {
 			m := c.(map[string]interface{})
-			colleagues[i] = &invite.Colleague{
+			col := &invite.Colleague{
 				Email:       m["email"].(string),
 				PhoneNumber: m["phoneNumber"].(string),
 			}
+			if !validate.Email(col.Email) {
+				return nil, errors.New("Email is invalid")
+			}
+			var err error
+			col.PhoneNumber, err = phone.Format(col.PhoneNumber, phone.E164)
+			if err != nil {
+				return nil, err
+			}
+			colleagues[i] = col
 		}
 
 		ent, err := svc.entityForAccountID(ctx, orgID, acc.ID)

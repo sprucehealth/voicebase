@@ -154,13 +154,11 @@ func (s *service) entityDomain(ctx context.Context, entityID, domain string) (st
 	return res.EntityID, res.Domain, errors.Trace(err)
 }
 
-// createAndSendSMSVerificationCode creates a verification code and asynchronously sends it via SMS to the provided number. The token associated with the code is returned
-func (s *service) createAndSendSMSVerificationCode(ctx context.Context, codeType auth.VerificationCodeType, valueToVerify, pn string) (string, error) {
+// createAndSendSMSVerificationCode creates a verification code and asynchronously sends it via
+// SMS to the provided number. The token associated with the code is returned. The phone number
+// is expected to already be E164 format.
+func (s *service) createAndSendSMSVerificationCode(ctx context.Context, codeType auth.VerificationCodeType, valueToVerify string, pn phone.Number) (string, error) {
 	golog.Debugf("Creating and sending verification code of type %s to %s", auth.VerificationCodeType_name[int32(codeType)], pn)
-	phoneNumber, err := phone.ParseNumber(pn)
-	if err != nil {
-		return "", errors.Trace(err)
-	}
 
 	resp, err := s.auth.CreateVerificationCode(ctx, &auth.CreateVerificationCodeRequest{
 		Type:          codeType,
@@ -178,12 +176,52 @@ func (s *service) createAndSendSMSVerificationCode(ctx context.Context, codeType
 				SMS: &excomms.SMSMessage{
 					Text:            fmt.Sprintf("Your Spruce verification code is %s", resp.VerificationCode.Code),
 					FromPhoneNumber: s.serviceNumber.String(),
-					ToPhoneNumber:   phoneNumber.String(),
+					ToPhoneNumber:   pn.String(),
 				},
 			},
 		}); err != nil {
-			golog.Errorf("Error while sending phone number verification message for %s: %s", phoneNumber, err)
+			golog.Errorf("Error while sending phone number verification message for %s: %s", pn, err)
 		}
 	})
 	return resp.VerificationCode.Token, nil
+}
+
+func (s *service) inviteInfo(ctx context.Context) (*invite.LookupInviteResponse, error) {
+	sh := spruceHeadersFromContext(ctx)
+	if sh == nil || sh.DeviceID == "" {
+		return nil, nil
+	}
+
+	res, err := s.invite.AttributionData(ctx, &invite.AttributionDataRequest{
+		DeviceID: sh.DeviceID,
+	})
+	if err != nil {
+		if grpc.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+		return nil, errors.Trace(err)
+	}
+
+	var inviteToken string
+	for _, v := range res.Values {
+		if v.Key == "invite_token" {
+			inviteToken = v.Value
+			break
+		}
+	}
+	if inviteToken == "" {
+		return nil, nil
+	}
+
+	ires, err := s.invite.LookupInvite(ctx, &invite.LookupInviteRequest{
+		Token: inviteToken,
+	})
+	if err != nil {
+		if grpc.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+		return nil, errors.Trace(err)
+	}
+
+	return ires, nil
 }

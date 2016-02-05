@@ -70,7 +70,7 @@ func TestInviteColleague(t *testing.T) {
 		},
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
-			{ID: "org", Type: directory.EntityType_ORGANIZATION, Info: &directory.EntityInfo{DisplayName: "Org"}},
+			{ID: "org", Type: directory.EntityType_ORGANIZATION, Info: &directory.EntityInfo{DisplayName: "Orgo"}},
 		},
 	}, nil))
 
@@ -91,8 +91,8 @@ func TestInviteColleague(t *testing.T) {
 
 	// Generate branch URL
 	clientData := map[string]interface{}{
-		"token":       "thetoken",
-		"client_data": `{"organization_invite":{"popover":{"title":"Welcome to Spruce!","message":"Inviter has invited you to join them on Spruce.","button_text":"Get Started"},"org_id":"org"}}`,
+		"invite_token": "thetoken",
+		"client_data":  `{"organization_invite":{"popover":{"title":"Welcome to Spruce!","message":"Inviter has invited you to join them on Spruce.","button_text":"Get Started"},"org_id":"org","org_name":"Orgo"}}`,
 	}
 	branch.Expect(mock.NewExpectation(branch.URL, clientData).WithReturns("https://example.com/invite", nil))
 
@@ -111,10 +111,10 @@ func TestInviteColleague(t *testing.T) {
 	// Send invite email
 	sg.Expect(mock.NewExpectation(sg.Send, &sendgrid.SGMail{
 		To:      []string{"someone@example.com"},
-		Subject: fmt.Sprintf("Invite to join %s", "Org"),
+		Subject: fmt.Sprintf("Invite to join %s", "Orgo"),
 		Text: fmt.Sprintf(
 			"I would like you to join my organization %s\n%s\n\nBest,\n%s",
-			"Org", "https://example.com/invite", "Inviter"),
+			"Orgo", "https://example.com/invite", "Inviter"),
 		From:     "from@example.com",
 		FromName: "Inviter",
 		SMTPAPIHeader: smtpapi.SMTPAPIHeader{

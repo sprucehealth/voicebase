@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/sprucehealth/backend/libs/phone"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -239,7 +240,12 @@ var verifyPhoneNumberForPasswordResetMutation = &graphql.Field{
 			return nil, internalError(err)
 		}
 
-		token, err := svc.createAndSendSMSVerificationCode(ctx, auth.VerificationCodeType_PASSWORD_RESET, resp.AccountID, resp.AccountPhoneNumber)
+		accountPhoneNumber, err := phone.ParseNumber(resp.AccountPhoneNumber)
+		if err != nil {
+			// Shouldn't fail
+			return nil, internalError(err)
+		}
+		token, err := svc.createAndSendSMSVerificationCode(ctx, auth.VerificationCodeType_PASSWORD_RESET, resp.AccountID, accountPhoneNumber)
 		if err != nil {
 			return nil, internalError(err)
 		}
