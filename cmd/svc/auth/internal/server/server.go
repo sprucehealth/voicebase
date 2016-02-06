@@ -1,7 +1,7 @@
 package server
 
 import (
-	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"fmt"
 	"sort"
@@ -46,7 +46,7 @@ var bCryptHashCost = 10
 
 // New returns an initialized instance of server
 func New(dl dal.DAL, settings settings.SettingsClient, clientEncryptionKeySecret string) (auth.AuthServer, error) {
-	clientEncryptionKeySigner, err := sig.NewSigner([][]byte{[]byte(clientEncryptionKeySecret)}, sha256.New)
+	clientEncryptionKeySigner, err := sig.NewSigner([][]byte{[]byte(clientEncryptionKeySecret)}, sha512.New)
 	if err != nil {
 		return nil, errors.Trace(fmt.Errorf("auth: Failed to initialize client encryption key signer: %s", err))
 	}

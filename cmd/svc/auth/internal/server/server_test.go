@@ -1,7 +1,7 @@
 package server
 
 import (
-	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"strings"
 	"testing"
@@ -222,7 +222,7 @@ func TestAuthenticateLoginWithCode(t *testing.T) {
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
 	var expires uint64
-	signer, err := sig.NewSigner([][]byte{[]byte(clientEncryptionSecret)}, sha256.New)
+	signer, err := sig.NewSigner([][]byte{[]byte(clientEncryptionSecret)}, sha512.New)
 	test.OK(t, err)
 	dl.Expect(mock.NewExpectation(dl.VerificationCode, token).WithReturns(&dal.VerificationCode{
 		Token:            token,
@@ -399,7 +399,7 @@ func TestCheckAuthentication(t *testing.T) {
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
 	expires := mClock.Now().Add(defaultTokenExpiration)
-	signer, err := sig.NewSigner([][]byte{[]byte(clientEncryptionSecret)}, sha256.New)
+	signer, err := sig.NewSigner([][]byte{[]byte(clientEncryptionSecret)}, sha512.New)
 	test.OK(t, err)
 	dl.Expect(mock.NewExpectation(dl.AuthToken, token+":tokenattribute", mClock.Now()).WithReturns(&dal.AuthToken{
 		Token:     []byte(token + ":tokenattribute"),
@@ -593,7 +593,7 @@ func TestCheckAuthenticationRefresh(t *testing.T) {
 	tokenAttributes := map[string]string{"token": "attribute"}
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
-	signer, err := sig.NewSigner([][]byte{[]byte(clientEncryptionSecret)}, sha256.New)
+	signer, err := sig.NewSigner([][]byte{[]byte(clientEncryptionSecret)}, sha512.New)
 	test.OK(t, err)
 	expires := mClock.Now().Add(defaultTokenExpiration)
 	var refreshedExpiration time.Time
@@ -691,7 +691,7 @@ func TestCreateAccount(t *testing.T) {
 	test.OK(t, err)
 	aPID1, err := dal.NewAccountPhoneID()
 	test.OK(t, err)
-	signer, err := sig.NewSigner([][]byte{[]byte(clientEncryptionSecret)}, sha256.New)
+	signer, err := sig.NewSigner([][]byte{[]byte(clientEncryptionSecret)}, sha512.New)
 	test.OK(t, err)
 	dl.Expect(mock.NewExpectationFn(dl.InsertAccount, func(p ...interface{}) {
 		test.Equals(t, 1, len(p))
