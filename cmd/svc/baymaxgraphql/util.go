@@ -21,6 +21,12 @@ const (
 	ctxSpruceHeaders ctxKey = 1
 )
 
+type errInvalidContactFormat string
+
+func (e errInvalidContactFormat) Error() string {
+	return string(e)
+}
+
 func ctxWithSpruceHeaders(ctx context.Context, sh *apiservice.SpruceHeaders) context.Context {
 	return context.WithValue(ctx, ctxSpruceHeaders, sh)
 }
@@ -110,11 +116,11 @@ func contactFromInput(input interface{}) (*directory.Contact, error) {
 	case directory.ContactType_PHONE:
 		formattedValue, err = phone.Format(v, phone.E164)
 		if err != nil {
-			return nil, err
+			return nil, errInvalidContactFormat(err.Error())
 		}
 	case directory.ContactType_EMAIL:
 		if !validate.Email(v) {
-			return nil, fmt.Errorf("Invalid email %s", v)
+			return nil, errInvalidContactFormat("Invalid email " + v)
 		}
 		formattedValue = v
 	}
@@ -127,14 +133,16 @@ func contactFromInput(input interface{}) (*directory.Contact, error) {
 	}, nil
 }
 
-func contactListFromInput(input []interface{}) ([]*directory.Contact, error) {
-	contacts := make([]*directory.Contact, len(input))
-	for i, ci := range input {
+func contactListFromInput(input []interface{}, ignoreInvalid bool) ([]*directory.Contact, error) {
+	contacts := make([]*directory.Contact, 0, len(input))
+	for _, ci := range input {
 		c, err := contactFromInput(ci)
-		if err != nil {
+		if _, ok := errors.Cause(err).(errInvalidContactFormat); ok && ignoreInvalid {
+			continue
+		} else if err != nil {
 			return nil, err
 		}
-		contacts[i] = c
+		contacts = append(contacts, c)
 	}
 	return contacts, nil
 }
@@ -169,23 +177,8 @@ func entityInfoFromInput(ei interface{}) (*directory.EntityInfo, error) {
 }
 
 func buildDisplayName(info *directory.EntityInfo, contacts []*directory.Contact) (string, error) {
-	var displayName string
-
-	if info.FirstName == "" && info.LastName == "" {
-		// pick the display name to be the first contact value
-		for _, c := range contacts {
-			if c.ContactType == directory.ContactType_PHONE {
-				pn, err := phone.Format(c.Value, phone.Pretty)
-				if err != nil {
-					return c.Value, nil
-				}
-				return pn, nil
-			}
-			return c.Value, nil
-		}
-	}
-
 	if info.FirstName != "" || info.LastName != "" {
+		var displayName string
 		if info.MiddleInitial != "" {
 			displayName = info.FirstName + " " + info.MiddleInitial + ". " + info.LastName
 		} else {
@@ -194,11 +187,22 @@ func buildDisplayName(info *directory.EntityInfo, contacts []*directory.Contact)
 		if info.ShortTitle != "" {
 			displayName += ", " + info.ShortTitle
 		}
+		return displayName, nil
 	} else if info.GroupName != "" {
-		displayName = info.GroupName
-	} else {
-		return "", errors.New("Display name cannot be empty and not enough information was supplied to infer one")
+		return info.GroupName, nil
 	}
 
-	return displayName, nil
+	// pick the display name to be the first contact value
+	for _, c := range contacts {
+		if c.ContactType == directory.ContactType_PHONE {
+			pn, err := phone.Format(c.Value, phone.Pretty)
+			if err != nil {
+				return c.Value, nil
+			}
+			return pn, nil
+		}
+		return c.Value, nil
+	}
+
+	return "", errors.New("Display name cannot be empty and not enough information was supplied to infer one")
 }

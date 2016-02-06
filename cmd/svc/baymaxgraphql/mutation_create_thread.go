@@ -102,7 +102,7 @@ var createThreadMutation = &graphql.Field{
 			if err != nil {
 				return nil, internalError(err)
 			}
-			contactInfos, err = contactListFromInput(entityInfoInput["contactInfos"].([]interface{}))
+			contactInfos, err = contactListFromInput(entityInfoInput["contactInfos"].([]interface{}), true)
 			if err != nil {
 				return nil, internalError(err)
 			}

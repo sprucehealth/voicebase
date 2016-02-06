@@ -49,7 +49,7 @@ var updateContactInfosMutation = &graphql.Field{
 		contactInfos, _ := input["contactInfos"].([]interface{})
 		entID := input["entityID"].(string)
 
-		contacts, err := contactListFromInput(contactInfos)
+		contacts, err := contactListFromInput(contactInfos, false)
 		if err != nil {
 			return nil, internalError(err)
 		}

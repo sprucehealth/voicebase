@@ -54,7 +54,7 @@ var updateEntityMutation = &graphql.Field{
 			return nil, internalError(err)
 		}
 		contactFields, _ := entityInfoInput["contactInfos"].([]interface{})
-		contacts, err := contactListFromInput(contactFields)
+		contacts, err := contactListFromInput(contactFields, false)
 		if err != nil {
 			return nil, internalError(err)
 		}

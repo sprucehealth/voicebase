@@ -231,7 +231,7 @@ var modifySettingMutation = &graphql.Field{
 
 			items, _ := value["items"].([]interface{})
 			if len(items) != 1 {
-				return nil, fmt.Errorf("Expected 1 item for a single select for config %s.%s but got %d", len(items))
+				return nil, fmt.Errorf("Expected 1 item for a single select for config %s.%s but got %d", key, subkey, len(items))
 			}
 			id, _ := items[0].(map[string]interface{})["id"].(string)
 			text, _ := items[0].(map[string]interface{})["text"].(string)

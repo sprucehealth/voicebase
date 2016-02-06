@@ -125,6 +125,7 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 					contactInfos:  [
 						{type: PHONE, value: "+14155555555", label: "Phone"},
 						{type: EMAIL, value: "someone@example.com", label: "Email"},
+						{type: PHONE, value: "1", label: "Invalid"}
 					],
 				},
 				createForContactInfo: {type: EMAIL, value: "someone@example.com"},
