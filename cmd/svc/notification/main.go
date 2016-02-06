@@ -40,6 +40,7 @@ var config struct {
 	awsRegion                         string
 	directoryServiceAddress           string
 	settingsServiceAddress            string
+	webDomain                         string
 }
 
 func init() {
@@ -61,6 +62,7 @@ func init() {
 	flag.StringVar(&config.awsRegion, "aws_region", "us-east-1", "aws region")
 	flag.StringVar(&config.directoryServiceAddress, "directory_addr", "", "host:port of directory service")
 	flag.StringVar(&config.settingsServiceAddress, "settings_addr", "", "host:port of settings service")
+	flag.StringVar(&config.webDomain, "web_domain", "", "the baymax web domain")
 }
 
 func main() {
@@ -90,6 +92,9 @@ func main() {
 		AWSAccessKey: config.awsAccessKey,
 	}
 
+	if config.webDomain == "" {
+		golog.Fatalf("Web domain not configured")
+	}
 	if config.directoryServiceAddress == "" {
 		golog.Fatalf("Directory service not configured")
 	}
@@ -127,8 +132,9 @@ func main() {
 			NotificationSQSURL:              config.sqsNotificationURL,
 			AppleDeviceRegistrationSNSARN:   config.snsAppleDeviceRegistrationTopic,
 			AndriodDeviceRegistrationSNSARN: config.snsAndroidDeviceRegistrationTopic,
-			SQSAPI: sqs.New(baseConfig.AWSSession()),
-			SNSAPI: sns.New(baseConfig.AWSSession()),
+			SQSAPI:    sqs.New(baseConfig.AWSSession()),
+			SNSAPI:    sns.New(baseConfig.AWSSession()),
+			WebDomain: config.webDomain,
 		})
 	svc.Start()
 

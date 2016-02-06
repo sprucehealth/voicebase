@@ -182,7 +182,7 @@ func (s *service) createAndSendPasswordResetEmail(ctx context.Context, email str
 		return errors.Trace(err)
 	}
 
-	body := fmt.Sprintf("Your password reset link is: %s", passwordResetURL(resp.Token))
+	body := fmt.Sprintf("Your password reset link is: %s", passwordResetURL(s.webDomain, resp.Token))
 	golog.Debugf("Sending password reset email %q to %s", body, email)
 	if _, err := s.exComms.SendMessage(context.TODO(), &excomms.SendMessageRequest{
 		Channel: excomms.ChannelType_EMAIL,
@@ -339,6 +339,6 @@ var passwordResetMutation = &graphql.Field{
 	},
 }
 
-func passwordResetURL(passwordResetToken string) string {
-	return fmt.Sprintf("https://baymax.com/account/passwordReset/%s", passwordResetToken)
+func passwordResetURL(webDomain, passwordResetToken string) string {
+	return fmt.Sprintf("https://%s/account/passwordReset/%s", webDomain, passwordResetToken)
 }

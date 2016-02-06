@@ -287,8 +287,9 @@ func TestProcessNotification(t *testing.T) {
 		NotificationSQSURL:              notificationSQSURL,
 		AppleDeviceRegistrationSNSARN:   appleDeviceRegistrationSNSARN,
 		AndriodDeviceRegistrationSNSARN: andriodDeviceRegistrationSNSARN,
-		SNSAPI: snsAPI,
-		SQSAPI: sqsAPI,
+		SNSAPI:    snsAPI,
+		SQSAPI:    sqsAPI,
+		WebDomain: "testDomain",
 	})
 	cSvc := svc.(*service)
 
@@ -296,6 +297,8 @@ func TestProcessNotification(t *testing.T) {
 		ShortMessage:     "ShortMessage",
 		ThreadID:         "ThreadID",
 		OrganizationID:   "OrganizationID",
+		MessageID:        "ItemID",
+		SavedQueryID:     "SavedQueryID",
 		EntitiesToNotify: []string{"entity:1", "entity:2"},
 	})
 	test.OK(t, err)
@@ -320,16 +323,22 @@ func TestProcessNotification(t *testing.T) {
 	iData, err := json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
 			Alert: "ShortMessage",
-			URL:   threadActivityURL("OrganizationID", "ThreadID"),
+			URL:   threadActivityURL("testDomain", "OrganizationID", "SavedQueryID", "ThreadID", "ItemID"),
 		},
-		ThreadID: "ThreadID",
+		ThreadID:       "ThreadID",
+		OrganizationID: "OrganizationID",
+		MessageID:      "ItemID",
+		SavedQueryID:   "SavedQueryID",
 	})
 	test.OK(t, err)
 	aData, err := json.Marshal(&androidPushNotification{
 		PushData: &androidPushData{
-			Message:  "ShortMessage",
-			URL:      threadActivityURL("OrganizationID", "ThreadID"),
-			ThreadID: "ThreadID",
+			Message:        "ShortMessage",
+			URL:            threadActivityURL("testDomain", "OrganizationID", "SavedQueryID", "ThreadID", "ItemID"),
+			ThreadID:       "ThreadID",
+			OrganizationID: "OrganizationID",
+			MessageID:      "ItemID",
+			SavedQueryID:   "SavedQueryID",
 		},
 	})
 	test.OK(t, err)

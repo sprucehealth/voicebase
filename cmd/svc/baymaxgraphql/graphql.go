@@ -88,6 +88,7 @@ func NewGraphQL(
 	invite invite.InviteClient,
 	mediaSigner *media.Signer,
 	emailDomain string,
+	webDomain string,
 	serviceNumber phone.Number,
 ) httputil.ContextHandler {
 	return &graphQLHandler{
@@ -99,6 +100,7 @@ func NewGraphQL(
 			notification:  notificationClient,
 			mediaSigner:   mediaSigner,
 			emailDomain:   emailDomain,
+			webDomain:     webDomain,
 			serviceNumber: serviceNumber,
 			settings:      settings,
 			invite:        invite,

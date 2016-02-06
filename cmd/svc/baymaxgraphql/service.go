@@ -30,6 +30,7 @@ type service struct {
 	invite       invite.InviteClient
 	mediaSigner  *media.Signer
 	emailDomain  string
+	webDomain    string
 	// TODO: Remove this
 	serviceNumber phone.Number
 }

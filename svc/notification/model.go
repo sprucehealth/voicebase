@@ -15,7 +15,9 @@ type DeviceRegistrationInfo struct {
 // Notification represents the information to be transformed into a notification
 type Notification struct {
 	ShortMessage     string   `json:"short_message"`
-	ThreadID         string   `json:"thread_id"`
 	OrganizationID   string   `json:"organization_id"`
+	SavedQueryID     string   `json:"saved_query_id"`
+	ThreadID         string   `json:"thread_id"`
+	MessageID        string   `json:"message_id"`
 	EntitiesToNotify []string `json:"entities_to_notify"`
 }

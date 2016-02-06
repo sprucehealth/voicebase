@@ -30,6 +30,7 @@ type Config struct {
 	AndriodDeviceRegistrationSNSARN string
 	SNSAPI                          snsiface.SNSAPI
 	SQSAPI                          sqsiface.SQSAPI
+	WebDomain                       string
 }
 
 // Service defines the interface that the notification service provides
@@ -199,7 +200,7 @@ func (s *service) sendPushNotificationToExternalGroupID(externalGroupID string, 
 		var snsNote *snsNotification
 		switch pushConfig.Platform {
 		case "iOS", "android":
-			snsNote = generateNotification(n, pushConfig)
+			snsNote = generateNotification(s.config.WebDomain, n, pushConfig)
 		default:
 			return errors.Trace(fmt.Errorf("Cannot send push notification to unknown platform %q for push notifications", pushConfig.Platform))
 		}
@@ -223,7 +224,6 @@ func (s *service) sendPushNotificationToExternalGroupID(externalGroupID string, 
 
 func accountIDsFromExternalIDs(eIDs []*directory.ExternalID) []string {
 	var accountIDs []string
-	// TODO: Fix this ID parsing once we move to the new format and stop prefixing from graphql
 	for _, eID := range eIDs {
 		i := strings.IndexByte(eID.ID, '_')
 		if i != -1 {
@@ -246,8 +246,11 @@ type snsNotification struct {
 }
 
 type iOSPushNotification struct {
-	PushData *iOSPushData `json:"aps"`
-	ThreadID string       `json:"thread_id"`
+	PushData       *iOSPushData `json:"aps"`
+	OrganizationID string       `json:"organization_id"`
+	SavedQueryID   string       `json:"saved_query_id"`
+	ThreadID       string       `json:"thread_id"`
+	MessageID      string       `json:"message_id"`
 }
 
 type iOSPushData struct {
@@ -260,28 +263,37 @@ type androidPushNotification struct {
 }
 
 type androidPushData struct {
-	Message  string `json:"message"`
-	URL      string `json:"url"`
-	ThreadID string `json:"thread_id"`
+	Message        string `json:"message"`
+	URL            string `json:"url"`
+	OrganizationID string `json:"organization_id"`
+	SavedQueryID   string `json:"saved_query_id"`
+	ThreadID       string `json:"thread_id"`
+	MessageID      string `json:"message_id"`
 }
 
-func generateNotification(n *notification.Notification, pushConfig *dal.PushConfig) *snsNotification {
-	url := threadActivityURL(n.OrganizationID, n.ThreadID)
+func generateNotification(webDomain string, n *notification.Notification, pushConfig *dal.PushConfig) *snsNotification {
+	url := threadActivityURL(webDomain, n.OrganizationID, n.SavedQueryID, n.ThreadID, n.MessageID)
 	isNotifData, err := json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
 			Alert: n.ShortMessage,
 			URL:   url,
 		},
-		ThreadID: n.ThreadID,
+		OrganizationID: n.OrganizationID,
+		SavedQueryID:   n.SavedQueryID,
+		ThreadID:       n.ThreadID,
+		MessageID:      n.MessageID,
 	})
 	if err != nil {
 		golog.Errorf("Error while serializing ios notification data: %s", err)
 	}
 	androidNotifData, err := json.Marshal(&androidPushNotification{
 		PushData: &androidPushData{
-			Message:  n.ShortMessage,
-			URL:      url,
-			ThreadID: n.ThreadID,
+			Message:        n.ShortMessage,
+			URL:            url,
+			OrganizationID: n.OrganizationID,
+			SavedQueryID:   n.SavedQueryID,
+			ThreadID:       n.ThreadID,
+			MessageID:      n.MessageID,
 		},
 	})
 	if err != nil {
@@ -296,7 +308,6 @@ func generateNotification(n *notification.Notification, pushConfig *dal.PushConf
 	}
 }
 
-// TODO: Perhaps the notification provider should create this
-func threadActivityURL(organizationID, threadID string) string {
-	return fmt.Sprintf("https://baymax.com/org/%s/thread/%s/", organizationID, threadID)
+func threadActivityURL(webDomain, organizationID, savedQueryID, threadID, messageID string) string {
+	return fmt.Sprintf("https://%s/org/%s/list/%s/thread/%s/message/%s", webDomain, organizationID, savedQueryID, threadID, messageID)
 }

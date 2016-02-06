@@ -731,6 +731,10 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 	defer notificationClient.Finish()
 	tID, err := models.NewThreadID()
 	test.OK(t, err)
+	tiID, err := models.NewThreadItemID()
+	test.OK(t, err)
+	sqID, err := models.NewSavedQueryID()
+	test.OK(t, err)
 	publishingEntity := "publishingEntity"
 	orgID := "orgID"
 	readTime := time.Now()
@@ -764,12 +768,14 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 
 	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
 		ShortMessage:     "A new message is available",
-		ThreadID:         tID.String(),
 		OrganizationID:   orgID,
+		SavedQueryID:     sqID.String(),
+		ThreadID:         tID.String(),
+		MessageID:        tiID.String(),
 		EntitiesToNotify: []string{"notify1", "notify2"},
 	}))
 
-	csrv.notifyMembersOfPublishMessage(context.Background(), orgID, tID, publishingEntity)
+	csrv.notifyMembersOfPublishMessage(context.Background(), orgID, sqID, tID, tiID, publishingEntity)
 }
 
 func TestDeleteThread(t *testing.T) {

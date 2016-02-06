@@ -230,6 +230,7 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 		return nil, grpc.Errorf(codes.Internal, errors.Trace(err).Error())
 	}
 	s.publishMessage(ctx, in.OrganizationID, in.FromEntityID, threadID, it, in.UUID)
+	s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), threadID, item.ID, in.FromEntityID)
 	return &threading.CreateThreadResponse{
 		ThreadID:   threadID.String(),
 		ThreadItem: it,
@@ -409,7 +410,7 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		return nil, grpc.Errorf(codes.Internal, errors.Trace(err).Error())
 	}
 	s.publishMessage(ctx, thread.OrganizationID, thread.PrimaryEntityID, threadID, it, in.UUID)
-	s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, threadID, in.FromEntityID)
+	s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), threadID, item.ID, in.FromEntityID)
 	return &threading.PostMessageResponse{
 		Item:   it,
 		Thread: th,
@@ -719,10 +720,14 @@ func (s *threadsServer) publishMessage(ctx context.Context, orgID, primaryEntity
 	})
 }
 
-func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID string, threadID models.ThreadID, publishingEntityID string) {
+func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID string, savedQueryID models.SavedQueryID, threadID models.ThreadID, messageID models.ThreadItemID, publishingEntityID string) {
 	golog.Debugf("Notifying members of org %s of activity on thread %s by entity %s", orgID, threadID, publishingEntityID)
 	if s.notificationClient == nil || s.directoryClient == nil {
 		golog.Debugf("Member notification aborted because either notification client or directory client is not configured")
+		return
+	}
+	if orgID == "" || !threadID.IsValid || !messageID.IsValid {
+		golog.Errorf("Invalid message information for notification: %v, %v, %v, %v", orgID, savedQueryID, threadID, messageID)
 		return
 	}
 	conc.Go(func() {
@@ -756,8 +761,10 @@ func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID
 		golog.Debugf("Sending notifications to member entities %v", memberEntityIDs)
 		if err := s.notificationClient.SendNotification(&notification.Notification{
 			ShortMessage:     "A new message is available",
-			ThreadID:         threadID.String(),
 			OrganizationID:   orgID,
+			SavedQueryID:     savedQueryID.String(),
+			ThreadID:         threadID.String(),
+			MessageID:        messageID.String(),
 			EntitiesToNotify: memberEntityIDs,
 		}); err != nil {
 			golog.Errorf("Failed to notify members: %s", err)

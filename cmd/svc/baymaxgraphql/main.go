@@ -195,7 +195,7 @@ func main() {
 
 	corsOrigins := []string{"https://" + *flagWebDomain}
 
-	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, settingsClient, inviteClient, ms, *flagEmailDomain, pn)
+	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, settingsClient, inviteClient, ms, *flagEmailDomain, *flagWebDomain, pn)
 	r.Handle("/graphql", httputil.ToContextHandler(cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},
