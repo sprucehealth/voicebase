@@ -3,7 +3,6 @@ package dal
 import (
 	"database/sql"
 	"fmt"
-	"github.com/sprucehealth/backend/libs/idgen"
 	"strconv"
 	"strings"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/libs/transactional/tsql"
 	"golang.org/x/net/context"
 )
