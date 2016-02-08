@@ -51,7 +51,7 @@ var verifyPhoneNumberOutputType = graphql.NewObject(
 var verifyPhoneNumberMutation = &graphql.Field{
 	Type: graphql.NewNonNull(verifyPhoneNumberOutputType),
 	Args: graphql.FieldConfigArgument{
-		"input": &graphql.ArgumentConfig{Type: verifyPhoneNumberInputType},
+		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(verifyPhoneNumberInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
@@ -152,7 +152,7 @@ var checkVerificationCodeOutputType = graphql.NewObject(
 var checkVerificationCodeMutation = &graphql.Field{
 	Type: graphql.NewNonNull(checkVerificationCodeOutputType),
 	Args: graphql.FieldConfigArgument{
-		"input": &graphql.ArgumentConfig{Type: checkVerificationCodeInputType},
+		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(checkVerificationCodeInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)

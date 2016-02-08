@@ -277,8 +277,6 @@ func isNullish(value interface{}) bool {
 	switch v := value.(type) {
 	case nil:
 		return true
-	case string:
-		return v == ""
 	case float32:
 		return math.IsNaN(float64(v))
 	case float64:

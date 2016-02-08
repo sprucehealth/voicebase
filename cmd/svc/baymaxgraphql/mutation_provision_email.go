@@ -94,7 +94,7 @@ var provisionEmailOutputType = graphql.NewObject(
 var provisionEmailMutation = &graphql.Field{
 	Type: graphql.NewNonNull(provisionEmailOutputType),
 	Args: graphql.FieldConfigArgument{
-		"input": &graphql.ArgumentConfig{Type: provisionEmailInputType},
+		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(provisionEmailInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)

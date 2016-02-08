@@ -12,8 +12,8 @@ import (
 
 type provisionPhoneNumberOutput struct {
 	ClientMutationID string        `json:"clientMutationId"`
-	PhoneNumber      string        `json:"phoneNumber"`
-	Organization     *organization `json:"organization"`
+	PhoneNumber      string        `json:"phoneNumber,omitempty"`
+	Organization     *organization `json:"organization,omitempty"`
 	Result           string        `json:"result"`
 }
 

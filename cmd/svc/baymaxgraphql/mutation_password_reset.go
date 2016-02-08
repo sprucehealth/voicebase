@@ -53,7 +53,7 @@ var requestPasswordResetOutputType = graphql.NewObject(
 var requestPasswordResetMutation = &graphql.Field{
 	Type: graphql.NewNonNull(requestPasswordResetOutputType),
 	Args: graphql.FieldConfigArgument{
-		"input": &graphql.ArgumentConfig{Type: requestPasswordResetInputType},
+		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(requestPasswordResetInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
@@ -143,7 +143,7 @@ var checkPasswordResetTokenOutputType = graphql.NewObject(
 var checkPasswordResetTokenMutation = &graphql.Field{
 	Type: graphql.NewNonNull(checkPasswordResetTokenOutputType),
 	Args: graphql.FieldConfigArgument{
-		"input": &graphql.ArgumentConfig{Type: checkPasswordResetTokenInputType},
+		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(checkPasswordResetTokenInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
@@ -220,7 +220,7 @@ var verifyPhoneNumberForPasswordResetInputType = graphql.NewInputObject(
 var verifyPhoneNumberForPasswordResetMutation = &graphql.Field{
 	Type: graphql.NewNonNull(verifyPhoneNumberOutputType),
 	Args: graphql.FieldConfigArgument{
-		"input": &graphql.ArgumentConfig{Type: verifyPhoneNumberForPasswordResetInputType},
+		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(verifyPhoneNumberForPasswordResetInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
@@ -302,7 +302,7 @@ var passwordResetOutputType = graphql.NewObject(
 var passwordResetMutation = &graphql.Field{
 	Type: graphql.NewNonNull(passwordResetOutputType),
 	Args: graphql.FieldConfigArgument{
-		"input": &graphql.ArgumentConfig{Type: passwordResetInputType},
+		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(passwordResetInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)

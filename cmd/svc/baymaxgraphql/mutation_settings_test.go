@@ -128,7 +128,7 @@ func TestModifySetting_Boolean(t *testing.T) {
 			"setting": {
 				"description": "Hi",
 				"key": "2fa",
-				"subkey": null,
+				"subkey": "",
 				"title": "Hello",
 				"value": {
 					"__typename": "BooleanSettingValue",
@@ -513,7 +513,7 @@ func TestModifySetting_MultiSelect(t *testing.T) {
 			"setting": {
 				"description": "Hi",
 				"key": "2fa",
-				"subkey": null,
+				"subkey": "",
 				"title": "Hello",
 				"value": {
 					"__typename": "SelectableSettingValue",
@@ -665,7 +665,7 @@ func TestModifySetting_SingleSelect(t *testing.T) {
 			"setting": {
 				"description": "Hi",
 				"key": "2fa",
-				"subkey": null,
+				"subkey": "",
 				"title": "Hello",
 				"value": {
 					"__typename": "SelectableSettingValue",

@@ -3,12 +3,11 @@ package main
 import (
 	"fmt"
 
-	"google.golang.org/grpc"
-
 	"github.com/graphql-go/graphql"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/settings"
+	"google.golang.org/grpc"
 )
 
 type modifySettingOutput struct {
