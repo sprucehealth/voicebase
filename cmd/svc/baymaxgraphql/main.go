@@ -217,9 +217,13 @@ func main() {
 			*flagResourcePath = path.Join(p, "src/github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/resources")
 		}
 	}
-	if *flagResourcePath != "" {
-		r.PathPrefix("/graphiql/").Handler(httputil.FileServer(http.Dir(*flagResourcePath)))
+	if !environment.IsProd() {
+		if *flagResourcePath != "" {
+			r.PathPrefix("/graphiql/").Handler(httputil.FileServer(http.Dir(*flagResourcePath)))
+		}
+		r.Handle("/schema", newSchemaHandler())
 	}
+
 	fmt.Printf("Listening on %s\n", *flagListenAddr)
 
 	server := &http.Server{
