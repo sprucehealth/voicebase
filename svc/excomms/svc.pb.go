@@ -11,7 +11,8 @@
 	It has these top-level messages:
 		PublishedExternalMessage
 		SMSItem
-		CallEventItem
+		IncomingCallEventItem
+		OutgoingCallEventItem
 		EmailItem
 		MediaAttachment
 		SendMessageRequest
@@ -97,20 +98,23 @@ var PhoneNumberCapability_value = map[string]int32{
 type PublishedExternalMessage_Type int32
 
 const (
-	PublishedExternalMessage_SMS        PublishedExternalMessage_Type = 0
-	PublishedExternalMessage_CALL_EVENT PublishedExternalMessage_Type = 1
-	PublishedExternalMessage_EMAIL      PublishedExternalMessage_Type = 2
+	PublishedExternalMessage_SMS                 PublishedExternalMessage_Type = 0
+	PublishedExternalMessage_INCOMING_CALL_EVENT PublishedExternalMessage_Type = 1
+	PublishedExternalMessage_OUTGOING_CALL_EVENT PublishedExternalMessage_Type = 2
+	PublishedExternalMessage_EMAIL               PublishedExternalMessage_Type = 3
 )
 
 var PublishedExternalMessage_Type_name = map[int32]string{
 	0: "SMS",
-	1: "CALL_EVENT",
-	2: "EMAIL",
+	1: "INCOMING_CALL_EVENT",
+	2: "OUTGOING_CALL_EVENT",
+	3: "EMAIL",
 }
 var PublishedExternalMessage_Type_value = map[string]int32{
-	"SMS":        0,
-	"CALL_EVENT": 1,
-	"EMAIL":      2,
+	"SMS": 0,
+	"INCOMING_CALL_EVENT": 1,
+	"OUTGOING_CALL_EVENT": 2,
+	"EMAIL":               3,
 }
 
 type PublishedExternalMessage_Direction int32
@@ -129,32 +133,42 @@ var PublishedExternalMessage_Direction_value = map[string]int32{
 	"OUTBOUND": 1,
 }
 
-type CallEventItem_Type int32
+type IncomingCallEventItem_Type int32
 
 const (
-	CallEventItem_INCOMING_ANSWERED       CallEventItem_Type = 0
-	CallEventItem_INCOMING_UNANSWERED     CallEventItem_Type = 1
-	CallEventItem_INCOMING_LEFT_VOICEMAIL CallEventItem_Type = 2
-	CallEventItem_OUTGOING_PLACED         CallEventItem_Type = 3
-	CallEventItem_OUTGOING_ANSWERED       CallEventItem_Type = 4
-	CallEventItem_OUTGOING_UNANSWERED     CallEventItem_Type = 5
+	IncomingCallEventItem_ANSWERED       IncomingCallEventItem_Type = 0
+	IncomingCallEventItem_UNANSWERED     IncomingCallEventItem_Type = 1
+	IncomingCallEventItem_LEFT_VOICEMAIL IncomingCallEventItem_Type = 2
 )
 
-var CallEventItem_Type_name = map[int32]string{
-	0: "INCOMING_ANSWERED",
-	1: "INCOMING_UNANSWERED",
-	2: "INCOMING_LEFT_VOICEMAIL",
-	3: "OUTGOING_PLACED",
-	4: "OUTGOING_ANSWERED",
-	5: "OUTGOING_UNANSWERED",
+var IncomingCallEventItem_Type_name = map[int32]string{
+	0: "ANSWERED",
+	1: "UNANSWERED",
+	2: "LEFT_VOICEMAIL",
 }
-var CallEventItem_Type_value = map[string]int32{
-	"INCOMING_ANSWERED":       0,
-	"INCOMING_UNANSWERED":     1,
-	"INCOMING_LEFT_VOICEMAIL": 2,
-	"OUTGOING_PLACED":         3,
-	"OUTGOING_ANSWERED":       4,
-	"OUTGOING_UNANSWERED":     5,
+var IncomingCallEventItem_Type_value = map[string]int32{
+	"ANSWERED":       0,
+	"UNANSWERED":     1,
+	"LEFT_VOICEMAIL": 2,
+}
+
+type OutgoingCallEventItem_Type int32
+
+const (
+	OutgoingCallEventItem_PLACED     OutgoingCallEventItem_Type = 0
+	OutgoingCallEventItem_ANSWERED   OutgoingCallEventItem_Type = 1
+	OutgoingCallEventItem_UNANSWERED OutgoingCallEventItem_Type = 2
+)
+
+var OutgoingCallEventItem_Type_name = map[int32]string{
+	0: "PLACED",
+	1: "ANSWERED",
+	2: "UNANSWERED",
+}
+var OutgoingCallEventItem_Type_value = map[string]int32{
+	"PLACED":     0,
+	"ANSWERED":   1,
+	"UNANSWERED": 2,
 }
 
 type InitiatePhoneCallRequest_CallInitiationType int32
@@ -187,10 +201,11 @@ type PublishedExternalMessage struct {
 	Type          PublishedExternalMessage_Type `protobuf:"varint,4,opt,name=type,proto3,enum=excomms.PublishedExternalMessage_Type" json:"type,omitempty"`
 	// Types that are valid to be assigned to Item:
 	//	*PublishedExternalMessage_SMSItem
-	//	*PublishedExternalMessage_CallEventItem
+	//	*PublishedExternalMessage_Incoming
+	//	*PublishedExternalMessage_Outgoing
 	//	*PublishedExternalMessage_EmailItem
 	Item      isPublishedExternalMessage_Item    `protobuf_oneof:"item"`
-	Direction PublishedExternalMessage_Direction `protobuf:"varint,8,opt,name=direction,proto3,enum=excomms.PublishedExternalMessage_Direction" json:"direction,omitempty"`
+	Direction PublishedExternalMessage_Direction `protobuf:"varint,9,opt,name=direction,proto3,enum=excomms.PublishedExternalMessage_Direction" json:"direction,omitempty"`
 }
 
 func (m *PublishedExternalMessage) Reset()      { *m = PublishedExternalMessage{} }
@@ -206,16 +221,20 @@ type isPublishedExternalMessage_Item interface {
 type PublishedExternalMessage_SMSItem struct {
 	SMSItem *SMSItem `protobuf:"bytes,5,opt,name=sms_item,oneof"`
 }
-type PublishedExternalMessage_CallEventItem struct {
-	CallEventItem *CallEventItem `protobuf:"bytes,6,opt,name=call_event_item,oneof"`
+type PublishedExternalMessage_Incoming struct {
+	Incoming *IncomingCallEventItem `protobuf:"bytes,6,opt,name=incoming,oneof"`
+}
+type PublishedExternalMessage_Outgoing struct {
+	Outgoing *OutgoingCallEventItem `protobuf:"bytes,7,opt,name=outgoing,oneof"`
 }
 type PublishedExternalMessage_EmailItem struct {
-	EmailItem *EmailItem `protobuf:"bytes,7,opt,name=email_item,oneof"`
+	EmailItem *EmailItem `protobuf:"bytes,8,opt,name=email_item,oneof"`
 }
 
-func (*PublishedExternalMessage_SMSItem) isPublishedExternalMessage_Item()       {}
-func (*PublishedExternalMessage_CallEventItem) isPublishedExternalMessage_Item() {}
-func (*PublishedExternalMessage_EmailItem) isPublishedExternalMessage_Item()     {}
+func (*PublishedExternalMessage_SMSItem) isPublishedExternalMessage_Item()   {}
+func (*PublishedExternalMessage_Incoming) isPublishedExternalMessage_Item()  {}
+func (*PublishedExternalMessage_Outgoing) isPublishedExternalMessage_Item()  {}
+func (*PublishedExternalMessage_EmailItem) isPublishedExternalMessage_Item() {}
 
 func (m *PublishedExternalMessage) GetItem() isPublishedExternalMessage_Item {
 	if m != nil {
@@ -231,9 +250,16 @@ func (m *PublishedExternalMessage) GetSMSItem() *SMSItem {
 	return nil
 }
 
-func (m *PublishedExternalMessage) GetCallEventItem() *CallEventItem {
-	if x, ok := m.GetItem().(*PublishedExternalMessage_CallEventItem); ok {
-		return x.CallEventItem
+func (m *PublishedExternalMessage) GetIncoming() *IncomingCallEventItem {
+	if x, ok := m.GetItem().(*PublishedExternalMessage_Incoming); ok {
+		return x.Incoming
+	}
+	return nil
+}
+
+func (m *PublishedExternalMessage) GetOutgoing() *OutgoingCallEventItem {
+	if x, ok := m.GetItem().(*PublishedExternalMessage_Outgoing); ok {
+		return x.Outgoing
 	}
 	return nil
 }
@@ -249,7 +275,8 @@ func (m *PublishedExternalMessage) GetEmailItem() *EmailItem {
 func (*PublishedExternalMessage) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
 	return _PublishedExternalMessage_OneofMarshaler, _PublishedExternalMessage_OneofUnmarshaler, []interface{}{
 		(*PublishedExternalMessage_SMSItem)(nil),
-		(*PublishedExternalMessage_CallEventItem)(nil),
+		(*PublishedExternalMessage_Incoming)(nil),
+		(*PublishedExternalMessage_Outgoing)(nil),
 		(*PublishedExternalMessage_EmailItem)(nil),
 	}
 }
@@ -263,13 +290,18 @@ func _PublishedExternalMessage_OneofMarshaler(msg proto.Message, b *proto.Buffer
 		if err := b.EncodeMessage(x.SMSItem); err != nil {
 			return err
 		}
-	case *PublishedExternalMessage_CallEventItem:
+	case *PublishedExternalMessage_Incoming:
 		_ = b.EncodeVarint(6<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.CallEventItem); err != nil {
+		if err := b.EncodeMessage(x.Incoming); err != nil {
+			return err
+		}
+	case *PublishedExternalMessage_Outgoing:
+		_ = b.EncodeVarint(7<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Outgoing); err != nil {
 			return err
 		}
 	case *PublishedExternalMessage_EmailItem:
-		_ = b.EncodeVarint(7<<3 | proto.WireBytes)
+		_ = b.EncodeVarint(8<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.EmailItem); err != nil {
 			return err
 		}
@@ -291,15 +323,23 @@ func _PublishedExternalMessage_OneofUnmarshaler(msg proto.Message, tag, wire int
 		err := b.DecodeMessage(msg)
 		m.Item = &PublishedExternalMessage_SMSItem{msg}
 		return true, err
-	case 6: // item.call_event_item
+	case 6: // item.incoming
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
-		msg := new(CallEventItem)
+		msg := new(IncomingCallEventItem)
 		err := b.DecodeMessage(msg)
-		m.Item = &PublishedExternalMessage_CallEventItem{msg}
+		m.Item = &PublishedExternalMessage_Incoming{msg}
 		return true, err
-	case 7: // item.email_item
+	case 7: // item.outgoing
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(OutgoingCallEventItem)
+		err := b.DecodeMessage(msg)
+		m.Item = &PublishedExternalMessage_Outgoing{msg}
+		return true, err
+	case 8: // item.email_item
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
@@ -327,14 +367,24 @@ func (m *SMSItem) GetAttachments() []*MediaAttachment {
 	return nil
 }
 
-type CallEventItem struct {
-	Type              CallEventItem_Type `protobuf:"varint,1,opt,name=type,proto3,enum=excomms.CallEventItem_Type" json:"type,omitempty"`
-	DurationInSeconds uint32             `protobuf:"varint,2,opt,name=duration_in_seconds,proto3" json:"duration_in_seconds,omitempty"`
-	URL               string             `protobuf:"bytes,3,opt,name=url,proto3" json:"url,omitempty"`
+type IncomingCallEventItem struct {
+	Type              IncomingCallEventItem_Type `protobuf:"varint,1,opt,name=type,proto3,enum=excomms.IncomingCallEventItem_Type" json:"type,omitempty"`
+	DurationInSeconds uint32                     `protobuf:"varint,2,opt,name=duration_in_seconds,proto3" json:"duration_in_seconds,omitempty"`
+	URL               string                     `protobuf:"bytes,3,opt,name=url,proto3" json:"url,omitempty"`
 }
 
-func (m *CallEventItem) Reset()      { *m = CallEventItem{} }
-func (*CallEventItem) ProtoMessage() {}
+func (m *IncomingCallEventItem) Reset()      { *m = IncomingCallEventItem{} }
+func (*IncomingCallEventItem) ProtoMessage() {}
+
+type OutgoingCallEventItem struct {
+	Type              OutgoingCallEventItem_Type `protobuf:"varint,1,opt,name=type,proto3,enum=excomms.OutgoingCallEventItem_Type" json:"type,omitempty"`
+	DurationInSeconds uint32                     `protobuf:"varint,2,opt,name=duration_in_seconds,proto3" json:"duration_in_seconds,omitempty"`
+	CallerEntityID    string                     `protobuf:"bytes,3,opt,name=caller_entity_id,proto3" json:"caller_entity_id,omitempty"`
+	CalleeEntityID    string                     `protobuf:"bytes,4,opt,name=callee_entity_id,proto3" json:"callee_entity_id,omitempty"`
+}
+
+func (m *OutgoingCallEventItem) Reset()      { *m = OutgoingCallEventItem{} }
+func (*OutgoingCallEventItem) ProtoMessage() {}
 
 type EmailItem struct {
 	Body        string             `protobuf:"bytes,1,opt,name=body,proto3" json:"body,omitempty"`
@@ -667,7 +717,8 @@ func (*ProvisionEmailAddressResponse) ProtoMessage() {}
 func init() {
 	proto.RegisterType((*PublishedExternalMessage)(nil), "excomms.PublishedExternalMessage")
 	proto.RegisterType((*SMSItem)(nil), "excomms.SMSItem")
-	proto.RegisterType((*CallEventItem)(nil), "excomms.CallEventItem")
+	proto.RegisterType((*IncomingCallEventItem)(nil), "excomms.IncomingCallEventItem")
+	proto.RegisterType((*OutgoingCallEventItem)(nil), "excomms.OutgoingCallEventItem")
 	proto.RegisterType((*EmailItem)(nil), "excomms.EmailItem")
 	proto.RegisterType((*MediaAttachment)(nil), "excomms.MediaAttachment")
 	proto.RegisterType((*SendMessageRequest)(nil), "excomms.SendMessageRequest")
@@ -687,7 +738,8 @@ func init() {
 	proto.RegisterEnum("excomms.PhoneNumberCapability", PhoneNumberCapability_name, PhoneNumberCapability_value)
 	proto.RegisterEnum("excomms.PublishedExternalMessage_Type", PublishedExternalMessage_Type_name, PublishedExternalMessage_Type_value)
 	proto.RegisterEnum("excomms.PublishedExternalMessage_Direction", PublishedExternalMessage_Direction_name, PublishedExternalMessage_Direction_value)
-	proto.RegisterEnum("excomms.CallEventItem_Type", CallEventItem_Type_name, CallEventItem_Type_value)
+	proto.RegisterEnum("excomms.IncomingCallEventItem_Type", IncomingCallEventItem_Type_name, IncomingCallEventItem_Type_value)
+	proto.RegisterEnum("excomms.OutgoingCallEventItem_Type", OutgoingCallEventItem_Type_name, OutgoingCallEventItem_Type_value)
 	proto.RegisterEnum("excomms.InitiatePhoneCallRequest_CallInitiationType", InitiatePhoneCallRequest_CallInitiationType_name, InitiatePhoneCallRequest_CallInitiationType_value)
 }
 func (x ChannelType) String() string {
@@ -718,8 +770,15 @@ func (x PublishedExternalMessage_Direction) String() string {
 	}
 	return strconv.Itoa(int(x))
 }
-func (x CallEventItem_Type) String() string {
-	s, ok := CallEventItem_Type_name[int32(x)]
+func (x IncomingCallEventItem_Type) String() string {
+	s, ok := IncomingCallEventItem_Type_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (x OutgoingCallEventItem_Type) String() string {
+	s, ok := OutgoingCallEventItem_Type_name[int32(x)]
 	if ok {
 		return s
 	}
@@ -803,7 +862,7 @@ func (this *PublishedExternalMessage_SMSItem) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *PublishedExternalMessage_CallEventItem) Equal(that interface{}) bool {
+func (this *PublishedExternalMessage_Incoming) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
 			return true
@@ -811,7 +870,7 @@ func (this *PublishedExternalMessage_CallEventItem) Equal(that interface{}) bool
 		return false
 	}
 
-	that1, ok := that.(*PublishedExternalMessage_CallEventItem)
+	that1, ok := that.(*PublishedExternalMessage_Incoming)
 	if !ok {
 		return false
 	}
@@ -823,7 +882,32 @@ func (this *PublishedExternalMessage_CallEventItem) Equal(that interface{}) bool
 	} else if this == nil {
 		return false
 	}
-	if !this.CallEventItem.Equal(that1.CallEventItem) {
+	if !this.Incoming.Equal(that1.Incoming) {
+		return false
+	}
+	return true
+}
+func (this *PublishedExternalMessage_Outgoing) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*PublishedExternalMessage_Outgoing)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Outgoing.Equal(that1.Outgoing) {
 		return false
 	}
 	return true
@@ -886,7 +970,7 @@ func (this *SMSItem) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *CallEventItem) Equal(that interface{}) bool {
+func (this *IncomingCallEventItem) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
 			return true
@@ -894,7 +978,7 @@ func (this *CallEventItem) Equal(that interface{}) bool {
 		return false
 	}
 
-	that1, ok := that.(*CallEventItem)
+	that1, ok := that.(*IncomingCallEventItem)
 	if !ok {
 		return false
 	}
@@ -913,6 +997,40 @@ func (this *CallEventItem) Equal(that interface{}) bool {
 		return false
 	}
 	if this.URL != that1.URL {
+		return false
+	}
+	return true
+}
+func (this *OutgoingCallEventItem) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*OutgoingCallEventItem)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Type != that1.Type {
+		return false
+	}
+	if this.DurationInSeconds != that1.DurationInSeconds {
+		return false
+	}
+	if this.CallerEntityID != that1.CallerEntityID {
+		return false
+	}
+	if this.CalleeEntityID != that1.CalleeEntityID {
 		return false
 	}
 	return true
@@ -1494,7 +1612,7 @@ func (this *PublishedExternalMessage) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 12)
+	s := make([]string, 0, 13)
 	s = append(s, "&excomms.PublishedExternalMessage{")
 	s = append(s, "FromChannelID: "+fmt.Sprintf("%#v", this.FromChannelID)+",\n")
 	s = append(s, "ToChannelID: "+fmt.Sprintf("%#v", this.ToChannelID)+",\n")
@@ -1515,12 +1633,20 @@ func (this *PublishedExternalMessage_SMSItem) GoString() string {
 		`SMSItem:` + fmt.Sprintf("%#v", this.SMSItem) + `}`}, ", ")
 	return s
 }
-func (this *PublishedExternalMessage_CallEventItem) GoString() string {
+func (this *PublishedExternalMessage_Incoming) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&excomms.PublishedExternalMessage_CallEventItem{` +
-		`CallEventItem:` + fmt.Sprintf("%#v", this.CallEventItem) + `}`}, ", ")
+	s := strings.Join([]string{`&excomms.PublishedExternalMessage_Incoming{` +
+		`Incoming:` + fmt.Sprintf("%#v", this.Incoming) + `}`}, ", ")
+	return s
+}
+func (this *PublishedExternalMessage_Outgoing) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&excomms.PublishedExternalMessage_Outgoing{` +
+		`Outgoing:` + fmt.Sprintf("%#v", this.Outgoing) + `}`}, ", ")
 	return s
 }
 func (this *PublishedExternalMessage_EmailItem) GoString() string {
@@ -1544,15 +1670,28 @@ func (this *SMSItem) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *CallEventItem) GoString() string {
+func (this *IncomingCallEventItem) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 7)
-	s = append(s, "&excomms.CallEventItem{")
+	s = append(s, "&excomms.IncomingCallEventItem{")
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	s = append(s, "DurationInSeconds: "+fmt.Sprintf("%#v", this.DurationInSeconds)+",\n")
 	s = append(s, "URL: "+fmt.Sprintf("%#v", this.URL)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *OutgoingCallEventItem) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 8)
+	s = append(s, "&excomms.OutgoingCallEventItem{")
+	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
+	s = append(s, "DurationInSeconds: "+fmt.Sprintf("%#v", this.DurationInSeconds)+",\n")
+	s = append(s, "CallerEntityID: "+fmt.Sprintf("%#v", this.CallerEntityID)+",\n")
+	s = append(s, "CalleeEntityID: "+fmt.Sprintf("%#v", this.CalleeEntityID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2018,7 +2157,7 @@ func (m *PublishedExternalMessage) MarshalTo(data []byte) (int, error) {
 		i += nn1
 	}
 	if m.Direction != 0 {
-		data[i] = 0x40
+		data[i] = 0x48
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Direction))
 	}
@@ -2039,13 +2178,13 @@ func (m *PublishedExternalMessage_SMSItem) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *PublishedExternalMessage_CallEventItem) MarshalTo(data []byte) (int, error) {
+func (m *PublishedExternalMessage_Incoming) MarshalTo(data []byte) (int, error) {
 	i := 0
-	if m.CallEventItem != nil {
+	if m.Incoming != nil {
 		data[i] = 0x32
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.CallEventItem.Size()))
-		n3, err := m.CallEventItem.MarshalTo(data[i:])
+		i = encodeVarintSvc(data, i, uint64(m.Incoming.Size()))
+		n3, err := m.Incoming.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -2053,17 +2192,31 @@ func (m *PublishedExternalMessage_CallEventItem) MarshalTo(data []byte) (int, er
 	}
 	return i, nil
 }
-func (m *PublishedExternalMessage_EmailItem) MarshalTo(data []byte) (int, error) {
+func (m *PublishedExternalMessage_Outgoing) MarshalTo(data []byte) (int, error) {
 	i := 0
-	if m.EmailItem != nil {
+	if m.Outgoing != nil {
 		data[i] = 0x3a
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.EmailItem.Size()))
-		n4, err := m.EmailItem.MarshalTo(data[i:])
+		i = encodeVarintSvc(data, i, uint64(m.Outgoing.Size()))
+		n4, err := m.Outgoing.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n4
+	}
+	return i, nil
+}
+func (m *PublishedExternalMessage_EmailItem) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.EmailItem != nil {
+		data[i] = 0x42
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.EmailItem.Size()))
+		n5, err := m.EmailItem.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n5
 	}
 	return i, nil
 }
@@ -2103,7 +2256,7 @@ func (m *SMSItem) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *CallEventItem) Marshal() (data []byte, err error) {
+func (m *IncomingCallEventItem) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -2113,7 +2266,7 @@ func (m *CallEventItem) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *CallEventItem) MarshalTo(data []byte) (int, error) {
+func (m *IncomingCallEventItem) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -2133,6 +2286,46 @@ func (m *CallEventItem) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintSvc(data, i, uint64(len(m.URL)))
 		i += copy(data[i:], m.URL)
+	}
+	return i, nil
+}
+
+func (m *OutgoingCallEventItem) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *OutgoingCallEventItem) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Type != 0 {
+		data[i] = 0x8
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Type))
+	}
+	if m.DurationInSeconds != 0 {
+		data[i] = 0x10
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.DurationInSeconds))
+	}
+	if len(m.CallerEntityID) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.CallerEntityID)))
+		i += copy(data[i:], m.CallerEntityID)
+	}
+	if len(m.CalleeEntityID) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.CalleeEntityID)))
+		i += copy(data[i:], m.CalleeEntityID)
 	}
 	return i, nil
 }
@@ -2236,11 +2429,11 @@ func (m *SendMessageRequest) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(m.Channel))
 	}
 	if m.Message != nil {
-		nn5, err := m.Message.MarshalTo(data[i:])
+		nn6, err := m.Message.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn5
+		i += nn6
 	}
 	if len(m.UUID) > 0 {
 		data[i] = 0x22
@@ -2257,11 +2450,11 @@ func (m *SendMessageRequest_Email) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x12
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Email.Size()))
-		n6, err := m.Email.MarshalTo(data[i:])
+		n7, err := m.Email.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n6
+		i += n7
 	}
 	return i, nil
 }
@@ -2271,11 +2464,11 @@ func (m *SendMessageRequest_SMS) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.SMS.Size()))
-		n7, err := m.SMS.MarshalTo(data[i:])
+		n8, err := m.SMS.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n7
+		i += n8
 	}
 	return i, nil
 }
@@ -2584,11 +2777,11 @@ func (m *ProvisionPhoneNumberRequest) MarshalTo(data []byte) (int, error) {
 		i += copy(data[i:], m.ProvisionFor)
 	}
 	if m.Number != nil {
-		nn8, err := m.Number.MarshalTo(data[i:])
+		nn9, err := m.Number.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn8
+		i += nn9
 	}
 	return i, nil
 }
@@ -2749,11 +2942,20 @@ func (m *PublishedExternalMessage_SMSItem) Size() (n int) {
 	}
 	return n
 }
-func (m *PublishedExternalMessage_CallEventItem) Size() (n int) {
+func (m *PublishedExternalMessage_Incoming) Size() (n int) {
 	var l int
 	_ = l
-	if m.CallEventItem != nil {
-		l = m.CallEventItem.Size()
+	if m.Incoming != nil {
+		l = m.Incoming.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+func (m *PublishedExternalMessage_Outgoing) Size() (n int) {
+	var l int
+	_ = l
+	if m.Outgoing != nil {
+		l = m.Outgoing.Size()
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
@@ -2783,7 +2985,7 @@ func (m *SMSItem) Size() (n int) {
 	return n
 }
 
-func (m *CallEventItem) Size() (n int) {
+func (m *IncomingCallEventItem) Size() (n int) {
 	var l int
 	_ = l
 	if m.Type != 0 {
@@ -2793,6 +2995,26 @@ func (m *CallEventItem) Size() (n int) {
 		n += 1 + sovSvc(uint64(m.DurationInSeconds))
 	}
 	l = len(m.URL)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *OutgoingCallEventItem) Size() (n int) {
+	var l int
+	_ = l
+	if m.Type != 0 {
+		n += 1 + sovSvc(uint64(m.Type))
+	}
+	if m.DurationInSeconds != 0 {
+		n += 1 + sovSvc(uint64(m.DurationInSeconds))
+	}
+	l = len(m.CallerEntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.CalleeEntityID)
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
@@ -3109,12 +3331,22 @@ func (this *PublishedExternalMessage_SMSItem) String() string {
 	}, "")
 	return s
 }
-func (this *PublishedExternalMessage_CallEventItem) String() string {
+func (this *PublishedExternalMessage_Incoming) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&PublishedExternalMessage_CallEventItem{`,
-		`CallEventItem:` + strings.Replace(fmt.Sprintf("%v", this.CallEventItem), "CallEventItem", "CallEventItem", 1) + `,`,
+	s := strings.Join([]string{`&PublishedExternalMessage_Incoming{`,
+		`Incoming:` + strings.Replace(fmt.Sprintf("%v", this.Incoming), "IncomingCallEventItem", "IncomingCallEventItem", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PublishedExternalMessage_Outgoing) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PublishedExternalMessage_Outgoing{`,
+		`Outgoing:` + strings.Replace(fmt.Sprintf("%v", this.Outgoing), "OutgoingCallEventItem", "OutgoingCallEventItem", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3140,14 +3372,27 @@ func (this *SMSItem) String() string {
 	}, "")
 	return s
 }
-func (this *CallEventItem) String() string {
+func (this *IncomingCallEventItem) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&CallEventItem{`,
+	s := strings.Join([]string{`&IncomingCallEventItem{`,
 		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
 		`DurationInSeconds:` + fmt.Sprintf("%v", this.DurationInSeconds) + `,`,
 		`URL:` + fmt.Sprintf("%v", this.URL) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OutgoingCallEventItem) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&OutgoingCallEventItem{`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`DurationInSeconds:` + fmt.Sprintf("%v", this.DurationInSeconds) + `,`,
+		`CallerEntityID:` + fmt.Sprintf("%v", this.CallerEntityID) + `,`,
+		`CalleeEntityID:` + fmt.Sprintf("%v", this.CalleeEntityID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3531,7 +3776,7 @@ func (m *PublishedExternalMessage) Unmarshal(data []byte) error {
 			iNdEx = postIndex
 		case 6:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CallEventItem", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Incoming", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -3555,13 +3800,45 @@ func (m *PublishedExternalMessage) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &CallEventItem{}
+			v := &IncomingCallEventItem{}
 			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.Item = &PublishedExternalMessage_CallEventItem{v}
+			m.Item = &PublishedExternalMessage_Incoming{v}
 			iNdEx = postIndex
 		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Outgoing", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &OutgoingCallEventItem{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Item = &PublishedExternalMessage_Outgoing{v}
+			iNdEx = postIndex
+		case 8:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field EmailItem", wireType)
 			}
@@ -3593,7 +3870,7 @@ func (m *PublishedExternalMessage) Unmarshal(data []byte) error {
 			}
 			m.Item = &PublishedExternalMessage_EmailItem{v}
 			iNdEx = postIndex
-		case 8:
+		case 9:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Direction", wireType)
 			}
@@ -3743,7 +4020,7 @@ func (m *SMSItem) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CallEventItem) Unmarshal(data []byte) error {
+func (m *IncomingCallEventItem) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -3766,10 +4043,10 @@ func (m *CallEventItem) Unmarshal(data []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: CallEventItem: wiretype end group for non-group")
+			return fmt.Errorf("proto: IncomingCallEventItem: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CallEventItem: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: IncomingCallEventItem: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -3786,7 +4063,7 @@ func (m *CallEventItem) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				m.Type |= (CallEventItem_Type(b) & 0x7F) << shift
+				m.Type |= (IncomingCallEventItem_Type(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3838,6 +4115,152 @@ func (m *CallEventItem) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.URL = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *OutgoingCallEventItem) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: OutgoingCallEventItem: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: OutgoingCallEventItem: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			m.Type = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Type |= (OutgoingCallEventItem_Type(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DurationInSeconds", wireType)
+			}
+			m.DurationInSeconds = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.DurationInSeconds |= (uint32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CallerEntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CallerEntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CalleeEntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CalleeEntityID = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

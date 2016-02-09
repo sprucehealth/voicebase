@@ -510,10 +510,10 @@ func TestIncomingVoicemail_NewUser(t *testing.T) {
 	pem := &excomms.PublishedExternalMessage{
 		FromChannelID: fromChannelID,
 		ToChannelID:   toChannelID,
-		Type:          excomms.PublishedExternalMessage_CALL_EVENT,
-		Item: &excomms.PublishedExternalMessage_CallEventItem{
-			CallEventItem: &excomms.CallEventItem{
-				Type:              excomms.CallEventItem_INCOMING_LEFT_VOICEMAIL,
+		Type:          excomms.PublishedExternalMessage_INCOMING_CALL_EVENT,
+		Item: &excomms.PublishedExternalMessage_Incoming{
+			Incoming: &excomms.IncomingCallEventItem{
+				Type:              excomms.IncomingCallEventItem_LEFT_VOICEMAIL,
 				DurationInSeconds: 100,
 				URL:               "http://voicemail.com",
 			},
@@ -533,8 +533,8 @@ func TestIncomingVoicemail_NewUser(t *testing.T) {
 	test.Equals(t, organizationEntity.ID, threadRequested.OrganizationID)
 	test.Equals(t, "", threadRequested.Text)
 	test.Equals(t, "<ref id=\"2\" type=\"entity\">(206) 877-3590</ref> called <ref id=\"10\" type=\"entity\">Spruce Practice</ref>, left voicemail", threadRequested.Title)
-	test.Equals(t, pem.GetCallEventItem().DurationInSeconds, threadRequested.GetAttachments()[0].GetAudio().DurationInSeconds)
-	test.Equals(t, pem.GetCallEventItem().URL, threadRequested.GetAttachments()[0].GetAudio().URL)
+	test.Equals(t, pem.GetIncoming().DurationInSeconds, threadRequested.GetAttachments()[0].GetAudio().DurationInSeconds)
+	test.Equals(t, pem.GetIncoming().URL, threadRequested.GetAttachments()[0].GetAudio().URL)
 
 	// ensure no call to post message to thread
 	if mt.postMessageRequested != nil {
@@ -611,11 +611,13 @@ func TestOutgoingCallEvent(t *testing.T) {
 	pem := &excomms.PublishedExternalMessage{
 		FromChannelID: fromChannelID,
 		ToChannelID:   toChannelID,
-		Type:          excomms.PublishedExternalMessage_CALL_EVENT,
+		Type:          excomms.PublishedExternalMessage_OUTGOING_CALL_EVENT,
 		Direction:     excomms.PublishedExternalMessage_OUTBOUND,
-		Item: &excomms.PublishedExternalMessage_CallEventItem{
-			CallEventItem: &excomms.CallEventItem{
-				Type: excomms.CallEventItem_OUTGOING_PLACED,
+		Item: &excomms.PublishedExternalMessage_Outgoing{
+			Outgoing: &excomms.OutgoingCallEventItem{
+				Type:           excomms.OutgoingCallEventItem_PLACED,
+				CallerEntityID: providerEntity.ID,
+				CalleeEntityID: externalEntity.ID,
 			},
 		},
 	}

@@ -146,6 +146,8 @@ func testOutgoing(t *testing.T, testExpired bool, patientName string) {
 			OrganizationID: organizationID,
 			CallSID:        callSID,
 			Requested:      mclock.Now(),
+			CallerEntityID: providerID,
+			CalleeEntityID: destinationEntityID,
 		}))
 	}
 
@@ -753,8 +755,8 @@ func testIncomingCallStatus(t *testing.T, incomingStatus rawmsg.TwilioParams_Cal
 		t.Fatalf("Expected %s but got %s", "+17348465522", params.To)
 	} else if pem.Direction != excomms.PublishedExternalMessage_INBOUND {
 		t.Fatalf("Expected %s but got %s", excomms.PublishedExternalMessage_INBOUND, pem.Direction)
-	} else if pem.Type != excomms.PublishedExternalMessage_CALL_EVENT {
-		t.Fatalf("Expected %s but got %s", excomms.PublishedExternalMessage_CALL_EVENT, pem.Type)
+	} else if pem.Type != excomms.PublishedExternalMessage_INCOMING_CALL_EVENT {
+		t.Fatalf("Expected %s but got %s", excomms.PublishedExternalMessage_INCOMING_CALL_EVENT, pem.Type)
 	}
 }
 
@@ -803,12 +805,12 @@ func TestOutgoingCallStatus(t *testing.T) {
 		t.Fatalf("Expected %s but got %s", md.cr.Destination.String(), pem.ToChannelID)
 	} else if pem.Direction != excomms.PublishedExternalMessage_OUTBOUND {
 		t.Fatalf("Expectd %s but got %s", excomms.PublishedExternalMessage_OUTBOUND, pem.Direction)
-	} else if pem.Type != excomms.PublishedExternalMessage_CALL_EVENT {
-		t.Fatalf("Expectd %s but got %s", excomms.PublishedExternalMessage_CALL_EVENT, pem.Type)
-	} else if pem.GetCallEventItem().Type != excomms.CallEventItem_OUTGOING_ANSWERED {
-		t.Fatalf("Expectd %s but got %s", excomms.CallEventItem_OUTGOING_ANSWERED, pem.GetCallEventItem().Type)
-	} else if pem.GetCallEventItem().DurationInSeconds != params.CallDuration {
-		t.Fatalf("Expectd %d but got %d", params.CallDuration, pem.GetCallEventItem().DurationInSeconds)
+	} else if pem.Type != excomms.PublishedExternalMessage_OUTGOING_CALL_EVENT {
+		t.Fatalf("Expectd %s but got %s", excomms.PublishedExternalMessage_OUTGOING_CALL_EVENT, pem.Type)
+	} else if pem.GetOutgoing().Type != excomms.OutgoingCallEventItem_ANSWERED {
+		t.Fatalf("Expectd %s but got %s", excomms.OutgoingCallEventItem_ANSWERED, pem.GetOutgoing().Type)
+	} else if pem.GetOutgoing().DurationInSeconds != params.CallDuration {
+		t.Fatalf("Expectd %d but got %d", params.CallDuration, pem.GetOutgoing().DurationInSeconds)
 	}
 }
 

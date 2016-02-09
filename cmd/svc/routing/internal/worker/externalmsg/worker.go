@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"strings"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/libs/awsutil"
@@ -18,9 +21,8 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/threading"
+
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 )
 
 type externalMessageWorker struct {
@@ -119,25 +121,11 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 
 	ctx := context.Background()
 
-	toEntityLookupRes, err := lookupEntitiesByContact(ctx, pem.ToChannelID, r.directory)
-	if err != nil {
-		if grpc.Code(errors.Cause(err)) != codes.NotFound {
-			return errors.Trace(err)
-		}
-	}
-
-	fromEntityLookupRes, err := lookupEntitiesByContact(ctx, pem.FromChannelID, r.directory)
-	if err != nil {
-		if grpc.Code(errors.Cause(err)) != codes.NotFound {
-			return errors.Trace(err)
-		}
-	}
-
 	var toEntity, fromEntity, externalEntity *directory.Entity
 	var organizationID, externalChannelID string
 	var contactType directory.ContactType
 	switch pem.Type {
-	case excomms.PublishedExternalMessage_SMS, excomms.PublishedExternalMessage_CALL_EVENT:
+	case excomms.PublishedExternalMessage_SMS, excomms.PublishedExternalMessage_OUTGOING_CALL_EVENT, excomms.PublishedExternalMessage_INCOMING_CALL_EVENT:
 		contactType = directory.ContactType_PHONE
 	case excomms.PublishedExternalMessage_EMAIL:
 		contactType = directory.ContactType_EMAIL
@@ -148,6 +136,21 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 	switch pem.Direction {
 
 	case excomms.PublishedExternalMessage_INBOUND:
+
+		toEntityLookupRes, err := lookupEntitiesByContact(ctx, pem.ToChannelID, r.directory)
+		if err != nil {
+			if grpc.Code(errors.Cause(err)) != codes.NotFound {
+				return errors.Trace(err)
+			}
+		}
+
+		fromEntityLookupRes, err := lookupEntitiesByContact(ctx, pem.FromChannelID, r.directory)
+		if err != nil {
+			if grpc.Code(errors.Cause(err)) != codes.NotFound {
+				return errors.Trace(err)
+			}
+		}
+
 		toEntity = determineProviderOrOrgEntity(toEntityLookupRes, pem.ToChannelID)
 		if toEntity == nil {
 			return errors.Trace(fmt.Errorf("No organization or provider found for %s", pem.ToChannelID))
@@ -157,12 +160,18 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 		externalEntity = fromEntity
 		externalChannelID = pem.FromChannelID
 	case excomms.PublishedExternalMessage_OUTBOUND:
-		fromEntity = determineProviderOrOrgEntity(fromEntityLookupRes, pem.FromChannelID)
-		if fromEntity == nil {
-			return errors.Trace(fmt.Errorf("No organization or provider found for %s", pem.FromChannelID))
+		var err error
+		fromEntity, err = lookupEntity(ctx, pem.GetOutgoing().CallerEntityID, r.directory)
+		if err != nil {
+			return errors.Trace(err)
 		}
+
+		toEntity, err = lookupEntity(ctx, pem.GetOutgoing().CalleeEntityID, r.directory)
+		if err != nil {
+			return errors.Trace(err)
+		}
+
 		organizationID = determineOrganizationID(fromEntity)
-		toEntity = determineExternalEntity(toEntityLookupRes, organizationID)
 		externalEntity = toEntity
 		externalChannelID = pem.ToChannelID
 	}
@@ -277,19 +286,19 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			}
 		}
 
-	case excomms.PublishedExternalMessage_CALL_EVENT:
+	case excomms.PublishedExternalMessage_INCOMING_CALL_EVENT:
 		endpointChannel = threading.Endpoint_VOICE
 		title = bml.Parsef("%s called %s",
 			&bml.Ref{Type: bml.EntityRef, ID: fromEntity.ID, Text: fromName},
 			&bml.Ref{Type: bml.EntityRef, ID: toEntity.ID, Text: toName})
-		switch pem.GetCallEventItem().Type {
-		case excomms.CallEventItem_INCOMING_ANSWERED:
+		switch pem.GetIncoming().Type {
+		case excomms.IncomingCallEventItem_ANSWERED:
 			title = append(title, ", answered")
 			summary = "Called, answered"
-		case excomms.CallEventItem_INCOMING_UNANSWERED:
+		case excomms.IncomingCallEventItem_UNANSWERED:
 			title = append(title, ", no answer")
 			summary = "Called, no answer"
-		case excomms.CallEventItem_INCOMING_LEFT_VOICEMAIL:
+		case excomms.IncomingCallEventItem_LEFT_VOICEMAIL:
 			title = append(title, ", left voicemail")
 			summary = "Called, left voicemail"
 			attachments = []*threading.Attachment{
@@ -297,20 +306,29 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 					Type: threading.Attachment_AUDIO,
 					Data: &threading.Attachment_Audio{
 						Audio: &threading.AudioAttachment{
-							URL:               pem.GetCallEventItem().URL,
-							DurationInSeconds: pem.GetCallEventItem().DurationInSeconds,
+							URL:               pem.GetIncoming().URL,
+							DurationInSeconds: pem.GetIncoming().DurationInSeconds,
 						},
 					},
 				},
 			}
-		case excomms.CallEventItem_OUTGOING_PLACED:
-		case excomms.CallEventItem_OUTGOING_ANSWERED:
+		}
+	case excomms.PublishedExternalMessage_OUTGOING_CALL_EVENT:
+		endpointChannel = threading.Endpoint_VOICE
+		title = bml.Parsef("%s called %s",
+			&bml.Ref{Type: bml.EntityRef, ID: fromEntity.ID, Text: fromName},
+			&bml.Ref{Type: bml.EntityRef, ID: toEntity.ID, Text: toName})
+
+		switch pem.GetOutgoing().Type {
+		case excomms.OutgoingCallEventItem_PLACED:
+		case excomms.OutgoingCallEventItem_ANSWERED:
 			title = append(title, ", answered")
 			summary = fmt.Sprintf("%s called %s, answered", fromName, toName)
-		case excomms.CallEventItem_OUTGOING_UNANSWERED:
+		case excomms.OutgoingCallEventItem_UNANSWERED:
 			title = append(title, ", no answer")
 			summary = fmt.Sprintf("%s called %s, no answer", fromName, toName)
 		}
+
 	case excomms.PublishedExternalMessage_EMAIL:
 		endpointChannel = threading.Endpoint_EMAIL
 		text = pem.GetEmailItem().Body
@@ -421,6 +439,30 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 
 	golog.Debugf("Message posted from %s → %s : %s", pem.FromChannelID, pem.ToChannelID, text)
 	return nil
+}
+
+func lookupEntity(ctx context.Context, entityID string, dir directory.DirectoryClient) (*directory.Entity, error) {
+	res, err := dir.LookupEntities(
+		ctx,
+		&directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: entityID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth: 1,
+				EntityInformation: []directory.EntityInformation{
+					directory.EntityInformation_MEMBERSHIPS,
+					directory.EntityInformation_CONTACTS,
+				},
+			},
+		})
+	if err != nil {
+		return nil, errors.Trace(err)
+	} else if len(res.Entities) != 1 {
+		return nil, errors.Trace(fmt.Errorf("Expected 1 entity but got %d", len(res.Entities)))
+	}
+	return res.Entities[0], nil
 }
 
 func lookupEntitiesByContact(ctx context.Context, contactValue string, dir directory.DirectoryClient) (*directory.LookupEntitiesByContactResponse, error) {

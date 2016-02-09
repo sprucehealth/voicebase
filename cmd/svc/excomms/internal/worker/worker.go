@@ -203,10 +203,10 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			ToChannelID:   params.To,
 			Timestamp:     rm.Timestamp,
 			Direction:     excomms.PublishedExternalMessage_INBOUND,
-			Type:          excomms.PublishedExternalMessage_CALL_EVENT,
-			Item: &excomms.PublishedExternalMessage_CallEventItem{
-				CallEventItem: &excomms.CallEventItem{
-					Type:              excomms.CallEventItem_INCOMING_LEFT_VOICEMAIL,
+			Type:          excomms.PublishedExternalMessage_INCOMING_CALL_EVENT,
+			Item: &excomms.PublishedExternalMessage_Incoming{
+				Incoming: &excomms.IncomingCallEventItem{
+					Type:              excomms.IncomingCallEventItem_LEFT_VOICEMAIL,
 					DurationInSeconds: params.RecordingDuration,
 					URL:               media.URL,
 				},

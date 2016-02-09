@@ -62,6 +62,8 @@ type CallRequest struct {
 	Requested      time.Time
 	OrganizationID string
 	CallSID        string
+	CallerEntityID string
+	CalleeEntityID string
 }
 
 // CallEvent represents an entry pertaining to a call event

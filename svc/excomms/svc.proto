@@ -22,21 +22,23 @@ message PublishedExternalMessage {
 	uint64 timestamp = 3;
 	enum Type {
 		SMS = 0;
-		CALL_EVENT = 1;
-		EMAIL = 2;
+		INCOMING_CALL_EVENT = 1;
+		OUTGOING_CALL_EVENT = 2;
+		EMAIL = 3;
 	}
 	Type type = 4;
 	oneof item {
 		SMSItem sms_item = 5 [(gogoproto.customname) = "SMSItem"];
-		CallEventItem call_event_item = 6;
-		EmailItem email_item = 7;
+		IncomingCallEventItem incoming = 6;
+		OutgoingCallEventItem outgoing = 7;
+		EmailItem email_item = 8;
 	}
 
 	enum Direction {
 		INBOUND = 0;
 		OUTBOUND = 1;
 	}
-	Direction direction = 8;
+	Direction direction = 9;
 }
 
 message SMSItem {
@@ -44,18 +46,27 @@ message SMSItem {
 	repeated MediaAttachment attachments = 2;
 }
 
-message CallEventItem {
+message IncomingCallEventItem {
 	enum Type {
-		INCOMING_ANSWERED = 0;
-		INCOMING_UNANSWERED = 1;
-		INCOMING_LEFT_VOICEMAIL = 2;
-		OUTGOING_PLACED = 3;
-		OUTGOING_ANSWERED = 4;
-		OUTGOING_UNANSWERED = 5;
+		ANSWERED = 0;
+		UNANSWERED = 1;
+		LEFT_VOICEMAIL = 2;
 	}
 	Type type = 1;
 	uint32 duration_in_seconds = 2;
 	string url = 3 [(gogoproto.customname) = "URL"];
+}
+
+message OutgoingCallEventItem {
+	enum Type {
+		PLACED = 0;
+		ANSWERED = 1;
+		UNANSWERED = 2;
+	}
+	Type type = 1;
+	uint32 duration_in_seconds = 2;
+	string caller_entity_id = 3 [(gogoproto.customname) = "CallerEntityID"];
+	string callee_entity_id = 4 [(gogoproto.customname) = "CalleeEntityID"];
 }
 
 message EmailItem {

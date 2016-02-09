@@ -159,6 +159,8 @@ func processOutgoingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 		OrganizationID: ppnr.OrganizationID,
 		CallSID:        params.CallSID,
 		Requested:      eh.clock.Now(),
+		CallerEntityID: ppnr.OwnerEntityID,
+		CalleeEntityID: ppnr.DestinationEntityID,
 	}); err != nil {
 		return "", errors.Trace(err)
 	}
@@ -427,10 +429,10 @@ func processIncomingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 				ToChannelID:   params.To,
 				Timestamp:     uint64(time.Now().Unix()),
 				Direction:     excomms.PublishedExternalMessage_INBOUND,
-				Type:          excomms.PublishedExternalMessage_CALL_EVENT,
-				Item: &excomms.PublishedExternalMessage_CallEventItem{
-					CallEventItem: &excomms.CallEventItem{
-						Type:              excomms.CallEventItem_INCOMING_ANSWERED,
+				Type:          excomms.PublishedExternalMessage_INCOMING_CALL_EVENT,
+				Item: &excomms.PublishedExternalMessage_Incoming{
+					Incoming: &excomms.IncomingCallEventItem{
+						Type:              excomms.IncomingCallEventItem_ANSWERED,
 						DurationInSeconds: params.CallDuration,
 					},
 				},
@@ -466,20 +468,24 @@ func processOutgoingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 		return "", errors.Trace(err)
 	}
 
-	var cet *excomms.PublishedExternalMessage_CallEventItem
+	var cet *excomms.PublishedExternalMessage_Outgoing
 	switch params.CallStatus {
 	case rawmsg.TwilioParams_RINGING:
-		cet = &excomms.PublishedExternalMessage_CallEventItem{
-			CallEventItem: &excomms.CallEventItem{
-				Type:              excomms.CallEventItem_OUTGOING_PLACED,
+		cet = &excomms.PublishedExternalMessage_Outgoing{
+			Outgoing: &excomms.OutgoingCallEventItem{
+				Type:              excomms.OutgoingCallEventItem_PLACED,
 				DurationInSeconds: params.CallDuration,
+				CallerEntityID:    cr.CallerEntityID,
+				CalleeEntityID:    cr.CalleeEntityID,
 			},
 		}
 	case rawmsg.TwilioParams_ANSWERED, rawmsg.TwilioParams_COMPLETED:
-		cet = &excomms.PublishedExternalMessage_CallEventItem{
-			CallEventItem: &excomms.CallEventItem{
-				Type:              excomms.CallEventItem_OUTGOING_ANSWERED,
+		cet = &excomms.PublishedExternalMessage_Outgoing{
+			Outgoing: &excomms.OutgoingCallEventItem{
+				Type:              excomms.OutgoingCallEventItem_ANSWERED,
 				DurationInSeconds: params.CallDuration,
+				CallerEntityID:    cr.CallerEntityID,
+				CalleeEntityID:    cr.CalleeEntityID,
 			},
 		}
 		if err := eh.proxyNumberManager.CallEnded(cr.Source, cr.Proxy); err != nil {
@@ -497,7 +503,7 @@ func processOutgoingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 			ToChannelID:   cr.Destination.String(),
 			Direction:     excomms.PublishedExternalMessage_OUTBOUND,
 			Timestamp:     uint64(time.Now().Unix()),
-			Type:          excomms.PublishedExternalMessage_CALL_EVENT,
+			Type:          excomms.PublishedExternalMessage_OUTGOING_CALL_EVENT,
 			Item:          cet,
 		}); err != nil {
 			golog.Errorf(err.Error())
