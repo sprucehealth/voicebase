@@ -163,11 +163,13 @@ func TestCreateThread(t *testing.T) {
 	test.Equals(t, &threading.CreateThreadResponse{
 		ThreadID: thid.String(),
 		ThreadItem: &threading.ThreadItem{
-			ID:            mid.String(),
-			Timestamp:     uint64(now.Unix()),
-			Type:          threading.ThreadItem_MESSAGE,
-			Internal:      true,
-			ActorEntityID: "e1",
+			ID:             mid.String(),
+			Timestamp:      uint64(now.Unix()),
+			Type:           threading.ThreadItem_MESSAGE,
+			Internal:       true,
+			ActorEntityID:  "e1",
+			ThreadID:       th2.ID.String(),
+			OrganizationID: "o1",
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Title:  "foo % woo",
@@ -201,6 +203,8 @@ func TestThreadItem(t *testing.T) {
 
 	eid, err := models.NewThreadItemID()
 	test.OK(t, err)
+	tid, err := models.NewThreadID()
+	test.OK(t, err)
 	now := time.Now()
 	eti := &models.ThreadItem{
 		ID:            eid,
@@ -208,6 +212,7 @@ func TestThreadItem(t *testing.T) {
 		Created:       now,
 		Internal:      true,
 		ActorEntityID: "e2",
+		ThreadID:      tid,
 		Data: &models.Message{
 			Title:  "abc",
 			Text:   "hello",
@@ -221,17 +226,20 @@ func TestThreadItem(t *testing.T) {
 		},
 	}
 	dl.Expect(mock.NewExpectation(dl.ThreadItem, eid).WithReturns(eti, nil))
+	dl.Expect(mock.NewExpectation(dl.Thread, tid).WithReturns(&models.Thread{OrganizationID: "orgID"}, nil))
 	res, err := srv.ThreadItem(nil, &threading.ThreadItemRequest{
 		ItemID: eid.String(),
 	})
 	test.OK(t, err)
 	test.Equals(t, &threading.ThreadItemResponse{
 		Item: &threading.ThreadItem{
-			ID:            eid.String(),
-			Timestamp:     uint64(now.Unix()),
-			Type:          threading.ThreadItem_MESSAGE,
-			Internal:      true,
-			ActorEntityID: "e2",
+			ID:             eid.String(),
+			Timestamp:      uint64(now.Unix()),
+			Type:           threading.ThreadItem_MESSAGE,
+			Internal:       true,
+			ActorEntityID:  "e2",
+			ThreadID:       tid.String(),
+			OrganizationID: "orgID",
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Title:  "abc",

@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
+	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/bml"
@@ -225,7 +226,7 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	it, err := transformThreadItemToResponse(item)
+	it, err := transformThreadItemToResponse(item, thread.OrganizationID)
 	if err != nil {
 		return nil, grpc.Errorf(codes.Internal, errors.Trace(err).Error())
 	}
@@ -405,7 +406,7 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	it, err := transformThreadItemToResponse(item)
+	it, err := transformThreadItemToResponse(item, thread.OrganizationID)
 	if err != nil {
 		return nil, grpc.Errorf(codes.Internal, errors.Trace(err).Error())
 	}
@@ -549,7 +550,15 @@ func (s *threadsServer) ThreadItem(ctx context.Context, in *threading.ThreadItem
 	} else if err != nil {
 		return nil, grpc.Errorf(codes.Internal, errors.Trace(err).Error())
 	}
-	ti, err := transformThreadItemToResponse(item)
+
+	th, err := s.dal.Thread(ctx, item.ThreadID)
+	if api.IsErrNotFound(err) {
+		return nil, grpc.Errorf(codes.NotFound, "Thread %s not found", tid)
+	} else if err != nil {
+		return nil, grpc.Errorf(codes.Internal, "Error while fetching thread: %s", err)
+	}
+
+	ti, err := transformThreadItemToResponse(item, th.OrganizationID)
 	if err != nil {
 		return nil, grpc.Errorf(codes.Internal, errors.Trace(err).Error())
 	}
@@ -590,6 +599,13 @@ func (s *threadsServer) ThreadItems(ctx context.Context, in *threading.ThreadIte
 		return nil, grpc.Errorf(codes.InvalidArgument, "Invalid ThreadID")
 	}
 
+	th, err := s.dal.Thread(ctx, tid)
+	if api.IsErrNotFound(err) {
+		return nil, grpc.Errorf(codes.NotFound, "Thread %s not found", tid)
+	} else if err != nil {
+		return nil, grpc.Errorf(codes.Internal, "Error while fetching thread: %s", err)
+	}
+
 	forExternal := false // TODO: set to true for EXTERNAL entities
 
 	d := dal.FromStart
@@ -612,7 +628,7 @@ func (s *threadsServer) ThreadItems(ctx context.Context, in *threading.ThreadIte
 		HasMore: ir.HasMore,
 	}
 	for i, e := range ir.Edges {
-		it, err := transformThreadItemToResponse(e.Item)
+		it, err := transformThreadItemToResponse(e.Item, th.OrganizationID)
 		if err != nil {
 			return nil, grpc.Errorf(codes.Internal, errors.Trace(err).Error())
 		}

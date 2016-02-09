@@ -72,11 +72,13 @@ func transformThreadToResponse(t *threading.Thread) (*thread, error) {
 
 func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID string, mediaSigner *media.Signer) (*threadItem, error) {
 	it := &threadItem{
-		ID:            item.ID,
-		UUID:          uuid,
-		Timestamp:     item.Timestamp,
-		ActorEntityID: item.ActorEntityID,
-		Internal:      item.Internal,
+		ID:             item.ID,
+		UUID:           uuid,
+		Timestamp:      item.Timestamp,
+		ActorEntityID:  item.ActorEntityID,
+		Internal:       item.Internal,
+		ThreadID:       item.ThreadID,
+		OrganizationID: item.OrganizationID,
 	}
 	switch item.Type {
 	case threading.ThreadItem_MESSAGE:

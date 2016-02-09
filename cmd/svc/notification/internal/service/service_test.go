@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	dmock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/notification"
+	"github.com/sprucehealth/backend/svc/notification/deeplink"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -323,7 +324,7 @@ func TestProcessNotification(t *testing.T) {
 	iData, err := json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
 			Alert: "ShortMessage",
-			URL:   threadActivityURL("testDomain", "OrganizationID", "SavedQueryID", "ThreadID", "ItemID"),
+			URL:   deeplink.ThreadMessageURL("testDomain", "OrganizationID", "SavedQueryID", "ThreadID", "ItemID"),
 		},
 		ThreadID:       "ThreadID",
 		OrganizationID: "OrganizationID",
@@ -334,7 +335,7 @@ func TestProcessNotification(t *testing.T) {
 	aData, err := json.Marshal(&androidPushNotification{
 		PushData: &androidPushData{
 			Message:        "ShortMessage",
-			URL:            threadActivityURL("testDomain", "OrganizationID", "SavedQueryID", "ThreadID", "ItemID"),
+			URL:            deeplink.ThreadMessageURL("testDomain", "OrganizationID", "SavedQueryID", "ThreadID", "ItemID"),
 			ThreadID:       "ThreadID",
 			OrganizationID: "OrganizationID",
 			MessageID:      "ItemID",

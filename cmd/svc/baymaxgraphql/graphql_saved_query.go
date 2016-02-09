@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/graphql-go/graphql"
+	"github.com/sprucehealth/backend/svc/notification/deeplink"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -96,6 +97,14 @@ var savedThreadQueryType = graphql.NewObject(
 					}
 
 					return cn, nil
+				},
+			},
+			"deeplink": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.String),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					sq := p.Source.(*savedThreadQuery)
+					svc := serviceFromParams(p)
+					return deeplink.SavedQueryURL(svc.webDomain, sq.OrganizationID, sq.ID), nil
 				},
 			},
 		},

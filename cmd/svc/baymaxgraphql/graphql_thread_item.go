@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/notification/deeplink"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -120,6 +121,26 @@ var messageType = graphql.NewObject(
 					svc := serviceFromParams(p)
 					ctx := p.Context
 					return lookupThreadItemViewDetails(ctx, svc, m.ThreadItemID)
+				},
+			},
+			"deeplink": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.String),
+				Args: graphql.FieldConfigArgument{
+					"savedQueryID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				},
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					ti := p.Source.(*threadItem)
+					svc := serviceFromParams(p)
+					savedQueryID := p.Args["savedQueryID"].(string)
+					return deeplink.ThreadMessageURL(svc.webDomain, ti.OrganizationID, savedQueryID, ti.ThreadID, ti.ID), nil
+				},
+			},
+			"shareableDeeplink": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.String),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					ti := p.Source.(*threadItem)
+					svc := serviceFromParams(p)
+					return deeplink.ThreadMessageURLShareable(svc.webDomain, ti.OrganizationID, ti.ThreadID, ti.ID), nil
 				},
 			},
 			// TODO: "editor: Entity"

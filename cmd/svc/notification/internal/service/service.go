@@ -20,6 +20,7 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification"
+	"github.com/sprucehealth/backend/svc/notification/deeplink"
 )
 
 // Config represents the configurations required to operate the notification service
@@ -272,7 +273,7 @@ type androidPushData struct {
 }
 
 func generateNotification(webDomain string, n *notification.Notification, pushConfig *dal.PushConfig) *snsNotification {
-	url := threadActivityURL(webDomain, n.OrganizationID, n.SavedQueryID, n.ThreadID, n.MessageID)
+	url := deeplink.ThreadMessageURL(webDomain, n.OrganizationID, n.SavedQueryID, n.ThreadID, n.MessageID)
 	isNotifData, err := json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
 			Alert: n.ShortMessage,
@@ -306,8 +307,4 @@ func generateNotification(webDomain string, n *notification.Notification, pushCo
 		IOS:            string(isNotifData),
 		Android:        string(androidNotifData),
 	}
-}
-
-func threadActivityURL(webDomain, organizationID, savedQueryID, threadID, messageID string) string {
-	return fmt.Sprintf("https://%s/org/%s/list/%s/thread/%s/message/%s", webDomain, organizationID, savedQueryID, threadID, messageID)
 }

@@ -23,13 +23,15 @@ func transformThreadToResponse(thread *models.Thread, forExternal bool) (*thread
 	return t, nil
 }
 
-func transformThreadItemToResponse(item *models.ThreadItem) (*threading.ThreadItem, error) {
+func transformThreadItemToResponse(item *models.ThreadItem, orgID string) (*threading.ThreadItem, error) {
 	it := &threading.ThreadItem{
-		ID:            item.ID.String(),
-		Timestamp:     uint64(item.Created.Unix()),
-		ActorEntityID: item.ActorEntityID,
-		Internal:      item.Internal,
-		Type:          threading.ThreadItem_Type(threading.ThreadItem_Type_value[string(item.Type)]), // TODO
+		ID:             item.ID.String(),
+		Timestamp:      uint64(item.Created.Unix()),
+		ActorEntityID:  item.ActorEntityID,
+		Internal:       item.Internal,
+		Type:           threading.ThreadItem_Type(threading.ThreadItem_Type_value[string(item.Type)]), // TODO
+		ThreadID:       item.ThreadID.String(),
+		OrganizationID: orgID,
 	}
 	switch item.Type {
 	case models.ItemTypeMessage:

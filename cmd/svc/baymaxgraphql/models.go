@@ -120,13 +120,15 @@ type thread struct {
 }
 
 type threadItem struct {
-	ID            string      `json:"id"`
-	UUID          string      `json:"uuid"`
-	Timestamp     uint64      `json:"timestamp"`
-	ActorEntityID string      `json:"actorEntityID"`
-	Internal      bool        `json:"internal"`
-	Type          string      `json:"type"`
-	Data          interface{} `json:"data"`
+	ID             string      `json:"id"`
+	UUID           string      `json:"uuid"`
+	Timestamp      uint64      `json:"timestamp"`
+	ActorEntityID  string      `json:"actorEntityID"`
+	Internal       bool        `json:"internal"`
+	Type           string      `json:"type"`
+	Data           interface{} `json:"data"`
+	OrganizationID string      `json:"organizationID"`
+	ThreadID       string      `json:"threadID"`
 }
 
 type threadItemViewDetails struct {

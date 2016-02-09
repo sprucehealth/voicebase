@@ -58,6 +58,8 @@ message ThreadItem {
 		MessageUpdated message_updated = 11;
 		FollowerUpdated follower_updated = 12;
 	}
+	string thread_id = 6 [(gogoproto.customname) = "ThreadID"];
+	string organization_id = 7 [(gogoproto.customname) = "OrganizationID"];
 }
 
 message ThreadItemViewDetails {

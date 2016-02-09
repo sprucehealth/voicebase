@@ -4,6 +4,7 @@ import (
 	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/notification/deeplink"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -120,6 +121,14 @@ var organizationType = graphql.NewObject(
 						})
 					}
 					return qs, nil
+				},
+			},
+			"deeplink": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.String),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					org := p.Source.(*organization)
+					svc := serviceFromParams(p)
+					return deeplink.OrgURL(svc.webDomain, org.ID), nil
 				},
 			},
 		},

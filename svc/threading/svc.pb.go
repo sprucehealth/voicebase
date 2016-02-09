@@ -261,7 +261,9 @@ type ThreadItem struct {
 	//	*ThreadItem_Message
 	//	*ThreadItem_MessageUpdated
 	//	*ThreadItem_FollowerUpdated
-	Item isThreadItem_Item `protobuf_oneof:"item"`
+	Item           isThreadItem_Item `protobuf_oneof:"item"`
+	ThreadID       string            `protobuf:"bytes,6,opt,name=thread_id,proto3" json:"thread_id,omitempty"`
+	OrganizationID string            `protobuf:"bytes,7,opt,name=organization_id,proto3" json:"organization_id,omitempty"`
 }
 
 func (m *ThreadItem) Reset()      { *m = ThreadItem{} }
@@ -1539,6 +1541,12 @@ func (this *ThreadItem) Equal(that interface{}) bool {
 	} else if this.Item == nil {
 		return false
 	} else if !this.Item.Equal(that1.Item) {
+		return false
+	}
+	if this.ThreadID != that1.ThreadID {
+		return false
+	}
+	if this.OrganizationID != that1.OrganizationID {
 		return false
 	}
 	return true
@@ -3364,7 +3372,7 @@ func (this *ThreadItem) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 12)
+	s := make([]string, 0, 14)
 	s = append(s, "&threading.ThreadItem{")
 	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	s = append(s, "Timestamp: "+fmt.Sprintf("%#v", this.Timestamp)+",\n")
@@ -3374,6 +3382,8 @@ func (this *ThreadItem) GoString() string {
 	if this.Item != nil {
 		s = append(s, "Item: "+fmt.Sprintf("%#v", this.Item)+",\n")
 	}
+	s = append(s, "ThreadID: "+fmt.Sprintf("%#v", this.ThreadID)+",\n")
+	s = append(s, "OrganizationID: "+fmt.Sprintf("%#v", this.OrganizationID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -4875,6 +4885,18 @@ func (m *ThreadItem) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x28
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Type))
+	}
+	if len(m.ThreadID) > 0 {
+		data[i] = 0x32
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.ThreadID)))
+		i += copy(data[i:], m.ThreadID)
+	}
+	if len(m.OrganizationID) > 0 {
+		data[i] = 0x3a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.OrganizationID)))
+		i += copy(data[i:], m.OrganizationID)
 	}
 	if m.Item != nil {
 		nn1, err := m.Item.MarshalTo(data[i:])
@@ -6958,6 +6980,14 @@ func (m *ThreadItem) Size() (n int) {
 	if m.Type != 0 {
 		n += 1 + sovSvc(uint64(m.Type))
 	}
+	l = len(m.ThreadID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.OrganizationID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
 	if m.Item != nil {
 		n += m.Item.Size()
 	}
@@ -7911,6 +7941,8 @@ func (this *ThreadItem) String() string {
 		`ActorEntityID:` + fmt.Sprintf("%v", this.ActorEntityID) + `,`,
 		`Internal:` + fmt.Sprintf("%v", this.Internal) + `,`,
 		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`ThreadID:` + fmt.Sprintf("%v", this.ThreadID) + `,`,
+		`OrganizationID:` + fmt.Sprintf("%v", this.OrganizationID) + `,`,
 		`Item:` + fmt.Sprintf("%v", this.Item) + `,`,
 		`}`,
 	}, "")
@@ -9233,6 +9265,64 @@ func (m *ThreadItem) Unmarshal(data []byte) error {
 					break
 				}
 			}
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ThreadID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ThreadID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OrganizationID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		case 10:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)

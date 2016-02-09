@@ -7,6 +7,7 @@ import (
 	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/notification/deeplink"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -126,7 +127,6 @@ var threadType = graphql.NewObject(
 					}
 
 					for i, e := range res.Edges {
-
 						it, err := transformThreadItemToResponse(e.Item, "", acc.ID, svc.mediaSigner)
 						if err != nil {
 							golog.Errorf("Unknown thread item type %s", e.Item.Type.String())
@@ -139,6 +139,26 @@ var threadType = graphql.NewObject(
 					}
 
 					return cn, nil
+				},
+			},
+			"deeplink": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.String),
+				Args: graphql.FieldConfigArgument{
+					"savedQueryID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				},
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					th := p.Source.(*thread)
+					svc := serviceFromParams(p)
+					savedQueryID, _ := p.Args["savedQueryID"].(string)
+					return deeplink.ThreadURL(svc.webDomain, th.OrganizationID, savedQueryID, th.ID), nil
+				},
+			},
+			"shareableDeeplink": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.String),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					th := p.Source.(*thread)
+					svc := serviceFromParams(p)
+					return deeplink.ThreadURLShareable(svc.webDomain, th.OrganizationID, th.ID), nil
 				},
 			},
 			// "members": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(memberType))},
