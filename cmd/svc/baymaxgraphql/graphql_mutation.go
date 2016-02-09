@@ -47,18 +47,29 @@ var contactInfoInputType = graphql.NewInputObject(
 	},
 )
 
+var serializedContactInputType = graphql.NewInputObject(
+	graphql.InputObjectConfig{
+		Name: "SerializedContactInput",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"platform": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(platformEnumType)},
+			"contact":  &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		},
+	},
+)
+
 var entityInfoInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
 		Name: "EntityInfoInput",
 		Fields: graphql.InputObjectConfigFieldMap{
-			"firstName":     &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"middleInitial": &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"lastName":      &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"groupName":     &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"shortTitle":    &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"longTitle":     &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"note":          &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"contactInfos":  &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(contactInfoInputType))},
+			"firstName":          &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"middleInitial":      &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"lastName":           &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"groupName":          &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"shortTitle":         &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"longTitle":          &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"note":               &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"contactInfos":       &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(contactInfoInputType))},
+			"serializedContacts": &graphql.InputObjectFieldConfig{Type: graphql.NewList(serializedContactInputType)},
 		},
 	},
 )

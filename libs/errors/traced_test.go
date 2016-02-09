@@ -13,11 +13,11 @@ func TestTrace(t *testing.T) {
 		t.Fatal("Trace should return nil on a nil error")
 	}
 	err := testFunc1()
-	if ex := "failed [errors/traced_test.go:25]"; err.Error() != ex {
+	if ex := "failed [backend/libs/errors/traced_test.go:25]"; err.Error() != ex {
 		t.Fatalf("Expected '%s' got '%s'", ex, err.Error())
 	}
-	if tr := Traces(err); len(tr) != 1 || tr[0] != "errors/traced_test.go:25" {
-		t.Fatalf("Expected ['errors/traced_test.go:25'] got %+v", tr)
+	if tr := Traces(err); len(tr) != 1 || tr[0] != "backend/libs/errors/traced_test.go:25" {
+		t.Fatalf("Expected ['backend/libs/errors/traced_test.go:25'] got %+v", tr)
 	}
 }
 

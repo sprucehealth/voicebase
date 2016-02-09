@@ -63,6 +63,35 @@ var entityType = graphql.NewObject(
 			"shortTitle":    &graphql.Field{Type: graphql.String},
 			"note":          &graphql.Field{Type: graphql.String},
 			"contacts":      &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(contactInfoType))},
+			"serializedContact": &graphql.Field{
+				Type: graphql.String,
+				Args: graphql.FieldConfigArgument{
+					"platform": &graphql.ArgumentConfig{Type: graphql.NewNonNull(platformEnumType)},
+				},
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					entity := p.Source.(*entity)
+					svc := serviceFromParams(p)
+					ctx := p.Context
+					acc := accountFromContext(ctx)
+					if acc == nil {
+						return nil, errNotAuthenticated
+					}
+
+					platform, _ := p.Args["platform"].(string)
+					pPlatform, ok := directory.Platform_value[platform]
+					if !ok {
+						return nil, fmt.Errorf("Unknown platform type %s", platform)
+					}
+					dPlatform := directory.Platform(pPlatform)
+
+					sc, err := lookupSerializedEntityContact(ctx, svc, entity.ID, dPlatform)
+					if err != nil {
+						return nil, internalError(err)
+					}
+
+					return sc, nil
+				},
+			},
 			// TODO: avatar(width: Int = 120, height: Int = 120, crop: Boolean = true): Image
 		},
 	},

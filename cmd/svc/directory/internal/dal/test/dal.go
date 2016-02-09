@@ -229,6 +229,38 @@ func (dl *mockDAL) InsertEntityDomain(id dal.EntityID, domain string) error {
 	return mock.SafeError(rets[0])
 }
 
+func (dl *mockDAL) UpsertSerializedClientEntityContact(model *dal.SerializedClientEntityContact) error {
+	rets := dl.Expector.Record(model)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
+func (dl *mockDAL) SerializedClientEntityContact(entityID dal.EntityID, platform dal.SerializedClientEntityContactPlatform) (*dal.SerializedClientEntityContact, error) {
+	rets := dl.Expector.Record(entityID, platform)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*dal.SerializedClientEntityContact), mock.SafeError(rets[1])
+}
+
+func (dl *mockDAL) UpdateSerializedClientEntityContact(entityID dal.EntityID, platform dal.SerializedClientEntityContactPlatform, update *dal.SerializedClientEntityContactUpdate) (int64, error) {
+	rets := dl.Expector.Record(entityID, platform, update)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
+func (dl *mockDAL) DeleteSerializedClientEntityContact(entityID dal.EntityID, platform dal.SerializedClientEntityContactPlatform) (int64, error) {
+	rets := dl.Expector.Record(entityID, platform)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
 func (dl *mockDAL) Transact(trans func(dal dal.DAL) error) (err error) {
 	if err := trans(dl); err != nil {
 		return errors.Trace(err)

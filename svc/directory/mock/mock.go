@@ -129,3 +129,12 @@ func (c *Client) UpdateEntity(ctx context.Context, in *directory.UpdateEntityReq
 	}
 	return rets[0].(*directory.UpdateEntityResponse), mock.SafeError(rets[1])
 }
+
+// SerializedEntityContact returns the platform specific serialized contact for an entity
+func (c *Client) SerializedEntityContact(ctx context.Context, in *directory.SerializedEntityContactRequest, opts ...grpc.CallOption) (*directory.SerializedEntityContactResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*directory.SerializedEntityContactResponse), mock.SafeError(rets[1])
+}

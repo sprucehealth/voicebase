@@ -12,6 +12,7 @@
 		ExternalID
 		EntityInfo
 		Entity
+		SerializedClientEntityContact
 		RequestedInformation
 		ExternalIDsRequest
 		ExternalIDsResponse
@@ -38,6 +39,8 @@
 		UpdateContactsResponse
 		DeleteContactsRequest
 		DeleteContactsResponse
+		SerializedEntityContactRequest
+		SerializedEntityContactResponse
 */
 package directory
 
@@ -47,6 +50,8 @@ import math "math"
 import _ "github.com/gogo/protobuf/gogoproto"
 
 import strconv "strconv"
+
+import bytes "bytes"
 
 import strings "strings"
 import github_com_gogo_protobuf_proto "github.com/gogo/protobuf/proto"
@@ -104,6 +109,22 @@ var EntityInformation_value = map[string]int32{
 	"MEMBERS":      1,
 	"CONTACTS":     2,
 	"EXTERNAL_IDS": 3,
+}
+
+type Platform int32
+
+const (
+	Platform_IOS     Platform = 0
+	Platform_ANDROID Platform = 1
+)
+
+var Platform_name = map[int32]string{
+	0: "IOS",
+	1: "ANDROID",
+}
+var Platform_value = map[string]int32{
+	"IOS":     0,
+	"ANDROID": 1,
 }
 
 type ContactType int32
@@ -201,6 +222,15 @@ func (m *Entity) GetInfo() *EntityInfo {
 	}
 	return nil
 }
+
+type SerializedClientEntityContact struct {
+	EntityID                string   `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	Platform                Platform `protobuf:"varint,2,opt,name=platform,proto3,enum=directory.Platform" json:"platform,omitempty"`
+	SerializedEntityContact []byte   `protobuf:"bytes,3,opt,name=serialized_entity_contact,proto3" json:"serialized_entity_contact,omitempty"`
+}
+
+func (m *SerializedClientEntityContact) Reset()      { *m = SerializedClientEntityContact{} }
+func (*SerializedClientEntityContact) ProtoMessage() {}
 
 type RequestedInformation struct {
 	Depth             int64               `protobuf:"varint,1,opt,name=depth,proto3" json:"depth,omitempty"`
@@ -571,10 +601,11 @@ func (m *CreateContactsResponse) GetEntity() *Entity {
 }
 
 type UpdateEntityRequest struct {
-	EntityID             string                `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
-	EntityInfo           *EntityInfo           `protobuf:"bytes,2,opt,name=entity_info" json:"entity_info,omitempty"`
-	RequestedInformation *RequestedInformation `protobuf:"bytes,3,opt,name=requested_information" json:"requested_information,omitempty"`
-	Contacts             []*Contact            `protobuf:"bytes,4,rep,name=contacts" json:"contacts,omitempty"`
+	EntityID                 string                           `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	EntityInfo               *EntityInfo                      `protobuf:"bytes,2,opt,name=entity_info" json:"entity_info,omitempty"`
+	RequestedInformation     *RequestedInformation            `protobuf:"bytes,3,opt,name=requested_information" json:"requested_information,omitempty"`
+	Contacts                 []*Contact                       `protobuf:"bytes,4,rep,name=contacts" json:"contacts,omitempty"`
+	SerializedEntityContacts []*SerializedClientEntityContact `protobuf:"bytes,5,rep,name=serialized_entity_contacts" json:"serialized_entity_contacts,omitempty"`
 }
 
 func (m *UpdateEntityRequest) Reset()      { *m = UpdateEntityRequest{} }
@@ -597,6 +628,13 @@ func (m *UpdateEntityRequest) GetRequestedInformation() *RequestedInformation {
 func (m *UpdateEntityRequest) GetContacts() []*Contact {
 	if m != nil {
 		return m.Contacts
+	}
+	return nil
+}
+
+func (m *UpdateEntityRequest) GetSerializedEntityContacts() []*SerializedClientEntityContact {
+	if m != nil {
+		return m.SerializedEntityContacts
 	}
 	return nil
 }
@@ -682,10 +720,33 @@ func (m *DeleteContactsResponse) GetEntity() *Entity {
 	return nil
 }
 
+type SerializedEntityContactRequest struct {
+	EntityID string   `protobuf:"bytes,1,opt,name=entity_id,proto3" json:"entity_id,omitempty"`
+	Platform Platform `protobuf:"varint,2,opt,name=platform,proto3,enum=directory.Platform" json:"platform,omitempty"`
+}
+
+func (m *SerializedEntityContactRequest) Reset()      { *m = SerializedEntityContactRequest{} }
+func (*SerializedEntityContactRequest) ProtoMessage() {}
+
+type SerializedEntityContactResponse struct {
+	SerializedEntityContact *SerializedClientEntityContact `protobuf:"bytes,1,opt,name=serialized_entity_contact" json:"serialized_entity_contact,omitempty"`
+}
+
+func (m *SerializedEntityContactResponse) Reset()      { *m = SerializedEntityContactResponse{} }
+func (*SerializedEntityContactResponse) ProtoMessage() {}
+
+func (m *SerializedEntityContactResponse) GetSerializedEntityContact() *SerializedClientEntityContact {
+	if m != nil {
+		return m.SerializedEntityContact
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*ExternalID)(nil), "directory.ExternalID")
 	proto.RegisterType((*EntityInfo)(nil), "directory.EntityInfo")
 	proto.RegisterType((*Entity)(nil), "directory.Entity")
+	proto.RegisterType((*SerializedClientEntityContact)(nil), "directory.SerializedClientEntityContact")
 	proto.RegisterType((*RequestedInformation)(nil), "directory.RequestedInformation")
 	proto.RegisterType((*ExternalIDsRequest)(nil), "directory.ExternalIDsRequest")
 	proto.RegisterType((*ExternalIDsResponse)(nil), "directory.ExternalIDsResponse")
@@ -712,8 +773,11 @@ func init() {
 	proto.RegisterType((*UpdateContactsResponse)(nil), "directory.UpdateContactsResponse")
 	proto.RegisterType((*DeleteContactsRequest)(nil), "directory.DeleteContactsRequest")
 	proto.RegisterType((*DeleteContactsResponse)(nil), "directory.DeleteContactsResponse")
+	proto.RegisterType((*SerializedEntityContactRequest)(nil), "directory.SerializedEntityContactRequest")
+	proto.RegisterType((*SerializedEntityContactResponse)(nil), "directory.SerializedEntityContactResponse")
 	proto.RegisterEnum("directory.EntityType", EntityType_name, EntityType_value)
 	proto.RegisterEnum("directory.EntityInformation", EntityInformation_name, EntityInformation_value)
+	proto.RegisterEnum("directory.Platform", Platform_name, Platform_value)
 	proto.RegisterEnum("directory.ContactType", ContactType_name, ContactType_value)
 	proto.RegisterEnum("directory.LookupEntitiesRequest_LookupKeyType", LookupEntitiesRequest_LookupKeyType_name, LookupEntitiesRequest_LookupKeyType_value)
 }
@@ -726,6 +790,13 @@ func (x EntityType) String() string {
 }
 func (x EntityInformation) String() string {
 	s, ok := EntityInformation_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (x Platform) String() string {
+	s, ok := Platform_name[int32(x)]
 	if ok {
 		return s
 	}
@@ -886,6 +957,37 @@ func (this *Entity) Equal(that interface{}) bool {
 		}
 	}
 	if !this.Info.Equal(that1.Info) {
+		return false
+	}
+	return true
+}
+func (this *SerializedClientEntityContact) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*SerializedClientEntityContact)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.EntityID != that1.EntityID {
+		return false
+	}
+	if this.Platform != that1.Platform {
+		return false
+	}
+	if !bytes.Equal(this.SerializedEntityContact, that1.SerializedEntityContact) {
 		return false
 	}
 	return true
@@ -1581,6 +1683,14 @@ func (this *UpdateEntityRequest) Equal(that interface{}) bool {
 			return false
 		}
 	}
+	if len(this.SerializedEntityContacts) != len(that1.SerializedEntityContacts) {
+		return false
+	}
+	for i := range this.SerializedEntityContacts {
+		if !this.SerializedEntityContacts[i].Equal(that1.SerializedEntityContacts[i]) {
+			return false
+		}
+	}
 	return true
 }
 func (this *UpdateEntityResponse) Equal(that interface{}) bool {
@@ -1730,6 +1840,59 @@ func (this *DeleteContactsResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *SerializedEntityContactRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*SerializedEntityContactRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.EntityID != that1.EntityID {
+		return false
+	}
+	if this.Platform != that1.Platform {
+		return false
+	}
+	return true
+}
+func (this *SerializedEntityContactResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*SerializedEntityContactResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.SerializedEntityContact.Equal(that1.SerializedEntityContact) {
+		return false
+	}
+	return true
+}
 func (this *ExternalID) GoString() string {
 	if this == nil {
 		return "nil"
@@ -1780,6 +1943,18 @@ func (this *Entity) GoString() string {
 	if this.Info != nil {
 		s = append(s, "Info: "+fmt.Sprintf("%#v", this.Info)+",\n")
 	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *SerializedClientEntityContact) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&directory.SerializedClientEntityContact{")
+	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
+	s = append(s, "Platform: "+fmt.Sprintf("%#v", this.Platform)+",\n")
+	s = append(s, "SerializedEntityContact: "+fmt.Sprintf("%#v", this.SerializedEntityContact)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2060,7 +2235,7 @@ func (this *UpdateEntityRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 8)
+	s := make([]string, 0, 9)
 	s = append(s, "&directory.UpdateEntityRequest{")
 	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
 	if this.EntityInfo != nil {
@@ -2071,6 +2246,9 @@ func (this *UpdateEntityRequest) GoString() string {
 	}
 	if this.Contacts != nil {
 		s = append(s, "Contacts: "+fmt.Sprintf("%#v", this.Contacts)+",\n")
+	}
+	if this.SerializedEntityContacts != nil {
+		s = append(s, "SerializedEntityContacts: "+fmt.Sprintf("%#v", this.SerializedEntityContacts)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -2141,6 +2319,29 @@ func (this *DeleteContactsResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *SerializedEntityContactRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&directory.SerializedEntityContactRequest{")
+	s = append(s, "EntityID: "+fmt.Sprintf("%#v", this.EntityID)+",\n")
+	s = append(s, "Platform: "+fmt.Sprintf("%#v", this.Platform)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *SerializedEntityContactResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&directory.SerializedEntityContactResponse{")
+	if this.SerializedEntityContact != nil {
+		s = append(s, "SerializedEntityContact: "+fmt.Sprintf("%#v", this.SerializedEntityContact)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func valueToGoStringSvc(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -2177,6 +2378,7 @@ type DirectoryClient interface {
 	// TODO: 1/22/16 - Remove the single version of this call once this code has been deployed and all callers have been changed and deployed
 	CreateContact(ctx context.Context, in *CreateContactRequest, opts ...grpc.CallOption) (*CreateContactResponse, error)
 	CreateContacts(ctx context.Context, in *CreateContactsRequest, opts ...grpc.CallOption) (*CreateContactsResponse, error)
+	CreateEntityDomain(ctx context.Context, in *CreateEntityDomainRequest, opts ...grpc.CallOption) (*CreateEntityDomainResponse, error)
 	CreateEntity(ctx context.Context, in *CreateEntityRequest, opts ...grpc.CallOption) (*CreateEntityResponse, error)
 	CreateMembership(ctx context.Context, in *CreateMembershipRequest, opts ...grpc.CallOption) (*CreateMembershipResponse, error)
 	DeleteContacts(ctx context.Context, in *DeleteContactsRequest, opts ...grpc.CallOption) (*DeleteContactsResponse, error)
@@ -2184,7 +2386,7 @@ type DirectoryClient interface {
 	LookupEntities(ctx context.Context, in *LookupEntitiesRequest, opts ...grpc.CallOption) (*LookupEntitiesResponse, error)
 	LookupEntitiesByContact(ctx context.Context, in *LookupEntitiesByContactRequest, opts ...grpc.CallOption) (*LookupEntitiesByContactResponse, error)
 	LookupEntityDomain(ctx context.Context, in *LookupEntityDomainRequest, opts ...grpc.CallOption) (*LookupEntityDomainResponse, error)
-	CreateEntityDomain(ctx context.Context, in *CreateEntityDomainRequest, opts ...grpc.CallOption) (*CreateEntityDomainResponse, error)
+	SerializedEntityContact(ctx context.Context, in *SerializedEntityContactRequest, opts ...grpc.CallOption) (*SerializedEntityContactResponse, error)
 	UpdateContacts(ctx context.Context, in *UpdateContactsRequest, opts ...grpc.CallOption) (*UpdateContactsResponse, error)
 	UpdateEntity(ctx context.Context, in *UpdateEntityRequest, opts ...grpc.CallOption) (*UpdateEntityResponse, error)
 }
@@ -2209,6 +2411,15 @@ func (c *directoryClient) CreateContact(ctx context.Context, in *CreateContactRe
 func (c *directoryClient) CreateContacts(ctx context.Context, in *CreateContactsRequest, opts ...grpc.CallOption) (*CreateContactsResponse, error) {
 	out := new(CreateContactsResponse)
 	err := grpc.Invoke(ctx, "/directory.Directory/CreateContacts", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *directoryClient) CreateEntityDomain(ctx context.Context, in *CreateEntityDomainRequest, opts ...grpc.CallOption) (*CreateEntityDomainResponse, error) {
+	out := new(CreateEntityDomainResponse)
+	err := grpc.Invoke(ctx, "/directory.Directory/CreateEntityDomain", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2278,9 +2489,9 @@ func (c *directoryClient) LookupEntityDomain(ctx context.Context, in *LookupEnti
 	return out, nil
 }
 
-func (c *directoryClient) CreateEntityDomain(ctx context.Context, in *CreateEntityDomainRequest, opts ...grpc.CallOption) (*CreateEntityDomainResponse, error) {
-	out := new(CreateEntityDomainResponse)
-	err := grpc.Invoke(ctx, "/directory.Directory/CreateEntityDomain", in, out, c.cc, opts...)
+func (c *directoryClient) SerializedEntityContact(ctx context.Context, in *SerializedEntityContactRequest, opts ...grpc.CallOption) (*SerializedEntityContactResponse, error) {
+	out := new(SerializedEntityContactResponse)
+	err := grpc.Invoke(ctx, "/directory.Directory/SerializedEntityContact", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2311,6 +2522,7 @@ type DirectoryServer interface {
 	// TODO: 1/22/16 - Remove the single version of this call once this code has been deployed and all callers have been changed and deployed
 	CreateContact(context.Context, *CreateContactRequest) (*CreateContactResponse, error)
 	CreateContacts(context.Context, *CreateContactsRequest) (*CreateContactsResponse, error)
+	CreateEntityDomain(context.Context, *CreateEntityDomainRequest) (*CreateEntityDomainResponse, error)
 	CreateEntity(context.Context, *CreateEntityRequest) (*CreateEntityResponse, error)
 	CreateMembership(context.Context, *CreateMembershipRequest) (*CreateMembershipResponse, error)
 	DeleteContacts(context.Context, *DeleteContactsRequest) (*DeleteContactsResponse, error)
@@ -2318,7 +2530,7 @@ type DirectoryServer interface {
 	LookupEntities(context.Context, *LookupEntitiesRequest) (*LookupEntitiesResponse, error)
 	LookupEntitiesByContact(context.Context, *LookupEntitiesByContactRequest) (*LookupEntitiesByContactResponse, error)
 	LookupEntityDomain(context.Context, *LookupEntityDomainRequest) (*LookupEntityDomainResponse, error)
-	CreateEntityDomain(context.Context, *CreateEntityDomainRequest) (*CreateEntityDomainResponse, error)
+	SerializedEntityContact(context.Context, *SerializedEntityContactRequest) (*SerializedEntityContactResponse, error)
 	UpdateContacts(context.Context, *UpdateContactsRequest) (*UpdateContactsResponse, error)
 	UpdateEntity(context.Context, *UpdateEntityRequest) (*UpdateEntityResponse, error)
 }
@@ -2345,6 +2557,18 @@ func _Directory_CreateContacts_Handler(srv interface{}, ctx context.Context, dec
 		return nil, err
 	}
 	out, err := srv.(DirectoryServer).CreateContacts(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Directory_CreateEntityDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(CreateEntityDomainRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(DirectoryServer).CreateEntityDomain(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -2435,12 +2659,12 @@ func _Directory_LookupEntityDomain_Handler(srv interface{}, ctx context.Context,
 	return out, nil
 }
 
-func _Directory_CreateEntityDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(CreateEntityDomainRequest)
+func _Directory_SerializedEntityContact_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(SerializedEntityContactRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(DirectoryServer).CreateEntityDomain(ctx, in)
+	out, err := srv.(DirectoryServer).SerializedEntityContact(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -2484,6 +2708,10 @@ var _Directory_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Directory_CreateContacts_Handler,
 		},
 		{
+			MethodName: "CreateEntityDomain",
+			Handler:    _Directory_CreateEntityDomain_Handler,
+		},
+		{
 			MethodName: "CreateEntity",
 			Handler:    _Directory_CreateEntity_Handler,
 		},
@@ -2512,8 +2740,8 @@ var _Directory_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Directory_LookupEntityDomain_Handler,
 		},
 		{
-			MethodName: "CreateEntityDomain",
-			Handler:    _Directory_CreateEntityDomain_Handler,
+			MethodName: "SerializedEntityContact",
+			Handler:    _Directory_SerializedEntityContact_Handler,
 		},
 		{
 			MethodName: "UpdateContacts",
@@ -2716,6 +2944,43 @@ func (m *Entity) MarshalTo(data []byte) (int, error) {
 			return 0, err
 		}
 		i += n1
+	}
+	return i, nil
+}
+
+func (m *SerializedClientEntityContact) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *SerializedClientEntityContact) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.EntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
+		i += copy(data[i:], m.EntityID)
+	}
+	if m.Platform != 0 {
+		data[i] = 0x10
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Platform))
+	}
+	if m.SerializedEntityContact != nil {
+		if len(m.SerializedEntityContact) > 0 {
+			data[i] = 0x1a
+			i++
+			i = encodeVarintSvc(data, i, uint64(len(m.SerializedEntityContact)))
+			i += copy(data[i:], m.SerializedEntityContact)
+		}
 	}
 	return i, nil
 }
@@ -3484,6 +3749,18 @@ func (m *UpdateEntityRequest) MarshalTo(data []byte) (int, error) {
 			i += n
 		}
 	}
+	if len(m.SerializedEntityContacts) > 0 {
+		for _, msg := range m.SerializedEntityContacts {
+			data[i] = 0x2a
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
 	return i, nil
 }
 
@@ -3666,6 +3943,63 @@ func (m *DeleteContactsResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *SerializedEntityContactRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *SerializedEntityContactRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.EntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.EntityID)))
+		i += copy(data[i:], m.EntityID)
+	}
+	if m.Platform != 0 {
+		data[i] = 0x10
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Platform))
+	}
+	return i, nil
+}
+
+func (m *SerializedEntityContactResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *SerializedEntityContactResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.SerializedEntityContact != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.SerializedEntityContact.Size()))
+		n22, err := m.SerializedEntityContact.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n22
+	}
+	return i, nil
+}
+
 func encodeFixed64Svc(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -3787,6 +4121,25 @@ func (m *Entity) Size() (n int) {
 	if m.Info != nil {
 		l = m.Info.Size()
 		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *SerializedClientEntityContact) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.EntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.Platform != 0 {
+		n += 1 + sovSvc(uint64(m.Platform))
+	}
+	if m.SerializedEntityContact != nil {
+		l = len(m.SerializedEntityContact)
+		if l > 0 {
+			n += 1 + l + sovSvc(uint64(l))
+		}
 	}
 	return n
 }
@@ -4117,6 +4470,12 @@ func (m *UpdateEntityRequest) Size() (n int) {
 			n += 1 + l + sovSvc(uint64(l))
 		}
 	}
+	if len(m.SerializedEntityContacts) > 0 {
+		for _, e := range m.SerializedEntityContacts {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -4190,6 +4549,29 @@ func (m *DeleteContactsResponse) Size() (n int) {
 	return n
 }
 
+func (m *SerializedEntityContactRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.EntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.Platform != 0 {
+		n += 1 + sovSvc(uint64(m.Platform))
+	}
+	return n
+}
+
+func (m *SerializedEntityContactResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.SerializedEntityContact != nil {
+		l = m.SerializedEntityContact.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
 func sovSvc(x uint64) (n int) {
 	for {
 		n++
@@ -4244,6 +4626,18 @@ func (this *Entity) String() string {
 		`Contacts:` + strings.Replace(fmt.Sprintf("%v", this.Contacts), "Contact", "Contact", 1) + `,`,
 		`IncludedInformation:` + fmt.Sprintf("%v", this.IncludedInformation) + `,`,
 		`Info:` + strings.Replace(fmt.Sprintf("%v", this.Info), "EntityInfo", "EntityInfo", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SerializedClientEntityContact) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SerializedClientEntityContact{`,
+		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
+		`Platform:` + fmt.Sprintf("%v", this.Platform) + `,`,
+		`SerializedEntityContact:` + fmt.Sprintf("%v", this.SerializedEntityContact) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -4498,6 +4892,7 @@ func (this *UpdateEntityRequest) String() string {
 		`EntityInfo:` + strings.Replace(fmt.Sprintf("%v", this.EntityInfo), "EntityInfo", "EntityInfo", 1) + `,`,
 		`RequestedInformation:` + strings.Replace(fmt.Sprintf("%v", this.RequestedInformation), "RequestedInformation", "RequestedInformation", 1) + `,`,
 		`Contacts:` + strings.Replace(fmt.Sprintf("%v", this.Contacts), "Contact", "Contact", 1) + `,`,
+		`SerializedEntityContacts:` + strings.Replace(fmt.Sprintf("%v", this.SerializedEntityContacts), "SerializedClientEntityContact", "SerializedClientEntityContact", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -4552,6 +4947,27 @@ func (this *DeleteContactsResponse) String() string {
 	}
 	s := strings.Join([]string{`&DeleteContactsResponse{`,
 		`Entity:` + strings.Replace(fmt.Sprintf("%v", this.Entity), "Entity", "Entity", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SerializedEntityContactRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SerializedEntityContactRequest{`,
+		`EntityID:` + fmt.Sprintf("%v", this.EntityID) + `,`,
+		`Platform:` + fmt.Sprintf("%v", this.Platform) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SerializedEntityContactResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SerializedEntityContactResponse{`,
+		`SerializedEntityContact:` + strings.Replace(fmt.Sprintf("%v", this.SerializedEntityContact), "SerializedClientEntityContact", "SerializedClientEntityContact", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5205,6 +5621,132 @@ func (m *Entity) Unmarshal(data []byte) error {
 			if err := m.Info.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SerializedClientEntityContact) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SerializedClientEntityContact: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SerializedClientEntityContact: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Platform", wireType)
+			}
+			m.Platform = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Platform |= (Platform(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SerializedEntityContact", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SerializedEntityContact = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -7600,6 +8142,37 @@ func (m *UpdateEntityRequest) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SerializedEntityContacts", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SerializedEntityContacts = append(m.SerializedEntityContacts, &SerializedClientEntityContact{})
+			if err := m.SerializedEntityContacts[len(m.SerializedEntityContacts)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -8130,6 +8703,187 @@ func (m *DeleteContactsResponse) Unmarshal(data []byte) error {
 				m.Entity = &Entity{}
 			}
 			if err := m.Entity.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SerializedEntityContactRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SerializedEntityContactRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SerializedEntityContactRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Platform", wireType)
+			}
+			m.Platform = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Platform |= (Platform(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SerializedEntityContactResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SerializedEntityContactResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SerializedEntityContactResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SerializedEntityContact", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.SerializedEntityContact == nil {
+				m.SerializedEntityContact = &SerializedClientEntityContact{}
+			}
+			if err := m.SerializedEntityContact.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

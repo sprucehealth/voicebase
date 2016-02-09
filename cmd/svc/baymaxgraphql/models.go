@@ -137,6 +137,10 @@ type threadItemViewDetails struct {
 	ViewTime      uint64 `json:"viewTime"`
 }
 
+type serializedEntityContact struct {
+	SerializedContact string `json:"serializedContact"`
+}
+
 type savedThreadQuery struct {
 	ID             string `json:"id"`
 	OrganizationID string `json:"id"`

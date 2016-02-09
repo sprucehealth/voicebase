@@ -27,7 +27,7 @@ func Trace(err error) error {
 			if file[i] == '/' {
 				short = file[i+1:]
 				depth++
-				if depth == 2 {
+				if depth == 4 {
 					break
 				}
 			}

@@ -171,6 +171,29 @@ func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityReq
 	}, nil
 }
 
+func (s *server) SerializedEntityContact(ctx context.Context, rd *directory.SerializedEntityContactRequest) (out *directory.SerializedEntityContactResponse, err error) {
+	if rd.EntityID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "entity id required")
+	}
+	entityID, err := dal.ParseEntityID(rd.EntityID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Error parsing entity id: %s", err)
+	}
+	platform, err := dal.ParseSerializedClientEntityContactPlatform(directory.Platform_name[int32(rd.Platform)])
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Error parsing platform type: %s", err)
+	}
+	sec, err := s.dl.SerializedClientEntityContact(entityID, platform)
+	if !api.IsErrNotFound(err) && err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	} else if api.IsErrNotFound(err) {
+		return nil, grpcErrorf(codes.NotFound, "Not serialized entity contact exists for entity id %s and platform %s", entityID, platform)
+	}
+	return &directory.SerializedEntityContactResponse{
+		SerializedEntityContact: dalSerializedClientEntityContactAsPBSerializedClientEntityContact(sec),
+	}, nil
+}
+
 func (s *server) validateCreateEntityRequest(rd *directory.CreateEntityRequest) error {
 	golog.Debugf("Entering server.server.validateCreateEntityRequest: %+v", rd)
 	if golog.Default().L(golog.DEBUG) {
@@ -260,6 +283,21 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 		// Insert the new set of contact records
 		if err := dl.InsertEntityContacts(contacts); err != nil {
 			return errors.Trace(err)
+		}
+
+		// Upsert any serialized entity contact info
+		for _, sec := range rd.SerializedEntityContacts {
+			platform, err := dal.ParseSerializedClientEntityContactPlatform(directory.Platform_name[int32(sec.Platform)])
+			if err != nil {
+				return grpcErrorf(codes.InvalidArgument, "Error parsing platform type: %s", err)
+			}
+			if err := dl.UpsertSerializedClientEntityContact(&dal.SerializedClientEntityContact{
+				EntityID:                eID,
+				Platform:                platform,
+				SerializedEntityContact: sec.SerializedEntityContact,
+			}); err != nil {
+				return grpcErrorf(codes.Internal, err.Error())
+			}
 		}
 
 		entity, err := dl.Entity(eID)
@@ -850,6 +888,25 @@ func dalEntityAsPBEntity(dEntity *dal.Entity) *directory.Entity {
 		Note:          dEntity.Note,
 	}
 	return entity
+}
+
+// Note: Much letters. Many length. So convention.
+func dalSerializedClientEntityContactAsPBSerializedClientEntityContact(dSerializedClientEntityContact *dal.SerializedClientEntityContact) *directory.SerializedClientEntityContact {
+	golog.Debugf("Entering server.dalSerializedClientEntityContactAsPBSerializedClientEntityContact: %+v...", dSerializedClientEntityContact)
+	if golog.Default().L(golog.DEBUG) {
+		defer func() {
+			golog.Debugf("Leaving server.dalSerializedClientEntityContactAsPBSerializedClientEntityContact...")
+		}()
+	}
+	serializedClientEntityContact := &directory.SerializedClientEntityContact{}
+	serializedClientEntityContact.EntityID = dSerializedClientEntityContact.EntityID.String()
+	platform, ok := directory.Platform_value[dSerializedClientEntityContact.Platform.String()]
+	if !ok {
+		golog.Errorf("Unknown platform %s when converting to PB format", dSerializedClientEntityContact.Platform)
+	}
+	serializedClientEntityContact.Platform = directory.Platform(platform)
+	serializedClientEntityContact.SerializedEntityContact = dSerializedClientEntityContact.SerializedEntityContact
+	return serializedClientEntityContact
 }
 
 // Note: Assuming this is small it's not a big deal but might want to be more efficient if it grows

@@ -23,6 +23,10 @@ type DAL interface {
 	Entities(ids []EntityID) ([]*Entity, error)
 	UpdateEntity(id EntityID, update *EntityUpdate) (int64, error)
 	DeleteEntity(id EntityID) (int64, error)
+	UpsertSerializedClientEntityContact(model *SerializedClientEntityContact) error
+	SerializedClientEntityContact(entityID EntityID, platform SerializedClientEntityContactPlatform) (*SerializedClientEntityContact, error)
+	UpdateSerializedClientEntityContact(entityID EntityID, platform SerializedClientEntityContactPlatform, update *SerializedClientEntityContactUpdate) (int64, error)
+	DeleteSerializedClientEntityContact(entityID EntityID, platform SerializedClientEntityContactPlatform) (int64, error)
 	InsertExternalEntityID(model *ExternalEntityID) error
 	ExternalEntityIDs(externalID string) ([]*ExternalEntityID, error)
 	ExternalEntityIDsForEntities(entityID []EntityID) ([]*ExternalEntityID, error)
@@ -345,6 +349,43 @@ func (t *EntityContactType) Scan(src interface{}) error {
 	return errors.Trace(err)
 }
 
+// SerializedClientEntityContactPlatform represents the type associated with the platform column of the serialized_client_entity_contact table
+type SerializedClientEntityContactPlatform string
+
+const (
+	// SerializedClientEntityContactPlatformIOS represents the IOS state of the platform field on a serialized_client_entity_contact record
+	SerializedClientEntityContactPlatformIOS SerializedClientEntityContactPlatform = "IOS"
+	// SerializedClientEntityContactPlatformAndroid represents the ANDROID state of the platform field on a serialized_client_entity_contact record
+	SerializedClientEntityContactPlatformAndroid SerializedClientEntityContactPlatform = "ANDROID"
+)
+
+// ParseSerializedClientEntityContactPlatform converts a string into the correcponding enum value
+func ParseSerializedClientEntityContactPlatform(s string) (SerializedClientEntityContactPlatform, error) {
+	switch t := SerializedClientEntityContactPlatform(strings.ToUpper(s)); t {
+	case SerializedClientEntityContactPlatformIOS, SerializedClientEntityContactPlatformAndroid:
+		return t, nil
+	}
+	return SerializedClientEntityContactPlatform(""), errors.Trace(fmt.Errorf("Unknown platform:%s", s))
+}
+
+func (t SerializedClientEntityContactPlatform) String() string {
+	return string(t)
+}
+
+// Scan allows for scanning of SerializedClientEntityContactPlatform from a database conforming to the sql.Scanner interface
+func (t *SerializedClientEntityContactPlatform) Scan(src interface{}) error {
+	var err error
+	switch ts := src.(type) {
+	case string:
+		*t, err = ParseSerializedClientEntityContactPlatform(ts)
+	case []byte:
+		*t, err = ParseSerializedClientEntityContactPlatform(string(ts))
+	default:
+		return errors.Trace(fmt.Errorf("Unsupported type %T with value %+v in enumeration scan", src, src))
+	}
+	return errors.Trace(err)
+}
+
 // Event represents a event record
 type Event struct {
 	ID       EventID
@@ -434,6 +475,20 @@ type EntityUpdate struct {
 	ShortTitle    *string
 	LongTitle     *string
 	Note          *string
+}
+
+// SerializedClientEntityContact represents a serialized_client_entity_contact record
+type SerializedClientEntityContact struct {
+	EntityID                EntityID
+	SerializedEntityContact []byte
+	Platform                SerializedClientEntityContactPlatform
+	Created                 time.Time
+	Modified                time.Time
+}
+
+// SerializedClientEntityContactUpdate represents the mutable aspects of a serialized_client_entity_contact record
+type SerializedClientEntityContactUpdate struct {
+	SerializedEntityContact []byte
 }
 
 // InsertEntity inserts a entity record
@@ -911,6 +966,58 @@ func (d *dal) InsertEntityDomain(id EntityID, domain string) error {
 	return errors.Trace(err)
 }
 
+// UpsertSerializedClientEntityContact inserts a serialized_client_entity_contact record and updates on duplicate
+func (d *dal) UpsertSerializedClientEntityContact(model *SerializedClientEntityContact) error {
+	_, err := d.db.Exec(
+		`INSERT INTO serialized_client_entity_contact
+          (entity_id, serialized_entity_contact, platform)
+          VALUES (?, ?, ?)
+          ON DUPLICATE KEY UPDATE serialized_entity_contact=VALUES(serialized_entity_contact)`, model.EntityID, model.SerializedEntityContact, model.Platform.String())
+	return errors.Trace(err)
+}
+
+// SerializedClientEntityContact retrieves a serialized_client_entity_contact record
+func (d *dal) SerializedClientEntityContact(entityID EntityID, platform SerializedClientEntityContactPlatform) (*SerializedClientEntityContact, error) {
+	row := d.db.QueryRow(
+		selectSerializedClientEntityContact+` WHERE entity_id = ? AND platform = ?`, entityID, platform.String())
+	model, err := scanSerializedClientEntityContact(row)
+	return model, errors.Trace(err)
+}
+
+// UpdateSerializedClientEntityContact updates the mutable aspects of a serialized_client_entity_contact record
+func (d *dal) UpdateSerializedClientEntityContact(entityID EntityID, platform SerializedClientEntityContactPlatform, update *SerializedClientEntityContactUpdate) (int64, error) {
+	args := dbutil.MySQLVarArgs()
+	if len(update.SerializedEntityContact) != 0 {
+		args.Append("serialized_entity_contact", update.SerializedEntityContact)
+	}
+	if args.IsEmpty() {
+		return 0, nil
+	}
+
+	res, err := d.db.Exec(
+		`UPDATE serialized_client_entity_contact
+          SET `+args.ColumnsForUpdate()+` WHERE entity_id = ? AND platform = ?`, append(args.Values(), entityID, platform)...)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	aff, err := res.RowsAffected()
+	return aff, errors.Trace(err)
+}
+
+// DeleteSerializedClientEntityContact deletes a serialized_client_entity_contact record
+func (d *dal) DeleteSerializedClientEntityContact(entityID EntityID, platform SerializedClientEntityContactPlatform) (int64, error) {
+	res, err := d.db.Exec(
+		`DELETE FROM serialized_client_entity_contact
+          WHERE entity_id = ? AND platform = ?`, entityID, platform)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	aff, err := res.RowsAffected()
+	return aff, errors.Trace(err)
+}
+
 const selectExternalEntityID = `
     SELECT external_entity_id.created, external_entity_id.modified, external_entity_id.entity_id, external_entity_id.external_id
       FROM external_entity_id`
@@ -985,6 +1092,20 @@ func scanEntity(row dbutil.Scanner) (*Entity, error) {
 	err := row.Scan(&m.ID, &m.MiddleInitial, &m.LastName, &m.Note, &m.Created, &m.Modified, &m.DisplayName, &m.FirstName, &m.GroupName, &m.Type, &m.Status, &m.ShortTitle, &m.LongTitle)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(api.ErrNotFound("directory - Entity not found"))
+	}
+	return &m, errors.Trace(err)
+}
+
+const selectSerializedClientEntityContact = `
+    SELECT serialized_client_entity_contact.entity_id, serialized_client_entity_contact.serialized_entity_contact, serialized_client_entity_contact.platform, serialized_client_entity_contact.created, serialized_client_entity_contact.modified
+      FROM serialized_client_entity_contact`
+
+func scanSerializedClientEntityContact(row dbutil.Scanner) (*SerializedClientEntityContact, error) {
+	var m SerializedClientEntityContact
+
+	err := row.Scan(&m.EntityID, &m.SerializedEntityContact, &m.Platform, &m.Created, &m.Modified)
+	if err == sql.ErrNoRows {
+		return nil, errors.Trace(api.ErrNotFound("directory - SerializedClientEntityContact not found"))
 	}
 	return &m, errors.Trace(err)
 }

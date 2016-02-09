@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/svc/directory"
 )
@@ -64,10 +66,29 @@ var updateEntityMutation = &graphql.Field{
 			return nil, internalError(err)
 		}
 
+		serializedContactInput, _ := entityInfoInput["serializedContacts"].([]interface{})
+		serializedContacts := make([]*directory.SerializedClientEntityContact, len(serializedContactInput))
+		for i, sci := range serializedContactInput {
+			msci := sci.(map[string]interface{})
+			platform := msci["platform"].(string)
+			contact := msci["contact"].(string)
+			pPlatform, ok := directory.Platform_value[platform]
+			if !ok {
+				return nil, fmt.Errorf("Unknown platform type %s", platform)
+			}
+			dPlatform := directory.Platform(pPlatform)
+			serializedContacts[i] = &directory.SerializedClientEntityContact{
+				EntityID:                entID,
+				Platform:                dPlatform,
+				SerializedEntityContact: []byte(contact),
+			}
+		}
+
 		resp, err := svc.directory.UpdateEntity(ctx, &directory.UpdateEntityRequest{
-			EntityID:   entID,
-			EntityInfo: entityInfo,
-			Contacts:   contacts,
+			EntityID:                 entID,
+			EntityInfo:               entityInfo,
+			Contacts:                 contacts,
+			SerializedEntityContacts: serializedContacts,
 			RequestedInformation: &directory.RequestedInformation{
 				Depth:             0,
 				EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},

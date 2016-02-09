@@ -36,10 +36,17 @@ func TestUpdateEntityMutation(t *testing.T) {
 		{ContactType: directory.ContactType_PHONE, Value: "+14155555555", Label: "Phone"},
 		{ContactType: directory.ContactType_EMAIL, Value: "someone@example.com", Label: "Email"},
 	}
+	serializedContacts := []*directory.SerializedClientEntityContact{
+		{
+			EntityID:                entityID,
+			Platform:                directory.Platform_IOS,
+			SerializedEntityContact: []byte("{\"data\":\"serialized\"}")},
+	}
 	g.dirC.Expect(mock.NewExpectation(g.dirC.UpdateEntity, &directory.UpdateEntityRequest{
-		EntityID:   entityID,
-		EntityInfo: entityInfo,
-		Contacts:   contacts,
+		EntityID:                 entityID,
+		EntityInfo:               entityInfo,
+		Contacts:                 contacts,
+		SerializedEntityContacts: serializedContacts,
 		RequestedInformation: &directory.RequestedInformation{
 			Depth:             0,
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
@@ -49,6 +56,16 @@ func TestUpdateEntityMutation(t *testing.T) {
 			ID:       entityID,
 			Contacts: contacts,
 			Info:     entityInfo,
+		},
+	}, nil))
+	g.dirC.Expect(mock.NewExpectation(g.dirC.SerializedEntityContact, &directory.SerializedEntityContactRequest{
+		EntityID: entityID,
+		Platform: directory.Platform_IOS,
+	}).WithReturns(&directory.SerializedEntityContactResponse{
+		SerializedEntityContact: &directory.SerializedClientEntityContact{
+			EntityID:                entityID,
+			Platform:                directory.Platform_IOS,
+			SerializedEntityContact: []byte("{\"data\":\"serialized\"}"),
 		},
 	}, nil))
 
@@ -69,6 +86,9 @@ func TestUpdateEntityMutation(t *testing.T) {
 						{type: PHONE, value: "+14155555555", label: "Phone"},
 						{type: EMAIL, value: "someone@example.com", label: "Email"},
 					],
+					serializedContacts: [
+						{platform: IOS, contact: "{\"data\":\"serialized\"}"},
+					],
 				},
 			}) {
 				clientMutationId
@@ -87,6 +107,7 @@ func TestUpdateEntityMutation(t *testing.T) {
 						value
 						label
 					}
+					serializedContact(platform: IOS)
 				}
 			}
 		}`, map[string]interface{}{
@@ -119,6 +140,7 @@ func TestUpdateEntityMutation(t *testing.T) {
 				"longTitle": "longTitle",
 				"middleInitial": "middleInitial",
 				"note": "note",
+				"serializedContact": "{\"data\":\"serialized\"}",
 				"shortTitle": "shortTitle"
 			}
 		}
