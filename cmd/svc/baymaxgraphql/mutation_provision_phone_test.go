@@ -218,7 +218,7 @@ func TestProvisionPhone_Unavailable(t *testing.T) {
 		"provisionPhoneNumber": {
 			"clientMutationId": "a1b2c3",
 			"organization": null,
-			"phoneNumber": "",
+			"phoneNumber": null,
 			"result": "UNAVAILABLE"
 		}
 	}

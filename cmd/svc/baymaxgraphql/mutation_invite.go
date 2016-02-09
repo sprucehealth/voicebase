@@ -106,7 +106,7 @@ var associateAttributionValueType = graphql.NewInputObject(graphql.InputObjectCo
 	Name: "AssociateAttributionValue",
 	Fields: graphql.InputObjectConfigFieldMap{
 		"key":   &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-		"value": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		"value": &graphql.InputObjectFieldConfig{Type: graphql.String},
 	},
 })
 
@@ -153,9 +153,12 @@ var associateAttributionMutation = &graphql.Field{
 		values := make([]*invite.AttributionValue, len(valuesInput))
 		for i, v := range valuesInput {
 			m := v.(map[string]interface{})
-			values[i] = &invite.AttributionValue{
-				Key:   m["key"].(string),
-				Value: m["value"].(string),
+			value, _ := m["value"].(string)
+			if value != "" {
+				values[i] = &invite.AttributionValue{
+					Key:   m["key"].(string),
+					Value: value,
+				}
 			}
 		}
 		_, err := svc.invite.SetAttributionData(ctx, &invite.SetAttributionDataRequest{
