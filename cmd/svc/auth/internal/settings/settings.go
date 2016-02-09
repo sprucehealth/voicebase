@@ -17,8 +17,7 @@ var Enable2FAConfig = &settings.Config{
 	Config: &settings.Config_Boolean{
 		Boolean: &settings.BooleanConfig{
 			Default: &settings.BooleanValue{
-				// TODO: Make on by default in prod and off by default in non-prod.
-				Value: false,
+				Value: true,
 			},
 		},
 	},
