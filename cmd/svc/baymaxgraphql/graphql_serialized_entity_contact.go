@@ -5,8 +5,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
-	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/graphql"
 )
 
 var platformEnumType = graphql.NewEnum(

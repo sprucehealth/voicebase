@@ -3,15 +3,15 @@ package main
 import (
 	"fmt"
 
-	"github.com/graphql-go/graphql"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/settings"
+	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
 )
 
 type modifySettingOutput struct {
-	ClientMutationID string      `json:"clientMutationId"`
+	ClientMutationID string      `json:"clientMutationId,omitempty"`
 	Setting          interface{} `json:"setting"`
 	UserErrorMessage string      `json:"userErrorMessage"`
 	Result           string      `json:"result"`

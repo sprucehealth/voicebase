@@ -2,13 +2,14 @@ package main
 
 import (
 	"errors"
-	"github.com/sprucehealth/backend/libs/phone"
 	"time"
 
-	"github.com/graphql-go/graphql"
+	"github.com/sprucehealth/backend/libs/phone"
+
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
@@ -24,7 +25,7 @@ const (
 )
 
 type authenticateOutput struct {
-	ClientMutationID      string   `json:"clientMutationId"`
+	ClientMutationID      string   `json:"clientMutationId,omitempty"`
 	Result                string   `json:"result"`
 	Token                 string   `json:"token,omitempty"`
 	Account               *account `json:"account,omitempty"`

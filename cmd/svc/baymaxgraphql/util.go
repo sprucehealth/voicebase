@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/language/ast"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/language/ast"
 	"golang.org/x/net/context"
 )
 

@@ -1,15 +1,15 @@
 package main
 
 import (
-	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/invite"
+	"github.com/sprucehealth/graphql"
 )
 
 type inviteColleaguesOutput struct {
-	ClientMutationID string `json:"clientMutationId"`
+	ClientMutationID string `json:"clientMutationId,omitempty"`
 }
 
 var inviteColleaguesInfoType = graphql.NewInputObject(graphql.InputObjectConfig{
@@ -99,7 +99,7 @@ var inviteColleaguesMutation = &graphql.Field{
 // associateAttribution
 
 type associateAttributionOutput struct {
-	ClientMutationID string `json:"clientMutationId"`
+	ClientMutationID string `json:"clientMutationId,omitempty"`
 }
 
 var associateAttributionValueType = graphql.NewInputObject(graphql.InputObjectConfig{

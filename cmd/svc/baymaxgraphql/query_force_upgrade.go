@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/graphql"
 )
 
 var forceUpgradeStatusType = graphql.NewObject(

@@ -2,26 +2,24 @@ package main
 
 import (
 	"fmt"
-	"github.com/sprucehealth/backend/libs/phone"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-
-	"golang.org/x/net/context"
-
-	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/graphql"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 // requestPasswordReset
 
 type requestPasswordResetOutput struct {
-	ClientMutationID string `json:"clientMutationId"`
+	ClientMutationID string `json:"clientMutationId,omitempty"`
 }
 
 var requestPasswordResetInputType = graphql.NewInputObject(
@@ -89,7 +87,7 @@ const (
 )
 
 type checkPasswordResetTokenOutput struct {
-	ClientMutationID          string `json:"clientMutationId"`
+	ClientMutationID          string `json:"clientMutationId,omitempty"`
 	Result                    string `json:"result"`
 	PhoneNumberLastFourDigits string `json:"phone_number_last_four_digits"`
 }

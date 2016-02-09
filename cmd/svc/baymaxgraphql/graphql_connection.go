@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/graphql-go/graphql"
+	"github.com/sprucehealth/graphql"
 )
 
 type ConnectionCursor string

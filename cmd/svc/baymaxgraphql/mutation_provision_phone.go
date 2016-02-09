@@ -3,15 +3,15 @@ package main
 import (
 	"fmt"
 
-	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
 
 type provisionPhoneNumberOutput struct {
-	ClientMutationID string        `json:"clientMutationId"`
+	ClientMutationID string        `json:"clientMutationId,omitempty"`
 	PhoneNumber      string        `json:"phoneNumber,omitempty"`
 	Organization     *organization `json:"organization,omitempty"`
 	Result           string        `json:"result"`

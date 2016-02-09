@@ -4,11 +4,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification/deeplink"
 	"github.com/sprucehealth/backend/svc/threading"
+	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

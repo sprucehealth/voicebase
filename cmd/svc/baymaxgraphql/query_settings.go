@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 
-	"github.com/graphql-go/graphql"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/settings"
+	"github.com/sprucehealth/graphql"
 )
 
 var settingsInterfaceType = graphql.NewInterface(

@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
@@ -15,7 +15,7 @@ import (
 // provision email
 
 type provisionEmailOutput struct {
-	ClientMutationID string        `json:"clientMutationId"`
+	ClientMutationID string        `json:"clientMutationId,omitempty"`
 	Result           string        `json:"result"`
 	Organization     *organization `json:"organization"`
 	Entity           *entity       `json:"entity"`

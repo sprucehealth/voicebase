@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/sprucehealth/backend/svc/invite"
 	"time"
 
-	"github.com/graphql-go/graphql"
+	"github.com/sprucehealth/backend/svc/invite"
+
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -14,11 +14,12 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
+	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
 )
 
 type createAccountOutput struct {
-	ClientMutationID    string   `json:"clientMutationId"`
+	ClientMutationID    string   `json:"clientMutationId,omitempty"`
 	Token               string   `json:"token,omitempty"`
 	Account             *account `json:"account,omitempty"`
 	ClientEncryptionKey string   `json:"clientEncryptionKey,omitempty"`

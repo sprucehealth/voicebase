@@ -2,9 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/excomms"
-	"testing"
 
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"

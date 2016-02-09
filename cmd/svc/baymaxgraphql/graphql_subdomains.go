@@ -1,6 +1,6 @@
 package main
 
-import "github.com/graphql-go/graphql"
+import "github.com/sprucehealth/graphql"
 
 var subdomainType = graphql.NewObject(
 	graphql.ObjectConfig{

@@ -3,13 +3,13 @@ package main
 import (
 	"testing"
 
-	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	dirmock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/threading"
 	thmock "github.com/sprucehealth/backend/svc/threading/mock"
 	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

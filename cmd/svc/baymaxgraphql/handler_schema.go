@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/gqlintrospect"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
 )
 

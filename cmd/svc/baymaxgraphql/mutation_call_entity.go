@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 
-	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/graphql"
 )
 
 // callEntity
@@ -23,7 +23,7 @@ const (
 )
 
 type callEntityOutput struct {
-	ClientMutationID       string `json:"clientMutationId"`
+	ClientMutationID       string `json:"clientMutationId,omitempty"`
 	Result                 string `json:"result"`
 	ProxyPhoneNumber       string `json:"proxyPhoneNumber,omitempty"`
 	OriginatingPhoneNumber string `json:"originatingPhoneNumber,omitempty"`

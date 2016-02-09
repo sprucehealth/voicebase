@@ -1,13 +1,14 @@
 package main
 
 import (
-	"github.com/graphql-go/graphql"
+	"testing"
+
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/test"
+	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
-	"testing"
 )
 
 func TestForceUpgradeStatus(t *testing.T) {

@@ -126,7 +126,7 @@ type thread struct {
 
 type threadItem struct {
 	ID             string      `json:"id"`
-	UUID           string      `json:"uuid"`
+	UUID           string      `json:"uuid,omitempty"`
 	Timestamp      uint64      `json:"timestamp"`
 	ActorEntityID  string      `json:"actorEntityID"`
 	Internal       bool        `json:"internal"`
@@ -166,7 +166,7 @@ type subdomain struct {
 
 type stringListSetting struct {
 	Key         string                  `json:"key"`
-	Subkey      string                  `json:"subkey"`
+	Subkey      string                  `json:"subkey,omitempty"`
 	Title       string                  `json:"title"`
 	Description string                  `json:"description"`
 	Value       *stringListSettingValue `json:"value"`
@@ -174,7 +174,7 @@ type stringListSetting struct {
 
 type booleanSetting struct {
 	Key         string               `json:"key"`
-	Subkey      string               `json:"subkey"`
+	Subkey      string               `json:"subkey,omitempty"`
 	Title       string               `json:"title"`
 	Description string               `json:"description"`
 	Value       *booleanSettingValue `json:"value"`
@@ -188,7 +188,7 @@ type selectableItem struct {
 
 type selectSetting struct {
 	Key         string                  `json:"key"`
-	Subkey      string                  `json:"subkey"`
+	Subkey      string                  `json:"subkey,omitempty"`
 	Title       string                  `json:"title"`
 	Description string                  `json:"description"`
 	Options     []*selectableItem       `json:"options"`
@@ -200,13 +200,13 @@ type selectSetting struct {
 type stringListSettingValue struct {
 	Values []string `json:"list"`
 	Key    string   `json:"key"`
-	Subkey string   `json:"subkey"`
+	Subkey string   `json:"subkey,omitempty"`
 }
 
 type booleanSettingValue struct {
 	Value  bool   `json:"set"`
 	Key    string `json:"key"`
-	Subkey string `json:"subkey"`
+	Subkey string `json:"subkey,omitempty"`
 }
 
 type selectableItemValue struct {
@@ -216,7 +216,7 @@ type selectableItemValue struct {
 type selectableSettingValue struct {
 	Items  []*selectableItemValue `json:"items"`
 	Key    string                 `json:"key"`
-	Subkey string                 `json:"subkey"`
+	Subkey string                 `json:"subkey,omitempty"`
 }
 
 // force upgrade status

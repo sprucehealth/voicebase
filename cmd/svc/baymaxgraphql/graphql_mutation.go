@@ -4,12 +4,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/threading"
+	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
@@ -91,7 +91,7 @@ var messageInputType = graphql.NewInputObject(
 // postMessage
 
 type postMessageOutput struct {
-	ClientMutationID string  `json:"clientMutationId"`
+	ClientMutationID string  `json:"clientMutationId,omitempty"`
 	ItemEdge         *Edge   `json:"itemEdge"`
 	Thread           *thread `json:"thread"`
 }
@@ -168,7 +168,7 @@ var createSavedThreadQueryInputType = graphql.NewInputObject(
 )
 
 type createSavedThreadQueryOutput struct {
-	ClientMutationID   string            `json:"clientMutationId"`
+	ClientMutationID   string            `json:"clientMutationId,omitempty"`
 	Result             string            `json:"result"`
 	SavedThreadQueryID string            `json:"savedThreadQueryID,omitempty"`
 	SavedThreadQuery   *savedThreadQuery `json:"savedThreadQuery,omitempty"`
@@ -192,7 +192,7 @@ var createSavedThreadQueryOutputType = graphql.NewObject(
 /// registerDeviceForPush
 
 type registerDeviceForPushOutput struct {
-	ClientMutationID string `json:"clientMutationId"`
+	ClientMutationID string `json:"clientMutationId,omitempty"`
 }
 
 var registerDeviceForPushInputType = graphql.NewInputObject(
@@ -221,7 +221,7 @@ var registerDeviceForPushOutputType = graphql.NewObject(
 /// markThreadAsRead
 
 type markThreadAsReadOutput struct {
-	ClientMutationID string `json:"clientMutationId"`
+	ClientMutationID string `json:"clientMutationId,omitempty"`
 }
 
 var markThreadAsReadInputType = graphql.NewInputObject(
@@ -251,7 +251,7 @@ var markThreadAsReadOutputType = graphql.NewObject(
 /// sendTestNotification
 
 type sendTestNotificationOutput struct {
-	ClientMutationID string `json:"clientMutationId"`
+	ClientMutationID string `json:"clientMutationId,omitempty"`
 }
 
 var sendTestNotificationInputType = graphql.NewInputObject(
@@ -282,7 +282,7 @@ var sendTestNotificationOutputType = graphql.NewObject(
 // deleteThread
 
 type deleteThreadOutput struct {
-	ClientMutationID string `json:"clientMutationId"`
+	ClientMutationID string `json:"clientMutationId,omitempty"`
 }
 
 var deleteThreadInputType = graphql.NewInputObject(

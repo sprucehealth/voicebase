@@ -3,12 +3,12 @@ package main
 import (
 	"fmt"
 
-	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/graphql"
 )
 
 type updateEntityOutput struct {
-	ClientMutationID string  `json:"clientMutationId"`
+	ClientMutationID string  `json:"clientMutationId,omitempty"`
 	Entity           *entity `json:"entity"`
 }
 

@@ -6,9 +6,9 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
+	"github.com/sprucehealth/graphql"
 )
 
 var threadItemViewDetailsType = graphql.NewObject(

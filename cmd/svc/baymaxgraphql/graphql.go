@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/environment"
@@ -22,6 +21,7 @@ import (
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
+	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
 )
 

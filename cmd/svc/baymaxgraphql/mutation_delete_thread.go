@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/threading"
+	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )

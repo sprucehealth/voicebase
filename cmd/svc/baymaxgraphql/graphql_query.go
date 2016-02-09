@@ -3,8 +3,8 @@ package main
 import (
 	"errors"
 
-	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
 )
 

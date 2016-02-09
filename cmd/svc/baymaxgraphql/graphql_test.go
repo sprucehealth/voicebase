@@ -3,7 +3,6 @@ package main
 import (
 	"testing"
 
-	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/conc"
 	authmock "github.com/sprucehealth/backend/svc/auth/mock"
 	dirmock "github.com/sprucehealth/backend/svc/directory/mock"
@@ -11,6 +10,7 @@ import (
 	invitemock "github.com/sprucehealth/backend/svc/invite/mock"
 	settingsmock "github.com/sprucehealth/backend/svc/settings/mock"
 	thmock "github.com/sprucehealth/backend/svc/threading/mock"
+	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
 )
 

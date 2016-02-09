@@ -3,12 +3,12 @@ package main
 import (
 	"strings"
 
-	"github.com/graphql-go/graphql"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
+	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
@@ -45,7 +45,7 @@ var createThreadResultType = graphql.NewEnum(graphql.EnumConfig{
 })
 
 type createThreadOutput struct {
-	ClientMutationID string    `json:"clientMutationId"`
+	ClientMutationID string    `json:"clientMutationId,omitempty"`
 	Result           string    `json:"result"`
 	Thread           *thread   `json:"thread"`
 	ExistingThreads  []*thread `json:"existingThreads,omitempty"`
