@@ -63,7 +63,7 @@ type SendGridClient interface {
 // New returns an initialized instance of the invite server
 func New(dal dal.DAL, clk clock.Clock, directoryClient directory.DirectoryClient, branch branch.Client, sg SendGridClient, fromEmail string) invite.InviteServer {
 	if clk == nil {
-		clock.New()
+		clk = clock.New()
 	}
 	return &server{
 		dal:             dal,
