@@ -99,6 +99,12 @@ if [[ ! -z "$FULLCOVERAGE" ]]; then
             go test -cover -covermode=set -coverprofile="$PKG/cover.out" -test.parallel 4 "$PKG"
         fi
     done
+elif [[ ! -z "$NO_INTEGRATION_TESTS" ]]; then
+    for PKG in $PKGS; do
+        if [[ ! "$PKG" == *"/test/"* ]]; then
+            go test -cover -covermode=set -coverprofile="$PKG/cover.out" -test.parallel 4 "$PKG"
+        fi
+    done
 else
     for PKG in $PKGS; do
         if [[ "$PKG" == *"/test/"* ]]; then
