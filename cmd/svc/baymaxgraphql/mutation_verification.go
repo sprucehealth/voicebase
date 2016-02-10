@@ -63,7 +63,7 @@ var verifyPhoneNumberOutputType = graphql.NewObject(
 		Name: "VerifyPhoneNumberPayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
-			"result":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"result":           &graphql.Field{Type: graphql.NewNonNull(verifyPhoneNumberResultType)},
 			"token":            &graphql.Field{Type: graphql.String},
 			"message":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		},
