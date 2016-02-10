@@ -29,6 +29,11 @@ const (
 	endpointChannelEmail = "EMAIL"
 )
 
+type me struct {
+	Account             *account `json:"account"`
+	ClientEncryptionKey string   `json:"clientEncryptionKey"`
+}
+
 type account struct {
 	ID string `json:"id"`
 	// Entity        *Entity         `json:"entity"`

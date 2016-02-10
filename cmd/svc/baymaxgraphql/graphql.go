@@ -161,6 +161,7 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	}
 
 	var acc *account
+	var cek string
 	if c, err := r.Cookie(authTokenCookieName); err == nil && c.Value != "" {
 		res, err := h.service.auth.CheckAuthentication(ctx,
 			&auth.CheckAuthenticationRequest{Token: c.Value},
@@ -179,12 +180,14 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 			acc = &account{
 				ID: res.Account.ID,
 			}
+			cek = res.Token.ClientEncryptionKey
 		} else {
 			removeAuthCookie(w, r.Host)
 		}
 	}
 
 	ctx = ctxWithAccount(ctx, acc)
+	ctx = ctxWithClientEncryptionKey(ctx, cek)
 
 	sHeaders := apiservice.ExtractSpruceHeaders(r)
 	ctx = ctxWithSpruceHeaders(ctx, sHeaders)

@@ -17,8 +17,9 @@ import (
 type ctxKey int
 
 const (
-	ctxAccount       ctxKey = 0
-	ctxSpruceHeaders ctxKey = 1
+	ctxAccount ctxKey = iota
+	ctxSpruceHeaders
+	ctxClientEncryptionKey
 )
 
 type errInvalidContactFormat string
@@ -55,6 +56,17 @@ func accountFromContext(ctx context.Context) *account {
 		return nil
 	}
 	return acc
+}
+
+func ctxWithClientEncryptionKey(ctx context.Context, clientEncryptionKey string) context.Context {
+	// The client encryption key is genrated at token validation check time, so we store it here to make it available to concerned parties
+	return context.WithValue(ctx, ctxClientEncryptionKey, clientEncryptionKey)
+}
+
+// clientEncryptionKeyFromContext returns the clientEncryptionKey from the context which may be the empty string
+func clientEncryptionKeyFromContext(ctx context.Context) string {
+	cek, _ := ctx.Value(ctxClientEncryptionKey).(string)
+	return cek
 }
 
 func serviceFromParams(p graphql.ResolveParams) *service {

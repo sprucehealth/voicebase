@@ -15,13 +15,14 @@ var queryType = graphql.NewObject(
 		Name: "Query",
 		Fields: graphql.Fields{
 			"me": &graphql.Field{
-				Type: graphql.NewNonNull(accountType),
+				Type: graphql.NewNonNull(meType),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					acc := accountFromContext(p.Context)
 					if acc == nil {
 						return nil, errNotAuthenticated
 					}
-					return acc, nil
+					cek := clientEncryptionKeyFromContext(p.Context)
+					return &me{Account: acc, ClientEncryptionKey: cek}, nil
 				},
 			},
 			"node": &graphql.Field{

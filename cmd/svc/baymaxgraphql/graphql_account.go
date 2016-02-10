@@ -12,6 +12,16 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+var meType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "Me",
+		Fields: graphql.Fields{
+			"account":             &graphql.Field{Type: graphql.NewNonNull(accountType)},
+			"clientEncryptionKey": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		},
+	},
+)
+
 var accountType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Account",
