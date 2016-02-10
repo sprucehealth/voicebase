@@ -273,7 +273,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				ctx := p.Context
 				acc := accountFromContext(ctx)
 				if acc == nil {
-					return nil, errNotAuthenticated
+					return nil, errNotAuthenticated(ctx)
 				}
 
 				input := p.Args["input"].(map[string]interface{})
@@ -299,11 +299,11 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					case codes.InvalidArgument:
 						return nil, err
 					}
-					return nil, internalError(err)
+					return nil, internalError(ctx, err)
 				}
 				sq, err := transformSavedQueryToResponse(res.SavedQuery)
 				if err != nil {
-					return nil, internalError(err)
+					return nil, internalError(ctx, err)
 				}
 				return &createSavedThreadQueryOutput{
 					ClientMutationID:   mutationID,
@@ -326,7 +326,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				acc := accountFromContext(ctx)
 				sh := spruceHeadersFromContext(ctx)
 				if acc == nil {
-					return nil, errNotAuthenticated
+					return nil, errNotAuthenticated(ctx)
 				}
 				golog.Infof("Registering Device For Push: Account:%s Device:%+v", acc.ID, sh)
 				input := p.Args["input"].(map[string]interface{})
@@ -361,7 +361,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				ctx := p.Context
 				acc := accountFromContext(ctx)
 				if acc == nil {
-					return nil, errNotAuthenticated
+					return nil, errNotAuthenticated(ctx)
 				}
 
 				input := p.Args["input"].(map[string]interface{})
@@ -379,7 +379,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					EntityID: ent.ID,
 				})
 				if err != nil {
-					return nil, internalError(err)
+					return nil, internalError(ctx, err)
 				}
 
 				return &markThreadAsReadOutput{
@@ -397,7 +397,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				ctx := p.Context
 				acc := accountFromContext(ctx)
 				if acc == nil {
-					return nil, errNotAuthenticated
+					return nil, errNotAuthenticated(ctx)
 				}
 
 				input := p.Args["input"].(map[string]interface{})
@@ -418,7 +418,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					OrganizationID:   orgID,
 					EntitiesToNotify: []string{ent.ID},
 				}); err != nil {
-					return nil, internalError(err)
+					return nil, internalError(ctx, err)
 				}
 
 				return &sendTestNotificationOutput{

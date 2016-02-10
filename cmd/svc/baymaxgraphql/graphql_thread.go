@@ -32,18 +32,22 @@ var threadType = graphql.NewObject(
 			"lastMessageTimestamp": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
 			"unread":               &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"primaryEntity": &graphql.Field{
-				Type: graphql.NewNonNull(entityType),
+				Type: entityType,
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					ctx := p.Context
 					th := p.Source.(*thread)
 					if th == nil {
-						return nil, internalError(errors.New("thread is nil"))
+						return nil, internalError(ctx, errors.New("thread is nil"))
+					}
+					// Internal threads don't have a primary entity
+					if th.PrimaryEntityID == "" {
+						return nil, nil
 					}
 					if selectingOnlyID(p) {
 						return &entity{ID: th.PrimaryEntityID}, nil
 					}
 
 					svc := serviceFromParams(p)
-					ctx := p.Context
 					res, err := svc.directory.LookupEntities(ctx,
 						&directory.LookupEntitiesRequest{
 							LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -58,31 +62,31 @@ var threadType = graphql.NewObject(
 							},
 						})
 					if err != nil {
-						return nil, internalError(err)
+						return nil, internalError(ctx, err)
 					}
 					for _, e := range res.Entities {
 						ent, err := transformEntityToResponse(e)
 						if err != nil {
-							return nil, internalError(fmt.Errorf("failed to transform entity: %s", err))
+							return nil, internalError(ctx, fmt.Errorf("failed to transform entity: %s", err))
 						}
 						return ent, nil
 					}
-					return nil, errors.New("primary entity not found")
+					return nil, internalError(ctx, errors.New("Primary entity not found"))
 				},
 			},
 			"items": &graphql.Field{
 				Type: graphql.NewNonNull(threadItemConnectionType.ConnectionType),
 				Args: NewConnectionArguments(nil),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					ctx := p.Context
 					t := p.Source.(*thread)
 					if t == nil {
-						return nil, internalError(errors.New("thread is nil"))
+						return nil, internalError(ctx, errors.New("thread is nil"))
 					}
 					svc := serviceFromParams(p)
-					ctx := p.Context
 					acc := accountFromContext(p.Context)
 					if acc == nil {
-						return nil, errNotAuthenticated
+						return nil, errNotAuthenticated(ctx)
 					}
 
 					req := &threading.ThreadItemsRequest{
@@ -114,7 +118,7 @@ var threadType = graphql.NewObject(
 						case codes.InvalidArgument:
 							return nil, err
 						}
-						return nil, internalError(err)
+						return nil, internalError(ctx, err)
 					}
 
 					cn := &Connection{
@@ -174,17 +178,17 @@ func lookupThread(ctx context.Context, svc *service, id, viewerEntityID string) 
 	if err != nil {
 		switch grpc.Code(err) {
 		case codes.NotFound:
-			return nil, errors.New("thread not found")
+			return nil, userError(ctx, errTypeNotFound, "Thread not found.")
 		}
-		return nil, internalError(err)
+		return nil, internalError(ctx, err)
 	}
 
 	th, err := transformThreadToResponse(tres.Thread)
 	if err != nil {
-		return nil, internalError(err)
+		return nil, internalError(ctx, err)
 	}
 	if err := svc.hydrateThreadTitles(ctx, []*thread{th}); err != nil {
-		return nil, internalError(err)
+		return nil, internalError(ctx, err)
 	}
 	return th, nil
 }

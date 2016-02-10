@@ -8,8 +8,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-var errNotAuthenticated = errors.New("not authenticated")
-
 var queryType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Query",
@@ -19,7 +17,7 @@ var queryType = graphql.NewObject(
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					acc := accountFromContext(p.Context)
 					if acc == nil {
-						return nil, errNotAuthenticated
+						return nil, errNotAuthenticated(p.Context)
 					}
 					cek := clientEncryptionKeyFromContext(p.Context)
 					return &me{Account: acc, ClientEncryptionKey: cek}, nil
@@ -35,7 +33,7 @@ var queryType = graphql.NewObject(
 					ctx := p.Context
 					acc := accountFromContext(ctx)
 					if acc == nil {
-						return nil, errNotAuthenticated
+						return nil, errNotAuthenticated(ctx)
 					}
 					id := p.Args["id"].(string)
 					prefix := nodePrefix(id)
@@ -76,7 +74,7 @@ var queryType = graphql.NewObject(
 					ctx := p.Context
 					acc := accountFromContext(ctx)
 					if acc == nil {
-						return nil, errNotAuthenticated
+						return nil, errNotAuthenticated(ctx)
 					}
 					id := p.Args["id"].(string)
 					return lookupEntity(ctx, svc, id)
@@ -92,7 +90,7 @@ var queryType = graphql.NewObject(
 					ctx := p.Context
 					acc := accountFromContext(ctx)
 					if acc == nil {
-						return nil, errNotAuthenticated
+						return nil, errNotAuthenticated(ctx)
 					}
 					id := p.Args["id"].(string)
 					return lookupSavedQuery(ctx, svc, id)
@@ -108,7 +106,7 @@ var queryType = graphql.NewObject(
 					ctx := p.Context
 					acc := accountFromContext(ctx)
 					if acc == nil {
-						return nil, errNotAuthenticated
+						return nil, errNotAuthenticated(ctx)
 					}
 					it, err := lookupThreadWithReadStatus(ctx, svc, acc, p.Args["id"].(string))
 					return it, err
@@ -125,7 +123,7 @@ var queryType = graphql.NewObject(
 					acc := accountFromContext(ctx)
 					domain := p.Args["value"].(string)
 					if acc == nil {
-						return nil, errNotAuthenticated
+						return nil, errNotAuthenticated(ctx)
 					}
 
 					queriedEntityID, queriedDomain, err := svc.entityDomain(ctx, "", domain)

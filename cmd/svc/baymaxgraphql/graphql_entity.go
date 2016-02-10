@@ -74,7 +74,7 @@ var entityType = graphql.NewObject(
 					ctx := p.Context
 					acc := accountFromContext(ctx)
 					if acc == nil {
-						return nil, errNotAuthenticated
+						return nil, errNotAuthenticated(ctx)
 					}
 
 					platform, _ := p.Args["platform"].(string)
@@ -86,7 +86,7 @@ var entityType = graphql.NewObject(
 
 					sc, err := lookupSerializedEntityContact(ctx, svc, entity.ID, dPlatform)
 					if err != nil {
-						return nil, internalError(err)
+						return nil, internalError(ctx, err)
 					}
 
 					return sc, nil
@@ -115,12 +115,12 @@ func lookupEntity(ctx context.Context, svc *service, id string) (interface{}, er
 		if grpc.Code(err) == codes.NotFound {
 			return nil, errors.New("not found")
 		}
-		return nil, internalError(err)
+		return nil, internalError(ctx, err)
 	}
 	for _, em := range res.Entities {
 		oc, err := transformContactsToResponse(em.Contacts)
 		if err != nil {
-			return nil, internalError(fmt.Errorf("failed to transform entity contacts: %+v", err))
+			return nil, internalError(ctx, fmt.Errorf("failed to transform entity contacts: %+v", err))
 		}
 		switch em.Type {
 		case directory.EntityType_ORGANIZATION:
@@ -134,12 +134,12 @@ func lookupEntity(ctx context.Context, svc *service, id string) (interface{}, er
 			if acc != nil {
 				e, err := svc.entityForAccountID(ctx, org.ID, acc.ID)
 				if err != nil {
-					return nil, internalError(err)
+					return nil, internalError(ctx, err)
 				}
 				if e != nil {
 					org.Entity, err = transformEntityToResponse(e)
 					if err != nil {
-						return nil, internalError(err)
+						return nil, internalError(ctx, err)
 					}
 				}
 			}
@@ -147,11 +147,11 @@ func lookupEntity(ctx context.Context, svc *service, id string) (interface{}, er
 		case directory.EntityType_INTERNAL, directory.EntityType_EXTERNAL:
 			e, err := transformEntityToResponse(em)
 			if err != nil {
-				return nil, internalError(err)
+				return nil, internalError(ctx, err)
 			}
 			return e, nil
 		default:
-			return nil, internalError(fmt.Errorf("unknown entity type: %s", em.Type.String()))
+			return nil, internalError(ctx, fmt.Errorf("unknown entity type: %s", em.Type.String()))
 		}
 	}
 	return nil, errors.New("not found")

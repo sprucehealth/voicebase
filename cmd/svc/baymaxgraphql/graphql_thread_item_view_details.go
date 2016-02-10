@@ -21,16 +21,16 @@ var threadItemViewDetailsType = graphql.NewObject(
 			"actor": &graphql.Field{
 				Type: graphql.NewNonNull(entityType),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					ctx := p.Context
 					tivd := p.Source.(*threadItemViewDetails)
 					if tivd == nil {
-						return nil, internalError(errors.New("thread item view details is nil"))
+						return nil, internalError(ctx, errors.New("thread item view details is nil"))
 					}
 					if selectingOnlyID(p) {
 						return &entity{ID: tivd.ActorEntityID}, nil
 					}
 
 					svc := serviceFromParams(p)
-					ctx := p.Context
 					res, err := svc.directory.LookupEntities(ctx,
 						&directory.LookupEntitiesRequest{
 							LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -39,12 +39,12 @@ var threadItemViewDetailsType = graphql.NewObject(
 							},
 						})
 					if err != nil {
-						return nil, internalError(err)
+						return nil, internalError(ctx, err)
 					}
 					for _, e := range res.Entities {
 						ent, err := transformEntityToResponse(e)
 						if err != nil {
-							return nil, internalError(fmt.Errorf("failed to transform entity: %s", err))
+							return nil, internalError(ctx, fmt.Errorf("failed to transform entity: %s", err))
 						}
 						return ent, nil
 					}
@@ -60,11 +60,11 @@ func lookupThreadItemViewDetails(ctx context.Context, svc *service, threadItemID
 		ItemID: threadItemID,
 	})
 	if err != nil {
-		return nil, internalError(err)
+		return nil, internalError(ctx, err)
 	}
 	resps, err := transformThreadItemViewDetailsToResponse(res.ItemViewDetails)
 	if err != nil {
-		return nil, internalError(err)
+		return nil, internalError(ctx, err)
 	}
 	iResps := make([]interface{}, len(resps))
 	for i, v := range resps {

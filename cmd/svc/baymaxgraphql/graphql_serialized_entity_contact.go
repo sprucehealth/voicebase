@@ -34,7 +34,7 @@ func lookupSerializedEntityContact(ctx context.Context, svc *service, entityID s
 	if grpc.Code(err) == codes.NotFound {
 		return nil, nil
 	} else if err != nil {
-		return nil, internalError(err)
+		return nil, internalError(ctx, err)
 	}
 	return string(res.SerializedEntityContact.SerializedEntityContact), nil
 }

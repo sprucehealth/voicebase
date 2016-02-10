@@ -103,7 +103,10 @@ var authenticateMutation = &graphql.Field{
 		mutationID, _ := input["clientMutationId"].(string)
 		email := input["email"].(string)
 		if !validate.Email(email) {
-			return nil, errors.New("invalid email")
+			return &authenticateOutput{
+				ClientMutationID: mutationID,
+				Result:           authenticateResultInvalidEmail,
+			}, nil
 		}
 		password := input["password"].(string)
 		res, err := svc.auth.AuthenticateLogin(ctx, &auth.AuthenticateLoginRequest{
@@ -123,7 +126,7 @@ var authenticateMutation = &graphql.Field{
 					Result:           authenticateResultInvalidPassword,
 				}, nil
 			default:
-				return nil, internalError(err)
+				return nil, internalError(ctx, err)
 			}
 		}
 		var token string
@@ -137,11 +140,11 @@ var authenticateMutation = &graphql.Field{
 			twoFactorPhoneNumber, err := phone.ParseNumber(res.TwoFactorPhoneNumber)
 			if err != nil {
 				// Shouldn't fail
-				return nil, internalError(err)
+				return nil, internalError(ctx, err)
 			}
 			token, err = svc.createAndSendSMSVerificationCode(ctx, auth.VerificationCodeType_ACCOUNT_2FA, res.Account.ID, twoFactorPhoneNumber)
 			if err != nil {
-				return nil, internalError(err)
+				return nil, internalError(ctx, err)
 			}
 			if len(res.TwoFactorPhoneNumber) > 2 {
 				phoneNumberLastDigits = res.TwoFactorPhoneNumber[len(res.TwoFactorPhoneNumber)-2:]
@@ -211,7 +214,7 @@ var authenticateWithCodeMutation = &graphql.Field{
 					Result:           authenticateResultInvalidCode,
 				}, nil
 			default:
-				return nil, internalError(err)
+				return nil, internalError(ctx, err)
 			}
 		}
 		result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
@@ -276,11 +279,11 @@ var unauthenticateMutation = &graphql.Field{
 		// TODO: get token from cookie if not provided in args
 		token, ok := input["token"].(string)
 		if !ok {
-			return nil, internalError(errors.New("TODO: unauthenticate using cookie is not yet implemented"))
+			return nil, internalError(ctx, errors.New("TODO: unauthenticate using cookie is not yet implemented"))
 		}
 		_, err := svc.auth.Unauthenticate(ctx, &auth.UnauthenticateRequest{Token: token})
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 		result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
 		result.Set("unauthenticated", true)

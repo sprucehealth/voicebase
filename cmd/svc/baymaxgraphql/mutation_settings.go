@@ -139,7 +139,7 @@ var modifySettingMutation = &graphql.Field{
 		ctx := p.Context
 		acc := accountFromContext(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated
+			return nil, errNotAuthenticated(ctx)
 		}
 
 		input, _ := p.Args["input"].(map[string]interface{})
@@ -167,7 +167,7 @@ var modifySettingMutation = &graphql.Field{
 			Keys: []string{key},
 		})
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		} else if len(res.Configs) != 1 {
 			return nil, fmt.Errorf("Expected 1 config but got %d", len(res.Configs))
 		}
@@ -332,7 +332,7 @@ var modifySettingMutation = &graphql.Field{
 					Result:           modifySettingResultInvalidInput,
 				}, nil
 			}
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		var setting interface{}

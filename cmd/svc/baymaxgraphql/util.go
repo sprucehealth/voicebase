@@ -20,6 +20,8 @@ const (
 	ctxAccount ctxKey = iota
 	ctxSpruceHeaders
 	ctxClientEncryptionKey
+	ctxRequestID
+	ctxAuthToken
 )
 
 type errInvalidContactFormat string
@@ -36,6 +38,24 @@ func ctxWithSpruceHeaders(ctx context.Context, sh *apiservice.SpruceHeaders) con
 func spruceHeadersFromContext(ctx context.Context) *apiservice.SpruceHeaders {
 	sh, _ := ctx.Value(ctxSpruceHeaders).(*apiservice.SpruceHeaders)
 	return sh
+}
+
+func ctxWithAuthToken(ctx context.Context, token string) context.Context {
+	return context.WithValue(ctx, ctxAuthToken, token)
+}
+
+func authTokenFromContext(ctx context.Context) string {
+	token, _ := ctx.Value(ctxAuthToken).(string)
+	return token
+}
+
+func ctxWithRequestID(ctx context.Context, id uint64) context.Context {
+	return context.WithValue(ctx, ctxRequestID, id)
+}
+
+func requestIDFromContext(ctx context.Context) uint64 {
+	id, _ := ctx.Value(ctxRequestID).(uint64)
+	return id
 }
 
 func ctxWithAccount(ctx context.Context, acc *account) context.Context {
@@ -59,7 +79,7 @@ func accountFromContext(ctx context.Context) *account {
 }
 
 func ctxWithClientEncryptionKey(ctx context.Context, clientEncryptionKey string) context.Context {
-	// The client encryption key is genrated at token validation check time, so we store it here to make it available to concerned parties
+	// The client encryption key is generated at token validation check time, so we store it here to make it available to concerned parties
 	return context.WithValue(ctx, ctxClientEncryptionKey, clientEncryptionKey)
 }
 

@@ -112,7 +112,7 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 		if forAccountCreation {
 			inv, err := svc.inviteInfo(ctx)
 			if err != nil {
-				return nil, internalError(err)
+				return nil, internalError(ctx, err)
 			}
 			if inv != nil {
 				switch inv.Type {
@@ -133,12 +133,12 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 
 		token, err := svc.createAndSendSMSVerificationCode(ctx, auth.VerificationCodeType_PHONE, pn.String(), pn)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		nicePhone, err := pn.Format(phone.Pretty)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 		return &verifyPhoneNumberOutput{
 			ClientMutationID: mutationID,

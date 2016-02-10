@@ -86,7 +86,7 @@ var createThreadMutation = &graphql.Field{
 		ctx := p.Context
 		acc := accountFromContext(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated
+			return nil, errNotAuthenticated(ctx)
 		}
 
 		input := p.Args["input"].(map[string]interface{})
@@ -100,11 +100,11 @@ var createThreadMutation = &graphql.Field{
 			entityInfoInput := ei
 			entityInfo, err = entityInfoFromInput(entityInfoInput)
 			if err != nil {
-				return nil, internalError(err)
+				return nil, internalError(ctx, err)
 			}
 			contactInfos, err = contactListFromInput(entityInfoInput["contactInfos"].([]interface{}), true)
 			if err != nil {
-				return nil, internalError(err)
+				return nil, internalError(ctx, err)
 			}
 		} else {
 			entityInfo = &directory.EntityInfo{}
@@ -113,17 +113,17 @@ var createThreadMutation = &graphql.Field{
 		var err error
 		entityInfo.DisplayName, err = buildDisplayName(entityInfo, contactInfos)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		createForContact, err := contactFromInput(input["createForContactInfo"])
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		creatorEnt, err := svc.entityForAccountID(ctx, orgID, acc.ID)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 		if creatorEnt == nil {
 			return nil, errors.New("Not a member of the organization")
@@ -153,7 +153,7 @@ var createThreadMutation = &graphql.Field{
 				}
 			}
 		} else if err != nil && grpc.Code(err) != codes.NotFound {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		// Check for an existing thread
@@ -179,7 +179,7 @@ var createThreadMutation = &graphql.Field{
 				})
 			}
 			if err := par.Wait(); err != nil {
-				return nil, internalError(err)
+				return nil, internalError(ctx, err)
 			}
 			var threads []*threading.Thread
 			for _, ts := range threadResults {
@@ -215,7 +215,7 @@ var createThreadMutation = &graphql.Field{
 					}
 					th, err := transformThreadToResponse(t)
 					if err != nil {
-						return nil, internalError(err)
+						return nil, internalError(ctx, err)
 					}
 					th.Title = threadTitleForEntity(entMap[t.PrimaryEntityID])
 
@@ -278,7 +278,7 @@ var createThreadMutation = &graphql.Field{
 			},
 		})
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 		primaryEnt := ceres.Entity
 
@@ -294,11 +294,11 @@ var createThreadMutation = &graphql.Field{
 			Summary:         "New conversation", // TODO: not sure what we want here. it's a fallback if there's no posts made in the thread.
 		})
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 		th, err := transformThreadToResponse(res.Thread)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 		th.Title = threadTitleForEntity(primaryEnt)
 

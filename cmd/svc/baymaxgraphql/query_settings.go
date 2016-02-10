@@ -187,7 +187,7 @@ var settingsQuery = &graphql.Field{
 		ctx := p.Context
 		acc := accountFromContext(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated
+			return nil, errNotAuthenticated(ctx)
 		}
 
 		key, _ := p.Args["key"].(string)
@@ -198,7 +198,7 @@ var settingsQuery = &graphql.Field{
 		if isForwardingList {
 			pn, err := phone.Format(subkey, phone.E164)
 			if err != nil {
-				return nil, internalError(err)
+				return nil, internalError(ctx, err)
 			}
 			subkey = pn
 		}
@@ -243,7 +243,7 @@ var settingsQuery = &graphql.Field{
 		})
 
 		if err := par.Wait(); err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		var setting interface{}

@@ -38,7 +38,7 @@ var accountType = graphql.NewObject(
 					acc := p.Source.(*account)
 					if acc == nil {
 						// Shouldn't be possible I don't think
-						return nil, internalError(errors.New("nil account"))
+						return nil, internalError(ctx, errors.New("nil account"))
 					}
 					res, err := svc.directory.LookupEntities(ctx,
 						&directory.LookupEntitiesRequest{
@@ -55,18 +55,18 @@ var accountType = graphql.NewObject(
 							},
 						})
 					if err != nil {
-						return nil, internalError(err)
+						return nil, internalError(ctx, err)
 					}
 					var orgs []*organization
 					for _, e := range res.Entities {
 						for _, em := range e.Memberships {
 							oc, err := transformContactsToResponse(em.Contacts)
 							if err != nil {
-								return nil, internalError(fmt.Errorf("failed to transform org contacts: %+v", err))
+								return nil, internalError(ctx, fmt.Errorf("failed to transform org contacts: %+v", err))
 							}
 							entity, err := transformEntityToResponse(e)
 							if err != nil {
-								return nil, internalError(fmt.Errorf("failed to transform entity: %+v", err))
+								return nil, internalError(ctx, fmt.Errorf("failed to transform entity: %+v", err))
 							}
 							orgs = append(orgs, &organization{
 								ID:       em.ID,
@@ -90,9 +90,9 @@ func lookupAccount(ctx context.Context, svc *service, id string) (interface{}, e
 	if err != nil {
 		switch grpc.Code(err) {
 		case codes.NotFound:
-			return nil, errors.New("account not found")
+			return nil, userError(ctx, errTypeNotFound, "Account not found.")
 		}
-		return nil, internalError(err)
+		return nil, internalError(ctx, err)
 	}
 	// Since we only use the ID we don't really need to do the lookup, but
 	// it allows us to check if the account exists.

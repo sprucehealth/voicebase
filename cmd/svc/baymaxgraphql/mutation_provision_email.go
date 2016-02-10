@@ -101,7 +101,7 @@ var provisionEmailMutation = &graphql.Field{
 		ctx := p.Context
 		acc := accountFromContext(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated
+			return nil, errNotAuthenticated(ctx)
 		}
 
 		input := p.Args["input"].(map[string]interface{})
@@ -121,7 +121,7 @@ var provisionEmailMutation = &graphql.Field{
 				directory.EntityInformation_MEMBERSHIPS,
 				directory.EntityInformation_EXTERNAL_IDS)
 			if err != nil {
-				return nil, internalError(err)
+				return nil, internalError(ctx, err)
 			} else if ent.Type != directory.EntityType_INTERNAL {
 				return nil, fmt.Errorf("email can only be provisioned for a provider")
 			}
@@ -150,11 +150,11 @@ var provisionEmailMutation = &graphql.Field{
 		} else if organizationID != "" {
 			orgEntity, err = svc.entity(ctx, organizationID)
 			if err != nil {
-				return nil, internalError(err)
+				return nil, internalError(ctx, err)
 			}
 			ent, err = svc.entityForAccountID(ctx, organizationID, acc.ID)
 			if err != nil {
-				return nil, internalError(err)
+				return nil, internalError(ctx, err)
 			} else if ent == nil {
 				return nil, fmt.Errorf("current user does not belong to the organization %s", organizationID)
 			}
@@ -182,7 +182,7 @@ var provisionEmailMutation = &graphql.Field{
 					Domain:   subdomain,
 				})
 				if err != nil {
-					return nil, internalError(err)
+					return nil, internalError(ctx, err)
 				}
 			}
 		} else {
@@ -237,7 +237,7 @@ var provisionEmailMutation = &graphql.Field{
 			},
 		})
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		var e *entity
@@ -245,12 +245,12 @@ var provisionEmailMutation = &graphql.Field{
 		if organizationID != "" {
 			o, err = transformOrganizationToResponse(createContactRes.Entity, ent)
 			if err != nil {
-				return nil, internalError(err)
+				return nil, internalError(ctx, err)
 			}
 		} else {
 			e, err = transformEntityToResponse(createContactRes.Entity)
 			if err != nil {
-				return nil, internalError(err)
+				return nil, internalError(ctx, err)
 			}
 		}
 

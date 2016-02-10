@@ -51,7 +51,7 @@ var inviteColleaguesMutation = &graphql.Field{
 		ctx := p.Context
 		acc := accountFromContext(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated
+			return nil, errNotAuthenticated(ctx)
 		}
 
 		input := p.Args["input"].(map[string]interface{})
@@ -78,7 +78,7 @@ var inviteColleaguesMutation = &graphql.Field{
 
 		ent, err := svc.entityForAccountID(ctx, orgID, acc.ID)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 		if ent == nil {
 			return nil, errors.New("Not a member of the organization")
@@ -89,7 +89,7 @@ var inviteColleaguesMutation = &graphql.Field{
 			InviterEntityID:      ent.ID,
 			Colleagues:           colleagues,
 		}); err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		return &inviteColleaguesOutput{ClientMutationID: mutationID}, nil
@@ -166,7 +166,7 @@ var associateAttributionMutation = &graphql.Field{
 			Values:   values,
 		})
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		return &associateAttributionOutput{ClientMutationID: mutationID}, nil

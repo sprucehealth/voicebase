@@ -42,7 +42,7 @@ var deleteContactInfosMutation = &graphql.Field{
 		ctx := p.Context
 		acc := accountFromContext(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated
+			return nil, errNotAuthenticated(ctx)
 		}
 
 		input := p.Args["input"].(map[string]interface{})
@@ -64,12 +64,12 @@ var deleteContactInfosMutation = &graphql.Field{
 			},
 		})
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		e, err := transformEntityToResponse(resp.Entity)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		return &deleteContactInfosOutput{

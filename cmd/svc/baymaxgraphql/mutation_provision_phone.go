@@ -82,7 +82,7 @@ var provisionPhoneNumberMutation = &graphql.Field{
 		ctx := p.Context
 		acc := accountFromContext(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated
+			return nil, errNotAuthenticated(ctx)
 		}
 
 		input := p.Args["input"].(map[string]interface{})
@@ -98,7 +98,7 @@ var provisionPhoneNumberMutation = &graphql.Field{
 
 		entity, err := svc.entityForAccountID(ctx, organizationID, acc.ID)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		} else if entity == nil {
 			return nil, fmt.Errorf("No entity found in organization %s", organizationID)
 		}
@@ -115,7 +115,7 @@ var provisionPhoneNumberMutation = &graphql.Field{
 				Result:           provisionPhoneNumberResultUnavailable,
 			}, nil
 		} else if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		// lets go ahead and create a contact for the entity for which the number was provisioned
@@ -135,12 +135,12 @@ var provisionPhoneNumberMutation = &graphql.Field{
 			},
 		})
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		orgRes, err := transformOrganizationToResponse(createContactRes.Entity, entity)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		return &provisionPhoneNumberOutput{

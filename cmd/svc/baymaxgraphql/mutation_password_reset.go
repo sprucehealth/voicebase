@@ -156,9 +156,9 @@ var checkPasswordResetTokenMutation = &graphql.Field{
 			Token: token,
 		})
 		if grpc.Code(err) == auth.TokenExpired {
-			return nil, errors.New("The provided token has expired")
+			return nil, userError(ctx, errTypeExpired, "Your password reset link has expired. Please request a new one.")
 		} else if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		last4Phone := resp.AccountPhoneNumber
@@ -233,19 +233,19 @@ var verifyPhoneNumberForPasswordResetMutation = &graphql.Field{
 			Token: linkToken,
 		})
 		if grpc.Code(err) == auth.TokenExpired {
-			return nil, errors.New("The provided token has expired")
+			return nil, userError(ctx, errTypeExpired, "Your phone verification token has expired. Please go back and enter your number again.")
 		} else if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		accountPhoneNumber, err := phone.ParseNumber(resp.AccountPhoneNumber)
 		if err != nil {
 			// Shouldn't fail
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 		token, err := svc.createAndSendSMSVerificationCode(ctx, auth.VerificationCodeType_PASSWORD_RESET, resp.AccountID, accountPhoneNumber)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		last4Phone := resp.AccountPhoneNumber
@@ -332,7 +332,7 @@ var passwordResetMutation = &graphql.Field{
 			case auth.BadVerificationCode:
 				return nil, errors.New("Bad verification code")
 			default:
-				return nil, internalError(err)
+				return nil, internalError(ctx, err)
 			}
 		}
 

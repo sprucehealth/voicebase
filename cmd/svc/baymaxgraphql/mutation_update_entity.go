@@ -44,7 +44,7 @@ var updateEntityMutation = &graphql.Field{
 		ctx := p.Context
 		acc := accountFromContext(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated
+			return nil, errNotAuthenticated(ctx)
 		}
 
 		input := p.Args["input"].(map[string]interface{})
@@ -53,17 +53,17 @@ var updateEntityMutation = &graphql.Field{
 		entityInfoInput := input["entityInfo"].(map[string]interface{})
 		entityInfo, err := entityInfoFromInput(entityInfoInput)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 		contactFields, _ := entityInfoInput["contactInfos"].([]interface{})
 		contacts, err := contactListFromInput(contactFields, false)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		entityInfo.DisplayName, err = buildDisplayName(entityInfo, contacts)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		serializedContactInput, _ := entityInfoInput["serializedContacts"].([]interface{})
@@ -95,12 +95,12 @@ var updateEntityMutation = &graphql.Field{
 			},
 		})
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		e, err := transformEntityToResponse(resp.Entity)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		return &updateEntityOutput{

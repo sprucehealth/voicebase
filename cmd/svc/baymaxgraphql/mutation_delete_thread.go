@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
@@ -18,7 +18,7 @@ var deleteThreadMutation = &graphql.Field{
 		ctx := p.Context
 		acc := accountFromContext(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated
+			return nil, errNotAuthenticated(ctx)
 		}
 
 		input := p.Args["input"].(map[string]interface{})
@@ -32,24 +32,24 @@ var deleteThreadMutation = &graphql.Field{
 		if err != nil {
 			switch grpc.Code(err) {
 			case codes.NotFound:
-				return nil, errors.New("thread not found")
+				return nil, userError(ctx, errTypeNotFound, "Thread does not exist.")
 			}
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		ent, err := svc.entityForAccountID(ctx, tres.Thread.OrganizationID, acc.ID)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
-		if ent == nil {
-			return nil, errors.New("not a member of the organization")
+		if ent == nil || ent.Type != directory.EntityType_INTERNAL {
+			return nil, userError(ctx, errTypeNotAuthorized, "Permission denied.")
 		}
 
 		if _, err := svc.threading.DeleteThread(ctx, &threading.DeleteThreadRequest{
 			ThreadID:      threadID,
 			ActorEntityID: ent.ID,
 		}); err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		return &deleteThreadOutput{

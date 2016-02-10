@@ -82,7 +82,7 @@ var postMessageMutation = &graphql.Field{
 		ctx := p.Context
 		acc := accountFromContext(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated
+			return nil, errNotAuthenticated(ctx)
 		}
 
 		input := p.Args["input"].(map[string]interface{})
@@ -98,16 +98,16 @@ var postMessageMutation = &graphql.Field{
 			case codes.NotFound:
 				return nil, errors.New("thread does not exist")
 			}
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 		thr := tres.Thread
 
 		ent, err := svc.entityForAccountID(ctx, thr.OrganizationID, acc.ID)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
-		if ent == nil {
-			return nil, internalError(fmt.Errorf("entity for org %s and account %s not found", thr.OrganizationID, acc.ID))
+		if ent == nil || ent.Type != directory.EntityType_INTERNAL {
+			return nil, userError(ctx, errTypeNotAuthorized, "Not a member of the organization")
 		}
 
 		var title bml.BML
@@ -129,7 +129,7 @@ var postMessageMutation = &graphql.Field{
 		plainText, err := textBML.PlainText()
 		if err != nil {
 			// Shouldn't fail here since the parsing should have done validation
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 		summary := fmt.Sprintf("%s: %s", fromName, plainText)
 
@@ -167,7 +167,7 @@ var postMessageMutation = &graphql.Field{
 						},
 					})
 				if err != nil {
-					return nil, internalError(err)
+					return nil, internalError(ctx, err)
 				}
 				if len(res.Entities) > 1 {
 					golog.Errorf("lookup entities returned more than 1 result for entity ID %s", thr.PrimaryEntityID)
@@ -227,27 +227,27 @@ var postMessageMutation = &graphql.Field{
 
 		titleStr, err := title.Format()
 		if err != nil {
-			return nil, internalError(fmt.Errorf("invalid title BML %+v: %s", title, err))
+			return nil, internalError(ctx, fmt.Errorf("invalid title BML %+v: %s", title, err))
 		}
 		req.Title = titleStr
 
 		pmres, err := svc.threading.PostMessage(ctx, req)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		it, err := transformThreadItemToResponse(pmres.Item, req.UUID, acc.ID, svc.mediaSigner)
 		if err != nil {
-			return nil, internalError(fmt.Errorf("failed to transform thread item: %s", err))
+			return nil, internalError(ctx, fmt.Errorf("failed to transform thread item: %s", err))
 		}
 		th, err := transformThreadToResponse(pmres.Thread)
 		if err != nil {
-			return nil, internalError(fmt.Errorf("failed to transform thread: %s", err))
+			return nil, internalError(ctx, fmt.Errorf("failed to transform thread: %s", err))
 		}
 		if extEntity != nil {
 			th.Title = threadTitleForEntity(extEntity)
 		} else if err := svc.hydrateThreadTitles(ctx, []*thread{th}); err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 		return &postMessageOutput{
 			ClientMutationID: mutationID,

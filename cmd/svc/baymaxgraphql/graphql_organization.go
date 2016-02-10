@@ -31,19 +31,19 @@ var organizationType = graphql.NewObject(
 					ctx := p.Context
 					acc := accountFromContext(ctx)
 					if acc == nil {
-						return nil, errNotAuthenticated
+						return nil, errNotAuthenticated(ctx)
 					}
 
 					e, err := svc.entityForAccountID(ctx, org.ID, acc.ID)
 					if err != nil {
-						return nil, internalError(err)
+						return nil, internalError(ctx, err)
 					}
 					if e == nil {
 						return nil, errors.New("entity not found for organization")
 					}
 					rE, err := transformEntityToResponse(e)
 					if err != nil {
-						return nil, internalError(err)
+						return nil, internalError(ctx, err)
 					}
 					return rE, nil
 				},
@@ -87,7 +87,7 @@ var organizationType = graphql.NewObject(
 								if em.Type == directory.EntityType_INTERNAL {
 									ent, err := transformEntityToResponse(em)
 									if err != nil {
-										return nil, internalError(err)
+										return nil, internalError(ctx, err)
 									}
 									entities = append(entities, ent)
 								}
@@ -110,7 +110,7 @@ var organizationType = graphql.NewObject(
 						EntityID: org.Entity.ID,
 					})
 					if err != nil {
-						return nil, internalError(err)
+						return nil, internalError(ctx, err)
 					}
 					var qs []*savedThreadQuery
 					for _, q := range res.SavedQueries {

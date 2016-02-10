@@ -88,7 +88,7 @@ var messageType = graphql.NewObject(
 
 					msg := p.Source.(*message)
 					if msg == nil {
-						return nil, internalError(errors.New("message is nil"))
+						return nil, internalError(ctx, errors.New("message is nil"))
 					}
 
 					refs := make([]interface{}, 0, len(msg.Refs))
@@ -114,12 +114,12 @@ var messageType = graphql.NewObject(
 			"viewDetails": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(threadItemViewDetailsType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					ctx := p.Context
 					m := p.Source.(*message)
 					if m == nil {
-						return nil, internalError(errors.New("message is nil"))
+						return nil, internalError(ctx, errors.New("message is nil"))
 					}
 					svc := serviceFromParams(p)
-					ctx := p.Context
 					return lookupThreadItemViewDetails(ctx, svc, m.ThreadItemID)
 				},
 			},
@@ -159,12 +159,12 @@ var imageAttachmentType = graphql.NewObject(
 					ctx := p.Context
 					account := accountFromContext(ctx)
 					if account == nil {
-						return nil, errNotAuthenticated
+						return nil, errNotAuthenticated(ctx)
 					}
 
 					attachment := p.Source.(*imageAttachment)
 					if attachment == nil {
-						return nil, internalError(errors.New("attachment is nil"))
+						return nil, internalError(ctx, errors.New("attachment is nil"))
 					}
 
 					width := p.Args["width"].(int)
@@ -177,7 +177,7 @@ var imageAttachmentType = graphql.NewObject(
 					}
 					url, err := svc.mediaSigner.SignedURL(mediaID, attachment.Mimetype, account.ID, width, height, crop)
 					if err != nil {
-						return nil, internalError(err)
+						return nil, internalError(ctx, err)
 					}
 					return &image{
 						URL:    url,
@@ -263,16 +263,16 @@ var threadItemType = graphql.NewObject(
 			"actor": &graphql.Field{
 				Type: graphql.NewNonNull(entityType),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					ctx := p.Context
 					it := p.Source.(*threadItem)
 					if it == nil {
-						return nil, internalError(errors.New("thread item is nil"))
+						return nil, internalError(ctx, errors.New("thread item is nil"))
 					}
 					if selectingOnlyID(p) {
 						return &entity{ID: it.ActorEntityID}, nil
 					}
 
 					svc := serviceFromParams(p)
-					ctx := p.Context
 					res, err := svc.directory.LookupEntities(ctx,
 						&directory.LookupEntitiesRequest{
 							LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
@@ -287,12 +287,12 @@ var threadItemType = graphql.NewObject(
 							},
 						})
 					if err != nil {
-						return nil, internalError(err)
+						return nil, internalError(ctx, err)
 					}
 					for _, e := range res.Entities {
 						ent, err := transformEntityToResponse(e)
 						if err != nil {
-							return nil, internalError(fmt.Errorf("failed to transform entity: %s", err))
+							return nil, internalError(ctx, fmt.Errorf("failed to transform entity: %s", err))
 						}
 						return ent, nil
 					}
@@ -332,16 +332,16 @@ func lookupThreadItem(ctx context.Context, svc *service, id string) (interface{}
 		case codes.NotFound:
 			return nil, errors.New("thread item not found")
 		}
-		return nil, internalError(err)
+		return nil, internalError(ctx, err)
 	}
 	account := accountFromContext(ctx)
 	if account == nil {
-		return nil, errNotAuthenticated
+		return nil, errNotAuthenticated(ctx)
 	}
 
 	it, err := transformThreadItemToResponse(res.Item, "", account.ID, svc.mediaSigner)
 	if err != nil {
-		return nil, internalError(err)
+		return nil, internalError(ctx, err)
 	}
 	return it, nil
 }

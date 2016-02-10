@@ -2,17 +2,15 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
-	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
+	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -161,7 +159,6 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	}
 
 	var acc *account
-	var cek string
 	if c, err := r.Cookie(authTokenCookieName); err == nil && c.Value != "" {
 		res, err := h.service.auth.CheckAuthentication(ctx,
 			&auth.CheckAuthenticationRequest{Token: c.Value},
@@ -180,14 +177,23 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 			acc = &account{
 				ID: res.Account.ID,
 			}
-			cek = res.Token.ClientEncryptionKey
+			ctx = ctxWithClientEncryptionKey(ctx, res.Token.ClientEncryptionKey)
+			ctx = ctxWithAuthToken(ctx, c.Value)
 		} else {
 			removeAuthCookie(w, r.Host)
 		}
 	}
 
+	// The account needs to exist in the context even when not authenticated. This is
+	// so that if the request is a mutation that authenticates (authenticate, createAccount)
+	// then the account can be updated in the context.
 	ctx = ctxWithAccount(ctx, acc)
-	ctx = ctxWithClientEncryptionKey(ctx, cek)
+
+	requestID, err := idgen.NewID()
+	if err != nil {
+		golog.Errorf("failed to generate request ID: %s", err)
+	}
+	ctx = ctxWithRequestID(ctx, requestID)
 
 	sHeaders := apiservice.ExtractSpruceHeaders(r)
 	ctx = ctxWithSpruceHeaders(ctx, sHeaders)
@@ -217,14 +223,4 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	}
 
 	httputil.JSONResponse(w, http.StatusOK, response)
-}
-
-// internalError logs the provided internal error and returns a sanitized
-// versions since we don't want internal details leaking over graphql errors.
-func internalError(err error) error {
-	golog.LogDepthf(1, golog.ERR, err.Error())
-	if environment.IsDev() {
-		return fmt.Errorf("internal error: %s\n", err)
-	}
-	return errors.New("internal error") // TODO: attach request ID or error ID or something
 }

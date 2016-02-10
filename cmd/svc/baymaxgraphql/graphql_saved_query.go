@@ -25,21 +25,21 @@ var savedThreadQueryType = graphql.NewObject(
 				Type: threadConnectionType.ConnectionType,
 				Args: NewConnectionArguments(nil),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					ctx := p.Context
 					stq := p.Source.(*savedThreadQuery)
 					if stq == nil {
 						// Shouldn't be possible I don't think
-						return nil, internalError(errors.New("savedThreadQuery is nil"))
+						return nil, internalError(ctx, errors.New("savedThreadQuery is nil"))
 					}
 
 					svc := serviceFromParams(p)
-					ctx := p.Context
 					acc := accountFromContext(ctx)
 					if acc == nil {
-						return nil, errNotAuthenticated
+						return nil, errNotAuthenticated(ctx)
 					}
 					ent, err := svc.entityForAccountID(ctx, stq.OrganizationID, acc.ID)
 					if err != nil || ent == nil {
-						return nil, internalError(errors.New("no entity id found"))
+						return nil, internalError(ctx, errors.New("no entity id found"))
 					}
 					req := &threading.QueryThreadsRequest{
 						OrganizationID: stq.OrganizationID,
@@ -69,7 +69,7 @@ var savedThreadQueryType = graphql.NewObject(
 						case codes.InvalidArgument:
 							return nil, err
 						}
-						return nil, internalError(err)
+						return nil, internalError(ctx, err)
 					}
 
 					cn := &Connection{
@@ -84,7 +84,7 @@ var savedThreadQueryType = graphql.NewObject(
 					for i, e := range res.Edges {
 						t, err := transformThreadToResponse(e.Thread)
 						if err != nil {
-							return nil, internalError(fmt.Errorf("Failed to transform thread: %s", err))
+							return nil, internalError(ctx, fmt.Errorf("Failed to transform thread: %s", err))
 						}
 						threads[i] = t
 						cn.Edges[i] = &Edge{
@@ -93,7 +93,7 @@ var savedThreadQueryType = graphql.NewObject(
 						}
 					}
 					if err := svc.hydrateThreadTitles(ctx, threads); err != nil {
-						return nil, internalError(err)
+						return nil, internalError(ctx, err)
 					}
 
 					return cn, nil
@@ -120,12 +120,12 @@ func lookupSavedQuery(ctx context.Context, svc *service, id string) (interface{}
 		case codes.NotFound:
 			return nil, errors.New("saved query not found")
 		}
-		return nil, internalError(err)
+		return nil, internalError(ctx, err)
 	}
 
 	sq, err := transformSavedQueryToResponse(tres.SavedQuery)
 	if err != nil {
-		return nil, internalError(err)
+		return nil, internalError(ctx, err)
 	}
 	return sq, nil
 }

@@ -121,7 +121,7 @@ var callEntityMutation = &graphql.Field{
 		ctx := p.Context
 		acc := accountFromContext(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated
+			return nil, errNotAuthenticated(ctx)
 		}
 
 		input := p.Args["input"].(map[string]interface{})
@@ -136,7 +136,7 @@ var callEntityMutation = &graphql.Field{
 
 		calleeEnt, err := svc.entity(ctx, entityID)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 		if calleeEnt == nil || calleeEnt.Type != directory.EntityType_EXTERNAL {
 			return &callEntityOutput{
@@ -179,7 +179,7 @@ var callEntityMutation = &graphql.Field{
 
 		callerEnt, err := svc.entityForAccountID(ctx, org.ID, acc.ID)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 		if callerEnt == nil {
 			return &callEntityOutput{
@@ -202,7 +202,7 @@ var callEntityMutation = &graphql.Field{
 		}
 		ires, err := svc.exComms.InitiatePhoneCall(ctx, ireq)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		return &callEntityOutput{

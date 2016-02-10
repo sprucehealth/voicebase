@@ -73,11 +73,11 @@ var createAccountMutation = &graphql.Field{
 
 		inv, err := svc.inviteInfo(ctx)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 		// Sanity check to make sure we fail early in case we forgot to handle all new invite types
 		if inv != nil && inv.Type != invite.LookupInviteResponse_COLLEAGUE {
-			return nil, internalError(fmt.Errorf("unknown invite type %s", inv.Type.String()))
+			return nil, internalError(ctx, fmt.Errorf("unknown invite type %s", inv.Type.String()))
 		}
 
 		req := &auth.CreateAccountRequest{
@@ -89,7 +89,7 @@ var createAccountMutation = &graphql.Field{
 		}
 		entityInfo, err := entityInfoFromInput(input)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		req.FirstName = entityInfo.FirstName
@@ -108,11 +108,11 @@ var createAccountMutation = &graphql.Field{
 		if grpc.Code(err) == auth.ValueNotYetVerified {
 			return nil, errors.New("The phone number for the provided token has not yet been verified")
 		} else if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 		vpn, err := phone.ParseNumber(respVerifiedValue.Value)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 		pn, err := phone.ParseNumber(input["phoneNumber"].(string))
 		if err != nil {
@@ -133,7 +133,7 @@ var createAccountMutation = &graphql.Field{
 			case auth.InvalidPhoneNumber:
 				return nil, errors.New("invalid phone number")
 			}
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 		accountID := res.Account.ID
 
@@ -150,7 +150,7 @@ var createAccountMutation = &graphql.Field{
 					Type: directory.EntityType_ORGANIZATION,
 				})
 				if err != nil {
-					return nil, internalError(err)
+					return nil, internalError(ctx, err)
 				}
 				orgEntityID = res.Entity.ID
 			} else {
@@ -166,7 +166,7 @@ var createAccountMutation = &graphql.Field{
 			}
 			entityInfo.DisplayName, err = buildDisplayName(entityInfo, contacts)
 			if err != nil {
-				return nil, internalError(err)
+				return nil, internalError(ctx, err)
 			}
 			// Create entity
 			res, err := svc.directory.CreateEntity(ctx, &directory.CreateEntityRequest{
@@ -177,7 +177,7 @@ var createAccountMutation = &graphql.Field{
 				Contacts:                  contacts,
 			})
 			if err != nil {
-				return nil, internalError(err)
+				return nil, internalError(ctx, err)
 			}
 			accEntityID = res.Entity.ID
 		}
@@ -189,7 +189,7 @@ var createAccountMutation = &graphql.Field{
 			// TODO: query
 		})
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)

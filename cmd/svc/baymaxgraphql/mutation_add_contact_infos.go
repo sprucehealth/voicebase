@@ -46,7 +46,7 @@ var addContactInfosMutation = &graphql.Field{
 		ctx := p.Context
 		acc := accountFromContext(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated
+			return nil, errNotAuthenticated(ctx)
 		}
 
 		input := p.Args["input"].(map[string]interface{})
@@ -56,7 +56,7 @@ var addContactInfosMutation = &graphql.Field{
 
 		contacts, err := contactListFromInput(contactInfos, false)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		resp, err := svc.directory.CreateContacts(ctx, &directory.CreateContactsRequest{
@@ -68,12 +68,12 @@ var addContactInfosMutation = &graphql.Field{
 			},
 		})
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		e, err := transformEntityToResponse(resp.Entity)
 		if err != nil {
-			return nil, internalError(err)
+			return nil, internalError(ctx, err)
 		}
 
 		return &addContactInfosOutput{
