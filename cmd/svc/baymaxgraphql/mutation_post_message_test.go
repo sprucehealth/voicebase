@@ -165,6 +165,7 @@ func TestPostMessage(t *testing.T) {
 				}
 			}) {
 				clientMutationId
+				success
 				itemEdge {
 					cursor
 					node {
@@ -178,9 +179,8 @@ func TestPostMessage(t *testing.T) {
 						data {
 							__typename
 							... on Message {
+								summaryMarkup
 								textMarkup
-								titleMarkup
-								status
 							}
 						}
 					}
@@ -210,9 +210,8 @@ func TestPostMessage(t *testing.T) {
 					},
 					"data": {
 						"__typename": "Message",
-						"status": "NORMAL",
-						"textMarkup": "foo",
-						"titleMarkup": "\u003cref id=\"e1\" type=\"entity\"\u003eSchmee\u003c/ref\u003e texted \u003cref id=\"e2\" type=\"entity\"\u003eBarro\u003c/ref\u003e"
+						"summaryMarkup": "\u003cref id=\"e1\" type=\"entity\"\u003eSchmee\u003c/ref\u003e texted \u003cref id=\"e2\" type=\"entity\"\u003eBarro\u003c/ref\u003e",
+						"textMarkup": "foo"
 					},
 					"id": "ti1",
 					"internal": false,
@@ -220,6 +219,7 @@ func TestPostMessage(t *testing.T) {
 					"uuid": "abc"
 				}
 			},
+			"success": true,
 			"thread": {
 				"allowInternalMessages": true,
 				"id": "t1",
@@ -342,8 +342,7 @@ func TestPostMessageDestinationNotContactOfPrimary(t *testing.T) {
 							__typename
 							... on Message {
 								textMarkup
-								titleMarkup
-								status
+								summaryMarkup
 							}
 						}
 					}

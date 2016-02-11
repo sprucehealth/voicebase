@@ -322,10 +322,9 @@ func TestNodeQuery(t *testing.T) {
 		ActorEntityID: "entity_1",
 		Internal:      true,
 		Data: &message{
-			ThreadItemID: id,
-			TitleMarkup:  "abc",
-			TextMarkup:   "hello",
-			Status:       messageStatusNormal,
+			ThreadItemID:  id,
+			SummaryMarkup: "abc",
+			TextMarkup:    "hello",
 			Source: &endpoint{
 				Channel: endpointChannelVoice,
 				ID:      "555-555-5555",

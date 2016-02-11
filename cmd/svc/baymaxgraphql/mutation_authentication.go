@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"time"
 
 	"github.com/sprucehealth/backend/libs/conc"
@@ -258,7 +257,6 @@ var unauthenticateInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 	Name: "UnauthenticateInput",
 	Fields: graphql.InputObjectConfigFieldMap{
 		"clientMutationId": newClientMutationIDInputField(),
-		"token":            &graphql.InputObjectFieldConfig{Type: graphql.String},
 	},
 })
 
@@ -291,17 +289,15 @@ var unauthenticateMutation = &graphql.Field{
 		ctx := p.Context
 		input := p.Args["input"].(map[string]interface{})
 		mutationID, _ := input["clientMutationId"].(string)
-		// TODO: get token from cookie if not provided in args
-		token, ok := input["token"].(string)
-		if !ok {
-			return nil, internalError(ctx, errors.New("TODO: unauthenticate using cookie is not yet implemented"))
+		token := authTokenFromContext(ctx)
+		if token != "" {
+			_, err := svc.auth.Unauthenticate(ctx, &auth.UnauthenticateRequest{Token: token})
+			if err != nil {
+				return nil, internalError(ctx, err)
+			}
+			result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
+			result.Set("unauthenticated", true)
 		}
-		_, err := svc.auth.Unauthenticate(ctx, &auth.UnauthenticateRequest{Token: token})
-		if err != nil {
-			return nil, internalError(ctx, err)
-		}
-		result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
-		result.Set("unauthenticated", true)
 		return &unauthenticateOutput{
 			ClientMutationID: mutationID,
 			Success:          true,

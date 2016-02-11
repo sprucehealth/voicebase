@@ -63,3 +63,40 @@ func TestAuthenticateMutation(t *testing.T) {
 	test.AssertNotNil(t, acc2)
 	test.Equals(t, "acc", acc2.ID)
 }
+
+func TestUnauthenticateMutation(t *testing.T) {
+	g := newGQL(t)
+	defer g.finish()
+
+	ctx := context.Background()
+	acc := &account{ID: "a_1"}
+	ctx = ctxWithAccount(ctx, acc)
+	ctx = ctxWithAuthToken(ctx, "token")
+
+	g.authC.Expect(mock.NewExpectation(g.authC.Unauthenticate, &auth.UnauthenticateRequest{
+		Token: "token",
+	}).WithReturns(&auth.UnauthenticateResponse{}, nil))
+
+	res := g.query(ctx, `
+		mutation _ {
+			unauthenticate(input: {clientMutationId: "a1b2c3"}) {
+				clientMutationId
+				success
+			}
+		}`, nil)
+	b, err := json.MarshalIndent(res, "", "\t")
+	test.OK(t, err)
+	test.Equals(t, `{
+	"data": {
+		"unauthenticate": {
+			"clientMutationId": "a1b2c3",
+			"success": true
+		}
+	}
+}`, string(b))
+
+	// Make sure account gets updated in the context
+	// acc2 := accountFromContext(ctx)
+	// test.AssertNotNil(t, acc2)
+	// test.Equals(t, "acc", acc2.ID)
+}

@@ -276,6 +276,7 @@ var postMessageMutation = &graphql.Field{
 		}
 		return &postMessageOutput{
 			ClientMutationID: mutationID,
+			Success:          true,
 			ItemEdge:         &Edge{Node: it, Cursor: ConnectionCursor(pmres.Item.ID)},
 			Thread:           th,
 		}, nil
