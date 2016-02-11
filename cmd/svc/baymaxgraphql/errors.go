@@ -35,7 +35,7 @@ func userError(ctx context.Context, typ errorType, m string, a ...interface{}) e
 // versions since we don't want internal details leaking over graphql errors.
 func internalError(ctx context.Context, err error) error {
 	rid := requestIDFromContext(ctx)
-	golog.LogDepthf(1, golog.ERR, "%s [RequestID %d]", rid, err)
+	golog.LogDepthf(1, golog.ERR, "%s [RequestID %d]", err, rid)
 	userMessage := "Something went wrong on the server."
 	if !environment.IsProd() {
 		return gqlerrors.FormattedError{
