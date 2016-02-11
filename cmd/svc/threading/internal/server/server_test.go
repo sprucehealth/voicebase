@@ -80,14 +80,14 @@ func TestCreateEmptyThread(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, &threading.CreateEmptyThreadResponse{
 		Thread: &threading.Thread{
-			ID:                   th2.ID.String(),
-			OrganizationID:       "o1",
-			PrimaryEntityID:      "e2",
-			LastMessageTimestamp: uint64(now.Unix()),
-			LastMessageSummary:   "summ",
+			ID:                         th2.ID.String(),
+			OrganizationID:             "o1",
+			PrimaryEntityID:            "e2",
+			LastMessageTimestamp:       uint64(now.Unix()),
+			LastMessageSummary:         "summ",
+			LastPrimaryEntityEndpoints: []*threading.Endpoint{},
 		},
 	}, res)
-	mock.FinishAll(dl)
 }
 
 func TestCreateThread(t *testing.T) {
@@ -186,14 +186,14 @@ func TestCreateThread(t *testing.T) {
 			},
 		},
 		Thread: &threading.Thread{
-			ID:                   th2.ID.String(),
-			OrganizationID:       "o1",
-			PrimaryEntityID:      "e1",
-			LastMessageTimestamp: uint64(now.Unix()),
-			LastMessageSummary:   ps.Summary,
+			ID:                         th2.ID.String(),
+			OrganizationID:             "o1",
+			PrimaryEntityID:            "e1",
+			LastMessageTimestamp:       uint64(now.Unix()),
+			LastMessageSummary:         ps.Summary,
+			LastPrimaryEntityEndpoints: []*threading.Endpoint{},
 		},
 	}, res)
-	mock.FinishAll(dl)
 }
 
 func TestThreadItem(t *testing.T) {
@@ -256,7 +256,6 @@ func TestThreadItem(t *testing.T) {
 			},
 		},
 	}, res)
-	mock.FinishAll(dl)
 }
 
 func TestQueryThreads(t *testing.T) {
@@ -286,6 +285,14 @@ func TestQueryThreads(t *testing.T) {
 					OrganizationID:       orgID,
 					PrimaryEntityID:      peID,
 					LastMessageTimestamp: now,
+					LastPrimaryEntityEndpoints: models.EndpointList{
+						Endpoints: []*models.Endpoint{
+							&models.Endpoint{
+								Channel: models.Endpoint_SMS,
+								ID:      "+1234567890",
+							},
+						},
+					},
 				},
 			},
 		},
@@ -313,12 +320,17 @@ func TestQueryThreads(t *testing.T) {
 					OrganizationID:       orgID,
 					PrimaryEntityID:      peID,
 					LastMessageTimestamp: uint64(now.Unix()),
+					LastPrimaryEntityEndpoints: []*threading.Endpoint{
+						&threading.Endpoint{
+							Channel: threading.Endpoint_SMS,
+							ID:      "+1234567890",
+						},
+					},
 				},
 				Cursor: "c2",
 			},
 		},
 	}, res)
-	mock.FinishAll(dl)
 }
 
 func TestQueryThreadsWithViewer(t *testing.T) {
@@ -403,6 +415,7 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 					PrimaryEntityID:      peID,
 					LastMessageTimestamp: uint64(now.Unix()),
 					Unread:               true,
+					LastPrimaryEntityEndpoints: []*threading.Endpoint{},
 				},
 				Cursor: "c2",
 			},
@@ -413,12 +426,12 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 					PrimaryEntityID:      peID,
 					LastMessageTimestamp: uint64(time.Unix(now.Unix()-1000, 0).Unix()),
 					Unread:               false,
+					LastPrimaryEntityEndpoints: []*threading.Endpoint{},
 				},
 				Cursor: "c3",
 			},
 		},
 	}, res)
-	mock.FinishAll(dl)
 }
 
 func TestThread(t *testing.T) {
@@ -445,13 +458,13 @@ func TestThread(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, &threading.ThreadResponse{
 		Thread: &threading.Thread{
-			ID:                   thID.String(),
-			OrganizationID:       orgID,
-			PrimaryEntityID:      entID,
-			LastMessageTimestamp: uint64(now.Unix()),
+			ID:                         thID.String(),
+			OrganizationID:             orgID,
+			PrimaryEntityID:            entID,
+			LastMessageTimestamp:       uint64(now.Unix()),
+			LastPrimaryEntityEndpoints: []*threading.Endpoint{},
 		},
 	}, res)
-	mock.FinishAll(dl)
 }
 
 func TestThreadWithViewer(t *testing.T) {
@@ -494,9 +507,9 @@ func TestThreadWithViewer(t *testing.T) {
 			PrimaryEntityID:      entID,
 			LastMessageTimestamp: uint64(now.Unix()),
 			Unread:               true,
+			LastPrimaryEntityEndpoints: []*threading.Endpoint{},
 		},
 	}, res)
-	mock.FinishAll(dl)
 }
 
 func TestThreadWithViewerNoMembership(t *testing.T) {
@@ -531,9 +544,9 @@ func TestThreadWithViewerNoMembership(t *testing.T) {
 			PrimaryEntityID:      entID,
 			LastMessageTimestamp: uint64(now.Unix()),
 			Unread:               true,
+			LastPrimaryEntityEndpoints: []*threading.Endpoint{},
 		},
 	}, res)
-	mock.FinishAll(dl)
 }
 
 func TestSavedQuery(t *testing.T) {
@@ -565,7 +578,6 @@ func TestSavedQuery(t *testing.T) {
 			OrganizationID: orgID,
 		},
 	}, res)
-	mock.FinishAll(dl)
 }
 
 func TestMarkThreadAsRead(t *testing.T) {

@@ -11,6 +11,7 @@
 	It has these top-level messages:
 		Reference
 		Message
+		EndpointList
 		Endpoint
 		MessageUpdated
 		FollowerUpdated
@@ -154,6 +155,20 @@ func (m *Message) GetDestinations() []*Endpoint {
 func (m *Message) GetTextRefs() []*Reference {
 	if m != nil {
 		return m.TextRefs
+	}
+	return nil
+}
+
+type EndpointList struct {
+	Endpoints []*Endpoint `protobuf:"bytes,1,rep,name=endpoints" json:"endpoints,omitempty"`
+}
+
+func (m *EndpointList) Reset()      { *m = EndpointList{} }
+func (*EndpointList) ProtoMessage() {}
+
+func (m *EndpointList) GetEndpoints() []*Endpoint {
+	if m != nil {
+		return m.Endpoints
 	}
 	return nil
 }
@@ -315,6 +330,7 @@ func (*AudioAttachment) ProtoMessage() {}
 func init() {
 	proto.RegisterType((*Reference)(nil), "models.Reference")
 	proto.RegisterType((*Message)(nil), "models.Message")
+	proto.RegisterType((*EndpointList)(nil), "models.EndpointList")
 	proto.RegisterType((*Endpoint)(nil), "models.Endpoint")
 	proto.RegisterType((*MessageUpdated)(nil), "models.MessageUpdated")
 	proto.RegisterType((*FollowerUpdated)(nil), "models.FollowerUpdated")
@@ -446,6 +462,36 @@ func (this *Message) Equal(that interface{}) bool {
 	}
 	if this.Summary != that1.Summary {
 		return false
+	}
+	return true
+}
+func (this *EndpointList) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*EndpointList)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if len(this.Endpoints) != len(that1.Endpoints) {
+		return false
+	}
+	for i := range this.Endpoints {
+		if !this.Endpoints[i].Equal(that1.Endpoints[i]) {
+			return false
+		}
 	}
 	return true
 }
@@ -726,6 +772,18 @@ func (this *Message) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *EndpointList) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&models.EndpointList{")
+	if this.Endpoints != nil {
+		s = append(s, "Endpoints: "+fmt.Sprintf("%#v", this.Endpoints)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *Endpoint) GoString() string {
 	if this == nil {
 		return "nil"
@@ -965,6 +1023,36 @@ func (m *Message) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintGen(data, i, uint64(len(m.Summary)))
 		i += copy(data[i:], m.Summary)
+	}
+	return i, nil
+}
+
+func (m *EndpointList) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *EndpointList) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Endpoints) > 0 {
+		for _, msg := range m.Endpoints {
+			data[i] = 0xa
+			i++
+			i = encodeVarintGen(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
 	}
 	return i, nil
 }
@@ -1297,6 +1385,18 @@ func (m *Message) Size() (n int) {
 	return n
 }
 
+func (m *EndpointList) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.Endpoints) > 0 {
+		for _, e := range m.Endpoints {
+			l = e.Size()
+			n += 1 + l + sovGen(uint64(l))
+		}
+	}
+	return n
+}
+
 func (m *Endpoint) Size() (n int) {
 	var l int
 	_ = l
@@ -1452,6 +1552,16 @@ func (this *Message) String() string {
 		`Title:` + fmt.Sprintf("%v", this.Title) + `,`,
 		`TextRefs:` + strings.Replace(fmt.Sprintf("%v", this.TextRefs), "Reference", "Reference", 1) + `,`,
 		`Summary:` + fmt.Sprintf("%v", this.Summary) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *EndpointList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&EndpointList{`,
+		`Endpoints:` + strings.Replace(fmt.Sprintf("%v", this.Endpoints), "Endpoint", "Endpoint", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1961,6 +2071,87 @@ func (m *Message) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Summary = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGen(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthGen
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *EndpointList) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGen
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: EndpointList: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: EndpointList: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Endpoints", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGen
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGen
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Endpoints = append(m.Endpoints, &Endpoint{})
+			if err := m.Endpoints[len(m.Endpoints)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

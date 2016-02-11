@@ -135,6 +135,7 @@ type Thread struct {
 	LastExternalMessageTimestamp time.Time
 	LastMessageSummary           string
 	LastExternalMessageSummary   string
+	LastPrimaryEntityEndpoints   EndpointList
 }
 
 // ThreadMember links an entity to a thread.

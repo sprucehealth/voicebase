@@ -33,6 +33,10 @@ message Message {
 	string summary = 10;
 }
 
+message EndpointList {
+	repeated Endpoint endpoints = 1;
+}
+
 message Endpoint {
 	enum Channel {
 		APP = 0;

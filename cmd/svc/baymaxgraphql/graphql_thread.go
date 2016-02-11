@@ -32,6 +32,106 @@ var threadType = graphql.NewObject(
 			"lastMessageTimestamp":  &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
 			"unread":                &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowInternalMessages": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			// TODO: We currently just assume all contacts for an entity are available endpoints
+			"availableEndpoints": &graphql.Field{
+				Type: graphql.NewList(endpointType),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					ctx := p.Context
+					th := p.Source.(*thread)
+					if th == nil {
+						return nil, internalError(ctx, errors.New("thread is nil"))
+					}
+
+					svc := serviceFromParams(p)
+					res, err := svc.directory.LookupEntities(ctx,
+						&directory.LookupEntitiesRequest{
+							LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+							LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+								EntityID: th.PrimaryEntityID,
+							},
+							RequestedInformation: &directory.RequestedInformation{
+								Depth: 0,
+								EntityInformation: []directory.EntityInformation{
+									directory.EntityInformation_CONTACTS,
+								},
+							},
+						})
+					if err != nil {
+						return nil, internalError(ctx, err)
+					}
+					for _, e := range res.Entities {
+						endpoints := make([]*endpoint, len(e.Contacts))
+						for i, c := range e.Contacts {
+							endpoint, err := transformEntityContactToEndpoint(c)
+							if err != nil {
+								return nil, internalError(ctx, err)
+							}
+							endpoints[i] = endpoint
+						}
+						return endpoints, nil
+					}
+					return nil, errors.New("primary entity not found")
+				},
+			},
+			// Default endpoints are build from the last primary entity endpoints filtering out anything contacts that no longer exist for the entity
+			"defaultEndpoints": &graphql.Field{
+				Type: graphql.NewList(endpointType),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					ctx := p.Context
+					th := p.Source.(*thread)
+					if th == nil {
+						return nil, internalError(ctx, errors.New("thread is nil"))
+					}
+
+					svc := serviceFromParams(p)
+					res, err := svc.directory.LookupEntities(ctx,
+						&directory.LookupEntitiesRequest{
+							LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+							LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+								EntityID: th.PrimaryEntityID,
+							},
+							RequestedInformation: &directory.RequestedInformation{
+								Depth: 0,
+								EntityInformation: []directory.EntityInformation{
+									directory.EntityInformation_CONTACTS,
+								},
+							},
+						})
+					if err != nil {
+						return nil, internalError(ctx, err)
+					}
+
+					for _, e := range res.Entities {
+						var filteredEndpoints []*endpoint
+						// Assert that our endpoints stil exist as a contact
+						for _, ep := range th.LastPrimaryEntityEndpoints {
+							for _, c := range e.Contacts {
+								endpoint, err := transformEntityContactToEndpoint(c)
+								if err != nil {
+									return nil, internalError(ctx, err)
+								}
+								if endpoint.Channel == ep.Channel && endpoint.ID == ep.ID {
+									filteredEndpoints = append(filteredEndpoints, endpoint)
+									continue
+								}
+							}
+						}
+						// If we didn't find any matching endpoints or the source list is empty, pick the first contact attached to the entity
+						if len(filteredEndpoints) == 0 {
+							for _, c := range e.Contacts {
+								endpoint, err := transformEntityContactToEndpoint(c)
+								if err != nil {
+									return nil, internalError(ctx, err)
+								}
+								filteredEndpoints = append(filteredEndpoints, endpoint)
+								continue
+							}
+						}
+						return filteredEndpoints, nil
+					}
+					return nil, errors.New("primary entity not found")
+				},
+			},
 			"primaryEntity": &graphql.Field{
 				Type: entityType,
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {

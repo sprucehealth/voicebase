@@ -34,6 +34,7 @@ message Thread {
 	uint64 last_message_timestamp = 5;
 	string last_message_summary = 6;
     bool unread = 7;
+	repeated Endpoint last_primary_entity_endpoints = 8;
 }
 
 message Member {

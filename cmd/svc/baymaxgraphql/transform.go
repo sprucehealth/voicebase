@@ -67,14 +67,21 @@ func transformContactsToResponse(contacts []*directory.Contact) ([]*contactInfo,
 }
 
 func transformThreadToResponse(t *threading.Thread) (*thread, error) {
-	return &thread{
+	th := &thread{
 		ID:                   t.ID,
 		OrganizationID:       t.OrganizationID,
 		PrimaryEntityID:      t.PrimaryEntityID,
 		Subtitle:             t.LastMessageSummary,
 		LastMessageTimestamp: t.LastMessageTimestamp,
 		Unread:               t.Unread,
-	}, nil
+	}
+	for i, ep := range t.LastPrimaryEntityEndpoints {
+		th.LastPrimaryEntityEndpoints[i] = &endpoint{
+			Channel: ep.Channel.String(),
+			ID:      ep.ID,
+		}
+	}
+	return th, nil
 }
 
 func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID string, mediaSigner *media.Signer) (*threadItem, error) {
@@ -317,4 +324,28 @@ func transformMultiSelectToResponse(config *settings.Config, value *settings.Val
 	}
 
 	return ss
+}
+
+func transformEntityContactToEndpoint(c *directory.Contact) (*endpoint, error) {
+	var channel string
+	var displayValue string
+	var err error
+	switch c.ContactType {
+	case directory.ContactType_EMAIL:
+		channel = endpointChannelEmail
+		displayValue = c.Value
+	case directory.ContactType_PHONE:
+		channel = endpointChannelSMS
+		displayValue, err = phone.Format(c.Value, phone.Pretty)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+	default:
+		return nil, fmt.Errorf("unknown contact type %v", c.ContactType)
+	}
+	return &endpoint{
+		Channel:      channel,
+		ID:           c.Value,
+		DisplayValue: displayValue,
+	}, nil
 }

@@ -65,8 +65,9 @@ type contactInfo struct {
 }
 
 type endpoint struct {
-	Channel string `json:"channel"`
-	ID      string `json:"id"`
+	Channel      string `json:"channel"`
+	ID           string `json:"id"`
+	DisplayValue string `json:"displayValue"`
 }
 
 const (
@@ -116,14 +117,15 @@ type audioAttachment struct {
 }
 
 type thread struct {
-	ID                    string `json:"id"`
-	OrganizationID        string `json:"organizationID"`
-	PrimaryEntityID       string `json:"primaryEntityID"`
-	Title                 string `json:"title"`
-	Subtitle              string `json:"subtitle"`
-	LastMessageTimestamp  uint64 `json:"lastMessageTimestamp"`
-	Unread                bool   `json:"unread"`
-	AllowInternalMessages bool   `json:"allowInternalMessages"`
+	ID                         string `json:"id"`
+	OrganizationID             string `json:"organizationID"`
+	PrimaryEntityID            string `json:"primaryEntityID"`
+	Title                      string `json:"title"`
+	Subtitle                   string `json:"subtitle"`
+	LastMessageTimestamp       uint64 `json:"lastMessageTimestamp"`
+	Unread                     bool   `json:"unread"`
+	AllowInternalMessages      bool   `json:"allowInternalMessages"`
+	LastPrimaryEntityEndpoints []*endpoint
 }
 
 type threadItem struct {

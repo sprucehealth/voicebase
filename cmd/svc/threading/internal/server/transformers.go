@@ -10,17 +10,62 @@ import (
 
 func transformThreadToResponse(thread *models.Thread, forExternal bool) (*threading.Thread, error) {
 	t := &threading.Thread{
-		ID:                   thread.ID.String(),
-		OrganizationID:       thread.OrganizationID,
-		PrimaryEntityID:      thread.PrimaryEntityID,
-		LastMessageTimestamp: uint64(thread.LastMessageTimestamp.Unix()),
-		LastMessageSummary:   thread.LastMessageSummary,
+		ID:                         thread.ID.String(),
+		OrganizationID:             thread.OrganizationID,
+		PrimaryEntityID:            thread.PrimaryEntityID,
+		LastMessageTimestamp:       uint64(thread.LastMessageTimestamp.Unix()),
+		LastMessageSummary:         thread.LastMessageSummary,
+		LastPrimaryEntityEndpoints: make([]*threading.Endpoint, len(thread.LastPrimaryEntityEndpoints.Endpoints)),
+	}
+	for i, ep := range thread.LastPrimaryEntityEndpoints.Endpoints {
+		tc, err := transformEndpointChannelToResponse(ep.Channel)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		t.LastPrimaryEntityEndpoints[i] = &threading.Endpoint{
+			Channel: tc,
+			ID:      ep.ID,
+		}
 	}
 	if forExternal {
 		t.LastMessageTimestamp = uint64(thread.LastExternalMessageTimestamp.Unix())
 		t.LastMessageSummary = thread.LastExternalMessageSummary
 	}
 	return t, nil
+}
+
+func transformRequestEndpointChannelToDAL(c threading.Endpoint_Channel) (models.Endpoint_Channel, error) {
+	var dc models.Endpoint_Channel
+	switch c {
+	case threading.Endpoint_APP:
+		dc = models.Endpoint_APP
+	case threading.Endpoint_EMAIL:
+		dc = models.Endpoint_EMAIL
+	case threading.Endpoint_SMS:
+		dc = models.Endpoint_SMS
+	case threading.Endpoint_VOICE:
+		dc = models.Endpoint_VOICE
+	default:
+		return 0, errors.Trace(fmt.Errorf("Unknown dal layer endpoint channel type: %v", c))
+	}
+	return dc, nil
+}
+
+func transformEndpointChannelToResponse(c models.Endpoint_Channel) (threading.Endpoint_Channel, error) {
+	var tc threading.Endpoint_Channel
+	switch c {
+	case models.Endpoint_APP:
+		tc = threading.Endpoint_APP
+	case models.Endpoint_EMAIL:
+		tc = threading.Endpoint_EMAIL
+	case models.Endpoint_SMS:
+		tc = threading.Endpoint_SMS
+	case models.Endpoint_VOICE:
+		tc = threading.Endpoint_VOICE
+	default:
+		return 0, errors.Trace(fmt.Errorf("Unknown grpc layer endpoint channel type: %v", c))
+	}
+	return tc, nil
 }
 
 func transformThreadItemToResponse(item *models.ThreadItem, orgID string) (*threading.ThreadItem, error) {

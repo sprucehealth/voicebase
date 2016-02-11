@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -163,11 +164,15 @@ func (d *dal) CreateThread(ctx context.Context, thread *models.Thread) (models.T
 	if err != nil {
 		return models.ThreadID{}, errors.Trace(err)
 	}
+	lastPrimaryEntityEndpointsData, err := thread.LastPrimaryEntityEndpoints.Marshal()
+	if err != nil {
+		return models.ThreadID{}, errors.Trace(err)
+	}
 	now := time.Now()
 	if _, err := d.db.Exec(`
-		INSERT INTO threads (id, organization_id, primary_entity_id, last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-	`, id, thread.OrganizationID, thread.PrimaryEntityID, now, now, thread.LastMessageSummary, thread.LastExternalMessageSummary); err != nil {
+		INSERT INTO threads (id, organization_id, primary_entity_id, last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary, last_primary_entity_endpoints)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, id, thread.OrganizationID, thread.PrimaryEntityID, now, now, thread.LastMessageSummary, thread.LastExternalMessageSummary, lastPrimaryEntityEndpointsData); err != nil {
 		return models.ThreadID{}, errors.Trace(err)
 	}
 	thread.ID = id
@@ -234,7 +239,7 @@ func (d *dal) IterateThreads(ctx context.Context, orgID string, forExternal bool
 	}
 	limit := fmt.Sprintf(" LIMIT %d", it.Count+1) // +1 to check if there's more than requested available.. will filter it out later
 	rows, err := d.db.Query(`
-		SELECT id, organization_id, COALESCE(primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary
+		SELECT id, organization_id, COALESCE(primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary, last_primary_entity_endpoints
 		FROM threads
 		WHERE `+where+order+limit, vals...)
 	if err != nil {
@@ -423,14 +428,27 @@ func (d *dal) PostMessage(ctx context.Context, req *PostMessageRequest) (*models
 				last_message_summary = ?
 			WHERE id = ?`, item.Created, msg.Summary, item.ThreadID)
 	} else {
-		_, err = tx.Exec(`
+		endpointList := models.EndpointList{Endpoints: req.Destinations}
+		endpointListData, err := endpointList.Marshal()
+		if err != nil {
+			tx.Rollback()
+			return nil, errors.Trace(err)
+		}
+		values := []interface{}{item.Created, item.Created, msg.Summary, msg.Summary, item.ThreadID}
+		// Only update the endpoint list on an external thread if it's non empty
+		var endpointUpdate string
+		if len(req.Destinations) > 0 {
+			endpointUpdate = ", last_primary_entity_endpoints = ?"
+			values = append(values, endpointListData)
+		}
+		_, err = tx.Exec(fmt.Sprintf(`
 			UPDATE threads
 			SET
 				last_message_timestamp = GREATEST(last_message_timestamp, ?),
 				last_external_message_timestamp = GREATEST(last_external_message_timestamp, ?),
 				last_message_summary = ?,
-				last_external_message_summary = ?
-			WHERE id = ?`, item.Created, item.Created, msg.Summary, msg.Summary, item.ThreadID)
+				last_external_message_summary = ?%s
+			WHERE id = ?`, endpointUpdate), values...)
 	}
 	if err != nil {
 		tx.Rollback()
@@ -487,7 +505,7 @@ func (d *dal) SavedQueries(ctx context.Context, entityID string) ([]*models.Save
 
 func (d *dal) Thread(ctx context.Context, id models.ThreadID) (*models.Thread, error) {
 	row := d.db.QueryRow(`
-		SELECT id, organization_id, COALESCE(primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary
+		SELECT id, organization_id, COALESCE(primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary, last_primary_entity_endpoints
 		FROM threads
 		WHERE id = ? AND deleted = false`, id)
 	t, err := scanThread(row)
@@ -608,12 +626,12 @@ func (d *dal) ThreadsForMember(ctx context.Context, entityID string, primaryOnly
 	var err error
 	if primaryOnly {
 		rows, err = d.db.Query(`
-			SELECT id, organization_id, COALESCE(primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary
+			SELECT id, organization_id, COALESCE(primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary, last_primary_entity_endpoints
 			FROM threads
 			WHERE primary_entity_id = ? AND deleted = false`, entityID)
 	} else {
 		rows, err = d.db.Query(`
-			SELECT t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary
+			SELECT t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary, last_primary_entity_endpoints
 			FROM thread_members tm
 			INNER JOIN threads t ON t.id = tm.thread_id
 			WHERE tm.entity_id = ? AND deleted = false`, entityID)
@@ -678,11 +696,17 @@ func scanSavedQuery(row dbutil.Scanner) (*models.SavedQuery, error) {
 func scanThread(row dbutil.Scanner) (*models.Thread, error) {
 	var t models.Thread
 	t.ID = models.EmptyThreadID()
-	err := row.Scan(&t.ID, &t.OrganizationID, &t.PrimaryEntityID, &t.LastMessageTimestamp, &t.LastExternalMessageTimestamp, &t.LastMessageSummary, &t.LastExternalMessageSummary)
+	var lastPrimaryEntityEndpointsData []byte
+	err := row.Scan(&t.ID, &t.OrganizationID, &t.PrimaryEntityID, &t.LastMessageTimestamp, &t.LastExternalMessageTimestamp, &t.LastMessageSummary, &t.LastExternalMessageSummary, &lastPrimaryEntityEndpointsData)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	} else if err != nil {
 		return nil, errors.Trace(err)
+	}
+	if len(lastPrimaryEntityEndpointsData) != 0 {
+		if err := proto.Unmarshal(lastPrimaryEntityEndpointsData, &t.LastPrimaryEntityEndpoints); err != nil {
+			return nil, errors.Trace(err)
+		}
 	}
 	return &t, nil
 }

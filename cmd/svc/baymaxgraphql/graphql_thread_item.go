@@ -45,8 +45,9 @@ var endpointType = graphql.NewObject(
 		Name:        "Endpoint",
 		Description: "Communication endpoint",
 		Fields: graphql.Fields{
-			"channel": &graphql.Field{Type: graphql.NewNonNull(channelEnumType)},
-			"id":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"channel":      &graphql.Field{Type: graphql.NewNonNull(channelEnumType)},
+			"id":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"displayValue": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		},
 	},
 )

@@ -223,13 +223,14 @@ func (m *Iterator) Reset()      { *m = Iterator{} }
 func (*Iterator) ProtoMessage() {}
 
 type Thread struct {
-	ID                   string    `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	OrganizationID       string    `protobuf:"bytes,2,opt,name=organization_id,proto3" json:"organization_id,omitempty"`
-	PrimaryEntityID      string    `protobuf:"bytes,3,opt,name=primary_entity_id,proto3" json:"primary_entity_id,omitempty"`
-	Members              []*Member `protobuf:"bytes,4,rep,name=members" json:"members,omitempty"`
-	LastMessageTimestamp uint64    `protobuf:"varint,5,opt,name=last_message_timestamp,proto3" json:"last_message_timestamp,omitempty"`
-	LastMessageSummary   string    `protobuf:"bytes,6,opt,name=last_message_summary,proto3" json:"last_message_summary,omitempty"`
-	Unread               bool      `protobuf:"varint,7,opt,name=unread,proto3" json:"unread,omitempty"`
+	ID                         string      `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	OrganizationID             string      `protobuf:"bytes,2,opt,name=organization_id,proto3" json:"organization_id,omitempty"`
+	PrimaryEntityID            string      `protobuf:"bytes,3,opt,name=primary_entity_id,proto3" json:"primary_entity_id,omitempty"`
+	Members                    []*Member   `protobuf:"bytes,4,rep,name=members" json:"members,omitempty"`
+	LastMessageTimestamp       uint64      `protobuf:"varint,5,opt,name=last_message_timestamp,proto3" json:"last_message_timestamp,omitempty"`
+	LastMessageSummary         string      `protobuf:"bytes,6,opt,name=last_message_summary,proto3" json:"last_message_summary,omitempty"`
+	Unread                     bool        `protobuf:"varint,7,opt,name=unread,proto3" json:"unread,omitempty"`
+	LastPrimaryEntityEndpoints []*Endpoint `protobuf:"bytes,8,rep,name=last_primary_entity_endpoints" json:"last_primary_entity_endpoints,omitempty"`
 }
 
 func (m *Thread) Reset()      { *m = Thread{} }
@@ -238,6 +239,13 @@ func (*Thread) ProtoMessage() {}
 func (m *Thread) GetMembers() []*Member {
 	if m != nil {
 		return m.Members
+	}
+	return nil
+}
+
+func (m *Thread) GetLastPrimaryEntityEndpoints() []*Endpoint {
+	if m != nil {
+		return m.LastPrimaryEntityEndpoints
 	}
 	return nil
 }
@@ -1465,6 +1473,14 @@ func (this *Thread) Equal(that interface{}) bool {
 	}
 	if this.Unread != that1.Unread {
 		return false
+	}
+	if len(this.LastPrimaryEntityEndpoints) != len(that1.LastPrimaryEntityEndpoints) {
+		return false
+	}
+	for i := range this.LastPrimaryEntityEndpoints {
+		if !this.LastPrimaryEntityEndpoints[i].Equal(that1.LastPrimaryEntityEndpoints[i]) {
+			return false
+		}
 	}
 	return true
 }
@@ -3342,7 +3358,7 @@ func (this *Thread) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 11)
+	s := make([]string, 0, 12)
 	s = append(s, "&threading.Thread{")
 	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	s = append(s, "OrganizationID: "+fmt.Sprintf("%#v", this.OrganizationID)+",\n")
@@ -3353,6 +3369,9 @@ func (this *Thread) GoString() string {
 	s = append(s, "LastMessageTimestamp: "+fmt.Sprintf("%#v", this.LastMessageTimestamp)+",\n")
 	s = append(s, "LastMessageSummary: "+fmt.Sprintf("%#v", this.LastMessageSummary)+",\n")
 	s = append(s, "Unread: "+fmt.Sprintf("%#v", this.Unread)+",\n")
+	if this.LastPrimaryEntityEndpoints != nil {
+		s = append(s, "LastPrimaryEntityEndpoints: "+fmt.Sprintf("%#v", this.LastPrimaryEntityEndpoints)+",\n")
+	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -4796,6 +4815,18 @@ func (m *Thread) MarshalTo(data []byte) (int, error) {
 			data[i] = 0
 		}
 		i++
+	}
+	if len(m.LastPrimaryEntityEndpoints) > 0 {
+		for _, msg := range m.LastPrimaryEntityEndpoints {
+			data[i] = 0x42
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
 	}
 	return i, nil
 }
@@ -6941,6 +6972,12 @@ func (m *Thread) Size() (n int) {
 	if m.Unread {
 		n += 2
 	}
+	if len(m.LastPrimaryEntityEndpoints) > 0 {
+		for _, e := range m.LastPrimaryEntityEndpoints {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -7915,6 +7952,7 @@ func (this *Thread) String() string {
 		`LastMessageTimestamp:` + fmt.Sprintf("%v", this.LastMessageTimestamp) + `,`,
 		`LastMessageSummary:` + fmt.Sprintf("%v", this.LastMessageSummary) + `,`,
 		`Unread:` + fmt.Sprintf("%v", this.Unread) + `,`,
+		`LastPrimaryEntityEndpoints:` + strings.Replace(fmt.Sprintf("%v", this.LastPrimaryEntityEndpoints), "Endpoint", "Endpoint", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -8981,6 +9019,37 @@ func (m *Thread) Unmarshal(data []byte) error {
 				}
 			}
 			m.Unread = bool(v != 0)
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LastPrimaryEntityEndpoints", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.LastPrimaryEntityEndpoints = append(m.LastPrimaryEntityEndpoints, &Endpoint{})
+			if err := m.LastPrimaryEntityEndpoints[len(m.LastPrimaryEntityEndpoints)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
