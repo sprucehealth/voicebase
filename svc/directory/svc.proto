@@ -12,6 +12,7 @@ enum EntityType {
 	ORGANIZATION = 0;
 	INTERNAL = 1;
 	EXTERNAL = 2;
+	SYSTEM = 3;
 }
 
 enum EntityInformation {

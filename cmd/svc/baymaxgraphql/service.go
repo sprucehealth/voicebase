@@ -67,6 +67,7 @@ func (s *service) hydrateThreadTitles(ctx context.Context, threads []*thread) er
 				return errors.Trace(fmt.Errorf("lookup entities returned %d results for %s, expected 1", len(res.Entities), thread.PrimaryEntityID))
 			}
 			thread.Title = threadTitleForEntity(res.Entities[0])
+			thread.AllowInternalMessages = res.Entities[0].Type != directory.EntityType_SYSTEM
 			return nil
 		})
 	}

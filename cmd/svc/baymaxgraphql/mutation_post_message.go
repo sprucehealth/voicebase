@@ -270,6 +270,7 @@ var postMessageMutation = &graphql.Field{
 		}
 		if extEntity != nil {
 			th.Title = threadTitleForEntity(extEntity)
+			th.AllowInternalMessages = extEntity.Type != directory.EntityType_SYSTEM
 		} else if err := svc.hydrateThreadTitles(ctx, []*thread{th}); err != nil {
 			return nil, internalError(ctx, err)
 		}

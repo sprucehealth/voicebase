@@ -110,6 +110,7 @@ func TestNodeQuery(t *testing.T) {
 		Contacts: []*contactInfo{},
 		Entity: &entity{
 			ID:          "entity_222",
+			IsEditable:  true,
 			DisplayName: "Mem",
 			Contacts:    []*contactInfo{},
 		},
@@ -150,7 +151,7 @@ func TestNodeQuery(t *testing.T) {
 		nil))
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, &entity{ID: id, DisplayName: "Someone", Contacts: []*contactInfo{}}, res)
+	test.Equals(t, &entity{ID: id, IsEditable: true, DisplayName: "Someone", Contacts: []*contactInfo{}}, res)
 	mock.FinishAll(dirC)
 
 	// Thread
@@ -277,7 +278,7 @@ func TestNodeQuery(t *testing.T) {
 		nil))
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, &thread{ID: id, OrganizationID: "entity_1", PrimaryEntityID: "entity_2", Title: "Someone"}, res)
+	test.Equals(t, &thread{ID: id, AllowInternalMessages: true, OrganizationID: "entity_1", PrimaryEntityID: "entity_2", Title: "Someone"}, res)
 	mock.FinishAll(thC, dirC)
 
 	// Thread item

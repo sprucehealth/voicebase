@@ -76,17 +76,20 @@ const (
 	EntityType_ORGANIZATION EntityType = 0
 	EntityType_INTERNAL     EntityType = 1
 	EntityType_EXTERNAL     EntityType = 2
+	EntityType_SYSTEM       EntityType = 3
 )
 
 var EntityType_name = map[int32]string{
 	0: "ORGANIZATION",
 	1: "INTERNAL",
 	2: "EXTERNAL",
+	3: "SYSTEM",
 }
 var EntityType_value = map[string]int32{
 	"ORGANIZATION": 0,
 	"INTERNAL":     1,
 	"EXTERNAL":     2,
+	"SYSTEM":       3,
 }
 
 type EntityInformation int32

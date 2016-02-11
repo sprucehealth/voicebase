@@ -205,12 +205,14 @@ const (
 	EntityTypeInternal EntityType = "INTERNAL"
 	// EntityTypeExternal represents the EXTERNAL state of the type field on a entity record
 	EntityTypeExternal EntityType = "EXTERNAL"
+	// EntityTypeSystem represents the SYSTEM state of the type field on a entity record
+	EntityTypeSystem EntityType = "SYSTEM"
 )
 
 // ParseEntityType converts a string into the correcponding enum value
 func ParseEntityType(s string) (EntityType, error) {
 	switch t := EntityType(strings.ToUpper(s)); t {
-	case EntityTypeOrganization, EntityTypeInternal, EntityTypeExternal:
+	case EntityTypeOrganization, EntityTypeInternal, EntityTypeExternal, EntityTypeSystem:
 		return t, nil
 	}
 	return EntityType(""), errors.Trace(fmt.Errorf("Unknown type:%s", s))

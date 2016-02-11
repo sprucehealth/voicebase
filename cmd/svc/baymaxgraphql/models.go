@@ -42,6 +42,7 @@ type account struct {
 
 type entity struct {
 	ID            string         `json:"id"`
+	IsEditable    bool           `json:"isEditable"`
 	FirstName     string         `json:"firstName"`
 	MiddleInitial string         `json:"middleInitial"`
 	LastName      string         `json:"lastName"`
@@ -115,13 +116,14 @@ type audioAttachment struct {
 }
 
 type thread struct {
-	ID                   string `json:"id"`
-	OrganizationID       string `json:"organizationID"`
-	PrimaryEntityID      string `json:"primaryEntityID"`
-	Title                string `json:"title"`
-	Subtitle             string `json:"subtitle"`
-	LastMessageTimestamp uint64 `json:"lastMessageTimestamp"`
-	Unread               bool   `json:"unread"`
+	ID                    string `json:"id"`
+	OrganizationID        string `json:"organizationID"`
+	PrimaryEntityID       string `json:"primaryEntityID"`
+	Title                 string `json:"title"`
+	Subtitle              string `json:"subtitle"`
+	LastMessageTimestamp  uint64 `json:"lastMessageTimestamp"`
+	Unread                bool   `json:"unread"`
+	AllowInternalMessages bool   `json:"allowInternalMessages"`
 }
 
 type threadItem struct {

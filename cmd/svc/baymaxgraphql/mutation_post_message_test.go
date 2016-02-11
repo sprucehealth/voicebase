@@ -190,6 +190,7 @@ func TestPostMessage(t *testing.T) {
 					lastMessageTimestamp
 					title
 					subtitle
+					allowInternalMessages
 				}
 			}
 		}`, map[string]interface{}{
@@ -220,6 +221,7 @@ func TestPostMessage(t *testing.T) {
 				}
 			},
 			"thread": {
+				"allowInternalMessages": true,
 				"id": "t1",
 				"lastMessageTimestamp": 123456789,
 				"subtitle": "Schmee: foo",

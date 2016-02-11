@@ -134,6 +134,7 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 				success
 				thread {
 					id
+					allowInternalMessages
 				}
 			}
 		}`, nil)
@@ -145,6 +146,7 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 			"clientMutationId": "a1b2c3",
 			"success": true,
 			"thread": {
+				"allowInternalMessages": true,
 				"id": "t_1"
 			}
 		}
@@ -294,6 +296,7 @@ func TestCreateThreadMutation_DifferentOrg(t *testing.T) {
 				thread {
 					id
 					title
+					allowInternalMessages
 				}
 			}
 		}`, nil)
@@ -305,6 +308,7 @@ func TestCreateThreadMutation_DifferentOrg(t *testing.T) {
 			"clientMutationId": "a1b2c3",
 			"success": true,
 			"thread": {
+				"allowInternalMessages": true,
 				"id": "t_1",
 				"title": "firstName middleInitial. lastName, shortTitle"
 			}
@@ -441,10 +445,12 @@ func TestCreateThreadMutation_ExistingThreads_DifferentName(t *testing.T) {
 				success
 				errorCode
 				thread {
+					allowInternalMessages
 					id
 					title
 				}
 				existingThreads {
+					allowInternalMessages
 					id
 					title
 				}
@@ -460,10 +466,12 @@ func TestCreateThreadMutation_ExistingThreads_DifferentName(t *testing.T) {
 			"errorCode": "EXISTING_THREAD",
 			"existingThreads": [
 				{
+					"allowInternalMessages": true,
 					"id": "t_1",
 					"title": "(415) 555-5555"
 				},
 				{
+					"allowInternalMessages": true,
 					"id": "t_2",
 					"title": "someone@example.com"
 				}
@@ -471,6 +479,7 @@ func TestCreateThreadMutation_ExistingThreads_DifferentName(t *testing.T) {
 			"nameDiffers": true,
 			"success": false,
 			"thread": {
+				"allowInternalMessages": true,
 				"id": "t_1",
 				"title": "(415) 555-5555"
 			}
@@ -608,9 +617,11 @@ func TestCreateThreadMutation_ExistingThreads_SameName(t *testing.T) {
 				errorCode
 				thread {
 					id
+					allowInternalMessages
 				}
 				existingThreads {
 					id
+					allowInternalMessages
 				}
 				nameDiffers
 			}
@@ -624,15 +635,18 @@ func TestCreateThreadMutation_ExistingThreads_SameName(t *testing.T) {
 			"errorCode": "EXISTING_THREAD",
 			"existingThreads": [
 				{
+					"allowInternalMessages": true,
 					"id": "t_1"
 				},
 				{
+					"allowInternalMessages": true,
 					"id": "t_2"
 				}
 			],
 			"nameDiffers": false,
 			"success": false,
 			"thread": {
+				"allowInternalMessages": true,
 				"id": "t_2"
 			}
 		}

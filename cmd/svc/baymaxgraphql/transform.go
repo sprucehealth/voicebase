@@ -201,6 +201,7 @@ func transformEntityToResponse(e *directory.Entity) (*entity, error) {
 	}
 	return &entity{
 		ID:            e.ID,
+		IsEditable:    e.Type != directory.EntityType_SYSTEM,
 		Contacts:      oc,
 		FirstName:     e.Info.FirstName,
 		MiddleInitial: e.Info.MiddleInitial,

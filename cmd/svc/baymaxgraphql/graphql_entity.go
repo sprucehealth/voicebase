@@ -54,6 +54,7 @@ var entityType = graphql.NewObject(
 		},
 		Fields: graphql.Fields{
 			"id":            &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+			"isEditable":    &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"firstName":     &graphql.Field{Type: graphql.String},
 			"middleInitial": &graphql.Field{Type: graphql.String},
 			"lastName":      &graphql.Field{Type: graphql.String},
