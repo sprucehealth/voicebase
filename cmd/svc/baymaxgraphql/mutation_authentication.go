@@ -4,9 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/sprucehealth/backend/libs/phone"
-
 	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/graphql"
@@ -17,50 +16,45 @@ import (
 // authenticate
 
 const (
-	authenticateResultSuccess            = "SUCCESS"
-	authenticateResultSuccess2FARequired = "SUCCESS_2FA_REQUIRED"
-	authenticateResultInvalidEmail       = "INVALID_EMAIL"
-	authenticateResultInvalidPassword    = "INVALID_PASSWORD"
-	authenticateResultInvalidCode        = "INVALID_CODE"
+	authenticateErrorCodeTwoFactorRequired = "TWO_FACTOR_REQUIRED"
+	authenticateErrorCodeAccountNotFound   = "ACCOUNT_NOT_FOUND"
+	authenticateErrorCodePasswordMismatch  = "PASSWORD_MISMATCH"
+	authenticateErrorCodeInvalidCode       = "INVALID_CODE"
 )
 
 type authenticateOutput struct {
 	ClientMutationID      string   `json:"clientMutationId,omitempty"`
-	Result                string   `json:"result"`
+	Success               bool     `json:"success"`
+	ErrorCode             string   `json:"errorCode,omitempty"`
+	ErrorMessage          string   `json:"errorMessage,omitempty"`
 	Token                 string   `json:"token,omitempty"`
 	Account               *account `json:"account,omitempty"`
 	PhoneNumberLastDigits string   `json:"phoneNumberLastDigits,omitempty"`
 	ClientEncryptionKey   string   `json:"clientEncryptionKey,omitempty"`
 }
 
-var authenticateResultType = graphql.NewEnum(
-	graphql.EnumConfig{
-		Name:        "AuthenticateResult",
-		Description: "Result of authenticate mutation",
-		Values: graphql.EnumValueConfigMap{
-			authenticateResultSuccess: &graphql.EnumValueConfig{
-				Value:       authenticateResultSuccess,
-				Description: "Success",
-			},
-			authenticateResultSuccess2FARequired: &graphql.EnumValueConfig{
-				Value:       authenticateResultSuccess2FARequired,
-				Description: "Success but 2FA is required",
-			},
-			authenticateResultInvalidEmail: &graphql.EnumValueConfig{
-				Value:       authenticateResultInvalidEmail,
-				Description: "Email not found",
-			},
-			authenticateResultInvalidPassword: &graphql.EnumValueConfig{
-				Value:       authenticateResultInvalidPassword,
-				Description: "Password doesn't match",
-			},
-			authenticateResultInvalidCode: &graphql.EnumValueConfig{
-				Value:       authenticateResultInvalidCode,
-				Description: "Code doesn't match",
-			},
+var authenticateErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "AuthenticateErrorCode",
+	Description: "Result of authenticate mutation",
+	Values: graphql.EnumValueConfigMap{
+		authenticateErrorCodeTwoFactorRequired: &graphql.EnumValueConfig{
+			Value:       authenticateErrorCodeTwoFactorRequired,
+			Description: "2FA is required",
+		},
+		authenticateErrorCodeAccountNotFound: &graphql.EnumValueConfig{
+			Value:       authenticateErrorCodeAccountNotFound,
+			Description: "Account with email not found",
+		},
+		authenticateErrorCodePasswordMismatch: &graphql.EnumValueConfig{
+			Value:       authenticateErrorCodePasswordMismatch,
+			Description: "Password doesn't match",
+		},
+		authenticateErrorCodeInvalidCode: &graphql.EnumValueConfig{
+			Value:       authenticateErrorCodeInvalidCode,
+			Description: "Code doesn't match",
 		},
 	},
-)
+})
 
 var authenticateInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
@@ -77,12 +71,17 @@ var authenticateOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "AuthenticatePayload",
 		Fields: graphql.Fields{
-			"clientMutationId":      newClientmutationIDOutputField(),
-			"result":                &graphql.Field{Type: graphql.NewNonNull(authenticateResultType)},
-			"token":                 &graphql.Field{Type: graphql.String},
-			"account":               &graphql.Field{Type: accountType},
-			"phoneNumberLastDigits": &graphql.Field{Type: graphql.String},
-			"clientEncryptionKey":   &graphql.Field{Type: graphql.String},
+			"clientMutationId": newClientmutationIDOutputField(),
+			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorCode":        &graphql.Field{Type: authenticateErrorCodeEnum},
+			"errorMessage":     &graphql.Field{Type: graphql.String},
+			"token":            &graphql.Field{Type: graphql.String},
+			"account":          &graphql.Field{Type: accountType},
+			"phoneNumberLastDigits": &graphql.Field{
+				Type:        graphql.String,
+				Description: "Last couple digits of phone number used to send 2FA verification code. Only when errorCode=TWO_FACTOR_REQUIRED.",
+			},
+			"clientEncryptionKey": &graphql.Field{Type: graphql.String},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*authenticateOutput)
@@ -105,7 +104,9 @@ var authenticateMutation = &graphql.Field{
 		if !validate.Email(email) {
 			return &authenticateOutput{
 				ClientMutationID: mutationID,
-				Result:           authenticateResultInvalidEmail,
+				Success:          false,
+				ErrorCode:        authenticateErrorCodeAccountNotFound,
+				ErrorMessage:     "No account exists with the provided email.",
 			}, nil
 		}
 		password := input["password"].(string)
@@ -118,61 +119,65 @@ var authenticateMutation = &graphql.Field{
 			case auth.EmailNotFound:
 				return &authenticateOutput{
 					ClientMutationID: mutationID,
-					Result:           authenticateResultInvalidEmail,
+					Success:          false,
+					ErrorCode:        authenticateErrorCodeAccountNotFound,
+					ErrorMessage:     "No account exists with the provided email.",
 				}, nil
 			case auth.BadPassword:
 				return &authenticateOutput{
 					ClientMutationID: mutationID,
-					Result:           authenticateResultInvalidPassword,
+					Success:          false,
+					ErrorCode:        authenticateErrorCodePasswordMismatch,
+					ErrorMessage:     "The password does not match. Please try typing it again.",
 				}, nil
 			default:
 				return nil, internalError(ctx, err)
 			}
 		}
-		var token string
-		var clientEncryptionKey string
-		var expires time.Time
-		var acc *account
-		var phoneNumberLastDigits string
-		authResult := authenticateResultSuccess
 		if res.TwoFactorRequired {
-			authResult = authenticateResultSuccess2FARequired
 			twoFactorPhoneNumber, err := phone.ParseNumber(res.TwoFactorPhoneNumber)
 			if err != nil {
 				// Shouldn't fail
 				return nil, internalError(ctx, err)
 			}
-			token, err = svc.createAndSendSMSVerificationCode(ctx, auth.VerificationCodeType_ACCOUNT_2FA, res.Account.ID, twoFactorPhoneNumber)
+			token, err := svc.createAndSendSMSVerificationCode(ctx, auth.VerificationCodeType_ACCOUNT_2FA, res.Account.ID, twoFactorPhoneNumber)
 			if err != nil {
 				return nil, internalError(ctx, err)
 			}
-			if len(res.TwoFactorPhoneNumber) > 2 {
-				phoneNumberLastDigits = res.TwoFactorPhoneNumber[len(res.TwoFactorPhoneNumber)-2:]
+			phoneNumberLastDigits := res.TwoFactorPhoneNumber
+			if len(phoneNumberLastDigits) > 2 {
+				phoneNumberLastDigits = phoneNumberLastDigits[len(phoneNumberLastDigits)-2:]
 			}
-
-		} else {
-			token = res.Token.Value
-			expires = time.Unix(int64(res.Token.ExpirationEpoch), 0)
-			acc = &account{
-				ID: res.Account.ID,
-			}
-			clientEncryptionKey = res.Token.ClientEncryptionKey
-
-			// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
-			// that likely won't change, but this still isn't a great way to update the context.
-			*ctx.Value(ctxAccount).(*account) = *acc
-			result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
-			result.Set("auth_token", token)
-			result.Set("auth_expiration", expires)
+			return &authenticateOutput{
+				ClientMutationID: mutationID,
+				Success:          false,
+				ErrorCode:        authenticateErrorCodeTwoFactorRequired,
+				ErrorMessage:     "A verification code has been sent to your primary phone number. You must enter the received code to complete authentication.",
+				Token:            token,
+				PhoneNumberLastDigits: phoneNumberLastDigits,
+			}, nil
 		}
 
+		token := res.Token.Value
+		expires := time.Unix(int64(res.Token.ExpirationEpoch), 0)
+		acc, err := transformAccountToResponse(res.Account)
+		if err != nil {
+			return nil, internalError(ctx, err)
+		}
+
+		// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
+		// that likely won't change, but this still isn't a great way to update the context.
+		*ctx.Value(ctxAccount).(*account) = *acc
+		result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
+		result.Set("auth_token", token)
+		result.Set("auth_expiration", expires)
+
 		return &authenticateOutput{
-			ClientMutationID:      mutationID,
-			Result:                authResult,
-			Token:                 token,
-			Account:               acc,
-			PhoneNumberLastDigits: phoneNumberLastDigits,
-			ClientEncryptionKey:   clientEncryptionKey,
+			ClientMutationID:    mutationID,
+			Success:             true,
+			Token:               token,
+			Account:             acc,
+			ClientEncryptionKey: res.Token.ClientEncryptionKey,
 		}, nil
 	},
 }
@@ -211,7 +216,9 @@ var authenticateWithCodeMutation = &graphql.Field{
 			case auth.BadVerificationCode, codes.NotFound:
 				return &authenticateOutput{
 					ClientMutationID: mutationID,
-					Result:           authenticateResultInvalidCode,
+					Success:          false,
+					ErrorCode:        authenticateErrorCodeInvalidCode,
+					ErrorMessage:     "The verification code you provided is incorrect.",
 				}, nil
 			default:
 				return nil, internalError(ctx, err)
@@ -221,15 +228,16 @@ var authenticateWithCodeMutation = &graphql.Field{
 		result.Set("auth_token", res.Token.Value)
 		result.Set("auth_expiration", time.Unix(int64(res.Token.ExpirationEpoch), 0))
 
+		acc, err := transformAccountToResponse(res.Account)
+		if err != nil {
+			return nil, internalError(ctx, err)
+		}
 		// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
 		// that likely won't change, but this still isn't a great way to update the context.
-		acc := &account{
-			ID: res.Account.ID,
-		}
 		*ctx.Value(ctxAccount).(*account) = *acc
 		return &authenticateOutput{
 			ClientMutationID:    mutationID,
-			Result:              authenticateResultSuccess,
+			Success:             true,
 			Token:               res.Token.Value,
 			ClientEncryptionKey: res.Token.ClientEncryptionKey,
 			Account:             acc,
@@ -241,23 +249,30 @@ var authenticateWithCodeMutation = &graphql.Field{
 
 type unauthenticateOutput struct {
 	ClientMutationID string `json:"clientMutationId"`
+	Success          bool   `json:"success"`
+	ErrorCode        string `json:"errorCode,omitempty"`
+	ErrorMessage     string `json:"errorMessage,omitempty"`
 }
 
-var unauthenticateInputType = graphql.NewInputObject(
-	graphql.InputObjectConfig{
-		Name: "UnauthenticateInput",
-		Fields: graphql.InputObjectConfigFieldMap{
-			"clientMutationId": newClientMutationIDInputField(),
-			"token":            &graphql.InputObjectFieldConfig{Type: graphql.String},
-		},
+var unauthenticateInputType = graphql.NewInputObject(graphql.InputObjectConfig{
+	Name: "UnauthenticateInput",
+	Fields: graphql.InputObjectConfigFieldMap{
+		"clientMutationId": newClientMutationIDInputField(),
+		"token":            &graphql.InputObjectFieldConfig{Type: graphql.String},
 	},
-)
+})
+
+// JANK: can't have an empty enum and we want this field to always exist so make it a string until it's needed
+var unauthenticateErrorCodeEnum = graphql.String
 
 var unauthenticateOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "UnauthenticatePayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
+			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorCode":        &graphql.Field{Type: unauthenticateErrorCodeEnum},
+			"errorMessage":     &graphql.Field{Type: graphql.String},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*unauthenticateOutput)
@@ -289,6 +304,7 @@ var unauthenticateMutation = &graphql.Field{
 		result.Set("unauthenticated", true)
 		return &unauthenticateOutput{
 			ClientMutationID: mutationID,
+			Success:          true,
 		}, nil
 	},
 }

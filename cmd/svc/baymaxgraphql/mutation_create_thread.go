@@ -25,20 +25,15 @@ var createThreadInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 })
 
 const (
-	createThreadResultSuccess        = "SUCCESS"
-	createThreadResultExistingThread = "EXISTING_THREAD"
+	createThreadErrorCodeExistingThread = "EXISTING_THREAD"
 )
 
-var createThreadResultType = graphql.NewEnum(graphql.EnumConfig{
-	Name:        "CreateThreadResult",
+var createThreadErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "CreateThreadErrorCode",
 	Description: "Result of createThread mutation",
 	Values: graphql.EnumValueConfigMap{
-		createThreadResultSuccess: &graphql.EnumValueConfig{
-			Value:       createThreadResultSuccess,
-			Description: "Success",
-		},
-		createThreadResultExistingThread: &graphql.EnumValueConfig{
-			Value:       createThreadResultExistingThread,
+		createThreadErrorCodeExistingThread: &graphql.EnumValueConfig{
+			Value:       createThreadErrorCodeExistingThread,
 			Description: "A thread exists with the provided contact",
 		},
 	},
@@ -46,7 +41,9 @@ var createThreadResultType = graphql.NewEnum(graphql.EnumConfig{
 
 type createThreadOutput struct {
 	ClientMutationID string    `json:"clientMutationId,omitempty"`
-	Result           string    `json:"result"`
+	Success          bool      `json:"success"`
+	ErrorCode        string    `json:"errorCode,omitempty"`
+	ErrorMessage     string    `json:"errorMessage,omitempty"`
 	Thread           *thread   `json:"thread"`
 	ExistingThreads  []*thread `json:"existingThreads,omitempty"`
 	NameDiffers      bool      `json:"nameDiffers"`
@@ -56,7 +53,9 @@ var createThreadOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "CreateThreadPayload",
 	Fields: graphql.Fields{
 		"clientMutationId": newClientmutationIDOutputField(),
-		"result":           &graphql.Field{Type: graphql.NewNonNull(createThreadResultType)},
+		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"errorCode":        &graphql.Field{Type: createThreadErrorCodeEnum},
+		"errorMessage":     &graphql.Field{Type: graphql.String},
 		"thread": &graphql.Field{
 			Type:        graphql.NewNonNull(threadType),
 			Description: "Populated for both SUCCESS and EXISTING_THREAD. For existing thread the server picks the most appropriate one if multiple.",
@@ -239,7 +238,9 @@ var createThreadMutation = &graphql.Field{
 
 				return &createThreadOutput{
 					ClientMutationID: mutationID,
-					Result:           createThreadResultExistingThread,
+					Success:          false,
+					ErrorCode:        createThreadErrorCodeExistingThread,
+					ErrorMessage:     "A thread already exists with the provided contact",
 					Thread:           theOneThread,
 					ExistingThreads:  existingThreads,
 					NameDiffers:      !matchedName,
@@ -304,7 +305,7 @@ var createThreadMutation = &graphql.Field{
 
 		return &createThreadOutput{
 			ClientMutationID: mutationID,
-			Result:           createThreadResultSuccess,
+			Success:          true,
 			Thread:           th,
 		}, nil
 	},

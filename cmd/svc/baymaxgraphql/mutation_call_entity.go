@@ -17,99 +17,90 @@ const (
 )
 
 const (
-	callEntityResultSuccess            = "SUCCESS"
-	callEntityResultEntityNotFound     = "ENTITY_NOT_FOUND"
-	callEntityResultEntityHasNoContact = "ENTITY_HAS_NO_CONTACT"
+	callEntityErrorCodeEntityNotFound     = "ENTITY_NOT_FOUND"
+	callEntityErrorCodeEntityHasNoContact = "ENTITY_HAS_NO_CONTACT"
 )
 
 type callEntityOutput struct {
 	ClientMutationID       string `json:"clientMutationId,omitempty"`
-	Result                 string `json:"result"`
+	Success                bool   `json:"success"`
+	ErrorCode              string `json:"errorCode,omitempty"`
+	ErrorMessage           string `json:"errorMessage,omitempty"`
 	ProxyPhoneNumber       string `json:"proxyPhoneNumber,omitempty"`
 	OriginatingPhoneNumber string `json:"originatingPhoneNumber,omitempty"`
 }
 
-var callEntityTypeEnumType = graphql.NewEnum(
-	graphql.EnumConfig{
-		Name:        "CallEntityType",
-		Description: "How to initiate the call",
-		Values: graphql.EnumValueConfigMap{
-			callEntityTypeConnectParties: &graphql.EnumValueConfig{
-				Value:       callEntityTypeConnectParties,
-				Description: "Connect parties by calling both numbers",
-			},
-			callEntityTypeReturnPhoneNumber: &graphql.EnumValueConfig{
-				Value:       callEntityTypeReturnPhoneNumber,
-				Description: "Return a phone number to call",
-			},
+var callEntityTypeEnumType = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "CallEntityType",
+	Description: "How to initiate the call",
+	Values: graphql.EnumValueConfigMap{
+		callEntityTypeConnectParties: &graphql.EnumValueConfig{
+			Value:       callEntityTypeConnectParties,
+			Description: "Connect parties by calling both numbers",
+		},
+		callEntityTypeReturnPhoneNumber: &graphql.EnumValueConfig{
+			Value:       callEntityTypeReturnPhoneNumber,
+			Description: "Return a phone number to call",
 		},
 	},
-)
+})
 
-var callEntityResultType = graphql.NewEnum(
-	graphql.EnumConfig{
-		Name:        "CallEntityResult",
-		Description: "Result of callEntity",
-		Values: graphql.EnumValueConfigMap{
-			callEntityResultSuccess: &graphql.EnumValueConfig{
-				Value:       callEntityResultSuccess,
-				Description: "Success",
-			},
-			callEntityResultEntityNotFound: &graphql.EnumValueConfig{
-				Value:       callEntityResultEntityNotFound,
-				Description: "The requested entity does not exist",
-			},
-			callEntityResultEntityHasNoContact: &graphql.EnumValueConfig{
-				Value:       callEntityResultEntityHasNoContact,
-				Description: "An entity does not have a viable contact",
-			},
+var callEntityErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "CallEntityErrorCode",
+	Description: "Result of callEntity",
+	Values: graphql.EnumValueConfigMap{
+		callEntityErrorCodeEntityNotFound: &graphql.EnumValueConfig{
+			Value:       callEntityErrorCodeEntityNotFound,
+			Description: "The requested entity does not exist",
+		},
+		callEntityErrorCodeEntityHasNoContact: &graphql.EnumValueConfig{
+			Value:       callEntityErrorCodeEntityHasNoContact,
+			Description: "An entity does not have a viable contact",
 		},
 	},
-)
+})
 
-var callEntityInputType = graphql.NewInputObject(
-	graphql.InputObjectConfig{
-		Name: "CallEntityInput",
-		Fields: graphql.InputObjectConfigFieldMap{
-			"clientMutationId": newClientMutationIDInputField(),
-			"destinationEntityID": &graphql.InputObjectFieldConfig{
-				Type:        graphql.NewNonNull(graphql.ID),
-				Description: "EntityID of the person being called.",
-			},
-			"originatingPhoneNumber": &graphql.InputObjectFieldConfig{
-				Type:        graphql.String,
-				Description: "Number from which the call is intended to originate. If one is not specified, it is assumed that the call will originate from the phone number associated with the callerEntity's account.",
-			},
-			"destinationPhoneNumber": &graphql.InputObjectFieldConfig{
-				Type:        graphql.NewNonNull(graphql.String),
-				Description: "Phone number to call. This has to map to one of the phone numbers associated with the calleeEntity.",
-			},
-			"type": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(callEntityTypeEnumType)},
+var callEntityInputType = graphql.NewInputObject(graphql.InputObjectConfig{
+	Name: "CallEntityInput",
+	Fields: graphql.InputObjectConfigFieldMap{
+		"clientMutationId": newClientMutationIDInputField(),
+		"destinationEntityID": &graphql.InputObjectFieldConfig{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "EntityID of the person being called.",
 		},
+		"originatingPhoneNumber": &graphql.InputObjectFieldConfig{
+			Type:        graphql.String,
+			Description: "Number from which the call is intended to originate. If one is not specified, it is assumed that the call will originate from the phone number associated with the callerEntity's account.",
+		},
+		"destinationPhoneNumber": &graphql.InputObjectFieldConfig{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Phone number to call. This has to map to one of the phone numbers associated with the calleeEntity.",
+		},
+		"type": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(callEntityTypeEnumType)},
 	},
-)
+})
 
-var callEntityOutputType = graphql.NewObject(
-	graphql.ObjectConfig{
-		Name: "CallEntityPayload",
-		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
-			"result":           &graphql.Field{Type: graphql.NewNonNull(callEntityResultType)},
-			"proxyPhoneNumber": &graphql.Field{
-				Type:        graphql.String,
-				Description: "The phone number to use to contact the entity.",
-			},
-			"originatingPhoneNumber": &graphql.Field{
-				Type:        graphql.String,
-				Description: "The phone number of where the call is intended to originate from",
-			},
+var callEntityOutputType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "CallEntityPayload",
+	Fields: graphql.Fields{
+		"clientMutationId": newClientmutationIDOutputField(),
+		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"errorCode":        &graphql.Field{Type: callEntityErrorCodeEnum},
+		"errorMessage":     &graphql.Field{Type: graphql.String},
+		"proxyPhoneNumber": &graphql.Field{
+			Type:        graphql.String,
+			Description: "The phone number to use to contact the entity.",
 		},
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*callEntityOutput)
-			return ok
+		"originatingPhoneNumber": &graphql.Field{
+			Type:        graphql.String,
+			Description: "The phone number of where the call is intended to originate from",
 		},
 	},
-)
+	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+		_, ok := value.(*callEntityOutput)
+		return ok
+	},
+})
 
 var callEntityMutation = &graphql.Field{
 	Type: graphql.NewNonNull(callEntityOutputType),
@@ -141,7 +132,9 @@ var callEntityMutation = &graphql.Field{
 		if calleeEnt == nil || calleeEnt.Type != directory.EntityType_EXTERNAL {
 			return &callEntityOutput{
 				ClientMutationID: mutationID,
-				Result:           callEntityResultEntityNotFound,
+				Success:          false,
+				ErrorCode:        callEntityErrorCodeEntityNotFound,
+				ErrorMessage:     "The callee was not found.",
 			}, nil
 		}
 
@@ -173,7 +166,8 @@ var callEntityMutation = &graphql.Field{
 		if org == nil {
 			return &callEntityOutput{
 				ClientMutationID: mutationID,
-				Result:           callEntityResultEntityNotFound,
+				ErrorCode:        callEntityErrorCodeEntityNotFound,
+				ErrorMessage:     "The callee was not found.",
 			}, nil
 		}
 
@@ -184,7 +178,8 @@ var callEntityMutation = &graphql.Field{
 		if callerEnt == nil {
 			return &callEntityOutput{
 				ClientMutationID: mutationID,
-				Result:           callEntityResultEntityNotFound,
+				ErrorCode:        callEntityErrorCodeEntityNotFound,
+				ErrorMessage:     "The caller was not found.",
 			}, nil
 		}
 
@@ -207,7 +202,7 @@ var callEntityMutation = &graphql.Field{
 
 		return &callEntityOutput{
 			ClientMutationID:       mutationID,
-			Result:                 callEntityResultSuccess,
+			Success:                true,
 			ProxyPhoneNumber:       ires.ProxyPhoneNumber,
 			OriginatingPhoneNumber: ires.OriginatingPhoneNumber,
 		}, nil

@@ -12,9 +12,11 @@ import (
 
 type provisionPhoneNumberOutput struct {
 	ClientMutationID string        `json:"clientMutationId,omitempty"`
+	Success          bool          `json:"success"`
+	ErrorCode        string        `json:"errorCode,omitempty"`
+	ErrorMessage     string        `json:"errorMessage,omitempty"`
 	PhoneNumber      string        `json:"phoneNumber,omitempty"`
 	Organization     *organization `json:"organization,omitempty"`
-	Result           string        `json:"result"`
 }
 
 var provisionPhoneNumberInputType = graphql.NewInputObject(
@@ -35,21 +37,16 @@ var provisionPhoneNumberInputType = graphql.NewInputObject(
 )
 
 const (
-	provisionPhoneNumberResultSuccess     = "SUCCESS"
-	provisionPhoneNumberResultUnavailable = "UNAVAILABLE"
+	provisionPhoneNumberErrorCodeUnavailable = "UNAVAILABLE"
 )
 
-var provisionPhoneNumberResultType = graphql.NewEnum(
+var provisionPhoneNumberErrorCodeEnum = graphql.NewEnum(
 	graphql.EnumConfig{
-		Name:        "ProvisionPhoneNumberResult",
+		Name:        "ProvisionPhoneNumberErrorCode",
 		Description: "Result of provisionPhoneNumber mutation",
 		Values: graphql.EnumValueConfigMap{
-			provisionPhoneNumberResultSuccess: &graphql.EnumValueConfig{
-				Value:       provisionPhoneNumberResultSuccess,
-				Description: "Success",
-			},
-			provisionPhoneNumberResultUnavailable: &graphql.EnumValueConfig{
-				Value:       provisionPhoneNumberResultUnavailable,
+			provisionPhoneNumberErrorCodeUnavailable: &graphql.EnumValueConfig{
+				Value:       provisionPhoneNumberErrorCodeUnavailable,
 				Description: "No phone numbers found for area code",
 			},
 		},
@@ -61,9 +58,11 @@ var provisionPhoneNumberOutputType = graphql.NewObject(
 		Name: "ProvisionPhoneNumberPayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
+			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorCode":        &graphql.Field{Type: provisionPhoneNumberErrorCodeEnum},
+			"errorMessage":     &graphql.Field{Type: graphql.String},
 			"phoneNumber":      &graphql.Field{Type: graphql.String},
 			"organization":     &graphql.Field{Type: organizationType},
-			"result":           &graphql.Field{Type: graphql.NewNonNull(provisionPhoneNumberResultType)},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*provisionPhoneNumberOutput)
@@ -112,7 +111,9 @@ var provisionPhoneNumberMutation = &graphql.Field{
 		if grpc.Code(err) == codes.InvalidArgument || grpc.Code(err) == codes.NotFound {
 			return &provisionPhoneNumberOutput{
 				ClientMutationID: mutationID,
-				Result:           provisionPhoneNumberResultUnavailable,
+				Success:          false,
+				ErrorCode:        provisionPhoneNumberErrorCodeUnavailable,
+				ErrorMessage:     "No phone number is available for the chosen area code. Please choose another.",
 			}, nil
 		} else if err != nil {
 			return nil, internalError(ctx, err)
@@ -144,10 +145,10 @@ var provisionPhoneNumberMutation = &graphql.Field{
 		}
 
 		return &provisionPhoneNumberOutput{
+			ClientMutationID: mutationID,
+			Success:          true,
 			PhoneNumber:      res.PhoneNumber,
 			Organization:     orgRes,
-			Result:           provisionPhoneNumberResultSuccess,
-			ClientMutationID: mutationID,
 		}, nil
 	},
 }

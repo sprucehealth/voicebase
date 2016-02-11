@@ -131,7 +131,7 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 				createForContactInfo: {type: EMAIL, value: "someone@example.com"},
 			}) {
 				clientMutationId
-				result
+				success
 				thread {
 					id
 				}
@@ -143,7 +143,7 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 	"data": {
 		"createThread": {
 			"clientMutationId": "a1b2c3",
-			"result": "SUCCESS",
+			"success": true,
 			"thread": {
 				"id": "t_1"
 			}
@@ -290,7 +290,7 @@ func TestCreateThreadMutation_DifferentOrg(t *testing.T) {
 				createForContactInfo: {type: EMAIL, value: "someone@example.com"},
 			}) {
 				clientMutationId
-				result
+				success
 				thread {
 					id
 					title
@@ -303,7 +303,7 @@ func TestCreateThreadMutation_DifferentOrg(t *testing.T) {
 	"data": {
 		"createThread": {
 			"clientMutationId": "a1b2c3",
-			"result": "SUCCESS",
+			"success": true,
 			"thread": {
 				"id": "t_1",
 				"title": "firstName middleInitial. lastName, shortTitle"
@@ -438,7 +438,8 @@ func TestCreateThreadMutation_ExistingThreads_DifferentName(t *testing.T) {
 				createForContactInfo: {type: EMAIL, value: "someone@example.com"},
 			}) {
 				clientMutationId
-				result
+				success
+				errorCode
 				thread {
 					id
 					title
@@ -456,6 +457,7 @@ func TestCreateThreadMutation_ExistingThreads_DifferentName(t *testing.T) {
 	"data": {
 		"createThread": {
 			"clientMutationId": "a1b2c3",
+			"errorCode": "EXISTING_THREAD",
 			"existingThreads": [
 				{
 					"id": "t_1",
@@ -467,7 +469,7 @@ func TestCreateThreadMutation_ExistingThreads_DifferentName(t *testing.T) {
 				}
 			],
 			"nameDiffers": true,
-			"result": "EXISTING_THREAD",
+			"success": false,
 			"thread": {
 				"id": "t_1",
 				"title": "(415) 555-5555"
@@ -602,7 +604,8 @@ func TestCreateThreadMutation_ExistingThreads_SameName(t *testing.T) {
 				createForContactInfo: {type: EMAIL, value: "someone@example.com"},
 			}) {
 				clientMutationId
-				result
+				success
+				errorCode
 				thread {
 					id
 				}
@@ -618,6 +621,7 @@ func TestCreateThreadMutation_ExistingThreads_SameName(t *testing.T) {
 	"data": {
 		"createThread": {
 			"clientMutationId": "a1b2c3",
+			"errorCode": "EXISTING_THREAD",
 			"existingThreads": [
 				{
 					"id": "t_1"
@@ -627,7 +631,7 @@ func TestCreateThreadMutation_ExistingThreads_SameName(t *testing.T) {
 				}
 			],
 			"nameDiffers": false,
-			"result": "EXISTING_THREAD",
+			"success": false,
 			"thread": {
 				"id": "t_2"
 			}

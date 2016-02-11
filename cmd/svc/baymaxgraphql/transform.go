@@ -8,10 +8,17 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 )
+
+func transformAccountToResponse(a *auth.Account) (*account, error) {
+	return &account{
+		ID: a.ID,
+	}, nil
+}
 
 func threadTitleForEntity(e *directory.Entity) string {
 	if e.Info.DisplayName != "" {

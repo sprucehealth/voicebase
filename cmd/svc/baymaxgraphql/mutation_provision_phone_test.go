@@ -103,7 +103,7 @@ func TestProvisionPhone(t *testing.T) {
 				organizationID: $organizationId,
 			}) {
 				clientMutationId
-				result
+				success
 				phoneNumber
 				organization {
 					 contacts {
@@ -133,7 +133,7 @@ func TestProvisionPhone(t *testing.T) {
 				]
 			},
 			"phoneNumber": "+12068773590",
-			"result": "SUCCESS"
+			"success": true
 		}
 	}
 }`, string(b))
@@ -197,7 +197,8 @@ func TestProvisionPhone_Unavailable(t *testing.T) {
 				organizationID: $organizationId,
 			}) {
 				clientMutationId
-				result
+				success
+				errorCode
 				phoneNumber
 				organization {
 					 contacts {
@@ -217,9 +218,10 @@ func TestProvisionPhone_Unavailable(t *testing.T) {
 	"data": {
 		"provisionPhoneNumber": {
 			"clientMutationId": "a1b2c3",
+			"errorCode": "UNAVAILABLE",
 			"organization": null,
 			"phoneNumber": null,
-			"result": "UNAVAILABLE"
+			"success": false
 		}
 	}
 }`, string(b))

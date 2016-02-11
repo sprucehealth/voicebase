@@ -5,11 +5,10 @@ import (
 	"fmt"
 
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 )
 
 func newClientMutationIDInputField() *graphql.InputObjectFieldConfig {
@@ -72,77 +71,13 @@ var entityInfoInputType = graphql.NewInputObject(
 	},
 )
 
-// createSavedThreadQuery
-
-const (
-	createSavedThreadQueryResultSuccess             = "SUCCESS"
-	createSavedThreadQueryResultInvalidOrganization = "INVALID_ORGANIZATION"
-	createSavedThreadQueryResultInvalidQuery        = "INVALID_QUERY"
-	createSavedThreadQueryResultNotAllowed          = "NOT_ALLOWED"
-)
-
-var createSavedThreadQueryResultType = graphql.NewEnum(
-	graphql.EnumConfig{
-		Name:        "CreatedSavedThreadQueryResult",
-		Description: "Result of createSavedThreadQuery",
-		Values: graphql.EnumValueConfigMap{
-			createSavedThreadQueryResultSuccess: &graphql.EnumValueConfig{
-				Value:       createSavedThreadQueryResultSuccess,
-				Description: "Success",
-			},
-			createSavedThreadQueryResultInvalidQuery: &graphql.EnumValueConfig{
-				Value:       createSavedThreadQueryResultInvalidQuery,
-				Description: "The provided query is invalid",
-			},
-			createSavedThreadQueryResultInvalidOrganization: &graphql.EnumValueConfig{
-				Value:       createSavedThreadQueryResultInvalidOrganization,
-				Description: "The provided organization ID is invalid",
-			},
-			createSavedThreadQueryResultNotAllowed: &graphql.EnumValueConfig{
-				Value:       createSavedThreadQueryResultNotAllowed,
-				Description: "The account does not have access to the organization",
-			},
-		},
-	},
-)
-
-var createSavedThreadQueryInputType = graphql.NewInputObject(
-	graphql.InputObjectConfig{
-		Name: "CreateSavedThreadQueryInput",
-		Fields: graphql.InputObjectConfigFieldMap{
-			"clientMutationId": newClientMutationIDInputField(),
-			"organizationID":   &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
-			// TODO: query
-		},
-	},
-)
-
-type createSavedThreadQueryOutput struct {
-	ClientMutationID   string            `json:"clientMutationId,omitempty"`
-	Result             string            `json:"result"`
-	SavedThreadQueryID string            `json:"savedThreadQueryID,omitempty"`
-	SavedThreadQuery   *savedThreadQuery `json:"savedThreadQuery,omitempty"`
-}
-
-var createSavedThreadQueryOutputType = graphql.NewObject(
-	graphql.ObjectConfig{
-		Name: "CreateSavedThreadQueryPayload",
-		Fields: graphql.Fields{
-			"clientMutationId":   newClientmutationIDOutputField(),
-			"savedThreadQueryID": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-			"savedThreadQuery":   &graphql.Field{Type: graphql.NewNonNull(savedThreadQueryType)},
-		},
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*createSavedThreadQueryOutput)
-			return ok
-		},
-	},
-)
-
 /// registerDeviceForPush
 
 type registerDeviceForPushOutput struct {
 	ClientMutationID string `json:"clientMutationId,omitempty"`
+	Success          bool   `json:"success"`
+	ErrorCode        string `json:"errorCode,omitempty"`
+	ErrorMessage     string `json:"errorMessage,omitempty"`
 }
 
 var registerDeviceForPushInputType = graphql.NewInputObject(
@@ -155,11 +90,17 @@ var registerDeviceForPushInputType = graphql.NewInputObject(
 	},
 )
 
+// JANK: can't have an empty enum and we want this field to always exist so make it a string until it's needed
+var registerDeviceForPushErrorCodeEnum = graphql.String
+
 var registerDeviceForPushOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "RegisterDeviceForPushPayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
+			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorCode":        &graphql.Field{Type: registerDeviceForPushErrorCodeEnum},
+			"errorMessage":     &graphql.Field{Type: graphql.String},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*registerDeviceForPushOutput)
@@ -172,6 +113,9 @@ var registerDeviceForPushOutputType = graphql.NewObject(
 
 type markThreadAsReadOutput struct {
 	ClientMutationID string `json:"clientMutationId,omitempty"`
+	Success          bool   `json:"success"`
+	ErrorCode        string `json:"errorCode,omitempty"`
+	ErrorMessage     string `json:"errorMessage,omitempty"`
 }
 
 var markThreadAsReadInputType = graphql.NewInputObject(
@@ -185,11 +129,17 @@ var markThreadAsReadInputType = graphql.NewInputObject(
 	},
 )
 
+// JANK: can't have an empty enum and we want this field to always exist so make it a string until it's needed
+var markThreadAsReadErrorCodeEnum = graphql.String
+
 var markThreadAsReadOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "MarkThreadAsReadPayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
+			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorCode":        &graphql.Field{Type: markThreadAsReadErrorCodeEnum},
+			"errorMessage":     &graphql.Field{Type: graphql.String},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*markThreadAsReadOutput)
@@ -202,6 +152,9 @@ var markThreadAsReadOutputType = graphql.NewObject(
 
 type sendTestNotificationOutput struct {
 	ClientMutationID string `json:"clientMutationId,omitempty"`
+	Success          bool   `json:"success"`
+	ErrorCode        string `json:"errorCode,omitempty"`
+	ErrorMessage     string `json:"errorMessage,omitempty"`
 }
 
 var sendTestNotificationInputType = graphql.NewInputObject(
@@ -216,11 +169,17 @@ var sendTestNotificationInputType = graphql.NewInputObject(
 	},
 )
 
+// JANK: can't have an empty enum and we want this field to always exist so make it a string until it's needed
+var sendTestNotificationErrorCodeEnum = graphql.String
+
 var sendTestNotificationOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "SendTestNotificationPayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
+			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorCode":        &graphql.Field{Type: sendTestNotificationErrorCodeEnum},
+			"errorMessage":     &graphql.Field{Type: graphql.String},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*sendTestNotificationOutput)
@@ -229,92 +188,12 @@ var sendTestNotificationOutputType = graphql.NewObject(
 	},
 )
 
-// deleteThread
-
-type deleteThreadOutput struct {
-	ClientMutationID string `json:"clientMutationId,omitempty"`
-}
-
-var deleteThreadInputType = graphql.NewInputObject(
-	graphql.InputObjectConfig{
-		Name: "DeleteThreadInput",
-		Fields: graphql.InputObjectConfigFieldMap{
-			"clientMutationId": newClientMutationIDInputField(),
-			"uuid":             newUUIDInputField(),
-			"threadID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
-		},
-	},
-)
-
-var deleteThreadOutputType = graphql.NewObject(
-	graphql.ObjectConfig{
-		Name: "DeleteThreadPayload",
-		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
-		},
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*deleteThreadOutput)
-			return ok
-		},
-	},
-)
-
 var mutationType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Mutation",
 	Fields: graphql.Fields{
+		"callEntity":    callEntityMutation,
 		"createAccount": createAccountMutation,
-		"createSavedThreadQuery": &graphql.Field{
-			Type: graphql.NewNonNull(createSavedThreadQueryOutputType),
-			Args: graphql.FieldConfigArgument{
-				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(createSavedThreadQueryInputType)},
-			},
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				svc := serviceFromParams(p)
-				ctx := p.Context
-				acc := accountFromContext(ctx)
-				if acc == nil {
-					return nil, errNotAuthenticated(ctx)
-				}
-
-				input := p.Args["input"].(map[string]interface{})
-				mutationID, _ := input["clientMutationId"].(string)
-				orgID := input["organizationID"].(string)
-				// TODO: validate organization exists
-
-				ent, err := svc.entityForAccountID(ctx, orgID, acc.ID)
-				if err != nil {
-					return &createSavedThreadQueryOutput{
-						ClientMutationID: mutationID,
-						Result:           createSavedThreadQueryResultNotAllowed,
-					}, nil
-				}
-
-				res, err := svc.threading.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
-					OrganizationID: orgID,
-					EntityID:       ent.ID,
-					// TODO: query
-				})
-				if err != nil {
-					switch grpc.Code(err) {
-					case codes.InvalidArgument:
-						return nil, err
-					}
-					return nil, internalError(ctx, err)
-				}
-				sq, err := transformSavedQueryToResponse(res.SavedQuery)
-				if err != nil {
-					return nil, internalError(ctx, err)
-				}
-				return &createSavedThreadQueryOutput{
-					ClientMutationID:   mutationID,
-					Result:             createSavedThreadQueryResultSuccess,
-					SavedThreadQueryID: res.SavedQuery.ID,
-					SavedThreadQuery:   sq,
-				}, nil
-			},
-		},
-		"postMessage": postMessageMutation,
-		"callEntity":  callEntityMutation,
+		"postMessage":   postMessageMutation,
 		"registerDeviceForPush": &graphql.Field{
 			Type: graphql.NewNonNull(registerDeviceForPushOutputType),
 			Args: graphql.FieldConfigArgument{
@@ -348,6 +227,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 
 				return &registerDeviceForPushOutput{
 					ClientMutationID: mutationID,
+					Success:          true,
 				}, nil
 			},
 		},
@@ -370,9 +250,11 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				orgID, _ := input["organizationID"].(string)
 				ent, err := svc.entityForAccountID(ctx, orgID, acc.ID)
 				if err != nil {
-					return nil, errors.New("mark thread as read failed")
+					return nil, internalError(ctx, err)
 				}
-				// TODO: Authorize
+				if ent == nil || ent.Type != directory.EntityType_INTERNAL {
+					return nil, errors.New("not authorized")
+				}
 
 				_, err = svc.threading.MarkThreadAsRead(ctx, &threading.MarkThreadAsReadRequest{
 					ThreadID: threadID,
@@ -384,6 +266,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 
 				return &markThreadAsReadOutput{
 					ClientMutationID: mutationID,
+					Success:          true,
 				}, nil
 			},
 		},
@@ -423,6 +306,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 
 				return &sendTestNotificationOutput{
 					ClientMutationID: mutationID,
+					Success:          true,
 				}, nil
 			},
 		},

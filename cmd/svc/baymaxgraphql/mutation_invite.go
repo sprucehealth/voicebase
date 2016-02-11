@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
@@ -10,6 +11,9 @@ import (
 
 type inviteColleaguesOutput struct {
 	ClientMutationID string `json:"clientMutationId,omitempty"`
+	Success          bool   `json:"success"`
+	ErrorCode        string `json:"errorCode,omitempty"`
+	ErrorMessage     string `json:"errorMessage,omitempty"`
 }
 
 var inviteColleaguesInfoType = graphql.NewInputObject(graphql.InputObjectConfig{
@@ -29,10 +33,32 @@ var inviteColleaguesInputType = graphql.NewInputObject(graphql.InputObjectConfig
 	},
 })
 
+const (
+	inviteColleaguesErrorCodeInvalidEmail       = "INVALID_EMAIL"
+	inviteColleaguesErrorCodeInvalidPhoneNumber = "INVALID_PHONE_NUMBER"
+)
+
+var inviteColleaguesErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name: "InviteColleagueErrorCode",
+	Values: graphql.EnumValueConfigMap{
+		inviteColleaguesErrorCodeInvalidEmail: &graphql.EnumValueConfig{
+			Value:       inviteColleaguesErrorCodeInvalidEmail,
+			Description: "The provided email address is invalid",
+		},
+		inviteColleaguesErrorCodeInvalidPhoneNumber: &graphql.EnumValueConfig{
+			Value:       inviteColleaguesErrorCodeInvalidPhoneNumber,
+			Description: "The provided phone number is invalid",
+		},
+	},
+})
+
 var inviteColleaguesOutputType = graphql.NewObject(graphql.ObjectConfig{
-	Name: "InviteColleaguePayload",
+	Name: "InviteColleaguesPayload",
 	Fields: graphql.Fields{
 		"clientMutationId": newClientmutationIDOutputField(),
+		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"errorCode":        &graphql.Field{Type: inviteColleaguesErrorCodeEnum},
+		"errorMessage":     &graphql.Field{Type: graphql.String},
 	},
 	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 		_, ok := value.(*inviteColleaguesOutput)
@@ -66,12 +92,22 @@ var inviteColleaguesMutation = &graphql.Field{
 				PhoneNumber: m["phoneNumber"].(string),
 			}
 			if !validate.Email(col.Email) {
-				return nil, errors.New("Email is invalid")
+				return &inviteColleaguesOutput{
+					ClientMutationID: mutationID,
+					Success:          false,
+					ErrorCode:        inviteColleaguesErrorCodeInvalidEmail,
+					ErrorMessage:     fmt.Sprintf("The email address '%s' not valid.", col.Email),
+				}, nil
 			}
 			var err error
 			col.PhoneNumber, err = phone.Format(col.PhoneNumber, phone.E164)
 			if err != nil {
-				return nil, err
+				return &inviteColleaguesOutput{
+					ClientMutationID: mutationID,
+					Success:          false,
+					ErrorCode:        inviteColleaguesErrorCodeInvalidEmail,
+					ErrorMessage:     fmt.Sprintf("The phone number '%s' not valid.", col.PhoneNumber),
+				}, nil
 			}
 			colleagues[i] = col
 		}
@@ -92,7 +128,10 @@ var inviteColleaguesMutation = &graphql.Field{
 			return nil, internalError(ctx, err)
 		}
 
-		return &inviteColleaguesOutput{ClientMutationID: mutationID}, nil
+		return &inviteColleaguesOutput{
+			ClientMutationID: mutationID,
+			Success:          true,
+		}, nil
 	},
 }
 
@@ -100,13 +139,16 @@ var inviteColleaguesMutation = &graphql.Field{
 
 type associateAttributionOutput struct {
 	ClientMutationID string `json:"clientMutationId,omitempty"`
+	Success          bool   `json:"success"`
+	ErrorCode        string `json:"errorCode,omitempty"`
+	ErrorMessage     string `json:"errorMessage,omitempty"`
 }
 
 var associateAttributionValueType = graphql.NewInputObject(graphql.InputObjectConfig{
 	Name: "AssociateAttributionValue",
 	Fields: graphql.InputObjectConfigFieldMap{
 		"key":   &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-		"value": &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"value": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 	},
 })
 
@@ -120,11 +162,17 @@ var associateAttributionInputType = graphql.NewInputObject(
 	},
 )
 
+// JANK: can't have an empty enum and we want this field to always exist so make it a string until it's needed
+var associateAttributionErrorCodeEnum = graphql.String
+
 var associateAttributionOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "AssociateAttributionPayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
+			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorCode":        &graphql.Field{Type: associateAttributionErrorCodeEnum},
+			"errorMessage":     &graphql.Field{Type: graphql.String},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*associateAttributionOutput)
@@ -169,6 +217,6 @@ var associateAttributionMutation = &graphql.Field{
 			return nil, internalError(ctx, err)
 		}
 
-		return &associateAttributionOutput{ClientMutationID: mutationID}, nil
+		return &associateAttributionOutput{ClientMutationID: mutationID, Success: true}, nil
 	},
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -15,6 +16,6 @@ func TestSchemaHandler(t *testing.T) {
 	h.ServeHTTP(nil, w, nil)
 	test.HTTPResponseCode(t, http.StatusOK, w)
 	if os.Getenv("GRAPHQL_SCHEMA") != "" {
-		t.Log(w.Body.String())
+		fmt.Print(w.Body.String())
 	}
 }

@@ -16,63 +16,56 @@ import (
 // verifyPhoneNumber
 
 const (
-	verifyPhoneNumberResultSuccess             = "SUCCESS"
-	verifyPhoneNumberResultInvitePhoneMismatch = "INVITE_PHONE_MISMATCH"
+	verifyPhoneNumberErrorCodeInvitePhoneMismatch = "INVITE_PHONE_MISMATCH"
 )
 
-var verifyPhoneNumberResultType = graphql.NewEnum(
-	graphql.EnumConfig{
-		Name:        "VerifyPhoneNumberResult",
-		Description: "Result of verifyPhoneNumber mutation",
-		Values: graphql.EnumValueConfigMap{
-			verifyPhoneNumberResultSuccess: &graphql.EnumValueConfig{
-				Value:       verifyPhoneNumberResultSuccess,
-				Description: "Success",
-			},
-			verifyPhoneNumberResultInvitePhoneMismatch: &graphql.EnumValueConfig{
-				Value:       verifyPhoneNumberResultInvitePhoneMismatch,
-				Description: "Phone number from invite does not match",
-			},
+var verifyPhoneNumberErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "VerifyPhoneNumberErrorCode",
+	Description: "Result of verifyPhoneNumber mutation",
+	Values: graphql.EnumValueConfigMap{
+		verifyPhoneNumberErrorCodeInvitePhoneMismatch: &graphql.EnumValueConfig{
+			Value:       verifyPhoneNumberErrorCodeInvitePhoneMismatch,
+			Description: "Phone number from invite does not match",
 		},
 	},
-)
+})
 
 type verifyPhoneNumberOutput struct {
 	ClientMutationID string `json:"clientMutationId,omitempty"`
-	Result           string `json:"result"`
+	Success          bool   `json:"success"`
+	ErrorCode        string `json:"errorCode,omitempty"`
+	ErrorMessage     string `json:"errorMessage,omitempty"`
 	Token            string `json:"token"`
 	Message          string `json:"message"`
 }
 
-var verifyPhoneNumberInputType = graphql.NewInputObject(
-	graphql.InputObjectConfig{
-		Name: "VerifyPhoneNumberInput",
-		Fields: graphql.InputObjectConfigFieldMap{
-			"clientMutationId": newClientMutationIDInputField(),
-			"uuid":             newUUIDInputField(),
-			"phoneNumber": &graphql.InputObjectFieldConfig{
-				Type:        graphql.NewNonNull(graphql.String),
-				Description: "Specify the phone number to send a verification code to.",
-			},
+var verifyPhoneNumberInputType = graphql.NewInputObject(graphql.InputObjectConfig{
+	Name: "VerifyPhoneNumberInput",
+	Fields: graphql.InputObjectConfigFieldMap{
+		"clientMutationId": newClientMutationIDInputField(),
+		"uuid":             newUUIDInputField(),
+		"phoneNumber": &graphql.InputObjectFieldConfig{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Specify the phone number to send a verification code to.",
 		},
 	},
-)
+})
 
-var verifyPhoneNumberOutputType = graphql.NewObject(
-	graphql.ObjectConfig{
-		Name: "VerifyPhoneNumberPayload",
-		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
-			"result":           &graphql.Field{Type: graphql.NewNonNull(verifyPhoneNumberResultType)},
-			"token":            &graphql.Field{Type: graphql.String},
-			"message":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		},
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*verifyPhoneNumberOutput)
-			return ok
-		},
+var verifyPhoneNumberOutputType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "VerifyPhoneNumberPayload",
+	Fields: graphql.Fields{
+		"clientMutationId": newClientmutationIDOutputField(),
+		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"errorCode":        &graphql.Field{Type: verifyPhoneNumberErrorCodeEnum},
+		"errorMessage":     &graphql.Field{Type: graphql.String},
+		"token":            &graphql.Field{Type: graphql.String},
+		"message":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 	},
-)
+	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+		_, ok := value.(*verifyPhoneNumberOutput)
+		return ok
+	},
+})
 
 var verifyPhoneNumberMutation = &graphql.Field{
 	Type: graphql.NewNonNull(verifyPhoneNumberOutputType),
@@ -121,8 +114,9 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 					if col.PhoneNumber != pn.String() {
 						return &verifyPhoneNumberOutput{
 							ClientMutationID: mutationID,
-							Result:           verifyPhoneNumberResultInvitePhoneMismatch,
-							Message:          "The phone number did not match.",
+							Success:          false,
+							ErrorCode:        verifyPhoneNumberErrorCodeInvitePhoneMismatch,
+							ErrorMessage:     "The phone number must match the one that was in your invite.",
 						}, nil
 					}
 				default:
@@ -142,7 +136,7 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 		}
 		return &verifyPhoneNumberOutput{
 			ClientMutationID: mutationID,
-			Result:           verifyPhoneNumberResultSuccess,
+			Success:          true,
 			Token:            token,
 			Message:          fmt.Sprintf("A verification code has been sent to %s", nicePhone),
 		}, nil
@@ -152,32 +146,29 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 // checkVerificationCode
 
 const (
-	checkVerificationCodeResultSuccess = "SUCCESS"
-	checkVerificationCodeResultFailure = "VERIFICATION_FAILED"
-	checkVerificationCodeResultExpired = "CODE_EXPIRED"
+	checkVerificationCodeErrorCodeFailure = "VERIFICATION_FAILED"
+	checkVerificationCodeErrorCodeExpired = "CODE_EXPIRED"
 )
 
 type checkVerificationCodeOutput struct {
 	ClientMutationID string   `json:"clientMutationId,omitempty"`
-	Result           string   `json:"result"`
+	Success          bool     `json:"success"`
+	ErrorCode        string   `json:"errorCode,omitempty"`
+	ErrorMessage     string   `json:"errorMessage,omitempty"`
 	Account          *account `json:"account"`
 }
 
-var checkVerificationCodeResultType = graphql.NewEnum(
+var checkVerificationCodeErrorCodeEnum = graphql.NewEnum(
 	graphql.EnumConfig{
-		Name:        "CheckVerificationCodeResult",
+		Name:        "CheckVerificationCodeErrorCode",
 		Description: "Result of checkVerificationCode mutation",
 		Values: graphql.EnumValueConfigMap{
-			checkVerificationCodeResultSuccess: &graphql.EnumValueConfig{
-				Value:       checkVerificationCodeResultSuccess,
-				Description: "Success",
-			},
-			checkVerificationCodeResultExpired: &graphql.EnumValueConfig{
-				Value:       checkVerificationCodeResultExpired,
+			checkVerificationCodeErrorCodeFailure: &graphql.EnumValueConfig{
+				Value:       checkVerificationCodeErrorCodeFailure,
 				Description: "Code expired",
 			},
-			checkVerificationCodeResultFailure: &graphql.EnumValueConfig{
-				Value:       checkVerificationCodeResultFailure,
+			checkVerificationCodeErrorCodeExpired: &graphql.EnumValueConfig{
+				Value:       checkVerificationCodeErrorCodeExpired,
 				Description: "Code verification failed",
 			},
 		},
@@ -201,7 +192,9 @@ var checkVerificationCodeOutputType = graphql.NewObject(
 		Name: "CheckVerificationCodePayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
-			"result":           &graphql.Field{Type: graphql.NewNonNull(checkVerificationCodeResultType)},
+			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorCode":        &graphql.Field{Type: checkVerificationCodeErrorCodeEnum},
+			"errorMessage":     &graphql.Field{Type: graphql.String},
 			"account":          &graphql.Field{Type: accountType},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
@@ -233,12 +226,16 @@ var checkVerificationCodeMutation = &graphql.Field{
 		if grpc.Code(err) == auth.BadVerificationCode {
 			return &checkVerificationCodeOutput{
 				ClientMutationID: mutationID,
-				Result:           checkVerificationCodeResultFailure,
+				Success:          false,
+				ErrorCode:        checkVerificationCodeErrorCodeFailure,
+				ErrorMessage:     "The entered code is incorrect.",
 			}, nil
 		} else if grpc.Code(err) == auth.VerificationCodeExpired {
 			return &checkVerificationCodeOutput{
 				ClientMutationID: mutationID,
-				Result:           checkVerificationCodeResultExpired,
+				Success:          false,
+				ErrorCode:        checkVerificationCodeErrorCodeExpired,
+				ErrorMessage:     "The entered code has expired. Please request a new code.",
 			}, nil
 		} else if err != nil {
 			golog.Errorf(err.Error())
@@ -247,14 +244,16 @@ var checkVerificationCodeMutation = &graphql.Field{
 
 		var acc *account
 		if resp.Account != nil {
-			acc = &account{
-				ID: resp.Account.ID,
+			var err error
+			acc, err = transformAccountToResponse(resp.Account)
+			if err != nil {
+				return nil, internalError(ctx, err)
 			}
 		}
 
 		return &checkVerificationCodeOutput{
 			ClientMutationID: mutationID,
-			Result:           checkVerificationCodeResultSuccess,
+			Success:          true,
 			Account:          acc,
 		}, nil
 	},

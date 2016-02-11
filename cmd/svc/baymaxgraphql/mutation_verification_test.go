@@ -56,8 +56,9 @@ func TestVerifyPhoneNumberForAccountCreationMutation_Invite(t *testing.T) {
 				phoneNumber: "+14155551212"
 			}) {
 				clientMutationId
-				result
-				message
+				success
+				errorCode
+				errorMessage
 			}
 		}`, nil)
 	b, err := json.MarshalIndent(res, "", "\t")
@@ -66,8 +67,9 @@ func TestVerifyPhoneNumberForAccountCreationMutation_Invite(t *testing.T) {
 	"data": {
 		"verifyPhoneNumberForAccountCreation": {
 			"clientMutationId": "a1b2c3",
-			"message": "The phone number did not match.",
-			"result": "INVITE_PHONE_MISMATCH"
+			"errorCode": "INVITE_PHONE_MISMATCH",
+			"errorMessage": "The phone number must match the one that was in your invite.",
+			"success": false
 		}
 	}
 }`, string(b))
@@ -123,7 +125,7 @@ func TestVerifyPhoneNumberForAccountCreationMutation_Invite(t *testing.T) {
 				phoneNumber: "+14155551212"
 			}) {
 				clientMutationId
-				result
+				success
 				token
 				message
 			}
@@ -135,7 +137,7 @@ func TestVerifyPhoneNumberForAccountCreationMutation_Invite(t *testing.T) {
 		"verifyPhoneNumberForAccountCreation": {
 			"clientMutationId": "a1b2c3",
 			"message": "A verification code has been sent to (415) 555-1212",
-			"result": "SUCCESS",
+			"success": true,
 			"token": "TheToken"
 		}
 	}

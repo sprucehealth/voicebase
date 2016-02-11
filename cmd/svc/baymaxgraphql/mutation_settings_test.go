@@ -100,7 +100,7 @@ func TestModifySetting_Boolean(t *testing.T) {
 				}
 			}) {
 				clientMutationId
-				result
+				success
 				setting {
 					key
 					subkey
@@ -124,7 +124,6 @@ func TestModifySetting_Boolean(t *testing.T) {
 	"data": {
 		"modifySetting": {
 			"clientMutationId": "a1b2c3",
-			"result": "SUCCESS",
 			"setting": {
 				"description": "Hi",
 				"key": "2fa",
@@ -134,7 +133,8 @@ func TestModifySetting_Boolean(t *testing.T) {
 					"__typename": "BooleanSettingValue",
 					"set": true
 				}
-			}
+			},
+			"success": true
 		}
 	}
 }`, string(b))
@@ -225,7 +225,7 @@ func TestModifySetting_StringList(t *testing.T) {
 				}
 			}) {
 				clientMutationId
-				result
+				success
 				setting {
 					key
 					subkey
@@ -250,7 +250,6 @@ func TestModifySetting_StringList(t *testing.T) {
 	"data": {
 		"modifySetting": {
 			"clientMutationId": "a1b2c3",
-			"result": "SUCCESS",
 			"setting": {
 				"description": "Hi",
 				"key": "forwarding_list",
@@ -264,7 +263,8 @@ func TestModifySetting_StringList(t *testing.T) {
 						"(123) 456-5522"
 					]
 				}
-			}
+			},
+			"success": true
 		}
 	}
 }`, string(b))
@@ -339,8 +339,9 @@ func TestModifySetting_StringList_InvalidInput(t *testing.T) {
 				}
 			}) {
 				clientMutationId
-				result
-				userErrorMessage
+				success
+				errorCode
+				errorMessage
 				setting {
 					key
 					subkey
@@ -365,9 +366,10 @@ func TestModifySetting_StringList_InvalidInput(t *testing.T) {
 	"data": {
 		"modifySetting": {
 			"clientMutationId": "a1b2c3",
-			"result": "INVALID_INPUT",
+			"errorCode": "INVALID_INPUT",
+			"errorMessage": "Please enter a valid US phone number",
 			"setting": null,
-			"userErrorMessage": "Please enter a valid US phone number"
+			"success": false
 		}
 	}
 }`, string(b))
@@ -483,7 +485,7 @@ func TestModifySetting_MultiSelect(t *testing.T) {
 				}
 			}) {
 				clientMutationId
-				result
+				success
 				setting {
 					key
 					subkey
@@ -509,7 +511,6 @@ func TestModifySetting_MultiSelect(t *testing.T) {
 	"data": {
 		"modifySetting": {
 			"clientMutationId": "a1b2c3",
-			"result": "SUCCESS",
 			"setting": {
 				"description": "Hi",
 				"key": "2fa",
@@ -526,7 +527,8 @@ func TestModifySetting_MultiSelect(t *testing.T) {
 						}
 					]
 				}
-			}
+			},
+			"success": true
 		}
 	}
 }`, string(b))
@@ -635,7 +637,7 @@ func TestModifySetting_SingleSelect(t *testing.T) {
 				}
 			}) {
 				clientMutationId
-				result
+				success
 				setting {
 					key
 					subkey
@@ -661,7 +663,6 @@ func TestModifySetting_SingleSelect(t *testing.T) {
 	"data": {
 		"modifySetting": {
 			"clientMutationId": "a1b2c3",
-			"result": "SUCCESS",
 			"setting": {
 				"description": "Hi",
 				"key": "2fa",
@@ -675,7 +676,8 @@ func TestModifySetting_SingleSelect(t *testing.T) {
 						}
 					]
 				}
-			}
+			},
+			"success": true
 		}
 	}
 }`, string(b))
@@ -753,7 +755,7 @@ func TestModifySetting_InvalidOwner(t *testing.T) {
 				}
 			}) {
 				clientMutationId
-				result
+				success
 				setting {
 					key
 					subkey

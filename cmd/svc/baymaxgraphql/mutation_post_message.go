@@ -42,6 +42,9 @@ var messageInputType = graphql.NewInputObject(
 
 type postMessageOutput struct {
 	ClientMutationID string  `json:"clientMutationId,omitempty"`
+	Success          bool    `json:"success"`
+	ErrorCode        string  `json:"errorCode,omitempty"`
+	ErrorMessage     string  `json:"errorMessage,omitempty"`
 	ItemEdge         *Edge   `json:"itemEdge"`
 	Thread           *thread `json:"thread"`
 }
@@ -57,11 +60,28 @@ var postMessageInputType = graphql.NewInputObject(
 	},
 )
 
+const (
+	postMessageErrorCodeThreadDoesNotExist = "THREAD_DOES_NOT_EXIST"
+)
+
+var postMessageErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name: "PostMessageErrorCode",
+	Values: graphql.EnumValueConfigMap{
+		postMessageErrorCodeThreadDoesNotExist: &graphql.EnumValueConfig{
+			Value:       postMessageErrorCodeThreadDoesNotExist,
+			Description: "Thread with provided ID does not exist.",
+		},
+	},
+})
+
 var postMessageOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "PostMessagePayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
+			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorCode":        &graphql.Field{Type: postMessageErrorCodeEnum},
+			"errorMessage":     &graphql.Field{Type: graphql.String},
 			"itemEdge":         &graphql.Field{Type: graphql.NewNonNull(threadItemConnectionType.EdgeType)},
 			"thread":           &graphql.Field{Type: graphql.NewNonNull(threadType)},
 		},
@@ -96,7 +116,11 @@ var postMessageMutation = &graphql.Field{
 		if err != nil {
 			switch grpc.Code(err) {
 			case codes.NotFound:
-				return nil, errors.New("thread does not exist")
+				return &postMessageOutput{
+					Success:      false,
+					ErrorCode:    postMessageErrorCodeThreadDoesNotExist,
+					ErrorMessage: "Thread does not exist.",
+				}, nil
 			}
 			return nil, internalError(ctx, err)
 		}

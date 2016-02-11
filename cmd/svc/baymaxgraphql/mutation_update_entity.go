@@ -9,6 +9,9 @@ import (
 
 type updateEntityOutput struct {
 	ClientMutationID string  `json:"clientMutationId,omitempty"`
+	Success          bool    `json:"success"`
+	ErrorCode        string  `json:"errorCode,omitempty"`
+	ErrorMessage     string  `json:"errorMessage,omitempty"`
 	Entity           *entity `json:"entity"`
 }
 
@@ -22,10 +25,16 @@ var updateEntityInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 	},
 })
 
+// JANK: can't have an empty enum and we want this field to always exist so make it a string until it's needed
+var updateEntityErrorCodeEnum = graphql.String
+
 var updateEntityOutputType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "UpdateEntityPayload",
 	Fields: graphql.Fields{
 		"clientMutationId": newClientmutationIDOutputField(),
+		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"errorCode":        &graphql.Field{Type: updateEntityErrorCodeEnum},
+		"errorMessage":     &graphql.Field{Type: graphql.String},
 		"entity":           &graphql.Field{Type: graphql.NewNonNull(entityType)},
 	},
 	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
@@ -105,6 +114,7 @@ var updateEntityMutation = &graphql.Field{
 
 		return &updateEntityOutput{
 			ClientMutationID: mutationID,
+			Success:          true,
 			Entity:           e,
 		}, nil
 	},

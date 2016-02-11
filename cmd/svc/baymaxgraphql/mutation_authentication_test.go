@@ -41,7 +41,7 @@ func TestAuthenticateMutation(t *testing.T) {
 				password: $password,
 			}) {
 				clientMutationId
-				result
+				success
 			}
 		}`, map[string]interface{}{
 		"email":    email,
@@ -53,7 +53,7 @@ func TestAuthenticateMutation(t *testing.T) {
 	"data": {
 		"authenticate": {
 			"clientMutationId": "a1b2c3",
-			"result": "SUCCESS"
+			"success": true
 		}
 	}
 }`, string(b))

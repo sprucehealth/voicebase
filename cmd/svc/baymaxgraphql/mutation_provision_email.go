@@ -16,7 +16,9 @@ import (
 
 type provisionEmailOutput struct {
 	ClientMutationID string        `json:"clientMutationId,omitempty"`
-	Result           string        `json:"result"`
+	Success          bool          `json:"success"`
+	ErrorCode        string        `json:"errorCode,omitempty"`
+	ErrorMessage     string        `json:"errorMessage,omitempty"`
 	Organization     *organization `json:"organization"`
 	Entity           *entity       `json:"entity"`
 }
@@ -45,51 +47,42 @@ var provisionEmailInputType = graphql.NewInputObject(
 )
 
 const (
-	provisionEmailResultSuccess        = "SUCCESS"
-	provisionEmailResultSubdomainInUse = "SUBDOMAIN_IN_USE"
-	provisionEmailResultLocalPartInUse = "LOCAL_PART_IN_USE"
+	provisionEmailErrorCodeSubdomainInUse = "SUBDOMAIN_IN_USE"
+	provisionEmailErrorCodeLocalPartInUse = "LOCAL_PART_IN_USE"
 )
 
-var provisionEmailResultType = graphql.NewEnum(
+var provisionEmailErrorCodeEnum = graphql.NewEnum(
 	graphql.EnumConfig{
-		Name:        "ProvisionEmailResult",
+		Name:        "ProvisionEmailErrorCode",
 		Description: "Result of provisionEmail mutation",
 		Values: graphql.EnumValueConfigMap{
-			provisionEmailResultSuccess: &graphql.EnumValueConfig{
-				Value:       provisionEmailResultSuccess,
-				Description: "Success",
-			},
-			provisionEmailResultSubdomainInUse: &graphql.EnumValueConfig{
-				Value:       provisionEmailResultSubdomainInUse,
+			provisionEmailErrorCodeSubdomainInUse: &graphql.EnumValueConfig{
+				Value:       provisionEmailErrorCodeSubdomainInUse,
 				Description: "Subdomain not found",
 			},
-			provisionEmailResultLocalPartInUse: &graphql.EnumValueConfig{
-				Value:       provisionEmailResultLocalPartInUse,
+			provisionEmailErrorCodeLocalPartInUse: &graphql.EnumValueConfig{
+				Value:       provisionEmailErrorCodeLocalPartInUse,
 				Description: "Local part of the address is in use",
 			},
 		},
 	},
 )
 
-var provisionEmailOutputType = graphql.NewObject(
-	graphql.ObjectConfig{
-		Name: "ProvisionEmailPayload",
-		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
-			"result":           &graphql.Field{Type: graphql.NewNonNull(provisionEmailResultType)},
-			"entity": &graphql.Field{
-				Type: entityType,
-			},
-			"organization": &graphql.Field{
-				Type: organizationType,
-			},
-		},
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*provisionEmailOutput)
-			return ok
-		},
+var provisionEmailOutputType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "ProvisionEmailPayload",
+	Fields: graphql.Fields{
+		"clientMutationId": newClientmutationIDOutputField(),
+		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"errorCode":        &graphql.Field{Type: provisionEmailErrorCodeEnum},
+		"errorMessage":     &graphql.Field{Type: graphql.String},
+		"entity":           &graphql.Field{Type: entityType},
+		"organization":     &graphql.Field{Type: organizationType},
 	},
-)
+	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+		_, ok := value.(*provisionEmailOutput)
+		return ok
+	},
+})
 
 var provisionEmailMutation = &graphql.Field{
 	Type: graphql.NewNonNull(provisionEmailOutputType),
@@ -170,8 +163,10 @@ var provisionEmailMutation = &graphql.Field{
 				return nil, err
 			} else if domain != "" && domain != subdomain {
 				return &provisionEmailOutput{
-					Result:           provisionEmailResultSubdomainInUse,
 					ClientMutationID: mutationID,
+					Success:          false,
+					ErrorCode:        provisionEmailErrorCodeSubdomainInUse,
+					ErrorMessage:     "The entered subdomain is already in use. Please pick another.",
 				}, nil
 			}
 
@@ -197,8 +192,10 @@ var provisionEmailMutation = &graphql.Field{
 				return nil, errors.New("no domain picked for organization yet")
 			} else if domain != subdomain {
 				return &provisionEmailOutput{
-					Result:           provisionEmailResultSubdomainInUse,
 					ClientMutationID: mutationID,
+					Success:          false,
+					ErrorCode:        provisionEmailErrorCodeSubdomainInUse,
+					ErrorMessage:     "The entered subdomain is already in use. Please pick another.",
 				}, nil
 			}
 		}
@@ -215,8 +212,10 @@ var provisionEmailMutation = &graphql.Field{
 		})
 		if grpc.Code(err) == codes.AlreadyExists {
 			return &provisionEmailOutput{
-				Result:           provisionEmailResultLocalPartInUse,
 				ClientMutationID: mutationID,
+				Success:          false,
+				ErrorCode:        provisionEmailErrorCodeLocalPartInUse,
+				ErrorMessage:     "The entered email is already in use. Please pick another.",
 			}, nil
 		}
 
@@ -255,8 +254,8 @@ var provisionEmailMutation = &graphql.Field{
 		}
 
 		return &provisionEmailOutput{
-			Result:           provisionEmailResultSuccess,
 			ClientMutationID: mutationID,
+			Success:          true,
 			Entity:           e,
 			Organization:     o,
 		}, nil

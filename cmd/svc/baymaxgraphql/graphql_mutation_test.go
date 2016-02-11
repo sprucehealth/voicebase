@@ -155,7 +155,7 @@ func TestProvisionEmail_Organization(t *testing.T) {
 				organizationID: $organizationID,
 			}) {
 				clientMutationId
-				result
+				success
 				organization {
 					id
 					 contacts {
@@ -186,7 +186,7 @@ func TestProvisionEmail_Organization(t *testing.T) {
 				],
 				"id": "e1"
 			},
-			"result": "SUCCESS"
+			"success": true
 		}
 	}
 }`, string(b))
@@ -305,7 +305,7 @@ func TestProvisionEmail_Internal(t *testing.T) {
 				entityID: $entityID,
 			}) {
 				clientMutationId
-				result
+				success
 				entity {
 					 contacts {
 						type
@@ -334,7 +334,7 @@ func TestProvisionEmail_Internal(t *testing.T) {
 					}
 				]
 			},
-			"result": "SUCCESS"
+			"success": true
 		}
 	}
 }`, string(b))
@@ -473,7 +473,7 @@ func TestProvisionEmail_Organization_DomainExists(t *testing.T) {
 				organizationID: $organizationID,
 			}) {
 				clientMutationId
-				result
+				success
 				organization {
 					 contacts {
 						type
@@ -502,7 +502,7 @@ func TestProvisionEmail_Organization_DomainExists(t *testing.T) {
 					}
 				]
 			},
-			"result": "SUCCESS"
+			"success": true
 		}
 	}
 }`, string(b))
@@ -599,7 +599,8 @@ func TestProvisionEmail_Organization_DomainInUse(t *testing.T) {
 				organizationID: $organizationID,
 			}) {
 				clientMutationId
-				result
+				success
+				errorCode
 				entity {
 					 contacts {
 						type
@@ -620,7 +621,8 @@ func TestProvisionEmail_Organization_DomainInUse(t *testing.T) {
 		"provisionEmail": {
 			"clientMutationId": "a1b2c3",
 			"entity": null,
-			"result": "SUBDOMAIN_IN_USE"
+			"errorCode": "SUBDOMAIN_IN_USE",
+			"success": false
 		}
 	}
 }`, string(b))
@@ -723,7 +725,8 @@ func TestProvisionEmail_Organization_EmailInUse(t *testing.T) {
 				organizationID: $organizationID,
 			}) {
 				clientMutationId
-				result
+				success
+				errorCode
 				organization {
 					 contacts {
 						type
@@ -743,8 +746,9 @@ func TestProvisionEmail_Organization_EmailInUse(t *testing.T) {
 	"data": {
 		"provisionEmail": {
 			"clientMutationId": "a1b2c3",
+			"errorCode": "LOCAL_PART_IN_USE",
 			"organization": null,
-			"result": "LOCAL_PART_IN_USE"
+			"success": false
 		}
 	}
 }`, string(b))

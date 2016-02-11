@@ -20,6 +20,9 @@ import (
 
 type requestPasswordResetOutput struct {
 	ClientMutationID string `json:"clientMutationId,omitempty"`
+	Success          bool   `json:"success"`
+	ErrorCode        string `json:"errorCode,omitempty"`
+	ErrorMessage     string `json:"errorMessage,omitempty"`
 }
 
 var requestPasswordResetInputType = graphql.NewInputObject(
@@ -36,11 +39,28 @@ var requestPasswordResetInputType = graphql.NewInputObject(
 	},
 )
 
+const (
+	requestPasswordResetErrorCodeInvalidEmail = "INVALID_EMAIL"
+)
+
+var requestPasswordResetErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name: "RequestPasswordResetErrorCode",
+	Values: graphql.EnumValueConfigMap{
+		requestPasswordResetErrorCodeInvalidEmail: &graphql.EnumValueConfig{
+			Value:       requestPasswordResetErrorCodeInvalidEmail,
+			Description: "The provided email address is invalid",
+		},
+	},
+})
+
 var requestPasswordResetOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "RequestPasswordResetPayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
+			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorCode":        &graphql.Field{Type: requestPasswordResetErrorCodeEnum},
+			"errorMessage":     &graphql.Field{Type: graphql.String},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*requestPasswordResetOutput)
@@ -63,7 +83,12 @@ var requestPasswordResetMutation = &graphql.Field{
 		email, _ := input["email"].(string)
 
 		if !validate.Email(email) {
-			return nil, errors.New("invalid email")
+			return &requestPasswordResetOutput{
+				ClientMutationID: mutationID,
+				Success:          false,
+				ErrorCode:        requestPasswordResetErrorCodeInvalidEmail,
+				ErrorMessage:     "The entered email address is invalid.",
+			}, nil
 		}
 
 		conc.Go(func() {
@@ -74,6 +99,7 @@ var requestPasswordResetMutation = &graphql.Field{
 
 		return &requestPasswordResetOutput{
 			ClientMutationID: mutationID,
+			Success:          true,
 		}, nil
 	},
 }
@@ -81,32 +107,29 @@ var requestPasswordResetMutation = &graphql.Field{
 // checkPasswordResetToken
 
 const (
-	checkPasswordResetTokenResultSuccess = "SUCCESS"
-	checkPasswordResetTokenResultFailure = "BAD_TOKEN"
-	checkPasswordResetTokenResultExpired = "TOKEN_EXPIRED"
+	checkPasswordResetTokenErrorCodeFailure = "BAD_TOKEN"
+	checkPasswordResetTokenErrorCodeExpired = "TOKEN_EXPIRED"
 )
 
 type checkPasswordResetTokenOutput struct {
 	ClientMutationID          string `json:"clientMutationId,omitempty"`
-	Result                    string `json:"result"`
+	Success                   bool   `json:"success"`
+	ErrorCode                 string `json:"errorCode,omitempty"`
+	ErrorMessage              string `json:"errorMessage,omitempty"`
 	PhoneNumberLastFourDigits string `json:"phone_number_last_four_digits"`
 }
 
-var checkPasswordResetTokenResultType = graphql.NewEnum(
+var checkPasswordResetTokenErrorCodeEnum = graphql.NewEnum(
 	graphql.EnumConfig{
-		Name:        "CheckVerificationCodeResult",
+		Name:        "CheckPasswordResetTokenErrorCode",
 		Description: "Result of checkPasswordResetToken mutation",
 		Values: graphql.EnumValueConfigMap{
-			checkPasswordResetTokenResultSuccess: &graphql.EnumValueConfig{
-				Value:       checkPasswordResetTokenResultSuccess,
-				Description: "Success",
-			},
-			checkPasswordResetTokenResultExpired: &graphql.EnumValueConfig{
-				Value:       checkPasswordResetTokenResultExpired,
+			checkPasswordResetTokenErrorCodeFailure: &graphql.EnumValueConfig{
+				Value:       checkPasswordResetTokenErrorCodeFailure,
 				Description: "Code expired",
 			},
-			checkPasswordResetTokenResultFailure: &graphql.EnumValueConfig{
-				Value:       checkPasswordResetTokenResultFailure,
+			checkPasswordResetTokenErrorCodeExpired: &graphql.EnumValueConfig{
+				Value:       checkPasswordResetTokenErrorCodeExpired,
 				Description: "Code verifcation failed",
 			},
 		},
@@ -129,7 +152,9 @@ var checkPasswordResetTokenOutputType = graphql.NewObject(
 		Name: "CheckPasswordResetTokenPayload",
 		Fields: graphql.Fields{
 			"clientMutationId":          newClientmutationIDOutputField(),
-			"result":                    &graphql.Field{Type: graphql.NewNonNull(checkVerificationCodeResultType)},
+			"success":                   &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorCode":                 &graphql.Field{Type: checkPasswordResetTokenErrorCodeEnum},
+			"errorMessage":              &graphql.Field{Type: graphql.String},
 			"phoneNumberLastFourDigits": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
@@ -150,13 +175,18 @@ var checkPasswordResetTokenMutation = &graphql.Field{
 
 		input := p.Args["input"].(map[string]interface{})
 		mutationID, _ := input["clientMutationId"].(string)
-		token, _ := input["token"].(string)
+		token := input["token"].(string)
 
 		resp, err := svc.auth.CheckPasswordResetToken(ctx, &auth.CheckPasswordResetTokenRequest{
 			Token: token,
 		})
 		if grpc.Code(err) == auth.TokenExpired {
-			return nil, userError(ctx, errTypeExpired, "Your password reset link has expired. Please request a new one.")
+			return &checkPasswordResetTokenOutput{
+				ClientMutationID: mutationID,
+				Success:          false,
+				ErrorCode:        checkPasswordResetTokenErrorCodeExpired,
+				ErrorMessage:     "Your reset link has expired. Please request a new password reset email.",
+			}, nil
 		} else if err != nil {
 			return nil, internalError(ctx, err)
 		}
@@ -167,6 +197,7 @@ var checkPasswordResetTokenMutation = &graphql.Field{
 		}
 		return &checkPasswordResetTokenOutput{
 			ClientMutationID:          mutationID,
+			Success:                   true,
 			PhoneNumberLastFourDigits: last4Phone,
 		}, nil
 	},
@@ -254,6 +285,7 @@ var verifyPhoneNumberForPasswordResetMutation = &graphql.Field{
 		}
 		return &verifyPhoneNumberOutput{
 			ClientMutationID: mutationID,
+			Success:          true,
 			Token:            token,
 			Message:          fmt.Sprintf("A verification code has been sent to the phone number ending in %s", last4Phone),
 		}, nil
@@ -264,6 +296,9 @@ var verifyPhoneNumberForPasswordResetMutation = &graphql.Field{
 
 type passwordResetOutput struct {
 	ClientMutationID string `json:"clientMutationId"`
+	Success          bool   `json:"success"`
+	ErrorCode        string `json:"errorCode,omitempty"`
+	ErrorMessage     string `json:"errorMessage,omitempty"`
 	Message          string `json:"message"`
 }
 
@@ -289,11 +324,17 @@ var passwordResetInputType = graphql.NewInputObject(
 	},
 )
 
+// JANK: can't have an empty enum and we want this field to always exist so make it a string until it's needed
+var passwordResetErrorCodeEnum = graphql.String
+
 var passwordResetOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "PasswordResetPayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
+			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorCode":        &graphql.Field{Type: passwordResetErrorCodeEnum},
+			"errorMessage":     &graphql.Field{Type: graphql.String},
 			"message":          &graphql.Field{Type: graphql.String},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
@@ -338,6 +379,7 @@ var passwordResetMutation = &graphql.Field{
 
 		return &passwordResetOutput{
 			ClientMutationID: mutationID,
+			Success:          true,
 			Message:          "Password updated",
 		}, nil
 	},

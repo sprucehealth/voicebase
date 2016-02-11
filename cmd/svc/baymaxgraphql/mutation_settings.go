@@ -12,9 +12,10 @@ import (
 
 type modifySettingOutput struct {
 	ClientMutationID string      `json:"clientMutationId,omitempty"`
+	Success          bool        `json:"success"`
+	ErrorCode        string      `json:"errorCode,omitempty"`
+	ErrorMessage     string      `json:"errorMessage,omitempty"`
 	Setting          interface{} `json:"setting"`
-	UserErrorMessage string      `json:"userErrorMessage"`
-	Result           string      `json:"result"`
 }
 
 var stringListInputType = graphql.NewInputObject(
@@ -92,21 +93,16 @@ var modifySettingInputType = graphql.NewInputObject(
 )
 
 const (
-	modifySettingResultSuccess      = "SUCCESS"
-	modifySettingResultInvalidInput = "INVALID_INPUT"
+	modifySettingErrorCodeInvalidInput = "INVALID_INPUT"
 )
 
-var modifySettingResultType = graphql.NewEnum(
+var modifySettingErrorCodeEnum = graphql.NewEnum(
 	graphql.EnumConfig{
-		Name:        "ModifySettingResult",
+		Name:        "ModifySettingErrorCode",
 		Description: "Result of modifySetting mutation",
 		Values: graphql.EnumValueConfigMap{
-			modifySettingResultSuccess: &graphql.EnumValueConfig{
-				Value:       modifySettingResultSuccess,
-				Description: "Success",
-			},
-			modifySettingResultInvalidInput: &graphql.EnumValueConfig{
-				Value:       modifySettingResultInvalidInput,
+			modifySettingErrorCodeInvalidInput: &graphql.EnumValueConfig{
+				Value:       modifySettingErrorCodeInvalidInput,
 				Description: "Invalid input",
 			},
 		},
@@ -118,9 +114,10 @@ var modifySettingOutputType = graphql.NewObject(
 		Name: "ModifySettingPayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
-			"result":           &graphql.Field{Type: graphql.NewNonNull(modifySettingResultType)},
+			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorCode":        &graphql.Field{Type: modifySettingErrorCodeEnum},
+			"errorMessage":     &graphql.Field{Type: graphql.String},
 			"setting":          &graphql.Field{Type: settingsInterfaceType},
-			"userErrorMessage": &graphql.Field{Type: graphql.String},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*modifySettingOutput)
@@ -143,9 +140,9 @@ var modifySettingMutation = &graphql.Field{
 		}
 
 		input, _ := p.Args["input"].(map[string]interface{})
-		key, _ := input["key"].(string)
+		key := input["key"].(string)
 		subkey, _ := input["subkey"].(string)
-		nodeID, _ := input["nodeID"].(string)
+		nodeID := input["nodeID"].(string)
 		mutationID, _ := input["clientMutationId"].(string)
 
 		// TODO: Add a validator for the subkey so as to enforce subkey to be of valid format
@@ -293,8 +290,9 @@ var modifySettingMutation = &graphql.Field{
 					if err != nil {
 						return &modifySettingOutput{
 							ClientMutationID: mutationID,
-							UserErrorMessage: "Please enter a valid US phone number",
-							Result:           modifySettingResultInvalidInput,
+							Success:          false,
+							ErrorCode:        modifySettingErrorCodeInvalidInput,
+							ErrorMessage:     "Please enter a valid US phone number",
 						}, nil
 					}
 
@@ -328,8 +326,9 @@ var modifySettingMutation = &graphql.Field{
 			if grpc.Code(err) == settings.InvalidUserValue {
 				return &modifySettingOutput{
 					ClientMutationID: mutationID,
-					UserErrorMessage: grpc.ErrorDesc(err),
-					Result:           modifySettingResultInvalidInput,
+					Success:          false,
+					ErrorCode:        modifySettingErrorCodeInvalidInput,
+					ErrorMessage:     grpc.ErrorDesc(err),
 				}, nil
 			}
 			return nil, internalError(ctx, err)
@@ -350,8 +349,8 @@ var modifySettingMutation = &graphql.Field{
 
 		return &modifySettingOutput{
 			ClientMutationID: mutationID,
+			Success:          true,
 			Setting:          setting,
-			Result:           modifySettingResultSuccess,
 		}, nil
 	},
 }

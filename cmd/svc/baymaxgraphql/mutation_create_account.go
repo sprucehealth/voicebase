@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sprucehealth/backend/svc/invite"
-
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -13,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
@@ -20,45 +19,81 @@ import (
 
 type createAccountOutput struct {
 	ClientMutationID    string   `json:"clientMutationId,omitempty"`
+	Success             bool     `json:"success"`
+	ErrorCode           string   `json:"errorCode,omitempty"`
+	ErrorMessage        string   `json:"errorMessage,omitempty"`
 	Token               string   `json:"token,omitempty"`
 	Account             *account `json:"account,omitempty"`
 	ClientEncryptionKey string   `json:"clientEncryptionKey,omitempty"`
 }
 
-var createAccountInputType = graphql.NewInputObject(
-	graphql.InputObjectConfig{
-		Name: "CreateAccountInput",
-		Fields: graphql.InputObjectConfigFieldMap{
-			"clientMutationId":       newClientMutationIDInputField(),
-			"uuid":                   newUUIDInputField(),
-			"email":                  &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-			"password":               &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-			"phoneNumber":            &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-			"firstName":              &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-			"lastName":               &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-			"shortTitle":             &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"longTitle":              &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"organizationName":       &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"phoneVerificationToken": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-		},
+var createAccountInputType = graphql.NewInputObject(graphql.InputObjectConfig{
+	Name: "CreateAccountInput",
+	Fields: graphql.InputObjectConfigFieldMap{
+		"clientMutationId":       newClientMutationIDInputField(),
+		"uuid":                   newUUIDInputField(),
+		"email":                  &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		"password":               &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		"phoneNumber":            &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		"firstName":              &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		"lastName":               &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		"shortTitle":             &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"longTitle":              &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"organizationName":       &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"phoneVerificationToken": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 	},
+})
+
+const (
+	createAccountErrorCodeAccountExists           = "ACCOUNT_EXISTS"
+	createAccountErrorCodeInvalidEmail            = "INVALID_EMAIL"
+	createAccountErrorCodeInvalidOrganizationName = "INVALID_ORGANIZATION_NAME"
+	createAccountErrorCodeInvalidPassword         = "INVALID_PASSWORD"
+	createAccountErrorCodeInvalidPhoneNumber      = "INVALID_PHONE_NUMBER"
 )
 
-var createAccountOutputType = graphql.NewObject(
-	graphql.ObjectConfig{
-		Name: "CreateAccountPayload",
-		Fields: graphql.Fields{
-			"clientMutationId":    newClientmutationIDOutputField(),
-			"token":               &graphql.Field{Type: graphql.String},
-			"account":             &graphql.Field{Type: accountType},
-			"clientEncryptionKey": &graphql.Field{Type: graphql.String},
+var createAccountErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name: "CreateAccountErrorCode",
+	Values: graphql.EnumValueConfigMap{
+		createAccountErrorCodeInvalidEmail: &graphql.EnumValueConfig{
+			Value:       createAccountErrorCodeInvalidEmail,
+			Description: "The provided email is invalid",
 		},
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*createAccountOutput)
-			return ok
+		createAccountErrorCodeInvalidPassword: &graphql.EnumValueConfig{
+			Value:       createAccountErrorCodeInvalidPassword,
+			Description: "The provided password is invalid",
+		},
+		createAccountErrorCodeInvalidPhoneNumber: &graphql.EnumValueConfig{
+			Value:       createAccountErrorCodeInvalidPhoneNumber,
+			Description: "The provided phone number is invalid",
+		},
+		createAccountErrorCodeAccountExists: &graphql.EnumValueConfig{
+			Value:       createAccountErrorCodeAccountExists,
+			Description: "An account exists with the provided email address",
+		},
+		createAccountErrorCodeInvalidOrganizationName: &graphql.EnumValueConfig{
+			Value:       createAccountErrorCodeInvalidOrganizationName,
+			Description: "The provided organization name is invalid",
 		},
 	},
-)
+})
+
+var createAccountOutputType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "CreateAccountPayload",
+	Fields: graphql.Fields{
+		"clientMutationId":    newClientmutationIDOutputField(),
+		"success":             &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"errorCode":           &graphql.Field{Type: createAccountErrorCodeEnum},
+		"errorMessage":        &graphql.Field{Type: graphql.String},
+		"token":               &graphql.Field{Type: graphql.String},
+		"account":             &graphql.Field{Type: accountType},
+		"clientEncryptionKey": &graphql.Field{Type: graphql.String},
+	},
+	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+		_, ok := value.(*createAccountOutput)
+		return ok
+	},
+})
 
 var createAccountMutation = &graphql.Field{
 	Type: graphql.NewNonNull(createAccountOutputType),
@@ -85,7 +120,11 @@ var createAccountMutation = &graphql.Field{
 			Password: input["password"].(string),
 		}
 		if !validate.Email(req.Email) {
-			return nil, errors.New("invalid email")
+			return &createAccountOutput{
+				Success:      false,
+				ErrorCode:    createAccountErrorCodeInvalidEmail,
+				ErrorMessage: "The entered email address is invalid",
+			}, nil
 		}
 		entityInfo, err := entityInfoFromInput(input)
 		if err != nil {
@@ -99,7 +138,11 @@ var createAccountMutation = &graphql.Field{
 		if inv == nil {
 			organizationName, _ = input["organizationName"].(string)
 			if organizationName == "" {
-				return nil, errors.New("Organization Name is required")
+				return &createAccountOutput{
+					Success:      false,
+					ErrorCode:    createAccountErrorCodeInvalidOrganizationName,
+					ErrorMessage: "The organization name is required",
+				}, nil
 			}
 		}
 		respVerifiedValue, err := svc.auth.VerifiedValue(ctx, &auth.VerifiedValueRequest{
@@ -116,7 +159,11 @@ var createAccountMutation = &graphql.Field{
 		}
 		pn, err := phone.ParseNumber(input["phoneNumber"].(string))
 		if err != nil {
-			return nil, fmt.Errorf("Unable to parse the provided phone number %q", req.PhoneNumber)
+			return &createAccountOutput{
+				Success:      false,
+				ErrorCode:    createAccountErrorCodeInvalidPhoneNumber,
+				ErrorMessage: "The entered phone number is invalid",
+			}, nil
 		}
 		req.PhoneNumber = pn.String()
 		if vpn.String() != pn.String() {
@@ -127,11 +174,23 @@ var createAccountMutation = &graphql.Field{
 		if err != nil {
 			switch grpc.Code(err) {
 			case auth.DuplicateEmail:
-				return nil, errors.New("account with email exists")
+				return &createAccountOutput{
+					Success:      false,
+					ErrorCode:    createAccountErrorCodeAccountExists,
+					ErrorMessage: "An account already exists with the entered email address.",
+				}, nil
 			case auth.InvalidEmail:
-				return nil, errors.New("invalid email")
+				return &createAccountOutput{
+					Success:      false,
+					ErrorCode:    createAccountErrorCodeInvalidEmail,
+					ErrorMessage: "The entered email address is invalid",
+				}, nil
 			case auth.InvalidPhoneNumber:
-				return nil, errors.New("invalid phone number")
+				return &createAccountOutput{
+					Success:      false,
+					ErrorCode:    createAccountErrorCodeInvalidPhoneNumber,
+					ErrorMessage: "The entered phone number is invalid",
+				}, nil
 			}
 			return nil, internalError(ctx, err)
 		}
@@ -196,14 +255,16 @@ var createAccountMutation = &graphql.Field{
 		result.Set("auth_token", res.Token.Value)
 		result.Set("auth_expiration", time.Unix(int64(res.Token.ExpirationEpoch), 0))
 
-		acc := &account{
-			ID: res.Account.ID,
+		acc, err := transformAccountToResponse(res.Account)
+		if err != nil {
+			return nil, internalError(ctx, err)
 		}
 		// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
 		// that likely won't change, but this still isn't a great way to update the context.
 		*ctx.Value(ctxAccount).(*account) = *acc
 		return &createAccountOutput{
 			ClientMutationID:    mutationID,
+			Success:             true,
 			Token:               res.Token.Value,
 			Account:             acc,
 			ClientEncryptionKey: res.Token.ClientEncryptionKey,
