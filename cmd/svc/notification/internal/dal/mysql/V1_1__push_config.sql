@@ -12,5 +12,5 @@ CREATE TABLE notification.push_config (
 	modified             timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	created              timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	CONSTRAINT pk_external_id PRIMARY KEY (id),
-    CONSTRAINT UNIQUE(external_group_id, device_id)
+	CONSTRAINT UNIQUE(external_group_id, device_id)
  ) engine=InnoDB;
