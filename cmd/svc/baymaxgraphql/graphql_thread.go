@@ -34,7 +34,7 @@ var threadType = graphql.NewObject(
 			"allowInternalMessages": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			// TODO: We currently just assume all contacts for an entity are available endpoints
 			"availableEndpoints": &graphql.Field{
-				Type: graphql.NewList(endpointType),
+				Type: graphql.NewList(graphql.NewNonNull(endpointType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
 					th := p.Source.(*thread)
@@ -75,7 +75,7 @@ var threadType = graphql.NewObject(
 			},
 			// Default endpoints are build from the last primary entity endpoints filtering out anything contacts that no longer exist for the entity
 			"defaultEndpoints": &graphql.Field{
-				Type: graphql.NewList(endpointType),
+				Type: graphql.NewList(graphql.NewNonNull(endpointType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
 					th := p.Source.(*thread)
