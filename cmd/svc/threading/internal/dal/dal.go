@@ -434,21 +434,22 @@ func (d *dal) PostMessage(ctx context.Context, req *PostMessageRequest) (*models
 			tx.Rollback()
 			return nil, errors.Trace(err)
 		}
-		values := []interface{}{item.Created, item.Created, msg.Summary, msg.Summary, item.ThreadID}
+		values := []interface{}{item.Created, item.Created, msg.Summary, msg.Summary}
 		// Only update the endpoint list on an external thread if it's non empty
 		var endpointUpdate string
 		if len(req.Destinations) > 0 {
 			endpointUpdate = ", last_primary_entity_endpoints = ?"
 			values = append(values, endpointListData)
 		}
-		_, err = tx.Exec(fmt.Sprintf(`
+		values = append(values, item.ThreadID)
+		_, err = tx.Exec(`
 			UPDATE threads
 			SET
 				last_message_timestamp = GREATEST(last_message_timestamp, ?),
 				last_external_message_timestamp = GREATEST(last_external_message_timestamp, ?),
 				last_message_summary = ?,
-				last_external_message_summary = ?%s
-			WHERE id = ?`, endpointUpdate), values...)
+				last_external_message_summary = ? `+endpointUpdate+`
+			WHERE id = ?`, values...)
 	}
 	if err != nil {
 		tx.Rollback()
