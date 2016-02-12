@@ -211,6 +211,12 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		},
 	})
 
+	for _, e := range response.Errors {
+		if e.StackTrace != "" {
+			golog.Errorf("[%s] %s\n%s", e.Type, e.Message, e.StackTrace)
+		}
+	}
+
 	if token, ok := result.Get("auth_token").(string); ok {
 		expires, _ := result.Get("auth_expiration").(time.Time)
 		if expires.Before(time.Now()) {
