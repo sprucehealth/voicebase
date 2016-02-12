@@ -18,6 +18,7 @@ func (e ErrValidation) Error() string {
 }
 
 var elementTypes = map[string]reflect.Type{
+	"a":   reflect.TypeOf(Anchor{}),
 	"ref": reflect.TypeOf(Ref{}),
 }
 
