@@ -39,7 +39,7 @@ const (
 )
 
 var inviteColleaguesErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
-	Name: "InviteColleagueErrorCode",
+	Name: "InviteColleaguesErrorCode",
 	Values: graphql.EnumValueConfigMap{
 		inviteColleaguesErrorCodeInvalidEmail: &graphql.EnumValueConfig{
 			Value:       inviteColleaguesErrorCodeInvalidEmail,
