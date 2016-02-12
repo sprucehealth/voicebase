@@ -244,8 +244,10 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
     cp $GOPATH/bin/restapi build/$CMD_NAME
     bzip2 -9 build/$CMD_NAME
     echo $GIT_COMMIT > build/$CMD_NAME.revision
-    cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.out build/$CMD_NAME.coverage
-    cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.html build/$CMD_NAME.coverage.html
+    if [[ -e $MONOREPO_PATH/coverage-$BUILD_NUMBER.out ]]; then
+        cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.out build/$CMD_NAME.coverage
+        cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.html build/$CMD_NAME.coverage.html
+    fi
     s3cmd --add-header "x-amz-acl:bucket-owner-full-control" -M --server-side-encryption put build/* s3://spruce-deploy/restapi/
 
     cd $MONOREPO_PATH/resources/static
@@ -275,8 +277,10 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
     cp $GOPATH/bin/curbside bin/$CMD_NAME
     bzip2 -9 bin/$CMD_NAME
     echo $GIT_COMMIT > bin/$CMD_NAME.revision
-    cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.out bin/$CMD_NAME.coverage
-    cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.html bin/$CMD_NAME.coverage.html
+    if [[ -e $MONOREPO_PATH/coverage-$BUILD_NUMBER.out ]]; then
+        cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.out bin/$CMD_NAME.coverage
+        cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.html bin/$CMD_NAME.coverage.html
+    fi
     s3cmd --add-header "x-amz-acl:bucket-owner-full-control" -M --server-side-encryption put bin/* s3://spruce-deploy/curbside/
 
     cd $MONOREPO_PATH/cmd/svc/curbside/build
@@ -306,8 +310,10 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
     cp $GOPATH/bin/regimensapi build/$CMD_NAME
     bzip2 -9 build/$CMD_NAME
     echo $GIT_COMMIT > build/$CMD_NAME.revision
-    cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.out build/$CMD_NAME.coverage
-    cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.html build/$CMD_NAME.coverage.html
+    if [[ -e $MONOREPO_PATH/coverage-$BUILD_NUMBER.out ]]; then
+        cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.out bin/$CMD_NAME.coverage
+        cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.html bin/$CMD_NAME.coverage.html
+    fi
     s3cmd --add-header "x-amz-acl:bucket-owner-full-control" -M --server-side-encryption put build/* s3://spruce-deploy/regimensapi/
 fi
 
@@ -325,8 +331,10 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
     cp $GOPATH/bin/carefinder build/$CMD_NAME
     bzip2 -9 build/$CMD_NAME
     echo $GIT_COMMIT > build/$CMD_NAME.revision
-    cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.out build/$CMD_NAME.coverage
-    cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.html build/$CMD_NAME.coverage.html
+    if [[ -e $MONOREPO_PATH/coverage-$BUILD_NUMBER.out ]]; then
+        cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.out bin/$CMD_NAME.coverage
+        cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.html bin/$CMD_NAME.coverage.html
+    fi
     s3cmd --add-header "x-amz-acl:bucket-owner-full-control" -M --server-side-encryption put build/* s3://spruce-deploy/carefinder/
 
     # Copy over the fonts from the shared location
