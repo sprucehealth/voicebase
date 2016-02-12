@@ -523,9 +523,9 @@ func (d *dal) ThreadItem(ctx context.Context, id models.ThreadItemID) (*models.T
 
 func (d *dal) ThreadItemIDsCreatedAfter(ctx context.Context, threadID models.ThreadID, after time.Time) ([]models.ThreadItemID, error) {
 	rows, err := d.db.Query(`
-		SELECT id FROM thread_items 
-        WHERE thread_id = ? 
-        AND created > ? 
+		SELECT id FROM thread_items
+        WHERE thread_id = ?
+        AND created > ?
         ORDER BY created ASC`, threadID, after)
 	if err != nil {
 		return nil, errors.Trace(err)

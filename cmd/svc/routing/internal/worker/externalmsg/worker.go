@@ -318,6 +318,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 		switch pem.GetOutgoing().Type {
 		case excomms.OutgoingCallEventItem_PLACED:
 			title = bml.BML{"Outbound call"}
+			summary = fmt.Sprintf("%s called %s", fromName, toName)
 		case excomms.OutgoingCallEventItem_ANSWERED:
 			if d := pem.GetOutgoing().DurationInSeconds; d != 0 {
 				title = bml.BML{fmt.Sprintf("Outbound call, %d:%02ds", d/60, d%60)}
@@ -373,7 +374,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 		return errors.Trace(err)
 	}
 	if summary == "" {
-		summary = fmt.Sprintf("%s: %s", fromName, titleStr)
+		summary = fmt.Sprintf("%s: %s", fromName, text)
 	}
 	if externalThread == nil {
 		golog.Debugf("External thread for %s not found. Creating...", externalEntity.Contacts[0].Value)

@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/graphql"
@@ -46,57 +47,76 @@ var contactInfoType = graphql.NewObject(
 	},
 )
 
-var entityType = graphql.NewObject(
-	graphql.ObjectConfig{
-		Name: "Entity",
-		Interfaces: []*graphql.Interface{
-			nodeInterfaceType,
-		},
-		Fields: graphql.Fields{
-			"id":            &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-			"isEditable":    &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"firstName":     &graphql.Field{Type: graphql.String},
-			"middleInitial": &graphql.Field{Type: graphql.String},
-			"lastName":      &graphql.Field{Type: graphql.String},
-			"groupName":     &graphql.Field{Type: graphql.String},
-			"displayName":   &graphql.Field{Type: graphql.String},
-			"longTitle":     &graphql.Field{Type: graphql.String},
-			"shortTitle":    &graphql.Field{Type: graphql.String},
-			"note":          &graphql.Field{Type: graphql.String},
-			"contacts":      &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(contactInfoType))},
-			"serializedContact": &graphql.Field{
-				Type: graphql.String,
-				Args: graphql.FieldConfigArgument{
-					"platform": &graphql.ArgumentConfig{Type: graphql.NewNonNull(platformEnumType)},
-				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					entity := p.Source.(*entity)
-					svc := serviceFromParams(p)
-					ctx := p.Context
-					acc := accountFromContext(ctx)
-					if acc == nil {
-						return nil, errNotAuthenticated(ctx)
-					}
-
-					platform, _ := p.Args["platform"].(string)
-					pPlatform, ok := directory.Platform_value[platform]
-					if !ok {
-						return nil, fmt.Errorf("Unknown platform type %s", platform)
-					}
-					dPlatform := directory.Platform(pPlatform)
-
-					sc, err := lookupSerializedEntityContact(ctx, svc, entity.ID, dPlatform)
-					if err != nil {
-						return nil, internalError(ctx, err)
-					}
-
-					return sc, nil
-				},
+var entityType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "Entity",
+	Interfaces: []*graphql.Interface{
+		nodeInterfaceType,
+	},
+	Fields: graphql.Fields{
+		"id":            &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+		"isEditable":    &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"firstName":     &graphql.Field{Type: graphql.String},
+		"middleInitial": &graphql.Field{Type: graphql.String},
+		"lastName":      &graphql.Field{Type: graphql.String},
+		"groupName":     &graphql.Field{Type: graphql.String},
+		"displayName":   &graphql.Field{Type: graphql.String},
+		"longTitle":     &graphql.Field{Type: graphql.String},
+		"shortTitle":    &graphql.Field{Type: graphql.String},
+		"note":          &graphql.Field{Type: graphql.String},
+		"initials": &graphql.Field{
+			Type: graphql.NewNonNull(graphql.String),
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				entity := p.Source.(*entity)
+				var first, last string
+				if entity.FirstName != "" {
+					first = entity.FirstName[:1]
+				}
+				if entity.LastName != "" {
+					last = entity.LastName[:1]
+				}
+				return strings.ToUpper(first + last), nil
 			},
-			// TODO: avatar(width: Int = 120, height: Int = 120, crop: Boolean = true): Image
+		},
+		"contacts": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(contactInfoType))},
+		"serializedContact": &graphql.Field{
+			Type: graphql.String,
+			Args: graphql.FieldConfigArgument{
+				"platform": &graphql.ArgumentConfig{Type: graphql.NewNonNull(platformEnumType)},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				entity := p.Source.(*entity)
+				svc := serviceFromParams(p)
+				ctx := p.Context
+				acc := accountFromContext(ctx)
+				if acc == nil {
+					return nil, errNotAuthenticated(ctx)
+				}
+
+				platform, _ := p.Args["platform"].(string)
+				pPlatform, ok := directory.Platform_value[platform]
+				if !ok {
+					return nil, fmt.Errorf("Unknown platform type %s", platform)
+				}
+				dPlatform := directory.Platform(pPlatform)
+
+				sc, err := lookupSerializedEntityContact(ctx, svc, entity.ID, dPlatform)
+				if err != nil {
+					return nil, internalError(ctx, err)
+				}
+
+				return sc, nil
+			},
+		},
+		"avatar": &graphql.Field{
+			Type: imageType,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				entity := p.Source.(*entity)
+				// TODO: should have arugments for width, height, crop, etc..
+				return entity.avatar, nil
+			},
 		},
 	},
-)
+})
 
 func lookupEntity(ctx context.Context, svc *service, id string) (interface{}, error) {
 	res, err := svc.directory.LookupEntities(ctx,

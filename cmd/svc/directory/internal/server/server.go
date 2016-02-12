@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/cmd/svc/directory/internal/dal"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -15,6 +12,8 @@ import (
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/directory"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 var grpcErrorf = grpc.Errorf

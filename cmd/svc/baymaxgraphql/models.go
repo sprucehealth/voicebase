@@ -52,7 +52,8 @@ type entity struct {
 	LongTitle     string         `json:"longTitle"`
 	Note          string         `json:"note"`
 	Contacts      []*contactInfo `json:"contacts"`
-	// TODO avatar(width: Int = 120, height: Int = 120, crop: Boolean = true): Image
+
+	avatar *image
 }
 
 type contactInfo struct {

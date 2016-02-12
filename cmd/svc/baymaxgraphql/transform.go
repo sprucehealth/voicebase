@@ -209,7 +209,7 @@ func transformEntityToResponse(e *directory.Entity) (*entity, error) {
 	if err != nil {
 		return nil, errors.Trace(fmt.Errorf("failed to transform contacts for entity %s: %s", e.ID, err))
 	}
-	return &entity{
+	ent := &entity{
 		ID:            e.ID,
 		IsEditable:    e.Type != directory.EntityType_SYSTEM,
 		Contacts:      oc,
@@ -221,7 +221,55 @@ func transformEntityToResponse(e *directory.Entity) (*entity, error) {
 		ShortTitle:    e.Info.ShortTitle,
 		LongTitle:     e.Info.LongTitle,
 		Note:          e.Info.Note,
-	}, nil
+	}
+	if ent.DisplayName == "" {
+		// TODO: the display name will eventually be generated in the diretory service but for now this is a safety check since this must never be empty
+		ent.DisplayName, err = buildDisplayName(e.Info, e.Contacts)
+		if err != nil {
+			golog.Errorf("Failed to generate display name for entity %s: %s", e.ID, err)
+		}
+		if ent.DisplayName == "" {
+			ent.DisplayName = e.ID
+		}
+	}
+	switch e.Type {
+	case directory.EntityType_SYSTEM:
+		ent.avatar = &image{
+			URL:    "http://carefront-static.s3.amazonaws.com/icon_rx_large?system",
+			Width:  72,
+			Height: 72,
+		}
+	case directory.EntityType_EXTERNAL:
+		// For external entities without names we use contact info for the name. In that case we want an icon for an avatar matching the type of contact.
+		// TODO: this is checking for an entity that's using contact info for the displayName. this needs
+		//       to be handled better going forward but can't think of a better way for now.
+		if ent.FirstName == "" || ent.LastName == "" {
+			for _, c := range e.Contacts {
+				switch c.ContactType {
+				case directory.ContactType_PHONE:
+					ent.avatar = &image{
+						URL:    "http://carefront-static.s3.amazonaws.com/icon_rx_large?phone",
+						Width:  72,
+						Height: 72,
+					}
+				case directory.ContactType_EMAIL:
+					ent.avatar = &image{
+						URL:    "http://carefront-static.s3.amazonaws.com/icon_rx_large?email",
+						Width:  72,
+						Height: 72,
+					}
+				default:
+					ent.avatar = &image{
+						URL:    "http://carefront-static.s3.amazonaws.com/icon_rx_large?other",
+						Width:  72,
+						Height: 72,
+					}
+				}
+				break
+			}
+		}
+	}
+	return ent, nil
 }
 
 func transformOrganizationToResponse(org *directory.Entity, provider *directory.Entity) (*organization, error) {

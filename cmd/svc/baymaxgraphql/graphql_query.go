@@ -157,7 +157,11 @@ func lookupThreadWithReadStatus(ctx context.Context, svc *service, acc *account,
 
 	ent, err := svc.entityForAccountID(ctx, th.OrganizationID, acc.ID)
 	if err != nil || ent == nil {
-		golog.Errorf("Unable to find entity for account/org: %s/%s - %s", acc.ID, th.OrganizationID, err)
+		if err == nil {
+			golog.Errorf("Unable to find entity for account/org: %s/%s", acc.ID, th.OrganizationID)
+		} else {
+			golog.Errorf("Unable to find entity for account/org: %s/%s [%s]", acc.ID, th.OrganizationID, err)
+		}
 		return nil, errors.New("Unable to retrieve thread")
 	}
 	return lookupThread(ctx, svc, id, ent.ID)
