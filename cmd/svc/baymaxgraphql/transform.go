@@ -74,6 +74,7 @@ func transformThreadToResponse(t *threading.Thread) (*thread, error) {
 		Subtitle:             t.LastMessageSummary,
 		LastMessageTimestamp: t.LastMessageTimestamp,
 		Unread:               t.Unread,
+		LastPrimaryEntityEndpoints: make([]*endpoint, len(t.LastPrimaryEntityEndpoints)),
 	}
 	for i, ep := range t.LastPrimaryEntityEndpoints {
 		th.LastPrimaryEntityEndpoints[i] = &endpoint{
