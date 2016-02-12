@@ -7,6 +7,7 @@ import (
 )
 
 func TestThreadID(t *testing.T) {
+	t.Parallel()
 	var id ThreadID
 	id.Prefix = threadIDPrefix
 

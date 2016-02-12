@@ -25,6 +25,7 @@ type gql struct {
 }
 
 func newGQL(t *testing.T) *gql {
+	t.Parallel()
 	var g gql
 	g.authC = authmock.New(t)
 	g.dirC = dirmock.New(t)

@@ -25,6 +25,7 @@ func init() {
 }
 
 func TestCreateSavedQuery(t *testing.T) {
+	t.Parallel()
 	dl := newMockDAL(t)
 	defer dl.Finish()
 	eid, err := models.NewSavedQueryID()
@@ -46,6 +47,7 @@ func TestCreateSavedQuery(t *testing.T) {
 }
 
 func TestCreateEmptyThread(t *testing.T) {
+	t.Parallel()
 	dl := newMockDAL(t)
 	defer dl.Finish()
 
@@ -91,6 +93,7 @@ func TestCreateEmptyThread(t *testing.T) {
 }
 
 func TestCreateThread(t *testing.T) {
+	t.Parallel()
 	dl := newMockDAL(t)
 	defer dl.Finish()
 	now := time.Now()
@@ -197,6 +200,7 @@ func TestCreateThread(t *testing.T) {
 }
 
 func TestThreadItem(t *testing.T) {
+	t.Parallel()
 	dl := newMockDAL(t)
 	defer dl.Finish()
 	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil)
@@ -259,6 +263,7 @@ func TestThreadItem(t *testing.T) {
 }
 
 func TestQueryThreads(t *testing.T) {
+	t.Parallel()
 	dl := newMockDAL(t)
 	defer dl.Finish()
 	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil)
@@ -334,6 +339,7 @@ func TestQueryThreads(t *testing.T) {
 }
 
 func TestQueryThreadsWithViewer(t *testing.T) {
+	t.Parallel()
 	dl := newMockDAL(t)
 	defer dl.Finish()
 	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil)
@@ -435,6 +441,7 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 }
 
 func TestThread(t *testing.T) {
+	t.Parallel()
 	dl := newMockDAL(t)
 	defer dl.Finish()
 	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil)
@@ -468,6 +475,7 @@ func TestThread(t *testing.T) {
 }
 
 func TestThreadWithViewer(t *testing.T) {
+	t.Parallel()
 	dl := newMockDAL(t)
 	defer dl.Finish()
 	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil)
@@ -513,6 +521,7 @@ func TestThreadWithViewer(t *testing.T) {
 }
 
 func TestThreadWithViewerNoMembership(t *testing.T) {
+	t.Parallel()
 	dl := newMockDAL(t)
 	defer dl.Finish()
 	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil)
@@ -550,6 +559,7 @@ func TestThreadWithViewerNoMembership(t *testing.T) {
 }
 
 func TestSavedQuery(t *testing.T) {
+	t.Parallel()
 	dl := newMockDAL(t)
 	defer dl.Finish()
 	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil)
@@ -581,6 +591,7 @@ func TestSavedQuery(t *testing.T) {
 }
 
 func TestMarkThreadAsRead(t *testing.T) {
+	t.Parallel()
 	dl := newMockDAL(t)
 	defer dl.Finish()
 	tID, err := models.NewThreadID()
@@ -635,6 +646,7 @@ func TestMarkThreadAsRead(t *testing.T) {
 }
 
 func TestMarkThreadAsReadNilLastView(t *testing.T) {
+	t.Parallel()
 	dl := newMockDAL(t)
 	defer dl.Finish()
 	tID, err := models.NewThreadID()
@@ -693,6 +705,7 @@ func TestMarkThreadAsReadNilLastView(t *testing.T) {
 }
 
 func TestMarkThreadAsReadExistingMembership(t *testing.T) {
+	t.Parallel()
 	dl := newMockDAL(t)
 	defer dl.Finish()
 	tID, err := models.NewThreadID()
@@ -743,6 +756,7 @@ func TestMarkThreadAsReadExistingMembership(t *testing.T) {
 }
 
 func TestNotifyMembersOfPublishMessage(t *testing.T) {
+	t.Parallel()
 	dl := newMockDAL(t)
 	defer dl.Finish()
 	directoryClient := mock_directory.New(t)
@@ -799,6 +813,7 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 }
 
 func TestDeleteThread(t *testing.T) {
+	t.Parallel()
 	dl := newMockDAL(t)
 	defer dl.Finish()
 

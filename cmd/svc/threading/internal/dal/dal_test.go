@@ -8,6 +8,7 @@ import (
 )
 
 func TestTimeCursor(t *testing.T) {
+	t.Parallel()
 	tm := time.Unix(1, 234567890)
 
 	// sanity check mainly for documentation purposes

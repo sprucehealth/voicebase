@@ -100,11 +100,18 @@ if [[ ! -z "$FULLCOVERAGE" ]]; then
         fi
     done
 elif [[ ! -z "$NO_INTEGRATION_TESTS" ]]; then
+    # for PKG in $PKGS; do
+    #     if [[ ! "$PKG" == *"/test/"* ]]; then
+    #         go test -cover -covermode=set -coverprofile="$PKG/cover.out" -test.parallel 4 "$PKG"
+    #     fi
+    # done
+    TESTPKGS=""
     for PKG in $PKGS; do
         if [[ ! "$PKG" == *"/test/"* ]]; then
-            go test -cover -covermode=set -coverprofile="$PKG/cover.out" -test.parallel 4 "$PKG"
+            TESTPKGS+="$PKG "
         fi
     done
+    go test $TESTPKGS
 else
     for PKG in $PKGS; do
         if [[ "$PKG" == *"/test/"* ]]; then
@@ -115,10 +122,12 @@ else
     done
 fi
 
-go run docker-ci/covermerge.go ./coverage-$BUILD_NUMBER.out ./
-go tool cover -html=coverage-$BUILD_NUMBER.out -o coverage.html
-cp coverage.html coverage-$BUILD_NUMBER.html
-go tool cover -func=coverage-$BUILD_NUMBER.out | grep "total:" | tee -a $PHABRICATOR_COMMENT
+if [[ -z "$NO_INTEGRATION_TESTS" ]]; then
+    go run docker-ci/covermerge.go ./coverage-$BUILD_NUMBER.out ./
+    go tool cover -html=coverage-$BUILD_NUMBER.out -o coverage.html
+    cp coverage.html coverage-$BUILD_NUMBER.html
+    go tool cover -func=coverage-$BUILD_NUMBER.out | grep "total:" | tee -a $PHABRICATOR_COMMENT
+fi
 
 flow version | tee -a $PHABRICATOR_COMMENT
 npm version | tee -a $PHABRICATOR_COMMENT
