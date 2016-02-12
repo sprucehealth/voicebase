@@ -287,8 +287,12 @@ var unauthenticateMutation = &graphql.Field{
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
 		ctx := p.Context
-		input := p.Args["input"].(map[string]interface{})
-		mutationID, _ := input["clientMutationId"].(string)
+		input, _ := p.Args["input"].(map[string]interface{})
+		var mutationID string
+		if input != nil {
+			mutationID, _ = input["clientMutationId"].(string)
+		}
+
 		token := authTokenFromContext(ctx)
 		if token != "" {
 			_, err := svc.auth.Unauthenticate(ctx, &auth.UnauthenticateRequest{Token: token})
