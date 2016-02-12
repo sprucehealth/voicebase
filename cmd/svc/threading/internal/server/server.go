@@ -152,17 +152,16 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	if in.Source == nil {
 		return nil, grpc.Errorf(codes.InvalidArgument, "Source is required")
 	}
-	if in.Title == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "Title is required")
-	}
 	if in.Summary == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "Summary is required")
 	}
 	if len(in.Summary) > maxSummaryLength {
 		in.Summary = in.Summary[:maxSummaryLength]
 	}
-	if _, err := bml.Parse(in.Title); err != nil {
-		return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Title is invalid format: %s", err.Error()))
+	if in.Title != "" {
+		if _, err := bml.Parse(in.Title); err != nil {
+			return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Title is invalid format: %s", err.Error()))
+		}
 	}
 	var err error
 	var textRefs []*models.Reference
@@ -335,17 +334,16 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	if in.Source == nil {
 		return nil, grpc.Errorf(codes.InvalidArgument, "Source is required")
 	}
-	if in.Title == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "Title is required")
-	}
 	if in.Summary == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "Summary is required")
 	}
 	if len(in.Summary) > maxSummaryLength {
 		in.Summary = in.Summary[:maxSummaryLength]
 	}
-	if _, err := bml.Parse(in.Title); err != nil {
-		return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Title is invalid format: %s", err.Error()))
+	if in.Title != "" {
+		if _, err := bml.Parse(in.Title); err != nil {
+			return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Title is invalid format: %s", err.Error()))
+		}
 	}
 	var textRefs []*models.Reference
 	in.Text, textRefs, err = parseRefsAndNormalize(in.Text)
