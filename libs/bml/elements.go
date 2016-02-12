@@ -2,6 +2,7 @@ package bml
 
 import (
 	"fmt"
+	"net/url"
 	"reflect"
 	"strings"
 )
@@ -41,6 +42,13 @@ type Ref struct {
 	Text    string  `xml:",chardata"`
 }
 
+// Anchor tag links to a URL
+type Anchor struct {
+	XMLName string `xml:"a"`
+	HREF    string `xml:"href,attr"`
+	Text    string `xml:",chardata"`
+}
+
 // Validate implements the Validator interface
 func (r *Ref) Validate() error {
 	// TODO: this should happen during unmarshal but for now it's fine here since
@@ -60,5 +68,25 @@ func (r *Ref) Validate() error {
 
 // PlainText implements the PlainTexter interface
 func (r *Ref) PlainText() (string, error) {
+	return r.Text, nil
+}
+
+// Validate implements the Validator interface
+func (r *Anchor) Validate() error {
+	if r.HREF == "" {
+		return ErrValidation{Element: "a", Reason: "href required"}
+	}
+	u, err := url.Parse(r.HREF)
+	if err != nil {
+		return ErrValidation{Element: "a", Reason: "href is not a valid URL"}
+	}
+	// TODO: this should happen during unmarshal but for now it's fine here since
+	// it adds less complexity and validate is always called before marshal.
+	r.HREF = u.String()
+	return nil
+}
+
+// PlainText implements the PlainTexter interface
+func (r *Anchor) PlainText() (string, error) {
 	return r.Text, nil
 }
