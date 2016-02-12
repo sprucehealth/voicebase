@@ -144,25 +144,17 @@ var queryType = graphql.NewObject(
 
 // TODO: This double read is inefficent/incorrect in the sense that we need the org ID to get the correct entity. We will use this for now until we can encode the organization ID into the thread ID
 func lookupThreadWithReadStatus(ctx context.Context, svc *service, acc *account, id string) (interface{}, error) {
-	ith, err := lookupThread(ctx, svc, id, "")
+	th, err := lookupThread(ctx, svc, id, "")
 	if err != nil {
-		golog.Errorf(err.Error())
-		return nil, errors.New("Unable to retrieve thread")
+		return nil, internalError(ctx, err)
 	}
-	th, ok := ith.(*thread)
-	if !ok {
-		golog.Errorf("Expected *thread to be returned but got %T:%+v", ith, ith)
-		return nil, errors.New("Unable to retrieve thread")
-	}
-
 	ent, err := svc.entityForAccountID(ctx, th.OrganizationID, acc.ID)
-	if err != nil || ent == nil {
-		if err == nil {
-			golog.Errorf("Unable to find entity for account/org: %s/%s", acc.ID, th.OrganizationID)
-		} else {
-			golog.Errorf("Unable to find entity for account/org: %s/%s [%s]", acc.ID, th.OrganizationID, err)
-		}
-		return nil, errors.New("Unable to retrieve thread")
+	if err != nil {
+		return nil, internalError(ctx, err)
+	}
+	if ent == nil {
+		golog.Debugf("Account %s not a member of organization %d", acc.ID, th.OrganizationID)
+		return nil, userError(ctx, errTypeNotAuthorized, "You are not a member of the organzation")
 	}
 	return lookupThread(ctx, svc, id, ent.ID)
 }

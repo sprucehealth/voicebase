@@ -271,7 +271,7 @@ var threadType = graphql.NewObject(
 	},
 )
 
-func lookupThread(ctx context.Context, svc *service, id, viewerEntityID string) (interface{}, error) {
+func lookupThread(ctx context.Context, svc *service, id, viewerEntityID string) (*thread, error) {
 	tres, err := svc.threading.Thread(ctx, &threading.ThreadRequest{
 		ThreadID:       id,
 		ViewerEntityID: viewerEntityID,
