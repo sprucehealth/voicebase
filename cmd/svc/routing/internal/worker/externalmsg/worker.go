@@ -267,9 +267,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 	case excomms.PublishedExternalMessage_SMS:
 		endpointChannel = threading.Endpoint_SMS
 		text = pem.GetSMSItem().Text
-		title = bml.Parsef("%s texted %s",
-			&bml.Ref{Type: bml.EntityRef, ID: fromEntity.ID, Text: fromName},
-			&bml.Ref{Type: bml.EntityRef, ID: toEntity.ID, Text: toName})
+		title = bml.BML{"SMS"}
 		summary = fmt.Sprintf("%s: %s", fromName, text)
 
 		// populate attachments
@@ -288,18 +286,19 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 
 	case excomms.PublishedExternalMessage_INCOMING_CALL_EVENT:
 		endpointChannel = threading.Endpoint_VOICE
-		title = bml.Parsef("%s called %s",
-			&bml.Ref{Type: bml.EntityRef, ID: fromEntity.ID, Text: fromName},
-			&bml.Ref{Type: bml.EntityRef, ID: toEntity.ID, Text: toName})
 		switch pem.GetIncoming().Type {
 		case excomms.IncomingCallEventItem_ANSWERED:
-			title = append(title, ", answered")
+			if d := pem.GetIncoming().DurationInSeconds; d != 0 {
+				title = bml.BML{fmt.Sprintf("Inbound call, %d:%02ds", d/60, d%60)}
+			} else {
+				title = bml.BML{"Inbound call, answered"}
+			}
 			summary = "Called, answered"
 		case excomms.IncomingCallEventItem_UNANSWERED:
-			title = append(title, ", no answer")
+			title = bml.BML{"Inbound call, no answer"}
 			summary = "Called, no answer"
 		case excomms.IncomingCallEventItem_LEFT_VOICEMAIL:
-			title = append(title, ", left voicemail")
+			title = bml.BML{"Voicemail"}
 			summary = "Called, left voicemail"
 			attachments = []*threading.Attachment{
 				{
@@ -315,29 +314,27 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 		}
 	case excomms.PublishedExternalMessage_OUTGOING_CALL_EVENT:
 		endpointChannel = threading.Endpoint_VOICE
-		title = bml.Parsef("%s called %s",
-			&bml.Ref{Type: bml.EntityRef, ID: fromEntity.ID, Text: fromName},
-			&bml.Ref{Type: bml.EntityRef, ID: toEntity.ID, Text: toName})
 
 		switch pem.GetOutgoing().Type {
 		case excomms.OutgoingCallEventItem_PLACED:
+			title = bml.BML{"Outbound call"}
 		case excomms.OutgoingCallEventItem_ANSWERED:
-			title = append(title, ", answered")
+			if d := pem.GetOutgoing().DurationInSeconds; d != 0 {
+				title = bml.BML{fmt.Sprintf("Outbound call, %d:%02ds", d/60, d%60)}
+			} else {
+				title = bml.BML{"Outbound call, answered"}
+			}
 			summary = fmt.Sprintf("%s called %s, answered", fromName, toName)
 		case excomms.OutgoingCallEventItem_UNANSWERED:
-			title = append(title, ", no answer")
+			title = bml.BML{"Outbound call, no answer"}
 			summary = fmt.Sprintf("%s called %s, no answer", fromName, toName)
 		}
 
 	case excomms.PublishedExternalMessage_EMAIL:
 		endpointChannel = threading.Endpoint_EMAIL
-		text = pem.GetEmailItem().Body
 		subject := pem.GetEmailItem().Subject
-		title = bml.Parsef("%s emailed %s, Subject: %s",
-			&bml.Ref{Type: bml.EntityRef, ID: fromEntity.ID, Text: fromName},
-			&bml.Ref{Type: bml.EntityRef, ID: toEntity.ID, Text: toName},
-			subject,
-		)
+		text = fmt.Sprintf("Subject: %s\n\n%s", subject, pem.GetEmailItem().Body)
+		title = bml.BML{"Email"}
 		summary = fmt.Sprintf("Subject: %s", subject)
 
 		for _, attachmentItem := range pem.GetEmailItem().Attachments {

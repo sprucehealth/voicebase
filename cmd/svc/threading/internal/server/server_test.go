@@ -287,7 +287,7 @@ func TestQueryThreads(t *testing.T) {
 					LastMessageTimestamp: now,
 					LastPrimaryEntityEndpoints: models.EndpointList{
 						Endpoints: []*models.Endpoint{
-							&models.Endpoint{
+							{
 								Channel: models.Endpoint_SMS,
 								ID:      "+1234567890",
 							},
@@ -321,7 +321,7 @@ func TestQueryThreads(t *testing.T) {
 					PrimaryEntityID:      peID,
 					LastMessageTimestamp: uint64(now.Unix()),
 					LastPrimaryEntityEndpoints: []*threading.Endpoint{
-						&threading.Endpoint{
+						{
 							Channel: threading.Endpoint_SMS,
 							ID:      "+1234567890",
 						},
@@ -378,12 +378,12 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 	// Since we have a viewer associated with this query, expect the memberships to be queried to populate read status
 	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{tID, tID2}, peID, false).WithReturns(
 		[]*models.ThreadMember{
-			&models.ThreadMember{
+			{
 				ThreadID:   tID,
 				EntityID:   peID,
 				LastViewed: ptr.Time(time.Unix(1, 1)),
 			},
-			&models.ThreadMember{
+			{
 				ThreadID:   tID2,
 				EntityID:   peID,
 				LastViewed: ptr.Time(now),
@@ -488,7 +488,7 @@ func TestThreadWithViewer(t *testing.T) {
 	// Since we have a viewer associated with this query, expect the memberships to be queried to populate read status
 	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{thID}, entID, false).WithReturns(
 		[]*models.ThreadMember{
-			&models.ThreadMember{
+			{
 				ThreadID:   thID,
 				EntityID:   entID,
 				LastViewed: ptr.Time(time.Unix(1, 1)),
@@ -598,7 +598,7 @@ func TestMarkThreadAsRead(t *testing.T) {
 	// Lookup the membership of the viewer in the threads records
 	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{tID}, eID, true).WithReturns(
 		[]*models.ThreadMember{
-			&models.ThreadMember{
+			{
 				ThreadID:   tID,
 				EntityID:   eID,
 				LastViewed: lView,
@@ -614,12 +614,12 @@ func TestMarkThreadAsRead(t *testing.T) {
 
 	// Create a view record for each of those items
 	dl.Expect(mock.NewExpectation(dl.CreateThreadItemViewDetails, []*models.ThreadItemViewDetails{
-		&models.ThreadItemViewDetails{
+		{
 			ThreadItemID:  tiID1,
 			ActorEntityID: eID,
 			ViewTime:      ptr.Time(readTime),
 		},
-		&models.ThreadItemViewDetails{
+		{
 			ThreadItemID:  tiID2,
 			ActorEntityID: eID,
 			ViewTime:      ptr.Time(readTime),
@@ -652,7 +652,7 @@ func TestMarkThreadAsReadNilLastView(t *testing.T) {
 	// Lookup the membership of the viewer in the threads records
 	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{tID}, eID, true).WithReturns(
 		[]*models.ThreadMember{
-			&models.ThreadMember{
+			{
 				ThreadID:   tID,
 				EntityID:   eID,
 				LastViewed: nil,
@@ -672,12 +672,12 @@ func TestMarkThreadAsReadNilLastView(t *testing.T) {
 
 	// Create a view record for each of those items
 	dl.Expect(mock.NewExpectation(dl.CreateThreadItemViewDetails, []*models.ThreadItemViewDetails{
-		&models.ThreadItemViewDetails{
+		{
 			ThreadItemID:  tiID1,
 			ActorEntityID: eID,
 			ViewTime:      ptr.Time(readTime),
 		},
-		&models.ThreadItemViewDetails{
+		{
 			ThreadItemID:  tiID2,
 			ActorEntityID: eID,
 			ViewTime:      ptr.Time(readTime),
@@ -722,12 +722,12 @@ func TestMarkThreadAsReadExistingMembership(t *testing.T) {
 
 	// Create a view record for each of those items
 	dl.Expect(mock.NewExpectation(dl.CreateThreadItemViewDetails, []*models.ThreadItemViewDetails{
-		&models.ThreadItemViewDetails{
+		{
 			ThreadItemID:  tiID1,
 			ActorEntityID: eID,
 			ViewTime:      ptr.Time(readTime),
 		},
-		&models.ThreadItemViewDetails{
+		{
 			ThreadItemID:  tiID2,
 			ActorEntityID: eID,
 			ViewTime:      ptr.Time(readTime),
@@ -773,14 +773,14 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 		},
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
-			&directory.Entity{
+			{
 				ID: orgID,
 				Members: []*directory.Entity{
-					&directory.Entity{ID: "notify1", Type: directory.EntityType_INTERNAL},
-					&directory.Entity{ID: "notify2", Type: directory.EntityType_INTERNAL},
-					&directory.Entity{ID: publishingEntity, Type: directory.EntityType_INTERNAL},
-					&directory.Entity{ID: "doNotNotify", Type: directory.EntityType_ORGANIZATION},
-					&directory.Entity{ID: "doNotNotify2", Type: directory.EntityType_EXTERNAL},
+					{ID: "notify1", Type: directory.EntityType_INTERNAL},
+					{ID: "notify2", Type: directory.EntityType_INTERNAL},
+					{ID: publishingEntity, Type: directory.EntityType_INTERNAL},
+					{ID: "doNotNotify", Type: directory.EntityType_ORGANIZATION},
+					{ID: "doNotNotify2", Type: directory.EntityType_EXTERNAL},
 				},
 			},
 		},

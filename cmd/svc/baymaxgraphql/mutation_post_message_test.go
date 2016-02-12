@@ -109,7 +109,7 @@ func TestPostMessage(t *testing.T) {
 			},
 		},
 		Text:    "foo",
-		Title:   `<ref id="e1" type="entity">Schmee</ref> texted <ref id="e2" type="entity">Barro</ref>`,
+		Title:   `SMS`,
 		Summary: `Schmee: foo`,
 	}).WithReturns(&threading.PostMessageResponse{
 		Thread: &threading.Thread{
@@ -139,7 +139,7 @@ func TestPostMessage(t *testing.T) {
 							ID:      entPhoneNumber,
 						},
 					},
-					Title:   `<ref id="e1" type="entity">Schmee</ref> texted <ref id="e2" type="entity">Barro</ref>`,
+					Title:   `SMS`,
 					Summary: `Schmee: foo`,
 					TextRefs: []*threading.Reference{
 						{Type: threading.Reference_ENTITY, ID: entID},
@@ -210,7 +210,7 @@ func TestPostMessage(t *testing.T) {
 					},
 					"data": {
 						"__typename": "Message",
-						"summaryMarkup": "\u003cref id=\"e1\" type=\"entity\"\u003eSchmee\u003c/ref\u003e texted \u003cref id=\"e2\" type=\"entity\"\u003eBarro\u003c/ref\u003e",
+						"summaryMarkup": "SMS",
 						"textMarkup": "foo"
 					},
 					"id": "ti1",

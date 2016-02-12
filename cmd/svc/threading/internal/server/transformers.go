@@ -93,10 +93,6 @@ func transformThreadItemToResponse(item *models.ThreadItem, orgID string) (*thre
 			EditorEntityID:  m.EditorEntityID,
 			TextRefs:        make([]*threading.Reference, len(m.TextRefs)),
 		}
-		// TODO: this is temporary since old messages don't have a title
-		if m2.Title == "" {
-			m2.Title = m2.Source.ID
-		}
 		for i, r := range m.TextRefs {
 			var err error
 			m2.TextRefs[i], err = transformReferenceToResponse(r)
