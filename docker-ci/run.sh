@@ -73,7 +73,7 @@ echo "VET"
 echo $PKGS | xargs go vet | tee -a $PHABRICATOR_COMMENT
 
 echo "LINT"
-echo $PKGS | xargs -n 1 golint | grep -v "_test.go" | grep -v ".pb.go"
+#echo $PKGS | xargs -n 1 golint | grep -v "_test.go" | grep -v ".pb.go"
 
 echo "BUILDING TESTS"
 echo $PKGS | xargs go test -i
