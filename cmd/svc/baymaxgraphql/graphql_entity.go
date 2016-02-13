@@ -166,7 +166,7 @@ func lookupEntity(ctx context.Context, svc *service, id string) (interface{}, er
 				}
 			}
 			return org, nil
-		case directory.EntityType_INTERNAL, directory.EntityType_EXTERNAL:
+		case directory.EntityType_INTERNAL, directory.EntityType_EXTERNAL, directory.EntityType_SYSTEM:
 			e, err := transformEntityToResponse(em)
 			if err != nil {
 				return nil, internalError(ctx, err)
