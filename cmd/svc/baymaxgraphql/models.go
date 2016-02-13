@@ -52,6 +52,7 @@ type entity struct {
 	LongTitle     string         `json:"longTitle"`
 	Note          string         `json:"note"`
 	Contacts      []*contactInfo `json:"contacts"`
+	IsInternal    bool           `json:"isInternal"`
 
 	avatar *image
 }

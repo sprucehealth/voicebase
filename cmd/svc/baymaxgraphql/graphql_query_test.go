@@ -113,6 +113,7 @@ func TestNodeQuery(t *testing.T) {
 			IsEditable:  true,
 			DisplayName: "Mem",
 			Contacts:    []*contactInfo{},
+			IsInternal:  true,
 		},
 	}, res)
 	mock.FinishAll(dirC)
@@ -140,7 +141,7 @@ func TestNodeQuery(t *testing.T) {
 		&directory.LookupEntitiesResponse{
 			Entities: []*directory.Entity{
 				{
-					Type: directory.EntityType_INTERNAL,
+					Type: directory.EntityType_EXTERNAL,
 					ID:   id,
 					Info: &directory.EntityInfo{
 						DisplayName: "Someone",
@@ -151,7 +152,7 @@ func TestNodeQuery(t *testing.T) {
 		nil))
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, &entity{ID: id, IsEditable: true, DisplayName: "Someone", Contacts: []*contactInfo{}}, res)
+	test.Equals(t, &entity{ID: id, IsEditable: true, IsInternal: false, DisplayName: "Someone", Contacts: []*contactInfo{}}, res)
 	mock.FinishAll(dirC)
 
 	// Thread

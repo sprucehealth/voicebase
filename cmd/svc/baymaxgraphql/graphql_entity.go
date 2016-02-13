@@ -115,6 +115,7 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 				return entity.avatar, nil
 			},
 		},
+		"isInternal": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 	},
 })
 

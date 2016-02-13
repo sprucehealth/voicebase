@@ -222,6 +222,7 @@ func transformEntityToResponse(e *directory.Entity) (*entity, error) {
 		ShortTitle:    e.Info.ShortTitle,
 		LongTitle:     e.Info.LongTitle,
 		Note:          e.Info.Note,
+		IsInternal:    e.Type == directory.EntityType_INTERNAL,
 	}
 	if ent.DisplayName == "" {
 		// TODO: the display name will eventually be generated in the diretory service but for now this is a safety check since this must never be empty
