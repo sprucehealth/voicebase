@@ -217,7 +217,9 @@ func (s *service) sendPushNotificationToExternalGroupID(externalGroupID string, 
 			MessageStructure: jsonStructure,
 			TargetArn:        ptr.String(pushConfig.PushEndpoint),
 		}); err != nil {
-			return errors.Trace(err)
+			golog.Errorf(err.Error())
+			// continue so that we do a best effort to publish to all endpoints.
+			continue
 		}
 	}
 	return nil
