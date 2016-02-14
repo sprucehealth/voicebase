@@ -273,7 +273,7 @@ type androidPushData struct {
 }
 
 func generateNotification(webDomain string, n *notification.Notification, pushConfig *dal.PushConfig) *snsNotification {
-	url := deeplink.ThreadMessageURL(webDomain, n.OrganizationID, n.SavedQueryID, n.ThreadID, n.MessageID)
+	url := deeplink.ThreadMessageURLShareable(webDomain, n.OrganizationID, n.ThreadID, n.MessageID)
 	isNotifData, err := json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
 			Alert: n.ShortMessage,

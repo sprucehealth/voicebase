@@ -324,7 +324,7 @@ func TestProcessNotification(t *testing.T) {
 	iData, err := json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
 			Alert: "ShortMessage",
-			URL:   deeplink.ThreadMessageURL("testDomain", "OrganizationID", "SavedQueryID", "ThreadID", "ItemID"),
+			URL:   deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 		},
 		ThreadID:       "ThreadID",
 		OrganizationID: "OrganizationID",
@@ -335,7 +335,7 @@ func TestProcessNotification(t *testing.T) {
 	aData, err := json.Marshal(&androidPushNotification{
 		PushData: &androidPushData{
 			Message:        "ShortMessage",
-			URL:            deeplink.ThreadMessageURL("testDomain", "OrganizationID", "SavedQueryID", "ThreadID", "ItemID"),
+			URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 			ThreadID:       "ThreadID",
 			OrganizationID: "OrganizationID",
 			MessageID:      "ItemID",
