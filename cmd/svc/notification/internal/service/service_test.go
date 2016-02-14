@@ -340,6 +340,7 @@ func TestProcessNotification(t *testing.T) {
 			OrganizationID: "OrganizationID",
 			MessageID:      "ItemID",
 			SavedQueryID:   "SavedQueryID",
+			PushID:         "thread:ThreadID",
 		},
 	})
 	test.OK(t, err)

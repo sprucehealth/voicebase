@@ -272,6 +272,7 @@ type androidPushData struct {
 	SavedQueryID   string `json:"saved_query_id"`
 	ThreadID       string `json:"thread_id"`
 	MessageID      string `json:"message_id"`
+	PushID         string `json:"push_id"`
 }
 
 func generateNotification(webDomain string, n *notification.Notification, pushConfig *dal.PushConfig) *snsNotification {
@@ -297,6 +298,7 @@ func generateNotification(webDomain string, n *notification.Notification, pushCo
 			SavedQueryID:   n.SavedQueryID,
 			ThreadID:       n.ThreadID,
 			MessageID:      n.MessageID,
+			PushID:         fmt.Sprintf("thread:%s", n.ThreadID),
 		},
 	})
 	if err != nil {
