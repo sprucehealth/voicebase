@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/directory/internal/dal"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -194,10 +195,6 @@ func (s *server) SerializedEntityContact(ctx context.Context, rd *directory.Seri
 }
 
 func (s *server) validateCreateEntityRequest(rd *directory.CreateEntityRequest) error {
-	golog.Debugf("Entering server.server.validateCreateEntityRequest: %+v", rd)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.server.validateCreateEntityRequest...") }()
-	}
 	if rd.Type != directory.EntityType_EXTERNAL && rd.EntityInfo.DisplayName == "" {
 		return grpcErrorf(codes.InvalidArgument, "DisplayName cannot be empty for non external entities")
 	}
@@ -607,11 +604,9 @@ func validateContact(contact *directory.Contact) error {
 			return fmt.Errorf("Invalid email: %s", contact.Value)
 		}
 	case directory.ContactType_PHONE:
-		/*
-			if _, err := common.ParsePhone(contact.Value); err != nil {
-				return fmt.Errorf("Invalid phone number: %s", contact.Value)
-			}
-		*/
+		if _, err := phone.ParseNumber(contact.Value); err != nil {
+			return fmt.Errorf("Invalid phone number: %s", contact.Value)
+		}
 	}
 	return nil
 }
@@ -724,10 +719,6 @@ func transformExternalIDs(dExternalEntityIDs []*dal.ExternalEntityID) []*directo
 }
 
 func getPBEntities(dl dal.DAL, dEntities []*dal.Entity, entityInformation []directory.EntityInformation, depth int64) ([]*directory.Entity, error) {
-	golog.Debugf("Entering server.getPBEntities: dEntities: %+v, entityInformation, %+v, depth: %d", dEntities, entityInformation, depth)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.getPBEntities...") }()
-	}
 	pbEntities := make([]*directory.Entity, len(dEntities))
 	for i, e := range dEntities {
 		pbEntity, err := getPBEntity(dl, e, entityInformation, depth)
@@ -741,10 +732,6 @@ func getPBEntities(dl dal.DAL, dEntities []*dal.Entity, entityInformation []dire
 
 // Note: How we optimize this deep crawl is very likely to change
 func getPBEntity(dl dal.DAL, dEntity *dal.Entity, entityInformation []directory.EntityInformation, depth int64) (*directory.Entity, error) {
-	golog.Debugf("Entering server.getPBEntity: dEntity: %+v, entityInformation, %+v, depth: %d", dEntity, entityInformation, depth)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.getPBEntity...") }()
-	}
 	entity := dalEntityAsPBEntity(dEntity)
 	if depth >= 0 {
 		if hasRequestedInfo(entityInformation, directory.EntityInformation_MEMBERSHIPS) {
@@ -781,10 +768,6 @@ func getPBEntity(dl dal.DAL, dEntity *dal.Entity, entityInformation []directory.
 }
 
 func getPBMemberships(dl dal.DAL, entityID dal.EntityID, entityInformation []directory.EntityInformation, depth int64) ([]*directory.Entity, error) {
-	golog.Debugf("Entering server.getPBMemberships - EntityID: %s, entityInformation: %+v, depth: %d", entityID, entityInformation, depth)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.getPBMemberships...") }()
-	}
 	memberships, err := dl.EntityMemberships(entityID)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -802,10 +785,6 @@ func getPBMemberships(dl dal.DAL, entityID dal.EntityID, entityInformation []dir
 }
 
 func getPBMembers(dl dal.DAL, entityID dal.EntityID, entityInformation []directory.EntityInformation, depth int64) ([]*directory.Entity, error) {
-	golog.Debugf("Entering server.getPBMembers - EntityID: %s, RequestedInformation: %v, depth: %d", entityID, entityInformation, depth)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.getPBMembers...") }()
-	}
 	members, err := dl.EntityMembers(entityID)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -815,10 +794,6 @@ func getPBMembers(dl dal.DAL, entityID dal.EntityID, entityInformation []directo
 }
 
 func getPBExternalIDs(dl dal.DAL, entityID dal.EntityID) ([]string, error) {
-	golog.Debugf("Entering server.getPBExternalIDs - EntityID: %s", entityID)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.getPBExternalIDs...") }()
-	}
 	externalIDs, err := dl.ExternalEntityIDsForEntities([]dal.EntityID{entityID})
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -831,10 +806,6 @@ func getPBExternalIDs(dl dal.DAL, entityID dal.EntityID) ([]string, error) {
 }
 
 func getPBEntityContacts(dl dal.DAL, entityID dal.EntityID) ([]*directory.Contact, error) {
-	golog.Debugf("Entering server.getPBEntityContacts - EntityID: %s", entityID)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.getPBEntityContacts...") }()
-	}
 	entityContacts, err := dl.EntityContacts(entityID)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -847,10 +818,6 @@ func getPBEntityContacts(dl dal.DAL, entityID dal.EntityID) ([]*directory.Contac
 }
 
 func dalEntityContactAsPBContact(dEntityContact *dal.EntityContact) *directory.Contact {
-	golog.Debugf("Entering server.dalEntityContactAsPBContact: %+v...", dEntityContact)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.dalEntityContactAsPBContact...") }()
-	}
 	contact := &directory.Contact{}
 	contact.Provisioned = dEntityContact.Provisioned
 	contactType, ok := directory.ContactType_value[dEntityContact.Type.String()]
@@ -865,10 +832,6 @@ func dalEntityContactAsPBContact(dEntityContact *dal.EntityContact) *directory.C
 }
 
 func dalEntityAsPBEntity(dEntity *dal.Entity) *directory.Entity {
-	golog.Debugf("Entering server.dalEntityAsPBEntity: %+v...", dEntity)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.dalEntityAsPBEntity...") }()
-	}
 	entity := &directory.Entity{}
 	entity.ID = dEntity.ID.String()
 	entityType, ok := directory.EntityType_value[dEntity.Type.String()]
@@ -891,12 +854,6 @@ func dalEntityAsPBEntity(dEntity *dal.Entity) *directory.Entity {
 
 // Note: Much letters. Many length. So convention.
 func dalSerializedClientEntityContactAsPBSerializedClientEntityContact(dSerializedClientEntityContact *dal.SerializedClientEntityContact) *directory.SerializedClientEntityContact {
-	golog.Debugf("Entering server.dalSerializedClientEntityContactAsPBSerializedClientEntityContact: %+v...", dSerializedClientEntityContact)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() {
-			golog.Debugf("Leaving server.dalSerializedClientEntityContactAsPBSerializedClientEntityContact...")
-		}()
-	}
 	serializedClientEntityContact := &directory.SerializedClientEntityContact{}
 	serializedClientEntityContact.EntityID = dSerializedClientEntityContact.EntityID.String()
 	platform, ok := directory.Platform_value[dSerializedClientEntityContact.Platform.String()]

@@ -182,11 +182,11 @@ func TestCreateEntityFull(t *testing.T) {
 	contacts := []*directory.Contact{
 		{
 			ContactType: directory.ContactType_PHONE,
-			Value:       "batphone", // This should break when phone validation is enabled
+			Value:       "+1234567890",
 		},
 		{
 			ContactType: directory.ContactType_EMAIL,
-			Value:       "bat@cave.com", // This should break when phone validation is enabled
+			Value:       "bat@cave.com",
 			Provisioned: true,
 		},
 	}
@@ -208,7 +208,7 @@ func TestCreateEntityFull(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.InsertEntityContact, &dal.EntityContact{
 		EntityID:    eID1,
 		Type:        dal.EntityContactTypePhone,
-		Value:       "batphone",
+		Value:       "+1234567890",
 		Provisioned: false,
 	}))
 	dl.Expect(mock.NewExpectation(dl.InsertEntityContact, &dal.EntityContact{
