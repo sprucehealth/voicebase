@@ -386,5 +386,5 @@ var passwordResetMutation = &graphql.Field{
 }
 
 func passwordResetURL(webDomain, passwordResetToken string) string {
-	return fmt.Sprintf("https://%s/account/passwordReset/%s", webDomain, passwordResetToken)
+	return fmt.Sprintf("https://%s/account/password-reset/%s", webDomain, passwordResetToken)
 }
