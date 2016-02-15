@@ -121,7 +121,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 
 	ctx := context.Background()
 
-	var toEntity, fromEntity, externalEntity *directory.Entity
+	var toEntities, fromEntities, externalEntities []*directory.Entity
 	var organizationID, externalChannelID string
 	var contactType directory.ContactType
 	switch pem.Type {
@@ -151,33 +151,43 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			}
 		}
 
-		toEntity = determineProviderOrOrgEntity(toEntityLookupRes, pem.ToChannelID)
+		toEntity := determineProviderOrOrgEntity(toEntityLookupRes, pem.ToChannelID)
 		if toEntity == nil {
 			return errors.Trace(fmt.Errorf("No organization or provider found for %s", pem.ToChannelID))
 		}
+		toEntities = []*directory.Entity{toEntity}
+
 		organizationID = determineOrganizationID(toEntity)
-		fromEntity = determineExternalEntity(fromEntityLookupRes, organizationID)
-		externalEntity = fromEntity
+		fromEntities = determineExternalEntities(fromEntityLookupRes, organizationID)
+		externalEntities = fromEntities
 		externalChannelID = pem.FromChannelID
 	case excomms.PublishedExternalMessage_OUTBOUND:
 		var err error
-		fromEntity, err = lookupEntity(ctx, pem.GetOutgoing().CallerEntityID, r.directory)
+		fromEntities, err = lookupEntities(ctx, pem.GetOutgoing().CallerEntityID, r.directory)
+		if err != nil {
+			return errors.Trace(err)
+		} else if len(fromEntities) != 1 {
+			return errors.Trace(fmt.Errorf("Expected 1 internal/organization entity but got back %d", len(fromEntities)))
+		}
+
+		toEntities, err = lookupEntities(ctx, pem.GetOutgoing().CalleeEntityID, r.directory)
 		if err != nil {
 			return errors.Trace(err)
 		}
 
-		toEntity, err = lookupEntity(ctx, pem.GetOutgoing().CalleeEntityID, r.directory)
-		if err != nil {
-			return errors.Trace(err)
-		}
-
-		organizationID = determineOrganizationID(fromEntity)
-		externalEntity = toEntity
+		organizationID = determineOrganizationID(fromEntities[0])
+		externalEntities = toEntities
 		externalChannelID = pem.ToChannelID
 	}
 
-	if externalEntity != nil {
-		golog.Debugf("FromEntity for %s found. ID = %s", pem.FromChannelID, fromEntity.ID)
+	if len(externalEntities) > 0 {
+		if golog.Default().L(golog.DEBUG) {
+			externalEntityIDs := make([]string, len(externalEntities))
+			for i, externalEntity := range externalEntities {
+				externalEntityIDs[i] = externalEntity.ID
+			}
+			golog.Debugf("FromEntities for %s found. %s", pem.FromChannelID, externalEntities)
+		}
 	} else {
 		golog.Debugf("External entity for %s not found. Creating new entity...", pem.FromChannelID)
 		res, err := r.directory.CreateEntity(
@@ -206,240 +216,252 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			return errors.Trace(err)
 		}
 
-		externalEntity = res.Entity
+		externalEntities = []*directory.Entity{res.Entity}
 		if pem.Direction == excomms.PublishedExternalMessage_INBOUND {
+			fromEntities = externalEntities
+		}
+	}
+
+	for _, externalEntity := range externalEntities {
+
+		// now that to and from entities have been resolved, post the message to the appropriate
+		// thread.
+		threadsForMemberRes, err := r.threading.ThreadsForMember(
+			ctx,
+			&threading.ThreadsForMemberRequest{
+				EntityID:    externalEntity.ID,
+				PrimaryOnly: true,
+			},
+		)
+		if err != nil {
+			return errors.Trace(err)
+		}
+
+		// Note: assumption is that there is only one external thread for the entity.
+		var externalThread *threading.Thread
+		for _, thread := range threadsForMemberRes.Threads {
+			if thread.PrimaryEntityID == externalEntity.ID {
+				externalThread = thread
+				break
+			}
+		}
+
+		var endpointChannel threading.Endpoint_Channel
+		var attachments []*threading.Attachment
+		var text string
+		var summary string
+		var title bml.BML
+		var fromName, toName string
+		var fromEntity, toEntity *directory.Entity
+
+		switch pem.Direction {
+		case excomms.PublishedExternalMessage_INBOUND:
+			fromName = determineDisplayName(pem.FromChannelID, contactType, externalEntity)
 			fromEntity = externalEntity
-		}
-	}
-
-	// now that to and from entities have been resolved, post the message to the appropriate
-	// thread.
-	threadsForMemberRes, err := r.threading.ThreadsForMember(
-		ctx,
-		&threading.ThreadsForMemberRequest{
-			EntityID:    externalEntity.ID,
-			PrimaryOnly: true,
-		},
-	)
-	if err != nil {
-		return errors.Trace(err)
-	}
-
-	// Note: assumption is that there is only one external thread for the entity.
-	var externalThread *threading.Thread
-	for _, thread := range threadsForMemberRes.Threads {
-		if thread.PrimaryEntityID == externalEntity.ID {
-			externalThread = thread
-			break
-		}
-	}
-
-	var endpointChannel threading.Endpoint_Channel
-	var attachments []*threading.Attachment
-	var text string
-	var summary string
-	var title bml.BML
-
-	fromName := pem.FromChannelID
-	if fromEntity.Info != nil && fromEntity.Info.DisplayName != "" {
-		fromName = fromEntity.Info.DisplayName
-	} else if contactType == directory.ContactType_PHONE {
-		formattedPhone, err := phone.Format(fromName, phone.Pretty)
-		if err == nil {
-			fromName = formattedPhone
-		}
-	}
-	toName := pem.ToChannelID
-	if toEntity.Info != nil && toEntity.Info.DisplayName != "" {
-		toName = toEntity.Info.DisplayName
-	} else if contactType == directory.ContactType_PHONE {
-		formattedPhone, err := phone.Format(toName, phone.Pretty)
-		if err == nil {
-			toName = formattedPhone
-		}
-	}
-
-	// TODO: The creation of this mesage should not be the responsibility
-	// of the routing layer. It should probably be the responsibility of the
-	// external communications layer before it is published.
-	switch pem.Type {
-
-	case excomms.PublishedExternalMessage_SMS:
-		endpointChannel = threading.Endpoint_SMS
-		text = pem.GetSMSItem().Text
-		title = bml.BML{"SMS"}
-		summary = fmt.Sprintf("%s: %s", fromName, text)
-
-		// populate attachments
-		attachments = make([]*threading.Attachment, len(pem.GetSMSItem().Attachments))
-		for i, a := range pem.GetSMSItem().Attachments {
-			attachments[i] = &threading.Attachment{
-				Type: threading.Attachment_IMAGE,
-				Data: &threading.Attachment_Image{
-					Image: &threading.ImageAttachment{
-						Mimetype: a.ContentType,
-						URL:      a.URL,
-					},
-				},
-			}
+			toName = determineDisplayName(pem.ToChannelID, contactType, toEntities[0])
+			toEntity = toEntities[0]
+		case excomms.PublishedExternalMessage_OUTBOUND:
+			fromName = determineDisplayName(pem.FromChannelID, contactType, fromEntities[0])
+			fromEntity = fromEntities[0]
+			toName = determineDisplayName(pem.ToChannelID, contactType, externalEntity)
+			toEntity = externalEntity
 		}
 
-	case excomms.PublishedExternalMessage_INCOMING_CALL_EVENT:
-		endpointChannel = threading.Endpoint_VOICE
-		switch pem.GetIncoming().Type {
-		case excomms.IncomingCallEventItem_ANSWERED:
-			if d := pem.GetIncoming().DurationInSeconds; d != 0 {
-				title = bml.BML{fmt.Sprintf("Inbound call, %d:%02ds", d/60, d%60)}
-			} else {
-				title = bml.BML{"Inbound call, answered"}
-			}
-			summary = "Called, answered"
-		case excomms.IncomingCallEventItem_UNANSWERED:
-			title = bml.BML{"Inbound call, no answer"}
-			summary = "Called, no answer"
-		case excomms.IncomingCallEventItem_LEFT_VOICEMAIL:
-			title = bml.BML{"Voicemail"}
-			summary = "Called, left voicemail"
-			attachments = []*threading.Attachment{
-				{
-					Type: threading.Attachment_AUDIO,
-					Data: &threading.Attachment_Audio{
-						Audio: &threading.AudioAttachment{
-							URL:               pem.GetIncoming().URL,
-							DurationInSeconds: pem.GetIncoming().DurationInSeconds,
-						},
-					},
-				},
-			}
-		}
-	case excomms.PublishedExternalMessage_OUTGOING_CALL_EVENT:
-		endpointChannel = threading.Endpoint_VOICE
+		// TODO: The creation of this mesage should not be the responsibility
+		// of the routing layer. It should probably be the responsibility of the
+		// external communications layer before it is published.
+		switch pem.Type {
 
-		switch pem.GetOutgoing().Type {
-		case excomms.OutgoingCallEventItem_PLACED:
-			title = bml.BML{"Outbound call"}
-			summary = fmt.Sprintf("%s called %s", fromName, toName)
-		case excomms.OutgoingCallEventItem_ANSWERED:
-			if d := pem.GetOutgoing().DurationInSeconds; d != 0 {
-				title = bml.BML{fmt.Sprintf("Outbound call, %d:%02ds", d/60, d%60)}
-			} else {
-				title = bml.BML{"Outbound call, answered"}
-			}
-			summary = fmt.Sprintf("%s called %s, answered", fromName, toName)
-		case excomms.OutgoingCallEventItem_UNANSWERED:
-			title = bml.BML{"Outbound call, no answer"}
-			summary = fmt.Sprintf("%s called %s, no answer", fromName, toName)
-		}
+		case excomms.PublishedExternalMessage_SMS:
+			endpointChannel = threading.Endpoint_SMS
+			text = pem.GetSMSItem().Text
+			title = bml.BML{"SMS"}
+			summary = fmt.Sprintf("%s: %s", fromName, text)
 
-	case excomms.PublishedExternalMessage_EMAIL:
-		endpointChannel = threading.Endpoint_EMAIL
-		subject := pem.GetEmailItem().Subject
-		text = fmt.Sprintf("Subject: %s\n\n%s", subject, pem.GetEmailItem().Body)
-		title = bml.BML{"Email"}
-		summary = fmt.Sprintf("Subject: %s", subject)
-
-		for _, attachmentItem := range pem.GetEmailItem().Attachments {
-			if strings.HasPrefix(attachmentItem.ContentType, "image") {
-				attachments = append(attachments, &threading.Attachment{
-					Type:  threading.Attachment_IMAGE,
-					Title: attachmentItem.Name,
+			// populate attachments
+			attachments = make([]*threading.Attachment, len(pem.GetSMSItem().Attachments))
+			for i, a := range pem.GetSMSItem().Attachments {
+				attachments[i] = &threading.Attachment{
+					Type: threading.Attachment_IMAGE,
 					Data: &threading.Attachment_Image{
 						Image: &threading.ImageAttachment{
-							Mimetype: attachmentItem.ContentType,
-							URL:      attachmentItem.URL,
+							Mimetype: a.ContentType,
+							URL:      a.URL,
 						},
 					},
-				})
-			} else {
-				attachments = append(attachments, &threading.Attachment{
-					Type:  threading.Attachment_GENERIC_URL,
-					Title: attachmentItem.Name,
-					Data: &threading.Attachment_GenericURL{
-						GenericURL: &threading.GenericURLAttachment{
-							Mimetype: attachmentItem.ContentType,
-							URL:      attachmentItem.URL,
+				}
+			}
+
+		case excomms.PublishedExternalMessage_INCOMING_CALL_EVENT:
+			endpointChannel = threading.Endpoint_VOICE
+			switch pem.GetIncoming().Type {
+			case excomms.IncomingCallEventItem_ANSWERED:
+				if d := pem.GetIncoming().DurationInSeconds; d != 0 {
+					title = bml.BML{fmt.Sprintf("Inbound call, %d:%02ds", d/60, d%60)}
+				} else {
+					title = bml.BML{"Inbound call, answered"}
+				}
+				summary = "Called, answered"
+			case excomms.IncomingCallEventItem_UNANSWERED:
+				title = bml.BML{"Inbound call, no answer"}
+				summary = "Called, no answer"
+			case excomms.IncomingCallEventItem_LEFT_VOICEMAIL:
+				title = bml.BML{"Voicemail"}
+				summary = "Called, left voicemail"
+				attachments = []*threading.Attachment{
+					{
+						Type: threading.Attachment_AUDIO,
+						Data: &threading.Attachment_Audio{
+							Audio: &threading.AudioAttachment{
+								URL:               pem.GetIncoming().URL,
+								DurationInSeconds: pem.GetIncoming().DurationInSeconds,
+							},
 						},
 					},
-				})
+				}
+			}
+		case excomms.PublishedExternalMessage_OUTGOING_CALL_EVENT:
+			endpointChannel = threading.Endpoint_VOICE
+
+			switch pem.GetOutgoing().Type {
+			case excomms.OutgoingCallEventItem_PLACED:
+				title = bml.BML{"Outbound call"}
+				summary = fmt.Sprintf("%s called %s", fromName, toName)
+			case excomms.OutgoingCallEventItem_ANSWERED:
+				if d := pem.GetOutgoing().DurationInSeconds; d != 0 {
+					title = bml.BML{fmt.Sprintf("Outbound call, %d:%02ds", d/60, d%60)}
+				} else {
+					title = bml.BML{"Outbound call, answered"}
+				}
+				summary = fmt.Sprintf("%s called %s, answered", fromName, toName)
+			case excomms.OutgoingCallEventItem_UNANSWERED:
+				title = bml.BML{"Outbound call, no answer"}
+				summary = fmt.Sprintf("%s called %s, no answer", fromName, toName)
+			}
+
+		case excomms.PublishedExternalMessage_EMAIL:
+			endpointChannel = threading.Endpoint_EMAIL
+			subject := pem.GetEmailItem().Subject
+			text = fmt.Sprintf("Subject: %s\n\n%s", subject, pem.GetEmailItem().Body)
+			title = bml.BML{"Email"}
+			summary = fmt.Sprintf("Subject: %s", subject)
+
+			for _, attachmentItem := range pem.GetEmailItem().Attachments {
+				if strings.HasPrefix(attachmentItem.ContentType, "image") {
+					attachments = append(attachments, &threading.Attachment{
+						Type:  threading.Attachment_IMAGE,
+						Title: attachmentItem.Name,
+						Data: &threading.Attachment_Image{
+							Image: &threading.ImageAttachment{
+								Mimetype: attachmentItem.ContentType,
+								URL:      attachmentItem.URL,
+							},
+						},
+					})
+				} else {
+					attachments = append(attachments, &threading.Attachment{
+						Type:  threading.Attachment_GENERIC_URL,
+						Title: attachmentItem.Name,
+						Data: &threading.Attachment_GenericURL{
+							GenericURL: &threading.GenericURLAttachment{
+								Mimetype: attachmentItem.ContentType,
+								URL:      attachmentItem.URL,
+							},
+						},
+					})
+				}
 			}
 		}
-	}
 
-	titleStr, err := title.Format()
-	if err != nil {
-		return errors.Trace(err)
-	}
-	plainText, err := bml.BML{text}.Format()
-	if err != nil {
-		return errors.Trace(err)
-	}
-	if summary == "" {
-		summary = fmt.Sprintf("%s: %s", fromName, text)
-	}
-	if externalThread == nil {
-		golog.Debugf("External thread for %s not found. Creating...", externalEntity.Contacts[0].Value)
-
-		// create thread if one doesn't exist
-		_, err := r.threading.CreateThread(
-			ctx,
-			&threading.CreateThreadRequest{
-				OrganizationID: organizationID,
-				FromEntityID:   externalEntity.ID,
-				Source: &threading.Endpoint{
-					Channel: endpointChannel,
-					ID:      pem.FromChannelID,
-				},
-				Destinations: []*threading.Endpoint{
-					{
-						Channel: endpointChannel,
-						ID:      pem.ToChannelID,
-					},
-				},
-				Internal:    false,
-				Title:       titleStr,
-				Text:        plainText,
-				Attachments: attachments,
-				Summary:     summary,
-			},
-		)
+		titleStr, err := title.Format()
 		if err != nil {
 			return errors.Trace(err)
 		}
-	} else {
-		golog.Debugf("External thread for %s found. Posting to existing thread...", externalEntity.Contacts[0].Value)
-		// post message if thread exists
-		_, err = r.threading.PostMessage(
-			ctx,
-			&threading.PostMessageRequest{
-				ThreadID:     externalThread.ID,
-				FromEntityID: fromEntity.ID,
-				Source: &threading.Endpoint{
-					Channel: endpointChannel,
-					ID:      pem.FromChannelID,
-				},
-				Destinations: []*threading.Endpoint{
-					{
-						Channel: endpointChannel,
-						ID:      pem.ToChannelID,
-					},
-				},
-				Internal:    false,
-				Title:       titleStr,
-				Text:        plainText,
-				Attachments: attachments,
-				Summary:     summary,
-			},
-		)
+		plainText, err := bml.BML{text}.Format()
 		if err != nil {
 			return errors.Trace(err)
 		}
+		if summary == "" {
+			summary = fmt.Sprintf("%s: %s", fromName, text)
+		}
+		if externalThread == nil {
+			golog.Debugf("External thread for %s not found. Creating...", externalEntity.Contacts[0].Value)
+
+			// create thread if one doesn't exist
+			_, err := r.threading.CreateThread(
+				ctx,
+				&threading.CreateThreadRequest{
+					OrganizationID: organizationID,
+					FromEntityID:   externalEntity.ID,
+					Source: &threading.Endpoint{
+						Channel: endpointChannel,
+						ID:      pem.FromChannelID,
+					},
+					Destinations: []*threading.Endpoint{
+						{
+							Channel: endpointChannel,
+							ID:      pem.ToChannelID,
+						},
+					},
+					Internal:    false,
+					Title:       titleStr,
+					Text:        plainText,
+					Attachments: attachments,
+					Summary:     summary,
+				},
+			)
+			if err != nil {
+				return errors.Trace(err)
+			}
+		} else {
+			golog.Debugf("External thread for %s found. Posting to existing thread...", externalEntity.Contacts[0].Value)
+			// post message if thread exists
+			_, err = r.threading.PostMessage(
+				ctx,
+				&threading.PostMessageRequest{
+					ThreadID:     externalThread.ID,
+					FromEntityID: fromEntity.ID,
+					Source: &threading.Endpoint{
+						Channel: endpointChannel,
+						ID:      pem.FromChannelID,
+					},
+					Destinations: []*threading.Endpoint{
+						{
+							Channel: endpointChannel,
+							ID:      pem.ToChannelID,
+						},
+					},
+					Internal:    false,
+					Title:       titleStr,
+					Text:        plainText,
+					Attachments: attachments,
+					Summary:     summary,
+				},
+			)
+			if err != nil {
+				return errors.Trace(err)
+			}
+		}
+		golog.Debugf("Message posted from %s → %s : %s", fromEntity.ID, toEntity.ID, text)
 	}
 
-	golog.Debugf("Message posted from %s → %s : %s", pem.FromChannelID, pem.ToChannelID, text)
 	return nil
 }
 
-func lookupEntity(ctx context.Context, entityID string, dir directory.DirectoryClient) (*directory.Entity, error) {
+func determineDisplayName(channelID string, contactType directory.ContactType, entity *directory.Entity) string {
+	fromName := channelID
+	if entity.Info != nil && entity.Info.DisplayName != "" {
+		return entity.Info.DisplayName
+	} else if contactType == directory.ContactType_PHONE {
+		formattedPhone, err := phone.Format(fromName, phone.Pretty)
+		if err == nil {
+			return formattedPhone
+		}
+	}
+	return fromName
+}
+
+func lookupEntities(ctx context.Context, entityID string, dir directory.DirectoryClient) ([]*directory.Entity, error) {
 	res, err := dir.LookupEntities(
 		ctx,
 		&directory.LookupEntitiesRequest{
@@ -457,10 +479,8 @@ func lookupEntity(ctx context.Context, entityID string, dir directory.DirectoryC
 		})
 	if err != nil {
 		return nil, errors.Trace(err)
-	} else if len(res.Entities) != 1 {
-		return nil, errors.Trace(fmt.Errorf("Expected 1 entity but got %d", len(res.Entities)))
 	}
-	return res.Entities[0], nil
+	return res.Entities, nil
 }
 
 func lookupEntitiesByContact(ctx context.Context, contactValue string, dir directory.DirectoryClient) (*directory.LookupEntitiesByContactResponse, error) {
@@ -516,10 +536,12 @@ func determineProviderOrOrgEntity(res *directory.LookupEntitiesByContactResponse
 	return nil
 }
 
-func determineExternalEntity(res *directory.LookupEntitiesByContactResponse, organizationID string) *directory.Entity {
+func determineExternalEntities(res *directory.LookupEntitiesByContactResponse, organizationID string) []*directory.Entity {
 	if res == nil {
 		return nil
 	}
+
+	externalEntities := make([]*directory.Entity, 0, len(res.Entities))
 	for _, entity := range res.Entities {
 		if entity.Type != directory.EntityType_EXTERNAL {
 			continue
@@ -527,9 +549,9 @@ func determineExternalEntity(res *directory.LookupEntitiesByContactResponse, org
 		// if entity is external, determine membership to the specified organization.
 		for _, m := range entity.Memberships {
 			if m.Type == directory.EntityType_ORGANIZATION && m.ID == organizationID {
-				return entity
+				externalEntities = append(externalEntities, entity)
 			}
 		}
 	}
-	return nil
+	return externalEntities
 }
