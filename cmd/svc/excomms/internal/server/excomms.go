@@ -348,9 +348,13 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 		return nil, grpc.Errorf(codes.Internal, err.Error())
 	}
 
+	// find an external entity for the callee
 	for _, entity := range lookupByContacRes.Entities {
 		if destinationEntity != nil {
 			break
+		}
+		if entity.Type != directory.EntityType_EXTERNAL {
+			continue
 		}
 		for _, m := range entity.Memberships {
 			if m.Type == directory.EntityType_ORGANIZATION && m.ID == in.OrganizationID {

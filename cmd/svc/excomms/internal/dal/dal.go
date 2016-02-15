@@ -205,8 +205,8 @@ func (d *dal) CreateCallRequest(cr *models.CallRequest) error {
 	}
 
 	_, err := d.db.Exec(`
-		INSERT INTO outgoing_call_request (source, destination, proxy, organization_id, requested, call_sid)
-		VALUES (?,?,?,?,?,?)`, cr.Source, cr.Destination, cr.Proxy, cr.OrganizationID, cr.Requested, cr.CallSID)
+		INSERT INTO outgoing_call_request (source, destination, proxy, organization_id, requested, call_sid, caller_entity_id, callee_entity_id)
+		VALUES (?,?,?,?,?,?,?,?)`, cr.Source, cr.Destination, cr.Proxy, cr.OrganizationID, cr.Requested, cr.CallSID, cr.CallerEntityID, cr.CalleeEntityID, cr.CallerEntityID, cr.CalleeEntityID)
 	return errors.Trace(err)
 }
 
@@ -216,7 +216,7 @@ func (d *dal) LookupCallRequest(callSID string) (*models.CallRequest, error) {
 	var cr models.CallRequest
 
 	err := d.db.QueryRow(`
-		SELECT source, destination, proxy, organization_id, requested, call_sid 
+		SELECT source, destination, proxy, organization_id, requested, call_sid, caller_entity_id, callee_entity_id 
 		FROM outgoing_call_request
 		WHERE call_sid = ?`, callSID).Scan(
 		&cr.Source,
@@ -224,7 +224,9 @@ func (d *dal) LookupCallRequest(callSID string) (*models.CallRequest, error) {
 		&cr.Proxy,
 		&cr.OrganizationID,
 		&cr.Requested,
-		&cr.CallSID)
+		&cr.CallSID,
+		&cr.CallerEntityID,
+		&cr.CalleeEntityID)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrCallRequestNotFound)
 	} else if err != nil {

@@ -611,7 +611,8 @@ func TestInitiatePhoneCall_OriginatingNumberSpecified(t *testing.T) {
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{
-				ID: organizationID,
+				ID:   organizationID,
+				Type: directory.EntityType_ORGANIZATION,
 			},
 		},
 	}, nil))
@@ -632,7 +633,8 @@ func TestInitiatePhoneCall_OriginatingNumberSpecified(t *testing.T) {
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{
-				ID: callerEntityID,
+				ID:   callerEntityID,
+				Type: directory.EntityType_INTERNAL,
 				Memberships: []*directory.Entity{
 					{
 						ID:   organizationID,
@@ -653,7 +655,8 @@ func TestInitiatePhoneCall_OriginatingNumberSpecified(t *testing.T) {
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{
 		Entities: []*directory.Entity{
 			{
-				ID: destinationEntityID,
+				ID:   destinationEntityID,
+				Type: directory.EntityType_EXTERNAL,
 				Memberships: []*directory.Entity{
 					{
 						ID:   organizationID,
@@ -722,7 +725,8 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_ButExists(t *testing.T)
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{
-				ID: organizationID,
+				ID:   organizationID,
+				Type: directory.EntityType_ORGANIZATION,
 			},
 		},
 	}, nil))
@@ -743,7 +747,8 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_ButExists(t *testing.T)
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{
-				ID: callerEntityID,
+				ID:   callerEntityID,
+				Type: directory.EntityType_INTERNAL,
 				Memberships: []*directory.Entity{
 					{
 						ID:   organizationID,
@@ -764,7 +769,8 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_ButExists(t *testing.T)
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{
 		Entities: []*directory.Entity{
 			{
-				ID: destinationEntityID,
+				ID:   destinationEntityID,
+				Type: directory.EntityType_EXTERNAL,
 				Memberships: []*directory.Entity{
 					{
 						ID:   organizationID,
@@ -834,7 +840,8 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_DoesNotExist(t *testing
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{
-				ID: organizationID,
+				ID:   organizationID,
+				Type: directory.EntityType_ORGANIZATION,
 			},
 		},
 	}, nil))
@@ -855,7 +862,8 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_DoesNotExist(t *testing
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{
-				ID: callerEntityID,
+				ID:   callerEntityID,
+				Type: directory.EntityType_INTERNAL,
 				Memberships: []*directory.Entity{
 					{
 						ID:   organizationID,
@@ -882,7 +890,8 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_DoesNotExist(t *testing
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{
 		Entities: []*directory.Entity{
 			{
-				ID: destinationEntityID,
+				ID:   destinationEntityID,
+				Type: directory.EntityType_EXTERNAL,
 				Memberships: []*directory.Entity{
 					{
 						ID:   organizationID,
