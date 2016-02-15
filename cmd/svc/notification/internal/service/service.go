@@ -7,12 +7,14 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/cmd/svc/notification/internal/dal"
 	"github.com/sprucehealth/backend/libs/awsutil"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
@@ -187,6 +189,8 @@ func (s *service) processPushNotification(n *notification.Notification) error {
 	return nil
 }
 
+const endpointDisabledAWSErrCode = "EndpointDisabled"
+
 func (s *service) sendPushNotificationToExternalGroupID(externalGroupID string, n *notification.Notification) error {
 	pushConfigs, err := s.dl.PushConfigsForExternalGroupID(externalGroupID)
 	if err != nil {
@@ -217,9 +221,20 @@ func (s *service) sendPushNotificationToExternalGroupID(externalGroupID string, 
 			MessageStructure: jsonStructure,
 			TargetArn:        ptr.String(pushConfig.PushEndpoint),
 		}); err != nil {
-			golog.Errorf(err.Error())
-			// continue so that we do a best effort to publish to all endpoints.
-			continue
+			aerr, ok := err.(awserr.Error)
+			if ok && aerr.Code() == endpointDisabledAWSErrCode {
+				golog.Debugf("Encountered disabled endpoint %+v", msg, pushConfig)
+				// If an endpoint has been disabled then make an attempt to delete it since it is no longer valid
+				conc.Go(func() {
+					if _, err := s.dl.DeletePushConfig(pushConfig.ID); err != nil {
+						golog.Errorf("Encountered error while attempting delete of disabled endpoint %s: %s", pushConfig.ID, err)
+					}
+				})
+			} else {
+				golog.Errorf(err.Error())
+				// continue so that we do a best effort to publish to all endpoints.
+				continue
+			}
 		}
 	}
 	return nil
