@@ -125,7 +125,7 @@ var threadType = graphql.NewObject(
 									return nil, internalError(ctx, err)
 								}
 								filteredEndpoints = append(filteredEndpoints, endpoint)
-								continue
+								break
 							}
 						}
 						return filteredEndpoints, nil
