@@ -127,6 +127,7 @@ type thread struct {
 	LastMessageTimestamp       uint64 `json:"lastMessageTimestamp"`
 	Unread                     bool   `json:"unread"`
 	AllowInternalMessages      bool   `json:"allowInternalMessages"`
+	IsDeletable                bool   `json:"isDeletable"`
 	LastPrimaryEntityEndpoints []*endpoint
 }
 

@@ -282,6 +282,7 @@ func TestNodeQuery(t *testing.T) {
 	test.Equals(t, &thread{
 		ID: id,
 		AllowInternalMessages: true,
+		IsDeletable:           true,
 		OrganizationID:        "entity_1",
 		PrimaryEntityID:       "entity_2",
 		Title:                 "Someone",

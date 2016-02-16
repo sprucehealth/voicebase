@@ -304,6 +304,7 @@ var createThreadMutation = &graphql.Field{
 		}
 		th.Title = threadTitleForEntity(primaryEnt)
 		th.AllowInternalMessages = true
+		th.IsDeletable = true
 
 		return &createThreadOutput{
 			ClientMutationID: mutationID,

@@ -135,6 +135,7 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 				thread {
 					id
 					allowInternalMessages
+					isDeletable
 				}
 			}
 		}`, nil)
@@ -147,7 +148,8 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 			"success": true,
 			"thread": {
 				"allowInternalMessages": true,
-				"id": "t_1"
+				"id": "t_1",
+				"isDeletable": true
 			}
 		}
 	}
@@ -297,6 +299,7 @@ func TestCreateThreadMutation_DifferentOrg(t *testing.T) {
 					id
 					title
 					allowInternalMessages
+					isDeletable
 				}
 			}
 		}`, nil)
@@ -310,6 +313,7 @@ func TestCreateThreadMutation_DifferentOrg(t *testing.T) {
 			"thread": {
 				"allowInternalMessages": true,
 				"id": "t_1",
+				"isDeletable": true,
 				"title": "firstName middleInitial. lastName, shortTitle"
 			}
 		}

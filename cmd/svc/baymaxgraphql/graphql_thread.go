@@ -32,6 +32,7 @@ var threadType = graphql.NewObject(
 			"lastMessageTimestamp":  &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
 			"unread":                &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowInternalMessages": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"isDeletable":           &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			// TODO: We currently just assume all contacts for an entity are available endpoints
 			"availableEndpoints": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(endpointType)),
@@ -288,7 +289,7 @@ func lookupThread(ctx context.Context, svc *service, id, viewerEntityID string) 
 	if err != nil {
 		return nil, internalError(ctx, err)
 	}
-	if err := svc.hydrateThreadTitles(ctx, []*thread{th}); err != nil {
+	if err := svc.hydrateThreads(ctx, []*thread{th}); err != nil {
 		return nil, internalError(ctx, err)
 	}
 	return th, nil

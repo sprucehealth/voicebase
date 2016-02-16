@@ -35,13 +35,15 @@ type service struct {
 	serviceNumber phone.Number
 }
 
-func (s *service) hydrateThreadTitles(ctx context.Context, threads []*thread) error {
+func (s *service) hydrateThreads(ctx context.Context, threads []*thread) error {
 	// TODO: this done one request per thread. ideally the directory service would have a bulk lookup
 	p := conc.NewParallel()
 	for _, t := range threads {
 		if t.PrimaryEntityID == "" {
 			// TODO: not sure what this should be for internal threads (ones without a primary entity ID)
 			t.Title = "Internal"
+			t.AllowInternalMessages = false
+			t.IsDeletable = true
 			continue
 		}
 		// Create a reference to thread since the loop variable will change underneath
@@ -68,6 +70,7 @@ func (s *service) hydrateThreadTitles(ctx context.Context, threads []*thread) er
 			}
 			thread.Title = threadTitleForEntity(res.Entities[0])
 			thread.AllowInternalMessages = res.Entities[0].Type != directory.EntityType_SYSTEM
+			thread.IsDeletable = res.Entities[0].Type != directory.EntityType_SYSTEM
 			return nil
 		})
 	}

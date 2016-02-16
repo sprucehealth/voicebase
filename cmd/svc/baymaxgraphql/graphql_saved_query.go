@@ -92,7 +92,7 @@ var savedThreadQueryType = graphql.NewObject(
 							Cursor: ConnectionCursor(e.Cursor),
 						}
 					}
-					if err := svc.hydrateThreadTitles(ctx, threads); err != nil {
+					if err := svc.hydrateThreads(ctx, threads); err != nil {
 						return nil, internalError(ctx, err)
 					}
 

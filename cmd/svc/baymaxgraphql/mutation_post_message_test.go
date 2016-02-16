@@ -191,6 +191,7 @@ func TestPostMessage(t *testing.T) {
 					title
 					subtitle
 					allowInternalMessages
+					isDeletable
 				}
 			}
 		}`, map[string]interface{}{
@@ -223,6 +224,7 @@ func TestPostMessage(t *testing.T) {
 			"thread": {
 				"allowInternalMessages": true,
 				"id": "t1",
+				"isDeletable": true,
 				"lastMessageTimestamp": 123456789,
 				"subtitle": "Schmee: foo",
 				"title": "Barro"
