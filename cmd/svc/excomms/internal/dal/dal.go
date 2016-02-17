@@ -206,7 +206,7 @@ func (d *dal) CreateCallRequest(cr *models.CallRequest) error {
 
 	_, err := d.db.Exec(`
 		INSERT INTO outgoing_call_request (source, destination, proxy, organization_id, requested, call_sid, caller_entity_id, callee_entity_id)
-		VALUES (?,?,?,?,?,?,?,?,?,?)`, cr.Source, cr.Destination, cr.Proxy, cr.OrganizationID, cr.Requested, cr.CallSID, cr.CallerEntityID, cr.CalleeEntityID, cr.CallerEntityID, cr.CalleeEntityID)
+		VALUES (?,?,?,?,?,?,?,?)`, cr.Source, cr.Destination, cr.Proxy, cr.OrganizationID, cr.Requested, cr.CallSID, cr.CallerEntityID, cr.CalleeEntityID)
 	return errors.Trace(err)
 }
 
