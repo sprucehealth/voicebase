@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -195,7 +195,7 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	}
 	ctx = ctxWithRequestID(ctx, requestID)
 
-	sHeaders := apiservice.ExtractSpruceHeaders(r)
+	sHeaders := device.ExtractSpruceHeaders(w, r)
 	ctx = ctxWithSpruceHeaders(ctx, sHeaders)
 
 	result := conc.NewMap()

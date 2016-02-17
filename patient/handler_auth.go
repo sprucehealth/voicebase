@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/feedback"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -177,7 +178,7 @@ func (h *AuthenticationHandler) authenticate(ctx context.Context, w http.Respons
 		return
 	}
 
-	headers := apiservice.ExtractSpruceHeaders(r)
+	headers := device.ExtractSpruceHeaders(w, r)
 	h.dispatcher.PublishAsync(&auth.AuthenticatedEvent{
 		AccountID:     patient.AccountID.Int64(),
 		SpruceHeaders: headers,

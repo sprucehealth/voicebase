@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
@@ -31,13 +31,13 @@ func (e errInvalidContactFormat) Error() string {
 	return string(e)
 }
 
-func ctxWithSpruceHeaders(ctx context.Context, sh *apiservice.SpruceHeaders) context.Context {
+func ctxWithSpruceHeaders(ctx context.Context, sh *device.SpruceHeaders) context.Context {
 	return context.WithValue(ctx, ctxSpruceHeaders, sh)
 }
 
 // spruceHeadersFromContext returns the spruce headers which may be nil
-func spruceHeadersFromContext(ctx context.Context) *apiservice.SpruceHeaders {
-	sh, _ := ctx.Value(ctxSpruceHeaders).(*apiservice.SpruceHeaders)
+func spruceHeadersFromContext(ctx context.Context) *device.SpruceHeaders {
+	sh, _ := ctx.Value(ctxSpruceHeaders).(*device.SpruceHeaders)
 	return sh
 }
 

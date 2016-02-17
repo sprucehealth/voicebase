@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/auth"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -124,7 +125,7 @@ func (h *authenticationHandler) ServeHTTP(ctx context.Context, w http.ResponseWr
 	}
 
 	if account.TwoFactorEnabled {
-		appHeaders := apiservice.ExtractSpruceHeaders(r)
+		appHeaders := device.ExtractSpruceHeaders(w, r)
 		device, err := h.authAPI.GetAccountDevice(account.ID, appHeaders.DeviceID)
 		if err != nil && !api.IsErrNotFound(err) {
 			apiservice.WriteError(ctx, err, w, r)
@@ -176,7 +177,7 @@ func (h *authenticationHandler) ServeHTTP(ctx context.Context, w http.ResponseWr
 		Doctor: doctor,
 	})
 
-	headers := apiservice.ExtractSpruceHeaders(r)
+	headers := device.ExtractSpruceHeaders(w, r)
 	h.dispatcher.PublishAsync(&auth.AuthenticatedEvent{
 		AccountID:     doctor.AccountID.Int64(),
 		SpruceHeaders: headers,

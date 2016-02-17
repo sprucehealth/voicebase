@@ -5,6 +5,7 @@ import (
 
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"golang.org/x/net/context"
 )
@@ -30,7 +31,7 @@ func NewHandler(minimumAppVersionConfigs *config.MinimumAppVersionConfigs) httpu
 }
 
 func (h *handler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	sHeaders := apiservice.ExtractSpruceHeaders(r)
+	sHeaders := device.ExtractSpruceHeaders(w, r)
 
 	if h.minimumAppVersionConfigs != nil {
 		minAppVersionConfig, err := h.minimumAppVersionConfigs.Get(sHeaders.AppType + "-" + sHeaders.AppEnvironment)

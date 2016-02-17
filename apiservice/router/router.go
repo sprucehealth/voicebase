@@ -27,6 +27,7 @@ import (
 	"github.com/sprucehealth/backend/cost"
 	"github.com/sprucehealth/backend/cost/promotions"
 	"github.com/sprucehealth/backend/demo"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/diagnosis"
 	diaghandlers "github.com/sprucehealth/backend/diagnosis/handlers"
 	"github.com/sprucehealth/backend/doctor"
@@ -368,7 +369,7 @@ func New(conf *Config) (*mux.Router, httputil.ContextHandler) {
 	// Lazily include the feature set for the requesting app to the context
 	handler := httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		ctx = features.CtxWithSet(ctx, features.LazySet(func() features.Set {
-			appInfo := apiservice.ExtractSpruceHeaders(r)
+			appInfo := device.ExtractSpruceHeaders(w, r)
 			return appFeatures.Set(strings.ToLower(appInfo.Platform.String()+"-"+appInfo.AppType), appInfo.AppVersion)
 		}))
 		conf.mux.ServeHTTP(ctx, w, r)

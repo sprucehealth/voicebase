@@ -19,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dispatch"
@@ -390,7 +391,7 @@ func (s *SignupHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r 
 	// To provide a good account creation experience don't block on promo code association/metric emission/attribution creation
 	conc.Go(func() { s.applyAttribution(r, accountID, newPatient, requestData, attributionData) })
 
-	headers := apiservice.ExtractSpruceHeaders(r)
+	headers := device.ExtractSpruceHeaders(w, r)
 	s.dispatcher.PublishAsync(&SignupEvent{
 		AccountID:     newPatient.AccountID.Int64(),
 		PatientID:     newPatient.ID,

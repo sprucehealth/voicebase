@@ -3,8 +3,8 @@ package main
 import (
 	"testing"
 
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/graphql"
@@ -13,7 +13,7 @@ import (
 
 func TestForceUpgradeStatus(t *testing.T) {
 	ctx := context.Background()
-	ctx = ctxWithSpruceHeaders(ctx, &apiservice.SpruceHeaders{
+	ctx = ctxWithSpruceHeaders(ctx, &device.SpruceHeaders{
 		AppType:         "baymax",
 		AppEnvironment:  "dev",
 		AppVersion:      &encoding.Version{Major: 1},
@@ -40,7 +40,7 @@ func TestForceUpgradeStatus(t *testing.T) {
 
 func TestForceUpgradeStatus_Hook(t *testing.T) {
 	ctx := context.Background()
-	ctx = ctxWithSpruceHeaders(ctx, &apiservice.SpruceHeaders{
+	ctx = ctxWithSpruceHeaders(ctx, &device.SpruceHeaders{
 		AppType:         "baymax",
 		AppEnvironment:  "dev",
 		AppVersion:      &encoding.Version{Patch: 9999},

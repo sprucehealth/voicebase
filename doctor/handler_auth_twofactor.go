@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/auth"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/responses"
@@ -72,7 +73,7 @@ func (d *twoFactorHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 	account := requestCache[apiservice.CKAccount].(*common.Account)
 	req := requestCache[apiservice.CKRequestData].(*TwoFactorRequest)
 
-	appHeaders := apiservice.ExtractSpruceHeaders(r)
+	appHeaders := device.ExtractSpruceHeaders(w, r)
 
 	if req.Resend {
 		if _, err := auth.SendTwoFactorCode(d.authAPI, d.smsAPI, d.fromNumber, account.ID, appHeaders.DeviceID, d.twoFactorExpiration); err != nil {

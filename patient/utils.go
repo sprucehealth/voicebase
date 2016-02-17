@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/mediastore"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/feedback"
 	"github.com/sprucehealth/backend/info_intake"
@@ -374,7 +375,7 @@ func createPatientVisit(
 		}
 
 		// start a new visit
-		sHeaders := apiservice.ExtractSpruceHeaders(r)
+		sHeaders := device.ExtractSpruceHeaders(nil, r)
 		layoutVersionID, err := dataAPI.IntakeLayoutVersionIDForAppVersion(
 			sHeaders.AppVersion,
 			sHeaders.Platform,

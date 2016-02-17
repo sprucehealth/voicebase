@@ -188,29 +188,30 @@ fi
 TIME=$(date)
 export TAG="$BRANCH-$BUILD_NUMBER"
 
-SVCS="auth baymaxgraphql directory excomms invite notification regimensapi routing threading settings"
-for SVC in $SVCS; do
-    echo "BUILDING ($SVC)"
-    cd $MONOREPO_PATH/cmd/svc/$SVC
-    GO15VENDOREXPERIMENT=1 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
-        go install -tags netgo -ldflags " \
-            -X 'github.com/sprucehealth/backend/boot.GitRevision=$REV' \
-            -X 'github.com/sprucehealth/backend/boot.GitBranch=$BRANCH' \
-            -X 'github.com/sprucehealth/backend/boot.BuildTime=$TIME' \
-            -X 'github.com/sprucehealth/backend/boot.BuildNumber=$BUILD_NUMBER'"
+if [[ "$DEPLOY_TO_S3" != "" ]]; then
+    SVCS="auth baymaxgraphql directory excomms invite notification regimensapi routing threading settings"
+    for SVC in $SVCS; do
+        echo "BUILDING ($SVC)"
+        cd $MONOREPO_PATH/cmd/svc/$SVC
+        GO15VENDOREXPERIMENT=1 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
+            go install -tags netgo -ldflags " \
+                -X 'github.com/sprucehealth/backend/boot.GitRevision=$REV' \
+                -X 'github.com/sprucehealth/backend/boot.GitBranch=$BRANCH' \
+                -X 'github.com/sprucehealth/backend/boot.BuildTime=$TIME' \
+                -X 'github.com/sprucehealth/backend/boot.BuildNumber=$BUILD_NUMBER'"
 
-    BINPATH=$GOPATH/bin/$SVC
-    if [[ "$(go env GOHOSTOS)" != "linux" ]]; then
-        BINPATH=$GOPATH/bin/linux_amd64/$SVC
-    fi
-    rm -rf build
-    mkdir build
-    cp $BINPATH build/
-    if [[ -e resources ]]; then
-        cp -r resources build/
-    fi
-    cp /etc/ssl/certs/ca-certificates.crt build/
-    cat > build/Dockerfile <<EOF
+        BINPATH=$GOPATH/bin/$SVC
+        if [[ "$(go env GOHOSTOS)" != "linux" ]]; then
+            BINPATH=$GOPATH/bin/linux_amd64/$SVC
+        fi
+        rm -rf build
+        mkdir build
+        cp $BINPATH build/
+        if [[ -e resources ]]; then
+            cp -r resources build/
+        fi
+        cp /etc/ssl/certs/ca-certificates.crt build/
+        cat > build/Dockerfile <<EOF
 FROM scratch
 
 LABEL version=$TAG
@@ -222,8 +223,9 @@ COPY ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 USER 65534
 CMD ["/workspace/$SVC"]
 EOF
-    docker build --rm=true -t $SVC:$TAG -f build/Dockerfile build
-done
+        docker build --rm=true -t $SVC:$TAG -f build/Dockerfile build
+    done
+fi
 
 # Build for deploy (restapi)
 echo "BUILDING (restapi)"

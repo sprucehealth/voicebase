@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"golang.org/x/net/context"
 )
@@ -40,7 +41,7 @@ func (n *notifyMeHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 		return
 	}
 
-	spruceHeaders := apiservice.ExtractSpruceHeaders(r)
+	spruceHeaders := device.ExtractSpruceHeaders(w, r)
 	if err := n.dataAPI.RecordForm(&common.NotifyMeForm{
 		Email:     rd.Email,
 		State:     state.Abbreviation,

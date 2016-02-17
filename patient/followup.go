@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dispatch"
 )
@@ -120,7 +120,7 @@ func checkLayoutVersionForFollowup(dataAPI api.DataAPI, publisher dispatch.Publi
 			return err
 		}
 
-		headers := apiservice.ExtractSpruceHeaders(r)
+		headers := device.ExtractSpruceHeaders(nil, r)
 		var layoutVersionToUpdate *int64
 		var status string
 		layoutVersionID, err := dataAPI.IntakeLayoutVersionIDForAppVersion(headers.AppVersion, headers.Platform,

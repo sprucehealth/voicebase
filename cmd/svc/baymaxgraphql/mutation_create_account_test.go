@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -178,7 +178,7 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 	ctx := context.Background()
 	var acc *account
 	ctx = ctxWithAccount(ctx, acc)
-	ctx = ctxWithSpruceHeaders(ctx, &apiservice.SpruceHeaders{
+	ctx = ctxWithSpruceHeaders(ctx, &device.SpruceHeaders{
 		DeviceID: "DevID",
 	})
 

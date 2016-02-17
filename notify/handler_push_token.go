@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"golang.org/x/net/context"
 )
@@ -46,7 +47,7 @@ func (n *notificationHandler) ServeHTTP(ctx context.Context, w http.ResponseWrit
 		return
 	}
 
-	sHeaders := apiservice.ExtractSpruceHeaders(r)
+	sHeaders := device.ExtractSpruceHeaders(w, r)
 
 	// we need the minimum headers set to be able to accept the token
 	if sHeaders.Platform == "" || sHeaders.AppEnvironment == "" || sHeaders.AppType == "" {

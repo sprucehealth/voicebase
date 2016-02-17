@@ -7,10 +7,10 @@ import (
 
 	"github.com/sprucehealth/backend/address"
 	"github.com/sprucehealth/backend/api"
-	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/app_url"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/cost/promotions"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/features"
 	"github.com/sprucehealth/backend/feedback"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -78,7 +78,7 @@ func homeCardsForUnAuthenticatedUser(
 	if isSpruceAvailable {
 		views[0] = getStartVisitCard()
 	} else {
-		spruceHeaders := apiservice.ExtractSpruceHeaders(r)
+		spruceHeaders := device.ExtractSpruceHeaders(nil, r)
 		entryExists, err := dataAPI.FormEntryExists("form_notify_me", spruceHeaders.DeviceID)
 		if err != nil {
 			return nil, err
@@ -145,7 +145,7 @@ func homeCardsForAuthenticatedUser(
 			}
 		}
 	}
-	requestHeaders := apiservice.ExtractSpruceHeaders(r)
+	requestHeaders := device.ExtractSpruceHeaders(nil, r)
 	// iterate through the cases to populate the view for each case card
 	for _, patientCase := range cases {
 		caseNotifications := notificationMap[patientCase.ID.Int64()]

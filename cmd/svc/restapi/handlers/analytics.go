@@ -10,6 +10,7 @@ import (
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/analytics"
 	"github.com/sprucehealth/backend/apiservice"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/dispatch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -118,7 +119,7 @@ func (h *analyticsHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter,
 
 	h.statEventsReceived.Inc(uint64(len(req.Events)))
 
-	ch := apiservice.ExtractSpruceHeaders(r)
+	ch := device.ExtractSpruceHeaders(w, r)
 
 	nowUnix := float64(time.Now().UTC().UnixNano()) / 1e9
 	var eventsOut []analytics.Event
