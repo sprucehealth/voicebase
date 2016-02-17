@@ -1,6 +1,8 @@
 package server
 
 import (
+	"bytes"
+	"io/ioutil"
 	"net/http"
 	"testing"
 	"time"
@@ -46,6 +48,7 @@ func (m *mockIncomingPhoneNumberService_Excomms) PurchaseLocal(params twilio.Pur
 	return m.pn, &twilio.Response{
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(&bytes.Reader{}),
 		},
 	}, nil
 }
