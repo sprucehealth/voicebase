@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/sprucehealth/backend/libs/conc"
@@ -129,6 +130,7 @@ var createAccountMutation = &graphql.Field{
 			Email:    input["email"].(string),
 			Password: input["password"].(string),
 		}
+		req.Email = strings.TrimSpace(req.Email)
 		if !validate.Email(req.Email) {
 			return &createAccountOutput{
 				ClientMutationID: mutationID,
@@ -142,8 +144,8 @@ var createAccountMutation = &graphql.Field{
 			return nil, internalError(ctx, err)
 		}
 
-		req.FirstName = entityInfo.FirstName
-		req.LastName = entityInfo.LastName
+		req.FirstName = strings.TrimSpace(entityInfo.FirstName)
+		req.LastName = strings.TrimSpace(entityInfo.LastName)
 		if req.FirstName == "" || !isValidPlane0Unicode(req.FirstName) {
 			return &createAccountOutput{
 				ClientMutationID: mutationID,
@@ -164,7 +166,8 @@ var createAccountMutation = &graphql.Field{
 		var organizationName string
 		if inv == nil {
 			organizationName, _ = input["organizationName"].(string)
-			if organizationName == "" || !isValidPlane0Unicode(req.LastName) {
+			organizationName = strings.TrimSpace(organizationName)
+			if organizationName == "" || !isValidPlane0Unicode(organizationName) {
 				return &createAccountOutput{
 					ClientMutationID: mutationID,
 					Success:          false,
