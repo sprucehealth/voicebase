@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -237,4 +238,17 @@ func buildDisplayName(info *directory.EntityInfo, contacts []*directory.Contact)
 	}
 
 	return "", errors.New("Display name cannot be empty and not enough information was supplied to infer one")
+}
+
+// isValidPlane0Unicode returns true iff the provided string only has valid plane 0 unicode (no emoji)
+func isValidPlane0Unicode(s string) bool {
+	for _, r := range s {
+		if !utf8.ValidRune(r) {
+			return false
+		}
+		if utf8.RuneLen(r) > 3 {
+			return false
+		}
+	}
+	return true
 }

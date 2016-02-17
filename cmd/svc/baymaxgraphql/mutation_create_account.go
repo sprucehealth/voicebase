@@ -47,6 +47,8 @@ var createAccountInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 const (
 	createAccountErrorCodeAccountExists           = "ACCOUNT_EXISTS"
 	createAccountErrorCodeInvalidEmail            = "INVALID_EMAIL"
+	createAccountErrorCodeInvalidFirstName        = "INVALID_FIRST_NAME"
+	createAccountErrorCodeInvalidLastName         = "INVALID_LAST_NAME"
 	createAccountErrorCodeInvalidOrganizationName = "INVALID_ORGANIZATION_NAME"
 	createAccountErrorCodeInvalidPassword         = "INVALID_PASSWORD"
 	createAccountErrorCodeInvalidPhoneNumber      = "INVALID_PHONE_NUMBER"
@@ -74,6 +76,14 @@ var createAccountErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 		createAccountErrorCodeInvalidOrganizationName: &graphql.EnumValueConfig{
 			Value:       createAccountErrorCodeInvalidOrganizationName,
 			Description: "The provided organization name is invalid",
+		},
+		createAccountErrorCodeInvalidFirstName: &graphql.EnumValueConfig{
+			Value:       createAccountErrorCodeInvalidFirstName,
+			Description: "The provided first name is invalid",
+		},
+		createAccountErrorCodeInvalidLastName: &graphql.EnumValueConfig{
+			Value:       createAccountErrorCodeInvalidLastName,
+			Description: "The provided last name is invalid",
 		},
 	},
 })
@@ -121,9 +131,10 @@ var createAccountMutation = &graphql.Field{
 		}
 		if !validate.Email(req.Email) {
 			return &createAccountOutput{
-				Success:      false,
-				ErrorCode:    createAccountErrorCodeInvalidEmail,
-				ErrorMessage: "The entered email address is invalid",
+				ClientMutationID: mutationID,
+				Success:          false,
+				ErrorCode:        createAccountErrorCodeInvalidEmail,
+				ErrorMessage:     "Please enter a valid email address.",
 			}, nil
 		}
 		entityInfo, err := entityInfoFromInput(input)
@@ -133,15 +144,32 @@ var createAccountMutation = &graphql.Field{
 
 		req.FirstName = entityInfo.FirstName
 		req.LastName = entityInfo.LastName
+		if req.FirstName == "" || !isValidPlane0Unicode(req.FirstName) {
+			return &createAccountOutput{
+				ClientMutationID: mutationID,
+				Success:          false,
+				ErrorCode:        createAccountErrorCodeInvalidFirstName,
+				ErrorMessage:     "Please enter a valid first name.",
+			}, nil
+		}
+		if req.LastName == "" || !isValidPlane0Unicode(req.LastName) {
+			return &createAccountOutput{
+				ClientMutationID: mutationID,
+				Success:          false,
+				ErrorCode:        createAccountErrorCodeInvalidLastName,
+				ErrorMessage:     "Please enter a valid last name.",
+			}, nil
+		}
 
 		var organizationName string
 		if inv == nil {
 			organizationName, _ = input["organizationName"].(string)
-			if organizationName == "" {
+			if organizationName == "" || !isValidPlane0Unicode(req.LastName) {
 				return &createAccountOutput{
-					Success:      false,
-					ErrorCode:    createAccountErrorCodeInvalidOrganizationName,
-					ErrorMessage: "The organization name is required",
+					ClientMutationID: mutationID,
+					Success:          false,
+					ErrorCode:        createAccountErrorCodeInvalidOrganizationName,
+					ErrorMessage:     "Please enter a valid organization name.",
 				}, nil
 			}
 		}
@@ -149,7 +177,7 @@ var createAccountMutation = &graphql.Field{
 			Token: input["phoneVerificationToken"].(string),
 		})
 		if grpc.Code(err) == auth.ValueNotYetVerified {
-			return nil, errors.New("The phone number for the provided token has not yet been verified")
+			return nil, errors.New("The phone number for the provided token has not yet been verified.")
 		} else if err != nil {
 			return nil, internalError(ctx, err)
 		}
@@ -160,9 +188,10 @@ var createAccountMutation = &graphql.Field{
 		pn, err := phone.ParseNumber(input["phoneNumber"].(string))
 		if err != nil {
 			return &createAccountOutput{
-				Success:      false,
-				ErrorCode:    createAccountErrorCodeInvalidPhoneNumber,
-				ErrorMessage: "The entered phone number is invalid",
+				ClientMutationID: mutationID,
+				Success:          false,
+				ErrorCode:        createAccountErrorCodeInvalidPhoneNumber,
+				ErrorMessage:     "Please enter a valid phone number.",
 			}, nil
 		}
 		req.PhoneNumber = pn.String()
@@ -175,21 +204,24 @@ var createAccountMutation = &graphql.Field{
 			switch grpc.Code(err) {
 			case auth.DuplicateEmail:
 				return &createAccountOutput{
-					Success:      false,
-					ErrorCode:    createAccountErrorCodeAccountExists,
-					ErrorMessage: "An account already exists with the entered email address.",
+					ClientMutationID: mutationID,
+					Success:          false,
+					ErrorCode:        createAccountErrorCodeAccountExists,
+					ErrorMessage:     "An account already exists with the entered email address.",
 				}, nil
 			case auth.InvalidEmail:
 				return &createAccountOutput{
-					Success:      false,
-					ErrorCode:    createAccountErrorCodeInvalidEmail,
-					ErrorMessage: "The entered email address is invalid",
+					ClientMutationID: mutationID,
+					Success:          false,
+					ErrorCode:        createAccountErrorCodeInvalidEmail,
+					ErrorMessage:     "Please enter a valid email address.",
 				}, nil
 			case auth.InvalidPhoneNumber:
 				return &createAccountOutput{
-					Success:      false,
-					ErrorCode:    createAccountErrorCodeInvalidPhoneNumber,
-					ErrorMessage: "The entered phone number is invalid",
+					ClientMutationID: mutationID,
+					Success:          false,
+					ErrorCode:        createAccountErrorCodeInvalidPhoneNumber,
+					ErrorMessage:     "Please enter a valid phone number.",
 				}, nil
 			}
 			return nil, internalError(ctx, err)

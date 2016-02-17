@@ -130,6 +130,47 @@ func TestCreateAccountMutation(t *testing.T) {
 }`, string(b))
 }
 
+func TestCreateAccountMutation_InvalidName(t *testing.T) {
+	g := newGQL(t)
+	defer g.finish()
+
+	ctx := context.Background()
+	var acc *account
+	ctx = ctxWithAccount(ctx, acc)
+
+	res := g.query(ctx, `
+		mutation _ ($firstName: String!) {
+			createAccount(input: {
+				clientMutationId: "a1b2c3",
+				email: "someone@somewhere.com",
+				password: "password",
+				phoneNumber: "415-555-1212",
+				firstName: $firstName,
+				lastName: "last",
+				organizationName: "org",
+				phoneVerificationToken: "validToken",
+			}) {
+				clientMutationId
+				success
+				errorCode
+			}
+		}`,
+		map[string]interface{}{
+			"firstName": "first😎",
+		})
+	b, err := json.MarshalIndent(res, "", "\t")
+	test.OK(t, err)
+	test.Equals(t, `{
+	"data": {
+		"createAccount": {
+			"clientMutationId": "a1b2c3",
+			"errorCode": "INVALID_FIRST_NAME",
+			"success": false
+		}
+	}
+}`, string(b))
+}
+
 func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 	g := newGQL(t)
 	defer g.finish()
