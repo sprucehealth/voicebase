@@ -92,9 +92,6 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 	if in.OrganizationID == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "OrganizationID is required")
 	}
-	if in.FromEntityID == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "FromEntityID is required")
-	}
 	if in.PrimaryEntityID == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "PrimaryEntityID is required")
 	}
@@ -119,11 +116,14 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 		if err != nil {
 			return errors.Trace(err)
 		}
-		// The creator of the thread automatically becomes a follower
-		err = dl.UpdateMember(ctx, threadID, in.FromEntityID, &dal.MemberUpdate{
-			Following: ptr.Bool(true),
-		})
-		return errors.Trace(err)
+		if in.FromEntityID != "" {
+			// The creator of the thread automatically becomes a follower
+			err = dl.UpdateMember(ctx, threadID, in.FromEntityID, &dal.MemberUpdate{
+				Following: ptr.Bool(true),
+			})
+			return errors.Trace(err)
+		}
+		return nil
 	}); err != nil {
 		return nil, grpc.Errorf(codes.Internal, errors.Trace(err).Error())
 	}

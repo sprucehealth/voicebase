@@ -104,7 +104,8 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 
 	}).WithReturns(&threading.CreateEmptyThreadResponse{
 		Thread: &threading.Thread{
-			ID: "t_1",
+			ID:              "t_1",
+			PrimaryEntityID: "e_patient",
 		},
 	}, nil))
 
@@ -268,7 +269,8 @@ func TestCreateThreadMutation_DifferentOrg(t *testing.T) {
 
 	}).WithReturns(&threading.CreateEmptyThreadResponse{
 		Thread: &threading.Thread{
-			ID: "t_1",
+			ID:              "t_1",
+			PrimaryEntityID: "e_patient",
 		},
 	}, nil))
 
@@ -450,11 +452,13 @@ func TestCreateThreadMutation_ExistingThreads_DifferentName(t *testing.T) {
 				errorCode
 				thread {
 					allowInternalMessages
+					isDeletable
 					id
 					title
 				}
 				existingThreads {
 					allowInternalMessages
+					isDeletable
 					id
 					title
 				}
@@ -472,11 +476,13 @@ func TestCreateThreadMutation_ExistingThreads_DifferentName(t *testing.T) {
 				{
 					"allowInternalMessages": true,
 					"id": "t_1",
+					"isDeletable": true,
 					"title": "(415) 555-5555"
 				},
 				{
 					"allowInternalMessages": true,
 					"id": "t_2",
+					"isDeletable": true,
 					"title": "someone@example.com"
 				}
 			],
@@ -485,6 +491,7 @@ func TestCreateThreadMutation_ExistingThreads_DifferentName(t *testing.T) {
 			"thread": {
 				"allowInternalMessages": true,
 				"id": "t_1",
+				"isDeletable": true,
 				"title": "(415) 555-5555"
 			}
 		}
@@ -622,10 +629,12 @@ func TestCreateThreadMutation_ExistingThreads_SameName(t *testing.T) {
 				thread {
 					id
 					allowInternalMessages
+					isDeletable
 				}
 				existingThreads {
 					id
 					allowInternalMessages
+					isDeletable
 				}
 				nameDiffers
 			}
@@ -640,18 +649,21 @@ func TestCreateThreadMutation_ExistingThreads_SameName(t *testing.T) {
 			"existingThreads": [
 				{
 					"allowInternalMessages": true,
-					"id": "t_1"
+					"id": "t_1",
+					"isDeletable": true
 				},
 				{
 					"allowInternalMessages": true,
-					"id": "t_2"
+					"id": "t_2",
+					"isDeletable": true
 				}
 			],
 			"nameDiffers": false,
 			"success": false,
 			"thread": {
 				"allowInternalMessages": true,
-				"id": "t_2"
+				"id": "t_2",
+				"isDeletable": true
 			}
 		}
 	}

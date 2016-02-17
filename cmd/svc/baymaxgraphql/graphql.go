@@ -214,6 +214,8 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	for _, e := range response.Errors {
 		if e.StackTrace != "" {
 			golog.Errorf("[%s] %s\n%s", e.Type, e.Message, e.StackTrace)
+			// The stack trace shouldn't be serialized in the response but clear it out just to be sure
+			e.StackTrace = ""
 		}
 	}
 

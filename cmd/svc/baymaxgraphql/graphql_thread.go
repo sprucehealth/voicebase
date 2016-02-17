@@ -33,6 +33,7 @@ var threadType = graphql.NewObject(
 			"unread":                &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowInternalMessages": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"isDeletable":           &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"emptyStateTextMarkup":  &graphql.Field{Type: graphql.String},
 			// TODO: We currently just assume all contacts for an entity are available endpoints
 			"availableEndpoints": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(endpointType)),
@@ -267,7 +268,6 @@ var threadType = graphql.NewObject(
 					return deeplink.ThreadURLShareable(svc.webDomain, th.OrganizationID, th.ID), nil
 				},
 			},
-			// "members": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(memberType))},
 		},
 	},
 )

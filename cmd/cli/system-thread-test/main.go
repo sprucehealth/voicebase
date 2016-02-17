@@ -55,7 +55,7 @@ func main() {
 		golog.Fatalf(err.Error())
 	}
 	if len(dres.Entities) != 1 {
-		golog.Fatalf("Expected 1 entitiy got %d", len(dres.Entities))
+		golog.Fatalf("Expected 1 entity got %d", len(dres.Entities))
 	}
 	if dres.Entities[0].Type != directory.EntityType_ORGANIZATION {
 		golog.Fatalf("Expected organization entity got %s", dres.Entities[0].Type)

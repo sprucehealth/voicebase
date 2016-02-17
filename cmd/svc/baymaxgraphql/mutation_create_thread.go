@@ -216,8 +216,10 @@ var createThreadMutation = &graphql.Field{
 					if err != nil {
 						return nil, internalError(ctx, err)
 					}
-					th.Title = threadTitleForEntity(entMap[t.PrimaryEntityID])
-					th.AllowInternalMessages = true
+					th.primaryEntity = entMap[t.PrimaryEntityID]
+					if err := svc.hydrateThreads(ctx, []*thread{th}); err != nil {
+						return nil, internalError(ctx, err)
+					}
 
 					existingThreads[i] = th
 					// See if there's a thread with a primary entity equal to the one we foudn matching the contact info
@@ -302,9 +304,10 @@ var createThreadMutation = &graphql.Field{
 		if err != nil {
 			return nil, internalError(ctx, err)
 		}
-		th.Title = threadTitleForEntity(primaryEnt)
-		th.AllowInternalMessages = true
-		th.IsDeletable = true
+		th.primaryEntity = primaryEnt
+		if err := svc.hydrateThreads(ctx, []*thread{th}); err != nil {
+			return nil, internalError(ctx, err)
+		}
 
 		return &createThreadOutput{
 			ClientMutationID: mutationID,

@@ -282,11 +282,8 @@ var postMessageMutation = &graphql.Field{
 		if err != nil {
 			return nil, internalError(ctx, fmt.Errorf("failed to transform thread: %s", err))
 		}
-		if primaryEntity != nil {
-			th.Title = threadTitleForEntity(primaryEntity)
-			th.AllowInternalMessages = primaryEntity.Type != directory.EntityType_SYSTEM
-			th.IsDeletable = primaryEntity.Type != directory.EntityType_SYSTEM
-		} else if err := svc.hydrateThreads(ctx, []*thread{th}); err != nil {
+		th.primaryEntity = primaryEntity
+		if err := svc.hydrateThreads(ctx, []*thread{th}); err != nil {
 			return nil, internalError(ctx, err)
 		}
 		return &postMessageOutput{

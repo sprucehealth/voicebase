@@ -55,15 +55,6 @@ var queryType = graphql.NewObject(
 					return nil, errors.New("unknown node type")
 				},
 			},
-			// "listSavedThreadQueries": &graphql.Field{
-			// 	Type: graphql.NewList(graphql.NewNonNull(savedThreadQueryType)),
-			// 	Args: graphql.FieldConfigArgument{
-			// 		"orgID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-			// 	},
-			// 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			// 		return nil, nil
-			// 	},
-			// },
 			"organization": &graphql.Field{
 				Type: graphql.NewNonNull(organizationType),
 				Args: graphql.FieldConfigArgument{

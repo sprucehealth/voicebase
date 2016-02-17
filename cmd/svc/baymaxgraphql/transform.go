@@ -21,6 +21,9 @@ func transformAccountToResponse(a *auth.Account) (*account, error) {
 }
 
 func threadTitleForEntity(e *directory.Entity) string {
+	if e.Type == directory.EntityType_ORGANIZATION {
+		return fmt.Sprintf("Team (%s)", e.Info.DisplayName)
+	}
 	if e.Info.DisplayName != "" {
 		return e.Info.DisplayName
 	}
@@ -238,6 +241,12 @@ func transformEntityToResponse(e *directory.Entity) (*entity, error) {
 	case directory.EntityType_SYSTEM:
 		ent.avatar = &image{
 			URL:    "http://carefront-static.s3.amazonaws.com/icon_rx_large?system",
+			Width:  72,
+			Height: 72,
+		}
+	case directory.EntityType_ORGANIZATION:
+		ent.avatar = &image{
+			URL:    "http://carefront-static.s3.amazonaws.com/icon_rx_large?org",
 			Width:  72,
 			Height: 72,
 		}

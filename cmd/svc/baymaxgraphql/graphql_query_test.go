@@ -279,6 +279,7 @@ func TestNodeQuery(t *testing.T) {
 		nil))
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
+	res.(*thread).primaryEntity = nil
 	test.Equals(t, &thread{
 		ID: id,
 		AllowInternalMessages: true,

@@ -1,5 +1,9 @@
 package main
 
+import (
+	"github.com/sprucehealth/backend/svc/directory"
+)
+
 /*
 Notes about GraphQL package compatibility:
 - can't use custom types for things like `type someEnum string` so just use `string`
@@ -36,8 +40,6 @@ type me struct {
 
 type account struct {
 	ID string `json:"id"`
-	// Entity        *Entity         `json:"entity"`
-	// Organizations []*Organization `json:"organizations"`
 }
 
 type entity struct {
@@ -129,6 +131,9 @@ type thread struct {
 	AllowInternalMessages      bool   `json:"allowInternalMessages"`
 	IsDeletable                bool   `json:"isDeletable"`
 	LastPrimaryEntityEndpoints []*endpoint
+	EmptyStateTextMarkup       string `json:"emptyStateTextMarkup,omitempty"`
+
+	primaryEntity *directory.Entity
 }
 
 type threadItem struct {

@@ -49,28 +49,35 @@ func (s *service) hydrateThreads(ctx context.Context, threads []*thread) error {
 		// Create a reference to thread since the loop variable will change underneath
 		thread := t
 		p.Go(func() error {
-			res, err := s.directory.LookupEntities(ctx,
-				&directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-						EntityID: thread.PrimaryEntityID,
-					},
-					RequestedInformation: &directory.RequestedInformation{
-						Depth: 0,
-						EntityInformation: []directory.EntityInformation{
-							directory.EntityInformation_CONTACTS,
+			if thread.primaryEntity == nil {
+				res, err := s.directory.LookupEntities(ctx,
+					&directory.LookupEntitiesRequest{
+						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+							EntityID: thread.PrimaryEntityID,
 						},
-					},
-				})
-			if err != nil {
-				return errors.Trace(err)
+						RequestedInformation: &directory.RequestedInformation{
+							Depth: 0,
+							EntityInformation: []directory.EntityInformation{
+								directory.EntityInformation_CONTACTS,
+							},
+						},
+					})
+				if err != nil {
+					return errors.Trace(err)
+				}
+				if len(res.Entities) != 1 {
+					return errors.Trace(fmt.Errorf("lookup entities returned %d results for %s, expected 1", len(res.Entities), thread.PrimaryEntityID))
+				}
+				thread.primaryEntity = res.Entities[0]
 			}
-			if len(res.Entities) != 1 {
-				return errors.Trace(fmt.Errorf("lookup entities returned %d results for %s, expected 1", len(res.Entities), thread.PrimaryEntityID))
+			thread.Title = threadTitleForEntity(thread.primaryEntity)
+			thread.AllowInternalMessages = thread.primaryEntity.Type != directory.EntityType_SYSTEM
+			thread.IsDeletable = thread.primaryEntity.Type != directory.EntityType_SYSTEM
+			// TODO: this text should only be included for empty threads but we don't know if it's empty at this point
+			if thread.primaryEntity.Type == directory.EntityType_ORGANIZATION {
+				thread.EmptyStateTextMarkup = "This is the beginning of a conversation that is visible to everyone in your organization.\n\nInvite some colleagues to join and then send a message here to get things started."
 			}
-			thread.Title = threadTitleForEntity(res.Entities[0])
-			thread.AllowInternalMessages = res.Entities[0].Type != directory.EntityType_SYSTEM
-			thread.IsDeletable = res.Entities[0].Type != directory.EntityType_SYSTEM
 			return nil
 		})
 	}
