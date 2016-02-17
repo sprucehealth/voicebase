@@ -165,12 +165,14 @@ func (e *excommsService) ProvisionPhoneNumber(ctx context.Context, in *excomms.P
 		VoiceApplicationSID: e.twilioApplicationSID,
 		SMSApplicationSID:   e.twilioApplicationSID,
 	})
+	if err != nil {
+		return nil, grpc.Errorf(codes.Internal, err.Error())
+	}
+	defer res.Body.Close()
 	if res.StatusCode == http.StatusBadRequest {
 		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	} else if res.StatusCode == http.StatusNotFound {
 		return nil, grpc.Errorf(codes.NotFound, err.Error())
-	} else if err != nil {
-		return nil, grpc.Errorf(codes.Internal, err.Error())
 	}
 
 	// record the fact that number has been purchased
