@@ -210,13 +210,16 @@ var provisionEmailMutation = &graphql.Field{
 			EmailAddress: emailAddress,
 			ProvisionFor: provisionFor,
 		})
-		if grpc.Code(err) == codes.AlreadyExists {
-			return &provisionEmailOutput{
-				ClientMutationID: mutationID,
-				Success:          false,
-				ErrorCode:        provisionEmailErrorCodeLocalPartInUse,
-				ErrorMessage:     "The entered email is already in use. Please pick another.",
-			}, nil
+		if err != nil {
+			if grpc.Code(err) == codes.AlreadyExists {
+				return &provisionEmailOutput{
+					ClientMutationID: mutationID,
+					Success:          false,
+					ErrorCode:        provisionEmailErrorCodeLocalPartInUse,
+					ErrorMessage:     "The entered email is already in use. Please pick another.",
+				}, nil
+			}
+			return nil, internalError(ctx, err)
 		}
 
 		// lets go ahead and create the provisioned email address as a contact for the entity
