@@ -76,7 +76,6 @@ var requestPasswordResetMutation = &graphql.Field{
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
-		ctx := p.Context
 
 		input := p.Args["input"].(map[string]interface{})
 		mutationID, _ := input["clientMutationId"].(string)
@@ -92,7 +91,7 @@ var requestPasswordResetMutation = &graphql.Field{
 		}
 
 		conc.Go(func() {
-			if err := svc.createAndSendPasswordResetEmail(ctx, email); err != nil {
+			if err := svc.createAndSendPasswordResetEmail(context.TODO(), email); err != nil {
 				golog.Errorf("Error while sending password reset email: %s", err)
 			}
 		})
@@ -214,7 +213,7 @@ func (s *service) createAndSendPasswordResetEmail(ctx context.Context, email str
 
 	body := fmt.Sprintf("Your password reset link is: %s", passwordResetURL(s.webDomain, resp.Token))
 	golog.Debugf("Sending password reset email %q to %s", body, email)
-	if _, err := s.exComms.SendMessage(context.TODO(), &excomms.SendMessageRequest{
+	if _, err := s.exComms.SendMessage(ctx, &excomms.SendMessageRequest{
 		Channel: excomms.ChannelType_EMAIL,
 		Message: &excomms.SendMessageRequest_Email{
 			Email: &excomms.EmailMessage{
