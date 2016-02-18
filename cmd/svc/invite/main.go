@@ -5,9 +5,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -19,7 +16,6 @@ import (
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/server"
-	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/branch"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -80,14 +76,7 @@ func createAWSSession() (*session.Session, error) {
 
 func main() {
 	boot.ParseFlags("INVITE_")
-	if *flagDebug {
-		golog.Default().SetLevel(golog.DEBUG)
-	}
-
-	if *flagEnv == "" {
-		golog.Fatalf("Environment not set")
-	}
-	environment.SetCurrent(*flagEnv)
+	boot.InitService()
 
 	if *flagFromEmail == "" {
 		golog.Fatalf("from_email required")
@@ -138,12 +127,5 @@ func main() {
 		}
 	}()
 
-	// Wait for an external process interrupt to quit the program
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
-	select {
-	case sig := <-sigCh:
-		golog.Infof("Quitting due to signal %s", sig.String())
-		break
-	}
+	boot.WaitForTermination()
 }

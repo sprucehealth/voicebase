@@ -2,9 +2,6 @@ package main
 
 import (
 	"flag"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/sns"
@@ -22,7 +19,6 @@ import (
 )
 
 var config struct {
-	debug                             bool
 	dbHost                            string
 	dbPort                            int
 	dbName                            string
@@ -44,7 +40,6 @@ var config struct {
 }
 
 func init() {
-	flag.BoolVar(&config.debug, "debug", false, "enables golog debug logging for the application")
 	flag.StringVar(&config.dbHost, "db_host", "localhost", "the host at which we should attempt to connect to the database")
 	flag.IntVar(&config.dbPort, "db_port", 3306, "the port on which we should attempt to connect to the database")
 	flag.StringVar(&config.dbName, "db_name", "notification", "the name of the database which we should connect to")
@@ -67,7 +62,7 @@ func init() {
 
 func main() {
 	boot.ParseFlags("NOTIFICATION_SERVICE_")
-	configureLogging()
+	boot.InitService()
 
 	golog.Infof("Initializing database connection on %s:%d, user: %s, db: %s...", config.dbHost, config.dbPort, config.dbUser, config.dbName)
 	db, err := dbutil.ConnectMySQL(&dbutil.DBConfig{
@@ -138,20 +133,5 @@ func main() {
 		})
 	svc.Start()
 
-	// Wait for an external process interrupt to quit the program
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt, os.Kill, syscall.SIGTERM)
-	select {
-	case sig := <-sigCh:
-		golog.Infof("Quitting due to signal %s", sig.String())
-		svc.Shutdown()
-		break
-	}
-}
-
-func configureLogging() {
-	if config.debug {
-		golog.Default().SetLevel(golog.DEBUG)
-		golog.Debugf("Debug logging enabled...")
-	}
+	boot.WaitForTermination()
 }

@@ -31,9 +31,7 @@ var config struct {
 	awsRegion    string
 
 	// environment
-	debug bool
-	env   string
-	port  int
+	port int
 }
 
 func init() {
@@ -43,24 +41,18 @@ func init() {
 	flag.StringVar(&config.awsRegion, "aws_region", "us-east-1", "AWS region")
 	flag.StringVar(&config.awsAccessKey, "aws_access_key", "", "AWS access key")
 	flag.StringVar(&config.awsSecretKey, "aws_secret_key", "", "AWS secret key")
-	flag.BoolVar(&config.debug, "debug", false, "debug mode")
-	flag.StringVar(&config.env, "env", "", "environment")
 	flag.IntVar(&config.port, "port", 50053, "port on which to run settings service")
 }
 
 func main() {
 	boot.ParseFlags("SETTINGS_")
-
-	if config.debug {
-		golog.Default().SetLevel(golog.DEBUG)
-	}
+	boot.InitService()
 
 	baseConfig := &cfg.BaseConfig{
 		AppName:      "settings",
 		AWSRegion:    config.awsRegion,
 		AWSSecretKey: config.awsSecretKey,
 		AWSAccessKey: config.awsAccessKey,
-		Environment:  config.env,
 	}
 	awsSession := baseConfig.AWSSession()
 
@@ -86,9 +78,14 @@ func main() {
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
+	defer lis.Close()
 
 	golog.Infof("Starting settings service on port %d", config.port)
-	if err := server.Serve(lis); err != nil {
-		golog.Fatalf(err.Error())
-	}
+	go func() {
+		if err := server.Serve(lis); err != nil {
+			golog.Fatalf(err.Error())
+		}
+	}()
+
+	boot.WaitForTermination()
 }

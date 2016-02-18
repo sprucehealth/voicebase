@@ -2,13 +2,9 @@ package main
 
 import (
 	"flag"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/libs/conc"
-	"github.com/sprucehealth/backend/libs/golog"
 )
 
 var config struct {
@@ -27,7 +23,6 @@ var config struct {
 	attachmentPrefix        string
 	externalMessageTopic    string
 	incomingRawMessageQueue string
-	debug                   bool
 	dbHost                  string
 	dbPassword              string
 	dbName                  string
@@ -53,7 +48,6 @@ func init() {
 	flag.StringVar(&config.awsSecretKey, "aws_secret_key", "", "secret key for aws user")
 	flag.StringVar(&config.sendgridAPIKey, "sendgrid_api_key", "", "sendgrid api key")
 	flag.StringVar(&config.externalMessageTopic, "sns_external_message_topic", "", "sns topic on which to post external message events")
-	flag.BoolVar(&config.debug, "debug", false, "debug flag")
 	flag.StringVar(&config.dbHost, "db_host", "", "database host")
 	flag.StringVar(&config.dbPassword, "db_password", "", "database password")
 	flag.StringVar(&config.dbName, "db_name", "", "database name")
@@ -71,6 +65,7 @@ func init() {
 
 func main() {
 	boot.ParseFlags("EXCOMMS_")
+	boot.InitService()
 
 	conc.Go(func() {
 		runAPI()
@@ -80,13 +75,5 @@ func main() {
 		runService()
 	})
 
-	// Wait for an external process interrupt to quit the program
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt, os.Kill, syscall.SIGTERM)
-	select {
-	case sig := <-sigCh:
-		golog.Infof("Quitting due to signal %s", sig.String())
-		break
-	}
-
+	boot.WaitForTermination()
 }

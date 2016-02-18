@@ -38,7 +38,6 @@ var (
 	flagDBTLS              = flag.String("db_tls", "false", "Enable TLS for database connection (one of 'true', 'false', 'skip-verify'). Ignored if CA cert provided.")
 	flagListen             = flag.String("listen_addr", ":5001", "Address on which to listen")
 	flagSNSTopicARN        = flag.String("sns_topic_arn", "", "SNS topic ARN to publish new messages to")
-	flagDebug              = flag.Bool("debug", false, "Enable debug logging")
 	flagSQSNotificationURL = flag.String("sqs_notification_url", "", "the sqs url for notification messages")
 	flagDirectoryAddr      = flag.String("directory_addr", "", "host:port of directory service")
 )
@@ -78,9 +77,7 @@ func createAWSSession() (*session.Session, error) {
 
 func main() {
 	boot.ParseFlags("THREADING_")
-	if *flagDebug {
-		golog.Default().SetLevel(golog.DEBUG)
-	}
+	boot.InitService()
 
 	db, err := dbutil.ConnectMySQL(&dbutil.DBConfig{
 		Host:          *flagDBHost,
@@ -133,7 +130,11 @@ func main() {
 	if err != nil {
 		golog.Fatalf("failed to listen on %s: %v", *flagListen, err)
 	}
-	s.Serve(ln)
+	go func() {
+		s.Serve(ln)
+	}()
+
+	boot.WaitForTermination()
 
 	// cert, err := tls.X509KeyPair(localTLSCert, localTLSKey)
 	// if err != nil {

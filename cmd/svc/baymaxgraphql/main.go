@@ -34,16 +34,13 @@ import (
 
 var (
 	flagListenAddr    = flag.String("listen_addr", "127.0.0.1:8080", "host:port to listen on")
-	flagDebugAddr     = flag.String("debug_addr", "127.0.0.1:9090", "host:port to listen for debug interface")
 	flagResourcePath  = flag.String("resource_path", "", "Path to resources (defaults to use GOPATH)")
-	flagEnv           = flag.String("env", "", "Execution environment")
 	flagAPIDomain     = flag.String("api_domain", "", "API `domain`")
 	flagWebDomain     = flag.String("web_domain", "", "Web `domain`")
 	flagStorageBucket = flag.String("storage_bucket", "", "storage bucket for media")
 	flagSigKeys       = flag.String("signature_keys_csv", "", "csv signature keys")
 	flagEmailDomain   = flag.String("email_domain", "", "domain to use for email address provisioning")
 	flagServiceNumber = flag.String("service_phone_number", "", "TODO: This should be managed by the excomms service")
-	flagDebug         = flag.Bool("debug", false, "flag to enable debug logging")
 
 	// Services
 	flagAuthAddr                 = flag.String("auth_addr", "", "host:port of auth service")
@@ -63,21 +60,8 @@ var (
 
 func main() {
 	boot.ParseFlags("BAYMAXGRAPHQL_")
-	if *flagDebug {
-		golog.Default().SetLevel(golog.DEBUG)
-		golog.Debugf("Debug logging enabled...")
-	}
-	if *flagEnv == "" {
-		fmt.Fprintf(os.Stderr, "Flag -env is required\n")
-		os.Exit(1)
-	}
-	environment.SetCurrent(*flagEnv)
+	boot.InitService()
 
-	if *flagDebugAddr != "" {
-		go func() {
-			http.ListenAndServe(*flagDebugAddr, nil)
-		}()
-	}
 	if *flagServiceNumber == "" {
 		golog.Fatalf("A service phone number must be provided")
 	}
@@ -231,5 +215,9 @@ func main() {
 		Handler:        httputil.FromContextHandler(r),
 		MaxHeaderBytes: 1 << 20,
 	}
-	server.ListenAndServe()
+	go func() {
+		server.ListenAndServe()
+	}()
+
+	boot.WaitForTermination()
 }

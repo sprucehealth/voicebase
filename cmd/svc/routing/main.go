@@ -2,9 +2,6 @@ package main
 
 import (
 	"flag"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/routing/internal"
@@ -25,8 +22,6 @@ var config struct {
 	awsRegion            string
 	externalMessageQueue string
 	inAppMessageQueue    string
-	debug                bool
-	env                  string
 }
 
 func init() {
@@ -36,18 +31,13 @@ func init() {
 	flag.StringVar(&config.awsAccessKey, "aws_access_key", "", "access key for aws")
 	flag.StringVar(&config.awsSecretKey, "aws_secret_key", "", "secret key for aws")
 	flag.StringVar(&config.awsRegion, "aws_region", "us-east-1", "aws region")
-	flag.StringVar(&config.env, "env", "dev", "environment")
 	flag.StringVar(&config.externalMessageQueue, "queue_external_message", "", "queue name for receiving external messages")
 	flag.StringVar(&config.inAppMessageQueue, "queue_inapp_message", "", "queue name for receiving in app messages")
-	flag.BoolVar(&config.debug, "debug", false, "flag to turn debug on")
 }
 
 func main() {
 	boot.ParseFlags("ROUTING_")
-
-	if config.debug {
-		golog.Default().SetLevel(golog.DEBUG)
-	}
+	boot.InitService()
 
 	directoryConn, err := grpc.Dial(
 		config.directoryServiceURL,
@@ -81,7 +71,6 @@ func main() {
 		AWSRegion:    config.awsRegion,
 		AWSSecretKey: config.awsSecretKey,
 		AWSAccessKey: config.awsAccessKey,
-		Environment:  config.env,
 	}
 
 	awsSession := baseConfig.AWSSession()
@@ -101,12 +90,5 @@ func main() {
 	golog.Infof("Started routing service ...")
 	routingService.Start()
 
-	// Wait for an external process interrupt to quit the program
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt, os.Kill, syscall.SIGTERM)
-	select {
-	case sig := <-sigCh:
-		golog.Infof("Quitting due to signal %s", sig.String())
-		break
-	}
+	boot.WaitForTermination()
 }

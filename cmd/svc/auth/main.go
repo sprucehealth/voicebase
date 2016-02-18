@@ -14,14 +14,12 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	pb "github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/settings"
-
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
 var config struct {
 	listenPort                int
-	debug                     bool
 	dbHost                    string
 	dbPort                    int
 	dbName                    string
@@ -36,7 +34,6 @@ var config struct {
 
 func init() {
 	flag.IntVar(&config.listenPort, "rpc_listen_port", 50051, "the port on which to listen for rpc call")
-	flag.BoolVar(&config.debug, "debug", false, "enables golog debug logging for the application")
 	flag.StringVar(&config.dbHost, "db_host", "localhost", "the host at which we should attempt to connect to the database")
 	flag.IntVar(&config.dbPort, "db_port", 3306, "the port on which we should attempt to connect to the database")
 	flag.StringVar(&config.dbName, "db_name", "auth", "the name of the database which we should connect to")
@@ -51,7 +48,7 @@ func init() {
 
 func main() {
 	boot.ParseFlags("AUTH_SERVICE_")
-	configureLogging()
+	boot.InitService()
 
 	if config.clientEncryptionKeySecret == "" {
 		golog.Fatalf("Client encryption key secret required")
@@ -102,12 +99,7 @@ func main() {
 	s := grpc.NewServer()
 	pb.RegisterAuthServer(s, aSrv)
 	golog.Infof("Starting AuthService on %s...", listenAddress)
-	s.Serve(lis)
-}
+	go s.Serve(lis)
 
-func configureLogging() {
-	if config.debug {
-		golog.Default().SetLevel(golog.DEBUG)
-		golog.Debugf("Debug logging enabled...")
-	}
+	boot.WaitForTermination()
 }

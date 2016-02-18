@@ -16,7 +16,6 @@ import (
 
 var config struct {
 	listenPort           int
-	debug                bool
 	dbHost               string
 	dbPort               int
 	dbName               string
@@ -31,7 +30,6 @@ var config struct {
 
 func init() {
 	flag.IntVar(&config.listenPort, "rpc_listen_port", 50051, "the port on which to listen for rpc call")
-	flag.BoolVar(&config.debug, "debug", false, "enables golog debug logging for the application")
 	flag.StringVar(&config.dbHost, "db_host", "localhost", "the host at which we should attempt to connect to the database")
 	flag.IntVar(&config.dbPort, "db_port", 3306, "the port on which we should attempt to connect to the database")
 	flag.StringVar(&config.dbName, "db_name", "directory", "the name of the database which we should connect to")
@@ -46,7 +44,7 @@ func init() {
 
 func main() {
 	boot.ParseFlags("DIRECTORY_")
-	configureLogging()
+	boot.InitService()
 
 	listenAddress := ":" + strconv.Itoa(config.listenPort)
 	lis, err := net.Listen("tcp", listenAddress)
@@ -67,17 +65,12 @@ func main() {
 		MaxIdleConnections: config.dbMaxIdleConnections,
 	})
 	if err != nil {
-		golog.Fatalf("failed to iniitlize db connection: %s", err)
+		golog.Fatalf("failed to initialize db connection: %s", err)
 	}
 	s := grpc.NewServer()
 	pb.RegisterDirectoryServer(s, server.New(dal.New(db)))
 	golog.Infof("Starting DirectoryService on %s...", listenAddress)
-	s.Serve(lis)
-}
+	go s.Serve(lis)
 
-func configureLogging() {
-	if config.debug {
-		golog.Default().SetLevel(golog.DEBUG)
-		golog.Debugf("Debug logging enabled...")
-	}
+	boot.WaitForTermination()
 }

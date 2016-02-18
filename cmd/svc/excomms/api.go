@@ -24,11 +24,6 @@ import (
 )
 
 func runAPI() {
-
-	if config.debug {
-		golog.Default().SetLevel(golog.DEBUG)
-	}
-
 	conn, err := grpc.Dial(config.directoryServiceURL, grpc.WithInsecure())
 	if err != nil {
 		golog.Fatalf("Unable to communicate with events processor service: %s", err.Error())

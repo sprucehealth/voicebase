@@ -7,11 +7,10 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/server"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/worker"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
-
-	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber"
 	cfg "github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -24,7 +23,6 @@ import (
 )
 
 func runService() {
-
 	dbConfig := &cfg.DB{
 		User:     config.dbUserName,
 		Password: config.dbPassword,
@@ -41,10 +39,6 @@ func runService() {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.excommsServicePort))
 	if err != nil {
 		golog.Fatalf(err.Error())
-	}
-
-	if config.debug {
-		golog.Default().SetLevel(golog.DEBUG)
 	}
 
 	baseConfig := &cfg.BaseConfig{
