@@ -115,7 +115,7 @@ type checkPasswordResetTokenOutput struct {
 	Success                   bool   `json:"success"`
 	ErrorCode                 string `json:"errorCode,omitempty"`
 	ErrorMessage              string `json:"errorMessage,omitempty"`
-	PhoneNumberLastFourDigits string `json:"phone_number_last_four_digits"`
+	PhoneNumberLastFourDigits string `json:"phoneNumberLastFourDigits"`
 }
 
 var checkPasswordResetTokenErrorCodeEnum = graphql.NewEnum(
