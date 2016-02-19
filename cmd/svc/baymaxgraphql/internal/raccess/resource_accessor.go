@@ -327,7 +327,7 @@ func (m *resourceAccessor) EntityDomain(ctx context.Context, entityID, domain st
 			return nil, err
 		}
 	}
-	res, err := m.entityDomain(ctx, domain, entityID)
+	res, err := m.entityDomain(ctx, entityID, domain)
 	if err != nil {
 		return nil, err
 	}
