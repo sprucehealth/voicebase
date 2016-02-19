@@ -847,7 +847,7 @@ func (m *resourceAccessor) entitiesForContact(ctx context.Context, contactValue 
 		&directory.LookupEntitiesByContactRequest{
 			ContactValue: contactValue,
 			RequestedInformation: &directory.RequestedInformation{
-				Depth:             0,
+				Depth:             depth,
 				EntityInformation: entityInfo,
 			},
 		})
@@ -871,7 +871,7 @@ func (m *resourceAccessor) entitiesForExternalID(ctx context.Context, externalID
 				ExternalID: externalID,
 			},
 			RequestedInformation: &directory.RequestedInformation{
-				Depth:             0,
+				Depth:             depth,
 				EntityInformation: entityInfo,
 			},
 		})

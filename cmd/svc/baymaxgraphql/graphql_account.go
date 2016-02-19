@@ -49,20 +49,22 @@ var accountType = graphql.NewObject(
 					var orgs []*models.Organization
 					for _, e := range entities {
 						for _, em := range e.Memberships {
-							oc, err := transformContactsToResponse(em.Contacts)
-							if err != nil {
-								return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform org contacts: %+v", err))
+							if em.Type == directory.EntityType_ORGANIZATION {
+								oc, err := transformContactsToResponse(em.Contacts)
+								if err != nil {
+									return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform org contacts: %+v", err))
+								}
+								entity, err := transformEntityToResponse(e)
+								if err != nil {
+									return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity: %+v", err))
+								}
+								orgs = append(orgs, &models.Organization{
+									ID:       em.ID,
+									Name:     em.Info.DisplayName,
+									Contacts: oc,
+									Entity:   entity,
+								})
 							}
-							entity, err := transformEntityToResponse(e)
-							if err != nil {
-								return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity: %+v", err))
-							}
-							orgs = append(orgs, &models.Organization{
-								ID:       em.ID,
-								Name:     em.Info.DisplayName,
-								Contacts: oc,
-								Entity:   entity,
-							})
 						}
 					}
 					return orgs, nil
