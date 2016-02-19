@@ -232,6 +232,13 @@ var createAccountMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 		accountID := res.Account.ID
+		acc, err := transformAccountToResponse(res.Account)
+		if err != nil {
+			return nil, errors.InternalError(ctx, err)
+		}
+		// TODO: updating the gqlctx this is safe for now because the GraphQL pkg serializes mutations.
+		// that likely won't change, but this still isn't a great way to update the gqlctx.
+		gqlctx.InPlaceWithAccount(ctx, acc)
 
 		var orgEntityID string
 		var accEntityID string
@@ -291,13 +298,6 @@ var createAccountMutation = &graphql.Field{
 		result.Set("auth_token", res.Token.Value)
 		result.Set("auth_expiration", time.Unix(int64(res.Token.ExpirationEpoch), 0))
 
-		acc, err := transformAccountToResponse(res.Account)
-		if err != nil {
-			return nil, errors.InternalError(ctx, err)
-		}
-		// TODO: updating the gqlctx this is safe for now because the GraphQL pkg serializes mutations.
-		// that likely won't change, but this still isn't a great way to update the gqlctx.
-		gqlctx.InPlaceWithAccount(ctx, acc)
 		return &createAccountOutput{
 			ClientMutationID:    mutationID,
 			Success:             true,
