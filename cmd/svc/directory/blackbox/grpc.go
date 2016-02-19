@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/sprucehealth/backend/cmd/svc/blackbox/harness"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 

@@ -30,7 +30,6 @@ var (
 	flagAWSToken      = flag.String("aws_token", "", "AWS `token`")
 	flagAWSRegion     = flag.String("aws_region", "", "AWS `region`")
 	flagBranchKey     = flag.String("branch_key", "", "Branch API key")
-	flagDebug         = flag.Bool("debug", false, "Enable debug logging")
 	flagDirectoryAddr = flag.String("directory_addr", "", "`host:port` of directory service")
 	flagEnv           = flag.String("env", "", "`Environment` (local, dev, staging, prod)")
 	flagFromEmail     = flag.String("from_email", "", "Email address from which to send invites")

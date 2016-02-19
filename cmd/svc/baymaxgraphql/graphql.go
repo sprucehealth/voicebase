@@ -70,12 +70,6 @@ func init() {
 	}
 }
 
-type user struct {
-	account  *models.Account
-	email    string
-	password string
-}
-
 type graphQLHandler struct {
 	auth    auth.AuthClient
 	ram     raccess.ResourceAccessor

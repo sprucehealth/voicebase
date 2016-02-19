@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-	"sync"
 	"time"
 )
 
@@ -25,24 +24,6 @@ const (
 	MetadataInstanceType     = "instance-type"
 	MetadataLocalIPv4        = "local-ipv4"
 )
-
-// TODO: The locking on Credentials is pretty inefficient. The request for keys
-// should never block, and all updates should happen in the background.
-
-type Credentials struct {
-	Code            string
-	LastUpdatedStr  string    `json:"LastUpdated"`
-	LastUpdated     time.Time `json:"-"`
-	Type            string
-	AccessKeyID     string
-	SecretAccessKey string
-	Token           string
-	ExpirationStr   string    `json:"Expiration"`
-	Expiration      time.Time `json:"-"`
-	Role            string
-
-	mu sync.RWMutex
-}
 
 const metadataTimeout = time.Second
 

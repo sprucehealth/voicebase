@@ -23,7 +23,6 @@ var twilioEventMapper = map[string]rawmsg.TwilioEvent{
 }
 
 type twilioRequestHandler struct {
-	h             httputil.ContextHandler
 	eventsHandler twilio.EventHandler
 }
 
