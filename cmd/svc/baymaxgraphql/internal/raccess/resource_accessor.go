@@ -600,8 +600,6 @@ func (m *resourceAccessor) canAccessResource(ctx context.Context, resourceID str
 		return errors.ErrNotAuthenticated(ctx)
 	}
 
-	golog.Debugf("Authorization: Checking account %s can access resource %s", acc.ID, resourceID)
-
 	// Get the orgs for the resource
 	resourceOrgs := m.rMap.Get(resourceID)
 

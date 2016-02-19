@@ -48,7 +48,7 @@ func hydrateThreads(ctx context.Context, ram raccess.ResourceAccessor, threads [
 		thread := t
 		p.Go(func() error {
 			if thread.PrimaryEntity == nil {
-				entity, err := ram.Entity(ctx, t.PrimaryEntityID, []directory.EntityInformation{directory.EntityInformation_CONTACTS}, 0)
+				entity, err := ram.Entity(ctx, thread.PrimaryEntityID, []directory.EntityInformation{directory.EntityInformation_CONTACTS}, 0)
 				if err != nil {
 					return err
 				}
