@@ -76,13 +76,13 @@ func TestAccount_EmergencyContacts(t *testing.T) {
 	pr := test_integration.SignupRandomTestPatientWithPharmacyAndAddress(t, testData)
 
 	emergencyContacts := []*common.EmergencyContact{
-		&common.EmergencyContact{
+		{
 			ID:           1,
 			FullName:     "Test 1",
 			Relationship: "Test's Brother",
 			PhoneNumber:  "734-846-5522",
 		},
-		&common.EmergencyContact{
+		{
 			ID:           2,
 			FullName:     "Test 2",
 			Relationship: "Test's Sister",

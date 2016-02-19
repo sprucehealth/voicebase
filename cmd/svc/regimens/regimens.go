@@ -110,7 +110,7 @@ func (s *service) Regimen(id string) (*svc.Regimen, bool, error) {
 	getResp, operr := s.kvs.GetItem(&dynamodb.GetItemInput{
 		TableName: s.regimenTableName,
 		Key: map[string]*dynamodb.AttributeValue{
-			regimenIDAN: &dynamodb.AttributeValue{
+			regimenIDAN: {
 				S: ptr.String(id),
 			},
 		},
@@ -144,7 +144,7 @@ func (s *service) IncrementViewCount(id string) error {
 	updateResp, operr := s.kvs.UpdateItem(&dynamodb.UpdateItemInput{
 		TableName: s.regimenTableName,
 		Key: map[string]*dynamodb.AttributeValue{
-			regimenIDAN: &dynamodb.AttributeValue{
+			regimenIDAN: {
 				S: ptr.String(id),
 			},
 		},
@@ -178,10 +178,10 @@ func (s *service) IncrementViewCount(id string) error {
 		_, err := s.kvs.UpdateItem(&dynamodb.UpdateItemInput{
 			TableName: s.regimenTagTableName,
 			Key: map[string]*dynamodb.AttributeValue{
-				tagAN: &dynamodb.AttributeValue{
+				tagAN: {
 					S: ptr.String(tag),
 				},
-				regimenIDAN: &dynamodb.AttributeValue{
+				regimenIDAN: {
 					S: regimenID,
 				},
 			},
@@ -220,18 +220,18 @@ func (s *service) PutRegimen(id string, r *svc.Regimen, published bool) error {
 
 	putRequest := &dynamodb.PutRequest{
 		Item: map[string]*dynamodb.AttributeValue{
-			regimenIDAN: &dynamodb.AttributeValue{
+			regimenIDAN: {
 				S: ptr.String(id),
 			},
 
 			// An unpublished regimen always has a view count of 0 and a published regimen should not be mutated so always PUT with a 0 value
-			viewCountAN: &dynamodb.AttributeValue{
+			viewCountAN: {
 				N: zeroAV,
 			},
-			publishedAN: &dynamodb.AttributeValue{
+			publishedAN: {
 				BOOL: ptr.Bool(published),
 			},
-			regimenAN: &dynamodb.AttributeValue{
+			regimenAN: {
 				B: regimenData,
 			},
 		},
@@ -242,7 +242,7 @@ func (s *service) PutRegimen(id string, r *svc.Regimen, published bool) error {
 		}
 	}
 	regimenWriteRequests := []*dynamodb.WriteRequest{
-		&dynamodb.WriteRequest{
+		{
 			PutRequest: putRequest,
 		},
 	}
@@ -269,14 +269,14 @@ func (s *service) PutRegimen(id string, r *svc.Regimen, published bool) error {
 			tagWriteRequests = append(tagWriteRequests, &dynamodb.WriteRequest{
 				PutRequest: &dynamodb.PutRequest{
 					Item: map[string]*dynamodb.AttributeValue{
-						tagAN: &dynamodb.AttributeValue{
+						tagAN: {
 							S: ptr.String(tag),
 						},
 						// An unpublished regimen always has a view count of 0 and a published regimen should not be mutated so always PUT with a 0 value
-						viewCountAN: &dynamodb.AttributeValue{
+						viewCountAN: {
 							N: zeroAV,
 						},
-						regimenIDAN: &dynamodb.AttributeValue{
+						regimenIDAN: {
 							S: ptr.String(id),
 						},
 					},
@@ -479,7 +479,7 @@ func (s *service) FoundationOf(id string, maxResults int) ([]*svc.Regimen, error
 	// Merge in the result of each query
 	for _, v := range regimenResult.Items {
 		if v[viewCountAN].N == nil {
-			golog.Errorf("Encountered a nil view count for regimen %s when doing foundation query, moving on", v[regimenIDAN].S)
+			golog.Errorf("Encountered a nil view count for regimen %s when doing foundation query, moving on", v[regimenIDAN].String())
 			continue
 		}
 
@@ -489,7 +489,7 @@ func (s *service) FoundationOf(id string, maxResults int) ([]*svc.Regimen, error
 		}
 		regimen := &svc.Regimen{}
 		if err := json.Unmarshal(v[regimenAN].B, regimen); err != nil {
-			golog.Errorf("Unable to deserialize regimen %s when doing foundation query, moving on: %s", v[regimenIDAN].S, err)
+			golog.Errorf("Unable to deserialize regimen %s when doing foundation query, moving on: %s", v[regimenIDAN].String(), err)
 			continue
 		}
 		regimen.ViewCount = int(vc)
@@ -509,30 +509,30 @@ func (s *service) bootstrapDynamo() error {
 	if err := awsutil.CreateDynamoDBTable(s.kvs, &dynamodb.CreateTableInput{
 		TableName: s.regimenTableName,
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
-			&dynamodb.AttributeDefinition{
+			{
 				AttributeName: ptr.String(regimenIDAN),
 				AttributeType: ptr.String("S"),
 			},
-			&dynamodb.AttributeDefinition{
+			{
 				AttributeName: ptr.String(sourceRegimenIDAN),
 				AttributeType: ptr.String("S"),
 			},
 		},
 		KeySchema: []*dynamodb.KeySchemaElement{
-			&dynamodb.KeySchemaElement{
+			{
 				AttributeName: ptr.String(regimenIDAN),
 				KeyType:       ptr.String("HASH"),
 			},
 		},
 		GlobalSecondaryIndexes: []*dynamodb.GlobalSecondaryIndex{
-			&dynamodb.GlobalSecondaryIndex{
+			{
 				IndexName: regimenTableSourceRegimenRegimenIndexName,
 				KeySchema: []*dynamodb.KeySchemaElement{
-					&dynamodb.KeySchemaElement{
+					{
 						AttributeName: ptr.String(sourceRegimenIDAN),
 						KeyType:       ptr.String("HASH"),
 					},
-					&dynamodb.KeySchemaElement{
+					{
 						AttributeName: ptr.String(regimenIDAN),
 						KeyType:       ptr.String("RANGE"),
 					},
@@ -563,38 +563,38 @@ func (s *service) bootstrapDynamo() error {
 	return errors.Trace(awsutil.CreateDynamoDBTable(s.kvs, &dynamodb.CreateTableInput{
 		TableName: s.regimenTagTableName,
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
-			&dynamodb.AttributeDefinition{
+			{
 				AttributeName: ptr.String(tagAN),
 				AttributeType: ptr.String("S"),
 			},
-			&dynamodb.AttributeDefinition{
+			{
 				AttributeName: ptr.String(regimenIDAN),
 				AttributeType: ptr.String("S"),
 			},
-			&dynamodb.AttributeDefinition{
+			{
 				AttributeName: ptr.String(viewCountAN),
 				AttributeType: ptr.String("N"),
 			},
 		},
 		KeySchema: []*dynamodb.KeySchemaElement{
-			&dynamodb.KeySchemaElement{
+			{
 				AttributeName: ptr.String(tagAN),
 				KeyType:       ptr.String("HASH"),
 			},
-			&dynamodb.KeySchemaElement{
+			{
 				AttributeName: ptr.String(regimenIDAN),
 				KeyType:       ptr.String("RANGE"),
 			},
 		},
 		GlobalSecondaryIndexes: []*dynamodb.GlobalSecondaryIndex{
-			&dynamodb.GlobalSecondaryIndex{
+			{
 				IndexName: regimenTagTableTagViewIndexName,
 				KeySchema: []*dynamodb.KeySchemaElement{
-					&dynamodb.KeySchemaElement{
+					{
 						AttributeName: ptr.String(tagAN),
 						KeyType:       ptr.String("HASH"),
 					},
-					&dynamodb.KeySchemaElement{
+					{
 						AttributeName: ptr.String(viewCountAN),
 						KeyType:       ptr.String("RANGE"),
 					},

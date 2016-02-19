@@ -6,9 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/libs/awsutil"
@@ -21,8 +18,9 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/threading"
-
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 type externalMessageWorker struct {

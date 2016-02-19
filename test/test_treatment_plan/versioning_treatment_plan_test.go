@@ -143,14 +143,14 @@ func TestVersionTreatmentPlan_PrevTP(t *testing.T) {
 	regimenPlanRequest.AllSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
 	regimenSection := &common.RegimenSection{}
 	regimenSection.Name = "morning"
-	regimenSection.Steps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+	regimenSection.Steps = []*common.DoctorInstructionItem{{
 		ParentID: regimenPlanRequest.AllSteps[0].ID,
 		Text:     regimenPlanRequest.AllSteps[0].Text,
 	},
 	}
 	regimenSection2 := &common.RegimenSection{}
 	regimenSection2.Name = "night"
-	regimenSection2.Steps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+	regimenSection2.Steps = []*common.DoctorInstructionItem{{
 		ParentID: regimenPlanRequest.AllSteps[1].ID,
 		Text:     regimenPlanRequest.AllSteps[1].Text,
 	},
@@ -277,14 +277,14 @@ func TestVersionTreatmentPlan_MultipleRevs(t *testing.T) {
 	regimenPlanRequest.AllSteps = []*common.DoctorInstructionItem{regimenStep1, regimenStep2}
 	regimenSection := &common.RegimenSection{}
 	regimenSection.Name = "morning"
-	regimenSection.Steps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+	regimenSection.Steps = []*common.DoctorInstructionItem{{
 		ParentID: regimenPlanRequest.AllSteps[0].ID,
 		Text:     regimenPlanRequest.AllSteps[0].Text,
 	},
 	}
 	regimenSection2 := &common.RegimenSection{}
 	regimenSection2.Name = "night"
-	regimenSection2.Steps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+	regimenSection2.Steps = []*common.DoctorInstructionItem{{
 		ParentID: regimenPlanRequest.AllSteps[1].ID,
 		Text:     regimenPlanRequest.AllSteps[1].Text,
 	},

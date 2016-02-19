@@ -145,7 +145,7 @@ func (f *factualDAL) QueryProducts(query string, limit int) ([]*products.Product
 	}
 
 	ps, err := f.fc.QueryProducts(query, map[string]*factual.Filter{
-		"category": &factual.Filter{
+		"category": {
 			In: factualCategories,
 		},
 	}, limit)

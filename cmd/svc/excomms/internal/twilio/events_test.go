@@ -99,7 +99,7 @@ func testOutgoing(t *testing.T, testExpired bool, patientName string) {
 
 	md := &mockDirectoryService_Twilio{
 		entities: map[string][]*directory.Entity{
-			"1234": []*directory.Entity{
+			"1234": {
 				{
 					ID:   organizationID,
 					Type: directory.EntityType_ORGANIZATION,
@@ -112,7 +112,7 @@ func testOutgoing(t *testing.T, testExpired bool, patientName string) {
 					},
 				},
 			},
-			"6789": []*directory.Entity{
+			"6789": {
 				{
 					ID:   destinationEntityID,
 					Type: directory.EntityType_EXTERNAL,

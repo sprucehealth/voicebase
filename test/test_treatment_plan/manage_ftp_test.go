@@ -47,24 +47,24 @@ func TestManageFTP(t *testing.T) {
 	}
 
 	regimenSections := []*common.RegimenSection{
-		&common.RegimenSection{
+		{
 			Name: "Morning",
 			Steps: []*common.DoctorInstructionItem{
-				&common.DoctorInstructionItem{
+				{
 					Text: "Step 1",
 				},
-				&common.DoctorInstructionItem{
+				{
 					Text: "Step 2",
 				},
 			},
 		},
-		&common.RegimenSection{
+		{
 			Name: "Nighttime",
 			Steps: []*common.DoctorInstructionItem{
-				&common.DoctorInstructionItem{
+				{
 					Text: "Step 1",
 				},
-				&common.DoctorInstructionItem{
+				{
 					Text: "Step 2",
 				},
 			},

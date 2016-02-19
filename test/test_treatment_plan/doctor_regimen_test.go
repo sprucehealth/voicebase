@@ -61,7 +61,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 	// now lets add a couple regimen steps to a regimen section
 	regimenSection := &common.RegimenSection{}
 	regimenSection.Name = "morning"
-	regimenSection.Steps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+	regimenSection.Steps = []*common.DoctorInstructionItem{{
 		ParentID: regimenPlanRequest.AllSteps[0].ID,
 		Text:     regimenPlanRequest.AllSteps[0].Text,
 	},
@@ -69,7 +69,7 @@ func TestRegimenForPatientVisit(t *testing.T) {
 
 	regimenSection2 := &common.RegimenSection{}
 	regimenSection2.Name = "night"
-	regimenSection2.Steps = []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+	regimenSection2.Steps = []*common.DoctorInstructionItem{{
 		ParentID: regimenPlanRequest.AllSteps[1].ID,
 		Text:     regimenPlanRequest.AllSteps[1].Text,
 	},
@@ -219,7 +219,7 @@ func TestRegimenForPatientVisit_AddingMultipleItemsWithSameText(t *testing.T) {
 
 		regimenPlanRequest.Sections = append(regimenPlanRequest.Sections, &common.RegimenSection{
 			Name: "test " + strconv.Itoa(i),
-			Steps: []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+			Steps: []*common.DoctorInstructionItem{{
 				Text:  "Regimen Step",
 				State: common.StateAdded,
 			},
@@ -316,7 +316,7 @@ func TestRegimenForPatientVisit_UpdatingMultipleItemsWithSameText(t *testing.T) 
 
 		regimenPlanRequest.Sections = append(regimenPlanRequest.Sections, &common.RegimenSection{
 			Name: "test " + strconv.Itoa(i),
-			Steps: []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+			Steps: []*common.DoctorInstructionItem{{
 				Text:  "Regimen Step",
 				State: common.StateAdded,
 			},
@@ -361,7 +361,7 @@ func TestRegimenForPatientVisit_UpdatingItemLinkedToDeletedItem(t *testing.T) {
 
 		regimenPlanRequest.Sections = append(regimenPlanRequest.Sections, &common.RegimenSection{
 			Name: "test " + strconv.Itoa(i),
-			Steps: []*common.DoctorInstructionItem{&common.DoctorInstructionItem{
+			Steps: []*common.DoctorInstructionItem{{
 				Text:  "Regimen Step",
 				State: common.StateAdded,
 			},

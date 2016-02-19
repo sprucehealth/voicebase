@@ -11,6 +11,9 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+// go vet doesn't like that the first argument to grpcErrorf is not a string so alias the function with a different name :(
+var grpcErrorf = grpc.Errorf
+
 type server struct {
 	dal dal.DAL
 }
@@ -29,22 +32,22 @@ func (s *server) RegisterConfigs(ctx context.Context, in *settings.RegisterConfi
 
 	// TODO: Validate incoming config
 	if err := s.dal.SetConfigs(configs); err != nil {
-		return nil, grpc.Errorf(codes.Internal, err.Error())
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 	return &settings.RegisterConfigsResponse{}, nil
 }
 
 func (s *server) SetValue(ctx context.Context, in *settings.SetValueRequest) (*settings.SetValueResponse, error) {
 	if in.Value.Key == nil || in.Value.Key.Key == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "config key not specified")
+		return nil, grpcErrorf(codes.InvalidArgument, "config key not specified")
 	}
 
 	// pull up config
 	config, err := s.getConfig(in.Value.Key.Key)
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, err.Error())
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	} else if config == nil {
-		return nil, grpc.Errorf(codes.NotFound, "config with key %s not found", in.Value.Key.Key)
+		return nil, grpcErrorf(codes.NotFound, "config with key %s not found", in.Value.Key.Key)
 	}
 
 	// validate value against config
@@ -53,13 +56,13 @@ func (s *server) SetValue(ctx context.Context, in *settings.SetValueRequest) (*s
 		if grpc.Code(err) == settings.InvalidUserValue {
 			return nil, err
 		}
-		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
+		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
 	}
 
 	// TODO: Verify entityID is valid?
 	// ensure that entityID is populated
 	if err := s.dal.SetValues(in.NodeID, []*models.Value{transformedValue}); err != nil {
-		return nil, grpc.Errorf(codes.Internal, err.Error())
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
 	return &settings.SetValueResponse{}, nil
@@ -73,7 +76,7 @@ func (s *server) GetValues(ctx context.Context, in *settings.GetValuesRequest) (
 
 	values, err := s.dal.GetValues(in.NodeID, keys)
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, err.Error())
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
 	// create a value map to quickly check if data is present
@@ -93,9 +96,9 @@ func (s *server) GetValues(ctx context.Context, in *settings.GetValuesRequest) (
 		// lookup config
 		config, err := s.getConfig(k.Key)
 		if err != nil {
-			return nil, grpc.Errorf(codes.Internal, err.Error())
+			return nil, grpcErrorf(codes.Internal, err.Error())
 		} else if config == nil {
-			return nil, grpc.Errorf(codes.NotFound, "config with key %s not found", k.Key)
+			return nil, grpcErrorf(codes.NotFound, "config with key %s not found", k.Key)
 		}
 
 		// assign default
@@ -132,7 +135,7 @@ func (s *server) GetValues(ctx context.Context, in *settings.GetValuesRequest) (
 				}
 			}
 		default:
-			return nil, grpc.Errorf(codes.Unimplemented, "config type %s not supported", config.Type)
+			return nil, grpcErrorf(codes.Unimplemented, "config type %s not supported", config.Type)
 		}
 
 		transformedValues = append(transformedValues, transformModelToValue(val))
@@ -146,7 +149,7 @@ func (s *server) GetValues(ctx context.Context, in *settings.GetValuesRequest) (
 func (s *server) GetConfigs(ctx context.Context, in *settings.GetConfigsRequest) (*settings.GetConfigsResponse, error) {
 	configs, err := s.dal.GetConfigs(in.Keys)
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, err.Error())
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
 	transformedConfigs := make([]*settings.Config, len(configs))

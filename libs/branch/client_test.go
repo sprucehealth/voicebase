@@ -56,7 +56,7 @@ func TestGenerateBranchURL(t *testing.T) {
 		httpClient: &http.Client{
 			Transport: &recordingTransport{
 				resps: []*http.Response{
-					&http.Response{
+					{
 						StatusCode: http.StatusOK,
 						Body:       ioutil.NopCloser(bytes.NewReader(data)),
 					},
@@ -76,7 +76,7 @@ func TestGenerateBranchURLNotOK(t *testing.T) {
 		httpClient: &http.Client{
 			Transport: &recordingTransport{
 				resps: []*http.Response{
-					&http.Response{
+					{
 						StatusCode: http.StatusBadRequest,
 						Body:       ioutil.NopCloser(bytes.NewReader(nil)),
 					},
@@ -100,11 +100,11 @@ func TestGenerateBranchURLOK1Retry(t *testing.T) {
 		httpClient: &http.Client{
 			Transport: &recordingTransport{
 				resps: []*http.Response{
-					&http.Response{
+					{
 						StatusCode: http.StatusBadRequest,
 						Body:       ioutil.NopCloser(bytes.NewReader(nil)),
 					},
-					&http.Response{
+					{
 						StatusCode: http.StatusOK,
 						Body:       ioutil.NopCloser(bytes.NewReader(data)),
 					},
@@ -124,23 +124,23 @@ func TestGenerateBranchURL6RetryNotOK(t *testing.T) {
 		httpClient: &http.Client{
 			Transport: &recordingTransport{
 				resps: []*http.Response{
-					&http.Response{
+					{
 						StatusCode: http.StatusBadRequest,
 						Body:       ioutil.NopCloser(bytes.NewReader(nil)),
 					},
-					&http.Response{
+					{
 						StatusCode: http.StatusBadRequest,
 						Body:       ioutil.NopCloser(bytes.NewReader(nil)),
 					},
-					&http.Response{
+					{
 						StatusCode: http.StatusBadRequest,
 						Body:       ioutil.NopCloser(bytes.NewReader(nil)),
 					},
-					&http.Response{
+					{
 						StatusCode: http.StatusBadRequest,
 						Body:       ioutil.NopCloser(bytes.NewReader(nil)),
 					},
-					&http.Response{
+					{
 						StatusCode: http.StatusBadRequest,
 						Body:       ioutil.NopCloser(bytes.NewReader(nil)),
 					},
@@ -183,7 +183,7 @@ func TestGenerateMemcacheBranchURLCacheMiss(t *testing.T) {
 			httpClient: &http.Client{
 				Transport: &recordingTransport{
 					resps: []*http.Response{
-						&http.Response{
+						{
 							StatusCode: http.StatusOK,
 							Body:       ioutil.NopCloser(bytes.NewReader(data)),
 						},

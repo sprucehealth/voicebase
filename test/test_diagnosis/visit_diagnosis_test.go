@@ -72,7 +72,7 @@ func TestDiagnosisSet(t *testing.T) {
 		{
 			QuestionID: questionInfos[0].QuestionID,
 			AnswerIntakes: []*apiservice.AnswerItem{
-				&apiservice.AnswerItem{
+				{
 					PotentialAnswerID: answerInfos[0].AnswerID,
 				},
 			},
@@ -80,7 +80,7 @@ func TestDiagnosisSet(t *testing.T) {
 		{
 			QuestionID: questionInfos[1].QuestionID,
 			AnswerIntakes: []*apiservice.AnswerItem{
-				&apiservice.AnswerItem{
+				{
 					PotentialAnswerID: answerInfos[1].AnswerID,
 				},
 			},

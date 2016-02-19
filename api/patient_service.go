@@ -1241,7 +1241,7 @@ func (d *dataService) getPatientBasedOnQuery(table, joins, where string, queryPa
 				return nil, errors.Trace(err)
 			}
 			p.PhoneNumbers = []*common.PhoneNumber{
-				&common.PhoneNumber{
+				{
 					Phone: phone,
 					Type:  phoneNumberType,
 				},

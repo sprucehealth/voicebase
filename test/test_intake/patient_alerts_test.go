@@ -36,7 +36,7 @@ func TestPatientAlerts(t *testing.T) {
 	aItem := &apiservice.QuestionAnswerItem{
 		QuestionID: questionInfo.QuestionID,
 		AnswerIntakes: []*apiservice.AnswerItem{
-			&apiservice.AnswerItem{
+			{
 				AnswerText: answerText,
 			},
 		},

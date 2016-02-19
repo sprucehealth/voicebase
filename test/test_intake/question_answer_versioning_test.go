@@ -78,7 +78,7 @@ func TestVersionedQuestionDataAccess(t *testing.T) {
 	defer testData.Close(t)
 	testData.StartAPIServer(t)
 	insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
-	vqs, err := testData.DataAPI.VersionedQuestions([]*api.QuestionQueryParams{&api.QuestionQueryParams{QuestionTag: "myTag", LanguageID: EN, Version: 1}})
+	vqs, err := testData.DataAPI.VersionedQuestions([]*api.QuestionQueryParams{{QuestionTag: "myTag", LanguageID: EN, Version: 1}})
 	test.OK(t, err)
 	test.Equals(t, vqs[0].QuestionText, "questionText")
 	test.Equals(t, vqs[0].QuestionType, "questionType")
@@ -92,12 +92,12 @@ func TestVersionedQuestionMultipleDataAccess(t *testing.T) {
 	insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
 	insertQuestionVersion("myTag", "questionText2", "questionType", 2, nil, false, testData, t)
 	query := []*api.QuestionQueryParams{
-		&api.QuestionQueryParams{
+		{
 			QuestionTag: "myTag",
 			LanguageID:  EN,
 			Version:     1,
 		},
-		&api.QuestionQueryParams{
+		{
 			QuestionTag: "myTag",
 			LanguageID:  EN,
 			Version:     2,
@@ -165,7 +165,7 @@ func TestInsertVersionedQuestion(t *testing.T) {
 	id, err := testData.DataAPI.InsertVersionedQuestion(vq, []*common.VersionedAnswer{va1, va2}, []*common.VersionedPhotoSlot{}, nil)
 	test.OK(t, err)
 
-	vas, err := testData.DataAPI.VersionedAnswers([]*api.AnswerQueryParams{&api.AnswerQueryParams{QuestionID: id, LanguageID: EN}})
+	vas, err := testData.DataAPI.VersionedAnswers([]*api.AnswerQueryParams{{QuestionID: id, LanguageID: EN}})
 	test.OK(t, err)
 	test.Equals(t, 2, len(vas))
 	test.Equals(t, vas[0].AnswerText, "answerText")
@@ -186,7 +186,7 @@ func TestInsertVersionedQuestionNoAnswers(t *testing.T) {
 	id, err := testData.DataAPI.InsertVersionedQuestion(vq, []*common.VersionedAnswer{}, []*common.VersionedPhotoSlot{}, nil)
 	test.OK(t, err)
 
-	vas, err := testData.DataAPI.VersionedAnswers([]*api.AnswerQueryParams{&api.AnswerQueryParams{QuestionID: id, LanguageID: EN}})
+	vas, err := testData.DataAPI.VersionedAnswers([]*api.AnswerQueryParams{{QuestionID: id, LanguageID: EN}})
 	test.OK(t, err)
 	test.Equals(t, 0, len(vas))
 }
@@ -239,7 +239,7 @@ func TestInsertVersionedQuestionVersionsParent(t *testing.T) {
 	vq, err = testData.DataAPI.VersionedQuestionFromID(id)
 	test.OK(t, err)
 
-	vas, err := testData.DataAPI.VersionedAnswers([]*api.AnswerQueryParams{&api.AnswerQueryParams{QuestionID: id, LanguageID: EN}})
+	vas, err := testData.DataAPI.VersionedAnswers([]*api.AnswerQueryParams{{QuestionID: id, LanguageID: EN}})
 	test.OK(t, err)
 	test.Equals(t, 0, len(vas))
 	test.Assert(t, pqid != *vq.ParentQuestionID, "Expected previous and current parent id's to not match")
@@ -363,7 +363,7 @@ func TestVersionedAnswerDataAccess(t *testing.T) {
 	testData.StartAPIServer(t)
 	qid := insertQuestionVersion("myTag", "questionText", "questionType", 1, nil, false, testData, t)
 	insertAnswerVersion("myTag", "answerText", "answerType", 1, qid, "", testData, t)
-	vas, err := testData.DataAPI.VersionedAnswers([]*api.AnswerQueryParams{&api.AnswerQueryParams{QuestionID: qid, LanguageID: EN, AnswerTag: "myTag"}})
+	vas, err := testData.DataAPI.VersionedAnswers([]*api.AnswerQueryParams{{QuestionID: qid, LanguageID: EN, AnswerTag: "myTag"}})
 	test.OK(t, err)
 	test.Equals(t, vas[0].AnswerText, "answerText")
 	test.Equals(t, vas[0].AnswerType, "answerType")
@@ -378,12 +378,12 @@ func TestVersionedAnswerMultipleDataAccess(t *testing.T) {
 	insertAnswerVersion("myTag", "answerText", "answerType", 1, qid, "", testData, t)
 	insertAnswerVersion("myTag", "answerText2", "answerType", 1, qid2, "", testData, t)
 	query := []*api.AnswerQueryParams{
-		&api.AnswerQueryParams{
+		{
 			AnswerTag:  "myTag",
 			QuestionID: qid,
 			LanguageID: EN,
 		},
-		&api.AnswerQueryParams{
+		{
 			AnswerTag:  "myTag",
 			QuestionID: qid2,
 			LanguageID: EN,

@@ -18,11 +18,11 @@ RUN cd /usr/local && \
 # Install Go
 RUN cd /usr/local && \
 	rm -rf go && \
-	curl -s https://storage.googleapis.com/golang/go1.5.3.linux-amd64.tar.gz | tar -zxf - && \
+	curl -s https://storage.googleapis.com/golang/go1.6.linux-amd64.tar.gz | tar -zxf - && \
 	ln -s /usr/local/go/bin/go /usr/local/bin/go
 
 # Install Consul
-RUN curl -s -o /usr/local/bin/consul.zip https://releases.hashicorp.com/consul/0.6.1/consul_0.6.1_linux_amd64.zip && \
+RUN curl -s -o /usr/local/bin/consul.zip https://releases.hashicorp.com/consul/0.6.3/consul_0.6.3_linux_amd64.zip && \
 	cd /usr/local/bin && \
 	unzip consul.zip && \
 	rm consul.zip

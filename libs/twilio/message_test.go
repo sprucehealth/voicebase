@@ -310,7 +310,7 @@ func TestMessageService_List(t *testing.T) {
 	}
 
 	want := []Message{
-		Message{Sid: "MM90c6fc909d8504d45ecdb3a3d5b3556e"},
+		{Sid: "MM90c6fc909d8504d45ecdb3a3d5b3556e"},
 	}
 
 	if !reflect.DeepEqual(ml, want) {

@@ -225,7 +225,7 @@ func prepareAnswersForVisitIntake(visitID int64, visitLayout *info_intake.InfoIn
 				case info_intake.QuestionTypeSingleSelect:
 					intakeData.Questions = append(intakeData.Questions, &apiservice.QuestionAnswerItem{
 						QuestionID: question.QuestionID,
-						AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{
+						AnswerIntakes: []*apiservice.AnswerItem{{
 							PotentialAnswerID: question.PotentialAnswers[0].AnswerID,
 						},
 						},
@@ -234,10 +234,10 @@ func prepareAnswersForVisitIntake(visitID int64, visitLayout *info_intake.InfoIn
 					intakeData.Questions = append(intakeData.Questions, &apiservice.QuestionAnswerItem{
 						QuestionID: question.QuestionID,
 						AnswerIntakes: []*apiservice.AnswerItem{
-							&apiservice.AnswerItem{
+							{
 								PotentialAnswerID: question.PotentialAnswers[0].AnswerID,
 							},
-							&apiservice.AnswerItem{
+							{
 								PotentialAnswerID: question.PotentialAnswers[1].AnswerID,
 							},
 						},
@@ -246,7 +246,7 @@ func prepareAnswersForVisitIntake(visitID int64, visitLayout *info_intake.InfoIn
 					intakeData.Questions = append(intakeData.Questions, &apiservice.QuestionAnswerItem{
 						QuestionID: question.QuestionID,
 						AnswerIntakes: []*apiservice.AnswerItem{
-							&apiservice.AnswerItem{
+							{
 								AnswerText: "autocomplete 1",
 							},
 						},
@@ -255,7 +255,7 @@ func prepareAnswersForVisitIntake(visitID int64, visitLayout *info_intake.InfoIn
 					intakeData.Questions = append(intakeData.Questions, &apiservice.QuestionAnswerItem{
 						QuestionID: question.QuestionID,
 						AnswerIntakes: []*apiservice.AnswerItem{
-							&apiservice.AnswerItem{
+							{
 								AnswerText: "This is a test answer",
 							},
 						},

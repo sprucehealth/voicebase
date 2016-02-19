@@ -172,8 +172,8 @@ func TestRXReminderServiceUpdateRXReminder(t *testing.T) {
 
 func TestRXReminderServiceRemindersForPatient(t *testing.T) {
 	reminderMap := map[int64]*common.RXReminder{
-		1: &common.RXReminder{},
-		2: &common.RXReminder{},
+		1: {},
+		2: {},
 	}
 	testData := []struct {
 		patientID                       common.PatientID

@@ -116,14 +116,14 @@ func TestPrefillQuestions(t *testing.T) {
 
 	m := &mockDataAPI_prefillQuestions{
 		answers: map[string][]common.Answer{
-			"q_free_text_tag": []common.Answer{
+			"q_free_text_tag": {
 				&common.AnswerIntake{
 					AnswerIntakeID: encoding.DeprecatedNewObjectID(10),
 					QuestionID:     encoding.DeprecatedNewObjectID(90),
 					AnswerText:     freeTextResponse,
 				},
 			},
-			"q_multiple_choice_tag": []common.Answer{
+			"q_multiple_choice_tag": {
 				&common.AnswerIntake{
 					AnswerIntakeID:    encoding.DeprecatedNewObjectID(11),
 					QuestionID:        encoding.DeprecatedNewObjectID(91),
@@ -142,7 +142,7 @@ func TestPrefillQuestions(t *testing.T) {
 					AnswerText:     freeTextResponse,
 				},
 			},
-			"q_single_select_tag": []common.Answer{
+			"q_single_select_tag": {
 				&common.AnswerIntake{
 					AnswerIntakeID:    encoding.DeprecatedNewObjectID(12),
 					QuestionID:        encoding.DeprecatedNewObjectID(92),
@@ -150,7 +150,7 @@ func TestPrefillQuestions(t *testing.T) {
 					PotentialAnswerID: encoding.DeprecatedNewObjectID(8),
 				},
 			},
-			"q_multiple_choice_tag_unmatched_answer": []common.Answer{
+			"q_multiple_choice_tag_unmatched_answer": {
 				&common.AnswerIntake{
 					AnswerIntakeID:    encoding.DeprecatedNewObjectID(13),
 					QuestionID:        encoding.DeprecatedNewObjectID(103),

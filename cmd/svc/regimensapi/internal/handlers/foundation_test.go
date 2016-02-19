@@ -28,10 +28,10 @@ func (v *foundationSvc) FoundationOf(id string, maxResults int) ([]*regimens.Reg
 
 func TestFoundationGET(t *testing.T) {
 	regRefs := []*regimens.Regimen{
-		&regimens.Regimen{
+		{
 			ID: "test1",
 		},
-		&regimens.Regimen{
+		{
 			ID: "test2",
 		},
 	}

@@ -113,7 +113,7 @@ func (f *followupHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 	}
 
 	err = messages.CreateMessageAndAttachments(caseMsg, []*messages.Attachment{
-		&messages.Attachment{
+		{
 			Type:  common.AttachmentTypeFollowupVisit,
 			ID:    followupVisit.ID.Int64(),
 			Title: "Follow-up Visit",

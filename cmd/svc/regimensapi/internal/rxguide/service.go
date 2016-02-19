@@ -64,21 +64,21 @@ func New(kvs kvs, env string) (Service, error) {
 	return s, errors.Trace(awsutil.CreateDynamoDBTable(kvs, &dynamodb.CreateTableInput{
 		TableName: s.rxGuideTableName,
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
-			&dynamodb.AttributeDefinition{
+			{
 				AttributeName: rxGuidesAN,
 				AttributeType: ptr.String("S"),
 			},
-			&dynamodb.AttributeDefinition{
+			{
 				AttributeName: drugNameAN,
 				AttributeType: ptr.String("S"),
 			},
 		},
 		KeySchema: []*dynamodb.KeySchemaElement{
-			&dynamodb.KeySchemaElement{
+			{
 				AttributeName: rxGuidesAN,
 				KeyType:       ptr.String("HASH"),
 			},
-			&dynamodb.KeySchemaElement{
+			{
 				AttributeName: drugNameAN,
 				KeyType:       ptr.String("RANGE"),
 			},
@@ -96,10 +96,10 @@ func (s *service) RXGuide(drugName string) (*responses.RXGuide, error) {
 	getResp, err := s.kvs.GetItem(&dynamodb.GetItemInput{
 		TableName: s.rxGuideTableName,
 		Key: map[string]*dynamodb.AttributeValue{
-			*rxGuidesAN: &dynamodb.AttributeValue{
+			*rxGuidesAN: {
 				S: rxGuidesAN,
 			},
-			*drugNameAN: &dynamodb.AttributeValue{
+			*drugNameAN: {
 				S: ptr.String(strings.ToLower(strings.TrimSpace(drugName))),
 			},
 		},
@@ -179,13 +179,13 @@ func (s *service) PutRXGuide(r *responses.RXGuide) error {
 		writeRequests[i] = &dynamodb.WriteRequest{
 			PutRequest: &dynamodb.PutRequest{
 				Item: map[string]*dynamodb.AttributeValue{
-					*rxGuidesAN: &dynamodb.AttributeValue{
+					*rxGuidesAN: {
 						S: rxGuidesAN,
 					},
-					*drugNameAN: &dynamodb.AttributeValue{
+					*drugNameAN: {
 						S: ptr.String(strings.ToLower(strings.TrimSpace(brandName))),
 					},
-					*rxGuideAN: &dynamodb.AttributeValue{
+					*rxGuideAN: {
 						B: guideData,
 					},
 				},
@@ -195,13 +195,13 @@ func (s *service) PutRXGuide(r *responses.RXGuide) error {
 	writeRequests[len(r.BrandNames)] = &dynamodb.WriteRequest{
 		PutRequest: &dynamodb.PutRequest{
 			Item: map[string]*dynamodb.AttributeValue{
-				*rxGuidesAN: &dynamodb.AttributeValue{
+				*rxGuidesAN: {
 					S: rxGuidesAN,
 				},
-				*drugNameAN: &dynamodb.AttributeValue{
+				*drugNameAN: {
 					S: ptr.String(strings.ToLower(strings.TrimSpace(r.GenericName))),
 				},
-				*rxGuideAN: &dynamodb.AttributeValue{
+				*rxGuideAN: {
 					B: guideData,
 				},
 			},

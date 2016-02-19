@@ -185,7 +185,7 @@ func TestFailedCharge_ChargeExists(t *testing.T) {
 	stubStripe := testData.Config.PaymentAPI.(*test_integration.StripeStub)
 	stubStripe.ListAllChargesFunc = func(string) ([]*stripe.Charge, error) {
 		return []*stripe.Charge{
-			&stripe.Charge{
+			{
 				ID: "charge_test1234",
 				Metadata: map[string]string{
 					"receipt_ref_num": "12345",

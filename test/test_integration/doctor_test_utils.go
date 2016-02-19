@@ -184,14 +184,14 @@ func PrepareAnswersForDiagnosis(testData *TestData, t *testing.T, patientVisitID
 	test.OK(t, err)
 	QuestionAnswerItem := &apiservice.QuestionAnswerItem{
 		QuestionID:    diagnosisQuestionID,
-		AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: answerInfo[0].AnswerID}},
+		AnswerIntakes: []*apiservice.AnswerItem{{PotentialAnswerID: answerInfo[0].AnswerID}},
 	}
 
 	answerInfo, err = testData.DataAPI.GetAnswerInfoForTags([]string{"a_doctor_acne_severity_severity"}, api.LanguageIDEnglish)
 	test.OK(t, err)
 	QuestionAnswerItem2 := &apiservice.QuestionAnswerItem{
 		QuestionID:    severityQuestionID,
-		AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: answerInfo[0].AnswerID}},
+		AnswerIntakes: []*apiservice.AnswerItem{{PotentialAnswerID: answerInfo[0].AnswerID}},
 	}
 
 	answerInfo, err = testData.DataAPI.GetAnswerInfoForTags([]string{"a_acne_inflammatory"}, api.LanguageIDEnglish)
@@ -200,7 +200,7 @@ func PrepareAnswersForDiagnosis(testData *TestData, t *testing.T, patientVisitID
 	}
 	QuestionAnswerItem3 := &apiservice.QuestionAnswerItem{
 		QuestionID:    acneTypeQuestionID,
-		AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: answerInfo[0].AnswerID}},
+		AnswerIntakes: []*apiservice.AnswerItem{{PotentialAnswerID: answerInfo[0].AnswerID}},
 	}
 
 	intakeData.Questions = []*apiservice.QuestionAnswerItem{QuestionAnswerItem, QuestionAnswerItem2, QuestionAnswerItem3}
@@ -224,7 +224,7 @@ func PrepareAnswersForDiagnosingAsUnsuitableForSpruce(testData *TestData, t *tes
 
 	QuestionAnswerItem := &apiservice.QuestionAnswerItem{
 		QuestionID:    diagnosisQuestionID,
-		AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: answerItemList[0].AnswerID}},
+		AnswerIntakes: []*apiservice.AnswerItem{{PotentialAnswerID: answerItemList[0].AnswerID}},
 	}
 	intakeData.Questions = []*apiservice.QuestionAnswerItem{QuestionAnswerItem}
 	return intakeData

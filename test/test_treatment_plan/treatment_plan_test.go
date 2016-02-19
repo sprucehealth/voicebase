@@ -580,8 +580,8 @@ func TestTreatmentPlan_GlobalTreatmentPlanAddition(t *testing.T) {
 		Lifecycle: "ACTIVE",
 	}
 	ftpsByPathwayID := map[int64][]*common.FavoriteTreatmentPlan{
-		p1.ID: []*common.FavoriteTreatmentPlan{ftp1},
-		p2.ID: []*common.FavoriteTreatmentPlan{ftp2},
+		p1.ID: {ftp1},
+		p2.ID: {ftp2},
 	}
 	err = testData.DataAPI.InsertGlobalFTPsAndUpdateMemberships(ftpsByPathwayID)
 	test.OK(t, err)
@@ -616,8 +616,8 @@ func TestTreatmentPlan_GlobalTreatmentPlanAddition(t *testing.T) {
 		Lifecycle: "ACTIVE",
 	}
 	ftpsByPathwayID = map[int64][]*common.FavoriteTreatmentPlan{
-		p1.ID: []*common.FavoriteTreatmentPlan{ftp1, ftp2, ftp4},
-		p2.ID: []*common.FavoriteTreatmentPlan{ftp3},
+		p1.ID: {ftp1, ftp2, ftp4},
+		p2.ID: {ftp3},
 	}
 	err = testData.DataAPI.InsertGlobalFTPsAndUpdateMemberships(ftpsByPathwayID)
 	test.OK(t, err)

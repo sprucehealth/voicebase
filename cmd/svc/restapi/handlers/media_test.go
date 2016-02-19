@@ -62,7 +62,7 @@ func TestMediaHandlerGet(t *testing.T) {
 
 	dapi := &mediaDataAPI{
 		media: map[int64]*common.Media{
-			123: &common.Media{
+			123: {
 				ID:  123,
 				URL: "image-123",
 			},

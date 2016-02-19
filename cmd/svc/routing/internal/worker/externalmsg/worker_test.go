@@ -12,6 +12,9 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+// go vet doesn't like that the first argument to grpcErrorf is not a string so alias the function with a different name :(
+var grpcErrorf = grpc.Errorf
+
 type mockDirectoryService struct {
 	directory.DirectoryClient
 	entityIDToEntityMapping  map[string]*directory.Entity
@@ -25,7 +28,7 @@ func (s *mockDirectoryService) LookupEntities(ctx context.Context, in *directory
 	if entity != nil {
 		entities = append(entities, entity)
 	} else {
-		return nil, grpc.Errorf(codes.NotFound, "")
+		return nil, grpcErrorf(codes.NotFound, "")
 	}
 
 	return &directory.LookupEntitiesResponse{
@@ -40,7 +43,7 @@ func (s *mockDirectoryService) CreateEntity(ctx context.Context, in *directory.C
 func (s *mockDirectoryService) LookupEntitiesByContact(ctx context.Context, in *directory.LookupEntitiesByContactRequest, opts ...grpc.CallOption) (*directory.LookupEntitiesByContactResponse, error) {
 	entities := s.contactToEntitiesMapping[in.ContactValue]
 	if len(entities) == 0 {
-		return nil, grpc.Errorf(codes.NotFound, "")
+		return nil, grpcErrorf(codes.NotFound, "")
 	}
 
 	return &directory.LookupEntitiesByContactResponse{
@@ -113,7 +116,7 @@ func TestIncomingSMS_NewUser_SMS(t *testing.T) {
 			providerEntity.ID:     providerEntity,
 		},
 		contactToEntitiesMapping: map[string][]*directory.Entity{
-			toChannelID: []*directory.Entity{organizationEntity},
+			toChannelID: {organizationEntity},
 		},
 		entityToCreate: externalEntityToBeCreated,
 	}
@@ -205,7 +208,7 @@ func TestIncomingSMS_NewUser_Email(t *testing.T) {
 			providerEntity.ID:     providerEntity,
 		},
 		contactToEntitiesMapping: map[string][]*directory.Entity{
-			toChannelID: []*directory.Entity{organizationEntity},
+			toChannelID: {organizationEntity},
 		},
 		entityToCreate: externalEntityToBeCreated,
 	}
@@ -301,8 +304,8 @@ func TestIncomingSMS_ExistingUser_SMS(t *testing.T) {
 			externalEntity.ID:     externalEntity,
 		},
 		contactToEntitiesMapping: map[string][]*directory.Entity{
-			toChannelID:   []*directory.Entity{organizationEntity},
-			fromChannelID: []*directory.Entity{externalEntity},
+			toChannelID:   {organizationEntity},
+			fromChannelID: {externalEntity},
 		},
 	}
 	mt := &mockThreadsService{
@@ -401,8 +404,8 @@ func TestIncomingSMS_ExistingUser_Email(t *testing.T) {
 			externalEntity.ID:     externalEntity,
 		},
 		contactToEntitiesMapping: map[string][]*directory.Entity{
-			toChannelID:   []*directory.Entity{organizationEntity},
-			fromChannelID: []*directory.Entity{externalEntity},
+			toChannelID:   {organizationEntity},
+			fromChannelID: {externalEntity},
 		},
 	}
 	mt := &mockThreadsService{
@@ -508,8 +511,8 @@ func TestIncomingSMS_MultipleExistingUsers_Email(t *testing.T) {
 			externalEntity.ID:     externalEntity,
 		},
 		contactToEntitiesMapping: map[string][]*directory.Entity{
-			toChannelID:   []*directory.Entity{organizationEntity},
-			fromChannelID: []*directory.Entity{externalEntity, externalEntity2},
+			toChannelID:   {organizationEntity},
+			fromChannelID: {externalEntity, externalEntity2},
 		},
 	}
 	mt := &mockThreadsService{
@@ -612,7 +615,7 @@ func TestIncomingVoicemail_NewUser(t *testing.T) {
 			providerEntity.ID:     providerEntity,
 		},
 		contactToEntitiesMapping: map[string][]*directory.Entity{
-			toChannelID: []*directory.Entity{organizationEntity},
+			toChannelID: {organizationEntity},
 		},
 		entityToCreate: externalEntityToBeCreated,
 	}
@@ -706,8 +709,8 @@ func TestOutgoingCallEvent(t *testing.T) {
 			externalEntity.ID:     externalEntity,
 		},
 		contactToEntitiesMapping: map[string][]*directory.Entity{
-			toChannelID:   []*directory.Entity{externalEntity},
-			fromChannelID: []*directory.Entity{providerEntity},
+			toChannelID:   {externalEntity},
+			fromChannelID: {providerEntity},
 		},
 	}
 	mt := &mockThreadsService{

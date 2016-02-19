@@ -33,13 +33,13 @@ func NewDynamoDBDAL(db dynamodbiface.DynamoDBAPI, env string, metricsRegistry me
 	return d, errors.Trace(awsutil.CreateDynamoDBTable(db, &dynamodb.CreateTableInput{
 		TableName: &d.tableName,
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
-			&dynamodb.AttributeDefinition{
+			{
 				AttributeName: ptr.String(dynamoIDColumn),
 				AttributeType: ptr.String("S"),
 			},
 		},
 		KeySchema: []*dynamodb.KeySchemaElement{
-			&dynamodb.KeySchemaElement{
+			{
 				AttributeName: ptr.String(dynamoIDColumn),
 				KeyType:       ptr.String("HASH"),
 			},

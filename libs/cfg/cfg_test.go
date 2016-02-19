@@ -18,32 +18,49 @@ func TestValueDef(t *testing.T) {
 		t.Errorf("Expected empty ValueDef to be invalid")
 	}
 
-	*def = *validDef
-	def.Name = ""
+	def = &ValueDef{
+		Type:    ValueTypeBool,
+		Default: true,
+		Choices: []interface{}{true, false},
+	}
 	if err := def.Validate(); err == nil {
 		t.Errorf("Expected missing Name to be invalid")
 	}
 
-	*def = *validDef
-	def.Type = ""
+	def = &ValueDef{
+		Name:    "Var",
+		Default: true,
+		Choices: []interface{}{true, false},
+	}
 	if err := def.Validate(); err == nil {
 		t.Errorf("Expected missing Type to be invalid")
 	}
 
-	*def = *validDef
-	def.Default = nil
+	def = &ValueDef{
+		Name:    "Var",
+		Type:    ValueTypeBool,
+		Choices: []interface{}{true, false},
+	}
 	if err := def.Validate(); err == nil {
 		t.Errorf("Expected missing Default to be invalid")
 	}
 
-	*def = *validDef
-	def.Default = "not a bool"
+	def = &ValueDef{
+		Name:    "Var",
+		Type:    ValueTypeBool,
+		Default: "not a bool",
+		Choices: []interface{}{true, false},
+	}
 	if err := def.Validate(); err == nil {
 		t.Errorf("Expected bad Default type to be invalid")
 	}
 
-	*def = *validDef
-	def.Choices = []interface{}{"not a bool"}
+	def = &ValueDef{
+		Name:    "Var",
+		Type:    ValueTypeBool,
+		Default: true,
+		Choices: []interface{}{"not a bool"},
+	}
 	if err := def.Validate(); err == nil {
 		t.Errorf("Expected bad Choice type to be invalid")
 	}

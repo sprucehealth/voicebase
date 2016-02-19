@@ -669,7 +669,7 @@ func (m *resourceAccessor) orgsForSavedQuery(ctx context.Context, savedQueryID s
 	if err != nil {
 		return nil, err
 	}
-	return map[string]struct{}{res.SavedQuery.OrganizationID: struct{}{}}, nil
+	return map[string]struct{}{res.SavedQuery.OrganizationID: {}}, nil
 }
 
 func (m *resourceAccessor) orgsForThread(ctx context.Context, threadID string) (map[string]struct{}, error) {
@@ -677,7 +677,7 @@ func (m *resourceAccessor) orgsForThread(ctx context.Context, threadID string) (
 	if err != nil {
 		return nil, err
 	}
-	return map[string]struct{}{res.Thread.OrganizationID: struct{}{}}, nil
+	return map[string]struct{}{res.Thread.OrganizationID: {}}, nil
 }
 
 func (m *resourceAccessor) orgsForThreadItem(ctx context.Context, threadItemID string) (map[string]struct{}, error) {
@@ -685,12 +685,12 @@ func (m *resourceAccessor) orgsForThreadItem(ctx context.Context, threadItemID s
 	if err != nil {
 		return nil, err
 	}
-	return map[string]struct{}{res.Item.OrganizationID: struct{}{}}, nil
+	return map[string]struct{}{res.Item.OrganizationID: {}}, nil
 }
 
 func (m *resourceAccessor) orgsForOrganization(ctx context.Context, organizationID string) (map[string]struct{}, error) {
 	// Just map organizatiions as members of themselves
-	return map[string]struct{}{organizationID: struct{}{}}, nil
+	return map[string]struct{}{organizationID: {}}, nil
 }
 
 func orgsForEntity(e *directory.Entity) map[string]struct{} {

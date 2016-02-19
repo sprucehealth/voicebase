@@ -11,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
 
@@ -65,7 +64,7 @@ func TestProvisionEmail_Organization(t *testing.T) {
 	}, nil))
 
 	// Lookup whether the domain exists or not
-	g.ra.Expect(mock.NewExpectation(g.ra.EntityDomain, organizationID, "").WithReturns(&directory.LookupEntityDomainResponse{}, grpc.Errorf(codes.NotFound, "")))
+	g.ra.Expect(mock.NewExpectation(g.ra.EntityDomain, organizationID, "").WithReturns(&directory.LookupEntityDomainResponse{}, grpcErrorf(codes.NotFound, "")))
 
 	// Create domain
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntityDomain, organizationID, "pup").WithReturns(&directory.CreateEntityDomainResponse{}, nil))
@@ -565,7 +564,7 @@ func TestProvisionEmail_Organization_EmailInUse(t *testing.T) {
 	g.ra.Expect(mock.NewExpectation(g.ra.ProvisionEmailAddress, &excomms.ProvisionEmailAddressRequest{
 		ProvisionFor: organizationID,
 		EmailAddress: emailToProvision,
-	}).WithReturns(&excomms.ProvisionEmailAddressResponse{}, grpc.Errorf(codes.AlreadyExists, "")))
+	}).WithReturns(&excomms.ProvisionEmailAddressResponse{}, grpcErrorf(codes.AlreadyExists, "")))
 	// Provisioning email address
 
 	res := g.query(ctx, `

@@ -774,35 +774,35 @@ func TestCreateAccountMissingData(t *testing.T) {
 	phoneNumber := "+12345678910"
 	password := "password"
 	inputs := []*auth.CreateAccountRequest{
-		&auth.CreateAccountRequest{
+		{
 			FirstName:   "",
 			LastName:    ln,
 			PhoneNumber: phoneNumber,
 			Email:       email,
 			Password:    password,
 		},
-		&auth.CreateAccountRequest{
+		{
 			FirstName:   fn,
 			LastName:    "",
 			PhoneNumber: phoneNumber,
 			Email:       email,
 			Password:    password,
 		},
-		&auth.CreateAccountRequest{
+		{
 			FirstName:   fn,
 			LastName:    ln,
 			PhoneNumber: "",
 			Email:       email,
 			Password:    password,
 		},
-		&auth.CreateAccountRequest{
+		{
 			FirstName:   fn,
 			LastName:    ln,
 			PhoneNumber: phoneNumber,
 			Email:       "",
 			Password:    password,
 		},
-		&auth.CreateAccountRequest{
+		{
 			FirstName:   fn,
 			LastName:    ln,
 			PhoneNumber: phoneNumber,

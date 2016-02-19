@@ -107,7 +107,7 @@ func testProcessAnswersForInsurance(t *testing.T, event string, answerTag string
 			Layout: jsonData,
 		},
 		answers: map[int64][]common.Answer{
-			10: []common.Answer{
+			10: {
 				&common.AnswerIntake{
 					PotentialAnswerID: encoding.DeprecatedNewObjectID(5),
 				},
@@ -199,7 +199,7 @@ func TestProcessAnswers_SecondCase(t *testing.T) {
 			Layout: jsonData,
 		},
 		answers: map[int64][]common.Answer{
-			10: []common.Answer{
+			10: {
 				&common.AnswerIntake{
 					PotentialAnswerID: encoding.DeprecatedNewObjectID(5),
 				},
@@ -282,7 +282,7 @@ func TestProcessAnswers_FollowupVisit(t *testing.T) {
 			Layout: jsonData,
 		},
 		answers: map[int64][]common.Answer{
-			10: []common.Answer{
+			10: {
 				&common.AnswerIntake{
 					PotentialAnswerID: encoding.DeprecatedNewObjectID(5),
 				},
@@ -360,7 +360,7 @@ func TestProcessAnswers_MedicaidTag(t *testing.T) {
 			Layout: jsonData,
 		},
 		answers: map[int64][]common.Answer{
-			10: []common.Answer{
+			10: {
 				&common.AnswerIntake{
 					PotentialAnswerID: encoding.DeprecatedNewObjectID(5),
 				},
@@ -438,7 +438,7 @@ func TestAlerts_Under18(t *testing.T) {
 			Layout: jsonData,
 		},
 		answers: map[int64][]common.Answer{
-			10: []common.Answer{
+			10: {
 				&common.AnswerIntake{
 					PotentialAnswerID: encoding.DeprecatedNewObjectID(5),
 				},

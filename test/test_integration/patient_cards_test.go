@@ -28,7 +28,7 @@ func TestAddCardsForPatient(t *testing.T) {
 	customerToAdd := &stripe.Customer{
 		ID: "test_customer_id",
 		CardList: &stripe.CardList{
-			Cards: []*stripe.Card{&stripe.Card{
+			Cards: []*stripe.Card{{
 				ID:          "third_party_id0",
 				Fingerprint: "test_fingerprint0",
 			},

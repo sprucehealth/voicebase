@@ -28,13 +28,13 @@ func init() {
 
 func TestExternalIDToAccountIDTransformation(t *testing.T) {
 	externalIDs := []*directory.ExternalID{
-		&directory.ExternalID{
+		{
 			ID: auth.AccountIDPrefix + "215610700746457088",
 		},
-		&directory.ExternalID{
+		{
 			ID: auth.AccountIDPrefix + "215610700746457090",
 		},
-		&directory.ExternalID{
+		{
 			ID: "other_1235123423522",
 		},
 	}
@@ -316,15 +316,15 @@ func TestProcessNotification(t *testing.T) {
 		EntityIDs: []string{"entity:1", "entity:2"},
 	}).WithReturns(&directory.ExternalIDsResponse{
 		ExternalIDs: []*directory.ExternalID{
-			&directory.ExternalID{ID: "account_1"},
-			&directory.ExternalID{ID: "account_2"},
+			{ID: "account_1"},
+			{ID: "account_2"},
 		},
 	}, nil))
 
 	// Lookup the push configs for each external group id (account)
 	dl.Expect(mock.NewExpectation(dl.PushConfigsForExternalGroupID, "account_1").WithReturns([]*dal.PushConfig{
-		&dal.PushConfig{PushEndpoint: "account1:pushEndpoint1", Platform: "iOS"},
-		&dal.PushConfig{PushEndpoint: "account1:pushEndpoint2", Platform: "android"},
+		{PushEndpoint: "account1:pushEndpoint1", Platform: "iOS"},
+		{PushEndpoint: "account1:pushEndpoint2", Platform: "android"},
 	}, nil))
 
 	// Build out expected notification structure
@@ -374,9 +374,9 @@ func TestProcessNotification(t *testing.T) {
 
 	// Repeat for the next thread member
 	dl.Expect(mock.NewExpectation(dl.PushConfigsForExternalGroupID, "account_2").WithReturns([]*dal.PushConfig{
-		&dal.PushConfig{PushEndpoint: "account2:pushEndpoint1", Platform: "iOS"},
-		&dal.PushConfig{PushEndpoint: "account2:pushEndpoint2", Platform: "android"},
-		&dal.PushConfig{PushEndpoint: "account2:pushEndpoint2", Platform: "unknown"},
+		{PushEndpoint: "account2:pushEndpoint1", Platform: "iOS"},
+		{PushEndpoint: "account2:pushEndpoint2", Platform: "android"},
+		{PushEndpoint: "account2:pushEndpoint2", Platform: "unknown"},
 	}, nil))
 
 	// Send out the push notifications
@@ -430,14 +430,14 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 		EntityIDs: []string{"entity:1", "entity:2"},
 	}).WithReturns(&directory.ExternalIDsResponse{
 		ExternalIDs: []*directory.ExternalID{
-			&directory.ExternalID{ID: "account_1"},
+			{ID: "account_1"},
 		},
 	}, nil))
 
 	// Lookup the push configs for each external group id (account)
 	dl.Expect(mock.NewExpectation(dl.PushConfigsForExternalGroupID, "account_1").WithReturns([]*dal.PushConfig{
-		&dal.PushConfig{ID: pcID, PushEndpoint: "account1:pushEndpoint1", Platform: "iOS"},
-		&dal.PushConfig{PushEndpoint: "account1:pushEndpoint2", Platform: "android"},
+		{ID: pcID, PushEndpoint: "account1:pushEndpoint1", Platform: "iOS"},
+		{PushEndpoint: "account1:pushEndpoint2", Platform: "android"},
 	}, nil))
 
 	// Build out expected notification structure

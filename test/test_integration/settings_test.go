@@ -16,7 +16,7 @@ func TestForcedUpgrade(t *testing.T) {
 	defer testData.Close(t)
 
 	minimumAppVersionConfigs := config.MinimumAppVersionConfigs(map[string]*config.MinimumAppVersionConfig{
-		"Patient-Dev": &config.MinimumAppVersionConfig{
+		"Patient-Dev": {
 			AppVersion: &encoding.Version{Major: 1, Minor: 2, Patch: 0},
 		},
 	})

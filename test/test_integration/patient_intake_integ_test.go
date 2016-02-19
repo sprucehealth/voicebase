@@ -76,10 +76,10 @@ func TestSingleSelectIntake(t *testing.T) {
 	rb := apiservice.IntakeData{
 		PatientVisitID: patientVisitResponse.PatientVisitID,
 		Questions: []*apiservice.QuestionAnswerItem{
-			&apiservice.QuestionAnswerItem{
+			{
 				QuestionID: questionID,
 				AnswerIntakes: []*apiservice.AnswerItem{
-					&apiservice.AnswerItem{
+					{
 						PotentialAnswerID: potentialAnswerID,
 					},
 				},
@@ -194,7 +194,7 @@ func TestSingleEntryIntake(t *testing.T) {
 
 	qaItem := &apiservice.QuestionAnswerItem{
 		QuestionID:    questionID,
-		AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: potentialAnswerID, AnswerText: "testAnswer"}},
+		AnswerIntakes: []*apiservice.AnswerItem{{PotentialAnswerID: potentialAnswerID, AnswerText: "testAnswer"}},
 	}
 	intakeData.Questions = []*apiservice.QuestionAnswerItem{qaItem}
 	SubmitAnswersIntakeForPatient(pr.Patient.ID, pr.Patient.AccountID.Int64(), &intakeData, testData, t)
@@ -337,7 +337,7 @@ func submitFreeTextResponseForPatient(
 
 	qaItem := &apiservice.QuestionAnswerItem{
 		QuestionID:    questionID,
-		AnswerIntakes: []*apiservice.AnswerItem{&apiservice.AnswerItem{AnswerText: freeTextResponse}},
+		AnswerIntakes: []*apiservice.AnswerItem{{AnswerText: freeTextResponse}},
 	}
 
 	intakeData.Questions = []*apiservice.QuestionAnswerItem{qaItem}
@@ -371,7 +371,7 @@ func submitFreeTextResponseForPatient(
 func addSubAnswerToAnswerIntake(answerIntake *apiservice.AnswerItem, subAnswerQuestionID, subAnswerPotentialAnswerID int64) {
 	qaItem := &apiservice.QuestionAnswerItem{}
 	qaItem.QuestionID = subAnswerQuestionID
-	qaItem.AnswerIntakes = []*apiservice.AnswerItem{&apiservice.AnswerItem{PotentialAnswerID: subAnswerPotentialAnswerID}}
+	qaItem.AnswerIntakes = []*apiservice.AnswerItem{{PotentialAnswerID: subAnswerPotentialAnswerID}}
 	if answerIntake.SubQuestions == nil {
 		answerIntake.SubQuestions = make([]*apiservice.QuestionAnswerItem, 0)
 	}

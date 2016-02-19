@@ -27,6 +27,7 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+// go vet doesn't like that the first argument to grpcErrorf is not a string so alias the function with a different name :(
 var grpcErrorf = grpc.Errorf
 
 var (

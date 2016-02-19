@@ -72,8 +72,8 @@ func (t *textLinkHandler) ServeHTTP(context context.Context, w http.ResponseWrit
 		"number": req.Number,
 		"code":   doctor.ReferralCode,
 		"params": map[string][]string{
-			"is_spruce_patient": []string{"true"},
-			"care_provider_id":  []string{strconv.FormatInt(doctor.SpruceProviderID, 10)},
+			"is_spruce_patient": {"true"},
+			"care_provider_id":  {strconv.FormatInt(doctor.SpruceProviderID, 10)},
 		},
 	})
 	if err != nil {

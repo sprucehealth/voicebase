@@ -85,7 +85,7 @@ func TestAlerts_ByVisitID(t *testing.T) {
 	m := &mockDataAPI_handlerAlerts{
 		doctorID: 10,
 		careTeamsByCase: map[int64]*common.PatientCareTeam{
-			1: &common.PatientCareTeam{
+			1: {
 				Assignments: []*common.CareProviderAssignment{
 					{
 						ProviderID:   10,
@@ -133,7 +133,7 @@ func TestAlerts_ByCaseID(t *testing.T) {
 	m := &mockDataAPI_handlerAlerts{
 		doctorID: 10,
 		careTeamsByCase: map[int64]*common.PatientCareTeam{
-			1: &common.PatientCareTeam{
+			1: {
 				Assignments: []*common.CareProviderAssignment{
 					{
 						ProviderID:   10,
@@ -191,7 +191,7 @@ func TestAlerts_ByPatientID(t *testing.T) {
 	m := &mockDataAPI_handlerAlerts{
 		doctorID: 10,
 		careTeamsByCase: map[int64]*common.PatientCareTeam{
-			1: &common.PatientCareTeam{
+			1: {
 				Assignments: []*common.CareProviderAssignment{
 					{
 						ProviderID:   10,
@@ -260,7 +260,7 @@ func TestAlerts_ByPatientID_NotRegistered(t *testing.T) {
 	m := &mockDataAPI_handlerAlerts{
 		doctorID: 10,
 		careTeamsByCase: map[int64]*common.PatientCareTeam{
-			1: &common.PatientCareTeam{
+			1: {
 				Assignments: []*common.CareProviderAssignment{
 					{
 						ProviderID:   10,

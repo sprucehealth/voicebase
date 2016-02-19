@@ -175,12 +175,12 @@ func TestPathwayDetailsHandler(t *testing.T) {
 			},
 		},
 		pathwayDoctors: map[string][]*common.Doctor{
-			"acne": []*common.Doctor{
+			"acne": {
 				{},
 			},
 		},
 		careTeams: map[int64]*common.PatientCareTeam{
-			111: &common.PatientCareTeam{
+			111: {
 				Assignments: []*common.CareProviderAssignment{
 					{
 						ProviderRole:     api.RoleDoctor,
@@ -372,7 +372,7 @@ func TestPathwayDetailsHandler(t *testing.T) {
 	}
 
 	// Authenticated with launch promo (visits since launch)
-	dataAPI.visits = []*common.PatientVisit{&common.PatientVisit{}}
+	dataAPI.visits = []*common.PatientVisit{{}}
 	r, err = http.NewRequest("GET", "/?pathway_id=hypochondria", nil)
 	if err != nil {
 		t.Fatal(err)

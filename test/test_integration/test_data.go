@@ -378,7 +378,7 @@ func setupTest() (*TestData, error) {
 		},
 		PaymentAPI: &StripeStub{},
 		NotifyConfigs: (*config.NotificationConfigs)(&map[string]*config.NotificationConfig{
-			"iOS-Patient-Feature": &config.NotificationConfig{
+			"iOS-Patient-Feature": {
 				SNSApplicationEndpoint: "endpoint",
 			},
 		}),

@@ -967,7 +967,7 @@ func TestInitiatePhoneCall_ConnectCallers(t *testing.T) {
 func TestInitiatePhoneCall_OrgNotFound(t *testing.T) {
 	md := &mockDirectory_Excomms{
 		Expector: &mock.Expector{T: t},
-		resErr:   grpc.Errorf(codes.NotFound, "Not Found"),
+		resErr:   grpcErrorf(codes.NotFound, "Not Found"),
 	}
 
 	md.Expect(mock.NewExpectation(md.LookupEntities, context.Background(), &directory.LookupEntitiesRequest{
@@ -1027,7 +1027,7 @@ func TestInitiatePhoneCall_InvalidCaller(t *testing.T) {
 			Depth:             0,
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS, directory.EntityInformation_MEMBERSHIPS},
 		},
-	}).WithReturns(&directory.LookupEntitiesResponse{}, grpc.Errorf(codes.NotFound, "")))
+	}).WithReturns(&directory.LookupEntitiesResponse{}, grpcErrorf(codes.NotFound, "")))
 
 	mdal := &mockDAL_Excomms{
 		Expector: &mock.Expector{
@@ -1098,7 +1098,7 @@ func TestInitiatePhoneCall_InvalidCallee(t *testing.T) {
 			Depth:             1,
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
 		},
-	}).WithReturns(&directory.LookupEntitiesByContactResponse{}, grpc.Errorf(codes.NotFound, "")))
+	}).WithReturns(&directory.LookupEntitiesByContactResponse{}, grpcErrorf(codes.NotFound, "")))
 
 	mdal := &mockDAL_Excomms{
 		Expector: &mock.Expector{

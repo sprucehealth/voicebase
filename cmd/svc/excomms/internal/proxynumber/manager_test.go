@@ -65,14 +65,14 @@ func TestReserveNumber_ExistingReservation(t *testing.T) {
 
 	md.Expect(mock.NewExpectation(md.ActiveProxyPhoneNumberReservation, originatingPhoneNumber, phone.Ptr(destinationPhoneNumber), phone.Ptr(phone.Number(""))).
 		WithReturns(&models.ProxyPhoneNumberReservation{
-		ProxyPhoneNumber:       proxyPhoneNumber,
-		DestinationPhoneNumber: destinationPhoneNumber,
-		OriginatingPhoneNumber: originatingPhoneNumber,
-		DestinationEntityID:    destinationEntityID,
-		OwnerEntityID:          sourceEntityID,
-		OrganizationID:         organizationID,
-		Expires:                mclock.Now().Add(phoneReservationDuration),
-	}, nil))
+			ProxyPhoneNumber:       proxyPhoneNumber,
+			DestinationPhoneNumber: destinationPhoneNumber,
+			OriginatingPhoneNumber: originatingPhoneNumber,
+			DestinationEntityID:    destinationEntityID,
+			OwnerEntityID:          sourceEntityID,
+			OrganizationID:         organizationID,
+			Expires:                mclock.Now().Add(phoneReservationDuration),
+		}, nil))
 
 	md.Expect(mock.NewExpectation(md.UpdateActiveProxyPhoneNumberReservation, originatingPhoneNumber, phone.Ptr(destinationPhoneNumber), phone.Ptr(phone.Number("")), &dal.ProxyPhoneNumberReservationUpdate{
 		Expires: ptr.Time(mclock.Now().Add(phoneReservationDuration)),

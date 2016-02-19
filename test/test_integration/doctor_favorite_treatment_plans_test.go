@@ -717,7 +717,7 @@ func TestFavoriteTreatmentPlan_InContextOfTreatmentPlan_TwoDontMatch(t *testing.
 	}
 
 	regimenPlanRequest.Sections = []*common.RegimenSection{
-		&common.RegimenSection{
+		{
 			Name: "dgag",
 			Steps: []*common.DoctorInstructionItem{
 				regimenStep1,

@@ -52,13 +52,13 @@ func TestPhotoIntake(t *testing.T) {
 	requestData := &patient_visit.PhotoAnswerIntakeRequestData{
 		PatientVisitID: patientVisitResponse.PatientVisitID,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
-			&patient_visit.PhotoAnswerIntakeQuestionItem{
+			{
 				QuestionID: questionInfo.QuestionID,
 				PhotoSections: []*common.PhotoIntakeSection{
-					&common.PhotoIntakeSection{
+					{
 						Name: "Testing",
 						Photos: []*common.PhotoIntakeSlot{
-							&common.PhotoIntakeSlot{
+							{
 								Name:    "Other",
 								PhotoID: photoID,
 								SlotID:  photoSlots[0].ID,
@@ -131,10 +131,10 @@ func TestPhotoIntake_AllSections(t *testing.T) {
 		requestData.PhotoQuestions[i] = &patient_visit.PhotoAnswerIntakeQuestionItem{
 			QuestionID: questionInfo.QuestionID,
 			PhotoSections: []*common.PhotoIntakeSection{
-				&common.PhotoIntakeSection{
+				{
 					Name: "Testing",
 					Photos: []*common.PhotoIntakeSlot{
-						&common.PhotoIntakeSlot{
+						{
 							PhotoID: photoIds[i],
 							SlotID:  photoSlots[0].ID,
 							Name:    "Slot1",
@@ -204,23 +204,23 @@ func TestPhotoIntake_MultipleSectionsForSameQuestion(t *testing.T) {
 	requestData := &patient_visit.PhotoAnswerIntakeRequestData{
 		PatientVisitID: patientVisitResponse.PatientVisitID,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
-			&patient_visit.PhotoAnswerIntakeQuestionItem{
+			{
 				QuestionID: questionInfo.QuestionID,
 				PhotoSections: []*common.PhotoIntakeSection{
-					&common.PhotoIntakeSection{
+					{
 						Name: "Testing",
 						Photos: []*common.PhotoIntakeSlot{
-							&common.PhotoIntakeSlot{
+							{
 								Name:    "Other",
 								PhotoID: photoID,
 								SlotID:  photoSlots[0].ID,
 							},
 						},
 					},
-					&common.PhotoIntakeSection{
+					{
 						Name: "Testing2",
 						Photos: []*common.PhotoIntakeSlot{
-							&common.PhotoIntakeSlot{
+							{
 								Name:    "Other2",
 								PhotoID: photoID2,
 								SlotID:  photoSlots[0].ID,
@@ -276,18 +276,18 @@ func TestPhotoIntake_MultiplePhotos(t *testing.T) {
 	requestData := &patient_visit.PhotoAnswerIntakeRequestData{
 		PatientVisitID: patientVisitResponse.PatientVisitID,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
-			&patient_visit.PhotoAnswerIntakeQuestionItem{
+			{
 				QuestionID: questionInfo.QuestionID,
 				PhotoSections: []*common.PhotoIntakeSection{
-					&common.PhotoIntakeSection{
+					{
 						Name: "Testing",
 						Photos: []*common.PhotoIntakeSlot{
-							&common.PhotoIntakeSlot{
+							{
 								Name:    "Other",
 								PhotoID: photoID,
 								SlotID:  photoSlots[0].ID,
 							},
-							&common.PhotoIntakeSlot{
+							{
 								Name:    "Other2",
 								PhotoID: photoID2,
 								SlotID:  photoSlots[0].ID,
@@ -348,18 +348,18 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 	requestData := &patient_visit.PhotoAnswerIntakeRequestData{
 		PatientVisitID: patientVisitResponse.PatientVisitID,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
-			&patient_visit.PhotoAnswerIntakeQuestionItem{
+			{
 				QuestionID: questionInfo.QuestionID,
 				PhotoSections: []*common.PhotoIntakeSection{
-					&common.PhotoIntakeSection{
+					{
 						Name: "Testing",
 						Photos: []*common.PhotoIntakeSlot{
-							&common.PhotoIntakeSlot{
+							{
 								Name:    "Other",
 								PhotoID: photoID,
 								SlotID:  photoSlots[0].ID,
 							},
-							&common.PhotoIntakeSlot{
+							{
 								Name:    "Other2",
 								PhotoID: photoID2,
 								SlotID:  photoSlots[0].ID,
@@ -382,13 +382,13 @@ func TestPhotoIntake_AnswerInvalidation(t *testing.T) {
 	requestData = &patient_visit.PhotoAnswerIntakeRequestData{
 		PatientVisitID: patientVisitResponse.PatientVisitID,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
-			&patient_visit.PhotoAnswerIntakeQuestionItem{
+			{
 				QuestionID: questionInfo.QuestionID,
 				PhotoSections: []*common.PhotoIntakeSection{
-					&common.PhotoIntakeSection{
+					{
 						Name: "Testing3",
 						Photos: []*common.PhotoIntakeSlot{
-							&common.PhotoIntakeSlot{
+							{
 								Name:    "Other3",
 								PhotoID: photoID3,
 								SlotID:  photoSlots[0].ID,
@@ -456,13 +456,13 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 	requestData := &patient_visit.PhotoAnswerIntakeRequestData{
 		PatientVisitID: patientVisitResponse.PatientVisitID,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
-			&patient_visit.PhotoAnswerIntakeQuestionItem{
+			{
 				QuestionID: questionInfo.QuestionID,
 				PhotoSections: []*common.PhotoIntakeSection{
-					&common.PhotoIntakeSection{
+					{
 						Name: "Testing",
 						Photos: []*common.PhotoIntakeSlot{
-							&common.PhotoIntakeSlot{
+							{
 								Name:    "Other",
 								PhotoID: photoID,
 								SlotID:  photoSlots[0].ID,
@@ -471,13 +471,13 @@ func TestPhotoIntake_MultiplePhotoQuestions(t *testing.T) {
 					},
 				},
 			},
-			&patient_visit.PhotoAnswerIntakeQuestionItem{
+			{
 				QuestionID: questionInfo2.QuestionID,
 				PhotoSections: []*common.PhotoIntakeSection{
-					&common.PhotoIntakeSection{
+					{
 						Name: "Testing",
 						Photos: []*common.PhotoIntakeSlot{
-							&common.PhotoIntakeSlot{
+							{
 								Name:    "Other",
 								PhotoID: photoID2,
 								SlotID:  photoSlots2[0].ID,
@@ -548,13 +548,13 @@ func TestPhotoIntake_MistmatchedSlotId(t *testing.T) {
 	requestData := &patient_visit.PhotoAnswerIntakeRequestData{
 		PatientVisitID: patientVisitResponse.PatientVisitID,
 		PhotoQuestions: []*patient_visit.PhotoAnswerIntakeQuestionItem{
-			&patient_visit.PhotoAnswerIntakeQuestionItem{
+			{
 				QuestionID: questionInfo.QuestionID,
 				PhotoSections: []*common.PhotoIntakeSection{
-					&common.PhotoIntakeSection{
+					{
 						Name: "Testing",
 						Photos: []*common.PhotoIntakeSlot{
-							&common.PhotoIntakeSlot{
+							{
 								Name:    "Other",
 								PhotoID: photoID,
 								SlotID:  photoSlots2[0].ID,

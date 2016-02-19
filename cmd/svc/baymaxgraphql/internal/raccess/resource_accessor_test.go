@@ -202,11 +202,11 @@ func expectOrgsForEntity(rat *ratest, entityID, orgID string) {
 		},
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
-			&directory.Entity{
+			{
 				ID:   entityID,
 				Type: directory.EntityType_INTERNAL,
 				Memberships: []*directory.Entity{
-					&directory.Entity{
+					{
 						ID:   orgID,
 						Type: directory.EntityType_ORGANIZATION,
 					},
@@ -228,11 +228,11 @@ func expectOrgsForEntityForExternalID(rat *ratest, externalID, orgID string) {
 		},
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
-			&directory.Entity{
+			{
 				ID:   externalID,
 				Type: directory.EntityType_INTERNAL,
 				Memberships: []*directory.Entity{
-					&directory.Entity{
+					{
 						ID:   orgID,
 						Type: directory.EntityType_ORGANIZATION,
 					},
@@ -729,7 +729,7 @@ func TestEntity(t *testing.T) {
 			EntityInformation: entityInfo,
 		},
 	}).WithReturns(&directory.LookupEntitiesResponse{Entities: []*directory.Entity{
-		&directory.Entity{ID: entityID},
+		{ID: entityID},
 	}}, nil))
 
 	resp, err := rat.ra.Entity(ctx, entityID, entityInfo, depth)

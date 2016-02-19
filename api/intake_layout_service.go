@@ -268,7 +268,7 @@ func (d *dataService) GetActiveDoctorDiagnosisLayout(pathwayID int64) (*LayoutVe
 		WHERE status=? AND clinical_pathway_id = ?`,
 		StatusActive, pathwayID).
 		Scan(&layoutVersion.ID, &layoutVersion.Layout, &layoutVersion.LayoutTemplateVersionID, &layoutVersion.Version.Major,
-		&layoutVersion.Version.Minor, &layoutVersion.Version.Patch)
+			&layoutVersion.Version.Minor, &layoutVersion.Version.Patch)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound("diagnosis_layout_version")
 	} else if err != nil {
@@ -351,7 +351,7 @@ func (d *dataService) GetPatientLayout(layoutVersionID, languageID int64) (*Layo
 		INNER JOIN layout_blob_storage ON layout_blob_storage_id = layout_blob_storage.id
 		WHERE layout_version_id = ? AND language_id = ?`, layoutVersionID, languageID).
 		Scan(&layoutVersion.ID, &layoutVersion.Layout, &layoutVersion.LayoutTemplateVersionID, &layoutVersion.Version.Major,
-		&layoutVersion.Version.Minor, &layoutVersion.Version.Patch)
+			&layoutVersion.Version.Minor, &layoutVersion.Version.Patch)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound("patient_layout_version")
 	} else if err != nil {
@@ -787,7 +787,7 @@ func (d *dataService) insertVersionedQuestionWithVersionedParents(db db, vq *com
 			return 0, err
 		}
 
-		pvas, err := d.VersionedAnswers([]*AnswerQueryParams{&AnswerQueryParams{LanguageID: pvq.LanguageID, QuestionID: pvq.ID}})
+		pvas, err := d.VersionedAnswers([]*AnswerQueryParams{{LanguageID: pvq.LanguageID, QuestionID: pvq.ID}})
 		if err != nil {
 			return 0, err
 		}
@@ -1149,7 +1149,7 @@ func (d *dataService) getQuestionInfoForQuestionSet(versionedQuestions []*common
 }
 
 func (d *dataService) GetAnswerInfo(questionID, languageID int64) ([]*info_intake.PotentialAnswer, error) {
-	versionedAnswers, err := d.VersionedAnswers([]*AnswerQueryParams{&AnswerQueryParams{LanguageID: languageID, QuestionID: questionID}})
+	versionedAnswers, err := d.VersionedAnswers([]*AnswerQueryParams{{LanguageID: languageID, QuestionID: questionID}})
 	if err != nil {
 		return nil, err
 	}

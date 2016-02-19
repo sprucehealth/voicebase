@@ -12,7 +12,6 @@ import (
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
 
@@ -42,7 +41,7 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 
 	g.ra.Expect(mock.NewExpectation(g.ra.EntitiesByContact, "someone@example.com", []directory.EntityInformation{
 		directory.EntityInformation_MEMBERSHIPS,
-	}, int64(1)).WithReturns(([]*directory.Entity)(nil), grpc.Errorf(codes.NotFound, "No entities found")))
+	}, int64(1)).WithReturns(([]*directory.Entity)(nil), grpcErrorf(codes.NotFound, "No entities found")))
 
 	entityInfo := &directory.EntityInfo{
 		FirstName:     "firstName",

@@ -13,7 +13,11 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/language/ast"
+	"google.golang.org/grpc"
 )
+
+// go vet doesn't like that the first argument to grpcErrorf is not a string so alias the function with a different name :(
+var grpcErrorf = grpc.Errorf
 
 type errInvalidContactFormat string
 

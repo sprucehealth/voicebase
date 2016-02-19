@@ -75,7 +75,7 @@ func createSingleSignOn(phrase []byte, clinicKey string) []byte {
 }
 
 func removeTwoEqualSignsIfPresent(str []byte) []byte {
-	if bytes.Compare(str[len(str)-2:len(str)], []byte("==")) == 0 {
+	if bytes.Compare(str[len(str)-2:], []byte("==")) == 0 {
 		return str[:len(str)-2]
 	}
 	return str

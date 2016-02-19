@@ -33,21 +33,21 @@ func expectCreateTable(m *mock.DynamoDB) {
 	m.Expect(mock.NewExpectation(m.CreateTable, &dynamodb.CreateTableInput{
 		TableName: ptr.String(fmt.Sprintf(rxGuideTableNameFormatString, testEnv)),
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
-			&dynamodb.AttributeDefinition{
+			{
 				AttributeName: rxGuidesAN,
 				AttributeType: ptr.String("S"),
 			},
-			&dynamodb.AttributeDefinition{
+			{
 				AttributeName: drugNameAN,
 				AttributeType: ptr.String("S"),
 			},
 		},
 		KeySchema: []*dynamodb.KeySchemaElement{
-			&dynamodb.KeySchemaElement{
+			{
 				AttributeName: rxGuidesAN,
 				KeyType:       ptr.String("HASH"),
 			},
-			&dynamodb.KeySchemaElement{
+			{
 				AttributeName: drugNameAN,
 				KeyType:       ptr.String("RANGE"),
 			},
@@ -85,16 +85,16 @@ func TestRXGuideServiceRXGuide(t *testing.T) {
 	kvs.Expect(mock.NewExpectation(kvs.GetItem, &dynamodb.GetItemInput{
 		TableName: ptr.String(fmt.Sprintf(rxGuideTableNameFormatString, testEnv)),
 		Key: map[string]*dynamodb.AttributeValue{
-			*rxGuidesAN: &dynamodb.AttributeValue{
+			*rxGuidesAN: {
 				S: rxGuidesAN,
 			},
-			*drugNameAN: &dynamodb.AttributeValue{
+			*drugNameAN: {
 				S: ptr.String(strings.ToLower(strings.TrimSpace(drugName))),
 			},
 		},
 	}))
 	kvs.GetItemOutputs = []*dynamodb.GetItemOutput{
-		&dynamodb.GetItemOutput{
+		{
 			Item: map[string]*dynamodb.AttributeValue{
 				*rxGuideAN: {B: data},
 			},
@@ -116,16 +116,16 @@ func TestRXGuideServiceRXGuideNoGuidesErr(t *testing.T) {
 	kvs.Expect(mock.NewExpectation(kvs.GetItem, &dynamodb.GetItemInput{
 		TableName: ptr.String(fmt.Sprintf(rxGuideTableNameFormatString, testEnv)),
 		Key: map[string]*dynamodb.AttributeValue{
-			*rxGuidesAN: &dynamodb.AttributeValue{
+			*rxGuidesAN: {
 				S: rxGuidesAN,
 			},
-			*drugNameAN: &dynamodb.AttributeValue{
+			*drugNameAN: {
 				S: ptr.String(strings.ToLower(strings.TrimSpace(drugName))),
 			},
 		},
 	}))
 	kvs.GetItemOutputs = []*dynamodb.GetItemOutput{
-		&dynamodb.GetItemOutput{},
+		{},
 	}
 
 	svc, err := New(kvs, testEnv)
@@ -158,13 +158,13 @@ func TestRXGuideServiceQueryRXGuides(t *testing.T) {
 		Limit: ptr.Int64(int64(limit)),
 	}))
 	kvs.QueryOutputs = []*dynamodb.QueryOutput{
-		&dynamodb.QueryOutput{
+		{
 			Items: []map[string]*dynamodb.AttributeValue{
-				map[string]*dynamodb.AttributeValue{
+				{
 					*drugNameAN: {S: ptr.String(drugPrefix)},
 					*rxGuideAN:  {B: data},
 				},
-				map[string]*dynamodb.AttributeValue{
+				{
 					*drugNameAN: {S: ptr.String(drugPrefix2)},
 					*rxGuideAN:  {B: data2},
 				},
@@ -200,9 +200,9 @@ func TestRXGuideServiceQueryRXGuidesBrandNameMap(t *testing.T) {
 		Limit: ptr.Int64(int64(limit)),
 	}))
 	kvs.QueryOutputs = []*dynamodb.QueryOutput{
-		&dynamodb.QueryOutput{
+		{
 			Items: []map[string]*dynamodb.AttributeValue{
-				map[string]*dynamodb.AttributeValue{
+				{
 					*drugNameAN: {S: ptr.String(normalizedBrandName)},
 					*rxGuideAN:  {B: data},
 				},
@@ -233,7 +233,7 @@ func TestRXGuideServiceQueryRXGuidesNoGuidesErr(t *testing.T) {
 		Limit: ptr.Int64(int64(limit)),
 	}))
 	kvs.QueryOutputs = []*dynamodb.QueryOutput{
-		&dynamodb.QueryOutput{
+		{
 			Items: []map[string]*dynamodb.AttributeValue{},
 		},
 	}
@@ -256,47 +256,47 @@ func TestRXGuideServicePutRXGuide(t *testing.T) {
 	expectTableExists(kvs)
 	kvs.Expect(mock.NewExpectation(kvs.BatchWriteItem, &dynamodb.BatchWriteItemInput{
 		RequestItems: map[string][]*dynamodb.WriteRequest{
-			fmt.Sprintf(rxGuideTableNameFormatString, testEnv): []*dynamodb.WriteRequest{
-				&dynamodb.WriteRequest{
+			fmt.Sprintf(rxGuideTableNameFormatString, testEnv): {
+				{
 					PutRequest: &dynamodb.PutRequest{
 						Item: map[string]*dynamodb.AttributeValue{
-							*rxGuidesAN: &dynamodb.AttributeValue{
+							*rxGuidesAN: {
 								S: rxGuidesAN,
 							},
-							*drugNameAN: &dynamodb.AttributeValue{
+							*drugNameAN: {
 								S: ptr.String(strings.ToLower(strings.TrimSpace(brandNames[0]))),
 							},
-							*rxGuideAN: &dynamodb.AttributeValue{
+							*rxGuideAN: {
 								B: data,
 							},
 						},
 					},
 				},
-				&dynamodb.WriteRequest{
+				{
 					PutRequest: &dynamodb.PutRequest{
 						Item: map[string]*dynamodb.AttributeValue{
-							*rxGuidesAN: &dynamodb.AttributeValue{
+							*rxGuidesAN: {
 								S: rxGuidesAN,
 							},
-							*drugNameAN: &dynamodb.AttributeValue{
+							*drugNameAN: {
 								S: ptr.String(strings.ToLower(strings.TrimSpace(brandNames[1]))),
 							},
-							*rxGuideAN: &dynamodb.AttributeValue{
+							*rxGuideAN: {
 								B: data,
 							},
 						},
 					},
 				},
-				&dynamodb.WriteRequest{
+				{
 					PutRequest: &dynamodb.PutRequest{
 						Item: map[string]*dynamodb.AttributeValue{
-							*rxGuidesAN: &dynamodb.AttributeValue{
+							*rxGuidesAN: {
 								S: rxGuidesAN,
 							},
-							*drugNameAN: &dynamodb.AttributeValue{
+							*drugNameAN: {
 								S: ptr.String(strings.ToLower(strings.TrimSpace(genericName))),
 							},
-							*rxGuideAN: &dynamodb.AttributeValue{
+							*rxGuideAN: {
 								B: data,
 							},
 						},

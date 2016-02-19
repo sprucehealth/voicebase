@@ -45,10 +45,10 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 
 	// create a random patient and simulate uninsured patient coming through visit
 	pv := test_integration.CreateAndSubmitPatientVisitWithSpecifiedAnswers(map[int64]*apiservice.QuestionAnswerItem{
-		insuranceCoverageQuestionID: &apiservice.QuestionAnswerItem{
+		insuranceCoverageQuestionID: {
 			QuestionID: insuranceCoverageQuestionID,
 			AnswerIntakes: []*apiservice.AnswerItem{
-				&apiservice.AnswerItem{
+				{
 					PotentialAnswerID: noInsurancePotentialAnswerID,
 				},
 			},
@@ -103,10 +103,10 @@ func TestScheduledMessage_InsuredPatient(t *testing.T) {
 	}
 
 	pv = test_integration.CreateAndSubmitPatientVisitWithSpecifiedAnswers(map[int64]*apiservice.QuestionAnswerItem{
-		insuranceCoverageQuestionID: &apiservice.QuestionAnswerItem{
+		insuranceCoverageQuestionID: {
 			QuestionID: insuranceCoverageQuestionID,
 			AnswerIntakes: []*apiservice.AnswerItem{
-				&apiservice.AnswerItem{
+				{
 					PotentialAnswerID: genericOnlyAnswerID,
 				},
 			},

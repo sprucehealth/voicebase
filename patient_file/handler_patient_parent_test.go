@@ -80,7 +80,7 @@ func TestPatientParentHandler(t *testing.T) {
 			},
 		},
 		careTeams: map[int64]*common.PatientCareTeam{
-			1: &common.PatientCareTeam{
+			1: {
 				Assignments: []*common.CareProviderAssignment{
 					{
 						ProviderRole: api.RoleDoctor,

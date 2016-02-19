@@ -69,11 +69,11 @@ func TestCaseMessages(t *testing.T) {
 
 	audioID, _ := uploadMedia(t, testData, doctor.AccountID.Int64())
 	attachments := []*messages.Attachment{
-		&messages.Attachment{
+		{
 			Type: common.AttachmentTypePhoto,
 			ID:   photoID,
 		},
-		&messages.Attachment{
+		{
 			Type: common.AttachmentTypeAudio,
 			ID:   audioID,
 		},

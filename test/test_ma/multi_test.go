@@ -20,10 +20,10 @@ func TestPrimaryCC(t *testing.T) {
 	p := test_integration.SignupRandomTestPatient(t, testData)
 	pcli := test_integration.PatientClient(testData, t, p.Patient.ID)
 	res, err := pcli.CreatePatientVisit(api.AcnePathwayTag, 0, map[string][]string{
-		"S-Version":   []string{"Patient;Feature;1.0.0;000105"},
-		"S-OS":        []string{"iOS;7.1.1"},
-		"S-Device":    []string{"Phone;iPhone6,1;640;1136;2.0"},
-		"S-Device-ID": []string{"12345678-1234-1234-1234-123456789abc"},
+		"S-Version":   {"Patient;Feature;1.0.0;000105"},
+		"S-OS":        {"iOS;7.1.1"},
+		"S-Device":    {"Phone;iPhone6,1;640;1136;2.0"},
+		"S-Device-ID": {"12345678-1234-1234-1234-123456789abc"},
 	})
 	test.OK(t, err)
 	patientVisit, err := testData.DataAPI.GetPatientVisitFromID(res.PatientVisitID)
@@ -39,10 +39,10 @@ func TestPrimaryCC(t *testing.T) {
 	p = test_integration.SignupRandomTestPatient(t, testData)
 	pcli = test_integration.PatientClient(testData, t, p.Patient.ID)
 	res, err = pcli.CreatePatientVisit(api.AcnePathwayTag, 0, map[string][]string{
-		"S-Version":   []string{"Patient;Feature;1.0.0;000105"},
-		"S-OS":        []string{"iOS;7.1.1"},
-		"S-Device":    []string{"Phone;iPhone6,1;640;1136;2.0"},
-		"S-Device-ID": []string{"12345678-1234-1234-1234-123456789abc"},
+		"S-Version":   {"Patient;Feature;1.0.0;000105"},
+		"S-OS":        {"iOS;7.1.1"},
+		"S-Device":    {"Phone;iPhone6,1;640;1136;2.0"},
+		"S-Device-ID": {"12345678-1234-1234-1234-123456789abc"},
 	})
 	test.OK(t, err)
 	patientVisit, err = testData.DataAPI.GetPatientVisitFromID(res.PatientVisitID)

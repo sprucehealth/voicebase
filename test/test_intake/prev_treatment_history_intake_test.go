@@ -80,118 +80,118 @@ func TestPrevPrescriptions(t *testing.T) {
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[usingMoreThreeMonthsPrescriptionTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[lessThanThreeMonthsPrescription],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[howEffectiveAcnePrescriptionTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[somewhatEffectivePrescription],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[anythingElseAcnePrescriptionTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										AnswerText: "Testing this answer",
 									},
 								},
 							},
 						},
 					},
-					&apiservice.AnswerItem{
+					{
 						PotentialAnswerID: aMapping[otherPrevPrescriptionTag],
 						AnswerText:        "Duac",
 						SubQuestions: []*apiservice.QuestionAnswerItem{
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[usingPrevAcnePrescriptionTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[usingPrevPrescriptionYes],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[irritateSkinAcnePrescriptionTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[irritateYesPrescription],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[usingMoreThreeMonthsPrescriptionTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[lessThanThreeMonthsPrescription],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[howEffectiveAcnePrescriptionTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[somewhatEffectivePrescription],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[anythingElseAcnePrescriptionTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										AnswerText: "Testing this answer",
 									},
 								},
 							},
 						},
 					},
-					&apiservice.AnswerItem{
+					{
 						PotentialAnswerID: aMapping[otherPrevPrescriptionTag],
 						AnswerText:        "Duac2",
 						SubQuestions: []*apiservice.QuestionAnswerItem{
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[usingPrevAcnePrescriptionTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[usingPrevPrescriptionYes],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[irritateSkinAcnePrescriptionTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[irritateYesPrescription],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[usingMoreThreeMonthsPrescriptionTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[lessThanThreeMonthsPrescription],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[howEffectiveAcnePrescriptionTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[somewhatEffectivePrescription],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[anythingElseAcnePrescriptionTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										AnswerText: "Testing this answer",
 									},
 								},
@@ -287,100 +287,100 @@ func TestPrevAcne(t *testing.T) {
 	requestData := &apiservice.IntakeData{
 		PatientVisitID: patientVisitResponse.PatientVisitID,
 		Questions: []*apiservice.QuestionAnswerItem{
-			&apiservice.QuestionAnswerItem{
+			{
 				QuestionID: qMapping[acnePrevOTCSelectTag],
 				AnswerIntakes: []*apiservice.AnswerItem{
-					&apiservice.AnswerItem{
+					{
 						PotentialAnswerID: aMapping[acneFreeTag],
 						SubQuestions: []*apiservice.QuestionAnswerItem{
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[acneOTCProductTriedTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										AnswerText: "Clean and clear",
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[acneUsingPrevOTCTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[acneUsingPrevOTCYesTag],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[acneHowEffectivePrevOTCTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[acneHowEffectiveVeryOTCTag],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[acneIrritateSkinPrevOTCTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[acneIrritateSkinYesPrevOTCTag],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[acneAnythingElsePrevOTCTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										AnswerText: "Nope nothing else",
 									},
 								},
 							},
 						},
 					},
-					&apiservice.AnswerItem{
+					{
 						PotentialAnswerID: aMapping[cetaphilOTCTag],
 						SubQuestions: []*apiservice.QuestionAnswerItem{
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[acneOTCProductTriedTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										AnswerText: "Clean lgkna",
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[acneUsingPrevOTCTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[acneUsingPrevOTCYesTag],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[acneHowEffectivePrevOTCTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[acneHowEffectiveVeryOTCTag],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[acneIrritateSkinPrevOTCTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										PotentialAnswerID: aMapping[acneIrritateSkinYesPrevOTCTag],
 									},
 								},
 							},
-							&apiservice.QuestionAnswerItem{
+							{
 								QuestionID: qMapping[acneAnythingElsePrevOTCTag],
 								AnswerIntakes: []*apiservice.AnswerItem{
-									&apiservice.AnswerItem{
+									{
 										AnswerText: "Nope nothing else",
 									},
 								},
 							},
 						},
 					},
-					&apiservice.AnswerItem{
+					{
 						PotentialAnswerID: aMapping[otherPrevOTCTag],
 						SubQuestions: []*apiservice.QuestionAnswerItem{
 							{
@@ -425,7 +425,7 @@ func TestPrevAcne(t *testing.T) {
 							},
 						},
 					},
-					&apiservice.AnswerItem{
+					{
 						PotentialAnswerID: aMapping[otherPrevOTCTag],
 						SubQuestions: []*apiservice.QuestionAnswerItem{
 							{

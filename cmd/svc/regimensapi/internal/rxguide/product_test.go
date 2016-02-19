@@ -18,7 +18,7 @@ func TestProductQueryProducts(t *testing.T) {
 	limit := 90
 	mediaEndpoint := "http://test.media"
 	webEndpoint := "http://test.web"
-	rxGuides := map[string]*responses.RXGuide{q: &responses.RXGuide{GenericName: q}, q2: &responses.RXGuide{GenericName: q2}}
+	rxGuides := map[string]*responses.RXGuide{q: {GenericName: q}, q2: {GenericName: q2}}
 	imageURLs := []string{media.ResizeURL(mediaEndpoint, RXPlaceholderMediaID, 100, 100)}
 	svc := &rxtest.RXGuideService{Expector: &mock.Expector{T: t}}
 	svc.Expect(mock.NewExpectation(svc.QueryRXGuides, q, limit))

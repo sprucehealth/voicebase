@@ -338,7 +338,7 @@ func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 	}
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
-		1: &common.PatientCareTeam{
+		1: {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					Status:           api.StatusActive,
@@ -350,7 +350,7 @@ func TestHome_Authenticated_IncompleteCase_NoDoctor(t *testing.T) {
 	}
 
 	dataAPI.caseNotifications = map[int64][]*common.CaseNotification{
-		1: []*common.CaseNotification{
+		1: {
 			{
 				ID:               1,
 				PatientCaseID:    1,
@@ -431,7 +431,7 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, 1)
 	doctorShortDisplayName := "Dr. X"
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
-		1: &common.PatientCareTeam{
+		1: {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					ProviderID:       1,
@@ -450,7 +450,7 @@ func TestHome_Authenticated_IncompleteCase_DoctorAssigned(t *testing.T) {
 	}
 
 	dataAPI.caseNotifications = map[int64][]*common.CaseNotification{
-		1: []*common.CaseNotification{
+		1: {
 			{
 				ID:               1,
 				PatientCaseID:    1,
@@ -530,7 +530,7 @@ func TestHome_Authenticated_CaseTriaged(t *testing.T) {
 	}
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
-		1: &common.PatientCareTeam{
+		1: {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					ProviderID:       2,
@@ -543,7 +543,7 @@ func TestHome_Authenticated_CaseTriaged(t *testing.T) {
 	}
 
 	dataAPI.caseNotifications = map[int64][]*common.CaseNotification{
-		1: []*common.CaseNotification{
+		1: {
 			{
 				ID:               1,
 				PatientCaseID:    1,
@@ -620,7 +620,7 @@ func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 	}
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
-		1: &common.PatientCareTeam{
+		1: {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					Status:           api.StatusActive,
@@ -632,7 +632,7 @@ func TestHome_Authenticated_CompletedVisit_NoDoctor(t *testing.T) {
 	}
 
 	dataAPI.caseNotifications = map[int64][]*common.CaseNotification{
-		1: []*common.CaseNotification{
+		1: {
 			{
 				ID:               1,
 				PatientCaseID:    1,
@@ -711,7 +711,7 @@ func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 	}
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
-		1: &common.PatientCareTeam{
+		1: {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					ProviderID:       1,
@@ -730,7 +730,7 @@ func TestHome_Authenticated_CompletedVisit_DoctorAssigned(t *testing.T) {
 	}
 
 	dataAPI.caseNotifications = map[int64][]*common.CaseNotification{
-		1: []*common.CaseNotification{
+		1: {
 			{
 				ID:               1,
 				PatientCaseID:    1,
@@ -807,7 +807,7 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleCC, 1)
 	maDisplayName := "Care Coordinator"
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
-		1: &common.PatientCareTeam{
+		1: {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					Status:           api.StatusActive,
@@ -821,7 +821,7 @@ func TestHome_Authenticated_Messages_NoDoctor(t *testing.T) {
 	}
 
 	dataAPI.caseNotifications = map[int64][]*common.CaseNotification{
-		1: []*common.CaseNotification{
+		1: {
 			{
 				ID:               1,
 				PatientCaseID:    1,
@@ -900,7 +900,7 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 	maProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleCC, 1)
 	maDisplayName := "Care Coordinator"
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
-		1: &common.PatientCareTeam{
+		1: {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					Status:           api.StatusActive,
@@ -914,7 +914,7 @@ func TestHome_Authenticated_MultipleMessages_NoDoctor(t *testing.T) {
 	}
 
 	dataAPI.caseNotifications = map[int64][]*common.CaseNotification{
-		1: []*common.CaseNotification{
+		1: {
 			{
 				ID:               1,
 				PatientCaseID:    1,
@@ -1009,7 +1009,7 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 	doctorDisplayName := "Dr. X"
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
-		1: &common.PatientCareTeam{
+		1: {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					Status:           api.StatusActive,
@@ -1030,7 +1030,7 @@ func TestHome_Authenticated_Message_DoctorAssigned(t *testing.T) {
 	}
 
 	dataAPI.caseNotifications = map[int64][]*common.CaseNotification{
-		1: []*common.CaseNotification{
+		1: {
 			{
 				ID:               1,
 				PatientCaseID:    1,
@@ -1122,7 +1122,7 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 	doctorDisplayName := "Dr. X"
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
-		1: &common.PatientCareTeam{
+		1: {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					Status:           api.StatusActive,
@@ -1143,7 +1143,7 @@ func TestHome_Authenticated_Message_VisitTreated(t *testing.T) {
 	}
 
 	dataAPI.caseNotifications = map[int64][]*common.CaseNotification{
-		1: []*common.CaseNotification{
+		1: {
 			{
 				ID:               1,
 				PatientCaseID:    1,
@@ -1239,7 +1239,7 @@ func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 	}
 
 	dataAPI.caseNotifications = map[int64][]*common.CaseNotification{
-		1: []*common.CaseNotification{
+		1: {
 			{
 				ID:               1,
 				PatientCaseID:    1,
@@ -1260,7 +1260,7 @@ func TestHome_Authenticated_VisitTreated_TPNotViewed(t *testing.T) {
 	doctorDisplayName := "Dr. X"
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
-		1: &common.PatientCareTeam{
+		1: {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					Status:           api.StatusActive,
@@ -1347,7 +1347,7 @@ func TestHome_Authenticated_NoUpdates(t *testing.T) {
 	doctorDisplayName := "Dr. X"
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
-		1: &common.PatientCareTeam{
+		1: {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					Status:           api.StatusActive,
@@ -1445,7 +1445,7 @@ func TestHome_Authenticated_VisitTreated_TPViewed(t *testing.T) {
 	doctorDisplayName := "Dr. X"
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
-		1: &common.PatientCareTeam{
+		1: {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					Status:           api.StatusActive,
@@ -1550,7 +1550,7 @@ func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, 2)
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
-		1: &common.PatientCareTeam{
+		1: {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					Status:           api.StatusActive,
@@ -1571,7 +1571,7 @@ func TestHome_Authenticated_MultipleTPs(t *testing.T) {
 	}
 
 	dataAPI.caseNotifications = map[int64][]*common.CaseNotification{
-		1: []*common.CaseNotification{
+		1: {
 			{
 				ID:               1,
 				PatientCaseID:    1,
@@ -1673,7 +1673,7 @@ func TestHome_Authenticated_CompletedCase_ReferAFriend_2_0_2(t *testing.T) {
 	doctorProfileURL := app_url.ThumbnailURL("api.spruce.local", api.RoleDoctor, 2)
 
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
-		1: &common.PatientCareTeam{
+		1: {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					Status:           api.StatusActive,
@@ -1694,7 +1694,7 @@ func TestHome_Authenticated_CompletedCase_ReferAFriend_2_0_2(t *testing.T) {
 	}
 
 	dataAPI.caseNotifications = map[int64][]*common.CaseNotification{
-		1: []*common.CaseNotification{
+		1: {
 			{
 				ID:               1,
 				PatientCaseID:    1,
@@ -1782,7 +1782,7 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 
 	maDisplayName := "Care Coordinator"
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
-		1: &common.PatientCareTeam{
+		1: {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					Status:           api.StatusActive,
@@ -1793,7 +1793,7 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 				},
 			},
 		},
-		2: &common.PatientCareTeam{
+		2: {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					Status:           api.StatusActive,
@@ -1807,7 +1807,7 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 	}
 
 	dataAPI.caseNotifications = map[int64][]*common.CaseNotification{
-		1: []*common.CaseNotification{
+		1: {
 			{
 				ID:               1,
 				PatientCaseID:    1,
@@ -1818,7 +1818,7 @@ func TestHome_MultipleCases_Incomplete(t *testing.T) {
 				},
 			},
 		},
-		2: []*common.CaseNotification{
+		2: {
 			{
 				ID:               1,
 				PatientCaseID:    1,
@@ -1916,7 +1916,7 @@ func TestHome_MultipleCases_TPPending(t *testing.T) {
 	doctorDisplayName1 := "Doctor 1"
 	doctorDisplayName2 := "Doctor 2"
 	dataAPI.careTeamsByCase = map[int64]*common.PatientCareTeam{
-		1: &common.PatientCareTeam{
+		1: {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					Status:           api.StatusActive,
@@ -1934,7 +1934,7 @@ func TestHome_MultipleCases_TPPending(t *testing.T) {
 				},
 			},
 		},
-		2: &common.PatientCareTeam{
+		2: {
 			Assignments: []*common.CareProviderAssignment{
 				{
 					Status:           api.StatusActive,
@@ -1955,7 +1955,7 @@ func TestHome_MultipleCases_TPPending(t *testing.T) {
 	}
 
 	dataAPI.caseNotifications = map[int64][]*common.CaseNotification{
-		1: []*common.CaseNotification{
+		1: {
 			{
 				ID:               1,
 				PatientCaseID:    1,
@@ -1969,7 +1969,7 @@ func TestHome_MultipleCases_TPPending(t *testing.T) {
 				},
 			},
 		},
-		2: []*common.CaseNotification{
+		2: {
 			{
 				ID:               1,
 				PatientCaseID:    2,
@@ -2058,7 +2058,7 @@ func setupMockAccessors(t *testing.T) (*mockHomeHandlerDataAPI, *mockHandlerHome
 		formEntryExists: true,
 		accountCode:     &ac,
 		pathwayMap: map[string]*common.Pathway{
-			api.AcnePathwayTag: &common.Pathway{
+			api.AcnePathwayTag: {
 				Tag:    api.AcnePathwayTag,
 				Name:   "Acne",
 				ID:     1,

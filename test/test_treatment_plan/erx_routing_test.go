@@ -92,7 +92,7 @@ func TestERXRouting_RXStarted(t *testing.T) {
 	// after routing the prescriptions
 	stubERxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
 	stubERxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		treatmentPrescriptionID: []common.StatusEvent{{Status: api.ERXStatusEntered}},
+		treatmentPrescriptionID: {{Status: api.ERXStatusEntered}},
 	}
 	consumed, err := doctor_treatment_plan.NewWorker(
 		testData.DataAPI, stubERxAPI, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue,
@@ -189,7 +189,7 @@ func TestERXRouting_RXSent(t *testing.T) {
 	// after routing the prescriptions
 	stubERxAPI := testData.Config.ERxAPI.(*erx.StubErxService)
 	stubERxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		treatmentPrescriptionID: []common.StatusEvent{{Status: api.ERXStatusSent}},
+		treatmentPrescriptionID: {{Status: api.ERXStatusSent}},
 	}
 	consumed, err := doctor_treatment_plan.NewWorker(
 		testData.DataAPI, stubERxAPI, testData.Config.Dispatcher, testData.Config.ERxRoutingQueue,

@@ -38,30 +38,30 @@ func expectRegimensCreateTable(m *mock.DynamoDB) {
 	m.Expect(mock.NewExpectation(m.CreateTable, &dynamodb.CreateTableInput{
 		TableName: ptr.String(fmt.Sprintf(regimenTableNameFormatString, testEnv)),
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
-			&dynamodb.AttributeDefinition{
+			{
 				AttributeName: ptr.String(regimenIDAN),
 				AttributeType: ptr.String("S"),
 			},
-			&dynamodb.AttributeDefinition{
+			{
 				AttributeName: ptr.String(sourceRegimenIDAN),
 				AttributeType: ptr.String("S"),
 			},
 		},
 		KeySchema: []*dynamodb.KeySchemaElement{
-			&dynamodb.KeySchemaElement{
+			{
 				AttributeName: ptr.String(regimenIDAN),
 				KeyType:       ptr.String("HASH"),
 			},
 		},
 		GlobalSecondaryIndexes: []*dynamodb.GlobalSecondaryIndex{
-			&dynamodb.GlobalSecondaryIndex{
+			{
 				IndexName: regimenTableSourceRegimenRegimenIndexName,
 				KeySchema: []*dynamodb.KeySchemaElement{
-					&dynamodb.KeySchemaElement{
+					{
 						AttributeName: ptr.String(sourceRegimenIDAN),
 						KeyType:       ptr.String("HASH"),
 					},
-					&dynamodb.KeySchemaElement{
+					{
 						AttributeName: ptr.String(regimenIDAN),
 						KeyType:       ptr.String("RANGE"),
 					},
@@ -121,38 +121,38 @@ func expectRegimensTagCreateTable(m *mock.DynamoDB) {
 	m.Expect(mock.NewExpectation(m.CreateTable, &dynamodb.CreateTableInput{
 		TableName: ptr.String(fmt.Sprintf(regimenTagTableNameFormatString, testEnv)),
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
-			&dynamodb.AttributeDefinition{
+			{
 				AttributeName: ptr.String(tagAN),
 				AttributeType: ptr.String("S"),
 			},
-			&dynamodb.AttributeDefinition{
+			{
 				AttributeName: ptr.String(regimenIDAN),
 				AttributeType: ptr.String("S"),
 			},
-			&dynamodb.AttributeDefinition{
+			{
 				AttributeName: ptr.String(viewCountAN),
 				AttributeType: ptr.String("N"),
 			},
 		},
 		KeySchema: []*dynamodb.KeySchemaElement{
-			&dynamodb.KeySchemaElement{
+			{
 				AttributeName: ptr.String(tagAN),
 				KeyType:       ptr.String("HASH"),
 			},
-			&dynamodb.KeySchemaElement{
+			{
 				AttributeName: ptr.String(regimenIDAN),
 				KeyType:       ptr.String("RANGE"),
 			},
 		},
 		GlobalSecondaryIndexes: []*dynamodb.GlobalSecondaryIndex{
-			&dynamodb.GlobalSecondaryIndex{
+			{
 				IndexName: regimenTagTableTagViewIndexName,
 				KeySchema: []*dynamodb.KeySchemaElement{
-					&dynamodb.KeySchemaElement{
+					{
 						AttributeName: ptr.String(tagAN),
 						KeyType:       ptr.String("HASH"),
 					},
-					&dynamodb.KeySchemaElement{
+					{
 						AttributeName: ptr.String(viewCountAN),
 						KeyType:       ptr.String("RANGE"),
 					},
@@ -216,7 +216,7 @@ func TestRegimensServiceRegimen(t *testing.T) {
 	kvs.Expect(mock.NewExpectation(kvs.GetItem, &dynamodb.GetItemInput{
 		TableName: ptr.String(fmt.Sprintf(regimenTableNameFormatString, testEnv)),
 		Key: map[string]*dynamodb.AttributeValue{
-			regimenIDAN: &dynamodb.AttributeValue{
+			regimenIDAN: {
 				S: ptr.String(id),
 			},
 		},
@@ -249,7 +249,7 @@ func TestRegimensServiceRegimenUnknownError(t *testing.T) {
 	kvs.Expect(mock.NewExpectation(kvs.GetItem, &dynamodb.GetItemInput{
 		TableName: ptr.String(fmt.Sprintf(regimenTableNameFormatString, testEnv)),
 		Key: map[string]*dynamodb.AttributeValue{
-			regimenIDAN: &dynamodb.AttributeValue{
+			regimenIDAN: {
 				S: ptr.String(id),
 			},
 		},
@@ -280,7 +280,7 @@ func TestRegimensServiceRegimenNilPublishedDefault(t *testing.T) {
 	kvs.Expect(mock.NewExpectation(kvs.GetItem, &dynamodb.GetItemInput{
 		TableName: ptr.String(fmt.Sprintf(regimenTableNameFormatString, testEnv)),
 		Key: map[string]*dynamodb.AttributeValue{
-			regimenIDAN: &dynamodb.AttributeValue{
+			regimenIDAN: {
 				S: ptr.String(id),
 			},
 		},
@@ -318,7 +318,7 @@ func TestRegimensIncrementViewCount(t *testing.T) {
 	kvs.Expect(mock.NewExpectation(kvs.UpdateItem, &dynamodb.UpdateItemInput{
 		TableName: ptr.String(fmt.Sprintf(regimenTableNameFormatString, testEnv)),
 		Key: map[string]*dynamodb.AttributeValue{
-			regimenIDAN: &dynamodb.AttributeValue{
+			regimenIDAN: {
 				S: ptr.String(id),
 			},
 		},
@@ -336,10 +336,10 @@ func TestRegimensIncrementViewCount(t *testing.T) {
 	kvs.Expect(mock.NewExpectation(kvs.UpdateItem, &dynamodb.UpdateItemInput{
 		TableName: ptr.String(fmt.Sprintf(regimenTagTableNameFormatString, testEnv)),
 		Key: map[string]*dynamodb.AttributeValue{
-			tagAN: &dynamodb.AttributeValue{
+			tagAN: {
 				S: ptr.String(strings.ToLower(tags[0])),
 			},
-			regimenIDAN: &dynamodb.AttributeValue{
+			regimenIDAN: {
 				S: ptr.String(id),
 			},
 		},
@@ -350,10 +350,10 @@ func TestRegimensIncrementViewCount(t *testing.T) {
 	kvs.Expect(mock.NewExpectation(kvs.UpdateItem, &dynamodb.UpdateItemInput{
 		TableName: ptr.String(fmt.Sprintf(regimenTagTableNameFormatString, testEnv)),
 		Key: map[string]*dynamodb.AttributeValue{
-			tagAN: &dynamodb.AttributeValue{
+			tagAN: {
 				S: ptr.String(strings.ToLower(tags[1])),
 			},
-			regimenIDAN: &dynamodb.AttributeValue{
+			regimenIDAN: {
 				S: ptr.String(id),
 			},
 		},
@@ -383,7 +383,7 @@ func TestRegimensIncrementViewCountIgnoreIndexUpdateErrors(t *testing.T) {
 	kvs.Expect(mock.NewExpectation(kvs.UpdateItem, &dynamodb.UpdateItemInput{
 		TableName: ptr.String(fmt.Sprintf(regimenTableNameFormatString, testEnv)),
 		Key: map[string]*dynamodb.AttributeValue{
-			regimenIDAN: &dynamodb.AttributeValue{
+			regimenIDAN: {
 				S: ptr.String(id),
 			},
 		},
@@ -402,10 +402,10 @@ func TestRegimensIncrementViewCountIgnoreIndexUpdateErrors(t *testing.T) {
 	kvs.Expect(mock.NewExpectation(kvs.UpdateItem, &dynamodb.UpdateItemInput{
 		TableName: ptr.String(fmt.Sprintf(regimenTagTableNameFormatString, testEnv)),
 		Key: map[string]*dynamodb.AttributeValue{
-			tagAN: &dynamodb.AttributeValue{
+			tagAN: {
 				S: ptr.String(strings.ToLower(tags[0])),
 			},
-			regimenIDAN: &dynamodb.AttributeValue{
+			regimenIDAN: {
 				S: ptr.String(id),
 			},
 		},
@@ -417,10 +417,10 @@ func TestRegimensIncrementViewCountIgnoreIndexUpdateErrors(t *testing.T) {
 	kvs.Expect(mock.NewExpectation(kvs.UpdateItem, &dynamodb.UpdateItemInput{
 		TableName: ptr.String(fmt.Sprintf(regimenTagTableNameFormatString, testEnv)),
 		Key: map[string]*dynamodb.AttributeValue{
-			tagAN: &dynamodb.AttributeValue{
+			tagAN: {
 				S: ptr.String(strings.ToLower(tags[1])),
 			},
-			regimenIDAN: &dynamodb.AttributeValue{
+			regimenIDAN: {
 				S: ptr.String(id),
 			},
 		},
@@ -446,7 +446,7 @@ func TestRegimensIncrementViewCountNoRegimen(t *testing.T) {
 	kvs.Expect(mock.NewExpectation(kvs.UpdateItem, &dynamodb.UpdateItemInput{
 		TableName: ptr.String(fmt.Sprintf(regimenTableNameFormatString, testEnv)),
 		Key: map[string]*dynamodb.AttributeValue{
-			regimenIDAN: &dynamodb.AttributeValue{
+			regimenIDAN: {
 				S: ptr.String(id),
 			},
 		},
@@ -478,20 +478,20 @@ func TestRegimensPutRegimenUnpublished(t *testing.T) {
 	test.OK(t, err)
 	kvs.Expect(mock.NewExpectation(kvs.BatchWriteItem, &dynamodb.BatchWriteItemInput{
 		RequestItems: map[string][]*dynamodb.WriteRequest{
-			fmt.Sprintf(regimenTableNameFormatString, testEnv): []*dynamodb.WriteRequest{
-				&dynamodb.WriteRequest{
+			fmt.Sprintf(regimenTableNameFormatString, testEnv): {
+				{
 					PutRequest: &dynamodb.PutRequest{
 						Item: map[string]*dynamodb.AttributeValue{
-							regimenIDAN: &dynamodb.AttributeValue{
+							regimenIDAN: {
 								S: ptr.String(id),
 							},
-							viewCountAN: &dynamodb.AttributeValue{
+							viewCountAN: {
 								N: zeroAV,
 							},
-							publishedAN: &dynamodb.AttributeValue{
+							publishedAN: {
 								BOOL: ptr.Bool(published),
 							},
-							regimenAN: &dynamodb.AttributeValue{
+							regimenAN: {
 								B: data,
 							},
 						},
@@ -522,54 +522,54 @@ func TestRegimensPutRegimenPublished(t *testing.T) {
 	test.OK(t, err)
 	kvs.Expect(mock.NewExpectation(kvs.BatchWriteItem, &dynamodb.BatchWriteItemInput{
 		RequestItems: map[string][]*dynamodb.WriteRequest{
-			fmt.Sprintf(regimenTableNameFormatString, testEnv): []*dynamodb.WriteRequest{
-				&dynamodb.WriteRequest{
+			fmt.Sprintf(regimenTableNameFormatString, testEnv): {
+				{
 					PutRequest: &dynamodb.PutRequest{
 						Item: map[string]*dynamodb.AttributeValue{
-							regimenIDAN: &dynamodb.AttributeValue{
+							regimenIDAN: {
 								S: ptr.String(id),
 							},
-							viewCountAN: &dynamodb.AttributeValue{
+							viewCountAN: {
 								N: zeroAV,
 							},
-							publishedAN: &dynamodb.AttributeValue{
+							publishedAN: {
 								BOOL: ptr.Bool(published),
 							},
-							regimenAN: &dynamodb.AttributeValue{
+							regimenAN: {
 								B: data,
 							},
 						},
 					},
 				},
 			},
-			fmt.Sprintf(regimenTagTableNameFormatString, testEnv): []*dynamodb.WriteRequest{
-				&dynamodb.WriteRequest{
+			fmt.Sprintf(regimenTagTableNameFormatString, testEnv): {
+				{
 					PutRequest: &dynamodb.PutRequest{
 						Item: map[string]*dynamodb.AttributeValue{
-							tagAN: &dynamodb.AttributeValue{
+							tagAN: {
 								S: ptr.String(strings.ToLower(tags[0])),
 							},
 							// An unpublished regimen always has a view count of 0 and a published regimen should not be mutated so always PUT with a 0 value
-							viewCountAN: &dynamodb.AttributeValue{
+							viewCountAN: {
 								N: zeroAV,
 							},
-							regimenIDAN: &dynamodb.AttributeValue{
+							regimenIDAN: {
 								S: ptr.String(id),
 							},
 						},
 					},
 				},
-				&dynamodb.WriteRequest{
+				{
 					PutRequest: &dynamodb.PutRequest{
 						Item: map[string]*dynamodb.AttributeValue{
-							tagAN: &dynamodb.AttributeValue{
+							tagAN: {
 								S: ptr.String(strings.ToLower(tags[1])),
 							},
 							// An unpublished regimen always has a view count of 0 and a published regimen should not be mutated so always PUT with a 0 value
-							viewCountAN: &dynamodb.AttributeValue{
+							viewCountAN: {
 								N: zeroAV,
 							},
-							regimenIDAN: &dynamodb.AttributeValue{
+							regimenIDAN: {
 								S: ptr.String(id),
 							},
 						},
@@ -627,7 +627,7 @@ func TestRegimensTagQuery(t *testing.T) {
 	}))
 	kvs.QueryOutputs = append(kvs.QueryOutputs, &dynamodb.QueryOutput{
 		Items: []map[string]*dynamodb.AttributeValue{
-			map[string]*dynamodb.AttributeValue{viewCountAN: {N: ptr.String("49")}, regimenIDAN: {S: ptr.String(id)}},
+			{viewCountAN: {N: ptr.String("49")}, regimenIDAN: {S: ptr.String(id)}},
 		},
 	})
 	kvs.Expect(mock.NewExpectation(kvs.Query, &dynamodb.QueryInput{
@@ -641,27 +641,27 @@ func TestRegimensTagQuery(t *testing.T) {
 	}))
 	kvs.QueryOutputs = append(kvs.QueryOutputs, &dynamodb.QueryOutput{
 		Items: []map[string]*dynamodb.AttributeValue{
-			map[string]*dynamodb.AttributeValue{viewCountAN: {N: ptr.String("50")}, regimenIDAN: {S: ptr.String(id2)}},
+			{viewCountAN: {N: ptr.String("50")}, regimenIDAN: {S: ptr.String(id2)}},
 		},
 	})
 	kvs.Expect(mock.NewExpectation(kvs.BatchGetItem, &dynamodb.BatchGetItemInput{
 		RequestItems: map[string]*dynamodb.KeysAndAttributes{
 			fmt.Sprintf(regimenTableNameFormatString, testEnv): {
 				Keys: []map[string]*dynamodb.AttributeValue{
-					map[string]*dynamodb.AttributeValue{regimenIDAN: {S: ptr.String(id2)}},
-					map[string]*dynamodb.AttributeValue{regimenIDAN: {S: ptr.String(id)}},
+					{regimenIDAN: {S: ptr.String(id2)}},
+					{regimenIDAN: {S: ptr.String(id)}},
 				},
 			},
 		},
 	}))
 	kvs.BatchGetItemOutputs = append(kvs.BatchGetItemOutputs, &dynamodb.BatchGetItemOutput{
 		Responses: map[string][]map[string]*dynamodb.AttributeValue{
-			fmt.Sprintf(regimenTableNameFormatString, testEnv): []map[string]*dynamodb.AttributeValue{
-				map[string]*dynamodb.AttributeValue{
+			fmt.Sprintf(regimenTableNameFormatString, testEnv): {
+				{
 					regimenAN:   {B: data},
 					viewCountAN: {N: ptr.String("49")},
 				},
-				map[string]*dynamodb.AttributeValue{
+				{
 					regimenAN:   {B: data2},
 					viewCountAN: {N: ptr.String("50")},
 				},
@@ -705,8 +705,8 @@ func TestRegimensFoundationOf(t *testing.T) {
 	}))
 	kvs.QueryOutputs = append(kvs.QueryOutputs, &dynamodb.QueryOutput{
 		Items: []map[string]*dynamodb.AttributeValue{
-			map[string]*dynamodb.AttributeValue{viewCountAN: {N: ptr.String("49")}, regimenAN: {B: data}, regimenIDAN: {S: ptr.String(id)}},
-			map[string]*dynamodb.AttributeValue{viewCountAN: {N: ptr.String("50")}, regimenAN: {B: data2}, regimenIDAN: {S: ptr.String(id2)}},
+			{viewCountAN: {N: ptr.String("49")}, regimenAN: {B: data}, regimenIDAN: {S: ptr.String(id)}},
+			{viewCountAN: {N: ptr.String("50")}, regimenAN: {B: data2}, regimenIDAN: {S: ptr.String(id2)}},
 		},
 	})
 

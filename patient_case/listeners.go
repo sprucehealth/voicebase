@@ -86,7 +86,7 @@ func InitListeners(dataAPI api.DataAPI, dispatcher *dispatch.Dispatcher, notific
 					ShortMessage: "You have a new message on Spruce.",
 					EmailType:    notifyNewMessageEmailType,
 					EmailVars: []mandrill.Var{
-						mandrill.Var{
+						{
 							Name:    "PatientFirstName",
 							Content: patient.FirstName,
 						},

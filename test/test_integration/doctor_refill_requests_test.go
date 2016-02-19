@@ -195,7 +195,7 @@ func TestRefill_ExistingPatient(t *testing.T) {
 		PharmacyDetailsToReturn:      pharmacyToReturn,
 		RefillRxRequestQueueToReturn: []*common.RefillRequestItem{refillRequestItem},
 		PrescriptionIDToPrescriptionStatuses: map[int64][]common.StatusEvent{
-			prescriptionIDForRequestedPrescription: []common.StatusEvent{{
+			prescriptionIDForRequestedPrescription: {{
 				Status: api.ERXStatusSent,
 			}},
 		},
@@ -392,7 +392,7 @@ func TestRefill_Approve(t *testing.T) {
 		refillRequestQueueItemID: approvedRefillRequestPrescriptionID,
 	}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		approvedRefillRequestPrescriptionID: []common.StatusEvent{common.StatusEvent{
+		approvedRefillRequestPrescriptionID: {{
 			Status: api.ERXStatusSent,
 		},
 		},
@@ -614,7 +614,7 @@ func TestRefill_Approve_ControlledSubstance(t *testing.T) {
 		refillRequestQueueItemID: approvedRefillRequestPrescriptionID,
 	}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		approvedRefillRequestPrescriptionID: []common.StatusEvent{common.StatusEvent{
+		approvedRefillRequestPrescriptionID: {{
 			Status:        api.ERXStatusError,
 			StatusDetails: "testing this error",
 		},
@@ -778,7 +778,7 @@ func TestRefill_Approve_ErrorSending(t *testing.T) {
 		refillRequestQueueItemID: approvedRefillRequestPrescriptionID,
 	}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		approvedRefillRequestPrescriptionID: []common.StatusEvent{{
+		approvedRefillRequestPrescriptionID: {{
 			Status:        api.ERXStatusError,
 			StatusDetails: "testing this error",
 		}},
@@ -998,7 +998,7 @@ func testRefill_Deny(isControlledSubstance bool, t *testing.T) {
 		refillRequestQueueItemID: deniedRefillRequestPrescriptionID,
 	}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		deniedRefillRequestPrescriptionID: []common.StatusEvent{common.StatusEvent{
+		deniedRefillRequestPrescriptionID: {{
 			Status: api.ERXStatusDeleted,
 		},
 		},
@@ -1452,7 +1452,7 @@ func setupRefill_Deny_DNTF(t *testing.T, testData *TestData, endErxStatus common
 	stubErxAPI.PrescriptionIDsToReturn = []int64{prescriptionIDForTreatment}
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		prescriptionIDForTreatment: []common.StatusEvent{endErxStatus},
+		prescriptionIDForTreatment: {endErxStatus},
 	}
 	stubErxAPI.PharmacyToSendPrescriptionTo = pharmacyToReturn.SourceID
 
@@ -1870,7 +1870,7 @@ func setupRefill_Deny_DNTF_ExistingPatient(t *testing.T, testData *TestData, end
 	stubErxAPI.PharmacyToSendPrescriptionTo = pharmacyToReturn.SourceID
 	stubErxAPI.ExpectedRxReferenceNumber = strconv.FormatInt(refillRequestItem.RxRequestQueueItemID, 10)
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		prescriptionIDForTreatment: []common.StatusEvent{endErxStatus},
+		prescriptionIDForTreatment: {endErxStatus},
 	}
 
 	// Call the Consume method
@@ -2218,7 +2218,7 @@ func TestRefill_Status_MultipleRefills(t *testing.T) {
 		refillRequestQueueItemID: approvedRefillRequestPrescriptionID,
 	}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		approvedRefillRequestPrescriptionID: []common.StatusEvent{{Status: api.ERXStatusSent}},
+		approvedRefillRequestPrescriptionID: {{Status: api.ERXStatusSent}},
 	}
 
 	// Call the Consume method so that the first refill request gets added to the system
@@ -2281,10 +2281,10 @@ func TestRefill_Status_MultipleRefills(t *testing.T) {
 		refillRequestQueueItemID + 3: approvedRefillRequestPrescriptionID + 3,
 	}
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		approvedRefillRequestPrescriptionID:     []common.StatusEvent{common.StatusEvent{Status: api.ERXStatusSent}},
-		approvedRefillRequestPrescriptionID + 1: []common.StatusEvent{common.StatusEvent{Status: api.ERXStatusSent}},
-		approvedRefillRequestPrescriptionID + 2: []common.StatusEvent{common.StatusEvent{Status: api.ERXStatusSent}},
-		approvedRefillRequestPrescriptionID + 3: []common.StatusEvent{common.StatusEvent{Status: api.ERXStatusSent}},
+		approvedRefillRequestPrescriptionID:     {{Status: api.ERXStatusSent}},
+		approvedRefillRequestPrescriptionID + 1: {{Status: api.ERXStatusSent}},
+		approvedRefillRequestPrescriptionID + 2: {{Status: api.ERXStatusSent}},
+		approvedRefillRequestPrescriptionID + 3: {{Status: api.ERXStatusSent}},
 	}
 
 	test.OK(t, refillRXWorker.Do())
@@ -2652,7 +2652,7 @@ func TestRefill_ExistingPatient_NonexistentTreatment(t *testing.T) {
 	stubErxAPI.RefillRxRequestQueueToReturn = []*common.RefillRequestItem{refillRequestItem}
 	stubErxAPI.PharmacyDetailsToReturn = pharmacyToReturn
 	stubErxAPI.PrescriptionIDToPrescriptionStatuses = map[int64][]common.StatusEvent{
-		prescriptionIDForRequestedPrescription: []common.StatusEvent{{Status: api.ERXStatusDeleted}},
+		prescriptionIDForRequestedPrescription: {{Status: api.ERXStatusDeleted}},
 	}
 
 	// Call the Consume method
@@ -2886,7 +2886,7 @@ func TestRefill_NonSprucePatient(t *testing.T) {
 
 	refillRequest, err := testData.DataAPI.GetRefillRequestFromID(refillRequestStatuses[0].ItemID)
 	if err != nil {
-		t.Fatal("Unable to get refill request that was just added: ", err.Error)
+		t.Fatal("Unable to get refill request that was just added: ", err.Error())
 	}
 
 	if refillRequest.DispensedPrescription == nil {

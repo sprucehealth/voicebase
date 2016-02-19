@@ -11,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
 
@@ -153,7 +152,7 @@ func TestProvisionPhone_Unavailable(t *testing.T) {
 		Number: &excomms.ProvisionPhoneNumberRequest_AreaCode{
 			AreaCode: areaCode,
 		},
-	}).WithReturns(&excomms.ProvisionPhoneNumberResponse{}, grpc.Errorf(codes.InvalidArgument, "")))
+	}).WithReturns(&excomms.ProvisionPhoneNumberResponse{}, grpcErrorf(codes.InvalidArgument, "")))
 
 	res := g.query(ctx, `
 		mutation _ ($organizationId: ID!, $areaCode: String!) {

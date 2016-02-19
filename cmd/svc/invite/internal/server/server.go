@@ -25,6 +25,9 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+// go vet doesn't like that the first argument to grpcErrorf is not a string so alias the function with a different name :(
+var grpcErrorf = grpc.Errorf
+
 // unitTesting is set by the unit tests to force deterministic token generation
 var unitTesting = false
 
@@ -79,7 +82,7 @@ func New(dal dal.DAL, clk clock.Clock, directoryClient directory.DirectoryClient
 func (s *server) AttributionData(ctx context.Context, in *invite.AttributionDataRequest) (*invite.AttributionDataResponse, error) {
 	values, err := s.dal.AttributionData(ctx, in.DeviceID)
 	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("No attribution data found for device ID '%s'", in.DeviceID))
+		return nil, grpcErrorf(codes.NotFound, fmt.Sprintf("No attribution data found for device ID '%s'", in.DeviceID))
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -98,25 +101,25 @@ func (s *server) AttributionData(ctx context.Context, in *invite.AttributionData
 // InviteColleagues sends invites to people to join an organization
 func (s *server) InviteColleagues(ctx context.Context, in *invite.InviteColleaguesRequest) (*invite.InviteColleaguesResponse, error) {
 	if in.OrganizationEntityID == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "OrganizationEntityID is required")
+		return nil, grpcErrorf(codes.InvalidArgument, "OrganizationEntityID is required")
 	}
 	if in.InviterEntityID == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "InviterEntityID is required")
+		return nil, grpcErrorf(codes.InvalidArgument, "InviterEntityID is required")
 	}
 	// Validate all colleague information
 	for _, c := range in.Colleagues {
 		if c.Email == "" {
-			return nil, grpc.Errorf(codes.InvalidArgument, "Email is required")
+			return nil, grpcErrorf(codes.InvalidArgument, "Email is required")
 		}
 		if !validate.Email(c.Email) {
-			return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Email '%s' is invalid", c.Email))
+			return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Email '%s' is invalid", c.Email))
 		}
 		if c.PhoneNumber == "" {
-			return nil, grpc.Errorf(codes.InvalidArgument, "Phone number is required")
+			return nil, grpcErrorf(codes.InvalidArgument, "Phone number is required")
 		}
 		pn, err := phone.ParseNumber(c.PhoneNumber)
 		if err != nil {
-			return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Phone number '%s' is invalid", c.PhoneNumber))
+			return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Phone number '%s' is invalid", c.PhoneNumber))
 		}
 		c.PhoneNumber = pn.String()
 	}
@@ -134,16 +137,16 @@ func (s *server) InviteColleagues(ctx context.Context, in *invite.InviteColleagu
 	if err != nil {
 		switch grpc.Code(err) {
 		case codes.NotFound:
-			return nil, grpc.Errorf(codes.InvalidArgument, "OrganizationEntityID not found")
+			return nil, grpcErrorf(codes.InvalidArgument, "OrganizationEntityID not found")
 		}
 		return nil, errors.Trace(err)
 	}
 	// Sanity check
 	if len(res.Entities) != 1 {
-		return nil, grpc.Errorf(codes.Internal, fmt.Sprintf("Expected 1 organization got %d", len(res.Entities)))
+		return nil, grpcErrorf(codes.Internal, fmt.Sprintf("Expected 1 organization got %d", len(res.Entities)))
 	}
 	if res.Entities[0].Type != directory.EntityType_ORGANIZATION {
-		return nil, grpc.Errorf(codes.InvalidArgument, "OrganizationEntityID not an organization")
+		return nil, grpcErrorf(codes.InvalidArgument, "OrganizationEntityID not an organization")
 	}
 	org := res.Entities[0]
 
@@ -160,16 +163,16 @@ func (s *server) InviteColleagues(ctx context.Context, in *invite.InviteColleagu
 	if err != nil {
 		switch grpc.Code(err) {
 		case codes.NotFound:
-			return nil, grpc.Errorf(codes.InvalidArgument, "InviterEntityID not found")
+			return nil, grpcErrorf(codes.InvalidArgument, "InviterEntityID not found")
 		}
 		return nil, errors.Trace(err)
 	}
 	// Sanity check
 	if len(res.Entities) != 1 {
-		return nil, grpc.Errorf(codes.Internal, fmt.Sprintf("Expected 1 entities got %d", len(res.Entities)))
+		return nil, grpcErrorf(codes.Internal, fmt.Sprintf("Expected 1 entities got %d", len(res.Entities)))
 	}
 	if res.Entities[0].Type != directory.EntityType_INTERNAL {
-		return nil, grpc.Errorf(codes.InvalidArgument, "InviterEntityID not an internal entity")
+		return nil, grpcErrorf(codes.InvalidArgument, "InviterEntityID not an internal entity")
 	}
 	inviter := res.Entities[0]
 
@@ -252,12 +255,12 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 	inv, err := s.dal.InviteForToken(ctx, in.Token)
 	if err != nil {
 		if errors.Cause(err) == dal.ErrNotFound {
-			return nil, grpc.Errorf(codes.NotFound, "Invite not found with token "+in.Token)
+			return nil, grpcErrorf(codes.NotFound, "Invite not found with token "+in.Token)
 		}
 		return nil, errors.Trace(err)
 	}
 	if inv.Type != models.ColleagueInvite {
-		return nil, grpc.Errorf(codes.Internal, "unsupported invite type "+string(inv.Type))
+		return nil, grpcErrorf(codes.Internal, "unsupported invite type "+string(inv.Type))
 	}
 	return &invite.LookupInviteResponse{
 		Type: invite.LookupInviteResponse_COLLEAGUE,
@@ -277,7 +280,7 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 // SetAttributionData associate attribution data with a device
 func (s *server) SetAttributionData(ctx context.Context, in *invite.SetAttributionDataRequest) (*invite.SetAttributionDataResponse, error) {
 	if in.DeviceID == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "DeviceID is required")
+		return nil, grpcErrorf(codes.InvalidArgument, "DeviceID is required")
 	}
 	values := make(map[string]string, len(in.Values))
 	for _, v := range in.Values {

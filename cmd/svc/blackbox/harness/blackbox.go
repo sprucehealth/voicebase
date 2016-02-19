@@ -132,7 +132,7 @@ func Register(testSuite TestSuite, config *RegistrationConfig) {
 						suite:   testV,
 						payload: payload,
 						testContexts: []*testContext{
-							&testContext{
+							{
 								testName: method.Name,
 								test:     method,
 							},

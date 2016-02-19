@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+// go vet doesn't like that the first argument to grpcErrorf is not a string so alias the function with a different name :(
 var grpcErrorf = grpc.Errorf
 
 var (
@@ -347,7 +348,7 @@ func (s *server) ExternalIDs(ctx context.Context, rd *directory.ExternalIDsReque
 	}
 	externalIDs, err := s.dl.ExternalEntityIDsForEntities(ids)
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, err.Error())
+		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 	return &directory.ExternalIDsResponse{
 		ExternalIDs: transformExternalIDs(externalIDs),

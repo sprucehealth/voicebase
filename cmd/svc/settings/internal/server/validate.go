@@ -4,17 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"google.golang.org/grpc"
-
 	"github.com/sprucehealth/backend/cmd/svc/settings/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/settings"
 )
 
-var grpcErrorf = grpc.Errorf
-
 func validateValueAgainstConfig(value *settings.Value, config *models.Config) (*models.Value, error) {
-
 	if value.Key == nil {
 		return nil, errors.New("key required for value")
 	} else if !config.AllowSubkeys && value.Key.Subkey != "" {
@@ -83,18 +78,17 @@ func validateValueAgainstConfig(value *settings.Value, config *models.Config) (*
 				return transformedValue, nil
 			}
 			return nil, grpcErrorf(settings.InvalidUserValue, "Please specify at least one entry")
-		} else {
-			// ensure that there is at least one valid entry
-			atLeastOneValidEntry := false
-			for _, item := range transformedValue.GetStringList().Values {
-				if len(strings.TrimSpace(item)) != 0 {
-					atLeastOneValidEntry = true
-					break
-				}
+		}
+		// ensure that there is at least one valid entry
+		atLeastOneValidEntry := false
+		for _, item := range transformedValue.GetStringList().Values {
+			if len(strings.TrimSpace(item)) != 0 {
+				atLeastOneValidEntry = true
+				break
 			}
-			if !atLeastOneValidEntry && !config.OptionalValue {
-				return nil, grpcErrorf(settings.InvalidUserValue, "Please specify at least one entry")
-			}
+		}
+		if !atLeastOneValidEntry && !config.OptionalValue {
+			return nil, grpcErrorf(settings.InvalidUserValue, "Please specify at least one entry")
 		}
 
 	default:
