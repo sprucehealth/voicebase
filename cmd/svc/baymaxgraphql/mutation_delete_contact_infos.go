@@ -61,7 +61,7 @@ var deleteContactInfosMutation = &graphql.Field{
 		input := p.Args["input"].(map[string]interface{})
 		mutationID, _ := input["clientMutationId"].(string)
 		contactIDs, _ := input["contactIDs"].([]interface{})
-		entID, _ := input["entityID"].(string)
+		entID := input["entityID"].(string)
 
 		sContacts := make([]string, len(contactIDs))
 		for i, ci := range contactIDs {

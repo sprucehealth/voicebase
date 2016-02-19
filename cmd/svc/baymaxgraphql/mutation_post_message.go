@@ -2,14 +2,14 @@ package main
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
-	"github.com/sprucehealth/backend/libs/phone"
-
 	"github.com/sprucehealth/backend/libs/bml"
+	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
@@ -234,7 +234,12 @@ var postMessageMutation = &graphql.Field{
 					destSet["Email"] = struct{}{}
 				}
 			}
+			destTitles := make([]string, 0, len(destSet))
 			for d := range destSet {
+				destTitles = append(destTitles, d)
+			}
+			sort.Strings(destTitles)
+			for _, d := range destTitles {
 				if len(title) != 0 {
 					title = append(title, " & ")
 				}

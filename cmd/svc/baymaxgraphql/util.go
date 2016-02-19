@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
@@ -180,4 +182,26 @@ func isValidPlane0Unicode(s string) bool {
 		}
 	}
 	return true
+}
+
+func initialsForEntity(e *models.Entity) string {
+	var first, last rune
+	if e.FirstName != "" {
+		first, _ = utf8.DecodeRuneInString(e.FirstName)
+		first = unicode.ToUpper(first)
+	}
+	if e.LastName != "" {
+		last, _ = utf8.DecodeRuneInString(e.LastName)
+		last = unicode.ToUpper(last)
+	}
+	if first == 0 {
+		if last == 0 {
+			return ""
+		}
+		return string(last)
+	}
+	if last == 0 {
+		return string(first)
+	}
+	return string(first) + string(last)
 }

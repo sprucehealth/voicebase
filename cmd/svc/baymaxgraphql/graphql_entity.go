@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
@@ -68,14 +67,7 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 			Type: graphql.NewNonNull(graphql.String),
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				entity := p.Source.(*models.Entity)
-				var first, last string
-				if entity.FirstName != "" {
-					first = entity.FirstName[:1]
-				}
-				if entity.LastName != "" {
-					last = entity.LastName[:1]
-				}
-				return strings.ToUpper(first + last), nil
+				return initialsForEntity(entity), nil
 			},
 		},
 		"contacts": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(contactInfoType))},
