@@ -5,7 +5,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -20,6 +24,7 @@ import (
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
+	"github.com/sprucehealth/graphql/gqlerrors"
 	"golang.org/x/net/context"
 )
 
@@ -48,17 +53,17 @@ func init() {
 	// This is done here rather than at declaration time to avoid an unresolvable compile time decleration loop
 	nodeInterfaceType.ResolveType = func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
 		switch value.(type) {
-		case *account:
+		case *models.Account:
 			return accountType
-		case *entity:
+		case *models.Entity:
 			return entityType
-		case *organization:
+		case *models.Organization:
 			return organizationType
-		case *savedThreadQuery:
+		case *models.SavedThreadQuery:
 			return savedThreadQueryType
-		case *thread:
+		case *models.Thread:
 			return threadType
-		case *threadItem:
+		case *models.ThreadItem:
 			return threadItemType
 		}
 		return nil
@@ -66,12 +71,14 @@ func init() {
 }
 
 type user struct {
-	account  *account
+	account  *models.Account
 	email    string
 	password string
 }
 
 type graphQLHandler struct {
+	auth    auth.AuthClient
+	ram     raccess.ResourceAccessor
 	service *service
 }
 
@@ -90,11 +97,9 @@ func NewGraphQL(
 	serviceNumber phone.Number,
 ) httputil.ContextHandler {
 	return &graphQLHandler{
+		auth: authClient,
+		ram:  raccess.New(authClient, directoryClient, threadingClient, exComms),
 		service: &service{
-			auth:          authClient,
-			directory:     directoryClient,
-			threading:     threadingClient,
-			exComms:       exComms,
 			notification:  notificationClient,
 			mediaSigner:   mediaSigner,
 			emailDomain:   emailDomain,
@@ -158,9 +163,9 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		}
 	}
 
-	var acc *account
+	var acc *models.Account
 	if c, err := r.Cookie(authTokenCookieName); err == nil && c.Value != "" {
-		res, err := h.service.auth.CheckAuthentication(ctx,
+		res, err := h.auth.CheckAuthentication(ctx,
 			&auth.CheckAuthenticationRequest{Token: c.Value},
 		)
 		if err != nil {
@@ -174,11 +179,11 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 				}
 				setAuthCookie(w, r.Host, res.Token.Value, expires)
 			}
-			acc = &account{
+			acc = &models.Account{
 				ID: res.Account.ID,
 			}
-			ctx = ctxWithClientEncryptionKey(ctx, res.Token.ClientEncryptionKey)
-			ctx = ctxWithAuthToken(ctx, c.Value)
+			ctx = gqlctx.WithClientEncryptionKey(ctx, res.Token.ClientEncryptionKey)
+			ctx = gqlctx.WithAuthToken(ctx, c.Value)
 		} else {
 			removeAuthCookie(w, r.Host)
 		}
@@ -187,16 +192,16 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	// The account needs to exist in the context even when not authenticated. This is
 	// so that if the request is a mutation that authenticates (authenticate, createAccount)
 	// then the account can be updated in the context.
-	ctx = ctxWithAccount(ctx, acc)
+	ctx = gqlctx.WithAccount(ctx, acc)
 
 	requestID, err := idgen.NewID()
 	if err != nil {
 		golog.Errorf("failed to generate request ID: %s", err)
 	}
-	ctx = ctxWithRequestID(ctx, requestID)
+	ctx = gqlctx.WithRequestID(ctx, requestID)
 
 	sHeaders := device.ExtractSpruceHeaders(w, r)
-	ctx = ctxWithSpruceHeaders(ctx, sHeaders)
+	ctx = gqlctx.WithSpruceHeaders(ctx, sHeaders)
 
 	result := conc.NewMap()
 	response := graphql.Do(graphql.Params{
@@ -208,14 +213,20 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 			"service": h.service,
 			// result is used to pass values from the executor to the top level (e.g. auth token)
 			"result": result,
+			// ram represents the resource access manager that fetches remote resources that require authorization
+			raccess.ParamKey: h.ram,
 		},
 	})
 
-	for _, e := range response.Errors {
+	for i, e := range response.Errors {
 		if e.StackTrace != "" {
 			golog.Errorf("[%s] %s\n%s", e.Type, e.Message, e.StackTrace)
 			// The stack trace shouldn't be serialized in the response but clear it out just to be sure
 			e.StackTrace = ""
+		}
+		// Wrap any non well formed gql errors as internal
+		if errors.Type(e) == errors.ErrTypeUnknown {
+			response.Errors[i] = errors.InternalError(ctx, e).(gqlerrors.FormattedError)
 		}
 	}
 

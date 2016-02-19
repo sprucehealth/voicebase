@@ -1,8 +1,10 @@
 package main
 
 import (
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/svc/directory"
-	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -51,11 +53,11 @@ var deleteThreadMutation = &graphql.Field{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(deleteThreadInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
-		acc := accountFromContext(ctx)
+		acc := gqlctx.Account(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated(ctx)
+			return nil, errors.ErrNotAuthenticated(ctx)
 		}
 
 		input := p.Args["input"].(map[string]interface{})
@@ -63,30 +65,25 @@ var deleteThreadMutation = &graphql.Field{
 		threadID := input["threadID"].(string)
 
 		// Make sure thread exists (wasn't deleted) and get organization ID to be able to fetch entity for the account
-		tres, err := svc.threading.Thread(ctx, &threading.ThreadRequest{
-			ThreadID: threadID,
-		})
+		thread, err := ram.Thread(ctx, threadID, "")
 		if err != nil {
 			switch grpc.Code(err) {
 			case codes.NotFound:
-				return nil, userError(ctx, errTypeNotFound, "Thread does not exist.")
+				return nil, errors.UserError(ctx, errors.ErrTypeNotFound, "Thread does not exist.")
 			}
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
-		ent, err := svc.entityForAccountID(ctx, tres.Thread.OrganizationID, acc.ID)
+		ent, err := ram.EntityForAccountID(ctx, thread.OrganizationID, acc.ID)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, err
 		}
 		if ent == nil || ent.Type != directory.EntityType_INTERNAL {
-			return nil, userError(ctx, errTypeNotAuthorized, "Permission denied.")
+			return nil, errors.UserError(ctx, errors.ErrTypeNotAuthorized, "Permission denied.")
 		}
 
-		if _, err := svc.threading.DeleteThread(ctx, &threading.DeleteThreadRequest{
-			ThreadID:      threadID,
-			ActorEntityID: ent.ID,
-		}); err != nil {
-			return nil, internalError(ctx, err)
+		if err := ram.DeleteThread(ctx, threadID, ent.ID); err != nil {
+			return nil, err
 		}
 
 		return &deleteThreadOutput{

@@ -1,15 +1,16 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 )
 
 var contactEnumType = graphql.NewEnum(
@@ -66,7 +67,7 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 		"initials": &graphql.Field{
 			Type: graphql.NewNonNull(graphql.String),
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				entity := p.Source.(*entity)
+				entity := p.Source.(*models.Entity)
 				var first, last string
 				if entity.FirstName != "" {
 					first = entity.FirstName[:1]
@@ -84,12 +85,12 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 				"platform": &graphql.ArgumentConfig{Type: graphql.NewNonNull(platformEnumType)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				entity := p.Source.(*entity)
-				svc := serviceFromParams(p)
+				entity := p.Source.(*models.Entity)
+				ram := raccess.ResourceAccess(p)
 				ctx := p.Context
-				acc := accountFromContext(ctx)
+				acc := gqlctx.Account(ctx)
 				if acc == nil {
-					return nil, errNotAuthenticated(ctx)
+					return nil, errors.ErrNotAuthenticated(ctx)
 				}
 
 				platform, _ := p.Args["platform"].(string)
@@ -99,9 +100,9 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 				}
 				dPlatform := directory.Platform(pPlatform)
 
-				sc, err := lookupSerializedEntityContact(ctx, svc, entity.ID, dPlatform)
+				sc, err := lookupSerializedEntityContact(ctx, ram, entity.ID, dPlatform)
 				if err != nil {
-					return nil, internalError(ctx, err)
+					return nil, errors.InternalError(ctx, err)
 				}
 
 				return sc, nil
@@ -110,71 +111,52 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 		"avatar": &graphql.Field{
 			Type: imageType,
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				entity := p.Source.(*entity)
+				entity := p.Source.(*models.Entity)
 				// TODO: should have arugments for width, height, crop, etc..
-				return entity.avatar, nil
+				return entity.Avatar, nil
 			},
 		},
 		"isInternal": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 	},
 })
 
-func lookupEntity(ctx context.Context, svc *service, id string) (interface{}, error) {
-	res, err := svc.directory.LookupEntities(ctx,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: id,
-			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 0,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_CONTACTS,
-				},
-			},
-		})
+func lookupEntity(ctx context.Context, ram raccess.ResourceAccessor, entityID string) (interface{}, error) {
+	em, err := ram.Entity(ctx, entityID, []directory.EntityInformation{directory.EntityInformation_CONTACTS}, 0)
 	if err != nil {
-		if grpc.Code(err) == codes.NotFound {
-			return nil, errors.New("not found")
-		}
-		return nil, internalError(ctx, err)
+		return nil, err
 	}
-	for _, em := range res.Entities {
-		oc, err := transformContactsToResponse(em.Contacts)
-		if err != nil {
-			return nil, internalError(ctx, fmt.Errorf("failed to transform entity contacts: %+v", err))
+	oc, err := transformContactsToResponse(em.Contacts)
+	if err != nil {
+		return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity contacts: %+v", err))
+	}
+	switch em.Type {
+	case directory.EntityType_ORGANIZATION:
+		org := &models.Organization{
+			ID:       em.ID,
+			Name:     em.Info.DisplayName,
+			Contacts: oc,
 		}
-		switch em.Type {
-		case directory.EntityType_ORGANIZATION:
-			org := &organization{
-				ID:       em.ID,
-				Name:     em.Info.DisplayName,
-				Contacts: oc,
-			}
 
-			acc := accountFromContext(ctx)
-			if acc != nil {
-				e, err := svc.entityForAccountID(ctx, org.ID, acc.ID)
-				if err != nil {
-					return nil, internalError(ctx, err)
-				}
-				if e != nil {
-					org.Entity, err = transformEntityToResponse(e)
-					if err != nil {
-						return nil, internalError(ctx, err)
-					}
-				}
-			}
-			return org, nil
-		case directory.EntityType_INTERNAL, directory.EntityType_EXTERNAL, directory.EntityType_SYSTEM:
-			e, err := transformEntityToResponse(em)
+		acc := gqlctx.Account(ctx)
+		if acc != nil {
+			e, err := ram.EntityForAccountID(ctx, org.ID, acc.ID)
 			if err != nil {
-				return nil, internalError(ctx, err)
+				return nil, errors.InternalError(ctx, err)
 			}
-			return e, nil
-		default:
-			return nil, internalError(ctx, fmt.Errorf("unknown entity type: %s", em.Type.String()))
+			if e != nil {
+				org.Entity, err = transformEntityToResponse(e)
+				if err != nil {
+					return nil, errors.InternalError(ctx, err)
+				}
+			}
 		}
+		return org, nil
+	case directory.EntityType_INTERNAL, directory.EntityType_EXTERNAL, directory.EntityType_SYSTEM:
+		e, err := transformEntityToResponse(em)
+		if err != nil {
+			return nil, errors.InternalError(ctx, err)
+		}
+		return e, nil
 	}
-	return nil, errors.New("not found")
+	return nil, errors.InternalError(ctx, fmt.Errorf("unknown entity type: %s", em.Type.String()))
 }

@@ -1,16 +1,20 @@
 package main
 
 import (
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/graphql"
 )
 
 type deleteContactInfosOutput struct {
-	ClientMutationID string  `json:"clientMutationId,omitempty"`
-	Success          bool    `json:"success"`
-	ErrorCode        string  `json:"errorCode,omitempty"`
-	ErrorMessage     string  `json:"errorMessage,omitempty"`
-	Entity           *entity `json:"entity"`
+	ClientMutationID string         `json:"clientMutationId,omitempty"`
+	Success          bool           `json:"success"`
+	ErrorCode        string         `json:"errorCode,omitempty"`
+	ErrorMessage     string         `json:"errorMessage,omitempty"`
+	Entity           *models.Entity `json:"entity"`
 }
 
 var deleteContactInfosInputType = graphql.NewInputObject(graphql.InputObjectConfig{
@@ -47,11 +51,11 @@ var deleteContactInfosMutation = &graphql.Field{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(deleteContactInfosInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
-		acc := accountFromContext(ctx)
+		acc := gqlctx.Account(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated(ctx)
+			return nil, errors.ErrNotAuthenticated(ctx)
 		}
 
 		input := p.Args["input"].(map[string]interface{})
@@ -64,7 +68,7 @@ var deleteContactInfosMutation = &graphql.Field{
 			sContacts[i] = ci.(string)
 		}
 
-		resp, err := svc.directory.DeleteContacts(ctx, &directory.DeleteContactsRequest{
+		ent, err := ram.DeleteContacts(ctx, &directory.DeleteContactsRequest{
 			EntityID:         entID,
 			EntityContactIDs: sContacts,
 			RequestedInformation: &directory.RequestedInformation{
@@ -73,12 +77,12 @@ var deleteContactInfosMutation = &graphql.Field{
 			},
 		})
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
-		e, err := transformEntityToResponse(resp.Entity)
+		e, err := transformEntityToResponse(ent)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		return &deleteContactInfosOutput{

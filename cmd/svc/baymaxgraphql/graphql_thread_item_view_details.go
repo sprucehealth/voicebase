@@ -1,13 +1,13 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 
 	"golang.org/x/net/context"
 
-	"github.com/sprucehealth/backend/svc/directory"
-	"github.com/sprucehealth/backend/svc/threading"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/graphql"
 )
 
@@ -22,49 +22,38 @@ var threadItemViewDetailsType = graphql.NewObject(
 				Type: graphql.NewNonNull(entityType),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
-					tivd := p.Source.(*threadItemViewDetails)
+					tivd := p.Source.(*models.ThreadItemViewDetails)
 					if tivd == nil {
-						return nil, internalError(ctx, errors.New("thread item view details is nil"))
+						return nil, errors.InternalError(ctx, errors.New("thread item view details is nil"))
 					}
 					if selectingOnlyID(p) {
-						return &entity{ID: tivd.ActorEntityID}, nil
+						return &models.Entity{ID: tivd.ActorEntityID}, nil
 					}
 
-					svc := serviceFromParams(p)
-					res, err := svc.directory.LookupEntities(ctx,
-						&directory.LookupEntitiesRequest{
-							LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-							LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-								EntityID: tivd.ActorEntityID,
-							},
-						})
+					ram := raccess.ResourceAccess(p)
+					e, err := ram.Entity(ctx, tivd.ActorEntityID, nil, 0)
 					if err != nil {
-						return nil, internalError(ctx, err)
+						return nil, err
 					}
-					for _, e := range res.Entities {
-						ent, err := transformEntityToResponse(e)
-						if err != nil {
-							return nil, internalError(ctx, fmt.Errorf("failed to transform entity: %s", err))
-						}
-						return ent, nil
+					ent, err := transformEntityToResponse(e)
+					if err != nil {
+						return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity: %s", err))
 					}
-					return nil, errors.New("actor not found")
+					return ent, nil
 				},
 			},
 		},
 	},
 )
 
-func lookupThreadItemViewDetails(ctx context.Context, svc *service, threadItemID string) ([]interface{}, error) {
-	res, err := svc.threading.ThreadItemViewDetails(ctx, &threading.ThreadItemViewDetailsRequest{
-		ItemID: threadItemID,
-	})
+func lookupThreadItemViewDetails(ctx context.Context, ram raccess.ResourceAccessor, threadItemID string) ([]interface{}, error) {
+	tivd, err := ram.ThreadItemViewDetails(ctx, threadItemID)
 	if err != nil {
-		return nil, internalError(ctx, err)
+		return nil, errors.InternalError(ctx, err)
 	}
-	resps, err := transformThreadItemViewDetailsToResponse(res.ItemViewDetails)
+	resps, err := transformThreadItemViewDetailsToResponse(tivd)
 	if err != nil {
-		return nil, internalError(ctx, err)
+		return nil, errors.InternalError(ctx, err)
 	}
 	iResps := make([]interface{}, len(resps))
 	for i, v := range resps {

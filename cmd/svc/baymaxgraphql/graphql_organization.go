@@ -1,13 +1,13 @@
 package main
 
 import (
-	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification/deeplink"
-	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 )
 
 var organizationType = graphql.NewObject(
@@ -22,28 +22,28 @@ var organizationType = graphql.NewObject(
 			"entity": &graphql.Field{
 				Type: entityType,
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					org := p.Source.(*organization)
+					org := p.Source.(*models.Organization)
 					if org.Entity != nil {
 						return org.Entity, nil
 					}
 
-					svc := serviceFromParams(p)
+					ram := raccess.ResourceAccess(p)
 					ctx := p.Context
-					acc := accountFromContext(ctx)
+					acc := gqlctx.Account(ctx)
 					if acc == nil {
-						return nil, errNotAuthenticated(ctx)
+						return nil, errors.ErrNotAuthenticated(ctx)
 					}
 
-					e, err := svc.entityForAccountID(ctx, org.ID, acc.ID)
+					e, err := ram.EntityForAccountID(ctx, org.ID, acc.ID)
 					if err != nil {
-						return nil, internalError(ctx, err)
+						return nil, errors.InternalError(ctx, err)
 					}
 					if e == nil {
 						return nil, errors.New("entity not found for organization")
 					}
 					rE, err := transformEntityToResponse(e)
 					if err != nil {
-						return nil, internalError(ctx, err)
+						return nil, errors.InternalError(ctx, err)
 					}
 					return rE, nil
 				},
@@ -52,46 +52,30 @@ var organizationType = graphql.NewObject(
 			"entities": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(entityType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					org := p.Source.(*organization)
+					org := p.Source.(*models.Organization)
 					if org.Entity == nil || org.Entity.ID == "" {
 						return nil, errors.New("no entity for organization")
 					}
-					svc := serviceFromParams(p)
+					ram := raccess.ResourceAccess(p)
 					ctx := p.Context
 
-					res, err := svc.directory.LookupEntities(ctx,
-						&directory.LookupEntitiesRequest{
-							LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-							LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-								EntityID: org.ID,
-							},
-							RequestedInformation: &directory.RequestedInformation{
-								Depth: 0,
-								EntityInformation: []directory.EntityInformation{
-									directory.EntityInformation_MEMBERS,
-									// TODO: don't always need contacts
-									directory.EntityInformation_CONTACTS,
-								},
-							},
-						})
-					if grpc.Code(err) == codes.NotFound {
-						return nil, errors.New("not found")
-					} else if err != nil {
-						return nil, errors.Trace(err)
+					orgEntity, err := ram.Entity(ctx, org.ID, []directory.EntityInformation{
+						directory.EntityInformation_MEMBERS,
+						// TODO: don't always need contacts
+						directory.EntityInformation_CONTACTS,
+					}, 0)
+					if err != nil {
+						return nil, err
 					}
 
-					entities := make([]*entity, 0, len(res.Entities))
-					for _, e := range res.Entities {
-						if e.ID == org.ID {
-							for _, em := range e.Members {
-								if em.Type == directory.EntityType_INTERNAL {
-									ent, err := transformEntityToResponse(em)
-									if err != nil {
-										return nil, internalError(ctx, err)
-									}
-									entities = append(entities, ent)
-								}
+					entities := make([]*models.Entity, 0, len(orgEntity.Members))
+					for _, em := range orgEntity.Members {
+						if em.Type == directory.EntityType_INTERNAL {
+							ent, err := transformEntityToResponse(em)
+							if err != nil {
+								return nil, errors.InternalError(ctx, err)
 							}
+							entities = append(entities, ent)
 						}
 					}
 					return entities, nil
@@ -100,21 +84,19 @@ var organizationType = graphql.NewObject(
 			"savedThreadQueries": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(savedThreadQueryType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					org := p.Source.(*organization)
+					org := p.Source.(*models.Organization)
 					if org.Entity == nil || org.Entity.ID == "" {
 						return nil, errors.New("no entity for organization")
 					}
-					svc := serviceFromParams(p)
+					ram := raccess.ResourceAccess(p)
 					ctx := p.Context
-					res, err := svc.threading.SavedQueries(ctx, &threading.SavedQueriesRequest{
-						EntityID: org.Entity.ID,
-					})
+					sqs, err := ram.SavedQueries(ctx, org.Entity.ID)
 					if err != nil {
-						return nil, internalError(ctx, err)
+						return nil, err
 					}
-					var qs []*savedThreadQuery
-					for _, q := range res.SavedQueries {
-						qs = append(qs, &savedThreadQuery{
+					var qs []*models.SavedThreadQuery
+					for _, q := range sqs {
+						qs = append(qs, &models.SavedThreadQuery{
 							ID:             q.ID,
 							OrganizationID: org.ID,
 							// TODO: query
@@ -126,7 +108,7 @@ var organizationType = graphql.NewObject(
 			"deeplink": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					org := p.Source.(*organization)
+					org := p.Source.(*models.Organization)
 					svc := serviceFromParams(p)
 					return deeplink.OrgURL(svc.webDomain, org.ID), nil
 				},

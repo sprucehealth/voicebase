@@ -3,8 +3,9 @@ package main
 import (
 	"fmt"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/conc"
-	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
@@ -76,6 +77,7 @@ var requestPasswordResetMutation = &graphql.Field{
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 
 		input := p.Args["input"].(map[string]interface{})
 		mutationID, _ := input["clientMutationId"].(string)
@@ -91,7 +93,7 @@ var requestPasswordResetMutation = &graphql.Field{
 		}
 
 		conc.Go(func() {
-			if err := svc.createAndSendPasswordResetEmail(context.TODO(), email); err != nil {
+			if err := createAndSendPasswordResetEmail(context.TODO(), ram, svc.webDomain, email); err != nil {
 				golog.Errorf("Error while sending password reset email: %s", err)
 			}
 		})
@@ -169,16 +171,14 @@ var checkPasswordResetTokenMutation = &graphql.Field{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(checkPasswordResetTokenInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 
 		input := p.Args["input"].(map[string]interface{})
 		mutationID, _ := input["clientMutationId"].(string)
 		token := input["token"].(string)
 
-		resp, err := svc.auth.CheckPasswordResetToken(ctx, &auth.CheckPasswordResetTokenRequest{
-			Token: token,
-		})
+		resp, err := ram.CheckPasswordResetToken(ctx, token)
 		if grpc.Code(err) == auth.TokenExpired {
 			return &checkPasswordResetTokenOutput{
 				ClientMutationID: mutationID,
@@ -187,7 +187,7 @@ var checkPasswordResetTokenMutation = &graphql.Field{
 				ErrorMessage:     "Your reset link has expired. Please request a new password reset email.",
 			}, nil
 		} else if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		last4Phone := resp.AccountPhoneNumber
@@ -203,17 +203,15 @@ var checkPasswordResetTokenMutation = &graphql.Field{
 }
 
 // createAndSendPasswordResetEmail creates a token for the password reset link and embeds it in a link and sends it to the account's provided email
-func (s *service) createAndSendPasswordResetEmail(ctx context.Context, email string) error {
-	resp, err := s.auth.CreatePasswordResetToken(ctx, &auth.CreatePasswordResetTokenRequest{
-		Email: email,
-	})
+func createAndSendPasswordResetEmail(ctx context.Context, ram raccess.ResourceAccessor, webDomain string, email string) error {
+	resp, err := ram.CreatePasswordResetToken(ctx, email)
 	if err != nil {
 		return errors.Trace(err)
 	}
 
-	body := fmt.Sprintf("Your password reset link is: %s", passwordResetURL(s.webDomain, resp.Token))
+	body := fmt.Sprintf("Your password reset link is: %s", passwordResetURL(webDomain, resp.Token))
 	golog.Debugf("Sending password reset email %q to %s", body, email)
-	if _, err := s.exComms.SendMessage(ctx, &excomms.SendMessageRequest{
+	if err := ram.SendMessage(ctx, &excomms.SendMessageRequest{
 		Channel: excomms.ChannelType_EMAIL,
 		Message: &excomms.SendMessageRequest_Email{
 			Email: &excomms.EmailMessage{
@@ -253,29 +251,28 @@ var verifyPhoneNumberForPasswordResetMutation = &graphql.Field{
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 
 		input := p.Args["input"].(map[string]interface{})
 		mutationID, _ := input["clientMutationId"].(string)
 		linkToken, _ := input["linkToken"].(string)
 
-		resp, err := svc.auth.CheckPasswordResetToken(ctx, &auth.CheckPasswordResetTokenRequest{
-			Token: linkToken,
-		})
+		resp, err := ram.CheckPasswordResetToken(ctx, linkToken)
 		if grpc.Code(err) == auth.TokenExpired {
-			return nil, userError(ctx, errTypeExpired, "Your phone verification token has expired. Please go back and enter your number again.")
+			return nil, errors.UserError(ctx, errors.ErrTypeExpired, "Your phone verification token has expired. Please go back and enter your number again.")
 		} else if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		accountPhoneNumber, err := phone.ParseNumber(resp.AccountPhoneNumber)
 		if err != nil {
 			// Shouldn't fail
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
-		token, err := svc.createAndSendSMSVerificationCode(ctx, auth.VerificationCodeType_PASSWORD_RESET, resp.AccountID, accountPhoneNumber)
+		token, err := createAndSendSMSVerificationCode(ctx, ram, svc.serviceNumber, auth.VerificationCodeType_PASSWORD_RESET, resp.AccountID, accountPhoneNumber)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		last4Phone := resp.AccountPhoneNumber
@@ -349,7 +346,7 @@ var passwordResetMutation = &graphql.Field{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(passwordResetInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 
 		input := p.Args["input"].(map[string]interface{})
@@ -358,12 +355,7 @@ var passwordResetMutation = &graphql.Field{
 		code, _ := input["code"].(string)
 		newPassword, _ := input["newPassword"].(string)
 
-		_, err := svc.auth.UpdatePassword(ctx, &auth.UpdatePasswordRequest{
-			Token:       token,
-			Code:        code,
-			NewPassword: newPassword,
-		})
-		if err != nil {
+		if err := ram.UpdatePassword(ctx, token, code, newPassword); err != nil {
 			switch grpc.Code(err) {
 			case codes.NotFound:
 				return nil, errors.New("Token not found")
@@ -372,7 +364,7 @@ var passwordResetMutation = &graphql.Field{
 			case auth.BadVerificationCode:
 				return nil, errors.New("Bad verification code")
 			default:
-				return nil, internalError(ctx, err)
+				return nil, errors.InternalError(ctx, err)
 			}
 		}
 

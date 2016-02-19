@@ -3,7 +3,10 @@ package main
 import (
 	"fmt"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -14,17 +17,12 @@ import (
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
-	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
 
 type service struct {
-	auth         auth.AuthClient
-	directory    directory.DirectoryClient
-	threading    threading.ThreadsClient
-	exComms      excomms.ExCommsClient
 	notification notification.Client
 	settings     settings.SettingsClient
 	invite       invite.InviteClient
@@ -35,7 +33,7 @@ type service struct {
 	serviceNumber phone.Number
 }
 
-func (s *service) hydrateThreads(ctx context.Context, threads []*thread) error {
+func hydrateThreads(ctx context.Context, ram raccess.ResourceAccessor, threads []*models.Thread) error {
 	// TODO: this done one request per thread. ideally the directory service would have a bulk lookup
 	p := conc.NewParallel()
 	for _, t := range threads {
@@ -49,33 +47,18 @@ func (s *service) hydrateThreads(ctx context.Context, threads []*thread) error {
 		// Create a reference to thread since the loop variable will change underneath
 		thread := t
 		p.Go(func() error {
-			if thread.primaryEntity == nil {
-				res, err := s.directory.LookupEntities(ctx,
-					&directory.LookupEntitiesRequest{
-						LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-						LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-							EntityID: thread.PrimaryEntityID,
-						},
-						RequestedInformation: &directory.RequestedInformation{
-							Depth: 0,
-							EntityInformation: []directory.EntityInformation{
-								directory.EntityInformation_CONTACTS,
-							},
-						},
-					})
+			if thread.PrimaryEntity == nil {
+				entity, err := ram.Entity(ctx, t.PrimaryEntityID, []directory.EntityInformation{directory.EntityInformation_CONTACTS}, 0)
 				if err != nil {
-					return errors.Trace(err)
+					return err
 				}
-				if len(res.Entities) != 1 {
-					return errors.Trace(fmt.Errorf("lookup entities returned %d results for %s, expected 1", len(res.Entities), thread.PrimaryEntityID))
-				}
-				thread.primaryEntity = res.Entities[0]
+				thread.PrimaryEntity = entity
 			}
-			thread.Title = threadTitleForEntity(thread.primaryEntity)
-			thread.AllowInternalMessages = thread.primaryEntity.Type != directory.EntityType_SYSTEM
-			thread.IsDeletable = thread.primaryEntity.Type != directory.EntityType_SYSTEM
+			thread.Title = threadTitleForEntity(thread.PrimaryEntity)
+			thread.AllowInternalMessages = thread.PrimaryEntity.Type != directory.EntityType_SYSTEM
+			thread.IsDeletable = thread.PrimaryEntity.Type != directory.EntityType_SYSTEM
 			// TODO: this text should only be included for empty threads but we don't know if it's empty at this point
-			if thread.primaryEntity.Type == directory.EntityType_ORGANIZATION {
+			if thread.PrimaryEntity.Type == directory.EntityType_ORGANIZATION {
 				thread.EmptyStateTextMarkup = "This is the beginning of a conversation that is visible to everyone in your organization.\n\nInvite some colleagues to join and then send a message here to get things started."
 			}
 			return nil
@@ -84,109 +67,25 @@ func (s *service) hydrateThreads(ctx context.Context, threads []*thread) error {
 	return p.Wait()
 }
 
-func (s *service) entityForAccountID(ctx context.Context, orgID, accountID string) (*directory.Entity, error) {
-	// TODO: should use a cache for this
-	res, err := s.directory.LookupEntities(ctx,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-				ExternalID: accountID,
-			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 0,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_MEMBERSHIPS,
-					// TODO: don't always need contacts
-					directory.EntityInformation_CONTACTS,
-				},
-			},
-		})
-	if grpc.Code(err) == codes.NotFound {
-		return nil, nil
-	} else if err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	for _, e := range res.Entities {
-		for _, e2 := range e.GetMemberships() {
-			if e2.Type == directory.EntityType_ORGANIZATION && e2.ID == orgID {
-				return e, nil
-			}
-		}
-	}
-	return nil, nil
-}
-
-func (s *service) entity(ctx context.Context, entityID string, entityInformation ...directory.EntityInformation) (*directory.Entity, error) {
-	var info []directory.EntityInformation
-	if len(entityInformation) == 0 {
-		info = []directory.EntityInformation{
-			directory.EntityInformation_MEMBERSHIPS,
-			directory.EntityInformation_CONTACTS,
-		}
-	} else {
-		info = entityInformation
-	}
-
-	// TODO: should use a cache for this
-	res, err := s.directory.LookupEntities(ctx,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: entityID,
-			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth:             0,
-				EntityInformation: info,
-			},
-		})
-	if grpc.Code(err) == codes.NotFound {
-		return nil, nil
-	} else if err != nil {
-		return nil, errors.Trace(err)
-	}
-	for _, e := range res.Entities {
-		return e, nil
-	}
-	return nil, nil
-}
-
-func (s *service) entityDomain(ctx context.Context, entityID, domain string) (string, string, error) {
-	res, err := s.directory.LookupEntityDomain(ctx, &directory.LookupEntityDomainRequest{
-		Domain:   domain,
-		EntityID: entityID,
-	})
-	if grpc.Code(err) == codes.NotFound {
-		return "", "", nil
-	} else if err != nil {
-		return "", "", errors.Trace(err)
-	}
-
-	return res.EntityID, res.Domain, errors.Trace(err)
-}
-
 // createAndSendSMSVerificationCode creates a verification code and asynchronously sends it via
 // SMS to the provided number. The token associated with the code is returned. The phone number
 // is expected to already be E164 format.
-func (s *service) createAndSendSMSVerificationCode(ctx context.Context, codeType auth.VerificationCodeType, valueToVerify string, pn phone.Number) (string, error) {
+func createAndSendSMSVerificationCode(ctx context.Context, ram raccess.ResourceAccessor, serviceNumber phone.Number, codeType auth.VerificationCodeType, valueToVerify string, pn phone.Number) (string, error) {
 	golog.Debugf("Creating and sending verification code of type %s to %s", auth.VerificationCodeType_name[int32(codeType)], pn)
 
-	resp, err := s.auth.CreateVerificationCode(ctx, &auth.CreateVerificationCodeRequest{
-		Type:          codeType,
-		ValueToVerify: valueToVerify,
-	})
+	resp, err := ram.CreateVerificationCode(ctx, codeType, valueToVerify)
 	if err != nil {
-		return "", errors.Trace(err)
+		return "", err
 	}
 
 	golog.Debugf("Sending code %s to %s for verification", resp.VerificationCode.Code, pn)
 	conc.Go(func() {
-		if _, err := s.exComms.SendMessage(context.TODO(), &excomms.SendMessageRequest{
+		if err := ram.SendMessage(context.TODO(), &excomms.SendMessageRequest{
 			Channel: excomms.ChannelType_SMS,
 			Message: &excomms.SendMessageRequest_SMS{
 				SMS: &excomms.SMSMessage{
 					Text:            fmt.Sprintf("Your Spruce verification code is %s", resp.VerificationCode.Code),
-					FromPhoneNumber: s.serviceNumber.String(),
+					FromPhoneNumber: serviceNumber.String(),
 					ToPhoneNumber:   pn.String(),
 				},
 			},
@@ -198,7 +97,7 @@ func (s *service) createAndSendSMSVerificationCode(ctx context.Context, codeType
 }
 
 func (s *service) inviteInfo(ctx context.Context) (*invite.LookupInviteResponse, error) {
-	sh := spruceHeadersFromContext(ctx)
+	sh := gqlctx.SpruceHeaders(ctx)
 	if sh == nil || sh.DeviceID == "" {
 		return nil, nil
 	}

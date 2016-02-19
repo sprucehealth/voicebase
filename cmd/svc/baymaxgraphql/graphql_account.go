@@ -1,15 +1,14 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 
-	"github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 )
 
 var meType = graphql.NewObject(
@@ -33,42 +32,32 @@ var accountType = graphql.NewObject(
 			"organizations": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(organizationType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					svc := serviceFromParams(p)
+					ram := raccess.ResourceAccess(p)
 					ctx := p.Context
-					acc := p.Source.(*account)
+					acc := p.Source.(*models.Account)
 					if acc == nil {
 						// Shouldn't be possible I don't think
-						return nil, internalError(ctx, errors.New("nil account"))
+						return nil, errors.InternalError(ctx, errors.New("nil account"))
 					}
-					res, err := svc.directory.LookupEntities(ctx,
-						&directory.LookupEntitiesRequest{
-							LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-							LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-								ExternalID: acc.ID,
-							},
-							RequestedInformation: &directory.RequestedInformation{
-								Depth: 1,
-								EntityInformation: []directory.EntityInformation{
-									directory.EntityInformation_MEMBERSHIPS,
-									directory.EntityInformation_CONTACTS,
-								},
-							},
-						})
+					entities, err := ram.EntitiesForExternalID(ctx, acc.ID, []directory.EntityInformation{
+						directory.EntityInformation_MEMBERSHIPS,
+						directory.EntityInformation_CONTACTS,
+					}, 1)
 					if err != nil {
-						return nil, internalError(ctx, err)
+						return nil, errors.InternalError(ctx, err)
 					}
-					var orgs []*organization
-					for _, e := range res.Entities {
+					var orgs []*models.Organization
+					for _, e := range entities {
 						for _, em := range e.Memberships {
 							oc, err := transformContactsToResponse(em.Contacts)
 							if err != nil {
-								return nil, internalError(ctx, fmt.Errorf("failed to transform org contacts: %+v", err))
+								return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform org contacts: %+v", err))
 							}
 							entity, err := transformEntityToResponse(e)
 							if err != nil {
-								return nil, internalError(ctx, fmt.Errorf("failed to transform entity: %+v", err))
+								return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity: %+v", err))
 							}
-							orgs = append(orgs, &organization{
+							orgs = append(orgs, &models.Organization{
 								ID:       em.ID,
 								Name:     em.Info.DisplayName,
 								Contacts: oc,
@@ -83,20 +72,14 @@ var accountType = graphql.NewObject(
 	},
 )
 
-func lookupAccount(ctx context.Context, svc *service, id string) (interface{}, error) {
-	res, err := svc.auth.GetAccount(ctx, &auth.GetAccountRequest{
-		AccountID: id,
-	})
+func lookupAccount(ctx context.Context, ram raccess.ResourceAccessor, accountID string) (interface{}, error) {
+	account, err := ram.Account(ctx, accountID)
 	if err != nil {
-		switch grpc.Code(err) {
-		case codes.NotFound:
-			return nil, userError(ctx, errTypeNotFound, "Account not found.")
-		}
-		return nil, internalError(ctx, err)
+		return nil, err
 	}
 	// Since we only use the ID we don't really need to do the lookup, but
 	// it allows us to check if the account exists.
-	return &account{
-		ID: res.Account.ID,
+	return &models.Account{
+		ID: account.ID,
 	}, nil
 }

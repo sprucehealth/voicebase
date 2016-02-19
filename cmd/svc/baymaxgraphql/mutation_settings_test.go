@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -18,10 +20,10 @@ func TestModifySetting_Boolean(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &account{
+	acc := &models.Account{
 		ID: "account_12345",
 	}
-	ctx = ctxWithAccount(ctx, acc)
+	ctx = gqlctx.WithAccount(ctx, acc)
 
 	key := "2fa"
 	nodeID := "entity_e1"
@@ -47,32 +49,15 @@ func TestModifySetting_Boolean(t *testing.T) {
 		},
 	}, nil))
 
-	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntities,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: nodeID,
-			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 0,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_CONTACTS,
-				},
-			},
+	g.ra.Expect(mock.NewExpectation(g.ra.Entity, nodeID, []directory.EntityInformation{
+		directory.EntityInformation_CONTACTS,
+	}, int64(0)).WithReturns(&directory.Entity{
+		Type: directory.EntityType_INTERNAL,
+		ID:   nodeID,
+		Info: &directory.EntityInfo{
+			DisplayName: "HI",
 		},
-	).WithReturns(
-		&directory.LookupEntitiesResponse{
-			Entities: []*directory.Entity{
-				{
-					Type: directory.EntityType_INTERNAL,
-					ID:   nodeID,
-					Info: &directory.EntityInfo{
-						DisplayName: "HI",
-					},
-				},
-			},
-		},
-		nil))
+	}, nil))
 
 	g.settingsC.Expect(mock.NewExpectation(g.settingsC.SetValue, &settings.SetValueRequest{
 		NodeID: nodeID,
@@ -145,10 +130,10 @@ func TestModifySetting_StringList(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &account{
+	acc := &models.Account{
 		ID: "account_12345",
 	}
-	ctx = ctxWithAccount(ctx, acc)
+	ctx = gqlctx.WithAccount(ctx, acc)
 
 	key := excommsSettings.ConfigKeyForwardingList
 	nodeID := "entity_e1"
@@ -170,32 +155,15 @@ func TestModifySetting_StringList(t *testing.T) {
 		},
 	}, nil))
 
-	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntities,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: nodeID,
-			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 0,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_CONTACTS,
-				},
-			},
+	g.ra.Expect(mock.NewExpectation(g.ra.Entity, nodeID, []directory.EntityInformation{
+		directory.EntityInformation_CONTACTS,
+	}, int64(0)).WithReturns(&directory.Entity{
+		Type: directory.EntityType_INTERNAL,
+		ID:   nodeID,
+		Info: &directory.EntityInfo{
+			DisplayName: "HI",
 		},
-	).WithReturns(
-		&directory.LookupEntitiesResponse{
-			Entities: []*directory.Entity{
-				{
-					Type: directory.EntityType_INTERNAL,
-					ID:   nodeID,
-					Info: &directory.EntityInfo{
-						DisplayName: "HI",
-					},
-				},
-			},
-		},
-		nil))
+	}, nil))
 
 	g.settingsC.Expect(mock.NewExpectation(g.settingsC.SetValue, &settings.SetValueRequest{
 		NodeID: nodeID,
@@ -275,10 +243,10 @@ func TestModifySetting_StringList_InvalidInput(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &account{
+	acc := &models.Account{
 		ID: "account_12345",
 	}
-	ctx = ctxWithAccount(ctx, acc)
+	ctx = gqlctx.WithAccount(ctx, acc)
 
 	key := excommsSettings.ConfigKeyForwardingList
 	nodeID := "entity_e1"
@@ -300,32 +268,15 @@ func TestModifySetting_StringList_InvalidInput(t *testing.T) {
 		},
 	}, nil))
 
-	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntities,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: nodeID,
-			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 0,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_CONTACTS,
-				},
-			},
+	g.ra.Expect(mock.NewExpectation(g.ra.Entity, nodeID, []directory.EntityInformation{
+		directory.EntityInformation_CONTACTS,
+	}, int64(0)).WithReturns(&directory.Entity{
+		Type: directory.EntityType_INTERNAL,
+		ID:   nodeID,
+		Info: &directory.EntityInfo{
+			DisplayName: "HI",
 		},
-	).WithReturns(
-		&directory.LookupEntitiesResponse{
-			Entities: []*directory.Entity{
-				{
-					Type: directory.EntityType_INTERNAL,
-					ID:   nodeID,
-					Info: &directory.EntityInfo{
-						DisplayName: "HI",
-					},
-				},
-			},
-		},
-		nil))
+	}, nil))
 
 	res := g.query(ctx, `
 		mutation _ ($nodeID: ID!, $key: String!, $subkey: String!) {
@@ -380,10 +331,10 @@ func TestModifySetting_MultiSelect(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &account{
+	acc := &models.Account{
 		ID: "account_12345",
 	}
-	ctx = ctxWithAccount(ctx, acc)
+	ctx = gqlctx.WithAccount(ctx, acc)
 
 	key := "2fa"
 	nodeID := "entity_e1"
@@ -420,32 +371,15 @@ func TestModifySetting_MultiSelect(t *testing.T) {
 		},
 	}, nil))
 
-	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntities,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: nodeID,
-			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 0,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_CONTACTS,
-				},
-			},
+	g.ra.Expect(mock.NewExpectation(g.ra.Entity, nodeID, []directory.EntityInformation{
+		directory.EntityInformation_CONTACTS,
+	}, int64(0)).WithReturns(&directory.Entity{
+		Type: directory.EntityType_INTERNAL,
+		ID:   nodeID,
+		Info: &directory.EntityInfo{
+			DisplayName: "HI",
 		},
-	).WithReturns(
-		&directory.LookupEntitiesResponse{
-			Entities: []*directory.Entity{
-				{
-					Type: directory.EntityType_INTERNAL,
-					ID:   nodeID,
-					Info: &directory.EntityInfo{
-						DisplayName: "HI",
-					},
-				},
-			},
-		},
-		nil))
+	}, nil))
 
 	g.settingsC.Expect(mock.NewExpectation(g.settingsC.SetValue, &settings.SetValueRequest{
 		NodeID: nodeID,
@@ -539,10 +473,10 @@ func TestModifySetting_SingleSelect(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &account{
+	acc := &models.Account{
 		ID: "account_12345",
 	}
-	ctx = ctxWithAccount(ctx, acc)
+	ctx = gqlctx.WithAccount(ctx, acc)
 
 	key := "2fa"
 	nodeID := "entity_e1"
@@ -579,32 +513,15 @@ func TestModifySetting_SingleSelect(t *testing.T) {
 		},
 	}, nil))
 
-	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntities,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: nodeID,
-			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 0,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_CONTACTS,
-				},
-			},
+	g.ra.Expect(mock.NewExpectation(g.ra.Entity, nodeID, []directory.EntityInformation{
+		directory.EntityInformation_CONTACTS,
+	}, int64(0)).WithReturns(&directory.Entity{
+		Type: directory.EntityType_INTERNAL,
+		ID:   nodeID,
+		Info: &directory.EntityInfo{
+			DisplayName: "HI",
 		},
-	).WithReturns(
-		&directory.LookupEntitiesResponse{
-			Entities: []*directory.Entity{
-				{
-					Type: directory.EntityType_INTERNAL,
-					ID:   nodeID,
-					Info: &directory.EntityInfo{
-						DisplayName: "HI",
-					},
-				},
-			},
-		},
-		nil))
+	}, nil))
 
 	g.settingsC.Expect(mock.NewExpectation(g.settingsC.SetValue, &settings.SetValueRequest{
 		NodeID: nodeID,
@@ -688,10 +605,10 @@ func TestModifySetting_InvalidOwner(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &account{
+	acc := &models.Account{
 		ID: "account_12345",
 	}
-	ctx = ctxWithAccount(ctx, acc)
+	ctx = gqlctx.WithAccount(ctx, acc)
 
 	key := "2fa"
 	nodeID := "entity_e1"
@@ -717,32 +634,15 @@ func TestModifySetting_InvalidOwner(t *testing.T) {
 		},
 	}, nil))
 
-	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntities,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: nodeID,
-			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 0,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_CONTACTS,
-				},
-			},
+	g.ra.Expect(mock.NewExpectation(g.ra.Entity, nodeID, []directory.EntityInformation{
+		directory.EntityInformation_CONTACTS,
+	}, int64(0)).WithReturns(&directory.Entity{
+		Type: directory.EntityType_INTERNAL,
+		ID:   nodeID,
+		Info: &directory.EntityInfo{
+			DisplayName: "HI",
 		},
-	).WithReturns(
-		&directory.LookupEntitiesResponse{
-			Entities: []*directory.Entity{
-				{
-					Type: directory.EntityType_INTERNAL,
-					ID:   nodeID,
-					Info: &directory.EntityInfo{
-						DisplayName: "HI",
-					},
-				},
-			},
-		},
-		nil))
+	}, nil))
 
 	res := g.query(ctx, `
 		mutation _ ($nodeID: ID!, $key: String!) {

@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/sprucehealth/backend/libs/errors"
+
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/invite"
@@ -74,10 +77,11 @@ var inviteColleaguesMutation = &graphql.Field{
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
-		acc := accountFromContext(ctx)
+		acc := gqlctx.Account(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated(ctx)
+			return nil, errors.ErrNotAuthenticated(ctx)
 		}
 
 		input := p.Args["input"].(map[string]interface{})
@@ -112,9 +116,9 @@ var inviteColleaguesMutation = &graphql.Field{
 			colleagues[i] = col
 		}
 
-		ent, err := svc.entityForAccountID(ctx, orgID, acc.ID)
+		ent, err := ram.EntityForAccountID(ctx, orgID, acc.ID)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 		if ent == nil {
 			return nil, errors.New("Not a member of the organization")
@@ -125,7 +129,7 @@ var inviteColleaguesMutation = &graphql.Field{
 			InviterEntityID:      ent.ID,
 			Colleagues:           colleagues,
 		}); err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		return &inviteColleaguesOutput{
@@ -190,7 +194,7 @@ var associateAttributionMutation = &graphql.Field{
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
 		ctx := p.Context
-		sh := spruceHeadersFromContext(ctx)
+		sh := gqlctx.SpruceHeaders(ctx)
 		if sh.DeviceID == "" {
 			return nil, errors.New("missing device ID")
 		}
@@ -214,7 +218,7 @@ var associateAttributionMutation = &graphql.Field{
 			Values:   values,
 		})
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		return &associateAttributionOutput{ClientMutationID: mutationID, Success: true}, nil

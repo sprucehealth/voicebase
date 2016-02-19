@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"runtime/debug"
 
-	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -92,6 +94,7 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 		}()
 
 		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 
 		input := p.Args["input"].(map[string]interface{})
@@ -105,7 +108,7 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 		if forAccountCreation {
 			inv, err := svc.inviteInfo(ctx)
 			if err != nil {
-				return nil, internalError(ctx, err)
+				return nil, errors.InternalError(ctx, err)
 			}
 			if inv != nil {
 				switch inv.Type {
@@ -125,14 +128,14 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 			}
 		}
 
-		token, err := svc.createAndSendSMSVerificationCode(ctx, auth.VerificationCodeType_PHONE, pn.String(), pn)
+		token, err := createAndSendSMSVerificationCode(ctx, ram, svc.serviceNumber, auth.VerificationCodeType_PHONE, pn.String(), pn)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		nicePhone, err := pn.Format(phone.Pretty)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 		return &verifyPhoneNumberOutput{
 			ClientMutationID: mutationID,
@@ -151,11 +154,11 @@ const (
 )
 
 type checkVerificationCodeOutput struct {
-	ClientMutationID string   `json:"clientMutationId,omitempty"`
-	Success          bool     `json:"success"`
-	ErrorCode        string   `json:"errorCode,omitempty"`
-	ErrorMessage     string   `json:"errorMessage,omitempty"`
-	Account          *account `json:"account"`
+	ClientMutationID string          `json:"clientMutationId,omitempty"`
+	Success          bool            `json:"success"`
+	ErrorCode        string          `json:"errorCode,omitempty"`
+	ErrorMessage     string          `json:"errorMessage,omitempty"`
+	Account          *models.Account `json:"account"`
 }
 
 var checkVerificationCodeErrorCodeEnum = graphql.NewEnum(
@@ -210,7 +213,7 @@ var checkVerificationCodeMutation = &graphql.Field{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(checkVerificationCodeInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 
 		input := p.Args["input"].(map[string]interface{})
@@ -219,10 +222,7 @@ var checkVerificationCodeMutation = &graphql.Field{
 		code := input["code"].(string)
 
 		golog.Debugf("Checking token %s against code %s", token, code)
-		resp, err := svc.auth.CheckVerificationCode(ctx, &auth.CheckVerificationCodeRequest{
-			Token: token,
-			Code:  code,
-		})
+		resp, err := ram.CheckVerificationCode(ctx, token, code)
 		if grpc.Code(err) == auth.BadVerificationCode {
 			return &checkVerificationCodeOutput{
 				ClientMutationID: mutationID,
@@ -242,12 +242,12 @@ var checkVerificationCodeMutation = &graphql.Field{
 			return nil, errors.New("Failed to check verification code")
 		}
 
-		var acc *account
+		var acc *models.Account
 		if resp.Account != nil {
 			var err error
 			acc, err = transformAccountToResponse(resp.Account)
 			if err != nil {
-				return nil, internalError(ctx, err)
+				return nil, errors.InternalError(ctx, err)
 			}
 		}
 

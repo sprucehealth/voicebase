@@ -2,9 +2,8 @@ package main
 
 import (
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/graphql"
 )
@@ -26,15 +25,10 @@ var platformEnumType = graphql.NewEnum(
 	},
 )
 
-func lookupSerializedEntityContact(ctx context.Context, svc *service, entityID string, platform directory.Platform) (interface{}, error) {
-	res, err := svc.directory.SerializedEntityContact(ctx, &directory.SerializedEntityContactRequest{
-		EntityID: entityID,
-		Platform: platform,
-	})
-	if grpc.Code(err) == codes.NotFound {
-		return nil, nil
-	} else if err != nil {
-		return nil, internalError(ctx, err)
+func lookupSerializedEntityContact(ctx context.Context, ram raccess.ResourceAccessor, entityID string, platform directory.Platform) (interface{}, error) {
+	sec, err := ram.SerializedEntityContact(ctx, entityID, platform)
+	if err != nil {
+		return nil, err
 	}
-	return string(res.SerializedEntityContact.SerializedEntityContact), nil
+	return string(sec.SerializedEntityContact), nil
 }

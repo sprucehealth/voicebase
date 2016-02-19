@@ -3,6 +3,10 @@ package main
 import (
 	"time"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
@@ -22,14 +26,14 @@ const (
 )
 
 type authenticateOutput struct {
-	ClientMutationID      string   `json:"clientMutationId,omitempty"`
-	Success               bool     `json:"success"`
-	ErrorCode             string   `json:"errorCode,omitempty"`
-	ErrorMessage          string   `json:"errorMessage,omitempty"`
-	Token                 string   `json:"token,omitempty"`
-	Account               *account `json:"account,omitempty"`
-	PhoneNumberLastDigits string   `json:"phoneNumberLastDigits,omitempty"`
-	ClientEncryptionKey   string   `json:"clientEncryptionKey,omitempty"`
+	ClientMutationID      string          `json:"clientMutationId,omitempty"`
+	Success               bool            `json:"success"`
+	ErrorCode             string          `json:"errorCode,omitempty"`
+	ErrorMessage          string          `json:"errorMessage,omitempty"`
+	Token                 string          `json:"token,omitempty"`
+	Account               *models.Account `json:"account,omitempty"`
+	PhoneNumberLastDigits string          `json:"phoneNumberLastDigits,omitempty"`
+	ClientEncryptionKey   string          `json:"clientEncryptionKey,omitempty"`
 }
 
 var authenticateErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
@@ -96,6 +100,7 @@ var authenticateMutation = &graphql.Field{
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 		input := p.Args["input"].(map[string]interface{})
 		mutationID, _ := input["clientMutationId"].(string)
@@ -109,10 +114,7 @@ var authenticateMutation = &graphql.Field{
 			}, nil
 		}
 		password := input["password"].(string)
-		res, err := svc.auth.AuthenticateLogin(ctx, &auth.AuthenticateLoginRequest{
-			Email:    email,
-			Password: password,
-		})
+		res, err := ram.AuthenticateLogin(ctx, email, password)
 		if err != nil {
 			switch grpc.Code(err) {
 			case auth.EmailNotFound:
@@ -130,18 +132,18 @@ var authenticateMutation = &graphql.Field{
 					ErrorMessage:     "The password does not match. Please try typing it again.",
 				}, nil
 			default:
-				return nil, internalError(ctx, err)
+				return nil, errors.InternalError(ctx, err)
 			}
 		}
 		if res.TwoFactorRequired {
 			twoFactorPhoneNumber, err := phone.ParseNumber(res.TwoFactorPhoneNumber)
 			if err != nil {
 				// Shouldn't fail
-				return nil, internalError(ctx, err)
+				return nil, errors.InternalError(ctx, err)
 			}
-			token, err := svc.createAndSendSMSVerificationCode(ctx, auth.VerificationCodeType_ACCOUNT_2FA, res.Account.ID, twoFactorPhoneNumber)
+			token, err := createAndSendSMSVerificationCode(ctx, ram, svc.serviceNumber, auth.VerificationCodeType_ACCOUNT_2FA, res.Account.ID, twoFactorPhoneNumber)
 			if err != nil {
-				return nil, internalError(ctx, err)
+				return nil, errors.InternalError(ctx, err)
 			}
 			phoneNumberLastDigits := res.TwoFactorPhoneNumber
 			if len(phoneNumberLastDigits) > 2 {
@@ -161,12 +163,12 @@ var authenticateMutation = &graphql.Field{
 		expires := time.Unix(int64(res.Token.ExpirationEpoch), 0)
 		acc, err := transformAccountToResponse(res.Account)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
 		// that likely won't change, but this still isn't a great way to update the context.
-		*ctx.Value(ctxAccount).(*account) = *acc
+		gqlctx.InPlaceWithAccount(ctx, acc)
 		result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
 		result.Set("auth_token", token)
 		result.Set("auth_expiration", expires)
@@ -200,16 +202,13 @@ var authenticateWithCodeMutation = &graphql.Field{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(authenticateWithCodeInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 		input := p.Args["input"].(map[string]interface{})
 		mutationID, _ := input["clientMutationId"].(string)
 		token := input["token"].(string)
 		code := input["code"].(string)
-		res, err := svc.auth.AuthenticateLoginWithCode(ctx, &auth.AuthenticateLoginWithCodeRequest{
-			Token: token,
-			Code:  code,
-		})
+		res, err := ram.AuthenticateLoginWithCode(ctx, token, code)
 		if err != nil {
 			switch grpc.Code(err) {
 			case auth.BadVerificationCode, codes.NotFound:
@@ -220,7 +219,7 @@ var authenticateWithCodeMutation = &graphql.Field{
 					ErrorMessage:     "The verification code you provided is incorrect.",
 				}, nil
 			default:
-				return nil, internalError(ctx, err)
+				return nil, errors.InternalError(ctx, err)
 			}
 		}
 		result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
@@ -229,11 +228,11 @@ var authenticateWithCodeMutation = &graphql.Field{
 
 		acc, err := transformAccountToResponse(res.Account)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 		// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
 		// that likely won't change, but this still isn't a great way to update the context.
-		*ctx.Value(ctxAccount).(*account) = *acc
+		gqlctx.InPlaceWithAccount(ctx, acc)
 		return &authenticateOutput{
 			ClientMutationID:    mutationID,
 			Success:             true,
@@ -285,7 +284,7 @@ var unauthenticateMutation = &graphql.Field{
 		"input": &graphql.ArgumentConfig{Type: unauthenticateInputType},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 		input, _ := p.Args["input"].(map[string]interface{})
 		var mutationID string
@@ -293,11 +292,10 @@ var unauthenticateMutation = &graphql.Field{
 			mutationID, _ = input["clientMutationId"].(string)
 		}
 
-		token := authTokenFromContext(ctx)
+		token := gqlctx.AuthToken(ctx)
 		if token != "" {
-			_, err := svc.auth.Unauthenticate(ctx, &auth.UnauthenticateRequest{Token: token})
-			if err != nil {
-				return nil, internalError(ctx, err)
+			if err := ram.Unauthenticate(ctx, token); err != nil {
+				return nil, errors.InternalError(ctx, err)
 			}
 			result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
 			result.Set("unauthenticated", true)

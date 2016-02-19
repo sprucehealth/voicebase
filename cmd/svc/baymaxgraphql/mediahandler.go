@@ -7,7 +7,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	mediasigner "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/media"
@@ -34,7 +36,7 @@ type errorMsg struct {
 }
 
 func (m *mediaHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	var acc *account
+	var acc *models.Account
 	if c, err := r.Cookie(authTokenCookieName); err == nil && c.Value != "" {
 		res, err := m.auth.CheckAuthentication(ctx,
 			&auth.CheckAuthenticationRequest{Token: c.Value},
@@ -47,7 +49,7 @@ func (m *mediaHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
-		acc = &account{
+		acc = &models.Account{
 			ID: res.Account.ID,
 		}
 	} else {
@@ -55,7 +57,7 @@ func (m *mediaHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *
 		return
 	}
 
-	ctx = ctxWithAccount(ctx, acc)
+	ctx = gqlctx.WithAccount(ctx, acc)
 
 	// get media related params
 	mimetype := r.FormValue("mimetype")

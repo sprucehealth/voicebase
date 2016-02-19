@@ -5,89 +5,18 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/language/ast"
-	"golang.org/x/net/context"
-)
-
-type ctxKey int
-
-const (
-	ctxAccount ctxKey = iota
-	ctxSpruceHeaders
-	ctxClientEncryptionKey
-	ctxRequestID
-	ctxAuthToken
 )
 
 type errInvalidContactFormat string
 
 func (e errInvalidContactFormat) Error() string {
 	return string(e)
-}
-
-func ctxWithSpruceHeaders(ctx context.Context, sh *device.SpruceHeaders) context.Context {
-	return context.WithValue(ctx, ctxSpruceHeaders, sh)
-}
-
-// spruceHeadersFromContext returns the spruce headers which may be nil
-func spruceHeadersFromContext(ctx context.Context) *device.SpruceHeaders {
-	sh, _ := ctx.Value(ctxSpruceHeaders).(*device.SpruceHeaders)
-	return sh
-}
-
-func ctxWithAuthToken(ctx context.Context, token string) context.Context {
-	return context.WithValue(ctx, ctxAuthToken, token)
-}
-
-func authTokenFromContext(ctx context.Context) string {
-	token, _ := ctx.Value(ctxAuthToken).(string)
-	return token
-}
-
-func ctxWithRequestID(ctx context.Context, id uint64) context.Context {
-	return context.WithValue(ctx, ctxRequestID, id)
-}
-
-func requestIDFromContext(ctx context.Context) uint64 {
-	id, _ := ctx.Value(ctxRequestID).(uint64)
-	return id
-}
-
-func ctxWithAccount(ctx context.Context, acc *account) context.Context {
-	// Never set a nil account so that we can update it in place. It's kind
-	// of gross, but can't think of a better way to deal with authenticate
-	// needing to update the account at the moment. Ideally the GraphQL pkg would
-	// have a way to update context as it went through the executor.. but alas..
-	if acc == nil {
-		acc = &account{}
-	}
-	return context.WithValue(ctx, ctxAccount, acc)
-}
-
-// accountFromContext returns the account from the context which may be nil
-func accountFromContext(ctx context.Context) *account {
-	acc, _ := ctx.Value(ctxAccount).(*account)
-	if acc != nil && acc.ID == "" {
-		return nil
-	}
-	return acc
-}
-
-func ctxWithClientEncryptionKey(ctx context.Context, clientEncryptionKey string) context.Context {
-	// The client encryption key is generated at token validation check time, so we store it here to make it available to concerned parties
-	return context.WithValue(ctx, ctxClientEncryptionKey, clientEncryptionKey)
-}
-
-// clientEncryptionKeyFromContext returns the clientEncryptionKey from the context which may be the empty string
-func clientEncryptionKeyFromContext(ctx context.Context) string {
-	cek, _ := ctx.Value(ctxClientEncryptionKey).(string)
-	return cek
 }
 
 func serviceFromParams(p graphql.ResolveParams) *service {

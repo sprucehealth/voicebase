@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/test"
@@ -15,10 +17,10 @@ func TestUpdateContactInfosMutation(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &account{
+	acc := &models.Account{
 		ID: "a_1",
 	}
-	ctx = ctxWithAccount(ctx, acc)
+	ctx = gqlctx.WithAccount(ctx, acc)
 
 	entityID := "e_1"
 
@@ -36,19 +38,17 @@ func TestUpdateContactInfosMutation(t *testing.T) {
 		{ContactType: directory.ContactType_PHONE, Value: "+14155555555", Label: "Phone"},
 		{ContactType: directory.ContactType_EMAIL, Value: "someone@example.com", Label: "Email"},
 	}
-	g.dirC.Expect(mock.NewExpectation(g.dirC.UpdateContacts, &directory.UpdateContactsRequest{
+	g.ra.Expect(mock.NewExpectation(g.ra.UpdateContacts, &directory.UpdateContactsRequest{
 		EntityID: entityID,
 		Contacts: contacts,
 		RequestedInformation: &directory.RequestedInformation{
 			Depth:             0,
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
 		},
-	}).WithReturns(&directory.UpdateContactsResponse{
-		Entity: &directory.Entity{
-			ID:       entityID,
-			Contacts: contacts,
-			Info:     entityInfo,
-		},
+	}).WithReturns(&directory.Entity{
+		ID:       entityID,
+		Contacts: contacts,
+		Info:     entityInfo,
 	}, nil))
 
 	res := g.query(ctx, `

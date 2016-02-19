@@ -3,8 +3,11 @@ package main
 import (
 	"strings"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/conc"
-	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -40,13 +43,13 @@ var createThreadErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 })
 
 type createThreadOutput struct {
-	ClientMutationID string    `json:"clientMutationId,omitempty"`
-	Success          bool      `json:"success"`
-	ErrorCode        string    `json:"errorCode,omitempty"`
-	ErrorMessage     string    `json:"errorMessage,omitempty"`
-	Thread           *thread   `json:"thread"`
-	ExistingThreads  []*thread `json:"existingThreads,omitempty"`
-	NameDiffers      bool      `json:"nameDiffers"`
+	ClientMutationID string           `json:"clientMutationId,omitempty"`
+	Success          bool             `json:"success"`
+	ErrorCode        string           `json:"errorCode,omitempty"`
+	ErrorMessage     string           `json:"errorMessage,omitempty"`
+	Thread           *models.Thread   `json:"thread"`
+	ExistingThreads  []*models.Thread `json:"existingThreads,omitempty"`
+	NameDiffers      bool             `json:"nameDiffers"`
 }
 
 var createThreadOutputType = graphql.NewObject(graphql.ObjectConfig{
@@ -81,11 +84,11 @@ var createThreadMutation = &graphql.Field{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(createThreadInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
-		acc := accountFromContext(ctx)
+		acc := gqlctx.Account(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated(ctx)
+			return nil, errors.ErrNotAuthenticated(ctx)
 		}
 
 		input := p.Args["input"].(map[string]interface{})
@@ -99,11 +102,11 @@ var createThreadMutation = &graphql.Field{
 			entityInfoInput := ei
 			entityInfo, err = entityInfoFromInput(entityInfoInput)
 			if err != nil {
-				return nil, internalError(ctx, err)
+				return nil, errors.InternalError(ctx, err)
 			}
 			contactInfos, err = contactListFromInput(entityInfoInput["contactInfos"].([]interface{}), true)
 			if err != nil {
-				return nil, internalError(ctx, err)
+				return nil, errors.InternalError(ctx, err)
 			}
 		} else {
 			entityInfo = &directory.EntityInfo{}
@@ -112,17 +115,17 @@ var createThreadMutation = &graphql.Field{
 		var err error
 		entityInfo.DisplayName, err = buildDisplayName(entityInfo, contactInfos)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		createForContact, err := contactFromInput(input["createForContactInfo"])
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
-		creatorEnt, err := svc.entityForAccountID(ctx, orgID, acc.ID)
+		creatorEnt, err := ram.EntityForAccountID(ctx, orgID, acc.ID)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 		if creatorEnt == nil {
 			return nil, errors.New("Not a member of the organization")
@@ -130,17 +133,12 @@ var createThreadMutation = &graphql.Field{
 
 		// Check for an existing entity with the provided contact info
 		var existingEntities []*directory.Entity
-		dres, err := svc.directory.LookupEntitiesByContact(ctx, &directory.LookupEntitiesByContactRequest{
-			ContactValue: createForContact.Value,
-			RequestedInformation: &directory.RequestedInformation{
-				Depth:             1,
-				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
-			},
-		})
+		entities, err := ram.EntitiesByContact(ctx, createForContact.Value, []directory.EntityInformation{
+			directory.EntityInformation_MEMBERSHIPS}, 1)
 		if err == nil {
 			// Filter out entities that aren't external as that's all we're dealing with right now
-			existingEntities = make([]*directory.Entity, 0, len(dres.Entities))
-			for _, e := range dres.Entities {
+			existingEntities = make([]*directory.Entity, 0, len(entities))
+			for _, e := range entities {
 				if e.Type == directory.EntityType_EXTERNAL {
 					// Make sure entity is a member of the chosen organization
 					for _, em := range e.Memberships {
@@ -152,33 +150,31 @@ var createThreadMutation = &graphql.Field{
 				}
 			}
 		} else if err != nil && grpc.Code(err) != codes.NotFound {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		// Check for an existing thread
 		if len(existingEntities) != 0 {
 			threadResults := make([][]*threading.Thread, len(existingEntities))
 			par := conc.NewParallel()
+			primaryOnly := true
 			for i, e := range existingEntities {
 				ix := i
 				ent := e
 				par.Go(func() error {
-					res, err := svc.threading.ThreadsForMember(ctx, &threading.ThreadsForMemberRequest{
-						EntityID:    ent.ID,
-						PrimaryOnly: true,
-					})
+					threads, err := ram.ThreadsForMember(ctx, ent.ID, primaryOnly)
 					if err != nil {
 						if grpc.Code(err) != codes.NotFound {
 							return err
 						}
 						return nil
 					}
-					threadResults[ix] = res.Threads
+					threadResults[ix] = threads
 					return nil
 				})
 			}
 			if err := par.Wait(); err != nil {
-				return nil, internalError(ctx, err)
+				return nil, errors.InternalError(ctx, err)
 			}
 			var threads []*threading.Thread
 			for _, ts := range threadResults {
@@ -202,9 +198,9 @@ var createThreadMutation = &graphql.Field{
 					entMap[e.ID] = e
 				}
 
-				var theOneThread *thread
+				var theOneThread *models.Thread
 				var matchedName bool
-				existingThreads := make([]*thread, len(threads))
+				existingThreads := make([]*models.Thread, len(threads))
 				for i, t := range threads {
 					// Sanity check. This shouldn't ever be triggered since we made sure the tntiy
 					// is part of the organization, but doesn't hurt to double check.
@@ -214,11 +210,11 @@ var createThreadMutation = &graphql.Field{
 					}
 					th, err := transformThreadToResponse(t)
 					if err != nil {
-						return nil, internalError(ctx, err)
+						return nil, errors.InternalError(ctx, err)
 					}
-					th.primaryEntity = entMap[t.PrimaryEntityID]
-					if err := svc.hydrateThreads(ctx, []*thread{th}); err != nil {
-						return nil, internalError(ctx, err)
+					th.PrimaryEntity = entMap[t.PrimaryEntityID]
+					if err := hydrateThreads(ctx, ram, []*models.Thread{th}); err != nil {
+						return nil, errors.InternalError(ctx, err)
 					}
 
 					existingThreads[i] = th
@@ -272,7 +268,7 @@ var createThreadMutation = &graphql.Field{
 		// Didn't find any existing threads so create a new one, but first we need to create an entity. We
 		// purposefully don't try to merge with an existing entity even if some contact info matches since
 		// that's likely very error prone. Safer to just assume a new entity.
-		ceres, err := svc.directory.CreateEntity(ctx, &directory.CreateEntityRequest{
+		primaryEnt, err := ram.CreateEntity(ctx, &directory.CreateEntityRequest{
 			Type: directory.EntityType_EXTERNAL,
 			InitialMembershipEntityID: orgID,
 			Contacts:                  contactInfos,
@@ -282,11 +278,10 @@ var createThreadMutation = &graphql.Field{
 			},
 		})
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
-		primaryEnt := ceres.Entity
 
-		res, err := svc.threading.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
+		thread, err := ram.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
 			UUID:           uuid,
 			OrganizationID: orgID,
 			FromEntityID:   creatorEnt.ID,
@@ -298,15 +293,15 @@ var createThreadMutation = &graphql.Field{
 			Summary:         "New conversation", // TODO: not sure what we want here. it's a fallback if there's no posts made in the thread.
 		})
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
-		th, err := transformThreadToResponse(res.Thread)
+		th, err := transformThreadToResponse(thread)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
-		th.primaryEntity = primaryEnt
-		if err := svc.hydrateThreads(ctx, []*thread{th}); err != nil {
-			return nil, internalError(ctx, err)
+		th.PrimaryEntity = primaryEnt
+		if err := hydrateThreads(ctx, ram, []*models.Thread{th}); err != nil {
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		return &createThreadOutput{

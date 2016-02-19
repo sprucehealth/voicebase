@@ -1,16 +1,18 @@
 package main
 
 import (
-	"errors"
 	"fmt"
+
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/phone"
 
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 )
 
 // message
@@ -41,12 +43,12 @@ var messageInputType = graphql.NewInputObject(
 // postMessage
 
 type postMessageOutput struct {
-	ClientMutationID string  `json:"clientMutationId,omitempty"`
-	Success          bool    `json:"success"`
-	ErrorCode        string  `json:"errorCode,omitempty"`
-	ErrorMessage     string  `json:"errorMessage,omitempty"`
-	ItemEdge         *Edge   `json:"itemEdge"`
-	Thread           *thread `json:"thread"`
+	ClientMutationID string         `json:"clientMutationId,omitempty"`
+	Success          bool           `json:"success"`
+	ErrorCode        string         `json:"errorCode,omitempty"`
+	ErrorMessage     string         `json:"errorMessage,omitempty"`
+	ItemEdge         *Edge          `json:"itemEdge"`
+	Thread           *models.Thread `json:"thread"`
 }
 
 var postMessageInputType = graphql.NewInputObject(
@@ -99,10 +101,11 @@ var postMessageMutation = &graphql.Field{
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
-		acc := accountFromContext(ctx)
+		acc := gqlctx.Account(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated(ctx)
+			return nil, errors.ErrNotAuthenticated(ctx)
 		}
 
 		input := p.Args["input"].(map[string]interface{})
@@ -110,52 +113,33 @@ var postMessageMutation = &graphql.Field{
 		threadID := input["threadID"].(string)
 		msg := input["msg"].(map[string]interface{})
 
-		tres, err := svc.threading.Thread(ctx, &threading.ThreadRequest{
-			ThreadID: threadID,
-		})
+		thr, err := ram.Thread(ctx, threadID, "")
 		if err != nil {
-			switch grpc.Code(err) {
-			case codes.NotFound:
+			switch errors.Type(err) {
+			case errors.ErrTypeNotFound:
 				return &postMessageOutput{
 					Success:      false,
 					ErrorCode:    postMessageErrorCodeThreadDoesNotExist,
 					ErrorMessage: "Thread does not exist.",
 				}, nil
 			}
-			return nil, internalError(ctx, err)
+			return nil, err
 		}
-		thr := tres.Thread
 
-		ent, err := svc.entityForAccountID(ctx, thr.OrganizationID, acc.ID)
+		ent, err := ram.EntityForAccountID(ctx, thr.OrganizationID, acc.ID)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, err
 		}
 		if ent == nil || ent.Type != directory.EntityType_INTERNAL {
-			return nil, userError(ctx, errTypeNotAuthorized, "Not a member of the organization")
+			return nil, errors.UserError(ctx, errors.ErrTypeNotAuthorized, "Not a member of the organization")
 		}
 
 		var primaryEntity *directory.Entity
 		if thr.PrimaryEntityID != "" {
-			res, err := svc.directory.LookupEntities(ctx,
-				&directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-						EntityID: thr.PrimaryEntityID,
-					},
-					RequestedInformation: &directory.RequestedInformation{
-						Depth: 0,
-						EntityInformation: []directory.EntityInformation{
-							directory.EntityInformation_CONTACTS,
-						},
-					},
-				})
+			primaryEntity, err = ram.Entity(ctx, thr.PrimaryEntityID, []directory.EntityInformation{directory.EntityInformation_CONTACTS}, 0)
 			if err != nil {
-				return nil, internalError(ctx, err)
+				return nil, err
 			}
-			if len(res.Entities) != 1 {
-				return nil, internalError(ctx, fmt.Errorf("lookup entities returned %d result(s) expected 1 entity ID %s", len(res.Entities), thr.PrimaryEntityID))
-			}
-			primaryEntity = res.Entities[0]
 		}
 
 		text := msg["text"].(string)
@@ -170,7 +154,7 @@ var postMessageMutation = &graphql.Field{
 		plainText, err := textBML.PlainText()
 		if err != nil {
 			// Shouldn't fail here since the parsing should have done validation
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 		fromName := ent.Info.DisplayName
 		if fromName == "" && len(ent.Contacts) != 0 {
@@ -219,10 +203,10 @@ var postMessageMutation = &graphql.Field{
 				var ct directory.ContactType
 				var ec threading.Endpoint_Channel
 				switch endpointChannel {
-				case endpointChannelEmail:
+				case models.EndpointChannelEmail:
 					ct = directory.ContactType_EMAIL
 					ec = threading.Endpoint_EMAIL
-				case endpointChannelSMS:
+				case models.EndpointChannelSMS:
 					ct = directory.ContactType_PHONE
 					ec = threading.Endpoint_SMS
 				default:
@@ -265,26 +249,27 @@ var postMessageMutation = &graphql.Field{
 
 		titleStr, err := title.Format()
 		if err != nil {
-			return nil, internalError(ctx, fmt.Errorf("invalid title BML %+v: %s", title, err))
+			return nil, errors.InternalError(ctx, fmt.Errorf("invalid title BML %+v: %s", title, err))
 		}
 		req.Title = titleStr
 
-		pmres, err := svc.threading.PostMessage(ctx, req)
+		pmres, err := ram.PostMessage(ctx, req)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		it, err := transformThreadItemToResponse(pmres.Item, req.UUID, acc.ID, svc.mediaSigner)
 		if err != nil {
-			return nil, internalError(ctx, fmt.Errorf("failed to transform thread item: %s", err))
+			return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform thread item: %s", err))
 		}
 		th, err := transformThreadToResponse(pmres.Thread)
 		if err != nil {
-			return nil, internalError(ctx, fmt.Errorf("failed to transform thread: %s", err))
+			return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform thread: %s", err))
 		}
-		th.primaryEntity = primaryEntity
-		if err := svc.hydrateThreads(ctx, []*thread{th}); err != nil {
-			return nil, internalError(ctx, err)
+
+		th.PrimaryEntity = primaryEntity
+		if err := hydrateThreads(ctx, ram, []*models.Thread{th}); err != nil {
+			return nil, errors.InternalError(ctx, err)
 		}
 		return &postMessageOutput{
 			ClientMutationID: mutationID,

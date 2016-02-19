@@ -1,17 +1,18 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification/deeplink"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 )
 
 var threadConnectionType = ConnectionDefinitions(ConnectionConfig{
@@ -39,40 +40,27 @@ var threadType = graphql.NewObject(
 				Type: graphql.NewList(graphql.NewNonNull(endpointType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
-					th := p.Source.(*thread)
+					th := p.Source.(*models.Thread)
 					if th == nil {
-						return nil, internalError(ctx, errors.New("thread is nil"))
+						return nil, errors.InternalError(ctx, errors.New("thread is nil"))
 					}
 
-					svc := serviceFromParams(p)
-					res, err := svc.directory.LookupEntities(ctx,
-						&directory.LookupEntitiesRequest{
-							LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-							LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-								EntityID: th.PrimaryEntityID,
-							},
-							RequestedInformation: &directory.RequestedInformation{
-								Depth: 0,
-								EntityInformation: []directory.EntityInformation{
-									directory.EntityInformation_CONTACTS,
-								},
-							},
-						})
+					ram := raccess.ResourceAccess(p)
+					ent, err := ram.Entity(ctx, th.PrimaryEntityID, []directory.EntityInformation{
+						directory.EntityInformation_CONTACTS,
+					}, 0)
 					if err != nil {
-						return nil, internalError(ctx, err)
+						return nil, err
 					}
-					for _, e := range res.Entities {
-						endpoints := make([]*endpoint, len(e.Contacts))
-						for i, c := range e.Contacts {
-							endpoint, err := transformEntityContactToEndpoint(c)
-							if err != nil {
-								return nil, internalError(ctx, err)
-							}
-							endpoints[i] = endpoint
+					endpoints := make([]*models.Endpoint, len(ent.Contacts))
+					for i, c := range ent.Contacts {
+						endpoint, err := transformEntityContactToEndpoint(c)
+						if err != nil {
+							return nil, errors.InternalError(ctx, err)
 						}
-						return endpoints, nil
+						endpoints[i] = endpoint
 					}
-					return nil, errors.New("primary entity not found")
+					return endpoints, nil
 				},
 			},
 			// Default endpoints are build from the last primary entity endpoints filtering out anything contacts that no longer exist for the entity
@@ -80,101 +68,75 @@ var threadType = graphql.NewObject(
 				Type: graphql.NewList(graphql.NewNonNull(endpointType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
-					th := p.Source.(*thread)
+					th := p.Source.(*models.Thread)
 					if th == nil {
-						return nil, internalError(ctx, errors.New("thread is nil"))
+						return nil, errors.InternalError(ctx, errors.New("thread is nil"))
 					}
 
-					svc := serviceFromParams(p)
-					res, err := svc.directory.LookupEntities(ctx,
-						&directory.LookupEntitiesRequest{
-							LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-							LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-								EntityID: th.PrimaryEntityID,
-							},
-							RequestedInformation: &directory.RequestedInformation{
-								Depth: 0,
-								EntityInformation: []directory.EntityInformation{
-									directory.EntityInformation_CONTACTS,
-								},
-							},
-						})
+					ram := raccess.ResourceAccess(p)
+					ent, err := ram.Entity(ctx, th.PrimaryEntityID, []directory.EntityInformation{
+						directory.EntityInformation_CONTACTS,
+					}, 0)
 					if err != nil {
-						return nil, internalError(ctx, err)
+						return nil, err
 					}
 
-					for _, e := range res.Entities {
-						var filteredEndpoints []*endpoint
-						// Assert that our endpoints stil exist as a contact
-						for _, ep := range th.LastPrimaryEntityEndpoints {
-							for _, c := range e.Contacts {
-								endpoint, err := transformEntityContactToEndpoint(c)
-								if err != nil {
-									return nil, internalError(ctx, err)
-								}
-								if endpoint.Channel == ep.Channel && endpoint.ID == ep.ID {
-									filteredEndpoints = append(filteredEndpoints, endpoint)
-									continue
-								}
+					var filteredEndpoints []*models.Endpoint
+					// Assert that our endpoints stil exist as a contact
+					for _, ep := range th.LastPrimaryEntityEndpoints {
+						for _, c := range ent.Contacts {
+							endpoint, err := transformEntityContactToEndpoint(c)
+							if err != nil {
+								return nil, errors.InternalError(ctx, err)
 							}
-						}
-						// If we didn't find any matching endpoints or the source list is empty, pick the first contact attached to the entity
-						if len(filteredEndpoints) == 0 {
-							for _, c := range e.Contacts {
-								endpoint, err := transformEntityContactToEndpoint(c)
-								if err != nil {
-									return nil, internalError(ctx, err)
-								}
+							if endpoint.Channel == ep.Channel && endpoint.ID == ep.ID {
 								filteredEndpoints = append(filteredEndpoints, endpoint)
 								break
 							}
 						}
-						return filteredEndpoints, nil
 					}
-					return nil, errors.New("primary entity not found")
+					// If we didn't find any matching endpoints or the source list is empty, pick the first contact attached to the entity
+					if len(filteredEndpoints) == 0 {
+						for _, c := range ent.Contacts {
+							endpoint, err := transformEntityContactToEndpoint(c)
+							if err != nil {
+								return nil, errors.InternalError(ctx, err)
+							}
+							filteredEndpoints = append(filteredEndpoints, endpoint)
+							continue
+						}
+					}
+					return filteredEndpoints, nil
 				},
 			},
 			"primaryEntity": &graphql.Field{
 				Type: entityType,
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
-					th := p.Source.(*thread)
+					th := p.Source.(*models.Thread)
 					if th == nil {
-						return nil, internalError(ctx, errors.New("thread is nil"))
+						return nil, errors.InternalError(ctx, errors.New("thread is nil"))
 					}
 					// Internal threads don't have a primary entity
 					if th.PrimaryEntityID == "" {
 						return nil, nil
 					}
 					if selectingOnlyID(p) {
-						return &entity{ID: th.PrimaryEntityID}, nil
+						return &models.Entity{ID: th.PrimaryEntityID}, nil
 					}
 
-					svc := serviceFromParams(p)
-					res, err := svc.directory.LookupEntities(ctx,
-						&directory.LookupEntitiesRequest{
-							LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-							LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-								EntityID: th.PrimaryEntityID,
-							},
-							RequestedInformation: &directory.RequestedInformation{
-								Depth: 0,
-								EntityInformation: []directory.EntityInformation{
-									directory.EntityInformation_CONTACTS,
-								},
-							},
-						})
+					ram := raccess.ResourceAccess(p)
+					e, err := ram.Entity(ctx, th.PrimaryEntityID, []directory.EntityInformation{
+						directory.EntityInformation_CONTACTS,
+					}, 0)
 					if err != nil {
-						return nil, internalError(ctx, err)
+						return nil, err
 					}
-					for _, e := range res.Entities {
-						ent, err := transformEntityToResponse(e)
-						if err != nil {
-							return nil, internalError(ctx, fmt.Errorf("failed to transform entity: %s", err))
-						}
-						return ent, nil
+					ent, err := transformEntityToResponse(e)
+					if err != nil {
+						return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity: %s", err))
 					}
-					return nil, internalError(ctx, errors.New("Primary entity not found"))
+					return ent, nil
 				},
 			},
 			"items": &graphql.Field{
@@ -182,14 +144,15 @@ var threadType = graphql.NewObject(
 				Args: NewConnectionArguments(nil),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
-					t := p.Source.(*thread)
+					t := p.Source.(*models.Thread)
 					if t == nil {
-						return nil, internalError(ctx, errors.New("thread is nil"))
+						return nil, errors.InternalError(ctx, errors.New("thread is nil"))
 					}
 					svc := serviceFromParams(p)
-					acc := accountFromContext(p.Context)
+					ram := raccess.ResourceAccess(p)
+					acc := gqlctx.Account(p.Context)
 					if acc == nil {
-						return nil, errNotAuthenticated(ctx)
+						return nil, errors.ErrNotAuthenticated(ctx)
 					}
 
 					req := &threading.ThreadItemsRequest{
@@ -213,15 +176,9 @@ var threadType = graphql.NewObject(
 						req.Iterator.Count = 20 // default
 						req.Iterator.Direction = threading.Iterator_FROM_START
 					}
-					res, err := svc.threading.ThreadItems(ctx, req)
+					res, err := ram.ThreadItems(ctx, req)
 					if err != nil {
-						switch grpc.Code(err) {
-						case codes.NotFound:
-							return nil, err
-						case codes.InvalidArgument:
-							return nil, err
-						}
-						return nil, internalError(ctx, err)
+						return nil, err
 					}
 
 					cn := &Connection{
@@ -254,7 +211,7 @@ var threadType = graphql.NewObject(
 					"savedQueryID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					th := p.Source.(*thread)
+					th := p.Source.(*models.Thread)
 					svc := serviceFromParams(p)
 					savedQueryID, _ := p.Args["savedQueryID"].(string)
 					return deeplink.ThreadURL(svc.webDomain, th.OrganizationID, savedQueryID, th.ID), nil
@@ -263,7 +220,7 @@ var threadType = graphql.NewObject(
 			"shareableDeeplink": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					th := p.Source.(*thread)
+					th := p.Source.(*models.Thread)
 					svc := serviceFromParams(p)
 					return deeplink.ThreadURLShareable(svc.webDomain, th.OrganizationID, th.ID), nil
 				},
@@ -272,25 +229,19 @@ var threadType = graphql.NewObject(
 	},
 )
 
-func lookupThread(ctx context.Context, svc *service, id, viewerEntityID string) (*thread, error) {
-	tres, err := svc.threading.Thread(ctx, &threading.ThreadRequest{
-		ThreadID:       id,
-		ViewerEntityID: viewerEntityID,
-	})
+func lookupThread(ctx context.Context, ram raccess.ResourceAccessor, threadID, viewerEntityID string) (*models.Thread, error) {
+	thread, err := ram.Thread(ctx, threadID, viewerEntityID)
 	if err != nil {
-		switch grpc.Code(err) {
-		case codes.NotFound:
-			return nil, userError(ctx, errTypeNotFound, "Thread not found.")
-		}
-		return nil, internalError(ctx, err)
+		return nil, err
 	}
 
-	th, err := transformThreadToResponse(tres.Thread)
+	th, err := transformThreadToResponse(thread)
 	if err != nil {
-		return nil, internalError(ctx, err)
+		return nil, errors.InternalError(ctx, err)
 	}
-	if err := svc.hydrateThreads(ctx, []*thread{th}); err != nil {
-		return nil, internalError(ctx, err)
+
+	if err := hydrateThreads(ctx, ram, []*models.Thread{th}); err != nil {
+		return nil, errors.InternalError(ctx, err)
 	}
 	return th, nil
 }

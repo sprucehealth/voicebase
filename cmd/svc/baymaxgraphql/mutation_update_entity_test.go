@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/test"
@@ -15,10 +17,10 @@ func TestUpdateEntityMutation(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &account{
+	acc := &models.Account{
 		ID: "a_1",
 	}
-	ctx = ctxWithAccount(ctx, acc)
+	ctx = gqlctx.WithAccount(ctx, acc)
 
 	entityID := "e_1"
 
@@ -42,7 +44,7 @@ func TestUpdateEntityMutation(t *testing.T) {
 			Platform:                directory.Platform_IOS,
 			SerializedEntityContact: []byte("{\"data\":\"serialized\"}")},
 	}
-	g.dirC.Expect(mock.NewExpectation(g.dirC.UpdateEntity, &directory.UpdateEntityRequest{
+	g.ra.Expect(mock.NewExpectation(g.ra.UpdateEntity, &directory.UpdateEntityRequest{
 		EntityID:                 entityID,
 		EntityInfo:               entityInfo,
 		Contacts:                 contacts,
@@ -51,23 +53,17 @@ func TestUpdateEntityMutation(t *testing.T) {
 			Depth:             0,
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_CONTACTS},
 		},
-	}).WithReturns(&directory.UpdateEntityResponse{
-		Entity: &directory.Entity{
-			ID:       entityID,
-			Contacts: contacts,
-			Info:     entityInfo,
-		},
+	}).WithReturns(&directory.Entity{
+		ID:       entityID,
+		Contacts: contacts,
+		Info:     entityInfo,
 	}, nil))
-	g.dirC.Expect(mock.NewExpectation(g.dirC.SerializedEntityContact, &directory.SerializedEntityContactRequest{
-		EntityID: entityID,
-		Platform: directory.Platform_IOS,
-	}).WithReturns(&directory.SerializedEntityContactResponse{
-		SerializedEntityContact: &directory.SerializedClientEntityContact{
+	g.ra.Expect(mock.NewExpectation(g.ra.SerializedEntityContact, entityID, directory.Platform_IOS).WithReturns(
+		&directory.SerializedClientEntityContact{
 			EntityID:                entityID,
 			Platform:                directory.Platform_IOS,
 			SerializedEntityContact: []byte("{\"data\":\"serialized\"}"),
-		},
-	}, nil))
+		}, nil))
 
 	res := g.query(ctx, `
 		mutation _ ($entityID: ID!) {

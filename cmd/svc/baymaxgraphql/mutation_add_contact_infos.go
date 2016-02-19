@@ -1,16 +1,20 @@
 package main
 
 import (
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/graphql"
 )
 
 type addContactInfosOutput struct {
-	ClientMutationID string  `json:"clientMutationId,omitempty"`
-	Success          bool    `json:"success"`
-	ErrorCode        string  `json:"errorCode,omitempty"`
-	ErrorMessage     string  `json:"errorMessage,omitempty"`
-	Entity           *entity `json:"entity"`
+	ClientMutationID string         `json:"clientMutationId,omitempty"`
+	Success          bool           `json:"success"`
+	ErrorCode        string         `json:"errorCode,omitempty"`
+	ErrorMessage     string         `json:"errorMessage,omitempty"`
+	Entity           *models.Entity `json:"entity"`
 }
 
 var addContactInfosInputType = graphql.NewInputObject(
@@ -51,11 +55,11 @@ var addContactInfosMutation = &graphql.Field{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(addContactInfosInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
-		acc := accountFromContext(ctx)
+		acc := gqlctx.Account(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated(ctx)
+			return nil, errors.ErrNotAuthenticated(ctx)
 		}
 
 		input := p.Args["input"].(map[string]interface{})
@@ -65,10 +69,10 @@ var addContactInfosMutation = &graphql.Field{
 
 		contacts, err := contactListFromInput(contactInfos, false)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, err
 		}
 
-		resp, err := svc.directory.CreateContacts(ctx, &directory.CreateContactsRequest{
+		resp, err := ram.CreateContacts(ctx, &directory.CreateContactsRequest{
 			EntityID: entID,
 			Contacts: contacts,
 			RequestedInformation: &directory.RequestedInformation{
@@ -77,12 +81,12 @@ var addContactInfosMutation = &graphql.Field{
 			},
 		})
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, err
 		}
 
 		e, err := transformEntityToResponse(resp.Entity)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, err
 		}
 
 		return &addContactInfosOutput{

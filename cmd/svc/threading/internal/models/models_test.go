@@ -3,13 +3,14 @@ package models
 import (
 	"testing"
 
+	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/backend/test"
 )
 
 func TestThreadID(t *testing.T) {
 	t.Parallel()
 	var id ThreadID
-	id.Prefix = threadIDPrefix
+	id.Prefix = threading.ThreadIDPrefix
 
 	// Empty/invalid state marshaling
 	b, err := id.MarshalText()

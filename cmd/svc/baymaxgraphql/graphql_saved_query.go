@@ -1,15 +1,16 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/svc/notification/deeplink"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 )
 
 var savedThreadQueryType = graphql.NewObject(
@@ -26,20 +27,20 @@ var savedThreadQueryType = graphql.NewObject(
 				Args: NewConnectionArguments(nil),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
-					stq := p.Source.(*savedThreadQuery)
+					stq := p.Source.(*models.SavedThreadQuery)
 					if stq == nil {
 						// Shouldn't be possible I don't think
-						return nil, internalError(ctx, errors.New("savedThreadQuery is nil"))
+						return nil, errors.InternalError(ctx, errors.New("savedThreadQuery is nil"))
 					}
 
-					svc := serviceFromParams(p)
-					acc := accountFromContext(ctx)
+					ram := raccess.ResourceAccess(p)
+					acc := gqlctx.Account(ctx)
 					if acc == nil {
-						return nil, errNotAuthenticated(ctx)
+						return nil, errors.ErrNotAuthenticated(ctx)
 					}
-					ent, err := svc.entityForAccountID(ctx, stq.OrganizationID, acc.ID)
+					ent, err := ram.EntityForAccountID(ctx, stq.OrganizationID, acc.ID)
 					if err != nil || ent == nil {
-						return nil, internalError(ctx, errors.New("no entity id found"))
+						return nil, errors.InternalError(ctx, errors.New("no entity id found"))
 					}
 					req := &threading.QueryThreadsRequest{
 						OrganizationID: stq.OrganizationID,
@@ -63,13 +64,9 @@ var savedThreadQueryType = graphql.NewObject(
 						req.Iterator.Count = uint32(i)
 						req.Iterator.Direction = threading.Iterator_FROM_START
 					}
-					res, err := svc.threading.QueryThreads(ctx, req)
+					res, err := ram.QueryThreads(ctx, req)
 					if err != nil {
-						switch grpc.Code(err) {
-						case codes.InvalidArgument:
-							return nil, err
-						}
-						return nil, internalError(ctx, err)
+						return nil, err
 					}
 
 					cn := &Connection{
@@ -80,11 +77,11 @@ var savedThreadQueryType = graphql.NewObject(
 					} else {
 						cn.PageInfo.HasPreviousPage = res.HasMore
 					}
-					threads := make([]*thread, len(res.Edges))
+					threads := make([]*models.Thread, len(res.Edges))
 					for i, e := range res.Edges {
 						t, err := transformThreadToResponse(e.Thread)
 						if err != nil {
-							return nil, internalError(ctx, fmt.Errorf("Failed to transform thread: %s", err))
+							return nil, errors.InternalError(ctx, fmt.Errorf("Failed to transform thread: %s", err))
 						}
 						threads[i] = t
 						cn.Edges[i] = &Edge{
@@ -92,8 +89,9 @@ var savedThreadQueryType = graphql.NewObject(
 							Cursor: ConnectionCursor(e.Cursor),
 						}
 					}
-					if err := svc.hydrateThreads(ctx, threads); err != nil {
-						return nil, internalError(ctx, err)
+
+					if err := hydrateThreads(ctx, ram, threads); err != nil {
+						return nil, errors.InternalError(ctx, err)
 					}
 
 					return cn, nil
@@ -102,7 +100,7 @@ var savedThreadQueryType = graphql.NewObject(
 			"deeplink": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					sq := p.Source.(*savedThreadQuery)
+					sq := p.Source.(*models.SavedThreadQuery)
 					svc := serviceFromParams(p)
 					return deeplink.SavedQueryURL(svc.webDomain, sq.OrganizationID, sq.ID), nil
 				},
@@ -111,21 +109,15 @@ var savedThreadQueryType = graphql.NewObject(
 	},
 )
 
-func lookupSavedQuery(ctx context.Context, svc *service, id string) (interface{}, error) {
-	tres, err := svc.threading.SavedQuery(ctx, &threading.SavedQueryRequest{
-		SavedQueryID: id,
-	})
+func lookupSavedQuery(ctx context.Context, ram raccess.ResourceAccessor, savedQueryID string) (interface{}, error) {
+	sq, err := ram.SavedQuery(ctx, savedQueryID)
 	if err != nil {
-		switch grpc.Code(err) {
-		case codes.NotFound:
-			return nil, errors.New("saved query not found")
-		}
-		return nil, internalError(ctx, err)
+		return nil, err
 	}
 
-	sq, err := transformSavedQueryToResponse(tres.SavedQuery)
+	rsq, err := transformSavedQueryToResponse(sq)
 	if err != nil {
-		return nil, internalError(ctx, err)
+		return nil, errors.InternalError(ctx, err)
 	}
-	return sq, nil
+	return rsq, nil
 }

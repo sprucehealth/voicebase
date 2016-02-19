@@ -1,18 +1,18 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification/deeplink"
-	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 )
 
 var channelEnumType = graphql.NewEnum(
@@ -66,19 +66,19 @@ var messageType = graphql.NewObject(
 			"refs": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(nodeInterfaceType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					svc := serviceFromParams(p)
+					ram := raccess.ResourceAccess(p)
 					ctx := p.Context
 
-					msg := p.Source.(*message)
+					msg := p.Source.(*models.Message)
 					if msg == nil {
-						return nil, internalError(ctx, errors.New("message is nil"))
+						return nil, errors.InternalError(ctx, errors.New("message is nil"))
 					}
 
 					refs := make([]interface{}, 0, len(msg.Refs))
 					for _, r := range msg.Refs {
 						switch r.Type {
-						case entityRef:
-							e, err := lookupEntity(ctx, svc, r.ID)
+						case models.EntityRef:
+							e, err := lookupEntity(ctx, ram, r.ID)
 							if err != nil {
 								return nil, err
 							}
@@ -98,19 +98,19 @@ var messageType = graphql.NewObject(
 				Type: graphql.NewList(graphql.NewNonNull(threadItemViewDetailsType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
-					m := p.Source.(*message)
+					m := p.Source.(*models.Message)
 					if m == nil {
-						return nil, internalError(ctx, errors.New("message is nil"))
+						return nil, errors.InternalError(ctx, errors.New("message is nil"))
 					}
-					svc := serviceFromParams(p)
-					return lookupThreadItemViewDetails(ctx, svc, m.ThreadItemID)
+					ram := raccess.ResourceAccess(p)
+					return lookupThreadItemViewDetails(ctx, ram, m.ThreadItemID)
 				},
 			},
 			// TODO: "editor: Entity"
 			// TODO: "editedTimestamp: Int"
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*message)
+			_, ok := value.(*models.Message)
 			return ok
 		},
 	},
@@ -140,14 +140,14 @@ var imageAttachmentType = graphql.NewObject(
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					svc := serviceFromParams(p)
 					ctx := p.Context
-					account := accountFromContext(ctx)
+					account := gqlctx.Account(ctx)
 					if account == nil {
-						return nil, errNotAuthenticated(ctx)
+						return nil, errors.ErrNotAuthenticated(ctx)
 					}
 
-					attachment := p.Source.(*imageAttachment)
+					attachment := p.Source.(*models.ImageAttachment)
 					if attachment == nil {
-						return nil, internalError(ctx, errors.New("attachment is nil"))
+						return nil, errors.InternalError(ctx, errors.New("attachment is nil"))
 					}
 
 					width := p.Args["width"].(int)
@@ -160,9 +160,9 @@ var imageAttachmentType = graphql.NewObject(
 					}
 					url, err := svc.mediaSigner.SignedURL(mediaID, attachment.Mimetype, account.ID, width, height, crop)
 					if err != nil {
-						return nil, internalError(ctx, err)
+						return nil, errors.InternalError(ctx, err)
 					}
-					return &image{
+					return &models.Image{
 						URL:    url,
 						Width:  width,
 						Height: height,
@@ -171,7 +171,7 @@ var imageAttachmentType = graphql.NewObject(
 			},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*imageAttachment)
+			_, ok := value.(*models.ImageAttachment)
 			return ok
 		},
 	},
@@ -186,7 +186,7 @@ var audioAttachmentType = graphql.NewObject(
 			"durationInSeconds": &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*audioAttachment)
+			_, ok := value.(*models.AudioAttachment)
 			return ok
 		},
 	},
@@ -212,7 +212,7 @@ var attachmentType = graphql.NewObject(
 			"data":  &graphql.Field{Type: attachmentDataType},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*attachment)
+			_, ok := value.(*models.Attachment)
 			return ok
 		},
 	},
@@ -247,39 +247,26 @@ var threadItemType = graphql.NewObject(
 				Type: graphql.NewNonNull(entityType),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
-					it := p.Source.(*threadItem)
+					it := p.Source.(*models.ThreadItem)
 					if it == nil {
-						return nil, internalError(ctx, errors.New("thread item is nil"))
+						return nil, errors.InternalError(ctx, errors.New("thread item is nil"))
 					}
 					if selectingOnlyID(p) {
-						return &entity{ID: it.ActorEntityID}, nil
+						return &models.Entity{ID: it.ActorEntityID}, nil
 					}
 
-					svc := serviceFromParams(p)
-					res, err := svc.directory.LookupEntities(ctx,
-						&directory.LookupEntitiesRequest{
-							LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-							LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-								EntityID: it.ActorEntityID,
-							},
-							RequestedInformation: &directory.RequestedInformation{
-								Depth: 0,
-								EntityInformation: []directory.EntityInformation{
-									directory.EntityInformation_CONTACTS,
-								},
-							},
-						})
+					ram := raccess.ResourceAccess(p)
+					entity, err := ram.Entity(ctx, it.ActorEntityID, []directory.EntityInformation{
+						directory.EntityInformation_CONTACTS,
+					}, 1)
 					if err != nil {
-						return nil, internalError(ctx, err)
+						return nil, err
 					}
-					for _, e := range res.Entities {
-						ent, err := transformEntityToResponse(e)
-						if err != nil {
-							return nil, internalError(ctx, fmt.Errorf("failed to transform entity: %s", err))
-						}
-						return ent, nil
+					ent, err := transformEntityToResponse(entity)
+					if err != nil {
+						return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity: %s", err))
 					}
-					return nil, errors.New("actor not found")
+					return ent, nil
 				},
 			},
 			"deeplink": &graphql.Field{
@@ -288,7 +275,7 @@ var threadItemType = graphql.NewObject(
 					"savedQueryID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					ti := p.Source.(*threadItem)
+					ti := p.Source.(*models.ThreadItem)
 					svc := serviceFromParams(p)
 					savedQueryID := p.Args["savedQueryID"].(string)
 					return deeplink.ThreadMessageURL(svc.webDomain, ti.OrganizationID, savedQueryID, ti.ThreadID, ti.ID), nil
@@ -297,7 +284,7 @@ var threadItemType = graphql.NewObject(
 			"shareableDeeplink": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					ti := p.Source.(*threadItem)
+					ti := p.Source.(*models.ThreadItem)
 					svc := serviceFromParams(p)
 					return deeplink.ThreadMessageURLShareable(svc.webDomain, ti.OrganizationID, ti.ThreadID, ti.ID), nil
 				},
@@ -306,25 +293,19 @@ var threadItemType = graphql.NewObject(
 	},
 )
 
-func lookupThreadItem(ctx context.Context, svc *service, id string) (interface{}, error) {
-	res, err := svc.threading.ThreadItem(ctx, &threading.ThreadItemRequest{
-		ItemID: id,
-	})
+func lookupThreadItem(ctx context.Context, ram raccess.ResourceAccessor, mediaSigner *media.Signer, threadItemID string) (interface{}, error) {
+	threadItem, err := ram.ThreadItem(ctx, threadItemID)
 	if err != nil {
-		switch grpc.Code(err) {
-		case codes.NotFound:
-			return nil, errors.New("thread item not found")
-		}
-		return nil, internalError(ctx, err)
+		return nil, err
 	}
-	account := accountFromContext(ctx)
+	account := gqlctx.Account(ctx)
 	if account == nil {
-		return nil, errNotAuthenticated(ctx)
+		return nil, errors.ErrNotAuthenticated(ctx)
 	}
 
-	it, err := transformThreadItemToResponse(res.Item, "", account.ID, svc.mediaSigner)
+	it, err := transformThreadItemToResponse(threadItem, "", account.ID, mediaSigner)
 	if err != nil {
-		return nil, internalError(ctx, err)
+		return nil, errors.InternalError(ctx, err)
 	}
 	return it, nil
 }

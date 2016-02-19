@@ -6,12 +6,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/libs/model"
-)
-
-const (
-	savedQueryIDPrefix = "sq_"
-	threadIDPrefix     = "t_"
-	threadItemIDPrefix = "ti_"
+	"github.com/sprucehealth/backend/svc/threading"
 )
 
 // ThreadID is the ID for a Thread
@@ -24,7 +19,7 @@ func NewThreadID() (ThreadID, error) {
 	}
 	return ThreadID{
 		model.ObjectID{
-			Prefix:  threadIDPrefix,
+			Prefix:  threading.ThreadIDPrefix,
 			Val:     id,
 			IsValid: true,
 		},
@@ -40,7 +35,7 @@ func ParseThreadID(s string) (ThreadID, error) {
 func EmptyThreadID() ThreadID {
 	return ThreadID{
 		model.ObjectID{
-			Prefix:  threadIDPrefix,
+			Prefix:  threading.ThreadIDPrefix,
 			IsValid: false,
 		},
 	}
@@ -56,7 +51,7 @@ func NewThreadItemID() (ThreadItemID, error) {
 	}
 	return ThreadItemID{
 		model.ObjectID{
-			Prefix:  threadItemIDPrefix,
+			Prefix:  threading.ThreadItemIDPrefix,
 			Val:     id,
 			IsValid: true,
 		},
@@ -72,7 +67,7 @@ func ParseThreadItemID(s string) (ThreadItemID, error) {
 func EmptyThreadItemID() ThreadItemID {
 	return ThreadItemID{
 		model.ObjectID{
-			Prefix:  threadItemIDPrefix,
+			Prefix:  threading.ThreadItemIDPrefix,
 			IsValid: false,
 		},
 	}
@@ -88,7 +83,7 @@ func NewSavedQueryID() (SavedQueryID, error) {
 	}
 	return SavedQueryID{
 		model.ObjectID{
-			Prefix:  savedQueryIDPrefix,
+			Prefix:  threading.SavedQueryIDPrefix,
 			Val:     id,
 			IsValid: true,
 		},
@@ -104,7 +99,7 @@ func ParseSavedQueryID(s string) (SavedQueryID, error) {
 func EmptySavedQueryID() SavedQueryID {
 	return SavedQueryID{
 		model.ObjectID{
-			Prefix:  savedQueryIDPrefix,
+			Prefix:  threading.SavedQueryIDPrefix,
 			IsValid: false,
 		},
 	}

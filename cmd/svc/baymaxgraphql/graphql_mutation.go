@@ -1,13 +1,12 @@
 package main
 
 import (
-	"errors"
-	"fmt"
-
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification"
-	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 )
 
@@ -148,46 +147,6 @@ var markThreadAsReadOutputType = graphql.NewObject(
 	},
 )
 
-/// sendTestNotification
-
-type sendTestNotificationOutput struct {
-	ClientMutationID string `json:"clientMutationId,omitempty"`
-	Success          bool   `json:"success"`
-	ErrorCode        string `json:"errorCode,omitempty"`
-	ErrorMessage     string `json:"errorMessage,omitempty"`
-}
-
-var sendTestNotificationInputType = graphql.NewInputObject(
-	graphql.InputObjectConfig{
-		Name: "SendTestNotificationInput",
-		Fields: graphql.InputObjectConfigFieldMap{
-			"clientMutationId": newClientMutationIDInputField(),
-			"message":          &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-			"threadID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-			"organizationID":   &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-		},
-	},
-)
-
-// JANK: can't have an empty enum and we want this field to always exist so make it a string until it's needed
-var sendTestNotificationErrorCodeEnum = graphql.String
-
-var sendTestNotificationOutputType = graphql.NewObject(
-	graphql.ObjectConfig{
-		Name: "SendTestNotificationPayload",
-		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
-			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"errorCode":        &graphql.Field{Type: sendTestNotificationErrorCodeEnum},
-			"errorMessage":     &graphql.Field{Type: graphql.String},
-		},
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*sendTestNotificationOutput)
-			return ok
-		},
-	},
-)
-
 var mutationType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Mutation",
 	Fields: graphql.Fields{
@@ -202,10 +161,10 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				svc := serviceFromParams(p)
 				ctx := p.Context
-				acc := accountFromContext(ctx)
-				sh := spruceHeadersFromContext(ctx)
+				acc := gqlctx.Account(ctx)
+				sh := gqlctx.SpruceHeaders(ctx)
 				if acc == nil {
-					return nil, errNotAuthenticated(ctx)
+					return nil, errors.ErrNotAuthenticated(ctx)
 				}
 				golog.Debugf("Registering Device For Push: Account:%s Device:%+v", acc.ID, sh)
 				input := p.Args["input"].(map[string]interface{})
@@ -237,74 +196,30 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(markThreadAsReadInputType)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				svc := serviceFromParams(p)
+				ram := raccess.ResourceAccess(p)
 				ctx := p.Context
-				acc := accountFromContext(ctx)
+				acc := gqlctx.Account(ctx)
 				if acc == nil {
-					return nil, errNotAuthenticated(ctx)
+					return nil, errors.ErrNotAuthenticated(ctx)
 				}
 
 				input := p.Args["input"].(map[string]interface{})
 				mutationID, _ := input["clientMutationId"].(string)
 				threadID, _ := input["threadID"].(string)
 				orgID, _ := input["organizationID"].(string)
-				ent, err := svc.entityForAccountID(ctx, orgID, acc.ID)
+				ent, err := ram.EntityForAccountID(ctx, orgID, acc.ID)
 				if err != nil {
-					return nil, internalError(ctx, err)
+					return nil, errors.InternalError(ctx, err)
 				}
 				if ent == nil || ent.Type != directory.EntityType_INTERNAL {
 					return nil, errors.New("not authorized")
 				}
 
-				_, err = svc.threading.MarkThreadAsRead(ctx, &threading.MarkThreadAsReadRequest{
-					ThreadID: threadID,
-					EntityID: ent.ID,
-				})
-				if err != nil {
-					return nil, internalError(ctx, err)
+				if err = ram.MarkThreadAsRead(ctx, threadID, ent.ID); err != nil {
+					return nil, err
 				}
 
 				return &markThreadAsReadOutput{
-					ClientMutationID: mutationID,
-					Success:          true,
-				}, nil
-			},
-		},
-		"sendTestNotification": &graphql.Field{
-			Type: graphql.NewNonNull(sendTestNotificationOutputType),
-			Args: graphql.FieldConfigArgument{
-				"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(sendTestNotificationInputType)},
-			},
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				svc := serviceFromParams(p)
-				ctx := p.Context
-				acc := accountFromContext(ctx)
-				if acc == nil {
-					return nil, errNotAuthenticated(ctx)
-				}
-
-				input := p.Args["input"].(map[string]interface{})
-				mutationID, _ := input["clientMutationId"].(string)
-				threadID, _ := input["threadID"].(string)
-				orgID, _ := input["organizationID"].(string)
-				message, _ := input["message"].(string)
-				ent, err := svc.entityForAccountID(ctx, orgID, acc.ID)
-				if err != nil {
-					return nil, errors.New("send test notification failed")
-				} else if ent == nil {
-					return nil, fmt.Errorf("entity not found for token and orgID %s", orgID)
-				}
-
-				if err := svc.notification.SendNotification(&notification.Notification{
-					ShortMessage:     message,
-					ThreadID:         threadID,
-					OrganizationID:   orgID,
-					EntitiesToNotify: []string{ent.ID},
-				}); err != nil {
-					return nil, internalError(ctx, err)
-				}
-
-				return &sendTestNotificationOutput{
 					ClientMutationID: mutationID,
 					Success:          true,
 				}, nil

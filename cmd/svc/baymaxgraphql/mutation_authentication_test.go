@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/test"
@@ -15,16 +17,13 @@ func TestAuthenticateMutation(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	var acc *account
-	ctx = ctxWithAccount(ctx, acc)
+	var acc *models.Account
+	ctx = gqlctx.WithAccount(ctx, acc)
 
 	email := "someone@example.com"
 	password := "toomanysecrets"
 
-	g.authC.Expect(mock.NewExpectation(g.authC.AuthenticateLogin, &auth.AuthenticateLoginRequest{
-		Email:    email,
-		Password: password,
-	}).WithReturns(&auth.AuthenticateLoginResponse{
+	g.ra.Expect(mock.NewExpectation(g.ra.AuthenticateLogin, email, password).WithReturns(&auth.AuthenticateLoginResponse{
 		Token: &auth.AuthToken{
 			Value: "token",
 		},
@@ -59,7 +58,7 @@ func TestAuthenticateMutation(t *testing.T) {
 }`, string(b))
 
 	// Make sure account gets updated in the context
-	acc2 := accountFromContext(ctx)
+	acc2 := gqlctx.Account(ctx)
 	test.AssertNotNil(t, acc2)
 	test.Equals(t, "acc", acc2.ID)
 }
@@ -69,13 +68,11 @@ func TestUnauthenticateMutation(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &account{ID: "a_1"}
-	ctx = ctxWithAccount(ctx, acc)
-	ctx = ctxWithAuthToken(ctx, "token")
+	acc := &models.Account{ID: "a_1"}
+	ctx = gqlctx.WithAccount(ctx, acc)
+	ctx = gqlctx.WithAuthToken(ctx, "token")
 
-	g.authC.Expect(mock.NewExpectation(g.authC.Unauthenticate, &auth.UnauthenticateRequest{
-		Token: "token",
-	}).WithReturns(&auth.UnauthenticateResponse{}, nil))
+	g.ra.Expect(mock.NewExpectation(g.ra.Unauthenticate, "token").WithReturns(&auth.UnauthenticateResponse{}, nil))
 
 	res := g.query(ctx, `
 		mutation _ {
@@ -96,7 +93,7 @@ func TestUnauthenticateMutation(t *testing.T) {
 }`, string(b))
 
 	// Make sure account gets updated in the context
-	// acc2 := accountFromContext(ctx)
+	// acc2 := account(ctx)
 	// test.AssertNotNil(t, acc2)
 	// test.Equals(t, "acc", acc2.ID)
 }

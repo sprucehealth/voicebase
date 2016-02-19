@@ -3,16 +3,20 @@ package main
 import (
 	"fmt"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/graphql"
 )
 
 type updateEntityOutput struct {
-	ClientMutationID string  `json:"clientMutationId,omitempty"`
-	Success          bool    `json:"success"`
-	ErrorCode        string  `json:"errorCode,omitempty"`
-	ErrorMessage     string  `json:"errorMessage,omitempty"`
-	Entity           *entity `json:"entity"`
+	ClientMutationID string         `json:"clientMutationId,omitempty"`
+	Success          bool           `json:"success"`
+	ErrorCode        string         `json:"errorCode,omitempty"`
+	ErrorMessage     string         `json:"errorMessage,omitempty"`
+	Entity           *models.Entity `json:"entity"`
 }
 
 var updateEntityInputType = graphql.NewInputObject(graphql.InputObjectConfig{
@@ -49,11 +53,11 @@ var updateEntityMutation = &graphql.Field{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(updateEntityInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
-		acc := accountFromContext(ctx)
+		acc := gqlctx.Account(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated(ctx)
+			return nil, errors.ErrNotAuthenticated(ctx)
 		}
 
 		input := p.Args["input"].(map[string]interface{})
@@ -62,17 +66,17 @@ var updateEntityMutation = &graphql.Field{
 		entityInfoInput := input["entityInfo"].(map[string]interface{})
 		entityInfo, err := entityInfoFromInput(entityInfoInput)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 		contactFields, _ := entityInfoInput["contactInfos"].([]interface{})
 		contacts, err := contactListFromInput(contactFields, false)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		entityInfo.DisplayName, err = buildDisplayName(entityInfo, contacts)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		serializedContactInput, _ := entityInfoInput["serializedContacts"].([]interface{})
@@ -93,7 +97,7 @@ var updateEntityMutation = &graphql.Field{
 			}
 		}
 
-		resp, err := svc.directory.UpdateEntity(ctx, &directory.UpdateEntityRequest{
+		entity, err := ram.UpdateEntity(ctx, &directory.UpdateEntityRequest{
 			EntityID:                 entID,
 			EntityInfo:               entityInfo,
 			Contacts:                 contacts,
@@ -104,12 +108,12 @@ var updateEntityMutation = &graphql.Field{
 			},
 		})
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
-		e, err := transformEntityToResponse(resp.Entity)
+		e, err := transformEntityToResponse(entity)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		return &updateEntityOutput{

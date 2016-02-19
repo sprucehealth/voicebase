@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
@@ -14,8 +15,8 @@ import (
 	"github.com/sprucehealth/backend/svc/threading"
 )
 
-func transformAccountToResponse(a *auth.Account) (*account, error) {
-	return &account{
+func transformAccountToResponse(a *auth.Account) (*models.Account, error) {
+	return &models.Account{
 		ID: a.ID,
 	}, nil
 }
@@ -41,11 +42,11 @@ func threadTitleForEntity(e *directory.Entity) string {
 	return e.ID
 }
 
-func transformContactsToResponse(contacts []*directory.Contact) ([]*contactInfo, error) {
-	cs := make([]*contactInfo, len(contacts))
+func transformContactsToResponse(contacts []*directory.Contact) ([]*models.ContactInfo, error) {
+	cs := make([]*models.ContactInfo, len(contacts))
 	for i, c := range contacts {
 
-		ci := &contactInfo{
+		ci := &models.ContactInfo{
 			ID:           c.ID,
 			Value:        c.Value,
 			DisplayValue: c.Value,
@@ -54,9 +55,9 @@ func transformContactsToResponse(contacts []*directory.Contact) ([]*contactInfo,
 		}
 		switch c.ContactType {
 		case directory.ContactType_EMAIL:
-			ci.Type = contactTypeEmail
+			ci.Type = models.ContactTypeEmail
 		case directory.ContactType_PHONE:
-			ci.Type = contactTypePhone
+			ci.Type = models.ContactTypePhone
 			pn, err := phone.Format(c.Value, phone.Pretty)
 			if err == nil {
 				ci.DisplayValue = pn
@@ -69,18 +70,18 @@ func transformContactsToResponse(contacts []*directory.Contact) ([]*contactInfo,
 	return cs, nil
 }
 
-func transformThreadToResponse(t *threading.Thread) (*thread, error) {
-	th := &thread{
+func transformThreadToResponse(t *threading.Thread) (*models.Thread, error) {
+	th := &models.Thread{
 		ID:                   t.ID,
 		OrganizationID:       t.OrganizationID,
 		PrimaryEntityID:      t.PrimaryEntityID,
 		Subtitle:             t.LastMessageSummary,
 		LastMessageTimestamp: t.LastMessageTimestamp,
 		Unread:               t.Unread,
-		LastPrimaryEntityEndpoints: make([]*endpoint, len(t.LastPrimaryEntityEndpoints)),
+		LastPrimaryEntityEndpoints: make([]*models.Endpoint, len(t.LastPrimaryEntityEndpoints)),
 	}
 	for i, ep := range t.LastPrimaryEntityEndpoints {
-		th.LastPrimaryEntityEndpoints[i] = &endpoint{
+		th.LastPrimaryEntityEndpoints[i] = &models.Endpoint{
 			Channel: ep.Channel.String(),
 			ID:      ep.ID,
 		}
@@ -88,8 +89,8 @@ func transformThreadToResponse(t *threading.Thread) (*thread, error) {
 	return th, nil
 }
 
-func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID string, mediaSigner *media.Signer) (*threadItem, error) {
-	it := &threadItem{
+func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID string, mediaSigner *media.Signer) (*models.ThreadItem, error) {
+	it := &models.ThreadItem{
 		ID:             item.ID,
 		UUID:           uuid,
 		Timestamp:      item.Timestamp,
@@ -101,11 +102,11 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID s
 	switch item.Type {
 	case threading.ThreadItem_MESSAGE:
 		m := item.GetMessage()
-		m2 := &message{
+		m2 := &models.Message{
 			ThreadItemID:  item.ID,
 			SummaryMarkup: m.Title,
 			TextMarkup:    m.Text,
-			Source: &endpoint{
+			Source: &models.Endpoint{
 				Channel: m.Source.Channel.String(),
 				ID:      m.Source.ID,
 			},
@@ -113,7 +114,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID s
 			// TODO: EditedTimestamp
 		}
 		for _, r := range m.TextRefs {
-			m2.Refs = append(m2.Refs, &reference{
+			m2.Refs = append(m2.Refs, &models.Reference{
 				ID:   r.ID,
 				Type: strings.ToLower(r.Type.String()),
 			})
@@ -140,7 +141,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID s
 				//       so reduce the duration by half a second to try to account for that. The real fix of actually
 				//       processing the mp3 to figure out the accurate duration should be done when there's time.
 				duration := float64(d.DurationInSeconds) - 0.5
-				data = &audioAttachment{
+				data = &models.AudioAttachment{
 					Mimetype:          d.Mimetype,
 					URL:               signedURL,
 					DurationInSeconds: duration,
@@ -157,7 +158,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID s
 				if d.Mimetype == "" { // TODO
 					d.Mimetype = "image/jpeg"
 				}
-				data = &imageAttachment{
+				data = &models.ImageAttachment{
 					Mimetype: d.Mimetype,
 					URL:      d.URL,
 				}
@@ -182,14 +183,14 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID s
 			default:
 				return nil, errors.Trace(fmt.Errorf("unknown attachment type %s", a.Type.String()))
 			}
-			m2.Attachments = append(m2.Attachments, &attachment{
+			m2.Attachments = append(m2.Attachments, &models.Attachment{
 				Title: a.Title,
 				URL:   a.URL,
 				Data:  data,
 			})
 		}
 		for _, dc := range m.Destinations {
-			m2.Destinations = append(m2.Destinations, &endpoint{
+			m2.Destinations = append(m2.Destinations, &models.Endpoint{
 				Channel: dc.Channel.String(),
 				ID:      dc.ID,
 			})
@@ -201,19 +202,19 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID s
 	return it, nil
 }
 
-func transformSavedQueryToResponse(sq *threading.SavedQuery) (*savedThreadQuery, error) {
-	return &savedThreadQuery{
+func transformSavedQueryToResponse(sq *threading.SavedQuery) (*models.SavedThreadQuery, error) {
+	return &models.SavedThreadQuery{
 		ID:             sq.ID,
 		OrganizationID: sq.OrganizationID,
 	}, nil
 }
 
-func transformEntityToResponse(e *directory.Entity) (*entity, error) {
+func transformEntityToResponse(e *directory.Entity) (*models.Entity, error) {
 	oc, err := transformContactsToResponse(e.Contacts)
 	if err != nil {
 		return nil, errors.Trace(fmt.Errorf("failed to transform contacts for entity %s: %s", e.ID, err))
 	}
-	ent := &entity{
+	ent := &models.Entity{
 		ID:            e.ID,
 		IsEditable:    e.Type != directory.EntityType_SYSTEM,
 		Contacts:      oc,
@@ -239,13 +240,13 @@ func transformEntityToResponse(e *directory.Entity) (*entity, error) {
 	}
 	switch e.Type {
 	case directory.EntityType_SYSTEM:
-		ent.avatar = &image{
+		ent.Avatar = &models.Image{
 			URL:    "http://carefront-static.s3.amazonaws.com/icon_rx_large?system",
 			Width:  72,
 			Height: 72,
 		}
 	case directory.EntityType_ORGANIZATION:
-		ent.avatar = &image{
+		ent.Avatar = &models.Image{
 			URL:    "http://carefront-static.s3.amazonaws.com/icon_rx_large?org",
 			Width:  72,
 			Height: 72,
@@ -258,19 +259,19 @@ func transformEntityToResponse(e *directory.Entity) (*entity, error) {
 			for _, c := range e.Contacts {
 				switch c.ContactType {
 				case directory.ContactType_PHONE:
-					ent.avatar = &image{
+					ent.Avatar = &models.Image{
 						URL:    "http://carefront-static.s3.amazonaws.com/icon_rx_large?phone",
 						Width:  72,
 						Height: 72,
 					}
 				case directory.ContactType_EMAIL:
-					ent.avatar = &image{
+					ent.Avatar = &models.Image{
 						URL:    "http://carefront-static.s3.amazonaws.com/icon_rx_large?email",
 						Width:  72,
 						Height: 72,
 					}
 				default:
-					ent.avatar = &image{
+					ent.Avatar = &models.Image{
 						URL:    "http://carefront-static.s3.amazonaws.com/icon_rx_large?other",
 						Width:  72,
 						Height: 72,
@@ -283,8 +284,8 @@ func transformEntityToResponse(e *directory.Entity) (*entity, error) {
 	return ent, nil
 }
 
-func transformOrganizationToResponse(org *directory.Entity, provider *directory.Entity) (*organization, error) {
-	o := &organization{
+func transformOrganizationToResponse(org *directory.Entity, provider *directory.Entity) (*models.Organization, error) {
+	o := &models.Organization{
 		ID:   org.ID,
 		Name: org.Info.DisplayName,
 	}
@@ -305,10 +306,10 @@ func transformOrganizationToResponse(org *directory.Entity, provider *directory.
 	return o, nil
 }
 
-func transformThreadItemViewDetailsToResponse(tivds []*threading.ThreadItemViewDetails) ([]*threadItemViewDetails, error) {
-	rivds := make([]*threadItemViewDetails, len(tivds))
+func transformThreadItemViewDetailsToResponse(tivds []*threading.ThreadItemViewDetails) ([]*models.ThreadItemViewDetails, error) {
+	rivds := make([]*models.ThreadItemViewDetails, len(tivds))
 	for i, tivd := range tivds {
-		rivds[i] = &threadItemViewDetails{
+		rivds[i] = &models.ThreadItemViewDetails{
 			ThreadItemID:  tivd.ThreadItemID,
 			ActorEntityID: tivd.EntityID,
 			ViewTime:      tivd.ViewTime,
@@ -317,32 +318,32 @@ func transformThreadItemViewDetailsToResponse(tivds []*threading.ThreadItemViewD
 	return rivds, nil
 }
 
-func transformStringListSettingToResponse(config *settings.Config, value *settings.Value) *stringListSetting {
-	return &stringListSetting{
+func transformStringListSettingToResponse(config *settings.Config, value *settings.Value) *models.StringListSetting {
+	return &models.StringListSetting{
 		Key:         config.Key,
 		Subkey:      value.Key.Subkey,
 		Title:       config.Title,
 		Description: config.Description,
-		Value: &stringListSettingValue{
+		Value: &models.StringListSettingValue{
 			Values: value.GetStringList().Values,
 		},
 	}
 }
 
-func transformBooleanSettingToResponse(config *settings.Config, value *settings.Value) *booleanSetting {
-	return &booleanSetting{
+func transformBooleanSettingToResponse(config *settings.Config, value *settings.Value) *models.BooleanSetting {
+	return &models.BooleanSetting{
 		Key:         config.Key,
 		Subkey:      value.Key.Subkey,
 		Title:       config.Title,
 		Description: config.Description,
-		Value: &booleanSettingValue{
+		Value: &models.BooleanSettingValue{
 			Value: value.GetBoolean().Value,
 		},
 	}
 }
 
-func transformMultiSelectToResponse(config *settings.Config, value *settings.Value) *selectSetting {
-	ss := &selectSetting{
+func transformMultiSelectToResponse(config *settings.Config, value *settings.Value) *models.SelectSetting {
+	ss := &models.SelectSetting{
 		Key:         config.Key,
 		Subkey:      value.Key.Subkey,
 		Title:       config.Title,
@@ -361,13 +362,13 @@ func transformMultiSelectToResponse(config *settings.Config, value *settings.Val
 		values = value.GetMultiSelect().Items
 	}
 
-	ss.Options = make([]*selectableItem, len(items))
-	ss.Value = &selectableSettingValue{
-		Items: make([]*selectableItemValue, len(values)),
+	ss.Options = make([]*models.SelectableItem, len(items))
+	ss.Value = &models.SelectableSettingValue{
+		Items: make([]*models.SelectableItemValue, len(values)),
 	}
 
 	for i, option := range items {
-		ss.Options[i] = &selectableItem{
+		ss.Options[i] = &models.SelectableItem{
 			ID:            option.ID,
 			Label:         option.Label,
 			AllowFreeText: option.AllowFreeText,
@@ -375,7 +376,7 @@ func transformMultiSelectToResponse(config *settings.Config, value *settings.Val
 	}
 
 	for i, v := range values {
-		ss.Value.Items[i] = &selectableItemValue{
+		ss.Value.Items[i] = &models.SelectableItemValue{
 			ID:   v.ID,
 			Text: v.FreeTextResponse,
 		}
@@ -384,16 +385,16 @@ func transformMultiSelectToResponse(config *settings.Config, value *settings.Val
 	return ss
 }
 
-func transformEntityContactToEndpoint(c *directory.Contact) (*endpoint, error) {
+func transformEntityContactToEndpoint(c *directory.Contact) (*models.Endpoint, error) {
 	var channel string
 	var displayValue string
 	var err error
 	switch c.ContactType {
 	case directory.ContactType_EMAIL:
-		channel = endpointChannelEmail
+		channel = models.EndpointChannelEmail
 		displayValue = c.Value
 	case directory.ContactType_PHONE:
-		channel = endpointChannelSMS
+		channel = models.EndpointChannelSMS
 		displayValue, err = phone.Format(c.Value, phone.Pretty)
 		if err != nil {
 			return nil, errors.Trace(err)
@@ -401,7 +402,7 @@ func transformEntityContactToEndpoint(c *directory.Contact) (*endpoint, error) {
 	default:
 		return nil, fmt.Errorf("unknown contact type %v", c.ContactType)
 	}
-	return &endpoint{
+	return &models.Endpoint{
 		Channel:      channel,
 		ID:           c.Value,
 		DisplayValue: displayValue,

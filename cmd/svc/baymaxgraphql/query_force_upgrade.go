@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/graphql"
@@ -17,7 +19,7 @@ var forceUpgradeStatusType = graphql.NewObject(
 			"upgrade":     &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*forceUpgradeStatus)
+			_, ok := value.(*models.ForceUpgradeStatus)
 			return ok
 		},
 	},
@@ -27,7 +29,7 @@ var forceUpgradeQuery = &graphql.Field{
 	Type: graphql.NewNonNull(forceUpgradeStatusType),
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 
-		sh := spruceHeadersFromContext(p.Context)
+		sh := gqlctx.SpruceHeaders(p.Context)
 
 		// TODO: The logic of whether or not to force upgrade is intentionally left out for now
 		// so that we can add the work if and when we need it. For now just ensuring that we have
@@ -52,14 +54,14 @@ var forceUpgradeQuery = &graphql.Field{
 
 		// Putting a hook in place to test force upgrade
 		if sh.AppVersion.Equals(&encoding.Version{Major: 0, Minor: 0, Patch: 9999}) {
-			return &forceUpgradeStatus{
+			return &models.ForceUpgradeStatus{
 				Upgrade:     true,
 				URL:         "https://www.google.com",
 				UserMessage: "Force upgrade works!",
 			}, nil
 		}
 
-		return &forceUpgradeStatus{
+		return &models.ForceUpgradeStatus{
 			Upgrade: false,
 		}, nil
 	},

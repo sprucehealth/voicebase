@@ -3,6 +3,10 @@ package main
 import (
 	"fmt"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/graphql"
@@ -11,12 +15,12 @@ import (
 )
 
 type provisionPhoneNumberOutput struct {
-	ClientMutationID string        `json:"clientMutationId,omitempty"`
-	Success          bool          `json:"success"`
-	ErrorCode        string        `json:"errorCode,omitempty"`
-	ErrorMessage     string        `json:"errorMessage,omitempty"`
-	PhoneNumber      string        `json:"phoneNumber,omitempty"`
-	Organization     *organization `json:"organization,omitempty"`
+	ClientMutationID string               `json:"clientMutationId,omitempty"`
+	Success          bool                 `json:"success"`
+	ErrorCode        string               `json:"errorCode,omitempty"`
+	ErrorMessage     string               `json:"errorMessage,omitempty"`
+	PhoneNumber      string               `json:"phoneNumber,omitempty"`
+	Organization     *models.Organization `json:"organization,omitempty"`
 }
 
 var provisionPhoneNumberInputType = graphql.NewInputObject(
@@ -77,11 +81,11 @@ var provisionPhoneNumberMutation = &graphql.Field{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(provisionPhoneNumberInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
-		acc := accountFromContext(ctx)
+		acc := gqlctx.Account(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated(ctx)
+			return nil, errors.ErrNotAuthenticated(ctx)
 		}
 
 		input := p.Args["input"].(map[string]interface{})
@@ -95,14 +99,14 @@ var provisionPhoneNumberMutation = &graphql.Field{
 			return nil, fmt.Errorf("areaCode required")
 		}
 
-		entity, err := svc.entityForAccountID(ctx, organizationID, acc.ID)
+		entity, err := ram.EntityForAccountID(ctx, organizationID, acc.ID)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		} else if entity == nil {
 			return nil, fmt.Errorf("No entity found in organization %s", organizationID)
 		}
 
-		res, err := svc.exComms.ProvisionPhoneNumber(ctx, &excomms.ProvisionPhoneNumberRequest{
+		res, err := ram.ProvisionPhoneNumber(ctx, &excomms.ProvisionPhoneNumberRequest{
 			ProvisionFor: organizationID,
 			Number: &excomms.ProvisionPhoneNumberRequest_AreaCode{
 				AreaCode: areaCode,
@@ -116,11 +120,11 @@ var provisionPhoneNumberMutation = &graphql.Field{
 				ErrorMessage:     "No phone number is available for the chosen area code. Please choose another.",
 			}, nil
 		} else if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		// lets go ahead and create a contact for the entity for which the number was provisioned
-		createContactRes, err := svc.directory.CreateContact(ctx, &directory.CreateContactRequest{
+		createContactRes, err := ram.CreateContact(ctx, &directory.CreateContactRequest{
 			EntityID: organizationID,
 			Contact: &directory.Contact{
 				ContactType: directory.ContactType_PHONE,
@@ -136,12 +140,12 @@ var provisionPhoneNumberMutation = &graphql.Field{
 			},
 		})
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		orgRes, err := transformOrganizationToResponse(createContactRes.Entity, entity)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		return &provisionPhoneNumberOutput{

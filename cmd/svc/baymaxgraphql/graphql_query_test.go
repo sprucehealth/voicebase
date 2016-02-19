@@ -3,11 +3,13 @@ package main
 import (
 	"testing"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	ramock "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess/mock"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
-	dirmock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/threading"
-	thmock "github.com/sprucehealth/backend/svc/threading/mock"
 	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
@@ -18,24 +20,16 @@ import (
 func TestNodeQuery(t *testing.T) {
 	nodeField := queryType.Fields()["node"]
 
-	dirC := dirmock.New(t)
-	thC := thmock.New(t)
-	defer dirC.Finish()
-	defer thC.Finish()
-
-	acc := &account{ID: "account_12345"}
+	ra := ramock.New(t)
+	acc := &models.Account{ID: "account_12345"}
 	ctx := context.Background()
-	ctx = ctxWithAccount(ctx, acc)
+	ctx = gqlctx.WithAccount(ctx, acc)
 	p := graphql.ResolveParams{
 		Context: ctx,
 		Info: graphql.ResolveInfo{
 			RootValue: map[string]interface{}{
-				"service": &service{
-					// auth      auth.AuthClient
-					directory: dirC,
-					threading: thC,
-					// exComms   excomms.ExCommsClient
-				},
+				raccess.ParamKey: ra,
+				"service":        &service{},
 			},
 		},
 	}
@@ -46,77 +40,42 @@ func TestNodeQuery(t *testing.T) {
 	p.Args = map[string]interface{}{
 		"id": id,
 	}
-	dirC.Expect(mock.NewExpectation(dirC.LookupEntities,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: id,
+	ra.Expect(mock.NewExpectation(ra.Entity, id, []directory.EntityInformation{
+		directory.EntityInformation_CONTACTS,
+	}, int64(0)).WithReturns(
+		&directory.Entity{
+			Type: directory.EntityType_ORGANIZATION,
+			ID:   id,
+			Info: &directory.EntityInfo{
+				DisplayName: "Org",
 			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 0,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_CONTACTS,
-				},
+		}, nil))
+	ra.Expect(mock.NewExpectation(ra.EntityForAccountID, id, acc.ID).WithReturns(
+		&directory.Entity{
+			Type: directory.EntityType_INTERNAL,
+			ID:   "entity_222",
+			Info: &directory.EntityInfo{
+				DisplayName: "Mem",
 			},
-		},
-	).WithReturns(
-		&directory.LookupEntitiesResponse{
-			Entities: []*directory.Entity{
-				{
-					Type: directory.EntityType_ORGANIZATION,
-					ID:   id,
-					Info: &directory.EntityInfo{
-						DisplayName: "Org",
-					},
-				},
+			Memberships: []*directory.Entity{
+				{ID: id},
 			},
-		},
-		nil))
-	dirC.Expect(mock.NewExpectation(dirC.LookupEntities,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-				ExternalID: acc.ID,
-			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 0,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_MEMBERSHIPS,
-					directory.EntityInformation_CONTACTS,
-				},
-			},
-		},
-	).WithReturns(
-		&directory.LookupEntitiesResponse{
-			Entities: []*directory.Entity{
-				{
-					Type: directory.EntityType_INTERNAL,
-					ID:   "entity_222",
-					Info: &directory.EntityInfo{
-						DisplayName: "Mem",
-					},
-					Memberships: []*directory.Entity{
-						{ID: id},
-					},
-				},
-			},
-		},
-		nil))
+		}, nil))
 	res, err := nodeField.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, &organization{
+	test.Equals(t, &models.Organization{
 		ID:       id,
 		Name:     "Org",
-		Contacts: []*contactInfo{},
-		Entity: &entity{
+		Contacts: []*models.ContactInfo{},
+		Entity: &models.Entity{
 			ID:          "entity_222",
 			IsEditable:  true,
 			DisplayName: "Mem",
-			Contacts:    []*contactInfo{},
+			Contacts:    []*models.ContactInfo{},
 			IsInternal:  true,
 		},
 	}, res)
-	mock.FinishAll(dirC)
+	mock.FinishAll(ra)
 
 	// Entity
 
@@ -124,36 +83,18 @@ func TestNodeQuery(t *testing.T) {
 	p.Args = map[string]interface{}{
 		"id": id,
 	}
-	dirC.Expect(mock.NewExpectation(dirC.LookupEntities,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: id,
-			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 0,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_CONTACTS,
-				},
-			},
+	ra.Expect(mock.NewExpectation(ra.Entity, id, []directory.EntityInformation{
+		directory.EntityInformation_CONTACTS}, int64(0)).WithReturns(&directory.Entity{
+		Type: directory.EntityType_EXTERNAL,
+		ID:   id,
+		Info: &directory.EntityInfo{
+			DisplayName: "Someone",
 		},
-	).WithReturns(
-		&directory.LookupEntitiesResponse{
-			Entities: []*directory.Entity{
-				{
-					Type: directory.EntityType_EXTERNAL,
-					ID:   id,
-					Info: &directory.EntityInfo{
-						DisplayName: "Someone",
-					},
-				},
-			},
-		},
-		nil))
+	}, nil))
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, &entity{ID: id, IsEditable: true, IsInternal: false, DisplayName: "Someone", Contacts: []*contactInfo{}}, res)
-	mock.FinishAll(dirC)
+	test.Equals(t, &models.Entity{ID: id, IsEditable: true, IsInternal: false, DisplayName: "Someone", Contacts: []*models.ContactInfo{}}, res)
+	mock.FinishAll(ra)
 
 	// Thread
 
@@ -161,135 +102,69 @@ func TestNodeQuery(t *testing.T) {
 	p.Args = map[string]interface{}{
 		"id": id,
 	}
-	thC.Expect(mock.NewExpectation(thC.Thread,
-		&threading.ThreadRequest{ThreadID: id},
-	).WithReturns(
-		&threading.ThreadResponse{
-			Thread: &threading.Thread{
-				ID:              id,
-				OrganizationID:  "entity_1",
-				PrimaryEntityID: "entity_2",
+	ra.Expect(mock.NewExpectation(ra.Thread, id, "").WithReturns(&threading.Thread{
+		ID:              id,
+		OrganizationID:  "entity_1",
+		PrimaryEntityID: "entity_2",
+	}, nil))
+	ra.Expect(mock.NewExpectation(ra.Entity, "entity_2", []directory.EntityInformation{
+		directory.EntityInformation_CONTACTS,
+	}, int64(0)).WithReturns(
+		&directory.Entity{
+			Type: directory.EntityType_EXTERNAL,
+			ID:   id,
+			Info: &directory.EntityInfo{
+				DisplayName: "Someone",
 			},
-		},
-		nil))
-	dirC.Expect(mock.NewExpectation(dirC.LookupEntities,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: "entity_2",
+		}, nil))
+	ra.Expect(mock.NewExpectation(ra.EntityForAccountID, "entity_1", acc.ID).WithReturns(
+		&directory.Entity{
+			Type: directory.EntityType_INTERNAL,
+			ID:   "entity_222",
+			Info: &directory.EntityInfo{
+				DisplayName: "Someone",
 			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 0,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_CONTACTS,
-				},
-			},
-		},
-	).WithReturns(
-		&directory.LookupEntitiesResponse{
-			Entities: []*directory.Entity{
+			Memberships: []*directory.Entity{
 				{
-					Type: directory.EntityType_EXTERNAL,
-					ID:   id,
-					Info: &directory.EntityInfo{
-						DisplayName: "Someone",
-					},
+					Type: directory.EntityType_ORGANIZATION,
+					ID:   "entity_1",
 				},
 			},
-		},
-		nil))
-	dirC.Expect(mock.NewExpectation(dirC.LookupEntities,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-				ExternalID: acc.ID,
+		}, nil))
+	ra.Expect(mock.NewExpectation(ra.Thread, id, "entity_222").WithReturns(&threading.Thread{
+		ID:              id,
+		OrganizationID:  "entity_1",
+		PrimaryEntityID: "entity_2",
+	}, nil))
+	ra.Expect(mock.NewExpectation(ra.Entity, "entity_2", []directory.EntityInformation{
+		directory.EntityInformation_CONTACTS,
+	}, int64(0)).WithReturns(
+		&directory.Entity{
+			Type: directory.EntityType_INTERNAL,
+			ID:   "entity_2",
+			Info: &directory.EntityInfo{
+				DisplayName: "Someone",
 			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 0,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_MEMBERSHIPS,
-					directory.EntityInformation_CONTACTS,
-				},
-			},
-		},
-	).WithReturns(
-		&directory.LookupEntitiesResponse{
-			Entities: []*directory.Entity{
+			Memberships: []*directory.Entity{
 				{
-					Type: directory.EntityType_INTERNAL,
-					ID:   "entity_222",
-					Info: &directory.EntityInfo{
-						DisplayName: "Someone",
-					},
-					Memberships: []*directory.Entity{
-						{
-							Type: directory.EntityType_ORGANIZATION,
-							ID:   "entity_1",
-						},
-					},
+					Type: directory.EntityType_ORGANIZATION,
+					ID:   "entity_1",
 				},
 			},
-		},
-		nil))
-	thC.Expect(mock.NewExpectation(thC.Thread,
-		&threading.ThreadRequest{
-			ThreadID:       id,
-			ViewerEntityID: "entity_222",
-		},
-	).WithReturns(
-		&threading.ThreadResponse{
-			Thread: &threading.Thread{
-				ID:              id,
-				OrganizationID:  "entity_1",
-				PrimaryEntityID: "entity_2",
-			},
-		},
-		nil))
-	dirC.Expect(mock.NewExpectation(dirC.LookupEntities,
-		&directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: "entity_2",
-			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 0,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_CONTACTS,
-				},
-			},
-		},
-	).WithReturns(
-		&directory.LookupEntitiesResponse{
-			Entities: []*directory.Entity{
-				{
-					Type: directory.EntityType_INTERNAL,
-					ID:   "entity_2",
-					Info: &directory.EntityInfo{
-						DisplayName: "Someone",
-					},
-					Memberships: []*directory.Entity{
-						{
-							Type: directory.EntityType_ORGANIZATION,
-							ID:   "entity_1",
-						},
-					},
-				},
-			},
-		},
-		nil))
+		}, nil))
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
-	res.(*thread).primaryEntity = nil
-	test.Equals(t, &thread{
+	res.(*models.Thread).PrimaryEntity = nil
+	test.Equals(t, &models.Thread{
 		ID: id,
 		AllowInternalMessages: true,
 		IsDeletable:           true,
 		OrganizationID:        "entity_1",
 		PrimaryEntityID:       "entity_2",
 		Title:                 "Someone",
-		LastPrimaryEntityEndpoints: []*endpoint{},
+		LastPrimaryEntityEndpoints: []*models.Endpoint{},
 	}, res)
-	mock.FinishAll(thC, dirC)
+	mock.FinishAll(ra)
 
 	// Thread item
 
@@ -297,54 +172,48 @@ func TestNodeQuery(t *testing.T) {
 	p.Args = map[string]interface{}{
 		"id": id,
 	}
-	thC.Expect(mock.NewExpectation(thC.ThreadItem,
-		&threading.ThreadItemRequest{ItemID: id},
-	).WithReturns(
-		&threading.ThreadItemResponse{
-			Item: &threading.ThreadItem{
-				ID:            id,
-				Timestamp:     1234,
-				ActorEntityID: "entity_1",
-				Internal:      true,
-				Type:          threading.ThreadItem_MESSAGE,
-				Item: &threading.ThreadItem_Message{
-					Message: &threading.Message{
-						Title:  "abc",
-						Text:   "hello",
-						Status: threading.Message_NORMAL,
-						Source: &threading.Endpoint{
-							ID:      "555-555-5555",
-							Channel: threading.Endpoint_VOICE,
-						},
-						TextRefs: []*threading.Reference{
-							{ID: "e2", Type: threading.Reference_ENTITY},
-						},
-					},
-				},
-			},
-		},
-		nil))
-	res, err = nodeField.Resolve(p)
-	test.OK(t, err)
-	test.Equals(t, &threadItem{
+	ra.Expect(mock.NewExpectation(ra.ThreadItem, id).WithReturns(&threading.ThreadItem{
 		ID:            id,
 		Timestamp:     1234,
 		ActorEntityID: "entity_1",
 		Internal:      true,
-		Data: &message{
+		Type:          threading.ThreadItem_MESSAGE,
+		Item: &threading.ThreadItem_Message{
+			Message: &threading.Message{
+				Title:  "abc",
+				Text:   "hello",
+				Status: threading.Message_NORMAL,
+				Source: &threading.Endpoint{
+					ID:      "555-555-5555",
+					Channel: threading.Endpoint_VOICE,
+				},
+				TextRefs: []*threading.Reference{
+					{ID: "e2", Type: threading.Reference_ENTITY},
+				},
+			},
+		},
+	}, nil))
+	res, err = nodeField.Resolve(p)
+	test.OK(t, err)
+	test.Equals(t, &models.ThreadItem{
+		ID:            id,
+		Timestamp:     1234,
+		ActorEntityID: "entity_1",
+		Internal:      true,
+		Data: &models.Message{
 			ThreadItemID:  id,
 			SummaryMarkup: "abc",
 			TextMarkup:    "hello",
-			Source: &endpoint{
-				Channel: endpointChannelVoice,
+			Source: &models.Endpoint{
+				Channel: models.EndpointChannelVoice,
 				ID:      "555-555-5555",
 			},
-			Refs: []*reference{
+			Refs: []*models.Reference{
 				{ID: "e2", Type: "entity"},
 			},
 		},
 	}, res)
-	mock.FinishAll(thC)
+	mock.FinishAll(ra)
 
 	// Saved query
 
@@ -352,43 +221,28 @@ func TestNodeQuery(t *testing.T) {
 	p.Args = map[string]interface{}{
 		"id": id,
 	}
-	thC.Expect(mock.NewExpectation(thC.SavedQuery,
-		&threading.SavedQueryRequest{SavedQueryID: id},
-	).WithReturns(
-		&threading.SavedQueryResponse{
-			SavedQuery: &threading.SavedQuery{
-				ID:             id,
-				OrganizationID: "entity_1",
-			},
-		},
-		nil))
+	ra.Expect(mock.NewExpectation(ra.SavedQuery, id).WithReturns(&threading.SavedQuery{
+		ID:             id,
+		OrganizationID: "entity_1",
+	}, nil))
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, &savedThreadQuery{ID: id, OrganizationID: "entity_1"}, res)
-	mock.FinishAll(thC)
+	test.Equals(t, &models.SavedThreadQuery{ID: id, OrganizationID: "entity_1"}, res)
+	mock.FinishAll(ra)
 }
 
 func TestSubdomainQuery_Unavailable(t *testing.T) {
 	subdomainField := queryType.Fields()["subdomain"]
 
-	dirC := dirmock.New(t)
-	thC := thmock.New(t)
-	defer dirC.Finish()
-	defer thC.Finish()
-
-	acc := &account{ID: "account:12345"}
+	ra := ramock.New(t)
+	acc := &models.Account{ID: "account:12345"}
 	ctx := context.Background()
-	ctx = ctxWithAccount(ctx, acc)
+	ctx = gqlctx.WithAccount(ctx, acc)
 	p := graphql.ResolveParams{
 		Context: ctx,
 		Info: graphql.ResolveInfo{
 			RootValue: map[string]interface{}{
-				"service": &service{
-					// auth      auth.AuthClient
-					directory: dirC,
-					threading: thC,
-					// exComms   excomms.ExCommsClient
-				},
+				raccess.ParamKey: ra,
 			},
 		},
 	}
@@ -396,11 +250,7 @@ func TestSubdomainQuery_Unavailable(t *testing.T) {
 	p.Args = map[string]interface{}{
 		"value": "mypractice",
 	}
-	dirC.Expect(mock.NewExpectation(dirC.LookupEntityDomain,
-		&directory.LookupEntityDomainRequest{
-			Domain: "mypractice",
-		},
-	).WithReturns(
+	ra.Expect(mock.NewExpectation(ra.EntityDomain, "", "mypractice").WithReturns(
 		&directory.LookupEntityDomainResponse{
 			EntityID: "dkgj",
 			Domain:   "mypractice",
@@ -410,33 +260,24 @@ func TestSubdomainQuery_Unavailable(t *testing.T) {
 
 	res, err := subdomainField.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, &subdomain{
+	test.Equals(t, &models.Subdomain{
 		Available: false,
 	}, res)
-	mock.FinishAll(dirC)
+	mock.FinishAll(ra)
 }
 
 func TestSubdomainQuery_Available(t *testing.T) {
 	subdomainField := queryType.Fields()["subdomain"]
 
-	dirC := dirmock.New(t)
-	thC := thmock.New(t)
-	defer dirC.Finish()
-	defer thC.Finish()
-
-	acc := &account{ID: "account:12345"}
+	ra := ramock.New(t)
+	acc := &models.Account{ID: "account:12345"}
 	ctx := context.Background()
-	ctx = ctxWithAccount(ctx, acc)
+	ctx = gqlctx.WithAccount(ctx, acc)
 	p := graphql.ResolveParams{
 		Context: ctx,
 		Info: graphql.ResolveInfo{
 			RootValue: map[string]interface{}{
-				"service": &service{
-					// auth      auth.AuthClient
-					directory: dirC,
-					threading: thC,
-					// exComms   excomms.ExCommsClient
-				},
+				raccess.ParamKey: ra,
 			},
 		},
 	}
@@ -445,18 +286,14 @@ func TestSubdomainQuery_Available(t *testing.T) {
 	p.Args = map[string]interface{}{
 		"value": "anotherpractice",
 	}
-	dirC.Expect(mock.NewExpectation(dirC.LookupEntityDomain,
-		&directory.LookupEntityDomainRequest{
-			Domain: "anotherpractice",
-		},
-	).WithReturns(
+	ra.Expect(mock.NewExpectation(ra.EntityDomain, "", "anotherpractice").WithReturns(
 		&directory.LookupEntityDomainResponse{},
 		grpc.Errorf(codes.NotFound, "entity_domain not found")),
 	)
 	res, err := subdomainField.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, &subdomain{
+	test.Equals(t, &models.Subdomain{
 		Available: true,
 	}, res)
-	mock.FinishAll(dirC)
+	mock.FinishAll(ra)
 }

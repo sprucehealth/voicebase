@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -19,18 +21,14 @@ func TestCreateAccountMutation(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	var acc *account
-	ctx = ctxWithAccount(ctx, acc)
+	var acc *models.Account
+	ctx = gqlctx.WithAccount(ctx, acc)
 
 	// Verify phone number token
-	g.authC.Expect(mock.NewExpectation(g.authC.VerifiedValue, &auth.VerifiedValueRequest{
-		Token: "validToken",
-	}).WithReturns(&auth.VerifiedValueResponse{
-		Value: "+14155551212",
-	}, nil))
+	g.ra.Expect(mock.NewExpectation(g.ra.VerifiedValue, "validToken").WithReturns("+14155551212", nil))
 
 	// Create account
-	g.authC.Expect(mock.NewExpectation(g.authC.CreateAccount, &auth.CreateAccountRequest{
+	g.ra.Expect(mock.NewExpectation(g.ra.CreateAccount, &auth.CreateAccountRequest{
 		FirstName:   "first",
 		LastName:    "last",
 		Email:       "someone@somewhere.com",
@@ -48,20 +46,18 @@ func TestCreateAccountMutation(t *testing.T) {
 	}, nil))
 
 	// Create organization
-	g.dirC.Expect(mock.NewExpectation(g.dirC.CreateEntity, &directory.CreateEntityRequest{
+	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntity, &directory.CreateEntityRequest{
 		EntityInfo: &directory.EntityInfo{
 			GroupName:   "org",
 			DisplayName: "org",
 		},
 		Type: directory.EntityType_ORGANIZATION,
-	}).WithReturns(&directory.CreateEntityResponse{
-		Entity: &directory.Entity{
-			ID: "e_org",
-		},
+	}).WithReturns(&directory.Entity{
+		ID: "e_org",
 	}, nil))
 
 	// Create internal entity
-	g.dirC.Expect(mock.NewExpectation(g.dirC.CreateEntity, &directory.CreateEntityRequest{
+	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntity, &directory.CreateEntityRequest{
 		EntityInfo: &directory.EntityInfo{
 			FirstName:   "first",
 			LastName:    "last",
@@ -77,14 +73,12 @@ func TestCreateAccountMutation(t *testing.T) {
 				Provisioned: false,
 			},
 		},
-	}).WithReturns(&directory.CreateEntityResponse{
-		Entity: &directory.Entity{
-			ID: "e_int",
-		},
+	}).WithReturns(&directory.Entity{
+		ID: "e_int",
 	}, nil))
 
 	// Create saved query
-	g.thC.Expect(mock.NewExpectation(g.thC.CreateSavedQuery, &threading.CreateSavedQueryRequest{
+	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
 		OrganizationID: "e_org",
 		EntityID:       "e_int",
 		Query:          nil,
@@ -135,8 +129,8 @@ func TestCreateAccountMutation_InvalidName(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	var acc *account
-	ctx = ctxWithAccount(ctx, acc)
+	var acc *models.Account
+	ctx = gqlctx.WithAccount(ctx, acc)
 
 	res := g.query(ctx, `
 		mutation _ ($firstName: String!) {
@@ -176,9 +170,9 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	var acc *account
-	ctx = ctxWithAccount(ctx, acc)
-	ctx = ctxWithSpruceHeaders(ctx, &device.SpruceHeaders{
+	var acc *models.Account
+	ctx = gqlctx.WithAccount(ctx, acc)
+	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
 		DeviceID: "DevID",
 	})
 
@@ -206,14 +200,10 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 	}, nil))
 
 	// Verify phone number token
-	g.authC.Expect(mock.NewExpectation(g.authC.VerifiedValue, &auth.VerifiedValueRequest{
-		Token: "validToken",
-	}).WithReturns(&auth.VerifiedValueResponse{
-		Value: "+14155551212",
-	}, nil))
+	g.ra.Expect(mock.NewExpectation(g.ra.VerifiedValue, "validToken").WithReturns("+14155551212", nil))
 
 	// Create account
-	g.authC.Expect(mock.NewExpectation(g.authC.CreateAccount, &auth.CreateAccountRequest{
+	g.ra.Expect(mock.NewExpectation(g.ra.CreateAccount, &auth.CreateAccountRequest{
 		FirstName:   "first",
 		LastName:    "last",
 		Email:       "someone@somewhere.com",
@@ -231,7 +221,7 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 	}, nil))
 
 	// Create internal entity
-	g.dirC.Expect(mock.NewExpectation(g.dirC.CreateEntity, &directory.CreateEntityRequest{
+	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntity, &directory.CreateEntityRequest{
 		EntityInfo: &directory.EntityInfo{
 			FirstName:   "first",
 			LastName:    "last",
@@ -247,14 +237,12 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 				Provisioned: false,
 			},
 		},
-	}).WithReturns(&directory.CreateEntityResponse{
-		Entity: &directory.Entity{
-			ID: "e_int",
-		},
+	}).WithReturns(&directory.Entity{
+		ID: "e_int",
 	}, nil))
 
 	// Create saved query
-	g.thC.Expect(mock.NewExpectation(g.thC.CreateSavedQuery, &threading.CreateSavedQueryRequest{
+	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
 		OrganizationID: "e_org_inv",
 		EntityID:       "e_int",
 		Query:          nil,

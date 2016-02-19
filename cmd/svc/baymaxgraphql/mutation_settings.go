@@ -3,6 +3,10 @@ package main
 import (
 	"fmt"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/settings"
@@ -133,10 +137,11 @@ var modifySettingMutation = &graphql.Field{
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
-		acc := accountFromContext(ctx)
+		acc := gqlctx.Account(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated(ctx)
+			return nil, errors.ErrNotAuthenticated(ctx)
 		}
 
 		input, _ := p.Args["input"].(map[string]interface{})
@@ -164,7 +169,7 @@ var modifySettingMutation = &graphql.Field{
 			Keys: []string{key},
 		})
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		} else if len(res.Configs) != 1 {
 			return nil, fmt.Errorf("Expected 1 config but got %d", len(res.Configs))
 		}
@@ -174,9 +179,9 @@ var modifySettingMutation = &graphql.Field{
 		prefix := nodePrefix(nodeID)
 		switch prefix {
 		case "account":
-			node, err = lookupAccount(ctx, svc, nodeID)
+			node, err = lookupAccount(ctx, ram, nodeID)
 		case "entity":
-			node, err = lookupEntity(ctx, svc, nodeID)
+			node, err = lookupEntity(ctx, ram, nodeID)
 		default:
 			return nil, fmt.Errorf("nodeID type %s not supported", prefix)
 		}
@@ -187,17 +192,17 @@ var modifySettingMutation = &graphql.Field{
 		for _, po := range config.PossibleOwners {
 			switch po {
 			case settings.OwnerType_ACCOUNT:
-				if _, ok := node.(*account); ok {
+				if _, ok := node.(*models.Account); ok {
 					validOwner = true
 					break
 				}
 			case settings.OwnerType_INTERNAL_ENTITY:
-				if _, ok := node.(*entity); ok {
+				if _, ok := node.(*models.Entity); ok {
 					validOwner = true
 					break
 				}
 			case settings.OwnerType_ORGANIZATION:
-				if _, ok := node.(*organization); ok {
+				if _, ok := node.(*models.Organization); ok {
 					validOwner = true
 					break
 				}
@@ -331,7 +336,7 @@ var modifySettingMutation = &graphql.Field{
 					ErrorMessage:     grpc.ErrorDesc(err),
 				}, nil
 			}
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		var setting interface{}

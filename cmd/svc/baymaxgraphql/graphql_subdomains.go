@@ -1,6 +1,9 @@
 package main
 
-import "github.com/sprucehealth/graphql"
+import (
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/graphql"
+)
 
 var subdomainType = graphql.NewObject(
 	graphql.ObjectConfig{
@@ -9,7 +12,7 @@ var subdomainType = graphql.NewObject(
 			"available": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*subdomain)
+			_, ok := value.(*models.Subdomain)
 			return ok
 		},
 	},

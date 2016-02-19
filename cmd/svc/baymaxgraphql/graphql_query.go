@@ -1,11 +1,14 @@
 package main
 
 import (
-	"errors"
-
-	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 var queryType = graphql.NewObject(
@@ -15,12 +18,12 @@ var queryType = graphql.NewObject(
 			"me": &graphql.Field{
 				Type: graphql.NewNonNull(meType),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					acc := accountFromContext(p.Context)
+					acc := gqlctx.Account(p.Context)
 					if acc == nil {
-						return nil, errNotAuthenticated(p.Context)
+						return nil, errors.ErrNotAuthenticated(p.Context)
 					}
-					cek := clientEncryptionKeyFromContext(p.Context)
-					return &me{Account: acc, ClientEncryptionKey: cek}, nil
+					cek := gqlctx.ClientEncryptionKey(p.Context)
+					return &models.Me{Account: acc, ClientEncryptionKey: cek}, nil
 				},
 			},
 			"node": &graphql.Field{
@@ -30,27 +33,25 @@ var queryType = graphql.NewObject(
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					svc := serviceFromParams(p)
+					ram := raccess.ResourceAccess(p)
 					ctx := p.Context
-					acc := accountFromContext(ctx)
+					acc := gqlctx.Account(ctx)
 					if acc == nil {
-						return nil, errNotAuthenticated(ctx)
+						return nil, errors.ErrNotAuthenticated(ctx)
 					}
 					id := p.Args["id"].(string)
 					prefix := nodePrefix(id)
 					switch prefix {
 					case "entity":
-						return lookupEntity(ctx, svc, id)
+						return lookupEntity(ctx, ram, id)
 					case "account":
-						if id == acc.ID {
-							return acc, nil
-						}
-						return lookupAccount(ctx, svc, id)
+						return lookupAccount(ctx, ram, id)
 					case "sq":
-						return lookupSavedQuery(ctx, svc, id)
+						return lookupSavedQuery(ctx, ram, id)
 					case "t":
-						return lookupThreadWithReadStatus(ctx, svc, acc, id)
+						return lookupThreadWithReadStatus(ctx, ram, acc, id)
 					case "ti":
-						return lookupThreadItem(ctx, svc, id)
+						return lookupThreadItem(ctx, ram, svc.mediaSigner, id)
 					}
 					return nil, errors.New("unknown node type")
 				},
@@ -61,14 +62,14 @@ var queryType = graphql.NewObject(
 					"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					svc := serviceFromParams(p)
+					ram := raccess.ResourceAccess(p)
 					ctx := p.Context
-					acc := accountFromContext(ctx)
+					acc := gqlctx.Account(ctx)
+
 					if acc == nil {
-						return nil, errNotAuthenticated(ctx)
+						return nil, errors.ErrNotAuthenticated(ctx)
 					}
-					id := p.Args["id"].(string)
-					return lookupEntity(ctx, svc, id)
+					return lookupEntity(ctx, ram, p.Args["id"].(string))
 				},
 			},
 			"savedThreadQuery": &graphql.Field{
@@ -77,14 +78,13 @@ var queryType = graphql.NewObject(
 					"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					svc := serviceFromParams(p)
+					ram := raccess.ResourceAccess(p)
 					ctx := p.Context
-					acc := accountFromContext(ctx)
+					acc := gqlctx.Account(ctx)
 					if acc == nil {
-						return nil, errNotAuthenticated(ctx)
+						return nil, errors.ErrNotAuthenticated(ctx)
 					}
-					id := p.Args["id"].(string)
-					return lookupSavedQuery(ctx, svc, id)
+					return lookupSavedQuery(ctx, ram, p.Args["id"].(string))
 				},
 			},
 			"thread": &graphql.Field{
@@ -93,13 +93,13 @@ var queryType = graphql.NewObject(
 					"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					svc := serviceFromParams(p)
+					ram := raccess.ResourceAccess(p)
 					ctx := p.Context
-					acc := accountFromContext(ctx)
+					acc := gqlctx.Account(ctx)
 					if acc == nil {
-						return nil, errNotAuthenticated(ctx)
+						return nil, errors.ErrNotAuthenticated(ctx)
 					}
-					it, err := lookupThreadWithReadStatus(ctx, svc, acc, p.Args["id"].(string))
+					it, err := lookupThreadWithReadStatus(ctx, ram, acc, p.Args["id"].(string))
 					return it, err
 				},
 			},
@@ -109,21 +109,24 @@ var queryType = graphql.NewObject(
 					"value": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					svc := serviceFromParams(p)
+					ram := raccess.ResourceAccess(p)
 					ctx := p.Context
-					acc := accountFromContext(ctx)
+					acc := gqlctx.Account(ctx)
 					domain := p.Args["value"].(string)
 					if acc == nil {
-						return nil, errNotAuthenticated(ctx)
+						return nil, errors.ErrNotAuthenticated(ctx)
 					}
 
-					queriedEntityID, queriedDomain, err := svc.entityDomain(ctx, "", domain)
-					if err != nil {
+					var available bool
+					_, err := ram.EntityDomain(ctx, "", domain)
+					if grpc.Code(err) == codes.NotFound {
+						available = true
+					} else if err != nil {
 						return nil, err
 					}
 
-					return &subdomain{
-						Available: queriedEntityID == "" && queriedDomain == "",
+					return &models.Subdomain{
+						Available: available,
 					}, nil
 				},
 			},
@@ -134,18 +137,16 @@ var queryType = graphql.NewObject(
 )
 
 // TODO: This double read is inefficent/incorrect in the sense that we need the org ID to get the correct entity. We will use this for now until we can encode the organization ID into the thread ID
-func lookupThreadWithReadStatus(ctx context.Context, svc *service, acc *account, id string) (interface{}, error) {
-	th, err := lookupThread(ctx, svc, id, "")
+func lookupThreadWithReadStatus(ctx context.Context, ram raccess.ResourceAccessor, acc *models.Account, id string) (interface{}, error) {
+	th, err := lookupThread(ctx, ram, id, "")
 	if err != nil {
-		return nil, internalError(ctx, err)
+		return nil, errors.InternalError(ctx, err)
 	}
-	ent, err := svc.entityForAccountID(ctx, th.OrganizationID, acc.ID)
-	if err != nil {
-		return nil, internalError(ctx, err)
+	ent, err := ram.EntityForAccountID(ctx, th.OrganizationID, acc.ID)
+	if errors.Type(err) == errors.ErrTypeNotFound {
+		return nil, errors.UserError(ctx, errors.ErrTypeNotAuthorized, "You are not a member of the organzation")
+	} else if err != nil {
+		return nil, err
 	}
-	if ent == nil {
-		golog.Debugf("Account %s not a member of organization %d", acc.ID, th.OrganizationID)
-		return nil, userError(ctx, errTypeNotAuthorized, "You are not a member of the organzation")
-	}
-	return lookupThread(ctx, svc, id, ent.ID)
+	return lookupThread(ctx, ram, id, ent.ID)
 }

@@ -1,16 +1,20 @@
 package main
 
 import (
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/graphql"
 )
 
 type updateContactInfosOutput struct {
-	ClientMutationID string  `json:"clientMutationId,omitempty"`
-	Success          bool    `json:"success"`
-	ErrorCode        string  `json:"errorCode,omitempty"`
-	ErrorMessage     string  `json:"errorMessage,omitempty"`
-	Entity           *entity `json:"entity"`
+	ClientMutationID string         `json:"clientMutationId,omitempty"`
+	Success          bool           `json:"success"`
+	ErrorCode        string         `json:"errorCode,omitempty"`
+	ErrorMessage     string         `json:"errorMessage,omitempty"`
+	Entity           *models.Entity `json:"entity"`
 }
 
 var updateContactInfosInputType = graphql.NewInputObject(graphql.InputObjectConfig{
@@ -46,11 +50,11 @@ var updateContactInfosMutation = &graphql.Field{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(updateContactInfosInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
-		acc := accountFromContext(ctx)
+		acc := gqlctx.Account(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated(ctx)
+			return nil, errors.ErrNotAuthenticated(ctx)
 		}
 
 		input := p.Args["input"].(map[string]interface{})
@@ -60,10 +64,10 @@ var updateContactInfosMutation = &graphql.Field{
 
 		contacts, err := contactListFromInput(contactInfos, false)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
-		resp, err := svc.directory.UpdateContacts(ctx, &directory.UpdateContactsRequest{
+		ent, err := ram.UpdateContacts(ctx, &directory.UpdateContactsRequest{
 			EntityID: entID,
 			Contacts: contacts,
 			RequestedInformation: &directory.RequestedInformation{
@@ -72,12 +76,12 @@ var updateContactInfosMutation = &graphql.Field{
 			},
 		})
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
-		e, err := transformEntityToResponse(resp.Entity)
+		e, err := transformEntityToResponse(ent)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		return &updateContactInfosOutput{

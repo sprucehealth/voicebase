@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
@@ -108,11 +111,11 @@ var callEntityMutation = &graphql.Field{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(callEntityInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
-		acc := accountFromContext(ctx)
+		acc := gqlctx.Account(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated(ctx)
+			return nil, errors.ErrNotAuthenticated(ctx)
 		}
 
 		input := p.Args["input"].(map[string]interface{})
@@ -125,9 +128,12 @@ var callEntityMutation = &graphql.Field{
 			return nil, fmt.Errorf("destination phone number for entity required")
 		}
 
-		calleeEnt, err := svc.entity(ctx, entityID)
+		calleeEnt, err := ram.Entity(ctx, entityID, []directory.EntityInformation{
+			directory.EntityInformation_CONTACTS,
+			directory.EntityInformation_MEMBERSHIPS,
+		}, 0)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 		if calleeEnt == nil || calleeEnt.Type != directory.EntityType_EXTERNAL {
 			return &callEntityOutput{
@@ -171,9 +177,9 @@ var callEntityMutation = &graphql.Field{
 			}, nil
 		}
 
-		callerEnt, err := svc.entityForAccountID(ctx, org.ID, acc.ID)
+		callerEnt, err := ram.EntityForAccountID(ctx, org.ID, acc.ID)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, err
 		}
 		if callerEnt == nil {
 			return &callEntityOutput{
@@ -195,9 +201,9 @@ var callEntityMutation = &graphql.Field{
 		case callEntityTypeReturnPhoneNumber:
 			ireq.CallInitiationType = excomms.InitiatePhoneCallRequest_RETURN_PHONE_NUMBER
 		}
-		ires, err := svc.exComms.InitiatePhoneCall(ctx, ireq)
+		ires, err := ram.InitiatePhoneCall(ctx, ireq)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		return &callEntityOutput{

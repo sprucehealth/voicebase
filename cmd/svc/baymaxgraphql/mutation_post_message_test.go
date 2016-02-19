@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -16,10 +18,10 @@ func TestPostMessage(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &account{
+	acc := &models.Account{
 		ID: "account_12345",
 	}
-	ctx = ctxWithAccount(ctx, acc)
+	ctx = gqlctx.WithAccount(ctx, acc)
 
 	threadID := "t1"
 	itemID := "ti1"
@@ -27,74 +29,43 @@ func TestPostMessage(t *testing.T) {
 	entID := "e1"
 	extEntID := "e2"
 	entPhoneNumber := "+1-555-555-1234"
-	g.thC.Expect(mock.NewExpectation(g.thC.Thread, &threading.ThreadRequest{
-		ThreadID: threadID,
-	}).WithReturns(&threading.ThreadResponse{
-		Thread: &threading.Thread{
-			ID:              threadID,
-			OrganizationID:  orgID,
-			PrimaryEntityID: extEntID,
-		},
+	g.ra.Expect(mock.NewExpectation(g.ra.Thread, threadID, "").WithReturns(&threading.Thread{
+		ID:              threadID,
+		OrganizationID:  orgID,
+		PrimaryEntityID: extEntID,
 	}, nil))
 	// Looking up the account's entity for the org
-	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-			ExternalID: acc.ID,
-		},
-		RequestedInformation: &directory.RequestedInformation{
-			Depth: 0,
-			EntityInformation: []directory.EntityInformation{
-				directory.EntityInformation_MEMBERSHIPS,
-				directory.EntityInformation_CONTACTS,
+	g.ra.Expect(mock.NewExpectation(g.ra.EntityForAccountID, orgID, acc.ID).WithReturns(
+		&directory.Entity{
+			ID:   entID,
+			Type: directory.EntityType_INTERNAL,
+			Info: &directory.EntityInfo{
+				DisplayName: "Schmee",
 			},
-		},
-	}).WithReturns(&directory.LookupEntitiesResponse{
-		Entities: []*directory.Entity{
-			{
-				ID:   entID,
-				Type: directory.EntityType_INTERNAL,
-				Info: &directory.EntityInfo{
-					DisplayName: "Schmee",
-				},
-				Memberships: []*directory.Entity{
-					{ID: orgID, Type: directory.EntityType_ORGANIZATION},
-				},
+			Memberships: []*directory.Entity{
+				{ID: orgID, Type: directory.EntityType_ORGANIZATION},
 			},
-		},
-	}, nil))
+		}, nil))
+
 	// Looking up the primary entity on the thread
-	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-			EntityID: extEntID,
+	g.ra.Expect(mock.NewExpectation(g.ra.Entity, extEntID, []directory.EntityInformation{
+		directory.EntityInformation_CONTACTS,
+	}, int64(0)).WithReturns(&directory.Entity{
+		ID:   extEntID,
+		Type: directory.EntityType_EXTERNAL,
+		Info: &directory.EntityInfo{
+			DisplayName: "Barro",
 		},
-		RequestedInformation: &directory.RequestedInformation{
-			Depth: 0,
-			EntityInformation: []directory.EntityInformation{
-				directory.EntityInformation_CONTACTS,
-			},
-		},
-	}).WithReturns(&directory.LookupEntitiesResponse{
-		Entities: []*directory.Entity{
+		Contacts: []*directory.Contact{
 			{
-				ID:   extEntID,
-				Type: directory.EntityType_EXTERNAL,
-				Info: &directory.EntityInfo{
-					DisplayName: "Barro",
-				},
-				Contacts: []*directory.Contact{
-					{
-						ContactType: directory.ContactType_PHONE,
-						Value:       entPhoneNumber,
-					},
-				},
+				ContactType: directory.ContactType_PHONE,
+				Value:       entPhoneNumber,
 			},
 		},
 	}, nil))
 	// Posting the message
 	now := uint64(123456789)
-	g.thC.Expect(mock.NewExpectation(g.thC.Thread, &threading.PostMessageRequest{
+	g.ra.Expect(mock.NewExpectation(g.ra.PostMessage, &threading.PostMessageRequest{
 		ThreadID:     threadID,
 		UUID:         "abc",
 		FromEntityID: entID,
@@ -239,78 +210,46 @@ func TestPostMessageDestinationNotContactOfPrimary(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &account{
+	acc := &models.Account{
 		ID: "account_12345",
 	}
-	ctx = ctxWithAccount(ctx, acc)
+	ctx = gqlctx.WithAccount(ctx, acc)
 
 	threadID := "t1"
 	orgID := "o1"
 	entID := "e1"
 	extEntID := "e2"
 	entPhoneNumber := "+1-555-555-1234"
-	g.thC.Expect(mock.NewExpectation(g.thC.Thread, &threading.ThreadRequest{
-		ThreadID: threadID,
-	}).WithReturns(&threading.ThreadResponse{
-		Thread: &threading.Thread{
-			ID:              threadID,
-			OrganizationID:  orgID,
-			PrimaryEntityID: extEntID,
-		},
+	g.ra.Expect(mock.NewExpectation(g.ra.Thread, threadID, "").WithReturns(&threading.Thread{
+		ID:              threadID,
+		OrganizationID:  orgID,
+		PrimaryEntityID: extEntID,
 	}, nil))
 	// Looking up the account's entity for the org
-	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-			ExternalID: acc.ID,
-		},
-		RequestedInformation: &directory.RequestedInformation{
-			Depth: 0,
-			EntityInformation: []directory.EntityInformation{
-				directory.EntityInformation_MEMBERSHIPS,
-				directory.EntityInformation_CONTACTS,
+	g.ra.Expect(mock.NewExpectation(g.ra.EntityForAccountID, orgID, acc.ID).WithReturns(
+		&directory.Entity{
+			ID:   entID,
+			Type: directory.EntityType_INTERNAL,
+			Info: &directory.EntityInfo{
+				DisplayName: "Schmee",
 			},
-		},
-	}).WithReturns(&directory.LookupEntitiesResponse{
-		Entities: []*directory.Entity{
-			{
-				ID:   entID,
-				Type: directory.EntityType_INTERNAL,
-				Info: &directory.EntityInfo{
-					DisplayName: "Schmee",
-				},
-				Memberships: []*directory.Entity{
-					{ID: orgID, Type: directory.EntityType_ORGANIZATION},
-				},
+			Memberships: []*directory.Entity{
+				{ID: orgID, Type: directory.EntityType_ORGANIZATION},
 			},
-		},
-	}, nil))
+		}, nil))
 	// Looking up the primary entity on the thread
-	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-			EntityID: extEntID,
+	g.ra.Expect(mock.NewExpectation(g.ra.Entity, extEntID, []directory.EntityInformation{
+		directory.EntityInformation_CONTACTS,
+	}, int64(0)).WithReturns(&directory.Entity{
+		ID:   extEntID,
+		Type: directory.EntityType_EXTERNAL,
+		Info: &directory.EntityInfo{
+			DisplayName: "Barro",
 		},
-		RequestedInformation: &directory.RequestedInformation{
-			Depth: 0,
-			EntityInformation: []directory.EntityInformation{
-				directory.EntityInformation_CONTACTS,
-			},
-		},
-	}).WithReturns(&directory.LookupEntitiesResponse{
-		Entities: []*directory.Entity{
+		Contacts: []*directory.Contact{
 			{
-				ID:   extEntID,
-				Type: directory.EntityType_EXTERNAL,
-				Info: &directory.EntityInfo{
-					DisplayName: "Barro",
-				},
-				Contacts: []*directory.Contact{
-					{
-						ContactType: directory.ContactType_PHONE,
-						Value:       entPhoneNumber,
-					},
-				},
+				ContactType: directory.ContactType_PHONE,
+				Value:       entPhoneNumber,
 			},
 		},
 	}, nil))

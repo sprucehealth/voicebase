@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -16,58 +18,36 @@ func TestDeleteThread(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &account{
+	acc := &models.Account{
 		ID: "account_12345",
 	}
-	ctx = ctxWithAccount(ctx, acc)
+	ctx = gqlctx.WithAccount(ctx, acc)
 
 	threadID := "t1"
 	orgID := "o1"
 	entID := "e1"
 
 	// Fetch thread
-	g.thC.Expect(mock.NewExpectation(g.thC.Thread, &threading.ThreadRequest{
-		ThreadID: threadID,
-	}).WithReturns(&threading.ThreadResponse{
-		Thread: &threading.Thread{
-			ID:             threadID,
-			OrganizationID: orgID,
-		},
+	g.ra.Expect(mock.NewExpectation(g.ra.Thread, threadID, "").WithReturns(&threading.Thread{
+		ID:             threadID,
+		OrganizationID: orgID,
 	}, nil))
 
 	// Looking up the account's entity for the org
-	g.dirC.Expect(mock.NewExpectation(g.dirC.LookupEntities, &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_EXTERNAL_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_ExternalID{
-			ExternalID: acc.ID,
-		},
-		RequestedInformation: &directory.RequestedInformation{
-			Depth: 0,
-			EntityInformation: []directory.EntityInformation{
-				directory.EntityInformation_MEMBERSHIPS,
-				directory.EntityInformation_CONTACTS,
+	g.ra.Expect(mock.NewExpectation(g.ra.EntityForAccountID, orgID, acc.ID).WithReturns(
+		&directory.Entity{
+			ID:   entID,
+			Type: directory.EntityType_INTERNAL,
+			Info: &directory.EntityInfo{
+				DisplayName: "Schmee",
 			},
-		},
-	}).WithReturns(&directory.LookupEntitiesResponse{
-		Entities: []*directory.Entity{
-			{
-				ID:   entID,
-				Type: directory.EntityType_INTERNAL,
-				Info: &directory.EntityInfo{
-					DisplayName: "Schmee",
-				},
-				Memberships: []*directory.Entity{
-					{ID: orgID, Type: directory.EntityType_ORGANIZATION},
-				},
+			Memberships: []*directory.Entity{
+				{ID: orgID, Type: directory.EntityType_ORGANIZATION},
 			},
-		},
-	}, nil))
+		}, nil))
 
 	// Delete thread
-	g.thC.Expect(mock.NewExpectation(g.thC.DeleteThread, &threading.DeleteThreadRequest{
-		ThreadID:      threadID,
-		ActorEntityID: entID,
-	}).WithReturns(&threading.DeleteThreadResponse{}, nil))
+	g.ra.Expect(mock.NewExpectation(g.ra.DeleteThread, threadID, entID).WithReturns(nil))
 
 	res := g.query(ctx, `
 		mutation _ ($threadID: ID!) {

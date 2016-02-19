@@ -3,6 +3,8 @@ package main
 import (
 	"testing"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/encoding"
@@ -13,7 +15,7 @@ import (
 
 func TestForceUpgradeStatus(t *testing.T) {
 	ctx := context.Background()
-	ctx = ctxWithSpruceHeaders(ctx, &device.SpruceHeaders{
+	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
 		AppType:         "baymax",
 		AppEnvironment:  "dev",
 		AppVersion:      &encoding.Version{Major: 1},
@@ -33,14 +35,14 @@ func TestForceUpgradeStatus(t *testing.T) {
 
 	res, err := forceUpgradeQuery.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, &forceUpgradeStatus{
+	test.Equals(t, &models.ForceUpgradeStatus{
 		Upgrade: false,
 	}, res)
 }
 
 func TestForceUpgradeStatus_Hook(t *testing.T) {
 	ctx := context.Background()
-	ctx = ctxWithSpruceHeaders(ctx, &device.SpruceHeaders{
+	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
 		AppType:         "baymax",
 		AppEnvironment:  "dev",
 		AppVersion:      &encoding.Version{Patch: 9999},
@@ -60,7 +62,7 @@ func TestForceUpgradeStatus_Hook(t *testing.T) {
 
 	res, err := forceUpgradeQuery.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, &forceUpgradeStatus{
+	test.Equals(t, &models.ForceUpgradeStatus{
 		Upgrade:     true,
 		UserMessage: "Force upgrade works!",
 		URL:         "https://www.google.com",

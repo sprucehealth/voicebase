@@ -1,4 +1,4 @@
-package main
+package models
 
 import (
 	"github.com/sprucehealth/backend/svc/directory"
@@ -10,39 +10,39 @@ Notes about GraphQL package compatibility:
 */
 
 const (
-	organizationIDType     = "organization"
-	savedThreadQueryIDType = "saved_thread_query"
-	threadIDType           = "thread"
+	OrganizationIDType     = "organization"
+	SavedThreadQueryIDType = "saved_thread_query"
+	ThreadIDType           = "thread"
 )
 
 const (
-	messageStatusNormal  = "NORMAL"
-	messageStatusDeleted = "DELETED"
+	MessageStatusNormal  = "NORMAL"
+	MessageStatusDeleted = "DELETED"
 )
 
 const (
-	contactTypeApp   = "APP"
-	contactTypePhone = "PHONE"
-	contactTypeEmail = "EMAIL"
+	ContactTypeApp   = "APP"
+	ContactTypePhone = "PHONE"
+	ContactTypeEmail = "EMAIL"
 )
 
 const (
-	endpointChannelApp   = "APP"
-	endpointChannelSMS   = "SMS"
-	endpointChannelVoice = "VOICE"
-	endpointChannelEmail = "EMAIL"
+	EndpointChannelApp   = "APP"
+	EndpointChannelSMS   = "SMS"
+	EndpointChannelVoice = "VOICE"
+	EndpointChannelEmail = "EMAIL"
 )
 
-type me struct {
-	Account             *account `json:"account"`
+type Me struct {
+	Account             *Account `json:"account"`
 	ClientEncryptionKey string   `json:"clientEncryptionKey"`
 }
 
-type account struct {
+type Account struct {
 	ID string `json:"id"`
 }
 
-type entity struct {
+type Entity struct {
 	ID            string         `json:"id"`
 	IsEditable    bool           `json:"isEditable"`
 	FirstName     string         `json:"firstName"`
@@ -53,13 +53,13 @@ type entity struct {
 	ShortTitle    string         `json:"shortTitle"`
 	LongTitle     string         `json:"longTitle"`
 	Note          string         `json:"note"`
-	Contacts      []*contactInfo `json:"contacts"`
+	Contacts      []*ContactInfo `json:"contacts"`
 	IsInternal    bool           `json:"isInternal"`
 
-	avatar *image
+	Avatar *Image
 }
 
-type contactInfo struct {
+type ContactInfo struct {
 	ID           string `json:"id"`
 	Type         string `json:"type"`
 	Value        string `json:"value"`
@@ -68,59 +68,59 @@ type contactInfo struct {
 	Label        string `json:"label"`
 }
 
-type endpoint struct {
+type Endpoint struct {
 	Channel      string `json:"channel"`
 	ID           string `json:"id"`
 	DisplayValue string `json:"displayValue"`
 }
 
 const (
-	entityRef = "entity"
+	EntityRef = "entity"
 )
 
-type reference struct {
+type Reference struct {
 	Type string `json:"type"`
 	ID   string `json:"id"`
 }
 
-type message struct {
+type Message struct {
 	ThreadItemID    string
 	SummaryMarkup   string        `json:"summaryMarkup"`
 	TextMarkup      string        `json:"textMarkup"`
 	Status          string        `json:"status"`
-	Source          *endpoint     `json:"source"`
-	Destinations    []*endpoint   `json:"destinations,omitempty"`
-	Attachments     []*attachment `json:"attachments,omitempty"`
+	Source          *Endpoint     `json:"source"`
+	Destinations    []*Endpoint   `json:"destinations,omitempty"`
+	Attachments     []*Attachment `json:"attachments,omitempty"`
 	EditorEntityID  string        `json:"editorEntityID,omitempty"`
 	EditedTimestamp uint64        `json:"editedTimestamp,omitempty"`
-	Refs            []*reference  `json:"refs,omitempty"`
+	Refs            []*Reference  `json:"refs,omitempty"`
 }
 
-type attachment struct {
+type Attachment struct {
 	Title string      `json:"title"`
 	URL   string      `json:"url"`
 	Data  interface{} `json:"data"`
 }
 
-type imageAttachment struct {
+type ImageAttachment struct {
 	Mimetype string `json:"mimetype"`
 	URL      string `json:"url"`
-	Image    *image `json:"image"`
+	Image    *Image `json:"image"`
 }
 
-type image struct {
+type Image struct {
 	URL    string `json:"url"`
 	Width  int    `json:"width"`
 	Height int    `json:"height"`
 }
 
-type audioAttachment struct {
+type AudioAttachment struct {
 	Mimetype          string  `json:"mimetype"`
 	URL               string  `json:"url"`
 	DurationInSeconds float64 `json:"durationInSeconds"`
 }
 
-type thread struct {
+type Thread struct {
 	ID                         string `json:"id"`
 	OrganizationID             string `json:"organizationID"`
 	PrimaryEntityID            string `json:"primaryEntityID"`
@@ -130,13 +130,13 @@ type thread struct {
 	Unread                     bool   `json:"unread"`
 	AllowInternalMessages      bool   `json:"allowInternalMessages"`
 	IsDeletable                bool   `json:"isDeletable"`
-	LastPrimaryEntityEndpoints []*endpoint
+	LastPrimaryEntityEndpoints []*Endpoint
 	EmptyStateTextMarkup       string `json:"emptyStateTextMarkup,omitempty"`
 
-	primaryEntity *directory.Entity
+	PrimaryEntity *directory.Entity
 }
 
-type threadItem struct {
+type ThreadItem struct {
 	ID             string      `json:"id"`
 	UUID           string      `json:"uuid,omitempty"`
 	Timestamp      uint64      `json:"timestamp"`
@@ -148,92 +148,92 @@ type threadItem struct {
 	ThreadID       string      `json:"threadID"`
 }
 
-type threadItemViewDetails struct {
+type ThreadItemViewDetails struct {
 	ThreadItemID  string `json:"threadItemID"`
 	ActorEntityID string `json:"actorEntityID"`
 	ViewTime      uint64 `json:"viewTime"`
 }
 
-type serializedEntityContact struct {
+type SerializedEntityContact struct {
 	SerializedContact string `json:"serializedContact"`
 }
 
-type savedThreadQuery struct {
+type SavedThreadQuery struct {
 	ID             string `json:"id"`
 	OrganizationID string `json:"id"`
 }
 
-type organization struct {
+type Organization struct {
 	ID       string         `json:"id"`
-	Entity   *entity        `json:"entity"`
+	Entity   *Entity        `json:"entity"`
 	Name     string         `json:"name"`
-	Contacts []*contactInfo `json:"contacts"`
+	Contacts []*ContactInfo `json:"contacts"`
 }
 
-type subdomain struct {
+type Subdomain struct {
 	Available bool `json:"available"`
 }
 
 // settings
 
-type stringListSetting struct {
+type StringListSetting struct {
 	Key         string                  `json:"key"`
 	Subkey      string                  `json:"subkey,omitempty"`
 	Title       string                  `json:"title"`
 	Description string                  `json:"description"`
-	Value       *stringListSettingValue `json:"value"`
+	Value       *StringListSettingValue `json:"value"`
 }
 
-type booleanSetting struct {
+type BooleanSetting struct {
 	Key         string               `json:"key"`
 	Subkey      string               `json:"subkey,omitempty"`
 	Title       string               `json:"title"`
 	Description string               `json:"description"`
-	Value       *booleanSettingValue `json:"value"`
+	Value       *BooleanSettingValue `json:"value"`
 }
 
-type selectableItem struct {
+type SelectableItem struct {
 	ID            string `json:"id"`
 	Label         string `json:"label"`
 	AllowFreeText bool   `json:"allowFreeText"`
 }
 
-type selectSetting struct {
+type SelectSetting struct {
 	Key         string                  `json:"key"`
 	Subkey      string                  `json:"subkey,omitempty"`
 	Title       string                  `json:"title"`
 	Description string                  `json:"description"`
-	Options     []*selectableItem       `json:"options"`
-	Value       *selectableSettingValue `json:"value"`
+	Options     []*SelectableItem       `json:"options"`
+	Value       *SelectableSettingValue `json:"value"`
 }
 
 // setting values
 
-type stringListSettingValue struct {
+type StringListSettingValue struct {
 	Values []string `json:"list"`
 	Key    string   `json:"key"`
 	Subkey string   `json:"subkey,omitempty"`
 }
 
-type booleanSettingValue struct {
+type BooleanSettingValue struct {
 	Value  bool   `json:"set"`
 	Key    string `json:"key"`
 	Subkey string `json:"subkey,omitempty"`
 }
 
-type selectableItemValue struct {
+type SelectableItemValue struct {
 	ID   string `json:"id"`
 	Text string `json:"text"`
 }
-type selectableSettingValue struct {
-	Items  []*selectableItemValue `json:"items"`
+type SelectableSettingValue struct {
+	Items  []*SelectableItemValue `json:"items"`
 	Key    string                 `json:"key"`
 	Subkey string                 `json:"subkey,omitempty"`
 }
 
 // force upgrade status
 
-type forceUpgradeStatus struct {
+type ForceUpgradeStatus struct {
 	URL         string `json:"url"`
 	Upgrade     bool   `json:"upgrade"`
 	UserMessage string `json:"userMessage"`

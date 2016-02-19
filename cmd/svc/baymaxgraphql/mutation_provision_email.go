@@ -1,9 +1,12 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
@@ -15,12 +18,12 @@ import (
 // provision email
 
 type provisionEmailOutput struct {
-	ClientMutationID string        `json:"clientMutationId,omitempty"`
-	Success          bool          `json:"success"`
-	ErrorCode        string        `json:"errorCode,omitempty"`
-	ErrorMessage     string        `json:"errorMessage,omitempty"`
-	Organization     *organization `json:"organization"`
-	Entity           *entity       `json:"entity"`
+	ClientMutationID string               `json:"clientMutationId,omitempty"`
+	Success          bool                 `json:"success"`
+	ErrorCode        string               `json:"errorCode,omitempty"`
+	ErrorMessage     string               `json:"errorMessage,omitempty"`
+	Organization     *models.Organization `json:"organization"`
+	Entity           *models.Entity       `json:"entity"`
 }
 
 var provisionEmailInputType = graphql.NewInputObject(
@@ -91,10 +94,11 @@ var provisionEmailMutation = &graphql.Field{
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
-		acc := accountFromContext(ctx)
+		acc := gqlctx.Account(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated(ctx)
+			return nil, errors.ErrNotAuthenticated(ctx)
 		}
 
 		input := p.Args["input"].(map[string]interface{})
@@ -109,12 +113,13 @@ var provisionEmailMutation = &graphql.Field{
 		var orgEntity *directory.Entity
 		var err error
 		if entityID != "" {
-			ent, err = svc.entity(ctx, entityID,
+			ent, err = ram.Entity(ctx, entityID, []directory.EntityInformation{
 				directory.EntityInformation_CONTACTS,
 				directory.EntityInformation_MEMBERSHIPS,
-				directory.EntityInformation_EXTERNAL_IDS)
+				directory.EntityInformation_EXTERNAL_IDS,
+			}, 0)
 			if err != nil {
-				return nil, internalError(ctx, err)
+				return nil, err
 			} else if ent.Type != directory.EntityType_INTERNAL {
 				return nil, fmt.Errorf("email can only be provisioned for a provider")
 			}
@@ -141,15 +146,16 @@ var provisionEmailMutation = &graphql.Field{
 			}
 
 		} else if organizationID != "" {
-			orgEntity, err = svc.entity(ctx, organizationID)
+			orgEntity, err = ram.Entity(ctx, organizationID, []directory.EntityInformation{
+				directory.EntityInformation_MEMBERSHIPS,
+				directory.EntityInformation_CONTACTS,
+			}, 0)
 			if err != nil {
-				return nil, internalError(ctx, err)
+				return nil, errors.InternalError(ctx, err)
 			}
-			ent, err = svc.entityForAccountID(ctx, organizationID, acc.ID)
+			ent, err = ram.EntityForAccountID(ctx, organizationID, acc.ID)
 			if err != nil {
-				return nil, internalError(ctx, err)
-			} else if ent == nil {
-				return nil, fmt.Errorf("current user does not belong to the organization %s", organizationID)
+				return nil, err
 			}
 		}
 
@@ -158,26 +164,21 @@ var provisionEmailMutation = &graphql.Field{
 		}
 
 		if organizationID != "" {
-			_, domain, err := svc.entityDomain(ctx, organizationID, "")
-			if err != nil {
+			res, err := ram.EntityDomain(ctx, organizationID, "")
+			if grpc.Code(err) == codes.NotFound {
+				if err := ram.CreateEntityDomain(ctx, organizationID, subdomain); err != nil {
+					return nil, err
+				}
+			} else if err != nil {
 				return nil, err
-			} else if domain != "" && domain != subdomain {
-				return &provisionEmailOutput{
-					ClientMutationID: mutationID,
-					Success:          false,
-					ErrorCode:        provisionEmailErrorCodeSubdomainInUse,
-					ErrorMessage:     "The entered subdomain is already in use. Please pick another.",
-				}, nil
-			}
-
-			// lets go ahead and create domain for organization
-			if domain == "" {
-				_, err := svc.directory.CreateEntityDomain(ctx, &directory.CreateEntityDomainRequest{
-					EntityID: organizationID,
-					Domain:   subdomain,
-				})
-				if err != nil {
-					return nil, internalError(ctx, err)
+			} else {
+				if res.Domain != "" && res.Domain != subdomain {
+					return &provisionEmailOutput{
+						ClientMutationID: mutationID,
+						Success:          false,
+						ErrorCode:        provisionEmailErrorCodeSubdomainInUse,
+						ErrorMessage:     "The entered subdomain is already in use. Please pick another.",
+					}, nil
 				}
 			}
 		} else {
@@ -185,12 +186,14 @@ var provisionEmailMutation = &graphql.Field{
 				return nil, fmt.Errorf("Cannot provision email for external entity")
 			}
 
-			_, domain, err := svc.entityDomain(ctx, orgEntity.ID, "")
-			if err != nil {
-				return nil, err
-			} else if domain == "" {
+			res, err := ram.EntityDomain(ctx, orgEntity.ID, "")
+			if grpc.Code(err) == codes.NotFound || res.Domain == "" {
 				return nil, errors.New("no domain picked for organization yet")
-			} else if domain != subdomain {
+			} else if err != nil {
+				return nil, err
+			}
+
+			if res.Domain != subdomain {
 				return &provisionEmailOutput{
 					ClientMutationID: mutationID,
 					Success:          false,
@@ -206,7 +209,7 @@ var provisionEmailMutation = &graphql.Field{
 		}
 
 		// lets go ahead and provision the email for the entity specified
-		_, err = svc.exComms.ProvisionEmailAddress(ctx, &excomms.ProvisionEmailAddressRequest{
+		_, err = ram.ProvisionEmailAddress(ctx, &excomms.ProvisionEmailAddressRequest{
 			EmailAddress: emailAddress,
 			ProvisionFor: provisionFor,
 		})
@@ -219,11 +222,11 @@ var provisionEmailMutation = &graphql.Field{
 					ErrorMessage:     "The entered email is already in use. Please pick another.",
 				}, nil
 			}
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		// lets go ahead and create the provisioned email address as a contact for the entity
-		createContactRes, err := svc.directory.CreateContact(ctx, &directory.CreateContactRequest{
+		createContactRes, err := ram.CreateContact(ctx, &directory.CreateContactRequest{
 			EntityID: provisionFor,
 			Contact: &directory.Contact{
 				ContactType: directory.ContactType_EMAIL,
@@ -239,20 +242,20 @@ var provisionEmailMutation = &graphql.Field{
 			},
 		})
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
-		var e *entity
-		var o *organization
+		var e *models.Entity
+		var o *models.Organization
 		if organizationID != "" {
 			o, err = transformOrganizationToResponse(createContactRes.Entity, ent)
 			if err != nil {
-				return nil, internalError(ctx, err)
+				return nil, errors.InternalError(ctx, err)
 			}
 		} else {
 			e, err = transformEntityToResponse(createContactRes.Entity)
 			if err != nil {
-				return nil, internalError(ctx, err)
+				return nil, errors.InternalError(ctx, err)
 			}
 		}
 

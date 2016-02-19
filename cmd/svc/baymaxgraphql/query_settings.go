@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/phone"
@@ -36,7 +39,7 @@ var stringListType = graphql.NewObject(
 			"value":       &graphql.Field{Type: graphql.NewNonNull(settingValueInterfaceType)},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*stringListSetting)
+			_, ok := value.(*models.StringListSetting)
 			return ok
 		},
 	},
@@ -56,7 +59,7 @@ var booleanSettingType = graphql.NewObject(
 			"value":       &graphql.Field{Type: graphql.NewNonNull(settingValueInterfaceType)},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*booleanSetting)
+			_, ok := value.(*models.BooleanSetting)
 			return ok
 		},
 	},
@@ -71,7 +74,7 @@ var selectableItemType = graphql.NewObject(
 			"allowFreeText": &graphql.Field{Type: graphql.Boolean},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*selectableItem)
+			_, ok := value.(*models.SelectableItem)
 			return ok
 		},
 	},
@@ -92,7 +95,7 @@ var selectSettingType = graphql.NewObject(
 			"value":       &graphql.Field{Type: graphql.NewNonNull(settingValueInterfaceType)},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*selectSetting)
+			_, ok := value.(*models.SelectSetting)
 			return ok
 		},
 	},
@@ -119,7 +122,7 @@ var stringListSettingValueType = graphql.NewObject(
 			"list":   &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*stringListSettingValue)
+			_, ok := value.(*models.StringListSettingValue)
 			return ok
 		},
 	},
@@ -137,7 +140,7 @@ var booleanSettingValueType = graphql.NewObject(
 			"set":    &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*booleanSettingValue)
+			_, ok := value.(*models.BooleanSettingValue)
 			return ok
 		},
 	},
@@ -151,7 +154,7 @@ var selectableItemValueType = graphql.NewObject(
 			"text": &graphql.Field{Type: graphql.String},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*selectableItemValue)
+			_, ok := value.(*models.SelectableItemValue)
 			return ok
 		},
 	},
@@ -169,7 +172,7 @@ var selectableSettingValueType = graphql.NewObject(
 			"items":  &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(selectableItemValueType))},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*selectableSettingValue)
+			_, ok := value.(*models.SelectableSettingValue)
 			return ok
 		},
 	},
@@ -185,9 +188,9 @@ var settingsQuery = &graphql.Field{
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
 		ctx := p.Context
-		acc := accountFromContext(ctx)
+		acc := gqlctx.Account(ctx)
 		if acc == nil {
-			return nil, errNotAuthenticated(ctx)
+			return nil, errors.ErrNotAuthenticated(ctx)
 		}
 
 		key, _ := p.Args["key"].(string)
@@ -198,7 +201,7 @@ var settingsQuery = &graphql.Field{
 		if isForwardingList {
 			pn, err := phone.Format(subkey, phone.E164)
 			if err != nil {
-				return nil, internalError(ctx, err)
+				return nil, errors.InternalError(ctx, err)
 			}
 			subkey = pn
 		}
@@ -243,7 +246,7 @@ var settingsQuery = &graphql.Field{
 		})
 
 		if err := par.Wait(); err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		var setting interface{}

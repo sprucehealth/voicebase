@@ -5,8 +5,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/conc"
-	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
@@ -19,13 +22,13 @@ import (
 )
 
 type createAccountOutput struct {
-	ClientMutationID    string   `json:"clientMutationId,omitempty"`
-	Success             bool     `json:"success"`
-	ErrorCode           string   `json:"errorCode,omitempty"`
-	ErrorMessage        string   `json:"errorMessage,omitempty"`
-	Token               string   `json:"token,omitempty"`
-	Account             *account `json:"account,omitempty"`
-	ClientEncryptionKey string   `json:"clientEncryptionKey,omitempty"`
+	ClientMutationID    string          `json:"clientMutationId,omitempty"`
+	Success             bool            `json:"success"`
+	ErrorCode           string          `json:"errorCode,omitempty"`
+	ErrorMessage        string          `json:"errorMessage,omitempty"`
+	Token               string          `json:"token,omitempty"`
+	Account             *models.Account `json:"account,omitempty"`
+	ClientEncryptionKey string          `json:"clientEncryptionKey,omitempty"`
 }
 
 var createAccountInputType = graphql.NewInputObject(graphql.InputObjectConfig{
@@ -113,17 +116,18 @@ var createAccountMutation = &graphql.Field{
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 		input := p.Args["input"].(map[string]interface{})
 		mutationID, _ := input["clientMutationId"].(string)
 
 		inv, err := svc.inviteInfo(ctx)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 		// Sanity check to make sure we fail early in case we forgot to handle all new invite types
 		if inv != nil && inv.Type != invite.LookupInviteResponse_COLLEAGUE {
-			return nil, internalError(ctx, fmt.Errorf("unknown invite type %s", inv.Type.String()))
+			return nil, errors.InternalError(ctx, fmt.Errorf("unknown invite type %s", inv.Type.String()))
 		}
 
 		req := &auth.CreateAccountRequest{
@@ -141,7 +145,7 @@ var createAccountMutation = &graphql.Field{
 		}
 		entityInfo, err := entityInfoFromInput(input)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		req.FirstName = strings.TrimSpace(entityInfo.FirstName)
@@ -176,17 +180,15 @@ var createAccountMutation = &graphql.Field{
 				}, nil
 			}
 		}
-		respVerifiedValue, err := svc.auth.VerifiedValue(ctx, &auth.VerifiedValueRequest{
-			Token: input["phoneVerificationToken"].(string),
-		})
+		verifiedValue, err := ram.VerifiedValue(ctx, input["phoneVerificationToken"].(string))
 		if grpc.Code(err) == auth.ValueNotYetVerified {
 			return nil, errors.New("The phone number for the provided token has not yet been verified.")
 		} else if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, err
 		}
-		vpn, err := phone.ParseNumber(respVerifiedValue.Value)
+		vpn, err := phone.ParseNumber(verifiedValue)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 		pn, err := phone.ParseNumber(input["phoneNumber"].(string))
 		if err != nil {
@@ -202,7 +204,7 @@ var createAccountMutation = &graphql.Field{
 			golog.Debugf("The provided phone number %q does not match the number validated by the provided token %s", pn.String(), vpn.String())
 			return nil, fmt.Errorf("The provided phone number %q does not match the number validated by the provided token", req.PhoneNumber)
 		}
-		res, err := svc.auth.CreateAccount(ctx, req)
+		res, err := ram.CreateAccount(ctx, req)
 		if err != nil {
 			switch grpc.Code(err) {
 			case auth.DuplicateEmail:
@@ -227,7 +229,7 @@ var createAccountMutation = &graphql.Field{
 					ErrorMessage:     "Please enter a valid phone number.",
 				}, nil
 			}
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
 		accountID := res.Account.ID
 
@@ -236,7 +238,7 @@ var createAccountMutation = &graphql.Field{
 		{
 			if inv == nil {
 				// Create organization
-				res, err := svc.directory.CreateEntity(ctx, &directory.CreateEntityRequest{
+				ent, err := ram.CreateEntity(ctx, &directory.CreateEntityRequest{
 					EntityInfo: &directory.EntityInfo{
 						GroupName:   organizationName,
 						DisplayName: organizationName,
@@ -244,9 +246,9 @@ var createAccountMutation = &graphql.Field{
 					Type: directory.EntityType_ORGANIZATION,
 				})
 				if err != nil {
-					return nil, internalError(ctx, err)
+					return nil, err
 				}
-				orgEntityID = res.Entity.ID
+				orgEntityID = ent.ID
 			} else {
 				orgEntityID = inv.GetColleague().OrganizationEntityID
 			}
@@ -260,10 +262,10 @@ var createAccountMutation = &graphql.Field{
 			}
 			entityInfo.DisplayName, err = buildDisplayName(entityInfo, contacts)
 			if err != nil {
-				return nil, internalError(ctx, err)
+				return nil, errors.InternalError(ctx, err)
 			}
 			// Create entity
-			res, err := svc.directory.CreateEntity(ctx, &directory.CreateEntityRequest{
+			ent, err := ram.CreateEntity(ctx, &directory.CreateEntityRequest{
 				EntityInfo:                entityInfo,
 				Type:                      directory.EntityType_INTERNAL,
 				ExternalID:                accountID,
@@ -271,19 +273,18 @@ var createAccountMutation = &graphql.Field{
 				Contacts:                  contacts,
 			})
 			if err != nil {
-				return nil, internalError(ctx, err)
+				return nil, err
 			}
-			accEntityID = res.Entity.ID
+			accEntityID = ent.ID
 		}
 
 		// Create a default saved query
-		_, err = svc.threading.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
+		if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
 			OrganizationID: orgEntityID,
 			EntityID:       accEntityID,
 			// TODO: query
-		})
-		if err != nil {
-			return nil, internalError(ctx, err)
+		}); err != nil {
+			return nil, errors.InternalError(ctx, err)
 		}
 
 		result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
@@ -292,11 +293,11 @@ var createAccountMutation = &graphql.Field{
 
 		acc, err := transformAccountToResponse(res.Account)
 		if err != nil {
-			return nil, internalError(ctx, err)
+			return nil, errors.InternalError(ctx, err)
 		}
-		// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
-		// that likely won't change, but this still isn't a great way to update the context.
-		*ctx.Value(ctxAccount).(*account) = *acc
+		// TODO: updating the gqlctx this is safe for now because the GraphQL pkg serializes mutations.
+		// that likely won't change, but this still isn't a great way to update the gqlctx.
+		gqlctx.InPlaceWithAccount(ctx, acc)
 		return &createAccountOutput{
 			ClientMutationID:    mutationID,
 			Success:             true,

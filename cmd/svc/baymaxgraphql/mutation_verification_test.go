@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -18,9 +20,9 @@ func TestVerifyPhoneNumberForAccountCreationMutation_Invite(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	var acc *account
-	ctx = ctxWithAccount(ctx, acc)
-	ctx = ctxWithSpruceHeaders(ctx, &device.SpruceHeaders{
+	var acc *models.Account
+	ctx = gqlctx.WithAccount(ctx, acc)
+	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
 		DeviceID: "DevID",
 	})
 
@@ -97,17 +99,15 @@ func TestVerifyPhoneNumberForAccountCreationMutation_Invite(t *testing.T) {
 		},
 	}, nil))
 
-	g.authC.Expect(mock.NewExpectation(g.authC.CreateVerificationCode, &auth.CreateVerificationCodeRequest{
-		Type:          auth.VerificationCodeType_PHONE,
-		ValueToVerify: "+14155551212",
-	}).WithReturns(&auth.CreateVerificationCodeResponse{
-		VerificationCode: &auth.VerificationCode{
-			Code:  "123456",
-			Token: "TheToken",
-		},
-	}, nil))
+	g.ra.Expect(mock.NewExpectation(g.ra.CreateVerificationCode, auth.VerificationCodeType_PHONE, "+14155551212").WithReturns(
+		&auth.CreateVerificationCodeResponse{
+			VerificationCode: &auth.VerificationCode{
+				Code:  "123456",
+				Token: "TheToken",
+			},
+		}, nil))
 
-	g.exC.Expect(mock.NewExpectation(g.exC.SendMessage, &excomms.SendMessageRequest{
+	g.ra.Expect(mock.NewExpectation(g.ra.SendMessage, &excomms.SendMessageRequest{
 		Channel: excomms.ChannelType_SMS,
 		Message: &excomms.SendMessageRequest_SMS{
 			SMS: &excomms.SMSMessage{
@@ -115,7 +115,7 @@ func TestVerifyPhoneNumberForAccountCreationMutation_Invite(t *testing.T) {
 				ToPhoneNumber: "+14155551212",
 			},
 		},
-	}).WithReturns(&excomms.SendMessageResponse{}, nil))
+	}).WithReturns(nil))
 
 	res = g.query(ctx, `
 		mutation _ {
