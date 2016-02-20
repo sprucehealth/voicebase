@@ -35,7 +35,6 @@ func runAPI() {
 		AWSRegion:    config.awsRegion,
 		AWSSecretKey: config.awsSecretKey,
 		AWSAccessKey: config.awsAccessKey,
-		Environment:  config.env,
 	}
 
 	awsSession := baseConfig.AWSSession()

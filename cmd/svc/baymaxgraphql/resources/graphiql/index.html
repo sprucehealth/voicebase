@@ -9,10 +9,18 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+        width: 100%;
+        overflow: hidden;
+      }
+    </style>
     <link rel="stylesheet" href="./graphiql.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.0/react.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.0/react-dom.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/fetch/0.9.0/fetch.min.js"></script>
+    <script src="//cdn.jsdelivr.net/fetch/0.9.0/fetch.min.js"></script>
+    <script src="//cdn.jsdelivr.net/react/0.14.7/react.min.js"></script>
+    <script src="//cdn.jsdelivr.net/react/0.14.7/react-dom.min.js"></script>
     <script src="./graphiql.js"></script>
   </head>
   <body>
@@ -40,14 +48,15 @@
       });
 
       // if variables was provided, try to format it.
-      // if (parameters.variables) {
-      //   try {
-      //     parameters.variables = JSON.parse(parameters.variables);
-      //   } catch (e) {
-      //     // Do nothing, we want to display the invalid JSON as a string, rather
-      //     // than present an error.
-      //   }
-      // }
+      if (parameters.variables) {
+        try {
+          parameters.variables =
+            JSON.stringify(JSON.parse(parameters.variables), null, 2);
+        } catch (e) {
+          // Do nothing, we want to display the invalid JSON as a string, rather
+          // than present an error.
+        }
+      }
 
       // When the query and variables string is edited, update the URL bar so
       // that it can be easily shared
@@ -71,9 +80,6 @@
 
       // Defines a GraphQL fetcher using the fetch API.
       function graphQLFetcher(graphQLParams) {
-        if (graphQLParams.variables) {
-          graphQLParams.variables = JSON.parse(graphQLParams.variables);
-        }
         return fetch(window.location.origin + '/graphql', {
           method: 'post',
           headers: {
@@ -83,7 +89,13 @@
           body: JSON.stringify(graphQLParams),
           credentials: 'include',
         }).then(function (response) {
-          return response.json();
+          return response.text();
+        }).then(function (responseBody) {
+          try {
+            return JSON.parse(responseBody);
+          } catch (error) {
+            return responseBody;
+          }
         });
       }
 

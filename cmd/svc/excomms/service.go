@@ -46,7 +46,6 @@ func runService() {
 		AWSRegion:    config.awsRegion,
 		AWSSecretKey: config.awsSecretKey,
 		AWSAccessKey: config.awsAccessKey,
-		Environment:  config.env,
 	}
 
 	awsSession := baseConfig.AWSSession()
