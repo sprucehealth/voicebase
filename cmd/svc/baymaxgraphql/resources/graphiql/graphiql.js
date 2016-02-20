@@ -41,7 +41,7 @@ function getLocation(source, position) {
   }
   return _codemirror2['default'].Pos(line, column);
 }
-},{"./jsonLint":2,"codemirror":44}],2:[function(require,module,exports){
+},{"./jsonLint":2,"codemirror":49}],2:[function(require,module,exports){
 /**
  *  Copyright (c) 2015, Facebook, Inc.
  *  All rights reserved.
@@ -330,7 +330,7 @@ var _marked = require('marked');
 
 var _marked2 = _interopRequireDefault(_marked);
 
-var _graphqlType = require('graphql/type');
+var _graphql = require('graphql');
 
 /**
  * DocExplorer
@@ -366,7 +366,7 @@ var DocExplorer = (function (_React$Component) {
   _createClass(DocExplorer, null, [{
     key: 'propTypes',
     value: {
-      schema: _react.PropTypes.instanceOf(_graphqlType.GraphQLSchema)
+      schema: _react.PropTypes.instanceOf(_graphql.GraphQLSchema)
     },
     enumerable: true
   }]);
@@ -383,23 +383,35 @@ var DocExplorer = (function (_React$Component) {
     };
 
     this._onNavBackClick = function () {
-      _this.setState({ navStack: _this.state.navStack.slice(0, -1) });
+      _this.setState({
+        navStack: _this.state.navStack.slice(0, -1),
+        searchValue: null
+      });
     };
 
     this._onClickTypeOrField = function (typeOrField) {
       _this.showDoc(typeOrField);
     };
 
-    this.state = { navStack: [] };
+    this._onSearch = function (event) {
+      _this.setState({ searchValue: event.target.value });
+    };
+
+    this.state = {
+      navStack: [],
+      searchValue: null
+    };
   }
 
-  // Render the top level Schema
+  // Render Search Results
 
   DocExplorer.prototype.shouldComponentUpdate = function shouldComponentUpdate(nextProps, nextState) {
-    return this.props.schema !== nextProps.schema || this.state.navStack !== nextState.navStack;
+    return this.props.schema !== nextProps.schema || this.state.navStack !== nextState.navStack || this.state.searchValue !== nextState.searchValue;
   };
 
   DocExplorer.prototype.render = function render() {
+    var _this2 = this;
+
     var schema = this.props.schema;
     var navStack = this.state.navStack;
 
@@ -412,7 +424,7 @@ var DocExplorer = (function (_React$Component) {
     var content;
     if (typeOrField) {
       title = typeOrField.name;
-      content = _graphqlType.isType(typeOrField) ? _react2['default'].createElement(TypeDoc, {
+      content = _graphql.isType(typeOrField) ? _react2['default'].createElement(TypeDoc, {
         key: typeOrField.name,
         type: typeOrField,
         onClickType: this._onClickTypeOrField,
@@ -422,11 +434,20 @@ var DocExplorer = (function (_React$Component) {
         field: typeOrField,
         onClickType: this._onClickTypeOrField
       });
+    } else if (this.state.searchValue) {
+      title = 'Search Results';
+      content = _react2['default'].createElement(SearchDoc, {
+        searchValue: this.state.searchValue,
+        schema: schema,
+        onClickType: this._onClickTypeOrField,
+        onClickField: this._onClickTypeOrField
+      });
     } else if (schema) {
       title = 'Documentation Explorer';
       content = _react2['default'].createElement(SchemaDoc, {
         schema: schema,
-        onClickType: this._onClickTypeOrField
+        onClickType: this._onClickTypeOrField,
+        onSearch: this._onSearch
       });
     }
 
@@ -436,6 +457,12 @@ var DocExplorer = (function (_React$Component) {
     } else if (navStack.length > 1) {
       prevName = navStack[navStack.length - 2].name;
     }
+
+    var spinnerDiv = _react2['default'].createElement(
+      'div',
+      { className: 'spinner-container' },
+      _react2['default'].createElement('div', { className: 'spinner' })
+    );
 
     return _react2['default'].createElement(
       'div',
@@ -462,7 +489,17 @@ var DocExplorer = (function (_React$Component) {
       _react2['default'].createElement(
         'div',
         { className: 'doc-explorer-contents' },
-        content
+        !typeOrField && _react2['default'].createElement(
+          'label',
+          { className: 'search-box-outer' },
+          _react2['default'].createElement('input', { className: 'search-box-input',
+            onKeyUp: function (event) {
+              return _this2._onSearch(event);
+            },
+            type: 'text',
+            placeholder: 'Search the schema ...' })
+        ),
+        this.props.schema ? content : spinnerDiv
       )
     );
   };
@@ -472,13 +509,147 @@ var DocExplorer = (function (_React$Component) {
 
 exports.DocExplorer = DocExplorer;
 
-var SchemaDoc = (function (_React$Component2) {
-  _inherits(SchemaDoc, _React$Component2);
+var SearchDoc = (function (_React$Component2) {
+  _inherits(SearchDoc, _React$Component2);
+
+  function SearchDoc() {
+    _classCallCheck(this, SearchDoc);
+
+    _React$Component2.apply(this, arguments);
+  }
+
+  // Render the top level Schema
+
+  SearchDoc.prototype.shouldComponentUpdate = function shouldComponentUpdate(nextProps) {
+    return this.props.schema !== nextProps.schema || this.props.searchValue !== nextProps.searchValue;
+  };
+
+  SearchDoc.prototype.render = function render() {
+    var searchValue = this.props.searchValue;
+    var schema = this.props.schema;
+    var onClickType = this.props.onClickType;
+    var onClickField = this.props.onClickField;
+
+    var typeMap = schema.getTypeMap();
+
+    var matchedTypes = [];
+    var matchedFields = [];
+
+    Object.keys(typeMap).forEach(function (typeName) {
+      var type = typeMap[typeName];
+      var matchedOn = [];
+      if (typeName.indexOf(searchValue) !== -1) {
+        matchedOn.push('Type Name');
+      }
+
+      if (matchedOn.length) {
+        matchedTypes.push(_react2['default'].createElement(
+          'div',
+          { className: 'doc-category-item' },
+          _react2['default'].createElement(TypeLink, { type: type, onClick: onClickType })
+        ));
+      }
+
+      if (type.getFields) {
+        (function () {
+          var fields = type.getFields();
+          Object.keys(fields).forEach(function (fieldName) {
+            var field = fields[fieldName];
+            if (fieldName.indexOf(searchValue) !== -1) {
+              matchedFields.push(_react2['default'].createElement(
+                'div',
+                { className: 'doc-category-item' },
+                _react2['default'].createElement(
+                  'a',
+                  { className: 'field-name',
+                    onClick: function (event) {
+                      return onClickField(field, type, event);
+                    } },
+                  field.name
+                ),
+                ' on ',
+                _react2['default'].createElement(TypeLink, { type: type, onClick: onClickType })
+              ));
+            } else if (field.args && field.args.length) {
+              var matches = field.args.filter(function (arg) {
+                return arg.name.indexOf(searchValue) !== -1;
+              });
+              if (matches.length > 0) {
+                matchedFields.push(_react2['default'].createElement(
+                  'div',
+                  { className: 'doc-category-item' },
+                  _react2['default'].createElement(
+                    'a',
+                    { className: 'field-name',
+                      onClick: function (event) {
+                        return onClickField(field, type, event);
+                      } },
+                    field.name
+                  ),
+                  '(',
+                  _react2['default'].createElement(
+                    'span',
+                    null,
+                    matches.map(function (arg) {
+                      return _react2['default'].createElement(
+                        'span',
+                        { className: 'arg', key: arg.name },
+                        _react2['default'].createElement(
+                          'span',
+                          { className: 'arg-name' },
+                          arg.name
+                        ),
+                        ': ',
+                        _react2['default'].createElement(TypeLink, { type: arg.type, onClick: onClickType })
+                      );
+                    })
+                  ),
+                  ')',
+                  ' on ',
+                  _react2['default'].createElement(TypeLink, { type: type, onClick: onClickType })
+                ));
+              }
+            }
+          });
+        })();
+      }
+    });
+
+    if (matchedTypes.length === 0 && matchedFields.length === 0) {
+      return _react2['default'].createElement(
+        'span',
+        { className: 'doc-alert-text' },
+        'No results found.'
+      );
+    }
+
+    return _react2['default'].createElement(
+      'div',
+      null,
+      _react2['default'].createElement(
+        'div',
+        { className: 'doc-category' },
+        (matchedTypes.length > 0 || matchedFields.length > 0) && _react2['default'].createElement(
+          'div',
+          { className: 'doc-category-title' },
+          'search results'
+        ),
+        matchedTypes,
+        matchedFields
+      )
+    );
+  };
+
+  return SearchDoc;
+})(_react2['default'].Component);
+
+var SchemaDoc = (function (_React$Component3) {
+  _inherits(SchemaDoc, _React$Component3);
 
   function SchemaDoc() {
     _classCallCheck(this, SchemaDoc);
 
-    _React$Component2.apply(this, arguments);
+    _React$Component3.apply(this, arguments);
   }
 
   // Documentation for a Type
@@ -490,8 +661,8 @@ var SchemaDoc = (function (_React$Component2) {
   SchemaDoc.prototype.render = function render() {
     var schema = this.props.schema;
     var queryType = schema.getQueryType();
-    var mutationType = schema.getMutationType();
-    var subscriptionType = schema.getSubscriptionType();
+    var mutationType = schema.getMutationType && schema.getMutationType();
+    var subscriptionType = schema.getSubscriptionType && schema.getSubscriptionType();
 
     return _react2['default'].createElement(
       'div',
@@ -551,13 +722,13 @@ var SchemaDoc = (function (_React$Component2) {
   return SchemaDoc;
 })(_react2['default'].Component);
 
-var TypeDoc = (function (_React$Component3) {
-  _inherits(TypeDoc, _React$Component3);
+var TypeDoc = (function (_React$Component4) {
+  _inherits(TypeDoc, _React$Component4);
 
   function TypeDoc() {
     _classCallCheck(this, TypeDoc);
 
-    _React$Component3.apply(this, arguments);
+    _React$Component4.apply(this, arguments);
   }
 
   // Documentation for a field
@@ -573,13 +744,13 @@ var TypeDoc = (function (_React$Component3) {
 
     var typesTitle;
     var types;
-    if (type instanceof _graphqlType.GraphQLUnionType) {
+    if (type instanceof _graphql.GraphQLUnionType) {
       typesTitle = 'possible types';
       types = type.getPossibleTypes();
-    } else if (type instanceof _graphqlType.GraphQLInterfaceType) {
+    } else if (type instanceof _graphql.GraphQLInterfaceType) {
       typesTitle = 'implementations';
       types = type.getPossibleTypes();
-    } else if (type instanceof _graphqlType.GraphQLObjectType) {
+    } else if (type instanceof _graphql.GraphQLObjectType) {
       typesTitle = 'implements';
       types = type.getInterfaces();
     }
@@ -664,7 +835,7 @@ var TypeDoc = (function (_React$Component3) {
     }
 
     var valuesDef;
-    if (type instanceof _graphqlType.GraphQLEnumType) {
+    if (type instanceof _graphql.GraphQLEnumType) {
       valuesDef = _react2['default'].createElement(
         'div',
         { className: 'doc-category' },
@@ -684,7 +855,7 @@ var TypeDoc = (function (_React$Component3) {
             ),
             _react2['default'].createElement(Description, {
               className: 'doc-value-description',
-              markdown: type.description
+              markdown: value.description
             })
           );
         })
@@ -698,23 +869,23 @@ var TypeDoc = (function (_React$Component3) {
         className: 'doc-type-description',
         markdown: type.description || 'No Description'
       }),
-      type instanceof _graphqlType.GraphQLObjectType && typesDef,
+      type instanceof _graphql.GraphQLObjectType && typesDef,
       fieldsDef,
       valuesDef,
-      !(type instanceof _graphqlType.GraphQLObjectType) && typesDef
+      !(type instanceof _graphql.GraphQLObjectType) && typesDef
     );
   };
 
   return TypeDoc;
 })(_react2['default'].Component);
 
-var FieldDoc = (function (_React$Component4) {
-  _inherits(FieldDoc, _React$Component4);
+var FieldDoc = (function (_React$Component5) {
+  _inherits(FieldDoc, _React$Component5);
 
   function FieldDoc() {
     _classCallCheck(this, FieldDoc);
 
-    _React$Component4.apply(this, arguments);
+    _React$Component5.apply(this, arguments);
   }
 
   // Renders a type link
@@ -724,7 +895,7 @@ var FieldDoc = (function (_React$Component4) {
   };
 
   FieldDoc.prototype.render = function render() {
-    var _this2 = this;
+    var _this3 = this;
 
     var field = this.props.field;
 
@@ -751,7 +922,7 @@ var FieldDoc = (function (_React$Component4) {
                 arg.name
               ),
               ': ',
-              _react2['default'].createElement(TypeLink, { type: arg.type, onClick: _this2.props.onClickType })
+              _react2['default'].createElement(TypeLink, { type: arg.type, onClick: _this3.props.onClickType })
             ),
             _react2['default'].createElement(Description, {
               className: 'doc-value-description',
@@ -786,13 +957,13 @@ var FieldDoc = (function (_React$Component4) {
   return FieldDoc;
 })(_react2['default'].Component);
 
-var TypeLink = (function (_React$Component5) {
-  _inherits(TypeLink, _React$Component5);
+var TypeLink = (function (_React$Component6) {
+  _inherits(TypeLink, _React$Component6);
 
   function TypeLink() {
     _classCallCheck(this, TypeLink);
 
-    _React$Component5.apply(this, arguments);
+    _React$Component6.apply(this, arguments);
   }
 
   TypeLink.prototype.shouldComponentUpdate = function shouldComponentUpdate(nextProps) {
@@ -807,7 +978,7 @@ var TypeLink = (function (_React$Component5) {
 })(_react2['default'].Component);
 
 function renderType(type, onClick) {
-  if (type instanceof _graphqlType.GraphQLNonNull) {
+  if (type instanceof _graphql.GraphQLNonNull) {
     return _react2['default'].createElement(
       'span',
       null,
@@ -815,7 +986,7 @@ function renderType(type, onClick) {
       '!'
     );
   }
-  if (type instanceof _graphqlType.GraphQLList) {
+  if (type instanceof _graphql.GraphQLList) {
     return _react2['default'].createElement(
       'span',
       null,
@@ -835,13 +1006,13 @@ function renderType(type, onClick) {
 
 // Renders a description
 
-var Description = (function (_React$Component6) {
-  _inherits(Description, _React$Component6);
+var Description = (function (_React$Component7) {
+  _inherits(Description, _React$Component7);
 
   function Description() {
     _classCallCheck(this, Description);
 
-    _React$Component6.apply(this, arguments);
+    _React$Component7.apply(this, arguments);
   }
 
   Description.prototype.shouldComponentUpdate = function shouldComponentUpdate(nextProps) {
@@ -854,7 +1025,7 @@ var Description = (function (_React$Component6) {
       return _react2['default'].createElement('div', null);
     }
 
-    var html = _marked2['default'](markdown);
+    var html = _marked2['default'](markdown, { sanitize: true });
     return _react2['default'].createElement('div', {
       className: this.props.className,
       dangerouslySetInnerHTML: { __html: html }
@@ -864,7 +1035,7 @@ var Description = (function (_React$Component6) {
   return Description;
 })(_react2['default'].Component);
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"graphql/type":136,"marked":178}],4:[function(require,module,exports){
+},{"graphql":142,"marked":203}],4:[function(require,module,exports){
 (function (global){
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -981,15 +1152,11 @@ var _reactDom = (typeof window !== "undefined" ? window['ReactDOM'] : typeof glo
 
 var _reactDom2 = _interopRequireDefault(_reactDom);
 
-var _graphqlType = require('graphql/type');
-
-var _graphqlUtilities = require('graphql/utilities');
-
-var _graphqlJsutilsFind = require('graphql/jsutils/find');
-
-var _graphqlJsutilsFind2 = _interopRequireDefault(_graphqlJsutilsFind);
+var _graphql = require('graphql');
 
 var _ExecuteButton = require('./ExecuteButton');
+
+var _ToolbarButton = require('./ToolbarButton');
 
 var _QueryEditor = require('./QueryEditor');
 
@@ -999,9 +1166,13 @@ var _ResultViewer = require('./ResultViewer');
 
 var _DocExplorer = require('./DocExplorer');
 
+var _utilityElementPosition = require('../utility/elementPosition');
+
 var _utilityFillLeafs = require('../utility/fillLeafs');
 
-var _utilityElementPosition = require('../utility/elementPosition');
+var _utilityFind = require('../utility/find');
+
+var _utilityFind2 = _interopRequireDefault(_utilityFind);
 
 var _utilityIntrospectionQueries = require('../utility/introspectionQueries');
 
@@ -1015,11 +1186,17 @@ var _utilityIntrospectionQueries = require('../utility/introspectionQueries');
  *   - fetcher: a function which accepts GraphQL-HTTP parameters and returns
  *     a Promise which resolves to the GraphQL parsed JSON response.
  *
- *   - schema: an optional GraphQLSchema instance. If one is not provided,
- *     GraphiQL will fetch one using introspection.
+ *   - schema: a GraphQLSchema instance or `null` if one is not to be used.
+ *     If `undefined` is provided, GraphiQL will send an introspection query
+ *     using the fetcher to produce a schema.
  *
  *   - query: an optional GraphQL string to use as the initial displayed query,
- *     if not provided, the stored query or defaultQuery will be used.
+ *     if `undefined` is provided, the stored query or defaultQuery will
+ *     be used.
+ *
+ *   - variables: an optional GraphQL string to use as the initial displayed
+ *     query variables, if `undefined` is provided, the stored variables will
+ *     be used.
  *
  *   - response: an optional JSON string to use as the initial displayed
  *     response. If not provided, no response will be initialy shown. You might
@@ -1028,11 +1205,9 @@ var _utilityIntrospectionQueries = require('../utility/introspectionQueries');
  *   - storage: an instance of [Storage][] GraphiQL will use to persist state.
  *     Only `getItem` and `setItem` are called. Default: window.localStorage
  *
- *   - defaultQuery: an optional GraphQL string to use instead of a
- *     blank screen when a query was not found in the local cache.
- *
- *   - variables: an optional GraphQL string to use as the initial displayed
- *     query variables, if not provided, the stored variables will be used.
+ *   - defaultQuery: an optional GraphQL string to use when no query is provided
+ *     and no stored query exists from a previous session. If `undefined` is
+ *     provided, GraphiQL will use its own default query.
  *
  *   - onEditQuery: an optional function which will be called when the Query
  *     editor changes. The argument to the function will be the query string.
@@ -1051,6 +1226,8 @@ var _utilityIntrospectionQueries = require('../utility/introspectionQueries');
  *   - <GraphiQL.Logo> Replace the GraphiQL logo with your own.
  *
  *   - <GraphiQL.Toolbar> Add a custom toolbar above GraphiQL.
+ *
+ *   - <GraphiQL.ToolbarButton> Add a button to the toolbar above GraphiQL.
  *
  *   - <GraphiQL.Footer> Add a custom footer below GraphiQL Results.
  *
@@ -1118,7 +1295,7 @@ var GraphiQL = (function (_React$Component) {
     key: 'propTypes',
     value: {
       fetcher: _react.PropTypes.func.isRequired,
-      schema: _react.PropTypes.instanceOf(_graphqlType.GraphQLSchema),
+      schema: _react.PropTypes.instanceOf(_graphql.GraphQLSchema),
       query: _react.PropTypes.string,
       response: _react.PropTypes.string,
       storage: _react.PropTypes.shape({
@@ -1139,11 +1316,16 @@ var GraphiQL = (function (_React$Component) {
 
     _classCallCheck(this, GraphiQL);
 
-    _React$Component.call(this);
+    _React$Component.call(this, props);
 
     // Ensure props are correct
 
     this._runEditorQuery = function () {
+      _this.setState({
+        isWaitingForResponse: true,
+        response: null
+      });
+
       _this._editorQueryID++;
       var queryID = _this._editorQueryID;
 
@@ -1154,9 +1336,18 @@ var GraphiQL = (function (_React$Component) {
 
       _this._fetchQuery(editedQuery, _this.state.variables, function (result) {
         if (queryID === _this._editorQueryID) {
-          _this.setState({ response: JSON.stringify(result, null, 2) });
+          _this.setState({
+            isWaitingForResponse: false,
+            response: JSON.stringify(result, null, 2)
+          });
         }
       });
+    };
+
+    this._prettifyQuery = function () {
+      var query = _graphql.print(_graphql.parse(_this.state.query));
+      var editor = _this.refs.queryEditor.getCodeMirror();
+      editor.setValue(query);
     };
 
     this._onEditQuery = function (value) {
@@ -1365,10 +1556,10 @@ var GraphiQL = (function (_React$Component) {
     this._storage = props.storage || window.localStorage;
 
     // Determine the initial query to display.
-    var query = props.query || this._storageGet('query') || props.defaultQuery || defaultQuery;
+    var query = props.query !== undefined ? props.query : this._storageGet('query') !== undefined ? this._storageGet('query') : props.defaultQuery !== undefined ? props.defaultQuery : defaultQuery;
 
     // Determine the initial variables to display.
-    var variables = props.variables || this._storageGet('variables');
+    var variables = props.variables !== undefined ? props.variables : this._storageGet('variables');
 
     // Initialize state
     this.state = {
@@ -1380,7 +1571,8 @@ var GraphiQL = (function (_React$Component) {
       variableEditorOpen: Boolean(variables),
       variableEditorHeight: this._storageGet('variableEditorHeight') || 200,
       docsOpen: false,
-      docsWidth: this._storageGet('docExplorerWidth') || 350
+      docsWidth: this._storageGet('docExplorerWidth') || 350,
+      isWaitingForResponse: false
     };
 
     // Ensure only the last executed editor query is rendered.
@@ -1390,19 +1582,24 @@ var GraphiQL = (function (_React$Component) {
   // Configure the UI by providing this Component as a child of GraphiQL.
 
   GraphiQL.prototype.componentWillReceiveProps = function componentWillReceiveProps(nextProps) {
+    var nextSchema = this.state.schema;
     var nextQuery = this.state.query;
     var nextVariables = this.state.variables;
     var nextResponse = this.state.response;
-    if (nextProps.query && nextProps.query !== nextQuery) {
+    if (nextProps.schema !== undefined) {
+      nextSchema = nextProps.schema;
+    }
+    if (nextProps.query !== undefined) {
       nextQuery = nextProps.query;
     }
-    if (nextProps.variables && nextProps.variables !== nextVariables) {
+    if (nextProps.variables !== undefined) {
       nextVariables = nextProps.variables;
     }
-    if (nextProps.response && nextProps.response !== nextResponse) {
+    if (nextProps.response !== undefined) {
       nextResponse = nextProps.response;
     }
     this.setState({
+      schema: nextSchema,
       query: nextQuery,
       variables: nextVariables,
       response: nextResponse
@@ -1412,23 +1609,34 @@ var GraphiQL = (function (_React$Component) {
   GraphiQL.prototype.componentDidMount = function componentDidMount() {
     var _this2 = this;
 
-    if (!this.state.schema) {
-      var fetcher = this.props.fetcher;
-
-      // Try the stock introspection query first, falling back on the
-      // sans-subscriptions query for services which do not yet support it.
-      fetcher({ query: _utilityIntrospectionQueries.introspectionQuery })['catch'](function () {
-        return fetcher({ query: _utilityIntrospectionQueries.introspectionQuerySansSubscriptions });
-      }).then(function (result) {
-        if (!result.data) {
-          _this2.setState({ response: JSON.stringify(result, null, 2) });
-        } else {
-          _this2.setState({ schema: _graphqlUtilities.buildClientSchema(result.data) });
-        }
-      })['catch'](function (error) {
-        _this2.setState({ response: error && error.stack || error });
-      });
+    // If there is no schema provided via props, fetch one using introspection.
+    if (this.state.schema !== undefined) {
+      return;
     }
+
+    var fetcher = this.props.fetcher;
+
+    // Try the stock introspection query first, falling back on the
+    // sans-subscriptions query for services which do not yet support it.
+    fetcher({ query: _utilityIntrospectionQueries.introspectionQuery })['catch'](function () {
+      return fetcher({ query: _utilityIntrospectionQueries.introspectionQuerySansSubscriptions });
+    }).then(function (result) {
+      // If a schema was provided while this fetch was underway, then
+      // satisfy the race condition by respecting the already
+      // provided schema.
+      if (_this2.state.schema !== undefined) {
+        return;
+      }
+
+      if (result.data) {
+        _this2.setState({ schema: _graphql.buildClientSchema(result.data) });
+      } else {
+        var responseString = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+        _this2.setState({ response: responseString });
+      }
+    })['catch'](function (error) {
+      _this2.setState({ response: error && (error.stack || String(error)) });
+    });
   };
 
   GraphiQL.prototype.componentDidUpdate = function componentDidUpdate(prevProps, prevState) {
@@ -1445,14 +1653,23 @@ var GraphiQL = (function (_React$Component) {
       children.push(child);
     });
 
-    var logo = _graphqlJsutilsFind2['default'](children, function (child) {
+    var logo = _utilityFind2['default'](children, function (child) {
       return child.type === GraphiQL.Logo;
     }) || _react2['default'].createElement(GraphiQL.Logo, null);
 
-    var toolbar = _graphqlJsutilsFind2['default'](children, function (child) {
+    var toolbar = _utilityFind2['default'](children, function (child) {
       return child.type === GraphiQL.Toolbar;
-    });
-    var footer = _graphqlJsutilsFind2['default'](children, function (child) {
+    }) || _react2['default'].createElement(
+      GraphiQL.Toolbar,
+      null,
+      _react2['default'].createElement(GraphiQL.ToolbarButton, {
+        onClick: this._prettifyQuery,
+        title: 'Prettify Query',
+        label: 'Prettify'
+      })
+    );
+
+    var footer = _utilityFind2['default'](children, function (child) {
       return child.type === GraphiQL.Footer;
     });
 
@@ -1531,6 +1748,11 @@ var GraphiQL = (function (_React$Component) {
           _react2['default'].createElement(
             'div',
             { className: 'resultWrap' },
+            this.state.isWaitingForResponse && _react2['default'].createElement(
+              'div',
+              { className: 'spinner-container' },
+              _react2['default'].createElement('div', { className: 'spinner' })
+            ),
             _react2['default'].createElement(_ResultViewer.ResultViewer, { ref: 'result', value: this.state.response }),
             footer
           )
@@ -1570,7 +1792,10 @@ var GraphiQL = (function (_React$Component) {
     var _this3 = this;
 
     this.props.fetcher({ query: query, variables: variables }).then(cb)['catch'](function (error) {
-      _this3.setState({ response: error && error.stack || error });
+      _this3.setState({
+        isWaitingForResponse: false,
+        response: error && (error.stack || String(error))
+      });
     });
   };
 
@@ -1650,6 +1875,9 @@ GraphiQL.Toolbar = (function (_React$Component3) {
   return GraphiQLToolbar;
 })(_react2['default'].Component);
 
+// Add a buttom to the Toolbar.
+GraphiQL.ToolbarButton = _ToolbarButton.ToolbarButton;
+
 // Configure the UI by providing this Component as a child of GraphiQL.
 GraphiQL.Footer = (function (_React$Component4) {
   _inherits(GraphiQLFooter, _React$Component4);
@@ -1673,7 +1901,7 @@ GraphiQL.Footer = (function (_React$Component4) {
 
 var defaultQuery = '# Welcome to GraphiQL\n#\n# GraphiQL is an in-browser IDE for writing, validating, and\n# testing GraphQL queries.\n#\n# Type queries into this side of the screen, and you will\n# see intelligent typeaheads aware of the current GraphQL type schema and\n# live syntax and validation errors highlighted within the text.\n#\n# To bring up the auto-complete at any point, just press Ctrl-Space.\n#\n# Press the run button above, or Cmd-Enter to execute the query, and the result\n# will appear in the pane to the right.\n\n';
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../utility/elementPosition":10,"../utility/fillLeafs":11,"../utility/introspectionQueries":12,"./DocExplorer":3,"./ExecuteButton":4,"./QueryEditor":6,"./ResultViewer":7,"./VariableEditor":8,"graphql/jsutils/find":121,"graphql/type":136,"graphql/utilities":145}],6:[function(require,module,exports){
+},{"../utility/elementPosition":11,"../utility/fillLeafs":12,"../utility/find":13,"../utility/introspectionQueries":14,"./DocExplorer":3,"./ExecuteButton":4,"./QueryEditor":6,"./ResultViewer":7,"./ToolbarButton":8,"./VariableEditor":9,"graphql":142}],6:[function(require,module,exports){
 (function (global){
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -1711,7 +1939,7 @@ var _codemirror = require('codemirror');
 
 var _codemirror2 = _interopRequireDefault(_codemirror);
 
-var _graphqlType = require('graphql/type');
+var _graphql = require('graphql');
 
 require('codemirror/addon/hint/show-hint');
 
@@ -1754,7 +1982,7 @@ var QueryEditor = (function (_React$Component) {
   _createClass(QueryEditor, null, [{
     key: 'propTypes',
     value: {
-      schema: _react.PropTypes.instanceOf(_graphqlType.GraphQLSchema),
+      schema: _react.PropTypes.instanceOf(_graphql.GraphQLSchema),
       value: _react.PropTypes.string,
       onEdit: _react.PropTypes.func
     },
@@ -1915,6 +2143,12 @@ var QueryEditor = (function (_React$Component) {
         'Ctrl-Space': function CtrlSpace() {
           return _this2.editor.showHint({ completeSingle: true });
         },
+        'Alt-Space': function AltSpace() {
+          return _this2.editor.showHint({ completeSingle: true });
+        },
+        'Shift-Space': function ShiftSpace() {
+          return _this2.editor.showHint({ completeSingle: true });
+        },
 
         // Editor improvements
         'Ctrl-Left': 'goSubwordLeft',
@@ -1963,10 +2197,10 @@ var QueryEditor = (function (_React$Component) {
 exports.QueryEditor = QueryEditor;
 
 function renderType(type) {
-  if (type instanceof _graphqlType.GraphQLNonNull) {
+  if (type instanceof _graphql.GraphQLNonNull) {
     return renderType(type.ofType) + '!';
   }
-  if (type instanceof _graphqlType.GraphQLList) {
+  if (type instanceof _graphql.GraphQLList) {
     return '[' + renderType(type.ofType) + ']';
   }
   return '<a class="typeName">' + type.name + '</a>';
@@ -1977,7 +2211,7 @@ function renderType(type) {
  * about the type and description for the selected context.
  */
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"codemirror":44,"codemirror-graphql/hint":31,"codemirror-graphql/lint":32,"codemirror-graphql/mode":33,"codemirror/addon/comment/comment":34,"codemirror/addon/edit/closebrackets":35,"codemirror/addon/edit/matchbrackets":36,"codemirror/addon/fold/brace-fold":37,"codemirror/addon/fold/foldgutter":39,"codemirror/addon/hint/show-hint":40,"codemirror/addon/lint/lint":41,"codemirror/keymap/sublime":43,"graphql/type":136,"marked":178}],7:[function(require,module,exports){
+},{"codemirror":49,"codemirror-graphql/hint":36,"codemirror-graphql/lint":37,"codemirror-graphql/mode":38,"codemirror/addon/comment/comment":39,"codemirror/addon/edit/closebrackets":40,"codemirror/addon/edit/matchbrackets":41,"codemirror/addon/fold/brace-fold":42,"codemirror/addon/fold/foldgutter":44,"codemirror/addon/hint/show-hint":45,"codemirror/addon/lint/lint":46,"codemirror/keymap/sublime":48,"graphql":142,"marked":203}],7:[function(require,module,exports){
 (function (global){
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -2092,7 +2326,90 @@ var ResultViewer = (function (_React$Component) {
 
 exports.ResultViewer = ResultViewer;
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"codemirror":44,"codemirror/addon/fold/brace-fold":37,"codemirror/addon/fold/foldgutter":39,"codemirror/keymap/sublime":43,"codemirror/mode/javascript/javascript":45}],8:[function(require,module,exports){
+},{"codemirror":49,"codemirror/addon/fold/brace-fold":42,"codemirror/addon/fold/foldgutter":44,"codemirror/keymap/sublime":48,"codemirror/mode/javascript/javascript":50}],8:[function(require,module,exports){
+(function (global){
+/**
+ *  Copyright (c) 2015, Facebook, Inc.
+ *  All rights reserved.
+ *
+ *  This source code is licensed under the license found in the
+ *  LICENSE-examples file in the root directory of this source tree.
+ */
+
+'use strict';
+
+exports.__esModule = true;
+
+var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== 'function' && superClass !== null) { throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var _react = (typeof window !== "undefined" ? window['React'] : typeof global !== "undefined" ? global['React'] : null);
+
+var _react2 = _interopRequireDefault(_react);
+
+/**
+ * ToolbarButton
+ *
+ * A button to use within the Toolbar.
+ */
+
+var ToolbarButton = (function (_React$Component) {
+  _inherits(ToolbarButton, _React$Component);
+
+  _createClass(ToolbarButton, null, [{
+    key: 'propTypes',
+    value: {
+      onClick: _react.PropTypes.func,
+      title: _react.PropTypes.string,
+      label: _react.PropTypes.string
+    },
+    enumerable: true
+  }]);
+
+  function ToolbarButton(props) {
+    var _this = this;
+
+    _classCallCheck(this, ToolbarButton);
+
+    _React$Component.call(this, props);
+
+    this.onClick = function (e) {
+      e.preventDefault();
+      try {
+        _this.props.onClick();
+        _this.setState({ error: null });
+      } catch (error) {
+        _this.setState({ error: error });
+      }
+    };
+
+    this.state = { error: null };
+  }
+
+  ToolbarButton.prototype.render = function render() {
+    var error = this.state.error;
+
+    return _react2['default'].createElement(
+      'a',
+      {
+        className: 'toolbar-button' + (error ? ' error' : ''),
+        onClick: this.onClick,
+        title: error ? error.message : this.props.title },
+      this.props.label
+    );
+  };
+
+  return ToolbarButton;
+})(_react2['default'].Component);
+
+exports.ToolbarButton = ToolbarButton;
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],9:[function(require,module,exports){
 (function (global){
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -2241,7 +2558,7 @@ var VariableEditor = (function (_React$Component) {
 
 exports.VariableEditor = VariableEditor;
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../codemirror/lint/json-lint":1,"codemirror":44,"codemirror/addon/fold/brace-fold":37,"codemirror/addon/fold/foldgutter":39,"codemirror/addon/lint/lint":41,"codemirror/keymap/sublime":43,"codemirror/mode/javascript/javascript":45}],9:[function(require,module,exports){
+},{"../codemirror/lint/json-lint":1,"codemirror":49,"codemirror/addon/fold/brace-fold":42,"codemirror/addon/fold/foldgutter":44,"codemirror/addon/lint/lint":46,"codemirror/keymap/sublime":48,"codemirror/mode/javascript/javascript":50}],10:[function(require,module,exports){
 /**
  *  Copyright (c) 2015, Facebook, Inc.
  *  All rights reserved.
@@ -2254,7 +2571,7 @@ exports.VariableEditor = VariableEditor;
 'use strict';
 
 module.exports = require('./components/GraphiQL').GraphiQL;
-},{"./components/GraphiQL":5}],10:[function(require,module,exports){
+},{"./components/GraphiQL":5}],11:[function(require,module,exports){
 /**
  *  Copyright (c) 2015, Facebook, Inc.
  *  All rights reserved.
@@ -2292,7 +2609,7 @@ function getTop(initialElem) {
   }
   return pt;
 }
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 /**
  *  Copyright (c) 2015, Facebook, Inc.
  *  All rights reserved.
@@ -2306,11 +2623,7 @@ function getTop(initialElem) {
 exports.__esModule = true;
 exports.fillLeafs = fillLeafs;
 
-var _graphqlUtilities = require('graphql/utilities');
-
-var _graphqlLanguage = require('graphql/language');
-
-var _graphqlType = require('graphql/type');
+var _graphql = require('graphql');
 
 /**
  * Given a document string which may not be valid due to terminal fields not
@@ -2332,14 +2645,14 @@ function fillLeafs(schema, docString, getDefaultFieldNames) {
 
   var ast = undefined;
   try {
-    ast = _graphqlLanguage.parse(docString);
+    ast = _graphql.parse(docString);
   } catch (error) {
     return { insertions: insertions, result: docString };
   }
 
   var fieldNameFn = getDefaultFieldNames || defaultGetDefaultFieldNames;
-  var typeInfo = new _graphqlUtilities.TypeInfo(schema);
-  _graphqlLanguage.visit(ast, {
+  var typeInfo = new _graphql.TypeInfo(schema);
+  _graphql.visit(ast, {
     leave: function leave(node) {
       typeInfo.leave(node);
     },
@@ -2352,7 +2665,7 @@ function fillLeafs(schema, docString, getDefaultFieldNames) {
           var indent = getIndentation(docString, node.loc.start);
           insertions.push({
             index: node.loc.end,
-            string: ' ' + _graphqlLanguage.print(selectionSet).replace(/\n/g, '\n' + indent)
+            string: ' ' + _graphql.print(selectionSet).replace(/\n/g, '\n' + indent)
           });
         }
       }
@@ -2370,6 +2683,11 @@ function fillLeafs(schema, docString, getDefaultFieldNames) {
 // This function first looks for some common patterns, and falls back to
 // including all leaf-type fields.
 function defaultGetDefaultFieldNames(type) {
+  // If this type cannot access fields, then return an empty set.
+  if (!type.getFields) {
+    return [];
+  }
+
   var fields = type.getFields();
 
   // Is there an `id` field?
@@ -2390,7 +2708,7 @@ function defaultGetDefaultFieldNames(type) {
   // Include all leaf-type fields.
   var leafFieldNames = [];
   Object.keys(fields).forEach(function (fieldName) {
-    if (_graphqlType.isLeafType(fields[fieldName].type)) {
+    if (_graphql.isLeafType(fields[fieldName].type)) {
       leafFieldNames.push(fieldName);
     }
   });
@@ -2401,10 +2719,10 @@ function defaultGetDefaultFieldNames(type) {
 // generate a SelectionSet which includes default fields.
 function buildSelectionSet(type, getDefaultFieldNames) {
   // Unwrap any non-null or list types.
-  var namedType = _graphqlType.getNamedType(type);
+  var namedType = _graphql.getNamedType(type);
 
   // Unknown types and leaf types do not have selection sets.
-  if (!type || _graphqlType.isLeafType(type)) {
+  if (!type || _graphql.isLeafType(type)) {
     return;
   }
 
@@ -2472,7 +2790,32 @@ function getIndentation(str, index) {
   }
   return str.substring(indentStart, indentEnd);
 }
-},{"graphql/language":126,"graphql/type":136,"graphql/utilities":145}],12:[function(require,module,exports){
+},{"graphql":142}],13:[function(require,module,exports){
+
+/**
+ *  Copyright (c) 2015, Facebook, Inc.
+ *  All rights reserved.
+ *
+ *  This source code is licensed under the BSD-style license found in the
+ *  LICENSE file in the root directory of this source tree. An additional grant
+ *  of patent rights can be found in the PATENTS file in the same directory.
+ */
+
+"use strict";
+
+exports.__esModule = true;
+exports["default"] = find;
+
+function find(list, predicate) {
+  for (var i = 0; i < list.length; i++) {
+    if (predicate(list[i])) {
+      return list[i];
+    }
+  }
+}
+
+module.exports = exports["default"];
+},{}],14:[function(require,module,exports){
 /**
  *  Copyright (c) 2015, Facebook, Inc.
  *  All rights reserved.
@@ -2486,36 +2829,40 @@ function getIndentation(str, index) {
 
 exports.__esModule = true;
 
-var _graphqlUtilities = require('graphql/utilities');
+var _graphql = require('graphql');
 
-exports.introspectionQuery = _graphqlUtilities.introspectionQuery;
+exports.introspectionQuery = _graphql.introspectionQuery;
 
 // Some GraphQL services do not support subscriptions and fail an introspection
 // query which includes the `subscriptionType` field as the stock introspection
 // query does. This backup query removes that field.
 var introspectionQuerySansSubscriptions = '\n  query IntrospectionQuery {\n    __schema {\n      queryType { name }\n      mutationType { name }\n      types {\n        ...FullType\n      }\n      directives {\n        name\n        description\n        args {\n          ...InputValue\n        }\n        onOperation\n        onFragment\n        onField\n      }\n    }\n  }\n\n  fragment FullType on __Type {\n    kind\n    name\n    description\n    fields(includeDeprecated: true) {\n      name\n      description\n      args {\n        ...InputValue\n      }\n      type {\n        ...TypeRef\n      }\n      isDeprecated\n      deprecationReason\n    }\n    inputFields {\n      ...InputValue\n    }\n    interfaces {\n      ...TypeRef\n    }\n    enumValues(includeDeprecated: true) {\n      name\n      description\n      isDeprecated\n      deprecationReason\n    }\n    possibleTypes {\n      ...TypeRef\n    }\n  }\n\n  fragment InputValue on __InputValue {\n    name\n    description\n    type { ...TypeRef }\n    defaultValue\n  }\n\n  fragment TypeRef on __Type {\n    kind\n    name\n    ofType {\n      kind\n      name\n      ofType {\n        kind\n        name\n        ofType {\n          kind\n          name\n        }\n      }\n    }\n  }\n';
 exports.introspectionQuerySansSubscriptions = introspectionQuerySansSubscriptions;
-},{"graphql/utilities":145}],13:[function(require,module,exports){
+},{"graphql":142}],15:[function(require,module,exports){
+module.exports = { "default": require("core-js/library/fn/array/from"), __esModule: true };
+},{"core-js/library/fn/array/from":51}],16:[function(require,module,exports){
 module.exports = { "default": require("core-js/library/fn/get-iterator"), __esModule: true };
-},{"core-js/library/fn/get-iterator":46}],14:[function(require,module,exports){
+},{"core-js/library/fn/get-iterator":52}],17:[function(require,module,exports){
 module.exports = { "default": require("core-js/library/fn/is-iterable"), __esModule: true };
-},{"core-js/library/fn/is-iterable":47}],15:[function(require,module,exports){
+},{"core-js/library/fn/is-iterable":53}],18:[function(require,module,exports){
 module.exports = { "default": require("core-js/library/fn/map"), __esModule: true };
-},{"core-js/library/fn/map":48}],16:[function(require,module,exports){
+},{"core-js/library/fn/map":54}],19:[function(require,module,exports){
 module.exports = { "default": require("core-js/library/fn/object/assign"), __esModule: true };
-},{"core-js/library/fn/object/assign":49}],17:[function(require,module,exports){
+},{"core-js/library/fn/object/assign":55}],20:[function(require,module,exports){
 module.exports = { "default": require("core-js/library/fn/object/create"), __esModule: true };
-},{"core-js/library/fn/object/create":50}],18:[function(require,module,exports){
+},{"core-js/library/fn/object/create":56}],21:[function(require,module,exports){
 module.exports = { "default": require("core-js/library/fn/object/define-property"), __esModule: true };
-},{"core-js/library/fn/object/define-property":51}],19:[function(require,module,exports){
+},{"core-js/library/fn/object/define-property":57}],22:[function(require,module,exports){
 module.exports = { "default": require("core-js/library/fn/object/get-own-property-descriptor"), __esModule: true };
-},{"core-js/library/fn/object/get-own-property-descriptor":52}],20:[function(require,module,exports){
+},{"core-js/library/fn/object/get-own-property-descriptor":58}],23:[function(require,module,exports){
 module.exports = { "default": require("core-js/library/fn/object/keys"), __esModule: true };
-},{"core-js/library/fn/object/keys":53}],21:[function(require,module,exports){
+},{"core-js/library/fn/object/keys":59}],24:[function(require,module,exports){
 module.exports = { "default": require("core-js/library/fn/object/set-prototype-of"), __esModule: true };
-},{"core-js/library/fn/object/set-prototype-of":54}],22:[function(require,module,exports){
+},{"core-js/library/fn/object/set-prototype-of":60}],25:[function(require,module,exports){
+module.exports = { "default": require("core-js/library/fn/promise"), __esModule: true };
+},{"core-js/library/fn/promise":61}],26:[function(require,module,exports){
 module.exports = { "default": require("core-js/library/fn/set"), __esModule: true };
-},{"core-js/library/fn/set":55}],23:[function(require,module,exports){
+},{"core-js/library/fn/set":62}],27:[function(require,module,exports){
 "use strict";
 
 exports["default"] = function (instance, Constructor) {
@@ -2525,7 +2872,7 @@ exports["default"] = function (instance, Constructor) {
 };
 
 exports.__esModule = true;
-},{}],24:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 "use strict";
 
 var _Object$defineProperty = require("babel-runtime/core-js/object/define-property")["default"];
@@ -2550,7 +2897,7 @@ exports["default"] = (function () {
 })();
 
 exports.__esModule = true;
-},{"babel-runtime/core-js/object/define-property":18}],25:[function(require,module,exports){
+},{"babel-runtime/core-js/object/define-property":21}],29:[function(require,module,exports){
 "use strict";
 
 var _Object$assign = require("babel-runtime/core-js/object/assign")["default"];
@@ -2570,7 +2917,7 @@ exports["default"] = _Object$assign || function (target) {
 };
 
 exports.__esModule = true;
-},{"babel-runtime/core-js/object/assign":16}],26:[function(require,module,exports){
+},{"babel-runtime/core-js/object/assign":19}],30:[function(require,module,exports){
 "use strict";
 
 var _Object$getOwnPropertyDescriptor = require("babel-runtime/core-js/object/get-own-property-descriptor")["default"];
@@ -2615,7 +2962,7 @@ exports["default"] = function get(_x, _x2, _x3) {
 };
 
 exports.__esModule = true;
-},{"babel-runtime/core-js/object/get-own-property-descriptor":19}],27:[function(require,module,exports){
+},{"babel-runtime/core-js/object/get-own-property-descriptor":22}],31:[function(require,module,exports){
 "use strict";
 
 var _Object$create = require("babel-runtime/core-js/object/create")["default"];
@@ -2639,7 +2986,7 @@ exports["default"] = function (subClass, superClass) {
 };
 
 exports.__esModule = true;
-},{"babel-runtime/core-js/object/create":17,"babel-runtime/core-js/object/set-prototype-of":21}],28:[function(require,module,exports){
+},{"babel-runtime/core-js/object/create":20,"babel-runtime/core-js/object/set-prototype-of":24}],32:[function(require,module,exports){
 "use strict";
 
 exports["default"] = function (obj) {
@@ -2649,7 +2996,7 @@ exports["default"] = function (obj) {
 };
 
 exports.__esModule = true;
-},{}],29:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 "use strict";
 
 exports["default"] = function (obj) {
@@ -2670,7 +3017,7 @@ exports["default"] = function (obj) {
 };
 
 exports.__esModule = true;
-},{}],30:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 "use strict";
 
 var _getIterator = require("babel-runtime/core-js/get-iterator")["default"];
@@ -2716,7 +3063,23 @@ exports["default"] = (function () {
 })();
 
 exports.__esModule = true;
-},{"babel-runtime/core-js/get-iterator":13,"babel-runtime/core-js/is-iterable":14}],31:[function(require,module,exports){
+},{"babel-runtime/core-js/get-iterator":16,"babel-runtime/core-js/is-iterable":17}],35:[function(require,module,exports){
+"use strict";
+
+var _Array$from = require("babel-runtime/core-js/array/from")["default"];
+
+exports["default"] = function (arr) {
+  if (Array.isArray(arr)) {
+    for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i];
+
+    return arr2;
+  } else {
+    return _Array$from(arr);
+  }
+};
+
+exports.__esModule = true;
+},{"babel-runtime/core-js/array/from":15}],36:[function(require,module,exports){
 /**
  *  Copyright (c) 2015, Facebook, Inc.
  *  All rights reserved.
@@ -2734,9 +3097,11 @@ var _codemirror = require('codemirror');
 
 var _codemirror2 = _interopRequireDefault(_codemirror);
 
-var _graphqlType = require('graphql/type');
+var _graphql = require('graphql');
 
 var _graphqlTypeIntrospection = require('graphql/type/introspection');
+
+require('./mode');
 
 /**
  * Registers a "hint" helper for CodeMirror.
@@ -2790,7 +3155,7 @@ _codemirror2['default'].registerHelper('hint', 'graphql', function (editor, opti
       } else {
         fields = [];
       }
-      if (_graphqlType.isAbstractType(typeInfo.parentType)) {
+      if (_graphql.isAbstractType(typeInfo.parentType)) {
         fields.push(_graphqlTypeIntrospection.TypeNameMetaFieldDef);
       }
       if (typeInfo.parentType === schema.getQueryType()) {
@@ -2838,8 +3203,8 @@ _codemirror2['default'].registerHelper('hint', 'graphql', function (editor, opti
 
   // Input values: Enum and Boolean
   if (kind === 'EnumValue' || kind === 'ListValue' && step === 1 || kind === 'ObjectField' && step === 2 || kind === 'Argument' && step === 2) {
-    var namedInputType = _graphqlType.getNamedType(typeInfo.inputType);
-    if (namedInputType instanceof _graphqlType.GraphQLEnumType) {
+    var namedInputType = _graphql.getNamedType(typeInfo.inputType);
+    if (namedInputType instanceof _graphql.GraphQLEnumType) {
       var valueMap = namedInputType.getValues();
       var values = Object.keys(valueMap).map(function (valueName) {
         return valueMap[valueName];
@@ -2851,8 +3216,8 @@ _codemirror2['default'].registerHelper('hint', 'graphql', function (editor, opti
           description: value.description
         };
       }));
-    } else if (namedInputType === _graphqlType.GraphQLBoolean) {
-      return hintList(editor, options, cur, token, [{ text: 'true', type: _graphqlType.GraphQLBoolean, description: 'Not false.' }, { text: 'false', type: _graphqlType.GraphQLBoolean, description: 'Not true.' }]);
+    } else if (namedInputType === _graphql.GraphQLBoolean) {
+      return hintList(editor, options, cur, token, [{ text: 'true', type: _graphql.GraphQLBoolean, description: 'Not false.' }, { text: 'false', type: _graphql.GraphQLBoolean, description: 'Not true.' }]);
     }
   }
 
@@ -2860,12 +3225,14 @@ _codemirror2['default'].registerHelper('hint', 'graphql', function (editor, opti
   if (kind === 'TypeCondition' && step === 1 || kind === 'NamedType' && state.prevState.kind === 'TypeCondition') {
     var possibleTypes;
     if (typeInfo.parentType) {
-      possibleTypes = _graphqlType.isAbstractType(typeInfo.parentType) ? typeInfo.parentType.getPossibleTypes() : [typeInfo.parentType];
+      possibleTypes = _graphql.isAbstractType(typeInfo.parentType) ? typeInfo.parentType.getPossibleTypes() : [typeInfo.parentType];
     } else {
-      var typeMap = schema.getTypeMap();
-      possibleTypes = Object.keys(typeMap).map(function (typeName) {
-        return typeMap[typeName];
-      }).filter(_graphqlType.isCompositeType);
+      (function () {
+        var typeMap = schema.getTypeMap();
+        possibleTypes = Object.keys(typeMap).map(function (typeName) {
+          return typeMap[typeName];
+        }).filter(_graphql.isCompositeType);
+      })();
     }
     return hintList(editor, options, cur, token, possibleTypes.map(function (type) {
       return {
@@ -2875,12 +3242,45 @@ _codemirror2['default'].registerHelper('hint', 'graphql', function (editor, opti
     }));
   }
 
+  // Fragment spread names
+  if (kind === 'FragmentSpread' && step === 1) {
+    var _ret2 = (function () {
+      var typeMap = schema.getTypeMap();
+      var defState = getDefinitionState(token.state);
+      var fragments = getFragmentDefinitions(editor);
+
+      // Filter down to only the fragments which may exist here.
+      var relevantFrags = fragments.filter(function (frag) {
+        return(
+          // Only include fragments with known types.
+          typeMap[frag.typeCondition.name.value] &&
+          // Only include fragments which are not cyclic.
+          !(defState && defState.kind === 'FragmentDefinition' && defState.name === frag.name.value) &&
+          // Only include fragments which could possibly be spread here.
+          _graphql.doTypesOverlap(typeInfo.parentType, typeMap[frag.typeCondition.name.value])
+        );
+      });
+
+      return {
+        v: hintList(editor, options, cur, token, relevantFrags.map(function (frag) {
+          return {
+            text: frag.name.value,
+            type: typeMap[frag.typeCondition.name.value],
+            description: 'fragment ' + frag.name.value + ' on ' + frag.typeCondition.name.value
+          };
+        }))
+      };
+    })();
+
+    if (typeof _ret2 === 'object') return _ret2.v;
+  }
+
   // Variable definition types
   if (kind === 'VariableDefinition' && step === 2 || kind === 'ListType' && step === 1 || kind === 'NamedType' && (state.prevState.kind === 'VariableDefinition' || state.prevState.kind === 'ListType')) {
     var inputTypeMap = schema.getTypeMap();
     var inputTypes = Object.keys(inputTypeMap).map(function (typeName) {
       return inputTypeMap[typeName];
-    }).filter(_graphqlType.isInputType);
+    }).filter(_graphql.isInputType);
     return hintList(editor, options, cur, token, inputTypes.map(function (type) {
       return {
         text: type.name,
@@ -2919,7 +3319,8 @@ function getTypeInfo(schema, tokenState) {
 
   forEachState(tokenState, function (state) {
     switch (state.kind) {
-      case 'Query':case 'ShortQuery':
+      case 'Query':
+      case 'ShortQuery':
         info.type = schema.getQueryType();
         break;
       case 'Mutation':
@@ -2930,14 +3331,16 @@ function getTypeInfo(schema, tokenState) {
         break;
       case 'InlineFragment':
       case 'FragmentDefinition':
-        info.type = state.type && schema.getType(state.type);
+        if (state.type) {
+          info.type = schema.getType(state.type);
+        }
         break;
       case 'Field':
         info.fieldDef = info.type && state.name ? getFieldDef(schema, info.parentType, state.name) : null;
         info.type = info.fieldDef && info.fieldDef.type;
         break;
       case 'SelectionSet':
-        info.parentType = _graphqlType.getNamedType(info.type);
+        info.parentType = _graphql.getNamedType(info.type);
         break;
       case 'Directive':
         info.directiveDef = state.name && schema.getDirective(state.name);
@@ -2958,12 +3361,12 @@ function getTypeInfo(schema, tokenState) {
         info.inputType = info.argDef && info.argDef.type;
         break;
       case 'ListValue':
-        var nullableType = _graphqlType.getNullableType(info.inputType);
-        info.inputType = nullableType instanceof _graphqlType.GraphQLList ? nullableType.ofType : null;
+        var nullableType = _graphql.getNullableType(info.inputType);
+        info.inputType = nullableType instanceof _graphql.GraphQLList ? nullableType.ofType : null;
         break;
       case 'ObjectValue':
-        var objectType = _graphqlType.getNamedType(info.inputType);
-        info.objectFieldDefs = objectType instanceof _graphqlType.GraphQLInputObjectType ? objectType.getFields() : null;
+        var objectType = _graphql.getNamedType(info.inputType);
+        info.objectFieldDefs = objectType instanceof _graphql.GraphQLInputObjectType ? objectType.getFields() : null;
         break;
       case 'ObjectField':
         var objectField = state.name && info.objectFieldDefs ? info.objectFieldDefs[state.name] : null;
@@ -2973,6 +3376,26 @@ function getTypeInfo(schema, tokenState) {
   });
 
   return info;
+}
+
+// Utility for returning the state representing the Definition this token state
+// is within, if any.
+function getDefinitionState(tokenState) {
+  var definitionState = undefined;
+
+  forEachState(tokenState, function (state) {
+    switch (state.kind) {
+      case 'Query':
+      case 'ShortQuery':
+      case 'Mutation':
+      case 'Subscription':
+      case 'FragmentDefinition':
+        definitionState = state;
+        break;
+    }
+  });
+
+  return definitionState;
 }
 
 // Utility for iterating through a state stack bottom-up.
@@ -2988,6 +3411,45 @@ function forEachState(stack, fn) {
   }
 }
 
+// Finds all fragment definition ASTs in a source.
+function getFragmentDefinitions(editor) {
+  var fragmentDefs = [];
+  runMode(editor, 'graphql', function (state) {
+    if (state.kind === 'FragmentDefinition' && state.name && state.type) {
+      fragmentDefs.push({
+        kind: 'FragmentDefinition',
+        name: {
+          kind: 'Name',
+          value: state.name
+        },
+        typeCondition: {
+          kind: 'NamedType',
+          name: {
+            kind: 'Name',
+            value: state.type
+          }
+        }
+      });
+    }
+  });
+  return fragmentDefs;
+}
+
+// Utility for efficiently running a codemirror mode over an editor's current
+// state, calling an iterFn function on each token.
+function runMode(editor, modeSpec, iterFn) {
+  var mode = _codemirror2['default'].getMode(_codemirror2['default'].defaults, modeSpec);
+  var state = _codemirror2['default'].startState(mode);
+  editor.eachLine(function (line) {
+    var stream = new _codemirror2['default'].StringStream(line.text);
+    while (!stream.eol()) {
+      var style = mode.token(stream, state);
+      iterFn(state, style, stream);
+      stream.start = stream.pos;
+    }
+  });
+}
+
 // Gets the field definition given a type and field name
 function getFieldDef(schema, type, fieldName) {
   if (fieldName === _graphqlTypeIntrospection.SchemaMetaFieldDef.name && schema.getQueryType() === type) {
@@ -2996,7 +3458,7 @@ function getFieldDef(schema, type, fieldName) {
   if (fieldName === _graphqlTypeIntrospection.TypeMetaFieldDef.name && schema.getQueryType() === type) {
     return _graphqlTypeIntrospection.TypeMetaFieldDef;
   }
-  if (fieldName === _graphqlTypeIntrospection.TypeNameMetaFieldDef.name && _graphqlType.isCompositeType(type)) {
+  if (fieldName === _graphqlTypeIntrospection.TypeNameMetaFieldDef.name && _graphql.isCompositeType(type)) {
     return _graphqlTypeIntrospection.TypeNameMetaFieldDef;
   }
   if (type.getFields) {
@@ -3011,7 +3473,7 @@ function hintList(editor, options, cursor, token, list) {
     return;
   }
 
-  var tokenStart = token.type === null ? token.end : /\w/.test(token.string[0]) ? token.start : token.start + 1;
+  var tokenStart = token.type !== null && /\w/.test(token.string[0]) ? token.start : token.end;
 
   var results = {
     list: hints,
@@ -3103,7 +3565,7 @@ function lexicalDistance(a, b) {
 
   return d[aLength][bLength];
 }
-},{"codemirror":44,"graphql/type":136,"graphql/type/introspection":137}],32:[function(require,module,exports){
+},{"./mode":38,"codemirror":49,"graphql":142,"graphql/type/introspection":159}],37:[function(require,module,exports){
 /**
  *  Copyright (c) 2015, Facebook, Inc.
  *  All rights reserved.
@@ -3121,9 +3583,7 @@ var _codemirror = require('codemirror');
 
 var _codemirror2 = _interopRequireDefault(_codemirror);
 
-var _graphqlLanguage = require('graphql/language');
-
-var _graphqlValidation = require('graphql/validation');
+var _graphql = require('graphql');
 
 /**
  * Registers a "lint" helper for CodeMirror.
@@ -3140,7 +3600,7 @@ var _graphqlValidation = require('graphql/validation');
 _codemirror2['default'].registerHelper('lint', 'graphql', function (text, options, editor) {
   var schema = options.schema;
   try {
-    var ast = _graphqlLanguage.parse(text);
+    var ast = _graphql.parse(text);
   } catch (error) {
     var location = error.locations[0];
     var pos = _codemirror2['default'].Pos(location.line - 1, location.column);
@@ -3153,7 +3613,7 @@ _codemirror2['default'].registerHelper('lint', 'graphql', function (text, option
       to: _codemirror2['default'].Pos(location.line - 1, token.end)
     }];
   }
-  var errors = schema ? _graphqlValidation.validate(schema, ast) : [];
+  var errors = schema ? _graphql.validate(schema, ast) : [];
   return mapCat(errors, function (error) {
     return errorAnnotations(editor, error);
   });
@@ -3176,7 +3636,7 @@ function errorAnnotations(editor, error) {
 function mapCat(array, mapper) {
   return Array.prototype.concat.apply([], array.map(mapper));
 }
-},{"codemirror":44,"graphql/language":126,"graphql/validation":152}],33:[function(require,module,exports){
+},{"codemirror":49,"graphql":142}],38:[function(require,module,exports){
 /**
  *  Copyright (c) 2015, Facebook, Inc.
  *  All rights reserved.
@@ -3414,6 +3874,17 @@ function lex(stream) {
   }
 }
 
+// An constraint described as `but not` in the GraphQL spec.
+function butNot(rule, exclusions) {
+  var ruleMatch = rule.match;
+  rule.match = function (token) {
+    return ruleMatch(token) && exclusions.every(function (exclusion) {
+      return !exclusion.match(token);
+    });
+  };
+  return rule;
+}
+
 // An optional rule.
 function opt(ofRule) {
   return { ofRule: ofRule };
@@ -3526,7 +3997,7 @@ var ParseRules = {
   DefaultValue: [p('='), 'Value'],
   SelectionSet: [p('{'), list('Selection'), p('}')],
   Selection: function Selection(token, stream) {
-    return token.value === '...' ? stream.match(/[\s\u00a0,]*on\b/, false) ? 'InlineFragment' : 'FragmentSpread' : stream.match(/[\s\u00a0,]*:/, false) ? 'AliasedField' : 'Field';
+    return token.value === '...' ? stream.match(/[\s\u00a0,]*(on\b|@|{)/, false) ? 'InlineFragment' : 'FragmentSpread' : stream.match(/[\s\u00a0,]*:/, false) ? 'AliasedField' : 'Field';
   },
   // Note: this minor deviation of "AliasedField" simplifies the lookahead.
   AliasedField: [name('qualifier'), p(':'), 'Field'],
@@ -3535,7 +4006,7 @@ var ParseRules = {
   Argument: [name('attribute'), p(':'), 'Value'],
   FragmentSpread: [p('...'), name('def'), list('Directive')],
   InlineFragment: [p('...'), opt('TypeCondition'), list('Directive'), 'SelectionSet'],
-  FragmentDefinition: [word('fragment'), name('def'), 'TypeCondition', list('Directive'), 'SelectionSet'],
+  FragmentDefinition: [word('fragment'), opt(butNot(name('def'), [word('on')])), 'TypeCondition', list('Directive'), 'SelectionSet'],
   TypeCondition: [word('on'), type('atom')],
   // Variables could be parsed in cases where only Const is expected by spec.
   Value: function Value(token) {
@@ -3577,7 +4048,7 @@ var ParseRules = {
   NamedType: [name('atom'), opt(p('!'))],
   Directive: [p('@', 'meta'), name('meta'), opt('Arguments')]
 };
-},{"codemirror":44}],34:[function(require,module,exports){
+},{"codemirror":49}],39:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -3775,7 +4246,7 @@ var ParseRules = {
   });
 });
 
-},{"../../lib/codemirror":44}],35:[function(require,module,exports){
+},{"../../lib/codemirror":49}],40:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -3841,7 +4312,7 @@ var ParseRules = {
     }
     for (var i = ranges.length - 1; i >= 0; i--) {
       var cur = ranges[i].head;
-      cm.replaceRange("", Pos(cur.line, cur.ch - 1), Pos(cur.line, cur.ch + 1));
+      cm.replaceRange("", Pos(cur.line, cur.ch - 1), Pos(cur.line, cur.ch + 1), "+delete");
     }
   }
 
@@ -3972,7 +4443,7 @@ var ParseRules = {
   }
 });
 
-},{"../../lib/codemirror":44}],36:[function(require,module,exports){
+},{"../../lib/codemirror":49}],41:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -4094,7 +4565,7 @@ var ParseRules = {
   });
 });
 
-},{"../../lib/codemirror":44}],37:[function(require,module,exports){
+},{"../../lib/codemirror":49}],42:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -4201,7 +4672,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
 
 });
 
-},{"../../lib/codemirror":44}],38:[function(require,module,exports){
+},{"../../lib/codemirror":49}],43:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -4352,7 +4823,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
   });
 });
 
-},{"../../lib/codemirror":44}],39:[function(require,module,exports){
+},{"../../lib/codemirror":49}],44:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -4375,7 +4846,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
       cm.off("viewportChange", onViewportChange);
       cm.off("fold", onFold);
       cm.off("unfold", onFold);
-      cm.off("swapDoc", updateInViewport);
+      cm.off("swapDoc", onChange);
     }
     if (val) {
       cm.state.foldGutter = new State(parseOptions(val));
@@ -4385,7 +4856,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
       cm.on("viewportChange", onViewportChange);
       cm.on("fold", onFold);
       cm.on("unfold", onFold);
-      cm.on("swapDoc", updateInViewport);
+      cm.on("swapDoc", onChange);
     }
   });
 
@@ -4500,7 +4971,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
   }
 });
 
-},{"../../lib/codemirror":44,"./foldcode":38}],40:[function(require,module,exports){
+},{"../../lib/codemirror":49,"./foldcode":43}],45:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -4933,7 +5404,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
     alignWithWord: true,
     closeCharacters: /[\s()\[\]{};:>,]/,
     closeOnUnfocus: true,
-    completeOnSingleClick: false,
+    completeOnSingleClick: true,
     container: null,
     customKeys: null,
     extraKeys: null
@@ -4942,7 +5413,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
   CodeMirror.defineOption("hintOptions", null);
 });
 
-},{"../../lib/codemirror":44}],41:[function(require,module,exports){
+},{"../../lib/codemirror":49}],46:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -5175,7 +5646,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
   });
 });
 
-},{"../../lib/codemirror":44}],42:[function(require,module,exports){
+},{"../../lib/codemirror":49}],47:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -5366,7 +5837,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
   });
 });
 
-},{"../../lib/codemirror":44}],43:[function(require,module,exports){
+},{"../../lib/codemirror":49}],48:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -5474,9 +5945,10 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
     cm.setSelections(extended);
   };
 
-  map["Shift-" + ctrl + "K"] = "deleteLine";
+  map["Shift-Ctrl-K"] = "deleteLine";
 
   function insertLine(cm, above) {
+    if (cm.isReadOnly()) return CodeMirror.Pass
     cm.operation(function() {
       var len = cm.listSelections().length, newSelection = [], last = -1;
       for (var i = 0; i < len; i++) {
@@ -5492,9 +5964,9 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
     });
   }
 
-  cmds[map[ctrl + "Enter"] = "insertLineAfter"] = function(cm) { insertLine(cm, false); };
+  cmds[map[ctrl + "Enter"] = "insertLineAfter"] = function(cm) { return insertLine(cm, false); };
 
-  cmds[map["Shift-" + ctrl + "Enter"] = "insertLineBefore"] = function(cm) { insertLine(cm, true); };
+  cmds[map["Shift-" + ctrl + "Enter"] = "insertLineBefore"] = function(cm) { return insertLine(cm, true); };
 
   function wordAt(cm, pos) {
     var start = pos.ch, end = start, line = cm.getLine(pos.line);
@@ -5561,6 +6033,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
   var swapLineCombo = mac ? "Cmd-Ctrl-" : "Shift-Ctrl-";
 
   cmds[map[swapLineCombo + "Up"] = "swapLineUp"] = function(cm) {
+    if (cm.isReadOnly()) return CodeMirror.Pass
     var ranges = cm.listSelections(), linesToMove = [], at = cm.firstLine() - 1, newSels = [];
     for (var i = 0; i < ranges.length; i++) {
       var range = ranges[i], from = range.from().line - 1, to = range.to().line;
@@ -5587,6 +6060,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
   };
 
   cmds[map[swapLineCombo + "Down"] = "swapLineDown"] = function(cm) {
+    if (cm.isReadOnly()) return CodeMirror.Pass
     var ranges = cm.listSelections(), linesToMove = [], at = cm.lastLine() + 1;
     for (var i = ranges.length - 1; i >= 0; i--) {
       var range = ranges[i], from = range.to().line + 1, to = range.from().line;
@@ -5609,7 +6083,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
     });
   };
 
-  map[ctrl + "/"] = function(cm) {
+  cmds[map[ctrl + "/"] = "toggleCommentIndented"] = function(cm) {
     cm.toggleComment({ indent: true });
   }
 
@@ -5658,6 +6132,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
   map[ctrl + "T"] = "transposeChars";
 
   function sortLines(cm, caseSensitive) {
+    if (cm.isReadOnly()) return CodeMirror.Pass
     var ranges = cm.listSelections(), toSort = [], selected;
     for (var i = 0; i < ranges.length; i++) {
       var range = ranges[i];
@@ -5933,7 +6408,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
   CodeMirror.normalizeKeyMap(map);
 });
 
-},{"../addon/edit/matchbrackets":36,"../addon/search/searchcursor":42,"../lib/codemirror":44}],44:[function(require,module,exports){
+},{"../addon/edit/matchbrackets":41,"../addon/search/searchcursor":47,"../lib/codemirror":49}],49:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -5949,7 +6424,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
   else if (typeof define == "function" && define.amd) // AMD
     return define([], mod);
   else // Plain browser env
-    this.CodeMirror = mod();
+    (this || window).CodeMirror = mod();
 })(function() {
   "use strict";
 
@@ -6346,7 +6821,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
       if (horiz.clientWidth) scroll(horiz.scrollLeft, "horizontal");
     });
 
-    this.checkedOverlay = false;
+    this.checkedZeroWidth = false;
     // Need to set a minimum width to see the scrollbar on IE7 (but must not set it on IE8).
     if (ie && ie_version < 8) this.horiz.style.minHeight = this.vert.style.minWidth = "18px";
   }
@@ -6381,29 +6856,43 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
         this.horiz.firstChild.style.width = "0";
       }
 
-      if (!this.checkedOverlay && measure.clientHeight > 0) {
-        if (sWidth == 0) this.overlayHack();
-        this.checkedOverlay = true;
+      if (!this.checkedZeroWidth && measure.clientHeight > 0) {
+        if (sWidth == 0) this.zeroWidthHack();
+        this.checkedZeroWidth = true;
       }
 
       return {right: needsV ? sWidth : 0, bottom: needsH ? sWidth : 0};
     },
     setScrollLeft: function(pos) {
       if (this.horiz.scrollLeft != pos) this.horiz.scrollLeft = pos;
+      if (this.disableHoriz) this.enableZeroWidthBar(this.horiz, this.disableHoriz);
     },
     setScrollTop: function(pos) {
       if (this.vert.scrollTop != pos) this.vert.scrollTop = pos;
+      if (this.disableVert) this.enableZeroWidthBar(this.vert, this.disableVert);
     },
-    overlayHack: function() {
+    zeroWidthHack: function() {
       var w = mac && !mac_geMountainLion ? "12px" : "18px";
-      this.horiz.style.minHeight = this.vert.style.minWidth = w;
-      var self = this;
-      var barMouseDown = function(e) {
-        if (e_target(e) != self.vert && e_target(e) != self.horiz)
-          operation(self.cm, onMouseDown)(e);
-      };
-      on(this.vert, "mousedown", barMouseDown);
-      on(this.horiz, "mousedown", barMouseDown);
+      this.horiz.style.height = this.vert.style.width = w;
+      this.horiz.style.pointerEvents = this.vert.style.pointerEvents = "none";
+      this.disableHoriz = new Delayed;
+      this.disableVert = new Delayed;
+    },
+    enableZeroWidthBar: function(bar, delay) {
+      bar.style.pointerEvents = "auto";
+      function maybeDisable() {
+        // To find out whether the scrollbar is still visible, we
+        // check whether the element under the pixel in the bottom
+        // left corner of the scrollbar box is the scrollbar box
+        // itself (when the bar is still visible) or its filler child
+        // (when the bar is hidden). If it is still visible, we keep
+        // it enabled, if it's hidden, we disable pointer events.
+        var box = bar.getBoundingClientRect();
+        var elt = document.elementFromPoint(box.left + 1, box.bottom - 1);
+        if (elt != bar) bar.style.pointerEvents = "none";
+        else delay.set(1000, maybeDisable);
+      }
+      delay.set(1000, maybeDisable);
     },
     clear: function() {
       var parent = this.horiz.parentNode;
@@ -6465,6 +6954,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
 
     d.sizer.style.paddingRight = (d.barWidth = sizes.right) + "px";
     d.sizer.style.paddingBottom = (d.barHeight = sizes.bottom) + "px";
+    d.heightForcer.style.borderBottom = sizes.bottom + "px solid transparent"
 
     if (sizes.right && sizes.bottom) {
       d.scrollbarFiller.style.display = "block";
@@ -6709,9 +7199,9 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
 
   function setDocumentHeight(cm, measure) {
     cm.display.sizer.style.minHeight = measure.docHeight + "px";
-    var total = measure.docHeight + cm.display.barHeight;
-    cm.display.heightForcer.style.top = total + "px";
-    cm.display.gutters.style.height = Math.max(total + scrollGap(cm), measure.clientHeight) + "px";
+    cm.display.heightForcer.style.top = measure.docHeight + "px";
+    cm.display.gutters.style.height = Math.max(measure.docHeight + cm.display.barHeight + scrollGap(cm),
+                                               measure.clientHeight) + "px";
   }
 
   // Read the actual heights of the rendered lines, and update their
@@ -6745,7 +7235,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
   // given line.
   function updateWidgetHeight(line) {
     if (line.widgets) for (var i = 0; i < line.widgets.length; ++i)
-      line.widgets[i].height = line.widgets[i].node.offsetHeight;
+      line.widgets[i].height = line.widgets[i].node.parentNode.offsetHeight;
   }
 
   // Do a bulk-read of the DOM positions and sizes needed to draw the
@@ -7016,10 +7506,6 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
     if (!cm.state.focused) { cm.display.input.focus(); onFocus(cm); }
   }
 
-  function isReadOnly(cm) {
-    return cm.options.readOnly || cm.doc.cantEdit;
-  }
-
   // This will be set to an array of strings when copying, so that,
   // when pasting, we know what kind of selections the copied text
   // was made out of.
@@ -7074,7 +7560,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
     var pasted = e.clipboardData && e.clipboardData.getData("text/plain");
     if (pasted) {
       e.preventDefault();
-      if (!isReadOnly(cm) && !cm.options.disableInput)
+      if (!cm.isReadOnly() && !cm.options.disableInput)
         runInOp(cm, function() { applyTextInput(cm, pasted, 0, null, "paste"); });
       return true;
     }
@@ -7177,13 +7663,14 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
       });
 
       on(te, "paste", function(e) {
-        if (handlePaste(e, cm)) return true;
+        if (signalDOMEvent(cm, e) || handlePaste(e, cm)) return
 
         cm.state.pasteIncoming = true;
         input.fastPoll();
       });
 
       function prepareCopyCut(e) {
+        if (signalDOMEvent(cm, e)) return
         if (cm.somethingSelected()) {
           lastCopied = cm.getSelections();
           if (input.inaccurateSelection) {
@@ -7211,7 +7698,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
       on(te, "copy", prepareCopyCut);
 
       on(display.scroller, "paste", function(e) {
-        if (eventInWidget(display, e)) return;
+        if (eventInWidget(display, e) || signalDOMEvent(cm, e)) return;
         cm.state.pasteIncoming = true;
         input.focus();
       });
@@ -7345,7 +7832,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
       // in which case reading its value would be expensive.
       if (this.contextMenuPending || !cm.state.focused ||
           (hasSelection(input) && !prevInput && !this.composing) ||
-          isReadOnly(cm) || cm.options.disableInput || cm.state.keySeq)
+          cm.isReadOnly() || cm.options.disableInput || cm.state.keySeq)
         return false;
 
       var text = input.value;
@@ -7407,10 +7894,11 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
       if (reset && cm.doc.sel.contains(pos) == -1)
         operation(cm, setSelection)(cm.doc, simpleSelection(pos), sel_dontScroll);
 
-      var oldCSS = te.style.cssText;
-      input.wrapper.style.position = "absolute";
-      te.style.cssText = "position: fixed; width: 30px; height: 30px; top: " + (e.clientY - 5) +
-        "px; left: " + (e.clientX - 5) + "px; z-index: 1000; background: " +
+      var oldCSS = te.style.cssText, oldWrapperCSS = input.wrapper.style.cssText;
+      input.wrapper.style.cssText = "position: absolute"
+      var wrapperBox = input.wrapper.getBoundingClientRect()
+      te.style.cssText = "position: absolute; width: 30px; height: 30px; top: " + (e.clientY - wrapperBox.top - 5) +
+        "px; left: " + (e.clientX - wrapperBox.left - 5) + "px; z-index: 1000; background: " +
         (ie ? "rgba(255, 255, 255, .05)" : "transparent") +
         "; outline: none; border-width: 0; outline: none; overflow: hidden; opacity: .05; filter: alpha(opacity=5);";
       if (webkit) var oldScrollY = window.scrollY; // Work around Chrome issue (#2712)
@@ -7441,7 +7929,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
       }
       function rehide() {
         input.contextMenuPending = false;
-        input.wrapper.style.position = "relative";
+        input.wrapper.style.cssText = oldWrapperCSS
         te.style.cssText = oldCSS;
         if (ie && ie_version < 9) display.scrollbars.setScrollTop(display.scroller.scrollTop = scrollPos);
 
@@ -7496,7 +7984,9 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
       var div = input.div = display.lineDiv;
       disableBrowserMagic(div);
 
-      on(div, "paste", function(e) { handlePaste(e, cm); })
+      on(div, "paste", function(e) {
+        if (!signalDOMEvent(cm, e)) handlePaste(e, cm);
+      })
 
       on(div, "compositionstart", function(e) {
         var data = e.data;
@@ -7534,11 +8024,12 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
 
       on(div, "input", function() {
         if (input.composing) return;
-        if (isReadOnly(cm) || !input.pollContent())
+        if (cm.isReadOnly() || !input.pollContent())
           runInOp(input.cm, function() {regChange(cm);});
       });
 
       function onCopyCut(e) {
+        if (signalDOMEvent(cm, e)) return
         if (cm.somethingSelected()) {
           lastCopied = cm.getSelections();
           if (e.type == "cut") cm.replaceSelection("", null, "cut");
@@ -7614,8 +8105,13 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
       try { var rng = range(start.node, start.offset, end.offset, end.node); }
       catch(e) {} // Our model of the DOM might be outdated, in which case the range we try to set can be impossible
       if (rng) {
-        sel.removeAllRanges();
-        sel.addRange(rng);
+        if (!gecko && this.cm.state.focused) {
+          sel.collapse(start.node, start.offset);
+          if (!rng.collapsed) sel.addRange(rng);
+        } else {
+          sel.removeAllRanges();
+          sel.addRange(rng);
+        }
         if (old && sel.anchorNode == null) sel.addRange(old);
         else if (gecko) this.startGracePeriod();
       }
@@ -7759,7 +8255,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
       this.div.focus();
     },
     applyComposition: function(composing) {
-      if (isReadOnly(this.cm))
+      if (this.cm.isReadOnly())
         operation(this.cm, regChange)(this.cm)
       else if (composing.data && composing.data != composing.startData)
         operation(this.cm, applyTextInput)(this.cm, composing.data, 0, composing.sel);
@@ -7771,7 +8267,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
 
     onKeyPress: function(e) {
       e.preventDefault();
-      if (!isReadOnly(this.cm))
+      if (!this.cm.isReadOnly())
         operation(this.cm, applyTextInput)(this.cm, String.fromCharCode(e.charCode == null ? e.keyCode : e.charCode), 0);
     },
 
@@ -8076,7 +8572,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
 
   // Give beforeSelectionChange handlers a change to influence a
   // selection update.
-  function filterSelectionChange(doc, sel) {
+  function filterSelectionChange(doc, sel, options) {
     var obj = {
       ranges: sel.ranges,
       update: function(ranges) {
@@ -8084,7 +8580,8 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
         for (var i = 0; i < ranges.length; i++)
           this.ranges[i] = new Range(clipPos(doc, ranges[i].anchor),
                                      clipPos(doc, ranges[i].head));
-      }
+      },
+      origin: options && options.origin
     };
     signal(doc, "beforeSelectionChange", doc, obj);
     if (doc.cm) signal(doc.cm, "beforeSelectionChange", doc.cm, obj);
@@ -8110,7 +8607,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
 
   function setSelectionNoUndo(doc, sel, options) {
     if (hasHandler(doc, "beforeSelectionChange") || doc.cm && hasHandler(doc.cm, "beforeSelectionChange"))
-      sel = filterSelectionChange(doc, sel);
+      sel = filterSelectionChange(doc, sel, options);
 
     var bias = options && options.bias ||
       (cmp(sel.primary().head, doc.sel.primary().head) < 0 ? -1 : 1);
@@ -8144,8 +8641,9 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
     var out;
     for (var i = 0; i < sel.ranges.length; i++) {
       var range = sel.ranges[i];
-      var newAnchor = skipAtomic(doc, range.anchor, bias, mayClear);
-      var newHead = skipAtomic(doc, range.head, bias, mayClear);
+      var old = sel.ranges.length == doc.sel.ranges.length && doc.sel.ranges[i];
+      var newAnchor = skipAtomic(doc, range.anchor, old && old.anchor, bias, mayClear);
+      var newHead = skipAtomic(doc, range.head, old && old.head, bias, mayClear);
       if (out || newAnchor != range.anchor || newHead != range.head) {
         if (!out) out = sel.ranges.slice(0, i);
         out[i] = new Range(newAnchor, newHead);
@@ -8154,54 +8652,59 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
     return out ? normalizeSelection(out, sel.primIndex) : sel;
   }
 
-  // Ensure a given position is not inside an atomic range.
-  function skipAtomic(doc, pos, bias, mayClear) {
-    var flipped = false, curPos = pos;
-    var dir = bias || 1;
-    doc.cantEdit = false;
-    search: for (;;) {
-      var line = getLine(doc, curPos.line);
-      if (line.markedSpans) {
-        for (var i = 0; i < line.markedSpans.length; ++i) {
-          var sp = line.markedSpans[i], m = sp.marker;
-          if ((sp.from == null || (m.inclusiveLeft ? sp.from <= curPos.ch : sp.from < curPos.ch)) &&
-              (sp.to == null || (m.inclusiveRight ? sp.to >= curPos.ch : sp.to > curPos.ch))) {
-            if (mayClear) {
-              signal(m, "beforeCursorEnter");
-              if (m.explicitlyCleared) {
-                if (!line.markedSpans) break;
-                else {--i; continue;}
-              }
-            }
-            if (!m.atomic) continue;
-            var newPos = m.find(dir < 0 ? -1 : 1);
-            if (cmp(newPos, curPos) == 0) {
-              newPos.ch += dir;
-              if (newPos.ch < 0) {
-                if (newPos.line > doc.first) newPos = clipPos(doc, Pos(newPos.line - 1));
-                else newPos = null;
-              } else if (newPos.ch > line.text.length) {
-                if (newPos.line < doc.first + doc.size - 1) newPos = Pos(newPos.line + 1, 0);
-                else newPos = null;
-              }
-              if (!newPos) {
-                if (flipped) {
-                  // Driven in a corner -- no valid cursor position found at all
-                  // -- try again *with* clearing, if we didn't already
-                  if (!mayClear) return skipAtomic(doc, pos, bias, true);
-                  // Otherwise, turn off editing until further notice, and return the start of the doc
-                  doc.cantEdit = true;
-                  return Pos(doc.first, 0);
-                }
-                flipped = true; newPos = pos; dir = -dir;
-              }
-            }
-            curPos = newPos;
-            continue search;
+  function skipAtomicInner(doc, pos, oldPos, dir, mayClear) {
+    var line = getLine(doc, pos.line);
+    if (line.markedSpans) for (var i = 0; i < line.markedSpans.length; ++i) {
+      var sp = line.markedSpans[i], m = sp.marker;
+      if ((sp.from == null || (m.inclusiveLeft ? sp.from <= pos.ch : sp.from < pos.ch)) &&
+          (sp.to == null || (m.inclusiveRight ? sp.to >= pos.ch : sp.to > pos.ch))) {
+        if (mayClear) {
+          signal(m, "beforeCursorEnter");
+          if (m.explicitlyCleared) {
+            if (!line.markedSpans) break;
+            else {--i; continue;}
           }
         }
+        if (!m.atomic) continue;
+
+        if (oldPos) {
+          var near = m.find(dir < 0 ? 1 : -1), diff;
+          if (dir < 0 ? m.inclusiveRight : m.inclusiveLeft) near = movePos(doc, near, -dir, line);
+          if (near && near.line == pos.line && (diff = cmp(near, oldPos)) && (dir < 0 ? diff < 0 : diff > 0))
+            return skipAtomicInner(doc, near, pos, dir, mayClear);
+        }
+
+        var far = m.find(dir < 0 ? -1 : 1);
+        if (dir < 0 ? m.inclusiveLeft : m.inclusiveRight) far = movePos(doc, far, dir, line);
+        return far ? skipAtomicInner(doc, far, pos, dir, mayClear) : null;
       }
-      return curPos;
+    }
+    return pos;
+  }
+
+  // Ensure a given position is not inside an atomic range.
+  function skipAtomic(doc, pos, oldPos, bias, mayClear) {
+    var dir = bias || 1;
+    var found = skipAtomicInner(doc, pos, oldPos, dir, mayClear) ||
+        (!mayClear && skipAtomicInner(doc, pos, oldPos, dir, true)) ||
+        skipAtomicInner(doc, pos, oldPos, -dir, mayClear) ||
+        (!mayClear && skipAtomicInner(doc, pos, oldPos, -dir, true));
+    if (!found) {
+      doc.cantEdit = true;
+      return Pos(doc.first, 0);
+    }
+    return found;
+  }
+
+  function movePos(doc, pos, dir, line) {
+    if (dir < 0 && pos.ch == 0) {
+      if (pos.line > doc.first) return clipPos(doc, Pos(pos.line - 1));
+      else return null;
+    } else if (dir > 0 && pos.ch == (line || getLine(doc, pos.line)).text.length) {
+      if (pos.line < doc.first + doc.size - 1) return Pos(pos.line + 1, 0);
+      else return null;
+    } else {
+      return new Pos(pos.line, pos.ch + dir);
     }
   }
 
@@ -9029,7 +9532,8 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
 
     if (cm.state.focused && op.updateInput)
       cm.display.input.reset(op.typing);
-    if (op.focus && op.focus == activeElt()) ensureFocus(op.cm);
+    if (op.focus && op.focus == activeElt() && (!document.hasFocus || document.hasFocus()))
+      ensureFocus(op.cm);
   }
 
   function endOperation_finish(op) {
@@ -9048,7 +9552,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
       display.scroller.scrollTop = doc.scrollTop;
     }
     if (op.scrollLeft != null && (display.scroller.scrollLeft != op.scrollLeft || op.forceScroll)) {
-      doc.scrollLeft = Math.max(0, Math.min(display.scroller.scrollWidth - displayWidth(cm), op.scrollLeft));
+      doc.scrollLeft = Math.max(0, Math.min(display.scroller.scrollWidth - display.scroller.clientWidth, op.scrollLeft));
       display.scrollbars.setScrollLeft(doc.scrollLeft);
       display.scroller.scrollLeft = doc.scrollLeft;
       alignHorizontally(cm);
@@ -9344,7 +9848,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
       return dx * dx + dy * dy > 20 * 20;
     }
     on(d.scroller, "touchstart", function(e) {
-      if (!isMouseLikeTouchEvent(e)) {
+      if (!signalDOMEvent(cm, e) && !isMouseLikeTouchEvent(e)) {
         clearTimeout(touchFinished);
         var now = +new Date;
         d.activeTouch = {start: now, moved: false,
@@ -9473,7 +9977,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
   // not interfere with, such as a scrollbar or widget.
   function onMouseDown(e) {
     var cm = this, display = cm.display;
-    if (display.activeTouch && display.input.supportsTouch() || signalDOMEvent(cm, e)) return;
+    if (signalDOMEvent(cm, e) || display.activeTouch && display.input.supportsTouch()) return;
     display.shift = e.shiftKey;
 
     if (eventInWidget(display, e)) {
@@ -9529,7 +10033,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
     }
 
     var sel = cm.doc.sel, modifier = mac ? e.metaKey : e.ctrlKey, contained;
-    if (cm.options.dragDrop && dragAndDrop && !isReadOnly(cm) &&
+    if (cm.options.dragDrop && dragAndDrop && !cm.isReadOnly() &&
         type == "single" && (contained = sel.contains(start)) > -1 &&
         (cmp((contained = sel.ranges[contained]).from(), start) < 0 || start.xRel > 0) &&
         (cmp(contained.to(), start) > 0 || start.xRel < 0))
@@ -9714,7 +10218,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
 
   // Determines whether an event happened in the gutter, and fires the
   // handlers for the corresponding event.
-  function gutterEvent(cm, e, type, prevent, signalfn) {
+  function gutterEvent(cm, e, type, prevent) {
     try { var mX = e.clientX, mY = e.clientY; }
     catch(e) { return false; }
     if (mX >= Math.floor(cm.display.gutters.getBoundingClientRect().right)) return false;
@@ -9731,14 +10235,14 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
       if (g && g.getBoundingClientRect().right >= mX) {
         var line = lineAtHeight(cm.doc, mY);
         var gutter = cm.options.gutters[i];
-        signalfn(cm, type, cm, line, gutter, e);
+        signal(cm, type, cm, line, gutter, e);
         return e_defaultPrevented(e);
       }
     }
   }
 
   function clickInGutter(cm, e) {
-    return gutterEvent(cm, e, "gutterClick", true, signalLater);
+    return gutterEvent(cm, e, "gutterClick", true);
   }
 
   // Kludge to work around strange IE behavior where it'll sometimes
@@ -9753,7 +10257,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
     e_preventDefault(e);
     if (ie) lastDrop = +new Date;
     var pos = posFromMouse(cm, e, true), files = e.dataTransfer.files;
-    if (!pos || isReadOnly(cm)) return;
+    if (!pos || cm.isReadOnly()) return;
     // Might be a file drop, in which case we simply extract the text
     // and insert it.
     if (files && files.length && window.FileReader && window.File) {
@@ -9992,7 +10496,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
     cm.display.input.ensurePolled();
     var prevShift = cm.display.shift, done = false;
     try {
-      if (isReadOnly(cm)) cm.state.suppressEdits = true;
+      if (cm.isReadOnly()) cm.state.suppressEdits = true;
       if (dropShift) cm.display.shift = false;
       done = bound(cm) != Pass;
     } finally {
@@ -10177,7 +10681,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
 
   function contextMenuInGutter(cm, e) {
     if (!hasHandler(cm, "gutterContextMenu")) return false;
-    return gutterEvent(cm, e, "gutterContextMenu", false, signal);
+    return gutterEvent(cm, e, "gutterContextMenu", false);
   }
 
   // UPDATING
@@ -10725,10 +11229,9 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
   function findPosH(doc, pos, dir, unit, visually) {
     var line = pos.line, ch = pos.ch, origDir = dir;
     var lineObj = getLine(doc, line);
-    var possible = true;
     function findNextLine() {
       var l = line + dir;
-      if (l < doc.first || l >= doc.first + doc.size) return (possible = false);
+      if (l < doc.first || l >= doc.first + doc.size) return false
       line = l;
       return lineObj = getLine(doc, l);
     }
@@ -10738,14 +11241,16 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
         if (!boundToLine && findNextLine()) {
           if (visually) ch = (dir < 0 ? lineRight : lineLeft)(lineObj);
           else ch = dir < 0 ? lineObj.text.length : 0;
-        } else return (possible = false);
+        } else return false
       } else ch = next;
       return true;
     }
 
-    if (unit == "char") moveOnce();
-    else if (unit == "column") moveOnce(true);
-    else if (unit == "word" || unit == "group") {
+    if (unit == "char") {
+      moveOnce()
+    } else if (unit == "column") {
+      moveOnce(true)
+    } else if (unit == "word" || unit == "group") {
       var sawType = null, group = unit == "group";
       var helper = doc.cm && doc.cm.getHelper(pos, "wordChars");
       for (var first = true;; first = false) {
@@ -10765,8 +11270,8 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
         if (dir > 0 && !moveOnce(!first)) break;
       }
     }
-    var result = skipAtomic(doc, Pos(line, ch), origDir, true);
-    if (!possible) result.hitSide = true;
+    var result = skipAtomic(doc, Pos(line, ch), pos, origDir, true);
+    if (!cmp(pos, result)) result.hitSide = true;
     return result;
   }
 
@@ -11153,6 +11658,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
       signal(this, "overwriteToggle", this, this.state.overwrite);
     },
     hasFocus: function() { return this.display.input.getField() == activeElt(); },
+    isReadOnly: function() { return !!(this.options.readOnly || this.doc.cantEdit); },
 
     scrollTo: methodOp(function(x, y) {
       if (x != null || y != null) resolveScrollToPos(this);
@@ -12589,7 +13095,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
         parentStyle += "width: " + cm.display.wrapper.clientWidth + "px;";
       removeChildrenAndAdd(cm.display.measure, elt("div", [widget.node], null, parentStyle));
     }
-    return widget.height = widget.node.offsetHeight;
+    return widget.height = widget.node.parentNode.offsetHeight;
   }
 
   function addLineWidget(doc, handle, node, options) {
@@ -12999,7 +13505,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
       if (nextChange == pos) { // Update current marker set
         spanStyle = spanEndStyle = spanStartStyle = title = css = "";
         collapsed = null; nextChange = Infinity;
-        var foundBookmarks = [];
+        var foundBookmarks = [], endStyles
         for (var j = 0; j < spans.length; ++j) {
           var sp = spans[j], m = sp.marker;
           if (m.type == "bookmark" && sp.from == pos && m.widgetNode) {
@@ -13010,9 +13516,9 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
               spanEndStyle = "";
             }
             if (m.className) spanStyle += " " + m.className;
-            if (m.css) css = m.css;
+            if (m.css) css = (css ? css + ";" : "") + m.css;
             if (m.startStyle && sp.from == pos) spanStartStyle += " " + m.startStyle;
-            if (m.endStyle && sp.to == nextChange) spanEndStyle += " " + m.endStyle;
+            if (m.endStyle && sp.to == nextChange) (endStyles || (endStyles = [])).push(m.endStyle, sp.to)
             if (m.title && !title) title = m.title;
             if (m.collapsed && (!collapsed || compareCollapsedMarkers(collapsed.marker, m) < 0))
               collapsed = sp;
@@ -13020,14 +13526,17 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
             nextChange = sp.from;
           }
         }
+        if (endStyles) for (var j = 0; j < endStyles.length; j += 2)
+          if (endStyles[j + 1] == nextChange) spanEndStyle += " " + endStyles[j]
+
+        if (!collapsed || collapsed.from == pos) for (var j = 0; j < foundBookmarks.length; ++j)
+          buildCollapsedSpan(builder, 0, foundBookmarks[j]);
         if (collapsed && (collapsed.from || 0) == pos) {
           buildCollapsedSpan(builder, (collapsed.to == null ? len + 1 : collapsed.to) - pos,
                              collapsed.marker, collapsed.from == null);
           if (collapsed.to == null) return;
           if (collapsed.to == pos) collapsed = false;
         }
-        if (!collapsed && foundBookmarks.length) for (var j = 0; j < foundBookmarks.length; ++j)
-          buildCollapsedSpan(builder, 0, foundBookmarks[j]);
       }
       if (pos >= len) break;
 
@@ -13279,6 +13788,7 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
     this.id = ++nextDocId;
     this.modeOption = mode;
     this.lineSep = lineSep;
+    this.extend = false;
 
     if (typeof text == "string") text = this.splitLines(text);
     updateDoc(this, {from: start, to: start, text: text});
@@ -13366,10 +13876,11 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
       extendSelection(this, clipPos(this, head), other && clipPos(this, other), options);
     }),
     extendSelections: docMethodOp(function(heads, options) {
-      extendSelections(this, clipPosArray(this, heads, options));
+      extendSelections(this, clipPosArray(this, heads), options);
     }),
     extendSelectionsBy: docMethodOp(function(f, options) {
-      extendSelections(this, map(this.sel.ranges, f), options);
+      var heads = map(this.sel.ranges, f);
+      extendSelections(this, clipPosArray(this, heads), options);
     }),
     setSelections: docMethodOp(function(ranges, primary, options) {
       if (!ranges.length) return;
@@ -14786,12 +15297,12 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
 
   // THE END
 
-  CodeMirror.version = "5.8.0";
+  CodeMirror.version = "5.12.0";
 
   return CodeMirror;
 });
 
-},{}],45:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
@@ -14806,6 +15317,11 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
     mod(CodeMirror);
 })(function(CodeMirror) {
 "use strict";
+
+function expressionAllowed(stream, state, backUp) {
+  return /^(?:operator|sof|keyword c|case|new|[\[{}\(,;:]|=>)$/.test(state.lastType) ||
+    (state.lastType == "quasi" && /\{\s*$/.test(stream.string.slice(0, stream.pos - (backUp || 0))))
+}
 
 CodeMirror.defineMode("javascript", function(config, parserConfig) {
   var indentUnit = config.indentUnit;
@@ -14826,12 +15342,12 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
       "if": kw("if"), "while": A, "with": A, "else": B, "do": B, "try": B, "finally": B,
       "return": C, "break": C, "continue": C, "new": kw("new"), "delete": C, "throw": C, "debugger": C,
       "var": kw("var"), "const": kw("var"), "let": kw("var"),
-      "async": kw("async"), "function": kw("function"), "catch": kw("catch"),
+      "function": kw("function"), "catch": kw("catch"),
       "for": kw("for"), "switch": kw("switch"), "case": kw("case"), "default": kw("default"),
       "in": operator, "typeof": operator, "instanceof": operator,
       "true": atom, "false": atom, "null": atom, "undefined": atom, "NaN": atom, "Infinity": atom,
       "this": kw("this"), "class": kw("class"), "super": kw("atom"),
-      "await": C, "yield": C, "export": kw("export"), "import": kw("import"), "extends": C
+      "yield": C, "export": kw("export"), "import": kw("import"), "extends": C
     };
 
     // Extend the 'normal' keywords with the TypeScript language extensions
@@ -14839,15 +15355,20 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
       var type = {type: "variable", style: "variable-3"};
       var tsKeywords = {
         // object-like things
-        "interface": kw("interface"),
-        "extends": kw("extends"),
-        "constructor": kw("constructor"),
+        "interface": kw("class"),
+        "implements": C,
+        "namespace": C,
+        "module": kw("module"),
+        "enum": kw("module"),
 
         // scope modifiers
-        "public": kw("public"),
-        "private": kw("private"),
-        "protected": kw("protected"),
-        "static": kw("static"),
+        "public": kw("modifier"),
+        "private": kw("modifier"),
+        "protected": kw("modifier"),
+        "abstract": kw("modifier"),
+
+        // operators
+        "as": operator,
 
         // types
         "string": type, "number": type, "boolean": type, "any": type
@@ -14915,8 +15436,7 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
       } else if (stream.eat("/")) {
         stream.skipToEnd();
         return ret("comment", "comment");
-      } else if (state.lastType == "operator" || state.lastType == "keyword c" ||
-                 state.lastType == "sof" || /^[\[{}\(,;:]$/.test(state.lastType)) {
+      } else if (expressionAllowed(stream, state, 1)) {
         readRegexp(stream);
         stream.match(/^\b(([gimyu])(?![gimyu]*\2))+\b/);
         return ret("regexp", "string-2");
@@ -15150,6 +15670,7 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
     if (type == "class") return cont(pushlex("form"), className, poplex);
     if (type == "export") return cont(pushlex("stat"), afterExport, poplex);
     if (type == "import") return cont(pushlex("stat"), afterImport, poplex);
+    if (type == "module") return cont(pushlex("form"), pattern, pushlex("}"), expect("{"), block, poplex, poplex)
     return pass(pushlex("stat"), expression, expect(";"), poplex);
   }
   function expression(type) {
@@ -15167,7 +15688,6 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
 
     var maybeop = noComma ? maybeoperatorNoComma : maybeoperatorComma;
     if (atomicTypes.hasOwnProperty(type)) return cont(maybeop);
-    if (type == "async") return cont(expression);
     if (type == "function") return cont(functiondef, maybeop);
     if (type == "keyword c") return cont(noComma ? maybeexpressionNoComma : maybeexpression);
     if (type == "(") return cont(pushlex(")"), maybeexpression, comprehension, expect(")"), poplex, maybeop);
@@ -15246,9 +15766,7 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
     if (type == "variable") {cx.marked = "property"; return cont();}
   }
   function objprop(type, value) {
-    if (type == "async") {
-      return cont(objprop);
-    } else if (type == "variable" || cx.style == "keyword") {
+    if (type == "variable" || cx.style == "keyword") {
       cx.marked = "property";
       if (value == "get" || value == "set") return cont(getterSetter);
       return cont(afterprop);
@@ -15257,8 +15775,12 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
       return cont(afterprop);
     } else if (type == "jsonld-keyword") {
       return cont(afterprop);
+    } else if (type == "modifier") {
+      return cont(objprop)
     } else if (type == "[") {
       return cont(expression, expect("]"), afterprop);
+    } else if (type == "spread") {
+      return cont(expression);
     }
   }
   function getterSetter(type) {
@@ -15307,6 +15829,7 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
     return pass(pattern, maybetype, maybeAssign, vardefCont);
   }
   function pattern(type, value) {
+    if (type == "modifier") return cont(pattern)
     if (type == "variable") { register(value); return cont(); }
     if (type == "spread") return cont(pattern);
     if (type == "[") return contCommasep(pattern, "]");
@@ -15319,6 +15842,7 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
     }
     if (type == "variable") cx.marked = "property";
     if (type == "spread") return cont(pattern);
+    if (type == "}") return pass();
     return cont(expect(":"), pattern, maybeAssign);
   }
   function maybeAssign(_type, value) {
@@ -15441,7 +15965,7 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
         lexical: new JSLexical((basecolumn || 0) - indentUnit, 0, "block", false),
         localVars: parserConfig.localVars,
         context: parserConfig.localVars && {vars: parserConfig.localVars},
-        indented: 0
+        indented: basecolumn || 0
       };
       if (parserConfig.globalVars && typeof parserConfig.globalVars == "object")
         state.globalVars = parserConfig.globalVars;
@@ -15497,7 +16021,13 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
 
     helperType: jsonMode ? "json" : "javascript",
     jsonldMode: jsonldMode,
-    jsonMode: jsonMode
+    jsonMode: jsonMode,
+
+    expressionAllowed: expressionAllowed,
+    skipExpression: function(state) {
+      var top = state.cc[state.cc.length - 1]
+      if (top == expression || top == expressionNoComma) state.cc.pop()
+    }
   };
 });
 
@@ -15516,67 +16046,77 @@ CodeMirror.defineMIME("application/typescript", { name: "javascript", typescript
 
 });
 
-},{"../../lib/codemirror":44}],46:[function(require,module,exports){
+},{"../../lib/codemirror":49}],51:[function(require,module,exports){
+require('../../modules/es6.string.iterator');
+require('../../modules/es6.array.from');
+module.exports = require('../../modules/$.core').Array.from;
+},{"../../modules/$.core":71,"../../modules/es6.array.from":119,"../../modules/es6.string.iterator":129}],52:[function(require,module,exports){
 require('../modules/web.dom.iterable');
 require('../modules/es6.string.iterator');
 module.exports = require('../modules/core.get-iterator');
-},{"../modules/core.get-iterator":102,"../modules/es6.string.iterator":112,"../modules/web.dom.iterable":115}],47:[function(require,module,exports){
+},{"../modules/core.get-iterator":117,"../modules/es6.string.iterator":129,"../modules/web.dom.iterable":132}],53:[function(require,module,exports){
 require('../modules/web.dom.iterable');
 require('../modules/es6.string.iterator');
 module.exports = require('../modules/core.is-iterable');
-},{"../modules/core.is-iterable":103,"../modules/es6.string.iterator":112,"../modules/web.dom.iterable":115}],48:[function(require,module,exports){
+},{"../modules/core.is-iterable":118,"../modules/es6.string.iterator":129,"../modules/web.dom.iterable":132}],54:[function(require,module,exports){
 require('../modules/es6.object.to-string');
 require('../modules/es6.string.iterator');
 require('../modules/web.dom.iterable');
 require('../modules/es6.map');
 require('../modules/es7.map.to-json');
 module.exports = require('../modules/$.core').Map;
-},{"../modules/$.core":64,"../modules/es6.map":105,"../modules/es6.object.to-string":110,"../modules/es6.string.iterator":112,"../modules/es7.map.to-json":113,"../modules/web.dom.iterable":115}],49:[function(require,module,exports){
+},{"../modules/$.core":71,"../modules/es6.map":121,"../modules/es6.object.to-string":126,"../modules/es6.string.iterator":129,"../modules/es7.map.to-json":130,"../modules/web.dom.iterable":132}],55:[function(require,module,exports){
 require('../../modules/es6.object.assign');
 module.exports = require('../../modules/$.core').Object.assign;
-},{"../../modules/$.core":64,"../../modules/es6.object.assign":106}],50:[function(require,module,exports){
+},{"../../modules/$.core":71,"../../modules/es6.object.assign":122}],56:[function(require,module,exports){
 var $ = require('../../modules/$');
 module.exports = function create(P, D){
   return $.create(P, D);
 };
-},{"../../modules/$":82}],51:[function(require,module,exports){
+},{"../../modules/$":93}],57:[function(require,module,exports){
 var $ = require('../../modules/$');
 module.exports = function defineProperty(it, key, desc){
   return $.setDesc(it, key, desc);
 };
-},{"../../modules/$":82}],52:[function(require,module,exports){
+},{"../../modules/$":93}],58:[function(require,module,exports){
 var $ = require('../../modules/$');
 require('../../modules/es6.object.get-own-property-descriptor');
 module.exports = function getOwnPropertyDescriptor(it, key){
   return $.getDesc(it, key);
 };
-},{"../../modules/$":82,"../../modules/es6.object.get-own-property-descriptor":107}],53:[function(require,module,exports){
+},{"../../modules/$":93,"../../modules/es6.object.get-own-property-descriptor":123}],59:[function(require,module,exports){
 require('../../modules/es6.object.keys');
 module.exports = require('../../modules/$.core').Object.keys;
-},{"../../modules/$.core":64,"../../modules/es6.object.keys":108}],54:[function(require,module,exports){
+},{"../../modules/$.core":71,"../../modules/es6.object.keys":124}],60:[function(require,module,exports){
 require('../../modules/es6.object.set-prototype-of');
 module.exports = require('../../modules/$.core').Object.setPrototypeOf;
-},{"../../modules/$.core":64,"../../modules/es6.object.set-prototype-of":109}],55:[function(require,module,exports){
+},{"../../modules/$.core":71,"../../modules/es6.object.set-prototype-of":125}],61:[function(require,module,exports){
+require('../modules/es6.object.to-string');
+require('../modules/es6.string.iterator');
+require('../modules/web.dom.iterable');
+require('../modules/es6.promise');
+module.exports = require('../modules/$.core').Promise;
+},{"../modules/$.core":71,"../modules/es6.object.to-string":126,"../modules/es6.promise":127,"../modules/es6.string.iterator":129,"../modules/web.dom.iterable":132}],62:[function(require,module,exports){
 require('../modules/es6.object.to-string');
 require('../modules/es6.string.iterator');
 require('../modules/web.dom.iterable');
 require('../modules/es6.set');
 require('../modules/es7.set.to-json');
 module.exports = require('../modules/$.core').Set;
-},{"../modules/$.core":64,"../modules/es6.object.to-string":110,"../modules/es6.set":111,"../modules/es6.string.iterator":112,"../modules/es7.set.to-json":114,"../modules/web.dom.iterable":115}],56:[function(require,module,exports){
+},{"../modules/$.core":71,"../modules/es6.object.to-string":126,"../modules/es6.set":128,"../modules/es6.string.iterator":129,"../modules/es7.set.to-json":131,"../modules/web.dom.iterable":132}],63:[function(require,module,exports){
 module.exports = function(it){
   if(typeof it != 'function')throw TypeError(it + ' is not a function!');
   return it;
 };
-},{}],57:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 module.exports = function(){ /* empty */ };
-},{}],58:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 var isObject = require('./$.is-object');
 module.exports = function(it){
   if(!isObject(it))throw TypeError(it + ' is not an object!');
   return it;
 };
-},{"./$.is-object":76}],59:[function(require,module,exports){
+},{"./$.is-object":86}],66:[function(require,module,exports){
 // getting tag from 19.1.3.6 Object.prototype.toString()
 var cof = require('./$.cof')
   , TAG = require('./$.wks')('toStringTag')
@@ -15593,13 +16133,13 @@ module.exports = function(it){
     // ES3 arguments fallback
     : (B = cof(O)) == 'Object' && typeof O.callee == 'function' ? 'Arguments' : B;
 };
-},{"./$.cof":60,"./$.wks":100}],60:[function(require,module,exports){
+},{"./$.cof":67,"./$.wks":115}],67:[function(require,module,exports){
 var toString = {}.toString;
 
 module.exports = function(it){
   return toString.call(it).slice(8, -1);
 };
-},{}],61:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 'use strict';
 var $            = require('./$')
   , hide         = require('./$.hide')
@@ -15759,7 +16299,7 @@ module.exports = {
     setSpecies(NAME);
   }
 };
-},{"./$":82,"./$.ctx":65,"./$.defined":66,"./$.descriptors":67,"./$.for-of":70,"./$.has":72,"./$.hide":73,"./$.is-object":76,"./$.iter-define":79,"./$.iter-step":80,"./$.redefine-all":87,"./$.set-species":90,"./$.strict-new":93,"./$.uid":99}],62:[function(require,module,exports){
+},{"./$":93,"./$.ctx":72,"./$.defined":73,"./$.descriptors":74,"./$.for-of":78,"./$.has":80,"./$.hide":81,"./$.is-object":86,"./$.iter-define":89,"./$.iter-step":91,"./$.redefine-all":99,"./$.set-species":103,"./$.strict-new":107,"./$.uid":114}],69:[function(require,module,exports){
 // https://github.com/DavidBruant/Map-Set.prototype.toJSON
 var forOf   = require('./$.for-of')
   , classof = require('./$.classof');
@@ -15771,7 +16311,7 @@ module.exports = function(NAME){
     return arr;
   };
 };
-},{"./$.classof":59,"./$.for-of":70}],63:[function(require,module,exports){
+},{"./$.classof":66,"./$.for-of":78}],70:[function(require,module,exports){
 'use strict';
 var $              = require('./$')
   , global         = require('./$.global')
@@ -15827,10 +16367,10 @@ module.exports = function(NAME, wrapper, methods, common, IS_MAP, IS_WEAK){
 
   return C;
 };
-},{"./$":82,"./$.descriptors":67,"./$.export":68,"./$.fails":69,"./$.for-of":70,"./$.global":71,"./$.hide":73,"./$.is-object":76,"./$.redefine-all":87,"./$.set-to-string-tag":91,"./$.strict-new":93}],64:[function(require,module,exports){
+},{"./$":93,"./$.descriptors":74,"./$.export":76,"./$.fails":77,"./$.for-of":78,"./$.global":79,"./$.hide":81,"./$.is-object":86,"./$.redefine-all":99,"./$.set-to-string-tag":104,"./$.strict-new":107}],71:[function(require,module,exports){
 var core = module.exports = {version: '1.2.6'};
 if(typeof __e == 'number')__e = core; // eslint-disable-line no-undef
-},{}],65:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 // optional / simple context binding
 var aFunction = require('./$.a-function');
 module.exports = function(fn, that, length){
@@ -15851,18 +16391,26 @@ module.exports = function(fn, that, length){
     return fn.apply(that, arguments);
   };
 };
-},{"./$.a-function":56}],66:[function(require,module,exports){
+},{"./$.a-function":63}],73:[function(require,module,exports){
 // 7.2.1 RequireObjectCoercible(argument)
 module.exports = function(it){
   if(it == undefined)throw TypeError("Can't call method on  " + it);
   return it;
 };
-},{}],67:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 // Thank's IE8 for his funny defineProperty
 module.exports = !require('./$.fails')(function(){
   return Object.defineProperty({}, 'a', {get: function(){ return 7; }}).a != 7;
 });
-},{"./$.fails":69}],68:[function(require,module,exports){
+},{"./$.fails":77}],75:[function(require,module,exports){
+var isObject = require('./$.is-object')
+  , document = require('./$.global').document
+  // in old IE typeof document.createElement is 'object'
+  , is = isObject(document) && isObject(document.createElement);
+module.exports = function(it){
+  return is ? document.createElement(it) : {};
+};
+},{"./$.global":79,"./$.is-object":86}],76:[function(require,module,exports){
 var global    = require('./$.global')
   , core      = require('./$.core')
   , ctx       = require('./$.ctx')
@@ -15909,7 +16457,7 @@ $export.P = 8;  // proto
 $export.B = 16; // bind
 $export.W = 32; // wrap
 module.exports = $export;
-},{"./$.core":64,"./$.ctx":65,"./$.global":71}],69:[function(require,module,exports){
+},{"./$.core":71,"./$.ctx":72,"./$.global":79}],77:[function(require,module,exports){
 module.exports = function(exec){
   try {
     return !!exec();
@@ -15917,7 +16465,7 @@ module.exports = function(exec){
     return true;
   }
 };
-},{}],70:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 var ctx         = require('./$.ctx')
   , call        = require('./$.iter-call')
   , isArrayIter = require('./$.is-array-iter')
@@ -15937,17 +16485,17 @@ module.exports = function(iterable, entries, fn, that){
     call(iterator, f, step.value, entries);
   }
 };
-},{"./$.an-object":58,"./$.ctx":65,"./$.is-array-iter":75,"./$.iter-call":77,"./$.to-length":97,"./core.get-iterator-method":101}],71:[function(require,module,exports){
+},{"./$.an-object":65,"./$.ctx":72,"./$.is-array-iter":85,"./$.iter-call":87,"./$.to-length":112,"./core.get-iterator-method":116}],79:[function(require,module,exports){
 // https://github.com/zloirock/core-js/issues/86#issuecomment-115759028
 var global = module.exports = typeof window != 'undefined' && window.Math == Math
   ? window : typeof self != 'undefined' && self.Math == Math ? self : Function('return this')();
 if(typeof __g == 'number')__g = global; // eslint-disable-line no-undef
-},{}],72:[function(require,module,exports){
+},{}],80:[function(require,module,exports){
 var hasOwnProperty = {}.hasOwnProperty;
 module.exports = function(it, key){
   return hasOwnProperty.call(it, key);
 };
-},{}],73:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 var $          = require('./$')
   , createDesc = require('./$.property-desc');
 module.exports = require('./$.descriptors') ? function(object, key, value){
@@ -15956,13 +16504,32 @@ module.exports = require('./$.descriptors') ? function(object, key, value){
   object[key] = value;
   return object;
 };
-},{"./$":82,"./$.descriptors":67,"./$.property-desc":86}],74:[function(require,module,exports){
+},{"./$":93,"./$.descriptors":74,"./$.property-desc":98}],82:[function(require,module,exports){
+module.exports = require('./$.global').document && document.documentElement;
+},{"./$.global":79}],83:[function(require,module,exports){
+// fast apply, http://jsperf.lnkit.com/fast-apply/5
+module.exports = function(fn, args, that){
+  var un = that === undefined;
+  switch(args.length){
+    case 0: return un ? fn()
+                      : fn.call(that);
+    case 1: return un ? fn(args[0])
+                      : fn.call(that, args[0]);
+    case 2: return un ? fn(args[0], args[1])
+                      : fn.call(that, args[0], args[1]);
+    case 3: return un ? fn(args[0], args[1], args[2])
+                      : fn.call(that, args[0], args[1], args[2]);
+    case 4: return un ? fn(args[0], args[1], args[2], args[3])
+                      : fn.call(that, args[0], args[1], args[2], args[3]);
+  } return              fn.apply(that, args);
+};
+},{}],84:[function(require,module,exports){
 // fallback for non-array-like ES3 and non-enumerable old V8 strings
 var cof = require('./$.cof');
 module.exports = Object('z').propertyIsEnumerable(0) ? Object : function(it){
   return cof(it) == 'String' ? it.split('') : Object(it);
 };
-},{"./$.cof":60}],75:[function(require,module,exports){
+},{"./$.cof":67}],85:[function(require,module,exports){
 // check on default Array iterator
 var Iterators  = require('./$.iterators')
   , ITERATOR   = require('./$.wks')('iterator')
@@ -15971,11 +16538,11 @@ var Iterators  = require('./$.iterators')
 module.exports = function(it){
   return it !== undefined && (Iterators.Array === it || ArrayProto[ITERATOR] === it);
 };
-},{"./$.iterators":81,"./$.wks":100}],76:[function(require,module,exports){
+},{"./$.iterators":92,"./$.wks":115}],86:[function(require,module,exports){
 module.exports = function(it){
   return typeof it === 'object' ? it !== null : typeof it === 'function';
 };
-},{}],77:[function(require,module,exports){
+},{}],87:[function(require,module,exports){
 // call something on iterator step with safe closing on error
 var anObject = require('./$.an-object');
 module.exports = function(iterator, fn, value, entries){
@@ -15988,7 +16555,7 @@ module.exports = function(iterator, fn, value, entries){
     throw e;
   }
 };
-},{"./$.an-object":58}],78:[function(require,module,exports){
+},{"./$.an-object":65}],88:[function(require,module,exports){
 'use strict';
 var $              = require('./$')
   , descriptor     = require('./$.property-desc')
@@ -16002,7 +16569,7 @@ module.exports = function(Constructor, NAME, next){
   Constructor.prototype = $.create(IteratorPrototype, {next: descriptor(1, next)});
   setToStringTag(Constructor, NAME + ' Iterator');
 };
-},{"./$":82,"./$.hide":73,"./$.property-desc":86,"./$.set-to-string-tag":91,"./$.wks":100}],79:[function(require,module,exports){
+},{"./$":93,"./$.hide":81,"./$.property-desc":98,"./$.set-to-string-tag":104,"./$.wks":115}],89:[function(require,module,exports){
 'use strict';
 var LIBRARY        = require('./$.library')
   , $export        = require('./$.export')
@@ -16069,13 +16636,35 @@ module.exports = function(Base, NAME, Constructor, next, DEFAULT, IS_SET, FORCED
   }
   return methods;
 };
-},{"./$":82,"./$.export":68,"./$.has":72,"./$.hide":73,"./$.iter-create":78,"./$.iterators":81,"./$.library":83,"./$.redefine":88,"./$.set-to-string-tag":91,"./$.wks":100}],80:[function(require,module,exports){
+},{"./$":93,"./$.export":76,"./$.has":80,"./$.hide":81,"./$.iter-create":88,"./$.iterators":92,"./$.library":94,"./$.redefine":100,"./$.set-to-string-tag":104,"./$.wks":115}],90:[function(require,module,exports){
+var ITERATOR     = require('./$.wks')('iterator')
+  , SAFE_CLOSING = false;
+
+try {
+  var riter = [7][ITERATOR]();
+  riter['return'] = function(){ SAFE_CLOSING = true; };
+  Array.from(riter, function(){ throw 2; });
+} catch(e){ /* empty */ }
+
+module.exports = function(exec, skipClosing){
+  if(!skipClosing && !SAFE_CLOSING)return false;
+  var safe = false;
+  try {
+    var arr  = [7]
+      , iter = arr[ITERATOR]();
+    iter.next = function(){ safe = true; };
+    arr[ITERATOR] = function(){ return iter; };
+    exec(arr);
+  } catch(e){ /* empty */ }
+  return safe;
+};
+},{"./$.wks":115}],91:[function(require,module,exports){
 module.exports = function(done, value){
   return {value: value, done: !!done};
 };
-},{}],81:[function(require,module,exports){
+},{}],92:[function(require,module,exports){
 module.exports = {};
-},{}],82:[function(require,module,exports){
+},{}],93:[function(require,module,exports){
 var $Object = Object;
 module.exports = {
   create:     $Object.create,
@@ -16089,9 +16678,74 @@ module.exports = {
   getSymbols: $Object.getOwnPropertySymbols,
   each:       [].forEach
 };
-},{}],83:[function(require,module,exports){
+},{}],94:[function(require,module,exports){
 module.exports = true;
-},{}],84:[function(require,module,exports){
+},{}],95:[function(require,module,exports){
+var global    = require('./$.global')
+  , macrotask = require('./$.task').set
+  , Observer  = global.MutationObserver || global.WebKitMutationObserver
+  , process   = global.process
+  , Promise   = global.Promise
+  , isNode    = require('./$.cof')(process) == 'process'
+  , head, last, notify;
+
+var flush = function(){
+  var parent, domain, fn;
+  if(isNode && (parent = process.domain)){
+    process.domain = null;
+    parent.exit();
+  }
+  while(head){
+    domain = head.domain;
+    fn     = head.fn;
+    if(domain)domain.enter();
+    fn(); // <- currently we use it only for Promise - try / catch not required
+    if(domain)domain.exit();
+    head = head.next;
+  } last = undefined;
+  if(parent)parent.enter();
+};
+
+// Node.js
+if(isNode){
+  notify = function(){
+    process.nextTick(flush);
+  };
+// browsers with MutationObserver
+} else if(Observer){
+  var toggle = 1
+    , node   = document.createTextNode('');
+  new Observer(flush).observe(node, {characterData: true}); // eslint-disable-line no-new
+  notify = function(){
+    node.data = toggle = -toggle;
+  };
+// environments with maybe non-completely correct, but existent Promise
+} else if(Promise && Promise.resolve){
+  notify = function(){
+    Promise.resolve().then(flush);
+  };
+// for other environments - macrotask based on:
+// - setImmediate
+// - MessageChannel
+// - window.postMessag
+// - onreadystatechange
+// - setTimeout
+} else {
+  notify = function(){
+    // strange IE + webpack dev server bug - use .call(global)
+    macrotask.call(global, flush);
+  };
+}
+
+module.exports = function asap(fn){
+  var task = {fn: fn, next: undefined, domain: isNode && process.domain};
+  if(last)last.next = task;
+  if(!head){
+    head = task;
+    notify();
+  } last = task;
+};
+},{"./$.cof":67,"./$.global":79,"./$.task":109}],96:[function(require,module,exports){
 // 19.1.2.1 Object.assign(target, source, ...)
 var $        = require('./$')
   , toObject = require('./$.to-object')
@@ -16125,7 +16779,7 @@ module.exports = require('./$.fails')(function(){
   }
   return T;
 } : Object.assign;
-},{"./$":82,"./$.fails":69,"./$.iobject":74,"./$.to-object":98}],85:[function(require,module,exports){
+},{"./$":93,"./$.fails":77,"./$.iobject":84,"./$.to-object":113}],97:[function(require,module,exports){
 // most Object methods by ES6 should accept primitives
 var $export = require('./$.export')
   , core    = require('./$.core')
@@ -16136,7 +16790,7 @@ module.exports = function(KEY, exec){
   exp[KEY] = exec(fn);
   $export($export.S + $export.F * fails(function(){ fn(1); }), 'Object', exp);
 };
-},{"./$.core":64,"./$.export":68,"./$.fails":69}],86:[function(require,module,exports){
+},{"./$.core":71,"./$.export":76,"./$.fails":77}],98:[function(require,module,exports){
 module.exports = function(bitmap, value){
   return {
     enumerable  : !(bitmap & 1),
@@ -16145,15 +16799,20 @@ module.exports = function(bitmap, value){
     value       : value
   };
 };
-},{}],87:[function(require,module,exports){
+},{}],99:[function(require,module,exports){
 var redefine = require('./$.redefine');
 module.exports = function(target, src){
   for(var key in src)redefine(target, key, src[key]);
   return target;
 };
-},{"./$.redefine":88}],88:[function(require,module,exports){
+},{"./$.redefine":100}],100:[function(require,module,exports){
 module.exports = require('./$.hide');
-},{"./$.hide":73}],89:[function(require,module,exports){
+},{"./$.hide":81}],101:[function(require,module,exports){
+// 7.2.9 SameValue(x, y)
+module.exports = Object.is || function is(x, y){
+  return x === y ? x !== 0 || 1 / x === 1 / y : x != x && y != y;
+};
+},{}],102:[function(require,module,exports){
 // Works with __proto__ only. Old v8 can't work with null proto objects.
 /* eslint-disable no-proto */
 var getDesc  = require('./$').getDesc
@@ -16180,7 +16839,7 @@ module.exports = {
     }({}, false) : undefined),
   check: check
 };
-},{"./$":82,"./$.an-object":58,"./$.ctx":65,"./$.is-object":76}],90:[function(require,module,exports){
+},{"./$":93,"./$.an-object":65,"./$.ctx":72,"./$.is-object":86}],103:[function(require,module,exports){
 'use strict';
 var core        = require('./$.core')
   , $           = require('./$')
@@ -16194,7 +16853,7 @@ module.exports = function(KEY){
     get: function(){ return this; }
   });
 };
-},{"./$":82,"./$.core":64,"./$.descriptors":67,"./$.wks":100}],91:[function(require,module,exports){
+},{"./$":93,"./$.core":71,"./$.descriptors":74,"./$.wks":115}],104:[function(require,module,exports){
 var def = require('./$').setDesc
   , has = require('./$.has')
   , TAG = require('./$.wks')('toStringTag');
@@ -16202,19 +16861,28 @@ var def = require('./$').setDesc
 module.exports = function(it, tag, stat){
   if(it && !has(it = stat ? it : it.prototype, TAG))def(it, TAG, {configurable: true, value: tag});
 };
-},{"./$":82,"./$.has":72,"./$.wks":100}],92:[function(require,module,exports){
+},{"./$":93,"./$.has":80,"./$.wks":115}],105:[function(require,module,exports){
 var global = require('./$.global')
   , SHARED = '__core-js_shared__'
   , store  = global[SHARED] || (global[SHARED] = {});
 module.exports = function(key){
   return store[key] || (store[key] = {});
 };
-},{"./$.global":71}],93:[function(require,module,exports){
+},{"./$.global":79}],106:[function(require,module,exports){
+// 7.3.20 SpeciesConstructor(O, defaultConstructor)
+var anObject  = require('./$.an-object')
+  , aFunction = require('./$.a-function')
+  , SPECIES   = require('./$.wks')('species');
+module.exports = function(O, D){
+  var C = anObject(O).constructor, S;
+  return C === undefined || (S = anObject(C)[SPECIES]) == undefined ? D : aFunction(S);
+};
+},{"./$.a-function":63,"./$.an-object":65,"./$.wks":115}],107:[function(require,module,exports){
 module.exports = function(it, Constructor, name){
   if(!(it instanceof Constructor))throw TypeError(name + ": use the 'new' operator!");
   return it;
 };
-},{}],94:[function(require,module,exports){
+},{}],108:[function(require,module,exports){
 var toInteger = require('./$.to-integer')
   , defined   = require('./$.defined');
 // true  -> String#at
@@ -16232,40 +16900,116 @@ module.exports = function(TO_STRING){
       : TO_STRING ? s.slice(i, i + 2) : (a - 0xd800 << 10) + (b - 0xdc00) + 0x10000;
   };
 };
-},{"./$.defined":66,"./$.to-integer":95}],95:[function(require,module,exports){
+},{"./$.defined":73,"./$.to-integer":110}],109:[function(require,module,exports){
+var ctx                = require('./$.ctx')
+  , invoke             = require('./$.invoke')
+  , html               = require('./$.html')
+  , cel                = require('./$.dom-create')
+  , global             = require('./$.global')
+  , process            = global.process
+  , setTask            = global.setImmediate
+  , clearTask          = global.clearImmediate
+  , MessageChannel     = global.MessageChannel
+  , counter            = 0
+  , queue              = {}
+  , ONREADYSTATECHANGE = 'onreadystatechange'
+  , defer, channel, port;
+var run = function(){
+  var id = +this;
+  if(queue.hasOwnProperty(id)){
+    var fn = queue[id];
+    delete queue[id];
+    fn();
+  }
+};
+var listner = function(event){
+  run.call(event.data);
+};
+// Node.js 0.9+ & IE10+ has setImmediate, otherwise:
+if(!setTask || !clearTask){
+  setTask = function setImmediate(fn){
+    var args = [], i = 1;
+    while(arguments.length > i)args.push(arguments[i++]);
+    queue[++counter] = function(){
+      invoke(typeof fn == 'function' ? fn : Function(fn), args);
+    };
+    defer(counter);
+    return counter;
+  };
+  clearTask = function clearImmediate(id){
+    delete queue[id];
+  };
+  // Node.js 0.8-
+  if(require('./$.cof')(process) == 'process'){
+    defer = function(id){
+      process.nextTick(ctx(run, id, 1));
+    };
+  // Browsers with MessageChannel, includes WebWorkers
+  } else if(MessageChannel){
+    channel = new MessageChannel;
+    port    = channel.port2;
+    channel.port1.onmessage = listner;
+    defer = ctx(port.postMessage, port, 1);
+  // Browsers with postMessage, skip WebWorkers
+  // IE8 has postMessage, but it's sync & typeof its postMessage is 'object'
+  } else if(global.addEventListener && typeof postMessage == 'function' && !global.importScripts){
+    defer = function(id){
+      global.postMessage(id + '', '*');
+    };
+    global.addEventListener('message', listner, false);
+  // IE8-
+  } else if(ONREADYSTATECHANGE in cel('script')){
+    defer = function(id){
+      html.appendChild(cel('script'))[ONREADYSTATECHANGE] = function(){
+        html.removeChild(this);
+        run.call(id);
+      };
+    };
+  // Rest old browsers
+  } else {
+    defer = function(id){
+      setTimeout(ctx(run, id, 1), 0);
+    };
+  }
+}
+module.exports = {
+  set:   setTask,
+  clear: clearTask
+};
+},{"./$.cof":67,"./$.ctx":72,"./$.dom-create":75,"./$.global":79,"./$.html":82,"./$.invoke":83}],110:[function(require,module,exports){
 // 7.1.4 ToInteger
 var ceil  = Math.ceil
   , floor = Math.floor;
 module.exports = function(it){
   return isNaN(it = +it) ? 0 : (it > 0 ? floor : ceil)(it);
 };
-},{}],96:[function(require,module,exports){
+},{}],111:[function(require,module,exports){
 // to indexed object, toObject with fallback for non-array-like ES3 strings
 var IObject = require('./$.iobject')
   , defined = require('./$.defined');
 module.exports = function(it){
   return IObject(defined(it));
 };
-},{"./$.defined":66,"./$.iobject":74}],97:[function(require,module,exports){
+},{"./$.defined":73,"./$.iobject":84}],112:[function(require,module,exports){
 // 7.1.15 ToLength
 var toInteger = require('./$.to-integer')
   , min       = Math.min;
 module.exports = function(it){
   return it > 0 ? min(toInteger(it), 0x1fffffffffffff) : 0; // pow(2, 53) - 1 == 9007199254740991
 };
-},{"./$.to-integer":95}],98:[function(require,module,exports){
+},{"./$.to-integer":110}],113:[function(require,module,exports){
 // 7.1.13 ToObject(argument)
 var defined = require('./$.defined');
 module.exports = function(it){
   return Object(defined(it));
 };
-},{"./$.defined":66}],99:[function(require,module,exports){
+},{"./$.defined":73}],114:[function(require,module,exports){
 var id = 0
   , px = Math.random();
 module.exports = function(key){
   return 'Symbol('.concat(key === undefined ? '' : key, ')_', (++id + px).toString(36));
 };
-},{}],100:[function(require,module,exports){
+},{}],115:[function(require,module,exports){
 var store  = require('./$.shared')('wks')
   , uid    = require('./$.uid')
   , Symbol = require('./$.global').Symbol;
@@ -16273,7 +17017,7 @@ module.exports = function(name){
   return store[name] || (store[name] =
     Symbol && Symbol[name] || (Symbol || uid)('Symbol.' + name));
 };
-},{"./$.global":71,"./$.shared":92,"./$.uid":99}],101:[function(require,module,exports){
+},{"./$.global":79,"./$.shared":105,"./$.uid":114}],116:[function(require,module,exports){
 var classof   = require('./$.classof')
   , ITERATOR  = require('./$.wks')('iterator')
   , Iterators = require('./$.iterators');
@@ -16282,7 +17026,7 @@ module.exports = require('./$.core').getIteratorMethod = function(it){
     || it['@@iterator']
     || Iterators[classof(it)];
 };
-},{"./$.classof":59,"./$.core":64,"./$.iterators":81,"./$.wks":100}],102:[function(require,module,exports){
+},{"./$.classof":66,"./$.core":71,"./$.iterators":92,"./$.wks":115}],117:[function(require,module,exports){
 var anObject = require('./$.an-object')
   , get      = require('./core.get-iterator-method');
 module.exports = require('./$.core').getIterator = function(it){
@@ -16290,7 +17034,7 @@ module.exports = require('./$.core').getIterator = function(it){
   if(typeof iterFn != 'function')throw TypeError(it + ' is not iterable!');
   return anObject(iterFn.call(it));
 };
-},{"./$.an-object":58,"./$.core":64,"./core.get-iterator-method":101}],103:[function(require,module,exports){
+},{"./$.an-object":65,"./$.core":71,"./core.get-iterator-method":116}],118:[function(require,module,exports){
 var classof   = require('./$.classof')
   , ITERATOR  = require('./$.wks')('iterator')
   , Iterators = require('./$.iterators');
@@ -16300,7 +17044,45 @@ module.exports = require('./$.core').isIterable = function(it){
     || '@@iterator' in O
     || Iterators.hasOwnProperty(classof(O));
 };
-},{"./$.classof":59,"./$.core":64,"./$.iterators":81,"./$.wks":100}],104:[function(require,module,exports){
+},{"./$.classof":66,"./$.core":71,"./$.iterators":92,"./$.wks":115}],119:[function(require,module,exports){
+'use strict';
+var ctx         = require('./$.ctx')
+  , $export     = require('./$.export')
+  , toObject    = require('./$.to-object')
+  , call        = require('./$.iter-call')
+  , isArrayIter = require('./$.is-array-iter')
+  , toLength    = require('./$.to-length')
+  , getIterFn   = require('./core.get-iterator-method');
+$export($export.S + $export.F * !require('./$.iter-detect')(function(iter){ Array.from(iter); }), 'Array', {
+  // 22.1.2.1 Array.from(arrayLike, mapfn = undefined, thisArg = undefined)
+  from: function from(arrayLike/*, mapfn = undefined, thisArg = undefined*/){
+    var O       = toObject(arrayLike)
+      , C       = typeof this == 'function' ? this : Array
+      , $$      = arguments
+      , $$len   = $$.length
+      , mapfn   = $$len > 1 ? $$[1] : undefined
+      , mapping = mapfn !== undefined
+      , index   = 0
+      , iterFn  = getIterFn(O)
+      , length, result, step, iterator;
+    if(mapping)mapfn = ctx(mapfn, $$len > 2 ? $$[2] : undefined, 2);
+    // if object isn't iterable or it's array with default iterator - use simple case
+    if(iterFn != undefined && !(C == Array && isArrayIter(iterFn))){
+      for(iterator = iterFn.call(O), result = new C; !(step = iterator.next()).done; index++){
+        result[index] = mapping ? call(iterator, mapfn, [step.value, index], true) : step.value;
+      }
+    } else {
+      length = toLength(O.length);
+      for(result = new C(length); length > index; index++){
+        result[index] = mapping ? mapfn(O[index], index) : O[index];
+      }
+    }
+    result.length = index;
+    return result;
+  }
+});
+
+},{"./$.ctx":72,"./$.export":76,"./$.is-array-iter":85,"./$.iter-call":87,"./$.iter-detect":90,"./$.to-length":112,"./$.to-object":113,"./core.get-iterator-method":116}],120:[function(require,module,exports){
 'use strict';
 var addToUnscopables = require('./$.add-to-unscopables')
   , step             = require('./$.iter-step')
@@ -16335,7 +17117,7 @@ Iterators.Arguments = Iterators.Array;
 addToUnscopables('keys');
 addToUnscopables('values');
 addToUnscopables('entries');
-},{"./$.add-to-unscopables":57,"./$.iter-define":79,"./$.iter-step":80,"./$.iterators":81,"./$.to-iobject":96}],105:[function(require,module,exports){
+},{"./$.add-to-unscopables":64,"./$.iter-define":89,"./$.iter-step":91,"./$.iterators":92,"./$.to-iobject":111}],121:[function(require,module,exports){
 'use strict';
 var strong = require('./$.collection-strong');
 
@@ -16353,12 +17135,12 @@ require('./$.collection')('Map', function(get){
     return strong.def(this, key === 0 ? 0 : key, value);
   }
 }, strong, true);
-},{"./$.collection":63,"./$.collection-strong":61}],106:[function(require,module,exports){
+},{"./$.collection":70,"./$.collection-strong":68}],122:[function(require,module,exports){
 // 19.1.3.1 Object.assign(target, source)
 var $export = require('./$.export');
 
 $export($export.S + $export.F, 'Object', {assign: require('./$.object-assign')});
-},{"./$.export":68,"./$.object-assign":84}],107:[function(require,module,exports){
+},{"./$.export":76,"./$.object-assign":96}],123:[function(require,module,exports){
 // 19.1.2.6 Object.getOwnPropertyDescriptor(O, P)
 var toIObject = require('./$.to-iobject');
 
@@ -16367,7 +17149,7 @@ require('./$.object-sap')('getOwnPropertyDescriptor', function($getOwnPropertyDe
     return $getOwnPropertyDescriptor(toIObject(it), key);
   };
 });
-},{"./$.object-sap":85,"./$.to-iobject":96}],108:[function(require,module,exports){
+},{"./$.object-sap":97,"./$.to-iobject":111}],124:[function(require,module,exports){
 // 19.1.2.14 Object.keys(O)
 var toObject = require('./$.to-object');
 
@@ -16376,13 +17158,303 @@ require('./$.object-sap')('keys', function($keys){
     return $keys(toObject(it));
   };
 });
-},{"./$.object-sap":85,"./$.to-object":98}],109:[function(require,module,exports){
+},{"./$.object-sap":97,"./$.to-object":113}],125:[function(require,module,exports){
 // 19.1.3.19 Object.setPrototypeOf(O, proto)
 var $export = require('./$.export');
 $export($export.S, 'Object', {setPrototypeOf: require('./$.set-proto').set});
-},{"./$.export":68,"./$.set-proto":89}],110:[function(require,module,exports){
+},{"./$.export":76,"./$.set-proto":102}],126:[function(require,module,exports){
 
-},{}],111:[function(require,module,exports){
+},{}],127:[function(require,module,exports){
+'use strict';
+var $          = require('./$')
+  , LIBRARY    = require('./$.library')
+  , global     = require('./$.global')
+  , ctx        = require('./$.ctx')
+  , classof    = require('./$.classof')
+  , $export    = require('./$.export')
+  , isObject   = require('./$.is-object')
+  , anObject   = require('./$.an-object')
+  , aFunction  = require('./$.a-function')
+  , strictNew  = require('./$.strict-new')
+  , forOf      = require('./$.for-of')
+  , setProto   = require('./$.set-proto').set
+  , same       = require('./$.same-value')
+  , SPECIES    = require('./$.wks')('species')
+  , speciesConstructor = require('./$.species-constructor')
+  , asap       = require('./$.microtask')
+  , PROMISE    = 'Promise'
+  , process    = global.process
+  , isNode     = classof(process) == 'process'
+  , P          = global[PROMISE]
+  , Wrapper;
+
+var testResolve = function(sub){
+  var test = new P(function(){});
+  if(sub)test.constructor = Object;
+  return P.resolve(test) === test;
+};
+
+var USE_NATIVE = function(){
+  var works = false;
+  function P2(x){
+    var self = new P(x);
+    setProto(self, P2.prototype);
+    return self;
+  }
+  try {
+    works = P && P.resolve && testResolve();
+    setProto(P2, P);
+    P2.prototype = $.create(P.prototype, {constructor: {value: P2}});
+    // actual Firefox has broken subclass support, test that
+    if(!(P2.resolve(5).then(function(){}) instanceof P2)){
+      works = false;
+    }
+    // actual V8 bug, https://code.google.com/p/v8/issues/detail?id=4162
+    if(works && require('./$.descriptors')){
+      var thenableThenGotten = false;
+      P.resolve($.setDesc({}, 'then', {
+        get: function(){ thenableThenGotten = true; }
+      }));
+      works = thenableThenGotten;
+    }
+  } catch(e){ works = false; }
+  return works;
+}();
+
+// helpers
+var sameConstructor = function(a, b){
+  // library wrapper special case
+  if(LIBRARY && a === P && b === Wrapper)return true;
+  return same(a, b);
+};
+var getConstructor = function(C){
+  var S = anObject(C)[SPECIES];
+  return S != undefined ? S : C;
+};
+var isThenable = function(it){
+  var then;
+  return isObject(it) && typeof (then = it.then) == 'function' ? then : false;
+};
+var PromiseCapability = function(C){
+  var resolve, reject;
+  this.promise = new C(function($$resolve, $$reject){
+    if(resolve !== undefined || reject !== undefined)throw TypeError('Bad Promise constructor');
+    resolve = $$resolve;
+    reject  = $$reject;
+  });
+  this.resolve = aFunction(resolve),
+  this.reject  = aFunction(reject)
+};
+var perform = function(exec){
+  try {
+    exec();
+  } catch(e){
+    return {error: e};
+  }
+};
+var notify = function(record, isReject){
+  if(record.n)return;
+  record.n = true;
+  var chain = record.c;
+  asap(function(){
+    var value = record.v
+      , ok    = record.s == 1
+      , i     = 0;
+    var run = function(reaction){
+      var handler = ok ? reaction.ok : reaction.fail
+        , resolve = reaction.resolve
+        , reject  = reaction.reject
+        , result, then;
+      try {
+        if(handler){
+          if(!ok)record.h = true;
+          result = handler === true ? value : handler(value);
+          if(result === reaction.promise){
+            reject(TypeError('Promise-chain cycle'));
+          } else if(then = isThenable(result)){
+            then.call(result, resolve, reject);
+          } else resolve(result);
+        } else reject(value);
+      } catch(e){
+        reject(e);
+      }
+    };
+    while(chain.length > i)run(chain[i++]); // variable length - can't use forEach
+    chain.length = 0;
+    record.n = false;
+    if(isReject)setTimeout(function(){
+      var promise = record.p
+        , handler, console;
+      if(isUnhandled(promise)){
+        if(isNode){
+          process.emit('unhandledRejection', value, promise);
+        } else if(handler = global.onunhandledrejection){
+          handler({promise: promise, reason: value});
+        } else if((console = global.console) && console.error){
+          console.error('Unhandled promise rejection', value);
+        }
+      } record.a = undefined;
+    }, 1);
+  });
+};
+var isUnhandled = function(promise){
+  var record = promise._d
+    , chain  = record.a || record.c
+    , i      = 0
+    , reaction;
+  if(record.h)return false;
+  while(chain.length > i){
+    reaction = chain[i++];
+    if(reaction.fail || !isUnhandled(reaction.promise))return false;
+  } return true;
+};
+var $reject = function(value){
+  var record = this;
+  if(record.d)return;
+  record.d = true;
+  record = record.r || record; // unwrap
+  record.v = value;
+  record.s = 2;
+  record.a = record.c.slice();
+  notify(record, true);
+};
+var $resolve = function(value){
+  var record = this
+    , then;
+  if(record.d)return;
+  record.d = true;
+  record = record.r || record; // unwrap
+  try {
+    if(record.p === value)throw TypeError("Promise can't be resolved itself");
+    if(then = isThenable(value)){
+      asap(function(){
+        var wrapper = {r: record, d: false}; // wrap
+        try {
+          then.call(value, ctx($resolve, wrapper, 1), ctx($reject, wrapper, 1));
+        } catch(e){
+          $reject.call(wrapper, e);
+        }
+      });
+    } else {
+      record.v = value;
+      record.s = 1;
+      notify(record, false);
+    }
+  } catch(e){
+    $reject.call({r: record, d: false}, e); // wrap
+  }
+};
+
+// constructor polyfill
+if(!USE_NATIVE){
+  // 25.4.3.1 Promise(executor)
+  P = function Promise(executor){
+    aFunction(executor);
+    var record = this._d = {
+      p: strictNew(this, P, PROMISE),         // <- promise
+      c: [],                                  // <- awaiting reactions
+      a: undefined,                           // <- checked in isUnhandled reactions
+      s: 0,                                   // <- state
+      d: false,                               // <- done
+      v: undefined,                           // <- value
+      h: false,                               // <- handled rejection
+      n: false                                // <- notify
+    };
+    try {
+      executor(ctx($resolve, record, 1), ctx($reject, record, 1));
+    } catch(err){
+      $reject.call(record, err);
+    }
+  };
+  require('./$.redefine-all')(P.prototype, {
+    // 25.4.5.3 Promise.prototype.then(onFulfilled, onRejected)
+    then: function then(onFulfilled, onRejected){
+      var reaction = new PromiseCapability(speciesConstructor(this, P))
+        , promise  = reaction.promise
+        , record   = this._d;
+      reaction.ok   = typeof onFulfilled == 'function' ? onFulfilled : true;
+      reaction.fail = typeof onRejected == 'function' && onRejected;
+      record.c.push(reaction);
+      if(record.a)record.a.push(reaction);
+      if(record.s)notify(record, false);
+      return promise;
+    },
+    // 25.4.5.1 Promise.prototype.catch(onRejected)
+    'catch': function(onRejected){
+      return this.then(undefined, onRejected);
+    }
+  });
+}
+
+$export($export.G + $export.W + $export.F * !USE_NATIVE, {Promise: P});
+require('./$.set-to-string-tag')(P, PROMISE);
+require('./$.set-species')(PROMISE);
+Wrapper = require('./$.core')[PROMISE];
+
+// statics
+$export($export.S + $export.F * !USE_NATIVE, PROMISE, {
+  // 25.4.4.5 Promise.reject(r)
+  reject: function reject(r){
+    var capability = new PromiseCapability(this)
+      , $$reject   = capability.reject;
+    $$reject(r);
+    return capability.promise;
+  }
+});
+$export($export.S + $export.F * (!USE_NATIVE || testResolve(true)), PROMISE, {
+  // 25.4.4.6 Promise.resolve(x)
+  resolve: function resolve(x){
+    // instanceof instead of internal slot check because we should fix it without replacement native Promise core
+    if(x instanceof P && sameConstructor(x.constructor, this))return x;
+    var capability = new PromiseCapability(this)
+      , $$resolve  = capability.resolve;
+    $$resolve(x);
+    return capability.promise;
+  }
+});
+$export($export.S + $export.F * !(USE_NATIVE && require('./$.iter-detect')(function(iter){
+  P.all(iter)['catch'](function(){});
+})), PROMISE, {
+  // 25.4.4.1 Promise.all(iterable)
+  all: function all(iterable){
+    var C          = getConstructor(this)
+      , capability = new PromiseCapability(C)
+      , resolve    = capability.resolve
+      , reject     = capability.reject
+      , values     = [];
+    var abrupt = perform(function(){
+      forOf(iterable, false, values.push, values);
+      var remaining = values.length
+        , results   = Array(remaining);
+      if(remaining)$.each.call(values, function(promise, index){
+        var alreadyCalled = false;
+        C.resolve(promise).then(function(value){
+          if(alreadyCalled)return;
+          alreadyCalled = true;
+          results[index] = value;
+          --remaining || resolve(results);
+        }, reject);
+      });
+      else resolve(results);
+    });
+    if(abrupt)reject(abrupt.error);
+    return capability.promise;
+  },
+  // 25.4.4.4 Promise.race(iterable)
+  race: function race(iterable){
+    var C          = getConstructor(this)
+      , capability = new PromiseCapability(C)
+      , reject     = capability.reject;
+    var abrupt = perform(function(){
+      forOf(iterable, false, function(promise){
+        C.resolve(promise).then(capability.resolve, reject);
+      });
+    });
+    if(abrupt)reject(abrupt.error);
+    return capability.promise;
+  }
+});
+},{"./$":93,"./$.a-function":63,"./$.an-object":65,"./$.classof":66,"./$.core":71,"./$.ctx":72,"./$.descriptors":74,"./$.export":76,"./$.for-of":78,"./$.global":79,"./$.is-object":86,"./$.iter-detect":90,"./$.library":94,"./$.microtask":95,"./$.redefine-all":99,"./$.same-value":101,"./$.set-proto":102,"./$.set-species":103,"./$.set-to-string-tag":104,"./$.species-constructor":106,"./$.strict-new":107,"./$.wks":115}],128:[function(require,module,exports){
 'use strict';
 var strong = require('./$.collection-strong');
 
@@ -16395,7 +17467,7 @@ require('./$.collection')('Set', function(get){
     return strong.def(this, value = value === 0 ? 0 : value, value);
   }
 }, strong);
-},{"./$.collection":63,"./$.collection-strong":61}],112:[function(require,module,exports){
+},{"./$.collection":70,"./$.collection-strong":68}],129:[function(require,module,exports){
 'use strict';
 var $at  = require('./$.string-at')(true);
 
@@ -16413,21 +17485,21 @@ require('./$.iter-define')(String, 'String', function(iterated){
   this._i += point.length;
   return {value: point, done: false};
 });
-},{"./$.iter-define":79,"./$.string-at":94}],113:[function(require,module,exports){
+},{"./$.iter-define":89,"./$.string-at":108}],130:[function(require,module,exports){
 // https://github.com/DavidBruant/Map-Set.prototype.toJSON
 var $export  = require('./$.export');
 
 $export($export.P, 'Map', {toJSON: require('./$.collection-to-json')('Map')});
-},{"./$.collection-to-json":62,"./$.export":68}],114:[function(require,module,exports){
+},{"./$.collection-to-json":69,"./$.export":76}],131:[function(require,module,exports){
 // https://github.com/DavidBruant/Map-Set.prototype.toJSON
 var $export  = require('./$.export');
 
 $export($export.P, 'Set', {toJSON: require('./$.collection-to-json')('Set')});
-},{"./$.collection-to-json":62,"./$.export":68}],115:[function(require,module,exports){
+},{"./$.collection-to-json":69,"./$.export":76}],132:[function(require,module,exports){
 require('./es6.array.iterator');
 var Iterators = require('./$.iterators');
 Iterators.NodeList = Iterators.HTMLCollection = Iterators.Array;
-},{"./$.iterators":81,"./es6.array.iterator":104}],116:[function(require,module,exports){
+},{"./$.iterators":92,"./es6.array.iterator":120}],133:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -16514,7 +17586,7 @@ var GraphQLError = (function (_Error) {
 })(Error);
 
 exports.GraphQLError = GraphQLError;
-},{"../language":126,"babel-runtime/helpers/class-call-check":23,"babel-runtime/helpers/get":26,"babel-runtime/helpers/inherits":27}],117:[function(require,module,exports){
+},{"../language":148,"babel-runtime/helpers/class-call-check":27,"babel-runtime/helpers/get":30,"babel-runtime/helpers/inherits":31}],134:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -16549,7 +17621,7 @@ function formatError(error) {
     locations: error.locations
   };
 }
-},{"../jsutils/invariant":122,"babel-runtime/helpers/interop-require-default":28}],118:[function(require,module,exports){
+},{"../jsutils/invariant":144,"babel-runtime/helpers/interop-require-default":32}],135:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -16601,7 +17673,7 @@ Object.defineProperty(exports, 'formatError', {
     return _formatError.formatError;
   }
 });
-},{"./GraphQLError":116,"./formatError":117,"./locatedError":119,"./syntaxError":120}],119:[function(require,module,exports){
+},{"./GraphQLError":133,"./formatError":134,"./locatedError":136,"./syntaxError":137}],136:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -16627,12 +17699,14 @@ var _GraphQLError = require('./GraphQLError');
  * document responsible for the original Error.
  */
 
-function locatedError(error, nodes) {
-  var message = error ? error.message || String(error) : 'An unknown error occurred.';
-  var stack = error ? error.stack : null;
-  return new _GraphQLError.GraphQLError(message, nodes, stack);
+function locatedError(originalError, nodes) {
+  var message = originalError ? originalError.message || String(originalError) : 'An unknown error occurred.';
+  var stack = originalError ? originalError.stack : null;
+  var error = new _GraphQLError.GraphQLError(message, nodes, stack);
+  error.originalError = originalError;
+  return error;
 }
-},{"./GraphQLError":116}],120:[function(require,module,exports){
+},{"./GraphQLError":133}],137:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -16675,14 +17749,1367 @@ function highlightSourceAtLocation(source, location) {
   var lineNum = line.toString();
   var nextLineNum = (line + 1).toString();
   var padLen = nextLineNum.length;
-  var lines = source.body.split(/\r\n|[\n\r\u2028\u2029]/g);
+  var lines = source.body.split(/\r\n|[\n\r]/g);
   return (line >= 2 ? lpad(padLen, prevLineNum) + ': ' + lines[line - 2] + '\n' : '') + lpad(padLen, lineNum) + ': ' + lines[line - 1] + '\n' + Array(2 + padLen + location.column).join(' ') + '^\n' + (line < lines.length ? lpad(padLen, nextLineNum) + ': ' + lines[line] + '\n' : '');
 }
 
 function lpad(len, str) {
   return Array(len - str.length + 1).join(' ') + str;
 }
-},{"../language/location":129,"./GraphQLError":116}],121:[function(require,module,exports){
+},{"../language/location":151,"./GraphQLError":133}],138:[function(require,module,exports){
+
+/**
+ *  Copyright (c) 2015, Facebook, Inc.
+ *  All rights reserved.
+ *
+ *  This source code is licensed under the BSD-style license found in the
+ *  LICENSE file in the root directory of this source tree. An additional grant
+ *  of patent rights can be found in the PATENTS file in the same directory.
+ */
+
+/**
+ * Terminology
+ *
+ * "Definitions" are the generic name for top-level statements in the document.
+ * Examples of this include:
+ * 1) Operations (such as a query)
+ * 2) Fragments
+ *
+ * "Operations" are a generic name for requests in the document.
+ * Examples of this include:
+ * 1) query,
+ * 2) mutation
+ *
+ * "Selections" are the definitions that can appear legally and at
+ * single level of the query. These include:
+ * 1) field references e.g "a"
+ * 2) fragment "spreads" e.g. "...c"
+ * 3) inline fragment "spreads" e.g. "...on Type { a }"
+ */
+
+/**
+ * Data that must be available at all points during query execution.
+ *
+ * Namely, schema of the type system that is currently executing,
+ * and the fragments defined in the query document
+ */
+'use strict';
+
+/**
+ * The result of execution. `data` is the result of executing the
+ * query, `errors` is null if no errors occurred, and is a
+ * non-empty array if an error occurred.
+ */
+
+var _Promise = require('babel-runtime/core-js/promise')['default'];
+
+var _Object$create = require('babel-runtime/core-js/object/create')['default'];
+
+var _Object$keys = require('babel-runtime/core-js/object/keys')['default'];
+
+var _interopRequireDefault = require('babel-runtime/helpers/interop-require-default')['default'];
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+exports.execute = execute;
+
+var _error = require('../error');
+
+var _jsutilsFind = require('../jsutils/find');
+
+var _jsutilsFind2 = _interopRequireDefault(_jsutilsFind);
+
+var _jsutilsInvariant = require('../jsutils/invariant');
+
+var _jsutilsInvariant2 = _interopRequireDefault(_jsutilsInvariant);
+
+var _jsutilsIsNullish = require('../jsutils/isNullish');
+
+var _jsutilsIsNullish2 = _interopRequireDefault(_jsutilsIsNullish);
+
+var _utilitiesTypeFromAST = require('../utilities/typeFromAST');
+
+var _language = require('../language');
+
+var _values = require('./values');
+
+var _typeDefinition = require('../type/definition');
+
+var _typeSchema = require('../type/schema');
+
+var _typeIntrospection = require('../type/introspection');
+
+var _typeDirectives = require('../type/directives');
+
+/**
+ * Implements the "Evaluating requests" section of the GraphQL specification.
+ *
+ * Returns a Promise that will eventually be resolved and never rejected.
+ *
+ * If the arguments to this function do not result in a legal execution context,
+ * a GraphQLError will be thrown immediately explaining the invalid input.
+ */
+
+function execute(schema, documentAST, rootValue, variableValues, operationName) {
+  (0, _jsutilsInvariant2['default'])(schema, 'Must provide schema');
+  (0, _jsutilsInvariant2['default'])(schema instanceof _typeSchema.GraphQLSchema, 'Schema must be an instance of GraphQLSchema. Also ensure that there are ' + 'not multiple versions of GraphQL installed in your node_modules directory.');
+
+  // If a valid context cannot be created due to incorrect arguments,
+  // this will throw an error.
+  var context = buildExecutionContext(schema, documentAST, rootValue, variableValues, operationName);
+
+  // Return a Promise that will eventually resolve to the data described by
+  // The "Response" section of the GraphQL specification.
+  //
+  // If errors are encountered while executing a GraphQL field, only that
+  // field and its descendants will be omitted, and sibling fields will still
+  // be executed. An execution which encounters errors will still result in a
+  // resolved Promise.
+  return new _Promise(function (resolve) {
+    resolve(executeOperation(context, context.operation, rootValue));
+  })['catch'](function (error) {
+    // Errors from sub-fields of a NonNull type may propagate to the top level,
+    // at which point we still log the error and null the parent field, which
+    // in this case is the entire response.
+    context.errors.push(error);
+    return null;
+  }).then(function (data) {
+    if (!context.errors.length) {
+      return { data: data };
+    }
+    return { data: data, errors: context.errors };
+  });
+}
+
+/**
+ * Constructs a ExecutionContext object from the arguments passed to
+ * execute, which we will pass throughout the other execution methods.
+ *
+ * Throws a GraphQLError if a valid execution context cannot be created.
+ */
+function buildExecutionContext(schema, documentAST, rootValue, rawVariableValues, operationName) {
+  var errors = [];
+  var operation = undefined;
+  var fragments = _Object$create(null);
+  documentAST.definitions.forEach(function (definition) {
+    switch (definition.kind) {
+      case _language.Kind.OPERATION_DEFINITION:
+        if (!operationName && operation) {
+          throw new _error.GraphQLError('Must provide operation name if query contains multiple operations.');
+        }
+        if (!operationName || definition.name && definition.name.value === operationName) {
+          operation = definition;
+        }
+        break;
+      case _language.Kind.FRAGMENT_DEFINITION:
+        fragments[definition.name.value] = definition;
+        break;
+      default:
+        throw new _error.GraphQLError('GraphQL cannot execute a request containing a ' + definition.kind + '.', definition);
+    }
+  });
+  if (!operation) {
+    if (!operationName) {
+      throw new _error.GraphQLError('Unknown operation named "' + operationName + '".');
+    } else {
+      throw new _error.GraphQLError('Must provide an operation.');
+    }
+  }
+  var variableValues = (0, _values.getVariableValues)(schema, operation.variableDefinitions || [], rawVariableValues || {});
+  var exeContext = { schema: schema, fragments: fragments, rootValue: rootValue, operation: operation, variableValues: variableValues, errors: errors };
+  return exeContext;
+}
+
+/**
+ * Implements the "Evaluating operations" section of the spec.
+ */
+function executeOperation(exeContext, operation, rootValue) {
+  var type = getOperationRootType(exeContext.schema, operation);
+  var fields = collectFields(exeContext, type, operation.selectionSet, _Object$create(null), _Object$create(null));
+
+  if (operation.operation === 'mutation') {
+    return executeFieldsSerially(exeContext, type, rootValue, fields);
+  }
+  return executeFields(exeContext, type, rootValue, fields);
+}
+
+/**
+ * Extracts the root type of the operation from the schema.
+ */
+function getOperationRootType(schema, operation) {
+  switch (operation.operation) {
+    case 'query':
+      return schema.getQueryType();
+    case 'mutation':
+      var mutationType = schema.getMutationType();
+      if (!mutationType) {
+        throw new _error.GraphQLError('Schema is not configured for mutations', [operation]);
+      }
+      return mutationType;
+    case 'subscription':
+      var subscriptionType = schema.getSubscriptionType();
+      if (!subscriptionType) {
+        throw new _error.GraphQLError('Schema is not configured for subscriptions', [operation]);
+      }
+      return subscriptionType;
+    default:
+      throw new _error.GraphQLError('Can only execute queries, mutations and subscriptions', [operation]);
+  }
+}
+
+/**
+ * Implements the "Evaluating selection sets" section of the spec
+ * for "write" mode.
+ */
+function executeFieldsSerially(exeContext, parentType, sourceValue, fields) {
+  return _Object$keys(fields).reduce(function (prevPromise, responseName) {
+    return prevPromise.then(function (results) {
+      var fieldASTs = fields[responseName];
+      var result = resolveField(exeContext, parentType, sourceValue, fieldASTs);
+      if (result === undefined) {
+        return results;
+      }
+      if (isThenable(result)) {
+        return result.then(function (resolvedResult) {
+          results[responseName] = resolvedResult;
+          return results;
+        });
+      }
+      results[responseName] = result;
+      return results;
+    });
+  }, _Promise.resolve({}));
+}
+
+/**
+ * Implements the "Evaluating selection sets" section of the spec
+ * for "read" mode.
+ */
+function executeFields(exeContext, parentType, sourceValue, fields) {
+  var containsPromise = false;
+
+  var finalResults = _Object$keys(fields).reduce(function (results, responseName) {
+    var fieldASTs = fields[responseName];
+    var result = resolveField(exeContext, parentType, sourceValue, fieldASTs);
+    if (result === undefined) {
+      return results;
+    }
+    results[responseName] = result;
+    if (isThenable(result)) {
+      containsPromise = true;
+    }
+    return results;
+  }, _Object$create(null));
+
+  // If there are no promises, we can just return the object
+  if (!containsPromise) {
+    return finalResults;
+  }
+
+  // Otherwise, results is a map from field name to the result
+  // of resolving that field, which is possibly a promise. Return
+  // a promise that will return this same map, but with any
+  // promises replaced with the values they resolved to.
+  return promiseForObject(finalResults);
+}
+
+/**
+ * Given a selectionSet, adds all of the fields in that selection to
+ * the passed in map of fields, and returns it at the end.
+ *
+ * CollectFields requires the "runtime type" of an object. For a field which
+ * returns and Interface or Union type, the "runtime type" will be the actual
+ * Object type returned by that field.
+ */
+function collectFields(exeContext, runtimeType, selectionSet, fields, visitedFragmentNames) {
+  for (var i = 0; i < selectionSet.selections.length; i++) {
+    var selection = selectionSet.selections[i];
+    switch (selection.kind) {
+      case _language.Kind.FIELD:
+        if (!shouldIncludeNode(exeContext, selection.directives)) {
+          continue;
+        }
+        var name = getFieldEntryKey(selection);
+        if (!fields[name]) {
+          fields[name] = [];
+        }
+        fields[name].push(selection);
+        break;
+      case _language.Kind.INLINE_FRAGMENT:
+        if (!shouldIncludeNode(exeContext, selection.directives) || !doesFragmentConditionMatch(exeContext, selection, runtimeType)) {
+          continue;
+        }
+        collectFields(exeContext, runtimeType, selection.selectionSet, fields, visitedFragmentNames);
+        break;
+      case _language.Kind.FRAGMENT_SPREAD:
+        var fragName = selection.name.value;
+        if (visitedFragmentNames[fragName] || !shouldIncludeNode(exeContext, selection.directives)) {
+          continue;
+        }
+        visitedFragmentNames[fragName] = true;
+        var fragment = exeContext.fragments[fragName];
+        if (!fragment || !shouldIncludeNode(exeContext, fragment.directives) || !doesFragmentConditionMatch(exeContext, fragment, runtimeType)) {
+          continue;
+        }
+        collectFields(exeContext, runtimeType, fragment.selectionSet, fields, visitedFragmentNames);
+        break;
+    }
+  }
+  return fields;
+}
+
+/**
+ * Determines if a field should be included based on the @include and @skip
+ * directives, where @skip has higher precidence than @include.
+ */
+function shouldIncludeNode(exeContext, directives) {
+  var skipAST = directives && (0, _jsutilsFind2['default'])(directives, function (directive) {
+    return directive.name.value === _typeDirectives.GraphQLSkipDirective.name;
+  });
+  if (skipAST) {
+    var _getArgumentValues = (0, _values.getArgumentValues)(_typeDirectives.GraphQLSkipDirective.args, skipAST.arguments, exeContext.variableValues);
+
+    var skipIf = _getArgumentValues['if'];
+
+    return !skipIf;
+  }
+
+  var includeAST = directives && (0, _jsutilsFind2['default'])(directives, function (directive) {
+    return directive.name.value === _typeDirectives.GraphQLIncludeDirective.name;
+  });
+  if (includeAST) {
+    var _getArgumentValues2 = (0, _values.getArgumentValues)(_typeDirectives.GraphQLIncludeDirective.args, includeAST.arguments, exeContext.variableValues);
+
+    var includeIf = _getArgumentValues2['if'];
+
+    return Boolean(includeIf);
+  }
+
+  return true;
+}
+
+/**
+ * Determines if a fragment is applicable to the given type.
+ */
+function doesFragmentConditionMatch(exeContext, fragment, type) {
+  var typeConditionAST = fragment.typeCondition;
+  if (!typeConditionAST) {
+    return true;
+  }
+  var conditionalType = (0, _utilitiesTypeFromAST.typeFromAST)(exeContext.schema, typeConditionAST);
+  if (conditionalType === type) {
+    return true;
+  }
+  if ((0, _typeDefinition.isAbstractType)(conditionalType)) {
+    return conditionalType.isPossibleType(type);
+  }
+  return false;
+}
+
+/**
+ * This function transforms a JS object `{[key: string]: Promise<T>}` into
+ * a `Promise<{[key: string]: T}>`
+ *
+ * This is akin to bluebird's `Promise.props`, but implemented only using
+ * `Promise.all` so it will work with any implementation of ES6 promises.
+ */
+function promiseForObject(object) {
+  var keys = _Object$keys(object);
+  var valuesAndPromises = keys.map(function (name) {
+    return object[name];
+  });
+  return _Promise.all(valuesAndPromises).then(function (values) {
+    return values.reduce(function (resolvedObject, value, i) {
+      resolvedObject[keys[i]] = value;
+      return resolvedObject;
+    }, _Object$create(null));
+  });
+}
+
+/**
+ * Implements the logic to compute the key of a given field’s entry
+ */
+function getFieldEntryKey(node) {
+  return node.alias ? node.alias.value : node.name.value;
+}
+
+/**
+ * Resolves the field on the given source object. In particular, this
+ * figures out the value that the field returns by calling its resolve function,
+ * then calls completeValue to complete promises, serialize scalars, or execute
+ * the sub-selection-set for objects.
+ */
+function resolveField(exeContext, parentType, source, fieldASTs) {
+  var fieldAST = fieldASTs[0];
+  var fieldName = fieldAST.name.value;
+
+  var fieldDef = getFieldDef(exeContext.schema, parentType, fieldName);
+  if (!fieldDef) {
+    return;
+  }
+
+  var returnType = fieldDef.type;
+  var resolveFn = fieldDef.resolve || defaultResolveFn;
+
+  // Build a JS object of arguments from the field.arguments AST, using the
+  // variables scope to fulfill any variable references.
+  // TODO: find a way to memoize, in case this field is within a List type.
+  var args = (0, _values.getArgumentValues)(fieldDef.args, fieldAST.arguments, exeContext.variableValues);
+
+  // The resolve function's optional third argument is a collection of
+  // information about the current execution state.
+  var info = {
+    fieldName: fieldName,
+    fieldASTs: fieldASTs,
+    returnType: returnType,
+    parentType: parentType,
+    schema: exeContext.schema,
+    fragments: exeContext.fragments,
+    rootValue: exeContext.rootValue,
+    operation: exeContext.operation,
+    variableValues: exeContext.variableValues
+  };
+
+  // Get the resolve function, regardless of if its result is normal
+  // or abrupt (error).
+  var result = resolveOrError(resolveFn, source, args, info);
+
+  return completeValueCatchingError(exeContext, returnType, fieldASTs, info, result);
+}
+
+// Isolates the "ReturnOrAbrupt" behavior to not de-opt the `resolveField`
+// function. Returns the result of resolveFn or the abrupt-return Error object.
+function resolveOrError(resolveFn, source, args, info) {
+  try {
+    return resolveFn(source, args, info);
+  } catch (error) {
+    // Sometimes a non-error is thrown, wrap it as an Error for a
+    // consistent interface.
+    return error instanceof Error ? error : new Error(error);
+  }
+}
+
+// This is a small wrapper around completeValue which detects and logs errors
+// in the execution context.
+function completeValueCatchingError(exeContext, returnType, fieldASTs, info, result) {
+  // If the field type is non-nullable, then it is resolved without any
+  // protection from errors.
+  if (returnType instanceof _typeDefinition.GraphQLNonNull) {
+    return completeValue(exeContext, returnType, fieldASTs, info, result);
+  }
+
+  // Otherwise, error protection is applied, logging the error and resolving
+  // a null value for this field if one is encountered.
+  try {
+    var completed = completeValue(exeContext, returnType, fieldASTs, info, result);
+    if (isThenable(completed)) {
+      // If `completeValue` returned a rejected promise, log the rejection
+      // error and resolve to null.
+      // Note: we don't rely on a `catch` method, but we do expect "thenable"
+      // to take a second callback for the error case.
+      return completed.then(undefined, function (error) {
+        exeContext.errors.push(error);
+        return _Promise.resolve(null);
+      });
+    }
+    return completed;
+  } catch (error) {
+    // If `completeValue` returned abruptly (threw an error), log the error
+    // and return null.
+    exeContext.errors.push(error);
+    return null;
+  }
+}
+
+/**
+ * Implements the instructions for completeValue as defined in the
+ * "Field entries" section of the spec.
+ *
+ * If the field type is Non-Null, then this recursively completes the value
+ * for the inner type. It throws a field error if that completion returns null,
+ * as per the "Nullability" section of the spec.
+ *
+ * If the field type is a List, then this recursively completes the value
+ * for the inner type on each item in the list.
+ *
+ * If the field type is a Scalar or Enum, ensures the completed value is a legal
+ * value of the type by calling the `serialize` method of GraphQL type
+ * definition.
+ *
+ * Otherwise, the field type expects a sub-selection set, and will complete the
+ * value by evaluating all sub-selections.
+ */
+function completeValue(exeContext, returnType, fieldASTs, info, result) {
+  // If result is a Promise, apply-lift over completeValue.
+  if (isThenable(result)) {
+    return result.then(
+    // Once resolved to a value, complete that value.
+    function (resolved) {
+      return completeValue(exeContext, returnType, fieldASTs, info, resolved);
+    },
+    // If rejected, create a located error, and continue to reject.
+    function (error) {
+      return _Promise.reject((0, _error.locatedError)(error, fieldASTs));
+    });
+  }
+
+  // If result is an Error, throw a located error.
+  if (result instanceof Error) {
+    throw (0, _error.locatedError)(result, fieldASTs);
+  }
+
+  // If field type is NonNull, complete for inner type, and throw field error
+  // if result is null.
+  if (returnType instanceof _typeDefinition.GraphQLNonNull) {
+    var completed = completeValue(exeContext, returnType.ofType, fieldASTs, info, result);
+    if (completed === null) {
+      throw new _error.GraphQLError('Cannot return null for non-nullable ' + ('field ' + info.parentType + '.' + info.fieldName + '.'), fieldASTs);
+    }
+    return completed;
+  }
+
+  // If result is null-like, return null.
+  if ((0, _jsutilsIsNullish2['default'])(result)) {
+    return null;
+  }
+
+  // If field type is List, complete each item in the list with the inner type
+  if (returnType instanceof _typeDefinition.GraphQLList) {
+    var _ret = (function () {
+      (0, _jsutilsInvariant2['default'])(Array.isArray(result), 'User Error: expected iterable, but did not find one ' + ('for field ' + info.parentType + '.' + info.fieldName + '.'));
+
+      // This is specified as a simple map, however we're optimizing the path
+      // where the list contains no Promises by avoiding creating another Promise.
+      var itemType = returnType.ofType;
+      var containsPromise = false;
+      var completedResults = result.map(function (item) {
+        var completedItem = completeValueCatchingError(exeContext, itemType, fieldASTs, info, item);
+        if (!containsPromise && isThenable(completedItem)) {
+          containsPromise = true;
+        }
+        return completedItem;
+      });
+
+      return {
+        v: containsPromise ? _Promise.all(completedResults) : completedResults
+      };
+    })();
+
+    if (typeof _ret === 'object') return _ret.v;
+  }
+
+  // If field type is Scalar or Enum, serialize to a valid value, returning
+  // null if serialization is not possible.
+  if (returnType instanceof _typeDefinition.GraphQLScalarType || returnType instanceof _typeDefinition.GraphQLEnumType) {
+    (0, _jsutilsInvariant2['default'])(returnType.serialize, 'Missing serialize method on type');
+    var serializedResult = returnType.serialize(result);
+    return (0, _jsutilsIsNullish2['default'])(serializedResult) ? null : serializedResult;
+  }
+
+  // Field type must be Object, Interface or Union and expect sub-selections.
+  var runtimeType = undefined;
+
+  if (returnType instanceof _typeDefinition.GraphQLObjectType) {
+    runtimeType = returnType;
+  } else if ((0, _typeDefinition.isAbstractType)(returnType)) {
+    var abstractType = returnType;
+    runtimeType = abstractType.getObjectType(result, info);
+    if (runtimeType && !abstractType.isPossibleType(runtimeType)) {
+      throw new _error.GraphQLError('Runtime Object type "' + runtimeType + '" is not a possible type ' + ('for "' + abstractType + '".'), fieldASTs);
+    }
+  }
+
+  if (!runtimeType) {
+    return null;
+  }
+
+  // If there is an isTypeOf predicate function, call it with the
+  // current result. If isTypeOf returns false, then raise an error rather
+  // than continuing execution.
+  if (runtimeType.isTypeOf && !runtimeType.isTypeOf(result, info)) {
+    throw new _error.GraphQLError('Expected value of type "' + runtimeType + '" but got: ' + result + '.', fieldASTs);
+  }
+
+  // Collect sub-fields to execute to complete this value.
+  var subFieldASTs = _Object$create(null);
+  var visitedFragmentNames = _Object$create(null);
+  for (var i = 0; i < fieldASTs.length; i++) {
+    var selectionSet = fieldASTs[i].selectionSet;
+    if (selectionSet) {
+      subFieldASTs = collectFields(exeContext, runtimeType, selectionSet, subFieldASTs, visitedFragmentNames);
+    }
+  }
+
+  return executeFields(exeContext, runtimeType, result, subFieldASTs);
+}
+
+/**
+ * If a resolve function is not given, then a default resolve behavior is used
+ * which takes the property of the source object of the same name as the field
+ * and returns it as the result, or if it's a function, returns the result
+ * of calling that function.
+ */
+function defaultResolveFn(source, args, _ref) {
+  var fieldName = _ref.fieldName;
+
+  // ensure source is a value for which property access is acceptable.
+  if (typeof source !== 'number' && typeof source !== 'string' && source) {
+    var property = source[fieldName];
+    return typeof property === 'function' ? property.call(source) : property;
+  }
+}
+
+/**
+ * Checks to see if this object acts like a Promise, i.e. has a "then"
+ * function.
+ */
+function isThenable(value) {
+  return typeof value === 'object' && value !== null && typeof value.then === 'function';
+}
+
+/**
+ * This method looks up the field on the given type defintion.
+ * It has special casing for the two introspection fields, __schema
+ * and __typename. __typename is special because it can always be
+ * queried as a field, even in situations where no other fields
+ * are allowed, like on a Union. __schema could get automatically
+ * added to the query type, but that would require mutating type
+ * definitions, which would cause issues.
+ */
+function getFieldDef(schema, parentType, fieldName) {
+  if (fieldName === _typeIntrospection.SchemaMetaFieldDef.name && schema.getQueryType() === parentType) {
+    return _typeIntrospection.SchemaMetaFieldDef;
+  } else if (fieldName === _typeIntrospection.TypeMetaFieldDef.name && schema.getQueryType() === parentType) {
+    return _typeIntrospection.TypeMetaFieldDef;
+  } else if (fieldName === _typeIntrospection.TypeNameMetaFieldDef.name) {
+    return _typeIntrospection.TypeNameMetaFieldDef;
+  }
+  return parentType.getFields()[fieldName];
+}
+},{"../error":135,"../jsutils/find":143,"../jsutils/invariant":144,"../jsutils/isNullish":145,"../language":148,"../type/definition":156,"../type/directives":157,"../type/introspection":159,"../type/schema":161,"../utilities/typeFromAST":175,"./values":140,"babel-runtime/core-js/object/create":20,"babel-runtime/core-js/object/keys":23,"babel-runtime/core-js/promise":25,"babel-runtime/helpers/interop-require-default":32}],139:[function(require,module,exports){
+/**
+ *  Copyright (c) 2015, Facebook, Inc.
+ *  All rights reserved.
+ *
+ *  This source code is licensed under the BSD-style license found in the
+ *  LICENSE file in the root directory of this source tree. An additional grant
+ *  of patent rights can be found in the PATENTS file in the same directory.
+ */
+
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+
+var _execute = require('./execute');
+
+Object.defineProperty(exports, 'execute', {
+  enumerable: true,
+  get: function get() {
+    return _execute.execute;
+  }
+});
+},{"./execute":138}],140:[function(require,module,exports){
+
+/**
+ *  Copyright (c) 2015, Facebook, Inc.
+ *  All rights reserved.
+ *
+ *  This source code is licensed under the BSD-style license found in the
+ *  LICENSE file in the root directory of this source tree. An additional grant
+ *  of patent rights can be found in the PATENTS file in the same directory.
+ */
+
+/**
+ * Prepares an object map of variableValues of the correct type based on the
+ * provided variable definitions and arbitrary input. If the input cannot be
+ * parsed to match the variable definitions, a GraphQLError will be thrown.
+ */
+'use strict';
+
+var _Object$keys = require('babel-runtime/core-js/object/keys')['default'];
+
+var _interopRequireDefault = require('babel-runtime/helpers/interop-require-default')['default'];
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+exports.getVariableValues = getVariableValues;
+exports.getArgumentValues = getArgumentValues;
+
+var _error = require('../error');
+
+var _jsutilsInvariant = require('../jsutils/invariant');
+
+var _jsutilsInvariant2 = _interopRequireDefault(_jsutilsInvariant);
+
+var _jsutilsIsNullish = require('../jsutils/isNullish');
+
+var _jsutilsIsNullish2 = _interopRequireDefault(_jsutilsIsNullish);
+
+var _jsutilsKeyMap = require('../jsutils/keyMap');
+
+var _jsutilsKeyMap2 = _interopRequireDefault(_jsutilsKeyMap);
+
+var _utilitiesTypeFromAST = require('../utilities/typeFromAST');
+
+var _utilitiesValueFromAST = require('../utilities/valueFromAST');
+
+var _utilitiesIsValidJSValue = require('../utilities/isValidJSValue');
+
+var _languagePrinter = require('../language/printer');
+
+var _typeDefinition = require('../type/definition');
+
+function getVariableValues(schema, definitionASTs, inputs) {
+  return definitionASTs.reduce(function (values, defAST) {
+    var varName = defAST.variable.name.value;
+    values[varName] = getVariableValue(schema, defAST, inputs[varName]);
+    return values;
+  }, {});
+}
+
+/**
+ * Prepares an object map of argument values given a list of argument
+ * definitions and list of argument AST nodes.
+ */
+
+function getArgumentValues(argDefs, argASTs, variableValues) {
+  if (!argDefs || !argASTs) {
+    return {};
+  }
+  var argASTMap = (0, _jsutilsKeyMap2['default'])(argASTs, function (arg) {
+    return arg.name.value;
+  });
+  return argDefs.reduce(function (result, argDef) {
+    var name = argDef.name;
+    var valueAST = argASTMap[name] ? argASTMap[name].value : null;
+    var value = (0, _utilitiesValueFromAST.valueFromAST)(valueAST, argDef.type, variableValues);
+    if ((0, _jsutilsIsNullish2['default'])(value)) {
+      value = argDef.defaultValue;
+    }
+    if (!(0, _jsutilsIsNullish2['default'])(value)) {
+      result[name] = value;
+    }
+    return result;
+  }, {});
+}
+
+/**
+ * Given a variable definition, and any value of input, return a value which
+ * adheres to the variable definition, or throw an error.
+ */
+function getVariableValue(schema, definitionAST, input) {
+  var type = (0, _utilitiesTypeFromAST.typeFromAST)(schema, definitionAST.type);
+  var variable = definitionAST.variable;
+  if (!type || !(0, _typeDefinition.isInputType)(type)) {
+    throw new _error.GraphQLError('Variable "$' + variable.name.value + '" expected value of type ' + ('"' + (0, _languagePrinter.print)(definitionAST.type) + '" which cannot be used as an input type.'), [definitionAST]);
+  }
+  var inputType = type;
+  var errors = (0, _utilitiesIsValidJSValue.isValidJSValue)(input, inputType);
+  if (!errors.length) {
+    if ((0, _jsutilsIsNullish2['default'])(input)) {
+      var defaultValue = definitionAST.defaultValue;
+      if (defaultValue) {
+        return (0, _utilitiesValueFromAST.valueFromAST)(defaultValue, inputType);
+      }
+    }
+    return coerceValue(inputType, input);
+  }
+  if ((0, _jsutilsIsNullish2['default'])(input)) {
+    throw new _error.GraphQLError('Variable "$' + variable.name.value + '" of required type ' + ('"' + (0, _languagePrinter.print)(definitionAST.type) + '" was not provided.'), [definitionAST]);
+  }
+  var message = errors ? '\n' + errors.join('\n') : '';
+  throw new _error.GraphQLError('Variable "$' + variable.name.value + '" got invalid value ' + (JSON.stringify(input) + '.' + message), [definitionAST]);
+}
+
+/**
+ * Given a type and any value, return a runtime value coerced to match the type.
+ */
+function coerceValue(_x, _x2) {
+  var _again = true;
+
+  _function: while (_again) {
+    var type = _x,
+        value = _x2;
+    _value = _ret = _ret2 = parsed = undefined;
+    _again = false;
+
+    // Ensure flow knows that we treat function params as const.
+    var _value = value;
+
+    if (type instanceof _typeDefinition.GraphQLNonNull) {
+      // Note: we're not checking that the result of coerceValue is non-null.
+      // We only call this function after calling isValidJSValue.
+      _x = type.ofType;
+      _x2 = _value;
+      _again = true;
+      continue _function;
+    }
+
+    if ((0, _jsutilsIsNullish2['default'])(_value)) {
+      return null;
+    }
+
+    if (type instanceof _typeDefinition.GraphQLList) {
+      var _ret = (function () {
+        var itemType = type.ofType;
+        // TODO: support iterable input
+        if (Array.isArray(_value)) {
+          return {
+            v: _value.map(function (item) {
+              return coerceValue(itemType, item);
+            })
+          };
+        }
+        return {
+          v: [coerceValue(itemType, _value)]
+        };
+      })();
+
+      if (typeof _ret === 'object') return _ret.v;
+    }
+
+    if (type instanceof _typeDefinition.GraphQLInputObjectType) {
+      var _ret2 = (function () {
+        if (typeof _value !== 'object' || _value === null) {
+          return {
+            v: null
+          };
+        }
+        var fields = type.getFields();
+        return {
+          v: _Object$keys(fields).reduce(function (obj, fieldName) {
+            var field = fields[fieldName];
+            var fieldValue = coerceValue(field.type, _value[fieldName]);
+            if ((0, _jsutilsIsNullish2['default'])(fieldValue)) {
+              fieldValue = field.defaultValue;
+            }
+            if (!(0, _jsutilsIsNullish2['default'])(fieldValue)) {
+              obj[fieldName] = fieldValue;
+            }
+            return obj;
+          }, {})
+        };
+      })();
+
+      if (typeof _ret2 === 'object') return _ret2.v;
+    }
+
+    (0, _jsutilsInvariant2['default'])(type instanceof _typeDefinition.GraphQLScalarType || type instanceof _typeDefinition.GraphQLEnumType, 'Must be input type');
+
+    var parsed = type.parseValue(_value);
+    if (!(0, _jsutilsIsNullish2['default'])(parsed)) {
+      return parsed;
+    }
+  }
+}
+},{"../error":135,"../jsutils/invariant":144,"../jsutils/isNullish":145,"../jsutils/keyMap":146,"../language/printer":153,"../type/definition":156,"../utilities/isValidJSValue":171,"../utilities/typeFromAST":175,"../utilities/valueFromAST":176,"babel-runtime/core-js/object/keys":23,"babel-runtime/helpers/interop-require-default":32}],141:[function(require,module,exports){
+
+/**
+ *  Copyright (c) 2015, Facebook, Inc.
+ *  All rights reserved.
+ *
+ *  This source code is licensed under the BSD-style license found in the
+ *  LICENSE file in the root directory of this source tree. An additional grant
+ *  of patent rights can be found in the PATENTS file in the same directory.
+ */
+
+/**
+ * This is the primary entry point function for fulfilling GraphQL operations
+ * by parsing, validating, and executing a GraphQL document along side a
+ * GraphQL schema.
+ *
+ * More sophisticated GraphQL servers, such as those which persist queries,
+ * may wish to separate the validation and execution phases to a static time
+ * tooling step, and a server runtime step.
+ *
+ * schema:
+ *    The GraphQL type system to use when validating and executing a query.
+ * requestString:
+ *    A GraphQL language formatted string representing the requested operation.
+ * rootValue:
+ *    The value provided as the first argument to resolver functions on the top
+ *    level type (e.g. the query object type).
+ * variableValues:
+ *    A mapping of variable name to runtime value to use for all variables
+ *    defined in the requestString.
+ * operationName:
+ *    The name of the operation to use if requestString contains multiple
+ *    possible operations. Can be omitted if requestString contains only
+ *    one operation.
+ */
+'use strict';
+
+var _Promise = require('babel-runtime/core-js/promise')['default'];
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+exports.graphql = graphql;
+
+/**
+ * The result of a GraphQL parse, validation and execution.
+ *
+ * `data` is the result of a successful execution of the query.
+ * `errors` is included when any errors occurred as a non-empty array.
+ */
+
+var _languageSource = require('./language/source');
+
+var _languageParser = require('./language/parser');
+
+var _validationValidate = require('./validation/validate');
+
+var _executionExecute = require('./execution/execute');
+
+function graphql(schema, requestString, rootValue, variableValues, operationName) {
+  return new _Promise(function (resolve) {
+    var source = new _languageSource.Source(requestString || '', 'GraphQL request');
+    var documentAST = (0, _languageParser.parse)(source);
+    var validationErrors = (0, _validationValidate.validate)(schema, documentAST);
+    if (validationErrors.length > 0) {
+      resolve({ errors: validationErrors });
+    } else {
+      resolve((0, _executionExecute.execute)(schema, documentAST, rootValue, variableValues, operationName));
+    }
+  })['catch'](function (error) {
+    return { errors: [error] };
+  });
+}
+},{"./execution/execute":138,"./language/parser":152,"./language/source":154,"./validation/validate":202,"babel-runtime/core-js/promise":25}],142:[function(require,module,exports){
+
+/**
+ *  Copyright (c) 2015, Facebook, Inc.
+ *  All rights reserved.
+ *
+ *  This source code is licensed under the BSD-style license found in the
+ *  LICENSE file in the root directory of this source tree. An additional grant
+ *  of patent rights can be found in the PATENTS file in the same directory.
+ */
+
+/**
+ * GraphQL.js provides a reference implementation for the GraphQL specification
+ * but is also a useful utility for operating on GraphQL files and building
+ * sophisticated tools.
+ *
+ * This primary module exports a general purpose function for fulfilling all
+ * steps of the GraphQL specification in a single operation, but also includes
+ * utilities for every part of the GraphQL specification:
+ *
+ *   - Parsing the GraphQL language.
+ *   - Building a GraphQL type schema.
+ *   - Validating a GraphQL request against a type schema.
+ *   - Executing a GraphQL request against a type schema.
+ *
+ * This also includes utility functions for operating on GraphQL types and
+ * GraphQL documents to facilitate building tools.
+ *
+ * You may also import from each sub-directory directly. For example, the
+ * following two import statements are equivalent:
+ *
+ *     import { parse } from 'graphql';
+ *     import { parse } from 'graphql/language';
+ */
+
+// The primary entry point into fulfilling a GraphQL request.
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+
+var _graphql = require('./graphql');
+
+Object.defineProperty(exports, 'graphql', {
+  enumerable: true,
+  get: function get() {
+    return _graphql.graphql;
+  }
+});
+
+// Create and operate on GraphQL type definitions and schema.
+
+var _type = require('./type');
+
+Object.defineProperty(exports, 'GraphQLSchema', {
+  enumerable: true,
+  get: function get() {
+    return _type.GraphQLSchema;
+  }
+});
+Object.defineProperty(exports, 'GraphQLScalarType', {
+  enumerable: true,
+  get: function get() {
+    return _type.GraphQLScalarType;
+  }
+});
+Object.defineProperty(exports, 'GraphQLObjectType', {
+  enumerable: true,
+  get: function get() {
+    return _type.GraphQLObjectType;
+  }
+});
+Object.defineProperty(exports, 'GraphQLInterfaceType', {
+  enumerable: true,
+  get: function get() {
+    return _type.GraphQLInterfaceType;
+  }
+});
+Object.defineProperty(exports, 'GraphQLUnionType', {
+  enumerable: true,
+  get: function get() {
+    return _type.GraphQLUnionType;
+  }
+});
+Object.defineProperty(exports, 'GraphQLEnumType', {
+  enumerable: true,
+  get: function get() {
+    return _type.GraphQLEnumType;
+  }
+});
+Object.defineProperty(exports, 'GraphQLInputObjectType', {
+  enumerable: true,
+  get: function get() {
+    return _type.GraphQLInputObjectType;
+  }
+});
+Object.defineProperty(exports, 'GraphQLList', {
+  enumerable: true,
+  get: function get() {
+    return _type.GraphQLList;
+  }
+});
+Object.defineProperty(exports, 'GraphQLNonNull', {
+  enumerable: true,
+  get: function get() {
+    return _type.GraphQLNonNull;
+  }
+});
+Object.defineProperty(exports, 'GraphQLInt', {
+  enumerable: true,
+  get: function get() {
+    return _type.GraphQLInt;
+  }
+});
+Object.defineProperty(exports, 'GraphQLFloat', {
+  enumerable: true,
+  get: function get() {
+    return _type.GraphQLFloat;
+  }
+});
+Object.defineProperty(exports, 'GraphQLString', {
+  enumerable: true,
+  get: function get() {
+    return _type.GraphQLString;
+  }
+});
+Object.defineProperty(exports, 'GraphQLBoolean', {
+  enumerable: true,
+  get: function get() {
+    return _type.GraphQLBoolean;
+  }
+});
+Object.defineProperty(exports, 'GraphQLID', {
+  enumerable: true,
+  get: function get() {
+    return _type.GraphQLID;
+  }
+});
+Object.defineProperty(exports, 'isType', {
+  enumerable: true,
+  get: function get() {
+    return _type.isType;
+  }
+});
+Object.defineProperty(exports, 'isInputType', {
+  enumerable: true,
+  get: function get() {
+    return _type.isInputType;
+  }
+});
+Object.defineProperty(exports, 'isOutputType', {
+  enumerable: true,
+  get: function get() {
+    return _type.isOutputType;
+  }
+});
+Object.defineProperty(exports, 'isLeafType', {
+  enumerable: true,
+  get: function get() {
+    return _type.isLeafType;
+  }
+});
+Object.defineProperty(exports, 'isCompositeType', {
+  enumerable: true,
+  get: function get() {
+    return _type.isCompositeType;
+  }
+});
+Object.defineProperty(exports, 'isAbstractType', {
+  enumerable: true,
+  get: function get() {
+    return _type.isAbstractType;
+  }
+});
+Object.defineProperty(exports, 'getNullableType', {
+  enumerable: true,
+  get: function get() {
+    return _type.getNullableType;
+  }
+});
+Object.defineProperty(exports, 'getNamedType', {
+  enumerable: true,
+  get: function get() {
+    return _type.getNamedType;
+  }
+});
+
+// Parse and operate on GraphQL language source files.
+
+var _language = require('./language');
+
+Object.defineProperty(exports, 'Source', {
+  enumerable: true,
+  get: function get() {
+    return _language.Source;
+  }
+});
+Object.defineProperty(exports, 'getLocation', {
+  enumerable: true,
+  get: function get() {
+    return _language.getLocation;
+  }
+});
+Object.defineProperty(exports, 'parse', {
+  enumerable: true,
+  get: function get() {
+    return _language.parse;
+  }
+});
+Object.defineProperty(exports, 'parseValue', {
+  enumerable: true,
+  get: function get() {
+    return _language.parseValue;
+  }
+});
+Object.defineProperty(exports, 'print', {
+  enumerable: true,
+  get: function get() {
+    return _language.print;
+  }
+});
+Object.defineProperty(exports, 'visit', {
+  enumerable: true,
+  get: function get() {
+    return _language.visit;
+  }
+});
+Object.defineProperty(exports, 'Kind', {
+  enumerable: true,
+  get: function get() {
+    return _language.Kind;
+  }
+});
+Object.defineProperty(exports, 'BREAK', {
+  enumerable: true,
+  get: function get() {
+    return _language.BREAK;
+  }
+});
+
+// Execute GraphQL queries.
+
+var _execution = require('./execution');
+
+Object.defineProperty(exports, 'execute', {
+  enumerable: true,
+  get: function get() {
+    return _execution.execute;
+  }
+});
+
+// Validate GraphQL queries.
+
+var _validation = require('./validation');
+
+Object.defineProperty(exports, 'validate', {
+  enumerable: true,
+  get: function get() {
+    return _validation.validate;
+  }
+});
+Object.defineProperty(exports, 'specifiedRules', {
+  enumerable: true,
+  get: function get() {
+    return _validation.specifiedRules;
+  }
+});
+
+// Create and format GraphQL errors.
+
+var _error = require('./error');
+
+Object.defineProperty(exports, 'GraphQLError', {
+  enumerable: true,
+  get: function get() {
+    return _error.GraphQLError;
+  }
+});
+Object.defineProperty(exports, 'formatError', {
+  enumerable: true,
+  get: function get() {
+    return _error.formatError;
+  }
+});
+
+// Utilities for operating on GraphQL type schema and parsed sources.
+
+var _utilities = require('./utilities');
+
+Object.defineProperty(exports, 'introspectionQuery', {
+  enumerable: true,
+  get: function get() {
+    return _utilities.introspectionQuery;
+  }
+});
+Object.defineProperty(exports, 'getOperationAST', {
+  enumerable: true,
+  get: function get() {
+    return _utilities.getOperationAST;
+  }
+});
+Object.defineProperty(exports, 'buildClientSchema', {
+  enumerable: true,
+  get: function get() {
+    return _utilities.buildClientSchema;
+  }
+});
+Object.defineProperty(exports, 'buildASTSchema', {
+  enumerable: true,
+  get: function get() {
+    return _utilities.buildASTSchema;
+  }
+});
+Object.defineProperty(exports, 'extendSchema', {
+  enumerable: true,
+  get: function get() {
+    return _utilities.extendSchema;
+  }
+});
+Object.defineProperty(exports, 'printSchema', {
+  enumerable: true,
+  get: function get() {
+    return _utilities.printSchema;
+  }
+});
+Object.defineProperty(exports, 'typeFromAST', {
+  enumerable: true,
+  get: function get() {
+    return _utilities.typeFromAST;
+  }
+});
+Object.defineProperty(exports, 'valueFromAST', {
+  enumerable: true,
+  get: function get() {
+    return _utilities.valueFromAST;
+  }
+});
+Object.defineProperty(exports, 'astFromValue', {
+  enumerable: true,
+  get: function get() {
+    return _utilities.astFromValue;
+  }
+});
+Object.defineProperty(exports, 'TypeInfo', {
+  enumerable: true,
+  get: function get() {
+    return _utilities.TypeInfo;
+  }
+});
+Object.defineProperty(exports, 'isValidJSValue', {
+  enumerable: true,
+  get: function get() {
+    return _utilities.isValidJSValue;
+  }
+});
+Object.defineProperty(exports, 'isValidLiteralValue', {
+  enumerable: true,
+  get: function get() {
+    return _utilities.isValidLiteralValue;
+  }
+});
+Object.defineProperty(exports, 'concatAST', {
+  enumerable: true,
+  get: function get() {
+    return _utilities.concatAST;
+  }
+});
+Object.defineProperty(exports, 'isEqualType', {
+  enumerable: true,
+  get: function get() {
+    return _utilities.isEqualType;
+  }
+});
+Object.defineProperty(exports, 'isTypeSubTypeOf', {
+  enumerable: true,
+  get: function get() {
+    return _utilities.isTypeSubTypeOf;
+  }
+});
+Object.defineProperty(exports, 'doTypesOverlap', {
+  enumerable: true,
+  get: function get() {
+    return _utilities.doTypesOverlap;
+  }
+});
+
+// Definitions
+
+// Scalars
+
+// Predicates
+
+// Un-modifiers
+
+// Parse
+
+// Print
+
+// Visit
+
+// The GraphQL query recommended for a full schema introspection.
+
+// Gets the target Operation from a Document
+
+// Build a GraphQLSchema from an introspection result.
+
+// Build a GraphQLSchema from a parsed GraphQL Schema language AST.
+
+// Extends an existing GraphQLSchema from a parsed GraphQL Schema
+// language AST.
+
+// Print a GraphQLSchema to GraphQL Schema language.
+
+// Create a GraphQLType from a GraphQL language AST.
+
+// Create a JavaScript value from a GraphQL language AST.
+
+// Create a GraphQL language AST from a JavaScript value.
+
+// A helper to use within recursive-descent visitors which need to be aware of
+// the GraphQL type system.
+
+// Determine if JavaScript values adhere to a GraphQL type.
+
+// Determine if AST values adhere to a GraphQL type.
+
+// Concatenates multiple AST together.
+
+// Comparators for types
+},{"./error":135,"./execution":139,"./graphql":141,"./language":148,"./type":158,"./utilities":169,"./validation":177}],143:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -16709,7 +19136,7 @@ function find(list, predicate) {
 }
 
 module.exports = exports["default"];
-},{}],122:[function(require,module,exports){
+},{}],144:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -16734,7 +19161,7 @@ function invariant(condition, message) {
 }
 
 module.exports = exports["default"];
-},{}],123:[function(require,module,exports){
+},{}],145:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -16760,7 +19187,7 @@ function isNullish(value) {
 }
 
 module.exports = exports["default"];
-},{}],124:[function(require,module,exports){
+},{}],146:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -16778,20 +19205,20 @@ module.exports = exports["default"];
  * This provides a convenient lookup for the array items if the key function
  * produces unique results.
  *
- *     var phoneBook = [
+ *     const phoneBook = [
  *       { name: 'Jon', num: '555-1234' },
  *       { name: 'Jenny', num: '867-5309' }
  *     ]
  *
  *     // { Jon: { name: 'Jon', num: '555-1234' },
  *     //   Jenny: { name: 'Jenny', num: '867-5309' } }
- *     var entriesByName = keyMap(
+ *     const entriesByName = keyMap(
  *       phoneBook,
  *       entry => entry.name
  *     )
  *
  *     // { name: 'Jenny', num: '857-6309' }
- *     var jennyEntry = entriesByName['Jenny']
+ *     const jennyEntry = entriesByName['Jenny']
  *
  */
 "use strict";
@@ -16808,7 +19235,7 @@ function keyMap(list, keyFn) {
 }
 
 module.exports = exports["default"];
-},{}],125:[function(require,module,exports){
+},{}],147:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -16823,13 +19250,13 @@ module.exports = exports["default"];
  * Creates a keyed JS object from an array, given a function to produce the keys
  * and a function to produce the values from each item in the array.
  *
- *     var phoneBook = [
+ *     const phoneBook = [
  *       { name: 'Jon', num: '555-1234' },
  *       { name: 'Jenny', num: '867-5309' }
  *     ]
  *
  *     // { Jon: '555-1234', Jenny: '867-5309' }
- *     var phonesByName = keyValMap(
+ *     const phonesByName = keyValMap(
  *       phoneBook,
  *       entry => entry.name,
  *       entry => entry.num
@@ -16850,7 +19277,7 @@ function keyValMap(list, keyFn, valFn) {
 }
 
 module.exports = exports["default"];
-},{}],126:[function(require,module,exports){
+},{}],148:[function(require,module,exports){
 /**
  *  Copyright (c) 2015, Facebook, Inc.
  *  All rights reserved.
@@ -16938,7 +19365,7 @@ Object.defineProperty(exports, 'BREAK', {
     return _visitor.BREAK;
   }
 });
-},{"./kinds":127,"./lexer":128,"./location":129,"./parser":130,"./printer":131,"./source":132,"./visitor":133,"babel-runtime/helpers/interop-require-wildcard":29}],127:[function(require,module,exports){
+},{"./kinds":149,"./lexer":150,"./location":151,"./parser":152,"./printer":153,"./source":154,"./visitor":155,"babel-runtime/helpers/interop-require-wildcard":33}],149:[function(require,module,exports){
 /**
  *  Copyright (c) 2015, Facebook, Inc.
  *  All rights reserved.
@@ -17039,7 +19466,7 @@ var INPUT_OBJECT_TYPE_DEFINITION = 'InputObjectTypeDefinition';
 exports.INPUT_OBJECT_TYPE_DEFINITION = INPUT_OBJECT_TYPE_DEFINITION;
 var TYPE_EXTENSION_DEFINITION = 'TypeExtensionDefinition';
 exports.TYPE_EXTENSION_DEFINITION = TYPE_EXTENSION_DEFINITION;
-},{}],128:[function(require,module,exports){
+},{}],150:[function(require,module,exports){
 /*  /
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -17053,8 +19480,8 @@ exports.TYPE_EXTENSION_DEFINITION = TYPE_EXTENSION_DEFINITION;
 'use strict';
 
 /**
- * A representation of a lexed Token. Value is optional, is it is
- * not needed for punctuators like BANG or PAREN_L.
+ * A representation of a lexed Token. Value only appears for non-punctuation
+ * tokens: NAME, INT, FLOAT, and STRING.
  */
 Object.defineProperty(exports, '__esModule', {
   value: true
@@ -17105,10 +19532,9 @@ var TokenKind = {
   PIPE: 13,
   BRACE_R: 14,
   NAME: 15,
-  VARIABLE: 16,
-  INT: 17,
-  FLOAT: 18,
-  STRING: 19
+  INT: 16,
+  FLOAT: 17,
+  STRING: 18
 };
 
 exports.TokenKind = TokenKind;
@@ -17144,7 +19570,6 @@ tokenDescription[TokenKind.BRACE_L] = '{';
 tokenDescription[TokenKind.PIPE] = '|';
 tokenDescription[TokenKind.BRACE_R] = '}';
 tokenDescription[TokenKind.NAME] = 'Name';
-tokenDescription[TokenKind.VARIABLE] = 'Variable';
 tokenDescription[TokenKind.INT] = 'Int';
 tokenDescription[TokenKind.FLOAT] = 'Float';
 tokenDescription[TokenKind.STRING] = 'String';
@@ -17311,8 +19736,8 @@ function positionAfterWhitespace(body, startPosition) {
  * Float: -?(0|[1-9][0-9]*)(\.[0-9]+)?((E|e)(+|-)?[0-9]+)?
  */
 function readNumber(source, start, firstCode) {
-  var code = firstCode;
   var body = source.body;
+  var code = firstCode;
   var position = start;
   var isFloat = false;
 
@@ -17376,7 +19801,7 @@ function readDigits(source, start, firstCode) {
 /**
  * Reads a string token from the source file.
  *
- * "([^"\\\u000A\u000D\u2028\u2029]|(\\(u[0-9a-fA-F]{4}|["\\/bfnrt])))*"
+ * "([^"\\\u000A\u000D]|(\\(u[0-9a-fA-F]{4}|["\\/bfnrt])))*"
  */
 function readString(source, start) {
   var body = source.body;
@@ -17491,7 +19916,7 @@ function readName(source, position) {
   }
   return makeToken(TokenKind.NAME, position, end, slice.call(body, position, end));
 }
-},{"../error":118}],129:[function(require,module,exports){
+},{"../error":135}],151:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -17518,17 +19943,18 @@ exports.getLocation = getLocation;
  */
 
 function getLocation(source, position) {
+  var lineRegexp = /\r\n|[\n\r]/g;
   var line = 1;
   var column = position + 1;
-  var lineRegexp = /\r\n|[\n\r\u2028\u2029]/g;
-  var match;
+  var match = undefined;
   while ((match = lineRegexp.exec(source.body)) && match.index < position) {
     line += 1;
     column = position + 1 - (match.index + match[0].length);
   }
   return { line: line, column: column };
 }
-},{}],130:[function(require,module,exports){
+},{}],152:[function(require,module,exports){
+
 /**
  *  Copyright (c) 2015, Facebook, Inc.
  *  All rights reserved.
@@ -17582,7 +20008,7 @@ function parse(source, options) {
 function parseValue(source, options) {
   var sourceObj = source instanceof _source.Source ? source : new _source.Source(source);
   var parser = makeParser(sourceObj, options || {});
-  return parseValueLiteral(parser);
+  return parseValueLiteral(parser, false);
 }
 
 /**
@@ -17622,6 +20048,7 @@ function parseDocument(parser) {
  *   - OperationDefinition
  *   - FragmentDefinition
  *   - TypeDefinition
+ *   - TypeExtensionDefinition
  */
 function parseDefinition(parser) {
   if (peek(parser, _lexer.TokenKind.BRACE_L)) {
@@ -17645,8 +20072,9 @@ function parseDefinition(parser) {
       case 'scalar':
       case 'enum':
       case 'input':
-      case 'extend':
         return parseTypeDefinition(parser);
+      case 'extend':
+        return parseTypeExtensionDefinition(parser);
     }
   }
 
@@ -17676,8 +20104,10 @@ function parseOperationDefinition(parser) {
     };
   }
   var operationToken = expect(parser, _lexer.TokenKind.NAME);
-  var operation = operationToken.value;
-  var name;
+  var operation = operationToken.value === 'mutation' ? 'mutation' : operationToken.value === 'subscription' ? 'subscription' : operationToken.value === 'query' ? 'query' : (function () {
+    throw unexpected(parser, operationToken);
+  })();
+  var name = undefined;
   if (peek(parser, _lexer.TokenKind.NAME)) {
     name = parseName(parser);
   }
@@ -17757,8 +20187,8 @@ function parseField(parser) {
   var start = parser.token.start;
 
   var nameOrAlias = parseName(parser);
-  var alias;
-  var name;
+  var alias = undefined;
+  var name = undefined;
   if (skip(parser, _lexer.TokenKind.COLON)) {
     alias = nameOrAlias;
     name = parseName(parser);
@@ -18025,7 +20455,7 @@ function parseDirective(parser) {
 
 function parseType(parser) {
   var start = parser.token.start;
-  var type;
+  var type = undefined;
   if (skip(parser, _lexer.TokenKind.BRACKET_L)) {
     type = parseType(parser);
     expect(parser, _lexer.TokenKind.BRACKET_R);
@@ -18070,7 +20500,6 @@ function parseNamedType(parser) {
  *   - ScalarTypeDefinition
  *   - EnumTypeDefinition
  *   - InputObjectTypeDefinition
- *   - TypeExtensionDefinition
  */
 function parseTypeDefinition(parser) {
   if (!peek(parser, _lexer.TokenKind.NAME)) {
@@ -18089,8 +20518,6 @@ function parseTypeDefinition(parser) {
       return parseEnumTypeDefinition(parser);
     case 'input':
       return parseInputObjectTypeDefinition(parser);
-    case 'extend':
-      return parseTypeExtensionDefinition(parser);
     default:
       throw unexpected(parser);
   }
@@ -18163,7 +20590,7 @@ function parseInputValueDef(parser) {
   var start = parser.token.start;
   var name = parseName(parser);
   expect(parser, _lexer.TokenKind.COLON);
-  var type = parseType(parser, false);
+  var type = parseType(parser);
   var defaultValue = null;
   if (skip(parser, _lexer.TokenKind.EQUALS)) {
     defaultValue = parseConstValue(parser);
@@ -18434,7 +20861,7 @@ function many(parser, openKind, parseFn, closeKind) {
  * to the source that they were created from. This configuration flag
  * disables that behavior for performance or testing.
  */
-},{"../error":118,"./kinds":127,"./lexer":128,"./source":132}],131:[function(require,module,exports){
+},{"../error":135,"./kinds":149,"./lexer":150,"./source":154}],153:[function(require,module,exports){
 /**
  *  Copyright (c) 2015, Facebook, Inc.
  *  All rights reserved.
@@ -18690,7 +21117,7 @@ function indent(maybeString) {
 function length(maybeArray) {
   return maybeArray ? maybeArray.length : 0;
 }
-},{"./visitor":133}],132:[function(require,module,exports){
+},{"./visitor":155}],154:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -18723,7 +21150,7 @@ var Source = function Source(body, name) {
 };
 
 exports.Source = Source;
-},{"babel-runtime/helpers/class-call-check":23}],133:[function(require,module,exports){
+},{"babel-runtime/helpers/class-call-check":27}],155:[function(require,module,exports){
 /**
  *  Copyright (c) 2015, Facebook, Inc.
  *  All rights reserved.
@@ -18741,7 +21168,8 @@ Object.defineProperty(exports, '__esModule', {
   value: true
 });
 exports.visit = visit;
-exports.getVisitFn = getVisitFn;
+exports.visitInParallel = visitInParallel;
+exports.visitWithTypeInfo = visitWithTypeInfo;
 var QueryDocumentKeys = {
   Name: [],
 
@@ -18802,7 +21230,7 @@ exports.BREAK = BREAK;
  * a new version of the AST with the changes applied will be returned from the
  * visit function.
  *
- *     var editedAST = visit(ast, {
+ *     const editedAST = visit(ast, {
  *       enter(node, key, parent, path, ancestors) {
  *         // @return
  *         //   undefined: no action
@@ -18878,12 +21306,12 @@ exports.BREAK = BREAK;
 function visit(root, visitor, keyMap) {
   var visitorKeys = keyMap || QueryDocumentKeys;
 
-  var stack;
+  var stack = undefined;
   var inArray = Array.isArray(root);
   var keys = [root];
   var index = -1;
   var edits = [];
-  var parent;
+  var parent = undefined;
   var path = [];
   var ancestors = [];
   var newRoot = root;
@@ -18891,8 +21319,8 @@ function visit(root, visitor, keyMap) {
   do {
     index++;
     var isLeaving = index === keys.length;
-    var key;
-    var node;
+    var key = undefined;
+    var node = undefined;
     var isEdited = isLeaving && edits.length !== 0;
     if (isLeaving) {
       key = ancestors.length === 0 ? undefined : path.pop();
@@ -18912,10 +21340,13 @@ function visit(root, visitor, keyMap) {
         }
         var editOffset = 0;
         for (var ii = 0; ii < edits.length; ii++) {
-          var _edits$ii = _slicedToArray(edits[ii], 2);
+          var _edits$ii = _slicedToArray(edits[ii], 1);
 
           var editKey = _edits$ii[0];
-          var editValue = _edits$ii[1];
+
+          var _edits$ii2 = _slicedToArray(edits[ii], 2);
+
+          var editValue = _edits$ii2[1];
 
           if (inArray) {
             editKey -= editOffset;
@@ -18949,7 +21380,7 @@ function visit(root, visitor, keyMap) {
       if (!isNode(node)) {
         throw new Error('Invalid AST Node: ' + JSON.stringify(node));
       }
-      var visitFn = getVisitFn(visitor, isLeaving, node.kind);
+      var visitFn = getVisitFn(visitor, node.kind, isLeaving);
       if (visitFn) {
         result = visitFn.call(visitor, node, key, parent, path, ancestors);
 
@@ -19004,7 +21435,92 @@ function isNode(maybeNode) {
   return maybeNode && typeof maybeNode.kind === 'string';
 }
 
-function getVisitFn(visitor, isLeaving, kind) {
+/**
+ * Creates a new visitor instance which delegates to many visitors to run in
+ * parallel. Each visitor will be visited for each node before moving on.
+ *
+ * If a prior visitor edits a node, no following visitors will see that node.
+ */
+
+function visitInParallel(visitors) {
+  var skipping = new Array(visitors.length);
+
+  return {
+    enter: function enter(node) {
+      for (var i = 0; i < visitors.length; i++) {
+        if (!skipping[i]) {
+          var fn = getVisitFn(visitors[i], node.kind, /* isLeaving */false);
+          if (fn) {
+            var result = fn.apply(visitors[i], arguments);
+            if (result === false) {
+              skipping[i] = node;
+            } else if (result === BREAK) {
+              skipping[i] = BREAK;
+            } else if (result !== undefined) {
+              return result;
+            }
+          }
+        }
+      }
+    },
+    leave: function leave(node) {
+      for (var i = 0; i < visitors.length; i++) {
+        if (!skipping[i]) {
+          var fn = getVisitFn(visitors[i], node.kind, /* isLeaving */true);
+          if (fn) {
+            var result = fn.apply(visitors[i], arguments);
+            if (result === BREAK) {
+              skipping[i] = BREAK;
+            } else if (result !== undefined && result !== false) {
+              return result;
+            }
+          }
+        } else if (skipping[i] === node) {
+          skipping[i] = null;
+        }
+      }
+    }
+  };
+}
+
+/**
+ * Creates a new visitor instance which maintains a provided TypeInfo instance
+ * along with visiting visitor.
+ */
+
+function visitWithTypeInfo(typeInfo, visitor) {
+  return {
+    enter: function enter(node) {
+      typeInfo.enter(node);
+      var fn = getVisitFn(visitor, node.kind, /* isLeaving */false);
+      if (fn) {
+        var result = fn.apply(visitor, arguments);
+        if (result !== undefined) {
+          typeInfo.leave(node);
+          if (isNode(result)) {
+            typeInfo.enter(result);
+          }
+        }
+        return result;
+      }
+    },
+    leave: function leave(node) {
+      var fn = getVisitFn(visitor, node.kind, /* isLeaving */true);
+      var result = undefined;
+      if (fn) {
+        result = fn.apply(visitor, arguments);
+      }
+      typeInfo.leave(node);
+      return result;
+    }
+  };
+}
+
+/**
+ * Given a visitor instance, if it is leaving or not, and a node kind, return
+ * the function the visitor runtime should call.
+ */
+function getVisitFn(visitor, kind, isLeaving) {
   var kindVisitor = visitor[kind];
   if (kindVisitor) {
     if (!isLeaving && typeof kindVisitor === 'function') {
@@ -19016,22 +21532,22 @@ function getVisitFn(visitor, isLeaving, kind) {
       // { Kind: { enter() {}, leave() {} } }
       return kindSpecificVisitor;
     }
-    return;
-  }
-  var specificVisitor = isLeaving ? visitor.leave : visitor.enter;
-  if (specificVisitor) {
-    if (typeof specificVisitor === 'function') {
-      // { enter() {}, leave() {} }
-      return specificVisitor;
-    }
-    var specificKindVisitor = specificVisitor[kind];
-    if (typeof specificKindVisitor === 'function') {
-      // { enter: { Kind() {} }, leave: { Kind() {} } }
-      return specificKindVisitor;
+  } else {
+    var specificVisitor = isLeaving ? visitor.leave : visitor.enter;
+    if (specificVisitor) {
+      if (typeof specificVisitor === 'function') {
+        // { enter() {}, leave() {} }
+        return specificVisitor;
+      }
+      var specificKindVisitor = specificVisitor[kind];
+      if (typeof specificKindVisitor === 'function') {
+        // { enter: { Kind() {} }, leave: { Kind() {} } }
+        return specificKindVisitor;
+      }
     }
   }
 }
-},{"babel-runtime/helpers/sliced-to-array":30}],134:[function(require,module,exports){
+},{"babel-runtime/helpers/sliced-to-array":34}],156:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -19165,7 +21681,7 @@ function getNamedType(type) {
  *
  * Example:
  *
- *     var OddType = new GraphQLScalarType({
+ *     const OddType = new GraphQLScalarType({
  *       name: 'Odd',
  *       serialize(value) {
  *         return value % 2 === 1 ? value : null;
@@ -19174,9 +21690,8 @@ function getNamedType(type) {
  *
  */
 
-var GraphQLScalarType /* <T> */ = (function () {
-  /* <T> */
-  function GraphQLScalarType(config /* <T> */) {
+var GraphQLScalarType = (function () {
+  function GraphQLScalarType(config) {
     _classCallCheck(this, GraphQLScalarType);
 
     (0, _jsutilsInvariant2['default'])(config.name, 'Type must be named.');
@@ -19192,19 +21707,19 @@ var GraphQLScalarType /* <T> */ = (function () {
 
   _createClass(GraphQLScalarType, [{
     key: 'serialize',
-    value: function serialize(value) /* T */{
+    value: function serialize(value) {
       var serializer = this._scalarConfig.serialize;
       return serializer(value);
     }
   }, {
     key: 'parseValue',
-    value: function parseValue(value) /* T */{
+    value: function parseValue(value) {
       var parser = this._scalarConfig.parseValue;
       return parser ? parser(value) : null;
     }
   }, {
     key: 'parseLiteral',
-    value: function parseLiteral(valueAST) /* T */{
+    value: function parseLiteral(valueAST) {
       var parser = this._scalarConfig.parseLiteral;
       return parser ? parser(valueAST) : null;
     }
@@ -19219,7 +21734,6 @@ var GraphQLScalarType /* <T> */ = (function () {
 })();
 
 exports.GraphQLScalarType = GraphQLScalarType;
-/* T */
 
 /**
  * Object Type Definition
@@ -19229,7 +21743,7 @@ exports.GraphQLScalarType = GraphQLScalarType;
  *
  * Example:
  *
- *     var AddressType = new GraphQLObjectType({
+ *     const AddressType = new GraphQLObjectType({
  *       name: 'Address',
  *       fields: {
  *         street: { type: GraphQLString },
@@ -19249,7 +21763,7 @@ exports.GraphQLScalarType = GraphQLScalarType;
  *
  * Example:
  *
- *     var PersonType = new GraphQLObjectType({
+ *     const PersonType = new GraphQLObjectType({
  *       name: 'Person',
  *       fields: () => ({
  *         name: { type: GraphQLString },
@@ -19378,7 +21892,7 @@ function addImplementationToInterfaces(impl) {
  *
  * Example:
  *
- *     var EntityType = new GraphQLInterfaceType({
+ *     const EntityType = new GraphQLInterfaceType({
  *       name: 'Entity',
  *       fields: {
  *         name: { type: GraphQLString }
@@ -19442,9 +21956,9 @@ exports.GraphQLInterfaceType = GraphQLInterfaceType;
 function getTypeOf(value, info, abstractType) {
   var possibleTypes = abstractType.getPossibleTypes();
   for (var i = 0; i < possibleTypes.length; i++) {
-    var type = possibleTypes[i];
-    if (typeof type.isTypeOf === 'function' && type.isTypeOf(value, info)) {
-      return type;
+    var _type = possibleTypes[i];
+    if (typeof _type.isTypeOf === 'function' && _type.isTypeOf(value, info)) {
+      return _type;
     }
   }
 }
@@ -19458,7 +21972,7 @@ function getTypeOf(value, info, abstractType) {
  *
  * Example:
  *
- *     var PetType = new GraphQLUnionType({
+ *     const PetType = new GraphQLUnionType({
  *       name: 'Pet',
  *       types: [ DogType, CatType ],
  *       resolveType(value) {
@@ -19541,7 +22055,7 @@ exports.GraphQLUnionType = GraphQLUnionType;
  *
  * Example:
  *
- *     var RGBType = new GraphQLEnumType({
+ *     const RGBType = new GraphQLEnumType({
  *       name: 'RGB',
  *       values: {
  *         RED: { value: 0 },
@@ -19579,9 +22093,11 @@ var GraphQLEnumType /* <T> */ = (function () {
   }, {
     key: 'parseValue',
     value: function parseValue(value) /* T */{
-      var enumValue = this._getNameLookup()[value];
-      if (enumValue) {
-        return enumValue.value;
+      if (typeof value === 'string') {
+        var enumValue = this._getNameLookup()[value];
+        if (enumValue) {
+          return enumValue.value;
+        }
       }
     }
   }, {
@@ -19597,24 +22113,32 @@ var GraphQLEnumType /* <T> */ = (function () {
   }, {
     key: '_getValueLookup',
     value: function _getValueLookup() {
+      var _this2 = this;
+
       if (!this._valueLookup) {
-        var lookup = new _Map();
-        this.getValues().forEach(function (value) {
-          lookup.set(value.value, value);
-        });
-        this._valueLookup = lookup;
+        (function () {
+          var lookup = new _Map();
+          _this2.getValues().forEach(function (value) {
+            lookup.set(value.value, value);
+          });
+          _this2._valueLookup = lookup;
+        })();
       }
       return this._valueLookup;
     }
   }, {
     key: '_getNameLookup',
     value: function _getNameLookup() {
+      var _this3 = this;
+
       if (!this._nameLookup) {
-        var lookup = _Object$create(null);
-        this.getValues().forEach(function (value) {
-          lookup[value.name] = value;
-        });
-        this._nameLookup = lookup;
+        (function () {
+          var lookup = _Object$create(null);
+          _this3.getValues().forEach(function (value) {
+            lookup[value.name] = value;
+          });
+          _this3._nameLookup = lookup;
+        })();
       }
       return this._nameLookup;
     }
@@ -19640,15 +22164,16 @@ function defineEnumValues(type, valueMap /* <T> */
     var value = valueMap[valueName];
     (0, _jsutilsInvariant2['default'])(isPlainObj(value), type + '.' + valueName + ' must refer to an object with a "value" key ' + ('representing an internal value but got: ' + value + '.'));
     (0, _jsutilsInvariant2['default'])(!value.hasOwnProperty('isDeprecated'), type + '.' + valueName + ' should provide "deprecationReason" instead ' + 'of "isDeprecated".');
-    value.name = valueName;
-    if ((0, _jsutilsIsNullish2['default'])(value.value)) {
-      value.value = valueName;
-    }
-    return value;
+    return {
+      name: valueName,
+      description: value.description,
+      deprecationReason: value.deprecationReason,
+      value: (0, _jsutilsIsNullish2['default'])(value.value) ? valueName : value.value
+    };
   });
 }
 
-/* <T> */
+/* <T> */ /* T */
 
 /**
  * Input Object Type Definition
@@ -19660,7 +22185,7 @@ function defineEnumValues(type, valueMap /* <T> */
  *
  * Example:
  *
- *     var GeoPoint = new GraphQLInputObjectType({
+ *     const GeoPoint = new GraphQLInputObjectType({
  *       name: 'GeoPoint',
  *       fields: {
  *         lat: { type: new GraphQLNonNull(GraphQLFloat) },
@@ -19690,7 +22215,7 @@ var GraphQLInputObjectType = (function () {
   }, {
     key: '_defineFieldMap',
     value: function _defineFieldMap() {
-      var _this2 = this;
+      var _this4 = this;
 
       var fieldMap = resolveMaybeThunk(this._typeConfig.fields);
       (0, _jsutilsInvariant2['default'])(isPlainObj(fieldMap), this + ' fields must be an object with field names as keys or a ' + 'function which returns such an object.');
@@ -19702,7 +22227,7 @@ var GraphQLInputObjectType = (function () {
         var field = _extends({}, fieldMap[fieldName], {
           name: fieldName
         });
-        (0, _jsutilsInvariant2['default'])(isInputType(field.type), _this2 + '.' + fieldName + ' field type must be Input Type but ' + ('got: ' + field.type + '.'));
+        (0, _jsutilsInvariant2['default'])(isInputType(field.type), _this4 + '.' + fieldName + ' field type must be Input Type but ' + ('got: ' + field.type + '.'));
         resultFieldMap[fieldName] = field;
       });
       return resultFieldMap;
@@ -19728,7 +22253,7 @@ exports.GraphQLInputObjectType = GraphQLInputObjectType;
  *
  * Example:
  *
- *     var PersonType = new GraphQLObjectType({
+ *     const PersonType = new GraphQLObjectType({
  *       name: 'Person',
  *       fields: () => ({
  *         parents: { type: new GraphQLList(Person) },
@@ -19757,7 +22282,7 @@ var GraphQLList = (function () {
    *
    * Example:
    *
-   *     var RowType = new GraphQLObjectType({
+   *     const RowType = new GraphQLObjectType({
    *       name: 'Row',
    *       fields: () => ({
    *         id: { type: new GraphQLNonNull(GraphQLString) },
@@ -19805,7 +22330,7 @@ var NAME_RX = /^[_a-zA-Z][_a-zA-Z0-9]*$/;
 function assertValidName(name) {
   (0, _jsutilsInvariant2['default'])(NAME_RX.test(name), 'Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but "' + name + '" does not.');
 }
-/* <T> */ /* T */ /* T */
+
 /**
  * Optionally provide a custom type resolver function. If one is not provided,
  * the default implementation will call `isTypeOf` on each implementing
@@ -19817,8 +22342,8 @@ function assertValidName(name) {
  * the default implementation will call `isTypeOf` on each implementing
  * Object type.
  */
-/* <T> */ /* <T> */ /* T */ /* T */ /* <T> */ /* <T> */ /* <T> */ /* <T> */ /* T */ /* <T> */ /* T */
-},{"../jsutils/invariant":122,"../jsutils/isNullish":123,"../jsutils/keyMap":124,"../language/kinds":127,"babel-runtime/core-js/map":15,"babel-runtime/core-js/object/create":17,"babel-runtime/core-js/object/keys":20,"babel-runtime/helpers/class-call-check":23,"babel-runtime/helpers/create-class":24,"babel-runtime/helpers/extends":25,"babel-runtime/helpers/interop-require-default":28}],135:[function(require,module,exports){
+/* <T> */ /* <T> */ /* T */ /* T */ /* <T> */ /* <T> */ /* <T> */ /* <T> */ /* T */ /* <T> */
+},{"../jsutils/invariant":144,"../jsutils/isNullish":145,"../jsutils/keyMap":146,"../language/kinds":149,"babel-runtime/core-js/map":18,"babel-runtime/core-js/object/create":20,"babel-runtime/core-js/object/keys":23,"babel-runtime/helpers/class-call-check":27,"babel-runtime/helpers/create-class":28,"babel-runtime/helpers/extends":29,"babel-runtime/helpers/interop-require-default":32}],157:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -19851,10 +22376,10 @@ var GraphQLDirective = function GraphQLDirective(config) {
 
   this.name = config.name;
   this.description = config.description;
-  this.args = config.args;
-  this.onOperation = config.onOperation;
-  this.onFragment = config.onFragment;
-  this.onField = config.onField;
+  this.args = config.args || [];
+  this.onOperation = Boolean(config.onOperation);
+  this.onFragment = Boolean(config.onFragment);
+  this.onField = Boolean(config.onField);
 };
 
 exports.GraphQLDirective = GraphQLDirective;
@@ -19888,7 +22413,7 @@ var GraphQLSkipDirective = new GraphQLDirective({
   onField: true
 });
 exports.GraphQLSkipDirective = GraphQLSkipDirective;
-},{"./definition":134,"./scalars":138,"babel-runtime/helpers/class-call-check":23}],136:[function(require,module,exports){
+},{"./definition":156,"./scalars":160,"babel-runtime/helpers/class-call-check":27}],158:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -20054,8 +22579,8 @@ Object.defineProperty(exports, 'GraphQLID', {
 // Un-modifiers
 
 // Definitions
-},{"./definition":134,"./scalars":138,"./schema":139}],137:[function(require,module,exports){
-/*  weak */
+},{"./definition":156,"./scalars":160,"./schema":161}],159:[function(require,module,exports){
+
 /**
  *  Copyright (c) 2015, Facebook, Inc.
  *  All rights reserved.
@@ -20137,7 +22662,7 @@ var __Schema = new _definition.GraphQLObjectType({
 exports.__Schema = __Schema;
 var __Directive = new _definition.GraphQLObjectType({
   name: '__Directive',
-  description: 'A Directives provides a way to describe alternate runtime execution and ' + 'type validation behavior in a GraphQL document.' + '\n\nIn some cases, you need to provide options to alter GraphQL’s ' + 'execution behavior in ways field arguments will not suffice, such as ' + 'conditionally including or skipping a field. Directives provide this by ' + 'describing additional information to the executor.',
+  description: 'A Directive provides a way to describe alternate runtime execution and ' + 'type validation behavior in a GraphQL document.' + '\n\nIn some cases, you need to provide options to alter GraphQL’s ' + 'execution behavior in ways field arguments will not suffice, such as ' + 'conditionally including or skipping a field. Directives provide this by ' + 'describing additional information to the executor.',
   fields: function fields() {
     return {
       name: { type: new _definition.GraphQLNonNull(_scalars.GraphQLString) },
@@ -20194,16 +22719,22 @@ var __Type = new _definition.GraphQLObjectType({
           var includeDeprecated = _ref.includeDeprecated;
 
           if (type instanceof _definition.GraphQLObjectType || type instanceof _definition.GraphQLInterfaceType) {
-            var fieldMap = type.getFields();
-            var fields = _Object$keys(fieldMap).map(function (fieldName) {
-              return fieldMap[fieldName];
-            });
-            if (!includeDeprecated) {
-              fields = fields.filter(function (field) {
-                return !field.deprecationReason;
+            var _ret = (function () {
+              var fieldMap = type.getFields();
+              var fields = _Object$keys(fieldMap).map(function (fieldName) {
+                return fieldMap[fieldName];
               });
-            }
-            return fields;
+              if (!includeDeprecated) {
+                fields = fields.filter(function (field) {
+                  return !field.deprecationReason;
+                });
+              }
+              return {
+                v: fields
+              };
+            })();
+
+            if (typeof _ret === 'object') return _ret.v;
           }
           return null;
         }
@@ -20247,10 +22778,16 @@ var __Type = new _definition.GraphQLObjectType({
         type: new _definition.GraphQLList(new _definition.GraphQLNonNull(__InputValue)),
         resolve: function resolve(type) {
           if (type instanceof _definition.GraphQLInputObjectType) {
-            var fieldMap = type.getFields();
-            return _Object$keys(fieldMap).map(function (fieldName) {
-              return fieldMap[fieldName];
-            });
+            var _ret2 = (function () {
+              var fieldMap = type.getFields();
+              return {
+                v: _Object$keys(fieldMap).map(function (fieldName) {
+                  return fieldMap[fieldName];
+                })
+              };
+            })();
+
+            if (typeof _ret2 === 'object') return _ret2.v;
           }
         }
       },
@@ -20298,7 +22835,7 @@ var __InputValue = new _definition.GraphQLObjectType({
         type: _scalars.GraphQLString,
         description: 'A GraphQL-formatted string representing the default value for this ' + 'input value.',
         resolve: function resolve(inputVal) {
-          return inputVal.defaultValue == null ? null : (0, _languagePrinter.print)((0, _utilitiesAstFromValue.astFromValue)(inputVal.defaultValue, inputVal));
+          return (0, _jsutilsIsNullish2['default'])(inputVal.defaultValue) ? null : (0, _languagePrinter.print)((0, _utilitiesAstFromValue.astFromValue)(inputVal.defaultValue, inputVal));
         }
       }
     };
@@ -20308,18 +22845,20 @@ var __InputValue = new _definition.GraphQLObjectType({
 var __EnumValue = new _definition.GraphQLObjectType({
   name: '__EnumValue',
   description: 'One possible value for a given Enum. Enum values are unique values, not ' + 'a placeholder for a string or numeric value. However an Enum value is ' + 'returned in a JSON response as a string.',
-  fields: {
-    name: { type: new _definition.GraphQLNonNull(_scalars.GraphQLString) },
-    description: { type: _scalars.GraphQLString },
-    isDeprecated: {
-      type: new _definition.GraphQLNonNull(_scalars.GraphQLBoolean),
-      resolve: function resolve(enumValue) {
-        return !(0, _jsutilsIsNullish2['default'])(enumValue.deprecationReason);
+  fields: function fields() {
+    return {
+      name: { type: new _definition.GraphQLNonNull(_scalars.GraphQLString) },
+      description: { type: _scalars.GraphQLString },
+      isDeprecated: {
+        type: new _definition.GraphQLNonNull(_scalars.GraphQLBoolean),
+        resolve: function resolve(enumValue) {
+          return !(0, _jsutilsIsNullish2['default'])(enumValue.deprecationReason);
+        }
+      },
+      deprecationReason: {
+        type: _scalars.GraphQLString
       }
-    },
-    deprecationReason: {
-      type: _scalars.GraphQLString
-    }
+    };
   }
 });
 
@@ -20399,7 +22938,9 @@ var TypeMetaFieldDef = {
   resolve: function resolve(source, _ref4, _ref5) {
     var name = _ref4.name;
     var schema = _ref5.schema;
-    return schema.getType(name);
+    return (function () {
+      return schema.getType(name);
+    })();
   }
 };
 
@@ -20415,7 +22956,7 @@ var TypeNameMetaFieldDef = {
   }
 };
 exports.TypeNameMetaFieldDef = TypeNameMetaFieldDef;
-},{"../jsutils/isNullish":123,"../language/printer":131,"../utilities/astFromValue":141,"./definition":134,"./scalars":138,"babel-runtime/core-js/object/keys":20,"babel-runtime/helpers/interop-require-default":28}],138:[function(require,module,exports){
+},{"../jsutils/isNullish":145,"../language/printer":153,"../utilities/astFromValue":163,"./definition":156,"./scalars":160,"babel-runtime/core-js/object/keys":23,"babel-runtime/helpers/interop-require-default":32}],160:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -20436,11 +22977,13 @@ var _definition = require('./definition');
 
 var _language = require('../language');
 
-// Integers are only safe when between -(2^53 - 1) and 2^53 - 1 due to being
-// encoded in JavaScript and represented in JSON as double-precision floating
-// point numbers, as specified by IEEE 754.
-var MAX_INT = 9007199254740991;
-var MIN_INT = -9007199254740991;
+// As per the GraphQL Spec, Integers are only treated as valid when a valid
+// 32-bit signed integer, providing the broadest support across platforms.
+//
+// n.b. JavaScript's integers are safe between -(2^53 - 1) and 2^53 - 1 because
+// they are internally represented as IEEE 754 doubles.
+var MAX_INT = 2147483647;
+var MIN_INT = -2147483648;
 
 function coerceInt(value) {
   var num = Number(value);
@@ -20452,7 +22995,7 @@ function coerceInt(value) {
 
 var GraphQLInt = new _definition.GraphQLScalarType({
   name: 'Int',
-  description: 'The `Int` scalar type represents non-fractional signed whole numeric ' + 'values. Int can represent values between -(2^53 - 1) and 2^53 - 1 since ' + 'represented in JSON as double-precision floating point numbers specified' + 'by [IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point).',
+  description: 'The `Int` scalar type represents non-fractional signed whole numeric ' + 'values. Int can represent values between -(2^31) and 2^31 - 1. ',
   serialize: coerceInt,
   parseValue: coerceInt,
   parseLiteral: function parseLiteral(ast) {
@@ -20515,7 +23058,7 @@ var GraphQLID = new _definition.GraphQLScalarType({
   }
 });
 exports.GraphQLID = GraphQLID;
-},{"../language":126,"./definition":134}],139:[function(require,module,exports){
+},{"../language":148,"./definition":156}],161:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -20554,6 +23097,8 @@ var _jsutilsInvariant = require('../jsutils/invariant');
 
 var _jsutilsInvariant2 = _interopRequireDefault(_jsutilsInvariant);
 
+var _utilitiesTypeComparators = require('../utilities/typeComparators');
+
 /**
  * Schema Definition
  *
@@ -20563,7 +23108,7 @@ var _jsutilsInvariant2 = _interopRequireDefault(_jsutilsInvariant);
  *
  * Example:
  *
- *     var MyAppSchema = new GraphQLSchema({
+ *     const MyAppSchema = new GraphQLSchema({
  *       query: MyAppQueryRootType
  *       mutation: MyAppMutationRootType
  *     });
@@ -20577,10 +23122,21 @@ var GraphQLSchema = (function () {
     _classCallCheck(this, GraphQLSchema);
 
     (0, _jsutilsInvariant2['default'])(typeof config === 'object', 'Must provide configuration object.');
+
     (0, _jsutilsInvariant2['default'])(config.query instanceof _definition.GraphQLObjectType, 'Schema query must be Object Type but got: ' + config.query + '.');
+    this._queryType = config.query;
+
     (0, _jsutilsInvariant2['default'])(!config.mutation || config.mutation instanceof _definition.GraphQLObjectType, 'Schema mutation must be Object Type if provided but ' + ('got: ' + config.mutation + '.'));
+    this._mutationType = config.mutation;
+
     (0, _jsutilsInvariant2['default'])(!config.subscription || config.subscription instanceof _definition.GraphQLObjectType, 'Schema subscription must be Object Type if provided but ' + ('got: ' + config.subscription + '.'));
-    this._schemaConfig = config;
+    this._subscriptionType = config.subscription;
+
+    (0, _jsutilsInvariant2['default'])(!config.directives || Array.isArray(config.directives) && config.directives.every(function (directive) {
+      return directive instanceof _directives.GraphQLDirective;
+    }), 'Schema directives must be Array<GraphQLDirective> if provided but ' + ('got: ' + config.directives + '.'));
+    // Provide `@include() and `@skip()` directives by default.
+    this._directives = config.directives || [_directives.GraphQLIncludeDirective, _directives.GraphQLSkipDirective];
 
     // Build type map now to detect any errors within this schema.
     this._typeMap = [this.getQueryType(), this.getMutationType(), this.getSubscriptionType(), _introspection.__Schema].reduce(typeMapReducer, {});
@@ -20599,17 +23155,17 @@ var GraphQLSchema = (function () {
   _createClass(GraphQLSchema, [{
     key: 'getQueryType',
     value: function getQueryType() {
-      return this._schemaConfig.query;
+      return this._queryType;
     }
   }, {
     key: 'getMutationType',
     value: function getMutationType() {
-      return this._schemaConfig.mutation;
+      return this._mutationType;
     }
   }, {
     key: 'getSubscriptionType',
     value: function getSubscriptionType() {
-      return this._schemaConfig.subscription;
+      return this._subscriptionType;
     }
   }, {
     key: 'getTypeMap',
@@ -20624,7 +23180,7 @@ var GraphQLSchema = (function () {
   }, {
     key: 'getDirectives',
     value: function getDirectives() {
-      return this._directives || (this._directives = [_directives.GraphQLIncludeDirective, _directives.GraphQLSkipDirective]);
+      return this._directives;
     }
   }, {
     key: 'getDirective',
@@ -20646,7 +23202,7 @@ function typeMapReducer(_x, _x2) {
   _function: while (_again) {
     var map = _x,
         type = _x2;
-    reducedMap = fieldMap = undefined;
+    reducedMap = undefined;
     _again = false;
 
     if (!type) {
@@ -20675,18 +23231,20 @@ function typeMapReducer(_x, _x2) {
     }
 
     if (type instanceof _definition.GraphQLObjectType || type instanceof _definition.GraphQLInterfaceType || type instanceof _definition.GraphQLInputObjectType) {
-      var fieldMap = type.getFields();
-      _Object$keys(fieldMap).forEach(function (fieldName) {
-        var field = fieldMap[fieldName];
+      (function () {
+        var fieldMap = type.getFields();
+        _Object$keys(fieldMap).forEach(function (fieldName) {
+          var field = fieldMap[fieldName];
 
-        if (field.args) {
-          var fieldArgTypes = field.args.map(function (arg) {
-            return arg.type;
-          });
-          reducedMap = fieldArgTypes.reduce(typeMapReducer, reducedMap);
-        }
-        reducedMap = typeMapReducer(reducedMap, field.type);
-      });
+          if (field.args) {
+            var fieldArgTypes = field.args.map(function (arg) {
+              return arg.type;
+            });
+            reducedMap = fieldArgTypes.reduce(typeMapReducer, reducedMap);
+          }
+          reducedMap = typeMapReducer(reducedMap, field.type);
+        });
+      })();
     }
 
     return reducedMap;
@@ -20705,8 +23263,9 @@ function assertObjectImplementsInterface(object, iface) {
     // Assert interface field exists on object.
     (0, _jsutilsInvariant2['default'])(objectField, '"' + iface + '" expects field "' + fieldName + '" but "' + object + '" does not ' + 'provide it.');
 
-    // Assert interface field type matches object field type. (invariant)
-    (0, _jsutilsInvariant2['default'])(isEqualType(ifaceField.type, objectField.type), iface + '.' + fieldName + ' expects type "' + ifaceField.type + '" but ' + (object + '.' + fieldName + ' provides type "' + objectField.type + '".'));
+    // Assert interface field type is satisfied by object field type, by being
+    // a valid subtype. (covariant)
+    (0, _jsutilsInvariant2['default'])((0, _utilitiesTypeComparators.isTypeSubTypeOf)(objectField.type, ifaceField.type), iface + '.' + fieldName + ' expects type "' + ifaceField.type + '" but ' + (object + '.' + fieldName + ' provides type "' + objectField.type + '".'));
 
     // Assert each interface field arg is implemented.
     ifaceField.args.forEach(function (ifaceArg) {
@@ -20720,44 +23279,22 @@ function assertObjectImplementsInterface(object, iface) {
 
       // Assert interface field arg type matches object field arg type.
       // (invariant)
-      (0, _jsutilsInvariant2['default'])(isEqualType(ifaceArg.type, objectArg.type), iface + '.' + fieldName + '(' + argName + ':) expects type "' + ifaceArg.type + '" ' + ('but ' + object + '.' + fieldName + '(' + argName + ':) provides ') + ('type "' + objectArg.type + '".'));
+      (0, _jsutilsInvariant2['default'])((0, _utilitiesTypeComparators.isEqualType)(ifaceArg.type, objectArg.type), iface + '.' + fieldName + '(' + argName + ':) expects type "' + ifaceArg.type + '" ' + ('but ' + object + '.' + fieldName + '(' + argName + ':) provides ') + ('type "' + objectArg.type + '".'));
     });
 
-    // Assert argument set invariance.
+    // Assert additional arguments must not be required.
     objectField.args.forEach(function (objectArg) {
       var argName = objectArg.name;
       var ifaceArg = (0, _jsutilsFind2['default'])(ifaceField.args, function (arg) {
         return arg.name === argName;
       });
-      (0, _jsutilsInvariant2['default'])(ifaceArg, iface + '.' + fieldName + ' does not define argument "' + argName + '" but ' + (object + '.' + fieldName + ' provides it.'));
+      if (!ifaceArg) {
+        (0, _jsutilsInvariant2['default'])(!(objectArg.type instanceof _definition.GraphQLNonNull), object + '.' + fieldName + '(' + argName + ':) is of required type ' + ('"' + objectArg.type + '" but is not also provided by the ') + ('interface ' + iface + '.' + fieldName + '.'));
+      }
     });
   });
 }
-
-function isEqualType(_x3, _x4) {
-  var _again2 = true;
-
-  _function2: while (_again2) {
-    var typeA = _x3,
-        typeB = _x4;
-    _again2 = false;
-
-    if (typeA instanceof _definition.GraphQLNonNull && typeB instanceof _definition.GraphQLNonNull) {
-      _x3 = typeA.ofType;
-      _x4 = typeB.ofType;
-      _again2 = true;
-      continue _function2;
-    }
-    if (typeA instanceof _definition.GraphQLList && typeB instanceof _definition.GraphQLList) {
-      _x3 = typeA.ofType;
-      _x4 = typeB.ofType;
-      _again2 = true;
-      continue _function2;
-    }
-    return typeA === typeB;
-  }
-}
-},{"../jsutils/find":121,"../jsutils/invariant":122,"./definition":134,"./directives":135,"./introspection":137,"babel-runtime/core-js/object/keys":20,"babel-runtime/helpers/class-call-check":23,"babel-runtime/helpers/create-class":24,"babel-runtime/helpers/interop-require-default":28}],140:[function(require,module,exports){
+},{"../jsutils/find":143,"../jsutils/invariant":144,"../utilities/typeComparators":174,"./definition":156,"./directives":157,"./introspection":159,"babel-runtime/core-js/object/keys":23,"babel-runtime/helpers/class-call-check":27,"babel-runtime/helpers/create-class":28,"babel-runtime/helpers/interop-require-default":32}],162:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -20803,7 +23340,10 @@ var _jsutilsFind2 = _interopRequireDefault(_jsutilsFind);
  */
 
 var TypeInfo = (function () {
-  function TypeInfo(schema) {
+  function TypeInfo(schema,
+  // NOTE: this experimental optional second parameter is only needed in order
+  // to support non-spec-compliant codebases. You should never need to use it.
+  getFieldDefFn) {
     _classCallCheck(this, TypeInfo);
 
     this._schema = schema;
@@ -20813,6 +23353,7 @@ var TypeInfo = (function () {
     this._fieldDefStack = [];
     this._directive = null;
     this._argument = null;
+    this._getFieldDef = getFieldDefFn || getFieldDef;
   }
 
   /**
@@ -20865,11 +23406,10 @@ var TypeInfo = (function () {
     key: 'enter',
     value: function enter(node /* Node */) {
       var schema = this._schema;
-      var type;
       switch (node.kind) {
         case Kind.SELECTION_SET:
           var namedType = (0, _typeDefinition.getNamedType)(this.getType());
-          var compositeType;
+          var compositeType = undefined;
           if ((0, _typeDefinition.isCompositeType)(namedType)) {
             // isCompositeType is a type refining predicate, so this is safe.
             compositeType = namedType;
@@ -20878,9 +23418,9 @@ var TypeInfo = (function () {
           break;
         case Kind.FIELD:
           var parentType = this.getParentType();
-          var fieldDef;
+          var fieldDef = undefined;
           if (parentType) {
-            fieldDef = getFieldDef(schema, parentType, node);
+            fieldDef = this._getFieldDef(schema, parentType, node);
           }
           this._fieldDefStack.push(fieldDef);
           this._typeStack.push(fieldDef && fieldDef.type);
@@ -20889,6 +23429,7 @@ var TypeInfo = (function () {
           this._directive = schema.getDirective(node.name.value);
           break;
         case Kind.OPERATION_DEFINITION:
+          var type = undefined;
           if (node.operation === 'query') {
             type = schema.getQueryType();
           } else if (node.operation === 'mutation') {
@@ -20901,15 +23442,16 @@ var TypeInfo = (function () {
         case Kind.INLINE_FRAGMENT:
         case Kind.FRAGMENT_DEFINITION:
           var typeConditionAST = node.typeCondition;
-          type = typeConditionAST ? (0, _typeFromAST.typeFromAST)(schema, typeConditionAST) : this.getType();
-          this._typeStack.push(type);
+          var outputType = typeConditionAST ? (0, _typeFromAST.typeFromAST)(schema, typeConditionAST) : this.getType();
+          this._typeStack.push(outputType);
           break;
         case Kind.VARIABLE_DEFINITION:
-          this._inputTypeStack.push((0, _typeFromAST.typeFromAST)(schema, node.type));
+          var inputType = (0, _typeFromAST.typeFromAST)(schema, node.type);
+          this._inputTypeStack.push(inputType);
           break;
         case Kind.ARGUMENT:
-          var argDef;
-          var argType;
+          var argDef = undefined;
+          var argType = undefined;
           var fieldOrDirective = this.getDirective() || this.getFieldDef();
           if (fieldOrDirective) {
             argDef = (0, _jsutilsFind2['default'])(fieldOrDirective.args, function (arg) {
@@ -20928,7 +23470,7 @@ var TypeInfo = (function () {
           break;
         case Kind.OBJECT_FIELD:
           var objectType = (0, _typeDefinition.getNamedType)(this.getInputType());
-          var fieldType;
+          var fieldType = undefined;
           if (objectType instanceof _typeDefinition.GraphQLInputObjectType) {
             var inputField = objectType.getFields()[node.name.value];
             fieldType = inputField ? inputField.type : undefined;
@@ -20990,7 +23532,8 @@ function getFieldDef(schema, parentType, fieldAST) {
     return parentType.getFields()[name];
   }
 }
-},{"../jsutils/find":121,"../language/kinds":127,"../type/definition":134,"../type/introspection":137,"./typeFromAST":150,"babel-runtime/helpers/class-call-check":23,"babel-runtime/helpers/create-class":24,"babel-runtime/helpers/interop-require-default":28,"babel-runtime/helpers/interop-require-wildcard":29}],141:[function(require,module,exports){
+// It may disappear in the future.
+},{"../jsutils/find":143,"../language/kinds":149,"../type/definition":156,"../type/introspection":159,"./typeFromAST":175,"babel-runtime/helpers/class-call-check":27,"babel-runtime/helpers/create-class":28,"babel-runtime/helpers/interop-require-default":32,"babel-runtime/helpers/interop-require-wildcard":33}],163:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -21048,51 +23591,62 @@ function astFromValue(_x, _x2) {
   _function: while (_again) {
     var value = _x,
         type = _x2;
-    itemType = stringNum = isIntValue = fields = undefined;
+    _value = _ret = stringNum = isIntValue = fields = undefined;
     _again = false;
+
+    // Ensure flow knows that we treat function params as const.
+    var _value = value;
 
     if (type instanceof _typeDefinition.GraphQLNonNull) {
       // Note: we're not checking that the result is non-null.
       // This function is not responsible for validating the input value.
-      _x = value;
+      _x = _value;
       _x2 = type.ofType;
       _again = true;
       continue _function;
     }
 
-    if ((0, _jsutilsIsNullish2['default'])(value)) {
+    if ((0, _jsutilsIsNullish2['default'])(_value)) {
       return null;
     }
 
     // Convert JavaScript array to GraphQL list. If the GraphQLType is a list, but
     // the value is not an array, convert the value using the list's item type.
-    if (Array.isArray(value)) {
-      var itemType = type instanceof _typeDefinition.GraphQLList ? type.ofType : null;
-      return {
-        kind: _languageKinds.LIST,
-        values: value.map(function (item) {
-          return astFromValue(item, itemType);
-        })
-      };
+    if (Array.isArray(_value)) {
+      var _ret = (function () {
+        var itemType = type instanceof _typeDefinition.GraphQLList ? type.ofType : null;
+        return {
+          v: {
+            kind: _languageKinds.LIST,
+            values: _value.map(function (item) {
+              var itemValue = astFromValue(item, itemType);
+              (0, _jsutilsInvariant2['default'])(itemValue, 'Could not create AST item.');
+              return itemValue;
+            })
+          }
+        };
+      })();
+
+      if (typeof _ret === 'object') return _ret.v;
     } else if (type instanceof _typeDefinition.GraphQLList) {
       // Because GraphQL will accept single values as a "list of one" when
       // expecting a list, if there's a non-array value and an expected list type,
       // create an AST using the list's item type.
-      _x = value;
+      _x = _value;
       _x2 = type.ofType;
       _again = true;
       continue _function;
     }
 
-    if (typeof value === 'boolean') {
-      return { kind: _languageKinds.BOOLEAN, value: value };
+    if (typeof _value === 'boolean') {
+      return { kind: _languageKinds.BOOLEAN, value: _value };
     }
 
     // JavaScript numbers can be Float or Int values. Use the GraphQLType to
     // differentiate if available, otherwise prefer Int if the value is a
     // valid Int.
-    if (typeof value === 'number') {
-      var stringNum = String(value);
+    if (typeof _value === 'number') {
+      var stringNum = String(_value);
       var isIntValue = /^[0-9]+$/.test(stringNum);
       if (isIntValue) {
         if (type === _typeScalars.GraphQLFloat) {
@@ -21105,28 +23659,28 @@ function astFromValue(_x, _x2) {
 
     // JavaScript strings can be Enum values or String values. Use the
     // GraphQLType to differentiate if possible.
-    if (typeof value === 'string') {
-      if (type instanceof _typeDefinition.GraphQLEnumType && /^[_a-zA-Z][_a-zA-Z0-9]*$/.test(value)) {
-        return { kind: _languageKinds.ENUM, value: value };
+    if (typeof _value === 'string') {
+      if (type instanceof _typeDefinition.GraphQLEnumType && /^[_a-zA-Z][_a-zA-Z0-9]*$/.test(_value)) {
+        return { kind: _languageKinds.ENUM, value: _value };
       }
       // Use JSON stringify, which uses the same string encoding as GraphQL,
       // then remove the quotes.
-      return { kind: _languageKinds.STRING, value: JSON.stringify(value).slice(1, -1) };
+      return { kind: _languageKinds.STRING, value: JSON.stringify(_value).slice(1, -1) };
     }
 
     // last remaining possible typeof
-    (0, _jsutilsInvariant2['default'])(typeof value === 'object');
+    (0, _jsutilsInvariant2['default'])(typeof _value === 'object' && _value !== null);
 
     // Populate the fields of the input object by creating ASTs from each value
     // in the JavaScript object.
     var fields = [];
-    _Object$keys(value).forEach(function (fieldName) {
-      var fieldType;
+    _Object$keys(_value).forEach(function (fieldName) {
+      var fieldType = undefined;
       if (type instanceof _typeDefinition.GraphQLInputObjectType) {
         var fieldDef = type.getFields()[fieldName];
         fieldType = fieldDef && fieldDef.type;
       }
-      var fieldValue = astFromValue(value[fieldName], fieldType);
+      var fieldValue = astFromValue(_value[fieldName], fieldType);
       if (fieldValue) {
         fields.push({
           kind: _languageKinds.OBJECT_FIELD,
@@ -21138,7 +23692,8 @@ function astFromValue(_x, _x2) {
     return { kind: _languageKinds.OBJECT, fields: fields };
   }
 }
-},{"../jsutils/invariant":122,"../jsutils/isNullish":123,"../language/kinds":127,"../type/definition":134,"../type/scalars":138,"babel-runtime/core-js/object/keys":20,"babel-runtime/helpers/interop-require-default":28}],142:[function(require,module,exports){
+},{"../jsutils/invariant":144,"../jsutils/isNullish":145,"../language/kinds":149,"../type/definition":156,"../type/scalars":160,"babel-runtime/core-js/object/keys":23,"babel-runtime/helpers/interop-require-default":32}],164:[function(require,module,exports){
+
 /**
  *  Copyright (c) 2015, Facebook, Inc.
  *  All rights reserved.
@@ -21157,9 +23712,9 @@ Object.defineProperty(exports, '__esModule', {
 });
 exports.buildASTSchema = buildASTSchema;
 
-var _jsutilsIsNullish = require('../jsutils/isNullish');
+var _jsutilsInvariant = require('../jsutils/invariant');
 
-var _jsutilsIsNullish2 = _interopRequireDefault(_jsutilsIsNullish);
+var _jsutilsInvariant2 = _interopRequireDefault(_jsutilsInvariant);
 
 var _jsutilsKeyMap = require('../jsutils/keyMap');
 
@@ -21180,25 +23735,19 @@ function buildWrappedType(innerType, inputTypeAST) {
     return new _type.GraphQLList(buildWrappedType(innerType, inputTypeAST.type));
   }
   if (inputTypeAST.kind === _languageKinds.NON_NULL_TYPE) {
-    return new _type.GraphQLNonNull(buildWrappedType(innerType, inputTypeAST.type));
+    var wrappedType = buildWrappedType(innerType, inputTypeAST.type);
+    (0, _jsutilsInvariant2['default'])(!(wrappedType instanceof _type.GraphQLNonNull), 'No nesting nonnull.');
+    return new _type.GraphQLNonNull(wrappedType);
   }
   return innerType;
 }
 
-function getInnerTypeName(_x) {
-  var _again = true;
-
-  _function: while (_again) {
-    var typeAST = _x;
-    _again = false;
-
-    if (typeAST.kind === _languageKinds.LIST_TYPE || typeAST.kind === _languageKinds.NON_NULL_TYPE) {
-      _x = typeAST.type;
-      _again = true;
-      continue _function;
-    }
-    return typeAST.name.value;
+function getNamedTypeAST(typeAST) {
+  var namedType = typeAST;
+  while (namedType.kind === _languageKinds.LIST_TYPE || namedType.kind === _languageKinds.NON_NULL_TYPE) {
+    namedType = namedType.type;
   }
+  return namedType;
 }
 
 /**
@@ -21211,15 +23760,17 @@ function getInnerTypeName(_x) {
  */
 
 function buildASTSchema(ast, queryTypeName, mutationTypeName, subscriptionTypeName) {
-
-  if ((0, _jsutilsIsNullish2['default'])(ast)) {
+  if (!ast) {
     throw new Error('must pass in ast');
   }
-  if ((0, _jsutilsIsNullish2['default'])(queryTypeName)) {
+
+  if (!queryTypeName) {
     throw new Error('must pass in query type');
   }
 
-  var typeDefs = ast.definitions.filter(function (d) {
+  var typeDefs = [];
+  for (var i = 0; i < ast.definitions.length; i++) {
+    var d = ast.definitions[i];
     switch (d.kind) {
       case _languageKinds.OBJECT_TYPE_DEFINITION:
       case _languageKinds.INTERFACE_TYPE_DEFINITION:
@@ -21227,83 +23778,75 @@ function buildASTSchema(ast, queryTypeName, mutationTypeName, subscriptionTypeNa
       case _languageKinds.UNION_TYPE_DEFINITION:
       case _languageKinds.SCALAR_TYPE_DEFINITION:
       case _languageKinds.INPUT_OBJECT_TYPE_DEFINITION:
-        return true;
+        typeDefs.push(d);
     }
-  });
+  }
 
   var astMap = (0, _jsutilsKeyMap2['default'])(typeDefs, function (d) {
     return d.name.value;
   });
 
-  if ((0, _jsutilsIsNullish2['default'])(astMap[queryTypeName])) {
+  if (!astMap[queryTypeName]) {
     throw new Error('Specified query type ' + queryTypeName + ' not found in document.');
   }
 
-  if (!(0, _jsutilsIsNullish2['default'])(mutationTypeName) && (0, _jsutilsIsNullish2['default'])(astMap[mutationTypeName])) {
+  if (mutationTypeName && !astMap[mutationTypeName]) {
     throw new Error('Specified mutation type ' + mutationTypeName + ' not found in document.');
   }
 
-  if (!(0, _jsutilsIsNullish2['default'])(subscriptionTypeName) && (0, _jsutilsIsNullish2['default'])(astMap[subscriptionTypeName])) {
+  if (subscriptionTypeName && !astMap[subscriptionTypeName]) {
     throw new Error('Specified subscription type ' + subscriptionTypeName + ' not found in document.');
   }
 
-  /**
-   * This generates a function that allows you to produce
-   * type definitions on demand. We produce the function
-   * in order to close over the memoization dictionaries
-   * that need to be retained over multiple functions calls.
-   **/
-  function getTypeDefProducer() {
-
-    var innerTypeMap = {
-      String: _type.GraphQLString,
-      Int: _type.GraphQLInt,
-      Float: _type.GraphQLFloat,
-      Boolean: _type.GraphQLBoolean,
-      ID: _type.GraphQLID
-    };
-
-    return function (typeAST) {
-      var typeName = getInnerTypeName(typeAST);
-      if (!(0, _jsutilsIsNullish2['default'])(innerTypeMap[typeName])) {
-        return buildWrappedType(innerTypeMap[typeName], typeAST);
-      }
-
-      if ((0, _jsutilsIsNullish2['default'])(astMap[typeName])) {
-        throw new Error('Type ' + typeName + ' not found in document');
-      }
-
-      var innerTypeDef = makeSchemaDef(astMap[typeName]);
-      if ((0, _jsutilsIsNullish2['default'])(innerTypeDef)) {
-        throw new Error('Nothing constructed for ' + typeName);
-      }
-      innerTypeMap[typeName] = innerTypeDef;
-      return buildWrappedType(innerTypeDef, typeAST);
-    };
-  }
-
-  var produceTypeDef = getTypeDefProducer(ast);
-
-  ast.definitions.forEach(produceTypeDef);
-
-  var queryType = produceTypeDef(astMap[queryTypeName]);
-
-  var schemaBody = {
-    query: queryType
+  var innerTypeMap = {
+    String: _type.GraphQLString,
+    Int: _type.GraphQLInt,
+    Float: _type.GraphQLFloat,
+    Boolean: _type.GraphQLBoolean,
+    ID: _type.GraphQLID
   };
 
-  if (!(0, _jsutilsIsNullish2['default'])(mutationTypeName)) {
-    schemaBody.mutation = produceTypeDef(astMap[mutationTypeName]);
+  typeDefs.forEach(function (def) {
+    return typeDefNamed(def.name.value);
+  });
+
+  return new _type.GraphQLSchema({
+    query: getObjectType(astMap[queryTypeName]),
+    mutation: mutationTypeName ? getObjectType(astMap[mutationTypeName]) : null,
+    subscription: subscriptionTypeName ? getObjectType(astMap[subscriptionTypeName]) : null
+  });
+
+  function getObjectType(typeAST) {
+    var type = typeDefNamed(typeAST.name.value);
+    (0, _jsutilsInvariant2['default'])(type instanceof _type.GraphQLObjectType, 'AST must provide object type.');
+    return type;
   }
 
-  if (!(0, _jsutilsIsNullish2['default'])(subscriptionTypeName)) {
-    schemaBody.subscription = produceTypeDef(astMap[subscriptionTypeName]);
+  function produceTypeDef(typeAST) {
+    var typeName = getNamedTypeAST(typeAST).name.value;
+    var typeDef = typeDefNamed(typeName);
+    return buildWrappedType(typeDef, typeAST);
   }
 
-  return new _type.GraphQLSchema(schemaBody);
+  function typeDefNamed(typeName) {
+    if (innerTypeMap[typeName]) {
+      return innerTypeMap[typeName];
+    }
+
+    if (!astMap[typeName]) {
+      throw new Error('Type ' + typeName + ' not found in document');
+    }
+
+    var innerTypeDef = makeSchemaDef(astMap[typeName]);
+    if (!innerTypeDef) {
+      throw new Error('Nothing constructed for ' + typeName);
+    }
+    innerTypeMap[typeName] = innerTypeDef;
+    return innerTypeDef;
+  }
 
   function makeSchemaDef(def) {
-    if ((0, _jsutilsIsNullish2['default'])(def)) {
+    if (!def) {
       throw new Error('def must be defined');
     }
     switch (def.kind) {
@@ -21431,7 +23974,7 @@ function buildASTSchema(ast, queryTypeName, mutationTypeName, subscriptionTypeNa
     });
   }
 }
-},{"../jsutils/isNullish":123,"../jsutils/keyMap":124,"../jsutils/keyValMap":125,"../language/kinds":127,"../type":136,"./valueFromAST":151,"babel-runtime/helpers/interop-require-default":28}],143:[function(require,module,exports){
+},{"../jsutils/invariant":144,"../jsutils/keyMap":146,"../jsutils/keyValMap":147,"../language/kinds":149,"../type":158,"./valueFromAST":176,"babel-runtime/helpers/interop-require-default":32}],165:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -21482,6 +24025,8 @@ var _typeDefinition = require('../type/definition');
 
 var _typeScalars = require('../type/scalars');
 
+var _typeDirectives = require('../type/directives');
+
 var _typeIntrospection = require('../type/introspection');
 
 function buildClientSchema(introspection) {
@@ -21520,7 +24065,9 @@ function buildClientSchema(introspection) {
       if (!nullableRef) {
         throw new Error('Decorated type deeper than introspection query.');
       }
-      return new _typeDefinition.GraphQLNonNull(getType(nullableRef));
+      var nullableType = getType(nullableRef);
+      (0, _jsutilsInvariant2['default'])(!(nullableType instanceof _typeDefinition.GraphQLNonNull), 'No nesting nonnull.');
+      return new _typeDefinition.GraphQLNonNull(nullableType);
     }
     return getNamedType(typeRef.name);
   }
@@ -21646,7 +24193,8 @@ function buildClientSchema(introspection) {
         return valueIntrospection.name;
       }, function (valueIntrospection) {
         return {
-          description: valueIntrospection.description
+          description: valueIntrospection.description,
+          deprecationReason: valueIntrospection.deprecationReason
         };
       })
     });
@@ -21668,6 +24216,7 @@ function buildClientSchema(introspection) {
     }, function (fieldIntrospection) {
       return {
         description: fieldIntrospection.description,
+        deprecationReason: fieldIntrospection.deprecationReason,
         type: getOutputType(fieldIntrospection.type),
         args: buildInputValueDefMap(fieldIntrospection.args),
         resolve: function resolve() {
@@ -21680,16 +24229,30 @@ function buildClientSchema(introspection) {
   function buildInputValueDefMap(inputValueIntrospections) {
     return (0, _jsutilsKeyValMap2['default'])(inputValueIntrospections, function (inputValue) {
       return inputValue.name;
-    }, function (inputValue) {
-      var description = inputValue.description;
-      var type = getInputType(inputValue.type);
-      var defaultValue = inputValue.defaultValue ? (0, _valueFromAST.valueFromAST)((0, _languageParser.parseValue)(inputValue.defaultValue), type) : null;
-      return { description: description, type: type, defaultValue: defaultValue };
-    });
+    }, buildInputValue);
   }
 
-  // TODO: deprecation
-  // TODO: directives
+  function buildInputValue(inputValueIntrospection) {
+    var type = getInputType(inputValueIntrospection.type);
+    var defaultValue = inputValueIntrospection.defaultValue ? (0, _valueFromAST.valueFromAST)((0, _languageParser.parseValue)(inputValueIntrospection.defaultValue), type) : null;
+    return {
+      name: inputValueIntrospection.name,
+      description: inputValueIntrospection.description,
+      type: type,
+      defaultValue: defaultValue
+    };
+  }
+
+  function buildDirective(directiveIntrospection) {
+    return new _typeDirectives.GraphQLDirective({
+      name: directiveIntrospection.name,
+      description: directiveIntrospection.description,
+      args: directiveIntrospection.args.map(buildInputValue),
+      onOperation: directiveIntrospection.onOperation,
+      onFragment: directiveIntrospection.onFragment,
+      onField: directiveIntrospection.onField
+    });
+  }
 
   // Iterate through all types, getting the type definition for each, ensuring
   // that any type not directly referenced by a field will get created.
@@ -21698,20 +24261,498 @@ function buildClientSchema(introspection) {
   });
 
   // Get the root Query, Mutation, and Subscription types.
-  var queryType = getType(schemaIntrospection.queryType);
-  var mutationType = schemaIntrospection.mutationType ? getType(schemaIntrospection.mutationType) : null;
-  var subscriptionType = schemaIntrospection.subscriptionType ? getType(schemaIntrospection.subscriptionType) : null;
+  var queryType = getObjectType(schemaIntrospection.queryType);
+
+  var mutationType = schemaIntrospection.mutationType ? getObjectType(schemaIntrospection.mutationType) : null;
+
+  var subscriptionType = schemaIntrospection.subscriptionType ? getObjectType(schemaIntrospection.subscriptionType) : null;
+
+  // Get the directives supported by Introspection, assuming empty-set if
+  // directives were not queried for.
+  var directives = schemaIntrospection.directives ? schemaIntrospection.directives.map(buildDirective) : [];
 
   // Then produce and return a Schema with these types.
-  var schema = new _typeSchema.GraphQLSchema({
+  return new _typeSchema.GraphQLSchema({
     query: queryType,
     mutation: mutationType,
-    subscription: subscriptionType
+    subscription: subscriptionType,
+    directives: directives
+  });
+}
+},{"../jsutils/invariant":144,"../jsutils/keyMap":146,"../jsutils/keyValMap":147,"../language/parser":152,"../type/definition":156,"../type/directives":157,"../type/introspection":159,"../type/scalars":160,"../type/schema":161,"./valueFromAST":176,"babel-runtime/helpers/interop-require-default":32}],166:[function(require,module,exports){
+
+/**
+ *  Copyright (c) 2015, Facebook, Inc.
+ *  All rights reserved.
+ *
+ *  This source code is licensed under the BSD-style license found in the
+ *  LICENSE file in the root directory of this source tree. An additional grant
+ *  of patent rights can be found in the PATENTS file in the same directory.
+ */
+
+/**
+ * Provided a collection of ASTs, presumably each from different files,
+ * concatenate the ASTs together into batched AST, useful for validating many
+ * GraphQL source files which together represent one conceptual application.
+ */
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+exports.concatAST = concatAST;
+
+function concatAST(asts) {
+  var batchDefinitions = [];
+  for (var i = 0; i < asts.length; i++) {
+    var definitions = asts[i].definitions;
+    for (var j = 0; j < definitions.length; j++) {
+      batchDefinitions.push(definitions[j]);
+    }
+  }
+  return {
+    kind: 'Document',
+    definitions: batchDefinitions
+  };
+}
+},{}],167:[function(require,module,exports){
+
+/**
+ *  Copyright (c) 2015, Facebook, Inc.
+ *  All rights reserved.
+ *
+ *  This source code is licensed under the BSD-style license found in the
+ *  LICENSE file in the root directory of this source tree. An additional grant
+ *  of patent rights can be found in the PATENTS file in the same directory.
+ */
+
+/**
+ * Produces a new schema given an existing schema and a document which may
+ * contain GraphQL type extensions and definitions. The original schema will
+ * remain unaltered.
+ *
+ * Because a schema represents a graph of references, a schema cannot be
+ * extended without effectively making an entire copy. We do not know until it's
+ * too late if subgraphs remain unchanged.
+ *
+ * This algorithm copies the provided schema, applying extensions while
+ * producing the copy. The original schema remains unaltered.
+ */
+'use strict';
+
+var _Object$keys = require('babel-runtime/core-js/object/keys')['default'];
+
+var _interopRequireDefault = require('babel-runtime/helpers/interop-require-default')['default'];
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+exports.extendSchema = extendSchema;
+
+var _jsutilsInvariant = require('../jsutils/invariant');
+
+var _jsutilsInvariant2 = _interopRequireDefault(_jsutilsInvariant);
+
+var _jsutilsKeyMap = require('../jsutils/keyMap');
+
+var _jsutilsKeyMap2 = _interopRequireDefault(_jsutilsKeyMap);
+
+var _jsutilsKeyValMap = require('../jsutils/keyValMap');
+
+var _jsutilsKeyValMap2 = _interopRequireDefault(_jsutilsKeyValMap);
+
+var _valueFromAST = require('./valueFromAST');
+
+var _errorGraphQLError = require('../error/GraphQLError');
+
+var _typeSchema = require('../type/schema');
+
+var _typeDefinition = require('../type/definition');
+
+var _typeScalars = require('../type/scalars');
+
+var _languageKinds = require('../language/kinds');
+
+function extendSchema(schema, documentAST) {
+  (0, _jsutilsInvariant2['default'])(schema instanceof _typeSchema.GraphQLSchema, 'Must provide valid GraphQLSchema');
+
+  (0, _jsutilsInvariant2['default'])(documentAST && documentAST.kind === _languageKinds.DOCUMENT, 'Must provide valid Document AST');
+
+  // Collect the type definitions and extensions found in the document.
+  var typeDefinitionMap = {};
+  var typeExtensionsMap = {};
+
+  for (var i = 0; i < documentAST.definitions.length; i++) {
+    var def = documentAST.definitions[i];
+    switch (def.kind) {
+      case _languageKinds.OBJECT_TYPE_DEFINITION:
+      case _languageKinds.INTERFACE_TYPE_DEFINITION:
+      case _languageKinds.ENUM_TYPE_DEFINITION:
+      case _languageKinds.UNION_TYPE_DEFINITION:
+      case _languageKinds.SCALAR_TYPE_DEFINITION:
+      case _languageKinds.INPUT_OBJECT_TYPE_DEFINITION:
+        // Sanity check that none of the defined types conflict with the
+        // schema's existing types.
+        var typeName = def.name.value;
+        if (schema.getType(typeName)) {
+          throw new _errorGraphQLError.GraphQLError('Type "' + typeName + '" already exists in the schema. It cannot also ' + 'be defined in this type definition.', [def]);
+        }
+        typeDefinitionMap[typeName] = def;
+        break;
+      case _languageKinds.TYPE_EXTENSION_DEFINITION:
+        // Sanity check that this type extension exists within the
+        // schema's existing types.
+        var extendedTypeName = def.definition.name.value;
+        var existingType = schema.getType(extendedTypeName);
+        if (!existingType) {
+          throw new _errorGraphQLError.GraphQLError('Cannot extend type "' + extendedTypeName + '" because it does not ' + 'exist in the existing schema.', [def.definition]);
+        }
+        if (!(existingType instanceof _typeDefinition.GraphQLObjectType)) {
+          throw new _errorGraphQLError.GraphQLError('Cannot extend non-object type "' + extendedTypeName + '".', [def.definition]);
+        }
+        var extensions = typeExtensionsMap[extendedTypeName];
+        if (extensions) {
+          extensions.push(def);
+        } else {
+          extensions = [def];
+        }
+        typeExtensionsMap[extendedTypeName] = extensions;
+        break;
+    }
+  }
+
+  // If this document contains no new types, then return the same unmodified
+  // GraphQLSchema instance.
+  if (_Object$keys(typeExtensionsMap).length === 0 && _Object$keys(typeDefinitionMap).length === 0) {
+    return schema;
+  }
+
+  // A cache to use to store the actual GraphQLType definition objects by name.
+  // Initialize to the GraphQL built in scalars. All functions below are inline
+  // so that this type def cache is within the scope of the closure.
+  var typeDefCache = {
+    String: _typeScalars.GraphQLString,
+    Int: _typeScalars.GraphQLInt,
+    Float: _typeScalars.GraphQLFloat,
+    Boolean: _typeScalars.GraphQLBoolean,
+    ID: _typeScalars.GraphQLID
+  };
+
+  // Get the root Query, Mutation, and Subscription types.
+  var queryType = getTypeFromDef(schema.getQueryType());
+
+  var existingMutationType = schema.getMutationType();
+  var mutationType = existingMutationType ? getTypeFromDef(existingMutationType) : null;
+
+  var existingSubscriptionType = schema.getSubscriptionType();
+  var subscriptionType = existingSubscriptionType ? getTypeFromDef(existingSubscriptionType) : null;
+
+  // Iterate through all types, getting the type definition for each, ensuring
+  // that any type not directly referenced by a field will get created.
+  _Object$keys(schema.getTypeMap()).forEach(function (typeName) {
+    return getTypeFromDef(schema.getType(typeName));
   });
 
-  return schema;
+  // Do the same with new types.
+  _Object$keys(typeDefinitionMap).forEach(function (typeName) {
+    return getTypeFromAST(typeDefinitionMap[typeName]);
+  });
+
+  // Then produce and return a Schema with these types.
+  return new _typeSchema.GraphQLSchema({
+    query: queryType,
+    mutation: mutationType,
+    subscription: subscriptionType,
+    // Copy directives.
+    directives: schema.getDirectives()
+  });
+
+  // Below are functions used for producing this schema that have closed over
+  // this scope and have access to the schema, cache, and newly defined types.
+
+  function getTypeFromDef(typeDef) {
+    var type = _getNamedType(typeDef.name);
+    (0, _jsutilsInvariant2['default'])(type, 'Invalid schema');
+    return type;
+  }
+
+  function getTypeFromAST(astNode) {
+    var type = _getNamedType(astNode.name.value);
+    if (!type) {
+      throw new _errorGraphQLError.GraphQLError('Unknown type: "' + astNode.name.value + '". Ensure that this type exists ' + 'either in the original schema, or is added in a type definition.', [astNode]);
+    }
+    return type;
+  }
+
+  // Given a name, returns a type from either the existing schema or an
+  // added type.
+  function _getNamedType(typeName) {
+    var cachedTypeDef = typeDefCache[typeName];
+    if (cachedTypeDef) {
+      return cachedTypeDef;
+    }
+
+    var existingType = schema.getType(typeName);
+    if (existingType) {
+      var typeDef = extendType(existingType);
+      typeDefCache[typeName] = typeDef;
+      return typeDef;
+    }
+
+    var typeAST = typeDefinitionMap[typeName];
+    if (typeAST) {
+      var typeDef = buildType(typeAST);
+      typeDefCache[typeName] = typeDef;
+      return typeDef;
+    }
+  }
+
+  // Given a type's introspection result, construct the correct
+  // GraphQLType instance.
+  function extendType(type) {
+    if (type instanceof _typeDefinition.GraphQLObjectType) {
+      return extendObjectType(type);
+    }
+    if (type instanceof _typeDefinition.GraphQLInterfaceType) {
+      return extendInterfaceType(type);
+    }
+    if (type instanceof _typeDefinition.GraphQLUnionType) {
+      return extendUnionType(type);
+    }
+    return type;
+  }
+
+  function extendObjectType(type) {
+    return new _typeDefinition.GraphQLObjectType({
+      name: type.name,
+      description: type.description,
+      interfaces: function interfaces() {
+        return extendImplementedInterfaces(type);
+      },
+      fields: function fields() {
+        return extendFieldMap(type);
+      }
+    });
+  }
+
+  function extendInterfaceType(type) {
+    return new _typeDefinition.GraphQLInterfaceType({
+      name: type.name,
+      description: type.description,
+      fields: function fields() {
+        return extendFieldMap(type);
+      },
+      resolveType: throwClientSchemaExecutionError
+    });
+  }
+
+  function extendUnionType(type) {
+    return new _typeDefinition.GraphQLUnionType({
+      name: type.name,
+      description: type.description,
+      types: type.getPossibleTypes().map(getTypeFromDef),
+      resolveType: throwClientSchemaExecutionError
+    });
+  }
+
+  function extendImplementedInterfaces(type) {
+    var interfaces = type.getInterfaces().map(getTypeFromDef);
+
+    // If there are any extensions to the interfaces, apply those here.
+    var extensions = typeExtensionsMap[type.name];
+    if (extensions) {
+      extensions.forEach(function (extension) {
+        extension.definition.interfaces.forEach(function (namedType) {
+          var interfaceName = namedType.name.value;
+          if (interfaces.some(function (def) {
+            return def.name === interfaceName;
+          })) {
+            throw new _errorGraphQLError.GraphQLError('\'Type "' + type.name + '" already implements "' + interfaceName + '". ' + 'It cannot also be implemented in this type extension.', [namedType]);
+          }
+          interfaces.push(getTypeFromAST(namedType));
+        });
+      });
+    }
+
+    return interfaces;
+  }
+
+  function extendFieldMap(type) {
+    var newFieldMap = {};
+    var oldFieldMap = type.getFields();
+    _Object$keys(oldFieldMap).forEach(function (fieldName) {
+      var field = oldFieldMap[fieldName];
+      newFieldMap[fieldName] = {
+        description: field.description,
+        deprecationReason: field.deprecationReason,
+        type: extendFieldType(field.type),
+        args: (0, _jsutilsKeyMap2['default'])(field.args, function (arg) {
+          return arg.name;
+        }),
+        resolve: throwClientSchemaExecutionError
+      };
+    });
+
+    // If there are any extensions to the fields, apply those here.
+    var extensions = typeExtensionsMap[type.name];
+    if (extensions) {
+      extensions.forEach(function (extension) {
+        extension.definition.fields.forEach(function (field) {
+          var fieldName = field.name.value;
+          if (oldFieldMap[fieldName]) {
+            throw new _errorGraphQLError.GraphQLError('Field "' + type.name + '.' + fieldName + '" already exists in the ' + 'schema. It cannot also be defined in this type extension.', [field]);
+          }
+          newFieldMap[fieldName] = {
+            type: buildFieldType(field.type),
+            args: buildInputValues(field.arguments),
+            resolve: throwClientSchemaExecutionError
+          };
+        });
+      });
+    }
+
+    return newFieldMap;
+  }
+
+  function extendFieldType(type) {
+    if (type instanceof _typeDefinition.GraphQLList) {
+      return new _typeDefinition.GraphQLList(extendFieldType(type.ofType));
+    }
+    if (type instanceof _typeDefinition.GraphQLNonNull) {
+      return new _typeDefinition.GraphQLNonNull(extendFieldType(type.ofType));
+    }
+    return getTypeFromDef(type);
+  }
+
+  function buildType(typeAST) {
+    switch (typeAST.kind) {
+      case _languageKinds.OBJECT_TYPE_DEFINITION:
+        return buildObjectType(typeAST);
+      case _languageKinds.INTERFACE_TYPE_DEFINITION:
+        return buildInterfaceType(typeAST);
+      case _languageKinds.UNION_TYPE_DEFINITION:
+        return buildUnionType(typeAST);
+      case _languageKinds.SCALAR_TYPE_DEFINITION:
+        return buildScalarType(typeAST);
+      case _languageKinds.ENUM_TYPE_DEFINITION:
+        return buildEnumType(typeAST);
+      case _languageKinds.INPUT_OBJECT_TYPE_DEFINITION:
+        return buildInputObjectType(typeAST);
+    }
+  }
+
+  function buildObjectType(typeAST) {
+    return new _typeDefinition.GraphQLObjectType({
+      name: typeAST.name.value,
+      interfaces: function interfaces() {
+        return buildImplementedInterfaces(typeAST);
+      },
+      fields: function fields() {
+        return buildFieldMap(typeAST);
+      }
+    });
+  }
+
+  function buildInterfaceType(typeAST) {
+    return new _typeDefinition.GraphQLInterfaceType({
+      name: typeAST.name.value,
+      fields: function fields() {
+        return buildFieldMap(typeAST);
+      },
+      resolveType: throwClientSchemaExecutionError
+    });
+  }
+
+  function buildUnionType(typeAST) {
+    return new _typeDefinition.GraphQLUnionType({
+      name: typeAST.name.value,
+      types: typeAST.types.map(getTypeFromAST),
+      resolveType: throwClientSchemaExecutionError
+    });
+  }
+
+  function buildScalarType(typeAST) {
+    return new _typeDefinition.GraphQLScalarType({
+      name: typeAST.name.value,
+      serialize: function serialize() {
+        return null;
+      },
+      // Note: validation calls the parse functions to determine if a
+      // literal value is correct. Returning null would cause use of custom
+      // scalars to always fail validation. Returning false causes them to
+      // always pass validation.
+      parseValue: function parseValue() {
+        return false;
+      },
+      parseLiteral: function parseLiteral() {
+        return false;
+      }
+    });
+  }
+
+  function buildEnumType(typeAST) {
+    return new _typeDefinition.GraphQLEnumType({
+      name: typeAST.name.value,
+      values: (0, _jsutilsKeyValMap2['default'])(typeAST.values, function (v) {
+        return v.name.value;
+      }, function () {
+        return {};
+      })
+    });
+  }
+
+  function buildInputObjectType(typeAST) {
+    return new _typeDefinition.GraphQLInputObjectType({
+      name: typeAST.name.value,
+      fields: function fields() {
+        return buildInputValues(typeAST.fields);
+      }
+    });
+  }
+
+  function buildImplementedInterfaces(typeAST) {
+    return typeAST.interfaces.map(getTypeFromAST);
+  }
+
+  function buildFieldMap(typeAST) {
+    return (0, _jsutilsKeyValMap2['default'])(typeAST.fields, function (field) {
+      return field.name.value;
+    }, function (field) {
+      return {
+        type: buildFieldType(field.type),
+        args: buildInputValues(field.arguments),
+        resolve: throwClientSchemaExecutionError
+      };
+    });
+  }
+
+  function buildInputValues(values) {
+    return (0, _jsutilsKeyValMap2['default'])(values, function (value) {
+      return value.name.value;
+    }, function (value) {
+      var type = buildFieldType(value.type);
+      return {
+        type: type,
+        defaultValue: (0, _valueFromAST.valueFromAST)(value.defaultValue, type)
+      };
+    });
+  }
+
+  function buildFieldType(typeAST) {
+    if (typeAST.kind === _languageKinds.LIST_TYPE) {
+      return new _typeDefinition.GraphQLList(buildFieldType(typeAST.type));
+    }
+    if (typeAST.kind === _languageKinds.NON_NULL_TYPE) {
+      return new _typeDefinition.GraphQLNonNull(buildFieldType(typeAST.type));
+    }
+    return getTypeFromAST(typeAST);
+  }
 }
-},{"../jsutils/invariant":122,"../jsutils/keyMap":124,"../jsutils/keyValMap":125,"../language/parser":130,"../type/definition":134,"../type/introspection":137,"../type/scalars":138,"../type/schema":139,"./valueFromAST":151,"babel-runtime/helpers/interop-require-default":28}],144:[function(require,module,exports){
+
+function throwClientSchemaExecutionError() {
+  throw new Error('Client Schema cannot be used for execution.');
+}
+},{"../error/GraphQLError":133,"../jsutils/invariant":144,"../jsutils/keyMap":146,"../jsutils/keyValMap":147,"../language/kinds":149,"../type/definition":156,"../type/scalars":160,"../type/schema":161,"./valueFromAST":176,"babel-runtime/core-js/object/keys":23,"babel-runtime/helpers/interop-require-default":32}],168:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -21756,7 +24797,7 @@ function getOperationAST(documentAST, operationName) {
   }
   return operation;
 }
-},{"../language/kinds":127}],145:[function(require,module,exports){
+},{"../language/kinds":149}],169:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -21813,6 +24854,17 @@ Object.defineProperty(exports, 'buildASTSchema', {
   enumerable: true,
   get: function get() {
     return _buildASTSchema.buildASTSchema;
+  }
+});
+
+// Extends an existing GraphQLSchema from a parsed GraphQL Schema language AST.
+
+var _extendSchema = require('./extendSchema');
+
+Object.defineProperty(exports, 'extendSchema', {
+  enumerable: true,
+  get: function get() {
+    return _extendSchema.extendSchema;
   }
 });
 
@@ -21899,7 +24951,41 @@ Object.defineProperty(exports, 'isValidLiteralValue', {
     return _isValidLiteralValue.isValidLiteralValue;
   }
 });
-},{"./TypeInfo":140,"./astFromValue":141,"./buildASTSchema":142,"./buildClientSchema":143,"./getOperationAST":144,"./introspectionQuery":146,"./isValidJSValue":147,"./isValidLiteralValue":148,"./schemaPrinter":149,"./typeFromAST":150,"./valueFromAST":151}],146:[function(require,module,exports){
+
+// Concatenates multiple AST together.
+
+var _concatAST = require('./concatAST');
+
+Object.defineProperty(exports, 'concatAST', {
+  enumerable: true,
+  get: function get() {
+    return _concatAST.concatAST;
+  }
+});
+
+// Comparators for types
+
+var _typeComparators = require('./typeComparators');
+
+Object.defineProperty(exports, 'isEqualType', {
+  enumerable: true,
+  get: function get() {
+    return _typeComparators.isEqualType;
+  }
+});
+Object.defineProperty(exports, 'isTypeSubTypeOf', {
+  enumerable: true,
+  get: function get() {
+    return _typeComparators.isTypeSubTypeOf;
+  }
+});
+Object.defineProperty(exports, 'doTypesOverlap', {
+  enumerable: true,
+  get: function get() {
+    return _typeComparators.doTypesOverlap;
+  }
+});
+},{"./TypeInfo":162,"./astFromValue":163,"./buildASTSchema":164,"./buildClientSchema":165,"./concatAST":166,"./extendSchema":167,"./getOperationAST":168,"./introspectionQuery":170,"./isValidJSValue":171,"./isValidLiteralValue":172,"./schemaPrinter":173,"./typeComparators":174,"./typeFromAST":175,"./valueFromAST":176}],170:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -21915,10 +25001,10 @@ Object.defineProperty(exports, 'isValidLiteralValue', {
 Object.defineProperty(exports, '__esModule', {
   value: true
 });
-var introspectionQuery = '\n  query IntrospectionQuery {\n    __schema {\n      queryType { name }\n      mutationType { name }\n      subscriptionType { name }\n      types {\n        ...FullType\n      }\n      directives {\n        name\n        description\n        args {\n          ...InputValue\n        }\n        onOperation\n        onFragment\n        onField\n      }\n    }\n  }\n\n  fragment FullType on __Type {\n    kind\n    name\n    description\n    fields {\n      name\n      description\n      args {\n        ...InputValue\n      }\n      type {\n        ...TypeRef\n      }\n      isDeprecated\n      deprecationReason\n    }\n    inputFields {\n      ...InputValue\n    }\n    interfaces {\n      ...TypeRef\n    }\n    enumValues {\n      name\n      description\n      isDeprecated\n      deprecationReason\n    }\n    possibleTypes {\n      ...TypeRef\n    }\n  }\n\n  fragment InputValue on __InputValue {\n    name\n    description\n    type { ...TypeRef }\n    defaultValue\n  }\n\n  fragment TypeRef on __Type {\n    kind\n    name\n    ofType {\n      kind\n      name\n      ofType {\n        kind\n        name\n        ofType {\n          kind\n          name\n        }\n      }\n    }\n  }\n';
+var introspectionQuery = '\n  query IntrospectionQuery {\n    __schema {\n      queryType { name }\n      mutationType { name }\n      subscriptionType { name }\n      types {\n        ...FullType\n      }\n      directives {\n        name\n        description\n        args {\n          ...InputValue\n        }\n        onOperation\n        onFragment\n        onField\n      }\n    }\n  }\n\n  fragment FullType on __Type {\n    kind\n    name\n    description\n    fields(includeDeprecated: true) {\n      name\n      description\n      args {\n        ...InputValue\n      }\n      type {\n        ...TypeRef\n      }\n      isDeprecated\n      deprecationReason\n    }\n    inputFields {\n      ...InputValue\n    }\n    interfaces {\n      ...TypeRef\n    }\n    enumValues(includeDeprecated: true) {\n      name\n      description\n      isDeprecated\n      deprecationReason\n    }\n    possibleTypes {\n      ...TypeRef\n    }\n  }\n\n  fragment InputValue on __InputValue {\n    name\n    description\n    type { ...TypeRef }\n    defaultValue\n  }\n\n  fragment TypeRef on __Type {\n    kind\n    name\n    ofType {\n      kind\n      name\n      ofType {\n        kind\n        name\n        ofType {\n          kind\n          name\n        }\n      }\n    }\n  }\n';
 
 exports.introspectionQuery = introspectionQuery;
-},{}],147:[function(require,module,exports){
+},{}],171:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -21935,6 +25021,10 @@ exports.introspectionQuery = introspectionQuery;
  * runtime values of query variables.
  */
 'use strict';
+
+var _toConsumableArray = require('babel-runtime/helpers/to-consumable-array')['default'];
+
+var _getIterator = require('babel-runtime/core-js/get-iterator')['default'];
 
 var _Object$keys = require('babel-runtime/core-js/object/keys')['default'];
 
@@ -21961,67 +25051,136 @@ function isValidJSValue(_x, _x2) {
   _function: while (_again) {
     var value = _x,
         type = _x2;
-    nullableType = itemType = fields = undefined;
+    _ret = fields = errors = _iteratorNormalCompletion = _didIteratorError = _iteratorError = _iteratorNormalCompletion2 = _didIteratorError2 = _iteratorError2 = parseResult = undefined;
     _again = false;
 
     // A value must be provided if the type is non-null.
     if (type instanceof _typeDefinition.GraphQLNonNull) {
       if ((0, _jsutilsIsNullish2['default'])(value)) {
-        return false;
+        if (type.ofType.name) {
+          return ['Expected "' + type.ofType.name + '!", found null.'];
+        }
+        return ['Expected non-null value, found null.'];
       }
-      var nullableType = type.ofType;
       _x = value;
-      _x2 = nullableType;
+      _x2 = type.ofType;
       _again = true;
       continue _function;
     }
 
     if ((0, _jsutilsIsNullish2['default'])(value)) {
-      return true;
+      return [];
     }
 
     // Lists accept a non-list value as a list of one.
     if (type instanceof _typeDefinition.GraphQLList) {
-      var itemType = type.ofType;
-      if (Array.isArray(value)) {
-        return value.every(function (item) {
-          return isValidJSValue(item, itemType);
-        });
-      }
-      _x = value;
-      _x2 = itemType;
-      _again = true;
-      continue _function;
+      var _ret = (function () {
+        var itemType = type.ofType;
+        if (Array.isArray(value)) {
+          return {
+            v: value.reduce(function (acc, item, index) {
+              var errors = isValidJSValue(item, itemType);
+              return acc.concat(errors.map(function (error) {
+                return 'In element #' + index + ': ' + error;
+              }));
+            }, [])
+          };
+        }
+        return {
+          v: isValidJSValue(value, itemType)
+        };
+      })();
+
+      if (typeof _ret === 'object') return _ret.v;
     }
 
     // Input objects check each defined field.
     if (type instanceof _typeDefinition.GraphQLInputObjectType) {
-      if (typeof value !== 'object') {
-        return false;
+      if (typeof value !== 'object' || value === null) {
+        return ['Expected "' + type.name + '", found not an object.'];
       }
       var fields = type.getFields();
 
+      var errors = [];
+
       // Ensure every provided field is defined.
-      if (_Object$keys(value).some(function (fieldName) {
-        return !fields[fieldName];
-      })) {
-        return false;
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
+
+      try {
+        for (var _iterator = _getIterator(_Object$keys(value)), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var providedField = _step.value;
+
+          if (!fields[providedField]) {
+            errors.push('In field "' + providedField + '": Unknown field.');
+          }
+        }
+
+        // Ensure every defined field is valid.
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion && _iterator['return']) {
+            _iterator['return']();
+          }
+        } finally {
+          if (_didIteratorError) {
+            throw _iteratorError;
+          }
+        }
       }
 
-      // Ensure every defined field is valid.
-      return _Object$keys(fields).every(function (fieldName) {
-        return isValidJSValue(value[fieldName], fields[fieldName].type);
-      });
+      var _iteratorNormalCompletion2 = true;
+      var _didIteratorError2 = false;
+      var _iteratorError2 = undefined;
+
+      try {
+        var _loop = function () {
+          var fieldName = _step2.value;
+
+          var newErrors = isValidJSValue(value[fieldName], fields[fieldName].type);
+          errors.push.apply(errors, _toConsumableArray(newErrors.map(function (error) {
+            return 'In field "' + fieldName + '": ' + error;
+          })));
+        };
+
+        for (var _iterator2 = _getIterator(_Object$keys(fields)), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+          _loop();
+        }
+      } catch (err) {
+        _didIteratorError2 = true;
+        _iteratorError2 = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion2 && _iterator2['return']) {
+            _iterator2['return']();
+          }
+        } finally {
+          if (_didIteratorError2) {
+            throw _iteratorError2;
+          }
+        }
+      }
+
+      return errors;
     }
 
     (0, _jsutilsInvariant2['default'])(type instanceof _typeDefinition.GraphQLScalarType || type instanceof _typeDefinition.GraphQLEnumType, 'Must be input type');
 
     // Scalar/Enum input checks to ensure the type can parse the value to
     // a non-null value.
-    return !(0, _jsutilsIsNullish2['default'])(type.parseValue(value));
+    var parseResult = type.parseValue(value);
+    if ((0, _jsutilsIsNullish2['default'])(parseResult)) {
+      return ['Expected type "' + type.name + '", found ' + JSON.stringify(value) + '.'];
+    }
+
+    return [];
   }
 }
-},{"../jsutils/invariant":122,"../jsutils/isNullish":123,"../type/definition":134,"babel-runtime/core-js/object/keys":20,"babel-runtime/helpers/interop-require-default":28}],148:[function(require,module,exports){
+},{"../jsutils/invariant":144,"../jsutils/isNullish":145,"../type/definition":156,"babel-runtime/core-js/get-iterator":16,"babel-runtime/core-js/object/keys":23,"babel-runtime/helpers/interop-require-default":32,"babel-runtime/helpers/to-consumable-array":35}],172:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -22034,6 +25193,10 @@ function isValidJSValue(_x, _x2) {
 
 'use strict';
 
+var _toConsumableArray = require('babel-runtime/helpers/to-consumable-array')['default'];
+
+var _getIterator = require('babel-runtime/core-js/get-iterator')['default'];
+
 var _Object$keys = require('babel-runtime/core-js/object/keys')['default'];
 
 var _interopRequireDefault = require('babel-runtime/helpers/interop-require-default')['default'];
@@ -22042,6 +25205,8 @@ Object.defineProperty(exports, '__esModule', {
   value: true
 });
 exports.isValidLiteralValue = isValidLiteralValue;
+
+var _languagePrinter = require('../language/printer');
 
 var _languageKinds = require('../language/kinds');
 
@@ -22073,77 +25238,146 @@ function isValidLiteralValue(_x, _x2) {
   _function: while (_again) {
     var type = _x,
         valueAST = _x2;
-    ofType = itemType = fields = fieldASTs = fieldASTMap = undefined;
+    _ret = fields = errors = fieldASTs = _iteratorNormalCompletion = _didIteratorError = _iteratorError = fieldASTMap = _iteratorNormalCompletion2 = _didIteratorError2 = _iteratorError2 = parseResult = undefined;
     _again = false;
 
     // A value must be provided if the type is non-null.
     if (type instanceof _typeDefinition.GraphQLNonNull) {
       if (!valueAST) {
-        return false;
+        if (type.ofType.name) {
+          return ['Expected "' + type.ofType.name + '!", found null.'];
+        }
+        return ['Expected non-null value, found null.'];
       }
-      var ofType = type.ofType;
-      _x = ofType;
+      _x = type.ofType;
       _x2 = valueAST;
       _again = true;
       continue _function;
     }
 
     if (!valueAST) {
-      return true;
+      return [];
     }
 
     // This function only tests literals, and assumes variables will provide
     // values of the correct type.
     if (valueAST.kind === _languageKinds.VARIABLE) {
-      return true;
+      return [];
     }
 
     // Lists accept a non-list value as a list of one.
     if (type instanceof _typeDefinition.GraphQLList) {
-      var itemType = type.ofType;
-      if (valueAST.kind === _languageKinds.LIST) {
-        return valueAST.values.every(function (itemAST) {
-          return isValidLiteralValue(itemType, itemAST);
-        });
-      }
-      _x = itemType;
-      _x2 = valueAST;
-      _again = true;
-      continue _function;
+      var _ret = (function () {
+        var itemType = type.ofType;
+        if (valueAST.kind === _languageKinds.LIST) {
+          return {
+            v: valueAST.values.reduce(function (acc, itemAST, index) {
+              var errors = isValidLiteralValue(itemType, itemAST);
+              return acc.concat(errors.map(function (error) {
+                return 'In element #' + index + ': ' + error;
+              }));
+            }, [])
+          };
+        }
+        return {
+          v: isValidLiteralValue(itemType, valueAST)
+        };
+      })();
+
+      if (typeof _ret === 'object') return _ret.v;
     }
 
     // Input objects check each defined field and look for undefined fields.
     if (type instanceof _typeDefinition.GraphQLInputObjectType) {
       if (valueAST.kind !== _languageKinds.OBJECT) {
-        return false;
+        return ['Expected "' + type.name + '", found not an object.'];
       }
       var fields = type.getFields();
 
+      var errors = [];
+
       // Ensure every provided field is defined.
       var fieldASTs = valueAST.fields;
-      if (fieldASTs.some(function (fieldAST) {
-        return !fields[fieldAST.name.value];
-      })) {
-        return false;
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
+
+      try {
+        for (var _iterator = _getIterator(fieldASTs), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var providedFieldAST = _step.value;
+
+          if (!fields[providedFieldAST.name.value]) {
+            errors.push('In field "' + providedFieldAST.name.value + '": Unknown field.');
+          }
+        }
+
+        // Ensure every defined field is valid.
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion && _iterator['return']) {
+            _iterator['return']();
+          }
+        } finally {
+          if (_didIteratorError) {
+            throw _iteratorError;
+          }
+        }
       }
 
-      // Ensure every defined field is valid.
       var fieldASTMap = (0, _jsutilsKeyMap2['default'])(fieldASTs, function (fieldAST) {
         return fieldAST.name.value;
       });
-      return _Object$keys(fields).every(function (fieldName) {
-        return isValidLiteralValue(fields[fieldName].type, fieldASTMap[fieldName] && fieldASTMap[fieldName].value);
-      });
+      var _iteratorNormalCompletion2 = true;
+      var _didIteratorError2 = false;
+      var _iteratorError2 = undefined;
+
+      try {
+        var _loop = function () {
+          var fieldName = _step2.value;
+
+          var result = isValidLiteralValue(fields[fieldName].type, fieldASTMap[fieldName] && fieldASTMap[fieldName].value);
+          errors.push.apply(errors, _toConsumableArray(result.map(function (error) {
+            return 'In field "' + fieldName + '": ' + error;
+          })));
+        };
+
+        for (var _iterator2 = _getIterator(_Object$keys(fields)), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+          _loop();
+        }
+      } catch (err) {
+        _didIteratorError2 = true;
+        _iteratorError2 = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion2 && _iterator2['return']) {
+            _iterator2['return']();
+          }
+        } finally {
+          if (_didIteratorError2) {
+            throw _iteratorError2;
+          }
+        }
+      }
+
+      return errors;
     }
 
     (0, _jsutilsInvariant2['default'])(type instanceof _typeDefinition.GraphQLScalarType || type instanceof _typeDefinition.GraphQLEnumType, 'Must be input type');
 
     // Scalar/Enum input checks to ensure the type can parse the value to
     // a non-null value.
-    return !(0, _jsutilsIsNullish2['default'])(type.parseLiteral(valueAST));
+    var parseResult = type.parseLiteral(valueAST);
+    if ((0, _jsutilsIsNullish2['default'])(parseResult)) {
+      return ['Expected type "' + type.name + '", found ' + (0, _languagePrinter.print)(valueAST) + '.'];
+    }
+
+    return [];
   }
 }
-},{"../jsutils/invariant":122,"../jsutils/isNullish":123,"../jsutils/keyMap":124,"../language/kinds":127,"../type/definition":134,"babel-runtime/core-js/object/keys":20,"babel-runtime/helpers/interop-require-default":28}],149:[function(require,module,exports){
+},{"../jsutils/invariant":144,"../jsutils/isNullish":145,"../jsutils/keyMap":146,"../language/kinds":149,"../language/printer":153,"../type/definition":156,"babel-runtime/core-js/get-iterator":16,"babel-runtime/core-js/object/keys":23,"babel-runtime/helpers/interop-require-default":32,"babel-runtime/helpers/to-consumable-array":35}],173:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -22287,7 +25521,165 @@ function printInputValue(arg) {
   }
   return argDecl;
 }
-},{"../jsutils/invariant":122,"../jsutils/isNullish":123,"../language/printer":131,"../type/definition":134,"../utilities/astFromValue":141,"babel-runtime/core-js/object/keys":20,"babel-runtime/helpers/interop-require-default":28}],150:[function(require,module,exports){
+},{"../jsutils/invariant":144,"../jsutils/isNullish":145,"../language/printer":153,"../type/definition":156,"../utilities/astFromValue":163,"babel-runtime/core-js/object/keys":23,"babel-runtime/helpers/interop-require-default":32}],174:[function(require,module,exports){
+
+/**
+ *  Copyright (c) 2015, Facebook, Inc.
+ *  All rights reserved.
+ *
+ *  This source code is licensed under the BSD-style license found in the
+ *  LICENSE file in the root directory of this source tree. An additional grant
+ *  of patent rights can be found in the PATENTS file in the same directory.
+ */
+
+/**
+ * Provided two types, return true if the types are equal (invariant).
+ */
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+exports.isEqualType = isEqualType;
+exports.isTypeSubTypeOf = isTypeSubTypeOf;
+exports.doTypesOverlap = doTypesOverlap;
+
+var _typeDefinition = require('../type/definition');
+
+function isEqualType(_x, _x2) {
+  var _again = true;
+
+  _function: while (_again) {
+    var typeA = _x,
+        typeB = _x2;
+    _again = false;
+
+    // Equivalent types are equal.
+    if (typeA === typeB) {
+      return true;
+    }
+
+    // If either type is non-null, the other must also be non-null.
+    if (typeA instanceof _typeDefinition.GraphQLNonNull && typeB instanceof _typeDefinition.GraphQLNonNull) {
+      _x = typeA.ofType;
+      _x2 = typeB.ofType;
+      _again = true;
+      continue _function;
+    }
+
+    // If either type is a list, the other must also be a list.
+    if (typeA instanceof _typeDefinition.GraphQLList && typeB instanceof _typeDefinition.GraphQLList) {
+      _x = typeA.ofType;
+      _x2 = typeB.ofType;
+      _again = true;
+      continue _function;
+    }
+
+    // Otherwise the types are not equal.
+    return false;
+  }
+}
+
+/**
+ * Provided a type and a super type, return true if the first type is either
+ * equal or a subset of the second super type (covariant).
+ */
+
+function isTypeSubTypeOf(_x3, _x4) {
+  var _again2 = true;
+
+  _function2: while (_again2) {
+    var maybeSubType = _x3,
+        superType = _x4;
+    _again2 = false;
+
+    // Equivalent type is a valid subtype
+    if (maybeSubType === superType) {
+      return true;
+    }
+
+    // If superType is non-null, maybeSubType must also be nullable.
+    if (superType instanceof _typeDefinition.GraphQLNonNull) {
+      if (maybeSubType instanceof _typeDefinition.GraphQLNonNull) {
+        _x3 = maybeSubType.ofType;
+        _x4 = superType.ofType;
+        _again2 = true;
+        continue _function2;
+      }
+      return false;
+    } else if (maybeSubType instanceof _typeDefinition.GraphQLNonNull) {
+      // If superType is nullable, maybeSubType may be non-null.
+      _x3 = maybeSubType.ofType;
+      _x4 = superType;
+      _again2 = true;
+      continue _function2;
+    }
+
+    // If superType type is a list, maybeSubType type must also be a list.
+    if (superType instanceof _typeDefinition.GraphQLList) {
+      if (maybeSubType instanceof _typeDefinition.GraphQLList) {
+        _x3 = maybeSubType.ofType;
+        _x4 = superType.ofType;
+        _again2 = true;
+        continue _function2;
+      }
+      return false;
+    } else if (maybeSubType instanceof _typeDefinition.GraphQLList) {
+      // If superType is not a list, maybeSubType must also be not a list.
+      return false;
+    }
+
+    // If superType type is an abstract type, maybeSubType type may be a currently
+    // possible object type.
+    if ((0, _typeDefinition.isAbstractType)(superType) && maybeSubType instanceof _typeDefinition.GraphQLObjectType && superType.isPossibleType(maybeSubType)) {
+      return true;
+    }
+
+    // Otherwise, the child type is not a valid subtype of the parent type.
+    return false;
+  }
+}
+
+/**
+ * Provided two composite types, determine if they "overlap". Two composite
+ * types overlap when the Sets of possible concrete types for each intersect.
+ *
+ * This is often used to determine if a fragment of a given type could possibly
+ * be visited in a context of another type.
+ *
+ * This function is commutative.
+ */
+
+function doTypesOverlap(typeA, typeB) {
+  // So flow is aware this is constant
+  var _typeB = typeB;
+
+  // Equivalent types overlap
+  if (typeA === _typeB) {
+    return true;
+  }
+
+  if (typeA instanceof _typeDefinition.GraphQLInterfaceType || typeA instanceof _typeDefinition.GraphQLUnionType) {
+    if (_typeB instanceof _typeDefinition.GraphQLInterfaceType || _typeB instanceof _typeDefinition.GraphQLUnionType) {
+      // If both types are abstract, then determine if there is any intersection
+      // between possible concrete types of each.
+      return typeA.getPossibleTypes().some(function (type) {
+        return _typeB.isPossibleType(type);
+      });
+    }
+    // Determine if the latter type is a possible concrete type of the former.
+    return typeA.isPossibleType(_typeB);
+  }
+
+  if (_typeB instanceof _typeDefinition.GraphQLInterfaceType || _typeB instanceof _typeDefinition.GraphQLUnionType) {
+    // Determine if the former type is a possible concrete type of the latter.
+    return _typeB.isPossibleType(typeA);
+  }
+
+  // Otherwise the types do not overlap.
+  return false;
+}
+},{"../type/definition":156}],175:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -22316,7 +25708,7 @@ var _languageKinds = require('../language/kinds');
 var _typeDefinition = require('../type/definition');
 
 function typeFromAST(schema, inputTypeAST) {
-  var innerType;
+  var innerType = undefined;
   if (inputTypeAST.kind === _languageKinds.LIST_TYPE) {
     innerType = typeFromAST(schema, inputTypeAST.type);
     return innerType && new _typeDefinition.GraphQLList(innerType);
@@ -22328,7 +25720,7 @@ function typeFromAST(schema, inputTypeAST) {
   (0, _jsutilsInvariant2['default'])(inputTypeAST.kind === _languageKinds.NAMED_TYPE, 'Must be a named type.');
   return schema.getType(inputTypeAST.name.value);
 }
-},{"../jsutils/invariant":122,"../language/kinds":127,"../type/definition":134,"babel-runtime/helpers/interop-require-default":28}],151:[function(require,module,exports){
+},{"../jsutils/invariant":144,"../language/kinds":149,"../type/definition":156,"babel-runtime/helpers/interop-require-default":32}],176:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -22392,16 +25784,15 @@ function valueFromAST(_x, _x2, _x3) {
     var valueAST = _x,
         type = _x2,
         variables = _x3;
-    nullableType = variableName = itemType = fields = fieldASTs = parsed = undefined;
+    variableName = _ret = _ret2 = parsed = undefined;
     _again = false;
 
     if (type instanceof _typeDefinition.GraphQLNonNull) {
-      var nullableType = type.ofType;
       // Note: we're not checking that the result of valueFromAST is non-null.
       // We're assuming that this query has been validated and the value used
       // here is of the correct type.
       _x = valueAST;
-      _x2 = nullableType;
+      _x2 = type.ofType;
       _x3 = variables;
       _again = true;
       continue _function;
@@ -22423,35 +25814,51 @@ function valueFromAST(_x, _x2, _x3) {
     }
 
     if (type instanceof _typeDefinition.GraphQLList) {
-      var itemType = type.ofType;
-      if (valueAST.kind === Kind.LIST) {
-        return valueAST.values.map(function (itemAST) {
-          return valueFromAST(itemAST, itemType, variables);
-        });
-      }
-      return [valueFromAST(valueAST, itemType, variables)];
+      var _ret = (function () {
+        var itemType = type.ofType;
+        if (valueAST.kind === Kind.LIST) {
+          return {
+            v: valueAST.values.map(function (itemAST) {
+              return valueFromAST(itemAST, itemType, variables);
+            })
+          };
+        }
+        return {
+          v: [valueFromAST(valueAST, itemType, variables)]
+        };
+      })();
+
+      if (typeof _ret === 'object') return _ret.v;
     }
 
     if (type instanceof _typeDefinition.GraphQLInputObjectType) {
-      var fields = type.getFields();
-      if (valueAST.kind !== Kind.OBJECT) {
-        return null;
-      }
-      var fieldASTs = (0, _jsutilsKeyMap2['default'])(valueAST.fields, function (field) {
-        return field.name.value;
-      });
-      return _Object$keys(fields).reduce(function (obj, fieldName) {
-        var field = fields[fieldName];
-        var fieldAST = fieldASTs[fieldName];
-        var fieldValue = valueFromAST(fieldAST && fieldAST.value, field.type, variables);
-        if ((0, _jsutilsIsNullish2['default'])(fieldValue)) {
-          fieldValue = field.defaultValue;
+      var _ret2 = (function () {
+        var fields = type.getFields();
+        if (valueAST.kind !== Kind.OBJECT) {
+          return {
+            v: null
+          };
         }
-        if (!(0, _jsutilsIsNullish2['default'])(fieldValue)) {
-          obj[fieldName] = fieldValue;
-        }
-        return obj;
-      }, {});
+        var fieldASTs = (0, _jsutilsKeyMap2['default'])(valueAST.fields, function (field) {
+          return field.name.value;
+        });
+        return {
+          v: _Object$keys(fields).reduce(function (obj, fieldName) {
+            var field = fields[fieldName];
+            var fieldAST = fieldASTs[fieldName];
+            var fieldValue = valueFromAST(fieldAST && fieldAST.value, field.type, variables);
+            if ((0, _jsutilsIsNullish2['default'])(fieldValue)) {
+              fieldValue = field.defaultValue;
+            }
+            if (!(0, _jsutilsIsNullish2['default'])(fieldValue)) {
+              obj[fieldName] = fieldValue;
+            }
+            return obj;
+          }, {})
+        };
+      })();
+
+      if (typeof _ret2 === 'object') return _ret2.v;
     }
 
     (0, _jsutilsInvariant2['default'])(type instanceof _typeDefinition.GraphQLScalarType || type instanceof _typeDefinition.GraphQLEnumType, 'Must be input type');
@@ -22462,7 +25869,7 @@ function valueFromAST(_x, _x2, _x3) {
     }
   }
 }
-},{"../jsutils/invariant":122,"../jsutils/isNullish":123,"../jsutils/keyMap":124,"../language/kinds":127,"../type/definition":134,"babel-runtime/core-js/object/keys":20,"babel-runtime/helpers/interop-require-default":28,"babel-runtime/helpers/interop-require-wildcard":29}],152:[function(require,module,exports){
+},{"../jsutils/invariant":144,"../jsutils/isNullish":145,"../jsutils/keyMap":146,"../language/kinds":149,"../type/definition":156,"babel-runtime/core-js/object/keys":23,"babel-runtime/helpers/interop-require-default":32,"babel-runtime/helpers/interop-require-wildcard":33}],177:[function(require,module,exports){
 /**
  *  Copyright (c) 2015, Facebook, Inc.
  *  All rights reserved.
@@ -22495,7 +25902,7 @@ Object.defineProperty(exports, 'specifiedRules', {
     return _specifiedRules.specifiedRules;
   }
 });
-},{"./specifiedRules":176,"./validate":177}],153:[function(require,module,exports){
+},{"./specifiedRules":201,"./validate":202}],178:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -22520,8 +25927,9 @@ var _languagePrinter = require('../../language/printer');
 
 var _utilitiesIsValidLiteralValue = require('../../utilities/isValidLiteralValue');
 
-function badValueMessage(argName, type, value) {
-  return 'Argument "' + argName + '" expected type "' + type + '" but got: ' + value + '.';
+function badValueMessage(argName, type, value, verboseErrors) {
+  var message = verboseErrors ? '\n' + verboseErrors.join('\n') : '';
+  return 'Argument "' + argName + '" has invalid value ' + value + '.' + message;
 }
 
 /**
@@ -22535,13 +25943,17 @@ function ArgumentsOfCorrectType(context) {
   return {
     Argument: function Argument(argAST) {
       var argDef = context.getArgument();
-      if (argDef && !(0, _utilitiesIsValidLiteralValue.isValidLiteralValue)(argDef.type, argAST.value)) {
-        return new _error.GraphQLError(badValueMessage(argAST.name.value, argDef.type, (0, _languagePrinter.print)(argAST.value)), [argAST.value]);
+      if (argDef) {
+        var errors = (0, _utilitiesIsValidLiteralValue.isValidLiteralValue)(argDef.type, argAST.value);
+        if (errors && errors.length > 0) {
+          context.reportError(new _error.GraphQLError(badValueMessage(argAST.name.value, argDef.type, (0, _languagePrinter.print)(argAST.value), errors), [argAST.value]));
+        }
       }
+      return false;
     }
   };
 }
-},{"../../error":118,"../../language/printer":131,"../../utilities/isValidLiteralValue":148}],154:[function(require,module,exports){
+},{"../../error":135,"../../language/printer":153,"../../utilities/isValidLiteralValue":172}],179:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -22573,8 +25985,9 @@ function defaultForNonNullArgMessage(varName, type, guessType) {
   return 'Variable "$' + varName + '" of type "' + type + '" is required and will not ' + ('use the default value. Perhaps you meant to use type "' + guessType + '".');
 }
 
-function badValueForDefaultArgMessage(varName, type, value) {
-  return 'Variable "$' + varName + '" of type "' + type + '" has invalid default ' + ('value: ' + value + '.');
+function badValueForDefaultArgMessage(varName, type, value, verboseErrors) {
+  var message = verboseErrors ? '\n' + verboseErrors.join('\n') : '';
+  return 'Variable "$' + varName + ' has invalid default value ' + value + '.' + message;
 }
 
 /**
@@ -22591,15 +26004,25 @@ function DefaultValuesOfCorrectType(context) {
       var defaultValue = varDefAST.defaultValue;
       var type = context.getInputType();
       if (type instanceof _typeDefinition.GraphQLNonNull && defaultValue) {
-        return new _error.GraphQLError(defaultForNonNullArgMessage(name, type, type.ofType), [defaultValue]);
+        context.reportError(new _error.GraphQLError(defaultForNonNullArgMessage(name, type, type.ofType), [defaultValue]));
       }
-      if (type && defaultValue && !(0, _utilitiesIsValidLiteralValue.isValidLiteralValue)(type, defaultValue)) {
-        return new _error.GraphQLError(badValueForDefaultArgMessage(name, type, (0, _languagePrinter.print)(defaultValue)), [defaultValue]);
+      if (type && defaultValue) {
+        var errors = (0, _utilitiesIsValidLiteralValue.isValidLiteralValue)(type, defaultValue);
+        if (errors && errors.length > 0) {
+          context.reportError(new _error.GraphQLError(badValueForDefaultArgMessage(name, type, (0, _languagePrinter.print)(defaultValue), errors), [defaultValue]));
+        }
       }
+      return false;
+    },
+    SelectionSet: function SelectionSet() {
+      return false;
+    },
+    FragmentDefinition: function FragmentDefinition() {
+      return false;
     }
   };
 }
-},{"../../error":118,"../../language/printer":131,"../../type/definition":134,"../../utilities/isValidLiteralValue":148}],155:[function(require,module,exports){
+},{"../../error":135,"../../language/printer":153,"../../type/definition":156,"../../utilities/isValidLiteralValue":172}],180:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -22612,6 +26035,8 @@ function DefaultValuesOfCorrectType(context) {
 
 'use strict';
 
+var _Object$keys = require('babel-runtime/core-js/object/keys')['default'];
+
 Object.defineProperty(exports, '__esModule', {
   value: true
 });
@@ -22620,8 +26045,22 @@ exports.FieldsOnCorrectType = FieldsOnCorrectType;
 
 var _error = require('../../error');
 
-function undefinedFieldMessage(fieldName, type) {
-  return 'Cannot query field "' + fieldName + '" on "' + type + '".';
+var _typeDefinition = require('../../type/definition');
+
+function undefinedFieldMessage(fieldName, type, suggestedTypes) {
+  var message = 'Cannot query field "' + fieldName + '" on type "' + type + '".';
+  var MAX_LENGTH = 5;
+  if (suggestedTypes.length !== 0) {
+    var suggestions = suggestedTypes.slice(0, MAX_LENGTH).map(function (t) {
+      return '"' + t + '"';
+    }).join(', ');
+    if (suggestedTypes.length > MAX_LENGTH) {
+      suggestions += ', and ' + (suggestedTypes.length - MAX_LENGTH) + ' other types';
+    }
+    message += ' However, this field exists on ' + suggestions + '.';
+    message += ' Perhaps you meant to use an inline fragment?';
+  }
+  return message;
 }
 
 /**
@@ -22638,13 +26077,58 @@ function FieldsOnCorrectType(context) {
       if (type) {
         var fieldDef = context.getFieldDef();
         if (!fieldDef) {
-          return new _error.GraphQLError(undefinedFieldMessage(node.name.value, type.name), [node]);
+          // This isn't valid. Let's find suggestions, if any.
+          var suggestedTypes = [];
+          if ((0, _typeDefinition.isAbstractType)(type)) {
+            suggestedTypes = getSiblingInterfacesIncludingField(type, node.name.value);
+            suggestedTypes = suggestedTypes.concat(getImplementationsIncludingField(type, node.name.value));
+          }
+          context.reportError(new _error.GraphQLError(undefinedFieldMessage(node.name.value, type.name, suggestedTypes), [node]));
         }
       }
     }
   };
 }
-},{"../../error":118}],156:[function(require,module,exports){
+
+/**
+ * Return implementations of `type` that include `fieldName` as a valid field.
+ */
+function getImplementationsIncludingField(type, fieldName) {
+  return type.getPossibleTypes().filter(function (t) {
+    return t.getFields()[fieldName] !== undefined;
+  }).map(function (t) {
+    return t.name;
+  }).sort();
+}
+
+/**
+ * Go through all of the implementations of type, and find other interaces
+ * that they implement. If those interfaces include `field` as a valid field,
+ * return them, sorted by how often the implementations include the other
+ * interface.
+ */
+function getSiblingInterfacesIncludingField(type, fieldName) {
+  var implementingObjects = type.getPossibleTypes().filter(function (t) {
+    return t instanceof _typeDefinition.GraphQLObjectType;
+  });
+
+  var suggestedInterfaces = implementingObjects.reduce(function (acc, t) {
+    t.getInterfaces().forEach(function (i) {
+      if (i.getFields()[fieldName] === undefined) {
+        return;
+      }
+      if (acc[i.name] === undefined) {
+        acc[i.name] = 0;
+      }
+      acc[i.name] += 1;
+    });
+    return acc;
+  }, {});
+  return _Object$keys(suggestedInterfaces).sort(function (a, b) {
+    return suggestedInterfaces[b] - suggestedInterfaces[a];
+  });
+}
+},{"../../error":135,"../../type/definition":156,"babel-runtime/core-js/object/keys":23}],181:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -22691,18 +26175,18 @@ function FragmentsOnCompositeTypes(context) {
     InlineFragment: function InlineFragment(node) {
       var type = context.getType();
       if (node.typeCondition && type && !(0, _typeDefinition.isCompositeType)(type)) {
-        return new _error.GraphQLError(inlineFragmentOnNonCompositeErrorMessage((0, _languagePrinter.print)(node.typeCondition)), [node.typeCondition]);
+        context.reportError(new _error.GraphQLError(inlineFragmentOnNonCompositeErrorMessage((0, _languagePrinter.print)(node.typeCondition)), [node.typeCondition]));
       }
     },
     FragmentDefinition: function FragmentDefinition(node) {
       var type = context.getType();
       if (type && !(0, _typeDefinition.isCompositeType)(type)) {
-        return new _error.GraphQLError(fragmentOnNonCompositeErrorMessage(node.name.value, (0, _languagePrinter.print)(node.typeCondition)), [node.typeCondition]);
+        context.reportError(new _error.GraphQLError(fragmentOnNonCompositeErrorMessage(node.name.value, (0, _languagePrinter.print)(node.typeCondition)), [node.typeCondition]));
       }
     }
   };
 }
-},{"../../error":118,"../../language/printer":131,"../../type/definition":134}],157:[function(require,module,exports){
+},{"../../error":135,"../../language/printer":153,"../../type/definition":156}],182:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -22764,7 +26248,7 @@ function KnownArgumentNames(context) {
           if (!fieldArgDef) {
             var parentType = context.getParentType();
             (0, _jsutilsInvariant2['default'])(parentType);
-            return new _error.GraphQLError(unknownArgMessage(node.name.value, fieldDef.name, parentType.name), [node]);
+            context.reportError(new _error.GraphQLError(unknownArgMessage(node.name.value, fieldDef.name, parentType.name), [node]));
           }
         }
       } else if (argumentOf.kind === _languageKinds.DIRECTIVE) {
@@ -22774,14 +26258,14 @@ function KnownArgumentNames(context) {
             return arg.name === node.name.value;
           });
           if (!directiveArgDef) {
-            return new _error.GraphQLError(unknownDirectiveArgMessage(node.name.value, directive.name), [node]);
+            context.reportError(new _error.GraphQLError(unknownDirectiveArgMessage(node.name.value, directive.name), [node]));
           }
         }
       }
     }
   };
 }
-},{"../../error":118,"../../jsutils/find":121,"../../jsutils/invariant":122,"../../language/kinds":127,"babel-runtime/helpers/interop-require-default":28}],158:[function(require,module,exports){
+},{"../../error":135,"../../jsutils/find":143,"../../jsutils/invariant":144,"../../language/kinds":149,"babel-runtime/helpers/interop-require-default":32}],183:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -22833,22 +26317,33 @@ function KnownDirectives(context) {
         return def.name === node.name.value;
       });
       if (!directiveDef) {
-        return new _error.GraphQLError(unknownDirectiveMessage(node.name.value), [node]);
+        context.reportError(new _error.GraphQLError(unknownDirectiveMessage(node.name.value), [node]));
+        return;
       }
       var appliedTo = ancestors[ancestors.length - 1];
-      if (appliedTo.kind === _languageKinds.OPERATION_DEFINITION && !directiveDef.onOperation) {
-        return new _error.GraphQLError(misplacedDirectiveMessage(node.name.value, 'operation'), [node]);
-      }
-      if (appliedTo.kind === _languageKinds.FIELD && !directiveDef.onField) {
-        return new _error.GraphQLError(misplacedDirectiveMessage(node.name.value, 'field'), [node]);
-      }
-      if ((appliedTo.kind === _languageKinds.FRAGMENT_SPREAD || appliedTo.kind === _languageKinds.INLINE_FRAGMENT || appliedTo.kind === _languageKinds.FRAGMENT_DEFINITION) && !directiveDef.onFragment) {
-        return new _error.GraphQLError(misplacedDirectiveMessage(node.name.value, 'fragment'), [node]);
+      switch (appliedTo.kind) {
+        case _languageKinds.OPERATION_DEFINITION:
+          if (!directiveDef.onOperation) {
+            context.reportError(new _error.GraphQLError(misplacedDirectiveMessage(node.name.value, 'operation'), [node]));
+          }
+          break;
+        case _languageKinds.FIELD:
+          if (!directiveDef.onField) {
+            context.reportError(new _error.GraphQLError(misplacedDirectiveMessage(node.name.value, 'field'), [node]));
+          }
+          break;
+        case _languageKinds.FRAGMENT_SPREAD:
+        case _languageKinds.INLINE_FRAGMENT:
+        case _languageKinds.FRAGMENT_DEFINITION:
+          if (!directiveDef.onFragment) {
+            context.reportError(new _error.GraphQLError(misplacedDirectiveMessage(node.name.value, 'fragment'), [node]));
+          }
+          break;
       }
     }
   };
 }
-},{"../../error":118,"../../jsutils/find":121,"../../language/kinds":127,"babel-runtime/helpers/interop-require-default":28}],159:[function(require,module,exports){
+},{"../../error":135,"../../jsutils/find":143,"../../language/kinds":149,"babel-runtime/helpers/interop-require-default":32}],184:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -22886,12 +26381,12 @@ function KnownFragmentNames(context) {
       var fragmentName = node.name.value;
       var fragment = context.getFragment(fragmentName);
       if (!fragment) {
-        return new _error.GraphQLError(unknownFragmentMessage(fragmentName), [node.name]);
+        context.reportError(new _error.GraphQLError(unknownFragmentMessage(fragmentName), [node.name]));
       }
     }
   };
 }
-},{"../../error":118}],160:[function(require,module,exports){
+},{"../../error":135}],185:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -22925,16 +26420,31 @@ function unknownTypeMessage(type) {
 
 function KnownTypeNames(context) {
   return {
+    // TODO: when validating IDL, re-enable these. Experimental version does not
+    // add unreferenced types, resulting in false-positive errors. Squelched
+    // errors for now.
+    ObjectTypeDefinition: function ObjectTypeDefinition() {
+      return false;
+    },
+    InterfaceTypeDefinition: function InterfaceTypeDefinition() {
+      return false;
+    },
+    UnionTypeDefinition: function UnionTypeDefinition() {
+      return false;
+    },
+    InputObjectTypeDefinition: function InputObjectTypeDefinition() {
+      return false;
+    },
     NamedType: function NamedType(node) {
       var typeName = node.name.value;
       var type = context.getSchema().getType(typeName);
       if (!type) {
-        return new _error.GraphQLError(unknownTypeMessage(typeName), [node]);
+        context.reportError(new _error.GraphQLError(unknownTypeMessage(typeName), [node]));
       }
     }
   };
 }
-},{"../../error":118}],161:[function(require,module,exports){
+},{"../../error":135}],186:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -22968,7 +26478,7 @@ function anonOperationNotAloneMessage() {
  * (the query short-hand) that it contains only that one operation definition.
  */
 
-function LoneAnonymousOperation() {
+function LoneAnonymousOperation(context) {
   var operationCount = 0;
   return {
     Document: function Document(node) {
@@ -22978,12 +26488,12 @@ function LoneAnonymousOperation() {
     },
     OperationDefinition: function OperationDefinition(node) {
       if (!node.name && operationCount > 1) {
-        return new _error.GraphQLError(anonOperationNotAloneMessage(), [node]);
+        context.reportError(new _error.GraphQLError(anonOperationNotAloneMessage(), [node]));
       }
     }
   };
 }
-},{"../../error":118,"../../language/kinds":127}],162:[function(require,module,exports){
+},{"../../error":135,"../../language/kinds":149}],187:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -22996,7 +26506,7 @@ function LoneAnonymousOperation() {
 
 'use strict';
 
-var _Set = require('babel-runtime/core-js/set')['default'];
+var _Object$create = require('babel-runtime/core-js/object/create')['default'];
 
 Object.defineProperty(exports, '__esModule', {
   value: true
@@ -23006,95 +26516,74 @@ exports.NoFragmentCycles = NoFragmentCycles;
 
 var _error = require('../../error');
 
-var _languageKinds = require('../../language/kinds');
-
-var _languageVisitor = require('../../language/visitor');
-
 function cycleErrorMessage(fragName, spreadNames) {
   var via = spreadNames.length ? ' via ' + spreadNames.join(', ') : '';
   return 'Cannot spread fragment "' + fragName + '" within itself' + via + '.';
 }
 
 function NoFragmentCycles(context) {
+  // Tracks already visited fragments to maintain O(N) and to ensure that cycles
+  // are not redundantly reported.
+  var visitedFrags = _Object$create(null);
 
-  // Gather all the fragment spreads ASTs for each fragment definition.
-  // Importantly this does not include inline fragments.
-  var definitions = context.getDocument().definitions;
-  var spreadsInFragment = definitions.reduce(function (map, node) {
-    if (node.kind === _languageKinds.FRAGMENT_DEFINITION) {
-      map[node.name.value] = gatherSpreads(node);
-    }
-    return map;
-  }, {});
+  // Array of AST nodes used to produce meaningful errors
+  var spreadPath = [];
 
-  // Tracks spreads known to lead to cycles to ensure that cycles are not
-  // redundantly reported.
-  var knownToLeadToCycle = new _Set();
+  // Position in the spread path
+  var spreadPathIndexByName = _Object$create(null);
 
   return {
+    OperationDefinition: function OperationDefinition() {
+      return false;
+    },
     FragmentDefinition: function FragmentDefinition(node) {
-      var errors = [];
-      var initialName = node.name.value;
-
-      // Array of AST nodes used to produce meaningful errors
-      var spreadPath = [];
-
-      // This does a straight-forward DFS to find cycles.
-      // It does not terminate when a cycle was found but continues to explore
-      // the graph to find all possible cycles.
-      function detectCycleRecursive(fragmentName) {
-        var spreadNodes = spreadsInFragment[fragmentName];
-        for (var i = 0; i < spreadNodes.length; ++i) {
-          var spreadNode = spreadNodes[i];
-          if (knownToLeadToCycle.has(spreadNode)) {
-            continue;
-          }
-          if (spreadNode.name.value === initialName) {
-            var cyclePath = spreadPath.concat(spreadNode);
-            cyclePath.forEach(function (spread) {
-              return knownToLeadToCycle.add(spread);
-            });
-            errors.push(new _error.GraphQLError(cycleErrorMessage(initialName, spreadPath.map(function (s) {
-              return s.name.value;
-            })), cyclePath));
-            continue;
-          }
-          if (spreadPath.some(function (spread) {
-            return spread === spreadNode;
-          })) {
-            continue;
-          }
-
-          spreadPath.push(spreadNode);
-          detectCycleRecursive(spreadNode.name.value);
-          spreadPath.pop();
-        }
+      if (!visitedFrags[node.name.value]) {
+        detectCycleRecursive(node);
       }
-
-      detectCycleRecursive(initialName);
-
-      if (errors.length > 0) {
-        return errors;
-      }
+      return false;
     }
   };
-}
 
-/**
- * Given an operation or fragment AST node, gather all the
- * named spreads defined within the scope of the fragment
- * or operation
- */
-function gatherSpreads(node) {
-  var spreadNodes = [];
-  (0, _languageVisitor.visit)(node, {
-    FragmentSpread: function FragmentSpread(spread) {
-      spreadNodes.push(spread);
+  // This does a straight-forward DFS to find cycles.
+  // It does not terminate when a cycle was found but continues to explore
+  // the graph to find all possible cycles.
+  function detectCycleRecursive(fragment) {
+    var fragmentName = fragment.name.value;
+    visitedFrags[fragmentName] = true;
+
+    var spreadNodes = context.getFragmentSpreads(fragment);
+    if (spreadNodes.length === 0) {
+      return;
     }
-  });
-  return spreadNodes;
+
+    spreadPathIndexByName[fragmentName] = spreadPath.length;
+
+    for (var i = 0; i < spreadNodes.length; i++) {
+      var spreadNode = spreadNodes[i];
+      var spreadName = spreadNode.name.value;
+      var cycleIndex = spreadPathIndexByName[spreadName];
+
+      if (cycleIndex === undefined) {
+        spreadPath.push(spreadNode);
+        if (!visitedFrags[spreadName]) {
+          var spreadFragment = context.getFragment(spreadName);
+          if (spreadFragment) {
+            detectCycleRecursive(spreadFragment);
+          }
+        }
+        spreadPath.pop();
+      } else {
+        var cyclePath = spreadPath.slice(cycleIndex);
+        context.reportError(new _error.GraphQLError(cycleErrorMessage(spreadName, cyclePath.map(function (s) {
+          return s.name.value;
+        })), cyclePath.concat(spreadNode)));
+      }
+    }
+
+    spreadPathIndexByName[fragmentName] = undefined;
+  }
 }
-},{"../../error":118,"../../language/kinds":127,"../../language/visitor":133,"babel-runtime/core-js/set":22}],163:[function(require,module,exports){
+},{"../../error":135,"babel-runtime/core-js/object/create":20}],188:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -23107,23 +26596,18 @@ function gatherSpreads(node) {
 
 'use strict';
 
+var _Object$create = require('babel-runtime/core-js/object/create')['default'];
+
 Object.defineProperty(exports, '__esModule', {
   value: true
 });
 exports.undefinedVarMessage = undefinedVarMessage;
-exports.undefinedVarByOpMessage = undefinedVarByOpMessage;
 exports.NoUndefinedVariables = NoUndefinedVariables;
 
 var _error = require('../../error');
 
-var _languageKinds = require('../../language/kinds');
-
-function undefinedVarMessage(varName) {
-  return 'Variable "$' + varName + '" is not defined.';
-}
-
-function undefinedVarByOpMessage(varName, opName) {
-  return 'Variable "$' + varName + '" is not defined by operation "' + opName + '".';
+function undefinedVarMessage(varName, opName) {
+  return opName ? 'Variable "$' + varName + '" is not defined by operation "' + opName + '".' : 'Variable "$' + varName + '" is not defined.';
 }
 
 /**
@@ -23133,45 +26617,33 @@ function undefinedVarByOpMessage(varName, opName) {
  * and via fragment spreads, are defined by that operation.
  */
 
-function NoUndefinedVariables() {
-  var operation;
-  var visitedFragmentNames = {};
-  var definedVariableNames = {};
+function NoUndefinedVariables(context) {
+  var variableNameDefined = _Object$create(null);
 
   return {
-    // Visit FragmentDefinition after visiting FragmentSpread
-    visitSpreadFragments: true,
+    OperationDefinition: {
+      enter: function enter() {
+        variableNameDefined = _Object$create(null);
+      },
+      leave: function leave(operation) {
+        var usages = context.getRecursiveVariableUsages(operation);
 
-    OperationDefinition: function OperationDefinition(node) {
-      operation = node;
-      visitedFragmentNames = {};
-      definedVariableNames = {};
-    },
-    VariableDefinition: function VariableDefinition(def) {
-      definedVariableNames[def.variable.name.value] = true;
-    },
-    Variable: function Variable(variable, key, parent, path, ancestors) {
-      var varName = variable.name.value;
-      if (definedVariableNames[varName] !== true) {
-        var withinFragment = ancestors.some(function (node) {
-          return node.kind === _languageKinds.FRAGMENT_DEFINITION;
+        usages.forEach(function (_ref) {
+          var node = _ref.node;
+
+          var varName = node.name.value;
+          if (variableNameDefined[varName] !== true) {
+            context.reportError(new _error.GraphQLError(undefinedVarMessage(varName, operation.name && operation.name.value), [node, operation]));
+          }
         });
-        if (withinFragment && operation && operation.name) {
-          return new _error.GraphQLError(undefinedVarByOpMessage(varName, operation.name.value), [variable, operation]);
-        }
-        return new _error.GraphQLError(undefinedVarMessage(varName), [variable]);
       }
     },
-    FragmentSpread: function FragmentSpread(spreadAST) {
-      // Only visit fragments of a particular name once per operation
-      if (visitedFragmentNames[spreadAST.name.value] === true) {
-        return false;
-      }
-      visitedFragmentNames[spreadAST.name.value] = true;
+    VariableDefinition: function VariableDefinition(varDefAST) {
+      variableNameDefined[varDefAST.variable.name.value] = true;
     }
   };
 }
-},{"../../error":118,"../../language/kinds":127}],164:[function(require,module,exports){
+},{"../../error":135,"babel-runtime/core-js/object/create":20}],189:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -23184,7 +26656,7 @@ function NoUndefinedVariables() {
 
 'use strict';
 
-var _Object$keys = require('babel-runtime/core-js/object/keys')['default'];
+var _Object$create = require('babel-runtime/core-js/object/create')['default'];
 
 Object.defineProperty(exports, '__esModule', {
   value: true
@@ -23205,54 +26677,39 @@ function unusedFragMessage(fragName) {
  * within operations, or spread within other fragments spread within operations.
  */
 
-function NoUnusedFragments() {
+function NoUnusedFragments(context) {
+  var operationDefs = [];
   var fragmentDefs = [];
-  var spreadsWithinOperation = [];
-  var fragAdjacencies = {};
-  var spreadNames = {};
 
   return {
-    OperationDefinition: function OperationDefinition() {
-      spreadNames = {};
-      spreadsWithinOperation.push(spreadNames);
+    OperationDefinition: function OperationDefinition(node) {
+      operationDefs.push(node);
+      return false;
     },
-    FragmentDefinition: function FragmentDefinition(def) {
-      fragmentDefs.push(def);
-      spreadNames = {};
-      fragAdjacencies[def.name.value] = spreadNames;
-    },
-    FragmentSpread: function FragmentSpread(spread) {
-      spreadNames[spread.name.value] = true;
+    FragmentDefinition: function FragmentDefinition(node) {
+      fragmentDefs.push(node);
+      return false;
     },
     Document: {
       leave: function leave() {
-        var fragmentNameUsed = {};
-        var reduceSpreadFragments = function reduceSpreadFragments(spreads) {
-          var keys = _Object$keys(spreads);
-          keys.forEach(function (fragName) {
-            if (fragmentNameUsed[fragName] !== true) {
-              fragmentNameUsed[fragName] = true;
-              var adjacencies = fragAdjacencies[fragName];
-              if (adjacencies) {
-                reduceSpreadFragments(adjacencies);
-              }
-            }
+        var fragmentNameUsed = _Object$create(null);
+        operationDefs.forEach(function (operation) {
+          context.getRecursivelyReferencedFragments(operation).forEach(function (fragment) {
+            fragmentNameUsed[fragment.name.value] = true;
           });
-        };
-        spreadsWithinOperation.forEach(reduceSpreadFragments);
-        var errors = fragmentDefs.filter(function (def) {
-          return fragmentNameUsed[def.name.value] !== true;
-        }).map(function (def) {
-          return new _error.GraphQLError(unusedFragMessage(def.name.value), [def]);
         });
-        if (errors.length > 0) {
-          return errors;
-        }
+
+        fragmentDefs.forEach(function (fragmentDef) {
+          var fragName = fragmentDef.name.value;
+          if (fragmentNameUsed[fragName] !== true) {
+            context.reportError(new _error.GraphQLError(unusedFragMessage(fragName), [fragmentDef]));
+          }
+        });
       }
     }
   };
 }
-},{"../../error":118,"babel-runtime/core-js/object/keys":20}],165:[function(require,module,exports){
+},{"../../error":135,"babel-runtime/core-js/object/create":20}],190:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -23265,6 +26722,8 @@ function NoUnusedFragments() {
 
 'use strict';
 
+var _Object$create = require('babel-runtime/core-js/object/create')['default'];
+
 Object.defineProperty(exports, '__esModule', {
   value: true
 });
@@ -23273,8 +26732,8 @@ exports.NoUnusedVariables = NoUnusedVariables;
 
 var _error = require('../../error');
 
-function unusedVariableMessage(varName) {
-  return 'Variable "$' + varName + '" is never used.';
+function unusedVariableMessage(varName, opName) {
+  return opName ? 'Variable "$' + varName + '" is never used in operation "' + opName + '".' : 'Variable "$' + varName + '" is never used.';
 }
 
 /**
@@ -23284,50 +26743,39 @@ function unusedVariableMessage(varName) {
  * are used, either directly or within a spread fragment.
  */
 
-function NoUnusedVariables() {
-  var visitedFragmentNames = {};
+function NoUnusedVariables(context) {
   var variableDefs = [];
-  var variableNameUsed = {};
 
   return {
-    // Visit FragmentDefinition after visiting FragmentSpread
-    visitSpreadFragments: true,
-
     OperationDefinition: {
       enter: function enter() {
-        visitedFragmentNames = {};
         variableDefs = [];
-        variableNameUsed = {};
       },
-      leave: function leave() {
-        var errors = variableDefs.filter(function (def) {
-          return variableNameUsed[def.variable.name.value] !== true;
-        }).map(function (def) {
-          return new _error.GraphQLError(unusedVariableMessage(def.variable.name.value), [def]);
+      leave: function leave(operation) {
+        var variableNameUsed = _Object$create(null);
+        var usages = context.getRecursiveVariableUsages(operation);
+        var opName = operation.name ? operation.name.value : null;
+
+        usages.forEach(function (_ref) {
+          var node = _ref.node;
+
+          variableNameUsed[node.name.value] = true;
         });
-        if (errors.length > 0) {
-          return errors;
-        }
+
+        variableDefs.forEach(function (variableDef) {
+          var variableName = variableDef.variable.name.value;
+          if (variableNameUsed[variableName] !== true) {
+            context.reportError(new _error.GraphQLError(unusedVariableMessage(variableName, opName), [variableDef]));
+          }
+        });
       }
     },
     VariableDefinition: function VariableDefinition(def) {
       variableDefs.push(def);
-      // Do not visit deeper, or else the defined variable name will be visited.
-      return false;
-    },
-    Variable: function Variable(variable) {
-      variableNameUsed[variable.name.value] = true;
-    },
-    FragmentSpread: function FragmentSpread(spreadAST) {
-      // Only visit fragments of a particular name once per operation
-      if (visitedFragmentNames[spreadAST.name.value] === true) {
-        return false;
-      }
-      visitedFragmentNames[spreadAST.name.value] = true;
     }
   };
 }
-},{"../../error":118}],166:[function(require,module,exports){
+},{"../../error":135,"babel-runtime/core-js/object/create":20}],191:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -23364,6 +26812,10 @@ exports.OverlappingFieldsCanBeMerged = OverlappingFieldsCanBeMerged;
 
 // Reason is a string, or a nested list of conflicts.
 
+// Tuple defining an AST in a context
+
+// Map of array of those.
+
 var _error = require('../../error');
 
 var _jsutilsFind = require('../../jsutils/find');
@@ -23375,6 +26827,8 @@ var _languageKinds = require('../../language/kinds');
 var _languagePrinter = require('../../language/printer');
 
 var _typeDefinition = require('../../type/definition');
+
+var _utilitiesTypeComparators = require('../../utilities/typeComparators');
 
 var _utilitiesTypeFromAST = require('../../utilities/typeFromAST');
 
@@ -23424,18 +26878,37 @@ function OverlappingFieldsCanBeMerged(context) {
     return conflicts;
   }
 
-  function findConflict(responseName, pair1, pair2) {
-    var _pair1 = _slicedToArray(pair1, 2);
+  function findConflict(responseName, field1, field2) {
+    var _field1 = _slicedToArray(field1, 3);
 
-    var ast1 = _pair1[0];
-    var def1 = _pair1[1];
+    var parentType1 = _field1[0];
+    var ast1 = _field1[1];
+    var def1 = _field1[2];
 
-    var _pair2 = _slicedToArray(pair2, 2);
+    var _field2 = _slicedToArray(field2, 3);
 
-    var ast2 = _pair2[0];
-    var def2 = _pair2[1];
+    var parentType2 = _field2[0];
+    var ast2 = _field2[1];
+    var def2 = _field2[2];
 
-    if (ast1 === ast2 || comparedSet.has(ast1, ast2)) {
+    // Not a pair.
+    if (ast1 === ast2) {
+      return;
+    }
+
+    // If the statically known parent types could not possibly apply at the same
+    // time, then it is safe to permit them to diverge as they will not present
+    // any ambiguity by differing.
+    // It is known that two parent types could never overlap if they are
+    // different Object types. Interface or Union types might overlap - if not
+    // in the current state of the schema, then perhaps in some future version,
+    // thus may not safely diverge.
+    if (parentType1 !== parentType2 && parentType1 instanceof _typeDefinition.GraphQLObjectType && parentType2 instanceof _typeDefinition.GraphQLObjectType) {
+      return;
+    }
+
+    // Memoize, do not report the same issue twice.
+    if (comparedSet.has(ast1, ast2)) {
       return;
     }
     comparedSet.add(ast1, ast2);
@@ -23443,21 +26916,17 @@ function OverlappingFieldsCanBeMerged(context) {
     var name1 = ast1.name.value;
     var name2 = ast2.name.value;
     if (name1 !== name2) {
-      return [[responseName, name1 + ' and ' + name2 + ' are different fields'], [ast1, ast2]];
+      return [[responseName, name1 + ' and ' + name2 + ' are different fields'], [ast1], [ast2]];
     }
 
     var type1 = def1 && def1.type;
     var type2 = def2 && def2.type;
-    if (type1 && type2 && !sameType(type1, type2)) {
-      return [[responseName, 'they return differing types ' + type1 + ' and ' + type2], [ast1, ast2]];
+    if (type1 && type2 && !(0, _utilitiesTypeComparators.isEqualType)(type1, type2)) {
+      return [[responseName, 'they return differing types ' + type1 + ' and ' + type2], [ast1], [ast2]];
     }
 
     if (!sameArguments(ast1.arguments || [], ast2.arguments || [])) {
-      return [[responseName, 'they have differing arguments'], [ast1, ast2]];
-    }
-
-    if (!sameDirectives(ast1.directives || [], ast2.directives || [])) {
-      return [[responseName, 'they have differing directives'], [ast1, ast2]];
+      return [[responseName, 'they have differing arguments'], [ast1], [ast2]];
     }
 
     var selectionSet1 = ast1.selectionSet;
@@ -23476,9 +26945,14 @@ function OverlappingFieldsCanBeMerged(context) {
         })], conflicts.reduce(function (allFields, _ref4) {
           var _ref42 = _slicedToArray(_ref4, 2);
 
-          var fields = _ref42[1];
-          return allFields.concat(fields);
-        }, [ast1, ast2])];
+          var fields1 = _ref42[1];
+          return allFields.concat(fields1);
+        }, [ast1]), conflicts.reduce(function (allFields, _ref5) {
+          var _ref52 = _slicedToArray(_ref5, 3);
+
+          var fields2 = _ref52[2];
+          return allFields.concat(fields2);
+        }, [ast2])];
       }
     }
   }
@@ -23490,36 +26964,20 @@ function OverlappingFieldsCanBeMerged(context) {
       leave: function leave(selectionSet) {
         var fieldMap = collectFieldASTsAndDefs(context, context.getParentType(), selectionSet);
         var conflicts = findConflicts(fieldMap);
-        if (conflicts.length) {
-          return conflicts.map(function (_ref5) {
-            var _ref52 = _slicedToArray(_ref5, 2);
+        conflicts.forEach(function (_ref6) {
+          var _ref62 = _slicedToArray(_ref6, 3);
 
-            var _ref52$0 = _slicedToArray(_ref52[0], 2);
+          var _ref62$0 = _slicedToArray(_ref62[0], 2);
 
-            var responseName = _ref52$0[0];
-            var reason = _ref52$0[1];
-            var fields = _ref52[1];
-            return new _error.GraphQLError(fieldsConflictMessage(responseName, reason), fields);
-          });
-        }
+          var responseName = _ref62$0[0];
+          var reason = _ref62$0[1];
+          var fields1 = _ref62[1];
+          var fields2 = _ref62[2];
+          return context.reportError(new _error.GraphQLError(fieldsConflictMessage(responseName, reason), fields1.concat(fields2)));
+        });
       }
     }
   };
-}
-
-function sameDirectives(directives1, directives2) {
-  if (directives1.length !== directives2.length) {
-    return false;
-  }
-  return directives1.every(function (directive1) {
-    var directive2 = (0, _jsutilsFind2['default'])(directives2, function (directive) {
-      return directive.name.value === directive1.name.value;
-    });
-    if (!directive2) {
-      return false;
-    }
-    return sameArguments(directive1.arguments || [], directive2.arguments || []);
-  });
 }
 
 function sameArguments(arguments1, arguments2) {
@@ -23541,10 +26999,6 @@ function sameValue(value1, value2) {
   return !value1 && !value2 || (0, _languagePrinter.print)(value1) === (0, _languagePrinter.print)(value2);
 }
 
-function sameType(type1, type2) {
-  return String(type1) === String(type2);
-}
-
 /**
  * Given a selectionSet, adds all of the fields in that selection to
  * the passed in map of fields, and returns it at the end.
@@ -23561,7 +27015,7 @@ function collectFieldASTsAndDefs(context, parentType, selectionSet, visitedFragm
     switch (selection.kind) {
       case _languageKinds.FIELD:
         var fieldName = selection.name.value;
-        var fieldDef;
+        var fieldDef = undefined;
         if (parentType instanceof _typeDefinition.GraphQLObjectType || parentType instanceof _typeDefinition.GraphQLInterfaceType) {
           fieldDef = parentType.getFields()[fieldName];
         }
@@ -23569,7 +27023,7 @@ function collectFieldASTsAndDefs(context, parentType, selectionSet, visitedFragm
         if (!_astAndDefs[responseName]) {
           _astAndDefs[responseName] = [];
         }
-        _astAndDefs[responseName].push([selection, fieldDef]);
+        _astAndDefs[responseName].push([parentType, selection, fieldDef]);
         break;
       case _languageKinds.INLINE_FRAGMENT:
         var typeCondition = selection.typeCondition;
@@ -23586,7 +27040,8 @@ function collectFieldASTsAndDefs(context, parentType, selectionSet, visitedFragm
         if (!fragment) {
           continue;
         }
-        _astAndDefs = collectFieldASTsAndDefs(context, (0, _utilitiesTypeFromAST.typeFromAST)(context.getSchema(), fragment.typeCondition), fragment.selectionSet, _visitedFragmentNames, _astAndDefs);
+        var fragmentType = (0, _utilitiesTypeFromAST.typeFromAST)(context.getSchema(), fragment.typeCondition);
+        _astAndDefs = collectFieldASTsAndDefs(context, fragmentType, fragment.selectionSet, _visitedFragmentNames, _astAndDefs);
         break;
     }
   }
@@ -23630,7 +27085,7 @@ function _pairSetAdd(data, a, b) {
   }
   set.add(b);
 }
-},{"../../error":118,"../../jsutils/find":121,"../../language/kinds":127,"../../language/printer":131,"../../type/definition":134,"../../utilities/typeFromAST":150,"babel-runtime/core-js/map":15,"babel-runtime/core-js/object/keys":20,"babel-runtime/core-js/set":22,"babel-runtime/helpers/class-call-check":23,"babel-runtime/helpers/create-class":24,"babel-runtime/helpers/interop-require-default":28,"babel-runtime/helpers/sliced-to-array":30}],167:[function(require,module,exports){
+},{"../../error":135,"../../jsutils/find":143,"../../language/kinds":149,"../../language/printer":153,"../../type/definition":156,"../../utilities/typeComparators":174,"../../utilities/typeFromAST":175,"babel-runtime/core-js/map":18,"babel-runtime/core-js/object/keys":23,"babel-runtime/core-js/set":26,"babel-runtime/helpers/class-call-check":27,"babel-runtime/helpers/create-class":28,"babel-runtime/helpers/interop-require-default":32,"babel-runtime/helpers/sliced-to-array":34}],192:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -23643,8 +27098,6 @@ function _pairSetAdd(data, a, b) {
 
 'use strict';
 
-var _interopRequireDefault = require('babel-runtime/helpers/interop-require-default')['default'];
-
 Object.defineProperty(exports, '__esModule', {
   value: true
 });
@@ -23654,11 +27107,7 @@ exports.PossibleFragmentSpreads = PossibleFragmentSpreads;
 
 var _error = require('../../error');
 
-var _jsutilsKeyMap = require('../../jsutils/keyMap');
-
-var _jsutilsKeyMap2 = _interopRequireDefault(_jsutilsKeyMap);
-
-var _typeDefinition = require('../../type/definition');
+var _utilitiesTypeComparators = require('../../utilities/typeComparators');
 
 var _utilitiesTypeFromAST = require('../../utilities/typeFromAST');
 
@@ -23683,16 +27132,16 @@ function PossibleFragmentSpreads(context) {
     InlineFragment: function InlineFragment(node) {
       var fragType = context.getType();
       var parentType = context.getParentType();
-      if (fragType && parentType && !doTypesOverlap(fragType, parentType)) {
-        return new _error.GraphQLError(typeIncompatibleAnonSpreadMessage(parentType, fragType), [node]);
+      if (fragType && parentType && !(0, _utilitiesTypeComparators.doTypesOverlap)(fragType, parentType)) {
+        context.reportError(new _error.GraphQLError(typeIncompatibleAnonSpreadMessage(parentType, fragType), [node]));
       }
     },
     FragmentSpread: function FragmentSpread(node) {
       var fragName = node.name.value;
       var fragType = getFragmentType(context, fragName);
       var parentType = context.getParentType();
-      if (fragType && parentType && !doTypesOverlap(fragType, parentType)) {
-        return new _error.GraphQLError(typeIncompatibleSpreadMessage(fragName, parentType, fragType), [node]);
+      if (fragType && parentType && !(0, _utilitiesTypeComparators.doTypesOverlap)(fragType, parentType)) {
+        context.reportError(new _error.GraphQLError(typeIncompatibleSpreadMessage(fragName, parentType, fragType), [node]));
       }
     }
   };
@@ -23702,30 +27151,7 @@ function getFragmentType(context, name) {
   var frag = context.getFragment(name);
   return frag && (0, _utilitiesTypeFromAST.typeFromAST)(context.getSchema(), frag.typeCondition);
 }
-
-function doTypesOverlap(t1, t2) {
-  if (t1 === t2) {
-    return true;
-  }
-  if (t1 instanceof _typeDefinition.GraphQLObjectType) {
-    if (t2 instanceof _typeDefinition.GraphQLObjectType) {
-      return false;
-    }
-    return t2.getPossibleTypes().indexOf(t1) !== -1;
-  }
-  if (t1 instanceof _typeDefinition.GraphQLInterfaceType || t1 instanceof _typeDefinition.GraphQLUnionType) {
-    if (t2 instanceof _typeDefinition.GraphQLObjectType) {
-      return t1.getPossibleTypes().indexOf(t2) !== -1;
-    }
-    var t1TypeNames = (0, _jsutilsKeyMap2['default'])(t1.getPossibleTypes(), function (type) {
-      return type.name;
-    });
-    return t2.getPossibleTypes().some(function (type) {
-      return t1TypeNames[type.name];
-    });
-  }
-}
-},{"../../error":118,"../../jsutils/keyMap":124,"../../type/definition":134,"../../utilities/typeFromAST":150,"babel-runtime/helpers/interop-require-default":28}],168:[function(require,module,exports){
+},{"../../error":135,"../../utilities/typeComparators":174,"../../utilities/typeFromAST":175}],193:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -23779,7 +27205,6 @@ function ProvidedNonNullArguments(context) {
         if (!fieldDef) {
           return false;
         }
-        var errors = [];
         var argASTs = fieldAST.arguments || [];
 
         var argASTMap = (0, _jsutilsKeyMap2['default'])(argASTs, function (arg) {
@@ -23788,13 +27213,9 @@ function ProvidedNonNullArguments(context) {
         fieldDef.args.forEach(function (argDef) {
           var argAST = argASTMap[argDef.name];
           if (!argAST && argDef.type instanceof _typeDefinition.GraphQLNonNull) {
-            errors.push(new _error.GraphQLError(missingFieldArgMessage(fieldAST.name.value, argDef.name, argDef.type), [fieldAST]));
+            context.reportError(new _error.GraphQLError(missingFieldArgMessage(fieldAST.name.value, argDef.name, argDef.type), [fieldAST]));
           }
         });
-
-        if (errors.length > 0) {
-          return errors;
-        }
       }
     },
 
@@ -23805,7 +27226,6 @@ function ProvidedNonNullArguments(context) {
         if (!directiveDef) {
           return false;
         }
-        var errors = [];
         var argASTs = directiveAST.arguments || [];
 
         var argASTMap = (0, _jsutilsKeyMap2['default'])(argASTs, function (arg) {
@@ -23814,18 +27234,14 @@ function ProvidedNonNullArguments(context) {
         directiveDef.args.forEach(function (argDef) {
           var argAST = argASTMap[argDef.name];
           if (!argAST && argDef.type instanceof _typeDefinition.GraphQLNonNull) {
-            errors.push(new _error.GraphQLError(missingDirectiveArgMessage(directiveAST.name.value, argDef.name, argDef.type), [directiveAST]));
+            context.reportError(new _error.GraphQLError(missingDirectiveArgMessage(directiveAST.name.value, argDef.name, argDef.type), [directiveAST]));
           }
         });
-
-        if (errors.length > 0) {
-          return errors;
-        }
       }
     }
   };
 }
-},{"../../error":118,"../../jsutils/keyMap":124,"../../type/definition":134,"babel-runtime/helpers/interop-require-default":28}],169:[function(require,module,exports){
+},{"../../error":135,"../../jsutils/keyMap":146,"../../type/definition":156,"babel-runtime/helpers/interop-require-default":32}],194:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -23871,16 +27287,16 @@ function ScalarLeafs(context) {
       if (type) {
         if ((0, _typeDefinition.isLeafType)(type)) {
           if (node.selectionSet) {
-            return new _error.GraphQLError(noSubselectionAllowedMessage(node.name.value, type), [node.selectionSet]);
+            context.reportError(new _error.GraphQLError(noSubselectionAllowedMessage(node.name.value, type), [node.selectionSet]));
           }
         } else if (!node.selectionSet) {
-          return new _error.GraphQLError(requiredSubselectionMessage(node.name.value, type), [node]);
+          context.reportError(new _error.GraphQLError(requiredSubselectionMessage(node.name.value, type), [node]));
         }
       }
     }
   };
 }
-},{"../../error":118,"../../type/definition":134}],170:[function(require,module,exports){
+},{"../../error":135,"../../type/definition":156}],195:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -23914,7 +27330,7 @@ function duplicateArgMessage(argName) {
  * uniquely named.
  */
 
-function UniqueArgumentNames() {
+function UniqueArgumentNames(context) {
   var knownArgNames = _Object$create(null);
   return {
     Field: function Field() {
@@ -23926,13 +27342,15 @@ function UniqueArgumentNames() {
     Argument: function Argument(node) {
       var argName = node.name.value;
       if (knownArgNames[argName]) {
-        return new _error.GraphQLError(duplicateArgMessage(argName), [knownArgNames[argName], node.name]);
+        context.reportError(new _error.GraphQLError(duplicateArgMessage(argName), [knownArgNames[argName], node.name]));
+      } else {
+        knownArgNames[argName] = node.name;
       }
-      knownArgNames[argName] = node.name;
+      return false;
     }
   };
 }
-},{"../../error":118,"babel-runtime/core-js/object/create":17}],171:[function(require,module,exports){
+},{"../../error":135,"babel-runtime/core-js/object/create":20}],196:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -23965,19 +27383,24 @@ function duplicateFragmentNameMessage(fragName) {
  * A GraphQL document is only valid if all defined fragments have unique names.
  */
 
-function UniqueFragmentNames() {
+function UniqueFragmentNames(context) {
   var knownFragmentNames = _Object$create(null);
   return {
+    OperationDefinition: function OperationDefinition() {
+      return false;
+    },
     FragmentDefinition: function FragmentDefinition(node) {
       var fragmentName = node.name.value;
       if (knownFragmentNames[fragmentName]) {
-        return new _error.GraphQLError(duplicateFragmentNameMessage(fragmentName), [knownFragmentNames[fragmentName], node.name]);
+        context.reportError(new _error.GraphQLError(duplicateFragmentNameMessage(fragmentName), [knownFragmentNames[fragmentName], node.name]));
+      } else {
+        knownFragmentNames[fragmentName] = node.name;
       }
-      knownFragmentNames[fragmentName] = node.name;
+      return false;
     }
   };
 }
-},{"../../error":118,"babel-runtime/core-js/object/create":17}],172:[function(require,module,exports){
+},{"../../error":135,"babel-runtime/core-js/object/create":20}],197:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -24011,22 +27434,32 @@ function duplicateInputFieldMessage(fieldName) {
  * uniquely named.
  */
 
-function UniqueInputFieldNames() {
+function UniqueInputFieldNames(context) {
+  var knownNameStack = [];
   var knownNames = _Object$create(null);
+
   return {
-    ObjectValue: function ObjectValue() {
-      knownNames = _Object$create(null);
+    ObjectValue: {
+      enter: function enter() {
+        knownNameStack.push(knownNames);
+        knownNames = _Object$create(null);
+      },
+      leave: function leave() {
+        knownNames = knownNameStack.pop();
+      }
     },
     ObjectField: function ObjectField(node) {
       var fieldName = node.name.value;
       if (knownNames[fieldName]) {
-        return new _error.GraphQLError(duplicateInputFieldMessage(fieldName), [knownNames[fieldName], node.name]);
+        context.reportError(new _error.GraphQLError(duplicateInputFieldMessage(fieldName), [knownNames[fieldName], node.name]));
+      } else {
+        knownNames[fieldName] = node.name;
       }
-      knownNames[fieldName] = node.name;
+      return false;
     }
   };
 }
-},{"../../error":118,"babel-runtime/core-js/object/create":17}],173:[function(require,module,exports){
+},{"../../error":135,"babel-runtime/core-js/object/create":20}],198:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -24059,21 +27492,26 @@ function duplicateOperationNameMessage(operationName) {
  * A GraphQL document is only valid if all defined operations have unique names.
  */
 
-function UniqueOperationNames() {
+function UniqueOperationNames(context) {
   var knownOperationNames = _Object$create(null);
   return {
     OperationDefinition: function OperationDefinition(node) {
       var operationName = node.name;
       if (operationName) {
         if (knownOperationNames[operationName.value]) {
-          return new _error.GraphQLError(duplicateOperationNameMessage(operationName.value), [knownOperationNames[operationName.value], operationName]);
+          context.reportError(new _error.GraphQLError(duplicateOperationNameMessage(operationName.value), [knownOperationNames[operationName.value], operationName]));
+        } else {
+          knownOperationNames[operationName.value] = operationName;
         }
-        knownOperationNames[operationName.value] = operationName;
       }
+      return false;
+    },
+    FragmentDefinition: function FragmentDefinition() {
+      return false;
     }
   };
 }
-},{"../../error":118,"babel-runtime/core-js/object/create":17}],174:[function(require,module,exports){
+},{"../../error":135,"babel-runtime/core-js/object/create":20}],199:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -24119,12 +27557,12 @@ function VariablesAreInputTypes(context) {
       // If the variable type is not an input type, return an error.
       if (type && !(0, _typeDefinition.isInputType)(type)) {
         var variableName = node.variable.name.value;
-        return new _error.GraphQLError(nonInputTypeOnVarMessage(variableName, (0, _languagePrinter.print)(node.type)), [node.type]);
+        context.reportError(new _error.GraphQLError(nonInputTypeOnVarMessage(variableName, (0, _languagePrinter.print)(node.type)), [node.type]));
       }
     }
   };
 }
-},{"../../error":118,"../../language/printer":131,"../../type/definition":134,"../../utilities/typeFromAST":150}],175:[function(require,module,exports){
+},{"../../error":135,"../../language/printer":153,"../../type/definition":156,"../../utilities/typeFromAST":175}],200:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -24137,6 +27575,8 @@ function VariablesAreInputTypes(context) {
 
 'use strict';
 
+var _Object$create = require('babel-runtime/core-js/object/create')['default'];
+
 Object.defineProperty(exports, '__esModule', {
   value: true
 });
@@ -24146,6 +27586,8 @@ exports.VariablesInAllowedPosition = VariablesInAllowedPosition;
 var _error = require('../../error');
 
 var _typeDefinition = require('../../type/definition');
+
+var _utilitiesTypeComparators = require('../../utilities/typeComparators');
 
 var _utilitiesTypeFromAST = require('../../utilities/typeFromAST');
 
@@ -24158,35 +27600,38 @@ function badVarPosMessage(varName, varType, expectedType) {
  */
 
 function VariablesInAllowedPosition(context) {
-  var varDefMap = {};
-  var visitedFragmentNames = {};
+  var varDefMap = _Object$create(null);
 
   return {
-    // Visit FragmentDefinition after visiting FragmentSpread
-    visitSpreadFragments: true,
+    OperationDefinition: {
+      enter: function enter() {
+        varDefMap = _Object$create(null);
+      },
+      leave: function leave(operation) {
+        var usages = context.getRecursiveVariableUsages(operation);
 
-    OperationDefinition: function OperationDefinition() {
-      varDefMap = {};
-      visitedFragmentNames = {};
+        usages.forEach(function (_ref) {
+          var node = _ref.node;
+          var type = _ref.type;
+
+          var varName = node.name.value;
+          var varDef = varDefMap[varName];
+          if (varDef && type) {
+            // A var type is allowed if it is the same or more strict (e.g. is
+            // a subtype of) than the expected type. It can be more strict if
+            // the variable type is non-null when the expected type is nullable.
+            // If both are list types, the variable item type can be more strict
+            // than the expected item type (contravariant).
+            var varType = (0, _utilitiesTypeFromAST.typeFromAST)(context.getSchema(), varDef.type);
+            if (varType && !(0, _utilitiesTypeComparators.isTypeSubTypeOf)(effectiveType(varType, varDef), type)) {
+              context.reportError(new _error.GraphQLError(badVarPosMessage(varName, varType, type), [varDef, node]));
+            }
+          }
+        });
+      }
     },
     VariableDefinition: function VariableDefinition(varDefAST) {
       varDefMap[varDefAST.variable.name.value] = varDefAST;
-    },
-    FragmentSpread: function FragmentSpread(spreadAST) {
-      // Only visit fragments of a particular name once per operation
-      if (visitedFragmentNames[spreadAST.name.value]) {
-        return false;
-      }
-      visitedFragmentNames[spreadAST.name.value] = true;
-    },
-    Variable: function Variable(variableAST) {
-      var varName = variableAST.name.value;
-      var varDef = varDefMap[varName];
-      var varType = varDef && (0, _utilitiesTypeFromAST.typeFromAST)(context.getSchema(), varDef.type);
-      var inputType = context.getInputType();
-      if (varType && inputType && !varTypeAllowedForType(effectiveType(varType, varDef), inputType)) {
-        return new _error.GraphQLError(badVarPosMessage(varName, varType, inputType), [variableAST]);
-      }
     }
   };
 }
@@ -24195,44 +27640,7 @@ function VariablesInAllowedPosition(context) {
 function effectiveType(varType, varDef) {
   return !varDef.defaultValue || varType instanceof _typeDefinition.GraphQLNonNull ? varType : new _typeDefinition.GraphQLNonNull(varType);
 }
-
-// A var type is allowed if it is the same or more strict than the expected
-// type. It can be more strict if the variable type is non-null when the
-// expected type is nullable. If both are list types, the variable item type can
-// be more strict than the expected item type.
-function varTypeAllowedForType(_x, _x2) {
-  var _again = true;
-
-  _function: while (_again) {
-    var varType = _x,
-        expectedType = _x2;
-    _again = false;
-
-    if (expectedType instanceof _typeDefinition.GraphQLNonNull) {
-      if (varType instanceof _typeDefinition.GraphQLNonNull) {
-        _x = varType.ofType;
-        _x2 = expectedType.ofType;
-        _again = true;
-        continue _function;
-      }
-      return false;
-    }
-    if (varType instanceof _typeDefinition.GraphQLNonNull) {
-      _x = varType.ofType;
-      _x2 = expectedType;
-      _again = true;
-      continue _function;
-    }
-    if (varType instanceof _typeDefinition.GraphQLList && expectedType instanceof _typeDefinition.GraphQLList) {
-      _x = varType.ofType;
-      _x2 = expectedType.ofType;
-      _again = true;
-      continue _function;
-    }
-    return varType === expectedType;
-  }
-}
-},{"../../error":118,"../../type/definition":134,"../../utilities/typeFromAST":150}],176:[function(require,module,exports){
+},{"../../error":135,"../../type/definition":156,"../../utilities/typeComparators":174,"../../utilities/typeFromAST":175,"babel-runtime/core-js/object/create":20}],201:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -24244,6 +27652,10 @@ function varTypeAllowedForType(_x, _x2) {
  */
 
 // Spec Section: "Operation Name Uniqueness"
+
+/**
+ * This set includes all validation rules defined by the GraphQL spec.
+ */
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -24340,12 +27752,9 @@ var _rulesOverlappingFieldsCanBeMerged = require('./rules/OverlappingFieldsCanBe
 
 var _rulesUniqueInputFieldNames = require('./rules/UniqueInputFieldNames');
 
-/**
- * This set includes all validation rules defined by the GraphQL spec.
- */
 var specifiedRules = [_rulesUniqueOperationNames.UniqueOperationNames, _rulesLoneAnonymousOperation.LoneAnonymousOperation, _rulesKnownTypeNames.KnownTypeNames, _rulesFragmentsOnCompositeTypes.FragmentsOnCompositeTypes, _rulesVariablesAreInputTypes.VariablesAreInputTypes, _rulesScalarLeafs.ScalarLeafs, _rulesFieldsOnCorrectType.FieldsOnCorrectType, _rulesUniqueFragmentNames.UniqueFragmentNames, _rulesKnownFragmentNames.KnownFragmentNames, _rulesNoUnusedFragments.NoUnusedFragments, _rulesPossibleFragmentSpreads.PossibleFragmentSpreads, _rulesNoFragmentCycles.NoFragmentCycles, _rulesNoUndefinedVariables.NoUndefinedVariables, _rulesNoUnusedVariables.NoUnusedVariables, _rulesKnownDirectives.KnownDirectives, _rulesKnownArgumentNames.KnownArgumentNames, _rulesUniqueArgumentNames.UniqueArgumentNames, _rulesArgumentsOfCorrectType.ArgumentsOfCorrectType, _rulesProvidedNonNullArguments.ProvidedNonNullArguments, _rulesDefaultValuesOfCorrectType.DefaultValuesOfCorrectType, _rulesVariablesInAllowedPosition.VariablesInAllowedPosition, _rulesOverlappingFieldsCanBeMerged.OverlappingFieldsCanBeMerged, _rulesUniqueInputFieldNames.UniqueInputFieldNames];
 exports.specifiedRules = specifiedRules;
-},{"./rules/ArgumentsOfCorrectType":153,"./rules/DefaultValuesOfCorrectType":154,"./rules/FieldsOnCorrectType":155,"./rules/FragmentsOnCompositeTypes":156,"./rules/KnownArgumentNames":157,"./rules/KnownDirectives":158,"./rules/KnownFragmentNames":159,"./rules/KnownTypeNames":160,"./rules/LoneAnonymousOperation":161,"./rules/NoFragmentCycles":162,"./rules/NoUndefinedVariables":163,"./rules/NoUnusedFragments":164,"./rules/NoUnusedVariables":165,"./rules/OverlappingFieldsCanBeMerged":166,"./rules/PossibleFragmentSpreads":167,"./rules/ProvidedNonNullArguments":168,"./rules/ScalarLeafs":169,"./rules/UniqueArgumentNames":170,"./rules/UniqueFragmentNames":171,"./rules/UniqueInputFieldNames":172,"./rules/UniqueOperationNames":173,"./rules/VariablesAreInputTypes":174,"./rules/VariablesInAllowedPosition":175}],177:[function(require,module,exports){
+},{"./rules/ArgumentsOfCorrectType":178,"./rules/DefaultValuesOfCorrectType":179,"./rules/FieldsOnCorrectType":180,"./rules/FragmentsOnCompositeTypes":181,"./rules/KnownArgumentNames":182,"./rules/KnownDirectives":183,"./rules/KnownFragmentNames":184,"./rules/KnownTypeNames":185,"./rules/LoneAnonymousOperation":186,"./rules/NoFragmentCycles":187,"./rules/NoUndefinedVariables":188,"./rules/NoUnusedFragments":189,"./rules/NoUnusedVariables":190,"./rules/OverlappingFieldsCanBeMerged":191,"./rules/PossibleFragmentSpreads":192,"./rules/ProvidedNonNullArguments":193,"./rules/ScalarLeafs":194,"./rules/UniqueArgumentNames":195,"./rules/UniqueFragmentNames":196,"./rules/UniqueInputFieldNames":197,"./rules/UniqueOperationNames":198,"./rules/VariablesAreInputTypes":199,"./rules/VariablesInAllowedPosition":200}],202:[function(require,module,exports){
 
 /**
  *  Copyright (c) 2015, Facebook, Inc.
@@ -24362,6 +27771,10 @@ var _createClass = require('babel-runtime/helpers/create-class')['default'];
 
 var _classCallCheck = require('babel-runtime/helpers/class-call-check')['default'];
 
+var _Map = require('babel-runtime/core-js/map')['default'];
+
+var _Object$create = require('babel-runtime/core-js/object/create')['default'];
+
 var _interopRequireDefault = require('babel-runtime/helpers/interop-require-default')['default'];
 
 var _interopRequireWildcard = require('babel-runtime/helpers/interop-require-wildcard')['default'];
@@ -24370,6 +27783,7 @@ Object.defineProperty(exports, '__esModule', {
   value: true
 });
 exports.validate = validate;
+exports.visitUsingRules = visitUsingRules;
 
 var _jsutilsInvariant = require('../jsutils/invariant');
 
@@ -24401,116 +27815,31 @@ var _specifiedRules = require('./specifiedRules');
  * Each validation rules is a function which returns a visitor
  * (see the language/visitor API). Visitor methods are expected to return
  * GraphQLErrors, or Arrays of GraphQLErrors when invalid.
- *
- * Visitors can also supply `visitSpreadFragments: true` which will alter the
- * behavior of the visitor to skip over top level defined fragments, and instead
- * visit those fragments at every point a spread is encountered.
  */
 
 function validate(schema, ast, rules) {
   (0, _jsutilsInvariant2['default'])(schema, 'Must provide schema');
   (0, _jsutilsInvariant2['default'])(ast, 'Must provide document');
   (0, _jsutilsInvariant2['default'])(schema instanceof _typeSchema.GraphQLSchema, 'Schema must be an instance of GraphQLSchema. Also ensure that there are ' + 'not multiple versions of GraphQL installed in your node_modules directory.');
-  return visitUsingRules(schema, ast, rules || _specifiedRules.specifiedRules);
+  var typeInfo = new _utilitiesTypeInfo.TypeInfo(schema);
+  return visitUsingRules(schema, typeInfo, ast, rules || _specifiedRules.specifiedRules);
 }
 
 /**
  * This uses a specialized visitor which runs multiple visitors in parallel,
  * while maintaining the visitor skip and break API.
+ *
+ * @internal
  */
-function visitUsingRules(schema, documentAST, rules) {
-  var typeInfo = new _utilitiesTypeInfo.TypeInfo(schema);
+
+function visitUsingRules(schema, typeInfo, documentAST, rules) {
   var context = new ValidationContext(schema, documentAST, typeInfo);
-  var errors = [];
-
-  function visitInstance(ast, instance) {
-    (0, _languageVisitor.visit)(ast, {
-      enter: function enter(node, key) {
-        // Collect type information about the current position in the AST.
-        typeInfo.enter(node);
-
-        // Do not visit top level fragment definitions if this instance will
-        // visit those fragments inline because it
-        // provided `visitSpreadFragments`.
-        var result;
-        if (node.kind === Kind.FRAGMENT_DEFINITION && key !== undefined && instance.visitSpreadFragments) {
-          return false;
-        }
-
-        // Get the visitor function from the validation instance, and if it
-        // exists, call it with the visitor arguments.
-        var enter = (0, _languageVisitor.getVisitFn)(instance, false, node.kind);
-        result = enter ? enter.apply(instance, arguments) : undefined;
-
-        // If the visitor returned an error, log it and do not visit any
-        // deeper nodes.
-        if (result && isError(result)) {
-          append(errors, result);
-          result = false;
-        }
-
-        // If any validation instances provide the flag `visitSpreadFragments`
-        // and this node is a fragment spread, visit the fragment definition
-        // from this point.
-        if (result === undefined && instance.visitSpreadFragments && node.kind === Kind.FRAGMENT_SPREAD) {
-          var fragment = context.getFragment(node.name.value);
-          if (fragment) {
-            visitInstance(fragment, instance);
-          }
-        }
-
-        // If the result is "false", we're not visiting any descendent nodes,
-        // but need to update typeInfo.
-        if (result === false) {
-          typeInfo.leave(node);
-        }
-
-        return result;
-      },
-      leave: function leave(node) {
-        // Get the visitor function from the validation instance, and if it
-        // exists, call it with the visitor arguments.
-        var leave = (0, _languageVisitor.getVisitFn)(instance, true, node.kind);
-        var result = leave ? leave.apply(instance, arguments) : undefined;
-
-        // If the visitor returned an error, log it and do not visit any
-        // deeper nodes.
-        if (result && isError(result)) {
-          append(errors, result);
-          result = false;
-        }
-
-        // Update typeInfo.
-        typeInfo.leave(node);
-
-        return result;
-      }
-    });
-  }
-
-  // Visit the whole document with each instance of all provided rules.
-  var instances = rules.map(function (rule) {
+  var visitors = rules.map(function (rule) {
     return rule(context);
   });
-  instances.forEach(function (instance) {
-    visitInstance(documentAST, instance);
-  });
-
-  return errors;
-}
-
-function isError(value) {
-  return Array.isArray(value) ? value.every(function (item) {
-    return item instanceof _error.GraphQLError;
-  }) : value instanceof _error.GraphQLError;
-}
-
-function append(arr, items) {
-  if (Array.isArray(items)) {
-    arr.push.apply(arr, items);
-  } else {
-    arr.push(items);
-  }
+  // Visit the whole document with each instance of all provided rules.
+  (0, _languageVisitor.visit)(documentAST, (0, _languageVisitor.visitWithTypeInfo)(typeInfo, (0, _languageVisitor.visitInParallel)(visitors)));
+  return context.getErrors();
 }
 
 /**
@@ -24526,9 +27855,24 @@ var ValidationContext = (function () {
     this._schema = schema;
     this._ast = ast;
     this._typeInfo = typeInfo;
+    this._errors = [];
+    this._fragmentSpreads = new _Map();
+    this._recursivelyReferencedFragments = new _Map();
+    this._variableUsages = new _Map();
+    this._recursiveVariableUsages = new _Map();
   }
 
   _createClass(ValidationContext, [{
+    key: 'reportError',
+    value: function reportError(error) {
+      this._errors.push(error);
+    }
+  }, {
+    key: 'getErrors',
+    value: function getErrors() {
+      return this._errors;
+    }
+  }, {
     key: 'getSchema',
     value: function getSchema() {
       return this._schema;
@@ -24551,6 +27895,93 @@ var ValidationContext = (function () {
         }, {});
       }
       return fragments[name];
+    }
+  }, {
+    key: 'getFragmentSpreads',
+    value: function getFragmentSpreads(node) {
+      var spreads = this._fragmentSpreads.get(node);
+      if (!spreads) {
+        spreads = [];
+        var setsToVisit = [node.selectionSet];
+        while (setsToVisit.length !== 0) {
+          var set = setsToVisit.pop();
+          for (var i = 0; i < set.selections.length; i++) {
+            var selection = set.selections[i];
+            if (selection.kind === Kind.FRAGMENT_SPREAD) {
+              spreads.push(selection);
+            } else if (selection.selectionSet) {
+              setsToVisit.push(selection.selectionSet);
+            }
+          }
+        }
+        this._fragmentSpreads.set(node, spreads);
+      }
+      return spreads;
+    }
+  }, {
+    key: 'getRecursivelyReferencedFragments',
+    value: function getRecursivelyReferencedFragments(operation) {
+      var fragments = this._recursivelyReferencedFragments.get(operation);
+      if (!fragments) {
+        fragments = [];
+        var collectedNames = _Object$create(null);
+        var nodesToVisit = [operation];
+        while (nodesToVisit.length !== 0) {
+          var _node = nodesToVisit.pop();
+          var spreads = this.getFragmentSpreads(_node);
+          for (var i = 0; i < spreads.length; i++) {
+            var fragName = spreads[i].name.value;
+            if (collectedNames[fragName] !== true) {
+              collectedNames[fragName] = true;
+              var fragment = this.getFragment(fragName);
+              if (fragment) {
+                fragments.push(fragment);
+                nodesToVisit.push(fragment);
+              }
+            }
+          }
+        }
+        this._recursivelyReferencedFragments.set(operation, fragments);
+      }
+      return fragments;
+    }
+  }, {
+    key: 'getVariableUsages',
+    value: function getVariableUsages(node) {
+      var _this = this;
+
+      var usages = this._variableUsages.get(node);
+      if (!usages) {
+        (function () {
+          var newUsages = [];
+          var typeInfo = new _utilitiesTypeInfo.TypeInfo(_this._schema);
+          (0, _languageVisitor.visit)(node, (0, _languageVisitor.visitWithTypeInfo)(typeInfo, {
+            VariableDefinition: function VariableDefinition() {
+              return false;
+            },
+            Variable: function Variable(variable) {
+              newUsages.push({ node: variable, type: typeInfo.getInputType() });
+            }
+          }));
+          usages = newUsages;
+          _this._variableUsages.set(node, usages);
+        })();
+      }
+      return usages;
+    }
+  }, {
+    key: 'getRecursiveVariableUsages',
+    value: function getRecursiveVariableUsages(operation) {
+      var usages = this._recursiveVariableUsages.get(operation);
+      if (!usages) {
+        usages = this.getVariableUsages(operation);
+        var fragments = this.getRecursivelyReferencedFragments(operation);
+        for (var i = 0; i < fragments.length; i++) {
+          Array.prototype.push.apply(usages, this.getVariableUsages(fragments[i]));
+        }
+        this._recursiveVariableUsages.set(operation, usages);
+      }
+      return usages;
     }
   }, {
     key: 'getType',
@@ -24588,7 +28019,7 @@ var ValidationContext = (function () {
 })();
 
 exports.ValidationContext = ValidationContext;
-},{"../error":118,"../jsutils/invariant":122,"../language/kinds":127,"../language/visitor":133,"../type/schema":139,"../utilities/TypeInfo":140,"./specifiedRules":176,"babel-runtime/helpers/class-call-check":23,"babel-runtime/helpers/create-class":24,"babel-runtime/helpers/interop-require-default":28,"babel-runtime/helpers/interop-require-wildcard":29}],178:[function(require,module,exports){
+},{"../error":135,"../jsutils/invariant":144,"../language/kinds":149,"../language/visitor":155,"../type/schema":161,"../utilities/TypeInfo":162,"./specifiedRules":201,"babel-runtime/core-js/map":18,"babel-runtime/core-js/object/create":20,"babel-runtime/helpers/class-call-check":27,"babel-runtime/helpers/create-class":28,"babel-runtime/helpers/interop-require-default":32,"babel-runtime/helpers/interop-require-wildcard":33}],203:[function(require,module,exports){
 (function (global){
 /**
  * marked - a markdown parser
@@ -25877,5 +29308,5 @@ if (typeof module !== 'undefined' && typeof exports === 'object') {
 }());
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}]},{},[9])(9)
+},{}]},{},[10])(10)
 });
