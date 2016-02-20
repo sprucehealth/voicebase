@@ -123,6 +123,21 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 		return nil
 	}
 
+	// TODO: Remove this filterings once the APP destination is no longer valid
+	destinations := make([]*threading.Endpoint, 0, len(pti.GetItem().GetMessage().Destinations))
+	for _, d := range pti.GetItem().GetMessage().Destinations {
+		if d.Channel != threading.Endpoint_APP {
+			destinations = append(destinations, d)
+		}
+	}
+
+	// Do this circuit break after the above debug logging since it may be useful
+	// If there are no destinations then we don't care about this message
+	if len(destinations) == 0 {
+		golog.Debugf("Message recieved with no valid destinations. Item ID: %s. Ignoring...", pti.Item.ID)
+		return nil
+	}
+
 	organizationID := pti.OrganizationID
 	ctx := context.Background()
 
@@ -171,27 +186,13 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 		return errors.Trace(fmt.Errorf("Expected external entity to exist for id %s", pti.PrimaryEntityID))
 	}
 
-	// TODO: Improve logic for auto-routing (we have a ticket for this)
-	destinations := pti.GetItem().GetMessage().Destinations
-	if len(destinations) == 0 || destinations[0].Channel == threading.Endpoint_APP {
-		contacts := externalEntityLookupRes.Entities[0].Contacts
-		for _, c := range contacts {
-			var endpointType threading.Endpoint_Channel
-			if c.ContactType == directory.ContactType_PHONE {
-				endpointType = threading.Endpoint_SMS
-			} else if c.ContactType == directory.ContactType_EMAIL {
-				endpointType = threading.Endpoint_EMAIL
-			}
-			destinations = append(destinations, &threading.Endpoint{
-				Channel: endpointType,
-				ID:      c.Value,
-			})
-		}
-	}
-
+	// Perform the outbound operations for any remaining valid destinations
 	orgEntity := orgLookupRes.Entities[0]
 	for _, d := range destinations {
 		switch d.Channel {
+		case threading.Endpoint_APP:
+			// Note: Do nothing in this case since it should already be in the app.
+			// TODO: Remove this case when Endpoint_APP is removed from the system
 		case threading.Endpoint_SMS:
 			// determine org phone number
 			orgContact := determineProvisionedContact(orgEntity, directory.ContactType_PHONE)
