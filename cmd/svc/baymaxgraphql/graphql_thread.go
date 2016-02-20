@@ -82,7 +82,7 @@ var threadType = graphql.NewObject(
 					}
 
 					var filteredEndpoints []*models.Endpoint
-					// Assert that our endpoints stil exist as a contact
+					// Assert that our endpoints still exist as a contact
 					for _, ep := range th.LastPrimaryEntityEndpoints {
 						for _, c := range ent.Contacts {
 							endpoint, err := transformEntityContactToEndpoint(c)
@@ -103,7 +103,7 @@ var threadType = graphql.NewObject(
 								return nil, errors.InternalError(ctx, err)
 							}
 							filteredEndpoints = append(filteredEndpoints, endpoint)
-							continue
+							break
 						}
 					}
 					return filteredEndpoints, nil
