@@ -32,7 +32,6 @@ var config struct {
 	proxyProtocol           bool
 	excommsServiceURL       string
 	incomingRawMessageTopic string
-	env                     string
 }
 
 func init() {
@@ -58,7 +57,6 @@ func init() {
 	flag.BoolVar(&config.proxyProtocol, "proxyproto", false, "enabled proxy protocol")
 	flag.StringVar(&config.excommsServiceURL, "excomms_url", "localhost:5200", "url for events processor service. format `host:port`")
 	flag.StringVar(&config.incomingRawMessageTopic, "sns_incoming_raw_message_topic", "", "Inbound msg topic")
-	flag.StringVar(&config.env, "env", "dev", "environment")
 	flag.StringVar(&config.attachmentBucket, "s3_attachment_bucket", "dev-baymax-storage", "bucket name for s3 storage")
 	flag.StringVar(&config.attachmentPrefix, "s3_attachment_prefix", "excomms-media", "prefix for excomms media attachments")
 }
