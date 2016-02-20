@@ -223,9 +223,10 @@ func (s *server) InviteColleagues(ctx context.Context, in *invite.InviteColleagu
 			}
 			if errors.Cause(err) != dal.ErrDuplicateInviteToken {
 				golog.Errorf("Failed to insert invite: %s", err)
+				inviteURL = ""
 			}
 		}
-		if token == "" {
+		if inviteURL == "" {
 			continue
 		}
 
