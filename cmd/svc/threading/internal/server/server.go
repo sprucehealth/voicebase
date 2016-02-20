@@ -358,6 +358,7 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	if errors.Cause(err) == dal.ErrNotFound {
 		return nil, grpcErrorf(codes.NotFound, "Thread not found")
 	}
+	prePostLastMessageTimestamp := thread.LastMessageTimestamp
 
 	var item *models.ThreadItem
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
@@ -387,12 +388,38 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 			})
 		}
 		var err error
-		item, err = s.dal.PostMessage(ctx, req)
+		item, err = dl.PostMessage(ctx, req)
 		if err != nil {
 			return grpcErrorf(codes.Internal, errors.Trace(err).Error())
 		}
+
+		var memberUpdate *dal.MemberUpdate
+		// Lock our membership row while doing this since we might update it
+		forUpdate := true
+		tms, err := dl.ThreadMemberships(ctx, []models.ThreadID{threadID}, in.FromEntityID, forUpdate)
+		if err != nil {
+			return grpcErrorf(codes.Internal, errors.Trace(err).Error())
+		}
+
+		if len(tms) > 0 {
+			if len(tms) != 1 {
+				return grpcErrorf(codes.Internal, errors.Trace(
+					fmt.Errorf("Expected to find at most 1 membership for entity %s to thread %s but found %d", in.FromEntityID, threadID, len(tms))).Error())
+			}
+			// Update the last read timestamp on the membership if all other messages have been read
+			lastViewed := tms[0].LastViewed
+			if lastViewed == nil {
+				lastViewed = &thread.Created
+			}
+			if lastViewed.Unix() >= prePostLastMessageTimestamp.Unix() {
+				memberUpdate = &dal.MemberUpdate{
+					LastViewed: ptr.Time(s.clk.Now()),
+				}
+			}
+		}
+
 		// The poster is recorded as a member if necessary but does not become a follower
-		if err := dl.UpdateMember(ctx, threadID, in.FromEntityID, nil); err != nil {
+		if err := dl.UpdateMember(ctx, threadID, in.FromEntityID, memberUpdate); err != nil {
 			return grpcErrorf(codes.Internal, errors.Trace(err).Error())
 		}
 		return nil

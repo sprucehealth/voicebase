@@ -239,7 +239,7 @@ func (d *dal) IterateThreads(ctx context.Context, orgID string, forExternal bool
 	}
 	limit := fmt.Sprintf(" LIMIT %d", it.Count+1) // +1 to check if there's more than requested available.. will filter it out later
 	rows, err := d.db.Query(`
-		SELECT id, organization_id, COALESCE(primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary, last_primary_entity_endpoints
+		SELECT id, organization_id, COALESCE(primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary, last_primary_entity_endpoints, created
 		FROM threads
 		WHERE `+where+order+limit, vals...)
 	if err != nil {
@@ -506,7 +506,7 @@ func (d *dal) SavedQueries(ctx context.Context, entityID string) ([]*models.Save
 
 func (d *dal) Thread(ctx context.Context, id models.ThreadID) (*models.Thread, error) {
 	row := d.db.QueryRow(`
-		SELECT id, organization_id, COALESCE(primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary, last_primary_entity_endpoints
+		SELECT id, organization_id, COALESCE(primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary, last_primary_entity_endpoints, created
 		FROM threads
 		WHERE id = ? AND deleted = false`, id)
 	t, err := scanThread(row)
@@ -627,12 +627,12 @@ func (d *dal) ThreadsForMember(ctx context.Context, entityID string, primaryOnly
 	var err error
 	if primaryOnly {
 		rows, err = d.db.Query(`
-			SELECT id, organization_id, COALESCE(primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary, last_primary_entity_endpoints
+			SELECT id, organization_id, COALESCE(primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary, last_primary_entity_endpoints, created
 			FROM threads
 			WHERE primary_entity_id = ? AND deleted = false`, entityID)
 	} else {
 		rows, err = d.db.Query(`
-			SELECT t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary, last_primary_entity_endpoints
+			SELECT t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary, last_primary_entity_endpoints, created
 			FROM thread_members tm
 			INNER JOIN threads t ON t.id = tm.thread_id
 			WHERE tm.entity_id = ? AND deleted = false`, entityID)
@@ -698,7 +698,7 @@ func scanThread(row dbutil.Scanner) (*models.Thread, error) {
 	var t models.Thread
 	t.ID = models.EmptyThreadID()
 	var lastPrimaryEntityEndpointsData []byte
-	err := row.Scan(&t.ID, &t.OrganizationID, &t.PrimaryEntityID, &t.LastMessageTimestamp, &t.LastExternalMessageTimestamp, &t.LastMessageSummary, &t.LastExternalMessageSummary, &lastPrimaryEntityEndpointsData)
+	err := row.Scan(&t.ID, &t.OrganizationID, &t.PrimaryEntityID, &t.LastMessageTimestamp, &t.LastExternalMessageTimestamp, &t.LastMessageSummary, &t.LastExternalMessageSummary, &lastPrimaryEntityEndpointsData, &t.Created)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	} else if err != nil {
