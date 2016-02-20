@@ -1,0 +1,50 @@
+{
+    "tables": {
+        "push_config": {
+            "columns": {
+                "id": {
+                    "primary_key": true
+                },
+                "external_group_id": {
+                    "type": "string",
+                    "mutable": true
+                },
+                "device_token": {
+                    "type": "[]byte",
+                    "mutable": true
+                },
+                "push_endpoint": {
+                    "type": "string",
+                    "mutable": true
+                },
+                "platform": {
+                    "type": "string",
+                    "mutable": true
+                },
+                "platform_version": {
+                    "type": "string",
+                    "mutable": true
+                },
+                "app_version": {
+                    "type": "string",
+                    "mutable": true
+                },
+                "device": {
+                    "type": "string"
+                },
+                "device_model": {
+                    "type": "string"
+                },
+                "device_id": {
+                    "type": "string"
+                },
+                "created": {
+                    "type": "time.Time"
+                },
+                "modified": {
+                    "type": "time.Time"
+                }
+            }
+        }
+    }
+}

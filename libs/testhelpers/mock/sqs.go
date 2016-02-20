@@ -8,18 +8,18 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 )
 
-type mockSQSAPI struct {
+type SQSAPI struct {
 	*Expector
 }
 
-var _ sqsiface.SQSAPI = NewMockSQSAPI(nil)
+var _ sqsiface.SQSAPI = NewSQSAPI(nil)
 
-// NewMockSQSAPI returns a mock compatible SQSAPI instance
-func NewMockSQSAPI(t *testing.T) *mockSQSAPI {
-	return &mockSQSAPI{&Expector{T: t}}
+// NewSQSAPI returns a mock compatible SQSAPI instance
+func NewSQSAPI(t *testing.T) *SQSAPI {
+	return &SQSAPI{&Expector{T: t}}
 }
 
-func (s *mockSQSAPI) AddPermissionRequest(in *sqs.AddPermissionInput) (*request.Request, *sqs.AddPermissionOutput) {
+func (s *SQSAPI) AddPermissionRequest(in *sqs.AddPermissionInput) (*request.Request, *sqs.AddPermissionOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -27,7 +27,7 @@ func (s *mockSQSAPI) AddPermissionRequest(in *sqs.AddPermissionInput) (*request.
 	return rets[0].(*request.Request), rets[1].(*sqs.AddPermissionOutput)
 }
 
-func (s *mockSQSAPI) AddPermission(in *sqs.AddPermissionInput) (*sqs.AddPermissionOutput, error) {
+func (s *SQSAPI) AddPermission(in *sqs.AddPermissionInput) (*sqs.AddPermissionOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -35,7 +35,7 @@ func (s *mockSQSAPI) AddPermission(in *sqs.AddPermissionInput) (*sqs.AddPermissi
 	return rets[0].(*sqs.AddPermissionOutput), SafeError(rets[1])
 }
 
-func (s *mockSQSAPI) ChangeMessageVisibilityRequest(in *sqs.ChangeMessageVisibilityInput) (*request.Request, *sqs.ChangeMessageVisibilityOutput) {
+func (s *SQSAPI) ChangeMessageVisibilityRequest(in *sqs.ChangeMessageVisibilityInput) (*request.Request, *sqs.ChangeMessageVisibilityOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -43,7 +43,7 @@ func (s *mockSQSAPI) ChangeMessageVisibilityRequest(in *sqs.ChangeMessageVisibil
 	return rets[0].(*request.Request), rets[1].(*sqs.ChangeMessageVisibilityOutput)
 }
 
-func (s *mockSQSAPI) ChangeMessageVisibility(in *sqs.ChangeMessageVisibilityInput) (*sqs.ChangeMessageVisibilityOutput, error) {
+func (s *SQSAPI) ChangeMessageVisibility(in *sqs.ChangeMessageVisibilityInput) (*sqs.ChangeMessageVisibilityOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -51,7 +51,7 @@ func (s *mockSQSAPI) ChangeMessageVisibility(in *sqs.ChangeMessageVisibilityInpu
 	return rets[0].(*sqs.ChangeMessageVisibilityOutput), SafeError(rets[1])
 }
 
-func (s *mockSQSAPI) ChangeMessageVisibilityBatchRequest(in *sqs.ChangeMessageVisibilityBatchInput) (*request.Request, *sqs.ChangeMessageVisibilityBatchOutput) {
+func (s *SQSAPI) ChangeMessageVisibilityBatchRequest(in *sqs.ChangeMessageVisibilityBatchInput) (*request.Request, *sqs.ChangeMessageVisibilityBatchOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -59,7 +59,7 @@ func (s *mockSQSAPI) ChangeMessageVisibilityBatchRequest(in *sqs.ChangeMessageVi
 	return rets[0].(*request.Request), rets[1].(*sqs.ChangeMessageVisibilityBatchOutput)
 }
 
-func (s *mockSQSAPI) ChangeMessageVisibilityBatch(in *sqs.ChangeMessageVisibilityBatchInput) (*sqs.ChangeMessageVisibilityBatchOutput, error) {
+func (s *SQSAPI) ChangeMessageVisibilityBatch(in *sqs.ChangeMessageVisibilityBatchInput) (*sqs.ChangeMessageVisibilityBatchOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -67,7 +67,7 @@ func (s *mockSQSAPI) ChangeMessageVisibilityBatch(in *sqs.ChangeMessageVisibilit
 	return rets[0].(*sqs.ChangeMessageVisibilityBatchOutput), SafeError(rets[1])
 }
 
-func (s *mockSQSAPI) CreateQueueRequest(in *sqs.CreateQueueInput) (*request.Request, *sqs.CreateQueueOutput) {
+func (s *SQSAPI) CreateQueueRequest(in *sqs.CreateQueueInput) (*request.Request, *sqs.CreateQueueOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -75,7 +75,7 @@ func (s *mockSQSAPI) CreateQueueRequest(in *sqs.CreateQueueInput) (*request.Requ
 	return rets[0].(*request.Request), rets[1].(*sqs.CreateQueueOutput)
 }
 
-func (s *mockSQSAPI) CreateQueue(in *sqs.CreateQueueInput) (*sqs.CreateQueueOutput, error) {
+func (s *SQSAPI) CreateQueue(in *sqs.CreateQueueInput) (*sqs.CreateQueueOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -83,7 +83,7 @@ func (s *mockSQSAPI) CreateQueue(in *sqs.CreateQueueInput) (*sqs.CreateQueueOutp
 	return rets[0].(*sqs.CreateQueueOutput), SafeError(rets[1])
 }
 
-func (s *mockSQSAPI) DeleteMessageRequest(in *sqs.DeleteMessageInput) (*request.Request, *sqs.DeleteMessageOutput) {
+func (s *SQSAPI) DeleteMessageRequest(in *sqs.DeleteMessageInput) (*request.Request, *sqs.DeleteMessageOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -91,7 +91,7 @@ func (s *mockSQSAPI) DeleteMessageRequest(in *sqs.DeleteMessageInput) (*request.
 	return rets[0].(*request.Request), rets[1].(*sqs.DeleteMessageOutput)
 }
 
-func (s *mockSQSAPI) DeleteMessage(in *sqs.DeleteMessageInput) (*sqs.DeleteMessageOutput, error) {
+func (s *SQSAPI) DeleteMessage(in *sqs.DeleteMessageInput) (*sqs.DeleteMessageOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -99,7 +99,7 @@ func (s *mockSQSAPI) DeleteMessage(in *sqs.DeleteMessageInput) (*sqs.DeleteMessa
 	return rets[0].(*sqs.DeleteMessageOutput), SafeError(rets[1])
 }
 
-func (s *mockSQSAPI) DeleteMessageBatchRequest(in *sqs.DeleteMessageBatchInput) (*request.Request, *sqs.DeleteMessageBatchOutput) {
+func (s *SQSAPI) DeleteMessageBatchRequest(in *sqs.DeleteMessageBatchInput) (*request.Request, *sqs.DeleteMessageBatchOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -107,7 +107,7 @@ func (s *mockSQSAPI) DeleteMessageBatchRequest(in *sqs.DeleteMessageBatchInput) 
 	return rets[0].(*request.Request), rets[1].(*sqs.DeleteMessageBatchOutput)
 }
 
-func (s *mockSQSAPI) DeleteMessageBatch(in *sqs.DeleteMessageBatchInput) (*sqs.DeleteMessageBatchOutput, error) {
+func (s *SQSAPI) DeleteMessageBatch(in *sqs.DeleteMessageBatchInput) (*sqs.DeleteMessageBatchOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -115,7 +115,7 @@ func (s *mockSQSAPI) DeleteMessageBatch(in *sqs.DeleteMessageBatchInput) (*sqs.D
 	return rets[0].(*sqs.DeleteMessageBatchOutput), SafeError(rets[1])
 }
 
-func (s *mockSQSAPI) DeleteQueueRequest(in *sqs.DeleteQueueInput) (*request.Request, *sqs.DeleteQueueOutput) {
+func (s *SQSAPI) DeleteQueueRequest(in *sqs.DeleteQueueInput) (*request.Request, *sqs.DeleteQueueOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -123,7 +123,7 @@ func (s *mockSQSAPI) DeleteQueueRequest(in *sqs.DeleteQueueInput) (*request.Requ
 	return rets[0].(*request.Request), rets[1].(*sqs.DeleteQueueOutput)
 }
 
-func (s *mockSQSAPI) DeleteQueue(in *sqs.DeleteQueueInput) (*sqs.DeleteQueueOutput, error) {
+func (s *SQSAPI) DeleteQueue(in *sqs.DeleteQueueInput) (*sqs.DeleteQueueOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -131,7 +131,7 @@ func (s *mockSQSAPI) DeleteQueue(in *sqs.DeleteQueueInput) (*sqs.DeleteQueueOutp
 	return rets[0].(*sqs.DeleteQueueOutput), SafeError(rets[1])
 }
 
-func (s *mockSQSAPI) GetQueueAttributesRequest(in *sqs.GetQueueAttributesInput) (*request.Request, *sqs.GetQueueAttributesOutput) {
+func (s *SQSAPI) GetQueueAttributesRequest(in *sqs.GetQueueAttributesInput) (*request.Request, *sqs.GetQueueAttributesOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -139,7 +139,7 @@ func (s *mockSQSAPI) GetQueueAttributesRequest(in *sqs.GetQueueAttributesInput) 
 	return rets[0].(*request.Request), rets[1].(*sqs.GetQueueAttributesOutput)
 }
 
-func (s *mockSQSAPI) GetQueueAttributes(in *sqs.GetQueueAttributesInput) (*sqs.GetQueueAttributesOutput, error) {
+func (s *SQSAPI) GetQueueAttributes(in *sqs.GetQueueAttributesInput) (*sqs.GetQueueAttributesOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -147,7 +147,7 @@ func (s *mockSQSAPI) GetQueueAttributes(in *sqs.GetQueueAttributesInput) (*sqs.G
 	return rets[0].(*sqs.GetQueueAttributesOutput), SafeError(rets[1])
 }
 
-func (s *mockSQSAPI) GetQueueUrlRequest(in *sqs.GetQueueUrlInput) (*request.Request, *sqs.GetQueueUrlOutput) {
+func (s *SQSAPI) GetQueueUrlRequest(in *sqs.GetQueueUrlInput) (*request.Request, *sqs.GetQueueUrlOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -155,7 +155,7 @@ func (s *mockSQSAPI) GetQueueUrlRequest(in *sqs.GetQueueUrlInput) (*request.Requ
 	return rets[0].(*request.Request), rets[1].(*sqs.GetQueueUrlOutput)
 }
 
-func (s *mockSQSAPI) GetQueueUrl(in *sqs.GetQueueUrlInput) (*sqs.GetQueueUrlOutput, error) {
+func (s *SQSAPI) GetQueueUrl(in *sqs.GetQueueUrlInput) (*sqs.GetQueueUrlOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -163,7 +163,7 @@ func (s *mockSQSAPI) GetQueueUrl(in *sqs.GetQueueUrlInput) (*sqs.GetQueueUrlOutp
 	return rets[0].(*sqs.GetQueueUrlOutput), SafeError(rets[1])
 }
 
-func (s *mockSQSAPI) ListDeadLetterSourceQueuesRequest(in *sqs.ListDeadLetterSourceQueuesInput) (*request.Request, *sqs.ListDeadLetterSourceQueuesOutput) {
+func (s *SQSAPI) ListDeadLetterSourceQueuesRequest(in *sqs.ListDeadLetterSourceQueuesInput) (*request.Request, *sqs.ListDeadLetterSourceQueuesOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -171,7 +171,7 @@ func (s *mockSQSAPI) ListDeadLetterSourceQueuesRequest(in *sqs.ListDeadLetterSou
 	return rets[0].(*request.Request), rets[1].(*sqs.ListDeadLetterSourceQueuesOutput)
 }
 
-func (s *mockSQSAPI) ListDeadLetterSourceQueues(in *sqs.ListDeadLetterSourceQueuesInput) (*sqs.ListDeadLetterSourceQueuesOutput, error) {
+func (s *SQSAPI) ListDeadLetterSourceQueues(in *sqs.ListDeadLetterSourceQueuesInput) (*sqs.ListDeadLetterSourceQueuesOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -179,7 +179,7 @@ func (s *mockSQSAPI) ListDeadLetterSourceQueues(in *sqs.ListDeadLetterSourceQueu
 	return rets[0].(*sqs.ListDeadLetterSourceQueuesOutput), SafeError(rets[1])
 }
 
-func (s *mockSQSAPI) ListQueuesRequest(in *sqs.ListQueuesInput) (*request.Request, *sqs.ListQueuesOutput) {
+func (s *SQSAPI) ListQueuesRequest(in *sqs.ListQueuesInput) (*request.Request, *sqs.ListQueuesOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -187,7 +187,7 @@ func (s *mockSQSAPI) ListQueuesRequest(in *sqs.ListQueuesInput) (*request.Reques
 	return rets[0].(*request.Request), rets[1].(*sqs.ListQueuesOutput)
 }
 
-func (s *mockSQSAPI) ListQueues(in *sqs.ListQueuesInput) (*sqs.ListQueuesOutput, error) {
+func (s *SQSAPI) ListQueues(in *sqs.ListQueuesInput) (*sqs.ListQueuesOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -195,7 +195,7 @@ func (s *mockSQSAPI) ListQueues(in *sqs.ListQueuesInput) (*sqs.ListQueuesOutput,
 	return rets[0].(*sqs.ListQueuesOutput), SafeError(rets[1])
 }
 
-func (s *mockSQSAPI) PurgeQueueRequest(in *sqs.PurgeQueueInput) (*request.Request, *sqs.PurgeQueueOutput) {
+func (s *SQSAPI) PurgeQueueRequest(in *sqs.PurgeQueueInput) (*request.Request, *sqs.PurgeQueueOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -203,7 +203,7 @@ func (s *mockSQSAPI) PurgeQueueRequest(in *sqs.PurgeQueueInput) (*request.Reques
 	return rets[0].(*request.Request), rets[1].(*sqs.PurgeQueueOutput)
 }
 
-func (s *mockSQSAPI) PurgeQueue(in *sqs.PurgeQueueInput) (*sqs.PurgeQueueOutput, error) {
+func (s *SQSAPI) PurgeQueue(in *sqs.PurgeQueueInput) (*sqs.PurgeQueueOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -211,7 +211,7 @@ func (s *mockSQSAPI) PurgeQueue(in *sqs.PurgeQueueInput) (*sqs.PurgeQueueOutput,
 	return rets[0].(*sqs.PurgeQueueOutput), SafeError(rets[1])
 }
 
-func (s *mockSQSAPI) ReceiveMessageRequest(in *sqs.ReceiveMessageInput) (*request.Request, *sqs.ReceiveMessageOutput) {
+func (s *SQSAPI) ReceiveMessageRequest(in *sqs.ReceiveMessageInput) (*request.Request, *sqs.ReceiveMessageOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -219,7 +219,7 @@ func (s *mockSQSAPI) ReceiveMessageRequest(in *sqs.ReceiveMessageInput) (*reques
 	return rets[0].(*request.Request), rets[1].(*sqs.ReceiveMessageOutput)
 }
 
-func (s *mockSQSAPI) ReceiveMessage(in *sqs.ReceiveMessageInput) (*sqs.ReceiveMessageOutput, error) {
+func (s *SQSAPI) ReceiveMessage(in *sqs.ReceiveMessageInput) (*sqs.ReceiveMessageOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -227,7 +227,7 @@ func (s *mockSQSAPI) ReceiveMessage(in *sqs.ReceiveMessageInput) (*sqs.ReceiveMe
 	return rets[0].(*sqs.ReceiveMessageOutput), SafeError(rets[1])
 }
 
-func (s *mockSQSAPI) RemovePermissionRequest(in *sqs.RemovePermissionInput) (*request.Request, *sqs.RemovePermissionOutput) {
+func (s *SQSAPI) RemovePermissionRequest(in *sqs.RemovePermissionInput) (*request.Request, *sqs.RemovePermissionOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -235,7 +235,7 @@ func (s *mockSQSAPI) RemovePermissionRequest(in *sqs.RemovePermissionInput) (*re
 	return rets[0].(*request.Request), rets[1].(*sqs.RemovePermissionOutput)
 }
 
-func (s *mockSQSAPI) RemovePermission(in *sqs.RemovePermissionInput) (*sqs.RemovePermissionOutput, error) {
+func (s *SQSAPI) RemovePermission(in *sqs.RemovePermissionInput) (*sqs.RemovePermissionOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -243,7 +243,7 @@ func (s *mockSQSAPI) RemovePermission(in *sqs.RemovePermissionInput) (*sqs.Remov
 	return rets[0].(*sqs.RemovePermissionOutput), SafeError(rets[1])
 }
 
-func (s *mockSQSAPI) SendMessageRequest(in *sqs.SendMessageInput) (*request.Request, *sqs.SendMessageOutput) {
+func (s *SQSAPI) SendMessageRequest(in *sqs.SendMessageInput) (*request.Request, *sqs.SendMessageOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -251,7 +251,7 @@ func (s *mockSQSAPI) SendMessageRequest(in *sqs.SendMessageInput) (*request.Requ
 	return rets[0].(*request.Request), rets[1].(*sqs.SendMessageOutput)
 }
 
-func (s *mockSQSAPI) SendMessage(in *sqs.SendMessageInput) (*sqs.SendMessageOutput, error) {
+func (s *SQSAPI) SendMessage(in *sqs.SendMessageInput) (*sqs.SendMessageOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -259,7 +259,7 @@ func (s *mockSQSAPI) SendMessage(in *sqs.SendMessageInput) (*sqs.SendMessageOutp
 	return rets[0].(*sqs.SendMessageOutput), SafeError(rets[1])
 }
 
-func (s *mockSQSAPI) SendMessageBatchRequest(in *sqs.SendMessageBatchInput) (*request.Request, *sqs.SendMessageBatchOutput) {
+func (s *SQSAPI) SendMessageBatchRequest(in *sqs.SendMessageBatchInput) (*request.Request, *sqs.SendMessageBatchOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -267,7 +267,7 @@ func (s *mockSQSAPI) SendMessageBatchRequest(in *sqs.SendMessageBatchInput) (*re
 	return rets[0].(*request.Request), rets[1].(*sqs.SendMessageBatchOutput)
 }
 
-func (s *mockSQSAPI) SendMessageBatch(in *sqs.SendMessageBatchInput) (*sqs.SendMessageBatchOutput, error) {
+func (s *SQSAPI) SendMessageBatch(in *sqs.SendMessageBatchInput) (*sqs.SendMessageBatchOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -275,7 +275,7 @@ func (s *mockSQSAPI) SendMessageBatch(in *sqs.SendMessageBatchInput) (*sqs.SendM
 	return rets[0].(*sqs.SendMessageBatchOutput), SafeError(rets[1])
 }
 
-func (s *mockSQSAPI) SetQueueAttributesRequest(in *sqs.SetQueueAttributesInput) (*request.Request, *sqs.SetQueueAttributesOutput) {
+func (s *SQSAPI) SetQueueAttributesRequest(in *sqs.SetQueueAttributesInput) (*request.Request, *sqs.SetQueueAttributesOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -283,7 +283,7 @@ func (s *mockSQSAPI) SetQueueAttributesRequest(in *sqs.SetQueueAttributesInput) 
 	return rets[0].(*request.Request), rets[1].(*sqs.SetQueueAttributesOutput)
 }
 
-func (s *mockSQSAPI) SetQueueAttributes(in *sqs.SetQueueAttributesInput) (*sqs.SetQueueAttributesOutput, error) {
+func (s *SQSAPI) SetQueueAttributes(in *sqs.SetQueueAttributesInput) (*sqs.SetQueueAttributesOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil

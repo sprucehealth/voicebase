@@ -8,18 +8,18 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 )
 
-type mockSNSAPI struct {
+type MockSNSAPI struct {
 	*Expector
 }
 
-var _ snsiface.SNSAPI = NewMockSNSAPI(nil)
+var _ snsiface.SNSAPI = NewSNSAPI(nil)
 
-// NewMockSNSAPI returns a mock compatible SNSAPI instance
-func NewMockSNSAPI(t *testing.T) *mockSNSAPI {
-	return &mockSNSAPI{&Expector{T: t}}
+// NewSNSAPI returns a mock compatible SNSAPI instance
+func NewSNSAPI(t *testing.T) *MockSNSAPI {
+	return &MockSNSAPI{&Expector{T: t}}
 }
 
-func (s *mockSNSAPI) AddPermissionRequest(in *sns.AddPermissionInput) (*request.Request, *sns.AddPermissionOutput) {
+func (s *MockSNSAPI) AddPermissionRequest(in *sns.AddPermissionInput) (*request.Request, *sns.AddPermissionOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -27,7 +27,7 @@ func (s *mockSNSAPI) AddPermissionRequest(in *sns.AddPermissionInput) (*request.
 	return rets[0].(*request.Request), rets[1].(*sns.AddPermissionOutput)
 }
 
-func (s *mockSNSAPI) AddPermission(in *sns.AddPermissionInput) (*sns.AddPermissionOutput, error) {
+func (s *MockSNSAPI) AddPermission(in *sns.AddPermissionInput) (*sns.AddPermissionOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -35,7 +35,7 @@ func (s *mockSNSAPI) AddPermission(in *sns.AddPermissionInput) (*sns.AddPermissi
 	return rets[0].(*sns.AddPermissionOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) ConfirmSubscriptionRequest(in *sns.ConfirmSubscriptionInput) (*request.Request, *sns.ConfirmSubscriptionOutput) {
+func (s *MockSNSAPI) ConfirmSubscriptionRequest(in *sns.ConfirmSubscriptionInput) (*request.Request, *sns.ConfirmSubscriptionOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -43,7 +43,7 @@ func (s *mockSNSAPI) ConfirmSubscriptionRequest(in *sns.ConfirmSubscriptionInput
 	return rets[0].(*request.Request), rets[1].(*sns.ConfirmSubscriptionOutput)
 }
 
-func (s *mockSNSAPI) ConfirmSubscription(in *sns.ConfirmSubscriptionInput) (*sns.ConfirmSubscriptionOutput, error) {
+func (s *MockSNSAPI) ConfirmSubscription(in *sns.ConfirmSubscriptionInput) (*sns.ConfirmSubscriptionOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -51,7 +51,7 @@ func (s *mockSNSAPI) ConfirmSubscription(in *sns.ConfirmSubscriptionInput) (*sns
 	return rets[0].(*sns.ConfirmSubscriptionOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) CreatePlatformApplicationRequest(in *sns.CreatePlatformApplicationInput) (*request.Request, *sns.CreatePlatformApplicationOutput) {
+func (s *MockSNSAPI) CreatePlatformApplicationRequest(in *sns.CreatePlatformApplicationInput) (*request.Request, *sns.CreatePlatformApplicationOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -59,7 +59,7 @@ func (s *mockSNSAPI) CreatePlatformApplicationRequest(in *sns.CreatePlatformAppl
 	return rets[0].(*request.Request), rets[1].(*sns.CreatePlatformApplicationOutput)
 }
 
-func (s *mockSNSAPI) CreatePlatformApplication(in *sns.CreatePlatformApplicationInput) (*sns.CreatePlatformApplicationOutput, error) {
+func (s *MockSNSAPI) CreatePlatformApplication(in *sns.CreatePlatformApplicationInput) (*sns.CreatePlatformApplicationOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -67,7 +67,7 @@ func (s *mockSNSAPI) CreatePlatformApplication(in *sns.CreatePlatformApplication
 	return rets[0].(*sns.CreatePlatformApplicationOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) CreatePlatformEndpointRequest(in *sns.CreatePlatformEndpointInput) (*request.Request, *sns.CreatePlatformEndpointOutput) {
+func (s *MockSNSAPI) CreatePlatformEndpointRequest(in *sns.CreatePlatformEndpointInput) (*request.Request, *sns.CreatePlatformEndpointOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -75,7 +75,7 @@ func (s *mockSNSAPI) CreatePlatformEndpointRequest(in *sns.CreatePlatformEndpoin
 	return rets[0].(*request.Request), rets[1].(*sns.CreatePlatformEndpointOutput)
 }
 
-func (s *mockSNSAPI) CreatePlatformEndpoint(in *sns.CreatePlatformEndpointInput) (*sns.CreatePlatformEndpointOutput, error) {
+func (s *MockSNSAPI) CreatePlatformEndpoint(in *sns.CreatePlatformEndpointInput) (*sns.CreatePlatformEndpointOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -83,7 +83,7 @@ func (s *mockSNSAPI) CreatePlatformEndpoint(in *sns.CreatePlatformEndpointInput)
 	return rets[0].(*sns.CreatePlatformEndpointOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) CreateTopicRequest(in *sns.CreateTopicInput) (*request.Request, *sns.CreateTopicOutput) {
+func (s *MockSNSAPI) CreateTopicRequest(in *sns.CreateTopicInput) (*request.Request, *sns.CreateTopicOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -91,7 +91,7 @@ func (s *mockSNSAPI) CreateTopicRequest(in *sns.CreateTopicInput) (*request.Requ
 	return rets[0].(*request.Request), rets[1].(*sns.CreateTopicOutput)
 }
 
-func (s *mockSNSAPI) CreateTopic(in *sns.CreateTopicInput) (*sns.CreateTopicOutput, error) {
+func (s *MockSNSAPI) CreateTopic(in *sns.CreateTopicInput) (*sns.CreateTopicOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -99,7 +99,7 @@ func (s *mockSNSAPI) CreateTopic(in *sns.CreateTopicInput) (*sns.CreateTopicOutp
 	return rets[0].(*sns.CreateTopicOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) DeleteEndpointRequest(in *sns.DeleteEndpointInput) (*request.Request, *sns.DeleteEndpointOutput) {
+func (s *MockSNSAPI) DeleteEndpointRequest(in *sns.DeleteEndpointInput) (*request.Request, *sns.DeleteEndpointOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -107,7 +107,7 @@ func (s *mockSNSAPI) DeleteEndpointRequest(in *sns.DeleteEndpointInput) (*reques
 	return rets[0].(*request.Request), rets[1].(*sns.DeleteEndpointOutput)
 }
 
-func (s *mockSNSAPI) DeleteEndpoint(in *sns.DeleteEndpointInput) (*sns.DeleteEndpointOutput, error) {
+func (s *MockSNSAPI) DeleteEndpoint(in *sns.DeleteEndpointInput) (*sns.DeleteEndpointOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -115,7 +115,7 @@ func (s *mockSNSAPI) DeleteEndpoint(in *sns.DeleteEndpointInput) (*sns.DeleteEnd
 	return rets[0].(*sns.DeleteEndpointOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) DeletePlatformApplicationRequest(in *sns.DeletePlatformApplicationInput) (*request.Request, *sns.DeletePlatformApplicationOutput) {
+func (s *MockSNSAPI) DeletePlatformApplicationRequest(in *sns.DeletePlatformApplicationInput) (*request.Request, *sns.DeletePlatformApplicationOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -123,7 +123,7 @@ func (s *mockSNSAPI) DeletePlatformApplicationRequest(in *sns.DeletePlatformAppl
 	return rets[0].(*request.Request), rets[1].(*sns.DeletePlatformApplicationOutput)
 }
 
-func (s *mockSNSAPI) DeletePlatformApplication(in *sns.DeletePlatformApplicationInput) (*sns.DeletePlatformApplicationOutput, error) {
+func (s *MockSNSAPI) DeletePlatformApplication(in *sns.DeletePlatformApplicationInput) (*sns.DeletePlatformApplicationOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -131,7 +131,7 @@ func (s *mockSNSAPI) DeletePlatformApplication(in *sns.DeletePlatformApplication
 	return rets[0].(*sns.DeletePlatformApplicationOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) DeleteTopicRequest(in *sns.DeleteTopicInput) (*request.Request, *sns.DeleteTopicOutput) {
+func (s *MockSNSAPI) DeleteTopicRequest(in *sns.DeleteTopicInput) (*request.Request, *sns.DeleteTopicOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -139,7 +139,7 @@ func (s *mockSNSAPI) DeleteTopicRequest(in *sns.DeleteTopicInput) (*request.Requ
 	return rets[0].(*request.Request), rets[1].(*sns.DeleteTopicOutput)
 }
 
-func (s *mockSNSAPI) DeleteTopic(in *sns.DeleteTopicInput) (*sns.DeleteTopicOutput, error) {
+func (s *MockSNSAPI) DeleteTopic(in *sns.DeleteTopicInput) (*sns.DeleteTopicOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -147,7 +147,7 @@ func (s *mockSNSAPI) DeleteTopic(in *sns.DeleteTopicInput) (*sns.DeleteTopicOutp
 	return rets[0].(*sns.DeleteTopicOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) GetEndpointAttributesRequest(in *sns.GetEndpointAttributesInput) (*request.Request, *sns.GetEndpointAttributesOutput) {
+func (s *MockSNSAPI) GetEndpointAttributesRequest(in *sns.GetEndpointAttributesInput) (*request.Request, *sns.GetEndpointAttributesOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -155,7 +155,7 @@ func (s *mockSNSAPI) GetEndpointAttributesRequest(in *sns.GetEndpointAttributesI
 	return rets[0].(*request.Request), rets[1].(*sns.GetEndpointAttributesOutput)
 }
 
-func (s *mockSNSAPI) GetEndpointAttributes(in *sns.GetEndpointAttributesInput) (*sns.GetEndpointAttributesOutput, error) {
+func (s *MockSNSAPI) GetEndpointAttributes(in *sns.GetEndpointAttributesInput) (*sns.GetEndpointAttributesOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -163,7 +163,7 @@ func (s *mockSNSAPI) GetEndpointAttributes(in *sns.GetEndpointAttributesInput) (
 	return rets[0].(*sns.GetEndpointAttributesOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) GetPlatformApplicationAttributesRequest(in *sns.GetPlatformApplicationAttributesInput) (*request.Request, *sns.GetPlatformApplicationAttributesOutput) {
+func (s *MockSNSAPI) GetPlatformApplicationAttributesRequest(in *sns.GetPlatformApplicationAttributesInput) (*request.Request, *sns.GetPlatformApplicationAttributesOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -171,7 +171,7 @@ func (s *mockSNSAPI) GetPlatformApplicationAttributesRequest(in *sns.GetPlatform
 	return rets[0].(*request.Request), rets[1].(*sns.GetPlatformApplicationAttributesOutput)
 }
 
-func (s *mockSNSAPI) GetPlatformApplicationAttributes(in *sns.GetPlatformApplicationAttributesInput) (*sns.GetPlatformApplicationAttributesOutput, error) {
+func (s *MockSNSAPI) GetPlatformApplicationAttributes(in *sns.GetPlatformApplicationAttributesInput) (*sns.GetPlatformApplicationAttributesOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -179,7 +179,7 @@ func (s *mockSNSAPI) GetPlatformApplicationAttributes(in *sns.GetPlatformApplica
 	return rets[0].(*sns.GetPlatformApplicationAttributesOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) GetSubscriptionAttributesRequest(in *sns.GetSubscriptionAttributesInput) (*request.Request, *sns.GetSubscriptionAttributesOutput) {
+func (s *MockSNSAPI) GetSubscriptionAttributesRequest(in *sns.GetSubscriptionAttributesInput) (*request.Request, *sns.GetSubscriptionAttributesOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -187,7 +187,7 @@ func (s *mockSNSAPI) GetSubscriptionAttributesRequest(in *sns.GetSubscriptionAtt
 	return rets[0].(*request.Request), rets[1].(*sns.GetSubscriptionAttributesOutput)
 }
 
-func (s *mockSNSAPI) GetSubscriptionAttributes(in *sns.GetSubscriptionAttributesInput) (*sns.GetSubscriptionAttributesOutput, error) {
+func (s *MockSNSAPI) GetSubscriptionAttributes(in *sns.GetSubscriptionAttributesInput) (*sns.GetSubscriptionAttributesOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -195,7 +195,7 @@ func (s *mockSNSAPI) GetSubscriptionAttributes(in *sns.GetSubscriptionAttributes
 	return rets[0].(*sns.GetSubscriptionAttributesOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) GetTopicAttributesRequest(in *sns.GetTopicAttributesInput) (*request.Request, *sns.GetTopicAttributesOutput) {
+func (s *MockSNSAPI) GetTopicAttributesRequest(in *sns.GetTopicAttributesInput) (*request.Request, *sns.GetTopicAttributesOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -203,7 +203,7 @@ func (s *mockSNSAPI) GetTopicAttributesRequest(in *sns.GetTopicAttributesInput) 
 	return rets[0].(*request.Request), rets[1].(*sns.GetTopicAttributesOutput)
 }
 
-func (s *mockSNSAPI) GetTopicAttributes(in *sns.GetTopicAttributesInput) (*sns.GetTopicAttributesOutput, error) {
+func (s *MockSNSAPI) GetTopicAttributes(in *sns.GetTopicAttributesInput) (*sns.GetTopicAttributesOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -211,7 +211,7 @@ func (s *mockSNSAPI) GetTopicAttributes(in *sns.GetTopicAttributesInput) (*sns.G
 	return rets[0].(*sns.GetTopicAttributesOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) ListEndpointsByPlatformApplicationRequest(in *sns.ListEndpointsByPlatformApplicationInput) (*request.Request, *sns.ListEndpointsByPlatformApplicationOutput) {
+func (s *MockSNSAPI) ListEndpointsByPlatformApplicationRequest(in *sns.ListEndpointsByPlatformApplicationInput) (*request.Request, *sns.ListEndpointsByPlatformApplicationOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -219,7 +219,7 @@ func (s *mockSNSAPI) ListEndpointsByPlatformApplicationRequest(in *sns.ListEndpo
 	return rets[0].(*request.Request), rets[1].(*sns.ListEndpointsByPlatformApplicationOutput)
 }
 
-func (s *mockSNSAPI) ListEndpointsByPlatformApplication(in *sns.ListEndpointsByPlatformApplicationInput) (*sns.ListEndpointsByPlatformApplicationOutput, error) {
+func (s *MockSNSAPI) ListEndpointsByPlatformApplication(in *sns.ListEndpointsByPlatformApplicationInput) (*sns.ListEndpointsByPlatformApplicationOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -227,7 +227,7 @@ func (s *mockSNSAPI) ListEndpointsByPlatformApplication(in *sns.ListEndpointsByP
 	return rets[0].(*sns.ListEndpointsByPlatformApplicationOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) ListEndpointsByPlatformApplicationPages(in *sns.ListEndpointsByPlatformApplicationInput, f func(*sns.ListEndpointsByPlatformApplicationOutput, bool) bool) error {
+func (s *MockSNSAPI) ListEndpointsByPlatformApplicationPages(in *sns.ListEndpointsByPlatformApplicationInput, f func(*sns.ListEndpointsByPlatformApplicationOutput, bool) bool) error {
 	rets := s.Record(in, f)
 	if len(rets) == 0 {
 		return nil
@@ -235,7 +235,7 @@ func (s *mockSNSAPI) ListEndpointsByPlatformApplicationPages(in *sns.ListEndpoin
 	return SafeError(rets[0])
 }
 
-func (s *mockSNSAPI) ListPlatformApplicationsRequest(in *sns.ListPlatformApplicationsInput) (*request.Request, *sns.ListPlatformApplicationsOutput) {
+func (s *MockSNSAPI) ListPlatformApplicationsRequest(in *sns.ListPlatformApplicationsInput) (*request.Request, *sns.ListPlatformApplicationsOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -243,7 +243,7 @@ func (s *mockSNSAPI) ListPlatformApplicationsRequest(in *sns.ListPlatformApplica
 	return rets[0].(*request.Request), rets[1].(*sns.ListPlatformApplicationsOutput)
 }
 
-func (s *mockSNSAPI) ListPlatformApplications(in *sns.ListPlatformApplicationsInput) (*sns.ListPlatformApplicationsOutput, error) {
+func (s *MockSNSAPI) ListPlatformApplications(in *sns.ListPlatformApplicationsInput) (*sns.ListPlatformApplicationsOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -251,7 +251,7 @@ func (s *mockSNSAPI) ListPlatformApplications(in *sns.ListPlatformApplicationsIn
 	return rets[0].(*sns.ListPlatformApplicationsOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) ListPlatformApplicationsPages(in *sns.ListPlatformApplicationsInput, f func(*sns.ListPlatformApplicationsOutput, bool) bool) error {
+func (s *MockSNSAPI) ListPlatformApplicationsPages(in *sns.ListPlatformApplicationsInput, f func(*sns.ListPlatformApplicationsOutput, bool) bool) error {
 	rets := s.Record(in, f)
 	if len(rets) == 0 {
 		return nil
@@ -259,7 +259,7 @@ func (s *mockSNSAPI) ListPlatformApplicationsPages(in *sns.ListPlatformApplicati
 	return SafeError(rets[0])
 }
 
-func (s *mockSNSAPI) ListSubscriptionsRequest(in *sns.ListSubscriptionsInput) (*request.Request, *sns.ListSubscriptionsOutput) {
+func (s *MockSNSAPI) ListSubscriptionsRequest(in *sns.ListSubscriptionsInput) (*request.Request, *sns.ListSubscriptionsOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -267,7 +267,7 @@ func (s *mockSNSAPI) ListSubscriptionsRequest(in *sns.ListSubscriptionsInput) (*
 	return rets[0].(*request.Request), rets[1].(*sns.ListSubscriptionsOutput)
 }
 
-func (s *mockSNSAPI) ListSubscriptions(in *sns.ListSubscriptionsInput) (*sns.ListSubscriptionsOutput, error) {
+func (s *MockSNSAPI) ListSubscriptions(in *sns.ListSubscriptionsInput) (*sns.ListSubscriptionsOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -275,7 +275,7 @@ func (s *mockSNSAPI) ListSubscriptions(in *sns.ListSubscriptionsInput) (*sns.Lis
 	return rets[0].(*sns.ListSubscriptionsOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) ListSubscriptionsPages(in *sns.ListSubscriptionsInput, f func(*sns.ListSubscriptionsOutput, bool) bool) error {
+func (s *MockSNSAPI) ListSubscriptionsPages(in *sns.ListSubscriptionsInput, f func(*sns.ListSubscriptionsOutput, bool) bool) error {
 	rets := s.Record(in, f)
 	if len(rets) == 0 {
 		return nil
@@ -283,7 +283,7 @@ func (s *mockSNSAPI) ListSubscriptionsPages(in *sns.ListSubscriptionsInput, f fu
 	return SafeError(rets[0])
 }
 
-func (s *mockSNSAPI) ListSubscriptionsByTopicRequest(in *sns.ListSubscriptionsByTopicInput) (*request.Request, *sns.ListSubscriptionsByTopicOutput) {
+func (s *MockSNSAPI) ListSubscriptionsByTopicRequest(in *sns.ListSubscriptionsByTopicInput) (*request.Request, *sns.ListSubscriptionsByTopicOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -291,7 +291,7 @@ func (s *mockSNSAPI) ListSubscriptionsByTopicRequest(in *sns.ListSubscriptionsBy
 	return rets[0].(*request.Request), rets[1].(*sns.ListSubscriptionsByTopicOutput)
 }
 
-func (s *mockSNSAPI) ListSubscriptionsByTopic(in *sns.ListSubscriptionsByTopicInput) (*sns.ListSubscriptionsByTopicOutput, error) {
+func (s *MockSNSAPI) ListSubscriptionsByTopic(in *sns.ListSubscriptionsByTopicInput) (*sns.ListSubscriptionsByTopicOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -299,7 +299,7 @@ func (s *mockSNSAPI) ListSubscriptionsByTopic(in *sns.ListSubscriptionsByTopicIn
 	return rets[0].(*sns.ListSubscriptionsByTopicOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) ListSubscriptionsByTopicPages(in *sns.ListSubscriptionsByTopicInput, f func(*sns.ListSubscriptionsByTopicOutput, bool) bool) error {
+func (s *MockSNSAPI) ListSubscriptionsByTopicPages(in *sns.ListSubscriptionsByTopicInput, f func(*sns.ListSubscriptionsByTopicOutput, bool) bool) error {
 	rets := s.Record(in, f)
 	if len(rets) == 0 {
 		return nil
@@ -307,7 +307,7 @@ func (s *mockSNSAPI) ListSubscriptionsByTopicPages(in *sns.ListSubscriptionsByTo
 	return SafeError(rets[0])
 }
 
-func (s *mockSNSAPI) ListTopicsRequest(in *sns.ListTopicsInput) (*request.Request, *sns.ListTopicsOutput) {
+func (s *MockSNSAPI) ListTopicsRequest(in *sns.ListTopicsInput) (*request.Request, *sns.ListTopicsOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -315,7 +315,7 @@ func (s *mockSNSAPI) ListTopicsRequest(in *sns.ListTopicsInput) (*request.Reques
 	return rets[0].(*request.Request), rets[1].(*sns.ListTopicsOutput)
 }
 
-func (s *mockSNSAPI) ListTopics(in *sns.ListTopicsInput) (*sns.ListTopicsOutput, error) {
+func (s *MockSNSAPI) ListTopics(in *sns.ListTopicsInput) (*sns.ListTopicsOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -323,7 +323,7 @@ func (s *mockSNSAPI) ListTopics(in *sns.ListTopicsInput) (*sns.ListTopicsOutput,
 	return rets[0].(*sns.ListTopicsOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) ListTopicsPages(in *sns.ListTopicsInput, f func(*sns.ListTopicsOutput, bool) bool) error {
+func (s *MockSNSAPI) ListTopicsPages(in *sns.ListTopicsInput, f func(*sns.ListTopicsOutput, bool) bool) error {
 	rets := s.Record(in, f)
 	if len(rets) == 0 {
 		return nil
@@ -331,7 +331,7 @@ func (s *mockSNSAPI) ListTopicsPages(in *sns.ListTopicsInput, f func(*sns.ListTo
 	return SafeError(rets[0])
 }
 
-func (s *mockSNSAPI) PublishRequest(in *sns.PublishInput) (*request.Request, *sns.PublishOutput) {
+func (s *MockSNSAPI) PublishRequest(in *sns.PublishInput) (*request.Request, *sns.PublishOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -339,7 +339,7 @@ func (s *mockSNSAPI) PublishRequest(in *sns.PublishInput) (*request.Request, *sn
 	return rets[0].(*request.Request), rets[1].(*sns.PublishOutput)
 }
 
-func (s *mockSNSAPI) Publish(in *sns.PublishInput) (*sns.PublishOutput, error) {
+func (s *MockSNSAPI) Publish(in *sns.PublishInput) (*sns.PublishOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -347,7 +347,7 @@ func (s *mockSNSAPI) Publish(in *sns.PublishInput) (*sns.PublishOutput, error) {
 	return rets[0].(*sns.PublishOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) RemovePermissionRequest(in *sns.RemovePermissionInput) (*request.Request, *sns.RemovePermissionOutput) {
+func (s *MockSNSAPI) RemovePermissionRequest(in *sns.RemovePermissionInput) (*request.Request, *sns.RemovePermissionOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -355,7 +355,7 @@ func (s *mockSNSAPI) RemovePermissionRequest(in *sns.RemovePermissionInput) (*re
 	return rets[0].(*request.Request), rets[1].(*sns.RemovePermissionOutput)
 }
 
-func (s *mockSNSAPI) RemovePermission(in *sns.RemovePermissionInput) (*sns.RemovePermissionOutput, error) {
+func (s *MockSNSAPI) RemovePermission(in *sns.RemovePermissionInput) (*sns.RemovePermissionOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -363,7 +363,7 @@ func (s *mockSNSAPI) RemovePermission(in *sns.RemovePermissionInput) (*sns.Remov
 	return rets[0].(*sns.RemovePermissionOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) SetEndpointAttributesRequest(in *sns.SetEndpointAttributesInput) (*request.Request, *sns.SetEndpointAttributesOutput) {
+func (s *MockSNSAPI) SetEndpointAttributesRequest(in *sns.SetEndpointAttributesInput) (*request.Request, *sns.SetEndpointAttributesOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -371,7 +371,7 @@ func (s *mockSNSAPI) SetEndpointAttributesRequest(in *sns.SetEndpointAttributesI
 	return rets[0].(*request.Request), rets[1].(*sns.SetEndpointAttributesOutput)
 }
 
-func (s *mockSNSAPI) SetEndpointAttributes(in *sns.SetEndpointAttributesInput) (*sns.SetEndpointAttributesOutput, error) {
+func (s *MockSNSAPI) SetEndpointAttributes(in *sns.SetEndpointAttributesInput) (*sns.SetEndpointAttributesOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -379,7 +379,7 @@ func (s *mockSNSAPI) SetEndpointAttributes(in *sns.SetEndpointAttributesInput) (
 	return rets[0].(*sns.SetEndpointAttributesOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) SetPlatformApplicationAttributesRequest(in *sns.SetPlatformApplicationAttributesInput) (*request.Request, *sns.SetPlatformApplicationAttributesOutput) {
+func (s *MockSNSAPI) SetPlatformApplicationAttributesRequest(in *sns.SetPlatformApplicationAttributesInput) (*request.Request, *sns.SetPlatformApplicationAttributesOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -387,7 +387,7 @@ func (s *mockSNSAPI) SetPlatformApplicationAttributesRequest(in *sns.SetPlatform
 	return rets[0].(*request.Request), rets[1].(*sns.SetPlatformApplicationAttributesOutput)
 }
 
-func (s *mockSNSAPI) SetPlatformApplicationAttributes(in *sns.SetPlatformApplicationAttributesInput) (*sns.SetPlatformApplicationAttributesOutput, error) {
+func (s *MockSNSAPI) SetPlatformApplicationAttributes(in *sns.SetPlatformApplicationAttributesInput) (*sns.SetPlatformApplicationAttributesOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -395,7 +395,7 @@ func (s *mockSNSAPI) SetPlatformApplicationAttributes(in *sns.SetPlatformApplica
 	return rets[0].(*sns.SetPlatformApplicationAttributesOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) SetSubscriptionAttributesRequest(in *sns.SetSubscriptionAttributesInput) (*request.Request, *sns.SetSubscriptionAttributesOutput) {
+func (s *MockSNSAPI) SetSubscriptionAttributesRequest(in *sns.SetSubscriptionAttributesInput) (*request.Request, *sns.SetSubscriptionAttributesOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -403,7 +403,7 @@ func (s *mockSNSAPI) SetSubscriptionAttributesRequest(in *sns.SetSubscriptionAtt
 	return rets[0].(*request.Request), rets[1].(*sns.SetSubscriptionAttributesOutput)
 }
 
-func (s *mockSNSAPI) SetSubscriptionAttributes(in *sns.SetSubscriptionAttributesInput) (*sns.SetSubscriptionAttributesOutput, error) {
+func (s *MockSNSAPI) SetSubscriptionAttributes(in *sns.SetSubscriptionAttributesInput) (*sns.SetSubscriptionAttributesOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -411,7 +411,7 @@ func (s *mockSNSAPI) SetSubscriptionAttributes(in *sns.SetSubscriptionAttributes
 	return rets[0].(*sns.SetSubscriptionAttributesOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) SetTopicAttributesRequest(in *sns.SetTopicAttributesInput) (*request.Request, *sns.SetTopicAttributesOutput) {
+func (s *MockSNSAPI) SetTopicAttributesRequest(in *sns.SetTopicAttributesInput) (*request.Request, *sns.SetTopicAttributesOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -419,7 +419,7 @@ func (s *mockSNSAPI) SetTopicAttributesRequest(in *sns.SetTopicAttributesInput) 
 	return rets[0].(*request.Request), rets[1].(*sns.SetTopicAttributesOutput)
 }
 
-func (s *mockSNSAPI) SetTopicAttributes(in *sns.SetTopicAttributesInput) (*sns.SetTopicAttributesOutput, error) {
+func (s *MockSNSAPI) SetTopicAttributes(in *sns.SetTopicAttributesInput) (*sns.SetTopicAttributesOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -427,7 +427,7 @@ func (s *mockSNSAPI) SetTopicAttributes(in *sns.SetTopicAttributesInput) (*sns.S
 	return rets[0].(*sns.SetTopicAttributesOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) SubscribeRequest(in *sns.SubscribeInput) (*request.Request, *sns.SubscribeOutput) {
+func (s *MockSNSAPI) SubscribeRequest(in *sns.SubscribeInput) (*request.Request, *sns.SubscribeOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -435,7 +435,7 @@ func (s *mockSNSAPI) SubscribeRequest(in *sns.SubscribeInput) (*request.Request,
 	return rets[0].(*request.Request), rets[1].(*sns.SubscribeOutput)
 }
 
-func (s *mockSNSAPI) Subscribe(in *sns.SubscribeInput) (*sns.SubscribeOutput, error) {
+func (s *MockSNSAPI) Subscribe(in *sns.SubscribeInput) (*sns.SubscribeOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -443,7 +443,7 @@ func (s *mockSNSAPI) Subscribe(in *sns.SubscribeInput) (*sns.SubscribeOutput, er
 	return rets[0].(*sns.SubscribeOutput), SafeError(rets[1])
 }
 
-func (s *mockSNSAPI) UnsubscribeRequest(in *sns.UnsubscribeInput) (*request.Request, *sns.UnsubscribeOutput) {
+func (s *MockSNSAPI) UnsubscribeRequest(in *sns.UnsubscribeInput) (*request.Request, *sns.UnsubscribeOutput) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
@@ -451,7 +451,7 @@ func (s *mockSNSAPI) UnsubscribeRequest(in *sns.UnsubscribeInput) (*request.Requ
 	return rets[0].(*request.Request), rets[1].(*sns.UnsubscribeOutput)
 }
 
-func (s *mockSNSAPI) Unsubscribe(in *sns.UnsubscribeInput) (*sns.UnsubscribeOutput, error) {
+func (s *MockSNSAPI) Unsubscribe(in *sns.UnsubscribeInput) (*sns.UnsubscribeOutput, error) {
 	rets := s.Record(in)
 	if len(rets) == 0 {
 		return nil, nil

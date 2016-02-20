@@ -23,16 +23,18 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/notification/deeplink"
+	"github.com/sprucehealth/backend/svc/settings"
 )
 
 // Config represents the configurations required to operate the notification service
 type Config struct {
 	DeviceRegistrationSQSURL        string
+	DeviceDeregistrationSQSURL      string
 	NotificationSQSURL              string
 	AppleDeviceRegistrationSNSARN   string
 	AndriodDeviceRegistrationSNSARN string
-	SNSAPI                          snsiface.SNSAPI
 	SQSAPI                          sqsiface.SQSAPI
+	SNSAPI                          snsiface.SNSAPI
 	WebDomain                       string
 }
 
@@ -44,23 +46,32 @@ type Service interface {
 
 // Note: This is currently very push centric. Concerns will be seperated out as new notification types are supported.
 type service struct {
-	config             *Config
-	dl                 dal.DAL
-	snsAPI             snsiface.SNSAPI
-	directoryClient    directory.DirectoryClient
-	registrationWorker worker.Worker
-	notificationWorker worker.Worker
+	config               *Config
+	dl                   dal.DAL
+	snsAPI               snsiface.SNSAPI
+	directoryClient      directory.DirectoryClient
+	settingsClient       settings.SettingsClient
+	registrationWorker   worker.Worker
+	deregistrationWorker worker.Worker
+	notificationWorker   worker.Worker
 }
 
 // New returns an initialized instance of service
-func New(dl dal.DAL, directoryClient directory.DirectoryClient, config *Config) Service {
+func New(
+	dl dal.DAL,
+	directoryClient directory.DirectoryClient,
+	settingsClient settings.SettingsClient,
+	config *Config) Service {
 	golog.Debugf("Initializing Notification Service with Config: %+v", config)
 	s := &service{
 		config:          config,
+		snsAPI:          config.SNSAPI,
 		dl:              dl,
 		directoryClient: directoryClient,
-		snsAPI:          config.SNSAPI,
+		settingsClient:  settingsClient,
 	}
+	// TODO: Prioritize working through the deregister queue before starting to serve notifications
+	s.deregistrationWorker = awsutil.NewSQSWorker(config.SQSAPI, config.DeviceDeregistrationSQSURL, s.processDeviceDeregistration)
 	s.registrationWorker = awsutil.NewSQSWorker(config.SQSAPI, config.DeviceRegistrationSQSURL, s.processDeviceRegistration)
 	s.notificationWorker = awsutil.NewSQSWorker(config.SQSAPI, config.NotificationSQSURL, s.processNotification)
 	return s
@@ -70,6 +81,7 @@ func New(dl dal.DAL, directoryClient directory.DirectoryClient, config *Config) 
 func (s *service) Start() {
 	golog.Debugf("Starting the Notification service and background workers")
 	s.registrationWorker.Start()
+	s.deregistrationWorker.Start()
 	s.notificationWorker.Start()
 }
 
@@ -158,6 +170,18 @@ func (s *service) generateEndpointARN(info *notification.DeviceRegistrationInfo)
 	return *createEndpointResponse.EndpointArn, nil
 }
 
+func (s *service) processDeviceDeregistration(data []byte) error {
+	deregistrationInfo := &notification.DeviceDeregistrationInfo{}
+	if err := json.Unmarshal(data, deregistrationInfo); err != nil {
+		return errors.Trace(err)
+	}
+	golog.Debugf("Processing device deregistration event: %+v", deregistrationInfo)
+
+	//Remove the push config for this device id
+	_, err := s.dl.DeletePushConfigForDeviceID(deregistrationInfo.DeviceID)
+	return errors.Trace(err)
+}
+
 var jsonStructure = ptr.String("json")
 
 // TODO: Set and examine communication preferences for caller
@@ -172,21 +196,56 @@ func (s *service) processNotification(data []byte) error {
 }
 
 func (s *service) processPushNotification(n *notification.Notification) error {
+	entitiesToNotify, err := s.filterNodesWithNotificationsDisabled(n.EntitiesToNotify)
+	if err != nil {
+		return errors.Trace(err)
+	}
+
 	// Fetch the external ids for these entities and attempt to resolve them to accounts for groups
 	externalIDsResp, err := s.directoryClient.ExternalIDs(context.Background(), &directory.ExternalIDsRequest{
-		EntityIDs: n.EntitiesToNotify,
+		EntityIDs: entitiesToNotify,
 	})
 	if err != nil {
 		return errors.Trace(err)
 	}
-	accountIDs := accountIDsFromExternalIDs(externalIDsResp.ExternalIDs)
-	for _, accountID := range accountIDs {
+
+	accountIDsToNotify, err := s.filterNodesWithNotificationsDisabled(accountIDsFromExternalIDs(externalIDsResp.ExternalIDs))
+	if err != nil {
+		return errors.Trace(err)
+	}
+	for _, accountID := range accountIDsToNotify {
 		golog.Debugf("Sending push notification to external group ID: %s", accountID)
 		if err := s.sendPushNotificationToExternalGroupID(accountID, n); err != nil {
 			golog.Errorf(err.Error())
 		}
 	}
 	return nil
+}
+
+func (s *service) filterNodesWithNotificationsDisabled(nodes []string) ([]string, error) {
+	// Filter any nodes who explicitly have notifications disabled from the list
+	filteredNodes := make([]string, 0, len(nodes))
+	for _, nID := range nodes {
+		// TODO: Perhaps we should have a bulk version of this call
+		// TODO: It would be great to live in a world where the settings service pushed changed settings to hosts that are interested in them
+		resp, err := s.settingsClient.GetValues(context.TODO(), &settings.GetValuesRequest{
+			Keys:   []*settings.ConfigKey{{Key: notification.ReceiveNotificationsSettingsKey}},
+			NodeID: nID,
+		})
+		// If we failed to get the notification settings then just fail. We'd rather not notify than notify someone disabled
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		if len(resp.Values) != 1 {
+			golog.Warningf("Expected only 1 value to be returned for settings key %s and node id %s but got %d. Continuing with first value", notification.ReceiveNotificationsSettingsKey, nID, nodes)
+		}
+		if resp.Values[0].GetBoolean().Value {
+			filteredNodes = append(filteredNodes, nID)
+		} else {
+			golog.Debugf("Node id %s has notifications disabled. Filtering from list.")
+		}
+	}
+	return filteredNodes, nil
 }
 
 const endpointDisabledAWSErrCode = "EndpointDisabled"

@@ -81,7 +81,6 @@ func (w *sqsWorker) Start() {
 					continue
 				}
 
-				golog.Debugf("Processing message %s", *item.ReceiptHandle)
 				if err := w.ProcessF([]byte(*item.Body)); err != nil {
 					golog.Errorf(err.Error())
 					continue
@@ -97,8 +96,6 @@ func (w *sqsWorker) Start() {
 				if err != nil {
 					golog.Errorf(err.Error())
 				}
-
-				golog.Debugf("Delete message %s", *item.ReceiptHandle)
 			}
 		}
 	}()

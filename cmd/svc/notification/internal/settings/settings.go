@@ -1,18 +1,15 @@
-package main
+package settings
 
 import (
+	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 )
 
-const (
-	configKeyReceiveNotifications   = "receive_notifications"
-	configKeyNotificationPreference = "notification_preference"
-)
-
-var receiveNotificationsConfig = &settings.Config{
+// ReceiveNotificationsConfig represents the config controlling if notifications are disabled or not
+var ReceiveNotificationsConfig = &settings.Config{
 	Title:          "Receive notifications",
 	AllowSubkeys:   false,
-	Key:            configKeyReceiveNotifications,
+	Key:            notification.ReceiveNotificationsSettingsKey,
 	Type:           settings.ConfigType_BOOLEAN,
 	PossibleOwners: []settings.OwnerType{settings.OwnerType_INTERNAL_ENTITY},
 	Config: &settings.Config_Boolean{
@@ -24,10 +21,11 @@ var receiveNotificationsConfig = &settings.Config{
 	},
 }
 
-var notificationPreferenceConfig = &settings.Config{
+// NotificationPreferenceConfig represents the config controlling when notifications are sent
+var NotificationPreferenceConfig = &settings.Config{
 	Title:          "Notification Preference",
 	AllowSubkeys:   false,
-	Key:            configKeyNotificationPreference,
+	Key:            notification.NotificationPreferencesSettingsKey,
 	Type:           settings.ConfigType_MULTI_SELECT,
 	PossibleOwners: []settings.OwnerType{settings.OwnerType_INTERNAL_ENTITY},
 	Config: &settings.Config_MultiSelect{

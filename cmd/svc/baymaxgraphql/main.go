@@ -9,6 +9,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/rs/cors"
 	"github.com/sprucehealth/backend/boot"
 	mediastore "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
@@ -43,14 +44,15 @@ var (
 	flagServiceNumber = flag.String("service_phone_number", "", "TODO: This should be managed by the excomms service")
 
 	// Services
-	flagAuthAddr                 = flag.String("auth_addr", "", "host:port of auth service")
-	flagDirectoryAddr            = flag.String("directory_addr", "", "host:port of directory service")
-	flagExCommsAddr              = flag.String("excomms_addr", "", "host:port of excomms service")
-	flagInviteAddr               = flag.String("invite_addr", "", "host:port of invites service")
-	flagSettingsAddr             = flag.String("settings_addr", "", "host:port of settings service")
-	flagSQSDeviceRegistrationURL = flag.String("sqs_device_registration_url", "", "the sqs url for device registration messages")
-	flagSQSNotificationURL       = flag.String("sqs_notification_url", "", "the sqs url for notification queueing")
-	flagThreadingAddr            = flag.String("threading_addr", "", "host:port of threading service")
+	flagAuthAddr                   = flag.String("auth_addr", "", "host:port of auth service")
+	flagDirectoryAddr              = flag.String("directory_addr", "", "host:port of directory service")
+	flagExCommsAddr                = flag.String("excomms_addr", "", "host:port of excomms service")
+	flagInviteAddr                 = flag.String("invite_addr", "", "host:port of invites service")
+	flagSettingsAddr               = flag.String("settings_addr", "", "host:port of settings service")
+	flagSQSDeviceRegistrationURL   = flag.String("sqs_device_registration_url", "", "the sqs url for device registration messages")
+	flagSQSDeviceDeregistrationURL = flag.String("sqs_device_deregistration_url", "", "the sqs url for device deregistration messages")
+	flagSQSNotificationURL         = flag.String("sqs_notification_url", "", "the sqs url for notification queueing")
+	flagThreadingAddr              = flag.String("threading_addr", "", "host:port of threading service")
 
 	// AWS
 	flagAWSAccessKey = flag.String("aws_access_key", "", "access key for aws")
@@ -138,14 +140,17 @@ func main() {
 	if *flagSQSDeviceRegistrationURL == "" {
 		golog.Fatalf("Notification service device registration not configured")
 	}
+	if *flagSQSDeviceDeregistrationURL == "" {
+		golog.Fatalf("Notification service device deregistration not configured")
+	}
 	if *flagSQSNotificationURL == "" {
 		golog.Fatalf("Notification service notification queue not configured")
 	}
 	awsSession := baseConfig.AWSSession()
-	notificationClient := notification.NewClient(&notification.ClientConfig{
-		SQSDeviceRegistrationURL: *flagSQSDeviceRegistrationURL,
-		SQSNotificationURL:       *flagSQSNotificationURL,
-		Session:                  awsSession,
+	notificationClient := notification.NewClient(sqs.New(awsSession), &notification.ClientConfig{
+		SQSDeviceRegistrationURL:   *flagSQSDeviceRegistrationURL,
+		SQSNotificationURL:         *flagSQSNotificationURL,
+		SQSDeviceDeregistrationURL: *flagSQSDeviceDeregistrationURL,
 	})
 
 	r := mux.NewRouter()

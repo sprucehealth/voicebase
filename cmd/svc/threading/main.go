@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/server"
@@ -107,8 +108,7 @@ func main() {
 
 	var notificationClient notification.Client
 	if *flagSQSNotificationURL != "" {
-		notificationClient = notification.NewClient(&notification.ClientConfig{
-			Session:            awsSession,
+		notificationClient = notification.NewClient(sqs.New(awsSession), &notification.ClientConfig{
 			SQSNotificationURL: *flagSQSNotificationURL,
 		})
 	}

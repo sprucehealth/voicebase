@@ -81,3 +81,11 @@ func (d *mockDAL) DeletePushConfig(id dal.PushConfigID) (int64, error) {
 	}
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
+
+func (d *mockDAL) DeletePushConfigForDeviceID(deviceID string) (int64, error) {
+	rets := d.Record(deviceID)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}

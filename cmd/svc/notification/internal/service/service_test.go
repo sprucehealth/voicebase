@@ -19,6 +19,8 @@ import (
 	dmock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/notification/deeplink"
+	"github.com/sprucehealth/backend/svc/settings"
+	smock "github.com/sprucehealth/backend/svc/settings/mock"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -55,16 +57,18 @@ func TestProcessNewDeviceRegistrationIOS(t *testing.T) {
 	defer dl.Finish()
 	dc := dmock.New(t)
 	defer dc.Finish()
-	snsAPI := mock.NewMockSNSAPI(t)
+	snsAPI := mock.NewSNSAPI(t)
 	defer snsAPI.Finish()
-	sqsAPI := mock.NewMockSQSAPI(t)
+	sqsAPI := mock.NewSQSAPI(t)
 	defer sqsAPI.Finish()
-	svc := New(dl, dc, &Config{
+	sc := smock.New(t)
+	defer sc.Finish()
+	svc := New(dl, dc, sc, &Config{
 		DeviceRegistrationSQSURL:        deviceRegistrationSQSURL,
 		AppleDeviceRegistrationSNSARN:   appleDeviceRegistrationSNSARN,
 		AndriodDeviceRegistrationSNSARN: andriodDeviceRegistrationSNSARN,
-		SNSAPI: snsAPI,
 		SQSAPI: sqsAPI,
+		SNSAPI: snsAPI,
 	})
 	cSvc := svc.(*service)
 
@@ -112,16 +116,18 @@ func TestProcessNewDeviceRegistrationAndroid(t *testing.T) {
 	defer dl.Finish()
 	dc := dmock.New(t)
 	defer dc.Finish()
-	snsAPI := mock.NewMockSNSAPI(t)
+	snsAPI := mock.NewSNSAPI(t)
 	defer snsAPI.Finish()
-	sqsAPI := mock.NewMockSQSAPI(t)
+	sqsAPI := mock.NewSQSAPI(t)
 	defer sqsAPI.Finish()
-	svc := New(dl, dc, &Config{
+	sc := smock.New(t)
+	defer sc.Finish()
+	svc := New(dl, dc, sc, &Config{
 		DeviceRegistrationSQSURL:        deviceRegistrationSQSURL,
 		AppleDeviceRegistrationSNSARN:   appleDeviceRegistrationSNSARN,
 		AndriodDeviceRegistrationSNSARN: andriodDeviceRegistrationSNSARN,
-		SNSAPI: snsAPI,
 		SQSAPI: sqsAPI,
+		SNSAPI: snsAPI,
 	})
 	cSvc := svc.(*service)
 
@@ -169,16 +175,18 @@ func TestProcessExistingDeviceRegistrationIOS(t *testing.T) {
 	defer dl.Finish()
 	dc := dmock.New(t)
 	defer dc.Finish()
-	snsAPI := mock.NewMockSNSAPI(t)
+	snsAPI := mock.NewSNSAPI(t)
 	defer snsAPI.Finish()
-	sqsAPI := mock.NewMockSQSAPI(t)
+	sqsAPI := mock.NewSQSAPI(t)
 	defer sqsAPI.Finish()
-	svc := New(dl, dc, &Config{
+	sc := smock.New(t)
+	defer sc.Finish()
+	svc := New(dl, dc, sc, &Config{
 		DeviceRegistrationSQSURL:        deviceRegistrationSQSURL,
 		AppleDeviceRegistrationSNSARN:   appleDeviceRegistrationSNSARN,
 		AndriodDeviceRegistrationSNSARN: andriodDeviceRegistrationSNSARN,
-		SNSAPI: snsAPI,
 		SQSAPI: sqsAPI,
+		SNSAPI: snsAPI,
 	})
 	cSvc := svc.(*service)
 
@@ -228,16 +236,18 @@ func TestProcessExistingDeviceRegistrationAndroid(t *testing.T) {
 	defer dl.Finish()
 	dc := dmock.New(t)
 	defer dc.Finish()
-	snsAPI := mock.NewMockSNSAPI(t)
+	snsAPI := mock.NewSNSAPI(t)
 	defer snsAPI.Finish()
-	sqsAPI := mock.NewMockSQSAPI(t)
+	sqsAPI := mock.NewSQSAPI(t)
 	defer sqsAPI.Finish()
-	svc := New(dl, dc, &Config{
+	sc := smock.New(t)
+	defer sc.Finish()
+	svc := New(dl, dc, sc, &Config{
 		DeviceRegistrationSQSURL:        deviceRegistrationSQSURL,
 		AppleDeviceRegistrationSNSARN:   appleDeviceRegistrationSNSARN,
 		AndriodDeviceRegistrationSNSARN: andriodDeviceRegistrationSNSARN,
-		SNSAPI: snsAPI,
 		SQSAPI: sqsAPI,
+		SNSAPI: snsAPI,
 	})
 	cSvc := svc.(*service)
 
@@ -282,36 +292,90 @@ func TestProcessExistingDeviceRegistrationAndroid(t *testing.T) {
 	cSvc.processDeviceRegistration(driData)
 }
 
+func TestProcessExistingDeviceDeregistration(t *testing.T) {
+	dl := testdal.NewMockDAL(t)
+	defer dl.Finish()
+	dc := dmock.New(t)
+	defer dc.Finish()
+	snsAPI := mock.NewSNSAPI(t)
+	defer snsAPI.Finish()
+	sqsAPI := mock.NewSQSAPI(t)
+	defer sqsAPI.Finish()
+	sc := smock.New(t)
+	defer sc.Finish()
+	svc := New(dl, dc, sc, &Config{
+		DeviceRegistrationSQSURL:        deviceRegistrationSQSURL,
+		AppleDeviceRegistrationSNSARN:   appleDeviceRegistrationSNSARN,
+		AndriodDeviceRegistrationSNSARN: andriodDeviceRegistrationSNSARN,
+		SQSAPI: sqsAPI,
+		SNSAPI: snsAPI,
+	})
+	cSvc := svc.(*service)
+
+	ddriData, err := json.Marshal(&notification.DeviceDeregistrationInfo{
+		DeviceID: "DeviceID",
+	})
+	test.OK(t, err)
+
+	// Lookup the device and find it
+	dl.Expect(mock.NewExpectation(dl.DeletePushConfigForDeviceID, "DeviceID"))
+
+	cSvc.processDeviceDeregistration(ddriData)
+}
+
+func expectFilterNodesWithNotificationsDisabled(t *testing.T, sc *smock.Client, nodes []string, values []bool) {
+	test.Assert(t, len(nodes) == len(values), "Expected the number of nodes and values to be equal for mocking")
+	for i, n := range nodes {
+		sc.Expect(mock.NewExpectation(sc.GetValues, &settings.GetValuesRequest{
+			Keys:   []*settings.ConfigKey{{Key: notification.ReceiveNotificationsSettingsKey}},
+			NodeID: n,
+		}).WithReturns(&settings.GetValuesResponse{
+			Values: []*settings.Value{
+				{
+					Type:  settings.ConfigType_BOOLEAN,
+					Value: &settings.Value_Boolean{Boolean: &settings.BooleanValue{Value: values[i]}},
+				},
+			},
+		}, nil))
+	}
+}
+
 func TestProcessNotification(t *testing.T) {
 	dl := testdal.NewMockDAL(t)
 	defer dl.Finish()
 	dc := dmock.New(t)
 	defer dc.Finish()
-	snsAPI := mock.NewMockSNSAPI(t)
+	snsAPI := mock.NewSNSAPI(t)
 	defer snsAPI.Finish()
-	sqsAPI := mock.NewMockSQSAPI(t)
+	sqsAPI := mock.NewSQSAPI(t)
 	defer sqsAPI.Finish()
-	svc := New(dl, dc, &Config{
+	sc := smock.New(t)
+	defer sc.Finish()
+	svc := New(dl, dc, sc, &Config{
 		NotificationSQSURL:              notificationSQSURL,
 		AppleDeviceRegistrationSNSARN:   appleDeviceRegistrationSNSARN,
 		AndriodDeviceRegistrationSNSARN: andriodDeviceRegistrationSNSARN,
-		SNSAPI:    snsAPI,
 		SQSAPI:    sqsAPI,
+		SNSAPI:    snsAPI,
 		WebDomain: "testDomain",
 	})
 	cSvc := svc.(*service)
 
+	entitiesToNotify := []string{"entity:1", "entity:2", "entity:3"}
 	notificationData, err := json.Marshal(&notification.Notification{
 		ShortMessage:     "ShortMessage",
 		ThreadID:         "ThreadID",
 		OrganizationID:   "OrganizationID",
 		MessageID:        "ItemID",
 		SavedQueryID:     "SavedQueryID",
-		EntitiesToNotify: []string{"entity:1", "entity:2"},
+		EntitiesToNotify: entitiesToNotify,
 	})
 	test.OK(t, err)
 
-	// Lookup account IDs for the entities via their external identifiers
+	// Check the settings for each entity
+	expectFilterNodesWithNotificationsDisabled(t, sc, entitiesToNotify, []bool{true, true, false})
+
+	// Lookup account IDs for the entities via their external identifiers, we should have filtered 1
 	dc.Expect(mock.NewExpectation(dc.ExternalIDs, &directory.ExternalIDsRequest{
 		EntityIDs: []string{"entity:1", "entity:2"},
 	}).WithReturns(&directory.ExternalIDsResponse{
@@ -320,6 +384,9 @@ func TestProcessNotification(t *testing.T) {
 			{ID: "account_2"},
 		},
 	}, nil))
+
+	// Check the settings for each account
+	expectFilterNodesWithNotificationsDisabled(t, sc, []string{"account_1", "account_2"}, []bool{true, true})
 
 	// Lookup the push configs for each external group id (account)
 	dl.Expect(mock.NewExpectation(dl.PushConfigsForExternalGroupID, "account_1").WithReturns([]*dal.PushConfig{
@@ -399,18 +466,20 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 	defer dl.Finish()
 	dc := dmock.New(t)
 	defer dc.Finish()
-	snsAPI := mock.NewMockSNSAPI(t)
+	snsAPI := mock.NewSNSAPI(t)
 	defer snsAPI.Finish()
-	sqsAPI := mock.NewMockSQSAPI(t)
+	sqsAPI := mock.NewSQSAPI(t)
 	defer sqsAPI.Finish()
 	pcID, err := dal.NewPushConfigID()
 	test.OK(t, err)
-	svc := New(dl, dc, &Config{
+	sc := smock.New(t)
+	defer sc.Finish()
+	svc := New(dl, dc, sc, &Config{
 		NotificationSQSURL:              notificationSQSURL,
 		AppleDeviceRegistrationSNSARN:   appleDeviceRegistrationSNSARN,
 		AndriodDeviceRegistrationSNSARN: andriodDeviceRegistrationSNSARN,
-		SNSAPI:    snsAPI,
 		SQSAPI:    sqsAPI,
+		SNSAPI:    snsAPI,
 		WebDomain: "testDomain",
 	})
 	cSvc := svc.(*service)
@@ -425,14 +494,19 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 	})
 	test.OK(t, err)
 
+	expectFilterNodesWithNotificationsDisabled(t, sc, []string{"entity:1", "entity:2"}, []bool{true, true})
+
 	// Lookup account IDs for the entities via their external identifiers
 	dc.Expect(mock.NewExpectation(dc.ExternalIDs, &directory.ExternalIDsRequest{
 		EntityIDs: []string{"entity:1", "entity:2"},
 	}).WithReturns(&directory.ExternalIDsResponse{
 		ExternalIDs: []*directory.ExternalID{
 			{ID: "account_1"},
+			{ID: "account_2"},
 		},
 	}, nil))
+
+	expectFilterNodesWithNotificationsDisabled(t, sc, []string{"account_1", "account_2"}, []bool{true, false})
 
 	// Lookup the push configs for each external group id (account)
 	dl.Expect(mock.NewExpectation(dl.PushConfigsForExternalGroupID, "account_1").WithReturns([]*dal.PushConfig{

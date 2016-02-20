@@ -6,6 +6,7 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/test"
@@ -71,6 +72,74 @@ func TestUnauthenticateMutation(t *testing.T) {
 	acc := &models.Account{ID: "a_1"}
 	ctx = gqlctx.WithAccount(ctx, acc)
 	ctx = gqlctx.WithAuthToken(ctx, "token")
+	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{DeviceID: "deviceID"})
+
+	g.ra.Expect(mock.NewExpectation(g.ra.Unauthenticate, "token").WithReturns(&auth.UnauthenticateResponse{}, nil))
+	g.notificationC.Expect(mock.NewExpectation(g.notificationC.DeregisterDeviceForPush, "deviceID"))
+
+	res := g.query(ctx, `
+		mutation _ {
+			unauthenticate(input: {clientMutationId: "a1b2c3"}) {
+				clientMutationId
+				success
+			}
+		}`, nil)
+	b, err := json.MarshalIndent(res, "", "\t")
+	test.OK(t, err)
+	test.Equals(t, `{
+	"data": {
+		"unauthenticate": {
+			"clientMutationId": "a1b2c3",
+			"success": true
+		}
+	}
+}`, string(b))
+
+	// Make sure account gets updated in the context
+	// acc2 := account(ctx)
+	// test.AssertNotNil(t, acc2)
+	// test.Equals(t, "acc", acc2.ID)
+}
+
+func TestUnauthenticateMutationNoHeaders(t *testing.T) {
+	g := newGQL(t)
+	defer g.finish()
+
+	ctx := context.Background()
+	acc := &models.Account{ID: "a_1"}
+	ctx = gqlctx.WithAccount(ctx, acc)
+	ctx = gqlctx.WithAuthToken(ctx, "token")
+
+	g.ra.Expect(mock.NewExpectation(g.ra.Unauthenticate, "token").WithReturns(&auth.UnauthenticateResponse{}, nil))
+
+	res := g.query(ctx, `
+		mutation _ {
+			unauthenticate(input: {clientMutationId: "a1b2c3"}) {
+				clientMutationId
+				success
+			}
+		}`, nil)
+	b, err := json.MarshalIndent(res, "", "\t")
+	test.OK(t, err)
+	test.Equals(t, `{
+	"data": {
+		"unauthenticate": {
+			"clientMutationId": "a1b2c3",
+			"success": true
+		}
+	}
+}`, string(b))
+}
+
+func TestUnauthenticateMutationNoDeviceID(t *testing.T) {
+	g := newGQL(t)
+	defer g.finish()
+
+	ctx := context.Background()
+	acc := &models.Account{ID: "a_1"}
+	ctx = gqlctx.WithAccount(ctx, acc)
+	ctx = gqlctx.WithAuthToken(ctx, "token")
+	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{DeviceID: ""})
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Unauthenticate, "token").WithReturns(&auth.UnauthenticateResponse{}, nil))
 

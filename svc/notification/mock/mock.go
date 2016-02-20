@@ -29,6 +29,15 @@ func (c *Client) RegisterDeviceForPush(in *notification.DeviceRegistrationInfo) 
 	return mock.SafeError(rets[0])
 }
 
+// DeregisterDeviceForPush implements notification.Client
+func (c *Client) DeregisterDeviceForPush(deviceID string) error {
+	rets := c.Expector.Record(deviceID)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
 // SendNotification implements notification.Client
 func (c *Client) SendNotification(in *notification.Notification) error {
 	rets := c.Expector.Record(in)

@@ -24,6 +24,7 @@ type DAL interface {
 	PushConfigsForExternalGroupID(externalGroupID string) ([]*PushConfig, error)
 	UpdatePushConfig(id PushConfigID, update *PushConfigUpdate) (int64, error)
 	DeletePushConfig(id PushConfigID) (int64, error)
+	DeletePushConfigForDeviceID(deviceID string) (int64, error)
 }
 
 type dal struct {
@@ -222,6 +223,19 @@ func (d *dal) DeletePushConfig(id PushConfigID) (int64, error) {
 	res, err := d.db.Exec(
 		`DELETE FROM push_config
           WHERE id = ?`, id)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	aff, err := res.RowsAffected()
+	return aff, errors.Trace(err)
+}
+
+// DeletePushConfigForDeviceID deletes a push_config record for the specified device id
+func (d *dal) DeletePushConfigForDeviceID(deviceID string) (int64, error) {
+	res, err := d.db.Exec(
+		`DELETE FROM push_config
+          WHERE device_id = ?`, deviceID)
 	if err != nil {
 		return 0, errors.Trace(err)
 	}

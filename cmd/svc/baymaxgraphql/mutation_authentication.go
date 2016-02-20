@@ -284,6 +284,7 @@ var unauthenticateMutation = &graphql.Field{
 		"input": &graphql.ArgumentConfig{Type: unauthenticateInputType},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		svc := serviceFromParams(p)
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 		input, _ := p.Args["input"].(map[string]interface{})
@@ -300,6 +301,14 @@ var unauthenticateMutation = &graphql.Field{
 			result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
 			result.Set("unauthenticated", true)
 		}
+
+		headers := gqlctx.SpruceHeaders(ctx)
+		if headers != nil && headers.DeviceID != "" {
+			if err := svc.notification.DeregisterDeviceForPush(headers.DeviceID); err != nil {
+				return nil, errors.InternalError(ctx, err)
+			}
+		}
+
 		return &unauthenticateOutput{
 			ClientMutationID: mutationID,
 			Success:          true,

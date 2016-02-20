@@ -12,6 +12,11 @@ type DeviceRegistrationInfo struct {
 	DeviceID        string `json:"device_id"`
 }
 
+// DeviceDeregistrationInfo represents the information required by the notification service to unregister an existing device
+type DeviceDeregistrationInfo struct {
+	DeviceID string `json:"device_id"`
+}
+
 // Notification represents the information to be transformed into a notification
 type Notification struct {
 	ShortMessage     string   `json:"short_message"`

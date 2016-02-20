@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/notification/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/notification/internal/service"
+	nsettings "github.com/sprucehealth/backend/cmd/svc/notification/internal/settings"
 	cfg "github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -28,6 +29,7 @@ var config struct {
 	dbTLSCert                         string
 	dbTLSKey                          string
 	sqsDeviceRegistrationURL          string
+	sqsDeviceDeregistrationURL        string
 	sqsNotificationURL                string
 	snsAppleDeviceRegistrationTopic   string
 	snsAndroidDeviceRegistrationTopic string
@@ -49,6 +51,7 @@ func init() {
 	flag.StringVar(&config.dbTLSCert, "db_tls_cert", "", "the tls cert to use when connecting to the database")
 	flag.StringVar(&config.dbTLSKey, "db_tls_key", "", "the tls key to use when connecting to the database")
 	flag.StringVar(&config.sqsDeviceRegistrationURL, "sqs_device_registration_url", "", "the sqs url for device registration messages")
+	flag.StringVar(&config.sqsDeviceDeregistrationURL, "sqs_device_deregistration_url", "", "the sqs url for device deregistration messages")
 	flag.StringVar(&config.sqsNotificationURL, "sqs_notification_url", "", "the sqs url for outgoing notifications")
 	flag.StringVar(&config.snsAppleDeviceRegistrationTopic, "sns_apple_device_registration_arn", "", "the arn of the sns topic for apple device push registration")
 	flag.StringVar(&config.snsAndroidDeviceRegistrationTopic, "sns_android_device_registration_arn", "", "the arn of the sns topic for android device push registration")
@@ -93,11 +96,12 @@ func main() {
 	if config.directoryServiceAddress == "" {
 		golog.Fatalf("Directory service not configured")
 	}
-	conn, err := grpc.Dial(config.directoryServiceAddress, grpc.WithInsecure())
+	directoryConn, err := grpc.Dial(config.directoryServiceAddress, grpc.WithInsecure())
 	if err != nil {
 		golog.Fatalf("Unable to connect to directory service: %s", err)
 	}
-	directoryClient := directory.NewDirectoryClient(conn)
+	defer directoryConn.Close()
+	directoryClient := directory.NewDirectoryClient(directoryConn)
 
 	settingsConn, err := grpc.Dial(config.settingsServiceAddress, grpc.WithInsecure())
 	if err != nil {
@@ -112,8 +116,8 @@ func main() {
 		ctx,
 		settingsClient,
 		[]*settings.Config{
-			receiveNotificationsConfig,
-			notificationPreferenceConfig,
+			nsettings.ReceiveNotificationsConfig,
+			nsettings.NotificationPreferenceConfig,
 		})
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
@@ -122,8 +126,10 @@ func main() {
 	svc := service.New(
 		dal.New(db),
 		directoryClient,
+		settingsClient,
 		&service.Config{
 			DeviceRegistrationSQSURL:        config.sqsDeviceRegistrationURL,
+			DeviceDeregistrationSQSURL:      config.sqsDeviceDeregistrationURL,
 			NotificationSQSURL:              config.sqsNotificationURL,
 			AppleDeviceRegistrationSNSARN:   config.snsAppleDeviceRegistrationTopic,
 			AndriodDeviceRegistrationSNSARN: config.snsAndroidDeviceRegistrationTopic,
