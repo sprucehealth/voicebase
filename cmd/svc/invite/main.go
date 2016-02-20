@@ -16,6 +16,7 @@ import (
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/server"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/branch"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -31,7 +32,6 @@ var (
 	flagAWSRegion     = flag.String("aws_region", "", "AWS `region`")
 	flagBranchKey     = flag.String("branch_key", "", "Branch API key")
 	flagDirectoryAddr = flag.String("directory_addr", "", "`host:port` of directory service")
-	flagEnv           = flag.String("env", "", "`Environment` (local, dev, staging, prod)")
 	flagFromEmail     = flag.String("from_email", "", "Email address from which to send invites")
 	flagListen        = flag.String("listen_addr", ":5001", "`host:port` for grpc server")
 	flagSendGridKey   = flag.String("sendgrid_key", "", "SendGrid API `key`")
@@ -109,7 +109,7 @@ func main() {
 	sg := sendgrid.NewSendGridClientWithApiKey(*flagSendGridKey)
 	branchCli := branch.NewClient(*flagBranchKey)
 
-	srv := server.New(dal.New(db, *flagEnv), nil, directoryClient, branchCli, sg, *flagFromEmail)
+	srv := server.New(dal.New(db, environment.GetCurrent()), nil, directoryClient, branchCli, sg, *flagFromEmail)
 	s := grpc.NewServer()
 	defer s.Stop()
 	invite.RegisterInviteServer(s, srv)
