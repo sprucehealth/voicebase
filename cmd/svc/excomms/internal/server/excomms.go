@@ -1,7 +1,6 @@
 package server
 
 import (
-	"net/http"
 	"strconv"
 	"strings"
 
@@ -146,36 +145,36 @@ func (e *excommsService) ProvisionPhoneNumber(ctx context.Context, in *excomms.P
 				return &excomms.ProvisionPhoneNumberResponse{
 					PhoneNumber: ppn.Endpoint,
 				}, nil
-			} else {
-				return nil, grpcErrorf(codes.AlreadyExists, "a different number has already been provisioned. Provision For: %s, number provisioned: %s", in.ProvisionFor, ppn.Endpoint)
 			}
+			return nil, grpcErrorf(codes.AlreadyExists, "a different number has already been provisioned. Provision For: %s, number provisioned: %s", in.ProvisionFor, ppn.Endpoint)
 		} else if in.GetAreaCode() != "" {
 			if strings.HasPrefix(ppn.Endpoint[2:], in.GetAreaCode()) {
 				return &excomms.ProvisionPhoneNumberResponse{
 					PhoneNumber: ppn.Endpoint,
 				}, nil
-			} else {
-				return nil, grpcErrorf(codes.AlreadyExists, "a different number has already been provisioned. Provision For: %s, number provisioned: %s", in.ProvisionFor, ppn.Endpoint)
 			}
+			return nil, grpcErrorf(codes.AlreadyExists, "a different number has already been provisioned. Provision For: %s, number provisioned: %s", in.ProvisionFor, ppn.Endpoint)
 		}
 	}
 
 	// Setup all purchased numbers to route incoming calls and call statuses to the
 	// URLs setup in the specified twilio application.
-	ipn, res, err := e.twilio.IncomingPhoneNumber.PurchaseLocal(twilio.PurchasePhoneNumberParams{
+	ipn, _, err := e.twilio.IncomingPhoneNumber.PurchaseLocal(twilio.PurchasePhoneNumberParams{
 		AreaCode:            in.GetAreaCode(),
 		PhoneNumber:         in.GetPhoneNumber(),
 		VoiceApplicationSID: e.twilioApplicationSID,
 		SMSApplicationSID:   e.twilioApplicationSID,
 	})
 	if err != nil {
+		if e, ok := err.(*twilio.Exception); ok {
+			switch e.Code {
+			case twilio.ErrorCodeInvalidAreaCode:
+				return nil, grpcErrorf(codes.NotFound, e.Message)
+			case twilio.ErrorCodeNoPhoneNumberInAreaCode:
+				return nil, grpcErrorf(codes.InvalidArgument, e.Message)
+			}
+		}
 		return nil, grpcErrorf(codes.Internal, err.Error())
-	}
-	defer res.Body.Close()
-	if res.StatusCode == http.StatusBadRequest {
-		return nil, grpcErrorf(codes.InvalidArgument, err.Error())
-	} else if res.StatusCode == http.StatusNotFound {
-		return nil, grpcErrorf(codes.NotFound, err.Error())
 	}
 
 	// record the fact that number has been purchased

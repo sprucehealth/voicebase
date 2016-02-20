@@ -4,6 +4,15 @@ import (
 	"fmt"
 )
 
+const (
+	// ErrorCodeInvalidAreaCode is returned whhen trying to get a phone number in an
+	// invalid arae code. https://www.twilio.com/docs/errors/21451
+	ErrorCodeInvalidAreaCode = 21451
+	// ErrorCodeNoPhoneNumberInAreaCode is returned when there's no available phone numbers
+	// in the requested area code. https://www.twilio.com/docs/api/errors/21452
+	ErrorCodeNoPhoneNumberInAreaCode = 21452
+)
+
 // Exception holds information about error response returned by Twilio API
 type Exception struct {
 	Status   int    `json:"status"`

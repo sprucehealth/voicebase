@@ -3,9 +3,26 @@ package twilio
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"reflect"
 	"testing"
 )
+
+func TestIncomingPhoneNumberService_BadAreaCode(t *testing.T) {
+	sid := os.Getenv("TEST_TWILIO_SID")
+	token := os.Getenv("TEST_TWILIO_TOKEN")
+	if sid == "" || token == "" {
+		t.Skip("TEST_TWILIO_SID and/or TEST_TWILIO_TOKEN not set")
+	}
+	c := NewClient(sid, token, nil)
+	_, _, err := c.IncomingPhoneNumber.PurchaseLocal(PurchasePhoneNumberParams{
+		AreaCode: "555",
+	})
+	e := err.(*Exception)
+	if e.Code != ErrorCodeInvalidAreaCode {
+		t.Fatalf("Expected Code %d got %d", ErrorCodeInvalidAreaCode, e.Code)
+	}
+}
 
 func TestIncomingPhoneNumberService_Validate(t *testing.T) {
 	m := PurchasePhoneNumberParams{}
