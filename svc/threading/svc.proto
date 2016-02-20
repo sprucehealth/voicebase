@@ -35,6 +35,8 @@ message Thread {
 	string last_message_summary = 6;
     bool unread = 7;
 	repeated Endpoint last_primary_entity_endpoints = 8;
+	uint64 created = 9;
+	int32 message_count = 10;
 }
 
 message Member {

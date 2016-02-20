@@ -231,6 +231,8 @@ type Thread struct {
 	LastMessageSummary         string      `protobuf:"bytes,6,opt,name=last_message_summary,proto3" json:"last_message_summary,omitempty"`
 	Unread                     bool        `protobuf:"varint,7,opt,name=unread,proto3" json:"unread,omitempty"`
 	LastPrimaryEntityEndpoints []*Endpoint `protobuf:"bytes,8,rep,name=last_primary_entity_endpoints" json:"last_primary_entity_endpoints,omitempty"`
+	Created                    uint64      `protobuf:"varint,9,opt,name=created,proto3" json:"created,omitempty"`
+	MessageCount               int32       `protobuf:"varint,10,opt,name=message_count,proto3" json:"message_count,omitempty"`
 }
 
 func (m *Thread) Reset()      { *m = Thread{} }
@@ -1481,6 +1483,12 @@ func (this *Thread) Equal(that interface{}) bool {
 		if !this.LastPrimaryEntityEndpoints[i].Equal(that1.LastPrimaryEntityEndpoints[i]) {
 			return false
 		}
+	}
+	if this.Created != that1.Created {
+		return false
+	}
+	if this.MessageCount != that1.MessageCount {
+		return false
 	}
 	return true
 }
@@ -3358,7 +3366,7 @@ func (this *Thread) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 12)
+	s := make([]string, 0, 14)
 	s = append(s, "&threading.Thread{")
 	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	s = append(s, "OrganizationID: "+fmt.Sprintf("%#v", this.OrganizationID)+",\n")
@@ -3372,6 +3380,8 @@ func (this *Thread) GoString() string {
 	if this.LastPrimaryEntityEndpoints != nil {
 		s = append(s, "LastPrimaryEntityEndpoints: "+fmt.Sprintf("%#v", this.LastPrimaryEntityEndpoints)+",\n")
 	}
+	s = append(s, "Created: "+fmt.Sprintf("%#v", this.Created)+",\n")
+	s = append(s, "MessageCount: "+fmt.Sprintf("%#v", this.MessageCount)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -4827,6 +4837,16 @@ func (m *Thread) MarshalTo(data []byte) (int, error) {
 			}
 			i += n
 		}
+	}
+	if m.Created != 0 {
+		data[i] = 0x48
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Created))
+	}
+	if m.MessageCount != 0 {
+		data[i] = 0x50
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.MessageCount))
 	}
 	return i, nil
 }
@@ -6978,6 +6998,12 @@ func (m *Thread) Size() (n int) {
 			n += 1 + l + sovSvc(uint64(l))
 		}
 	}
+	if m.Created != 0 {
+		n += 1 + sovSvc(uint64(m.Created))
+	}
+	if m.MessageCount != 0 {
+		n += 1 + sovSvc(uint64(m.MessageCount))
+	}
 	return n
 }
 
@@ -7953,6 +7979,8 @@ func (this *Thread) String() string {
 		`LastMessageSummary:` + fmt.Sprintf("%v", this.LastMessageSummary) + `,`,
 		`Unread:` + fmt.Sprintf("%v", this.Unread) + `,`,
 		`LastPrimaryEntityEndpoints:` + strings.Replace(fmt.Sprintf("%v", this.LastPrimaryEntityEndpoints), "Endpoint", "Endpoint", 1) + `,`,
+		`Created:` + fmt.Sprintf("%v", this.Created) + `,`,
+		`MessageCount:` + fmt.Sprintf("%v", this.MessageCount) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -9050,6 +9078,44 @@ func (m *Thread) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 9:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Created", wireType)
+			}
+			m.Created = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Created |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 10:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MessageCount", wireType)
+			}
+			m.MessageCount = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.MessageCount |= (int32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

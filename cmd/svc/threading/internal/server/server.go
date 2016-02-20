@@ -731,8 +731,10 @@ func (s *threadsServer) populateReadStatus(ctx context.Context, ts []*threading.
 	}
 
 	for _, t := range ts {
-		lastViewed := threadLastViewedMap[t.ID]
-		t.Unread = lastViewed == nil || (t.LastMessageTimestamp > uint64(lastViewed.Unix()))
+		if t.MessageCount > 0 {
+			lastViewed := threadLastViewedMap[t.ID]
+			t.Unread = lastViewed == nil || (t.LastMessageTimestamp > uint64(lastViewed.Unix()))
+		}
 	}
 	return nil
 }

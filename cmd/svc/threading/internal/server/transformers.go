@@ -16,6 +16,8 @@ func transformThreadToResponse(thread *models.Thread, forExternal bool) (*thread
 		LastMessageTimestamp:       uint64(thread.LastMessageTimestamp.Unix()),
 		LastMessageSummary:         thread.LastMessageSummary,
 		LastPrimaryEntityEndpoints: make([]*threading.Endpoint, len(thread.LastPrimaryEntityEndpoints.Endpoints)),
+		Created:                    uint64(thread.Created.Unix()),
+		MessageCount:               thread.MessageCount,
 	}
 	for i, ep := range thread.LastPrimaryEntityEndpoints.Endpoints {
 		tc, err := transformEndpointChannelToResponse(ep.Channel)

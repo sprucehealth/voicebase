@@ -55,7 +55,11 @@ func TestCreateEmptyThread(t *testing.T) {
 
 	thid, err := models.NewThreadID()
 	test.OK(t, err)
-	th := &models.Thread{OrganizationID: "o1", PrimaryEntityID: "e2", LastMessageSummary: "summ"}
+	th := &models.Thread{
+		OrganizationID:     "o1",
+		PrimaryEntityID:    "e2",
+		LastMessageSummary: "summ",
+	}
 	dl.Expect(mock.NewExpectation(dl.CreateThread, th).WithReturns(thid, nil))
 
 	dl.Expect(mock.NewExpectation(dl.UpdateMember, thid, "e1", &dal.MemberUpdate{Following: ptr.Bool(true)}).WithReturns(nil))
@@ -65,6 +69,8 @@ func TestCreateEmptyThread(t *testing.T) {
 		PrimaryEntityID:      "e2",
 		LastMessageTimestamp: now,
 		LastMessageSummary:   "summ",
+		Created:              now,
+		MessageCount:         0,
 	}
 	dl.Expect(mock.NewExpectation(dl.Thread, thid).WithReturns(th2, nil))
 
@@ -88,6 +94,8 @@ func TestCreateEmptyThread(t *testing.T) {
 			LastMessageTimestamp:       uint64(now.Unix()),
 			LastMessageSummary:         "summ",
 			LastPrimaryEntityEndpoints: []*threading.Endpoint{},
+			Created:                    uint64(now.Unix()),
+			MessageCount:               0,
 		},
 	}, res)
 }
@@ -146,6 +154,8 @@ func TestCreateThread(t *testing.T) {
 		PrimaryEntityID:      "e1",
 		LastMessageTimestamp: now,
 		LastMessageSummary:   ps.Summary,
+		Created:              now,
+		MessageCount:         0,
 	}
 	dl.Expect(mock.NewExpectation(dl.Thread, thid).WithReturns(th2, nil))
 
@@ -195,6 +205,8 @@ func TestCreateThread(t *testing.T) {
 			LastMessageTimestamp:       uint64(now.Unix()),
 			LastMessageSummary:         ps.Summary,
 			LastPrimaryEntityEndpoints: []*threading.Endpoint{},
+			Created:                    uint64(now.Unix()),
+			MessageCount:               0,
 		},
 	}, res)
 }
@@ -273,6 +285,7 @@ func TestQueryThreads(t *testing.T) {
 	tID, err := models.NewThreadID()
 	test.OK(t, err)
 	now := time.Now()
+	created := time.Now()
 
 	// Adhoc query
 
@@ -298,6 +311,8 @@ func TestQueryThreads(t *testing.T) {
 							},
 						},
 					},
+					Created:      created,
+					MessageCount: 32,
 				},
 			},
 		},
@@ -331,6 +346,9 @@ func TestQueryThreads(t *testing.T) {
 							ID:      "+1234567890",
 						},
 					},
+					Created:      uint64(created.Unix()),
+					MessageCount: 32,
+					Unread:       false,
 				},
 				Cursor: "c2",
 			},
@@ -350,6 +368,8 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 	test.OK(t, err)
 	tID2, err := models.NewThreadID()
 	test.OK(t, err)
+	tID3, err := models.NewThreadID()
+	test.OK(t, err)
 	now := time.Now()
 
 	// Adhoc query
@@ -367,6 +387,8 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 					OrganizationID:       orgID,
 					PrimaryEntityID:      peID,
 					LastMessageTimestamp: now,
+					Created:              time.Unix(now.Unix()-1000, 0),
+					MessageCount:         32,
 				},
 			},
 			{
@@ -376,13 +398,26 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 					OrganizationID:       orgID,
 					PrimaryEntityID:      peID,
 					LastMessageTimestamp: time.Unix(now.Unix()-1000, 0),
+					Created:              time.Unix(now.Unix()-2000, 0),
+					MessageCount:         33,
+				},
+			},
+			{
+				Cursor: "c4",
+				Thread: &models.Thread{
+					ID:                   tID3,
+					OrganizationID:       orgID,
+					PrimaryEntityID:      peID,
+					LastMessageTimestamp: now,
+					Created:              now,
+					MessageCount:         0,
 				},
 			},
 		},
 	}, nil))
 
 	// Since we have a viewer associated with this query, expect the memberships to be queried to populate read status
-	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{tID, tID2}, peID, false).WithReturns(
+	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{tID, tID2, tID3}, peID, false).WithReturns(
 		[]*models.ThreadMember{
 			{
 				ThreadID:   tID,
@@ -391,6 +426,11 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 			},
 			{
 				ThreadID:   tID2,
+				EntityID:   peID,
+				LastViewed: ptr.Time(now),
+			},
+			{
+				ThreadID:   tID3,
 				EntityID:   peID,
 				LastViewed: ptr.Time(now),
 			},
@@ -422,6 +462,8 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 					LastMessageTimestamp: uint64(now.Unix()),
 					Unread:               true,
 					LastPrimaryEntityEndpoints: []*threading.Endpoint{},
+					Created:                    uint64(time.Unix(now.Unix()-1000, 0).Unix()),
+					MessageCount:               32,
 				},
 				Cursor: "c2",
 			},
@@ -433,8 +475,23 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 					LastMessageTimestamp: uint64(time.Unix(now.Unix()-1000, 0).Unix()),
 					Unread:               false,
 					LastPrimaryEntityEndpoints: []*threading.Endpoint{},
+					Created:                    uint64(time.Unix(now.Unix()-2000, 0).Unix()),
+					MessageCount:               33,
 				},
 				Cursor: "c3",
+			},
+			{
+				Thread: &threading.Thread{
+					ID:                   tID3.String(),
+					OrganizationID:       orgID,
+					PrimaryEntityID:      peID,
+					LastMessageTimestamp: uint64(now.Unix()),
+					Unread:               false,
+					LastPrimaryEntityEndpoints: []*threading.Endpoint{},
+					Created:                    uint64(now.Unix()),
+					MessageCount:               0,
+				},
+				Cursor: "c4",
 			},
 		},
 	}, res)
@@ -451,6 +508,7 @@ func TestThread(t *testing.T) {
 	orgID := "o1"
 	entID := "e1"
 	now := time.Now()
+	created := time.Now()
 
 	dl.Expect(mock.NewExpectation(dl.Thread, thID).WithReturns(
 		&models.Thread{
@@ -458,6 +516,8 @@ func TestThread(t *testing.T) {
 			OrganizationID:       orgID,
 			PrimaryEntityID:      entID,
 			LastMessageTimestamp: now,
+			Created:              created,
+			MessageCount:         32,
 		}, nil))
 	res, err := srv.Thread(nil, &threading.ThreadRequest{
 		ThreadID: thID.String(),
@@ -470,6 +530,9 @@ func TestThread(t *testing.T) {
 			PrimaryEntityID:            entID,
 			LastMessageTimestamp:       uint64(now.Unix()),
 			LastPrimaryEntityEndpoints: []*threading.Endpoint{},
+			Created:                    uint64(created.Unix()),
+			MessageCount:               32,
+			Unread:                     false,
 		},
 	}, res)
 }
@@ -485,6 +548,7 @@ func TestThreadWithViewer(t *testing.T) {
 	orgID := "o1"
 	entID := "e1"
 	now := time.Now()
+	created := time.Now()
 
 	dl.Expect(mock.NewExpectation(dl.Thread, thID).WithReturns(
 		&models.Thread{
@@ -492,6 +556,8 @@ func TestThreadWithViewer(t *testing.T) {
 			OrganizationID:       orgID,
 			PrimaryEntityID:      entID,
 			LastMessageTimestamp: now,
+			Created:              created,
+			MessageCount:         32,
 		}, nil))
 	// Since we have a viewer associated with this query, expect the memberships to be queried to populate read status
 	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{thID}, entID, false).WithReturns(
@@ -516,6 +582,8 @@ func TestThreadWithViewer(t *testing.T) {
 			LastMessageTimestamp: uint64(now.Unix()),
 			Unread:               true,
 			LastPrimaryEntityEndpoints: []*threading.Endpoint{},
+			Created:                    uint64(created.Unix()),
+			MessageCount:               32,
 		},
 	}, res)
 }
@@ -531,6 +599,7 @@ func TestThreadWithViewerNoMembership(t *testing.T) {
 	orgID := "o1"
 	entID := "e1"
 	now := time.Now()
+	created := time.Now()
 
 	dl.Expect(mock.NewExpectation(dl.Thread, thID).WithReturns(
 		&models.Thread{
@@ -538,6 +607,8 @@ func TestThreadWithViewerNoMembership(t *testing.T) {
 			OrganizationID:       orgID,
 			PrimaryEntityID:      entID,
 			LastMessageTimestamp: now,
+			Created:              created,
+			MessageCount:         32,
 		}, nil))
 	// Since we have a viewer associated with this query, expect the memberships to be queried and return none, this should be marked as unread
 	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{thID}, entID, false))
@@ -554,6 +625,51 @@ func TestThreadWithViewerNoMembership(t *testing.T) {
 			LastMessageTimestamp: uint64(now.Unix()),
 			Unread:               true,
 			LastPrimaryEntityEndpoints: []*threading.Endpoint{},
+			Created:                    uint64(created.Unix()),
+			MessageCount:               32,
+		},
+	}, res)
+}
+
+func TestThreadWithViewerNoMessages(t *testing.T) {
+	t.Parallel()
+	dl := newMockDAL(t)
+	defer dl.Finish()
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil)
+
+	thID, err := models.NewThreadID()
+	test.OK(t, err)
+	orgID := "o1"
+	entID := "e1"
+	now := time.Now()
+	created := time.Now()
+
+	dl.Expect(mock.NewExpectation(dl.Thread, thID).WithReturns(
+		&models.Thread{
+			ID:                   thID,
+			OrganizationID:       orgID,
+			PrimaryEntityID:      entID,
+			LastMessageTimestamp: now,
+			Created:              created,
+			MessageCount:         0,
+		}, nil))
+	// Since we have a viewer associated with this query, expect the memberships to be queried and return none, this should be marked as unread
+	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{thID}, entID, false))
+	res, err := srv.Thread(nil, &threading.ThreadRequest{
+		ThreadID:       thID.String(),
+		ViewerEntityID: entID,
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.ThreadResponse{
+		Thread: &threading.Thread{
+			ID:                   thID.String(),
+			OrganizationID:       orgID,
+			PrimaryEntityID:      entID,
+			LastMessageTimestamp: uint64(now.Unix()),
+			Unread:               false, // An empty thread should never be unread
+			LastPrimaryEntityEndpoints: []*threading.Endpoint{},
+			Created:                    uint64(created.Unix()),
+			MessageCount:               0,
 		},
 	}, res)
 }
