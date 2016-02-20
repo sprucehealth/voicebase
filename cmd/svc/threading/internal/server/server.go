@@ -39,6 +39,7 @@ type threadsServer struct {
 	snsTopicARN        string
 	notificationClient notification.Client
 	directoryClient    directory.DirectoryClient
+	webDomain          string
 }
 
 // NewThreadsServer returns an initialized instance of threadsServer
@@ -49,6 +50,7 @@ func NewThreadsServer(
 	snsTopicARN string,
 	notificationClient notification.Client,
 	directoryClient directory.DirectoryClient,
+	webDomain string,
 ) threading.ThreadsServer {
 	if clk == nil {
 		clk = clock.New()
@@ -60,6 +62,7 @@ func NewThreadsServer(
 		snsTopicARN:        snsTopicARN,
 		notificationClient: notificationClient,
 		directoryClient:    directoryClient,
+		webDomain:          webDomain,
 	}
 }
 
@@ -98,15 +101,10 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 	if in.PrimaryEntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "PrimaryEntityID is required")
 	}
-	if in.Source == nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Source is required")
-	}
 	if in.Summary == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
 	}
-	if len(in.Summary) > maxSummaryLength {
-		in.Summary = in.Summary[:maxSummaryLength]
-	}
+	in.Summary = truncateUTF8(in.Summary, maxSummaryLength)
 
 	var threadID models.ThreadID
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
@@ -152,15 +150,10 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	if in.FromEntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "FromEntityID is required")
 	}
-	if in.Source == nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Source is required")
-	}
 	if in.Summary == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
 	}
-	if len(in.Summary) > maxSummaryLength {
-		in.Summary = in.Summary[:maxSummaryLength]
-	}
+	in.Summary = truncateUTF8(in.Summary, maxSummaryLength)
 	if in.Title != "" {
 		if _, err := bml.Parse(in.Title); err != nil {
 			return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Title is invalid format: %s", err.Error()))
@@ -197,23 +190,25 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 			Internal:     in.Internal,
 			Text:         in.Text,
 			Title:        in.Title,
-			// TODO: safer transform for Endpoint.Type
-			Source: &models.Endpoint{
-				Channel: models.Endpoint_Channel(models.Endpoint_Channel_value[in.Source.Channel.String()]),
-				ID:      in.Source.ID,
-			},
-			TextRefs: textRefs,
-			Summary:  in.Summary,
+			TextRefs:     textRefs,
+			Summary:      in.Summary,
+		}
+		if in.Source != nil {
+			req.Source, err = transformEndpointFromRequest(in.Source)
+			if err != nil {
+				return errors.Trace(err)
+			}
 		}
 		req.Attachments, err = transformAttachmentsFromRequest(in.Attachments)
 		if err != nil {
 			return errors.Trace(err)
 		}
 		for _, dc := range in.Destinations {
-			req.Destinations = append(req.Destinations, &models.Endpoint{
-				Channel: models.Endpoint_Channel(models.Endpoint_Channel_value[dc.Channel.String()]),
-				ID:      dc.ID,
-			})
+			d, err := transformEndpointFromRequest(dc)
+			if err != nil {
+				return errors.Trace(err)
+			}
+			req.Destinations = append(req.Destinations, d)
 		}
 		item, err = dl.PostMessage(ctx, req)
 		return errors.Trace(err)
@@ -238,6 +233,110 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 		ThreadID:   threadID.String(),
 		ThreadItem: it,
 		Thread:     th,
+	}, nil
+}
+
+func (s *threadsServer) CreateLinkedThreads(ctx context.Context, in *threading.CreateLinkedThreadsRequest) (*threading.CreateLinkedThreadsResponse, error) {
+	if in.Organization1ID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "Organization1ID is required")
+	}
+	if in.Organization2ID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "Organization2ID is required")
+	}
+	if in.PrimaryEntity1ID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "PrimaryEntity1ID is required")
+	}
+	if in.PrimaryEntity2ID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "PrimaryEntity2ID is required")
+	}
+	if in.Summary == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
+	}
+	in.Summary = truncateUTF8(in.Summary, maxSummaryLength)
+	if in.Title != "" {
+		if _, err := bml.Parse(in.Title); err != nil {
+			return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Title is invalid format: %s", err.Error()))
+		}
+	}
+	var err error
+	var textRefs []*models.Reference
+	in.Text, textRefs, err = parseRefsAndNormalize(in.Text)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Text is invalid format: %s", errors.Cause(err).Error()))
+	}
+
+	var thread1ID, thread2ID models.ThreadID
+	err = s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
+		var err error
+		thread1ID, err = dl.CreateThread(ctx, &models.Thread{
+			OrganizationID:     in.Organization1ID,
+			PrimaryEntityID:    in.PrimaryEntity1ID,
+			LastMessageSummary: in.Summary,
+		})
+		if err != nil {
+			return errors.Trace(err)
+		}
+		thread2ID, err = dl.CreateThread(ctx, &models.Thread{
+			OrganizationID:     in.Organization2ID,
+			PrimaryEntityID:    in.PrimaryEntity2ID,
+			LastMessageSummary: in.Summary,
+		})
+		if err != nil {
+			return errors.Trace(err)
+		}
+		if err := dl.CreateThreadLink(ctx, thread1ID, thread2ID); err != nil {
+			return errors.Trace(err)
+		}
+		if in.Text != "" {
+			_, err = dl.PostMessage(ctx, &dal.PostMessageRequest{
+				ThreadID:     thread1ID,
+				FromEntityID: in.PrimaryEntity1ID,
+				Internal:     false,
+				Text:         in.Text,
+				Title:        in.Title,
+				TextRefs:     textRefs,
+				Summary:      in.Summary,
+			})
+			if err != nil {
+				return errors.Trace(err)
+			}
+			_, err = dl.PostMessage(ctx, &dal.PostMessageRequest{
+				ThreadID:     thread2ID,
+				FromEntityID: in.PrimaryEntity2ID,
+				Internal:     false,
+				Text:         in.Text,
+				Title:        in.Title,
+				TextRefs:     textRefs,
+				Summary:      in.Summary,
+			})
+			if err != nil {
+				return errors.Trace(err)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	thread1, err := s.dal.Thread(ctx, thread1ID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	th1, err := transformThreadToResponse(thread1, false)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	thread2, err := s.dal.Thread(ctx, thread2ID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	th2, err := transformThreadToResponse(thread2, false)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &threading.CreateLinkedThreadsResponse{
+		Thread1: th1,
+		Thread2: th2,
 	}, nil
 }
 
@@ -368,15 +467,10 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	if in.FromEntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "FromEntityID is required")
 	}
-	if in.Source == nil {
-		return nil, grpcErrorf(codes.InvalidArgument, "Source is required")
-	}
 	if in.Summary == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
 	}
-	if len(in.Summary) > maxSummaryLength {
-		in.Summary = in.Summary[:maxSummaryLength]
-	}
+	in.Summary = truncateUTF8(in.Summary, maxSummaryLength)
 	if in.Title != "" {
 		if _, err := bml.Parse(in.Title); err != nil {
 			return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Title is invalid format: %s", err.Error()))
@@ -394,34 +488,42 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	}
 	prePostLastMessageTimestamp := thread.LastMessageTimestamp
 
+	linkedThread, err := s.dal.LinkedThread(ctx, threadID)
+	if err != nil && errors.Cause(err) != dal.ErrNotFound {
+		return nil, grpcErrorf(codes.Internal, errors.Trace(err).Error())
+	}
+
 	var item *models.ThreadItem
+	var linkedItem *models.ThreadItem
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
 		// TODO: validate any attachments
+		attachments, err := transformAttachmentsFromRequest(in.Attachments)
+		if err != nil {
+			return grpcErrorf(codes.Internal, errors.Trace(err).Error())
+		}
 		req := &dal.PostMessageRequest{
 			ThreadID:     threadID,
 			FromEntityID: in.FromEntityID,
 			Internal:     in.Internal,
 			Text:         in.Text,
 			Title:        in.Title,
-			// TODO: safer transform for Endpoint.Channel
-			Source: &models.Endpoint{
-				Channel: models.Endpoint_Channel(models.Endpoint_Channel_value[in.Source.Channel.String()]),
-				ID:      in.Source.ID,
-			},
-			TextRefs: textRefs,
-			Summary:  in.Summary,
+			TextRefs:     textRefs,
+			Summary:      in.Summary,
+			Attachments:  attachments,
 		}
-		req.Attachments, err = transformAttachmentsFromRequest(in.Attachments)
-		if err != nil {
-			return grpcErrorf(codes.Internal, errors.Trace(err).Error())
+		if in.Source != nil {
+			req.Source, err = transformEndpointFromRequest(in.Source)
+			if err != nil {
+				return errors.Trace(err)
+			}
 		}
 		for _, dc := range in.Destinations {
-			req.Destinations = append(req.Destinations, &models.Endpoint{
-				Channel: models.Endpoint_Channel(models.Endpoint_Channel_value[dc.Channel.String()]),
-				ID:      dc.ID,
-			})
+			d, err := transformEndpointFromRequest(dc)
+			if err != nil {
+				return errors.Trace(err)
+			}
+			req.Destinations = append(req.Destinations, d)
 		}
-		var err error
 		item, err = dl.PostMessage(ctx, req)
 		if err != nil {
 			return grpcErrorf(codes.Internal, errors.Trace(err).Error())
@@ -456,6 +558,30 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		if err := dl.UpdateMember(ctx, threadID, in.FromEntityID, memberUpdate); err != nil {
 			return grpcErrorf(codes.Internal, errors.Trace(err).Error())
 		}
+
+		// Also post in linked thread if there is one
+		if linkedThread != nil && !in.Internal {
+			req := &dal.PostMessageRequest{
+				ThreadID:     linkedThread.ID,
+				FromEntityID: linkedThread.PrimaryEntityID,
+				Text:         in.Text,
+				Title:        in.Title,
+				TextRefs:     textRefs,
+				Summary:      in.Summary,
+				Attachments:  attachments,
+			}
+			if in.Source != nil {
+				req.Source, err = transformEndpointFromRequest(in.Source)
+				if err != nil {
+					return errors.Trace(err)
+				}
+			}
+			linkedItem, err = dl.PostMessage(ctx, req)
+			if err != nil {
+				return grpcErrorf(codes.Internal, errors.Trace(err).Error())
+			}
+		}
+
 		return nil
 	}); err != nil {
 		return nil, grpcErrorf(codes.Internal, errors.Trace(err).Error())
@@ -474,6 +600,14 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	}
 	s.publishMessage(ctx, thread.OrganizationID, thread.PrimaryEntityID, threadID, it, in.UUID)
 	s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), threadID, item.ID, in.FromEntityID)
+	if linkedItem != nil {
+		it2, err := transformThreadItemToResponse(linkedItem, linkedThread.OrganizationID)
+		if err != nil {
+			return nil, grpcErrorf(codes.Internal, errors.Trace(err).Error())
+		}
+		s.publishMessage(ctx, linkedThread.OrganizationID, linkedThread.PrimaryEntityID, linkedThread.ID, it2, "")
+		s.notifyMembersOfPublishMessage(ctx, linkedThread.OrganizationID, models.EmptySavedQueryID(), linkedThread.ID, linkedItem.ID, linkedItem.ActorEntityID)
+	}
 	return &threading.PostMessageResponse{
 		Item:   it,
 		Thread: th,

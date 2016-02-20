@@ -88,6 +88,63 @@ func TestCreateAccountMutation(t *testing.T) {
 		},
 	}, nil))
 
+	// Create internal org thread
+	g.ra.Expect(mock.NewExpectation(g.ra.CreateEmptyThread, &threading.CreateEmptyThreadRequest{
+		OrganizationID: "e_org",
+		Source: &threading.Endpoint{
+			Channel: threading.Endpoint_APP,
+			ID:      "e_org",
+		},
+		PrimaryEntityID: "e_org",
+		Summary:         "No messages yet",
+	}).WithReturns(&threading.Thread{}, nil))
+
+	// Create linked support threads
+	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntity, &directory.CreateEntityRequest{
+		EntityInfo: &directory.EntityInfo{
+			DisplayName: "Team Spruce",
+			GroupName:   "Team Spruce",
+		},
+		Type: directory.EntityType_SYSTEM,
+		InitialMembershipEntityID: "e_org",
+	}).WithReturns(&directory.Entity{
+		ID: "e_sys_1",
+	}, nil))
+	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntity, &directory.CreateEntityRequest{
+		EntityInfo: &directory.EntityInfo{
+			DisplayName: "Team Spruce (org)",
+			GroupName:   "Team Spruce (org)",
+		},
+		Type: directory.EntityType_SYSTEM,
+		InitialMembershipEntityID: "spruce_org",
+	}).WithReturns(&directory.Entity{
+		ID: "e_sys_2",
+	}, nil))
+	g.ra.Expect(mock.NewExpectation(g.ra.CreateLinkedThreads, &threading.CreateLinkedThreadsRequest{
+		Organization1ID:  "e_org",
+		Organization2ID:  "spruce_org",
+		PrimaryEntity1ID: "e_sys_1",
+		PrimaryEntity2ID: "e_sys_2",
+		Summary:          "Team Spruce: " + teamSpruceInitialText[:128],
+		Text:             teamSpruceInitialText,
+	}).WithReturns(&threading.CreateLinkedThreadsResponse{}, nil))
+
+	// Create onboarding thread
+	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntity, &directory.CreateEntityRequest{
+		EntityInfo: &directory.EntityInfo{
+			DisplayName: "Spruce Assistant",
+			GroupName:   "Spruce Assistant",
+		},
+		Type: directory.EntityType_SYSTEM,
+		InitialMembershipEntityID: "e_org",
+	}).WithReturns(&directory.Entity{
+		ID: "e_sys_3",
+	}, nil))
+	g.ra.Expect(mock.NewExpectation(g.ra.CreateOnboardingThread, &threading.CreateOnboardingThreadRequest{
+		OrganizationID:  "e_org",
+		PrimaryEntityID: "e_sys_3",
+	}).WithReturns(&threading.CreateOnboardingThreadResponse{}, nil))
+
 	res := g.query(ctx, `
 		mutation _ {
 			createAccount(input: {

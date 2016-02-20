@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
@@ -107,6 +108,10 @@ func (r *externalMessageWorker) Start() {
 			}
 		}
 	}()
+}
+
+func (r *externalMessageWorker) Stop(wait time.Duration) {
+	// TODO
 }
 
 func (r *externalMessageWorker) Started() bool {

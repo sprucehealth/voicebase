@@ -8,25 +8,42 @@ import (
 	"github.com/sprucehealth/backend/svc/threading"
 )
 
+func transformEndpointFromRequest(e *threading.Endpoint) (*models.Endpoint, error) {
+	switch e.Channel {
+	case threading.Endpoint_APP:
+		// TODO: remove this once it's not in the proto anymore
+		return &models.Endpoint{Channel: models.Endpoint_APP, ID: e.ID}, nil
+	case threading.Endpoint_EMAIL:
+		return &models.Endpoint{Channel: models.Endpoint_EMAIL, ID: e.ID}, nil
+	case threading.Endpoint_SMS:
+		return &models.Endpoint{Channel: models.Endpoint_SMS, ID: e.ID}, nil
+	case threading.Endpoint_VOICE:
+		return &models.Endpoint{Channel: models.Endpoint_VOICE, ID: e.ID}, nil
+	}
+	return nil, fmt.Errorf("Unknown endpoint channel %s", e.Channel.String())
+}
+
 func transformThreadToResponse(thread *models.Thread, forExternal bool) (*threading.Thread, error) {
 	t := &threading.Thread{
-		ID:                         thread.ID.String(),
-		OrganizationID:             thread.OrganizationID,
-		PrimaryEntityID:            thread.PrimaryEntityID,
-		LastMessageTimestamp:       uint64(thread.LastMessageTimestamp.Unix()),
-		LastMessageSummary:         thread.LastMessageSummary,
-		LastPrimaryEntityEndpoints: make([]*threading.Endpoint, len(thread.LastPrimaryEntityEndpoints.Endpoints)),
-		CreatedTimestamp:           uint64(thread.Created.Unix()),
-		MessageCount:               int32(thread.MessageCount),
+		ID:                   thread.ID.String(),
+		OrganizationID:       thread.OrganizationID,
+		PrimaryEntityID:      thread.PrimaryEntityID,
+		LastMessageTimestamp: uint64(thread.LastMessageTimestamp.Unix()),
+		LastMessageSummary:   thread.LastMessageSummary,
+		CreatedTimestamp:     uint64(thread.Created.Unix()),
+		MessageCount:         int32(thread.MessageCount),
 	}
-	for i, ep := range thread.LastPrimaryEntityEndpoints.Endpoints {
-		tc, err := transformEndpointChannelToResponse(ep.Channel)
-		if err != nil {
-			return nil, errors.Trace(err)
-		}
-		t.LastPrimaryEntityEndpoints[i] = &threading.Endpoint{
-			Channel: tc,
-			ID:      ep.ID,
+	if len(thread.LastPrimaryEntityEndpoints.Endpoints) != 0 {
+		t.LastPrimaryEntityEndpoints = make([]*threading.Endpoint, len(thread.LastPrimaryEntityEndpoints.Endpoints))
+		for i, ep := range thread.LastPrimaryEntityEndpoints.Endpoints {
+			tc, err := transformEndpointChannelToResponse(ep.Channel)
+			if err != nil {
+				return nil, errors.Trace(err)
+			}
+			t.LastPrimaryEntityEndpoints[i] = &threading.Endpoint{
+				Channel: tc,
+				ID:      ep.ID,
+			}
 		}
 	}
 	if forExternal {
@@ -84,22 +101,27 @@ func transformThreadItemToResponse(item *models.ThreadItem, orgID string) (*thre
 	case models.ItemTypeMessage:
 		m := item.Data.(*models.Message)
 		m2 := &threading.Message{
-			Title:  m.Title,
-			Text:   m.Text,
-			Status: threading.Message_Status(threading.Message_Status_value[m.Status.String()]), // TODO
-			Source: &threading.Endpoint{
-				Channel: threading.Endpoint_Channel(threading.Endpoint_Channel_value[m.Source.Channel.String()]), // TODO
-				ID:      m.Source.ID,
-			},
+			Title:           m.Title,
+			Text:            m.Text,
+			Status:          threading.Message_Status(threading.Message_Status_value[m.Status.String()]), // TODO
+			Summary:         m.Summary,
 			EditedTimestamp: m.EditedTimestamp,
 			EditorEntityID:  m.EditorEntityID,
-			TextRefs:        make([]*threading.Reference, len(m.TextRefs)),
 		}
-		for i, r := range m.TextRefs {
-			var err error
-			m2.TextRefs[i], err = transformReferenceToResponse(r)
-			if err != nil {
-				return nil, errors.Trace(err)
+		if m.Source != nil {
+			m2.Source = &threading.Endpoint{
+				Channel: threading.Endpoint_Channel(threading.Endpoint_Channel_value[m.Source.Channel.String()]), // TODO
+				ID:      m.Source.ID,
+			}
+		}
+		if len(m.TextRefs) != 0 {
+			m2.TextRefs = make([]*threading.Reference, len(m.TextRefs))
+			for i, r := range m.TextRefs {
+				var err error
+				m2.TextRefs[i], err = transformReferenceToResponse(r)
+				if err != nil {
+					return nil, errors.Trace(err)
+				}
 			}
 		}
 		for _, a := range m.Attachments {
@@ -135,11 +157,14 @@ func transformThreadItemToResponse(item *models.ThreadItem, orgID string) (*thre
 			}
 			m2.Attachments = append(m2.Attachments, at)
 		}
-		for _, dc := range m.Destinations {
-			m2.Destinations = append(m2.Destinations, &threading.Endpoint{
-				Channel: threading.Endpoint_Channel(threading.Endpoint_Channel_value[dc.Channel.String()]), // TODO
-				ID:      dc.ID,
-			})
+		if len(m.Destinations) != 0 {
+			m2.Destinations = make([]*threading.Endpoint, len(m.Destinations))
+			for i, dc := range m.Destinations {
+				m2.Destinations[i] = &threading.Endpoint{
+					Channel: threading.Endpoint_Channel(threading.Endpoint_Channel_value[dc.Channel.String()]), // TODO
+					ID:      dc.ID,
+				}
+			}
 		}
 		it.Item = &threading.ThreadItem_Message{
 			Message: m2,
@@ -173,6 +198,9 @@ func transformSavedQueryToResponse(sq *models.SavedQuery) (*threading.SavedQuery
 // From request
 
 func transformAttachmentsFromRequest(atts []*threading.Attachment) ([]*models.Attachment, error) {
+	if len(atts) == 0 {
+		return nil, nil
+	}
 	as := make([]*models.Attachment, 0, len(atts))
 	for _, a := range atts {
 		at := &models.Attachment{

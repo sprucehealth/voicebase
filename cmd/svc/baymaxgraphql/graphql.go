@@ -90,6 +90,7 @@ func NewGraphQL(
 	emailDomain string,
 	webDomain string,
 	serviceNumber phone.Number,
+	spruceOrgID string,
 ) httputil.ContextHandler {
 	return &graphQLHandler{
 		auth: authClient,
@@ -102,6 +103,7 @@ func NewGraphQL(
 			serviceNumber: serviceNumber,
 			settings:      settings,
 			invite:        invite,
+			spruceOrgID:   spruceOrgID,
 		},
 	}
 }

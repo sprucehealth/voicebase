@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -88,13 +89,15 @@ func (s *service) Start() {
 // Shutdown cleanly shut down the service
 func (s *service) Shutdown() error {
 	golog.Debugf("Shutting down the Notification service and background workers")
-	// TODO
+	s.registrationWorker.Stop(time.Second * 30)
+	s.deregistrationWorker.Stop(time.Second * 30)
+	s.notificationWorker.Stop(time.Second * 30)
 	return nil
 }
 
-func (s *service) processDeviceRegistration(data []byte) error {
+func (s *service) processDeviceRegistration(data string) error {
 	registrationInfo := &notification.DeviceRegistrationInfo{}
-	if err := json.Unmarshal(data, registrationInfo); err != nil {
+	if err := json.Unmarshal([]byte(data), registrationInfo); err != nil {
 		return errors.Trace(err)
 	}
 
@@ -194,9 +197,9 @@ func (s *service) updateEndpoint(endpointARN, deviceToken string) error {
 	return errors.Trace(err)
 }
 
-func (s *service) processDeviceDeregistration(data []byte) error {
+func (s *service) processDeviceDeregistration(data string) error {
 	deregistrationInfo := &notification.DeviceDeregistrationInfo{}
-	if err := json.Unmarshal(data, deregistrationInfo); err != nil {
+	if err := json.Unmarshal([]byte(data), deregistrationInfo); err != nil {
 		return errors.Trace(err)
 	}
 	golog.Debugf("Processing device deregistration event: %+v", deregistrationInfo)
@@ -210,9 +213,9 @@ var jsonStructure = ptr.String("json")
 
 // TODO: Set and examine communication preferences for caller
 // NOTE: This is an initial version of what PUSH notifications can look like. Will discuss with the client team about what we want the formal mature version to be. This is mainly a POC and validation regarding PUSH with Baymax
-func (s *service) processNotification(data []byte) error {
+func (s *service) processNotification(data string) error {
 	n := &notification.Notification{}
-	if err := json.Unmarshal(data, n); err != nil {
+	if err := json.Unmarshal([]byte(data), n); err != nil {
 		return errors.Trace(err)
 	}
 	return errors.Trace(s.processPushNotification(n))

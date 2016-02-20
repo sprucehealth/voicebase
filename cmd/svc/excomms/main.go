@@ -22,12 +22,15 @@ var config struct {
 	attachmentBucket        string
 	attachmentPrefix        string
 	externalMessageTopic    string
+	eventTopic              string
 	incomingRawMessageQueue string
 	dbHost                  string
 	dbPassword              string
 	dbName                  string
 	dbUserName              string
 	dbPort                  int
+	dbCACert                string
+	dbTLS                   string
 	httpAddr                string
 	proxyProtocol           bool
 	excommsServiceURL       string
@@ -47,11 +50,14 @@ func init() {
 	flag.StringVar(&config.awsSecretKey, "aws_secret_key", "", "secret key for aws user")
 	flag.StringVar(&config.sendgridAPIKey, "sendgrid_api_key", "", "sendgrid api key")
 	flag.StringVar(&config.externalMessageTopic, "sns_external_message_topic", "", "sns topic on which to post external message events")
+	flag.StringVar(&config.eventTopic, "sns_event_topic", "", "SNS topic on which to publish events")
 	flag.StringVar(&config.dbHost, "db_host", "", "database host")
 	flag.StringVar(&config.dbPassword, "db_password", "", "database password")
 	flag.StringVar(&config.dbName, "db_name", "", "database name")
 	flag.StringVar(&config.dbUserName, "db_username", "", "database username")
 	flag.IntVar(&config.dbPort, "db_port", 3306, "database port")
+	flag.StringVar(&config.dbCACert, "db_ca_cert", "", "Path to database CA certificate")
+	flag.StringVar(&config.dbTLS, "db_tls", "skip-verify", "Enable TLS for database connection (one of 'true', 'false', 'skip-verify'). Ignored if CA cert provided.")
 	flag.StringVar(&config.incomingRawMessageQueue, "queue_incoming_raw_message", "", "queue name for receiving incoming raw messages")
 	flag.StringVar(&config.httpAddr, "http", "0.0.0.0:8900", "listen for http on `host:port`")
 	flag.BoolVar(&config.proxyProtocol, "proxyproto", false, "enabled proxy protocol")

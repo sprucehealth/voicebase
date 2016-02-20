@@ -21,6 +21,10 @@ import (
 	"google.golang.org/grpc"
 )
 
+const teamSpruceInitialText = `This is your personal support conversation with Spruce Health.
+
+If you're unsure about anything or need some help, send us a message here and a member of the Spruce Health team will respond.`
+
 type createAccountOutput struct {
 	ClientMutationID    string          `json:"clientMutationId,omitempty"`
 	Success             bool            `json:"success"`
@@ -292,6 +296,101 @@ var createAccountMutation = &graphql.Field{
 			// TODO: query
 		}); err != nil {
 			return nil, errors.InternalError(ctx, err)
+		}
+
+		if inv == nil {
+			// Create initial threads, but don't fail entirely on errors as this isn't critical to the account existing,
+			// and because a hard fail leaves the account around but makes it look like it failed it's best just to
+			// log and continue. Once the account creation is idempotent then can have this be a hard fail.
+
+			par := conc.NewParallel()
+			par.Go(func() error {
+				// Create a default internal team thread
+				_, err := ram.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
+					OrganizationID: orgEntityID,
+					Source: &threading.Endpoint{
+						Channel: threading.Endpoint_APP,
+						ID:      orgEntityID,
+					},
+					PrimaryEntityID: orgEntityID,
+					Summary:         "No messages yet",
+				})
+				if err != nil {
+					golog.Errorf("Failed to create initial private thread for org %s: %s", orgEntityID, err)
+				}
+				return nil
+			})
+			par.Go(func() error {
+				// Create a support thread (linked to Spruce support org) and the primary entities for them
+				var tsEnt1, tsEnt2 *directory.Entity
+				par := conc.NewParallel()
+				par.Go(func() error {
+					var err error
+					tsEnt1, err = ram.CreateEntity(ctx, &directory.CreateEntityRequest{
+						EntityInfo: &directory.EntityInfo{
+							GroupName:   "Team Spruce",
+							DisplayName: "Team Spruce",
+						},
+						Type: directory.EntityType_SYSTEM,
+						InitialMembershipEntityID: orgEntityID,
+					})
+					return err
+				})
+				par.Go(func() error {
+					var err error
+					tsEnt2, err = ram.CreateEntity(ctx, &directory.CreateEntityRequest{
+						EntityInfo: &directory.EntityInfo{
+							GroupName:   fmt.Sprintf("Team Spruce (%s)", organizationName),
+							DisplayName: fmt.Sprintf("Team Spruce (%s)", organizationName),
+						},
+						Type: directory.EntityType_SYSTEM,
+						InitialMembershipEntityID: svc.spruceOrgID,
+					})
+					return err
+				})
+				if err := par.Wait(); err != nil {
+					golog.Errorf("Failed to create entity for support thread for org %s: %s", orgEntityID, err)
+					return nil
+				}
+				_, err = ram.CreateLinkedThreads(ctx, &threading.CreateLinkedThreadsRequest{
+					Organization1ID:  orgEntityID,
+					Organization2ID:  svc.spruceOrgID,
+					PrimaryEntity1ID: tsEnt1.ID,
+					PrimaryEntity2ID: tsEnt2.ID,
+					Summary:          "Team Spruce: " + teamSpruceInitialText[:128],
+					Text:             teamSpruceInitialText,
+				})
+				if err != nil {
+					golog.Errorf("Failed to create linked support threads for org %s: %s", orgEntityID, err)
+				}
+				return nil
+			})
+			par.Go(func() error {
+				// Create an onboarding thread and related system entity
+				onbEnt, err := ram.CreateEntity(ctx, &directory.CreateEntityRequest{
+					EntityInfo: &directory.EntityInfo{
+						GroupName:   "Spruce Assistant",
+						DisplayName: "Spruce Assistant",
+					},
+					Type: directory.EntityType_SYSTEM,
+					InitialMembershipEntityID: orgEntityID,
+				})
+				if err != nil {
+					golog.Errorf("Failed to create entity for onboarding thread for org %s: %s", orgEntityID, err)
+					return nil
+				}
+				_, err = ram.CreateOnboardingThread(ctx, &threading.CreateOnboardingThreadRequest{
+					OrganizationID:  orgEntityID,
+					PrimaryEntityID: onbEnt.ID,
+				})
+				if err != nil {
+					golog.Errorf("Failed to create onboarding thread for org %s: %s", orgEntityID, err)
+				}
+				return nil
+			})
+			if err := par.Wait(); err != nil {
+				golog.Errorf(err.Error())
+			}
 		}
 
 		result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)

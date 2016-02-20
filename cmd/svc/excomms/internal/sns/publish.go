@@ -15,7 +15,6 @@ type marshaller interface {
 }
 
 func Publish(snsCLI snsiface.SNSAPI, topic string, m marshaller) error {
-
 	data, err := m.Marshal()
 	if err != nil {
 		return errors.Trace(err)

@@ -64,6 +64,10 @@
 		ThreadItemResponse
 		ThreadItemViewDetailsRequest
 		ThreadItemViewDetailsResponse
+		CreateLinkedThreadsRequest
+		CreateLinkedThreadsResponse
+		CreateOnboardingThreadRequest
+		CreateOnboardingThreadResponse
 */
 package threading
 
@@ -1283,6 +1287,64 @@ func (m *ThreadItemViewDetailsResponse) GetItemViewDetails() []*ThreadItemViewDe
 	return nil
 }
 
+type CreateLinkedThreadsRequest struct {
+	Organization1ID  string `protobuf:"bytes,1,opt,name=organization1_id,proto3" json:"organization1_id,omitempty"`
+	Organization2ID  string `protobuf:"bytes,2,opt,name=organization2_id,proto3" json:"organization2_id,omitempty"`
+	PrimaryEntity1ID string `protobuf:"bytes,3,opt,name=primary_entity1_id,proto3" json:"primary_entity1_id,omitempty"`
+	PrimaryEntity2ID string `protobuf:"bytes,4,opt,name=primary_entity2_id,proto3" json:"primary_entity2_id,omitempty"`
+	Text             string `protobuf:"bytes,5,opt,name=text,proto3" json:"text,omitempty"`
+	Title            string `protobuf:"bytes,6,opt,name=title,proto3" json:"title,omitempty"`
+	Summary          string `protobuf:"bytes,7,opt,name=summary,proto3" json:"summary,omitempty"`
+}
+
+func (m *CreateLinkedThreadsRequest) Reset()      { *m = CreateLinkedThreadsRequest{} }
+func (*CreateLinkedThreadsRequest) ProtoMessage() {}
+
+type CreateLinkedThreadsResponse struct {
+	Thread1 *Thread `protobuf:"bytes,1,opt,name=thread1" json:"thread1,omitempty"`
+	Thread2 *Thread `protobuf:"bytes,2,opt,name=thread2" json:"thread2,omitempty"`
+}
+
+func (m *CreateLinkedThreadsResponse) Reset()      { *m = CreateLinkedThreadsResponse{} }
+func (*CreateLinkedThreadsResponse) ProtoMessage() {}
+
+func (m *CreateLinkedThreadsResponse) GetThread1() *Thread {
+	if m != nil {
+		return m.Thread1
+	}
+	return nil
+}
+
+func (m *CreateLinkedThreadsResponse) GetThread2() *Thread {
+	if m != nil {
+		return m.Thread2
+	}
+	return nil
+}
+
+type CreateOnboardingThreadRequest struct {
+	OrganizationID  string `protobuf:"bytes,1,opt,name=organization_id,proto3" json:"organization_id,omitempty"`
+	PrimaryEntityID string `protobuf:"bytes,2,opt,name=primary_entity_id,proto3" json:"primary_entity_id,omitempty"`
+	Summary         string `protobuf:"bytes,3,opt,name=summary,proto3" json:"summary,omitempty"`
+}
+
+func (m *CreateOnboardingThreadRequest) Reset()      { *m = CreateOnboardingThreadRequest{} }
+func (*CreateOnboardingThreadRequest) ProtoMessage() {}
+
+type CreateOnboardingThreadResponse struct {
+	Thread *Thread `protobuf:"bytes,1,opt,name=thread" json:"thread,omitempty"`
+}
+
+func (m *CreateOnboardingThreadResponse) Reset()      { *m = CreateOnboardingThreadResponse{} }
+func (*CreateOnboardingThreadResponse) ProtoMessage() {}
+
+func (m *CreateOnboardingThreadResponse) GetThread() *Thread {
+	if m != nil {
+		return m.Thread
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*Iterator)(nil), "threading.Iterator")
 	proto.RegisterType((*Thread)(nil), "threading.Thread")
@@ -1339,6 +1401,10 @@ func init() {
 	proto.RegisterType((*ThreadItemResponse)(nil), "threading.ThreadItemResponse")
 	proto.RegisterType((*ThreadItemViewDetailsRequest)(nil), "threading.ThreadItemViewDetailsRequest")
 	proto.RegisterType((*ThreadItemViewDetailsResponse)(nil), "threading.ThreadItemViewDetailsResponse")
+	proto.RegisterType((*CreateLinkedThreadsRequest)(nil), "threading.CreateLinkedThreadsRequest")
+	proto.RegisterType((*CreateLinkedThreadsResponse)(nil), "threading.CreateLinkedThreadsResponse")
+	proto.RegisterType((*CreateOnboardingThreadRequest)(nil), "threading.CreateOnboardingThreadRequest")
+	proto.RegisterType((*CreateOnboardingThreadResponse)(nil), "threading.CreateOnboardingThreadResponse")
 	proto.RegisterEnum("threading.Iterator_Direction", Iterator_Direction_name, Iterator_Direction_value)
 	proto.RegisterEnum("threading.ThreadItem_Type", ThreadItem_Type_name, ThreadItem_Type_value)
 	proto.RegisterEnum("threading.Reference_Type", Reference_Type_name, Reference_Type_value)
@@ -3349,6 +3415,133 @@ func (this *ThreadItemViewDetailsResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *CreateLinkedThreadsRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreateLinkedThreadsRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Organization1ID != that1.Organization1ID {
+		return false
+	}
+	if this.Organization2ID != that1.Organization2ID {
+		return false
+	}
+	if this.PrimaryEntity1ID != that1.PrimaryEntity1ID {
+		return false
+	}
+	if this.PrimaryEntity2ID != that1.PrimaryEntity2ID {
+		return false
+	}
+	if this.Text != that1.Text {
+		return false
+	}
+	if this.Title != that1.Title {
+		return false
+	}
+	if this.Summary != that1.Summary {
+		return false
+	}
+	return true
+}
+func (this *CreateLinkedThreadsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreateLinkedThreadsResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Thread1.Equal(that1.Thread1) {
+		return false
+	}
+	if !this.Thread2.Equal(that1.Thread2) {
+		return false
+	}
+	return true
+}
+func (this *CreateOnboardingThreadRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreateOnboardingThreadRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.OrganizationID != that1.OrganizationID {
+		return false
+	}
+	if this.PrimaryEntityID != that1.PrimaryEntityID {
+		return false
+	}
+	if this.Summary != that1.Summary {
+		return false
+	}
+	return true
+}
+func (this *CreateOnboardingThreadResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*CreateOnboardingThreadResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Thread.Equal(that1.Thread) {
+		return false
+	}
+	return true
+}
 func (this *Iterator) GoString() string {
 	if this == nil {
 		return "nil"
@@ -4138,6 +4331,61 @@ func (this *ThreadItemViewDetailsResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *CreateLinkedThreadsRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 11)
+	s = append(s, "&threading.CreateLinkedThreadsRequest{")
+	s = append(s, "Organization1ID: "+fmt.Sprintf("%#v", this.Organization1ID)+",\n")
+	s = append(s, "Organization2ID: "+fmt.Sprintf("%#v", this.Organization2ID)+",\n")
+	s = append(s, "PrimaryEntity1ID: "+fmt.Sprintf("%#v", this.PrimaryEntity1ID)+",\n")
+	s = append(s, "PrimaryEntity2ID: "+fmt.Sprintf("%#v", this.PrimaryEntity2ID)+",\n")
+	s = append(s, "Text: "+fmt.Sprintf("%#v", this.Text)+",\n")
+	s = append(s, "Title: "+fmt.Sprintf("%#v", this.Title)+",\n")
+	s = append(s, "Summary: "+fmt.Sprintf("%#v", this.Summary)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreateLinkedThreadsResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&threading.CreateLinkedThreadsResponse{")
+	if this.Thread1 != nil {
+		s = append(s, "Thread1: "+fmt.Sprintf("%#v", this.Thread1)+",\n")
+	}
+	if this.Thread2 != nil {
+		s = append(s, "Thread2: "+fmt.Sprintf("%#v", this.Thread2)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreateOnboardingThreadRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&threading.CreateOnboardingThreadRequest{")
+	s = append(s, "OrganizationID: "+fmt.Sprintf("%#v", this.OrganizationID)+",\n")
+	s = append(s, "PrimaryEntityID: "+fmt.Sprintf("%#v", this.PrimaryEntityID)+",\n")
+	s = append(s, "Summary: "+fmt.Sprintf("%#v", this.Summary)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreateOnboardingThreadResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&threading.CreateOnboardingThreadResponse{")
+	if this.Thread != nil {
+		s = append(s, "Thread: "+fmt.Sprintf("%#v", this.Thread)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func valueToGoStringSvc(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -4175,6 +4423,10 @@ type ThreadsClient interface {
 	CreateSavedQuery(ctx context.Context, in *CreateSavedQueryRequest, opts ...grpc.CallOption) (*CreateSavedQueryResponse, error)
 	// CreateEmptyThread creates a new thread with no messages
 	CreateEmptyThread(ctx context.Context, in *CreateEmptyThreadRequest, opts ...grpc.CallOption) (*CreateEmptyThreadResponse, error)
+	// CreateLinkedThreads creates a pair of threads in two separate organizations that allows cross-org communication.
+	CreateLinkedThreads(ctx context.Context, in *CreateLinkedThreadsRequest, opts ...grpc.CallOption) (*CreateLinkedThreadsResponse, error)
+	// CreateOnboardingThread create a new scripted onboarding thread.
+	CreateOnboardingThread(ctx context.Context, in *CreateOnboardingThreadRequest, opts ...grpc.CallOption) (*CreateOnboardingThreadResponse, error)
 	// CreateThread create a new thread with an initial message
 	CreateThread(ctx context.Context, in *CreateThreadRequest, opts ...grpc.CallOption) (*CreateThreadResponse, error)
 	// DeleteMessage deletes a message from a thread
@@ -4229,6 +4481,24 @@ func (c *threadsClient) CreateSavedQuery(ctx context.Context, in *CreateSavedQue
 func (c *threadsClient) CreateEmptyThread(ctx context.Context, in *CreateEmptyThreadRequest, opts ...grpc.CallOption) (*CreateEmptyThreadResponse, error) {
 	out := new(CreateEmptyThreadResponse)
 	err := grpc.Invoke(ctx, "/threading.Threads/CreateEmptyThread", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *threadsClient) CreateLinkedThreads(ctx context.Context, in *CreateLinkedThreadsRequest, opts ...grpc.CallOption) (*CreateLinkedThreadsResponse, error) {
+	out := new(CreateLinkedThreadsResponse)
+	err := grpc.Invoke(ctx, "/threading.Threads/CreateLinkedThreads", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *threadsClient) CreateOnboardingThread(ctx context.Context, in *CreateOnboardingThreadRequest, opts ...grpc.CallOption) (*CreateOnboardingThreadResponse, error) {
+	out := new(CreateOnboardingThreadResponse)
+	err := grpc.Invoke(ctx, "/threading.Threads/CreateOnboardingThread", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -4386,6 +4656,10 @@ type ThreadsServer interface {
 	CreateSavedQuery(context.Context, *CreateSavedQueryRequest) (*CreateSavedQueryResponse, error)
 	// CreateEmptyThread creates a new thread with no messages
 	CreateEmptyThread(context.Context, *CreateEmptyThreadRequest) (*CreateEmptyThreadResponse, error)
+	// CreateLinkedThreads creates a pair of threads in two separate organizations that allows cross-org communication.
+	CreateLinkedThreads(context.Context, *CreateLinkedThreadsRequest) (*CreateLinkedThreadsResponse, error)
+	// CreateOnboardingThread create a new scripted onboarding thread.
+	CreateOnboardingThread(context.Context, *CreateOnboardingThreadRequest) (*CreateOnboardingThreadResponse, error)
 	// CreateThread create a new thread with an initial message
 	CreateThread(context.Context, *CreateThreadRequest) (*CreateThreadResponse, error)
 	// DeleteMessage deletes a message from a thread
@@ -4442,6 +4716,30 @@ func _Threads_CreateEmptyThread_Handler(srv interface{}, ctx context.Context, de
 		return nil, err
 	}
 	out, err := srv.(ThreadsServer).CreateEmptyThread(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Threads_CreateLinkedThreads_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(CreateLinkedThreadsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(ThreadsServer).CreateLinkedThreads(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Threads_CreateOnboardingThread_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(CreateOnboardingThreadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(ThreadsServer).CreateOnboardingThread(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -4651,6 +4949,14 @@ var _Threads_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateEmptyThread",
 			Handler:    _Threads_CreateEmptyThread_Handler,
+		},
+		{
+			MethodName: "CreateLinkedThreads",
+			Handler:    _Threads_CreateLinkedThreads_Handler,
+		},
+		{
+			MethodName: "CreateOnboardingThread",
+			Handler:    _Threads_CreateOnboardingThread_Handler,
 		},
 		{
 			MethodName: "CreateThread",
@@ -6914,6 +7220,168 @@ func (m *ThreadItemViewDetailsResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *CreateLinkedThreadsRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreateLinkedThreadsRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Organization1ID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Organization1ID)))
+		i += copy(data[i:], m.Organization1ID)
+	}
+	if len(m.Organization2ID) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Organization2ID)))
+		i += copy(data[i:], m.Organization2ID)
+	}
+	if len(m.PrimaryEntity1ID) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.PrimaryEntity1ID)))
+		i += copy(data[i:], m.PrimaryEntity1ID)
+	}
+	if len(m.PrimaryEntity2ID) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.PrimaryEntity2ID)))
+		i += copy(data[i:], m.PrimaryEntity2ID)
+	}
+	if len(m.Text) > 0 {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Text)))
+		i += copy(data[i:], m.Text)
+	}
+	if len(m.Title) > 0 {
+		data[i] = 0x32
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Title)))
+		i += copy(data[i:], m.Title)
+	}
+	if len(m.Summary) > 0 {
+		data[i] = 0x3a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Summary)))
+		i += copy(data[i:], m.Summary)
+	}
+	return i, nil
+}
+
+func (m *CreateLinkedThreadsResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreateLinkedThreadsResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Thread1 != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Thread1.Size()))
+		n33, err := m.Thread1.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n33
+	}
+	if m.Thread2 != nil {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Thread2.Size()))
+		n34, err := m.Thread2.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n34
+	}
+	return i, nil
+}
+
+func (m *CreateOnboardingThreadRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreateOnboardingThreadRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.OrganizationID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.OrganizationID)))
+		i += copy(data[i:], m.OrganizationID)
+	}
+	if len(m.PrimaryEntityID) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.PrimaryEntityID)))
+		i += copy(data[i:], m.PrimaryEntityID)
+	}
+	if len(m.Summary) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Summary)))
+		i += copy(data[i:], m.Summary)
+	}
+	return i, nil
+}
+
+func (m *CreateOnboardingThreadResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CreateOnboardingThreadResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Thread != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
+		n35, err := m.Thread.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n35
+	}
+	return i, nil
+}
+
 func encodeFixed64Svc(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -7940,6 +8408,82 @@ func (m *ThreadItemViewDetailsResponse) Size() (n int) {
 	return n
 }
 
+func (m *CreateLinkedThreadsRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Organization1ID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Organization2ID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.PrimaryEntity1ID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.PrimaryEntity2ID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Text)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Title)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Summary)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *CreateLinkedThreadsResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.Thread1 != nil {
+		l = m.Thread1.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.Thread2 != nil {
+		l = m.Thread2.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *CreateOnboardingThreadRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.OrganizationID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.PrimaryEntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Summary)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *CreateOnboardingThreadResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.Thread != nil {
+		l = m.Thread.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
 func sovSvc(x uint64) (n int) {
 	for {
 		n++
@@ -8674,6 +9218,55 @@ func (this *ThreadItemViewDetailsResponse) String() string {
 	}
 	s := strings.Join([]string{`&ThreadItemViewDetailsResponse{`,
 		`ItemViewDetails:` + strings.Replace(fmt.Sprintf("%v", this.ItemViewDetails), "ThreadItemViewDetails", "ThreadItemViewDetails", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateLinkedThreadsRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateLinkedThreadsRequest{`,
+		`Organization1ID:` + fmt.Sprintf("%v", this.Organization1ID) + `,`,
+		`Organization2ID:` + fmt.Sprintf("%v", this.Organization2ID) + `,`,
+		`PrimaryEntity1ID:` + fmt.Sprintf("%v", this.PrimaryEntity1ID) + `,`,
+		`PrimaryEntity2ID:` + fmt.Sprintf("%v", this.PrimaryEntity2ID) + `,`,
+		`Text:` + fmt.Sprintf("%v", this.Text) + `,`,
+		`Title:` + fmt.Sprintf("%v", this.Title) + `,`,
+		`Summary:` + fmt.Sprintf("%v", this.Summary) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateLinkedThreadsResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateLinkedThreadsResponse{`,
+		`Thread1:` + strings.Replace(fmt.Sprintf("%v", this.Thread1), "Thread", "Thread", 1) + `,`,
+		`Thread2:` + strings.Replace(fmt.Sprintf("%v", this.Thread2), "Thread", "Thread", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateOnboardingThreadRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateOnboardingThreadRequest{`,
+		`OrganizationID:` + fmt.Sprintf("%v", this.OrganizationID) + `,`,
+		`PrimaryEntityID:` + fmt.Sprintf("%v", this.PrimaryEntityID) + `,`,
+		`Summary:` + fmt.Sprintf("%v", this.Summary) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateOnboardingThreadResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateOnboardingThreadResponse{`,
+		`Thread:` + strings.Replace(fmt.Sprintf("%v", this.Thread), "Thread", "Thread", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -15775,6 +16368,595 @@ func (m *ThreadItemViewDetailsResponse) Unmarshal(data []byte) error {
 			}
 			m.ItemViewDetails = append(m.ItemViewDetails, &ThreadItemViewDetails{})
 			if err := m.ItemViewDetails[len(m.ItemViewDetails)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateLinkedThreadsRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateLinkedThreadsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateLinkedThreadsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Organization1ID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Organization1ID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Organization2ID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Organization2ID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PrimaryEntity1ID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PrimaryEntity1ID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PrimaryEntity2ID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PrimaryEntity2ID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Text", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Text = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Title", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Title = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Summary", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Summary = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateLinkedThreadsResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateLinkedThreadsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateLinkedThreadsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Thread1", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Thread1 == nil {
+				m.Thread1 = &Thread{}
+			}
+			if err := m.Thread1.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Thread2", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Thread2 == nil {
+				m.Thread2 = &Thread{}
+			}
+			if err := m.Thread2.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateOnboardingThreadRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateOnboardingThreadRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateOnboardingThreadRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OrganizationID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PrimaryEntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PrimaryEntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Summary", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Summary = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateOnboardingThreadResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateOnboardingThreadResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateOnboardingThreadResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Thread", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Thread == nil {
+				m.Thread = &Thread{}
+			}
+			if err := m.Thread.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

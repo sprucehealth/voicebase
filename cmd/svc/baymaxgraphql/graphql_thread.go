@@ -46,12 +46,14 @@ var threadType = graphql.NewObject(
 					}
 
 					ram := raccess.ResourceAccess(p)
-					ent, err := ram.Entity(ctx, th.PrimaryEntityID, []directory.EntityInformation{
-						directory.EntityInformation_CONTACTS,
-					}, 0)
+					ent, err := primaryEntityForThread(ctx, ram, th)
 					if err != nil {
 						return nil, err
 					}
+					if ent.Type != directory.EntityType_EXTERNAL {
+						return []*models.Endpoint{}, nil
+					}
+
 					endpoints := make([]*models.Endpoint, len(ent.Contacts))
 					for i, c := range ent.Contacts {
 						endpoint, err := transformEntityContactToEndpoint(c)
@@ -74,11 +76,12 @@ var threadType = graphql.NewObject(
 					}
 
 					ram := raccess.ResourceAccess(p)
-					ent, err := ram.Entity(ctx, th.PrimaryEntityID, []directory.EntityInformation{
-						directory.EntityInformation_CONTACTS,
-					}, 0)
+					ent, err := primaryEntityForThread(ctx, ram, th)
 					if err != nil {
 						return nil, err
+					}
+					if ent.Type != directory.EntityType_EXTERNAL {
+						return []*models.Endpoint{}, nil
 					}
 
 					var filteredEndpoints []*models.Endpoint
@@ -126,13 +129,11 @@ var threadType = graphql.NewObject(
 					}
 
 					ram := raccess.ResourceAccess(p)
-					e, err := ram.Entity(ctx, th.PrimaryEntityID, []directory.EntityInformation{
-						directory.EntityInformation_CONTACTS,
-					}, 0)
+					pe, err := primaryEntityForThread(ctx, ram, th)
 					if err != nil {
-						return nil, err
+						return nil, errors.InternalError(ctx, err)
 					}
-					ent, err := transformEntityToResponse(e)
+					ent, err := transformEntityToResponse(pe)
 					if err != nil {
 						return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity: %s", err))
 					}
@@ -244,4 +245,25 @@ func lookupThread(ctx context.Context, ram raccess.ResourceAccessor, threadID, v
 		return nil, errors.InternalError(ctx, err)
 	}
 	return th, nil
+}
+
+func primaryEntityForThread(ctx context.Context, ram raccess.ResourceAccessor, t *models.Thread) (*directory.Entity, error) {
+	t.Mu.RLock()
+	if t.PrimaryEntity != nil {
+		t.Mu.RUnlock()
+		return t.PrimaryEntity, nil
+	}
+
+	t.Mu.Lock()
+	defer t.Mu.Unlock()
+
+	// Could have been fetched by someone else at this point
+	if t.PrimaryEntity != nil {
+		return t.PrimaryEntity, nil
+	}
+	ent, err := ram.Entity(ctx, t.PrimaryEntityID, []directory.EntityInformation{
+		directory.EntityInformation_CONTACTS,
+	}, 0)
+	t.PrimaryEntity = ent
+	return ent, err
 }

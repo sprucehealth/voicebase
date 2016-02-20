@@ -5,13 +5,10 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
@@ -35,6 +32,7 @@ var (
 	flagFromEmail     = flag.String("from_email", "", "Email address from which to send invites")
 	flagListen        = flag.String("listen_addr", ":5001", "`host:port` for grpc server")
 	flagSendGridKey   = flag.String("sendgrid_key", "", "SendGrid API `key`")
+	flagEventsTopic   = flag.String("events_topic", "", "SNS topic ARN for publishing events")
 
 	// For local development
 	flagDynamoDBEndpoint = flag.String("dynamodb_endpoint", "", "DynamoDB endpoint `URL` (for local development)")
@@ -43,34 +41,6 @@ var (
 func init() {
 	// Disable the built in grpc tracing and use our own
 	grpc.EnableTracing = false
-}
-
-func createAWSSession() (*session.Session, error) {
-	var creds *credentials.Credentials
-	if *flagAWSAccessKey != "" && *flagAWSSecretKey != "" {
-		creds = credentials.NewStaticCredentials(*flagAWSAccessKey, *flagAWSSecretKey, *flagAWSToken)
-	} else {
-		creds = credentials.NewEnvCredentials()
-		if v, err := creds.Get(); err != nil || v.AccessKeyID == "" || v.SecretAccessKey == "" {
-			creds = ec2rolecreds.NewCredentials(session.New(), func(p *ec2rolecreds.EC2RoleProvider) {
-				p.ExpiryWindow = time.Minute * 5
-			})
-		}
-	}
-	if *flagAWSRegion == "" {
-		az, err := awsutil.GetMetadata(awsutil.MetadataAvailabilityZone)
-		if err != nil {
-			return nil, err
-		}
-		// Remove the last letter of the az to get the region (e.g. us-east-1a -> us-east-1)
-		*flagAWSRegion = az[:len(az)-1]
-	}
-
-	awsConfig := &aws.Config{
-		Credentials: creds,
-		Region:      flagAWSRegion,
-	}
-	return session.New(awsConfig), nil
 }
 
 func main() {
@@ -84,10 +54,11 @@ func main() {
 		golog.Fatalf("sendgrid_key required")
 	}
 
-	awsSession, err := createAWSSession()
+	awsConfig, err := awsutil.Config(*flagAWSRegion, *flagAWSAccessKey, *flagAWSSecretKey, *flagAWSToken)
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
+	awsSession := session.New(awsConfig)
 
 	db := dynamodb.New(awsSession)
 
@@ -109,7 +80,9 @@ func main() {
 	sg := sendgrid.NewSendGridClientWithApiKey(*flagSendGridKey)
 	branchCli := branch.NewClient(*flagBranchKey)
 
-	srv := server.New(dal.New(db, environment.GetCurrent()), nil, directoryClient, branchCli, sg, *flagFromEmail)
+	snsCli := sns.New(awsSession)
+
+	srv := server.New(dal.New(db, environment.GetCurrent()), nil, directoryClient, snsCli, branchCli, sg, *flagFromEmail, *flagEventsTopic)
 	s := grpc.NewServer()
 	defer s.Stop()
 	invite.RegisterInviteServer(s, srv)

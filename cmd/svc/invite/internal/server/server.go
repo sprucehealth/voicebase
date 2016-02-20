@@ -8,6 +8,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/smtpapi-go"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
@@ -19,6 +20,7 @@ import (
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/events"
 	"github.com/sprucehealth/backend/svc/invite"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -40,6 +42,8 @@ type server struct {
 	branch          branch.Client
 	sg              SendGridClient
 	fromEmail       string
+	eventsTopic     string
+	sns             snsiface.SNSAPI
 }
 
 type popover struct {
@@ -64,7 +68,7 @@ type SendGridClient interface {
 }
 
 // New returns an initialized instance of the invite server
-func New(dal dal.DAL, clk clock.Clock, directoryClient directory.DirectoryClient, branch branch.Client, sg SendGridClient, fromEmail string) invite.InviteServer {
+func New(dal dal.DAL, clk clock.Clock, directoryClient directory.DirectoryClient, snsC snsiface.SNSAPI, branch branch.Client, sg SendGridClient, fromEmail string, eventsTopic string) invite.InviteServer {
 	if clk == nil {
 		clk = clock.New()
 	}
@@ -72,9 +76,11 @@ func New(dal dal.DAL, clk clock.Clock, directoryClient directory.DirectoryClient
 		dal:             dal,
 		clk:             clk,
 		directoryClient: directoryClient,
+		sns:             snsC,
 		branch:          branch,
 		sg:              sg,
 		fromEmail:       fromEmail,
+		eventsTopic:     eventsTopic,
 	}
 }
 
@@ -248,6 +254,17 @@ func (s *server) InviteColleagues(ctx context.Context, in *invite.InviteColleagu
 			golog.Errorf("Failed to send invite %s email to %s: %s", token, c.Email, err)
 		}
 	}
+
+	events.Publish(s.sns, s.eventsTopic, events.Service_INVITE, &invite.Event{
+		Type: invite.Event_INVITED_COLLEAGUES,
+		Details: &invite.Event_InvitedColleagues{
+			InvitedColleagues: &invite.InvitedColleagues{
+				OrganizationEntityID: in.OrganizationEntityID,
+				InviterEntityID:      in.InviterEntityID,
+			},
+		},
+	})
+
 	return &invite.InviteColleaguesResponse{}, nil
 }
 

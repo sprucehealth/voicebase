@@ -32,6 +32,7 @@ func newGQL(t *testing.T) *gql {
 		invite:       g.inviteC,
 		settings:     g.settingsC,
 		notification: g.notificationC,
+		spruceOrgID:  "spruce_org",
 	}
 	return &g
 }

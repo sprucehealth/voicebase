@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package excomms;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = true;
+
+enum EndpointType {
+	INVALID = 0;
+	PHONE = 1;
+	EMAIL = 2;
+}
+
+message Event {
+	enum Type {
+		INVALID = 0;
+		PROVISIONED_ENDPOINT = 1;
+	}
+	Type type = 1;
+	oneof details {
+		ProvisionedEndpoint provisioned_endpoint = 10;
+	}
+}
+
+message ProvisionedEndpoint {
+	string for_entity_id = 1 [(gogoproto.customname) = "ForEntityID"];
+	EndpointType endpoint_type = 2;
+	string endpoint = 3;
+}

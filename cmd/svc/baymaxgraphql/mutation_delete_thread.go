@@ -17,35 +17,31 @@ type deleteThreadOutput struct {
 	ErrorMessage     string `json:"errorMessage,omitempty"`
 }
 
-var deleteThreadInputType = graphql.NewInputObject(
-	graphql.InputObjectConfig{
-		Name: "DeleteThreadInput",
-		Fields: graphql.InputObjectConfigFieldMap{
-			"clientMutationId": newClientMutationIDInputField(),
-			"uuid":             newUUIDInputField(),
-			"threadID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
-		},
+var deleteThreadInputType = graphql.NewInputObject(graphql.InputObjectConfig{
+	Name: "DeleteThreadInput",
+	Fields: graphql.InputObjectConfigFieldMap{
+		"clientMutationId": newClientMutationIDInputField(),
+		"uuid":             newUUIDInputField(),
+		"threadID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
 	},
-)
+})
 
 // JANK: can't have an empty enum and we want this field to always exist so make it a string until it's needed
 var deleteThreadErrorCodeEnum = graphql.String
 
-var deleteThreadOutputType = graphql.NewObject(
-	graphql.ObjectConfig{
-		Name: "DeleteThreadPayload",
-		Fields: graphql.Fields{
-			"clientMutationId": newClientmutationIDOutputField(),
-			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"errorCode":        &graphql.Field{Type: deleteThreadErrorCodeEnum},
-			"errorMessage":     &graphql.Field{Type: graphql.String},
-		},
-		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
-			_, ok := value.(*deleteThreadOutput)
-			return ok
-		},
+var deleteThreadOutputType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "DeleteThreadPayload",
+	Fields: graphql.Fields{
+		"clientMutationId": newClientmutationIDOutputField(),
+		"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"errorCode":        &graphql.Field{Type: deleteThreadErrorCodeEnum},
+		"errorMessage":     &graphql.Field{Type: graphql.String},
 	},
-)
+	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+		_, ok := value.(*deleteThreadOutput)
+		return ok
+	},
+})
 
 var deleteThreadMutation = &graphql.Field{
 	Type: graphql.NewNonNull(deleteThreadOutputType),

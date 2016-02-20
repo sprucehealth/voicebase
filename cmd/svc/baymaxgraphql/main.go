@@ -9,13 +9,14 @@ import (
 	"path"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/rs/cors"
 	"github.com/sprucehealth/backend/boot"
 	mediastore "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/stub"
-	"github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/environment"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/media"
@@ -42,6 +43,7 @@ var (
 	flagSigKeys       = flag.String("signature_keys_csv", "", "csv signature keys")
 	flagEmailDomain   = flag.String("email_domain", "", "domain to use for email address provisioning")
 	flagServiceNumber = flag.String("service_phone_number", "", "TODO: This should be managed by the excomms service")
+	flagSpruceOrgID   = flag.String("spruce_org_id", "", "`ID` for the Spruce support organization")
 
 	// Services
 	flagAuthAddr                   = flag.String("auth_addr", "", "host:port of auth service")
@@ -63,6 +65,10 @@ var (
 func main() {
 	boot.ParseFlags("BAYMAXGRAPHQL_")
 	boot.InitService()
+
+	if *flagSpruceOrgID == "" {
+		golog.Fatalf("-spruce_org_id flag is required")
+	}
 
 	if *flagServiceNumber == "" {
 		golog.Fatalf("A service phone number must be provided")
@@ -130,11 +136,9 @@ func main() {
 	}
 	inviteClient := invite.NewInviteClient(conn)
 
-	baseConfig := &config.BaseConfig{
-		AppName:      "baymaxgraphql",
-		AWSRegion:    *flagAWSRegion,
-		AWSSecretKey: *flagAWSSecretKey,
-		AWSAccessKey: *flagAWSAccessKey,
+	awsConfig, err := awsutil.Config(*flagAWSRegion, *flagAWSAccessKey, *flagAWSSecretKey, "")
+	if err != nil {
+		golog.Fatalf(err.Error())
 	}
 
 	if *flagSQSDeviceRegistrationURL == "" {
@@ -146,7 +150,7 @@ func main() {
 	if *flagSQSNotificationURL == "" {
 		golog.Fatalf("Notification service notification queue not configured")
 	}
-	awsSession := baseConfig.AWSSession()
+	awsSession := session.New(awsConfig)
 	notificationClient := notification.NewClient(sqs.New(awsSession), &notification.ClientConfig{
 		SQSDeviceRegistrationURL:   *flagSQSDeviceRegistrationURL,
 		SQSNotificationURL:         *flagSQSNotificationURL,
@@ -184,7 +188,7 @@ func main() {
 
 	corsOrigins := []string{"https://" + *flagWebDomain}
 
-	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, settingsClient, inviteClient, ms, *flagEmailDomain, *flagWebDomain, pn)
+	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, settingsClient, inviteClient, ms, *flagEmailDomain, *flagWebDomain, pn, *flagSpruceOrgID)
 	r.Handle("/graphql", httputil.ToContextHandler(cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},

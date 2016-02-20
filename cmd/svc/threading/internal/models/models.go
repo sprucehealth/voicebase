@@ -206,3 +206,9 @@ type SavedQuery struct {
 	Created        time.Time
 	Modified       time.Time
 }
+
+// OnboardingState is the state of an onboarding thread
+type OnboardingState struct {
+	ThreadID ThreadID
+	Step     int
+}

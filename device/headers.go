@@ -126,9 +126,9 @@ func ExtractSpruceHeaders(w http.ResponseWriter, r *http.Request) *SpruceHeaders
 				}
 				http.SetCookie(w, &http.Cookie{
 					Name:     deviceIDCookie,
+					Domain:   domain,
 					Value:    sHeaders.DeviceID,
 					Path:     "/",
-					Domain:   domain,
 					Secure:   !environment.IsDev(),
 					HttpOnly: true,
 				})

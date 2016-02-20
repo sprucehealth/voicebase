@@ -2,11 +2,13 @@ package server
 
 import (
 	"bytes"
+	"encoding/base64"
 	"io/ioutil"
 	"net/http"
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	dalmock "github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
@@ -14,16 +16,22 @@ import (
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/libs/twilio"
 	"github.com/sprucehealth/backend/svc/directory"
 	dirmock "github.com/sprucehealth/backend/svc/directory/mock"
+	"github.com/sprucehealth/backend/svc/events"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
+
+func init() {
+	conc.Testing = true
+}
 
 type mockAvailablePhoneNumberService_Excomms struct {
 	twilio.AvailablephoneNumbersIFace
@@ -209,9 +217,12 @@ func TestProvisionPhoneNumber_NotProvisioned_AreaCode(t *testing.T) {
 		},
 	}
 
+	snsC := mock.NewSNSAPI(t)
 	es := &excommsService{
-		twilio: twilio.NewClient("", "", nil),
-		dal:    md,
+		twilio:     twilio.NewClient("", "", nil),
+		dal:        md,
+		sns:        snsC,
+		eventTopic: "eventsTopic",
 	}
 	es.twilio.IncomingPhoneNumber = mi
 
@@ -224,6 +235,22 @@ func TestProvisionPhoneNumber_NotProvisioned_AreaCode(t *testing.T) {
 		Endpoint:       "+14152222222",
 		EndpointType:   models.EndpointTypePhone,
 	}))
+
+	eventData, err := events.MarshalEnvelope(events.Service_EXCOMMS, &excomms.Event{
+		Type: excomms.Event_PROVISIONED_ENDPOINT,
+		Details: &excomms.Event_ProvisionedEndpoint{
+			ProvisionedEndpoint: &excomms.ProvisionedEndpoint{
+				ForEntityID:  "test",
+				EndpointType: excomms.EndpointType_PHONE,
+				Endpoint:     "+14152222222",
+			},
+		},
+	})
+	test.OK(t, err)
+	snsC.Expect(mock.NewExpectation(snsC.Publish, &sns.PublishInput{
+		Message:  ptr.String(base64.StdEncoding.EncodeToString(eventData)),
+		TopicArn: ptr.String("eventsTopic"),
+	}).WithReturns(&sns.PublishOutput{}, nil))
 
 	res, err := es.ProvisionPhoneNumber(context.Background(), &excomms.ProvisionPhoneNumberRequest{
 		ProvisionFor: "test",
@@ -253,9 +280,12 @@ func TestProvisionPhoneNumber_NotProvisioned_PhoneNumber(t *testing.T) {
 		},
 	}
 
+	snsC := mock.NewSNSAPI(t)
 	es := &excommsService{
-		twilio: twilio.NewClient("", "", nil),
-		dal:    md,
+		twilio:     twilio.NewClient("", "", nil),
+		dal:        md,
+		sns:        snsC,
+		eventTopic: "eventsTopic",
 	}
 	es.twilio.IncomingPhoneNumber = mi
 
@@ -268,6 +298,22 @@ func TestProvisionPhoneNumber_NotProvisioned_PhoneNumber(t *testing.T) {
 		Endpoint:       "+14152222222",
 		EndpointType:   models.EndpointTypePhone,
 	}))
+
+	eventData, err := events.MarshalEnvelope(events.Service_EXCOMMS, &excomms.Event{
+		Type: excomms.Event_PROVISIONED_ENDPOINT,
+		Details: &excomms.Event_ProvisionedEndpoint{
+			ProvisionedEndpoint: &excomms.ProvisionedEndpoint{
+				ForEntityID:  "test",
+				EndpointType: excomms.EndpointType_PHONE,
+				Endpoint:     "+14152222222",
+			},
+		},
+	})
+	test.OK(t, err)
+	snsC.Expect(mock.NewExpectation(snsC.Publish, &sns.PublishInput{
+		Message:  ptr.String(base64.StdEncoding.EncodeToString(eventData)),
+		TopicArn: ptr.String("eventsTopic"),
+	}).WithReturns(&sns.PublishOutput{}, nil))
 
 	res, err := es.ProvisionPhoneNumber(context.Background(), &excomms.ProvisionPhoneNumberRequest{
 		ProvisionFor: "test",
@@ -1134,9 +1180,12 @@ func TestProvisionEmailAddress(t *testing.T) {
 		},
 	}
 
+	snsC := mock.NewSNSAPI(t)
 	es := &excommsService{
-		twilio: twilio.NewClient("", "", nil),
-		dal:    md,
+		twilio:     twilio.NewClient("", "", nil),
+		dal:        md,
+		sns:        snsC,
+		eventTopic: "eventsTopic",
 	}
 
 	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpoint, "test", models.EndpointTypeEmail))
@@ -1145,6 +1194,22 @@ func TestProvisionEmailAddress(t *testing.T) {
 		Endpoint:       "test@subdomain.domain.com",
 		EndpointType:   models.EndpointTypeEmail,
 	}))
+
+	eventData, err := events.MarshalEnvelope(events.Service_EXCOMMS, &excomms.Event{
+		Type: excomms.Event_PROVISIONED_ENDPOINT,
+		Details: &excomms.Event_ProvisionedEndpoint{
+			ProvisionedEndpoint: &excomms.ProvisionedEndpoint{
+				ForEntityID:  "test",
+				EndpointType: excomms.EndpointType_EMAIL,
+				Endpoint:     "test@subdomain.domain.com",
+			},
+		},
+	})
+	test.OK(t, err)
+	snsC.Expect(mock.NewExpectation(snsC.Publish, &sns.PublishInput{
+		Message:  ptr.String(base64.StdEncoding.EncodeToString(eventData)),
+		TopicArn: ptr.String("eventsTopic"),
+	}).WithReturns(&sns.PublishOutput{}, nil))
 
 	res, err := es.ProvisionEmailAddress(context.Background(), &excomms.ProvisionEmailAddressRequest{
 		ProvisionFor: "test",

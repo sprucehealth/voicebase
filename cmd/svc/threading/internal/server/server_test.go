@@ -4,9 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
+	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal/dalmock"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
@@ -18,6 +17,7 @@ import (
 	mock_notification "github.com/sprucehealth/backend/svc/notification/mock"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/backend/test"
+	"golang.org/x/net/context"
 )
 
 func init() {
@@ -26,13 +26,13 @@ func init() {
 
 func TestCreateSavedQuery(t *testing.T) {
 	t.Parallel()
-	dl := newMockDAL(t)
+	dl := dalmock.New(t)
 	defer dl.Finish()
 	eid, err := models.NewSavedQueryID()
 	test.OK(t, err)
 	esq := &models.SavedQuery{OrganizationID: "o1", EntityID: "e1"}
 	dl.Expect(mock.NewExpectation(dl.CreateSavedQuery, esq).WithReturns(eid, nil))
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil)
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, "WEBDOMAIN")
 	res, err := srv.CreateSavedQuery(nil, &threading.CreateSavedQueryRequest{
 		OrganizationID: "o1",
 		EntityID:       "e1",
@@ -48,7 +48,7 @@ func TestCreateSavedQuery(t *testing.T) {
 
 func TestCreateEmptyThread(t *testing.T) {
 	t.Parallel()
-	dl := newMockDAL(t)
+	dl := dalmock.New(t)
 	defer dl.Finish()
 
 	now := time.Unix(1e7, 0)
@@ -74,7 +74,7 @@ func TestCreateEmptyThread(t *testing.T) {
 	}
 	dl.Expect(mock.NewExpectation(dl.Thread, thid).WithReturns(th2, nil))
 
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil)
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, "WEBDOMAIN")
 	res, err := srv.CreateEmptyThread(nil, &threading.CreateEmptyThreadRequest{
 		OrganizationID:  "o1",
 		FromEntityID:    "e1",
@@ -88,21 +88,20 @@ func TestCreateEmptyThread(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, &threading.CreateEmptyThreadResponse{
 		Thread: &threading.Thread{
-			ID:                         th2.ID.String(),
-			OrganizationID:             "o1",
-			PrimaryEntityID:            "e2",
-			LastMessageTimestamp:       uint64(now.Unix()),
-			LastMessageSummary:         "summ",
-			LastPrimaryEntityEndpoints: []*threading.Endpoint{},
-			CreatedTimestamp:           uint64(now.Unix()),
-			MessageCount:               0,
+			ID:                   th2.ID.String(),
+			OrganizationID:       "o1",
+			PrimaryEntityID:      "e2",
+			LastMessageTimestamp: uint64(now.Unix()),
+			LastMessageSummary:   "summ",
+			CreatedTimestamp:     uint64(now.Unix()),
+			MessageCount:         0,
 		},
 	}, res)
 }
 
 func TestCreateThread(t *testing.T) {
 	t.Parallel()
-	dl := newMockDAL(t)
+	dl := dalmock.New(t)
 	defer dl.Finish()
 	now := time.Now()
 
@@ -121,7 +120,6 @@ func TestCreateThread(t *testing.T) {
 		Internal:     true,
 		Title:        "foo % woo",
 		Text:         "<ref id=\"e2\" type=\"entity\">Foo</ref> bar",
-		Attachments:  []*models.Attachment{},
 		Source: &models.Endpoint{
 			ID:      "555-555-5555",
 			Channel: models.Endpoint_SMS,
@@ -159,7 +157,7 @@ func TestCreateThread(t *testing.T) {
 	}
 	dl.Expect(mock.NewExpectation(dl.Thread, thid).WithReturns(th2, nil))
 
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil)
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, "WEBDOMAIN")
 	res, err := srv.CreateThread(nil, &threading.CreateThreadRequest{
 		OrganizationID: "o1",
 		FromEntityID:   "e1",
@@ -185,9 +183,10 @@ func TestCreateThread(t *testing.T) {
 			OrganizationID: "o1",
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
-					Title:  "foo % woo",
-					Text:   "<ref id=\"e2\" type=\"entity\">Foo</ref> bar",
-					Status: threading.Message_NORMAL,
+					Title:   "foo % woo",
+					Text:    "<ref id=\"e2\" type=\"entity\">Foo</ref> bar",
+					Summary: "Foo bar",
+					Status:  threading.Message_NORMAL,
 					Source: &threading.Endpoint{
 						ID:      "555-555-5555",
 						Channel: threading.Endpoint_SMS,
@@ -199,23 +198,340 @@ func TestCreateThread(t *testing.T) {
 			},
 		},
 		Thread: &threading.Thread{
-			ID:                         th2.ID.String(),
-			OrganizationID:             "o1",
-			PrimaryEntityID:            "e1",
-			LastMessageTimestamp:       uint64(now.Unix()),
-			LastMessageSummary:         ps.Summary,
-			LastPrimaryEntityEndpoints: []*threading.Endpoint{},
-			CreatedTimestamp:           uint64(now.Unix()),
-			MessageCount:               0,
+			ID:                   th2.ID.String(),
+			OrganizationID:       "o1",
+			PrimaryEntityID:      "e1",
+			LastMessageTimestamp: uint64(now.Unix()),
+			LastMessageSummary:   ps.Summary,
+			CreatedTimestamp:     uint64(now.Unix()),
+			MessageCount:         0,
+		},
+	}, res)
+}
+
+func TestPostMessage(t *testing.T) {
+	t.Parallel()
+	dl := dalmock.New(t)
+	defer dl.Finish()
+	now := time.Now()
+
+	th1id, err := models.NewThreadID()
+	test.OK(t, err)
+	ti1id, err := models.NewThreadItemID()
+	test.OK(t, err)
+
+	dl.Expect(mock.NewExpectation(dl.Thread, th1id).WithReturns(&models.Thread{
+		ID:              th1id,
+		PrimaryEntityID: "e2",
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.LinkedThread, th1id).WithReturns((*models.Thread)(nil), dal.ErrNotFound))
+
+	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
+		ThreadID:     th1id,
+		FromEntityID: "e1",
+		Title:        "title",
+		Text:         "text",
+		Summary:      "summary",
+	}).WithReturns(&models.ThreadItem{
+		ID:            ti1id,
+		ThreadID:      th1id,
+		Created:       now,
+		ActorEntityID: "e1",
+		Internal:      false,
+		Type:          models.ItemTypeMessage,
+		Data: &models.Message{
+			Title:   "title",
+			Text:    "text",
+			Status:  models.Message_NORMAL,
+			Summary: "summary",
+		},
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{th1id}, []string{"e1"}, true).WithReturns(map[string][]*models.ThreadMember(nil), nil))
+
+	dl.Expect(mock.NewExpectation(dl.UpdateMember, th1id, "e1", (*dal.MemberUpdate)(nil)).WithReturns(nil))
+
+	dl.Expect(mock.NewExpectation(dl.Thread, th1id).WithReturns(&models.Thread{
+		ID:                           th1id,
+		Created:                      now,
+		MessageCount:                 1,
+		OrganizationID:               "o1",
+		PrimaryEntityID:              "e2",
+		LastExternalMessageSummary:   "summary",
+		LastExternalMessageTimestamp: now,
+	}, nil))
+
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, "WEBDOMAIN")
+	res, err := srv.PostMessage(nil, &threading.PostMessageRequest{
+		ThreadID:     th1id.String(),
+		FromEntityID: "e1",
+		Title:        "title",
+		Text:         "text",
+		Summary:      "summary",
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.PostMessageResponse{
+		Item: &threading.ThreadItem{
+			ID:             ti1id.String(),
+			ThreadID:       th1id.String(),
+			OrganizationID: "o1",
+			ActorEntityID:  "e1",
+			Internal:       false,
+			Type:           threading.ThreadItem_MESSAGE,
+			Timestamp:      uint64(now.Unix()),
+			Item: &threading.ThreadItem_Message{
+				Message: &threading.Message{
+					Title:   "title",
+					Text:    "text",
+					Status:  threading.Message_NORMAL,
+					Summary: "summary",
+				},
+			},
+		},
+		Thread: &threading.Thread{
+			ID:                   th1id.String(),
+			OrganizationID:       "o1",
+			PrimaryEntityID:      "e2",
+			LastMessageTimestamp: uint64(now.Unix()),
+			LastMessageSummary:   "summary",
+			CreatedTimestamp:     uint64(now.Unix()),
+			MessageCount:         1,
+		},
+	}, res)
+}
+
+func TestPostMessage_Linked(t *testing.T) {
+	t.Parallel()
+	dl := dalmock.New(t)
+	defer dl.Finish()
+	now := time.Now()
+
+	th1id, err := models.NewThreadID()
+	test.OK(t, err)
+	th2id, err := models.NewThreadID()
+	test.OK(t, err)
+	ti1id, err := models.NewThreadItemID()
+	test.OK(t, err)
+	ti2id, err := models.NewThreadItemID()
+	test.OK(t, err)
+
+	dl.Expect(mock.NewExpectation(dl.Thread, th1id).WithReturns(&models.Thread{
+		ID:              th1id,
+		PrimaryEntityID: "e2",
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.LinkedThread, th1id).WithReturns(&models.Thread{
+		ID:              th2id,
+		PrimaryEntityID: "e3",
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
+		ThreadID:     th1id,
+		FromEntityID: "e1",
+		Title:        "title",
+		Text:         "text",
+		Summary:      "summary",
+	}).WithReturns(&models.ThreadItem{
+		ID:            ti1id,
+		ThreadID:      th1id,
+		Created:       now,
+		ActorEntityID: "e1",
+		Internal:      false,
+		Type:          models.ItemTypeMessage,
+		Data: &models.Message{
+			Title:   "title",
+			Text:    "text",
+			Status:  models.Message_NORMAL,
+			Summary: "summary",
+		},
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{th1id}, []string{"e1"}, true).WithReturns(map[string][]*models.ThreadMember(nil), nil))
+
+	dl.Expect(mock.NewExpectation(dl.UpdateMember, th1id, "e1", (*dal.MemberUpdate)(nil)).WithReturns(nil))
+
+	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
+		ThreadID:     th2id,
+		FromEntityID: "e3",
+		Title:        "title",
+		Text:         "text",
+		Summary:      "summary",
+	}).WithReturns(&models.ThreadItem{
+		ID:            ti2id,
+		ThreadID:      th2id,
+		Created:       now,
+		ActorEntityID: "e3",
+		Internal:      false,
+		Type:          models.ItemTypeMessage,
+		Data: &models.Message{
+			Title:   "title",
+			Text:    "text",
+			Status:  models.Message_NORMAL,
+			Summary: "summary",
+		},
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.Thread, th1id).WithReturns(&models.Thread{
+		ID:                           th1id,
+		Created:                      now,
+		MessageCount:                 1,
+		OrganizationID:               "o1",
+		PrimaryEntityID:              "e2",
+		LastExternalMessageSummary:   "summary",
+		LastExternalMessageTimestamp: now,
+	}, nil))
+
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, "WEBDOMAIN")
+	res, err := srv.PostMessage(nil, &threading.PostMessageRequest{
+		ThreadID:     th1id.String(),
+		FromEntityID: "e1",
+		Title:        "title",
+		Text:         "text",
+		Summary:      "summary",
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.PostMessageResponse{
+		Item: &threading.ThreadItem{
+			ID:             ti1id.String(),
+			ThreadID:       th1id.String(),
+			OrganizationID: "o1",
+			ActorEntityID:  "e1",
+			Internal:       false,
+			Type:           threading.ThreadItem_MESSAGE,
+			Timestamp:      uint64(now.Unix()),
+			Item: &threading.ThreadItem_Message{
+				Message: &threading.Message{
+					Title:   "title",
+					Text:    "text",
+					Status:  threading.Message_NORMAL,
+					Summary: "summary",
+				},
+			},
+		},
+		Thread: &threading.Thread{
+			ID:                   th1id.String(),
+			OrganizationID:       "o1",
+			PrimaryEntityID:      "e2",
+			LastMessageTimestamp: uint64(now.Unix()),
+			LastMessageSummary:   "summary",
+			CreatedTimestamp:     uint64(now.Unix()),
+			MessageCount:         1,
+		},
+	}, res)
+}
+
+func TestCreateLinkedThreads(t *testing.T) {
+	t.Parallel()
+	dl := dalmock.New(t)
+	defer dl.Finish()
+
+	now := time.Unix(1e7, 0)
+
+	th1id, err := models.NewThreadID()
+	test.OK(t, err)
+	th1 := &models.Thread{
+		OrganizationID:     "o1",
+		PrimaryEntityID:    "e1",
+		LastMessageSummary: "summ",
+	}
+	dl.Expect(mock.NewExpectation(dl.CreateThread, th1).WithReturns(th1id, nil))
+
+	th2id, err := models.NewThreadID()
+	test.OK(t, err)
+	th2 := &models.Thread{
+		OrganizationID:     "o2",
+		PrimaryEntityID:    "e2",
+		LastMessageSummary: "summ",
+	}
+	dl.Expect(mock.NewExpectation(dl.CreateThread, th2).WithReturns(th2id, nil))
+
+	dl.Expect(mock.NewExpectation(dl.CreateThreadLink, th1id, th2id).WithReturns(nil))
+
+	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
+		ThreadID:     th1id,
+		FromEntityID: "e1",
+		Internal:     false,
+		Title:        "title",
+		Text:         "text",
+		TextRefs:     nil,
+		Attachments:  nil,
+		Destinations: nil,
+		Summary:      "summ",
+	}).WithReturns(&models.ThreadItem{}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
+		ThreadID:     th2id,
+		FromEntityID: "e2",
+		Internal:     false,
+		Title:        "title",
+		Text:         "text",
+		TextRefs:     nil,
+		Attachments:  nil,
+		Destinations: nil,
+		Summary:      "summ",
+	}).WithReturns(&models.ThreadItem{}, nil))
+
+	th1res := &models.Thread{
+		ID:                   th1id,
+		OrganizationID:       "o1",
+		PrimaryEntityID:      "e1",
+		LastMessageTimestamp: now,
+		LastMessageSummary:   "summ",
+		Created:              now,
+		MessageCount:         0,
+	}
+	dl.Expect(mock.NewExpectation(dl.Thread, th1id).WithReturns(th1res, nil))
+
+	th2res := &models.Thread{
+		ID:                   th2id,
+		OrganizationID:       "o2",
+		PrimaryEntityID:      "e2",
+		LastMessageTimestamp: now,
+		LastMessageSummary:   "summ",
+		Created:              now,
+		MessageCount:         0,
+	}
+	dl.Expect(mock.NewExpectation(dl.Thread, th2id).WithReturns(th2res, nil))
+
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, "WEBDOMAIN")
+	res, err := srv.CreateLinkedThreads(nil, &threading.CreateLinkedThreadsRequest{
+		Organization1ID:  "o1",
+		Organization2ID:  "o2",
+		PrimaryEntity1ID: "e1",
+		PrimaryEntity2ID: "e2",
+		Summary:          "summ",
+		Text:             "text",
+		Title:            "title",
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.CreateLinkedThreadsResponse{
+		Thread1: &threading.Thread{
+			ID:                   th1id.String(),
+			OrganizationID:       "o1",
+			PrimaryEntityID:      "e1",
+			LastMessageTimestamp: uint64(now.Unix()),
+			LastMessageSummary:   "summ",
+			CreatedTimestamp:     uint64(now.Unix()),
+			MessageCount:         0,
+		},
+		Thread2: &threading.Thread{
+			ID:                   th2id.String(),
+			OrganizationID:       "o2",
+			PrimaryEntityID:      "e2",
+			LastMessageTimestamp: uint64(now.Unix()),
+			LastMessageSummary:   "summ",
+			CreatedTimestamp:     uint64(now.Unix()),
+			MessageCount:         0,
 		},
 	}, res)
 }
 
 func TestThreadItem(t *testing.T) {
 	t.Parallel()
-	dl := newMockDAL(t)
+	dl := dalmock.New(t)
 	defer dl.Finish()
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil)
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, "WEBDOMAIN")
 
 	eid, err := models.NewThreadItemID()
 	test.OK(t, err)
@@ -267,7 +583,6 @@ func TestThreadItem(t *testing.T) {
 					},
 					EditedTimestamp: 123,
 					EditorEntityID:  "entity:1",
-					TextRefs:        []*threading.Reference{},
 				},
 			},
 		},
@@ -276,9 +591,9 @@ func TestThreadItem(t *testing.T) {
 
 func TestQueryThreads(t *testing.T) {
 	t.Parallel()
-	dl := newMockDAL(t)
+	dl := dalmock.New(t)
 	defer dl.Finish()
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil)
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, "WEBDOMAIN")
 
 	orgID := "entity:1"
 	peID := "entity:2"
@@ -358,9 +673,9 @@ func TestQueryThreads(t *testing.T) {
 
 func TestQueryThreadsWithViewer(t *testing.T) {
 	t.Parallel()
-	dl := newMockDAL(t)
+	dl := dalmock.New(t)
 	defer dl.Finish()
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil)
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, "WEBDOMAIN")
 
 	orgID := "entity:1"
 	peID := "entity:2"
@@ -463,9 +778,8 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 					PrimaryEntityID:      peID,
 					LastMessageTimestamp: uint64(now.Unix()),
 					Unread:               true,
-					LastPrimaryEntityEndpoints: []*threading.Endpoint{},
-					CreatedTimestamp:           uint64(time.Unix(now.Unix()-1000, 0).Unix()),
-					MessageCount:               32,
+					CreatedTimestamp:     uint64(time.Unix(now.Unix()-1000, 0).Unix()),
+					MessageCount:         32,
 				},
 				Cursor: "c2",
 			},
@@ -476,9 +790,8 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 					PrimaryEntityID:      peID,
 					LastMessageTimestamp: uint64(time.Unix(now.Unix()-1000, 0).Unix()),
 					Unread:               false,
-					LastPrimaryEntityEndpoints: []*threading.Endpoint{},
-					CreatedTimestamp:           uint64(time.Unix(now.Unix()-2000, 0).Unix()),
-					MessageCount:               33,
+					CreatedTimestamp:     uint64(time.Unix(now.Unix()-2000, 0).Unix()),
+					MessageCount:         33,
 				},
 				Cursor: "c3",
 			},
@@ -489,9 +802,8 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 					PrimaryEntityID:      peID,
 					LastMessageTimestamp: uint64(now.Unix()),
 					Unread:               false,
-					LastPrimaryEntityEndpoints: []*threading.Endpoint{},
-					CreatedTimestamp:           uint64(now.Unix()),
-					MessageCount:               0,
+					CreatedTimestamp:     uint64(now.Unix()),
+					MessageCount:         0,
 				},
 				Cursor: "c4",
 			},
@@ -501,9 +813,9 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 
 func TestThread(t *testing.T) {
 	t.Parallel()
-	dl := newMockDAL(t)
+	dl := dalmock.New(t)
 	defer dl.Finish()
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil)
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, "WEBDOMAIN")
 
 	thID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -527,23 +839,22 @@ func TestThread(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, &threading.ThreadResponse{
 		Thread: &threading.Thread{
-			ID:                         thID.String(),
-			OrganizationID:             orgID,
-			PrimaryEntityID:            entID,
-			LastMessageTimestamp:       uint64(now.Unix()),
-			LastPrimaryEntityEndpoints: []*threading.Endpoint{},
-			CreatedTimestamp:           uint64(created.Unix()),
-			MessageCount:               32,
-			Unread:                     false,
+			ID:                   thID.String(),
+			OrganizationID:       orgID,
+			PrimaryEntityID:      entID,
+			LastMessageTimestamp: uint64(now.Unix()),
+			CreatedTimestamp:     uint64(created.Unix()),
+			MessageCount:         32,
+			Unread:               false,
 		},
 	}, res)
 }
 
 func TestThreadWithViewer(t *testing.T) {
 	t.Parallel()
-	dl := newMockDAL(t)
+	dl := dalmock.New(t)
 	defer dl.Finish()
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil)
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, "WEBDOMAIN")
 
 	thID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -585,18 +896,17 @@ func TestThreadWithViewer(t *testing.T) {
 			PrimaryEntityID:      entID,
 			LastMessageTimestamp: uint64(now.Unix()),
 			Unread:               true,
-			LastPrimaryEntityEndpoints: []*threading.Endpoint{},
-			CreatedTimestamp:           uint64(created.Unix()),
-			MessageCount:               32,
+			CreatedTimestamp:     uint64(created.Unix()),
+			MessageCount:         32,
 		},
 	}, res)
 }
 
 func TestThreadWithViewerNoMembership(t *testing.T) {
 	t.Parallel()
-	dl := newMockDAL(t)
+	dl := dalmock.New(t)
 	defer dl.Finish()
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil)
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, "WEBDOMAIN")
 
 	thID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -628,18 +938,17 @@ func TestThreadWithViewerNoMembership(t *testing.T) {
 			PrimaryEntityID:      entID,
 			LastMessageTimestamp: uint64(now.Unix()),
 			Unread:               true,
-			LastPrimaryEntityEndpoints: []*threading.Endpoint{},
-			CreatedTimestamp:           uint64(created.Unix()),
-			MessageCount:               32,
+			CreatedTimestamp:     uint64(created.Unix()),
+			MessageCount:         32,
 		},
 	}, res)
 }
 
 func TestThreadWithViewerNoMessages(t *testing.T) {
 	t.Parallel()
-	dl := newMockDAL(t)
+	dl := dalmock.New(t)
 	defer dl.Finish()
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil)
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, "WEBDOMAIN")
 
 	thID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -671,18 +980,17 @@ func TestThreadWithViewerNoMessages(t *testing.T) {
 			PrimaryEntityID:      entID,
 			LastMessageTimestamp: uint64(now.Unix()),
 			Unread:               false, // An empty thread should never be unread
-			LastPrimaryEntityEndpoints: []*threading.Endpoint{},
-			CreatedTimestamp:           uint64(created.Unix()),
-			MessageCount:               0,
+			CreatedTimestamp:     uint64(created.Unix()),
+			MessageCount:         0,
 		},
 	}, res)
 }
 
 func TestSavedQuery(t *testing.T) {
 	t.Parallel()
-	dl := newMockDAL(t)
+	dl := dalmock.New(t)
 	defer dl.Finish()
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil)
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, "WEBDOMAIN")
 
 	sqID, err := models.NewSavedQueryID()
 	test.OK(t, err)
@@ -712,7 +1020,7 @@ func TestSavedQuery(t *testing.T) {
 
 func TestMarkThreadAsRead(t *testing.T) {
 	t.Parallel()
-	dl := newMockDAL(t)
+	dl := dalmock.New(t)
 	defer dl.Finish()
 	tID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -724,7 +1032,7 @@ func TestMarkThreadAsRead(t *testing.T) {
 	lView := ptr.Time(time.Unix(time.Now().Unix()-1000, 0))
 	readTime := time.Now()
 	clk := clock.NewManaged(readTime)
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil)
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, "WEBDOMAIN")
 
 	// Lookup the membership of the viewer in the threads records
 	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{tID}, []string{eID}, true).WithReturns(
@@ -769,7 +1077,7 @@ func TestMarkThreadAsRead(t *testing.T) {
 
 func TestMarkThreadAsReadNilLastView(t *testing.T) {
 	t.Parallel()
-	dl := newMockDAL(t)
+	dl := dalmock.New(t)
 	defer dl.Finish()
 	tID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -781,7 +1089,7 @@ func TestMarkThreadAsReadNilLastView(t *testing.T) {
 	lView := time.Unix(0, 0)
 	readTime := time.Now()
 	clk := clock.NewManaged(readTime)
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil)
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, "WEBDOMAIN")
 
 	// Lookup the membership of the viewer in the threads records
 	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{tID}, []string{eID}, true).WithReturns(
@@ -830,7 +1138,7 @@ func TestMarkThreadAsReadNilLastView(t *testing.T) {
 
 func TestMarkThreadAsReadExistingMembership(t *testing.T) {
 	t.Parallel()
-	dl := newMockDAL(t)
+	dl := dalmock.New(t)
 	defer dl.Finish()
 	tID, err := models.NewThreadID()
 	test.OK(t, err)
@@ -842,7 +1150,7 @@ func TestMarkThreadAsReadExistingMembership(t *testing.T) {
 	lView := time.Unix(0, 0)
 	readTime := time.Now()
 	clk := clock.NewManaged(readTime)
-	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil)
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, "WEBDOMAIN")
 
 	// Lookup the membership of the viewer in the threads records
 	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{tID}, []string{eID}, true))
@@ -881,7 +1189,7 @@ func TestMarkThreadAsReadExistingMembership(t *testing.T) {
 
 func TestNotifyMembersOfPublishMessage(t *testing.T) {
 	t.Parallel()
-	dl := newMockDAL(t)
+	dl := dalmock.New(t)
 	defer dl.Finish()
 	directoryClient := mock_directory.New(t)
 	defer directoryClient.Finish()
@@ -901,7 +1209,7 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 	orgID := "orgID"
 	readTime := time.Now()
 	clk := clock.NewManaged(readTime)
-	srv := NewThreadsServer(clk, dl, nil, "arn", notificationClient, directoryClient)
+	srv := NewThreadsServer(clk, dl, nil, "arn", notificationClient, directoryClient, "WEBDOMAIN")
 	csrv := srv.(*threadsServer)
 
 	directoryClient.Expect(mock.NewExpectation(directoryClient.LookupEntities, &directory.LookupEntitiesRequest{
@@ -1020,14 +1328,14 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 
 func TestDeleteThread(t *testing.T) {
 	t.Parallel()
-	dl := newMockDAL(t)
+	dl := dalmock.New(t)
 	defer dl.Finish()
 	directoryClient := mock_directory.New(t)
 	defer directoryClient.Finish()
 
 	tID, err := models.NewThreadID()
 	test.OK(t, err)
-	srv := NewThreadsServer(nil, dl, nil, "arn", nil, directoryClient)
+	srv := NewThreadsServer(nil, dl, nil, "arn", nil, directoryClient, "WEBDOMAIN")
 	eID := "entity_123"
 	peID := "entity_456"
 
@@ -1057,14 +1365,14 @@ func TestDeleteThread(t *testing.T) {
 
 func TestDeleteThreadNoPE(t *testing.T) {
 	t.Parallel()
-	dl := newMockDAL(t)
+	dl := dalmock.New(t)
 	defer dl.Finish()
 	directoryClient := mock_directory.New(t)
 	defer directoryClient.Finish()
 
 	tID, err := models.NewThreadID()
 	test.OK(t, err)
-	srv := NewThreadsServer(nil, dl, nil, "arn", nil, directoryClient)
+	srv := NewThreadsServer(nil, dl, nil, "arn", nil, directoryClient, "WEBDOMAIN")
 	eID := "entity_123"
 
 	dl.Expect(mock.NewExpectation(dl.Thread, tID).WithReturns(&models.Thread{PrimaryEntityID: ""}, nil))
@@ -1080,14 +1388,14 @@ func TestDeleteThreadNoPE(t *testing.T) {
 
 func TestDeleteThreadPEInternal(t *testing.T) {
 	t.Parallel()
-	dl := newMockDAL(t)
+	dl := dalmock.New(t)
 	defer dl.Finish()
 	directoryClient := mock_directory.New(t)
 	defer directoryClient.Finish()
 
 	tID, err := models.NewThreadID()
 	test.OK(t, err)
-	srv := NewThreadsServer(nil, dl, nil, "arn", nil, directoryClient)
+	srv := NewThreadsServer(nil, dl, nil, "arn", nil, directoryClient, "WEBDOMAIN")
 	eID := "entity_123"
 	peID := "entity_456"
 

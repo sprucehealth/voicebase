@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
+	"github.com/kr/pretty"
 )
 
 // Assert fails the test if the condition is false.
@@ -28,21 +28,21 @@ func OK(t testing.TB, err error) {
 // Equals fails the test if exp is not equal to act.
 func Equals(t testing.TB, exp, act interface{}) {
 	if !reflect.DeepEqual(exp, act) {
-		t.Fatalf("["+CallerString(1)+"]\nexpected:\n%s\ngot:\n%s", spew.Sdump(exp), spew.Sdump(act))
+		t.Fatalf(pretty.Sprintf("[%s] difference: %s", CallerString(1), pretty.Diff(exp, act)))
 	}
 }
 
 // AssertNil fails the test if the provided value is not nil
 func AssertNil(t testing.TB, e interface{}) {
 	if !reflect.ValueOf(e).IsNil() {
-		t.Fatalf("["+CallerString(1)+"]\nExpected a nil value but got %+v", e)
+		t.Fatalf("[%s] Expected a nil value but got %+v", CallerString(1), e)
 	}
 }
 
 // AssertNotNil fails the test if the provided value is nil
 func AssertNotNil(t testing.TB, e interface{}) {
 	if reflect.ValueOf(e).IsNil() {
-		t.Fatalf("["+CallerString(1)+"]\nExpected a non nil value but got %+v", e)
+		t.Fatalf("[%s] Expected a non nil value but got %+v", CallerString(1), e)
 	}
 }
 
@@ -50,7 +50,7 @@ func AssertNotNil(t testing.TB, e interface{}) {
 // will output the response body for easier debugging.
 func HTTPResponseCode(t testing.TB, exp int, res *httptest.ResponseRecorder) {
 	if res.Code != exp {
-		t.Fatalf("["+CallerString(1)+"]\nexp status code: %d\ngot status code: %d\nbody: %s", exp, res.Code, res.Body.String())
+		t.Fatalf("[%s]\nexp status code: %d\ngot status code: %d\nbody: %s", CallerString(1), exp, res.Code, res.Body.String())
 	}
 }
 

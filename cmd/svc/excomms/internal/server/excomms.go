@@ -16,6 +16,7 @@ import (
 	"github.com/sprucehealth/backend/libs/twilio"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/events"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -33,6 +34,7 @@ type excommsService struct {
 	directory            directory.DirectoryClient
 	sns                  snsiface.SNSAPI
 	externalMessageTopic string
+	eventTopic           string
 	clock                clock.Clock
 	emailClient          EmailClient
 	idgen                idGenerator
@@ -46,6 +48,7 @@ func NewService(
 	directory directory.DirectoryClient,
 	sns snsiface.SNSAPI,
 	externalMessageTopic string,
+	eventTopic string,
 	clock clock.Clock,
 	emailClient EmailClient,
 	idgen idGenerator,
@@ -59,6 +62,7 @@ func NewService(
 		directory:            directory,
 		sns:                  sns,
 		externalMessageTopic: externalMessageTopic,
+		eventTopic:           eventTopic,
 		clock:                clock,
 		emailClient:          emailClient,
 		idgen:                idgen,
@@ -129,7 +133,6 @@ func containsCapability(capabilities []excomms.PhoneNumberCapability, capability
 
 // ProvisionPhoneNumber provisions the phone number provided for the requester.
 func (e *excommsService) ProvisionPhoneNumber(ctx context.Context, in *excomms.ProvisionPhoneNumberRequest) (*excomms.ProvisionPhoneNumberResponse, error) {
-
 	// check if a phone number has already been provisioned for this purpose
 	ppn, err := e.dal.LookupProvisionedEndpoint(in.ProvisionFor, models.EndpointTypePhone)
 	if errors.Cause(err) != dal.ErrProvisionedEndpointNotFound && err != nil {
@@ -185,6 +188,17 @@ func (e *excommsService) ProvisionPhoneNumber(ctx context.Context, in *excomms.P
 	}); err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
+
+	events.Publish(e.sns, e.eventTopic, events.Service_EXCOMMS, &excomms.Event{
+		Type: excomms.Event_PROVISIONED_ENDPOINT,
+		Details: &excomms.Event_ProvisionedEndpoint{
+			ProvisionedEndpoint: &excomms.ProvisionedEndpoint{
+				ForEntityID:  in.ProvisionFor,
+				EndpointType: excomms.EndpointType_PHONE,
+				Endpoint:     ipn.PhoneNumber,
+			},
+		},
+	})
 
 	return &excomms.ProvisionPhoneNumberResponse{
 		PhoneNumber: ipn.PhoneNumber,
@@ -427,7 +441,6 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 }
 
 func (e *excommsService) ProvisionEmailAddress(ctx context.Context, req *excomms.ProvisionEmailAddressRequest) (*excomms.ProvisionEmailAddressResponse, error) {
-
 	// validate email
 	if !validate.Email(req.EmailAddress) {
 		return nil, grpcErrorf(codes.InvalidArgument, "%s is an invalid email address", req.EmailAddress)
@@ -457,6 +470,17 @@ func (e *excommsService) ProvisionEmailAddress(ctx context.Context, req *excomms
 	}); err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
+
+	events.Publish(e.sns, e.eventTopic, events.Service_EXCOMMS, &excomms.Event{
+		Type: excomms.Event_PROVISIONED_ENDPOINT,
+		Details: &excomms.Event_ProvisionedEndpoint{
+			ProvisionedEndpoint: &excomms.ProvisionedEndpoint{
+				ForEntityID:  req.ProvisionFor,
+				EndpointType: excomms.EndpointType_EMAIL,
+				Endpoint:     emailAddress,
+			},
+		},
+	})
 
 	return &excomms.ProvisionEmailAddressResponse{
 		EmailAddress: emailAddress,

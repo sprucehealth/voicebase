@@ -123,6 +123,22 @@ func (m *ResourceAccessor) CreateEntityDomain(ctx context.Context, organizationI
 	return mock.SafeError(rets[0])
 }
 
+func (m *ResourceAccessor) CreateLinkedThreads(ctx context.Context, req *threading.CreateLinkedThreadsRequest) (*threading.CreateLinkedThreadsResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.CreateLinkedThreadsResponse), mock.SafeError(rets[1])
+}
+
+func (m *ResourceAccessor) CreateOnboardingThread(ctx context.Context, req *threading.CreateOnboardingThreadRequest) (*threading.CreateOnboardingThreadResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.CreateOnboardingThreadResponse), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) CreatePasswordResetToken(ctx context.Context, email string) (*auth.CreatePasswordResetTokenResponse, error) {
 	rets := m.Record(email)
 	if len(rets) == 0 {

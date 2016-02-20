@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package events;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = true;
+
+enum Service {
+	INVALID = 0;
+	EXCOMMS = 1;
+	INVITE = 2;
+}
+
+message Envelope {
+	Service service = 1;
+	bytes event = 2;
+}

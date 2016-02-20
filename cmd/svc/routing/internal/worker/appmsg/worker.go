@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
@@ -103,6 +104,10 @@ func (a *appMessageWorker) Start() {
 			}
 		}
 	}()
+}
+
+func (a *appMessageWorker) Stop(wait time.Duration) {
+	// TODO
 }
 
 func (a *appMessageWorker) Started() bool {

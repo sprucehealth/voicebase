@@ -181,15 +181,13 @@ var provisionEmailMutation = &graphql.Field{
 				}
 			} else if err != nil {
 				return nil, err
-			} else {
-				if res.Domain != "" && res.Domain != subdomain {
-					return &provisionEmailOutput{
-						ClientMutationID: mutationID,
-						Success:          false,
-						ErrorCode:        provisionEmailErrorCodeSubdomainInUse,
-						ErrorMessage:     "The entered subdomain is already in use. Please pick another.",
-					}, nil
-				}
+			} else if res.Domain != "" && res.Domain != subdomain {
+				return &provisionEmailOutput{
+					ClientMutationID: mutationID,
+					Success:          false,
+					ErrorCode:        provisionEmailErrorCodeSubdomainInUse,
+					ErrorMessage:     "The entered subdomain is already in use. Please pick another.",
+				}, nil
 			}
 		} else {
 			if ent.Type != directory.EntityType_INTERNAL {
@@ -197,7 +195,7 @@ var provisionEmailMutation = &graphql.Field{
 			}
 
 			res, err := ram.EntityDomain(ctx, orgEntity.ID, "")
-			if grpc.Code(err) == codes.NotFound || res.Domain == "" {
+			if grpc.Code(err) == codes.NotFound || (err == nil && res.Domain == "") {
 				return nil, errors.New("no domain picked for organization yet")
 			} else if err != nil {
 				return nil, err

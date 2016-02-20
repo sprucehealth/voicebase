@@ -2,6 +2,7 @@ package models
 
 import (
 	"github.com/sprucehealth/backend/svc/directory"
+	"sync"
 )
 
 /*
@@ -132,7 +133,9 @@ type Thread struct {
 	IsDeletable                bool   `json:"isDeletable"`
 	LastPrimaryEntityEndpoints []*Endpoint
 	EmptyStateTextMarkup       string `json:"emptyStateTextMarkup,omitempty"`
+	MessageCount               int    `json:"messageCount"`
 
+	Mu            sync.RWMutex
 	PrimaryEntity *directory.Entity
 }
 

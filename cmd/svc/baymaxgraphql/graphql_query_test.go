@@ -111,7 +111,7 @@ func TestNodeQuery(t *testing.T) {
 	}, int64(0)).WithReturns(
 		&directory.Entity{
 			Type: directory.EntityType_EXTERNAL,
-			ID:   id,
+			ID:   "entity_2",
 			Info: &directory.EntityInfo{
 				DisplayName: "Someone",
 			},
@@ -139,7 +139,7 @@ func TestNodeQuery(t *testing.T) {
 		directory.EntityInformation_CONTACTS,
 	}, int64(0)).WithReturns(
 		&directory.Entity{
-			Type: directory.EntityType_INTERNAL,
+			Type: directory.EntityType_EXTERNAL,
 			ID:   "entity_2",
 			Info: &directory.EntityInfo{
 				DisplayName: "Someone",

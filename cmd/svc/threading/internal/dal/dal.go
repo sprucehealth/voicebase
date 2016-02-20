@@ -86,13 +86,22 @@ type MemberUpdate struct {
 	LastUnreadNotify *time.Time
 }
 
+type OnboardingStateUpdate struct {
+	Step *int
+}
+
 type DAL interface {
 	CreateSavedQuery(context.Context, *models.SavedQuery) (models.SavedQueryID, error)
+	CreateOnboardingState(ctx context.Context, threadID models.ThreadID, entityID string) error
 	CreateThread(context.Context, *models.Thread) (models.ThreadID, error)
 	CreateThreadItemViewDetails(ctx context.Context, tds []*models.ThreadItemViewDetails) error
+	CreateThreadLink(ctx context.Context, thread1ID, thread2ID models.ThreadID) error
 	DeleteThread(ctx context.Context, threadID models.ThreadID) error
 	IterateThreads(ctx context.Context, orgID string, forExternal bool, it *Iterator) (*ThreadConnection, error)
 	IterateThreadItems(ctx context.Context, threadID models.ThreadID, forExternal bool, it *Iterator) (*ThreadItemConnection, error)
+	LinkedThread(ctx context.Context, threadID models.ThreadID) (*models.Thread, error)
+	OnboardingState(ctx context.Context, threadID models.ThreadID, forUpdate bool) (*models.OnboardingState, error)
+	OnboardingStateForEntity(ctx context.Context, entityID string, forUpdate bool) (*models.OnboardingState, error)
 	PostMessage(context.Context, *PostMessageRequest) (*models.ThreadItem, error)
 	RecordThreadEvent(ctx context.Context, threadID models.ThreadID, actorEntityID string, event models.ThreadEvent) error
 	SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.SavedQuery, error)
@@ -107,6 +116,7 @@ type DAL interface {
 	ThreadsForOrg(ctx context.Context, organizationID string) ([]*models.Thread, error)
 	// UpdateMember updates attributes about a thread member. If the membership doesn't exist then it is created.
 	UpdateMember(ctx context.Context, threadID models.ThreadID, entityID string, update *MemberUpdate) error
+	UpdateOnboardingState(context.Context, models.ThreadID, *OnboardingStateUpdate) error
 
 	Transact(context.Context, func(context.Context, DAL) error) error
 }
@@ -145,6 +155,11 @@ func (d *dal) Transact(ctx context.Context, trans func(context.Context, DAL) err
 		return errors.Trace(err)
 	}
 	return errors.Trace(tx.Commit())
+}
+
+func (d *dal) CreateOnboardingState(ctx context.Context, threadID models.ThreadID, entityID string) error {
+	_, err := d.db.Exec(`INSERT INTO onboarding_thread (thread_id, entity_id, step) VALUES (?, ?, ?)`, threadID, entityID, 0)
+	return errors.Trace(err)
 }
 
 func (d *dal) CreateSavedQuery(ctx context.Context, sq *models.SavedQuery) (models.SavedQueryID, error) {
@@ -194,6 +209,16 @@ func (d *dal) CreateThreadItemViewDetails(ctx context.Context, tds []*models.Thr
         INSERT IGNORE INTO thread_item_view_details
 	        (thread_item_id, actor_entity_id, view_time)
         VALUES `+ins.Query(), ins.Values()...)
+	return errors.Trace(err)
+}
+
+func (d *dal) CreateThreadLink(ctx context.Context, thread1ID, thread2ID models.ThreadID) error {
+	// Sanity check since self-reference is toos scary to imagine
+	if thread1ID.Val == thread2ID.Val {
+		return errors.Trace(errors.New("cannot link a thread to itself"))
+	}
+	_, err := d.db.Exec(`INSERT INTO thread_links (thread1_id, thread2_id) VALUES(?, ?)`,
+		thread1ID, thread2ID)
 	return errors.Trace(err)
 }
 
@@ -360,6 +385,46 @@ func (d *dal) IterateThreadItems(ctx context.Context, threadID models.ThreadID, 
 	}
 
 	return &tc, errors.Trace(rows.Err())
+}
+
+func (d *dal) LinkedThread(ctx context.Context, threadID models.ThreadID) (*models.Thread, error) {
+	row := d.db.QueryRow(`
+		SELECT id, organization_id, COALESCE(primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary, last_primary_entity_endpoints, created, message_count
+		FROM threads
+		INNER JOIN thread_links tl ON tl.thread1_id = ? OR tl.thread2_id = ?
+		WHERE id != ? AND id IN (tl.thread1_id, tl.thread2_id) AND deleted = false`, threadID)
+	t, err := scanThread(row)
+	return t, errors.Trace(err)
+}
+
+func (d *dal) OnboardingState(ctx context.Context, threadID models.ThreadID, forUpdate bool) (*models.OnboardingState, error) {
+	var forUpdateSQL string
+	if forUpdate {
+		forUpdateSQL = ` FOR UPDATE`
+	}
+	row := d.db.QueryRow(`SELECT thread_id, step FROM onboarding_threads WHERE thread_id = ?`+forUpdateSQL, threadID)
+	var state models.OnboardingState
+	if err := row.Scan(&state.ThreadID, &state.Step); err == sql.ErrNoRows {
+		return nil, ErrNotFound
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &state, nil
+}
+
+func (d *dal) OnboardingStateForEntity(ctx context.Context, entityID string, forUpdate bool) (*models.OnboardingState, error) {
+	var forUpdateSQL string
+	if forUpdate {
+		forUpdateSQL = ` FOR UPDATE`
+	}
+	row := d.db.QueryRow(`SELECT thread_id, step FROM onboarding_threads WHERE entity_id = ?`+forUpdateSQL, entityID)
+	var state models.OnboardingState
+	if err := row.Scan(&state.ThreadID, &state.Step); err == sql.ErrNoRows {
+		return nil, ErrNotFound
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &state, nil
 }
 
 func (d *dal) PostMessage(ctx context.Context, req *PostMessageRequest) (*models.ThreadItem, error) {
@@ -715,6 +780,19 @@ func (d *dal) UpdateMember(ctx context.Context, threadID models.ThreadID, entity
 		VALUES (` + dbutil.MySQLArgs(len(insertCols)) + `)
 		ON DUPLICATE KEY UPDATE ` + args.ColumnsForUpdate()
 	_, err := d.db.Exec(query, vals...)
+	return errors.Trace(err)
+}
+
+func (d *dal) UpdateOnboardingState(ctx context.Context, threadID models.ThreadID, update *OnboardingStateUpdate) error {
+	args := dbutil.MySQLVarArgs()
+	if update.Step != nil {
+		args.Append("step", *update.Step)
+	}
+	if args.IsEmpty() {
+		return nil
+	}
+	_, err := d.db.Exec(`UPDATE onboarding_threads SET `+args.ColumnsForUpdate()+` WHERE id = ?`,
+		append(args.Values(), threadID))
 	return errors.Trace(err)
 }
 

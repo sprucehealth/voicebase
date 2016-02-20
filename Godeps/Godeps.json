@@ -1,10 +1,18 @@
 {
 	"ImportPath": "github.com/sprucehealth/backend",
-	"GoVersion": "go1.5.1",
+	"GoVersion": "go1.6",
 	"Packages": [
 		"./..."
 	],
 	"Deps": [
+		{
+			"ImportPath": "github.com/kr/text",
+			"Rev": "bb797dc4fb8320488f47bf11de07a733d7233e1f"
+		},
+		{
+			"ImportPath": "github.com/kr/pretty",
+			"Rev": "e6ac2fc51e89a3249e82157fa0bb7a18ef9dd5bb"
+		},
 		{
 			"ImportPath": "bitbucket.org/pkg/inflect",
 			"Comment": "go.r60-12",
@@ -111,10 +119,6 @@
 		{
 			"ImportPath": "github.com/cookieo9/resources-go",
 			"Rev": "e008c9143e114c4462104da78fabbc4faf085a79"
-		},
-		{
-			"ImportPath": "github.com/davecgh/go-spew/spew",
-			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
 		},
 		{
 			"ImportPath": "github.com/dominicphillips/amazing",

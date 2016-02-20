@@ -40,6 +40,15 @@ func (c *Client) CreateEmptyThread(ctx context.Context, in *threading.CreateEmpt
 	return rets[0].(*threading.CreateEmptyThreadResponse), mock.SafeError(rets[1])
 }
 
+// CreateOnboardingThread create a new onboarding thread
+func (c *Client) CreateOnboardingThread(ctx context.Context, in *threading.CreateOnboardingThreadRequest, opts ...grpc.CallOption) (*threading.CreateOnboardingThreadResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.CreateOnboardingThreadResponse), mock.SafeError(rets[1])
+}
+
 // CreateThread create a new thread with an initial message
 func (c *Client) CreateThread(ctx context.Context, in *threading.CreateThreadRequest, opts ...grpc.CallOption) (*threading.CreateThreadResponse, error) {
 	rets := c.Expector.Record(in)
@@ -47,6 +56,15 @@ func (c *Client) CreateThread(ctx context.Context, in *threading.CreateThreadReq
 		return nil, nil
 	}
 	return rets[0].(*threading.CreateThreadResponse), mock.SafeError(rets[1])
+}
+
+// CreateLinkedThreads is a mock
+func (c *Client) CreateLinkedThreads(ctx context.Context, in *threading.CreateLinkedThreadsRequest, opts ...grpc.CallOption) (*threading.CreateLinkedThreadsResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.CreateLinkedThreadsResponse), mock.SafeError(rets[1])
 }
 
 // DeleteMessage deletes a message from a thread

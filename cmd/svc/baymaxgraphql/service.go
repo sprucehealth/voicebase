@@ -29,6 +29,7 @@ type service struct {
 	mediaSigner  *media.Signer
 	emailDomain  string
 	webDomain    string
+	spruceOrgID  string
 	// TODO: Remove this
 	serviceNumber phone.Number
 }
@@ -55,10 +56,9 @@ func hydrateThreads(ctx context.Context, ram raccess.ResourceAccessor, threads [
 				thread.PrimaryEntity = entity
 			}
 			thread.Title = threadTitleForEntity(thread.PrimaryEntity)
-			thread.AllowInternalMessages = thread.PrimaryEntity.Type != directory.EntityType_SYSTEM
-			thread.IsDeletable = thread.PrimaryEntity.Type != directory.EntityType_SYSTEM
-			// TODO: this text should only be included for empty threads but we don't know if it's empty at this point
-			if thread.PrimaryEntity.Type == directory.EntityType_ORGANIZATION {
+			thread.AllowInternalMessages = thread.PrimaryEntity.Type == directory.EntityType_EXTERNAL
+			thread.IsDeletable = thread.PrimaryEntity.Type == directory.EntityType_EXTERNAL
+			if thread.MessageCount == 0 && thread.PrimaryEntity.Type == directory.EntityType_ORGANIZATION {
 				thread.EmptyStateTextMarkup = "This is the beginning of a conversation that is visible to everyone in your organization.\n\nInvite some colleagues to join and then send a message here to get things started."
 			}
 			return nil

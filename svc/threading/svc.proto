@@ -378,11 +378,40 @@ message ThreadItemViewDetailsResponse {
     repeated ThreadItemViewDetails item_view_details = 1;
 }
 
+message CreateLinkedThreadsRequest {
+	string organization1_id = 1 [(gogoproto.customname) = "Organization1ID"];
+	string organization2_id = 2 [(gogoproto.customname) = "Organization2ID"];
+	string primary_entity1_id = 3 [(gogoproto.customname) = "PrimaryEntity1ID"];
+	string primary_entity2_id = 4 [(gogoproto.customname) = "PrimaryEntity2ID"];
+	string text = 5;
+	string title = 6;
+	string summary = 7;
+}
+
+message CreateLinkedThreadsResponse {
+	Thread thread1 = 1;
+	Thread thread2 = 2;
+}
+
+message CreateOnboardingThreadRequest {
+	string organization_id = 1 [(gogoproto.customname) = "OrganizationID"];
+	string primary_entity_id = 2 [(gogoproto.customname) = "PrimaryEntityID"];
+	string summary = 3;
+}
+
+message CreateOnboardingThreadResponse {
+	Thread thread = 1;
+}
+
 service Threads {
 	// CreateSavedQuery saves a query for later use
 	rpc CreateSavedQuery(CreateSavedQueryRequest) returns (CreateSavedQueryResponse);
 	// CreateEmptyThread creates a new thread with no messages
 	rpc CreateEmptyThread(CreateEmptyThreadRequest) returns (CreateEmptyThreadResponse);
+	// CreateLinkedThreads creates a pair of threads in two separate organizations that allows cross-org communication.
+	rpc CreateLinkedThreads(CreateLinkedThreadsRequest) returns (CreateLinkedThreadsResponse);
+	// CreateOnboardingThread create a new scripted onboarding thread.
+	rpc CreateOnboardingThread(CreateOnboardingThreadRequest) returns (CreateOnboardingThreadResponse);
 	// CreateThread create a new thread with an initial message
 	rpc CreateThread(CreateThreadRequest) returns (CreateThreadResponse);
 	// DeleteMessage deletes a message from a thread

@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package invite;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = true;
+
+message Event {
+	enum Type {
+		INVALID = 0;
+		INVITED_COLLEAGUES = 1;
+	}
+	Type type = 1;
+	oneof details {
+		InvitedColleagues invited_colleagues = 10;
+	}
+}
+
+message InvitedColleagues {
+	string organization_entity_id = 1 [(gogoproto.customname) = "OrganizationEntityID"];
+	string inviter_entity_id = 2 [(gogoproto.customname) = "InviterEntityID"];
+}

@@ -5,14 +5,16 @@ import (
 	"net"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/server"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/worker"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
-	cfg "github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/clock"
+	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -23,15 +25,16 @@ import (
 )
 
 func runService() {
-	dbConfig := &cfg.DB{
-		User:     config.dbUserName,
-		Password: config.dbPassword,
-		Host:     config.dbHost,
-		Port:     config.dbPort,
-		Name:     config.dbName,
-	}
-
-	db, err := dbConfig.ConnectMySQL(nil)
+	db, err := dbutil.ConnectMySQL(&dbutil.DBConfig{
+		User:          config.dbUserName,
+		Password:      config.dbPassword,
+		Host:          config.dbHost,
+		Port:          config.dbPort,
+		Name:          config.dbName,
+		CACert:        config.dbCACert,
+		EnableTLS:     config.dbTLS == "true" || config.dbTLS == "skip-verify",
+		SkipVerifyTLS: config.dbTLS == "skip-verify",
+	})
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
@@ -41,14 +44,11 @@ func runService() {
 		golog.Fatalf(err.Error())
 	}
 
-	baseConfig := &cfg.BaseConfig{
-		AppName:      "excomms",
-		AWSRegion:    config.awsRegion,
-		AWSSecretKey: config.awsSecretKey,
-		AWSAccessKey: config.awsAccessKey,
+	awsConfig, err := awsutil.Config(config.awsRegion, config.awsAccessKey, config.awsSecretKey, "")
+	if err != nil {
+		golog.Fatalf(err.Error())
 	}
-
-	awsSession := baseConfig.AWSSession()
+	awsSession := session.New(awsConfig)
 	snsCLI := sns.New(awsSession)
 
 	directoryConn, err := grpc.Dial(
@@ -113,6 +113,7 @@ func runService() {
 		directory.NewDirectoryClient(directoryConn),
 		snsCLI,
 		config.externalMessageTopic,
+		config.eventTopic,
 		clock.New(),
 		server.NewSendgridClient(config.sendgridAPIKey),
 		server.NewIDGenerator(),

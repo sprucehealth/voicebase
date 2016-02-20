@@ -1,15 +1,13 @@
 package awsutil
 
 import (
-	"encoding/json"
-	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
-	"github.com/sprucehealth/backend/libs/worker"
 )
 
 // SNSSQSMessage is the format of the message on an SQS queue
@@ -27,12 +25,13 @@ type SNSSQSMessage struct {
 	UnsubscribeURL   string
 }
 
-type sqsWorker struct {
-	startLock sync.Mutex
-	started   bool
-	sqsAPI    sqsiface.SQSAPI
-	sqsURL    string
-	ProcessF  func([]byte) error
+// SQSWorker is a worker that processes messages from SQS
+type SQSWorker struct {
+	started  uint32
+	sqsAPI   sqsiface.SQSAPI
+	sqsURL   string
+	processF func(string) error
+	stopCh   chan chan struct{}
 }
 
 // NewSQSWorker returns a worker that consumes SQS messages
@@ -40,29 +39,48 @@ type sqsWorker struct {
 func NewSQSWorker(
 	sqsAPI sqsiface.SQSAPI,
 	sqsURL string,
-	processF func([]byte) error,
-) worker.Worker {
-	return &sqsWorker{
-		startLock: sync.Mutex{},
-		sqsAPI:    sqsAPI,
-		sqsURL:    sqsURL,
-		ProcessF:  processF,
+	processF func(string) error,
+) *SQSWorker {
+	return &SQSWorker{
+		sqsAPI:   sqsAPI,
+		sqsURL:   sqsURL,
+		processF: processF,
+		stopCh:   make(chan chan struct{}, 1),
 	}
 }
 
-func (w *sqsWorker) Started() bool {
-	return w.started
+// Started resturns true iff the worker is currently running
+func (w *SQSWorker) Started() bool {
+	return atomic.LoadUint32(&w.started) != 0
 }
 
-func (w *sqsWorker) Start() {
-	w.startLock.Lock()
-	if w.started {
+// Stop signals the worker to stop waiting for a duration for it to stop.
+func (w *SQSWorker) Stop(wait time.Duration) {
+	if w.Started() {
+		ch := make(chan struct{})
+		w.stopCh <- ch
+		select {
+		case <-ch:
+		case <-time.After(wait):
+		}
+	}
+}
+
+// Start starts the worker consuming messages if it's not already doing so.
+func (w *SQSWorker) Start() {
+	if atomic.SwapUint32(&w.started, 1) == 1 {
 		return
 	}
-	w.started = true
-	w.startLock.Unlock()
 	go func() {
+		defer atomic.StoreUint32(&w.started, 0)
 		for {
+			select {
+			case ch := <-w.stopCh:
+				ch <- struct{}{}
+				return
+			default:
+			}
+
 			sqsRes, err := w.sqsAPI.ReceiveMessage(&sqs.ReceiveMessageInput{
 				QueueUrl:            ptr.String(w.sqsURL),
 				MaxNumberOfMessages: ptr.Int64(1),
@@ -70,18 +88,12 @@ func (w *sqsWorker) Start() {
 				WaitTimeSeconds:     ptr.Int64(20),
 			})
 			if err != nil {
-				golog.Errorf(err.Error())
+				golog.Errorf("Failed to receive message: %s", err.Error())
 				continue
 			}
 
 			for _, item := range sqsRes.Messages {
-				var m SNSSQSMessage
-				if err := json.Unmarshal([]byte(*item.Body), &m); err != nil {
-					golog.Errorf(err.Error())
-					continue
-				}
-
-				if err := w.ProcessF([]byte(*item.Body)); err != nil {
+				if err := w.processF(*item.Body); err != nil {
 					golog.Errorf(err.Error())
 					continue
 				}
@@ -94,7 +106,7 @@ func (w *sqsWorker) Start() {
 					},
 				)
 				if err != nil {
-					golog.Errorf(err.Error())
+					golog.Errorf("Failed to delete message: %s", err.Error())
 				}
 			}
 		}

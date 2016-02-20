@@ -1,30 +1,39 @@
 package server
 
 import (
+	"encoding/base64"
 	"fmt"
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/smtpapi-go"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/models"
 	branchmock "github.com/sprucehealth/backend/libs/branch/mock"
 	"github.com/sprucehealth/backend/libs/clock"
+	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	dirmock "github.com/sprucehealth/backend/svc/directory/mock"
+	"github.com/sprucehealth/backend/svc/events"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/test"
 )
 
 func init() {
 	unitTesting = true
+	conc.Testing = true
 }
 
 func TestAttribution(t *testing.T) {
 	dl := newMockDAL(t)
 	defer dl.Finish()
-	srv := New(dl, nil, nil, nil, nil, "")
+
+	snsC := mock.NewSNSAPI(t)
+	defer snsC.Finish()
+	srv := New(dl, nil, nil, snsC, nil, nil, "", "")
 
 	values := []*invite.AttributionValue{
 		{Key: "abc", Value: "123"},
@@ -57,7 +66,9 @@ func TestInviteColleague(t *testing.T) {
 	sg := newSGMock(t)
 	defer sg.Finish()
 	clk := clock.NewManaged(time.Unix(10000000, 0))
-	srv := New(dl, clk, dir, branch, sg, "from@example.com")
+	snsC := mock.NewSNSAPI(t)
+	defer snsC.Finish()
+	srv := New(dl, clk, dir, snsC, branch, sg, "from@example.com", "eventsTopic")
 
 	// Lookup organization
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
@@ -124,6 +135,21 @@ func TestInviteColleague(t *testing.T) {
 		},
 	}).WithReturns(nil))
 
+	eventData, err := events.MarshalEnvelope(events.Service_INVITE, &invite.Event{
+		Type: invite.Event_INVITED_COLLEAGUES,
+		Details: &invite.Event_InvitedColleagues{
+			InvitedColleagues: &invite.InvitedColleagues{
+				OrganizationEntityID: "org",
+				InviterEntityID:      "ent",
+			},
+		},
+	})
+	test.OK(t, err)
+	snsC.Expect(mock.NewExpectation(snsC.Publish, &sns.PublishInput{
+		Message:  ptr.String(base64.StdEncoding.EncodeToString(eventData)),
+		TopicArn: ptr.String("eventsTopic"),
+	}).WithReturns(&sns.PublishOutput{}, nil))
+
 	ires, err := srv.InviteColleagues(nil, &invite.InviteColleaguesRequest{
 		OrganizationEntityID: "org",
 		InviterEntityID:      "ent",
@@ -138,7 +164,9 @@ func TestInviteColleague(t *testing.T) {
 func TestLookupInvite(t *testing.T) {
 	dl := newMockDAL(t)
 	defer dl.Finish()
-	srv := New(dl, nil, nil, nil, nil, "")
+	snsC := mock.NewSNSAPI(t)
+	defer snsC.Finish()
+	srv := New(dl, nil, nil, snsC, nil, nil, "", "")
 
 	dl.Expect(mock.NewExpectation(dl.InviteForToken, "testtoken").WithReturns(
 		&models.Invite{

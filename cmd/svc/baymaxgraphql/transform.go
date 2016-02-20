@@ -72,12 +72,13 @@ func transformContactsToResponse(contacts []*directory.Contact) ([]*models.Conta
 
 func transformThreadToResponse(t *threading.Thread) (*models.Thread, error) {
 	th := &models.Thread{
-		ID:                   t.ID,
-		OrganizationID:       t.OrganizationID,
-		PrimaryEntityID:      t.PrimaryEntityID,
-		Subtitle:             t.LastMessageSummary,
-		LastMessageTimestamp: t.LastMessageTimestamp,
-		Unread:               t.Unread,
+		ID:                         t.ID,
+		OrganizationID:             t.OrganizationID,
+		PrimaryEntityID:            t.PrimaryEntityID,
+		Subtitle:                   t.LastMessageSummary,
+		LastMessageTimestamp:       t.LastMessageTimestamp,
+		Unread:                     t.Unread,
+		MessageCount:               int(t.MessageCount),
 		LastPrimaryEntityEndpoints: make([]*models.Endpoint, len(t.LastPrimaryEntityEndpoints)),
 	}
 	for i, ep := range t.LastPrimaryEntityEndpoints {

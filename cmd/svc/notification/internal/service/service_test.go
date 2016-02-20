@@ -109,7 +109,7 @@ func TestProcessNewDeviceRegistrationIOS(t *testing.T) {
 		DeviceModel:     "DeviceModel",
 	}))
 
-	cSvc.processDeviceRegistration(driData)
+	cSvc.processDeviceRegistration(string(driData))
 }
 
 func TestProcessNewDeviceRegistrationAndroid(t *testing.T) {
@@ -169,7 +169,7 @@ func TestProcessNewDeviceRegistrationAndroid(t *testing.T) {
 		DeviceModel:     "DeviceModel",
 	}))
 
-	cSvc.processDeviceRegistration(driData)
+	cSvc.processDeviceRegistration(string(driData))
 }
 
 func TestProcessExistingDeviceRegistrationIOSTokenChanged(t *testing.T) {
@@ -242,7 +242,7 @@ func TestProcessExistingDeviceRegistrationIOSTokenChanged(t *testing.T) {
 		DeviceToken:     []byte("NewDeviceToken"),
 	}))
 
-	cSvc.processDeviceRegistration(driData)
+	cSvc.processDeviceRegistration(string(driData))
 }
 
 func TestProcessExistingDeviceRegistrationAndroid(t *testing.T) {
@@ -305,7 +305,7 @@ func TestProcessExistingDeviceRegistrationAndroid(t *testing.T) {
 		DeviceToken:     []byte("DeviceToken"),
 	}))
 
-	cSvc.processDeviceRegistration(driData)
+	cSvc.processDeviceRegistration(string(driData))
 }
 
 func TestProcessExistingDeviceDeregistration(t *testing.T) {
@@ -336,7 +336,7 @@ func TestProcessExistingDeviceDeregistration(t *testing.T) {
 	// Lookup the device and find it
 	dl.Expect(mock.NewExpectation(dl.DeletePushConfigForDeviceID, "DeviceID"))
 
-	cSvc.processDeviceDeregistration(ddriData)
+	cSvc.processDeviceDeregistration(string(ddriData))
 }
 
 func expectFilterNodesWithNotificationsDisabled(t *testing.T, sc *smock.Client, nodes []string, values []bool) {
@@ -576,7 +576,7 @@ func TestProcessNotification(t *testing.T) {
 		TargetArn:        ptr.String("account4:pushEndpoint1"),
 	}))
 
-	cSvc.processNotification(notificationData)
+	cSvc.processNotification(string(notificationData))
 }
 
 func TestProcessNotificationDisabledEndpoint(t *testing.T) {
@@ -690,5 +690,5 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 		TargetArn:        ptr.String("account1:pushEndpoint2"),
 	}))
 
-	cSvc.processNotification(notificationData)
+	cSvc.processNotification(string(notificationData))
 }

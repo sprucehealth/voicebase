@@ -62,6 +62,8 @@ type ResourceAccessor interface {
 	CreateEmptyThread(ctx context.Context, req *threading.CreateEmptyThreadRequest) (*threading.Thread, error)
 	CreateEntity(ctx context.Context, req *directory.CreateEntityRequest) (*directory.Entity, error)
 	CreateEntityDomain(ctx context.Context, organizationID, subdomain string) error
+	CreateLinkedThreads(ctx context.Context, req *threading.CreateLinkedThreadsRequest) (*threading.CreateLinkedThreadsResponse, error)
+	CreateOnboardingThread(ctx context.Context, req *threading.CreateOnboardingThreadRequest) (*threading.CreateOnboardingThreadResponse, error)
 	CreatePasswordResetToken(ctx context.Context, email string) (*auth.CreatePasswordResetTokenResponse, error)
 	CreateSavedQuery(ctx context.Context, req *threading.CreateSavedQueryRequest) error
 	CreateVerificationCode(ctx context.Context, codeType auth.VerificationCodeType, valueToVerify string) (*auth.CreateVerificationCodeResponse, error)
@@ -248,6 +250,16 @@ func (m *resourceAccessor) CreateEntityDomain(ctx context.Context, organizationI
 		return err
 	}
 	return nil
+}
+
+func (m *resourceAccessor) CreateLinkedThreads(ctx context.Context, req *threading.CreateLinkedThreadsRequest) (*threading.CreateLinkedThreadsResponse, error) {
+	// Note: can't do any real validation for this since it's internal
+	return m.threading.CreateLinkedThreads(ctx, req)
+}
+
+func (m *resourceAccessor) CreateOnboardingThread(ctx context.Context, req *threading.CreateOnboardingThreadRequest) (*threading.CreateOnboardingThreadResponse, error) {
+	// Note: can't do any real validation for this since it's internal
+	return m.threading.CreateOnboardingThread(ctx, req)
 }
 
 func (m *resourceAccessor) CreatePasswordResetToken(ctx context.Context, email string) (*auth.CreatePasswordResetTokenResponse, error) {

@@ -5,9 +5,10 @@ package mock
 import (
 	"reflect"
 	"runtime"
+	"strings"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
+	"github.com/kr/pretty"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -153,9 +154,7 @@ func (e *Expector) Record(params ...interface{}) []interface{} {
 	if len(e.expects) == 0 {
 		e.T.Fatalf(
 			"Recieved call to %s without any remaining ordered expectiations: params %+v\n"+
-				"Source:\n"+
-				"File: %s\n"+
-				"Line: %d\n", caller.Name(), params, file, line)
+				"Source: %s:%d\n", caller.Name(), params, file, line)
 	}
 
 	// If we didn't match any unordered expectations do an in order assertion
@@ -177,17 +176,14 @@ func (e *Expector) Record(params ...interface{}) []interface{} {
 }
 
 const failureFormatString = "\nFailed Expectation:\n" +
-	"File: %s\n" +
-	"Line: %d\n" +
+	"File: %s:%d\n" +
 	"Expected:\n" +
 	"  Name: %s\n" +
-	"  Params: %s\n" +
 	"Got:\n" +
 	"  Name: %s\n" +
-	"  Params: %s\n\n" +
+	"Params Diff:\n  %s\n" +
 	"Expectation Source:\n" +
-	"File: %s\n" +
-	"Line: %d\n"
+	"File: %s:%d\n"
 
 // checkExpectation examines the provided expectation and fails the test if it does not pass if failOnFail is true
 //   if failOnFail is false then the failure status of the expectation is returned
@@ -201,14 +197,11 @@ func (e *Expector) checkExpectation(ex *expectation, es *expectationSource, fail
 		if failOnFail {
 			e.T.Fatalf(
 				failureFormatString,
-				file,
-				line,
+				file, line,
 				exp.Func.Name(),
-				spew.Sdump(exp.Params),
 				actual.Func.Name(),
-				spew.Sdump(actual.Params),
-				es.File,
-				es.Line)
+				strings.Join(pretty.Diff(actual.Params, exp.Params), "\n  "),
+				es.File, es.Line)
 		}
 		return false
 	}
