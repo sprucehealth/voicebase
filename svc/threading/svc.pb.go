@@ -231,7 +231,7 @@ type Thread struct {
 	LastMessageSummary         string      `protobuf:"bytes,6,opt,name=last_message_summary,proto3" json:"last_message_summary,omitempty"`
 	Unread                     bool        `protobuf:"varint,7,opt,name=unread,proto3" json:"unread,omitempty"`
 	LastPrimaryEntityEndpoints []*Endpoint `protobuf:"bytes,8,rep,name=last_primary_entity_endpoints" json:"last_primary_entity_endpoints,omitempty"`
-	Created                    uint64      `protobuf:"varint,9,opt,name=created,proto3" json:"created,omitempty"`
+	CreatedTimestamp           uint64      `protobuf:"varint,9,opt,name=created_timestamp,proto3" json:"created_timestamp,omitempty"`
 	MessageCount               int32       `protobuf:"varint,10,opt,name=message_count,proto3" json:"message_count,omitempty"`
 }
 
@@ -1484,7 +1484,7 @@ func (this *Thread) Equal(that interface{}) bool {
 			return false
 		}
 	}
-	if this.Created != that1.Created {
+	if this.CreatedTimestamp != that1.CreatedTimestamp {
 		return false
 	}
 	if this.MessageCount != that1.MessageCount {
@@ -3380,7 +3380,7 @@ func (this *Thread) GoString() string {
 	if this.LastPrimaryEntityEndpoints != nil {
 		s = append(s, "LastPrimaryEntityEndpoints: "+fmt.Sprintf("%#v", this.LastPrimaryEntityEndpoints)+",\n")
 	}
-	s = append(s, "Created: "+fmt.Sprintf("%#v", this.Created)+",\n")
+	s = append(s, "CreatedTimestamp: "+fmt.Sprintf("%#v", this.CreatedTimestamp)+",\n")
 	s = append(s, "MessageCount: "+fmt.Sprintf("%#v", this.MessageCount)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -4838,10 +4838,10 @@ func (m *Thread) MarshalTo(data []byte) (int, error) {
 			i += n
 		}
 	}
-	if m.Created != 0 {
+	if m.CreatedTimestamp != 0 {
 		data[i] = 0x48
 		i++
-		i = encodeVarintSvc(data, i, uint64(m.Created))
+		i = encodeVarintSvc(data, i, uint64(m.CreatedTimestamp))
 	}
 	if m.MessageCount != 0 {
 		data[i] = 0x50
@@ -6998,8 +6998,8 @@ func (m *Thread) Size() (n int) {
 			n += 1 + l + sovSvc(uint64(l))
 		}
 	}
-	if m.Created != 0 {
-		n += 1 + sovSvc(uint64(m.Created))
+	if m.CreatedTimestamp != 0 {
+		n += 1 + sovSvc(uint64(m.CreatedTimestamp))
 	}
 	if m.MessageCount != 0 {
 		n += 1 + sovSvc(uint64(m.MessageCount))
@@ -7979,7 +7979,7 @@ func (this *Thread) String() string {
 		`LastMessageSummary:` + fmt.Sprintf("%v", this.LastMessageSummary) + `,`,
 		`Unread:` + fmt.Sprintf("%v", this.Unread) + `,`,
 		`LastPrimaryEntityEndpoints:` + strings.Replace(fmt.Sprintf("%v", this.LastPrimaryEntityEndpoints), "Endpoint", "Endpoint", 1) + `,`,
-		`Created:` + fmt.Sprintf("%v", this.Created) + `,`,
+		`CreatedTimestamp:` + fmt.Sprintf("%v", this.CreatedTimestamp) + `,`,
 		`MessageCount:` + fmt.Sprintf("%v", this.MessageCount) + `,`,
 		`}`,
 	}, "")
@@ -9080,9 +9080,9 @@ func (m *Thread) Unmarshal(data []byte) error {
 			iNdEx = postIndex
 		case 9:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Created", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field CreatedTimestamp", wireType)
 			}
-			m.Created = 0
+			m.CreatedTimestamp = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowSvc
@@ -9092,7 +9092,7 @@ func (m *Thread) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				m.Created |= (uint64(b) & 0x7F) << shift
+				m.CreatedTimestamp |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}

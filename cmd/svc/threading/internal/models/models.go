@@ -132,7 +132,7 @@ type Thread struct {
 	LastExternalMessageSummary   string
 	LastPrimaryEntityEndpoints   EndpointList
 	Created                      time.Time
-	MessageCount                 int32
+	MessageCount                 int
 }
 
 // ThreadMember links an entity to a thread.
