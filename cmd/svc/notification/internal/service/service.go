@@ -100,7 +100,7 @@ func (s *service) processDeviceRegistration(data []byte) error {
 	golog.Debugf("Processing device registration event: %+v", registrationInfo)
 
 	// Check to see if we already have this device registered
-	pushConfig, err := s.dl.PushConfigForDeviceToken(registrationInfo.DeviceToken)
+	pushConfig, err := s.dl.PushConfigForDeviceID(registrationInfo.DeviceID)
 	if api.IsErrNotFound(err) {
 		// Generate a new endpoint if we don't already have this device registered
 		endpointARN, err := s.generateEndpointARN(registrationInfo)
@@ -129,7 +129,21 @@ func (s *service) processDeviceRegistration(data []byte) error {
 		return errors.Trace(err)
 	}
 
-	// This device is already registered but let's update it's information
+	// This device is already registered but let's check to see if our token has changed
+	if string(pushConfig.DeviceToken) != registrationInfo.DeviceToken {
+		// If our token has changed, Regneerate to reassert that the endpoint is enabled
+		// Generate a new endpoint if we don't already have this device registered
+		endpointARN, err := s.generateEndpointARN(registrationInfo)
+		if err != nil {
+			return errors.Trace(err)
+		} else if endpointARN == "" {
+			golog.Warningf("No SNS endpoint ARN generated for %s, %s, %s", registrationInfo.ExternalGroupID, registrationInfo.Platform, registrationInfo.DeviceID)
+			return nil
+		}
+		// This should likely be the same as before but just set it anyways
+		pushConfig.PushEndpoint = endpointARN
+	}
+
 	golog.Debugf("Updating existing push config with externalID %s for device registration event: %+v", registrationInfo.ExternalGroupID, registrationInfo)
 	_, err = s.dl.UpdatePushConfig(pushConfig.ID, &dal.PushConfigUpdate{
 		ExternalGroupID: ptr.String(registrationInfo.ExternalGroupID),
@@ -137,6 +151,7 @@ func (s *service) processDeviceRegistration(data []byte) error {
 		PlatformVersion: ptr.String(registrationInfo.PlatformVersion),
 		DeviceID:        ptr.String(registrationInfo.DeviceID),
 		AppVersion:      ptr.String(registrationInfo.AppVersion),
+		DeviceToken:     []byte(registrationInfo.DeviceToken),
 	})
 	if err != nil {
 		return errors.Trace(err)
@@ -144,6 +159,8 @@ func (s *service) processDeviceRegistration(data []byte) error {
 
 	return errors.Trace(err)
 }
+
+const snsEndpointEnabledAttributeKey = "Enabled"
 
 func (s *service) generateEndpointARN(info *notification.DeviceRegistrationInfo) (string, error) {
 	var arn string
@@ -163,6 +180,8 @@ func (s *service) generateEndpointARN(info *notification.DeviceRegistrationInfo)
 	createEndpointResponse, err := s.snsAPI.CreatePlatformEndpoint(&sns.CreatePlatformEndpointInput{
 		PlatformApplicationArn: ptr.String(arn),
 		Token: ptr.String(info.DeviceToken),
+		// http://docs.aws.amazon.com/sns/latest/api/API_SetEndpointAttributes.html
+		Attributes: map[string]*string{snsEndpointEnabledAttributeKey: ptr.String("true")}, // If we have a new device token then set the endpoint attribute back to enabled
 	})
 	if err != nil {
 		return "", errors.Trace(err)
@@ -191,7 +210,6 @@ func (s *service) processNotification(data []byte) error {
 	if err := json.Unmarshal(data, n); err != nil {
 		return errors.Trace(err)
 	}
-	golog.Debugf("Processing notification event: %+v", n)
 	return errors.Trace(s.processPushNotification(n))
 }
 
@@ -214,7 +232,6 @@ func (s *service) processPushNotification(n *notification.Notification) error {
 		return errors.Trace(err)
 	}
 	for _, accountID := range accountIDsToNotify {
-		golog.Debugf("Sending push notification to external group ID: %s", accountID)
 		if err := s.sendPushNotificationToExternalGroupID(accountID, n); err != nil {
 			golog.Errorf(err.Error())
 		}
@@ -242,7 +259,7 @@ func (s *service) filterNodesWithNotificationsDisabled(nodes []string) ([]string
 		if resp.Values[0].GetBoolean().Value {
 			filteredNodes = append(filteredNodes, nID)
 		} else {
-			golog.Debugf("Node id %s has notifications disabled. Filtering from list.")
+			golog.Debugf("Node id %s has notifications disabled. Filtering from list.", nID)
 		}
 	}
 	return filteredNodes, nil
@@ -254,9 +271,6 @@ func (s *service) sendPushNotificationToExternalGroupID(externalGroupID string, 
 	pushConfigs, err := s.dl.PushConfigsForExternalGroupID(externalGroupID)
 	if err != nil {
 		return errors.Trace(err)
-	}
-	if len(pushConfigs) == 0 {
-		golog.Debugf("No push configs available for external group id %s", externalGroupID)
 	}
 
 	// TODO: Account for partial failure here. If some configs succeed and others don't
@@ -274,7 +288,6 @@ func (s *service) sendPushNotificationToExternalGroupID(externalGroupID string, 
 			return errors.Trace(err)
 		}
 
-		golog.Debugf("Publishing %s to %s", msg, pushConfig.PushEndpoint)
 		if _, err := s.snsAPI.Publish(&sns.PublishInput{
 			Message:          ptr.String(string(msg)),
 			MessageStructure: jsonStructure,
@@ -282,7 +295,7 @@ func (s *service) sendPushNotificationToExternalGroupID(externalGroupID string, 
 		}); err != nil {
 			aerr, ok := err.(awserr.Error)
 			if ok && aerr.Code() == endpointDisabledAWSErrCode {
-				golog.Debugf("Encountered disabled endpoint %+v", msg, pushConfig)
+				golog.Debugf("Encountered disabled endpoint %s", pushConfig.ID)
 				// If an endpoint has been disabled then make an attempt to delete it since it is no longer valid
 				conc.Go(func() {
 					if _, err := s.dl.DeletePushConfig(pushConfig.ID); err != nil {
