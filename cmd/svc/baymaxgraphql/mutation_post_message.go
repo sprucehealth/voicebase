@@ -44,6 +44,7 @@ var messageInputType = graphql.NewInputObject(
 
 type postMessageOutput struct {
 	ClientMutationID string         `json:"clientMutationId,omitempty"`
+	UUID             string         `json:"uuid,omitempty"`
 	Success          bool           `json:"success"`
 	ErrorCode        string         `json:"errorCode,omitempty"`
 	ErrorMessage     string         `json:"errorMessage,omitempty"`
@@ -81,6 +82,7 @@ var postMessageOutputType = graphql.NewObject(
 		Name: "PostMessagePayload",
 		Fields: graphql.Fields{
 			"clientMutationId": newClientmutationIDOutputField(),
+			"uuid":             &graphql.Field{Type: graphql.String},
 			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"errorCode":        &graphql.Field{Type: postMessageErrorCodeEnum},
 			"errorMessage":     &graphql.Field{Type: graphql.String},
@@ -248,7 +250,8 @@ var postMessageMutation = &graphql.Field{
 		} else if req.Internal {
 			title = append(title[:0], "Internal")
 		}
-		if uuid, ok := msg["uuid"].(string); ok {
+		uuid, ok := msg["uuid"].(string)
+		if ok {
 			req.UUID = uuid
 		}
 
@@ -278,6 +281,7 @@ var postMessageMutation = &graphql.Field{
 		}
 		return &postMessageOutput{
 			ClientMutationID: mutationID,
+			UUID:             uuid,
 			Success:          true,
 			ItemEdge:         &Edge{Node: it, Cursor: ConnectionCursor(pmres.Item.ID)},
 			Thread:           th,
