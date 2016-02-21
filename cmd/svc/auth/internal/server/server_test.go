@@ -693,6 +693,8 @@ func TestCreateAccount(t *testing.T) {
 	test.OK(t, err)
 	signer, err := sig.NewSigner([][]byte{[]byte(clientEncryptionSecret)}, sha512.New)
 	test.OK(t, err)
+	// Check for the account by email
+	dl.Expect(mock.NewExpectation(dl.AccountForEmail, email).WithReturns((*dal.Account)(nil), api.ErrNotFound("foo")))
 	dl.Expect(mock.NewExpectationFn(dl.InsertAccount, func(p ...interface{}) {
 		test.Equals(t, 1, len(p))
 		account, ok := p[0].(*dal.Account)
@@ -758,6 +760,33 @@ func TestCreateAccount(t *testing.T) {
 		ExpirationEpoch:     expiration,
 		ClientEncryptionKey: base64.StdEncoding.EncodeToString(key),
 	}, resp.Token)
+}
+
+func TestCreateAccountExistingEmail(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
+	fn := "bat"
+	ln := "man"
+	email := "bat@man.com"
+	phoneNumber := "+12345678910"
+	password := "password"
+	// Check for the account by email and return one
+	dl.Expect(mock.NewExpectation(dl.AccountForEmail, email).WithReturns(&dal.Account{}, nil))
+	resp, err := s.CreateAccount(context.Background(), &auth.CreateAccountRequest{
+		FirstName:   fn,
+		LastName:    ln,
+		PhoneNumber: phoneNumber,
+		Email:       email,
+		Password:    password,
+	})
+	test.AssertNil(t, resp)
+	test.Equals(t, auth.DuplicateEmail, grpc.Code(err))
 }
 
 func TestCreateAccountMissingData(t *testing.T) {

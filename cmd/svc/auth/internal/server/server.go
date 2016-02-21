@@ -394,6 +394,14 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 		return nil, grpcErrorf(codes.InvalidArgument, "The provided phone number is not valid: %s", rd.PhoneNumber)
 	}
 
+	// TODO: This is check should be coupled with some idempotency changes to actually be correct. Just detecting the duyplicate for now.
+	acc, err := s.dal.AccountForEmail(rd.Email)
+	if err != nil && !api.IsErrNotFound(err) {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	} else if acc != nil {
+		return nil, grpcErrorf(auth.DuplicateEmail, "The email %s is already in use by an account", rd.Email)
+	}
+
 	var account *dal.Account
 	var authToken *auth.AuthToken
 	if err := s.dal.Transact(func(dl dal.DAL) error {
@@ -402,7 +410,6 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 			return errors.Trace(err)
 		}
 
-		golog.Debugf("Inserting account")
 		accountID, err := dl.InsertAccount(&dal.Account{
 			FirstName: rd.FirstName,
 			LastName:  rd.LastName,
@@ -412,9 +419,7 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 		if err != nil {
 			return errors.Trace(err)
 		}
-		golog.Debugf("Account inserted %s", accountID)
 
-		golog.Debugf("Inserting account email")
 		accountEmailID, err := dl.InsertAccountEmail(&dal.AccountEmail{
 			AccountID: accountID,
 			Email:     rd.Email,
@@ -424,9 +429,7 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 		if err != nil {
 			return errors.Trace(err)
 		}
-		golog.Debugf("Account email inserted %s", accountEmailID)
 
-		golog.Debugf("Inserting account phone")
 		accountPhoneID, err := dl.InsertAccountPhone(&dal.AccountPhone{
 			AccountID:   accountID,
 			Verified:    false,
@@ -436,14 +439,11 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 		if err != nil {
 			return errors.Trace(err)
 		}
-		golog.Debugf("Account phone inserted %s", accountPhoneID)
 
-		golog.Debugf("Updating account for email and phone")
 		aff, err := dl.UpdateAccount(accountID, &dal.AccountUpdate{
 			PrimaryAccountPhoneID: accountPhoneID,
 			PrimaryAccountEmailID: accountEmailID,
 		})
-		golog.Debugf("Account updated: %d affected", aff)
 		if err != nil {
 			return errors.Trace(err)
 		} else if aff != 1 {
@@ -455,9 +455,7 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 			return errors.Trace(err)
 		}
 
-		golog.Debugf("Getting account %s", accountID)
 		account, err = dl.Account(accountID)
-		golog.Debugf("Account %+v", account)
 		return errors.Trace(err)
 	}); err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
