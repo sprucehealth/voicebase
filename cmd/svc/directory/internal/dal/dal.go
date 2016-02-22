@@ -1089,7 +1089,7 @@ func andEntityStatusIN(ss []EntityStatus) string {
 	if len(ss) == 0 {
 		return ""
 	}
-	q := `AND status IN (`
+	q := `AND entity.status IN (`
 	for i, s := range ss {
 		q += `'` + string(s) + `'`
 		if i != (len(ss) - 1) {
