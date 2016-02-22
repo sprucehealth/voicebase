@@ -502,7 +502,7 @@ func (s *server) CreateEntityDomain(ctx context.Context, in *directory.CreateEnt
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
-	if err := s.dl.InsertEntityDomain(eID, in.Domain); err != nil {
+	if err := s.dl.InsertEntityDomain(eID, strings.ToLower(in.Domain)); err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 

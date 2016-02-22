@@ -50,8 +50,9 @@ var provisionEmailInputType = graphql.NewInputObject(
 )
 
 const (
-	provisionEmailErrorCodeSubdomainInUse = "SUBDOMAIN_IN_USE"
-	provisionEmailErrorCodeLocalPartInUse = "LOCAL_PART_IN_USE"
+	provisionEmailErrorCodeSubdomainInUse  = "SUBDOMAIN_IN_USE"
+	provisionEmailErrorCodeLocalPartInUse  = "LOCAL_PART_IN_USE"
+	provisionEmailErrorInvalidEmailAddress = "INVALID_EMAIL"
 )
 
 var provisionEmailErrorCodeEnum = graphql.NewEnum(
@@ -66,6 +67,10 @@ var provisionEmailErrorCodeEnum = graphql.NewEnum(
 			provisionEmailErrorCodeLocalPartInUse: &graphql.EnumValueConfig{
 				Value:       provisionEmailErrorCodeLocalPartInUse,
 				Description: "Local part of the address is in use",
+			},
+			provisionEmailErrorInvalidEmailAddress: &graphql.EnumValueConfig{
+				Value:       provisionEmailErrorInvalidEmailAddress,
+				Description: "Invalid email address",
 			},
 		},
 	},
@@ -160,7 +165,12 @@ var provisionEmailMutation = &graphql.Field{
 		}
 
 		if !validate.Email(emailAddress) {
-			return nil, errors.New("invalid email address")
+			return &provisionEmailOutput{
+				ClientMutationID: mutationID,
+				Success:          false,
+				ErrorCode:        provisionEmailErrorInvalidEmailAddress,
+				ErrorMessage:     "Please enter a valid email address",
+			}, nil
 		}
 
 		if organizationID != "" {

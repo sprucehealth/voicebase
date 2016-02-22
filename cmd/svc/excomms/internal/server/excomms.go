@@ -431,15 +431,17 @@ func (e *excommsService) ProvisionEmailAddress(ctx context.Context, req *excomms
 		return nil, grpcErrorf(codes.InvalidArgument, "%s is an invalid email address", req.EmailAddress)
 	}
 
+	emailAddress := strings.ToLower(req.EmailAddress)
+
 	// check if an email has been provisioned for this reason
 	provisionedEndpoint, err := e.dal.LookupProvisionedEndpoint(req.ProvisionFor, models.EndpointTypeEmail)
 	if err != nil {
 		if errors.Cause(err) != dal.ErrProvisionedEndpointNotFound {
 			return nil, grpcErrorf(codes.Internal, err.Error())
 		}
-	} else if provisionedEndpoint.Endpoint == req.EmailAddress {
+	} else if provisionedEndpoint.Endpoint == emailAddress {
 		return &excomms.ProvisionEmailAddressResponse{
-			EmailAddress: req.EmailAddress,
+			EmailAddress: emailAddress,
 		}, nil
 	} else {
 		return nil, grpcErrorf(codes.AlreadyExists, "Different email address (%s) provisioned for %s", provisionedEndpoint.Endpoint, req.ProvisionFor)
@@ -449,12 +451,12 @@ func (e *excommsService) ProvisionEmailAddress(ctx context.Context, req *excomms
 	if err := e.dal.ProvisionEndpoint(&models.ProvisionedEndpoint{
 		EndpointType:   models.EndpointTypeEmail,
 		ProvisionedFor: req.ProvisionFor,
-		Endpoint:       req.EmailAddress,
+		Endpoint:       emailAddress,
 	}); err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
 
 	return &excomms.ProvisionEmailAddressResponse{
-		EmailAddress: req.EmailAddress,
+		EmailAddress: emailAddress,
 	}, nil
 }
