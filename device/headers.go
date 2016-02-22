@@ -9,6 +9,7 @@ import (
 
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/golog"
 )
 
@@ -128,7 +129,7 @@ func ExtractSpruceHeaders(w http.ResponseWriter, r *http.Request) *SpruceHeaders
 					Value:    sHeaders.DeviceID,
 					Path:     "/",
 					Domain:   domain,
-					Secure:   true,
+					Secure:   !environment.IsDev(),
 					HttpOnly: true,
 				})
 			}

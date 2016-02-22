@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -120,24 +121,24 @@ func setAuthCookie(w http.ResponseWriter, domain, token string, expires time.Tim
 		expires = time.Now().Add(defaultAuthCookieDuration)
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:   authTokenCookieName,
-		Domain: domain,
-		Value:  token,
-		Path:   "/",
-		MaxAge: int(expires.Sub(time.Now()).Nanoseconds() / 1e9),
-		// Secure: true, TODO
+		Name:     authTokenCookieName,
+		Domain:   domain,
+		Value:    token,
+		Path:     "/",
+		MaxAge:   int(expires.Sub(time.Now()).Nanoseconds() / 1e9),
+		Secure:   !environment.IsDev(),
 		HttpOnly: true,
 	})
 }
 
 func removeAuthCookie(w http.ResponseWriter, domain string) {
 	http.SetCookie(w, &http.Cookie{
-		Name:   authTokenCookieName,
-		Domain: domain,
-		Value:  "",
-		Path:   "/",
-		MaxAge: -1,
-		// Secure: true, TODO
+		Name:     authTokenCookieName,
+		Domain:   domain,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		Secure:   !environment.IsDev(),
 		HttpOnly: true,
 	})
 }
