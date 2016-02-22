@@ -48,7 +48,7 @@ func ErrNotFound(ctx context.Context, resourceID string) error {
 	acc := gqlctx.Account(ctx)
 	rid := gqlctx.RequestID(ctx)
 	golog.LogDepthf(1, golog.WARN, "NotFound: Account %+v requested resource %s and it was not found [RequestID %d]", acc, resourceID, rid)
-	return UserError(ctx, ErrTypeNotAuthorized, "This requested resource could not be found.")
+	return UserError(ctx, ErrTypeNotFound, "This requested resource could not be found.")
 }
 
 // UserError created a message with user facing content

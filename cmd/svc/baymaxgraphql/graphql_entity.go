@@ -93,8 +93,13 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 				dPlatform := directory.Platform(pPlatform)
 
 				sc, err := lookupSerializedEntityContact(ctx, ram, entity.ID, dPlatform)
+
 				if err != nil {
-					return nil, errors.InternalError(ctx, err)
+					if errors.Type(err) == errors.ErrTypeNotFound {
+						return nil, nil
+					} else {
+						return nil, errors.InternalError(ctx, err)
+					}
 				}
 
 				return sc, nil

@@ -192,7 +192,7 @@ func (s *server) SerializedEntityContact(ctx context.Context, rd *directory.Seri
 	if !api.IsErrNotFound(err) && err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	} else if api.IsErrNotFound(err) {
-		return nil, grpcErrorf(codes.NotFound, "Not serialized entity contact exists for entity id %s and platform %s", entityID, platform)
+		return nil, grpcErrorf(codes.NotFound, "No serialized entity contact exists for entity id %s and platform %s", entityID, platform)
 	}
 	return &directory.SerializedEntityContactResponse{
 		SerializedEntityContact: dalSerializedClientEntityContactAsPBSerializedClientEntityContact(sec),

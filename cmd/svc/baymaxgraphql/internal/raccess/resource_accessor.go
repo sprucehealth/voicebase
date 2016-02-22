@@ -472,7 +472,11 @@ func (m *resourceAccessor) SerializedEntityContact(ctx context.Context, entityID
 		return nil, err
 	}
 	res, err := m.serializedEntityContact(ctx, entityID, platform)
+
 	if err != nil {
+		if grpc.Code(err) == codes.NotFound {
+			return nil, errors.ErrNotFound(ctx, fmt.Sprintf("serialized contact info for entity %s on platform %s", entityID, platform.String()))
+		}
 		return nil, err
 	}
 	return res.SerializedEntityContact, nil
