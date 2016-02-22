@@ -260,19 +260,19 @@ func transformEntityToResponse(e *directory.Entity) (*models.Entity, error) {
 				switch c.ContactType {
 				case directory.ContactType_PHONE:
 					ent.Avatar = &models.Image{
-						URL:    "http://carefront-static.s3.amazonaws.com/icon_rx_large?phone",
+						URL:    "https://carefront-static.s3.amazonaws.com/icon_rx_large?phone",
 						Width:  72,
 						Height: 72,
 					}
 				case directory.ContactType_EMAIL:
 					ent.Avatar = &models.Image{
-						URL:    "http://carefront-static.s3.amazonaws.com/icon_rx_large?email",
+						URL:    "https://carefront-static.s3.amazonaws.com/icon_rx_large?email",
 						Width:  72,
 						Height: 72,
 					}
 				default:
 					ent.Avatar = &models.Image{
-						URL:    "http://carefront-static.s3.amazonaws.com/icon_rx_large?other",
+						URL:    "https://carefront-static.s3.amazonaws.com/icon_rx_large?other",
 						Width:  72,
 						Height: 72,
 					}
