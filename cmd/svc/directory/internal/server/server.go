@@ -428,9 +428,6 @@ func (s *server) LookupEntitiesByContact(ctx context.Context, rd *directory.Look
 	if err != nil {
 		return nil, grpcErrorf(codes.Internal, err.Error())
 	}
-	if len(rd.Statuses) == 0 {
-		rd.Statuses = []directory.EntityStatus{directory.EntityStatus_ACTIVE}
-	}
 	if len(entityContacts) == 0 {
 		return nil, grpcErrorf(codes.NotFound, "Contact with value %s not found", rd.ContactValue)
 	}

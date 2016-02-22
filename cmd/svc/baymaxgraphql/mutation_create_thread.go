@@ -134,7 +134,7 @@ var createThreadMutation = &graphql.Field{
 		// Check for an existing entity with the provided contact info
 		var existingEntities []*directory.Entity
 		entities, err := ram.EntitiesByContact(ctx, createForContact.Value, []directory.EntityInformation{
-			directory.EntityInformation_MEMBERSHIPS}, 1)
+			directory.EntityInformation_MEMBERSHIPS}, 1, []directory.EntityStatus{directory.EntityStatus_ACTIVE})
 		if err == nil {
 			// Filter out entities that aren't external as that's all we're dealing with right now
 			existingEntities = make([]*directory.Entity, 0, len(entities))

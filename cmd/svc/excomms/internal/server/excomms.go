@@ -345,7 +345,9 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 			RequestedInformation: &directory.RequestedInformation{
 				Depth:             1,
 				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
-			}})
+			},
+			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		})
 	if grpc.Code(err) == codes.NotFound {
 		return nil, grpcErrorf(codes.NotFound, "callee %s not found", in.ToPhoneNumber)
 	} else if err != nil {

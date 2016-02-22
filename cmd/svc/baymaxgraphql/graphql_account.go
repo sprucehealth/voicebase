@@ -42,7 +42,7 @@ var accountType = graphql.NewObject(
 					entities, err := ram.EntitiesForExternalID(ctx, acc.ID, []directory.EntityInformation{
 						directory.EntityInformation_MEMBERSHIPS,
 						directory.EntityInformation_CONTACTS,
-					}, 1)
+					}, 1, nil)
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)
 					}

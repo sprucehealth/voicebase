@@ -200,6 +200,7 @@ func expectOrgsForEntity(rat *ratest, entityID, orgID string) {
 			Depth:             0,
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
 		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{
@@ -226,6 +227,7 @@ func expectOrgsForEntityForExternalID(rat *ratest, externalID, orgID string) {
 			Depth:             0,
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
 		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
 			{

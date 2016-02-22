@@ -195,7 +195,7 @@ func (m *ResourceAccessor) EntityForAccountID(ctx context.Context, orgID, accoun
 	return rets[0].(*directory.Entity), mock.SafeError(rets[1])
 }
 
-func (m *ResourceAccessor) EntitiesByContact(ctx context.Context, contactValue string, entityInfo []directory.EntityInformation, depth int64) ([]*directory.Entity, error) {
+func (m *ResourceAccessor) EntitiesByContact(ctx context.Context, contactValue string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) ([]*directory.Entity, error) {
 	rets := m.Record(contactValue, entityInfo, depth)
 	if len(rets) == 0 {
 		return nil, nil
@@ -204,7 +204,7 @@ func (m *ResourceAccessor) EntitiesByContact(ctx context.Context, contactValue s
 	return rets[0].([]*directory.Entity), mock.SafeError(rets[1])
 }
 
-func (m *ResourceAccessor) EntitiesForExternalID(ctx context.Context, externalID string, entityInfo []directory.EntityInformation, depth int64) ([]*directory.Entity, error) {
+func (m *ResourceAccessor) EntitiesForExternalID(ctx context.Context, externalID string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) ([]*directory.Entity, error) {
 	rets := m.Record(externalID, entityInfo, depth)
 	if len(rets) == 0 {
 		return nil, nil
