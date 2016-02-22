@@ -266,7 +266,7 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 	// persist the message that was sent for tracking purposes
 	conc.Go(func() {
 		if err := e.dal.CreateSentMessage(sentMessage); err != nil {
-			golog.Errorf(err.Error())
+			golog.Warningf(err.Error())
 		}
 	})
 
