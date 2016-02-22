@@ -67,6 +67,15 @@ func (c *Client) DeleteContacts(ctx context.Context, in *directory.DeleteContact
 	return rets[0].(*directory.DeleteContactsResponse), mock.SafeError(rets[1])
 }
 
+// DeleteEntity implements directory.DirectoryClient
+func (c *Client) DeleteEntity(ctx context.Context, in *directory.DeleteEntityRequest, opts ...grpc.CallOption) (*directory.DeleteEntityResponse, error) {
+	rets := c.Expector.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*directory.DeleteEntityResponse), mock.SafeError(rets[1])
+}
+
 // LookupEntitiesByContact implements directory.DirectoryClient
 func (c *Client) LookupEntitiesByContact(ctx context.Context, in *directory.LookupEntitiesByContactRequest, opts ...grpc.CallOption) (*directory.LookupEntitiesByContactResponse, error) {
 	rets := c.Expector.Record(in)

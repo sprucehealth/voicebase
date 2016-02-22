@@ -932,12 +932,86 @@ func TestDeleteThread(t *testing.T) {
 	t.Parallel()
 	dl := newMockDAL(t)
 	defer dl.Finish()
+	directoryClient := mock_directory.New(t)
+	defer directoryClient.Finish()
 
 	tID, err := models.NewThreadID()
 	test.OK(t, err)
-	srv := NewThreadsServer(nil, dl, nil, "arn", nil, nil)
+	srv := NewThreadsServer(nil, dl, nil, "arn", nil, directoryClient)
+	eID := "entity_123"
+	peID := "entity_456"
+
+	dl.Expect(mock.NewExpectation(dl.Thread, tID).WithReturns(&models.Thread{PrimaryEntityID: peID}, nil))
+	directoryClient.Expect(mock.NewExpectation(directoryClient.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: peID,
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{ID: peID, Type: directory.EntityType_EXTERNAL, Status: directory.EntityStatus_ACTIVE},
+		},
+	}, nil))
+	directoryClient.Expect(mock.NewExpectation(directoryClient.DeleteEntity, &directory.DeleteEntityRequest{
+		EntityID: peID,
+	}).WithReturns(&directory.DeleteEntityResponse{}, nil))
+	dl.Expect(mock.NewExpectation(dl.DeleteThread, tID).WithReturns(nil))
+	dl.Expect(mock.NewExpectation(dl.RecordThreadEvent, tID, eID, models.ThreadEventDelete).WithReturns(nil))
+	resp, err := srv.DeleteThread(nil, &threading.DeleteThreadRequest{
+		ThreadID:      tID.String(),
+		ActorEntityID: eID,
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.DeleteThreadResponse{}, resp)
+}
+
+func TestDeleteThreadNoPE(t *testing.T) {
+	t.Parallel()
+	dl := newMockDAL(t)
+	defer dl.Finish()
+	directoryClient := mock_directory.New(t)
+	defer directoryClient.Finish()
+
+	tID, err := models.NewThreadID()
+	test.OK(t, err)
+	srv := NewThreadsServer(nil, dl, nil, "arn", nil, directoryClient)
 	eID := "entity_123"
 
+	dl.Expect(mock.NewExpectation(dl.Thread, tID).WithReturns(&models.Thread{PrimaryEntityID: ""}, nil))
+	dl.Expect(mock.NewExpectation(dl.DeleteThread, tID).WithReturns(nil))
+	dl.Expect(mock.NewExpectation(dl.RecordThreadEvent, tID, eID, models.ThreadEventDelete).WithReturns(nil))
+	resp, err := srv.DeleteThread(nil, &threading.DeleteThreadRequest{
+		ThreadID:      tID.String(),
+		ActorEntityID: eID,
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.DeleteThreadResponse{}, resp)
+}
+
+func TestDeleteThreadPEInternal(t *testing.T) {
+	t.Parallel()
+	dl := newMockDAL(t)
+	defer dl.Finish()
+	directoryClient := mock_directory.New(t)
+	defer directoryClient.Finish()
+
+	tID, err := models.NewThreadID()
+	test.OK(t, err)
+	srv := NewThreadsServer(nil, dl, nil, "arn", nil, directoryClient)
+	eID := "entity_123"
+	peID := "entity_456"
+
+	dl.Expect(mock.NewExpectation(dl.Thread, tID).WithReturns(&models.Thread{PrimaryEntityID: peID}, nil))
+	directoryClient.Expect(mock.NewExpectation(directoryClient.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: peID,
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{ID: peID, Type: directory.EntityType_INTERNAL, Status: directory.EntityStatus_ACTIVE},
+		},
+	}, nil))
 	dl.Expect(mock.NewExpectation(dl.DeleteThread, tID).WithReturns(nil))
 	dl.Expect(mock.NewExpectation(dl.RecordThreadEvent, tID, eID, models.ThreadEventDelete).WithReturns(nil))
 	resp, err := srv.DeleteThread(nil, &threading.DeleteThreadRequest{

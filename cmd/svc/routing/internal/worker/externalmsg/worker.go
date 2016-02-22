@@ -493,6 +493,7 @@ func lookupEntitiesByContact(ctx context.Context, contactValue string, dir direc
 					directory.EntityInformation_CONTACTS,
 				},
 			},
+			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 		},
 	)
 	if err != nil {

@@ -20,7 +20,7 @@ type DAL interface {
 	Transact(trans func(dal DAL) error) (err error)
 	InsertEntity(model *Entity) (EntityID, error)
 	Entity(id EntityID) (*Entity, error)
-	Entities(ids []EntityID) ([]*Entity, error)
+	Entities(ids []EntityID, statuses []EntityStatus) ([]*Entity, error)
 	UpdateEntity(id EntityID, update *EntityUpdate) (int64, error)
 	DeleteEntity(id EntityID) (int64, error)
 	UpsertSerializedClientEntityContact(model *SerializedClientEntityContact) error
@@ -32,7 +32,7 @@ type DAL interface {
 	ExternalEntityIDsForEntities(entityID []EntityID) ([]*ExternalEntityID, error)
 	InsertEntityMembership(model *EntityMembership) error
 	EntityMemberships(id EntityID) ([]*EntityMembership, error)
-	EntityMembers(id EntityID) ([]*Entity, error)
+	EntityMembers(id EntityID, statuses []EntityStatus) ([]*Entity, error)
 	InsertEntityContact(model *EntityContact) (EntityContactID, error)
 	InsertEntityContacts(models []*EntityContact) error
 	EntityContact(id EntityContactID) (*EntityContact, error)
@@ -244,14 +244,12 @@ const (
 	EntityStatusActive EntityStatus = "ACTIVE"
 	// EntityStatusDeleted represents the DELETED state of the status field on a entity record
 	EntityStatusDeleted EntityStatus = "DELETED"
-	// EntityStatusSuspended represents the SUSPENDED state of the status field on a entity record
-	EntityStatusSuspended EntityStatus = "SUSPENDED"
 )
 
 // ParseEntityStatus converts a string into the correcponding enum value
 func ParseEntityStatus(s string) (EntityStatus, error) {
 	switch t := EntityStatus(strings.ToUpper(s)); t {
-	case EntityStatusActive, EntityStatusDeleted, EntityStatusSuspended:
+	case EntityStatusActive, EntityStatusDeleted:
 		return t, nil
 	}
 	return EntityStatus(""), errors.Trace(fmt.Errorf("Unknown status:%s", s))
@@ -522,7 +520,7 @@ func (d *dal) Entity(id EntityID) (*Entity, error) {
 }
 
 // Entities returns the entity record associated with the provided IDs
-func (d *dal) Entities(ids []EntityID) ([]*Entity, error) {
+func (d *dal) Entities(ids []EntityID, statuses []EntityStatus) ([]*Entity, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -532,7 +530,7 @@ func (d *dal) Entities(ids []EntityID) ([]*Entity, error) {
 		vals[i] = v
 	}
 	rows, err := d.db.Query(
-		selectEntity+` WHERE id IN (`+dbutil.MySQLArgs(len(ids))+`)`, vals...)
+		selectEntity+` WHERE id IN (`+dbutil.MySQLArgs(len(ids))+`) `+andEntityStatusIN(statuses), vals...)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -568,10 +566,10 @@ func (d *dal) UpdateEntity(id EntityID, update *EntityUpdate) (int64, error) {
 		args.Append("long_title", *update.LongTitle)
 	}
 	if update.Type != nil {
-		args.Append("type", *update.Type)
+		args.Append("type", update.Type.String())
 	}
 	if update.Status != nil {
-		args.Append("status", *update.Status)
+		args.Append("status", update.Status.String())
 	}
 	if update.MiddleInitial != nil {
 		args.Append("middle_initial", *update.MiddleInitial)
@@ -705,10 +703,10 @@ func (d *dal) EntityMemberships(id EntityID) ([]*EntityMembership, error) {
 }
 
 // EntityMembers returns all the members of the provided entity id
-func (d *dal) EntityMembers(id EntityID) ([]*Entity, error) {
+func (d *dal) EntityMembers(id EntityID, statuses []EntityStatus) ([]*Entity, error) {
 	rows, err := d.db.Query(
 		selectEntity+` JOIN entity_membership ON entity_membership.entity_id = entity.id
-		  WHERE entity_membership.target_entity_id = ?`, id)
+		  WHERE entity_membership.target_entity_id = ? `+andEntityStatusIN(statuses), id)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -1086,6 +1084,20 @@ func scanEvent(row dbutil.Scanner) (*Event, error) {
 const selectEntity = `
     SELECT entity.id, entity.middle_initial, entity.last_name, entity.note, entity.created, entity.modified, entity.display_name, entity.first_name, entity.group_name, entity.type, entity.status, entity.short_title, entity.long_title
       FROM entity`
+
+func andEntityStatusIN(ss []EntityStatus) string {
+	if len(ss) == 0 {
+		return ""
+	}
+	q := `AND status IN (`
+	for i, s := range ss {
+		q += `'` + string(s) + `'`
+		if i != (len(ss) - 1) {
+			q += ", "
+		}
+	}
+	return q + `)`
+}
 
 func scanEntity(row dbutil.Scanner) (*Entity, error) {
 	var m Entity

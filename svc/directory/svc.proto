@@ -22,6 +22,12 @@ enum EntityInformation {
 	EXTERNAL_IDS = 3;
 }
 
+enum EntityStatus {
+	UNKNOWN = 0; 
+	ACTIVE = 1;
+	DELETED = 2;
+}
+
 enum Platform {
 	IOS = 0;
 	ANDROID = 1;
@@ -52,6 +58,7 @@ message Entity {
 	repeated Contact contacts = 7;
 	repeated EntityInformation included_information = 8;
     EntityInfo info = 9;
+	EntityStatus status = 10;
 }
 
 message SerializedClientEntityContact {
@@ -86,6 +93,7 @@ message LookupEntitiesRequest {
 	}
 
 	RequestedInformation requested_information = 4;
+	repeated EntityStatus statuses = 5;
 }
 
 message LookupEntitiesResponse {
@@ -131,6 +139,7 @@ message Contact {
 message LookupEntitiesByContactRequest {
 	string contact_value = 1;
 	RequestedInformation requested_information = 4;
+	repeated EntityStatus statuses = 5;
 }
 
 message LookupEntitiesByContactResponse {
@@ -215,6 +224,12 @@ message SerializedEntityContactResponse {
 	SerializedClientEntityContact serialized_entity_contact = 1;
 }
 
+message DeleteEntityRequest {
+    string entity_id = 1 [(gogoproto.customname) = "EntityID"];
+}
+
+message DeleteEntityResponse {}
+
 service Directory {
     // TODO: 1/22/16 - Remove the single version of this call once this code has been deployed and all callers have been changed and deployed
     rpc CreateContact (CreateContactRequest) returns (CreateContactResponse);
@@ -223,6 +238,7 @@ service Directory {
 	rpc CreateEntity (CreateEntityRequest) returns (CreateEntityResponse);
 	rpc CreateMembership (CreateMembershipRequest) returns (CreateMembershipResponse);
     rpc DeleteContacts (DeleteContactsRequest) returns (DeleteContactsResponse);
+	rpc DeleteEntity (DeleteEntityRequest) returns (DeleteEntityResponse);
     rpc ExternalIDs (ExternalIDsRequest) returns (ExternalIDsResponse);
     rpc LookupEntities (LookupEntitiesRequest) returns (LookupEntitiesResponse);
 	rpc LookupEntitiesByContact (LookupEntitiesByContactRequest) returns (LookupEntitiesByContactResponse);

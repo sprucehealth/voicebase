@@ -258,12 +258,46 @@ func (s *threadsServer) DeleteThread(ctx context.Context, in *threading.DeleteTh
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadID")
 	}
-	s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
+
+	// If we can't find the thread then just return success
+	thread, err := s.dal.Thread(ctx, threadID)
+	if api.IsErrNotFound(err) {
+		return &threading.DeleteThreadResponse{}, nil
+	} else if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	if thread.PrimaryEntityID != "" {
+		// Get the primary entity on the thread first and determine if we need to delete it if it's external
+		resp, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: thread.PrimaryEntityID,
+			},
+		})
+		if err != nil && grpc.Code(err) != codes.NotFound {
+			return nil, grpcErrorf(codes.Internal, err.Error())
+		}
+
+		if resp != nil &&
+			len(resp.Entities) != 0 &&
+			resp.Entities[0].Type == directory.EntityType_EXTERNAL &&
+			resp.Entities[0].Status != directory.EntityStatus_DELETED {
+			if _, err := s.directoryClient.DeleteEntity(ctx, &directory.DeleteEntityRequest{
+				EntityID: resp.Entities[0].ID,
+			}); err != nil {
+				return nil, grpcErrorf(codes.Internal, err.Error())
+			}
+		}
+	}
+	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
 		if err := s.dal.DeleteThread(ctx, threadID); err != nil {
 			return errors.Trace(err)
 		}
 		return errors.Trace(s.dal.RecordThreadEvent(ctx, threadID, in.ActorEntityID, models.ThreadEventDelete))
-	})
+	}); err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
 	return &threading.DeleteThreadResponse{}, nil
 }
 

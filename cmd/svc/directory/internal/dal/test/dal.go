@@ -43,8 +43,8 @@ func (dl *mockDAL) Entity(id dal.EntityID) (*dal.Entity, error) {
 	return rets[0].(*dal.Entity), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) Entities(ids []dal.EntityID) ([]*dal.Entity, error) {
-	rets := dl.Expector.Record(ids)
+func (dl *mockDAL) Entities(ids []dal.EntityID, statuses []dal.EntityStatus) ([]*dal.Entity, error) {
+	rets := dl.Expector.Record(ids, statuses)
 	if len(rets) == 0 {
 		return nil, nil
 	}
@@ -107,8 +107,8 @@ func (dl *mockDAL) EntityMemberships(id dal.EntityID) ([]*dal.EntityMembership, 
 	return rets[0].([]*dal.EntityMembership), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) EntityMembers(id dal.EntityID) ([]*dal.Entity, error) {
-	rets := dl.Expector.Record(id)
+func (dl *mockDAL) EntityMembers(id dal.EntityID, statuses []dal.EntityStatus) ([]*dal.Entity, error) {
+	rets := dl.Expector.Record(id, statuses)
 	if len(rets) == 0 {
 		return nil, nil
 	}
