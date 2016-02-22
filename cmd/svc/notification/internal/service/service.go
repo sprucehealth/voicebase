@@ -22,7 +22,6 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification"
-	"github.com/sprucehealth/backend/svc/notification/deeplink"
 	"github.com/sprucehealth/backend/svc/settings"
 )
 
@@ -271,19 +270,25 @@ func (s *service) filterNodesWithNotificationsDisabled(nodes []string) ([]string
 const endpointDisabledAWSErrCode = "EndpointDisabled"
 
 func (s *service) sendPushNotificationToExternalGroupID(externalGroupID string, n *notification.Notification) error {
-	pushConfigs, err := s.dl.PushConfigsForExternalGroupID(externalGroupID)
-	if err != nil {
-		return errors.Trace(err)
+	/*
+		pushConfigs, err := s.dl.PushConfigsForExternalGroupID(externalGroupID)
+		if err != nil {
+			return errors.Trace(err)
+		}*/
+	pushConfigs := []dal.PushConfig{
+		{
+			PushEndpoint: "arn:aws:sns:us-east-1:758505115169:endpoint/GCM/staging-baymax_android_push_notification/14dd890e-12e1-323f-aecd-0628e9146317",
+			Platform:     "android",
+		},
 	}
 
-	// TODO: Account for partial failure here. If some configs succeed and others don't
 	for _, pushConfig := range pushConfigs {
 		var snsNote *snsNotification
 		switch pushConfig.Platform {
 		case "iOS", "android":
-			snsNote = generateNotification(s.config.WebDomain, n, pushConfig)
+			snsNote = generateNotification(s.config.WebDomain, n)
 		default:
-			return errors.Trace(fmt.Errorf("Cannot send push notification to unknown platform %q for push notifications", pushConfig.Platform))
+			return errors.Trace(fmt.Errorf("Cannot send push notification to unhandled platform %q", pushConfig.Platform))
 		}
 
 		msg, err := json.Marshal(snsNote)
@@ -352,7 +357,16 @@ type iOSPushData struct {
 }
 
 type androidPushNotification struct {
-	PushData *androidPushData `json:"data"`
+	CollapseKey      string               `json:"collapse_key"`
+	PushData         *androidPushData     `json:"data"`
+	PushNotification *androidNotification `json:"notification"`
+}
+
+type androidNotification struct {
+	Icon  string `json:"collapse_key"`
+	Tag   string `json:"tag"`   // This is the dedupe key
+	Sound string `json:"sound"` // Leaving this empty means no vibrate or sound
+	Body  string `json:"body"`
 }
 
 type androidPushData struct {
@@ -365,8 +379,12 @@ type androidPushData struct {
 	PushID         string `json:"push_id"`
 }
 
-func generateNotification(webDomain string, n *notification.Notification, pushConfig *dal.PushConfig) *snsNotification {
-	url := deeplink.ThreadMessageURLShareable(webDomain, n.OrganizationID, n.ThreadID, n.MessageID)
+func generateNotification(webDomain string, n *notification.Notification) *snsNotification {
+	var sound string
+	if n.Alert {
+		sound = "default"
+	}
+
 	isNotifData, err := json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
 			Alert: n.ShortMessage,
@@ -381,14 +399,20 @@ func generateNotification(webDomain string, n *notification.Notification, pushCo
 		golog.Errorf("Error while serializing ios notification data: %s", err)
 	}
 	androidNotifData, err := json.Marshal(&androidPushNotification{
+		CollapseKey: n.CollapseKey,
 		PushData: &androidPushData{
 			Message:        n.ShortMessage,
-			URL:            url,
+			URL:            n.URL,
 			OrganizationID: n.OrganizationID,
 			SavedQueryID:   n.SavedQueryID,
 			ThreadID:       n.ThreadID,
 			MessageID:      n.MessageID,
-			PushID:         fmt.Sprintf("thread:%s", n.ThreadID),
+			PushID:         n.DedupeKey,
+		},
+		PushNotification: &androidNotification{
+			Tag:   n.DedupeKey,
+			Sound: sound,
+			Body:  n.ShortMessage,
 		},
 	})
 	if err != nil {

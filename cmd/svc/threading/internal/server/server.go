@@ -18,6 +18,7 @@ import (
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification"
+	"github.com/sprucehealth/backend/svc/notification/deeplink"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -37,6 +38,7 @@ type threadsServer struct {
 	dal                dal.DAL
 	sns                snsiface.SNSAPI
 	snsTopicARN        string
+	webDomain          string
 	notificationClient notification.Client
 	directoryClient    directory.DirectoryClient
 }
@@ -47,6 +49,7 @@ func NewThreadsServer(
 	dal dal.DAL,
 	sns snsiface.SNSAPI,
 	snsTopicARN string,
+	webDomain string,
 	notificationClient notification.Client,
 	directoryClient directory.DirectoryClient,
 ) threading.ThreadsServer {
@@ -58,6 +61,7 @@ func NewThreadsServer(
 		dal:                dal,
 		sns:                sns,
 		snsTopicARN:        snsTopicARN,
+		webDomain:          webDomain,
 		notificationClient: notificationClient,
 		directoryClient:    directoryClient,
 	}
@@ -430,18 +434,18 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		var memberUpdate *dal.MemberUpdate
 		// Lock our membership row while doing this since we might update it
 		forUpdate := true
-		tms, err := dl.ThreadMemberships(ctx, []models.ThreadID{threadID}, in.FromEntityID, forUpdate)
+		tms, err := dl.ThreadMemberships(ctx, []models.ThreadID{threadID}, []string{in.FromEntityID}, forUpdate)
 		if err != nil {
 			return grpcErrorf(codes.Internal, errors.Trace(err).Error())
 		}
 
 		if len(tms) > 0 {
-			if len(tms) != 1 {
+			if len(tms[in.FromEntityID]) != 1 {
 				return grpcErrorf(codes.Internal, errors.Trace(
 					fmt.Errorf("Expected to find at most 1 membership for entity %s to thread %s but found %d", in.FromEntityID, threadID, len(tms))).Error())
 			}
 			// Update the last read timestamp on the membership if all other messages have been read
-			lastViewed := tms[0].LastViewed
+			lastViewed := tms[in.FromEntityID][0].LastViewed
 			if lastViewed == nil {
 				lastViewed = &thread.Created
 			}
@@ -800,6 +804,8 @@ func (s *threadsServer) publishMessage(ctx context.Context, orgID, primaryEntity
 	})
 }
 
+const newMessageNotificationKey = "new_message" // This is used for both collapse and dedupe
+
 func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID string, savedQueryID models.SavedQueryID, threadID models.ThreadID, messageID models.ThreadItemID, publishingEntityID string) {
 	golog.Debugf("Notifying members of org %s of activity on thread %s by entity %s", orgID, threadID, publishingEntityID)
 	if s.notificationClient == nil || s.directoryClient == nil {
@@ -833,19 +839,37 @@ func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID
 		org := resp.Entities[0]
 		var memberEntityIDs []string
 		for _, m := range org.Members {
-			if m.Type != directory.EntityType_INTERNAL || m.ID == publishingEntityID {
+			if m.Type != directory.EntityType_INTERNAL { //|| m.ID == publishingEntityID {
 				continue
 			}
 			memberEntityIDs = append(memberEntityIDs, m.ID)
 		}
+
+		// Get the threads for the org
+		orgThreads, err := s.dal.ThreadsForOrg(ctx, orgID)
+		if err != nil {
+			golog.Errorf("Failed to fetch org threads of %s to notify about thread: %s - %s", orgID, threadID, err)
+			return
+		}
+
+		// Determine the nature of the notification we want to send (multiple outstanding, text change, etc...)
+		shortMessages := make(map[string]string)
+		urls := make(map[string]string)
+		alert := make(map[string]bool)
+		for i, me := range memberEntityIDs {
+
+		}
 		golog.Debugf("Sending notifications to member entities %v", memberEntityIDs)
 		if err := s.notificationClient.SendNotification(&notification.Notification{
 			ShortMessage:     "A new message is available",
+			URL:              deeplink.ThreadMessageURLShareable(s.webDomain, n.OrganizationID, n.ThreadID, n.MessageID),
 			OrganizationID:   orgID,
 			SavedQueryID:     savedQueryID.String(),
 			ThreadID:         threadID.String(),
 			MessageID:        messageID.String(),
 			EntitiesToNotify: memberEntityIDs,
+			DedupeKey:        newMessageNotificationKey,
+			CollapseKey:      newMessageNotificationKey,
 		}); err != nil {
 			golog.Errorf("Failed to notify members: %s", err)
 		}

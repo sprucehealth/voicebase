@@ -41,6 +41,7 @@ var (
 	flagSNSTopicARN        = flag.String("sns_topic_arn", "", "SNS topic ARN to publish new messages to")
 	flagSQSNotificationURL = flag.String("sqs_notification_url", "", "the sqs url for notification messages")
 	flagDirectoryAddr      = flag.String("directory_addr", "", "host:port of directory service")
+	flagWebDomain          = flag.String("web_domain", "", "the domain of the web app")
 )
 
 func init() {
@@ -113,6 +114,9 @@ func main() {
 		})
 	}
 
+	if *flagWebDomain == "" {
+		golog.Fatalf("Web domain not configured")
+	}
 	if *flagDirectoryAddr == "" {
 		golog.Fatalf("Directory service not configured")
 	}
@@ -123,7 +127,7 @@ func main() {
 	directoryClient := directory.NewDirectoryClient(conn)
 
 	s := grpc.NewServer()
-	threading.RegisterThreadsServer(s, server.NewThreadsServer(clock.New(), dal.New(db), sns, *flagSNSTopicARN, notificationClient, directoryClient))
+	threading.RegisterThreadsServer(s, server.NewThreadsServer(clock.New(), dal.New(db), sns, *flagSNSTopicARN, *flagWebDomain, notificationClient, directoryClient))
 	golog.Infof("Starting Threads service on %s...", *flagListen)
 
 	ln, err := net.Listen("tcp", *flagListen)
