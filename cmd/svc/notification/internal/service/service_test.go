@@ -213,17 +213,18 @@ func TestProcessExistingDeviceRegistrationIOSTokenChanged(t *testing.T) {
 				IsValid: true,
 			},
 		},
-		DeviceToken: []byte("DeviceToken"),
+		DeviceToken:  []byte("DeviceToken"),
+		PushEndpoint: "myEndpoint",
 	}, nil))
 
-	// Generate an endpoint for the device
-	snsAPI.Expect(mock.NewExpectation(snsAPI.CreatePlatformEndpoint, &sns.CreatePlatformEndpointInput{
-		PlatformApplicationArn: ptr.String(appleDeviceRegistrationSNSARN),
-		Token:      ptr.String("NewDeviceToken"),
-		Attributes: map[string]*string{snsEndpointEnabledAttributeKey: ptr.String("true")},
-	}).WithReturns(&sns.CreatePlatformEndpointOutput{
-		EndpointArn: ptr.String("androidEnpointARN"),
-	}, nil))
+	// Update the endpoint for the device
+	snsAPI.Expect(mock.NewExpectation(snsAPI.SetEndpointAttributes, &sns.SetEndpointAttributesInput{
+		EndpointArn: ptr.String("myEndpoint"),
+		Attributes: map[string]*string{
+			snsEndpointEnabledAttributeKey: ptr.String("true"),
+			snsEndpointTokenAttributeKey:   ptr.String("NewDeviceToken"),
+		},
+	}).WithReturns(&sns.SetEndpointAttributesOutput{}, nil))
 
 	// Update the record for the device
 	dl.Expect(mock.NewExpectation(dl.UpdatePushConfig, dal.PushConfigID{

@@ -97,7 +97,6 @@ func (s *service) processDeviceRegistration(data []byte) error {
 	if err := json.Unmarshal(data, registrationInfo); err != nil {
 		return errors.Trace(err)
 	}
-	golog.Debugf("Processing device registration event: %+v", registrationInfo)
 
 	// Check to see if we already have this device registered
 	pushConfig, err := s.dl.PushConfigForDeviceID(registrationInfo.DeviceID)
@@ -112,7 +111,7 @@ func (s *service) processDeviceRegistration(data []byte) error {
 		}
 
 		// Insert the newly created endpoint
-		golog.Debugf("Inserting new push config with endpoint %s for device registration event: %+v", endpointARN, registrationInfo)
+		golog.Debugf("Inserting new push config with endpoint %s for device registration", endpointARN)
 		_, err = s.dl.InsertPushConfig(&dal.PushConfig{
 			ExternalGroupID: registrationInfo.ExternalGroupID,
 			Platform:        registrationInfo.Platform,
@@ -131,20 +130,13 @@ func (s *service) processDeviceRegistration(data []byte) error {
 
 	// This device is already registered but let's check to see if our token has changed
 	if string(pushConfig.DeviceToken) != registrationInfo.DeviceToken {
-		// If our token has changed, Regneerate to reassert that the endpoint is enabled
-		// Generate a new endpoint if we don't already have this device registered
-		endpointARN, err := s.generateEndpointARN(registrationInfo)
-		if err != nil {
+		// If our token has changed, update the endpoint
+		if err := s.updateEndpoint(pushConfig.PushEndpoint, registrationInfo.DeviceToken); err != nil {
 			return errors.Trace(err)
-		} else if endpointARN == "" {
-			golog.Warningf("No SNS endpoint ARN generated for %s, %s, %s", registrationInfo.ExternalGroupID, registrationInfo.Platform, registrationInfo.DeviceID)
-			return nil
 		}
-		// This should likely be the same as before but just set it anyways
-		pushConfig.PushEndpoint = endpointARN
 	}
 
-	golog.Debugf("Updating existing push config with externalID %s for device registration event: %+v", registrationInfo.ExternalGroupID, registrationInfo)
+	golog.Debugf("Updating existing push config with externalID %s for device registration.", registrationInfo.ExternalGroupID)
 	_, err = s.dl.UpdatePushConfig(pushConfig.ID, &dal.PushConfigUpdate{
 		ExternalGroupID: ptr.String(registrationInfo.ExternalGroupID),
 		Platform:        ptr.String(registrationInfo.Platform),
@@ -161,6 +153,7 @@ func (s *service) processDeviceRegistration(data []byte) error {
 }
 
 const snsEndpointEnabledAttributeKey = "Enabled"
+const snsEndpointTokenAttributeKey = "Token"
 
 func (s *service) generateEndpointARN(info *notification.DeviceRegistrationInfo) (string, error) {
 	var arn string
@@ -181,12 +174,24 @@ func (s *service) generateEndpointARN(info *notification.DeviceRegistrationInfo)
 		PlatformApplicationArn: ptr.String(arn),
 		Token: ptr.String(info.DeviceToken),
 		// http://docs.aws.amazon.com/sns/latest/api/API_SetEndpointAttributes.html
-		Attributes: map[string]*string{snsEndpointEnabledAttributeKey: ptr.String("true")}, // If we have a new device token then set the endpoint attribute back to enabled
+		Attributes: map[string]*string{snsEndpointEnabledAttributeKey: ptr.String("true")},
 	})
 	if err != nil {
 		return "", errors.Trace(err)
 	}
 	return *createEndpointResponse.EndpointArn, nil
+}
+
+func (s *service) updateEndpoint(endpointARN, deviceToken string) error {
+	_, err := s.snsAPI.SetEndpointAttributes(&sns.SetEndpointAttributesInput{
+		EndpointArn: ptr.String(endpointARN),
+		// http://docs.aws.amazon.com/sns/latest/api/API_SetEndpointAttributes.html
+		Attributes: map[string]*string{
+			snsEndpointEnabledAttributeKey: ptr.String("true"),
+			snsEndpointTokenAttributeKey:   ptr.String(deviceToken),
+		},
+	})
+	return errors.Trace(err)
 }
 
 func (s *service) processDeviceDeregistration(data []byte) error {
@@ -258,8 +263,6 @@ func (s *service) filterNodesWithNotificationsDisabled(nodes []string) ([]string
 		}
 		if resp.Values[0].GetBoolean().Value {
 			filteredNodes = append(filteredNodes, nID)
-		} else {
-			golog.Debugf("Node id %s has notifications disabled. Filtering from list.", nID)
 		}
 	}
 	return filteredNodes, nil
