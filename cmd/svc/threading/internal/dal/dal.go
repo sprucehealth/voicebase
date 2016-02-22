@@ -99,10 +99,9 @@ type DAL interface {
 	ThreadItem(ctx context.Context, id models.ThreadItemID) (*models.ThreadItem, error)
 	ThreadItemIDsCreatedAfter(ctx context.Context, threadID models.ThreadID, after time.Time) ([]models.ThreadItemID, error)
 	ThreadItemViewDetails(ctx context.Context, id models.ThreadItemID) ([]*models.ThreadItemViewDetails, error)
-	ThreadMemberships(ctx context.Context, threadIDs []models.ThreadID, entityIDs []string, forUpdate bool) (map[string][]*models.ThreadMember, error)
+	ThreadMemberships(ctx context.Context, threadID []models.ThreadID, entityID string, forUpdate bool) ([]*models.ThreadMember, error)
 	ThreadMembers(ctx context.Context, threadID models.ThreadID) ([]*models.ThreadMember, error)
 	ThreadsForMember(ctx context.Context, entityID string, primaryOnly bool) ([]*models.Thread, error)
-	ThreadsForOrg(ctx context.Context, organizationID string) ([]*models.Thread, error)
 	// UpdateMember updates attributes about a thread member. If the membership doesn't exist then it is created.
 	UpdateMember(ctx context.Context, threadID models.ThreadID, entityID string, update *MemberUpdate) error
 
@@ -569,8 +568,8 @@ func (d *dal) ThreadItemViewDetails(ctx context.Context, id models.ThreadItemID)
 	return tds, errors.Trace(rows.Err())
 }
 
-func (d *dal) ThreadMemberships(ctx context.Context, threadIDs []models.ThreadID, entityIDs []string, forUpdate bool) (map[string][]*models.ThreadMember, error) {
-	if len(threadIDs) == 0 || len(entityIDs) == 0 {
+func (d *dal) ThreadMemberships(ctx context.Context, threadIDs []models.ThreadID, entityID string, forUpdate bool) ([]*models.ThreadMember, error) {
+	if len(threadIDs) == 0 {
 		return nil, nil
 	}
 
@@ -578,30 +577,28 @@ func (d *dal) ThreadMemberships(ctx context.Context, threadIDs []models.ThreadID
 	if forUpdate {
 		sfu = "FOR UPDATE"
 	}
-	values := make([]interface{}, len(threadIDs)+len(entityIDs))
-	for i, e := range entityIDs {
-		values[i] = e
-	}
+	values := make([]interface{}, len(threadIDs)+1)
+	values[0] = entityID
 	for i, v := range threadIDs {
-		values[i+len(entityIDs)] = v
+		values[i+1] = v
 	}
 	rows, err := d.db.Query(fmt.Sprintf(`
 		SELECT thread_id, entity_id, following, joined, last_viewed
 		FROM thread_members
-		WHERE entity_id = IN (`+dbutil.MySQLArgs(len(entityIDs))+`)
+		WHERE entity_id = ?
         AND thread_id IN (`+dbutil.MySQLArgs(len(threadIDs))+`) %s`, sfu), values...)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	defer rows.Close()
 
-	tms := make(map[string][]*models.ThreadMember)
+	var tms []*models.ThreadMember
 	for rows.Next() {
 		tm, err := scanThreadMember(rows)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		tms[tm.EntityID] = append(tms[tm.EntityID], tm)
+		tms = append(tms, tm)
 	}
 	return tms, errors.Trace(err)
 }
@@ -642,27 +639,6 @@ func (d *dal) ThreadsForMember(ctx context.Context, entityID string, primaryOnly
 			INNER JOIN threads t ON t.id = tm.thread_id
 			WHERE tm.entity_id = ? AND deleted = false`, entityID)
 	}
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-	var threads []*models.Thread
-	for rows.Next() {
-		t, err := scanThread(rows)
-		if err != nil {
-			return nil, errors.Trace(err)
-		}
-		threads = append(threads, t)
-	}
-	return threads, errors.Trace(rows.Err())
-}
-
-func (d *dal) ThreadsForOrg(ctx context.Context, organizationID string) ([]*models.Thread, error) {
-	var rows *sql.Rows
-	var err error
-	rows, err = d.db.Query(`
-			SELECT id, organization_id, COALESCE(primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary, last_primary_entity_endpoints, created, message_count
-			FROM threads
-			WHERE organization_id = ? AND deleted = false`, organizationID)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

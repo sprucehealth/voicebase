@@ -19,14 +19,10 @@ type DeviceDeregistrationInfo struct {
 
 // Notification represents the information to be transformed into a notification
 type Notification struct {
-	ShortMessage     map[string]string `json:"short_message"`
-	URL              map[string]string `json:"url"`
-	CollapseKey      string            `json:"collapse_key"`
-	DedupeKey        string            `json:"dedupe_key"`
-	Alert            map[string]bool   `json:"alert"`
-	OrganizationID   string            `json:"organization_id"`
-	SavedQueryID     string            `json:"saved_query_id"`
-	ThreadID         string            `json:"thread_id"`
-	MessageID        string            `json:"message_id"`
-	EntitiesToNotify []string          `json:"entities_to_notify"`
+	ShortMessage     string   `json:"short_message"`
+	OrganizationID   string   `json:"organization_id"`
+	SavedQueryID     string   `json:"saved_query_id"`
+	ThreadID         string   `json:"thread_id"`
+	MessageID        string   `json:"message_id"`
+	EntitiesToNotify []string `json:"entities_to_notify"`
 }
