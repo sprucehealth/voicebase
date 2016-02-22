@@ -327,7 +327,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 				summary = fmt.Sprintf("%s called %s", fromName, toName)
 			case excomms.OutgoingCallEventItem_ANSWERED:
 				if d := pem.GetOutgoing().DurationInSeconds; d != 0 {
-					title = bml.BML{fmt.Sprintf("Outbound call, %d:%02ds", d/60, d%60)}
+					title = bml.BML{fmt.Sprintf("Outbound call, answered. %d:%02ds", d/60, d%60)}
 				} else {
 					title = bml.BML{"Outbound call, answered"}
 				}
@@ -340,6 +340,9 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 		case excomms.PublishedExternalMessage_EMAIL:
 			endpointChannel = threading.Endpoint_EMAIL
 			subject := pem.GetEmailItem().Subject
+			if len(strings.TrimSpace(subject)) == 0 {
+				subject = "No Subject"
+			}
 			text = fmt.Sprintf("Subject: %s\n\n%s", subject, pem.GetEmailItem().Body)
 			title = bml.BML{"Email"}
 			summary = fmt.Sprintf("Subject: %s", subject)
@@ -393,7 +396,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 					FromEntityID:   externalEntity.ID,
 					Source: &threading.Endpoint{
 						Channel: endpointChannel,
-						ID:      pem.FromChannelID,
+						ID:      fromName,
 					},
 					Destinations: []*threading.Endpoint{
 						{
@@ -421,7 +424,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 					FromEntityID: fromEntity.ID,
 					Source: &threading.Endpoint{
 						Channel: endpointChannel,
-						ID:      pem.FromChannelID,
+						ID:      fromName,
 					},
 					Destinations: []*threading.Endpoint{
 						{

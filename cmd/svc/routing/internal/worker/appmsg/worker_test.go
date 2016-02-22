@@ -215,7 +215,7 @@ func TestSendMessage_Email(t *testing.T) {
 		Channel: excomms.ChannelType_EMAIL,
 		Message: &excomms.SendMessageRequest_Email{
 			Email: &excomms.EmailMessage{
-				Subject:          "Message from Dr. Smith, Practice Name",
+				Subject:          "Message from Practice Name",
 				Body:             "Hello",
 				FromName:         "Dr. Smith",
 				FromEmailAddress: "doctor@practice.baymax.com",
@@ -365,7 +365,7 @@ func TestSendMessage_Multiple(t *testing.T) {
 		Channel: excomms.ChannelType_EMAIL,
 		Message: &excomms.SendMessageRequest_Email{
 			Email: &excomms.EmailMessage{
-				Subject:          "Message from Dr. Smith, Practice Name",
+				Subject:          "Message from Practice Name",
 				Body:             "Hello",
 				FromName:         "Dr. Smith",
 				FromEmailAddress: "doctor@practice.baymax.com",
