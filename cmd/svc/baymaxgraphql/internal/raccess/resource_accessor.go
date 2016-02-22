@@ -647,7 +647,8 @@ func (m *resourceAccessor) canAccessResource(ctx context.Context, resourceID str
 }
 
 func (m *resourceAccessor) orgsForEntity(ctx context.Context, entityID string) (map[string]struct{}, error) {
-	res, err := m.entity(ctx, entityID, []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS}, 0, []directory.EntityStatus{directory.EntityStatus_ACTIVE})
+	// Don't do any status checks. Authorization is for all existing resources
+	res, err := m.entity(ctx, entityID, []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS}, 0, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -655,7 +656,8 @@ func (m *resourceAccessor) orgsForEntity(ctx context.Context, entityID string) (
 }
 
 func (m *resourceAccessor) orgsForEntityForExternalID(ctx context.Context, externalID string) (map[string]struct{}, error) {
-	res, err := m.entitiesForExternalID(ctx, externalID, []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS}, 0, []directory.EntityStatus{directory.EntityStatus_ACTIVE})
+	// Don't do any status checks. Authorization is for all existing resources
+	res, err := m.entitiesForExternalID(ctx, externalID, []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS}, 0, nil)
 	if err != nil {
 		return nil, err
 	}

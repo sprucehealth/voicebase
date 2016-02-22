@@ -514,7 +514,7 @@ func (d *dal) InsertEntity(model *Entity) (EntityID, error) {
 // Entity retrieves a entity record
 func (d *dal) Entity(id EntityID) (*Entity, error) {
 	row := d.db.QueryRow(
-		selectEntity+` WHERE id = ?`, id.Val)
+		selectEntity+` WHERE id = ?`, id)
 	model, err := scanEntity(row)
 	return model, errors.Trace(err)
 }
