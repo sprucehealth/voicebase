@@ -126,6 +126,7 @@ func processOutgoingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 					directory.EntityInformation_CONTACTS,
 				},
 			},
+			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 		})
 	if err != nil {
 		return "", errors.Trace(err)
@@ -173,6 +174,7 @@ func processOutgoingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
 				EntityID: ppnr.DestinationEntityID,
 			},
+			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 		})
 	if err != nil {
 		return "", errors.Trace(err)
@@ -228,6 +230,7 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 					directory.EntityInformation_CONTACTS,
 				},
 			},
+			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 		})
 	if err != nil {
 		return "", errors.Trace(err)

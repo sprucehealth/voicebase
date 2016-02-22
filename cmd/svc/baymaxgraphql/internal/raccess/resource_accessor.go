@@ -70,8 +70,8 @@ type ResourceAccessor interface {
 	Entity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error)
 	EntityDomain(ctx context.Context, entityID, domain string) (*directory.LookupEntityDomainResponse, error)
 	EntityForAccountID(ctx context.Context, orgID, accountID string) (*directory.Entity, error)
-	EntitiesByContact(ctx context.Context, contactValue string, entityInfo []directory.EntityInformation, depth int64) ([]*directory.Entity, error)
-	EntitiesForExternalID(ctx context.Context, externalID string, entityInfo []directory.EntityInformation, depth int64) ([]*directory.Entity, error)
+	EntitiesByContact(ctx context.Context, contactValue string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) ([]*directory.Entity, error)
+	EntitiesForExternalID(ctx context.Context, externalID string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) ([]*directory.Entity, error)
 	InitiatePhoneCall(ctx context.Context, req *excomms.InitiatePhoneCallRequest) (*excomms.InitiatePhoneCallResponse, error)
 	MarkThreadAsRead(ctx context.Context, threadID, entityID string) error
 	PostMessage(ctx context.Context, req *threading.PostMessageRequest) (*threading.PostMessageResponse, error)
@@ -313,7 +313,7 @@ func (m *resourceAccessor) Entity(ctx context.Context, entityID string, entityIn
 	if err := m.canAccessResource(ctx, entityID, m.orgsForEntity); err != nil {
 		return nil, err
 	}
-	res, err := m.entity(ctx, entityID, entityInfo, depth)
+	res, err := m.entity(ctx, entityID, entityInfo, depth, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -337,7 +337,7 @@ func (m *resourceAccessor) EntityDomain(ctx context.Context, entityID, domain st
 // TODO: This is currently a single org account hack
 func (m *resourceAccessor) EntityForAccountID(ctx context.Context, orgID, accountID string) (*directory.Entity, error) {
 	// Note: Authorization is done at the next level down
-	entities, err := m.EntitiesForExternalID(ctx, accountID, []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS}, 0)
+	entities, err := m.EntitiesForExternalID(ctx, accountID, []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS}, 0, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -351,20 +351,20 @@ func (m *resourceAccessor) EntityForAccountID(ctx context.Context, orgID, accoun
 	return nil, errors.ErrNotFound(ctx, fmt.Sprintf("(entity for account %s and org %s)", accountID, orgID))
 }
 
-func (m *resourceAccessor) EntitiesByContact(ctx context.Context, contactValue string, entityInfo []directory.EntityInformation, depth int64) ([]*directory.Entity, error) {
+func (m *resourceAccessor) EntitiesByContact(ctx context.Context, contactValue string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) ([]*directory.Entity, error) {
 	// Note: There is no authorization required for this operation.
-	res, err := m.entitiesForContact(ctx, contactValue, entityInfo, depth)
+	res, err := m.entitiesForContact(ctx, contactValue, entityInfo, depth, statuses)
 	if err != nil {
 		return nil, err
 	}
 	return res.Entities, nil
 }
 
-func (m *resourceAccessor) EntitiesForExternalID(ctx context.Context, externalID string, entityInfo []directory.EntityInformation, depth int64) ([]*directory.Entity, error) {
+func (m *resourceAccessor) EntitiesForExternalID(ctx context.Context, externalID string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) ([]*directory.Entity, error) {
 	if err := m.canAccessResource(ctx, externalID, m.orgsForEntityForExternalID); err != nil {
 		return nil, err
 	}
-	res, err := m.entitiesForExternalID(ctx, externalID, entityInfo, depth)
+	res, err := m.entitiesForExternalID(ctx, externalID, entityInfo, depth, statuses)
 	if err != nil {
 		return nil, err
 	}
@@ -472,11 +472,7 @@ func (m *resourceAccessor) SerializedEntityContact(ctx context.Context, entityID
 		return nil, err
 	}
 	res, err := m.serializedEntityContact(ctx, entityID, platform)
-
 	if err != nil {
-		if grpc.Code(err) == codes.NotFound {
-			return nil, errors.ErrNotFound(ctx, fmt.Sprintf("serialized contact info for entity %s on platform %s", entityID, platform.String()))
-		}
 		return nil, err
 	}
 	return res.SerializedEntityContact, nil
@@ -648,7 +644,7 @@ func (m *resourceAccessor) canAccessResource(ctx context.Context, resourceID str
 }
 
 func (m *resourceAccessor) orgsForEntity(ctx context.Context, entityID string) (map[string]struct{}, error) {
-	res, err := m.entity(ctx, entityID, []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS}, 0)
+	res, err := m.entity(ctx, entityID, []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS}, 0, []directory.EntityStatus{directory.EntityStatus_ACTIVE})
 	if err != nil {
 		return nil, err
 	}
@@ -656,7 +652,7 @@ func (m *resourceAccessor) orgsForEntity(ctx context.Context, entityID string) (
 }
 
 func (m *resourceAccessor) orgsForEntityForExternalID(ctx context.Context, externalID string) (map[string]struct{}, error) {
-	res, err := m.entitiesForExternalID(ctx, externalID, []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS}, 0)
+	res, err := m.entitiesForExternalID(ctx, externalID, []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS}, 0, []directory.EntityStatus{directory.EntityStatus_ACTIVE})
 	if err != nil {
 		return nil, err
 	}
@@ -802,7 +798,7 @@ func (m *resourceAccessor) deleteThread(ctx context.Context, threadID, entityID 
 	return nil
 }
 
-func (m *resourceAccessor) entity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.LookupEntitiesResponse, error) {
+func (m *resourceAccessor) entity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) (*directory.LookupEntitiesResponse, error) {
 	if len(entityInfo) == 0 {
 		entityInfo = []directory.EntityInformation{
 			directory.EntityInformation_MEMBERSHIPS,
@@ -819,6 +815,7 @@ func (m *resourceAccessor) entity(ctx context.Context, entityID string, entityIn
 				Depth:             depth,
 				EntityInformation: entityInfo,
 			},
+			Statuses: statuses,
 		})
 	if err != nil {
 		return nil, err
@@ -840,7 +837,7 @@ func (m *resourceAccessor) entityDomain(ctx context.Context, entityID, domain st
 	return resp, nil
 }
 
-func (m *resourceAccessor) entitiesForContact(ctx context.Context, contactValue string, entityInfo []directory.EntityInformation, depth int64) (*directory.LookupEntitiesByContactResponse, error) {
+func (m *resourceAccessor) entitiesForContact(ctx context.Context, contactValue string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) (*directory.LookupEntitiesByContactResponse, error) {
 	if len(entityInfo) == 0 {
 		entityInfo = []directory.EntityInformation{
 			directory.EntityInformation_MEMBERSHIPS,
@@ -854,6 +851,7 @@ func (m *resourceAccessor) entitiesForContact(ctx context.Context, contactValue 
 				Depth:             depth,
 				EntityInformation: entityInfo,
 			},
+			Statuses: statuses,
 		})
 	if err != nil {
 		return nil, err
@@ -861,7 +859,7 @@ func (m *resourceAccessor) entitiesForContact(ctx context.Context, contactValue 
 	return res, nil
 }
 
-func (m *resourceAccessor) entitiesForExternalID(ctx context.Context, externalID string, entityInfo []directory.EntityInformation, depth int64) (*directory.LookupEntitiesResponse, error) {
+func (m *resourceAccessor) entitiesForExternalID(ctx context.Context, externalID string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) (*directory.LookupEntitiesResponse, error) {
 	if len(entityInfo) == 0 {
 		entityInfo = []directory.EntityInformation{
 			directory.EntityInformation_MEMBERSHIPS,
@@ -878,6 +876,7 @@ func (m *resourceAccessor) entitiesForExternalID(ctx context.Context, externalID
 				Depth:             depth,
 				EntityInformation: entityInfo,
 			},
+			Statuses: statuses,
 		})
 	if err != nil {
 		return nil, err

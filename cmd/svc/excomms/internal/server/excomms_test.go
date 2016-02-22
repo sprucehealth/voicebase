@@ -655,6 +655,7 @@ func TestInitiatePhoneCall_OriginatingNumberSpecified(t *testing.T) {
 			Depth:             1,
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
 		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{
 		Entities: []*directory.Entity{
 			{
@@ -769,6 +770,7 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_ButExists(t *testing.T)
 			Depth:             1,
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
 		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{
 		Entities: []*directory.Entity{
 			{
@@ -890,6 +892,7 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_DoesNotExist(t *testing
 			Depth:             1,
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
 		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{
 		Entities: []*directory.Entity{
 			{
@@ -1098,6 +1101,7 @@ func TestInitiatePhoneCall_InvalidCallee(t *testing.T) {
 			Depth:             1,
 			EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS},
 		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 	}).WithReturns(&directory.LookupEntitiesByContactResponse{}, grpcErrorf(codes.NotFound, "")))
 
 	mdal := &mockDAL_Excomms{
