@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
@@ -25,12 +26,14 @@ const (
 )
 
 type callEntityOutput struct {
-	ClientMutationID       string `json:"clientMutationId,omitempty"`
-	Success                bool   `json:"success"`
-	ErrorCode              string `json:"errorCode,omitempty"`
-	ErrorMessage           string `json:"errorMessage,omitempty"`
-	ProxyPhoneNumber       string `json:"proxyPhoneNumber,omitempty"`
-	OriginatingPhoneNumber string `json:"originatingPhoneNumber,omitempty"`
+	ClientMutationID                   string `json:"clientMutationId,omitempty"`
+	Success                            bool   `json:"success"`
+	ErrorCode                          string `json:"errorCode,omitempty"`
+	ErrorMessage                       string `json:"errorMessage,omitempty"`
+	ProxyPhoneNumber                   string `json:"proxyPhoneNumber,omitempty"`
+	ProxyPhoneNumberDisplayValue       string `json:"proxyPhoneNumberDisplayValue,omitempty"`
+	OriginatingPhoneNumber             string `json:"originatingPhoneNumber,omitempty"`
+	OriginatingPhoneNumberDisplayValue string `json:"originatingPhoneNumberDisplayValue,omitempty"`
 }
 
 var callEntityTypeEnumType = graphql.NewEnum(graphql.EnumConfig{
@@ -94,9 +97,17 @@ var callEntityOutputType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        graphql.String,
 			Description: "The phone number to use to contact the entity.",
 		},
+		"proxyPhoneNumberDisplayValue": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Display ready proxy phone number",
+		},
 		"originatingPhoneNumber": &graphql.Field{
 			Type:        graphql.String,
 			Description: "The phone number of where the call is intended to originate from",
+		},
+		"originatingPhoneNumberDisplayValue": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Display ready originating phone number",
 		},
 	},
 	IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
@@ -206,11 +217,23 @@ var callEntityMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 
+		proxyPhoneNumberDisplayValue, err := phone.Format(ires.ProxyPhoneNumber, phone.Pretty)
+		if err != nil {
+			golog.Errorf("Unable to format proxy phone number %s :%s ", ires.ProxyPhoneNumber, err.Error())
+		}
+
+		originatingPhoneNumberDisplayValue, err := phone.Format(ires.OriginatingPhoneNumber, phone.Pretty)
+		if err != nil {
+			golog.Errorf("Unable to format originating phone number %s: %s", ires.OriginatingPhoneNumber, err.Error())
+		}
+
 		return &callEntityOutput{
-			ClientMutationID:       mutationID,
-			Success:                true,
-			ProxyPhoneNumber:       ires.ProxyPhoneNumber,
-			OriginatingPhoneNumber: ires.OriginatingPhoneNumber,
+			ClientMutationID:                   mutationID,
+			Success:                            true,
+			ProxyPhoneNumber:                   ires.ProxyPhoneNumber,
+			ProxyPhoneNumberDisplayValue:       proxyPhoneNumberDisplayValue,
+			OriginatingPhoneNumberDisplayValue: originatingPhoneNumberDisplayValue,
+			OriginatingPhoneNumber:             ires.OriginatingPhoneNumber,
 		}, nil
 	},
 }
