@@ -85,6 +85,52 @@ func TestReserveNumber_ExistingReservation(t *testing.T) {
 	test.Equals(t, proxyPhoneNumber, pn)
 }
 
+func TestReserveNumber_NewReservation_SameSourceDestinationPair(t *testing.T) {
+	md := dalmock.New(t)
+	defer md.Finish()
+
+	originatingPhoneNumber := phone.Number("+12068773590")
+	destinationPhoneNumber := phone.Number("+17348465522")
+	proxyPhoneNumber := phone.Number("+11234567890")
+	destinationEntityID := "d1"
+	sourceEntityID := "s1"
+	organizationID := "o1"
+	mclock := clock.NewManaged(time.Now())
+
+	md.Expect(mock.NewExpectation(md.ActiveProxyPhoneNumberReservation, originatingPhoneNumber, phone.Ptr(destinationPhoneNumber), phone.Ptr(phone.Number(""))).
+		WithReturns(&models.ProxyPhoneNumberReservation{
+			ProxyPhoneNumber:       proxyPhoneNumber,
+			DestinationPhoneNumber: destinationPhoneNumber,
+			OriginatingPhoneNumber: originatingPhoneNumber,
+			DestinationEntityID:    "d2",
+			OwnerEntityID:          sourceEntityID,
+			OrganizationID:         organizationID,
+			Expires:                mclock.Now().Add(phoneReservationDuration),
+		}, nil))
+
+	md.Expect(mock.NewExpectation(md.AvailableProxyPhoneNumbers, originatingPhoneNumber).WithReturns(
+		[]*models.ProxyPhoneNumber{
+			{
+				PhoneNumber: proxyPhoneNumber,
+			},
+		}, nil))
+	md.Expect(mock.NewExpectation(md.CreateProxyPhoneNumberReservation, &models.ProxyPhoneNumberReservation{
+		ProxyPhoneNumber:       proxyPhoneNumber,
+		DestinationPhoneNumber: destinationPhoneNumber,
+		OriginatingPhoneNumber: originatingPhoneNumber,
+		DestinationEntityID:    destinationEntityID,
+		OwnerEntityID:          sourceEntityID,
+		OrganizationID:         organizationID,
+		Expires:                mclock.Now().Add(phoneReservationDuration),
+	}))
+
+	manager := NewManager(md, mclock)
+
+	pn, err := manager.ReserveNumber(originatingPhoneNumber, destinationPhoneNumber, destinationEntityID, sourceEntityID, organizationID)
+	test.OK(t, err)
+	test.Equals(t, proxyPhoneNumber, pn)
+}
+
 func TestReserveNumber_LastReserved(t *testing.T) {
 	md := dalmock.New(t)
 	defer md.Finish()

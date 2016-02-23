@@ -61,15 +61,14 @@ func (m *manager) ReserveNumber(originatingPhoneNumber, destinationPhoneNumber p
 	var proxyPhoneNumber phone.Number
 	if err := m.dal.Transact(func(dl dal.DAL) error {
 
-		// check if an active reservation already exists for the source/destination pair, and if
+		// check if an active reservation already exists for the source/destination pair and the same source/destination entity pair, and if
 		// so, extend the reservation and return the same number rather than reserving a new number
 		ppnr, err := dl.ActiveProxyPhoneNumberReservation(originatingPhoneNumber, phone.Ptr(destinationPhoneNumber), nil)
 		if err != nil && errors.Cause(err) != dal.ErrProxyPhoneNumberReservationNotFound {
 			return errors.Trace(err)
-		} else if ppnr != nil {
+		} else if ppnr != nil && (ppnr.DestinationEntityID == destinationEntityID && ppnr.OwnerEntityID == sourceEntityID) {
 
 			expiration := m.clock.Now().Add(phoneReservationDuration)
-
 			// extend the existing reservation rather than creating a new one and return
 			if rowsAffected, err := dl.UpdateActiveProxyPhoneNumberReservation(originatingPhoneNumber, phone.Ptr(destinationPhoneNumber), nil, &dal.ProxyPhoneNumberReservationUpdate{
 				Expires: ptr.Time(expiration),
