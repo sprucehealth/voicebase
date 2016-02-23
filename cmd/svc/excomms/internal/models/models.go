@@ -66,6 +66,14 @@ type CallRequest struct {
 	CalleeEntityID string
 }
 
+// IncomingCall represents a call from an external party to an organization.
+type IncomingCall struct {
+	CallSID        string
+	Source         phone.Number
+	Destination    phone.Number
+	OrganizationID string
+}
+
 // CallEvent represents an entry pertaining to a call event
 // along with its corresponding data.
 type CallEvent struct {

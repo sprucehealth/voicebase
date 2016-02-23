@@ -57,6 +57,12 @@ type DAL interface {
 	// LookupCallRequest returns the call request identified by the call sid.
 	LookupCallRequest(callSID string) (*models.CallRequest, error)
 
+	// CreateIncomingCall creates an entry for the incoming call
+	CreateIncomingCall(*models.IncomingCall) error
+
+	// LookupIncomingCall identifies an incoming call by the SID
+	LookupIncomingCall(sid string) (*models.IncomingCall, error)
+
 	// AvailableProxyPhoneNumbers returns a list of proxy phone numbers available for reservation for a given originatingNumber.
 	AvailableProxyPhoneNumbers(originatingPhoneNumber phone.Number) ([]*models.ProxyPhoneNumber, error)
 
@@ -108,6 +114,7 @@ var (
 	ErrSentMessageNotFound                 = errors.New("sent message not found")
 	ErrIncomingRawMessageNotFound          = errors.New("incoming raw message not found")
 	ErrOriginatingNumberNotFound           = errors.New("originating number not found")
+	ErrIncomingCallNotFound                = errors.New("incoming_call not found")
 )
 
 func (d *dal) LookupProvisionedEndpoint(provisionedFor string, endpointType models.EndpointType) (*models.ProvisionedEndpoint, error) {
@@ -537,4 +544,28 @@ func (d *dal) LookupMedia(ids []uint64) (map[uint64]*models.Media, error) {
 	}
 
 	return media, errors.Trace(rows.Err())
+}
+
+func (d *dal) CreateIncomingCall(ic *models.IncomingCall) error {
+	_, err := d.db.Exec(`REPLACE INTO incoming_call (call_sid, source, destination, organization_id) VALUES (?,?,?,?)`, ic.CallSID, ic.Source, ic.Destination, ic.OrganizationID)
+	return errors.Trace(err)
+}
+
+func (d *dal) LookupIncomingCall(sid string) (*models.IncomingCall, error) {
+	var ic models.IncomingCall
+	if err := d.db.QueryRow(`
+		SELECT call_sid, source, destination, organization_id
+		FROM incoming_call
+		WHERE call_sid = ?`, sid).Scan(
+		&ic.CallSID,
+		&ic.Source,
+		&ic.Destination,
+		&ic.OrganizationID); err == sql.ErrNoRows {
+		return nil, errors.Trace(ErrIncomingCallNotFound)
+	} else if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	return &ic, nil
+
 }

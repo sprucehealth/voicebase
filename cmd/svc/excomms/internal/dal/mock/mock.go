@@ -187,3 +187,21 @@ func (m *mockDAL) LookupMedia(ids []uint64) (map[uint64]*models.Media, error) {
 
 	return rets[0].(map[uint64]*models.Media), mock.SafeError(rets[1])
 }
+
+func (m *mockDAL) CreateIncomingCall(ic *models.IncomingCall) error {
+	rets := m.Record(ic)
+	if len(rets) == 0 {
+		return nil
+	}
+
+	return mock.SafeError(rets[0])
+}
+
+func (m *mockDAL) LookupIncomingCall(sid string) (*models.IncomingCall, error) {
+	rets := m.Record(sid)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*models.IncomingCall), mock.SafeError(rets[1])
+}

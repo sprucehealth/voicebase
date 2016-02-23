@@ -21,6 +21,8 @@ import (
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/settings"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 var (
@@ -49,7 +51,14 @@ type eventsHandler struct {
 	incomingRawMsgTopic  string
 }
 
-func NewEventHandler(directory directory.DirectoryClient, settingsClient settings.SettingsClient, dal dal.DAL, sns snsiface.SNSAPI, clock clock.Clock, proxyNumberManager proxynumber.Manager, apiURL, externalMessageTopic, incomingRawMsgTopic string) EventHandler {
+func NewEventHandler(
+	directory directory.DirectoryClient,
+	settingsClient settings.SettingsClient,
+	dal dal.DAL,
+	sns snsiface.SNSAPI,
+	clock clock.Clock,
+	proxyNumberManager proxynumber.Manager,
+	apiURL, externalMessageTopic, incomingRawMsgTopic string) EventHandler {
 	return &eventsHandler{
 		directory:            directory,
 		settings:             settingsClient,
@@ -304,6 +313,24 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 		return "", errors.Trace(fmt.Errorf("Unable to find organization for provisioned number %s", params.To))
 	}
 
+	source, err := phone.ParseNumber(params.From)
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+	destination, err := phone.ParseNumber(params.To)
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+
+	if err := eh.dal.CreateIncomingCall(&models.IncomingCall{
+		Source:         source,
+		Destination:    destination,
+		OrganizationID: organizationID,
+		CallSID:        params.CallSID,
+	}); err != nil {
+		return "", errors.Trace(err)
+	}
+
 	// remove the providers from the forwarding list that have a setting
 	// turned on to indicate that all calls should be directed to voicemail
 	par := conc.NewParallel()
@@ -368,6 +395,27 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 func providerCallConnected(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 	golog.Infof("Call connected for provider at %s.", params.To)
 
+	// lookup the parent call information to be able to announce the name of the patient if we have it
+	// use the parentCallSID as that identifies the originating call, given that this particular call leg to the provider
+	// stems from that call.
+	incomingCall, err := eh.dal.LookupIncomingCall(params.ParentCallSID)
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+
+	externalEntityName, err := determineExternalEntityName(ctx, incomingCall.Source, incomingCall.OrganizationID, eh)
+	if err != nil {
+		golog.Errorf("Unable to determine external entity name based on call sid %s. Error: %s", params.ParentCallSID, err.Error())
+	}
+
+	// if no name is found, then use the phone number itself.
+	if externalEntityName == "" {
+		externalEntityName, err = incomingCall.Source.Format(phone.National)
+		if err != nil {
+			golog.Errorf("Unable to format number %s. Error: %s", incomingCall.Source.String(), err.Error())
+		}
+	}
+
 	tw := twiml.NewResponse(
 		&twiml.Gather{
 			Action:           "/twilio/call/provider_entered_digits",
@@ -377,7 +425,7 @@ func providerCallConnected(ctx context.Context, params *rawmsg.TwilioParams, eh 
 			Verbs: []interface{}{
 				&twiml.Say{
 					Voice: "woman",
-					Text:  "You have an incoming call. Press 1 to answer.",
+					Text:  fmt.Sprintf("You have an incoming call from %s. Press 1 to answer.", externalEntityName),
 				},
 			},
 		},
@@ -399,18 +447,66 @@ func providerEnteredDigits(ctx context.Context, params *rawmsg.TwilioParams, eh 
 		return tw.GenerateTwiML()
 	}
 
-	// hangup they key on the provider side if any key other than 1 is pressed.
-	tw := twiml.NewResponse(&twiml.Hangup{})
-	return tw.GenerateTwiML()
+	// repeate message if any key other than one pressed.
+	return providerCallConnected(ctx, params, eh)
 }
 
 func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 
-	// TODO: Configurable voice mail or default mehsage based on user configuration.
+	// determine the name of the organization from the destination phone number, assuming that the destination phone number
+	// belongs to a provider or an organization.
+	res, err := eh.directory.LookupEntitiesByContact(
+		context.Background(),
+		&directory.LookupEntitiesByContactRequest{
+			ContactValue: params.To,
+			RequestedInformation: &directory.RequestedInformation{
+				Depth: 1,
+				EntityInformation: []directory.EntityInformation{
+					directory.EntityInformation_MEMBERS,
+					directory.EntityInformation_MEMBERSHIPS,
+					directory.EntityInformation_CONTACTS,
+				},
+			},
+			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		})
+	if err != nil {
+		return "", errors.Trace(err)
+	} else if len(res.Entities) != 1 {
+		return "", errors.Trace(fmt.Errorf("Expected single entity mapping to provisioned phone number but got back %d", len(res.Entities)))
+	}
+
+	var orgName string
+	switch res.Entities[0].Type {
+	case directory.EntityType_ORGANIZATION:
+		orgName = res.Entities[0].Info.DisplayName
+	case directory.EntityType_INTERNAL:
+		for _, m := range res.Entities[0].Memberships {
+			if m.Type != directory.EntityType_ORGANIZATION {
+				continue
+			}
+
+			// find the organization that has this number listed as the provisioned number
+			for _, c := range m.Contacts {
+				if c.Provisioned && c.Value == params.To {
+					orgName = m.Info.DisplayName
+					break
+				}
+			}
+		}
+	}
+
+	var voicemailMessage string
+	if orgName != "" {
+		voicemailMessage = fmt.Sprintf("You have reached %s. Please leave a message after the tone.", orgName)
+	} else {
+		voicemailMessage = "Please leave a message after the tone."
+	}
+
 	tw := &twiml.Response{
 		Verbs: []interface{}{
-			&twiml.Play{
-				Text: "http://dev-twilio.s3.amazonaws.com/kunal_clinic_voicemail.mp3",
+			&twiml.Say{
+				Voice: "woman",
+				Text:  voicemailMessage,
 			},
 			&twiml.Record{
 				Action:           "/twilio/call/process_voicemail",
@@ -589,4 +685,47 @@ func sendAllCallsToVoicemailForProvider(ctx context.Context, entityID string, eh
 	}
 
 	return res.Values[0].GetBoolean().Value, nil
+}
+
+func determineExternalEntityName(ctx context.Context, source phone.Number, organizationID string, eh *eventsHandler) (string, error) {
+	// determine the external entity if possible so that we can announce their name
+	res, err := eh.directory.LookupEntitiesByContact(
+		ctx,
+		&directory.LookupEntitiesByContactRequest{
+			ContactValue: source.String(),
+			RequestedInformation: &directory.RequestedInformation{
+				Depth: 0,
+				EntityInformation: []directory.EntityInformation{
+					directory.EntityInformation_CONTACTS,
+					directory.EntityInformation_MEMBERSHIPS,
+				},
+			},
+			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		})
+	if err != nil {
+		if grpc.Code(err) == codes.NotFound {
+			return "", nil
+		}
+		return "", errors.Trace(err)
+	}
+	for _, e := range res.Entities {
+
+		// only deal with external parties
+		if e.Type != directory.EntityType_EXTERNAL {
+			continue
+		}
+
+		// find the entity that has a membership to the organization
+		for _, m := range e.Memberships {
+			if m.ID == organizationID {
+				// only use the display name if the first and last name
+				// exist. We use this fact as an indicator that the display name
+				// is probably the name of the patient (versus phone number or email address).
+				if e.Info.FirstName != "" && e.Info.LastName != "" {
+					return e.Info.DisplayName, nil
+				}
+			}
+		}
+	}
+	return "", nil
 }
