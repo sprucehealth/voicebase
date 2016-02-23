@@ -425,7 +425,11 @@ func providerCallConnected(ctx context.Context, params *rawmsg.TwilioParams, eh 
 			Verbs: []interface{}{
 				&twiml.Say{
 					Voice: "woman",
-					Text:  fmt.Sprintf("You have an incoming call from %s. Press 1 to answer.", externalEntityName),
+					Text:  fmt.Sprintf("You have an incoming call from %s.", externalEntityName),
+				},
+				&twiml.Say{
+					Voice: "woman",
+					Text:  "Press 1 to answer.",
 				},
 			},
 		},

@@ -731,7 +731,7 @@ func TestProviderCallConnected(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 	expected := `<?xml version="1.0" encoding="UTF-8"?>
-<Response><Gather action="/twilio/call/provider_entered_digits" method="POST" timeout="5" numDigits="1"><Say voice="woman">You have an incoming call from JS. Press 1 to answer.</Say></Gather><Hangup></Hangup></Response>`
+<Response><Gather action="/twilio/call/provider_entered_digits" method="POST" timeout="5" numDigits="1"><Say voice="woman">You have an incoming call from JS.</Say><Say voice="woman">Press 1 to answer.</Say></Gather><Hangup></Hangup></Response>`
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -798,7 +798,7 @@ func TestProviderCallConnected_NoName(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 	expected := `<?xml version="1.0" encoding="UTF-8"?>
-<Response><Gather action="/twilio/call/provider_entered_digits" method="POST" timeout="5" numDigits="1"><Say voice="woman">You have an incoming call from 206 111 1111. Press 1 to answer.</Say></Gather><Hangup></Hangup></Response>`
+<Response><Gather action="/twilio/call/provider_entered_digits" method="POST" timeout="5" numDigits="1"><Say voice="woman">You have an incoming call from 206 111 1111.</Say><Say voice="woman">Press 1 to answer.</Say></Gather><Hangup></Hangup></Response>`
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -889,7 +889,7 @@ func TestProviderEnteredDigits_EnteredOtherDigit(t *testing.T) {
 	}
 
 	expected := `<?xml version="1.0" encoding="UTF-8"?>
-<Response><Gather action="/twilio/call/provider_entered_digits" method="POST" timeout="5" numDigits="1"><Say voice="woman">You have an incoming call from JS. Press 1 to answer.</Say></Gather><Hangup></Hangup></Response>`
+<Response><Gather action="/twilio/call/provider_entered_digits" method="POST" timeout="5" numDigits="1"><Say voice="woman">You have an incoming call from JS.</Say><Say voice="woman">Press 1 to answer.</Say></Gather><Hangup></Hangup></Response>`
 
 	if expected != twiml {
 		t.Fatalf(`\nExpected: %s\nGot:%s`, expected, twiml)
