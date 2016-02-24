@@ -1,6 +1,7 @@
 package models
 
 import (
+	"sort"
 	"time"
 
 	"github.com/sprucehealth/backend/libs/errors"
@@ -39,6 +40,29 @@ func EmptyThreadID() ThreadID {
 			IsValid: false,
 		},
 	}
+}
+
+type threadIDSlice []ThreadID
+
+func (t threadIDSlice) Len() int {
+	return len([]ThreadID(t))
+}
+
+func (t threadIDSlice) Less(i, j int) bool {
+	ts := []ThreadID(t)
+	return ts[i].Val < ts[j].Val
+}
+
+func (t threadIDSlice) Swap(i, j int) {
+	ts := []ThreadID(t)
+	jv := ts[j]
+	ts[j] = ts[i]
+	ts[i] = jv
+}
+
+// SortThreadID sorts the list of thread ids in ascending order
+func SortThreadID(ids []ThreadID) {
+	sort.Sort(threadIDSlice(ids))
 }
 
 // ThreadItemID is the ID for a ThreadItem

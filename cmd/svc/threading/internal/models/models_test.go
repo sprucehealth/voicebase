@@ -3,6 +3,7 @@ package models
 import (
 	"testing"
 
+	"github.com/sprucehealth/backend/libs/model"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/backend/test"
 )
@@ -29,4 +30,26 @@ func TestThreadID(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, []byte("t_00000000002D4"), b)
 	test.Equals(t, "t_00000000002D4", id.String())
+}
+
+func TestThreadIDSort(t *testing.T) {
+	t.Parallel()
+	id1 := ThreadID{
+		model.ObjectID{
+			Prefix:  threading.ThreadIDPrefix,
+			Val:     2,
+			IsValid: true,
+		},
+	}
+	id2 := ThreadID{
+		model.ObjectID{
+			Prefix:  threading.ThreadIDPrefix,
+			Val:     1,
+			IsValid: true,
+		},
+	}
+	ids := []ThreadID{id1, id2}
+	SortThreadID(ids)
+	test.Equals(t, ids[0], id2)
+	test.Equals(t, ids[1], id1)
 }

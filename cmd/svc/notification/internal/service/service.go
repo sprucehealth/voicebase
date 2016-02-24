@@ -218,7 +218,7 @@ func (s *service) processNotification(data []byte) error {
 	return errors.Trace(s.processPushNotification(n))
 }
 
-// TODO: mraines: This section sof code has become incredibly push and new_message specific. It needs a deperate refactor before any other
+// TODO: mraines: This section of code has become incredibly push and new_message specific. It needs a desperate refactor before any other
 //   notification work is done.
 func (s *service) processPushNotification(n *notification.Notification) error {
 	entitiesToNotify, err := s.filterNodesWithNotificationsDisabled(n.EntitiesToNotify)
@@ -388,11 +388,12 @@ func generateNotification(webDomain string, n *notification.Notification, target
 	iOSData := &iOSPushData{
 		Alert: msg,
 		URL:   url,
-		Badge: unreadCount,
+		//Badge: unreadCount,
 	}
 	if msg == "" {
 		iOSData = &iOSPushData{
 			ContentAvailable: 1,
+			//Badge: unreadCount,
 		}
 	}
 	isNotifData, err := json.Marshal(&iOSPushNotification{

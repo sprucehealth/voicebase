@@ -482,8 +482,8 @@ func TestProcessNotification(t *testing.T) {
 	iData, err = json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
 			Alert: "ShortMessage2",
-			Badge: 2,
-			URL:   deeplink.OrgURL("testDomain", "OrganizationID"),
+			//Badge: 2,
+			URL: deeplink.OrgURL("testDomain", "OrganizationID"),
 		},
 		ThreadID:       "ThreadID",
 		OrganizationID: "OrganizationID",
@@ -536,8 +536,8 @@ func TestProcessNotification(t *testing.T) {
 	iData, err = json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
 			Alert: "ShortMessage4",
-			Badge: 4,
-			URL:   deeplink.OrgURL("testDomain", "OrganizationID"),
+			////Badge: 4,
+			URL: deeplink.OrgURL("testDomain", "OrganizationID"),
 		},
 		ThreadID:       "ThreadID",
 		OrganizationID: "OrganizationID",
@@ -644,7 +644,7 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 		PushData: &iOSPushData{
 			Alert: "ShortMessage",
 			URL:   deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
-			Badge: 1,
+			//Badge: 1,
 		},
 		ThreadID:       "ThreadID",
 		OrganizationID: "OrganizationID",

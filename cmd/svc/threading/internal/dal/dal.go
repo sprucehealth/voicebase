@@ -3,6 +3,7 @@ package dal
 import (
 	"database/sql"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -578,6 +579,10 @@ func (d *dal) ThreadMemberships(ctx context.Context, threadIDs []models.ThreadID
 	var sfu string
 	if forUpdate {
 		sfu = "FOR UPDATE"
+
+		// Since we locking these rows, sort our keys to avoid deadlocks
+		sort.Strings(entityIDs)
+		models.SortThreadID(threadIDs)
 	}
 	values := make([]interface{}, len(threadIDs)+len(entityIDs))
 	for i, e := range entityIDs {
