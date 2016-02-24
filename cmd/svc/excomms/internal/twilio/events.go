@@ -424,11 +424,11 @@ func providerCallConnected(ctx context.Context, params *rawmsg.TwilioParams, eh 
 			NumDigits:        1,
 			Verbs: []interface{}{
 				&twiml.Say{
-					Voice: "woman",
-					Text:  fmt.Sprintf("You have an incoming call from %s.", externalEntityName),
+					Voice: "alice",
+					Text:  fmt.Sprintf("You have an incoming call from %s", externalEntityName),
 				},
 				&twiml.Say{
-					Voice: "woman",
+					Voice: "alice",
 					Text:  "Press 1 to answer.",
 				},
 			},
@@ -509,7 +509,7 @@ func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *events
 	tw := &twiml.Response{
 		Verbs: []interface{}{
 			&twiml.Say{
-				Voice: "woman",
+				Voice: "alice",
 				Text:  voicemailMessage,
 			},
 			&twiml.Record{
