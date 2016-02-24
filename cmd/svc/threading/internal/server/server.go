@@ -863,9 +863,11 @@ func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID
 			// Update the memberships for everyone who needs to be notified
 			// Note: It takes human interaction for this update state to trigger so shouldn't be too often.
 			for entityID, unreadThreads := range unreadThreadsByEntityID {
+				var notifyEntity bool
 				for _, unreadThread := range unreadThreads {
 					// TODO: mraines: Perform these updates in a throttled parallel manner
 					if unreadThread.needsNotify {
+						notifyEntity = true
 						if err := dl.UpdateMember(ctx, unreadThread.threadID, entityID, &dal.MemberUpdate{
 							LastUnreadNotify: ptr.Time(s.clk.Now()),
 						}); err != nil {
@@ -874,12 +876,16 @@ func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID
 					}
 				}
 
-				// Build out the information the clients will need
-				msg := "You have a new message"
-				if len(unreadThreads) > 1 {
-					msg = fmt.Sprintf("You have unread messages in %d conversations", len(unreadThreads))
+				// If we need to notify the entity then build out the message
+				if notifyEntity {
+					// Build out the information the clients will need
+					msg := "You have a new message"
+					if len(unreadThreads) > 1 {
+						msg = fmt.Sprintf("You have unread messages in %d conversations", len(unreadThreads))
+					}
+					messages[entityID] = msg
 				}
-				messages[entityID] = msg
+				// Always send down the unread count
 				unreadCounts[entityID] = len(unreadThreads)
 			}
 			return nil

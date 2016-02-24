@@ -920,6 +920,7 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 				Members: []*directory.Entity{
 					{ID: "notify1", Type: directory.EntityType_INTERNAL, CreatedTimestamp: uint64(time.Unix(1, 0).Unix())},
 					{ID: "notify2", Type: directory.EntityType_INTERNAL, CreatedTimestamp: uint64(time.Unix(0, 0).Unix())},
+					{ID: "notify3", Type: directory.EntityType_INTERNAL, CreatedTimestamp: uint64(time.Unix(0, 0).Unix())},
 					{ID: publishingEntity, Type: directory.EntityType_INTERNAL},
 					{ID: "doNotNotify", Type: directory.EntityType_ORGANIZATION},
 					{ID: "doNotNotify2", Type: directory.EntityType_EXTERNAL},
@@ -937,6 +938,7 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{tID, tID2, tID3}, []string{
 		"notify1",
 		"notify2",
+		"notify3",
 	}, true).WithReturns(
 		map[string][]*models.ThreadMember{
 			"notify1": {
@@ -963,6 +965,24 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 					LastViewed: nil,
 				},
 			},
+			"notify3": {
+				{
+					ThreadID:   tID,
+					EntityID:   "notify3",
+					LastViewed: ptr.Time(time.Unix(6, 0)),
+				},
+				{
+					ThreadID:   tID2,
+					EntityID:   "notify3",
+					LastViewed: ptr.Time(time.Unix(6, 0)),
+				},
+				{
+					ThreadID:         tID3,
+					EntityID:         "notify3",
+					LastViewed:       ptr.Time(time.Unix(3, 0)),
+					LastUnreadNotify: ptr.Time(time.Unix(4, 0)),
+				},
+			},
 		}, nil,
 	))
 
@@ -984,6 +1004,7 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 		UnreadCounts: map[string]int{
 			"notify1": 1,
 			"notify2": 2,
+			"notify3": 1,
 		},
 		OrganizationID:   orgID,
 		SavedQueryID:     sqID.String(),
@@ -991,7 +1012,7 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 		MessageID:        tiID.String(),
 		CollapseKey:      newMessageNotificationKey,
 		DedupeKey:        newMessageNotificationKey,
-		EntitiesToNotify: []string{"notify1", "notify2"},
+		EntitiesToNotify: []string{"notify1", "notify2", "notify3"},
 	}))
 
 	csrv.notifyMembersOfPublishMessage(context.Background(), orgID, sqID, tID, tiID, publishingEntity)
