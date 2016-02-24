@@ -59,6 +59,7 @@ message Entity {
 	repeated EntityInformation included_information = 8;
     EntityInfo info = 9;
 	EntityStatus status = 10;
+	uint64 created_timestamp = 11;
 }
 
 message SerializedClientEntityContact {

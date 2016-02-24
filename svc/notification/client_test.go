@@ -38,7 +38,7 @@ func TestSendNotification(t *testing.T) {
 	sqsAPI := mock.NewSQSAPI(t)
 	defer sqsAPI.Finish()
 	client := NewClient(sqsAPI, clientConfig)
-	n := &Notification{ShortMessage: "shortMessage"}
+	n := &Notification{CollapseKey: "collapse"}
 	expectSendMessage(t, sqsAPI, n, clientConfig.SQSNotificationURL)
 	client.SendNotification(n)
 }

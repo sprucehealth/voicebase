@@ -135,13 +135,24 @@ type Thread struct {
 	MessageCount                 int
 }
 
+// ThreadIDs is a convenience method for retrieving ID's from a list
+// Note: This could be made more gneeric using reflection but don't want the performance cost
+func ThreadIDs(ts []*Thread) []ThreadID {
+	ids := make([]ThreadID, len(ts))
+	for i, t := range ts {
+		ids[i] = t.ID
+	}
+	return ids
+}
+
 // ThreadMember links an entity to a thread.
 type ThreadMember struct {
-	ThreadID   ThreadID
-	EntityID   string
-	Following  bool
-	Joined     time.Time
-	LastViewed *time.Time
+	ThreadID         ThreadID
+	EntityID         string
+	Following        bool
+	Joined           time.Time
+	LastViewed       *time.Time
+	LastUnreadNotify *time.Time
 }
 
 // ThreadItem is an item within a thread. It can be a message or an event modifying a message.

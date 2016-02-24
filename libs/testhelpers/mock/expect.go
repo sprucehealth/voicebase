@@ -1,7 +1,8 @@
 package mock
 
+// TODO: mraines: This package/file needs a refactor and some tests since it's becoming core to our testing
+
 import (
-	"log"
 	"reflect"
 	"runtime"
 	"testing"
@@ -14,7 +15,6 @@ import (
 type expectation struct {
 	Func              *runtime.Func
 	Params            []interface{}
-	ExactParamMatch   bool
 	FnParams          []interface{}
 	ParamValidationFn func(params ...interface{})
 	Returns           []interface{}
@@ -24,9 +24,8 @@ type expectation struct {
 // NewExpectation returns an initialized instance of Expectation. This is sugar.
 func NewExpectation(f interface{}, params ...interface{}) *expectation {
 	return &expectation{
-		Func:            runtime.FuncForPC(reflect.ValueOf(f).Pointer()),
-		Params:          params,
-		ExactParamMatch: true,
+		Func:   runtime.FuncForPC(reflect.ValueOf(f).Pointer()),
+		Params: params,
 	}
 }
 
@@ -81,8 +80,10 @@ type expectationSource struct {
 
 // Expector is to be used in composit mock structs for expectation setting
 type Expector struct {
-	T                  *testing.T
-	Debug              bool
+	T *testing.T
+
+	// Keep unordered expectations in a map to simplify the deletion process
+	unorderedExpects   map[int]*expectation
 	expects            []*expectation
 	expectationSources []*expectationSource
 	callCounts         map[string]int
@@ -93,6 +94,20 @@ func (e *Expector) Expect(exp *expectation) {
 	_, file, line, _ := runtime.Caller(1)
 	e.expects = append(e.expects, exp)
 	e.expectationSources = append(e.expectationSources, &expectationSource{File: file, Line: line})
+}
+
+// ExpectUnordered sets an expectation that just needs to occur.
+// Note: For a struct all expectations set in ExpectNoOrder are checked first
+//   this is suboptimal for expectations in  a test that occur in both an unordered and order fashion
+// Note: NoOrder expectations do not track the source of the expectation since there can be overlap
+func (e *Expector) ExpectUnordered(exp *expectation) {
+	if exp.ParamValidationFn != nil {
+		e.T.Fatalf("Currently you cannot set unordered expectation withparam validation fn. This is TODO:")
+	}
+	if e.unorderedExpects == nil {
+		e.unorderedExpects = make(map[int]*expectation)
+	}
+	e.unorderedExpects[len(e.unorderedExpects)] = exp
 }
 
 // callIndex returns the call count of the calling function - 1. Call counts are incremented using the Record method
@@ -115,73 +130,89 @@ func (e *Expector) Record(params ...interface{}) []interface{} {
 
 	pc, file, line, _ := runtime.Caller(1)
 	caller := runtime.FuncForPC(pc)
-	if len(e.expects) == 0 {
-		e.T.Fatalf(
-			"Recieved call to %s without any remaining expectiations: params %+v\n"+
-				"Source:\n"+
-				"File: %s\n"+
-				"Line: %d\n", caller.Name(), params, file, line)
-	}
 	// increment our call count
 	if e.callCounts == nil {
 		e.callCounts = make(map[string]int)
 	}
 	e.callCounts[caller.Name()]++
 
-	// Grab out next expectation and then pop it off the list
-	expectWithReturns := e.expects[0]
-	actual := &expectation{Func: caller, Params: params}
-	source := e.expectationSources[0]
-	if expectWithReturns.ExactParamMatch {
-		expectWithoutReturns := &expectation{Func: expectWithReturns.Func, Params: expectWithReturns.Params}
-		if !reflect.DeepEqual(expectWithoutReturns, actual) {
-			e.T.Fatalf(
-				"\nFailed Expectation:\n"+
-					"File: %s\n"+
-					"Line: %d\n"+
-					"Expected:\n"+
-					"  Name: %s\n"+
-					"  Params: %s\n"+
-					"Got:\n"+
-					"  Name: %s\n"+
-					"  Params: %s\n\n"+
-					"Expectation Source:\n"+
-					"File: %s\n"+
-					"Line: %d\n", file, line,
-				expectWithoutReturns.Func.Name(), spew.Sdump(expectWithoutReturns.Params),
-				actual.Func.Name(), spew.Sdump(actual.Params),
-				source.File, source.Line)
+	// Check our unordered expectations first
+	for k, ex := range e.unorderedExpects {
+		failOnFatal := false
+		if e.checkExpectation(ex, nil, failOnFatal, caller, file, line, params) {
+			// execute any post fn
+			if ex.PostFn != nil {
+				ex.PostFn()
+			}
+			// If we matched an unordered expectation then remove it
+			delete(e.unorderedExpects, k)
+			return ex.Returns
 		}
-	} else if !reflect.DeepEqual(expectWithReturns.Func, actual.Func) {
-		e.T.Fatalf(
-			"\nFailed Expectation:\n"+
-				"File: %s\n"+
-				"Line: %d\n"+
-				"Expected:\n"+
-				"  Name: %s\n"+
-				"Got:\n"+
-				"  Name: %s\n"+
-				"Expectation Source:\n"+
-				"File: %s\n"+
-				"Line: %d\n", file, line,
-			expectWithReturns.Func.Name(),
-			actual.Func.Name(),
-			source.File, source.Line)
-	}
-	if expectWithReturns.ParamValidationFn != nil {
-		expectWithReturns.ParamValidationFn(actual.Params...)
-	}
-	if e.Debug {
-		log.Printf("Completed recording and validation of:\nFunction: %s\nParams:%+v", actual.Func.Name(), actual.Params)
 	}
 
-	if expectWithReturns.PostFn != nil {
-		expectWithReturns.PostFn()
+	if len(e.expects) == 0 {
+		e.T.Fatalf(
+			"Recieved call to %s without any remaining ordered expectiations: params %+v\n"+
+				"Source:\n"+
+				"File: %s\n"+
+				"Line: %d\n", caller.Name(), params, file, line)
+	}
+
+	// If we didn't match any unordered expectations do an in order assertion
+	es := e.expectationSources[0]
+	ex := e.expects[0]
+
+	// If the inorder expectation fails then fail immediately
+	failOnFatal := true
+	e.checkExpectation(ex, es, failOnFatal, caller, file, line, params)
+
+	// execute any post fn
+	if ex.PostFn != nil {
+		ex.PostFn()
 	}
 
 	e.expectationSources = e.expectationSources[1:]
 	e.expects = e.expects[1:]
-	return expectWithReturns.Returns
+	return ex.Returns
+}
+
+const failureFormatString = "\nFailed Expectation:\n" +
+	"File: %s\n" +
+	"Line: %d\n" +
+	"Expected:\n" +
+	"  Name: %s\n" +
+	"  Params: %s\n" +
+	"Got:\n" +
+	"  Name: %s\n" +
+	"  Params: %s\n\n" +
+	"Expectation Source:\n" +
+	"File: %s\n" +
+	"Line: %d\n"
+
+// checkExpectation examines the provided expectation and fails the test if it does not pass if failOnFail is true
+//   if failOnFail is false then the failure status of the expectation is returned
+func (e *Expector) checkExpectation(ex *expectation, es *expectationSource, failOnFail bool, caller *runtime.Func, file string, line int, params []interface{}) bool {
+	// Remove any returns from the expectation for proper comparison
+	exp := &expectation{Func: ex.Func, Params: ex.Params}
+	actual := &expectation{Func: caller, Params: params}
+	if ex.ParamValidationFn != nil {
+		ex.ParamValidationFn(actual.Params...)
+	} else if !reflect.DeepEqual(exp, actual) {
+		if failOnFail {
+			e.T.Fatalf(
+				failureFormatString,
+				file,
+				line,
+				exp.Func.Name(),
+				spew.Sdump(exp.Params),
+				actual.Func.Name(),
+				spew.Sdump(actual.Params),
+				es.File,
+				es.Line)
+		}
+		return false
+	}
+	return true
 }
 
 // Finisher is an interface for anything with a Finish method
@@ -203,6 +234,11 @@ func (e *Expector) Finish() {
 	// Check for outstanding expectations
 	for _, ex := range e.expects {
 		e.T.Fatalf("All expectations were not met. Next expectation - Name: %s, Params: %+v", ex.Func.Name(), ex.Params)
+	}
+
+	// Check for outstanding unordered expectations
+	for _, ex := range e.unorderedExpects {
+		e.T.Fatalf("All unordered expectations were not met. Next unordered expectation - Name: %s, Params: %+v", ex.Func.Name(), ex.Params)
 	}
 }
 

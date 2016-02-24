@@ -137,12 +137,12 @@ func (dl *mockDAL) ThreadItemViewDetails(ctx context.Context, id models.ThreadIt
 	return rets[0].([]*models.ThreadItemViewDetails), mock.SafeError(rets[1])
 }
 
-func (dl *mockDAL) ThreadMemberships(ctx context.Context, threadIDs []models.ThreadID, entityID string, forUpdate bool) ([]*models.ThreadMember, error) {
-	rets := dl.Expector.Record(threadIDs, entityID, forUpdate)
+func (dl *mockDAL) ThreadMemberships(ctx context.Context, threadIDs []models.ThreadID, entityIDs []string, forUpdate bool) (map[string][]*models.ThreadMember, error) {
+	rets := dl.Expector.Record(threadIDs, entityIDs, forUpdate)
 	if len(rets) == 0 {
 		return nil, nil
 	}
-	return rets[0].([]*models.ThreadMember), mock.SafeError(rets[1])
+	return rets[0].(map[string][]*models.ThreadMember), mock.SafeError(rets[1])
 }
 
 func (dl *mockDAL) ThreadMembers(ctx context.Context, threadIDs models.ThreadID) ([]*models.ThreadMember, error) {
@@ -155,6 +155,14 @@ func (dl *mockDAL) ThreadMembers(ctx context.Context, threadIDs models.ThreadID)
 
 func (dl *mockDAL) ThreadsForMember(ctx context.Context, entityID string, primaryOnly bool) ([]*models.Thread, error) {
 	rets := dl.Expector.Record(entityID, primaryOnly)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].([]*models.Thread), mock.SafeError(rets[1])
+}
+
+func (dl *mockDAL) ThreadsForOrg(ctx context.Context, orgID string) ([]*models.Thread, error) {
+	rets := dl.Expector.Record(orgID)
 	if len(rets) == 0 {
 		return nil, nil
 	}

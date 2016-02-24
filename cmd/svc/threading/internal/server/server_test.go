@@ -417,22 +417,24 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 	}, nil))
 
 	// Since we have a viewer associated with this query, expect the memberships to be queried to populate read status
-	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{tID, tID2, tID3}, peID, false).WithReturns(
-		[]*models.ThreadMember{
-			{
-				ThreadID:   tID,
-				EntityID:   peID,
-				LastViewed: ptr.Time(time.Unix(1, 1)),
-			},
-			{
-				ThreadID:   tID2,
-				EntityID:   peID,
-				LastViewed: ptr.Time(now),
-			},
-			{
-				ThreadID:   tID3,
-				EntityID:   peID,
-				LastViewed: ptr.Time(now),
+	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{tID, tID2, tID3}, []string{peID}, false).WithReturns(
+		map[string][]*models.ThreadMember{
+			peID: {
+				{
+					ThreadID:   tID,
+					EntityID:   peID,
+					LastViewed: ptr.Time(time.Unix(1, 1)),
+				},
+				{
+					ThreadID:   tID2,
+					EntityID:   peID,
+					LastViewed: ptr.Time(now),
+				},
+				{
+					ThreadID:   tID3,
+					EntityID:   peID,
+					LastViewed: ptr.Time(now),
+				},
 			},
 		}, nil,
 	))
@@ -560,12 +562,14 @@ func TestThreadWithViewer(t *testing.T) {
 			MessageCount:         32,
 		}, nil))
 	// Since we have a viewer associated with this query, expect the memberships to be queried to populate read status
-	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{thID}, entID, false).WithReturns(
-		[]*models.ThreadMember{
-			{
-				ThreadID:   thID,
-				EntityID:   entID,
-				LastViewed: ptr.Time(time.Unix(1, 1)),
+	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{thID}, []string{entID}, false).WithReturns(
+		map[string][]*models.ThreadMember{
+			entID: {
+				{
+					ThreadID:   thID,
+					EntityID:   entID,
+					LastViewed: ptr.Time(time.Unix(1, 1)),
+				},
 			},
 		}, nil,
 	))
@@ -611,7 +615,7 @@ func TestThreadWithViewerNoMembership(t *testing.T) {
 			MessageCount:         32,
 		}, nil))
 	// Since we have a viewer associated with this query, expect the memberships to be queried and return none, this should be marked as unread
-	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{thID}, entID, false))
+	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{thID}, []string{entID}, false))
 	res, err := srv.Thread(nil, &threading.ThreadRequest{
 		ThreadID:       thID.String(),
 		ViewerEntityID: entID,
@@ -654,7 +658,7 @@ func TestThreadWithViewerNoMessages(t *testing.T) {
 			MessageCount:         0,
 		}, nil))
 	// Since we have a viewer associated with this query, expect the memberships to be queried and return none, this should be marked as unread
-	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{thID}, entID, false))
+	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{thID}, []string{entID}, false))
 	res, err := srv.Thread(nil, &threading.ThreadRequest{
 		ThreadID:       thID.String(),
 		ViewerEntityID: entID,
@@ -723,12 +727,14 @@ func TestMarkThreadAsRead(t *testing.T) {
 	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil)
 
 	// Lookup the membership of the viewer in the threads records
-	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{tID}, eID, true).WithReturns(
-		[]*models.ThreadMember{
-			{
-				ThreadID:   tID,
-				EntityID:   eID,
-				LastViewed: lView,
+	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{tID}, []string{eID}, true).WithReturns(
+		map[string][]*models.ThreadMember{
+			eID: {
+				{
+					ThreadID:   tID,
+					EntityID:   eID,
+					LastViewed: lView,
+				},
 			},
 		}, nil,
 	))
@@ -778,12 +784,14 @@ func TestMarkThreadAsReadNilLastView(t *testing.T) {
 	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil)
 
 	// Lookup the membership of the viewer in the threads records
-	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{tID}, eID, true).WithReturns(
-		[]*models.ThreadMember{
-			{
-				ThreadID:   tID,
-				EntityID:   eID,
-				LastViewed: nil,
+	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{tID}, []string{eID}, true).WithReturns(
+		map[string][]*models.ThreadMember{
+			eID: {
+				{
+					ThreadID:   tID,
+					EntityID:   eID,
+					LastViewed: nil,
+				},
 			},
 		}, nil,
 	))
@@ -837,7 +845,7 @@ func TestMarkThreadAsReadExistingMembership(t *testing.T) {
 	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil)
 
 	// Lookup the membership of the viewer in the threads records
-	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{tID}, eID, true))
+	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{tID}, []string{eID}, true))
 
 	// Update the whole thread as being read
 	dl.Expect(mock.NewExpectation(dl.UpdateMember, tID, eID, &dal.MemberUpdate{LastViewed: ptr.Time(readTime)}))
@@ -881,6 +889,10 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 	defer notificationClient.Finish()
 	tID, err := models.NewThreadID()
 	test.OK(t, err)
+	tID2, err := models.NewThreadID()
+	test.OK(t, err)
+	tID3, err := models.NewThreadID()
+	test.OK(t, err)
 	tiID, err := models.NewThreadItemID()
 	test.OK(t, err)
 	sqID, err := models.NewSavedQueryID()
@@ -906,8 +918,8 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 			{
 				ID: orgID,
 				Members: []*directory.Entity{
-					{ID: "notify1", Type: directory.EntityType_INTERNAL},
-					{ID: "notify2", Type: directory.EntityType_INTERNAL},
+					{ID: "notify1", Type: directory.EntityType_INTERNAL, CreatedTimestamp: uint64(time.Unix(1, 0).Unix())},
+					{ID: "notify2", Type: directory.EntityType_INTERNAL, CreatedTimestamp: uint64(time.Unix(0, 0).Unix())},
 					{ID: publishingEntity, Type: directory.EntityType_INTERNAL},
 					{ID: "doNotNotify", Type: directory.EntityType_ORGANIZATION},
 					{ID: "doNotNotify2", Type: directory.EntityType_EXTERNAL},
@@ -916,12 +928,69 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 		},
 	}, nil))
 
+	dl.Expect(mock.NewExpectation(dl.ThreadsForOrg, orgID).WithReturns([]*models.Thread{
+		{ID: tID, LastMessageTimestamp: time.Unix(1, 0), MessageCount: 2},
+		{ID: tID2, LastMessageTimestamp: time.Unix(3, 0), MessageCount: 2},
+		{ID: tID3, LastMessageTimestamp: time.Unix(5, 0), MessageCount: 2},
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{tID, tID2, tID3}, []string{
+		"notify1",
+		"notify2",
+	}, true).WithReturns(
+		map[string][]*models.ThreadMember{
+			"notify1": {
+				{
+					ThreadID:   tID2,
+					EntityID:   "notify1",
+					LastViewed: ptr.Time(time.Unix(5, 0)),
+				},
+				{
+					ThreadID:   tID3,
+					EntityID:   "notify1",
+					LastViewed: nil,
+				},
+			},
+			"notify2": {
+				{
+					ThreadID:   tID,
+					EntityID:   "notify2",
+					LastViewed: ptr.Time(time.Unix(6, 0)),
+				},
+				{
+					ThreadID:   tID3,
+					EntityID:   "notify2",
+					LastViewed: nil,
+				},
+			},
+		}, nil,
+	))
+
+	dl.ExpectUnordered(mock.NewExpectation(dl.UpdateMember, tID3, "notify1", &dal.MemberUpdate{
+		LastUnreadNotify: ptr.Time(clk.Now()),
+	}))
+	dl.ExpectUnordered(mock.NewExpectation(dl.UpdateMember, tID2, "notify2", &dal.MemberUpdate{
+		LastUnreadNotify: ptr.Time(clk.Now()),
+	}))
+	dl.ExpectUnordered(mock.NewExpectation(dl.UpdateMember, tID3, "notify2", &dal.MemberUpdate{
+		LastUnreadNotify: ptr.Time(clk.Now()),
+	}))
+
 	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
-		ShortMessage:     "A new message is available",
+		ShortMessages: map[string]string{
+			"notify1": "You have a new message",
+			"notify2": "You have unread messages in 2 conversations",
+		},
+		UnreadCounts: map[string]int{
+			"notify1": 1,
+			"notify2": 2,
+		},
 		OrganizationID:   orgID,
 		SavedQueryID:     sqID.String(),
 		ThreadID:         tID.String(),
 		MessageID:        tiID.String(),
+		CollapseKey:      newMessageNotificationKey,
+		DedupeKey:        newMessageNotificationKey,
 		EntitiesToNotify: []string{"notify1", "notify2"},
 	}))
 

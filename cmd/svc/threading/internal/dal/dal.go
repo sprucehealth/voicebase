@@ -80,8 +80,9 @@ type PostMessageRequest struct {
 }
 
 type MemberUpdate struct {
-	Following  *bool
-	LastViewed *time.Time
+	Following        *bool
+	LastViewed       *time.Time
+	LastUnreadNotify *time.Time
 }
 
 type DAL interface {
@@ -99,9 +100,10 @@ type DAL interface {
 	ThreadItem(ctx context.Context, id models.ThreadItemID) (*models.ThreadItem, error)
 	ThreadItemIDsCreatedAfter(ctx context.Context, threadID models.ThreadID, after time.Time) ([]models.ThreadItemID, error)
 	ThreadItemViewDetails(ctx context.Context, id models.ThreadItemID) ([]*models.ThreadItemViewDetails, error)
-	ThreadMemberships(ctx context.Context, threadID []models.ThreadID, entityID string, forUpdate bool) ([]*models.ThreadMember, error)
+	ThreadMemberships(ctx context.Context, threadIDs []models.ThreadID, entityIDs []string, forUpdate bool) (map[string][]*models.ThreadMember, error)
 	ThreadMembers(ctx context.Context, threadID models.ThreadID) ([]*models.ThreadMember, error)
 	ThreadsForMember(ctx context.Context, entityID string, primaryOnly bool) ([]*models.Thread, error)
+	ThreadsForOrg(ctx context.Context, organizationID string) ([]*models.Thread, error)
 	// UpdateMember updates attributes about a thread member. If the membership doesn't exist then it is created.
 	UpdateMember(ctx context.Context, threadID models.ThreadID, entityID string, update *MemberUpdate) error
 
@@ -568,8 +570,8 @@ func (d *dal) ThreadItemViewDetails(ctx context.Context, id models.ThreadItemID)
 	return tds, errors.Trace(rows.Err())
 }
 
-func (d *dal) ThreadMemberships(ctx context.Context, threadIDs []models.ThreadID, entityID string, forUpdate bool) ([]*models.ThreadMember, error) {
-	if len(threadIDs) == 0 {
+func (d *dal) ThreadMemberships(ctx context.Context, threadIDs []models.ThreadID, entityIDs []string, forUpdate bool) (map[string][]*models.ThreadMember, error) {
+	if len(threadIDs) == 0 || len(entityIDs) == 0 {
 		return nil, nil
 	}
 
@@ -577,35 +579,37 @@ func (d *dal) ThreadMemberships(ctx context.Context, threadIDs []models.ThreadID
 	if forUpdate {
 		sfu = "FOR UPDATE"
 	}
-	values := make([]interface{}, len(threadIDs)+1)
-	values[0] = entityID
+	values := make([]interface{}, len(threadIDs)+len(entityIDs))
+	for i, e := range entityIDs {
+		values[i] = e
+	}
 	for i, v := range threadIDs {
-		values[i+1] = v
+		values[i+len(entityIDs)] = v
 	}
 	rows, err := d.db.Query(fmt.Sprintf(`
-		SELECT thread_id, entity_id, following, joined, last_viewed
+		SELECT thread_id, entity_id, following, joined, last_viewed, last_unread_notify
 		FROM thread_members
-		WHERE entity_id = ?
+		WHERE entity_id IN (`+dbutil.MySQLArgs(len(entityIDs))+`)
         AND thread_id IN (`+dbutil.MySQLArgs(len(threadIDs))+`) %s`, sfu), values...)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	defer rows.Close()
 
-	var tms []*models.ThreadMember
+	tms := make(map[string][]*models.ThreadMember)
 	for rows.Next() {
 		tm, err := scanThreadMember(rows)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		tms = append(tms, tm)
+		tms[tm.EntityID] = append(tms[tm.EntityID], tm)
 	}
 	return tms, errors.Trace(err)
 }
 
 func (d *dal) ThreadMembers(ctx context.Context, threadID models.ThreadID) ([]*models.ThreadMember, error) {
 	rows, err := d.db.Query(`
-		SELECT thread_id, entity_id, following, joined, last_viewed
+		SELECT thread_id, entity_id, following, joined, last_viewed, last_unread_notify
 		FROM thread_members
         WHERE thread_id = ?`, threadID)
 	if err != nil {
@@ -653,6 +657,27 @@ func (d *dal) ThreadsForMember(ctx context.Context, entityID string, primaryOnly
 	return threads, errors.Trace(rows.Err())
 }
 
+func (d *dal) ThreadsForOrg(ctx context.Context, organizationID string) ([]*models.Thread, error) {
+	var rows *sql.Rows
+	var err error
+	rows, err = d.db.Query(`
+			SELECT id, organization_id, COALESCE(primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary, last_primary_entity_endpoints, created, message_count
+			FROM threads
+			WHERE organization_id = ? AND deleted = false`, organizationID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	var threads []*models.Thread
+	for rows.Next() {
+		t, err := scanThread(rows)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		threads = append(threads, t)
+	}
+	return threads, errors.Trace(rows.Err())
+}
+
 func (d *dal) UpdateMember(ctx context.Context, threadID models.ThreadID, entityID string, update *MemberUpdate) error {
 	var args dbutil.VarArgs
 
@@ -663,6 +688,9 @@ func (d *dal) UpdateMember(ctx context.Context, threadID models.ThreadID, entity
 		}
 		if update.LastViewed != nil {
 			args.Append("last_viewed", *update.LastViewed)
+		}
+		if update.LastUnreadNotify != nil {
+			args.Append("last_unread_notify", *update.LastUnreadNotify)
 		}
 	}
 
@@ -717,7 +745,7 @@ func scanThread(row dbutil.Scanner) (*models.Thread, error) {
 func scanThreadMember(row dbutil.Scanner) (*models.ThreadMember, error) {
 	var tm models.ThreadMember
 	tm.ThreadID = models.EmptyThreadID()
-	if err := row.Scan(&tm.ThreadID, &tm.EntityID, &tm.Following, &tm.Joined, &tm.LastViewed); err == sql.ErrNoRows {
+	if err := row.Scan(&tm.ThreadID, &tm.EntityID, &tm.Following, &tm.Joined, &tm.LastViewed, &tm.LastUnreadNotify); err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	} else if err != nil {
 		return nil, errors.Trace(err)

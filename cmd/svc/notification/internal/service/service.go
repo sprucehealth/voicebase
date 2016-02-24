@@ -218,6 +218,8 @@ func (s *service) processNotification(data []byte) error {
 	return errors.Trace(s.processPushNotification(n))
 }
 
+// TODO: mraines: This section sof code has become incredibly push and new_message specific. It needs a deperate refactor before any other
+//   notification work is done.
 func (s *service) processPushNotification(n *notification.Notification) error {
 	entitiesToNotify, err := s.filterNodesWithNotificationsDisabled(n.EntitiesToNotify)
 	if err != nil {
@@ -230,6 +232,12 @@ func (s *service) processPushNotification(n *notification.Notification) error {
 	})
 	if err != nil {
 		return errors.Trace(err)
+	}
+
+	// Map our notification information back to our new external id info
+	for _, eID := range externalIDsResp.ExternalIDs {
+		n.ShortMessages[eID.ID] = n.ShortMessages[eID.EntityID]
+		n.UnreadCounts[eID.ID] = n.UnreadCounts[eID.EntityID]
 	}
 
 	accountIDsToNotify, err := s.filterNodesWithNotificationsDisabled(accountIDsFromExternalIDs(externalIDsResp.ExternalIDs))
@@ -276,14 +284,13 @@ func (s *service) sendPushNotificationToExternalGroupID(externalGroupID string, 
 		return errors.Trace(err)
 	}
 
-	// TODO: Account for partial failure here. If some configs succeed and others don't
 	for _, pushConfig := range pushConfigs {
 		var snsNote *snsNotification
 		switch pushConfig.Platform {
 		case "iOS", "android":
-			snsNote = generateNotification(s.config.WebDomain, n, pushConfig)
+			snsNote = generateNotification(s.config.WebDomain, n, externalGroupID)
 		default:
-			return errors.Trace(fmt.Errorf("Cannot send push notification to unknown platform %q for push notifications", pushConfig.Platform))
+			return errors.Trace(fmt.Errorf("Cannot send push notification to unhandled platform %q", pushConfig.Platform))
 		}
 
 		msg, err := json.Marshal(snsNote)
@@ -346,18 +353,24 @@ type iOSPushNotification struct {
 	MessageID      string       `json:"message_id"`
 }
 
+// https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/TheNotificationPayload.html#//apple_ref/doc/uid/TP40008194-CH107-SW1
 type iOSPushData struct {
-	Alert string `json:"alert"`
-	URL   string `json:"url"`
+	Alert            string `json:"alert"`
+	URL              string `json:"url"`
+	Badge            int    `json:"badge"`
+	ContentAvailable int    `json:"content-available"`
 }
 
 type androidPushNotification struct {
-	PushData *androidPushData `json:"data"`
+	CollapseKey string           `json:"collapse_key"`
+	PushData    *androidPushData `json:"data"`
 }
 
 type androidPushData struct {
+	Background     bool   `json:"background"`
 	Message        string `json:"message"`
 	URL            string `json:"url"`
+	UnreadCount    int    `json:"unread_count"`
 	OrganizationID string `json:"organization_id"`
 	SavedQueryID   string `json:"saved_query_id"`
 	ThreadID       string `json:"thread_id"`
@@ -365,13 +378,25 @@ type androidPushData struct {
 	PushID         string `json:"push_id"`
 }
 
-func generateNotification(webDomain string, n *notification.Notification, pushConfig *dal.PushConfig) *snsNotification {
-	url := deeplink.ThreadMessageURLShareable(webDomain, n.OrganizationID, n.ThreadID, n.MessageID)
+func generateNotification(webDomain string, n *notification.Notification, targetID string) *snsNotification {
+	msg := n.ShortMessages[targetID]
+	unreadCount := n.UnreadCounts[targetID]
+	url := deeplink.OrgURL(webDomain, n.OrganizationID)
+	if unreadCount == 1 {
+		url = deeplink.ThreadMessageURLShareable(webDomain, n.OrganizationID, n.ThreadID, n.MessageID)
+	}
+	iOSData := &iOSPushData{
+		Alert: msg,
+		URL:   url,
+		Badge: unreadCount,
+	}
+	if msg == "" {
+		iOSData = &iOSPushData{
+			ContentAvailable: 1,
+		}
+	}
 	isNotifData, err := json.Marshal(&iOSPushNotification{
-		PushData: &iOSPushData{
-			Alert: n.ShortMessage,
-			URL:   url,
-		},
+		PushData:       iOSData,
 		OrganizationID: n.OrganizationID,
 		SavedQueryID:   n.SavedQueryID,
 		ThreadID:       n.ThreadID,
@@ -381,14 +406,17 @@ func generateNotification(webDomain string, n *notification.Notification, pushCo
 		golog.Errorf("Error while serializing ios notification data: %s", err)
 	}
 	androidNotifData, err := json.Marshal(&androidPushNotification{
+		CollapseKey: n.CollapseKey,
 		PushData: &androidPushData{
-			Message:        n.ShortMessage,
+			Background:     msg == "",
+			Message:        msg,
 			URL:            url,
 			OrganizationID: n.OrganizationID,
 			SavedQueryID:   n.SavedQueryID,
 			ThreadID:       n.ThreadID,
 			MessageID:      n.MessageID,
-			PushID:         fmt.Sprintf("thread:%s", n.ThreadID),
+			UnreadCount:    unreadCount,
+			PushID:         n.DedupeKey,
 		},
 	})
 	if err != nil {
@@ -396,7 +424,7 @@ func generateNotification(webDomain string, n *notification.Notification, pushCo
 	}
 
 	return &snsNotification{
-		DefaultMessage: n.ShortMessage,
+		DefaultMessage: msg,
 		IOSSandBox:     string(isNotifData),
 		IOS:            string(isNotifData),
 		Android:        string(androidNotifData),

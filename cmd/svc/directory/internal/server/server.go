@@ -875,8 +875,10 @@ func dalEntityContactAsPBContact(dEntityContact *dal.EntityContact) *directory.C
 }
 
 func dalEntityAsPBEntity(dEntity *dal.Entity) *directory.Entity {
-	entity := &directory.Entity{}
-	entity.ID = dEntity.ID.String()
+	entity := &directory.Entity{
+		ID:               dEntity.ID.String(),
+		CreatedTimestamp: uint64(dEntity.Created.Unix()),
+	}
 	entityType, ok := directory.EntityType_value[dEntity.Type.String()]
 	if !ok {
 		golog.Errorf("Unknown entity type %s when converting to PB format", dEntity.Type)
