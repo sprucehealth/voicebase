@@ -73,6 +73,7 @@ func main() {
 	if *flagStaticURLPrefix == "" {
 		golog.Fatalf("-static_url_prefix flag required")
 	}
+	*flagStaticURLPrefix = strings.Replace(*flagStaticURLPrefix, "{BuildNumber}", boot.BuildNumber, -1)
 	if !strings.HasSuffix(*flagStaticURLPrefix, "/") {
 		*flagStaticURLPrefix += "/"
 	}
