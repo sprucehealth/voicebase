@@ -396,7 +396,6 @@ message CreateLinkedThreadsResponse {
 message CreateOnboardingThreadRequest {
 	string organization_id = 1 [(gogoproto.customname) = "OrganizationID"];
 	string primary_entity_id = 2 [(gogoproto.customname) = "PrimaryEntityID"];
-	string summary = 3;
 }
 
 message CreateOnboardingThreadResponse {

@@ -25,7 +25,7 @@ func TestCreateOnboardingThread(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.CreateThread, &models.Thread{
 		OrganizationID:     "o1",
 		PrimaryEntityID:    "e2",
-		LastMessageSummary: "summ",
+		LastMessageSummary: "Spruce Assistant: Welcome to Spruce! Let’s get you set up with your own Spruce phone number so you can start receiving calls, voicemails, and texts from patients without disclosing your personal number.\n\nGet your Spruce number\nor type \"skip\" to get it later",
 	}).WithReturns(thid, nil))
 
 	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
@@ -33,7 +33,7 @@ func TestCreateOnboardingThread(t *testing.T) {
 		FromEntityID: "e2",
 		Internal:     false,
 		Text:         "Welcome to Spruce! Let’s get you set up with your own Spruce phone number so you can start receiving calls, voicemails, and texts from patients without disclosing your personal number.\n\n<a href=\"https://WEBDOMAIN/org/o1/settings/phone\">Get your Spruce number</a>\nor type \"skip\" to get it later",
-		Summary:      "Spruce Assistant: Welcome to Spruce! Let’s get you set up with your own Spruce p",
+		Summary:      "Spruce Assistant: Welcome to Spruce! Let’s get you set up with your own Spruce phone number so you can start receiving calls, voicemails, and texts from patients without disclosing your personal number.\n\nGet your Spruce number\nor type \"skip\" to get it later",
 	}).WithReturns(&models.ThreadItem{}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.CreateOnboardingState, thid, "o1").WithReturns(nil))
@@ -42,7 +42,7 @@ func TestCreateOnboardingThread(t *testing.T) {
 		ID:                   thid,
 		OrganizationID:       "o1",
 		PrimaryEntityID:      "e2",
-		LastMessageSummary:   "summ",
+		LastMessageSummary:   "Spruce Assistant: Welcome to Spruce! Let’s get you set up with your own Spruce phone number so you can start receiving calls, voicemails, and texts from patients without disclosing your personal number.\n\nGet your Spruce number\nor type \"skip\" to get it later",
 		LastMessageTimestamp: now,
 		Created:              now,
 	}, nil))
@@ -51,7 +51,6 @@ func TestCreateOnboardingThread(t *testing.T) {
 	res, err := srv.CreateOnboardingThread(nil, &threading.CreateOnboardingThreadRequest{
 		OrganizationID:  "o1",
 		PrimaryEntityID: "e2",
-		Summary:         "summ",
 	})
 	test.OK(t, err)
 	test.Equals(t, &threading.CreateOnboardingThreadResponse{
@@ -60,7 +59,7 @@ func TestCreateOnboardingThread(t *testing.T) {
 			OrganizationID:       "o1",
 			PrimaryEntityID:      "e2",
 			LastMessageTimestamp: uint64(now.Unix()),
-			LastMessageSummary:   "summ",
+			LastMessageSummary:   "Spruce Assistant: Welcome to Spruce! Let’s get you set up with your own Spruce phone number so you can start receiving calls, voicemails, and texts from patients without disclosing your personal number.\n\nGet your Spruce number\nor type \"skip\" to get it later",
 			CreatedTimestamp:     uint64(now.Unix()),
 			MessageCount:         0,
 		},

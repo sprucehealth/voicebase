@@ -1,7 +1,7 @@
-package server
+package textutil
 
-// truncateUTF8 truncates the provided string if it's longer than the max length in runes (not bytes).
-func truncateUTF8(s string, maxLen int) string {
+// TruncateUTF8 truncates the provided string if it's longer than the max length in runes (not bytes).
+func TruncateUTF8(s string, maxLen int) string {
 	// Shortcuts for the simple cases
 	if maxLen <= 0 {
 		return ""

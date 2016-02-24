@@ -1,4 +1,4 @@
-package server
+package textutil
 
 import (
 	"testing"
@@ -28,6 +28,6 @@ func TestTruncateUTF8(t *testing.T) {
 		{`\😶/`, `\😶/`, 4},
 	}
 	for _, c := range cases {
-		test.Equals(t, c.o, truncateUTF8(c.i, c.n))
+		test.Equals(t, c.o, TruncateUTF8(c.i, c.n))
 	}
 }

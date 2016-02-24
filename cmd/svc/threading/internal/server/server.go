@@ -16,6 +16,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
+	"github.com/sprucehealth/backend/libs/textutil"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -104,7 +105,7 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 	if in.Summary == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
 	}
-	in.Summary = truncateUTF8(in.Summary, maxSummaryLength)
+	in.Summary = textutil.TruncateUTF8(in.Summary, maxSummaryLength)
 
 	var threadID models.ThreadID
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
@@ -153,7 +154,7 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	if in.Summary == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
 	}
-	in.Summary = truncateUTF8(in.Summary, maxSummaryLength)
+	in.Summary = textutil.TruncateUTF8(in.Summary, maxSummaryLength)
 	if in.Title != "" {
 		if _, err := bml.Parse(in.Title); err != nil {
 			return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Title is invalid format: %s", err.Error()))
@@ -252,7 +253,7 @@ func (s *threadsServer) CreateLinkedThreads(ctx context.Context, in *threading.C
 	if in.Summary == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
 	}
-	in.Summary = truncateUTF8(in.Summary, maxSummaryLength)
+	in.Summary = textutil.TruncateUTF8(in.Summary, maxSummaryLength)
 	if in.Title != "" {
 		if _, err := bml.Parse(in.Title); err != nil {
 			return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Title is invalid format: %s", err.Error()))
@@ -470,7 +471,7 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	if in.Summary == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
 	}
-	in.Summary = truncateUTF8(in.Summary, maxSummaryLength)
+	in.Summary = textutil.TruncateUTF8(in.Summary, maxSummaryLength)
 	if in.Title != "" {
 		if _, err := bml.Parse(in.Title); err != nil {
 			return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Title is invalid format: %s", err.Error()))

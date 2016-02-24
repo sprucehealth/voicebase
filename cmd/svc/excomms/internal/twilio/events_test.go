@@ -221,7 +221,8 @@ func TestIncoming_Organization(t *testing.T) {
 				Contacts: []*directory.Contact{
 					{
 						ContactType: directory.ContactType_PHONE,
-						Value:       providerPersonalPhone,
+						Value:       practicePhoneNumber,
+						Provisioned: true,
 					},
 				},
 			},
@@ -300,7 +301,8 @@ func TestIncoming_Organization_SingleProvider_DirectAllCallsToVoicemail(t *testi
 				Contacts: []*directory.Contact{
 					{
 						ContactType: directory.ContactType_PHONE,
-						Value:       providerPersonalPhone,
+						Value:       practicePhoneNumber,
+						Provisioned: true,
 					},
 				},
 				Info: &directory.EntityInfo{
@@ -413,6 +415,13 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 			{
 				ID:   orgID,
 				Type: directory.EntityType_ORGANIZATION,
+				Contacts: []*directory.Contact{
+					{
+						ContactType: directory.ContactType_PHONE,
+						Provisioned: true,
+						Value:       practicePhoneNumber,
+					},
+				},
 			},
 		},
 	}
@@ -488,6 +497,13 @@ func TestIncoming_Organization_MultipleContacts_SendToVoicemail(t *testing.T) {
 			{
 				ID:   orgID,
 				Type: directory.EntityType_ORGANIZATION,
+				Contacts: []*directory.Contact{
+					{
+						ContactType: directory.ContactType_PHONE,
+						Value:       practicePhoneNumber,
+						Provisioned: true,
+					},
+				},
 				Members: []*directory.Entity{
 					{
 						ID: providerID1,
@@ -604,6 +620,11 @@ func TestIncoming_Provider(t *testing.T) {
 					},
 				},
 				Contacts: []*directory.Contact{
+					{
+						ContactType: directory.ContactType_PHONE,
+						Value:       practicePhoneNumber,
+						Provisioned: true,
+					},
 					{
 						ContactType: directory.ContactType_PHONE,
 						Value:       providerPersonalPhone,
@@ -899,7 +920,7 @@ func TestProviderEnteredDigits_EnteredOtherDigit(t *testing.T) {
 func TestVoicemailTwiML(t *testing.T) {
 	orgID := "12345"
 	providerID := "p1"
-	providerPersonalPhone := "+14152222222"
+	practicePhoneNumber := "+14152222222"
 	md := &mockDirectoryService_Twilio{
 		entitiesList: []*directory.Entity{
 			{
@@ -908,7 +929,8 @@ func TestVoicemailTwiML(t *testing.T) {
 				Contacts: []*directory.Contact{
 					{
 						ContactType: directory.ContactType_PHONE,
-						Value:       providerPersonalPhone,
+						Value:       practicePhoneNumber,
+						Provisioned: true,
 					},
 				},
 				Info: &directory.EntityInfo{
@@ -920,7 +942,7 @@ func TestVoicemailTwiML(t *testing.T) {
 						Contacts: []*directory.Contact{
 							{
 								ContactType: directory.ContactType_PHONE,
-								Value:       providerPersonalPhone,
+								Value:       "+14151111111",
 							},
 						},
 					},
@@ -988,7 +1010,8 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 				Contacts: []*directory.Contact{
 					{
 						ContactType: directory.ContactType_PHONE,
-						Value:       providerPersonalPhone,
+						Value:       "+17348465522",
+						Provisioned: true,
 					},
 				},
 				Info: &directory.EntityInfo{

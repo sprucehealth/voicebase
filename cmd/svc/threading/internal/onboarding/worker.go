@@ -133,7 +133,10 @@ func (w *Worker) processEvent(env *events.Envelope) error {
 		if err != nil {
 			return errors.Trace(err)
 		}
-		nextMsg := Message(step, skip, w.webDomain, thread.OrganizationID, args)
+		nextMsg, summary, err := Message(step, skip, w.webDomain, thread.OrganizationID, args)
+		if err != nil {
+			return errors.Trace(err)
+		}
 		if nextMsg == "" {
 			return errors.Trace(fmt.Errorf("Empty next message for onboarding step %d", step))
 		}
@@ -142,7 +145,7 @@ func (w *Worker) processEvent(env *events.Envelope) error {
 			FromEntityID: thread.PrimaryEntityID,
 			Internal:     false,
 			Text:         nextMsg,
-			Summary:      "Spruce Assistant: " + nextMsg[:64],
+			Summary:      summary,
 		})
 		if err != nil {
 			return errors.Trace(err)
@@ -197,7 +200,10 @@ func (w *Worker) processThreadItem(ti *threading.PublishedThreadItem) error {
 		if !skip && (step != 4 || !item.Internal) { // Step 4 is waiting for an internal message
 			return nil
 		}
-		nextMsg := Message(state.Step+1, skip, w.webDomain, thread.OrganizationID, nil)
+		nextMsg, summary, err := Message(state.Step+1, skip, w.webDomain, thread.OrganizationID, nil)
+		if err != nil {
+			return errors.Trace(err)
+		}
 		if nextMsg == "" {
 			return errors.Trace(fmt.Errorf("Empty next message for onboarding step %d", step))
 		}
@@ -206,7 +212,7 @@ func (w *Worker) processThreadItem(ti *threading.PublishedThreadItem) error {
 			FromEntityID: thread.PrimaryEntityID,
 			Internal:     false,
 			Text:         nextMsg,
-			Summary:      "Spruce Assistant: " + nextMsg[:64],
+			Summary:      summary,
 		})
 		if err != nil {
 			return errors.Trace(err)

@@ -42,7 +42,7 @@ func TestWorker_Step1_Done(t *testing.T) {
 		Internal:     false,
 		Title:        "",
 		Text:         "Success! Your patients can now reach you at (555) 111-2222. Next let’s set up you up to send and receive email through Spruce.\n\n<a href=\"https://WEBDOMAIN/org/orgid/settings/email\">Set up email support</a>\nor type \"skip\" to set it up later",
-		Summary:      "Spruce Assistant: Success! Your patients can now reach you at (555) 111-2222. Next",
+		Summary:      "Spruce Assistant: Success! Your patients can now reach you at (555) 111-2222. Next let’s set up you up to send and receive email through Spruce.\n\nSet up email support\nor type \"skip\" to set it up later",
 	}).WithReturns(&models.ThreadItem{}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.UpdateOnboardingState, thid, &dal.OnboardingStateUpdate{
@@ -91,7 +91,7 @@ func TestWorker_Step1_Skip(t *testing.T) {
 		Internal:     false,
 		Title:        "",
 		Text:         "You can set up your Spruce number at any time from the settings menu. Would you like to set up your account to send and receive email through Spruce?\n\n<a href=\"https://WEBDOMAIN/org/orgid/settings/email\">Set up email support</a>\nor type \"skip\" to set it up later",
-		Summary:      "Spruce Assistant: You can set up your Spruce number at any time from the settings ",
+		Summary:      "Spruce Assistant: You can set up your Spruce number at any time from the settings menu. Would you like to set up your account to send and receive email through Spruce?\n\nSet up email support\nor type \"skip\" to set it up later",
 	}).WithReturns(&models.ThreadItem{}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.UpdateOnboardingState, thid, &dal.OnboardingStateUpdate{
@@ -137,7 +137,7 @@ func TestWorker_Step2_Done(t *testing.T) {
 		Internal:     false,
 		Title:        "",
 		Text:         "Great! Your patients can now reach you at foo@bar.com. Would you like to collaborate with colleagues around patient communication? Spruce can do that too.\n\n<a href=\"https://WEBDOMAIN/org/orgid/invite\">Add a colleague to your organization</a>\nor type \"skip\" to send invites later",
-		Summary:      "Spruce Assistant: Great! Your patients can now reach you at foo@bar.com. Would you",
+		Summary:      "Spruce Assistant: Great! Your patients can now reach you at foo@bar.com. Would you like to collaborate with colleagues around patient communication? Spruce can do that too.\n\nAdd a colleague to your organization\nor type \"skip\" to send invites later",
 	}).WithReturns(&models.ThreadItem{}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.UpdateOnboardingState, thid, &dal.OnboardingStateUpdate{
@@ -186,7 +186,7 @@ func TestWorker_Step2_Skip(t *testing.T) {
 		Internal:     false,
 		Title:        "",
 		Text:         "You can set up your Spruce email at any time from the settings menu. Would you like to collaborate with colleagues around patient communication? Spruce can do that too.\n\n<a href=\"https://WEBDOMAIN/org/orgid/invite\">Add a colleague to your organization</a>\nor type \"skip\" to send invites later",
-		Summary:      "Spruce Assistant: You can set up your Spruce email at any time from the settings m",
+		Summary:      "Spruce Assistant: You can set up your Spruce email at any time from the settings menu. Would you like to collaborate with colleagues around patient communication? Spruce can do that too.\n\nAdd a colleague to your organization\nor type \"skip\" to send invites later",
 	}).WithReturns(&models.ThreadItem{}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.UpdateOnboardingState, thid, &dal.OnboardingStateUpdate{
@@ -232,7 +232,7 @@ func TestWorker_Step3_Done(t *testing.T) {
 		Internal:     false,
 		Title:        "",
 		Text:         "We’ve sent your invite to colleague. Once they’ve joined, you can communicate with them about care, right from a patient’s conversation thread.\n\nTo send internal messages or notes in a patient thread, simply tap the lock icon while writing a message to mark it as internal. You can test it out right here.",
-		Summary:      "Spruce Assistant: We’ve sent your invite to colleague. Once they’ve joined, yo",
+		Summary:      "Spruce Assistant: We’ve sent your invite to colleague. Once they’ve joined, you can communicate with them about care, right from a patient’s conversation thread.\n\nTo send internal messages or notes in a patient thread, simply tap the lock icon while writing a message to mark it as internal. You can test it out right here.",
 	}).WithReturns(&models.ThreadItem{}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.UpdateOnboardingState, thid, &dal.OnboardingStateUpdate{
@@ -280,7 +280,7 @@ func TestWorker_Step3_Skip(t *testing.T) {
 		Internal:     false,
 		Title:        "",
 		Text:         "You can invite a colleague any time from the settings menu. Until then, you can still make internal notes on a patient conversation thread. These will only be visible to you until you add colleagues. \n\nYou can test out internal messaging by writing a message in this conversation and tapping the lock icon before sending it.",
-		Summary:      "Spruce Assistant: You can invite a colleague any time from the settings menu. Unti",
+		Summary:      "Spruce Assistant: You can invite a colleague any time from the settings menu. Until then, you can still make internal notes on a patient conversation thread. These will only be visible to you until you add colleagues. \n\nYou can test out internal messaging by writing a message in this conversation and tapping the lock icon before sending it.",
 	}).WithReturns(&models.ThreadItem{}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.UpdateOnboardingState, thid, &dal.OnboardingStateUpdate{
@@ -326,7 +326,7 @@ func TestWorker_Step4_Done(t *testing.T) {
 		Internal:     false,
 		Title:        "",
 		Text:         "That’s all for now. You’re well on your way to greater control in your communication with your patients. You can keep trying out other Spruce patient features in this conversation, and if you’re unsure about anything or need some help, message us on the Team Spruce conversation thread and a real human will respond.",
-		Summary:      "Spruce Assistant: That’s all for now. You’re well on your way to greater contr",
+		Summary:      "Spruce Assistant: That’s all for now. You’re well on your way to greater control in your communication with your patients. You can keep trying out other Spruce patient features in this conversation, and if you’re unsure about anything or need some help, message us on the Team Spruce conversation thread and a real human will respond.",
 	}).WithReturns(&models.ThreadItem{}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.UpdateOnboardingState, thid, &dal.OnboardingStateUpdate{
@@ -373,7 +373,7 @@ func TestWorker_Step4_Skip(t *testing.T) {
 		Internal:     false,
 		Title:        "",
 		Text:         "That’s all for now. You’re well on your way to greater control in your communication with your patients. You can keep trying out other Spruce patient features in this conversation, and if you’re unsure about anything or need some help, message us on the Team Spruce conversation thread and a real human will respond.",
-		Summary:      "Spruce Assistant: That’s all for now. You’re well on your way to greater contr",
+		Summary:      "Spruce Assistant: That’s all for now. You’re well on your way to greater control in your communication with your patients. You can keep trying out other Spruce patient features in this conversation, and if you’re unsure about anything or need some help, message us on the Team Spruce conversation thread and a real human will respond.",
 	}).WithReturns(&models.ThreadItem{}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.UpdateOnboardingState, thid, &dal.OnboardingStateUpdate{

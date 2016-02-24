@@ -1325,7 +1325,6 @@ func (m *CreateLinkedThreadsResponse) GetThread2() *Thread {
 type CreateOnboardingThreadRequest struct {
 	OrganizationID  string `protobuf:"bytes,1,opt,name=organization_id,proto3" json:"organization_id,omitempty"`
 	PrimaryEntityID string `protobuf:"bytes,2,opt,name=primary_entity_id,proto3" json:"primary_entity_id,omitempty"`
-	Summary         string `protobuf:"bytes,3,opt,name=summary,proto3" json:"summary,omitempty"`
 }
 
 func (m *CreateOnboardingThreadRequest) Reset()      { *m = CreateOnboardingThreadRequest{} }
@@ -3512,9 +3511,6 @@ func (this *CreateOnboardingThreadRequest) Equal(that interface{}) bool {
 	if this.PrimaryEntityID != that1.PrimaryEntityID {
 		return false
 	}
-	if this.Summary != that1.Summary {
-		return false
-	}
 	return true
 }
 func (this *CreateOnboardingThreadResponse) Equal(that interface{}) bool {
@@ -4366,11 +4362,10 @@ func (this *CreateOnboardingThreadRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 6)
 	s = append(s, "&threading.CreateOnboardingThreadRequest{")
 	s = append(s, "OrganizationID: "+fmt.Sprintf("%#v", this.OrganizationID)+",\n")
 	s = append(s, "PrimaryEntityID: "+fmt.Sprintf("%#v", this.PrimaryEntityID)+",\n")
-	s = append(s, "Summary: "+fmt.Sprintf("%#v", this.Summary)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -7345,12 +7340,6 @@ func (m *CreateOnboardingThreadRequest) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(len(m.PrimaryEntityID)))
 		i += copy(data[i:], m.PrimaryEntityID)
 	}
-	if len(m.Summary) > 0 {
-		data[i] = 0x1a
-		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Summary)))
-		i += copy(data[i:], m.Summary)
-	}
 	return i, nil
 }
 
@@ -8467,10 +8456,6 @@ func (m *CreateOnboardingThreadRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
-	l = len(m.Summary)
-	if l > 0 {
-		n += 1 + l + sovSvc(uint64(l))
-	}
 	return n
 }
 
@@ -9256,7 +9241,6 @@ func (this *CreateOnboardingThreadRequest) String() string {
 	s := strings.Join([]string{`&CreateOnboardingThreadRequest{`,
 		`OrganizationID:` + fmt.Sprintf("%v", this.OrganizationID) + `,`,
 		`PrimaryEntityID:` + fmt.Sprintf("%v", this.PrimaryEntityID) + `,`,
-		`Summary:` + fmt.Sprintf("%v", this.Summary) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -16847,35 +16831,6 @@ func (m *CreateOnboardingThreadRequest) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.PrimaryEntityID = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Summary", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Summary = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

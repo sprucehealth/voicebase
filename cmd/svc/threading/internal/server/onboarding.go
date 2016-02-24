@@ -15,29 +15,30 @@ func (s *threadsServer) CreateOnboardingThread(ctx context.Context, in *threadin
 	if in.OrganizationID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "OrganizationID is required")
 	}
-	if in.Summary == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
-	}
-	in.Summary = truncateUTF8(in.Summary, maxSummaryLength)
 
 	var threadID models.ThreadID
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
-		var err error
+		nextMsg, summary, err := onboarding.Message(0, false, s.webDomain, in.OrganizationID, nil)
+		if err != nil {
+			return errors.Trace(err)
+		}
+		if nextMsg == "" {
+			return errors.Trace(errors.New("empty first message for onboarding"))
+		}
 		threadID, err = dl.CreateThread(ctx, &models.Thread{
 			OrganizationID:     in.OrganizationID,
 			PrimaryEntityID:    in.PrimaryEntityID,
-			LastMessageSummary: in.Summary,
+			LastMessageSummary: summary,
 		})
 		if err != nil {
 			return errors.Trace(err)
 		}
-		nextMsg := onboarding.Message(0, false, s.webDomain, in.OrganizationID, nil)
 		if _, err := dl.PostMessage(ctx, &dal.PostMessageRequest{
 			ThreadID:     threadID,
 			FromEntityID: in.PrimaryEntityID,
 			Internal:     false,
 			Text:         nextMsg,
-			Summary:      "Spruce Assistant: " + nextMsg[:64],
+			Summary:      summary,
 		}); err != nil {
 			return errors.Trace(err)
 		}

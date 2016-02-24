@@ -107,13 +107,16 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID s
 			ThreadItemID:  item.ID,
 			SummaryMarkup: m.Title,
 			TextMarkup:    m.Text,
-			Source: &models.Endpoint{
-				Channel: m.Source.Channel.String(),
-				ID:      m.Source.ID,
-			},
 			// TODO: EditorEntityID
 			// TODO: EditedTimestamp
 		}
+		if m.Source != nil {
+			m2.Source = &models.Endpoint{
+				Channel: m.Source.Channel.String(),
+				ID:      m.Source.ID,
+			}
+		}
+
 		for _, r := range m.TextRefs {
 			m2.Refs = append(m2.Refs, &models.Reference{
 				ID:   r.ID,

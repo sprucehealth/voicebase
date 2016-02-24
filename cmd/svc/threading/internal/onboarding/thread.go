@@ -1,19 +1,24 @@
 package onboarding
 
 import (
+	"fmt"
+
+	"github.com/sprucehealth/backend/libs/bml"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/libs/textutil"
 )
 
-func Message(step int, skip bool, webDomain, orgID string, args map[string]string) string {
+func Message(step int, skip bool, webDomain, orgID string, args map[string]string) (string, string, error) {
+	var msg string
 	switch step {
 	case 0:
-		return `Welcome to Spruce! Let’s get you set up with your own Spruce phone number so you can start receiving calls, voicemails, and texts from patients without disclosing your personal number.
+		msg = `Welcome to Spruce! Let’s get you set up with your own Spruce phone number so you can start receiving calls, voicemails, and texts from patients without disclosing your personal number.
 
 <a href="https://` + webDomain + `/org/` + orgID + `/settings/phone">Get your Spruce number</a>
 or type "skip" to get it later`
 	case 1:
-		var msg string
 		if skip {
 			msg = `You can set up your Spruce number at any time from the settings menu. Would you like to set up your account to send and receive email through Spruce?`
 		} else {
@@ -28,9 +33,7 @@ or type "skip" to get it later`
 
 <a href="https://` + webDomain + `/org/` + orgID + `/settings/email">Set up email support</a>
 or type "skip" to set it up later`
-		return msg
 	case 2:
-		var msg string
 		if skip {
 			msg = `You can set up your Spruce email at any time from the settings menu. Would you like to collaborate with colleagues around patient communication? Spruce can do that too.`
 		} else {
@@ -40,18 +43,39 @@ or type "skip" to set it up later`
 
 <a href="https://` + webDomain + `/org/` + orgID + `/invite">Add a colleague to your organization</a>
 or type "skip" to send invites later`
-		return msg
 	case 3:
 		if skip {
-			return `You can invite a colleague any time from the settings menu. Until then, you can still make internal notes on a patient conversation thread. These will only be visible to you until you add colleagues. 
+			msg = `You can invite a colleague any time from the settings menu. Until then, you can still make internal notes on a patient conversation thread. These will only be visible to you until you add colleagues. 
 
 You can test out internal messaging by writing a message in this conversation and tapping the lock icon before sending it.`
-		}
-		return `We’ve sent your invite to colleague. Once they’ve joined, you can communicate with them about care, right from a patient’s conversation thread.
+		} else {
+			msg = `We’ve sent your invite to colleague. Once they’ve joined, you can communicate with them about care, right from a patient’s conversation thread.
 
 To send internal messages or notes in a patient thread, simply tap the lock icon while writing a message to mark it as internal. You can test it out right here.`
+		}
 	case 4:
-		return `That’s all for now. You’re well on your way to greater control in your communication with your patients. You can keep trying out other Spruce patient features in this conversation, and if you’re unsure about anything or need some help, message us on the Team Spruce conversation thread and a real human will respond.`
+		msg = `That’s all for now. You’re well on your way to greater control in your communication with your patients. You can keep trying out other Spruce patient features in this conversation, and if you’re unsure about anything or need some help, message us on the Team Spruce conversation thread and a real human will respond.`
 	}
-	return ""
+	if msg != "" {
+		summary, err := summaryFromText("Spruce Assistant: " + msg)
+		return msg, summary, err
+	}
+	return "", "", fmt.Errorf("no available onboarding message for step %d", step)
+}
+
+func summaryFromText(text string) (string, error) {
+	textBML, err := bml.Parse(text)
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+	plainText, err := textBML.PlainText()
+	if err != nil {
+		// Shouldn't fail here since the parsing should have done validation
+		return "", errors.Trace(err)
+	}
+	pt := textutil.TruncateUTF8(plainText, 1000)
+	if pt != plainText {
+		pt += "…"
+	}
+	return pt, nil
 }
