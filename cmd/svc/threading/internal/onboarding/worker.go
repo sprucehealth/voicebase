@@ -83,6 +83,7 @@ func (w *Worker) processEvent(env *events.Envelope) error {
 			golog.Errorf("Failed to unmarshal excomms event: %s", err)
 			return nil
 		}
+		golog.Debugf("Onboarding: received event from excomms service: %s", ev.Type.String())
 		switch ev.Type {
 		case excomms.Event_PROVISIONED_ENDPOINT:
 			e := ev.GetProvisionedEndpoint()
@@ -107,12 +108,15 @@ func (w *Worker) processEvent(env *events.Envelope) error {
 			golog.Errorf("Failed to unmarshal invite event: %s", err)
 			return nil
 		}
+		golog.Debugf("Onboarding: received event from invite service: %s", ev.Type.String())
 		switch ev.Type {
 		case invite.Event_INVITED_COLLEAGUES:
 			e := ev.GetInvitedColleagues()
 			entityID = e.OrganizationEntityID
 			step = 3
 		}
+	default:
+		golog.Debugf("Onboarding: received unhandled event from service %s", env.Service.String())
 	}
 
 	if entityID == "" {
@@ -171,6 +175,7 @@ func (w *Worker) processSNSThreadItem(msg string) error {
 }
 
 func (w *Worker) processThreadItem(ti *threading.PublishedThreadItem) error {
+	golog.Debugf("Onboarding: processing thread item: %+v", ti)
 	ctx := context.Background()
 	threadID, err := models.ParseThreadID(ti.ThreadID)
 	if err != nil {

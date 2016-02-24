@@ -18,12 +18,13 @@ type Marshaler interface {
 
 // Publish posts an event to an SNS topic
 func Publish(sn snsiface.SNSAPI, topicARN string, svc Service, event Marshaler) {
+	envelopeData, err := MarshalEnvelope(svc, event)
+	if err != nil {
+		golog.Errorf("failed to marshal event envelope %T: %s", event, err)
+		return
+	}
+	golog.Debugf("Publishing event for service %s: %T", svc.String(), event)
 	conc.Go(func() {
-		envelopeData, err := MarshalEnvelope(svc, event)
-		if err != nil {
-			golog.Errorf("failed to marshal event envelope %T: %s", event, err)
-			return
-		}
 		if _, err := sn.Publish(&sns.PublishInput{
 			Message:  ptr.String(base64.StdEncoding.EncodeToString(envelopeData)),
 			TopicArn: ptr.String(topicARN),
