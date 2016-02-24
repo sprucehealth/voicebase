@@ -158,7 +158,7 @@ func (d *dal) Transact(ctx context.Context, trans func(context.Context, DAL) err
 }
 
 func (d *dal) CreateOnboardingState(ctx context.Context, threadID models.ThreadID, entityID string) error {
-	_, err := d.db.Exec(`INSERT INTO onboarding_thread (thread_id, entity_id, step) VALUES (?, ?, ?)`, threadID, entityID, 0)
+	_, err := d.db.Exec(`INSERT INTO onboarding_threads (thread_id, entity_id, step) VALUES (?, ?, ?)`, threadID, entityID, 0)
 	return errors.Trace(err)
 }
 
@@ -392,7 +392,7 @@ func (d *dal) LinkedThread(ctx context.Context, threadID models.ThreadID) (*mode
 		SELECT id, organization_id, COALESCE(primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary, last_primary_entity_endpoints, created, message_count
 		FROM threads
 		INNER JOIN thread_links tl ON tl.thread1_id = ? OR tl.thread2_id = ?
-		WHERE id != ? AND id IN (tl.thread1_id, tl.thread2_id) AND deleted = false`, threadID)
+		WHERE id != ? AND id IN (tl.thread1_id, tl.thread2_id) AND deleted = false`, threadID, threadID, threadID)
 	t, err := scanThread(row)
 	return t, errors.Trace(err)
 }
