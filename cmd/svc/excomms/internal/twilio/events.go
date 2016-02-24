@@ -226,38 +226,18 @@ func processOutgoingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 	golog.Infof("Incoming call %s to %s.", params.From, params.To)
 
-	// lookup the entity for the destination of the incoming call
-	res, err := eh.directory.LookupEntitiesByContact(
-		context.Background(),
-		&directory.LookupEntitiesByContactRequest{
-			ContactValue: params.To,
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 2,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_MEMBERS,
-					directory.EntityInformation_MEMBERSHIPS,
-					directory.EntityInformation_CONTACTS,
-				},
-			},
-			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-		})
+	entity, err := determineEntityWithProvisionedEndpoint(eh, params.To, 2)
 	if err != nil {
 		return "", errors.Trace(err)
-	}
-
-	// we should get back a single entity at this point given that there should be a 1:1 mapping between a provisioned number
-	// and an entity
-	if len(res.Entities) != 1 {
-		return "", errors.Trace(fmt.Errorf("Expected 1 entity for provisioned number, got back %d", len(res.Entities)))
 	}
 
 	var forwardingList []string
 	var providersInForwardingList map[string]bool
 	var phoneNumberToProviderMap map[string]string
 	var organizationID string
-	switch res.Entities[0].Type {
+	switch entity.Type {
 	case directory.EntityType_ORGANIZATION:
-		organizationID = res.Entities[0].ID
+		organizationID = entity.ID
 
 		forwardingList, err = getForwardingListForProvisionedPhoneNumber(ctx, params.To, organizationID, eh)
 		if err != nil {
@@ -275,7 +255,7 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 				continue
 			}
 
-			for _, m := range res.Entities[0].Members {
+			for _, m := range entity.Members {
 				for _, c := range m.Contacts {
 					if c.Value == parsedPn {
 						providersInForwardingList[m.ID] = true
@@ -285,7 +265,7 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 			}
 		}
 	case directory.EntityType_INTERNAL:
-		for _, c := range res.Entities[0].Contacts {
+		for _, c := range entity.Contacts {
 			if c.Provisioned {
 				continue
 			} else if c.ContactType != directory.ContactType_PHONE {
@@ -294,19 +274,19 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 			// assuming for now that we are to call the first non-provisioned
 			// phone number mapped to the provider.
 			forwardingList = []string{c.Value}
-			providersInForwardingList = map[string]bool{res.Entities[0].ID: true}
-			phoneNumberToProviderMap = map[string]string{c.Value: res.Entities[0].ID}
+			providersInForwardingList = map[string]bool{entity.ID: true}
+			phoneNumberToProviderMap = map[string]string{c.Value: entity.ID}
 			break
 		}
 
-		for _, m := range res.Entities[0].Memberships {
+		for _, m := range entity.Memberships {
 			if m.Type == directory.EntityType_ORGANIZATION {
 				organizationID = m.ID
 				break
 			}
 		}
 	default:
-		return "", errors.Trace(fmt.Errorf("Unexpected entity type %s", res.Entities[0].Type.String()))
+		return "", errors.Trace(fmt.Errorf("Unexpected entity type %s", entity.Type.String()))
 	}
 
 	if organizationID == "" {
@@ -457,34 +437,17 @@ func providerEnteredDigits(ctx context.Context, params *rawmsg.TwilioParams, eh 
 
 func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 
-	// determine the name of the organization from the destination phone number, assuming that the destination phone number
-	// belongs to a provider or an organization.
-	res, err := eh.directory.LookupEntitiesByContact(
-		context.Background(),
-		&directory.LookupEntitiesByContactRequest{
-			ContactValue: params.To,
-			RequestedInformation: &directory.RequestedInformation{
-				Depth: 1,
-				EntityInformation: []directory.EntityInformation{
-					directory.EntityInformation_MEMBERS,
-					directory.EntityInformation_MEMBERSHIPS,
-					directory.EntityInformation_CONTACTS,
-				},
-			},
-			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
-		})
+	entity, err := determineEntityWithProvisionedEndpoint(eh, params.To, 1)
 	if err != nil {
 		return "", errors.Trace(err)
-	} else if len(res.Entities) != 1 {
-		return "", errors.Trace(fmt.Errorf("Expected single entity mapping to provisioned phone number but got back %d", len(res.Entities)))
 	}
 
 	var orgName string
-	switch res.Entities[0].Type {
+	switch entity.Type {
 	case directory.EntityType_ORGANIZATION:
-		orgName = res.Entities[0].Info.DisplayName
+		orgName = entity.Info.DisplayName
 	case directory.EntityType_INTERNAL:
-		for _, m := range res.Entities[0].Memberships {
+		for _, m := range entity.Memberships {
 			if m.Type != directory.EntityType_ORGANIZATION {
 				continue
 			}
@@ -732,4 +695,44 @@ func determineExternalEntityName(ctx context.Context, source phone.Number, organ
 		}
 	}
 	return "", nil
+}
+
+func determineEntityWithProvisionedEndpoint(eh *eventsHandler, endpoint string, depth int64) (*directory.Entity, error) {
+	res, err := eh.directory.LookupEntitiesByContact(
+		context.Background(),
+		&directory.LookupEntitiesByContactRequest{
+			ContactValue: endpoint,
+			RequestedInformation: &directory.RequestedInformation{
+				Depth: depth,
+				EntityInformation: []directory.EntityInformation{
+					directory.EntityInformation_MEMBERS,
+					directory.EntityInformation_MEMBERSHIPS,
+					directory.EntityInformation_CONTACTS,
+				},
+			},
+			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	// only one entity should exist with the provisioned value
+	var entity *directory.Entity
+	for _, e := range res.Entities {
+		for _, c := range e.Contacts {
+			if c.Provisioned && c.Value == endpoint {
+				if entity != nil {
+					return nil, errors.Trace(fmt.Errorf("More than 1 entity found with provisioned endpoint %s", endpoint))
+				}
+
+				entity = e
+			}
+		}
+	}
+
+	if entity == nil {
+		return nil, errors.Trace(fmt.Errorf("No entity found for provisioned endpoint %s", endpoint))
+	}
+
+	return entity, nil
 }
