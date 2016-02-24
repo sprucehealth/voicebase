@@ -115,6 +115,12 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID s
 				Channel: m.Source.Channel.String(),
 				ID:      m.Source.ID,
 			}
+		} else {
+			// TODO: for now setting source to APP if not included since clients might assume it's always included
+			m2.Source = &models.Endpoint{
+				Channel: threading.Endpoint_APP.String(),
+				ID:      item.ActorEntityID,
+			}
 		}
 
 		for _, r := range m.TextRefs {
