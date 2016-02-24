@@ -29,7 +29,7 @@ var queryType = graphql.NewObject(
 			"node": &graphql.Field{
 				Type: graphql.NewNonNull(nodeInterfaceType),
 				Args: graphql.FieldConfigArgument{
-					"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+					"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					svc := serviceFromParams(p)
@@ -59,7 +59,7 @@ var queryType = graphql.NewObject(
 			"organization": &graphql.Field{
 				Type: graphql.NewNonNull(organizationType),
 				Args: graphql.FieldConfigArgument{
-					"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+					"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					ram := raccess.ResourceAccess(p)
@@ -75,7 +75,7 @@ var queryType = graphql.NewObject(
 			"savedThreadQuery": &graphql.Field{
 				Type: graphql.NewNonNull(savedThreadQueryType),
 				Args: graphql.FieldConfigArgument{
-					"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+					"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					ram := raccess.ResourceAccess(p)
@@ -90,7 +90,7 @@ var queryType = graphql.NewObject(
 			"thread": &graphql.Field{
 				Type: graphql.NewNonNull(threadType),
 				Args: graphql.FieldConfigArgument{
-					"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+					"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					ram := raccess.ResourceAccess(p)
