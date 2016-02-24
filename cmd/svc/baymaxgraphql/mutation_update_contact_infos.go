@@ -52,6 +52,7 @@ var updateContactInfosMutation = &graphql.Field{
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
+		svc := serviceFromParams(p)
 		acc := gqlctx.Account(ctx)
 		if acc == nil {
 			return nil, errors.ErrNotAuthenticated(ctx)
@@ -79,7 +80,7 @@ var updateContactInfosMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 
-		e, err := transformEntityToResponse(ent)
+		e, err := transformEntityToResponse(svc.staticURLPrefix, ent)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}

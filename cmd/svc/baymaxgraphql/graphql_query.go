@@ -32,8 +32,8 @@ var queryType = graphql.NewObject(
 					"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					svc := serviceFromParams(p)
 					ram := raccess.ResourceAccess(p)
+					svc := serviceFromParams(p)
 					ctx := p.Context
 					acc := gqlctx.Account(ctx)
 					if acc == nil {
@@ -43,7 +43,7 @@ var queryType = graphql.NewObject(
 					prefix := nodePrefix(id)
 					switch prefix {
 					case "entity":
-						return lookupEntity(ctx, ram, id)
+						return lookupEntity(ctx, svc, ram, id)
 					case "account":
 						return lookupAccount(ctx, ram, id)
 					case "sq":
@@ -64,12 +64,13 @@ var queryType = graphql.NewObject(
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					ram := raccess.ResourceAccess(p)
 					ctx := p.Context
+					svc := serviceFromParams(p)
 					acc := gqlctx.Account(ctx)
 
 					if acc == nil {
 						return nil, errors.ErrNotAuthenticated(ctx)
 					}
-					return lookupEntity(ctx, ram, p.Args["id"].(string))
+					return lookupEntity(ctx, svc, ram, p.Args["id"].(string))
 				},
 			},
 			"savedThreadQuery": &graphql.Field{

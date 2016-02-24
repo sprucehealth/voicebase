@@ -213,7 +213,7 @@ func transformSavedQueryToResponse(sq *threading.SavedQuery) (*models.SavedThrea
 	}, nil
 }
 
-func transformEntityToResponse(e *directory.Entity) (*models.Entity, error) {
+func transformEntityToResponse(staticURLPrefix string, e *directory.Entity) (*models.Entity, error) {
 	oc, err := transformContactsToResponse(e.Contacts)
 	if err != nil {
 		return nil, errors.Trace(fmt.Errorf("failed to transform contacts for entity %s: %s", e.ID, err))
@@ -244,16 +244,19 @@ func transformEntityToResponse(e *directory.Entity) (*models.Entity, error) {
 	}
 	switch e.Type {
 	case directory.EntityType_SYSTEM:
-		ent.Avatar = &models.Image{
-			URL:    "http://carefront-static.s3.amazonaws.com/icon_rx_large?system",
-			Width:  72,
-			Height: 72,
-		}
-	case directory.EntityType_ORGANIZATION:
-		ent.Avatar = &models.Image{
-			URL:    "http://carefront-static.s3.amazonaws.com/icon_rx_large?org",
-			Width:  72,
-			Height: 72,
+		// TODO: it is brittle to use the name for checking the difference, but right now there's no other way to know
+		if ent.DisplayName == "Team Spruce" {
+			ent.Avatar = &models.Image{
+				URL:    staticURLPrefix + "img/avatar/icon_profile_teamspruce@3x.png",
+				Width:  60,
+				Height: 60,
+			}
+		} else {
+			ent.Avatar = &models.Image{
+				URL:    staticURLPrefix + "img/avatar/icon_profile_spruceassist@3x.png",
+				Width:  60,
+				Height: 60,
+			}
 		}
 	case directory.EntityType_EXTERNAL:
 		// For external entities without names we use contact info for the name. In that case we want an icon for an avatar matching the type of contact.
@@ -264,21 +267,21 @@ func transformEntityToResponse(e *directory.Entity) (*models.Entity, error) {
 				switch c.ContactType {
 				case directory.ContactType_PHONE:
 					ent.Avatar = &models.Image{
-						URL:    "https://carefront-static.s3.amazonaws.com/icon_rx_large?phone",
-						Width:  72,
-						Height: 72,
+						URL:    staticURLPrefix + "img/avatar/icon_profile_phone@3x.png",
+						Width:  60,
+						Height: 60,
 					}
 				case directory.ContactType_EMAIL:
 					ent.Avatar = &models.Image{
-						URL:    "https://carefront-static.s3.amazonaws.com/icon_rx_large?email",
-						Width:  72,
-						Height: 72,
+						URL:    staticURLPrefix + "img/avatar/icon_profile_email@3x.png",
+						Width:  60,
+						Height: 60,
 					}
 				default:
 					ent.Avatar = &models.Image{
-						URL:    "https://carefront-static.s3.amazonaws.com/icon_rx_large?other",
-						Width:  72,
-						Height: 72,
+						URL:    staticURLPrefix + "img/avatar/icon_profile_user@3x.png",
+						Width:  60,
+						Height: 60,
 					}
 				}
 				break
@@ -288,7 +291,7 @@ func transformEntityToResponse(e *directory.Entity) (*models.Entity, error) {
 	return ent, nil
 }
 
-func transformOrganizationToResponse(org *directory.Entity, provider *directory.Entity) (*models.Organization, error) {
+func transformOrganizationToResponse(staticURLPrefix string, org *directory.Entity, provider *directory.Entity) (*models.Organization, error) {
 	o := &models.Organization{
 		ID:   org.ID,
 		Name: org.Info.DisplayName,
@@ -301,7 +304,7 @@ func transformOrganizationToResponse(org *directory.Entity, provider *directory.
 
 	o.Contacts = oc
 
-	e, err := transformEntityToResponse(provider)
+	e, err := transformEntityToResponse(staticURLPrefix, provider)
 	if err != nil {
 		return nil, err
 	}

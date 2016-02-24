@@ -32,6 +32,7 @@ var accountType = graphql.NewObject(
 			"organizations": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(organizationType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					svc := serviceFromParams(p)
 					ram := raccess.ResourceAccess(p)
 					ctx := p.Context
 					acc := p.Source.(*models.Account)
@@ -54,7 +55,7 @@ var accountType = graphql.NewObject(
 								if err != nil {
 									return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform org contacts: %+v", err))
 								}
-								entity, err := transformEntityToResponse(e)
+								entity, err := transformEntityToResponse(svc.staticURLPrefix, e)
 								if err != nil {
 									return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity: %+v", err))
 								}

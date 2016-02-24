@@ -35,15 +35,16 @@ import (
 )
 
 var (
-	flagListenAddr    = flag.String("listen_addr", "127.0.0.1:8080", "host:port to listen on")
-	flagResourcePath  = flag.String("resource_path", "", "Path to resources (defaults to use GOPATH)")
-	flagAPIDomain     = flag.String("api_domain", "", "API `domain`")
-	flagWebDomain     = flag.String("web_domain", "", "Web `domain`")
-	flagStorageBucket = flag.String("storage_bucket", "", "storage bucket for media")
-	flagSigKeys       = flag.String("signature_keys_csv", "", "csv signature keys")
-	flagEmailDomain   = flag.String("email_domain", "", "domain to use for email address provisioning")
-	flagServiceNumber = flag.String("service_phone_number", "", "TODO: This should be managed by the excomms service")
-	flagSpruceOrgID   = flag.String("spruce_org_id", "", "`ID` for the Spruce support organization")
+	flagListenAddr      = flag.String("listen_addr", "127.0.0.1:8080", "host:port to listen on")
+	flagResourcePath    = flag.String("resource_path", "", "Path to resources (defaults to use GOPATH)")
+	flagAPIDomain       = flag.String("api_domain", "", "API `domain`")
+	flagWebDomain       = flag.String("web_domain", "", "Web `domain`")
+	flagStorageBucket   = flag.String("storage_bucket", "", "storage bucket for media")
+	flagSigKeys         = flag.String("signature_keys_csv", "", "csv signature keys")
+	flagEmailDomain     = flag.String("email_domain", "", "domain to use for email address provisioning")
+	flagServiceNumber   = flag.String("service_phone_number", "", "TODO: This should be managed by the excomms service")
+	flagSpruceOrgID     = flag.String("spruce_org_id", "", "`ID` for the Spruce support organization")
+	flagStaticURLPrefix = flag.String("static_url_prefix", "", "URL prefix of static assets")
 
 	// Services
 	flagAuthAddr                   = flag.String("auth_addr", "", "host:port of auth service")
@@ -68,6 +69,12 @@ func main() {
 
 	if *flagSpruceOrgID == "" {
 		golog.Fatalf("-spruce_org_id flag is required")
+	}
+	if *flagStaticURLPrefix == "" {
+		golog.Fatalf("-static_url_prefix flag required")
+	}
+	if !strings.HasSuffix(*flagStaticURLPrefix, "/") {
+		*flagStaticURLPrefix += "/"
 	}
 
 	if *flagServiceNumber == "" {
@@ -188,7 +195,7 @@ func main() {
 
 	corsOrigins := []string{"https://" + *flagWebDomain}
 
-	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, settingsClient, inviteClient, ms, *flagEmailDomain, *flagWebDomain, pn, *flagSpruceOrgID)
+	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, settingsClient, inviteClient, ms, *flagEmailDomain, *flagWebDomain, pn, *flagSpruceOrgID, *flagStaticURLPrefix)
 	r.Handle("/graphql", httputil.ToContextHandler(cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},

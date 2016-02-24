@@ -224,6 +224,10 @@ USER 65534
 CMD ["/workspace/$SVC"]
 EOF
         docker build --rm=true -t $SVC:$TAG -f build/Dockerfile build
+        STATIC_PREFIX="s3://spruce-static/web/$BUILD_NUMBER"
+        if [[ -e ./resources/img ]]; then
+            s3cmd --recursive -P --no-preserve -M put ./resources/img/* $STATIC_PREFIX/img/
+        fi
     done
 fi
 

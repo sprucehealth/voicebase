@@ -23,13 +23,14 @@ import (
 )
 
 type service struct {
-	notification notification.Client
-	settings     settings.SettingsClient
-	invite       invite.InviteClient
-	mediaSigner  *media.Signer
-	emailDomain  string
-	webDomain    string
-	spruceOrgID  string
+	notification    notification.Client
+	settings        settings.SettingsClient
+	invite          invite.InviteClient
+	mediaSigner     *media.Signer
+	emailDomain     string
+	webDomain       string
+	staticURLPrefix string
+	spruceOrgID     string
 	// TODO: Remove this
 	serviceNumber phone.Number
 }

@@ -116,6 +116,7 @@ var threadType = graphql.NewObject(
 				Type: entityType,
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
+					svc := serviceFromParams(p)
 					th := p.Source.(*models.Thread)
 					if th == nil {
 						return nil, errors.InternalError(ctx, errors.New("thread is nil"))
@@ -133,7 +134,7 @@ var threadType = graphql.NewObject(
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)
 					}
-					ent, err := transformEntityToResponse(pe)
+					ent, err := transformEntityToResponse(svc.staticURLPrefix, pe)
 					if err != nil {
 						return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity: %s", err))
 					}

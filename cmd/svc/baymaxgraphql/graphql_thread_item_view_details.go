@@ -22,6 +22,7 @@ var threadItemViewDetailsType = graphql.NewObject(
 				Type: graphql.NewNonNull(entityType),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
+					svc := serviceFromParams(p)
 					tivd := p.Source.(*models.ThreadItemViewDetails)
 					if tivd == nil {
 						return nil, errors.InternalError(ctx, errors.New("thread item view details is nil"))
@@ -35,7 +36,7 @@ var threadItemViewDetailsType = graphql.NewObject(
 					if err != nil {
 						return nil, err
 					}
-					ent, err := transformEntityToResponse(e)
+					ent, err := transformEntityToResponse(svc.staticURLPrefix, e)
 					if err != nil {
 						return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity: %s", err))
 					}

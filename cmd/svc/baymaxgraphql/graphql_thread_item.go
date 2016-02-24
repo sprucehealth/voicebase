@@ -67,6 +67,7 @@ var messageType = graphql.NewObject(
 				Type: graphql.NewList(graphql.NewNonNull(nodeInterfaceType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					ram := raccess.ResourceAccess(p)
+					svc := serviceFromParams(p)
 					ctx := p.Context
 
 					msg := p.Source.(*models.Message)
@@ -78,7 +79,7 @@ var messageType = graphql.NewObject(
 					for _, r := range msg.Refs {
 						switch r.Type {
 						case models.EntityRef:
-							e, err := lookupEntity(ctx, ram, r.ID)
+							e, err := lookupEntity(ctx, svc, ram, r.ID)
 							if err != nil {
 								return nil, err
 							}
@@ -247,6 +248,7 @@ var threadItemType = graphql.NewObject(
 				Type: graphql.NewNonNull(entityType),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					ctx := p.Context
+					svc := serviceFromParams(p)
 					it := p.Source.(*models.ThreadItem)
 					if it == nil {
 						return nil, errors.InternalError(ctx, errors.New("thread item is nil"))
@@ -262,7 +264,7 @@ var threadItemType = graphql.NewObject(
 					if err != nil {
 						return nil, err
 					}
-					ent, err := transformEntityToResponse(entity)
+					ent, err := transformEntityToResponse(svc.staticURLPrefix, entity)
 					if err != nil {
 						return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity: %s", err))
 					}

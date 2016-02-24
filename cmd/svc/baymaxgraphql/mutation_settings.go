@@ -181,7 +181,7 @@ var modifySettingMutation = &graphql.Field{
 		case "account":
 			node, err = lookupAccount(ctx, ram, nodeID)
 		case "entity":
-			node, err = lookupEntity(ctx, ram, nodeID)
+			node, err = lookupEntity(ctx, svc, ram, nodeID)
 		default:
 			return nil, fmt.Errorf("nodeID type %s not supported", prefix)
 		}

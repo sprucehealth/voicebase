@@ -256,12 +256,12 @@ var provisionEmailMutation = &graphql.Field{
 		var e *models.Entity
 		var o *models.Organization
 		if organizationID != "" {
-			o, err = transformOrganizationToResponse(createContactRes.Entity, ent)
+			o, err = transformOrganizationToResponse(svc.staticURLPrefix, createContactRes.Entity, ent)
 			if err != nil {
 				return nil, errors.InternalError(ctx, err)
 			}
 		} else {
-			e, err = transformEntityToResponse(createContactRes.Entity)
+			e, err = transformEntityToResponse(svc.staticURLPrefix, createContactRes.Entity)
 			if err != nil {
 				return nil, errors.InternalError(ctx, err)
 			}

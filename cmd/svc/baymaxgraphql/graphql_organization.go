@@ -28,6 +28,7 @@ var organizationType = graphql.NewObject(
 					}
 
 					ram := raccess.ResourceAccess(p)
+					svc := serviceFromParams(p)
 					ctx := p.Context
 					acc := gqlctx.Account(ctx)
 					if acc == nil {
@@ -41,7 +42,7 @@ var organizationType = graphql.NewObject(
 					if e == nil {
 						return nil, errors.New("entity not found for organization")
 					}
-					rE, err := transformEntityToResponse(e)
+					rE, err := transformEntityToResponse(svc.staticURLPrefix, e)
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)
 					}
@@ -57,6 +58,7 @@ var organizationType = graphql.NewObject(
 						return nil, errors.New("no entity for organization")
 					}
 					ram := raccess.ResourceAccess(p)
+					svc := serviceFromParams(p)
 					ctx := p.Context
 
 					orgEntity, err := ram.Entity(ctx, org.ID, []directory.EntityInformation{
@@ -71,7 +73,7 @@ var organizationType = graphql.NewObject(
 					entities := make([]*models.Entity, 0, len(orgEntity.Members))
 					for _, em := range orgEntity.Members {
 						if em.Type == directory.EntityType_INTERNAL {
-							ent, err := transformEntityToResponse(em)
+							ent, err := transformEntityToResponse(svc.staticURLPrefix, em)
 							if err != nil {
 								return nil, errors.InternalError(ctx, err)
 							}

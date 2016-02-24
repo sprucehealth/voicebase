@@ -91,19 +91,21 @@ func NewGraphQL(
 	webDomain string,
 	serviceNumber phone.Number,
 	spruceOrgID string,
+	staticURLPrefix string,
 ) httputil.ContextHandler {
 	return &graphQLHandler{
 		auth: authClient,
 		ram:  raccess.New(authClient, directoryClient, threadingClient, exComms),
 		service: &service{
-			notification:  notificationClient,
-			mediaSigner:   mediaSigner,
-			emailDomain:   emailDomain,
-			webDomain:     webDomain,
-			serviceNumber: serviceNumber,
-			settings:      settings,
-			invite:        invite,
-			spruceOrgID:   spruceOrgID,
+			notification:    notificationClient,
+			mediaSigner:     mediaSigner,
+			emailDomain:     emailDomain,
+			webDomain:       webDomain,
+			serviceNumber:   serviceNumber,
+			settings:        settings,
+			invite:          invite,
+			spruceOrgID:     spruceOrgID,
+			staticURLPrefix: staticURLPrefix,
 		},
 	}
 }

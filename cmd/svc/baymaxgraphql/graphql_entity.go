@@ -97,9 +97,8 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 				if err != nil {
 					if errors.Type(err) == errors.ErrTypeNotFound {
 						return nil, nil
-					} else {
-						return nil, errors.InternalError(ctx, err)
 					}
+					return nil, errors.InternalError(ctx, err)
 				}
 
 				return sc, nil
@@ -117,7 +116,7 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
-func lookupEntity(ctx context.Context, ram raccess.ResourceAccessor, entityID string) (interface{}, error) {
+func lookupEntity(ctx context.Context, svc *service, ram raccess.ResourceAccessor, entityID string) (interface{}, error) {
 	em, err := ram.Entity(ctx, entityID, []directory.EntityInformation{directory.EntityInformation_CONTACTS}, 0)
 	if err != nil {
 		return nil, err
@@ -141,7 +140,7 @@ func lookupEntity(ctx context.Context, ram raccess.ResourceAccessor, entityID st
 				return nil, errors.InternalError(ctx, err)
 			}
 			if e != nil {
-				org.Entity, err = transformEntityToResponse(e)
+				org.Entity, err = transformEntityToResponse(svc.staticURLPrefix, e)
 				if err != nil {
 					return nil, errors.InternalError(ctx, err)
 				}
@@ -149,7 +148,7 @@ func lookupEntity(ctx context.Context, ram raccess.ResourceAccessor, entityID st
 		}
 		return org, nil
 	case directory.EntityType_INTERNAL, directory.EntityType_EXTERNAL, directory.EntityType_SYSTEM:
-		e, err := transformEntityToResponse(em)
+		e, err := transformEntityToResponse(svc.staticURLPrefix, em)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
