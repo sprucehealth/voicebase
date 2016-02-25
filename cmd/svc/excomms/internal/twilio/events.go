@@ -330,6 +330,10 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 		return "", errors.Trace(err)
 	}
 
+	golog.Debugf("Forwarding list %s", forwardingList)
+	golog.Debugf("Providers in forwarding list %s", providersInForwardingList)
+	golog.Debugf("PhoneNumberToProviderMap %s", phoneNumberToProviderMap)
+
 	numbers := make([]interface{}, 0, maxPhoneNumbers)
 	for _, p := range forwardingList {
 		parsedPn, err := phone.Format(p, phone.E164)
