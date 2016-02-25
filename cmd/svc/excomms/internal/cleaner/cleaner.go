@@ -68,9 +68,9 @@ func (w *Worker) processEvent(drr *models.DeleteResourceRequest) error {
 			return err
 		}
 		switch call.Status {
-		case "busy", "completed", "failed", "canceled":
+		case "busy", "completed", "failed", "canceled", "no-answer":
 		default:
-			golog.Warningf("Waiting for call %s to reach a completed state before deleting.", call.SID)
+			golog.Warningf("Waiting for call %s to reach a completed state before deleting. Current status: %s", drr.ResourceID, call.Status)
 			return awsutil.ErrMsgNotProcessedYet
 		}
 		_, err = w.twilio.Calls.Delete(drr.ResourceID)
