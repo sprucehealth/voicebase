@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"io"
 	"net/http"
+	stdhttputil "net/http/httputil"
+	"net/url"
 
 	resources "github.com/cookieo9/resources-go"
 	"github.com/samuel/go-librato/librato"
@@ -118,6 +120,7 @@ type Config struct {
 	EventsClient        events.Client
 	Cfg                 cfg.Store
 	BranchClient        branch.Client
+	ProxiedSiteURL      string
 }
 
 // New returns the root handler for the www web app
@@ -208,6 +211,13 @@ func New(c *Config) httputil.ContextHandler {
 		Cfg:             c.Cfg,
 		AnalyticsLogger: c.AnalyticsLogger,
 	})
+
+	proxyURL, err := url.Parse(c.ProxiedSiteURL)
+	if err != nil {
+		golog.Fatalf(err.Error())
+	}
+	rp := stdhttputil.NewSingleHostReverseProxy(proxyURL)
+	router.NotFoundHandler = httputil.ToContextHandler(rp)
 
 	secureRedirectHandler := httputil.ContextHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		if !environment.IsTest() && r.Header.Get("X-Forwarded-Proto") != "https" {

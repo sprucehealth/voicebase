@@ -49,6 +49,7 @@ func buildWWW(
 	metricsRegistry metrics.Registry,
 	cfgStore cfg.Store,
 	memcacheClient *memcache.Client,
+	proxiedSiteURL string,
 ) httputil.ContextHandler {
 	stripeCli := &stripe.Client{
 		SecretKey:      conf.Stripe.SecretKey,
@@ -112,5 +113,6 @@ func buildWWW(
 		EventsClient:        eventsClient,
 		Cfg:                 cfgStore,
 		BranchClient:        branchClient,
+		ProxiedSiteURL:      proxiedSiteURL,
 	}), cfgStore)
 }

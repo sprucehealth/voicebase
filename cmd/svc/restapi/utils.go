@@ -175,6 +175,7 @@ type mainConfig struct {
 	ExperimentID                 map[string]string                `description:"Google Analytics Experiment IDs"`
 	CompressResponse             bool                             `description:"Compress the HTTP response"`
 	LaunchPromo                  *launchPromoConfig               `group:"LaunchPromo" toml:"launch_promo" description:"Config to run launch promo"`
+	ProxiedSiteURL               string
 	Memcached                    map[string]*memcachedClusterConfig
 	RateLimiters                 map[string]*rateLimiterConfig
 	BranchKey                    string
@@ -229,6 +230,9 @@ func (c *mainConfig) Validate() {
 	}
 	if len(c.SecretSignatureKeys) == 0 {
 		errors = append(errors, "No secret signature keys")
+	}
+	if c.ProxiedSiteURL == "" {
+		errors = append(errors, "No ProxySiteURL provided")
 	}
 
 	if !c.Debug {
