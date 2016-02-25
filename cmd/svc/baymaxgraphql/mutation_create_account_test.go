@@ -102,8 +102,8 @@ func TestCreateAccountMutation(t *testing.T) {
 	// Create linked support threads
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntity, &directory.CreateEntityRequest{
 		EntityInfo: &directory.EntityInfo{
-			DisplayName: "Team Spruce",
-			GroupName:   "Team Spruce",
+			DisplayName: supportThreadTitle,
+			GroupName:   supportThreadTitle,
 		},
 		Type: directory.EntityType_SYSTEM,
 		InitialMembershipEntityID: "e_org",
@@ -125,15 +125,15 @@ func TestCreateAccountMutation(t *testing.T) {
 		Organization2ID:  "spruce_org",
 		PrimaryEntity1ID: "e_sys_1",
 		PrimaryEntity2ID: "e_sys_2",
-		Summary:          "Team Spruce: " + teamSpruceInitialText[:128],
+		Summary:          supportThreadTitle + ": " + teamSpruceInitialText[:128],
 		Text:             teamSpruceInitialText,
 	}).WithReturns(&threading.CreateLinkedThreadsResponse{}, nil))
 
 	// Create onboarding thread
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntity, &directory.CreateEntityRequest{
 		EntityInfo: &directory.EntityInfo{
-			DisplayName: "Spruce Assistant",
-			GroupName:   "Spruce Assistant",
+			DisplayName: onboardingThreadTitle,
+			GroupName:   onboardingThreadTitle,
 		},
 		Type: directory.EntityType_SYSTEM,
 		InitialMembershipEntityID: "e_org",

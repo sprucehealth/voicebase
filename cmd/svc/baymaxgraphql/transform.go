@@ -251,7 +251,7 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity) (*mo
 	switch e.Type {
 	case directory.EntityType_SYSTEM:
 		// TODO: it is brittle to use the name for checking the difference, but right now there's no other way to know
-		if ent.DisplayName == "Team Spruce" {
+		if ent.DisplayName == supportThreadTitle {
 			ent.Avatar = &models.Image{
 				URL:    staticURLPrefix + "img/avatar/icon_profile_teamspruce@3x.png",
 				Width:  60,

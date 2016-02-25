@@ -21,9 +21,13 @@ import (
 	"google.golang.org/grpc"
 )
 
-const teamSpruceInitialText = `This is your personal support conversation with Spruce Health.
+const (
+	supportThreadTitle    = "Spruce Support"
+	onboardingThreadTitle = "Setup"
+	teamSpruceInitialText = `This is your personal support conversation with Spruce Health.
 
 If you're unsure about anything or need some help, send us a message here and a member of the Spruce Health team will respond.`
+)
 
 type createAccountOutput struct {
 	ClientMutationID    string          `json:"clientMutationId,omitempty"`
@@ -328,8 +332,8 @@ var createAccountMutation = &graphql.Field{
 					var err error
 					tsEnt1, err = ram.CreateEntity(ctx, &directory.CreateEntityRequest{
 						EntityInfo: &directory.EntityInfo{
-							GroupName:   "Team Spruce",
-							DisplayName: "Team Spruce",
+							GroupName:   supportThreadTitle,
+							DisplayName: supportThreadTitle,
 						},
 						Type: directory.EntityType_SYSTEM,
 						InitialMembershipEntityID: orgEntityID,
@@ -357,7 +361,7 @@ var createAccountMutation = &graphql.Field{
 					Organization2ID:  svc.spruceOrgID,
 					PrimaryEntity1ID: tsEnt1.ID,
 					PrimaryEntity2ID: tsEnt2.ID,
-					Summary:          "Team Spruce: " + teamSpruceInitialText[:128],
+					Summary:          supportThreadTitle + ": " + teamSpruceInitialText[:128],
 					Text:             teamSpruceInitialText,
 				})
 				if err != nil {
@@ -369,8 +373,8 @@ var createAccountMutation = &graphql.Field{
 				// Create an onboarding thread and related system entity
 				onbEnt, err := ram.CreateEntity(ctx, &directory.CreateEntityRequest{
 					EntityInfo: &directory.EntityInfo{
-						GroupName:   "Spruce Assistant",
-						DisplayName: "Spruce Assistant",
+						GroupName:   onboardingThreadTitle,
+						DisplayName: onboardingThreadTitle,
 					},
 					Type: directory.EntityType_SYSTEM,
 					InitialMembershipEntityID: orgEntityID,
