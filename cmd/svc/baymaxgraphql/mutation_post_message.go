@@ -184,8 +184,7 @@ var postMessageMutation = &graphql.Field{
 			Summary: summary,
 		}
 
-		if primaryEntity == nil || primaryEntity.Type != directory.EntityType_EXTERNAL {
-			// Internal messages only make sense on external threads
+		if primaryEntity == nil || primaryEntity.Type == directory.EntityType_ORGANIZATION {
 			req.Internal = false
 		}
 
