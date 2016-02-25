@@ -254,14 +254,14 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity) (*mo
 		if ent.DisplayName == supportThreadTitle {
 			ent.Avatar = &models.Image{
 				URL:    staticURLPrefix + "img/avatar/icon_profile_teamspruce@3x.png",
-				Width:  60,
-				Height: 60,
+				Width:  108,
+				Height: 108,
 			}
 		} else {
 			ent.Avatar = &models.Image{
 				URL:    staticURLPrefix + "img/avatar/icon_profile_spruceassist@3x.png",
-				Width:  60,
-				Height: 60,
+				Width:  108,
+				Height: 108,
 			}
 		}
 	case directory.EntityType_EXTERNAL:
@@ -274,20 +274,20 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity) (*mo
 				case directory.ContactType_PHONE:
 					ent.Avatar = &models.Image{
 						URL:    staticURLPrefix + "img/avatar/icon_profile_phone@3x.png",
-						Width:  60,
-						Height: 60,
+						Width:  108,
+						Height: 108,
 					}
 				case directory.ContactType_EMAIL:
 					ent.Avatar = &models.Image{
 						URL:    staticURLPrefix + "img/avatar/icon_profile_email@3x.png",
-						Width:  60,
-						Height: 60,
+						Width:  108,
+						Height: 108,
 					}
 				default:
 					ent.Avatar = &models.Image{
 						URL:    staticURLPrefix + "img/avatar/icon_profile_user@3x.png",
-						Width:  60,
-						Height: 60,
+						Width:  108,
+						Height: 108,
 					}
 				}
 				break
