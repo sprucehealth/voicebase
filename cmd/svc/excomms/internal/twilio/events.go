@@ -256,6 +256,12 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 			}
 
 			for _, m := range entity.Members {
+
+				// only consider internal members
+				if m.Type != directory.EntityType_INTERNAL {
+					continue
+				}
+
 				for _, c := range m.Contacts {
 					if c.Value == parsedPn {
 						providersInForwardingList[m.ID] = true
