@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/libs/crypt"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/ptr"
 )
 
@@ -31,6 +32,9 @@ func NewEncryptedSNS(masterKeyARN string, kms kmsiface.KMSAPI, sns snsiface.SNSA
 }
 
 func (e *encryptedSNS) Publish(in *sns.PublishInput) (*sns.PublishOutput, error) {
+	if in.MessageStructure != nil {
+		return nil, errors.Trace(errors.New("encrypted SNS can only publish messages without structure"))
+	}
 	eMessage, err := e.encryptor.Encrypt([]byte(*in.Message))
 	if err != nil {
 		return nil, err

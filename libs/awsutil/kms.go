@@ -27,12 +27,9 @@ type kmsEncryptionWrapper struct {
 type kmsEncrypter struct {
 	// The aead used to encrypt data
 	aead cipher.AEAD
-	// The unique identifier that maps to the encryption key backing the cipher
+	// The ID of the master key
 	keyID string
 	// The encryption key encrypted with the remote master key
-	// The purpose of this key is to attach it alongside the encrypted data
-	// The receiver utilizes the keyID to decrypt the cipher key which can in turn
-	//   be used to decrypt the wrapped data
 	cipherKey []byte
 
 	kmsC kmsiface.KMSAPI
@@ -55,16 +52,16 @@ func NewKMSEncrypter(masterKeyARN string, kmsC kmsiface.KMSAPI) (crypt.Encrypter
 	}
 	cipherBlock, err := aes.NewCipher(resp.Plaintext)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	aead, err := cipher.NewGCM(cipherBlock)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	return &kmsEncrypter{
 		aead:      aead,
-		keyID:     *resp.KeyId,
 		cipherKey: resp.CiphertextBlob,
+		keyID:     *resp.KeyId,
 		kmsC:      kmsC,
 	}, nil
 }
@@ -74,11 +71,11 @@ func NewKMSEncrypter(masterKeyARN string, kmsC kmsiface.KMSAPI) (crypt.Encrypter
 func (k *kmsEncrypter) Encrypt(d []byte) ([]byte, error) {
 	ed, nonce, err := k.encrypt(d)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	wd, err := k.wrap(ed, nonce)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	return wd, nil
@@ -93,7 +90,7 @@ func (k *kmsEncrypter) wrap(d, nonce []byte) ([]byte, error) {
 		Data:       d,
 	})
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	return wd, nil
 }
@@ -101,7 +98,7 @@ func (k *kmsEncrypter) wrap(d, nonce []byte) ([]byte, error) {
 func (k *kmsEncrypter) encrypt(d []byte) ([]byte, []byte, error) {
 	nonce := make([]byte, k.aead.NonceSize())
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Trace(err)
 	}
 	cipherText := make([]byte, 0, k.aead.Overhead()+len(d))
 	return k.aead.Seal(cipherText, nonce, d, nil), nonce, nil
@@ -129,15 +126,15 @@ func NewKMSDecrypter(masterKeyARN string, kmsC kmsiface.KMSAPI) crypt.Decrypter 
 func (k *kmsDecrypter) Decrypt(d []byte) ([]byte, error) {
 	wd, err := k.unwrap(d)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
-	key, err := k.key(wd.KeyID, wd.CipherKey)
+	key, err := k.key(wd.CipherKey)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	dd, err := k.decrypt(key, wd.Data, wd.Nonce)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	return dd, nil
 }
@@ -145,14 +142,17 @@ func (k *kmsDecrypter) Decrypt(d []byte) ([]byte, error) {
 func (k *kmsDecrypter) unwrap(d []byte) (*kmsEncryptionWrapper, error) {
 	w := &kmsEncryptionWrapper{}
 	if err := json.Unmarshal(d, w); err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	return w, nil
 }
 
-func (k *kmsDecrypter) key(keyID string, cipherKey []byte) ([]byte, error) {
+func (k *kmsDecrypter) key(cipherKey []byte) ([]byte, error) {
+	// This won't be valid UTF8 but that's fine since we're treating it as opaque
+	cacheKey := string(cipherKey)
+
 	k.cacheMutex.RLock()
-	key, ok := k.keyCache[keyID]
+	key, ok := k.keyCache[cacheKey]
 	k.cacheMutex.RUnlock()
 
 	// If we don't have the key caches, use KMS to decrypt the cipher key
@@ -161,11 +161,11 @@ func (k *kmsDecrypter) key(keyID string, cipherKey []byte) ([]byte, error) {
 			CiphertextBlob: cipherKey,
 		})
 		if err != nil {
-			return nil, err
+			return nil, errors.Trace(err)
 		}
 		k.cacheMutex.Lock()
 		defer k.cacheMutex.Unlock()
-		k.keyCache[*resp.KeyId] = resp.Plaintext
+		k.keyCache[cacheKey] = resp.Plaintext
 		key = resp.Plaintext
 	}
 	return key, nil
@@ -175,11 +175,11 @@ func (k *kmsDecrypter) key(keyID string, cipherKey []byte) ([]byte, error) {
 func (k *kmsDecrypter) decrypt(key, d, nonce []byte) ([]byte, error) {
 	cipherBlock, err := aes.NewCipher(key)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	aead, err := cipher.NewGCM(cipherBlock)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	return aead.Open(nil, nonce, d, nil)
 }

@@ -3,7 +3,6 @@ package awsutil
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sync/atomic"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/libs/crypt"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
 )
@@ -141,7 +141,7 @@ func NewEncryptedSQS(masterKeyARN string, kms kmsiface.KMSAPI, sqs sqsiface.SQSA
 func (e *encryptedSQS) SendMessage(in *sqs.SendMessageInput) (*sqs.SendMessageOutput, error) {
 	eBody, err := e.encrypter.Encrypt([]byte(*in.MessageBody))
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	in.MessageBody = ptr.String(base64.StdEncoding.EncodeToString(eBody))
 	return e.SQSAPI.SendMessage(in)
@@ -154,42 +154,42 @@ func (e *encryptedSQS) SendMessageBatch(in *sqs.SendMessageBatchInput) (*sqs.Sen
 func (e *encryptedSQS) ReceiveMessage(in *sqs.ReceiveMessageInput) (*sqs.ReceiveMessageOutput, error) {
 	resp, err := e.SQSAPI.ReceiveMessage(in)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 	for i, m := range resp.Messages {
 		// If our message was produced byt the encrypted sns publisher, we need to do some wrangling to get it back
 		// Hack: Attempt to detect non blob payloads by looking for json encoding
-		if (*m.Body)[0] == '{' {
+		if *m.Body != "" && (*m.Body)[0] == '{' {
 			snsMessage := &SNSSQSMessage{}
 			if err := json.Unmarshal([]byte(*m.Body), snsMessage); err != nil {
-				return nil, err
+				return nil, errors.Trace(err)
 			}
 			eMessage, err := base64.StdEncoding.DecodeString(snsMessage.Message)
 			if err != nil {
-				return nil, err
+				return nil, errors.Trace(err)
 			}
 			dMessage, err := e.decrypter.Decrypt(eMessage)
 			if err != nil {
-				return nil, err
+				return nil, errors.Trace(err)
 			}
 			snsMessage.Message = string(dMessage)
 			bMessage, err := json.Marshal(snsMessage)
 			if err != nil {
-				return nil, err
+				return nil, errors.Trace(err)
 			}
 			resp.Messages[i].Body = ptr.String(string(bMessage))
 		} else {
 			// If it is just a normal sqs message then we can just decode and decrypt
 			sBody, err := base64.StdEncoding.DecodeString(*m.Body)
 			if err != nil {
-				return nil, err
+				return nil, errors.Trace(err)
 			}
 			dBody, err := e.decrypter.Decrypt([]byte(sBody))
 			if err != nil {
-				return nil, err
+				return nil, errors.Trace(err)
 			}
 			resp.Messages[i].Body = ptr.String(string(dBody))
 		}
 	}
-	return resp, err
+	return resp, nil
 }
