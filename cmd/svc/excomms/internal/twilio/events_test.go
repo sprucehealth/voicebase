@@ -309,7 +309,8 @@ func TestIncoming_Organization_SingleProvider_DirectAllCallsToVoicemail(t *testi
 				},
 				Members: []*directory.Entity{
 					{
-						ID: providerID,
+						ID:   providerID,
+						Type: directory.EntityType_INTERNAL,
 						Contacts: []*directory.Contact{
 							{
 								ContactType: directory.ContactType_PHONE,
@@ -505,7 +506,8 @@ func TestIncoming_Organization_MultipleContacts_SendToVoicemail(t *testing.T) {
 				},
 				Members: []*directory.Entity{
 					{
-						ID: providerID1,
+						ID:   providerID1,
+						Type: directory.EntityType_INTERNAL,
 						Contacts: []*directory.Contact{
 							{
 								ContactType: directory.ContactType_PHONE,
