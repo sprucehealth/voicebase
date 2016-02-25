@@ -156,6 +156,8 @@ func SetupRoutes(r *mux.Router, config *Config) {
 	r.Handle("/api/parental-consent/image", apiAuthFilter(newParentalConsentImageAPIHAndler(config.DataAPI, config.Dispatcher, config.MediaStore)))
 	r.Handle("/api/practices/whitepaper-request", newPracticeExtensionWhitepaperAPIHandler(config.Cfg))
 	r.Handle("/api/practices/demo-request", newPracticeExtensionDemoAPIHandler(config.Cfg))
+	r.Handle("/api/caremessenger/whitepaper-request", newCareMessengerWhitePaperRequestAPIHandler(config.Cfg))
+	r.Handle("/api/caremessenger/beta-request", newCareMessengerBetaRequestAPIHandler(config.Cfg))
 
 	// Analytics
 	ah := newAnalyticsHandler(config.AnalyticsLogger, config.MetricsRegistry.Scope("analytics"))

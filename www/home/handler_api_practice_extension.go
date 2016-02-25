@@ -1,11 +1,8 @@
 package home
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -87,38 +84,6 @@ func (d *whitepaperPOSTRequest) Validate() error {
 	if d.Email == "" {
 		return errors.New("Please enter your email address.")
 	}
-	return nil
-}
-
-func postToSlack(username string, message string, url string) (err error) {
-	if url == "" {
-		return errors.New("url must not be blank when posting to Slack")
-	}
-	data, err := json.Marshal(&struct {
-		Text      string `json:"text"`
-		Username  string `json:"username"`
-		IconEmoji string `json:"icon_emoji"`
-	}{
-		Text:      message,
-		Username:  username,
-		IconEmoji: ":orly:",
-	})
-	if err != nil {
-		return err
-	}
-	res, err := http.Post(url, "text/json", bytes.NewReader(data))
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-	if res.StatusCode >= 300 {
-		b, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			b = nil
-		}
-		return fmt.Errorf("Bad status code %d from Slack: %s", res.StatusCode, string(b))
-	}
-
 	return nil
 }
 
