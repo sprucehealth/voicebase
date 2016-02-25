@@ -20,6 +20,7 @@ var twilioEventMapper = map[string]rawmsg.TwilioEvent{
 	"provider_call_connected":      rawmsg.TwilioEvent_PROVIDER_CALL_CONNECTED,
 	"provider_entered_digits":      rawmsg.TwilioEvent_PROVIDER_ENTERED_DIGITS,
 	"twiml_voicemail":              rawmsg.TwilioEvent_TWIML_REQUESTED_VOICEMAIL,
+	"process_sms_status":           rawmsg.TwilioEvent_PROCESS_SMS_STATUS,
 }
 
 type twilioRequestHandler struct {

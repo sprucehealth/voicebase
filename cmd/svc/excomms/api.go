@@ -88,7 +88,7 @@ func runAPI() {
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.Handle("/twilio/sms", handlers.NewTwilioSMSHandler(dl, config.incomingRawMessageTopic, eSNS))
-	router.Handle("/twilio/sms/status", handlers.NewTwilioRequestHandler(eh))
+	router.Handle("/twilio/sms/status", handlers.NewTwilioSMSStatusHandler(eh))
 	router.Handle("/twilio/call/{event}", handlers.NewTwilioRequestHandler(eh))
 	router.Handle("/sendgrid/email", handlers.NewSendGridHandler(config.incomingRawMessageTopic, eSNS, dl, store))
 
