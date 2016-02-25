@@ -356,7 +356,7 @@ func TestPostMessage_Linked(t *testing.T) {
 		FromEntityID: "e3",
 		Title:        "title",
 		Text:         "text",
-		Summary:      "summary",
+		Summary:      "Setup: text",
 	}).WithReturns(&models.ThreadItem{
 		ID:            ti2id,
 		ThreadID:      th2id,
@@ -368,7 +368,7 @@ func TestPostMessage_Linked(t *testing.T) {
 			Title:   "title",
 			Text:    "text",
 			Status:  models.Message_NORMAL,
-			Summary: "summary",
+			Summary: "Setup: text",
 		},
 	}, nil))
 

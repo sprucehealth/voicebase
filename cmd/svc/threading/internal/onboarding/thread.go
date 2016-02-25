@@ -3,11 +3,9 @@ package onboarding
 import (
 	"fmt"
 
-	"github.com/sprucehealth/backend/libs/bml"
-	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
-	"github.com/sprucehealth/backend/libs/textutil"
 )
 
 func Message(step int, skip bool, webDomain, orgID string, args map[string]string) (string, string, error) {
@@ -57,25 +55,8 @@ To send internal messages or notes in a patient thread, simply tap the lock icon
 		msg = `That’s all for now. You’re well on your way to greater control in your communication with your patients. You can keep trying out other Spruce patient features in this conversation, and if you’re unsure about anything or need some help, message us on the Team Spruce conversation thread and a real human will respond.`
 	}
 	if msg != "" {
-		summary, err := summaryFromText("Spruce Assistant: " + msg)
+		summary, err := models.SummaryFromText("Setup: " + msg)
 		return msg, summary, err
 	}
 	return "", "", fmt.Errorf("no available onboarding message for step %d", step)
-}
-
-func summaryFromText(text string) (string, error) {
-	textBML, err := bml.Parse(text)
-	if err != nil {
-		return "", errors.Trace(err)
-	}
-	plainText, err := textBML.PlainText()
-	if err != nil {
-		// Shouldn't fail here since the parsing should have done validation
-		return "", errors.Trace(err)
-	}
-	pt := textutil.TruncateUTF8(plainText, 1000)
-	if pt != plainText {
-		pt += "…"
-	}
-	return pt, nil
 }

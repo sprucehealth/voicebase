@@ -562,13 +562,18 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 
 		// Also post in linked thread if there is one
 		if linkedThread != nil && !in.Internal {
+			// TODO: should use primary entity name here
+			summary, err := models.SummaryFromText("Setup: " + in.Text)
+			if err != nil {
+				return errors.Trace(err)
+			}
 			req := &dal.PostMessageRequest{
 				ThreadID:     linkedThread.ID,
 				FromEntityID: linkedThread.PrimaryEntityID,
 				Text:         in.Text,
 				Title:        in.Title,
 				TextRefs:     textRefs,
-				Summary:      in.Summary,
+				Summary:      summary,
 				Attachments:  attachments,
 			}
 			if in.Source != nil {

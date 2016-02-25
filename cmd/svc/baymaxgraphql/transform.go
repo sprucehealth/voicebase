@@ -23,7 +23,7 @@ func transformAccountToResponse(a *auth.Account) (*models.Account, error) {
 
 func threadTitleForEntity(e *directory.Entity) string {
 	if e.Type == directory.EntityType_ORGANIZATION {
-		return fmt.Sprintf("Team (%s)", e.Info.DisplayName)
+		return fmt.Sprintf("Team %s", e.Info.DisplayName)
 	}
 	if e.Info.DisplayName != "" {
 		return e.Info.DisplayName
