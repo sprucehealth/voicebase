@@ -112,8 +112,8 @@ func TestCreateAccountMutation(t *testing.T) {
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntity, &directory.CreateEntityRequest{
 		EntityInfo: &directory.EntityInfo{
-			DisplayName: "Team Spruce (org)",
-			GroupName:   "Team Spruce (org)",
+			DisplayName: supportThreadTitle + " (org)",
+			GroupName:   supportThreadTitle + " (org)",
 		},
 		Type: directory.EntityType_SYSTEM,
 		InitialMembershipEntityID: "spruce_org",

@@ -307,55 +307,52 @@ var createAccountMutation = &graphql.Field{
 			// and because a hard fail leaves the account around but makes it look like it failed it's best just to
 			// log and continue. Once the account creation is idempotent then can have this be a hard fail.
 
+			// These are created synchronously to enforce strict ordering
+
+			// Create a default internal team thread
+			_, err := ram.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
+				OrganizationID: orgEntityID,
+				Source: &threading.Endpoint{
+					Channel: threading.Endpoint_APP,
+					ID:      orgEntityID,
+				},
+				PrimaryEntityID: orgEntityID,
+				Summary:         "No messages yet",
+			})
+			if err != nil {
+				golog.Errorf("Failed to create initial private thread for org %s: %s", orgEntityID, err)
+			}
+
+			// Create a support thread (linked to Spruce support org) and the primary entities for them
+			var tsEnt1, tsEnt2 *directory.Entity
 			par := conc.NewParallel()
 			par.Go(func() error {
-				// Create a default internal team thread
-				_, err := ram.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
-					OrganizationID: orgEntityID,
-					Source: &threading.Endpoint{
-						Channel: threading.Endpoint_APP,
-						ID:      orgEntityID,
+				var err error
+				tsEnt1, err = ram.CreateEntity(ctx, &directory.CreateEntityRequest{
+					EntityInfo: &directory.EntityInfo{
+						GroupName:   supportThreadTitle,
+						DisplayName: supportThreadTitle,
 					},
-					PrimaryEntityID: orgEntityID,
-					Summary:         "No messages yet",
+					Type: directory.EntityType_SYSTEM,
+					InitialMembershipEntityID: orgEntityID,
 				})
-				if err != nil {
-					golog.Errorf("Failed to create initial private thread for org %s: %s", orgEntityID, err)
-				}
-				return nil
+				return err
 			})
 			par.Go(func() error {
-				// Create a support thread (linked to Spruce support org) and the primary entities for them
-				var tsEnt1, tsEnt2 *directory.Entity
-				par := conc.NewParallel()
-				par.Go(func() error {
-					var err error
-					tsEnt1, err = ram.CreateEntity(ctx, &directory.CreateEntityRequest{
-						EntityInfo: &directory.EntityInfo{
-							GroupName:   supportThreadTitle,
-							DisplayName: supportThreadTitle,
-						},
-						Type: directory.EntityType_SYSTEM,
-						InitialMembershipEntityID: orgEntityID,
-					})
-					return err
+				var err error
+				tsEnt2, err = ram.CreateEntity(ctx, &directory.CreateEntityRequest{
+					EntityInfo: &directory.EntityInfo{
+						GroupName:   fmt.Sprintf(supportThreadTitle+" (%s)", organizationName),
+						DisplayName: fmt.Sprintf(supportThreadTitle+" (%s)", organizationName),
+					},
+					Type: directory.EntityType_SYSTEM,
+					InitialMembershipEntityID: svc.spruceOrgID,
 				})
-				par.Go(func() error {
-					var err error
-					tsEnt2, err = ram.CreateEntity(ctx, &directory.CreateEntityRequest{
-						EntityInfo: &directory.EntityInfo{
-							GroupName:   fmt.Sprintf("Team Spruce (%s)", organizationName),
-							DisplayName: fmt.Sprintf("Team Spruce (%s)", organizationName),
-						},
-						Type: directory.EntityType_SYSTEM,
-						InitialMembershipEntityID: svc.spruceOrgID,
-					})
-					return err
-				})
-				if err := par.Wait(); err != nil {
-					golog.Errorf("Failed to create entity for support thread for org %s: %s", orgEntityID, err)
-					return nil
-				}
+				return err
+			})
+			if err := par.Wait(); err != nil {
+				golog.Errorf("Failed to create entity for support thread for org %s: %s", orgEntityID, err)
+			} else {
 				_, err = ram.CreateLinkedThreads(ctx, &threading.CreateLinkedThreadsRequest{
 					Organization1ID:  orgEntityID,
 					Organization2ID:  svc.spruceOrgID,
@@ -367,22 +364,20 @@ var createAccountMutation = &graphql.Field{
 				if err != nil {
 					golog.Errorf("Failed to create linked support threads for org %s: %s", orgEntityID, err)
 				}
-				return nil
+			}
+
+			// Create an onboarding thread and related system entity
+			onbEnt, err := ram.CreateEntity(ctx, &directory.CreateEntityRequest{
+				EntityInfo: &directory.EntityInfo{
+					GroupName:   onboardingThreadTitle,
+					DisplayName: onboardingThreadTitle,
+				},
+				Type: directory.EntityType_SYSTEM,
+				InitialMembershipEntityID: orgEntityID,
 			})
-			par.Go(func() error {
-				// Create an onboarding thread and related system entity
-				onbEnt, err := ram.CreateEntity(ctx, &directory.CreateEntityRequest{
-					EntityInfo: &directory.EntityInfo{
-						GroupName:   onboardingThreadTitle,
-						DisplayName: onboardingThreadTitle,
-					},
-					Type: directory.EntityType_SYSTEM,
-					InitialMembershipEntityID: orgEntityID,
-				})
-				if err != nil {
-					golog.Errorf("Failed to create entity for onboarding thread for org %s: %s", orgEntityID, err)
-					return nil
-				}
+			if err != nil {
+				golog.Errorf("Failed to create entity for onboarding thread for org %s: %s", orgEntityID, err)
+			} else {
 				_, err = ram.CreateOnboardingThread(ctx, &threading.CreateOnboardingThreadRequest{
 					OrganizationID:  orgEntityID,
 					PrimaryEntityID: onbEnt.ID,
@@ -390,10 +385,6 @@ var createAccountMutation = &graphql.Field{
 				if err != nil {
 					golog.Errorf("Failed to create onboarding thread for org %s: %s", orgEntityID, err)
 				}
-				return nil
-			})
-			if err := par.Wait(); err != nil {
-				golog.Errorf(err.Error())
 			}
 		}
 

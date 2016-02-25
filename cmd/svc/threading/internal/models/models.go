@@ -4,9 +4,11 @@ import (
 	"sort"
 	"time"
 
+	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/idgen"
 	"github.com/sprucehealth/backend/libs/model"
+	"github.com/sprucehealth/backend/libs/textutil"
 	"github.com/sprucehealth/backend/svc/threading"
 )
 
@@ -211,4 +213,22 @@ type SavedQuery struct {
 type OnboardingState struct {
 	ThreadID ThreadID
 	Step     int
+}
+
+// SummaryFromText returns a summary appropriate plaintext given BML markup.
+func SummaryFromText(textMarkup string) (string, error) {
+	textBML, err := bml.Parse(textMarkup)
+	if err != nil {
+		return "", errors.Trace(err)
+	}
+	plainText, err := textBML.PlainText()
+	if err != nil {
+		// Shouldn't fail here since the parsing should have done validation
+		return "", errors.Trace(err)
+	}
+	pt := textutil.TruncateUTF8(plainText, 1000)
+	if pt != plainText {
+		pt += "…"
+	}
+	return pt, nil
 }
