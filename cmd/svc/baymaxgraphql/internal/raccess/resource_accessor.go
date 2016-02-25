@@ -373,11 +373,16 @@ func (m *resourceAccessor) EntitiesByContact(ctx context.Context, contactValue s
 }
 
 func (m *resourceAccessor) EntitiesForExternalID(ctx context.Context, externalID string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) ([]*directory.Entity, error) {
-	if err := m.canAccessResource(ctx, externalID, m.orgsForEntityForExternalID); err != nil {
-		return nil, err
+	// TODO: externalID at the moment at least is always an account. this should change if that ever changes
+	acc := gqlctx.Account(ctx)
+	if acc == nil || acc.ID != externalID {
+		return nil, errors.ErrNotAuthenticated(ctx)
 	}
 	res, err := m.entitiesForExternalID(ctx, externalID, entityInfo, depth, statuses)
 	if err != nil {
+		if grpc.Code(err) == codes.NotFound {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return res.Entities, nil
