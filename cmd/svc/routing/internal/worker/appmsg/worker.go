@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/libs/awsutil"
+	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
@@ -191,6 +192,20 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 		return errors.Trace(fmt.Errorf("Expected external entity to exist for id %s", pti.PrimaryEntityID))
 	}
 
+	// Parse text and render as plain text.
+	textBML, err := bml.Parse(pti.GetItem().GetMessage().Text)
+	if e, ok := err.(bml.ErrParseFailure); ok {
+		return fmt.Errorf("failed to parse text at pos %d: %s", e.Offset, e.Reason)
+	} else if err != nil {
+		return errors.New("text is not valid markup")
+	}
+	plainText, err := textBML.PlainText()
+	if err != nil {
+		golog.Errorf("Unable to render plain text version for message item %s: "+err.Error(), pti.GetItem().ID)
+		// Shouldn't fail here since the parsing should have done validation
+		return errors.Trace(err)
+	}
+
 	// Perform the outbound operations for any remaining valid destinations
 	orgEntity := orgLookupRes.Entities[0]
 	for _, d := range destinations {
@@ -215,7 +230,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 						SMS: &excomms.SMSMessage{
 							FromPhoneNumber: orgContact.Value,
 							ToPhoneNumber:   d.ID,
-							Text:            pti.GetItem().GetMessage().Text,
+							Text:            plainText,
 						},
 					},
 				},
@@ -260,7 +275,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 					Message: &excomms.SendMessageRequest_Email{
 						Email: &excomms.EmailMessage{
 							Subject:          fmt.Sprintf("Message from %s", orgEntity.Info.DisplayName),
-							Body:             pti.GetItem().GetMessage().Text,
+							Body:             plainText,
 							FromName:         providerEntity.Info.DisplayName,
 							FromEmailAddress: orgContact.Value,
 							ToEmailAddress:   d.ID,
