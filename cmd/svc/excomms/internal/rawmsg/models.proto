@@ -24,6 +24,16 @@ message TwilioParams {
 		INITIATED = 10;
 	}
 
+	enum MessageStatus {
+		MSG_STATUS_INVALID = 0;
+		MSG_STATUS_QUEUED = 1;
+		MSG_STATUS_SENDING = 2;
+		MSG_STATUS_FAILED = 3;
+		MSG_STATUS_SENT = 4;
+		MSG_STATUS_DELIVERED = 5;
+		MSG_STATUS_UNDELIVERED = 6;
+	}
+
 	enum Direction {
 		DIRECTION_UNDEFINED = 0;
 		INBOUND = 1;
@@ -70,6 +80,8 @@ message TwilioParams {
 	uint32 dial_call_duration = 24 [(gogoproto.customname) = "DialCallDuration"];
 	uint64 recording_media_id = 25 [(gogoproto.customname) = "RecordingMediaID"];
 
+	MessageStatus message_status = 26;
+
 
 	// infrequently used parameters
 	string forwarded_from = 100;
@@ -93,6 +105,7 @@ enum TwilioEvent {
 	PROCESS_OUTGOING_CALL = 6;
 	PROCESS_VOICEMAIL = 7;
 	PROCESS_OUTGOING_CALL_STATUS = 8;
+	PROCESS_SMS_STATUS = 9;
 }
 
 message SendGridIncomingEmail {

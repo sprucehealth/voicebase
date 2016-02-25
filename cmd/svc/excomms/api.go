@@ -84,10 +84,12 @@ func runAPI() {
 		proxyNumberManager,
 		config.excommsAPIURL,
 		config.externalMessageTopic,
-		config.incomingRawMessageTopic)
+		config.incomingRawMessageTopic,
+		config.resourceCleanerTopic)
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.Handle("/twilio/sms", handlers.NewTwilioSMSHandler(dl, config.incomingRawMessageTopic, snsCLI))
+	router.Handle("/twilio/sms/status", handlers.NewTwilioRequestHandler(eh))
 	router.Handle("/twilio/call/{event}", handlers.NewTwilioRequestHandler(eh))
 	router.Handle("/sendgrid/email", handlers.NewSendGridHandler(config.incomingRawMessageTopic, snsCLI, dl, store))
 

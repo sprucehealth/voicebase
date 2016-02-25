@@ -36,6 +36,8 @@ var config struct {
 	excommsServiceURL       string
 	incomingRawMessageTopic string
 	kmsKeyARN               string
+	resourceCleanerQueueURL string
+	resourceCleanerTopic    string
 }
 
 func init() {
@@ -67,6 +69,8 @@ func init() {
 	flag.StringVar(&config.attachmentBucket, "s3_attachment_bucket", "dev-baymax-storage", "bucket name for s3 storage")
 	flag.StringVar(&config.attachmentPrefix, "s3_attachment_prefix", "excomms-media", "prefix for excomms media attachments")
 	flag.StringVar(&config.kmsKeyARN, "kms_key_arn", "", "the arn of the master key that should be used to encrypt outbound and decrypt inbound data")
+	flag.StringVar(&config.resourceCleanerTopic, "sns_resource_cleaner_topic", "", "sns topic for publishing requests to delete resources")
+	flag.StringVar(&config.resourceCleanerQueueURL, "resource_cleaner_queue_url", "", "sqs queue that contains requests to delete resources")
 }
 
 func main() {

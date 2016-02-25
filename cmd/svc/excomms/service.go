@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/cleaner"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/server"
@@ -18,7 +19,9 @@ import (
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/libs/twilio"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/settings"
@@ -106,7 +109,8 @@ func runService() {
 		dl,
 		store,
 		config.twilioAccountSID,
-		config.twilioAuthToken)
+		config.twilioAuthToken,
+		config.resourceCleanerTopic)
 
 	if err != nil {
 		golog.Fatalf("Unable to start worker: %s", err.Error())
@@ -132,6 +136,15 @@ func runService() {
 	excommsServer := grpc.NewServer()
 	excomms.RegisterExCommsServer(excommsServer, excommsService)
 
+	res, err := eSQS.GetQueueUrl(&sqs.GetQueueUrlInput{
+		QueueName: ptr.String(config.resourceCleanerQueueURL),
+	})
+	if err != nil {
+		golog.Fatalf("Unable to build queue url for resource cleaner %s: %s", config.resourceCleanerQueueURL, err.Error())
+	}
+
+	resourceCleaner := cleaner.NewWorker(twilio.NewClient(config.twilioAccountSID, config.twilioAuthToken, nil), dl, eSQS, *res.QueueUrl)
+	resourceCleaner.Start()
 	// TODO: Only listen on secure connection.
 	golog.Infof("Starting excomms service on port %d", config.excommsServicePort)
 	if err := excommsServer.Serve(lis); err != nil {

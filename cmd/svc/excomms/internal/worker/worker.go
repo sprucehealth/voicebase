@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/recapco/emailreplyparser"
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/cleaner"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
@@ -37,6 +38,7 @@ type IncomingRawMessageWorker struct {
 	store                storage.Store
 	twilioAccountSID     string
 	twilioAuthToken      string
+	resourceCleanerTopic string
 }
 
 func NewWorker(
@@ -46,7 +48,8 @@ func NewWorker(
 	externalMessageTopic string,
 	dal dal.DAL,
 	store storage.Store,
-	twilioAccountSID, twilioAuthToken string) (*IncomingRawMessageWorker, error) {
+	twilioAccountSID, twilioAuthToken string,
+	resourceCleanerTopic string) (*IncomingRawMessageWorker, error) {
 
 	res, err := sqsAPI.GetQueueUrl(&sqs.GetQueueUrlInput{
 		QueueName: ptr.String(incomingRawMessageQueueName),
@@ -63,6 +66,7 @@ func NewWorker(
 		store:                store,
 		twilioAccountSID:     twilioAccountSID,
 		twilioAuthToken:      twilioAuthToken,
+		resourceCleanerTopic: resourceCleanerTopic,
 	}, nil
 }
 
@@ -156,10 +160,16 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			mediaMap[media.ID] = media
 			m.ID = media.ID
 
+			cleaner.Publish(w.snsAPI, w.resourceCleanerTopic, &models.DeleteResourceRequest{
+				Type:       models.DeleteResourceRequest_TWILIO_MEDIA,
+				ResourceID: m.MediaURL,
+			})
+
 			smsItem.SMSItem.Attachments[i] = &excomms.MediaAttachment{
 				URL:         media.URL,
 				ContentType: m.ContentType,
 			}
+
 		}
 
 		_, err = utils.PersistRawMessage(w.dal, mediaMap, rm)
@@ -176,8 +186,10 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			Item:          smsItem,
 		})
 
-		// TODO: Delete SMS from twilio
-		// TODO: Upload any media objects attached to SMS to our system and delete from twilio
+		cleaner.Publish(w.snsAPI, w.resourceCleanerTopic, &models.DeleteResourceRequest{
+			Type:       models.DeleteResourceRequest_TWILIO_SMS,
+			ResourceID: params.MessageSID,
+		})
 
 	case rawmsg.Incoming_TWILIO_VOICEMAIL:
 		params := rm.GetTwilio()
@@ -190,6 +202,22 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 		}
 		mediaMap[media.ID] = media
 		params.RecordingMediaID = media.ID
+
+		cleaner.Publish(w.snsAPI, w.resourceCleanerTopic, &models.DeleteResourceRequest{
+			Type:       models.DeleteResourceRequest_TWILIO_RECORDING,
+			ResourceID: params.RecordingSID,
+		})
+
+		// also delete the calls that originated in the voicemail
+		cleaner.Publish(w.snsAPI, w.resourceCleanerTopic, &models.DeleteResourceRequest{
+			Type:       models.DeleteResourceRequest_TWILIO_CALL,
+			ResourceID: params.CallSID,
+		})
+
+		cleaner.Publish(w.snsAPI, w.resourceCleanerTopic, &models.DeleteResourceRequest{
+			Type:       models.DeleteResourceRequest_TWILIO_CALL,
+			ResourceID: params.ParentCallSID,
+		})
 
 		_, err = utils.PersistRawMessage(w.dal, mediaMap, rm)
 		if err != nil {

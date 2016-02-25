@@ -96,6 +96,9 @@ type DAL interface {
 
 	// LookupMedia looks up media objects based on their IDs
 	LookupMedia(ids []uint64) (map[uint64]*models.Media, error)
+
+	// CreateDeletedResource creates an entry for a deleted resource
+	CreateDeletedResource(resource, resourceID string) error
 }
 
 type dal struct {
@@ -567,5 +570,14 @@ func (d *dal) LookupIncomingCall(sid string) (*models.IncomingCall, error) {
 	}
 
 	return &ic, nil
+}
 
+func (d *dal) CreateDeletedResource(resource, resourceID string) error {
+
+	_, err := d.db.Exec(`INSERT INTO deleted_resource (resource, resource_id) VALUES (?,?)`, resource, resourceID)
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	return nil
 }

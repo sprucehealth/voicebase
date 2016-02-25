@@ -41,6 +41,7 @@ func ParamsFromRequest(r *http.Request) (*rawmsg.TwilioParams, error) {
 	}
 
 	t.CallStatus = parseCallStatus(r.FormValue("CallStatus"))
+	t.MessageStatus = parseMessageStatus(r.FormValue("MessageStatus"))
 	t.DialCallStatus = parseCallStatus(r.FormValue("DialCallStatus"))
 
 	switch r.FormValue("Direction") {
@@ -129,4 +130,22 @@ func parseCallStatus(status string) rawmsg.TwilioParams_CallStatus {
 		return rawmsg.TwilioParams_INITIATED
 	}
 	return rawmsg.TwilioParams_CALL_STATUS_UNDEFINED
+}
+
+func parseMessageStatus(status string) rawmsg.TwilioParams_MessageStatus {
+	switch status {
+	case "queued":
+		return rawmsg.TwilioParams_MSG_STATUS_QUEUED
+	case "sending":
+		return rawmsg.TwilioParams_MSG_STATUS_SENDING
+	case "sent":
+		return rawmsg.TwilioParams_MSG_STATUS_SENT
+	case "failed":
+		return rawmsg.TwilioParams_MSG_STATUS_FAILED
+	case "delivered":
+		return rawmsg.TwilioParams_MSG_STATUS_DELIVERED
+	case "undelivered":
+		return rawmsg.TwilioParams_MSG_STATUS_UNDELIVERED
+	}
+	return rawmsg.TwilioParams_MSG_STATUS_INVALID
 }

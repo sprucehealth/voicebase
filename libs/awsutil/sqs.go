@@ -40,6 +40,10 @@ type SQSWorker struct {
 	stopCh   chan chan struct{}
 }
 
+// ErrMsgNotProcessedYet is a specific error returned when the procesing function
+// wants to communicate that the message should not be deleted yet as it has not been processed.
+var ErrMsgNotProcessedYet = errors.New("sqs message not processed yet")
+
 // NewSQSWorker returns a worker that consumes SQS messages
 // and passes them through the provided process function
 func NewSQSWorker(
@@ -100,6 +104,10 @@ func (w *SQSWorker) Start() {
 
 			for _, item := range sqsRes.Messages {
 				if err := w.processF(*item.Body); err != nil {
+					// TODO: Find a better way to communicate that the message has not been processed yet.
+					if err == ErrMsgNotProcessedYet {
+						continue
+					}
 					golog.Errorf(err.Error())
 					continue
 				}

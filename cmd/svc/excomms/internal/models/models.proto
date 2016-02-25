@@ -42,3 +42,15 @@ message SMSMessage {
 	uint64 date_created = 5;
 	uint64 date_sent = 6;
 }
+
+message DeleteResourceRequest {
+	enum Type {
+		INVALID = 0;
+		TWILIO_CALL = 1;
+		TWILIO_SMS = 2;
+		TWILIO_MEDIA = 3;
+		TWILIO_RECORDING = 4;
+	}
+	Type type = 1;
+	string resource_id = 2 [(gogoproto.customname) = "ResourceID"];
+}

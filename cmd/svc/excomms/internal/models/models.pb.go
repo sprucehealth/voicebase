@@ -12,6 +12,7 @@
 		SentMessage
 		EmailMessage
 		SMSMessage
+		DeleteResourceRequest
 */
 package models
 
@@ -48,6 +49,31 @@ var SentMessage_Type_name = map[int32]string{
 var SentMessage_Type_value = map[string]int32{
 	"SMS":   0,
 	"EMAIL": 1,
+}
+
+type DeleteResourceRequest_Type int32
+
+const (
+	DeleteResourceRequest_INVALID          DeleteResourceRequest_Type = 0
+	DeleteResourceRequest_TWILIO_CALL      DeleteResourceRequest_Type = 1
+	DeleteResourceRequest_TWILIO_SMS       DeleteResourceRequest_Type = 2
+	DeleteResourceRequest_TWILIO_MEDIA     DeleteResourceRequest_Type = 3
+	DeleteResourceRequest_TWILIO_RECORDING DeleteResourceRequest_Type = 4
+)
+
+var DeleteResourceRequest_Type_name = map[int32]string{
+	0: "INVALID",
+	1: "TWILIO_CALL",
+	2: "TWILIO_SMS",
+	3: "TWILIO_MEDIA",
+	4: "TWILIO_RECORDING",
+}
+var DeleteResourceRequest_Type_value = map[string]int32{
+	"INVALID":          0,
+	"TWILIO_CALL":      1,
+	"TWILIO_SMS":       2,
+	"TWILIO_MEDIA":     3,
+	"TWILIO_RECORDING": 4,
 }
 
 type SentMessage struct {
@@ -180,14 +206,32 @@ type SMSMessage struct {
 func (m *SMSMessage) Reset()      { *m = SMSMessage{} }
 func (*SMSMessage) ProtoMessage() {}
 
+type DeleteResourceRequest struct {
+	Type          DeleteResourceRequest_Type `protobuf:"varint,1,opt,name=type,proto3,enum=models.DeleteResourceRequest_Type" json:"type,omitempty"`
+	ResourceID    string                     `protobuf:"bytes,2,opt,name=resource_id,proto3" json:"resource_id,omitempty"`
+	DateRequested uint64                     `protobuf:"varint,3,opt,name=date_requested,proto3" json:"date_requested,omitempty"`
+}
+
+func (m *DeleteResourceRequest) Reset()      { *m = DeleteResourceRequest{} }
+func (*DeleteResourceRequest) ProtoMessage() {}
+
 func init() {
 	proto.RegisterType((*SentMessage)(nil), "models.SentMessage")
 	proto.RegisterType((*EmailMessage)(nil), "models.EmailMessage")
 	proto.RegisterType((*SMSMessage)(nil), "models.SMSMessage")
+	proto.RegisterType((*DeleteResourceRequest)(nil), "models.DeleteResourceRequest")
 	proto.RegisterEnum("models.SentMessage_Type", SentMessage_Type_name, SentMessage_Type_value)
+	proto.RegisterEnum("models.DeleteResourceRequest_Type", DeleteResourceRequest_Type_name, DeleteResourceRequest_Type_value)
 }
 func (x SentMessage_Type) String() string {
 	s, ok := SentMessage_Type_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (x DeleteResourceRequest_Type) String() string {
+	s, ok := DeleteResourceRequest_Type_name[int32(x)]
 	if ok {
 		return s
 	}
@@ -369,6 +413,37 @@ func (this *SMSMessage) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *DeleteResourceRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*DeleteResourceRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Type != that1.Type {
+		return false
+	}
+	if this.ResourceID != that1.ResourceID {
+		return false
+	}
+	if this.DateRequested != that1.DateRequested {
+		return false
+	}
+	return true
+}
 func (this *SentMessage) GoString() string {
 	if this == nil {
 		return "nil"
@@ -429,6 +504,18 @@ func (this *SMSMessage) GoString() string {
 	s = append(s, "Text: "+fmt.Sprintf("%#v", this.Text)+",\n")
 	s = append(s, "DateCreated: "+fmt.Sprintf("%#v", this.DateCreated)+",\n")
 	s = append(s, "DateSent: "+fmt.Sprintf("%#v", this.DateSent)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DeleteResourceRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&models.DeleteResourceRequest{")
+	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
+	s = append(s, "ResourceID: "+fmt.Sprintf("%#v", this.ResourceID)+",\n")
+	s = append(s, "DateRequested: "+fmt.Sprintf("%#v", this.DateRequested)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -644,6 +731,40 @@ func (m *SMSMessage) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *DeleteResourceRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *DeleteResourceRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Type != 0 {
+		data[i] = 0x8
+		i++
+		i = encodeVarintModels(data, i, uint64(m.Type))
+	}
+	if len(m.ResourceID) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintModels(data, i, uint64(len(m.ResourceID)))
+		i += copy(data[i:], m.ResourceID)
+	}
+	if m.DateRequested != 0 {
+		data[i] = 0x18
+		i++
+		i = encodeVarintModels(data, i, uint64(m.DateRequested))
+	}
+	return i, nil
+}
+
 func encodeFixed64Models(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -774,6 +895,22 @@ func (m *SMSMessage) Size() (n int) {
 	return n
 }
 
+func (m *DeleteResourceRequest) Size() (n int) {
+	var l int
+	_ = l
+	if m.Type != 0 {
+		n += 1 + sovModels(uint64(m.Type))
+	}
+	l = len(m.ResourceID)
+	if l > 0 {
+		n += 1 + l + sovModels(uint64(l))
+	}
+	if m.DateRequested != 0 {
+		n += 1 + sovModels(uint64(m.DateRequested))
+	}
+	return n
+}
+
 func sovModels(x uint64) (n int) {
 	for {
 		n++
@@ -848,6 +985,18 @@ func (this *SMSMessage) String() string {
 		`Text:` + fmt.Sprintf("%v", this.Text) + `,`,
 		`DateCreated:` + fmt.Sprintf("%v", this.DateCreated) + `,`,
 		`DateSent:` + fmt.Sprintf("%v", this.DateSent) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeleteResourceRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeleteResourceRequest{`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`ResourceID:` + fmt.Sprintf("%v", this.ResourceID) + `,`,
+		`DateRequested:` + fmt.Sprintf("%v", this.DateRequested) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1502,6 +1651,123 @@ func (m *SMSMessage) Unmarshal(data []byte) error {
 				b := data[iNdEx]
 				iNdEx++
 				m.DateSent |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipModels(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthModels
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeleteResourceRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowModels
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeleteResourceRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeleteResourceRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			m.Type = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Type |= (DeleteResourceRequest_Type(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ResourceID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthModels
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ResourceID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DateRequested", wireType)
+			}
+			m.DateRequested = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.DateRequested |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}

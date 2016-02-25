@@ -21,6 +21,8 @@ type MessageIFace interface {
 	Get(sid string) (*Message, *Response, error)
 	List(params MessageListParams) ([]Message, *Response, error)
 	GetMediaMetadata(messageSID, mediaSID string) (*Metadata, *Response, error)
+	Delete(sid string) (*Response, error)
+	DeleteMedia(mediaURL string) (*Response, error)
 }
 
 type Message struct {
@@ -188,4 +190,35 @@ func (s *MessageService) GetMediaMetadata(messageSID, mediaSID string) (*Metadat
 		return nil, nil, err
 	}
 	return met, res, nil
+}
+
+func (s *MessageService) Delete(sid string) (*Response, error) {
+	u := s.client.EndPoint("Messages", sid)
+
+	req, err := s.client.NewRequest("DELETE", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.Do(req, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (s *MessageService) DeleteMedia(url string) (*Response, error) {
+
+	req, err := s.client.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.Do(req, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }

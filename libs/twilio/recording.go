@@ -20,6 +20,7 @@ type RecordingService struct {
 
 type RecordingIFace interface {
 	GetMetadata(sid string) (*Metadata, *Response, error)
+	Delete(sid string) (*Response, error)
 }
 
 // ParseRecordingSID expects the url to be of the form /2010-04-01/Accounts/{AccountSid}/Recordings/{RecordingSid}
@@ -52,4 +53,20 @@ func (r *RecordingService) GetMetadata(sid string) (*Metadata, *Response, error)
 		return nil, nil, err
 	}
 	return met, res, nil
+}
+
+func (r *RecordingService) Delete(sid string) (*Response, error) {
+	u := r.client.EndPoint("Recordings", sid)
+
+	req, err := r.client.NewRequest("DELETE", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := r.client.Do(req, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }

@@ -45,6 +45,7 @@ const (
 	TwilioEvent_PROCESS_OUTGOING_CALL        TwilioEvent = 6
 	TwilioEvent_PROCESS_VOICEMAIL            TwilioEvent = 7
 	TwilioEvent_PROCESS_OUTGOING_CALL_STATUS TwilioEvent = 8
+	TwilioEvent_PROCESS_SMS_STATUS           TwilioEvent = 9
 )
 
 var TwilioEvent_name = map[int32]string{
@@ -56,6 +57,7 @@ var TwilioEvent_name = map[int32]string{
 	6: "PROCESS_OUTGOING_CALL",
 	7: "PROCESS_VOICEMAIL",
 	8: "PROCESS_OUTGOING_CALL_STATUS",
+	9: "PROCESS_SMS_STATUS",
 }
 var TwilioEvent_value = map[string]int32{
 	"PROCESS_INCOMING_CALL":        0,
@@ -66,6 +68,7 @@ var TwilioEvent_value = map[string]int32{
 	"PROCESS_OUTGOING_CALL":        6,
 	"PROCESS_VOICEMAIL":            7,
 	"PROCESS_OUTGOING_CALL_STATUS": 8,
+	"PROCESS_SMS_STATUS":           9,
 }
 
 type TwilioParams_CallStatus int32
@@ -109,6 +112,37 @@ var TwilioParams_CallStatus_value = map[string]int32{
 	"CANCELED":              8,
 	"ANSWERED":              9,
 	"INITIATED":             10,
+}
+
+type TwilioParams_MessageStatus int32
+
+const (
+	TwilioParams_MSG_STATUS_INVALID     TwilioParams_MessageStatus = 0
+	TwilioParams_MSG_STATUS_QUEUED      TwilioParams_MessageStatus = 1
+	TwilioParams_MSG_STATUS_SENDING     TwilioParams_MessageStatus = 2
+	TwilioParams_MSG_STATUS_FAILED      TwilioParams_MessageStatus = 3
+	TwilioParams_MSG_STATUS_SENT        TwilioParams_MessageStatus = 4
+	TwilioParams_MSG_STATUS_DELIVERED   TwilioParams_MessageStatus = 5
+	TwilioParams_MSG_STATUS_UNDELIVERED TwilioParams_MessageStatus = 6
+)
+
+var TwilioParams_MessageStatus_name = map[int32]string{
+	0: "MSG_STATUS_INVALID",
+	1: "MSG_STATUS_QUEUED",
+	2: "MSG_STATUS_SENDING",
+	3: "MSG_STATUS_FAILED",
+	4: "MSG_STATUS_SENT",
+	5: "MSG_STATUS_DELIVERED",
+	6: "MSG_STATUS_UNDELIVERED",
+}
+var TwilioParams_MessageStatus_value = map[string]int32{
+	"MSG_STATUS_INVALID":     0,
+	"MSG_STATUS_QUEUED":      1,
+	"MSG_STATUS_SENDING":     2,
+	"MSG_STATUS_FAILED":      3,
+	"MSG_STATUS_SENT":        4,
+	"MSG_STATUS_DELIVERED":   5,
+	"MSG_STATUS_UNDELIVERED": 6,
 }
 
 type TwilioParams_Direction int32
@@ -178,10 +212,11 @@ type TwilioParams struct {
 	QueueTime       uint32 `protobuf:"varint,20,opt,name=queue_time,proto3" json:"queue_time,omitempty"`
 	DequeingCallSID string `protobuf:"bytes,21,opt,name=dequeuing_call_sid,proto3" json:"dequeuing_call_sid,omitempty"`
 	// this parameter is only present for status callbacks from a dial twiml verb
-	ParentCallSID    string                  `protobuf:"bytes,22,opt,name=parent_call_sid,proto3" json:"parent_call_sid,omitempty"`
-	DialCallStatus   TwilioParams_CallStatus `protobuf:"varint,23,opt,name=dial_call_status,proto3,enum=rawmsg.TwilioParams_CallStatus" json:"dial_call_status,omitempty"`
-	DialCallDuration uint32                  `protobuf:"varint,24,opt,name=dial_call_duration,proto3" json:"dial_call_duration,omitempty"`
-	RecordingMediaID uint64                  `protobuf:"varint,25,opt,name=recording_media_id,proto3" json:"recording_media_id,omitempty"`
+	ParentCallSID    string                     `protobuf:"bytes,22,opt,name=parent_call_sid,proto3" json:"parent_call_sid,omitempty"`
+	DialCallStatus   TwilioParams_CallStatus    `protobuf:"varint,23,opt,name=dial_call_status,proto3,enum=rawmsg.TwilioParams_CallStatus" json:"dial_call_status,omitempty"`
+	DialCallDuration uint32                     `protobuf:"varint,24,opt,name=dial_call_duration,proto3" json:"dial_call_duration,omitempty"`
+	RecordingMediaID uint64                     `protobuf:"varint,25,opt,name=recording_media_id,proto3" json:"recording_media_id,omitempty"`
+	MessageStatus    TwilioParams_MessageStatus `protobuf:"varint,26,opt,name=message_status,proto3,enum=rawmsg.TwilioParams_MessageStatus" json:"message_status,omitempty"`
 	// infrequently used parameters
 	ForwardedFrom string `protobuf:"bytes,100,opt,name=forwarded_from,proto3" json:"forwarded_from,omitempty"`
 	CallerName    string `protobuf:"bytes,101,opt,name=caller_name,proto3" json:"caller_name,omitempty"`
@@ -365,6 +400,7 @@ func init() {
 	proto.RegisterType((*Incoming)(nil), "rawmsg.Incoming")
 	proto.RegisterEnum("rawmsg.TwilioEvent", TwilioEvent_name, TwilioEvent_value)
 	proto.RegisterEnum("rawmsg.TwilioParams_CallStatus", TwilioParams_CallStatus_name, TwilioParams_CallStatus_value)
+	proto.RegisterEnum("rawmsg.TwilioParams_MessageStatus", TwilioParams_MessageStatus_name, TwilioParams_MessageStatus_value)
 	proto.RegisterEnum("rawmsg.TwilioParams_Direction", TwilioParams_Direction_name, TwilioParams_Direction_value)
 	proto.RegisterEnum("rawmsg.Incoming_Type", Incoming_Type_name, Incoming_Type_value)
 }
@@ -377,6 +413,13 @@ func (x TwilioEvent) String() string {
 }
 func (x TwilioParams_CallStatus) String() string {
 	s, ok := TwilioParams_CallStatus_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (x TwilioParams_MessageStatus) String() string {
+	s, ok := TwilioParams_MessageStatus_name[int32(x)]
 	if ok {
 		return s
 	}
@@ -494,6 +537,9 @@ func (this *TwilioParams) Equal(that interface{}) bool {
 		return false
 	}
 	if this.RecordingMediaID != that1.RecordingMediaID {
+		return false
+	}
+	if this.MessageStatus != that1.MessageStatus {
 		return false
 	}
 	if this.ForwardedFrom != that1.ForwardedFrom {
@@ -756,7 +802,7 @@ func (this *TwilioParams) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 39)
+	s := make([]string, 0, 40)
 	s = append(s, "&rawmsg.TwilioParams{")
 	s = append(s, "CallSID: "+fmt.Sprintf("%#v", this.CallSID)+",\n")
 	s = append(s, "AccountSID: "+fmt.Sprintf("%#v", this.AccountSID)+",\n")
@@ -785,6 +831,7 @@ func (this *TwilioParams) GoString() string {
 	s = append(s, "DialCallStatus: "+fmt.Sprintf("%#v", this.DialCallStatus)+",\n")
 	s = append(s, "DialCallDuration: "+fmt.Sprintf("%#v", this.DialCallDuration)+",\n")
 	s = append(s, "RecordingMediaID: "+fmt.Sprintf("%#v", this.RecordingMediaID)+",\n")
+	s = append(s, "MessageStatus: "+fmt.Sprintf("%#v", this.MessageStatus)+",\n")
 	s = append(s, "ForwardedFrom: "+fmt.Sprintf("%#v", this.ForwardedFrom)+",\n")
 	s = append(s, "CallerName: "+fmt.Sprintf("%#v", this.CallerName)+",\n")
 	s = append(s, "FromCity: "+fmt.Sprintf("%#v", this.FromCity)+",\n")
@@ -1085,6 +1132,13 @@ func (m *TwilioParams) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1
 		i++
 		i = encodeVarintModels(data, i, uint64(m.RecordingMediaID))
+	}
+	if m.MessageStatus != 0 {
+		data[i] = 0xd0
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintModels(data, i, uint64(m.MessageStatus))
 	}
 	if len(m.ForwardedFrom) > 0 {
 		data[i] = 0xa2
@@ -1543,6 +1597,9 @@ func (m *TwilioParams) Size() (n int) {
 	if m.RecordingMediaID != 0 {
 		n += 2 + sovModels(uint64(m.RecordingMediaID))
 	}
+	if m.MessageStatus != 0 {
+		n += 2 + sovModels(uint64(m.MessageStatus))
+	}
 	l = len(m.ForwardedFrom)
 	if l > 0 {
 		n += 2 + l + sovModels(uint64(l))
@@ -1767,6 +1824,7 @@ func (this *TwilioParams) String() string {
 		`DialCallStatus:` + fmt.Sprintf("%v", this.DialCallStatus) + `,`,
 		`DialCallDuration:` + fmt.Sprintf("%v", this.DialCallDuration) + `,`,
 		`RecordingMediaID:` + fmt.Sprintf("%v", this.RecordingMediaID) + `,`,
+		`MessageStatus:` + fmt.Sprintf("%v", this.MessageStatus) + `,`,
 		`ForwardedFrom:` + fmt.Sprintf("%v", this.ForwardedFrom) + `,`,
 		`CallerName:` + fmt.Sprintf("%v", this.CallerName) + `,`,
 		`FromCity:` + fmt.Sprintf("%v", this.FromCity) + `,`,
@@ -2532,6 +2590,25 @@ func (m *TwilioParams) Unmarshal(data []byte) error {
 				b := data[iNdEx]
 				iNdEx++
 				m.RecordingMediaID |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 26:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MessageStatus", wireType)
+			}
+			m.MessageStatus = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.MessageStatus |= (TwilioParams_MessageStatus(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/cleaner"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber"
@@ -35,6 +36,7 @@ var (
 		rawmsg.TwilioEvent_PROCESS_INCOMING_CALL_STATUS: processIncomingCallStatus,
 		rawmsg.TwilioEvent_PROCESS_VOICEMAIL:            processVoicemail,
 		rawmsg.TwilioEvent_PROCESS_OUTGOING_CALL_STATUS: processOutgoingCallStatus,
+		rawmsg.TwilioEvent_PROCESS_SMS_STATUS:           processOutgoingSMSStatus,
 	}
 	maxPhoneNumbers = 10
 )
@@ -49,6 +51,7 @@ type eventsHandler struct {
 	apiURL               string
 	externalMessageTopic string
 	incomingRawMsgTopic  string
+	resourceCleanerTopic string
 }
 
 func NewEventHandler(
@@ -58,7 +61,7 @@ func NewEventHandler(
 	sns snsiface.SNSAPI,
 	clock clock.Clock,
 	proxyNumberManager proxynumber.Manager,
-	apiURL, externalMessageTopic, incomingRawMsgTopic string) EventHandler {
+	apiURL, externalMessageTopic, incomingRawMsgTopic, resourceCleanerTopic string) EventHandler {
 	return &eventsHandler{
 		directory:            directory,
 		settings:             settingsClient,
@@ -69,6 +72,7 @@ func NewEventHandler(
 		externalMessageTopic: externalMessageTopic,
 		incomingRawMsgTopic:  incomingRawMsgTopic,
 		proxyNumberManager:   proxyNumberManager,
+		resourceCleanerTopic: resourceCleanerTopic,
 	}
 }
 
@@ -520,6 +524,19 @@ func processIncomingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 			}); err != nil {
 				golog.Errorf(err.Error())
 			}
+
+			// Delete the dialed leg as well as the originating call once the call
+			// has been considered complete
+			cleaner.Publish(eh.sns, eh.resourceCleanerTopic, &models.DeleteResourceRequest{
+				Type:       models.DeleteResourceRequest_TWILIO_CALL,
+				ResourceID: params.CallSID,
+			})
+
+			cleaner.Publish(eh.sns, eh.resourceCleanerTopic, &models.DeleteResourceRequest{
+				Type:       models.DeleteResourceRequest_TWILIO_CALL,
+				ResourceID: params.ParentCallSID,
+			})
+
 		})
 
 	case rawmsg.TwilioParams_CALL_STATUS_UNDEFINED:
@@ -572,6 +589,16 @@ func processOutgoingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 		if err := eh.proxyNumberManager.CallEnded(cr.Source, cr.Proxy); err != nil {
 			return "", errors.Trace(err)
 		}
+
+		cleaner.Publish(eh.sns, eh.resourceCleanerTopic, &models.DeleteResourceRequest{
+			Type:       models.DeleteResourceRequest_TWILIO_CALL,
+			ResourceID: params.CallSID,
+		})
+
+		cleaner.Publish(eh.sns, eh.resourceCleanerTopic, &models.DeleteResourceRequest{
+			Type:       models.DeleteResourceRequest_TWILIO_CALL,
+			ResourceID: params.ParentCallSID,
+		})
 	default:
 		// nothing to do
 		golog.Debugf("Ignoring call status %s", params.CallStatus.String())
@@ -614,6 +641,21 @@ func processVoicemail(ctx context.Context, params *rawmsg.TwilioParams, eh *even
 		}
 	})
 
+	return "", nil
+}
+
+func processOutgoingSMSStatus(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
+	switch params.MessageStatus {
+	case rawmsg.TwilioParams_MSG_STATUS_SENT:
+		cleaner.Publish(eh.sns, eh.resourceCleanerTopic, &models.DeleteResourceRequest{
+			Type:       models.DeleteResourceRequest_TWILIO_SMS,
+			ResourceID: params.MessageSID,
+		})
+	case rawmsg.TwilioParams_MSG_STATUS_FAILED:
+		// for now if message sending failed lets log error so that we
+		// can investigate why a message that passed validation failed to send
+		golog.Errorf("Failed to send message %s", params.MessageSID)
+	}
 	return "", nil
 }
 

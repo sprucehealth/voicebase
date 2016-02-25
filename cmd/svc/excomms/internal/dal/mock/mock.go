@@ -205,3 +205,11 @@ func (m *mockDAL) LookupIncomingCall(sid string) (*models.IncomingCall, error) {
 
 	return rets[0].(*models.IncomingCall), mock.SafeError(rets[1])
 }
+
+func (m *mockDAL) CreateDeletedResource(resource, resourceID string) error {
+	rets := m.Record(resource, resourceID)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}

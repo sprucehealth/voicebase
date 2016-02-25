@@ -11,6 +11,9 @@ const (
 	// ErrorCodeNoPhoneNumberInAreaCode is returned when there's no available phone numbers
 	// in the requested area code. https://www.twilio.com/docs/api/errors/21452
 	ErrorCodeNoPhoneNumberInAreaCode = 21452
+	// ErrorCodeResourceNotFound is returned when the requested resource was not found
+	// https://www.twilio.com/docs/api/errors/20404
+	ErrorCodeResourceNotFound = 20404
 )
 
 // Exception holds information about error response returned by Twilio API

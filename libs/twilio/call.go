@@ -18,6 +18,7 @@ type CallIFace interface {
 	Make(params CallParams) (*Call, *Response, error)
 	Modify(sid string, params CallModificationParams) (*Call, *Response, error)
 	Get(sid string) (*Call, *Response, error)
+	Delete(sid string) (*Response, error)
 }
 
 type Call struct {
@@ -157,4 +158,20 @@ func (c *CallService) Get(sid string) (*Call, *Response, error) {
 	}
 
 	return call, resp, err
+}
+
+func (c *CallService) Delete(sid string) (*Response, error) {
+	u := c.client.EndPoint("Calls", sid)
+
+	req, err := c.client.NewRequest("DELETE", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.client.Do(req, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
