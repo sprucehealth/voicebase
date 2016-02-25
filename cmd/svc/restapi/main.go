@@ -334,7 +334,7 @@ func main() {
 		cfgStore, metricsRegistry, db, gologHandler)
 	webMux := buildWWW(&conf, dataAPI, db, authAPI, diagnosisAPI, eventsClient, emailService, smsAPI,
 		doseSpotService, dispatcher, signer, stores, rateLimiters, alog, conf.CompressResponse,
-		metricsRegistry, cfgStore, memcacheCli)
+		metricsRegistry, cfgStore, memcacheCli, conf.ProxiedSiteURL)
 
 	// Remove port numbers since the muxer doesn't include them in the match
 	apiDomain := conf.APIDomain

@@ -83,8 +83,8 @@ func SetupRoutes(r *mux.Router, config *Config) {
 		}
 	}
 
-	r.Handle("/", newStaticHandler(r, config.TemplateLoader, "home/home.html", "Spruce", nil))
-	r.Handle("/about", newStaticHandler(r, config.TemplateLoader, "home/about.html", "About | Spruce", nil))
+	r.Handle("/dermatology", newStaticHandler(r, config.TemplateLoader, "home/home.html", "Spruce", nil))
+	// r.Handle("/about", newStaticHandler(r, config.TemplateLoader, "home/about.html", "About | Spruce", nil))
 	r.Handle("/conditions-treated", newStaticHandler(r, config.TemplateLoader, "home/conditions.html", "Conditions Treated | Spruce", nil))
 	r.Handle("/contact", newStaticHandler(r, config.TemplateLoader, "home/contact.html", "Contact | Spruce", nil))
 	r.Handle("/faq", newStaticHandler(r, config.TemplateLoader, "home/faq.html", "FAQ | Spruce", faqCtx))
