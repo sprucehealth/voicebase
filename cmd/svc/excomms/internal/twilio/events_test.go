@@ -2,7 +2,6 @@ package twilio
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -1182,14 +1181,7 @@ func TestProcessVoicemail(t *testing.T) {
 }
 
 func parsePublishedExternalMessage(message string) (*excomms.PublishedExternalMessage, error) {
-	var input struct {
-		Default string `json:"default"`
-	}
-	if err := json.Unmarshal([]byte(message), &input); err != nil {
-		return nil, err
-	}
-
-	data, err := base64.StdEncoding.DecodeString(input.Default)
+	data, err := base64.StdEncoding.DecodeString(message)
 	if err != nil {
 		return nil, err
 	}
