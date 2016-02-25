@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification/deeplink"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
@@ -39,8 +40,11 @@ var savedThreadQueryType = graphql.NewObject(
 						return nil, errors.ErrNotAuthenticated(ctx)
 					}
 					ent, err := ram.EntityForAccountID(ctx, stq.OrganizationID, acc.ID)
-					if err != nil || ent == nil {
-						return nil, errors.InternalError(ctx, errors.New("no entity id found"))
+					if err != nil {
+						return nil, errors.InternalError(ctx, err)
+					}
+					if ent == nil || ent.Type != directory.EntityType_INTERNAL {
+						return nil, errors.UserError(ctx, errors.ErrTypeNotAuthorized, "Not a member of the organization")
 					}
 					req := &threading.QueryThreadsRequest{
 						OrganizationID: stq.OrganizationID,
