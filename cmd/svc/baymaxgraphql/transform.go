@@ -225,8 +225,9 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity) (*mo
 		return nil, errors.Trace(fmt.Errorf("failed to transform contacts for entity %s: %s", e.ID, err))
 	}
 	ent := &models.Entity{
-		ID:            e.ID,
-		IsEditable:    e.Type != directory.EntityType_SYSTEM,
+		ID: e.ID,
+		// IsEditable:    e.Type != directory.EntityType_SYSTEM,
+		IsEditable:    false,
 		Contacts:      oc,
 		FirstName:     e.Info.FirstName,
 		MiddleInitial: e.Info.MiddleInitial,
