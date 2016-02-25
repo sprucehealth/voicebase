@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sprucehealth/backend/boot"
@@ -42,6 +43,7 @@ var (
 	flagSQSThreadingURL    = flag.String("sqs_threading_url", "", "SQS URL for threading queue")
 	flagDirectoryAddr      = flag.String("directory_addr", "", "host:port of directory service")
 	flagWebDomain          = flag.String("web_domain", "", "Domain of the website")
+	flagKMSKeyARN          = flag.String("kms_key_arn", "", "the arn of the master key that should be used to encrypt outbound and decrypt inbound data")
 )
 
 func init() {
@@ -52,6 +54,10 @@ func init() {
 func main() {
 	boot.ParseFlags("THREADING_")
 	boot.InitService()
+
+	if *flagKMSKeyARN == "" {
+		golog.Fatalf("-kms_key_arn flag is required")
+	}
 
 	db, err := dbutil.ConnectMySQL(&dbutil.DBConfig{
 		Host:          *flagDBHost,
@@ -73,18 +79,25 @@ func main() {
 	}
 	awsSession := session.New(awsConfig)
 
-	sns := sns.New(awsSession)
+	eSNS, err := awsutil.NewEncryptedSNS(*flagKMSKeyARN, kms.New(awsSession), sns.New(awsSession))
+	if err != nil {
+		golog.Fatalf("Unable to initialize enrypted sns: %s", err.Error())
+		return
+	}
+	eSQS, err := awsutil.NewEncryptedSQS(*flagKMSKeyARN, kms.New(awsSession), sqs.New(awsSession))
+	if err != nil {
+		golog.Fatalf("Unable to initialize enrypted sqs: %s", err.Error())
+		return
+	}
 
 	// Start management server
 	go func() {
 		golog.Fatalf("%s", http.ListenAndServe(":8005", nil))
 	}()
 
-	sqsC := sqs.New(awsSession)
-
 	var notificationClient notification.Client
 	if *flagSQSNotificationURL != "" {
-		notificationClient = notification.NewClient(sqsC, &notification.ClientConfig{
+		notificationClient = notification.NewClient(eSQS, &notification.ClientConfig{
 			SQSNotificationURL: *flagSQSNotificationURL,
 		})
 	}
@@ -100,12 +113,12 @@ func main() {
 
 	dl := dal.New(db)
 
-	w := onboarding.NewWorker(sqsC, dl, *flagWebDomain, *flagSQSEventsURL, *flagSQSThreadingURL)
+	w := onboarding.NewWorker(eSQS, dl, *flagWebDomain, *flagSQSEventsURL, *flagSQSThreadingURL)
 	w.Start()
 	defer w.Stop(time.Second * 10)
 
 	s := grpc.NewServer()
-	threading.RegisterThreadsServer(s, server.NewThreadsServer(clock.New(), dl, sns, *flagSNSTopicARN, notificationClient, directoryClient, *flagWebDomain))
+	threading.RegisterThreadsServer(s, server.NewThreadsServer(clock.New(), dl, eSNS, *flagSNSTopicARN, notificationClient, directoryClient, *flagWebDomain))
 	golog.Infof("Starting Threads service on %s...", *flagListen)
 
 	ln, err := net.Listen("tcp", *flagListen)

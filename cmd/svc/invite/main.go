@@ -8,8 +8,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
-	"github.com/sendgrid/sendgrid-go"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/invite/internal/server"
@@ -19,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
+	"github.com/sendgrid/sendgrid-go"
 	"google.golang.org/grpc"
 )
 
@@ -33,6 +34,7 @@ var (
 	flagListen        = flag.String("listen_addr", ":5001", "`host:port` for grpc server")
 	flagSendGridKey   = flag.String("sendgrid_key", "", "SendGrid API `key`")
 	flagEventsTopic   = flag.String("events_topic", "", "SNS topic ARN for publishing events")
+	flagKMSKeyARN     = flag.String("kms_key_arn", "", "the arn of the master key that should be used to encrypt outbound and decrypt inbound data")
 
 	// For local development
 	flagDynamoDBEndpoint = flag.String("dynamodb_endpoint", "", "DynamoDB endpoint `URL` (for local development)")
@@ -80,9 +82,13 @@ func main() {
 	sg := sendgrid.NewSendGridClientWithApiKey(*flagSendGridKey)
 	branchCli := branch.NewClient(*flagBranchKey)
 
-	snsCli := sns.New(awsSession)
+	eSNS, err := awsutil.NewEncryptedSNS(*flagKMSKeyARN, kms.New(awsSession), sns.New(awsSession))
+	if err != nil {
+		golog.Fatalf("Unable to initialize enrypted sns: %s", err.Error())
+		return
+	}
 
-	srv := server.New(dal.New(db, environment.GetCurrent()), nil, directoryClient, snsCli, branchCli, sg, *flagFromEmail, *flagEventsTopic)
+	srv := server.New(dal.New(db, environment.GetCurrent()), nil, directoryClient, eSNS, branchCli, sg, *flagFromEmail, *flagEventsTopic)
 	s := grpc.NewServer()
 	defer s.Stop()
 	invite.RegisterInviteServer(s, srv)

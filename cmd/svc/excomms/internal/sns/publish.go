@@ -2,7 +2,6 @@ package sns
 
 import (
 	"encoding/base64"
-	"encoding/json"
 
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
@@ -20,19 +19,9 @@ func Publish(snsCLI snsiface.SNSAPI, topic string, m marshaller) error {
 		return errors.Trace(err)
 	}
 
-	msgData, err := json.Marshal(&struct {
-		Default string `json:"default"`
-	}{
-		Default: base64.StdEncoding.EncodeToString(data),
-	})
-	if err != nil {
-		return errors.Trace(err)
-	}
-
 	_, err = snsCLI.Publish(&sns.PublishInput{
-		Message:          ptr.String(string(msgData)),
-		MessageStructure: ptr.String("json"),
-		TopicArn:         ptr.String(topic),
+		Message:  ptr.String(base64.StdEncoding.EncodeToString(data)),
+		TopicArn: ptr.String(topic),
 	})
 	if err != nil {
 		return errors.Trace(err)

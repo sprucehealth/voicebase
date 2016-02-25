@@ -35,6 +35,7 @@ var config struct {
 	proxyProtocol           bool
 	excommsServiceURL       string
 	incomingRawMessageTopic string
+	kmsKeyARN               string
 }
 
 func init() {
@@ -65,6 +66,7 @@ func init() {
 	flag.StringVar(&config.incomingRawMessageTopic, "sns_incoming_raw_message_topic", "", "Inbound msg topic")
 	flag.StringVar(&config.attachmentBucket, "s3_attachment_bucket", "dev-baymax-storage", "bucket name for s3 storage")
 	flag.StringVar(&config.attachmentPrefix, "s3_attachment_prefix", "excomms-media", "prefix for excomms media attachments")
+	flag.StringVar(&config.kmsKeyARN, "kms_key_arn", "", "the arn of the master key that should be used to encrypt outbound and decrypt inbound data")
 }
 
 func main() {

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/rs/cors"
 	"github.com/sprucehealth/backend/boot"
@@ -47,15 +48,20 @@ var (
 	flagStaticURLPrefix = flag.String("static_url_prefix", "", "URL prefix of static assets")
 
 	// Services
-	flagAuthAddr                   = flag.String("auth_addr", "", "host:port of auth service")
-	flagDirectoryAddr              = flag.String("directory_addr", "", "host:port of directory service")
-	flagExCommsAddr                = flag.String("excomms_addr", "", "host:port of excomms service")
-	flagInviteAddr                 = flag.String("invite_addr", "", "host:port of invites service")
-	flagSettingsAddr               = flag.String("settings_addr", "", "host:port of settings service")
+	flagAuthAddr      = flag.String("auth_addr", "", "host:port of auth service")
+	flagDirectoryAddr = flag.String("directory_addr", "", "host:port of directory service")
+	flagExCommsAddr   = flag.String("excomms_addr", "", "host:port of excomms service")
+	flagInviteAddr    = flag.String("invite_addr", "", "host:port of invites service")
+	flagSettingsAddr  = flag.String("settings_addr", "", "host:port of settings service")
+	flagThreadingAddr = flag.String("threading_addr", "", "host:port of threading service")
+
+	// Messages
 	flagSQSDeviceRegistrationURL   = flag.String("sqs_device_registration_url", "", "the sqs url for device registration messages")
 	flagSQSDeviceDeregistrationURL = flag.String("sqs_device_deregistration_url", "", "the sqs url for device deregistration messages")
 	flagSQSNotificationURL         = flag.String("sqs_notification_url", "", "the sqs url for notification queueing")
-	flagThreadingAddr              = flag.String("threading_addr", "", "host:port of threading service")
+
+	// Encryption
+	flagKMSKeyARN = flag.String("kms_key_arn", "", "the arn of the master key that should be used to encrypt outbound and decrypt inbound data")
 
 	// AWS
 	flagAWSAccessKey = flag.String("aws_access_key", "", "access key for aws")
@@ -66,6 +72,10 @@ var (
 func main() {
 	boot.ParseFlags("BAYMAXGRAPHQL_")
 	boot.InitService()
+
+	if *flagKMSKeyARN == "" {
+		golog.Fatalf("-kms_key_arn flag is required")
+	}
 
 	if *flagSpruceOrgID == "" {
 		golog.Fatalf("-spruce_org_id flag is required")
@@ -159,11 +169,17 @@ func main() {
 		golog.Fatalf("Notification service notification queue not configured")
 	}
 	awsSession := session.New(awsConfig)
-	notificationClient := notification.NewClient(sqs.New(awsSession), &notification.ClientConfig{
-		SQSDeviceRegistrationURL:   *flagSQSDeviceRegistrationURL,
-		SQSNotificationURL:         *flagSQSNotificationURL,
-		SQSDeviceDeregistrationURL: *flagSQSDeviceDeregistrationURL,
-	})
+	eSQS, err := awsutil.NewEncryptedSQS(*flagKMSKeyARN, kms.New(awsSession), sqs.New(awsSession))
+	if err != nil {
+		golog.Fatalf("Unable to initialize Encrypted SQS: %s", err)
+	}
+	notificationClient := notification.NewClient(
+		eSQS,
+		&notification.ClientConfig{
+			SQSDeviceRegistrationURL:   *flagSQSDeviceRegistrationURL,
+			SQSNotificationURL:         *flagSQSNotificationURL,
+			SQSDeviceDeregistrationURL: *flagSQSDeviceDeregistrationURL,
+		})
 
 	r := mux.NewRouter()
 	if *flagSigKeys == "" {

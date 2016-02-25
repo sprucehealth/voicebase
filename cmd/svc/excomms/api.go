@@ -5,12 +5,14 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/handlers"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/twilio"
 	cfg "github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
@@ -67,11 +69,17 @@ func runAPI() {
 	}
 	defer settingsConn.Close()
 
+	eSNS, err := awsutil.NewEncryptedSNS(config.kmsKeyARN, kms.New(awsSession), sns.New(awsSession))
+	if err != nil {
+		golog.Fatalf("Unable to initialize enrypted sns: %s", err.Error())
+		return
+	}
+
 	eh := twilio.NewEventHandler(
 		directory.NewDirectoryClient(conn),
 		settings.NewSettingsClient(settingsConn),
 		dl,
-		snsCLI,
+		eSNS,
 		clock.New(),
 		proxyNumberManager,
 		config.excommsAPIURL,

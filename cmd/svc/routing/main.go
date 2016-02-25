@@ -22,6 +22,7 @@ var config struct {
 	awsRegion            string
 	externalMessageQueue string
 	inAppMessageQueue    string
+	kmsKeyARN            string
 }
 
 func init() {
@@ -33,6 +34,7 @@ func init() {
 	flag.StringVar(&config.awsRegion, "aws_region", "us-east-1", "aws region")
 	flag.StringVar(&config.externalMessageQueue, "queue_external_message", "", "queue name for receiving external messages")
 	flag.StringVar(&config.inAppMessageQueue, "queue_inapp_message", "", "queue name for receiving in app messages")
+	flag.StringVar(&config.kmsKeyARN, "kms_key_arn", "", "the arn of the master key that should be used to encrypt outbound and decrypt inbound data")
 }
 
 func main() {
@@ -81,6 +83,7 @@ func main() {
 		directory.NewDirectoryClient(directoryConn),
 		threading.NewThreadsClient(threadConn),
 		excomms.NewExCommsClient(excommsConn),
+		config.kmsKeyARN,
 	)
 	if err != nil {
 		golog.Fatalf(err.Error())

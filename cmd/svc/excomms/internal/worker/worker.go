@@ -9,7 +9,6 @@ import (
 	"net/mail"
 	"strconv"
 
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
@@ -41,23 +40,22 @@ type IncomingRawMessageWorker struct {
 }
 
 func NewWorker(
-	awsSession *session.Session,
 	incomingRawMessageQueueName string,
 	snsAPI snsiface.SNSAPI,
+	sqsAPI sqsiface.SQSAPI,
 	externalMessageTopic string,
 	dal dal.DAL,
 	store storage.Store,
 	twilioAccountSID, twilioAuthToken string) (*IncomingRawMessageWorker, error) {
 
-	incomingRawMessageQueue := sqs.New(awsSession)
-	res, err := incomingRawMessageQueue.GetQueueUrl(&sqs.GetQueueUrlInput{
+	res, err := sqsAPI.GetQueueUrl(&sqs.GetQueueUrlInput{
 		QueueName: ptr.String(incomingRawMessageQueueName),
 	})
 	if err != nil {
 		return nil, err
 	}
 	return &IncomingRawMessageWorker{
-		sqsAPI:               incomingRawMessageQueue,
+		sqsAPI:               sqsAPI,
 		sqsURL:               *res.QueueUrl,
 		externalMessageTopic: externalMessageTopic,
 		snsAPI:               snsAPI,

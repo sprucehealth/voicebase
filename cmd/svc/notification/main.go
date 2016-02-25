@@ -4,6 +4,7 @@ import (
 	"flag"
 	"time"
 
+	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sprucehealth/backend/boot"
@@ -11,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/notification/internal/service"
 	nsettings "github.com/sprucehealth/backend/cmd/svc/notification/internal/settings"
 	cfg "github.com/sprucehealth/backend/common/config"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -39,6 +41,7 @@ var config struct {
 	directoryServiceAddress           string
 	settingsServiceAddress            string
 	webDomain                         string
+	kmsKeyARN                         string
 }
 
 func init() {
@@ -61,6 +64,7 @@ func init() {
 	flag.StringVar(&config.directoryServiceAddress, "directory_addr", "", "host:port of directory service")
 	flag.StringVar(&config.settingsServiceAddress, "settings_addr", "", "host:port of settings service")
 	flag.StringVar(&config.webDomain, "web_domain", "", "the baymax web domain")
+	flag.StringVar(&config.kmsKeyARN, "kms_key_arn", "", "the arn of the master key that should be used to encrypt outbound and decrypt inbound data")
 }
 
 func main() {
@@ -90,6 +94,9 @@ func main() {
 		AWSAccessKey: config.awsAccessKey,
 	}
 
+	if config.kmsKeyARN == "" {
+		golog.Fatalf("KMS key not configured")
+	}
 	if config.webDomain == "" {
 		golog.Fatalf("Web domain not configured")
 	}
@@ -123,6 +130,11 @@ func main() {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
 	}
 
+	eSQS, err := awsutil.NewEncryptedSQS(config.kmsKeyARN, kms.New(baseConfig.AWSSession()), sqs.New(baseConfig.AWSSession()))
+	if err != nil {
+		golog.Fatalf("Unable to initialize Encrypted SQS: %s", err)
+	}
+
 	svc := service.New(
 		dal.New(db),
 		directoryClient,
@@ -133,7 +145,8 @@ func main() {
 			NotificationSQSURL:              config.sqsNotificationURL,
 			AppleDeviceRegistrationSNSARN:   config.snsAppleDeviceRegistrationTopic,
 			AndriodDeviceRegistrationSNSARN: config.snsAndroidDeviceRegistrationTopic,
-			SQSAPI:    sqs.New(baseConfig.AWSSession()),
+			SQSAPI: eSQS,
+			// do not use an encrypted sns client here since these are messages being sent to the client through SNS
 			SNSAPI:    sns.New(baseConfig.AWSSession()),
 			WebDomain: config.webDomain,
 		})

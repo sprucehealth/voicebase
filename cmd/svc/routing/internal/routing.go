@@ -1,10 +1,14 @@
 package internal
 
 import (
+	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sprucehealth/backend/cmd/svc/routing/internal/worker/appmsg"
 	"github.com/sprucehealth/backend/cmd/svc/routing/internal/worker/externalmsg"
+	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/worker"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -25,9 +29,13 @@ func NewRoutingService(
 	externalMessageQueueName, inAppMessageQueueName string,
 	directory directory.DirectoryClient,
 	threading threading.ThreadsClient,
-	excomms excomms.ExCommsClient) (RoutingService, error) {
+	excomms excomms.ExCommsClient,
+	kmsKeyARN string) (RoutingService, error) {
 
-	externalMessageQueue := sqs.New(awsSession)
+	externalMessageQueue, err := awsutil.NewEncryptedSQS(kmsKeyARN, kms.New(awsSession), sqs.New(awsSession))
+	if err != nil {
+		return nil, fmt.Errorf("Unable to initialize enrypted sqs: %s", err.Error())
+	}
 	res, err := externalMessageQueue.GetQueueUrl(&sqs.GetQueueUrlInput{
 		QueueName: ptr.String(externalMessageQueueName),
 	})
@@ -36,7 +44,10 @@ func NewRoutingService(
 	}
 	externalMessageQueueURL := *res.QueueUrl
 
-	appMessageQueue := sqs.New(awsSession)
+	appMessageQueue, err := awsutil.NewEncryptedSQS(kmsKeyARN, kms.New(awsSession), sqs.New(awsSession))
+	if err != nil {
+		return nil, fmt.Errorf("Unable to initialize enrypted sqs: %s", err.Error())
+	}
 	res, err = appMessageQueue.GetQueueUrl(&sqs.GetQueueUrlInput{
 		QueueName: ptr.String(inAppMessageQueueName),
 	})

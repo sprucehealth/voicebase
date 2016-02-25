@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/server"
@@ -49,7 +51,17 @@ func runService() {
 		golog.Fatalf(err.Error())
 	}
 	awsSession := session.New(awsConfig)
-	snsCLI := sns.New(awsSession)
+
+	eSNS, err := awsutil.NewEncryptedSNS(config.kmsKeyARN, kms.New(awsSession), sns.New(awsSession))
+	if err != nil {
+		golog.Fatalf("Unable to initialize enrypted sns: %s", err.Error())
+		return
+	}
+	eSQS, err := awsutil.NewEncryptedSQS(config.kmsKeyARN, kms.New(awsSession), sqs.New(awsSession))
+	if err != nil {
+		golog.Fatalf("Unable to initialize enrypted sqs: %s", err.Error())
+		return
+	}
 
 	directoryConn, err := grpc.Dial(
 		config.directoryServiceURL,
@@ -85,12 +97,11 @@ func runService() {
 	}
 
 	store := storage.NewS3(awsSession, config.attachmentBucket, config.attachmentPrefix)
-
 	dl := dal.NewDAL(db)
 	w, err := worker.NewWorker(
-		awsSession,
 		config.incomingRawMessageQueue,
-		snsCLI,
+		eSNS,
+		eSQS,
 		config.externalMessageTopic,
 		dl,
 		store,
@@ -111,7 +122,7 @@ func runService() {
 		dl,
 		config.excommsAPIURL,
 		directory.NewDirectoryClient(directoryConn),
-		snsCLI,
+		eSNS,
 		config.externalMessageTopic,
 		config.eventTopic,
 		clock.New(),
