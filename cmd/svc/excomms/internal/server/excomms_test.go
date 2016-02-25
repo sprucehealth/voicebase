@@ -107,6 +107,10 @@ func (m *mockMessages_Excomms) SendSMS(from, to, body string) (*twilio.Message, 
 	defer m.Record(from, to, body)
 	return m.msg, nil, nil
 }
+func (m *mockMessages_Excomms) Send(from, to string, params twilio.MessageParams) (*twilio.Message, *twilio.Response, error) {
+	defer m.Record(from, to, params)
+	return m.msg, nil, nil
+}
 
 type mockEmail_Excomms struct {
 	*mock.Expector
@@ -413,7 +417,10 @@ func TestSendMessage_SMS(t *testing.T) {
 		},
 		msg: &twilio.Message{},
 	}
-	mm.Expect(mock.NewExpectation(mm.SendSMS, "+17348465522", "+14152222222", "hello"))
+	mm.Expect(mock.NewExpectation(mm.Send, "+17348465522", "+14152222222", twilio.MessageParams{
+		Body:           "hello",
+		ApplicationSid: "1234",
+	}))
 
 	md := &mockDAL_Excomms{
 		Expector: &mock.Expector{
@@ -438,8 +445,9 @@ func TestSendMessage_SMS(t *testing.T) {
 	}))
 
 	es := &excommsService{
-		twilio: twilio.NewClient("", "", nil),
-		dal:    md,
+		twilio:               twilio.NewClient("", "", nil),
+		dal:                  md,
+		twilioApplicationSID: "1234",
 	}
 	es.twilio.Messages = mm
 

@@ -240,7 +240,10 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 	case excomms.ChannelType_VOICE:
 		return nil, grpcErrorf(codes.Unimplemented, "not implemented")
 	case excomms.ChannelType_SMS:
-		msg, _, err := e.twilio.Messages.SendSMS(in.GetSMS().FromPhoneNumber, in.GetSMS().ToPhoneNumber, in.GetSMS().Text)
+		msg, _, err := e.twilio.Messages.Send(in.GetSMS().FromPhoneNumber, in.GetSMS().ToPhoneNumber, twilio.MessageParams{
+			ApplicationSid: e.twilioApplicationSID,
+			Body:           in.GetSMS().Text,
+		})
 		if err != nil {
 			return nil, grpcErrorf(codes.Internal, err.Error())
 		}
