@@ -40,7 +40,6 @@ func runAPI() {
 	}
 
 	awsSession := baseConfig.AWSSession()
-	snsCLI := sns.New(awsSession)
 
 	dbConfig := &cfg.DB{
 		User:     config.dbUserName,
@@ -88,10 +87,10 @@ func runAPI() {
 		config.resourceCleanerTopic)
 
 	router := mux.NewRouter().StrictSlash(true)
-	router.Handle("/twilio/sms", handlers.NewTwilioSMSHandler(dl, config.incomingRawMessageTopic, snsCLI))
+	router.Handle("/twilio/sms", handlers.NewTwilioSMSHandler(dl, config.incomingRawMessageTopic, eSNS))
 	router.Handle("/twilio/sms/status", handlers.NewTwilioRequestHandler(eh))
 	router.Handle("/twilio/call/{event}", handlers.NewTwilioRequestHandler(eh))
-	router.Handle("/sendgrid/email", handlers.NewSendGridHandler(config.incomingRawMessageTopic, snsCLI, dl, store))
+	router.Handle("/sendgrid/email", handlers.NewSendGridHandler(config.incomingRawMessageTopic, eSNS, dl, store))
 
 	webRequestLogger := func(ctx context.Context, ev *httputil.RequestEvent) {
 
