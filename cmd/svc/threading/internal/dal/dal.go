@@ -791,8 +791,8 @@ func (d *dal) UpdateOnboardingState(ctx context.Context, threadID models.ThreadI
 	if args.IsEmpty() {
 		return nil
 	}
-	_, err := d.db.Exec(`UPDATE onboarding_threads SET `+args.ColumnsForUpdate()+` WHERE id = ?`,
-		append(args.Values(), threadID))
+	_, err := d.db.Exec(`UPDATE onboarding_threads SET `+args.ColumnsForUpdate()+` WHERE thread_id = ?`,
+		append(args.Values(), threadID)...)
 	return errors.Trace(err)
 }
 
