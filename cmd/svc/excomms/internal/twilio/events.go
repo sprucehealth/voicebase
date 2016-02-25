@@ -332,6 +332,11 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 
 	numbers := make([]interface{}, 0, maxPhoneNumbers)
 	for _, p := range forwardingList {
+		parsedPn, err := phone.Format(p, phone.E164)
+		if err != nil {
+			golog.Errorf("Unable to parse phone number %s: %s", p, err.Error())
+			continue
+		}
 		if len(numbers) == maxPhoneNumbers {
 			golog.Errorf("Org %s is currently configured to simultaneously call more than 10 numbers when that is the maximum that twilio supports.", organizationID)
 			break
@@ -339,7 +344,7 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 
 		// check if send all calls to voicemail setting is on
 		// for any provider in the forwarding list
-		eID, ok := phoneNumberToProviderMap[p]
+		eID, ok := phoneNumberToProviderMap[parsedPn]
 		if ok {
 			val := sendAllCallsToVoicemailMap.Get(eID)
 			if val != nil && val.(bool) {
