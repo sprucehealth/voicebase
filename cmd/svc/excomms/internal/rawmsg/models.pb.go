@@ -217,6 +217,7 @@ type TwilioParams struct {
 	DialCallDuration uint32                     `protobuf:"varint,24,opt,name=dial_call_duration,proto3" json:"dial_call_duration,omitempty"`
 	RecordingMediaID uint64                     `protobuf:"varint,25,opt,name=recording_media_id,proto3" json:"recording_media_id,omitempty"`
 	MessageStatus    TwilioParams_MessageStatus `protobuf:"varint,26,opt,name=message_status,proto3,enum=rawmsg.TwilioParams_MessageStatus" json:"message_status,omitempty"`
+	DialCallSID      string                     `protobuf:"bytes,27,opt,name=dial_call_sid,proto3" json:"dial_call_sid,omitempty"`
 	// infrequently used parameters
 	ForwardedFrom string `protobuf:"bytes,100,opt,name=forwarded_from,proto3" json:"forwarded_from,omitempty"`
 	CallerName    string `protobuf:"bytes,101,opt,name=caller_name,proto3" json:"caller_name,omitempty"`
@@ -542,6 +543,9 @@ func (this *TwilioParams) Equal(that interface{}) bool {
 	if this.MessageStatus != that1.MessageStatus {
 		return false
 	}
+	if this.DialCallSID != that1.DialCallSID {
+		return false
+	}
 	if this.ForwardedFrom != that1.ForwardedFrom {
 		return false
 	}
@@ -802,7 +806,7 @@ func (this *TwilioParams) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 40)
+	s := make([]string, 0, 41)
 	s = append(s, "&rawmsg.TwilioParams{")
 	s = append(s, "CallSID: "+fmt.Sprintf("%#v", this.CallSID)+",\n")
 	s = append(s, "AccountSID: "+fmt.Sprintf("%#v", this.AccountSID)+",\n")
@@ -832,6 +836,7 @@ func (this *TwilioParams) GoString() string {
 	s = append(s, "DialCallDuration: "+fmt.Sprintf("%#v", this.DialCallDuration)+",\n")
 	s = append(s, "RecordingMediaID: "+fmt.Sprintf("%#v", this.RecordingMediaID)+",\n")
 	s = append(s, "MessageStatus: "+fmt.Sprintf("%#v", this.MessageStatus)+",\n")
+	s = append(s, "DialCallSID: "+fmt.Sprintf("%#v", this.DialCallSID)+",\n")
 	s = append(s, "ForwardedFrom: "+fmt.Sprintf("%#v", this.ForwardedFrom)+",\n")
 	s = append(s, "CallerName: "+fmt.Sprintf("%#v", this.CallerName)+",\n")
 	s = append(s, "FromCity: "+fmt.Sprintf("%#v", this.FromCity)+",\n")
@@ -1139,6 +1144,14 @@ func (m *TwilioParams) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1
 		i++
 		i = encodeVarintModels(data, i, uint64(m.MessageStatus))
+	}
+	if len(m.DialCallSID) > 0 {
+		data[i] = 0xda
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintModels(data, i, uint64(len(m.DialCallSID)))
+		i += copy(data[i:], m.DialCallSID)
 	}
 	if len(m.ForwardedFrom) > 0 {
 		data[i] = 0xa2
@@ -1600,6 +1613,10 @@ func (m *TwilioParams) Size() (n int) {
 	if m.MessageStatus != 0 {
 		n += 2 + sovModels(uint64(m.MessageStatus))
 	}
+	l = len(m.DialCallSID)
+	if l > 0 {
+		n += 2 + l + sovModels(uint64(l))
+	}
 	l = len(m.ForwardedFrom)
 	if l > 0 {
 		n += 2 + l + sovModels(uint64(l))
@@ -1825,6 +1842,7 @@ func (this *TwilioParams) String() string {
 		`DialCallDuration:` + fmt.Sprintf("%v", this.DialCallDuration) + `,`,
 		`RecordingMediaID:` + fmt.Sprintf("%v", this.RecordingMediaID) + `,`,
 		`MessageStatus:` + fmt.Sprintf("%v", this.MessageStatus) + `,`,
+		`DialCallSID:` + fmt.Sprintf("%v", this.DialCallSID) + `,`,
 		`ForwardedFrom:` + fmt.Sprintf("%v", this.ForwardedFrom) + `,`,
 		`CallerName:` + fmt.Sprintf("%v", this.CallerName) + `,`,
 		`FromCity:` + fmt.Sprintf("%v", this.FromCity) + `,`,
@@ -2613,6 +2631,35 @@ func (m *TwilioParams) Unmarshal(data []byte) error {
 					break
 				}
 			}
+		case 27:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DialCallSID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthModels
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DialCallSID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		case 100:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ForwardedFrom", wireType)

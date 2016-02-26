@@ -81,6 +81,7 @@ message TwilioParams {
 	uint64 recording_media_id = 25 [(gogoproto.customname) = "RecordingMediaID"];
 
 	MessageStatus message_status = 26;
+	string dial_call_sid = 27 [(gogoproto.customname) = "DialCallSID"];
 
 
 	// infrequently used parameters

@@ -379,6 +379,12 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 		return voicemailTWIML(ctx, params, eh)
 	}
 
+	// put the incoming call into the queue to be deleted once the call is complete.
+	cleaner.Publish(eh.sns, eh.resourceCleanerTopic, &models.DeleteResourceRequest{
+		Type:       models.DeleteResourceRequest_TWILIO_CALL,
+		ResourceID: params.CallSID,
+	})
+
 	tw := twiml.NewResponse(
 		&twiml.Dial{
 			CallerID:         params.To,
@@ -524,25 +530,18 @@ func processIncomingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 			}); err != nil {
 				golog.Errorf(err.Error())
 			}
-
-			// Delete the dialed leg as well as the originating call once the call
-			// has been considered complete
-			cleaner.Publish(eh.sns, eh.resourceCleanerTopic, &models.DeleteResourceRequest{
-				Type:       models.DeleteResourceRequest_TWILIO_CALL,
-				ResourceID: params.CallSID,
-			})
-
-			cleaner.Publish(eh.sns, eh.resourceCleanerTopic, &models.DeleteResourceRequest{
-				Type:       models.DeleteResourceRequest_TWILIO_CALL,
-				ResourceID: params.ParentCallSID,
-			})
-
 		})
 
 	case rawmsg.TwilioParams_CALL_STATUS_UNDEFINED:
 	default:
 		return voicemailTWIML(ctx, params, eh)
 	}
+
+	// delete the dialed call
+	cleaner.Publish(eh.sns, eh.resourceCleanerTopic, &models.DeleteResourceRequest{
+		Type:       models.DeleteResourceRequest_TWILIO_CALL,
+		ResourceID: params.DialCallSID,
+	})
 
 	return "", nil
 }

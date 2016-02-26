@@ -38,6 +38,7 @@ func ParamsFromRequest(r *http.Request) (*rawmsg.TwilioParams, error) {
 		QueueSID:           r.FormValue("QueueSid"),
 		DequeingCallSID:    r.FormValue("DequeingCallSid"),
 		ParentCallSID:      r.FormValue("ParentCallSid"),
+		DialCallSID:        r.FormValue("DialCallSID"),
 	}
 
 	t.CallStatus = parseCallStatus(r.FormValue("CallStatus"))

@@ -172,7 +172,7 @@ func testOutgoing(t *testing.T, testExpired bool, patientName string) {
 		mproxynumberManager.Expect(mock.NewExpectation(mproxynumberManager.CallStarted, providerPersonalPhoneNumber, proxyPhoneNumber))
 	}
 
-	es := NewEventHandler(md, nil, mdal, nil, mclock, mproxynumberManager, "https://test.com", "", "", "")
+	es := NewEventHandler(md, nil, mdal, &mockSNS_Twilio{}, mclock, mproxynumberManager, "https://test.com", "", "", "")
 
 	params := &rawmsg.TwilioParams{
 		From:    providerPersonalPhoneNumber.String(),
@@ -265,7 +265,7 @@ func TestIncoming_Organization(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, mdal, nil, clock.New(), nil, "https://test.com", "", "", "")
+	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "")
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -382,7 +382,7 @@ func TestIncoming_Organization_SingleProvider_DirectAllCallsToVoicemail(t *testi
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, mdal, nil, clock.New(), nil, "https://test.com", "", "", "")
+	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "")
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -463,7 +463,7 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, mdal, nil, clock.New(), nil, "https://test.com", "", "", "")
+	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "")
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -582,7 +582,7 @@ func TestIncoming_Organization_MultipleContacts_SendToVoicemail(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, mdal, nil, clock.New(), nil, "https://test.com", "", "", "")
+	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "")
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -670,7 +670,7 @@ func TestIncoming_Provider(t *testing.T) {
 		CallSID:        callSID,
 	}))
 
-	es := NewEventHandler(md, msettings, mdal, nil, clock.New(), nil, "https://test.com", "", "", "")
+	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "")
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -746,7 +746,7 @@ func TestProviderCallConnected(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(mdirectory, nil, mdal, nil, clock.New(), nil, "https://test.com", "", "", "")
+	es := NewEventHandler(mdirectory, nil, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "")
 
 	twiml, err := providerCallConnected(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -813,7 +813,7 @@ func TestProviderCallConnected_NoName(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(mdirectory, nil, mdal, nil, clock.New(), nil, "https://test.com", "", "", "")
+	es := NewEventHandler(mdirectory, nil, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "")
 
 	twiml, err := providerCallConnected(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -904,7 +904,7 @@ func TestProviderEnteredDigits_EnteredOtherDigit(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(mdirectory, nil, mdal, nil, clock.New(), nil, "https://test.com", "", "", "")
+	es := NewEventHandler(mdirectory, nil, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "")
 	twiml, err := providerEnteredDigits(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatal(err)
@@ -958,7 +958,7 @@ func TestVoicemailTwiML(t *testing.T) {
 		Digits: "2",
 	}
 
-	es := NewEventHandler(md, nil, nil, nil, clock.New(), nil, "https://test.com", "", "", "")
+	es := NewEventHandler(md, nil, nil, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "")
 
 	twiml, err := voicemailTWIML(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -1071,8 +1071,8 @@ func testIncomingCallStatus(t *testing.T, incomingStatus rawmsg.TwilioParams_Cal
 	}
 
 	// ensure that item was published
-	if len(ms.published) != 3 {
-		t.Fatalf("Expected %d got %d", 3, len(ms.published))
+	if len(ms.published) != 2 {
+		t.Fatalf("Expected %d got %d", 2, len(ms.published))
 	}
 
 	pem, err := parsePublishedExternalMessage(*ms.published[0].Message)

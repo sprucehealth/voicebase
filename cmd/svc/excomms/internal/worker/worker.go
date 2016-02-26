@@ -208,17 +208,6 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			ResourceID: params.RecordingSID,
 		})
 
-		// also delete the calls that originated in the voicemail
-		cleaner.Publish(w.snsAPI, w.resourceCleanerTopic, &models.DeleteResourceRequest{
-			Type:       models.DeleteResourceRequest_TWILIO_CALL,
-			ResourceID: params.CallSID,
-		})
-
-		cleaner.Publish(w.snsAPI, w.resourceCleanerTopic, &models.DeleteResourceRequest{
-			Type:       models.DeleteResourceRequest_TWILIO_CALL,
-			ResourceID: params.ParentCallSID,
-		})
-
 		_, err = utils.PersistRawMessage(w.dal, mediaMap, rm)
 		if err != nil {
 			return errors.Trace(err)
