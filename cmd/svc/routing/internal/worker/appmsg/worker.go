@@ -124,7 +124,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 	} else if pti.GetItem().Type != threading.ThreadItem_MESSAGE {
 		golog.Debugf("Thread item is not a message, it is of type %s. Ignoring...", pti.GetItem().Type.String())
 		return nil
-	} else if pti.GetItem().GetMessage().Source.Channel != threading.Endpoint_APP {
+	} else if !(pti.GetItem().GetMessage().Source == nil || pti.GetItem().GetMessage().Source.Channel == threading.Endpoint_APP) {
 		golog.Debugf("SourceContact has to have type APP, but has %s. Ignoring...", pti.GetItem().GetMessage().Source.Channel)
 		return nil
 	}
