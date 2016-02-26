@@ -327,7 +327,6 @@ message CreateEmptyThreadRequest {
 	string uuid = 1 [(gogoproto.customname) = "UUID"];
 	string organization_id = 2 [(gogoproto.customname) = "OrganizationID"];
 	string from_entity_id = 3 [(gogoproto.customname) = "FromEntityID"];
-	Endpoint source = 4;
 	string primary_entity_id = 5 [(gogoproto.customname) = "PrimaryEntityID"];
 	string summary = 6;
 }

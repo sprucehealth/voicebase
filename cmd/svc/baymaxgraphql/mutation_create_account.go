@@ -349,17 +349,25 @@ var createAccountMutation = &graphql.Field{
 			// These are created synchronously to enforce strict ordering
 
 			// Create a default internal team thread
-			_, err := ram.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
-				OrganizationID: orgEntityID,
-				Source: &threading.Endpoint{
-					Channel: threading.Endpoint_APP,
-					ID:      orgEntityID,
-				},
+			res, err := ram.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
+				OrganizationID:  orgEntityID,
 				PrimaryEntityID: orgEntityID,
 				Summary:         "No messages yet",
 			})
 			if err != nil {
 				golog.Errorf("Failed to create initial private thread for org %s: %s", orgEntityID, err)
+			} else {
+				// TODO: remove this initial post once all apps support the empty state text
+				initialInternalMsg := "This is the beginning of a conversation that is visible to everyone in your organization.\n\nInvite some colleagues to join and then send a message here to get things started."
+				_, err = ram.PostMessage(ctx, &threading.PostMessageRequest{
+					ThreadID:     res.ID,
+					Text:         initialInternalMsg,
+					FromEntityID: orgEntityID,
+					Summary:      initialInternalMsg,
+				})
+				if err != nil {
+					golog.Errorf("Failed to post initial message in internal thread: %s", err)
+				}
 			}
 
 			// Create a support thread (linked to Spruce support org) and the primary entities for them

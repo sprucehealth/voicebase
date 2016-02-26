@@ -89,15 +89,18 @@ func TestCreateAccountMutation(t *testing.T) {
 	}, nil))
 
 	// Create internal org thread
+
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEmptyThread, &threading.CreateEmptyThreadRequest{
-		OrganizationID: "e_org",
-		Source: &threading.Endpoint{
-			Channel: threading.Endpoint_APP,
-			ID:      "e_org",
-		},
+		OrganizationID:  "e_org",
 		PrimaryEntityID: "e_org",
 		Summary:         "No messages yet",
-	}).WithReturns(&threading.Thread{}, nil))
+	}).WithReturns(&threading.Thread{ID: "t_00000000002D4"}, nil))
+	g.ra.Expect(mock.NewExpectation(g.ra.PostMessage, &threading.PostMessageRequest{
+		ThreadID:     "t_00000000002D4",
+		Text:         "This is the beginning of a conversation that is visible to everyone in your organization.\n\nInvite some colleagues to join and then send a message here to get things started.",
+		FromEntityID: "e_org",
+		Summary:      "This is the beginning of a conversation that is visible to everyone in your organization.\n\nInvite some colleagues to join and then send a message here to get things started.",
+	}).WithReturns(&threading.PostMessageResponse{}, nil))
 
 	// Create linked support threads
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntity, &directory.CreateEntityRequest{

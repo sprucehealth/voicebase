@@ -58,11 +58,7 @@ func main() {
 	}
 
 	_, err = threadingCli.CreateEmptyThread(context.Background(), &threading.CreateEmptyThreadRequest{
-		OrganizationID: orgID,
-		Source: &threading.Endpoint{
-			Channel: threading.Endpoint_APP,
-			ID:      orgID,
-		},
+		OrganizationID:  orgID,
 		PrimaryEntityID: orgID,
 		Summary:         "No messages yet",
 	})

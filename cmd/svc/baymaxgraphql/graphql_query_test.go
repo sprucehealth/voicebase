@@ -68,7 +68,7 @@ func TestNodeQuery(t *testing.T) {
 		Contacts: []*models.ContactInfo{},
 		Entity: &models.Entity{
 			ID:          "entity_222",
-			IsEditable:  false,
+			IsEditable:  true,
 			DisplayName: "Mem",
 			Contacts:    []*models.ContactInfo{},
 			IsInternal:  true,
@@ -92,7 +92,7 @@ func TestNodeQuery(t *testing.T) {
 	}, nil))
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, &models.Entity{ID: id, IsEditable: false, IsInternal: false, DisplayName: "Someone", Contacts: []*models.ContactInfo{}}, res)
+	test.Equals(t, &models.Entity{ID: id, IsEditable: true, IsInternal: false, DisplayName: "Someone", Contacts: []*models.ContactInfo{}}, res)
 	mock.FinishAll(ra)
 
 	// Thread

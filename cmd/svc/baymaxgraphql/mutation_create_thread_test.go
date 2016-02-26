@@ -73,13 +73,9 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEmptyThread, &threading.CreateEmptyThreadRequest{
-		UUID:           "zztop",
-		OrganizationID: "e_org",
-		FromEntityID:   "e_creator",
-		Source: &threading.Endpoint{
-			Channel: threading.Endpoint_APP,
-			ID:      "e_creator",
-		},
+		UUID:            "zztop",
+		OrganizationID:  "e_org",
+		FromEntityID:    "e_creator",
 		PrimaryEntityID: "e_patient",
 		Summary:         "New conversation", // TODO: not sure what we want here. it's a fallback if there's no posts made in the thread.
 
@@ -212,13 +208,9 @@ func TestCreateThreadMutation_DifferentOrg(t *testing.T) {
 	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEmptyThread, &threading.CreateEmptyThreadRequest{
-		UUID:           "zztop",
-		OrganizationID: "e_org",
-		FromEntityID:   "e_creator",
-		Source: &threading.Endpoint{
-			Channel: threading.Endpoint_APP,
-			ID:      "e_creator",
-		},
+		UUID:            "zztop",
+		OrganizationID:  "e_org",
+		FromEntityID:    "e_creator",
 		PrimaryEntityID: "e_patient",
 		Summary:         "New conversation", // TODO: not sure what we want here. it's a fallback if there's no posts made in the thread.
 

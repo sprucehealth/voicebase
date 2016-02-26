@@ -79,11 +79,7 @@ func TestCreateEmptyThread(t *testing.T) {
 		OrganizationID:  "o1",
 		FromEntityID:    "e1",
 		PrimaryEntityID: "e2",
-		Source: &threading.Endpoint{
-			ID:      "555-555-5555",
-			Channel: threading.Endpoint_SMS,
-		},
-		Summary: "summ",
+		Summary:         "summ",
 	})
 	test.OK(t, err)
 	test.Equals(t, &threading.CreateEmptyThreadResponse{

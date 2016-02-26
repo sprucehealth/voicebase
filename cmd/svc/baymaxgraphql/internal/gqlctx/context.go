@@ -24,6 +24,9 @@ func WithSpruceHeaders(ctx context.Context, sh *device.SpruceHeaders) context.Co
 // SpruceHeaders returns the spruce headers which may be nil
 func SpruceHeaders(ctx context.Context) *device.SpruceHeaders {
 	sh, _ := ctx.Value(ctxSpruceHeaders).(*device.SpruceHeaders)
+	if sh == nil {
+		return &device.SpruceHeaders{}
+	}
 	return sh
 }
 

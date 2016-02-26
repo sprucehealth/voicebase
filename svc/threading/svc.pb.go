@@ -1148,23 +1148,15 @@ func (m *CreateThreadResponse) GetThread() *Thread {
 }
 
 type CreateEmptyThreadRequest struct {
-	UUID            string    `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
-	OrganizationID  string    `protobuf:"bytes,2,opt,name=organization_id,proto3" json:"organization_id,omitempty"`
-	FromEntityID    string    `protobuf:"bytes,3,opt,name=from_entity_id,proto3" json:"from_entity_id,omitempty"`
-	Source          *Endpoint `protobuf:"bytes,4,opt,name=source" json:"source,omitempty"`
-	PrimaryEntityID string    `protobuf:"bytes,5,opt,name=primary_entity_id,proto3" json:"primary_entity_id,omitempty"`
-	Summary         string    `protobuf:"bytes,6,opt,name=summary,proto3" json:"summary,omitempty"`
+	UUID            string `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
+	OrganizationID  string `protobuf:"bytes,2,opt,name=organization_id,proto3" json:"organization_id,omitempty"`
+	FromEntityID    string `protobuf:"bytes,3,opt,name=from_entity_id,proto3" json:"from_entity_id,omitempty"`
+	PrimaryEntityID string `protobuf:"bytes,5,opt,name=primary_entity_id,proto3" json:"primary_entity_id,omitempty"`
+	Summary         string `protobuf:"bytes,6,opt,name=summary,proto3" json:"summary,omitempty"`
 }
 
 func (m *CreateEmptyThreadRequest) Reset()      { *m = CreateEmptyThreadRequest{} }
 func (*CreateEmptyThreadRequest) ProtoMessage() {}
-
-func (m *CreateEmptyThreadRequest) GetSource() *Endpoint {
-	if m != nil {
-		return m.Source
-	}
-	return nil
-}
 
 type CreateEmptyThreadResponse struct {
 	Thread *Thread `protobuf:"bytes,1,opt,name=thread" json:"thread,omitempty"`
@@ -3107,9 +3099,6 @@ func (this *CreateEmptyThreadRequest) Equal(that interface{}) bool {
 	if this.FromEntityID != that1.FromEntityID {
 		return false
 	}
-	if !this.Source.Equal(that1.Source) {
-		return false
-	}
 	if this.PrimaryEntityID != that1.PrimaryEntityID {
 		return false
 	}
@@ -4190,14 +4179,11 @@ func (this *CreateEmptyThreadRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 10)
+	s := make([]string, 0, 9)
 	s = append(s, "&threading.CreateEmptyThreadRequest{")
 	s = append(s, "UUID: "+fmt.Sprintf("%#v", this.UUID)+",\n")
 	s = append(s, "OrganizationID: "+fmt.Sprintf("%#v", this.OrganizationID)+",\n")
 	s = append(s, "FromEntityID: "+fmt.Sprintf("%#v", this.FromEntityID)+",\n")
-	if this.Source != nil {
-		s = append(s, "Source: "+fmt.Sprintf("%#v", this.Source)+",\n")
-	}
 	s = append(s, "PrimaryEntityID: "+fmt.Sprintf("%#v", this.PrimaryEntityID)+",\n")
 	s = append(s, "Summary: "+fmt.Sprintf("%#v", this.Summary)+",\n")
 	s = append(s, "}")
@@ -6880,16 +6866,6 @@ func (m *CreateEmptyThreadRequest) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(len(m.FromEntityID)))
 		i += copy(data[i:], m.FromEntityID)
 	}
-	if m.Source != nil {
-		data[i] = 0x22
-		i++
-		i = encodeVarintSvc(data, i, uint64(m.Source.Size()))
-		n29, err := m.Source.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n29
-	}
 	if len(m.PrimaryEntityID) > 0 {
 		data[i] = 0x2a
 		i++
@@ -6924,11 +6900,11 @@ func (m *CreateEmptyThreadResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
-		n30, err := m.Thread.MarshalTo(data[i:])
+		n29, err := m.Thread.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n30
+		i += n29
 	}
 	return i, nil
 }
@@ -7094,11 +7070,11 @@ func (m *SavedQueryResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.SavedQuery.Size()))
-		n31, err := m.SavedQuery.MarshalTo(data[i:])
+		n30, err := m.SavedQuery.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n31
+		i += n30
 	}
 	return i, nil
 }
@@ -7152,11 +7128,11 @@ func (m *ThreadItemResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Item.Size()))
-		n32, err := m.Item.MarshalTo(data[i:])
+		n31, err := m.Item.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n32
+		i += n31
 	}
 	return i, nil
 }
@@ -7294,21 +7270,21 @@ func (m *CreateLinkedThreadsResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Thread1.Size()))
-		n33, err := m.Thread1.MarshalTo(data[i:])
+		n32, err := m.Thread1.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n33
+		i += n32
 	}
 	if m.Thread2 != nil {
 		data[i] = 0x12
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Thread2.Size()))
-		n34, err := m.Thread2.MarshalTo(data[i:])
+		n33, err := m.Thread2.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n34
+		i += n33
 	}
 	return i, nil
 }
@@ -7362,11 +7338,11 @@ func (m *CreateOnboardingThreadResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Thread.Size()))
-		n35, err := m.Thread.MarshalTo(data[i:])
+		n34, err := m.Thread.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n35
+		i += n34
 	}
 	return i, nil
 }
@@ -8259,10 +8235,6 @@ func (m *CreateEmptyThreadRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
-	if m.Source != nil {
-		l = m.Source.Size()
-		n += 1 + l + sovSvc(uint64(l))
-	}
 	l = len(m.PrimaryEntityID)
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
@@ -9088,7 +9060,6 @@ func (this *CreateEmptyThreadRequest) String() string {
 		`UUID:` + fmt.Sprintf("%v", this.UUID) + `,`,
 		`OrganizationID:` + fmt.Sprintf("%v", this.OrganizationID) + `,`,
 		`FromEntityID:` + fmt.Sprintf("%v", this.FromEntityID) + `,`,
-		`Source:` + strings.Replace(fmt.Sprintf("%v", this.Source), "Endpoint", "Endpoint", 1) + `,`,
 		`PrimaryEntityID:` + fmt.Sprintf("%v", this.PrimaryEntityID) + `,`,
 		`Summary:` + fmt.Sprintf("%v", this.Summary) + `,`,
 		`}`,
@@ -15327,39 +15298,6 @@ func (m *CreateEmptyThreadRequest) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.FromEntityID = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Source", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSvc
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Source == nil {
-				m.Source = &Endpoint{}
-			}
-			if err := m.Source.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {

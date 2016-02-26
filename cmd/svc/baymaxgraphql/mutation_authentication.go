@@ -167,11 +167,12 @@ var authenticateMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 
-		svc.segmentio.Identify(&analytics.Identify{
+		eh := gqlctx.SpruceHeaders(ctx)
+		svc.segmentio.Track(&analytics.Track{
 			UserId: acc.ID,
-			Traits: map[string]interface{}{
-				"name":  res.Account.FirstName + " " + res.Account.LastName,
-				"email": email,
+			Event:  "signedin",
+			Properties: map[string]interface{}{
+				"platform": eh.Platform.String(),
 			},
 		})
 

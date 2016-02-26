@@ -284,13 +284,9 @@ var createThreadMutation = &graphql.Field{
 		}
 
 		thread, err := ram.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
-			UUID:           uuid,
-			OrganizationID: orgID,
-			FromEntityID:   creatorEnt.ID,
-			Source: &threading.Endpoint{
-				Channel: threading.Endpoint_APP,
-				ID:      creatorEnt.ID,
-			},
+			UUID:            uuid,
+			OrganizationID:  orgID,
+			FromEntityID:    creatorEnt.ID,
 			PrimaryEntityID: primaryEnt.ID,
 			Summary:         "New conversation", // TODO: not sure what we want here. it's a fallback if there's no posts made in the thread.
 		})
