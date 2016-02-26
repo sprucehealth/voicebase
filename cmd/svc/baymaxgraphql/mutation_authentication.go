@@ -3,6 +3,7 @@ package main
 import (
 	"time"
 
+	"github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
@@ -165,6 +166,14 @@ var authenticateMutation = &graphql.Field{
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
+
+		svc.segmentio.Identify(&analytics.Identify{
+			UserId: acc.ID,
+			Traits: map[string]interface{}{
+				"name":  res.Account.FirstName + " " + res.Account.LastName,
+				"email": email,
+			},
+		})
 
 		// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
 		// that likely won't change, but this still isn't a great way to update the context.

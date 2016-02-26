@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/rs/cors"
+	"github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/boot"
 	mediastore "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/stub"
@@ -46,6 +47,7 @@ var (
 	flagServiceNumber   = flag.String("service_phone_number", "", "TODO: This should be managed by the excomms service")
 	flagSpruceOrgID     = flag.String("spruce_org_id", "", "`ID` for the Spruce support organization")
 	flagStaticURLPrefix = flag.String("static_url_prefix", "", "URL prefix of static assets")
+	flagSegmentIOKey    = flag.String("segmentio_key", "", "Segment IO API `key`")
 
 	// Services
 	flagAuthAddr      = flag.String("auth_addr", "", "host:port of auth service")
@@ -181,7 +183,6 @@ func main() {
 			SQSDeviceDeregistrationURL: *flagSQSDeviceDeregistrationURL,
 		})
 
-	r := mux.NewRouter()
 	if *flagSigKeys == "" {
 		golog.Fatalf("Signature keys not specified")
 	}
@@ -212,7 +213,14 @@ func main() {
 
 	corsOrigins := []string{"https://" + *flagWebDomain}
 
-	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, settingsClient, inviteClient, ms, *flagEmailDomain, *flagWebDomain, pn, *flagSpruceOrgID, *flagStaticURLPrefix)
+	var segmentClient *analytics.Client
+	if *flagSegmentIOKey != "" {
+		segmentClient = analytics.New(*flagSegmentIOKey)
+		defer segmentClient.Close()
+	}
+
+	r := mux.NewRouter()
+	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, settingsClient, inviteClient, ms, *flagEmailDomain, *flagWebDomain, pn, *flagSpruceOrgID, *flagStaticURLPrefix, segmentClient)
 	r.Handle("/graphql", httputil.ToContextHandler(cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},

@@ -33,6 +33,7 @@ func newGQL(t *testing.T) *gql {
 		settings:     g.settingsC,
 		notification: g.notificationC,
 		spruceOrgID:  "spruce_org",
+		segmentio:    &segmentIOWrapper{},
 	}
 	return &g
 }

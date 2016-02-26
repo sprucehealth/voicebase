@@ -31,6 +31,7 @@ type service struct {
 	webDomain       string
 	staticURLPrefix string
 	spruceOrgID     string
+	segmentio       *segmentIOWrapper
 	// TODO: Remove this
 	serviceNumber phone.Number
 }

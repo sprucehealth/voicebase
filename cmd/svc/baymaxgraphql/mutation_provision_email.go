@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
@@ -254,6 +255,14 @@ var provisionEmailMutation = &graphql.Field{
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
+
+		svc.segmentio.Track(&analytics.Track{
+			Event:  "provisioned-email",
+			UserId: acc.ID,
+			Properties: map[string]interface{}{
+				"email": emailAddress,
+			},
+		})
 
 		var e *models.Entity
 		var o *models.Organization

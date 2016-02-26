@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
@@ -92,6 +93,7 @@ func NewGraphQL(
 	serviceNumber phone.Number,
 	spruceOrgID string,
 	staticURLPrefix string,
+	segmentClient *analytics.Client,
 ) httputil.ContextHandler {
 	return &graphQLHandler{
 		auth: authClient,
@@ -106,6 +108,7 @@ func NewGraphQL(
 			invite:          invite,
 			spruceOrgID:     spruceOrgID,
 			staticURLPrefix: staticURLPrefix,
+			segmentio:       &segmentIOWrapper{Client: segmentClient},
 		},
 	}
 }

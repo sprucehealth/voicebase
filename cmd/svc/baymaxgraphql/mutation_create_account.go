@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/segmentio/analytics-go"
 	"strings"
 	"time"
 
@@ -292,6 +293,43 @@ var createAccountMutation = &graphql.Field{
 			}
 			accEntityID = ent.ID
 		}
+
+		headers := gqlctx.SpruceHeaders(ctx)
+		var platform string
+		if headers != nil {
+			platform = headers.Platform.String()
+		}
+		svc.segmentio.Identify(&analytics.Identify{
+			UserId: acc.ID,
+			Traits: map[string]interface{}{
+				"name":              res.Account.FirstName + " " + res.Account.LastName,
+				"first_name":        res.Account.FirstName,
+				"last_name":         res.Account.LastName,
+				"email":             req.Email,
+				"title":             entityInfo.ShortTitle,
+				"organization_name": organizationName,
+				"platform":          platform,
+			},
+		})
+		svc.segmentio.Group(&analytics.Group{
+			UserId:  acc.ID,
+			GroupId: orgEntityID,
+			Traits: map[string]interface{}{
+				"name": organizationName,
+			},
+		})
+		props := map[string]interface{}{
+			"entity_id":       accEntityID,
+			"organization_id": orgEntityID,
+		}
+		if inv != nil {
+			props["invite"] = inv.Type.String()
+		}
+		svc.segmentio.Track(&analytics.Track{
+			Event:      "signedup",
+			UserId:     acc.ID,
+			Properties: props,
+		})
 
 		// Create a default saved query
 		if err = ram.CreateSavedQuery(ctx, &threading.CreateSavedQueryRequest{
