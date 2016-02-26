@@ -14,6 +14,11 @@ const (
 	// ErrorCodeResourceNotFound is returned when the requested resource was not found
 	// https://www.twilio.com/docs/api/errors/20404
 	ErrorCodeResourceNotFound = 20404
+
+	// ErrorCodeInvalidToPhoneNumber is returned when there was an attempt to initiate an outbound call
+	// or send a message to an invalid phone number.
+	// https://www.twilio.com/docs/api/errors/21211
+	ErrorCodeInvalidToPhoneNumber = 21211
 )
 
 // Exception holds information about error response returned by Twilio API

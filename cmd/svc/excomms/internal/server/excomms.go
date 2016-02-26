@@ -245,6 +245,14 @@ func (e *excommsService) SendMessage(ctx context.Context, in *excomms.SendMessag
 			Body:           in.GetSMS().Text,
 		})
 		if err != nil {
+			if e, ok := err.(*twilio.Exception); ok {
+				if e.Code == twilio.ErrorCodeInvalidToPhoneNumber {
+					// drop the message since the phone number is invalid.
+					// TODO: In the future we might want to indicate to the provider
+					// that they entered an invalid phone number?
+					return &excomms.SendMessageResponse{}, nil
+				}
+			}
 			return nil, grpcErrorf(codes.Internal, err.Error())
 		}
 		sentMessage.Message = &models.SentMessage_SMSMsg{
