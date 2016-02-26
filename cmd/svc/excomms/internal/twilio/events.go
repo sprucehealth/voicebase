@@ -646,7 +646,7 @@ func processVoicemail(ctx context.Context, params *rawmsg.TwilioParams, eh *even
 
 func processOutgoingSMSStatus(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 	switch params.MessageStatus {
-	case rawmsg.TwilioParams_MSG_STATUS_SENT:
+	case rawmsg.TwilioParams_MSG_STATUS_DELIVERED:
 		cleaner.Publish(eh.sns, eh.resourceCleanerTopic, &models.DeleteResourceRequest{
 			Type:       models.DeleteResourceRequest_TWILIO_SMS,
 			ResourceID: params.MessageSID,
