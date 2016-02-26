@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/segmentio/analytics-go"
 	"strings"
 	"time"
 
+	"github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
@@ -19,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
@@ -299,37 +300,48 @@ var createAccountMutation = &graphql.Field{
 		if headers != nil {
 			platform = headers.Platform.String()
 		}
-		svc.segmentio.Identify(&analytics.Identify{
-			UserId: acc.ID,
-			Traits: map[string]interface{}{
-				"name":              res.Account.FirstName + " " + res.Account.LastName,
-				"first_name":        res.Account.FirstName,
-				"last_name":         res.Account.LastName,
-				"email":             req.Email,
-				"title":             entityInfo.ShortTitle,
-				"organization_name": organizationName,
-				"platform":          platform,
-				"createdAt":         time.Now().Unix(),
-			},
-		})
-		svc.segmentio.Group(&analytics.Group{
-			UserId:  acc.ID,
-			GroupId: orgEntityID,
-			Traits: map[string]interface{}{
-				"name": organizationName,
-			},
-		})
-		props := map[string]interface{}{
-			"entity_id":       accEntityID,
-			"organization_id": orgEntityID,
-		}
-		if inv != nil {
-			props["invite"] = inv.Type.String()
-		}
-		svc.segmentio.Track(&analytics.Track{
-			Event:      "signedup",
-			UserId:     acc.ID,
-			Properties: props,
+		conc.Go(func() {
+			orgName := organizationName
+			if inv != nil {
+				oe, err := ram.Entity(context.Background(), orgEntityID, nil, 0)
+				if err != nil {
+					golog.Errorf("Failed to lookup organization %s: %s", orgEntityID, err)
+				} else {
+					orgName = oe.Info.DisplayName
+				}
+			}
+			svc.segmentio.Identify(&analytics.Identify{
+				UserId: acc.ID,
+				Traits: map[string]interface{}{
+					"name":              res.Account.FirstName + " " + res.Account.LastName,
+					"first_name":        res.Account.FirstName,
+					"last_name":         res.Account.LastName,
+					"email":             req.Email,
+					"title":             entityInfo.ShortTitle,
+					"organization_name": orgName,
+					"platform":          platform,
+					"createdAt":         time.Now().Unix(),
+				},
+			})
+			svc.segmentio.Group(&analytics.Group{
+				UserId:  acc.ID,
+				GroupId: orgEntityID,
+				Traits: map[string]interface{}{
+					"name": orgName,
+				},
+			})
+			props := map[string]interface{}{
+				"entity_id":       accEntityID,
+				"organization_id": orgEntityID,
+			}
+			if inv != nil {
+				props["invite"] = inv.Type.String()
+			}
+			svc.segmentio.Track(&analytics.Track{
+				Event:      "signedup",
+				UserId:     acc.ID,
+				Properties: props,
+			})
 		})
 
 		// Create a default saved query

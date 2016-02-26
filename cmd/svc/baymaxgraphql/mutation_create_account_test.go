@@ -301,6 +301,14 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 		ID: "e_int",
 	}, nil))
 
+	// Analytics looks up the organization to get the name for invites
+	g.ra.Expect(mock.NewExpectation(g.ra.Entity, "e_org_inv", []directory.EntityInformation(nil), int64(0)).WithReturns(
+		&directory.Entity{
+			Info: &directory.EntityInfo{
+				DisplayName: "The Org",
+			},
+		}, nil))
+
 	// Create saved query
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateSavedQuery, &threading.CreateSavedQueryRequest{
 		OrganizationID: "e_org_inv",
