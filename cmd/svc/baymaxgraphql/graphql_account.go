@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -47,6 +48,9 @@ var accountType = graphql.NewObject(
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)
 					}
+
+					sh := gqlctx.SpruceHeaders(p.Context)
+
 					var orgs []*models.Organization
 					for _, e := range entities {
 						for _, em := range e.Memberships {
@@ -55,7 +59,7 @@ var accountType = graphql.NewObject(
 								if err != nil {
 									return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform org contacts: %+v", err))
 								}
-								entity, err := transformEntityToResponse(svc.staticURLPrefix, e)
+								entity, err := transformEntityToResponse(svc.staticURLPrefix, e, sh)
 								if err != nil {
 									return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity: %+v", err))
 								}

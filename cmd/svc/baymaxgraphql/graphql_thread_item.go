@@ -264,7 +264,9 @@ var threadItemType = graphql.NewObject(
 					if err != nil {
 						return nil, err
 					}
-					ent, err := transformEntityToResponse(svc.staticURLPrefix, entity)
+
+					sh := gqlctx.SpruceHeaders(ctx)
+					ent, err := transformEntityToResponse(svc.staticURLPrefix, entity, sh)
 					if err != nil {
 						return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity: %s", err))
 					}

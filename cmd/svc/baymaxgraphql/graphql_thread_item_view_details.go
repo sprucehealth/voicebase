@@ -3,12 +3,12 @@ package main
 import (
 	"fmt"
 
-	"golang.org/x/net/context"
-
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/graphql"
+	"golang.org/x/net/context"
 )
 
 var threadItemViewDetailsType = graphql.NewObject(
@@ -36,7 +36,9 @@ var threadItemViewDetailsType = graphql.NewObject(
 					if err != nil {
 						return nil, err
 					}
-					ent, err := transformEntityToResponse(svc.staticURLPrefix, e)
+
+					sh := gqlctx.SpruceHeaders(ctx)
+					ent, err := transformEntityToResponse(svc.staticURLPrefix, e, sh)
 					if err != nil {
 						return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity: %s", err))
 					}

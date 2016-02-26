@@ -125,6 +125,8 @@ func lookupEntity(ctx context.Context, svc *service, ram raccess.ResourceAccesso
 	if err != nil {
 		return nil, errors.InternalError(ctx, fmt.Errorf("failed to transform entity contacts: %+v", err))
 	}
+
+	sh := gqlctx.SpruceHeaders(ctx)
 	switch em.Type {
 	case directory.EntityType_ORGANIZATION:
 		org := &models.Organization{
@@ -140,7 +142,7 @@ func lookupEntity(ctx context.Context, svc *service, ram raccess.ResourceAccesso
 				return nil, errors.InternalError(ctx, err)
 			}
 			if e != nil {
-				org.Entity, err = transformEntityToResponse(svc.staticURLPrefix, e)
+				org.Entity, err = transformEntityToResponse(svc.staticURLPrefix, e, sh)
 				if err != nil {
 					return nil, errors.InternalError(ctx, err)
 				}
@@ -148,7 +150,7 @@ func lookupEntity(ctx context.Context, svc *service, ram raccess.ResourceAccesso
 		}
 		return org, nil
 	case directory.EntityType_INTERNAL, directory.EntityType_EXTERNAL, directory.EntityType_SYSTEM:
-		e, err := transformEntityToResponse(svc.staticURLPrefix, em)
+		e, err := transformEntityToResponse(svc.staticURLPrefix, em, sh)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}

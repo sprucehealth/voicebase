@@ -102,6 +102,8 @@ var provisionEmailMutation = &graphql.Field{
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 		acc := gqlctx.Account(ctx)
+		sh := gqlctx.SpruceHeaders(ctx)
+
 		if acc == nil {
 			return nil, errors.ErrNotAuthenticated(ctx)
 		}
@@ -256,12 +258,13 @@ var provisionEmailMutation = &graphql.Field{
 		var e *models.Entity
 		var o *models.Organization
 		if organizationID != "" {
-			o, err = transformOrganizationToResponse(svc.staticURLPrefix, createContactRes.Entity, ent)
+			o, err = transformOrganizationToResponse(svc.staticURLPrefix, createContactRes.Entity, ent, sh)
 			if err != nil {
 				return nil, errors.InternalError(ctx, err)
 			}
 		} else {
-			e, err = transformEntityToResponse(svc.staticURLPrefix, createContactRes.Entity)
+			sh := gqlctx.SpruceHeaders(ctx)
+			e, err = transformEntityToResponse(svc.staticURLPrefix, createContactRes.Entity, sh)
 			if err != nil {
 				return nil, errors.InternalError(ctx, err)
 			}

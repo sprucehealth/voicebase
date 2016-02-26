@@ -6,6 +6,9 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/common"
+	"github.com/sprucehealth/backend/device"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
@@ -219,15 +222,24 @@ func transformSavedQueryToResponse(sq *threading.SavedQuery) (*models.SavedThrea
 	}, nil
 }
 
-func transformEntityToResponse(staticURLPrefix string, e *directory.Entity) (*models.Entity, error) {
+func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *device.SpruceHeaders) (*models.Entity, error) {
 	oc, err := transformContactsToResponse(e.Contacts)
 	if err != nil {
 		return nil, errors.Trace(fmt.Errorf("failed to transform contacts for entity %s: %s", e.ID, err))
 	}
+
+	isEditable := false
+	if e.Type != directory.EntityType_SYSTEM && sh != nil {
+		if sh.Platform == common.IOS {
+			isEditable = sh.AppVersion != nil && !sh.AppVersion.Equals(&encoding.Version{Major: 1})
+		} else {
+			isEditable = true
+		}
+	}
+
 	ent := &models.Entity{
-		ID: e.ID,
-		// IsEditable:    e.Type != directory.EntityType_SYSTEM,
-		IsEditable:    false,
+		ID:            e.ID,
+		IsEditable:    isEditable,
 		Contacts:      oc,
 		FirstName:     e.Info.FirstName,
 		MiddleInitial: e.Info.MiddleInitial,
@@ -298,7 +310,7 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity) (*mo
 	return ent, nil
 }
 
-func transformOrganizationToResponse(staticURLPrefix string, org *directory.Entity, provider *directory.Entity) (*models.Organization, error) {
+func transformOrganizationToResponse(staticURLPrefix string, org *directory.Entity, provider *directory.Entity, sh *device.SpruceHeaders) (*models.Organization, error) {
 	o := &models.Organization{
 		ID:   org.ID,
 		Name: org.Info.DisplayName,
@@ -311,7 +323,7 @@ func transformOrganizationToResponse(staticURLPrefix string, org *directory.Enti
 
 	o.Contacts = oc
 
-	e, err := transformEntityToResponse(staticURLPrefix, provider)
+	e, err := transformEntityToResponse(staticURLPrefix, provider, sh)
 	if err != nil {
 		return nil, err
 	}

@@ -85,6 +85,8 @@ var provisionPhoneNumberMutation = &graphql.Field{
 		ctx := p.Context
 		svc := serviceFromParams(p)
 		acc := gqlctx.Account(ctx)
+		sh := gqlctx.SpruceHeaders(ctx)
+
 		if acc == nil {
 			return nil, errors.ErrNotAuthenticated(ctx)
 		}
@@ -144,7 +146,7 @@ var provisionPhoneNumberMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 
-		orgRes, err := transformOrganizationToResponse(svc.staticURLPrefix, createContactRes.Entity, entity)
+		orgRes, err := transformOrganizationToResponse(svc.staticURLPrefix, createContactRes.Entity, entity, sh)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
