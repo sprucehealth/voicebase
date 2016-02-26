@@ -3,6 +3,7 @@ package main
 import (
 	"strings"
 
+	"github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
@@ -86,6 +87,7 @@ var createThreadMutation = &graphql.Field{
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
+		svc := serviceFromParams(p)
 		acc := gqlctx.Account(ctx)
 		if acc == nil {
 			return nil, errors.ErrNotAuthenticated(ctx)
@@ -303,6 +305,14 @@ var createThreadMutation = &graphql.Field{
 		if err := hydrateThreads(ctx, ram, []*models.Thread{th}); err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
+
+		svc.segmentio.Track(&analytics.Track{
+			Event:  "created-thread",
+			UserId: acc.ID,
+			Properties: map[string]interface{}{
+				"organization_id": orgID,
+			},
+		})
 
 		return &createThreadOutput{
 			ClientMutationID: mutationID,

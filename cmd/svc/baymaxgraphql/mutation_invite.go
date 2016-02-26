@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
@@ -130,6 +131,17 @@ var inviteColleaguesMutation = &graphql.Field{
 			Colleagues:           colleagues,
 		}); err != nil {
 			return nil, errors.InternalError(ctx, err)
+		}
+
+		for _, c := range colleagues {
+			svc.segmentio.Track(&analytics.Track{
+				Event:  "invited-colleague",
+				UserId: acc.ID,
+				Properties: map[string]interface{}{
+					"email":        c.Email,
+					"phone_number": c.PhoneNumber,
+				},
+			})
 		}
 
 		return &inviteColleaguesOutput{

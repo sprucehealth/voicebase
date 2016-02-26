@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
@@ -264,6 +265,15 @@ var postMessageMutation = &graphql.Field{
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
+
+		svc.segmentio.Track(&analytics.Track{
+			Event:  "posted-message",
+			UserId: acc.ID,
+			Properties: map[string]interface{}{
+				"organization_id": thr.OrganizationID,
+				"thread_id":       req.ThreadID,
+			},
+		})
 
 		it, err := transformThreadItemToResponse(pmres.Item, req.UUID, acc.ID, svc.mediaSigner)
 		if err != nil {

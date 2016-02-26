@@ -309,6 +309,7 @@ var createAccountMutation = &graphql.Field{
 				"title":             entityInfo.ShortTitle,
 				"organization_name": organizationName,
 				"platform":          platform,
+				"createdAt":         time.Now().Unix(),
 			},
 		})
 		svc.segmentio.Group(&analytics.Group{
