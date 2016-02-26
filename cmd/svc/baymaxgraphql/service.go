@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
@@ -58,7 +59,8 @@ func hydrateThreads(ctx context.Context, ram raccess.ResourceAccessor, threads [
 				thread.PrimaryEntity = entity
 			}
 			thread.Title = threadTitleForEntity(thread.PrimaryEntity)
-			thread.AllowInternalMessages = thread.PrimaryEntity.Type == directory.EntityType_EXTERNAL || thread.PrimaryEntity.Type == directory.EntityType_SYSTEM
+			// TODO: checking the thread title is crazy brittle but for now don't have a way to tell apart SYSTEM entities
+			thread.AllowInternalMessages = thread.PrimaryEntity.Type == directory.EntityType_EXTERNAL || (thread.PrimaryEntity.Type == directory.EntityType_SYSTEM && !strings.HasPrefix(thread.Title, "Team "))
 			thread.IsDeletable = thread.PrimaryEntity.Type == directory.EntityType_EXTERNAL
 			if thread.MessageCount == 0 && thread.PrimaryEntity.Type == directory.EntityType_ORGANIZATION {
 				thread.EmptyStateTextMarkup = "This is the beginning of a conversation that is visible to everyone in your organization.\n\nInvite some colleagues to join and then send a message here to get things started."

@@ -90,15 +90,25 @@ func TestCreateAccountMutation(t *testing.T) {
 
 	// Create internal org thread
 
+	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntity, &directory.CreateEntityRequest{
+		EntityInfo: &directory.EntityInfo{
+			DisplayName: "Team org",
+			GroupName:   "Team org",
+		},
+		Type: directory.EntityType_SYSTEM,
+		InitialMembershipEntityID: "e_org",
+	}).WithReturns(&directory.Entity{
+		ID: "e_intorg_1",
+	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEmptyThread, &threading.CreateEmptyThreadRequest{
 		OrganizationID:  "e_org",
-		PrimaryEntityID: "e_org",
+		PrimaryEntityID: "e_intorg_1",
 		Summary:         "No messages yet",
 	}).WithReturns(&threading.Thread{ID: "t_00000000002D4"}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.PostMessage, &threading.PostMessageRequest{
 		ThreadID:     "t_00000000002D4",
 		Text:         "This is the beginning of a conversation that is visible to everyone in your organization.\n\nInvite some colleagues to join and then send a message here to get things started.",
-		FromEntityID: "e_org",
+		FromEntityID: "e_intorg_1",
 		Summary:      "This is the beginning of a conversation that is visible to everyone in your organization.\n\nInvite some colleagues to join and then send a message here to get things started.",
 	}).WithReturns(&threading.PostMessageResponse{}, nil))
 
