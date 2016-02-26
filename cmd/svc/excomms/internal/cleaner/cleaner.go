@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/libs/awsutil"
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/twilio"
 )
@@ -53,7 +54,7 @@ func (w *Worker) processSNSEvent(msg string) error {
 		return nil
 	}
 
-	return w.processEvent(&drr)
+	return errors.Trace(w.processEvent(&drr))
 }
 
 func (w *Worker) processEvent(drr *models.DeleteResourceRequest) error {
@@ -65,7 +66,7 @@ func (w *Worker) processEvent(drr *models.DeleteResourceRequest) error {
 			if e, ok := err.(*twilio.Exception); ok && e.Code == twilio.ErrorCodeResourceNotFound {
 				return nil
 			}
-			return err
+			return errors.Trace(err)
 		}
 		switch call.Status {
 		case "busy", "completed", "failed", "canceled", "no-answer":
@@ -78,7 +79,7 @@ func (w *Worker) processEvent(drr *models.DeleteResourceRequest) error {
 			if e, ok := err.(*twilio.Exception); ok && e.Code == twilio.ErrorCodeResourceNotFound {
 				return nil
 			}
-			return err
+			return errors.Trace(err)
 		}
 	case models.DeleteResourceRequest_TWILIO_MEDIA:
 		_, err := w.twilio.Messages.DeleteMedia(drr.ResourceID)
@@ -86,7 +87,7 @@ func (w *Worker) processEvent(drr *models.DeleteResourceRequest) error {
 			if e, ok := err.(*twilio.Exception); ok && e.Code == twilio.ErrorCodeResourceNotFound {
 				return nil
 			}
-			return err
+			return errors.Trace(err)
 		}
 	case models.DeleteResourceRequest_TWILIO_RECORDING:
 		_, err := w.twilio.Recording.Delete(drr.ResourceID)
@@ -94,7 +95,7 @@ func (w *Worker) processEvent(drr *models.DeleteResourceRequest) error {
 			if e, ok := err.(*twilio.Exception); ok && e.Code == twilio.ErrorCodeResourceNotFound {
 				return nil
 			}
-			return err
+			return errors.Trace(err)
 		}
 
 	case models.DeleteResourceRequest_TWILIO_SMS:
@@ -103,7 +104,7 @@ func (w *Worker) processEvent(drr *models.DeleteResourceRequest) error {
 			if e, ok := err.(*twilio.Exception); ok && e.Code == twilio.ErrorCodeResourceNotFound {
 				return nil
 			}
-			return err
+			return errors.Trace(err)
 		}
 	}
 

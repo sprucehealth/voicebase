@@ -311,7 +311,7 @@ func (w *IncomingRawMessageWorker) uploadTwilioMediaToS3(contentType string, url
 	// via the response body
 	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
 	}
 
 	id, err := idgen.NewID()
