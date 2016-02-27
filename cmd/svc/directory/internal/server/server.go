@@ -217,7 +217,7 @@ func (s *server) validateCreateEntityRequest(rd *directory.CreateEntityRequest) 
 		}
 	}
 	if rd.EntityInfo == nil {
-		return grpcErrorf(codes.InvalidArgument, "Entity info must be provided")
+		rd.EntityInfo = &directory.EntityInfo{}
 	}
 	for _, contact := range rd.Contacts {
 		if contact.Value == "" {
