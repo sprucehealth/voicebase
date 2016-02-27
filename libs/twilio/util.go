@@ -2,6 +2,7 @@ package twilio
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 )
@@ -14,7 +15,9 @@ func CheckResponse(r *http.Response) error {
 	exception := new(Exception)
 	data, err := ioutil.ReadAll(r.Body)
 	if err == nil && data != nil {
-		json.Unmarshal(data, &exception)
+		if err := json.Unmarshal(data, &exception); err != nil {
+			return errors.New("twilio: unparseable error response: " + string(data))
+		}
 	}
 
 	return exception

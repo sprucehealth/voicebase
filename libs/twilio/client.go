@@ -84,7 +84,10 @@ func (c *Client) NewRequest(method, urlStr string, body io.Reader) (*http.Reques
 
 	u := c.BaseURL.ResolveReference(ul)
 
-	req, _ := http.NewRequest(method, u.String(), body)
+	req, err := http.NewRequest(method, u.String(), body)
+	if err != nil {
+		return nil, err
+	}
 
 	if method == "POST" || method == "PUT" {
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -104,7 +107,6 @@ func (c *Client) Do(req *http.Request, v interface{}) (*Response, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	defer resp.Body.Close()
 
 	response := NewResponse(resp)
