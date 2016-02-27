@@ -105,7 +105,7 @@ func (w *SQSWorker) Start() {
 			for _, item := range sqsRes.Messages {
 				if err := w.processF(*item.Body); err != nil {
 					// TODO: Find a better way to communicate that the message has not been processed yet.
-					if err == ErrMsgNotProcessedYet {
+					if errors.Cause(err) == ErrMsgNotProcessedYet {
 						continue
 					}
 					golog.Errorf(err.Error())
