@@ -54,7 +54,8 @@ message IncomingCallEventItem {
 	}
 	Type type = 1;
 	uint32 duration_in_seconds = 2;
-	string url = 3 [(gogoproto.customname) = "URL"];
+	string voicemail_url = 3 [(gogoproto.customname) = "VoicemailURL"];
+	uint64 voicemail_duration_ns = 4 [(gogoproto.customname) = "VoicemailDurationNS"];
 }
 
 message OutgoingCallEventItem {

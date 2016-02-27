@@ -153,7 +153,7 @@ message ImageAttachment {
 message AudioAttachment {
 	string mimetype = 1;
 	string url = 2 [(gogoproto.customname) = "URL"];
-	uint32 duration_in_seconds = 3;
+	uint64 duration_ns = 4 [(gogoproto.customname) = "DurationNS"];
 }
 
 message GenericURLAttachment {

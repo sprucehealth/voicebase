@@ -1,13 +1,17 @@
 package worker
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/mail"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/aws/aws-sdk-go/service/sqs"
@@ -26,6 +30,7 @@ import (
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/tcolgate/mp3"
 )
 
 type IncomingRawMessageWorker struct {
@@ -200,6 +205,9 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 		if err != nil {
 			return errors.Trace(err)
 		}
+		if media.Duration == 0 {
+			media.Duration = time.Duration(params.RecordingDuration) * time.Second
+		}
 		mediaMap[media.ID] = media
 		params.RecordingMediaID = media.ID
 
@@ -221,9 +229,10 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			Type:          excomms.PublishedExternalMessage_INCOMING_CALL_EVENT,
 			Item: &excomms.PublishedExternalMessage_Incoming{
 				Incoming: &excomms.IncomingCallEventItem{
-					Type:              excomms.IncomingCallEventItem_LEFT_VOICEMAIL,
-					DurationInSeconds: params.RecordingDuration,
-					URL:               media.URL,
+					Type:                excomms.IncomingCallEventItem_LEFT_VOICEMAIL,
+					DurationInSeconds:   params.RecordingDuration,
+					VoicemailURL:        media.URL,
+					VoicemailDurationNS: uint64(media.Duration.Nanoseconds()),
 				},
 			},
 		})
@@ -293,7 +302,7 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 	return nil
 }
 
-func (w *IncomingRawMessageWorker) uploadTwilioMediaToS3(contentType string, url string) (*models.Media, error) {
+func (w *IncomingRawMessageWorker) uploadTwilioMediaToS3(contentType, url string) (*models.Media, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -314,6 +323,27 @@ func (w *IncomingRawMessageWorker) uploadTwilioMediaToS3(contentType string, url
 		return nil, errors.Trace(err)
 	}
 
+	if res.StatusCode < 200 || res.StatusCode > 299 {
+		// Avoid flooding the log
+		if len(data) > 1000 {
+			data = data[:1000]
+		}
+		dataStr := string(data)
+		if !strings.HasPrefix(res.Header.Get("Content-Type"), "text/") {
+			// Avoid non-valid characters from breaking anything in case we get back binary
+			dataStr = strconv.Quote(string(data))
+		}
+		return nil, errors.Trace(fmt.Errorf("Expected status code 2xx when pulling media, got %d: %s", res.StatusCode, dataStr))
+	}
+
+	var duration time.Duration
+	if contentType == "audio/mpeg" {
+		duration, err = mp3Duration(bytes.NewReader(data))
+		if err != nil {
+			golog.Errorf("Failed to calculate duration of mp3: %s", err)
+		}
+	}
+
 	id, err := idgen.NewID()
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -325,8 +355,24 @@ func (w *IncomingRawMessageWorker) uploadTwilioMediaToS3(contentType string, url
 	}
 
 	return &models.Media{
-		ID:   id,
-		Type: contentType,
-		URL:  s3URL,
+		ID:       id,
+		Type:     contentType,
+		URL:      s3URL,
+		Duration: duration,
 	}, nil
+}
+
+func mp3Duration(r io.Reader) (time.Duration, error) {
+	dec := mp3.NewDecoder(r)
+	var frame mp3.Frame
+	var duration time.Duration
+	for {
+		if err := dec.Decode(&frame); err != nil {
+			if err == io.EOF {
+				return duration, nil
+			}
+			return 0, errors.Trace(err)
+		}
+		duration += frame.Duration()
+	}
 }

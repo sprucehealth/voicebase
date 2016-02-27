@@ -368,9 +368,10 @@ func (m *SMSItem) GetAttachments() []*MediaAttachment {
 }
 
 type IncomingCallEventItem struct {
-	Type              IncomingCallEventItem_Type `protobuf:"varint,1,opt,name=type,proto3,enum=excomms.IncomingCallEventItem_Type" json:"type,omitempty"`
-	DurationInSeconds uint32                     `protobuf:"varint,2,opt,name=duration_in_seconds,proto3" json:"duration_in_seconds,omitempty"`
-	URL               string                     `protobuf:"bytes,3,opt,name=url,proto3" json:"url,omitempty"`
+	Type                IncomingCallEventItem_Type `protobuf:"varint,1,opt,name=type,proto3,enum=excomms.IncomingCallEventItem_Type" json:"type,omitempty"`
+	DurationInSeconds   uint32                     `protobuf:"varint,2,opt,name=duration_in_seconds,proto3" json:"duration_in_seconds,omitempty"`
+	VoicemailURL        string                     `protobuf:"bytes,3,opt,name=voicemail_url,proto3" json:"voicemail_url,omitempty"`
+	VoicemailDurationNS uint64                     `protobuf:"varint,4,opt,name=voicemail_duration_ns,proto3" json:"voicemail_duration_ns,omitempty"`
 }
 
 func (m *IncomingCallEventItem) Reset()      { *m = IncomingCallEventItem{} }
@@ -996,7 +997,10 @@ func (this *IncomingCallEventItem) Equal(that interface{}) bool {
 	if this.DurationInSeconds != that1.DurationInSeconds {
 		return false
 	}
-	if this.URL != that1.URL {
+	if this.VoicemailURL != that1.VoicemailURL {
+		return false
+	}
+	if this.VoicemailDurationNS != that1.VoicemailDurationNS {
 		return false
 	}
 	return true
@@ -1674,11 +1678,12 @@ func (this *IncomingCallEventItem) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 8)
 	s = append(s, "&excomms.IncomingCallEventItem{")
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	s = append(s, "DurationInSeconds: "+fmt.Sprintf("%#v", this.DurationInSeconds)+",\n")
-	s = append(s, "URL: "+fmt.Sprintf("%#v", this.URL)+",\n")
+	s = append(s, "VoicemailURL: "+fmt.Sprintf("%#v", this.VoicemailURL)+",\n")
+	s = append(s, "VoicemailDurationNS: "+fmt.Sprintf("%#v", this.VoicemailDurationNS)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2281,11 +2286,16 @@ func (m *IncomingCallEventItem) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.DurationInSeconds))
 	}
-	if len(m.URL) > 0 {
+	if len(m.VoicemailURL) > 0 {
 		data[i] = 0x1a
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.URL)))
-		i += copy(data[i:], m.URL)
+		i = encodeVarintSvc(data, i, uint64(len(m.VoicemailURL)))
+		i += copy(data[i:], m.VoicemailURL)
+	}
+	if m.VoicemailDurationNS != 0 {
+		data[i] = 0x20
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.VoicemailDurationNS))
 	}
 	return i, nil
 }
@@ -2994,9 +3004,12 @@ func (m *IncomingCallEventItem) Size() (n int) {
 	if m.DurationInSeconds != 0 {
 		n += 1 + sovSvc(uint64(m.DurationInSeconds))
 	}
-	l = len(m.URL)
+	l = len(m.VoicemailURL)
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.VoicemailDurationNS != 0 {
+		n += 1 + sovSvc(uint64(m.VoicemailDurationNS))
 	}
 	return n
 }
@@ -3379,7 +3392,8 @@ func (this *IncomingCallEventItem) String() string {
 	s := strings.Join([]string{`&IncomingCallEventItem{`,
 		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
 		`DurationInSeconds:` + fmt.Sprintf("%v", this.DurationInSeconds) + `,`,
-		`URL:` + fmt.Sprintf("%v", this.URL) + `,`,
+		`VoicemailURL:` + fmt.Sprintf("%v", this.VoicemailURL) + `,`,
+		`VoicemailDurationNS:` + fmt.Sprintf("%v", this.VoicemailDurationNS) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -4089,7 +4103,7 @@ func (m *IncomingCallEventItem) Unmarshal(data []byte) error {
 			}
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field URL", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field VoicemailURL", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -4114,8 +4128,27 @@ func (m *IncomingCallEventItem) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.URL = string(data[iNdEx:postIndex])
+			m.VoicemailURL = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VoicemailDurationNS", wireType)
+			}
+			m.VoicemailDurationNS = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.VoicemailDurationNS |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

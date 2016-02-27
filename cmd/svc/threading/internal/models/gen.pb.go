@@ -319,9 +319,10 @@ func (m *ImageAttachment) Reset()      { *m = ImageAttachment{} }
 func (*ImageAttachment) ProtoMessage() {}
 
 type AudioAttachment struct {
-	Mimetype          string `protobuf:"bytes,1,opt,name=mimetype,proto3" json:"mimetype,omitempty"`
-	URL               string `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
-	DurationInSeconds uint32 `protobuf:"varint,3,opt,name=duration_in_seconds,proto3" json:"duration_in_seconds,omitempty"`
+	Mimetype                    string `protobuf:"bytes,1,opt,name=mimetype,proto3" json:"mimetype,omitempty"`
+	URL                         string `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	DeprecatedDurationInSeconds uint32 `protobuf:"varint,3,opt,name=deprecated_duration_in_seconds,proto3" json:"deprecated_duration_in_seconds,omitempty"`
+	DurationNS                  uint64 `protobuf:"varint,4,opt,name=duration_ns,proto3" json:"duration_ns,omitempty"`
 }
 
 func (m *AudioAttachment) Reset()      { *m = AudioAttachment{} }
@@ -729,7 +730,10 @@ func (this *AudioAttachment) Equal(that interface{}) bool {
 	if this.URL != that1.URL {
 		return false
 	}
-	if this.DurationInSeconds != that1.DurationInSeconds {
+	if this.DeprecatedDurationInSeconds != that1.DeprecatedDurationInSeconds {
+		return false
+	}
+	if this.DurationNS != that1.DurationNS {
 		return false
 	}
 	return true
@@ -867,11 +871,12 @@ func (this *AudioAttachment) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 8)
 	s = append(s, "&models.AudioAttachment{")
 	s = append(s, "Mimetype: "+fmt.Sprintf("%#v", this.Mimetype)+",\n")
 	s = append(s, "URL: "+fmt.Sprintf("%#v", this.URL)+",\n")
-	s = append(s, "DurationInSeconds: "+fmt.Sprintf("%#v", this.DurationInSeconds)+",\n")
+	s = append(s, "DeprecatedDurationInSeconds: "+fmt.Sprintf("%#v", this.DeprecatedDurationInSeconds)+",\n")
+	s = append(s, "DurationNS: "+fmt.Sprintf("%#v", this.DurationNS)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1287,10 +1292,15 @@ func (m *AudioAttachment) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintGen(data, i, uint64(len(m.URL)))
 		i += copy(data[i:], m.URL)
 	}
-	if m.DurationInSeconds != 0 {
+	if m.DeprecatedDurationInSeconds != 0 {
 		data[i] = 0x18
 		i++
-		i = encodeVarintGen(data, i, uint64(m.DurationInSeconds))
+		i = encodeVarintGen(data, i, uint64(m.DeprecatedDurationInSeconds))
+	}
+	if m.DurationNS != 0 {
+		data[i] = 0x20
+		i++
+		i = encodeVarintGen(data, i, uint64(m.DurationNS))
 	}
 	return i, nil
 }
@@ -1507,8 +1517,11 @@ func (m *AudioAttachment) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovGen(uint64(l))
 	}
-	if m.DurationInSeconds != 0 {
-		n += 1 + sovGen(uint64(m.DurationInSeconds))
+	if m.DeprecatedDurationInSeconds != 0 {
+		n += 1 + sovGen(uint64(m.DeprecatedDurationInSeconds))
+	}
+	if m.DurationNS != 0 {
+		n += 1 + sovGen(uint64(m.DurationNS))
 	}
 	return n
 }
@@ -1652,7 +1665,8 @@ func (this *AudioAttachment) String() string {
 	s := strings.Join([]string{`&AudioAttachment{`,
 		`Mimetype:` + fmt.Sprintf("%v", this.Mimetype) + `,`,
 		`URL:` + fmt.Sprintf("%v", this.URL) + `,`,
-		`DurationInSeconds:` + fmt.Sprintf("%v", this.DurationInSeconds) + `,`,
+		`DeprecatedDurationInSeconds:` + fmt.Sprintf("%v", this.DeprecatedDurationInSeconds) + `,`,
+		`DurationNS:` + fmt.Sprintf("%v", this.DurationNS) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2918,9 +2932,9 @@ func (m *AudioAttachment) Unmarshal(data []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DurationInSeconds", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field DeprecatedDurationInSeconds", wireType)
 			}
-			m.DurationInSeconds = 0
+			m.DeprecatedDurationInSeconds = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowGen
@@ -2930,7 +2944,26 @@ func (m *AudioAttachment) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				m.DurationInSeconds |= (uint32(b) & 0x7F) << shift
+				m.DeprecatedDurationInSeconds |= (uint32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DurationNS", wireType)
+			}
+			m.DurationNS = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGen
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.DurationNS |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}

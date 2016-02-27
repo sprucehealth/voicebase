@@ -133,11 +133,17 @@ func transformThreadItemToResponse(item *models.ThreadItem, orgID string) (*thre
 			case models.Attachment_AUDIO:
 				data := a.GetAudio()
 				at.Type = threading.Attachment_AUDIO
+				var durationNS uint64
+				if data.DeprecatedDurationInSeconds != 0 {
+					durationNS = uint64(data.DeprecatedDurationInSeconds) * 1e9
+				} else {
+					durationNS = data.DurationNS
+				}
 				at.Data = &threading.Attachment_Audio{
 					Audio: &threading.AudioAttachment{
-						Mimetype:          data.Mimetype,
-						URL:               data.URL,
-						DurationInSeconds: data.DurationInSeconds,
+						Mimetype:   data.Mimetype,
+						URL:        data.URL,
+						DurationNS: durationNS,
 					},
 				}
 			case models.Attachment_IMAGE:
@@ -213,9 +219,9 @@ func transformAttachmentsFromRequest(atts []*threading.Attachment) ([]*models.At
 			at.Type = models.Attachment_AUDIO
 			at.Data = &models.Attachment_Audio{
 				Audio: &models.AudioAttachment{
-					Mimetype:          data.Mimetype,
-					URL:               data.URL,
-					DurationInSeconds: data.DurationInSeconds,
+					Mimetype:   data.Mimetype,
+					URL:        data.URL,
+					DurationNS: data.DurationNS,
 				},
 			}
 		case threading.Attachment_IMAGE:

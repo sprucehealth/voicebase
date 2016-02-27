@@ -150,10 +150,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID s
 				if err != nil {
 					return nil, err
 				}
-				// TODO: Twilio seems to round up the duration which causes problems with the progress bar in the app
-				//       so reduce the duration by half a second to try to account for that. The real fix of actually
-				//       processing the mp3 to figure out the accurate duration should be done when there's time.
-				duration := float64(d.DurationInSeconds) - 0.5
+				duration := float64(d.DurationNS) / 1e9
 				data = &models.AudioAttachment{
 					Mimetype:          d.Mimetype,
 					URL:               signedURL,

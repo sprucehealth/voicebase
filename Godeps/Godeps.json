@@ -6,6 +6,10 @@
 	],
 	"Deps": [
 		{
+			"ImportPath": "github.com/tcolgate/mp3",
+			"Rev": "77b1e88f4c81c59354903d8612c64c2317835c45"
+		},
+		{
 			"ImportPath": "github.com/kr/text",
 			"Rev": "bb797dc4fb8320488f47bf11de07a733d7233e1f"
 		},

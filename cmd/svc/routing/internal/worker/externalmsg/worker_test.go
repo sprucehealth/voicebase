@@ -632,9 +632,10 @@ func TestIncomingVoicemail_NewUser(t *testing.T) {
 		Type:          excomms.PublishedExternalMessage_INCOMING_CALL_EVENT,
 		Item: &excomms.PublishedExternalMessage_Incoming{
 			Incoming: &excomms.IncomingCallEventItem{
-				Type:              excomms.IncomingCallEventItem_LEFT_VOICEMAIL,
-				DurationInSeconds: 100,
-				URL:               "http://voicemail.com",
+				Type:                excomms.IncomingCallEventItem_LEFT_VOICEMAIL,
+				DurationInSeconds:   100,
+				VoicemailURL:        "http://voicemail.com",
+				VoicemailDurationNS: 100 * 1e9,
 			},
 		},
 	}
@@ -652,8 +653,8 @@ func TestIncomingVoicemail_NewUser(t *testing.T) {
 	test.Equals(t, organizationEntity.ID, threadRequested.OrganizationID)
 	test.Equals(t, "", threadRequested.Text)
 	test.Equals(t, "Voicemail", threadRequested.Title)
-	test.Equals(t, pem.GetIncoming().DurationInSeconds, threadRequested.GetAttachments()[0].GetAudio().DurationInSeconds)
-	test.Equals(t, pem.GetIncoming().URL, threadRequested.GetAttachments()[0].GetAudio().URL)
+	test.Equals(t, pem.GetIncoming().VoicemailDurationNS, threadRequested.GetAttachments()[0].GetAudio().DurationNS)
+	test.Equals(t, pem.GetIncoming().VoicemailURL, threadRequested.GetAttachments()[0].GetAudio().URL)
 
 	// ensure no call to post message to thread
 	if len(mt.postMessageRequests) != 0 {

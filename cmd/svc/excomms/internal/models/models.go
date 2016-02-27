@@ -121,8 +121,9 @@ type ProxyPhoneNumberReservation struct {
 
 // Media represents an object uploaded to cloud storage.
 type Media struct {
-	ID   uint64
-	Type string
-	URL  string
-	Name *string
+	ID       uint64
+	Type     string
+	URL      string
+	Name     *string
+	Duration time.Duration
 }

@@ -56,7 +56,6 @@ func (r *externalMessageWorker) Start() {
 	r.started = true
 	go func() {
 		for {
-
 			sqsRes, err := r.sqsAPI.ReceiveMessage(&sqs.ReceiveMessageInput{
 				QueueUrl:            ptr.String(r.sqsURL),
 				MaxNumberOfMessages: ptr.Int64(1),
@@ -313,8 +312,8 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 						Type: threading.Attachment_AUDIO,
 						Data: &threading.Attachment_Audio{
 							Audio: &threading.AudioAttachment{
-								URL:               pem.GetIncoming().URL,
-								DurationInSeconds: pem.GetIncoming().DurationInSeconds,
+								URL:        pem.GetIncoming().VoicemailURL,
+								DurationNS: pem.GetIncoming().VoicemailDurationNS,
 							},
 						},
 					},
