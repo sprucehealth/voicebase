@@ -2,6 +2,7 @@ package twilio
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"io/ioutil"
 	"net/http"
@@ -16,7 +17,15 @@ func CheckResponse(r *http.Response) error {
 	data, err := ioutil.ReadAll(r.Body)
 	if err == nil && data != nil {
 		if err := json.Unmarshal(data, &exception); err != nil {
-			return errors.New("twilio: unparseable error response: " + string(data))
+			// Might be XML exception for REST requests
+			exc := struct {
+				RestException *Exception
+			}{
+				RestException: exception,
+			}
+			if err := xml.Unmarshal(data, &exc); err != nil {
+				return errors.New("twilio: unparseable error response: " + string(data))
+			}
 		}
 	}
 

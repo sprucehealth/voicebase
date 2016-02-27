@@ -209,7 +209,6 @@ func (s *MessageService) Delete(sid string) (*Response, error) {
 }
 
 func (s *MessageService) DeleteMedia(url string) (*Response, error) {
-
 	req, err := s.client.NewRequest("DELETE", url, nil)
 	if err != nil {
 		return nil, err
