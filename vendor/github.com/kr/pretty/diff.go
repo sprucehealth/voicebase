@@ -84,6 +84,12 @@ func (w diffWriter) diff(av, bv reflect.Value) {
 		}
 	case reflect.Struct:
 		for i := 0; i < av.NumField(); i++ {
+			// Skip unexported fields as the diff will blow up trying to get an interface for them
+			// TODO: figure out what reflect.DeepEqual does
+			af := av.Type().Field(i)
+			if af.PkgPath != "" && !af.Anonymous {
+				continue
+			}
 			w.relabel(at.Field(i).Name).diff(av.Field(i), bv.Field(i))
 		}
 	case reflect.Slice:

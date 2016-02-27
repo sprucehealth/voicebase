@@ -19,7 +19,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-const lastStep = 4
+const lastStep = 3
 
 type Worker struct {
 	sqs             sqsiface.SQSAPI
@@ -202,7 +202,7 @@ func (w *Worker) processThreadItem(ti *threading.PublishedThreadItem) error {
 		text := msg.Text
 		text = strings.ToLower(text)
 		skip := strings.Contains(text, "skip")
-		if !skip && (step != 4 || !item.Internal) { // Step 4 is waiting for an internal message
+		if !skip {
 			return nil
 		}
 		nextMsg, summary, err := Message(state.Step+1, skip, w.webDomain, thread.OrganizationID, nil)
