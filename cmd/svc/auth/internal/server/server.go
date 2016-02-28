@@ -655,7 +655,7 @@ func (s *server) VerifiedValue(ctx context.Context, rd *auth.VerifiedValueReques
 
 const (
 	maxTokenSize           = 250
-	defaultTokenExpiration = 60 * 60 * 24 * time.Second
+	defaultTokenExpiration = 3 * 60 * 60 * 24 * time.Second
 )
 
 func appendAttributes(token string, tokenAttributes map[string]string) (string, error) {
