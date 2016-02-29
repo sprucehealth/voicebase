@@ -103,7 +103,7 @@ func TestInviteColleague(t *testing.T) {
 	// Generate branch URL
 	clientData := map[string]interface{}{
 		"invite_token": "thetoken",
-		"client_data":  `{"organization_invite":{"popover":{"title":"Welcome to Spruce!","message":"Inviter has invited you to join them on Spruce.","button_text":"Get Started"},"org_id":"org","org_name":"Orgo"}}`,
+		"client_data":  `{"organization_invite":{"popover":{"title":"Welcome to Spruce!","message":"Inviter has invited you to join them on Spruce.","button_text":"Okay"},"org_id":"org","org_name":"Orgo"}}`,
 	}
 	branch.Expect(mock.NewExpectation(branch.URL, clientData).WithReturns("https://example.com/invite", nil))
 

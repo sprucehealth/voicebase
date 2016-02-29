@@ -187,7 +187,7 @@ func (s *server) InviteColleagues(ctx context.Context, in *invite.InviteColleagu
 			Popover: popover{
 				Title:      "Welcome to Spruce!",
 				Message:    inviter.Info.DisplayName + " has invited you to join them on Spruce.",
-				ButtonText: "Get Started",
+				ButtonText: "Okay",
 			},
 			OrgID:   org.ID,
 			OrgName: org.Info.DisplayName,
