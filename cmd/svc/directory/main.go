@@ -43,8 +43,7 @@ func init() {
 }
 
 func main() {
-	boot.ParseFlags("DIRECTORY_")
-	boot.InitService()
+	boot.InitService("directory")
 
 	listenAddress := ":" + strconv.Itoa(config.listenPort)
 	lis, err := net.Listen("tcp", listenAddress)

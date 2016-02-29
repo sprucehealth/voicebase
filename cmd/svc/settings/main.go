@@ -11,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/settings/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/settings/internal/server"
-	cfg "github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/svc/settings"
@@ -19,16 +18,10 @@ import (
 )
 
 var config struct {
-
 	// local dynamodb setup for testing
 	localDynamoDBEndpoint           string
 	dyanmoDBSettingsTableName       string
 	dynamoDBSettingsConfigTableName string
-
-	// aws
-	awsAccessKey string
-	awsSecretKey string
-	awsRegion    string
 
 	// environment
 	port int
@@ -38,23 +31,16 @@ func init() {
 	flag.StringVar(&config.localDynamoDBEndpoint, "local_dynamodb_endpoint", "", "local dynamodb endpoint for testing")
 	flag.StringVar(&config.dyanmoDBSettingsTableName, "dynamodb_table_name_settings", "", "table name where settings are stored")
 	flag.StringVar(&config.dynamoDBSettingsConfigTableName, "dynamodb_table_name_setting_configs", "", "table name where setting configs are stored")
-	flag.StringVar(&config.awsRegion, "aws_region", "us-east-1", "AWS region")
-	flag.StringVar(&config.awsAccessKey, "aws_access_key", "", "AWS access key")
-	flag.StringVar(&config.awsSecretKey, "aws_secret_key", "", "AWS secret key")
 	flag.IntVar(&config.port, "port", 50053, "port on which to run settings service")
 }
 
 func main() {
-	boot.ParseFlags("SETTINGS_")
-	boot.InitService()
+	boot.InitService("settings")
 
-	baseConfig := &cfg.BaseConfig{
-		AppName:      "settings",
-		AWSRegion:    config.awsRegion,
-		AWSSecretKey: config.awsSecretKey,
-		AWSAccessKey: config.awsAccessKey,
+	awsSession, err := boot.AWSSession()
+	if err != nil {
+		golog.Fatalf(err.Error())
 	}
-	awsSession := baseConfig.AWSSession()
 
 	dynamoDBClient := dynamodb.New(func() *session.Session {
 		if config.localDynamoDBEndpoint != "" {

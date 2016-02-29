@@ -9,7 +9,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/rs/cors"
@@ -64,16 +63,10 @@ var (
 
 	// Encryption
 	flagKMSKeyARN = flag.String("kms_key_arn", "", "the arn of the master key that should be used to encrypt outbound and decrypt inbound data")
-
-	// AWS
-	flagAWSAccessKey = flag.String("aws_access_key", "", "access key for aws")
-	flagAWSSecretKey = flag.String("aws_secret_key", "", "secret key for aws")
-	flagAWSRegion    = flag.String("aws_region", "us-east-1", "aws region")
 )
 
 func main() {
-	boot.ParseFlags("BAYMAXGRAPHQL_")
-	boot.InitService()
+	boot.InitService("baymaxgraphql")
 
 	if *flagKMSKeyARN == "" {
 		golog.Fatalf("-kms_key_arn flag is required")
@@ -156,11 +149,6 @@ func main() {
 	}
 	inviteClient := invite.NewInviteClient(conn)
 
-	awsConfig, err := awsutil.Config(*flagAWSRegion, *flagAWSAccessKey, *flagAWSSecretKey, "")
-	if err != nil {
-		golog.Fatalf(err.Error())
-	}
-
 	if *flagSQSDeviceRegistrationURL == "" {
 		golog.Fatalf("Notification service device registration not configured")
 	}
@@ -170,7 +158,12 @@ func main() {
 	if *flagSQSNotificationURL == "" {
 		golog.Fatalf("Notification service notification queue not configured")
 	}
-	awsSession := session.New(awsConfig)
+
+	awsSession, err := boot.AWSSession()
+	if err != nil {
+		golog.Fatalf("Failed to create AWS session: %s", err)
+	}
+
 	eSQS, err := awsutil.NewEncryptedSQS(*flagKMSKeyARN, kms.New(awsSession), sqs.New(awsSession))
 	if err != nil {
 		golog.Fatalf("Unable to initialize Encrypted SQS: %s", err)

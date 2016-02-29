@@ -7,13 +7,14 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/handlers"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/twilio"
-	cfg "github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/clock"
+	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/mux"
@@ -32,24 +33,21 @@ func runAPI() {
 	}
 	defer conn.Close()
 
-	baseConfig := &cfg.BaseConfig{
-		AppName:      "excomms",
-		AWSRegion:    config.awsRegion,
-		AWSSecretKey: config.awsSecretKey,
-		AWSAccessKey: config.awsAccessKey,
+	awsSession, err := boot.AWSSession()
+	if err != nil {
+		golog.Fatalf("Failed to create AWS session: %s", err)
 	}
 
-	awsSession := baseConfig.AWSSession()
-
-	dbConfig := &cfg.DB{
-		User:     config.dbUserName,
-		Password: config.dbPassword,
-		Host:     config.dbHost,
-		Port:     config.dbPort,
-		Name:     config.dbName,
-	}
-
-	db, err := dbConfig.ConnectMySQL(nil)
+	db, err := dbutil.ConnectMySQL(&dbutil.DBConfig{
+		User:          config.dbUserName,
+		Password:      config.dbPassword,
+		Host:          config.dbHost,
+		Port:          config.dbPort,
+		Name:          config.dbName,
+		CACert:        config.dbCACert,
+		EnableTLS:     config.dbTLS == "true" || config.dbTLS == "skip-verify",
+		SkipVerifyTLS: config.dbTLS == "skip-verify",
+	})
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}

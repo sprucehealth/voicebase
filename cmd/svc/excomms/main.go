@@ -16,9 +16,6 @@ var config struct {
 	twilioAccountSID        string
 	twilioApplicationSID    string
 	sendgridAPIKey          string
-	awsRegion               string
-	awsAccessKey            string
-	awsSecretKey            string
 	attachmentBucket        string
 	attachmentPrefix        string
 	externalMessageTopic    string
@@ -48,9 +45,6 @@ func init() {
 	flag.StringVar(&config.twilioAuthToken, "twilio_auth_token", "", "auth token for twilio account")
 	flag.StringVar(&config.directoryServiceURL, "directory_endpoint", "", "url to connect with directory service")
 	flag.StringVar(&config.settingsServiceURL, "settings_endpoint", "", "url to connect with settings service")
-	flag.StringVar(&config.awsRegion, "aws_region", "us-east-1", "aws region")
-	flag.StringVar(&config.awsAccessKey, "aws_access_key", "", "access key for aws user")
-	flag.StringVar(&config.awsSecretKey, "aws_secret_key", "", "secret key for aws user")
 	flag.StringVar(&config.sendgridAPIKey, "sendgrid_api_key", "", "sendgrid api key")
 	flag.StringVar(&config.externalMessageTopic, "sns_external_message_topic", "", "sns topic on which to post external message events")
 	flag.StringVar(&config.eventTopic, "sns_event_topic", "", "SNS topic on which to publish events")
@@ -74,8 +68,7 @@ func init() {
 }
 
 func main() {
-	boot.ParseFlags("EXCOMMS_")
-	boot.InitService()
+	boot.InitService("excomms")
 
 	conc.Go(func() {
 		runAPI()

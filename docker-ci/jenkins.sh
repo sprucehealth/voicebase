@@ -63,5 +63,6 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
 			sleep $(( NEXT_WAIT_TIME++ ))
 		done
 		docker rmi $REMOTETAG
+		docker rmi $TAG
 	done
 fi

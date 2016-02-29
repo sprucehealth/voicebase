@@ -47,8 +47,7 @@ func init() {
 }
 
 func main() {
-	boot.ParseFlags("AUTH_SERVICE_")
-	boot.InitService()
+	boot.InitService("auth")
 
 	if config.clientEncryptionKeySecret == "" {
 		golog.Fatalf("Client encryption key secret required")

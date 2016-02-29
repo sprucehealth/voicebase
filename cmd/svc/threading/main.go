@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
@@ -25,10 +24,6 @@ import (
 )
 
 var (
-	flagAWSAccessKey       = flag.String("aws_access_key", "", "AWS access key")
-	flagAWSSecretKey       = flag.String("aws_secret_key", "", "AWS secret key")
-	flagAWSToken           = flag.String("aws_token", "", "AWS token")
-	flagAWSRegion          = flag.String("aws_region", "", "AWS region")
 	flagDBName             = flag.String("db_name", "threading", "Database name")
 	flagDBHost             = flag.String("db_host", "127.0.0.1", "Database host")
 	flagDBPort             = flag.Int("db_port", 3306, "Database port")
@@ -52,8 +47,7 @@ func init() {
 }
 
 func main() {
-	boot.ParseFlags("THREADING_")
-	boot.InitService()
+	boot.InitService("threading")
 
 	if *flagKMSKeyARN == "" {
 		golog.Fatalf("-kms_key_arn flag is required")
@@ -73,11 +67,10 @@ func main() {
 		golog.Fatalf(err.Error())
 	}
 
-	awsConfig, err := awsutil.Config(*flagAWSRegion, *flagAWSAccessKey, *flagAWSSecretKey, *flagAWSToken)
+	awsSession, err := boot.AWSSession()
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
-	awsSession := session.New(awsConfig)
 
 	eSNS, err := awsutil.NewEncryptedSNS(*flagKMSKeyARN, kms.New(awsSession), sns.New(awsSession))
 	if err != nil {

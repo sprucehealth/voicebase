@@ -11,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/notification/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/notification/internal/service"
 	nsettings "github.com/sprucehealth/backend/cmd/svc/notification/internal/settings"
-	cfg "github.com/sprucehealth/backend/common/config"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -35,9 +34,6 @@ var config struct {
 	sqsNotificationURL                string
 	snsAppleDeviceRegistrationTopic   string
 	snsAndroidDeviceRegistrationTopic string
-	awsAccessKey                      string
-	awsSecretKey                      string
-	awsRegion                         string
 	directoryServiceAddress           string
 	settingsServiceAddress            string
 	webDomain                         string
@@ -58,9 +54,6 @@ func init() {
 	flag.StringVar(&config.sqsNotificationURL, "sqs_notification_url", "", "the sqs url for outgoing notifications")
 	flag.StringVar(&config.snsAppleDeviceRegistrationTopic, "sns_apple_device_registration_arn", "", "the arn of the sns topic for apple device push registration")
 	flag.StringVar(&config.snsAndroidDeviceRegistrationTopic, "sns_android_device_registration_arn", "", "the arn of the sns topic for android device push registration")
-	flag.StringVar(&config.awsAccessKey, "aws_access_key", "", "access key for aws")
-	flag.StringVar(&config.awsSecretKey, "aws_secret_key", "", "secret key for aws")
-	flag.StringVar(&config.awsRegion, "aws_region", "us-east-1", "aws region")
 	flag.StringVar(&config.directoryServiceAddress, "directory_addr", "", "host:port of directory service")
 	flag.StringVar(&config.settingsServiceAddress, "settings_addr", "", "host:port of settings service")
 	flag.StringVar(&config.webDomain, "web_domain", "", "the baymax web domain")
@@ -68,8 +61,7 @@ func init() {
 }
 
 func main() {
-	boot.ParseFlags("NOTIFICATION_SERVICE_")
-	boot.InitService()
+	boot.InitService("notification")
 
 	golog.Infof("Initializing database connection on %s:%d, user: %s, db: %s...", config.dbHost, config.dbPort, config.dbUser, config.dbName)
 	db, err := dbutil.ConnectMySQL(&dbutil.DBConfig{
@@ -84,14 +76,6 @@ func main() {
 	})
 	if err != nil {
 		golog.Fatalf("failed to initialize db connection: %s", err)
-	}
-
-	// generate the SQS and SNS clients we'll need
-	baseConfig := &cfg.BaseConfig{
-		AppName:      "notification",
-		AWSRegion:    config.awsRegion,
-		AWSSecretKey: config.awsSecretKey,
-		AWSAccessKey: config.awsAccessKey,
 	}
 
 	if config.kmsKeyARN == "" {
@@ -130,7 +114,12 @@ func main() {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
 	}
 
-	eSQS, err := awsutil.NewEncryptedSQS(config.kmsKeyARN, kms.New(baseConfig.AWSSession()), sqs.New(baseConfig.AWSSession()))
+	awsSession, err := boot.AWSSession()
+	if err != nil {
+		golog.Fatalf(err.Error())
+	}
+
+	eSQS, err := awsutil.NewEncryptedSQS(config.kmsKeyARN, kms.New(awsSession), sqs.New(awsSession))
 	if err != nil {
 		golog.Fatalf("Unable to initialize Encrypted SQS: %s", err)
 	}
@@ -147,7 +136,7 @@ func main() {
 			AndriodDeviceRegistrationSNSARN: config.snsAndroidDeviceRegistrationTopic,
 			SQSAPI: eSQS,
 			// do not use an encrypted sns client here since these are messages being sent to the client through SNS
-			SNSAPI:    sns.New(baseConfig.AWSSession()),
+			SNSAPI:    sns.New(awsSession),
 			WebDomain: config.webDomain,
 		})
 	svc.Start()

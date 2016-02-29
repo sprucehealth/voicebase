@@ -5,10 +5,10 @@ import (
 	"net"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/cleaner"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber"
@@ -49,11 +49,10 @@ func runService() {
 		golog.Fatalf(err.Error())
 	}
 
-	awsConfig, err := awsutil.Config(config.awsRegion, config.awsAccessKey, config.awsSecretKey, "")
+	awsSession, err := boot.AWSSession()
 	if err != nil {
-		golog.Fatalf(err.Error())
+		golog.Fatalf("Failed to create AWS session: %s", err)
 	}
-	awsSession := session.New(awsConfig)
 
 	eSNS, err := awsutil.NewEncryptedSNS(config.kmsKeyARN, kms.New(awsSession), sns.New(awsSession))
 	if err != nil {
