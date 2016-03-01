@@ -321,10 +321,11 @@ func main() {
 		golog.Fatalf("Mandrill not configured")
 	}
 
-	gologHandler := boot.SNSLogHandler(
-		snsCli, conf.ErrorLogSNSTopic, strings.ToUpper(conf.Environment+"/"+conf.BaseConfig.AppName),
-		golog.Default().Handler(), rateLimiters.Get("errorsns"), metricsRegistry.Scope("errorsns"))
+	gologHandler := golog.Default().Handler()
 	if conf.ErrorLogSNSTopic != "" {
+		gologHandler = boot.SNSLogHandler(
+			snsCli, conf.ErrorLogSNSTopic, strings.ToUpper(conf.Environment+"/"+conf.BaseConfig.AppName),
+			golog.Default().Handler(), rateLimiters.Get("errorsns"), metricsRegistry.Scope("errorsns"))
 		golog.Default().SetHandler(gologHandler)
 	}
 

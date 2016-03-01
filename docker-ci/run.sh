@@ -138,40 +138,6 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
     export BUILDENV=prod
 fi
 
-# Test static resources (restapi)
-echo "TESTING STATIC RESOURCES (restapi)"
-time (
-    cd $MONOREPO_PATH/resources
-    ./build.sh
-    cd apps
-    flow check
-) &
-savepid
-
-# Test static resources (curbside)
-echo "TESTING STATIC RESOURCES (curbside)"
-time (
-    cd $MONOREPO_PATH/cmd/svc/curbside
-    ./build_resources.sh
-    flow check
-) &
-savepid
-
-# Test static resources (carefinder)
-echo "TESTING STATIC RESOURCES (carefinder)"
-time (
-    cd $MONOREPO_PATH/cmd/svc/carefinder
-    rm -rf resources/static/js
-    mkdir resources/static/js
-    rm -rf resources/static/css
-    mkdir resources/static/css
-    ./build_resources.sh
-    flow check
-) &
-savepid
-
-checkedwait
-
 # Clean binaries before building to make sure we get a clean build for deployment
 rm -rf $GOPATH/pkg $GOPATH/bin
 
@@ -189,16 +155,20 @@ TIME=$(date)
 export TAG="$BRANCH-$BUILD_NUMBER"
 
 if [[ "$DEPLOY_TO_S3" != "" ]]; then
-    SVCS="auth baymaxgraphql directory excomms invite notification regimensapi routing threading settings"
+    SVCS="auth baymaxgraphql carefinder curbside directory excomms invite notification regimensapi restapi routing threading settings"
     for SVC in $SVCS; do
         echo "BUILDING ($SVC)"
         cd $MONOREPO_PATH/cmd/svc/$SVC
-        GO15VENDOREXPERIMENT=1 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
-            go install -tags netgo -ldflags " \
-                -X 'github.com/sprucehealth/backend/boot.GitRevision=$REV' \
-                -X 'github.com/sprucehealth/backend/boot.GitBranch=$BRANCH' \
-                -X 'github.com/sprucehealth/backend/boot.BuildTime=$TIME' \
-                -X 'github.com/sprucehealth/backend/boot.BuildNumber=$BUILD_NUMBER'"
+        if [ -e ./build.sh ]; then
+            ./build.sh
+        else
+            GO15VENDOREXPERIMENT=1 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
+                go install -tags netgo -ldflags " \
+                    -X 'github.com/sprucehealth/backend/boot.GitRevision=$REV' \
+                    -X 'github.com/sprucehealth/backend/boot.GitBranch=$BRANCH' \
+                    -X 'github.com/sprucehealth/backend/boot.BuildTime=$TIME' \
+                    -X 'github.com/sprucehealth/backend/boot.BuildNumber=$BUILD_NUMBER'"
+        fi
 
         BINPATH=$GOPATH/bin/$SVC
         if [[ "$(go env GOHOSTOS)" != "linux" ]]; then
@@ -231,30 +201,39 @@ EOF
     done
 fi
 
-# Build for deploy (restapi)
-echo "BUILDING (restapi)"
+# Test static resources (restapi)
+echo "TESTING STATIC RESOURCES (restapi)"
 time (
-    cd $MONOREPO_PATH/cmd/svc/restapi
+    cd $MONOREPO_PATH/resources
     ./build.sh
+    cd apps
+    flow check
+) &
+savepid
+
+# Test static resources (curbside)
+echo "TESTING STATIC RESOURCES (curbside)"
+time (
+    cd $MONOREPO_PATH/cmd/svc/curbside
+    ./build_resources.sh
+    flow check
+) &
+savepid
+
+# Test static resources (carefinder)
+echo "TESTING STATIC RESOURCES (carefinder)"
+time (
+    cd $MONOREPO_PATH/cmd/svc/carefinder
+    ./build_resources.sh
+    flow check
 ) &
 savepid
 
 checkedwait
 
+# Build for deploy (restapi)
 if [[ "$DEPLOY_TO_S3" != "" ]]; then
     echo "DEPLOYING (restapi)"
-
-    CMD_NAME="restapi-$GIT_BRANCH-$BUILD_NUMBER"
-    rm -rf build # Jenkins preserves the workspace so remove any old build files
-    mkdir build
-    cp $GOPATH/bin/restapi build/$CMD_NAME
-    bzip2 -9 build/$CMD_NAME
-    echo $GIT_COMMIT > build/$CMD_NAME.revision
-    if [[ -e $MONOREPO_PATH/coverage-$BUILD_NUMBER.out ]]; then
-        cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.out build/$CMD_NAME.coverage
-        cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.html build/$CMD_NAME.coverage.html
-    fi
-    s3cmd --add-header "x-amz-acl:bucket-owner-full-control" -M --server-side-encryption put build/* s3://spruce-deploy/restapi/
 
     cd $MONOREPO_PATH/resources/static
     STATIC_PREFIX="s3://spruce-static/web/$BUILD_NUMBER"
@@ -270,24 +249,8 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
 fi
 
 # Build for deploy (curbside)
-echo "BUILDING (curbside)"
-cd $MONOREPO_PATH/cmd/svc/curbside
-./build.sh
-
 if [[ "$DEPLOY_TO_S3" != "" ]]; then
     echo "DEPLOYING (curbside)"
-
-    CMD_NAME="curbside-$GIT_BRANCH-$BUILD_NUMBER"
-    rm -rf bin # Jenkins preserves the workspace so remove any old build files
-    mkdir bin
-    cp $GOPATH/bin/curbside bin/$CMD_NAME
-    bzip2 -9 bin/$CMD_NAME
-    echo $GIT_COMMIT > bin/$CMD_NAME.revision
-    if [[ -e $MONOREPO_PATH/coverage-$BUILD_NUMBER.out ]]; then
-        cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.out bin/$CMD_NAME.coverage
-        cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.html bin/$CMD_NAME.coverage.html
-    fi
-    s3cmd --add-header "x-amz-acl:bucket-owner-full-control" -M --server-side-encryption put bin/* s3://spruce-deploy/curbside/
 
     cd $MONOREPO_PATH/cmd/svc/curbside/build
     STATIC_PREFIX="s3://spruce-static/curbside/$BUILD_NUMBER"
@@ -302,46 +265,9 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
     s3cmd --recursive -P --no-preserve -M put img/* $STATIC_PREFIX/img/
 fi
 
-# Build for deploy (regimensapi)
-echo "BUILDING (regimensapi)"
-cd $MONOREPO_PATH/cmd/svc/regimensapi
-./build.sh
-
-if [[ "$DEPLOY_TO_S3" != "" ]]; then
-    echo "DEPLOYING (regimensapi)"
-
-    CMD_NAME="regimensapi-$GIT_BRANCH-$BUILD_NUMBER"
-    rm -rf build # Jenkins preserves the workspace so remove any old build files
-    mkdir build
-    cp $GOPATH/bin/regimensapi build/$CMD_NAME
-    bzip2 -9 build/$CMD_NAME
-    echo $GIT_COMMIT > build/$CMD_NAME.revision
-    if [[ -e $MONOREPO_PATH/coverage-$BUILD_NUMBER.out ]]; then
-        cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.out bin/$CMD_NAME.coverage
-        cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.html bin/$CMD_NAME.coverage.html
-    fi
-    s3cmd --add-header "x-amz-acl:bucket-owner-full-control" -M --server-side-encryption put build/* s3://spruce-deploy/regimensapi/
-fi
-
 # Build for deploy (carefinder)
-echo "BUILDING (carefinder)"
-cd $MONOREPO_PATH/cmd/svc/carefinder
-./build.sh
-
 if [[ "$DEPLOY_TO_S3" != "" ]]; then
     echo "DEPLOYING (carefinder)"
-
-    CMD_NAME="carefinder-$GIT_BRANCH-$BUILD_NUMBER"
-    rm -rf build # Jenkins preserves the workspace so remove any old build files
-    mkdir build
-    cp $GOPATH/bin/carefinder build/$CMD_NAME
-    bzip2 -9 build/$CMD_NAME
-    echo $GIT_COMMIT > build/$CMD_NAME.revision
-    if [[ -e $MONOREPO_PATH/coverage-$BUILD_NUMBER.out ]]; then
-        cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.out bin/$CMD_NAME.coverage
-        cp $MONOREPO_PATH/coverage-$BUILD_NUMBER.html bin/$CMD_NAME.coverage.html
-    fi
-    s3cmd --add-header "x-amz-acl:bucket-owner-full-control" -M --server-side-encryption put build/* s3://spruce-deploy/carefinder/
 
     # Copy over the fonts from the shared location
     LOCAL_CAREFINDER_STATIC_PATH="$MONOREPO_PATH/cmd/svc/carefinder/resources/static"

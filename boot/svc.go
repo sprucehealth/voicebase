@@ -20,14 +20,10 @@ import (
 )
 
 var (
-	flagAWSAccessKey   = flag.String("aws_access_key", "", "Access `key` for AWS")
-	flagAWSSecretKey   = flag.String("aws_secret_key", "", "Secret `key` for AWS")
-	flagAWSToken       = flag.String("aws_token", "", "Temporary access `token` for AWS")
-	flagAWSRegion      = flag.String("aws_region", "us-east-1", "AWS `region`")
-	flagDebug          = flag.Bool("debug", false, "Enable debug logging")
-	flagEnv            = flag.String("env", "", "Execution environment")
-	flagErrorSNSTopic  = flag.String("error_sns_topic", "", "SNS `topic` which to send errors")
-	flagManagementAddr = flag.String("management_addr", ":9000", "`host:port` of management HTTP server")
+	flagAWSAccessKey = flag.String("aws_access_key", "", "Access `key` for AWS")
+	flagAWSSecretKey = flag.String("aws_secret_key", "", "Secret `key` for AWS")
+	flagAWSToken     = flag.String("aws_token", "", "Temporary access `token` for AWS")
+	flagAWSRegion    = flag.String("aws_region", "us-east-1", "AWS `region`")
 )
 
 var (
@@ -38,6 +34,13 @@ var (
 
 // InitService should be called at the start of a service. It parses flags and sets up a mangement server.
 func InitService(name string) metrics.Registry {
+	var (
+		flagDebug          = flag.Bool("debug", false, "Enable debug logging")
+		flagEnv            = flag.String("env", "", "Execution environment")
+		flagErrorSNSTopic  = flag.String("error_sns_topic", "", "SNS `topic` which to send errors")
+		flagManagementAddr = flag.String("management_addr", ":9000", "`host:port` of management HTTP server")
+	)
+
 	ParseFlags(strings.ToUpper(name) + "_")
 
 	// Disable the built in grpc tracing and use our own

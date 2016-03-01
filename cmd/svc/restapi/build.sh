@@ -1,15 +1,21 @@
 #!/bin/bash -e
 
 APP=restapi
-REV="$GIT_COMMIT"
+if [ "$REV" = "" ]; then
+	REV="$GIT_COMMIT"
+fi
 if [ "$REV" = "" ]; then
 	REV=$(git rev-parse HEAD)
 fi
-BRANCH="$GIT_BRANCH"
+if [ "$BRANCH" = "" ]; then
+	BRANCH="$GIT_BRANCH"
+fi
 if [ "$BRANCH" = "" ]; then
 	BRANCH=$(git rev-parse --abbrev-ref HEAD)
 fi
-TIME=$(date)
+if [ "$TIME" = "" ]; then
+	TIME=$(date)
+fi
 LATEST_MIGRATION=$(ls -r $GOPATH/src/github.com/sprucehealth/backend/mysql/snapshot-*.sql | cut -d- -f 2  | cut -d. -f1 | sort -nr | head -1)
 GO15VENDOREXPERIMENT=1 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
 	go install -tags netgo -ldflags " \

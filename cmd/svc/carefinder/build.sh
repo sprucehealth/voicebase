@@ -1,15 +1,21 @@
 #!/bin/bash -e
 
 APP=carefinder
-REV="$GIT_COMMIT"
+if [ "$REV" = "" ]; then
+	REV="$GIT_COMMIT"
+fi
 if [ "$REV" = "" ]; then
 	REV=$(git rev-parse HEAD)
 fi
-BRANCH="$GIT_BRANCH"
+if [ "$BRANCH" = "" ]; then
+	BRANCH="$GIT_BRANCH"
+fi
 if [ "$BRANCH" = "" ]; then
 	BRANCH=$(git rev-parse --abbrev-ref HEAD)
 fi
-TIME=$(date)
+if [ "$TIME" = "" ]; then
+	TIME=$(date)
+fi
 GO15VENDOREXPERIMENT=1 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
 	go install -tags netgo -ldflags " \
 		-X 'github.com/sprucehealth/backend/boot.GitRevision=$REV' \
