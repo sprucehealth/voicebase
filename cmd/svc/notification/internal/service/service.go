@@ -134,7 +134,7 @@ func (s *service) processDeviceRegistration(data string) error {
 	// This device is already registered but let's check to see if our token has changed
 	if string(pushConfig.DeviceToken) != registrationInfo.DeviceToken {
 		// If our token has changed, update the endpoint
-		if err := s.updateEndpoint(pushConfig.PushEndpoint, registrationInfo.DeviceToken); err != nil {
+		if err := s.updateEndpoint(pushConfig.PushEndpoint, registrationInfo.DeviceToken, registrationInfo.ExternalGroupID); err != nil {
 			return errors.Trace(err)
 		}
 	}
@@ -155,8 +155,11 @@ func (s *service) processDeviceRegistration(data string) error {
 	return errors.Trace(err)
 }
 
-const snsEndpointEnabledAttributeKey = "Enabled"
-const snsEndpointTokenAttributeKey = "Token"
+const (
+	snsEndpointEnabledAttributeKey = "Enabled"
+	snsEndpointTokenAttributeKey   = "Token"
+	snsEndpointCustomUserDataKey   = "CustomUserData"
+)
 
 func (s *service) generateEndpointARN(info *notification.DeviceRegistrationInfo) (string, error) {
 	var arn string
@@ -178,6 +181,9 @@ func (s *service) generateEndpointARN(info *notification.DeviceRegistrationInfo)
 		Token: ptr.String(info.DeviceToken),
 		// http://docs.aws.amazon.com/sns/latest/api/API_SetEndpointAttributes.html
 		Attributes: map[string]*string{snsEndpointEnabledAttributeKey: ptr.String("true")},
+		// Arbitrary user data to associate with the endpoint. Amazon SNS does not use
+		// this data. The data must be in UTF-8 format and less than 2KB.
+		CustomUserData: ptr.String(info.ExternalGroupID),
 	})
 	if err != nil {
 		return "", errors.Trace(err)
@@ -185,13 +191,25 @@ func (s *service) generateEndpointARN(info *notification.DeviceRegistrationInfo)
 	return *createEndpointResponse.EndpointArn, nil
 }
 
-func (s *service) updateEndpoint(endpointARN, deviceToken string) error {
+func (s *service) updateEndpoint(endpointARN, deviceToken, externalGroupID string) error {
 	_, err := s.snsAPI.SetEndpointAttributes(&sns.SetEndpointAttributesInput{
 		EndpointArn: ptr.String(endpointARN),
 		// http://docs.aws.amazon.com/sns/latest/api/API_SetEndpointAttributes.html
+		// A map of the endpoint attributes. Attributes in this map include the following:
+		//
+		//   CustomUserData -- arbitrary user data to associate with the endpoint.
+		// Amazon SNS does not use this data. The data must be in UTF-8 format and less
+		// than 2KB.  Enabled -- flag that enables/disables delivery to the endpoint.
+		// Amazon SNS will set this to false when a notification service indicates to
+		// Amazon SNS that the endpoint is invalid. Users can set it back to true, typically
+		// after updating Token.  Token -- device token, also referred to as a registration
+		// id, for an app and mobile device. This is returned from the notification
+		// service when an app and mobile device are registered with the notification
+		// service.
 		Attributes: map[string]*string{
 			snsEndpointEnabledAttributeKey: ptr.String("true"),
 			snsEndpointTokenAttributeKey:   ptr.String(deviceToken),
+			snsEndpointCustomUserDataKey:   ptr.String(externalGroupID),
 		},
 	})
 	return errors.Trace(err)
@@ -359,10 +377,10 @@ type iOSPushNotification struct {
 // https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/TheNotificationPayload.html#//apple_ref/doc/uid/TP40008194-CH107-SW1
 type iOSPushData struct {
 	Alert            string `json:"alert"`
-	URL              string `json:"url"`
 	Badge            int    `json:"badge"`
 	ContentAvailable int    `json:"content-available"`
 	Sound            string `json:"sound"`
+	URL              string `json:"url"`
 }
 
 type androidPushNotification struct {

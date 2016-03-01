@@ -90,8 +90,11 @@ func TestProcessNewDeviceRegistrationIOS(t *testing.T) {
 	// Generate an endpoint for the device
 	snsAPI.Expect(mock.NewExpectation(snsAPI.CreatePlatformEndpoint, &sns.CreatePlatformEndpointInput{
 		PlatformApplicationArn: ptr.String(appleDeviceRegistrationSNSARN),
-		Token:      ptr.String("DeviceToken"),
-		Attributes: map[string]*string{snsEndpointEnabledAttributeKey: ptr.String("true")},
+		Token: ptr.String("DeviceToken"),
+		Attributes: map[string]*string{
+			snsEndpointEnabledAttributeKey: ptr.String("true"),
+		},
+		CustomUserData: ptr.String("ExternalGroupID"),
 	}).WithReturns(&sns.CreatePlatformEndpointOutput{
 		EndpointArn: ptr.String("iOSEnpointARN"),
 	}, nil))
@@ -150,8 +153,9 @@ func TestProcessNewDeviceRegistrationAndroid(t *testing.T) {
 	// Generate an endpoint for the device
 	snsAPI.Expect(mock.NewExpectation(snsAPI.CreatePlatformEndpoint, &sns.CreatePlatformEndpointInput{
 		PlatformApplicationArn: ptr.String(andriodDeviceRegistrationSNSARN),
-		Token:      ptr.String("DeviceToken"),
-		Attributes: map[string]*string{snsEndpointEnabledAttributeKey: ptr.String("true")},
+		Token:          ptr.String("DeviceToken"),
+		Attributes:     map[string]*string{snsEndpointEnabledAttributeKey: ptr.String("true")},
+		CustomUserData: ptr.String("ExternalGroupID"),
 	}).WithReturns(&sns.CreatePlatformEndpointOutput{
 		EndpointArn: ptr.String("androidEnpointARN"),
 	}, nil))
@@ -223,6 +227,7 @@ func TestProcessExistingDeviceRegistrationIOSTokenChanged(t *testing.T) {
 		Attributes: map[string]*string{
 			snsEndpointEnabledAttributeKey: ptr.String("true"),
 			snsEndpointTokenAttributeKey:   ptr.String("NewDeviceToken"),
+			snsEndpointCustomUserDataKey:   ptr.String("ExternalGroupID"),
 		},
 	}).WithReturns(&sns.SetEndpointAttributesOutput{}, nil))
 
