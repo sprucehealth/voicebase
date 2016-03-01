@@ -19,11 +19,12 @@ import (
 	"google.golang.org/grpc"
 )
 
+// TODO: these get set in InitService. A bit unfortunate how this is setup. Will clean up later.
 var (
-	flagAWSAccessKey = flag.String("aws_access_key", "", "Access `key` for AWS")
-	flagAWSSecretKey = flag.String("aws_secret_key", "", "Secret `key` for AWS")
-	flagAWSToken     = flag.String("aws_token", "", "Temporary access `token` for AWS")
-	flagAWSRegion    = flag.String("aws_region", "us-east-1", "AWS `region`")
+	flagAWSAccessKey *string
+	flagAWSSecretKey *string
+	flagAWSToken     *string
+	flagAWSRegion    *string
 )
 
 var (
@@ -40,6 +41,10 @@ func InitService(name string) metrics.Registry {
 		flagErrorSNSTopic  = flag.String("error_sns_topic", "", "SNS `topic` which to send errors")
 		flagManagementAddr = flag.String("management_addr", ":9000", "`host:port` of management HTTP server")
 	)
+	flagAWSAccessKey = flag.String("aws_access_key", "", "Access `key` for AWS")
+	flagAWSSecretKey = flag.String("aws_secret_key", "", "Secret `key` for AWS")
+	flagAWSToken = flag.String("aws_token", "", "Temporary access `token` for AWS")
+	flagAWSRegion = flag.String("aws_region", "us-east-1", "AWS `region`")
 
 	ParseFlags(strings.ToUpper(name) + "_")
 
