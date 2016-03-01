@@ -362,6 +362,7 @@ type iOSPushData struct {
 	URL              string `json:"url"`
 	Badge            int    `json:"badge"`
 	ContentAvailable int    `json:"content-available"`
+	Sound            string `json:"sound"`
 }
 
 type androidPushNotification struct {
@@ -391,6 +392,7 @@ func generateNotification(webDomain string, n *notification.Notification, target
 	iOSData := &iOSPushData{
 		Alert: msg,
 		URL:   url,
+		Sound: "default",
 		//Badge: unreadCount,
 	}
 	if msg == "" {

@@ -483,7 +483,8 @@ func TestProcessNotification(t *testing.T) {
 		PushData: &iOSPushData{
 			Alert: "ShortMessage2",
 			//Badge: 2,
-			URL: deeplink.OrgURL("testDomain", "OrganizationID"),
+			URL:   deeplink.OrgURL("testDomain", "OrganizationID"),
+			Sound: "default",
 		},
 		ThreadID:       "ThreadID",
 		OrganizationID: "OrganizationID",
@@ -537,7 +538,8 @@ func TestProcessNotification(t *testing.T) {
 		PushData: &iOSPushData{
 			Alert: "ShortMessage4",
 			////Badge: 4,
-			URL: deeplink.OrgURL("testDomain", "OrganizationID"),
+			URL:   deeplink.OrgURL("testDomain", "OrganizationID"),
+			Sound: "default",
 		},
 		ThreadID:       "ThreadID",
 		OrganizationID: "OrganizationID",
@@ -642,6 +644,7 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 	// Build out expected notification structure
 	iData, err := json.Marshal(&iOSPushNotification{
 		PushData: &iOSPushData{
+			Sound: "default",
 			Alert: "ShortMessage",
 			URL:   deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
 			//Badge: 1,
