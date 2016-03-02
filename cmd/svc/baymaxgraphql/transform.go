@@ -190,6 +190,16 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID s
 				if a.URL == "" {
 					a.URL = signedURL
 				}
+			case threading.Attachment_GENERIC_URL:
+				d := a.GetGenericURL()
+
+				// append to message
+				if d.Mimetype == "application/pdf" {
+					m2.TextMarkup += fmt.Sprintf("\nPDF Attachment:\n%s\n", d.URL)
+				} else {
+					golog.Warningf("Dropping attachment because mimetype %s for thread item %s is not supported", d.Mimetype, item.ID)
+				}
+				continue
 			default:
 				return nil, errors.Trace(fmt.Errorf("unknown attachment type %s", a.Type.String()))
 			}

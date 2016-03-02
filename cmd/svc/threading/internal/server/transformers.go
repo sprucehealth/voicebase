@@ -157,6 +157,15 @@ func transformThreadItemToResponse(item *models.ThreadItem, orgID string) (*thre
 						Height:   data.Height,
 					},
 				}
+			case models.Attachment_GENERIC:
+				data := a.GetGeneric()
+				at.Type = threading.Attachment_GENERIC_URL
+				at.Data = &threading.Attachment_GenericURL{
+					GenericURL: &threading.GenericURLAttachment{
+						URL:      data.URL,
+						Mimetype: data.Mimetype,
+					},
+				}
 			default:
 				return nil, errors.New("invalid attachment type " + a.Type.String())
 
@@ -233,6 +242,15 @@ func transformAttachmentsFromRequest(atts []*threading.Attachment) ([]*models.At
 					URL:      data.URL,
 					Width:    data.Width,
 					Height:   data.Height,
+				},
+			}
+		case threading.Attachment_GENERIC_URL:
+			data := a.GetGenericURL()
+			at.Type = models.Attachment_GENERIC
+			at.Data = &models.Attachment_Generic{
+				Generic: &models.GenericAttachment{
+					URL:      data.URL,
+					Mimetype: data.Mimetype,
 				},
 			}
 		default:
