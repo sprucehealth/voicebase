@@ -142,7 +142,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 		// TODO: Remove this once the emails that are blocked have been cleared.
 		// This has been introduced only because a particular doctor was forwarding emails from info@ and phone@
 		// to his sprucecare email address
-		if pem.ToChannelID == "phone@doctorlamberts.org" || pem.FromChannelID == "info@doctorlamberts.org" {
+		if pem.ToChannelID == "phone@doctorlamberts.org" || pem.ToChannelID == "info@doctorlamberts.org" {
 			pem.ToChannelID = "info@doctorlamberts.sprucecare.com"
 		}
 
