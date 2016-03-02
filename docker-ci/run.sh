@@ -180,6 +180,7 @@ if [[ "$DEPLOY_TO_S3" != "" ]]; then
         if [[ -e resources ]]; then
             cp -r resources build/
         fi
+        cp -r /usr/share/zoneinfo build/zoneinfo
         cp /etc/ssl/certs/ca-certificates.crt build/
         cat > build/Dockerfile <<EOF
 FROM scratch
@@ -190,6 +191,7 @@ LABEL svc=$SVC
 WORKDIR /workspace
 ADD . /workspace
 COPY ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY zoneinfo /usr/share/zoneinfo
 USER 65534
 CMD ["/workspace/$SVC"]
 EOF
