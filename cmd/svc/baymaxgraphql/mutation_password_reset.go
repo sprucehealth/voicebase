@@ -205,7 +205,10 @@ var checkPasswordResetTokenMutation = &graphql.Field{
 // createAndSendPasswordResetEmail creates a token for the password reset link and embeds it in a link and sends it to the account's provided email
 func createAndSendPasswordResetEmail(ctx context.Context, ram raccess.ResourceAccessor, webDomain string, email string) error {
 	resp, err := ram.CreatePasswordResetToken(ctx, email)
-	if err != nil {
+	if grpc.Code(err) == codes.NotFound {
+		golog.Warningf("PasswordReset: Unable to find account for email %s", email)
+		return nil
+	} else if err != nil {
 		return errors.Trace(err)
 	}
 

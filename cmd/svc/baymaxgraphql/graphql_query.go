@@ -5,6 +5,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -141,6 +142,7 @@ var queryType = graphql.NewObject(
 func lookupThreadWithReadStatus(ctx context.Context, ram raccess.ResourceAccessor, acc *models.Account, id string) (interface{}, error) {
 	th, err := lookupThread(ctx, ram, id, "")
 	if err != nil {
+		golog.Errorf("lookupThreadWithReadStatus: Failed - Account %+v, Thread ID: %s", gqlctx.Account(ctx), id)
 		return nil, errors.InternalError(ctx, err)
 	}
 	ent, err := ram.EntityForAccountID(ctx, th.OrganizationID, acc.ID)
