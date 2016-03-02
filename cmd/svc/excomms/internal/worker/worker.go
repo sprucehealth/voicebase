@@ -75,6 +75,10 @@ func NewWorker(
 	}, nil
 }
 
+type smtpEnvelope struct {
+	To []string `json:"to"`
+}
+
 func (w *IncomingRawMessageWorker) Start() {
 	if w.started {
 		return
@@ -245,56 +249,67 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			return errors.Trace(fmt.Errorf("Unable to parse email address %s :%s", sgEmail.Sender, err.Error()))
 		}
 
-		recipientAddress, err := mail.ParseAddress(sgEmail.Recipient)
-		if err != nil {
-			return errors.Trace(fmt.Errorf("Unable to parse email address %s :%s", sgEmail.Recipient, err.Error()))
+		// use the smtpEnvelope to determine who to send the mail to because
+		// it contains the information about the recipient whether the email was
+		// delivered due to a forwarding rule, the CC field or the forwarded field
+		// containing the spruce email address
+		var envelope smtpEnvelope
+		if err := json.Unmarshal([]byte(sgEmail.SMTPEnvelope), &envelope); err != nil {
+			return errors.Trace(fmt.Errorf("Unable to parse the SMTP envelope '%s' : %s", sgEmail.SMTPEnvelope, err.Error()))
 		}
 
-		text, err := emailreplyparser.ParseReply(sgEmail.Text)
-		if err != nil {
-			return errors.Trace(err)
-		}
-
-		emailItem := &excomms.PublishedExternalMessage_EmailItem{
-			EmailItem: &excomms.EmailItem{
-				Body:    text,
-				Subject: sgEmail.Subject,
-			},
-		}
-
-		// lookup media objects if there are any
-		mediaIDs := make([]uint64, len(sgEmail.Attachments))
-		for i, item := range sgEmail.Attachments {
-			mediaIDs[i] = item.ID
-		}
-
-		mediaMap, err := w.dal.LookupMedia(mediaIDs)
-		if err != nil {
-			return errors.Trace(err)
-		}
-
-		// populate attachments
-		mediaAttachments := make([]*excomms.MediaAttachment, sgEmail.NumAttachments)
-		for i, item := range sgEmail.Attachments {
-			media := mediaMap[item.ID]
-			mediaAttachments[i] = &excomms.MediaAttachment{
-				URL:         media.URL,
-				ContentType: media.Type,
+		for _, add := range envelope.To {
+			recipientAddress, err := mail.ParseAddress(add)
+			if err != nil {
+				return errors.Trace(fmt.Errorf("Unable to parse email address %s :%s", sgEmail.Recipient, err.Error()))
 			}
-			if media.Name != nil {
-				mediaAttachments[i].Name = *media.Name
-			}
-		}
-		emailItem.EmailItem.Attachments = mediaAttachments
 
-		sns.Publish(w.snsAPI, w.externalMessageTopic, &excomms.PublishedExternalMessage{
-			FromChannelID: senderAddress.Address,
-			ToChannelID:   recipientAddress.Address,
-			Timestamp:     rm.Timestamp,
-			Direction:     excomms.PublishedExternalMessage_INBOUND,
-			Type:          excomms.PublishedExternalMessage_EMAIL,
-			Item:          emailItem,
-		})
+			text, err := emailreplyparser.ParseReply(sgEmail.Text)
+			if err != nil {
+				return errors.Trace(err)
+			}
+
+			emailItem := &excomms.PublishedExternalMessage_EmailItem{
+				EmailItem: &excomms.EmailItem{
+					Body:    text,
+					Subject: sgEmail.Subject,
+				},
+			}
+
+			// lookup media objects if there are any
+			mediaIDs := make([]uint64, len(sgEmail.Attachments))
+			for i, item := range sgEmail.Attachments {
+				mediaIDs[i] = item.ID
+			}
+
+			mediaMap, err := w.dal.LookupMedia(mediaIDs)
+			if err != nil {
+				return errors.Trace(err)
+			}
+
+			// populate attachments
+			mediaAttachments := make([]*excomms.MediaAttachment, sgEmail.NumAttachments)
+			for i, item := range sgEmail.Attachments {
+				media := mediaMap[item.ID]
+				mediaAttachments[i] = &excomms.MediaAttachment{
+					URL:         media.URL,
+					ContentType: media.Type,
+				}
+				if media.Name != nil {
+					mediaAttachments[i].Name = *media.Name
+				}
+			}
+			emailItem.EmailItem.Attachments = mediaAttachments
+
+			sns.Publish(w.snsAPI, w.externalMessageTopic, &excomms.PublishedExternalMessage{
+				FromChannelID: senderAddress.Address,
+				ToChannelID:   recipientAddress.Address,
+				Timestamp:     rm.Timestamp,
+				Direction:     excomms.PublishedExternalMessage_INBOUND,
+				Type:          excomms.PublishedExternalMessage_EMAIL,
+				Item:          emailItem,
+			})
+		}
 	default:
 		golog.Errorf("Unknown raw message type %s. Dropping...", rm.Type.String())
 	}
