@@ -195,7 +195,19 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID s
 
 				// append to message
 				if d.Mimetype == "application/pdf" {
-					m2.TextMarkup += fmt.Sprintf("\nPDF Attachment:\n%s\n", d.URL)
+					mediaID, err := media.ParseMediaID(d.URL)
+					if err != nil {
+						golog.Errorf("Unable to parse mediaID out of url %s", d.URL)
+						continue
+					}
+
+					signedURL, err := mediaSigner.SignedURL(mediaID, d.Mimetype, accountID, 0, 0, false)
+					if err != nil {
+						golog.Errorf("Unable to generate signed url for media %s: %s", mediaID, err.Error())
+						continue
+					}
+					m2.TextMarkup += fmt.Sprintf("\nPDF Attachment:\n%s\n", signedURL)
+
 				} else {
 					golog.Warningf("Dropping attachment because mimetype %s for thread item %s is not supported", d.Mimetype, item.ID)
 				}
