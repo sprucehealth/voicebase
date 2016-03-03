@@ -1,0 +1,1 @@
+ALTER TABLE deleted_resource MODIFY COLUMN resource_id VARCHAR(255) NOT NULL;

@@ -39,6 +39,10 @@ func (e *sendgridHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, 
 		golog.Errorf(err.Error())
 		w.WriteHeader(http.StatusBadRequest)
 		return
+	} else if sgi.Headers == "" || sgi.SMTPEnvelope == "" {
+		golog.Warningf("Unable to parse the sendgrid parameters from the request")
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	msg := &rawmsg.Incoming{
