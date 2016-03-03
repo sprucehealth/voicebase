@@ -101,15 +101,15 @@ func (s *service) processDeviceRegistration(data string) error {
 		return errors.Trace(err)
 	}
 
-	// Check to see if we already have this device registered
-	pushConfig, err := s.dl.PushConfigForDeviceID(registrationInfo.DeviceID)
+	// Check to see if we already have this device token registered
+	pushConfig, err := s.dl.PushConfigForDeviceToken(registrationInfo.DeviceToken)
 	if api.IsErrNotFound(err) {
-		// Generate a new endpoint if we don't already have this device registered
+		// Generate a new endpoint if we don't already have this device token registered
 		endpointARN, err := s.generateEndpointARN(registrationInfo)
 		if err != nil {
 			return errors.Trace(err)
 		} else if endpointARN == "" {
-			golog.Warningf("No SNS endpoint ARN generated for %s, %s, %s", registrationInfo.ExternalGroupID, registrationInfo.Platform, registrationInfo.DeviceID)
+			golog.Errorf("No SNS endpoint ARN generated for %s, %s, %s", registrationInfo.ExternalGroupID, registrationInfo.Platform, registrationInfo.DeviceID)
 			return nil
 		}
 
@@ -131,14 +131,7 @@ func (s *service) processDeviceRegistration(data string) error {
 		return errors.Trace(err)
 	}
 
-	// This device is already registered but let's check to see if our token has changed
-	if string(pushConfig.DeviceToken) != registrationInfo.DeviceToken {
-		// If our token has changed, update the endpoint
-		if err := s.updateEndpoint(pushConfig.PushEndpoint, registrationInfo.DeviceToken, registrationInfo.ExternalGroupID); err != nil {
-			return errors.Trace(err)
-		}
-	}
-
+	// Perform the update here to support shared devices. We don't want to send push for an account that is no longer on a device
 	golog.Debugf("Updating existing push config with externalID %s for device registration.", registrationInfo.ExternalGroupID)
 	_, err = s.dl.UpdatePushConfig(pushConfig.ID, &dal.PushConfigUpdate{
 		ExternalGroupID: ptr.String(registrationInfo.ExternalGroupID),

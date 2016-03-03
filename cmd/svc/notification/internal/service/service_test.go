@@ -85,7 +85,7 @@ func TestProcessNewDeviceRegistrationIOS(t *testing.T) {
 	test.OK(t, err)
 
 	// Lookup the device and don't find it
-	dl.Expect(mock.NewExpectation(dl.PushConfigForDeviceID, "DeviceID").WithReturns((*dal.PushConfig)(nil), api.ErrNotFound("not found")))
+	dl.Expect(mock.NewExpectation(dl.PushConfigForDeviceToken, "DeviceToken").WithReturns((*dal.PushConfig)(nil), api.ErrNotFound("not found")))
 
 	// Generate an endpoint for the device
 	snsAPI.Expect(mock.NewExpectation(snsAPI.CreatePlatformEndpoint, &sns.CreatePlatformEndpointInput{
@@ -148,7 +148,7 @@ func TestProcessNewDeviceRegistrationAndroid(t *testing.T) {
 	test.OK(t, err)
 
 	// Lookup the device and don't find it
-	dl.Expect(mock.NewExpectation(dl.PushConfigForDeviceID, "DeviceID").WithReturns((*dal.PushConfig)(nil), api.ErrNotFound("not found")))
+	dl.Expect(mock.NewExpectation(dl.PushConfigForDeviceToken, "DeviceToken").WithReturns((*dal.PushConfig)(nil), api.ErrNotFound("not found")))
 
 	// Generate an endpoint for the device
 	snsAPI.Expect(mock.NewExpectation(snsAPI.CreatePlatformEndpoint, &sns.CreatePlatformEndpointInput{
@@ -171,80 +171,6 @@ func TestProcessNewDeviceRegistrationAndroid(t *testing.T) {
 		PushEndpoint:    "androidEnpointARN",
 		Device:          "Device",
 		DeviceModel:     "DeviceModel",
-	}))
-
-	cSvc.processDeviceRegistration(string(driData))
-}
-
-func TestProcessExistingDeviceRegistrationIOSTokenChanged(t *testing.T) {
-	dl := testdal.NewMockDAL(t)
-	defer dl.Finish()
-	dc := dmock.New(t)
-	defer dc.Finish()
-	snsAPI := mock.NewSNSAPI(t)
-	defer snsAPI.Finish()
-	sqsAPI := mock.NewSQSAPI(t)
-	defer sqsAPI.Finish()
-	sc := smock.New(t)
-	defer sc.Finish()
-	svc := New(dl, dc, sc, &Config{
-		DeviceRegistrationSQSURL:        deviceRegistrationSQSURL,
-		AppleDeviceRegistrationSNSARN:   appleDeviceRegistrationSNSARN,
-		AndriodDeviceRegistrationSNSARN: andriodDeviceRegistrationSNSARN,
-		SQSAPI: sqsAPI,
-		SNSAPI: snsAPI,
-	})
-	cSvc := svc.(*service)
-
-	driData, err := json.Marshal(&notification.DeviceRegistrationInfo{
-		ExternalGroupID: "ExternalGroupID",
-		DeviceToken:     "NewDeviceToken",
-		Platform:        "iOS",
-		PlatformVersion: "PlatformVersion",
-		AppVersion:      "AppVersion",
-		Device:          "Device",
-		DeviceModel:     "DeviceModel",
-		DeviceID:        "DeviceID",
-	})
-	test.OK(t, err)
-
-	// Lookup the device and find it
-	dl.Expect(mock.NewExpectation(dl.PushConfigForDeviceID, "DeviceID").WithReturns(&dal.PushConfig{
-		ID: dal.PushConfigID{
-			ObjectID: model.ObjectID{
-				Prefix:  notification.PushConfigIDPrefix,
-				Val:     1,
-				IsValid: true,
-			},
-		},
-		DeviceToken:  []byte("DeviceToken"),
-		PushEndpoint: "myEndpoint",
-	}, nil))
-
-	// Update the endpoint for the device
-	snsAPI.Expect(mock.NewExpectation(snsAPI.SetEndpointAttributes, &sns.SetEndpointAttributesInput{
-		EndpointArn: ptr.String("myEndpoint"),
-		Attributes: map[string]*string{
-			snsEndpointEnabledAttributeKey: ptr.String("true"),
-			snsEndpointTokenAttributeKey:   ptr.String("NewDeviceToken"),
-			snsEndpointCustomUserDataKey:   ptr.String("ExternalGroupID"),
-		},
-	}).WithReturns(&sns.SetEndpointAttributesOutput{}, nil))
-
-	// Update the record for the device
-	dl.Expect(mock.NewExpectation(dl.UpdatePushConfig, dal.PushConfigID{
-		ObjectID: model.ObjectID{
-			Prefix:  notification.PushConfigIDPrefix,
-			Val:     1,
-			IsValid: true,
-		},
-	}, &dal.PushConfigUpdate{
-		DeviceID:        ptr.String("DeviceID"),
-		ExternalGroupID: ptr.String("ExternalGroupID"),
-		Platform:        ptr.String("iOS"),
-		PlatformVersion: ptr.String("PlatformVersion"),
-		AppVersion:      ptr.String("AppVersion"),
-		DeviceToken:     []byte("NewDeviceToken"),
 	}))
 
 	cSvc.processDeviceRegistration(string(driData))
@@ -283,7 +209,7 @@ func TestProcessExistingDeviceRegistrationAndroid(t *testing.T) {
 	test.OK(t, err)
 
 	// Lookup the device and find it
-	dl.Expect(mock.NewExpectation(dl.PushConfigForDeviceID, "DeviceID").WithReturns(&dal.PushConfig{
+	dl.Expect(mock.NewExpectation(dl.PushConfigForDeviceToken, "DeviceToken").WithReturns(&dal.PushConfig{
 		ID: dal.PushConfigID{
 			ObjectID: model.ObjectID{
 				Prefix:  notification.PushConfigIDPrefix,
