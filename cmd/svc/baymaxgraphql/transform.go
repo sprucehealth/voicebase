@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/sprucehealth/backend/libs/bml"
+
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/device"
+
 	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -206,7 +209,29 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID s
 						golog.Errorf("Unable to generate signed url for media %s: %s", mediaID, err.Error())
 						continue
 					}
-					m2.TextMarkup += fmt.Sprintf("\nPDF Attachment:\n%s\n", signedURL)
+
+					title := a.Title
+					if title == "" {
+						title = "PDF Attachment"
+					}
+
+					pdfAttachment := bml.Anchor{
+						HREF: signedURL,
+						Text: title,
+					}
+
+					textMarkup, err := bml.Parse(m2.TextMarkup)
+					if err != nil {
+						// should not error because coming straight from the database and expected to be clean
+						return nil, errors.Trace(err)
+					}
+					textMarkup = append(textMarkup, "\n\n", pdfAttachment, "\n")
+
+					m2.TextMarkup, err = textMarkup.Format()
+					if err != nil {
+						// shouldn't fail
+						return nil, errors.Trace(err)
+					}
 
 				} else {
 					golog.Warningf("Dropping attachment because mimetype %s for thread item %s is not supported", d.Mimetype, item.ID)
