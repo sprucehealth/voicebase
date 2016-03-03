@@ -196,7 +196,7 @@ var threadType = graphql.NewObject(
 					for i, e := range res.Edges {
 						it, err := transformThreadItemToResponse(e.Item, "", acc.ID, svc.mediaSigner)
 						if err != nil {
-							golog.Errorf("Unable to transform thread item %s: %s", e.Item.ID, err.Error())
+							golog.Errorf("Failed to transform thread item %s: %s", e.Item.ID, err)
 							continue
 						}
 						cn.Edges[i] = &Edge{
