@@ -215,7 +215,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID s
 						title = "PDF Attachment"
 					}
 
-					pdfAttachment := bml.Anchor{
+					pdfAttachment := &bml.Anchor{
 						HREF: signedURL,
 						Text: title,
 					}
