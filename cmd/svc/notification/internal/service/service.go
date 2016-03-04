@@ -148,12 +148,6 @@ func (s *service) processDeviceRegistration(data string) error {
 	return errors.Trace(err)
 }
 
-const (
-	snsEndpointEnabledAttributeKey = "Enabled"
-	snsEndpointTokenAttributeKey   = "Token"
-	snsEndpointCustomUserDataKey   = "CustomUserData"
-)
-
 func (s *service) generateEndpointARN(info *notification.DeviceRegistrationInfo) (string, error) {
 	var arn string
 	switch info.Platform {
@@ -172,40 +166,11 @@ func (s *service) generateEndpointARN(info *notification.DeviceRegistrationInfo)
 	createEndpointResponse, err := s.snsAPI.CreatePlatformEndpoint(&sns.CreatePlatformEndpointInput{
 		PlatformApplicationArn: ptr.String(arn),
 		Token: ptr.String(info.DeviceToken),
-		// http://docs.aws.amazon.com/sns/latest/api/API_SetEndpointAttributes.html
-		Attributes: map[string]*string{snsEndpointEnabledAttributeKey: ptr.String("true")},
-		// Arbitrary user data to associate with the endpoint. Amazon SNS does not use
-		// this data. The data must be in UTF-8 format and less than 2KB.
-		CustomUserData: ptr.String(info.ExternalGroupID),
 	})
 	if err != nil {
 		return "", errors.Trace(err)
 	}
 	return *createEndpointResponse.EndpointArn, nil
-}
-
-func (s *service) updateEndpoint(endpointARN, deviceToken, externalGroupID string) error {
-	_, err := s.snsAPI.SetEndpointAttributes(&sns.SetEndpointAttributesInput{
-		EndpointArn: ptr.String(endpointARN),
-		// http://docs.aws.amazon.com/sns/latest/api/API_SetEndpointAttributes.html
-		// A map of the endpoint attributes. Attributes in this map include the following:
-		//
-		//   CustomUserData -- arbitrary user data to associate with the endpoint.
-		// Amazon SNS does not use this data. The data must be in UTF-8 format and less
-		// than 2KB.  Enabled -- flag that enables/disables delivery to the endpoint.
-		// Amazon SNS will set this to false when a notification service indicates to
-		// Amazon SNS that the endpoint is invalid. Users can set it back to true, typically
-		// after updating Token.  Token -- device token, also referred to as a registration
-		// id, for an app and mobile device. This is returned from the notification
-		// service when an app and mobile device are registered with the notification
-		// service.
-		Attributes: map[string]*string{
-			snsEndpointEnabledAttributeKey: ptr.String("true"),
-			snsEndpointTokenAttributeKey:   ptr.String(deviceToken),
-			snsEndpointCustomUserDataKey:   ptr.String(externalGroupID),
-		},
-	})
-	return errors.Trace(err)
 }
 
 func (s *service) processDeviceDeregistration(data string) error {
