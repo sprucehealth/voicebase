@@ -1,11 +1,12 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
-	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -101,8 +102,7 @@ var queryType = graphql.NewObject(
 					if acc == nil {
 						return nil, errors.ErrNotAuthenticated(ctx)
 					}
-					it, err := lookupThreadWithReadStatus(ctx, ram, acc, p.Args["id"].(string))
-					return it, err
+					return lookupThreadWithReadStatus(ctx, ram, acc, p.Args["id"].(string))
 				},
 			},
 			"subdomain": &graphql.Field{
@@ -141,9 +141,10 @@ var queryType = graphql.NewObject(
 // TODO: This double read is inefficent/incorrect in the sense that we need the org ID to get the correct entity. We will use this for now until we can encode the organization ID into the thread ID
 func lookupThreadWithReadStatus(ctx context.Context, ram raccess.ResourceAccessor, acc *models.Account, id string) (interface{}, error) {
 	th, err := lookupThread(ctx, ram, id, "")
-	if err != nil {
-		golog.Errorf("lookupThreadWithReadStatus: Failed - Account %+v, Thread ID: %s", gqlctx.Account(ctx), id)
-		return nil, errors.InternalError(ctx, err)
+	if grpc.Code(err) == codes.NotFound {
+		return nil, errors.ErrNotFound(ctx, id)
+	} else if err != nil {
+		return nil, errors.InternalError(ctx, fmt.Errorf("account=%+v threadID=%s: %s", gqlctx.Account(ctx), id, err))
 	}
 	ent, err := ram.EntityForAccountID(ctx, th.OrganizationID, acc.ID)
 	if errors.Type(err) == errors.ErrTypeNotFound {
