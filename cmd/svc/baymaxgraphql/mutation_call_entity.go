@@ -23,6 +23,7 @@ const (
 const (
 	callEntityErrorCodeEntityNotFound     = "ENTITY_NOT_FOUND"
 	callEntityErrorCodeEntityHasNoContact = "ENTITY_HAS_NO_CONTACT"
+	callEntityInvalidPhoneNumber          = "INVALID_PHONE_NUMBER"
 )
 
 type callEntityOutput struct {
@@ -47,6 +48,10 @@ var callEntityTypeEnumType = graphql.NewEnum(graphql.EnumConfig{
 		callEntityTypeReturnPhoneNumber: &graphql.EnumValueConfig{
 			Value:       callEntityTypeReturnPhoneNumber,
 			Description: "Return a phone number to call",
+		},
+		callEntityInvalidPhoneNumber: &graphql.EnumValueConfig{
+			Value:       callEntityInvalidPhoneNumber,
+			Description: "Invalid phone number",
 		},
 	},
 })
@@ -139,6 +144,30 @@ var callEntityMutation = &graphql.Field{
 			return nil, fmt.Errorf("destination phone number for entity required")
 		}
 
+		// the phone number specified has to be one of the contact values for the external
+		// entity
+		pn, err := phone.ParseNumber(destinationPhoneNumber)
+		if err != nil {
+			return &callEntityOutput{
+				ClientMutationID: mutationID,
+				Success:          false,
+				ErrorCode:        callEntityInvalidPhoneNumber,
+				ErrorMessage:     "The destination phone number is not a valid US phone number",
+			}, nil
+		}
+
+		if originatingPhoneNumber != "" {
+			_, err := phone.ParseNumber(originatingPhoneNumber)
+			if err != nil {
+				return &callEntityOutput{
+					ClientMutationID: mutationID,
+					Success:          false,
+					ErrorCode:        callEntityInvalidPhoneNumber,
+					ErrorMessage:     "The originating phone number is not a valid US phone number",
+				}, nil
+			}
+		}
+
 		calleeEnt, err := ram.Entity(ctx, entityID, []directory.EntityInformation{
 			directory.EntityInformation_CONTACTS,
 			directory.EntityInformation_MEMBERSHIPS,
@@ -153,13 +182,6 @@ var callEntityMutation = &graphql.Field{
 				ErrorCode:        callEntityErrorCodeEntityNotFound,
 				ErrorMessage:     "The callee was not found.",
 			}, nil
-		}
-
-		// the phone number specified has to be one of the contact values for the external
-		// entity
-		pn, err := phone.ParseNumber(destinationPhoneNumber)
-		if err != nil {
-			return nil, fmt.Errorf("invalid format for US phone number: %s", err.Error())
 		}
 
 		numberFound := false

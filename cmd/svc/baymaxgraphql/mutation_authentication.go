@@ -212,6 +212,7 @@ var authenticateWithCodeMutation = &graphql.Field{
 		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(authenticateWithCodeInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		svc := serviceFromParams(p)
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 		input := p.Args["input"].(map[string]interface{})
@@ -240,6 +241,16 @@ var authenticateWithCodeMutation = &graphql.Field{
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
+
+		eh := gqlctx.SpruceHeaders(ctx)
+		svc.segmentio.Track(&analytics.Track{
+			UserId: acc.ID,
+			Event:  "signedin",
+			Properties: map[string]interface{}{
+				"platform": eh.Platform.String(),
+			},
+		})
+
 		// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
 		// that likely won't change, but this still isn't a great way to update the context.
 		gqlctx.InPlaceWithAccount(ctx, acc)
