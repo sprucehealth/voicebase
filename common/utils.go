@@ -33,6 +33,20 @@ func (t *TypedData) TypeName() string {
 	return t.Type
 }
 
+// TokenGenerator represents the methods expected to be present on a token generator
+type TokenGenerator interface {
+	GenerateToken() (string, error)
+}
+
+type tokenGenerator struct{}
+
+// NewTokenGenerator returns an initialized instance of tokenGenerator
+func NewTokenGenerator() TokenGenerator { return &tokenGenerator{} }
+
+func (t *tokenGenerator) GenerateToken() (string, error) {
+	return GenerateToken()
+}
+
 func GenerateToken() (string, error) {
 	// REMINDER: Update MinimumTokenLength if this function changes
 	tokBytes := make([]byte, 16)

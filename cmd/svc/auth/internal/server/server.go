@@ -30,6 +30,11 @@ import (
 // go vet doesn't like that the first argument to grpcErrorf is not a string so alias the function with a different name :(
 var grpcErrorf = grpc.Errorf
 
+func grpcIErrorf(fmt string, args ...interface{}) error {
+	golog.LogDepthf(1, golog.ERR, fmt, args...)
+	return grpcErrorf(codes.Internal, fmt, args...)
+}
+
 var (
 	// ErrNotImplemented is returned from RPC calls that have yet to be implemented
 	ErrNotImplemented = errors.New("Not Implemented")
@@ -41,6 +46,7 @@ type server struct {
 	clk                       clock.Clock
 	settings                  settings.SettingsClient
 	clientEncryptionKeySigner *sig.Signer
+	tokenGenerator            common.TokenGenerator
 }
 
 var bCryptHashCost = 10
@@ -57,26 +63,18 @@ func New(dl dal.DAL, settings settings.SettingsClient, clientEncryptionKeySecret
 		clk:                       clock.New(),
 		settings:                  settings,
 		clientEncryptionKeySigner: clientEncryptionKeySigner,
+		tokenGenerator:            common.NewTokenGenerator(),
 	}, nil
 }
 
 func (s *server) AuthenticateLogin(ctx context.Context, rd *auth.AuthenticateLoginRequest) (*auth.AuthenticateLoginResponse, error) {
-	golog.Debugf("Entering server.server.AuthenticateLogin: %+v", rd)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.server.AuthenticateLogin...") }()
-	}
-	golog.Debugf("Getting account for email %s...", rd.Email)
 	account, err := s.dal.AccountForEmail(rd.Email)
 	if api.IsErrNotFound(err) {
 		return nil, grpcErrorf(auth.EmailNotFound, "Unknown email: %s", rd.Email)
 	} else if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcIErrorf(err.Error())
 	}
-	golog.Debugf("Got account %+v", account)
-
-	golog.Debugf("Comparing password with hash...")
 	if err := s.hasher.CompareHashAndPassword(account.Password, []byte(rd.Password)); err != nil {
-		golog.Debugf("Error while comparing password: %s", err)
 		return nil, grpcErrorf(auth.BadPassword, "The password does not match the provided account email: %s", rd.Email)
 	}
 
@@ -92,24 +90,24 @@ func (s *server) AuthenticateLogin(ctx context.Context, rd *auth.AuthenticateLog
 		},
 	})
 	if err != nil {
-		golog.Errorf("unable to lookup setting %s for account %s", authSetting.ConfigKey2FAEnabled, err.Error())
+		return nil, grpcIErrorf("Unable to lookup setting %s for account %s", authSetting.ConfigKey2FAEnabled, err.Error())
 	} else if len(res.Values) != 1 {
-		golog.Errorf("Expected 1 value for setting %s but got back %d", authSetting.ConfigKey2FAEnabled, len(res.Values))
+		return nil, grpcIErrorf("Expected 1 value for setting %s but got back %d", authSetting.ConfigKey2FAEnabled, len(res.Values))
 	}
 	val := res.Values[0]
-	accountRequiresTwoFactor = val.GetBoolean().Value
+	accountRequiresTwoFactor = val.GetBoolean().Value && s.deviceNeeds2FA(account.ID, rd.DeviceID)
 
 	if accountRequiresTwoFactor {
 		// TODO: Make this response and data less phone/sms specific
 		accountPhone, err := s.dal.AccountPhone(account.PrimaryAccountPhoneID)
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, grpcIErrorf(err.Error())
 		}
 		twoFactorPhone = accountPhone.PhoneNumber
 	} else {
-		authToken, err = generateAndInsertToken(s.dal, account.ID, rd.TokenAttributes, s.clk, s.clientEncryptionKeySigner)
+		authToken, err = s.generateAndInsertToken(s.dal, account.ID, rd.TokenAttributes)
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
+			return nil, grpcIErrorf(err.Error())
 		}
 	}
 
@@ -125,12 +123,25 @@ func (s *server) AuthenticateLogin(ctx context.Context, rd *auth.AuthenticateLog
 	}, nil
 }
 
-func (s *server) AuthenticateLoginWithCode(ctx context.Context, rd *auth.AuthenticateLoginWithCodeRequest) (*auth.AuthenticateLoginWithCodeResponse, error) {
-	golog.Debugf("Entering server.server.AuthenticateLoginWithCode: %+v", rd)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.server.AuthenticateLoginWithCode...") }()
-	}
+const (
+	// By default 2FA users should only have to login using 2FA once every 30 days per device
+	default2FALoginWindow = time.Second * 60 * 60 * 24 * 30
+)
 
+// deviceNeeds2FA determines if a device needs a 2FA login
+func (s *server) deviceNeeds2FA(accountID dal.AccountID, deviceID string) bool {
+	tfl, err := s.dal.TwoFactorLogin(accountID, deviceID)
+	if api.IsErrNotFound(err) {
+		return true
+	} else if err != nil {
+		// if we encountered an unexpected error, log it and determine we need 2FA
+		golog.Errorf("Encountered an error when attempting to query TwoFactorLogin for %s and device id %s: %s", accountID, deviceID, err)
+		return true
+	}
+	return tfl.LastLogin.Add(default2FALoginWindow).Before(s.clk.Now())
+}
+
+func (s *server) AuthenticateLoginWithCode(ctx context.Context, rd *auth.AuthenticateLoginWithCodeRequest) (*auth.AuthenticateLoginWithCodeResponse, error) {
 	if rd.Token == "" {
 		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	}
@@ -139,7 +150,7 @@ func (s *server) AuthenticateLoginWithCode(ctx context.Context, rd *auth.Authent
 	if api.IsErrNotFound(err) {
 		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	} else if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcIErrorf(err.Error())
 	} else if verificationCode.VerificationType != dal.VerificationCodeTypeAccount2fa {
 		return nil, grpcErrorf(codes.NotFound, "No 2FA verification code maps to the provided token %q", rd.Token)
 	}
@@ -156,22 +167,28 @@ func (s *server) AuthenticateLoginWithCode(ctx context.Context, rd *auth.Authent
 		Consumed: ptr.Bool(true),
 	})
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcIErrorf(err.Error())
 	}
 
 	accountID, err := dal.ParseAccountID(verificationCode.VerifiedValue)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, "ACCOUNT_2FA verification code value %q failed to parse into account id, unable to generate auth token: %s", verificationCode.VerifiedValue, err)
+		return nil, grpcIErrorf("ACCOUNT_2FA verification code value %q failed to parse into account id, unable to generate auth token: %s", verificationCode.VerifiedValue, err)
 	}
 
-	authToken, err := generateAndInsertToken(s.dal, accountID, rd.TokenAttributes, s.clk, s.clientEncryptionKeySigner)
+	authToken, err := s.generateAndInsertToken(s.dal, accountID, rd.TokenAttributes)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, "Failed to generate and insert new auth token for ACCOUNT_2FA: %s", err)
+		return nil, grpcIErrorf("Failed to generate and insert new auth token for ACCOUNT_2FA: %s", err)
 	}
 
 	acc, err := s.dal.Account(accountID)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, "Failed to fetch account record for ACCOUNT_2FA: %s", err)
+		return nil, grpcIErrorf("Failed to fetch account record for ACCOUNT_2FA: %s", err)
+	}
+
+	// Record the 2FA login attempt
+	if err := s.dal.UpsertTwoFactorLogin(accountID, rd.DeviceID, s.clk.Now()); err != nil {
+		// log the error here but don't block a successful login
+		golog.Errorf("Encountered error while attempting to record successful two factor login for %s with device id %s: %s", accountID, rd.DeviceID, err)
 	}
 
 	return &auth.AuthenticateLoginWithCodeResponse{
@@ -184,55 +201,66 @@ func (s *server) AuthenticateLoginWithCode(ctx context.Context, rd *auth.Authent
 	}, nil
 }
 
+var (
+	// A token is rotated and refreshed if auth is checked an hour or more after it was last refreshed
+	defaultTokenRefreshWindow = time.Second * 60 * 60
+	// A token lasts for a maximum of 30 days.
+	defaultTokenLifecycle = time.Second * 60 * 60 * 24 * 30
+)
+
 func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenticationRequest) (*auth.CheckAuthenticationResponse, error) {
-	golog.Debugf("Entering server.server.CheckAuthentication: %+v", rd)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.server.CheckAuthentication...") }()
-	}
 	attributedToken, err := appendAttributes(rd.Token, rd.TokenAttributes)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcIErrorf(err.Error())
 	}
 
-	golog.Debugf("Checking authentication of token %s", attributedToken)
-	aToken, err := s.dal.AuthToken(attributedToken, s.clk.Now())
-	if api.IsErrNotFound(err) {
-		return &auth.CheckAuthenticationResponse{
-			IsAuthenticated: false,
-		}, nil
-	} else if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
-	}
+	var account *dal.Account
+	var authToken *auth.AuthToken
+	var authenticated bool
+	if err := s.dal.Transact(func(dl dal.DAL) error {
+		// Lock the row for update to avoid race conditions since we might rotate it
+		// TODO: There are come optimizations we could do around this lock
+		aToken, err := dl.AuthToken(attributedToken, s.clk.Now(), true)
+		if api.IsErrNotFound(err) {
+			return nil
+		} else if err != nil {
+			return errors.Trace(err)
+		}
+		authenticated = true
 
-	authToken := &auth.AuthToken{
-		Value:           rd.Token,
-		ExpirationEpoch: uint64(aToken.Expires.Unix()),
-	}
-	if rd.Refresh {
-		if err := s.dal.Transact(func(dl dal.DAL) error {
-			rotatedToken, err := generateAndInsertToken(dl, aToken.AccountID, rd.TokenAttributes, s.clk, s.clientEncryptionKeySigner)
+		authToken = &auth.AuthToken{
+			Value:               rd.Token,
+			ExpirationEpoch:     uint64(aToken.Expires.Unix()),
+			ClientEncryptionKey: base64.StdEncoding.EncodeToString(aToken.ClientEncryptionKey),
+		}
+
+		// Conditions for extending and rotating token.
+		// 1. Not a shadow token
+		// 2. Not outside the token lifecycle.
+		// 3. Inside the token expiration refresh window.
+		if !aToken.Shadow &&
+			!s.clk.Now().After(aToken.Created.Add(defaultTokenLifecycle)) &&
+			s.clk.Now().After(aToken.Expires.Add(-defaultTokenExpiration).Add(defaultTokenRefreshWindow)) {
+			authToken, err = s.rotateAndExtendToken(dl, aToken, rd.TokenAttributes)
 			if err != nil {
 				return errors.Trace(err)
 			}
-			authToken = rotatedToken
-			_, err = dl.DeleteAuthToken(attributedToken)
-			return errors.Trace(err)
-		}); err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
 		}
-	} else {
-		// If the token is valid then rebuild their encryption key
-		key, err := s.clientEncryptionKeySigner.Sign([]byte(authToken.Value))
-		if err != nil {
-			return nil, grpcErrorf(codes.Internal, err.Error())
-		}
-		authToken.ClientEncryptionKey = base64.StdEncoding.EncodeToString(key)
-	}
 
-	golog.Debugf("Getting account %s", aToken.AccountID)
-	account, err := s.dal.Account(aToken.AccountID)
-	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		account, err = s.dal.Account(aToken.AccountID)
+		if err != nil {
+			return errors.Trace(err)
+		}
+		return nil
+	}); err != nil {
+		if err != nil {
+			return nil, grpcIErrorf(err.Error())
+		}
+	}
+	if !authenticated {
+		return &auth.CheckAuthenticationResponse{
+			IsAuthenticated: false,
+		}, nil
 	}
 	return &auth.CheckAuthenticationResponse{
 		IsAuthenticated: true,
@@ -246,10 +274,6 @@ func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenti
 }
 
 func (s *server) CheckVerificationCode(ctx context.Context, rd *auth.CheckVerificationCodeRequest) (*auth.CheckVerificationCodeResponse, error) {
-	golog.Debugf("Entering server.server.CheckVerificationCode: %+v", rd)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.server.CheckVerificationCode...") }()
-	}
 	if rd.Token == "" {
 		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	}
@@ -258,7 +282,7 @@ func (s *server) CheckVerificationCode(ctx context.Context, rd *auth.CheckVerifi
 	if api.IsErrNotFound(err) {
 		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	} else if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcIErrorf(err.Error())
 	}
 
 	// Check that the code matches the token and it is not expired
@@ -273,7 +297,7 @@ func (s *server) CheckVerificationCode(ctx context.Context, rd *auth.CheckVerifi
 		Consumed: ptr.Bool(true),
 	})
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcIErrorf(err.Error())
 	}
 
 	// If this is a ACCOUNT_2FA token return the account object as well
@@ -281,12 +305,12 @@ func (s *server) CheckVerificationCode(ctx context.Context, rd *auth.CheckVerifi
 	if verificationCode.VerificationType == dal.VerificationCodeTypeAccount2fa {
 		accountID, err := dal.ParseAccountID(verificationCode.VerifiedValue)
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, "ACCOUNT_2FA verification code value %q failed to parse into account id: %s", verificationCode.VerifiedValue, err)
+			return nil, grpcIErrorf("ACCOUNT_2FA verification code value %q failed to parse into account id: %s", verificationCode.VerifiedValue, err)
 		}
 
 		acc, err := s.dal.Account(accountID)
 		if err != nil {
-			return nil, grpcErrorf(codes.Internal, "Failed to fetch account record for ACCOUNT_2FA: %s", err)
+			return nil, grpcIErrorf("Failed to fetch account record for ACCOUNT_2FA: %s", err)
 		}
 		account = &auth.Account{
 			ID:        acc.ID.String(),
@@ -302,10 +326,6 @@ func (s *server) CheckVerificationCode(ctx context.Context, rd *auth.CheckVerifi
 }
 
 func (s *server) CheckPasswordResetToken(ctx context.Context, rd *auth.CheckPasswordResetTokenRequest) (*auth.CheckPasswordResetTokenResponse, error) {
-	golog.Debugf("Entering server.server.CheckPasswordResetToken: %+v", rd)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.server.CheckPasswordResetToken...") }()
-	}
 	if rd.Token == "" {
 		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	}
@@ -314,7 +334,7 @@ func (s *server) CheckPasswordResetToken(ctx context.Context, rd *auth.CheckPass
 	if api.IsErrNotFound(err) {
 		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	} else if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcIErrorf(err.Error())
 	}
 
 	// Check that the token is of the appropriate type and is not expired
@@ -327,14 +347,14 @@ func (s *server) CheckPasswordResetToken(ctx context.Context, rd *auth.CheckPass
 	// Return the releveant password reset information for the account
 	accountID, err := dal.ParseAccountID(verificationCode.VerifiedValue)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcIErrorf(err.Error())
 	}
 
 	account, err := s.dal.Account(accountID)
 	if api.IsErrNotFound(err) {
-		return nil, grpcErrorf(codes.Internal, "No account maps to the ID contained in the provided token %q:%q", rd.Token, accountID.String())
+		return nil, grpcIErrorf("No account maps to the ID contained in the provided token %q:%q", rd.Token, accountID.String())
 	} else if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcIErrorf(err.Error())
 	}
 
 	// Do the remaining operations in parallel
@@ -347,7 +367,7 @@ func (s *server) CheckPasswordResetToken(ctx context.Context, rd *auth.CheckPass
 			Consumed: ptr.Bool(true),
 		})
 		if err != nil {
-			return grpcErrorf(codes.Internal, err.Error())
+			return grpcIErrorf(err.Error())
 		}
 		return nil
 	})
@@ -356,7 +376,7 @@ func (s *server) CheckPasswordResetToken(ctx context.Context, rd *auth.CheckPass
 		// Fetch the phone number for the account
 		accountPhone, err = s.dal.AccountPhone(account.PrimaryAccountPhoneID)
 		if err != nil {
-			return grpcErrorf(codes.Internal, err.Error())
+			return grpcIErrorf(err.Error())
 		}
 		return nil
 	})
@@ -365,7 +385,7 @@ func (s *server) CheckPasswordResetToken(ctx context.Context, rd *auth.CheckPass
 		// Fetch the email for the account
 		accountEmail, err = s.dal.AccountEmail(account.PrimaryAccountEmailID)
 		if err != nil {
-			return grpcErrorf(codes.Internal, err.Error())
+			return grpcIErrorf(err.Error())
 		}
 		return nil
 	})
@@ -382,10 +402,6 @@ func (s *server) CheckPasswordResetToken(ctx context.Context, rd *auth.CheckPass
 }
 
 func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountRequest) (*auth.CreateAccountResponse, error) {
-	golog.Debugf("Entering server.server.CreateAccount: %+v", rd)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.server.CreateAccount...") }()
-	}
 	if errResp := s.validateCreateAccountRequest(rd); errResp != nil {
 		return nil, errResp
 	}
@@ -397,7 +413,7 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 	// TODO: This is check should be coupled with some idempotency changes to actually be correct. Just detecting the duyplicate for now.
 	acc, err := s.dal.AccountForEmail(rd.Email)
 	if err != nil && !api.IsErrNotFound(err) {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcIErrorf(err.Error())
 	} else if acc != nil {
 		return nil, grpcErrorf(auth.DuplicateEmail, "The email %s is already in use by an account", rd.Email)
 	}
@@ -450,7 +466,7 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 			return errors.Trace(fmt.Errorf("Expected 1 row to be affected but got %d", aff))
 		}
 
-		authToken, err = generateAndInsertToken(dl, accountID, rd.TokenAttributes, s.clk, s.clientEncryptionKeySigner)
+		authToken, err = s.generateAndInsertToken(dl, accountID, rd.TokenAttributes)
 		if err != nil {
 			return errors.Trace(err)
 		}
@@ -458,7 +474,7 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 		account, err = dl.Account(accountID)
 		return errors.Trace(err)
 	}); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcIErrorf(err.Error())
 	}
 
 	return &auth.CreateAccountResponse{
@@ -495,13 +511,9 @@ func (s *server) validateCreateAccountRequest(rd *auth.CreateAccountRequest) err
 }
 
 func (s *server) CreateVerificationCode(ctx context.Context, rd *auth.CreateVerificationCodeRequest) (*auth.CreateVerificationCodeResponse, error) {
-	golog.Debugf("Entering server.server.CreateVerificationCode: %+v", rd)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.server.CreateVerificationCode...") }()
-	}
 	verificationCode, err := generateAndInsertVerificationCode(s.dal, rd.ValueToVerify, rd.Type, s.clk)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcIErrorf(err.Error())
 	}
 	return &auth.CreateVerificationCodeResponse{
 		VerificationCode: verificationCode,
@@ -509,19 +521,15 @@ func (s *server) CreateVerificationCode(ctx context.Context, rd *auth.CreateVeri
 }
 
 func (s *server) CreatePasswordResetToken(ctx context.Context, rd *auth.CreatePasswordResetTokenRequest) (*auth.CreatePasswordResetTokenResponse, error) {
-	golog.Debugf("Entering server.server.CreatePasswordResetToken: %+v", rd)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.server.CreatePasswordResetToken...") }()
-	}
 	account, err := s.dal.AccountForEmail(rd.Email)
 	if api.IsErrNotFound(err) {
 		return nil, grpcErrorf(codes.NotFound, err.Error())
 	} else if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcIErrorf(err.Error())
 	}
 	verificationCode, err := generateAndInsertVerificationCode(s.dal, account.ID.String(), auth.VerificationCodeType_PASSWORD_RESET, s.clk)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcIErrorf(err.Error())
 	}
 	return &auth.CreatePasswordResetTokenResponse{
 		Token: verificationCode.Token,
@@ -529,10 +537,6 @@ func (s *server) CreatePasswordResetToken(ctx context.Context, rd *auth.CreatePa
 }
 
 func (s *server) GetAccount(ctx context.Context, rd *auth.GetAccountRequest) (*auth.GetAccountResponse, error) {
-	golog.Debugf("Entering server.server.GetAccount: %+v", rd)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.server.GetAccount...") }()
-	}
 	id, err := dal.ParseAccountID(rd.AccountID)
 	if err != nil {
 		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse provided account ID")
@@ -551,29 +555,19 @@ func (s *server) GetAccount(ctx context.Context, rd *auth.GetAccountRequest) (*a
 }
 
 func (s *server) Unauthenticate(ctx context.Context, rd *auth.UnauthenticateRequest) (*auth.UnauthenticateResponse, error) {
-	golog.Debugf("Entering server.server.Unauthenticate: %+v", rd)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.server.Unauthenticate...") }()
-	}
 	tokenWithAttributes, err := appendAttributes(rd.Token, rd.TokenAttributes)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcIErrorf(err.Error())
 	}
-	golog.Debugf("Deleting auth token %s", tokenWithAttributes)
 	if aff, err := s.dal.DeleteAuthToken(tokenWithAttributes); err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcIErrorf(err.Error())
 	} else if aff != 1 {
-		return nil, grpcErrorf(codes.Internal, "Expected 1 row to be affected but got %d", aff)
+		return nil, grpcIErrorf("Expected 1 row to be affected but got %d", aff)
 	}
 	return &auth.UnauthenticateResponse{}, nil
 }
 
 func (s *server) UpdatePassword(ctx context.Context, rd *auth.UpdatePasswordRequest) (*auth.UpdatePasswordResponse, error) {
-	golog.Debugf("Entering server.server.UpdatePassword: %+v", rd)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.server.UpdatePassword...") }()
-	}
-
 	if rd.Token == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "Token annot be empty", rd.Token)
 	}
@@ -588,7 +582,7 @@ func (s *server) UpdatePassword(ctx context.Context, rd *auth.UpdatePasswordRequ
 	if api.IsErrNotFound(err) {
 		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	} else if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcIErrorf(err.Error())
 	} else if verificationCode.Expires.Before(s.clk.Now()) {
 		return nil, grpcErrorf(auth.VerificationCodeExpired, "The code mapped to the provided token has expired.")
 	} else if verificationCode.Code != rd.Code {
@@ -597,19 +591,19 @@ func (s *server) UpdatePassword(ctx context.Context, rd *auth.UpdatePasswordRequ
 
 	hashedPassword, err := s.hasher.GenerateFromPassword([]byte(rd.NewPassword))
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcIErrorf(err.Error())
 	}
 
 	accountID, err := dal.ParseAccountID(verificationCode.VerifiedValue)
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcIErrorf(err.Error())
 	}
 
 	_, err = s.dal.UpdateAccount(accountID, &dal.AccountUpdate{
 		Password: &hashedPassword,
 	})
 	if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcIErrorf(err.Error())
 	}
 
 	// Since we sucessfully checked the token, mark it as consumed
@@ -630,11 +624,6 @@ func (s *server) UpdatePassword(ctx context.Context, rd *auth.UpdatePasswordRequ
 }
 
 func (s *server) VerifiedValue(ctx context.Context, rd *auth.VerifiedValueRequest) (*auth.VerifiedValueResponse, error) {
-	golog.Debugf("Entering server.server.VerifiedValue: %+v", rd)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.server.VerifiedValue...") }()
-	}
-
 	if rd.Token == "" {
 		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	}
@@ -643,7 +632,7 @@ func (s *server) VerifiedValue(ctx context.Context, rd *auth.VerifiedValueReques
 	if api.IsErrNotFound(err) {
 		return nil, grpcErrorf(codes.NotFound, "No verification code maps to the provided token %q", rd.Token)
 	} else if err != nil {
-		return nil, grpcErrorf(codes.Internal, err.Error())
+		return nil, grpcIErrorf(err.Error())
 	} else if !verificationCode.Consumed {
 		return nil, grpcErrorf(auth.ValueNotYetVerified, "The value mapped to this token %q has not yet been verified", rd.Token)
 	}
@@ -653,16 +642,83 @@ func (s *server) VerifiedValue(ctx context.Context, rd *auth.VerifiedValueReques
 	}, nil
 }
 
+// generateAndInsertToken generates and inserts an auth token for the provided account and information
+func (s *server) generateAndInsertToken(dl dal.DAL, accountID dal.AccountID, tokenAttributes map[string]string) (*auth.AuthToken, error) {
+	token, err := s.tokenGenerator.GenerateToken()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	tokenWithAttributes, err := appendAttributes(token, tokenAttributes)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	tokenExpiration := s.clk.Now().Add(defaultTokenExpiration)
+
+	// Utilize the auth token to generate a client encryption key
+	key, err := s.clientEncryptionKeySigner.Sign([]byte(token))
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	if err := dl.InsertAuthToken(&dal.AuthToken{
+		AccountID:           accountID,
+		Expires:             tokenExpiration,
+		Token:               []byte(tokenWithAttributes),
+		ClientEncryptionKey: key,
+	}); err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &auth.AuthToken{
+		Value:               token,
+		ExpirationEpoch:     uint64(tokenExpiration.Unix()),
+		ClientEncryptionKey: base64.StdEncoding.EncodeToString(key),
+	}, nil
+}
+
+func (s *server) rotateAndExtendToken(dl dal.DAL, authToken *dal.AuthToken, tokenAttributes map[string]string) (*auth.AuthToken, error) {
+	token, err := s.tokenGenerator.GenerateToken()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	tokenWithAttributes, err := appendAttributes(token, tokenAttributes)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	tokenExpiration := s.clk.Now().Add(defaultTokenExpiration)
+
+	if err := dl.Transact(func(dl dal.DAL) error {
+		// Update our existing token to preserve the Created information that we rely on in other parts of the system
+		if _, err := dl.UpdateAuthToken(string(authToken.Token), &dal.AuthTokenUpdate{
+			Expires: ptr.Time(s.clk.Now().Add(defaultTokenExpiration)),
+			Token:   []byte(tokenWithAttributes),
+		}); err != nil {
+			return errors.Trace(err)
+		}
+
+		// Insert a shadow token so that in flight requests will continue to work. This token will expire in 5 minutes
+		return errors.Trace(dl.InsertAuthToken(&dal.AuthToken{
+			AccountID:           authToken.AccountID,
+			Expires:             s.clk.Now().Add(time.Minute * 5),
+			Token:               authToken.Token,
+			ClientEncryptionKey: authToken.ClientEncryptionKey,
+			Shadow:              true,
+		}))
+	}); err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &auth.AuthToken{
+		Value:               tokenWithAttributes,
+		ExpirationEpoch:     uint64(tokenExpiration.Unix()),
+		ClientEncryptionKey: base64.StdEncoding.EncodeToString(authToken.ClientEncryptionKey),
+	}, nil
+}
+
 const (
 	maxTokenSize           = 250
-	defaultTokenExpiration = 3 * 60 * 60 * 24 * time.Second
+	defaultTokenExpiration = time.Second * 60 * 60 * 24 * 4 // A token by default expires in 4 days
 )
 
 func appendAttributes(token string, tokenAttributes map[string]string) (string, error) {
-	golog.Debugf("Entering server.appendAttributes: Token: %s, TokenAttributes: %+v", token, tokenAttributes)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.appendAttributes...") }()
-	}
 	if len(tokenAttributes) > 0 {
 		token += ":"
 		// due to the non deterministic nature of maps we need to sort the keys and always apply in that order
@@ -684,42 +740,6 @@ func appendAttributes(token string, tokenAttributes map[string]string) (string, 
 	return token, nil
 }
 
-func generateAndInsertToken(dl dal.DAL, accountID dal.AccountID, tokenAttributes map[string]string, clk clock.Clock, clientEncryptionKeySigner *sig.Signer) (*auth.AuthToken, error) {
-	golog.Debugf("Entering server.generateAndInsertToken: AccountID: %s, TokenAttributes: %+v", accountID, tokenAttributes)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.generateAndInsertToken...") }()
-	}
-	token, err := common.GenerateToken()
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-	tokenWithAttributes, err := appendAttributes(token, tokenAttributes)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-	tokenExpiration := clk.Now().Add(defaultTokenExpiration)
-
-	// Utilize the auth token to generate a client encryption key
-	key, err := clientEncryptionKeySigner.Sign([]byte(token))
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	golog.Debugf("Inserting auth token %s - expires %+v for account %s", tokenWithAttributes, tokenExpiration, accountID)
-	if err := dl.InsertAuthToken(&dal.AuthToken{
-		AccountID: accountID,
-		Expires:   tokenExpiration,
-		Token:     []byte(tokenWithAttributes),
-	}); err != nil {
-		return nil, errors.Trace(err)
-	}
-	return &auth.AuthToken{
-		Value:               token,
-		ExpirationEpoch:     uint64(tokenExpiration.Unix()),
-		ClientEncryptionKey: base64.StdEncoding.EncodeToString(key),
-	}, nil
-}
-
 const (
 	verificationCodeDigitCount        = 6
 	verificationCodeMaxValue          = 999999
@@ -727,10 +747,6 @@ const (
 )
 
 func generateAndInsertVerificationCode(dl dal.DAL, valueToVerify string, codeType auth.VerificationCodeType, clk clock.Clock) (*auth.VerificationCode, error) {
-	golog.Debugf("Entering server.generateAndInsertVerificationCode: valueToVerify: %s", valueToVerify)
-	if golog.Default().L(golog.DEBUG) {
-		defer func() { golog.Debugf("Leaving server.generateAndInsertVerificationCode...") }()
-	}
 	token, err := common.GenerateToken()
 	if err != nil {
 		return nil, errors.Trace(err)

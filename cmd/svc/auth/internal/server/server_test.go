@@ -3,7 +3,6 @@ package server
 import (
 	"crypto/sha512"
 	"encoding/base64"
-	"strings"
 	"testing"
 	"time"
 
@@ -29,6 +28,14 @@ import (
 const (
 	clientEncryptionSecret = "test-seekrit"
 )
+
+type tokenGenerator struct {
+	token string
+}
+
+func (t *tokenGenerator) GenerateToken() (string, error) {
+	return t.token, nil
+}
 
 func init() {
 	conc.Testing = true
@@ -94,7 +101,14 @@ func TestAuthenticateLogin2FA(t *testing.T) {
 	apID1, err := dal.NewAccountPhoneID()
 	test.OK(t, err)
 	phoneNumber := "+1234567890"
+	deviceID := "deviceID"
 	dl.Expect(mock.NewExpectation(dl.AccountForEmail, email).WithReturns(&dal.Account{ID: aID1, Password: hashedPassword, PrimaryAccountPhoneID: apID1}, nil))
+	dl.Expect(mock.NewExpectation(dl.TwoFactorLogin, aID1, deviceID).WithReturns(&dal.TwoFactorLogin{
+		AccountID: aID1,
+		DeviceID:  deviceID,
+		// Set their last login outside the refresh window so they require 2FA again
+		LastLogin: time.Now().Add(-(default2FALoginWindow + 10000)),
+	}, nil))
 	dl.Expect(mock.NewExpectation(dl.AccountPhone, apID1).WithReturns(&dal.AccountPhone{PhoneNumber: phoneNumber}, nil))
 
 	settingsMock.Expect(mock.NewExpectation(settingsMock.GetValues, &settings.GetValuesRequest{
@@ -123,6 +137,7 @@ func TestAuthenticateLogin2FA(t *testing.T) {
 		Email:           email,
 		Password:        password,
 		TokenAttributes: map[string]string{"test": "attribute"},
+		DeviceID:        deviceID,
 	})
 	test.OK(t, err)
 
@@ -130,6 +145,79 @@ func TestAuthenticateLogin2FA(t *testing.T) {
 	test.AssertNotNil(t, resp.Account)
 	test.Assert(t, resp.TwoFactorRequired, "Expected two factor to be required")
 	test.Equals(t, resp.TwoFactorPhoneNumber, phoneNumber)
+}
+
+func TestAuthenticateLoginDeviceInside2FAWindow(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
+	svr := s.(*server)
+	hasher := hash.NewBcryptHasher(bCryptHashCost)
+	email := "test@email.com"
+	password := "password"
+	hashedPassword, err := hasher.GenerateFromPassword([]byte(password))
+	test.OK(t, err)
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+	apID1, err := dal.NewAccountPhoneID()
+	test.OK(t, err)
+	deviceID := "deviceID"
+	mClock := clock.NewManaged(time.Now())
+	svr.tokenGenerator = &tokenGenerator{token: "genToken"}
+	svr.clk = mClock
+	dl.Expect(mock.NewExpectation(dl.AccountForEmail, email).WithReturns(&dal.Account{ID: aID1, Password: hashedPassword, PrimaryAccountPhoneID: apID1}, nil))
+	dl.Expect(mock.NewExpectation(dl.TwoFactorLogin, aID1, deviceID).WithReturns(&dal.TwoFactorLogin{
+		AccountID: aID1,
+		DeviceID:  deviceID,
+		// Set their last login inside the refresh window so they don't require 2FA again
+		LastLogin: time.Now().Add(-(default2FALoginWindow - 10000)),
+	}, nil))
+	cek, err := svr.clientEncryptionKeySigner.Sign([]byte("genToken"))
+	test.OK(t, err)
+	dl.Expect(mock.NewExpectation(dl.InsertAuthToken, &dal.AuthToken{
+		AccountID:           aID1,
+		Expires:             mClock.Now().Add(defaultTokenExpiration),
+		Token:               []byte("genToken:testattribute"),
+		ClientEncryptionKey: cek,
+	}))
+
+	settingsMock.Expect(mock.NewExpectation(settingsMock.GetValues, &settings.GetValuesRequest{
+		NodeID: aID1.String(),
+		Keys: []*settings.ConfigKey{
+			{
+				Key: authSetting.ConfigKey2FAEnabled,
+			},
+		},
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key: authSetting.ConfigKey2FAEnabled,
+				},
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: true,
+					},
+				},
+			},
+		},
+	}, nil))
+
+	resp, err := s.AuthenticateLogin(context.Background(), &auth.AuthenticateLoginRequest{
+		Email:           email,
+		Password:        password,
+		TokenAttributes: map[string]string{"test": "attribute"},
+		DeviceID:        deviceID,
+	})
+	test.OK(t, err)
+	test.AssertNotNil(t, resp.Token)
+	test.AssertNotNil(t, resp.Account)
+	test.Assert(t, resp.TwoFactorRequired == false, "Expected two factor to not be required")
+	test.Equals(t, resp.Token.Value, "genToken")
 }
 
 func TestAuthenticateLogin2FA_Disabled(t *testing.T) {
@@ -217,6 +305,7 @@ func TestAuthenticateLoginWithCode(t *testing.T) {
 	s = svr
 	token := "123abc"
 	code := "123456"
+	deviceID := "deviceID"
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
 	var expires uint64
@@ -245,9 +334,11 @@ func TestAuthenticateLoginWithCode(t *testing.T) {
 		FirstName: "Bat",
 		LastName:  "Wayne",
 	}, nil))
+	dl.Expect(mock.NewExpectation(dl.UpsertTwoFactorLogin, aID1, deviceID, mClock.Now()))
 	resp, err := s.AuthenticateLoginWithCode(context.Background(), &auth.AuthenticateLoginWithCodeRequest{
-		Token: token,
-		Code:  code,
+		Token:    token,
+		Code:     code,
+		DeviceID: deviceID,
 	})
 	key, err := signer.Sign([]byte(token))
 	test.OK(t, err)
@@ -397,12 +488,11 @@ func TestCheckAuthentication(t *testing.T) {
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
 	expires := mClock.Now().Add(defaultTokenExpiration)
-	signer, err := sig.NewSigner([][]byte{[]byte(clientEncryptionSecret)}, sha512.New)
-	test.OK(t, err)
-	dl.Expect(mock.NewExpectation(dl.AuthToken, token+":tokenattribute", mClock.Now()).WithReturns(&dal.AuthToken{
-		Token:     []byte(token + ":tokenattribute"),
-		AccountID: aID1,
-		Expires:   expires,
+	dl.Expect(mock.NewExpectation(dl.AuthToken, token+":tokenattribute", mClock.Now(), true).WithReturns(&dal.AuthToken{
+		Token:               []byte(token + ":tokenattribute"),
+		AccountID:           aID1,
+		Expires:             expires,
+		ClientEncryptionKey: []byte(clientEncryptionSecret),
 	}, nil))
 	dl.Expect(mock.NewExpectation(dl.Account, aID1).WithReturns(&dal.Account{
 		ID:        aID1,
@@ -413,8 +503,6 @@ func TestCheckAuthentication(t *testing.T) {
 		Token:           token,
 		TokenAttributes: tokenAttributes,
 	})
-	test.OK(t, err)
-	key, err := signer.Sign([]byte(token))
 	test.OK(t, err)
 
 	test.Assert(t, resp.IsAuthenticated, "Expected authentication")
@@ -428,7 +516,75 @@ func TestCheckAuthentication(t *testing.T) {
 	test.Equals(t, &auth.AuthToken{
 		Value:               token,
 		ExpirationEpoch:     uint64(expires.Unix()),
-		ClientEncryptionKey: base64.StdEncoding.EncodeToString(key),
+		ClientEncryptionKey: base64.StdEncoding.EncodeToString([]byte(clientEncryptionSecret)),
+	}, resp.Token)
+}
+
+func TestCheckAuthenticationRefresh(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
+	mClock := clock.NewManaged(time.Now())
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
+	svr, ok := s.(*server)
+	test.Assert(t, ok, "Expected a *server")
+	svr.clk = mClock
+	s = svr
+	token := "123abc"
+	tokenAttributes := map[string]string{"token": "attribute"}
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+	expires := mClock.Now().Add(defaultTokenExpiration)
+	created := mClock.Now()
+	svr.tokenGenerator = &tokenGenerator{token: "genToken"}
+	// Advance time into the refresh window
+	mClock.WarpForward(defaultTokenRefreshWindow + 10)
+	returnExpires := mClock.Now().Add(defaultTokenExpiration)
+	dl.Expect(mock.NewExpectation(dl.AuthToken, token+":tokenattribute", mClock.Now(), true).WithReturns(&dal.AuthToken{
+		Token:               []byte(token + ":tokenattribute"),
+		AccountID:           aID1,
+		Expires:             expires,
+		ClientEncryptionKey: []byte(clientEncryptionSecret),
+		Created:             created,
+	}, nil))
+	dl.Expect(mock.NewExpectation(dl.UpdateAuthToken, token+":tokenattribute", &dal.AuthTokenUpdate{
+		Expires: ptr.Time(mClock.Now().Add(defaultTokenExpiration)),
+		Token:   []byte("genToken:tokenattribute"),
+	}))
+	dl.Expect(mock.NewExpectation(dl.InsertAuthToken, &dal.AuthToken{
+		AccountID:           aID1,
+		Expires:             mClock.Now().Add(time.Minute * 5),
+		Token:               []byte(token + ":tokenattribute"),
+		ClientEncryptionKey: []byte(clientEncryptionSecret),
+		Shadow:              true,
+	}))
+	dl.Expect(mock.NewExpectation(dl.Account, aID1).WithReturns(&dal.Account{
+		ID:        aID1,
+		FirstName: "bat",
+		LastName:  "man",
+	}, nil))
+	resp, err := s.CheckAuthentication(context.Background(), &auth.CheckAuthenticationRequest{
+		Token:           token,
+		TokenAttributes: tokenAttributes,
+	})
+	test.OK(t, err)
+
+	test.Assert(t, resp.IsAuthenticated, "Expected authentication")
+	test.AssertNotNil(t, resp.Account)
+	test.AssertNotNil(t, resp.Token)
+	test.Equals(t, &auth.Account{
+		ID:        aID1.String(),
+		FirstName: "bat",
+		LastName:  "man",
+	}, resp.Account)
+	test.Equals(t, &auth.AuthToken{
+		Value:               "genToken:tokenattribute",
+		ExpirationEpoch:     uint64(returnExpires.Unix()),
+		ClientEncryptionKey: base64.StdEncoding.EncodeToString([]byte(clientEncryptionSecret)),
 	}, resp.Token)
 }
 
@@ -574,72 +730,6 @@ func TestCheckVerificationAccount2FA(t *testing.T) {
 	test.Equals(t, resp.Value, aID1.String())
 }
 
-func TestCheckAuthenticationRefresh(t *testing.T) {
-	dl := mock_dal.NewMockDAL(t)
-	defer dl.Finish()
-	settingsMock := mock_settings.New(t)
-	defer settingsMock.Finish()
-
-	mClock := clock.NewManaged(time.Now())
-	s, err := New(dl, settingsMock, clientEncryptionSecret)
-	test.OK(t, err)
-	svr, ok := s.(*server)
-	test.Assert(t, ok, "Expected a *server")
-	svr.clk = mClock
-	s = svr
-	token := "123abc"
-	tokenAttributes := map[string]string{"token": "attribute"}
-	aID1, err := dal.NewAccountID()
-	test.OK(t, err)
-	signer, err := sig.NewSigner([][]byte{[]byte(clientEncryptionSecret)}, sha512.New)
-	test.OK(t, err)
-	expires := mClock.Now().Add(defaultTokenExpiration)
-	var refreshedExpiration time.Time
-	dl.Expect(mock.NewExpectation(dl.AuthToken, token+":tokenattribute", mClock.Now()).WithReturns(&dal.AuthToken{
-		Token:     []byte(token + ":tokenattribute"),
-		AccountID: aID1,
-		Expires:   expires,
-	}, nil))
-	dl.Expect(mock.WithReturns(mock.NewExpectationFn(dl.InsertAuthToken, func(p ...interface{}) {
-		test.Equals(t, 1, len(p))
-		at, ok := p[0].(*dal.AuthToken)
-		test.Assert(t, ok, "Expected *dal.AuthToken")
-		test.Assert(t, strings.HasSuffix(string(at.Token), ":tokenattribute"), "Expected auth token to have attribute suffix %s, got: %s", ":tokenattribute", at.Token)
-		test.Assert(t, at.Expires.Unix() >= time.Now().Unix(), "Expected expiration token to be in the future but was %v", at.Expires)
-		test.Assert(t, at.AccountID.String() == aID1.String(), "Expected auth token to map to account id %s, but got %s", aID1.String(), at.AccountID.String())
-		token = strings.Split(string(at.Token), ":")[0]
-		refreshedExpiration = at.Expires
-	}), nil))
-	dl.Expect(mock.NewExpectation(dl.DeleteAuthToken, "123abc:tokenattribute").WithReturns(int64(1), nil))
-	dl.Expect(mock.NewExpectation(dl.Account, aID1).WithReturns(&dal.Account{
-		ID:        aID1,
-		FirstName: "bat",
-		LastName:  "man",
-	}, nil))
-	resp, err := s.CheckAuthentication(context.Background(), &auth.CheckAuthenticationRequest{
-		Token:           token,
-		TokenAttributes: tokenAttributes,
-		Refresh:         true,
-	})
-	test.OK(t, err)
-	key, err := signer.Sign([]byte(token))
-	test.OK(t, err)
-
-	test.Assert(t, resp.IsAuthenticated, "Expected authentication")
-	test.AssertNotNil(t, resp.Account)
-	test.AssertNotNil(t, resp.Token)
-	test.Equals(t, &auth.Account{
-		ID:        aID1.String(),
-		FirstName: "bat",
-		LastName:  "man",
-	}, resp.Account)
-	test.Equals(t, &auth.AuthToken{
-		Value:               token,
-		ExpirationEpoch:     uint64(refreshedExpiration.Unix()),
-		ClientEncryptionKey: base64.StdEncoding.EncodeToString(key),
-	}, resp.Token)
-}
-
 func TestCheckAuthenticationNoToken(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
@@ -656,7 +746,7 @@ func TestCheckAuthenticationNoToken(t *testing.T) {
 	s = svr
 	token := "123abc"
 	tokenAttributes := map[string]string{"token": "attribute"}
-	dl.Expect(mock.NewExpectation(dl.AuthToken, token+":tokenattribute", mClock.Now()).WithReturns((*dal.AuthToken)(nil), api.ErrNotFound("not found")))
+	dl.Expect(mock.NewExpectation(dl.AuthToken, token+":tokenattribute", mClock.Now(), true).WithReturns((*dal.AuthToken)(nil), api.ErrNotFound("not found")))
 	resp, err := s.CheckAuthentication(context.Background(), &auth.CheckAuthenticationRequest{
 		Token:           token,
 		TokenAttributes: tokenAttributes,

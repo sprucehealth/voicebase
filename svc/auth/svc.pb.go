@@ -125,6 +125,7 @@ type AuthenticateLoginRequest struct {
 	Email           string            `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
 	Password        string            `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
 	TokenAttributes map[string]string `protobuf:"bytes,3,rep,name=token_attributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	DeviceID        string            `protobuf:"bytes,4,opt,name=device_id,proto3" json:"device_id,omitempty"`
 }
 
 func (m *AuthenticateLoginRequest) Reset()      { *m = AuthenticateLoginRequest{} }
@@ -170,6 +171,7 @@ type AuthenticateLoginWithCodeRequest struct {
 	Token           string            `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	Code            string            `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
 	TokenAttributes map[string]string `protobuf:"bytes,3,rep,name=token_attributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	DeviceID        string            `protobuf:"bytes,4,opt,name=device_id,proto3" json:"device_id,omitempty"`
 }
 
 func (m *AuthenticateLoginWithCodeRequest) Reset()      { *m = AuthenticateLoginWithCodeRequest{} }
@@ -210,7 +212,6 @@ func (m *AuthenticateLoginWithCodeResponse) GetAccount() *Account {
 type CheckAuthenticationRequest struct {
 	Token           string            `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	TokenAttributes map[string]string `protobuf:"bytes,2,rep,name=token_attributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	Refresh         bool              `protobuf:"varint,3,opt,name=refresh,proto3" json:"refresh,omitempty"`
 }
 
 func (m *CheckAuthenticationRequest) Reset()      { *m = CheckAuthenticationRequest{} }
@@ -632,6 +633,9 @@ func (this *AuthenticateLoginRequest) Equal(that interface{}) bool {
 			return false
 		}
 	}
+	if this.DeviceID != that1.DeviceID {
+		return false
+	}
 	return true
 }
 func (this *AuthenticateLoginResponse) Equal(that interface{}) bool {
@@ -702,6 +706,9 @@ func (this *AuthenticateLoginWithCodeRequest) Equal(that interface{}) bool {
 			return false
 		}
 	}
+	if this.DeviceID != that1.DeviceID {
+		return false
+	}
 	return true
 }
 func (this *AuthenticateLoginWithCodeResponse) Equal(that interface{}) bool {
@@ -762,9 +769,6 @@ func (this *CheckAuthenticationRequest) Equal(that interface{}) bool {
 		if this.TokenAttributes[i] != that1.TokenAttributes[i] {
 			return false
 		}
-	}
-	if this.Refresh != that1.Refresh {
-		return false
 	}
 	return true
 }
@@ -1347,7 +1351,7 @@ func (this *AuthenticateLoginRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 8)
 	s = append(s, "&auth.AuthenticateLoginRequest{")
 	s = append(s, "Email: "+fmt.Sprintf("%#v", this.Email)+",\n")
 	s = append(s, "Password: "+fmt.Sprintf("%#v", this.Password)+",\n")
@@ -1364,6 +1368,7 @@ func (this *AuthenticateLoginRequest) GoString() string {
 	if this.TokenAttributes != nil {
 		s = append(s, "TokenAttributes: "+mapStringForTokenAttributes+",\n")
 	}
+	s = append(s, "DeviceID: "+fmt.Sprintf("%#v", this.DeviceID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1388,7 +1393,7 @@ func (this *AuthenticateLoginWithCodeRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 8)
 	s = append(s, "&auth.AuthenticateLoginWithCodeRequest{")
 	s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
 	s = append(s, "Code: "+fmt.Sprintf("%#v", this.Code)+",\n")
@@ -1405,6 +1410,7 @@ func (this *AuthenticateLoginWithCodeRequest) GoString() string {
 	if this.TokenAttributes != nil {
 		s = append(s, "TokenAttributes: "+mapStringForTokenAttributes+",\n")
 	}
+	s = append(s, "DeviceID: "+fmt.Sprintf("%#v", this.DeviceID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1427,7 +1433,7 @@ func (this *CheckAuthenticationRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 6)
 	s = append(s, "&auth.CheckAuthenticationRequest{")
 	s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
 	keysForTokenAttributes := make([]string, 0, len(this.TokenAttributes))
@@ -1443,7 +1449,6 @@ func (this *CheckAuthenticationRequest) GoString() string {
 	if this.TokenAttributes != nil {
 		s = append(s, "TokenAttributes: "+mapStringForTokenAttributes+",\n")
 	}
-	s = append(s, "Refresh: "+fmt.Sprintf("%#v", this.Refresh)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2242,6 +2247,12 @@ func (m *AuthenticateLoginRequest) MarshalTo(data []byte) (int, error) {
 			i += copy(data[i:], v)
 		}
 	}
+	if len(m.DeviceID) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.DeviceID)))
+		i += copy(data[i:], m.DeviceID)
+	}
 	return i, nil
 }
 
@@ -2343,6 +2354,12 @@ func (m *AuthenticateLoginWithCodeRequest) MarshalTo(data []byte) (int, error) {
 			i += copy(data[i:], v)
 		}
 	}
+	if len(m.DeviceID) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.DeviceID)))
+		i += copy(data[i:], m.DeviceID)
+	}
 	return i, nil
 }
 
@@ -2421,16 +2438,6 @@ func (m *CheckAuthenticationRequest) MarshalTo(data []byte) (int, error) {
 			i = encodeVarintSvc(data, i, uint64(len(v)))
 			i += copy(data[i:], v)
 		}
-	}
-	if m.Refresh {
-		data[i] = 0x18
-		i++
-		if m.Refresh {
-			data[i] = 1
-		} else {
-			data[i] = 0
-		}
-		i++
 	}
 	return i, nil
 }
@@ -3152,6 +3159,10 @@ func (m *AuthenticateLoginRequest) Size() (n int) {
 			n += mapEntrySize + 1 + sovSvc(uint64(mapEntrySize))
 		}
 	}
+	l = len(m.DeviceID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
 	return n
 }
 
@@ -3195,6 +3206,10 @@ func (m *AuthenticateLoginWithCodeRequest) Size() (n int) {
 			n += mapEntrySize + 1 + sovSvc(uint64(mapEntrySize))
 		}
 	}
+	l = len(m.DeviceID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
 	return n
 }
 
@@ -3226,9 +3241,6 @@ func (m *CheckAuthenticationRequest) Size() (n int) {
 			mapEntrySize := 1 + len(k) + sovSvc(uint64(len(k))) + 1 + len(v) + sovSvc(uint64(len(v)))
 			n += mapEntrySize + 1 + sovSvc(uint64(mapEntrySize))
 		}
-	}
-	if m.Refresh {
-		n += 2
 	}
 	return n
 }
@@ -3565,6 +3577,7 @@ func (this *AuthenticateLoginRequest) String() string {
 		`Email:` + fmt.Sprintf("%v", this.Email) + `,`,
 		`Password:` + fmt.Sprintf("%v", this.Password) + `,`,
 		`TokenAttributes:` + mapStringForTokenAttributes + `,`,
+		`DeviceID:` + fmt.Sprintf("%v", this.DeviceID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3600,6 +3613,7 @@ func (this *AuthenticateLoginWithCodeRequest) String() string {
 		`Token:` + fmt.Sprintf("%v", this.Token) + `,`,
 		`Code:` + fmt.Sprintf("%v", this.Code) + `,`,
 		`TokenAttributes:` + mapStringForTokenAttributes + `,`,
+		`DeviceID:` + fmt.Sprintf("%v", this.DeviceID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3632,7 +3646,6 @@ func (this *CheckAuthenticationRequest) String() string {
 	s := strings.Join([]string{`&CheckAuthenticationRequest{`,
 		`Token:` + fmt.Sprintf("%v", this.Token) + `,`,
 		`TokenAttributes:` + mapStringForTokenAttributes + `,`,
-		`Refresh:` + fmt.Sprintf("%v", this.Refresh) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -4489,6 +4502,35 @@ func (m *AuthenticateLoginRequest) Unmarshal(data []byte) error {
 			}
 			m.TokenAttributes[mapkey] = mapvalue
 			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DeviceID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DeviceID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -4873,6 +4915,35 @@ func (m *AuthenticateLoginWithCodeRequest) Unmarshal(data []byte) error {
 			}
 			m.TokenAttributes[mapkey] = mapvalue
 			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DeviceID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DeviceID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -5179,26 +5250,6 @@ func (m *CheckAuthenticationRequest) Unmarshal(data []byte) error {
 			}
 			m.TokenAttributes[mapkey] = mapvalue
 			iNdEx = postIndex
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Refresh", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Refresh = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

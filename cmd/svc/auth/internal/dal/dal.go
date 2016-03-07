@@ -25,7 +25,7 @@ type DAL interface {
 	UpdateAccount(id AccountID, update *AccountUpdate) (int64, error)
 	DeleteAccount(id AccountID) (int64, error)
 	InsertAuthToken(model *AuthToken) error
-	AuthToken(token string, expiresAfter time.Time) (*AuthToken, error)
+	AuthToken(token string, expiresAfter time.Time, forUpdate bool) (*AuthToken, error)
 	DeleteAuthTokens(accountID AccountID) (int64, error)
 	DeleteAuthToken(token string) (int64, error)
 	UpdateAuthToken(token string, update *AuthTokenUpdate) (int64, error)
@@ -44,6 +44,8 @@ type DAL interface {
 	UpdateVerificationCode(token string, update *VerificationCodeUpdate) (int64, error)
 	VerificationCode(token string) (*VerificationCode, error)
 	DeleteVerificationCode(token string) (int64, error)
+	TwoFactorLogin(accountID AccountID, deviceID string) (*TwoFactorLogin, error)
+	UpsertTwoFactorLogin(accountID AccountID, deviceID string, loginTime time.Time) error
 	Transact(trans func(dal DAL) error) (err error)
 }
 
@@ -484,17 +486,27 @@ type AccountEvent struct {
 
 // AuthToken represents a auth_token record
 type AuthToken struct {
-	Token     []byte
-	AccountID AccountID
-	Created   time.Time
-	Expires   time.Time
+	Token               []byte
+	ClientEncryptionKey []byte
+	AccountID           AccountID
+	Created             time.Time
+	Expires             time.Time
+	// A shadow token is a token that exists solely for the purposes
+	//  of supporting in flight calls while the master token is rotating
+	Shadow bool
 }
 
 // AuthTokenUpdate represents the mutable aspects of a auth_token record
 type AuthTokenUpdate struct {
-	Token     *[]byte
+	Token   []byte
+	Expires *time.Time
+}
+
+// TwoFactorLogin represents a two_factor_login record
+type TwoFactorLogin struct {
 	AccountID AccountID
-	Expires   *time.Time
+	DeviceID  string
+	LastLogin time.Time
 }
 
 // InsertAccount inserts a account record
@@ -583,10 +595,14 @@ func (d *dal) DeleteAccount(id AccountID) (int64, error) {
 	return aff, errors.Trace(err)
 }
 
-// AuthToken returns the auth token record the conforms to the provided input
-func (d *dal) AuthToken(token string, expiresAfter time.Time) (*AuthToken, error) {
+// AuthToken returns the auth token record that conforms to the provided input
+func (d *dal) AuthToken(token string, expiresAfter time.Time, forUpdate bool) (*AuthToken, error) {
+	var fu string
+	if forUpdate {
+		fu = "FOR UPDATE"
+	}
 	row := d.db.QueryRow(
-		selectAuthToken+` WHERE token = BINARY ? AND expires > ?`, token, expiresAfter)
+		selectAuthToken+` WHERE token = BINARY ? AND expires > ? `+fu, token, expiresAfter)
 	model, err := scanAuthToken(row)
 	return model, errors.Trace(err)
 }
@@ -595,8 +611,8 @@ func (d *dal) AuthToken(token string, expiresAfter time.Time) (*AuthToken, error
 func (d *dal) InsertAuthToken(model *AuthToken) error {
 	_, err := d.db.Exec(
 		`INSERT INTO auth_token
-          (token, account_id, expires)
-          VALUES (?, ?, ?)`, model.Token, model.AccountID, model.Expires)
+          (token, client_encryption_key, account_id, expires, shadow)
+          VALUES (?, ?, ?, ?, ?)`, model.Token, model.ClientEncryptionKey, model.AccountID, model.Expires, model.Shadow)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -633,6 +649,9 @@ func (d *dal) DeleteAuthToken(token string) (int64, error) {
 // UpdateAuthToken updated the mutable aspects of the provided token
 func (d *dal) UpdateAuthToken(token string, update *AuthTokenUpdate) (int64, error) {
 	args := dbutil.MySQLVarArgs()
+	if len(update.Token) != 0 {
+		args.Append("token", update.Token)
+	}
 	if update.Expires != nil {
 		args.Append("expires", *update.Expires)
 	}
@@ -883,6 +902,24 @@ func (d *dal) DeleteVerificationCode(token string) (int64, error) {
 	return aff, errors.Trace(err)
 }
 
+// TwoFactorLogin retrieves a verification_code record
+func (d *dal) TwoFactorLogin(accountID AccountID, deviceID string) (*TwoFactorLogin, error) {
+	row := d.db.QueryRow(
+		selectTwoFactorLogin+` WHERE account_id = ? AND device_id = ?`, accountID, deviceID)
+	model, err := scanTwoFactorLogin(row)
+	return model, errors.Trace(err)
+}
+
+// UpsertTwoFactorLogin inserts a new two factor login record if one doesn't already exist. If it does then the record is updated.
+func (d *dal) UpsertTwoFactorLogin(accountID AccountID, deviceID string, loginTime time.Time) error {
+	_, err := d.db.Exec(
+		`INSERT INTO two_factor_login
+          (account_id, device_id, last_login)
+          VALUES (?, ?, ?)
+		  ON DUPLICATE KEY UPDATE last_login=VALUES(last_login)`, accountID, deviceID, loginTime)
+	return errors.Trace(err)
+}
+
 const selectAccount = `
     SELECT account.primary_account_phone_id, account.password, account.status, account.created, account.primary_account_email_id, account.first_name, account.last_name, account.modified, account.id
       FROM account`
@@ -901,14 +938,14 @@ func scanAccount(row dbutil.Scanner) (*Account, error) {
 }
 
 const selectAuthToken = `
-    SELECT auth_token.token, auth_token.account_id, auth_token.created, auth_token.expires
+    SELECT auth_token.token, auth_token.client_encryption_key, auth_token.account_id, auth_token.created, auth_token.expires, auth_token.shadow
       FROM auth_token`
 
 func scanAuthToken(row dbutil.Scanner) (*AuthToken, error) {
 	var m AuthToken
 	m.AccountID = EmptyAccountID()
 
-	err := row.Scan(&m.Token, &m.AccountID, &m.Created, &m.Expires)
+	err := row.Scan(&m.Token, &m.ClientEncryptionKey, &m.AccountID, &m.Created, &m.Expires, &m.Shadow)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(api.ErrNotFound("auth - AuthToken not found"))
 	}
@@ -975,6 +1012,21 @@ func scanVerificationCode(row dbutil.Scanner) (*VerificationCode, error) {
 	err := row.Scan(&m.VerifiedValue, &m.Consumed, &m.Created, &m.Expires, &m.Token, &m.Code, &m.VerificationType)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(api.ErrNotFound("auth - VerificationCode not found"))
+	}
+	return &m, errors.Trace(err)
+}
+
+const selectTwoFactorLogin = `
+    SELECT two_factor_login.account_id, two_factor_login.device_id, two_factor_login.last_login
+      FROM two_factor_login`
+
+func scanTwoFactorLogin(row dbutil.Scanner) (*TwoFactorLogin, error) {
+	var m TwoFactorLogin
+	m.AccountID = EmptyAccountID()
+
+	err := row.Scan(&m.AccountID, &m.DeviceID, &m.LastLogin)
+	if err == sql.ErrNoRows {
+		return nil, errors.Trace(api.ErrNotFound("auth - TwoFactorLogin not found"))
 	}
 	return &m, errors.Trace(err)
 }

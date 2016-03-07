@@ -45,6 +45,7 @@ message AuthenticateLoginRequest {
 	string email = 1;
 	string password = 2;
 	map<string, string> token_attributes = 3;
+	string device_id = 4 [(gogoproto.customname) = "DeviceID"];
 }
 
 // AuthenticateLoginResponse represents the information that is returned from AuthenticateLoginRequest
@@ -63,6 +64,7 @@ message AuthenticateLoginWithCodeRequest {
 	string token = 1;
 	string code = 2;
 	map<string, string> token_attributes = 3;
+	string device_id = 4 [(gogoproto.customname) = "DeviceID"];
 }
 
 // AuthenticateLoginWithCodeResponse represents the information that is returned from AuthenticateLoginWithCode
@@ -76,7 +78,6 @@ message AuthenticateLoginWithCodeResponse {
 message CheckAuthenticationRequest {
 	string token = 1;
 	map<string, string> token_attributes = 2;
-	bool refresh = 3;
 }
 
 // CheckAuthenticationResponse represents the information that is returned from IsAuthenticatedRequest
