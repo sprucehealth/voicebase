@@ -707,7 +707,7 @@ func (s *server) rotateAndExtendToken(dl dal.DAL, authToken *dal.AuthToken, toke
 		return nil, errors.Trace(err)
 	}
 	return &auth.AuthToken{
-		Value:               tokenWithAttributes,
+		Value:               token,
 		ExpirationEpoch:     uint64(tokenExpiration.Unix()),
 		ClientEncryptionKey: base64.StdEncoding.EncodeToString(authToken.ClientEncryptionKey),
 	}, nil

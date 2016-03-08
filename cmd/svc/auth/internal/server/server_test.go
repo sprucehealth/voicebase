@@ -582,7 +582,7 @@ func TestCheckAuthenticationRefresh(t *testing.T) {
 		LastName:  "man",
 	}, resp.Account)
 	test.Equals(t, &auth.AuthToken{
-		Value:               "genToken:tokenattribute",
+		Value:               "genToken",
 		ExpirationEpoch:     uint64(returnExpires.Unix()),
 		ClientEncryptionKey: base64.StdEncoding.EncodeToString([]byte(clientEncryptionSecret)),
 	}, resp.Token)
