@@ -244,7 +244,7 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 	case rawmsg.Incoming_SENDGRID_EMAIL:
 		sgEmail := rm.GetSendGrid()
 
-		senderAddress, err := mail.ParseAddress(sgEmail.Sender)
+		senderAddress, err := parseAddress(sgEmail.Sender)
 		if err != nil {
 			return errors.Trace(fmt.Errorf("Unable to parse email address %s :%s", sgEmail.Sender, err.Error()))
 		}
@@ -390,4 +390,24 @@ func mp3Duration(r io.Reader) (time.Duration, error) {
 		}
 		duration += frame.Duration()
 	}
+}
+
+func parseAddress(addr string) (*mail.Address, error) {
+	addr = strings.TrimSpace(addr)
+
+	idx := strings.LastIndex(addr, "<")
+	if idx < 1 {
+		return mail.ParseAddress(addr)
+	}
+
+	if addr[0] == '"' {
+		return mail.ParseAddress(addr)
+	}
+
+	// lets quote the sting before the angle bracket to treat
+	// all characters before the angle bracket as part of the name.
+	// this is to work around the situation where the name is not quoted
+	// and has characters like parenthesis in it which causes the
+	// parser to error (eg. Joe Schmoe (Test) <joe@schmoe.com>)
+	return mail.ParseAddress(strconv.Quote(addr[:idx]) + addr[idx:])
 }
