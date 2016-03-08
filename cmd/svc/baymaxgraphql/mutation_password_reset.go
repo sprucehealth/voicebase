@@ -232,7 +232,6 @@ func createAndSendPasswordResetEmail(ctx context.Context, ram raccess.ResourceAc
 }
 
 // verifyPhoneNumberForPasswordReset
-
 var verifyPhoneNumberForPasswordResetInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
 		Name: "VerifyPhoneNumberForPasswordResetInput",

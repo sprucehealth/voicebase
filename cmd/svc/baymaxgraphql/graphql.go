@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/segmentio/analytics-go"
@@ -124,6 +125,10 @@ const (
 )
 
 func setAuthCookie(w http.ResponseWriter, domain, token string, expires time.Time) {
+	idx := strings.IndexByte(domain, ':')
+	if idx != -1 {
+		domain = domain[:idx]
+	}
 	if expires.IsZero() {
 		expires = time.Now().Add(defaultAuthCookieDuration)
 	}
@@ -165,10 +170,14 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		}
 	}
 
+	sHeaders := device.ExtractSpruceHeaders(w, r)
 	var acc *models.Account
 	if c, err := r.Cookie(authTokenCookieName); err == nil && c.Value != "" {
 		res, err := h.auth.CheckAuthentication(ctx,
-			&auth.CheckAuthenticationRequest{Token: c.Value},
+			&auth.CheckAuthenticationRequest{
+				Token:           c.Value,
+				TokenAttributes: map[string]string{raccess.DeviceIDAttributeKey: sHeaders.DeviceID},
+			},
 		)
 		if err != nil {
 			golog.Errorf("Failed to check auth token: %s", err)
@@ -201,8 +210,6 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		golog.Errorf("failed to generate request ID: %s", err)
 	}
 	ctx = gqlctx.WithRequestID(ctx, requestID)
-
-	sHeaders := device.ExtractSpruceHeaders(w, r)
 	ctx = gqlctx.WithSpruceHeaders(ctx, sHeaders)
 
 	result := conc.NewMap()

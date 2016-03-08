@@ -142,11 +142,19 @@ func (m *resourceAccessor) Account(ctx context.Context, accountID string) (*auth
 	return resp.Account, nil
 }
 
+const (
+	// DeviceIDAttributeKey exposes the key to use when sending device IDs to the auth service
+	DeviceIDAttributeKey = "deviceID"
+)
+
 func (m *resourceAccessor) AuthenticateLogin(ctx context.Context, email, password string) (*auth.AuthenticateLoginResponse, error) {
+	headers := gqlctx.SpruceHeaders(ctx)
 	// Note: There is no authorization required for this operation.
 	resp, err := m.auth.AuthenticateLogin(ctx, &auth.AuthenticateLoginRequest{
-		Email:    email,
-		Password: password,
+		Email:           email,
+		Password:        password,
+		TokenAttributes: map[string]string{DeviceIDAttributeKey: headers.DeviceID},
+		DeviceID:        headers.DeviceID,
 	})
 	if err != nil {
 		return nil, err
@@ -155,10 +163,13 @@ func (m *resourceAccessor) AuthenticateLogin(ctx context.Context, email, passwor
 }
 
 func (m *resourceAccessor) AuthenticateLoginWithCode(ctx context.Context, token, code string) (*auth.AuthenticateLoginWithCodeResponse, error) {
+	headers := gqlctx.SpruceHeaders(ctx)
 	// Note: There is no authorization required for this operation.
 	resp, err := m.auth.AuthenticateLoginWithCode(ctx, &auth.AuthenticateLoginWithCodeRequest{
-		Token: token,
-		Code:  code,
+		Token:           token,
+		Code:            code,
+		TokenAttributes: map[string]string{DeviceIDAttributeKey: headers.DeviceID},
+		DeviceID:        headers.DeviceID,
 	})
 	if err != nil {
 		return nil, err

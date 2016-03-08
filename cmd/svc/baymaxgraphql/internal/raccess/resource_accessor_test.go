@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	amock "github.com/sprucehealth/backend/svc/auth/mock"
@@ -82,14 +83,19 @@ func TestAuthenticateLogin(t *testing.T) {
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
+	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
+		DeviceID: "deviceID",
+	})
 
 	rat := new(t)
 	defer rat.finish()
 	email := "email"
 	password := "password"
-	rat.aC.Expect(mock.NewExpectation(rat.aC.AuthenticateLoginWithCode, &auth.AuthenticateLoginRequest{
-		Email:    email,
-		Password: password,
+	rat.aC.Expect(mock.NewExpectation(rat.aC.AuthenticateLogin, &auth.AuthenticateLoginRequest{
+		Email:           email,
+		Password:        password,
+		DeviceID:        "deviceID",
+		TokenAttributes: map[string]string{DeviceIDAttributeKey: "deviceID"},
 	}).WithReturns(&auth.AuthenticateLoginResponse{Account: &auth.Account{ID: accountID}}, nil))
 
 	resp, err := rat.ra.AuthenticateLogin(ctx, email, password)
@@ -104,14 +110,19 @@ func TestAuthenticateLoginWithCode(t *testing.T) {
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
+	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
+		DeviceID: "deviceID",
+	})
 
 	rat := new(t)
 	defer rat.finish()
 	token := "token"
 	code := "code"
 	rat.aC.Expect(mock.NewExpectation(rat.aC.AuthenticateLoginWithCode, &auth.AuthenticateLoginWithCodeRequest{
-		Token: token,
-		Code:  code,
+		Token:           token,
+		Code:            code,
+		DeviceID:        "deviceID",
+		TokenAttributes: map[string]string{DeviceIDAttributeKey: "deviceID"},
 	}).WithReturns(&auth.AuthenticateLoginWithCodeResponse{Account: &auth.Account{ID: accountID}}, nil))
 
 	resp, err := rat.ra.AuthenticateLoginWithCode(ctx, token, code)

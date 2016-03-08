@@ -71,8 +71,8 @@ func (dl *mockDAL) InsertAuthToken(model *dal.AuthToken) error {
 	return mock.SafeError(rets[0])
 }
 
-func (dl *mockDAL) AuthToken(token string, expiresAfter time.Time) (*dal.AuthToken, error) {
-	rets := dl.Record(token, expiresAfter)
+func (dl *mockDAL) AuthToken(token string, expiresAfter time.Time, forUpdate bool) (*dal.AuthToken, error) {
+	rets := dl.Record(token, expiresAfter, forUpdate)
 	if len(rets) == 0 {
 		return nil, nil
 	}
@@ -229,6 +229,22 @@ func (dl *mockDAL) DeleteVerificationCode(token string) (int64, error) {
 		return 0, nil
 	}
 	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
+func (dl *mockDAL) TwoFactorLogin(accountID dal.AccountID, deviceID string) (*dal.TwoFactorLogin, error) {
+	rets := dl.Record(accountID, deviceID)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*dal.TwoFactorLogin), mock.SafeError(rets[1])
+}
+
+func (dl *mockDAL) UpsertTwoFactorLogin(accountID dal.AccountID, deviceID string, loginTime time.Time) error {
+	rets := dl.Record(accountID, deviceID, loginTime)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
 }
 
 func (dl *mockDAL) Transact(trans func(dal dal.DAL) error) (err error) {
