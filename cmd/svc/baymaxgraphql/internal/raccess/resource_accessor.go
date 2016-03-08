@@ -1049,8 +1049,10 @@ func (m *resourceAccessor) threadsForMember(ctx context.Context, entityID string
 }
 
 func (m *resourceAccessor) unauthenticate(ctx context.Context, token string) (*auth.UnauthenticateResponse, error) {
+	headers := gqlctx.SpruceHeaders(ctx)
 	res, err := m.auth.Unauthenticate(ctx, &auth.UnauthenticateRequest{
-		Token: token,
+		Token:           token,
+		TokenAttributes: map[string]string{DeviceIDAttributeKey: headers.DeviceID},
 	})
 	if err != nil {
 		return nil, err
