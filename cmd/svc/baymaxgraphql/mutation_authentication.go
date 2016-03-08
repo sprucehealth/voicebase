@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/validate"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
@@ -323,12 +324,16 @@ var unauthenticateMutation = &graphql.Field{
 			result.Set("unauthenticated", true)
 		}
 
+		msg := "Unauthenticate called."
 		headers := gqlctx.SpruceHeaders(ctx)
 		if headers != nil && headers.DeviceID != "" {
 			if err := svc.notification.DeregisterDeviceForPush(headers.DeviceID); err != nil {
 				return nil, errors.InternalError(ctx, err)
 			}
+			msg += " Device ID: " + headers.DeviceID
 		}
+
+		golog.Infof(msg)
 
 		return &unauthenticateOutput{
 			ClientMutationID: mutationID,
