@@ -11,6 +11,8 @@ import (
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/graphql"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 type inviteColleaguesOutput struct {
@@ -234,5 +236,124 @@ var associateAttributionMutation = &graphql.Field{
 		}
 
 		return &associateAttributionOutput{ClientMutationID: mutationID, Success: true}, nil
+	},
+}
+
+// associateInvite
+
+var inviteValueType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "InviteValue",
+	Fields: graphql.Fields{
+		"key":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"value": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+	},
+})
+
+type inviteValue struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type associateInviteOutput struct {
+	ClientMutationID string        `json:"clientMutationId,omitempty"`
+	Success          bool          `json:"success"`
+	ErrorCode        string        `json:"errorCode,omitempty"`
+	ErrorMessage     string        `json:"errorMessage,omitempty"`
+	Values           []inviteValue `json:"values,omitempty"`
+}
+
+var associateInviteValueType = graphql.NewInputObject(graphql.InputObjectConfig{
+	Name: "AssociateInviteValue",
+	Fields: graphql.InputObjectConfigFieldMap{
+		"key":   &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		"value": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+	},
+})
+
+var associateInviteInputType = graphql.NewInputObject(
+	graphql.InputObjectConfig{
+		Name: "AssociateInviteInput",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"clientMutationId": newClientMutationIDInputField(),
+			"token":            &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		},
+	},
+)
+
+const associateInviteErrorCodeInvalidInvite = "INVALID_INVITE"
+
+var associateInviteErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name: "AssociateInviteErrorCode",
+	Values: graphql.EnumValueConfigMap{
+		associateInviteErrorCodeInvalidInvite: &graphql.EnumValueConfig{
+			Value:       associateInviteErrorCodeInvalidInvite,
+			Description: "The provided token doesn't match a valid invite",
+		},
+	},
+})
+
+var associateInviteOutputType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "AssociateInvitePayload",
+		Fields: graphql.Fields{
+			"clientMutationId": newClientmutationIDOutputField(),
+			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorCode":        &graphql.Field{Type: associateInviteErrorCodeEnum},
+			"errorMessage":     &graphql.Field{Type: graphql.String},
+			"values": &graphql.Field{
+				Type:        graphql.NewList(graphql.NewNonNull(inviteValueType)),
+				Description: "Values is the set of data attached to the invite which matters the attribution data from Branch",
+			},
+		},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+			_, ok := value.(*associateInviteOutput)
+			return ok
+		},
+	},
+)
+
+var associateInviteMutation = &graphql.Field{
+	Description: "associateInvite looks up an invite by token, attaches the attribution data to the device ID, and returns the attribution data",
+	Type:        graphql.NewNonNull(associateInviteOutputType),
+	Args: graphql.FieldConfigArgument{
+		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(associateInviteInputType)},
+	},
+	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		svc := serviceFromParams(p)
+		ctx := p.Context
+		sh := gqlctx.SpruceHeaders(ctx)
+		if sh.DeviceID == "" {
+			return nil, errors.New("missing device ID")
+		}
+
+		input := p.Args["input"].(map[string]interface{})
+		mutationID, _ := input["clientMutationId"].(string)
+		token := input["token"].(string)
+		res, err := svc.invite.LookupInvite(ctx, &invite.LookupInviteRequest{
+			Token: token,
+		})
+		if grpc.Code(err) == codes.NotFound {
+			return &associateInviteOutput{
+				ClientMutationID: mutationID,
+				Success:          false,
+				ErrorCode:        associateInviteErrorCodeInvalidInvite,
+				ErrorMessage:     "The invite token does not match a valid invite.",
+			}, nil
+		} else if err != nil {
+			return nil, errors.InternalError(ctx, err)
+		}
+
+		if _, err := svc.invite.SetAttributionData(ctx, &invite.SetAttributionDataRequest{
+			DeviceID: sh.DeviceID,
+			Values:   res.Values,
+		}); err != nil {
+			return nil, errors.InternalError(ctx, err)
+		}
+
+		values := make([]inviteValue, len(res.Values))
+		for i, v := range res.Values {
+			values[i] = inviteValue{Key: v.Key, Value: v.Value}
+		}
+		return &associateInviteOutput{ClientMutationID: mutationID, Success: true, Values: values}, nil
 	},
 }

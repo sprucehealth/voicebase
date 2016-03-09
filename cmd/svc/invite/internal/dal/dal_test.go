@@ -82,6 +82,7 @@ func TestInviteColleague(t *testing.T) {
 		PhoneNumber:          "+15551112222",
 		URL:                  "https://example.com",
 		Created:              time.Unix(123, 0),
+		Values:               map[string]string{"foo": "bar"},
 	}
 	test.OK(t, dal.InsertInvite(ctx, invite))
 

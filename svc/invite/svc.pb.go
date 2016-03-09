@@ -118,6 +118,7 @@ type LookupInviteResponse struct {
 	// Types that are valid to be assigned to Invite:
 	//	*LookupInviteResponse_Colleague
 	Invite isLookupInviteResponse_Invite `protobuf_oneof:"invite"`
+	Values []*AttributionValue           `protobuf:"bytes,2,rep,name=values" json:"values,omitempty"`
 }
 
 func (m *LookupInviteResponse) Reset()      { *m = LookupInviteResponse{} }
@@ -146,6 +147,13 @@ func (m *LookupInviteResponse) GetInvite() isLookupInviteResponse_Invite {
 func (m *LookupInviteResponse) GetColleague() *ColleagueInvite {
 	if x, ok := m.GetInvite().(*LookupInviteResponse_Colleague); ok {
 		return x.Colleague
+	}
+	return nil
+}
+
+func (m *LookupInviteResponse) GetValues() []*AttributionValue {
+	if m != nil {
+		return m.Values
 	}
 	return nil
 }
@@ -434,6 +442,14 @@ func (this *LookupInviteResponse) Equal(that interface{}) bool {
 	} else if !this.Invite.Equal(that1.Invite) {
 		return false
 	}
+	if len(this.Values) != len(that1.Values) {
+		return false
+	}
+	for i := range this.Values {
+		if !this.Values[i].Equal(that1.Values[i]) {
+			return false
+		}
+	}
 	return true
 }
 func (this *LookupInviteResponse_Colleague) Equal(that interface{}) bool {
@@ -661,11 +677,14 @@ func (this *LookupInviteResponse) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 6)
+	s := make([]string, 0, 7)
 	s = append(s, "&invite.LookupInviteResponse{")
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	if this.Invite != nil {
 		s = append(s, "Invite: "+fmt.Sprintf("%#v", this.Invite)+",\n")
+	}
+	if this.Values != nil {
+		s = append(s, "Values: "+fmt.Sprintf("%#v", this.Values)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -1083,6 +1102,18 @@ func (m *LookupInviteResponse) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Type))
 	}
+	if len(m.Values) > 0 {
+		for _, msg := range m.Values {
+			data[i] = 0x12
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
 	if m.Invite != nil {
 		nn2, err := m.Invite.MarshalTo(data[i:])
 		if err != nil {
@@ -1346,6 +1377,12 @@ func (m *LookupInviteResponse) Size() (n int) {
 	if m.Type != 0 {
 		n += 1 + sovSvc(uint64(m.Type))
 	}
+	if len(m.Values) > 0 {
+		for _, e := range m.Values {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
 	if m.Invite != nil {
 		n += m.Invite.Size()
 	}
@@ -1492,6 +1529,7 @@ func (this *LookupInviteResponse) String() string {
 	}
 	s := strings.Join([]string{`&LookupInviteResponse{`,
 		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`Values:` + strings.Replace(fmt.Sprintf("%v", this.Values), "AttributionValue", "AttributionValue", 1) + `,`,
 		`Invite:` + fmt.Sprintf("%v", this.Invite) + `,`,
 		`}`,
 	}, "")
@@ -2131,6 +2169,37 @@ func (m *LookupInviteResponse) Unmarshal(data []byte) error {
 					break
 				}
 			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Values", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Values = append(m.Values, &AttributionValue{})
+			if err := m.Values[len(m.Values)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		case 10:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Colleague", wireType)

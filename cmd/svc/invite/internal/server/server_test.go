@@ -33,7 +33,7 @@ func TestAttribution(t *testing.T) {
 
 	snsC := mock.NewSNSAPI(t)
 	defer snsC.Finish()
-	srv := New(dl, nil, nil, snsC, nil, nil, "", "")
+	srv := New(dl, nil, nil, snsC, nil, nil, "", "", "")
 
 	values := []*invite.AttributionValue{
 		{Key: "abc", Value: "123"},
@@ -56,7 +56,7 @@ func TestAttribution(t *testing.T) {
 	test.Equals(t, &invite.AttributionDataResponse{Values: values}, getRes)
 }
 
-func TestInviteColleague(t *testing.T) {
+func TestInviteColleagues(t *testing.T) {
 	dl := newMockDAL(t)
 	defer dl.Finish()
 	dir := dirmock.New(t)
@@ -68,7 +68,7 @@ func TestInviteColleague(t *testing.T) {
 	clk := clock.NewManaged(time.Unix(10000000, 0))
 	snsC := mock.NewSNSAPI(t)
 	defer snsC.Finish()
-	srv := New(dl, clk, dir, snsC, branch, sg, "from@example.com", "eventsTopic")
+	srv := New(dl, clk, dir, snsC, branch, sg, "from@example.com", "eventsTopic", "https://app.sprucehealth.com/signup?some=other")
 
 	// Lookup organization
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
@@ -101,9 +101,14 @@ func TestInviteColleague(t *testing.T) {
 	}, nil))
 
 	// Generate branch URL
-	clientData := map[string]interface{}{
+	values := map[string]string{
 		"invite_token": "thetoken",
 		"client_data":  `{"organization_invite":{"popover":{"title":"Welcome to Spruce!","message":"Inviter has invited you to join them on Spruce.","button_text":"Okay"},"org_id":"org","org_name":"Orgo"}}`,
+		"$desktop_url": "https://app.sprucehealth.com/signup?invite=thetoken&some=other",
+	}
+	clientData := make(map[string]interface{}, len(values))
+	for k, v := range values {
+		clientData[k] = v
 	}
 	branch.Expect(mock.NewExpectation(branch.URL, clientData).WithReturns("https://example.com/invite", nil))
 
@@ -117,6 +122,7 @@ func TestInviteColleague(t *testing.T) {
 		PhoneNumber:          "+15555551212",
 		URL:                  "https://example.com/invite",
 		Created:              clk.Now(),
+		Values:               values,
 	}).WithReturns(nil))
 
 	// Send invite email
@@ -166,7 +172,7 @@ func TestLookupInvite(t *testing.T) {
 	defer dl.Finish()
 	snsC := mock.NewSNSAPI(t)
 	defer snsC.Finish()
-	srv := New(dl, nil, nil, snsC, nil, nil, "", "")
+	srv := New(dl, nil, nil, snsC, nil, nil, "", "", "")
 
 	dl.Expect(mock.NewExpectation(dl.InviteForToken, "testtoken").WithReturns(
 		&models.Invite{
@@ -177,6 +183,9 @@ func TestLookupInvite(t *testing.T) {
 			Email:                "someone@example.com",
 			PhoneNumber:          "+15555551212",
 			Created:              time.Now(),
+			Values: map[string]string{
+				"foo": "bar",
+			},
 		}, nil))
 	res, err := srv.LookupInvite(nil, &invite.LookupInviteRequest{Token: "testtoken"})
 	test.OK(t, err)
@@ -192,5 +201,6 @@ func TestLookupInvite(t *testing.T) {
 				},
 			},
 		},
+		Values: []*invite.AttributionValue{{Key: "foo", Value: "bar"}},
 	}, res)
 }

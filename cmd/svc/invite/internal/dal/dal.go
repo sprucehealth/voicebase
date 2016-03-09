@@ -25,6 +25,7 @@ const (
 	phoneNumberKey          = "PhoneNumber"
 	typeKey                 = "Type"
 	urlKey                  = "URL"
+	valuesKey               = "Values"
 )
 
 // ErrNotFound is the error when an object is missing
@@ -122,6 +123,10 @@ func (d *dal) InsertInvite(ctx context.Context, invite *models.Invite) error {
 	if invite.Created.IsZero() {
 		return errors.Trace(errors.New("Created required"))
 	}
+	valuesAttr := make(map[string]*dynamodb.AttributeValue, len(invite.Values))
+	for k, v := range invite.Values {
+		valuesAttr[k] = &dynamodb.AttributeValue{S: ptr.String(v)}
+	}
 	_, err := d.db.PutItem(&dynamodb.PutItemInput{
 		TableName:           &d.inviteTable,
 		ConditionExpression: ptr.String("attribute_not_exists(" + inviteTokenKey + ")"),
@@ -134,6 +139,7 @@ func (d *dal) InsertInvite(ctx context.Context, invite *models.Invite) error {
 			phoneNumberKey:          {S: &invite.PhoneNumber},
 			urlKey:                  {S: &invite.URL},
 			createdTimestampKey:     {N: ptr.String(strconv.FormatInt(invite.Created.UnixNano(), 10))},
+			valuesKey:               {M: valuesAttr},
 		},
 	})
 	if err != nil {
@@ -163,7 +169,7 @@ func (d *dal) InviteForToken(ctx context.Context, token string) (*models.Invite,
 	if err != nil {
 		golog.Errorf("Invalid created time in invite for token %s", token)
 	}
-	return &models.Invite{
+	inv := &models.Invite{
 		Token:                token,
 		Type:                 models.InviteType(*res.Item[typeKey].S),
 		OrganizationEntityID: *res.Item[organizationEntityIDKey].S,
@@ -172,5 +178,11 @@ func (d *dal) InviteForToken(ctx context.Context, token string) (*models.Invite,
 		PhoneNumber:          *res.Item[phoneNumberKey].S,
 		URL:                  *res.Item[urlKey].S,
 		Created:              time.Unix(ct/1e9, ct%1e9),
-	}, nil
+	}
+	valuesAttr := res.Item[valuesKey].M
+	inv.Values = make(map[string]string, len(valuesAttr))
+	for k, v := range valuesAttr {
+		inv.Values[k] = *v.S
+	}
+	return inv, nil
 }

@@ -41,6 +41,7 @@ message LookupInviteResponse {
 	oneof invite {
 		ColleagueInvite colleague = 10;
 	}
+	repeated AttributionValue values = 2;
 }
 
 message AttributionValue {
