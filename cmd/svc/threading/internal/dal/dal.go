@@ -400,7 +400,9 @@ func (d *dal) LinkedThread(ctx context.Context, threadID models.ThreadID) (*mode
 		SELECT thread1_id, thread1_prepend_sender, thread2_id, thread2_prepend_sender
 		FROM thread_links 
 		WHERE thread1_id = ? OR thread2_id = ?`, threadID, threadID).Scan(&thread1.ThreadID, &thread1.PrependSender, &thread2.ThreadID, &thread2.PrependSender)
-	if err != nil {
+	if err == sql.ErrNoRows {
+		return nil, false, errors.Trace(ErrNotFound)
+	} else if err != nil {
 		return nil, false, errors.Trace(err)
 	}
 
