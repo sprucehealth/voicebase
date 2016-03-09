@@ -201,7 +201,12 @@ func (m *resourceAccessor) CheckVerificationCode(ctx context.Context, token, cod
 }
 
 func (m *resourceAccessor) CreateAccount(ctx context.Context, req *auth.CreateAccountRequest) (*auth.CreateAccountResponse, error) {
+	headers := gqlctx.SpruceHeaders(ctx)
 	// Note: There is no authorization required for this operation.
+	if req.TokenAttributes == nil {
+		req.TokenAttributes = make(map[string]string)
+	}
+	req.TokenAttributes[DeviceIDAttributeKey] = headers.DeviceID
 	resp, err := m.auth.CreateAccount(ctx, req)
 	if err != nil {
 		return nil, err

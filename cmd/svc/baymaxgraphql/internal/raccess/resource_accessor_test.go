@@ -187,11 +187,15 @@ func TestCreateAccount(t *testing.T) {
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
+	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
+		DeviceID: "deviceID",
+	})
 
 	rat := new(t)
 	defer rat.finish()
 	rat.aC.Expect(mock.NewExpectation(rat.aC.CreateAccount, &auth.CreateAccountRequest{
-		FirstName: "name",
+		FirstName:       "name",
+		TokenAttributes: map[string]string{DeviceIDAttributeKey: "deviceID"},
 	}).WithReturns(&auth.CreateAccountResponse{Account: &auth.Account{ID: "Hi"}}, nil))
 
 	resp, err := rat.ra.CreateAccount(ctx, &auth.CreateAccountRequest{
