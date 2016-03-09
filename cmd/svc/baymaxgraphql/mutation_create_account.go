@@ -375,12 +375,14 @@ var createAccountMutation = &graphql.Field{
 				golog.Errorf("Failed to create entity for support thread for org %s: %s", orgEntityID, err)
 			} else {
 				_, err = ram.CreateLinkedThreads(ctx, &threading.CreateLinkedThreadsRequest{
-					Organization1ID:  orgEntityID,
-					Organization2ID:  svc.spruceOrgID,
-					PrimaryEntity1ID: tsEnt1.ID,
-					PrimaryEntity2ID: tsEnt2.ID,
-					Summary:          supportThreadTitle + ": " + teamSpruceInitialText[:128],
-					Text:             teamSpruceInitialText,
+					Organization1ID:      orgEntityID,
+					Organization2ID:      svc.spruceOrgID,
+					PrimaryEntity1ID:     tsEnt1.ID,
+					PrimaryEntity2ID:     tsEnt2.ID,
+					PrependSenderThread1: false,
+					PrependSenderThread2: true,
+					Summary:              supportThreadTitle + ": " + teamSpruceInitialText[:128],
+					Text:                 teamSpruceInitialText,
 				})
 				if err != nil {
 					golog.Errorf("Failed to create linked support threads for org %s: %s", orgEntityID, err)

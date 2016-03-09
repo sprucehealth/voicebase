@@ -385,6 +385,8 @@ message CreateLinkedThreadsRequest {
 	string text = 5;
 	string title = 6;
 	string summary = 7;
+	bool prepend_sender_thread1 = 8;
+	bool prepend_sender_thread2 = 9;
 }
 
 message CreateLinkedThreadsResponse {

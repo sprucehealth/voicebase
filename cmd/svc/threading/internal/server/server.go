@@ -285,7 +285,13 @@ func (s *threadsServer) CreateLinkedThreads(ctx context.Context, in *threading.C
 		if err != nil {
 			return errors.Trace(err)
 		}
-		if err := dl.CreateThreadLink(ctx, thread1ID, thread2ID); err != nil {
+		if err := dl.CreateThreadLink(ctx, &dal.ThreadLink{
+			ThreadID:      thread1ID,
+			PrependSender: in.PrependSenderThread1,
+		}, &dal.ThreadLink{
+			ThreadID:      thread2ID,
+			PrependSender: in.PrependSenderThread2,
+		}); err != nil {
 			return errors.Trace(err)
 		}
 		if in.Text != "" {
@@ -489,7 +495,7 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 	}
 	prePostLastMessageTimestamp := thread.LastMessageTimestamp
 
-	linkedThread, err := s.dal.LinkedThread(ctx, threadID)
+	linkedThread, prependSender, err := s.dal.LinkedThread(ctx, threadID)
 	if err != nil && errors.Cause(err) != dal.ErrNotFound {
 		return nil, grpcErrorf(codes.Internal, errors.Trace(err).Error())
 	}
@@ -567,10 +573,35 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 			if err != nil {
 				return errors.Trace(err)
 			}
+			text := in.Text
+			if prependSender {
+				resp, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
+					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+						EntityID: in.FromEntityID,
+					},
+					RequestedInformation: &directory.RequestedInformation{
+						Depth: 0,
+					},
+				})
+				if err != nil {
+					golog.Errorf("Unable to lookup entity for id %s: %s", in.FromEntityID, err.Error())
+				} else if len(resp.Entities) != 1 {
+					golog.Errorf("Expected 1 entity for id %s but got %d back", in.FromEntityID, len(resp.Entities))
+				} else if resp.Entities[0].Type == directory.EntityType_INTERNAL {
+
+					validBML, err := bml.BML{resp.Entities[0].Info.DisplayName}.Format()
+					if err != nil {
+						golog.Errorf("Unable to escape the display name %s:%s", resp.Entities[0].Info.DisplayName, err.Error())
+					} else {
+						text = validBML + ": " + text
+					}
+				}
+			}
 			req := &dal.PostMessageRequest{
 				ThreadID:     linkedThread.ID,
 				FromEntityID: linkedThread.PrimaryEntityID,
-				Text:         in.Text,
+				Text:         text,
 				Title:        in.Title,
 				TextRefs:     textRefs,
 				Summary:      summary,

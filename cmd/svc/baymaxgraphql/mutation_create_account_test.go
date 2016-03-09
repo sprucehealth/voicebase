@@ -134,12 +134,14 @@ func TestCreateAccountMutation(t *testing.T) {
 		ID: "e_sys_2",
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateLinkedThreads, &threading.CreateLinkedThreadsRequest{
-		Organization1ID:  "e_org",
-		Organization2ID:  "spruce_org",
-		PrimaryEntity1ID: "e_sys_1",
-		PrimaryEntity2ID: "e_sys_2",
-		Summary:          supportThreadTitle + ": " + teamSpruceInitialText[:128],
-		Text:             teamSpruceInitialText,
+		Organization1ID:      "e_org",
+		Organization2ID:      "spruce_org",
+		PrimaryEntity1ID:     "e_sys_1",
+		PrimaryEntity2ID:     "e_sys_2",
+		PrependSenderThread1: false,
+		PrependSenderThread2: true,
+		Summary:              supportThreadTitle + ": " + teamSpruceInitialText[:128],
+		Text:                 teamSpruceInitialText,
 	}).WithReturns(&threading.CreateLinkedThreadsResponse{}, nil))
 
 	// Create onboarding thread

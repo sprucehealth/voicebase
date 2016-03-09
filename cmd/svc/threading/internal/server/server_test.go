@@ -221,7 +221,7 @@ func TestPostMessage(t *testing.T) {
 		PrimaryEntityID: "e2",
 	}, nil))
 
-	dl.Expect(mock.NewExpectation(dl.LinkedThread, th1id).WithReturns((*models.Thread)(nil), dal.ErrNotFound))
+	dl.Expect(mock.NewExpectation(dl.LinkedThread, th1id).WithReturns((*models.Thread)(nil), false, dal.ErrNotFound))
 
 	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
 		ThreadID:     th1id,
@@ -320,7 +320,7 @@ func TestPostMessage_Linked(t *testing.T) {
 	dl.Expect(mock.NewExpectation(dl.LinkedThread, th1id).WithReturns(&models.Thread{
 		ID:              th2id,
 		PrimaryEntityID: "e3",
-	}, nil))
+	}, false, nil))
 
 	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
 		ThreadID:     th1id,
@@ -417,6 +417,148 @@ func TestPostMessage_Linked(t *testing.T) {
 	}, res)
 }
 
+func TestPostMessage_Linked_PrependSender(t *testing.T) {
+	t.Parallel()
+	dl := dalmock.New(t)
+	defer dl.Finish()
+	now := time.Now()
+
+	th1id, err := models.NewThreadID()
+	test.OK(t, err)
+	th2id, err := models.NewThreadID()
+	test.OK(t, err)
+	ti1id, err := models.NewThreadItemID()
+	test.OK(t, err)
+	ti2id, err := models.NewThreadItemID()
+	test.OK(t, err)
+
+	dl.Expect(mock.NewExpectation(dl.Thread, th1id).WithReturns(&models.Thread{
+		ID:              th1id,
+		PrimaryEntityID: "e2",
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.LinkedThread, th1id).WithReturns(&models.Thread{
+		ID:              th2id,
+		PrimaryEntityID: "e3",
+	}, true, nil))
+
+	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
+		ThreadID:     th1id,
+		FromEntityID: "e1",
+		Title:        "title",
+		Text:         "text",
+		Summary:      "summary",
+	}).WithReturns(&models.ThreadItem{
+		ID:            ti1id,
+		ThreadID:      th1id,
+		Created:       now,
+		ActorEntityID: "e1",
+		Internal:      false,
+		Type:          models.ItemTypeMessage,
+		Data: &models.Message{
+			Title:   "title",
+			Text:    "text",
+			Status:  models.Message_NORMAL,
+			Summary: "summary",
+		},
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.ThreadMemberships, []models.ThreadID{th1id}, []string{"e1"}, true).WithReturns(map[string][]*models.ThreadMember(nil), nil))
+
+	dl.Expect(mock.NewExpectation(dl.UpdateMember, th1id, "e1", (*dal.MemberUpdate)(nil)).WithReturns(nil))
+
+	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
+		ThreadID:     th2id,
+		FromEntityID: "e3",
+		Title:        "title",
+		Text:         "text",
+		Summary:      "Spruce: text",
+	}).WithReturns(&models.ThreadItem{
+		ID:            ti2id,
+		ThreadID:      th2id,
+		Created:       now,
+		ActorEntityID: "e3",
+		Internal:      false,
+		Type:          models.ItemTypeMessage,
+		Data: &models.Message{
+			Title:   "title",
+			Text:    "dewabi: text",
+			Status:  models.Message_NORMAL,
+			Summary: "Spruce: text",
+		},
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.Thread, th1id).WithReturns(&models.Thread{
+		ID:                           th1id,
+		Created:                      now,
+		MessageCount:                 1,
+		OrganizationID:               "o1",
+		PrimaryEntityID:              "e2",
+		LastExternalMessageSummary:   "summary",
+		LastExternalMessageTimestamp: now,
+	}, nil))
+
+	dir := mock_directory.New(t)
+	defer dir.Finish()
+
+	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "e1",
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID: "e1",
+				Info: &directory.EntityInfo{
+					DisplayName: "dewabi",
+				},
+			},
+		},
+	}, nil))
+
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, dir, "WEBDOMAIN")
+	res, err := srv.PostMessage(nil, &threading.PostMessageRequest{
+		ThreadID:     th1id.String(),
+		FromEntityID: "e1",
+		Title:        "title",
+		Text:         "text",
+		Summary:      "summary",
+	})
+	test.OK(t, err)
+	test.Equals(t, &threading.PostMessageResponse{
+		Item: &threading.ThreadItem{
+			ID:             ti1id.String(),
+			ThreadID:       th1id.String(),
+			OrganizationID: "o1",
+			ActorEntityID:  "e1",
+			Internal:       false,
+			Type:           threading.ThreadItem_MESSAGE,
+			Timestamp:      uint64(now.Unix()),
+			Item: &threading.ThreadItem_Message{
+				Message: &threading.Message{
+					Title:   "title",
+					Text:    "text",
+					Status:  threading.Message_NORMAL,
+					Summary: "summary",
+				},
+			},
+		},
+		Thread: &threading.Thread{
+			ID:                   th1id.String(),
+			OrganizationID:       "o1",
+			PrimaryEntityID:      "e2",
+			LastMessageTimestamp: uint64(now.Unix()),
+			LastMessageSummary:   "summary",
+			CreatedTimestamp:     uint64(now.Unix()),
+			MessageCount:         1,
+		},
+	}, res)
+}
+
 func TestCreateLinkedThreads(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
@@ -442,7 +584,7 @@ func TestCreateLinkedThreads(t *testing.T) {
 	}
 	dl.Expect(mock.NewExpectation(dl.CreateThread, th2).WithReturns(th2id, nil))
 
-	dl.Expect(mock.NewExpectation(dl.CreateThreadLink, th1id, th2id).WithReturns(nil))
+	dl.Expect(mock.NewExpectation(dl.CreateThreadLink, &dal.ThreadLink{ThreadID: th1id}, &dal.ThreadLink{ThreadID: th2id, PrependSender: true}).WithReturns(nil))
 
 	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
 		ThreadID:     th1id,
@@ -492,13 +634,15 @@ func TestCreateLinkedThreads(t *testing.T) {
 
 	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, "WEBDOMAIN")
 	res, err := srv.CreateLinkedThreads(nil, &threading.CreateLinkedThreadsRequest{
-		Organization1ID:  "o1",
-		Organization2ID:  "o2",
-		PrimaryEntity1ID: "e1",
-		PrimaryEntity2ID: "e2",
-		Summary:          "summ",
-		Text:             "text",
-		Title:            "title",
+		Organization1ID:      "o1",
+		Organization2ID:      "o2",
+		PrimaryEntity1ID:     "e1",
+		PrimaryEntity2ID:     "e2",
+		PrependSenderThread1: false,
+		PrependSenderThread2: true,
+		Summary:              "summ",
+		Text:                 "text",
+		Title:                "title",
 	})
 	test.OK(t, err)
 	test.Equals(t, &threading.CreateLinkedThreadsResponse{

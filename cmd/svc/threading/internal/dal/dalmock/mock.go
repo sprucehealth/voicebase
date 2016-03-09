@@ -57,8 +57,8 @@ func (dl *DAL) CreateThreadItemViewDetails(ctx context.Context, tds []*models.Th
 	return mock.SafeError(rets[0])
 }
 
-func (dl *DAL) CreateThreadLink(ctx context.Context, thread1ID, thread2ID models.ThreadID) error {
-	rets := dl.Expector.Record(thread1ID, thread2ID)
+func (dl *DAL) CreateThreadLink(ctx context.Context, thread1, thread2 *dal.ThreadLink) error {
+	rets := dl.Expector.Record(thread1, thread2)
 	if len(rets) == 0 {
 		return nil
 	}
@@ -89,12 +89,12 @@ func (dl *DAL) IterateThreadItems(ctx context.Context, threadID models.ThreadID,
 	return rets[0].(*dal.ThreadItemConnection), mock.SafeError(rets[1])
 }
 
-func (dl *DAL) LinkedThread(ctx context.Context, threadID models.ThreadID) (*models.Thread, error) {
+func (dl *DAL) LinkedThread(ctx context.Context, threadID models.ThreadID) (*models.Thread, bool, error) {
 	rets := dl.Expector.Record(threadID)
 	if len(rets) == 0 {
-		return nil, nil
+		return nil, false, nil
 	}
-	return rets[0].(*models.Thread), mock.SafeError(rets[1])
+	return rets[0].(*models.Thread), rets[1].(bool), mock.SafeError(rets[2])
 }
 
 func (dl *DAL) OnboardingState(ctx context.Context, threadID models.ThreadID, forUpdate bool) (*models.OnboardingState, error) {

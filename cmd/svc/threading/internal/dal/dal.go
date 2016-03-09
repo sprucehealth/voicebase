@@ -67,6 +67,11 @@ type ThreadItemConnection struct {
 	HasMore bool
 }
 
+type ThreadLink struct {
+	ThreadID      models.ThreadID
+	PrependSender bool
+}
+
 type PostMessageRequest struct {
 	ThreadID     models.ThreadID
 	FromEntityID string
@@ -95,11 +100,11 @@ type DAL interface {
 	CreateOnboardingState(ctx context.Context, threadID models.ThreadID, entityID string) error
 	CreateThread(context.Context, *models.Thread) (models.ThreadID, error)
 	CreateThreadItemViewDetails(ctx context.Context, tds []*models.ThreadItemViewDetails) error
-	CreateThreadLink(ctx context.Context, thread1ID, thread2ID models.ThreadID) error
+	CreateThreadLink(ctx context.Context, thread1Link, thread2Link *ThreadLink) error
 	DeleteThread(ctx context.Context, threadID models.ThreadID) error
 	IterateThreads(ctx context.Context, orgID string, forExternal bool, it *Iterator) (*ThreadConnection, error)
 	IterateThreadItems(ctx context.Context, threadID models.ThreadID, forExternal bool, it *Iterator) (*ThreadItemConnection, error)
-	LinkedThread(ctx context.Context, threadID models.ThreadID) (*models.Thread, error)
+	LinkedThread(ctx context.Context, threadID models.ThreadID) (*models.Thread, bool, error)
 	OnboardingState(ctx context.Context, threadID models.ThreadID, forUpdate bool) (*models.OnboardingState, error)
 	OnboardingStateForEntity(ctx context.Context, entityID string, forUpdate bool) (*models.OnboardingState, error)
 	PostMessage(context.Context, *PostMessageRequest) (*models.ThreadItem, error)
@@ -212,13 +217,13 @@ func (d *dal) CreateThreadItemViewDetails(ctx context.Context, tds []*models.Thr
 	return errors.Trace(err)
 }
 
-func (d *dal) CreateThreadLink(ctx context.Context, thread1ID, thread2ID models.ThreadID) error {
-	// Sanity check since self-reference is toos scary to imagine
-	if thread1ID.Val == thread2ID.Val {
+func (d *dal) CreateThreadLink(ctx context.Context, thread1ID, thread2ID *ThreadLink) error {
+	// Sanity check since self-reference is too scary to imagine
+	if thread1ID.ThreadID.Val == thread2ID.ThreadID.Val {
 		return errors.Trace(errors.New("cannot link a thread to itself"))
 	}
-	_, err := d.db.Exec(`INSERT INTO thread_links (thread1_id, thread2_id) VALUES(?, ?)`,
-		thread1ID, thread2ID)
+	_, err := d.db.Exec(`INSERT INTO thread_links (thread1_id, thread1_prepend_sender, thread2_id, thread2_prepend_sender) VALUES(?, ?, ?, ?)`,
+		thread1ID.ThreadID, thread1ID.PrependSender, thread2ID.ThreadID, thread2ID.PrependSender)
 	return errors.Trace(err)
 }
 
@@ -387,14 +392,31 @@ func (d *dal) IterateThreadItems(ctx context.Context, threadID models.ThreadID, 
 	return &tc, errors.Trace(rows.Err())
 }
 
-func (d *dal) LinkedThread(ctx context.Context, threadID models.ThreadID) (*models.Thread, error) {
+func (d *dal) LinkedThread(ctx context.Context, threadID models.ThreadID) (*models.Thread, bool, error) {
+
+	var thread1 ThreadLink
+	var thread2 ThreadLink
+	err := d.db.QueryRow(`
+		SELECT thread1_id, thread1_prepend_sender, thread2_id, thread2_prepend_sender
+		FROM linked_thread 
+		WHERE thread1_id = ? OR thread2_id = ?`, threadID, threadID).Scan(&thread1.ThreadID, &thread1.PrependSender, &thread2.ThreadID, &thread2.PrependSender)
+	if err != nil {
+		return nil, false, errors.Trace(err)
+	}
+
+	var linkedThread *ThreadLink
+	if threadID == thread1.ThreadID {
+		linkedThread = &thread2
+	} else {
+		linkedThread = &thread1
+	}
+
 	row := d.db.QueryRow(`
 		SELECT id, organization_id, COALESCE(primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary, last_primary_entity_endpoints, created, message_count
 		FROM threads
-		INNER JOIN thread_links tl ON tl.thread1_id = ? OR tl.thread2_id = ?
-		WHERE id != ? AND id IN (tl.thread1_id, tl.thread2_id) AND deleted = false`, threadID, threadID, threadID)
+		WHERE id = ? AND deleted = false`, linkedThread.ThreadID)
 	t, err := scanThread(row)
-	return t, errors.Trace(err)
+	return t, linkedThread.PrependSender, errors.Trace(err)
 }
 
 func (d *dal) OnboardingState(ctx context.Context, threadID models.ThreadID, forUpdate bool) (*models.OnboardingState, error) {

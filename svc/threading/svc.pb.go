@@ -1280,13 +1280,15 @@ func (m *ThreadItemViewDetailsResponse) GetItemViewDetails() []*ThreadItemViewDe
 }
 
 type CreateLinkedThreadsRequest struct {
-	Organization1ID  string `protobuf:"bytes,1,opt,name=organization1_id,proto3" json:"organization1_id,omitempty"`
-	Organization2ID  string `protobuf:"bytes,2,opt,name=organization2_id,proto3" json:"organization2_id,omitempty"`
-	PrimaryEntity1ID string `protobuf:"bytes,3,opt,name=primary_entity1_id,proto3" json:"primary_entity1_id,omitempty"`
-	PrimaryEntity2ID string `protobuf:"bytes,4,opt,name=primary_entity2_id,proto3" json:"primary_entity2_id,omitempty"`
-	Text             string `protobuf:"bytes,5,opt,name=text,proto3" json:"text,omitempty"`
-	Title            string `protobuf:"bytes,6,opt,name=title,proto3" json:"title,omitempty"`
-	Summary          string `protobuf:"bytes,7,opt,name=summary,proto3" json:"summary,omitempty"`
+	Organization1ID      string `protobuf:"bytes,1,opt,name=organization1_id,proto3" json:"organization1_id,omitempty"`
+	Organization2ID      string `protobuf:"bytes,2,opt,name=organization2_id,proto3" json:"organization2_id,omitempty"`
+	PrimaryEntity1ID     string `protobuf:"bytes,3,opt,name=primary_entity1_id,proto3" json:"primary_entity1_id,omitempty"`
+	PrimaryEntity2ID     string `protobuf:"bytes,4,opt,name=primary_entity2_id,proto3" json:"primary_entity2_id,omitempty"`
+	Text                 string `protobuf:"bytes,5,opt,name=text,proto3" json:"text,omitempty"`
+	Title                string `protobuf:"bytes,6,opt,name=title,proto3" json:"title,omitempty"`
+	Summary              string `protobuf:"bytes,7,opt,name=summary,proto3" json:"summary,omitempty"`
+	PrependSenderThread1 bool   `protobuf:"varint,8,opt,name=prepend_sender_thread1,proto3" json:"prepend_sender_thread1,omitempty"`
+	PrependSenderThread2 bool   `protobuf:"varint,9,opt,name=prepend_sender_thread2,proto3" json:"prepend_sender_thread2,omitempty"`
 }
 
 func (m *CreateLinkedThreadsRequest) Reset()      { *m = CreateLinkedThreadsRequest{} }
@@ -3444,6 +3446,12 @@ func (this *CreateLinkedThreadsRequest) Equal(that interface{}) bool {
 	if this.Summary != that1.Summary {
 		return false
 	}
+	if this.PrependSenderThread1 != that1.PrependSenderThread1 {
+		return false
+	}
+	if this.PrependSenderThread2 != that1.PrependSenderThread2 {
+		return false
+	}
 	return true
 }
 func (this *CreateLinkedThreadsResponse) Equal(that interface{}) bool {
@@ -4317,7 +4325,7 @@ func (this *CreateLinkedThreadsRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 11)
+	s := make([]string, 0, 13)
 	s = append(s, "&threading.CreateLinkedThreadsRequest{")
 	s = append(s, "Organization1ID: "+fmt.Sprintf("%#v", this.Organization1ID)+",\n")
 	s = append(s, "Organization2ID: "+fmt.Sprintf("%#v", this.Organization2ID)+",\n")
@@ -4326,6 +4334,8 @@ func (this *CreateLinkedThreadsRequest) GoString() string {
 	s = append(s, "Text: "+fmt.Sprintf("%#v", this.Text)+",\n")
 	s = append(s, "Title: "+fmt.Sprintf("%#v", this.Title)+",\n")
 	s = append(s, "Summary: "+fmt.Sprintf("%#v", this.Summary)+",\n")
+	s = append(s, "PrependSenderThread1: "+fmt.Sprintf("%#v", this.PrependSenderThread1)+",\n")
+	s = append(s, "PrependSenderThread2: "+fmt.Sprintf("%#v", this.PrependSenderThread2)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -7248,6 +7258,26 @@ func (m *CreateLinkedThreadsRequest) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(len(m.Summary)))
 		i += copy(data[i:], m.Summary)
 	}
+	if m.PrependSenderThread1 {
+		data[i] = 0x40
+		i++
+		if m.PrependSenderThread1 {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
+	if m.PrependSenderThread2 {
+		data[i] = 0x48
+		i++
+		if m.PrependSenderThread2 {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
 	return i, nil
 }
 
@@ -8400,6 +8430,12 @@ func (m *CreateLinkedThreadsRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
+	if m.PrependSenderThread1 {
+		n += 2
+	}
+	if m.PrependSenderThread2 {
+		n += 2
+	}
 	return n
 }
 
@@ -9190,6 +9226,8 @@ func (this *CreateLinkedThreadsRequest) String() string {
 		`Text:` + fmt.Sprintf("%v", this.Text) + `,`,
 		`Title:` + fmt.Sprintf("%v", this.Title) + `,`,
 		`Summary:` + fmt.Sprintf("%v", this.Summary) + `,`,
+		`PrependSenderThread1:` + fmt.Sprintf("%v", this.PrependSenderThread1) + `,`,
+		`PrependSenderThread2:` + fmt.Sprintf("%v", this.PrependSenderThread2) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -16546,6 +16584,46 @@ func (m *CreateLinkedThreadsRequest) Unmarshal(data []byte) error {
 			}
 			m.Summary = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PrependSenderThread1", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.PrependSenderThread1 = bool(v != 0)
+		case 9:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PrependSenderThread2", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.PrependSenderThread2 = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
