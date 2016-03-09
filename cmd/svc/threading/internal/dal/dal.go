@@ -398,7 +398,7 @@ func (d *dal) LinkedThread(ctx context.Context, threadID models.ThreadID) (*mode
 	var thread2 ThreadLink
 	err := d.db.QueryRow(`
 		SELECT thread1_id, thread1_prepend_sender, thread2_id, thread2_prepend_sender
-		FROM linked_thread 
+		FROM thread_links 
 		WHERE thread1_id = ? OR thread2_id = ?`, threadID, threadID).Scan(&thread1.ThreadID, &thread1.PrependSender, &thread2.ThreadID, &thread2.PrependSender)
 	if err != nil {
 		return nil, false, errors.Trace(err)
