@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
@@ -44,6 +45,7 @@ type server struct {
 	fromEmail       string
 	eventsTopic     string
 	sns             snsiface.SNSAPI
+	webInviteURL    *url.URL
 }
 
 type popover struct {
@@ -68,9 +70,17 @@ type SendGridClient interface {
 }
 
 // New returns an initialized instance of the invite server
-func New(dal dal.DAL, clk clock.Clock, directoryClient directory.DirectoryClient, snsC snsiface.SNSAPI, branch branch.Client, sg SendGridClient, fromEmail string, eventsTopic string) invite.InviteServer {
+func New(dal dal.DAL, clk clock.Clock, directoryClient directory.DirectoryClient, snsC snsiface.SNSAPI, branch branch.Client, sg SendGridClient, fromEmail, eventsTopic, webInviteURL string) invite.InviteServer {
 	if clk == nil {
 		clk = clock.New()
+	}
+	var webURL *url.URL
+	if webInviteURL != "" {
+		var err error
+		webURL, err = url.Parse(webInviteURL)
+		if err != nil {
+			golog.Fatalf("Failed to parse web invite URL: %s", err)
+		}
 	}
 	return &server{
 		dal:             dal,
@@ -81,6 +91,7 @@ func New(dal dal.DAL, clk clock.Clock, directoryClient directory.DirectoryClient
 		sg:              sg,
 		fromEmail:       fromEmail,
 		eventsTopic:     eventsTopic,
+		webInviteURL:    webURL,
 	}
 }
 
@@ -206,10 +217,23 @@ func (s *server) InviteColleagues(ctx context.Context, in *invite.InviteColleagu
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
-			inviteURL, err = s.branch.URL(map[string]interface{}{
+			values := map[string]string{
 				"invite_token": token,
 				"client_data":  inviteClientDataStr,
-			})
+			}
+			if s.webInviteURL != nil {
+				// Close the URL to avoid modifying the template
+				ur := *s.webInviteURL
+				query := ur.Query()
+				query.Add("invite", token)
+				ur.RawQuery = query.Encode()
+				values[branch.DesktopURL] = ur.String()
+			}
+			attr := make(map[string]interface{}, len(values))
+			for k, v := range values {
+				attr[k] = v
+			}
+			inviteURL, err = s.branch.URL(attr)
 			if err != nil {
 				golog.Errorf("Failed to generate branch URL: %s", err)
 				continue
@@ -223,6 +247,7 @@ func (s *server) InviteColleagues(ctx context.Context, in *invite.InviteColleagu
 				PhoneNumber:          c.PhoneNumber,
 				Created:              s.clk.Now(),
 				URL:                  inviteURL,
+				Values:               values,
 			})
 			if err == nil {
 				break
@@ -280,6 +305,13 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 	if inv.Type != models.ColleagueInvite {
 		return nil, grpcErrorf(codes.Internal, "unsupported invite type "+string(inv.Type))
 	}
+	values := make([]*invite.AttributionValue, 0, len(inv.Values))
+	for k, v := range inv.Values {
+		values = append(values, &invite.AttributionValue{
+			Key:   k,
+			Value: v,
+		})
+	}
 	return &invite.LookupInviteResponse{
 		Type: invite.LookupInviteResponse_COLLEAGUE,
 		Invite: &invite.LookupInviteResponse_Colleague{
@@ -292,6 +324,7 @@ func (s *server) LookupInvite(ctx context.Context, in *invite.LookupInviteReques
 				},
 			},
 		},
+		Values: values,
 	}, nil
 }
 

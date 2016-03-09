@@ -227,6 +227,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 		},
 		"addContactInfos":                     addContactInfosMutation,
 		"associateAttribution":                associateAttributionMutation,
+		"associateInvite":                     associateInviteMutation,
 		"authenticate":                        authenticateMutation,
 		"authenticateWithCode":                authenticateWithCodeMutation,
 		"checkPasswordResetToken":             checkPasswordResetTokenMutation,

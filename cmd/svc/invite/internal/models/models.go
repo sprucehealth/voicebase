@@ -19,4 +19,5 @@ type Invite struct {
 	PhoneNumber          string
 	URL                  string
 	Created              time.Time
+	Values               map[string]string
 }

@@ -30,6 +30,7 @@ var (
 	flagSendGridKey   = flag.String("sendgrid_key", "", "SendGrid API `key`")
 	flagEventsTopic   = flag.String("events_topic", "", "SNS topic ARN for publishing events")
 	flagKMSKeyARN     = flag.String("kms_key_arn", "", "the arn of the master key that should be used to encrypt outbound and decrypt inbound data")
+	flagWebInviteURL  = flag.String("web_invite_url", "", "URL for the webapp invite page")
 
 	// For local development
 	flagDynamoDBEndpoint = flag.String("dynamodb_endpoint", "", "DynamoDB endpoint `URL` (for local development)")
@@ -76,7 +77,7 @@ func main() {
 		return
 	}
 
-	srv := server.New(dal.New(db, environment.GetCurrent()), nil, directoryClient, eSNS, branchCli, sg, *flagFromEmail, *flagEventsTopic)
+	srv := server.New(dal.New(db, environment.GetCurrent()), nil, directoryClient, eSNS, branchCli, sg, *flagFromEmail, *flagEventsTopic, *flagWebInviteURL)
 	s := grpc.NewServer()
 	defer s.Stop()
 	invite.RegisterInviteServer(s, srv)
