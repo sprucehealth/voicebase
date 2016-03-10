@@ -407,7 +407,7 @@ func (d *dal) LinkedThread(ctx context.Context, threadID models.ThreadID) (*mode
 	}
 
 	var linkedThread *ThreadLink
-	if threadID == thread1.ThreadID {
+	if threadID.Val == thread1.ThreadID.Val {
 		linkedThread = &thread2
 	} else {
 		linkedThread = &thread1
