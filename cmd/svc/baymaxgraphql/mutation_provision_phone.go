@@ -172,7 +172,7 @@ var provisionPhoneNumberMutation = &graphql.Field{
 			}
 		}
 
-		// lets go ahead and add the mobile number of the user to the forwarding list 
+		// lets go ahead and add the mobile number of the user to the forwarding list
 		// so that there is a number in the forwarding list by default.
 		_, err = svc.settings.SetValue(ctx, &settings.SetValueRequest{
 			NodeID: organizationID,
