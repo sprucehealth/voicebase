@@ -8,8 +8,12 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	excommssettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -154,6 +158,42 @@ var provisionPhoneNumberMutation = &graphql.Field{
 				"phone_number": res.PhoneNumber,
 			},
 		})
+
+		// identify the phone number associated with the provider
+		// provisioning the number for the organization.
+		var phoneNumber string
+		for _, c := range entity.Contacts {
+			if !c.Provisioned && c.ContactType == directory.ContactType_PHONE {
+				phoneNumber, err = phone.Format(c.Value, phone.E164)
+				if err != nil {
+					return nil, errors.InternalError(ctx, err)
+				}
+				break
+			}
+		}
+
+		// lets go ahead and add the mobile number of the user to the forwarding list 
+		// so that there is a number in the forwarding list by default.
+		_, err = svc.settings.SetValue(ctx, &settings.SetValueRequest{
+			NodeID: organizationID,
+			Value: &settings.Value{
+				Key: &settings.ConfigKey{
+					Key:    excommssettings.ConfigKeyForwardingList,
+					Subkey: res.PhoneNumber,
+				},
+				Type: settings.ConfigType_STRING_LIST,
+				Value: &settings.Value_StringList{
+					StringList: &settings.StringListValue{
+						Values: []string{
+							phoneNumber,
+						},
+					},
+				},
+			},
+		})
+		if err != nil {
+			golog.Errorf("Unable to create forwarding list for the provisioned phone number: %s", err.Error())
+		}
 
 		orgRes, err := transformOrganizationToResponse(svc.staticURLPrefix, createContactRes.Entity, entity, sh)
 		if err != nil {

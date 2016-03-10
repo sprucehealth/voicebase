@@ -364,7 +364,7 @@ func (m *resourceAccessor) EntityDomain(ctx context.Context, entityID, domain st
 // TODO: This is currently a single org account hack
 func (m *resourceAccessor) EntityForAccountID(ctx context.Context, orgID, accountID string) (*directory.Entity, error) {
 	// Note: Authorization is done at the next level down
-	entities, err := m.EntitiesForExternalID(ctx, accountID, []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS}, 0, nil)
+	entities, err := m.EntitiesForExternalID(ctx, accountID, []directory.EntityInformation{directory.EntityInformation_MEMBERSHIPS, directory.EntityInformation_CONTACTS}, 0, nil)
 	if err != nil {
 		return nil, err
 	}

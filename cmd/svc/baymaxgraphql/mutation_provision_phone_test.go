@@ -6,9 +6,12 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	excommssettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/settings"
+
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
@@ -33,6 +36,12 @@ func TestProvisionPhone(t *testing.T) {
 			Type: directory.EntityType_INTERNAL,
 			Info: &directory.EntityInfo{
 				DisplayName: "Schmee",
+			},
+			Contacts: []*directory.Contact{
+				{
+					ContactType: directory.ContactType_PHONE,
+					Value:       "+17348465522",
+				},
 			},
 			Memberships: []*directory.Entity{
 				{ID: entityID, Type: directory.EntityType_ORGANIZATION},
@@ -78,6 +87,24 @@ func TestProvisionPhone(t *testing.T) {
 			},
 		},
 	}, nil))
+
+	g.settingsC.Expect(mock.NewExpectation(g.settingsC.SetValue, &settings.SetValueRequest{
+		NodeID: entityID,
+		Value: &settings.Value{
+			Key: &settings.ConfigKey{
+				Key:    excommssettings.ConfigKeyForwardingList,
+				Subkey: "+12068773590",
+			},
+			Type: settings.ConfigType_STRING_LIST,
+			Value: &settings.Value_StringList{
+				StringList: &settings.StringListValue{
+					Values: []string{
+						"+17348465522",
+					},
+				},
+			},
+		},
+	}))
 	res := g.query(ctx, `
 		mutation _ ($organizationId: ID!, $areaCode: String!) {
 			provisionPhoneNumber(input: {
@@ -173,7 +200,7 @@ func TestProvisionPhone_Unavailable(t *testing.T) {
 					}
 				}
 			}
-		}`, map[string]interface{}{
+			}`, map[string]interface{}{
 		"organizationId": entityID,
 		"areaCode":       areaCode,
 	})
