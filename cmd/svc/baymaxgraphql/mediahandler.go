@@ -10,6 +10,8 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	mediasigner "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/media"
@@ -37,9 +39,14 @@ type errorMsg struct {
 
 func (m *mediaHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var acc *models.Account
+
+	sHeaders := device.ExtractSpruceHeaders(w, r)
 	if c, err := r.Cookie(authTokenCookieName); err == nil && c.Value != "" {
 		res, err := m.auth.CheckAuthentication(ctx,
-			&auth.CheckAuthenticationRequest{Token: c.Value},
+			&auth.CheckAuthenticationRequest{
+				Token:           c.Value,
+				TokenAttributes: map[string]string{raccess.DeviceIDAttributeKey: sHeaders.DeviceID},
+			},
 		)
 		if err != nil {
 			golog.Errorf("Failed to check auth token: %s", err)
