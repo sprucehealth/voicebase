@@ -164,7 +164,7 @@ var provisionPhoneNumberMutation = &graphql.Field{
 		var phoneNumber string
 		for _, c := range entity.Contacts {
 			if !c.Provisioned && c.ContactType == directory.ContactType_PHONE {
-				phoneNumber, err = phone.Format(c.Value, phone.E164)
+				phoneNumber, err = phone.Format(c.Value, phone.Pretty)
 				if err != nil {
 					return nil, errors.InternalError(ctx, err)
 				}

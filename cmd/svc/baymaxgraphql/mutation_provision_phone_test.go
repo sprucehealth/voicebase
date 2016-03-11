@@ -99,7 +99,7 @@ func TestProvisionPhone(t *testing.T) {
 			Value: &settings.Value_StringList{
 				StringList: &settings.StringListValue{
 					Values: []string{
-						"+17348465522",
+						"(734) 846-5522",
 					},
 				},
 			},
