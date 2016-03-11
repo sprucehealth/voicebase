@@ -91,7 +91,6 @@ func WaitForTermination() {
 	select {
 	case sig := <-ch:
 		golog.Infof("Quitting due to signal %s", sig.String())
-		break
 	}
 }
 
