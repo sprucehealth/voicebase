@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
@@ -202,8 +203,8 @@ func (s *server) AuthenticateLoginWithCode(ctx context.Context, rd *auth.Authent
 }
 
 var (
-	// A token is rotated and refreshed if auth is checked an hour or more after it was last refreshed
-	defaultTokenRefreshWindow = time.Second * 60 * 60
+	// A token is rotated and refreshed if auth is checked a day or more after it was last refreshed
+	defaultTokenRefreshWindow = time.Second * 60 * 60 * 24
 	// A token lasts for a maximum of 30 days.
 	defaultTokenLifecycle = time.Second * 60 * 60 * 24 * 30
 )
@@ -244,6 +245,19 @@ func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenti
 			authToken, err = s.rotateAndExtendToken(dl, aToken, rd.TokenAttributes)
 			if err != nil {
 				return errors.Trace(err)
+			}
+		}
+
+		// If the token is valid, but it's a shadow token, return their active token
+		if aToken.Shadow {
+			activeToken, err := s.dal.ActiveAuthTokenForAccount(aToken.AccountID)
+			if err != nil {
+				// Log the error here but allow the user to continue since their shadow token is still good.
+				golog.Errorf("Encountered an error when attempting to return the active token for account %s: %s", aToken.AccountID, err)
+			} else {
+				authToken.Value = stripAttributes(string(activeToken.Token))
+				authToken.ExpirationEpoch = uint64(activeToken.Expires.Unix())
+				authToken.ClientEncryptionKey = base64.StdEncoding.EncodeToString(activeToken.ClientEncryptionKey)
 			}
 		}
 
@@ -477,6 +491,12 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 		return nil, grpcIErrorf(err.Error())
 	}
 
+	// Record this as a succesful 2FA login attempt since we assume their phone number was validated
+	if err := s.dal.UpsertTwoFactorLogin(account.ID, rd.DeviceID, s.clk.Now()); err != nil {
+		// log the error here but don't block a successful create
+		golog.Errorf("Encountered error while attempting to record successful account creation two factor login for %s with device id %s: %s", account.ID, rd.DeviceID, err)
+	}
+
 	return &auth.CreateAccountResponse{
 		Token: authToken,
 		Account: &auth.Account{
@@ -675,6 +695,10 @@ func (s *server) generateAndInsertToken(dl dal.DAL, accountID dal.AccountID, tok
 	}, nil
 }
 
+const (
+	defaultShadowTokenExpiration = time.Second * 60 * 60 * 24 // A shadow token by default expires in 1 day
+)
+
 func (s *server) rotateAndExtendToken(dl dal.DAL, authToken *dal.AuthToken, tokenAttributes map[string]string) (*auth.AuthToken, error) {
 	token, err := s.tokenGenerator.GenerateToken()
 	if err != nil {
@@ -698,7 +722,7 @@ func (s *server) rotateAndExtendToken(dl dal.DAL, authToken *dal.AuthToken, toke
 		// Insert a shadow token so that in flight requests will continue to work. This token will expire in 5 minutes
 		return errors.Trace(dl.InsertAuthToken(&dal.AuthToken{
 			AccountID:           authToken.AccountID,
-			Expires:             s.clk.Now().Add(time.Minute * 5),
+			Expires:             s.clk.Now().Add(defaultShadowTokenExpiration),
 			Token:               authToken.Token,
 			ClientEncryptionKey: authToken.ClientEncryptionKey,
 			Shadow:              true,
@@ -738,6 +762,13 @@ func appendAttributes(token string, tokenAttributes map[string]string) (string, 
 		}
 	}
 	return token, nil
+}
+
+func stripAttributes(token string) string {
+	if i := strings.IndexByte(token, ':'); i != -1 {
+		token = token[:i]
+	}
+	return token
 }
 
 const (

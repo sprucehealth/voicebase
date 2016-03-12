@@ -258,6 +258,7 @@ type CreateAccountRequest struct {
 	PhoneNumber     string            `protobuf:"bytes,4,opt,name=phone_number,proto3" json:"phone_number,omitempty"`
 	Password        string            `protobuf:"bytes,5,opt,name=password,proto3" json:"password,omitempty"`
 	TokenAttributes map[string]string `protobuf:"bytes,6,rep,name=token_attributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	DeviceID        string            `protobuf:"bytes,7,opt,name=device_id,proto3" json:"device_id,omitempty"`
 }
 
 func (m *CreateAccountRequest) Reset()      { *m = CreateAccountRequest{} }
@@ -845,6 +846,9 @@ func (this *CreateAccountRequest) Equal(that interface{}) bool {
 		if this.TokenAttributes[i] != that1.TokenAttributes[i] {
 			return false
 		}
+	}
+	if this.DeviceID != that1.DeviceID {
+		return false
 	}
 	return true
 }
@@ -1472,7 +1476,7 @@ func (this *CreateAccountRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 10)
+	s := make([]string, 0, 11)
 	s = append(s, "&auth.CreateAccountRequest{")
 	s = append(s, "FirstName: "+fmt.Sprintf("%#v", this.FirstName)+",\n")
 	s = append(s, "LastName: "+fmt.Sprintf("%#v", this.LastName)+",\n")
@@ -1492,6 +1496,7 @@ func (this *CreateAccountRequest) GoString() string {
 	if this.TokenAttributes != nil {
 		s = append(s, "TokenAttributes: "+mapStringForTokenAttributes+",\n")
 	}
+	s = append(s, "DeviceID: "+fmt.Sprintf("%#v", this.DeviceID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2552,6 +2557,12 @@ func (m *CreateAccountRequest) MarshalTo(data []byte) (int, error) {
 			i += copy(data[i:], v)
 		}
 	}
+	if len(m.DeviceID) > 0 {
+		data[i] = 0x3a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.DeviceID)))
+		i += copy(data[i:], m.DeviceID)
+	}
 	return i, nil
 }
 
@@ -3293,6 +3304,10 @@ func (m *CreateAccountRequest) Size() (n int) {
 			n += mapEntrySize + 1 + sovSvc(uint64(mapEntrySize))
 		}
 	}
+	l = len(m.DeviceID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
 	return n
 }
 
@@ -3683,6 +3698,7 @@ func (this *CreateAccountRequest) String() string {
 		`PhoneNumber:` + fmt.Sprintf("%v", this.PhoneNumber) + `,`,
 		`Password:` + fmt.Sprintf("%v", this.Password) + `,`,
 		`TokenAttributes:` + mapStringForTokenAttributes + `,`,
+		`DeviceID:` + fmt.Sprintf("%v", this.DeviceID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5691,6 +5707,35 @@ func (m *CreateAccountRequest) Unmarshal(data []byte) error {
 				m.TokenAttributes = make(map[string]string)
 			}
 			m.TokenAttributes[mapkey] = mapvalue
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DeviceID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DeviceID = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

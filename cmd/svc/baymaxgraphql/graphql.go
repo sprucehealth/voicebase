@@ -175,8 +175,7 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	if c, err := r.Cookie(authTokenCookieName); err == nil && c.Value != "" {
 		res, err := h.auth.CheckAuthentication(ctx,
 			&auth.CheckAuthenticationRequest{
-				Token:           c.Value,
-				TokenAttributes: map[string]string{raccess.DeviceIDAttributeKey: sHeaders.DeviceID},
+				Token: c.Value,
 			},
 		)
 		if err != nil {

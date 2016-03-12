@@ -25,6 +25,7 @@ type DAL interface {
 	UpdateAccount(id AccountID, update *AccountUpdate) (int64, error)
 	DeleteAccount(id AccountID) (int64, error)
 	InsertAuthToken(model *AuthToken) error
+	ActiveAuthTokenForAccount(accountID AccountID) (*AuthToken, error)
 	AuthToken(token string, expiresAfter time.Time, forUpdate bool) (*AuthToken, error)
 	DeleteAuthTokens(accountID AccountID) (int64, error)
 	DeleteAuthToken(token string) (int64, error)
@@ -603,6 +604,14 @@ func (d *dal) AuthToken(token string, expiresAfter time.Time, forUpdate bool) (*
 	}
 	row := d.db.QueryRow(
 		selectAuthToken+` WHERE token = BINARY ? AND expires > ? `+fu, token, expiresAfter)
+	model, err := scanAuthToken(row)
+	return model, errors.Trace(err)
+}
+
+// ActiveAuthTokenForAccount returns the current active non shadow auth token record that conforms to the provided input
+func (d *dal) ActiveAuthTokenForAccount(accountID AccountID) (*AuthToken, error) {
+	row := d.db.QueryRow(
+		selectAuthToken+` WHERE account_id = ? AND expires > ? AND shadow = false`, accountID, time.Now())
 	model, err := scanAuthToken(row)
 	return model, errors.Trace(err)
 }

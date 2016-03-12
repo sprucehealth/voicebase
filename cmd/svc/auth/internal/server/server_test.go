@@ -520,6 +520,66 @@ func TestCheckAuthentication(t *testing.T) {
 	}, resp.Token)
 }
 
+func TestCheckAuthenticationShadowed(t *testing.T) {
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+
+	settingsMock := mock_settings.New(t)
+	defer settingsMock.Finish()
+
+	mClock := clock.NewManaged(time.Now())
+	s, err := New(dl, settingsMock, clientEncryptionSecret)
+	test.OK(t, err)
+	svr, ok := s.(*server)
+	test.Assert(t, ok, "Expected a *server")
+	svr.clk = mClock
+	s = svr
+	token := "123abc"
+	nonShadowToken := "456def"
+	tokenAttributes := map[string]string{"token": "attribute"}
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+	expires := mClock.Now().Add(defaultTokenExpiration)
+	dl.Expect(mock.NewExpectation(dl.AuthToken, token+":tokenattribute", mClock.Now(), true).WithReturns(&dal.AuthToken{
+		Token:               []byte(token + ":tokenattribute"),
+		AccountID:           aID1,
+		Expires:             expires,
+		ClientEncryptionKey: []byte(clientEncryptionSecret),
+		Shadow:              true,
+	}, nil))
+	dl.Expect(mock.NewExpectation(dl.ActiveAuthTokenForAccount, aID1).WithReturns(&dal.AuthToken{
+		Token:               []byte(nonShadowToken + ":tokenattribute"),
+		AccountID:           aID1,
+		Expires:             expires,
+		ClientEncryptionKey: []byte(clientEncryptionSecret),
+		Shadow:              false,
+	}, nil))
+	dl.Expect(mock.NewExpectation(dl.Account, aID1).WithReturns(&dal.Account{
+		ID:        aID1,
+		FirstName: "bat",
+		LastName:  "man",
+	}, nil))
+	resp, err := s.CheckAuthentication(context.Background(), &auth.CheckAuthenticationRequest{
+		Token:           token,
+		TokenAttributes: tokenAttributes,
+	})
+	test.OK(t, err)
+
+	test.Assert(t, resp.IsAuthenticated, "Expected authentication")
+	test.AssertNotNil(t, resp.Account)
+	test.AssertNotNil(t, resp.Token)
+	test.Equals(t, &auth.Account{
+		ID:        aID1.String(),
+		FirstName: "bat",
+		LastName:  "man",
+	}, resp.Account)
+	test.Equals(t, &auth.AuthToken{
+		Value:               nonShadowToken,
+		ExpirationEpoch:     uint64(expires.Unix()),
+		ClientEncryptionKey: base64.StdEncoding.EncodeToString([]byte(clientEncryptionSecret)),
+	}, resp.Token)
+}
+
 func TestCheckAuthenticationRefresh(t *testing.T) {
 	dl := mock_dal.NewMockDAL(t)
 	defer dl.Finish()
@@ -557,7 +617,7 @@ func TestCheckAuthenticationRefresh(t *testing.T) {
 	}))
 	dl.Expect(mock.NewExpectation(dl.InsertAuthToken, &dal.AuthToken{
 		AccountID:           aID1,
-		Expires:             mClock.Now().Add(time.Minute * 5),
+		Expires:             mClock.Now().Add(defaultShadowTokenExpiration),
 		Token:               []byte(token + ":tokenattribute"),
 		ClientEncryptionKey: []byte(clientEncryptionSecret),
 		Shadow:              true,
@@ -765,8 +825,12 @@ func TestCreateAccount(t *testing.T) {
 	settingsMock := mock_settings.New(t)
 	defer settingsMock.Finish()
 
+	mClock := clock.NewManaged(time.Now())
 	s, err := New(dl, settingsMock, clientEncryptionSecret)
 	test.OK(t, err)
+	svr, ok := s.(*server)
+	test.Assert(t, ok, "Expected a *server")
+	svr.clk = mClock
 	fn := "bat"
 	ln := "man"
 	email := "bat@man.com"
@@ -825,12 +889,14 @@ func TestCreateAccount(t *testing.T) {
 		FirstName: fn,
 		LastName:  ln,
 	}, nil))
+	dl.Expect(mock.NewExpectation(dl.UpsertTwoFactorLogin, aID1, "deviceID", mClock.Now()))
 	resp, err := s.CreateAccount(context.Background(), &auth.CreateAccountRequest{
 		FirstName:   fn,
 		LastName:    ln,
 		PhoneNumber: phoneNumber,
 		Email:       email,
 		Password:    password,
+		DeviceID:    "deviceID",
 	})
 	test.OK(t, err)
 	key, err := signer.Sign([]byte(token))

@@ -92,10 +92,9 @@ func TestAuthenticateLogin(t *testing.T) {
 	email := "email"
 	password := "password"
 	rat.aC.Expect(mock.NewExpectation(rat.aC.AuthenticateLogin, &auth.AuthenticateLoginRequest{
-		Email:           email,
-		Password:        password,
-		DeviceID:        "deviceID",
-		TokenAttributes: map[string]string{DeviceIDAttributeKey: "deviceID"},
+		Email:    email,
+		Password: password,
+		DeviceID: "deviceID",
 	}).WithReturns(&auth.AuthenticateLoginResponse{Account: &auth.Account{ID: accountID}}, nil))
 
 	resp, err := rat.ra.AuthenticateLogin(ctx, email, password)
@@ -119,10 +118,9 @@ func TestAuthenticateLoginWithCode(t *testing.T) {
 	token := "token"
 	code := "code"
 	rat.aC.Expect(mock.NewExpectation(rat.aC.AuthenticateLoginWithCode, &auth.AuthenticateLoginWithCodeRequest{
-		Token:           token,
-		Code:            code,
-		DeviceID:        "deviceID",
-		TokenAttributes: map[string]string{DeviceIDAttributeKey: "deviceID"},
+		Token:    token,
+		Code:     code,
+		DeviceID: "deviceID",
 	}).WithReturns(&auth.AuthenticateLoginWithCodeResponse{Account: &auth.Account{ID: accountID}}, nil))
 
 	resp, err := rat.ra.AuthenticateLoginWithCode(ctx, token, code)
@@ -194,8 +192,8 @@ func TestCreateAccount(t *testing.T) {
 	rat := new(t)
 	defer rat.finish()
 	rat.aC.Expect(mock.NewExpectation(rat.aC.CreateAccount, &auth.CreateAccountRequest{
-		FirstName:       "name",
-		TokenAttributes: map[string]string{DeviceIDAttributeKey: "deviceID"},
+		FirstName: "name",
+		DeviceID:  "deviceID",
 	}).WithReturns(&auth.CreateAccountResponse{Account: &auth.Account{ID: "Hi"}}, nil))
 
 	resp, err := rat.ra.CreateAccount(ctx, &auth.CreateAccountRequest{

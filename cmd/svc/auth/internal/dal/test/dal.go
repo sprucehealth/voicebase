@@ -71,6 +71,14 @@ func (dl *mockDAL) InsertAuthToken(model *dal.AuthToken) error {
 	return mock.SafeError(rets[0])
 }
 
+func (dl *mockDAL) ActiveAuthTokenForAccount(accountID dal.AccountID) (*dal.AuthToken, error) {
+	rets := dl.Record(accountID)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*dal.AuthToken), mock.SafeError(rets[1])
+}
+
 func (dl *mockDAL) AuthToken(token string, expiresAfter time.Time, forUpdate bool) (*dal.AuthToken, error) {
 	rets := dl.Record(token, expiresAfter, forUpdate)
 	if len(rets) == 0 {

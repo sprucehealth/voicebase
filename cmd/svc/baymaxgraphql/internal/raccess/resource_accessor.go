@@ -142,19 +142,13 @@ func (m *resourceAccessor) Account(ctx context.Context, accountID string) (*auth
 	return resp.Account, nil
 }
 
-const (
-	// DeviceIDAttributeKey exposes the key to use when sending device IDs to the auth service
-	DeviceIDAttributeKey = "deviceID"
-)
-
 func (m *resourceAccessor) AuthenticateLogin(ctx context.Context, email, password string) (*auth.AuthenticateLoginResponse, error) {
 	headers := gqlctx.SpruceHeaders(ctx)
 	// Note: There is no authorization required for this operation.
 	resp, err := m.auth.AuthenticateLogin(ctx, &auth.AuthenticateLoginRequest{
-		Email:           email,
-		Password:        password,
-		TokenAttributes: map[string]string{DeviceIDAttributeKey: headers.DeviceID},
-		DeviceID:        headers.DeviceID,
+		Email:    email,
+		Password: password,
+		DeviceID: headers.DeviceID,
 	})
 	if err != nil {
 		return nil, err
@@ -166,10 +160,9 @@ func (m *resourceAccessor) AuthenticateLoginWithCode(ctx context.Context, token,
 	headers := gqlctx.SpruceHeaders(ctx)
 	// Note: There is no authorization required for this operation.
 	resp, err := m.auth.AuthenticateLoginWithCode(ctx, &auth.AuthenticateLoginWithCodeRequest{
-		Token:           token,
-		Code:            code,
-		TokenAttributes: map[string]string{DeviceIDAttributeKey: headers.DeviceID},
-		DeviceID:        headers.DeviceID,
+		Token:    token,
+		Code:     code,
+		DeviceID: headers.DeviceID,
 	})
 	if err != nil {
 		return nil, err
@@ -202,11 +195,7 @@ func (m *resourceAccessor) CheckVerificationCode(ctx context.Context, token, cod
 
 func (m *resourceAccessor) CreateAccount(ctx context.Context, req *auth.CreateAccountRequest) (*auth.CreateAccountResponse, error) {
 	headers := gqlctx.SpruceHeaders(ctx)
-	// Note: There is no authorization required for this operation.
-	if req.TokenAttributes == nil {
-		req.TokenAttributes = make(map[string]string)
-	}
-	req.TokenAttributes[DeviceIDAttributeKey] = headers.DeviceID
+	req.DeviceID = headers.DeviceID
 	resp, err := m.auth.CreateAccount(ctx, req)
 	if err != nil {
 		return nil, err
@@ -1054,10 +1043,8 @@ func (m *resourceAccessor) threadsForMember(ctx context.Context, entityID string
 }
 
 func (m *resourceAccessor) unauthenticate(ctx context.Context, token string) (*auth.UnauthenticateResponse, error) {
-	headers := gqlctx.SpruceHeaders(ctx)
 	res, err := m.auth.Unauthenticate(ctx, &auth.UnauthenticateRequest{
-		Token:           token,
-		TokenAttributes: map[string]string{DeviceIDAttributeKey: headers.DeviceID},
+		Token: token,
 	})
 	if err != nil {
 		return nil, err

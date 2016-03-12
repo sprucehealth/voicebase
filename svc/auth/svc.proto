@@ -97,6 +97,7 @@ message CreateAccountRequest {
 	string phone_number = 4;
 	string password = 5;
 	map<string, string> token_attributes = 6;
+	string device_id = 7 [(gogoproto.customname) = "DeviceID"];
 }
 
 // CreateAccountResponse represents the information that is returned from CreateAccountRequest
