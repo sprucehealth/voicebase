@@ -1,8 +1,9 @@
 package models
 
 import (
-	"github.com/sprucehealth/backend/svc/directory"
 	"sync"
+
+	"github.com/sprucehealth/backend/svc/directory"
 )
 
 /*
@@ -44,20 +45,20 @@ type Account struct {
 }
 
 type Entity struct {
-	ID            string         `json:"id"`
-	IsEditable    bool           `json:"isEditable"`
-	FirstName     string         `json:"firstName"`
-	MiddleInitial string         `json:"middleInitial"`
-	LastName      string         `json:"lastName"`
-	GroupName     string         `json:"groupName"`
-	DisplayName   string         `json:"displayName"`
-	ShortTitle    string         `json:"shortTitle"`
-	LongTitle     string         `json:"longTitle"`
-	Note          string         `json:"note"`
-	Contacts      []*ContactInfo `json:"contacts"`
-	IsInternal    bool           `json:"isInternal"`
-
-	Avatar *Image
+	ID                    string         `json:"id"`
+	IsEditable            bool           `json:"isEditable"`
+	FirstName             string         `json:"firstName"`
+	MiddleInitial         string         `json:"middleInitial"`
+	LastName              string         `json:"lastName"`
+	GroupName             string         `json:"groupName"`
+	DisplayName           string         `json:"displayName"`
+	ShortTitle            string         `json:"shortTitle"`
+	LongTitle             string         `json:"longTitle"`
+	Note                  string         `json:"note"`
+	Contacts              []*ContactInfo `json:"contacts"`
+	IsInternal            bool           `json:"isInternal"`
+	LastModifiedTimestamp uint64         `json:"lastModifiedTimestamp"`
+	Avatar                *Image
 }
 
 type ContactInfo struct {

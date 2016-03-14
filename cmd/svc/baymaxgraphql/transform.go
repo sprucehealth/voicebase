@@ -282,18 +282,19 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *
 	}
 
 	ent := &models.Entity{
-		ID:            e.ID,
-		IsEditable:    isEditable,
-		Contacts:      oc,
-		FirstName:     e.Info.FirstName,
-		MiddleInitial: e.Info.MiddleInitial,
-		LastName:      e.Info.LastName,
-		GroupName:     e.Info.GroupName,
-		DisplayName:   e.Info.DisplayName,
-		ShortTitle:    e.Info.ShortTitle,
-		LongTitle:     e.Info.LongTitle,
-		Note:          e.Info.Note,
-		IsInternal:    e.Type == directory.EntityType_INTERNAL,
+		ID:                    e.ID,
+		IsEditable:            isEditable,
+		Contacts:              oc,
+		FirstName:             e.Info.FirstName,
+		MiddleInitial:         e.Info.MiddleInitial,
+		LastName:              e.Info.LastName,
+		GroupName:             e.Info.GroupName,
+		DisplayName:           e.Info.DisplayName,
+		ShortTitle:            e.Info.ShortTitle,
+		LongTitle:             e.Info.LongTitle,
+		Note:                  e.Info.Note,
+		IsInternal:            e.Type == directory.EntityType_INTERNAL,
+		LastModifiedTimestamp: e.LastModifiedTimestamp,
 	}
 	if ent.DisplayName == "" {
 		// TODO: the display name will eventually be generated in the diretory service but for now this is a safety check since this must never be empty

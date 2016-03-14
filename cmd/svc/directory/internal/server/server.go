@@ -888,6 +888,7 @@ func dalEntityAsPBEntity(dEntity *dal.Entity) *directory.Entity {
 	if !ok {
 		golog.Errorf("Unknown entity status %s when converting to PB format", dEntity.Status)
 	}
+	entity.LastModifiedTimestamp = uint64(dEntity.Modified.Unix())
 	entity.Status = directory.EntityStatus(entityStatus)
 	entity.Info = &directory.EntityInfo{
 		FirstName:     dEntity.FirstName,

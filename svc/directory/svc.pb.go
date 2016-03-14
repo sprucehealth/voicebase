@@ -206,16 +206,17 @@ func (m *EntityInfo) Reset()      { *m = EntityInfo{} }
 func (*EntityInfo) ProtoMessage() {}
 
 type Entity struct {
-	ID                  string              `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Type                EntityType          `protobuf:"varint,3,opt,name=type,proto3,enum=directory.EntityType" json:"type,omitempty"`
-	Memberships         []*Entity           `protobuf:"bytes,4,rep,name=memberships" json:"memberships,omitempty"`
-	Members             []*Entity           `protobuf:"bytes,5,rep,name=members" json:"members,omitempty"`
-	ExternalIDs         []string            `protobuf:"bytes,6,rep,name=external_ids" json:"external_ids,omitempty"`
-	Contacts            []*Contact          `protobuf:"bytes,7,rep,name=contacts" json:"contacts,omitempty"`
-	IncludedInformation []EntityInformation `protobuf:"varint,8,rep,name=included_information,enum=directory.EntityInformation" json:"included_information,omitempty"`
-	Info                *EntityInfo         `protobuf:"bytes,9,opt,name=info" json:"info,omitempty"`
-	Status              EntityStatus        `protobuf:"varint,10,opt,name=status,proto3,enum=directory.EntityStatus" json:"status,omitempty"`
-	CreatedTimestamp    uint64              `protobuf:"varint,11,opt,name=created_timestamp,proto3" json:"created_timestamp,omitempty"`
+	ID                    string              `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Type                  EntityType          `protobuf:"varint,3,opt,name=type,proto3,enum=directory.EntityType" json:"type,omitempty"`
+	Memberships           []*Entity           `protobuf:"bytes,4,rep,name=memberships" json:"memberships,omitempty"`
+	Members               []*Entity           `protobuf:"bytes,5,rep,name=members" json:"members,omitempty"`
+	ExternalIDs           []string            `protobuf:"bytes,6,rep,name=external_ids" json:"external_ids,omitempty"`
+	Contacts              []*Contact          `protobuf:"bytes,7,rep,name=contacts" json:"contacts,omitempty"`
+	IncludedInformation   []EntityInformation `protobuf:"varint,8,rep,name=included_information,enum=directory.EntityInformation" json:"included_information,omitempty"`
+	Info                  *EntityInfo         `protobuf:"bytes,9,opt,name=info" json:"info,omitempty"`
+	Status                EntityStatus        `protobuf:"varint,10,opt,name=status,proto3,enum=directory.EntityStatus" json:"status,omitempty"`
+	CreatedTimestamp      uint64              `protobuf:"varint,11,opt,name=created_timestamp,proto3" json:"created_timestamp,omitempty"`
+	LastModifiedTimestamp uint64              `protobuf:"varint,12,opt,name=last_modified_timestamp,proto3" json:"last_modified_timestamp,omitempty"`
 }
 
 func (m *Entity) Reset()      { *m = Entity{} }
@@ -1014,6 +1015,9 @@ func (this *Entity) Equal(that interface{}) bool {
 		return false
 	}
 	if this.CreatedTimestamp != that1.CreatedTimestamp {
+		return false
+	}
+	if this.LastModifiedTimestamp != that1.LastModifiedTimestamp {
 		return false
 	}
 	return true
@@ -2045,7 +2049,7 @@ func (this *Entity) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 14)
+	s := make([]string, 0, 15)
 	s = append(s, "&directory.Entity{")
 	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
@@ -2065,6 +2069,7 @@ func (this *Entity) GoString() string {
 	}
 	s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
 	s = append(s, "CreatedTimestamp: "+fmt.Sprintf("%#v", this.CreatedTimestamp)+",\n")
+	s = append(s, "LastModifiedTimestamp: "+fmt.Sprintf("%#v", this.LastModifiedTimestamp)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -3124,6 +3129,11 @@ func (m *Entity) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x58
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.CreatedTimestamp))
+	}
+	if m.LastModifiedTimestamp != 0 {
+		data[i] = 0x60
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.LastModifiedTimestamp))
 	}
 	return i, nil
 }
@@ -4364,6 +4374,9 @@ func (m *Entity) Size() (n int) {
 	if m.CreatedTimestamp != 0 {
 		n += 1 + sovSvc(uint64(m.CreatedTimestamp))
 	}
+	if m.LastModifiedTimestamp != 0 {
+		n += 1 + sovSvc(uint64(m.LastModifiedTimestamp))
+	}
 	return n
 }
 
@@ -4896,6 +4909,7 @@ func (this *Entity) String() string {
 		`Info:` + strings.Replace(fmt.Sprintf("%v", this.Info), "EntityInfo", "EntityInfo", 1) + `,`,
 		`Status:` + fmt.Sprintf("%v", this.Status) + `,`,
 		`CreatedTimestamp:` + fmt.Sprintf("%v", this.CreatedTimestamp) + `,`,
+		`LastModifiedTimestamp:` + fmt.Sprintf("%v", this.LastModifiedTimestamp) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5947,6 +5961,25 @@ func (m *Entity) Unmarshal(data []byte) error {
 				b := data[iNdEx]
 				iNdEx++
 				m.CreatedTimestamp |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 12:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LastModifiedTimestamp", wireType)
+			}
+			m.LastModifiedTimestamp = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.LastModifiedTimestamp |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
