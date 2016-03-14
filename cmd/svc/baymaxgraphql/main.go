@@ -14,6 +14,7 @@ import (
 	"github.com/rs/cors"
 	"github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/boot"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	mediastore "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/stub"
 	"github.com/sprucehealth/backend/environment"
@@ -32,6 +33,7 @@ import (
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
@@ -242,11 +244,33 @@ func main() {
 		r.Handle("/schema", newSchemaHandler())
 	}
 
+	webRequestLogger := func(ctx context.Context, ev *httputil.RequestEvent) {
+
+		contextVals := []interface{}{
+			"Method", ev.Request.Method,
+			"URL", ev.URL.String(),
+			"UserAgent", ev.Request.UserAgent(),
+			"RequestID", gqlctx.RequestID(ctx),
+			"RemoteAddr", ev.RemoteAddr,
+			"StatusCode", ev.StatusCode,
+		}
+
+		log := golog.Context(contextVals...)
+
+		if ev.Panic != nil {
+			log.Criticalf("http: panic: %v\n%s", ev.Panic, ev.StackTrace)
+		} else {
+			log.Infof("baymaxgraphql")
+		}
+	}
+
+	h := httputil.LoggingHandler(r, webRequestLogger)
+
 	fmt.Printf("Listening on %s\n", *flagListenAddr)
 
 	server := &http.Server{
 		Addr:           *flagListenAddr,
-		Handler:        httputil.FromContextHandler(r),
+		Handler:        httputil.FromContextHandler(h),
 		MaxHeaderBytes: 1 << 20,
 	}
 	go func() {

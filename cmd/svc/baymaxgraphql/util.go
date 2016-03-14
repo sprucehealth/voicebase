@@ -29,6 +29,14 @@ func serviceFromParams(p graphql.ResolveParams) *service {
 	return p.Info.RootValue.(map[string]interface{})["service"].(*service)
 }
 
+func remoteAddrFromParams(p graphql.ResolveParams) string {
+	return p.Info.RootValue.(map[string]interface{})["remoteAddr"].(string)
+}
+
+func userAgentFromParams(p graphql.ResolveParams) string {
+	return p.Info.RootValue.(map[string]interface{})["userAgent"].(string)
+}
+
 func selectedFields(p graphql.ResolveParams) []string {
 	f := p.Info.FieldASTs[0]
 	fields := make([]string, 0, len(f.SelectionSet.Selections))

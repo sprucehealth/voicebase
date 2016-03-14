@@ -439,6 +439,10 @@ var createAccountMutation = &graphql.Field{
 					"platform":          platform,
 					"createdAt":         time.Now().Unix(),
 				},
+				Context: map[string]interface{}{
+					"ip":        remoteAddrFromParams(p),
+					"userAgent": userAgentFromParams(p),
+				},
 			})
 			svc.segmentio.Group(&analytics.Group{
 				UserId:  acc.ID,

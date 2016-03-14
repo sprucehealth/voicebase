@@ -218,7 +218,9 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		VariableValues: req.Variables,
 		Context:        ctx,
 		RootObject: map[string]interface{}{
-			"service": h.service,
+			"service":    h.service,
+			"remoteAddr": r.RemoteAddr,
+			"userAgent":  r.UserAgent(),
 			// result is used to pass values from the executor to the top level (e.g. auth token)
 			"result": result,
 			// ram represents the resource access manager that fetches remote resources that require authorization

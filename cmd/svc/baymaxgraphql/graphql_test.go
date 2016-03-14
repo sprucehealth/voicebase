@@ -48,6 +48,8 @@ func (g *gql) query(ctx context.Context, query string, vars map[string]interface
 		RootObject: map[string]interface{}{
 			"service":        g.svc,
 			"result":         result,
+			"remoteAddr":     "127.0.0.1",
+			"userAgent":      "test",
 			raccess.ParamKey: g.ra,
 		},
 	})
