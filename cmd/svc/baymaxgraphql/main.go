@@ -49,6 +49,7 @@ var (
 	flagSpruceOrgID     = flag.String("spruce_org_id", "", "`ID` for the Spruce support organization")
 	flagStaticURLPrefix = flag.String("static_url_prefix", "", "URL prefix of static assets")
 	flagSegmentIOKey    = flag.String("segmentio_key", "", "Segment IO API `key`")
+	flagBehindProxy     = flag.Bool("behind_proxy", false, "Flag to indicate when the service is behind a proxy")
 
 	// Services
 	flagAuthAddr      = flag.String("auth_addr", "", "host:port of auth service")
@@ -246,12 +247,18 @@ func main() {
 
 	webRequestLogger := func(ctx context.Context, ev *httputil.RequestEvent) {
 
+		remoteAddr := ev.RemoteAddr
+		if *flagBehindProxy {
+			addrs := strings.Split(ev.Request.Header.Get("X-Forwarded-For"), ",")
+			remoteAddr = addrs[0]
+		}
+
 		contextVals := []interface{}{
 			"Method", ev.Request.Method,
 			"URL", ev.URL.String(),
 			"UserAgent", ev.Request.UserAgent(),
 			"RequestID", gqlctx.RequestID(ctx),
-			"RemoteAddr", ev.RemoteAddr,
+			"RemoteAddr", remoteAddr,
 			"StatusCode", ev.StatusCode,
 		}
 

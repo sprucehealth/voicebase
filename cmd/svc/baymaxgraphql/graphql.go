@@ -211,6 +211,12 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	ctx = gqlctx.WithRequestID(ctx, requestID)
 	ctx = gqlctx.WithSpruceHeaders(ctx, sHeaders)
 
+	remoteAddr := r.RemoteAddr
+	if *flagBehindProxy {
+		addrs := strings.Split(r.Header.Get("X-Forwarded-For"), ",")
+		remoteAddr = addrs[0]
+	}
+
 	result := conc.NewMap()
 	response := graphql.Do(graphql.Params{
 		Schema:         gqlSchema,
@@ -219,7 +225,7 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		Context:        ctx,
 		RootObject: map[string]interface{}{
 			"service":    h.service,
-			"remoteAddr": r.RemoteAddr,
+			"remoteAddr": remoteAddr,
 			"userAgent":  r.UserAgent(),
 			// result is used to pass values from the executor to the top level (e.g. auth token)
 			"result": result,
