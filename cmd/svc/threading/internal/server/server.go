@@ -96,34 +96,54 @@ func (s *threadsServer) CreateSavedQuery(ctx context.Context, in *threading.Crea
 
 // CreateEmptyThread create a new thread with no messages
 func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.CreateEmptyThreadRequest) (*threading.CreateEmptyThreadResponse, error) {
+	if in.Type == threading.ThreadType_UNKNOWN {
+		return nil, grpcErrorf(codes.InvalidArgument, "Type is required")
+	}
 	if in.OrganizationID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "OrganizationID is required")
 	}
-	if in.PrimaryEntityID == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "PrimaryEntityID is required")
+	if in.PrimaryEntityID == "" && in.Type != threading.ThreadType_TEAM {
+		return nil, grpcErrorf(codes.InvalidArgument, "PrimaryEntityID is required for non-team threads")
 	}
 	if in.Summary == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
 	}
+	if in.Type == threading.ThreadType_TEAM && in.SystemTitle == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "SystemTitle is required for team threads")
+	}
 	in.Summary = textutil.TruncateUTF8(in.Summary, maxSummaryLength)
+	if in.Type == threading.ThreadType_TEAM && in.FromEntityID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "FromEntityID is required for TEAM threads")
+	}
+
+	tt, err := transformThreadTypeFromRequest(in.Type)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread type")
+	}
 
 	var threadID models.ThreadID
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
-		var err error
 		threadID, err = dl.CreateThread(ctx, &models.Thread{
 			OrganizationID:     in.OrganizationID,
 			PrimaryEntityID:    in.PrimaryEntityID,
 			LastMessageSummary: in.Summary,
+			Type:               tt,
+			SystemTitle:        in.SystemTitle,
+			UserTitle:          in.UserTitle,
 		})
 		if err != nil {
 			return errors.Trace(err)
 		}
-		if in.FromEntityID != "" {
-			// The creator of the thread automatically becomes a follower
-			err = dl.UpdateMember(ctx, threadID, in.FromEntityID, &dal.MemberUpdate{
-				Following: ptr.Bool(true),
-			})
-			return errors.Trace(err)
+		if in.Type == threading.ThreadType_TEAM {
+			// Make sure posted is a member
+			in.MemberEntityIDs = append(in.MemberEntityIDs, in.FromEntityID)
+			if err := dl.UpdateThreadMembers(ctx, threadID, in.MemberEntityIDs); err != nil {
+				return errors.Trace(err)
+			}
+		} else if in.FromEntityID != "" {
+			if err := dl.UpdateThreadEntity(ctx, threadID, in.FromEntityID, nil); err != nil {
+				return errors.Trace(err)
+			}
 		}
 		return nil
 	}); err != nil {
@@ -145,22 +165,31 @@ func (s *threadsServer) CreateEmptyThread(ctx context.Context, in *threading.Cre
 // CreateThread create a new thread with an initial message
 func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateThreadRequest) (*threading.CreateThreadResponse, error) {
 	// TODO: return proper error responses for invalid request
+	if in.Type == threading.ThreadType_UNKNOWN {
+		return nil, grpcErrorf(codes.InvalidArgument, "Type is required")
+	}
 	if in.OrganizationID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "OrganizationID is required")
 	}
 	if in.FromEntityID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "FromEntityID is required")
 	}
+	tt, err := transformThreadTypeFromRequest(in.Type)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread type")
+	}
+	if in.Type == threading.ThreadType_TEAM && in.SystemTitle == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "SystemTitle is required for team threads")
+	}
 	if in.Summary == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
 	}
 	in.Summary = textutil.TruncateUTF8(in.Summary, maxSummaryLength)
-	if in.Title != "" {
-		if _, err := bml.Parse(in.Title); err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Title is invalid format: %s", err.Error()))
+	if in.MessageTitle != "" {
+		if _, err := bml.Parse(in.MessageTitle); err != nil {
+			return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("MessageTitle is invalid format: %s", err.Error()))
 		}
 	}
-	var err error
 	var textRefs []*models.Reference
 	in.Text, textRefs, err = parseRefsAndNormalize(in.Text)
 	if err != nil {
@@ -175,22 +204,30 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 		threadID, err = dl.CreateThread(ctx, &models.Thread{
 			OrganizationID:  in.OrganizationID,
 			PrimaryEntityID: in.FromEntityID,
+			Type:            tt,
+			SystemTitle:     in.SystemTitle,
+			UserTitle:       in.UserTitle,
 		})
 		if err != nil {
 			return errors.Trace(err)
 		}
-		// The creator of the thread automatically becomes a follower
-		if err := dl.UpdateMember(ctx, threadID, in.FromEntityID, &dal.MemberUpdate{
-			Following: ptr.Bool(true),
-		}); err != nil {
-			return errors.Trace(err)
+		if in.Type == threading.ThreadType_TEAM {
+			// Make sure posted is a member
+			in.MemberEntityIDs = append(in.MemberEntityIDs, in.FromEntityID)
+			if err := dl.UpdateThreadMembers(ctx, threadID, in.MemberEntityIDs); err != nil {
+				return errors.Trace(err)
+			}
+		} else {
+			if err := dl.UpdateThreadEntity(ctx, threadID, in.FromEntityID, nil); err != nil {
+				return errors.Trace(err)
+			}
 		}
 		req := &dal.PostMessageRequest{
 			ThreadID:     threadID,
 			FromEntityID: in.FromEntityID,
 			Internal:     in.Internal,
 			Text:         in.Text,
-			Title:        in.Title,
+			Title:        in.MessageTitle,
 			TextRefs:     textRefs,
 			Summary:      in.Summary,
 		}
@@ -229,7 +266,7 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 		return nil, grpcErrorf(codes.Internal, errors.Trace(err).Error())
 	}
 	s.publishMessage(ctx, in.OrganizationID, in.FromEntityID, threadID, it, in.UUID)
-	s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), threadID, item.ID, in.FromEntityID)
+	s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), thread, item.ID, in.FromEntityID)
 	return &threading.CreateThreadResponse{
 		ThreadID:   threadID.String(),
 		ThreadItem: it,
@@ -238,6 +275,9 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 }
 
 func (s *threadsServer) CreateLinkedThreads(ctx context.Context, in *threading.CreateLinkedThreadsRequest) (*threading.CreateLinkedThreadsResponse, error) {
+	if in.Type == threading.ThreadType_UNKNOWN {
+		return nil, grpcErrorf(codes.InvalidArgument, "Type is required")
+	}
 	if in.Organization1ID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "Organization1ID is required")
 	}
@@ -250,16 +290,19 @@ func (s *threadsServer) CreateLinkedThreads(ctx context.Context, in *threading.C
 	if in.PrimaryEntity2ID == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "PrimaryEntity2ID is required")
 	}
+	tt, err := transformThreadTypeFromRequest(in.Type)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid thread type")
+	}
 	if in.Summary == "" {
 		return nil, grpcErrorf(codes.InvalidArgument, "Summary is required")
 	}
 	in.Summary = textutil.TruncateUTF8(in.Summary, maxSummaryLength)
-	if in.Title != "" {
-		if _, err := bml.Parse(in.Title); err != nil {
-			return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("Title is invalid format: %s", err.Error()))
+	if in.MessageTitle != "" {
+		if _, err := bml.Parse(in.MessageTitle); err != nil {
+			return nil, grpcErrorf(codes.InvalidArgument, fmt.Sprintf("MessageTitle is invalid format: %s", err.Error()))
 		}
 	}
-	var err error
 	var textRefs []*models.Reference
 	in.Text, textRefs, err = parseRefsAndNormalize(in.Text)
 	if err != nil {
@@ -273,6 +316,9 @@ func (s *threadsServer) CreateLinkedThreads(ctx context.Context, in *threading.C
 			OrganizationID:     in.Organization1ID,
 			PrimaryEntityID:    in.PrimaryEntity1ID,
 			LastMessageSummary: in.Summary,
+			Type:               tt,
+			SystemTitle:        in.SystemTitle1,
+			UserTitle:          in.UserTitle1,
 		})
 		if err != nil {
 			return errors.Trace(err)
@@ -281,6 +327,9 @@ func (s *threadsServer) CreateLinkedThreads(ctx context.Context, in *threading.C
 			OrganizationID:     in.Organization2ID,
 			PrimaryEntityID:    in.PrimaryEntity2ID,
 			LastMessageSummary: in.Summary,
+			Type:               tt,
+			SystemTitle:        in.SystemTitle2,
+			UserTitle:          in.UserTitle2,
 		})
 		if err != nil {
 			return errors.Trace(err)
@@ -300,7 +349,7 @@ func (s *threadsServer) CreateLinkedThreads(ctx context.Context, in *threading.C
 				FromEntityID: in.PrimaryEntity1ID,
 				Internal:     false,
 				Text:         in.Text,
-				Title:        in.Title,
+				Title:        in.MessageTitle,
 				TextRefs:     textRefs,
 				Summary:      in.Summary,
 			})
@@ -312,7 +361,7 @@ func (s *threadsServer) CreateLinkedThreads(ctx context.Context, in *threading.C
 				FromEntityID: in.PrimaryEntity2ID,
 				Internal:     false,
 				Text:         in.Text,
-				Title:        in.Title,
+				Title:        in.MessageTitle,
 				TextRefs:     textRefs,
 				Summary:      in.Summary,
 			})
@@ -426,18 +475,18 @@ func (s *threadsServer) MarkThreadAsRead(ctx context.Context, in *threading.Mark
 
 	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
 		forUpdate := true
-		lastViewed := time.Unix(0, 0)
-		threadMembers, err := dl.ThreadMemberships(ctx, []models.ThreadID{threadID}, []string{in.EntityID}, forUpdate)
+		threadEntities, err := dl.ThreadEntities(ctx, []models.ThreadID{threadID}, in.EntityID, forUpdate)
 		if err != nil {
 			return errors.Trace(err)
-		} else if len(threadMembers) == 1 && threadMembers[in.EntityID][0].LastViewed != nil {
-			lastViewed = *threadMembers[in.EntityID][0].LastViewed
-		} else if len(threadMembers) > 1 {
-			return errors.Trace(fmt.Errorf("Expected to find only 1 or 0 records when getting membership for thread viewer instead found %d", len(threadMembers)))
+		}
+		tid := threadID.String()
+		lastViewed := time.Unix(0, 0)
+		if len(threadEntities) == 1 && threadEntities[tid].LastViewed != nil {
+			lastViewed = *threadEntities[tid].LastViewed
 		}
 
 		// Update our timestamp or create one if it isn't already there
-		if err := dl.UpdateMember(ctx, threadID, in.EntityID, &dal.MemberUpdate{LastViewed: ptr.Time(readTime)}); err != nil {
+		if err := dl.UpdateThreadEntity(ctx, threadID, in.EntityID, &dal.ThreadEntityUpdate{LastViewed: &readTime}); err != nil {
 			return errors.Trace(err)
 		}
 
@@ -451,7 +500,7 @@ func (s *threadsServer) MarkThreadAsRead(ctx context.Context, in *threading.Mark
 			tivds[i] = &models.ThreadItemViewDetails{
 				ThreadItemID:  tiid,
 				ActorEntityID: in.EntityID,
-				ViewTime:      ptr.Time(readTime),
+				ViewTime:      &readTime,
 			}
 		}
 		return errors.Trace(dl.CreateThreadItemViewDetails(ctx, tivds))
@@ -536,33 +585,29 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 			return grpcErrorf(codes.Internal, errors.Trace(err).Error())
 		}
 
-		var memberUpdate *dal.MemberUpdate
 		// Lock our membership row while doing this since we might update it
 		forUpdate := true
-		tms, err := dl.ThreadMemberships(ctx, []models.ThreadID{threadID}, []string{in.FromEntityID}, forUpdate)
+		tes, err := dl.ThreadEntities(ctx, []models.ThreadID{threadID}, in.FromEntityID, forUpdate)
 		if err != nil {
 			return grpcErrorf(codes.Internal, errors.Trace(err).Error())
 		}
 
-		if len(tms) > 0 {
-			if len(tms[in.FromEntityID]) != 1 {
-				return grpcErrorf(codes.Internal, errors.Trace(
-					fmt.Errorf("Expected to find at most 1 membership for entity %s to thread %s but found %d", in.FromEntityID, threadID, len(tms))).Error())
-			}
+		var teUpdate *dal.ThreadEntityUpdate
+		if len(tes) > 0 {
 			// Update the last read timestamp on the membership if all other messages have been read
-			lastViewed := tms[in.FromEntityID][0].LastViewed
+			lastViewed := tes[threadID.String()].LastViewed
 			if lastViewed == nil {
 				lastViewed = &thread.Created
 			}
 			if lastViewed.Unix() >= prePostLastMessageTimestamp.Unix() {
-				memberUpdate = &dal.MemberUpdate{
+				teUpdate = &dal.ThreadEntityUpdate{
 					LastViewed: ptr.Time(s.clk.Now()),
 				}
 			}
 		}
 
 		// The poster is recorded as a member if necessary but does not become a follower
-		if err := dl.UpdateMember(ctx, threadID, in.FromEntityID, memberUpdate); err != nil {
+		if err := dl.UpdateThreadEntity(ctx, threadID, in.FromEntityID, teUpdate); err != nil {
 			return grpcErrorf(codes.Internal, errors.Trace(err).Error())
 		}
 
@@ -636,14 +681,14 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 		return nil, grpcErrorf(codes.Internal, errors.Trace(err).Error())
 	}
 	s.publishMessage(ctx, thread.OrganizationID, thread.PrimaryEntityID, threadID, it, in.UUID)
-	s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), threadID, item.ID, in.FromEntityID)
+	s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), thread, item.ID, in.FromEntityID)
 	if linkedItem != nil {
 		it2, err := transformThreadItemToResponse(linkedItem, linkedThread.OrganizationID)
 		if err != nil {
 			return nil, grpcErrorf(codes.Internal, errors.Trace(err).Error())
 		}
 		s.publishMessage(ctx, linkedThread.OrganizationID, linkedThread.PrimaryEntityID, linkedThread.ID, it2, "")
-		s.notifyMembersOfPublishMessage(ctx, linkedThread.OrganizationID, models.EmptySavedQueryID(), linkedThread.ID, linkedItem.ID, linkedItem.ActorEntityID)
+		s.notifyMembersOfPublishMessage(ctx, linkedThread.OrganizationID, models.EmptySavedQueryID(), linkedThread, linkedItem.ID, linkedItem.ActorEntityID)
 	}
 	return &threading.PostMessageResponse{
 		Item:   it,
@@ -659,7 +704,7 @@ func (s *threadsServer) QueryThreads(ctx context.Context, in *threading.QueryThr
 		d = dal.FromEnd
 	}
 	forExternal := false // TODO: set to true for EXTERNAL entities
-	ir, err := s.dal.IterateThreads(ctx, in.OrganizationID, forExternal, &dal.Iterator{
+	ir, err := s.dal.IterateThreads(ctx, in.OrganizationID, in.ViewerEntityID, forExternal, &dal.Iterator{
 		StartCursor: in.Iterator.StartCursor,
 		EndCursor:   in.Iterator.EndCursor,
 		Direction:   d,
@@ -688,14 +733,13 @@ func (s *threadsServer) QueryThreads(ctx context.Context, in *threading.QueryThr
 		if in.ViewerEntityID != "" {
 			ths[i] = th
 		}
+		if in.ViewerEntityID != "" && th.MessageCount != 0 {
+			te := e.ThreadEntity
+			th.Unread = te == nil || te.LastViewed == nil || (th.LastMessageTimestamp > uint64(te.LastViewed.Unix()))
+		}
 		res.Edges[i] = &threading.ThreadEdge{
 			Thread: th,
 			Cursor: e.Cursor,
-		}
-	}
-	if in.ViewerEntityID != "" {
-		if err := s.populateReadStatus(ctx, ths, in.ViewerEntityID); err != nil {
-			return nil, grpcErrorf(codes.Internal, errors.Trace(err).Error())
 		}
 	}
 	return res, nil
@@ -761,9 +805,16 @@ func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest)
 		return nil, grpcErrorf(codes.Internal, errors.Trace(err).Error())
 	}
 	if in.ViewerEntityID != "" {
-		if err := s.populateReadStatus(ctx, []*threading.Thread{th}, in.ViewerEntityID); err != nil {
+		ts, err := s.hydrateThreadForViewer(ctx, []*threading.Thread{th}, in.ViewerEntityID)
+		if err != nil {
 			return nil, grpcErrorf(codes.Internal, errors.Trace(err).Error())
 		}
+		if len(ts) == 0 {
+			return nil, grpcErrorf(codes.NotFound, "Thread not found")
+		}
+	} else if th.Type == threading.ThreadType_TEAM {
+		// Require a viewer entity for private threads
+		return nil, grpcErrorf(codes.NotFound, "Thread not found")
 	}
 	return &threading.ThreadResponse{
 		Thread: th,
@@ -819,7 +870,8 @@ func (s *threadsServer) ThreadsForMember(ctx context.Context, in *threading.Thre
 		}
 		res.Threads[i] = th
 	}
-	if err := s.populateReadStatus(ctx, res.Threads, in.EntityID); err != nil {
+	res.Threads, err = s.hydrateThreadForViewer(ctx, res.Threads, in.EntityID)
+	if err != nil {
 		return nil, grpcErrorf(codes.Internal, errors.Trace(err).Error())
 	}
 	return res, nil
@@ -901,7 +953,25 @@ func (s *threadsServer) ThreadItemViewDetails(ctx context.Context, in *threading
 
 // ThreadMembers returns the members of a thread
 func (s *threadsServer) ThreadMembers(ctx context.Context, in *threading.ThreadMembersRequest) (*threading.ThreadMembersResponse, error) {
-	return nil, grpcErrorf(codes.Unimplemented, "ThreadMembers not implemented")
+	tid, err := models.ParseThreadID(in.ThreadID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadItemID")
+	}
+	tes, err := s.dal.EntitiesForThread(ctx, tid)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, errors.Trace(err).Error())
+	}
+	res := &threading.ThreadMembersResponse{
+		Members: make([]*threading.Member, 0, len(tes)),
+	}
+	for _, te := range tes {
+		if te.Member {
+			res.Members = append(res.Members, &threading.Member{
+				EntityID: te.EntityID,
+			})
+		}
+	}
+	return res, nil
 }
 
 // UpdateSavedQuery updated a saved query
@@ -909,39 +979,102 @@ func (s *threadsServer) UpdateSavedQuery(ctx context.Context, in *threading.Upda
 	return nil, grpcErrorf(codes.Unimplemented, "UpdateSavedQuery not implemented")
 }
 
-// UpdateThreadMembership updates the membership status of an entity on a thread
-func (s *threadsServer) UpdateThreadMembership(ctx context.Context, in *threading.UpdateThreadMembershipRequest) (*threading.UpdateThreadMembershipResponse, error) {
-	return nil, grpcErrorf(codes.Unimplemented, "UpdateThreadMembership not implemented")
-}
-
-func (s *threadsServer) populateReadStatus(ctx context.Context, ts []*threading.Thread, viewerEntityID string) error {
-	tIDs := make([]models.ThreadID, len(ts))
-	for i, t := range ts {
-		id, err := models.ParseThreadID(t.ID)
-		if err != nil {
+// UpdateThread update thread members and info
+func (s *threadsServer) UpdateThread(ctx context.Context, in *threading.UpdateThreadRequest) (*threading.UpdateThreadResponse, error) {
+	tid, err := models.ParseThreadID(in.ThreadID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Invalid ThreadItemID")
+	}
+	if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
+		update := &dal.ThreadUpdate{}
+		if in.SystemTitle != "" {
+			update.SystemTitle = &in.SystemTitle
+		}
+		if in.UserTitle != "" {
+			update.UserTitle = &in.UserTitle
+		}
+		if err := dl.UpdateThread(ctx, tid, update); err != nil {
 			return errors.Trace(err)
 		}
-		tIDs[i] = id
+		if len(in.SetMemberEntityIDs) != 0 {
+			if err := dl.UpdateThreadMembers(ctx, tid, in.SetMemberEntityIDs); err != nil {
+				return errors.Trace(err)
+			}
+		} else if len(in.AddMemberEntityIDs) != 0 || len(in.RemoveMemberEntityIDs) != 0 {
+			ents, err := dl.EntitiesForThread(ctx, tid)
+			if err != nil {
+				return errors.Trace(err)
+			}
+			mems := make(map[string]struct{}, len(ents))
+			for _, te := range ents {
+				if te.Member {
+					mems[te.EntityID] = struct{}{}
+				}
+			}
+			for _, id := range in.AddMemberEntityIDs {
+				mems[id] = struct{}{}
+			}
+			for _, id := range in.RemoveMemberEntityIDs {
+				delete(mems, id)
+			}
+			memIDs := make([]string, 0, len(mems))
+			for id := range mems {
+				memIDs = append(memIDs, id)
+			}
+			if err := dl.UpdateThreadMembers(ctx, tid, memIDs); err != nil {
+				return errors.Trace(err)
+			}
+		}
+		return nil
+	}); err != nil {
+		return nil, grpcErrorf(codes.Internal, errors.Trace(err).Error())
+	}
+	thread, err := s.dal.Thread(ctx, tid)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, errors.Trace(err).Error())
+	}
+	th, err := transformThreadToResponse(thread, false)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, errors.Trace(err).Error())
+	}
+	return &threading.UpdateThreadResponse{
+		Thread: th,
+	}, nil
+}
+
+func (s *threadsServer) hydrateThreadForViewer(ctx context.Context, ts []*threading.Thread, viewerEntityID string) ([]*threading.Thread, error) {
+	tIDs := make([]models.ThreadID, 0, len(ts))
+	for _, t := range ts {
+		if t.MessageCount > 0 || t.Type == threading.ThreadType_TEAM {
+			id, err := models.ParseThreadID(t.ID)
+			if err != nil {
+				return ts, errors.Trace(err)
+			}
+			tIDs = append(tIDs, id)
+		}
+	}
+	if len(tIDs) == 0 {
+		return ts, nil
 	}
 
 	forUpdate := false
-	tms, err := s.dal.ThreadMemberships(ctx, tIDs, []string{viewerEntityID}, forUpdate)
+	tes, err := s.dal.ThreadEntities(ctx, tIDs, viewerEntityID, forUpdate)
 	if err != nil {
-		return errors.Trace(err)
+		return ts, errors.Trace(err)
 	}
 
-	threadLastViewedMap := make(map[string]*time.Time)
-	for _, tm := range tms[viewerEntityID] {
-		threadLastViewedMap[tm.ThreadID.String()] = tm.LastViewed
-	}
-
+	ts2 := make([]*threading.Thread, 0, len(ts))
 	for _, t := range ts {
+		te := tes[t.ID]
 		if t.MessageCount > 0 {
-			lastViewed := threadLastViewedMap[t.ID]
-			t.Unread = lastViewed == nil || (t.LastMessageTimestamp > uint64(lastViewed.Unix()))
+			t.Unread = te == nil || te.LastViewed == nil || (t.LastMessageTimestamp > uint64(te.LastViewed.Unix()))
+		}
+		// Filter out threads which the viewer doesn't have access to
+		if t.Type != threading.ThreadType_TEAM || (te != nil && te.Member) {
+			ts2 = append(ts2, t)
 		}
 	}
-	return nil
+	return ts2, nil
 }
 
 func (s *threadsServer) publishMessage(ctx context.Context, orgID, primaryEntityID string, threadID models.ThreadID, item *threading.ThreadItem, uuid string) {
@@ -973,91 +1106,107 @@ func (s *threadsServer) publishMessage(ctx context.Context, orgID, primaryEntity
 
 const newMessageNotificationKey = "new_message" // This is used for both collapse and dedupe
 
-func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID string, savedQueryID models.SavedQueryID, threadID models.ThreadID, messageID models.ThreadItemID, publishingEntityID string) {
-	golog.Debugf("Notifying members of org %s of activity on thread %s by entity %s", orgID, threadID, publishingEntityID)
+func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID string, savedQueryID models.SavedQueryID, thread *models.Thread, messageID models.ThreadItemID, publishingEntityID string) {
 	if s.notificationClient == nil || s.directoryClient == nil {
 		golog.Debugf("Member notification aborted because either notification client or directory client is not configured")
 		return
 	}
-	if orgID == "" || !threadID.IsValid || !messageID.IsValid {
-		golog.Errorf("Invalid message information for notification: %v, %v, %v, %v", orgID, savedQueryID, threadID, messageID)
+	if orgID == "" || thread == nil || !messageID.IsValid {
+		golog.Errorf("Invalid message information for notification: %v, %v, %v, %v", orgID, savedQueryID, thread, messageID)
 		return
 	}
+	golog.Debugf("Notifying members of org %s of activity on thread %s by entity %s", orgID, thread.ID, publishingEntityID)
 	conc.Go(func() {
-		ctx = context.TODO()
-		// Lookup all members of the org this thread belongs to and notify them of the new message unless they published it
-		resp, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
-			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-				EntityID: orgID,
-			},
-			RequestedInformation: &directory.RequestedInformation{
-				Depth:             0,
-				EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERS},
-			},
-		})
+		ctx = context.Background()
+
+		threadEntities, err := s.dal.EntitiesForThread(ctx, thread.ID)
 		if err != nil {
-			golog.Errorf("Failed to fetch org members of %s to notify about thread: %s - %s", orgID, threadID, err)
+			golog.Errorf("Failed to get entities for thread %s: %s", thread.ID, err)
 			return
-		}
-		if len(resp.Entities) != 1 {
-			golog.Errorf("Expected to find 1 org for ID %s but found %d", orgID, len(resp.Entities))
-			return
-		}
-		org := resp.Entities[0]
-		var internalEntities []*directory.Entity
-		for _, m := range org.Members {
-			if m.Type != directory.EntityType_INTERNAL || m.ID == publishingEntityID {
-				continue
-			}
-			internalEntities = append(internalEntities, m)
 		}
 
-		// Get the threads for the org
-		orgThreads, err := s.dal.ThreadsForOrg(ctx, orgID)
-		if err != nil {
-			golog.Errorf("Failed to fetch org threads of %s to notify about thread: %s - %s", orgID, threadID, err)
-			return
+		// Figure out who should receive notifications
+		var entities []*directory.Entity
+		if thread.Type == models.ThreadTypeTeam {
+			entIDs := make([]string, len(threadEntities))
+			for i, te := range threadEntities {
+				entIDs[i] = te.EntityID
+			}
+			resp, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
+				LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
+				LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+					BatchEntityID: &directory.IDList{
+						IDs: entIDs,
+					},
+				},
+				RequestedInformation: &directory.RequestedInformation{
+					Depth:             0,
+					EntityInformation: []directory.EntityInformation{},
+				},
+			})
+			if err != nil {
+				golog.Errorf("Failed to fetch entities to notify about thread %s: %s", thread.ID, err)
+				return
+			}
+			entities = resp.Entities
+		} else {
+			// TODO: for now treating all other types the same which is the old behavior
+			// Lookup all members of the org this thread belongs to and notify them of the new message unless they published it
+			resp, err := s.directoryClient.LookupEntities(ctx, &directory.LookupEntitiesRequest{
+				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					EntityID: orgID,
+				},
+				RequestedInformation: &directory.RequestedInformation{
+					Depth:             0,
+					EntityInformation: []directory.EntityInformation{directory.EntityInformation_MEMBERS},
+				},
+			})
+			if err != nil {
+				golog.Errorf("Failed to fetch org members of %s to notify about thread %s: %s", orgID, thread.ID, err)
+				return
+			}
+			if len(resp.Entities) != 1 {
+				golog.Errorf("Expected to find 1 org for ID %s but found %d", orgID, len(resp.Entities))
+				return
+			}
+			org := resp.Entities[0]
+			for _, m := range org.Members {
+				if m.Type == directory.EntityType_INTERNAL && m.ID != publishingEntityID {
+					entities = append(entities, m)
+				}
+			}
+		}
+
+		teMap := make(map[string]*models.ThreadEntity, len(threadEntities))
+		for _, te := range threadEntities {
+			teMap[te.EntityID] = te
 		}
 
 		// Track the messages we want to send and how many unread threads there were
 		messages := make(map[string]string)
-		unreadCounts := make(map[string]int)
 
 		// Get the unread and notification information
 		if err := s.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
-			unreadThreadsByEntityID, err := calculateUnreadConversations(ctx, dl, orgThreads, internalEntities)
-			if err != nil {
-				return errors.Trace(err)
-			}
-
 			// Update the memberships for everyone who needs to be notified
 			// Note: It takes human interaction for this update state to trigger so shouldn't be too often.
-			for entityID, unreadThreads := range unreadThreadsByEntityID {
-				var notifyEntity bool
-				for _, unreadThread := range unreadThreads {
-					// TODO: mraines: Perform these updates in a throttled parallel manner
-					if unreadThread.needsNotify {
-						notifyEntity = true
-						if err := dl.UpdateMember(ctx, unreadThread.threadID, entityID, &dal.MemberUpdate{
-							LastUnreadNotify: ptr.Time(s.clk.Now()),
-						}); err != nil {
-							return errors.Trace(err)
-						}
-					}
+			now := s.clk.Now()
+			for _, ent := range entities {
+				if ent.ID == publishingEntityID {
+					continue
 				}
 
-				// If we need to notify the entity then build out the message
-				if notifyEntity {
-					// Build out the information the clients will need
-					msg := "You have a new message"
-					if len(unreadThreads) > 1 {
-						msg = fmt.Sprintf("You have unread messages in %d conversations", len(unreadThreads))
+				te := teMap[ent.ID]
+
+				// Only send a notification if no notification has been sent or the person has viewed the thread since the last notification
+				if te == nil || te.LastUnreadNotify == nil || (te.LastViewed != nil && te.LastViewed.After(*te.LastUnreadNotify)) {
+					if err := dl.UpdateThreadEntity(ctx, thread.ID, ent.ID, &dal.ThreadEntityUpdate{
+						LastUnreadNotify: &now,
+					}); err != nil {
+						return errors.Trace(err)
 					}
-					messages[entityID] = msg
+					messages[ent.ID] = "You have a new message"
 				}
-				// Always send down the unread count
-				unreadCounts[entityID] = len(unreadThreads)
 			}
 			return nil
 		}); err != nil {
@@ -1071,13 +1220,13 @@ func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID
 		//   should be sent silently or flagged as such.
 		//   Notifications with ShortMEssages for the entity will be displayed to the user
 		if err := s.notificationClient.SendNotification(&notification.Notification{
-			UnreadCounts:     unreadCounts,
+			// UnreadCounts:     unreadCounts, TODO: currently don't support counts
 			ShortMessages:    messages,
 			OrganizationID:   orgID,
 			SavedQueryID:     savedQueryID.String(),
-			ThreadID:         threadID.String(),
+			ThreadID:         thread.ID.String(),
 			MessageID:        messageID.String(),
-			EntitiesToNotify: directory.EntityIDs(internalEntities),
+			EntitiesToNotify: directory.EntityIDs(entities),
 			// Note: Parameterizing with these may not be the best. The notification infterface needs to be
 			//   rethought, but going with this for now
 			DedupeKey:   newMessageNotificationKey,
@@ -1086,111 +1235,6 @@ func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID
 			golog.Errorf("Failed to notify members: %s", err)
 		}
 	})
-}
-
-// Note: These two constructs are really independent, but bundle them in the return to avoid a second lookup
-type unreadThread struct {
-	threadID    models.ThreadID
-	needsNotify bool
-}
-
-// Unread Conversation States:
-// 1. The user has no membership to the thread (never been read, posted, or notified) and the last message is after when the entity was created.
-// ** Note: The ideal situation here is to base this off when they joined the org, but we don't have that data available easily right now so going with entity creation (in theory shoudl be the same)
-// 2. The user has a membership but the last meesage on the thread is after their last_viewed time
-// Notify Conversation States:
-// 1. The user has no membership to the thread (never been read, posted, or notified) and the last message is after when the entity was created.
-// 2. The user has a membership but the last meesage on the thread is after their last_viewed and their last_viewed time is after their last_notify time
-func calculateUnreadConversations(ctx context.Context, dl dal.DAL, threads []*models.Thread, entities []*directory.Entity) (map[string][]*unreadThread, error) {
-	// Do a bulk lookup of all the membership info we care about
-	// Lock these rows for update since we are accepting the context/transactionness of the caller
-	// We should only need to do this 1 lookup per unread calculation
-	forUpdate := true
-	threadMembershipsByEntityID, err := dl.ThreadMemberships(ctx, models.ThreadIDs(threads), directory.EntityIDs(entities), forUpdate)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	// Return a mapping between each entity and their current unread information for the org
-	entityUnread := make(map[string][]*unreadThread)
-
-	// Do a couple convenience mappings to simplify some later lookups
-	// ** We need to be able to quickly map back to the whole entity from just the ID
-	entitiesByEntityID := make(map[string]*directory.Entity, len(entities))
-	for _, ent := range entities {
-		entitiesByEntityID[ent.ID] = ent
-	}
-
-	// ** We need to be able to quickly map to a particular thread membership with entity and thread information
-	threadMembershipsByEntityIDThreadID := make(map[string]map[string]*models.ThreadMember, len(threadMembershipsByEntityID))
-	for entityID, tms := range threadMembershipsByEntityID {
-		for _, tm := range tms {
-			if threadMembershipsByEntityIDThreadID[entityID] == nil {
-				threadMembershipsByEntityIDThreadID[entityID] = make(map[string]*models.ThreadMember)
-			}
-			threadMembershipsByEntityIDThreadID[entityID][tm.ThreadID.String()] = tm
-		}
-	}
-
-	// TODO: mraines: Do these calcultions in parallel
-	// For each thread determine read status
-	for _, thread := range threads {
-		// Short circuit empty threads as they are never unread
-		if thread.MessageCount == 0 {
-			continue
-		}
-
-		for _, entity := range entities {
-			unreadThread := calculateUnreadConversation(ctx, thread, entity, threadMembershipsByEntityIDThreadID)
-			if unreadThread != nil {
-				entityUnread[entity.ID] = append(entityUnread[entity.ID], unreadThread)
-			}
-		}
-	}
-	return entityUnread, nil
-}
-
-// Note: calculateUnreadConversation should only READ threadMembershipsByEntityIDThreadID and NEVER WRITE
-func calculateUnreadConversation(ctx context.Context, thread *models.Thread, entity *directory.Entity, threadMembershipsByEntityIDThreadID map[string]map[string]*models.ThreadMember) *unreadThread {
-	// Short circuit
-	if len(threadMembershipsByEntityIDThreadID) == 0 {
-		return nil
-	}
-
-	// Check if the entity has a memberhsip to the thread in question
-	memberships := threadMembershipsByEntityIDThreadID[entity.ID]
-	if memberships == nil || memberships[thread.ID.String()] == nil {
-		// If this is the case then we have encountered an entity that has no memberships to any threads
-		//   or they do not have a membership to this thread in particular. These cases are identical
-
-		// If there is no membership to the thread them utilize the entity creation information for notification/unread info
-		if uint64(thread.LastMessageTimestamp.Unix()) > entity.CreatedTimestamp {
-			return &unreadThread{
-				threadID: thread.ID,
-				// In the case that we didn't have a membership, we always notify if we have determined that it is unread
-				needsNotify: true,
-			}
-		}
-	} else {
-		// If we have membership information then utilize the last viewed and last notify info to determine state
-		membership := memberships[thread.ID.String()]
-		if membership.LastViewed == nil {
-			// 1. If they have never viewed the thread but have a membership and messages exist (checked above), then it is unread
-			return &unreadThread{
-				threadID: thread.ID,
-				// If we have never notified them before then we need to notify
-				needsNotify: membership.LastUnreadNotify == nil,
-			}
-		} else if membership.LastViewed.Before(thread.LastMessageTimestamp) {
-			// 2. If they have viewed the thread and their last viewed is before the last message then it is unread
-			return &unreadThread{
-				threadID: thread.ID,
-				// If we have never notified them before or it was before the last view time then notify
-				needsNotify: membership.LastUnreadNotify == nil || membership.LastUnreadNotify.Before(*membership.LastViewed),
-			}
-		}
-	}
-	return nil
 }
 
 func parseRefsAndNormalize(s string) (string, []*models.Reference, error) {

@@ -72,6 +72,16 @@ func (s *server) LookupEntities(ctx context.Context, rd *directory.LookupEntitie
 			return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id")
 		}
 		entityIDs = append(entityIDs, entityID)
+	case directory.LookupEntitiesRequest_BATCH_ENTITY_ID:
+		idList := rd.GetBatchEntityID().IDs
+		entityIDs = make([]dal.EntityID, len(idList))
+		for i, id := range idList {
+			eid, err := dal.ParseEntityID(id)
+			if err != nil {
+				return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse entity id")
+			}
+			entityIDs[i] = eid
+		}
 	default:
 		return nil, grpcErrorf(codes.Internal, "Unknown lookup key type %d", rd.LookupKeyType)
 	}

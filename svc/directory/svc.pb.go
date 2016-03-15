@@ -16,6 +16,7 @@
 		RequestedInformation
 		ExternalIDsRequest
 		ExternalIDsResponse
+		IDList
 		LookupEntitiesRequest
 		LookupEntitiesResponse
 		CreateEntityRequest
@@ -170,17 +171,20 @@ var ContactType_value = map[string]int32{
 type LookupEntitiesRequest_LookupKeyType int32
 
 const (
-	LookupEntitiesRequest_ENTITY_ID   LookupEntitiesRequest_LookupKeyType = 0
-	LookupEntitiesRequest_EXTERNAL_ID LookupEntitiesRequest_LookupKeyType = 1
+	LookupEntitiesRequest_ENTITY_ID       LookupEntitiesRequest_LookupKeyType = 0
+	LookupEntitiesRequest_EXTERNAL_ID     LookupEntitiesRequest_LookupKeyType = 1
+	LookupEntitiesRequest_BATCH_ENTITY_ID LookupEntitiesRequest_LookupKeyType = 2
 )
 
 var LookupEntitiesRequest_LookupKeyType_name = map[int32]string{
 	0: "ENTITY_ID",
 	1: "EXTERNAL_ID",
+	2: "BATCH_ENTITY_ID",
 }
 var LookupEntitiesRequest_LookupKeyType_value = map[string]int32{
-	"ENTITY_ID":   0,
-	"EXTERNAL_ID": 1,
+	"ENTITY_ID":       0,
+	"EXTERNAL_ID":     1,
+	"BATCH_ENTITY_ID": 2,
 }
 
 type ExternalID struct {
@@ -288,11 +292,19 @@ func (m *ExternalIDsResponse) GetExternalIDs() []*ExternalID {
 	return nil
 }
 
+type IDList struct {
+	IDs []string `protobuf:"bytes,1,rep,name=ids" json:"ids,omitempty"`
+}
+
+func (m *IDList) Reset()      { *m = IDList{} }
+func (*IDList) ProtoMessage() {}
+
 type LookupEntitiesRequest struct {
 	LookupKeyType LookupEntitiesRequest_LookupKeyType `protobuf:"varint,1,opt,name=lookup_key_type,proto3,enum=directory.LookupEntitiesRequest_LookupKeyType" json:"lookup_key_type,omitempty"`
 	// Types that are valid to be assigned to LookupKeyOneof:
 	//	*LookupEntitiesRequest_EntityID
 	//	*LookupEntitiesRequest_ExternalID
+	//	*LookupEntitiesRequest_BatchEntityID
 	LookupKeyOneof       isLookupEntitiesRequest_LookupKeyOneof `protobuf_oneof:"lookup_key_oneof"`
 	RequestedInformation *RequestedInformation                  `protobuf:"bytes,4,opt,name=requested_information" json:"requested_information,omitempty"`
 	Statuses             []EntityStatus                         `protobuf:"varint,5,rep,name=statuses,enum=directory.EntityStatus" json:"statuses,omitempty"`
@@ -314,9 +326,13 @@ type LookupEntitiesRequest_EntityID struct {
 type LookupEntitiesRequest_ExternalID struct {
 	ExternalID string `protobuf:"bytes,3,opt,name=external_id,proto3,oneof"`
 }
+type LookupEntitiesRequest_BatchEntityID struct {
+	BatchEntityID *IDList `protobuf:"bytes,6,opt,name=batch_entity_id,oneof"`
+}
 
-func (*LookupEntitiesRequest_EntityID) isLookupEntitiesRequest_LookupKeyOneof()   {}
-func (*LookupEntitiesRequest_ExternalID) isLookupEntitiesRequest_LookupKeyOneof() {}
+func (*LookupEntitiesRequest_EntityID) isLookupEntitiesRequest_LookupKeyOneof()      {}
+func (*LookupEntitiesRequest_ExternalID) isLookupEntitiesRequest_LookupKeyOneof()    {}
+func (*LookupEntitiesRequest_BatchEntityID) isLookupEntitiesRequest_LookupKeyOneof() {}
 
 func (m *LookupEntitiesRequest) GetLookupKeyOneof() isLookupEntitiesRequest_LookupKeyOneof {
 	if m != nil {
@@ -339,6 +355,13 @@ func (m *LookupEntitiesRequest) GetExternalID() string {
 	return ""
 }
 
+func (m *LookupEntitiesRequest) GetBatchEntityID() *IDList {
+	if x, ok := m.GetLookupKeyOneof().(*LookupEntitiesRequest_BatchEntityID); ok {
+		return x.BatchEntityID
+	}
+	return nil
+}
+
 func (m *LookupEntitiesRequest) GetRequestedInformation() *RequestedInformation {
 	if m != nil {
 		return m.RequestedInformation
@@ -351,6 +374,7 @@ func (*LookupEntitiesRequest) XXX_OneofFuncs() (func(msg proto.Message, b *proto
 	return _LookupEntitiesRequest_OneofMarshaler, _LookupEntitiesRequest_OneofUnmarshaler, []interface{}{
 		(*LookupEntitiesRequest_EntityID)(nil),
 		(*LookupEntitiesRequest_ExternalID)(nil),
+		(*LookupEntitiesRequest_BatchEntityID)(nil),
 	}
 }
 
@@ -364,6 +388,11 @@ func _LookupEntitiesRequest_OneofMarshaler(msg proto.Message, b *proto.Buffer) e
 	case *LookupEntitiesRequest_ExternalID:
 		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
 		_ = b.EncodeStringBytes(x.ExternalID)
+	case *LookupEntitiesRequest_BatchEntityID:
+		_ = b.EncodeVarint(6<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.BatchEntityID); err != nil {
+			return err
+		}
 	case nil:
 	default:
 		return fmt.Errorf("LookupEntitiesRequest.LookupKeyOneof has unexpected type %T", x)
@@ -387,6 +416,14 @@ func _LookupEntitiesRequest_OneofUnmarshaler(msg proto.Message, tag, wire int, b
 		}
 		x, err := b.DecodeStringBytes()
 		m.LookupKeyOneof = &LookupEntitiesRequest_ExternalID{x}
+		return true, err
+	case 6: // lookup_key_oneof.batch_entity_id
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(IDList)
+		err := b.DecodeMessage(msg)
+		m.LookupKeyOneof = &LookupEntitiesRequest_BatchEntityID{msg}
 		return true, err
 	default:
 		return false, nil
@@ -792,6 +829,7 @@ func init() {
 	proto.RegisterType((*RequestedInformation)(nil), "directory.RequestedInformation")
 	proto.RegisterType((*ExternalIDsRequest)(nil), "directory.ExternalIDsRequest")
 	proto.RegisterType((*ExternalIDsResponse)(nil), "directory.ExternalIDsResponse")
+	proto.RegisterType((*IDList)(nil), "directory.IDList")
 	proto.RegisterType((*LookupEntitiesRequest)(nil), "directory.LookupEntitiesRequest")
 	proto.RegisterType((*LookupEntitiesResponse)(nil), "directory.LookupEntitiesResponse")
 	proto.RegisterType((*CreateEntityRequest)(nil), "directory.CreateEntityRequest")
@@ -1146,6 +1184,36 @@ func (this *ExternalIDsResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *IDList) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*IDList)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if len(this.IDs) != len(that1.IDs) {
+		return false
+	}
+	for i := range this.IDs {
+		if this.IDs[i] != that1.IDs[i] {
+			return false
+		}
+	}
+	return true
+}
 func (this *LookupEntitiesRequest) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
@@ -1237,6 +1305,31 @@ func (this *LookupEntitiesRequest_ExternalID) Equal(that interface{}) bool {
 		return false
 	}
 	if this.ExternalID != that1.ExternalID {
+		return false
+	}
+	return true
+}
+func (this *LookupEntitiesRequest_BatchEntityID) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*LookupEntitiesRequest_BatchEntityID)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.BatchEntityID.Equal(that1.BatchEntityID) {
 		return false
 	}
 	return true
@@ -2118,11 +2211,21 @@ func (this *ExternalIDsResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *IDList) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&directory.IDList{")
+	s = append(s, "IDs: "+fmt.Sprintf("%#v", this.IDs)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *LookupEntitiesRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 9)
+	s := make([]string, 0, 10)
 	s = append(s, "&directory.LookupEntitiesRequest{")
 	s = append(s, "LookupKeyType: "+fmt.Sprintf("%#v", this.LookupKeyType)+",\n")
 	if this.LookupKeyOneof != nil {
@@ -2149,6 +2252,14 @@ func (this *LookupEntitiesRequest_ExternalID) GoString() string {
 	}
 	s := strings.Join([]string{`&directory.LookupEntitiesRequest_ExternalID{` +
 		`ExternalID:` + fmt.Sprintf("%#v", this.ExternalID) + `}`}, ", ")
+	return s
+}
+func (this *LookupEntitiesRequest_BatchEntityID) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&directory.LookupEntitiesRequest_BatchEntityID{` +
+		`BatchEntityID:` + fmt.Sprintf("%#v", this.BatchEntityID) + `}`}, ", ")
 	return s
 }
 func (this *LookupEntitiesResponse) GoString() string {
@@ -3268,6 +3379,39 @@ func (m *ExternalIDsResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *IDList) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *IDList) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.IDs) > 0 {
+		for _, s := range m.IDs {
+			data[i] = 0xa
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			data[i] = uint8(l)
+			i++
+			i += copy(data[i:], s)
+		}
+	}
+	return i, nil
+}
+
 func (m *LookupEntitiesRequest) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -3329,6 +3473,20 @@ func (m *LookupEntitiesRequest_ExternalID) MarshalTo(data []byte) (int, error) {
 	i++
 	i = encodeVarintSvc(data, i, uint64(len(m.ExternalID)))
 	i += copy(data[i:], m.ExternalID)
+	return i, nil
+}
+func (m *LookupEntitiesRequest_BatchEntityID) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.BatchEntityID != nil {
+		data[i] = 0x32
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.BatchEntityID.Size()))
+		n4, err := m.BatchEntityID.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n4
+	}
 	return i, nil
 }
 func (m *LookupEntitiesResponse) Marshal() (data []byte, err error) {
@@ -3409,21 +3567,21 @@ func (m *CreateEntityRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x32
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n4, err := m.RequestedInformation.MarshalTo(data[i:])
+		n5, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n4
+		i += n5
 	}
 	if m.EntityInfo != nil {
 		data[i] = 0x3a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.EntityInfo.Size()))
-		n5, err := m.EntityInfo.MarshalTo(data[i:])
+		n6, err := m.EntityInfo.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n5
+		i += n6
 	}
 	return i, nil
 }
@@ -3447,11 +3605,11 @@ func (m *CreateEntityResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
-		n6, err := m.Entity.MarshalTo(data[i:])
+		n7, err := m.Entity.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n6
+		i += n7
 	}
 	return i, nil
 }
@@ -3487,11 +3645,11 @@ func (m *CreateMembershipRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n7, err := m.RequestedInformation.MarshalTo(data[i:])
+		n8, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n7
+		i += n8
 	}
 	return i, nil
 }
@@ -3515,11 +3673,11 @@ func (m *CreateMembershipResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
-		n8, err := m.Entity.MarshalTo(data[i:])
+		n9, err := m.Entity.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n8
+		i += n9
 	}
 	return i, nil
 }
@@ -3600,11 +3758,11 @@ func (m *LookupEntitiesByContactRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x22
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n9, err := m.RequestedInformation.MarshalTo(data[i:])
+		n10, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n9
+		i += n10
 	}
 	if len(m.Statuses) > 0 {
 		for _, num := range m.Statuses {
@@ -3665,11 +3823,11 @@ func (m *CreateContactRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Contact.Size()))
-		n10, err := m.Contact.MarshalTo(data[i:])
+		n11, err := m.Contact.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n10
+		i += n11
 	}
 	if len(m.EntityID) > 0 {
 		data[i] = 0x12
@@ -3681,11 +3839,11 @@ func (m *CreateContactRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n11, err := m.RequestedInformation.MarshalTo(data[i:])
+		n12, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n11
+		i += n12
 	}
 	return i, nil
 }
@@ -3709,11 +3867,11 @@ func (m *CreateContactResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
-		n12, err := m.Entity.MarshalTo(data[i:])
+		n13, err := m.Entity.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n12
+		i += n13
 	}
 	return i, nil
 }
@@ -3863,11 +4021,11 @@ func (m *CreateContactsRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n13, err := m.RequestedInformation.MarshalTo(data[i:])
+		n14, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n13
+		i += n14
 	}
 	return i, nil
 }
@@ -3891,11 +4049,11 @@ func (m *CreateContactsResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
-		n14, err := m.Entity.MarshalTo(data[i:])
+		n15, err := m.Entity.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n14
+		i += n15
 	}
 	return i, nil
 }
@@ -3925,21 +4083,21 @@ func (m *UpdateEntityRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x12
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.EntityInfo.Size()))
-		n15, err := m.EntityInfo.MarshalTo(data[i:])
+		n16, err := m.EntityInfo.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n15
+		i += n16
 	}
 	if m.RequestedInformation != nil {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n16, err := m.RequestedInformation.MarshalTo(data[i:])
+		n17, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n16
+		i += n17
 	}
 	if len(m.Contacts) > 0 {
 		for _, msg := range m.Contacts {
@@ -3987,11 +4145,11 @@ func (m *UpdateEntityResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
-		n17, err := m.Entity.MarshalTo(data[i:])
+		n18, err := m.Entity.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n17
+		i += n18
 	}
 	return i, nil
 }
@@ -4033,11 +4191,11 @@ func (m *UpdateContactsRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n18, err := m.RequestedInformation.MarshalTo(data[i:])
+		n19, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n18
+		i += n19
 	}
 	return i, nil
 }
@@ -4061,11 +4219,11 @@ func (m *UpdateContactsResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
-		n19, err := m.Entity.MarshalTo(data[i:])
+		n20, err := m.Entity.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n19
+		i += n20
 	}
 	return i, nil
 }
@@ -4110,11 +4268,11 @@ func (m *DeleteContactsRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n20, err := m.RequestedInformation.MarshalTo(data[i:])
+		n21, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n20
+		i += n21
 	}
 	return i, nil
 }
@@ -4138,11 +4296,11 @@ func (m *DeleteContactsResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
-		n21, err := m.Entity.MarshalTo(data[i:])
+		n22, err := m.Entity.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n21
+		i += n22
 	}
 	return i, nil
 }
@@ -4195,11 +4353,11 @@ func (m *SerializedEntityContactResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.SerializedEntityContact.Size()))
-		n22, err := m.SerializedEntityContact.MarshalTo(data[i:])
+		n23, err := m.SerializedEntityContact.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n22
+		i += n23
 	}
 	return i, nil
 }
@@ -4437,6 +4595,18 @@ func (m *ExternalIDsResponse) Size() (n int) {
 	return n
 }
 
+func (m *IDList) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.IDs) > 0 {
+		for _, s := range m.IDs {
+			l = len(s)
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	return n
+}
+
 func (m *LookupEntitiesRequest) Size() (n int) {
 	var l int
 	_ = l
@@ -4470,6 +4640,15 @@ func (m *LookupEntitiesRequest_ExternalID) Size() (n int) {
 	_ = l
 	l = len(m.ExternalID)
 	n += 1 + l + sovSvc(uint64(l))
+	return n
+}
+func (m *LookupEntitiesRequest_BatchEntityID) Size() (n int) {
+	var l int
+	_ = l
+	if m.BatchEntityID != nil {
+		l = m.BatchEntityID.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
 	return n
 }
 func (m *LookupEntitiesResponse) Size() (n int) {
@@ -4957,6 +5136,16 @@ func (this *ExternalIDsResponse) String() string {
 	}, "")
 	return s
 }
+func (this *IDList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&IDList{`,
+		`IDs:` + fmt.Sprintf("%v", this.IDs) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *LookupEntitiesRequest) String() string {
 	if this == nil {
 		return "nil"
@@ -4986,6 +5175,16 @@ func (this *LookupEntitiesRequest_ExternalID) String() string {
 	}
 	s := strings.Join([]string{`&LookupEntitiesRequest_ExternalID{`,
 		`ExternalID:` + fmt.Sprintf("%v", this.ExternalID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *LookupEntitiesRequest_BatchEntityID) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&LookupEntitiesRequest_BatchEntityID{`,
+		`BatchEntityID:` + strings.Replace(fmt.Sprintf("%v", this.BatchEntityID), "IDList", "IDList", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -6380,6 +6579,85 @@ func (m *ExternalIDsResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
+func (m *IDList) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: IDList: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: IDList: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IDs", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.IDs = append(m.IDs, string(data[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *LookupEntitiesRequest) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
@@ -6539,6 +6817,38 @@ func (m *LookupEntitiesRequest) Unmarshal(data []byte) error {
 				}
 			}
 			m.Statuses = append(m.Statuses, v)
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BatchEntityID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &IDList{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.LookupKeyOneof = &LookupEntitiesRequest_BatchEntityID{v}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

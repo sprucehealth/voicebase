@@ -448,11 +448,11 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 							ID:      pem.ToChannelID,
 						},
 					},
-					Internal:    false,
-					Title:       titleStr,
-					Text:        plainText,
-					Attachments: attachments,
-					Summary:     summary,
+					Internal:     false,
+					MessageTitle: titleStr,
+					Text:         plainText,
+					Attachments:  attachments,
+					Summary:      summary,
 				},
 			)
 			if err != nil {

@@ -32,6 +32,13 @@ func transformThreadToResponse(thread *models.Thread, forExternal bool) (*thread
 		LastMessageSummary:   thread.LastMessageSummary,
 		CreatedTimestamp:     uint64(thread.Created.Unix()),
 		MessageCount:         int32(thread.MessageCount),
+		SystemTitle:          thread.SystemTitle,
+		UserTitle:            thread.UserTitle,
+	}
+	var err error
+	t.Type, err = transformThreadTypeToResponse(thread.Type)
+	if err != nil {
+		return nil, errors.Trace(err)
 	}
 	if len(thread.LastPrimaryEntityEndpoints.Endpoints) != 0 {
 		t.LastPrimaryEntityEndpoints = make([]*threading.Endpoint, len(thread.LastPrimaryEntityEndpoints.Endpoints))
@@ -51,6 +58,37 @@ func transformThreadToResponse(thread *models.Thread, forExternal bool) (*thread
 		t.LastMessageSummary = thread.LastExternalMessageSummary
 	}
 	return t, nil
+}
+
+func transformThreadTypeToResponse(tt models.ThreadType) (threading.ThreadType, error) {
+	switch tt {
+	case models.ThreadTypeUnknown:
+		return threading.ThreadType_UNKNOWN, nil
+	case models.ThreadTypeExternal:
+		return threading.ThreadType_EXTERNAL, nil
+	case models.ThreadTypeTeam:
+		return threading.ThreadType_TEAM, nil
+	case models.ThreadTypeSetup:
+		return threading.ThreadType_SETUP, nil
+	case models.ThreadTypeSupport:
+		return threading.ThreadType_SUPPORT, nil
+	}
+	return threading.ThreadType_UNKNOWN, errors.Trace(fmt.Errorf("unknown thread type '%s'", tt))
+}
+
+func transformThreadTypeFromRequest(tt threading.ThreadType) (models.ThreadType, error) {
+	// Don't support creating threads with unknown types. The UNKNOWN type is only for old pre-migrated threads.
+	switch tt {
+	case threading.ThreadType_EXTERNAL:
+		return models.ThreadTypeExternal, nil
+	case threading.ThreadType_TEAM:
+		return models.ThreadTypeTeam, nil
+	case threading.ThreadType_SETUP:
+		return models.ThreadTypeSetup, nil
+	case threading.ThreadType_SUPPORT:
+		return models.ThreadTypeSupport, nil
+	}
+	return models.ThreadTypeUnknown, errors.Trace(fmt.Errorf("unknown thread type '%s'", tt))
 }
 
 func transformRequestEndpointChannelToDAL(c threading.Endpoint_Channel) (models.Endpoint_Channel, error) {

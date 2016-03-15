@@ -226,3 +226,22 @@ func remoteAddrFromRequest(r *http.Request, behindProxy bool) string {
 	}
 	return r.RemoteAddr
 }
+
+// dedupeStrings returns a slice of strings with duplicates removed. The order is not guaranteed to remain the same.
+func dedupeStrings(ss []string) []string {
+	if len(ss) == 0 {
+		return ss
+	}
+	mp := make(map[string]struct{}, len(ss))
+	for i := 0; i < len(ss); i++ {
+		s := ss[i]
+		if _, ok := mp[s]; !ok {
+			mp[s] = struct{}{}
+		} else {
+			ss[i] = ss[len(ss)-1]
+			ss = ss[:len(ss)-1]
+			i--
+		}
+	}
+	return ss
+}

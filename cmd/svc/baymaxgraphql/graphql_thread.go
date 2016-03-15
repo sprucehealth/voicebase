@@ -27,16 +27,64 @@ var threadType = graphql.NewObject(
 			nodeInterfaceType,
 		},
 		Fields: graphql.Fields{
-			"id":                    &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-			"title":                 &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-			"subtitle":              &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-			"lastMessageTimestamp":  &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
-			"unread":                &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"allowInternalMessages": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"allowSMSAttachments":   &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowAddMembers":       &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowDelete":           &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"allowEmailAttachments": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"isDeletable":           &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowInternalMessages": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowLeave":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowRemoveMembers":    &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowSMSAttachments":   &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowUpdateTitle":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"emptyStateTextMarkup":  &graphql.Field{Type: graphql.String},
+			"id": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+			"lastMessageTimestamp": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+			"subtitle":             &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"title":                &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"unread":               &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"isDeletable": &graphql.Field{
+				Type:              graphql.NewNonNull(graphql.Boolean),
+				DeprecationReason: "Replaced with allowDelete",
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return p.Source.(*models.Thread).AllowDelete, nil
+				},
+			},
+			"members": &graphql.Field{
+				Type: graphql.NewList(graphql.NewNonNull(entityType)),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					ctx := p.Context
+					th := p.Source.(*models.Thread)
+					if th == nil {
+						return nil, errors.InternalError(ctx, errors.New("thread is nil"))
+					}
+					// Only team threads have members
+					if th.Type != models.ThreadTypeTeam {
+						return nil, nil
+					}
+
+					svc := serviceFromParams(p)
+					acc := gqlctx.Account(p.Context)
+					if acc == nil {
+						return nil, errors.ErrNotAuthenticated(ctx)
+					}
+					ram := raccess.ResourceAccess(p)
+					members, err := ram.ThreadMembers(ctx, th.OrganizationID, &threading.ThreadMembersRequest{
+						ThreadID: th.ID,
+					})
+					if err != nil {
+						return nil, err
+					}
+					sh := gqlctx.SpruceHeaders(ctx)
+					ms := make([]*models.Entity, len(members))
+					for i, em := range members {
+						e, err := transformEntityToResponse(svc.staticURLPrefix, em, sh)
+						if err != nil {
+							return nil, err
+						}
+						ms[i] = e
+					}
+					return ms, nil
+				},
+			},
 			// TODO: We currently just assume all contacts for an entity are available endpoints
 			"availableEndpoints": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(endpointType)),

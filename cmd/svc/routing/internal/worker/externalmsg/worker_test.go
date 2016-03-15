@@ -158,7 +158,7 @@ func TestIncomingSMS_NewUser_SMS(t *testing.T) {
 	}
 	test.Equals(t, threadRequested.FromEntityID, externalEntityToBeCreated.ID)
 	test.Equals(t, threadRequested.OrganizationID, organizationEntity.ID)
-	test.Equals(t, threadRequested.Title, "SMS")
+	test.Equals(t, threadRequested.MessageTitle, "SMS")
 	test.Equals(t, threadRequested.Text, pem.GetSMSItem().Text)
 	test.Equals(t, len(threadRequested.Attachments), len(pem.GetSMSItem().GetAttachments()))
 
@@ -252,7 +252,7 @@ func TestIncomingSMS_NewUser_Email(t *testing.T) {
 	}
 	test.Equals(t, threadRequested.FromEntityID, externalEntityToBeCreated.ID)
 	test.Equals(t, threadRequested.OrganizationID, organizationEntity.ID)
-	test.Equals(t, threadRequested.Title, "Email")
+	test.Equals(t, threadRequested.MessageTitle, "Email")
 	test.Equals(t, threadRequested.Text, "Subject: Hello\n\n"+pem.GetEmailItem().Body)
 	test.Equals(t, pem.GetEmailItem().Attachments[0].URL, threadRequested.Attachments[0].GetImage().URL)
 	test.Equals(t, pem.GetEmailItem().Attachments[0].Name, threadRequested.Attachments[0].Title)
@@ -655,7 +655,7 @@ func TestIncomingVoicemail_NewUser(t *testing.T) {
 	test.Equals(t, externalEntityToBeCreated.ID, threadRequested.FromEntityID)
 	test.Equals(t, organizationEntity.ID, threadRequested.OrganizationID)
 	test.Equals(t, "", threadRequested.Text)
-	test.Equals(t, "Voicemail", threadRequested.Title)
+	test.Equals(t, "Voicemail", threadRequested.MessageTitle)
 	test.Equals(t, pem.GetIncoming().VoicemailDurationNS, threadRequested.GetAttachments()[0].GetAudio().DurationNS)
 	test.Equals(t, pem.GetIncoming().VoicemailURL, threadRequested.GetAttachments()[0].GetAudio().URL)
 

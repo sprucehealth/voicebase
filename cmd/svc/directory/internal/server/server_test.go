@@ -43,6 +43,45 @@ func TestLookupEntitiesByEntityID(t *testing.T) {
 	test.Equals(t, directory.EntityType_EXTERNAL, resp.Entities[0].Type)
 }
 
+func TestLookupEntitiesByBatchEntityID(t *testing.T) {
+	t.Parallel()
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+	s := New(dl)
+	eID1, err := dal.NewEntityID()
+	test.OK(t, err)
+	eID2, err := dal.NewEntityID()
+	test.OK(t, err)
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entities, []dal.EntityID{eID1, eID2}, ([]dal.EntityStatus)(nil)), []*dal.Entity{
+		{
+			ID:          eID1,
+			DisplayName: "entity1",
+			Type:        dal.EntityTypeExternal,
+			Status:      dal.EntityStatusActive,
+		},
+		{
+			ID:          eID2,
+			DisplayName: "entity2",
+			Type:        dal.EntityTypeExternal,
+			Status:      dal.EntityStatusActive,
+		},
+	}, nil))
+	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
+		LookupKeyType:        directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
+		LookupKeyOneof:       &directory.LookupEntitiesRequest_BatchEntityID{BatchEntityID: &directory.IDList{IDs: []string{eID1.String(), eID2.String()}}},
+		RequestedInformation: &directory.RequestedInformation{},
+	})
+	test.OK(t, err)
+
+	test.Equals(t, 2, len(resp.Entities))
+	test.Equals(t, eID1.String(), resp.Entities[0].ID)
+	test.Equals(t, "entity1", resp.Entities[0].Info.DisplayName)
+	test.Equals(t, directory.EntityType_EXTERNAL, resp.Entities[0].Type)
+	test.Equals(t, eID2.String(), resp.Entities[1].ID)
+	test.Equals(t, "entity2", resp.Entities[1].Info.DisplayName)
+	test.Equals(t, directory.EntityType_EXTERNAL, resp.Entities[1].Type)
+}
+
 func TestLookupEntitiesByExternalID(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)

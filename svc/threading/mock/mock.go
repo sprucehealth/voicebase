@@ -193,11 +193,11 @@ func (c *Client) UpdateSavedQuery(ctx context.Context, in *threading.UpdateSaved
 	return rets[0].(*threading.UpdateSavedQueryResponse), mock.SafeError(rets[1])
 }
 
-// UpdateThreadMembership updates the membership status of an entity on a thread
-func (c *Client) UpdateThreadMembership(ctx context.Context, in *threading.UpdateThreadMembershipRequest, opts ...grpc.CallOption) (*threading.UpdateThreadMembershipResponse, error) {
+// UpdateThread is a mock
+func (c *Client) UpdateThread(ctx context.Context, in *threading.UpdateThreadRequest, opts ...grpc.CallOption) (*threading.UpdateThreadResponse, error) {
 	rets := c.Expector.Record(in)
 	if len(rets) == 0 {
 		return nil, nil
 	}
-	return rets[0].(*threading.UpdateThreadMembershipResponse), mock.SafeError(rets[1])
+	return rets[0].(*threading.UpdateThreadResponse), mock.SafeError(rets[1])
 }

@@ -88,30 +88,6 @@ func TestCreateAccountMutation(t *testing.T) {
 		},
 	}, nil))
 
-	// Create internal org thread
-
-	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntity, &directory.CreateEntityRequest{
-		EntityInfo: &directory.EntityInfo{
-			DisplayName: "Team org",
-			GroupName:   "Team org",
-		},
-		Type: directory.EntityType_SYSTEM,
-		InitialMembershipEntityID: "e_org",
-	}).WithReturns(&directory.Entity{
-		ID: "e_intorg_1",
-	}, nil))
-	g.ra.Expect(mock.NewExpectation(g.ra.CreateEmptyThread, &threading.CreateEmptyThreadRequest{
-		OrganizationID:  "e_org",
-		PrimaryEntityID: "e_intorg_1",
-		Summary:         "No messages yet",
-	}).WithReturns(&threading.Thread{ID: "t_00000000002D4"}, nil))
-	g.ra.Expect(mock.NewExpectation(g.ra.PostMessage, &threading.PostMessageRequest{
-		ThreadID:     "t_00000000002D4",
-		Text:         "This is the beginning of a conversation that is visible to everyone in your organization.\n\nInvite some colleagues to join and then send a message here to get things started.",
-		FromEntityID: "e_intorg_1",
-		Summary:      "This is the beginning of a conversation that is visible to everyone in your organization.\n\nInvite some colleagues to join and then send a message here to get things started.",
-	}).WithReturns(&threading.PostMessageResponse{}, nil))
-
 	// Create linked support threads
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntity, &directory.CreateEntityRequest{
 		EntityInfo: &directory.EntityInfo{
@@ -142,6 +118,9 @@ func TestCreateAccountMutation(t *testing.T) {
 		PrependSenderThread2: true,
 		Summary:              supportThreadTitle + ": " + teamSpruceInitialText[:128],
 		Text:                 teamSpruceInitialText,
+		Type:                 threading.ThreadType_SUPPORT,
+		SystemTitle1:         supportThreadTitle,
+		SystemTitle2:         supportThreadTitle + " (org)",
 	}).WithReturns(&threading.CreateLinkedThreadsResponse{}, nil))
 
 	// Create onboarding thread
@@ -158,6 +137,7 @@ func TestCreateAccountMutation(t *testing.T) {
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateOnboardingThread, &threading.CreateOnboardingThreadRequest{
 		OrganizationID:  "e_org",
 		PrimaryEntityID: "e_sys_3",
+		SystemTitle:     onboardingThreadTitle,
 	}).WithReturns(&threading.CreateOnboardingThreadResponse{}, nil))
 
 	res := g.query(ctx, `

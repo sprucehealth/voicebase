@@ -4,14 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/sprucehealth/backend/libs/bml"
-
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/device"
-
 	"github.com/sprucehealth/backend/encoding"
+	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
@@ -86,6 +84,39 @@ func transformThreadToResponse(t *threading.Thread) (*models.Thread, error) {
 		Unread:                     t.Unread,
 		MessageCount:               int(t.MessageCount),
 		LastPrimaryEntityEndpoints: make([]*models.Endpoint, len(t.LastPrimaryEntityEndpoints)),
+		Type:  t.Type.String(),
+		Title: t.UserTitle,
+	}
+	if th.Title == "" {
+		th.Title = t.SystemTitle
+	}
+	switch t.Type {
+	case threading.ThreadType_TEAM:
+		th.AllowAddMembers = true
+		th.AllowDelete = true
+		th.AllowLeave = true
+		th.AllowRemoveMembers = true
+		th.AllowUpdateTitle = true
+		th.Type = models.ThreadTypeTeam
+	case threading.ThreadType_EXTERNAL:
+		th.AllowDelete = true
+		th.AllowInternalMessages = true
+		th.Type = models.ThreadTypeExternal
+	case threading.ThreadType_SETUP:
+		if th.Title == "" {
+			th.Title = onboardingThreadTitle
+		}
+		th.AllowInternalMessages = true
+		th.Type = models.ThreadTypeSetup
+	case threading.ThreadType_SUPPORT:
+		if th.Title == "" {
+			th.Title = supportThreadTitle
+		}
+		th.Type = models.ThreadTypeSupport
+	case threading.ThreadType_UNKNOWN: // TODO: remove this once old threads are migrated
+		th.Type = models.ThreadTypeUnknown
+	default:
+		return nil, fmt.Errorf("Unknown thread type %s", t.Type)
 	}
 	for i, ep := range t.LastPrimaryEntityEndpoints {
 		th.LastPrimaryEntityEndpoints[i] = &models.Endpoint{

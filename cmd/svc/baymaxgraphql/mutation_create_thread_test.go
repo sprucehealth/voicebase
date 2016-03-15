@@ -77,8 +77,8 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 		OrganizationID:  "e_org",
 		FromEntityID:    "e_creator",
 		PrimaryEntityID: "e_patient",
-		Summary:         "New conversation", // TODO: not sure what we want here. it's a fallback if there's no posts made in the thread.
-
+		Summary:         "New conversation",
+		Type:            threading.ThreadType_EXTERNAL,
 	}).WithReturns(&threading.Thread{
 		ID:              "t_1",
 		PrimaryEntityID: "e_patient",
@@ -212,8 +212,8 @@ func TestCreateThreadMutation_DifferentOrg(t *testing.T) {
 		OrganizationID:  "e_org",
 		FromEntityID:    "e_creator",
 		PrimaryEntityID: "e_patient",
-		Summary:         "New conversation", // TODO: not sure what we want here. it's a fallback if there's no posts made in the thread.
-
+		Summary:         "New conversation",
+		Type:            threading.ThreadType_EXTERNAL,
 	}).WithReturns(&threading.Thread{
 		ID:              "t_1",
 		PrimaryEntityID: "e_patient",

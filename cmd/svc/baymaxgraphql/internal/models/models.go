@@ -122,6 +122,14 @@ type AudioAttachment struct {
 	DurationInSeconds float64 `json:"durationInSeconds"`
 }
 
+const (
+	ThreadTypeUnknown  = "UNKNOWN" // TODO: remove this once old threads are migrated
+	ThreadTypeExternal = "EXTERNAL"
+	ThreadTypeTeam     = "TEAM"
+	ThreadTypeSetup    = "SETUP"
+	ThreadTypeSupport  = "SUPPORT"
+)
+
 type Thread struct {
 	ID                         string `json:"id"`
 	OrganizationID             string `json:"organizationID"`
@@ -130,13 +138,18 @@ type Thread struct {
 	Subtitle                   string `json:"subtitle"`
 	LastMessageTimestamp       uint64 `json:"lastMessageTimestamp"`
 	Unread                     bool   `json:"unread"`
+	AllowAddMembers            bool   `json:"allowAddMembers"`
+	AllowDelete                bool   `json:"allowDelete"`
 	AllowInternalMessages      bool   `json:"allowInternalMessages"`
 	AllowSMSAttachments        bool   `json:"allowSMSAttachments"`
 	AllowEmailAttachment       bool   `json:"allowEmailAttachments"`
-	IsDeletable                bool   `json:"isDeletable"`
+	AllowLeave                 bool   `json:"allowLeave"`
+	AllowRemoveMembers         bool   `json:"allowRemoveMembers"`
+	AllowUpdateTitle           bool   `json:"allowUpdateTitle"`
 	LastPrimaryEntityEndpoints []*Endpoint
 	EmptyStateTextMarkup       string `json:"emptyStateTextMarkup,omitempty"`
 	MessageCount               int    `json:"messageCount"`
+	Type                       string `json:"type"`
 
 	Mu            sync.RWMutex
 	PrimaryEntity *directory.Entity

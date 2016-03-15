@@ -193,6 +193,14 @@ func (m *ResourceAccessor) Entity(ctx context.Context, entityID string, entityIn
 	return rets[0].(*directory.Entity), mock.SafeError(rets[1])
 }
 
+func (m *ResourceAccessor) Entities(ctx context.Context, orgID string, entityIDs []string, entityInfo []directory.EntityInformation) ([]*directory.Entity, error) {
+	rets := m.Record(orgID, entityIDs, entityInfo)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].([]*directory.Entity), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) EntityDomain(ctx context.Context, entityID, domain string) (*directory.LookupEntityDomainResponse, error) {
 	rets := m.Record(entityID, domain)
 	if len(rets) == 0 {
@@ -364,6 +372,15 @@ func (m *ResourceAccessor) ThreadsForMember(ctx context.Context, entityID string
 	return rets[0].([]*threading.Thread), mock.SafeError(rets[1])
 }
 
+func (m *ResourceAccessor) ThreadMembers(ctx context.Context, orgID string, req *threading.ThreadMembersRequest) ([]*directory.Entity, error) {
+	rets := m.Record(orgID, req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].([]*directory.Entity), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) Unauthenticate(ctx context.Context, token string) error {
 	rets := m.Record(token)
 	if len(rets) == 0 {
@@ -398,6 +415,14 @@ func (m *ResourceAccessor) UpdatePassword(ctx context.Context, token, code, newP
 	}
 
 	return mock.SafeError(rets[0])
+}
+
+func (m *ResourceAccessor) UpdateThread(ctx context.Context, req *threading.UpdateThreadRequest) (*threading.UpdateThreadResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.UpdateThreadResponse), mock.SafeError(rets[1])
 }
 
 func (m *ResourceAccessor) VerifiedValue(ctx context.Context, token string) (string, error) {

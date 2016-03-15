@@ -69,6 +69,7 @@ type ResourceAccessor interface {
 	DeleteContacts(ctx context.Context, req *directory.DeleteContactsRequest) (*directory.Entity, error)
 	DeleteThread(ctx context.Context, threadID, entityID string) error
 	Entity(ctx context.Context, entityID string, entityInfo []directory.EntityInformation, depth int64) (*directory.Entity, error)
+	Entities(ctx context.Context, orgID string, entityIDs []string, entityInfo []directory.EntityInformation) ([]*directory.Entity, error)
 	EntityDomain(ctx context.Context, entityID, domain string) (*directory.LookupEntityDomainResponse, error)
 	EntityForAccountID(ctx context.Context, orgID, accountID string) (*directory.Entity, error)
 	EntitiesByContact(ctx context.Context, contactValue string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) ([]*directory.Entity, error)
@@ -87,11 +88,13 @@ type ResourceAccessor interface {
 	ThreadItem(ctx context.Context, threadItemID string) (*threading.ThreadItem, error)
 	ThreadItems(ctx context.Context, req *threading.ThreadItemsRequest) (*threading.ThreadItemsResponse, error)
 	ThreadItemViewDetails(ctx context.Context, threadItemID string) ([]*threading.ThreadItemViewDetails, error)
+	ThreadMembers(ctx context.Context, orgID string, req *threading.ThreadMembersRequest) ([]*directory.Entity, error)
 	ThreadsForMember(ctx context.Context, entityID string, primaryOnly bool) ([]*threading.Thread, error)
 	Unauthenticate(ctx context.Context, token string) error
 	UpdateContacts(ctx context.Context, req *directory.UpdateContactsRequest) (*directory.Entity, error)
 	UpdateEntity(ctx context.Context, req *directory.UpdateEntityRequest) (*directory.Entity, error)
 	UpdatePassword(ctx context.Context, token, code, newPassword string) error
+	UpdateThread(ctx context.Context, req *threading.UpdateThreadRequest) (*threading.UpdateThreadResponse, error)
 	VerifiedValue(ctx context.Context, token string) (string, error)
 }
 
@@ -336,6 +339,44 @@ func (m *resourceAccessor) Entity(ctx context.Context, entityID string, entityIn
 	return res.Entities[0], nil
 }
 
+func (m *resourceAccessor) Entities(ctx context.Context, orgID string, entityIDs []string, entityInfo []directory.EntityInformation) ([]*directory.Entity, error) {
+	if err := m.canAccessResource(ctx, orgID, m.orgsForEntity); err != nil {
+		return nil, err
+	}
+	entityInfo = append(entityInfo, directory.EntityInformation_MEMBERSHIPS)
+	res, err := m.directory.LookupEntities(ctx,
+		&directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+				BatchEntityID: &directory.IDList{IDs: entityIDs},
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth:             1,
+				EntityInformation: entityInfo,
+			},
+			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+		})
+	if err != nil {
+		return nil, err
+	}
+	// Filter out any entities that aren't in the expected org
+	for i := 0; i < len(res.Entities); i++ {
+		e := res.Entities[i]
+		found := false
+		for _, em := range e.Memberships {
+			if em.ID == orgID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			res.Entities[i] = res.Entities[len(res.Entities)-1]
+			res.Entities = res.Entities[:len(res.Entities)-1]
+		}
+	}
+	return res.Entities, nil
+}
+
 func (m *resourceAccessor) EntityDomain(ctx context.Context, entityID, domain string) (*directory.LookupEntityDomainResponse, error) {
 	// Only do an authorization check if they are specifying an entity id
 	if entityID != "" {
@@ -549,6 +590,54 @@ func (m *resourceAccessor) ThreadItemViewDetails(ctx context.Context, threadItem
 	return res.ItemViewDetails, nil
 }
 
+func (m *resourceAccessor) ThreadMembers(ctx context.Context, orgID string, req *threading.ThreadMembersRequest) ([]*directory.Entity, error) {
+	// Being a member of the thread provides access so no need to check out criteria
+	res, err := m.threading.ThreadMembers(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	// Make sure viewer is a member of the thread
+	acc := gqlctx.Account(ctx)
+	ent, err := m.EntityForAccountID(ctx, orgID, acc.ID)
+	if err != nil {
+		return nil, err
+	}
+	var found bool
+	for _, mem := range res.Members {
+		if mem.EntityID == ent.ID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, errors.ErrNotAuthorized(ctx, req.ThreadID)
+	}
+
+	entIDs := make([]string, len(res.Members))
+	for i, m := range res.Members {
+		entIDs[i] = m.EntityID
+	}
+	leres, err := m.directory.LookupEntities(ctx, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_BatchEntityID{
+			BatchEntityID: &directory.IDList{
+				IDs: entIDs,
+			},
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_CONTACTS,
+			},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	})
+	if err != nil {
+		return nil, errors.InternalError(ctx, err)
+	}
+	return leres.Entities, nil
+}
+
 func (m *resourceAccessor) ThreadsForMember(ctx context.Context, entityID string, primaryOnly bool) ([]*threading.Thread, error) {
 	if err := m.canAccessResource(ctx, entityID, m.orgsForEntity); err != nil {
 		return nil, err
@@ -616,6 +705,13 @@ func (m *resourceAccessor) UpdatePassword(ctx context.Context, token, code, newP
 		return err
 	}
 	return nil
+}
+
+func (m *resourceAccessor) UpdateThread(ctx context.Context, req *threading.UpdateThreadRequest) (*threading.UpdateThreadResponse, error) {
+	if err := m.canAccessResource(ctx, req.ThreadID, m.orgsForThread); err != nil {
+		return nil, err
+	}
+	return m.threading.UpdateThread(ctx, req)
 }
 
 func (m *resourceAccessor) canAccessResource(ctx context.Context, resourceID string, missF func(ctx context.Context, resourceID string) (map[string]struct{}, error)) error {

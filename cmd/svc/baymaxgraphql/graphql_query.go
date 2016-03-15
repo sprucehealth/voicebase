@@ -164,7 +164,7 @@ var queryType = graphql.NewObject(
 )
 
 // TODO: This double read is inefficent/incorrect in the sense that we need the org ID to get the correct entity. We will use this for now until we can encode the organization ID into the thread ID
-func lookupThreadWithReadStatus(ctx context.Context, ram raccess.ResourceAccessor, acc *models.Account, id string) (interface{}, error) {
+func lookupThreadWithReadStatus(ctx context.Context, ram raccess.ResourceAccessor, acc *models.Account, id string) (*models.Thread, error) {
 	th, err := lookupThread(ctx, ram, id, "")
 	if grpc.Code(err) == codes.NotFound {
 		return nil, errors.ErrNotFound(ctx, id)

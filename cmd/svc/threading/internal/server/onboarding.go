@@ -29,6 +29,7 @@ func (s *threadsServer) CreateOnboardingThread(ctx context.Context, in *threadin
 			OrganizationID:     in.OrganizationID,
 			PrimaryEntityID:    in.PrimaryEntityID,
 			LastMessageSummary: summary,
+			Type:               models.ThreadTypeSetup,
 		})
 		if err != nil {
 			return errors.Trace(err)

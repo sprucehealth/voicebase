@@ -40,37 +40,60 @@ type service struct {
 }
 
 func hydrateThreads(ctx context.Context, ram raccess.ResourceAccessor, threads []*models.Thread) error {
-	// TODO: this done one request per thread. ideally the directory service would have a bulk lookup
-	p := conc.NewParallel()
-	for _, t := range threads {
-		if t.PrimaryEntityID == "" {
-			// TODO: not sure what this should be for internal threads (ones without a primary entity ID)
-			t.Title = "Internal"
-			t.AllowInternalMessages = false
-			t.IsDeletable = true
-			continue
-		}
-		// Create a reference to thread since the loop variable will change underneath
-		thread := t
-		p.Go(func() error {
-			if thread.PrimaryEntity == nil {
-				entity, err := ram.Entity(ctx, thread.PrimaryEntityID, []directory.EntityInformation{directory.EntityInformation_CONTACTS}, 0)
-				if err != nil {
-					return err
-				}
-				thread.PrimaryEntity = entity
-			}
-			thread.Title = threadTitleForEntity(thread.PrimaryEntity)
-			// TODO: checking the thread title is crazy brittle but for now don't have a way to tell apart SYSTEM entities
-			thread.AllowInternalMessages = thread.PrimaryEntity.Type == directory.EntityType_EXTERNAL || (thread.PrimaryEntity.Type == directory.EntityType_SYSTEM && !strings.HasPrefix(thread.Title, "Team "))
-			thread.IsDeletable = thread.PrimaryEntity.Type == directory.EntityType_EXTERNAL
-			if thread.MessageCount == 0 && thread.PrimaryEntity.Type == directory.EntityType_ORGANIZATION {
-				thread.EmptyStateTextMarkup = "This is the beginning of a conversation that is visible to everyone in your organization.\n\nInvite some colleagues to join and then send a message here to get things started."
-			}
-			return nil
-		})
+	if len(threads) == 0 {
+		return nil
 	}
-	return p.Wait()
+
+	// TODO: for now requiring that all threads are in the same org which is currently the case
+	orgID := threads[0].OrganizationID
+	for _, t := range threads[1:] {
+		if t.OrganizationID != orgID {
+			return errors.Trace(fmt.Errorf("org %s doesn't match %s", t.OrganizationID, orgID))
+		}
+	}
+
+	// Get the set of entitiy IDs we need to lookup
+	var entityIDs []string
+	for _, t := range threads {
+		if t.PrimaryEntity == nil && t.PrimaryEntityID != "" {
+			entityIDs = append(entityIDs, t.PrimaryEntityID)
+		}
+	}
+
+	var eMap map[string]*directory.Entity
+	if len(entityIDs) != 0 {
+		entities, err := ram.Entities(ctx, orgID, dedupeStrings(entityIDs), []directory.EntityInformation{directory.EntityInformation_CONTACTS})
+		if err != nil {
+			return errors.Trace(err)
+		}
+		eMap = make(map[string]*directory.Entity, len(entities))
+		for _, e := range entities {
+			eMap[e.ID] = e
+		}
+	}
+
+	for _, t := range threads {
+		if t.MessageCount == 0 && t.Type == models.ThreadTypeTeam {
+			t.EmptyStateTextMarkup = "This is the beginning of a conversation that is visible to everyone in your organization.\n\nInvite some colleagues to join and then send a message here to get things started."
+		}
+		if t.PrimaryEntityID != "" && (t.Type == models.ThreadTypeExternal || t.Title == "") {
+			if t.PrimaryEntity == nil {
+				t.PrimaryEntity = eMap[t.PrimaryEntityID]
+				if t.PrimaryEntity == nil {
+					return errors.Trace(fmt.Errorf("primary entity %s not found for thread %s", t.PrimaryEntityID, t.ID))
+				}
+			}
+			t.Title = threadTitleForEntity(t.PrimaryEntity)
+			// TODO: remove this once old threads are migrated
+			if t.Type == models.ThreadTypeUnknown {
+				// TODO: checking the thread title is crazy brittle but for now don't have a way to tell apart SYSTEM entities
+				t.AllowInternalMessages = t.PrimaryEntity.Type == directory.EntityType_EXTERNAL || (t.PrimaryEntity.Type == directory.EntityType_SYSTEM && !strings.HasPrefix(t.Title, "Team "))
+				t.AllowDelete = t.PrimaryEntity.Type == directory.EntityType_EXTERNAL
+			}
+		}
+	}
+
+	return nil
 }
 
 // createAndSendSMSVerificationCode creates a verification code and asynchronously sends it via

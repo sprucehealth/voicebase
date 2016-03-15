@@ -26,6 +26,7 @@ func TestCreateOnboardingThread(t *testing.T) {
 		OrganizationID:     "o1",
 		PrimaryEntityID:    "e2",
 		LastMessageSummary: "Setup: Welcome to Spruce! Let’s get you set up with your own Spruce phone number so you can start receiving calls, voicemails, and texts from patients without disclosing your personal number.\n\nGet your Spruce number\nor type \"Skip\" to get it later",
+		Type:               models.ThreadTypeSetup,
 	}).WithReturns(thid, nil))
 
 	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{

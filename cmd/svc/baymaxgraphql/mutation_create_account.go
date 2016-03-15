@@ -311,40 +311,6 @@ var createAccountMutation = &graphql.Field{
 
 			// These are created synchronously to enforce strict ordering
 
-			// Create a default internal team thread
-			intEnt, err := ram.CreateEntity(ctx, &directory.CreateEntityRequest{
-				EntityInfo: &directory.EntityInfo{
-					GroupName:   "Team " + organizationName,
-					DisplayName: "Team " + organizationName,
-				},
-				Type: directory.EntityType_SYSTEM,
-				InitialMembershipEntityID: orgEntityID,
-			})
-			if err != nil {
-				golog.Errorf("Failed to create entity for initial private thread: %s", err)
-			} else {
-				res, err := ram.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
-					OrganizationID:  orgEntityID,
-					PrimaryEntityID: intEnt.ID,
-					Summary:         "No messages yet",
-				})
-				if err != nil {
-					golog.Errorf("Failed to create initial private thread for org %s: %s", orgEntityID, err)
-				} else {
-					// TODO: remove this initial post once all apps support the empty state text
-					initialInternalMsg := "This is the beginning of a conversation that is visible to everyone in your organization.\n\nInvite some colleagues to join and then send a message here to get things started."
-					_, err = ram.PostMessage(ctx, &threading.PostMessageRequest{
-						ThreadID:     res.ID,
-						Text:         initialInternalMsg,
-						FromEntityID: intEnt.ID,
-						Summary:      initialInternalMsg,
-					})
-					if err != nil {
-						golog.Errorf("Failed to post initial message in internal thread: %s", err)
-					}
-				}
-			}
-
 			// Create a support thread (linked to Spruce support org) and the primary entities for them
 			var tsEnt1, tsEnt2 *directory.Entity
 			par := conc.NewParallel()
@@ -360,12 +326,13 @@ var createAccountMutation = &graphql.Field{
 				})
 				return err
 			})
+			remoteSupportThreadTitle := fmt.Sprintf(supportThreadTitle+" (%s)", organizationName)
 			par.Go(func() error {
 				var err error
 				tsEnt2, err = ram.CreateEntity(ctx, &directory.CreateEntityRequest{
 					EntityInfo: &directory.EntityInfo{
-						GroupName:   fmt.Sprintf(supportThreadTitle+" (%s)", organizationName),
-						DisplayName: fmt.Sprintf(supportThreadTitle+" (%s)", organizationName),
+						GroupName:   remoteSupportThreadTitle,
+						DisplayName: remoteSupportThreadTitle,
 					},
 					Type: directory.EntityType_SYSTEM,
 					InitialMembershipEntityID: svc.spruceOrgID,
@@ -384,6 +351,9 @@ var createAccountMutation = &graphql.Field{
 					PrependSenderThread2: true,
 					Summary:              supportThreadTitle + ": " + teamSpruceInitialText[:128],
 					Text:                 teamSpruceInitialText,
+					Type:                 threading.ThreadType_SUPPORT,
+					SystemTitle1:         supportThreadTitle,
+					SystemTitle2:         remoteSupportThreadTitle,
 				})
 				if err != nil {
 					golog.Errorf("Failed to create linked support threads for org %s: %s", orgEntityID, err)
@@ -405,6 +375,7 @@ var createAccountMutation = &graphql.Field{
 				_, err = ram.CreateOnboardingThread(ctx, &threading.CreateOnboardingThreadRequest{
 					OrganizationID:  orgEntityID,
 					PrimaryEntityID: onbEnt.ID,
+					SystemTitle:     onboardingThreadTitle,
 				})
 				if err != nil {
 					golog.Errorf("Failed to create onboarding thread for org %s: %s", orgEntityID, err)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
@@ -11,6 +12,7 @@ import (
 	invitemock "github.com/sprucehealth/backend/svc/invite/mock"
 	notificationmock "github.com/sprucehealth/backend/svc/notification/mock"
 	settingsmock "github.com/sprucehealth/backend/svc/settings/mock"
+	"github.com/sprucehealth/backend/test"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
 )
@@ -63,4 +65,15 @@ func (g *gql) finish() {
 	g.settingsC.Finish()
 	g.notificationC.Finish()
 	g.ra.Finish()
+}
+
+func responseEquals(t *testing.T, expected string, actual interface{}) {
+	// Roundtrip response to normalize into basic types
+	b, err := json.Marshal(actual)
+	test.OK(t, err)
+	var act interface{}
+	test.OK(t, json.Unmarshal(b, &act))
+	var exp interface{}
+	test.OK(t, json.Unmarshal([]byte(expected), &exp))
+	test.Equals(t, exp, act)
 }

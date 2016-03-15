@@ -105,15 +105,18 @@ func TestNodeQuery(t *testing.T) {
 		ID:              id,
 		OrganizationID:  "entity_1",
 		PrimaryEntityID: "entity_2",
+		Type:            threading.ThreadType_EXTERNAL,
 	}, nil))
-	ra.Expect(mock.NewExpectation(ra.Entity, "entity_2", []directory.EntityInformation{
+	ra.Expect(mock.NewExpectation(ra.Entities, "entity_1", []string{"entity_2"}, []directory.EntityInformation{
 		directory.EntityInformation_CONTACTS,
-	}, int64(0)).WithReturns(
-		&directory.Entity{
-			Type: directory.EntityType_EXTERNAL,
-			ID:   "entity_2",
-			Info: &directory.EntityInfo{
-				DisplayName: "Someone",
+	}).WithReturns(
+		[]*directory.Entity{
+			{
+				Type: directory.EntityType_EXTERNAL,
+				ID:   "entity_2",
+				Info: &directory.EntityInfo{
+					DisplayName: "Someone",
+				},
 			},
 		}, nil))
 	ra.Expect(mock.NewExpectation(ra.EntityForAccountID, "entity_1", acc.ID).WithReturns(
@@ -134,20 +137,23 @@ func TestNodeQuery(t *testing.T) {
 		ID:              id,
 		OrganizationID:  "entity_1",
 		PrimaryEntityID: "entity_2",
+		Type:            threading.ThreadType_EXTERNAL,
 	}, nil))
-	ra.Expect(mock.NewExpectation(ra.Entity, "entity_2", []directory.EntityInformation{
+	ra.Expect(mock.NewExpectation(ra.Entities, "entity_1", []string{"entity_2"}, []directory.EntityInformation{
 		directory.EntityInformation_CONTACTS,
-	}, int64(0)).WithReturns(
-		&directory.Entity{
-			Type: directory.EntityType_EXTERNAL,
-			ID:   "entity_2",
-			Info: &directory.EntityInfo{
-				DisplayName: "Someone",
-			},
-			Memberships: []*directory.Entity{
-				{
-					Type: directory.EntityType_ORGANIZATION,
-					ID:   "entity_1",
+	}).WithReturns(
+		[]*directory.Entity{
+			{
+				Type: directory.EntityType_EXTERNAL,
+				ID:   "entity_2",
+				Info: &directory.EntityInfo{
+					DisplayName: "Someone",
+				},
+				Memberships: []*directory.Entity{
+					{
+						Type: directory.EntityType_ORGANIZATION,
+						ID:   "entity_1",
+					},
 				},
 			},
 		}, nil))
@@ -157,11 +163,12 @@ func TestNodeQuery(t *testing.T) {
 	test.Equals(t, &models.Thread{
 		ID: id,
 		AllowInternalMessages: true,
-		IsDeletable:           true,
+		AllowDelete:           true,
 		OrganizationID:        "entity_1",
 		PrimaryEntityID:       "entity_2",
 		Title:                 "Someone",
 		LastPrimaryEntityEndpoints: []*models.Endpoint{},
+		Type: models.ThreadTypeExternal,
 	}, res)
 	mock.FinishAll(ra)
 

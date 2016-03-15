@@ -26,6 +26,14 @@ message Iterator {
 	uint32 count = 4;
 }
 
+enum ThreadType {
+	UNKNOWN = 0;
+	EXTERNAL = 1;
+	TEAM = 2;
+	SETUP = 3;
+	SUPPORT = 4;
+}
+
 message Thread {
 	string id = 1 [(gogoproto.customname) = "ID"];
 	string organization_id = 2 [(gogoproto.customname) = "OrganizationID"];
@@ -37,12 +45,13 @@ message Thread {
 	repeated Endpoint last_primary_entity_endpoints = 8;
 	uint64 created_timestamp = 9;
 	int32 message_count = 10;
+	ThreadType type = 11;
+	string system_title = 12;
+	string user_title = 13;
 }
 
 message Member {
 	string entity_id = 1 [(gogoproto.customname) = "EntityID"];
-	bool following = 2;
-	uint64 joined_timestamp = 3; // time the member first joined the thread
 }
 
 message ThreadItem {
@@ -294,14 +303,17 @@ message DeleteThreadRequest {
 message DeleteThreadResponse {
 }
 
-message UpdateThreadMembershipRequest {
-	string organization_id = 1 [(gogoproto.customname) = "OrganizationID"];
-	string thread_id = 2 [(gogoproto.customname) = "ThreadID"];
-	string entity_id = 3 [(gogoproto.customname) = "EntityID"];
-	bool following = 4;
+message UpdateThreadRequest {
+	string thread_id = 1 [(gogoproto.customname) = "ThreadID"];
+	string system_title = 2;
+	string user_title = 3;
+	repeated string set_member_entity_ids = 4 [(gogoproto.customname) = "SetMemberEntityIDs"];
+	repeated string add_member_entity_ids = 5 [(gogoproto.customname) = "AddMemberEntityIDs"];
+	repeated string remove_member_entity_ids = 6 [(gogoproto.customname) = "RemoveMemberEntityIDs"];
 }
 
-message UpdateThreadMembershipResponse {
+message UpdateThreadResponse {
+	Thread thread = 1;
 }
 
 message CreateThreadRequest {
@@ -313,8 +325,12 @@ message CreateThreadRequest {
 	bool internal = 6;
 	string text = 7;
 	repeated Attachment attachments = 8;
-	string title = 9;
+	string message_title = 9;
 	string summary = 10;
+	string system_title = 11;
+	string user_title = 12;
+	ThreadType type = 13;
+	repeated string member_entity_ids = 14 [(gogoproto.customname) = "MemberEntityIDs"];
 }
 
 message CreateThreadResponse {
@@ -329,6 +345,10 @@ message CreateEmptyThreadRequest {
 	string from_entity_id = 3 [(gogoproto.customname) = "FromEntityID"];
 	string primary_entity_id = 5 [(gogoproto.customname) = "PrimaryEntityID"];
 	string summary = 6;
+	string system_title = 7;
+	string user_title = 8;
+	ThreadType type = 9;
+	repeated string member_entity_ids = 10 [(gogoproto.customname) = "MemberEntityIDs"];
 }
 
 message CreateEmptyThreadResponse {
@@ -383,10 +403,15 @@ message CreateLinkedThreadsRequest {
 	string primary_entity1_id = 3 [(gogoproto.customname) = "PrimaryEntity1ID"];
 	string primary_entity2_id = 4 [(gogoproto.customname) = "PrimaryEntity2ID"];
 	string text = 5;
-	string title = 6;
+	string message_title = 6;
 	string summary = 7;
 	bool prepend_sender_thread1 = 8;
 	bool prepend_sender_thread2 = 9;
+	ThreadType type = 10;
+	string system_title1 = 11;
+	string user_title1 = 12;
+	string system_title2 = 13;
+	string user_title2 = 14;
 }
 
 message CreateLinkedThreadsResponse {
@@ -397,6 +422,8 @@ message CreateLinkedThreadsResponse {
 message CreateOnboardingThreadRequest {
 	string organization_id = 1 [(gogoproto.customname) = "OrganizationID"];
 	string primary_entity_id = 2 [(gogoproto.customname) = "PrimaryEntityID"];
+	string system_title = 3;
+	string user_title = 4;
 }
 
 message CreateOnboardingThreadResponse {
@@ -442,6 +469,6 @@ service Threads {
 	rpc ThreadItemViewDetails(ThreadItemViewDetailsRequest) returns (ThreadItemViewDetailsResponse);
 	// UpdateSavedQuery updated a saved query
 	rpc UpdateSavedQuery(UpdateSavedQueryRequest) returns (UpdateSavedQueryResponse);
-	// UpdateThreadMembership updates the membership status of an entity on a thread
-	rpc UpdateThreadMembership(UpdateThreadMembershipRequest) returns (UpdateThreadMembershipResponse);
+	// UpdateThread updates the thread members and other information
+	rpc UpdateThread(UpdateThreadRequest) returns (UpdateThreadResponse);
 }

@@ -288,7 +288,8 @@ var createThreadMutation = &graphql.Field{
 			OrganizationID:  orgID,
 			FromEntityID:    creatorEnt.ID,
 			PrimaryEntityID: primaryEnt.ID,
-			Summary:         "New conversation", // TODO: not sure what we want here. it's a fallback if there's no posts made in the thread.
+			Summary:         "New conversation",
+			Type:            threading.ThreadType_EXTERNAL,
 		})
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)

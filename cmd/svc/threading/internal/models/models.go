@@ -1,7 +1,10 @@
 package models
 
 import (
+	"database/sql/driver"
+	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/sprucehealth/backend/libs/bml"
@@ -147,6 +150,59 @@ const (
 	ThreadEventDelete ThreadEvent = "DELETE"
 )
 
+// ThreadType is an enum of possible thread types
+type ThreadType string
+
+const (
+	// ThreadTypeUnknown is temporary until all threads are migrated
+	ThreadTypeUnknown ThreadType = ""
+	// ThreadTypeExternal is a thread with with an external entity (e.g. patient)
+	ThreadTypeExternal ThreadType = "EXTERNAL"
+	// ThreadTypeTeam is an internal org thread between team mebers
+	ThreadTypeTeam ThreadType = "TEAM"
+	// ThreadTypeSetup is a scripted setup assistant thread
+	ThreadTypeSetup ThreadType = "SETUP"
+	// ThreadTypeSupport is a thread linked to the spruce support org
+	ThreadTypeSupport ThreadType = "SUPPORT"
+)
+
+// Scan implements sql.Scanner and expects src to be nil or of type string or []byte
+func (tt *ThreadType) Scan(src interface{}) error {
+	if src == nil {
+		*tt = ThreadTypeUnknown
+		return nil
+	}
+	var typ string
+	switch v := src.(type) {
+	case []byte:
+		typ = string(v)
+	case string:
+		typ = v
+	default:
+		return errors.Trace(fmt.Errorf("unsupported type for ThreadType: %T", src))
+	}
+	*tt = ThreadType(strings.ToUpper(typ))
+	return errors.Trace(tt.Validate())
+}
+
+// Value implements sql/driver.Valuer
+func (tt ThreadType) Value() (driver.Value, error) {
+	return strings.ToUpper(string(tt)), errors.Trace(tt.Validate())
+}
+
+// Validate returns nil iff the value of the type is valid
+func (tt ThreadType) Validate() error {
+	switch tt {
+	case ThreadTypeUnknown, ThreadTypeExternal, ThreadTypeTeam, ThreadTypeSetup, ThreadTypeSupport:
+		return nil
+	}
+	return errors.Trace(fmt.Errorf("unknown thread type '%s'", string(tt)))
+}
+
+func (tt ThreadType) String() string {
+	return string(tt)
+}
+
 // Thread is a thread of conversation and the parent of thread items.
 type Thread struct {
 	ID                           ThreadID
@@ -159,6 +215,9 @@ type Thread struct {
 	LastPrimaryEntityEndpoints   EndpointList
 	Created                      time.Time
 	MessageCount                 int
+	SystemTitle                  string
+	UserTitle                    string
+	Type                         ThreadType
 }
 
 // ThreadIDs is a convenience method for retrieving ID's from a list
@@ -171,11 +230,11 @@ func ThreadIDs(ts []*Thread) []ThreadID {
 	return ids
 }
 
-// ThreadMember links an entity to a thread.
-type ThreadMember struct {
+// ThreadEntity links an entity to a thread.
+type ThreadEntity struct {
 	ThreadID         ThreadID
 	EntityID         string
-	Following        bool
+	Member           bool
 	Joined           time.Time
 	LastViewed       *time.Time
 	LastUnreadNotify *time.Time
