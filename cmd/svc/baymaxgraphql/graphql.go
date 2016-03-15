@@ -193,10 +193,16 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 
 	for _, s := range ipAddressSuffixes {
 		if strings.HasSuffix(remoteAddr, s) {
-			golog.Warningf("Rejecting request due to suffix match")
+			golog.Warningf("Rejecting request due to IP suffix match")
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
+	}
+
+	if sHeaders.DeviceID == "8df72c8b7e48831a" {
+		golog.Warningf("Rejecting request due to device match")
+		w.WriteHeader(http.StatusForbidden)
+		return
 	}
 
 	var acc *models.Account
