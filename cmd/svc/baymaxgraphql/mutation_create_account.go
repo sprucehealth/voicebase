@@ -128,6 +128,7 @@ var createAccountMutation = &graphql.Field{
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 		input := p.Args["input"].(map[string]interface{})
+
 		mutationID, _ := input["clientMutationId"].(string)
 
 		inv, err := svc.inviteInfo(ctx)
@@ -416,6 +417,7 @@ var createAccountMutation = &graphql.Field{
 		var platform string
 		if headers != nil {
 			platform = headers.Platform.String()
+			golog.Infof("Account created. ID = %s Device = %s", acc.ID, headers.DeviceID)
 		}
 		orgName := organizationName
 		if inv != nil {
