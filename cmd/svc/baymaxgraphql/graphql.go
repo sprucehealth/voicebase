@@ -124,6 +124,15 @@ const (
 	defaultAuthCookieDuration = time.Hour * 24 * 30
 )
 
+var (
+	ipAddressSuffixes = []string{
+		// Wuhan, Hubei, China
+		"27.16.107",
+		// Huanggang, Hubei, China
+		"121.62.232",
+	}
+)
+
 func setAuthCookie(w http.ResponseWriter, domain, token string, expires time.Time) {
 	idx := strings.IndexByte(domain, ':')
 	if idx != -1 {
@@ -156,6 +165,7 @@ func removeAuthCookie(w http.ResponseWriter, domain string) {
 }
 
 func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+
 	// TODO: should set the deadline earlier in the HTTP handler stack
 	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
 	defer cancel()
@@ -171,6 +181,22 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	}
 
 	sHeaders := device.ExtractSpruceHeaders(w, r)
+
+	// Reject any IP address that matches the following address suffix
+	// FIXME: Move this to its own handler
+	remoteAddr := r.RemoteAddr
+	if *flagBehindProxy {
+		addr := strings.Split(r.Header.Get("X-Forwarded-For"), ",")
+		remoteAddr = addr[0]
+	}
+	for _, s := range ipAddressSuffixes {
+		if strings.HasSuffix(remoteAddr, s) {
+			golog.Warningf("Rejecting request due to suffix match")
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+	}
+
 	var acc *models.Account
 	if c, err := r.Cookie(authTokenCookieName); err == nil && c.Value != "" {
 		res, err := h.auth.CheckAuthentication(ctx,
