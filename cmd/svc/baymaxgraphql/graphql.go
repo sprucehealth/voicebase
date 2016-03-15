@@ -184,7 +184,7 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 
 	// Reject any IP address that matches the following address suffix
 	// FIXME: Move this to its own handler
-	
+
 	remoteAddr := r.RemoteAddr
 	if *flagBehindProxy {
 		addrs := strings.Split(r.Header.Get("X-Forwarded-For"), ",")
