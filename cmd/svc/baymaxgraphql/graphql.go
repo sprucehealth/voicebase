@@ -199,7 +199,7 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		}
 	}
 
-	if sHeaders.DeviceID == "8df72c8b7e48831a" {
+	if sHeaders.DeviceID == "8df72c8b7e48831a" || sHeaders.DeviceID == "21470597-0ACE-41F5-9B55-11739B521C24" {
 		golog.Warningf("Rejecting request due to device match")
 		w.WriteHeader(http.StatusForbidden)
 		return
