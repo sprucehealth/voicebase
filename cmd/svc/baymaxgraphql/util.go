@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -216,4 +217,12 @@ func initialsForEntity(e *models.Entity) string {
 		return string(first)
 	}
 	return string(first) + string(last)
+}
+
+func remoteAddrFromRequest(r *http.Request, behindProxy bool) string {
+	if behindProxy {
+		addrs := strings.Split(r.Header.Get("X-Forwarded-For"), ",")
+		return addrs[0]
+	}
+	return r.RemoteAddr
 }

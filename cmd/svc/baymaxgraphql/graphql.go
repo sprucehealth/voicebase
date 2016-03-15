@@ -181,29 +181,7 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	}
 
 	sHeaders := device.ExtractSpruceHeaders(w, r)
-
-	// Reject any IP address that matches the following address prefix
-	// FIXME: Move this to its own handler
-
-	remoteAddr := r.RemoteAddr
-	if *flagBehindProxy {
-		addrs := strings.Split(r.Header.Get("X-Forwarded-For"), ",")
-		remoteAddr = addrs[0]
-	}
-
-	for _, s := range ipAddressPrefixes {
-		if strings.HasPrefix(remoteAddr, s) {
-			golog.Warningf("Rejecting request due to IP prefix match")
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
-	}
-
-	if sHeaders.DeviceID == "8df72c8b7e48831a" || sHeaders.DeviceID == "21470597-0ACE-41F5-9B55-11739B521C24" {
-		golog.Warningf("Rejecting request due to device match")
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
+	remoteAddr := remoteAddrFromRequest(r, *flagBehindProxy)
 
 	var acc *models.Account
 	if c, err := r.Cookie(authTokenCookieName); err == nil && c.Value != "" {

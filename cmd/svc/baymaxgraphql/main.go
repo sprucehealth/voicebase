@@ -247,18 +247,12 @@ func main() {
 
 	webRequestLogger := func(ctx context.Context, ev *httputil.RequestEvent) {
 
-		remoteAddr := ev.RemoteAddr
-		if *flagBehindProxy {
-			addrs := strings.Split(ev.Request.Header.Get("X-Forwarded-For"), ",")
-			remoteAddr = addrs[0]
-		}
-
 		contextVals := []interface{}{
 			"Method", ev.Request.Method,
 			"URL", ev.URL.String(),
 			"UserAgent", ev.Request.UserAgent(),
 			"RequestID", gqlctx.RequestID(ctx),
-			"RemoteAddr", remoteAddr,
+			"RemoteAddr", remoteAddrFromRequest(ev.Request, *flagBehindProxy),
 			"StatusCode", ev.StatusCode,
 		}
 
@@ -272,6 +266,7 @@ func main() {
 	}
 
 	h := httputil.LoggingHandler(r, webRequestLogger)
+	h = newBlockChinaHandler(h)
 
 	fmt.Printf("Listening on %s\n", *flagListenAddr)
 
