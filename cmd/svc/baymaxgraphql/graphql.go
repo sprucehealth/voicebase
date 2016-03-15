@@ -184,11 +184,13 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 
 	// Reject any IP address that matches the following address suffix
 	// FIXME: Move this to its own handler
+	
 	remoteAddr := r.RemoteAddr
 	if *flagBehindProxy {
-		addr := strings.Split(r.Header.Get("X-Forwarded-For"), ",")
-		remoteAddr = addr[0]
+		addrs := strings.Split(r.Header.Get("X-Forwarded-For"), ",")
+		remoteAddr = addrs[0]
 	}
+
 	for _, s := range ipAddressSuffixes {
 		if strings.HasSuffix(remoteAddr, s) {
 			golog.Warningf("Rejecting request due to suffix match")
@@ -236,12 +238,6 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	}
 	ctx = gqlctx.WithRequestID(ctx, requestID)
 	ctx = gqlctx.WithSpruceHeaders(ctx, sHeaders)
-
-	remoteAddr := r.RemoteAddr
-	if *flagBehindProxy {
-		addrs := strings.Split(r.Header.Get("X-Forwarded-For"), ",")
-		remoteAddr = addrs[0]
-	}
 
 	result := conc.NewMap()
 	response := graphql.Do(graphql.Params{
