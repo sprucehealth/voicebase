@@ -47,6 +47,7 @@ message EntityInfo {
     string     note = 6;
     string     short_title = 7;
     string     long_title = 8;
+	
 }
 
 message Entity {
@@ -60,6 +61,7 @@ message Entity {
     EntityInfo info = 9;
 	EntityStatus status = 10;
 	uint64 created_timestamp = 11;
+	uint64 last_modified_timestamp = 12;
 }
 
 message SerializedClientEntityContact {

@@ -112,7 +112,8 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 				return entity.Avatar, nil
 			},
 		},
-		"isInternal": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"isInternal":            &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"lastModifiedTimestamp": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
 	},
 })
 
