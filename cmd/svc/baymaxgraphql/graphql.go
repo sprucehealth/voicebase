@@ -125,7 +125,7 @@ const (
 )
 
 var (
-	ipAddressSuffixes = []string{
+	ipAddressPrefixes = []string{
 		// Wuhan, Hubei, China
 		"27.16.107",
 		// Huanggang, Hubei, China
@@ -182,7 +182,7 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 
 	sHeaders := device.ExtractSpruceHeaders(w, r)
 
-	// Reject any IP address that matches the following address suffix
+	// Reject any IP address that matches the following address prefix
 	// FIXME: Move this to its own handler
 
 	remoteAddr := r.RemoteAddr
@@ -191,9 +191,9 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		remoteAddr = addrs[0]
 	}
 
-	for _, s := range ipAddressSuffixes {
-		if strings.HasSuffix(remoteAddr, s) {
-			golog.Warningf("Rejecting request due to IP suffix match")
+	for _, s := range ipAddressPrefixes {
+		if strings.HasPrefix(remoteAddr, s) {
+			golog.Warningf("Rejecting request due to IP prefix match")
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
