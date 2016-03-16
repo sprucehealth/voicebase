@@ -236,7 +236,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 				},
 			)
 			if err != nil {
-				return errors.Trace(err)
+				return errors.Trace(fmt.Errorf("Unable to send message originating from thread item id : %s: %s", pti.GetItem().ID, err))
 			}
 			golog.Debugf("Sent SMS %s → %s. Text %s", orgContact.Value, d.ID, pti.GetItem().GetMessage().Text)
 		case threading.Endpoint_EMAIL:
