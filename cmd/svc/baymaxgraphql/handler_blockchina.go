@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"golang.org/x/net/context"
 )
@@ -50,6 +51,7 @@ func (b *blockChinaHandler) ServeHTTP(context context.Context, w http.ResponseWr
 
 	// if the remoteAddr is from China, block access
 	if ipAddressFromChina(remoteAddr) {
+		golog.Warningf("Rejecting request since it originates in China")
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
