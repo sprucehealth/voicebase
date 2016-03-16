@@ -151,6 +151,7 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 // environment for which to ignore the phone number match during the invite process.
 var ignorePhoneNumberCheckForOrgs = []string{
 	"staging:entity_0CGGMPGPG1800",
+	"prod:entity_0D6LQNE983O00",
 }
 
 // ignorePhoneNumberCheckForInvite returns true if the phone number check is to be

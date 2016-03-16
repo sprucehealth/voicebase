@@ -74,4 +74,4 @@ cmd/svc/carefinder/resources/static/js/*
 cmd/svc/excommsclient
 cmd/svc/settings/settings
 cmd/svc/settings/schema/state-*
-
+cmd/cli/generateinvitelink/generateinvitelink
