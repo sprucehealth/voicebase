@@ -41,7 +41,7 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 
 	g.ra.Expect(mock.NewExpectation(g.ra.EntitiesByContact, "someone@example.com", []directory.EntityInformation{
 		directory.EntityInformation_MEMBERSHIPS,
-	}, int64(1)).WithReturns(([]*directory.Entity)(nil), grpcErrorf(codes.NotFound, "No entities found")))
+	}, int64(1), []directory.EntityStatus{directory.EntityStatus_ACTIVE}).WithReturns(([]*directory.Entity)(nil), []directory.EntityStatus{directory.EntityStatus_ACTIVE}, grpcErrorf(codes.NotFound, "No entities found")))
 
 	entityInfo := &directory.EntityInfo{
 		FirstName:     "firstName",
@@ -152,7 +152,7 @@ func TestCreateThreadMutation_DifferentOrg(t *testing.T) {
 
 	g.ra.Expect(mock.NewExpectation(g.ra.EntitiesByContact, "someone@example.com", []directory.EntityInformation{
 		directory.EntityInformation_MEMBERSHIPS,
-	}, int64(1)).WithReturns([]*directory.Entity{
+	}, int64(1), []directory.EntityStatus{directory.EntityStatus_ACTIVE}).WithReturns([]*directory.Entity{
 		{
 			ID:   "e_existing_1",
 			Type: directory.EntityType_EXTERNAL,
@@ -288,7 +288,7 @@ func TestCreateThreadMutation_ExistingThreads_DifferentName(t *testing.T) {
 
 	g.ra.Expect(mock.NewExpectation(g.ra.EntitiesByContact, "someone@example.com", []directory.EntityInformation{
 		directory.EntityInformation_MEMBERSHIPS,
-	}, int64(1)).WithReturns([]*directory.Entity{
+	}, int64(1), []directory.EntityStatus{directory.EntityStatus_ACTIVE}).WithReturns([]*directory.Entity{
 		{
 			ID:   "e_existing_1",
 			Type: directory.EntityType_EXTERNAL,
@@ -432,7 +432,7 @@ func TestCreateThreadMutation_ExistingThreads_SameName(t *testing.T) {
 
 	g.ra.Expect(mock.NewExpectation(g.ra.EntitiesByContact, "someone@example.com", []directory.EntityInformation{
 		directory.EntityInformation_MEMBERSHIPS,
-	}, int64(1)).WithReturns([]*directory.Entity{
+	}, int64(1), []directory.EntityStatus{directory.EntityStatus_ACTIVE}).WithReturns([]*directory.Entity{
 		{
 			ID:   "e_existing_1",
 			Type: directory.EntityType_EXTERNAL,

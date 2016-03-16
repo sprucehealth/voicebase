@@ -4,12 +4,15 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/sprucehealth/backend/svc/directory"
+
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/excomms"
+
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
@@ -49,6 +52,9 @@ func TestVerifyPhoneNumberForAccountCreationMutation_Invite(t *testing.T) {
 			},
 		},
 	}, nil))
+
+	g.ra.Expect(mock.NewExpectation(g.ra.EntitiesByContact, "+14155551212",
+		[]directory.EntityInformation{directory.EntityInformation_CONTACTS}, int64(0), []directory.EntityStatus{directory.EntityStatus_ACTIVE}))
 
 	res := g.query(ctx, `
 		mutation _ {
@@ -99,6 +105,9 @@ func TestVerifyPhoneNumberForAccountCreationMutation_Invite(t *testing.T) {
 		},
 	}, nil))
 
+	g.ra.Expect(mock.NewExpectation(g.ra.EntitiesByContact, "+14155551212",
+		[]directory.EntityInformation{directory.EntityInformation_CONTACTS}, int64(0), []directory.EntityStatus{directory.EntityStatus_ACTIVE}))
+
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateVerificationCode, auth.VerificationCodeType_PHONE, "+14155551212").WithReturns(
 		&auth.CreateVerificationCodeResponse{
 			VerificationCode: &auth.VerificationCode{
@@ -138,6 +147,56 @@ func TestVerifyPhoneNumberForAccountCreationMutation_Invite(t *testing.T) {
 			"message": "A verification code has been sent to (415) 555-1212",
 			"success": true,
 			"token": "TheToken"
+		}
+	}
+}`, string(b))
+}
+
+func TestVerifyPhoneNumberForAccountCreationMutation_SprucePhoneNumber(t *testing.T) {
+	g := newGQL(t)
+	defer g.finish()
+
+	ctx := context.Background()
+	var acc *models.Account
+	ctx = gqlctx.WithAccount(ctx, acc)
+	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
+		DeviceID: "DevID",
+	})
+
+	g.ra.Expect(mock.NewExpectation(g.ra.EntitiesByContact, "+14155551212",
+		[]directory.EntityInformation{directory.EntityInformation_CONTACTS}, int64(0), []directory.EntityStatus{directory.EntityStatus_ACTIVE}).WithReturns(
+		[]*directory.Entity{
+			{
+				Contacts: []*directory.Contact{
+					{
+						Provisioned: true,
+						Value:       "+14155551212",
+					},
+				},
+			},
+		}, nil))
+
+	res := g.query(ctx, `
+		mutation _ {
+			verifyPhoneNumberForAccountCreation(input: {
+				clientMutationId: "a1b2c3",
+				phoneNumber: "+14155551212"
+			}) {
+				clientMutationId
+				errorCode
+				errorMessage
+				success
+			}
+		}`, nil)
+	b, err := json.MarshalIndent(res, "", "\t")
+	test.OK(t, err)
+	test.Equals(t, `{
+	"data": {
+		"verifyPhoneNumberForAccountCreation": {
+			"clientMutationId": "a1b2c3",
+			"errorCode": "INVALID_PHONE_NUMBER",
+			"errorMessage": "Please use a non-Spruce number to create an account with.",
+			"success": false
 		}
 	}
 }`, string(b))

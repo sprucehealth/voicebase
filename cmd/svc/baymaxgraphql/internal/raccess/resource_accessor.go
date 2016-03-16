@@ -371,6 +371,9 @@ func (m *resourceAccessor) EntitiesByContact(ctx context.Context, contactValue s
 	// Note: There is no authorization required for this operation.
 	res, err := m.entitiesForContact(ctx, contactValue, entityInfo, depth, statuses)
 	if err != nil {
+		if grpc.Code(err) == codes.NotFound {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return res.Entities, nil

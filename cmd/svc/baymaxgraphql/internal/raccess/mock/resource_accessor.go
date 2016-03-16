@@ -212,7 +212,7 @@ func (m *ResourceAccessor) EntityForAccountID(ctx context.Context, orgID, accoun
 }
 
 func (m *ResourceAccessor) EntitiesByContact(ctx context.Context, contactValue string, entityInfo []directory.EntityInformation, depth int64, statuses []directory.EntityStatus) ([]*directory.Entity, error) {
-	rets := m.Record(contactValue, entityInfo, depth)
+	rets := m.Record(contactValue, entityInfo, depth, statuses)
 	if len(rets) == 0 {
 		return nil, nil
 	}

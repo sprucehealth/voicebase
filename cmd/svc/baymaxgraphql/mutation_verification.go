@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"runtime/debug"
 
+	"github.com/sprucehealth/backend/svc/directory"
+
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
@@ -12,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/invite"
+
 	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
 )
@@ -20,6 +23,7 @@ import (
 
 const (
 	verifyPhoneNumberErrorCodeInvitePhoneMismatch = "INVITE_PHONE_MISMATCH"
+	verifyPhoneNumberErrorCodeInvalidPhone        = "INVALID_PHONE_NUMBER"
 )
 
 var verifyPhoneNumberErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
@@ -29,6 +33,10 @@ var verifyPhoneNumberErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 		verifyPhoneNumberErrorCodeInvitePhoneMismatch: &graphql.EnumValueConfig{
 			Value:       verifyPhoneNumberErrorCodeInvitePhoneMismatch,
 			Description: "Phone number from invite does not match",
+		},
+		verifyPhoneNumberErrorCodeInvalidPhone: &graphql.EnumValueConfig{
+			Value:       verifyPhoneNumberErrorCodeInvalidPhone,
+			Description: "Invalid phone number",
 		},
 	},
 })
@@ -102,7 +110,35 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 		mutationID, _ := input["clientMutationId"].(string)
 		pn, err := phone.ParseNumber(input["phoneNumber"].(string))
 		if err != nil {
-			return nil, errors.New("Phone number is invalid")
+			return &verifyPhoneNumberOutput{
+				ClientMutationID: mutationID,
+				Success:          false,
+				ErrorCode:        verifyPhoneNumberErrorCodeInvalidPhone,
+				ErrorMessage:     "Please use a valid U.S. phone number",
+			}, nil
+		}
+
+		// ensure that the phone number is not a provisioned phone number
+		entities, err := ram.EntitiesByContact(ctx, pn.String(), []directory.EntityInformation{
+			directory.EntityInformation_CONTACTS,
+		}, 0, []directory.EntityStatus{
+			directory.EntityStatus_ACTIVE,
+		})
+		if err != nil {
+			golog.Errorf("Unable to lookup entity by contact: %s", err.Error())
+		}
+
+		for _, ent := range entities {
+			for _, c := range ent.Contacts {
+				if c.Provisioned && c.Value == pn.String() {
+					return &verifyPhoneNumberOutput{
+						ClientMutationID: mutationID,
+						Success:          false,
+						ErrorCode:        verifyPhoneNumberErrorCodeInvalidPhone,
+						ErrorMessage:     "Please use a non-Spruce number to create an account with.",
+					}, nil
+				}
+			}
 		}
 
 		// Provided phone number must match what was provided during invite if here through invite
