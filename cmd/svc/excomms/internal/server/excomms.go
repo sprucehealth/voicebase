@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/twilio"
 	"github.com/sprucehealth/backend/libs/validate"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -203,6 +205,49 @@ func (e *excommsService) ProvisionPhoneNumber(ctx context.Context, in *excomms.P
 	return &excomms.ProvisionPhoneNumberResponse{
 		PhoneNumber: ipn.PhoneNumber,
 	}, nil
+}
+
+func (e *excommsService) DeprovisionPhoneNumber(ctx context.Context, in *excomms.DeprovisionPhoneNumberRequest) (*excomms.DeprovisionPhoneNumberResponse, error) {
+	if in.PhoneNumber == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "phone number to deprovision required")
+	} else if len(in.Reason) > 254 {
+		return nil, grpcErrorf(codes.InvalidArgument, "reason cannot be longer than 254 characters")
+	}
+
+	// lookup the phone number via twilio
+	list, _, err := e.twilio.IncomingPhoneNumber.List(twilio.ListPurchasedPhoneNumberParams{
+		PhoneNumber: in.PhoneNumber,
+	})
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	} else if len(list.IncomingPhoneNumbers) == 0 {
+		// nothing to do if no phone number to deprovision found
+		return &excomms.DeprovisionPhoneNumberResponse{}, nil
+	} else if len(list.IncomingPhoneNumbers) != 1 {
+		return nil, grpcErrorf(codes.Internal, fmt.Sprintf("Expected 1 purchased phone number but got %d for %s", len(list.IncomingPhoneNumbers), in.PhoneNumber))
+	}
+
+	numberToDeprovision := list.IncomingPhoneNumbers[0]
+
+	// go ahead and release the number from twilio
+	_, err = e.twilio.IncomingPhoneNumber.Delete(numberToDeprovision.SID)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	// mark the number as deprovisioned
+	rowsUpdated, err := e.dal.UpdateProvisionedEndpoint(in.PhoneNumber, models.EndpointTypePhone, &dal.ProvisionedEndpointUpdate{
+		Deprovisioned:          ptr.Bool(true),
+		DeprovisionedTimestamp: ptr.Time(e.clock.Now()),
+		DeprovisionedReason:    ptr.String(in.Reason),
+	})
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	} else if rowsUpdated > 1 {
+		return nil, grpcErrorf(codes.Internal, fmt.Sprintf("Expected no more than 1 row to be updated but got %d rows updated when deprovisioning %s", rowsUpdated, in.PhoneNumber))
+	}
+
+	return &excomms.DeprovisionPhoneNumberResponse{}, nil
 }
 
 // SendMessage sends the message over an external channel as specified in the SendMessageRequest.

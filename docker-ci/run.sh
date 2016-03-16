@@ -155,7 +155,7 @@ TIME=$(date)
 export TAG="$BRANCH-$BUILD_NUMBER"
 
 if [[ "$DEPLOY_TO_S3" != "" ]]; then
-    SVCS="auth baymaxgraphql carefinder curbside directory excomms invite notification regimensapi restapi routing threading settings"
+    SVCS="auth baymaxgraphql carefinder curbside directory excomms invite notification regimensapi restapi routing threading settings operational"
     for SVC in $SVCS; do
         echo "BUILDING ($SVC)"
         cd $MONOREPO_PATH/cmd/svc/$SVC

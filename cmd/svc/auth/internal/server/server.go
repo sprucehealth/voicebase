@@ -74,6 +74,10 @@ func (s *server) AuthenticateLogin(ctx context.Context, rd *auth.AuthenticateLog
 		return nil, grpcErrorf(auth.EmailNotFound, "Unknown email: %s", rd.Email)
 	} else if err != nil {
 		return nil, grpcIErrorf(err.Error())
+	} else if account.Status == dal.AccountStatusBlocked {
+		return nil, grpcErrorf(auth.AccountBlocked, "auth: blocked account")
+	} else if account.Status == dal.AccountStatusSuspended {
+		return nil, grpcErrorf(auth.AccountSuspended, "auth: suspended account")
 	}
 	if err := s.hasher.CompareHashAndPassword(account.Password, []byte(rd.Password)); err != nil {
 		return nil, grpcErrorf(auth.BadPassword, "The password does not match the provided account email: %s", rd.Email)
@@ -659,6 +663,52 @@ func (s *server) VerifiedValue(ctx context.Context, rd *auth.VerifiedValueReques
 
 	return &auth.VerifiedValueResponse{
 		Value: verificationCode.VerifiedValue,
+	}, nil
+}
+
+func (s *server) BlockAccount(ctx context.Context, req *auth.BlockAccountRequest) (*auth.BlockAccountResponse, error) {
+	if req.Email == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "email required")
+	}
+
+	account, err := s.dal.AccountForEmail(req.Email)
+	if api.IsErrNotFound(err) {
+		return nil, grpcErrorf(codes.NotFound, err.Error())
+	} else if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	} else if account.Status == dal.AccountStatusBlocked {
+		// work already done
+		return &auth.BlockAccountResponse{
+			Account: &auth.Account{
+				ID:        account.ID.String(),
+				FirstName: account.FirstName,
+				LastName:  account.LastName,
+			},
+		}, nil
+	}
+
+	_, err = s.dal.DeleteAuthTokens(account.ID)
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	}
+
+	// update the status of the account
+	blocked := dal.AccountStatusBlocked
+	rowsUpdated, err := s.dal.UpdateAccount(account.ID, &dal.AccountUpdate{
+		Status: &blocked,
+	})
+	if err != nil {
+		return nil, grpcErrorf(codes.Internal, err.Error())
+	} else if rowsUpdated > 1 {
+		return nil, grpcErrorf(codes.Internal, fmt.Sprintf("Expected no more than 1 row to be updated when updating status of account %s but updated %d rows", account.ID.String(), rowsUpdated))
+	}
+
+	return &auth.BlockAccountResponse{
+		Account: &auth.Account{
+			ID:        account.ID.String(),
+			FirstName: account.FirstName,
+			LastName:  account.LastName,
+		},
 	}, nil
 }
 

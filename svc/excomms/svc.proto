@@ -177,6 +177,15 @@ message ProvisionPhoneNumberResponse {
 	string phone_number = 3;
 }
 
+message DeprovisionPhoneNumberRequest {
+	string phone_number = 1;
+	string reason = 2;
+}
+
+message DeprovisionPhoneNumberResponse {
+
+}
+
 message ProvisionEmailAddressRequest {
 	string provision_for = 1;
 	string email_address = 2;
@@ -193,6 +202,9 @@ service ExComms {
 
 	// ProvisionPhoneNumber provisions the phone number provided for the requester.
 	rpc ProvisionPhoneNumber (ProvisionPhoneNumberRequest) returns (ProvisionPhoneNumberResponse);
+
+	// DeprovisionPhoneNumber releases the phone number if one is currently provisioned.
+	rpc DeprovisionPhoneNumber (DeprovisionPhoneNumberRequest) returns (DeprovisionPhoneNumberResponse);
 
 	// ProvisionEmailAddress provisions an email address for the requester.
 	rpc ProvisionEmailAddress (ProvisionEmailAddressRequest) returns (ProvisionEmailAddressResponse);

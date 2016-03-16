@@ -37,6 +37,15 @@ func (c *Client) ProvisionPhoneNumber(ctx context.Context, in *excomms.Provision
 	return rets[0].(*excomms.ProvisionPhoneNumberResponse), mock.SafeError(rets[1])
 }
 
+func (c *Client) DeprovisionPhoneNumber(ctx context.Context, in *excomms.DeprovisionPhoneNumberRequest, opts ...grpc.CallOption) (*excomms.DeprovisionPhoneNumberResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*excomms.DeprovisionPhoneNumberResponse), mock.SafeError(rets[1])
+}
+
 func (c *Client) ProvisionEmailAddress(ctx context.Context, in *excomms.ProvisionEmailAddressRequest, opts ...grpc.CallOption) (*excomms.ProvisionEmailAddressResponse, error) {
 	rets := c.Record(in)
 	if len(rets) == 0 {

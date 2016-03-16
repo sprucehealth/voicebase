@@ -191,6 +191,18 @@ message UpdatePasswordRequest {
     string new_password = 3;
 }
 
+
+// BlockAccountRequest represents the information required to block a certain account
+// from accessing the Spruce platform
+message BlockAccountRequest {
+	string email = 1;
+}
+
+// BlockAccountResponse represents the information returned from a call to BlockAccount
+message BlockAccountResponse {
+	Account account = 1;
+}
+
 // UpdatePasswordResponse represents the information returned from UpdatePassword
 message UpdatePasswordResponse {}
 
@@ -208,4 +220,5 @@ service Auth {
 	rpc Unauthenticate (UnauthenticateRequest) returns (UnauthenticateResponse);
     rpc UpdatePassword (UpdatePasswordRequest) returns (UpdatePasswordResponse);
     rpc VerifiedValue (VerifiedValueRequest) returns (VerifiedValueResponse);
+    rpc BlockAccount(BlockAccountRequest) returns (BlockAccountResponse);
 }

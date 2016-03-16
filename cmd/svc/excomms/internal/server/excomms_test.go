@@ -13,12 +13,14 @@ import (
 	dalmock "github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	proxynumber "github.com/sprucehealth/backend/cmd/svc/excomms/internal/proxynumber/mock"
+
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/libs/twilio"
+	twiliomock "github.com/sprucehealth/backend/libs/twilio/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	dirmock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/events"
@@ -1280,4 +1282,47 @@ func TestProvisionEmailAddress_AlreadyProvisionedWithDifferentAddress(t *testing
 	test.Equals(t, true, err != nil)
 	test.Equals(t, codes.AlreadyExists, grpc.Code(err))
 	test.Equals(t, true, res == nil)
+}
+
+func TestDeprovisionPhoneNumber(t *testing.T) {
+	phoneNumber := "+17348465522"
+	mc := clock.NewManaged(time.Now())
+
+	md := dalmock.New(t)
+	defer md.Finish()
+
+	md.Expect(mock.NewExpectation(md.UpdateProvisionedEndpoint, phoneNumber, models.EndpointTypePhone, &dal.ProvisionedEndpointUpdate{
+		Deprovisioned:          ptr.Bool(true),
+		DeprovisionedTimestamp: ptr.Time(mc.Now()),
+		DeprovisionedReason:    ptr.String("sup"),
+	}))
+
+	ipn := twiliomock.NewIncomingPhoneNumber(t)
+	defer ipn.Finish()
+
+	ipn.Expect(mock.NewExpectation(ipn.List, twilio.ListPurchasedPhoneNumberParams{
+		PhoneNumber: phoneNumber,
+	}).WithReturns(&twilio.ListPurchasedPhoneNumbersResponse{
+		IncomingPhoneNumbers: []*twilio.IncomingPhoneNumber{
+			{
+				SID: "1",
+			},
+		},
+	}, &twilio.Response{}, nil))
+
+	ipn.Expect(mock.NewExpectation(ipn.Delete, "1"))
+
+	es := &excommsService{
+		twilio:     twilio.NewClient("", "", nil),
+		dal:        md,
+		eventTopic: "eventsTopic",
+		clock:      mc,
+	}
+	es.twilio.IncomingPhoneNumber = ipn
+
+	_, err := es.DeprovisionPhoneNumber(context.Background(), &excomms.DeprovisionPhoneNumberRequest{
+		PhoneNumber: phoneNumber,
+		Reason:      "sup",
+	})
+	test.OK(t, err)
 }

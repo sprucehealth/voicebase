@@ -1424,3 +1424,39 @@ func TestUpdatePasswordBadCode(t *testing.T) {
 	test.AssertNil(t, resp)
 	test.Equals(t, auth.BadVerificationCode, grpc.Code(err))
 }
+
+func TestBlockAccount(t *testing.T) {
+	email := "block@example.com"
+	aID1, err := dal.NewAccountID()
+	test.OK(t, err)
+
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+
+	s, err := New(dl, nil, clientEncryptionSecret)
+	test.OK(t, err)
+
+	dl.Expect(mock.NewExpectation(dl.AccountForEmail, email).WithReturns(&dal.Account{
+		ID:        aID1,
+		FirstName: "Block",
+		LastName:  "Example",
+	}, nil))
+
+	dl.Expect(mock.NewExpectation(dl.DeleteAuthTokens, aID1))
+
+	blocked := dal.AccountStatusBlocked
+	dl.Expect(mock.NewExpectation(dl.UpdateAccount, aID1, &dal.AccountUpdate{
+		Status: &blocked,
+	}).WithReturns(int64(1), nil))
+
+	resp, err := s.BlockAccount(context.Background(), &auth.BlockAccountRequest{
+		Email: email,
+	})
+	test.OK(t, err)
+	test.Assert(t, resp != nil, "expected response not to be null")
+	test.Assert(t, resp.Account != nil, "expected account in response not to be null")
+	test.Equals(t, aID1.String(), resp.Account.ID)
+	test.Equals(t, "Block", resp.Account.FirstName)
+	test.Equals(t, "Example", resp.Account.LastName)
+
+}

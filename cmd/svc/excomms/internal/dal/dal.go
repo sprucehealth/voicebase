@@ -30,6 +30,12 @@ type ProxyPhoneNumberReservationUpdate struct {
 	Expires *time.Time
 }
 
+type ProvisionedEndpointUpdate struct {
+	Deprovisioned          *bool
+	DeprovisionedReason    *string
+	DeprovisionedTimestamp *time.Time
+}
+
 type DAL interface {
 	// Transact encapsulates the provided function in a transaction and handles rollback and commit actions
 	Transact(func(DAL) error) error
@@ -39,6 +45,9 @@ type DAL interface {
 
 	// ProvisionEndpoint provisions the specified endpoint.
 	ProvisionEndpoint(ppn *models.ProvisionedEndpoint) error
+
+	// UpdateProvisionedEndpoint updates the mutable and requested fields of the provisioned endpoint row
+	UpdateProvisionedEndpoint(endpoint string, endpointType models.EndpointType, update *ProvisionedEndpointUpdate) (int64, error)
 
 	// LogCallEvent persists the provided event for operational purposes.
 	// TODO: If this data gets noisy, might make sense to log this data into a different
@@ -124,14 +133,17 @@ func (d *dal) LookupProvisionedEndpoint(provisionedFor string, endpointType mode
 	var ppn models.ProvisionedEndpoint
 
 	err := d.db.QueryRow(`
-		SELECT endpoint, endpoint_type, provisioned_for, created 
+		SELECT endpoint, endpoint_type, provisioned_for, created, deprovision, deprovisioned_timestamp, deprovisioned_reason 
 		FROM provisioned_endpoint
 		WHERE provisioned_for = ?
 		AND endpoint_type = ?`, provisionedFor, endpointType).Scan(
 		&ppn.Endpoint,
 		&ppn.EndpointType,
 		&ppn.ProvisionedFor,
-		&ppn.Provisioned)
+		&ppn.Provisioned,
+		&ppn.Deprovisioned,
+		&ppn.DeprovisionedTimestamp,
+		&ppn.DeprovisionedReason)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrProvisionedEndpointNotFound)
 	}
@@ -150,6 +162,38 @@ func (d *dal) ProvisionEndpoint(ppn *models.ProvisionedEndpoint) error {
 	_, err := d.db.Exec(`
 		INSERT INTO provisioned_endpoint (endpoint, endpoint_type, provisioned_for) VALUES (?,?,?)`, ppn.Endpoint, ppn.EndpointType, ppn.ProvisionedFor)
 	return errors.Trace(err)
+}
+
+func (d *dal) UpdateProvisionedEndpoint(endpoint string, endpointType models.EndpointType, update *ProvisionedEndpointUpdate) (int64, error) {
+	args := dbutil.MySQLVarArgs()
+	if update.Deprovisioned != nil {
+		args.Append("deprovisioned", *update.Deprovisioned)
+	}
+	if update.DeprovisionedReason != nil {
+		args.Append("deprovisioned_reason", *update.DeprovisionedReason)
+	}
+	if update.DeprovisionedTimestamp != nil {
+		args.Append("deprovisioned_timestamp", *update.DeprovisionedTimestamp)
+	}
+
+	if args == nil || args.IsEmpty() {
+		return 0, nil
+	}
+
+	res, err := d.db.Exec(`
+		UPDATE provisioned_endpoint
+		SET `+args.ColumnsForUpdate()+`
+		WHERE endpoint = ? AND endpoint_type = ?`, append(args.Values(), endpoint, endpointType)...)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	rowsUpdated, err := res.RowsAffected()
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	return rowsUpdated, nil
 }
 
 func (d *dal) LogCallEvent(e *models.CallEvent) error {

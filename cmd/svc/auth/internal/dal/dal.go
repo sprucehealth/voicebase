@@ -331,12 +331,15 @@ const (
 	AccountStatusDeleted AccountStatus = "DELETED"
 	// AccountStatusSuspended represents the SUSPENDED state of the status field on a account record
 	AccountStatusSuspended AccountStatus = "SUSPENDED"
+	// AccountStatusBlocked represents a state where an account has been deemed inappropriate for our system
+	// with all access via the existing identity into the system blocked.
+	AccountStatusBlocked AccountStatus = "BLOCKED"
 )
 
 // ParseAccountStatus converts a string into the correcponding enum value
 func ParseAccountStatus(s string) (AccountStatus, error) {
 	switch t := AccountStatus(strings.ToUpper(s)); t {
-	case AccountStatusActive, AccountStatusDeleted, AccountStatusSuspended:
+	case AccountStatusActive, AccountStatusDeleted, AccountStatusSuspended, AccountStatusBlocked:
 		return t, nil
 	}
 	return AccountStatus(""), errors.Trace(fmt.Errorf("Unknown status:%s", s))

@@ -117,3 +117,12 @@ func (c *Client) VerifiedValue(ctx context.Context, in *auth.VerifiedValueReques
 	}
 	return rets[0].(*auth.VerifiedValueResponse), mock.SafeError(rets[1])
 }
+
+func (c *Client) BlockAccount(ctx context.Context, in *auth.BlockAccountRequest, opts ...grpc.CallOption) (*auth.BlockAccountResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*auth.BlockAccountResponse), mock.SafeError(rets[1])
+}

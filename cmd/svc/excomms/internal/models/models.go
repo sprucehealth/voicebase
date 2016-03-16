@@ -44,13 +44,15 @@ func (e EndpointType) Value() (driver.Value, error) {
 	return string(e), nil
 }
 
-// ProvisionedEndpoint represents a provisioned endpoint for a specific purpose
-// for a specific purpose.
+// ProvisionedEndpoint represents a provisioned endpoint for a specific purpose.
 type ProvisionedEndpoint struct {
-	Endpoint       string
-	EndpointType   EndpointType
-	ProvisionedFor string
-	Provisioned    time.Time
+	Endpoint               string
+	EndpointType           EndpointType
+	ProvisionedFor         string
+	Provisioned            time.Time
+	Deprovisioned          bool
+	DeprovisionedTimestamp *time.Time
+	DeprovisionedReason    string
 }
 
 // CallRequest represents a request to make a call from the source to the destination

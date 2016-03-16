@@ -30,4 +30,11 @@ const (
 
 	// TokenExpired indicates that the provided token has expired
 	TokenExpired gcode.Code = 108
+
+	// AccountBlocked indicates that the account is blocked and the user is forbidden from authenticating in.
+	AccountBlocked gcode.Code = 109
+
+	// AccountSuspended indicates that the user account has been temporarily suspended and the user should
+	// contact support.
+	AccountSuspended gcode.Code = 110
 )

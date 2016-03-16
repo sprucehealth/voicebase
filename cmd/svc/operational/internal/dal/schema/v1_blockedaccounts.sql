@@ -1,0 +1,5 @@
+CREATE TABLE blocked_accounts (
+	email VARCHAR(255) NOT NULL,
+	created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (email)
+);

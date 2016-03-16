@@ -30,6 +30,10 @@ func (sc *stubExCommsClient) ProvisionPhoneNumber(ctx context.Context, in *excom
 	}, nil
 }
 
+func (sc *stubExCommsClient) DeprovisionPhoneNumber(ctx context.Context, in *excomms.DeprovisionPhoneNumberRequest, opts ...grpc.CallOption) (*excomms.DeprovisionPhoneNumberResponse, error) {
+	return &excomms.DeprovisionPhoneNumberResponse{}, nil
+}
+
 // ProvisionEmailAddress provisions an email address for the requester.
 func (sc *stubExCommsClient) ProvisionEmailAddress(ctx context.Context, in *excomms.ProvisionEmailAddressRequest, opts ...grpc.CallOption) (*excomms.ProvisionEmailAddressResponse, error) {
 	return &excomms.ProvisionEmailAddressResponse{

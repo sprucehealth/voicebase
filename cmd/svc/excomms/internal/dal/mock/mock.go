@@ -49,6 +49,15 @@ func (m *mockDAL) ProvisionEndpoint(ppn *models.ProvisionedEndpoint) error {
 	return mock.SafeError(rets[0])
 }
 
+func (m *mockDAL) UpdateProvisionedEndpoint(endpoint string, endpointType models.EndpointType, update *dal.ProvisionedEndpointUpdate) (int64, error) {
+	rets := m.Record(endpoint, endpointType, update)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
 func (m *mockDAL) LogCallEvent(e *models.CallEvent) error {
 	rets := m.Record(e)
 	if len(rets) == 0 {

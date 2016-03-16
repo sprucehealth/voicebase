@@ -35,6 +35,8 @@
 		CheckPasswordResetTokenRequest
 		CheckPasswordResetTokenResponse
 		UpdatePasswordRequest
+		BlockAccountRequest
+		BlockAccountResponse
 		UpdatePasswordResponse
 */
 package auth
@@ -460,6 +462,30 @@ type UpdatePasswordRequest struct {
 func (m *UpdatePasswordRequest) Reset()      { *m = UpdatePasswordRequest{} }
 func (*UpdatePasswordRequest) ProtoMessage() {}
 
+// BlockAccountRequest represents the information required to block a certain account
+// from accessing the Spruce platform
+type BlockAccountRequest struct {
+	Email string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+}
+
+func (m *BlockAccountRequest) Reset()      { *m = BlockAccountRequest{} }
+func (*BlockAccountRequest) ProtoMessage() {}
+
+// BlockAccountResponse represents the information returned from a call to BlockAccount
+type BlockAccountResponse struct {
+	Account *Account `protobuf:"bytes,1,opt,name=account" json:"account,omitempty"`
+}
+
+func (m *BlockAccountResponse) Reset()      { *m = BlockAccountResponse{} }
+func (*BlockAccountResponse) ProtoMessage() {}
+
+func (m *BlockAccountResponse) GetAccount() *Account {
+	if m != nil {
+		return m.Account
+	}
+	return nil
+}
+
 // UpdatePasswordResponse represents the information returned from UpdatePassword
 type UpdatePasswordResponse struct {
 }
@@ -494,6 +520,8 @@ func init() {
 	proto.RegisterType((*CheckPasswordResetTokenRequest)(nil), "auth.CheckPasswordResetTokenRequest")
 	proto.RegisterType((*CheckPasswordResetTokenResponse)(nil), "auth.CheckPasswordResetTokenResponse")
 	proto.RegisterType((*UpdatePasswordRequest)(nil), "auth.UpdatePasswordRequest")
+	proto.RegisterType((*BlockAccountRequest)(nil), "auth.BlockAccountRequest")
+	proto.RegisterType((*BlockAccountResponse)(nil), "auth.BlockAccountResponse")
 	proto.RegisterType((*UpdatePasswordResponse)(nil), "auth.UpdatePasswordResponse")
 	proto.RegisterEnum("auth.VerificationCodeType", VerificationCodeType_name, VerificationCodeType_value)
 }
@@ -1292,6 +1320,56 @@ func (this *UpdatePasswordRequest) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *BlockAccountRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*BlockAccountRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Email != that1.Email {
+		return false
+	}
+	return true
+}
+func (this *BlockAccountResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*BlockAccountResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Account.Equal(that1.Account) {
+		return false
+	}
+	return true
+}
 func (this *UpdatePasswordResponse) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
@@ -1704,6 +1782,28 @@ func (this *UpdatePasswordRequest) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *BlockAccountRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&auth.BlockAccountRequest{")
+	s = append(s, "Email: "+fmt.Sprintf("%#v", this.Email)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *BlockAccountResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&auth.BlockAccountResponse{")
+	if this.Account != nil {
+		s = append(s, "Account: "+fmt.Sprintf("%#v", this.Account)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *UpdatePasswordResponse) GoString() string {
 	if this == nil {
 		return "nil"
@@ -1758,6 +1858,7 @@ type AuthClient interface {
 	Unauthenticate(ctx context.Context, in *UnauthenticateRequest, opts ...grpc.CallOption) (*UnauthenticateResponse, error)
 	UpdatePassword(ctx context.Context, in *UpdatePasswordRequest, opts ...grpc.CallOption) (*UpdatePasswordResponse, error)
 	VerifiedValue(ctx context.Context, in *VerifiedValueRequest, opts ...grpc.CallOption) (*VerifiedValueResponse, error)
+	BlockAccount(ctx context.Context, in *BlockAccountRequest, opts ...grpc.CallOption) (*BlockAccountResponse, error)
 }
 
 type authClient struct {
@@ -1876,6 +1977,15 @@ func (c *authClient) VerifiedValue(ctx context.Context, in *VerifiedValueRequest
 	return out, nil
 }
 
+func (c *authClient) BlockAccount(ctx context.Context, in *BlockAccountRequest, opts ...grpc.CallOption) (*BlockAccountResponse, error) {
+	out := new(BlockAccountResponse)
+	err := grpc.Invoke(ctx, "/auth.Auth/BlockAccount", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for Auth service
 
 type AuthServer interface {
@@ -1891,6 +2001,7 @@ type AuthServer interface {
 	Unauthenticate(context.Context, *UnauthenticateRequest) (*UnauthenticateResponse, error)
 	UpdatePassword(context.Context, *UpdatePasswordRequest) (*UpdatePasswordResponse, error)
 	VerifiedValue(context.Context, *VerifiedValueRequest) (*VerifiedValueResponse, error)
+	BlockAccount(context.Context, *BlockAccountRequest) (*BlockAccountResponse, error)
 }
 
 func RegisterAuthServer(s *grpc.Server, srv AuthServer) {
@@ -2041,6 +2152,18 @@ func _Auth_VerifiedValue_Handler(srv interface{}, ctx context.Context, dec func(
 	return out, nil
 }
 
+func _Auth_BlockAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(BlockAccountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(AuthServer).BlockAccount(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 var _Auth_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "auth.Auth",
 	HandlerType: (*AuthServer)(nil),
@@ -2092,6 +2215,10 @@ var _Auth_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "VerifiedValue",
 			Handler:    _Auth_VerifiedValue_Handler,
+		},
+		{
+			MethodName: "BlockAccount",
+			Handler:    _Auth_BlockAccount_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{},
@@ -3051,6 +3178,58 @@ func (m *UpdatePasswordRequest) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *BlockAccountRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *BlockAccountRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Email) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Email)))
+		i += copy(data[i:], m.Email)
+	}
+	return i, nil
+}
+
+func (m *BlockAccountResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *BlockAccountResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Account != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Account.Size()))
+		n12, err := m.Account.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n12
+	}
+	return i, nil
+}
+
 func (m *UpdatePasswordResponse) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -3518,6 +3697,26 @@ func (m *UpdatePasswordRequest) Size() (n int) {
 	return n
 }
 
+func (m *BlockAccountRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Email)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *BlockAccountResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.Account != nil {
+		l = m.Account.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
 func (m *UpdatePasswordResponse) Size() (n int) {
 	var l int
 	_ = l
@@ -3889,6 +4088,26 @@ func (this *UpdatePasswordRequest) String() string {
 		`Token:` + fmt.Sprintf("%v", this.Token) + `,`,
 		`Code:` + fmt.Sprintf("%v", this.Code) + `,`,
 		`NewPassword:` + fmt.Sprintf("%v", this.NewPassword) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *BlockAccountRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&BlockAccountRequest{`,
+		`Email:` + fmt.Sprintf("%v", this.Email) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *BlockAccountResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&BlockAccountResponse{`,
+		`Account:` + strings.Replace(fmt.Sprintf("%v", this.Account), "Account", "Account", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -7464,6 +7683,168 @@ func (m *UpdatePasswordRequest) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.NewPassword = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *BlockAccountRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: BlockAccountRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: BlockAccountRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Email", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Email = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *BlockAccountResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: BlockAccountResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: BlockAccountResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Account", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Account == nil {
+				m.Account = &Account{}
+			}
+			if err := m.Account.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

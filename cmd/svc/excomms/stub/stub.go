@@ -23,6 +23,10 @@ func (e *excommsClient) ProvisionPhoneNumber(ctx context.Context, in *excomms.Pr
 	return &excomms.ProvisionPhoneNumberResponse{}, nil
 }
 
+func (e *excommsClient) DeprovisionPhoneNumber(ctx context.Context, in *excomms.DeprovisionPhoneNumberRequest, opts ...grpc.CallOption) (*excomms.DeprovisionPhoneNumberResponse, error) {
+	return &excomms.DeprovisionPhoneNumberResponse{}, nil
+}
+
 // ProvisionEmailAddress provisions an email address for the requester.
 func (e *excommsClient) ProvisionEmailAddress(ctx context.Context, in *excomms.ProvisionEmailAddressRequest, opts ...grpc.CallOption) (*excomms.ProvisionEmailAddressResponse, error) {
 	return &excomms.ProvisionEmailAddressResponse{}, nil

@@ -13,6 +13,8 @@ type IncomingPhoneNumberService struct {
 
 type IncomingPhoneNumberIFace interface {
 	PurchaseLocal(params PurchasePhoneNumberParams) (*IncomingPhoneNumber, *Response, error)
+	List(params ListPurchasedPhoneNumberParams) (*ListPurchasedPhoneNumbersResponse, *Response, error)
+	Delete(sid string) (*Response, error)
 }
 
 type IncomingPhoneNumber struct {
@@ -40,11 +42,24 @@ type IncomingPhoneNumber struct {
 	URI                  string          `json:"uri"`
 }
 
+type ListPurchasedPhoneNumbersResponse struct {
+	Page                 int                    `json:"page"`
+	PageSize             int                    `json:"page_size"`
+	URI                  string                 `json:"uri"`
+	FirstPageURI         string                 `json:"first_page_uri"`
+	PreviousPageURI      string                 `json:"previous_page_uri"`
+	IncomingPhoneNumbers []*IncomingPhoneNumber `json:"incoming_phone_numbers"`
+}
+
 type PurchasePhoneNumberParams struct {
 	AreaCode            string `url:"AreaCode,omitempty"`
 	PhoneNumber         string `url:"PhoneNumber,omitempty"`
 	VoiceApplicationSID string `url:"VoiceApplicationSid,omitempty"`
 	SMSApplicationSID   string `url:"SmsApplicationSid,omitempty"`
+}
+
+type ListPurchasedPhoneNumberParams struct {
+	PhoneNumber string `url:"PhoneNumber,omitempty"`
 }
 
 func (p PurchasePhoneNumberParams) Validate() error {
@@ -78,4 +93,45 @@ func (i *IncomingPhoneNumberService) PurchaseLocal(params PurchasePhoneNumberPar
 	}
 
 	return ip, resp, nil
+}
+
+func (i *IncomingPhoneNumberService) List(params ListPurchasedPhoneNumberParams) (*ListPurchasedPhoneNumbersResponse, *Response, error) {
+	if params.PhoneNumber == "" {
+		return nil, nil, errors.New("phone number required.")
+	}
+
+	u := i.client.EndPoint("IncomingPhoneNumbers")
+
+	v, err := query.Values(params)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	req, err := i.client.NewRequest("GET", u.String()+"?"+v.Encode(), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	l := new(ListPurchasedPhoneNumbersResponse)
+	resp, err := i.client.Do(req, l)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return l, resp, nil
+}
+
+func (i *IncomingPhoneNumberService) Delete(sid string) (*Response, error) {
+	if sid == "" {
+		return nil, errors.New("phone number sid is required")
+	}
+
+	u := i.client.EndPoint("IncomingPhoneNumbers", sid)
+
+	req, err := i.client.NewRequest("DELETE", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return i.client.Do(req, nil)
 }
