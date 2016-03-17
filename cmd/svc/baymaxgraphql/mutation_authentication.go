@@ -133,6 +133,20 @@ var authenticateMutation = &graphql.Field{
 					ErrorCode:        authenticateErrorCodePasswordMismatch,
 					ErrorMessage:     "The password does not match. Please try typing it again.",
 				}, nil
+			case auth.AccountBlocked:
+				return &authenticateOutput{
+					ClientMutationID: mutationID,
+					Success:          false,
+					ErrorCode:        authenticateErrorCodeAccountNotFound,
+					ErrorMessage:     "Your account has been blocked. Please contact help@sprucehealth.com.",
+				}, nil
+			case auth.AccountSuspended:
+				return &authenticateOutput{
+					ClientMutationID: mutationID,
+					Success:          false,
+					ErrorCode:        authenticateErrorCodeAccountNotFound,
+					ErrorMessage:     "Your account has been suspended. Please contact help@sprucehealth.com.",
+				}, nil
 			default:
 				return nil, errors.InternalError(ctx, err)
 			}

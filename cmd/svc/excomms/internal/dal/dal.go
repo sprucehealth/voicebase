@@ -133,7 +133,7 @@ func (d *dal) LookupProvisionedEndpoint(provisionedFor string, endpointType mode
 	var ppn models.ProvisionedEndpoint
 
 	err := d.db.QueryRow(`
-		SELECT endpoint, endpoint_type, provisioned_for, created, deprovision, deprovisioned_timestamp, deprovisioned_reason 
+		SELECT endpoint, endpoint_type, provisioned_for, created, deprovisioned, deprovisioned_timestamp, deprovisioned_reason 
 		FROM provisioned_endpoint
 		WHERE provisioned_for = ?
 		AND endpoint_type = ?`, provisionedFor, endpointType).Scan(
