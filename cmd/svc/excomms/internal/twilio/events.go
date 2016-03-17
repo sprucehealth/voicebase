@@ -386,6 +386,9 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 	})
 
 	tw := twiml.NewResponse(
+		&twiml.Pause{
+			Length: uint(5),
+		},
 		&twiml.Dial{
 			CallerID:         params.To,
 			TimeoutInSeconds: 30,
