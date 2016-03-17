@@ -3,7 +3,10 @@ package externalmsg
 import (
 	"testing"
 
+	"github.com/sprucehealth/backend/libs/awsutil"
+	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
+	dirmock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/backend/test"
@@ -759,5 +762,107 @@ func TestOutgoingCallEvent(t *testing.T) {
 	test.Equals(t, providerEntity.ID, mt.postMessageRequests[0].FromEntityID)
 	test.Equals(t, "", mt.postMessageRequests[0].Text)
 	test.Equals(t, "Outbound call", mt.postMessageRequests[0].Title)
+
+}
+
+func TestWeChatSpam(t *testing.T) {
+	fromChannelID := "+12068773590"
+	toChannelID := "+17348465522"
+	text := "5321 (WeChat Verification Code)"
+
+	mdir := dirmock.New(t)
+	defer mdir.Finish()
+
+	snsAPI := &awsutil.SNS{}
+
+	mdir.Expect(mock.NewExpectation(mdir.LookupEntitiesByContact, &directory.LookupEntitiesByContactRequest{
+		ContactValue: toChannelID,
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 1,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_MEMBERSHIPS,
+				directory.EntityInformation_CONTACTS,
+				directory.EntityInformation_EXTERNAL_IDS,
+			},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns(&directory.LookupEntitiesByContactResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:   "e1",
+				Type: directory.EntityType_ORGANIZATION,
+				Contacts: []*directory.Contact{
+					{
+						ContactType: directory.ContactType_PHONE,
+						Provisioned: true,
+						Value:       toChannelID,
+					},
+				},
+			},
+		},
+	}, nil))
+
+	mdir.Expect(mock.NewExpectation(mdir.LookupEntitiesByContact, &directory.LookupEntitiesByContactRequest{
+		ContactValue: fromChannelID,
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 1,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_MEMBERSHIPS,
+				directory.EntityInformation_CONTACTS,
+				directory.EntityInformation_EXTERNAL_IDS,
+			},
+		},
+		Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+	}).WithReturns(&directory.LookupEntitiesByContactResponse{}, grpcErrorf(codes.NotFound, "")))
+
+	mdir.Expect(mock.NewExpectation(mdir.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "e1",
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 1,
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_MEMBERS,
+				directory.EntityInformation_EXTERNAL_IDS,
+			},
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				ID:   "e1",
+				Type: directory.EntityType_ORGANIZATION,
+				Members: []*directory.Entity{
+					{
+						ID:          "p1",
+						Type:        directory.EntityType_INTERNAL,
+						ExternalIDs: []string{"account_1"},
+					},
+					{
+						ID:          "p2",
+						Type:        directory.EntityType_INTERNAL,
+						ExternalIDs: []string{"account_2"},
+					},
+				},
+			},
+		}}, nil))
+
+	e := &externalMessageWorker{
+		snsAPI:    snsAPI,
+		directory: mdir,
+	}
+	if err := e.process(&excomms.PublishedExternalMessage{
+		FromChannelID: fromChannelID,
+		ToChannelID:   toChannelID,
+		Type:          excomms.PublishedExternalMessage_SMS,
+		Direction:     excomms.PublishedExternalMessage_INBOUND,
+		Item: &excomms.PublishedExternalMessage_SMSItem{
+			SMSItem: &excomms.SMSItem{
+				Text: text,
+			},
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
 
 }

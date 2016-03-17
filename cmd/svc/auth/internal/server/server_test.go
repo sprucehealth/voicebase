@@ -1426,7 +1426,6 @@ func TestUpdatePasswordBadCode(t *testing.T) {
 }
 
 func TestBlockAccount(t *testing.T) {
-	email := "block@example.com"
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
 
@@ -1436,7 +1435,7 @@ func TestBlockAccount(t *testing.T) {
 	s, err := New(dl, nil, clientEncryptionSecret)
 	test.OK(t, err)
 
-	dl.Expect(mock.NewExpectation(dl.AccountForEmail, email).WithReturns(&dal.Account{
+	dl.Expect(mock.NewExpectation(dl.Account, aID1).WithReturns(&dal.Account{
 		ID:        aID1,
 		FirstName: "Block",
 		LastName:  "Example",
@@ -1450,7 +1449,7 @@ func TestBlockAccount(t *testing.T) {
 	}).WithReturns(int64(1), nil))
 
 	resp, err := s.BlockAccount(context.Background(), &auth.BlockAccountRequest{
-		Email: email,
+		AccountID: aID1.String(),
 	})
 	test.OK(t, err)
 	test.Assert(t, resp != nil, "expected response not to be null")

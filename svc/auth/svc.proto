@@ -195,7 +195,7 @@ message UpdatePasswordRequest {
 // BlockAccountRequest represents the information required to block a certain account
 // from accessing the Spruce platform
 message BlockAccountRequest {
-	string email = 1;
+    string account_id = 1 [(gogoproto.customname) = "AccountID"];
 }
 
 // BlockAccountResponse represents the information returned from a call to BlockAccount

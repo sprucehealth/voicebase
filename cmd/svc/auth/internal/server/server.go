@@ -667,11 +667,16 @@ func (s *server) VerifiedValue(ctx context.Context, rd *auth.VerifiedValueReques
 }
 
 func (s *server) BlockAccount(ctx context.Context, req *auth.BlockAccountRequest) (*auth.BlockAccountResponse, error) {
-	if req.Email == "" {
-		return nil, grpcErrorf(codes.InvalidArgument, "email required")
+	if req.AccountID == "" {
+		return nil, grpcErrorf(codes.InvalidArgument, "accountID required")
 	}
 
-	account, err := s.dal.AccountForEmail(req.Email)
+	accountID, err := dal.ParseAccountID(req.AccountID)
+	if err != nil {
+		return nil, grpcErrorf(codes.InvalidArgument, "Unable to parse provided account ID")
+	}
+
+	account, err := s.dal.Account(accountID)
 	if api.IsErrNotFound(err) {
 		return nil, grpcErrorf(codes.NotFound, err.Error())
 	} else if err != nil {

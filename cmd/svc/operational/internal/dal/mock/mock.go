@@ -18,8 +18,8 @@ func New(t *testing.T) *mockDAL {
 	}
 }
 
-func (m *mockDAL) MarkAccountAsBlocked(email string) error {
-	rets := m.Record(email)
+func (m *mockDAL) MarkAccountAsBlocked(accountID string) error {
+	rets := m.Record(accountID)
 	if len(rets) == 0 {
 		return nil
 	}

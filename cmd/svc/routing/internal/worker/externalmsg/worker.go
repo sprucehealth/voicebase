@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 	"github.com/sprucehealth/backend/libs/awsutil"
@@ -16,8 +18,10 @@ import (
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/worker"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/operational"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -25,11 +29,13 @@ import (
 )
 
 type externalMessageWorker struct {
-	started   bool
-	sqsAPI    sqsiface.SQSAPI
-	sqsURL    string
-	directory directory.DirectoryClient
-	threading threading.ThreadsClient
+	started               bool
+	sqsAPI                sqsiface.SQSAPI
+	sqsURL                string
+	snsAPI                snsiface.SNSAPI
+	blockAccountsTopicARN string
+	directory             directory.DirectoryClient
+	threading             threading.ThreadsClient
 }
 
 // NewWorker returns a worker that consumes SQS messages
@@ -37,14 +43,18 @@ type externalMessageWorker struct {
 func NewWorker(
 	sqsAPI sqsiface.SQSAPI,
 	sqsURL string,
+	snsAPI snsiface.SNSAPI,
+	blockAccountsTopicARN string,
 	directory directory.DirectoryClient,
 	threading threading.ThreadsClient,
 ) worker.Worker {
 	return &externalMessageWorker{
-		sqsAPI:    sqsAPI,
-		sqsURL:    sqsURL,
-		directory: directory,
-		threading: threading,
+		sqsAPI:                sqsAPI,
+		sqsURL:                sqsURL,
+		snsAPI:                snsAPI,
+		blockAccountsTopicARN: blockAccountsTopicARN,
+		directory:             directory,
+		threading:             threading,
 	}
 }
 
@@ -158,6 +168,39 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			return errors.Trace(fmt.Errorf("No organization or provider found for %s", pem.ToChannelID))
 		}
 		toEntities = []*directory.Entity{toEntity}
+
+		if isMessageSpam(pem) {
+
+			accountIDs, err := r.determineAccountIDsOfProvidersInOrg(ctx, toEntity)
+			if err != nil {
+				return errors.Trace(err)
+			}
+
+			for _, accountID := range accountIDs {
+
+				bar := operational.BlockAccountRequest{
+					AccountID: accountID,
+				}
+
+				data, err := bar.Marshal()
+				if err != nil {
+					golog.Errorf("Unable to marshal block account request for account %s: %s", accountID, err.Error())
+					continue
+				}
+
+				_, err = r.snsAPI.Publish(&sns.PublishInput{
+					Message:  ptr.String(base64.StdEncoding.EncodeToString(data)),
+					TopicArn: ptr.String(r.blockAccountsTopicARN),
+				})
+				if err != nil {
+					golog.Errorf("Unable to publish message to block accounts topic for account %s: %s", accountID, err.Error())
+					continue
+				}
+			}
+
+			// routing complete if message is spam
+			return nil
+		}
 
 		organizationID = determineOrganizationID(toEntity)
 		fromEntities = determineExternalEntities(fromEntityLookupRes, organizationID)
@@ -450,6 +493,59 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 	return nil
 }
 
+func (e *externalMessageWorker) determineAccountIDsOfProvidersInOrg(ctx context.Context, ent *directory.Entity) ([]string, error) {
+
+	var accountIDs []string
+
+	switch ent.Type {
+
+	case directory.EntityType_INTERNAL:
+		accountIDs = []string{determineAccountIDFromEntityExternalID(ent)}
+
+	case directory.EntityType_ORGANIZATION:
+
+		orgLookupRes, err := e.directory.LookupEntities(
+			ctx,
+			&directory.LookupEntitiesRequest{
+				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					EntityID: ent.ID,
+				},
+				RequestedInformation: &directory.RequestedInformation{
+					Depth: 1,
+					EntityInformation: []directory.EntityInformation{
+						directory.EntityInformation_MEMBERS,
+						directory.EntityInformation_EXTERNAL_IDS,
+					},
+				},
+			})
+		if err != nil {
+			return nil, errors.Trace(err)
+		} else if len(orgLookupRes.Entities) != 1 {
+			return nil, errors.Trace(fmt.Errorf("Expected 1 entity but got %d for %s", len(orgLookupRes.Entities), ent.ID))
+		}
+
+		for _, member := range orgLookupRes.Entities[0].Members {
+			if member.Type == directory.EntityType_INTERNAL {
+				if accountID := determineAccountIDFromEntityExternalID(member); accountID != "" {
+					accountIDs = append(accountIDs, accountID)
+				}
+			}
+		}
+	}
+
+	return accountIDs, nil
+}
+
+func determineAccountIDFromEntityExternalID(ent *directory.Entity) string {
+	for _, externalID := range ent.ExternalIDs {
+		if strings.HasPrefix(externalID, auth.AccountIDPrefix) {
+			return externalID
+		}
+	}
+	return ""
+}
+
 func determineDisplayName(channelID string, contactType directory.ContactType, entity *directory.Entity) string {
 	fromName := channelID
 	if entity.Info != nil && entity.Info.DisplayName != "" {
@@ -495,6 +591,7 @@ func lookupEntitiesByContact(ctx context.Context, contactValue string, dir direc
 				EntityInformation: []directory.EntityInformation{
 					directory.EntityInformation_MEMBERSHIPS,
 					directory.EntityInformation_CONTACTS,
+					directory.EntityInformation_EXTERNAL_IDS,
 				},
 			},
 			Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
@@ -557,4 +654,11 @@ func determineExternalEntities(res *directory.LookupEntitiesByContactResponse, o
 		}
 	}
 	return externalEntities
+}
+
+func isMessageSpam(pem *excomms.PublishedExternalMessage) bool {
+	if pem.Type == excomms.PublishedExternalMessage_SMS && pem.Direction == excomms.PublishedExternalMessage_INBOUND {
+		return strings.Contains(pem.GetSMSItem().Text, "(WeChat Verification Code)")
+	}
+	return false
 }

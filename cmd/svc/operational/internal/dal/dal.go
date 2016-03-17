@@ -7,7 +7,7 @@ import (
 )
 
 type DAL interface {
-	MarkAccountAsBlocked(email string) error
+	MarkAccountAsBlocked(accountID string) error
 }
 
 type dal struct {
@@ -20,8 +20,8 @@ func NewDAL(db *sql.DB) DAL {
 	}
 }
 
-func (d *dal) MarkAccountAsBlocked(email string) error {
+func (d *dal) MarkAccountAsBlocked(accountID string) error {
 	_, err := d.db.Exec(`
-		INSERT INTO blocked_accounts (email) VALUES (?)`, email)
+		INSERT INTO blocked_accounts (account_id) VALUES (?)`, accountID)
 	return errors.Trace(err)
 }

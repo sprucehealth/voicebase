@@ -90,7 +90,7 @@ func (w *BlockAccountWorker) processEvent(bar *operational.BlockAccountRequest) 
 
 	// block account via the auth service
 	res, err := w.auth.BlockAccount(ctx, &auth.BlockAccountRequest{
-		Email: bar.Email,
+		AccountID: bar.AccountID,
 	})
 	if err != nil {
 		if grpc.Code(err) == codes.NotFound {
@@ -173,7 +173,7 @@ func (w *BlockAccountWorker) processEvent(bar *operational.BlockAccountRequest) 
 	}
 
 	// record the fact that the account was blocked
-	if err := w.dal.MarkAccountAsBlocked(bar.Email); err != nil {
+	if err := w.dal.MarkAccountAsBlocked(bar.AccountID); err != nil {
 		golog.Errorf("Unable to mark account as blocked :%s", err.Error())
 	}
 

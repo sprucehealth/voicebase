@@ -465,7 +465,7 @@ func (*UpdatePasswordRequest) ProtoMessage() {}
 // BlockAccountRequest represents the information required to block a certain account
 // from accessing the Spruce platform
 type BlockAccountRequest struct {
-	Email string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	AccountID string `protobuf:"bytes,1,opt,name=account_id,proto3" json:"account_id,omitempty"`
 }
 
 func (m *BlockAccountRequest) Reset()      { *m = BlockAccountRequest{} }
@@ -1340,7 +1340,7 @@ func (this *BlockAccountRequest) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.Email != that1.Email {
+	if this.AccountID != that1.AccountID {
 		return false
 	}
 	return true
@@ -1788,7 +1788,7 @@ func (this *BlockAccountRequest) GoString() string {
 	}
 	s := make([]string, 0, 5)
 	s = append(s, "&auth.BlockAccountRequest{")
-	s = append(s, "Email: "+fmt.Sprintf("%#v", this.Email)+",\n")
+	s = append(s, "AccountID: "+fmt.Sprintf("%#v", this.AccountID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -3193,11 +3193,11 @@ func (m *BlockAccountRequest) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.Email) > 0 {
+	if len(m.AccountID) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintSvc(data, i, uint64(len(m.Email)))
-		i += copy(data[i:], m.Email)
+		i = encodeVarintSvc(data, i, uint64(len(m.AccountID)))
+		i += copy(data[i:], m.AccountID)
 	}
 	return i, nil
 }
@@ -3700,7 +3700,7 @@ func (m *UpdatePasswordRequest) Size() (n int) {
 func (m *BlockAccountRequest) Size() (n int) {
 	var l int
 	_ = l
-	l = len(m.Email)
+	l = len(m.AccountID)
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
@@ -4097,7 +4097,7 @@ func (this *BlockAccountRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&BlockAccountRequest{`,
-		`Email:` + fmt.Sprintf("%v", this.Email) + `,`,
+		`AccountID:` + fmt.Sprintf("%v", this.AccountID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -7736,7 +7736,7 @@ func (m *BlockAccountRequest) Unmarshal(data []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Email", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field AccountID", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -7761,7 +7761,7 @@ func (m *BlockAccountRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Email = string(data[iNdEx:postIndex])
+			m.AccountID = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

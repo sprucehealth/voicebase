@@ -32,12 +32,11 @@ func TestBlockAccountWorker(t *testing.T) {
 	ma := authmock.New(t)
 	defer ma.Finish()
 
-	email := "block@example.com"
 	accountID := "accountID"
 	spruceOrgID := "spruceOrgID"
 
 	ma.Expect(mock.NewExpectation(ma.BlockAccount, &auth.BlockAccountRequest{
-		Email: email,
+		AccountID: accountID,
 	}).WithReturns(&auth.BlockAccountResponse{
 		Account: &auth.Account{
 			ID:        accountID,
@@ -110,11 +109,11 @@ func TestBlockAccountWorker(t *testing.T) {
 		Reason:      "block account",
 	}))
 
-	md.Expect(mock.NewExpectation(md.MarkAccountAsBlocked, email))
+	md.Expect(mock.NewExpectation(md.MarkAccountAsBlocked, accountID))
 
 	w := NewBlockAccountWorker(ma, mdir, me, mt, nil, md, "sqs_url", spruceOrgID)
 	test.OK(t, w.processEvent(&operational.BlockAccountRequest{
-		Email: email,
+		AccountID: accountID,
 	}))
 }
 
@@ -134,12 +133,11 @@ func TestBlockAccountWorker_NoProvisionedPhoneNumber(t *testing.T) {
 	ma := authmock.New(t)
 	defer ma.Finish()
 
-	email := "block@example.com"
 	accountID := "accountID"
 	spruceOrgID := "spruceOrgID"
 
 	ma.Expect(mock.NewExpectation(ma.BlockAccount, &auth.BlockAccountRequest{
-		Email: email,
+		AccountID: accountID,
 	}).WithReturns(&auth.BlockAccountResponse{
 		Account: &auth.Account{
 			ID:        accountID,
@@ -202,10 +200,10 @@ func TestBlockAccountWorker_NoProvisionedPhoneNumber(t *testing.T) {
 		},
 	}, nil))
 
-	md.Expect(mock.NewExpectation(md.MarkAccountAsBlocked, email))
+	md.Expect(mock.NewExpectation(md.MarkAccountAsBlocked, accountID))
 
 	w := NewBlockAccountWorker(ma, mdir, me, mt, nil, md, "sqs_url", spruceOrgID)
 	test.OK(t, w.processEvent(&operational.BlockAccountRequest{
-		Email: email,
+		AccountID: accountID,
 	}))
 }

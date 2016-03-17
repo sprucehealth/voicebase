@@ -9,5 +9,5 @@ option (gogoproto.unmarshaler_all) = true;
 option (gogoproto.goproto_enum_prefix_all) = true;
 
 message BlockAccountRequest {
-	string email = 1;
+    string account_id = 1 [(gogoproto.customname) = "AccountID"];
 }

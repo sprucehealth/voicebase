@@ -23,7 +23,7 @@ import (
 
 var (
 	flagKMSKeyARN               = flag.String("kms_key_arn", "", "the arn of the master key that should be used for encrypting data")
-	flagEmailCSV                = flag.String("email_csv", "", "file name containing the list of email addresses that map to accounts to block")
+	flagAccountIDsCSV           = flag.String("account_ids_csv", "", "file name containing the list of account IDs that map to accounts to block")
 	flagBlockAccountSNSTopicARN = flag.String("block_account_sns_topic_arn", "", "arn of the sns topic to which to publish the block account request")
 	flagAWSAccessKey            = flag.String("aws_access_key", "", "Access `key` for AWS")
 	flagAWSSecretKey            = flag.String("aws_secret_key", "", "Secret `key` for AWS")
@@ -46,7 +46,7 @@ func main() {
 		golog.Fatalf("Unable to initialize enrypted sns: %s", err.Error())
 	}
 
-	csvFile, err := os.Open(*flagEmailCSV)
+	csvFile, err := os.Open(*flagAccountIDsCSV)
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
@@ -63,7 +63,7 @@ func main() {
 		}
 
 		if err := publish(eSNS, *flagBlockAccountSNSTopicARN, &operational.BlockAccountRequest{
-			Email: row[0],
+			AccountID: row[0],
 		}); err != nil {
 			golog.Fatalf(err.Error())
 		} else {
@@ -75,7 +75,7 @@ func main() {
 func validate() {
 	if *flagKMSKeyARN == "" {
 		golog.Fatalf("ARN for KMS Key not specified")
-	} else if *flagEmailCSV == "" {
+	} else if *flagAccountIDsCSV == "" {
 		golog.Fatalf("Filename of file containing emails not specified")
 	} else if *flagBlockAccountSNSTopicARN == "" {
 		golog.Fatalf("SNS Topic ARN for blocking account not specified")
