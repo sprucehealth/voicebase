@@ -206,7 +206,6 @@ func testOutgoing(t *testing.T, testExpired bool, patientName string) {
 }
 
 func TestIncoming_Organization(t *testing.T) {
-	t.Skip("Debugging")
 	orgID := "12345"
 	providerPersonalPhone := "+14152222222"
 	patientPhone := "+14151111111"
@@ -278,7 +277,7 @@ func TestIncoming_Organization(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<Response><Pause length="5"></Pause><Dial action="/twilio/call/process_incoming_call_status" timeout="30" callerId="%s"><Number url="/twilio/call/provider_call_connected">%s</Number></Dial></Response>`, practicePhoneNumber, providerPersonalPhone)
+<Response><Pause length="2"></Pause><Dial action="/twilio/call/process_incoming_call_status" timeout="30" callerId="%s"><Number url="/twilio/call/provider_call_connected">%s</Number></Dial></Response>`, practicePhoneNumber, providerPersonalPhone)
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -403,7 +402,6 @@ func TestIncoming_Organization_SingleProvider_DirectAllCallsToVoicemail(t *testi
 }
 
 func TestIncoming_Organization_MultipleContacts(t *testing.T) {
-	t.Skip("Debugging")
 	orgID := "12345"
 	listedNumber1 := "+14152222222"
 	listedNumber2 := "+14153333333"
@@ -477,7 +475,7 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<Response><Pause length="5"></Pause><Dial action="/twilio/call/process_incoming_call_status" timeout="30" callerId="+14150000000"><Number url="/twilio/call/provider_call_connected">+14152222222</Number><Number url="/twilio/call/provider_call_connected">+14153333333</Number><Number url="/twilio/call/provider_call_connected">+14154444444</Number></Dial></Response>`)
+<Response><Pause length="2"></Pause><Dial action="/twilio/call/process_incoming_call_status" timeout="30" callerId="+14150000000"><Number url="/twilio/call/provider_call_connected">+14152222222</Number><Number url="/twilio/call/provider_call_connected">+14153333333</Number><Number url="/twilio/call/provider_call_connected">+14154444444</Number></Dial></Response>`)
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -485,7 +483,6 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 }
 
 func TestIncoming_Organization_MultipleContacts_SendToVoicemail(t *testing.T) {
-	t.Skip("Debugging")
 	orgID := "12345"
 	listedNumber1 := "+14152222222"
 	providerID1 := "p1"
@@ -597,7 +594,7 @@ func TestIncoming_Organization_MultipleContacts_SendToVoicemail(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<Response><Pause length="5"></Pause><Dial action="/twilio/call/process_incoming_call_status" timeout="30" callerId="+14150000000"><Number url="/twilio/call/provider_call_connected">+14153333333</Number><Number url="/twilio/call/provider_call_connected">+14154444444</Number></Dial></Response>`)
+<Response><Pause length="2"></Pause><Dial action="/twilio/call/process_incoming_call_status" timeout="30" callerId="+14150000000"><Number url="/twilio/call/provider_call_connected">+14153333333</Number><Number url="/twilio/call/provider_call_connected">+14154444444</Number></Dial></Response>`)
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -605,7 +602,6 @@ func TestIncoming_Organization_MultipleContacts_SendToVoicemail(t *testing.T) {
 }
 
 func TestIncoming_Provider(t *testing.T) {
-	t.Skip("Debugging")
 	orgID := "12345"
 	providerID := "6789"
 	providerPersonalPhone := "+14152222222"
@@ -686,7 +682,7 @@ func TestIncoming_Provider(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<Response><Pause length="5"></Pause><Dial action="/twilio/call/process_incoming_call_status" timeout="30" callerId="%s"><Number url="/twilio/call/provider_call_connected">%s</Number></Dial></Response>`, practicePhoneNumber, providerPersonalPhone)
+<Response><Pause length="2"></Pause><Dial action="/twilio/call/process_incoming_call_status" timeout="30" callerId="%s"><Number url="/twilio/call/provider_call_connected">%s</Number></Dial></Response>`, practicePhoneNumber, providerPersonalPhone)
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
