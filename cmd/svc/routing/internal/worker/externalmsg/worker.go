@@ -628,7 +628,8 @@ func determineProviderOrOrgEntity(res *directory.LookupEntitiesByContactResponse
 			continue
 		}
 		for _, c := range entity.Contacts {
-			if c.Value == value {
+
+			if strings.EqualFold(c.Value, value) {
 				return entity
 			}
 		}
