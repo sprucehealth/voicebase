@@ -52,7 +52,7 @@ type ProvisionedEndpoint struct {
 	Provisioned            time.Time
 	Deprovisioned          bool
 	DeprovisionedTimestamp *time.Time
-	DeprovisionedReason    string
+	DeprovisionedReason    *string
 }
 
 // CallRequest represents a request to make a call from the source to the destination
