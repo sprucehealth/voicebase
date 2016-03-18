@@ -142,7 +142,7 @@ func TestProvisionPhone(t *testing.T) {
 					}
 				]
 			},
-			"phoneNumber": "+12068773590",
+			"phoneNumber": "(206) 877-3590",
 			"success": true
 		}
 	}

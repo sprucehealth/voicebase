@@ -266,7 +266,6 @@ func main() {
 	}
 
 	h := httputil.LoggingHandler(r, webRequestLogger)
-	h = newBlockChinaHandler(h)
 
 	fmt.Printf("Listening on %s\n", *flagListenAddr)
 

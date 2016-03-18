@@ -200,10 +200,15 @@ var provisionPhoneNumberMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 
+		pn, err := phone.Format(res.PhoneNumber, phone.Pretty)
+		if err != nil {
+			return nil, errors.InternalError(ctx, err)
+		}
+
 		return &provisionPhoneNumberOutput{
 			ClientMutationID: mutationID,
 			Success:          true,
-			PhoneNumber:      res.PhoneNumber,
+			PhoneNumber:      pn,
 			Organization:     orgRes,
 		}, nil
 	},
