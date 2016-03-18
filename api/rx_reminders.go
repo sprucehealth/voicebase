@@ -8,7 +8,7 @@ import (
 
 func (d *dataService) CreateRXReminder(r *common.RXReminder) error {
 	_, err := d.db.Exec(`
-    INSERT INTO rx_reminder 
+    INSERT INTO rx_reminder
       (treatment_id, text, reminder_interval, days, times)
       VALUES (?, ?, ?, ?, ?)`, r.TreatmentID, r.ReminderText, r.Interval.String(), common.JoinRXRDaySlice(r.Days), r.Times)
 	return errors.Trace(err)
@@ -31,7 +31,7 @@ func (d *dataService) RXReminders(treatmentIDs []int64) (map[int64]*common.RXRem
 	}
 	reminders := make(map[int64]*common.RXReminder)
 	rows, err := d.db.Query(`
-    SELECT treatment_id, text, reminder_interval, days, times, created 
+    SELECT treatment_id, text, reminder_interval, days, times, created
       FROM rx_reminder
       WHERE treatment_id IN (`+dbutil.MySQLArgs(len(treatmentIDs))+`)`, dbutil.AppendInt64sToInterfaceSlice(nil, treatmentIDs)...)
 	if err != nil {
