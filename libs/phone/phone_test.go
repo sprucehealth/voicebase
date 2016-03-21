@@ -78,6 +78,34 @@ func TestNumber_Format(t *testing.T) {
 	test.Equals(t, "(206) 877-3590", str)
 }
 
+func TestNumber_HandledWords(t *testing.T) {
+	testHandledWords(t, NumberRestricted, restricted)
+	testHandledWords(t, NumberAnonymous, anonymous)
+	testHandledWords(t, NumberUnknown, unknown)
+	testHandledWords(t, NumberUnavailable, unavailable)
+	testHandledWords(t, NumberBlocked, blocked)
+}
+
+func testHandledWords(t *testing.T, handledDigits, handledWord string) {
+	// parse the handled digits to ensure they are parseable
+	n, err := ParseNumber(handledDigits)
+	test.OK(t, err)
+	test.Equals(t, handledDigits, n.String())
+
+	// run the pretty formatter to ensure we get the handled word back
+	f, err := n.Format(Pretty)
+	test.Equals(t, handledWord, f)
+
+	// run the E164 formatter to ensure that we get the digits back
+	f, err = n.Format(E164)
+	test.Equals(t, handledDigits, f)
+
+	// parse the handled word itself to ensure we get the digits back
+	n, err = ParseNumber(handledWord)
+	test.OK(t, err)
+	test.Equals(t, handledDigits, n.String())
+}
+
 func BenchmarkFormat(b *testing.B) {
 	n := Number("+12068773590")
 	b.ResetTimer()

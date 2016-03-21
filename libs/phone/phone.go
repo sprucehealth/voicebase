@@ -29,6 +29,42 @@ const (
 
 const (
 	prefix = "+1"
+
+	// the following numbers map to known "words"
+	// as listed here: https://www.twilio.com/help/faq/voice/why-am-i-getting-calls-from-these-strange-numbers
+	// we'd like to treat them as valid cases so that we are not rejecting
+	// phone numbers for valid situations where the user has their phone number blocked
+	// or unavailable.
+	NumberRestricted  = "+17378742833"
+	NumberBlocked     = "+2562533"
+	NumberUnknown     = "+8656696"
+	NumberAnonymous   = "+266696687"
+	NumberUnavailable = "+86282452253"
+
+	// constants that represent handled cases of a phone number
+	restricted  = "RESTRICTED"
+	blocked     = "BLOCKED"
+	unknown     = "UNKNOWN"
+	anonymous   = "ANONYMOUS"
+	unavailable = "UNAVAILABLE"
+)
+
+var (
+	digitsToHandledWordsMap = map[string]string{
+		NumberRestricted:  restricted,
+		NumberBlocked:     blocked,
+		NumberUnknown:     unknown,
+		NumberAnonymous:   anonymous,
+		NumberUnavailable: unavailable,
+	}
+
+	handledWordsToDigitsMap = map[string]string{
+		restricted:  NumberRestricted,
+		blocked:     NumberBlocked,
+		unknown:     NumberUnknown,
+		anonymous:   NumberAnonymous,
+		unavailable: NumberUnavailable,
+	}
 )
 
 // Number represents a phone number in E164 form
@@ -37,6 +73,15 @@ type Number string
 // String implements fmt.Stringer to provider a string representation of number.
 func (n Number) String() string {
 	return string(n)
+}
+
+// IsCallable returns true if the phone number can be called, false if not.
+func (n Number) IsCallable() bool {
+	switch n.String() {
+	case "", NumberRestricted, NumberBlocked, NumberUnknown, NumberUnavailable, NumberAnonymous:
+		return false
+	}
+	return true
 }
 
 // MarshalText implements encoding.TextMarshaler
@@ -87,9 +132,15 @@ func (n Number) Value() (driver.Value, error) {
 func (n Number) Format(format NumberFormat) (string, error) {
 	str := n.String()
 
-	switch format {
-	case E164:
+	if format == E164 {
 		return str, nil
+	}
+
+	if formattedStr := digitsToHandledWordsMap[str]; formattedStr != "" {
+		return formattedStr, nil
+	}
+
+	switch format {
 	case International:
 		return str[:2] + " " + str[2:5] + " " + str[5:8] + " " + str[8:], nil
 	case National:
@@ -97,6 +148,7 @@ func (n Number) Format(format NumberFormat) (string, error) {
 	case Pretty:
 		return "(" + str[2:5] + ") " + str[5:8] + "-" + str[8:], nil
 	}
+
 	return "", errors.New("Unsupported format")
 }
 
@@ -137,6 +189,10 @@ func Ptr(pn Number) *Number {
 
 func sanitize(str string) (string, error) {
 
+	if digits := handledWordsToDigitsMap[str]; digits != "" {
+		return digits, nil
+	}
+
 	strippedPhone := make([]byte, 0, len(str))
 	for _, s := range str {
 		if unicode.IsDigit(s) {
@@ -144,7 +200,10 @@ func sanitize(str string) (string, error) {
 		}
 	}
 
-	// strippedPhone := nonDigitsMatcher.ReplaceAllString(str, "")
+	if handledWord := digitsToHandledWordsMap["+"+string(strippedPhone)]; handledWord != "" {
+		return "+" + string(strippedPhone), nil
+	}
+
 	startingIdx := 0
 	switch {
 	case len(strippedPhone) == 10:

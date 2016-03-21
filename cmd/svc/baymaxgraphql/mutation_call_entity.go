@@ -154,6 +154,13 @@ var callEntityMutation = &graphql.Field{
 				ErrorCode:        callEntityInvalidPhoneNumber,
 				ErrorMessage:     "The destination phone number is not a valid US phone number",
 			}, nil
+		} else if !pn.IsCallable() {
+			return &callEntityOutput{
+				ClientMutationID: mutationID,
+				Success:          false,
+				ErrorCode:        callEntityInvalidPhoneNumber,
+				ErrorMessage:     "The destination phone number cannot be called given that it represents an unavailable phone number.",
+			}, nil
 		}
 
 		if originatingPhoneNumber != "" {
