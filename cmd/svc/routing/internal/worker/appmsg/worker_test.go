@@ -3,9 +3,12 @@ package appmsg
 import (
 	"testing"
 
+	rsettings "github.com/sprucehealth/backend/cmd/svc/routing/internal/settings"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/settings"
+	settingsmock "github.com/sprucehealth/backend/svc/settings/mock"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -42,8 +45,15 @@ func (e *mockExCommsService) SendMessage(ctx context.Context, in *excomms.SendMe
 	return &excomms.SendMessageResponse{}, nil
 }
 
-func TestSendMessage_SMS(t *testing.T) {
+func TestSendMessage_SMS_RevealSender(t *testing.T) {
+	testSendMessageSMS(t, true)
+}
 
+func TestSendMessage_SMS_DontRevealSender(t *testing.T) {
+	testSendMessageSMS(t, false)
+}
+
+func testSendMessageSMS(t *testing.T, revealSender bool) {
 	orgEntity := &directory.Entity{
 		Type: directory.EntityType_ORGANIZATION,
 		ID:   "10",
@@ -66,11 +76,23 @@ func TestSendMessage_SMS(t *testing.T) {
 			},
 		},
 	}
+	providerEntity := &directory.Entity{
+		Info: &directory.EntityInfo{
+			DisplayName: "Dr. Smith",
+		},
+		Type: directory.EntityType_INTERNAL,
+		ID:   "30",
+	}
 
 	me := &mockExCommsService{
 		Expector: &mock.Expector{
 			T: t,
 		},
+	}
+
+	text := "Hello"
+	if revealSender {
+		text = "Dr. Smith: Hello"
 	}
 	me.Expect(mock.NewExpectation(me.SendMessage, context.Background(), &excomms.SendMessageRequest{
 		UUID:    "11000",
@@ -79,7 +101,7 @@ func TestSendMessage_SMS(t *testing.T) {
 			SMS: &excomms.SMSMessage{
 				FromPhoneNumber: "+17348465522",
 				ToPhoneNumber:   "+12068773590",
-				Text:            "Hello",
+				Text:            text,
 			},
 		},
 	}))
@@ -91,6 +113,7 @@ func TestSendMessage_SMS(t *testing.T) {
 		entityIDToEntityMapping: map[string]*directory.Entity{
 			orgEntity.ID:      orgEntity,
 			externalEntity.ID: externalEntity,
+			providerEntity.ID: providerEntity,
 		},
 	}
 	md.Expect(mock.NewExpectation(md.LookupEntities, context.Background(), &directory.LookupEntitiesRequest{
@@ -120,7 +143,43 @@ func TestSendMessage_SMS(t *testing.T) {
 		},
 	}))
 
-	aw := NewWorker(nil, "", md, me)
+	if revealSender {
+		md.Expect(mock.NewExpectation(md.LookupEntities, context.Background(), &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: providerEntity.ID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth: 0,
+			},
+		}))
+	}
+
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		NodeID: orgEntity.ID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key: rsettings.ConfigKeyRevealSenderAcrossExcomms,
+			},
+		},
+	}).WithReturns(
+		&settings.GetValuesResponse{
+			Values: []*settings.Value{
+				{
+					Type: settings.ConfigType_BOOLEAN,
+					Value: &settings.Value_Boolean{
+						Boolean: &settings.BooleanValue{
+							Value: revealSender,
+						},
+					},
+				},
+			},
+		}, nil))
+
+	aw := NewWorker(nil, "", md, me, msettings)
 
 	pti := &threading.PublishedThreadItem{
 		OrganizationID:  orgEntity.ID,
@@ -128,7 +187,7 @@ func TestSendMessage_SMS(t *testing.T) {
 		PrimaryEntityID: externalEntity.ID,
 		Item: &threading.ThreadItem{
 			ID:            "11000",
-			ActorEntityID: "30",
+			ActorEntityID: providerEntity.ID,
 			Internal:      false,
 			Type:          threading.ThreadItem_MESSAGE,
 			Item: &threading.ThreadItem_Message{
@@ -160,8 +219,15 @@ func TestSendMessage_SMS(t *testing.T) {
 	md.Finish()
 }
 
-func TestSendMessage_Email(t *testing.T) {
+func TestSendMessage_Email_RevealSender(t *testing.T) {
+	testSendingEmail(t, true)
+}
 
+func TestSendMessage_Email_DontRevealSender(t *testing.T) {
+	testSendingEmail(t, false)
+}
+
+func testSendingEmail(t *testing.T, revealSender bool) {
 	orgEntity := &directory.Entity{
 		Info: &directory.EntityInfo{
 			DisplayName: "Practice Name",
@@ -210,6 +276,11 @@ func TestSendMessage_Email(t *testing.T) {
 			T: t,
 		},
 	}
+
+	fromName := "Practice Name"
+	if revealSender {
+		fromName = "Dr. Smith"
+	}
 	me.Expect(mock.NewExpectation(me.SendMessage, context.Background(), &excomms.SendMessageRequest{
 		UUID:    "11000",
 		Channel: excomms.ChannelType_EMAIL,
@@ -217,7 +288,7 @@ func TestSendMessage_Email(t *testing.T) {
 			Email: &excomms.EmailMessage{
 				Subject:          "Message from Practice Name",
 				Body:             "Hello",
-				FromName:         "Dr. Smith",
+				FromName:         fromName,
 				FromEmailAddress: "doctor@practice.baymax.com",
 				ToEmailAddress:   "patient@test.com",
 			},
@@ -260,17 +331,44 @@ func TestSendMessage_Email(t *testing.T) {
 			},
 		},
 	}))
-	md.Expect(mock.NewExpectation(md.LookupEntities, context.Background(), &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-			EntityID: providerEntity.ID,
-		},
-		RequestedInformation: &directory.RequestedInformation{
-			Depth: 0,
-		},
-	}))
 
-	aw := NewWorker(nil, "", md, me)
+	if revealSender {
+		md.Expect(mock.NewExpectation(md.LookupEntities, context.Background(), &directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: providerEntity.ID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth: 0,
+			},
+		}))
+	}
+
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		NodeID: orgEntity.ID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key: rsettings.ConfigKeyRevealSenderAcrossExcomms,
+			},
+		},
+	}).WithReturns(
+		&settings.GetValuesResponse{
+			Values: []*settings.Value{
+				{
+					Type: settings.ConfigType_BOOLEAN,
+					Value: &settings.Value_Boolean{
+						Boolean: &settings.BooleanValue{
+							Value: revealSender,
+						},
+					},
+				},
+			},
+		}, nil))
+
+	aw := NewWorker(nil, "", md, me, msettings)
 
 	pti := &threading.PublishedThreadItem{
 		OrganizationID:  orgEntity.ID,
@@ -367,7 +465,7 @@ func TestSendMessage_Multiple(t *testing.T) {
 			Email: &excomms.EmailMessage{
 				Subject:          "Message from Practice Name",
 				Body:             "Hello",
-				FromName:         "Dr. Smith",
+				FromName:         "Practice Name",
 				FromEmailAddress: "doctor@practice.baymax.com",
 				ToEmailAddress:   "patient@test.com",
 			},
@@ -421,17 +519,32 @@ func TestSendMessage_Multiple(t *testing.T) {
 			},
 		},
 	}))
-	md.Expect(mock.NewExpectation(md.LookupEntities, context.Background(), &directory.LookupEntitiesRequest{
-		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-			EntityID: providerEntity.ID,
-		},
-		RequestedInformation: &directory.RequestedInformation{
-			Depth: 0,
-		},
-	}))
 
-	aw := NewWorker(nil, "", md, me)
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		NodeID: orgEntity.ID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key: rsettings.ConfigKeyRevealSenderAcrossExcomms,
+			},
+		},
+	}).WithReturns(
+		&settings.GetValuesResponse{
+			Values: []*settings.Value{
+				{
+					Type: settings.ConfigType_BOOLEAN,
+					Value: &settings.Value_Boolean{
+						Boolean: &settings.BooleanValue{
+							Value: false,
+						},
+					},
+				},
+			},
+		}, nil))
+
+	aw := NewWorker(nil, "", md, me, msettings)
 
 	pti := &threading.PublishedThreadItem{
 		OrganizationID:  orgEntity.ID,
@@ -537,7 +650,10 @@ func TestSendMessage_OnlyAppDestinations(t *testing.T) {
 		},
 	}
 
-	aw := NewWorker(nil, "", md, me)
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+
+	aw := NewWorker(nil, "", md, me, msettings)
 
 	pti := &threading.PublishedThreadItem{
 		OrganizationID:  orgEntity.ID,
@@ -639,7 +755,10 @@ func TestSendMessage_NoDestinations(t *testing.T) {
 		},
 	}
 
-	aw := NewWorker(nil, "", md, me)
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+
+	aw := NewWorker(nil, "", md, me, msettings)
 
 	pti := &threading.PublishedThreadItem{
 		OrganizationID:  orgEntity.ID,
@@ -678,7 +797,10 @@ func TestSendMessage_Internal(t *testing.T) {
 	me := &mockExCommsService{}
 	md := &mockDirectoryService{}
 
-	aw := NewWorker(nil, "", md, me)
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+
+	aw := NewWorker(nil, "", md, me, msettings)
 
 	pti := &threading.PublishedThreadItem{
 		OrganizationID:  "99",

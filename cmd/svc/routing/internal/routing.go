@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/libs/worker"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 )
 
@@ -31,6 +32,7 @@ func NewRoutingService(
 	directory directory.DirectoryClient,
 	threading threading.ThreadsClient,
 	excomms excomms.ExCommsClient,
+	settings settings.SettingsClient,
 	sns snsiface.SNSAPI,
 	blockAccountsTopicARN string,
 	kmsKeyARN string) (RoutingService, error) {
@@ -74,6 +76,7 @@ func NewRoutingService(
 				appMessageQueueURL,
 				directory,
 				excomms,
+				settings,
 			),
 		},
 	}

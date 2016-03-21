@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
+	rsettings "github.com/sprucehealth/backend/cmd/svc/routing/internal/settings"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -16,6 +17,7 @@ import (
 	"github.com/sprucehealth/backend/libs/worker"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
 )
@@ -26,6 +28,7 @@ type appMessageWorker struct {
 	sqsURL    string
 	directory directory.DirectoryClient
 	excomms   excomms.ExCommsClient
+	settings  settings.SettingsClient
 }
 
 // NewWorker returns a worker that consumes SQS messages
@@ -36,11 +39,13 @@ func NewWorker(
 	sqsURL string,
 	directory directory.DirectoryClient,
 	excomms excomms.ExCommsClient,
+	settings settings.SettingsClient,
 ) worker.Worker {
 	return &appMessageWorker{
 		sqsAPI:    sqsAPI,
 		sqsURL:    sqsURL,
 		excomms:   excomms,
+		settings:  settings,
 		directory: directory,
 	}
 }
@@ -206,6 +211,27 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 		return errors.Trace(err)
 	}
 
+	var revealSender bool
+	res, err := a.settings.GetValues(ctx, &settings.GetValuesRequest{
+		NodeID: organizationID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key: rsettings.ConfigKeyRevealSenderAcrossExcomms,
+			},
+		},
+	})
+	if err != nil {
+		golog.Errorf("Unable to read settings for reveling sender for organizationID %s: %s", organizationID, err.Error())
+	} else if len(res.Values) == 0 {
+		golog.Warningf("No value specified for revealing sender for %s", organizationID)
+	} else if len(res.Values) != 1 {
+		golog.Warningf("Expected 1 value for revealing sender instead got %d for %s", len(res.Values), organizationID)
+	} else if res.Values[0].GetBoolean() == nil {
+		golog.Warningf("Expected boolean value for revealing sender instead got %T for %s", res.Values[0].Value, organizationID)
+	} else {
+		revealSender = res.Values[0].GetBoolean().Value
+	}
+
 	// Perform the outbound operations for any remaining valid destinations
 	orgEntity := orgLookupRes.Entities[0]
 	for _, d := range destinations {
@@ -219,6 +245,14 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 			if orgContact == nil {
 				golog.Errorf("Unable to determine organization provisioned phone number for org %s. Dropping message...", organizationID)
 				return nil
+			}
+
+			if revealSender {
+				providerEntity, err := determineActorEntity(ctx, a.directory, pti.GetItem().ActorEntityID)
+				if err != nil {
+					return errors.Trace(err)
+				}
+				plainText = providerEntity.Info.DisplayName + ": " + plainText
 			}
 
 			_, err := a.excomms.SendMessage(
@@ -247,25 +281,14 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 				return nil
 			}
 
-			// determine provider (sender of message) to include in the email
-			providerLookupRes, err := a.directory.LookupEntities(
-				ctx,
-				&directory.LookupEntitiesRequest{
-					LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
-					LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
-						EntityID: pti.GetItem().ActorEntityID,
-					},
-					RequestedInformation: &directory.RequestedInformation{
-						Depth: 0,
-					},
-				},
-			)
-			if err != nil {
-				return errors.Trace(err)
-			} else if len(providerLookupRes.Entities) != 1 {
-				return errors.Trace(fmt.Errorf("Expected 1 provider to exist for id %s, but got %d", pti.GetItem().ActorEntityID, len(providerLookupRes.Entities)))
+			fromName := orgEntity.Info.DisplayName
+			if revealSender {
+				providerEntity, err := determineActorEntity(ctx, a.directory, pti.GetItem().ActorEntityID)
+				if err != nil {
+					return errors.Trace(err)
+				}
+				fromName = providerEntity.Info.DisplayName
 			}
-			providerEntity := providerLookupRes.Entities[0]
 
 			_, err = a.excomms.SendMessage(
 				ctx,
@@ -276,7 +299,7 @@ func (a *appMessageWorker) process(pti *threading.PublishedThreadItem) error {
 						Email: &excomms.EmailMessage{
 							Subject:          fmt.Sprintf("Message from %s", orgEntity.Info.DisplayName),
 							Body:             plainText,
-							FromName:         providerEntity.Info.DisplayName,
+							FromName:         fromName,
 							FromEmailAddress: orgContact.Value,
 							ToEmailAddress:   d.ID,
 						},
@@ -310,4 +333,26 @@ func determineProvisionedContact(entity *directory.Entity, contactType directory
 
 	}
 	return nil
+}
+
+func determineActorEntity(ctx context.Context, directoryClient directory.DirectoryClient, actorEntityID string) (*directory.Entity, error) {
+	// determine provider (sender of message) to include in the email
+	providerLookupRes, err := directoryClient.LookupEntities(
+		ctx,
+		&directory.LookupEntitiesRequest{
+			LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+			LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+				EntityID: actorEntityID,
+			},
+			RequestedInformation: &directory.RequestedInformation{
+				Depth: 0,
+			},
+		},
+	)
+	if err != nil {
+		return nil, errors.Trace(err)
+	} else if len(providerLookupRes.Entities) != 1 {
+		return nil, errors.Trace(fmt.Errorf("Expected 1 provider to exist for id %s, but got %d", actorEntityID, len(providerLookupRes.Entities)))
+	}
+	return providerLookupRes.Entities[0], nil
 }

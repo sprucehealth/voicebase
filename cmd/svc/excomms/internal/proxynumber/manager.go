@@ -143,7 +143,7 @@ func (m *manager) ActiveReservation(originatingNumber, proxyNumber phone.Number)
 	// look for an active reservation on the proxy phone number
 	ppnr, err := m.dal.ActiveProxyPhoneNumberReservation(originatingNumber, nil, phone.Ptr(proxyNumber))
 	if errors.Cause(err) == dal.ErrProxyPhoneNumberReservationNotFound {
-		return nil, errors.Trace(fmt.Errorf("No active reservation found for %s", proxyNumber))
+		return nil, errors.Trace(fmt.Errorf("No active reservation found for proxy number: %s, originating number:%s", proxyNumber, originatingNumber))
 	} else if err != nil {
 		return nil, errors.Trace(err)
 	}
