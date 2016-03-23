@@ -10,7 +10,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/common"
 	"github.com/sprucehealth/backend/libs/errors"
-	"github.com/sprucehealth/backend/libs/idgen"
+	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/storage"
 )
@@ -20,7 +20,7 @@ type attachmentInfo struct {
 	Type     string `json:"type"`
 }
 
-func ParamsFromRequest(r *http.Request, store storage.Store) (*rawmsg.SendGridIncomingEmail, map[uint64]*models.Media, error) {
+func ParamsFromRequest(r *http.Request, store storage.Store) (*rawmsg.SendGridIncomingEmail, map[string]*models.Media, error) {
 	sgi := &rawmsg.SendGridIncomingEmail{
 		Headers:      r.FormValue("headers"),
 		Text:         r.FormValue("text"),
@@ -37,7 +37,7 @@ func ParamsFromRequest(r *http.Request, store storage.Store) (*rawmsg.SendGridIn
 		SpamReport:   r.FormValue("spam_report"),
 	}
 
-	media := make(map[uint64]*models.Media)
+	medias := make(map[string]*models.Media)
 	if r.FormValue("attachments") != "" {
 
 		attachmentInfoString := r.FormValue("attachment-info")
@@ -72,14 +72,17 @@ func ParamsFromRequest(r *http.Request, store storage.Store) (*rawmsg.SendGridIn
 			}
 
 			// upload the file to S3
-			id, err := idgen.NewID()
-			url, err := store.PutReader(strconv.FormatInt(int64(id), 10), fileHandle, size, sgi.Attachments[i].Type, map[string]string{
+			id, err := media.NewID()
+			if err != nil {
+				return nil, nil, errors.Trace(err)
+			}
+			url, err := store.PutReader(id, fileHandle, size, sgi.Attachments[i].Type, map[string]string{
 				"X-Amz-Meta-Original-Name": sgi.Attachments[i].Filename,
 			})
 			if err != nil {
 				return nil, nil, errors.Trace(err)
 			}
-			media[id] = &models.Media{
+			medias[id] = &models.Media{
 				ID:   id,
 				Type: sgi.Attachments[i].Type,
 				URL:  url,
@@ -89,5 +92,5 @@ func ParamsFromRequest(r *http.Request, store storage.Store) (*rawmsg.SendGridIn
 		}
 	}
 
-	return sgi, media, nil
+	return sgi, medias, nil
 }

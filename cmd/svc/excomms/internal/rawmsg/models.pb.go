@@ -212,12 +212,14 @@ type TwilioParams struct {
 	QueueTime       uint32 `protobuf:"varint,20,opt,name=queue_time,proto3" json:"queue_time,omitempty"`
 	DequeingCallSID string `protobuf:"bytes,21,opt,name=dequeuing_call_sid,proto3" json:"dequeuing_call_sid,omitempty"`
 	// this parameter is only present for status callbacks from a dial twiml verb
-	ParentCallSID    string                     `protobuf:"bytes,22,opt,name=parent_call_sid,proto3" json:"parent_call_sid,omitempty"`
-	DialCallStatus   TwilioParams_CallStatus    `protobuf:"varint,23,opt,name=dial_call_status,proto3,enum=rawmsg.TwilioParams_CallStatus" json:"dial_call_status,omitempty"`
-	DialCallDuration uint32                     `protobuf:"varint,24,opt,name=dial_call_duration,proto3" json:"dial_call_duration,omitempty"`
-	RecordingMediaID uint64                     `protobuf:"varint,25,opt,name=recording_media_id,proto3" json:"recording_media_id,omitempty"`
-	MessageStatus    TwilioParams_MessageStatus `protobuf:"varint,26,opt,name=message_status,proto3,enum=rawmsg.TwilioParams_MessageStatus" json:"message_status,omitempty"`
-	DialCallSID      string                     `protobuf:"bytes,27,opt,name=dial_call_sid,proto3" json:"dial_call_sid,omitempty"`
+	ParentCallSID    string                  `protobuf:"bytes,22,opt,name=parent_call_sid,proto3" json:"parent_call_sid,omitempty"`
+	DialCallStatus   TwilioParams_CallStatus `protobuf:"varint,23,opt,name=dial_call_status,proto3,enum=rawmsg.TwilioParams_CallStatus" json:"dial_call_status,omitempty"`
+	DialCallDuration uint32                  `protobuf:"varint,24,opt,name=dial_call_duration,proto3" json:"dial_call_duration,omitempty"`
+	// Deprecated
+	DeprecatedRecordingMediaID uint64                     `protobuf:"varint,25,opt,name=deprecated_recording_media_id,proto3" json:"deprecated_recording_media_id,omitempty"`
+	MessageStatus              TwilioParams_MessageStatus `protobuf:"varint,26,opt,name=message_status,proto3,enum=rawmsg.TwilioParams_MessageStatus" json:"message_status,omitempty"`
+	DialCallSID                string                     `protobuf:"bytes,27,opt,name=dial_call_sid,proto3" json:"dial_call_sid,omitempty"`
+	RecordingMediaID           string                     `protobuf:"bytes,28,opt,name=recording_media_id,proto3" json:"recording_media_id,omitempty"`
 	// infrequently used parameters
 	ForwardedFrom string `protobuf:"bytes,100,opt,name=forwarded_from,proto3" json:"forwarded_from,omitempty"`
 	CallerName    string `protobuf:"bytes,101,opt,name=caller_name,proto3" json:"caller_name,omitempty"`
@@ -242,9 +244,10 @@ func (m *TwilioParams) GetMediaItems() []*TwilioParams_TwilioMediaItem {
 }
 
 type TwilioParams_TwilioMediaItem struct {
-	ContentType string `protobuf:"bytes,1,opt,name=content_type,proto3" json:"content_type,omitempty"`
-	MediaURL    string `protobuf:"bytes,2,opt,name=media_url,proto3" json:"media_url,omitempty"`
-	ID          uint64 `protobuf:"varint,3,opt,name=id,proto3" json:"id,omitempty"`
+	ContentType  string `protobuf:"bytes,1,opt,name=content_type,proto3" json:"content_type,omitempty"`
+	MediaURL     string `protobuf:"bytes,2,opt,name=media_url,proto3" json:"media_url,omitempty"`
+	DeprecatedID uint64 `protobuf:"varint,3,opt,name=deprecated_id,proto3" json:"deprecated_id,omitempty"`
+	ID           string `protobuf:"bytes,4,opt,name=id,proto3" json:"id,omitempty"`
 }
 
 func (m *TwilioParams_TwilioMediaItem) Reset()      { *m = TwilioParams_TwilioMediaItem{} }
@@ -279,9 +282,10 @@ func (m *SendGridIncomingEmail) GetAttachments() []*SendGridIncomingEmail_Attach
 }
 
 type SendGridIncomingEmail_Attachment struct {
-	Type     string `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
-	Filename string `protobuf:"bytes,2,opt,name=file_name,proto3" json:"file_name,omitempty"`
-	ID       uint64 `protobuf:"varint,3,opt,name=id,proto3" json:"id,omitempty"`
+	Type         string `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	Filename     string `protobuf:"bytes,2,opt,name=file_name,proto3" json:"file_name,omitempty"`
+	DeprecatedID uint64 `protobuf:"varint,3,opt,name=deprecated_id,proto3" json:"deprecated_id,omitempty"`
+	ID           string `protobuf:"bytes,4,opt,name=id,proto3" json:"id,omitempty"`
 }
 
 func (m *SendGridIncomingEmail_Attachment) Reset()      { *m = SendGridIncomingEmail_Attachment{} }
@@ -537,13 +541,16 @@ func (this *TwilioParams) Equal(that interface{}) bool {
 	if this.DialCallDuration != that1.DialCallDuration {
 		return false
 	}
-	if this.RecordingMediaID != that1.RecordingMediaID {
+	if this.DeprecatedRecordingMediaID != that1.DeprecatedRecordingMediaID {
 		return false
 	}
 	if this.MessageStatus != that1.MessageStatus {
 		return false
 	}
 	if this.DialCallSID != that1.DialCallSID {
+		return false
+	}
+	if this.RecordingMediaID != that1.RecordingMediaID {
 		return false
 	}
 	if this.ForwardedFrom != that1.ForwardedFrom {
@@ -602,6 +609,9 @@ func (this *TwilioParams_TwilioMediaItem) Equal(that interface{}) bool {
 		return false
 	}
 	if this.MediaURL != that1.MediaURL {
+		return false
+	}
+	if this.DeprecatedID != that1.DeprecatedID {
 		return false
 	}
 	if this.ID != that1.ID {
@@ -707,6 +717,9 @@ func (this *SendGridIncomingEmail_Attachment) Equal(that interface{}) bool {
 	if this.Filename != that1.Filename {
 		return false
 	}
+	if this.DeprecatedID != that1.DeprecatedID {
+		return false
+	}
 	if this.ID != that1.ID {
 		return false
 	}
@@ -806,7 +819,7 @@ func (this *TwilioParams) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 41)
+	s := make([]string, 0, 42)
 	s = append(s, "&rawmsg.TwilioParams{")
 	s = append(s, "CallSID: "+fmt.Sprintf("%#v", this.CallSID)+",\n")
 	s = append(s, "AccountSID: "+fmt.Sprintf("%#v", this.AccountSID)+",\n")
@@ -834,9 +847,10 @@ func (this *TwilioParams) GoString() string {
 	s = append(s, "ParentCallSID: "+fmt.Sprintf("%#v", this.ParentCallSID)+",\n")
 	s = append(s, "DialCallStatus: "+fmt.Sprintf("%#v", this.DialCallStatus)+",\n")
 	s = append(s, "DialCallDuration: "+fmt.Sprintf("%#v", this.DialCallDuration)+",\n")
-	s = append(s, "RecordingMediaID: "+fmt.Sprintf("%#v", this.RecordingMediaID)+",\n")
+	s = append(s, "DeprecatedRecordingMediaID: "+fmt.Sprintf("%#v", this.DeprecatedRecordingMediaID)+",\n")
 	s = append(s, "MessageStatus: "+fmt.Sprintf("%#v", this.MessageStatus)+",\n")
 	s = append(s, "DialCallSID: "+fmt.Sprintf("%#v", this.DialCallSID)+",\n")
+	s = append(s, "RecordingMediaID: "+fmt.Sprintf("%#v", this.RecordingMediaID)+",\n")
 	s = append(s, "ForwardedFrom: "+fmt.Sprintf("%#v", this.ForwardedFrom)+",\n")
 	s = append(s, "CallerName: "+fmt.Sprintf("%#v", this.CallerName)+",\n")
 	s = append(s, "FromCity: "+fmt.Sprintf("%#v", this.FromCity)+",\n")
@@ -854,10 +868,11 @@ func (this *TwilioParams_TwilioMediaItem) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 8)
 	s = append(s, "&rawmsg.TwilioParams_TwilioMediaItem{")
 	s = append(s, "ContentType: "+fmt.Sprintf("%#v", this.ContentType)+",\n")
 	s = append(s, "MediaURL: "+fmt.Sprintf("%#v", this.MediaURL)+",\n")
+	s = append(s, "DeprecatedID: "+fmt.Sprintf("%#v", this.DeprecatedID)+",\n")
 	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -892,10 +907,11 @@ func (this *SendGridIncomingEmail_Attachment) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 8)
 	s = append(s, "&rawmsg.SendGridIncomingEmail_Attachment{")
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	s = append(s, "Filename: "+fmt.Sprintf("%#v", this.Filename)+",\n")
+	s = append(s, "DeprecatedID: "+fmt.Sprintf("%#v", this.DeprecatedID)+",\n")
 	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -1131,12 +1147,12 @@ func (m *TwilioParams) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintModels(data, i, uint64(m.DialCallDuration))
 	}
-	if m.RecordingMediaID != 0 {
+	if m.DeprecatedRecordingMediaID != 0 {
 		data[i] = 0xc8
 		i++
 		data[i] = 0x1
 		i++
-		i = encodeVarintModels(data, i, uint64(m.RecordingMediaID))
+		i = encodeVarintModels(data, i, uint64(m.DeprecatedRecordingMediaID))
 	}
 	if m.MessageStatus != 0 {
 		data[i] = 0xd0
@@ -1152,6 +1168,14 @@ func (m *TwilioParams) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintModels(data, i, uint64(len(m.DialCallSID)))
 		i += copy(data[i:], m.DialCallSID)
+	}
+	if len(m.RecordingMediaID) > 0 {
+		data[i] = 0xe2
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintModels(data, i, uint64(len(m.RecordingMediaID)))
+		i += copy(data[i:], m.RecordingMediaID)
 	}
 	if len(m.ForwardedFrom) > 0 {
 		data[i] = 0xa2
@@ -1263,10 +1287,16 @@ func (m *TwilioParams_TwilioMediaItem) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintModels(data, i, uint64(len(m.MediaURL)))
 		i += copy(data[i:], m.MediaURL)
 	}
-	if m.ID != 0 {
+	if m.DeprecatedID != 0 {
 		data[i] = 0x18
 		i++
-		i = encodeVarintModels(data, i, uint64(m.ID))
+		i = encodeVarintModels(data, i, uint64(m.DeprecatedID))
+	}
+	if len(m.ID) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintModels(data, i, uint64(len(m.ID)))
+		i += copy(data[i:], m.ID)
 	}
 	return i, nil
 }
@@ -1411,10 +1441,16 @@ func (m *SendGridIncomingEmail_Attachment) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintModels(data, i, uint64(len(m.Filename)))
 		i += copy(data[i:], m.Filename)
 	}
-	if m.ID != 0 {
+	if m.DeprecatedID != 0 {
 		data[i] = 0x18
 		i++
-		i = encodeVarintModels(data, i, uint64(m.ID))
+		i = encodeVarintModels(data, i, uint64(m.DeprecatedID))
+	}
+	if len(m.ID) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintModels(data, i, uint64(len(m.ID)))
+		i += copy(data[i:], m.ID)
 	}
 	return i, nil
 }
@@ -1607,13 +1643,17 @@ func (m *TwilioParams) Size() (n int) {
 	if m.DialCallDuration != 0 {
 		n += 2 + sovModels(uint64(m.DialCallDuration))
 	}
-	if m.RecordingMediaID != 0 {
-		n += 2 + sovModels(uint64(m.RecordingMediaID))
+	if m.DeprecatedRecordingMediaID != 0 {
+		n += 2 + sovModels(uint64(m.DeprecatedRecordingMediaID))
 	}
 	if m.MessageStatus != 0 {
 		n += 2 + sovModels(uint64(m.MessageStatus))
 	}
 	l = len(m.DialCallSID)
+	if l > 0 {
+		n += 2 + l + sovModels(uint64(l))
+	}
+	l = len(m.RecordingMediaID)
 	if l > 0 {
 		n += 2 + l + sovModels(uint64(l))
 	}
@@ -1671,8 +1711,12 @@ func (m *TwilioParams_TwilioMediaItem) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovModels(uint64(l))
 	}
-	if m.ID != 0 {
-		n += 1 + sovModels(uint64(m.ID))
+	if m.DeprecatedID != 0 {
+		n += 1 + sovModels(uint64(m.DeprecatedID))
+	}
+	l = len(m.ID)
+	if l > 0 {
+		n += 1 + l + sovModels(uint64(l))
 	}
 	return n
 }
@@ -1755,8 +1799,12 @@ func (m *SendGridIncomingEmail_Attachment) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovModels(uint64(l))
 	}
-	if m.ID != 0 {
-		n += 1 + sovModels(uint64(m.ID))
+	if m.DeprecatedID != 0 {
+		n += 1 + sovModels(uint64(m.DeprecatedID))
+	}
+	l = len(m.ID)
+	if l > 0 {
+		n += 1 + l + sovModels(uint64(l))
 	}
 	return n
 }
@@ -1840,9 +1888,10 @@ func (this *TwilioParams) String() string {
 		`ParentCallSID:` + fmt.Sprintf("%v", this.ParentCallSID) + `,`,
 		`DialCallStatus:` + fmt.Sprintf("%v", this.DialCallStatus) + `,`,
 		`DialCallDuration:` + fmt.Sprintf("%v", this.DialCallDuration) + `,`,
-		`RecordingMediaID:` + fmt.Sprintf("%v", this.RecordingMediaID) + `,`,
+		`DeprecatedRecordingMediaID:` + fmt.Sprintf("%v", this.DeprecatedRecordingMediaID) + `,`,
 		`MessageStatus:` + fmt.Sprintf("%v", this.MessageStatus) + `,`,
 		`DialCallSID:` + fmt.Sprintf("%v", this.DialCallSID) + `,`,
+		`RecordingMediaID:` + fmt.Sprintf("%v", this.RecordingMediaID) + `,`,
 		`ForwardedFrom:` + fmt.Sprintf("%v", this.ForwardedFrom) + `,`,
 		`CallerName:` + fmt.Sprintf("%v", this.CallerName) + `,`,
 		`FromCity:` + fmt.Sprintf("%v", this.FromCity) + `,`,
@@ -1864,6 +1913,7 @@ func (this *TwilioParams_TwilioMediaItem) String() string {
 	s := strings.Join([]string{`&TwilioParams_TwilioMediaItem{`,
 		`ContentType:` + fmt.Sprintf("%v", this.ContentType) + `,`,
 		`MediaURL:` + fmt.Sprintf("%v", this.MediaURL) + `,`,
+		`DeprecatedID:` + fmt.Sprintf("%v", this.DeprecatedID) + `,`,
 		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
 		`}`,
 	}, "")
@@ -1900,6 +1950,7 @@ func (this *SendGridIncomingEmail_Attachment) String() string {
 	s := strings.Join([]string{`&SendGridIncomingEmail_Attachment{`,
 		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
 		`Filename:` + fmt.Sprintf("%v", this.Filename) + `,`,
+		`DeprecatedID:` + fmt.Sprintf("%v", this.DeprecatedID) + `,`,
 		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
 		`}`,
 	}, "")
@@ -2595,9 +2646,9 @@ func (m *TwilioParams) Unmarshal(data []byte) error {
 			}
 		case 25:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RecordingMediaID", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field DeprecatedRecordingMediaID", wireType)
 			}
-			m.RecordingMediaID = 0
+			m.DeprecatedRecordingMediaID = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowModels
@@ -2607,7 +2658,7 @@ func (m *TwilioParams) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				m.RecordingMediaID |= (uint64(b) & 0x7F) << shift
+				m.DeprecatedRecordingMediaID |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2659,6 +2710,35 @@ func (m *TwilioParams) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.DialCallSID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 28:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RecordingMediaID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthModels
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RecordingMediaID = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 100:
 			if wireType != 2 {
@@ -3060,9 +3140,9 @@ func (m *TwilioParams_TwilioMediaItem) Unmarshal(data []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field DeprecatedID", wireType)
 			}
-			m.ID = 0
+			m.DeprecatedID = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowModels
@@ -3072,11 +3152,40 @@ func (m *TwilioParams_TwilioMediaItem) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				m.ID |= (uint64(b) & 0x7F) << shift
+				m.DeprecatedID |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthModels
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipModels(data[iNdEx:])
@@ -3664,9 +3773,9 @@ func (m *SendGridIncomingEmail_Attachment) Unmarshal(data []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field DeprecatedID", wireType)
 			}
-			m.ID = 0
+			m.DeprecatedID = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowModels
@@ -3676,11 +3785,40 @@ func (m *SendGridIncomingEmail_Attachment) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				m.ID |= (uint64(b) & 0x7F) << shift
+				m.DeprecatedID |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthModels
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipModels(data[iNdEx:])

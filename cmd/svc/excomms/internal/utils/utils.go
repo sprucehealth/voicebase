@@ -7,7 +7,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 )
 
-func PersistRawMessage(dl dal.DAL, media map[uint64]*models.Media, msg *rawmsg.Incoming) (uint64, error) {
+func PersistRawMessage(dl dal.DAL, media map[string]*models.Media, msg *rawmsg.Incoming) (uint64, error) {
 	var rawMessageID uint64
 	if err := dl.Transact(func(d dal.DAL) error {
 		mediaItems := make([]*models.Media, 0, len(media))

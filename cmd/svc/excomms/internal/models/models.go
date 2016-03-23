@@ -123,7 +123,7 @@ type ProxyPhoneNumberReservation struct {
 
 // Media represents an object uploaded to cloud storage.
 type Media struct {
-	ID       uint64
+	ID       string
 	Type     string
 	URL      string
 	Name     *string

@@ -54,6 +54,7 @@ type Meta struct {
 	Width    int
 	Height   int
 	Size     int // in bytes of the encoded image
+	URL      string
 }
 
 // Service implements a media storage service.
@@ -116,16 +117,18 @@ func (s *Service) PutReader(id string, r io.ReadSeeker) (*Meta, error) {
 		return nil, errors.Trace(err)
 	}
 
-	meta := &Meta{
-		MimeType: "image/" + imf, // This works for all stdlib decoders but might fail for others. Probably fine though.
-		Width:    cnf.Width,
-		Height:   cnf.Height,
-		Size:     int(size),
-	}
-	_, err = s.store.PutReader(id, r, size, meta.MimeType, map[string]string{
+	mimeType := "image/" + imf
+	url, err := s.store.PutReader(id, r, size, mimeType, map[string]string{
 		widthHeader:  strconv.Itoa(cnf.Width),
 		heightHeader: strconv.Itoa(cnf.Height),
 	})
+	meta := &Meta{
+		MimeType: mimeType, // This works for all stdlib decoders but might fail for others. Probably fine though.
+		Width:    cnf.Width,
+		Height:   cnf.Height,
+		Size:     int(size),
+		URL:      url,
+	}
 	return meta, errors.Trace(err)
 }
 
@@ -134,7 +137,8 @@ func (s *Service) storeOriginal(id string, img image.Image) (*Meta, error) {
 	if err := jpeg.Encode(buf, img, &jpeg.Options{Quality: imageutil.JPEGQuality}); err != nil {
 		return nil, errors.Trace(err)
 	}
-	if _, err := s.store.Put(id, buf.Bytes(), "image/jpeg", imgHeaders(img)); err != nil {
+	url, err := s.store.Put(id, buf.Bytes(), "image/jpeg", imgHeaders(img))
+	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	return &Meta{
@@ -142,6 +146,7 @@ func (s *Service) storeOriginal(id string, img image.Image) (*Meta, error) {
 		Width:    img.Bounds().Dx(),
 		Height:   img.Bounds().Dy(),
 		Size:     buf.Len(),
+		URL:      url,
 	}, nil
 }
 
