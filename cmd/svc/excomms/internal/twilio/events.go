@@ -126,7 +126,12 @@ func processOutgoingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 	// look for an active reservation on the proxy phone number
 	ppnr, err := eh.proxyNumberManager.ActiveReservation(originatingPhoneNumber, proxyPhoneNumber)
 	if err != nil {
-		return "", errors.Trace(err)
+		golog.Errorf(err.Error())
+		return twiml.NewResponse(
+			&twiml.Say{
+				Text:  "Outbound calls to patients should be initiated from within the Spruce app. Please hang up and call the patient you are trying to reach by tapping the phone icon within their conversation thread. Thank you!",
+				Voice: "alice",
+			}).GenerateTwiML()
 	}
 
 	// look up the practice phone number using the organizationID

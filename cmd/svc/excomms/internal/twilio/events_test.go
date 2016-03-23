@@ -182,9 +182,16 @@ func testOutgoing(t *testing.T, testExpired bool, patientName string) {
 
 	twiml, err := processOutgoingCall(context.Background(), params, es.(*eventsHandler))
 	if testExpired {
-		if err == nil {
-			t.Fatalf("Expected the call to not go through and be expired.")
+		if err != nil {
+			t.Fatal(err)
 		}
+
+		expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<Response><Say voice="alice">Outbound calls to patients should be initiated from within the Spruce app. Please hang up and call the patient you are trying to reach by tapping the phone icon within their conversation thread. Thank you!</Say></Response>`)
+		if twiml != expected {
+			t.Fatalf("\nExpected %s\nGot %s", expected, twiml)
+		}
+
 	} else {
 		if err != nil {
 			t.Fatal(err)
