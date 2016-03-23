@@ -663,10 +663,10 @@ func isMessageSpam(pem *excomms.PublishedExternalMessage) bool {
 		if strings.Contains(pem.GetSMSItem().Text, "(WeChat Verification Code)") {
 			return true
 		} else if strings.Contains(pem.GetSMSItem().Text, "Your TALK2 verification code is") {
-			return true 
+			return true
 		} else if strings.Contains(pem.GetSMSItem().Text, "is your verification code for Instanumber") {
 			return true
 		}
-}
+	}
 	return false
 }
