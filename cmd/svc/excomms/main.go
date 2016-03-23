@@ -35,6 +35,7 @@ var config struct {
 	kmsKeyARN               string
 	resourceCleanerQueueURL string
 	resourceCleanerTopic    string
+	segmentIOKey            string
 }
 
 func init() {
@@ -65,6 +66,7 @@ func init() {
 	flag.StringVar(&config.kmsKeyARN, "kms_key_arn", "", "the arn of the master key that should be used to encrypt outbound and decrypt inbound data")
 	flag.StringVar(&config.resourceCleanerTopic, "sns_resource_cleaner_topic", "", "sns topic for publishing requests to delete resources")
 	flag.StringVar(&config.resourceCleanerQueueURL, "resource_cleaner_queue_url", "", "sqs queue that contains requests to delete resources")
+	flag.StringVar(&config.segmentIOKey, "segmentio_key", "", "Segment IO API `key`")
 }
 
 func main() {

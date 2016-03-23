@@ -2,9 +2,11 @@ package twilio
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
+	analytics "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/cleaner"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
@@ -12,6 +14,8 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/sns"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
+	"github.com/sprucehealth/backend/svc/auth"
+
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -52,6 +56,7 @@ type eventsHandler struct {
 	externalMessageTopic string
 	incomingRawMsgTopic  string
 	resourceCleanerTopic string
+	segmentClient        *analytics.Client
 }
 
 func NewEventHandler(
@@ -61,7 +66,7 @@ func NewEventHandler(
 	sns snsiface.SNSAPI,
 	clock clock.Clock,
 	proxyNumberManager proxynumber.Manager,
-	apiURL, externalMessageTopic, incomingRawMsgTopic, resourceCleanerTopic string) EventHandler {
+	apiURL, externalMessageTopic, incomingRawMsgTopic, resourceCleanerTopic string, segmentClient *analytics.Client) EventHandler {
 	return &eventsHandler{
 		directory:            directory,
 		settings:             settingsClient,
@@ -73,6 +78,7 @@ func NewEventHandler(
 		incomingRawMsgTopic:  incomingRawMsgTopic,
 		proxyNumberManager:   proxyNumberManager,
 		resourceCleanerTopic: resourceCleanerTopic,
+		segmentClient:        segmentClient,
 	}
 }
 
@@ -601,6 +607,8 @@ func processOutgoingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 			Type:       models.DeleteResourceRequest_TWILIO_CALL,
 			ResourceID: params.ParentCallSID,
 		})
+
+		trackOutboundCall(eh, cr.CallerEntityID, cr.OrganizationID, cr.Destination.String(), params.CallDuration)
 	default:
 		// nothing to do
 		golog.Debugf("Ignoring call status %s", params.CallStatus.String())
@@ -621,6 +629,63 @@ func processOutgoingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 	})
 
 	return "", nil
+}
+
+func trackOutboundCall(eh *eventsHandler, callerEntityID, orgID, destination string, durationInSeconds uint32) {
+	conc.Go(func() {
+		res, err := eh.directory.LookupEntities(
+			context.Background(),
+			&directory.LookupEntitiesRequest{
+				LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+				LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+					EntityID: callerEntityID,
+				},
+				RequestedInformation: &directory.RequestedInformation{
+					Depth: 0,
+					EntityInformation: []directory.EntityInformation{
+						directory.EntityInformation_EXTERNAL_IDS,
+					},
+				},
+				Statuses: []directory.EntityStatus{directory.EntityStatus_ACTIVE},
+			})
+		if err != nil {
+			golog.Errorf("Unable to lookup entity %s: %s", callerEntityID, err)
+		} else if len(res.Entities) != 1 {
+			golog.Errorf("Expected 1 entity but got %d for %s", len(res.Entities), callerEntityID)
+		}
+
+		var accountID string
+		for _, externalID := range res.Entities[0].ExternalIDs {
+			if strings.HasPrefix(externalID, auth.AccountIDPrefix) {
+				accountID = externalID
+				break
+			}
+		}
+		if accountID == "" {
+			golog.Errorf("No accountID found for entity %s", res.Entities[0].ID)
+			return
+		}
+
+		msg := &analytics.Track{
+			Event:  "outbound-call-connected",
+			UserId: accountID,
+			Properties: map[string]interface{}{
+				"caller_entity_id":    callerEntityID,
+				"org_id":              orgID,
+				"duration_in_seconds": durationInSeconds,
+				"destination":         destination,
+			},
+		}
+
+		if eh.segmentClient == nil {
+			golog.Infof("SegmentIO Track(%+v)", msg)
+			return
+		}
+
+		if err := eh.segmentClient.Track(msg); err != nil {
+			golog.Errorf("SegmentIO Track(%+v) failed: %s", msg, err)
+		}
+	})
 }
 
 func processVoicemail(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {

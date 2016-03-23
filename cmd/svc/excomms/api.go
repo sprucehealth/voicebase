@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
+	analytics "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/handlers"
@@ -72,6 +73,12 @@ func runAPI() {
 		return
 	}
 
+	var segmentClient *analytics.Client
+	if config.segmentIOKey != "" {
+		segmentClient = analytics.New(config.segmentIOKey)
+		defer segmentClient.Close()
+	}
+
 	eh := twilio.NewEventHandler(
 		directory.NewDirectoryClient(conn),
 		settings.NewSettingsClient(settingsConn),
@@ -82,7 +89,8 @@ func runAPI() {
 		config.excommsAPIURL,
 		config.externalMessageTopic,
 		config.incomingRawMessageTopic,
-		config.resourceCleanerTopic)
+		config.resourceCleanerTopic,
+		segmentClient)
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.Handle("/twilio/sms", handlers.NewTwilioSMSHandler(dl, config.incomingRawMessageTopic, eSNS))

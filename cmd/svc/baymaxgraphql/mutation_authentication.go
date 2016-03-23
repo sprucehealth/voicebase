@@ -183,12 +183,26 @@ var authenticateMutation = &graphql.Field{
 		}
 
 		eh := gqlctx.SpruceHeaders(ctx)
-		svc.segmentio.Track(&analytics.Track{
-			UserId: acc.ID,
-			Event:  "signedin",
-			Properties: map[string]interface{}{
-				"platform": eh.Platform.String(),
-			},
+
+		conc.Go(func() {
+			svc.segmentio.Track(&analytics.Track{
+				UserId: acc.ID,
+				Event:  "signedin",
+				Properties: map[string]interface{}{
+					"platform": eh.Platform.String(),
+				},
+			})
+			svc.segmentio.Identify(&analytics.Identify{
+				UserId: acc.ID,
+				Traits: map[string]interface{}{
+					"platform": eh.Platform.String(),
+				},
+				Context: map[string]interface{}{
+					"ip":        remoteAddrFromParams(p),
+					"userAgent": userAgentFromParams(p),
+				},
+			})
+
 		})
 
 		// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
@@ -258,12 +272,26 @@ var authenticateWithCodeMutation = &graphql.Field{
 		}
 
 		eh := gqlctx.SpruceHeaders(ctx)
-		svc.segmentio.Track(&analytics.Track{
-			UserId: acc.ID,
-			Event:  "signedin",
-			Properties: map[string]interface{}{
-				"platform": eh.Platform.String(),
-			},
+
+		conc.Go(func() {
+			svc.segmentio.Track(&analytics.Track{
+				UserId: acc.ID,
+				Event:  "signedin",
+				Properties: map[string]interface{}{
+					"platform": eh.Platform.String(),
+				},
+			})
+
+			svc.segmentio.Identify(&analytics.Identify{
+				UserId: acc.ID,
+				Traits: map[string]interface{}{
+					"platform": eh.Platform.String(),
+				},
+				Context: map[string]interface{}{
+					"ip":        remoteAddrFromParams(p),
+					"userAgent": userAgentFromParams(p),
+				},
+			})
 		})
 
 		// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.

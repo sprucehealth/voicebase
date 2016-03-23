@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 
+	analytics "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -20,11 +22,34 @@ var queryType = graphql.NewObject(
 			"me": &graphql.Field{
 				Type: graphql.NewNonNull(meType),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					ctx := p.Context
 					acc := gqlctx.Account(p.Context)
+					svc := serviceFromParams(p)
+
+					headers := gqlctx.SpruceHeaders(ctx)
 					if acc == nil {
 						return nil, errors.ErrNotAuthenticated(p.Context)
 					}
 					cek := gqlctx.ClientEncryptionKey(p.Context)
+
+					var platform string
+					if headers != nil {
+						platform = headers.Platform.String()
+					}
+					conc.Go(func() {
+						svc.segmentio.Identify(&analytics.Identify{
+							UserId: acc.ID,
+							Traits: map[string]interface{}{
+								"platform": platform,
+							},
+							Context: map[string]interface{}{
+								"ip":        remoteAddrFromParams(p),
+								"userAgent": userAgentFromParams(p),
+							},
+						})
+
+					})
+
 					return &models.Me{Account: acc, ClientEncryptionKey: cek}, nil
 				},
 			},
