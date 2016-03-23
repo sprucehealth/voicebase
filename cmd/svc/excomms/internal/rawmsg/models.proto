@@ -44,7 +44,8 @@ message TwilioParams {
 	message TwilioMediaItem {
 		string content_type = 1;
 		string media_url = 2 [(gogoproto.customname) = "MediaURL"];
-		uint64 id = 3 [(gogoproto.customname) = "ID"];
+		uint64 deprecated_id = 3 [(gogoproto.customname) = "DeprecatedID"];
+		string id = 4 [(gogoproto.customname) = "ID"];
 	}
 
 	string call_sid = 1 [(gogoproto.customname) = "CallSID"];
@@ -78,10 +79,14 @@ message TwilioParams {
 
 	CallStatus dial_call_status = 23 [(gogoproto.customname) = "DialCallStatus"];
 	uint32 dial_call_duration = 24 [(gogoproto.customname) = "DialCallDuration"];
-	uint64 recording_media_id = 25 [(gogoproto.customname) = "RecordingMediaID"];
+	
+	// Deprecated
+	uint64 deprecated_recording_media_id = 25 [(gogoproto.customname) = "DeprecatedRecordingMediaID"];
 
 	MessageStatus message_status = 26;
 	string dial_call_sid = 27 [(gogoproto.customname) = "DialCallSID"];
+	
+	string recording_media_id = 28 [(gogoproto.customname) = "RecordingMediaID"];
 
 
 	// infrequently used parameters
@@ -128,7 +133,8 @@ message SendGridIncomingEmail {
 	message Attachment {
 		string type = 1;
 		string file_name = 2 [(gogoproto.customname) = "Filename"];
-		uint64 id = 3 [(gogoproto.customname) = "ID"];
+		uint64 deprecated_id = 3 [(gogoproto.customname) = "DeprecatedID"];
+		string id = 4 [(gogoproto.customname) = "ID"];
 	}
 
 	repeated Attachment attachments = 15; 

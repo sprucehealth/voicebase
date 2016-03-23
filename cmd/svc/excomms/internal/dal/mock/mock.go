@@ -188,13 +188,13 @@ func (m *mockDAL) StoreMedia(media []*models.Media) error {
 	return mock.SafeError(rets[0])
 }
 
-func (m *mockDAL) LookupMedia(ids []uint64) (map[uint64]*models.Media, error) {
+func (m *mockDAL) LookupMedia(ids []string) (map[string]*models.Media, error) {
 	rets := m.Record(ids)
 	if len(rets) == 0 {
 		return nil, nil
 	}
 
-	return rets[0].(map[uint64]*models.Media), mock.SafeError(rets[1])
+	return rets[0].(map[string]*models.Media), mock.SafeError(rets[1])
 }
 
 func (m *mockDAL) CreateIncomingCall(ic *models.IncomingCall) error {

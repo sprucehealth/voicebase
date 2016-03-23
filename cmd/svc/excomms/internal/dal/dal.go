@@ -104,7 +104,7 @@ type DAL interface {
 	StoreMedia(media []*models.Media) error
 
 	// LookupMedia looks up media objects based on their IDs
-	LookupMedia(ids []uint64) (map[uint64]*models.Media, error)
+	LookupMedia(ids []string) (map[string]*models.Media, error)
 
 	// CreateDeletedResource creates an entry for a deleted resource
 	CreateDeletedResource(resource, resourceID string) error
@@ -547,7 +547,7 @@ func (d *dal) StoreMedia(media []*models.Media) error {
 
 	multiInsert := dbutil.MySQLMultiInsert(len(media))
 	for _, m := range media {
-		if m.ID == 0 {
+		if m.ID == "" {
 			return errors.Trace(fmt.Errorf("id required for media object"))
 		}
 
@@ -563,7 +563,7 @@ func (d *dal) StoreMedia(media []*models.Media) error {
 }
 
 // LookupMedia looks up media objects based on their IDs
-func (d *dal) LookupMedia(ids []uint64) (map[uint64]*models.Media, error) {
+func (d *dal) LookupMedia(ids []string) (map[string]*models.Media, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -571,13 +571,13 @@ func (d *dal) LookupMedia(ids []uint64) (map[uint64]*models.Media, error) {
 	rows, err := d.db.Query(`
 		SELECT id, type, url, name
 		FROM media 
-		WHERE id in (`+dbutil.MySQLArgs(len(ids))+`)`, dbutil.AppendUint64sToInterfaceSlice(nil, ids)...)
+		WHERE id in (`+dbutil.MySQLArgs(len(ids))+`)`, dbutil.AppendStringsToInterfaceSlice(nil, ids)...)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	defer rows.Close()
 
-	media := make(map[uint64]*models.Media)
+	media := make(map[string]*models.Media)
 	for rows.Next() {
 		var m models.Media
 		if err := rows.Scan(

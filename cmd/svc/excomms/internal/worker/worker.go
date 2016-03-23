@@ -26,7 +26,7 @@ import (
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/idgen"
+	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/svc/excomms"
@@ -159,7 +159,7 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			},
 		}
 
-		mediaMap := make(map[uint64]*models.Media)
+		mediaMap := make(map[string]*models.Media)
 		for i, m := range params.MediaItems {
 
 			media, err := w.uploadTwilioMediaToS3(m.ContentType, m.MediaURL)
@@ -203,7 +203,7 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 	case rawmsg.Incoming_TWILIO_VOICEMAIL:
 		params := rm.GetTwilio()
 
-		mediaMap := make(map[uint64]*models.Media, 1)
+		mediaMap := make(map[string]*models.Media, 1)
 
 		media, err := w.uploadTwilioMediaToS3("audio/mpeg", params.RecordingURL+".mp3")
 		if err != nil {
@@ -277,9 +277,13 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			}
 
 			// lookup media objects if there are any
-			mediaIDs := make([]uint64, len(sgEmail.Attachments))
+			mediaIDs := make([]string, len(sgEmail.Attachments))
 			for i, item := range sgEmail.Attachments {
-				mediaIDs[i] = item.ID
+				if item.DeprecatedID != 0 {
+					mediaIDs[i] = strconv.FormatUint(item.DeprecatedID, 10)
+				} else {
+					mediaIDs[i] = item.ID
+				}
 			}
 
 			mediaMap, err := w.dal.LookupMedia(mediaIDs)
@@ -359,12 +363,12 @@ func (w *IncomingRawMessageWorker) uploadTwilioMediaToS3(contentType, url string
 		}
 	}
 
-	id, err := idgen.NewID()
+	id, err := media.NewID()
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 
-	s3URL, err := w.store.Put(strconv.FormatInt(int64(id), 10), data, contentType, nil)
+	s3URL, err := w.store.Put(id, data, contentType, nil)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
-	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/sendgrid"
+	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg/sendgrid"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/sns"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/utils"
 	"github.com/sprucehealth/backend/libs/conc"

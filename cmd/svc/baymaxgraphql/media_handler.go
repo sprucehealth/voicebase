@@ -1,29 +1,33 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"time"
 
+	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
-	mediasigner "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
+	imedia "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/svc/auth"
+	"github.com/sprucehealth/schema"
 	"golang.org/x/net/context"
 )
 
 type mediaHandler struct {
 	auth        auth.AuthClient
 	media       *media.Service
-	mediaSigner *mediasigner.Signer
+	mediaSigner *imedia.Signer
 }
 
-func NewMediaHandler(auth auth.AuthClient, media *media.Service, mediaSigner *mediasigner.Signer) httputil.ContextHandler {
+// NewMediaHandler returns an initialized instance of mediaHandler
+func NewMediaHandler(auth auth.AuthClient, media *media.Service, mediaSigner *imedia.Signer) httputil.ContextHandler {
 	return &mediaHandler{
 		auth:        auth,
 		media:       media,
@@ -36,8 +40,15 @@ type errorMsg struct {
 }
 
 func (m *mediaHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	var acc *models.Account
+	switch r.Method {
+	case httputil.Get:
+		m.serveGET(ctx, w, r)
+	case httputil.Post:
+		m.servePOST(ctx, w, r)
+	}
+}
 
+func (m *mediaHandler) checkAuth(ctx context.Context, r *http.Request) (*models.Account, int) {
 	if c, err := r.Cookie(authTokenCookieName); err == nil && c.Value != "" {
 		res, err := m.auth.CheckAuthentication(ctx,
 			&auth.CheckAuthenticationRequest{
@@ -46,17 +57,84 @@ func (m *mediaHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *
 		)
 		if err != nil {
 			golog.Errorf("Failed to check auth token: %s", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
+			return nil, http.StatusInternalServerError
 		} else if !res.IsAuthenticated {
-			w.WriteHeader(http.StatusForbidden)
-			return
+			return nil, http.StatusForbidden
 		}
-		acc = &models.Account{
+		return &models.Account{
 			ID: res.Account.ID,
-		}
-	} else {
-		w.WriteHeader(http.StatusForbidden)
+		}, 0
+	}
+	return nil, http.StatusForbidden
+}
+
+// mediaPOSTRequest represents the information associated with media posts
+type mediaPOSTRequest struct {
+	// TODO: For now just ask the client to send this information, but don't do anything with it
+	OrganizationID string `schema:"organization_id"`
+	ThreadID       string `schema:"thread_id"`
+}
+
+func parseMediaPOSTRequest(r *http.Request) (*mediaPOSTRequest, error) {
+	rd := &mediaPOSTRequest{}
+	if err := r.ParseForm(); err != nil {
+		return nil, err
+	}
+	if err := schema.NewDecoder().Decode(rd, r.Form); err != nil {
+		return nil, err
+	}
+
+	if rd.OrganizationID == "" {
+		return nil, errors.New("organization_id required")
+	}
+
+	return rd, nil
+}
+
+func (m *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	_, errCode := m.checkAuth(ctx, r)
+	if errCode != 0 {
+		w.WriteHeader(errCode)
+		return
+	}
+
+	// TODO: Don't do anything for now with the information coming from the client. We just want to require it
+	_, err := parseMediaPOSTRequest(r)
+	if err != nil {
+		apiservice.WriteError(ctx, err, w, r)
+		return
+	}
+
+	file, _, err := r.FormFile("media")
+	if err != nil {
+		apiservice.WriteUserError(w, http.StatusBadRequest, "Missing or invalid media in parameters: "+err.Error())
+		return
+	}
+	defer file.Close()
+
+	mediaID, err := media.NewID()
+	if err != nil {
+		apiservice.WriteError(ctx, err, w, r)
+		return
+	}
+
+	meta, err := m.media.PutReader(mediaID, file)
+	if err != nil {
+		apiservice.WriteError(ctx, err, w, r)
+		return
+	}
+
+	res := &imedia.POSTResponse{
+		MediaID: mediaID,
+		URL:     meta.URL,
+	}
+	httputil.JSONResponse(w, http.StatusOK, res)
+}
+
+func (m *mediaHandler) serveGET(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	acc, errCode := m.checkAuth(ctx, r)
+	if errCode != 0 {
+		w.WriteHeader(errCode)
 		return
 	}
 
