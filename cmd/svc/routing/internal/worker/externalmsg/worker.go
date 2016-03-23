@@ -659,7 +659,14 @@ func determineExternalEntities(res *directory.LookupEntitiesByContactResponse, o
 
 func isMessageSpam(pem *excomms.PublishedExternalMessage) bool {
 	if pem.Type == excomms.PublishedExternalMessage_SMS && pem.Direction == excomms.PublishedExternalMessage_INBOUND {
-		return strings.Contains(pem.GetSMSItem().Text, "(WeChat Verification Code)")
-	}
+
+		if strings.Contains(pem.GetSMSItem().Text, "(WeChat Verification Code)") {
+			return true
+		} else if strings.Contains(pem.GetSMSItem().Text, "Your TALK2 verification code is") {
+			return true 
+		} else if strings.Contains(pem.GetSMSItem().Text, "is your verification code for Instanumber") {
+			return true
+		}
+}
 	return false
 }
