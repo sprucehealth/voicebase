@@ -182,10 +182,10 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 		}
 
 		// go through media to publish them for cleanup once we have persisted the raw message
-		for _, mediaItem := range mediaMap {
+		for _, mediaItem := range params.MediaItems {
 			cleaner.Publish(w.snsAPI, w.resourceCleanerTopic, &models.DeleteResourceRequest{
 				Type:       models.DeleteResourceRequest_TWILIO_MEDIA,
-				ResourceID: mediaItem.URL,
+				ResourceID: mediaItem.MediaURL,
 			})
 		}
 
