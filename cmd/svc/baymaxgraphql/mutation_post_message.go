@@ -37,9 +37,44 @@ var messageInputType = graphql.NewInputObject(
 			"text":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"destinations": &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(endpointInputType))},
 			"internal":     &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Boolean)},
+			"attachments":  &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(attachmentInputType))},
 		},
 	},
 )
+
+var (
+	attachmentTypeImage = "IMAGE"
+)
+
+var attachmentInputTypeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name: "AttachmentInputType",
+	Values: graphql.EnumValueConfigMap{
+		attachmentTypeImage: &graphql.EnumValueConfig{
+			Value:       attachmentTypeImage,
+			Description: "The attachment type representing an image",
+		},
+	},
+})
+
+var attachmentInputType = graphql.NewInputObject(
+	graphql.InputObjectConfig{
+		Name: "AttachmentInput",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"title":          &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"mediaID":        &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"attachmentType": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(attachmentInputTypeEnum)},
+			"contentType":    &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		},
+	},
+)
+
+func attachmentTypeEnumAsThreadingEnum(t string) (threading.Attachment_Type, error) {
+	switch t {
+	case attachmentTypeImage:
+		return threading.Attachment_IMAGE, nil
+	}
+	return threading.Attachment_Type(0), fmt.Errorf("Unknown attachment type %s", t)
+}
 
 // postMessage
 
@@ -173,6 +208,38 @@ var postMessageMutation = &graphql.Field{
 		}
 		summary := fmt.Sprintf("%s: %s", fromName, plainText)
 
+		var msgAttachments []interface{}
+		if mas, ok := msg["attachments"]; ok {
+			msgAttachments = mas.([]interface{})
+		}
+		attachments := make([]*threading.Attachment, len(msgAttachments))
+		for i, ma := range msgAttachments {
+			mAttachment, _ := ma.(map[string]interface{})
+			mAttachmentType, err := attachmentTypeEnumAsThreadingEnum(mAttachment["attachmentType"].(string))
+			if err != nil {
+				return nil, err
+			}
+			// TODO: Verify that the media at the ID exists
+			url := svc.media.URL(mAttachment["mediaID"].(string))
+			attachment := &threading.Attachment{
+				Type:  mAttachmentType,
+				Title: mAttachment["title"].(string),
+				URL:   url,
+			}
+			switch mAttachmentType {
+			case threading.Attachment_IMAGE:
+				attachment.Data = &threading.Attachment_Image{
+					Image: &threading.ImageAttachment{
+						Mimetype: mAttachment["contentType"].(string),
+						URL:      url,
+					},
+				}
+			default:
+				return nil, fmt.Errorf("Unknown message attachment type %d", mAttachmentType)
+			}
+			attachments[i] = attachment
+		}
+
 		req := &threading.PostMessageRequest{
 			ThreadID:     threadID,
 			Text:         text,
@@ -182,7 +249,8 @@ var postMessageMutation = &graphql.Field{
 				Channel: threading.Endpoint_APP,
 				ID:      ent.ID,
 			},
-			Summary: summary,
+			Summary:     summary,
+			Attachments: attachments,
 		}
 
 		if primaryEntity == nil || primaryEntity.Type == directory.EntityType_ORGANIZATION {

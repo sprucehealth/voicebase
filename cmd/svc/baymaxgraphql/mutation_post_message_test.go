@@ -82,6 +82,19 @@ func TestPostMessage(t *testing.T) {
 		Text:    "foo",
 		Title:   `SMS`,
 		Summary: `Schmee: foo`,
+		Attachments: []*threading.Attachment{
+			&threading.Attachment{
+				Type:  threading.Attachment_IMAGE,
+				Title: "title",
+				URL:   "mediaID",
+				Data: &threading.Attachment_Image{
+					Image: &threading.ImageAttachment{
+						Mimetype: "image/jpeg",
+						URL:      "mediaID",
+					},
+				},
+			},
+		},
 	}).WithReturns(&threading.PostMessageResponse{
 		Thread: &threading.Thread{
 			ID:                   threadID,
@@ -133,6 +146,12 @@ func TestPostMessage(t *testing.T) {
 						id: "`+entPhoneNumber+`"
 					}]
 					internal: false
+					attachments: [{
+         				attachmentType: IMAGE
+         				contentType: "image/jpeg"
+         				mediaID: "mediaID"
+         				title: "title"
+        			}]
 				}
 			}) {
 				clientMutationId

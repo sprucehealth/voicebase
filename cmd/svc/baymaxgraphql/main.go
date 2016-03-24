@@ -215,8 +215,10 @@ func main() {
 		defer segmentClient.Close()
 	}
 
+	media := media.New(storage.NewS3(awsSession, *flagStorageBucket, "media"), storage.NewS3(awsSession, *flagStorageBucket, "media-cache"), 0, 0)
+
 	r := mux.NewRouter()
-	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, settingsClient, inviteClient, ms, *flagEmailDomain, *flagWebDomain, pn, *flagSpruceOrgID, *flagStaticURLPrefix, segmentClient)
+	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, settingsClient, inviteClient, ms, *flagEmailDomain, *flagWebDomain, pn, *flagSpruceOrgID, *flagStaticURLPrefix, segmentClient, media)
 	r.Handle("/graphql", httputil.ToContextHandler(cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},
@@ -224,11 +226,11 @@ func main() {
 		AllowedHeaders:   []string{"*"},
 	}).Handler(httputil.FromContextHandler(gqlHandler))))
 
-	mediaHandler := NewMediaHandler(authClient, media.New(storage.NewS3(awsSession, *flagStorageBucket, "media"), storage.NewS3(awsSession, *flagStorageBucket, "media-cache"), 0, 0), ms)
+	mediaHandler := NewMediaHandler(authClient, media, ms)
 
 	r.Handle("/media", httputil.ToContextHandler(cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
-		AllowedMethods:   []string{httputil.Get, httputil.Options},
+		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
 	}).Handler(httputil.FromContextHandler(mediaHandler))))

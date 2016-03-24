@@ -11,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	lmedia "github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -33,6 +34,7 @@ type service struct {
 	staticURLPrefix string
 	spruceOrgID     string
 	segmentio       *segmentIOWrapper
+	media           *lmedia.Service
 	// TODO: Remove this
 	serviceNumber phone.Number
 }

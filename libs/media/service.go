@@ -54,7 +54,6 @@ type Meta struct {
 	Width    int
 	Height   int
 	Size     int // in bytes of the encoded image
-	URL      string
 }
 
 // Service implements a media storage service.
@@ -118,7 +117,7 @@ func (s *Service) PutReader(id string, r io.ReadSeeker) (*Meta, error) {
 	}
 
 	mimeType := "image/" + imf
-	url, err := s.store.PutReader(id, r, size, mimeType, map[string]string{
+	_, err = s.store.PutReader(id, r, size, mimeType, map[string]string{
 		widthHeader:  strconv.Itoa(cnf.Width),
 		heightHeader: strconv.Itoa(cnf.Height),
 	})
@@ -127,7 +126,6 @@ func (s *Service) PutReader(id string, r io.ReadSeeker) (*Meta, error) {
 		Width:    cnf.Width,
 		Height:   cnf.Height,
 		Size:     int(size),
-		URL:      url,
 	}
 	return meta, errors.Trace(err)
 }
@@ -137,7 +135,7 @@ func (s *Service) storeOriginal(id string, img image.Image) (*Meta, error) {
 	if err := jpeg.Encode(buf, img, &jpeg.Options{Quality: imageutil.JPEGQuality}); err != nil {
 		return nil, errors.Trace(err)
 	}
-	url, err := s.store.Put(id, buf.Bytes(), "image/jpeg", imgHeaders(img))
+	_, err := s.store.Put(id, buf.Bytes(), "image/jpeg", imgHeaders(img))
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -146,7 +144,6 @@ func (s *Service) storeOriginal(id string, img image.Image) (*Meta, error) {
 		Width:    img.Bounds().Dx(),
 		Height:   img.Bounds().Dy(),
 		Size:     buf.Len(),
-		URL:      url,
 	}, nil
 }
 
@@ -226,6 +223,11 @@ func (s *Service) GetReader(id string, size *Size) (io.ReadCloser, *Meta, error)
 	})
 
 	return ioutil.NopCloser(buf), meta, nil
+}
+
+// URL returns the URL from the underlying deterministic storage system
+func (s *Service) URL(id string) string {
+	return s.store.URL(id)
 }
 
 func (s *Service) isTooLarge(width, height int) bool {

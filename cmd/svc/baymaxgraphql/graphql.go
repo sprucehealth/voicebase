@@ -18,6 +18,7 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/idgen"
+	lmedia "github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -95,6 +96,7 @@ func NewGraphQL(
 	spruceOrgID string,
 	staticURLPrefix string,
 	segmentClient *analytics.Client,
+	media *lmedia.Service,
 ) httputil.ContextHandler {
 	return &graphQLHandler{
 		auth: authClient,
@@ -110,6 +112,7 @@ func NewGraphQL(
 			spruceOrgID:     spruceOrgID,
 			staticURLPrefix: staticURLPrefix,
 			segmentio:       &segmentIOWrapper{Client: segmentClient},
+			media:           media,
 		},
 	}
 }

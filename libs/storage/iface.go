@@ -16,6 +16,7 @@ type Store interface {
 	Get(id string) ([]byte, http.Header, error)
 	GetReader(id string) (io.ReadCloser, http.Header, error)
 	Delete(id string) error
+	URL(id string) string
 }
 
 // DeterministicStore is a version of Store that uses a deterministric

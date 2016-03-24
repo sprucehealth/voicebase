@@ -6,6 +6,8 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	ramock "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess/mock"
 	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/libs/media"
+	"github.com/sprucehealth/backend/libs/storage"
 	invitemock "github.com/sprucehealth/backend/svc/invite/mock"
 	notificationmock "github.com/sprucehealth/backend/svc/notification/mock"
 	settingsmock "github.com/sprucehealth/backend/svc/settings/mock"
@@ -34,6 +36,7 @@ func newGQL(t *testing.T) *gql {
 		notification: g.notificationC,
 		spruceOrgID:  "spruce_org",
 		segmentio:    &segmentIOWrapper{},
+		media:        media.New(storage.NewTestStore(nil), storage.NewTestStore(nil), 100, 100),
 	}
 	return &g
 }

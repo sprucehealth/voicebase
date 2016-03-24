@@ -163,9 +163,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID s
 				if a.Title == "" {
 					a.Title = "Audio"
 				}
-				if a.URL == "" {
-					a.URL = signedURL
-				}
+				a.URL = signedURL
 			case threading.Attachment_IMAGE:
 				d := a.GetImage()
 				if d.Mimetype == "" { // TODO
@@ -189,10 +187,7 @@ func transformThreadItemToResponse(item *threading.ThreadItem, uuid, accountID s
 				if err != nil {
 					return nil, err
 				}
-
-				if a.URL == "" {
-					a.URL = signedURL
-				}
+				a.URL = signedURL
 			case threading.Attachment_GENERIC_URL:
 				d := a.GetGenericURL()
 

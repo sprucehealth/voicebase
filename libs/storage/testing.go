@@ -85,3 +85,7 @@ func (s *testStore) Delete(id string) error {
 	s.mu.Unlock()
 	return nil
 }
+
+func (s *testStore) URL(id string) string {
+	return s.IDFromName(id)
+}

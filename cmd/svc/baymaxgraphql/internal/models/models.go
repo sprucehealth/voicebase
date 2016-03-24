@@ -131,6 +131,8 @@ type Thread struct {
 	LastMessageTimestamp       uint64 `json:"lastMessageTimestamp"`
 	Unread                     bool   `json:"unread"`
 	AllowInternalMessages      bool   `json:"allowInternalMessages"`
+	AllowSMSAttachments        bool   `json:"allowSMSAttachments"`
+	AllowEmailAttachment       bool   `json:"allowEmailAttachments"`
 	IsDeletable                bool   `json:"isDeletable"`
 	LastPrimaryEntityEndpoints []*Endpoint
 	EmptyStateTextMarkup       string `json:"emptyStateTextMarkup,omitempty"`

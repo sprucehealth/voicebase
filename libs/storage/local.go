@@ -116,3 +116,7 @@ func (s *local) Delete(id string) error {
 	os.Remove(id + ".meta")
 	return os.Remove(id)
 }
+
+func (s *local) URL(name string) string {
+	return s.IDFromName(name)
+}

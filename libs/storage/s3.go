@@ -80,7 +80,7 @@ func (s *S3) PutReader(name string, r io.ReadSeeker, size int64, contentType str
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("s3://%s/%s%s", *s.s3.Config.Region, s.bucket, path), nil
+	return s.IDFromName(name), nil
 }
 
 func (s *S3) Get(id string) ([]byte, http.Header, error) {
@@ -142,6 +142,10 @@ func (s *S3) Delete(id string) error {
 		Key:    &path,
 	})
 	return err
+}
+
+func (s *S3) URL(name string) string {
+	return s.IDFromName(name)
 }
 
 func (s *S3) parseURI(uri string) (region string, bucket string, key string, err error) {

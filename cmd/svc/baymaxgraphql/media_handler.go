@@ -118,7 +118,7 @@ func (m *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *
 		return
 	}
 
-	meta, err := m.media.PutReader(mediaID, file)
+	_, err = m.media.PutReader(mediaID, file)
 	if err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
@@ -126,7 +126,6 @@ func (m *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *
 
 	res := &imedia.POSTResponse{
 		MediaID: mediaID,
-		URL:     meta.URL,
 	}
 	httputil.JSONResponse(w, http.StatusOK, res)
 }
