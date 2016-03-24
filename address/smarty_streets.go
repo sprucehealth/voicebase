@@ -18,7 +18,7 @@ type SmartyStreetsService struct {
 }
 
 const (
-	smartyStreetsEndpoint = "https://api.smartystreets.com/zipcode"
+	smartyStreetsEndpoint = "https://us-zipcode.api.smartystreets.com/lookup"
 	invalidZipcodeStatus  = "invalid_zipcode"
 )
 
