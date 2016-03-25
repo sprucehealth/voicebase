@@ -222,6 +222,16 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 				return errors.Trace(err)
 			}
 		}
+
+		// Update unread reference status for anyone mentioned
+		for _, r := range textRefs {
+			if err := dl.UpdateThreadEntity(ctx, threadID, r.ID, &dal.ThreadEntityUpdate{
+				LastReferenced: ptr.Time(s.clk.Now()),
+			}); err != nil {
+				return errors.Trace(err)
+			}
+		}
+
 		req := &dal.PostMessageRequest{
 			ThreadID:     threadID,
 			FromEntityID: in.FromEntityID,
@@ -585,6 +595,17 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 			return grpcErrorf(codes.Internal, errors.Trace(err).Error())
 		}
 
+		now := s.clk.Now()
+
+		// Update unread reference status for anyone mentioned
+		for _, r := range textRefs {
+			if err := dl.UpdateThreadEntity(ctx, threadID, r.ID, &dal.ThreadEntityUpdate{
+				LastReferenced: &now,
+			}); err != nil {
+				return errors.Trace(err)
+			}
+		}
+
 		// Lock our membership row while doing this since we might update it
 		forUpdate := true
 		tes, err := dl.ThreadEntities(ctx, []models.ThreadID{threadID}, in.FromEntityID, forUpdate)
@@ -601,12 +622,10 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 			}
 			if lastViewed.Unix() >= prePostLastMessageTimestamp.Unix() {
 				teUpdate = &dal.ThreadEntityUpdate{
-					LastViewed: ptr.Time(s.clk.Now()),
+					LastViewed: &now,
 				}
 			}
 		}
-
-		// The poster is recorded as a member if necessary but does not become a follower
 		if err := dl.UpdateThreadEntity(ctx, threadID, in.FromEntityID, teUpdate); err != nil {
 			return grpcErrorf(codes.Internal, errors.Trace(err).Error())
 		}
@@ -634,7 +653,6 @@ func (s *threadsServer) PostMessage(ctx context.Context, in *threading.PostMessa
 				} else if len(resp.Entities) != 1 {
 					golog.Errorf("Expected 1 entity for id %s but got %d back", in.FromEntityID, len(resp.Entities))
 				} else if resp.Entities[0].Type == directory.EntityType_INTERNAL {
-
 					validBML, err := bml.BML{resp.Entities[0].Info.DisplayName}.Format()
 					if err != nil {
 						golog.Errorf("Unable to escape the display name %s:%s", resp.Entities[0].Info.DisplayName, err.Error())
@@ -736,6 +754,7 @@ func (s *threadsServer) QueryThreads(ctx context.Context, in *threading.QueryThr
 		if in.ViewerEntityID != "" && th.MessageCount != 0 {
 			te := e.ThreadEntity
 			th.Unread = te == nil || te.LastViewed == nil || (th.LastMessageTimestamp > uint64(te.LastViewed.Unix()))
+			th.UnreadReference = te != nil && te.LastReferenced != nil && (te.LastViewed == nil || te.LastReferenced.After(*te.LastViewed))
 		}
 		res.Edges[i] = &threading.ThreadEdge{
 			Thread: th,

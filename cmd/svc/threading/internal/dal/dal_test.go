@@ -34,7 +34,11 @@ func setupTest(t *testing.T) *dbTest {
 		t.Skip("Missing TEST_DB_USER")
 	}
 
-	testName := fmt.Sprintf("test_threading_%d", rand.Int())
+	migrations, err := filepath.Glob("../../schema/*.sql")
+	test.OK(t, err)
+	sort.Strings(migrations)
+
+	dbName := fmt.Sprintf("test_threading_%d", rand.Int())
 	db, err := dbutil.ConnectMySQL(&dbutil.DBConfig{
 		Host:     "localhost",
 		Name:     "mysql",
@@ -42,16 +46,16 @@ func setupTest(t *testing.T) *dbTest {
 		Password: "",
 	})
 	test.OK(t, err)
-	_, err = db.Exec(`CREATE DATABASE ` + testName)
+	_, err = db.Exec(`CREATE DATABASE ` + dbName)
 	test.OK(t, err)
-	_, err = db.Exec(`USE ` + testName)
+	_, err = db.Exec(`USE ` + dbName)
 	test.OK(t, err)
-	migrations, err := filepath.Glob("../../schema/*.sql")
-	test.OK(t, err)
-	sort.Strings(migrations)
 	for _, m := range migrations {
 		b, err := ioutil.ReadFile(m)
-		test.OK(t, err)
+		if err != nil {
+			db.Exec(`DELETE DATABASE ` + dbName)
+			t.Fatal(err)
+		}
 		s := string(b)
 		lines := strings.Split(s, "\n")
 		nonEmpty := make([]string, 0, len(lines))
@@ -69,6 +73,7 @@ func setupTest(t *testing.T) *dbTest {
 			st = strings.TrimSpace(st)
 			if st != "" {
 				if _, err := db.Exec(st); err != nil {
+					db.Exec(`DELETE DATABASE ` + dbName)
 					t.Fatalf("Failed to apply migration %s: %s\nstatement: %s", m, err, st)
 				}
 			}
@@ -76,7 +81,7 @@ func setupTest(t *testing.T) *dbTest {
 	}
 	return &dbTest{
 		db:   db,
-		name: testName,
+		name: dbName,
 	}
 }
 
@@ -240,6 +245,14 @@ func TestThreadEntities(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, 1, len(ents))
 	test.Equals(t, time.Unix(1e6, 0), *ents[tid.String()].LastViewed)
+	test.Equals(t, (*time.Time)(nil), ents[tid.String()].LastReferenced)
+
+	test.OK(t, dal.UpdateThreadEntity(ctx, tid, "e1", &ThreadEntityUpdate{LastReferenced: ptr.Time(time.Unix(1e6, 0))}))
+
+	ents, err = dal.ThreadEntities(ctx, []models.ThreadID{tid}, "e1", true)
+	test.OK(t, err)
+	test.Equals(t, 1, len(ents))
+	test.Equals(t, time.Unix(1e6, 0), *ents[tid.String()].LastReferenced)
 }
 
 func TestUpdateThreadMembers(t *testing.T) {

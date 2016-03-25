@@ -238,6 +238,7 @@ type ThreadEntity struct {
 	Joined           time.Time
 	LastViewed       *time.Time
 	LastUnreadNotify *time.Time
+	LastReferenced   *time.Time
 }
 
 // ThreadItem is an item within a thread. It can be a message or an event modifying a message.

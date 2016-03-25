@@ -138,6 +138,7 @@ type Thread struct {
 	Subtitle                   string `json:"subtitle"`
 	LastMessageTimestamp       uint64 `json:"lastMessageTimestamp"`
 	Unread                     bool   `json:"unread"`
+	UnreadReference            bool   `json:"unreadReference"`
 	AllowAddMembers            bool   `json:"allowAddMembers"`
 	AllowDelete                bool   `json:"allowDelete"`
 	AllowInternalMessages      bool   `json:"allowInternalMessages"`

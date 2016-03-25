@@ -41,6 +41,7 @@ var threadType = graphql.NewObject(
 			"subtitle":             &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"title":                &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"unread":               &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"unreadReference":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"isDeletable": &graphql.Field{
 				Type:              graphql.NewNonNull(graphql.Boolean),
 				DeprecationReason: "Replaced with allowDelete",

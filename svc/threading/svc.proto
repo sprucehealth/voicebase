@@ -48,6 +48,7 @@ message Thread {
 	ThreadType type = 11;
 	string system_title = 12;
 	string user_title = 13;
+	bool unread_reference = 14;
 }
 
 message Member {

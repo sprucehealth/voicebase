@@ -265,6 +265,7 @@ type Thread struct {
 	Type                       ThreadType  `protobuf:"varint,11,opt,name=type,proto3,enum=threading.ThreadType" json:"type,omitempty"`
 	SystemTitle                string      `protobuf:"bytes,12,opt,name=system_title,proto3" json:"system_title,omitempty"`
 	UserTitle                  string      `protobuf:"bytes,13,opt,name=user_title,proto3" json:"user_title,omitempty"`
+	UnreadReference            bool        `protobuf:"varint,14,opt,name=unread_reference,proto3" json:"unread_reference,omitempty"`
 }
 
 func (m *Thread) Reset()      { *m = Thread{} }
@@ -1615,6 +1616,9 @@ func (this *Thread) Equal(that interface{}) bool {
 		return false
 	}
 	if this.UserTitle != that1.UserTitle {
+		return false
+	}
+	if this.UnreadReference != that1.UnreadReference {
 		return false
 	}
 	return true
@@ -3693,7 +3697,7 @@ func (this *Thread) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 17)
+	s := make([]string, 0, 18)
 	s = append(s, "&threading.Thread{")
 	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	s = append(s, "OrganizationID: "+fmt.Sprintf("%#v", this.OrganizationID)+",\n")
@@ -3712,6 +3716,7 @@ func (this *Thread) GoString() string {
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	s = append(s, "SystemTitle: "+fmt.Sprintf("%#v", this.SystemTitle)+",\n")
 	s = append(s, "UserTitle: "+fmt.Sprintf("%#v", this.UserTitle)+",\n")
+	s = append(s, "UnreadReference: "+fmt.Sprintf("%#v", this.UnreadReference)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -5323,6 +5328,16 @@ func (m *Thread) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintSvc(data, i, uint64(len(m.UserTitle)))
 		i += copy(data[i:], m.UserTitle)
+	}
+	if m.UnreadReference {
+		data[i] = 0x70
+		i++
+		if m.UnreadReference {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
 	}
 	return i, nil
 }
@@ -7792,6 +7807,9 @@ func (m *Thread) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
+	if m.UnreadReference {
+		n += 2
+	}
 	return n
 }
 
@@ -8920,6 +8938,7 @@ func (this *Thread) String() string {
 		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
 		`SystemTitle:` + fmt.Sprintf("%v", this.SystemTitle) + `,`,
 		`UserTitle:` + fmt.Sprintf("%v", this.UserTitle) + `,`,
+		`UnreadReference:` + fmt.Sprintf("%v", this.UnreadReference) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -10197,6 +10216,26 @@ func (m *Thread) Unmarshal(data []byte) error {
 			}
 			m.UserTitle = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 14:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UnreadReference", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.UnreadReference = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

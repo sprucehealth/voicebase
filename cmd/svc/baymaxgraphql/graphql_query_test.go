@@ -138,6 +138,8 @@ func TestNodeQuery(t *testing.T) {
 		OrganizationID:  "entity_1",
 		PrimaryEntityID: "entity_2",
 		Type:            threading.ThreadType_EXTERNAL,
+		Unread:          true,
+		UnreadReference: true,
 	}, nil))
 	ra.Expect(mock.NewExpectation(ra.Entities, "entity_1", []string{"entity_2"}, []directory.EntityInformation{
 		directory.EntityInformation_CONTACTS,
@@ -168,7 +170,9 @@ func TestNodeQuery(t *testing.T) {
 		PrimaryEntityID:       "entity_2",
 		Title:                 "Someone",
 		LastPrimaryEntityEndpoints: []*models.Endpoint{},
-		Type: models.ThreadTypeExternal,
+		Type:            models.ThreadTypeExternal,
+		Unread:          true,
+		UnreadReference: true,
 	}, res)
 	mock.FinishAll(ra)
 

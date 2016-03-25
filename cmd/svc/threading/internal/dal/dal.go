@@ -94,6 +94,7 @@ type ThreadEntityUpdate struct {
 	Member           *bool
 	LastViewed       *time.Time
 	LastUnreadNotify *time.Time
+	LastReferenced   *time.Time
 }
 
 type OnboardingStateUpdate struct {
@@ -284,7 +285,7 @@ func (d *dal) IterateThreads(ctx context.Context, orgEntityID, viewerEntityID st
 	rows, err := d.db.Query(`
 		SELECT t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), t.last_message_timestamp, t.last_external_message_timestamp, t.last_message_summary,
 			t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''),
-			te.thread_id, te.entity_id, te.member, te.joined, te.last_viewed, te.last_unread_notify
+			te.thread_id, te.entity_id, te.member, te.joined, te.last_viewed, te.last_unread_notify, te.last_referenced
 		FROM threads t
 		LEFT OUTER JOIN thread_entities te ON te.thread_id = t.id AND te.entity_id = ?
 		WHERE `+where+order+limit, vals...)
@@ -692,7 +693,7 @@ func (d *dal) ThreadEntities(ctx context.Context, threadIDs []models.ThreadID, e
 	}
 	values[len(threadIDs)] = entityID
 	rows, err := d.db.Query(`
-		SELECT thread_id, entity_id, member, joined, last_viewed, last_unread_notify
+		SELECT thread_id, entity_id, member, joined, last_viewed, last_unread_notify, last_referenced
 		FROM thread_entities
 		WHERE thread_id IN (`+dbutil.MySQLArgs(len(threadIDs))+`)
 			AND entity_id = ? `+sfu, values...)
@@ -714,7 +715,7 @@ func (d *dal) ThreadEntities(ctx context.Context, threadIDs []models.ThreadID, e
 
 func (d *dal) EntitiesForThread(ctx context.Context, threadID models.ThreadID) ([]*models.ThreadEntity, error) {
 	rows, err := d.db.Query(`
-		SELECT thread_id, entity_id, member, joined, last_viewed, last_unread_notify
+		SELECT thread_id, entity_id, member, joined, last_viewed, last_unread_notify, last_referenced
 		FROM thread_entities
         WHERE thread_id = ?`, threadID)
 	if err != nil {
@@ -817,6 +818,9 @@ func (d *dal) UpdateThreadEntity(ctx context.Context, threadID models.ThreadID, 
 		}
 		if update.LastUnreadNotify != nil {
 			args.Append("last_unread_notify", *update.LastUnreadNotify)
+		}
+		if update.LastReferenced != nil {
+			args.Append("last_referenced", *update.LastReferenced)
 		}
 	}
 
@@ -965,7 +969,7 @@ func scanThread(row dbutil.Scanner) (*models.Thread, error) {
 func scanThreadEntity(row dbutil.Scanner) (*models.ThreadEntity, error) {
 	var te models.ThreadEntity
 	te.ThreadID = models.EmptyThreadID()
-	if err := row.Scan(&te.ThreadID, &te.EntityID, &te.Member, &te.Joined, &te.LastViewed, &te.LastUnreadNotify); err == sql.ErrNoRows {
+	if err := row.Scan(&te.ThreadID, &te.EntityID, &te.Member, &te.Joined, &te.LastViewed, &te.LastUnreadNotify, &te.LastReferenced); err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	} else if err != nil {
 		return nil, errors.Trace(err)
@@ -983,8 +987,8 @@ func scanThreadAndEntity(row dbutil.Scanner) (*models.Thread, *models.ThreadEnti
 	t.ID = models.EmptyThreadID()
 	var lastPrimaryEntityEndpointsData []byte
 	err := row.Scan(&t.ID, &t.OrganizationID, &t.PrimaryEntityID, &t.LastMessageTimestamp, &t.LastExternalMessageTimestamp,
-		&t.LastMessageSummary, &t.LastExternalMessageSummary, &lastPrimaryEntityEndpointsData, &t.Created, &t.MessageCount,
-		&t.Type, &t.SystemTitle, &t.UserTitle, &te.ThreadID, &teEntityID, &teMember, &teJoined, &te.LastViewed, &te.LastUnreadNotify)
+		&t.LastMessageSummary, &t.LastExternalMessageSummary, &lastPrimaryEntityEndpointsData, &t.Created, &t.MessageCount, &t.Type,
+		&t.SystemTitle, &t.UserTitle, &te.ThreadID, &teEntityID, &teMember, &teJoined, &te.LastViewed, &te.LastUnreadNotify, &te.LastReferenced)
 	if err == sql.ErrNoRows {
 		return nil, nil, errors.Trace(ErrNotFound)
 	} else if err != nil {

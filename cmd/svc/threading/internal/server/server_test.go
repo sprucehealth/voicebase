@@ -103,7 +103,9 @@ func TestCreateThread(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
 	defer dl.Finish()
-	now := time.Now()
+
+	clk := clock.NewManaged(time.Unix(1e6, 0))
+	now := clk.Now()
 
 	thid, err := models.NewThreadID()
 	test.OK(t, err)
@@ -114,6 +116,12 @@ func TestCreateThread(t *testing.T) {
 
 	mid, err := models.NewThreadItemID()
 	test.OK(t, err)
+
+	// Update reference timestamp for mentioned entities
+	dl.Expect(mock.NewExpectation(dl.UpdateThreadEntity, thid, "e2", &dal.ThreadEntityUpdate{
+		LastReferenced: &now,
+	}).WithReturns(nil))
+
 	ps := &dal.PostMessageRequest{
 		ThreadID:     thid,
 		FromEntityID: "e1",
@@ -157,7 +165,7 @@ func TestCreateThread(t *testing.T) {
 	}
 	dl.Expect(mock.NewExpectation(dl.Thread, thid).WithReturns(th2, nil))
 
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, "WEBDOMAIN")
 	res, err := srv.CreateThread(nil, &threading.CreateThreadRequest{
 		OrganizationID: "o1",
 		FromEntityID:   "e1",
@@ -214,7 +222,9 @@ func TestPostMessage(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
 	defer dl.Finish()
-	now := time.Now()
+
+	clk := clock.NewManaged(time.Unix(1e6, 0))
+	now := clk.Now()
 
 	th1id, err := models.NewThreadID()
 	test.OK(t, err)
@@ -232,8 +242,12 @@ func TestPostMessage(t *testing.T) {
 		ThreadID:     th1id,
 		FromEntityID: "e1",
 		Title:        "title",
-		Text:         "text",
+		Text:         "<ref id=\"e2\" type=\"entity\">Foo</ref> <ref id=\"e3\" type=\"entity\">Bar</ref>",
 		Summary:      "summary",
+		TextRefs: []*models.Reference{
+			{ID: "e2", Type: models.Reference_ENTITY},
+			{ID: "e3", Type: models.Reference_ENTITY},
+		},
 	}).WithReturns(&models.ThreadItem{
 		ID:            ti1id,
 		ThreadID:      th1id,
@@ -243,11 +257,23 @@ func TestPostMessage(t *testing.T) {
 		Type:          models.ItemTypeMessage,
 		Data: &models.Message{
 			Title:   "title",
-			Text:    "text",
+			Text:    "<ref id=\"e2\" type=\"entity\">Foo</ref> <ref id=\"e3\" type=\"entity\">Bar</ref>",
 			Status:  models.Message_NORMAL,
 			Summary: "summary",
+			TextRefs: []*models.Reference{
+				{ID: "e2", Type: models.Reference_ENTITY},
+				{ID: "e3", Type: models.Reference_ENTITY},
+			},
 		},
 	}, nil))
+
+	// Update reference timestamp for mentioned entities
+	dl.Expect(mock.NewExpectation(dl.UpdateThreadEntity, th1id, "e2", &dal.ThreadEntityUpdate{
+		LastReferenced: &now,
+	}).WithReturns(nil))
+	dl.Expect(mock.NewExpectation(dl.UpdateThreadEntity, th1id, "e3", &dal.ThreadEntityUpdate{
+		LastReferenced: &now,
+	}).WithReturns(nil))
 
 	dl.Expect(mock.NewExpectation(dl.ThreadEntities, []models.ThreadID{th1id}, "e1", true).WithReturns(map[string]*models.ThreadEntity(nil), nil))
 
@@ -263,12 +289,12 @@ func TestPostMessage(t *testing.T) {
 		LastExternalMessageTimestamp: now,
 	}, nil))
 
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, "WEBDOMAIN")
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, "WEBDOMAIN")
 	res, err := srv.PostMessage(nil, &threading.PostMessageRequest{
 		ThreadID:     th1id.String(),
 		FromEntityID: "e1",
 		Title:        "title",
-		Text:         "text",
+		Text:         "<ref id=\"e2\" type=\"Entity\">Foo</ref> <ref id=\"e3\" type=\"Entity\">Bar</ref>",
 		Summary:      "summary",
 	})
 	test.OK(t, err)
@@ -284,9 +310,13 @@ func TestPostMessage(t *testing.T) {
 			Item: &threading.ThreadItem_Message{
 				Message: &threading.Message{
 					Title:   "title",
-					Text:    "text",
+					Text:    "<ref id=\"e2\" type=\"entity\">Foo</ref> <ref id=\"e3\" type=\"entity\">Bar</ref>",
 					Status:  threading.Message_NORMAL,
 					Summary: "summary",
+					TextRefs: []*threading.Reference{
+						{ID: "e2", Type: threading.Reference_ENTITY},
+						{ID: "e3", Type: threading.Reference_ENTITY},
+					},
 				},
 			},
 		},
@@ -845,7 +875,11 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
 	defer dl.Finish()
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, "WEBDOMAIN")
+
+	clk := clock.NewManaged(time.Unix(1e6, 0))
+	now := clk.Now()
+
+	srv := NewThreadsServer(clk, dl, nil, "arn", nil, nil, "WEBDOMAIN")
 
 	orgID := "entity:1"
 	peID := "entity:2"
@@ -855,7 +889,6 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 	test.OK(t, err)
 	tID3, err := models.NewThreadID()
 	test.OK(t, err)
-	now := time.Now()
 
 	// Adhoc query
 	dl.Expect(mock.NewExpectation(dl.IterateThreads, orgID, peID, false, &dal.Iterator{
@@ -876,13 +909,31 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 					MessageCount:         32,
 				},
 				ThreadEntity: &models.ThreadEntity{
-					ThreadID:   tID,
-					EntityID:   peID,
-					LastViewed: ptr.Time(time.Unix(1, 1)),
+					ThreadID:       tID,
+					EntityID:       peID,
+					LastViewed:     ptr.Time(time.Unix(1, 1)),
+					LastReferenced: ptr.Time(time.Unix(10, 1)),
 				},
 			},
 			{
 				Cursor: "c3",
+				Thread: &models.Thread{
+					ID:                   tID,
+					OrganizationID:       orgID,
+					PrimaryEntityID:      peID,
+					LastMessageTimestamp: now,
+					Created:              time.Unix(now.Unix()-1000, 0),
+					MessageCount:         32,
+				},
+				ThreadEntity: &models.ThreadEntity{
+					ThreadID:       tID,
+					EntityID:       peID,
+					LastViewed:     ptr.Time(time.Unix(5, 1)),
+					LastReferenced: ptr.Time(time.Unix(2, 1)),
+				},
+			},
+			{
+				Cursor: "c4",
 				Thread: &models.Thread{
 					ID:                   tID2,
 					OrganizationID:       orgID,
@@ -894,11 +945,11 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 				ThreadEntity: &models.ThreadEntity{
 					ThreadID:   tID2,
 					EntityID:   peID,
-					LastViewed: ptr.Time(now),
+					LastViewed: &now,
 				},
 			},
 			{
-				Cursor: "c4",
+				Cursor: "c5",
 				Thread: &models.Thread{
 					ID:                   tID3,
 					OrganizationID:       orgID,
@@ -935,11 +986,24 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 					PrimaryEntityID:      peID,
 					LastMessageTimestamp: uint64(now.Unix()),
 					Unread:               true,
+					UnreadReference:      true,
 					CreatedTimestamp:     uint64(time.Unix(now.Unix()-1000, 0).Unix()),
 					MessageCount:         32,
 				},
-				// ThreadEntity:
 				Cursor: "c2",
+			},
+			{
+				Thread: &threading.Thread{
+					ID:                   tID.String(),
+					OrganizationID:       orgID,
+					PrimaryEntityID:      peID,
+					LastMessageTimestamp: uint64(now.Unix()),
+					Unread:               true,
+					UnreadReference:      false,
+					CreatedTimestamp:     uint64(time.Unix(now.Unix()-1000, 0).Unix()),
+					MessageCount:         32,
+				},
+				Cursor: "c3",
 			},
 			{
 				Thread: &threading.Thread{
@@ -948,10 +1012,11 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 					PrimaryEntityID:      peID,
 					LastMessageTimestamp: uint64(time.Unix(now.Unix()-1000, 0).Unix()),
 					Unread:               false,
+					UnreadReference:      false,
 					CreatedTimestamp:     uint64(time.Unix(now.Unix()-2000, 0).Unix()),
 					MessageCount:         33,
 				},
-				Cursor: "c3",
+				Cursor: "c4",
 			},
 			{
 				Thread: &threading.Thread{
@@ -960,10 +1025,11 @@ func TestQueryThreadsWithViewer(t *testing.T) {
 					PrimaryEntityID:      peID,
 					LastMessageTimestamp: uint64(now.Unix()),
 					Unread:               false,
+					UnreadReference:      false,
 					CreatedTimestamp:     uint64(now.Unix()),
 					MessageCount:         0,
 				},
-				Cursor: "c4",
+				Cursor: "c5",
 			},
 		},
 	}, res)

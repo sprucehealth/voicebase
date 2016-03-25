@@ -82,6 +82,7 @@ func transformThreadToResponse(t *threading.Thread) (*models.Thread, error) {
 		Subtitle:                   t.LastMessageSummary,
 		LastMessageTimestamp:       t.LastMessageTimestamp,
 		Unread:                     t.Unread,
+		UnreadReference:            t.UnreadReference,
 		MessageCount:               int(t.MessageCount),
 		LastPrimaryEntityEndpoints: make([]*models.Endpoint, len(t.LastPrimaryEntityEndpoints)),
 		Type:  t.Type.String(),
