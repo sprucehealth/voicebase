@@ -453,6 +453,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 					Text:         plainText,
 					Attachments:  attachments,
 					Summary:      summary,
+					Type:         threading.ThreadType_EXTERNAL,
 				},
 			)
 			if err != nil {
