@@ -812,9 +812,10 @@ func (s *threadsServer) Thread(ctx context.Context, in *threading.ThreadRequest)
 		if len(ts) == 0 {
 			return nil, grpcErrorf(codes.NotFound, "Thread not found")
 		}
-	} else if th.Type == threading.ThreadType_TEAM {
-		// Require a viewer entity for private threads
-		return nil, grpcErrorf(codes.NotFound, "Thread not found")
+		// TODO: for now can't require the viewer since the graphql service requests the thread to get the org ID before it can know the entity viewing
+		// } else if th.Type == threading.ThreadType_TEAM {
+		// 	// Require a viewer entity for private threads
+		// 	return nil, grpcErrorf(codes.NotFound, "Thread not found")
 	}
 	return &threading.ThreadResponse{
 		Thread: th,
