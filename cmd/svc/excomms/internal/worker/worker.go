@@ -324,24 +324,7 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 	return nil
 }
 
-var deletedVoicemails = map[string]string{
-	"https://api.twilio.com/2010-04-01/Accounts/AC37393a5754e1b84bac32222dcd71b509/Recordings/RE77f692688f5f91509506f33ca4f9bf8a.mp3": "9be5f364-ede4-2edb-2139-3f45-b5b7c4ce",
-	"https://api.twilio.com/2010-04-01/Accounts/AC37393a5754e1b84bac32222dcd71b509/Recordings/REd17f3752ccbb6c7516116bd834d36f34.mp3": "9c9c7431-6ce9-095b-4b8f-57da-f6f0dc5a",
-	"https://api.twilio.com/2010-04-01/Accounts/AC37393a5754e1b84bac32222dcd71b509/Recordings/REfc3c295cd7284abad641ec7d30d2b4c7.mp3": "58bc48d2-3c59-5489-5b84-4744-81530cec",
-	"https://api.twilio.com/2010-04-01/Accounts/AC37393a5754e1b84bac32222dcd71b509/Recordings/RE6d65711f2fbc146fff83dbe797cc57c5.mp3": "dcbde368-f253-f858-5d01-c1f7-7a355d15",
-}
-
 func (w *IncomingRawMessageWorker) uploadTwilioMediaToS3(contentType, url string) (*models.Media, error) {
-
-	// TODO (kajham): Remove this code once we have unblocked the 4 voicemails stuck in production.
-	if mediaID := deletedVoicemails[url]; mediaID != "" {
-		golog.Infof("Processing deleted voicemail: %s", mediaID)
-		return &models.Media{
-			ID:   mediaID,
-			Type: contentType,
-			URL:  "s3://us-east-1/prod-baymax-storage/media/" + mediaID,
-		}, nil
-	}
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
