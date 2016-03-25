@@ -214,6 +214,34 @@ func TestUpdateThread(t *testing.T) {
 	test.Equals(t, "bar", th.UserTitle)
 }
 
+func TestThreadEntities(t *testing.T) {
+	dt := setupTest(t)
+	defer dt.cleanup(t)
+
+	dal := New(dt.db)
+	ctx := context.Background()
+
+	tid, err := dal.CreateThread(ctx, &models.Thread{
+		OrganizationID:             "org",
+		Type:                       models.ThreadTypeTeam,
+		LastMessageSummary:         "summary",
+		LastMessageTimestamp:       time.Unix(2, 0),
+		LastExternalMessageSummary: "extsummary",
+	})
+	test.OK(t, err)
+
+	ents, err := dal.ThreadEntities(ctx, []models.ThreadID{tid}, "e1", false)
+	test.OK(t, err)
+	test.Equals(t, 0, len(ents))
+
+	test.OK(t, dal.UpdateThreadEntity(ctx, tid, "e1", &ThreadEntityUpdate{LastViewed: ptr.Time(time.Unix(1e6, 0))}))
+
+	ents, err = dal.ThreadEntities(ctx, []models.ThreadID{tid}, "e1", true)
+	test.OK(t, err)
+	test.Equals(t, 1, len(ents))
+	test.Equals(t, time.Unix(1e6, 0), *ents[tid.String()].LastViewed)
+}
+
 func TestUpdateThreadMembers(t *testing.T) {
 	dt := setupTest(t)
 	defer dt.cleanup(t)

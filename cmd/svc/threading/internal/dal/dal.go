@@ -684,7 +684,7 @@ func (d *dal) ThreadEntities(ctx context.Context, threadIDs []models.ThreadID, e
 
 	var sfu string
 	if forUpdate {
-		sfu = "FOR UPDATE ORDER BY thread_id"
+		sfu = "ORDER BY thread_id FOR UPDATE"
 	}
 	values := make([]interface{}, len(threadIDs)+1)
 	for i, v := range threadIDs {
