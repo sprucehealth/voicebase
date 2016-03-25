@@ -340,7 +340,7 @@ func (m *resourceAccessor) Entity(ctx context.Context, entityID string, entityIn
 }
 
 func (m *resourceAccessor) Entities(ctx context.Context, orgID string, entityIDs []string, entityInfo []directory.EntityInformation) ([]*directory.Entity, error) {
-	if err := m.canAccessResource(ctx, orgID, m.orgsForEntity); err != nil {
+	if err := m.canAccessResource(ctx, orgID, m.orgsForOrganization); err != nil {
 		return nil, err
 	}
 	entityInfo = append(entityInfo, directory.EntityInformation_MEMBERSHIPS)
@@ -362,6 +362,10 @@ func (m *resourceAccessor) Entities(ctx context.Context, orgID string, entityIDs
 	// Filter out any entities that aren't in the expected org
 	for i := 0; i < len(res.Entities); i++ {
 		e := res.Entities[i]
+		// Allow the organization itself to be looked up
+		if e.ID == orgID {
+			continue
+		}
 		found := false
 		for _, em := range e.Memberships {
 			if em.ID == orgID {
