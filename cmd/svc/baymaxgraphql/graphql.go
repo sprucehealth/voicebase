@@ -127,15 +127,6 @@ const (
 	defaultAuthCookieDuration = time.Hour * 24 * 30
 )
 
-var (
-	ipAddressPrefixes = []string{
-		// Wuhan, Hubei, China
-		"27.16.107",
-		// Huanggang, Hubei, China
-		"121.62.232",
-	}
-)
-
 func setAuthCookie(w http.ResponseWriter, domain, token string, expires time.Time) {
 	idx := strings.IndexByte(domain, ':')
 	if idx != -1 {
