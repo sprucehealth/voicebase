@@ -182,7 +182,8 @@ var threadType = graphql.NewObject(
 					}
 					// Internal threads don't have a primary entity
 					if th.PrimaryEntityID == "" {
-						return nil, nil
+						// TODO: for now returning a stub primary entity as apps are relying on it existing. remove at some point
+						return stubEntity, nil
 					}
 					if selectingOnlyID(p) {
 						return &models.Entity{ID: th.PrimaryEntityID}, nil
