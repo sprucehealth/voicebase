@@ -50,6 +50,7 @@ message DeleteResourceRequest {
 		TWILIO_SMS = 2;
 		TWILIO_MEDIA = 3;
 		TWILIO_RECORDING = 4;
+		TWILIO_TRANSCRIPTION = 5;
 	}
 	Type type = 1;
 	string resource_id = 2 [(gogoproto.customname) = "ResourceID"];

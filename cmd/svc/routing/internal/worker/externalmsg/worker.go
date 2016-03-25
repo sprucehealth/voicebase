@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -350,6 +351,10 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 			case excomms.IncomingCallEventItem_LEFT_VOICEMAIL:
 				title = bml.BML{"Voicemail"}
 				summary = "Called, left voicemail"
+
+				if len(strings.TrimSpace(pem.GetIncoming().TranscriptionText)) > 0 {
+					text = "Transcription:" + strconv.Quote(pem.GetIncoming().TranscriptionText)
+				}
 				attachments = []*threading.Attachment{
 					{
 						Type: threading.Attachment_AUDIO,

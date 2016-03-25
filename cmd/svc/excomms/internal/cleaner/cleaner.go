@@ -106,6 +106,14 @@ func (w *Worker) processEvent(drr *models.DeleteResourceRequest) error {
 			}
 			return errors.Trace(err)
 		}
+	case models.DeleteResourceRequest_TWILIO_TRANSCRIPTION:
+		_, err := w.twilio.Transcription.Delete(drr.ResourceID)
+		if err != nil {
+			if e, ok := err.(*twilio.Exception); ok && e.Code == twilio.ErrorCodeResourceNotFound {
+				return nil
+			}
+			return errors.Trace(err)
+		}
 	}
 
 	if err := w.dal.CreateDeletedResource(drr.Type.String(), drr.ResourceID); err != nil {

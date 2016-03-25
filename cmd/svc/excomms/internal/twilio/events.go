@@ -41,6 +41,7 @@ var (
 		rawmsg.TwilioEvent_PROCESS_VOICEMAIL:            processVoicemail,
 		rawmsg.TwilioEvent_PROCESS_OUTGOING_CALL_STATUS: processOutgoingCallStatus,
 		rawmsg.TwilioEvent_PROCESS_SMS_STATUS:           processOutgoingSMSStatus,
+		rawmsg.TwilioEvent_NO_OP:                        processNoOp,
 	}
 	maxPhoneNumbers = 10
 )
@@ -110,6 +111,10 @@ type EventHandler interface {
 }
 
 type twilioEventHandleFunc func(context.Context, *rawmsg.TwilioParams, *eventsHandler) (string, error)
+
+func processNoOp(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
+	return "", nil
+}
 
 func processOutgoingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *eventsHandler) (string, error) {
 
@@ -482,9 +487,11 @@ func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *events
 	}
 
 	var orgName string
+	var orgID string
 	switch entity.Type {
 	case directory.EntityType_ORGANIZATION:
 		orgName = entity.Info.DisplayName
+		orgID = entity.ID
 	case directory.EntityType_INTERNAL:
 		for _, m := range entity.Memberships {
 			if m.Type != directory.EntityType_ORGANIZATION {
@@ -495,6 +502,7 @@ func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *events
 			for _, c := range m.Contacts {
 				if c.Provisioned && c.Value == params.To {
 					orgName = m.Info.DisplayName
+					orgID = m.ID
 					break
 				}
 			}
@@ -508,6 +516,37 @@ func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *events
 		voicemailMessage = "Please leave a message after the tone."
 	}
 
+	// check if voicemails should be transcribed or not
+	var transcribeVoicemail bool
+	res, err := eh.settings.GetValues(ctx, &settings.GetValuesRequest{
+		NodeID: orgID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key: excommsSettings.ConfigKeyTranscribeVoicemail,
+			},
+		},
+	})
+	if err != nil {
+		golog.Errorf("Unable to read settings for whether or not to transcribe voicemail for organizationID %s: %s", orgID, err.Error())
+	} else if len(res.Values) == 0 {
+		golog.Warningf("No value specified for transcribe voicemails for %s", orgID)
+	} else if len(res.Values) != 1 {
+		golog.Warningf("Expected 1 value for transcribe voicemails instead got %d for %s", len(res.Values), orgID)
+	} else if res.Values[0].GetBoolean() == nil {
+		golog.Warningf("Expected boolean value for revealing sender instead got %T for %s", res.Values[0].Value, orgID)
+	} else {
+		transcribeVoicemail = res.Values[0].GetBoolean().Value
+	}
+
+	var action, transcribeCallback string
+	if transcribeVoicemail {
+		transcribeCallback = "/twilio/call/process_voicemail"
+		action = "/twilio/call/no_op"
+	} else {
+		action = "/twilio/call/process_voicemail"
+		transcribeCallback = "/twilio/call/no_op"
+	}
+
 	tw := &twiml.Response{
 		Verbs: []interface{}{
 			&twiml.Say{
@@ -515,9 +554,13 @@ func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *events
 				Text:  voicemailMessage,
 			},
 			&twiml.Record{
-				Action:           "/twilio/call/process_voicemail",
-				PlayBeep:         true,
-				TimeoutInSeconds: 60,
+				Action:             action,
+				PlayBeep:           true,
+				TranscribeCallback: transcribeCallback,
+				TimeoutInSeconds:   60,
+				// Note: manually setting the maxLength so that a voicemail longer than 2 minutes can be recorded
+				// even if that long of a voicemail cannot be transcribed.
+				MaxLength: 3600,
 			},
 		},
 	}

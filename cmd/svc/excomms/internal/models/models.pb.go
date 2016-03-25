@@ -54,11 +54,12 @@ var SentMessage_Type_value = map[string]int32{
 type DeleteResourceRequest_Type int32
 
 const (
-	DeleteResourceRequest_INVALID          DeleteResourceRequest_Type = 0
-	DeleteResourceRequest_TWILIO_CALL      DeleteResourceRequest_Type = 1
-	DeleteResourceRequest_TWILIO_SMS       DeleteResourceRequest_Type = 2
-	DeleteResourceRequest_TWILIO_MEDIA     DeleteResourceRequest_Type = 3
-	DeleteResourceRequest_TWILIO_RECORDING DeleteResourceRequest_Type = 4
+	DeleteResourceRequest_INVALID              DeleteResourceRequest_Type = 0
+	DeleteResourceRequest_TWILIO_CALL          DeleteResourceRequest_Type = 1
+	DeleteResourceRequest_TWILIO_SMS           DeleteResourceRequest_Type = 2
+	DeleteResourceRequest_TWILIO_MEDIA         DeleteResourceRequest_Type = 3
+	DeleteResourceRequest_TWILIO_RECORDING     DeleteResourceRequest_Type = 4
+	DeleteResourceRequest_TWILIO_TRANSCRIPTION DeleteResourceRequest_Type = 5
 )
 
 var DeleteResourceRequest_Type_name = map[int32]string{
@@ -67,13 +68,15 @@ var DeleteResourceRequest_Type_name = map[int32]string{
 	2: "TWILIO_SMS",
 	3: "TWILIO_MEDIA",
 	4: "TWILIO_RECORDING",
+	5: "TWILIO_TRANSCRIPTION",
 }
 var DeleteResourceRequest_Type_value = map[string]int32{
-	"INVALID":          0,
-	"TWILIO_CALL":      1,
-	"TWILIO_SMS":       2,
-	"TWILIO_MEDIA":     3,
-	"TWILIO_RECORDING": 4,
+	"INVALID":              0,
+	"TWILIO_CALL":          1,
+	"TWILIO_SMS":           2,
+	"TWILIO_MEDIA":         3,
+	"TWILIO_RECORDING":     4,
+	"TWILIO_TRANSCRIPTION": 5,
 }
 
 type SentMessage struct {
@@ -207,9 +210,8 @@ func (m *SMSMessage) Reset()      { *m = SMSMessage{} }
 func (*SMSMessage) ProtoMessage() {}
 
 type DeleteResourceRequest struct {
-	Type          DeleteResourceRequest_Type `protobuf:"varint,1,opt,name=type,proto3,enum=models.DeleteResourceRequest_Type" json:"type,omitempty"`
-	ResourceID    string                     `protobuf:"bytes,2,opt,name=resource_id,proto3" json:"resource_id,omitempty"`
-	DateRequested uint64                     `protobuf:"varint,3,opt,name=date_requested,proto3" json:"date_requested,omitempty"`
+	Type       DeleteResourceRequest_Type `protobuf:"varint,1,opt,name=type,proto3,enum=models.DeleteResourceRequest_Type" json:"type,omitempty"`
+	ResourceID string                     `protobuf:"bytes,2,opt,name=resource_id,proto3" json:"resource_id,omitempty"`
 }
 
 func (m *DeleteResourceRequest) Reset()      { *m = DeleteResourceRequest{} }
@@ -439,9 +441,6 @@ func (this *DeleteResourceRequest) Equal(that interface{}) bool {
 	if this.ResourceID != that1.ResourceID {
 		return false
 	}
-	if this.DateRequested != that1.DateRequested {
-		return false
-	}
 	return true
 }
 func (this *SentMessage) GoString() string {
@@ -511,11 +510,10 @@ func (this *DeleteResourceRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 6)
 	s = append(s, "&models.DeleteResourceRequest{")
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	s = append(s, "ResourceID: "+fmt.Sprintf("%#v", this.ResourceID)+",\n")
-	s = append(s, "DateRequested: "+fmt.Sprintf("%#v", this.DateRequested)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -757,11 +755,6 @@ func (m *DeleteResourceRequest) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintModels(data, i, uint64(len(m.ResourceID)))
 		i += copy(data[i:], m.ResourceID)
 	}
-	if m.DateRequested != 0 {
-		data[i] = 0x18
-		i++
-		i = encodeVarintModels(data, i, uint64(m.DateRequested))
-	}
 	return i, nil
 }
 
@@ -905,9 +898,6 @@ func (m *DeleteResourceRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovModels(uint64(l))
 	}
-	if m.DateRequested != 0 {
-		n += 1 + sovModels(uint64(m.DateRequested))
-	}
 	return n
 }
 
@@ -996,7 +986,6 @@ func (this *DeleteResourceRequest) String() string {
 	s := strings.Join([]string{`&DeleteResourceRequest{`,
 		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
 		`ResourceID:` + fmt.Sprintf("%v", this.ResourceID) + `,`,
-		`DateRequested:` + fmt.Sprintf("%v", this.DateRequested) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1753,25 +1742,6 @@ func (m *DeleteResourceRequest) Unmarshal(data []byte) error {
 			}
 			m.ResourceID = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DateRequested", wireType)
-			}
-			m.DateRequested = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowModels
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.DateRequested |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipModels(data[iNdEx:])

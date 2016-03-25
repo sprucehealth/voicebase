@@ -366,6 +366,7 @@ func TestIncoming_Organization_SingleProvider_DirectAllCallsToVoicemail(t *testi
 			},
 		},
 	}, nil))
+
 	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
 		Keys: []*settings.ConfigKey{
 			{
@@ -378,6 +379,28 @@ func TestIncoming_Organization_SingleProvider_DirectAllCallsToVoicemail(t *testi
 			{
 				Key: &settings.ConfigKey{
 					Key: excommsSettings.ConfigKeySendCallsToVoicemail,
+				},
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: true,
+					},
+				},
+			},
+		},
+	}, nil))
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key: excommsSettings.ConfigKeyTranscribeVoicemail,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key: excommsSettings.ConfigKeyTranscribeVoicemail,
 				},
 				Type: settings.ConfigType_BOOLEAN,
 				Value: &settings.Value_Boolean{
@@ -401,7 +424,7 @@ func TestIncoming_Organization_SingleProvider_DirectAllCallsToVoicemail(t *testi
 		t.Fatalf(err.Error())
 	}
 	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<Response><Say voice="alice">You have reached Dewabi Corp. Please leave a message after the tone.</Say><Record action="/twilio/call/process_voicemail" timeout="60" playBeep="true"></Record></Response>`)
+<Response><Say voice="alice">You have reached Dewabi Corp. Please leave a message after the tone.</Say><Record action="/twilio/call/no_op" timeout="60" maxLength="3600" transcribeCallback="/twilio/call/process_voicemail" playBeep="true"></Record></Response>`)
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -965,14 +988,118 @@ func TestVoicemailTwiML(t *testing.T) {
 		Digits: "2",
 	}
 
-	es := NewEventHandler(md, nil, nil, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil)
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key: excommsSettings.ConfigKeyTranscribeVoicemail,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key: excommsSettings.ConfigKeyTranscribeVoicemail,
+				},
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: true,
+					},
+				},
+			},
+		},
+	}, nil))
+
+	es := NewEventHandler(md, msettings, nil, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil)
 
 	twiml, err := voicemailTWIML(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatal(err)
 	}
 	expected := `<?xml version="1.0" encoding="UTF-8"?>
-<Response><Say voice="alice">You have reached Dewabi Corp. Please leave a message after the tone.</Say><Record action="/twilio/call/process_voicemail" timeout="60" playBeep="true"></Record></Response>`
+<Response><Say voice="alice">You have reached Dewabi Corp. Please leave a message after the tone.</Say><Record action="/twilio/call/no_op" timeout="60" maxLength="3600" transcribeCallback="/twilio/call/process_voicemail" playBeep="true"></Record></Response>`
+
+	if expected != twiml {
+		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
+	}
+}
+
+func TestVoicemailTwiML_NoTranscription(t *testing.T) {
+	orgID := "12345"
+	providerID := "p1"
+	practicePhoneNumber := "+14152222222"
+	md := &mockDirectoryService_Twilio{
+		entitiesList: []*directory.Entity{
+			{
+				ID:   orgID,
+				Type: directory.EntityType_ORGANIZATION,
+				Contacts: []*directory.Contact{
+					{
+						ContactType: directory.ContactType_PHONE,
+						Value:       practicePhoneNumber,
+						Provisioned: true,
+					},
+				},
+				Info: &directory.EntityInfo{
+					DisplayName: "Dewabi Corp",
+				},
+				Members: []*directory.Entity{
+					{
+						ID: providerID,
+						Contacts: []*directory.Contact{
+							{
+								ContactType: directory.ContactType_PHONE,
+								Value:       "+14151111111",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	params := &rawmsg.TwilioParams{
+		From:   "+14151111111",
+		To:     "+14152222222",
+		Digits: "2",
+	}
+
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key: excommsSettings.ConfigKeyTranscribeVoicemail,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key: excommsSettings.ConfigKeyTranscribeVoicemail,
+				},
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: false,
+					},
+				},
+			},
+		},
+	}, nil))
+
+	es := NewEventHandler(md, msettings, nil, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil)
+
+	twiml, err := voicemailTWIML(context.Background(), params, es.(*eventsHandler))
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := `<?xml version="1.0" encoding="UTF-8"?>
+<Response><Say voice="alice">You have reached Dewabi Corp. Please leave a message after the tone.</Say><Record action="/twilio/call/process_voicemail" timeout="60" maxLength="3600" transcribeCallback="/twilio/call/no_op" playBeep="true"></Record></Response>`
 
 	if expected != twiml {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -1040,7 +1167,33 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 		},
 	}
 
-	es := NewEventHandler(md, nil, nil, ms, clock.New(), nil, "https://test.com", "", "", "", nil)
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key: excommsSettings.ConfigKeyTranscribeVoicemail,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key: excommsSettings.ConfigKeyTranscribeVoicemail,
+				},
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: true,
+					},
+				},
+			},
+		},
+	}, nil))
+
+	es := NewEventHandler(md, msettings, nil, ms, clock.New(), nil, "https://test.com", "", "", "", nil)
 
 	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -1048,7 +1201,7 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 	}
 
 	expected := `<?xml version="1.0" encoding="UTF-8"?>
-<Response><Say voice="alice">You have reached Dewabi Corp. Please leave a message after the tone.</Say><Record action="/twilio/call/process_voicemail" timeout="60" playBeep="true"></Record></Response>`
+<Response><Say voice="alice">You have reached Dewabi Corp. Please leave a message after the tone.</Say><Record action="/twilio/call/no_op" timeout="60" maxLength="3600" transcribeCallback="/twilio/call/process_voicemail" playBeep="true"></Record></Response>`
 	if expected != twiml {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
 	}

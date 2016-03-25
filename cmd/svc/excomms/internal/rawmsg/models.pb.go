@@ -46,18 +46,20 @@ const (
 	TwilioEvent_PROCESS_VOICEMAIL            TwilioEvent = 7
 	TwilioEvent_PROCESS_OUTGOING_CALL_STATUS TwilioEvent = 8
 	TwilioEvent_PROCESS_SMS_STATUS           TwilioEvent = 9
+	TwilioEvent_NO_OP                        TwilioEvent = 10
 )
 
 var TwilioEvent_name = map[int32]string{
-	0: "PROCESS_INCOMING_CALL",
-	1: "PROVIDER_CALL_CONNECTED",
-	2: "PROVIDER_ENTERED_DIGITS",
-	3: "TWIML_REQUESTED_VOICEMAIL",
-	4: "PROCESS_INCOMING_CALL_STATUS",
-	6: "PROCESS_OUTGOING_CALL",
-	7: "PROCESS_VOICEMAIL",
-	8: "PROCESS_OUTGOING_CALL_STATUS",
-	9: "PROCESS_SMS_STATUS",
+	0:  "PROCESS_INCOMING_CALL",
+	1:  "PROVIDER_CALL_CONNECTED",
+	2:  "PROVIDER_ENTERED_DIGITS",
+	3:  "TWIML_REQUESTED_VOICEMAIL",
+	4:  "PROCESS_INCOMING_CALL_STATUS",
+	6:  "PROCESS_OUTGOING_CALL",
+	7:  "PROCESS_VOICEMAIL",
+	8:  "PROCESS_OUTGOING_CALL_STATUS",
+	9:  "PROCESS_SMS_STATUS",
+	10: "NO_OP",
 }
 var TwilioEvent_value = map[string]int32{
 	"PROCESS_INCOMING_CALL":        0,
@@ -69,6 +71,7 @@ var TwilioEvent_value = map[string]int32{
 	"PROCESS_VOICEMAIL":            7,
 	"PROCESS_OUTGOING_CALL_STATUS": 8,
 	"PROCESS_SMS_STATUS":           9,
+	"NO_OP":                        10,
 }
 
 type TwilioParams_CallStatus int32
@@ -143,6 +146,25 @@ var TwilioParams_MessageStatus_value = map[string]int32{
 	"MSG_STATUS_SENT":        4,
 	"MSG_STATUS_DELIVERED":   5,
 	"MSG_STATUS_UNDELIVERED": 6,
+}
+
+type TwilioParams_TranscriptionStatus int32
+
+const (
+	TwilioParams_TRANSCRIPTION_STATUS_UNKNOWN   TwilioParams_TranscriptionStatus = 0
+	TwilioParams_TRANSCRIPTION_STATUS_COMPLETED TwilioParams_TranscriptionStatus = 1
+	TwilioParams_TRANSCRIPTION_STATUS_FAILED    TwilioParams_TranscriptionStatus = 2
+)
+
+var TwilioParams_TranscriptionStatus_name = map[int32]string{
+	0: "TRANSCRIPTION_STATUS_UNKNOWN",
+	1: "TRANSCRIPTION_STATUS_COMPLETED",
+	2: "TRANSCRIPTION_STATUS_FAILED",
+}
+var TwilioParams_TranscriptionStatus_value = map[string]int32{
+	"TRANSCRIPTION_STATUS_UNKNOWN":   0,
+	"TRANSCRIPTION_STATUS_COMPLETED": 1,
+	"TRANSCRIPTION_STATUS_FAILED":    2,
 }
 
 type TwilioParams_Direction int32
@@ -220,6 +242,11 @@ type TwilioParams struct {
 	MessageStatus              TwilioParams_MessageStatus `protobuf:"varint,26,opt,name=message_status,proto3,enum=rawmsg.TwilioParams_MessageStatus" json:"message_status,omitempty"`
 	DialCallSID                string                     `protobuf:"bytes,27,opt,name=dial_call_sid,proto3" json:"dial_call_sid,omitempty"`
 	RecordingMediaID           string                     `protobuf:"bytes,28,opt,name=recording_media_id,proto3" json:"recording_media_id,omitempty"`
+	// transcription parameters
+	TranscriptionStatus TwilioParams_TranscriptionStatus `protobuf:"varint,29,opt,name=transcription_status,proto3,enum=rawmsg.TwilioParams_TranscriptionStatus" json:"transcription_status,omitempty"`
+	TranscriptionURL    string                           `protobuf:"bytes,30,opt,name=transcription_url,proto3" json:"transcription_url,omitempty"`
+	TranscriptionText   string                           `protobuf:"bytes,31,opt,name=transcription_text,proto3" json:"transcription_text,omitempty"`
+	TranscriptionSID    string                           `protobuf:"bytes,32,opt,name=transcription_sid,proto3" json:"transcription_sid,omitempty"`
 	// infrequently used parameters
 	ForwardedFrom string `protobuf:"bytes,100,opt,name=forwarded_from,proto3" json:"forwarded_from,omitempty"`
 	CallerName    string `protobuf:"bytes,101,opt,name=caller_name,proto3" json:"caller_name,omitempty"`
@@ -406,6 +433,7 @@ func init() {
 	proto.RegisterEnum("rawmsg.TwilioEvent", TwilioEvent_name, TwilioEvent_value)
 	proto.RegisterEnum("rawmsg.TwilioParams_CallStatus", TwilioParams_CallStatus_name, TwilioParams_CallStatus_value)
 	proto.RegisterEnum("rawmsg.TwilioParams_MessageStatus", TwilioParams_MessageStatus_name, TwilioParams_MessageStatus_value)
+	proto.RegisterEnum("rawmsg.TwilioParams_TranscriptionStatus", TwilioParams_TranscriptionStatus_name, TwilioParams_TranscriptionStatus_value)
 	proto.RegisterEnum("rawmsg.TwilioParams_Direction", TwilioParams_Direction_name, TwilioParams_Direction_value)
 	proto.RegisterEnum("rawmsg.Incoming_Type", Incoming_Type_name, Incoming_Type_value)
 }
@@ -425,6 +453,13 @@ func (x TwilioParams_CallStatus) String() string {
 }
 func (x TwilioParams_MessageStatus) String() string {
 	s, ok := TwilioParams_MessageStatus_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (x TwilioParams_TranscriptionStatus) String() string {
+	s, ok := TwilioParams_TranscriptionStatus_name[int32(x)]
 	if ok {
 		return s
 	}
@@ -551,6 +586,18 @@ func (this *TwilioParams) Equal(that interface{}) bool {
 		return false
 	}
 	if this.RecordingMediaID != that1.RecordingMediaID {
+		return false
+	}
+	if this.TranscriptionStatus != that1.TranscriptionStatus {
+		return false
+	}
+	if this.TranscriptionURL != that1.TranscriptionURL {
+		return false
+	}
+	if this.TranscriptionText != that1.TranscriptionText {
+		return false
+	}
+	if this.TranscriptionSID != that1.TranscriptionSID {
 		return false
 	}
 	if this.ForwardedFrom != that1.ForwardedFrom {
@@ -819,7 +866,7 @@ func (this *TwilioParams) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 42)
+	s := make([]string, 0, 46)
 	s = append(s, "&rawmsg.TwilioParams{")
 	s = append(s, "CallSID: "+fmt.Sprintf("%#v", this.CallSID)+",\n")
 	s = append(s, "AccountSID: "+fmt.Sprintf("%#v", this.AccountSID)+",\n")
@@ -851,6 +898,10 @@ func (this *TwilioParams) GoString() string {
 	s = append(s, "MessageStatus: "+fmt.Sprintf("%#v", this.MessageStatus)+",\n")
 	s = append(s, "DialCallSID: "+fmt.Sprintf("%#v", this.DialCallSID)+",\n")
 	s = append(s, "RecordingMediaID: "+fmt.Sprintf("%#v", this.RecordingMediaID)+",\n")
+	s = append(s, "TranscriptionStatus: "+fmt.Sprintf("%#v", this.TranscriptionStatus)+",\n")
+	s = append(s, "TranscriptionURL: "+fmt.Sprintf("%#v", this.TranscriptionURL)+",\n")
+	s = append(s, "TranscriptionText: "+fmt.Sprintf("%#v", this.TranscriptionText)+",\n")
+	s = append(s, "TranscriptionSID: "+fmt.Sprintf("%#v", this.TranscriptionSID)+",\n")
 	s = append(s, "ForwardedFrom: "+fmt.Sprintf("%#v", this.ForwardedFrom)+",\n")
 	s = append(s, "CallerName: "+fmt.Sprintf("%#v", this.CallerName)+",\n")
 	s = append(s, "FromCity: "+fmt.Sprintf("%#v", this.FromCity)+",\n")
@@ -1176,6 +1227,37 @@ func (m *TwilioParams) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintModels(data, i, uint64(len(m.RecordingMediaID)))
 		i += copy(data[i:], m.RecordingMediaID)
+	}
+	if m.TranscriptionStatus != 0 {
+		data[i] = 0xe8
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintModels(data, i, uint64(m.TranscriptionStatus))
+	}
+	if len(m.TranscriptionURL) > 0 {
+		data[i] = 0xf2
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintModels(data, i, uint64(len(m.TranscriptionURL)))
+		i += copy(data[i:], m.TranscriptionURL)
+	}
+	if len(m.TranscriptionText) > 0 {
+		data[i] = 0xfa
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintModels(data, i, uint64(len(m.TranscriptionText)))
+		i += copy(data[i:], m.TranscriptionText)
+	}
+	if len(m.TranscriptionSID) > 0 {
+		data[i] = 0x82
+		i++
+		data[i] = 0x2
+		i++
+		i = encodeVarintModels(data, i, uint64(len(m.TranscriptionSID)))
+		i += copy(data[i:], m.TranscriptionSID)
 	}
 	if len(m.ForwardedFrom) > 0 {
 		data[i] = 0xa2
@@ -1657,6 +1739,21 @@ func (m *TwilioParams) Size() (n int) {
 	if l > 0 {
 		n += 2 + l + sovModels(uint64(l))
 	}
+	if m.TranscriptionStatus != 0 {
+		n += 2 + sovModels(uint64(m.TranscriptionStatus))
+	}
+	l = len(m.TranscriptionURL)
+	if l > 0 {
+		n += 2 + l + sovModels(uint64(l))
+	}
+	l = len(m.TranscriptionText)
+	if l > 0 {
+		n += 2 + l + sovModels(uint64(l))
+	}
+	l = len(m.TranscriptionSID)
+	if l > 0 {
+		n += 2 + l + sovModels(uint64(l))
+	}
 	l = len(m.ForwardedFrom)
 	if l > 0 {
 		n += 2 + l + sovModels(uint64(l))
@@ -1892,6 +1989,10 @@ func (this *TwilioParams) String() string {
 		`MessageStatus:` + fmt.Sprintf("%v", this.MessageStatus) + `,`,
 		`DialCallSID:` + fmt.Sprintf("%v", this.DialCallSID) + `,`,
 		`RecordingMediaID:` + fmt.Sprintf("%v", this.RecordingMediaID) + `,`,
+		`TranscriptionStatus:` + fmt.Sprintf("%v", this.TranscriptionStatus) + `,`,
+		`TranscriptionURL:` + fmt.Sprintf("%v", this.TranscriptionURL) + `,`,
+		`TranscriptionText:` + fmt.Sprintf("%v", this.TranscriptionText) + `,`,
+		`TranscriptionSID:` + fmt.Sprintf("%v", this.TranscriptionSID) + `,`,
 		`ForwardedFrom:` + fmt.Sprintf("%v", this.ForwardedFrom) + `,`,
 		`CallerName:` + fmt.Sprintf("%v", this.CallerName) + `,`,
 		`FromCity:` + fmt.Sprintf("%v", this.FromCity) + `,`,
@@ -2739,6 +2840,112 @@ func (m *TwilioParams) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.RecordingMediaID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 29:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TranscriptionStatus", wireType)
+			}
+			m.TranscriptionStatus = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.TranscriptionStatus |= (TwilioParams_TranscriptionStatus(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 30:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TranscriptionURL", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthModels
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TranscriptionURL = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 31:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TranscriptionText", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthModels
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TranscriptionText = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 32:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TranscriptionSID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthModels
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TranscriptionSID = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 100:
 			if wireType != 2 {

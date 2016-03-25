@@ -8,6 +8,7 @@ const (
 	ConfigKeyForwardingList       = "forwarding_list"
 	ConfigKeyVoicemailOption      = "voicemail_option"
 	ConfigKeySendCallsToVoicemail = "send_calls_to_voicemail"
+	ConfigKeyTranscribeVoicemail  = "transcribe_voicemail"
 )
 
 var NumbersToRingConfig = &settings.Config{
@@ -53,6 +54,21 @@ var SendCallsToVoicemailConfig = &settings.Config{
 	Title:          "Send all calls to voicemail",
 	Key:            ConfigKeySendCallsToVoicemail,
 	PossibleOwners: []settings.OwnerType{settings.OwnerType_INTERNAL_ENTITY},
+	AllowSubkeys:   false,
+	Type:           settings.ConfigType_BOOLEAN,
+	Config: &settings.Config_Boolean{
+		Boolean: &settings.BooleanConfig{
+			Default: &settings.BooleanValue{
+				Value: false,
+			},
+		},
+	},
+}
+
+var TranscribeVoicemailConfig = &settings.Config{
+	Title:          "Transcribe Voicemails",
+	Key:            ConfigKeySendCallsToVoicemail,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
 	AllowSubkeys:   false,
 	Type:           settings.ConfigType_BOOLEAN,
 	Config: &settings.Config_Boolean{

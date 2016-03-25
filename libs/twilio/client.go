@@ -36,6 +36,8 @@ type Client struct {
 	IncomingPhoneNumber IncomingPhoneNumberIFace
 
 	Recording RecordingIFace
+
+	Transcription Transcriptioner
 }
 
 // NewClient returns a new Twilio API client. This will load default http.Client if httpClient is nil.
@@ -60,6 +62,7 @@ func NewClient(accountSid, authToken string, httpClient *http.Client) *Client {
 	c.AvailablePhoneNumbers = &AvailablePhoneNumbersService{client: c}
 	c.IncomingPhoneNumber = &IncomingPhoneNumberService{client: c}
 	c.Recording = &RecordingService{client: c}
+	c.Transcription = &TranscriptionService{client: c}
 	return c
 }
 

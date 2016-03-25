@@ -39,11 +39,15 @@ func ParamsFromRequest(r *http.Request) (*rawmsg.TwilioParams, error) {
 		DequeingCallSID:    r.FormValue("DequeingCallSid"),
 		ParentCallSID:      r.FormValue("ParentCallSid"),
 		DialCallSID:        r.FormValue("DialCallSid"),
+		TranscriptionSID:   r.FormValue("TranscriptionSid"),
+		TranscriptionText:  r.FormValue("TranscriptionText"),
+		TranscriptionURL:   r.FormValue("TranscriptionURL"),
 	}
 
 	t.CallStatus = parseCallStatus(r.FormValue("CallStatus"))
 	t.MessageStatus = parseMessageStatus(r.FormValue("MessageStatus"))
 	t.DialCallStatus = parseCallStatus(r.FormValue("DialCallStatus"))
+	t.TranscriptionStatus = parseTranscriptionStatus(r.FormValue("TranscriptionStatus"))
 
 	switch r.FormValue("Direction") {
 	case "inbound":
@@ -105,6 +109,17 @@ func ParamsFromRequest(r *http.Request) (*rawmsg.TwilioParams, error) {
 	}
 
 	return t, nil
+}
+
+func parseTranscriptionStatus(status string) rawmsg.TwilioParams_TranscriptionStatus {
+	switch status {
+	case "completed":
+		return rawmsg.TwilioParams_TRANSCRIPTION_STATUS_COMPLETED
+	case "failed":
+		return rawmsg.TwilioParams_TRANSCRIPTION_STATUS_FAILED
+	}
+
+	return rawmsg.TwilioParams_TRANSCRIPTION_STATUS_UNKNOWN
 }
 
 func parseCallStatus(status string) rawmsg.TwilioParams_CallStatus {

@@ -228,6 +228,13 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			ResourceID: params.RecordingSID,
 		})
 
+		if params.TranscriptionStatus == rawmsg.TwilioParams_TRANSCRIPTION_STATUS_COMPLETED {
+			cleaner.Publish(w.snsAPI, w.resourceCleanerTopic, &models.DeleteResourceRequest{
+				Type:       models.DeleteResourceRequest_TWILIO_TRANSCRIPTION,
+				ResourceID: params.TranscriptionSID,
+			})
+		}
+
 		sns.Publish(w.snsAPI, w.externalMessageTopic, &excomms.PublishedExternalMessage{
 			FromChannelID: params.From,
 			ToChannelID:   params.To,
@@ -240,6 +247,7 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 					DurationInSeconds:   params.RecordingDuration,
 					VoicemailURL:        media.URL,
 					VoicemailDurationNS: uint64(media.Duration.Nanoseconds()),
+					TranscriptionText:   params.TranscriptionText,
 				},
 			},
 		})

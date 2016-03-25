@@ -93,6 +93,7 @@ func runService() {
 			excommsSettings.NumbersToRingConfig,
 			excommsSettings.VoicemailOptionConfig,
 			excommsSettings.SendCallsToVoicemailConfig,
+			excommsSettings.TranscribeVoicemailConfig,
 		})
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())

@@ -34,6 +34,12 @@ message TwilioParams {
 		MSG_STATUS_UNDELIVERED = 6;
 	}
 
+	enum TranscriptionStatus {
+		TRANSCRIPTION_STATUS_UNKNOWN = 0;
+		TRANSCRIPTION_STATUS_COMPLETED = 1;
+		TRANSCRIPTION_STATUS_FAILED = 2;
+	}
+
 	enum Direction {
 		DIRECTION_UNDEFINED = 0;
 		INBOUND = 1;
@@ -87,7 +93,12 @@ message TwilioParams {
 	string dial_call_sid = 27 [(gogoproto.customname) = "DialCallSID"];
 	
 	string recording_media_id = 28 [(gogoproto.customname) = "RecordingMediaID"];
-
+	
+	// transcription parameters
+	TranscriptionStatus transcription_status = 29;
+	string transcription_url = 30 [(gogoproto.customname) = "TranscriptionURL"];
+	string transcription_text = 31;
+	string transcription_sid = 32 [(gogoproto.customname) = "TranscriptionSID"];
 
 	// infrequently used parameters
 	string forwarded_from = 100;
@@ -112,6 +123,7 @@ enum TwilioEvent {
 	PROCESS_VOICEMAIL = 7;
 	PROCESS_OUTGOING_CALL_STATUS = 8;
 	PROCESS_SMS_STATUS = 9;
+	NO_OP = 10;
 }
 
 message SendGridIncomingEmail {
