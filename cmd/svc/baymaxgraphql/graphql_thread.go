@@ -94,6 +94,10 @@ var threadType = graphql.NewObject(
 					if th == nil {
 						return nil, errors.InternalError(ctx, errors.New("thread is nil"))
 					}
+					// No endpoints for team threads
+					if th.Type == models.ThreadTypeTeam {
+						return nil, nil
+					}
 
 					ram := raccess.ResourceAccess(p)
 					ent, err := primaryEntityForThread(ctx, ram, th)
@@ -123,6 +127,10 @@ var threadType = graphql.NewObject(
 					th := p.Source.(*models.Thread)
 					if th == nil {
 						return nil, errors.InternalError(ctx, errors.New("thread is nil"))
+					}
+					// No endpoints for team threads
+					if th.Type == models.ThreadTypeTeam {
+						return nil, nil
 					}
 
 					ram := raccess.ResourceAccess(p)
