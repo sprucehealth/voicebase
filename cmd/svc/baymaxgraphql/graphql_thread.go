@@ -305,6 +305,7 @@ func primaryEntityForThread(ctx context.Context, ram raccess.ResourceAccessor, t
 		t.Mu.RUnlock()
 		return t.PrimaryEntity, nil
 	}
+	t.Mu.RUnlock()
 
 	t.Mu.Lock()
 	defer t.Mu.Unlock()
