@@ -15,6 +15,12 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+// TOOD: this is a stubbed entity currently used in the primaryEntity for a thread. see comment there for more information
+var stubEntity = &models.Entity{
+	ID: "entity_stub",
+	LastModifiedTimestamp: 1458949057,
+}
+
 var queryType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Query",
@@ -70,6 +76,10 @@ var queryType = graphql.NewObject(
 					prefix := nodePrefix(id)
 					switch prefix {
 					case "entity":
+						// TOOD: this is a stubbed entity currently used in the primaryEntity for a thread. see comment there for more information
+						if id == "entity_stub" {
+							return stubEntity, nil
+						}
 						return lookupEntity(ctx, svc, ram, id)
 					case "account":
 						return lookupAccount(ctx, ram, id)
