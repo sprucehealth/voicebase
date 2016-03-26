@@ -424,7 +424,7 @@ func TestIncoming_Organization_SingleProvider_DirectAllCallsToVoicemail(t *testi
 		t.Fatalf(err.Error())
 	}
 	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<Response><Say voice="alice">You have reached Dewabi Corp. Please leave a message after the tone.</Say><Record action="/twilio/call/no_op" timeout="60" maxLength="3600" transcribeCallback="/twilio/call/process_voicemail" playBeep="true"></Record></Response>`)
+<Response><Say voice="alice">You have reached Dewabi Corp. Please leave a message after the tone. Speak slowly and clearly as your message will be transcribed.</Say><Record action="/twilio/call/no_op" timeout="60" maxLength="3600" transcribeCallback="/twilio/call/process_voicemail" playBeep="true"></Record></Response>`)
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -1020,7 +1020,7 @@ func TestVoicemailTwiML(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := `<?xml version="1.0" encoding="UTF-8"?>
-<Response><Say voice="alice">You have reached Dewabi Corp. Please leave a message after the tone.</Say><Record action="/twilio/call/no_op" timeout="60" maxLength="3600" transcribeCallback="/twilio/call/process_voicemail" playBeep="true"></Record></Response>`
+<Response><Say voice="alice">You have reached Dewabi Corp. Please leave a message after the tone. Speak slowly and clearly as your message will be transcribed.</Say><Record action="/twilio/call/no_op" timeout="60" maxLength="3600" transcribeCallback="/twilio/call/process_voicemail" playBeep="true"></Record></Response>`
 
 	if expected != twiml {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -1201,7 +1201,7 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 	}
 
 	expected := `<?xml version="1.0" encoding="UTF-8"?>
-<Response><Say voice="alice">You have reached Dewabi Corp. Please leave a message after the tone.</Say><Record action="/twilio/call/no_op" timeout="60" maxLength="3600" transcribeCallback="/twilio/call/process_voicemail" playBeep="true"></Record></Response>`
+<Response><Say voice="alice">You have reached Dewabi Corp. Please leave a message after the tone. Speak slowly and clearly as your message will be transcribed.</Say><Record action="/twilio/call/no_op" timeout="60" maxLength="3600" transcribeCallback="/twilio/call/process_voicemail" playBeep="true"></Record></Response>`
 	if expected != twiml {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
 	}

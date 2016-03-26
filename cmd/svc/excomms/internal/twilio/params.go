@@ -41,7 +41,7 @@ func ParamsFromRequest(r *http.Request) (*rawmsg.TwilioParams, error) {
 		DialCallSID:        r.FormValue("DialCallSid"),
 		TranscriptionSID:   r.FormValue("TranscriptionSid"),
 		TranscriptionText:  r.FormValue("TranscriptionText"),
-		TranscriptionURL:   r.FormValue("TranscriptionURL"),
+		TranscriptionURL:   r.FormValue("TranscriptionUrl"),
 	}
 
 	t.CallStatus = parseCallStatus(r.FormValue("CallStatus"))

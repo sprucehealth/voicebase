@@ -353,7 +353,7 @@ func (r *externalMessageWorker) process(pem *excomms.PublishedExternalMessage) e
 				summary = "Called, left voicemail"
 
 				if len(strings.TrimSpace(pem.GetIncoming().TranscriptionText)) > 0 {
-					text = "Transcription:" + strconv.Quote(pem.GetIncoming().TranscriptionText)
+					text = "Transcription: " + strconv.Quote(strings.TrimSpace(pem.GetIncoming().TranscriptionText))
 				}
 				attachments = []*threading.Attachment{
 					{

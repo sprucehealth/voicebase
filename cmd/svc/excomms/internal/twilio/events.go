@@ -509,13 +509,6 @@ func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *events
 		}
 	}
 
-	var voicemailMessage string
-	if orgName != "" {
-		voicemailMessage = fmt.Sprintf("You have reached %s. Please leave a message after the tone.", orgName)
-	} else {
-		voicemailMessage = "Please leave a message after the tone."
-	}
-
 	// check if voicemails should be transcribed or not
 	var transcribeVoicemail bool
 	res, err := eh.settings.GetValues(ctx, &settings.GetValuesRequest{
@@ -538,13 +531,21 @@ func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *events
 		transcribeVoicemail = res.Values[0].GetBoolean().Value
 	}
 
-	var action, transcribeCallback string
+	var action, transcribeCallback, transcriptionInfoInVoicemailMessage string
 	if transcribeVoicemail {
 		transcribeCallback = "/twilio/call/process_voicemail"
 		action = "/twilio/call/no_op"
+		transcriptionInfoInVoicemailMessage = " Speak slowly and clearly as your message will be transcribed."
 	} else {
 		action = "/twilio/call/process_voicemail"
 		transcribeCallback = "/twilio/call/no_op"
+	}
+
+	var voicemailMessage string
+	if orgName != "" {
+		voicemailMessage = fmt.Sprintf("You have reached %s. Please leave a message after the tone.%s", orgName, transcriptionInfoInVoicemailMessage)
+	} else {
+		voicemailMessage = fmt.Sprintf("Please leave a message after the tone.%s", transcriptionInfoInVoicemailMessage)
 	}
 
 	tw := &twiml.Response{

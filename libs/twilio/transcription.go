@@ -1,7 +1,5 @@
 package twilio
 
-import "net/http"
-
 type TranscriptionService struct {
 	client *Client
 }
@@ -13,7 +11,7 @@ type Transcriptioner interface {
 func (t *TranscriptionService) Delete(sid string) (*Response, error) {
 	u := t.client.EndPoint("Transcriptions", sid)
 
-	req, err := http.NewRequest("DELETE", u.String(), nil)
+	req, err := t.client.NewRequest("DELETE", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
