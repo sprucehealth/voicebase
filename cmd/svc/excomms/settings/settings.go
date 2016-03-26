@@ -67,7 +67,7 @@ var SendCallsToVoicemailConfig = &settings.Config{
 
 var TranscribeVoicemailConfig = &settings.Config{
 	Title:          "Transcribe Voicemails",
-	Key:            ConfigKeySendCallsToVoicemail,
+	Key:            ConfigKeyTranscribeVoicemail,
 	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
 	AllowSubkeys:   false,
 	Type:           settings.ConfigType_BOOLEAN,
