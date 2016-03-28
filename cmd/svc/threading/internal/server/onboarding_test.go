@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	mock_settings "github.com/sprucehealth/backend/svc/settings/mock"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/backend/test"
 )
@@ -17,6 +18,8 @@ func TestCreateOnboardingThread(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
 	defer dl.Finish()
+	sm := mock_settings.New(t)
+	defer sm.Finish()
 
 	now := time.Unix(1e7, 0)
 
@@ -48,7 +51,7 @@ func TestCreateOnboardingThread(t *testing.T) {
 		Created:              now,
 	}, nil))
 
-	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, "WEBDOMAIN")
+	srv := NewThreadsServer(clock.New(), dl, nil, "arn", nil, nil, sm, "WEBDOMAIN")
 	res, err := srv.CreateOnboardingThread(nil, &threading.CreateOnboardingThreadRequest{
 		OrganizationID:  "o1",
 		PrimaryEntityID: "e2",

@@ -19,6 +19,7 @@ import (
 	"github.com/sprucehealth/backend/libs/textutil"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -40,6 +41,7 @@ type threadsServer struct {
 	snsTopicARN        string
 	notificationClient notification.Client
 	directoryClient    directory.DirectoryClient
+	settingsClient     settings.SettingsClient
 	webDomain          string
 }
 
@@ -51,6 +53,7 @@ func NewThreadsServer(
 	snsTopicARN string,
 	notificationClient notification.Client,
 	directoryClient directory.DirectoryClient,
+	settingsClient settings.SettingsClient,
 	webDomain string,
 ) threading.ThreadsServer {
 	if clk == nil {
@@ -63,6 +66,7 @@ func NewThreadsServer(
 		snsTopicARN:        snsTopicARN,
 		notificationClient: notificationClient,
 		directoryClient:    directoryClient,
+		settingsClient:     settingsClient,
 		webDomain:          webDomain,
 	}
 }
@@ -1203,6 +1207,8 @@ func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID
 			teMap[te.EntityID] = te
 		}
 
+		notificationText := s.getNotificationText(ctx, thread, messageID)
+
 		// Track the messages we want to send and how many unread threads there were
 		messages := make(map[string]string)
 
@@ -1225,7 +1231,7 @@ func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID
 					}); err != nil {
 						return errors.Trace(err)
 					}
-					messages[ent.ID] = "You have a new message"
+					messages[ent.ID] = notificationText
 				}
 			}
 			return nil
@@ -1255,6 +1261,59 @@ func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID
 			golog.Errorf("Failed to notify members: %s", err)
 		}
 	})
+}
+
+func (s *threadsServer) getNotificationText(ctx context.Context, thread *models.Thread, messageID models.ThreadItemID) string {
+	notificationText := "You have a new message"
+	isClearText := s.isClearTextMessageNotificationsEnabled(ctx, thread.OrganizationID) || thread.Type == models.ThreadTypeSupport
+	if isClearText {
+		message, err := s.dal.ThreadItem(ctx, messageID)
+		if err != nil {
+			golog.Errorf("Encountered error when attempting to get message for clear text notification for message id %s", messageID)
+			return notificationText
+		}
+		if message.Type == models.ItemTypeMessage {
+			msg, ok := message.Data.(*models.Message)
+			if !ok {
+				golog.Errorf("Failed to convert thread item data to message for clear text notification for item id %s", messageID)
+				return notificationText
+			}
+			bmlText, err := bml.Parse(msg.Text)
+			if err != nil {
+				golog.Errorf("Failed to convert thread item data to message for clear text notification for item id %s: %s", messageID, err)
+				return notificationText
+			}
+			notificationText, err := bmlText.PlainText()
+			if err != nil {
+				golog.Errorf("Failed to convert thread item data to message for clear text notification for item id %s: %s", messageID, err)
+				return notificationText
+			}
+			if len(notificationText) > 256 {
+				notificationText = textutil.TruncateUTF8(notificationText, 253) + "..."
+			}
+			return notificationText
+		}
+	}
+	return notificationText
+}
+
+func (s *threadsServer) isClearTextMessageNotificationsEnabled(ctx context.Context, organizationID string) bool {
+	resp, err := s.settingsClient.GetValues(ctx, &settings.GetValuesRequest{
+		Keys:   []*settings.ConfigKey{{Key: threading.ClearTextMessageNotifications}},
+		NodeID: organizationID,
+	})
+	if err != nil {
+		golog.Errorf("Encountered an error when getting ClearTextMessageNotifications for org %s: %s", organizationID, err)
+		return false
+	}
+	if len(resp.Values) == 0 {
+		golog.Errorf("Expected only 1 value to be returned for settings key %s and org id %s but got none.", threading.ClearTextMessageNotifications, organizationID)
+		return false
+	}
+	if len(resp.Values) != 1 {
+		golog.Errorf("Expected only 1 value to be returned for settings key %s and org id %s but got %d. Continuing with first value", threading.ClearTextMessageNotifications, organizationID, len(resp.Values))
+	}
+	return resp.Values[0].GetBoolean().Value
 }
 
 func parseRefsAndNormalize(s string) (string, []*models.Reference, error) {

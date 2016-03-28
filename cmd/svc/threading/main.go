@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
@@ -13,12 +15,14 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/onboarding"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/server"
+	tsettings "github.com/sprucehealth/backend/cmd/svc/threading/internal/settings"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc"
 )
@@ -39,6 +43,7 @@ var (
 	flagDirectoryAddr      = flag.String("directory_addr", "", "host:port of directory service")
 	flagWebDomain          = flag.String("web_domain", "", "Domain of the website")
 	flagKMSKeyARN          = flag.String("kms_key_arn", "", "the arn of the master key that should be used to encrypt outbound and decrypt inbound data")
+	flagSettingsAddr       = flag.String("settings_addr", "", "host:port of settings service")
 )
 
 func init() {
@@ -48,6 +53,16 @@ func init() {
 
 func main() {
 	boot.InitService("threading")
+
+	if *flagSettingsAddr == "" {
+		golog.Fatalf("Settings service not configured")
+	}
+	settingsConn, err := grpc.Dial(*flagSettingsAddr, grpc.WithInsecure())
+	if err != nil {
+		golog.Fatalf("Unable to connect to settings service: %s", err)
+	}
+	defer settingsConn.Close()
+	settingsClient := settings.NewSettingsClient(settingsConn)
 
 	if *flagKMSKeyARN == "" {
 		golog.Fatalf("-kms_key_arn flag is required")
@@ -110,8 +125,20 @@ func main() {
 	w.Start()
 	defer w.Stop(time.Second * 10)
 
+	// register the settings with the service
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	_, err = settings.RegisterConfigs(
+		ctx,
+		settingsClient,
+		[]*settings.Config{
+			tsettings.ClearTextMessageNotificationsConfig,
+		})
+	if err != nil {
+		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
+	}
+
 	s := grpc.NewServer()
-	threading.RegisterThreadsServer(s, server.NewThreadsServer(clock.New(), dl, eSNS, *flagSNSTopicARN, notificationClient, directoryClient, *flagWebDomain))
+	threading.RegisterThreadsServer(s, server.NewThreadsServer(clock.New(), dl, eSNS, *flagSNSTopicARN, notificationClient, directoryClient, settingsClient, *flagWebDomain))
 	golog.Infof("Starting Threads service on %s...", *flagListen)
 
 	ln, err := net.Listen("tcp", *flagListen)
