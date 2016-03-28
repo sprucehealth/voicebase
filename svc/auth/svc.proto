@@ -24,11 +24,19 @@ message VerificationCode {
     uint64 expiration_epoch = 5;
 }
 
+// AccountType represents the various types of accounts
+enum AccountType {
+	UNKNOWN = 0;
+	PATIENT = 1;
+	PROVIDER = 2;
+}
+
 // Account represents the data associated with an account
 message Account {
 	string id = 1 [(gogoproto.customname) = "ID"];
 	string first_name = 2;
 	string last_name = 3;
+	AccountType type = 4;
 }
 
 // An AuthToken represents the token value and metadata about the token
@@ -98,6 +106,7 @@ message CreateAccountRequest {
 	string password = 5;
 	map<string, string> token_attributes = 6;
 	string device_id = 7 [(gogoproto.customname) = "DeviceID"];
+	AccountType type = 8;
 }
 
 // CreateAccountResponse represents the information that is returned from CreateAccountRequest

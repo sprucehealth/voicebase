@@ -444,11 +444,21 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 			return errors.Trace(err)
 		}
 
+		var accountType dal.AccountType
+		// TODO: mraines: Remove this check after the appropriate code has been deployed
+		if rd.Type != auth.AccountType_UNKNOWN {
+			accountType, err = dal.ParseAccountType(rd.Type.String())
+			if err != nil {
+				return errors.Trace(err)
+			}
+		}
+
 		accountID, err := dl.InsertAccount(&dal.Account{
 			FirstName: rd.FirstName,
 			LastName:  rd.LastName,
 			Password:  hashedPassword,
 			Status:    dal.AccountStatusActive,
+			Type:      accountType,
 		})
 		if err != nil {
 			return errors.Trace(err)

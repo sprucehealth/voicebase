@@ -1283,10 +1283,18 @@ func (s *threadsServer) getNotificationText(ctx context.Context, thread *models.
 				golog.Errorf("Failed to convert thread item data to message for clear text notification for item id %s: %s", messageID, err)
 				return notificationText
 			}
-			notificationText, err := bmlText.PlainText()
+			plainText, err := bmlText.PlainText()
 			if err != nil {
 				golog.Errorf("Failed to convert thread item data to message for clear text notification for item id %s: %s", messageID, err)
 				return notificationText
+			}
+			notificationText = plainText
+			if thread.Type != models.ThreadTypeSupport {
+				if thread.UserTitle != "" {
+					notificationText = thread.UserTitle + ": " + notificationText
+				} else {
+					notificationText = thread.SystemTitle + ": " + notificationText
+				}
 			}
 			if len(notificationText) > 256 {
 				notificationText = textutil.TruncateUTF8(notificationText, 253) + "..."

@@ -363,6 +363,43 @@ func (t *AccountStatus) Scan(src interface{}) error {
 	return errors.Trace(err)
 }
 
+// AccountType represents the type associated with the status column of the account table
+type AccountType string
+
+const (
+	// AccountTypePatient represents the PATIENT state of the type field on a account record
+	AccountTypePatient AccountType = "PATIENT"
+	// AccountTypeProvider represents the PROVIDER state of the type field on a account record
+	AccountTypeProvider AccountType = "PROVIDER"
+)
+
+// ParseAccountType converts a string into the correcponding enum value
+func ParseAccountType(s string) (AccountType, error) {
+	switch t := AccountType(strings.ToUpper(s)); t {
+	case AccountTypePatient, AccountTypeProvider:
+		return t, nil
+	}
+	return AccountType(""), errors.Trace(fmt.Errorf("Unknown type:%s", s))
+}
+
+func (t AccountType) String() string {
+	return string(t)
+}
+
+// Scan allows for scanning of AccountType from a database conforming to the sql.Scanner interface
+func (t *AccountType) Scan(src interface{}) error {
+	var err error
+	switch ts := src.(type) {
+	case string:
+		*t, err = ParseAccountType(ts)
+	case []byte:
+		*t, err = ParseAccountType(string(ts))
+	default:
+		return errors.Trace(fmt.Errorf("Unsupported type %T with value %+v in enumeration scan", src, src))
+	}
+	return errors.Trace(err)
+}
+
 // VerificationCodeType represents the type associated with the verification_type column of the verification_code table
 type VerificationCodeType string
 
@@ -430,6 +467,7 @@ type Account struct {
 	PrimaryAccountPhoneID AccountPhoneID
 	Password              []byte
 	Status                AccountStatus
+	Type                  AccountType
 	Modified              time.Time
 }
 
@@ -522,10 +560,16 @@ func (d *dal) InsertAccount(model *Account) (AccountID, error) {
 		}
 		model.ID = id
 	}
+
+	//TODO: mraines: Remove this default after the appropriate code has been deployed
+	if model.Type == "" {
+		model.Type = AccountTypeProvider
+	}
+
 	_, err := d.db.Exec(
 		`INSERT INTO account
-          (first_name, last_name, id, primary_account_email_id, primary_account_phone_id, password, status)
-          VALUES (?, ?, ?, ?, ?, ?, ?)`, model.FirstName, model.LastName, model.ID, model.PrimaryAccountEmailID, model.PrimaryAccountPhoneID, model.Password, model.Status.String())
+          (first_name, last_name, id, primary_account_email_id, primary_account_phone_id, password, status, type)
+          VALUES (?, ?, ?, ?, ?, ?, ?)`, model.FirstName, model.LastName, model.ID, model.PrimaryAccountEmailID, model.PrimaryAccountPhoneID, model.Password, model.Status.String(), model.Type.String())
 	if err != nil {
 		return EmptyAccountID(), errors.Trace(err)
 	}
@@ -933,7 +977,7 @@ func (d *dal) UpsertTwoFactorLogin(accountID AccountID, deviceID string, loginTi
 }
 
 const selectAccount = `
-    SELECT account.primary_account_phone_id, account.password, account.status, account.created, account.primary_account_email_id, account.first_name, account.last_name, account.modified, account.id
+    SELECT account.primary_account_phone_id, account.password, account.status, account.created, account.primary_account_email_id, account.first_name, account.last_name, account.modified, account.id, account.type
       FROM account`
 
 func scanAccount(row dbutil.Scanner) (*Account, error) {
@@ -942,7 +986,7 @@ func scanAccount(row dbutil.Scanner) (*Account, error) {
 	m.PrimaryAccountEmailID = EmptyAccountEmailID()
 	m.ID = EmptyAccountID()
 
-	err := row.Scan(&m.PrimaryAccountPhoneID, &m.Password, &m.Status, &m.Created, &m.PrimaryAccountEmailID, &m.FirstName, &m.LastName, &m.Modified, &m.ID)
+	err := row.Scan(&m.PrimaryAccountPhoneID, &m.Password, &m.Status, &m.Created, &m.PrimaryAccountEmailID, &m.FirstName, &m.LastName, &m.Modified, &m.ID, &m.Type)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(api.ErrNotFound("auth - Account not found"))
 	}

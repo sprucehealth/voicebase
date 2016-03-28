@@ -89,6 +89,26 @@ var VerificationCodeType_value = map[string]int32{
 	"PASSWORD_RESET": 3,
 }
 
+// AccountType represents the various types of accounts
+type AccountType int32
+
+const (
+	AccountType_UNKNOWN  AccountType = 0
+	AccountType_PATIENT  AccountType = 1
+	AccountType_PROVIDER AccountType = 2
+)
+
+var AccountType_name = map[int32]string{
+	0: "UNKNOWN",
+	1: "PATIENT",
+	2: "PROVIDER",
+}
+var AccountType_value = map[string]int32{
+	"UNKNOWN":  0,
+	"PATIENT":  1,
+	"PROVIDER": 2,
+}
+
 // VerificationCode represents the collection of information used to represent the time bound verification code
 type VerificationCode struct {
 	Token           string               `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
@@ -102,9 +122,10 @@ func (*VerificationCode) ProtoMessage() {}
 
 // Account represents the data associated with an account
 type Account struct {
-	ID        string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	FirstName string `protobuf:"bytes,2,opt,name=first_name,proto3" json:"first_name,omitempty"`
-	LastName  string `protobuf:"bytes,3,opt,name=last_name,proto3" json:"last_name,omitempty"`
+	ID        string      `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	FirstName string      `protobuf:"bytes,2,opt,name=first_name,proto3" json:"first_name,omitempty"`
+	LastName  string      `protobuf:"bytes,3,opt,name=last_name,proto3" json:"last_name,omitempty"`
+	Type      AccountType `protobuf:"varint,4,opt,name=type,proto3,enum=auth.AccountType" json:"type,omitempty"`
 }
 
 func (m *Account) Reset()      { *m = Account{} }
@@ -261,6 +282,7 @@ type CreateAccountRequest struct {
 	Password        string            `protobuf:"bytes,5,opt,name=password,proto3" json:"password,omitempty"`
 	TokenAttributes map[string]string `protobuf:"bytes,6,rep,name=token_attributes" json:"token_attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	DeviceID        string            `protobuf:"bytes,7,opt,name=device_id,proto3" json:"device_id,omitempty"`
+	Type            AccountType       `protobuf:"varint,8,opt,name=type,proto3,enum=auth.AccountType" json:"type,omitempty"`
 }
 
 func (m *CreateAccountRequest) Reset()      { *m = CreateAccountRequest{} }
@@ -524,9 +546,17 @@ func init() {
 	proto.RegisterType((*BlockAccountResponse)(nil), "auth.BlockAccountResponse")
 	proto.RegisterType((*UpdatePasswordResponse)(nil), "auth.UpdatePasswordResponse")
 	proto.RegisterEnum("auth.VerificationCodeType", VerificationCodeType_name, VerificationCodeType_value)
+	proto.RegisterEnum("auth.AccountType", AccountType_name, AccountType_value)
 }
 func (x VerificationCodeType) String() string {
 	s, ok := VerificationCodeType_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (x AccountType) String() string {
+	s, ok := AccountType_name[int32(x)]
 	if ok {
 		return s
 	}
@@ -593,6 +623,9 @@ func (this *Account) Equal(that interface{}) bool {
 		return false
 	}
 	if this.LastName != that1.LastName {
+		return false
+	}
+	if this.Type != that1.Type {
 		return false
 	}
 	return true
@@ -876,6 +909,9 @@ func (this *CreateAccountRequest) Equal(that interface{}) bool {
 		}
 	}
 	if this.DeviceID != that1.DeviceID {
+		return false
+	}
+	if this.Type != that1.Type {
 		return false
 	}
 	return true
@@ -1409,11 +1445,12 @@ func (this *Account) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 8)
 	s = append(s, "&auth.Account{")
 	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	s = append(s, "FirstName: "+fmt.Sprintf("%#v", this.FirstName)+",\n")
 	s = append(s, "LastName: "+fmt.Sprintf("%#v", this.LastName)+",\n")
+	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1554,7 +1591,7 @@ func (this *CreateAccountRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 11)
+	s := make([]string, 0, 12)
 	s = append(s, "&auth.CreateAccountRequest{")
 	s = append(s, "FirstName: "+fmt.Sprintf("%#v", this.FirstName)+",\n")
 	s = append(s, "LastName: "+fmt.Sprintf("%#v", this.LastName)+",\n")
@@ -1575,6 +1612,7 @@ func (this *CreateAccountRequest) GoString() string {
 		s = append(s, "TokenAttributes: "+mapStringForTokenAttributes+",\n")
 	}
 	s = append(s, "DeviceID: "+fmt.Sprintf("%#v", this.DeviceID)+",\n")
+	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2297,6 +2335,11 @@ func (m *Account) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(len(m.LastName)))
 		i += copy(data[i:], m.LastName)
 	}
+	if m.Type != 0 {
+		data[i] = 0x20
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Type))
+	}
 	return i, nil
 }
 
@@ -2689,6 +2732,11 @@ func (m *CreateAccountRequest) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintSvc(data, i, uint64(len(m.DeviceID)))
 		i += copy(data[i:], m.DeviceID)
+	}
+	if m.Type != 0 {
+		data[i] = 0x40
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Type))
 	}
 	return i, nil
 }
@@ -3310,6 +3358,9 @@ func (m *Account) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
+	if m.Type != 0 {
+		n += 1 + sovSvc(uint64(m.Type))
+	}
 	return n
 }
 
@@ -3486,6 +3537,9 @@ func (m *CreateAccountRequest) Size() (n int) {
 	l = len(m.DeviceID)
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.Type != 0 {
+		n += 1 + sovSvc(uint64(m.Type))
 	}
 	return n
 }
@@ -3757,6 +3811,7 @@ func (this *Account) String() string {
 		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
 		`FirstName:` + fmt.Sprintf("%v", this.FirstName) + `,`,
 		`LastName:` + fmt.Sprintf("%v", this.LastName) + `,`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3898,6 +3953,7 @@ func (this *CreateAccountRequest) String() string {
 		`Password:` + fmt.Sprintf("%v", this.Password) + `,`,
 		`TokenAttributes:` + mapStringForTokenAttributes + `,`,
 		`DeviceID:` + fmt.Sprintf("%v", this.DeviceID) + `,`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -4391,6 +4447,25 @@ func (m *Account) Unmarshal(data []byte) error {
 			}
 			m.LastName = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			m.Type = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Type |= (AccountType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])
@@ -5956,6 +6031,25 @@ func (m *CreateAccountRequest) Unmarshal(data []byte) error {
 			}
 			m.DeviceID = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			m.Type = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Type |= (AccountType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

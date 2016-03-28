@@ -1546,7 +1546,11 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 		EntitiesToNotify: []string{"notify1", "notify2", "notify3"},
 	}))
 
-	csrv.notifyMembersOfPublishMessage(context.Background(), orgID, sqID, &models.Thread{ID: tID, Type: models.ThreadTypeExternal, OrganizationID: orgID}, tiID, publishingEntity)
+	csrv.notifyMembersOfPublishMessage(context.Background(), orgID, sqID, &models.Thread{
+		ID:             tID,
+		Type:           models.ThreadTypeExternal,
+		OrganizationID: orgID,
+	}, tiID, publishingEntity)
 }
 
 func TestNotifyMembersOfPublishMessageClearTextSupportThread(t *testing.T) {
@@ -1628,7 +1632,12 @@ func TestNotifyMembersOfPublishMessageClearTextSupportThread(t *testing.T) {
 		EntitiesToNotify: []string{"notify1", "notify2", "notify3"},
 	}))
 
-	csrv.notifyMembersOfPublishMessage(context.Background(), orgID, sqID, &models.Thread{ID: tID, Type: models.ThreadTypeSupport, OrganizationID: orgID}, tiID, publishingEntity)
+	csrv.notifyMembersOfPublishMessage(context.Background(), orgID, sqID, &models.Thread{
+		ID:             tID,
+		Type:           models.ThreadTypeSupport,
+		OrganizationID: orgID,
+		UserTitle:      "ThreadTitle",
+	}, tiID, publishingEntity)
 }
 
 func TestNotifyMembersOfPublishMessageClearTextEnabled(t *testing.T) {
@@ -1697,8 +1706,8 @@ func TestNotifyMembersOfPublishMessageClearTextEnabled(t *testing.T) {
 
 	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
 		ShortMessages: map[string]string{
-			"notify1": "Clear Text Message",
-			"notify2": "Clear Text Message",
+			"notify1": "ThreadTitle: Clear Text Message",
+			"notify2": "ThreadTitle: Clear Text Message",
 		},
 		UnreadCounts:     nil,
 		OrganizationID:   orgID,
@@ -1710,7 +1719,12 @@ func TestNotifyMembersOfPublishMessageClearTextEnabled(t *testing.T) {
 		EntitiesToNotify: []string{"notify1", "notify2", "notify3"},
 	}))
 
-	csrv.notifyMembersOfPublishMessage(context.Background(), orgID, sqID, &models.Thread{ID: tID, Type: models.ThreadTypeExternal, OrganizationID: orgID}, tiID, publishingEntity)
+	csrv.notifyMembersOfPublishMessage(context.Background(), orgID, sqID, &models.Thread{
+		ID:             tID,
+		Type:           models.ThreadTypeExternal,
+		OrganizationID: orgID,
+		UserTitle:      "ThreadTitle",
+	}, tiID, publishingEntity)
 }
 
 func TestUpdateThread(t *testing.T) {

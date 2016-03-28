@@ -854,6 +854,7 @@ func TestCreateAccount(t *testing.T) {
 		test.Equals(t, fn, account.FirstName)
 		test.Equals(t, ln, account.LastName)
 		test.Equals(t, dal.AccountStatusActive, account.Status)
+		test.Equals(t, dal.AccountTypeProvider, account.Type)
 		test.OK(t, hasher.CompareHashAndPassword(account.Password, []byte(password)))
 	}).WithReturns(aID1, nil))
 	dl.Expect(mock.NewExpectation(dl.InsertAccountEmail, &dal.AccountEmail{
@@ -897,6 +898,7 @@ func TestCreateAccount(t *testing.T) {
 		Email:       email,
 		Password:    password,
 		DeviceID:    "deviceID",
+		Type:        auth.AccountType_PROVIDER,
 	})
 	test.OK(t, err)
 	key, err := signer.Sign([]byte(token))
