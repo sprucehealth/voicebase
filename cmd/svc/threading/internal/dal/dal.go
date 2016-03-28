@@ -17,6 +17,23 @@ import (
 	"golang.org/x/net/context"
 )
 
+type QueryOption int
+
+const (
+	ForUpdate QueryOption = 1 << iota
+)
+
+type queryOptions []QueryOption
+
+func (qos queryOptions) Has(opt QueryOption) bool {
+	for _, o := range qos {
+		if o == opt {
+			return true
+		}
+	}
+	return false
+}
+
 var ErrNotFound = errors.New("threading/dal: object not found")
 
 type ErrInvalidIterator string
@@ -112,17 +129,17 @@ type DAL interface {
 	IterateThreads(ctx context.Context, orgEntityID, viewerEntityID string, forExternal bool, it *Iterator) (*ThreadConnection, error)
 	IterateThreadItems(ctx context.Context, threadID models.ThreadID, forExternal bool, it *Iterator) (*ThreadItemConnection, error)
 	LinkedThread(ctx context.Context, threadID models.ThreadID) (*models.Thread, bool, error)
-	OnboardingState(ctx context.Context, threadID models.ThreadID, forUpdate bool) (*models.OnboardingState, error)
-	OnboardingStateForEntity(ctx context.Context, entityID string, forUpdate bool) (*models.OnboardingState, error)
+	OnboardingState(ctx context.Context, threadID models.ThreadID, opts ...QueryOption) (*models.OnboardingState, error)
+	OnboardingStateForEntity(ctx context.Context, entityID string, opts ...QueryOption) (*models.OnboardingState, error)
 	PostMessage(context.Context, *PostMessageRequest) (*models.ThreadItem, error)
 	RecordThreadEvent(ctx context.Context, threadID models.ThreadID, actorEntityID string, event models.ThreadEvent) error
 	SavedQuery(ctx context.Context, id models.SavedQueryID) (*models.SavedQuery, error)
 	SavedQueries(ctx context.Context, entityID string) ([]*models.SavedQuery, error)
-	Thread(ctx context.Context, id models.ThreadID) (*models.Thread, error)
+	Thread(ctx context.Context, id models.ThreadID, opts ...QueryOption) (*models.Thread, error)
 	ThreadItem(ctx context.Context, id models.ThreadItemID) (*models.ThreadItem, error)
 	ThreadItemIDsCreatedAfter(ctx context.Context, threadID models.ThreadID, after time.Time) ([]models.ThreadItemID, error)
 	ThreadItemViewDetails(ctx context.Context, id models.ThreadItemID) ([]*models.ThreadItemViewDetails, error)
-	ThreadEntities(ctx context.Context, threadIDs []models.ThreadID, entityID string, forUpdate bool) (map[string]*models.ThreadEntity, error)
+	ThreadEntities(ctx context.Context, threadIDs []models.ThreadID, entityID string, opts ...QueryOption) (map[string]*models.ThreadEntity, error)
 	ThreadsForMember(ctx context.Context, entityID string, primaryOnly bool) ([]*models.Thread, error)
 	ThreadsForOrg(ctx context.Context, organizationID string) ([]*models.Thread, error)
 	UpdateThread(ctx context.Context, threadID models.ThreadID, update *ThreadUpdate) error
@@ -439,9 +456,9 @@ func (d *dal) LinkedThread(ctx context.Context, threadID models.ThreadID) (*mode
 	return t, linkedThread.PrependSender, errors.Trace(err)
 }
 
-func (d *dal) OnboardingState(ctx context.Context, threadID models.ThreadID, forUpdate bool) (*models.OnboardingState, error) {
+func (d *dal) OnboardingState(ctx context.Context, threadID models.ThreadID, opts ...QueryOption) (*models.OnboardingState, error) {
 	var forUpdateSQL string
-	if forUpdate {
+	if queryOptions(opts).Has(ForUpdate) {
 		forUpdateSQL = ` FOR UPDATE`
 	}
 	row := d.db.QueryRow(`SELECT thread_id, step FROM onboarding_threads WHERE thread_id = ?`+forUpdateSQL, threadID)
@@ -454,9 +471,9 @@ func (d *dal) OnboardingState(ctx context.Context, threadID models.ThreadID, for
 	return &state, nil
 }
 
-func (d *dal) OnboardingStateForEntity(ctx context.Context, entityID string, forUpdate bool) (*models.OnboardingState, error) {
+func (d *dal) OnboardingStateForEntity(ctx context.Context, entityID string, opts ...QueryOption) (*models.OnboardingState, error) {
 	var forUpdateSQL string
-	if forUpdate {
+	if queryOptions(opts).Has(ForUpdate) {
 		forUpdateSQL = ` FOR UPDATE`
 	}
 	row := d.db.QueryRow(`SELECT thread_id, step FROM onboarding_threads WHERE entity_id = ?`+forUpdateSQL, entityID)
@@ -616,11 +633,15 @@ func (d *dal) SavedQueries(ctx context.Context, entityID string) ([]*models.Save
 	return sqs, errors.Trace(rows.Err())
 }
 
-func (d *dal) Thread(ctx context.Context, id models.ThreadID) (*models.Thread, error) {
+func (d *dal) Thread(ctx context.Context, id models.ThreadID, opts ...QueryOption) (*models.Thread, error) {
+	var forUpdateQuery string
+	if queryOptions(opts).Has(ForUpdate) {
+		forUpdateQuery = " FOR UPDATE"
+	}
 	row := d.db.QueryRow(`
 		SELECT id, organization_id, COALESCE(primary_entity_id, ''), last_message_timestamp, last_external_message_timestamp, last_message_summary, last_external_message_summary, last_primary_entity_endpoints, created, message_count, type, COALESCE(system_title, ''), COALESCE(user_title, '')
 		FROM threads
-		WHERE id = ? AND deleted = false`, id)
+		WHERE id = ? AND deleted = false`+forUpdateQuery, id)
 	t, err := scanThread(row)
 	return t, errors.Trace(err)
 }
@@ -678,13 +699,13 @@ func (d *dal) ThreadItemViewDetails(ctx context.Context, id models.ThreadItemID)
 	return tds, errors.Trace(rows.Err())
 }
 
-func (d *dal) ThreadEntities(ctx context.Context, threadIDs []models.ThreadID, entityID string, forUpdate bool) (map[string]*models.ThreadEntity, error) {
+func (d *dal) ThreadEntities(ctx context.Context, threadIDs []models.ThreadID, entityID string, opts ...QueryOption) (map[string]*models.ThreadEntity, error) {
 	if len(threadIDs) == 0 || entityID == "" {
 		return nil, nil
 	}
 
 	var sfu string
-	if forUpdate {
+	if queryOptions(opts).Has(ForUpdate) {
 		sfu = "ORDER BY thread_id FOR UPDATE"
 	}
 	values := make([]interface{}, len(threadIDs)+1)

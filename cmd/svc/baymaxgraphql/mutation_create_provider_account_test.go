@@ -136,7 +136,6 @@ func TestCreateProviderAccountMutation(t *testing.T) {
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateOnboardingThread, &threading.CreateOnboardingThreadRequest{
 		OrganizationID:  "e_org",
 		PrimaryEntityID: "e_sys_3",
-		SystemTitle:     onboardingThreadTitle,
 	}).WithReturns(&threading.CreateOnboardingThreadResponse{}, nil))
 
 	res := g.query(ctx, `

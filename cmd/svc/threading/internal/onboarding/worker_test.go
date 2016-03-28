@@ -1,7 +1,6 @@
 package onboarding
 
 import (
-	"github.com/sprucehealth/backend/svc/threading"
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
@@ -12,6 +11,7 @@ import (
 	"github.com/sprucehealth/backend/svc/events"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
+	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/backend/test"
 )
 
@@ -25,7 +25,7 @@ func TestWorker_Step1_Done(t *testing.T) {
 	thid, err := models.NewThreadID()
 	test.OK(t, err)
 
-	dl.Expect(mock.NewExpectation(dl.OnboardingStateForEntity, "ent", true).WithReturns(&models.OnboardingState{
+	dl.Expect(mock.NewExpectation(dl.OnboardingStateForEntity, "ent", dal.ForUpdate).WithReturns(&models.OnboardingState{
 		ThreadID: thid,
 		Step:     0,
 	}, nil))
@@ -74,7 +74,7 @@ func TestWorker_Step1_Skip(t *testing.T) {
 	thid, err := models.NewThreadID()
 	test.OK(t, err)
 
-	dl.Expect(mock.NewExpectation(dl.OnboardingState, thid, true).WithReturns(&models.OnboardingState{
+	dl.Expect(mock.NewExpectation(dl.OnboardingState, thid, dal.ForUpdate).WithReturns(&models.OnboardingState{
 		ThreadID: thid,
 		Step:     0,
 	}, nil))
@@ -120,7 +120,7 @@ func TestWorker_Step2_Done(t *testing.T) {
 	thid, err := models.NewThreadID()
 	test.OK(t, err)
 
-	dl.Expect(mock.NewExpectation(dl.OnboardingStateForEntity, "ent", true).WithReturns(&models.OnboardingState{
+	dl.Expect(mock.NewExpectation(dl.OnboardingStateForEntity, "ent", dal.ForUpdate).WithReturns(&models.OnboardingState{
 		ThreadID: thid,
 		Step:     1,
 	}, nil))
@@ -169,7 +169,7 @@ func TestWorker_Step2_Skip(t *testing.T) {
 	thid, err := models.NewThreadID()
 	test.OK(t, err)
 
-	dl.Expect(mock.NewExpectation(dl.OnboardingState, thid, true).WithReturns(&models.OnboardingState{
+	dl.Expect(mock.NewExpectation(dl.OnboardingState, thid, dal.ForUpdate).WithReturns(&models.OnboardingState{
 		ThreadID: thid,
 		Step:     1,
 	}, nil))
@@ -215,7 +215,7 @@ func TestWorker_Step3_Done(t *testing.T) {
 	thid, err := models.NewThreadID()
 	test.OK(t, err)
 
-	dl.Expect(mock.NewExpectation(dl.OnboardingStateForEntity, "org", true).WithReturns(&models.OnboardingState{
+	dl.Expect(mock.NewExpectation(dl.OnboardingStateForEntity, "org", dal.ForUpdate).WithReturns(&models.OnboardingState{
 		ThreadID: thid,
 		Step:     2,
 	}, nil))
@@ -263,7 +263,7 @@ func TestWorker_Step3_Skip(t *testing.T) {
 	thid, err := models.NewThreadID()
 	test.OK(t, err)
 
-	dl.Expect(mock.NewExpectation(dl.OnboardingState, thid, true).WithReturns(&models.OnboardingState{
+	dl.Expect(mock.NewExpectation(dl.OnboardingState, thid, dal.ForUpdate).WithReturns(&models.OnboardingState{
 		ThreadID: thid,
 		Step:     2,
 	}, nil))
@@ -309,7 +309,7 @@ func TestWorker_Step4_NOOP(t *testing.T) {
 	thid, err := models.NewThreadID()
 	test.OK(t, err)
 
-	dl.Expect(mock.NewExpectation(dl.OnboardingState, thid, true).WithReturns(&models.OnboardingState{
+	dl.Expect(mock.NewExpectation(dl.OnboardingState, thid, dal.ForUpdate).WithReturns(&models.OnboardingState{
 		ThreadID: thid,
 		Step:     3,
 	}, nil))

@@ -1,17 +1,12 @@
 package main
 
 import (
-	"sort"
-	"strings"
-
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
-	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
-	"golang.org/x/net/context"
 )
 
 var createTeamThreadInputType = graphql.NewInputObject(graphql.InputObjectConfig{
@@ -83,19 +78,13 @@ var createTeamThreadMutation = &graphql.Field{
 			return nil, errors.ErrNotAuthorized(ctx, orgID)
 		}
 
-		members, systemTitle, err := teamThreadMembersAndTitle(ctx, ram, orgID, append(members, creatorEnt.ID))
-		if err != nil {
-			return nil, errors.InternalError(ctx, err)
-		}
-
 		thread, err := ram.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
 			UUID:            uuid,
 			OrganizationID:  orgID,
 			FromEntityID:    creatorEnt.ID,
 			Summary:         "New conversation", // TODO: not sure what we want here
-			SystemTitle:     systemTitle,
 			UserTitle:       title,
-			MemberEntityIDs: members,
+			MemberEntityIDs: dedupeStrings(append(members, creatorEnt.ID)),
 			Type:            threading.ThreadType_TEAM,
 		})
 		if err != nil {
@@ -115,39 +104,4 @@ var createTeamThreadMutation = &graphql.Field{
 			Thread:           th,
 		}, nil
 	},
-}
-
-func teamThreadMembersAndTitle(ctx context.Context, ram raccess.ResourceAccessor, orgID string, members []string) ([]string, string, error) {
-	members = dedupeStrings(members)
-	if len(members) == 0 {
-		return members, "", nil
-	}
-
-	ems, err := ram.Entities(ctx, orgID, members, []directory.EntityInformation{directory.EntityInformation_CONTACTS})
-	if err != nil {
-		return nil, "", errors.Trace(err)
-	}
-
-	// Filter out non-internal entities
-	for i := 0; i < len(ems); i++ {
-		e := ems[i]
-		if e.Type != directory.EntityType_INTERNAL {
-			ems[i] = ems[len(ems)-1]
-			ems = ems[:len(ems)-1]
-		}
-	}
-
-	memberIDs := make([]string, len(ems))
-	for i, e := range ems {
-		memberIDs[i] = e.ID
-	}
-
-	names := make([]string, len(ems))
-	for i, e := range ems {
-		names[i] = e.Info.DisplayName
-	}
-	sort.Strings(names)
-	title := strings.Join(names, ", ")
-
-	return memberIDs, title, nil
 }

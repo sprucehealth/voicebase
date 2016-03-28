@@ -12,11 +12,12 @@ import (
 var updateThreadInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 	Name: "UpdateThreadInput",
 	Fields: graphql.InputObjectConfigFieldMap{
-		"clientMutationId": newClientMutationIDInputField(),
-		"uuid":             newUUIDInputField(),
-		"threadID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
-		"memberEntityIDs":  &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(graphql.ID))},
-		"title":            &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"clientMutationId":      newClientMutationIDInputField(),
+		"uuid":                  newUUIDInputField(),
+		"threadID":              &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
+		"addMemberEntityIDs":    &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(graphql.ID))},
+		"removeMemberEntityIDs": &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(graphql.ID))},
+		"title":                 &graphql.InputObjectFieldConfig{Type: graphql.String},
 	},
 })
 
@@ -80,22 +81,21 @@ var updateThreadMutation = &graphql.Field{
 		if t, ok := input["title"].(string); ok {
 			updateReq.UserTitle = t
 		}
-		if ms, ok := input["memberEntityIDs"].([]interface{}); ok && len(ms) != 0 {
+		if ms, ok := input["addMemberEntityIDs"].([]interface{}); ok && len(ms) != 0 {
 			members := make([]string, len(ms))
 			for i, m := range ms {
 				members[i] = m.(string)
 			}
-			members, systemTitle, err := teamThreadMembersAndTitle(ctx, ram, thread.OrganizationID, members)
-			if err != nil {
-				return nil, errors.InternalError(ctx, err)
-			}
-			if len(members) != 0 {
-				updateReq.SystemTitle = systemTitle
-				updateReq.SetMemberEntityIDs = members
-			}
+			updateReq.AddMemberEntityIDs = members
 		}
-
-		if updateReq.UserTitle != "" || updateReq.SystemTitle != "" || len(updateReq.SetMemberEntityIDs) != 0 {
+		if ms, ok := input["removeMemberEntityIDs"].([]interface{}); ok && len(ms) != 0 {
+			members := make([]string, len(ms))
+			for i, m := range ms {
+				members[i] = m.(string)
+			}
+			updateReq.RemoveMemberEntityIDs = members
+		}
+		if updateReq.UserTitle != "" || len(updateReq.AddMemberEntityIDs) != 0 || len(updateReq.RemoveMemberEntityIDs) != 0 {
 			res, err := ram.UpdateThread(ctx, updateReq)
 			if err != nil {
 				return nil, errors.InternalError(ctx, err)

@@ -331,7 +331,6 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 			_, err = ram.CreateOnboardingThread(ctx, &threading.CreateOnboardingThreadRequest{
 				OrganizationID:  orgEntityID,
 				PrimaryEntityID: onbEnt.ID,
-				SystemTitle:     onboardingThreadTitle,
 			})
 			if err != nil {
 				golog.Errorf("Failed to create onboarding thread for org %s: %s", orgEntityID, err)

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"strings"
-
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
@@ -79,19 +77,7 @@ var leaveThreadMutation = &graphql.Field{
 			return nil, err
 		}
 
-		members, err := ram.ThreadMembers(ctx, thread.OrganizationID, &threading.ThreadMembersRequest{ThreadID: thread.ID})
-		if err != nil {
-			return nil, errors.InternalError(ctx, err)
-		}
-		names := make([]string, 0, len(members))
-		for _, m := range members {
-			if m.ID != ent.ID {
-				names = append(names, m.Info.DisplayName)
-			}
-		}
-
 		_, err = ram.UpdateThread(ctx, &threading.UpdateThreadRequest{
-			SystemTitle:           strings.Join(names, ", "),
 			RemoveMemberEntityIDs: []string{ent.ID},
 		})
 		if err != nil {

@@ -31,22 +31,13 @@ func TestCreateTeamThreadMutation(t *testing.T) {
 			},
 		}, nil))
 
-	g.ra.Expect(mock.NewExpectation(g.ra.Entities, organizationID, []string{"e1", "e2", "e3", "e_creator"}, []directory.EntityInformation{
-		directory.EntityInformation_CONTACTS,
-	}).WithReturns([]*directory.Entity{
-		{ID: "e1", Type: directory.EntityType_INTERNAL, Info: &directory.EntityInfo{DisplayName: "Person1"}},
-		{ID: "e2", Type: directory.EntityType_EXTERNAL},
-		{ID: "e_creator", Type: directory.EntityType_INTERNAL, Info: &directory.EntityInfo{DisplayName: "Poster"}},
-	}, nil))
-
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEmptyThread, &threading.CreateEmptyThreadRequest{
 		UUID:            "zztop",
 		OrganizationID:  organizationID,
 		FromEntityID:    "e_creator",
 		Summary:         "New conversation",
 		UserTitle:       "thetitle",
-		SystemTitle:     "Person1, Poster",
-		MemberEntityIDs: []string{"e1", "e_creator"},
+		MemberEntityIDs: []string{"e1", "e2", "e3", "e_creator"},
 		Type:            threading.ThreadType_TEAM,
 	}).WithReturns(&threading.Thread{
 		ID:          "t_1",

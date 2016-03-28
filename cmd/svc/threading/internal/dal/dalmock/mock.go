@@ -97,16 +97,16 @@ func (dl *DAL) LinkedThread(ctx context.Context, threadID models.ThreadID) (*mod
 	return rets[0].(*models.Thread), rets[1].(bool), mock.SafeError(rets[2])
 }
 
-func (dl *DAL) OnboardingState(ctx context.Context, threadID models.ThreadID, forUpdate bool) (*models.OnboardingState, error) {
-	rets := dl.Expector.Record(threadID, forUpdate)
+func (dl *DAL) OnboardingState(ctx context.Context, threadID models.ThreadID, opts ...dal.QueryOption) (*models.OnboardingState, error) {
+	rets := dl.Expector.Record(append([]interface{}{threadID}, optsToInterfaces(opts)...)...)
 	if len(rets) == 0 {
 		return nil, nil
 	}
 	return rets[0].(*models.OnboardingState), mock.SafeError(rets[1])
 }
 
-func (dl *DAL) OnboardingStateForEntity(ctx context.Context, entityID string, forUpdate bool) (*models.OnboardingState, error) {
-	rets := dl.Expector.Record(entityID, forUpdate)
+func (dl *DAL) OnboardingStateForEntity(ctx context.Context, entityID string, opts ...dal.QueryOption) (*models.OnboardingState, error) {
+	rets := dl.Expector.Record(append([]interface{}{entityID}, optsToInterfaces(opts)...)...)
 	if len(rets) == 0 {
 		return nil, nil
 	}
@@ -145,8 +145,8 @@ func (dl *DAL) SavedQueries(ctx context.Context, entityID string) ([]*models.Sav
 	return rets[0].([]*models.SavedQuery), mock.SafeError(rets[1])
 }
 
-func (dl *DAL) Thread(ctx context.Context, id models.ThreadID) (*models.Thread, error) {
-	rets := dl.Expector.Record(id)
+func (dl *DAL) Thread(ctx context.Context, id models.ThreadID, opts ...dal.QueryOption) (*models.Thread, error) {
+	rets := dl.Expector.Record(append([]interface{}{id}, optsToInterfaces(opts)...)...)
 	if len(rets) == 0 {
 		return nil, nil
 	}
@@ -177,8 +177,8 @@ func (dl *DAL) ThreadItemViewDetails(ctx context.Context, id models.ThreadItemID
 	return rets[0].([]*models.ThreadItemViewDetails), mock.SafeError(rets[1])
 }
 
-func (dl *DAL) ThreadEntities(ctx context.Context, threadIDs []models.ThreadID, entityID string, forUpdate bool) (map[string]*models.ThreadEntity, error) {
-	rets := dl.Expector.Record(threadIDs, entityID, forUpdate)
+func (dl *DAL) ThreadEntities(ctx context.Context, threadIDs []models.ThreadID, entityID string, opts ...dal.QueryOption) (map[string]*models.ThreadEntity, error) {
+	rets := dl.Expector.Record(append([]interface{}{threadIDs, entityID}, optsToInterfaces(opts)...)...)
 	if len(rets) == 0 {
 		return nil, nil
 	}
@@ -239,4 +239,12 @@ func (dl *DAL) UpdateOnboardingState(ctx context.Context, threadID models.Thread
 		return nil
 	}
 	return mock.SafeError(rets[0])
+}
+
+func optsToInterfaces(opts []dal.QueryOption) []interface{} {
+	ifs := make([]interface{}, len(opts))
+	for i, o := range opts {
+		ifs[i] = o
+	}
+	return ifs
 }

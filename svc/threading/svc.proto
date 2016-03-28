@@ -306,11 +306,9 @@ message DeleteThreadResponse {
 
 message UpdateThreadRequest {
 	string thread_id = 1 [(gogoproto.customname) = "ThreadID"];
-	string system_title = 2;
 	string user_title = 3;
-	repeated string set_member_entity_ids = 4 [(gogoproto.customname) = "SetMemberEntityIDs"];
-	repeated string add_member_entity_ids = 5 [(gogoproto.customname) = "AddMemberEntityIDs"];
-	repeated string remove_member_entity_ids = 6 [(gogoproto.customname) = "RemoveMemberEntityIDs"];
+	repeated string add_member_entity_ids = 4 [(gogoproto.customname) = "AddMemberEntityIDs"];
+	repeated string remove_member_entity_ids = 5 [(gogoproto.customname) = "RemoveMemberEntityIDs"];
 }
 
 message UpdateThreadResponse {
@@ -328,7 +326,6 @@ message CreateThreadRequest {
 	repeated Attachment attachments = 8;
 	string message_title = 9;
 	string summary = 10;
-	string system_title = 11;
 	string user_title = 12;
 	ThreadType type = 13;
 	repeated string member_entity_ids = 14 [(gogoproto.customname) = "MemberEntityIDs"];
@@ -346,7 +343,6 @@ message CreateEmptyThreadRequest {
 	string from_entity_id = 3 [(gogoproto.customname) = "FromEntityID"];
 	string primary_entity_id = 5 [(gogoproto.customname) = "PrimaryEntityID"];
 	string summary = 6;
-	string system_title = 7;
 	string user_title = 8;
 	ThreadType type = 9;
 	repeated string member_entity_ids = 10 [(gogoproto.customname) = "MemberEntityIDs"];
@@ -410,9 +406,7 @@ message CreateLinkedThreadsRequest {
 	bool prepend_sender_thread2 = 9;
 	ThreadType type = 10;
 	string system_title1 = 11;
-	string user_title1 = 12;
 	string system_title2 = 13;
-	string user_title2 = 14;
 }
 
 message CreateLinkedThreadsResponse {
@@ -423,7 +417,6 @@ message CreateLinkedThreadsResponse {
 message CreateOnboardingThreadRequest {
 	string organization_id = 1 [(gogoproto.customname) = "OrganizationID"];
 	string primary_entity_id = 2 [(gogoproto.customname) = "PrimaryEntityID"];
-	string system_title = 3;
 	string user_title = 4;
 }
 

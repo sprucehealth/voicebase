@@ -124,7 +124,7 @@ func (w *Worker) processEvent(env *events.Envelope) error {
 	}
 
 	return errors.Trace(w.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
-		state, err := dl.OnboardingStateForEntity(ctx, entityID, true)
+		state, err := dl.OnboardingStateForEntity(ctx, entityID, dal.ForUpdate)
 		if errors.Cause(err) == dal.ErrNotFound {
 			return nil
 		} else if err != nil {
@@ -182,7 +182,7 @@ func (w *Worker) processThreadItem(ti *threading.PublishedThreadItem) error {
 		return errors.Trace(err)
 	}
 	return errors.Trace(w.dal.Transact(ctx, func(ctx context.Context, dl dal.DAL) error {
-		state, err := dl.OnboardingState(ctx, threadID, true)
+		state, err := dl.OnboardingState(ctx, threadID, dal.ForUpdate)
 		if errors.Cause(err) == dal.ErrNotFound {
 			return nil
 		} else if err != nil {

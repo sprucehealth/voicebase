@@ -188,6 +188,36 @@ func TestIterateThreads(t *testing.T) {
 	test.Equals(t, (*models.ThreadEntity)(nil), tc.Edges[1].ThreadEntity)
 }
 
+func TestThread(t *testing.T) {
+	dt := setupTest(t)
+	defer dt.cleanup(t)
+
+	dal := New(dt.db)
+	ctx := context.Background()
+
+	tid, err := dal.CreateThread(ctx, &models.Thread{
+		OrganizationID:             "org",
+		Type:                       models.ThreadTypeTeam,
+		LastMessageSummary:         "summary",
+		LastMessageTimestamp:       time.Unix(2, 0),
+		LastExternalMessageSummary: "extsummary",
+		SystemTitle:                "systemTitle",
+		UserTitle:                  "userTitle",
+	})
+	test.OK(t, err)
+
+	th, err := dal.Thread(ctx, tid)
+	test.OK(t, err)
+	test.Equals(t, "systemTitle", th.SystemTitle)
+	test.Equals(t, "userTitle", th.UserTitle)
+
+	// for update
+	th, err = dal.Thread(ctx, tid, ForUpdate)
+	test.OK(t, err)
+	test.Equals(t, "systemTitle", th.SystemTitle)
+	test.Equals(t, "userTitle", th.UserTitle)
+}
+
 func TestUpdateThread(t *testing.T) {
 	dt := setupTest(t)
 	defer dt.cleanup(t)
@@ -235,13 +265,13 @@ func TestThreadEntities(t *testing.T) {
 	})
 	test.OK(t, err)
 
-	ents, err := dal.ThreadEntities(ctx, []models.ThreadID{tid}, "e1", false)
+	ents, err := dal.ThreadEntities(ctx, []models.ThreadID{tid}, "e1")
 	test.OK(t, err)
 	test.Equals(t, 0, len(ents))
 
 	test.OK(t, dal.UpdateThreadEntity(ctx, tid, "e1", &ThreadEntityUpdate{LastViewed: ptr.Time(time.Unix(1e6, 0))}))
 
-	ents, err = dal.ThreadEntities(ctx, []models.ThreadID{tid}, "e1", true)
+	ents, err = dal.ThreadEntities(ctx, []models.ThreadID{tid}, "e1", ForUpdate)
 	test.OK(t, err)
 	test.Equals(t, 1, len(ents))
 	test.Equals(t, time.Unix(1e6, 0), *ents[tid.String()].LastViewed)
@@ -249,7 +279,7 @@ func TestThreadEntities(t *testing.T) {
 
 	test.OK(t, dal.UpdateThreadEntity(ctx, tid, "e1", &ThreadEntityUpdate{LastReferenced: ptr.Time(time.Unix(1e6, 0))}))
 
-	ents, err = dal.ThreadEntities(ctx, []models.ThreadID{tid}, "e1", true)
+	ents, err = dal.ThreadEntities(ctx, []models.ThreadID{tid}, "e1", ForUpdate)
 	test.OK(t, err)
 	test.Equals(t, 1, len(ents))
 	test.Equals(t, time.Unix(1e6, 0), *ents[tid.String()].LastReferenced)
