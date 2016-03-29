@@ -538,6 +538,7 @@ func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *events
 		if err != nil {
 			golog.Errorf("Unable to generate expiring url for %s:%s", customVoicemailMediaID, customVoicemailURL)
 		}
+		golog.Debugf("CustomVoicemail URL is %s", customVoicemailURL)
 	}
 
 	// check whether or not to transcribe voicemail
