@@ -41,9 +41,10 @@ func transformConfigToModel(config *settings.Config) *models.Config {
 
 		for i, item := range config.GetMultiSelect().Items {
 			m.GetMultiSelect().Items[i] = &models.Item{
-				ID:            item.ID,
-				Label:         item.Label,
-				AllowFreeText: item.AllowFreeText,
+				ID:               item.ID,
+				Label:            item.Label,
+				AllowFreeText:    item.AllowFreeText,
+				FreeTextRequired: item.FreeTextRequired,
 			}
 		}
 
@@ -67,9 +68,10 @@ func transformConfigToModel(config *settings.Config) *models.Config {
 		}
 		for i, item := range config.GetSingleSelect().Items {
 			m.GetSingleSelect().Items[i] = &models.Item{
-				ID:            item.ID,
-				Label:         item.Label,
-				AllowFreeText: item.AllowFreeText,
+				ID:               item.ID,
+				Label:            item.Label,
+				AllowFreeText:    item.AllowFreeText,
+				FreeTextRequired: item.FreeTextRequired,
 			}
 		}
 	case models.ConfigType_STRING_LIST:
@@ -121,9 +123,10 @@ func transformModelToConfig(config *models.Config) *settings.Config {
 		}
 		for i, item := range config.GetMultiSelect().Items {
 			c.GetMultiSelect().Items[i] = &settings.Item{
-				ID:            item.ID,
-				AllowFreeText: item.AllowFreeText,
-				Label:         item.Label,
+				ID:               item.ID,
+				AllowFreeText:    item.AllowFreeText,
+				Label:            item.Label,
+				FreeTextRequired: item.FreeTextRequired,
 			}
 		}
 		for i, item := range config.GetMultiSelect().Default.Items {
@@ -146,9 +149,10 @@ func transformModelToConfig(config *models.Config) *settings.Config {
 		}
 		for i, item := range config.GetSingleSelect().Items {
 			c.GetSingleSelect().Items[i] = &settings.Item{
-				ID:            item.ID,
-				AllowFreeText: item.AllowFreeText,
-				Label:         item.Label,
+				ID:               item.ID,
+				AllowFreeText:    item.AllowFreeText,
+				Label:            item.Label,
+				FreeTextRequired: item.FreeTextRequired,
 			}
 		}
 	case models.ConfigType_STRING_LIST:

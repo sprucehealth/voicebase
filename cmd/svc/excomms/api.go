@@ -90,7 +90,8 @@ func runAPI() {
 		config.externalMessageTopic,
 		config.incomingRawMessageTopic,
 		config.resourceCleanerTopic,
-		segmentClient)
+		segmentClient,
+		storage.NewS3(awsSession, config.attachmentBucket, "media"))
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.Handle("/twilio/sms", handlers.NewTwilioSMSHandler(dl, config.incomingRawMessageTopic, eSNS))

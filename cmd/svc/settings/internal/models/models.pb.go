@@ -473,9 +473,10 @@ func (m *StringListValue) Reset()      { *m = StringListValue{} }
 func (*StringListValue) ProtoMessage() {}
 
 type Item struct {
-	ID            string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Label         string `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
-	AllowFreeText bool   `protobuf:"varint,3,opt,name=allow_free_text,proto3" json:"allow_free_text,omitempty"`
+	ID               string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Label            string `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
+	AllowFreeText    bool   `protobuf:"varint,3,opt,name=allow_free_text,proto3" json:"allow_free_text,omitempty"`
+	FreeTextRequired bool   `protobuf:"varint,4,opt,name=free_text_required,proto3" json:"free_text_required,omitempty"`
 }
 
 func (m *Item) Reset()      { *m = Item{} }
@@ -1048,6 +1049,9 @@ func (this *Item) Equal(that interface{}) bool {
 	if this.AllowFreeText != that1.AllowFreeText {
 		return false
 	}
+	if this.FreeTextRequired != that1.FreeTextRequired {
+		return false
+	}
 	return true
 }
 func (this *MultiSelectConfig) Equal(that interface{}) bool {
@@ -1359,11 +1363,12 @@ func (this *Item) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 8)
 	s = append(s, "&models.Item{")
 	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	s = append(s, "Label: "+fmt.Sprintf("%#v", this.Label)+",\n")
 	s = append(s, "AllowFreeText: "+fmt.Sprintf("%#v", this.AllowFreeText)+",\n")
+	s = append(s, "FreeTextRequired: "+fmt.Sprintf("%#v", this.FreeTextRequired)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1873,6 +1878,16 @@ func (m *Item) MarshalTo(data []byte) (int, error) {
 		}
 		i++
 	}
+	if m.FreeTextRequired {
+		data[i] = 0x20
+		i++
+		if m.FreeTextRequired {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
 	return i, nil
 }
 
@@ -2264,6 +2279,9 @@ func (m *Item) Size() (n int) {
 	if m.AllowFreeText {
 		n += 2
 	}
+	if m.FreeTextRequired {
+		n += 2
+	}
 	return n
 }
 
@@ -2516,6 +2534,7 @@ func (this *Item) String() string {
 		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
 		`Label:` + fmt.Sprintf("%v", this.Label) + `,`,
 		`AllowFreeText:` + fmt.Sprintf("%v", this.AllowFreeText) + `,`,
+		`FreeTextRequired:` + fmt.Sprintf("%v", this.FreeTextRequired) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3699,6 +3718,26 @@ func (m *Item) Unmarshal(data []byte) error {
 				}
 			}
 			m.AllowFreeText = bool(v != 0)
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FreeTextRequired", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowModels
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.FreeTextRequired = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipModels(data[iNdEx:])

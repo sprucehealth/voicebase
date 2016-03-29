@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"time"
 )
 
 // ErrNoObject is returned when an trying to Get an object that doesn't exist
@@ -16,7 +17,7 @@ type Store interface {
 	Get(id string) ([]byte, http.Header, error)
 	GetReader(id string) (io.ReadCloser, http.Header, error)
 	Delete(id string) error
-	URL(id string) string
+	ExpiringURL(id string, expiration time.Duration) (string, error)
 }
 
 // DeterministicStore is a version of Store that uses a deterministric

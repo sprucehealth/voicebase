@@ -88,6 +88,7 @@ message Item {
 	string id = 1 [(gogoproto.customname) = "ID"];
 	string label = 2;
 	bool allow_free_text = 3;
+	bool free_text_required = 4;
 }
 message MultiSelectConfig {
 	repeated Item items = 1;

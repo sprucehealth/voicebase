@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 )
 
 type readCloser struct {
@@ -88,4 +89,8 @@ func (s *testStore) Delete(id string) error {
 
 func (s *testStore) URL(id string) string {
 	return s.IDFromName(id)
+}
+
+func (s *testStore) ExpiringURL(id string, duration time.Duration) (string, error) {
+	return id, nil
 }

@@ -350,6 +350,122 @@ func TestSetValue_MultiSelect(t *testing.T) {
 	mock.FinishAll(md)
 }
 
+func TestSetValue_MultiSelect_Invalid_RequiredFreeText(t *testing.T) {
+	md := dalmock.New(t)
+	md.Expect(mock.NewExpectation(md.GetConfigs, []string{"testingkey"}).WithReturns(
+		[]*models.Config{
+			{
+				Title:        "hello",
+				Description:  "hi",
+				Key:          "testingkey",
+				Type:         models.ConfigType_MULTI_SELECT,
+				AllowSubkeys: true,
+				Config: &models.Config_MultiSelect{
+					MultiSelect: &models.MultiSelectConfig{
+						Items: []*models.Item{
+							{
+								ID:               "option1",
+								Label:            "Option 1",
+								AllowFreeText:    true,
+								FreeTextRequired: true,
+							},
+							{
+								ID:    "option2",
+								Label: "Option 2",
+							},
+						},
+						Default: &models.MultiSelectValue{
+							Items: []*models.ItemValue{
+								{
+									ID: "option1",
+								},
+							},
+						},
+					},
+				},
+			},
+		}, nil))
+
+	server := New(md)
+	_, err := server.SetValue(context.Background(), &settings.SetValueRequest{
+		NodeID: "12345",
+		Value: &settings.Value{
+			Key: &settings.ConfigKey{
+				Key:    "testingkey",
+				Subkey: "22222",
+			},
+			Type: settings.ConfigType_MULTI_SELECT,
+			Value: &settings.Value_MultiSelect{
+				MultiSelect: &settings.MultiSelectValue{
+					Items: []*settings.ItemValue{
+						{
+							ID: "option1",
+						},
+					},
+				},
+			},
+		},
+	})
+	test.Assert(t, err != nil, "expected validation error")
+	mock.FinishAll(md)
+}
+
+func TestSetValue_SingleSelect_Invalid_RequiredFreeText(t *testing.T) {
+	md := dalmock.New(t)
+	md.Expect(mock.NewExpectation(md.GetConfigs, []string{"testingkey"}).WithReturns(
+		[]*models.Config{
+			{
+				Title:        "hello",
+				Description:  "hi",
+				Key:          "testingkey",
+				Type:         models.ConfigType_SINGLE_SELECT,
+				AllowSubkeys: true,
+				Config: &models.Config_SingleSelect{
+					SingleSelect: &models.SingleSelectConfig{
+						Items: []*models.Item{
+							{
+								ID:               "option1",
+								Label:            "Option 1",
+								AllowFreeText:    true,
+								FreeTextRequired: true,
+							},
+							{
+								ID:    "option2",
+								Label: "Option 2",
+							},
+						},
+						Default: &models.SingleSelectValue{
+							Item: &models.ItemValue{
+								ID: "option1",
+							},
+						},
+					},
+				},
+			},
+		}, nil))
+
+	server := New(md)
+	_, err := server.SetValue(context.Background(), &settings.SetValueRequest{
+		NodeID: "12345",
+		Value: &settings.Value{
+			Key: &settings.ConfigKey{
+				Key:    "testingkey",
+				Subkey: "22222",
+			},
+			Type: settings.ConfigType_SINGLE_SELECT,
+			Value: &settings.Value_SingleSelect{
+				SingleSelect: &settings.SingleSelectValue{
+					Item: &settings.ItemValue{
+						ID: "option1",
+					},
+				},
+			},
+		},
+	})
+	test.Assert(t, err != nil, "expected validation error")
+	mock.FinishAll(md)
+}
+
 func TestSetValue_MultiSelect_Invalid(t *testing.T) {
 	md := dalmock.New(t)
 	md.Expect(mock.NewExpectation(md.GetConfigs, []string{"testingkey"}).WithReturns(

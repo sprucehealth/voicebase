@@ -227,7 +227,7 @@ func (s *Service) GetReader(id string, size *Size) (io.ReadCloser, *Meta, error)
 
 // URL returns the URL from the underlying deterministic storage system
 func (s *Service) URL(id string) string {
-	return s.store.URL(id)
+	return s.store.IDFromName(id)
 }
 
 func (s *Service) isTooLarge(width, height int) bool {

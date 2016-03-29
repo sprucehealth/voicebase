@@ -23,6 +23,11 @@ var NumbersToRingConfig = &settings.Config{
 	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
 }
 
+const (
+	VoicemailOptionDefault = "voicemail_option_default"
+	VoicemailOptionCustom  = "voicemail_option_custom"
+)
+
 var VoicemailOptionConfig = &settings.Config{
 	Title:          "Set outgoing message",
 	Key:            ConfigKeyVoicemailOption,
@@ -33,17 +38,19 @@ var VoicemailOptionConfig = &settings.Config{
 		SingleSelect: &settings.SingleSelectConfig{
 			Items: []*settings.Item{
 				{
-					ID:    "voicemail_option_default",
+					ID:    VoicemailOptionDefault,
 					Label: "Default",
 				},
 				{
-					ID:    "voicemail_option_custom",
-					Label: "Custom",
+					ID:               VoicemailOptionCustom,
+					Label:            "Custom",
+					AllowFreeText:    true,
+					FreeTextRequired: true,
 				},
 			},
 			Default: &settings.SingleSelectValue{
 				Item: &settings.ItemValue{
-					ID: "voicemail_option_default",
+					ID: VoicemailOptionDefault,
 				},
 			},
 		},

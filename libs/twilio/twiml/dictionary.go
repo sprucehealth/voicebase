@@ -353,8 +353,8 @@ type Pause struct {
 
 type Play struct {
 	XMLName xml.Name `xml:"Play"`
-	Loop    uint     `xml:"loop"`
-	Digits  string   `xml:"digits"`
+	Loop    uint     `xml:"loop,attr,omitempty"`
+	Digits  string   `xml:"digits,attr,omitempty"`
 	Text    string   `xml:",innerxml"`
 }
 

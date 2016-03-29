@@ -37,14 +37,20 @@ func validateValueAgainstConfig(value *settings.Value, config *models.Config) (*
 		for _, item := range transformedValue.GetMultiSelect().GetItems() {
 			// ensure that id is present in the config
 			present := false
+			var optionSelected *models.Item
 			for _, option := range config.GetMultiSelect().Items {
 				if option.ID == item.ID {
 					present = true
+					optionSelected = option
 					break
 				}
 			}
 			if !present {
 				return nil, fmt.Errorf("Option selected is not one of the selectable options for value %s", transformedValue.Key)
+			}
+
+			if optionSelected.AllowFreeText && optionSelected.FreeTextRequired && len(strings.TrimSpace(item.FreeTextResponse)) == 0 {
+				return nil, fmt.Errorf("Selection requires free text but no free text set for value %s", transformedValue.Key)
 			}
 		}
 
@@ -59,15 +65,22 @@ func validateValueAgainstConfig(value *settings.Value, config *models.Config) (*
 		}
 
 		present := false
+		var optionSelected *models.Item
 		for _, option := range config.GetSingleSelect().Items {
 			if option.ID == transformedValue.GetSingleSelect().Item.ID {
 				present = true
+				optionSelected = option
 				break
 			}
 		}
 		if !present {
 			return nil, fmt.Errorf("Option selected is not one of the selectable options for value %s", transformedValue.Key)
 		}
+
+		if optionSelected.AllowFreeText && optionSelected.FreeTextRequired && len(strings.TrimSpace(transformedValue.GetSingleSelect().Item.FreeTextResponse)) == 0 {
+			return nil, fmt.Errorf("Selection requires free text but no free text set for value %s", transformedValue.Key)
+		}
+
 	case models.ConfigType_BOOLEAN:
 		if transformedValue.GetBoolean() == nil {
 			return nil, fmt.Errorf("No boolean value specified for %s", transformedValue.Key)

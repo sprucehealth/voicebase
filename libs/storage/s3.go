@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -144,8 +145,18 @@ func (s *S3) Delete(id string) error {
 	return err
 }
 
-func (s *S3) URL(name string) string {
-	return s.IDFromName(name)
+func (s *S3) ExpiringURL(id string, expiration time.Duration) (string, error) {
+	_, bkt, path, err := s.parseURI(id)
+	if err != nil {
+		return "", err
+	}
+
+	req, _ := s.s3.GetObjectRequest(&s3.GetObjectInput{
+		Bucket: &bkt,
+		Key:    &path,
+	})
+
+	return req.Presign(expiration)
 }
 
 func (s *S3) parseURI(uri string) (region string, bucket string, key string, err error) {

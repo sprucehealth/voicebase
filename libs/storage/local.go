@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // local is a store that uses the local filesystem.
@@ -117,6 +118,6 @@ func (s *local) Delete(id string) error {
 	return os.Remove(id)
 }
 
-func (s *local) URL(name string) string {
-	return s.IDFromName(name)
+func (s *local) ExpiringURL(id string, expiration time.Duration) (string, error) {
+	return id, nil
 }

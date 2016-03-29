@@ -1306,7 +1306,8 @@ func (s *threadsServer) getNotificationText(ctx context.Context, thread *models.
 }
 
 func (s *threadsServer) isClearTextMessageNotificationsEnabled(ctx context.Context, organizationID string) bool {
-	resp, err := s.settingsClient.GetValues(ctx, &settings.GetValuesRequest{
+
+	booleanValue, err := settings.GetBooleanValue(ctx, s.settingsClient, &settings.GetValuesRequest{
 		Keys:   []*settings.ConfigKey{{Key: threading.ClearTextMessageNotifications}},
 		NodeID: organizationID,
 	})
@@ -1314,14 +1315,8 @@ func (s *threadsServer) isClearTextMessageNotificationsEnabled(ctx context.Conte
 		golog.Errorf("Encountered an error when getting ClearTextMessageNotifications for org %s: %s", organizationID, err)
 		return false
 	}
-	if len(resp.Values) == 0 {
-		golog.Errorf("Expected only 1 value to be returned for settings key %s and org id %s but got none.", threading.ClearTextMessageNotifications, organizationID)
-		return false
-	}
-	if len(resp.Values) != 1 {
-		golog.Errorf("Expected only 1 value to be returned for settings key %s and org id %s but got %d. Continuing with first value", threading.ClearTextMessageNotifications, organizationID, len(resp.Values))
-	}
-	return resp.Values[0].GetBoolean().Value
+
+	return booleanValue.Value
 }
 
 func parseRefsAndNormalize(s string) (string, []*models.Reference, error) {

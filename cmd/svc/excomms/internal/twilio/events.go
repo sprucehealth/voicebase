@@ -21,6 +21,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/twilio/twiml"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
@@ -50,6 +51,7 @@ type eventsHandler struct {
 	directory            directory.DirectoryClient
 	settings             settings.SettingsClient
 	dal                  dal.DAL
+	store                storage.DeterministicStore
 	sns                  snsiface.SNSAPI
 	clock                clock.Clock
 	proxyNumberManager   proxynumber.Manager
@@ -67,7 +69,9 @@ func NewEventHandler(
 	sns snsiface.SNSAPI,
 	clock clock.Clock,
 	proxyNumberManager proxynumber.Manager,
-	apiURL, externalMessageTopic, incomingRawMsgTopic, resourceCleanerTopic string, segmentClient *analytics.Client) EventHandler {
+	apiURL, externalMessageTopic, incomingRawMsgTopic, resourceCleanerTopic string,
+	segmentClient *analytics.Client,
+	store storage.DeterministicStore) EventHandler {
 	return &eventsHandler{
 		directory:            directory,
 		settings:             settingsClient,
@@ -80,6 +84,7 @@ func NewEventHandler(
 		proxyNumberManager:   proxyNumberManager,
 		resourceCleanerTopic: resourceCleanerTopic,
 		segmentClient:        segmentClient,
+		store:                store,
 	}
 }
 
@@ -509,9 +514,35 @@ func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *events
 		}
 	}
 
-	// check if voicemails should be transcribed or not
+	// check whether to use custom voicemail or not
+	var customVoicemailURL string
+	singleSelectValue, err := settings.GetSingleSelectValue(ctx, eh.settings, &settings.GetValuesRequest{
+		NodeID: orgID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyVoicemailOption,
+				Subkey: params.To,
+			},
+		},
+	})
+	if err != nil {
+		golog.Errorf("Unable to read setting for voicemail option for orgID %s phone number %s: %s", orgID, params.To, err.Error())
+	}
+
+	if singleSelectValue.GetItem().ID == excommsSettings.VoicemailOptionCustom {
+		if url := singleSelectValue.GetItem().FreeTextResponse; url == "" {
+			golog.Errorf("URL for custom voicemail not specified for orgID %s when custom voicemail selected", orgID)
+		}
+		customVoicemailMediaID := singleSelectValue.GetItem().FreeTextResponse
+		customVoicemailURL, err = eh.store.ExpiringURL(customVoicemailMediaID, time.Hour)
+		if err != nil {
+			golog.Errorf("Unable to generate expiring url for %s:%s", customVoicemailMediaID, customVoicemailURL)
+		}
+	}
+
+	// check whether or not to transcribe voicemail
 	var transcribeVoicemail bool
-	res, err := eh.settings.GetValues(ctx, &settings.GetValuesRequest{
+	booleanValue, err := settings.GetBooleanValue(ctx, eh.settings, &settings.GetValuesRequest{
 		NodeID: orgID,
 		Keys: []*settings.ConfigKey{
 			{
@@ -520,16 +551,9 @@ func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *events
 		},
 	})
 	if err != nil {
-		golog.Errorf("Unable to read settings for whether or not to transcribe voicemail for organizationID %s: %s", orgID, err.Error())
-	} else if len(res.Values) == 0 {
-		golog.Warningf("No value specified for transcribe voicemails for %s", orgID)
-	} else if len(res.Values) != 1 {
-		golog.Warningf("Expected 1 value for transcribe voicemails instead got %d for %s", len(res.Values), orgID)
-	} else if res.Values[0].GetBoolean() == nil {
-		golog.Warningf("Expected boolean value for revealing sender instead got %T for %s", res.Values[0].Value, orgID)
-	} else {
-		transcribeVoicemail = res.Values[0].GetBoolean().Value
+		golog.Errorf("Unable to get transcribe voicemail setting for orgID %s", orgID)
 	}
+	transcribeVoicemail = booleanValue.Value
 
 	var action, transcribeCallback, transcriptionInfoInVoicemailMessage string
 	if transcribeVoicemail {
@@ -548,12 +572,21 @@ func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *events
 		voicemailMessage = fmt.Sprintf("Please leave a message after the tone.%s", transcriptionInfoInVoicemailMessage)
 	}
 
+	var firstVerb interface{}
+	if len(customVoicemailURL) > 0 {
+		firstVerb = &twiml.Play{
+			Text: customVoicemailURL,
+		}
+	} else {
+		firstVerb = &twiml.Say{
+			Voice: "alice",
+			Text:  voicemailMessage,
+		}
+	}
+
 	tw := &twiml.Response{
 		Verbs: []interface{}{
-			&twiml.Say{
-				Voice: "alice",
-				Text:  voicemailMessage,
-			},
+			firstVerb,
 			&twiml.Record{
 				Action:             action,
 				PlayBeep:           true,

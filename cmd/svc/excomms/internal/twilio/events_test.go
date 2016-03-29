@@ -17,6 +17,7 @@ import (
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/libs/storage"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
 	directorymock "github.com/sprucehealth/backend/svc/directory/mock"
@@ -172,7 +173,7 @@ func testOutgoing(t *testing.T, testExpired bool, patientName string) {
 		mproxynumberManager.Expect(mock.NewExpectation(mproxynumberManager.CallStarted, providerPersonalPhoneNumber, proxyPhoneNumber))
 	}
 
-	es := NewEventHandler(md, nil, mdal, &mockSNS_Twilio{}, mclock, mproxynumberManager, "https://test.com", "", "", "", nil)
+	es := NewEventHandler(md, nil, mdal, &mockSNS_Twilio{}, mclock, mproxynumberManager, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
 
 	params := &rawmsg.TwilioParams{
 		From:    providerPersonalPhoneNumber.String(),
@@ -272,7 +273,7 @@ func TestIncoming_Organization(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil)
+	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -389,6 +390,33 @@ func TestIncoming_Organization_SingleProvider_DirectAllCallsToVoicemail(t *testi
 			},
 		},
 	}, nil))
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyVoicemailOption,
+				Subkey: practicePhoneNumber,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key: excommsSettings.ConfigKeyVoicemailOption,
+				},
+				Type: settings.ConfigType_SINGLE_SELECT,
+				Value: &settings.Value_SingleSelect{
+					SingleSelect: &settings.SingleSelectValue{
+						Item: &settings.ItemValue{
+							ID: excommsSettings.VoicemailOptionDefault,
+						},
+					},
+				},
+			},
+		},
+	}, nil))
+
 	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
 		Keys: []*settings.ConfigKey{
 			{
@@ -412,7 +440,7 @@ func TestIncoming_Organization_SingleProvider_DirectAllCallsToVoicemail(t *testi
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil)
+	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -493,7 +521,7 @@ func TestIncoming_Organization_MultipleContacts(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil)
+	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -612,7 +640,7 @@ func TestIncoming_Organization_MultipleContacts_SendToVoicemail(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil)
+	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -700,7 +728,7 @@ func TestIncoming_Provider(t *testing.T) {
 		CallSID:        callSID,
 	}))
 
-	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil)
+	es := NewEventHandler(md, msettings, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
 	params := &rawmsg.TwilioParams{
 		From:    patientPhone,
 		To:      practicePhoneNumber,
@@ -776,7 +804,7 @@ func TestProviderCallConnected(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(mdirectory, nil, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil)
+	es := NewEventHandler(mdirectory, nil, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
 
 	twiml, err := providerCallConnected(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -843,7 +871,7 @@ func TestProviderCallConnected_NoName(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(mdirectory, nil, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil)
+	es := NewEventHandler(mdirectory, nil, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
 
 	twiml, err := providerCallConnected(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -934,7 +962,7 @@ func TestProviderEnteredDigits_EnteredOtherDigit(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(mdirectory, nil, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil)
+	es := NewEventHandler(mdirectory, nil, mdal, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
 	twiml, err := providerEnteredDigits(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
 		t.Fatal(err)
@@ -990,6 +1018,33 @@ func TestVoicemailTwiML(t *testing.T) {
 
 	msettings := settingsmock.New(t)
 	defer msettings.Finish()
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyVoicemailOption,
+				Subkey: practicePhoneNumber,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key: excommsSettings.ConfigKeyVoicemailOption,
+				},
+				Type: settings.ConfigType_SINGLE_SELECT,
+				Value: &settings.Value_SingleSelect{
+					SingleSelect: &settings.SingleSelectValue{
+						Item: &settings.ItemValue{
+							ID: excommsSettings.VoicemailOptionDefault,
+						},
+					},
+				},
+			},
+		},
+	}, nil))
+
 	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
 		Keys: []*settings.ConfigKey{
 			{
@@ -1013,7 +1068,7 @@ func TestVoicemailTwiML(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, nil, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil)
+	es := NewEventHandler(md, msettings, nil, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
 
 	twiml, err := voicemailTWIML(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -1021,6 +1076,113 @@ func TestVoicemailTwiML(t *testing.T) {
 	}
 	expected := `<?xml version="1.0" encoding="UTF-8"?>
 <Response><Say voice="alice">You have reached Dewabi Corp. Please leave a message after the tone. Speak slowly and clearly as your message will be transcribed.</Say><Record action="/twilio/call/no_op" timeout="60" maxLength="3600" transcribeCallback="/twilio/call/process_voicemail" playBeep="true"></Record></Response>`
+
+	if expected != twiml {
+		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
+	}
+}
+
+func TestVoicemailTwiML_Custom(t *testing.T) {
+	orgID := "12345"
+	providerID := "p1"
+	practicePhoneNumber := "+14152222222"
+	md := &mockDirectoryService_Twilio{
+		entitiesList: []*directory.Entity{
+			{
+				ID:   orgID,
+				Type: directory.EntityType_ORGANIZATION,
+				Contacts: []*directory.Contact{
+					{
+						ContactType: directory.ContactType_PHONE,
+						Value:       practicePhoneNumber,
+						Provisioned: true,
+					},
+				},
+				Info: &directory.EntityInfo{
+					DisplayName: "Dewabi Corp",
+				},
+				Members: []*directory.Entity{
+					{
+						ID: providerID,
+						Contacts: []*directory.Contact{
+							{
+								ContactType: directory.ContactType_PHONE,
+								Value:       "+14151111111",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	params := &rawmsg.TwilioParams{
+		From:   "+14151111111",
+		To:     "+14152222222",
+		Digits: "2",
+	}
+
+	msettings := settingsmock.New(t)
+	defer msettings.Finish()
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyVoicemailOption,
+				Subkey: practicePhoneNumber,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key: excommsSettings.ConfigKeyVoicemailOption,
+				},
+				Type: settings.ConfigType_SINGLE_SELECT,
+				Value: &settings.Value_SingleSelect{
+					SingleSelect: &settings.SingleSelectValue{
+						Item: &settings.ItemValue{
+							ID:               excommsSettings.VoicemailOptionCustom,
+							FreeTextResponse: "https://custom.voicemail",
+						},
+					},
+				},
+			},
+		},
+	}, nil))
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key: excommsSettings.ConfigKeyTranscribeVoicemail,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key: excommsSettings.ConfigKeyTranscribeVoicemail,
+				},
+				Type: settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: true,
+					},
+				},
+			},
+		},
+	}, nil))
+
+	es := NewEventHandler(md, msettings, nil, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
+
+	twiml, err := voicemailTWIML(context.Background(), params, es.(*eventsHandler))
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := `<?xml version="1.0" encoding="UTF-8"?>
+<Response><Play>https://custom.voicemail</Play><Record action="/twilio/call/no_op" timeout="60" maxLength="3600" transcribeCallback="/twilio/call/process_voicemail" playBeep="true"></Record></Response>`
 
 	if expected != twiml {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -1069,6 +1231,33 @@ func TestVoicemailTwiML_NoTranscription(t *testing.T) {
 
 	msettings := settingsmock.New(t)
 	defer msettings.Finish()
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeyVoicemailOption,
+				Subkey: practicePhoneNumber,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key: excommsSettings.ConfigKeyVoicemailOption,
+				},
+				Type: settings.ConfigType_SINGLE_SELECT,
+				Value: &settings.Value_SingleSelect{
+					SingleSelect: &settings.SingleSelectValue{
+						Item: &settings.ItemValue{
+							ID: excommsSettings.VoicemailOptionDefault,
+						},
+					},
+				},
+			},
+		},
+	}, nil))
+
 	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
 		Keys: []*settings.ConfigKey{
 			{
@@ -1092,7 +1281,7 @@ func TestVoicemailTwiML_NoTranscription(t *testing.T) {
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, nil, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil)
+	es := NewEventHandler(md, msettings, nil, &mockSNS_Twilio{}, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
 
 	twiml, err := voicemailTWIML(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -1137,6 +1326,7 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 	orgID := "12345"
 	providerID := "p1"
 	providerPersonalPhone := "+14152222222"
+	practicePhoneNumber := "+17348465522"
 	md := &mockDirectoryService_Twilio{
 		entitiesList: []*directory.Entity{
 			{
@@ -1145,7 +1335,7 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 				Contacts: []*directory.Contact{
 					{
 						ContactType: directory.ContactType_PHONE,
-						Value:       "+17348465522",
+						Value:       practicePhoneNumber,
 						Provisioned: true,
 					},
 				},
@@ -1173,6 +1363,32 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
 		Keys: []*settings.ConfigKey{
 			{
+				Key:    excommsSettings.ConfigKeyVoicemailOption,
+				Subkey: practicePhoneNumber,
+			},
+		},
+		NodeID: orgID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Key: &settings.ConfigKey{
+					Key: excommsSettings.ConfigKeyVoicemailOption,
+				},
+				Type: settings.ConfigType_SINGLE_SELECT,
+				Value: &settings.Value_SingleSelect{
+					SingleSelect: &settings.SingleSelectValue{
+						Item: &settings.ItemValue{
+							ID: excommsSettings.VoicemailOptionDefault,
+						},
+					},
+				},
+			},
+		},
+	}, nil))
+
+	msettings.Expect(mock.NewExpectation(msettings.GetValues, &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
 				Key: excommsSettings.ConfigKeyTranscribeVoicemail,
 			},
 		},
@@ -1193,7 +1409,7 @@ func testIncomingCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioPara
 		},
 	}, nil))
 
-	es := NewEventHandler(md, msettings, nil, ms, clock.New(), nil, "https://test.com", "", "", "", nil)
+	es := NewEventHandler(md, msettings, nil, ms, clock.New(), nil, "https://test.com", "", "", "", nil, storage.NewTestStore(nil))
 
 	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -1221,7 +1437,7 @@ func testIncomingCallStatus(t *testing.T, incomingStatus rawmsg.TwilioParams_Cal
 		DialCallStatus: incomingStatus,
 	}
 
-	es := NewEventHandler(nil, nil, nil, ms, clock.New(), nil, "", "", "", "", nil)
+	es := NewEventHandler(nil, nil, nil, ms, clock.New(), nil, "", "", "", "", nil, storage.NewTestStore(nil))
 
 	twiml, err := processIncomingCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -1297,7 +1513,7 @@ func TestOutgoingCallStatus(t *testing.T) {
 
 	mproxynumberManager.Expect(mock.NewExpectation(mproxynumberManager.CallEnded, phone.Number(params.From), phone.Number(params.To)))
 
-	es := NewEventHandler(mdir, nil, md, ms, clock.New(), mproxynumberManager, "", "", "", "", nil)
+	es := NewEventHandler(mdir, nil, md, ms, clock.New(), mproxynumberManager, "", "", "", "", nil, storage.NewTestStore(nil))
 
 	twiml, err := processOutgoingCallStatus(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
@@ -1352,7 +1568,7 @@ func TestProcessVoicemail(t *testing.T) {
 		},
 	}))
 
-	es := NewEventHandler(nil, nil, md, ms, clock.New(), nil, "", "", "", "", nil)
+	es := NewEventHandler(nil, nil, md, ms, clock.New(), nil, "", "", "", "", nil, storage.NewTestStore(nil))
 
 	twiml, err := processVoicemail(context.Background(), params, es.(*eventsHandler))
 	if err != nil {
