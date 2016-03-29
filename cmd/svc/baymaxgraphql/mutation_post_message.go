@@ -60,7 +60,7 @@ var attachmentInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
 		Name: "AttachmentInput",
 		Fields: graphql.InputObjectConfigFieldMap{
-			"title":          &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+			"title":          &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"mediaID":        &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"attachmentType": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(attachmentInputTypeEnum)},
 			"contentType":    &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},

@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/test"
@@ -20,7 +20,7 @@ func TestModifySetting_Boolean(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: "account_12345",
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -130,7 +130,7 @@ func TestModifySetting_StringList(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: "account_12345",
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -243,7 +243,7 @@ func TestModifySetting_StringList_InvalidInput(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: "account_12345",
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -331,7 +331,7 @@ func TestModifySetting_MultiSelect(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: "account_12345",
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -473,7 +473,7 @@ func TestModifySetting_SingleSelect(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: "account_12345",
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -605,7 +605,7 @@ func TestModifySetting_InvalidOwner(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: "account_12345",
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)

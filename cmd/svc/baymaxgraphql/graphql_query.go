@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/conc"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/graphql"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -56,7 +57,7 @@ var queryType = graphql.NewObject(
 
 					})
 
-					return &models.Me{Account: acc, ClientEncryptionKey: cek}, nil
+					return &models.Me{Account: transformAccountToResponse(acc), ClientEncryptionKey: cek}, nil
 				},
 			},
 			"node": &graphql.Field{
@@ -174,7 +175,7 @@ var queryType = graphql.NewObject(
 )
 
 // TODO: This double read is inefficent/incorrect in the sense that we need the org ID to get the correct entity. We will use this for now until we can encode the organization ID into the thread ID
-func lookupThreadWithReadStatus(ctx context.Context, ram raccess.ResourceAccessor, acc *models.Account, id string) (*models.Thread, error) {
+func lookupThreadWithReadStatus(ctx context.Context, ram raccess.ResourceAccessor, acc *auth.Account, id string) (*models.Thread, error) {
 	th, err := lookupThread(ctx, ram, id, "")
 	if grpc.Code(err) == codes.NotFound {
 		return nil, errors.ErrNotFound(ctx, id)

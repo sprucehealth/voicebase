@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	excommssettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/settings"
@@ -22,7 +22,7 @@ func TestProvisionPhone(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: "account:12345",
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -154,7 +154,7 @@ func TestProvisionPhone_Unavailable(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: "account:12345",
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)

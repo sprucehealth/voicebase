@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/test"
 	"golang.org/x/net/context"
@@ -19,7 +19,7 @@ func TestAssociateInviteMutation(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	var acc *models.Account
+	var acc *auth.Account
 	ctx = gqlctx.WithAccount(ctx, acc)
 	sh := &device.SpruceHeaders{DeviceID: "deviceID"}
 	ctx = gqlctx.WithSpruceHeaders(ctx, sh)
@@ -72,7 +72,7 @@ func TestAssociateInviteMutation_NotFound(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	var acc *models.Account
+	var acc *auth.Account
 	ctx = gqlctx.WithAccount(ctx, acc)
 	sh := &device.SpruceHeaders{DeviceID: "deviceID"}
 	ctx = gqlctx.WithSpruceHeaders(ctx, sh)

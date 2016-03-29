@@ -7,7 +7,6 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -23,7 +22,7 @@ func TestVerifyPhoneNumberForAccountCreationMutation_Invite(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	var acc *models.Account
+	var acc *auth.Account
 	ctx = gqlctx.WithAccount(ctx, acc)
 	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
 		DeviceID: "DevID",
@@ -157,7 +156,7 @@ func TestVerifyPhoneNumberForAccountCreationMutation_SprucePhoneNumber(t *testin
 	defer g.finish()
 
 	ctx := context.Background()
-	var acc *models.Account
+	var acc *auth.Account
 	ctx = gqlctx.WithAccount(ctx, acc)
 	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{
 		DeviceID: "DevID",
