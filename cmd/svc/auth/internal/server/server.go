@@ -117,12 +117,8 @@ func (s *server) AuthenticateLogin(ctx context.Context, rd *auth.AuthenticateLog
 	}
 
 	return &auth.AuthenticateLoginResponse{
-		Token: authToken,
-		Account: &auth.Account{
-			ID:        account.ID.String(),
-			FirstName: account.FirstName,
-			LastName:  account.LastName,
-		},
+		Token:                authToken,
+		Account:              accountAsResponse(account),
 		TwoFactorRequired:    accountRequiresTwoFactor,
 		TwoFactorPhoneNumber: twoFactorPhone,
 	}, nil
@@ -197,12 +193,8 @@ func (s *server) AuthenticateLoginWithCode(ctx context.Context, rd *auth.Authent
 	}
 
 	return &auth.AuthenticateLoginWithCodeResponse{
-		Token: authToken,
-		Account: &auth.Account{
-			ID:        acc.ID.String(),
-			FirstName: acc.FirstName,
-			LastName:  acc.LastName,
-		},
+		Token:   authToken,
+		Account: accountAsResponse(acc),
 	}, nil
 }
 
@@ -283,11 +275,7 @@ func (s *server) CheckAuthentication(ctx context.Context, rd *auth.CheckAuthenti
 	return &auth.CheckAuthenticationResponse{
 		IsAuthenticated: true,
 		Token:           authToken,
-		Account: &auth.Account{
-			ID:        account.ID.String(),
-			FirstName: account.FirstName,
-			LastName:  account.LastName,
-		},
+		Account:         accountAsResponse(account),
 	}, nil
 }
 
@@ -330,11 +318,7 @@ func (s *server) CheckVerificationCode(ctx context.Context, rd *auth.CheckVerifi
 		if err != nil {
 			return nil, grpcIErrorf("Failed to fetch account record for ACCOUNT_2FA: %s", err)
 		}
-		account = &auth.Account{
-			ID:        acc.ID.String(),
-			FirstName: acc.FirstName,
-			LastName:  acc.LastName,
-		}
+		account = accountAsResponse(acc)
 	}
 
 	return &auth.CheckVerificationCodeResponse{
@@ -512,12 +496,8 @@ func (s *server) CreateAccount(ctx context.Context, rd *auth.CreateAccountReques
 	}
 
 	return &auth.CreateAccountResponse{
-		Token: authToken,
-		Account: &auth.Account{
-			ID:        account.ID.String(),
-			FirstName: account.FirstName,
-			LastName:  account.LastName,
-		},
+		Token:   authToken,
+		Account: accountAsResponse(account),
 	}, nil
 }
 
@@ -580,11 +560,7 @@ func (s *server) GetAccount(ctx context.Context, rd *auth.GetAccountRequest) (*a
 		return nil, grpcErrorf(codes.NotFound, "Account with ID %s not found", rd.AccountID)
 	}
 	return &auth.GetAccountResponse{
-		Account: &auth.Account{
-			ID:        account.ID.String(),
-			FirstName: account.FirstName,
-			LastName:  account.LastName,
-		},
+		Account: accountAsResponse(account),
 	}, nil
 }
 
@@ -694,11 +670,7 @@ func (s *server) BlockAccount(ctx context.Context, req *auth.BlockAccountRequest
 	} else if account.Status == dal.AccountStatusBlocked {
 		// work already done
 		return &auth.BlockAccountResponse{
-			Account: &auth.Account{
-				ID:        account.ID.String(),
-				FirstName: account.FirstName,
-				LastName:  account.LastName,
-			},
+			Account: accountAsResponse(account),
 		}, nil
 	}
 
@@ -719,11 +691,7 @@ func (s *server) BlockAccount(ctx context.Context, req *auth.BlockAccountRequest
 	}
 
 	return &auth.BlockAccountResponse{
-		Account: &auth.Account{
-			ID:        account.ID.String(),
-			FirstName: account.FirstName,
-			LastName:  account.LastName,
-		},
+		Account: accountAsResponse(account),
 	}, nil
 }
 
