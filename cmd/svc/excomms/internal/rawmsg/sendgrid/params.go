@@ -80,7 +80,7 @@ func ParamsFromRequest(r *http.Request, store storage.Store) (*rawmsg.SendGridIn
 				"X-Amz-Meta-Original-Name": sgi.Attachments[i].Filename,
 			})
 			if err != nil {
-				return nil, nil, errors.Trace(err)
+				return nil, nil, errors.Trace(fmt.Errorf("Unable to store file to S3. ID: %s, size: %d, type: %s", id, size, sgi.Attachments[i].Type, err.Error()))
 			}
 			medias[id] = &models.Media{
 				ID:   id,
