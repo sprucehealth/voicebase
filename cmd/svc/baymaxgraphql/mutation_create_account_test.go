@@ -33,6 +33,7 @@ func TestCreateAccountMutation(t *testing.T) {
 		Email:       "someone@somewhere.com",
 		PhoneNumber: "+14155551212",
 		Password:    "password",
+		Type:        auth.AccountType_PROVIDER,
 	}).WithReturns(&auth.CreateAccountResponse{
 		Account: &auth.Account{
 			ID: "a_1",
@@ -259,6 +260,7 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 		Email:       "someone@somewhere.com",
 		PhoneNumber: "+14155551212",
 		Password:    "password",
+		Type:        auth.AccountType_PROVIDER,
 	}).WithReturns(&auth.CreateAccountResponse{
 		Account: &auth.Account{
 			ID: "a_1",
