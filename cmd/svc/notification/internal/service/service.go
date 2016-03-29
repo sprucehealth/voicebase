@@ -215,8 +215,12 @@ func (s *service) processPushNotification(n *notification.Notification) error {
 
 	// Map our notification information back to our new external id info
 	for _, eID := range externalIDsResp.ExternalIDs {
-		n.ShortMessages[eID.ID] = n.ShortMessages[eID.EntityID]
-		n.UnreadCounts[eID.ID] = n.UnreadCounts[eID.EntityID]
+		if n.ShortMessages != nil {
+			n.ShortMessages[eID.ID] = n.ShortMessages[eID.EntityID]
+		}
+		if n.UnreadCounts != nil {
+			n.UnreadCounts[eID.ID] = n.UnreadCounts[eID.EntityID]
+		}
 	}
 
 	accountIDsToNotify, err := s.filterNodesWithNotificationsDisabled(accountIDsFromExternalIDs(externalIDsResp.ExternalIDs))
