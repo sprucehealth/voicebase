@@ -239,6 +239,7 @@ var callEntityMutation = &graphql.Field{
 			ToPhoneNumber:   destinationPhoneNumber,
 			CallerEntityID:  callerEnt.ID,
 			OrganizationID:  org.ID,
+			DeviceID:        headers.DeviceID,
 		}
 		switch input["type"].(string) {
 		case callEntityTypeConnectParties:

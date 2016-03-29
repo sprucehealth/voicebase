@@ -449,7 +449,7 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 			return nil, grpcErrorf(codes.InvalidArgument, "%s is not a valid phone number", in.FromPhoneNumber)
 		}
 	} else {
-		currentOriginatingPhoneNumber, err := e.dal.CurrentOriginatingNumber(in.CallerEntityID)
+		currentOriginatingPhoneNumber, err := e.dal.CurrentOriginatingNumber(in.CallerEntityID, in.DeviceID)
 		if err != nil {
 			if errors.Cause(err) != dal.ErrOriginatingNumberNotFound {
 				return nil, grpcErrorf(codes.Internal, err.Error())
@@ -476,7 +476,7 @@ func (e *excommsService) InitiatePhoneCall(ctx context.Context, in *excomms.Init
 
 	// track originating phone number
 	conc.Go(func() {
-		if err := e.dal.SetCurrentOriginatingNumber(originatingPhoneNumber, in.CallerEntityID); err != nil {
+		if err := e.dal.SetCurrentOriginatingNumber(originatingPhoneNumber, in.CallerEntityID, in.DeviceID); err != nil {
 			golog.Errorf(err.Error())
 		}
 	})

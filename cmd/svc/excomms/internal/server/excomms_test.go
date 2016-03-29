@@ -730,7 +730,7 @@ func TestInitiatePhoneCall_OriginatingNumberSpecified(t *testing.T) {
 	mdal := dalmock.New(t)
 	defer mdal.Finish()
 
-	mdal.Expect(mock.NewExpectation(mdal.SetCurrentOriginatingNumber, originatingNumber, callerEntityID))
+	mdal.Expect(mock.NewExpectation(mdal.SetCurrentOriginatingNumber, originatingNumber, callerEntityID, "deviceID"))
 
 	mproxynumberManager := proxynumber.NewMockManager(t)
 	defer mproxynumberManager.Finish()
@@ -750,6 +750,7 @@ func TestInitiatePhoneCall_OriginatingNumberSpecified(t *testing.T) {
 		ToPhoneNumber:      destinationPhoneNumber.String(),
 		OrganizationID:     "1234",
 		CallerEntityID:     callerEntityID,
+		DeviceID:           "deviceID",
 	})
 	test.OK(t, err)
 	test.Equals(t, proxyPhoneNumber.String(), res.ProxyPhoneNumber)
@@ -845,9 +846,9 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_ButExists(t *testing.T)
 	mdal := dalmock.New(t)
 	defer mdal.Finish()
 
-	mdal.Expect(mock.NewExpectation(mdal.CurrentOriginatingNumber, callerEntityID).WithReturns(originatingNumber, nil))
+	mdal.Expect(mock.NewExpectation(mdal.CurrentOriginatingNumber, callerEntityID, "deviceID").WithReturns(originatingNumber, nil))
 
-	mdal.Expect(mock.NewExpectation(mdal.SetCurrentOriginatingNumber, originatingNumber, callerEntityID))
+	mdal.Expect(mock.NewExpectation(mdal.SetCurrentOriginatingNumber, originatingNumber, callerEntityID, "deviceID"))
 
 	mproxynumberManager := proxynumber.NewMockManager(t)
 	defer mproxynumberManager.Finish()
@@ -866,6 +867,7 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_ButExists(t *testing.T)
 		ToPhoneNumber:      destinationPhoneNumber.String(),
 		OrganizationID:     "1234",
 		CallerEntityID:     callerEntityID,
+		DeviceID:           "deviceID",
 	})
 	test.OK(t, err)
 	test.Equals(t, proxyPhoneNumber.String(), res.ProxyPhoneNumber)
@@ -967,9 +969,9 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_DoesNotExist(t *testing
 	mdal := dalmock.New(t)
 	defer mdal.Finish()
 
-	mdal.Expect(mock.NewExpectation(mdal.CurrentOriginatingNumber, callerEntityID).WithReturns(phone.Number(""), dal.ErrOriginatingNumberNotFound))
+	mdal.Expect(mock.NewExpectation(mdal.CurrentOriginatingNumber, callerEntityID, "deviceID").WithReturns(phone.Number(""), dal.ErrOriginatingNumberNotFound))
 
-	mdal.Expect(mock.NewExpectation(mdal.SetCurrentOriginatingNumber, originatingNumber, callerEntityID))
+	mdal.Expect(mock.NewExpectation(mdal.SetCurrentOriginatingNumber, originatingNumber, callerEntityID, "deviceID"))
 
 	mproxynumberManager := proxynumber.NewMockManager(t)
 	defer mproxynumberManager.Finish()
@@ -988,6 +990,7 @@ func TestInitiatePhoneCall_OriginatingNumberNotSpecified_DoesNotExist(t *testing
 		ToPhoneNumber:      destinationPhoneNumber.String(),
 		OrganizationID:     "1234",
 		CallerEntityID:     callerEntityID,
+		DeviceID:           "deviceID",
 	})
 	test.OK(t, err)
 	test.Equals(t, proxyPhoneNumber.String(), res.ProxyPhoneNumber)

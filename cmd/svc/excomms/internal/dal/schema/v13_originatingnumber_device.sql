@@ -1,0 +1,1 @@
+ALTER TABLE originating_phone_number ADD COLUMN device_id VARCHAR(128);

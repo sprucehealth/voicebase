@@ -88,10 +88,10 @@ type DAL interface {
 	ActiveProxyPhoneNumberReservation(originatingPhoneNumber phone.Number, destinationPhoneNumber, proxyPhoneNumber *phone.Number) (*models.ProxyPhoneNumberReservation, error)
 
 	// SetCurrentOriginatingNumber sets the provided originaing number for the entityID.
-	SetCurrentOriginatingNumber(phoneNumber phone.Number, entityID string) error
+	SetCurrentOriginatingNumber(phoneNumber phone.Number, entityID, deviceID string) error
 
 	// OriginatingNumber returns the current originating number for the given entityID.
-	CurrentOriginatingNumber(entityID string) (phone.Number, error)
+	CurrentOriginatingNumber(entityID, deviceID string) (phone.Number, error)
 
 	// StoreIncomingRawMessage persists the message in the database and returns an ID
 	// to identify the message by.
@@ -454,17 +454,17 @@ func (d *dal) UpdateActiveProxyPhoneNumberReservation(originatingPhoneNumber pho
 	return rowsAffected, nil
 }
 
-func (d *dal) SetCurrentOriginatingNumber(phoneNumber phone.Number, entityID string) error {
-	_, err := d.db.Exec(`REPLACE INTO originating_phone_number (phone_number, entity_id) VALUES (?, ?)`, phoneNumber, entityID)
+func (d *dal) SetCurrentOriginatingNumber(phoneNumber phone.Number, entityID, deviceID string) error {
+	_, err := d.db.Exec(`REPLACE INTO originating_phone_number (phone_number, entity_id, device_id) VALUES (?, ?, ?)`, phoneNumber, entityID, deviceID)
 	return errors.Trace(err)
 }
 
-func (d *dal) CurrentOriginatingNumber(entityID string) (phone.Number, error) {
+func (d *dal) CurrentOriginatingNumber(entityID, deviceID string) (phone.Number, error) {
 	var phoneNumber phone.Number
 	err := d.db.QueryRow(`
 		SELECT phone_number 
 		FROM originating_phone_number 
-		WHERE entity_id = ?`, entityID).Scan(&phoneNumber)
+		WHERE entity_id = ? AND device_id = ?`, entityID, deviceID).Scan(&phoneNumber)
 	if err == sql.ErrNoRows {
 		return phone.Number(""), errors.Trace(ErrOriginatingNumberNotFound)
 	}

@@ -135,6 +135,7 @@ message InitiatePhoneCallRequest {
 	string to_phone_number = 3;
 	string organization_id = 4 [(gogoproto.customname) = "OrganizationID"];
 	string caller_entity_id = 5 [(gogoproto.customname) = "CallerEntityID"];
+	string device_id = 6 [(gogoproto.customname) = "DeviceID"];
 }
 
 message InitiatePhoneCallResponse {

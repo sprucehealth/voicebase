@@ -554,6 +554,7 @@ type InitiatePhoneCallRequest struct {
 	ToPhoneNumber      string                                      `protobuf:"bytes,3,opt,name=to_phone_number,proto3" json:"to_phone_number,omitempty"`
 	OrganizationID     string                                      `protobuf:"bytes,4,opt,name=organization_id,proto3" json:"organization_id,omitempty"`
 	CallerEntityID     string                                      `protobuf:"bytes,5,opt,name=caller_entity_id,proto3" json:"caller_entity_id,omitempty"`
+	DeviceID           string                                      `protobuf:"bytes,6,opt,name=device_id,proto3" json:"device_id,omitempty"`
 }
 
 func (m *InitiatePhoneCallRequest) Reset()      { *m = InitiatePhoneCallRequest{} }
@@ -1343,6 +1344,9 @@ func (this *InitiatePhoneCallRequest) Equal(that interface{}) bool {
 	if this.CallerEntityID != that1.CallerEntityID {
 		return false
 	}
+	if this.DeviceID != that1.DeviceID {
+		return false
+	}
 	return true
 }
 func (this *InitiatePhoneCallResponse) Equal(that interface{}) bool {
@@ -1869,13 +1873,14 @@ func (this *InitiatePhoneCallRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 9)
+	s := make([]string, 0, 10)
 	s = append(s, "&excomms.InitiatePhoneCallRequest{")
 	s = append(s, "CallInitiationType: "+fmt.Sprintf("%#v", this.CallInitiationType)+",\n")
 	s = append(s, "FromPhoneNumber: "+fmt.Sprintf("%#v", this.FromPhoneNumber)+",\n")
 	s = append(s, "ToPhoneNumber: "+fmt.Sprintf("%#v", this.ToPhoneNumber)+",\n")
 	s = append(s, "OrganizationID: "+fmt.Sprintf("%#v", this.OrganizationID)+",\n")
 	s = append(s, "CallerEntityID: "+fmt.Sprintf("%#v", this.CallerEntityID)+",\n")
+	s = append(s, "DeviceID: "+fmt.Sprintf("%#v", this.DeviceID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2762,6 +2767,12 @@ func (m *InitiatePhoneCallRequest) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(len(m.CallerEntityID)))
 		i += copy(data[i:], m.CallerEntityID)
 	}
+	if len(m.DeviceID) > 0 {
+		data[i] = 0x32
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.DeviceID)))
+		i += copy(data[i:], m.DeviceID)
+	}
 	return i, nil
 }
 
@@ -3362,6 +3373,10 @@ func (m *InitiatePhoneCallRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
 	}
+	l = len(m.DeviceID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
 	return n
 }
 
@@ -3714,6 +3729,7 @@ func (this *InitiatePhoneCallRequest) String() string {
 		`ToPhoneNumber:` + fmt.Sprintf("%v", this.ToPhoneNumber) + `,`,
 		`OrganizationID:` + fmt.Sprintf("%v", this.OrganizationID) + `,`,
 		`CallerEntityID:` + fmt.Sprintf("%v", this.CallerEntityID) + `,`,
+		`DeviceID:` + fmt.Sprintf("%v", this.DeviceID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5578,6 +5594,35 @@ func (m *InitiatePhoneCallRequest) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.CallerEntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DeviceID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DeviceID = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

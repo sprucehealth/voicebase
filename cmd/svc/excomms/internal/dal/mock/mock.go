@@ -143,8 +143,8 @@ func (m *mockDAL) ActiveProxyPhoneNumberReservation(originatingPhoneNumber phone
 	return rets[0].(*models.ProxyPhoneNumberReservation), mock.SafeError(rets[1])
 }
 
-func (m *mockDAL) SetCurrentOriginatingNumber(phoneNumber phone.Number, entityID string) error {
-	rets := m.Record(phoneNumber, entityID)
+func (m *mockDAL) SetCurrentOriginatingNumber(phoneNumber phone.Number, entityID, deviceID string) error {
+	rets := m.Record(phoneNumber, entityID, deviceID)
 	if len(rets) == 0 {
 		return nil
 	}
@@ -152,8 +152,8 @@ func (m *mockDAL) SetCurrentOriginatingNumber(phoneNumber phone.Number, entityID
 	return mock.SafeError(rets[0])
 }
 
-func (m *mockDAL) CurrentOriginatingNumber(entityID string) (phone.Number, error) {
-	rets := m.Record(entityID)
+func (m *mockDAL) CurrentOriginatingNumber(entityID, deviceID string) (phone.Number, error) {
+	rets := m.Record(entityID, deviceID)
 	if len(rets) == 0 {
 		return phone.Number(""), nil
 	}
