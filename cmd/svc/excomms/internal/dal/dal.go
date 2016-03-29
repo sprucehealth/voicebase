@@ -552,11 +552,12 @@ func (d *dal) StoreMedia(media []*models.Media) error {
 		}
 
 		multiInsert.Append(m.ID, m.Type, m.URL, m.Name)
+		golog.Debugf("Inserting media %+v", m)
 	}
 
 	_, err := d.db.Exec(`INSERT INTO media (id, type, url, name) VALUES `+multiInsert.Query(), multiInsert.Values()...)
 	if err != nil {
-		return errors.Trace(fmt.Errorf("Unable to insert media (%+v): %s", media, err))
+		return errors.Trace(err)
 	}
 
 	return nil
