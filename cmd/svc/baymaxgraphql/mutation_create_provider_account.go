@@ -104,6 +104,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	req := &auth.CreateAccountRequest{
 		Email:    input["email"].(string),
 		Password: input["password"].(string),
+		Type:     auth.AccountType_PROVIDER,
 	}
 	req.Email = strings.TrimSpace(req.Email)
 	if !validate.Email(req.Email) {
