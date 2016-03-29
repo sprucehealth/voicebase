@@ -569,7 +569,7 @@ func (d *dal) InsertAccount(model *Account) (AccountID, error) {
 	_, err := d.db.Exec(
 		`INSERT INTO account
           (first_name, last_name, id, primary_account_email_id, primary_account_phone_id, password, status, type)
-          VALUES (?, ?, ?, ?, ?, ?, ?)`, model.FirstName, model.LastName, model.ID, model.PrimaryAccountEmailID, model.PrimaryAccountPhoneID, model.Password, model.Status.String(), model.Type.String())
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, model.FirstName, model.LastName, model.ID, model.PrimaryAccountEmailID, model.PrimaryAccountPhoneID, model.Password, model.Status.String(), model.Type.String())
 	if err != nil {
 		return EmptyAccountID(), errors.Trace(err)
 	}
