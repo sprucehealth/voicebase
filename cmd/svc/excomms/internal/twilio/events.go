@@ -2,6 +2,7 @@ package twilio
 
 import (
 	"fmt"
+	"html"
 	"strings"
 	"time"
 
@@ -576,7 +577,7 @@ func voicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, eh *events
 	var firstVerb interface{}
 	if len(customVoicemailURL) > 0 {
 		firstVerb = &twiml.Play{
-			Text: customVoicemailURL,
+			Text: html.EscapeString(customVoicemailURL),
 		}
 	} else {
 		firstVerb = &twiml.Say{
