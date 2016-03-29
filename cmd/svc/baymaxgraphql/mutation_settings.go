@@ -192,7 +192,7 @@ var modifySettingMutation = &graphql.Field{
 		for _, po := range config.PossibleOwners {
 			switch po {
 			case settings.OwnerType_ACCOUNT:
-				if _, ok := node.(*models.Account); ok {
+				if _, ok := node.(*models.ProviderAccount); ok {
 					validOwner = true
 					break
 				}

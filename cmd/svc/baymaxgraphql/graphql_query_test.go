@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	ramock "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess/mock"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/backend/test"
@@ -20,7 +21,7 @@ func TestNodeQuery(t *testing.T) {
 	nodeField := queryType.Fields()["node"]
 
 	ra := ramock.New(t)
-	acc := &models.Account{ID: "account_12345"}
+	acc := &auth.Account{ID: "account_12345"}
 	ctx := context.Background()
 	ctx = gqlctx.WithAccount(ctx, acc)
 	p := graphql.ResolveParams{
@@ -245,7 +246,7 @@ func TestSubdomainQuery_Unavailable(t *testing.T) {
 	subdomainField := queryType.Fields()["subdomain"]
 
 	ra := ramock.New(t)
-	acc := &models.Account{ID: "account:12345"}
+	acc := &auth.Account{ID: "account:12345"}
 	ctx := context.Background()
 	ctx = gqlctx.WithAccount(ctx, acc)
 	p := graphql.ResolveParams{
@@ -280,7 +281,7 @@ func TestSubdomainQuery_Available(t *testing.T) {
 	subdomainField := queryType.Fields()["subdomain"]
 
 	ra := ramock.New(t)
-	acc := &models.Account{ID: "account:12345"}
+	acc := &auth.Account{ID: "account:12345"}
 	ctx := context.Background()
 	ctx = gqlctx.WithAccount(ctx, acc)
 	p := graphql.ResolveParams{

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -18,7 +17,7 @@ func TestAuthenticateMutation(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	var acc *models.Account
+	var acc *auth.Account
 	ctx = gqlctx.WithAccount(ctx, acc)
 
 	email := "someone@example.com"
@@ -69,7 +68,7 @@ func TestUnauthenticateMutation(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &models.Account{ID: "a_1"}
+	acc := &auth.Account{ID: "a_1"}
 	ctx = gqlctx.WithAccount(ctx, acc)
 	ctx = gqlctx.WithAuthToken(ctx, "token")
 	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{DeviceID: "deviceID"})
@@ -106,7 +105,7 @@ func TestUnauthenticateMutationNoHeaders(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &models.Account{ID: "a_1"}
+	acc := &auth.Account{ID: "a_1"}
 	ctx = gqlctx.WithAccount(ctx, acc)
 	ctx = gqlctx.WithAuthToken(ctx, "token")
 
@@ -136,7 +135,7 @@ func TestUnauthenticateMutationNoDeviceID(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &models.Account{ID: "a_1"}
+	acc := &auth.Account{ID: "a_1"}
 	ctx = gqlctx.WithAccount(ctx, acc)
 	ctx = gqlctx.WithAuthToken(ctx, "token")
 	ctx = gqlctx.WithSpruceHeaders(ctx, &device.SpruceHeaders{DeviceID: ""})

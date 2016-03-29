@@ -1,8 +1,8 @@
 package gqlctx
 
 import (
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/device"
+	"github.com/sprucehealth/backend/svc/auth"
 	"golang.org/x/net/context"
 )
 
@@ -53,28 +53,28 @@ func RequestID(ctx context.Context) uint64 {
 }
 
 // WithAccount attaches the provided account onto a copy of the provided context
-func WithAccount(ctx context.Context, acc *models.Account) context.Context {
+func WithAccount(ctx context.Context, acc *auth.Account) context.Context {
 	// Never set a nil account so that we can update it in place. It's kind
 	// of gross, but can't think of a better way to deal with authenticate
 	// needing to update the account at the moment. Ideally the GraphQL pkg would
 	// have a way to update context as it went through the executor.. but alas..
 	if acc == nil {
-		acc = &models.Account{}
+		acc = &auth.Account{}
 	}
 	return context.WithValue(ctx, ctxAccount, acc)
 }
 
 // InPlaceWithAccount attaches the provided account onto the provided context
-func InPlaceWithAccount(ctx context.Context, acc *models.Account) {
+func InPlaceWithAccount(ctx context.Context, acc *auth.Account) {
 	if acc == nil {
-		acc = &models.Account{}
+		acc = &auth.Account{}
 	}
-	*ctx.Value(ctxAccount).(*models.Account) = *acc
+	*ctx.Value(ctxAccount).(*auth.Account) = *acc
 }
 
 // Account returns the account from the context which may be nil
-func Account(ctx context.Context) *models.Account {
-	acc, _ := ctx.Value(ctxAccount).(*models.Account)
+func Account(ctx context.Context) *auth.Account {
+	acc, _ := ctx.Value(ctxAccount).(*auth.Account)
 	if acc != nil && acc.ID == "" {
 		return nil
 	}

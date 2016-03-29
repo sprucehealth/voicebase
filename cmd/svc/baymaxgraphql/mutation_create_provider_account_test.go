@@ -15,7 +15,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func TestCreateAccountMutation(t *testing.T) {
+func TestCreateProviderAccountMutation(t *testing.T) {
 	g := newGQL(t)
 	defer g.finish()
 
@@ -141,7 +141,7 @@ func TestCreateAccountMutation(t *testing.T) {
 
 	res := g.query(ctx, `
 		mutation _ {
-			createAccount(input: {
+			createProviderAccount(input: {
 				clientMutationId: "a1b2c3",
 				email: "someone@somewhere.com",
 				password: "password",
@@ -163,7 +163,7 @@ func TestCreateAccountMutation(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, `{
 	"data": {
-		"createAccount": {
+		"createProviderAccount": {
 			"account": {
 				"id": "a_1"
 			},
@@ -175,7 +175,7 @@ func TestCreateAccountMutation(t *testing.T) {
 }`, string(b))
 }
 
-func TestCreateAccountMutation_InvalidName(t *testing.T) {
+func TestCreateProviderAccountMutation_InvalidName(t *testing.T) {
 	g := newGQL(t)
 	defer g.finish()
 
@@ -185,7 +185,7 @@ func TestCreateAccountMutation_InvalidName(t *testing.T) {
 
 	res := g.query(ctx, `
 		mutation _ ($firstName: String!) {
-			createAccount(input: {
+			createProviderAccount(input: {
 				clientMutationId: "a1b2c3",
 				email: "someone@somewhere.com",
 				password: "password",
@@ -207,7 +207,7 @@ func TestCreateAccountMutation_InvalidName(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, `{
 	"data": {
-		"createAccount": {
+		"createProviderAccount": {
 			"clientMutationId": "a1b2c3",
 			"errorCode": "INVALID_FIRST_NAME",
 			"success": false
@@ -216,7 +216,7 @@ func TestCreateAccountMutation_InvalidName(t *testing.T) {
 }`, string(b))
 }
 
-func TestCreateAccountMutation_InviteColleague(t *testing.T) {
+func TestCreateProviderAccountMutation_InviteColleague(t *testing.T) {
 	g := newGQL(t)
 	defer g.finish()
 
@@ -313,7 +313,7 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 
 	res := g.query(ctx, `
 		mutation _ {
-			createAccount(input: {
+			createProviderAccount(input: {
 				clientMutationId: "a1b2c3",
 				email: "someone@somewhere.com",
 				password: "password",
@@ -335,7 +335,7 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 	test.OK(t, err)
 	test.Equals(t, `{
 	"data": {
-		"createAccount": {
+		"createProviderAccount": {
 			"account": {
 				"id": "a_1"
 			},

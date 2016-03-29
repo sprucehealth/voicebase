@@ -217,11 +217,11 @@ const (
 )
 
 type checkVerificationCodeOutput struct {
-	ClientMutationID string          `json:"clientMutationId,omitempty"`
-	Success          bool            `json:"success"`
-	ErrorCode        string          `json:"errorCode,omitempty"`
-	ErrorMessage     string          `json:"errorMessage,omitempty"`
-	Account          *models.Account `json:"account"`
+	ClientMutationID string                  `json:"clientMutationId,omitempty"`
+	Success          bool                    `json:"success"`
+	ErrorCode        string                  `json:"errorCode,omitempty"`
+	ErrorMessage     string                  `json:"errorMessage,omitempty"`
+	Account          *models.ProviderAccount `json:"account"`
 }
 
 var checkVerificationCodeErrorCodeEnum = graphql.NewEnum(
@@ -261,7 +261,7 @@ var checkVerificationCodeOutputType = graphql.NewObject(
 			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"errorCode":        &graphql.Field{Type: checkVerificationCodeErrorCodeEnum},
 			"errorMessage":     &graphql.Field{Type: graphql.String},
-			"account":          &graphql.Field{Type: accountType},
+			"account":          &graphql.Field{Type: accountInterfaceType},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*checkVerificationCodeOutput)
@@ -305,19 +305,10 @@ var checkVerificationCodeMutation = &graphql.Field{
 			return nil, errors.New("Failed to check verification code")
 		}
 
-		var acc *models.Account
-		if resp.Account != nil {
-			var err error
-			acc, err = transformAccountToResponse(resp.Account)
-			if err != nil {
-				return nil, errors.InternalError(ctx, err)
-			}
-		}
-
 		return &checkVerificationCodeOutput{
 			ClientMutationID: mutationID,
 			Success:          true,
-			Account:          acc,
+			Account:          transformAccountToResponse(resp.Account),
 		}, nil
 	},
 }

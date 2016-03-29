@@ -57,8 +57,8 @@ func init() {
 	// This is done here rather than at declaration time to avoid an unresolvable compile time decleration loop
 	nodeInterfaceType.ResolveType = func(value interface{}, info graphql.ResolveInfo) *graphql.Object {
 		switch value.(type) {
-		case *models.Account:
-			return accountType
+		case *models.ProviderAccount:
+			return providerAccountType
 		case *models.Entity:
 			return entityType
 		case *models.Organization:
@@ -177,7 +177,7 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 	sHeaders := device.ExtractSpruceHeaders(w, r)
 	remoteAddr := remoteAddrFromRequest(r, *flagBehindProxy)
 
-	var acc *models.Account
+	var acc *auth.Account
 	if c, err := r.Cookie(authTokenCookieName); err == nil && c.Value != "" {
 		res, err := h.auth.CheckAuthentication(ctx,
 			&auth.CheckAuthenticationRequest{
@@ -195,9 +195,7 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 				}
 				setAuthCookie(w, r.Host, res.Token.Value, expires)
 			}
-			acc = &models.Account{
-				ID: res.Account.ID,
-			}
+			acc = res.Account
 			ctx = gqlctx.WithClientEncryptionKey(ctx, res.Token.ClientEncryptionKey)
 			ctx = gqlctx.WithAuthToken(ctx, c.Value)
 		} else {

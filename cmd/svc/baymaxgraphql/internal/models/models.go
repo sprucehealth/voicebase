@@ -36,11 +36,12 @@ const (
 )
 
 type Me struct {
-	Account             *Account `json:"account"`
-	ClientEncryptionKey string   `json:"clientEncryptionKey"`
+	Account             *ProviderAccount `json:"account"`
+	ClientEncryptionKey string           `json:"clientEncryptionKey"`
 }
 
-type Account struct {
+// ProviderAccount represents the information associated with a provider's account
+type ProviderAccount struct {
 	ID string `json:"id"`
 }
 

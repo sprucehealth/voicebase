@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/backend/test"
@@ -24,7 +24,7 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: "a_1",
 	}
 	organizationID := "e_org"
@@ -137,7 +137,7 @@ func TestCreateThreadMutation_DifferentOrg(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: "a_1",
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -273,7 +273,7 @@ func TestCreateThreadMutation_ExistingThreads_DifferentName(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: "a_1",
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -417,7 +417,7 @@ func TestCreateThreadMutation_ExistingThreads_SameName(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: "a_1",
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)

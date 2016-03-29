@@ -11,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/apiservice"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	imedia "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/media"
@@ -48,7 +47,7 @@ func (m *mediaHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *
 	}
 }
 
-func (m *mediaHandler) checkAuth(ctx context.Context, r *http.Request) (*models.Account, int) {
+func (m *mediaHandler) checkAuth(ctx context.Context, r *http.Request) (*auth.Account, int) {
 	if c, err := r.Cookie(authTokenCookieName); err == nil && c.Value != "" {
 		res, err := m.auth.CheckAuthentication(ctx,
 			&auth.CheckAuthenticationRequest{
@@ -61,9 +60,7 @@ func (m *mediaHandler) checkAuth(ctx context.Context, r *http.Request) (*models.
 		} else if !res.IsAuthenticated {
 			return nil, http.StatusForbidden
 		}
-		return &models.Account{
-			ID: res.Account.ID,
-		}, 0
+		return res.Account, 0
 	}
 	return nil, http.StatusForbidden
 }

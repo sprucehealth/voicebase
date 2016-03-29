@@ -28,14 +28,14 @@ const (
 )
 
 type authenticateOutput struct {
-	ClientMutationID      string          `json:"clientMutationId,omitempty"`
-	Success               bool            `json:"success"`
-	ErrorCode             string          `json:"errorCode,omitempty"`
-	ErrorMessage          string          `json:"errorMessage,omitempty"`
-	Token                 string          `json:"token,omitempty"`
-	Account               *models.Account `json:"account,omitempty"`
-	PhoneNumberLastDigits string          `json:"phoneNumberLastDigits,omitempty"`
-	ClientEncryptionKey   string          `json:"clientEncryptionKey,omitempty"`
+	ClientMutationID      string                  `json:"clientMutationId,omitempty"`
+	Success               bool                    `json:"success"`
+	ErrorCode             string                  `json:"errorCode,omitempty"`
+	ErrorMessage          string                  `json:"errorMessage,omitempty"`
+	Token                 string                  `json:"token,omitempty"`
+	Account               *models.ProviderAccount `json:"account,omitempty"`
+	PhoneNumberLastDigits string                  `json:"phoneNumberLastDigits,omitempty"`
+	ClientEncryptionKey   string                  `json:"clientEncryptionKey,omitempty"`
 }
 
 var authenticateErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
@@ -81,7 +81,7 @@ var authenticateOutputType = graphql.NewObject(
 			"errorCode":        &graphql.Field{Type: authenticateErrorCodeEnum},
 			"errorMessage":     &graphql.Field{Type: graphql.String},
 			"token":            &graphql.Field{Type: graphql.String},
-			"account":          &graphql.Field{Type: accountType},
+			"account":          &graphql.Field{Type: accountInterfaceType},
 			"phoneNumberLastDigits": &graphql.Field{
 				Type:        graphql.String,
 				Description: "Last couple digits of phone number used to send 2FA verification code. Only when errorCode=TWO_FACTOR_REQUIRED.",
@@ -177,23 +177,19 @@ var authenticateMutation = &graphql.Field{
 
 		token := res.Token.Value
 		expires := time.Unix(int64(res.Token.ExpirationEpoch), 0)
-		acc, err := transformAccountToResponse(res.Account)
-		if err != nil {
-			return nil, errors.InternalError(ctx, err)
-		}
 
 		eh := gqlctx.SpruceHeaders(ctx)
 
 		conc.Go(func() {
 			svc.segmentio.Track(&analytics.Track{
-				UserId: acc.ID,
+				UserId: res.Account.ID,
 				Event:  "signedin",
 				Properties: map[string]interface{}{
 					"platform": eh.Platform.String(),
 				},
 			})
 			svc.segmentio.Identify(&analytics.Identify{
-				UserId: acc.ID,
+				UserId: res.Account.ID,
 				Traits: map[string]interface{}{
 					"platform": eh.Platform.String(),
 				},
@@ -207,7 +203,7 @@ var authenticateMutation = &graphql.Field{
 
 		// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
 		// that likely won't change, but this still isn't a great way to update the context.
-		gqlctx.InPlaceWithAccount(ctx, acc)
+		gqlctx.InPlaceWithAccount(ctx, res.Account)
 		result := p.Info.RootValue.(map[string]interface{})["result"].(conc.Map)
 		result.Set("auth_token", token)
 		result.Set("auth_expiration", expires)
@@ -216,7 +212,7 @@ var authenticateMutation = &graphql.Field{
 			ClientMutationID:    mutationID,
 			Success:             true,
 			Token:               token,
-			Account:             acc,
+			Account:             transformAccountToResponse(res.Account),
 			ClientEncryptionKey: res.Token.ClientEncryptionKey,
 		}, nil
 	},
@@ -266,16 +262,11 @@ var authenticateWithCodeMutation = &graphql.Field{
 		result.Set("auth_token", res.Token.Value)
 		result.Set("auth_expiration", time.Unix(int64(res.Token.ExpirationEpoch), 0))
 
-		acc, err := transformAccountToResponse(res.Account)
-		if err != nil {
-			return nil, errors.InternalError(ctx, err)
-		}
-
 		eh := gqlctx.SpruceHeaders(ctx)
 
 		conc.Go(func() {
 			svc.segmentio.Track(&analytics.Track{
-				UserId: acc.ID,
+				UserId: res.Account.ID,
 				Event:  "signedin",
 				Properties: map[string]interface{}{
 					"platform": eh.Platform.String(),
@@ -283,7 +274,7 @@ var authenticateWithCodeMutation = &graphql.Field{
 			})
 
 			svc.segmentio.Identify(&analytics.Identify{
-				UserId: acc.ID,
+				UserId: res.Account.ID,
 				Traits: map[string]interface{}{
 					"platform": eh.Platform.String(),
 				},
@@ -296,13 +287,13 @@ var authenticateWithCodeMutation = &graphql.Field{
 
 		// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
 		// that likely won't change, but this still isn't a great way to update the context.
-		gqlctx.InPlaceWithAccount(ctx, acc)
+		gqlctx.InPlaceWithAccount(ctx, res.Account)
 		return &authenticateOutput{
 			ClientMutationID:    mutationID,
 			Success:             true,
 			Token:               res.Token.Value,
 			ClientEncryptionKey: res.Token.ClientEncryptionKey,
-			Account:             acc,
+			Account:             transformAccountToResponse(res.Account),
 		}, nil
 	},
 }

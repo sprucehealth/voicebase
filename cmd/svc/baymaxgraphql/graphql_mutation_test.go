@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/test"
@@ -19,7 +19,7 @@ func TestProvisionEmail_Organization(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: "account:12345",
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -160,7 +160,7 @@ func TestProvisionEmail_Internal(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: "account:12345",
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -292,7 +292,7 @@ func TestProvisionEmail_Organization_DomainExists(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: "account:12345",
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -428,7 +428,7 @@ func TestProvisionEmail_Organization_DomainInUse(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: "account:12345",
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -516,7 +516,7 @@ func TestProvisionEmail_Organization_EmailInUse(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: "account:12345",
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)

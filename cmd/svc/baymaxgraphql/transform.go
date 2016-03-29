@@ -19,10 +19,13 @@ import (
 	"github.com/sprucehealth/backend/svc/threading"
 )
 
-func transformAccountToResponse(a *auth.Account) (*models.Account, error) {
-	return &models.Account{
+func transformAccountToResponse(a *auth.Account) *models.ProviderAccount {
+	if a == nil {
+		return nil
+	}
+	return &models.ProviderAccount{
 		ID: a.ID,
-	}, nil
+	}
 }
 
 func threadTitleForEntity(e *directory.Entity) string {

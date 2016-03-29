@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/backend/test"
@@ -18,7 +18,7 @@ func TestDeleteThread(t *testing.T) {
 	defer g.finish()
 
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: "account_12345",
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)

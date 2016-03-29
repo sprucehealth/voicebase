@@ -150,9 +150,10 @@ var markThreadAsReadOutputType = graphql.NewObject(
 var mutationType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Mutation",
 	Fields: graphql.Fields{
-		"callEntity":    callEntityMutation,
-		"createAccount": createAccountMutation,
-		"postMessage":   postMessageMutation,
+		"callEntity":            callEntityMutation,
+		"createAccount":         createAccountMutation,
+		"createProviderAccount": createProviderAccountMutation,
+		"postMessage":           postMessageMutation,
 		"registerDeviceForPush": &graphql.Field{
 			Type: graphql.NewNonNull(registerDeviceForPushOutputType),
 			Args: graphql.FieldConfigArgument{

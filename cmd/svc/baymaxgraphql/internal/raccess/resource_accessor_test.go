@@ -7,7 +7,6 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
-	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
@@ -45,7 +44,7 @@ func new(t *testing.T) *ratest {
 func TestAccessAccount(t *testing.T) {
 	accountID := "account_12345"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -64,7 +63,7 @@ func TestAccessAccount(t *testing.T) {
 func TestAccessAccountNotSameAccount(t *testing.T) {
 	accountID := "account_12345"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID + "1",
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -79,7 +78,7 @@ func TestAccessAccountNotSameAccount(t *testing.T) {
 func TestAuthenticateLogin(t *testing.T) {
 	accountID := "account_12345"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -105,7 +104,7 @@ func TestAuthenticateLogin(t *testing.T) {
 func TestAuthenticateLoginWithCode(t *testing.T) {
 	accountID := "account_12345"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -131,7 +130,7 @@ func TestAuthenticateLoginWithCode(t *testing.T) {
 func TestCheckPasswordResetToken(t *testing.T) {
 	accountID := "account_12345"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -159,7 +158,7 @@ func TestCheckPasswordResetToken(t *testing.T) {
 func TestCheckVerificationCode(t *testing.T) {
 	accountID := "account_12345"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -181,7 +180,7 @@ func TestCheckVerificationCode(t *testing.T) {
 func TestCreateAccount(t *testing.T) {
 	accountID := "account_12345"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -271,7 +270,7 @@ func TestCreateContact(t *testing.T) {
 	entityID := "entity_12345"
 	orgID := "org_12345"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -298,7 +297,7 @@ func TestCreateContactNotAuthorized(t *testing.T) {
 	orgID1 := "org_12345"
 	orgID2 := "org_67890"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -321,7 +320,7 @@ func TestCreateContacts(t *testing.T) {
 	entityID := "entity_12345"
 	orgID := "org_12345"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -348,7 +347,7 @@ func TestCreateContactsNotAuthorized(t *testing.T) {
 	orgID1 := "org_12345"
 	orgID2 := "org_67890"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -370,7 +369,7 @@ func TestCreateEmptyThread(t *testing.T) {
 	accountID := "account_12345"
 	orgID := "org_12345"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -395,7 +394,7 @@ func TestCreateEmptyThreadNotAuthorized(t *testing.T) {
 	orgID1 := "org_12345"
 	orgID2 := "org_67890"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -416,7 +415,7 @@ func TestCreateEntity(t *testing.T) {
 	accountID := "account_12345"
 	entityID := "entity_12345"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -440,7 +439,7 @@ func TestCreateEntityDomain(t *testing.T) {
 	orgID := "org_12345"
 	subdomain := "subdomain"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -463,7 +462,7 @@ func TestCreateEntityDomainNotAuthorized(t *testing.T) {
 	orgID := "org_12345"
 	subdomain := "subdomain"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -497,7 +496,7 @@ func TestCreateSavedQuery(t *testing.T) {
 	orgID := "org_12345"
 	entityID := "entity_12345"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -526,7 +525,7 @@ func TestCreateSavedQueryNotAuthorizedEntity(t *testing.T) {
 	orgID2 := "org_67890"
 	entityID := "entity_12345"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -550,7 +549,7 @@ func TestCreateSavedQueryNotAuthorizedOrganization(t *testing.T) {
 	orgID2 := "org_67890"
 	entityID := "entity_12345"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -594,7 +593,7 @@ func TestDeleteContacts(t *testing.T) {
 	orgID := "org_12345"
 	entityID := "entity_12345"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -621,7 +620,7 @@ func TestDeleteContactsNotAuthorized(t *testing.T) {
 	orgID2 := "org_67890"
 	entityID := "entity_12345"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -645,7 +644,7 @@ func TestDeleteThread(t *testing.T) {
 	entityID := "entity_12345"
 	threadID := "t_12345"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -673,7 +672,7 @@ func TestDeleteThreadNotAuthorizedThread(t *testing.T) {
 	entityID := "entity_12345"
 	threadID := "t_12345"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -695,7 +694,7 @@ func TestDeleteThreadNotAuthorizedEntity(t *testing.T) {
 	entityID := "entity_12345"
 	threadID := "t_12345"
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -722,7 +721,7 @@ func TestEntity(t *testing.T) {
 		directory.EntityInformation_CONTACTS,
 	}
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
@@ -761,7 +760,7 @@ func TestEntityNotAuthorized(t *testing.T) {
 		directory.EntityInformation_CONTACTS,
 	}
 	ctx := context.Background()
-	acc := &models.Account{
+	acc := &auth.Account{
 		ID: accountID,
 	}
 	ctx = gqlctx.WithAccount(ctx, acc)
