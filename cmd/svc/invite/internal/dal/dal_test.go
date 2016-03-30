@@ -63,6 +63,42 @@ func TestAttribution(t *testing.T) {
 	vals, err = dal.AttributionData(ctx, deviceID)
 	test.OK(t, err)
 	test.Equals(t, expVals, vals)
+
+	// Should allow overwriting non-invite data with non-invite data
+	expVals = map[string]string{
+		"xyz": "456",
+	}
+	test.OK(t, dal.SetAttributionData(ctx, deviceID, expVals))
+	vals, err = dal.AttributionData(ctx, deviceID)
+	test.OK(t, err)
+	test.Equals(t, expVals, vals)
+
+	// Invite should overwrite non-invite data
+	expVals = map[string]string{
+		"invite_token": "foo",
+	}
+	test.OK(t, dal.SetAttributionData(ctx, deviceID, expVals))
+	vals, err = dal.AttributionData(ctx, deviceID)
+	test.OK(t, err)
+	test.Equals(t, expVals, vals)
+
+	// Invite should overwrite invite data
+	expVals = map[string]string{
+		"invite_token": "bar",
+	}
+	test.OK(t, dal.SetAttributionData(ctx, deviceID, expVals))
+	vals, err = dal.AttributionData(ctx, deviceID)
+	test.OK(t, err)
+	test.Equals(t, expVals, vals)
+
+	// Non-invite should NOT overwrite invite data
+	newExpVals := map[string]string{
+		"foo": "bar",
+	}
+	test.OK(t, dal.SetAttributionData(ctx, deviceID, newExpVals))
+	vals, err = dal.AttributionData(ctx, deviceID)
+	test.OK(t, err)
+	test.Equals(t, expVals, vals)
 }
 
 func TestInviteColleague(t *testing.T) {

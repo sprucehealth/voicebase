@@ -21,6 +21,7 @@ const (
 	emailKey                = "Email"
 	inviterEntityIDKey      = "InviterEntityID"
 	inviteTokenKey          = "InviteToken"
+	isInviteKey             = "IsInvite"
 	organizationEntityIDKey = "OrganizationEntityID"
 	phoneNumberKey          = "PhoneNumber"
 	typeKey                 = "Type"
@@ -88,14 +89,36 @@ func (d *dal) SetAttributionData(ctx context.Context, deviceID string, values ma
 	for name, val := range values {
 		itemVals[name] = &dynamodb.AttributeValue{S: ptr.String(val)}
 	}
-	_, err := d.db.PutItem(&dynamodb.PutItemInput{
+	isInvite := values["invite_token"] != ""
+	in := &dynamodb.PutItemInput{
 		TableName: &d.attributionTable,
 		Item: map[string]*dynamodb.AttributeValue{
 			deviceIDKey:     {S: &deviceID},
+			isInviteKey:     {BOOL: &isInvite},
 			attribValuesKey: {M: itemVals},
 		},
-	})
-	return errors.Trace(err)
+	}
+	// TODO: for now giving priority to invites. we'll eventually want a more complex
+	//       behavior here (perhaps keeping all unique attribution data) and changing
+	//       invite to not use attribution for tracking sign up flow.
+	if !isInvite {
+		// For non-invite data make sure not to overwrite any existing invite data
+		// Using NOT isInvite = true rather than isInvite = false to handle existing items
+		// that don't have the value at all. Can switch it later to simplify.
+		in.ConditionExpression = ptr.String("NOT " + isInviteKey + " = :true")
+		in.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
+			":true": {BOOL: ptr.Bool(true)},
+		}
+	}
+	_, err := d.db.PutItem(in)
+	if err != nil {
+		if e, ok := err.(awserr.RequestFailure); ok && e.Code() == "ConditionalCheckFailedException" {
+			// The caller likely doesn't care about this and can't really do anything with the inforamtion.
+			return nil
+		}
+		return errors.Trace(err)
+	}
+	return nil
 }
 
 func (d *dal) InsertInvite(ctx context.Context, invite *models.Invite) error {
