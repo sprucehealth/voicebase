@@ -14,8 +14,6 @@ var leaveThreadInputType = graphql.NewInputObject(graphql.InputObjectConfig{
 		"clientMutationId": newClientMutationIDInputField(),
 		"uuid":             newUUIDInputField(),
 		"threadID":         &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
-		"memberEntityIDs":  &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(graphql.ID))},
-		"title":            &graphql.InputObjectFieldConfig{Type: graphql.String},
 	},
 })
 
