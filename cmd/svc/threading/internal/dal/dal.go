@@ -271,8 +271,8 @@ func (d *dal) IterateThreads(ctx context.Context, orgEntityID, viewerEntityID st
 	if forExternal {
 		orderField = "last_external_message_timestamp"
 	}
-	cond := []string{"(t.type != ? OR te.member = true)", "organization_id = ?", "deleted = ?"}
-	vals := []interface{}{viewerEntityID, models.ThreadTypeTeam, orgEntityID, false}
+	cond := []string{"organization_id = ?", "deleted = ?"}
+	vals := []interface{}{viewerEntityID, orgEntityID, false}
 	// Build query based on iterator in descending order so start = later and end = earlier.
 	if it.StartCursor != "" {
 		cond = append(cond, "("+dbutil.EscapeMySQLName(orderField)+" < ?)")
@@ -298,7 +298,7 @@ func (d *dal) IterateThreads(ctx context.Context, orgEntityID, viewerEntityID st
 	if it.Direction == FromStart {
 		order += " DESC"
 	}
-	limit := fmt.Sprintf(" LIMIT %d", it.Count+1) // +1 to check if there's more than requested available.. will filter it out later
+	limit := fmt.Sprintf(" LIMIT %d", it.Count*2) // *2 since we don't filter on team thread membership yet
 	rows, err := d.db.Query(`
 		SELECT t.id, t.organization_id, COALESCE(t.primary_entity_id, ''), t.last_message_timestamp, t.last_external_message_timestamp, t.last_message_summary,
 			t.last_external_message_summary, t.last_primary_entity_endpoints, t.created, t.message_count, t.type, COALESCE(t.system_title, ''), COALESCE(t.user_title, ''),
@@ -323,11 +323,13 @@ func (d *dal) IterateThreads(ctx context.Context, orgEntityID, viewerEntityID st
 		} else {
 			cursor = formatTimeCursor(t.LastMessageTimestamp)
 		}
-		tc.Edges = append(tc.Edges, ThreadEdge{
-			Thread:       t,
-			ThreadEntity: te,
-			Cursor:       cursor,
-		})
+		if t.Type != models.ThreadTypeTeam || (te != nil && te.Member) {
+			tc.Edges = append(tc.Edges, ThreadEdge{
+				Thread:       t,
+				ThreadEntity: te,
+				Cursor:       cursor,
+			})
+		}
 	}
 
 	if err := rows.Err(); err != nil {
