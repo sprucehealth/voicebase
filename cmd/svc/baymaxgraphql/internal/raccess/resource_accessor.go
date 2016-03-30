@@ -343,7 +343,7 @@ func (m *resourceAccessor) Entities(ctx context.Context, orgID string, entityIDs
 	if err := m.canAccessResource(ctx, orgID, m.orgsForOrganization); err != nil {
 		return nil, err
 	}
-	entityInfo = append(entityInfo, directory.EntityInformation_MEMBERSHIPS)
+	// TODO: verify access to entities based on their org memberships. that's expensive so avoiding for now
 	res, err := m.directory.LookupEntities(ctx,
 		&directory.LookupEntitiesRequest{
 			LookupKeyType: directory.LookupEntitiesRequest_BATCH_ENTITY_ID,
@@ -358,25 +358,6 @@ func (m *resourceAccessor) Entities(ctx context.Context, orgID string, entityIDs
 		})
 	if err != nil {
 		return nil, err
-	}
-	// Filter out any entities that aren't in the expected org
-	for i := 0; i < len(res.Entities); i++ {
-		e := res.Entities[i]
-		// Allow the organization itself to be looked up
-		if e.ID == orgID {
-			continue
-		}
-		found := false
-		for _, em := range e.Memberships {
-			if em.ID == orgID {
-				found = true
-				break
-			}
-		}
-		if !found {
-			res.Entities[i] = res.Entities[len(res.Entities)-1]
-			res.Entities = res.Entities[:len(res.Entities)-1]
-		}
 	}
 	return res.Entities, nil
 }
