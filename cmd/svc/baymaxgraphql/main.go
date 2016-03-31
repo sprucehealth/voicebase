@@ -69,7 +69,7 @@ var (
 )
 
 func main() {
-	boot.InitService("baymaxgraphql")
+	metricsRegistry := boot.InitService("baymaxgraphql")
 
 	if *flagKMSKeyARN == "" {
 		golog.Fatalf("-kms_key_arn flag is required")
@@ -218,7 +218,7 @@ func main() {
 	media := media.New(storage.NewS3(awsSession, *flagStorageBucket, "media"), storage.NewS3(awsSession, *flagStorageBucket, "media-cache"), 0, 0)
 
 	r := mux.NewRouter()
-	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, settingsClient, inviteClient, ms, *flagEmailDomain, *flagWebDomain, pn, *flagSpruceOrgID, *flagStaticURLPrefix, segmentClient, media)
+	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, settingsClient, inviteClient, ms, *flagEmailDomain, *flagWebDomain, pn, *flagSpruceOrgID, *flagStaticURLPrefix, segmentClient, media, metricsRegistry.Scope("handler"))
 	r.Handle("/graphql", httputil.ToContextHandler(cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},
@@ -248,7 +248,6 @@ func main() {
 	}
 
 	webRequestLogger := func(ctx context.Context, ev *httputil.RequestEvent) {
-
 		contextVals := []interface{}{
 			"Method", ev.Request.Method,
 			"URL", ev.URL.String(),

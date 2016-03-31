@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/samuel/go-metrics/metrics"
 	"github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
@@ -75,9 +76,10 @@ func init() {
 }
 
 type graphQLHandler struct {
-	auth    auth.AuthClient
-	ram     raccess.ResourceAccessor
-	service *service
+	auth         auth.AuthClient
+	ram          raccess.ResourceAccessor
+	service      *service
+	statRequests *metrics.Counter
 }
 
 // NewGraphQL returns an initialized instance of graphQLHandler
@@ -97,7 +99,10 @@ func NewGraphQL(
 	staticURLPrefix string,
 	segmentClient *analytics.Client,
 	media *lmedia.Service,
+	metricsRegistry metrics.Registry,
 ) httputil.ContextHandler {
+	statRequests := metrics.NewCounter()
+	metricsRegistry.Add("requests", statRequests)
 	return &graphQLHandler{
 		auth: authClient,
 		ram:  raccess.New(authClient, directoryClient, threadingClient, exComms),
@@ -114,6 +119,7 @@ func NewGraphQL(
 			segmentio:       &segmentIOWrapper{Client: segmentClient},
 			media:           media,
 		},
+		statRequests: statRequests,
 	}
 }
 
@@ -159,6 +165,7 @@ func removeAuthCookie(w http.ResponseWriter, domain string) {
 }
 
 func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	h.statRequests.Inc(1)
 
 	// TODO: should set the deadline earlier in the HTTP handler stack
 	ctx, cancel := context.WithTimeout(ctx, time.Second*30)

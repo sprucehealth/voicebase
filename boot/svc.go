@@ -9,10 +9,12 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/samuel/go-metrics/metrics"
+	"github.com/samuel/go-metrics/reporter"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -36,10 +38,12 @@ var (
 // InitService should be called at the start of a service. It parses flags and sets up a mangement server.
 func InitService(name string) metrics.Registry {
 	var (
-		flagDebug          = flag.Bool("debug", false, "Enable debug logging")
-		flagEnv            = flag.String("env", "", "Execution environment")
-		flagErrorSNSTopic  = flag.String("error_sns_topic", "", "SNS `topic` which to send errors")
-		flagManagementAddr = flag.String("management_addr", ":9000", "`host:port` of management HTTP server")
+		flagDebug           = flag.Bool("debug", false, "Enable debug logging")
+		flagEnv             = flag.String("env", "", "Execution environment")
+		flagErrorSNSTopic   = flag.String("error_sns_topic", "", "SNS `topic` which to send errors")
+		flagManagementAddr  = flag.String("management_addr", ":9000", "`host:port` of management HTTP server")
+		flagLibratoUsername = flag.String("librato_username", "", "Librato metrics username")
+		flagLibratoToken    = flag.String("librato_token", "", "Librato metrics token")
 	)
 	flagAWSAccessKey = flag.String("aws_access_key", "", "Access `key` for AWS")
 	flagAWSSecretKey = flag.String("aws_secret_key", "", "Secret `key` for AWS")
@@ -81,7 +85,16 @@ func InitService(name string) metrics.Registry {
 			golog.Default().Handler(), nil, metricsRegistry.Scope("errorsns")))
 	}
 
-	return metricsRegistry
+	metricsRegistry.Add("runtime", metrics.RuntimeMetrics)
+
+	if *flagLibratoUsername != "" && *flagLibratoToken != "" {
+		source := *flagEnv + "-" + name
+		statsReporter := reporter.NewLibratoReporter(
+			metricsRegistry, time.Minute, true, *flagLibratoUsername, *flagLibratoToken, source)
+		statsReporter.Start()
+	}
+
+	return metricsRegistry.Scope("svc." + name)
 }
 
 // WaitForTermination waits for an INT or TERM signal.

@@ -43,7 +43,7 @@ func init() {
 }
 
 func main() {
-	boot.InitService("directory")
+	metricsRegistry := boot.InitService("directory")
 
 	listenAddress := ":" + strconv.Itoa(config.listenPort)
 	lis, err := net.Listen("tcp", listenAddress)
@@ -67,7 +67,7 @@ func main() {
 		golog.Fatalf("failed to initialize db connection: %s", err)
 	}
 	s := grpc.NewServer()
-	pb.RegisterDirectoryServer(s, server.New(dal.New(db)))
+	pb.RegisterDirectoryServer(s, server.New(dal.New(db), metricsRegistry.Scope("server")))
 	golog.Infof("Starting DirectoryService on %s...", listenAddress)
 	go s.Serve(lis)
 
