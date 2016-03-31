@@ -108,18 +108,15 @@ func TestNodeQuery(t *testing.T) {
 		PrimaryEntityID: "entity_2",
 		Type:            threading.ThreadType_EXTERNAL,
 	}, nil))
-	ra.Expect(mock.NewExpectation(ra.Entities, "entity_1", []string{"entity_2"}, []directory.EntityInformation{
+	ra.Expect(mock.NewExpectation(ra.Entity, "entity_2", []directory.EntityInformation{
 		directory.EntityInformation_CONTACTS,
-	}).WithReturns(
-		[]*directory.Entity{
-			{
-				Type: directory.EntityType_EXTERNAL,
-				ID:   "entity_2",
-				Info: &directory.EntityInfo{
-					DisplayName: "Someone",
-				},
-			},
-		}, nil))
+	}, int64(0)).WithReturns(&directory.Entity{
+		Type: directory.EntityType_EXTERNAL,
+		ID:   "entity_2",
+		Info: &directory.EntityInfo{
+			DisplayName: "Someone",
+		},
+	}, nil))
 	ra.Expect(mock.NewExpectation(ra.EntityForAccountID, "entity_1", acc.ID).WithReturns(
 		&directory.Entity{
 			Type: directory.EntityType_INTERNAL,
@@ -142,21 +139,19 @@ func TestNodeQuery(t *testing.T) {
 		Unread:          true,
 		UnreadReference: true,
 	}, nil))
-	ra.Expect(mock.NewExpectation(ra.Entities, "entity_1", []string{"entity_2"}, []directory.EntityInformation{
+	ra.Expect(mock.NewExpectation(ra.Entity, "entity_2", []directory.EntityInformation{
 		directory.EntityInformation_CONTACTS,
-	}).WithReturns(
-		[]*directory.Entity{
-			{
-				Type: directory.EntityType_EXTERNAL,
-				ID:   "entity_2",
-				Info: &directory.EntityInfo{
-					DisplayName: "Someone",
-				},
-				Memberships: []*directory.Entity{
-					{
-						Type: directory.EntityType_ORGANIZATION,
-						ID:   "entity_1",
-					},
+	}, int64(0)).WithReturns(
+		&directory.Entity{
+			Type: directory.EntityType_EXTERNAL,
+			ID:   "entity_2",
+			Info: &directory.EntityInfo{
+				DisplayName: "Someone",
+			},
+			Memberships: []*directory.Entity{
+				{
+					Type: directory.EntityType_ORGANIZATION,
+					ID:   "entity_1",
 				},
 			},
 		}, nil))

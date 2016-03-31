@@ -60,16 +60,25 @@ func hydrateThreads(ctx context.Context, ram raccess.ResourceAccessor, threads [
 		}
 	}
 
-	var eMap map[string]*directory.Entity
-	if len(entityIDs) != 0 {
-		entities, err := ram.Entities(ctx, orgID, dedupeStrings(entityIDs), []directory.EntityInformation{directory.EntityInformation_CONTACTS})
-		if err != nil {
-			return errors.Trace(err)
-		}
-		eMap = make(map[string]*directory.Entity, len(entities))
-		for _, e := range entities {
-			eMap[e.ID] = e
-		}
+	eMap := conc.NewMap()
+	par := conc.NewParallel()
+
+	entityIDs = dedupeStrings(entityIDs)
+	for _, entityID := range entityIDs {
+
+		eID := entityID
+		par.Go(func() error {
+			entity, err := ram.Entity(ctx, eID, []directory.EntityInformation{directory.EntityInformation_CONTACTS}, 0)
+			if err != nil {
+				return errors.Trace(err)
+			}
+			eMap.Set(entity.ID, entity)
+			return nil
+		})
+	}
+
+	if err := par.Wait(); err != nil {
+		return errors.Trace(err)
 	}
 
 	for _, t := range threads {
@@ -78,10 +87,15 @@ func hydrateThreads(ctx context.Context, ram raccess.ResourceAccessor, threads [
 		}
 		if t.PrimaryEntityID != "" && (t.Type == models.ThreadTypeExternal || t.Title == "") {
 			if t.PrimaryEntity == nil {
-				t.PrimaryEntity = eMap[t.PrimaryEntityID]
-				if t.PrimaryEntity == nil {
+				primaryEntity := eMap.Get(t.PrimaryEntityID)
+				if primaryEntity == nil {
 					return errors.Trace(fmt.Errorf("primary entity %s not found for thread %s", t.PrimaryEntityID, t.ID))
 				}
+				if _, ok := primaryEntity.(*directory.Entity); !ok {
+					return errors.Trace(fmt.Errorf("expected type Entity but got %T", primaryEntity))
+				}
+				t.PrimaryEntity = primaryEntity.(*directory.Entity)
+
 			}
 			t.Title = threadTitleForEntity(t.PrimaryEntity)
 			// TODO: remove this once old threads are migrated
