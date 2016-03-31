@@ -76,10 +76,12 @@ func init() {
 }
 
 type graphQLHandler struct {
-	auth         auth.AuthClient
-	ram          raccess.ResourceAccessor
-	service      *service
-	statRequests *metrics.Counter
+	auth               auth.AuthClient
+	ram                raccess.ResourceAccessor
+	service            *service
+	statRequests       *metrics.Counter
+	statResponseErrors *metrics.Counter
+	statLatency        metrics.Histogram
 }
 
 // NewGraphQL returns an initialized instance of graphQLHandler
@@ -102,7 +104,11 @@ func NewGraphQL(
 	metricsRegistry metrics.Registry,
 ) httputil.ContextHandler {
 	statRequests := metrics.NewCounter()
+	statResponseErrors := metrics.NewCounter()
+	statLatency := metrics.NewUnbiasedHistogram()
 	metricsRegistry.Add("requests", statRequests)
+	metricsRegistry.Add("response_errors", statResponseErrors)
+	metricsRegistry.Add("latency_us", statLatency)
 	return &graphQLHandler{
 		auth: authClient,
 		ram:  raccess.New(authClient, directoryClient, threadingClient, exComms),
@@ -119,7 +125,9 @@ func NewGraphQL(
 			segmentio:       &segmentIOWrapper{Client: segmentClient},
 			media:           media,
 		},
-		statRequests: statRequests,
+		statRequests:       statRequests,
+		statResponseErrors: statResponseErrors,
+		statLatency:        statLatency,
 	}
 }
 
@@ -166,6 +174,10 @@ func removeAuthCookie(w http.ResponseWriter, domain string) {
 
 func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	h.statRequests.Inc(1)
+	st := time.Now()
+	defer func() {
+		h.statLatency.Update(time.Since(st).Nanoseconds() / 1e3)
+	}()
 
 	// TODO: should set the deadline earlier in the HTTP handler stack
 	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
@@ -239,6 +251,9 @@ func (h *graphQLHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r
 		},
 	})
 
+	if len(response.Errors) != 0 {
+		h.statResponseErrors.Inc(1)
+	}
 	for i, e := range response.Errors {
 		if e.StackTrace != "" {
 			golog.Errorf("[%s] %s\n%s", e.Type, e.Message, e.StackTrace)

@@ -35,7 +35,7 @@ func init() {
 }
 
 func main() {
-	boot.InitService("settings")
+	metricsRegistry := boot.InitService("settings")
 
 	awsSession, err := boot.AWSSession()
 	if err != nil {
@@ -57,6 +57,7 @@ func main() {
 
 	dal := dal.New(dynamoDBClient, config.dyanmoDBSettingsTableName, config.dynamoDBSettingsConfigTableName)
 	settingsService := server.New(dal)
+	settings.InitMetrics(settingsService, metricsRegistry.Scope("server"))
 	server := grpc.NewServer()
 	settings.RegisterSettingsServer(server, settingsService)
 

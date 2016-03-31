@@ -70,14 +70,14 @@ func init() {
 }
 
 func main() {
-	boot.InitService("excomms")
+	metricsRegistry := boot.InitService("excomms")
 
 	conc.Go(func() {
 		runAPI()
 	})
 
 	conc.Go(func() {
-		runService()
+		runService(metricsRegistry)
 	})
 
 	boot.WaitForTermination()

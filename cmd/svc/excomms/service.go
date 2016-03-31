@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/samuel/go-metrics/metrics"
 	"net"
 	"time"
 
@@ -29,7 +30,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func runService() {
+func runService(metricsRegistry metrics.Registry) {
 	db, err := dbutil.ConnectMySQL(&dbutil.DBConfig{
 		User:          config.dbUserName,
 		Password:      config.dbPassword,
@@ -133,6 +134,8 @@ func runService() {
 		server.NewSendgridClient(config.sendgridAPIKey),
 		server.NewIDGenerator(),
 		proxyNumberManager)
+	excomms.InitMetrics(excommsService, metricsRegistry.Scope("server"))
+
 	excommsServer := grpc.NewServer()
 	excomms.RegisterExCommsServer(excommsServer, excommsService)
 

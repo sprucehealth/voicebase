@@ -66,8 +66,11 @@ func main() {
 	if err != nil {
 		golog.Fatalf("failed to initialize db connection: %s", err)
 	}
+	srvMetricsRegistry := metricsRegistry.Scope("server")
+	srv := server.New(dal.New(db), srvMetricsRegistry)
+	pb.InitMetrics(srv, srvMetricsRegistry)
 	s := grpc.NewServer()
-	pb.RegisterDirectoryServer(s, server.New(dal.New(db), metricsRegistry.Scope("server")))
+	pb.RegisterDirectoryServer(s, srv)
 	golog.Infof("Starting DirectoryService on %s...", listenAddress)
 	go s.Serve(lis)
 

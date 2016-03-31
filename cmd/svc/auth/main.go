@@ -94,7 +94,7 @@ func main() {
 	if err != nil {
 		golog.Fatalf("Error while initializing auth server: %s", err)
 	}
-	pb.InitMetrics(aSrv, metricsRegistry)
+	pb.InitMetrics(aSrv, metricsRegistry.Scope("server"))
 
 	s := grpc.NewServer()
 	pb.RegisterAuthServer(s, aSrv)

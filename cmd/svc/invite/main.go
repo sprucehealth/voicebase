@@ -37,7 +37,7 @@ var (
 )
 
 func main() {
-	boot.InitService("invite")
+	metricsRegistry := boot.InitService("invite")
 
 	if *flagFromEmail == "" {
 		golog.Fatalf("from_email required")
@@ -78,6 +78,7 @@ func main() {
 	}
 
 	srv := server.New(dal.New(db, environment.GetCurrent()), nil, directoryClient, eSNS, branchCli, sg, *flagFromEmail, *flagEventsTopic, *flagWebInviteURL)
+	invite.InitMetrics(srv, metricsRegistry.Scope("server"))
 	s := grpc.NewServer()
 	defer s.Stop()
 	invite.RegisterInviteServer(s, srv)

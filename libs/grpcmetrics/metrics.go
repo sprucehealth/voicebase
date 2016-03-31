@@ -6,6 +6,7 @@ import (
 	"github.com/samuel/go-metrics/metrics"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 type handlerMetrics struct {
@@ -48,7 +49,7 @@ func WrapMethods(methods []grpc.MethodDesc) {
 				st := time.Now()
 				defer func() {
 					hm.latency.Update(time.Since(st).Nanoseconds() / 1e3)
-					if err != nil {
+					if err != nil && (grpc.Code(err) == codes.Internal || grpc.Code(err) == codes.Unknown) {
 						hm.errors.Inc(1)
 					}
 				}()

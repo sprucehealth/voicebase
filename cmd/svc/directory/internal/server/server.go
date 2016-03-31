@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
@@ -29,25 +28,16 @@ var (
 
 type server struct {
 	dl                         dal.DAL
-	statLookupEntitiesRequests *metrics.Counter
 	statLookupEntitiesEntities *metrics.Counter
-	statLookupEntitiesErrors   *metrics.Counter
-	statLookupEntitiesLatency  metrics.Histogram
 }
 
 // New returns an initialized instance of server
 func New(dl dal.DAL, metricsRegistry metrics.Registry) directory.DirectoryServer {
 	srv := &server{
 		dl: dl,
-		statLookupEntitiesRequests: metrics.NewCounter(),
 		statLookupEntitiesEntities: metrics.NewCounter(),
-		statLookupEntitiesErrors:   metrics.NewCounter(),
-		statLookupEntitiesLatency:  metrics.NewUnbiasedHistogram(),
 	}
-	metricsRegistry.Add("LookupEntities.requests", srv.statLookupEntitiesRequests)
 	metricsRegistry.Add("LookupEntities.entities", srv.statLookupEntitiesEntities)
-	metricsRegistry.Add("LookupEntities.errors", srv.statLookupEntitiesErrors)
-	metricsRegistry.Add("LookupEntities.latency", srv.statLookupEntitiesLatency)
 	return srv
 }
 
@@ -68,15 +58,6 @@ func riDepth(ri *directory.RequestedInformation) int64 {
 }
 
 func (s *server) LookupEntities(ctx context.Context, rd *directory.LookupEntitiesRequest) (out *directory.LookupEntitiesResponse, err error) {
-	s.statLookupEntitiesRequests.Inc(1)
-	st := time.Now()
-	defer func() {
-		dt := time.Since(st)
-		s.statLookupEntitiesLatency.Update(dt.Nanoseconds() / 1e3)
-		if err != nil && (grpc.Code(err) == codes.Internal || grpc.Code(err) == codes.Unknown) {
-			s.statLookupEntitiesErrors.Inc(1)
-		}
-	}()
 	if golog.Default().L(golog.DEBUG) {
 		golog.Debugf("Entering server.server.LookupEntities: %+v", rd)
 		defer func() { golog.Debugf("Leaving server.server.LookupEntities... %+v", out) }()

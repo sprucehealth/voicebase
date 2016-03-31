@@ -138,7 +138,7 @@ func main() {
 	}
 
 	srv := server.NewThreadsServer(clock.New(), dl, eSNS, *flagSNSTopicARN, notificationClient, directoryClient, settingsClient, *flagWebDomain)
-	threading.InitMetrics(srv, metricsRegistry)
+	threading.InitMetrics(srv, metricsRegistry.Scope("server"))
 
 	s := grpc.NewServer()
 	threading.RegisterThreadsServer(s, srv)
