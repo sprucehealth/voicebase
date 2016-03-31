@@ -37,7 +37,7 @@ var (
 )
 
 func main() {
-	metricsRegistry := boot.InitService("invite")
+	svc := boot.NewService("invite")
 
 	if *flagFromEmail == "" {
 		golog.Fatalf("from_email required")
@@ -46,7 +46,7 @@ func main() {
 		golog.Fatalf("sendgrid_key required")
 	}
 
-	awsSession, err := boot.AWSSession()
+	awsSession, err := svc.AWSSession()
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
@@ -78,7 +78,7 @@ func main() {
 	}
 
 	srv := server.New(dal.New(db, environment.GetCurrent()), nil, directoryClient, eSNS, branchCli, sg, *flagFromEmail, *flagEventsTopic, *flagWebInviteURL)
-	invite.InitMetrics(srv, metricsRegistry.Scope("server"))
+	invite.InitMetrics(srv, svc.MetricsRegistry.Scope("server"))
 	s := grpc.NewServer()
 	defer s.Stop()
 	invite.RegisterInviteServer(s, srv)

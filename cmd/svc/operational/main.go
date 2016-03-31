@@ -36,7 +36,7 @@ var (
 )
 
 func main() {
-	boot.InitService("operational")
+	bootSvc := boot.NewService("operational")
 
 	if *flagKMSKeyARN == "" {
 		golog.Fatalf("-kms_key_arn flag is required")
@@ -56,7 +56,7 @@ func main() {
 		golog.Fatalf(err.Error())
 	}
 
-	awsSession, err := boot.AWSSession()
+	awsSession, err := bootSvc.AWSSession()
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}

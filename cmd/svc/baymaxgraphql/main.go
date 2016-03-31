@@ -69,7 +69,7 @@ var (
 )
 
 func main() {
-	metricsRegistry := boot.InitService("baymaxgraphql")
+	svc := boot.NewService("baymaxgraphql")
 
 	if *flagKMSKeyARN == "" {
 		golog.Fatalf("-kms_key_arn flag is required")
@@ -162,7 +162,7 @@ func main() {
 		golog.Fatalf("Notification service notification queue not configured")
 	}
 
-	awsSession, err := boot.AWSSession()
+	awsSession, err := svc.AWSSession()
 	if err != nil {
 		golog.Fatalf("Failed to create AWS session: %s", err)
 	}
@@ -218,7 +218,7 @@ func main() {
 	media := media.New(storage.NewS3(awsSession, *flagStorageBucket, "media"), storage.NewS3(awsSession, *flagStorageBucket, "media-cache"), 0, 0)
 
 	r := mux.NewRouter()
-	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, settingsClient, inviteClient, ms, *flagEmailDomain, *flagWebDomain, pn, *flagSpruceOrgID, *flagStaticURLPrefix, segmentClient, media, metricsRegistry.Scope("handler"))
+	gqlHandler := NewGraphQL(authClient, directoryClient, threadingClient, exCommsClient, notificationClient, settingsClient, inviteClient, ms, *flagEmailDomain, *flagWebDomain, pn, *flagSpruceOrgID, *flagStaticURLPrefix, segmentClient, media, svc.MetricsRegistry.Scope("handler"))
 	r.Handle("/graphql", httputil.ToContextHandler(cors.New(cors.Options{
 		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{httputil.Get, httputil.Options, httputil.Post},

@@ -43,7 +43,7 @@ func init() {
 }
 
 func main() {
-	metricsRegistry := boot.InitService("directory")
+	svc := boot.NewService("directory")
 
 	listenAddress := ":" + strconv.Itoa(config.listenPort)
 	lis, err := net.Listen("tcp", listenAddress)
@@ -66,7 +66,7 @@ func main() {
 	if err != nil {
 		golog.Fatalf("failed to initialize db connection: %s", err)
 	}
-	srvMetricsRegistry := metricsRegistry.Scope("server")
+	srvMetricsRegistry := svc.MetricsRegistry.Scope("server")
 	srv := server.New(dal.New(db), srvMetricsRegistry)
 	pb.InitMetrics(srv, srvMetricsRegistry)
 	s := grpc.NewServer()

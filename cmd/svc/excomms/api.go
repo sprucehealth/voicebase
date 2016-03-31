@@ -27,14 +27,14 @@ import (
 	"google.golang.org/grpc"
 )
 
-func runAPI() {
+func runAPI(bootSvc *boot.Service) {
 	conn, err := grpc.Dial(config.directoryServiceURL, grpc.WithInsecure())
 	if err != nil {
 		golog.Fatalf("Unable to communicate with events processor service: %s", err.Error())
 	}
 	defer conn.Close()
 
-	awsSession, err := boot.AWSSession()
+	awsSession, err := bootSvc.AWSSession()
 	if err != nil {
 		golog.Fatalf("Failed to create AWS session: %s", err)
 	}

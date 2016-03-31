@@ -61,7 +61,7 @@ func init() {
 }
 
 func main() {
-	boot.InitService("notification")
+	bootSvc := boot.NewService("notification")
 
 	golog.Infof("Initializing database connection on %s:%d, user: %s, db: %s...", config.dbHost, config.dbPort, config.dbUser, config.dbName)
 	db, err := dbutil.ConnectMySQL(&dbutil.DBConfig{
@@ -114,7 +114,7 @@ func main() {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
 	}
 
-	awsSession, err := boot.AWSSession()
+	awsSession, err := bootSvc.AWSSession()
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}

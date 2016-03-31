@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
@@ -24,6 +22,7 @@ import (
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
@@ -52,7 +51,7 @@ func init() {
 }
 
 func main() {
-	metricsRegistry := boot.InitService("threading")
+	bootSvc := boot.NewService("threading")
 
 	if *flagSettingsAddr == "" {
 		golog.Fatalf("Settings service not configured")
@@ -82,7 +81,7 @@ func main() {
 		golog.Fatalf(err.Error())
 	}
 
-	awsSession, err := boot.AWSSession()
+	awsSession, err := bootSvc.AWSSession()
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
@@ -138,7 +137,7 @@ func main() {
 	}
 
 	srv := server.NewThreadsServer(clock.New(), dl, eSNS, *flagSNSTopicARN, notificationClient, directoryClient, settingsClient, *flagWebDomain)
-	threading.InitMetrics(srv, metricsRegistry.Scope("server"))
+	threading.InitMetrics(srv, bootSvc.MetricsRegistry.Scope("server"))
 
 	s := grpc.NewServer()
 	threading.RegisterThreadsServer(s, srv)

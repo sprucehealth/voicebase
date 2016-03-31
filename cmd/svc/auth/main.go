@@ -47,7 +47,7 @@ func init() {
 }
 
 func main() {
-	metricsRegistry := boot.InitService("auth")
+	svc := boot.NewService("auth")
 
 	if config.clientEncryptionKeySecret == "" {
 		golog.Fatalf("Client encryption key secret required")
@@ -94,7 +94,7 @@ func main() {
 	if err != nil {
 		golog.Fatalf("Error while initializing auth server: %s", err)
 	}
-	pb.InitMetrics(aSrv, metricsRegistry.Scope("server"))
+	pb.InitMetrics(aSrv, svc.MetricsRegistry.Scope("server"))
 
 	s := grpc.NewServer()
 	pb.RegisterAuthServer(s, aSrv)

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/samuel/go-metrics/metrics"
 	"net"
 	"time"
 
@@ -30,7 +29,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func runService(metricsRegistry metrics.Registry) {
+func runService(bootSvc *boot.Service) {
 	db, err := dbutil.ConnectMySQL(&dbutil.DBConfig{
 		User:          config.dbUserName,
 		Password:      config.dbPassword,
@@ -50,7 +49,7 @@ func runService(metricsRegistry metrics.Registry) {
 		golog.Fatalf(err.Error())
 	}
 
-	awsSession, err := boot.AWSSession()
+	awsSession, err := bootSvc.AWSSession()
 	if err != nil {
 		golog.Fatalf("Failed to create AWS session: %s", err)
 	}
@@ -134,7 +133,7 @@ func runService(metricsRegistry metrics.Registry) {
 		server.NewSendgridClient(config.sendgridAPIKey),
 		server.NewIDGenerator(),
 		proxyNumberManager)
-	excomms.InitMetrics(excommsService, metricsRegistry.Scope("server"))
+	excomms.InitMetrics(excommsService, bootSvc.MetricsRegistry.Scope("server"))
 
 	excommsServer := grpc.NewServer()
 	excomms.RegisterExCommsServer(excommsServer, excommsService)

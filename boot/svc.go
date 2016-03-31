@@ -2,6 +2,7 @@ package boot
 
 import (
 	"flag"
+	"fmt"
 	"net/http"
 	_ "net/http/pprof" // imported for side-effect of registering HTTP handlers
 	"os"
@@ -13,54 +14,69 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/rainycape/memcache"
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/samuel/go-metrics/reporter"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/mcutil"
+	"github.com/sprucehealth/backend/libs/ratelimit"
 	"google.golang.org/grpc"
 )
 
-// TODO: these get set in InitService. A bit unfortunate how this is setup. Will clean up later.
-var (
-	flagAWSAccessKey *string
-	flagAWSSecretKey *string
-	flagAWSToken     *string
-	flagAWSRegion    *string
-)
+type Service struct {
+	MetricsRegistry metrics.Registry
 
-var (
+	flags struct {
+		debug                  bool
+		env                    string
+		errorSNSTopic          string
+		managementAddr         string
+		libratoUsername        string
+		libratoToken           string
+		awsAccessKey           string
+		awsSecretKey           string
+		awsToken               string
+		awsRegion              string
+		memcachedDiscoveryAddr string
+		memcachedHosts         string
+	}
 	awsSessionOnce sync.Once
 	awsSession     *session.Session
 	awsSessionErr  error
-)
+	memcacheOnce   sync.Once
+	memcacheCli    *memcache.Client
+	memcacheErr    error
+}
 
-// InitService should be called at the start of a service. It parses flags and sets up a mangement server.
-func InitService(name string) metrics.Registry {
-	var (
-		flagDebug           = flag.Bool("debug", false, "Enable debug logging")
-		flagEnv             = flag.String("env", "", "Execution environment")
-		flagErrorSNSTopic   = flag.String("error_sns_topic", "", "SNS `topic` which to send errors")
-		flagManagementAddr  = flag.String("management_addr", ":9000", "`host:port` of management HTTP server")
-		flagLibratoUsername = flag.String("librato_username", "", "Librato metrics username")
-		flagLibratoToken    = flag.String("librato_token", "", "Librato metrics token")
-	)
-	flagAWSAccessKey = flag.String("aws_access_key", "", "Access `key` for AWS")
-	flagAWSSecretKey = flag.String("aws_secret_key", "", "Secret `key` for AWS")
-	flagAWSToken = flag.String("aws_token", "", "Temporary access `token` for AWS")
-	flagAWSRegion = flag.String("aws_region", "us-east-1", "AWS `region`")
+// NewService should be called at the start of a service. It parses flags and sets up a mangement server.
+func NewService(name string) *Service {
+	svc := &Service{}
+	flag.BoolVar(&svc.flags.debug, "debug", false, "Enable debug logging")
+	flag.StringVar(&svc.flags.env, "env", "", "Execution environment")
+	flag.StringVar(&svc.flags.errorSNSTopic, "error_sns_topic", "", "SNS `topic` which to send errors")
+	flag.StringVar(&svc.flags.managementAddr, "management_addr", ":9000", "`host:port` of management HTTP server")
+	flag.StringVar(&svc.flags.libratoUsername, "librato_username", "", "Librato metrics username")
+	flag.StringVar(&svc.flags.libratoToken, "librato_token", "", "Librato metrics token")
+	flag.StringVar(&svc.flags.awsAccessKey, "aws_access_key", "", "Access `key` for AWS")
+	flag.StringVar(&svc.flags.awsSecretKey, "aws_secret_key", "", "Secret `key` for AWS")
+	flag.StringVar(&svc.flags.awsToken, "aws_token", "", "Temporary access `token` for AWS")
+	flag.StringVar(&svc.flags.awsRegion, "aws_region", "us-east-1", "AWS `region`")
+	flag.StringVar(&svc.flags.memcachedDiscoveryAddr, "memcached_discovery_addr", "", "host:port of memcached discovery service")
+	flag.StringVar(&svc.flags.memcachedHosts, "memcached_hosts", "", "Comma separate host:port list of memcached server addresses")
 
 	ParseFlags(strings.ToUpper(name) + "_")
 
 	// Disable the built in grpc tracing and use our own
 	grpc.EnableTracing = false
 
-	if *flagEnv == "" {
+	if svc.flags.env == "" {
 		golog.Fatalf("-env flag required")
 	}
-	environment.SetCurrent(*flagEnv)
+	environment.SetCurrent(svc.flags.env)
 
-	if *flagDebug {
+	if svc.flags.debug {
 		golog.Default().SetLevel(golog.DEBUG)
 	}
 
@@ -71,30 +87,89 @@ func InitService(name string) metrics.Registry {
 
 	// Start management server
 	go func() {
-		golog.Fatalf("%s", http.ListenAndServe(*flagManagementAddr, nil))
+		golog.Fatalf("%s", http.ListenAndServe(svc.flags.managementAddr, nil))
 	}()
 
 	metricsRegistry := metrics.NewRegistry()
-	if *flagErrorSNSTopic != "" {
-		awsSession, err := AWSSession()
+	svc.MetricsRegistry = metricsRegistry.Scope("svc." + name)
+
+	if svc.flags.errorSNSTopic != "" {
+		awsSession, err := svc.AWSSession()
 		if err != nil {
 			golog.Fatalf("Failed to create AWS session: %s", err)
 		}
+		var rateLimiter ratelimit.KeyedRateLimiter
+		mc, err := svc.MemcacheClient()
+		if err != nil {
+			golog.Fatalf("Failed to create memcached client: %s", err)
+		} else if mc != nil {
+			rateLimiter = ratelimit.NewMemcache(mc, 5, 60)
+		} else {
+			rateLimiter = ratelimit.NewLRUKeyed(128, func() ratelimit.RateLimiter {
+				return ratelimit.NewSimple(5, time.Minute)
+			})
+		}
 		golog.Default().SetHandler(SNSLogHandler(
-			sns.New(awsSession), *flagErrorSNSTopic, environment.GetCurrent()+"/"+name,
-			golog.Default().Handler(), nil, metricsRegistry.Scope("errorsns")))
+			sns.New(awsSession), svc.flags.errorSNSTopic, environment.GetCurrent()+"/"+name,
+			golog.Default().Handler(), rateLimiter, metricsRegistry.Scope("errorsns")))
 	}
 
 	metricsRegistry.Add("runtime", metrics.RuntimeMetrics)
 
-	if *flagLibratoUsername != "" && *flagLibratoToken != "" {
-		source := *flagEnv + "-" + name
+	if svc.flags.libratoUsername != "" && svc.flags.libratoToken != "" {
+		source := svc.flags.env + "-" + name
 		statsReporter := reporter.NewLibratoReporter(
-			metricsRegistry, time.Minute, true, *flagLibratoUsername, *flagLibratoToken, source)
+			metricsRegistry, time.Minute, true, svc.flags.libratoUsername, svc.flags.libratoToken, source)
 		statsReporter.Start()
 	}
 
-	return metricsRegistry.Scope("svc." + name)
+	return svc
+}
+
+// AWSSession returns an AWS session.
+func (svc *Service) AWSSession() (*session.Session, error) {
+	svc.awsSessionOnce.Do(func() {
+		awsConfig, err := awsutil.Config(svc.flags.awsRegion, svc.flags.awsAccessKey, svc.flags.awsSecretKey, svc.flags.awsToken)
+		if err != nil {
+			svc.awsSessionErr = err
+			return
+		}
+		svc.awsSession = session.New(awsConfig)
+	})
+	return svc.awsSession, svc.awsSessionErr
+}
+
+// MemcacheClient lazily creates and returns a memcached client. It returns the same client on every call.
+func (svc *Service) MemcacheClient() (*memcache.Client, error) {
+	if svc.flags.memcachedDiscoveryAddr == "" && svc.flags.memcachedHosts == "" {
+		return nil, nil
+	}
+	svc.memcacheOnce.Do(func() {
+		var servers memcache.Servers
+		if svc.flags.memcachedDiscoveryAddr != "" {
+			discoveryInterval := time.Minute
+			d, err := awsutil.NewElastiCacheDiscoverer(svc.flags.memcachedDiscoveryAddr, discoveryInterval)
+			if err != nil {
+				svc.memcacheErr = fmt.Errorf("Failed to discover memcached hosts: %s", err.Error())
+				return
+			}
+			servers = mcutil.NewElastiCacheServers(d)
+		} else {
+			var hosts []string
+			for _, h := range strings.Split(svc.flags.memcachedHosts, ",") {
+				if h = strings.TrimSpace(h); h != "" {
+					hosts = append(hosts, h)
+				}
+			}
+			if len(hosts) == 0 {
+				svc.memcacheErr = fmt.Errorf("Empty memcached host list")
+				return
+			}
+			servers = mcutil.NewHRWServer(hosts)
+		}
+		svc.memcacheCli = memcache.NewFromServers(servers)
+	})
+	return svc.memcacheCli, svc.memcacheErr
 }
 
 // WaitForTermination waits for an INT or TERM signal.
@@ -105,17 +180,4 @@ func WaitForTermination() {
 	case sig := <-ch:
 		golog.Infof("Quitting due to signal %s", sig.String())
 	}
-}
-
-// AWSSession returns an AWS session. It must only be called after ParseFlags or InitService.
-func AWSSession() (*session.Session, error) {
-	awsSessionOnce.Do(func() {
-		awsConfig, err := awsutil.Config(*flagAWSRegion, *flagAWSAccessKey, *flagAWSSecretKey, *flagAWSToken)
-		if err != nil {
-			awsSessionErr = err
-			return
-		}
-		awsSession = session.New(awsConfig)
-	})
-	return awsSession, awsSessionErr
 }

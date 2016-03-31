@@ -45,7 +45,7 @@ func init() {
 }
 
 func main() {
-	boot.InitService("routing")
+	bootSvc := boot.NewService("routing")
 
 	directoryConn, err := grpc.Dial(
 		config.directoryServiceURL,
@@ -96,7 +96,7 @@ func main() {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
 	}
 
-	awsSession, err := boot.AWSSession()
+	awsSession, err := bootSvc.AWSSession()
 	if err != nil {
 		golog.Fatalf(err.Error())
 	}
