@@ -52,7 +52,7 @@ func init() {
 }
 
 func main() {
-	boot.InitService("threading")
+	metricsRegistry := boot.InitService("threading")
 
 	if *flagSettingsAddr == "" {
 		golog.Fatalf("Settings service not configured")
@@ -137,8 +137,11 @@ func main() {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
 	}
 
+	srv := server.NewThreadsServer(clock.New(), dl, eSNS, *flagSNSTopicARN, notificationClient, directoryClient, settingsClient, *flagWebDomain)
+	threading.InitMetrics(srv, metricsRegistry)
+
 	s := grpc.NewServer()
-	threading.RegisterThreadsServer(s, server.NewThreadsServer(clock.New(), dl, eSNS, *flagSNSTopicARN, notificationClient, directoryClient, settingsClient, *flagWebDomain))
+	threading.RegisterThreadsServer(s, srv)
 	golog.Infof("Starting Threads service on %s...", *flagListen)
 
 	ln, err := net.Listen("tcp", *flagListen)

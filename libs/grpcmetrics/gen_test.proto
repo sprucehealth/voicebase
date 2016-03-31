@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package grpcmetrics_test;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = true;
+
+message AddRequest {
+	int64 a = 1;
+	int64 b = 2;
+}
+
+message AddResponse {
+	int64 sum = 1;
+}
+
+service Test {
+	rpc Add(AddRequest) returns (AddResponse);
+}

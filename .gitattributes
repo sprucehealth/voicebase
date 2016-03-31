@@ -4,3 +4,4 @@ intake-*.json binary
 review-*.json binary
 diagnose-*.json binary
 *.pb.go binary
+gen_pb_test.go binary
