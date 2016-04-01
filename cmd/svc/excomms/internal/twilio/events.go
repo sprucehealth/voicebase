@@ -258,9 +258,8 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 	}
 
 	var forwardingList []string
-	var providersInForwardingList map[string]bool
-	var phoneNumberToProviderMap map[string]string
 	var organizationID string
+	var providersInOrg []*directory.Entity
 	switch entity.Type {
 	case directory.EntityType_ORGANIZATION:
 		organizationID = entity.ID
@@ -270,32 +269,12 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 			return "", errors.Trace(err)
 		}
 
-		// track the phone numbers in the forwarding list that map to a provider
-		// we then need to check if any of the providers want their calls directed to voicemail.
-		providersInForwardingList = make(map[string]bool, len(forwardingList))
-		phoneNumberToProviderMap = make(map[string]string, len(forwardingList))
-		for _, pn := range forwardingList {
-			parsedPn, err := phone.Format(pn, phone.E164)
-			if err != nil {
-				golog.Errorf("Unable to parse phone number %s: %s", pn, err.Error())
-				continue
-			}
-
-			for _, m := range entity.Members {
-
-				// only consider internal members
-				if m.Type != directory.EntityType_INTERNAL {
-					continue
-				}
-
-				for _, c := range m.Contacts {
-					if c.Value == parsedPn {
-						providersInForwardingList[m.ID] = true
-						phoneNumberToProviderMap[parsedPn] = m.ID
-					}
-				}
+		for _, member := range entity.Members {
+			if member.Type == directory.EntityType_INTERNAL {
+				providersInOrg = append(providersInOrg, member)
 			}
 		}
+
 	case directory.EntityType_INTERNAL:
 		for _, c := range entity.Contacts {
 			if c.Provisioned {
@@ -306,8 +285,6 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 			// assuming for now that we are to call the first non-provisioned
 			// phone number mapped to the provider.
 			forwardingList = []string{c.Value}
-			providersInForwardingList = map[string]bool{entity.ID: true}
-			phoneNumberToProviderMap = map[string]string{c.Value: entity.ID}
 			break
 		}
 
@@ -317,6 +294,9 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 				break
 			}
 		}
+
+		providersInOrg = []*directory.Entity{entity}
+
 	default:
 		return "", errors.Trace(fmt.Errorf("Unexpected entity type %s", entity.Type.String()))
 	}
@@ -343,28 +323,40 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 		return "", errors.Trace(err)
 	}
 
-	// remove the providers from the forwarding list that have a setting
-	// turned on to indicate that all calls should be directed to voicemail
-	par := conc.NewParallel()
-	sendAllCallsToVoicemailMap := conc.NewMap()
-	for entityID := range providersInForwardingList {
-		eID := entityID
-		par.Go(func() error {
-			val, err := sendAllCallsToVoicemailForProvider(ctx, eID, eh)
-			if err != nil {
-				return err
-			}
-			sendAllCallsToVoicemailMap.Set(eID, val)
-			return nil
-		})
-	}
-	if err := par.Wait(); err != nil {
-		return "", errors.Trace(err)
+	// check if the send all calls to voicemail flag is turned on for the phone number
+	// at the org level. If so, then direct the call to voicemail rather than ringing any number in the call list.
+	sendAllCallsToVoicemailValue, err := settings.GetBooleanValue(ctx, eh.settings, &settings.GetValuesRequest{
+		NodeID: organizationID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    excommsSettings.ConfigKeySendCallsToVoicemail,
+				Subkey: params.To,
+			},
+		},
+	})
+	if err != nil {
+		return "", errors.Trace(fmt.Errorf("Unable to get the setting to direct all calls to voicemail for org %s: %s", organizationID, err.Error()))
+	} else if sendAllCallsToVoicemailValue.Value {
+		return voicemailTWIML(ctx, params, eh)
 	}
 
-	golog.Debugf("Forwarding list %s", forwardingList)
-	golog.Debugf("Providers in forwarding list %s", providersInForwardingList)
-	golog.Debugf("PhoneNumberToProviderMap %s", phoneNumberToProviderMap)
+	// send call to voicemail if any one of the providers have this setting on
+	// TODO: Remove this once v1.1 is out on all clients
+	for _, provider := range providersInOrg {
+		sendAllCallsToVoicemailValue, err := settings.GetBooleanValue(ctx, eh.settings, &settings.GetValuesRequest{
+			NodeID: provider.ID,
+			Keys: []*settings.ConfigKey{
+				{
+					Key: excommsSettings.ConfigKeySendCallsToVoicemail,
+				},
+			},
+		})
+		if err != nil {
+			return "", errors.Trace(fmt.Errorf("Unable to get the setting to direct all calls to voicemail for provider %s: %s", provider.ID, err.Error()))
+		} else if sendAllCallsToVoicemailValue.Value {
+			return voicemailTWIML(ctx, params, eh)
+		}
+	}
 
 	numbers := make([]interface{}, 0, maxPhoneNumbers)
 	for _, p := range forwardingList {
@@ -378,21 +370,9 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 			break
 		}
 
-		// check if send all calls to voicemail setting is on
-		// for any provider in the forwarding list
-		eID, ok := phoneNumberToProviderMap[parsedPn]
-		if ok {
-			val := sendAllCallsToVoicemailMap.Get(eID)
-			if val != nil && val.(bool) {
-				// skip including number from the list if provider indicated
-				// that they want all calls to be sent to voicemail
-				continue
-			}
-		}
-
 		numbers = append(numbers, &twiml.Number{
 			URL:  "/twilio/call/provider_call_connected",
-			Text: p,
+			Text: parsedPn,
 		})
 	}
 
@@ -840,26 +820,6 @@ func getForwardingListForProvisionedPhoneNumber(ctx context.Context, phoneNumber
 	}
 
 	return forwardingList, nil
-}
-
-func sendAllCallsToVoicemailForProvider(ctx context.Context, entityID string, eh *eventsHandler) (bool, error) {
-	res, err := eh.settings.GetValues(ctx, &settings.GetValuesRequest{
-		Keys: []*settings.ConfigKey{
-			{
-				Key: excommsSettings.ConfigKeySendCallsToVoicemail,
-			},
-		},
-		NodeID: entityID,
-	})
-	if err != nil {
-		return false, errors.Trace(err)
-	} else if len(res.Values) != 1 {
-		return false, errors.Trace(fmt.Errorf("Expected 1 value for config %s but got %d", excommsSettings.ConfigKeySendCallsToVoicemail, len(res.Values)))
-	} else if res.Values[0].GetBoolean() == nil {
-		return false, errors.Trace(fmt.Errorf("Expected boolean value for config %s but got %T", excommsSettings.ConfigKeySendCallsToVoicemail, res.Values[0]))
-	}
-
-	return res.Values[0].GetBoolean().Value, nil
 }
 
 func determineExternalEntityName(ctx context.Context, source phone.Number, organizationID string, eh *eventsHandler) (string, error) {

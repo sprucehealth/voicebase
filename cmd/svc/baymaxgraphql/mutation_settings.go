@@ -319,6 +319,7 @@ var modifySettingMutation = &graphql.Field{
 					Value: boolVal,
 				},
 			}
+
 		default:
 			return nil, fmt.Errorf("Unsupported type %s for config %s.%s", config.Type.String(), key, subkey)
 		}
