@@ -50,7 +50,7 @@ func (t *tokenGenerator) GenerateToken() (string, error) {
 func GenerateToken() (string, error) {
 	// REMINDER: Update MinimumTokenLength if this function changes
 	tokBytes := make([]byte, 16)
-	if _, err := rand.Read(tokBytes); err != nil {
+	if _, err := io.ReadFull(rand.Reader, tokBytes); err != nil {
 		return "", err
 	}
 	tok := strings.TrimRight(base64.URLEncoding.EncodeToString(tokBytes), "=")

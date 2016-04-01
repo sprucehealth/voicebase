@@ -11,6 +11,7 @@
 	It has these top-level messages:
 		Event
 		InvitedColleagues
+		InvitedPatients
 */
 package invite
 
@@ -38,21 +39,25 @@ type Event_Type int32
 const (
 	Event_INVALID            Event_Type = 0
 	Event_INVITED_COLLEAGUES Event_Type = 1
+	Event_INVITED_PATIENTS   Event_Type = 2
 )
 
 var Event_Type_name = map[int32]string{
 	0: "INVALID",
 	1: "INVITED_COLLEAGUES",
+	2: "INVITED_PATIENTS",
 }
 var Event_Type_value = map[string]int32{
 	"INVALID":            0,
 	"INVITED_COLLEAGUES": 1,
+	"INVITED_PATIENTS":   2,
 }
 
 type Event struct {
 	Type Event_Type `protobuf:"varint,1,opt,name=type,proto3,enum=invite.Event_Type" json:"type,omitempty"`
 	// Types that are valid to be assigned to Details:
 	//	*Event_InvitedColleagues
+	//	*Event_InvitedPatients
 	Details isEvent_Details `protobuf_oneof:"details"`
 }
 
@@ -69,8 +74,12 @@ type isEvent_Details interface {
 type Event_InvitedColleagues struct {
 	InvitedColleagues *InvitedColleagues `protobuf:"bytes,10,opt,name=invited_colleagues,oneof"`
 }
+type Event_InvitedPatients struct {
+	InvitedPatients *InvitedPatients `protobuf:"bytes,11,opt,name=invited_patients,oneof"`
+}
 
 func (*Event_InvitedColleagues) isEvent_Details() {}
+func (*Event_InvitedPatients) isEvent_Details()   {}
 
 func (m *Event) GetDetails() isEvent_Details {
 	if m != nil {
@@ -86,10 +95,18 @@ func (m *Event) GetInvitedColleagues() *InvitedColleagues {
 	return nil
 }
 
+func (m *Event) GetInvitedPatients() *InvitedPatients {
+	if x, ok := m.GetDetails().(*Event_InvitedPatients); ok {
+		return x.InvitedPatients
+	}
+	return nil
+}
+
 // XXX_OneofFuncs is for the internal use of the proto package.
 func (*Event) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
 	return _Event_OneofMarshaler, _Event_OneofUnmarshaler, []interface{}{
 		(*Event_InvitedColleagues)(nil),
+		(*Event_InvitedPatients)(nil),
 	}
 }
 
@@ -100,6 +117,11 @@ func _Event_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 	case *Event_InvitedColleagues:
 		_ = b.EncodeVarint(10<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.InvitedColleagues); err != nil {
+			return err
+		}
+	case *Event_InvitedPatients:
+		_ = b.EncodeVarint(11<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.InvitedPatients); err != nil {
 			return err
 		}
 	case nil:
@@ -120,6 +142,14 @@ func _Event_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) 
 		err := b.DecodeMessage(msg)
 		m.Details = &Event_InvitedColleagues{msg}
 		return true, err
+	case 11: // details.invited_patients
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(InvitedPatients)
+		err := b.DecodeMessage(msg)
+		m.Details = &Event_InvitedPatients{msg}
+		return true, err
 	default:
 		return false, nil
 	}
@@ -133,9 +163,18 @@ type InvitedColleagues struct {
 func (m *InvitedColleagues) Reset()      { *m = InvitedColleagues{} }
 func (*InvitedColleagues) ProtoMessage() {}
 
+type InvitedPatients struct {
+	OrganizationEntityID string `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
+	InviterEntityID      string `protobuf:"bytes,2,opt,name=inviter_entity_id,proto3" json:"inviter_entity_id,omitempty"`
+}
+
+func (m *InvitedPatients) Reset()      { *m = InvitedPatients{} }
+func (*InvitedPatients) ProtoMessage() {}
+
 func init() {
 	proto.RegisterType((*Event)(nil), "invite.Event")
 	proto.RegisterType((*InvitedColleagues)(nil), "invite.InvitedColleagues")
+	proto.RegisterType((*InvitedPatients)(nil), "invite.InvitedPatients")
 	proto.RegisterEnum("invite.Event_Type", Event_Type_name, Event_Type_value)
 }
 func (x Event_Type) String() string {
@@ -204,6 +243,31 @@ func (this *Event_InvitedColleagues) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *Event_InvitedPatients) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Event_InvitedPatients)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.InvitedPatients.Equal(that1.InvitedPatients) {
+		return false
+	}
+	return true
+}
 func (this *InvitedColleagues) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
@@ -232,11 +296,39 @@ func (this *InvitedColleagues) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *InvitedPatients) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*InvitedPatients)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.OrganizationEntityID != that1.OrganizationEntityID {
+		return false
+	}
+	if this.InviterEntityID != that1.InviterEntityID {
+		return false
+	}
+	return true
+}
 func (this *Event) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 6)
+	s := make([]string, 0, 7)
 	s = append(s, "&invite.Event{")
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	if this.Details != nil {
@@ -253,12 +345,31 @@ func (this *Event_InvitedColleagues) GoString() string {
 		`InvitedColleagues:` + fmt.Sprintf("%#v", this.InvitedColleagues) + `}`}, ", ")
 	return s
 }
+func (this *Event_InvitedPatients) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&invite.Event_InvitedPatients{` +
+		`InvitedPatients:` + fmt.Sprintf("%#v", this.InvitedPatients) + `}`}, ", ")
+	return s
+}
 func (this *InvitedColleagues) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 6)
 	s = append(s, "&invite.InvitedColleagues{")
+	s = append(s, "OrganizationEntityID: "+fmt.Sprintf("%#v", this.OrganizationEntityID)+",\n")
+	s = append(s, "InviterEntityID: "+fmt.Sprintf("%#v", this.InviterEntityID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *InvitedPatients) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&invite.InvitedPatients{")
 	s = append(s, "OrganizationEntityID: "+fmt.Sprintf("%#v", this.OrganizationEntityID)+",\n")
 	s = append(s, "InviterEntityID: "+fmt.Sprintf("%#v", this.InviterEntityID)+",\n")
 	s = append(s, "}")
@@ -333,6 +444,20 @@ func (m *Event_InvitedColleagues) MarshalTo(data []byte) (int, error) {
 	}
 	return i, nil
 }
+func (m *Event_InvitedPatients) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.InvitedPatients != nil {
+		data[i] = 0x5a
+		i++
+		i = encodeVarintEvents(data, i, uint64(m.InvitedPatients.Size()))
+		n3, err := m.InvitedPatients.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n3
+	}
+	return i, nil
+}
 func (m *InvitedColleagues) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -344,6 +469,36 @@ func (m *InvitedColleagues) Marshal() (data []byte, err error) {
 }
 
 func (m *InvitedColleagues) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.OrganizationEntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintEvents(data, i, uint64(len(m.OrganizationEntityID)))
+		i += copy(data[i:], m.OrganizationEntityID)
+	}
+	if len(m.InviterEntityID) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintEvents(data, i, uint64(len(m.InviterEntityID)))
+		i += copy(data[i:], m.InviterEntityID)
+	}
+	return i, nil
+}
+
+func (m *InvitedPatients) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *InvitedPatients) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -411,7 +566,30 @@ func (m *Event_InvitedColleagues) Size() (n int) {
 	}
 	return n
 }
+func (m *Event_InvitedPatients) Size() (n int) {
+	var l int
+	_ = l
+	if m.InvitedPatients != nil {
+		l = m.InvitedPatients.Size()
+		n += 1 + l + sovEvents(uint64(l))
+	}
+	return n
+}
 func (m *InvitedColleagues) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.OrganizationEntityID)
+	if l > 0 {
+		n += 1 + l + sovEvents(uint64(l))
+	}
+	l = len(m.InviterEntityID)
+	if l > 0 {
+		n += 1 + l + sovEvents(uint64(l))
+	}
+	return n
+}
+
+func (m *InvitedPatients) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.OrganizationEntityID)
@@ -459,11 +637,32 @@ func (this *Event_InvitedColleagues) String() string {
 	}, "")
 	return s
 }
+func (this *Event_InvitedPatients) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Event_InvitedPatients{`,
+		`InvitedPatients:` + strings.Replace(fmt.Sprintf("%v", this.InvitedPatients), "InvitedPatients", "InvitedPatients", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *InvitedColleagues) String() string {
 	if this == nil {
 		return "nil"
 	}
 	s := strings.Join([]string{`&InvitedColleagues{`,
+		`OrganizationEntityID:` + fmt.Sprintf("%v", this.OrganizationEntityID) + `,`,
+		`InviterEntityID:` + fmt.Sprintf("%v", this.InviterEntityID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *InvitedPatients) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&InvitedPatients{`,
 		`OrganizationEntityID:` + fmt.Sprintf("%v", this.OrganizationEntityID) + `,`,
 		`InviterEntityID:` + fmt.Sprintf("%v", this.InviterEntityID) + `,`,
 		`}`,
@@ -558,6 +757,38 @@ func (m *Event) Unmarshal(data []byte) error {
 			}
 			m.Details = &Event_InvitedColleagues{v}
 			iNdEx = postIndex
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InvitedPatients", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEvents
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthEvents
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &InvitedPatients{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Details = &Event_InvitedPatients{v}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipEvents(data[iNdEx:])
@@ -606,6 +837,114 @@ func (m *InvitedColleagues) Unmarshal(data []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: InvitedColleagues: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationEntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEvents
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthEvents
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OrganizationEntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InviterEntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEvents
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthEvents
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.InviterEntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipEvents(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthEvents
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *InvitedPatients) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowEvents
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: InvitedPatients: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: InvitedPatients: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

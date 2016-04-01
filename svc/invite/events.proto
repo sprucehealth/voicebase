@@ -12,14 +12,21 @@ message Event {
 	enum Type {
 		INVALID = 0;
 		INVITED_COLLEAGUES = 1;
+		INVITED_PATIENTS = 2;
 	}
 	Type type = 1;
 	oneof details {
 		InvitedColleagues invited_colleagues = 10;
+		InvitedPatients invited_patients = 11;
 	}
 }
 
 message InvitedColleagues {
+	string organization_entity_id = 1 [(gogoproto.customname) = "OrganizationEntityID"];
+	string inviter_entity_id = 2 [(gogoproto.customname) = "InviterEntityID"];
+}
+
+message InvitedPatients {
 	string organization_entity_id = 1 [(gogoproto.customname) = "OrganizationEntityID"];
 	string inviter_entity_id = 2 [(gogoproto.customname) = "InviterEntityID"];
 }

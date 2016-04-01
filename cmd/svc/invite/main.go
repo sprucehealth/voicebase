@@ -18,6 +18,7 @@ import (
 	"github.com/sprucehealth/backend/libs/branch"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/excomms"
 	"github.com/sprucehealth/backend/svc/invite"
 	"google.golang.org/grpc"
 )
@@ -25,7 +26,9 @@ import (
 var (
 	flagBranchKey     = flag.String("branch_key", "", "Branch API key")
 	flagDirectoryAddr = flag.String("directory_addr", "", "`host:port` of directory service")
+	flagExcommsAddr   = flag.String("excomms_addr", "", "`host:port` of excomms service")
 	flagFromEmail     = flag.String("from_email", "", "Email address from which to send invites")
+	flagServiceNumber = flag.String("service_phone_number", "", "TODO: This should be managed by the excomms service")
 	flagListen        = flag.String("listen_addr", ":5001", "`host:port` for grpc server")
 	flagSendGridKey   = flag.String("sendgrid_key", "", "SendGrid API `key`")
 	flagEventsTopic   = flag.String("events_topic", "", "SNS topic ARN for publishing events")
@@ -44,6 +47,9 @@ func main() {
 	}
 	if *flagSendGridKey == "" {
 		golog.Fatalf("sendgrid_key required")
+	}
+	if *flagServiceNumber == "" {
+		golog.Fatalf("service_phone_number required")
 	}
 
 	awsSession, err := svc.AWSSession()
@@ -68,6 +74,16 @@ func main() {
 	defer conn.Close()
 	directoryClient := directory.NewDirectoryClient(conn)
 
+	if *flagExcommsAddr == "" {
+		golog.Fatalf("Excomms service not configured")
+	}
+	conn, err = grpc.Dial(*flagExcommsAddr, grpc.WithInsecure())
+	if err != nil {
+		golog.Fatalf("Unable to connect to excomms service: %s", err)
+	}
+	defer conn.Close()
+	excommsClient := excomms.NewExCommsClient(conn)
+
 	sg := sendgrid.NewSendGridClientWithApiKey(*flagSendGridKey)
 	branchCli := branch.NewClient(*flagBranchKey)
 
@@ -77,7 +93,7 @@ func main() {
 		return
 	}
 
-	srv := server.New(dal.New(db, environment.GetCurrent()), nil, directoryClient, eSNS, branchCli, sg, *flagFromEmail, *flagEventsTopic, *flagWebInviteURL)
+	srv := server.New(dal.New(db, environment.GetCurrent()), nil, directoryClient, excommsClient, eSNS, branchCli, sg, *flagFromEmail, *flagServiceNumber, *flagEventsTopic, *flagWebInviteURL)
 	invite.InitMetrics(srv, svc.MetricsRegistry.Scope("server"))
 	s := grpc.NewServer()
 	defer s.Stop()

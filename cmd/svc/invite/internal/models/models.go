@@ -4,10 +4,14 @@ import (
 	"time"
 )
 
+// InviteType represents the purpose/type of the represented invite
 type InviteType string
 
 const (
+	// ColleagueInvite represents invites for other providers
 	ColleagueInvite InviteType = "COLLEAGUE"
+	// PatientInvite represents invites for patients
+	PatientInvite InviteType = "PATIENT"
 )
 
 type Invite struct {

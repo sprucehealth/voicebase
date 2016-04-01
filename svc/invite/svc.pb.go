@@ -13,6 +13,10 @@
 		InviteColleaguesRequest
 		InviteColleaguesResponse
 		ColleagueInvite
+		Patient
+		InvitePatientsRequest
+		InvitePatientsResponse
+		PatientInvite
 		LookupInviteRequest
 		LookupInviteResponse
 		AttributionValue
@@ -51,13 +55,16 @@ type LookupInviteResponse_Type int32
 
 const (
 	LookupInviteResponse_COLLEAGUE LookupInviteResponse_Type = 0
+	LookupInviteResponse_PATIENT   LookupInviteResponse_Type = 1
 )
 
 var LookupInviteResponse_Type_name = map[int32]string{
 	0: "COLLEAGUE",
+	1: "PATIENT",
 }
 var LookupInviteResponse_Type_value = map[string]int32{
 	"COLLEAGUE": 0,
+	"PATIENT":   1,
 }
 
 type Colleague struct {
@@ -106,6 +113,53 @@ func (m *ColleagueInvite) GetColleague() *Colleague {
 	return nil
 }
 
+type Patient struct {
+	FirstName   string `protobuf:"bytes,1,opt,name=first_name,proto3" json:"first_name,omitempty"`
+	Email       string `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+	PhoneNumber string `protobuf:"bytes,3,opt,name=phone_number,proto3" json:"phone_number,omitempty"`
+}
+
+func (m *Patient) Reset()      { *m = Patient{} }
+func (*Patient) ProtoMessage() {}
+
+type InvitePatientsRequest struct {
+	OrganizationEntityID string     `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
+	InviterEntityID      string     `protobuf:"bytes,2,opt,name=inviter_entity_id,proto3" json:"inviter_entity_id,omitempty"`
+	Patients             []*Patient `protobuf:"bytes,3,rep,name=patients" json:"patients,omitempty"`
+}
+
+func (m *InvitePatientsRequest) Reset()      { *m = InvitePatientsRequest{} }
+func (*InvitePatientsRequest) ProtoMessage() {}
+
+func (m *InvitePatientsRequest) GetPatients() []*Patient {
+	if m != nil {
+		return m.Patients
+	}
+	return nil
+}
+
+type InvitePatientsResponse struct {
+}
+
+func (m *InvitePatientsResponse) Reset()      { *m = InvitePatientsResponse{} }
+func (*InvitePatientsResponse) ProtoMessage() {}
+
+type PatientInvite struct {
+	OrganizationEntityID string     `protobuf:"bytes,1,opt,name=organization_entity_id,proto3" json:"organization_entity_id,omitempty"`
+	InviterEntityID      string     `protobuf:"bytes,2,opt,name=inviter_entity_id,proto3" json:"inviter_entity_id,omitempty"`
+	Colleague            *Colleague `protobuf:"bytes,3,opt,name=colleague" json:"colleague,omitempty"`
+}
+
+func (m *PatientInvite) Reset()      { *m = PatientInvite{} }
+func (*PatientInvite) ProtoMessage() {}
+
+func (m *PatientInvite) GetColleague() *Colleague {
+	if m != nil {
+		return m.Colleague
+	}
+	return nil
+}
+
 type LookupInviteRequest struct {
 	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 }
@@ -117,6 +171,7 @@ type LookupInviteResponse struct {
 	Type LookupInviteResponse_Type `protobuf:"varint,1,opt,name=type,proto3,enum=invite.LookupInviteResponse_Type" json:"type,omitempty"`
 	// Types that are valid to be assigned to Invite:
 	//	*LookupInviteResponse_Colleague
+	//	*LookupInviteResponse_Patient
 	Invite isLookupInviteResponse_Invite `protobuf_oneof:"invite"`
 	Values []*AttributionValue           `protobuf:"bytes,2,rep,name=values" json:"values,omitempty"`
 }
@@ -134,8 +189,12 @@ type isLookupInviteResponse_Invite interface {
 type LookupInviteResponse_Colleague struct {
 	Colleague *ColleagueInvite `protobuf:"bytes,10,opt,name=colleague,oneof"`
 }
+type LookupInviteResponse_Patient struct {
+	Patient *PatientInvite `protobuf:"bytes,11,opt,name=patient,oneof"`
+}
 
 func (*LookupInviteResponse_Colleague) isLookupInviteResponse_Invite() {}
+func (*LookupInviteResponse_Patient) isLookupInviteResponse_Invite()   {}
 
 func (m *LookupInviteResponse) GetInvite() isLookupInviteResponse_Invite {
 	if m != nil {
@@ -151,6 +210,13 @@ func (m *LookupInviteResponse) GetColleague() *ColleagueInvite {
 	return nil
 }
 
+func (m *LookupInviteResponse) GetPatient() *PatientInvite {
+	if x, ok := m.GetInvite().(*LookupInviteResponse_Patient); ok {
+		return x.Patient
+	}
+	return nil
+}
+
 func (m *LookupInviteResponse) GetValues() []*AttributionValue {
 	if m != nil {
 		return m.Values
@@ -162,6 +228,7 @@ func (m *LookupInviteResponse) GetValues() []*AttributionValue {
 func (*LookupInviteResponse) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
 	return _LookupInviteResponse_OneofMarshaler, _LookupInviteResponse_OneofUnmarshaler, []interface{}{
 		(*LookupInviteResponse_Colleague)(nil),
+		(*LookupInviteResponse_Patient)(nil),
 	}
 }
 
@@ -172,6 +239,11 @@ func _LookupInviteResponse_OneofMarshaler(msg proto.Message, b *proto.Buffer) er
 	case *LookupInviteResponse_Colleague:
 		_ = b.EncodeVarint(10<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.Colleague); err != nil {
+			return err
+		}
+	case *LookupInviteResponse_Patient:
+		_ = b.EncodeVarint(11<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Patient); err != nil {
 			return err
 		}
 	case nil:
@@ -191,6 +263,14 @@ func _LookupInviteResponse_OneofUnmarshaler(msg proto.Message, tag, wire int, b 
 		msg := new(ColleagueInvite)
 		err := b.DecodeMessage(msg)
 		m.Invite = &LookupInviteResponse_Colleague{msg}
+		return true, err
+	case 11: // invite.patient
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(PatientInvite)
+		err := b.DecodeMessage(msg)
+		m.Invite = &LookupInviteResponse_Patient{msg}
 		return true, err
 	default:
 		return false, nil
@@ -252,6 +332,10 @@ func init() {
 	proto.RegisterType((*InviteColleaguesRequest)(nil), "invite.InviteColleaguesRequest")
 	proto.RegisterType((*InviteColleaguesResponse)(nil), "invite.InviteColleaguesResponse")
 	proto.RegisterType((*ColleagueInvite)(nil), "invite.ColleagueInvite")
+	proto.RegisterType((*Patient)(nil), "invite.Patient")
+	proto.RegisterType((*InvitePatientsRequest)(nil), "invite.InvitePatientsRequest")
+	proto.RegisterType((*InvitePatientsResponse)(nil), "invite.InvitePatientsResponse")
+	proto.RegisterType((*PatientInvite)(nil), "invite.PatientInvite")
 	proto.RegisterType((*LookupInviteRequest)(nil), "invite.LookupInviteRequest")
 	proto.RegisterType((*LookupInviteResponse)(nil), "invite.LookupInviteResponse")
 	proto.RegisterType((*AttributionValue)(nil), "invite.AttributionValue")
@@ -385,6 +469,126 @@ func (this *ColleagueInvite) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *Patient) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Patient)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.FirstName != that1.FirstName {
+		return false
+	}
+	if this.Email != that1.Email {
+		return false
+	}
+	if this.PhoneNumber != that1.PhoneNumber {
+		return false
+	}
+	return true
+}
+func (this *InvitePatientsRequest) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*InvitePatientsRequest)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.OrganizationEntityID != that1.OrganizationEntityID {
+		return false
+	}
+	if this.InviterEntityID != that1.InviterEntityID {
+		return false
+	}
+	if len(this.Patients) != len(that1.Patients) {
+		return false
+	}
+	for i := range this.Patients {
+		if !this.Patients[i].Equal(that1.Patients[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *InvitePatientsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*InvitePatientsResponse)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *PatientInvite) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*PatientInvite)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.OrganizationEntityID != that1.OrganizationEntityID {
+		return false
+	}
+	if this.InviterEntityID != that1.InviterEntityID {
+		return false
+	}
+	if !this.Colleague.Equal(that1.Colleague) {
+		return false
+	}
+	return true
+}
 func (this *LookupInviteRequest) Equal(that interface{}) bool {
 	if that == nil {
 		if this == nil {
@@ -473,6 +677,31 @@ func (this *LookupInviteResponse_Colleague) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.Colleague.Equal(that1.Colleague) {
+		return false
+	}
+	return true
+}
+func (this *LookupInviteResponse_Patient) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*LookupInviteResponse_Patient)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Patient.Equal(that1.Patient) {
 		return false
 	}
 	return true
@@ -663,6 +892,55 @@ func (this *ColleagueInvite) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *Patient) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&invite.Patient{")
+	s = append(s, "FirstName: "+fmt.Sprintf("%#v", this.FirstName)+",\n")
+	s = append(s, "Email: "+fmt.Sprintf("%#v", this.Email)+",\n")
+	s = append(s, "PhoneNumber: "+fmt.Sprintf("%#v", this.PhoneNumber)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *InvitePatientsRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&invite.InvitePatientsRequest{")
+	s = append(s, "OrganizationEntityID: "+fmt.Sprintf("%#v", this.OrganizationEntityID)+",\n")
+	s = append(s, "InviterEntityID: "+fmt.Sprintf("%#v", this.InviterEntityID)+",\n")
+	if this.Patients != nil {
+		s = append(s, "Patients: "+fmt.Sprintf("%#v", this.Patients)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *InvitePatientsResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&invite.InvitePatientsResponse{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *PatientInvite) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&invite.PatientInvite{")
+	s = append(s, "OrganizationEntityID: "+fmt.Sprintf("%#v", this.OrganizationEntityID)+",\n")
+	s = append(s, "InviterEntityID: "+fmt.Sprintf("%#v", this.InviterEntityID)+",\n")
+	if this.Colleague != nil {
+		s = append(s, "Colleague: "+fmt.Sprintf("%#v", this.Colleague)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *LookupInviteRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -677,7 +955,7 @@ func (this *LookupInviteResponse) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 8)
 	s = append(s, "&invite.LookupInviteResponse{")
 	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	if this.Invite != nil {
@@ -695,6 +973,14 @@ func (this *LookupInviteResponse_Colleague) GoString() string {
 	}
 	s := strings.Join([]string{`&invite.LookupInviteResponse_Colleague{` +
 		`Colleague:` + fmt.Sprintf("%#v", this.Colleague) + `}`}, ", ")
+	return s
+}
+func (this *LookupInviteResponse_Patient) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&invite.LookupInviteResponse_Patient{` +
+		`Patient:` + fmt.Sprintf("%#v", this.Patient) + `}`}, ", ")
 	return s
 }
 func (this *AttributionValue) GoString() string {
@@ -789,6 +1075,8 @@ type InviteClient interface {
 	AttributionData(ctx context.Context, in *AttributionDataRequest, opts ...grpc.CallOption) (*AttributionDataResponse, error)
 	// InviteColleagues sends invites to people to join an organization
 	InviteColleagues(ctx context.Context, in *InviteColleaguesRequest, opts ...grpc.CallOption) (*InviteColleaguesResponse, error)
+	// InvitePatients sends invites to people to join an organization
+	InvitePatients(ctx context.Context, in *InvitePatientsRequest, opts ...grpc.CallOption) (*InvitePatientsResponse, error)
 	// LookupInvite returns information about an invite by token
 	LookupInvite(ctx context.Context, in *LookupInviteRequest, opts ...grpc.CallOption) (*LookupInviteResponse, error)
 	// SetAttributionData associate attribution data with a device
@@ -821,6 +1109,15 @@ func (c *inviteClient) InviteColleagues(ctx context.Context, in *InviteColleague
 	return out, nil
 }
 
+func (c *inviteClient) InvitePatients(ctx context.Context, in *InvitePatientsRequest, opts ...grpc.CallOption) (*InvitePatientsResponse, error) {
+	out := new(InvitePatientsResponse)
+	err := grpc.Invoke(ctx, "/invite.Invite/InvitePatients", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *inviteClient) LookupInvite(ctx context.Context, in *LookupInviteRequest, opts ...grpc.CallOption) (*LookupInviteResponse, error) {
 	out := new(LookupInviteResponse)
 	err := grpc.Invoke(ctx, "/invite.Invite/LookupInvite", in, out, c.cc, opts...)
@@ -846,6 +1143,8 @@ type InviteServer interface {
 	AttributionData(context.Context, *AttributionDataRequest) (*AttributionDataResponse, error)
 	// InviteColleagues sends invites to people to join an organization
 	InviteColleagues(context.Context, *InviteColleaguesRequest) (*InviteColleaguesResponse, error)
+	// InvitePatients sends invites to people to join an organization
+	InvitePatients(context.Context, *InvitePatientsRequest) (*InvitePatientsResponse, error)
 	// LookupInvite returns information about an invite by token
 	LookupInvite(context.Context, *LookupInviteRequest) (*LookupInviteResponse, error)
 	// SetAttributionData associate attribution data with a device
@@ -874,6 +1173,18 @@ func _Invite_InviteColleagues_Handler(srv interface{}, ctx context.Context, dec 
 		return nil, err
 	}
 	out, err := srv.(InviteServer).InviteColleagues(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _Invite_InvitePatients_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(InvitePatientsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(InviteServer).InvitePatients(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -915,6 +1226,10 @@ var _Invite_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "InviteColleagues",
 			Handler:    _Invite_InviteColleagues_Handler,
+		},
+		{
+			MethodName: "InvitePatients",
+			Handler:    _Invite_InvitePatients_Handler,
 		},
 		{
 			MethodName: "LookupInvite",
@@ -1058,6 +1373,142 @@ func (m *ColleagueInvite) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Patient) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Patient) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.FirstName) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.FirstName)))
+		i += copy(data[i:], m.FirstName)
+	}
+	if len(m.Email) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.Email)))
+		i += copy(data[i:], m.Email)
+	}
+	if len(m.PhoneNumber) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.PhoneNumber)))
+		i += copy(data[i:], m.PhoneNumber)
+	}
+	return i, nil
+}
+
+func (m *InvitePatientsRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *InvitePatientsRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.OrganizationEntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.OrganizationEntityID)))
+		i += copy(data[i:], m.OrganizationEntityID)
+	}
+	if len(m.InviterEntityID) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.InviterEntityID)))
+		i += copy(data[i:], m.InviterEntityID)
+	}
+	if len(m.Patients) > 0 {
+		for _, msg := range m.Patients {
+			data[i] = 0x1a
+			i++
+			i = encodeVarintSvc(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *InvitePatientsResponse) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *InvitePatientsResponse) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	return i, nil
+}
+
+func (m *PatientInvite) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *PatientInvite) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.OrganizationEntityID) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.OrganizationEntityID)))
+		i += copy(data[i:], m.OrganizationEntityID)
+	}
+	if len(m.InviterEntityID) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintSvc(data, i, uint64(len(m.InviterEntityID)))
+		i += copy(data[i:], m.InviterEntityID)
+	}
+	if m.Colleague != nil {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Colleague.Size()))
+		n2, err := m.Colleague.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n2
+	}
+	return i, nil
+}
+
 func (m *LookupInviteRequest) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -1115,11 +1566,11 @@ func (m *LookupInviteResponse) MarshalTo(data []byte) (int, error) {
 		}
 	}
 	if m.Invite != nil {
-		nn2, err := m.Invite.MarshalTo(data[i:])
+		nn3, err := m.Invite.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn2
+		i += nn3
 	}
 	return i, nil
 }
@@ -1130,11 +1581,25 @@ func (m *LookupInviteResponse_Colleague) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x52
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Colleague.Size()))
-		n3, err := m.Colleague.MarshalTo(data[i:])
+		n4, err := m.Colleague.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n3
+		i += n4
+	}
+	return i, nil
+}
+func (m *LookupInviteResponse_Patient) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.Patient != nil {
+		data[i] = 0x5a
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Patient.Size()))
+		n5, err := m.Patient.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n5
 	}
 	return i, nil
 }
@@ -1361,6 +1826,68 @@ func (m *ColleagueInvite) Size() (n int) {
 	return n
 }
 
+func (m *Patient) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.FirstName)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.Email)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.PhoneNumber)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
+func (m *InvitePatientsRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.OrganizationEntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.InviterEntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if len(m.Patients) > 0 {
+		for _, e := range m.Patients {
+			l = e.Size()
+			n += 1 + l + sovSvc(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *InvitePatientsResponse) Size() (n int) {
+	var l int
+	_ = l
+	return n
+}
+
+func (m *PatientInvite) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.OrganizationEntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	l = len(m.InviterEntityID)
+	if l > 0 {
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.Colleague != nil {
+		l = m.Colleague.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+
 func (m *LookupInviteRequest) Size() (n int) {
 	var l int
 	_ = l
@@ -1394,6 +1921,15 @@ func (m *LookupInviteResponse_Colleague) Size() (n int) {
 	_ = l
 	if m.Colleague != nil {
 		l = m.Colleague.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	return n
+}
+func (m *LookupInviteResponse_Patient) Size() (n int) {
+	var l int
+	_ = l
+	if m.Patient != nil {
+		l = m.Patient.Size()
 		n += 1 + l + sovSvc(uint64(l))
 	}
 	return n
@@ -1513,6 +2049,51 @@ func (this *ColleagueInvite) String() string {
 	}, "")
 	return s
 }
+func (this *Patient) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Patient{`,
+		`FirstName:` + fmt.Sprintf("%v", this.FirstName) + `,`,
+		`Email:` + fmt.Sprintf("%v", this.Email) + `,`,
+		`PhoneNumber:` + fmt.Sprintf("%v", this.PhoneNumber) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *InvitePatientsRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&InvitePatientsRequest{`,
+		`OrganizationEntityID:` + fmt.Sprintf("%v", this.OrganizationEntityID) + `,`,
+		`InviterEntityID:` + fmt.Sprintf("%v", this.InviterEntityID) + `,`,
+		`Patients:` + strings.Replace(fmt.Sprintf("%v", this.Patients), "Patient", "Patient", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *InvitePatientsResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&InvitePatientsResponse{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PatientInvite) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PatientInvite{`,
+		`OrganizationEntityID:` + fmt.Sprintf("%v", this.OrganizationEntityID) + `,`,
+		`InviterEntityID:` + fmt.Sprintf("%v", this.InviterEntityID) + `,`,
+		`Colleague:` + strings.Replace(fmt.Sprintf("%v", this.Colleague), "Colleague", "Colleague", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *LookupInviteRequest) String() string {
 	if this == nil {
 		return "nil"
@@ -1541,6 +2122,16 @@ func (this *LookupInviteResponse_Colleague) String() string {
 	}
 	s := strings.Join([]string{`&LookupInviteResponse_Colleague{`,
 		`Colleague:` + strings.Replace(fmt.Sprintf("%v", this.Colleague), "ColleagueInvite", "ColleagueInvite", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *LookupInviteResponse_Patient) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&LookupInviteResponse_Patient{`,
+		`Patient:` + strings.Replace(fmt.Sprintf("%v", this.Patient), "PatientInvite", "PatientInvite", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2042,6 +2633,473 @@ func (m *ColleagueInvite) Unmarshal(data []byte) error {
 	}
 	return nil
 }
+func (m *Patient) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Patient: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Patient: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FirstName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FirstName = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Email", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Email = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PhoneNumber", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PhoneNumber = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *InvitePatientsRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: InvitePatientsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: InvitePatientsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationEntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OrganizationEntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InviterEntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.InviterEntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Patients", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Patients = append(m.Patients, &Patient{})
+			if err := m.Patients[len(m.Patients)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *InvitePatientsResponse) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: InvitePatientsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: InvitePatientsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PatientInvite) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PatientInvite: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PatientInvite: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OrganizationEntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OrganizationEntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InviterEntityID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.InviterEntityID = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Colleague", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Colleague == nil {
+				m.Colleague = &Colleague{}
+			}
+			if err := m.Colleague.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *LookupInviteRequest) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
@@ -2231,6 +3289,38 @@ func (m *LookupInviteResponse) Unmarshal(data []byte) error {
 				return err
 			}
 			m.Invite = &LookupInviteResponse_Colleague{v}
+			iNdEx = postIndex
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Patient", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &PatientInvite{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Invite = &LookupInviteResponse_Patient{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

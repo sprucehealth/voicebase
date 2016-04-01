@@ -34,6 +34,12 @@ func (c *Client) InviteColleagues(ctx context.Context, in *invite.InviteColleagu
 	return ret[0].(*invite.InviteColleaguesResponse), mock.SafeError(ret[1])
 }
 
+// InvitePatients sends invites to people to join an organization
+func (c *Client) InvitePatients(ctx context.Context, in *invite.InvitePatientsRequest, opts ...grpc.CallOption) (*invite.InvitePatientsResponse, error) {
+	ret := c.Expector.Record(in)
+	return ret[0].(*invite.InvitePatientsResponse), mock.SafeError(ret[1])
+}
+
 // LookupInvite returns information about an invite by token
 func (c *Client) LookupInvite(ctx context.Context, in *invite.LookupInviteRequest, opts ...grpc.CallOption) (*invite.LookupInviteResponse, error) {
 	ret := c.Expector.Record(in)

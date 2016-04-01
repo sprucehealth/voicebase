@@ -18,12 +18,27 @@ import (
 	"github.com/sprucehealth/backend/svc/directory"
 	dirmock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/events"
+	"github.com/sprucehealth/backend/svc/excomms"
+	excommsmock "github.com/sprucehealth/backend/svc/excomms/mock"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/test"
 )
 
+type sTokenGenerator struct{}
+
+func (t *sTokenGenerator) GenerateToken() (string, error) {
+	return "simpleToken", nil
+}
+
+type cTokenGenerator struct{}
+
+func (t *cTokenGenerator) GenerateToken() (string, error) {
+	return "complexToken", nil
+}
+
 func init() {
-	unitTesting = true
+	simpleTokenGenerator = &sTokenGenerator{}
+	complexTokenGenerator = &cTokenGenerator{}
 	conc.Testing = true
 }
 
@@ -33,7 +48,7 @@ func TestAttribution(t *testing.T) {
 
 	snsC := mock.NewSNSAPI(t)
 	defer snsC.Finish()
-	srv := New(dl, nil, nil, snsC, nil, nil, "", "", "")
+	srv := New(dl, nil, nil, nil, snsC, nil, nil, "", "", "", "")
 
 	values := []*invite.AttributionValue{
 		{Key: "abc", Value: "123"},
@@ -68,7 +83,9 @@ func TestInviteColleagues(t *testing.T) {
 	clk := clock.NewManaged(time.Unix(10000000, 0))
 	snsC := mock.NewSNSAPI(t)
 	defer snsC.Finish()
-	srv := New(dl, clk, dir, snsC, branch, sg, "from@example.com", "eventsTopic", "https://app.sprucehealth.com/signup?some=other")
+	excommsC := excommsmock.New(t)
+	defer excommsC.Finish()
+	srv := New(dl, clk, dir, excommsC, snsC, branch, sg, "from@example.com", "+1234567890", "eventsTopic", "https://app.sprucehealth.com/signup?some=other")
 
 	// Lookup organization
 	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
@@ -102,9 +119,9 @@ func TestInviteColleagues(t *testing.T) {
 
 	// Generate branch URL
 	values := map[string]string{
-		"invite_token": "thetoken",
+		"invite_token": "complexToken",
 		"client_data":  `{"organization_invite":{"popover":{"title":"Welcome to Spruce!","message":"Inviter has invited you to join them on Spruce.","button_text":"Okay"},"org_id":"org","org_name":"Orgo"}}`,
-		"$desktop_url": "https://app.sprucehealth.com/signup?invite=thetoken&some=other",
+		"$desktop_url": "https://app.sprucehealth.com/signup?invite=complexToken&some=other",
 	}
 	clientData := make(map[string]interface{}, len(values))
 	for k, v := range values {
@@ -114,7 +131,7 @@ func TestInviteColleagues(t *testing.T) {
 
 	// Insert invite
 	dl.Expect(mock.NewExpectation(dl.InsertInvite, &models.Invite{
-		Token:                "thetoken",
+		Token:                "complexToken",
 		OrganizationEntityID: "org",
 		InviterEntityID:      "ent",
 		Type:                 models.ColleagueInvite,
@@ -136,7 +153,7 @@ func TestInviteColleagues(t *testing.T) {
 		FromName: "Inviter",
 		SMTPAPIHeader: smtpapi.SMTPAPIHeader{
 			UniqueArgs: map[string]string{
-				"invite_token": "thetoken",
+				"invite_token": "complexToken",
 			},
 		},
 	}).WithReturns(nil))
@@ -167,12 +184,121 @@ func TestInviteColleagues(t *testing.T) {
 	test.Equals(t, &invite.InviteColleaguesResponse{}, ires)
 }
 
+func TestInvitePatients(t *testing.T) {
+	dl := newMockDAL(t)
+	defer dl.Finish()
+	dir := dirmock.New(t)
+	defer dir.Finish()
+	branch := branchmock.New(t)
+	defer branch.Finish()
+	sg := newSGMock(t)
+	defer sg.Finish()
+	clk := clock.NewManaged(time.Unix(10000000, 0))
+	snsC := mock.NewSNSAPI(t)
+	defer snsC.Finish()
+	excommsC := excommsmock.New(t)
+	defer excommsC.Finish()
+	srv := New(dl, clk, dir, excommsC, snsC, branch, sg, "from@example.com", "+1234567890", "eventsTopic", "https://app.sprucehealth.com/signup?some=other")
+
+	// Lookup organization
+	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "org",
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{ID: "org", Type: directory.EntityType_ORGANIZATION, Info: &directory.EntityInfo{DisplayName: "Batman Inc"}},
+		},
+	}, nil))
+
+	// Lookup inviter
+	dir.Expect(mock.NewExpectation(dir.LookupEntities, &directory.LookupEntitiesRequest{
+		LookupKeyType: directory.LookupEntitiesRequest_ENTITY_ID,
+		LookupKeyOneof: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "ent",
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			Depth: 0,
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{ID: "ent", Type: directory.EntityType_INTERNAL, Info: &directory.EntityInfo{DisplayName: "Batman"}},
+		},
+	}, nil))
+
+	// Generate branch URL
+	values := map[string]string{
+		"invite_token": "simpleToken",
+		"client_data":  `{"organization_invite":{"popover":{"title":"Welcome Alfred!","message":"Let's create your account so you can start securely messaging with Batman Inc.","button_text":"Get Started"},"org_id":"org","org_name":"Batman Inc"}}`,
+		"$desktop_url": "https://app.sprucehealth.com/signup?invite=simpleToken&some=other",
+	}
+	clientData := make(map[string]interface{}, len(values))
+	for k, v := range values {
+		clientData[k] = v
+	}
+	branch.Expect(mock.NewExpectation(branch.URL, clientData).WithReturns("https://example.com/invite", nil))
+
+	// Insert invite
+	dl.Expect(mock.NewExpectation(dl.InsertInvite, &models.Invite{
+		Token:                "simpleToken",
+		OrganizationEntityID: "org",
+		InviterEntityID:      "ent",
+		Type:                 models.PatientInvite,
+		Email:                "someone@example.com",
+		PhoneNumber:          "+15555551212",
+		URL:                  "https://example.com/invite",
+		Created:              clk.Now(),
+		Values:               values,
+	}).WithReturns(nil))
+
+	// Send invite sms
+	excommsC.Expect(mock.NewExpectation(excommsC.SendMessage, &excomms.SendMessageRequest{
+		Channel: excomms.ChannelType_SMS,
+		Message: &excomms.SendMessageRequest_SMS{
+			SMS: &excomms.SMSMessage{
+				Text:            "Alfred - Batman Inc has invited you to use Spruce for secure messaging and digital care. Get the app now and join them. https://example.com/invite [simpleToken]",
+				FromPhoneNumber: "+1234567890",
+				ToPhoneNumber:   "+15555551212",
+			},
+		},
+	}).WithReturns(&excomms.SendMessageResponse{}, nil))
+
+	eventData, err := events.MarshalEnvelope(events.Service_INVITE, &invite.Event{
+		Type: invite.Event_INVITED_PATIENTS,
+		Details: &invite.Event_InvitedPatients{
+			InvitedPatients: &invite.InvitedPatients{
+				OrganizationEntityID: "org",
+				InviterEntityID:      "ent",
+			},
+		},
+	})
+	test.OK(t, err)
+	snsC.Expect(mock.NewExpectation(snsC.Publish, &sns.PublishInput{
+		Message:  ptr.String(base64.StdEncoding.EncodeToString(eventData)),
+		TopicArn: ptr.String("eventsTopic"),
+	}).WithReturns(&sns.PublishOutput{}, nil))
+
+	ires, err := srv.InvitePatients(nil, &invite.InvitePatientsRequest{
+		OrganizationEntityID: "org",
+		InviterEntityID:      "ent",
+		Patients: []*invite.Patient{
+			{FirstName: "Alfred", Email: "someone@example.com", PhoneNumber: "+15555551212"},
+		},
+	})
+	test.OK(t, err)
+	test.Equals(t, &invite.InvitePatientsResponse{}, ires)
+}
+
 func TestLookupInvite(t *testing.T) {
 	dl := newMockDAL(t)
 	defer dl.Finish()
 	snsC := mock.NewSNSAPI(t)
 	defer snsC.Finish()
-	srv := New(dl, nil, nil, snsC, nil, nil, "", "", "")
+	srv := New(dl, nil, nil, nil, snsC, nil, nil, "", "", "", "")
 
 	dl.Expect(mock.NewExpectation(dl.InviteForToken, "testtoken").WithReturns(
 		&models.Invite{
