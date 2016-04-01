@@ -86,6 +86,64 @@ var threadType = graphql.NewObject(
 					return ms, nil
 				},
 			},
+			"addressableEntities": &graphql.Field{
+				Type: graphql.NewList(graphql.NewNonNull(entityType)),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					ctx := p.Context
+					th := p.Source.(*models.Thread)
+					if th == nil {
+						return nil, errors.InternalError(ctx, errors.New("thread is nil"))
+					}
+
+					svc := serviceFromParams(p)
+					acc := gqlctx.Account(p.Context)
+					if acc == nil {
+						return nil, errors.ErrNotAuthenticated(ctx)
+					}
+					ram := raccess.ResourceAccess(p)
+
+					switch th.Type {
+					case models.ThreadTypeTeam:
+						members, err := ram.ThreadMembers(ctx, th.OrganizationID, &threading.ThreadMembersRequest{
+							ThreadID: th.ID,
+						})
+						if err != nil {
+							return nil, err
+						}
+						ms := make([]*models.Entity, len(members))
+						for i, em := range members {
+							e, err := transformEntityToResponse(svc.staticURLPrefix, em, gqlctx.SpruceHeaders(ctx))
+							if err != nil {
+								return nil, err
+							}
+							ms[i] = e
+						}
+						return ms, nil
+					case models.ThreadTypeExternal:
+						orgEntity, err := ram.Entity(ctx, th.OrganizationID, []directory.EntityInformation{
+							directory.EntityInformation_MEMBERS,
+							// TODO: don't always need contacts
+							directory.EntityInformation_CONTACTS,
+						}, 0)
+						if err != nil {
+							return nil, err
+						}
+
+						entities := make([]*models.Entity, 0, len(orgEntity.Members))
+						for _, em := range orgEntity.Members {
+							if em.Type == directory.EntityType_INTERNAL {
+								ent, err := transformEntityToResponse(svc.staticURLPrefix, em, gqlctx.SpruceHeaders(ctx))
+								if err != nil {
+									return nil, errors.InternalError(ctx, err)
+								}
+								entities = append(entities, ent)
+							}
+						}
+						return entities, nil
+					}
+					return nil, nil
+				},
+			},
 			// TODO: We currently just assume all contacts for an entity are available endpoints
 			"availableEndpoints": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(endpointType)),
