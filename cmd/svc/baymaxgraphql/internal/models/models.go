@@ -185,10 +185,11 @@ type SavedThreadQuery struct {
 }
 
 type Organization struct {
-	ID       string         `json:"id"`
-	Entity   *Entity        `json:"entity"`
-	Name     string         `json:"name"`
-	Contacts []*ContactInfo `json:"contacts"`
+	ID                     string         `json:"id"`
+	Entity                 *Entity        `json:"entity"`
+	Name                   string         `json:"name"`
+	Contacts               []*ContactInfo `json:"contacts"`
+	AllowTeamConversations bool           `json:"allowTeamConversations"`
 }
 
 type Subdomain struct {
