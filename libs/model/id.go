@@ -10,7 +10,9 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 )
 
-const base32EncodedUint64len = 13 // length of 8-byte as base32 with '=' stripped
+const (
+	base32EncodedUint64len = 13 // length of 8-byte as base32 with '=' stripped
+)
 
 var errInvalidID = errors.New("invalid ID")
 
@@ -50,11 +52,11 @@ func (id *ObjectID) UnmarshalText(text []byte) error {
 		return errors.Trace(errInvalidID)
 	}
 	s = s[len(id.Prefix):]
-	b, err := base32.HexEncoding.DecodeString(s + "===") // repad for decoding
+	decoded, err := base32.HexEncoding.DecodeString(s + "===") // repad for decoding
 	if err != nil {
 		return errors.Trace(errInvalidID)
 	}
-	id.Val = binary.BigEndian.Uint64(b)
+	id.Val = binary.BigEndian.Uint64(decoded)
 	id.IsValid = true
 	return nil
 }

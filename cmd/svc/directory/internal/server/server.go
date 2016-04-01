@@ -114,8 +114,8 @@ func (s *server) LookupEntities(ctx context.Context, rd *directory.LookupEntitie
 }
 
 func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityRequest) (out *directory.CreateEntityResponse, err error) {
-	golog.Debugf("Entering server.server.CreateEntity: %+v", rd)
 	if golog.Default().L(golog.DEBUG) {
+		golog.Debugf("Entering server.server.CreateEntity: %+v", rd)
 		defer func() { golog.Debugf("Leaving server.server.CreateEntity... %+v", out) }()
 	}
 	if err := s.validateCreateEntityRequest(rd); err != nil {
@@ -249,8 +249,8 @@ func (s *server) validateCreateEntityRequest(rd *directory.CreateEntityRequest) 
 }
 
 func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityRequest) (out *directory.UpdateEntityResponse, err error) {
-	golog.Debugf("Entering server.server.UpdateEntity: %+v", rd)
 	if golog.Default().L(golog.DEBUG) {
+		golog.Debugf("Entering server.server.UpdateEntity: %+v", rd)
 		defer func() { golog.Debugf("Leaving server.server.UpdateEntity... %+v", out) }()
 	}
 	if err := s.validateUpdateEntityRequest(rd); err != nil {
@@ -335,8 +335,8 @@ func (s *server) UpdateEntity(ctx context.Context, rd *directory.UpdateEntityReq
 }
 
 func (s *server) validateUpdateEntityRequest(rd *directory.UpdateEntityRequest) error {
-	golog.Debugf("Entering server.server.validateUpdateEntityRequest: %+v", rd)
 	if golog.Default().L(golog.DEBUG) {
+		golog.Debugf("Entering server.server.validateUpdateEntityRequest: %+v", rd)
 		defer func() { golog.Debugf("Leaving server.server.validateUpdateEntityRequest...") }()
 	}
 	eID, err := dal.ParseEntityID(rd.EntityID)
@@ -356,8 +356,8 @@ func (s *server) validateUpdateEntityRequest(rd *directory.UpdateEntityRequest) 
 }
 
 func (s *server) ExternalIDs(ctx context.Context, rd *directory.ExternalIDsRequest) (out *directory.ExternalIDsResponse, err error) {
-	golog.Debugf("Entering server.server.ExternalIDs: %+v", rd)
 	if golog.Default().L(golog.DEBUG) {
+		golog.Debugf("Entering server.server.ExternalIDs: %+v", rd)
 		defer func() { golog.Debugf("Leaving server.server.ExternalIDs... %+v", out) }()
 	}
 	ids := make([]dal.EntityID, len(rd.EntityIDs))
@@ -390,8 +390,8 @@ func doesEntityExist(dl dal.DAL, entityID dal.EntityID) (bool, error) {
 }
 
 func (s *server) CreateMembership(ctx context.Context, rd *directory.CreateMembershipRequest) (*directory.CreateMembershipResponse, error) {
-	golog.Debugf("Entering server.server.CreateMembership: %+v", rd)
 	if golog.Default().L(golog.DEBUG) {
+		golog.Debugf("Entering server.server.CreateMembership: %+v", rd)
 		defer func() { golog.Debugf("Leaving server.server.CreateMembership...") }()
 	}
 	entityID, err := dal.ParseEntityID(rd.EntityID)
@@ -438,8 +438,8 @@ func (s *server) CreateMembership(ctx context.Context, rd *directory.CreateMembe
 }
 
 func (s *server) LookupEntitiesByContact(ctx context.Context, rd *directory.LookupEntitiesByContactRequest) (out *directory.LookupEntitiesByContactResponse, err error) {
-	golog.Debugf("Entering server.server.LookupEntitiesByContact: %+v", rd)
 	if golog.Default().L(golog.DEBUG) {
+		golog.Debugf("Entering server.server.LookupEntitiesByContact: %+v", rd)
 		defer func() { golog.Debugf("Leaving server.server.LookupEntitiesByContact... %+v", out) }()
 	}
 	entityContacts, err := s.dl.EntityContactsForValue(strings.TrimSpace(rd.ContactValue))
@@ -475,8 +475,8 @@ func (s *server) LookupEntitiesByContact(ctx context.Context, rd *directory.Look
 }
 
 func (s *server) LookupEntityDomain(ctx context.Context, in *directory.LookupEntityDomainRequest) (*directory.LookupEntityDomainResponse, error) {
-	golog.Debugf("Entering server.LookupEntityDomain: %+v", in)
 	if golog.Default().L(golog.DEBUG) {
+		golog.Debugf("Entering server.LookupEntityDomain: %+v", in)
 		defer func() { golog.Debugf("Leaving server.LookupEntityDomain...") }()
 	}
 
@@ -525,8 +525,8 @@ func (s *server) CreateEntityDomain(ctx context.Context, in *directory.CreateEnt
 }
 
 func (s *server) CreateContact(ctx context.Context, rd *directory.CreateContactRequest) (out *directory.CreateContactResponse, err error) {
-	golog.Debugf("Entering server.server.CreateContact: %+v", rd)
 	if golog.Default().L(golog.DEBUG) {
+		golog.Debugf("Entering server.server.CreateContact: %+v", rd)
 		defer func() { golog.Debugf("Leaving server.server.CreateContact... %+v", out) }()
 	}
 	entityID, err := dal.ParseEntityID(rd.EntityID)
@@ -572,8 +572,8 @@ func (s *server) CreateContact(ctx context.Context, rd *directory.CreateContactR
 }
 
 func (s *server) CreateContacts(ctx context.Context, rd *directory.CreateContactsRequest) (out *directory.CreateContactsResponse, err error) {
-	golog.Debugf("Entering server.server.CreateContacts: %+v", rd)
 	if golog.Default().L(golog.DEBUG) {
+		golog.Debugf("Entering server.server.CreateContacts: %+v", rd)
 		defer func() { golog.Debugf("Leaving server.server.CreateContacts... %+v", out) }()
 	}
 	entityID, err := dal.ParseEntityID(rd.EntityID)
@@ -639,8 +639,8 @@ func validateContact(contact *directory.Contact) error {
 }
 
 func (s *server) UpdateContacts(ctx context.Context, rd *directory.UpdateContactsRequest) (out *directory.UpdateContactsResponse, err error) {
-	golog.Debugf("Entering server.server.UpdateContacts: %+v", rd)
 	if golog.Default().L(golog.DEBUG) {
+		golog.Debugf("Entering server.server.UpdateContacts: %+v", rd)
 		defer func() { golog.Debugf("Leaving server.server.UpdateContacts... %+v", out) }()
 	}
 	entityID, err := dal.ParseEntityID(rd.EntityID)
@@ -693,8 +693,8 @@ func (s *server) UpdateContacts(ctx context.Context, rd *directory.UpdateContact
 }
 
 func (s *server) DeleteContacts(ctx context.Context, rd *directory.DeleteContactsRequest) (out *directory.DeleteContactsResponse, err error) {
-	golog.Debugf("Entering server.server.DeleteContacts: %+v", rd)
 	if golog.Default().L(golog.DEBUG) {
+		golog.Debugf("Entering server.server.DeleteContacts: %+v", rd)
 		defer func() { golog.Debugf("Leaving server.server.DeleteContacts... %+v", out) }()
 	}
 	entityID, err := dal.ParseEntityID(rd.EntityID)
@@ -735,8 +735,8 @@ func (s *server) DeleteContacts(ctx context.Context, rd *directory.DeleteContact
 }
 
 func (s *server) DeleteEntity(ctx context.Context, rd *directory.DeleteEntityRequest) (out *directory.DeleteEntityResponse, err error) {
-	golog.Debugf("Entering server.server.DeleteEntityRequest: %+v", rd)
 	if golog.Default().L(golog.DEBUG) {
+		golog.Debugf("Entering server.server.DeleteEntityRequest: %+v", rd)
 		defer func() { golog.Debugf("Leaving server.server.DeleteEntityRequest... %+v", out) }()
 	}
 	entityID, err := dal.ParseEntityID(rd.EntityID)
@@ -793,31 +793,32 @@ func getPBEntities(dl dal.DAL, dEntities []*dal.Entity, entityInformation []dire
 
 // Note: How we optimize this deep crawl is very likely to change
 func getPBEntity(dl dal.DAL, dEntity *dal.Entity, entityInformation []directory.EntityInformation, depth int64, statuses []dal.EntityStatus) (*directory.Entity, error) {
+	id := dEntity.ID
 	entity := dalEntityAsPBEntity(dEntity)
 	if depth >= 0 {
 		if hasRequestedInfo(entityInformation, directory.EntityInformation_MEMBERSHIPS) {
-			memberships, err := getPBMemberships(dl, dEntity.ID, entityInformation, depth-1, statuses)
+			memberships, err := getPBMemberships(dl, id, entityInformation, depth-1, statuses)
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
 			entity.Memberships = memberships
 		}
 		if hasRequestedInfo(entityInformation, directory.EntityInformation_MEMBERS) {
-			members, err := getPBMembers(dl, dEntity.ID, entityInformation, depth-1, statuses)
+			members, err := getPBMembers(dl, id, entityInformation, depth-1, statuses)
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
 			entity.Members = members
 		}
 		if hasRequestedInfo(entityInformation, directory.EntityInformation_EXTERNAL_IDS) {
-			externalIDs, err := getPBExternalIDs(dl, dEntity.ID)
+			externalIDs, err := getPBExternalIDs(dl, id)
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
 			entity.ExternalIDs = externalIDs
 		}
 		if hasRequestedInfo(entityInformation, directory.EntityInformation_CONTACTS) {
-			contacts, err := getPBEntityContacts(dl, dEntity.ID)
+			contacts, err := getPBEntityContacts(dl, id)
 			if err != nil {
 				return nil, errors.Trace(err)
 			}
@@ -878,24 +879,31 @@ func getPBEntityContacts(dl dal.DAL, entityID dal.EntityID) ([]*directory.Contac
 	return pbEntityContacts, nil
 }
 
+// dalEntityAsPBEntity transforms a dal entity contact to a svc entity contact.
+// the dal entity contact must not be used after this call.
 func dalEntityContactAsPBContact(dEntityContact *dal.EntityContact) *directory.Contact {
-	contact := &directory.Contact{}
-	contact.Provisioned = dEntityContact.Provisioned
+	contact := &directory.Contact{
+		Provisioned: dEntityContact.Provisioned,
+		Value:       dEntityContact.Value,
+		ID:          dEntityContact.ID.String(),
+		Label:       dEntityContact.Label,
+	}
 	contactType, ok := directory.ContactType_value[dEntityContact.Type.String()]
 	if !ok {
 		golog.Errorf("Unknown contact type %s when converting to PB format", dEntityContact.Type)
 	}
 	contact.ContactType = directory.ContactType(contactType)
-	contact.Value = dEntityContact.Value
-	contact.ID = dEntityContact.ID.String()
-	contact.Label = dEntityContact.Label
+	dEntityContact.Recycle()
 	return contact
 }
 
+// dalEntityAsPBEntity transforms a dal entity to a svc entity.
+// the dal entity must not be used after this call.
 func dalEntityAsPBEntity(dEntity *dal.Entity) *directory.Entity {
 	entity := &directory.Entity{
-		ID:               dEntity.ID.String(),
-		CreatedTimestamp: uint64(dEntity.Created.Unix()),
+		ID:                    dEntity.ID.String(),
+		CreatedTimestamp:      uint64(dEntity.Created.Unix()),
+		LastModifiedTimestamp: uint64(dEntity.Modified.Unix()),
 	}
 	entityType, ok := directory.EntityType_value[dEntity.Type.String()]
 	if !ok {
@@ -906,7 +914,6 @@ func dalEntityAsPBEntity(dEntity *dal.Entity) *directory.Entity {
 	if !ok {
 		golog.Errorf("Unknown entity status %s when converting to PB format", dEntity.Status)
 	}
-	entity.LastModifiedTimestamp = uint64(dEntity.Modified.Unix())
 	entity.Status = directory.EntityStatus(entityStatus)
 	entity.Info = &directory.EntityInfo{
 		FirstName:     dEntity.FirstName,
@@ -918,19 +925,21 @@ func dalEntityAsPBEntity(dEntity *dal.Entity) *directory.Entity {
 		LongTitle:     dEntity.LongTitle,
 		Note:          dEntity.Note,
 	}
+	dEntity.Recycle()
 	return entity
 }
 
 // Note: Much letters. Many length. So convention.
 func dalSerializedClientEntityContactAsPBSerializedClientEntityContact(dSerializedClientEntityContact *dal.SerializedClientEntityContact) *directory.SerializedClientEntityContact {
-	serializedClientEntityContact := &directory.SerializedClientEntityContact{}
-	serializedClientEntityContact.EntityID = dSerializedClientEntityContact.EntityID.String()
+	serializedClientEntityContact := &directory.SerializedClientEntityContact{
+		EntityID:                dSerializedClientEntityContact.EntityID.String(),
+		SerializedEntityContact: dSerializedClientEntityContact.SerializedEntityContact,
+	}
 	platform, ok := directory.Platform_value[dSerializedClientEntityContact.Platform.String()]
 	if !ok {
 		golog.Errorf("Unknown platform %s when converting to PB format", dSerializedClientEntityContact.Platform)
 	}
 	serializedClientEntityContact.Platform = directory.Platform(platform)
-	serializedClientEntityContact.SerializedEntityContact = dSerializedClientEntityContact.SerializedEntityContact
 	return serializedClientEntityContact
 }
 

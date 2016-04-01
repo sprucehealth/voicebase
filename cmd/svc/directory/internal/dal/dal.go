@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/sprucehealth/backend/api"
@@ -399,6 +400,12 @@ type EventUpdate struct {
 	Event *string
 }
 
+var entityContactPool = &sync.Pool{
+	New: func() interface{} {
+		return &EntityContact{}
+	},
+}
+
 // EntityContact represents a entity_contact record
 type EntityContact struct {
 	EntityID    EntityID
@@ -409,6 +416,11 @@ type EntityContact struct {
 	ID          EntityContactID
 	Label       string
 	Provisioned bool
+}
+
+// Recycle puts the value back in the pool after which it must not be used.
+func (ec *EntityContact) Recycle() {
+	entityContactPool.Put(ec)
 }
 
 // EntityContactUpdate represents the mutable aspects of a entity_contact record
@@ -446,6 +458,12 @@ type ExternalEntityIDUpdate struct {
 	ExternalID *string
 }
 
+var entityPool = &sync.Pool{
+	New: func() interface{} {
+		return &Entity{}
+	},
+}
+
 // Entity represents a entity record
 type Entity struct {
 	ID            EntityID
@@ -461,6 +479,11 @@ type Entity struct {
 	LongTitle     string
 	Created       time.Time
 	Modified      time.Time
+}
+
+// Recycle puts the value back in the pool after which it must not be used.
+func (e *Entity) Recycle() {
+	entityPool.Put(e)
 }
 
 // EntityUpdate represents the mutable aspects of a entity record
@@ -1054,7 +1077,7 @@ const selectEntityContact = `
       FROM entity_contact`
 
 func scanEntityContact(row dbutil.Scanner) (*EntityContact, error) {
-	var m EntityContact
+	m := entityContactPool.Get().(*EntityContact)
 	m.ID = EmptyEntityContactID()
 	m.EntityID = EmptyEntityID()
 
@@ -1062,7 +1085,7 @@ func scanEntityContact(row dbutil.Scanner) (*EntityContact, error) {
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(api.ErrNotFound("directory - EntityContact not found"))
 	}
-	return &m, errors.Trace(err)
+	return m, errors.Trace(err)
 }
 
 const selectEvent = `
@@ -1100,14 +1123,14 @@ func andEntityStatusIN(ss []EntityStatus) string {
 }
 
 func scanEntity(row dbutil.Scanner) (*Entity, error) {
-	var m Entity
+	m := entityPool.Get().(*Entity)
 	m.ID = EmptyEntityID()
 
 	err := row.Scan(&m.ID, &m.MiddleInitial, &m.LastName, &m.Note, &m.Created, &m.Modified, &m.DisplayName, &m.FirstName, &m.GroupName, &m.Type, &m.Status, &m.ShortTitle, &m.LongTitle)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(api.ErrNotFound("directory - Entity not found"))
 	}
-	return &m, errors.Trace(err)
+	return m, errors.Trace(err)
 }
 
 const selectSerializedClientEntityContact = `

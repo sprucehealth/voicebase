@@ -26,3 +26,27 @@ func TestObjectID(t *testing.T) {
 	test.Equals(t, []byte("t_00000000002D4"), b)
 	test.Equals(t, "t_00000000002D4", id.String())
 }
+
+func BenchmarkObjectIDMarshalText(b *testing.B) {
+	id := ObjectID{Prefix: "t_"}
+	test.OK(b, id.UnmarshalText([]byte("t_00000000002D4")))
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := id.MarshalText(); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkObjectIDUnmarshalText(b *testing.B) {
+	idString := []byte("t_00000000002D4")
+	id := ObjectID{Prefix: "t_"}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if err := id.UnmarshalText(idString); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
