@@ -242,6 +242,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 		"leaveThread":                         leaveThreadMutation,
 		"modifySetting":                       modifySettingMutation,
 		"passwordReset":                       passwordResetMutation,
+		"postEvent":                           postEventMutation,
 		"provisionEmail":                      provisionEmailMutation,
 		"provisionPhoneNumber":                provisionPhoneNumberMutation,
 		"requestPasswordReset":                requestPasswordResetMutation,
