@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/sprucehealth/backend/api"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/idgen"
@@ -208,12 +209,14 @@ const (
 	EntityTypeExternal EntityType = "EXTERNAL"
 	// EntityTypeSystem represents the SYSTEM state of the type field on a entity record
 	EntityTypeSystem EntityType = "SYSTEM"
+	// EntityTypePatient represents the PATIENT state of the type field on a entity record
+	EntityTypePatient EntityType = "PATIENT"
 )
 
 // ParseEntityType converts a string into the correcponding enum value
 func ParseEntityType(s string) (EntityType, error) {
 	switch t := EntityType(strings.ToUpper(s)); t {
-	case EntityTypeOrganization, EntityTypeInternal, EntityTypeExternal, EntityTypeSystem:
+	case EntityTypeOrganization, EntityTypeInternal, EntityTypeExternal, EntityTypeSystem, EntityTypePatient:
 		return t, nil
 	}
 	return EntityType(""), errors.Trace(fmt.Errorf("Unknown type:%s", s))
@@ -268,6 +271,45 @@ func (t *EntityStatus) Scan(src interface{}) error {
 		*t, err = ParseEntityStatus(ts)
 	case []byte:
 		*t, err = ParseEntityStatus(string(ts))
+	default:
+		return errors.Trace(fmt.Errorf("Unsupported type %T with value %+v in enumeration scan", src, src))
+	}
+	return errors.Trace(err)
+}
+
+// EntityGender represents the type associated with the gender column of the entity table
+type EntityGender string
+
+const (
+	// EntityGenderMale represents the MALE state of the status field on a entity record
+	EntityGenderMale EntityGender = "MALE"
+	// EntityGenderFemale represents the FEMALE state of the status field on a entity record
+	EntityGenderFemale EntityGender = "FEMALE"
+	// EntityGenderOther represents the OTHER state of the status field on a entity record
+	EntityGenderOther EntityGender = "OTHER"
+)
+
+// ParseEntityGender converts a string into the correcponding enum value
+func ParseEntityGender(s string) (EntityGender, error) {
+	switch t := EntityGender(strings.ToUpper(s)); t {
+	case EntityGenderMale, EntityGenderFemale, EntityGenderOther:
+		return t, nil
+	}
+	return EntityGender(""), errors.Trace(fmt.Errorf("Unknown status:%s", s))
+}
+
+func (t EntityGender) String() string {
+	return string(t)
+}
+
+// Scan allows for scanning of EntityGender from a database conforming to the sql.Scanner interface
+func (t *EntityGender) Scan(src interface{}) error {
+	var err error
+	switch ts := src.(type) {
+	case string:
+		*t, err = ParseEntityGender(ts)
+	case []byte:
+		*t, err = ParseEntityGender(string(ts))
 	default:
 		return errors.Trace(fmt.Errorf("Unsupported type %T with value %+v in enumeration scan", src, src))
 	}
@@ -477,6 +519,8 @@ type Entity struct {
 	LastName      string
 	ShortTitle    string
 	LongTitle     string
+	Gender        *EntityGender
+	DOB           *encoding.Date
 	Created       time.Time
 	Modified      time.Time
 }
@@ -525,8 +569,16 @@ func (d *dal) InsertEntity(model *Entity) (EntityID, error) {
 	}
 	_, err := d.db.Exec(
 		`INSERT INTO entity
-          (display_name, first_name, group_name, type, status, id, middle_initial, last_name, note, short_title, long_title)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, model.DisplayName, model.FirstName, model.GroupName, model.Type.String(), model.Status.String(), model.ID, model.MiddleInitial, model.LastName, model.Note, model.ShortTitle, model.LongTitle)
+          (display_name, first_name, group_name, type, status, 
+		   id, middle_initial, last_name, note, short_title, 
+		   long_title, gender, dob)
+          VALUES 
+		  (?, ?, ?, ?, ?,
+		   ?, ?, ?, ?, ?,
+		   ?, ?, ?)`,
+		model.DisplayName, model.FirstName, model.GroupName, model.Type.String(), model.Status.String(),
+		model.ID, model.MiddleInitial, model.LastName, model.Note, model.ShortTitle,
+		model.LongTitle, model.Gender.String(), model.DOB)
 	if err != nil {
 		return EmptyEntityID(), errors.Trace(err)
 	}
@@ -1105,7 +1157,7 @@ func scanEvent(row dbutil.Scanner) (*Event, error) {
 }
 
 const selectEntity = `
-    SELECT entity.id, entity.middle_initial, entity.last_name, entity.note, entity.created, entity.modified, entity.display_name, entity.first_name, entity.group_name, entity.type, entity.status, entity.short_title, entity.long_title
+    SELECT entity.id, entity.middle_initial, entity.last_name, entity.note, entity.created, entity.modified, entity.display_name, entity.first_name, entity.group_name, entity.type, entity.status, entity.short_title, entity.long_title, entity.gender, entity.dob
       FROM entity`
 
 func andEntityStatusIN(ss []EntityStatus) string {
@@ -1126,7 +1178,7 @@ func scanEntity(row dbutil.Scanner) (*Entity, error) {
 	m := entityPool.Get().(*Entity)
 	m.ID = EmptyEntityID()
 
-	err := row.Scan(&m.ID, &m.MiddleInitial, &m.LastName, &m.Note, &m.Created, &m.Modified, &m.DisplayName, &m.FirstName, &m.GroupName, &m.Type, &m.Status, &m.ShortTitle, &m.LongTitle)
+	err := row.Scan(&m.ID, &m.MiddleInitial, &m.LastName, &m.Note, &m.Created, &m.Modified, &m.DisplayName, &m.FirstName, &m.GroupName, &m.Type, &m.Status, &m.ShortTitle, &m.LongTitle, &m.Gender, &m.DOB)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(api.ErrNotFound("directory - Entity not found"))
 	}

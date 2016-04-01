@@ -7,6 +7,7 @@ import (
 	"github.com/samuel/go-metrics/metrics"
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/cmd/svc/directory/internal/dal"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
@@ -128,6 +129,22 @@ func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityReq
 	}
 	var pbEntity *directory.Entity
 	if err = s.dl.Transact(func(dl dal.DAL) error {
+		var entityGender *dal.EntityGender
+		if rd.EntityInfo.Gender != directory.EntityInfo_UNKNOWN {
+			eg, err := dal.ParseEntityGender(rd.EntityInfo.Gender.String())
+			if err != nil {
+				return errors.Trace(err)
+			}
+			entityGender = &eg
+		}
+		var dob *encoding.Date
+		if rd.EntityInfo.DOB != nil {
+			dob = &encoding.Date{
+				Month: int(rd.EntityInfo.DOB.Month),
+				Day:   int(rd.EntityInfo.DOB.Day),
+				Year:  int(rd.EntityInfo.DOB.Year),
+			}
+		}
 		entityID, err := dl.InsertEntity(&dal.Entity{
 			Type:          entityType,
 			Status:        dal.EntityStatusActive,
@@ -138,6 +155,8 @@ func (s *server) CreateEntity(ctx context.Context, rd *directory.CreateEntityReq
 			DisplayName:   rd.EntityInfo.DisplayName,
 			ShortTitle:    rd.EntityInfo.ShortTitle,
 			LongTitle:     rd.EntityInfo.LongTitle,
+			Gender:        entityGender,
+			DOB:           dob,
 			Note:          rd.EntityInfo.Note,
 		})
 		if err != nil {
@@ -914,6 +933,20 @@ func dalEntityAsPBEntity(dEntity *dal.Entity) *directory.Entity {
 	if !ok {
 		golog.Errorf("Unknown entity status %s when converting to PB format", dEntity.Status)
 	}
+
+	var entityGender directory.EntityInfo_Gender
+	if dEntity.Gender != nil {
+		entityGender = directory.EntityInfo_Gender(directory.EntityInfo_Gender_value[dEntity.Gender.String()])
+	}
+	var dob *directory.Date
+	if dEntity.DOB != nil {
+		dob = &directory.Date{
+			Month: uint32(dEntity.DOB.Month),
+			Day:   uint32(dEntity.DOB.Day),
+			Year:  uint32(dEntity.DOB.Year),
+		}
+	}
+
 	entity.Status = directory.EntityStatus(entityStatus)
 	entity.Info = &directory.EntityInfo{
 		FirstName:     dEntity.FirstName,
@@ -923,6 +956,8 @@ func dalEntityAsPBEntity(dEntity *dal.Entity) *directory.Entity {
 		DisplayName:   dEntity.DisplayName,
 		ShortTitle:    dEntity.ShortTitle,
 		LongTitle:     dEntity.LongTitle,
+		Gender:        entityGender,
+		DOB:           dob,
 		Note:          dEntity.Note,
 	}
 	dEntity.Recycle()

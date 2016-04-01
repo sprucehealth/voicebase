@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/api"
 	"github.com/sprucehealth/backend/cmd/svc/directory/internal/dal"
 	mock_dal "github.com/sprucehealth/backend/cmd/svc/directory/internal/dal/test"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -235,11 +236,14 @@ func TestCreateEntityFull(t *testing.T) {
 			Provisioned: true,
 		},
 	}
+	male := dal.EntityGenderMale
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Entity, eID2), &dal.Entity{}, nil))
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.InsertEntity, &dal.Entity{
 		DisplayName: name,
 		Type:        dal.EntityTypeInternal,
 		Status:      dal.EntityStatusActive,
+		DOB:         &encoding.Date{Month: 7, Day: 25, Year: 1986},
+		Gender:      &male,
 	}), eID1, nil))
 	dl.Expect(mock.NewExpectation(dl.InsertExternalEntityID, &dal.ExternalEntityID{
 		EntityID:   eID1,
@@ -270,6 +274,12 @@ func TestCreateEntityFull(t *testing.T) {
 	resp, err := s.CreateEntity(context.Background(), &directory.CreateEntityRequest{
 		EntityInfo: &directory.EntityInfo{
 			DisplayName: name,
+			DOB: &directory.Date{
+				Year:  1986,
+				Month: 7,
+				Day:   25,
+			},
+			Gender: directory.EntityInfo_MALE,
 		},
 		Type:                      eType,
 		ExternalID:                externalID,

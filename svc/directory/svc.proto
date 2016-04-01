@@ -13,6 +13,7 @@ enum EntityType {
 	INTERNAL = 1;
 	EXTERNAL = 2;
 	SYSTEM = 3;
+        PATIENT = 4;
 }
 
 enum EntityInformation {
@@ -38,7 +39,20 @@ message ExternalID {
 	string entity_id = 2  [(gogoproto.customname) = "EntityID"];
 }
 
+message Date {
+	uint32 month = 1;
+	uint32 day = 2;
+	uint32 year = 3;
+}
+
 message EntityInfo {
+    enum Gender {
+		UNKNOWN = 0;
+		MALE = 1;
+		FEMALE = 2;
+		OTHER = 3;
+	}
+
 	string     first_name = 1;
 	string     middle_initial = 2;
 	string     last_name = 3;
@@ -47,6 +61,8 @@ message EntityInfo {
 	string     note = 6;
 	string     short_title = 7;
 	string     long_title = 8;
+	Gender     gender = 10;
+	Date        dob = 9 [(gogoproto.customname) = "DOB"];
 }
 
 message Entity {

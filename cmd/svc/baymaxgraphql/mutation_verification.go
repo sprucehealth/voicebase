@@ -217,11 +217,11 @@ const (
 )
 
 type checkVerificationCodeOutput struct {
-	ClientMutationID string                  `json:"clientMutationId,omitempty"`
-	Success          bool                    `json:"success"`
-	ErrorCode        string                  `json:"errorCode,omitempty"`
-	ErrorMessage     string                  `json:"errorMessage,omitempty"`
-	Account          *models.ProviderAccount `json:"account"`
+	ClientMutationID string         `json:"clientMutationId,omitempty"`
+	Success          bool           `json:"success"`
+	ErrorCode        string         `json:"errorCode,omitempty"`
+	ErrorMessage     string         `json:"errorMessage,omitempty"`
+	Account          models.Account `json:"account"`
 }
 
 var checkVerificationCodeErrorCodeEnum = graphql.NewEnum(

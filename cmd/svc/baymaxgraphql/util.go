@@ -137,8 +137,16 @@ func entityInfoFromInput(ei interface{}) (*directory.EntityInfo, error) {
 	st, _ := mei["shortTitle"].(string)
 	lt, _ := mei["longTitle"].(string)
 	n, _ := mei["note"].(string)
+	g, _ := mei["gender"].(string)
 
-	// If no display name was provided then build one from our input
+	var dob *directory.Date
+	mdob, _ := mei["dob"].(map[string]interface{})
+	if mdob != nil {
+		dob = &directory.Date{}
+		dob.Month = uint32(mdob["month"].(int))
+		dob.Day = uint32(mdob["day"].(int))
+		dob.Year = uint32(mdob["year"].(int))
+	}
 
 	entityInfo := &directory.EntityInfo{
 		FirstName:     fn,
@@ -147,6 +155,8 @@ func entityInfoFromInput(ei interface{}) (*directory.EntityInfo, error) {
 		GroupName:     gn,
 		ShortTitle:    st,
 		LongTitle:     lt,
+		DOB:           dob,
+		Gender:        directory.EntityInfo_Gender(directory.EntityInfo_Gender_value[g]),
 		Note:          n,
 	}
 

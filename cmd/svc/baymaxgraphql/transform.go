@@ -19,13 +19,22 @@ import (
 	"github.com/sprucehealth/backend/svc/threading"
 )
 
-func transformAccountToResponse(a *auth.Account) *models.ProviderAccount {
+func transformAccountToResponse(a *auth.Account) models.Account {
 	if a == nil {
 		return nil
 	}
-	return &models.ProviderAccount{
-		ID: a.ID,
+	switch a.Type {
+	case auth.AccountType_PROVIDER:
+		return &models.ProviderAccount{
+			ID: a.ID,
+		}
+	case auth.AccountType_PATIENT:
+		return &models.PatientAccount{
+			ID: a.ID,
+		}
 	}
+	golog.Errorf("Unable to transform account of type %s to repsonse", a.Type.String())
+	return nil
 }
 
 func threadTitleForEntity(e *directory.Entity) string {
@@ -311,6 +320,15 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *
 		}
 	}
 
+	var dob *models.DOB
+	if e.Info.DOB != nil {
+		dob = &models.DOB{
+			Month: int(e.Info.DOB.Month),
+			Day:   int(e.Info.DOB.Day),
+			Year:  int(e.Info.DOB.Year),
+		}
+	}
+
 	ent := &models.Entity{
 		ID:                    e.ID,
 		IsEditable:            isEditable,
@@ -322,6 +340,8 @@ func transformEntityToResponse(staticURLPrefix string, e *directory.Entity, sh *
 		DisplayName:           e.Info.DisplayName,
 		ShortTitle:            e.Info.ShortTitle,
 		LongTitle:             e.Info.LongTitle,
+		Gender:                e.Info.Gender.String(),
+		DOB:                   dob,
 		Note:                  e.Info.Note,
 		IsInternal:            e.Type == directory.EntityType_INTERNAL,
 		LastModifiedTimestamp: e.LastModifiedTimestamp,

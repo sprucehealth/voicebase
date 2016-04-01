@@ -31,13 +31,13 @@ If you're unsure about anything or need some help, send us a message here and a 
 )
 
 type createProviderAccountOutput struct {
-	ClientMutationID    string                  `json:"clientMutationId,omitempty"`
-	Success             bool                    `json:"success"`
-	ErrorCode           string                  `json:"errorCode,omitempty"`
-	ErrorMessage        string                  `json:"errorMessage,omitempty"`
-	Token               string                  `json:"token,omitempty"`
-	Account             *models.ProviderAccount `json:"account,omitempty"`
-	ClientEncryptionKey string                  `json:"clientEncryptionKey,omitempty"`
+	ClientMutationID    string         `json:"clientMutationId,omitempty"`
+	Success             bool           `json:"success"`
+	ErrorCode           string         `json:"errorCode,omitempty"`
+	ErrorMessage        string         `json:"errorMessage,omitempty"`
+	Token               string         `json:"token,omitempty"`
+	Account             models.Account `json:"account,omitempty"`
+	ClientEncryptionKey string         `json:"clientEncryptionKey,omitempty"`
 }
 
 var createProviderAccountInputType = graphql.NewInputObject(graphql.InputObjectConfig{
@@ -77,7 +77,7 @@ var createProviderAccountOutputType = graphql.NewObject(graphql.ObjectConfig{
 var createProviderAccountMutation = &graphql.Field{
 	Type: graphql.NewNonNull(createProviderAccountOutputType),
 	Args: graphql.FieldConfigArgument{
-		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(createAccountInputType)},
+		"input": &graphql.ArgumentConfig{Type: graphql.NewNonNull(createProviderAccountInputType)},
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		return createProviderAccount(p)
@@ -344,7 +344,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 	var platform string
 	if headers != nil {
 		platform = headers.Platform.String()
-		golog.Infof("Account created. ID = %s Device = %s", res.Account.ID, headers.DeviceID)
+		golog.Infof("Provider Account created. ID = %s Device = %s", res.Account.ID, headers.DeviceID)
 	}
 	orgName := organizationName
 	if inv != nil {

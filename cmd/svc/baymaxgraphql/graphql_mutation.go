@@ -153,6 +153,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 		"callEntity":            callEntityMutation,
 		"createAccount":         createAccountMutation,
 		"createProviderAccount": createProviderAccountMutation,
+		"createPatientAccount":  createPatientAccountMutation,
 		"postMessage":           postMessageMutation,
 		"registerDeviceForPush": &graphql.Field{
 			Type: graphql.NewNonNull(registerDeviceForPushOutputType),

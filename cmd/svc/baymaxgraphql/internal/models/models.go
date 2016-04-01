@@ -36,13 +36,37 @@ const (
 )
 
 type Me struct {
-	Account             *ProviderAccount `json:"account"`
-	ClientEncryptionKey string           `json:"clientEncryptionKey"`
+	Account             Account `json:"account"`
+	ClientEncryptionKey string  `json:"clientEncryptionKey"`
+}
+
+type Account interface {
+	// This method is unfortunatly named, but don't want to cover the exported ID
+	GetID() string
 }
 
 // ProviderAccount represents the information associated with a provider's account
 type ProviderAccount struct {
 	ID string `json:"id"`
+}
+
+func (a *ProviderAccount) GetID() string {
+	return a.ID
+}
+
+// PatientAccount represents the information associated with a patient's account
+type PatientAccount struct {
+	ID string `json:"id"`
+}
+
+func (a *PatientAccount) GetID() string {
+	return a.ID
+}
+
+type DOB struct {
+	Month int `json:"month"`
+	Day   int `json:"day"`
+	Year  int `json:"year"`
 }
 
 type Entity struct {
@@ -55,6 +79,8 @@ type Entity struct {
 	DisplayName           string         `json:"displayName"`
 	ShortTitle            string         `json:"shortTitle"`
 	LongTitle             string         `json:"longTitle"`
+	Gender                string         `json:"gender"`
+	DOB                   *DOB           `json:"dob"`
 	Note                  string         `json:"note"`
 	Contacts              []*ContactInfo `json:"contacts"`
 	IsInternal            bool           `json:"isInternal"`

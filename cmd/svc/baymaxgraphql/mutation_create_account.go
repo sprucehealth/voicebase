@@ -13,6 +13,7 @@ const (
 	createAccountErrorCodeInvalidOrganizationName = "INVALID_ORGANIZATION_NAME"
 	createAccountErrorCodeInvalidPassword         = "INVALID_PASSWORD"
 	createAccountErrorCodeInvalidPhoneNumber      = "INVALID_PHONE_NUMBER"
+	createAccountErrorCodeInvalidDOB              = "INVALID_DOB"
 )
 
 var createAccountErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
@@ -46,17 +47,21 @@ var createAccountErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 			Value:       createAccountErrorCodeInvalidLastName,
 			Description: "The provided last name is invalid",
 		},
+		createAccountErrorCodeInvalidDOB: &graphql.EnumValueConfig{
+			Value:       createAccountErrorCodeInvalidDOB,
+			Description: "The provided date of birth is invalid",
+		},
 	},
 })
 
 type createAccountOutput struct {
-	ClientMutationID    string                  `json:"clientMutationId,omitempty"`
-	Success             bool                    `json:"success"`
-	ErrorCode           string                  `json:"errorCode,omitempty"`
-	ErrorMessage        string                  `json:"errorMessage,omitempty"`
-	Token               string                  `json:"token,omitempty"`
-	Account             *models.ProviderAccount `json:"account,omitempty"`
-	ClientEncryptionKey string                  `json:"clientEncryptionKey,omitempty"`
+	ClientMutationID    string         `json:"clientMutationId,omitempty"`
+	Success             bool           `json:"success"`
+	ErrorCode           string         `json:"errorCode,omitempty"`
+	ErrorMessage        string         `json:"errorMessage,omitempty"`
+	Token               string         `json:"token,omitempty"`
+	Account             models.Account `json:"account,omitempty"`
+	ClientEncryptionKey string         `json:"clientEncryptionKey,omitempty"`
 }
 
 var createAccountInputType = graphql.NewInputObject(graphql.InputObjectConfig{

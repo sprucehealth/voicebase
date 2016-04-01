@@ -47,6 +47,16 @@ var contactInfoType = graphql.NewObject(
 	},
 )
 
+// dateType represents a date
+var dateType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "Date",
+	Fields: graphql.Fields{
+		"month": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"day":   &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"year":  &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+	},
+})
+
 var entityType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Entity",
 	Interfaces: []*graphql.Interface{
@@ -62,6 +72,8 @@ var entityType = graphql.NewObject(graphql.ObjectConfig{
 		"displayName":   &graphql.Field{Type: graphql.String},
 		"longTitle":     &graphql.Field{Type: graphql.String},
 		"shortTitle":    &graphql.Field{Type: graphql.String},
+		"gender":        &graphql.Field{Type: genderEnumType},
+		"dob":           &graphql.Field{Type: dateType},
 		"note":          &graphql.Field{Type: graphql.String},
 		"initials": &graphql.Field{
 			Type: graphql.NewNonNull(graphql.String),

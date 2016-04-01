@@ -5,9 +5,9 @@ import (
 	"github.com/sprucehealth/graphql"
 )
 
-var providerAccountType = graphql.NewObject(
+var patientAccountType = graphql.NewObject(
 	graphql.ObjectConfig{
-		Name: "ProviderAccount",
+		Name: "PatientAccount",
 		Interfaces: []*graphql.Interface{
 			nodeInterfaceType,
 			accountInterfaceType,
@@ -17,7 +17,7 @@ var providerAccountType = graphql.NewObject(
 			"organizations": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(organizationType)),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					a := p.Source.(*models.ProviderAccount)
+					a := p.Source.(*models.PatientAccount)
 					return accountOrganizations(p, a)
 				},
 			},

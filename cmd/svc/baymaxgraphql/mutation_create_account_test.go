@@ -36,7 +36,8 @@ func TestCreateAccountMutation(t *testing.T) {
 		Type:        auth.AccountType_PROVIDER,
 	}).WithReturns(&auth.CreateAccountResponse{
 		Account: &auth.Account{
-			ID: "a_1",
+			ID:   "a_1",
+			Type: auth.AccountType_PROVIDER,
 		},
 		Token: &auth.AuthToken{
 			Value:               "token",
@@ -263,7 +264,8 @@ func TestCreateAccountMutation_InviteColleague(t *testing.T) {
 		Type:        auth.AccountType_PROVIDER,
 	}).WithReturns(&auth.CreateAccountResponse{
 		Account: &auth.Account{
-			ID: "a_1",
+			ID:   "a_1",
+			Type: auth.AccountType_PROVIDER,
 		},
 		Token: &auth.AuthToken{
 			Value:               "token",

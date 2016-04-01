@@ -73,6 +73,7 @@ func TestNodeQuery(t *testing.T) {
 			DisplayName: "Mem",
 			Contacts:    []*models.ContactInfo{},
 			IsInternal:  true,
+			Gender:      "UNKNOWN",
 		},
 	}, res)
 	mock.FinishAll(ra)
@@ -89,11 +90,12 @@ func TestNodeQuery(t *testing.T) {
 		ID:   id,
 		Info: &directory.EntityInfo{
 			DisplayName: "Someone",
+			Gender:      directory.EntityInfo_MALE,
 		},
 	}, nil))
 	res, err = nodeField.Resolve(p)
 	test.OK(t, err)
-	test.Equals(t, &models.Entity{ID: id, IsEditable: true, IsInternal: false, DisplayName: "Someone", Contacts: []*models.ContactInfo{}}, res)
+	test.Equals(t, &models.Entity{ID: id, IsEditable: true, IsInternal: false, DisplayName: "Someone", Contacts: []*models.ContactInfo{}, Gender: "MALE"}, res)
 	mock.FinishAll(ra)
 
 	// Thread
@@ -115,6 +117,7 @@ func TestNodeQuery(t *testing.T) {
 		ID:   "entity_2",
 		Info: &directory.EntityInfo{
 			DisplayName: "Someone",
+			Gender:      directory.EntityInfo_FEMALE,
 		},
 	}, nil))
 	ra.Expect(mock.NewExpectation(ra.EntityForAccountID, "entity_1", acc.ID).WithReturns(
@@ -123,6 +126,7 @@ func TestNodeQuery(t *testing.T) {
 			ID:   "entity_222",
 			Info: &directory.EntityInfo{
 				DisplayName: "Someone",
+				Gender:      directory.EntityInfo_FEMALE,
 			},
 			Memberships: []*directory.Entity{
 				{
@@ -147,6 +151,7 @@ func TestNodeQuery(t *testing.T) {
 			ID:   "entity_2",
 			Info: &directory.EntityInfo{
 				DisplayName: "Someone",
+				Gender:      directory.EntityInfo_FEMALE,
 			},
 			Memberships: []*directory.Entity{
 				{

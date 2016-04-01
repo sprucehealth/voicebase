@@ -10,6 +10,7 @@
 
 	It has these top-level messages:
 		ExternalID
+		Date
 		EntityInfo
 		Entity
 		SerializedClientEntityContact
@@ -80,6 +81,7 @@ const (
 	EntityType_INTERNAL     EntityType = 1
 	EntityType_EXTERNAL     EntityType = 2
 	EntityType_SYSTEM       EntityType = 3
+	EntityType_PATIENT      EntityType = 4
 )
 
 var EntityType_name = map[int32]string{
@@ -87,12 +89,14 @@ var EntityType_name = map[int32]string{
 	1: "INTERNAL",
 	2: "EXTERNAL",
 	3: "SYSTEM",
+	4: "PATIENT",
 }
 var EntityType_value = map[string]int32{
 	"ORGANIZATION": 0,
 	"INTERNAL":     1,
 	"EXTERNAL":     2,
 	"SYSTEM":       3,
+	"PATIENT":      4,
 }
 
 type EntityInformation int32
@@ -168,6 +172,28 @@ var ContactType_value = map[string]int32{
 	"EMAIL": 1,
 }
 
+type EntityInfo_Gender int32
+
+const (
+	EntityInfo_UNKNOWN EntityInfo_Gender = 0
+	EntityInfo_MALE    EntityInfo_Gender = 1
+	EntityInfo_FEMALE  EntityInfo_Gender = 2
+	EntityInfo_OTHER   EntityInfo_Gender = 3
+)
+
+var EntityInfo_Gender_name = map[int32]string{
+	0: "UNKNOWN",
+	1: "MALE",
+	2: "FEMALE",
+	3: "OTHER",
+}
+var EntityInfo_Gender_value = map[string]int32{
+	"UNKNOWN": 0,
+	"MALE":    1,
+	"FEMALE":  2,
+	"OTHER":   3,
+}
+
 type LookupEntitiesRequest_LookupKeyType int32
 
 const (
@@ -195,19 +221,37 @@ type ExternalID struct {
 func (m *ExternalID) Reset()      { *m = ExternalID{} }
 func (*ExternalID) ProtoMessage() {}
 
+type Date struct {
+	Month uint32 `protobuf:"varint,1,opt,name=month,proto3" json:"month,omitempty"`
+	Day   uint32 `protobuf:"varint,2,opt,name=day,proto3" json:"day,omitempty"`
+	Year  uint32 `protobuf:"varint,3,opt,name=year,proto3" json:"year,omitempty"`
+}
+
+func (m *Date) Reset()      { *m = Date{} }
+func (*Date) ProtoMessage() {}
+
 type EntityInfo struct {
-	FirstName     string `protobuf:"bytes,1,opt,name=first_name,proto3" json:"first_name,omitempty"`
-	MiddleInitial string `protobuf:"bytes,2,opt,name=middle_initial,proto3" json:"middle_initial,omitempty"`
-	LastName      string `protobuf:"bytes,3,opt,name=last_name,proto3" json:"last_name,omitempty"`
-	GroupName     string `protobuf:"bytes,4,opt,name=group_name,proto3" json:"group_name,omitempty"`
-	DisplayName   string `protobuf:"bytes,5,opt,name=display_name,proto3" json:"display_name,omitempty"`
-	Note          string `protobuf:"bytes,6,opt,name=note,proto3" json:"note,omitempty"`
-	ShortTitle    string `protobuf:"bytes,7,opt,name=short_title,proto3" json:"short_title,omitempty"`
-	LongTitle     string `protobuf:"bytes,8,opt,name=long_title,proto3" json:"long_title,omitempty"`
+	FirstName     string            `protobuf:"bytes,1,opt,name=first_name,proto3" json:"first_name,omitempty"`
+	MiddleInitial string            `protobuf:"bytes,2,opt,name=middle_initial,proto3" json:"middle_initial,omitempty"`
+	LastName      string            `protobuf:"bytes,3,opt,name=last_name,proto3" json:"last_name,omitempty"`
+	GroupName     string            `protobuf:"bytes,4,opt,name=group_name,proto3" json:"group_name,omitempty"`
+	DisplayName   string            `protobuf:"bytes,5,opt,name=display_name,proto3" json:"display_name,omitempty"`
+	Note          string            `protobuf:"bytes,6,opt,name=note,proto3" json:"note,omitempty"`
+	ShortTitle    string            `protobuf:"bytes,7,opt,name=short_title,proto3" json:"short_title,omitempty"`
+	LongTitle     string            `protobuf:"bytes,8,opt,name=long_title,proto3" json:"long_title,omitempty"`
+	Gender        EntityInfo_Gender `protobuf:"varint,10,opt,name=gender,proto3,enum=directory.EntityInfo_Gender" json:"gender,omitempty"`
+	DOB           *Date             `protobuf:"bytes,9,opt,name=dob" json:"dob,omitempty"`
 }
 
 func (m *EntityInfo) Reset()      { *m = EntityInfo{} }
 func (*EntityInfo) ProtoMessage() {}
+
+func (m *EntityInfo) GetDOB() *Date {
+	if m != nil {
+		return m.DOB
+	}
+	return nil
+}
 
 type Entity struct {
 	ID                    string              `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -823,6 +867,7 @@ func (*DeleteEntityResponse) ProtoMessage() {}
 
 func init() {
 	proto.RegisterType((*ExternalID)(nil), "directory.ExternalID")
+	proto.RegisterType((*Date)(nil), "directory.Date")
 	proto.RegisterType((*EntityInfo)(nil), "directory.EntityInfo")
 	proto.RegisterType((*Entity)(nil), "directory.Entity")
 	proto.RegisterType((*SerializedClientEntityContact)(nil), "directory.SerializedClientEntityContact")
@@ -862,6 +907,7 @@ func init() {
 	proto.RegisterEnum("directory.EntityStatus", EntityStatus_name, EntityStatus_value)
 	proto.RegisterEnum("directory.Platform", Platform_name, Platform_value)
 	proto.RegisterEnum("directory.ContactType", ContactType_name, ContactType_value)
+	proto.RegisterEnum("directory.EntityInfo_Gender", EntityInfo_Gender_name, EntityInfo_Gender_value)
 	proto.RegisterEnum("directory.LookupEntitiesRequest_LookupKeyType", LookupEntitiesRequest_LookupKeyType_name, LookupEntitiesRequest_LookupKeyType_value)
 }
 func (x EntityType) String() string {
@@ -899,6 +945,13 @@ func (x ContactType) String() string {
 	}
 	return strconv.Itoa(int(x))
 }
+func (x EntityInfo_Gender) String() string {
+	s, ok := EntityInfo_Gender_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
 func (x LookupEntitiesRequest_LookupKeyType) String() string {
 	s, ok := LookupEntitiesRequest_LookupKeyType_name[int32(x)]
 	if ok {
@@ -930,6 +983,37 @@ func (this *ExternalID) Equal(that interface{}) bool {
 		return false
 	}
 	if this.EntityID != that1.EntityID {
+		return false
+	}
+	return true
+}
+func (this *Date) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*Date)
+	if !ok {
+		return false
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Month != that1.Month {
+		return false
+	}
+	if this.Day != that1.Day {
+		return false
+	}
+	if this.Year != that1.Year {
 		return false
 	}
 	return true
@@ -976,6 +1060,12 @@ func (this *EntityInfo) Equal(that interface{}) bool {
 		return false
 	}
 	if this.LongTitle != that1.LongTitle {
+		return false
+	}
+	if this.Gender != that1.Gender {
+		return false
+	}
+	if !this.DOB.Equal(that1.DOB) {
 		return false
 	}
 	return true
@@ -2121,11 +2211,23 @@ func (this *ExternalID) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *Date) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&directory.Date{")
+	s = append(s, "Month: "+fmt.Sprintf("%#v", this.Month)+",\n")
+	s = append(s, "Day: "+fmt.Sprintf("%#v", this.Day)+",\n")
+	s = append(s, "Year: "+fmt.Sprintf("%#v", this.Year)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *EntityInfo) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 12)
+	s := make([]string, 0, 14)
 	s = append(s, "&directory.EntityInfo{")
 	s = append(s, "FirstName: "+fmt.Sprintf("%#v", this.FirstName)+",\n")
 	s = append(s, "MiddleInitial: "+fmt.Sprintf("%#v", this.MiddleInitial)+",\n")
@@ -2135,6 +2237,10 @@ func (this *EntityInfo) GoString() string {
 	s = append(s, "Note: "+fmt.Sprintf("%#v", this.Note)+",\n")
 	s = append(s, "ShortTitle: "+fmt.Sprintf("%#v", this.ShortTitle)+",\n")
 	s = append(s, "LongTitle: "+fmt.Sprintf("%#v", this.LongTitle)+",\n")
+	s = append(s, "Gender: "+fmt.Sprintf("%#v", this.Gender)+",\n")
+	if this.DOB != nil {
+		s = append(s, "DOB: "+fmt.Sprintf("%#v", this.DOB)+",\n")
+	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -3071,6 +3177,39 @@ func (m *ExternalID) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Date) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Date) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Month != 0 {
+		data[i] = 0x8
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Month))
+	}
+	if m.Day != 0 {
+		data[i] = 0x10
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Day))
+	}
+	if m.Year != 0 {
+		data[i] = 0x18
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Year))
+	}
+	return i, nil
+}
+
 func (m *EntityInfo) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -3133,6 +3272,21 @@ func (m *EntityInfo) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintSvc(data, i, uint64(len(m.LongTitle)))
 		i += copy(data[i:], m.LongTitle)
+	}
+	if m.DOB != nil {
+		data[i] = 0x4a
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.DOB.Size()))
+		n1, err := m.DOB.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n1
+	}
+	if m.Gender != 0 {
+		data[i] = 0x50
+		i++
+		i = encodeVarintSvc(data, i, uint64(m.Gender))
 	}
 	return i, nil
 }
@@ -3225,11 +3379,11 @@ func (m *Entity) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x4a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Info.Size()))
-		n1, err := m.Info.MarshalTo(data[i:])
+		n2, err := m.Info.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n1
+		i += n2
 	}
 	if m.Status != 0 {
 		data[i] = 0x50
@@ -3433,21 +3587,21 @@ func (m *LookupEntitiesRequest) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintSvc(data, i, uint64(m.LookupKeyType))
 	}
 	if m.LookupKeyOneof != nil {
-		nn2, err := m.LookupKeyOneof.MarshalTo(data[i:])
+		nn3, err := m.LookupKeyOneof.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn2
+		i += nn3
 	}
 	if m.RequestedInformation != nil {
 		data[i] = 0x22
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n3, err := m.RequestedInformation.MarshalTo(data[i:])
+		n4, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n3
+		i += n4
 	}
 	if len(m.Statuses) > 0 {
 		for _, num := range m.Statuses {
@@ -3481,11 +3635,11 @@ func (m *LookupEntitiesRequest_BatchEntityID) MarshalTo(data []byte) (int, error
 		data[i] = 0x32
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.BatchEntityID.Size()))
-		n4, err := m.BatchEntityID.MarshalTo(data[i:])
+		n5, err := m.BatchEntityID.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n4
+		i += n5
 	}
 	return i, nil
 }
@@ -3567,21 +3721,21 @@ func (m *CreateEntityRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x32
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n5, err := m.RequestedInformation.MarshalTo(data[i:])
+		n6, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n5
+		i += n6
 	}
 	if m.EntityInfo != nil {
 		data[i] = 0x3a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.EntityInfo.Size()))
-		n6, err := m.EntityInfo.MarshalTo(data[i:])
+		n7, err := m.EntityInfo.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n6
+		i += n7
 	}
 	return i, nil
 }
@@ -3605,11 +3759,11 @@ func (m *CreateEntityResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
-		n7, err := m.Entity.MarshalTo(data[i:])
+		n8, err := m.Entity.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n7
+		i += n8
 	}
 	return i, nil
 }
@@ -3645,11 +3799,11 @@ func (m *CreateMembershipRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n8, err := m.RequestedInformation.MarshalTo(data[i:])
+		n9, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n8
+		i += n9
 	}
 	return i, nil
 }
@@ -3673,11 +3827,11 @@ func (m *CreateMembershipResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
-		n9, err := m.Entity.MarshalTo(data[i:])
+		n10, err := m.Entity.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n9
+		i += n10
 	}
 	return i, nil
 }
@@ -3758,11 +3912,11 @@ func (m *LookupEntitiesByContactRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x22
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n10, err := m.RequestedInformation.MarshalTo(data[i:])
+		n11, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n10
+		i += n11
 	}
 	if len(m.Statuses) > 0 {
 		for _, num := range m.Statuses {
@@ -3823,11 +3977,11 @@ func (m *CreateContactRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Contact.Size()))
-		n11, err := m.Contact.MarshalTo(data[i:])
+		n12, err := m.Contact.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n11
+		i += n12
 	}
 	if len(m.EntityID) > 0 {
 		data[i] = 0x12
@@ -3839,11 +3993,11 @@ func (m *CreateContactRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n12, err := m.RequestedInformation.MarshalTo(data[i:])
+		n13, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n12
+		i += n13
 	}
 	return i, nil
 }
@@ -3867,11 +4021,11 @@ func (m *CreateContactResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
-		n13, err := m.Entity.MarshalTo(data[i:])
+		n14, err := m.Entity.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n13
+		i += n14
 	}
 	return i, nil
 }
@@ -4021,11 +4175,11 @@ func (m *CreateContactsRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n14, err := m.RequestedInformation.MarshalTo(data[i:])
+		n15, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n14
+		i += n15
 	}
 	return i, nil
 }
@@ -4049,11 +4203,11 @@ func (m *CreateContactsResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
-		n15, err := m.Entity.MarshalTo(data[i:])
+		n16, err := m.Entity.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n15
+		i += n16
 	}
 	return i, nil
 }
@@ -4083,21 +4237,21 @@ func (m *UpdateEntityRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x12
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.EntityInfo.Size()))
-		n16, err := m.EntityInfo.MarshalTo(data[i:])
+		n17, err := m.EntityInfo.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n16
+		i += n17
 	}
 	if m.RequestedInformation != nil {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n17, err := m.RequestedInformation.MarshalTo(data[i:])
+		n18, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n17
+		i += n18
 	}
 	if len(m.Contacts) > 0 {
 		for _, msg := range m.Contacts {
@@ -4145,11 +4299,11 @@ func (m *UpdateEntityResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
-		n18, err := m.Entity.MarshalTo(data[i:])
+		n19, err := m.Entity.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n18
+		i += n19
 	}
 	return i, nil
 }
@@ -4191,11 +4345,11 @@ func (m *UpdateContactsRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n19, err := m.RequestedInformation.MarshalTo(data[i:])
+		n20, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n19
+		i += n20
 	}
 	return i, nil
 }
@@ -4219,11 +4373,11 @@ func (m *UpdateContactsResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
-		n20, err := m.Entity.MarshalTo(data[i:])
+		n21, err := m.Entity.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n20
+		i += n21
 	}
 	return i, nil
 }
@@ -4268,11 +4422,11 @@ func (m *DeleteContactsRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.RequestedInformation.Size()))
-		n21, err := m.RequestedInformation.MarshalTo(data[i:])
+		n22, err := m.RequestedInformation.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n21
+		i += n22
 	}
 	return i, nil
 }
@@ -4296,11 +4450,11 @@ func (m *DeleteContactsResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.Entity.Size()))
-		n22, err := m.Entity.MarshalTo(data[i:])
+		n23, err := m.Entity.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n22
+		i += n23
 	}
 	return i, nil
 }
@@ -4353,11 +4507,11 @@ func (m *SerializedEntityContactResponse) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintSvc(data, i, uint64(m.SerializedEntityContact.Size()))
-		n23, err := m.SerializedEntityContact.MarshalTo(data[i:])
+		n24, err := m.SerializedEntityContact.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n23
+		i += n24
 	}
 	return i, nil
 }
@@ -4445,6 +4599,21 @@ func (m *ExternalID) Size() (n int) {
 	return n
 }
 
+func (m *Date) Size() (n int) {
+	var l int
+	_ = l
+	if m.Month != 0 {
+		n += 1 + sovSvc(uint64(m.Month))
+	}
+	if m.Day != 0 {
+		n += 1 + sovSvc(uint64(m.Day))
+	}
+	if m.Year != 0 {
+		n += 1 + sovSvc(uint64(m.Year))
+	}
+	return n
+}
+
 func (m *EntityInfo) Size() (n int) {
 	var l int
 	_ = l
@@ -4479,6 +4648,13 @@ func (m *EntityInfo) Size() (n int) {
 	l = len(m.LongTitle)
 	if l > 0 {
 		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.DOB != nil {
+		l = m.DOB.Size()
+		n += 1 + l + sovSvc(uint64(l))
+	}
+	if m.Gender != 0 {
+		n += 1 + sovSvc(uint64(m.Gender))
 	}
 	return n
 }
@@ -5056,6 +5232,18 @@ func (this *ExternalID) String() string {
 	}, "")
 	return s
 }
+func (this *Date) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Date{`,
+		`Month:` + fmt.Sprintf("%v", this.Month) + `,`,
+		`Day:` + fmt.Sprintf("%v", this.Day) + `,`,
+		`Year:` + fmt.Sprintf("%v", this.Year) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *EntityInfo) String() string {
 	if this == nil {
 		return "nil"
@@ -5069,6 +5257,8 @@ func (this *EntityInfo) String() string {
 		`Note:` + fmt.Sprintf("%v", this.Note) + `,`,
 		`ShortTitle:` + fmt.Sprintf("%v", this.ShortTitle) + `,`,
 		`LongTitle:` + fmt.Sprintf("%v", this.LongTitle) + `,`,
+		`DOB:` + strings.Replace(fmt.Sprintf("%v", this.DOB), "Date", "Date", 1) + `,`,
+		`Gender:` + fmt.Sprintf("%v", this.Gender) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5592,6 +5782,113 @@ func (m *ExternalID) Unmarshal(data []byte) error {
 	}
 	return nil
 }
+func (m *Date) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSvc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Date: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Date: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Month", wireType)
+			}
+			m.Month = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Month |= (uint32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Day", wireType)
+			}
+			m.Day = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Day |= (uint32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Year", wireType)
+			}
+			m.Year = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Year |= (uint32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSvc(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSvc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *EntityInfo) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
@@ -5853,6 +6150,58 @@ func (m *EntityInfo) Unmarshal(data []byte) error {
 			}
 			m.LongTitle = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DOB", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSvc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DOB == nil {
+				m.DOB = &Date{}
+			}
+			if err := m.DOB.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 10:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Gender", wireType)
+			}
+			m.Gender = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSvc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Gender |= (EntityInfo_Gender(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSvc(data[iNdEx:])

@@ -28,14 +28,14 @@ const (
 )
 
 type authenticateOutput struct {
-	ClientMutationID      string                  `json:"clientMutationId,omitempty"`
-	Success               bool                    `json:"success"`
-	ErrorCode             string                  `json:"errorCode,omitempty"`
-	ErrorMessage          string                  `json:"errorMessage,omitempty"`
-	Token                 string                  `json:"token,omitempty"`
-	Account               *models.ProviderAccount `json:"account,omitempty"`
-	PhoneNumberLastDigits string                  `json:"phoneNumberLastDigits,omitempty"`
-	ClientEncryptionKey   string                  `json:"clientEncryptionKey,omitempty"`
+	ClientMutationID      string         `json:"clientMutationId,omitempty"`
+	Success               bool           `json:"success"`
+	ErrorCode             string         `json:"errorCode,omitempty"`
+	ErrorMessage          string         `json:"errorMessage,omitempty"`
+	Token                 string         `json:"token,omitempty"`
+	Account               models.Account `json:"account,omitempty"`
+	PhoneNumberLastDigits string         `json:"phoneNumberLastDigits,omitempty"`
+	ClientEncryptionKey   string         `json:"clientEncryptionKey,omitempty"`
 }
 
 var authenticateErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
