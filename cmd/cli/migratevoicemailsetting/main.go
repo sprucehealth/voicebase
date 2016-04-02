@@ -116,6 +116,23 @@ func main() {
 			golog.Fatalf(err.Error())
 		}
 
+		// respect the setting already being on at the org level
+		orgLevelSettingValue, err := settings.GetBooleanValue(context.Background(), settingsClient, &settings.GetValuesRequest{
+			NodeID: orgID,
+			Keys: []*settings.ConfigKey{
+				{
+					Key:    excommsSettings.ConfigKeySendCallsToVoicemail,
+					Subkey: provisionedPhone,
+				},
+			},
+		})
+		if err != nil {
+			golog.Fatalf(err.Error())
+		} else if orgLevelSettingValue.Value {
+			golog.Infof("Ignoring migration for entity %s since value already set to be on at org level for org %s ", entityID, orgID)
+			continue
+		}
+
 		// apply this value to the org the entity belongs to
 		_, err = settingsClient.SetValue(context.Background(), &settings.SetValueRequest{
 			NodeID: orgID,

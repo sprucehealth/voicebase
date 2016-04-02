@@ -1,10 +1,6 @@
 package settings
 
-import (
-	"github.com/sprucehealth/backend/environment"
-
-	"github.com/sprucehealth/backend/svc/settings"
-)
+import "github.com/sprucehealth/backend/svc/settings"
 
 const (
 	ConfigKeyTeamConversations = "team_conversations_enabled"
@@ -20,7 +16,7 @@ var TeamConversationsConfig = &settings.Config{
 	Config: &settings.Config_Boolean{
 		Boolean: &settings.BooleanConfig{
 			Default: &settings.BooleanValue{
-				Value: !environment.IsProd(), // disabled in prod by default, enabled everywhere else.
+				Value: false,
 			},
 		},
 	},
