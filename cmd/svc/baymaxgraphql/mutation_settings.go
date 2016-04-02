@@ -329,7 +329,7 @@ var modifySettingMutation = &graphql.Field{
 							nodeID = membership.ID
 							for _, contact := range membership.Contacts {
 								if contact.Provisioned && contact.ContactType == directory.ContactType_PHONE {
-									val.Key.Subkey = subkey
+									val.Key.Subkey = contact.Value
 									break
 								}
 							}

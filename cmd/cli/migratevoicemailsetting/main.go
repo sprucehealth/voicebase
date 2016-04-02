@@ -16,8 +16,6 @@ import (
 )
 
 var (
-	flagAWSSecretKey  = flag.String("aws_secret_key", "", "aws secret key")
-	flagAWSAccessKey  = flag.String("aws_access_key", "", "aws access key")
 	flagSettingsAddr  = flag.String("settings_addr", "", "`host:port` of settings service")
 	flagDirectoryAddr = flag.String("directory_addr", "", "`host:port` of directory service")
 	flagEntityList    = flag.String("entities_csv", "", "csv of entities for which to migrate setting")
@@ -96,6 +94,12 @@ func main() {
 		// don't touch the org if in the ignoreMap
 		if _, ok := orgsToIgnoreMap[orgID]; ok {
 			golog.Infof("Ignore migrating setting for entity %s in org %s", entityID, orgID)
+			continue
+		}
+
+		// ignore setting if no provisioned phone for the organization
+		if provisionedPhone == "" {
+			golog.Infof("Ignore entity migration for entity %s since no phone number set at org level", entityID)
 			continue
 		}
 
