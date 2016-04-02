@@ -340,24 +340,6 @@ func processIncomingCall(ctx context.Context, params *rawmsg.TwilioParams, eh *e
 		return voicemailTWIML(ctx, params, eh)
 	}
 
-	// send call to voicemail if any one of the providers have this setting on
-	// TODO: Remove this once v1.1 is out on all clients
-	for _, provider := range providersInOrg {
-		sendAllCallsToVoicemailValue, err := settings.GetBooleanValue(ctx, eh.settings, &settings.GetValuesRequest{
-			NodeID: provider.ID,
-			Keys: []*settings.ConfigKey{
-				{
-					Key: excommsSettings.ConfigKeySendCallsToVoicemail,
-				},
-			},
-		})
-		if err != nil {
-			return "", errors.Trace(fmt.Errorf("Unable to get the setting to direct all calls to voicemail for provider %s: %s", provider.ID, err.Error()))
-		} else if sendAllCallsToVoicemailValue.Value {
-			return voicemailTWIML(ctx, params, eh)
-		}
-	}
-
 	numbers := make([]interface{}, 0, maxPhoneNumbers)
 	for _, p := range forwardingList {
 		parsedPn, err := phone.Format(p, phone.E164)
