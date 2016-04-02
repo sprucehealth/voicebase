@@ -9,6 +9,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
@@ -311,6 +312,31 @@ var modifySettingMutation = &graphql.Field{
 			value, ok := input["booleanValue"].(map[string]interface{})
 			if !ok {
 				return nil, fmt.Errorf("Expected a bool value to be set for config %s.%s instead got none", key, subkey)
+			}
+
+			// if the send all calls to voicemail is being set at the entity level, set it at the org level instead
+			// TODO: Remove this workaround once we feel confident that there are no < v1.2 clients on iOS and < v1.1 on android
+			// out in the wild.
+			if key == excommsSettings.ConfigKeySendCallsToVoicemail {
+				if _, ok := node.(*models.Entity); ok {
+					entity, err := ram.Entity(ctx, nodeID, []directory.EntityInformation{directory.EntityInformation_CONTACTS, directory.EntityInformation_MEMBERSHIPS}, 1)
+					if err != nil {
+						return nil, fmt.Errorf("Unable to lookup entity for %s: %s", nodeID, err.Error())
+					}
+
+					for _, membership := range entity.Memberships {
+						if membership.Type == directory.EntityType_ORGANIZATION {
+							nodeID = membership.ID
+							for _, contact := range membership.Contacts {
+								if contact.Provisioned && contact.ContactType == directory.ContactType_PHONE {
+									val.Key.Subkey = subkey
+									break
+								}
+							}
+							break
+						}
+					}
+				}
 			}
 
 			boolVal, _ := value["set"].(bool)

@@ -6,9 +6,11 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
+	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/phone"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/graphql"
 )
@@ -187,6 +189,7 @@ var settingsQuery = &graphql.Field{
 	},
 	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		svc := serviceFromParams(p)
+		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 		acc := gqlctx.Account(ctx)
 		if acc == nil {
@@ -204,6 +207,31 @@ var settingsQuery = &graphql.Field{
 				return nil, errors.InternalError(ctx, err)
 			}
 			subkey = pn
+		}
+
+		// ensure that the send all calls to voicemail setting is being queried for at the org level
+		// and not the entity level
+		// TODO: Remove this workaround once we feel confident that there are no < v1.2 clients on iOS and < v1.1 on android
+		// out in the wild.
+		if key == excommsSettings.ConfigKeySendCallsToVoicemail {
+			entity, err := ram.Entity(ctx, nodeID, []directory.EntityInformation{directory.EntityInformation_CONTACTS, directory.EntityInformation_MEMBERSHIPS}, 1)
+			if err != nil {
+				return nil, fmt.Errorf("Unable to get entity %s: %s", nodeID, err.Error())
+			}
+			if entity.Type == directory.EntityType_INTERNAL {
+				for _, membership := range entity.Memberships {
+					if membership.Type == directory.EntityType_ORGANIZATION {
+						nodeID = membership.ID
+						for _, contact := range membership.Contacts {
+							if contact.Provisioned && contact.ContactType == directory.ContactType_PHONE {
+								subkey = contact.Value
+								break
+							}
+						}
+						break
+					}
+				}
+			}
 		}
 
 		par := conc.NewParallel()
