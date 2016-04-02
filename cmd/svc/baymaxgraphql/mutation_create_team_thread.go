@@ -5,6 +5,9 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
+	"github.com/sprucehealth/backend/svc/settings"
+
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 )
@@ -20,8 +23,20 @@ var createTeamThreadInputType = graphql.NewInputObject(graphql.InputObjectConfig
 	},
 })
 
-// JANK: can't have an empty enum and we want this field to always exist so make it a string until it's needed
-var createTeamThreadErrorCodeEnum = graphql.String
+const (
+	createTeamThreadErrorCodeFeatureDisabled = "FEATURE_DISABLED"
+)
+
+var createTeamThreadErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "CreateTeamThreadErrorCode",
+	Description: "Result of creaeteTeamThread mutation",
+	Values: graphql.EnumValueConfigMap{
+		createTeamThreadErrorCodeFeatureDisabled: &graphql.EnumValueConfig{
+			Value:       createTeamThreadErrorCodeFeatureDisabled,
+			Description: "This feature is not enabled for the org",
+		},
+	},
+})
 
 type createTeamThreadOutput struct {
 	ClientMutationID string         `json:"clientMutationId,omitempty"`
@@ -55,6 +70,7 @@ var createTeamThreadMutation = &graphql.Field{
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 		acc := gqlctx.Account(ctx)
+		svc := serviceFromParams(p)
 		if acc == nil {
 			return nil, errors.ErrNotAuthenticated(ctx)
 		}
@@ -65,6 +81,27 @@ var createTeamThreadMutation = &graphql.Field{
 		orgID := input["organizationID"].(string)
 		title, _ := input["title"].(string)
 		mems, _ := input["memberEntityIDs"].([]interface{})
+
+		// don't allow creation of team thread if setting is disabled
+		teamConversationsSettingValue, err := settings.GetBooleanValue(ctx, svc.settings, &settings.GetValuesRequest{
+			NodeID: orgID,
+			Keys: []*settings.ConfigKey{
+				{
+					Key: baymaxgraphqlsettings.ConfigKeyTeamConversations,
+				},
+			},
+		})
+		if err != nil {
+			return nil, errors.InternalError(ctx, err)
+		} else if !teamConversationsSettingValue.Value {
+			return &createTeamThreadOutput{
+				ClientMutationID: mutationID,
+				Success:          false,
+				ErrorCode:        createTeamThreadErrorCodeFeatureDisabled,
+				ErrorMessage:     "We're sorry but we cannot create this team conversation as this feature is disabled for your organization.",
+			}, nil
+		}
+
 		members := make([]string, len(mems))
 		for i, m := range mems {
 			members[i] = m.(string)

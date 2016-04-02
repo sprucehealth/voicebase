@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sqs"
@@ -16,6 +17,7 @@ import (
 	"github.com/sprucehealth/backend/boot"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	mediastore "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/media"
+	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/stub"
 	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/awsutil"
@@ -128,6 +130,17 @@ func main() {
 		golog.Fatalf("Unable to connect to settings service: %s", err)
 	}
 	settingsClient := settings.NewSettingsClient(conn)
+
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	_, err = settings.RegisterConfigs(
+		ctx,
+		settingsClient,
+		[]*settings.Config{
+			baymaxgraphqlsettings.TeamConversationsConfig,
+		})
+	if err != nil {
+		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
+	}
 
 	if *flagExCommsAddr == "" {
 		golog.Fatalf("ExComm service not configured")

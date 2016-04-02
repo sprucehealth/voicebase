@@ -5,8 +5,11 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/notification/deeplink"
+	"github.com/sprucehealth/backend/svc/settings"
+
 	"github.com/sprucehealth/graphql"
 )
 
@@ -19,7 +22,30 @@ var organizationType = graphql.NewObject(
 		Fields: graphql.Fields{
 			"id":   &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 			"name": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-			"allowTeamConversations": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"allowTeamConversations": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Boolean),
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					svc := serviceFromParams(p)
+					ctx := p.Context
+					org := p.Source.(*models.Organization)
+					if org == nil {
+						return false, nil
+					}
+
+					booleanValue, err := settings.GetBooleanValue(ctx, svc.settings, &settings.GetValuesRequest{
+						NodeID: org.ID,
+						Keys: []*settings.ConfigKey{
+							{
+								Key: baymaxgraphqlsettings.ConfigKeyTeamConversations,
+							},
+						},
+					})
+					if err != nil {
+						return nil, errors.InternalError(ctx, err)
+					}
+					return booleanValue.Value, nil
+				},
+			},
 			"entity": &graphql.Field{
 				Type: entityType,
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
