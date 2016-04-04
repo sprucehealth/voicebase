@@ -67,9 +67,7 @@ func (m *mediaHandler) checkAuth(ctx context.Context, r *http.Request) (*auth.Ac
 
 // mediaPOSTRequest represents the information associated with media posts
 type mediaPOSTRequest struct {
-	// TODO: For now just ask the client to send this information, but don't do anything with it
-	OrganizationID string `schema:"organization_id"`
-	ThreadID       string `schema:"thread_id"`
+	EntityID string `schema:"entity_id"`
 }
 
 func parseMediaPOSTRequest(r *http.Request) (*mediaPOSTRequest, error) {
@@ -81,8 +79,8 @@ func parseMediaPOSTRequest(r *http.Request) (*mediaPOSTRequest, error) {
 		return nil, err
 	}
 
-	if rd.OrganizationID == "" {
-		return nil, errors.New("organization_id required")
+	if rd.EntityID == "" {
+		return nil, errors.New("entity_id required")
 	}
 
 	return rd, nil
@@ -96,8 +94,7 @@ func (m *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *
 	}
 
 	// TODO: Don't do anything for now with the information coming from the client. We just want to require it
-	_, err := parseMediaPOSTRequest(r)
-	if err != nil {
+	if _, err := parseMediaPOSTRequest(r); err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
@@ -115,8 +112,7 @@ func (m *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *
 		return
 	}
 
-	_, err = m.media.PutReader(mediaID, file)
-	if err != nil {
+	if _, err = m.media.PutReader(mediaID, file); err != nil {
 		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
