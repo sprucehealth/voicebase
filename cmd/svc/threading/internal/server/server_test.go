@@ -1459,6 +1459,20 @@ func expectIsClearTextMessageNotificationsEnabled(sm *mock_settings.Client, orga
 	}, nil))
 }
 
+func expectIsAlertAllMessagesEnabled(sm *mock_settings.Client, entityID string, answer bool) {
+	sm.Expect(mock.NewExpectation(sm.GetValues, &settings.GetValuesRequest{
+		Keys:   []*settings.ConfigKey{{Key: threading.AlertAllMessages}},
+		NodeID: entityID,
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Type:  settings.ConfigType_BOOLEAN,
+				Value: &settings.Value_Boolean{Boolean: &settings.BooleanValue{Value: answer}},
+			},
+		},
+	}, nil))
+}
+
 func TestNotifyMembersOfPublishMessage(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
@@ -1515,18 +1529,15 @@ func TestNotifyMembersOfPublishMessage(t *testing.T) {
 	}, nil))
 
 	expectIsClearTextMessageNotificationsEnabled(sm, orgID, false)
-
-	dl.ExpectUnordered(mock.NewExpectation(dl.UpdateThreadEntity, tID, "notify1", &dal.ThreadEntityUpdate{
-		LastUnreadNotify: ptr.Time(clk.Now()),
-	}))
-	dl.ExpectUnordered(mock.NewExpectation(dl.UpdateThreadEntity, tID, "notify2", &dal.ThreadEntityUpdate{
-		LastUnreadNotify: ptr.Time(clk.Now()),
-	}))
+	expectIsAlertAllMessagesEnabled(sm, "notify1", true)
+	expectIsAlertAllMessagesEnabled(sm, "notify2", true)
+	expectIsAlertAllMessagesEnabled(sm, "notify3", true)
 
 	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
 		ShortMessages: map[string]string{
 			"notify1": "You have a new message",
 			"notify2": "You have a new message",
+			"notify3": "You have a new message",
 		},
 		UnreadCounts:     nil,
 		OrganizationID:   orgID,
@@ -1601,18 +1612,15 @@ func TestNotifyMembersOfPublishMessageClearTextSupportThread(t *testing.T) {
 	}, nil))
 
 	expectGetNotificationText(dl, sm, tiID, models.ThreadTypeSupport, "Clear Text Message", orgID, false)
-
-	dl.ExpectUnordered(mock.NewExpectation(dl.UpdateThreadEntity, tID, "notify1", &dal.ThreadEntityUpdate{
-		LastUnreadNotify: ptr.Time(clk.Now()),
-	}))
-	dl.ExpectUnordered(mock.NewExpectation(dl.UpdateThreadEntity, tID, "notify2", &dal.ThreadEntityUpdate{
-		LastUnreadNotify: ptr.Time(clk.Now()),
-	}))
+	expectIsAlertAllMessagesEnabled(sm, "notify1", true)
+	expectIsAlertAllMessagesEnabled(sm, "notify2", true)
+	expectIsAlertAllMessagesEnabled(sm, "notify3", true)
 
 	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
 		ShortMessages: map[string]string{
 			"notify1": "Clear Text Message",
 			"notify2": "Clear Text Message",
+			"notify3": "Clear Text Message",
 		},
 		UnreadCounts:     nil,
 		OrganizationID:   orgID,
@@ -1688,18 +1696,15 @@ func TestNotifyMembersOfPublishMessageClearTextEnabled(t *testing.T) {
 	}, nil))
 
 	expectGetNotificationText(dl, sm, tiID, models.ThreadTypeExternal, "Clear Text Message", orgID, true)
-
-	dl.ExpectUnordered(mock.NewExpectation(dl.UpdateThreadEntity, tID, "notify1", &dal.ThreadEntityUpdate{
-		LastUnreadNotify: ptr.Time(clk.Now()),
-	}))
-	dl.ExpectUnordered(mock.NewExpectation(dl.UpdateThreadEntity, tID, "notify2", &dal.ThreadEntityUpdate{
-		LastUnreadNotify: ptr.Time(clk.Now()),
-	}))
+	expectIsAlertAllMessagesEnabled(sm, "notify1", true)
+	expectIsAlertAllMessagesEnabled(sm, "notify2", true)
+	expectIsAlertAllMessagesEnabled(sm, "notify3", true)
 
 	notificationClient.Expect(mock.NewExpectation(notificationClient.SendNotification, &notification.Notification{
 		ShortMessages: map[string]string{
 			"notify1": "ThreadTitle: Clear Text Message",
 			"notify2": "ThreadTitle: Clear Text Message",
+			"notify3": "ThreadTitle: Clear Text Message",
 		},
 		UnreadCounts:     nil,
 		OrganizationID:   orgID,

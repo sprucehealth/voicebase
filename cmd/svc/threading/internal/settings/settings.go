@@ -20,3 +20,19 @@ var ClearTextMessageNotificationsConfig = &settings.Config{
 		},
 	},
 }
+
+// AlertAllMessagesConfig represents the config controlling if all messages should generate alerts or not
+var AlertAllMessagesConfig = &settings.Config{
+	Title:          "Alert for all new messages",
+	AllowSubkeys:   false,
+	Key:            threading.AlertAllMessages,
+	Type:           settings.ConfigType_BOOLEAN,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_INTERNAL_ENTITY},
+	Config: &settings.Config_Boolean{
+		Boolean: &settings.BooleanConfig{
+			Default: &settings.BooleanValue{
+				Value: true,
+			},
+		},
+	},
+}

@@ -1295,8 +1295,10 @@ func (s *threadsServer) notifyMembersOfPublishMessage(ctx context.Context, orgID
 
 				te := teMap[ent.ID]
 
-				// Only send a notification if no notification has been sent or the person has viewed the thread since the last notification
-				if te == nil || te.LastUnreadNotify == nil || (te.LastViewed != nil && te.LastViewed.After(*te.LastUnreadNotify)) {
+				if s.isAlertAllMessagesEnabled(ctx, ent.ID) {
+					messages[ent.ID] = notificationText
+				} else if te == nil || te.LastUnreadNotify == nil || (te.LastViewed != nil && te.LastViewed.After(*te.LastUnreadNotify)) {
+					// Only send a notification if no notification has been sent or the person has viewed the thread since the last notification
 					if err := dl.UpdateThreadEntity(ctx, thread.ID, ent.ID, &dal.ThreadEntityUpdate{
 						LastUnreadNotify: &now,
 					}); err != nil {
@@ -1374,6 +1376,20 @@ func (s *threadsServer) getNotificationText(ctx context.Context, thread *models.
 		}
 	}
 	return notificationText
+}
+
+func (s *threadsServer) isAlertAllMessagesEnabled(ctx context.Context, entityID string) bool {
+
+	booleanValue, err := settings.GetBooleanValue(ctx, s.settingsClient, &settings.GetValuesRequest{
+		Keys:   []*settings.ConfigKey{{Key: threading.AlertAllMessages}},
+		NodeID: entityID,
+	})
+	if err != nil {
+		golog.Errorf("Encountered an error when getting AlertAllMessages for entity %s: %s", entityID, err)
+		return true
+	}
+
+	return booleanValue.Value
 }
 
 func (s *threadsServer) isClearTextMessageNotificationsEnabled(ctx context.Context, organizationID string) bool {

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,7 +14,6 @@ import (
 	"github.com/sprucehealth/backend/libs/httputil"
 	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/svc/auth"
-	"github.com/sprucehealth/schema"
 	"golang.org/x/net/context"
 )
 
@@ -65,37 +63,10 @@ func (m *mediaHandler) checkAuth(ctx context.Context, r *http.Request) (*auth.Ac
 	return nil, http.StatusForbidden
 }
 
-// mediaPOSTRequest represents the information associated with media posts
-type mediaPOSTRequest struct {
-	EntityID string `schema:"entity_id"`
-}
-
-func parseMediaPOSTRequest(r *http.Request) (*mediaPOSTRequest, error) {
-	rd := &mediaPOSTRequest{}
-	if err := r.ParseForm(); err != nil {
-		return nil, err
-	}
-	if err := schema.NewDecoder().Decode(rd, r.Form); err != nil {
-		return nil, err
-	}
-
-	if rd.EntityID == "" {
-		return nil, errors.New("entity_id required")
-	}
-
-	return rd, nil
-}
-
 func (m *mediaHandler) servePOST(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	_, errCode := m.checkAuth(ctx, r)
 	if errCode != 0 {
 		w.WriteHeader(errCode)
-		return
-	}
-
-	// TODO: Don't do anything for now with the information coming from the client. We just want to require it
-	if _, err := parseMediaPOSTRequest(r); err != nil {
-		apiservice.WriteError(ctx, err, w, r)
 		return
 	}
 
