@@ -126,6 +126,9 @@ func transformThreadToResponse(t *threading.Thread) (*models.Thread, error) {
 			th.Title = supportThreadTitle
 		}
 		th.Type = models.ThreadTypeSupport
+		th.AllowInternalMessages = true
+	case threading.ThreadType_LEGACY_TEAM:
+		th.Type = models.ThreadTypeLegacyTeam
 	case threading.ThreadType_UNKNOWN: // TODO: remove this once old threads are migrated
 		th.Type = models.ThreadTypeUnknown
 	default:

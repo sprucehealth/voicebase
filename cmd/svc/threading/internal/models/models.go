@@ -164,6 +164,9 @@ const (
 	ThreadTypeSetup ThreadType = "SETUP"
 	// ThreadTypeSupport is a thread linked to the spruce support org
 	ThreadTypeSupport ThreadType = "SUPPORT"
+	// ThreadTypeLegacyInternal is a thread that represents the legacy internal thread
+	// visible to all members of the org for internal communication.
+	ThreadTypeLegacyTeam ThreadType = "LEGACY_TEAM"
 )
 
 // Scan implements sql.Scanner and expects src to be nil or of type string or []byte

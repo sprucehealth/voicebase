@@ -150,11 +150,12 @@ type AudioAttachment struct {
 }
 
 const (
-	ThreadTypeUnknown  = "UNKNOWN" // TODO: remove this once old threads are migrated
-	ThreadTypeExternal = "EXTERNAL"
-	ThreadTypeTeam     = "TEAM"
-	ThreadTypeSetup    = "SETUP"
-	ThreadTypeSupport  = "SUPPORT"
+	ThreadTypeUnknown    = "UNKNOWN" // TODO: remove this once old threads are migrated
+	ThreadTypeExternal   = "EXTERNAL"
+	ThreadTypeTeam       = "TEAM"
+	ThreadTypeSetup      = "SETUP"
+	ThreadTypeSupport    = "SUPPORT"
+	ThreadTypeLegacyTeam = "LEGACY_TEAM"
 )
 
 type Thread struct {

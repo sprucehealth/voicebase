@@ -98,11 +98,12 @@ var _ = math.Inf
 type ThreadType int32
 
 const (
-	ThreadType_UNKNOWN  ThreadType = 0
-	ThreadType_EXTERNAL ThreadType = 1
-	ThreadType_TEAM     ThreadType = 2
-	ThreadType_SETUP    ThreadType = 3
-	ThreadType_SUPPORT  ThreadType = 4
+	ThreadType_UNKNOWN     ThreadType = 0
+	ThreadType_EXTERNAL    ThreadType = 1
+	ThreadType_TEAM        ThreadType = 2
+	ThreadType_SETUP       ThreadType = 3
+	ThreadType_SUPPORT     ThreadType = 4
+	ThreadType_LEGACY_TEAM ThreadType = 5
 )
 
 var ThreadType_name = map[int32]string{
@@ -111,13 +112,15 @@ var ThreadType_name = map[int32]string{
 	2: "TEAM",
 	3: "SETUP",
 	4: "SUPPORT",
+	5: "LEGACY_TEAM",
 }
 var ThreadType_value = map[string]int32{
-	"UNKNOWN":  0,
-	"EXTERNAL": 1,
-	"TEAM":     2,
-	"SETUP":    3,
-	"SUPPORT":  4,
+	"UNKNOWN":     0,
+	"EXTERNAL":    1,
+	"TEAM":        2,
+	"SETUP":       3,
+	"SUPPORT":     4,
+	"LEGACY_TEAM": 5,
 }
 
 type Iterator_Direction int32

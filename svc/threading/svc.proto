@@ -32,6 +32,7 @@ enum ThreadType {
 	TEAM = 2;
 	SETUP = 3;
 	SUPPORT = 4;
+	LEGACY_TEAM = 5;
 }
 
 message Thread {
