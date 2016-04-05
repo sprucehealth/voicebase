@@ -3,6 +3,7 @@ package dal
 import (
 	"database/sql"
 	"fmt"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -72,8 +73,12 @@ func (d *dal) Transact(trans func(dal DAL) error) (err error) {
 	// Recover from any inner panics that happened and close the transaction
 	defer func() {
 		if r := recover(); r != nil {
+			const size = 64 << 10
+			buf := make([]byte, size)
+			buf = buf[:runtime.Stack(buf, false)]
+
 			tx.Rollback()
-			err = errors.Trace(fmt.Errorf("Encountered panic during transaction execution: %v", r))
+			err = errors.Trace(fmt.Errorf("Encountered panic during transaction execution: %v", string(buf)))
 		}
 	}()
 	if err := trans(tdal); err != nil {
@@ -578,7 +583,7 @@ func (d *dal) InsertEntity(model *Entity) (EntityID, error) {
 		   ?, ?, ?)`,
 		model.DisplayName, model.FirstName, model.GroupName, model.Type.String(), model.Status.String(),
 		model.ID, model.MiddleInitial, model.LastName, model.Note, model.ShortTitle,
-		model.LongTitle, model.Gender.String(), model.DOB)
+		model.LongTitle, model.Gender, model.DOB)
 	if err != nil {
 		return EmptyEntityID(), errors.Trace(err)
 	}
